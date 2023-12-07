@@ -7,3 +7,6 @@
 [submodule "external/xess"]
 	path = external/xess
 	url = https://github.com/intel/xess.git
+[submodule "external/vulkan"]
+	path = external/vulkan
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git
