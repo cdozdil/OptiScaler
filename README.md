@@ -6,13 +6,13 @@ Drop-in DLSS replacement with XeSS for various games such as Cyberpunk 2077.
 ## Installation
 *Following instructions were written for Cyberpunk 2077 and may differ for other games.*
 ### Windows 
-* Download the latest relase from [Nexusmods](https://www.nexusmods.com/cyberpunk2077/mods/3001?tab=files).
+* Download the latest relase from releases.
 * Extract the contents of the archive next to the `nvngx_dlss.dll` file in your games folder.
 * Run `EnableSignatureOverride.reg` and confirm merge.
 * That's it. Now DLSS option should appear in settigs.
 
 ### Linux
-* Download the latest relase from [Nexusmods](https://www.nexusmods.com/cyberpunk2077/mods/3001?tab=files).
+* Download the latest relase from releases.
 * Extract the contents of the archive next to the `nvngx_dlss.dll` file in your games folder.
 * Run the linuxinstall.sh script
 * Or just run the following command with the appropriate file paths to install the tweaks manually:
