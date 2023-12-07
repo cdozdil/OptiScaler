@@ -29,7 +29,6 @@ WINEPREFIX=/path/where/the/steam/library/is/steamapps/compatdata/1091500/pfx /bi
 
 ### Requirements
 * Visual Studio 2022
-* latest Vulkan SDK (1.3.216.0)
 
 ### Instructions
 * Clone this repo with all of its submodules.
