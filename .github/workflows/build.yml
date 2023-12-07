@@ -44,5 +44,5 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: CyberXeSS
-        path: ${{ github.workspace }}\x64\Release
+        path: ${{ github.workspace }}\x64\Release\*.dll
         if-no-files-found: error
