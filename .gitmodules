@@ -1,0 +1,9 @@
+[submodule "external/simpleini"]
+	path = external/simpleini
+	url = https://github.com/brofield/simpleini
+[submodule "external/unordered_dense"]
+	path = external/unordered_dense
+	url = https://github.com/martinus/unordered_dense.git
+[submodule "external/xess"]
+	path = external/xess
+	url = https://github.com/intel/xess.git
