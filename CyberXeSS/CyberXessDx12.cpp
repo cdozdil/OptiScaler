@@ -51,8 +51,9 @@ bool CreateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_Handle*
 #pragma region Read XeSS Version
 
 	xess_version_t ver;
+	xess_result_t ret = xessGetVersion(&ver);
 
-	if (xess_result_t ret = xessGetVersion(&ver); ret != XESS_RESULT_SUCCESS)
+	if (ret != XESS_RESULT_SUCCESS)
 		LOG("NVSDK_NGX_D3D12_CreateFeature error : " + ResultToString(ret), LEVEL_ERROR);
 
 	char buf[128];

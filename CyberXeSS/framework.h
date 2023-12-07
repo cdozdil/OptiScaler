@@ -6,7 +6,6 @@
 #include <windows.h>
 #include <d3d12.h>
 #include <DirectXMath.h>
-//#include <wrl/wrappers/corewrappers.h>
 #include <memory>
 #include <vector>
 #include <mutex>

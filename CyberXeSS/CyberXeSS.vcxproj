@@ -79,15 +79,14 @@
     <LibraryPath>$(XESS_SDK)\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\xess\inc\xess;$(VULKAN_SDK)\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)\external\xess\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\vulkan\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
     <TargetName>nvngx</TargetName>
-    <OutDir>..\..\..\Folders\Games\Alan Wake 2\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)\external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(VULKAN_SDK)\include;$(XESS_SDK)\inc\xess;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\vulkan\include;$(IncludePath)</IncludePath>
     <TargetName>nvngx</TargetName>
-    <LibraryPath>$(XESS_SDK)\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -133,9 +132,9 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -153,9 +152,9 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
       <FloatingPointModel>Fast</FloatingPointModel>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
