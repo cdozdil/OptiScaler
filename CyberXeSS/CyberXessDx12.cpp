@@ -458,7 +458,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	//dumpParams.frame_count = 1;
 	//dumpParams.frame_idx = cnt++;
 	//dumpParams.path = "D:\\dmp\\";
-	//
 	//xessStartDump(deviceContext->XessContext, &dumpParams);
 
 	// creatimg params for XeSS
