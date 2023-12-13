@@ -3,6 +3,7 @@
 #include "NvParameter.h"
 #include "xess_d3d12.h"
 #include "xess_debug.h"
+#include "WrappedD3D12Device.h"
 #include "d3d11on12.h"
 #include "d3dx12.h"
 
@@ -19,12 +20,13 @@ public:
 	bool init = false;
 	const NvParameter* CreateFeatureParams;
 	ID3D12Device* Dx12Device = nullptr;	
+	WrappedD3D12Device* Dx12ProxyDevice = nullptr;	
 	ID3D11Device* Dx11Device = nullptr;
 	ID3D11DeviceContext* Dx11DeviceContext = nullptr;
 	VkDevice VulkanDevice = nullptr;
 	VkInstance VulkanInstance = nullptr;
 	VkPhysicalDevice VulkanPhysicalDevice = nullptr;
-	
+
 	// D3D11on12 stuff
 	ID3D11On12Device2* Dx11on12Device = nullptr;
 	ID3D12CommandAllocator* Dx12CommandAllocator = nullptr;

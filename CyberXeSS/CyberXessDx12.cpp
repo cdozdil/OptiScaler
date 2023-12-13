@@ -90,10 +90,35 @@ static bool CreateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_
 		else
 		{
 			LOG("NVSDK_NGX_D3D12_CreateFeature CyberXessContext::instance()->Dx12Device received from InCmdList!", LEVEL_WARNING);
+
+			CyberXessContext::instance()->Dx12Device->QueryInterface(__uuidof(ID3D12ProxyDevice), (void**)&CyberXessContext::instance()->Dx12ProxyDevice);
+
+			if (CyberXessContext::instance()->Dx12ProxyDevice != nullptr)
+				LOG("NVSDK_NGX_D3D12_CreateFeature Dx12ProxyDevice assigned...", LEVEL_DEBUG);
+			else
+				LOG("NVSDK_NGX_D3D12_CreateFeature Dx12ProxyDevice not assigned...", LEVEL_DEBUG);
+	}
 	}
 	else
 		LOG("NVSDK_NGX_D3D12_CreateFeature CyberXessContext::instance()->Dx12Device is OK!", LEVEL_DEBUG);
 
+#pragma endregion
+
+#pragma region Check for Dx12ProxyDevice Device
+	//if (CyberXessContext::instance()->Dx12ProxyDevice != nullptr)
+	//{
+	//	LOG("NVSDK_NGX_D3D12_CreateFeature Dx12ProxyDevice proxy adapter disabling spoofing...", LEVEL_DEBUG);
+	//	IDXGIProxyAdapter* pAdapter = nullptr;
+
+	//	if (SUCCEEDED(CyberXessContext::instance()->Dx12ProxyDevice->GetProxyAdapter(&pAdapter)) && pAdapter != nullptr)
+	//	{
+	//		LOG("NVSDK_NGX_D3D12_CreateFeature Dx12ProxyDevice proxy adapter accuired...", LEVEL_DEBUG);
+	//		pAdapter->Spoofing(false);
+	//		LOG("NVSDK_NGX_D3D12_CreateFeature Dx12ProxyDevice proxy adapter spoofing disabled...", LEVEL_DEBUG);
+	//	}
+	//	else
+	//		LOG("NVSDK_NGX_D3D12_CreateFeature Dx12ProxyDevice proxy adapter is null!!!", LEVEL_DEBUG);
+	//}
 #pragma endregion
 
 	auto inParams = CyberXessContext::instance()->CreateFeatureParams;
@@ -275,11 +300,29 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 
 	CyberXessContext::instance()->init = false;
 	CyberXessContext::instance()->Dx12Device = nullptr;
+	CyberXessContext::instance()->Dx12ProxyDevice = nullptr;
 
 	if (InDevice)
 	{
+		WrappedD3D12Device* proxyDevice = nullptr;
+		if (InDevice->QueryInterface(__uuidof(ID3D12ProxyDevice), (void**)&proxyDevice) == S_OK && proxyDevice != nullptr)
+		{
+			CyberXessContext::instance()->Dx12Device = proxyDevice->m_device;
+			LOG("NVSDK_NGX_D3D12_Init_Ext Proxy Dx12Device assigned...", LEVEL_DEBUG);
+		}
+		else
+		{
 		CyberXessContext::instance()->Dx12Device = InDevice;
 		LOG("NVSDK_NGX_D3D12_Init_Ext Dx12Device assigned...", LEVEL_DEBUG);
+	}
+
+
+		InDevice->QueryInterface(__uuidof(ID3D12ProxyDevice), (void**)&CyberXessContext::instance()->Dx12ProxyDevice);
+
+		if (CyberXessContext::instance()->Dx12ProxyDevice != nullptr)
+			LOG("NVSDK_NGX_D3D12_Init_Ext Dx12ProxyDevice assigned...", LEVEL_DEBUG);
+	else
+			LOG("NVSDK_NGX_D3D12_Init_Ext Dx12ProxyDevice not assigned...", LEVEL_DEBUG);
 	}
 	else
 		LOG("NVSDK_NGX_D3D12_Init_Ext Dx12Device is already assigned or InDevice is null!!!!", LEVEL_ERROR);
@@ -324,7 +367,24 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 {
 	LOG("NVSDK_NGX_D3D12_Shutdown", LEVEL_DEBUG);
 
+	//if (CyberXessContext::instance()->Dx12ProxyDevice != nullptr)
+	//{
+	//	LOG("NVSDK_NGX_D3D12_Shutdown Dx12ProxyDevice proxy adapter spoofing enabling...", LEVEL_DEBUG);
+	//	IDXGIProxyAdapter* pAdapter = nullptr;
+	//	CyberXessContext::instance()->Dx12ProxyDevice->GetProxyAdapter(&pAdapter);
+	//	LOG("NVSDK_NGX_D3D12_Shutdown Dx12ProxyDevice proxy adapter accuired...", LEVEL_DEBUG);
+
+	//	if (pAdapter != nullptr)
+	//	{
+	//		pAdapter->Spoofing(true);
+	//		LOG("NVSDK_NGX_D3D12_Shutdown Dx12ProxyDevice proxy adapter spoofing enabled...", LEVEL_DEBUG);
+	//	}
+	//	else
+	//		LOG("NVSDK_NGX_D3D12_Shutdown Dx12ProxyDevice proxy adapter is null!!!", LEVEL_DEBUG);
+	//}
+
 	CyberXessContext::instance()->Dx12Device = nullptr;
+	CyberXessContext::instance()->Dx12ProxyDevice = nullptr;
 	CyberXessContext::instance()->NvParameterInstance->Params.clear();
 	CyberXessContext::instance()->Contexts.clear();
 
@@ -335,7 +395,25 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown1(ID3D12Device* InDevice)
 {
 	LOG("NVSDK_NGX_D3D12_Shutdown1", LEVEL_DEBUG);
 
+	//if (CyberXessContext::instance()->Dx12ProxyDevice != nullptr)
+	//{
+	//	LOG("NVSDK_NGX_D3D12_Shutdown1 Dx12ProxyDevice proxy adapter spoofing enabling...", LEVEL_DEBUG);
+
+	//	IDXGIProxyAdapter* pAdapter = nullptr;
+	//	CyberXessContext::instance()->Dx12ProxyDevice->GetProxyAdapter(&pAdapter);
+	//	LOG("NVSDK_NGX_D3D12_Shutdown1 Dx12ProxyDevice proxy adapter accuired...", LEVEL_DEBUG);
+
+	//	if (pAdapter != nullptr)
+	//	{
+	//		pAdapter->Spoofing(true);
+	//		LOG("NVSDK_NGX_D3D12_Shutdown1 Dx12ProxyDevice proxy adapter spoofing enabled...", LEVEL_DEBUG);
+	//	}
+	//	else
+	//		LOG("NVSDK_NGX_D3D12_Shutdown1 Dx12ProxyDevice proxy adapter is null!!!", LEVEL_DEBUG);
+	//}
+
 	CyberXessContext::instance()->Dx12Device = nullptr;
+	CyberXessContext::instance()->Dx12ProxyDevice = nullptr;
 	CyberXessContext::instance()->NvParameterInstance->Params.clear();
 	CyberXessContext::instance()->Contexts.clear();
 
@@ -466,6 +544,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	//xessStartDump(deviceContext->XessContext, &dumpParams);
 
 	// creatimg params for XeSS
+	xess_result_t xessResult;
 	xess_d3d12_execute_params_t params{};
 
 	params.jitterOffsetX = inParams->JitterOffsetX;
