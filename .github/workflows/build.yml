@@ -1,14 +1,20 @@
-name: MSBuild
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Build
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main" ]
-
+    branches: [ "master" ]
+    
 env:
   # Path to the solution file relative to the root of the project.
-  SOLUTION_FILE_PATH: CyberXeSS.sln
+  SOLUTION_FILE_PATH: .
 
   # Configuration type to build.
   # You can convert this to a build matrix if you need coverage of multiple configuration types.
@@ -39,5 +45,5 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: CyberXeSS
-        path: ${{ github.workspace }}\x64\Release
+        path: ${{ github.workspace }}\x64\Release\*.dll
         if-no-files-found: error

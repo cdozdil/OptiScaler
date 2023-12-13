@@ -1,6 +1,10 @@
 # DLSS2XeSS
 Drop-in DLSS replacement with XeSS for various games such as Cyberpunk 2077.
 
+Based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2](https://github.com/PotatoOfDoom/CyberFSR2). I have adapted it to use Intel's [XeSS](https://github.com/intel/xess/)
+
+As XeSS currently only supports DirectX12.
+
 ## Official Discord Channel: https://discord.gg/2JDHx6kcXB
 
 ## Installation
@@ -29,14 +33,12 @@ WINEPREFIX=/path/where/the/steam/library/is/steamapps/compatdata/1091500/pfx /bi
 
 ### Requirements
 * Visual Studio 2022
-* latest Vulkan SDK (1.3.216.0)
 
 ### Instructions
 * Clone this repo with all of its submodules.
 * Open the CyberXeSS.sln with Visual Studio 2022.
-* Copy the compiled `libxess.dll` from the XeSS Directory to your Cyberpunk 2077 executable directory.
-* Rename the compiled DLL from two steps ago to `nvngx.dll` if it is `CyberXeSS.dll`.
-* Copy `nvngx.dll` to your Cyberpunk 2077 executable directory.
+* Copy the compiled `nvngx.dll` from the XeSS Directory to your Cyberpunk 2077 executable directory.
+* Copy the `libxess.dll` from the external\XeSS\bin Directory to your Cyberpunk 2077 executable directory.
 * Run the `EnableSignatureOverride.reg` to allow Cyberpunks DLSS implementation to load unsigned DLSS versions
 * Run the game and set the quality in the DLSS settings
 * Play the game with XeSS
