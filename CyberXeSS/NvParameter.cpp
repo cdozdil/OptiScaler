@@ -397,31 +397,32 @@ void NvParameter::EvaluateRenderScale()
 
 		LOG("EvaluateRenderScale Quality : " + std::to_string(PerfQualityValue), LEVEL_DEBUG);
 
-		switch (xessQualityMode)
+		switch (PerfQualityValue)
 		{
-		case XESS_QUALITY_SETTING_PERFORMANCE:
+		case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
+			OutHeight = (unsigned int)((float)Height / 3.0);
+			OutWidth = (unsigned int)((float)Width / 3.0);
+			break;
+		case NVSDK_NGX_PerfQuality_Value_MaxPerf:
 			OutHeight = (unsigned int)((float)Height / 2.0);
 			OutWidth = (unsigned int)((float)Width / 2.0);
 			break;
-
-		case XESS_QUALITY_SETTING_BALANCED:
+		case NVSDK_NGX_PerfQuality_Value_Balanced:
 			OutHeight = (unsigned int)((float)Height / 1.699115044247788);
 			OutWidth = (unsigned int)((float)Width / 1.699115044247788);
 			break;
-
-		case XESS_QUALITY_SETTING_QUALITY:
+		case NVSDK_NGX_PerfQuality_Value_MaxQuality:
 			OutHeight = (unsigned int)((float)Height / 1.5);
 			OutWidth = (unsigned int)((float)Width / 1.5);
 			break;
-
-		case XESS_QUALITY_SETTING_ULTRA_QUALITY:
+		case NVSDK_NGX_PerfQuality_Value_UltraQuality:
 			OutHeight = (unsigned int)((float)Height / 1.299932295192959);
 			OutWidth = (unsigned int)((float)Width / 1.299932295192959);
 			break;
-
 		default:
-			OutHeight = Height;
-			OutWidth = Width;
+			OutHeight = (unsigned int)((float)Height / 1.699115044247788);
+			OutWidth = (unsigned int)((float)Width / 1.699115044247788);
+			break;
 		}
 	}
 
