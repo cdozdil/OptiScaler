@@ -380,8 +380,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 	//		LOG("NVSDK_NGX_D3D12_Shutdown Dx12ProxyDevice proxy adapter is null!!!", LEVEL_DEBUG);
 	//}
 
-	CyberXessContext::instance()->Dx12Device = nullptr;
-	CyberXessContext::instance()->Dx12ProxyDevice = nullptr;
+	CyberXessContext::instance()->Shutdown();
+
 	CyberXessContext::instance()->NvParameterInstance->Params.clear();
 	CyberXessContext::instance()->Contexts.clear();
 
@@ -409,8 +409,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown1(ID3D12Device* InDevice)
 	//		LOG("NVSDK_NGX_D3D12_Shutdown1 Dx12ProxyDevice proxy adapter is null!!!", LEVEL_DEBUG);
 	//}
 
-	CyberXessContext::instance()->Dx12Device = nullptr;
-	CyberXessContext::instance()->Dx12ProxyDevice = nullptr;
+	CyberXessContext::instance()->Shutdown();
+
 	CyberXessContext::instance()->NvParameterInstance->Params.clear();
 	CyberXessContext::instance()->Contexts.clear();
 

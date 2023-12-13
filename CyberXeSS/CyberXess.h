@@ -46,6 +46,74 @@ public:
 		static std::shared_ptr<CyberXessContext> INSTANCE{ std::make_shared<CyberXessContext>(CyberXessContext()) };
 		return INSTANCE;
 	}
+
+	void Shutdown()
+	{
+		CyberXessContext::instance()->Dx12FenceValueCounter = 0;
+
+		if (CyberXessContext::instance()->Dx12Fence != nullptr)
+		{
+			CyberXessContext::instance()->Dx12Fence->Release();
+			CyberXessContext::instance()->Dx12Fence = nullptr;
+		}
+
+		if (CyberXessContext::instance()->Dx12CommandList != nullptr)
+		{
+			CyberXessContext::instance()->Dx12CommandList->Release();
+			CyberXessContext::instance()->Dx12CommandList = nullptr;
+		}
+
+		if (CyberXessContext::instance()->Dx12CommandQueue != nullptr)
+		{
+			CyberXessContext::instance()->Dx12CommandQueue->Release();
+			CyberXessContext::instance()->Dx12CommandQueue = nullptr;
+		}
+
+		if (CyberXessContext::instance()->Dx12CommandAllocator != nullptr)
+		{
+			CyberXessContext::instance()->Dx12CommandAllocator->Release();
+			CyberXessContext::instance()->Dx12CommandAllocator = nullptr;
+		}
+
+		if (CyberXessContext::instance()->Dx12ProxyDevice != nullptr)
+		{
+			CyberXessContext::instance()->Dx12ProxyDevice->Release();
+			CyberXessContext::instance()->Dx12ProxyDevice = nullptr;
+		}
+
+		if (CyberXessContext::instance()->Dx12Device != nullptr)
+		{
+			CyberXessContext::instance()->Dx12Device->Release();
+			CyberXessContext::instance()->Dx12Device = nullptr;
+		}
+
+		if (CyberXessContext::instance()->Dx11on12Device != nullptr)
+		{
+			CyberXessContext::instance()->Dx11on12Device->Release();
+			CyberXessContext::instance()->Dx11on12Device = nullptr;
+		}
+
+		if (CyberXessContext::instance()->Dx11Device != nullptr)
+		{
+			CyberXessContext::instance()->Dx11Device->Release();
+			CyberXessContext::instance()->Dx11Device = nullptr;
+		}
+
+		if (CyberXessContext::instance()->Dx11DeviceContext != nullptr)
+		{
+			CyberXessContext::instance()->Dx11DeviceContext->Release();
+			CyberXessContext::instance()->Dx11DeviceContext = nullptr;
+		}
+
+		if (CyberXessContext::instance()->VulkanInstance != nullptr)
+			CyberXessContext::instance()->VulkanInstance = nullptr;
+
+		if (CyberXessContext::instance()->VulkanDevice != nullptr)
+			CyberXessContext::instance()->VulkanDevice = nullptr;
+
+		if (CyberXessContext::instance()->VulkanPhysicalDevice != nullptr)
+			CyberXessContext::instance()->VulkanPhysicalDevice = nullptr;
+	}
 };
 
 class FeatureContext

@@ -46,7 +46,8 @@ NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_D3D11_Shutdown(void)
 {
 	LOG("NVSDK_NGX_D3D11_Shutdown", LEVEL_INFO);
 
-	CyberXessContext::instance()->Dx11Device = nullptr;
+	CyberXessContext::instance()->Shutdown();
+
 	CyberXessContext::instance()->NvParameterInstance->Params.clear();
 	CyberXessContext::instance()->Contexts.clear();
 
@@ -57,7 +58,8 @@ NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_D3D11_Shutdown1(ID3D11Device* InDevice)
 {
 	LOG("NVSDK_NGX_D3D11_Shutdown1", LEVEL_INFO);
 
-	CyberXessContext::instance()->Dx11Device = nullptr;
+	CyberXessContext::instance()->Shutdown();
+
 	CyberXessContext::instance()->NvParameterInstance->Params.clear();
 	CyberXessContext::instance()->Contexts.clear();
 
