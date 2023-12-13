@@ -4,7 +4,6 @@
 #include "Util.h"
 
 static int cnt = 0;
-xess_dump_parameters_t dumpParams = {};
 
 inline void LogCallback(const char* Message, xess_logging_level_t Level)
 {
@@ -12,7 +11,7 @@ inline void LogCallback(const char* Message, xess_logging_level_t Level)
 	LOG("XeSS Runtime (" + std::to_string(Level) + ") : " + s, LEVEL_DEBUG);
 }
 
-const std::string ResultToString(xess_result_t result)
+static std::string ResultToString(xess_result_t result)
 {
 	switch (result)
 	{
@@ -69,16 +68,12 @@ static bool CreateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_
 
 	if (CyberXessContext::instance()->Dx12Device == nullptr)
 	{
-	if (InCmdList == nullptr)
-	{
-		LOG("NVSDK_NGX_D3D12_CreateFeature InCmdList is null!!!", LEVEL_ERROR);
-		return false;
-	}
+		if (InCmdList == nullptr)
+		{
+			LOG("NVSDK_NGX_D3D12_CreateFeature InCmdList is null!!!", LEVEL_ERROR);
+			return false;
+		}
 
-#pragma region Check for Dx12Device Device
-
-	if (CyberXessContext::instance()->Dx12Device == nullptr)
-	{
 		LOG("NVSDK_NGX_D3D12_CreateFeature CyberXessContext::instance()->Dx12Device is null trying to get from InCmdList!", LEVEL_WARNING);
 		InCmdList->GetDevice(IID_PPV_ARGS(&CyberXessContext::instance()->Dx12Device));
 
@@ -97,7 +92,7 @@ static bool CreateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_
 				LOG("NVSDK_NGX_D3D12_CreateFeature Dx12ProxyDevice assigned...", LEVEL_DEBUG);
 			else
 				LOG("NVSDK_NGX_D3D12_CreateFeature Dx12ProxyDevice not assigned...", LEVEL_DEBUG);
-	}
+		}
 	}
 	else
 		LOG("NVSDK_NGX_D3D12_CreateFeature CyberXessContext::instance()->Dx12Device is OK!", LEVEL_DEBUG);
@@ -135,18 +130,18 @@ static bool CreateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_
 	if (deviceContext->XessContext != nullptr)
 	{
 		LOG("NVSDK_NGX_D3D12_CreateFeature Destrying old XeSSContext", LEVEL_WARNING);
-		auto dStatus = xessDestroyContext(deviceContext->XessContext);
-		LOG("NVSDK_NGX_D3D12_CreateFeature xessDestroyContext result -> " + ResultToString(dStatus), LEVEL_WARNING);
+		ret = xessDestroyContext(deviceContext->XessContext);
+		LOG("NVSDK_NGX_D3D12_CreateFeature xessDestroyContext result -> " + ResultToString(ret), LEVEL_WARNING);
 	}
 
-	auto status = xessD3D12CreateContext(CyberXessContext::instance()->Dx12Device, &deviceContext->XessContext);
-	LOG("NVSDK_NGX_D3D12_CreateFeature xessD3D12CreateContext result -> " + ResultToString(status), LEVEL_INFO);
+	ret = xessD3D12CreateContext(CyberXessContext::instance()->Dx12Device, &deviceContext->XessContext);
+	LOG("NVSDK_NGX_D3D12_CreateFeature xessD3D12CreateContext result -> " + ResultToString(ret), LEVEL_INFO);
 
-	status = xessSetLoggingCallback(deviceContext->XessContext, XESS_LOGGING_LEVEL_DEBUG, LogCallback);
-	LOG("NVSDK_NGX_D3D12_CreateFeature xessSetLoggingCallback : " + ResultToString(status), LEVEL_DEBUG);
+	ret = xessSetLoggingCallback(deviceContext->XessContext, XESS_LOGGING_LEVEL_DEBUG, LogCallback);
+	LOG("NVSDK_NGX_D3D12_CreateFeature xessSetLoggingCallback : " + ResultToString(ret), LEVEL_DEBUG);
 
-	status = xessSetVelocityScale(deviceContext->XessContext, inParams->MVScaleX, inParams->MVScaleY);
-	LOG("NVSDK_NGX_D3D12_CreateFeature xessSetVelocityScale : " + ResultToString(status), LEVEL_DEBUG);
+	ret = xessSetVelocityScale(deviceContext->XessContext, inParams->MVScaleX, inParams->MVScaleY);
+	LOG("NVSDK_NGX_D3D12_CreateFeature xessSetVelocityScale : " + ResultToString(ret), LEVEL_DEBUG);
 
 #pragma region Create Parameters for XeSS
 
@@ -235,11 +230,11 @@ static bool CreateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_
 	{
 		LOG("NVSDK_NGX_D3D12_CreateFeature xessD3D12BuildPipelines start!", LEVEL_DEBUG);
 
-		status = xessD3D12BuildPipelines(deviceContext->XessContext, NULL, false, initParams.initFlags);
+		ret = xessD3D12BuildPipelines(deviceContext->XessContext, NULL, false, initParams.initFlags);
 
-		if (status != XESS_RESULT_SUCCESS)
+		if (ret != XESS_RESULT_SUCCESS)
 		{
-			LOG("NVSDK_NGX_D3D12_CreateFeature xessD3D12BuildPipelines error : -> " + ResultToString(status), LEVEL_ERROR);
+			LOG("NVSDK_NGX_D3D12_CreateFeature xessD3D12BuildPipelines error : -> " + ResultToString(ret), LEVEL_ERROR);
 			return false;
 		}
 	}
@@ -256,27 +251,29 @@ static bool CreateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_
 
 	LOG("NVSDK_NGX_D3D12_CreateFeature xessSelectNetworkModel trying to set value to " + std::to_string(model), LEVEL_DEBUG);
 
-	status = xessSelectNetworkModel(deviceContext->XessContext, model);
+	ret = xessSelectNetworkModel(deviceContext->XessContext, model);
 
-	if (status == XESS_RESULT_SUCCESS)
+	if (ret == XESS_RESULT_SUCCESS)
 		LOG("NVSDK_NGX_D3D12_CreateFeature xessSelectNetworkModel set to " + std::to_string(model), LEVEL_DEBUG);
 	else
-		LOG("NVSDK_NGX_D3D12_CreateFeature xessSelectNetworkModel(" + std::to_string(model) + ") error : " + ResultToString(status), LEVEL_ERROR);
+		LOG("NVSDK_NGX_D3D12_CreateFeature xessSelectNetworkModel(" + std::to_string(model) + ") error : " + ResultToString(ret), LEVEL_ERROR);
 
 #pragma endregion
 
 
 	LOG("NVSDK_NGX_D3D12_CreateFeature xessD3D12Init start!", LEVEL_DEBUG);
 
-	status = xessD3D12Init(deviceContext->XessContext, &initParams);
+	ret = xessD3D12Init(deviceContext->XessContext, &initParams);
 
-	if (status != XESS_RESULT_SUCCESS)
+	if (ret != XESS_RESULT_SUCCESS)
 	{
-		LOG("NVSDK_NGX_D3D12_CreateFeature xessD3D12Init error : -> " + ResultToString(status), LEVEL_ERROR);
+		LOG("NVSDK_NGX_D3D12_CreateFeature xessD3D12Init error : -> " + ResultToString(ret), LEVEL_ERROR);
 		return false;
 	}
 
 	LOG("NVSDK_NGX_D3D12_CreateFeature End!", LEVEL_DEBUG);
+
+	CyberXessContext::instance()->init = true;
 
 	return true;
 }
@@ -312,16 +309,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 		}
 		else
 		{
-		CyberXessContext::instance()->Dx12Device = InDevice;
-		LOG("NVSDK_NGX_D3D12_Init_Ext Dx12Device assigned...", LEVEL_DEBUG);
-	}
+			CyberXessContext::instance()->Dx12Device = InDevice;
+			LOG("NVSDK_NGX_D3D12_Init_Ext Dx12Device assigned...", LEVEL_DEBUG);
+		}
 
 
 		InDevice->QueryInterface(__uuidof(ID3D12ProxyDevice), (void**)&CyberXessContext::instance()->Dx12ProxyDevice);
 
 		if (CyberXessContext::instance()->Dx12ProxyDevice != nullptr)
 			LOG("NVSDK_NGX_D3D12_Init_Ext Dx12ProxyDevice assigned...", LEVEL_DEBUG);
-	else
+		else
 			LOG("NVSDK_NGX_D3D12_Init_Ext Dx12ProxyDevice not assigned...", LEVEL_DEBUG);
 	}
 	else
@@ -506,8 +503,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetFeatureRequirements(IDXGIAdapt
 	return NVSDK_NGX_Result_Success;
 }
 
-NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_Handle* InFeatureHandle,
-	const NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_Handle* InFeatureHandle, const NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
 {
 	LOG("NVSDK_NGX_D3D12_EvaluateFeature init!", LEVEL_DEBUG);
 
@@ -577,7 +573,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 			LOG("NVSDK_NGX_D3D12_EvaluateFeature Color UnwrapUnderlyingResource result: " + int_to_hex(d3d11on11Result), LEVEL_DEBUG);
 		}
 		else
-		params.pColorTexture = (ID3D12Resource*)inParams->Color;
+			params.pColorTexture = (ID3D12Resource*)inParams->Color;
 	}
 	else
 	{
@@ -602,7 +598,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 			LOG("NVSDK_NGX_D3D12_EvaluateFeature MotionVectors UnwrapUnderlyingResource result: " + int_to_hex(d3d11on11Result), LEVEL_DEBUG);
 		}
 		else
-		params.pVelocityTexture = (ID3D12Resource*)inParams->MotionVectors;
+			params.pVelocityTexture = (ID3D12Resource*)inParams->MotionVectors;
 	}
 	else
 	{
@@ -627,7 +623,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 			LOG("NVSDK_NGX_D3D12_EvaluateFeature Output UnwrapUnderlyingResource result: " + int_to_hex(d3d11on11Result), LEVEL_DEBUG);
 		}
 		else
-		params.pOutputTexture = (ID3D12Resource*)inParams->Output;
+			params.pOutputTexture = (ID3D12Resource*)inParams->Output;
 	}
 	else
 	{
@@ -652,7 +648,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 			LOG("NVSDK_NGX_D3D12_EvaluateFeature Depth UnwrapUnderlyingResource result: " + int_to_hex(d3d11on11Result), LEVEL_DEBUG);
 		}
 		else
-		params.pDepthTexture = (ID3D12Resource*)inParams->Depth;
+			params.pDepthTexture = (ID3D12Resource*)inParams->Depth;
 	}
 	else
 	{
@@ -688,8 +684,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 				LOG("NVSDK_NGX_D3D12_EvaluateFeature ExposureTexture UnwrapUnderlyingResource result: " + int_to_hex(d3d11on11Result), LEVEL_DEBUG);
 			}
 			else
-			params.pExposureScaleTexture = (ID3D12Resource*)inParams->ExposureTexture;
-
+				params.pExposureScaleTexture = (ID3D12Resource*)inParams->ExposureTexture;
 		}
 	}
 	else
@@ -717,7 +712,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 				LOG("NVSDK_NGX_D3D12_EvaluateFeature TransparencyMask UnwrapUnderlyingResource result: " + int_to_hex(d3d11on11Result), LEVEL_DEBUG);
 			}
 			else
-			params.pResponsivePixelMaskTexture = (ID3D12Resource*)inParams->TransparencyMask;
+				params.pResponsivePixelMaskTexture = (ID3D12Resource*)inParams->TransparencyMask;
 		}
 		else
 		{
@@ -731,11 +726,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	}
 
 	LOG("NVSDK_NGX_D3D12_EvaluateFeature mvscale x: " + std::to_string(inParams->MVScaleX) + " y: " + std::to_string(inParams->MVScaleY), LEVEL_DEBUG);
-	auto vResult = xessSetVelocityScale(deviceContext->XessContext, inParams->MVScaleX, inParams->MVScaleY);
+	xessResult = xessSetVelocityScale(deviceContext->XessContext, inParams->MVScaleX, inParams->MVScaleY);
 
-	if (vResult != XESS_RESULT_SUCCESS)
+	if (xessResult != XESS_RESULT_SUCCESS)
 	{
-		LOG("NVSDK_NGX_D3D12_EvaluateFeature xessSetVelocityScale : " + ResultToString(vResult), LEVEL_ERROR);
+		LOG("NVSDK_NGX_D3D12_EvaluateFeature xessSetVelocityScale : " + ResultToString(xessResult), LEVEL_ERROR);
 		return NVSDK_NGX_Result_Fail;
 	}
 
@@ -781,9 +776,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature Signal result: " + int_to_hex(bResult), LEVEL_DEBUG);
 	}
 
-	if (vResult != XESS_RESULT_SUCCESS)
+	if (xessResult != XESS_RESULT_SUCCESS)
 	{
-		LOG("xessD3D12Execute error : -> " + ResultToString(vResult), LEVEL_ERROR);
+		LOG("xessD3D12Execute error : -> " + ResultToString(xessResult), LEVEL_ERROR);
 		return NVSDK_NGX_Result_Fail;
 	}
 
