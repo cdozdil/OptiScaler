@@ -3,7 +3,7 @@
 #include "CyberXess.h"
 #include "Util.h"
 
-static int cnt = 0;
+//static int cnt = 0;
 
 inline void LogCallback(const char* Message, xess_logging_level_t Level)
 {
@@ -36,10 +36,8 @@ static std::string ResultToString(xess_result_t result)
 
 FeatureContext* CreateContext(NVSDK_NGX_Handle** OutHandle)
 {
-	auto instance = CyberXessContext::instance();
-	auto deviceContext = instance->CreateContext();
+	auto deviceContext = CyberXessContext::instance()->CreateContext();
 	*OutHandle = &deviceContext->Handle;
-
 	return deviceContext;
 }
 
@@ -267,7 +265,8 @@ static bool CreateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_
 
 	if (ret != XESS_RESULT_SUCCESS)
 	{
-		LOG("NVSDK_NGX_D3D12_CreateFeature xessD3D12Init error : -> " + ResultToString(ret), LEVEL_ERROR);
+		LOG("NVSDK_NGX_D3D12_CreateFeature xessD3D12Init error: " + ResultToString(ret), LEVEL_ERROR);
+		CyberXessContext::instance()->init = false;
 		return false;
 	}
 
@@ -470,9 +469,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 	if (CyberXessContext::instance()->MyConfig->DelayedInit.value_or(false))
 		return NVSDK_NGX_Result_Success;
 
-	auto result = CreateFeature(InCmdList, &context->Handle);
-
-	if (result)
+	if (CreateFeature(InCmdList, &context->Handle))
 		return NVSDK_NGX_Result_Success;
 
 	LOG("NVSDK_NGX_D3D12_CreateFeature: CreateFeature failed", LEVEL_ERROR);
@@ -486,6 +483,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 
 	auto deviceContext = CyberXessContext::instance()->Contexts[InHandle->Id].get();
 	auto result = xessDestroyContext(deviceContext->XessContext);
+	LOG("NVSDK_NGX_D3D12_ReleaseFeature: xessDestroyContext result: " + ResultToString(result), LEVEL_DEBUG);
 	CyberXessContext::instance()->DeleteContext(InHandle);
 	return NVSDK_NGX_Result_Success;
 }
@@ -517,16 +515,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature callback exist", LEVEL_WARNING);
 
 	const auto inParams = static_cast<const NvParameter*>(InParameters);
+	const auto instance = CyberXessContext::instance();
 
-	auto instance = CyberXessContext::instance();
-
-	if (!CyberXessContext::instance()->init)
+	if (!instance->init)
 	{
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature init is false, calling CreateFeature!", LEVEL_WARNING);
-		CyberXessContext::instance()->init = CreateFeature(InCmdList, InFeatureHandle);
+		instance->init = CreateFeature(InCmdList, InFeatureHandle);
 	}
 
-	if (!CyberXessContext::instance()->init)
+	if (!instance->init)
 	{
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature init still is null CreateFeature failed!", LEVEL_ERROR);
 		return NVSDK_NGX_Result_Fail;
@@ -560,13 +557,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	{
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature Color exist..", LEVEL_DEBUG);
 
-		if (CyberXessContext::instance()->Dx11on12Device != nullptr)
+		if (instance->Dx11on12Device != nullptr)
 		{
 			params.pColorTexture = nullptr;
 
-			d3d11on11Result = CyberXessContext::instance()->Dx11on12Device->UnwrapUnderlyingResource(
+			d3d11on11Result = instance->Dx11on12Device->UnwrapUnderlyingResource(
 				(ID3D11Resource*)inParams->Color,
-				CyberXessContext::instance()->Dx12CommandQueue,
+				instance->Dx12CommandQueue,
 				IID_PPV_ARGS(&params.pColorTexture)
 			);
 
@@ -585,13 +582,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	{
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature MotionVectors exist..", LEVEL_DEBUG);
 
-		if (CyberXessContext::instance()->Dx11on12Device != nullptr)
+		if (instance->Dx11on12Device != nullptr)
 		{
 			params.pVelocityTexture = nullptr;
 
-			d3d11on11Result = CyberXessContext::instance()->Dx11on12Device->UnwrapUnderlyingResource(
+			d3d11on11Result = instance->Dx11on12Device->UnwrapUnderlyingResource(
 				(ID3D11Resource*)inParams->MotionVectors,
-				CyberXessContext::instance()->Dx12CommandQueue,
+				instance->Dx12CommandQueue,
 				IID_PPV_ARGS(&params.pVelocityTexture)
 			);
 
@@ -610,13 +607,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	{
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature Output exist..", LEVEL_DEBUG);
 
-		if (CyberXessContext::instance()->Dx11on12Device != nullptr)
+		if (instance->Dx11on12Device != nullptr)
 		{
 			params.pOutputTexture = nullptr;
 
-			d3d11on11Result = CyberXessContext::instance()->Dx11on12Device->UnwrapUnderlyingResource(
+			d3d11on11Result = instance->Dx11on12Device->UnwrapUnderlyingResource(
 				(ID3D11Resource*)inParams->Output,
-				CyberXessContext::instance()->Dx12CommandQueue,
+				instance->Dx12CommandQueue,
 				IID_PPV_ARGS(&params.pOutputTexture)
 			);
 
@@ -631,17 +628,17 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		return NVSDK_NGX_Result_FAIL_InvalidParameter;
 	}
 
-	if (inParams->Depth && !CyberXessContext::instance()->MyConfig->DisplayResolution.value_or(false))
+	if (inParams->Depth && !instance->MyConfig->DisplayResolution.value_or(false))
 	{
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature Depth exist..", LEVEL_INFO);
 
-		if (CyberXessContext::instance()->Dx11on12Device != nullptr)
+		if (instance->Dx11on12Device != nullptr)
 		{
 			params.pDepthTexture = nullptr;
 
-			d3d11on11Result = CyberXessContext::instance()->Dx11on12Device->UnwrapUnderlyingResource(
+			d3d11on11Result = instance->Dx11on12Device->UnwrapUnderlyingResource(
 				(ID3D11Resource*)inParams->Depth,
-				CyberXessContext::instance()->Dx12CommandQueue,
+				instance->Dx12CommandQueue,
 				IID_PPV_ARGS(&params.pDepthTexture)
 			);
 
@@ -652,7 +649,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	}
 	else
 	{
-		if (!CyberXessContext::instance()->MyConfig->DisplayResolution.value_or(false))
+		if (!instance->MyConfig->DisplayResolution.value_or(false))
 			LOG("NVSDK_NGX_D3D12_EvaluateFeature Depth not exist!!", LEVEL_ERROR);
 		else
 			LOG("NVSDK_NGX_D3D12_EvaluateFeature Using high res motion vectors, depth is not needed!!", LEVEL_INFO);
@@ -660,7 +657,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		params.pDepthTexture = nullptr;
 	}
 
-	if (!CyberXessContext::instance()->MyConfig->AutoExposure.value_or(false))
+	if (!instance->MyConfig->AutoExposure.value_or(false))
 	{
 		if (inParams->ExposureTexture == nullptr)
 		{
@@ -671,13 +668,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		{
 			LOG("NVSDK_NGX_D3D12_EvaluateFeature ExposureTexture exist..", LEVEL_INFO);
 
-			if (CyberXessContext::instance()->Dx11on12Device != nullptr)
+			if (instance->Dx11on12Device != nullptr)
 			{
 				params.pExposureScaleTexture = nullptr;
 
-				d3d11on11Result = CyberXessContext::instance()->Dx11on12Device->UnwrapUnderlyingResource(
+				d3d11on11Result = instance->Dx11on12Device->UnwrapUnderlyingResource(
 					(ID3D11Resource*)inParams->ExposureTexture,
-					CyberXessContext::instance()->Dx12CommandQueue,
+					instance->Dx12CommandQueue,
 					IID_PPV_ARGS(&params.pExposureScaleTexture)
 				);
 
@@ -693,19 +690,19 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		params.pExposureScaleTexture = nullptr;
 	}
 
-	if (!CyberXessContext::instance()->MyConfig->DisableReactiveMask.value_or(true))
+	if (!instance->MyConfig->DisableReactiveMask.value_or(true))
 	{
 		if (inParams->TransparencyMask != nullptr)
 		{
 			LOG("NVSDK_NGX_D3D12_EvaluateFeature TransparencyMask exist..", LEVEL_INFO);
 
-			if (CyberXessContext::instance()->Dx11on12Device != nullptr)
+			if (instance->Dx11on12Device != nullptr)
 			{
 				params.pResponsivePixelMaskTexture = nullptr;
 
-				d3d11on11Result = CyberXessContext::instance()->Dx11on12Device->UnwrapUnderlyingResource(
+				d3d11on11Result = instance->Dx11on12Device->UnwrapUnderlyingResource(
 					(ID3D11Resource*)inParams->TransparencyMask,
-					CyberXessContext::instance()->Dx12CommandQueue,
+					instance->Dx12CommandQueue,
 					IID_PPV_ARGS(&params.pResponsivePixelMaskTexture)
 				);
 
@@ -734,9 +731,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	const UINT64 fence = CyberXessContext::instance()->Dx12FenceValueCounter;
+	const UINT64 fence = instance->Dx12FenceValueCounter;
 
-	if (CyberXessContext::instance()->Dx11on12Device != nullptr)
+	if (instance->Dx11on12Device != nullptr)
 	{
 		// Transition render targets D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE for XeSS
 		std::vector<CD3DX12_RESOURCE_BARRIER> transitions = {};
@@ -756,6 +753,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		if (params.pResponsivePixelMaskTexture != nullptr)
 			CD3DX12_RESOURCE_BARRIER::Transition(params.pResponsivePixelMaskTexture,
 				D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+		// Transition output D3D12_RESOURCE_STATE_UNORDERED_ACCESS for XeSS
 		if (params.pOutputTexture != nullptr)
 			CD3DX12_RESOURCE_BARRIER::Transition(params.pResponsivePixelMaskTexture,
 				D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -766,13 +765,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	LOG("NVSDK_NGX_D3D12_EvaluateFeature Executing!!", LEVEL_INFO);
 	xessResult = xessD3D12Execute(deviceContext->XessContext, InCmdList, &params);
 
-	if (CyberXessContext::instance()->Dx11on12Device != nullptr)
+	if (instance->Dx11on12Device != nullptr)
 	{
-		auto bResult = CyberXessContext::instance()->Dx12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&CyberXessContext::instance()->Dx12Fence));
+		auto bResult = instance->Dx12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&instance->Dx12Fence));
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature CreateFence result: " + int_to_hex(bResult), LEVEL_DEBUG);
 
 		// Signal the command queue and wait for the fence
-		bResult = CyberXessContext::instance()->Dx12CommandQueue->Signal(CyberXessContext::instance()->Dx12Fence, fence);
+		bResult = instance->Dx12CommandQueue->Signal(instance->Dx12Fence, fence);
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature Signal result: " + int_to_hex(bResult), LEVEL_DEBUG);
 	}
 
@@ -782,7 +781,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	if (CyberXessContext::instance()->Dx11DeviceContext != nullptr && params.pOutputTexture)
+	if (instance->Dx11DeviceContext != nullptr && params.pOutputTexture)
 	{
 		UINT64 signals[1] = { fence };
 		ID3D12Fence* fences[1] = { CyberXessContext::instance()->Dx12Fence };
