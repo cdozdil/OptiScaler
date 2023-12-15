@@ -38,7 +38,7 @@ WINEPREFIX=/path/where/the/steam/library/is/steamapps/compatdata/1091500/pfx /bi
 * Clone this repo with all of its submodules.
 * Open the CyberXeSS.sln with Visual Studio 2022.
 * Copy the compiled `nvngx.dll` from the XeSS Directory to your Cyberpunk 2077 executable directory.
-* Copy the `libxess.dll` from the external\XeSS\bin Directory to your Cyberpunk 2077 executable directory.
+* Copy the [libxess.dll](https://raw.githubusercontent.com/intel/xess/main/bin/libxess.dll) to your Cyberpunk 2077 executable directory.
 * Run the `EnableSignatureOverride.reg` to allow Cyberpunks DLSS implementation to load unsigned DLSS versions
 * Run the game and set the quality in the DLSS settings
 * Play the game with XeSS
