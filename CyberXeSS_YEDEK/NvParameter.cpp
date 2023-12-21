@@ -231,7 +231,6 @@ NVSDK_NGX_Result NvParameter::Get_Internal(const char* InName, unsigned long lon
 	auto outValueULL = (unsigned long long*)OutValue;
 	//Includes DirectX Resources
 	auto outValuePtr = (void**)OutValue;
-	const auto params = CyberXessContext::instance()->NvParameterInstance;
 
 	std::string s;
 	s = InName;
@@ -285,7 +284,7 @@ NVSDK_NGX_Result NvParameter::Get_Internal(const char* InName, unsigned long lon
 		*outValuePtr = NVSDK_NGX_DLSS_GetStatsCallback;
 		break;
 	case Util::NvParameter::SizeInBytes:
-		*outValueULL = params->OutHeight * params->OutWidth * 31; //Dummy value
+		*outValueULL = 0x1337; //Dummy value
 		break;
 	case Util::NvParameter::OptLevel:
 		*outValueInt = 0; //Dummy value

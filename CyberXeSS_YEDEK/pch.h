@@ -1,7 +1,8 @@
 #pragma once
 #include "framework.h"
 
-#define LOGGING_ACTIVE 
+//#define LOGGING_ACTIVE 
+//#define D3D11on12
 
 typedef enum _log_level_t
 {
@@ -23,7 +24,7 @@ typedef enum _log_level_t
   } while((void)0, 0)
 
 #ifdef LOGGING_ACTIVE
-#define LOG(string, level) logprintf(string, level)
+#define LOG(string, ...) logprintf(string, __VA_ARGS__)
 #else
 #define LOG(string, level)
 #endif

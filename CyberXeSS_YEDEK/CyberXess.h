@@ -3,9 +3,9 @@
 #include "NvParameter.h"
 #include "xess_d3d12.h"
 #include "xess_debug.h"
-#include "dxgi1_6.h"
-
-static unsigned int handleCounter = 1000;
+#include "WrappedD3D12Device.h"
+#include "d3d11on12.h"
+#include "d3dx12.h"
 
 class FeatureContext;
 
@@ -14,7 +14,7 @@ class CyberXessContext
 {
 	CyberXessContext();
 
-	void GetHardwareAdapter(IDXGIFactory1* pFactory, IDXGIAdapter** ppAdapter, D3D_FEATURE_LEVEL featureLevel, bool requestHighPerformanceAdapter) const
+	void GetHardwareAdapter(IDXGIFactory1* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel, bool requestHighPerformanceAdapter) const
 	{
 		*ppAdapter = nullptr;
 
@@ -44,13 +44,11 @@ class CyberXessContext
 				// Check to see whether the adapter supports Direct3D 12, but don't create the
 				// actual device yet.
 
+
 				auto result = D3D12CreateDevice(adapter, featureLevel, _uuidof(ID3D12Device), nullptr);
 
 				if (result == S_FALSE)
-				{
-					*ppAdapter = adapter;
 					break;
-				}
 			}
 		}
 		else
@@ -69,18 +67,16 @@ class CyberXessContext
 
 				// Check to see whether the adapter supports Direct3D 12, but don't create the
 				// actual device yet.
-
 				auto result = D3D12CreateDevice(adapter, featureLevel, _uuidof(ID3D12Device), nullptr);
 
 				if (result == S_FALSE)
-				{
-					*ppAdapter = adapter;
 					break;
-				}
 			}
 		}
 
+		*ppAdapter = adapter;
 	}
+
 
 public:
 	std::shared_ptr<Config> MyConfig;
@@ -90,16 +86,19 @@ public:
 
 	// D3D12 stuff
 	ID3D12Device* Dx12Device = nullptr;
+	WrappedD3D12Device* Dx12ProxyDevice = nullptr;
 
 	// D3D11 stuff
 	ID3D11Device5* Dx11Device = nullptr;
 	ID3D11DeviceContext4* Dx11DeviceContext = nullptr;
 
 	// D3D11on12 stuff
+	ID3D11On12Device2* Dx11on12Device = nullptr;
 	ID3D12CommandQueue* Dx12CommandQueue = nullptr;
 	ID3D12CommandAllocator* Dx12CommandAllocator[2] = { nullptr, nullptr };
 	ID3D12GraphicsCommandList* Dx12CommandList[2] = { nullptr, nullptr };
 	ID3D12Fence* Dx12Fence = nullptr;
+	volatile UINT64 Dx12FenceValueCounter = 0;
 
 	// Vulkan stuff
 	VkDevice VulkanDevice = nullptr;
@@ -118,92 +117,14 @@ public:
 		return INSTANCE;
 	}
 
-	void Shutdown(bool fromDx11 = false, bool shutdownEvent = false) const
+	void Shutdown() const
 	{
-		if (CyberXessContext::instance()->Dx12Fence != nullptr && fromDx11 && shutdownEvent)
+		CyberXessContext::instance()->Dx12FenceValueCounter = 0;
+
+		if (CyberXessContext::instance()->Dx12Fence != nullptr)
 		{
 			CyberXessContext::instance()->Dx12Fence->Release();
 			CyberXessContext::instance()->Dx12Fence = nullptr;
-		}
-
-		if (CyberXessContext::instance()->Dx12CommandList[0] != nullptr && fromDx11 && shutdownEvent)
-		{
-			CyberXessContext::instance()->Dx12CommandList[0]->Release();
-			CyberXessContext::instance()->Dx12CommandList[0] = nullptr;
-		}
-
-		if (CyberXessContext::instance()->Dx12CommandList[1] != nullptr && fromDx11 && shutdownEvent)
-		{
-			CyberXessContext::instance()->Dx12CommandList[1]->Release();
-			CyberXessContext::instance()->Dx12CommandList[1] = nullptr;
-		}
-
-		if (CyberXessContext::instance()->Dx12CommandQueue != nullptr && fromDx11 && shutdownEvent)
-		{
-			CyberXessContext::instance()->Dx12CommandQueue->Release();
-			CyberXessContext::instance()->Dx12CommandQueue = nullptr;
-		}
-
-		if (CyberXessContext::instance()->Dx12CommandAllocator[0] != nullptr && fromDx11 && shutdownEvent)
-		{
-			CyberXessContext::instance()->Dx12CommandAllocator[0]->Release();
-			CyberXessContext::instance()->Dx12CommandAllocator[0] = nullptr;
-		}
-
-		if (CyberXessContext::instance()->Dx12CommandAllocator[1] != nullptr && fromDx11 && shutdownEvent)
-		{
-			CyberXessContext::instance()->Dx12CommandAllocator[1]->Release();
-			CyberXessContext::instance()->Dx12CommandAllocator[1] = nullptr;
-		}
-
-		if (CyberXessContext::instance()->Dx12Device != nullptr && fromDx11 && shutdownEvent)
-		{
-			CyberXessContext::instance()->Dx12Device->Release();
-			CyberXessContext::instance()->Dx12Device = nullptr;
-		}
-
-		if (CyberXessContext::instance()->VulkanInstance != nullptr)
-			CyberXessContext::instance()->VulkanInstance = nullptr;
-
-		if (CyberXessContext::instance()->VulkanDevice != nullptr)
-			CyberXessContext::instance()->VulkanDevice = nullptr;
-
-		if (CyberXessContext::instance()->VulkanPhysicalDevice != nullptr)
-			CyberXessContext::instance()->VulkanPhysicalDevice = nullptr;
-
-	}
-
-	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL featureLevel)
-	{
-		if (Dx12Device != nullptr)
-			return S_OK;
-
-		HRESULT result;
-
-		IDXGIFactory4* factory;
-		result = CreateDXGIFactory2(0, IID_PPV_ARGS(&factory));
-
-		if (result != S_OK)
-		{
-			LOG("CreateDx12Device Can't create factory: " + int_to_hex(result), LEVEL_ERROR);
-			return result;
-		}
-
-		IDXGIAdapter* hardwareAdapter = nullptr;
-		GetHardwareAdapter(factory, &hardwareAdapter, featureLevel, true);
-
-		if (hardwareAdapter == nullptr)
-		{
-			LOG("CreateDx12Device Can't get hardwareAdapter!", LEVEL_ERROR);
-			return E_NOINTERFACE;
-		}
-
-		result = D3D12CreateDevice(hardwareAdapter, featureLevel, IID_PPV_ARGS(&Dx12Device));
-
-		if (result != S_OK)
-		{
-			LOG("CreateDx12Device Can't create device: " + int_to_hex(result), LEVEL_ERROR);
-			return result;
 		}
 
 		if (CyberXessContext::instance()->Dx12CommandList[0] != nullptr)
@@ -236,6 +157,76 @@ public:
 			CyberXessContext::instance()->Dx12CommandAllocator[1] = nullptr;
 		}
 
+		if (CyberXessContext::instance()->Dx12ProxyDevice != nullptr)
+		{
+			CyberXessContext::instance()->Dx12ProxyDevice->Release();
+			CyberXessContext::instance()->Dx12ProxyDevice = nullptr;
+		}
+
+		if (CyberXessContext::instance()->Dx12Device != nullptr)
+		{
+			CyberXessContext::instance()->Dx12Device->Release();
+			CyberXessContext::instance()->Dx12Device = nullptr;
+		}
+
+		if (CyberXessContext::instance()->Dx11on12Device != nullptr)
+		{
+			CyberXessContext::instance()->Dx11on12Device->Release();
+			CyberXessContext::instance()->Dx11on12Device = nullptr;
+		}
+
+		if (CyberXessContext::instance()->Dx11Device != nullptr)
+		{
+			CyberXessContext::instance()->Dx11Device->Release();
+			CyberXessContext::instance()->Dx11Device = nullptr;
+		}
+
+		if (CyberXessContext::instance()->Dx11DeviceContext != nullptr)
+		{
+			CyberXessContext::instance()->Dx11DeviceContext->Release();
+			CyberXessContext::instance()->Dx11DeviceContext = nullptr;
+		}
+
+		if (CyberXessContext::instance()->VulkanInstance != nullptr)
+			CyberXessContext::instance()->VulkanInstance = nullptr;
+
+		if (CyberXessContext::instance()->VulkanDevice != nullptr)
+			CyberXessContext::instance()->VulkanDevice = nullptr;
+
+		if (CyberXessContext::instance()->VulkanPhysicalDevice != nullptr)
+			CyberXessContext::instance()->VulkanPhysicalDevice = nullptr;
+	}
+
+	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL featureLevel)
+	{
+		HRESULT result;
+
+		IDXGIFactory4* factory;
+		result = CreateDXGIFactory2(0, IID_PPV_ARGS(&factory));
+
+		if (result != S_OK)
+		{
+			LOG("CreateDx12Device Can't create factory: " + int_to_hex(result));
+			return result;
+		}
+
+		IDXGIAdapter1* hardwareAdapter = nullptr;
+		GetHardwareAdapter(factory, &hardwareAdapter, featureLevel, true);
+
+		if (hardwareAdapter == nullptr)
+		{
+			LOG("CreateDx12Device Can't get hardwareAdapter!");
+			return E_NOINTERFACE;
+		}
+
+		result = D3D12CreateDevice(hardwareAdapter, featureLevel, IID_PPV_ARGS(&Dx12Device));
+
+		if (result != S_OK)
+		{
+			LOG("CreateDx12Device Can't create device: " + int_to_hex(result));
+			return result;
+		}
+
 		D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 		queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 		queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -243,10 +234,11 @@ public:
 
 		// CreateCommandQueue
 		result = Dx12Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&Dx12CommandQueue));
-		LOG("NVSDK_NGX_D3D11_EvaluateFeature CreateCommandQueue result: " + int_to_hex(result), LEVEL_DEBUG);
+		LOG("NVSDK_NGX_D3D11_EvaluateFeature CreateCommandQueue result: " + int_to_hex(result));
 
 		if (result != S_OK || Dx12CommandQueue == nullptr)
 			return NVSDK_NGX_Result_FAIL_PlatformError;
+
 
 		return S_OK;
 	}
@@ -256,6 +248,7 @@ class FeatureContext
 {
 public:
 	NVSDK_NGX_Handle Handle;
+
 	xess_context_handle_t XessContext = nullptr;
 
 	unsigned int Width{}, Height{}, RenderWidth{}, RenderHeight{};
@@ -287,4 +280,3 @@ static std::string ResultToString(xess_result_t result)
 	default: return "Unknown";
 	}
 }
-

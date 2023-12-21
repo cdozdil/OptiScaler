@@ -3,6 +3,8 @@
 #include "CyberXess.h"
 #include "Util.h"
 
+//static int cnt = 0;
+
 inline void LogCallback(const char* Message, xess_logging_level_t Level)
 {
 	std::string s = Message;
@@ -34,27 +36,52 @@ static bool CreateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_
 
 	if (CyberXessContext::instance()->Dx12Device == nullptr)
 	{
-		if (InCmdList == nullptr && CyberXessContext::instance()->Dx11Device != nullptr)
+		if (InCmdList == nullptr)
 		{
 			LOG("NVSDK_NGX_D3D12_CreateFeature InCmdList is null!!!", LEVEL_ERROR);
-			auto fl = CyberXessContext::instance()->Dx11Device->GetFeatureLevel();
-			CyberXessContext::instance()->CreateDx12Device(fl);
+			return false;
 		}
-		else
-		{
-			LOG("NVSDK_NGX_D3D12_CreateFeature CyberXessContext::instance()->Dx12Device is null trying to get from InCmdList!", LEVEL_WARNING);
-			InCmdList->GetDevice(IID_PPV_ARGS(&CyberXessContext::instance()->Dx12Device));
-		}
+
+		LOG("NVSDK_NGX_D3D12_CreateFeature CyberXessContext::instance()->Dx12Device is null trying to get from InCmdList!", LEVEL_WARNING);
+		InCmdList->GetDevice(IID_PPV_ARGS(&CyberXessContext::instance()->Dx12Device));
 
 		if (CyberXessContext::instance()->Dx12Device == nullptr)
 		{
 			LOG("NVSDK_NGX_D3D12_CreateFeature CyberXessContext::instance()->Dx12Device can't receive from InCmdList!", LEVEL_ERROR);
 			return false;
 		}
+		else
+		{
+			LOG("NVSDK_NGX_D3D12_CreateFeature CyberXessContext::instance()->Dx12Device received from InCmdList!", LEVEL_WARNING);
+
+			CyberXessContext::instance()->Dx12Device->QueryInterface(__uuidof(ID3D12ProxyDevice), (void**)&CyberXessContext::instance()->Dx12ProxyDevice);
+
+			if (CyberXessContext::instance()->Dx12ProxyDevice != nullptr)
+				LOG("NVSDK_NGX_D3D12_CreateFeature Dx12ProxyDevice assigned...", LEVEL_DEBUG);
+			else
+				LOG("NVSDK_NGX_D3D12_CreateFeature Dx12ProxyDevice not assigned...", LEVEL_DEBUG);
+		}
 	}
 	else
 		LOG("NVSDK_NGX_D3D12_CreateFeature CyberXessContext::instance()->Dx12Device is OK!", LEVEL_DEBUG);
 
+#pragma endregion
+
+#pragma region Check for Dx12ProxyDevice Device
+	//if (CyberXessContext::instance()->Dx12ProxyDevice != nullptr)
+	//{
+	//	LOG("NVSDK_NGX_D3D12_CreateFeature Dx12ProxyDevice proxy adapter disabling spoofing...", LEVEL_DEBUG);
+	//	IDXGIProxyAdapter* pAdapter = nullptr;
+
+	//	if (SUCCEEDED(CyberXessContext::instance()->Dx12ProxyDevice->GetProxyAdapter(&pAdapter)) && pAdapter != nullptr)
+	//	{
+	//		LOG("NVSDK_NGX_D3D12_CreateFeature Dx12ProxyDevice proxy adapter accuired...", LEVEL_DEBUG);
+	//		pAdapter->Spoofing(false);
+	//		LOG("NVSDK_NGX_D3D12_CreateFeature Dx12ProxyDevice proxy adapter spoofing disabled...", LEVEL_DEBUG);
+	//	}
+	//	else
+	//		LOG("NVSDK_NGX_D3D12_CreateFeature Dx12ProxyDevice proxy adapter is null!!!", LEVEL_DEBUG);
+	//}
 #pragma endregion
 
 	auto inParams = CyberXessContext::instance()->CreateFeatureParams;
@@ -73,13 +100,6 @@ static bool CreateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_
 		LOG("NVSDK_NGX_D3D12_CreateFeature Destrying old XeSSContext", LEVEL_WARNING);
 		ret = xessDestroyContext(deviceContext->XessContext);
 		LOG("NVSDK_NGX_D3D12_CreateFeature xessDestroyContext result -> " + ResultToString(ret), LEVEL_WARNING);
-	}
-
-	if (CyberXessContext::instance()->Dx12Device == nullptr && CyberXessContext::instance()->Dx11Device != nullptr)
-	{
-		LOG("NVSDK_NGX_D3D12_CreateFeature InCmdList is null!!!", LEVEL_ERROR);
-		auto fl = CyberXessContext::instance()->Dx11Device->GetFeatureLevel();
-		CyberXessContext::instance()->CreateDx12Device(fl);
 	}
 
 	ret = xessD3D12CreateContext(CyberXessContext::instance()->Dx12Device, &deviceContext->XessContext);
@@ -208,6 +228,7 @@ static bool CreateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_
 
 #pragma endregion
 
+
 	LOG("NVSDK_NGX_D3D12_CreateFeature xessD3D12Init start!", LEVEL_DEBUG);
 
 	ret = xessD3D12Init(deviceContext->XessContext, &initParams);
@@ -236,29 +257,48 @@ FeatureContext* CreateContext(NVSDK_NGX_Handle** OutHandle)
 #pragma region DLSS Init Calls
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath,
-	ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion, unsigned long long unknown0)
+	ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion,
+	unsigned long long unknown0)
 {
-
-	LOG("XeSS DelayedInit : " + std::to_string(CyberXessContext::instance()->MyConfig->DelayedInit.value_or(false)), LEVEL_INFO);
-	LOG("XeSS BuildPipelines : " + std::to_string(CyberXessContext::instance()->MyConfig->BuildPipelines.value_or(true)), LEVEL_INFO);
-	LOG("XeSS NetworkModel : " + std::to_string(CyberXessContext::instance()->MyConfig->NetworkModel.value_or(0)), LEVEL_INFO);
-	LOG("XeSS LogFile : " + CyberXessContext::instance()->MyConfig->LogFile.value_or(""), LEVEL_INFO);
-	LOG("XeSS LogLevel : " + std::to_string(CyberXessContext::instance()->MyConfig->LogLevel.value_or(1)), LEVEL_INFO);
-	LOG("XeSS XeSSLogging : " + std::to_string(CyberXessContext::instance()->MyConfig->XeSSLogging.value_or(true)), LEVEL_INFO);
 
 	LOG("NVSDK_NGX_D3D12_Init_Ext AppId:" + std::to_string(InApplicationId), LEVEL_DEBUG);
 	LOG("NVSDK_NGX_D3D12_Init_Ext SDK:" + std::to_string(InSDKVersion), LEVEL_DEBUG);
 
+	LOG("Logger DelayedInit : " + std::to_string(CyberXessContext::instance()->MyConfig->DelayedInit.value_or(false)), LEVEL_INFO);
+	LOG("Logger BuildPipelines : " + std::to_string(CyberXessContext::instance()->MyConfig->BuildPipelines.value_or(true)), LEVEL_INFO);
+	LOG("Logger NetworkModel : " + std::to_string(CyberXessContext::instance()->MyConfig->NetworkModel.value_or(0)), LEVEL_INFO);
+	LOG("Logger LogFile : " + CyberXessContext::instance()->MyConfig->LogFile.value_or(""), LEVEL_INFO);
+	LOG("Logger LogLevel : " + std::to_string(CyberXessContext::instance()->MyConfig->LogLevel.value_or(1)), LEVEL_INFO);
+	LOG("Logger XeSSLogging : " + std::to_string(CyberXessContext::instance()->MyConfig->XeSSLogging.value_or(true)), LEVEL_INFO);
+
 	CyberXessContext::instance()->init = false;
-	CyberXessContext::instance()->Shutdown(true, true);
+	CyberXessContext::instance()->Dx12Device = nullptr;
+	CyberXessContext::instance()->Dx12ProxyDevice = nullptr;
 
 	if (InDevice)
 	{
-		CyberXessContext::instance()->Dx12Device = InDevice;
-		LOG("NVSDK_NGX_D3D12_Init_Ext Dx12Device assigned...", LEVEL_DEBUG);
+		WrappedD3D12Device* proxyDevice = nullptr;
+		if (InDevice->QueryInterface(__uuidof(ID3D12ProxyDevice), (void**)&proxyDevice) == S_OK && proxyDevice != nullptr)
+		{
+			CyberXessContext::instance()->Dx12Device = proxyDevice->m_device;
+			LOG("NVSDK_NGX_D3D12_Init_Ext Proxy Dx12Device assigned...", LEVEL_DEBUG);
+		}
+		else
+		{
+			CyberXessContext::instance()->Dx12Device = InDevice;
+			LOG("NVSDK_NGX_D3D12_Init_Ext Dx12Device assigned...", LEVEL_DEBUG);
+		}
+
+
+		InDevice->QueryInterface(__uuidof(ID3D12ProxyDevice), (void**)&CyberXessContext::instance()->Dx12ProxyDevice);
+
+		if (CyberXessContext::instance()->Dx12ProxyDevice != nullptr)
+			LOG("NVSDK_NGX_D3D12_Init_Ext Dx12ProxyDevice assigned...", LEVEL_DEBUG);
+		else
+			LOG("NVSDK_NGX_D3D12_Init_Ext Dx12ProxyDevice not assigned...", LEVEL_DEBUG);
 	}
 	else
-		LOG("NVSDK_NGX_D3D12_Init_Ext InDevice is null!!!!", LEVEL_ERROR);
+		LOG("NVSDK_NGX_D3D12_Init_Ext Dx12Device is already assigned or InDevice is null!!!!", LEVEL_ERROR);
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -300,13 +340,25 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 {
 	LOG("NVSDK_NGX_D3D12_Shutdown", LEVEL_DEBUG);
 
-	CyberXessContext::instance()->Shutdown(false, true);
+	//if (CyberXessContext::instance()->Dx12ProxyDevice != nullptr)
+	//{
+	//	LOG("NVSDK_NGX_D3D12_Shutdown Dx12ProxyDevice proxy adapter spoofing enabling...", LEVEL_DEBUG);
+	//	IDXGIProxyAdapter* pAdapter = nullptr;
+	//	CyberXessContext::instance()->Dx12ProxyDevice->GetProxyAdapter(&pAdapter);
+	//	LOG("NVSDK_NGX_D3D12_Shutdown Dx12ProxyDevice proxy adapter accuired...", LEVEL_DEBUG);
+
+	//	if (pAdapter != nullptr)
+	//	{
+	//		pAdapter->Spoofing(true);
+	//		LOG("NVSDK_NGX_D3D12_Shutdown Dx12ProxyDevice proxy adapter spoofing enabled...", LEVEL_DEBUG);
+	//	}
+	//	else
+	//		LOG("NVSDK_NGX_D3D12_Shutdown Dx12ProxyDevice proxy adapter is null!!!", LEVEL_DEBUG);
+	//}
+
+	CyberXessContext::instance()->Shutdown();
+
 	CyberXessContext::instance()->NvParameterInstance->Params.clear();
-
-	for (auto const& [key, val] : CyberXessContext::instance()->Contexts) {
-		NVSDK_NGX_D3D12_ReleaseFeature(&val->Handle);
-	}
-
 	CyberXessContext::instance()->Contexts.clear();
 
 	return NVSDK_NGX_Result_Success;
@@ -316,13 +368,27 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown1(ID3D12Device* InDevice)
 {
 	LOG("NVSDK_NGX_D3D12_Shutdown1", LEVEL_DEBUG);
 
-	CyberXessContext::instance()->Shutdown(false, true);
+	//if (CyberXessContext::instance()->Dx12ProxyDevice != nullptr)
+	//{
+	//	LOG("NVSDK_NGX_D3D12_Shutdown1 Dx12ProxyDevice proxy adapter spoofing enabling...", LEVEL_DEBUG);
+
+	//	IDXGIProxyAdapter* pAdapter = nullptr;
+	//	CyberXessContext::instance()->Dx12ProxyDevice->GetProxyAdapter(&pAdapter);
+	//	LOG("NVSDK_NGX_D3D12_Shutdown1 Dx12ProxyDevice proxy adapter accuired...", LEVEL_DEBUG);
+
+	//	if (pAdapter != nullptr)
+	//	{
+	//		pAdapter->Spoofing(true);
+	//		LOG("NVSDK_NGX_D3D12_Shutdown1 Dx12ProxyDevice proxy adapter spoofing enabled...", LEVEL_DEBUG);
+	//	}
+	//	else
+	//		LOG("NVSDK_NGX_D3D12_Shutdown1 Dx12ProxyDevice proxy adapter is null!!!", LEVEL_DEBUG);
+	//}
+
+	CyberXessContext::instance()->Shutdown();
+
 	CyberXessContext::instance()->NvParameterInstance->Params.clear();
 	CyberXessContext::instance()->Contexts.clear();
-
-	for (auto const& [key, val] : CyberXessContext::instance()->Contexts) {
-		NVSDK_NGX_D3D12_ReleaseFeature(&val->Handle);
-	}
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -391,18 +457,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 {
 	LOG("NVSDK_NGX_D3D12_ReleaseFeature!", LEVEL_DEBUG);
 
-	if (auto deviceContext = CyberXessContext::instance()->Contexts[InHandle->Id].get(); deviceContext->XessContext != nullptr)
-	{
-		auto result = xessDestroyContext(deviceContext->XessContext);
-		deviceContext->XessContext = nullptr;
-		LOG("NVSDK_NGX_D3D11_ReleaseFeature: xessDestroyContext result: " + ResultToString(result), LEVEL_DEBUG);
-	}
-
+	auto deviceContext = CyberXessContext::instance()->Contexts[InHandle->Id].get();
+	auto result = xessDestroyContext(deviceContext->XessContext);
+	LOG("NVSDK_NGX_D3D12_ReleaseFeature: xessDestroyContext result: " + ResultToString(result), LEVEL_DEBUG);
 	CyberXessContext::instance()->DeleteContext(InHandle);
-
-	if (CyberXessContext::instance()->Contexts.empty())
-		CyberXessContext::instance()->Shutdown(false, true);
-
 	return NVSDK_NGX_Result_Success;
 }
 
@@ -470,10 +528,26 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	LOG("NVSDK_NGX_D3D12_EvaluateFeature inp width: " + std::to_string(inParams->Width) + " height: " + std::to_string(inParams->Height), LEVEL_DEBUG);
 
 
+	HRESULT d3d11on11Result;
+
 	if (inParams->Color != nullptr)
 	{
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature Color exist..", LEVEL_DEBUG);
-		params.pColorTexture = (ID3D12Resource*)inParams->Color;
+
+		if (instance->Dx11on12Device != nullptr)
+		{
+			params.pColorTexture = nullptr;
+
+			d3d11on11Result = instance->Dx11on12Device->UnwrapUnderlyingResource(
+				(ID3D11Resource*)inParams->Color,
+				instance->Dx12CommandQueue,
+				IID_PPV_ARGS(&params.pColorTexture)
+			);
+
+			LOG("NVSDK_NGX_D3D12_EvaluateFeature Color UnwrapUnderlyingResource result: " + int_to_hex(d3d11on11Result), LEVEL_DEBUG);
+		}
+		else
+			params.pColorTexture = (ID3D12Resource*)inParams->Color;
 	}
 	else
 	{
@@ -484,7 +558,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	if (inParams->MotionVectors)
 	{
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature MotionVectors exist..", LEVEL_DEBUG);
-		params.pVelocityTexture = (ID3D12Resource*)inParams->MotionVectors;
+
+		if (instance->Dx11on12Device != nullptr)
+		{
+			params.pVelocityTexture = nullptr;
+
+			d3d11on11Result = instance->Dx11on12Device->UnwrapUnderlyingResource(
+				(ID3D11Resource*)inParams->MotionVectors,
+				instance->Dx12CommandQueue,
+				IID_PPV_ARGS(&params.pVelocityTexture)
+			);
+
+			LOG("NVSDK_NGX_D3D12_EvaluateFeature MotionVectors UnwrapUnderlyingResource result: " + int_to_hex(d3d11on11Result), LEVEL_DEBUG);
+		}
+		else
+			params.pVelocityTexture = (ID3D12Resource*)inParams->MotionVectors;
 	}
 	else
 	{
@@ -495,7 +583,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	if (inParams->Output)
 	{
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature Output exist..", LEVEL_DEBUG);
-		params.pOutputTexture = (ID3D12Resource*)inParams->Output;
+
+		if (instance->Dx11on12Device != nullptr)
+		{
+			params.pOutputTexture = nullptr;
+
+			d3d11on11Result = instance->Dx11on12Device->UnwrapUnderlyingResource(
+				(ID3D11Resource*)inParams->Output,
+				instance->Dx12CommandQueue,
+				IID_PPV_ARGS(&params.pOutputTexture)
+			);
+
+			LOG("NVSDK_NGX_D3D12_EvaluateFeature Output UnwrapUnderlyingResource result: " + int_to_hex(d3d11on11Result), LEVEL_DEBUG);
+		}
+		else
+			params.pOutputTexture = (ID3D12Resource*)inParams->Output;
 	}
 	else
 	{
@@ -503,10 +605,24 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		return NVSDK_NGX_Result_FAIL_InvalidParameter;
 	}
 
-	if (inParams->Depth)
+	if (inParams->Depth && !instance->MyConfig->DisplayResolution.value_or(false))
 	{
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature Depth exist..", LEVEL_INFO);
-		params.pDepthTexture = (ID3D12Resource*)inParams->Depth;
+
+		if (instance->Dx11on12Device != nullptr)
+		{
+			params.pDepthTexture = nullptr;
+
+			d3d11on11Result = instance->Dx11on12Device->UnwrapUnderlyingResource(
+				(ID3D11Resource*)inParams->Depth,
+				instance->Dx12CommandQueue,
+				IID_PPV_ARGS(&params.pDepthTexture)
+			);
+
+			LOG("NVSDK_NGX_D3D12_EvaluateFeature Depth UnwrapUnderlyingResource result: " + int_to_hex(d3d11on11Result), LEVEL_DEBUG);
+		}
+		else
+			params.pDepthTexture = (ID3D12Resource*)inParams->Depth;
 	}
 	else
 	{
@@ -528,7 +644,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		else
 		{
 			LOG("NVSDK_NGX_D3D12_EvaluateFeature ExposureTexture exist..", LEVEL_INFO);
-			params.pExposureScaleTexture = (ID3D12Resource*)inParams->ExposureTexture;
+
+			if (instance->Dx11on12Device != nullptr)
+			{
+				params.pExposureScaleTexture = nullptr;
+
+				d3d11on11Result = instance->Dx11on12Device->UnwrapUnderlyingResource(
+					(ID3D11Resource*)inParams->ExposureTexture,
+					instance->Dx12CommandQueue,
+					IID_PPV_ARGS(&params.pExposureScaleTexture)
+				);
+
+				LOG("NVSDK_NGX_D3D12_EvaluateFeature ExposureTexture UnwrapUnderlyingResource result: " + int_to_hex(d3d11on11Result), LEVEL_DEBUG);
+			}
+			else
+				params.pExposureScaleTexture = (ID3D12Resource*)inParams->ExposureTexture;
 		}
 	}
 	else
@@ -542,7 +672,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		if (inParams->TransparencyMask != nullptr)
 		{
 			LOG("NVSDK_NGX_D3D12_EvaluateFeature TransparencyMask exist..", LEVEL_INFO);
-			params.pResponsivePixelMaskTexture = (ID3D12Resource*)inParams->TransparencyMask;
+
+			if (instance->Dx11on12Device != nullptr)
+			{
+				params.pResponsivePixelMaskTexture = nullptr;
+
+				d3d11on11Result = instance->Dx11on12Device->UnwrapUnderlyingResource(
+					(ID3D11Resource*)inParams->TransparencyMask,
+					instance->Dx12CommandQueue,
+					IID_PPV_ARGS(&params.pResponsivePixelMaskTexture)
+				);
+
+				LOG("NVSDK_NGX_D3D12_EvaluateFeature TransparencyMask UnwrapUnderlyingResource result: " + int_to_hex(d3d11on11Result), LEVEL_DEBUG);
+			}
+			else
+				params.pResponsivePixelMaskTexture = (ID3D12Resource*)inParams->TransparencyMask;
 		}
 		else
 		{
@@ -564,13 +708,97 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		return NVSDK_NGX_Result_Fail;
 	}
 
+	const UINT64 fence = instance->Dx12FenceValueCounter;
+
+	if (instance->Dx11on12Device != nullptr)
+	{
+		// Transition render targets D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE for XeSS
+		std::vector<CD3DX12_RESOURCE_BARRIER> transitions = {};
+
+		if (params.pColorTexture != nullptr)
+			transitions.push_back(CD3DX12_RESOURCE_BARRIER::Transition(params.pColorTexture,
+				D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+		if (params.pVelocityTexture != nullptr)
+			CD3DX12_RESOURCE_BARRIER::Transition(params.pVelocityTexture,
+				D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		if (params.pDepthTexture != nullptr)
+			CD3DX12_RESOURCE_BARRIER::Transition(params.pDepthTexture,
+				D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		if (params.pExposureScaleTexture != nullptr)
+			CD3DX12_RESOURCE_BARRIER::Transition(params.pExposureScaleTexture,
+				D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		if (params.pResponsivePixelMaskTexture != nullptr)
+			CD3DX12_RESOURCE_BARRIER::Transition(params.pResponsivePixelMaskTexture,
+				D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+		// Transition output D3D12_RESOURCE_STATE_UNORDERED_ACCESS for XeSS
+		if (params.pOutputTexture != nullptr)
+			CD3DX12_RESOURCE_BARRIER::Transition(params.pResponsivePixelMaskTexture,
+				D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+		InCmdList->ResourceBarrier((UINT)transitions.size(), transitions.data());
+	}
+
 	LOG("NVSDK_NGX_D3D12_EvaluateFeature Executing!!", LEVEL_INFO);
 	xessResult = xessD3D12Execute(deviceContext->XessContext, InCmdList, &params);
+
+	if (instance->Dx11on12Device != nullptr)
+	{
+		auto bResult = instance->Dx12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&instance->Dx12Fence));
+		LOG("NVSDK_NGX_D3D12_EvaluateFeature CreateFence result: " + int_to_hex(bResult), LEVEL_DEBUG);
+
+		// Signal the command queue and wait for the fence
+		bResult = instance->Dx12CommandQueue->Signal(instance->Dx12Fence, fence);
+		LOG("NVSDK_NGX_D3D12_EvaluateFeature Signal result: " + int_to_hex(bResult), LEVEL_DEBUG);
+	}
 
 	if (xessResult != XESS_RESULT_SUCCESS)
 	{
 		LOG("xessD3D12Execute error : -> " + ResultToString(xessResult), LEVEL_ERROR);
 		return NVSDK_NGX_Result_Fail;
+	}
+
+	if (instance->Dx11DeviceContext != nullptr && params.pOutputTexture)
+	{
+		UINT64 signals[1] = { fence };
+		ID3D12Fence* fences[1] = { CyberXessContext::instance()->Dx12Fence };
+		HRESULT bResult;
+
+		if (params.pOutputTexture != nullptr)
+		{
+			bResult = CyberXessContext::instance()->Dx11on12Device->ReturnUnderlyingResource((ID3D11Resource*)inParams->Output, 1, signals, fences);
+			LOG("NVSDK_NGX_D3D12_EvaluateFeature pOutputTexture ReturnUnderlyingResource Output result: " + int_to_hex(bResult), LEVEL_DEBUG);
+		}
+
+		if (params.pColorTexture != nullptr)
+		{
+			bResult = CyberXessContext::instance()->Dx11on12Device->ReturnUnderlyingResource((ID3D11Resource*)inParams->Color, 1, signals, fences);
+			LOG("NVSDK_NGX_D3D12_EvaluateFeature pOutputTexture ReturnUnderlyingResource Color result: " + int_to_hex(bResult), LEVEL_DEBUG);
+		}
+
+		if (params.pDepthTexture != nullptr)
+		{
+			bResult = CyberXessContext::instance()->Dx11on12Device->ReturnUnderlyingResource((ID3D11Resource*)inParams->Depth, 1, signals, fences);
+			LOG("NVSDK_NGX_D3D12_EvaluateFeature pOutputTexture ReturnUnderlyingResource Depth result: " + int_to_hex(bResult), LEVEL_DEBUG);
+		}
+
+		if (params.pVelocityTexture != nullptr)
+		{
+			bResult = CyberXessContext::instance()->Dx11on12Device->ReturnUnderlyingResource((ID3D11Resource*)inParams->MotionVectors, 1, signals, fences);
+			LOG("NVSDK_NGX_D3D12_EvaluateFeature pOutputTexture ReturnUnderlyingResource MotionVectors result: " + int_to_hex(bResult), LEVEL_DEBUG);
+		}
+
+		if (params.pExposureScaleTexture != nullptr)
+		{
+			bResult = CyberXessContext::instance()->Dx11on12Device->ReturnUnderlyingResource((ID3D11Resource*)inParams->ExposureTexture, 1, signals, fences);
+			LOG("NVSDK_NGX_D3D12_EvaluateFeature pOutputTexture ReturnUnderlyingResource MotionVectors result: " + int_to_hex(bResult), LEVEL_DEBUG);
+		}
+
+		if (params.pResponsivePixelMaskTexture != nullptr)
+		{
+			bResult = CyberXessContext::instance()->Dx11on12Device->ReturnUnderlyingResource((ID3D11Resource*)inParams->TransparencyMask, 1, signals, fences);
+			LOG("NVSDK_NGX_D3D12_EvaluateFeature pOutputTexture ReturnUnderlyingResource MotionVectors result: " + int_to_hex(bResult), LEVEL_DEBUG);
+		}
 	}
 
 	LOG("NVSDK_NGX_D3D12_EvaluateFeature End!", LEVEL_DEBUG);

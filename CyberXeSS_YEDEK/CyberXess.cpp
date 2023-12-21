@@ -5,7 +5,7 @@
 
 FeatureContext* CyberXessContext::CreateContext()
 {
-	auto handleId = handleCounter++;
+	auto handleId = rand();
 	Contexts[handleId] = std::make_unique<FeatureContext>();
 	Contexts[handleId]->Handle.Id = handleId;
 	return Contexts[handleId].get();
@@ -24,4 +24,3 @@ CyberXessContext::CyberXessContext()
 {
 	MyConfig = std::make_unique<Config>(L"nvngx.ini");
 }
-
