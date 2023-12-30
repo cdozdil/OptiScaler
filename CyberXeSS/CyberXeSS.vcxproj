@@ -171,12 +171,11 @@
     <ClInclude Include="Config.h" />
     <ClInclude Include="CyberXess.h" />
     <ClInclude Include="d3dx12.h" />
+    <ClInclude Include="Detours.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="NvParameter.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Util.h" />
-    <ClInclude Include="WrappedD3D12Device.h" />
-    <ClInclude Include="WrappedDXGIObjects.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp" />
@@ -193,8 +192,10 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Util.cpp" />
-    <ClCompile Include="WrappedD3D12Device.cpp" />
-    <ClCompile Include="WrappedDXGIObjects.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="detours.d.lib" />
+    <Library Include="detours.r.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
