@@ -3,6 +3,7 @@
 #include "NvParameter.h"
 #include "xess_d3d12.h"
 #include "xess_debug.h"
+#include "xess_d3d12_debug.h"
 #include "dxgi1_6.h"
 
 static unsigned int handleCounter = 1000;
@@ -97,9 +98,8 @@ public:
 
 	// D3D11on12 stuff
 	ID3D12CommandQueue* Dx12CommandQueue = nullptr;
-	ID3D12CommandAllocator* Dx12CommandAllocator[2] = { nullptr, nullptr };
-	ID3D12GraphicsCommandList* Dx12CommandList[2] = { nullptr, nullptr };
-	ID3D12Fence* Dx12Fence = nullptr;
+	ID3D12CommandAllocator* Dx12CommandAllocator = nullptr;
+	ID3D12GraphicsCommandList* Dx12CommandList = nullptr;
 
 	// Vulkan stuff
 	VkDevice VulkanDevice = nullptr;
@@ -120,57 +120,13 @@ public:
 
 	void Shutdown(bool fromDx11 = false, bool shutdownEvent = false) const
 	{
-		if (CyberXessContext::instance()->Dx12Fence != nullptr && fromDx11 && shutdownEvent)
+		if (fromDx11 && shutdownEvent)
 		{
-			CyberXessContext::instance()->Dx12Fence->Release();
-			CyberXessContext::instance()->Dx12Fence = nullptr;
+			SAFE_RELEASE(CyberXessContext::instance()->Dx12CommandList);
+			SAFE_RELEASE(CyberXessContext::instance()->Dx12CommandQueue);
+			SAFE_RELEASE(CyberXessContext::instance()->Dx12CommandAllocator);
+			SAFE_RELEASE(CyberXessContext::instance()->Dx12Device);
 		}
-
-		if (CyberXessContext::instance()->Dx12CommandList[0] != nullptr && fromDx11 && shutdownEvent)
-		{
-			CyberXessContext::instance()->Dx12CommandList[0]->Release();
-			CyberXessContext::instance()->Dx12CommandList[0] = nullptr;
-		}
-
-		if (CyberXessContext::instance()->Dx12CommandList[1] != nullptr && fromDx11 && shutdownEvent)
-		{
-			CyberXessContext::instance()->Dx12CommandList[1]->Release();
-			CyberXessContext::instance()->Dx12CommandList[1] = nullptr;
-		}
-
-		if (CyberXessContext::instance()->Dx12CommandQueue != nullptr && fromDx11 && shutdownEvent)
-		{
-			CyberXessContext::instance()->Dx12CommandQueue->Release();
-			CyberXessContext::instance()->Dx12CommandQueue = nullptr;
-		}
-
-		if (CyberXessContext::instance()->Dx12CommandAllocator[0] != nullptr && fromDx11 && shutdownEvent)
-		{
-			CyberXessContext::instance()->Dx12CommandAllocator[0]->Release();
-			CyberXessContext::instance()->Dx12CommandAllocator[0] = nullptr;
-		}
-
-		if (CyberXessContext::instance()->Dx12CommandAllocator[1] != nullptr && fromDx11 && shutdownEvent)
-		{
-			CyberXessContext::instance()->Dx12CommandAllocator[1]->Release();
-			CyberXessContext::instance()->Dx12CommandAllocator[1] = nullptr;
-		}
-
-		if (CyberXessContext::instance()->Dx12Device != nullptr && fromDx11 && shutdownEvent)
-		{
-			CyberXessContext::instance()->Dx12Device->Release();
-			CyberXessContext::instance()->Dx12Device = nullptr;
-		}
-
-		if (CyberXessContext::instance()->VulkanInstance != nullptr)
-			CyberXessContext::instance()->VulkanInstance = nullptr;
-
-		if (CyberXessContext::instance()->VulkanDevice != nullptr)
-			CyberXessContext::instance()->VulkanDevice = nullptr;
-
-		if (CyberXessContext::instance()->VulkanPhysicalDevice != nullptr)
-			CyberXessContext::instance()->VulkanPhysicalDevice = nullptr;
-
 	}
 
 	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL featureLevel)
@@ -206,40 +162,13 @@ public:
 			return result;
 		}
 
-		if (CyberXessContext::instance()->Dx12CommandList[0] != nullptr)
-		{
-			CyberXessContext::instance()->Dx12CommandList[0]->Release();
-			CyberXessContext::instance()->Dx12CommandList[0] = nullptr;
-		}
-
-		if (CyberXessContext::instance()->Dx12CommandList[1] != nullptr)
-		{
-			CyberXessContext::instance()->Dx12CommandList[1]->Release();
-			CyberXessContext::instance()->Dx12CommandList[1] = nullptr;
-		}
-
-		if (CyberXessContext::instance()->Dx12CommandQueue != nullptr)
-		{
-			CyberXessContext::instance()->Dx12CommandQueue->Release();
-			CyberXessContext::instance()->Dx12CommandQueue = nullptr;
-		}
-
-		if (CyberXessContext::instance()->Dx12CommandAllocator[0] != nullptr)
-		{
-			CyberXessContext::instance()->Dx12CommandAllocator[0]->Release();
-			CyberXessContext::instance()->Dx12CommandAllocator[0] = nullptr;
-		}
-
-		if (CyberXessContext::instance()->Dx12CommandAllocator[1] != nullptr)
-		{
-			CyberXessContext::instance()->Dx12CommandAllocator[1]->Release();
-			CyberXessContext::instance()->Dx12CommandAllocator[1] = nullptr;
-		}
+		SAFE_RELEASE(CyberXessContext::instance()->Dx12CommandList);
+		SAFE_RELEASE(CyberXessContext::instance()->Dx12CommandQueue);
+		SAFE_RELEASE(CyberXessContext::instance()->Dx12CommandAllocator);
 
 		D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 		queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 		queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-		queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
 
 		// CreateCommandQueue
 		result = Dx12Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&Dx12CommandQueue));
@@ -258,11 +187,16 @@ public:
 	NVSDK_NGX_Handle Handle;
 	xess_context_handle_t XessContext = nullptr;
 
-	unsigned int Width{}, Height{}, RenderWidth{}, RenderHeight{};
+	unsigned int Width{};
+	unsigned int Height{};
+	unsigned int RenderWidth{};
+	unsigned int RenderHeight{};
 	NVSDK_NGX_PerfQuality_Value PerfQualityValue = NVSDK_NGX_PerfQuality_Value_Balanced;
 	float Sharpness = 1.0f;
-	float MVScaleX{}, MVScaleY{};
-	float JitterOffsetX{}, JitterOffsetY{};
+	float MVScaleX{};
+	float MVScaleY{};
+	float JitterOffsetX{};
+	float JitterOffsetY{};
 };
 
 static std::string ResultToString(xess_result_t result)

@@ -85,6 +85,9 @@ static bool CreateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_
 	ret = xessD3D12CreateContext(CyberXessContext::instance()->Dx12Device, &deviceContext->XessContext);
 	LOG("NVSDK_NGX_D3D12_CreateFeature xessD3D12CreateContext result -> " + ResultToString(ret), LEVEL_INFO);
 
+	ret = xessIsOptimalDriver(deviceContext->XessContext);
+	LOG("NVSDK_NGX_D3D12_CreateFeature xessIsOptimalDriver : " + ResultToString(ret), LEVEL_DEBUG);
+
 	ret = xessSetLoggingCallback(deviceContext->XessContext, XESS_LOGGING_LEVEL_DEBUG, LogCallback);
 	LOG("NVSDK_NGX_D3D12_CreateFeature xessSetLoggingCallback : " + ResultToString(ret), LEVEL_DEBUG);
 
@@ -178,7 +181,7 @@ static bool CreateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_
 	{
 		LOG("NVSDK_NGX_D3D12_CreateFeature xessD3D12BuildPipelines start!", LEVEL_DEBUG);
 
-		ret = xessD3D12BuildPipelines(deviceContext->XessContext, NULL, false, initParams.initFlags);
+		ret = xessD3D12BuildPipelines(deviceContext->XessContext, NULL, true, initParams.initFlags);
 
 		if (ret != XESS_RESULT_SUCCESS)
 		{
@@ -468,7 +471,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	params.inputHeight = inParams->Height;
 
 	LOG("NVSDK_NGX_D3D12_EvaluateFeature inp width: " + std::to_string(inParams->Width) + " height: " + std::to_string(inParams->Height), LEVEL_DEBUG);
-
 
 	if (inParams->Color != nullptr)
 	{

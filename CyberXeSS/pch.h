@@ -12,14 +12,14 @@ typedef enum _log_level_t
 	LEVEL_ERROR = 3
 } log_level_t;
 
-#define SAFE_RELEASE(p) \
-  do                    \
-  {                     \
-	if(p)               \
-	{                   \
-	  (p)->Release();   \
-	  (p) = NULL;       \
-	}                   \
+#define SAFE_RELEASE(p)			\
+  do							\
+  {								\
+	if(p && p != nullptr)       \
+	{							\
+	  (p)->Release();			\
+	  (p) = NULL;				\
+	}							\
   } while((void)0, 0)
 
 #ifdef LOGGING_ACTIVE
@@ -49,7 +49,7 @@ static inline int64_t GetTicks()
 	return ticks.QuadPart;
 }
 
-template< typename T >
+template<typename T>
 static inline std::string int_to_hex(T i)
 {
 	std::stringstream stream;
