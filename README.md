@@ -3,7 +3,7 @@ Drop-in DLSS replacement with XeSS for various games such as Cyberpunk 2077.
 
 Based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2](https://github.com/PotatoOfDoom/CyberFSR2). I have adapted it to use Intel's [XeSS](https://github.com/intel/xess/)
 
-As XeSS currently only supports DirectX12.
+As XeSS officially only supports DirectX12 (Support for DirectX11 added but consider it as alpha and expect performance and other problems).
 
 ## Official Discord Channel: https://discord.gg/2JDHx6kcXB
 
