@@ -170,7 +170,6 @@
   <ItemGroup>
     <ClInclude Include="Config.h" />
     <ClInclude Include="CyberXess.h" />
-    <ClInclude Include="d3dx12.h" />
     <ClInclude Include="Detours.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="NvParameter.h" />
