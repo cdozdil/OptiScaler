@@ -51,8 +51,6 @@ static ID3D11Texture2D* tmShared = nullptr;
 static ID3D11Texture2D* expShared = nullptr;
 
 ID3D12Fence* d3d12Fence = nullptr;
-ID3D11Fence* d3d11Fence = nullptr;
-HANDLE fenceHandle = NULL;
 
 xess_d3d12_execute_params_t params{};
 
@@ -791,7 +789,6 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* InHandle)
 	{
 		ReleaseSharedResources();
 		CyberXessContext::instance()->Shutdown(true, false);
-
 	}
 
 	isDeviceBusy.store(false);
@@ -926,35 +923,11 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, 
 	// Fence for syncing
 	if (d3d12Fence == nullptr)
 	{
-		result = instance->Dx12Device->CreateFence(0, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&d3d12Fence));
+		result = instance->Dx12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
 
 		if (result != S_OK)
 		{
 			LOG("NVSDK_NGX_D3D11_EvaluateFeature CreateFence d3d12fence result: " + int_to_hex(result), LEVEL_DEBUG);
-			isDeviceBusy.store(false);
-			return NVSDK_NGX_Result_FAIL_InvalidParameter;
-		}
-	}
-
-	if (fenceHandle == NULL)
-	{
-		result = instance->Dx12Device->CreateSharedHandle(d3d12Fence, NULL, GENERIC_ALL, nullptr, &fenceHandle);
-
-		if (result != S_OK)
-		{
-			LOG("NVSDK_NGX_D3D11_EvaluateFeature CreateFence fenceHandle result: " + int_to_hex(result), LEVEL_DEBUG);
-			isDeviceBusy.store(false);
-			return NVSDK_NGX_Result_FAIL_InvalidParameter;
-		}
-	}
-
-	if (d3d11Fence == nullptr)
-	{
-		result = instance->Dx11Device->OpenSharedFence(fenceHandle, IID_PPV_ARGS(&d3d11Fence));
-
-		if (result != S_OK)
-		{
-			LOG("NVSDK_NGX_D3D11_EvaluateFeature CreateFence d3d11fence result: " + int_to_hex(result), LEVEL_DEBUG);
 			isDeviceBusy.store(false);
 			return NVSDK_NGX_Result_FAIL_InvalidParameter;
 		}
