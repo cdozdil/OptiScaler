@@ -51,14 +51,6 @@ static bool CreateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_
 			LOG("NVSDK_NGX_D3D12_CreateFeature CyberXessContext::instance()->Dx12Device can't receive from InCmdList!", LEVEL_ERROR);
 			return false;
 		}
-
-			CyberXessContext::instance()->Dx12Device->QueryInterface(__uuidof(ID3D12ProxyDevice), (void**)&CyberXessContext::instance()->Dx12ProxyDevice);
-
-			if (CyberXessContext::instance()->Dx12ProxyDevice != nullptr)
-				LOG("NVSDK_NGX_D3D12_CreateFeature Dx12ProxyDevice assigned...", LEVEL_DEBUG);
-			else
-				LOG("NVSDK_NGX_D3D12_CreateFeature Dx12ProxyDevice not assigned...", LEVEL_DEBUG);
-		}
 	}
 	else
 		LOG("NVSDK_NGX_D3D12_CreateFeature CyberXessContext::instance()->Dx12Device is OK!", LEVEL_DEBUG);
@@ -500,21 +492,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	if (inParams->Color != nullptr)
 	{
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature Color exist..", LEVEL_DEBUG);
-
-		if (instance->Dx11on12Device != nullptr)
-		{
-			params.pColorTexture = nullptr;
-
-			d3d11on11Result = instance->Dx11on12Device->UnwrapUnderlyingResource(
-				(ID3D11Resource*)inParams->Color,
-				instance->Dx12CommandQueue,
-				IID_PPV_ARGS(&params.pColorTexture)
-			);
-
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature Color UnwrapUnderlyingResource result: " + int_to_hex(d3d11on11Result), LEVEL_DEBUG);
-		}
-		else
-			params.pColorTexture = (ID3D12Resource*)inParams->Color;
+		params.pColorTexture = (ID3D12Resource*)inParams->Color;
 	}
 	else
 	{
@@ -525,21 +503,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	if (inParams->MotionVectors)
 	{
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature MotionVectors exist..", LEVEL_DEBUG);
-
-		if (instance->Dx11on12Device != nullptr)
-		{
-			params.pVelocityTexture = nullptr;
-
-			d3d11on11Result = instance->Dx11on12Device->UnwrapUnderlyingResource(
-				(ID3D11Resource*)inParams->MotionVectors,
-				instance->Dx12CommandQueue,
-				IID_PPV_ARGS(&params.pVelocityTexture)
-			);
-
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature MotionVectors UnwrapUnderlyingResource result: " + int_to_hex(d3d11on11Result), LEVEL_DEBUG);
-		}
-		else
-			params.pVelocityTexture = (ID3D12Resource*)inParams->MotionVectors;
+		params.pVelocityTexture = (ID3D12Resource*)inParams->MotionVectors;
 	}
 	else
 	{
@@ -550,21 +514,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	if (inParams->Output)
 	{
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature Output exist..", LEVEL_DEBUG);
-
-		if (instance->Dx11on12Device != nullptr)
-		{
-			params.pOutputTexture = nullptr;
-
-			d3d11on11Result = instance->Dx11on12Device->UnwrapUnderlyingResource(
-				(ID3D11Resource*)inParams->Output,
-				instance->Dx12CommandQueue,
-				IID_PPV_ARGS(&params.pOutputTexture)
-			);
-
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature Output UnwrapUnderlyingResource result: " + int_to_hex(d3d11on11Result), LEVEL_DEBUG);
-		}
-		else
-			params.pOutputTexture = (ID3D12Resource*)inParams->Output;
+		params.pOutputTexture = (ID3D12Resource*)inParams->Output;
 	}
 	else
 	{
@@ -575,21 +525,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	if (inParams->Depth)
 	{
 		LOG("NVSDK_NGX_D3D12_EvaluateFeature Depth exist..", LEVEL_INFO);
-
-		if (instance->Dx11on12Device != nullptr)
-		{
-			params.pDepthTexture = nullptr;
-
-			d3d11on11Result = instance->Dx11on12Device->UnwrapUnderlyingResource(
-				(ID3D11Resource*)inParams->Depth,
-				instance->Dx12CommandQueue,
-				IID_PPV_ARGS(&params.pDepthTexture)
-			);
-
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature Depth UnwrapUnderlyingResource result: " + int_to_hex(d3d11on11Result), LEVEL_DEBUG);
-		}
-		else
-			params.pDepthTexture = (ID3D12Resource*)inParams->Depth;
+		params.pDepthTexture = (ID3D12Resource*)inParams->Depth;
 	}
 	else
 	{
@@ -625,21 +561,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		if (inParams->TransparencyMask != nullptr)
 		{
 			LOG("NVSDK_NGX_D3D12_EvaluateFeature TransparencyMask exist..", LEVEL_INFO);
-
-			if (instance->Dx11on12Device != nullptr)
-			{
-				params.pResponsivePixelMaskTexture = nullptr;
-
-				d3d11on11Result = instance->Dx11on12Device->UnwrapUnderlyingResource(
-					(ID3D11Resource*)inParams->TransparencyMask,
-					instance->Dx12CommandQueue,
-					IID_PPV_ARGS(&params.pResponsivePixelMaskTexture)
-				);
-
-				LOG("NVSDK_NGX_D3D12_EvaluateFeature TransparencyMask UnwrapUnderlyingResource result: " + int_to_hex(d3d11on11Result), LEVEL_DEBUG);
-			}
-			else
-				params.pResponsivePixelMaskTexture = (ID3D12Resource*)inParams->TransparencyMask;
+			params.pResponsivePixelMaskTexture = (ID3D12Resource*)inParams->TransparencyMask;
 		}
 		else
 		{
@@ -661,37 +583,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	const UINT64 fence = instance->Dx12FenceValueCounter;
-
-	if (instance->Dx11on12Device != nullptr)
-	{
-		// Transition render targets D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE for XeSS
-		std::vector<CD3DX12_RESOURCE_BARRIER> transitions = {};
-
-		if (params.pColorTexture != nullptr)
-			transitions.push_back(CD3DX12_RESOURCE_BARRIER::Transition(params.pColorTexture,
-				D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
-		if (params.pVelocityTexture != nullptr)
-			CD3DX12_RESOURCE_BARRIER::Transition(params.pVelocityTexture,
-				D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		if (params.pDepthTexture != nullptr)
-			CD3DX12_RESOURCE_BARRIER::Transition(params.pDepthTexture,
-				D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		if (params.pExposureScaleTexture != nullptr)
-			CD3DX12_RESOURCE_BARRIER::Transition(params.pExposureScaleTexture,
-				D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		if (params.pResponsivePixelMaskTexture != nullptr)
-			CD3DX12_RESOURCE_BARRIER::Transition(params.pResponsivePixelMaskTexture,
-				D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-		// Transition output D3D12_RESOURCE_STATE_UNORDERED_ACCESS for XeSS
-		if (params.pOutputTexture != nullptr)
-			CD3DX12_RESOURCE_BARRIER::Transition(params.pResponsivePixelMaskTexture,
-				D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-
-		InCmdList->ResourceBarrier((UINT)transitions.size(), transitions.data());
-	}
-
 	LOG("NVSDK_NGX_D3D12_EvaluateFeature Executing!!", LEVEL_INFO);
 	xessResult = xessD3D12Execute(deviceContext->XessContext, InCmdList, &params);
 
@@ -699,49 +590,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	{
 		LOG("xessD3D12Execute error : -> " + ResultToString(xessResult), LEVEL_ERROR);
 		return NVSDK_NGX_Result_Fail;
-	}
-
-	if (instance->Dx11DeviceContext != nullptr && params.pOutputTexture)
-	{
-		UINT64 signals[1] = { fence };
-		ID3D12Fence* fences[1] = { CyberXessContext::instance()->Dx12Fence };
-		HRESULT bResult;
-
-		if (params.pOutputTexture != nullptr)
-		{
-			bResult = CyberXessContext::instance()->Dx11on12Device->ReturnUnderlyingResource((ID3D11Resource*)inParams->Output, 1, signals, fences);
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature pOutputTexture ReturnUnderlyingResource Output result: " + int_to_hex(bResult), LEVEL_DEBUG);
-		}
-
-		if (params.pColorTexture != nullptr)
-		{
-			bResult = CyberXessContext::instance()->Dx11on12Device->ReturnUnderlyingResource((ID3D11Resource*)inParams->Color, 1, signals, fences);
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature pOutputTexture ReturnUnderlyingResource Color result: " + int_to_hex(bResult), LEVEL_DEBUG);
-		}
-
-		if (params.pDepthTexture != nullptr)
-		{
-			bResult = CyberXessContext::instance()->Dx11on12Device->ReturnUnderlyingResource((ID3D11Resource*)inParams->Depth, 1, signals, fences);
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature pOutputTexture ReturnUnderlyingResource Depth result: " + int_to_hex(bResult), LEVEL_DEBUG);
-		}
-
-		if (params.pVelocityTexture != nullptr)
-		{
-			bResult = CyberXessContext::instance()->Dx11on12Device->ReturnUnderlyingResource((ID3D11Resource*)inParams->MotionVectors, 1, signals, fences);
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature pOutputTexture ReturnUnderlyingResource MotionVectors result: " + int_to_hex(bResult), LEVEL_DEBUG);
-		}
-
-		if (params.pExposureScaleTexture != nullptr)
-		{
-			bResult = CyberXessContext::instance()->Dx11on12Device->ReturnUnderlyingResource((ID3D11Resource*)inParams->ExposureTexture, 1, signals, fences);
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature pOutputTexture ReturnUnderlyingResource MotionVectors result: " + int_to_hex(bResult), LEVEL_DEBUG);
-		}
-
-		if (params.pResponsivePixelMaskTexture != nullptr)
-		{
-			bResult = CyberXessContext::instance()->Dx11on12Device->ReturnUnderlyingResource((ID3D11Resource*)inParams->TransparencyMask, 1, signals, fences);
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature pOutputTexture ReturnUnderlyingResource MotionVectors result: " + int_to_hex(bResult), LEVEL_DEBUG);
-		}
 	}
 
 	LOG("NVSDK_NGX_D3D12_EvaluateFeature End!", LEVEL_DEBUG);

@@ -96,13 +96,12 @@ public:
 	ID3D11Device5* Dx11Device = nullptr;
 	ID3D11DeviceContext4* Dx11DeviceContext = nullptr;
 
-	// D3D11on12 stuff
+	// D3D11with12 stuff
 	ID3D12CommandQueue* Dx12CommandQueue = nullptr;
 	ID3D12CommandAllocator* Dx12CommandAllocator = nullptr;
 	ID3D12GraphicsCommandList* Dx12CommandList = nullptr;
 
 	// Vulkan stuff
-	ID3D11DeviceContext* Dx11DeviceContext = nullptr;
 	VkDevice VulkanDevice = nullptr;
 	VkInstance VulkanInstance = nullptr;
 	VkPhysicalDevice VulkanPhysicalDevice = nullptr;
