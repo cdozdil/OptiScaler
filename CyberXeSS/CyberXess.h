@@ -102,6 +102,7 @@ public:
 	ID3D12GraphicsCommandList* Dx12CommandList = nullptr;
 
 	// Vulkan stuff
+	ID3D11DeviceContext* Dx11DeviceContext = nullptr;
 	VkDevice VulkanDevice = nullptr;
 	VkInstance VulkanInstance = nullptr;
 	VkPhysicalDevice VulkanPhysicalDevice = nullptr;

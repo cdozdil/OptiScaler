@@ -23,7 +23,7 @@ typedef enum _log_level_t
   } while((void)0, 0)
 
 #ifdef LOGGING_ACTIVE
-#define LOG(string, level) logprintf(string, level)
+#define LOG(string, ...) logprintf(string, __VA_ARGS__)
 #else
 #define LOG(string, level)
 #endif

@@ -33,6 +33,15 @@
     <ClInclude Include="NvParameter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="WrappedD3D12Device.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WrappedDXGIObjects.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="d3dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -60,6 +69,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CyberXessVk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WrappedD3D12Device.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WrappedDXGIObjects.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
