@@ -7,7 +7,7 @@ log_level_t logLevel = LEVEL_NONE;
 
 void logprintf(std::string logMsg, log_level_t level)
 {
-	if (level < logLevel)
+	if (logLevel == LEVEL_NONE || level < logLevel)
 		return;
 
 	ofs << GetTicks() << ": " << logMsg << '\n';

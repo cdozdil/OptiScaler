@@ -28,21 +28,27 @@ void Config::Reload()
 		DelayedInit = readBool("XeSS", "DelayedInit");
 		BuildPipelines = readBool("XeSS", "BuildPipelines");
 		NetworkModel = readInt("XeSS", "NetworkModel");
-	
+
 #ifdef LOGGING_ACTIVE
 		LogFile = readString("XeSS", "LogFile");
 
 		if (!LogFile.has_value())
 			LogFile = logFile;
-		
+
 		XeSSLogging = readBool("XeSS", "XeSSLogging");
 		LogLevel = readInt("XeSS", "LogLevel");
 
-		if (XeSSLogging.value_or(false))
+		if (!XeSSLogging.value_or(false))
 			LogLevel = -1;
 
-		prepareOfs(LogFile.value(), (log_level_t)LogLevel.value());
+		if (LogLevel >= 0)
+			prepareOfs(LogFile.value(), (log_level_t)LogLevel.value());
 #endif
+
+		// CAS
+		CasEnabled = readBool("CAS", "Enabled");
+		CasSharpness = readFloat("CAS", "Sharpness");
+		ColorSpaceConversion = readInt("CAS", "ColorSpaceConversion");
 
 		// Depth
 		DepthInverted = readBool("Depth", "DepthInverted");

@@ -1,7 +1,7 @@
 #pragma once
 #include "framework.h"
 
-//#define LOGGING_ACTIVE 
+#define LOGGING_ACTIVE 
 
 typedef enum _log_level_t
 {

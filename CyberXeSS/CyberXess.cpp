@@ -13,10 +13,12 @@ FeatureContext* CyberXessContext::CreateContext()
 
 void CyberXessContext::DeleteContext(NVSDK_NGX_Handle* handle)
 {
-	auto handleId = handle->Id;
+	if (handle == nullptr || handle == NULL)
+		return;
 
-	auto it = std::find_if(Contexts.begin(), Contexts.end(),
-		[&handleId](const auto& p) { return p.first == handleId; });
+	auto handleId = handle->Id;
+	auto it = std::find_if(Contexts.begin(), Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+
 	Contexts.erase(it);
 }
 

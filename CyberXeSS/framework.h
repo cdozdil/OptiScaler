@@ -6,6 +6,7 @@
 #include <windows.h>
 #include <d3d11_4.h>
 #include <d3d12.h>
+#include <d3dcompiler.h>
 #include <DirectXMath.h>
 #include <memory>
 #include <vector>

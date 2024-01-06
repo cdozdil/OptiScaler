@@ -25,6 +25,12 @@ public:
 	std::optional<int32_t> NetworkModel;
 	std::optional<int> LogLevel;
 
+	// CAS
+	std::optional<bool> CasEnabled;
+	std::optional<int> ColorSpaceConversion;
+	std::optional<float> CasSharpness;
+
+
 	// Upscale Ratio Override
 	std::optional<bool> UpscaleRatioOverrideEnabled;
 	std::optional<float> UpscaleRatioOverrideValue;
