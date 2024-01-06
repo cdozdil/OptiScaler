@@ -204,7 +204,17 @@
     <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_16bit_bf2fa42b327534c6759981f2cd5f9fbc.h" />
     <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_16bit_dcf57d714c2c7dbf7a034b385635f3f5.h" />
     <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_16bit_permutations.h" />
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_3121abbb07703be0f238c81f019132be.h" />
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_4805066f235102778d56cc2ee4cb57d7.h" />
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_49b4d708efd7f819fd04bbaaffb26384.h" />
     <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_5eac039bab8b5c1c000063672134a3c9.h" />
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_83902f06daf0596069bc80aebf06dcb2.h" />
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_939376e5371bfeaa5c316c9b8f966af7.h" />
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_adaa0bf14c3e27aa53c21008b01bc19d.h" />
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_c9aaf6985030cbcf4344514366e3156c.h" />
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_e7c573b4d3534237e56145ee2076445f.h" />
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_ec8c698e41b4daa7d74a1e6bd13b0240.h" />
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_permutations.h" />
     <ClInclude Include="cas\shared\ffx_shader_blobs.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="CyberXess.h" />

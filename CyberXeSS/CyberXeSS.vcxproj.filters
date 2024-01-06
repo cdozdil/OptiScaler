@@ -147,6 +147,36 @@
     <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_16bit_dcf57d714c2c7dbf7a034b385635f3f5.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_permutations.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_49b4d708efd7f819fd04bbaaffb26384.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_3121abbb07703be0f238c81f019132be.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_83902f06daf0596069bc80aebf06dcb2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_939376e5371bfeaa5c316c9b8f966af7.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_4805066f235102778d56cc2ee4cb57d7.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_adaa0bf14c3e27aa53c21008b01bc19d.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_c9aaf6985030cbcf4344514366e3156c.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_e7c573b4d3534237e56145ee2076445f.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_ec8c698e41b4daa7d74a1e6bd13b0240.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
