@@ -231,7 +231,7 @@ NVSDK_NGX_Result NvParameter::Get_Internal(const char* InName, unsigned long lon
 	auto outValueULL = (unsigned long long*)OutValue;
 	//Includes DirectX Resources
 	auto outValuePtr = (void**)OutValue;
-	const auto params = CyberXessContext::instance()->NvParameterInstance;
+	const auto params = CyberXessContext::instance()->CreateFeatureParams;
 
 	std::string s;
 	s = InName;

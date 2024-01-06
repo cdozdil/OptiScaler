@@ -55,7 +55,7 @@ static std::string ResultToString(xess_result_t result)
 inline void logCallback(const char* Message, xess_logging_level_t Level)
 {
 	std::string s = Message;
-	LOG("FeatureContext::LogCallback XeSS Runtime (" + std::to_string(Level) + ") : " + s, static_cast<log_level_t>(Level));
+	LOG("FeatureContext::LogCallback XeSS Runtime (" + std::to_string(Level) + ") : " + s, LEVEL_INFO);
 }
 
 class FeatureContext;
@@ -192,7 +192,7 @@ public:
 
 		if (result != S_OK)
 		{
-			LOG("CreateDx12Device Can't create factory: " + int_to_hex(result), LEVEL_ERROR);
+			LOG("CyberXessContext::CreateDx12Device Can't create factory: " + int_to_hex(result), LEVEL_ERROR);
 			return result;
 		}
 
@@ -201,7 +201,7 @@ public:
 
 		if (hardwareAdapter == nullptr)
 		{
-			LOG("CreateDx12Device Can't get hardwareAdapter!", LEVEL_ERROR);
+			LOG("CyberXessContext::CreateDx12Device Can't get hardwareAdapter!", LEVEL_ERROR);
 			return E_NOINTERFACE;
 		}
 
@@ -209,7 +209,7 @@ public:
 
 		if (result != S_OK)
 		{
-			LOG("CreateDx12Device Can't create device: " + int_to_hex(result), LEVEL_ERROR);
+			LOG("CyberXessContext::CreateDx12Device Can't create device: " + int_to_hex(result), LEVEL_ERROR);
 			return result;
 		}
 
@@ -223,7 +223,7 @@ public:
 
 		// CreateCommandQueue
 		result = Dx12Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&Dx12CommandQueue));
-		LOG("NVSDK_NGX_D3D11_EvaluateFeature CreateCommandQueue result: " + int_to_hex(result), LEVEL_DEBUG);
+		LOG("CyberXessContext::CreateDx12Device CreateCommandQueue result: " + int_to_hex(result), LEVEL_DEBUG);
 
 		if (result != S_OK || Dx12CommandQueue == nullptr)
 			return NVSDK_NGX_Result_FAIL_PlatformError;
@@ -351,6 +351,9 @@ class FeatureContext
 
 		if (!casActive)
 			return true;
+
+		if (source == nullptr)
+			return false;
 
 		D3D12_RESOURCE_DESC texDesc = source->GetDesc();
 
@@ -716,29 +719,29 @@ public:
 
 		if (initParams->Color != nullptr)
 		{
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature Color exist..", LEVEL_DEBUG);
+			LOG("FeatureContext::XeSSExecuteDx12 Color exist..", LEVEL_DEBUG);
 			params.pColorTexture = (ID3D12Resource*)initParams->Color;
 		}
 		else
 		{
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature Color not exist!!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx12 Color not exist!!", LEVEL_ERROR);
 			return false;
 		}
 
 		if (initParams->MotionVectors)
 		{
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature MotionVectors exist..", LEVEL_DEBUG);
+			LOG("FeatureContext::XeSSExecuteDx12 MotionVectors exist..", LEVEL_DEBUG);
 			params.pVelocityTexture = (ID3D12Resource*)initParams->MotionVectors;
 		}
 		else
 		{
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature MotionVectors not exist!!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx12 MotionVectors not exist!!", LEVEL_ERROR);
 			return false;
 		}
 
 		if (initParams->Output)
 		{
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature Output exist..", LEVEL_DEBUG);
+			LOG("FeatureContext::XeSSExecuteDx12 Output exist..", LEVEL_DEBUG);
 
 			if (casActive)
 			{
@@ -746,7 +749,7 @@ public:
 				{
 					if (!CreateCasBufferResource((ID3D12Resource*)initParams->Output))
 					{
-						LOG("NVSDK_NGX_D3D12_EvaluateFeature Can't create cas buffer!", LEVEL_ERROR);
+						LOG("FeatureContext::XeSSExecuteDx12 Can't create cas buffer!", LEVEL_ERROR);
 						return false;
 					}
 				}
@@ -758,21 +761,21 @@ public:
 		}
 		else
 		{
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature Output not exist!!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx12 Output not exist!!", LEVEL_ERROR);
 			return false;
 		}
 
 		if (initParams->Depth)
 		{
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature Depth exist..", LEVEL_INFO);
+			LOG("FeatureContext::XeSSExecuteDx12 Depth exist..", LEVEL_INFO);
 			params.pDepthTexture = (ID3D12Resource*)initParams->Depth;
 		}
 		else
 		{
 			if (!instance->MyConfig->DisplayResolution.value_or(false))
-				LOG("NVSDK_NGX_D3D12_EvaluateFeature Depth not exist!!", LEVEL_ERROR);
+				LOG("FeatureContext::XeSSExecuteDx12 Depth not exist!!", LEVEL_ERROR);
 			else
-				LOG("NVSDK_NGX_D3D12_EvaluateFeature Using high res motion vectors, depth is not needed!!", LEVEL_INFO);
+				LOG("FeatureContext::XeSSExecuteDx12 Using high res motion vectors, depth is not needed!!", LEVEL_INFO);
 
 			params.pDepthTexture = nullptr;
 		}
@@ -781,39 +784,40 @@ public:
 		{
 			if (initParams->ExposureTexture != nullptr)
 			{
-				LOG("NVSDK_NGX_D3D12_EvaluateFeature ExposureTexture exist..", LEVEL_INFO);
+				LOG("FeatureContext::XeSSExecuteDx12 ExposureTexture exist..", LEVEL_INFO);
 				params.pExposureScaleTexture = (ID3D12Resource*)initParams->ExposureTexture;
 			}
 			else
-				LOG("NVSDK_NGX_D3D12_EvaluateFeature AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!", LEVEL_WARNING);
+				LOG("FeatureContext::XeSSExecuteDx12 AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!", LEVEL_WARNING);
 		}
 		else
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature AutoExposure enabled!", LEVEL_WARNING);
+			LOG("FeatureContext::XeSSExecuteDx12 AutoExposure enabled!", LEVEL_WARNING);
 
 		if (!instance->MyConfig->DisableReactiveMask.value_or(true))
 		{
 			if (initParams->TransparencyMask != nullptr)
 			{
-				LOG("NVSDK_NGX_D3D12_EvaluateFeature TransparencyMask exist..", LEVEL_INFO);
+				LOG("FeatureContext::XeSSExecuteDx12 TransparencyMask exist..", LEVEL_INFO);
 				params.pResponsivePixelMaskTexture = (ID3D12Resource*)initParams->TransparencyMask;
 			}
 			else
-				LOG("NVSDK_NGX_D3D12_EvaluateFeature TransparencyMask not exist and its enabled in config, it may cause problems!!", LEVEL_WARNING);
+				LOG("FeatureContext::XeSSExecuteDx12 TransparencyMask not exist and its enabled in config, it may cause problems!!", LEVEL_WARNING);
 		}
 
 		xessResult = xessSetVelocityScale(xessContext, initParams->MVScaleX, initParams->MVScaleY);
 
 		if (xessResult != XESS_RESULT_SUCCESS)
 		{
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature xessSetVelocityScale : " + ResultToString(xessResult), LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx12 xessSetVelocityScale : " + ResultToString(xessResult), LEVEL_ERROR);
 			return false;
 		}
 
+		LOG("FeatureContext::XeSSExecuteDx12 Executing!!", LEVEL_INFO);
 		xessResult = xessD3D12Execute(xessContext, commandList, &params);
 
 		if (xessResult != XESS_RESULT_SUCCESS)
 		{
-			LOG("NVSDK_NGX_D3D12_EvaluateFeature xessD3D12Execute error: " + ResultToString(xessResult), LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx12 xessD3D12Execute error: " + ResultToString(xessResult), LEVEL_ERROR);
 			return false;
 		}
 
@@ -840,7 +844,7 @@ public:
 
 		if (result != S_OK)
 		{
-			LOG("NVSDK_NGX_D3D11_EvaluateFeature CreateFence d3d12fence error: " + int_to_hex(result), LEVEL_DEBUG);
+			LOG("FeatureContext::XeSSExecuteDx11 CreateFence d3d12fence error: " + int_to_hex(result), LEVEL_DEBUG);
 			return false;
 		}
 
@@ -867,7 +871,7 @@ public:
 
 		if (result != S_OK || query1 == nullptr || query1 == NULL)
 		{
-			LOG("NVSDK_NGX_D3D11_EvaluateFeature can't create query1!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx11 can't create query1!", LEVEL_ERROR);
 			return false;
 		}
 
@@ -876,73 +880,73 @@ public:
 
 		if (initParams->Color != nullptr)
 		{
-			LOG("NVSDK_NGX_D3D11_EvaluateFeature Color exist..", LEVEL_DEBUG);
+			LOG("FeatureContext::XeSSExecuteDx11 Color exist..", LEVEL_DEBUG);
 			if (CopyTextureFrom11To12((ID3D11Resource*)initParams->Color, &dx11Color.SharedTexture, &dx11Color.Desc) == NULL)
 				return false;
 		}
 		else
 		{
-			LOG("NVSDK_NGX_D3D11_EvaluateFeature Color not exist!!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx11 Color not exist!!", LEVEL_ERROR);
 			return false;
 		}
 
 		if (initParams->MotionVectors)
 		{
-			LOG("NVSDK_NGX_D3D11_EvaluateFeature MotionVectors exist..", LEVEL_DEBUG);
+			LOG("FeatureContext::XeSSExecuteDx11 MotionVectors exist..", LEVEL_DEBUG);
 			if (CopyTextureFrom11To12((ID3D11Resource*)initParams->MotionVectors, &dx11Mv.SharedTexture, &dx11Mv.Desc) == false)
 				return false;
 		}
 		else
 		{
-			LOG("NVSDK_NGX_D3D11_EvaluateFeature MotionVectors not exist!!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx11 MotionVectors not exist!!", LEVEL_ERROR);
 			return false;
 		}
 
 		if (initParams->Output)
 		{
-			LOG("NVSDK_NGX_D3D11_EvaluateFeature Output exist..", LEVEL_DEBUG);
+			LOG("FeatureContext::XeSSExecuteDx11 Output exist..", LEVEL_DEBUG);
 			if (CopyTextureFrom11To12((ID3D11Resource*)initParams->Output, &dx11Out.SharedTexture, &dx11Out.Desc, true) == false)
 				return false;
 		}
 		else
 		{
-			LOG("NVSDK_NGX_D3D11_EvaluateFeature Output not exist!!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx11 Output not exist!!", LEVEL_ERROR);
 			return false;
 		}
 
 		if (initParams->Depth)
 		{
-			LOG("NVSDK_NGX_D3D11_EvaluateFeature Depth exist..", LEVEL_DEBUG);
+			LOG("FeatureContext::XeSSExecuteDx11 Depth exist..", LEVEL_DEBUG);
 			if (CopyTextureFrom11To12((ID3D11Resource*)initParams->Depth, &dx11Depth.SharedTexture, &dx11Depth.Desc) == false)
 				return false;
 		}
 		else
-			LOG("NVSDK_NGX_D3D11_EvaluateFeature Depth not exist!!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx11 Depth not exist!!", LEVEL_ERROR);
 
 		if (!instance->MyConfig->AutoExposure.value_or(false))
 		{
 			if (initParams->ExposureTexture == nullptr)
-				LOG("NVSDK_NGX_D3D11_EvaluateFeature AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!", LEVEL_WARNING);
+				LOG("FeatureContext::XeSSExecuteDx11 AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!", LEVEL_WARNING);
 			else
 			{
-				LOG("NVSDK_NGX_D3D11_EvaluateFeature ExposureTexture exist..", LEVEL_DEBUG);
+				LOG("FeatureContext::XeSSExecuteDx11 ExposureTexture exist..", LEVEL_DEBUG);
 				if (CopyTextureFrom11To12((ID3D11Resource*)initParams->ExposureTexture, &dx11Exp.SharedTexture, &dx11Exp.Desc) == false)
 					return false;
 			}
 		}
 		else
-			LOG("NVSDK_NGX_D3D11_EvaluateFeature AutoExposure enabled!", LEVEL_WARNING);
+			LOG("FeatureContext::XeSSExecuteDx11 AutoExposure enabled!", LEVEL_WARNING);
 
 		if (!instance->MyConfig->DisableReactiveMask.value_or(true))
 		{
 			if (initParams->TransparencyMask != nullptr)
 			{
-				LOG("NVSDK_NGX_D3D11_EvaluateFeature TransparencyMask exist..", LEVEL_INFO);
+				LOG("FeatureContext::XeSSExecuteDx11 TransparencyMask exist..", LEVEL_INFO);
 				if (CopyTextureFrom11To12((ID3D11Resource*)initParams->TransparencyMask, &dx11Tm.SharedTexture, &dx11Tm.Desc) == false)
 					return false;
 			}
 			else
-				LOG("NVSDK_NGX_D3D11_EvaluateFeature TransparencyMask not exist and its enabled in config, it may cause problems!!", LEVEL_WARNING);
+				LOG("FeatureContext::XeSSExecuteDx11 TransparencyMask not exist and its enabled in config, it may cause problems!!", LEVEL_WARNING);
 		}
 
 		// Execute dx11 commands 
@@ -963,7 +967,7 @@ public:
 
 			if (result != S_OK)
 			{
-				LOG("NVSDK_NGX_D3D11_EvaluateFeature Color OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
+				LOG("FeatureContext::XeSSExecuteDx11 Color OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
 				return false;
 			}
 		}
@@ -974,7 +978,7 @@ public:
 
 			if (result != S_OK)
 			{
-				LOG("NVSDK_NGX_D3D11_EvaluateFeature MotionVectors OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
+				LOG("FeatureContext::XeSSExecuteDx11 MotionVectors OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
 				return false;
 			}
 		}
@@ -986,7 +990,7 @@ public:
 
 			if (result != S_OK)
 			{
-				LOG("NVSDK_NGX_D3D11_EvaluateFeature Output OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
+				LOG("FeatureContext::XeSSExecuteDx11 Output OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
 				return false;
 			}
 
@@ -994,9 +998,9 @@ public:
 			{
 				if (casBuffer == nullptr)
 				{
-					if (!CreateCasBufferResource(params.pOutputTexture))
+					if (!CreateCasBufferResource(dx11OutputBuffer))
 					{
-						LOG("NVSDK_NGX_D3D11_EvaluateFeature Can't create cas buffer!", LEVEL_ERROR);
+						LOG("FeatureContext::XeSSExecuteDx11 Can't create cas buffer!", LEVEL_ERROR);
 						return false;
 					}
 				}
@@ -1013,7 +1017,7 @@ public:
 
 			if (result != S_OK)
 			{
-				LOG("NVSDK_NGX_D3D11_EvaluateFeature Depth OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
+				LOG("FeatureContext::XeSSExecuteDx11 Depth OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
 				return false;
 			}
 		}
@@ -1024,7 +1028,7 @@ public:
 
 			if (result != S_OK)
 			{
-				LOG("NVSDK_NGX_D3D11_EvaluateFeature ExposureTexture OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
+				LOG("FeatureContext::XeSSExecuteDx11 ExposureTexture OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
 				return false;
 			}
 		}
@@ -1035,7 +1039,7 @@ public:
 
 			if (result != S_OK)
 			{
-				LOG("NVSDK_NGX_D3D11_EvaluateFeature TransparencyMask OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
+				LOG("FeatureContext::XeSSExecuteDx11 TransparencyMask OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
 				return false;
 			}
 		}
@@ -1046,17 +1050,17 @@ public:
 
 		if (xessResult != XESS_RESULT_SUCCESS)
 		{
-			LOG("NVSDK_NGX_D3D11_EvaluateFeature xessSetVelocityScale error: " + ResultToString(xessResult), LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx11 xessSetVelocityScale error: " + ResultToString(xessResult), LEVEL_ERROR);
 			return false;
 		}
 
 		// Execute xess
-		LOG("NVSDK_NGX_D3D11_EvaluateFeature Executing!!", LEVEL_INFO);
+		LOG("FeatureContext::XeSSExecuteDx11 Executing!!", LEVEL_INFO);
 		xessResult = xessD3D12Execute(xessContext, commandList, &params);
 
 		if (xessResult != XESS_RESULT_SUCCESS)
 		{
-			LOG("NVSDK_NGX_D3D11_EvaluateFeature xessD3D12Execute error: " + ResultToString(xessResult), LEVEL_INFO);
+			LOG("FeatureContext::XeSSExecuteDx11 xessD3D12Execute error: " + ResultToString(xessResult), LEVEL_INFO);
 			return false;
 		}
 
@@ -1090,7 +1094,7 @@ public:
 
 		if (result != S_OK || query2 == nullptr || query2 == NULL)
 		{
-			LOG("NVSDK_NGX_D3D11_EvaluateFeature can't create query2!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx11 can't create query2!", LEVEL_ERROR);
 			return false;
 		}
 
