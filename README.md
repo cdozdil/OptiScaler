@@ -5,7 +5,7 @@ Based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2]
 
 As XeSS officially only supports DirectX12 (Support for DirectX11 added but consider it as alpha and expect performance and other problems).
 
-Added CAS shapening support, you can enable and adjust it from ini file.
+Added FidelityFX CAS shapening support, you can enable and adjust it from ini file.
 
 ## Official Discord Channel: https://discord.gg/2JDHx6kcXB
 
