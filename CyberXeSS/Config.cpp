@@ -13,7 +13,8 @@ void Config::Reload()
 	const auto now = std::chrono::system_clock::now();
 	auto str = std::format("{:%d%m%Y_%H%M%OS}", now);
 
-	auto logFile = "./log_xess_" + str + ".log";
+	auto path = Util::DllPath().parent_path();
+	auto logFile = path.string() + "\\log_xess_" + str + ".log";
 	LogLevel = 1;
 	XeSSLogging = false;
 
