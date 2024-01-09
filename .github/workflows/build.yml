@@ -7,10 +7,10 @@ name: Build
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+#  push:
+#    branches: [ "master" ]
+#  pull_request:
+#    branches: [ "master" ]
     
 env:
   # Path to the solution file relative to the root of the project.
