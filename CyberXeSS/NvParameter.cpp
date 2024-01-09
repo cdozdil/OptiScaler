@@ -108,7 +108,7 @@ void NvParameter::Set_Internal(const char* InName, unsigned long long InValue, N
 	std::string s;
 	s = InName;
 
-	LOG("Set_Internal : " + s + " - f:" + std::to_string(*inValueFloat) + " - d:" + std::to_string(*inValueDouble) + " - i:" + std::to_string(*inValueInt) + " - u:" + std::to_string(*inValueUInt), LEVEL_DEBUG);
+	LOG("Set_Internal : " + s + " - f:" + std::to_string(*inValueFloat) + " - d:" + std::to_string(*inValueDouble) + " - i:" + std::to_string(*inValueInt) + " - u:" + std::to_string(*inValueUInt), spdlog::level::debug);
 
 	switch (Util::NvParameterToEnum(InName))
 	{
@@ -214,7 +214,7 @@ void NvParameter::Set_Internal(const char* InName, unsigned long long InValue, N
 		ExposureScale = *inValueFloat;
 		break;
 	default:
-		LOG("Set_Internal Not Implemented : " + s, LEVEL_DEBUG);
+		LOG("Set_Internal Not Implemented : " + s, spdlog::level::debug);
 
 	}
 }
@@ -312,11 +312,11 @@ NVSDK_NGX_Result NvParameter::Get_Internal(const char* InName, unsigned long lon
 		*outValueInt = UltraPerfPreset;
 		break;
 	default:
-		LOG("Get_Internal Not Implemented : " + s, LEVEL_DEBUG);
+		LOG("Get_Internal Not Implemented : " + s, spdlog::level::debug);
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	LOG("Get_Internal : " + s + " - f:" + std::to_string(*outValueFloat) + " - d:" + std::to_string(*outValueDouble) + " - i:" + std::to_string(*outValueInt) + " - u:" + std::to_string(*outValueUInt) + " - ul:" + std::to_string(*outValueULL), LEVEL_DEBUG);
+	LOG("Get_Internal : " + s + " - f:" + std::to_string(*outValueFloat) + " - d:" + std::to_string(*outValueDouble) + " - i:" + std::to_string(*outValueInt) + " - u:" + std::to_string(*outValueUInt) + " - ul:" + std::to_string(*outValueULL), spdlog::level::debug);
 	return NVSDK_NGX_Result_Success;
 }
 
@@ -376,7 +376,7 @@ inline std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_
 		output = CyberXessContext::instance()->MyConfig->QualityRatio_UltraQuality;
 		break;
 	default:
-		LOG("GetQualityOverrideRatio: Unknown quality : " + std::to_string(input), LEVEL_WARNING);
+		LOG("GetQualityOverrideRatio: Unknown quality : " + std::to_string(input), spdlog::level::warn);
 		output = CyberXessContext::instance()->MyConfig->QualityRatio_Balanced;
 		break;
 	}
@@ -385,7 +385,7 @@ inline std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_
 
 void NvParameter::EvaluateRenderScale()
 {
-	LOG("EvaluateRenderScale start :" + std::to_string(Width) + "x" + std::to_string(Height) + " o:" + std::to_string(OutWidth) + "x" + std::to_string(OutHeight), LEVEL_DEBUG);
+	LOG("EvaluateRenderScale start :" + std::to_string(Width) + "x" + std::to_string(Height) + " o:" + std::to_string(OutWidth) + "x" + std::to_string(OutHeight), spdlog::level::debug);
 
 	const std::optional<float> QualityRatio = GetQualityOverrideRatio(PerfQualityValue);
 
@@ -396,7 +396,7 @@ void NvParameter::EvaluateRenderScale()
 	else {
 		const xess_quality_settings_t xessQualityMode = DLSS2XeSSQualityTable(PerfQualityValue);
 
-		LOG("EvaluateRenderScale Quality : " + std::to_string(PerfQualityValue), LEVEL_DEBUG);
+		LOG("EvaluateRenderScale Quality : " + std::to_string(PerfQualityValue), spdlog::level::debug);
 
 		switch (PerfQualityValue)
 		{
@@ -427,7 +427,7 @@ void NvParameter::EvaluateRenderScale()
 		}
 	}
 
-	LOG("EvaluateRenderScale end :" + std::to_string(Width) + "x" + std::to_string(Height) + " o:" + std::to_string(OutWidth) + "x" + std::to_string(OutHeight), LEVEL_DEBUG);
+	LOG("EvaluateRenderScale end :" + std::to_string(Width) + "x" + std::to_string(Height) + " o:" + std::to_string(OutWidth) + "x" + std::to_string(OutHeight), spdlog::level::debug);
 }
 
 NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVSDK_NGX_Parameter* InParams)

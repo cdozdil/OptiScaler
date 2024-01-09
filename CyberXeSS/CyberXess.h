@@ -55,7 +55,7 @@ static std::string ResultToString(xess_result_t result)
 inline void logCallback(const char* Message, xess_logging_level_t Level)
 {
 	std::string s = Message;
-	LOG("FeatureContext::LogCallback XeSS Runtime (" + std::to_string(Level) + ") : " + s, LEVEL_INFO);
+	LOG("FeatureContext::LogCallback XeSS Runtime (" + std::to_string(Level) + ") : " + s, spdlog::level::info);
 }
 
 class FeatureContext;
@@ -192,7 +192,7 @@ public:
 
 		if (result != S_OK)
 		{
-			LOG("CyberXessContext::CreateDx12Device Can't create factory: " + int_to_hex(result), LEVEL_ERROR);
+			LOG("CyberXessContext::CreateDx12Device Can't create factory: " + int_to_hex(result), spdlog::level::err);
 			return result;
 		}
 
@@ -201,7 +201,7 @@ public:
 
 		if (hardwareAdapter == nullptr)
 		{
-			LOG("CyberXessContext::CreateDx12Device Can't get hardwareAdapter!", LEVEL_ERROR);
+			LOG("CyberXessContext::CreateDx12Device Can't get hardwareAdapter!", spdlog::level::err);
 			return E_NOINTERFACE;
 		}
 
@@ -209,7 +209,7 @@ public:
 
 		if (result != S_OK)
 		{
-			LOG("CyberXessContext::CreateDx12Device Can't create device: " + int_to_hex(result), LEVEL_ERROR);
+			LOG("CyberXessContext::CreateDx12Device Can't create device: " + int_to_hex(result), spdlog::level::err);
 			return result;
 		}
 
@@ -223,7 +223,7 @@ public:
 
 		// CreateCommandQueue
 		result = Dx12Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&Dx12CommandQueue));
-		LOG("CyberXessContext::CreateDx12Device CreateCommandQueue result: " + int_to_hex(result), LEVEL_DEBUG);
+		LOG("CyberXessContext::CreateDx12Device CreateCommandQueue result: " + int_to_hex(result), spdlog::level::debug);
 
 		if (result != S_OK || Dx12CommandQueue == nullptr)
 			return NVSDK_NGX_Result_FAIL_PlatformError;
@@ -263,6 +263,8 @@ class FeatureContext
 
 	void CasInit()
 	{
+		LOG("FeatureContext::CasInit Start!", spdlog::level::debug);
+
 		if (casInit)
 			return;
 
@@ -277,6 +279,8 @@ class FeatureContext
 
 	bool CreateCasContext()
 	{
+		LOG("FeatureContext::CreateCasContext Start!", spdlog::level::debug);
+
 		if (!casInit)
 			return false;
 
@@ -293,7 +297,7 @@ class FeatureContext
 
 		if (errorCode != FFX_OK)
 		{
-			LOG("FeatureContext::CreateCasContext ffxGetInterfaceDX12 error: " + int_to_hex(errorCode), LEVEL_ERROR);
+			LOG("FeatureContext::CreateCasContext ffxGetInterfaceDX12 error: " + int_to_hex(errorCode), spdlog::level::err);
 			return false;
 		}
 
@@ -323,7 +327,7 @@ class FeatureContext
 
 		if (errorCode != FFX_OK)
 		{
-			LOG("FeatureContext::CreateCasContext ffxCasContextCreate error: " + int_to_hex(errorCode), LEVEL_ERROR);
+			LOG("FeatureContext::CreateCasContext ffxCasContextCreate error: " + int_to_hex(errorCode), spdlog::level::err);
 			return false;
 		}
 
@@ -333,19 +337,23 @@ class FeatureContext
 
 	void DestroyCasContext()
 	{
+		LOG("FeatureContext::DestroyCasContext Start!", spdlog::level::debug);
+
 		if (!casActive || !casContextCreated)
 			return;
 
 		auto errorCode = ffxCasContextDestroy(&casContext);
 
 		if (errorCode != FFX_OK)
-			LOG("FeatureContext::DestroyCasContext ffxCasContextDestroy error: " + int_to_hex(errorCode), LEVEL_ERROR);
+			LOG("FeatureContext::DestroyCasContext ffxCasContextDestroy error: " + int_to_hex(errorCode), spdlog::level::err);
 
 		casContextCreated = false;
 	}
 
 	bool CreateCasBufferResource(ID3D12Resource* source)
 	{
+		LOG("FeatureContext::CreateCasBufferResource Start!", spdlog::level::debug);
+
 		if (!casInit)
 			return false;
 
@@ -363,7 +371,7 @@ class FeatureContext
 
 		if (hr != S_OK)
 		{
-			LOG("FeatureContext::CreateBufferResource GetHeapProperties result: " + int_to_hex(hr), LEVEL_ERROR);
+			LOG("FeatureContext::CreateBufferResource GetHeapProperties result: " + int_to_hex(hr), spdlog::level::err);
 			return false;
 		}
 
@@ -374,7 +382,7 @@ class FeatureContext
 
 		if (hr != S_OK)
 		{
-			LOG("FeatureContext::CreateBufferResource CreateCommittedResource result: " + int_to_hex(hr), LEVEL_ERROR);
+			LOG("FeatureContext::CreateBufferResource CreateCommittedResource result: " + int_to_hex(hr), spdlog::level::err);
 			return false;
 		}
 
@@ -383,6 +391,8 @@ class FeatureContext
 
 	bool CasDispatch(ID3D12CommandList* commandList, ID3D12Resource* input, ID3D12Resource* output)
 	{
+		LOG("FeatureContext::CasDispatch Start!", spdlog::level::debug);
+
 		if (!casInit)
 			return false;
 
@@ -400,7 +410,7 @@ class FeatureContext
 
 		if (auto errorCode = ffxCasContextDispatch(&casContext, &dispatchParameters); errorCode != FFX_OK)
 		{
-			LOG("FeatureContext::CasDispatch ffxCasContextDispatch error: " + int_to_hex(errorCode), LEVEL_ERROR);
+			LOG("FeatureContext::CasDispatch ffxCasContextDispatch error: " + int_to_hex(errorCode), spdlog::level::err);
 			return false;
 		}
 
@@ -443,7 +453,7 @@ class FeatureContext
 
 				if (result != S_OK)
 				{
-					LOG("FeatureContext::CopyTextureFrom11To12 QueryInterface(resource) error: " + int_to_hex(result), LEVEL_ERROR);
+					LOG("FeatureContext::CopyTextureFrom11To12 QueryInterface(resource) error: " + int_to_hex(result), spdlog::level::err);
 					return false;
 				}
 
@@ -452,7 +462,7 @@ class FeatureContext
 
 				if (result != S_OK)
 				{
-					LOG("FeatureContext::CopyTextureFrom11To12 GetSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
+					LOG("FeatureContext::CopyTextureFrom11To12 GetSharedHandle error: " + int_to_hex(result), spdlog::level::err);
 					return false;
 				}
 
@@ -472,7 +482,7 @@ class FeatureContext
 
 				if (result != S_OK)
 				{
-					LOG("FeatureContext::CopyTextureFrom11To12 QueryInterface(resource) error: " + int_to_hex(result), LEVEL_ERROR);
+					LOG("FeatureContext::CopyTextureFrom11To12 QueryInterface(resource) error: " + int_to_hex(result), spdlog::level::err);
 					return false;
 				}
 
@@ -481,7 +491,7 @@ class FeatureContext
 
 				if (result != S_OK)
 				{
-					LOG("FeatureContext::CopyTextureFrom11To12 GetSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
+					LOG("FeatureContext::CopyTextureFrom11To12 GetSharedHandle error: " + int_to_hex(result), spdlog::level::err);
 					return false;
 				}
 
@@ -496,7 +506,7 @@ class FeatureContext
 
 	void ReleaseSharedResources()
 	{
-		LOG("FeatureContext::ReleaseSharedResources start!", LEVEL_DEBUG);
+		LOG("FeatureContext::ReleaseSharedResources start!", spdlog::level::debug);
 
 		SAFE_RELEASE(casBuffer);
 		SAFE_RELEASE(dx11OutputBuffer);
@@ -524,7 +534,7 @@ public:
 	{
 		if (device == nullptr)
 		{
-			LOG("FeatureContext::XeSSInit D3D12Device is null!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSInit D3D12Device is null!", spdlog::level::err);
 			return false;
 		}
 
@@ -542,26 +552,26 @@ public:
 		xess_result_t ret = xessGetVersion(&ver);
 
 		if (ret == XESS_RESULT_SUCCESS)
-			LOG("FeatureContext::XeSSInit XeSS Version: " + std::to_string(ver.major) + "." + std::to_string(ver.minor) + std::to_string(ver.patch), LEVEL_INFO);
+			LOG("FeatureContext::XeSSInit XeSS Version: " + std::to_string(ver.major) + "." + std::to_string(ver.minor) + std::to_string(ver.patch), spdlog::level::info);
 		else
-			LOG("FeatureContext::XeSSInit xessGetVersion error: " + ResultToString(ret), LEVEL_WARNING);
+			LOG("FeatureContext::XeSSInit xessGetVersion error: " + ResultToString(ret), spdlog::level::warn);
 
 		ret = xessD3D12CreateContext(dx12device, &xessContext);
 
 		if (ret != XESS_RESULT_SUCCESS)
 		{
-			LOG("FeatureContext::XeSSInit xessD3D12CreateContext error: " + ResultToString(ret), LEVEL_ERROR);
+			LOG("FeatureContext::XeSSInit xessD3D12CreateContext error: " + ResultToString(ret), spdlog::level::err);
 			return false;
 		}
 
 		ret = xessIsOptimalDriver(xessContext);
-		LOG("FeatureContext::XeSSInit xessIsOptimalDriver : " + ResultToString(ret), LEVEL_DEBUG);
+		LOG("FeatureContext::XeSSInit xessIsOptimalDriver : " + ResultToString(ret), spdlog::level::debug);
 
 		ret = xessSetLoggingCallback(xessContext, XESS_LOGGING_LEVEL_DEBUG, logCallback);
-		LOG("FeatureContext::XeSSInit xessSetLoggingCallback : " + ResultToString(ret), LEVEL_DEBUG);
+		LOG("FeatureContext::XeSSInit xessSetLoggingCallback : " + ResultToString(ret), spdlog::level::debug);
 
 		ret = xessSetVelocityScale(xessContext, initParams->MVScaleX, initParams->MVScaleY);
-		LOG("FeatureContext::XeSSInit xessSetVelocityScale : " + ResultToString(ret), LEVEL_DEBUG);
+		LOG("FeatureContext::XeSSInit xessSetVelocityScale : " + ResultToString(ret), spdlog::level::debug);
 
 #pragma region Create Parameters for XeSS
 
@@ -598,46 +608,46 @@ public:
 		{
 			xessParams.initFlags |= XESS_INIT_FLAG_INVERTED_DEPTH;
 			CyberXessContext::instance()->MyConfig->DepthInverted = true;
-			LOG("FeatureContext::XeSSInit xessParams.initFlags (DepthInverted) " + std::to_string(xessParams.initFlags), LEVEL_INFO);
+			LOG("FeatureContext::XeSSInit xessParams.initFlags (DepthInverted) " + std::to_string(xessParams.initFlags), spdlog::level::info);
 		}
 
 		if (CyberXessContext::instance()->MyConfig->AutoExposure.value_or(initParams->AutoExposure))
 		{
 			xessParams.initFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
 			CyberXessContext::instance()->MyConfig->AutoExposure = true;
-			LOG("FeatureContext::XeSSInit initParams.initFlags (AutoExposure) " + std::to_string(xessParams.initFlags), LEVEL_INFO);
+			LOG("FeatureContext::XeSSInit initParams.initFlags (AutoExposure) " + std::to_string(xessParams.initFlags), spdlog::level::info);
 		}
 		else
 		{
 			xessParams.initFlags |= XESS_INIT_FLAG_EXPOSURE_SCALE_TEXTURE;
-			LOG("FeatureContext::XeSSInit xessParams.initFlags (!AutoExposure) " + std::to_string(xessParams.initFlags), LEVEL_INFO);
+			LOG("FeatureContext::XeSSInit xessParams.initFlags (!AutoExposure) " + std::to_string(xessParams.initFlags), spdlog::level::info);
 		}
 
 		if (!CyberXessContext::instance()->MyConfig->HDR.value_or(!initParams->Hdr))
 		{
 			xessParams.initFlags |= XESS_INIT_FLAG_LDR_INPUT_COLOR;
 			CyberXessContext::instance()->MyConfig->HDR = false;
-			LOG("FeatureContext::XeSSInit xessParams.initFlags (HDR) " + std::to_string(xessParams.initFlags), LEVEL_INFO);
+			LOG("FeatureContext::XeSSInit xessParams.initFlags (HDR) " + std::to_string(xessParams.initFlags), spdlog::level::info);
 		}
 
 		if (CyberXessContext::instance()->MyConfig->JitterCancellation.value_or(initParams->JitterMotion))
 		{
 			xessParams.initFlags |= XESS_INIT_FLAG_JITTERED_MV;
 			CyberXessContext::instance()->MyConfig->JitterCancellation = true;
-			LOG("FeatureContext::XeSSInit xessParams.initFlags (JitterCancellation) " + std::to_string(xessParams.initFlags), LEVEL_INFO);
+			LOG("FeatureContext::XeSSInit xessParams.initFlags (JitterCancellation) " + std::to_string(xessParams.initFlags), spdlog::level::info);
 		}
 
 		if (CyberXessContext::instance()->MyConfig->DisplayResolution.value_or(!initParams->LowRes))
 		{
 			xessParams.initFlags |= XESS_INIT_FLAG_HIGH_RES_MV;
 			CyberXessContext::instance()->MyConfig->DisplayResolution = true;
-			LOG("FeatureContext::XeSSInit xessParams.initFlags (LowRes) " + std::to_string(xessParams.initFlags), LEVEL_INFO);
+			LOG("FeatureContext::XeSSInit xessParams.initFlags (LowRes) " + std::to_string(xessParams.initFlags), spdlog::level::info);
 		}
 
 		if (!CyberXessContext::instance()->MyConfig->DisableReactiveMask.value_or(true))
 		{
 			xessParams.initFlags |= XESS_INIT_FLAG_RESPONSIVE_PIXEL_MASK;
-			LOG("FeatureContext::XeSSInit xessParams.initFlags (DisableReactiveMask) " + std::to_string(xessParams.initFlags), LEVEL_INFO);
+			LOG("FeatureContext::XeSSInit xessParams.initFlags (DisableReactiveMask) " + std::to_string(xessParams.initFlags), spdlog::level::info);
 		}
 
 #pragma endregion
@@ -646,26 +656,26 @@ public:
 
 		if (CyberXessContext::instance()->MyConfig->BuildPipelines.value_or(true))
 		{
-			LOG("FeatureContext::XeSSInit xessD3D12BuildPipelines!", LEVEL_DEBUG);
+			LOG("FeatureContext::XeSSInit xessD3D12BuildPipelines!", spdlog::level::debug);
 
 			ret = xessD3D12BuildPipelines(xessContext, NULL, false, xessParams.initFlags);
 
 			if (ret != XESS_RESULT_SUCCESS)
 			{
-				LOG("FeatureContext::XeSSInit xessD3D12BuildPipelines error: " + ResultToString(ret), LEVEL_ERROR);
+				LOG("FeatureContext::XeSSInit xessD3D12BuildPipelines error: " + ResultToString(ret), spdlog::level::err);
 				return false;
 			}
 		}
 
 #pragma endregion
 
-		LOG("FeatureContext::XeSSInit xessD3D12Init!", LEVEL_DEBUG);
+		LOG("FeatureContext::XeSSInit xessD3D12Init!", spdlog::level::debug);
 
 		ret = xessD3D12Init(xessContext, &xessParams);
 
 		if (ret != XESS_RESULT_SUCCESS)
 		{
-			LOG("FeatureContext::XeSSInit xessD3D12Init error: " + ResultToString(ret), LEVEL_ERROR);
+			LOG("FeatureContext::XeSSInit xessD3D12Init error: " + ResultToString(ret), spdlog::level::err);
 			return false;
 		}
 
@@ -685,7 +695,7 @@ public:
 		auto result = xessDestroyContext(xessContext);
 
 		if (result != XESS_RESULT_SUCCESS)
-			LOG("FeatureContext::XeSSDestroy xessDestroyContext error: " + ResultToString(result), LEVEL_ERROR);
+			LOG("FeatureContext::XeSSDestroy xessDestroyContext error: " + ResultToString(result), spdlog::level::err);
 
 		xessContext = nullptr;
 
@@ -719,29 +729,29 @@ public:
 
 		if (initParams->Color != nullptr)
 		{
-			LOG("FeatureContext::XeSSExecuteDx12 Color exist..", LEVEL_DEBUG);
+			LOG("FeatureContext::XeSSExecuteDx12 Color exist..", spdlog::level::debug);
 			params.pColorTexture = (ID3D12Resource*)initParams->Color;
 		}
 		else
 		{
-			LOG("FeatureContext::XeSSExecuteDx12 Color not exist!!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx12 Color not exist!!", spdlog::level::err);
 			return false;
 		}
 
 		if (initParams->MotionVectors)
 		{
-			LOG("FeatureContext::XeSSExecuteDx12 MotionVectors exist..", LEVEL_DEBUG);
+			LOG("FeatureContext::XeSSExecuteDx12 MotionVectors exist..", spdlog::level::debug);
 			params.pVelocityTexture = (ID3D12Resource*)initParams->MotionVectors;
 		}
 		else
 		{
-			LOG("FeatureContext::XeSSExecuteDx12 MotionVectors not exist!!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx12 MotionVectors not exist!!", spdlog::level::err);
 			return false;
 		}
 
 		if (initParams->Output)
 		{
-			LOG("FeatureContext::XeSSExecuteDx12 Output exist..", LEVEL_DEBUG);
+			LOG("FeatureContext::XeSSExecuteDx12 Output exist..", spdlog::level::debug);
 
 			if (casActive)
 			{
@@ -749,7 +759,7 @@ public:
 				{
 					if (!CreateCasBufferResource((ID3D12Resource*)initParams->Output))
 					{
-						LOG("FeatureContext::XeSSExecuteDx12 Can't create cas buffer!", LEVEL_ERROR);
+						LOG("FeatureContext::XeSSExecuteDx12 Can't create cas buffer!", spdlog::level::err);
 						return false;
 					}
 				}
@@ -761,21 +771,21 @@ public:
 		}
 		else
 		{
-			LOG("FeatureContext::XeSSExecuteDx12 Output not exist!!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx12 Output not exist!!", spdlog::level::err);
 			return false;
 		}
 
 		if (initParams->Depth)
 		{
-			LOG("FeatureContext::XeSSExecuteDx12 Depth exist..", LEVEL_INFO);
+			LOG("FeatureContext::XeSSExecuteDx12 Depth exist..", spdlog::level::info);
 			params.pDepthTexture = (ID3D12Resource*)initParams->Depth;
 		}
 		else
 		{
 			if (!instance->MyConfig->DisplayResolution.value_or(false))
-				LOG("FeatureContext::XeSSExecuteDx12 Depth not exist!!", LEVEL_ERROR);
+				LOG("FeatureContext::XeSSExecuteDx12 Depth not exist!!", spdlog::level::err);
 			else
-				LOG("FeatureContext::XeSSExecuteDx12 Using high res motion vectors, depth is not needed!!", LEVEL_INFO);
+				LOG("FeatureContext::XeSSExecuteDx12 Using high res motion vectors, depth is not needed!!", spdlog::level::info);
 
 			params.pDepthTexture = nullptr;
 		}
@@ -784,40 +794,40 @@ public:
 		{
 			if (initParams->ExposureTexture != nullptr)
 			{
-				LOG("FeatureContext::XeSSExecuteDx12 ExposureTexture exist..", LEVEL_INFO);
+				LOG("FeatureContext::XeSSExecuteDx12 ExposureTexture exist..", spdlog::level::info);
 				params.pExposureScaleTexture = (ID3D12Resource*)initParams->ExposureTexture;
 			}
 			else
-				LOG("FeatureContext::XeSSExecuteDx12 AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!", LEVEL_WARNING);
+				LOG("FeatureContext::XeSSExecuteDx12 AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!", spdlog::level::warn);
 		}
 		else
-			LOG("FeatureContext::XeSSExecuteDx12 AutoExposure enabled!", LEVEL_WARNING);
+			LOG("FeatureContext::XeSSExecuteDx12 AutoExposure enabled!", spdlog::level::warn);
 
 		if (!instance->MyConfig->DisableReactiveMask.value_or(true))
 		{
 			if (initParams->TransparencyMask != nullptr)
 			{
-				LOG("FeatureContext::XeSSExecuteDx12 TransparencyMask exist..", LEVEL_INFO);
+				LOG("FeatureContext::XeSSExecuteDx12 TransparencyMask exist..", spdlog::level::info);
 				params.pResponsivePixelMaskTexture = (ID3D12Resource*)initParams->TransparencyMask;
 			}
 			else
-				LOG("FeatureContext::XeSSExecuteDx12 TransparencyMask not exist and its enabled in config, it may cause problems!!", LEVEL_WARNING);
+				LOG("FeatureContext::XeSSExecuteDx12 TransparencyMask not exist and its enabled in config, it may cause problems!!", spdlog::level::warn);
 		}
 
 		xessResult = xessSetVelocityScale(xessContext, initParams->MVScaleX, initParams->MVScaleY);
 
 		if (xessResult != XESS_RESULT_SUCCESS)
 		{
-			LOG("FeatureContext::XeSSExecuteDx12 xessSetVelocityScale : " + ResultToString(xessResult), LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx12 xessSetVelocityScale : " + ResultToString(xessResult), spdlog::level::err);
 			return false;
 		}
 
-		LOG("FeatureContext::XeSSExecuteDx12 Executing!!", LEVEL_INFO);
+		LOG("FeatureContext::XeSSExecuteDx12 Executing!!", spdlog::level::info);
 		xessResult = xessD3D12Execute(xessContext, commandList, &params);
 
 		if (xessResult != XESS_RESULT_SUCCESS)
 		{
-			LOG("FeatureContext::XeSSExecuteDx12 xessD3D12Execute error: " + ResultToString(xessResult), LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx12 xessD3D12Execute error: " + ResultToString(xessResult), spdlog::level::err);
 			return false;
 		}
 
@@ -844,7 +854,7 @@ public:
 
 		if (result != S_OK)
 		{
-			LOG("FeatureContext::XeSSExecuteDx11 CreateFence d3d12fence error: " + int_to_hex(result), LEVEL_DEBUG);
+			LOG("FeatureContext::XeSSExecuteDx11 CreateFence d3d12fence error: " + int_to_hex(result), spdlog::level::debug);
 			return false;
 		}
 
@@ -871,7 +881,7 @@ public:
 
 		if (result != S_OK || query1 == nullptr || query1 == NULL)
 		{
-			LOG("FeatureContext::XeSSExecuteDx11 can't create query1!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx11 can't create query1!", spdlog::level::err);
 			return false;
 		}
 
@@ -880,73 +890,73 @@ public:
 
 		if (initParams->Color != nullptr)
 		{
-			LOG("FeatureContext::XeSSExecuteDx11 Color exist..", LEVEL_DEBUG);
+			LOG("FeatureContext::XeSSExecuteDx11 Color exist..", spdlog::level::debug);
 			if (CopyTextureFrom11To12((ID3D11Resource*)initParams->Color, &dx11Color.SharedTexture, &dx11Color.Desc) == NULL)
 				return false;
 		}
 		else
 		{
-			LOG("FeatureContext::XeSSExecuteDx11 Color not exist!!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx11 Color not exist!!", spdlog::level::err);
 			return false;
 		}
 
 		if (initParams->MotionVectors)
 		{
-			LOG("FeatureContext::XeSSExecuteDx11 MotionVectors exist..", LEVEL_DEBUG);
+			LOG("FeatureContext::XeSSExecuteDx11 MotionVectors exist..", spdlog::level::debug);
 			if (CopyTextureFrom11To12((ID3D11Resource*)initParams->MotionVectors, &dx11Mv.SharedTexture, &dx11Mv.Desc) == false)
 				return false;
 		}
 		else
 		{
-			LOG("FeatureContext::XeSSExecuteDx11 MotionVectors not exist!!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx11 MotionVectors not exist!!", spdlog::level::err);
 			return false;
 		}
 
 		if (initParams->Output)
 		{
-			LOG("FeatureContext::XeSSExecuteDx11 Output exist..", LEVEL_DEBUG);
+			LOG("FeatureContext::XeSSExecuteDx11 Output exist..", spdlog::level::debug);
 			if (CopyTextureFrom11To12((ID3D11Resource*)initParams->Output, &dx11Out.SharedTexture, &dx11Out.Desc, true) == false)
 				return false;
 		}
 		else
 		{
-			LOG("FeatureContext::XeSSExecuteDx11 Output not exist!!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx11 Output not exist!!", spdlog::level::err);
 			return false;
 		}
 
 		if (initParams->Depth)
 		{
-			LOG("FeatureContext::XeSSExecuteDx11 Depth exist..", LEVEL_DEBUG);
+			LOG("FeatureContext::XeSSExecuteDx11 Depth exist..", spdlog::level::debug);
 			if (CopyTextureFrom11To12((ID3D11Resource*)initParams->Depth, &dx11Depth.SharedTexture, &dx11Depth.Desc) == false)
 				return false;
 		}
 		else
-			LOG("FeatureContext::XeSSExecuteDx11 Depth not exist!!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx11 Depth not exist!!", spdlog::level::err);
 
 		if (!instance->MyConfig->AutoExposure.value_or(false))
 		{
 			if (initParams->ExposureTexture == nullptr)
-				LOG("FeatureContext::XeSSExecuteDx11 AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!", LEVEL_WARNING);
+				LOG("FeatureContext::XeSSExecuteDx11 AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!", spdlog::level::warn);
 			else
 			{
-				LOG("FeatureContext::XeSSExecuteDx11 ExposureTexture exist..", LEVEL_DEBUG);
+				LOG("FeatureContext::XeSSExecuteDx11 ExposureTexture exist..", spdlog::level::debug);
 				if (CopyTextureFrom11To12((ID3D11Resource*)initParams->ExposureTexture, &dx11Exp.SharedTexture, &dx11Exp.Desc) == false)
 					return false;
 			}
 		}
 		else
-			LOG("FeatureContext::XeSSExecuteDx11 AutoExposure enabled!", LEVEL_WARNING);
+			LOG("FeatureContext::XeSSExecuteDx11 AutoExposure enabled!", spdlog::level::warn);
 
 		if (!instance->MyConfig->DisableReactiveMask.value_or(true))
 		{
 			if (initParams->TransparencyMask != nullptr)
 			{
-				LOG("FeatureContext::XeSSExecuteDx11 TransparencyMask exist..", LEVEL_INFO);
+				LOG("FeatureContext::XeSSExecuteDx11 TransparencyMask exist..", spdlog::level::info);
 				if (CopyTextureFrom11To12((ID3D11Resource*)initParams->TransparencyMask, &dx11Tm.SharedTexture, &dx11Tm.Desc) == false)
 					return false;
 			}
 			else
-				LOG("FeatureContext::XeSSExecuteDx11 TransparencyMask not exist and its enabled in config, it may cause problems!!", LEVEL_WARNING);
+				LOG("FeatureContext::XeSSExecuteDx11 TransparencyMask not exist and its enabled in config, it may cause problems!!", spdlog::level::warn);
 		}
 
 		// Execute dx11 commands 
@@ -967,7 +977,7 @@ public:
 
 			if (result != S_OK)
 			{
-				LOG("FeatureContext::XeSSExecuteDx11 Color OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
+				LOG("FeatureContext::XeSSExecuteDx11 Color OpenSharedHandle error: " + int_to_hex(result), spdlog::level::err);
 				return false;
 			}
 		}
@@ -978,29 +988,29 @@ public:
 
 			if (result != S_OK)
 			{
-				LOG("FeatureContext::XeSSExecuteDx11 MotionVectors OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
+				LOG("FeatureContext::XeSSExecuteDx11 MotionVectors OpenSharedHandle error: " + int_to_hex(result), spdlog::level::err);
 				return false;
 			}
 		}
 
 		if (initParams->Output)
 		{
-			result = instance->Dx12Device->OpenSharedHandle(dx11Out.Desc.handle, IID_PPV_ARGS(&dx11OutputBuffer));
-			dx11Out.SharedHandle = dx11Out.Desc.handle;
-
-			if (result != S_OK)
-			{
-				LOG("FeatureContext::XeSSExecuteDx11 Output OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
-				return false;
-			}
-
 			if (casActive)
 			{
+				result = instance->Dx12Device->OpenSharedHandle(dx11Out.Desc.handle, IID_PPV_ARGS(&dx11OutputBuffer));
+				dx11Out.SharedHandle = dx11Out.Desc.handle;
+
+				if (result != S_OK)
+				{
+					LOG("FeatureContext::XeSSExecuteDx11 Output OpenSharedHandle error: " + int_to_hex(result), spdlog::level::err);
+					return false;
+				}
+
 				if (casBuffer == nullptr)
 				{
 					if (!CreateCasBufferResource(dx11OutputBuffer))
 					{
-						LOG("FeatureContext::XeSSExecuteDx11 Can't create cas buffer!", LEVEL_ERROR);
+						LOG("FeatureContext::XeSSExecuteDx11 Can't create cas buffer!", spdlog::level::err);
 						return false;
 					}
 				}
@@ -1008,7 +1018,16 @@ public:
 				params.pOutputTexture = casBuffer;
 			}
 			else
-				params.pOutputTexture = dx11OutputBuffer;
+			{
+				result = instance->Dx12Device->OpenSharedHandle(dx11Out.Desc.handle, IID_PPV_ARGS(&params.pOutputTexture));
+				dx11Out.SharedHandle = dx11Out.Desc.handle;
+
+				if (result != S_OK)
+				{
+					LOG("FeatureContext::XeSSExecuteDx11 Output OpenSharedHandle error: " + int_to_hex(result), spdlog::level::err);
+					return false;
+				}
+			}
 		}
 
 		if (initParams->Depth)
@@ -1017,7 +1036,7 @@ public:
 
 			if (result != S_OK)
 			{
-				LOG("FeatureContext::XeSSExecuteDx11 Depth OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
+				LOG("FeatureContext::XeSSExecuteDx11 Depth OpenSharedHandle error: " + int_to_hex(result), spdlog::level::err);
 				return false;
 			}
 		}
@@ -1028,7 +1047,7 @@ public:
 
 			if (result != S_OK)
 			{
-				LOG("FeatureContext::XeSSExecuteDx11 ExposureTexture OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
+				LOG("FeatureContext::XeSSExecuteDx11 ExposureTexture OpenSharedHandle error: " + int_to_hex(result), spdlog::level::err);
 				return false;
 			}
 		}
@@ -1039,7 +1058,7 @@ public:
 
 			if (result != S_OK)
 			{
-				LOG("FeatureContext::XeSSExecuteDx11 TransparencyMask OpenSharedHandle error: " + int_to_hex(result), LEVEL_ERROR);
+				LOG("FeatureContext::XeSSExecuteDx11 TransparencyMask OpenSharedHandle error: " + int_to_hex(result), spdlog::level::err);
 				return false;
 			}
 		}
@@ -1050,17 +1069,17 @@ public:
 
 		if (xessResult != XESS_RESULT_SUCCESS)
 		{
-			LOG("FeatureContext::XeSSExecuteDx11 xessSetVelocityScale error: " + ResultToString(xessResult), LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx11 xessSetVelocityScale error: " + ResultToString(xessResult), spdlog::level::err);
 			return false;
 		}
 
 		// Execute xess
-		LOG("FeatureContext::XeSSExecuteDx11 Executing!!", LEVEL_INFO);
+		LOG("FeatureContext::XeSSExecuteDx11 Executing!!", spdlog::level::info);
 		xessResult = xessD3D12Execute(xessContext, commandList, &params);
 
 		if (xessResult != XESS_RESULT_SUCCESS)
 		{
-			LOG("FeatureContext::XeSSExecuteDx11 xessD3D12Execute error: " + ResultToString(xessResult), LEVEL_INFO);
+			LOG("FeatureContext::XeSSExecuteDx11 xessD3D12Execute error: " + ResultToString(xessResult), spdlog::level::info);
 			return false;
 		}
 
@@ -1094,7 +1113,7 @@ public:
 
 		if (result != S_OK || query2 == nullptr || query2 == NULL)
 		{
-			LOG("FeatureContext::XeSSExecuteDx11 can't create query2!", LEVEL_ERROR);
+			LOG("FeatureContext::XeSSExecuteDx11 can't create query2!", spdlog::level::err);
 			return false;
 		}
 

@@ -10,3 +10,6 @@
 [submodule "external/vulkan"]
 	path = external/vulkan
 	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+[submodule "external/spdlog"]
+	path = external/spdlog
+	url = https://github.com/gabime/spdlog.git

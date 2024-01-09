@@ -10,14 +10,12 @@ Config::Config(std::wstring fileName)
 
 void Config::Reload()
 {
-#ifdef LOGGING_ACTIVE
 	const auto now = std::chrono::system_clock::now();
 	auto str = std::format("{:%d%m%Y_%H%M%OS}", now);
 
 	auto logFile = "./log_xess_" + str + ".log";
 	LogLevel = 1;
 	XeSSLogging = false;
-#endif
 
 	NetworkModel = 0;
 	BuildPipelines = true;
@@ -29,7 +27,6 @@ void Config::Reload()
 		BuildPipelines = readBool("XeSS", "BuildPipelines");
 		NetworkModel = readInt("XeSS", "NetworkModel");
 
-#ifdef LOGGING_ACTIVE
 		LogFile = readString("XeSS", "LogFile");
 
 		if (!LogFile.has_value())
@@ -39,11 +36,8 @@ void Config::Reload()
 		LogLevel = readInt("XeSS", "LogLevel");
 
 		if (!XeSSLogging.value_or(false))
-			LogLevel = -1;
+			LogLevel = 6;
 
-		if (LogLevel >= 0)
-			prepareOfs(LogFile.value(), (log_level_t)LogLevel.value());
-#endif
 
 		// CAS
 		CasEnabled = readBool("CAS", "Enabled");
