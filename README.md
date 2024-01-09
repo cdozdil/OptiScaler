@@ -16,7 +16,7 @@ Added CAS shapening support, you can enable and adjust it from ini file.
 * Extract the contents of the archive next to the `nvngx_dlss.dll` file in your games folder.
 * Copy the [libxess.dll](https://raw.githubusercontent.com/intel/xess/main/bin/libxess.dll) to your game executable directory.
 * Run `EnableSignatureOverride.reg` and confirm merge.
-* That's it. Now DLSS option should appear in settigs.
+* That's it. Now DLSS option should appear in settings if not you may try using [d3d12-proxy](https://github.com/cdozdil/d3d12-proxy)
 
 ### Linux
 * Download the latest relase from releases.
@@ -27,7 +27,7 @@ Added CAS shapening support, you can enable and adjust it from ini file.
 ```
 WINEPREFIX=/path/where/the/steam/library/is/steamapps/compatdata/1091500/pfx /bin/wine64 regedit ../../common/Cyberpunk\ 2077/bin/x64/FidelityFx\ Super\ Resolution\ 2.0-3001-0-3-1656426926/EnableSignatureOverride.reg
 ```
-* That's it. Now DLSS option should appear in settigs.
+* That's it. Now DLSS option should appear in settings if not you may try using [d3d12-proxy](https://github.com/cdozdil/d3d12-proxy)
 
 ### Uninstallation
 * Just run `DisableSignatureOverride.reg`
