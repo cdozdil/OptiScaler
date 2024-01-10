@@ -1,9 +1,6 @@
 #pragma once
 #include "framework.h"
 #include "Config.h"
-#include <string>
-#include <fstream>
-#include "spdlog/spdlog.h"
 
 #define SAFE_RELEASE(p)			\
   do							\

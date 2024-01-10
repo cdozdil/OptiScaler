@@ -3,13 +3,10 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #define WIN32_NO_STATUS
-#define _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS
 
 #include <windows.h>
 #include <d3d11_4.h>
 #include <d3d12.h>
-#include <d3dcompiler.h>
-#include <DirectXMath.h>
 #include <memory>
 #include <vector>
 #include <mutex>
@@ -19,6 +16,11 @@
 #include <algorithm>
 #include <filesystem>
 #include <stdexcept>
+#include <atomic>
+#include <iostream>
+//#include <DirectXMath.h>
+//#include <string>
+//#include <fstream>
 
 #include <vulkan/vulkan.hpp>
 
@@ -31,5 +33,9 @@
 
 #include <ankerl/unordered_dense.h>
 #include <SimpleIni.h>
+
+#define SPDLOG_USE_STD_FORMAT
+#include "spdlog/spdlog.h"
+
 
 

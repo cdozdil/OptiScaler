@@ -16,14 +16,17 @@ public:
 	// Motion
 	std::optional<bool> JitterCancellation;
 	std::optional<bool> DisplayResolution;
-	
+
+	//Logging
+	std::optional<bool> LoggingEnabled;
+	std::optional<bool> LogToConsole;
+	std::optional<int> LogLevel;
+	std::optional<std::string> LogFileName;
+
 	// XeSS
 	std::optional<bool> DelayedInit;
 	std::optional<bool> BuildPipelines;
-	std::optional<bool> XeSSLogging;
-	std::optional<std::string> LogFile;
 	std::optional<int32_t> NetworkModel;
-	std::optional<int> LogLevel;
 
 	// CAS
 	std::optional<bool> CasEnabled;

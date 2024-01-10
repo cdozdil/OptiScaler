@@ -10,13 +10,8 @@ Config::Config(std::wstring fileName)
 
 void Config::Reload()
 {
-	const auto now = std::chrono::system_clock::now();
-	auto str = std::format("{:%d%m%Y_%H%M%OS}", now);
-
-	auto path = Util::DllPath().parent_path();
-	auto logFile = path.string() + "\\log_xess_" + str + ".log";
-	LogLevel = 1;
-	XeSSLogging = false;
+	LogLevel = 2;
+	LoggingEnabled = false;
 
 	NetworkModel = 0;
 	BuildPipelines = true;
@@ -28,16 +23,32 @@ void Config::Reload()
 		BuildPipelines = readBool("XeSS", "BuildPipelines");
 		NetworkModel = readInt("XeSS", "NetworkModel");
 
-		LogFile = readString("XeSS", "LogFile");
+		LoggingEnabled = readBool("Log", "LoggingEnabled");
 
-		if (!LogFile.has_value())
-			LogFile = logFile;
+		if (LoggingEnabled.value_or(false))
+		{
+			LogLevel = readInt("Log", "LogLevel");
+			LogToConsole = readBool("Log", "LogToConsole");
 
-		XeSSLogging = readBool("XeSS", "XeSSLogging");
-		LogLevel = readInt("XeSS", "LogLevel");
+			if (!LogToConsole.value_or(false))
+			{
+				LogFileName = readString("Log", "LogFile");
 
-		if (!XeSSLogging.value_or(false))
+				if (!LogFileName.has_value())
+				{
+					const auto now = std::chrono::system_clock::now();
+					auto str = std::format("{:%d%m%Y_%H%M%OS}", now);
+
+					auto path = Util::DllPath().parent_path();
+					auto logFile = path.string() + "/log_xess_" + str + ".log";
+
+					LogFileName = logFile;
+				}
+			}
+		}
+		else
 			LogLevel = 6;
+
 
 
 		// CAS

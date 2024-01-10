@@ -55,7 +55,7 @@ static std::string ResultToString(xess_result_t result)
 inline void logCallback(const char* Message, xess_logging_level_t Level)
 {
 	std::string s = Message;
-	LOG("FeatureContext::LogCallback XeSS Runtime (" + std::to_string(Level) + ") : " + s, spdlog::level::info);
+	LOG("FeatureContext::LogCallback XeSS Runtime (" + std::to_string(Level) + ") : " + s, (spdlog::level::level_enum)((int)Level + 1));
 }
 
 class FeatureContext;
@@ -249,7 +249,6 @@ class FeatureContext
 	float casSharpness = 0.4f;
 	ID3D12Resource* casBuffer = nullptr;
 	FfxCasContextDescription casContextDesc = {};
-
 
 	// dx11
 	D3D11_TEXTURE2D_RESOURCE_C dx11Color = {};
@@ -784,7 +783,7 @@ public:
 
 		if (initParams->Depth)
 		{
-			LOG("FeatureContext::XeSSExecuteDx12 Depth exist..", spdlog::level::info);
+			LOG("FeatureContext::XeSSExecuteDx12 Depth exist..", spdlog::level::debug);
 			params.pDepthTexture = (ID3D12Resource*)initParams->Depth;
 		}
 		else
@@ -801,7 +800,7 @@ public:
 		{
 			if (initParams->ExposureTexture != nullptr)
 			{
-				LOG("FeatureContext::XeSSExecuteDx12 ExposureTexture exist..", spdlog::level::info);
+				LOG("FeatureContext::XeSSExecuteDx12 ExposureTexture exist..", spdlog::level::debug);
 				params.pExposureScaleTexture = (ID3D12Resource*)initParams->ExposureTexture;
 			}
 			else
@@ -814,7 +813,7 @@ public:
 		{
 			if (initParams->TransparencyMask != nullptr)
 			{
-				LOG("FeatureContext::XeSSExecuteDx12 TransparencyMask exist..", spdlog::level::info);
+				LOG("FeatureContext::XeSSExecuteDx12 TransparencyMask exist..", spdlog::level::debug);
 				params.pResponsivePixelMaskTexture = (ID3D12Resource*)initParams->TransparencyMask;
 			}
 			else
@@ -829,7 +828,7 @@ public:
 			return false;
 		}
 
-		LOG("FeatureContext::XeSSExecuteDx12 Executing!!", spdlog::level::info);
+		LOG("FeatureContext::XeSSExecuteDx12 Executing!!", spdlog::level::debug);
 		xessResult = xessD3D12Execute(xessContext, commandList, &params);
 
 		if (xessResult != XESS_RESULT_SUCCESS)
@@ -952,7 +951,7 @@ public:
 			}
 		}
 		else
-			LOG("FeatureContext::XeSSExecuteDx11 AutoExposure enabled!", spdlog::level::warn);
+			LOG("FeatureContext::XeSSExecuteDx11 AutoExposure enabled!", spdlog::level::debug);
 
 		if (!instance->MyConfig->DisableReactiveMask.value_or(true))
 		{
@@ -1078,7 +1077,7 @@ public:
 		}
 
 		// Execute xess
-		LOG("FeatureContext::XeSSExecuteDx11 Executing!!", spdlog::level::info);
+		LOG("FeatureContext::XeSSExecuteDx11 Executing!!", spdlog::level::debug);
 		xessResult = xessD3D12Execute(xessContext, commandList, &params);
 
 		if (xessResult != XESS_RESULT_SUCCESS)

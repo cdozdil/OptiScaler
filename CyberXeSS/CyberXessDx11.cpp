@@ -154,7 +154,7 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_GetScratchBufferSize(NVSDK_NGX_Feature InFeatur
 
 NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext* InDevCtx, NVSDK_NGX_Feature InFeatureID, NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Handle** OutHandle)
 {
-	LOG("NVSDK_NGX_D3D11_CreateFeature", spdlog::level::debug);
+	LOG("NVSDK_NGX_D3D11_CreateFeature", spdlog::level::info);
 
 	if (CyberXessContext::instance()->Dx11Device == nullptr)
 	{
@@ -196,7 +196,7 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* InHandle)
 	if (InHandle == nullptr || InHandle == NULL)
 		return NVSDK_NGX_Result_Success;
 
-	LOG("NVSDK_NGX_D3D11_ReleaseFeature Handle: " + std::to_string(InHandle->Id), spdlog::level::debug);
+	LOG("NVSDK_NGX_D3D11_ReleaseFeature Handle: " + std::to_string(InHandle->Id), spdlog::level::info);
 
 	if (auto deviceContext = CyberXessContext::instance()->Contexts[InHandle->Id].get(); deviceContext != nullptr)
 		deviceContext->XeSSDestroy();

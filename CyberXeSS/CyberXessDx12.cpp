@@ -8,12 +8,10 @@
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath,
 	ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion, unsigned long long unknown0)
 {
-	LOG("XeSS DelayedInit : " + std::to_string(CyberXessContext::instance()->MyConfig->DelayedInit.value_or(false)), spdlog::level::info);
-	LOG("XeSS BuildPipelines : " + std::to_string(CyberXessContext::instance()->MyConfig->BuildPipelines.value_or(true)), spdlog::level::info); 
-	LOG("XeSS NetworkModel : " + std::to_string(CyberXessContext::instance()->MyConfig->NetworkModel.value_or(0)), spdlog::level::info);
-	LOG("XeSS LogFile : " + CyberXessContext::instance()->MyConfig->LogFile.value_or(""), spdlog::level::info);
-	LOG("XeSS LogLevel : " + std::to_string(CyberXessContext::instance()->MyConfig->LogLevel.value_or(1)), spdlog::level::info);
-	LOG("XeSS XeSSLogging : " + std::to_string(CyberXessContext::instance()->MyConfig->XeSSLogging.value_or(true)), spdlog::level::info);
+	LOG("DelayedInit : " + std::to_string(CyberXessContext::instance()->MyConfig->DelayedInit.value_or(false)), spdlog::level::info);
+	LOG("BuildPipelines : " + std::to_string(CyberXessContext::instance()->MyConfig->BuildPipelines.value_or(true)), spdlog::level::info); 
+	LOG("NetworkModel : " + std::to_string(CyberXessContext::instance()->MyConfig->NetworkModel.value_or(0)), spdlog::level::info);
+	LOG("LogLevel : " + std::to_string(CyberXessContext::instance()->MyConfig->LogLevel.value_or(1)), spdlog::level::info);
 
 	LOG("NVSDK_NGX_D3D12_Init_Ext AppId:" + std::to_string(InApplicationId), spdlog::level::debug);
 	LOG("NVSDK_NGX_D3D12_Init_Ext SDK:" + std::to_string(InSDKVersion), spdlog::level::debug);
@@ -63,7 +61,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* I
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 {
-	LOG("NVSDK_NGX_D3D12_Shutdown", spdlog::level::debug);
+	LOG("NVSDK_NGX_D3D12_Shutdown", spdlog::level::info);
 
 	CyberXessContext::instance()->Shutdown(false, true);
 	CyberXessContext::instance()->NvParameterInstance->Params.clear();
@@ -80,16 +78,17 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown1(ID3D12Device* InDevice)
 {
-	LOG("NVSDK_NGX_D3D12_Shutdown1", spdlog::level::debug);
+	LOG("NVSDK_NGX_D3D12_Shutdown1", spdlog::level::info);
 
 	CyberXessContext::instance()->Shutdown(false, true);
 	CyberXessContext::instance()->NvParameterInstance->Params.clear();
-	CyberXessContext::instance()->Contexts.clear();
 
 	for (auto const& [key, val] : CyberXessContext::instance()->Contexts)
 	{
 		NVSDK_NGX_D3D12_ReleaseFeature(&val->Handle);
 	}
+
+	CyberXessContext::instance()->Contexts.clear();
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -140,7 +139,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_DestroyParameters(NVSDK_NGX_Param
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsCommandList* InCmdList, NVSDK_NGX_Feature InFeatureID, NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Handle** OutHandle)
 {
-	LOG("NVSDK_NGX_D3D12_CreateFeature Start!", spdlog::level::debug);
+	LOG("NVSDK_NGX_D3D12_CreateFeature", spdlog::level::info);
 
 	auto deviceContext = CyberXessContext::instance()->CreateContext();
 	*OutHandle = &deviceContext->Handle;
@@ -182,7 +181,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* InHandle)
 {
-	LOG("NVSDK_NGX_D3D12_ReleaseFeature!", spdlog::level::debug);
+	LOG("NVSDK_NGX_D3D12_ReleaseFeature", spdlog::level::info);
 
 	if (InHandle == nullptr || InHandle == NULL)
 		return NVSDK_NGX_Result_Success;
