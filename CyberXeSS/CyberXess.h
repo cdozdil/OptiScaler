@@ -804,7 +804,7 @@ public:
 				LOG("FeatureContext::XeSSExecuteDx12 AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!", spdlog::level::warn);
 		}
 		else
-			LOG("FeatureContext::XeSSExecuteDx12 AutoExposure enabled!", spdlog::level::warn);
+			LOG("FeatureContext::XeSSExecuteDx12 AutoExposure enabled!", spdlog::level::debug);
 
 		if (!instance->MyConfig->DisableReactiveMask.value_or(true))
 		{

@@ -8,13 +8,13 @@
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath,
 	ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion, unsigned long long unknown0)
 {
-	LOG("DelayedInit : " + std::to_string(CyberXessContext::instance()->MyConfig->DelayedInit.value_or(false)), spdlog::level::info);
-	LOG("BuildPipelines : " + std::to_string(CyberXessContext::instance()->MyConfig->BuildPipelines.value_or(true)), spdlog::level::info); 
-	LOG("NetworkModel : " + std::to_string(CyberXessContext::instance()->MyConfig->NetworkModel.value_or(0)), spdlog::level::info);
-	LOG("LogLevel : " + std::to_string(CyberXessContext::instance()->MyConfig->LogLevel.value_or(1)), spdlog::level::info);
+	LOG("NVSDK_NGX_D3D12_Init_Ext AppId:" + std::to_string(InApplicationId), spdlog::level::info);
+	LOG("NVSDK_NGX_D3D12_Init_Ext SDK:" + std::to_string(InSDKVersion), spdlog::level::info);
 
-	LOG("NVSDK_NGX_D3D12_Init_Ext AppId:" + std::to_string(InApplicationId), spdlog::level::debug);
-	LOG("NVSDK_NGX_D3D12_Init_Ext SDK:" + std::to_string(InSDKVersion), spdlog::level::debug);
+	LOG("NVSDK_NGX_D3D12_Init_Ext DelayedInit: " + std::to_string(CyberXessContext::instance()->MyConfig->DelayedInit.value_or(false)), spdlog::level::info);
+	LOG("NVSDK_NGX_D3D12_Init_Ext BuildPipelines: " + std::to_string(CyberXessContext::instance()->MyConfig->BuildPipelines.value_or(true)), spdlog::level::info); 
+	LOG("NVSDK_NGX_D3D12_Init_Ext NetworkModel: " + std::to_string(CyberXessContext::instance()->MyConfig->NetworkModel.value_or(0)), spdlog::level::info);
+	LOG("NVSDK_NGX_D3D12_Init_Ext LogLevel: " + std::to_string(CyberXessContext::instance()->MyConfig->LogLevel.value_or(1)), spdlog::level::info);
 
 	CyberXessContext::instance()->Shutdown(true, true);
 
