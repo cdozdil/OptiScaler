@@ -359,6 +359,6 @@ FfxErrorCode ffxCasContextDispatch(FfxCasContext* context, const FfxCasDispatchD
     FFX_RETURN_ON_ERROR(contextPrivate->device, FFX_ERROR_NULL_DEVICE);
 
     // dispatch the CAS passes.
-    const FfxErrorCode errorCode = casDispatch(contextPrivate, dispatchDescription);
+        const FfxErrorCode errorCode = casDispatch(contextPrivate, dispatchDescription);
     return errorCode;
 }

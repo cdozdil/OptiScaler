@@ -248,6 +248,8 @@ class FeatureContext
 	bool casActive = false;
 	float casSharpness = 0.4f;
 	ID3D12Resource* casBuffer = nullptr;
+	FfxCasContextDescription casContextDesc = {};
+
 
 	// dx11
 	D3D11_TEXTURE2D_RESOURCE_C dx11Color = {};
@@ -256,7 +258,7 @@ class FeatureContext
 	D3D11_TEXTURE2D_RESOURCE_C dx11Tm = {};
 	D3D11_TEXTURE2D_RESOURCE_C dx11Exp = {};
 	D3D11_TEXTURE2D_RESOURCE_C dx11Out = {};
-	ID3D12Resource* dx11OutputBuffer;
+	ID3D12Resource* dx11OutputBuffer = nullptr;
 
 
 #pragma region cas methods
@@ -290,14 +292,14 @@ class FeatureContext
 		DestroyCasContext();
 
 		const size_t scratchBufferSize = ffxGetScratchMemorySizeDX12(FFX_CAS_CONTEXT_COUNT);
-		void* scratchBuffer = calloc(scratchBufferSize, 1);
+		void* casScratchBuffer = calloc(scratchBufferSize, 1);
 
-		FfxCasContextDescription casContextDesc = {};
-		auto errorCode = ffxGetInterfaceDX12(&casContextDesc.backendInterface, dx12device, scratchBuffer, scratchBufferSize, FFX_CAS_CONTEXT_COUNT);
+		auto errorCode = ffxGetInterfaceDX12(&casContextDesc.backendInterface, dx12device, casScratchBuffer, scratchBufferSize, FFX_CAS_CONTEXT_COUNT);
 
 		if (errorCode != FFX_OK)
 		{
 			LOG("FeatureContext::CreateCasContext ffxGetInterfaceDX12 error: " + int_to_hex(errorCode), spdlog::level::err);
+			free(casScratchBuffer);
 			return false;
 		}
 
@@ -325,6 +327,8 @@ class FeatureContext
 
 		errorCode = ffxCasContextCreate(&casContext, &casContextDesc);
 
+
+
 		if (errorCode != FFX_OK)
 		{
 			LOG("FeatureContext::CreateCasContext ffxCasContextCreate error: " + int_to_hex(errorCode), spdlog::level::err);
@@ -346,6 +350,8 @@ class FeatureContext
 
 		if (errorCode != FFX_OK)
 			LOG("FeatureContext::DestroyCasContext ffxCasContextDestroy error: " + int_to_hex(errorCode), spdlog::level::err);
+
+		free(casContextDesc.backendInterface.scratchBuffer);
 
 		casContextCreated = false;
 	}
@@ -419,7 +425,7 @@ class FeatureContext
 
 #pragma endregion
 
-	bool CopyTextureFrom11To12(ID3D11Resource* d3d11texture, ID3D11Texture2D** pSharedTexture, D3D11_TEXTURE2D_DESC_C* sharedDesc, bool copy = false)
+	bool CopyTextureFrom11To12(ID3D11Resource* d3d11texture, ID3D11Texture2D** pSharedTexture, D3D11_TEXTURE2D_DESC_C* sharedDesc, bool copy = true)
 	{
 		ID3D11Texture2D* originalTexture = nullptr;
 		D3D11_TEXTURE2D_DESC desc{};
@@ -431,7 +437,7 @@ class FeatureContext
 
 		originalTexture->GetDesc(&desc);
 
-		if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) == 0 || copy)
+		if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) == 0)
 		{
 			if (desc.Width != sharedDesc->Width || desc.Height != sharedDesc->Height ||
 				desc.Format != sharedDesc->Format || desc.BindFlags != sharedDesc->BindFlags ||
@@ -440,8 +446,8 @@ class FeatureContext
 				if ((*pSharedTexture) != nullptr)
 					(*pSharedTexture)->Release();
 
-				ASSIGN_DESC(sharedDesc, desc);
-				sharedDesc->pointer = nullptr;
+				ASSIGN_DESC(sharedDesc, desc)
+					sharedDesc->pointer = nullptr;
 				sharedDesc->handle = NULL;
 
 				desc.MiscFlags |= D3D11_RESOURCE_MISC_SHARED;
@@ -470,7 +476,8 @@ class FeatureContext
 				sharedDesc->pointer = (*pSharedTexture);
 			}
 
-			CyberXessContext::instance()->Dx11DeviceContext->CopyResource(*pSharedTexture, d3d11texture);
+			if (copy)
+				CyberXessContext::instance()->Dx11DeviceContext->CopyResource(*pSharedTexture, d3d11texture);
 		}
 		else
 		{
@@ -915,7 +922,7 @@ public:
 		if (initParams->Output)
 		{
 			LOG("FeatureContext::XeSSExecuteDx11 Output exist..", spdlog::level::debug);
-			if (CopyTextureFrom11To12((ID3D11Resource*)initParams->Output, &dx11Out.SharedTexture, &dx11Out.Desc, true) == false)
+			if (CopyTextureFrom11To12((ID3D11Resource*)initParams->Output, &dx11Out.SharedTexture, &dx11Out.Desc, false) == false)
 				return false;
 		}
 		else
@@ -1006,13 +1013,10 @@ public:
 					return false;
 				}
 
-				if (casBuffer == nullptr)
+				if (casBuffer == nullptr && !CreateCasBufferResource(dx11OutputBuffer))
 				{
-					if (!CreateCasBufferResource(dx11OutputBuffer))
-					{
-						LOG("FeatureContext::XeSSExecuteDx11 Can't create cas buffer!", spdlog::level::err);
-						return false;
-					}
+					LOG("FeatureContext::XeSSExecuteDx11 Can't create cas buffer!", spdlog::level::err);
+					return false;
 				}
 
 				params.pOutputTexture = casBuffer;
@@ -1041,7 +1045,7 @@ public:
 			}
 		}
 
-		if (!instance->MyConfig->AutoExposure.value_or(false) && initParams->ExposureTexture != nullptr)
+		if (!instance->MyConfig->AutoExposure.value_or(false) && initParams->ExposureTexture)
 		{
 			result = instance->Dx12Device->OpenSharedHandle(dx11Exp.Desc.handle, IID_PPV_ARGS(&params.pExposureScaleTexture));
 
@@ -1052,7 +1056,7 @@ public:
 			}
 		}
 
-		if (!instance->MyConfig->DisableReactiveMask.value_or(true) && initParams->TransparencyMask != nullptr)
+		if (!instance->MyConfig->DisableReactiveMask.value_or(true) && initParams->TransparencyMask)
 		{
 			result = instance->Dx12Device->OpenSharedHandle(dx11Tm.Desc.handle, IID_PPV_ARGS(&params.pResponsivePixelMaskTexture));
 
@@ -1131,6 +1135,29 @@ public:
 
 		// Release the query
 		query2->Release();
+
+		if (initParams->Color)
+			params.pColorTexture->Release();
+
+		if (initParams->MotionVectors)
+			params.pVelocityTexture->Release();
+
+		if (initParams->Depth)
+			params.pDepthTexture->Release();
+
+		if (!instance->MyConfig->AutoExposure.value_or(false) && initParams->ExposureTexture)
+			params.pExposureScaleTexture->Release();
+
+		if (!instance->MyConfig->DisableReactiveMask.value_or(true) && initParams->TransparencyMask)
+			params.pResponsivePixelMaskTexture->Release();
+
+		if (initParams->Output)
+		{
+			if (casActive)
+				dx11OutputBuffer->Release();
+			else
+				params.pOutputTexture->Release();
+		}
 
 		return true;
 	}

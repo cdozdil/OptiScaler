@@ -303,10 +303,8 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, 
 	// get params from dlss
 	const auto inParams = static_cast<const NvParameter*>(InParameters);
 
-	NVSDK_NGX_Result evResult;
-	if (deviceContext->XeSSExecuteDx11(instance->Dx12CommandList, instance->Dx12CommandQueue, instance->Dx11Device, InDevCtx, inParams))
-		evResult = NVSDK_NGX_Result_Success;
-	else
+	NVSDK_NGX_Result evResult = NVSDK_NGX_Result_Success;
+	if (!deviceContext->XeSSExecuteDx11(instance->Dx12CommandList, instance->Dx12CommandQueue, instance->Dx11Device, InDevCtx, inParams))
 		evResult = NVSDK_NGX_Result_Fail;
 
 	instance->Dx12CommandAllocator->Reset();
