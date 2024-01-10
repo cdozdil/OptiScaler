@@ -257,8 +257,6 @@ class FeatureContext
 	D3D11_TEXTURE2D_RESOURCE_C dx11Tm = {};
 	D3D11_TEXTURE2D_RESOURCE_C dx11Exp = {};
 	D3D11_TEXTURE2D_RESOURCE_C dx11Out = {};
-	ID3D12Resource* dx11OutputBuffer = nullptr;
-
 
 #pragma region cas methods
 
@@ -515,7 +513,6 @@ class FeatureContext
 		LOG("FeatureContext::ReleaseSharedResources start!", spdlog::level::debug);
 
 		SAFE_RELEASE(casBuffer);
-		SAFE_RELEASE(dx11OutputBuffer);
 		SAFE_RELEASE(dx11Color.SharedTexture);
 		SAFE_RELEASE(dx11Mv.SharedTexture);
 		SAFE_RELEASE(dx11Out.SharedTexture);
@@ -976,6 +973,7 @@ public:
 
 		// Release the query
 		query1->Release();
+		ID3D12Resource* dx11OutputBuffer = nullptr;
 
 		if (initParams->Color)
 		{

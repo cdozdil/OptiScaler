@@ -2,15 +2,14 @@
 #include "framework.h"
 #include "Config.h"
 
-#define SAFE_RELEASE(p)			\
-  do							\
-  {								\
-	if(p && p != nullptr)       \
-	{							\
-	  (p)->Release();			\
-	  (p) = NULL;				\
-	}							\
-  } while((void)0, 0)
+#define SAFE_RELEASE(p)		\
+do {						\
+	if(p && p != nullptr)	\
+	{						\
+		(p)->Release();		\
+		(p) = nullptr;		\
+	}						\
+} while((void)0, 0);		
 
 #define LOG(string, ...) AddLog(string, __VA_ARGS__)
 
