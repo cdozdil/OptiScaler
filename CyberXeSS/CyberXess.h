@@ -262,10 +262,10 @@ class FeatureContext
 
 	void CasInit()
 	{
-		spdlog::debug("FeatureContext::CasInit Start!");
-
 		if (casInit)
 			return;
+
+		spdlog::debug("FeatureContext::CasInit Start!");
 
 		casActive = CyberXessContext::instance()->MyConfig->CasEnabled.value_or(false);
 		casSharpness = CyberXessContext::instance()->MyConfig->CasSharpness.value_or(0.4);
@@ -278,13 +278,13 @@ class FeatureContext
 
 	bool CreateCasContext()
 	{
-		spdlog::debug("FeatureContext::CreateCasContext Start!");
-
 		if (!casInit)
 			return false;
 
 		if (!casActive)
 			return true;
+
+		spdlog::debug("FeatureContext::CreateCasContext Start!");
 
 		DestroyCasContext();
 
@@ -355,8 +355,6 @@ class FeatureContext
 
 	bool CreateCasBufferResource(ID3D12Resource* source)
 	{
-		spdlog::debug("FeatureContext::CreateCasBufferResource Start!");
-
 		if (!casInit)
 			return false;
 
@@ -365,6 +363,8 @@ class FeatureContext
 
 		if (source == nullptr)
 			return false;
+
+		spdlog::debug("FeatureContext::CreateCasBufferResource Start!");
 
 		D3D12_RESOURCE_DESC texDesc = source->GetDesc();
 
@@ -394,13 +394,13 @@ class FeatureContext
 
 	bool CasDispatch(ID3D12CommandList* commandList, const NGXParameters* initParams, ID3D12Resource* input, ID3D12Resource* output)
 	{
-		spdlog::debug("FeatureContext::CasDispatch Start!");
-
 		if (!casInit)
 			return false;
 
 		if (!casActive)
 			return true;
+
+		spdlog::debug("FeatureContext::CasDispatch Start!");
 
 		FfxCasDispatchDescription dispatchParameters = {};
 		dispatchParameters.commandList = ffxGetCommandListDX12(commandList);
