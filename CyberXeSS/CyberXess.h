@@ -880,7 +880,7 @@ public:
 		}
 
 		//apply cas
-		if (!CasDispatch(commandList, casBuffer, paramOutput))
+		if (!CasDispatch(commandList, initParams, casBuffer, paramOutput))
 			return false;
 
 		return true;
@@ -1149,7 +1149,7 @@ public:
 		}
 
 		//apply cas
-		if (!CasDispatch(commandList, casBuffer, dx11OutputBuffer))
+		if (!CasDispatch(commandList, initParams, casBuffer, dx11OutputBuffer))
 			return false;
 
 		// Execute dx12 commands to process xess
