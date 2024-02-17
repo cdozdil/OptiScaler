@@ -742,7 +742,7 @@ public:
 		initParams->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffsetX);
 		initParams->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffsetY);
 
-		params.exposureScale = 1.0f;
+		initParams->Get(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, &params.exposureScale);
 		initParams->Get(NVSDK_NGX_Parameter_Reset, &params.resetHistory);
 
 		initParams->Get(NVSDK_NGX_Parameter_Width, &params.inputWidth);
@@ -903,7 +903,7 @@ public:
 		initParams->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffsetX);
 		initParams->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffsetY);
 
-		params.exposureScale = 1.0f;
+		initParams->Get(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, &params.exposureScale);
 		initParams->Get(NVSDK_NGX_Parameter_Reset, &params.resetHistory);
 
 		initParams->Get(NVSDK_NGX_Parameter_Width, &params.inputWidth);

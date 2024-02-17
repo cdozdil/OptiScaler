@@ -257,6 +257,7 @@ struct NGXParameters : public NVSDK_NGX_Parameter
 		Set(NVSDK_NGX_Parameter_MV_Scale_Y, 1.0f);
 		Set(NVSDK_NGX_Parameter_MV_Offset_X, 0.0f);
 		Set(NVSDK_NGX_Parameter_MV_Offset_Y, 0.0f);
+		Set(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, 1.0f);
 
 		Set(NVSDK_NGX_EParameter_SuperSampling_Available, 1);
 		Set(NVSDK_NGX_EParameter_OptLevel, 0);
