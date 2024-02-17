@@ -752,6 +752,17 @@ public:
 		if (params.pColorTexture)
 		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx12 Color exist..");
+
+			if (instance->MyConfig->ColorResourceBarrier.value_or(false))
+			{
+				D3D12_RESOURCE_BARRIER barrier = {};
+				barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+				barrier.Transition.pResource = params.pColorTexture;
+				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+				barrier.Transition.Subresource = 0;
+				commandList->ResourceBarrier(1, &barrier);
+			}
 		}
 		else
 		{

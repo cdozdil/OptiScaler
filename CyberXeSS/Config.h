@@ -48,6 +48,7 @@ public:
 
 	//Hotfix for Steam Deck
 	std::optional<bool> DisableReactiveMask;
+	std::optional<bool> ColorResourceBarrier;
 
 	void Reload();
 

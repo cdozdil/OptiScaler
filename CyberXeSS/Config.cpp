@@ -80,6 +80,7 @@ void Config::Reload()
 		}
 
 		DisableReactiveMask = readBool("Hotfix", "DisableReactiveMask");
+		ColorResourceBarrier = readBool("Hotfix", "ColorResourceBarrier");
 	}
 }
 
