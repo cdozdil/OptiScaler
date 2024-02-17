@@ -124,6 +124,35 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetStatsCallback(NVSDK_NGX_Par
 	return NVSDK_NGX_Result_Success;
 }
 
+inline void InitNGXParameters(NVSDK_NGX_Parameter* InParams)
+{
+	InParams->Set(NVSDK_NGX_Parameter_SuperSampling_Available, 1);
+	InParams->Set(NVSDK_NGX_Parameter_SuperSampling_MinDriverVersionMajor, 10);
+	InParams->Set(NVSDK_NGX_Parameter_SuperSampling_MinDriverVersionMinor, 10);
+	InParams->Set(NVSDK_NGX_Parameter_SuperSampling_NeedsUpdatedDriver, 0);
+	InParams->Set(NVSDK_NGX_Parameter_SuperSampling_FeatureInitResult, 1);
+	InParams->Set(NVSDK_NGX_Parameter_OptLevel, 0);
+	InParams->Set(NVSDK_NGX_Parameter_IsDevSnippetBranch, 0);
+	InParams->Set(NVSDK_NGX_Parameter_DLSSOptimalSettingsCallback, NVSDK_NGX_DLSS_GetOptimalSettingsCallback);
+	InParams->Set(NVSDK_NGX_Parameter_DLSSGetStatsCallback, NVSDK_NGX_DLSS_GetOptimalSettingsCallback);
+	InParams->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
+	InParams->Set(NVSDK_NGX_Parameter_MV_Scale_X, 1.0f);
+	InParams->Set(NVSDK_NGX_Parameter_MV_Scale_Y, 1.0f);
+	InParams->Set(NVSDK_NGX_Parameter_MV_Offset_X, 0.0f);
+	InParams->Set(NVSDK_NGX_Parameter_MV_Offset_Y, 0.0f);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, 1.0f);
+
+	InParams->Set(NVSDK_NGX_EParameter_SuperSampling_Available, 1);
+	InParams->Set(NVSDK_NGX_EParameter_OptLevel, 0);
+	InParams->Set(NVSDK_NGX_EParameter_IsDevSnippetBranch, 0);
+	InParams->Set(NVSDK_NGX_EParameter_DLSSOptimalSettingsCallback, NVSDK_NGX_DLSS_GetOptimalSettingsCallback);
+	InParams->Set(NVSDK_NGX_EParameter_Sharpness, 0.0f);
+	InParams->Set(NVSDK_NGX_EParameter_MV_Scale_X, 1.0f);
+	InParams->Set(NVSDK_NGX_EParameter_MV_Scale_Y, 1.0f);
+	InParams->Set(NVSDK_NGX_EParameter_MV_Offset_X, 0.0f);
+	InParams->Set(NVSDK_NGX_EParameter_MV_Offset_Y, 0.0f);
+}
+
 struct Parameter
 {
 	template<typename T>
@@ -243,31 +272,7 @@ struct NGXParameters : public NVSDK_NGX_Parameter
 
 		spdlog::debug("NGXParameters::Reset Start");
 
-		Set(NVSDK_NGX_Parameter_SuperSampling_Available, 1);
-		Set(NVSDK_NGX_Parameter_SuperSampling_MinDriverVersionMajor, 400);
-		Set(NVSDK_NGX_Parameter_SuperSampling_MinDriverVersionMinor, 0);
-		Set(NVSDK_NGX_Parameter_SuperSampling_NeedsUpdatedDriver, 0);
-		Set(NVSDK_NGX_Parameter_SuperSampling_FeatureInitResult, 1);
-		Set(NVSDK_NGX_Parameter_OptLevel, 0);
-		Set(NVSDK_NGX_Parameter_IsDevSnippetBranch, 0);
-		Set(NVSDK_NGX_Parameter_DLSSOptimalSettingsCallback, NVSDK_NGX_DLSS_GetOptimalSettingsCallback);
-		Set(NVSDK_NGX_Parameter_DLSSGetStatsCallback, NVSDK_NGX_DLSS_GetOptimalSettingsCallback);
-		Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
-		Set(NVSDK_NGX_Parameter_MV_Scale_X, 1.0f);
-		Set(NVSDK_NGX_Parameter_MV_Scale_Y, 1.0f);
-		Set(NVSDK_NGX_Parameter_MV_Offset_X, 0.0f);
-		Set(NVSDK_NGX_Parameter_MV_Offset_Y, 0.0f);
-		Set(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, 1.0f);
-
-		Set(NVSDK_NGX_EParameter_SuperSampling_Available, 1);
-		Set(NVSDK_NGX_EParameter_OptLevel, 0);
-		Set(NVSDK_NGX_EParameter_IsDevSnippetBranch, 0);
-		Set(NVSDK_NGX_EParameter_DLSSOptimalSettingsCallback, NVSDK_NGX_DLSS_GetOptimalSettingsCallback);
-		Set(NVSDK_NGX_EParameter_Sharpness, 0.0f);
-		Set(NVSDK_NGX_EParameter_MV_Scale_X, 1.0f);
-		Set(NVSDK_NGX_EParameter_MV_Scale_Y, 1.0f);
-		Set(NVSDK_NGX_EParameter_MV_Offset_X, 0.0f);
-		Set(NVSDK_NGX_EParameter_MV_Offset_Y, 0.0f);
+		InitNGXParameters(this);
 
 		spdlog::debug("NGXParameters::Reset End");
 	}

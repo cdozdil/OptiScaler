@@ -142,7 +142,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_PopulateParameters_Impl(NVSDK_NGX
 	if (InParameters == nullptr)
 		return NVSDK_NGX_Result_Fail;
 
-	InParameters->Reset();
+	InitNGXParameters(InParameters);
 
 	return NVSDK_NGX_Result_Success;
 }

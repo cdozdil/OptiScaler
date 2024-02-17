@@ -98,7 +98,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_PopulateParameters_Impl(NVSDK_NG
 	if (InParameters == nullptr)
 		return NVSDK_NGX_Result_Fail;
 
-	InParameters->Reset();
+	InitNGXParameters(InParameters);
 
 	return NVSDK_NGX_Result_Success;
 }
