@@ -30,9 +30,6 @@
     <ClInclude Include="Config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NvParameter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="cas\ffx_cas_private.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -177,6 +174,9 @@
     <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_ec8c698e41b4daa7d74a1e6bd13b0240.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="NGXParameter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -192,9 +192,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Config.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="NvParameter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CyberXessDx12.cpp">

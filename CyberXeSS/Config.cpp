@@ -47,9 +47,7 @@ void Config::Reload()
 			}
 		}
 		else
-			LogLevel = 6;
-
-
+			LogLevel = spdlog::level::off;
 
 		// CAS
 		CasEnabled = readBool("CAS", "Enabled");

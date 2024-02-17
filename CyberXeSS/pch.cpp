@@ -48,16 +48,6 @@ bool InitializeConsole()
 	return true;
 }
 
-
-void AddLog(const std::string logMsg, spdlog::level::level_enum level)
-{
-
-	if (logger == nullptr)
-		return;
-
-	logger->log(level, logMsg);
-}
-
 void PrepareLogger()
 {
 	try
@@ -73,6 +63,8 @@ void PrepareLogger()
 
 			logger->set_pattern("[%H:%M:%S.%f] [%L] %v");
 			logger->set_level((spdlog::level::level_enum)config.LogLevel.value_or(2));
+
+			spdlog::set_default_logger(logger);
 		}
 	}
 	catch (const spdlog::spdlog_ex& ex)

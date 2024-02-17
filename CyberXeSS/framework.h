@@ -18,9 +18,6 @@
 #include <stdexcept>
 #include <atomic>
 #include <iostream>
-//#include <DirectXMath.h>
-//#include <string>
-//#include <fstream>
 
 #include <vulkan/vulkan.hpp>
 
@@ -29,6 +26,7 @@
 #define NGX_ENABLE_DEPRECATED_GET_PARAMETERS
 #define NGX_ENABLE_DEPRECATED_SHUTDOWN
 #include <nvsdk_ngx.h>
+#include <nvsdk_ngx_defs.h>
 #include <nvsdk_ngx_vk.h>
 
 #include <ankerl/unordered_dense.h>
