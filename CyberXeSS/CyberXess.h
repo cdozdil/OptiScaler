@@ -63,7 +63,7 @@ class FeatureContext;
 //Global Context
 class CyberXessContext
 {
-	unsigned int handleCounter = 1000;
+	unsigned int handleCounter = 1000000;
 
 	CyberXessContext();
 

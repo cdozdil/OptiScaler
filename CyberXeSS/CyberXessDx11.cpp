@@ -135,16 +135,27 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_AllocateParameters(NVSDK_NGX_Parameter** OutPar
 	return NVSDK_NGX_Result_Success;
 }
 
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_PopulateParameters_Impl(NVSDK_NGX_Parameter* InParameters)
+{
+	spdlog::debug("NVSDK_NGX_D3D11_PopulateParameters_Impl");
+
+	if (InParameters == nullptr)
+		return NVSDK_NGX_Result_Fail;
+
+	InParameters->Reset();
+
+	return NVSDK_NGX_Result_Success;
+}
+
 NVSDK_NGX_Result NVSDK_NGX_D3D11_DestroyParameters(NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("NVSDK_NGX_D3D11_DestroyParameters");
 
-	if (InParameters != nullptr)
-	{
-		auto params = static_cast<NGXParameters*>(InParameters);
-		params->Reset();
-	}
+	if (InParameters == nullptr)
+		return NVSDK_NGX_Result_Fail;
 
+	InParameters->Reset();
+	delete InParameters;
 	return NVSDK_NGX_Result_Success;
 }
 
