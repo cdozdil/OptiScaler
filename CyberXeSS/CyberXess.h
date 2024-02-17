@@ -392,7 +392,7 @@ class FeatureContext
 		return true;
 	}
 
-	bool CasDispatch(ID3D12CommandList* commandList, ID3D12Resource* input, ID3D12Resource* output)
+	bool CasDispatch(ID3D12CommandList* commandList, const NGXParameters* initParams, ID3D12Resource* input, ID3D12Resource* output)
 	{
 		spdlog::debug("FeatureContext::CasDispatch Start!");
 
@@ -405,6 +405,16 @@ class FeatureContext
 		FfxCasDispatchDescription dispatchParameters = {};
 		dispatchParameters.commandList = ffxGetCommandListDX12(commandList);
 		dispatchParameters.renderSize = { DisplayWidth, DisplayHeight };
+
+		if (initParams->Get(NVSDK_NGX_Parameter_Sharpness, &casSharpness) != NVSDK_NGX_Result_Success ||
+			CyberXessContext::instance()->MyConfig->CasOverrideSharpness.value_or(false))
+		{
+			casSharpness = CyberXessContext::instance()->MyConfig->CasSharpness.value_or(0.4);
+
+			if (casSharpness > 1 || casSharpness < 0)
+				casSharpness = 0.4f;
+		}
+
 		dispatchParameters.sharpness = casSharpness;
 
 		dispatchParameters.color = ffxGetResourceDX12(input, GetFfxResourceDescriptionDX12(input), nullptr, FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);

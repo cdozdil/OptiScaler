@@ -31,6 +31,7 @@ public:
 	// CAS
 	std::optional<bool> CasEnabled;
 	std::optional<int> ColorSpaceConversion;
+	std::optional<bool> CasOverrideSharpness;
 	std::optional<float> CasSharpness;
 
 

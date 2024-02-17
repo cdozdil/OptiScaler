@@ -51,6 +51,7 @@ void Config::Reload()
 
 		// CAS
 		CasEnabled = readBool("CAS", "Enabled");
+		CasOverrideSharpness = readBool("CAS", "OverrideSharpness");
 		CasSharpness = readFloat("CAS", "Sharpness");
 		ColorSpaceConversion = readInt("CAS", "ColorSpaceConversion");
 
