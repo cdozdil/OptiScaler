@@ -25,7 +25,7 @@ void Config::Reload()
 
 		LoggingEnabled = readBool("Log", "LoggingEnabled");
 
-		if (LoggingEnabled.value_or(false))
+		if (LoggingEnabled.value_or(true))
 		{
 			LogLevel = readInt("Log", "LogLevel");
 			
