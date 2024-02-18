@@ -37,7 +37,6 @@ WINEPREFIX=/path/where/the/steam/library/is/steamapps/compatdata/1091500/pfx /bi
 
 ### Requirements
 * Visual Studio 2022
-* FSR3 3.0.3 SDK files in external\ffx-sdk folder
 
 ### Instructions
 * Clone this repo with all of its submodules.
