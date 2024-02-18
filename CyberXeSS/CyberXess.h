@@ -642,7 +642,7 @@ public:
 			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (DepthInverted) {0:b}", xessParams.initFlags);
 		}
 
-		if (CyberXessContext::instance()->MyConfig->AutoExposure.value_or(AutoExposure))
+		if (AutoExposure || CyberXessContext::instance()->MyConfig->AutoExposure.value_or(AutoExposure))
 		{
 			xessParams.initFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
 			CyberXessContext::instance()->MyConfig->AutoExposure = true;

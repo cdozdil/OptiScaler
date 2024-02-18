@@ -83,8 +83,11 @@ void PrepareLogger()
 				shared_logger = std::make_shared<spdlog::logger>(logger);
 			}
 
-			shared_logger->set_level(spdlog::level::level_enum::trace);
-			spdlog::set_default_logger(shared_logger);
+			if (shared_logger)
+			{
+				shared_logger->set_level(spdlog::level::level_enum::trace);
+				spdlog::set_default_logger(shared_logger);
+			}
 		}
 	}
 	catch (const spdlog::spdlog_ex& ex)

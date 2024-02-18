@@ -63,9 +63,9 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	const std::optional<float> QualityRatio = GetQualityOverrideRatio(enumPQValue);
 
 	if (QualityRatio.has_value()) {
-		OutHeight = (unsigned int)((float)Height / QualityRatio.value());
-		OutWidth = (unsigned int)((float)Width / QualityRatio.value());
-		scalingRatio = 1.0f / QualityRatio.value();
+		OutHeight = (unsigned int)((float)Height / QualityRatio.value_or(1.3));
+		OutWidth = (unsigned int)((float)Width / QualityRatio.value_or(1.3));
+		scalingRatio = 1.0f / QualityRatio.value_or(1.3);
 	}
 	else {
 		spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback Quality: {0}", PerfQualityValue);
