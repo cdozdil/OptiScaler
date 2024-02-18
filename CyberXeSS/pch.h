@@ -2,6 +2,8 @@
 #include "framework.h"
 #include "Config.h"
 
+//inline std::mutex CreateFeatureMutex;
+
 #define SAFE_RELEASE(p)		\
 do {						\
 	if(p && p != nullptr)	\

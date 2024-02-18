@@ -180,9 +180,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
 #pragma endregion
 
-	const auto inParams = static_cast<const NGXParameters*>(InParameters);
-
-	if (deviceContext->XeSSInit(CyberXessContext::instance()->Dx12Device, inParams))
+	if (CyberXessContext::instance()->MyConfig->DelayedInit.value_or(true) || deviceContext->XeSSInit(CyberXessContext::instance()->Dx12Device, InParameters))
 		return NVSDK_NGX_Result_Success;
 
 	spdlog::error("NVSDK_NGX_D3D12_CreateFeature: CreateFeature failed");
@@ -230,12 +228,22 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	if (InCallback)
 		spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature callback exist");
 
-	const auto inParams = static_cast<const NGXParameters*>(InParameters);
 	const auto deviceContext = CyberXessContext::instance()->Contexts[InFeatureHandle->Id].get();
+
+	unsigned int width, outWidth, height, outHeight;
+	InParameters->Get(NVSDK_NGX_Parameter_Width, &width);
+	InParameters->Get(NVSDK_NGX_Parameter_Height, &height);
+	InParameters->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth);
+	InParameters->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight);
+	width = width > outWidth ? width : outWidth;
+	height = height > outHeight ? height : outHeight;
+
+	if (deviceContext->XeSSIsInited() && (deviceContext->DisplayHeight != height || deviceContext->DisplayWidth != width))
+		deviceContext->XeSSDestroy();
 
 	if (!deviceContext->XeSSIsInited())
 	{
-		deviceContext->XeSSInit(CyberXessContext::instance()->Dx12Device, inParams);
+		deviceContext->XeSSInit(CyberXessContext::instance()->Dx12Device, InParameters);
 
 		if (!deviceContext->XeSSIsInited())
 		{
@@ -249,7 +257,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	//dumpParams.path = "D:\\dmp\\";
 	//xessStartDump(deviceContext->XessContext, &dumpParams);
 
-	if (deviceContext->XeSSExecuteDx12(InCmdList, inParams))
+	if (deviceContext->XeSSExecuteDx12(InCmdList, InParameters))
 		return NVSDK_NGX_Result_Success;
 	else
 		return NVSDK_NGX_Result_Fail;

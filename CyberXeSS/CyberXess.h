@@ -392,7 +392,7 @@ class FeatureContext
 		return true;
 	}
 
-	bool CasDispatch(ID3D12CommandList* commandList, const NGXParameters* initParams, ID3D12Resource* input, ID3D12Resource* output)
+	bool CasDispatch(ID3D12CommandList* commandList, const NVSDK_NGX_Parameter* initParams, ID3D12Resource* input, ID3D12Resource* output)
 	{
 		if (!casInit)
 			return false;
@@ -543,7 +543,7 @@ public:
 
 #pragma region xess methods
 
-	bool XeSSInit(ID3D12Device* device, const NGXParameters* initParams)
+	bool XeSSInit(ID3D12Device* device, const NVSDK_NGX_Parameter* initParams)
 	{
 		if (device == nullptr)
 		{
@@ -556,10 +556,18 @@ public:
 
 		dx12device = device;
 
-		initParams->Get(NVSDK_NGX_Parameter_OutWidth, &RenderWidth);
-		initParams->Get(NVSDK_NGX_Parameter_OutHeight, &RenderHeight);
-		initParams->Get(NVSDK_NGX_Parameter_OutWidth, &DisplayWidth);
-		initParams->Get(NVSDK_NGX_Parameter_OutHeight, &DisplayHeight);
+		unsigned int width, outWidth, height, outHeight;
+		initParams->Get(NVSDK_NGX_Parameter_Width, &width);
+		initParams->Get(NVSDK_NGX_Parameter_Height, &height);
+		initParams->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth);
+		initParams->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight);
+
+		DisplayWidth = width > outWidth ? width : outWidth;
+		DisplayHeight = height > outHeight ? height : outHeight;
+		RenderWidth = DisplayWidth;
+		RenderHeight = DisplayHeight;
+
+		spdlog::info("FeatureContext::XeSSInit Output Resolution: {0}x{1}", DisplayWidth, DisplayHeight);
 
 		xess_version_t ver;
 		xess_result_t ret = xessGetVersion(&ver);
@@ -583,20 +591,12 @@ public:
 		ret = xessSetLoggingCallback(xessContext, XESS_LOGGING_LEVEL_DEBUG, logCallback);
 		spdlog::debug("FeatureContext::XeSSInit xessSetLoggingCallback : {0}", ResultToString(ret));
 
-		float MVScaleX;
-		float MVScaleY;
-		initParams->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX);
-		initParams->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY);
-
-		ret = xessSetVelocityScale(xessContext, MVScaleX, MVScaleY);
-		spdlog::debug("FeatureContext::XeSSInit xessSetVelocityScale : {0}", ResultToString(ret));
-
 #pragma region Create Parameters for XeSS
 
 		xess_d3d12_init_params_t xessParams{};
 
-		xessParams.outputResolution.x = RenderWidth;
-		xessParams.outputResolution.y = RenderHeight;
+		xessParams.outputResolution.x = DisplayWidth;
+		xessParams.outputResolution.y = DisplayHeight;
 
 		int pqValue;
 		initParams->Get(NVSDK_NGX_Parameter_PerfQualityValue, &pqValue);
@@ -723,12 +723,15 @@ public:
 		if (!xessInit || xessContext == nullptr)
 			return;
 
+		spdlog::debug("FeatureContext::XeSSDestroy!");
+
 		auto result = xessDestroyContext(xessContext);
 
 		if (result != XESS_RESULT_SUCCESS)
 			spdlog::error("FeatureContext::XeSSDestroy xessDestroyContext error: {0}", ResultToString(result));
 
 		xessContext = nullptr;
+		xessInit = false;
 
 		DestroyCasContext();
 		ReleaseSharedResources();
@@ -739,7 +742,7 @@ public:
 		return xessInit;
 	}
 
-	bool XeSSExecuteDx12(ID3D12GraphicsCommandList* commandList, const NGXParameters* initParams)
+	bool XeSSExecuteDx12(ID3D12GraphicsCommandList* commandList, const NVSDK_NGX_Parameter* initParams)
 	{
 		if (!xessInit)
 			return false;
@@ -752,11 +755,34 @@ public:
 		initParams->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffsetX);
 		initParams->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffsetY);
 
-		initParams->Get(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, &params.exposureScale);
+		if (initParams->Get(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, &params.exposureScale) != NVSDK_NGX_Result_Success)
+			params.exposureScale = 1.0f;
+
 		initParams->Get(NVSDK_NGX_Parameter_Reset, &params.resetHistory);
 
-		initParams->Get(NVSDK_NGX_Parameter_Width, &params.inputWidth);
-		initParams->Get(NVSDK_NGX_Parameter_Height, &params.inputHeight);
+		if (initParams->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, &params.inputWidth) != NVSDK_NGX_Result_Success ||
+			initParams->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, &params.inputHeight) != NVSDK_NGX_Result_Success)
+		{
+			unsigned int width, height, outWidth, outHeight;
+
+			initParams->Get(NVSDK_NGX_Parameter_Width, &width);
+			initParams->Get(NVSDK_NGX_Parameter_Height, &height);
+			initParams->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth);
+			initParams->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight);
+
+			if (width < outWidth)
+			{
+				params.inputWidth = width;
+				params.inputHeight = height;
+			}
+			else
+			{
+				params.inputWidth = outWidth;
+				params.inputHeight = outHeight;
+			}
+		}
+
+		spdlog::debug("FeatureContext::XeSSInit Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
 		initParams->Get(NVSDK_NGX_Parameter_Color, &params.pColorTexture);
 		if (params.pColorTexture)
@@ -842,7 +868,7 @@ public:
 				spdlog::debug("FeatureContext::XeSSExecuteDx12 ExposureTexture exist..");
 			}
 			else
-				spdlog::warn("FeatureContext::XeSSExecuteDx12 AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
+				spdlog::debug("FeatureContext::XeSSExecuteDx12 AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
 		}
 		else
 			spdlog::debug("FeatureContext::XeSSExecuteDx12 AutoExposure enabled!");
@@ -855,7 +881,7 @@ public:
 				spdlog::debug("FeatureContext::XeSSExecuteDx12 TransparencyMask exist..");
 			}
 			else
-				spdlog::warn("FeatureContext::XeSSExecuteDx12 TransparencyMask not exist and its enabled in config, it may cause problems!!");
+				spdlog::debug("FeatureContext::XeSSExecuteDx12 TransparencyMask not exist and its enabled in config, it may cause problems!!");
 		}
 
 		float MVScaleX;
@@ -880,7 +906,7 @@ public:
 		}
 
 		//apply cas
-		if (!CasDispatch(commandList, initParams, casBuffer, paramOutput))
+		if (casActive && !CasDispatch(commandList, initParams, casBuffer, paramOutput))
 			return false;
 
 		return true;
@@ -888,7 +914,7 @@ public:
 
 	bool XeSSExecuteDx11(ID3D12GraphicsCommandList* commandList, ID3D12CommandQueue* commandQueue,
 		ID3D11Device* dx11device, ID3D11DeviceContext* deviceContext,
-		const NGXParameters* initParams)
+		const NVSDK_NGX_Parameter* initParams)
 	{
 		if (!xessInit)
 			return false;
@@ -913,11 +939,34 @@ public:
 		initParams->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffsetX);
 		initParams->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffsetY);
 
-		initParams->Get(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, &params.exposureScale);
+		if (initParams->Get(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, &params.exposureScale) != NVSDK_NGX_Result_Success)
+			params.exposureScale = 1.0f;
+
 		initParams->Get(NVSDK_NGX_Parameter_Reset, &params.resetHistory);
 
-		initParams->Get(NVSDK_NGX_Parameter_Width, &params.inputWidth);
-		initParams->Get(NVSDK_NGX_Parameter_Height, &params.inputHeight);
+		if (initParams->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, &params.inputWidth) != NVSDK_NGX_Result_Success ||
+			initParams->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, &params.inputHeight) != NVSDK_NGX_Result_Success)
+		{
+			unsigned int width, height, outWidth, outHeight;
+
+			initParams->Get(NVSDK_NGX_Parameter_Width, &width);
+			initParams->Get(NVSDK_NGX_Parameter_Height, &height);
+			initParams->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth);
+			initParams->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight);
+
+			if (width < outWidth)
+			{
+				params.inputWidth = width;
+				params.inputHeight = height;
+			}
+			else
+			{
+				params.inputWidth = outWidth;
+				params.inputHeight = outHeight;
+			}
+		}
+
+		spdlog::debug("FeatureContext::XeSSInit Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
 #pragma region Texture copies
 
@@ -1149,7 +1198,7 @@ public:
 		}
 
 		//apply cas
-		if (!CasDispatch(commandList, initParams, casBuffer, dx11OutputBuffer))
+		if (casActive && !CasDispatch(commandList, initParams, casBuffer, dx11OutputBuffer))
 			return false;
 
 		// Execute dx12 commands to process xess

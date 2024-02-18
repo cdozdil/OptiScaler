@@ -306,12 +306,21 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, 
 			return NVSDK_NGX_Result_FAIL_UnableToInitializeFeature;
 		}
 	}
-	
-	const auto inParams = static_cast<const NGXParameters*>(InParameters);
+
+	unsigned int width, outWidth, height, outHeight;
+	InParameters->Get(NVSDK_NGX_Parameter_Width, &width);
+	InParameters->Get(NVSDK_NGX_Parameter_Height, &height);
+	InParameters->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth);
+	InParameters->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight);
+	width = width > outWidth ? width : outWidth;
+	height = height > outHeight ? height : outHeight;
+
+	if (deviceContext->XeSSIsInited() && (deviceContext->DisplayHeight != height || deviceContext->DisplayWidth != width))
+		deviceContext->XeSSDestroy();
 
 	if (!deviceContext->XeSSIsInited())
 	{
-		deviceContext->XeSSInit(CyberXessContext::instance()->Dx12Device, inParams);
+		deviceContext->XeSSInit(CyberXessContext::instance()->Dx12Device, InParameters);
 
 		if (!deviceContext->XeSSIsInited())
 		{
@@ -323,7 +332,7 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, 
 	// get params from dlss
 
 	NVSDK_NGX_Result evResult = NVSDK_NGX_Result_Success;
-	if (!deviceContext->XeSSExecuteDx11(instance->Dx12CommandList, instance->Dx12CommandQueue, instance->Dx11Device, InDevCtx, inParams))
+	if (!deviceContext->XeSSExecuteDx11(instance->Dx12CommandList, instance->Dx12CommandQueue, instance->Dx11Device, InDevCtx, InParameters))
 		evResult = NVSDK_NGX_Result_Fail;
 
 	instance->Dx12CommandAllocator->Reset();
