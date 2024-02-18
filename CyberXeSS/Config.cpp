@@ -28,22 +28,23 @@ void Config::Reload()
 		if (LoggingEnabled.value_or(false))
 		{
 			LogLevel = readInt("Log", "LogLevel");
+			
 			LogToConsole = readBool("Log", "LogToConsole");
+			LogToFile = readBool("Log", "LogToFile");
 
-			if (!LogToConsole.value_or(false))
+			OpenConsole = readBool("Log", "OpenConsole");
+
+			LogFileName = readString("Log", "LogFile");
+
+			if (!LogFileName.has_value())
 			{
-				LogFileName = readString("Log", "LogFile");
+				const auto now = std::chrono::system_clock::now();
+				auto str = std::format("{:%d%m%Y_%H%M%OS}", now);
 
-				if (!LogFileName.has_value())
-				{
-					const auto now = std::chrono::system_clock::now();
-					auto str = std::format("{:%d%m%Y_%H%M%OS}", now);
+				auto path = Util::DllPath().parent_path();
+				auto logFile = path.string() + "/log_xess_" + str + ".log";
 
-					auto path = Util::DllPath().parent_path();
-					auto logFile = path.string() + "/log_xess_" + str + ".log";
-
-					LogFileName = logFile;
-				}
+				LogFileName = logFile;
 			}
 		}
 		else

@@ -82,6 +82,7 @@
     <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\ffx-sdk\sdk\include;$(SolutionDir)external\fmt\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)external\xess\lib;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
     <TargetName>nvngx</TargetName>
+    <OutDir>F:\Games\Deep Rock Galactic\FSD\Binaries\Win64\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\ffx-sdk\sdk\include;$(SolutionDir)external\fmt\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>

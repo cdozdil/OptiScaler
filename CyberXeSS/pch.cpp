@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "spdlog/sinks/basic_file_sink.h"
-#include "spdlog/sinks/stdout_sinks.h"
-
-std::shared_ptr<spdlog::logger> logger = nullptr;
+#include "spdlog/sinks/stdout_color_sinks.h"
 
 bool InitializeConsole()
 {
@@ -56,20 +54,47 @@ void PrepareLogger()
 
 		if (config.LoggingEnabled.value_or(false))
 		{
-			if (config.LogToConsole.value_or(false) && InitializeConsole())
-				logger = spdlog::stdout_logger_mt("xess");
-			else
-				logger = spdlog::basic_logger_mt("xess", config.LogFileName.value());
+			if (config.OpenConsole.value_or(false))
+				InitializeConsole();
 
-			logger->set_pattern("[%H:%M:%S.%f] [%L] %v");
-			logger->set_level((spdlog::level::level_enum)config.LogLevel.value_or(2));
+			auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+			console_sink->set_level(spdlog::level::level_enum::info);
+			console_sink->set_pattern("[XeSS] [%H:%M:%S.%f] [%L] %v");
 
-			spdlog::set_default_logger(logger);
+			auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(config.LogFileName.value(), true);
+			file_sink->set_level((spdlog::level::level_enum)config.LogLevel.value_or(2));
+			file_sink->set_pattern("[%H:%M:%S.%f] [%L] %v");
+
+			std::shared_ptr<spdlog::logger> shared_logger = nullptr;
+
+			if (config.LogToConsole.value_or(true) && config.LogToFile.value_or(false))
+			{
+				spdlog::logger logger("multi_sink", { console_sink, file_sink });
+				shared_logger = std::make_shared<spdlog::logger>(logger);
+			}
+			else if (config.LogToFile.value_or(false))
+			{
+				spdlog::logger logger("file_sink", { file_sink });
+				shared_logger = std::make_shared<spdlog::logger>(logger);
+			}
+			else if (config.LogToConsole.value_or(true))
+			{
+				spdlog::logger logger("console_sink", { console_sink });
+				shared_logger = std::make_shared<spdlog::logger>(logger);
+			}
+
+			shared_logger->set_level(spdlog::level::level_enum::trace);
+			spdlog::set_default_logger(shared_logger);
 		}
 	}
 	catch (const spdlog::spdlog_ex& ex)
 	{
+		std::cerr << ex.what() << std::endl;
 
+		auto logger = spdlog::stdout_color_mt("xess");
+		logger->set_pattern("[%H:%M:%S.%f] [%L] %v");
+		logger->set_level((spdlog::level::level_enum)2);
+		spdlog::set_default_logger(logger);
 	}
 }
 

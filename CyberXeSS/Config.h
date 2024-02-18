@@ -19,7 +19,9 @@ public:
 
 	//Logging
 	std::optional<bool> LoggingEnabled;
+	std::optional<bool> LogToFile;
 	std::optional<bool> LogToConsole;
+	std::optional<bool> OpenConsole;
 	std::optional<int> LogLevel;
 	std::optional<std::string> LogFileName;
 
