@@ -16,23 +16,23 @@ inline std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_
 	switch (input)
 	{
 	case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-		output = config->QualityRatio_UltraPerformance;
+		output = config->QualityRatio_UltraPerformance.value_or(3.0);
 		break;
 	case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-		output = config->QualityRatio_Performance;
+		output = config->QualityRatio_Performance.value_or(2.0);
 		break;
 	case NVSDK_NGX_PerfQuality_Value_Balanced:
-		output = config->QualityRatio_Balanced;
+		output = config->QualityRatio_Balanced.value_or(1.7);
 		break;
 	case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-		output = config->QualityRatio_Quality;
+		output = config->QualityRatio_Quality.value_or(1.5);
 		break;
 	case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-		output = config->QualityRatio_UltraQuality;
+		output = config->QualityRatio_UltraQuality.value_or(1.3);
 		break;
 	default:
 		spdlog::warn("GetQualityOverrideRatio: Unknown quality: {0}", (int)input);
-		output = config->QualityRatio_Balanced;
+		output = config->QualityRatio_Balanced.value_or(1.7);
 		break;
 	}
 	return output;

@@ -646,7 +646,7 @@ public:
 		{
 			xessParams.initFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
 			CyberXessContext::instance()->MyConfig->AutoExposure = true;
-			spdlog::info("FeatureContext::XeSSInit initParams.initFlags (AutoExposure) {0:b}", xessParams.initFlags);
+			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (AutoExposure) {0:b}", xessParams.initFlags);
 		}
 		else
 		{
@@ -784,7 +784,9 @@ public:
 
 		spdlog::debug("FeatureContext::XeSSInit Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
-		initParams->Get(NVSDK_NGX_Parameter_Color, &params.pColorTexture);
+		if (initParams->Get(NVSDK_NGX_Parameter_Color, &params.pColorTexture) != NVSDK_NGX_Result_Success)
+			initParams->Get(NVSDK_NGX_Parameter_Color, (void**) & params.pColorTexture);
+
 		if (params.pColorTexture)
 		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx12 Color exist..");
@@ -806,7 +808,9 @@ public:
 			return false;
 		}
 
-		initParams->Get(NVSDK_NGX_Parameter_MotionVectors, &params.pVelocityTexture);
+		if (initParams->Get(NVSDK_NGX_Parameter_MotionVectors, &params.pVelocityTexture) != NVSDK_NGX_Result_Success)
+			initParams->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&params.pVelocityTexture);
+
 		if (params.pVelocityTexture)
 		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx12 MotionVectors exist..");
@@ -818,7 +822,9 @@ public:
 		}
 
 		ID3D12Resource* paramOutput;
-		initParams->Get(NVSDK_NGX_Parameter_Output, &paramOutput);
+		if (initParams->Get(NVSDK_NGX_Parameter_Output, &paramOutput) != NVSDK_NGX_Result_Success)
+			initParams->Get(NVSDK_NGX_Parameter_Output, (void**)&paramOutput);
+
 		if (paramOutput)
 		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx12 Output exist..");
@@ -845,7 +851,9 @@ public:
 			return false;
 		}
 
-		initParams->Get(NVSDK_NGX_Parameter_Depth, &params.pDepthTexture);
+		if (initParams->Get(NVSDK_NGX_Parameter_Depth, &params.pDepthTexture) != NVSDK_NGX_Result_Success)
+			initParams->Get(NVSDK_NGX_Parameter_Depth, (void**)&params.pDepthTexture);
+		
 		if (params.pDepthTexture)
 		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx12 Depth exist..");
@@ -862,7 +870,9 @@ public:
 
 		if (!instance->MyConfig->AutoExposure.value_or(false))
 		{
-			initParams->Get(NVSDK_NGX_Parameter_ExposureTexture, &params.pExposureScaleTexture);
+			if (initParams->Get(NVSDK_NGX_Parameter_ExposureTexture, &params.pExposureScaleTexture) != NVSDK_NGX_Result_Success)
+				initParams->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&params.pExposureScaleTexture);
+
 			if (params.pExposureScaleTexture)
 			{
 				spdlog::debug("FeatureContext::XeSSExecuteDx12 ExposureTexture exist..");
@@ -875,7 +885,9 @@ public:
 
 		if (!instance->MyConfig->DisableReactiveMask.value_or(true))
 		{
-			initParams->Get(NVSDK_NGX_Parameter_TransparencyMask, &params.pResponsivePixelMaskTexture);
+			if (initParams->Get(NVSDK_NGX_Parameter_TransparencyMask, &params.pResponsivePixelMaskTexture) != NVSDK_NGX_Result_Success)
+				initParams->Get(NVSDK_NGX_Parameter_TransparencyMask, (void**)&params.pResponsivePixelMaskTexture);
+
 			if (params.pResponsivePixelMaskTexture)
 			{
 				spdlog::debug("FeatureContext::XeSSExecuteDx12 TransparencyMask exist..");
@@ -986,7 +998,9 @@ public:
 		deviceContext->Begin(query1);
 
 		ID3D11Resource* paramColor;
-		initParams->Get(NVSDK_NGX_Parameter_Color, &paramColor);
+		if (initParams->Get(NVSDK_NGX_Parameter_Color, &paramColor) != NVSDK_NGX_Result_Success)
+			initParams->Get(NVSDK_NGX_Parameter_Color, (void**)&paramColor);
+
 		if (paramColor)
 		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx11 Color exist..");
@@ -1000,7 +1014,9 @@ public:
 		}
 
 		ID3D11Resource* paramMv;
-		initParams->Get(NVSDK_NGX_Parameter_MotionVectors, &paramMv);
+		if (initParams->Get(NVSDK_NGX_Parameter_MotionVectors, &paramMv) != NVSDK_NGX_Result_Success)
+			initParams->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramMv);
+		
 		if (paramMv)
 		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx11 MotionVectors exist..");
@@ -1014,7 +1030,9 @@ public:
 		}
 
 		ID3D11Resource* paramOutput;
-		initParams->Get(NVSDK_NGX_Parameter_Output, &paramOutput);
+		if (initParams->Get(NVSDK_NGX_Parameter_Output, &paramOutput) != NVSDK_NGX_Result_Success)
+			initParams->Get(NVSDK_NGX_Parameter_Output, (void**)&paramOutput);
+
 		if (paramOutput)
 		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx11 Output exist..");
@@ -1028,7 +1046,9 @@ public:
 		}
 
 		ID3D11Resource* paramDepth;
-		initParams->Get(NVSDK_NGX_Parameter_Depth, &paramDepth);
+		if (initParams->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
+			initParams->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
+		
 		if (paramDepth)
 		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx11 Depth exist..");
@@ -1041,7 +1061,8 @@ public:
 		ID3D11Resource* paramExposure = nullptr;
 		if (!instance->MyConfig->AutoExposure.value_or(false))
 		{
-			initParams->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExposure);
+			if (initParams->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExposure) != NVSDK_NGX_Result_Success)
+				initParams->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&paramExposure);
 
 			if (paramExposure)
 			{
@@ -1059,7 +1080,8 @@ public:
 		ID3D11Resource* paramMask = nullptr;
 		if (!instance->MyConfig->DisableReactiveMask.value_or(true))
 		{
-			initParams->Get(NVSDK_NGX_Parameter_TransparencyMask, &paramMask);
+			if (initParams->Get(NVSDK_NGX_Parameter_TransparencyMask, &paramMask) != NVSDK_NGX_Result_Success)
+				initParams->Get(NVSDK_NGX_Parameter_TransparencyMask, (void**)&paramMask);
 
 			if (paramMask)
 			{
