@@ -52,33 +52,41 @@ void PrepareLogger()
 	{
 		auto config = Config(L"nvngx.ini");
 
-		if (config.LoggingEnabled.value_or(false))
+		if (config.LoggingEnabled.value_or(true))
 		{
 			if (config.OpenConsole.value_or(false))
 				InitializeConsole();
-
-			auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-			console_sink->set_level(spdlog::level::level_enum::info);
-			console_sink->set_pattern("[XeSS] [%H:%M:%S.%f] [%L] %v");
-
-			auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(config.LogFileName.value(), true);
-			file_sink->set_level((spdlog::level::level_enum)config.LogLevel.value_or(2));
-			file_sink->set_pattern("[%H:%M:%S.%f] [%L] %v");
 
 			std::shared_ptr<spdlog::logger> shared_logger = nullptr;
 
 			if (config.LogToConsole.value_or(true) && config.LogToFile.value_or(false))
 			{
+				auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+				console_sink->set_level(spdlog::level::level_enum::info);
+				console_sink->set_pattern("[XeSS] [%H:%M:%S.%f] [%L] %v");
+
+				auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(config.LogFileName.value(), true);
+				file_sink->set_level((spdlog::level::level_enum)config.LogLevel.value_or(2));
+				file_sink->set_pattern("[%H:%M:%S.%f] [%L] %v");
+
 				spdlog::logger logger("multi_sink", { console_sink, file_sink });
 				shared_logger = std::make_shared<spdlog::logger>(logger);
 			}
 			else if (config.LogToFile.value_or(false))
 			{
+				auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(config.LogFileName.value(), true);
+				file_sink->set_level((spdlog::level::level_enum)config.LogLevel.value_or(2));
+				file_sink->set_pattern("[%H:%M:%S.%f] [%L] %v");
+
 				spdlog::logger logger("file_sink", { file_sink });
 				shared_logger = std::make_shared<spdlog::logger>(logger);
 			}
 			else if (config.LogToConsole.value_or(true))
 			{
+				auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+				console_sink->set_level(spdlog::level::level_enum::info);
+				console_sink->set_pattern("[XeSS] [%H:%M:%S.%f] [%L] %v");
+
 				spdlog::logger logger("console_sink", { console_sink });
 				shared_logger = std::make_shared<spdlog::logger>(logger);
 			}
@@ -103,6 +111,7 @@ void PrepareLogger()
 
 void CloseLogger()
 {
+	spdlog::default_logger()->flush();
 	spdlog::shutdown();
 }
 

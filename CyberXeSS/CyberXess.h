@@ -785,7 +785,7 @@ public:
 		spdlog::debug("FeatureContext::XeSSInit Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
 		if (initParams->Get(NVSDK_NGX_Parameter_Color, &params.pColorTexture) != NVSDK_NGX_Result_Success)
-			initParams->Get(NVSDK_NGX_Parameter_Color, (void**) & params.pColorTexture);
+			initParams->Get(NVSDK_NGX_Parameter_Color, (void**)&params.pColorTexture);
 
 		if (params.pColorTexture)
 		{
@@ -796,8 +796,8 @@ public:
 				D3D12_RESOURCE_BARRIER barrier = {};
 				barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 				barrier.Transition.pResource = params.pColorTexture;
-				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+				barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 				barrier.Transition.Subresource = 0;
 				commandList->ResourceBarrier(1, &barrier);
 			}
@@ -812,9 +812,7 @@ public:
 			initParams->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&params.pVelocityTexture);
 
 		if (params.pVelocityTexture)
-		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx12 MotionVectors exist..");
-		}
 		else
 		{
 			spdlog::error("FeatureContext::XeSSExecuteDx12 MotionVectors not exist!!");
@@ -831,13 +829,10 @@ public:
 
 			if (casActive)
 			{
-				if (casBuffer == nullptr)
+				if (casBuffer == nullptr && !CreateCasBufferResource(paramOutput))
 				{
-					if (!CreateCasBufferResource(paramOutput))
-					{
-						spdlog::error("FeatureContext::XeSSExecuteDx12 Can't create cas buffer!");
-						return false;
-					}
+					spdlog::error("FeatureContext::XeSSExecuteDx12 Can't create cas buffer!");
+					return false;
 				}
 
 				params.pOutputTexture = casBuffer;
@@ -853,11 +848,9 @@ public:
 
 		if (initParams->Get(NVSDK_NGX_Parameter_Depth, &params.pDepthTexture) != NVSDK_NGX_Result_Success)
 			initParams->Get(NVSDK_NGX_Parameter_Depth, (void**)&params.pDepthTexture);
-		
+
 		if (params.pDepthTexture)
-		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx12 Depth exist..");
-		}
 		else
 		{
 			if (!instance->MyConfig->DisplayResolution.value_or(false))
@@ -874,9 +867,7 @@ public:
 				initParams->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&params.pExposureScaleTexture);
 
 			if (params.pExposureScaleTexture)
-			{
 				spdlog::debug("FeatureContext::XeSSExecuteDx12 ExposureTexture exist..");
-			}
 			else
 				spdlog::debug("FeatureContext::XeSSExecuteDx12 AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
 		}
@@ -889,27 +880,41 @@ public:
 				initParams->Get(NVSDK_NGX_Parameter_TransparencyMask, (void**)&params.pResponsivePixelMaskTexture);
 
 			if (params.pResponsivePixelMaskTexture)
-			{
 				spdlog::debug("FeatureContext::XeSSExecuteDx12 TransparencyMask exist..");
-			}
 			else
 				spdlog::debug("FeatureContext::XeSSExecuteDx12 TransparencyMask not exist and its enabled in config, it may cause problems!!");
 		}
 
 		float MVScaleX;
 		float MVScaleY;
-		initParams->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX);
-		initParams->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY);
-		xessResult = xessSetVelocityScale(xessContext, MVScaleX, MVScaleY);
 
-		if (xessResult != XESS_RESULT_SUCCESS)
+		if (initParams->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
+			initParams->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
 		{
-			spdlog::error("FeatureContext::XeSSExecuteDx12 xessSetVelocityScale: {0}", ResultToString(xessResult));
-			return false;
+			xessResult = xessSetVelocityScale(xessContext, MVScaleX, MVScaleY);
+
+			if (xessResult != XESS_RESULT_SUCCESS)
+			{
+				spdlog::error("FeatureContext::XeSSExecuteDx12 xessSetVelocityScale: {0}", ResultToString(xessResult));
+				return false;
+			}
 		}
+		else
+			spdlog::warn("FeatureContext::XeSSExecuteDx12 Can't get motion vector scales!");
 
 		spdlog::debug("FeatureContext::XeSSExecuteDx12 Executing!!");
 		xessResult = xessD3D12Execute(xessContext, commandList, &params);
+
+		if (params.pColorTexture && instance->MyConfig->ColorResourceBarrier.value_or(false))
+		{
+			D3D12_RESOURCE_BARRIER barrier = {};
+			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+			barrier.Transition.pResource = params.pColorTexture;
+			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+			barrier.Transition.Subresource = 0;
+			commandList->ResourceBarrier(1, &barrier);
+		}
 
 		if (xessResult != XESS_RESULT_SUCCESS)
 		{
@@ -933,9 +938,8 @@ public:
 
 		const auto instance = CyberXessContext::instance();
 
-		ID3D12Fence* d3d12Fence;
 		// Fence for syncing
-
+		ID3D12Fence* d3d12Fence;
 		auto result = dx12device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
 
 		if (result != S_OK)
@@ -1016,7 +1020,7 @@ public:
 		ID3D11Resource* paramMv;
 		if (initParams->Get(NVSDK_NGX_Parameter_MotionVectors, &paramMv) != NVSDK_NGX_Result_Success)
 			initParams->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramMv);
-		
+
 		if (paramMv)
 		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx11 MotionVectors exist..");
@@ -1048,7 +1052,7 @@ public:
 		ID3D11Resource* paramDepth;
 		if (initParams->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
 			initParams->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
-		
+
 		if (paramDepth)
 		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx11 Depth exist..");
@@ -1199,15 +1203,20 @@ public:
 
 		float MVScaleX;
 		float MVScaleY;
-		initParams->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX);
-		initParams->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY);
-		xessResult = xessSetVelocityScale(xessContext, MVScaleX, MVScaleY);
 
-		if (xessResult != XESS_RESULT_SUCCESS)
+		if (initParams->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
+			initParams->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
 		{
-			spdlog::error("FeatureContext::XeSSExecuteDx11 xessSetVelocityScale error: {0}", ResultToString(xessResult));
-			return false;
+			xessResult = xessSetVelocityScale(xessContext, MVScaleX, MVScaleY);
+
+			if (xessResult != XESS_RESULT_SUCCESS)
+			{
+				spdlog::error("FeatureContext::XeSSExecuteDx11 xessSetVelocityScale error: {0}", ResultToString(xessResult));
+				return false;
+			}
 		}
+		else
+			spdlog::warn("FeatureContext::XeSSExecuteDx12 Can't get motion vector scales!");
 
 		// Execute xess
 		spdlog::debug("FeatureContext::XeSSExecuteDx11 Executing!!");
