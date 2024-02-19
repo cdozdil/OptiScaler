@@ -11,7 +11,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext AppId: {0}", InApplicationId);
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext SDK: {0}", (int)InSDKVersion);
 
-	spdlog::info("NVSDK_NGX_D3D12_Init_Ext DelayedInit: {0}", CyberXessContext::instance()->MyConfig->DelayedInit.value_or(false));
+	spdlog::info("NVSDK_NGX_D3D12_Init_Ext DelayedInit: {0}", CyberXessContext::instance()->MyConfig->DelayedInit.value_or(true));
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext BuildPipelines: {0}", CyberXessContext::instance()->MyConfig->BuildPipelines.value_or(true));
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext NetworkModel: {0}", CyberXessContext::instance()->MyConfig->NetworkModel.value_or(0));
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext LogLevel: {0}", CyberXessContext::instance()->MyConfig->LogLevel.value_or(6));
@@ -139,7 +139,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_DestroyParameters(NVSDK_NGX_Param
 	if (InParameters == nullptr)
 		return NVSDK_NGX_Result_Fail;
 
-	InParameters->Reset();
 	delete InParameters;
 	return NVSDK_NGX_Result_Success;
 }

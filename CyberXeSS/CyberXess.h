@@ -618,6 +618,9 @@ public:
 		case NVSDK_NGX_PerfQuality_Value_UltraQuality:
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
 			break;
+		case NVSDK_NGX_PerfQuality_Value_DLAA:
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
+			break;
 		default:
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED; //Set out-of-range value for non-existing XESS_QUALITY_SETTING_BALANCED mode
 			break;
