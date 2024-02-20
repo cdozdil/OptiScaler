@@ -49,9 +49,14 @@ public:
 	std::optional<float> QualityRatio_Performance;
 	std::optional<float> QualityRatio_UltraPerformance;
 
-	//Hotfix for Steam Deck
+	//Hotfixes
 	std::optional<bool> DisableReactiveMask;
 	std::optional<bool> ColorResourceBarrier;
+	std::optional<bool> MVResourceBarrier;
+	std::optional<bool> DepthResourceBarrier;
+	std::optional<bool> ExposureResourceBarrier;
+	std::optional<bool> MaskResourceBarrier;
+	std::optional<bool> OutputResourceBarrier;
 
 	void Reload();
 

@@ -238,8 +238,9 @@ class FeatureContext
 
 	// xess
 	xess_context_handle_t xessContext = nullptr;
+	bool xessMaskEnabled = true;
 	bool xessInit = false;
-
+	
 	// cas
 	FfxCasContext casContext;
 	bool casInit = false;
@@ -543,6 +544,11 @@ public:
 
 #pragma region xess methods
 
+	bool XeSSMaskEnabled()
+	{
+		return xessMaskEnabled;
+	}
+
 	bool XeSSInit(ID3D12Device* device, const NVSDK_NGX_Parameter* initParams)
 	{
 		if (device == nullptr)
@@ -678,11 +684,14 @@ public:
 			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (LowRes) {0:b}", xessParams.initFlags);
 		}
 
-		if (!CyberXessContext::instance()->MyConfig->DisableReactiveMask.value_or(true))
+		if (!CyberXessContext::instance()->MyConfig->DisableReactiveMask.value_or(false))
 		{
+			xessMaskEnabled = true;
 			xessParams.initFlags |= XESS_INIT_FLAG_RESPONSIVE_PIXEL_MASK;
-			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (DisableReactiveMask) {0:b}", xessParams.initFlags);
+			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (ReactiveMaskActive) {0:b}", xessParams.initFlags);
 		}
+		else
+			xessMaskEnabled = false;
 
 #pragma endregion
 
@@ -815,7 +824,20 @@ public:
 			initParams->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&params.pVelocityTexture);
 
 		if (params.pVelocityTexture)
+		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx12 MotionVectors exist..");
+
+			if (instance->MyConfig->MVResourceBarrier.value_or(false))
+			{
+				D3D12_RESOURCE_BARRIER barrier = {};
+				barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+				barrier.Transition.pResource = params.pVelocityTexture;
+				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+				barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+				barrier.Transition.Subresource = 0;
+				commandList->ResourceBarrier(1, &barrier);
+			}
+		}
 		else
 		{
 			spdlog::error("FeatureContext::XeSSExecuteDx12 MotionVectors not exist!!");
@@ -829,6 +851,17 @@ public:
 		if (paramOutput)
 		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx12 Output exist..");
+
+			if (instance->MyConfig->OutputResourceBarrier.value_or(false))
+			{
+				D3D12_RESOURCE_BARRIER barrier = {};
+				barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+				barrier.Transition.pResource = paramOutput;
+				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+				barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+				barrier.Transition.Subresource = 0;
+				commandList->ResourceBarrier(1, &barrier);
+			}
 
 			if (casActive)
 			{
@@ -853,7 +886,20 @@ public:
 			initParams->Get(NVSDK_NGX_Parameter_Depth, (void**)&params.pDepthTexture);
 
 		if (params.pDepthTexture)
+		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx12 Depth exist..");
+
+			if (instance->MyConfig->DepthResourceBarrier.value_or(false))
+			{
+				D3D12_RESOURCE_BARRIER barrier = {};
+				barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+				barrier.Transition.pResource = params.pDepthTexture;
+				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+				barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+				barrier.Transition.Subresource = 0;
+				commandList->ResourceBarrier(1, &barrier);
+			}
+		}
 		else
 		{
 			if (!instance->MyConfig->DisplayResolution.value_or(false))
@@ -869,6 +915,17 @@ public:
 			if (initParams->Get(NVSDK_NGX_Parameter_ExposureTexture, &params.pExposureScaleTexture) != NVSDK_NGX_Result_Success)
 				initParams->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&params.pExposureScaleTexture);
 
+			if (instance->MyConfig->ExposureResourceBarrier.value_or(false))
+			{
+				D3D12_RESOURCE_BARRIER barrier = {};
+				barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+				barrier.Transition.pResource = params.pExposureScaleTexture;
+				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+				barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+				barrier.Transition.Subresource = 0;
+				commandList->ResourceBarrier(1, &barrier);
+			}
+
 			if (params.pExposureScaleTexture)
 				spdlog::debug("FeatureContext::XeSSExecuteDx12 ExposureTexture exist..");
 			else
@@ -877,15 +934,26 @@ public:
 		else
 			spdlog::debug("FeatureContext::XeSSExecuteDx12 AutoExposure enabled!");
 
-		if (!instance->MyConfig->DisableReactiveMask.value_or(true))
+		if (!instance->MyConfig->DisableReactiveMask.value_or(false))
 		{
-			if (initParams->Get(NVSDK_NGX_Parameter_TransparencyMask, &params.pResponsivePixelMaskTexture) != NVSDK_NGX_Result_Success)
-				initParams->Get(NVSDK_NGX_Parameter_TransparencyMask, (void**)&params.pResponsivePixelMaskTexture);
+			if (initParams->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &params.pResponsivePixelMaskTexture) != NVSDK_NGX_Result_Success)
+				initParams->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&params.pResponsivePixelMaskTexture);
+
+			if (instance->MyConfig->MaskResourceBarrier.value_or(false))
+			{
+				D3D12_RESOURCE_BARRIER barrier = {};
+				barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+				barrier.Transition.pResource = params.pResponsivePixelMaskTexture;
+				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+				barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+				barrier.Transition.Subresource = 0;
+				commandList->ResourceBarrier(1, &barrier);
+			}
 
 			if (params.pResponsivePixelMaskTexture)
-				spdlog::debug("FeatureContext::XeSSExecuteDx12 TransparencyMask exist..");
+				spdlog::debug("FeatureContext::XeSSExecuteDx12 Bias mask exist..");
 			else
-				spdlog::debug("FeatureContext::XeSSExecuteDx12 TransparencyMask not exist and its enabled in config, it may cause problems!!");
+				spdlog::debug("FeatureContext::XeSSExecuteDx12 Bias mask not exist and its enabled in config, it may cause problems!!");
 		}
 
 		float MVScaleX;
@@ -1085,19 +1153,19 @@ public:
 			spdlog::debug("FeatureContext::XeSSExecuteDx11 AutoExposure enabled!");
 
 		ID3D11Resource* paramMask = nullptr;
-		if (!instance->MyConfig->DisableReactiveMask.value_or(true))
+		if (!instance->MyConfig->DisableReactiveMask.value_or(false))
 		{
-			if (initParams->Get(NVSDK_NGX_Parameter_TransparencyMask, &paramMask) != NVSDK_NGX_Result_Success)
-				initParams->Get(NVSDK_NGX_Parameter_TransparencyMask, (void**)&paramMask);
+			if (initParams->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramMask) != NVSDK_NGX_Result_Success)
+				initParams->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramMask);
 
 			if (paramMask)
 			{
-				spdlog::debug("FeatureContext::XeSSExecuteDx11 TransparencyMask exist..");
+				spdlog::debug("FeatureContext::XeSSExecuteDx11 Bias mask exist..");
 				if (CopyTextureFrom11To12(paramMask, &dx11Tm.SharedTexture, &dx11Tm.Desc) == false)
 					return false;
 			}
 			else
-				spdlog::warn("FeatureContext::XeSSExecuteDx11 TransparencyMask not exist and its enabled in config, it may cause problems!!");
+				spdlog::warn("FeatureContext::XeSSExecuteDx11 bias mask not exist and its enabled in config, it may cause problems!!");
 		}
 
 		// Execute dx11 commands 
@@ -1191,7 +1259,7 @@ public:
 			}
 		}
 
-		if (!instance->MyConfig->DisableReactiveMask.value_or(true) && paramMask)
+		if (!instance->MyConfig->DisableReactiveMask.value_or(false) && paramMask)
 		{
 			result = instance->Dx12Device->OpenSharedHandle(dx11Tm.Desc.handle, IID_PPV_ARGS(&params.pResponsivePixelMaskTexture));
 
@@ -1296,7 +1364,7 @@ public:
 		if (!instance->MyConfig->AutoExposure.value_or(false) && paramExposure)
 			params.pExposureScaleTexture->Release();
 
-		if (!instance->MyConfig->DisableReactiveMask.value_or(true) && paramMask)
+		if (!instance->MyConfig->DisableReactiveMask.value_or(false) && paramMask)
 			params.pResponsivePixelMaskTexture->Release();
 
 		if (paramOutput)

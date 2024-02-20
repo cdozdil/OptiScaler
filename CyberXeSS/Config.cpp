@@ -83,6 +83,11 @@ void Config::Reload()
 
 		DisableReactiveMask = readBool("Hotfix", "DisableReactiveMask");
 		ColorResourceBarrier = readBool("Hotfix", "ColorResourceBarrier");
+		MVResourceBarrier = readBool("Hotfix", "MotionVectorResourceBarrier");
+		DepthResourceBarrier = readBool("Hotfix", "DepthResourceBarrier");
+		MaskResourceBarrier = readBool("Hotfix", "ColorMaskResourceBarrier");		
+		ExposureResourceBarrier = readBool("Hotfix", "ExposureResourceBarrier");
+		OutputResourceBarrier = readBool("Hotfix", "OutputResourceBarrier");
 	}
 }
 
