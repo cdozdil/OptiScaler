@@ -240,7 +240,7 @@ class FeatureContext
 	xess_context_handle_t xessContext = nullptr;
 	bool xessMaskEnabled = true;
 	bool xessInit = false;
-	
+
 	// cas
 	FfxCasContext casContext;
 	bool casInit = false;
@@ -607,29 +607,36 @@ public:
 		int pqValue;
 		initParams->Get(NVSDK_NGX_Parameter_PerfQualityValue, &pqValue);
 
-		switch ((NVSDK_NGX_PerfQuality_Value)pqValue)
+		if (CyberXessContext::instance()->MyConfig->OverrideQuality.has_value())
 		{
-		case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
-			break;
-		case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
-			break;
-		case NVSDK_NGX_PerfQuality_Value_Balanced:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
-			break;
-		case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
-			break;
-		case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
-			break;
-		case NVSDK_NGX_PerfQuality_Value_DLAA:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
-			break;
-		default:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED; //Set out-of-range value for non-existing XESS_QUALITY_SETTING_BALANCED mode
-			break;
+			xessParams.qualitySetting = (xess_quality_settings_t)CyberXessContext::instance()->MyConfig->OverrideQuality.value();
+		}
+		else
+		{
+			switch ((NVSDK_NGX_PerfQuality_Value)pqValue)
+			{
+			case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
+				xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
+				break;
+			case NVSDK_NGX_PerfQuality_Value_MaxPerf:
+				xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
+				break;
+			case NVSDK_NGX_PerfQuality_Value_Balanced:
+				xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
+				break;
+			case NVSDK_NGX_PerfQuality_Value_MaxQuality:
+				xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
+				break;
+			case NVSDK_NGX_PerfQuality_Value_UltraQuality:
+				xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
+				break;
+			case NVSDK_NGX_PerfQuality_Value_DLAA:
+				xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
+				break;
+			default:
+				xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED; //Set out-of-range value for non-existing XESS_QUALITY_SETTING_BALANCED mode
+				break;
+			}
 		}
 
 		xessParams.initFlags = XESS_INIT_FLAG_NONE;
@@ -722,8 +729,12 @@ public:
 			return false;
 		}
 
+		
+
 		CasInit();
-		CreateCasContext();
+
+		if (casActive)
+			CreateCasContext();
 
 		xessInit = true;
 
@@ -803,12 +814,12 @@ public:
 		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx12 Color exist..");
 
-			if (instance->MyConfig->ColorResourceBarrier.value_or(false))
+			if (instance->MyConfig->ColorResourceBarrier.has_value())
 			{
 				D3D12_RESOURCE_BARRIER barrier = {};
 				barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 				barrier.Transition.pResource = params.pColorTexture;
-				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+				barrier.Transition.StateBefore = (D3D12_RESOURCE_STATES)instance->MyConfig->ColorResourceBarrier.value();
 				barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 				barrier.Transition.Subresource = 0;
 				commandList->ResourceBarrier(1, &barrier);
@@ -827,12 +838,12 @@ public:
 		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx12 MotionVectors exist..");
 
-			if (instance->MyConfig->MVResourceBarrier.value_or(false))
+			if (instance->MyConfig->MVResourceBarrier.has_value())
 			{
 				D3D12_RESOURCE_BARRIER barrier = {};
 				barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 				barrier.Transition.pResource = params.pVelocityTexture;
-				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+				barrier.Transition.StateBefore = (D3D12_RESOURCE_STATES)instance->MyConfig->MVResourceBarrier.value();
 				barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 				barrier.Transition.Subresource = 0;
 				commandList->ResourceBarrier(1, &barrier);
@@ -852,12 +863,12 @@ public:
 		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx12 Output exist..");
 
-			if (instance->MyConfig->OutputResourceBarrier.value_or(false))
+			if (instance->MyConfig->OutputResourceBarrier.has_value())
 			{
 				D3D12_RESOURCE_BARRIER barrier = {};
 				barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 				barrier.Transition.pResource = paramOutput;
-				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+				barrier.Transition.StateBefore = (D3D12_RESOURCE_STATES)instance->MyConfig->OutputResourceBarrier.value();
 				barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 				barrier.Transition.Subresource = 0;
 				commandList->ResourceBarrier(1, &barrier);
@@ -889,12 +900,12 @@ public:
 		{
 			spdlog::debug("FeatureContext::XeSSExecuteDx12 Depth exist..");
 
-			if (instance->MyConfig->DepthResourceBarrier.value_or(false))
+			if (instance->MyConfig->DepthResourceBarrier.has_value())
 			{
 				D3D12_RESOURCE_BARRIER barrier = {};
 				barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 				barrier.Transition.pResource = params.pDepthTexture;
-				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+				barrier.Transition.StateBefore = (D3D12_RESOURCE_STATES)instance->MyConfig->DepthResourceBarrier.value();
 				barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 				barrier.Transition.Subresource = 0;
 				commandList->ResourceBarrier(1, &barrier);
@@ -915,12 +926,12 @@ public:
 			if (initParams->Get(NVSDK_NGX_Parameter_ExposureTexture, &params.pExposureScaleTexture) != NVSDK_NGX_Result_Success)
 				initParams->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&params.pExposureScaleTexture);
 
-			if (instance->MyConfig->ExposureResourceBarrier.value_or(false))
+			if (instance->MyConfig->ExposureResourceBarrier.has_value())
 			{
 				D3D12_RESOURCE_BARRIER barrier = {};
 				barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 				barrier.Transition.pResource = params.pExposureScaleTexture;
-				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+				barrier.Transition.StateBefore = (D3D12_RESOURCE_STATES)instance->MyConfig->ExposureResourceBarrier.value();
 				barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 				barrier.Transition.Subresource = 0;
 				commandList->ResourceBarrier(1, &barrier);
@@ -939,12 +950,12 @@ public:
 			if (initParams->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &params.pResponsivePixelMaskTexture) != NVSDK_NGX_Result_Success)
 				initParams->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&params.pResponsivePixelMaskTexture);
 
-			if (instance->MyConfig->MaskResourceBarrier.value_or(false))
+			if (instance->MyConfig->MaskResourceBarrier.has_value())
 			{
 				D3D12_RESOURCE_BARRIER barrier = {};
 				barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 				barrier.Transition.pResource = params.pResponsivePixelMaskTexture;
-				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+				barrier.Transition.StateBefore = (D3D12_RESOURCE_STATES)instance->MyConfig->MaskResourceBarrier.value();
 				barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 				barrier.Transition.Subresource = 0;
 				commandList->ResourceBarrier(1, &barrier);
@@ -976,6 +987,16 @@ public:
 		spdlog::debug("FeatureContext::XeSSExecuteDx12 Executing!!");
 		xessResult = xessD3D12Execute(xessContext, commandList, &params);
 
+		if (xessResult != XESS_RESULT_SUCCESS)
+		{
+			spdlog::error("FeatureContext::XeSSExecuteDx12 xessD3D12Execute error: {0}", ResultToString(xessResult));
+			return false;
+		}
+
+		//apply cas
+		if (casActive && !CasDispatch(commandList, initParams, casBuffer, paramOutput))
+			return false;
+
 		if (params.pColorTexture && instance->MyConfig->ColorResourceBarrier.value_or(false))
 		{
 			D3D12_RESOURCE_BARRIER barrier = {};
@@ -987,15 +1008,6 @@ public:
 			commandList->ResourceBarrier(1, &barrier);
 		}
 
-		if (xessResult != XESS_RESULT_SUCCESS)
-		{
-			spdlog::error("FeatureContext::XeSSExecuteDx12 xessD3D12Execute error: {0}", ResultToString(xessResult));
-			return false;
-		}
-
-		//apply cas
-		if (casActive && !CasDispatch(commandList, initParams, casBuffer, paramOutput))
-			return false;
 
 		return true;
 	}

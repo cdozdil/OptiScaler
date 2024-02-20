@@ -22,6 +22,7 @@ void Config::Reload()
 		DelayedInit = readBool("XeSS", "DelayedInit");
 		BuildPipelines = readBool("XeSS", "BuildPipelines");
 		NetworkModel = readInt("XeSS", "NetworkModel");
+		OverrideQuality = readInt("XeSS", "OverrideQuality");
 
 		LoggingEnabled = readBool("Log", "LoggingEnabled");
 

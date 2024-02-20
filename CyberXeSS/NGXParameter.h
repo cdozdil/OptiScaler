@@ -83,9 +83,9 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 			scalingRatio = 0.5f;
 			break;
 		case NVSDK_NGX_PerfQuality_Value_Balanced:
-			OutHeight = (unsigned int)((float)Height / 1.699115044247788);
-			OutWidth = (unsigned int)((float)Width / 1.699115044247788);
-			scalingRatio = 0.58854167f;
+			OutHeight = (unsigned int)((float)Height / 1.699215044247788);
+			OutWidth = (unsigned int)((float)Width / 1.699215044247788);
+			scalingRatio = 0.58850703f;
 			break;
 		case NVSDK_NGX_PerfQuality_Value_MaxQuality:
 			OutHeight = (unsigned int)((float)Height / 1.5);
@@ -103,9 +103,9 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 			scalingRatio = 1.0f;
 			break;
 		default:
-			OutHeight = (unsigned int)((float)Height / 1.699115044247788);
-			OutWidth = (unsigned int)((float)Width / 1.699115044247788);
-			scalingRatio = 0.58854167f;
+			OutHeight = (unsigned int)((float)Height / 1.699215044247788);
+			OutWidth = (unsigned int)((float)Width / 1.699215044247788);
+			scalingRatio = 0.58850703f;
 			break;
 		}
 	}
@@ -120,10 +120,10 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 
 	InParams->Set(NVSDK_NGX_Parameter_Scale, scalingRatio);
 	InParams->Set(NVSDK_NGX_Parameter_OutWidth, OutWidth);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, OutWidth);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, (unsigned int)((float)Width / 2.5));
 	InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Max_Render_Width, Width);
 	InParams->Set(NVSDK_NGX_Parameter_OutHeight, OutHeight);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, OutHeight);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, (unsigned int)((float)Height / 2.5));
 	InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Max_Render_Height, Height);
 	InParams->Set(NVSDK_NGX_Parameter_SizeInBytes, Width * Height * 31);
 

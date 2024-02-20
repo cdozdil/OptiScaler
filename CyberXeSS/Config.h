@@ -29,6 +29,7 @@ public:
 	std::optional<bool> DelayedInit;
 	std::optional<bool> BuildPipelines;
 	std::optional<int32_t> NetworkModel;
+	std::optional<int32_t> OverrideQuality;
 
 	// CAS
 	std::optional<bool> CasEnabled;
@@ -51,12 +52,12 @@ public:
 
 	//Hotfixes
 	std::optional<bool> DisableReactiveMask;
-	std::optional<bool> ColorResourceBarrier;
-	std::optional<bool> MVResourceBarrier;
-	std::optional<bool> DepthResourceBarrier;
-	std::optional<bool> ExposureResourceBarrier;
-	std::optional<bool> MaskResourceBarrier;
-	std::optional<bool> OutputResourceBarrier;
+	std::optional<int32_t> ColorResourceBarrier;
+	std::optional<int32_t> MVResourceBarrier;
+	std::optional<int32_t> DepthResourceBarrier;
+	std::optional<int32_t> ExposureResourceBarrier;
+	std::optional<int32_t> MaskResourceBarrier;
+	std::optional<int32_t> OutputResourceBarrier;
 
 	void Reload();
 
