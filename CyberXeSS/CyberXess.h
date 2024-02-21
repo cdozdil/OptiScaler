@@ -268,8 +268,8 @@ class FeatureContext
 
 		spdlog::debug("FeatureContext::CasInit Start!");
 
-		casActive = CyberXessContext::instance()->MyConfig->CasEnabled.value_or(false);
-		casSharpness = CyberXessContext::instance()->MyConfig->CasSharpness.value_or(0.4);
+		casActive = CyberXessContext::instance()->MyConfig->CasEnabled.value_or(true);
+		casSharpness = CyberXessContext::instance()->MyConfig->CasSharpness.value_or(0.3);
 
 		if (casSharpness > 1 || casSharpness < 0)
 			casSharpness = 0.4f;
