@@ -997,17 +997,72 @@ public:
 		if (casActive && !CasDispatch(commandList, initParams, casBuffer, paramOutput))
 			return false;
 
+		// restore resource states
 		if (params.pColorTexture && instance->MyConfig->ColorResourceBarrier.value_or(false))
 		{
 			D3D12_RESOURCE_BARRIER barrier = {};
 			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 			barrier.Transition.pResource = params.pColorTexture;
 			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+			barrier.Transition.StateAfter = (D3D12_RESOURCE_STATES)instance->MyConfig->ColorResourceBarrier.value();
 			barrier.Transition.Subresource = 0;
 			commandList->ResourceBarrier(1, &barrier);
 		}
 
+		if (instance->MyConfig->MVResourceBarrier.has_value())
+		{
+			D3D12_RESOURCE_BARRIER barrier = {};
+			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+			barrier.Transition.pResource = params.pVelocityTexture;
+			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+			barrier.Transition.StateAfter = (D3D12_RESOURCE_STATES)instance->MyConfig->MVResourceBarrier.value();
+			barrier.Transition.Subresource = 0;
+			commandList->ResourceBarrier(1, &barrier);
+		}
+
+		if (instance->MyConfig->OutputResourceBarrier.has_value())
+		{
+			D3D12_RESOURCE_BARRIER barrier = {};
+			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+			barrier.Transition.pResource = paramOutput;
+			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+			barrier.Transition.StateAfter = (D3D12_RESOURCE_STATES)instance->MyConfig->OutputResourceBarrier.value();
+			barrier.Transition.Subresource = 0;
+			commandList->ResourceBarrier(1, &barrier);
+		}
+
+		if (instance->MyConfig->DepthResourceBarrier.has_value())
+		{
+			D3D12_RESOURCE_BARRIER barrier = {};
+			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+			barrier.Transition.pResource = params.pDepthTexture;
+			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+			barrier.Transition.StateAfter = (D3D12_RESOURCE_STATES)instance->MyConfig->DepthResourceBarrier.value();
+			barrier.Transition.Subresource = 0;
+			commandList->ResourceBarrier(1, &barrier);
+		}
+
+		if (instance->MyConfig->ExposureResourceBarrier.has_value())
+		{
+			D3D12_RESOURCE_BARRIER barrier = {};
+			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+			barrier.Transition.pResource = params.pExposureScaleTexture;
+			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+			barrier.Transition.StateAfter = (D3D12_RESOURCE_STATES)instance->MyConfig->ExposureResourceBarrier.value();
+			barrier.Transition.Subresource = 0;
+			commandList->ResourceBarrier(1, &barrier);
+		}
+
+		if (instance->MyConfig->MaskResourceBarrier.has_value())
+		{
+			D3D12_RESOURCE_BARRIER barrier = {};
+			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+			barrier.Transition.pResource = params.pResponsivePixelMaskTexture;
+			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+			barrier.Transition.StateAfter = (D3D12_RESOURCE_STATES)instance->MyConfig->MaskResourceBarrier.value();
+			barrier.Transition.Subresource = 0;
+			commandList->ResourceBarrier(1, &barrier);
+		}
 
 		return true;
 	}
