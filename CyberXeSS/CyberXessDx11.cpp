@@ -317,26 +317,26 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, 
 	if (deviceContext->XeSSIsInited() && (deviceContext->DisplayHeight != height || deviceContext->DisplayWidth != width))
 		deviceContext->XeSSDestroy();
 
-	if(!CyberXessContext::instance()->MyConfig->DisableReactiveMask.has_value())
+	if (!CyberXessContext::instance()->MyConfig->DisableReactiveMaskSetFromIni)
 	{
 		ID3D11Resource* paramMask = nullptr;
 		if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramMask) != NVSDK_NGX_Result_Success)
 			InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramMask);
-	
+
 		if (paramMask != nullptr && !deviceContext->XeSSMaskEnabled())
 		{
-			spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature bias mask exist, enabling reactive mask!");
+			spdlog::debug("NVSDK_NGX_D3D11_EvaluateFeature bias mask exist, enabling reactive mask!");
 			CyberXessContext::instance()->MyConfig->DisableReactiveMask = false;
 			deviceContext->XeSSDestroy();
 		}
 		else if (paramMask == nullptr && deviceContext->XeSSMaskEnabled())
 		{
-			spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature bias mask does not exist, disabling reactive mask!");
+			spdlog::debug("NVSDK_NGX_D3D11_EvaluateFeature bias mask does not exist, disabling reactive mask!");
 			CyberXessContext::instance()->MyConfig->DisableReactiveMask = true;
 			deviceContext->XeSSDestroy();
 		}
 	}
-	
+
 	if (!deviceContext->XeSSIsInited())
 	{
 		deviceContext->XeSSInit(CyberXessContext::instance()->Dx12Device, InParameters);
@@ -347,9 +347,7 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, 
 			return NVSDK_NGX_Result_Fail;
 		}
 	}
-
-	// get params from dlss
-
+	
 	NVSDK_NGX_Result evResult = NVSDK_NGX_Result_Success;
 	if (!deviceContext->XeSSExecuteDx11(instance->Dx12CommandList, instance->Dx12CommandQueue, instance->Dx11Device, InDevCtx, InParameters))
 		evResult = NVSDK_NGX_Result_Fail;

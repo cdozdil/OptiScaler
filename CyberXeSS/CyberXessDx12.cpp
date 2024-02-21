@@ -240,7 +240,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	if (deviceContext->XeSSIsInited() && (deviceContext->DisplayHeight != height || deviceContext->DisplayWidth != width))
 		deviceContext->XeSSDestroy();
 
-	if(!CyberXessContext::instance()->MyConfig->DisableReactiveMask.has_value())
+	if (!CyberXessContext::instance()->MyConfig->DisableReactiveMaskSetFromIni)
 	{
 		ID3D12Resource* paramMask = nullptr;
 		if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramMask) != NVSDK_NGX_Result_Success)

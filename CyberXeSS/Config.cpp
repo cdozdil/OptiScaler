@@ -83,6 +83,7 @@ void Config::Reload()
 		}
 
 		DisableReactiveMask = readBool("Hotfix", "DisableReactiveMask");
+		DisableReactiveMaskSetFromIni = DisableReactiveMask.has_value();
 		ColorResourceBarrier = readInt("Hotfix", "ColorResourceBarrier");
 		MVResourceBarrier = readInt("Hotfix", "MotionVectorResourceBarrier");
 		DepthResourceBarrier = readInt("Hotfix", "DepthResourceBarrier");
