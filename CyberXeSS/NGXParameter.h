@@ -66,9 +66,9 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	const std::optional<float> QualityRatio = GetQualityOverrideRatio(enumPQValue);
 
 	if (QualityRatio.has_value()) {
-		OutHeight = (unsigned int)((float)Height / QualityRatio.value_or(1.3));
-		OutWidth = (unsigned int)((float)Width / QualityRatio.value_or(1.3));
-		scalingRatio = 1.0f / QualityRatio.value_or(1.3);
+		OutHeight = (unsigned int)((float)Height / QualityRatio.value());
+		OutWidth = (unsigned int)((float)Width / QualityRatio.value());
+		scalingRatio = 1.0f / QualityRatio.value();
 	}
 	else {
 		spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback Quality: {0}", PerfQualityValue);
@@ -123,11 +123,22 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 
 	InParams->Set(NVSDK_NGX_Parameter_Scale, scalingRatio);
 	InParams->Set(NVSDK_NGX_Parameter_OutWidth, OutWidth);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, (unsigned int)((float)Width / 2.5));
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Max_Render_Width, Width);
 	InParams->Set(NVSDK_NGX_Parameter_OutHeight, OutHeight);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, (unsigned int)((float)Height / 2.5));
+
+	if (enumPQValue == NVSDK_NGX_PerfQuality_Value_DLAA)
+	{
+		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, Width);
+		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, Height);
+	}
+	else
+	{
+		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, (unsigned int)((float)Width / 2.5));
+		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, (unsigned int)((float)Height / 2.5));
+	}
+
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Max_Render_Width, Width);
 	InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Max_Render_Height, Height);
+
 	InParams->Set(NVSDK_NGX_Parameter_SizeInBytes, Width * Height * 31);
 
 	InParams->Set(NVSDK_NGX_EParameter_Scale, scalingRatio);
@@ -150,7 +161,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetStatsCallback(NVSDK_NGX_Par
 		InParams->Set(NVSDK_NGX_Parameter_SizeInBytes, Width * Height * 31);
 	else
 		InParams->Set(NVSDK_NGX_Parameter_SizeInBytes, 1920 * 1080 * 31);
-	
+
 	return NVSDK_NGX_Result_Success;
 }
 
