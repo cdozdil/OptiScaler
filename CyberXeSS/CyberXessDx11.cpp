@@ -192,18 +192,15 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext* InDevCtx, NV
 {
 	spdlog::info("NVSDK_NGX_D3D11_CreateFeature");
 
-	if (CyberXessContext::instance()->Dx11Device == nullptr)
+	ID3D11Device* device;
+	InDevCtx->GetDevice(&device);
+
+	auto dx11DeviceResult = device->QueryInterface(IID_PPV_ARGS(&CyberXessContext::instance()->Dx11Device));
+
+	if (dx11DeviceResult != S_OK)
 	{
-		ID3D11Device* device;
-		InDevCtx->GetDevice(&device);
-
-		auto result = device->QueryInterface(IID_PPV_ARGS(&CyberXessContext::instance()->Dx11Device));
-
-		if (result != S_OK)
-		{
-			spdlog::error("NVSDK_NGX_D3D11_CreateFeature QueryInterface ID3D11Device5 result: {0:x}", result);
-			return NVSDK_NGX_Result_Fail;
-		}
+		spdlog::error("NVSDK_NGX_D3D11_CreateFeature QueryInterface ID3D11Device5 result: {0:x}", dx11DeviceResult);
+		return NVSDK_NGX_Result_Fail;
 	}
 
 	if (CyberXessContext::instance()->Dx12Device == nullptr)
@@ -338,26 +335,6 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, 
 			deviceContext->XeSSDestroy();
 	}
 
-	if (!CyberXessContext::instance()->MyConfig->DisableReactiveMaskSetFromIni)
-	{
-		ID3D11Resource* paramMask = nullptr;
-		if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramMask) != NVSDK_NGX_Result_Success)
-			InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramMask);
-
-		if (paramMask != nullptr && !deviceContext->XeSSMaskEnabled())
-		{
-			spdlog::debug("NVSDK_NGX_D3D11_EvaluateFeature bias mask exist, enabling reactive mask!");
-			CyberXessContext::instance()->MyConfig->DisableReactiveMask = false;
-			deviceContext->XeSSDestroy();
-		}
-		else if (paramMask == nullptr && deviceContext->XeSSMaskEnabled())
-		{
-			spdlog::debug("NVSDK_NGX_D3D11_EvaluateFeature bias mask does not exist, disabling reactive mask!");
-			CyberXessContext::instance()->MyConfig->DisableReactiveMask = true;
-			deviceContext->XeSSDestroy();
-		}
-	}
-
 	if (!deviceContext->XeSSIsInited())
 	{
 		deviceContext->XeSSInit(CyberXessContext::instance()->Dx12Device, InParameters);
@@ -368,7 +345,7 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, 
 			return NVSDK_NGX_Result_Fail;
 		}
 	}
-	
+
 	NVSDK_NGX_Result evResult = NVSDK_NGX_Result_Success;
 	if (!deviceContext->XeSSExecuteDx11(instance->Dx12CommandList, instance->Dx12CommandQueue, instance->Dx11Device, InDevCtx, InParameters, deviceContext))
 		evResult = NVSDK_NGX_Result_Fail;
