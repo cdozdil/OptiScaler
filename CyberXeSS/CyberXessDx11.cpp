@@ -251,7 +251,7 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_GetFeatureRequirements(IDXGIAdapter* Adapter, c
 	OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
 	OutSupported->MinHWArchitecture = 0;
 	//Some windows 10 os version
-	strcpy_s(OutSupported->MinOSVersion, "10.0.19045.2728");
+	strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
 	return NVSDK_NGX_Result_Success;
 }
 

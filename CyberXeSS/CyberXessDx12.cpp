@@ -228,7 +228,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetFeatureRequirements(IDXGIAdapt
 	OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
 	OutSupported->MinHWArchitecture = 0;
 	//Some windows 10 os version
-	strcpy_s(OutSupported->MinOSVersion, "10.0.19045.2728");
+	strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
 	return NVSDK_NGX_Result_Success;
 }
 
