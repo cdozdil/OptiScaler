@@ -51,7 +51,6 @@ public:
 
 	//Hotfixes
 	std::optional<bool> DisableReactiveMask;
-	bool DisableReactiveMaskSetFromIni = false;
 	std::optional<int32_t> ColorResourceBarrier;
 	std::optional<int32_t> MVResourceBarrier;
 	std::optional<int32_t> DepthResourceBarrier;

@@ -54,8 +54,12 @@ static std::string ResultToString(xess_result_t result)
 
 inline void logCallback(const char* Message, xess_logging_level_t Level)
 {
-	std::string s = Message;
-	spdlog::log((spdlog::level::level_enum)((int)Level + 1), "FeatureContext::LogCallback XeSS Runtime ({0})", s);
+	spdlog::log((spdlog::level::level_enum)((int)Level + 1), "FeatureContext::LogCallback XeSS Runtime ({0})", Message);
+}
+
+inline void ffxLogCallback(const char* message)
+{
+	spdlog::log(spdlog::level::debug, "FeatureContext::FfxAssertCallback Ffx ({0})", message);
 }
 
 class FeatureContext;
@@ -268,7 +272,7 @@ class FeatureContext
 
 		spdlog::debug("FeatureContext::CasInit Start!");
 
-		casActive = CyberXessContext::instance()->MyConfig->CasEnabled.value_or(true);
+		casActive = CyberXessContext::instance()->MyConfig->CasEnabled.value_or(false);
 		casSharpness = CyberXessContext::instance()->MyConfig->CasSharpness.value_or(0.3);
 
 		if (casSharpness > 1 || casSharpness < 0)
@@ -331,13 +335,13 @@ class FeatureContext
 
 		errorCode = ffxCasContextCreate(&casContext, &casContextDesc);
 
-
-
 		if (errorCode != FFX_OK)
 		{
 			spdlog::error("FeatureContext::CreateCasContext ffxCasContextCreate error: {0:x}", errorCode);
 			return false;
 		}
+
+		ffxAssertSetPrintingCallback(ffxLogCallback);
 
 		casContextCreated = true;
 		return true;
@@ -427,6 +431,7 @@ class FeatureContext
 		dispatchParameters.color = ffxGetResourceDX12(input, GetFfxResourceDescriptionDX12(input), nullptr, FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
 		dispatchParameters.output = ffxGetResourceDX12(output, GetFfxResourceDescriptionDX12(output), nullptr, FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
 
+		
 
 		if (auto errorCode = ffxCasContextDispatch(&casContext, &dispatchParameters); errorCode != FFX_OK)
 		{
@@ -697,7 +702,7 @@ public:
 			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (LowRes) {0:b}", xessParams.initFlags);
 		}
 
-		if (!CyberXessContext::instance()->MyConfig->DisableReactiveMask.value_or(false))
+		if (!CyberXessContext::instance()->MyConfig->DisableReactiveMask.value_or(true))
 		{
 			xessMaskEnabled = true;
 			xessParams.initFlags |= XESS_INIT_FLAG_RESPONSIVE_PIXEL_MASK;
@@ -972,7 +977,7 @@ public:
 		else
 			spdlog::debug("FeatureContext::XeSSExecuteDx12 AutoExposure enabled!");
 
-		if (!instance->MyConfig->DisableReactiveMask.value_or(false))
+		if (!instance->MyConfig->DisableReactiveMask.value_or(true))
 		{
 			if (initParams->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &params.pResponsivePixelMaskTexture) != NVSDK_NGX_Result_Success)
 				initParams->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&params.pResponsivePixelMaskTexture);
@@ -1268,7 +1273,7 @@ public:
 			spdlog::debug("FeatureContext::XeSSExecuteDx11 AutoExposure enabled!");
 
 		ID3D11Resource* paramMask = nullptr;
-		if (!instance->MyConfig->DisableReactiveMask.value_or(false))
+		if (!instance->MyConfig->DisableReactiveMask.value_or(true))
 		{
 			if (initParams->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramMask) != NVSDK_NGX_Result_Success)
 				initParams->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramMask);
@@ -1374,7 +1379,7 @@ public:
 			}
 		}
 
-		if (!instance->MyConfig->DisableReactiveMask.value_or(false) && paramMask)
+		if (!instance->MyConfig->DisableReactiveMask.value_or(true) && paramMask)
 		{
 			result = instance->Dx12Device->OpenSharedHandle(dx11Tm.Desc.handle, IID_PPV_ARGS(&params.pResponsivePixelMaskTexture));
 
@@ -1479,7 +1484,7 @@ public:
 		if (!instance->MyConfig->AutoExposure.value_or(false) && paramExposure)
 			params.pExposureScaleTexture->Release();
 
-		if (!instance->MyConfig->DisableReactiveMask.value_or(false) && paramMask)
+		if (!instance->MyConfig->DisableReactiveMask.value_or(true) && paramMask)
 			params.pResponsivePixelMaskTexture->Release();
 
 		if (paramOutput)

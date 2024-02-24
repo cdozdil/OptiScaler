@@ -72,7 +72,8 @@ void Config::Reload()
 
 		// Quality Overrides
 		QualityRatioOverrideEnabled = readBool("QualityOverrides", "QualityRatioOverrideEnabled");
-		if (QualityRatioOverrideEnabled) {
+
+		if (QualityRatioOverrideEnabled.value_or(false)) {
 			QualityRatio_UltraQuality = readFloat("QualityOverrides", "QualityRatioUltraQuality");
 			QualityRatio_Quality = readFloat("QualityOverrides", "QualityRatioQuality");
 			QualityRatio_Balanced = readFloat("QualityOverrides", "QualityRatioBalanced");
@@ -81,7 +82,6 @@ void Config::Reload()
 		}
 
 		DisableReactiveMask = readBool("Hotfix", "DisableReactiveMask");
-		DisableReactiveMaskSetFromIni = DisableReactiveMask.has_value();
 		ColorResourceBarrier = readInt("Hotfix", "ColorResourceBarrier");
 		MVResourceBarrier = readInt("Hotfix", "MotionVectorResourceBarrier");
 		DepthResourceBarrier = readInt("Hotfix", "DepthResourceBarrier");

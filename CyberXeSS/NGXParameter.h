@@ -366,7 +366,7 @@ private:
 inline NVSDK_NGX_Parameter* GetNGXParameters()
 {
 	auto params = new NGXParameters();
-	params->Reset();
+	InitNGXParameters(params);
 
 	return params;
 }
