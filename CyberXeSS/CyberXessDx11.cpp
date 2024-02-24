@@ -109,28 +109,48 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_GetParameters(NVSDK_NGX_Parameter** OutParamete
 {
 	spdlog::debug("NVSDK_NGX_D3D11_GetParameters");
 
-	if (*OutParameters == nullptr)
+	try
+	{
 		*OutParameters = GetNGXParameters();
-
-	return NVSDK_NGX_Result_Success;
+		return NVSDK_NGX_Result_Success;
+	}
+	catch (const std::exception& ex)
+	{
+		spdlog::error("NVSDK_NGX_D3D11_GetParameters exception: {}", ex.what());
+		return NVSDK_NGX_Result_Fail;
+	}
 }
 
 NVSDK_NGX_Result NVSDK_NGX_D3D11_GetCapabilityParameters(NVSDK_NGX_Parameter** OutParameters)
 {
 	spdlog::debug("NVSDK_NGX_D3D11_GetCapabilityParameters");
 
-	if (*OutParameters == nullptr)
+	try
+	{
 		*OutParameters = GetNGXParameters();
-
-	return NVSDK_NGX_Result_Success;
+		return NVSDK_NGX_Result_Success;
+	}
+	catch (const std::exception& ex)
+	{
+		spdlog::error("NVSDK_NGX_D3D11_GetCapabilityParameters exception: {}", ex.what());
+		return NVSDK_NGX_Result_Fail;
+	}
 }
 
 NVSDK_NGX_Result NVSDK_NGX_D3D11_AllocateParameters(NVSDK_NGX_Parameter** OutParameters)
 {
 	spdlog::debug("NVSDK_NGX_D3D11_AllocateParameters");
 
-	if (*OutParameters == nullptr)
+	try
+	{
 		*OutParameters = new NGXParameters();
+		return NVSDK_NGX_Result_Success;
+	}
+	catch (const std::exception& ex)
+	{
+		spdlog::error("NVSDK_NGX_D3D11_AllocateParameters exception: {}", ex.what());
+		return NVSDK_NGX_Result_Fail;
+	}
 
 	return NVSDK_NGX_Result_Success;
 }

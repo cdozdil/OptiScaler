@@ -93,30 +93,48 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetParameters(NVSDK_NGX_Parameter
 {
 	spdlog::debug("NVSDK_NGX_D3D12_GetParameters");
 
-	if (*OutParameters == nullptr)
+	try
+	{
 		*OutParameters = GetNGXParameters();
-
-	return NVSDK_NGX_Result_Success;
+		return NVSDK_NGX_Result_Success;
+	}
+	catch (const std::exception& ex)
+	{
+		spdlog::error("NVSDK_NGX_D3D12_GetParameters exception: {}", ex.what());
+		return NVSDK_NGX_Result_Fail;
+	}
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetCapabilityParameters(NVSDK_NGX_Parameter** OutParameters)
 {
 	spdlog::debug("NVSDK_NGX_D3D12_GetCapabilityParameters");
 
-	if (*OutParameters == nullptr)
+	try
+	{
 		*OutParameters = GetNGXParameters();
-
-	return NVSDK_NGX_Result_Success;
+		return NVSDK_NGX_Result_Success;
+	}
+	catch (const std::exception& ex)
+	{
+		spdlog::error("NVSDK_NGX_D3D12_GetCapabilityParameters exception: {}", ex.what());
+		return NVSDK_NGX_Result_Fail;
+	}
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_AllocateParameters(NVSDK_NGX_Parameter** OutParameters)
 {
 	spdlog::debug("NVSDK_NGX_D3D12_AllocateParameters");
 
-	if (*OutParameters == nullptr)
+	try
+	{
 		*OutParameters = new NGXParameters();
-
-	return NVSDK_NGX_Result_Success;
+		return NVSDK_NGX_Result_Success;
+	}
+	catch (const std::exception& ex)
+	{
+		spdlog::error("NVSDK_NGX_D3D12_AllocateParameters exception: {}", ex.what());
+		return NVSDK_NGX_Result_Fail;
+	}
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_PopulateParameters_Impl(NVSDK_NGX_Parameter* InParameters)
@@ -245,7 +263,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		ID3D12Resource* paramMask = nullptr;
 		if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramMask) != NVSDK_NGX_Result_Success)
 			InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramMask);
-	
+
 		if (paramMask != nullptr && (!deviceContext->XeSSMaskEnabled() || !deviceContext->XeSSIsInited()))
 		{
 			spdlog::error("NVSDK_NGX_D3D12_EvaluateFeature bias mask exist, enabling reactive mask!");
@@ -259,7 +277,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 			deviceContext->XeSSDestroy();
 		}
 	}
-	
+
 	if (!deviceContext->XeSSIsInited())
 	{
 		deviceContext->XeSSInit(CyberXessContext::instance()->Dx12Device, InParameters);

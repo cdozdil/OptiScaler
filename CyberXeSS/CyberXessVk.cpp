@@ -42,7 +42,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_Shutdown(void)
 	CyberXessContext::instance()->VulkanDevice = nullptr;
 	CyberXessContext::instance()->VulkanInstance = nullptr;
 	CyberXessContext::instance()->VulkanPhysicalDevice = nullptr;
-	//CyberXessContext::instance()->NvParameterInstance->Params.clear();
 	CyberXessContext::instance()->Contexts.clear();
 
 	return NVSDK_NGX_Result_Success;
@@ -55,7 +54,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_Shutdown1(VkDevice In
 	CyberXessContext::instance()->VulkanDevice = nullptr;
 	CyberXessContext::instance()->VulkanInstance = nullptr;
 	CyberXessContext::instance()->VulkanPhysicalDevice = nullptr;
-	//CyberXessContext::instance()->NvParameterInstance->Params.clear();
 	CyberXessContext::instance()->Contexts.clear();
 
 	return NVSDK_NGX_Result_Success;
@@ -65,30 +63,48 @@ NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetParameters(NVSDK_NGX_Parameter** OutParamet
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_GetParameters");
 
-	if (*OutParameters == nullptr)
+	try
+	{
 		*OutParameters = GetNGXParameters();
-
-	return NVSDK_NGX_Result_Success;
+		return NVSDK_NGX_Result_Success;
+	}
+	catch (const std::exception& ex)
+	{
+		spdlog::error("NVSDK_NGX_VULKAN_GetParameters exception: {}", ex.what());
+		return NVSDK_NGX_Result_Fail;
+	}
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_AllocateParameters(NVSDK_NGX_Parameter** OutParameters)
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_AllocateParameters");
 
-	if (*OutParameters == nullptr)
+	try
+	{
 		*OutParameters = new NGXParameters();
-
-	return NVSDK_NGX_Result_Success;
+		return NVSDK_NGX_Result_Success;
+	}
+	catch (const std::exception& ex)
+	{
+		spdlog::error("NVSDK_NGX_VULKAN_AllocateParameters exception: {}", ex.what());
+		return NVSDK_NGX_Result_Fail;
+	}
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_GetCapabilityParameters(NVSDK_NGX_Parameter** OutParameters)
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_GetCapabilityParameters");
 
-	if (*OutParameters == nullptr)
+	try
+	{
 		*OutParameters = GetNGXParameters();
-
-	return NVSDK_NGX_Result_Success;
+		return NVSDK_NGX_Result_Success;
+	}
+	catch (const std::exception& ex)
+	{
+		spdlog::error("NVSDK_NGX_VULKAN_GetCapabilityParameters exception: {}", ex.what());
+		return NVSDK_NGX_Result_Fail;
+	}
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_PopulateParameters_Impl(NVSDK_NGX_Parameter* InParameters)
