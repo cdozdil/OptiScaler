@@ -301,6 +301,11 @@ class FeatureContext
 			return false;
 		}
 
+		casUpscale = false;
+		casContextDesc.flags |= FFX_CAS_SHARPEN_ONLY;
+
+		/*
+		* We will probably never use CAS upscale 
 		if (RenderWidth == DisplayWidth && RenderHeight == DisplayHeight)
 		{
 			casUpscale = false;
@@ -311,6 +316,7 @@ class FeatureContext
 			casUpscale = true;
 			casContextDesc.flags &= ~FFX_CAS_SHARPEN_ONLY;
 		}
+		*/
 
 		auto casCSC = CyberXessContext::instance()->MyConfig->ColorSpaceConversion.value_or(FFX_CAS_COLOR_SPACE_LINEAR);
 
