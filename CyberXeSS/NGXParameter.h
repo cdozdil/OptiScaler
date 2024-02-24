@@ -122,6 +122,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	}
 
 	InParams->Set(NVSDK_NGX_Parameter_Scale, scalingRatio);
+	InParams->Set(NVSDK_NGX_Parameter_SuperSampling_ScaleFactor, scalingRatio);
 	InParams->Set(NVSDK_NGX_Parameter_OutWidth, OutWidth);
 	InParams->Set(NVSDK_NGX_Parameter_OutHeight, OutHeight);
 
