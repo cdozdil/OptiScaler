@@ -735,7 +735,7 @@ public:
 			return false;
 		}
 
-		
+
 
 		CasInit();
 
@@ -771,7 +771,7 @@ public:
 		return xessInit;
 	}
 
-	bool XeSSExecuteDx12(ID3D12GraphicsCommandList* commandList, const NVSDK_NGX_Parameter* initParams)
+	bool XeSSExecuteDx12(ID3D12GraphicsCommandList* commandList, const NVSDK_NGX_Parameter* initParams, const FeatureContext* context)
 	{
 		if (!xessInit)
 			return false;
@@ -794,20 +794,41 @@ public:
 		{
 			unsigned int width, height, outWidth, outHeight;
 
-			initParams->Get(NVSDK_NGX_Parameter_Width, &width);
-			initParams->Get(NVSDK_NGX_Parameter_Height, &height);
-			initParams->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth);
-			initParams->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight);
-
-			if (width < outWidth)
+			if (initParams->Get(NVSDK_NGX_Parameter_Width, &width) == NVSDK_NGX_Result_Success &&
+				initParams->Get(NVSDK_NGX_Parameter_Height, &height) == NVSDK_NGX_Result_Success)
 			{
-				params.inputWidth = width;
-				params.inputHeight = height;
+				if (initParams->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth) == NVSDK_NGX_Result_Success &&
+					initParams->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight) == NVSDK_NGX_Result_Success)
+				{
+					if (width < outWidth)
+					{
+						params.inputWidth = width;
+						params.inputHeight = height;
+					}
+					else
+					{
+						params.inputWidth = outWidth;
+						params.inputHeight = outHeight;
+					}
+				}
+				else
+				{
+					if (width < context->RenderWidth)
+					{
+						params.inputWidth = width;
+						params.inputHeight = height;
+					}
+					else
+					{
+						params.inputWidth = context->RenderWidth;
+						params.inputHeight = context->RenderHeight;
+					}
+				}
 			}
 			else
 			{
-				params.inputWidth = outWidth;
-				params.inputHeight = outHeight;
+				params.inputWidth = context->RenderWidth;
+				params.inputHeight = context->RenderHeight;
 			}
 		}
 
@@ -1075,7 +1096,7 @@ public:
 
 	bool XeSSExecuteDx11(ID3D12GraphicsCommandList* commandList, ID3D12CommandQueue* commandQueue,
 		ID3D11Device* dx11device, ID3D11DeviceContext* deviceContext,
-		const NVSDK_NGX_Parameter* initParams)
+		const NVSDK_NGX_Parameter* initParams, const FeatureContext* context)
 	{
 		if (!xessInit)
 			return false;
@@ -1109,20 +1130,41 @@ public:
 		{
 			unsigned int width, height, outWidth, outHeight;
 
-			initParams->Get(NVSDK_NGX_Parameter_Width, &width);
-			initParams->Get(NVSDK_NGX_Parameter_Height, &height);
-			initParams->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth);
-			initParams->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight);
-
-			if (width < outWidth)
+			if (initParams->Get(NVSDK_NGX_Parameter_Width, &width) == NVSDK_NGX_Result_Success &&
+				initParams->Get(NVSDK_NGX_Parameter_Height, &height) == NVSDK_NGX_Result_Success)
 			{
-				params.inputWidth = width;
-				params.inputHeight = height;
+				if (initParams->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth) == NVSDK_NGX_Result_Success &&
+					initParams->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight) == NVSDK_NGX_Result_Success)
+				{
+					if (width < outWidth)
+					{
+						params.inputWidth = width;
+						params.inputHeight = height;
+					}
+					else
+					{
+						params.inputWidth = outWidth;
+						params.inputHeight = outHeight;
+					}
+				}
+				else
+				{
+					if (width < context->RenderWidth)
+					{
+						params.inputWidth = width;
+						params.inputHeight = height;
+					}
+					else
+					{
+						params.inputWidth = context->RenderWidth;
+						params.inputHeight = context->RenderHeight;
+					}
+				}
 			}
 			else
 			{
-				params.inputWidth = outWidth;
-				params.inputHeight = outHeight;
+				params.inputWidth = context->RenderWidth;
+				params.inputHeight = context->RenderHeight;
 			}
 		}
 

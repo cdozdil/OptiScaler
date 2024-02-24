@@ -13,7 +13,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext BuildPipelines: {0}", CyberXessContext::instance()->MyConfig->BuildPipelines.value_or(true));
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext NetworkModel: {0}", CyberXessContext::instance()->MyConfig->NetworkModel.value_or(0));
-	spdlog::info("NVSDK_NGX_D3D12_Init_Ext LogLevel: {0}", CyberXessContext::instance()->MyConfig->LogLevel.value_or(6));
+	spdlog::info("NVSDK_NGX_D3D12_Init_Ext LogLevel: {0}", CyberXessContext::instance()->MyConfig->LogLevel.value_or(2));
 
 	CyberXessContext::instance()->Shutdown(true, true);
 
@@ -99,7 +99,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetParameters(NVSDK_NGX_Parameter
 	}
 	catch (const std::exception& ex)
 	{
-		spdlog::error("NVSDK_NGX_D3D12_GetParameters exception: {}", ex.what());
+		spdlog::error("NVSDK_NGX_D3D12_GetParameters exception: {0}", ex.what());
 		return NVSDK_NGX_Result_Fail;
 	}
 }
@@ -115,7 +115,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetCapabilityParameters(NVSDK_NGX
 	}
 	catch (const std::exception& ex)
 	{
-		spdlog::error("NVSDK_NGX_D3D12_GetCapabilityParameters exception: {}", ex.what());
+		spdlog::error("NVSDK_NGX_D3D12_GetCapabilityParameters exception: {0}", ex.what());
 		return NVSDK_NGX_Result_Fail;
 	}
 }
@@ -131,7 +131,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_AllocateParameters(NVSDK_NGX_Para
 	}
 	catch (const std::exception& ex)
 	{
-		spdlog::error("NVSDK_NGX_D3D12_AllocateParameters exception: {}", ex.what());
+		spdlog::error("NVSDK_NGX_D3D12_AllocateParameters exception: {0}", ex.what());
 		return NVSDK_NGX_Result_Fail;
 	}
 }
@@ -247,15 +247,18 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	const auto deviceContext = CyberXessContext::instance()->Contexts[InFeatureHandle->Id].get();
 
 	unsigned int width, outWidth, height, outHeight;
-	InParameters->Get(NVSDK_NGX_Parameter_Width, &width);
-	InParameters->Get(NVSDK_NGX_Parameter_Height, &height);
-	InParameters->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth);
-	InParameters->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight);
-	width = width > outWidth ? width : outWidth;
-	height = height > outHeight ? height : outHeight;
 
-	if (deviceContext->XeSSIsInited() && (deviceContext->DisplayHeight != height || deviceContext->DisplayWidth != width))
-		deviceContext->XeSSDestroy();
+	if (InParameters->Get(NVSDK_NGX_Parameter_Width, &width) == NVSDK_NGX_Result_Success &&
+		InParameters->Get(NVSDK_NGX_Parameter_Height, &height) == NVSDK_NGX_Result_Success &&
+		InParameters->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth) == NVSDK_NGX_Result_Success &&
+		InParameters->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight) == NVSDK_NGX_Result_Success)
+	{
+		width = width > outWidth ? width : outWidth;
+		height = height > outHeight ? height : outHeight;
+
+		if (deviceContext->XeSSIsInited() && (deviceContext->DisplayHeight != height || deviceContext->DisplayWidth != width))
+			deviceContext->XeSSDestroy();
+	}
 
 	if (!CyberXessContext::instance()->MyConfig->DisableReactiveMaskSetFromIni)
 	{
@@ -293,7 +296,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	//dumpParams.path = "D:\\dmp\\";
 	//xessStartDump(deviceContext->XessContext, &dumpParams);
 
-	if (deviceContext->XeSSExecuteDx12(InCmdList, InParameters))
+	if (deviceContext->XeSSExecuteDx12(InCmdList, InParameters, deviceContext))
 		return NVSDK_NGX_Result_Success;
 	else
 		return NVSDK_NGX_Result_Fail;
