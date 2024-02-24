@@ -570,8 +570,8 @@ public:
 
 		DisplayWidth = width > outWidth ? width : outWidth;
 		DisplayHeight = height > outHeight ? height : outHeight;
-		RenderWidth = DisplayWidth;
-		RenderHeight = DisplayHeight;
+		RenderWidth = width < outWidth ? width : outWidth;
+		RenderHeight = height < outHeight ? height : outHeight;
 
 		spdlog::info("FeatureContext::XeSSInit Output Resolution: {0}x{1}", DisplayWidth, DisplayHeight);
 
