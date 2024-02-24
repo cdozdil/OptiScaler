@@ -15,11 +15,9 @@ void Config::Reload()
 
 	NetworkModel = 0;
 	BuildPipelines = true;
-	DelayedInit = false;
 
 	if (ini.LoadFile(absoluteFileName.c_str()) == SI_OK)
 	{
-		DelayedInit = readBool("XeSS", "DelayedInit");
 		BuildPipelines = readBool("XeSS", "BuildPipelines");
 		NetworkModel = readInt("XeSS", "NetworkModel");
 		OverrideQuality = readInt("XeSS", "OverrideQuality");

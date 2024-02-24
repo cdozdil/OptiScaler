@@ -26,7 +26,6 @@ public:
 	std::optional<std::string> LogFileName;
 
 	// XeSS
-	std::optional<bool> DelayedInit;
 	std::optional<bool> BuildPipelines;
 	std::optional<int32_t> NetworkModel;
 	std::optional<int32_t> OverrideQuality;
