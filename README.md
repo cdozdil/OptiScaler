@@ -7,7 +7,7 @@ As XeSS officially only supports DirectX12 (Support for DirectX11 added but cons
 
 Added FidelityFX CAS shapening support, you can enable and adjust it from ini file.
 
-## Official Discord Channel: [CyberXess Support](https://discord.com/channels/995299945492008990/1131520508475752489)
+## Official Discord Channel: [CyberXeSS Support](https://discord.com/channels/995299945492008990/1131520508475752489)
 
 ## Installation
 
