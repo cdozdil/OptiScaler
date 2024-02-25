@@ -242,7 +242,6 @@ class FeatureContext
 
 	// xess
 	xess_context_handle_t xessContext = nullptr;
-	bool xessMaskEnabled = true;
 	bool xessInit = false;
 
 	// cas
@@ -555,11 +554,6 @@ public:
 
 #pragma region xess methods
 
-	bool XeSSMaskEnabled()
-	{
-		return xessMaskEnabled;
-	}
-
 	bool XeSSInit(ID3D12Device* device, const NVSDK_NGX_Parameter* initParams)
 	{
 		if (device == nullptr)
@@ -681,12 +675,14 @@ public:
 			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (!AutoExposure) {0:b}", xessParams.initFlags);
 		}
 
-		if (!CyberXessContext::instance()->MyConfig->HDR.value_or(!Hdr))
+		if (!CyberXessContext::instance()->MyConfig->HDR.value_or(Hdr))
 		{
 			xessParams.initFlags |= XESS_INIT_FLAG_LDR_INPUT_COLOR;
 			CyberXessContext::instance()->MyConfig->HDR = false;
-			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (HDR) {0:b}", xessParams.initFlags);
+			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (LDR) {0:b}", xessParams.initFlags);
 		}
+		else
+			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (HDR) {0:b}", xessParams.initFlags);
 
 		if (CyberXessContext::instance()->MyConfig->JitterCancellation.value_or(JitterMotion))
 		{
@@ -704,12 +700,9 @@ public:
 
 		if (!CyberXessContext::instance()->MyConfig->DisableReactiveMask.value_or(true))
 		{
-			xessMaskEnabled = true;
 			xessParams.initFlags |= XESS_INIT_FLAG_RESPONSIVE_PIXEL_MASK;
 			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (ReactiveMaskActive) {0:b}", xessParams.initFlags);
 		}
-		else
-			xessMaskEnabled = false;
 
 #pragma endregion
 
