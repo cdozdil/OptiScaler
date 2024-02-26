@@ -9,9 +9,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 	spdlog::debug("NVSDK_NGX_VULKAN_Init AppId: {0}", InApplicationId);
 	spdlog::debug("NVSDK_NGX_VULKAN_Init SDK: {0}", (int)InSDKVersion);
 
-	CyberXessContext::instance()->VulkanInstance = InInstance;
-	CyberXessContext::instance()->VulkanPhysicalDevice = InPD;
-	CyberXessContext::instance()->VulkanDevice = InDevice;
+	//CyberXessContext::instance()->VulkanInstance = InInstance;
+	//CyberXessContext::instance()->VulkanPhysicalDevice = InPD;
+	//CyberXessContext::instance()->VulkanDevice = InDevice;
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -39,9 +39,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_Shutdown(void)
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_Shutdown");
 
-	CyberXessContext::instance()->VulkanDevice = nullptr;
-	CyberXessContext::instance()->VulkanInstance = nullptr;
-	CyberXessContext::instance()->VulkanPhysicalDevice = nullptr;
+	//CyberXessContext::instance()->VulkanDevice = nullptr;
+	//CyberXessContext::instance()->VulkanInstance = nullptr;
+	//CyberXessContext::instance()->VulkanPhysicalDevice = nullptr;
 	CyberXessContext::instance()->Contexts.clear();
 
 	return NVSDK_NGX_Result_Success;
@@ -51,9 +51,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_Shutdown1(VkDevice In
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_Shutdown1");
 
-	CyberXessContext::instance()->VulkanDevice = nullptr;
-	CyberXessContext::instance()->VulkanInstance = nullptr;
-	CyberXessContext::instance()->VulkanPhysicalDevice = nullptr;
+	//CyberXessContext::instance()->VulkanDevice = nullptr;
+	//CyberXessContext::instance()->VulkanInstance = nullptr;
+	//CyberXessContext::instance()->VulkanPhysicalDevice = nullptr;
 	CyberXessContext::instance()->Contexts.clear();
 
 	return NVSDK_NGX_Result_Success;
@@ -141,7 +141,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_GetScratchBufferSize(
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_CreateFeature(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Feature InFeatureID, NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Handle** OutHandle)
 {
-	return NVSDK_NGX_VULKAN_CreateFeature1(CyberXessContext::instance()->VulkanDevice, InCmdBuffer, InFeatureID, InParameters, OutHandle);
+	//return NVSDK_NGX_VULKAN_CreateFeature1(CyberXessContext::instance()->VulkanDevice, InCmdBuffer, InFeatureID, InParameters, OutHandle);
+	return NVSDK_NGX_Result_Fail;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice, VkCommandBuffer InCmdList, NVSDK_NGX_Feature InFeatureID, NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Handle** OutHandle)

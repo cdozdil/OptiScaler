@@ -15,8 +15,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
 	spdlog::info("NVSDK_NGX_D3D11_Init_Ext NetworkModel: {0}", CyberXessContext::instance()->MyConfig->NetworkModel.value_or(0));
 	spdlog::info("NVSDK_NGX_D3D11_Init_Ext LogLevel: {0}", CyberXessContext::instance()->MyConfig->LogLevel.value_or(2));
 
-	CyberXessContext::instance()->Shutdown(true, true);
-
 	return NVSDK_NGX_Result_Success;
 }
 
@@ -53,36 +51,8 @@ NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_D3D11_Shutdown(void)
 {
 	spdlog::info("NVSDK_NGX_D3D11_Shutdown");
 
-	// Close D3D12 device
-	if (CyberXessContext::instance()->Dx12Device != nullptr &&
-		CyberXessContext::instance()->Dx12CommandQueue != nullptr &&
-		CyberXessContext::instance()->Dx12CommandList != nullptr)
-	{
-		spdlog::debug("NVSDK_NGX_D3D11_Shutdown: releasing d3d12 resources");
-		ID3D12Fence* d3d12Fence;
-		CyberXessContext::instance()->Dx12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
-		CyberXessContext::instance()->Dx12CommandQueue->Signal(d3d12Fence, 999);
-		spdlog::debug("NVSDK_NGX_D3D11_Shutdown: releasing d3d12 fence created and signalled");
-
-		CyberXessContext::instance()->Dx12CommandList->Close();
-		ID3D12CommandList* ppCommandLists[] = { CyberXessContext::instance()->Dx12CommandList };
-		spdlog::debug("NVSDK_NGX_D3D11_Shutdown: releasing d3d12 command list executing");
-		CyberXessContext::instance()->Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-
-		spdlog::debug("NVSDK_NGX_D3D11_Shutdown: releasing d3d12 waiting signal");
-		auto fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-		d3d12Fence->SetEventOnCompletion(999, fenceEvent);
-		WaitForSingleObject(fenceEvent, INFINITE);
-		CloseHandle(fenceEvent);
-		d3d12Fence->Release();
-		spdlog::debug("NVSDK_NGX_D3D11_Shutdown: releasing d3d12 release done");
-	}
-
-	CyberXessContext::instance()->Shutdown(true, true);
-
 	// close all xess contexts
 	for (auto const& [key, val] : CyberXessContext::instance()->Contexts) {
-		val->XeSSDestroy();
 		NVSDK_NGX_D3D11_ReleaseFeature(&val->Handle);
 	}
 
@@ -192,36 +162,14 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext* InDevCtx, NV
 {
 	spdlog::info("NVSDK_NGX_D3D11_CreateFeature");
 
-	ID3D11Device* device;
-	InDevCtx->GetDevice(&device);
+	auto deviceContext = CyberXessContext::instance()->CreateContext();
+	*OutHandle = &deviceContext->Handle;
 
-	auto dx11DeviceResult = device->QueryInterface(IID_PPV_ARGS(&CyberXessContext::instance()->Dx11Device));
+	if (deviceContext->XeSSInitDx11(InDevCtx, InParameters))
+		return NVSDK_NGX_Result_Success;
 
-	if (dx11DeviceResult != S_OK)
-	{
-		spdlog::error("NVSDK_NGX_D3D11_CreateFeature QueryInterface ID3D11Device5 result: {0:x}", dx11DeviceResult);
-		return NVSDK_NGX_Result_Fail;
-	}
-
-	if (CyberXessContext::instance()->Dx12Device == nullptr)
-	{
-		// create d3d12 device
-		auto fl = CyberXessContext::instance()->Dx11Device->GetFeatureLevel();
-		auto result = CyberXessContext::instance()->CreateDx12Device(fl);
-
-		if (result != S_OK || CyberXessContext::instance()->Dx12Device == nullptr)
-		{
-			spdlog::error("NVSDK_NGX_D3D11_CreateFeature QueryInterface Dx12Device result: {0:x}", result);
-			return NVSDK_NGX_Result_Fail;
-		}
-	}
-
-	auto result = NVSDK_NGX_D3D12_CreateFeature(nullptr, InFeatureID, InParameters, OutHandle);
-
-	if (result != NVSDK_NGX_Result_Success)
-		spdlog::error("NVSDK_NGX_D3D11_CreateFeature NVSDK_NGX_D3D12_CreateFeature error: {0:x}", (int)result);
-
-	return result;
+	spdlog::error("NVSDK_NGX_D3D11_CreateFeature: CreateFeature failed");
+	return NVSDK_NGX_Result_Fail;
 }
 
 NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* InHandle)
@@ -230,9 +178,13 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* InHandle)
 		return NVSDK_NGX_Result_Success;
 
 	spdlog::info("NVSDK_NGX_D3D11_ReleaseFeature Handle: {0}", InHandle->Id);
-
-	if (auto deviceContext = CyberXessContext::instance()->Contexts[InHandle->Id].get(); deviceContext != nullptr)
+	
+	auto deviceContext = CyberXessContext::instance()->Contexts[InHandle->Id].get();
+	if (deviceContext != nullptr)
+	{
 		deviceContext->XeSSDestroy();
+		deviceContext->Shutdown();
+	}
 
 	CyberXessContext::instance()->DeleteContext(InHandle);
 
@@ -266,62 +218,6 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, 
 
 	HRESULT result;
 
-	// if no d3d11device
-	if (instance->Dx11Device == nullptr)
-	{
-		// get d3d11device
-		InDevCtx->GetDevice((ID3D11Device**)&instance->Dx11Device);
-
-		// No D3D12 device!
-		if (instance->Dx12Device == nullptr)
-		{
-			spdlog::warn("NVSDK_NGX_D3D11_EvaluateFeature no Dx12Device device!");
-
-			auto fl = CyberXessContext::instance()->Dx11Device->GetFeatureLevel();
-			result = CyberXessContext::instance()->CreateDx12Device(fl);
-
-			if (result != S_OK || CyberXessContext::instance()->Dx12Device == nullptr)
-				return NVSDK_NGX_Result_Fail;
-
-			spdlog::debug("NVSDK_NGX_D3D11_EvaluateFeature Dx12Device created!");
-		}
-	}
-
-	// if no context
-	if (instance->Dx11DeviceContext == nullptr)
-	{
-		// get context
-		result = InDevCtx->QueryInterface(IID_PPV_ARGS(&instance->Dx11DeviceContext));
-
-		if (result != S_OK)
-		{
-			spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature no ID3D11DeviceContext4 interface!");
-			return NVSDK_NGX_Result_FAIL_FeatureNotSupported;
-		}
-	}
-
-	// Command allocator & command list
-	if (instance->Dx12CommandAllocator == nullptr)
-	{
-		//	CreateCommandAllocator 
-		result = instance->Dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&instance->Dx12CommandAllocator));
-
-		if (result != S_OK)
-		{
-			spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature CreateCommandAllocator error: {0:x}", result);
-			return NVSDK_NGX_Result_FAIL_UnableToInitializeFeature;
-		}
-
-		// CreateCommandList
-		result = instance->Dx12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, instance->Dx12CommandAllocator, nullptr, IID_PPV_ARGS(&instance->Dx12CommandList));
-
-		if (result != S_OK)
-		{
-			spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature CreateCommandList error: {0:x}", result);
-			return NVSDK_NGX_Result_FAIL_UnableToInitializeFeature;
-		}
-	}
-
 	unsigned int width, outWidth, height, outHeight;
 	if (InParameters->Get(NVSDK_NGX_Parameter_Width, &width) == NVSDK_NGX_Result_Success &&
 		InParameters->Get(NVSDK_NGX_Parameter_Height, &height) == NVSDK_NGX_Result_Success &&
@@ -337,7 +233,7 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, 
 
 	if (!deviceContext->XeSSIsInited())
 	{
-		deviceContext->XeSSInit(CyberXessContext::instance()->Dx12Device, InParameters);
+		deviceContext->XeSSInitDx11(InDevCtx, InParameters);
 
 		if (!deviceContext->XeSSIsInited())
 		{
@@ -347,11 +243,8 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, 
 	}
 
 	NVSDK_NGX_Result evResult = NVSDK_NGX_Result_Success;
-	if (!deviceContext->XeSSExecuteDx11(instance->Dx12CommandList, instance->Dx12CommandQueue, instance->Dx11Device, InDevCtx, InParameters, deviceContext))
+	if (!deviceContext->XeSSExecuteDx11(InDevCtx, InParameters))
 		evResult = NVSDK_NGX_Result_Fail;
-
-	instance->Dx12CommandAllocator->Reset();
-	instance->Dx12CommandList->Reset(instance->Dx12CommandAllocator, nullptr);
 
 	return evResult;
 }

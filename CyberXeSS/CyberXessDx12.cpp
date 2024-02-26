@@ -15,12 +15,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext NetworkModel: {0}", CyberXessContext::instance()->MyConfig->NetworkModel.value_or(0));
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext LogLevel: {0}", CyberXessContext::instance()->MyConfig->LogLevel.value_or(2));
 
-	CyberXessContext::instance()->Shutdown(true, true);
-
-	if (InDevice)
-		CyberXessContext::instance()->Dx12Device = InDevice;
-	else
-		spdlog::error("NVSDK_NGX_D3D12_Init_Ext InDevice is null!");
+	//if (InDevice)
+	//	CyberXessContext::instance()->Dx12Device = InDevice;
+	//else
+	//	spdlog::error("NVSDK_NGX_D3D12_Init_Ext InDevice is null!");
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -60,7 +58,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 {
 	spdlog::info("NVSDK_NGX_D3D12_Shutdown");
 
-	CyberXessContext::instance()->Shutdown(false, true);
+	//CyberXessContext::instance()->Shutdown(false, true);
 
 	for (auto const& [key, val] : CyberXessContext::instance()->Contexts)
 		NVSDK_NGX_D3D12_ReleaseFeature(&val->Handle);
@@ -74,7 +72,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown1(ID3D12Device* InDevice)
 {
 	spdlog::info("NVSDK_NGX_D3D12_Shutdown1");
 
-	CyberXessContext::instance()->Shutdown(false, true);
+	//CyberXessContext::instance()->Shutdown(false, true);
 
 	for (auto const& [key, val] : CyberXessContext::instance()->Contexts)
 		NVSDK_NGX_D3D12_ReleaseFeature(&val->Handle);
@@ -173,30 +171,19 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
 #pragma region Check for Dx12Device Device
 
-	if (CyberXessContext::instance()->Dx12Device == nullptr)
-	{
-		if (InCmdList == nullptr && CyberXessContext::instance()->Dx11Device != nullptr)
-		{
-			spdlog::error("NVSDK_NGX_D3D12_CreateFeature InCmdList is null!!!");
-			auto fl = CyberXessContext::instance()->Dx11Device->GetFeatureLevel();
-			CyberXessContext::instance()->CreateDx12Device(fl);
-		}
-		else
-		{
-			spdlog::warn("NVSDK_NGX_D3D12_CreateFeature CyberXessContext::instance()->Dx12Device is null trying to get from InCmdList!");
-			InCmdList->GetDevice(IID_PPV_ARGS(&CyberXessContext::instance()->Dx12Device));
-		}
+	ID3D12Device* device;
+	spdlog::debug("NVSDK_NGX_D3D12_CreateFeature Get D3d12 device from InCmdList!");
+	auto deviceResult = InCmdList->GetDevice(IID_PPV_ARGS(&device));
 
-		if (CyberXessContext::instance()->Dx12Device == nullptr)
-		{
-			spdlog::error("NVSDK_NGX_D3D12_CreateFeature CyberXessContext::instance()->Dx12Device can't receive from InCmdList!");
-			return NVSDK_NGX_Result_Fail;
-		}
+	if (deviceResult != S_OK || device == nullptr)
+	{
+		spdlog::error("NVSDK_NGX_D3D12_CreateFeature Can't get Dx12Device from InCmdList!");
+		return NVSDK_NGX_Result_Fail;
 	}
 
 #pragma endregion
 
-	if (deviceContext->XeSSInit(CyberXessContext::instance()->Dx12Device, InParameters))
+	if (deviceContext->XeSSInitDx12(device, InParameters))
 		return NVSDK_NGX_Result_Success;
 
 	spdlog::error("NVSDK_NGX_D3D12_CreateFeature: CreateFeature failed");
@@ -262,7 +249,17 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 	if (!deviceContext->XeSSIsInited())
 	{
-		deviceContext->XeSSInit(CyberXessContext::instance()->Dx12Device, InParameters);
+		ID3D12Device* device;
+		spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature Get D3d12 device from InCmdList!");
+		auto deviceResult = InCmdList->GetDevice(IID_PPV_ARGS(&device));
+
+		if (deviceResult != S_OK || device == nullptr)
+		{
+			spdlog::error("NVSDK_NGX_D3D12_EvaluateFeature Can't get Dx12Device from InCmdList!");
+			return NVSDK_NGX_Result_Fail;
+		}
+
+		deviceContext->XeSSInitDx12(device, InParameters);
 
 		if (!deviceContext->XeSSIsInited())
 		{
@@ -273,7 +270,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 	//dumpParams.frame_count = 1;
 	//dumpParams.frame_idx = cnt++;
-	//dumpParams.path = "D:\\dmp\\";
+	//dumpParams.path = "F:\\";
 	//xessStartDump(deviceContext->XessContext, &dumpParams);
 
 	if (deviceContext->XeSSExecuteDx12(InCmdList, InParameters, deviceContext))

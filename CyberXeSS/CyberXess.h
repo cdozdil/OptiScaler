@@ -71,6 +71,343 @@ class CyberXessContext
 
 	CyberXessContext();
 
+public:
+	std::shared_ptr<Config> MyConfig;
+
+	ankerl::unordered_dense::map <unsigned int, std::unique_ptr<FeatureContext>> Contexts;
+	FeatureContext* CreateContext();
+	void DeleteContext(NVSDK_NGX_Handle* handle);
+
+	static std::shared_ptr<CyberXessContext> instance()
+	{
+		static std::shared_ptr<CyberXessContext> INSTANCE{ std::make_shared<CyberXessContext>(CyberXessContext()) };
+		return INSTANCE;
+	}
+};
+
+class FeatureContext
+{
+	// D3D12 stuff
+	ID3D12Device* Dx12Device = nullptr;
+
+	// D3D11 stuff
+	ID3D11Device5* Dx11Device = nullptr;
+	ID3D11DeviceContext4* Dx11DeviceContext = nullptr;
+
+	// D3D11with12 stuff
+	ID3D12Device* Dx12on11Device = nullptr;
+	ID3D12CommandQueue* Dx12CommandQueue = nullptr;
+	ID3D12CommandAllocator* Dx12CommandAllocator = nullptr;
+	ID3D12GraphicsCommandList* Dx12CommandList = nullptr;
+
+	// Vulkan stuff
+	VkDevice VulkanDevice = nullptr;
+	VkInstance VulkanInstance = nullptr;
+	VkPhysicalDevice VulkanPhysicalDevice = nullptr;
+
+	// xess
+	xess_context_handle_t xessContext = nullptr;
+	bool xessInit11 = false;
+	bool xessInit12 = false;
+
+	// cas
+	FfxCasContext casContext;
+	bool casInit = false;
+	bool casContextCreated = false;
+	bool casUpscale = false;
+	bool casActive = false;
+	float casSharpness = 0.4f;
+	ID3D12Resource* casBuffer = nullptr;
+	FfxCasContextDescription casContextDesc = {};
+
+	// dx11
+	D3D11_TEXTURE2D_RESOURCE_C dx11Color = {};
+	D3D11_TEXTURE2D_RESOURCE_C dx11Mv = {};
+	D3D11_TEXTURE2D_RESOURCE_C dx11Depth = {};
+	D3D11_TEXTURE2D_RESOURCE_C dx11Tm = {};
+	D3D11_TEXTURE2D_RESOURCE_C dx11Exp = {};
+	D3D11_TEXTURE2D_RESOURCE_C dx11Out = {};
+
+#pragma region cas methods
+
+	void CasInit()
+	{
+		if (casInit)
+			return;
+
+		spdlog::debug("FeatureContext::CasInit Start!");
+
+		casActive = CyberXessContext::instance()->MyConfig->CasEnabled.value_or(false);
+		casSharpness = CyberXessContext::instance()->MyConfig->CasSharpness.value_or(0.3);
+
+		if (casSharpness > 1 || casSharpness < 0)
+			casSharpness = 0.4f;
+
+		casInit = true;
+	}
+
+	bool CreateCasContext(ID3D12Device* device)
+	{
+		if (!casInit)
+			return false;
+
+		if (!casActive)
+			return true;
+
+		spdlog::debug("FeatureContext::CreateCasContext Start!");
+
+		DestroyCasContext();
+
+		const size_t scratchBufferSize = ffxGetScratchMemorySizeDX12(FFX_CAS_CONTEXT_COUNT);
+		void* casScratchBuffer = calloc(scratchBufferSize, 1);
+
+		auto errorCode = ffxGetInterfaceDX12(&casContextDesc.backendInterface, device, casScratchBuffer, scratchBufferSize, FFX_CAS_CONTEXT_COUNT);
+
+		if (errorCode != FFX_OK)
+		{
+			spdlog::error("FeatureContext::CreateCasContext ffxGetInterfaceDX12 error: {0:x}", errorCode);
+			free(casScratchBuffer);
+			return false;
+		}
+
+		casUpscale = false;
+		casContextDesc.flags |= FFX_CAS_SHARPEN_ONLY;
+
+		/*
+		* We will probably never use CAS upscale
+		if (RenderWidth == DisplayWidth && RenderHeight == DisplayHeight)
+		{
+			casUpscale = false;
+			casContextDesc.flags |= FFX_CAS_SHARPEN_ONLY;
+		}
+		else
+		{
+			casUpscale = true;
+			casContextDesc.flags &= ~FFX_CAS_SHARPEN_ONLY;
+		}
+		*/
+
+		auto casCSC = CyberXessContext::instance()->MyConfig->ColorSpaceConversion.value_or(FFX_CAS_COLOR_SPACE_LINEAR);
+
+		if (casCSC < 0 || casCSC > 4)
+			casCSC = 0;
+
+		casContextDesc.colorSpaceConversion = static_cast<FfxCasColorSpaceConversion>(casCSC);
+		casContextDesc.maxRenderSize.width = RenderWidth;
+		casContextDesc.maxRenderSize.height = RenderHeight;
+		casContextDesc.displaySize.width = DisplayWidth;
+		casContextDesc.displaySize.height = DisplayHeight;
+
+		errorCode = ffxCasContextCreate(&casContext, &casContextDesc);
+
+		if (errorCode != FFX_OK)
+		{
+			spdlog::error("FeatureContext::CreateCasContext ffxCasContextCreate error: {0:x}", errorCode);
+			return false;
+		}
+
+		ffxAssertSetPrintingCallback(ffxLogCallback);
+
+		casContextCreated = true;
+		return true;
+	}
+
+	void DestroyCasContext()
+	{
+		spdlog::debug("FeatureContext::DestroyCasContext Start!");
+
+		if (!casActive || !casContextCreated)
+			return;
+
+		auto errorCode = ffxCasContextDestroy(&casContext);
+
+		if (errorCode != FFX_OK)
+			spdlog::error("FeatureContext::DestroyCasContext ffxCasContextDestroy error: {0:x}", errorCode);
+
+		free(casContextDesc.backendInterface.scratchBuffer);
+
+		casContextCreated = false;
+	}
+
+	bool CreateCasBufferResource(ID3D12Resource* source, ID3D12Device* device)
+	{
+		if (!casInit)
+			return false;
+
+		if (!casActive)
+			return true;
+
+		if (source == nullptr)
+			return false;
+
+		spdlog::debug("FeatureContext::CreateCasBufferResource Start!");
+
+		D3D12_RESOURCE_DESC texDesc = source->GetDesc();
+
+		D3D12_HEAP_PROPERTIES heapProperties;
+		D3D12_HEAP_FLAGS heapFlags;
+		HRESULT hr = source->GetHeapProperties(&heapProperties, &heapFlags);
+
+		if (hr != S_OK)
+		{
+			spdlog::error("FeatureContext::CreateBufferResource GetHeapProperties result: {0:x}", hr);
+			return false;
+		}
+
+		if (casBuffer != nullptr)
+			casBuffer->Release();
+
+		hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&casBuffer));
+
+		if (hr != S_OK)
+		{
+			spdlog::error("FeatureContext::CreateBufferResource CreateCommittedResource result: {0:x}", hr);
+			return false;
+		}
+
+		return true;
+	}
+
+	bool CasDispatch(ID3D12CommandList* commandList, const NVSDK_NGX_Parameter* initParams, ID3D12Resource* input, ID3D12Resource* output)
+	{
+		if (!casInit)
+			return false;
+
+		if (!casActive)
+			return true;
+
+		spdlog::debug("FeatureContext::CasDispatch Start!");
+
+		FfxCasDispatchDescription dispatchParameters = {};
+		dispatchParameters.commandList = ffxGetCommandListDX12(commandList);
+		dispatchParameters.renderSize = { DisplayWidth, DisplayHeight };
+
+		if (initParams->Get(NVSDK_NGX_Parameter_Sharpness, &casSharpness) != NVSDK_NGX_Result_Success ||
+			CyberXessContext::instance()->MyConfig->CasOverrideSharpness.value_or(false))
+		{
+			casSharpness = CyberXessContext::instance()->MyConfig->CasSharpness.value_or(0.4);
+
+			if (casSharpness > 1 || casSharpness < 0)
+				casSharpness = 0.4f;
+		}
+
+		dispatchParameters.sharpness = casSharpness;
+
+		dispatchParameters.color = ffxGetResourceDX12(input, GetFfxResourceDescriptionDX12(input), nullptr, FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
+		dispatchParameters.output = ffxGetResourceDX12(output, GetFfxResourceDescriptionDX12(output), nullptr, FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
+
+
+
+		if (auto errorCode = ffxCasContextDispatch(&casContext, &dispatchParameters); errorCode != FFX_OK)
+		{
+			spdlog::error("FeatureContext::CasDispatch ffxCasContextDispatch error: {0:x}", errorCode);
+			return false;
+		}
+
+		return true;
+	}
+
+#pragma endregion
+
+	bool CopyTextureFrom11To12(ID3D11Resource* d3d11texture, ID3D11Texture2D** pSharedTexture, D3D11_TEXTURE2D_DESC_C* sharedDesc, bool copy = true)
+	{
+		ID3D11Texture2D* originalTexture = nullptr;
+		D3D11_TEXTURE2D_DESC desc{};
+
+		auto result = d3d11texture->QueryInterface(IID_PPV_ARGS(&originalTexture));
+
+		if (result != S_OK)
+			return false;
+
+		originalTexture->GetDesc(&desc);
+
+		if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) == 0)
+		{
+			if (desc.Width != sharedDesc->Width || desc.Height != sharedDesc->Height ||
+				desc.Format != sharedDesc->Format || desc.BindFlags != sharedDesc->BindFlags ||
+				(*pSharedTexture) == nullptr)
+			{
+				if ((*pSharedTexture) != nullptr)
+					(*pSharedTexture)->Release();
+
+				ASSIGN_DESC(sharedDesc, desc);
+				sharedDesc->pointer = nullptr;
+				sharedDesc->handle = NULL;
+
+				desc.MiscFlags |= D3D11_RESOURCE_MISC_SHARED;
+				result = Dx11Device->CreateTexture2D(&desc, nullptr, pSharedTexture);
+
+				IDXGIResource1* resource;
+
+				result = (*pSharedTexture)->QueryInterface(IID_PPV_ARGS(&resource));
+
+				if (result != S_OK)
+				{
+					spdlog::error("FeatureContext::CopyTextureFrom11To12 QueryInterface(resource) error: {0:x}", result);
+					return false;
+				}
+
+				// Get shared handle
+				result = resource->GetSharedHandle(&sharedDesc->handle);
+
+				if (result != S_OK)
+				{
+					spdlog::error("FeatureContext::CopyTextureFrom11To12 GetSharedHandle error: {0:x}", result);
+					return false;
+				}
+
+				resource->Release();
+				sharedDesc->pointer = (*pSharedTexture);
+			}
+
+			if (copy)
+				Dx11DeviceContext->CopyResource(*pSharedTexture, d3d11texture);
+		}
+		else
+		{
+			if (sharedDesc->pointer != d3d11texture)
+			{
+				IDXGIResource1* resource;
+
+				result = originalTexture->QueryInterface(IID_PPV_ARGS(&resource));
+
+				if (result != S_OK)
+				{
+					spdlog::error("FeatureContext::CopyTextureFrom11To12 QueryInterface(resource) error: {0:x}", result);
+					return false;
+				}
+
+				// Get shared handle
+				result = resource->GetSharedHandle(&sharedDesc->handle);
+
+				if (result != S_OK)
+				{
+					spdlog::error("FeatureContext::CopyTextureFrom11To12 GetSharedHandle error: {0:x}", result);
+					return false;
+				}
+
+				resource->Release();
+				sharedDesc->pointer = d3d11texture;
+			}
+		}
+
+		originalTexture->Release();
+		return true;
+	}
+
+	void ReleaseSharedResources()
+	{
+		spdlog::debug("FeatureContext::ReleaseSharedResources start!");
+
+		SAFE_RELEASE(casBuffer);
+		SAFE_RELEASE(dx11Color.SharedTexture);
+		SAFE_RELEASE(dx11Mv.SharedTexture);
+		SAFE_RELEASE(dx11Out.SharedTexture);
+		SAFE_RELEASE(dx11Depth.SharedTexture);
+		SAFE_RELEASE(dx11Tm.SharedTexture);
+		SAFE_RELEASE(dx11Exp.SharedTexture);
+	}
+
 	void GetHardwareAdapter(IDXGIFactory1* pFactory, IDXGIAdapter** ppAdapter, D3D_FEATURE_LEVEL featureLevel, bool requestHighPerformanceAdapter) const
 	{
 		*ppAdapter = nullptr;
@@ -139,54 +476,9 @@ class CyberXessContext
 
 	}
 
-public:
-	std::shared_ptr<Config> MyConfig;
-
-	//const NvParameter* CreateFeatureParams;
-
-	// D3D12 stuff
-	ID3D12Device* Dx12Device = nullptr;
-
-	// D3D11 stuff
-	ID3D11Device5* Dx11Device = nullptr;
-	ID3D11DeviceContext4* Dx11DeviceContext = nullptr;
-
-	// D3D11with12 stuff
-	ID3D12CommandQueue* Dx12CommandQueue = nullptr;
-	ID3D12CommandAllocator* Dx12CommandAllocator = nullptr;
-	ID3D12GraphicsCommandList* Dx12CommandList = nullptr;
-
-	// Vulkan stuff
-	VkDevice VulkanDevice = nullptr;
-	VkInstance VulkanInstance = nullptr;
-	VkPhysicalDevice VulkanPhysicalDevice = nullptr;
-
-	//std::shared_ptr<NvParameter> NvParameterInstance = NvParameter::instance();
-
-	ankerl::unordered_dense::map <unsigned int, std::unique_ptr<FeatureContext>> Contexts;
-	FeatureContext* CreateContext();
-	void DeleteContext(NVSDK_NGX_Handle* handle);
-
-	static std::shared_ptr<CyberXessContext> instance()
-	{
-		static std::shared_ptr<CyberXessContext> INSTANCE{ std::make_shared<CyberXessContext>(CyberXessContext()) };
-		return INSTANCE;
-	}
-
-	void Shutdown(bool fromDx11 = false, bool shutdownEvent = false) const
-	{
-		if (fromDx11 && shutdownEvent)
-		{
-			SAFE_RELEASE(CyberXessContext::instance()->Dx12CommandList);
-			SAFE_RELEASE(CyberXessContext::instance()->Dx12CommandQueue);
-			SAFE_RELEASE(CyberXessContext::instance()->Dx12CommandAllocator);
-			SAFE_RELEASE(CyberXessContext::instance()->Dx12Device);
-		}
-	}
-
 	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL featureLevel)
 	{
-		if (Dx12Device != nullptr)
+		if (Dx12on11Device)
 			return S_OK;
 
 		HRESULT result;
@@ -196,7 +488,7 @@ public:
 
 		if (result != S_OK)
 		{
-			spdlog::error("CyberXessContext::CreateDx12Device Can't create factory: {0:x}", result);
+			spdlog::error("FeatureContext::CreateDx12Device Can't create factory: {0:x}", result);
 			return result;
 		}
 
@@ -205,341 +497,49 @@ public:
 
 		if (hardwareAdapter == nullptr)
 		{
-			spdlog::error("CyberXessContext::CreateDx12Device Can't get hardwareAdapter!");
+			spdlog::error("FeatureContext::CreateDx12Device Can't get hardwareAdapter!");
 			return E_NOINTERFACE;
 		}
 
-		result = D3D12CreateDevice(hardwareAdapter, featureLevel, IID_PPV_ARGS(&Dx12Device));
+		result = D3D12CreateDevice(hardwareAdapter, featureLevel, IID_PPV_ARGS(&Dx12on11Device));
 
 		if (result != S_OK)
 		{
-			spdlog::error("CyberXessContext::CreateDx12Device Can't create device: {0:x}", result);
+			spdlog::error("FeatureContext::CreateDx12Device Can't create device: {0:x}", result);
 			return result;
 		}
-
-		SAFE_RELEASE(CyberXessContext::instance()->Dx12CommandList);
-		SAFE_RELEASE(CyberXessContext::instance()->Dx12CommandQueue);
-		SAFE_RELEASE(CyberXessContext::instance()->Dx12CommandAllocator);
 
 		D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 		queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 		queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
 		// CreateCommandQueue
-		result = Dx12Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&Dx12CommandQueue));
-		spdlog::debug("CyberXessContext::CreateDx12Device CreateCommandQueue result: {0:x}", result);
+		result = Dx12on11Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&Dx12CommandQueue));
 
 		if (result != S_OK || Dx12CommandQueue == nullptr)
-			return NVSDK_NGX_Result_FAIL_PlatformError;
-
-		return S_OK;
-	}
-};
-
-class FeatureContext
-{
-	ID3D12Device* dx12device = nullptr;
-
-	// xess
-	xess_context_handle_t xessContext = nullptr;
-	bool xessInit = false;
-
-	// cas
-	FfxCasContext casContext;
-	bool casInit = false;
-	bool casContextCreated = false;
-	bool casUpscale = false;
-	bool casActive = false;
-	float casSharpness = 0.4f;
-	ID3D12Resource* casBuffer = nullptr;
-	FfxCasContextDescription casContextDesc = {};
-
-	// dx11
-	D3D11_TEXTURE2D_RESOURCE_C dx11Color = {};
-	D3D11_TEXTURE2D_RESOURCE_C dx11Mv = {};
-	D3D11_TEXTURE2D_RESOURCE_C dx11Depth = {};
-	D3D11_TEXTURE2D_RESOURCE_C dx11Tm = {};
-	D3D11_TEXTURE2D_RESOURCE_C dx11Exp = {};
-	D3D11_TEXTURE2D_RESOURCE_C dx11Out = {};
-
-#pragma region cas methods
-
-	void CasInit()
-	{
-		if (casInit)
-			return;
-
-		spdlog::debug("FeatureContext::CasInit Start!");
-
-		casActive = CyberXessContext::instance()->MyConfig->CasEnabled.value_or(false);
-		casSharpness = CyberXessContext::instance()->MyConfig->CasSharpness.value_or(0.3);
-
-		if (casSharpness > 1 || casSharpness < 0)
-			casSharpness = 0.4f;
-
-		casInit = true;
-	}
-
-	bool CreateCasContext()
-	{
-		if (!casInit)
-			return false;
-
-		if (!casActive)
-			return true;
-
-		spdlog::debug("FeatureContext::CreateCasContext Start!");
-
-		DestroyCasContext();
-
-		const size_t scratchBufferSize = ffxGetScratchMemorySizeDX12(FFX_CAS_CONTEXT_COUNT);
-		void* casScratchBuffer = calloc(scratchBufferSize, 1);
-
-		auto errorCode = ffxGetInterfaceDX12(&casContextDesc.backendInterface, dx12device, casScratchBuffer, scratchBufferSize, FFX_CAS_CONTEXT_COUNT);
-
-		if (errorCode != FFX_OK)
 		{
-			spdlog::error("FeatureContext::CreateCasContext ffxGetInterfaceDX12 error: {0:x}", errorCode);
-			free(casScratchBuffer);
-			return false;
+			spdlog::debug("FeatureContext::CreateDx12Device CreateCommandQueue result: {0:x}", result);
+			return E_NOINTERFACE;
 		}
 
-		casUpscale = false;
-		casContextDesc.flags |= FFX_CAS_SHARPEN_ONLY;
-
-		/*
-		* We will probably never use CAS upscale 
-		if (RenderWidth == DisplayWidth && RenderHeight == DisplayHeight)
-		{
-			casUpscale = false;
-			casContextDesc.flags |= FFX_CAS_SHARPEN_ONLY;
-		}
-		else
-		{
-			casUpscale = true;
-			casContextDesc.flags &= ~FFX_CAS_SHARPEN_ONLY;
-		}
-		*/
-
-		auto casCSC = CyberXessContext::instance()->MyConfig->ColorSpaceConversion.value_or(FFX_CAS_COLOR_SPACE_LINEAR);
-
-		if (casCSC < 0 || casCSC > 4)
-			casCSC = 0;
-
-		casContextDesc.colorSpaceConversion = static_cast<FfxCasColorSpaceConversion>(casCSC);
-		casContextDesc.maxRenderSize.width = RenderWidth;
-		casContextDesc.maxRenderSize.height = RenderHeight;
-		casContextDesc.displaySize.width = DisplayWidth;
-		casContextDesc.displaySize.height = DisplayHeight;
-
-		errorCode = ffxCasContextCreate(&casContext, &casContextDesc);
-
-		if (errorCode != FFX_OK)
-		{
-			spdlog::error("FeatureContext::CreateCasContext ffxCasContextCreate error: {0:x}", errorCode);
-			return false;
-		}
-
-		ffxAssertSetPrintingCallback(ffxLogCallback);
-
-		casContextCreated = true;
-		return true;
-	}
-
-	void DestroyCasContext()
-	{
-		spdlog::debug("FeatureContext::DestroyCasContext Start!");
-
-		if (!casActive || !casContextCreated)
-			return;
-
-		auto errorCode = ffxCasContextDestroy(&casContext);
-
-		if (errorCode != FFX_OK)
-			spdlog::error("FeatureContext::DestroyCasContext ffxCasContextDestroy error: {0:x}", errorCode);
-
-		free(casContextDesc.backendInterface.scratchBuffer);
-
-		casContextCreated = false;
-	}
-
-	bool CreateCasBufferResource(ID3D12Resource* source)
-	{
-		if (!casInit)
-			return false;
-
-		if (!casActive)
-			return true;
-
-		if (source == nullptr)
-			return false;
-
-		spdlog::debug("FeatureContext::CreateCasBufferResource Start!");
-
-		D3D12_RESOURCE_DESC texDesc = source->GetDesc();
-
-		D3D12_HEAP_PROPERTIES heapProperties;
-		D3D12_HEAP_FLAGS heapFlags;
-		HRESULT hr = source->GetHeapProperties(&heapProperties, &heapFlags);
-
-		if (hr != S_OK)
-		{
-			spdlog::error("FeatureContext::CreateBufferResource GetHeapProperties result: {0:x}", hr);
-			return false;
-		}
-
-		if (casBuffer != nullptr)
-			casBuffer->Release();
-
-		hr = dx12device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&casBuffer));
-
-		if (hr != S_OK)
-		{
-			spdlog::error("FeatureContext::CreateBufferResource CreateCommittedResource result: {0:x}", hr);
-			return false;
-		}
-
-		return true;
-	}
-
-	bool CasDispatch(ID3D12CommandList* commandList, const NVSDK_NGX_Parameter* initParams, ID3D12Resource* input, ID3D12Resource* output)
-	{
-		if (!casInit)
-			return false;
-
-		if (!casActive)
-			return true;
-
-		spdlog::debug("FeatureContext::CasDispatch Start!");
-
-		FfxCasDispatchDescription dispatchParameters = {};
-		dispatchParameters.commandList = ffxGetCommandListDX12(commandList);
-		dispatchParameters.renderSize = { DisplayWidth, DisplayHeight };
-
-		if (initParams->Get(NVSDK_NGX_Parameter_Sharpness, &casSharpness) != NVSDK_NGX_Result_Success ||
-			CyberXessContext::instance()->MyConfig->CasOverrideSharpness.value_or(false))
-		{
-			casSharpness = CyberXessContext::instance()->MyConfig->CasSharpness.value_or(0.4);
-
-			if (casSharpness > 1 || casSharpness < 0)
-				casSharpness = 0.4f;
-		}
-
-		dispatchParameters.sharpness = casSharpness;
-
-		dispatchParameters.color = ffxGetResourceDX12(input, GetFfxResourceDescriptionDX12(input), nullptr, FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
-		dispatchParameters.output = ffxGetResourceDX12(output, GetFfxResourceDescriptionDX12(output), nullptr, FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
-
-		
-
-		if (auto errorCode = ffxCasContextDispatch(&casContext, &dispatchParameters); errorCode != FFX_OK)
-		{
-			spdlog::error("FeatureContext::CasDispatch ffxCasContextDispatch error: {0:x}", errorCode);
-			return false;
-		}
-
-		return true;
-	}
-
-#pragma endregion
-
-	bool CopyTextureFrom11To12(ID3D11Resource* d3d11texture, ID3D11Texture2D** pSharedTexture, D3D11_TEXTURE2D_DESC_C* sharedDesc, bool copy = true)
-	{
-		ID3D11Texture2D* originalTexture = nullptr;
-		D3D11_TEXTURE2D_DESC desc{};
-
-		auto result = d3d11texture->QueryInterface(IID_PPV_ARGS(&originalTexture));
+		result = Dx12on11Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&Dx12CommandAllocator));
 
 		if (result != S_OK)
-			return false;
-
-		originalTexture->GetDesc(&desc);
-
-		if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) == 0)
 		{
-			if (desc.Width != sharedDesc->Width || desc.Height != sharedDesc->Height ||
-				desc.Format != sharedDesc->Format || desc.BindFlags != sharedDesc->BindFlags ||
-				(*pSharedTexture) == nullptr)
-			{
-				if ((*pSharedTexture) != nullptr)
-					(*pSharedTexture)->Release();
-
-				ASSIGN_DESC(sharedDesc, desc);
-				sharedDesc->pointer = nullptr;
-				sharedDesc->handle = NULL;
-
-				desc.MiscFlags |= D3D11_RESOURCE_MISC_SHARED;
-				result = CyberXessContext::instance()->Dx11Device->CreateTexture2D(&desc, nullptr, pSharedTexture);
-
-				IDXGIResource1* resource;
-
-				result = (*pSharedTexture)->QueryInterface(IID_PPV_ARGS(&resource));
-
-				if (result != S_OK)
-				{
-					spdlog::error("FeatureContext::CopyTextureFrom11To12 QueryInterface(resource) error: {0:x}", result);
-					return false;
-				}
-
-				// Get shared handle
-				result = resource->GetSharedHandle(&sharedDesc->handle);
-
-				if (result != S_OK)
-				{
-					spdlog::error("FeatureContext::CopyTextureFrom11To12 GetSharedHandle error: {0:x}", result);
-					return false;
-				}
-
-				resource->Release();
-				sharedDesc->pointer = (*pSharedTexture);
-			}
-
-			if (copy)
-				CyberXessContext::instance()->Dx11DeviceContext->CopyResource(*pSharedTexture, d3d11texture);
-		}
-		else
-		{
-			if (sharedDesc->pointer != d3d11texture)
-			{
-				IDXGIResource1* resource;
-
-				result = originalTexture->QueryInterface(IID_PPV_ARGS(&resource));
-
-				if (result != S_OK)
-				{
-					spdlog::error("FeatureContext::CopyTextureFrom11To12 QueryInterface(resource) error: {0:x}", result);
-					return false;
-				}
-
-				// Get shared handle
-				result = resource->GetSharedHandle(&sharedDesc->handle);
-
-				if (result != S_OK)
-				{
-					spdlog::error("FeatureContext::CopyTextureFrom11To12 GetSharedHandle error: {0:x}", result);
-					return false;
-				}
-
-				resource->Release();
-				sharedDesc->pointer = d3d11texture;
-			}
+			spdlog::error("FeatureContext::CreateDx12Device CreateCommandAllocator error: {0:x}", result);
+			return E_NOINTERFACE;
 		}
 
-		originalTexture->Release();
-		return true;
-	}
+		// CreateCommandList
+		result = Dx12on11Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, Dx12CommandAllocator, nullptr, IID_PPV_ARGS(&Dx12CommandList));
 
-	void ReleaseSharedResources()
-	{
-		spdlog::debug("FeatureContext::ReleaseSharedResources start!");
+		if (result != S_OK)
+		{
+			spdlog::error("FeatureContext::CreateDx12Device CreateCommandList error: {0:x}", result);
+			return E_NOINTERFACE;
+		}
 
-		SAFE_RELEASE(casBuffer);
-		SAFE_RELEASE(dx11Color.SharedTexture);
-		SAFE_RELEASE(dx11Mv.SharedTexture);
-		SAFE_RELEASE(dx11Out.SharedTexture);
-		SAFE_RELEASE(dx11Depth.SharedTexture);
-		SAFE_RELEASE(dx11Tm.SharedTexture);
-		SAFE_RELEASE(dx11Exp.SharedTexture);
+		return S_OK;
 	}
 
 public:
@@ -554,18 +554,75 @@ public:
 
 #pragma region xess methods
 
-	bool XeSSInit(ID3D12Device* device, const NVSDK_NGX_Parameter* initParams)
+	bool XeSSInitDx11(ID3D11DeviceContext* context, const NVSDK_NGX_Parameter* initParams)
 	{
-		if (device == nullptr)
+		if (!context)
 		{
-			spdlog::error("FeatureContext::XeSSInit D3D12Device is null!");
+			spdlog::error("FeatureContext::XeSSInitDx11 context is null!");
 			return false;
 		}
 
-		if (xessInit)
+		if (XeSSIsInited())
 			return true;
 
-		dx12device = device;
+		//if (!xessInit11)
+		//{
+		auto contextResult = context->QueryInterface(IID_PPV_ARGS(&Dx11DeviceContext));
+		if (contextResult != S_OK)
+		{
+			spdlog::error("FeatureContext::XeSSInitDx11 QueryInterface ID3D11DeviceContext4 result: {0:x}", contextResult);
+			return false;
+		}
+
+		ID3D11Device* device;
+		Dx11DeviceContext->GetDevice(&device);
+
+		auto dx11DeviceResult = device->QueryInterface(IID_PPV_ARGS(&Dx11Device));
+
+		if (dx11DeviceResult != S_OK)
+		{
+			spdlog::error("FeatureContext::XeSSInitDx11 QueryInterface ID3D11Device5 result: {0:x}", dx11DeviceResult);
+			return false;
+		}
+
+		xessInit11 = true;
+		//}
+		//else if (!xessInit12)
+		//{
+		auto fl = Dx11Device->GetFeatureLevel();
+		auto result = CreateDx12Device(fl);
+
+		if (result != S_OK || !Dx12on11Device)
+		{
+			spdlog::error("FeatureContext::XeSSExecuteDx11 QueryInterface Dx12Device result: {0:x}", result);
+			return false;
+		}
+
+		spdlog::debug("FeatureContext::XeSSExecuteDx11 calling XeSSInitDx12");
+
+		if (!XeSSInitDx12(Dx12on11Device, initParams, true))
+		{
+			spdlog::error("FeatureContext::XeSSExecuteDx11 XeSSInitDx12 fail!");
+			return false;
+		}
+		//}
+
+		return true;
+	}
+
+	bool XeSSInitDx12(ID3D12Device* device, const NVSDK_NGX_Parameter* initParams, bool from11 = false)
+	{
+		if (device == nullptr)
+		{
+			spdlog::error("FeatureContext::XeSSInit12 D3D12Device is null!");
+			return false;
+		}
+
+		if (xessInit12)
+			return true;
+
+		if (!from11)
+			Dx12Device = device;
 
 		unsigned int width, outWidth, height, outHeight;
 		initParams->Get(NVSDK_NGX_Parameter_Width, &width);
@@ -578,29 +635,29 @@ public:
 		RenderWidth = width < outWidth ? width : outWidth;
 		RenderHeight = height < outHeight ? height : outHeight;
 
-		spdlog::info("FeatureContext::XeSSInit Output Resolution: {0}x{1}", DisplayWidth, DisplayHeight);
+		spdlog::info("FeatureContext::XeSSInit12 Output Resolution: {0}x{1}", DisplayWidth, DisplayHeight);
 
 		xess_version_t ver;
 		xess_result_t ret = xessGetVersion(&ver);
 
 		if (ret == XESS_RESULT_SUCCESS)
-			spdlog::info("FeatureContext::XeSSInit XeSS Version: {0}.{1}.{2}", ver.major, ver.minor, ver.patch);
+			spdlog::info("FeatureContext::XeSSInit12 XeSS Version: {0}.{1}.{2}", ver.major, ver.minor, ver.patch);
 		else
-			spdlog::warn("FeatureContext::XeSSInit xessGetVersion error: {0}", ResultToString(ret));
+			spdlog::warn("FeatureContext::XeSSInit12 xessGetVersion error: {0}", ResultToString(ret));
 
-		ret = xessD3D12CreateContext(dx12device, &xessContext);
+		ret = xessD3D12CreateContext(device, &xessContext);
 
 		if (ret != XESS_RESULT_SUCCESS)
 		{
-			spdlog::error("FeatureContext::XeSSInit xessD3D12CreateContext error: {0}", ResultToString(ret));
+			spdlog::error("FeatureContext::XeSSInit12 xessD3D12CreateContext error: {0}", ResultToString(ret));
 			return false;
 		}
 
 		ret = xessIsOptimalDriver(xessContext);
-		spdlog::debug("FeatureContext::XeSSInit xessIsOptimalDriver : {0}", ResultToString(ret));
+		spdlog::debug("FeatureContext::XeSSInit12 xessIsOptimalDriver : {0}", ResultToString(ret));
 
 		ret = xessSetLoggingCallback(xessContext, XESS_LOGGING_LEVEL_DEBUG, logCallback);
-		spdlog::debug("FeatureContext::XeSSInit xessSetLoggingCallback : {0}", ResultToString(ret));
+		spdlog::debug("FeatureContext::XeSSInit12 xessSetLoggingCallback : {0}", ResultToString(ret));
 
 #pragma region Create Parameters for XeSS
 
@@ -660,48 +717,46 @@ public:
 		{
 			xessParams.initFlags |= XESS_INIT_FLAG_INVERTED_DEPTH;
 			CyberXessContext::instance()->MyConfig->DepthInverted = true;
-			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (DepthInverted) {0:b}", xessParams.initFlags);
+			spdlog::info("FeatureContext::XeSSInit12 xessParams.initFlags (DepthInverted) {0:b}", xessParams.initFlags);
 		}
 
 		if (AutoExposure || CyberXessContext::instance()->MyConfig->AutoExposure.value_or(AutoExposure))
 		{
 			xessParams.initFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
 			CyberXessContext::instance()->MyConfig->AutoExposure = true;
-			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (AutoExposure) {0:b}", xessParams.initFlags);
+			spdlog::info("FeatureContext::XeSSInit12 xessParams.initFlags (AutoExposure) {0:b}", xessParams.initFlags);
 		}
 		else
 		{
 			xessParams.initFlags |= XESS_INIT_FLAG_EXPOSURE_SCALE_TEXTURE;
-			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (!AutoExposure) {0:b}", xessParams.initFlags);
+			spdlog::info("FeatureContext::XeSSInit12 xessParams.initFlags (!AutoExposure) {0:b}", xessParams.initFlags);
 		}
 
 		if (!CyberXessContext::instance()->MyConfig->HDR.value_or(Hdr))
 		{
 			xessParams.initFlags |= XESS_INIT_FLAG_LDR_INPUT_COLOR;
 			CyberXessContext::instance()->MyConfig->HDR = false;
-			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (LDR) {0:b}", xessParams.initFlags);
+			spdlog::info("FeatureContext::XeSSInit12 xessParams.initFlags (!HDR) {0:b}", xessParams.initFlags);
 		}
-		else
-			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (HDR) {0:b}", xessParams.initFlags);
 
 		if (CyberXessContext::instance()->MyConfig->JitterCancellation.value_or(JitterMotion))
 		{
 			xessParams.initFlags |= XESS_INIT_FLAG_JITTERED_MV;
 			CyberXessContext::instance()->MyConfig->JitterCancellation = true;
-			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (JitterCancellation) {0:b}", xessParams.initFlags);
+			spdlog::info("FeatureContext::XeSSInit12 xessParams.initFlags (JitterCancellation) {0:b}", xessParams.initFlags);
 		}
 
 		if (CyberXessContext::instance()->MyConfig->DisplayResolution.value_or(!LowRes))
 		{
 			xessParams.initFlags |= XESS_INIT_FLAG_HIGH_RES_MV;
 			CyberXessContext::instance()->MyConfig->DisplayResolution = true;
-			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (LowRes) {0:b}", xessParams.initFlags);
+			spdlog::info("FeatureContext::XeSSInit12 xessParams.initFlags (LowRes) {0:b}", xessParams.initFlags);
 		}
 
 		if (!CyberXessContext::instance()->MyConfig->DisableReactiveMask.value_or(true))
 		{
 			xessParams.initFlags |= XESS_INIT_FLAG_RESPONSIVE_PIXEL_MASK;
-			spdlog::info("FeatureContext::XeSSInit xessParams.initFlags (ReactiveMaskActive) {0:b}", xessParams.initFlags);
+			spdlog::info("FeatureContext::XeSSInit12 xessParams.initFlags (ReactiveMaskActive) {0:b}", xessParams.initFlags);
 		}
 
 #pragma endregion
@@ -710,47 +765,69 @@ public:
 
 		if (CyberXessContext::instance()->MyConfig->BuildPipelines.value_or(true))
 		{
-			spdlog::debug("FeatureContext::XeSSInit xessD3D12BuildPipelines!");
+			spdlog::debug("FeatureContext::XeSSInit12 xessD3D12BuildPipelines!");
 
 			ret = xessD3D12BuildPipelines(xessContext, NULL, false, xessParams.initFlags);
 
 			if (ret != XESS_RESULT_SUCCESS)
 			{
-				spdlog::error("FeatureContext::XeSSInit xessD3D12BuildPipelines error: {0}", ResultToString(ret));
+				spdlog::error("FeatureContext::XeSSInit12 xessD3D12BuildPipelines error: {0}", ResultToString(ret));
 				return false;
 			}
 		}
 
 #pragma endregion
 
-		spdlog::debug("FeatureContext::XeSSInit xessD3D12Init!");
+		spdlog::debug("FeatureContext::XeSSInit12 xessD3D12Init!");
 
 		ret = xessD3D12Init(xessContext, &xessParams);
 
 		if (ret != XESS_RESULT_SUCCESS)
 		{
-			spdlog::error("FeatureContext::XeSSInit xessD3D12Init error: {0}", ResultToString(ret));
+			spdlog::error("FeatureContext::XeSSInit12 xessD3D12Init error: {0}", ResultToString(ret));
 			return false;
 		}
-
-
 
 		CasInit();
 
 		if (casActive)
-			CreateCasContext();
+			CreateCasContext(device);
 
-		xessInit = true;
+		xessInit12 = true;
 
 		return true;
 	}
 
 	void XeSSDestroy()
 	{
-		if (!xessInit || xessContext == nullptr)
+		if (!XeSSIsInited() || xessContext == nullptr)
 			return;
 
 		spdlog::debug("FeatureContext::XeSSDestroy!");
+
+		// Close D3D12 device
+		if (Dx11Device != nullptr && Dx12on11Device && Dx12CommandQueue && Dx12CommandList)
+		{
+			spdlog::debug("FeatureContext::Shutdown releasing d3d12 resources");
+			ID3D12Fence* d3d12Fence;
+			Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
+			Dx12CommandQueue->Signal(d3d12Fence, 999);
+			spdlog::debug("FeatureContext::Shutdown releasing d3d12 fence created and signalled");
+
+			Dx12CommandList->Close();
+			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+			spdlog::debug("FeatureContext::Shutdown releasing d3d12 command list executing");
+			Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+			spdlog::debug("FeatureContext::Shutdown releasing d3d12 waiting signal");
+			auto fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+			d3d12Fence->SetEventOnCompletion(999, fenceEvent);
+			WaitForSingleObject(fenceEvent, INFINITE);
+			CloseHandle(fenceEvent);
+			d3d12Fence->Release();
+
+			spdlog::debug("FeatureContext::Shutdown releasing d3d12 release done");
+		}
 
 		auto result = xessDestroyContext(xessContext);
 
@@ -758,7 +835,8 @@ public:
 			spdlog::error("FeatureContext::XeSSDestroy xessDestroyContext error: {0}", ResultToString(result));
 
 		xessContext = nullptr;
-		xessInit = false;
+		xessInit11 = false;
+		xessInit12 = false;
 
 		DestroyCasContext();
 		ReleaseSharedResources();
@@ -766,12 +844,12 @@ public:
 
 	bool XeSSIsInited() const
 	{
-		return xessInit;
+		return (xessInit11 && xessInit12) || (!xessInit11 && xessInit12);
 	}
 
 	bool XeSSExecuteDx12(ID3D12GraphicsCommandList* commandList, const NVSDK_NGX_Parameter* initParams, const FeatureContext* context)
 	{
-		if (!xessInit)
+		if (!xessInit12)
 			return false;
 
 		const auto instance = CyberXessContext::instance();
@@ -901,7 +979,7 @@ public:
 
 			if (casActive)
 			{
-				if (casBuffer == nullptr && !CreateCasBufferResource(paramOutput))
+				if (casBuffer == nullptr && !CreateCasBufferResource(paramOutput, Dx12Device))
 				{
 					spdlog::error("FeatureContext::XeSSExecuteDx12 Can't create cas buffer!");
 					return false;
@@ -1092,18 +1170,16 @@ public:
 		return true;
 	}
 
-	bool XeSSExecuteDx11(ID3D12GraphicsCommandList* commandList, ID3D12CommandQueue* commandQueue,
-		ID3D11Device* dx11device, ID3D11DeviceContext* deviceContext,
-		const NVSDK_NGX_Parameter* initParams, const FeatureContext* context)
+	bool XeSSExecuteDx11(ID3D11DeviceContext* deviceContext, const NVSDK_NGX_Parameter* initParams)
 	{
-		if (!xessInit)
+		if (!xessInit11)
 			return false;
 
 		const auto instance = CyberXessContext::instance();
 
 		// Fence for syncing
 		ID3D12Fence* d3d12Fence;
-		auto result = dx12device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
+		auto result = Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
 
 		if (result != S_OK)
 		{
@@ -1147,22 +1223,22 @@ public:
 				}
 				else
 				{
-					if (width < context->RenderWidth)
+					if (width < RenderWidth)
 					{
 						params.inputWidth = width;
 						params.inputHeight = height;
 					}
 					else
 					{
-						params.inputWidth = context->RenderWidth;
-						params.inputHeight = context->RenderHeight;
+						params.inputWidth = RenderWidth;
+						params.inputHeight = RenderHeight;
 					}
 				}
 			}
 			else
 			{
-				params.inputWidth = context->RenderWidth;
-				params.inputHeight = context->RenderHeight;
+				params.inputWidth = RenderWidth;
+				params.inputHeight = RenderHeight;
 			}
 		}
 
@@ -1174,7 +1250,7 @@ public:
 		pQueryDesc.Query = D3D11_QUERY_EVENT;
 		pQueryDesc.MiscFlags = 0;
 		ID3D11Query* query1 = nullptr;
-		result = dx11device->CreateQuery(&pQueryDesc, &query1);
+		result = Dx11Device->CreateQuery(&pQueryDesc, &query1);
 
 		if (result != S_OK || query1 == nullptr || query1 == NULL)
 		{
@@ -1286,7 +1362,7 @@ public:
 		deviceContext->Flush();
 
 		// Wait for the query to be ready
-		while (instance->Dx11DeviceContext->GetData(query1, NULL, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE) {
+		while (Dx11DeviceContext->GetData(query1, NULL, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE) {
 			//
 		}
 
@@ -1296,7 +1372,7 @@ public:
 
 		if (paramColor)
 		{
-			result = instance->Dx12Device->OpenSharedHandle(dx11Color.Desc.handle, IID_PPV_ARGS(&params.pColorTexture));
+			result = Dx12on11Device->OpenSharedHandle(dx11Color.Desc.handle, IID_PPV_ARGS(&params.pColorTexture));
 
 			if (result != S_OK)
 			{
@@ -1307,7 +1383,7 @@ public:
 
 		if (paramMv)
 		{
-			result = instance->Dx12Device->OpenSharedHandle(dx11Mv.Desc.handle, IID_PPV_ARGS(&params.pVelocityTexture));
+			result = Dx12on11Device->OpenSharedHandle(dx11Mv.Desc.handle, IID_PPV_ARGS(&params.pVelocityTexture));
 
 			if (result != S_OK)
 			{
@@ -1320,7 +1396,7 @@ public:
 		{
 			if (casActive)
 			{
-				result = instance->Dx12Device->OpenSharedHandle(dx11Out.Desc.handle, IID_PPV_ARGS(&dx11OutputBuffer));
+				result = Dx12on11Device->OpenSharedHandle(dx11Out.Desc.handle, IID_PPV_ARGS(&dx11OutputBuffer));
 				dx11Out.SharedHandle = dx11Out.Desc.handle;
 
 				if (result != S_OK)
@@ -1329,7 +1405,7 @@ public:
 					return false;
 				}
 
-				if (casBuffer == nullptr && !CreateCasBufferResource(dx11OutputBuffer))
+				if (casBuffer == nullptr && !CreateCasBufferResource(dx11OutputBuffer, Dx12on11Device))
 				{
 					spdlog::error("FeatureContext::XeSSExecuteDx11 Can't create cas buffer!");
 					return false;
@@ -1339,7 +1415,7 @@ public:
 			}
 			else
 			{
-				result = instance->Dx12Device->OpenSharedHandle(dx11Out.Desc.handle, IID_PPV_ARGS(&params.pOutputTexture));
+				result = Dx12on11Device->OpenSharedHandle(dx11Out.Desc.handle, IID_PPV_ARGS(&params.pOutputTexture));
 				dx11Out.SharedHandle = dx11Out.Desc.handle;
 
 				if (result != S_OK)
@@ -1352,7 +1428,7 @@ public:
 
 		if (paramDepth)
 		{
-			result = instance->Dx12Device->OpenSharedHandle(dx11Depth.Desc.handle, IID_PPV_ARGS(&params.pDepthTexture));
+			result = Dx12on11Device->OpenSharedHandle(dx11Depth.Desc.handle, IID_PPV_ARGS(&params.pDepthTexture));
 
 			if (result != S_OK)
 			{
@@ -1363,7 +1439,7 @@ public:
 
 		if (!instance->MyConfig->AutoExposure.value_or(false) && paramExposure)
 		{
-			result = instance->Dx12Device->OpenSharedHandle(dx11Exp.Desc.handle, IID_PPV_ARGS(&params.pExposureScaleTexture));
+			result = Dx12on11Device->OpenSharedHandle(dx11Exp.Desc.handle, IID_PPV_ARGS(&params.pExposureScaleTexture));
 
 			if (result != S_OK)
 			{
@@ -1374,7 +1450,7 @@ public:
 
 		if (!instance->MyConfig->DisableReactiveMask.value_or(true) && paramMask)
 		{
-			result = instance->Dx12Device->OpenSharedHandle(dx11Tm.Desc.handle, IID_PPV_ARGS(&params.pResponsivePixelMaskTexture));
+			result = Dx12on11Device->OpenSharedHandle(dx11Tm.Desc.handle, IID_PPV_ARGS(&params.pResponsivePixelMaskTexture));
 
 			if (result != S_OK)
 			{
@@ -1404,7 +1480,7 @@ public:
 
 		// Execute xess
 		spdlog::debug("FeatureContext::XeSSExecuteDx11 Executing!!");
-		xessResult = xessD3D12Execute(xessContext, commandList, &params);
+		xessResult = xessD3D12Execute(xessContext, Dx12CommandList, &params);
 
 		if (xessResult != XESS_RESULT_SUCCESS)
 		{
@@ -1413,16 +1489,16 @@ public:
 		}
 
 		//apply cas
-		if (casActive && !CasDispatch(commandList, initParams, casBuffer, dx11OutputBuffer))
+		if (casActive && !CasDispatch(Dx12CommandList, initParams, casBuffer, dx11OutputBuffer))
 			return false;
 
 		// Execute dx12 commands to process xess
-		commandList->Close();
-		ID3D12CommandList* ppCommandLists[] = { commandList };
-		commandQueue->ExecuteCommandLists(1, ppCommandLists);
+		Dx12CommandList->Close();
+		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+		Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
 		// xess done
-		commandQueue->Signal(d3d12Fence, 20);
+		Dx12CommandQueue->Signal(d3d12Fence, 20);
 
 		// wait for end of copy
 		if (d3d12Fence->GetCompletedValue() < 20)
@@ -1440,11 +1516,10 @@ public:
 		d3d12Fence->Release();
 
 		//copy output back
-
 		ID3D11Query* query2 = nullptr;
-		result = dx11device->CreateQuery(&pQueryDesc, &query2);
+		result = Dx11Device->CreateQuery(&pQueryDesc, &query2);
 
-		if (result != S_OK || query2 == nullptr || query2 == NULL)
+		if (result != S_OK || !query2)
 		{
 			spdlog::error("FeatureContext::XeSSExecuteDx11 can't create query2!");
 			return false;
@@ -1455,10 +1530,10 @@ public:
 		deviceContext->CopyResource(paramOutput, dx11Out.SharedTexture);
 		// Execute dx11 commands 
 		deviceContext->End(query2);
-		instance->Dx11DeviceContext->Flush();
+		Dx11DeviceContext->Flush();
 
 		// Wait for the query to be ready
-		while (instance->Dx11DeviceContext->GetData(query2, NULL, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE) {
+		while (Dx11DeviceContext->GetData(query2, NULL, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE) {
 			//
 		}
 
@@ -1488,10 +1563,45 @@ public:
 				params.pOutputTexture->Release();
 		}
 
+		Dx12CommandAllocator->Reset();
+		Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
 		return true;
 	}
 #pragma endregion 
 
+	void Shutdown()
+	{
+		if (Dx11Device != nullptr)
+		{
+			// Close D3D12 device
+			if (Dx12on11Device && Dx12CommandQueue && Dx12CommandList)
+			{
+				spdlog::debug("FeatureContext::Shutdown releasing d3d12 resources");
+				ID3D12Fence* d3d12Fence;
+				Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
+				Dx12CommandQueue->Signal(d3d12Fence, 999);
+				spdlog::debug("FeatureContext::Shutdown releasing d3d12 fence created and signalled");
 
+				Dx12CommandList->Close();
+				ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+				spdlog::debug("FeatureContext::Shutdown releasing d3d12 command list executing");
+				Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
+				spdlog::debug("FeatureContext::Shutdown releasing d3d12 waiting signal");
+				auto fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+				d3d12Fence->SetEventOnCompletion(999, fenceEvent);
+				WaitForSingleObject(fenceEvent, INFINITE);
+				CloseHandle(fenceEvent);
+				d3d12Fence->Release();
+
+				spdlog::debug("FeatureContext::Shutdown releasing d3d12 release done");
+			}
+
+			SAFE_RELEASE(Dx12CommandList);
+			SAFE_RELEASE(Dx12CommandQueue);
+			SAFE_RELEASE(Dx12CommandAllocator);
+			SAFE_RELEASE(Dx12on11Device);
+		}
+	}
 };
