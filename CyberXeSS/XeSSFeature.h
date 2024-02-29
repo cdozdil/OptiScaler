@@ -129,43 +129,53 @@ protected:
 
 		if (GetConfig()->DepthInverted.value_or(DepthInverted))
 		{
+			GetConfig()->DepthInverted = true;
 			xessParams.initFlags |= XESS_INIT_FLAG_INVERTED_DEPTH;
 			spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (DepthInverted) {0:b}", xessParams.initFlags);
 		}
 
 		if (GetConfig()->AutoExposure.value_or(AutoExposure))
 		{
+			GetConfig()->AutoExposure = true;
 			xessParams.initFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
 			spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (AutoExposure) {0:b}", xessParams.initFlags);
 		}
 		else
 		{
+			GetConfig()->AutoExposure = false;
 			xessParams.initFlags |= XESS_INIT_FLAG_EXPOSURE_SCALE_TEXTURE;
 			spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (!AutoExposure) {0:b}", xessParams.initFlags);
 		}
 
 		if (!GetConfig()->HDR.value_or(Hdr))
 		{
+			GetConfig()->HDR = false;
 			xessParams.initFlags |= XESS_INIT_FLAG_LDR_INPUT_COLOR;
 			spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (!HDR) {0:b}", xessParams.initFlags);
 		}
 		else
+		{
+			GetConfig()->HDR = true;
 			spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (HDR) {0:b}", xessParams.initFlags);
+		}
 
 		if (GetConfig()->JitterCancellation.value_or(JitterMotion))
 		{
+			GetConfig()->JitterCancellation = true;
 			xessParams.initFlags |= XESS_INIT_FLAG_JITTERED_MV;
 			spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (JitterCancellation) {0:b}", xessParams.initFlags);
 		}
 
 		if (GetConfig()->DisplayResolution.value_or(!LowRes))
 		{
+			GetConfig()->DisplayResolution = true;
 			xessParams.initFlags |= XESS_INIT_FLAG_HIGH_RES_MV;
 			spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (LowRes) {0:b}", xessParams.initFlags);
 		}
 
 		if (!GetConfig()->DisableReactiveMask.value_or(true))
 		{
+			GetConfig()->DisableReactiveMask = false;
 			xessParams.initFlags |= XESS_INIT_FLAG_RESPONSIVE_PIXEL_MASK;
 			spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (ReactiveMaskActive) {0:b}", xessParams.initFlags);
 		}
