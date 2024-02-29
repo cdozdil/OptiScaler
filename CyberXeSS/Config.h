@@ -1,5 +1,10 @@
 #pragma once
-#include "pch.h"
+#include <optional>
+#include <filesystem>
+
+#include <SimpleIni.h>
+#define SPDLOG_USE_STD_FORMAT
+#include "spdlog/spdlog.h"
 
 class Config
 {
@@ -60,8 +65,12 @@ public:
 
 	void Reload();
 
+	static Config* Instance();
+
 private:
 	CSimpleIniA ini;
+
+	inline static Config* _config;
 
 	std::filesystem::path absoluteFileName;
 

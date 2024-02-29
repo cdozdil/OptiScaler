@@ -6,25 +6,30 @@
 #define SPDLOG_USE_STD_FORMAT
 #include "spdlog/spdlog.h"
 
+#include "Config.h"
+
 inline static unsigned int handleCounter = 1000000;
 
-class IFeatureContext
+class IFeature
 {
 private:
+	NVSDK_NGX_Handle* _handle;
+
+	bool _initParameters = false;
+
 	unsigned int _displayWidth = 0;
 	unsigned int _displayHeight = 0;
 	unsigned int _renderWidth = 0;
 	unsigned int _renderHeight = 0;
 	NVSDK_NGX_PerfQuality_Value _perfQualityValue;
-	unsigned int _handle;
+
+	Config* _config;
 
 protected:
-	bool _isInited = false;
-
-	void SetHandle()
+	void SetHandle(unsigned int handleId)
 	{
-		_handle = handleCounter++;
-		spdlog::info("IFeatureContext::SetHandle Handle: {0}", _handle);
+		_handle = new NVSDK_NGX_Handle{ handleId };
+		spdlog::info("IFeatureContext::SetHandle Handle: {0}", _handle->Id);
 	}
 
 	bool SetInitParameters(const NVSDK_NGX_Parameter* InParameters)
@@ -53,21 +58,32 @@ protected:
 		spdlog::error("IFeatureContext::SetInitParameters Can't set parameters!");
 		return false;
 	}
+	
+	Config* GetConfig() { return _config; }
+
+	virtual void SetInit(bool value) = 0;
 
 public:
-	unsigned int Handle() const { return _handle; };
+	NVSDK_NGX_Handle* Handle() const { return _handle; };
 	unsigned int DisplayWidth() const { return _displayWidth; };
 	unsigned int DisplayHeight() const { return _displayHeight; };
 	unsigned int RenderWidth() const { return _renderWidth; };
 	unsigned int RenderHeight() const { return _renderHeight; };
 	NVSDK_NGX_PerfQuality_Value PerfQualityValue() const { return _perfQualityValue; }
-	bool IsInited() const { return _isInited; };
+	bool IsInitParameters() const { return _initParameters; };
+	static unsigned int GetNextHandleId() { return handleCounter++; }
 
-	explicit IFeatureContext(const NVSDK_NGX_Parameter* InParameters)
+	explicit IFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters, Config* config)
 	{
-		SetHandle();
-		SetInitParameters(InParameters);
+		_config = config;
+
+		SetHandle(handleId);
+
+		_initParameters = SetInitParameters(InParameters);
 	}
 
-	virtual ~IFeatureContext() {}
+	virtual ~IFeature() {}
+
+	virtual void ReInit(const NVSDK_NGX_Parameter* InParameters) = 0;
+	virtual bool IsInited() = 0;
 };

@@ -82,7 +82,7 @@
     <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\ffx-sdk\sdk\include;$(SolutionDir)external\fmt\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)external\xess\lib;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
     <TargetName>nvngx</TargetName>
-    <OutDir>E:\Games\God of War</OutDir>
+    <OutDir>E:\Games\Deep Rock Galactic\FSD\Binaries\Win64</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\ffx-sdk\sdk\include;$(SolutionDir)external\fmt\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
@@ -219,7 +219,11 @@
     <ClInclude Include="Config.h" />
     <ClInclude Include="CyberXess.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="NGXParameter.h" />
+    <ClInclude Include="IFeature_Dx11.h" />
+    <ClInclude Include="IFeature_Dx12.h" />
+    <ClInclude Include="IFeature.h" />
+    <ClInclude Include="IFeature_Vk.h" />
+    <ClInclude Include="NVNGX_Parameter.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Util.h" />
   </ItemGroup>
@@ -232,16 +236,14 @@
     <ClCompile Include="cas\shared\ffx_shader_blobs.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="CyberXess.cpp" />
-    <ClCompile Include="CyberXessDx11.cpp" />
-    <ClCompile Include="CyberXessDx12.cpp" />
-    <ClCompile Include="CyberXessVk.cpp" />
+    <ClCompile Include="NVNGX_Dx11.cpp" />
+    <ClCompile Include="NVNGX_Dx12.cpp" />
+    <ClCompile Include="NVNGX_Vk.cpp" />
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="pch.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-    </ClCompile>
+    <ClCompile Include="XeSSFeature.cpp" />
+    <ClCompile Include="XeSSFeature.h" />
+    <ClCompile Include="XeSSFeature_Dx12.cpp" />
+    <ClCompile Include="XeSSFeature_Dx12.h" />
     <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

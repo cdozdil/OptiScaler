@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "Config.h"
 #include "Util.h"
 
@@ -37,13 +36,8 @@ void Config::Reload()
 
 			if (!LogFileName.has_value())
 			{
-				const auto now = std::chrono::system_clock::now();
-				auto str = std::format("{:%d%m%Y_%H%M%OS}", now);
-
-				auto path = Util::DllPath().parent_path();
-				auto logFile = path.string() + "/log_xess_" + str + ".log";
-
-				LogFileName = logFile;
+				auto logFile = Util::DllPath().parent_path() / "CyberXeSS.log";
+				LogFileName = logFile.string();
 			}
 		}
 		else
@@ -169,3 +163,10 @@ std::optional<bool> Config::readBool(std::string section, std::string key)
 	return std::nullopt;
 }
 
+Config* Config::Instance()
+{
+	if(!_config)
+		_config = new Config(L"nvngx.ini");
+
+	return _config;
+}

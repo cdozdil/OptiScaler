@@ -1,41 +1,39 @@
 #pragma once
-#include "pch.h"
+#include <nvsdk_ngx.h>
+#include <nvsdk_ngx_defs.h>
 
-inline Config* config = nullptr;
+#include "Config.h"
 
 inline std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_Value input)
 {
-	if (config == nullptr || config == NULL)
-		config = new Config(L"nvngx.ini");
-
 	std::optional<float> output;
 
-	if (!(config->QualityRatioOverrideEnabled.has_value() && config->QualityRatioOverrideEnabled))
+	if (!(Config::Instance()->QualityRatioOverrideEnabled.has_value() && Config::Instance()->QualityRatioOverrideEnabled))
 		return output; // override not enabled
 
 	switch (input)
 	{
 	case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-		output = config->QualityRatio_UltraPerformance.value_or(3.0);
+		output = Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0);
 		break;
 	case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-		output = config->QualityRatio_Performance.value_or(2.0);
+		output = Config::Instance()->QualityRatio_Performance.value_or(2.0);
 		break;
 	case NVSDK_NGX_PerfQuality_Value_Balanced:
-		output = config->QualityRatio_Balanced.value_or(1.7);
+		output = Config::Instance()->QualityRatio_Balanced.value_or(1.7);
 		break;
 	case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-		output = config->QualityRatio_Quality.value_or(1.5);
+		output = Config::Instance()->QualityRatio_Quality.value_or(1.5);
 		break;
 	case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-		output = config->QualityRatio_UltraQuality.value_or(1.3);
+		output = Config::Instance()->QualityRatio_UltraQuality.value_or(1.3);
 		break;
 	case NVSDK_NGX_PerfQuality_Value_DLAA:
 		output = 1.0f;
 		break;
 	default:
 		spdlog::warn("GetQualityOverrideRatio: Unknown quality: {0}", (int)input);
-		output = config->QualityRatio_Balanced.value_or(1.7);
+		output = Config::Instance()->QualityRatio_Balanced.value_or(1.7);
 		break;
 	}
 	return output;

@@ -1,8 +1,5 @@
 #pragma once
-#include "framework.h"
-#include "Config.h"
-
-//inline std::mutex CreateFeatureMutex;
+//#include "framework.h"
 
 #define SAFE_RELEASE(p)		\
 do {						\
@@ -13,5 +10,3 @@ do {						\
 	}						\
 } while((void)0, 0);		
 
-void PrepareLogger();
-void CloseLogger();
