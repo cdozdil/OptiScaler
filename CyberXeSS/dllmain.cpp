@@ -1,10 +1,5 @@
 #include <iostream>
 
-#define NV_WINDOWS
-#define NVSDK_NGX
-#define NGX_ENABLE_DEPRECATED_GET_PARAMETERS
-#define NGX_ENABLE_DEPRECATED_SHUTDOWN
-
 #define SPDLOG_USE_STD_FORMAT
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"

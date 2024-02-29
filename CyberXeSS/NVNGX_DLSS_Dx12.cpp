@@ -74,6 +74,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 
 	Dx12Contexts.clear();
 
+	D3D12Device = nullptr;
+
 	return NVSDK_NGX_Result_Success;
 }
 
@@ -181,19 +183,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
 #pragma region Check for Dx12Device Device
 
-	ID3D12Device* device;
-	spdlog::debug("NVSDK_NGX_D3D12_CreateFeature Get D3d12 device from InCmdList!");
-	auto deviceResult = InCmdList->GetDevice(IID_PPV_ARGS(&device));
-
-	if (deviceResult != S_OK || device == nullptr)
+	if (!D3D12Device)
 	{
-		spdlog::error("NVSDK_NGX_D3D12_CreateFeature Can't get Dx12Device from InCmdList!");
-		return NVSDK_NGX_Result_Fail;
+		spdlog::debug("NVSDK_NGX_D3D12_CreateFeature Get D3d12 device from InCmdList!");
+		auto deviceResult = InCmdList->GetDevice(IID_PPV_ARGS(&D3D12Device));
+
+		if (deviceResult != S_OK || !D3D12Device)
+		{
+			spdlog::error("NVSDK_NGX_D3D12_CreateFeature Can't get Dx12Device from InCmdList!");
+			return NVSDK_NGX_Result_Fail;
+		}
 	}
 
 #pragma endregion
 
-	if (deviceContext->Init(device, InParameters))
+	if (deviceContext->Init(D3D12Device, InParameters))
 		return NVSDK_NGX_Result_Success;
 
 	spdlog::error("NVSDK_NGX_D3D12_CreateFeature: CreateFeature failed");

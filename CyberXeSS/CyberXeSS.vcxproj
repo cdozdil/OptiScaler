@@ -236,9 +236,9 @@
     <ClCompile Include="cas\shared\ffx_shader_blobs.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="CyberXess.cpp" />
-    <ClCompile Include="NVNGX_Dx11.cpp" />
-    <ClCompile Include="NVNGX_Dx12.cpp" />
-    <ClCompile Include="NVNGX_Vk.cpp" />
+    <ClCompile Include="NVNGX_DLSS_Dx11.cpp" />
+    <ClCompile Include="NVNGX_DLSS_Dx12.cpp" />
+    <ClCompile Include="NVNGX_DLSS_Vk.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="XeSSFeature.cpp" />
     <ClCompile Include="XeSSFeature.h" />

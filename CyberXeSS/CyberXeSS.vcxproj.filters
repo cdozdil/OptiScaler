@@ -211,13 +211,13 @@
     <ClCompile Include="Config.cpp">
       <Filter>Config</Filter>
     </ClCompile>
-    <ClCompile Include="NVNGX_Dx11.cpp">
+    <ClCompile Include="NVNGX_DLSS_Dx11.cpp">
       <Filter>NVNGX</Filter>
     </ClCompile>
-    <ClCompile Include="NVNGX_Dx12.cpp">
+    <ClCompile Include="NVNGX_DLSS_Dx12.cpp">
       <Filter>NVNGX</Filter>
     </ClCompile>
-    <ClCompile Include="NVNGX_Vk.cpp">
+    <ClCompile Include="NVNGX_DLSS_Vk.cpp">
       <Filter>NVNGX</Filter>
     </ClCompile>
     <ClCompile Include="XeSSFeature.cpp">

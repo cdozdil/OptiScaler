@@ -3,6 +3,7 @@
 #include <filesystem>
 
 #include <SimpleIni.h>
+
 #define SPDLOG_USE_STD_FORMAT
 #include "spdlog/spdlog.h"
 
