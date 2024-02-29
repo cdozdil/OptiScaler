@@ -24,7 +24,7 @@ public:
 	virtual bool Evaluate(ID3D12GraphicsCommandList* commandList, const NVSDK_NGX_Parameter* InParameters) = 0;
 	virtual void ReInit(const NVSDK_NGX_Parameter* InParameters) = 0;
 
-	explicit IFeature_Dx12(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters, Config* config) : IFeature(handleId, InParameters, config)
+	IFeature_Dx12(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters, Config* config) : IFeature(handleId, InParameters, config)
 	{
 	}
 

@@ -15,7 +15,7 @@ public:
 	virtual bool Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parameter* initParams) = 0;
 	virtual void ReInit(const NVSDK_NGX_Parameter* InParameters) = 0;
 
-	explicit IFeature_Vk(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters, Config* config) : IFeature(handleId, InParameters, config)
+	IFeature_Vk(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters, Config* config) : IFeature(handleId, InParameters, config)
 	{
 	}
 

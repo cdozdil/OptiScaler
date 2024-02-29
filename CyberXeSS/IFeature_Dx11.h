@@ -13,7 +13,7 @@ public:
 	virtual bool Evaluate(ID3D11DeviceContext* deviceContext, const NVSDK_NGX_Parameter* initParams) = 0;
 	virtual void ReInit(const NVSDK_NGX_Parameter* InParameters) = 0;
 
-	explicit IFeature_Dx11(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters, Config* config) : IFeature(handleId, InParameters, config)
+	IFeature_Dx11(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters, Config* config) : IFeature(handleId, InParameters, config)
 	{
 	}
 

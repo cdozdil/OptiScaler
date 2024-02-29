@@ -3,6 +3,7 @@
 
 class XeSSFeatureDx12 : public XeSSFeature, public IFeature_Dx12
 {
+private:
 
 protected:
 
