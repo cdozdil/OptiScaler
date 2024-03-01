@@ -1,7 +1,7 @@
+#include "IFeature.h"
 #include "xess_d3d12.h"
 #include "xess_debug.h"
-
-#include "IFeature.h"
+#include <string>
 
 inline static std::string ResultToString(xess_result_t result)
 {
@@ -26,6 +26,7 @@ inline static std::string ResultToString(xess_result_t result)
 	}
 }
 
+
 class XeSSFeature : public IFeature
 {
 private:
@@ -42,22 +43,11 @@ protected:
 
 public:
 
-	XeSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters, Config* config) : IFeature(handleId, InParameters, config)
+	XeSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
 	{
 	}
 
 	bool IsInited() override;
 
-	~XeSSFeature()
-	{
-		spdlog::debug("XeSSContext::Destroy!");
-
-		if (!_xessContext)
-			return;
-
-		auto result = xessDestroyContext(_xessContext);
-
-		if (result != XESS_RESULT_SUCCESS)
-			spdlog::error("XeSSContext::Destroy xessDestroyContext error: {0}", ResultToString(result));
-	}
+	~XeSSFeature();
 };

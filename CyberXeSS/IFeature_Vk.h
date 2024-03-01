@@ -1,6 +1,5 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
-
 #include "IFeature.h"
 
 class IFeature_Vk : public IFeature
@@ -15,7 +14,7 @@ public:
 	virtual bool Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parameter* initParams) = 0;
 	virtual void ReInit(const NVSDK_NGX_Parameter* InParameters) = 0;
 
-	IFeature_Vk(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters, Config* config) : IFeature(handleId, InParameters, config)
+	IFeature_Vk(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
 	{
 	}
 

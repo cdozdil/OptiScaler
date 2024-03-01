@@ -2,11 +2,6 @@
 #include <optional>
 #include <filesystem>
 
-#include <SimpleIni.h>
-
-#define SPDLOG_USE_STD_FORMAT
-#include "spdlog/spdlog.h"
-
 class Config
 {
 public:
@@ -69,8 +64,6 @@ public:
 	static Config* Instance();
 
 private:
-	CSimpleIniA ini;
-
 	inline static Config* _config;
 
 	std::filesystem::path absoluteFileName;

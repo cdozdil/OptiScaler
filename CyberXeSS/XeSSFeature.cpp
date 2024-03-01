@@ -1,4 +1,6 @@
+#include "pch.h"
 #include "XeSSFeature.h"
+#include "Config.h"
 
 inline void logCallback(const char* Message, xess_logging_level_t Level)
 {
@@ -53,9 +55,9 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	xessParams.outputResolution.x = DisplayWidth();
 	xessParams.outputResolution.y = DisplayHeight();
 
-	if (GetConfig()->OverrideQuality.has_value())
+	if (Config::Instance()->OverrideQuality.has_value())
 	{
-		xessParams.qualitySetting = (xess_quality_settings_t)GetConfig()->OverrideQuality.value();
+		xessParams.qualitySetting = (xess_quality_settings_t)Config::Instance()->OverrideQuality.value();
 	}
 	else
 	{
@@ -103,60 +105,60 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	bool LowRes = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
 	bool AutoExposure = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
 
-	if (GetConfig()->DepthInverted.value_or(DepthInverted))
+	if (Config::Instance()->DepthInverted.value_or(DepthInverted))
 	{
-		GetConfig()->DepthInverted = true;
+		Config::Instance()->DepthInverted = true;
 		xessParams.initFlags |= XESS_INIT_FLAG_INVERTED_DEPTH;
 		spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (DepthInverted) {0:b}", xessParams.initFlags);
 	}
 
-	if (GetConfig()->AutoExposure.value_or(AutoExposure))
+	if (Config::Instance()->AutoExposure.value_or(AutoExposure))
 	{
-		GetConfig()->AutoExposure = true;
+		Config::Instance()->AutoExposure = true;
 		xessParams.initFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
 		spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (AutoExposure) {0:b}", xessParams.initFlags);
 	}
 	else
 	{
-		GetConfig()->AutoExposure = false;
+		Config::Instance()->AutoExposure = false;
 		xessParams.initFlags |= XESS_INIT_FLAG_EXPOSURE_SCALE_TEXTURE;
 		spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (!AutoExposure) {0:b}", xessParams.initFlags);
 	}
 
-	if (!GetConfig()->HDR.value_or(Hdr))
+	if (!Config::Instance()->HDR.value_or(Hdr))
 	{
-		GetConfig()->HDR = false;
+		Config::Instance()->HDR = false;
 		xessParams.initFlags |= XESS_INIT_FLAG_LDR_INPUT_COLOR;
 		spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (!HDR) {0:b}", xessParams.initFlags);
 	}
 	else
 	{
-		GetConfig()->HDR = true;
+		Config::Instance()->HDR = true;
 		spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (HDR) {0:b}", xessParams.initFlags);
 	}
 
-	if (GetConfig()->JitterCancellation.value_or(JitterMotion))
+	if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
 	{
-		GetConfig()->JitterCancellation = true;
+		Config::Instance()->JitterCancellation = true;
 		xessParams.initFlags |= XESS_INIT_FLAG_JITTERED_MV;
 		spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (JitterCancellation) {0:b}", xessParams.initFlags);
 	}
 
-	if (GetConfig()->DisplayResolution.value_or(!LowRes))
+	if (Config::Instance()->DisplayResolution.value_or(!LowRes))
 	{
-		GetConfig()->DisplayResolution = true;
+		Config::Instance()->DisplayResolution = true;
 		xessParams.initFlags |= XESS_INIT_FLAG_HIGH_RES_MV;
 		spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (LowRes) {0:b}", xessParams.initFlags);
 	}
 
-	if (!GetConfig()->DisableReactiveMask.value_or(true))
+	if (!Config::Instance()->DisableReactiveMask.value_or(true))
 	{
-		GetConfig()->DisableReactiveMask = false;
+		Config::Instance()->DisableReactiveMask = false;
 		xessParams.initFlags |= XESS_INIT_FLAG_RESPONSIVE_PIXEL_MASK;
 		spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (ReactiveMaskActive) {0:b}", xessParams.initFlags);
 	}
 
-	if (GetConfig()->BuildPipelines.value_or(true))
+	if (Config::Instance()->BuildPipelines.value_or(true))
 	{
 		spdlog::debug("XeSSContext::InitXeSS xessD3D12BuildPipelines!");
 
@@ -225,4 +227,17 @@ void XeSSFeature::SetRenderResolution(const NVSDK_NGX_Parameter* InParameters, x
 		params->inputWidth = RenderWidth();
 		params->inputHeight = RenderHeight();
 	}
+}
+
+XeSSFeature::~XeSSFeature()
+{
+	spdlog::debug("XeSSContext::Destroy!");
+
+	if (!_xessContext)
+		return;
+
+	auto result = xessDestroyContext(_xessContext);
+
+	if (result != XESS_RESULT_SUCCESS)
+		spdlog::error("XeSSContext::Destroy xessDestroyContext error: {0}", ResultToString(result));
 }

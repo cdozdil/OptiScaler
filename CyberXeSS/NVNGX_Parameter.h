@@ -1,7 +1,6 @@
 #pragma once
-#include <nvsdk_ngx.h>
-#include <nvsdk_ngx_defs.h>
-
+#include "pch.h"
+#include <map>
 #include "Config.h"
 
 inline std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_Value input)

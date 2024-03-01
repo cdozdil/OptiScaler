@@ -1,6 +1,6 @@
+#include "pch.h"
 #include <iostream>
 
-#define SPDLOG_USE_STD_FORMAT
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 

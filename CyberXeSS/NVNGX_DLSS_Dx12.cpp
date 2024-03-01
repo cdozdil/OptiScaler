@@ -1,13 +1,6 @@
-#define SPDLOG_USE_STD_FORMAT
-#include "spdlog/spdlog.h"
-#include <ankerl/unordered_dense.h>
+#include "pch.h"
 
-#define NV_WINDOWS
-#define NVSDK_NGX
-#define NGX_ENABLE_DEPRECATED_GET_PARAMETERS
-#define NGX_ENABLE_DEPRECATED_SHUTDOWN
-#include <nvsdk_ngx.h>
-#include <nvsdk_ngx_defs.h>
+#include <ankerl/unordered_dense.h>
 
 #include "Config.h"
 #include "XeSSFeature_Dx12.h"
@@ -177,7 +170,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
 	// Create feature
 	auto handleId = IFeature::GetNextHandleId();
-	Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, InParameters, Config::Instance());
+	Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, InParameters);
 	auto deviceContext = Dx12Contexts[handleId].get();
 	*OutHandle = deviceContext->Handle();
 

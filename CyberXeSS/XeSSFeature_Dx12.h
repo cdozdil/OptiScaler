@@ -1,5 +1,6 @@
 #include "IFeature_Dx12.h"
 #include "XeSSFeature.h"
+#include <string>
 
 class XeSSFeatureDx12 : public XeSSFeature, public IFeature_Dx12
 {
@@ -8,9 +9,7 @@ private:
 protected:
 
 public:
-	using XeSSFeature::GetConfig;
-
-	XeSSFeatureDx12(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters, Config* config) : XeSSFeature(handleId, InParameters, config), IFeature_Dx12(handleId, InParameters, config)
+	XeSSFeatureDx12(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters) : XeSSFeature(handleId, InParameters), IFeature_Dx12(handleId, InParameters)
 	{
 	}
 
