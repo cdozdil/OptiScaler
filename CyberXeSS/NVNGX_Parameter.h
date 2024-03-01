@@ -58,7 +58,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 
 	auto enumPQValue = (NVSDK_NGX_PerfQuality_Value)PerfQualityValue;
 
-	spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback: in-> {0}x{1}", Width, Height);
+	spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback Output Resolution: {0}x{1}", Width, Height);
 
 	const std::optional<float> QualityRatio = GetQualityOverrideRatio(enumPQValue);
 
@@ -144,7 +144,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	InParams->Set(NVSDK_NGX_EParameter_OutHeight, OutHeight);
 	InParams->Set(NVSDK_NGX_EParameter_SizeInBytes, Width * Height * 31);
 
-	spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback: in-> {0}x{1} out-> {2}x{3}", Width, Height, OutWidth, OutHeight);
+	spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback: Output Resolution: {0}x{1} Render Resolution: {2}x{3}", Width, Height, OutWidth, OutHeight);
 	return NVSDK_NGX_Result_Success;
 }
 
@@ -286,36 +286,36 @@ struct Parameter
 	size_t key = 0;
 };
 
-struct NGXParameters : public NVSDK_NGX_Parameter
+struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 {
-	void Set(const char* key, unsigned long long value) override { spdlog::trace("NGXParameters::set ulong('{0}', {1})", key, value); setT(key, value); }
-	void Set(const char* key, float value) override { spdlog::trace("NGXParameters::set float('{0}', {1})", key, value); setT(key, value); }
-	void Set(const char* key, double value) override { spdlog::trace("NGXParameters::set double('{0}', {1})", key, value); setT(key, value); }
-	void Set(const char* key, unsigned int value) override { spdlog::trace("NGXParameters::set uint('{0}', {1})", key, value); setT(key, value); }
-	void Set(const char* key, int value) override { spdlog::trace("NGXParameters::set int('{0}', {1})", key, value); setT(key, value); }
-	void Set(const char* key, void* value) override { spdlog::trace("NGXParameters::set void('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
-	void Set(const char* key, ID3D11Resource* value) override { spdlog::trace("NGXParameters::set d3d11('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
-	void Set(const char* key, ID3D12Resource* value) override { spdlog::trace("NGXParameters::set d3d12('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
+	void Set(const char* key, unsigned long long value) override { spdlog::trace("NVNGX_Parameters::Set ulong('{0}', {1})", key, value); setT(key, value); }
+	void Set(const char* key, float value) override { spdlog::trace("NVNGX_Parameters::Set float('{0}', {1})", key, value); setT(key, value); }
+	void Set(const char* key, double value) override { spdlog::trace("NVNGX_Parameters::Set double('{0}', {1})", key, value); setT(key, value); }
+	void Set(const char* key, unsigned int value) override { spdlog::trace("NVNGX_Parameters::Set uint('{0}', {1})", key, value); setT(key, value); }
+	void Set(const char* key, int value) override { spdlog::trace("NVNGX_Parameters::Set int('{0}', {1})", key, value); setT(key, value); }
+	void Set(const char* key, void* value) override { spdlog::trace("NVNGX_Parameters::Set void('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
+	void Set(const char* key, ID3D11Resource* value) override { spdlog::trace("NVNGX_Parameters::Set d3d11('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
+	void Set(const char* key, ID3D12Resource* value) override { spdlog::trace("NVNGX_Parameters::Set d3d12('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
 
-	NVSDK_NGX_Result Get(const char* key, unsigned long long* value) const override { auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) { spdlog::trace("NGXParameters::get ulong('{0}', {1})", key, *value); return NVSDK_NGX_Result_Success; } return NVSDK_NGX_Result_Fail; }
-	NVSDK_NGX_Result Get(const char* key, float* value) const override { auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) { spdlog::trace("NGXParameters::get float('{0}', {1})", key, *value); return NVSDK_NGX_Result_Success; } return NVSDK_NGX_Result_Fail; }
-	NVSDK_NGX_Result Get(const char* key, double* value) const override { auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) { spdlog::trace("NGXParameters::get double('{0}', {1})", key, *value); return NVSDK_NGX_Result_Success; } return NVSDK_NGX_Result_Fail; }
-	NVSDK_NGX_Result Get(const char* key, unsigned int* value) const override { auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) { spdlog::trace("NGXParameters::get uint('{0}', {1})", key, *value); return NVSDK_NGX_Result_Success; } return NVSDK_NGX_Result_Fail; }
-	NVSDK_NGX_Result Get(const char* key, int* value) const override { auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) { spdlog::trace("NGXParameters::get int('{0}', {1})", key, *value); return NVSDK_NGX_Result_Success; } return NVSDK_NGX_Result_Fail; }
-	NVSDK_NGX_Result Get(const char* key, void** value) const override { auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) { spdlog::trace("NGXParameters::get void('{0}')", key); return NVSDK_NGX_Result_Success; } return NVSDK_NGX_Result_Fail; }
-	NVSDK_NGX_Result Get(const char* key, ID3D11Resource** value) const override { auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) { spdlog::trace("NGXParameters::get d3d11('{0}')", key); return NVSDK_NGX_Result_Success; } return NVSDK_NGX_Result_Fail; }
-	NVSDK_NGX_Result Get(const char* key, ID3D12Resource** value) const override { auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) { spdlog::trace("NGXParameters::get d3d12('{0}')", key); return NVSDK_NGX_Result_Success; } return NVSDK_NGX_Result_Fail; }
+	NVSDK_NGX_Result Get(const char* key, unsigned long long* value) const override { auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) { spdlog::trace("NVNGX_Parameters::Get ulong('{0}', {1})", key, *value); return NVSDK_NGX_Result_Success; } return NVSDK_NGX_Result_Fail; }
+	NVSDK_NGX_Result Get(const char* key, float* value) const override { auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) { spdlog::trace("NVNGX_Parameters::Get float('{0}', {1})", key, *value); return NVSDK_NGX_Result_Success; } return NVSDK_NGX_Result_Fail; }
+	NVSDK_NGX_Result Get(const char* key, double* value) const override { auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) { spdlog::trace("NVNGX_Parameters::Get double('{0}', {1})", key, *value); return NVSDK_NGX_Result_Success; } return NVSDK_NGX_Result_Fail; }
+	NVSDK_NGX_Result Get(const char* key, unsigned int* value) const override { auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) { spdlog::trace("NVNGX_Parameters::Get uint('{0}', {1})", key, *value); return NVSDK_NGX_Result_Success; } return NVSDK_NGX_Result_Fail; }
+	NVSDK_NGX_Result Get(const char* key, int* value) const override { auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) { spdlog::trace("NVNGX_Parameters::Get int('{0}', {1})", key, *value); return NVSDK_NGX_Result_Success; } return NVSDK_NGX_Result_Fail; }
+	NVSDK_NGX_Result Get(const char* key, void** value) const override { auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) { spdlog::trace("NVNGX_Parameters::Get void('{0}')", key); return NVSDK_NGX_Result_Success; } return NVSDK_NGX_Result_Fail; }
+	NVSDK_NGX_Result Get(const char* key, ID3D11Resource** value) const override { auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) { spdlog::trace("NVNGX_Parameters::Get d3d11('{0}')", key); return NVSDK_NGX_Result_Success; } return NVSDK_NGX_Result_Fail; }
+	NVSDK_NGX_Result Get(const char* key, ID3D12Resource** value) const override { auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) { spdlog::trace("NVNGX_Parameters::Get d3d12('{0}')", key); return NVSDK_NGX_Result_Success; } return NVSDK_NGX_Result_Fail; }
 
 	void Reset() override
 	{
 		if (!m_values.empty())
 			m_values.clear();
 
-		spdlog::debug("NGXParameters::Reset Start");
+		spdlog::debug("NVNGX_Parameters::Reset Start");
 
 		InitNGXParameters(this);
 
-		spdlog::debug("NGXParameters::Reset End");
+		spdlog::debug("NVNGX_Parameters::Reset End");
 	}
 
 	std::vector<std::string> enumerate() const
@@ -347,7 +347,7 @@ private:
 
 		if (k == m_values.end())
 		{
-			spdlog::debug("NGXParameters::getT('{0}', FAIL)", key);
+			spdlog::debug("NVNGX_Parameters::GetT('{0}', FAIL)", key);
 			return NVSDK_NGX_Result_Fail;
 		};
 
@@ -362,7 +362,7 @@ private:
 
 inline NVSDK_NGX_Parameter* GetNGXParameters()
 {
-	auto params = new NGXParameters();
+	auto params = new NVNGX_Parameters();
 	InitNGXParameters(params);
 
 	return params;

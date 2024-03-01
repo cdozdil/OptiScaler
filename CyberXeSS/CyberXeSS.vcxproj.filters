@@ -59,6 +59,9 @@
     <ClInclude Include="pch.h">
       <Filter>Other</Filter>
     </ClInclude>
+    <ClInclude Include="XeSSFeature_Dx11.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -97,6 +100,9 @@
     </ClCompile>
     <ClCompile Include="IFeature_Dx12.cpp">
       <Filter>IFeature</Filter>
+    </ClCompile>
+    <ClCompile Include="XeSSFeature_Dx11.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

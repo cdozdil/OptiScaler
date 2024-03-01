@@ -120,7 +120,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_AllocateParameters(NVSDK_NGX_Para
 
 	try
 	{
-		*OutParameters = new NGXParameters();
+		*OutParameters = new NVNGX_Parameters();
 		return NVSDK_NGX_Result_Success;
 	}
 	catch (const std::exception& ex)

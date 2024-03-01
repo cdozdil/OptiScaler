@@ -34,7 +34,6 @@ public:
 	bool IsInitParameters() const { return _initParameters; };
 	static unsigned int GetNextHandleId() { return handleCounter++; }
 
-	virtual void ReInit(const NVSDK_NGX_Parameter* InParameters) = 0;
 	virtual bool IsInited() = 0;
 
 	IFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters)
