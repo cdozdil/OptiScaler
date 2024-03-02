@@ -4,6 +4,7 @@
 
 #include "Config.h"
 #include "XeSSFeature_Dx12.h"
+#include "FSR3Feature_Dx12.h"
 #include "NVNGX_Parameter.h"
 
 inline ID3D12Device* D3D12Device = nullptr;
@@ -170,7 +171,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
 	// Create feature
 	auto handleId = IFeature::GetNextHandleId();
-	Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, InParameters);
+	Dx12Contexts[handleId] = std::make_unique<FSR3FeatureDx12>(handleId, InParameters);
 	auto deviceContext = Dx12Contexts[handleId].get();
 	*OutHandle = deviceContext->Handle();
 
@@ -261,27 +262,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 			deviceContext->ReInit(InParameters);
 		}
 	}
-
-	//if (!deviceContext->IsInited())
-	//{
-	//	ID3D12Device* device;
-	//	spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature Get D3d12 device from InCmdList!");
-	//	auto deviceResult = InCmdList->GetDevice(IID_PPV_ARGS(&device));
-
-	//	if (deviceResult != S_OK || device == nullptr)
-	//	{
-	//		spdlog::error("NVSDK_NGX_D3D12_EvaluateFeature Can't get Dx12Device from InCmdList!");
-	//		return NVSDK_NGX_Result_Fail;
-	//	}
-
-	//	deviceContext->Init(device, InParameters);
-
-	//	if (!deviceContext->IsInited())
-	//	{
-	//		spdlog::error("NVSDK_NGX_D3D12_EvaluateFeature deviceContext.XessInit is false, init failed!");
-	//		return NVSDK_NGX_Result_Fail;
-	//	}
-	//}
 
 	//dumpParams.frame_count = 1;
 	//dumpParams.frame_idx = cnt++;
