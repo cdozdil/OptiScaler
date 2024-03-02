@@ -262,26 +262,26 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		}
 	}
 
-	if (!deviceContext->IsInited())
-	{
-		ID3D12Device* device;
-		spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature Get D3d12 device from InCmdList!");
-		auto deviceResult = InCmdList->GetDevice(IID_PPV_ARGS(&device));
+	//if (!deviceContext->IsInited())
+	//{
+	//	ID3D12Device* device;
+	//	spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature Get D3d12 device from InCmdList!");
+	//	auto deviceResult = InCmdList->GetDevice(IID_PPV_ARGS(&device));
 
-		if (deviceResult != S_OK || device == nullptr)
-		{
-			spdlog::error("NVSDK_NGX_D3D12_EvaluateFeature Can't get Dx12Device from InCmdList!");
-			return NVSDK_NGX_Result_Fail;
-		}
+	//	if (deviceResult != S_OK || device == nullptr)
+	//	{
+	//		spdlog::error("NVSDK_NGX_D3D12_EvaluateFeature Can't get Dx12Device from InCmdList!");
+	//		return NVSDK_NGX_Result_Fail;
+	//	}
 
-		deviceContext->Init(device, InParameters);
+	//	deviceContext->Init(device, InParameters);
 
-		if (!deviceContext->IsInited())
-		{
-			spdlog::error("NVSDK_NGX_D3D12_EvaluateFeature deviceContext.XessInit is false, init failed!");
-			return NVSDK_NGX_Result_Fail;
-		}
-	}
+	//	if (!deviceContext->IsInited())
+	//	{
+	//		spdlog::error("NVSDK_NGX_D3D12_EvaluateFeature deviceContext.XessInit is false, init failed!");
+	//		return NVSDK_NGX_Result_Fail;
+	//	}
+	//}
 
 	//dumpParams.frame_count = 1;
 	//dumpParams.frame_idx = cnt++;

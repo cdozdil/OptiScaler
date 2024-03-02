@@ -298,7 +298,7 @@ bool XeSSFeatureDx11::Init(ID3D11Device* device, ID3D11DeviceContext* context, c
 
 	spdlog::debug("XeSSFeatureDx11::Init calling InitXeSS");
 
-	if (!InitXeSS(Dx12on11Device, initParams))
+	if (Dx12on11Device && !InitXeSS(Dx12on11Device, initParams))
 	{
 		spdlog::error("XeSSFeatureDx11::Init InitXeSS fail!");
 		return false;
@@ -309,13 +309,10 @@ bool XeSSFeatureDx11::Init(ID3D11Device* device, ID3D11DeviceContext* context, c
 
 bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK_NGX_Parameter* InParameters)
 {
-	if (!IsInited() || !_xessContext)
-		return false;
-
 	ID3D11DeviceContext4* dc;
 	auto result = InDeviceContext->QueryInterface(IID_PPV_ARGS(&dc));
 
-	if (result!= S_OK)
+	if (result != S_OK)
 	{
 		spdlog::error("XeSSFeatureDx11::Evaluate CreateFence d3d12fence error: {0:x}", result);
 		return false;
@@ -328,17 +325,29 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		Dx11DeviceContext = dc;
 	}
 
-	if (!Dx12on11Device)
+	if (!IsInited() || !_xessContext)
 	{
-		auto fl = Dx11Device->GetFeatureLevel();
-		auto result = CreateDx12Device(fl);
-
-		if (result != S_OK || !Dx12on11Device)
+		if (!Dx12on11Device)
 		{
-			spdlog::error("XeSSFeatureDx11::Init QueryInterface Dx12Device result: {0:x}", result);
-			return false;
+			auto fl = Dx11Device->GetFeatureLevel();
+			result = CreateDx12Device(fl);
+
+			if (result != S_OK || !Dx12on11Device)
+			{
+				spdlog::error("XeSSFeatureDx11::Init QueryInterface Dx12Device result: {0:x}", result);
+				return false;
+			}
+
+			if (!IsInited() && Dx12on11Device && !InitXeSS(Dx12on11Device, InParameters))
+			{
+				spdlog::error("XeSSFeatureDx11::Init InitXeSS fail!");
+				return false;
+			}
 		}
+		else
+			return false;
 	}
+
 
 	// Fence for syncing
 	ID3D12Fence* d3d12Fence;
@@ -694,7 +703,7 @@ XeSSFeatureDx11::~XeSSFeatureDx11()
 	ReleaseSharedResources();
 }
 
-void IFeature_Dx11::Shutdown() 
+void IFeature_Dx11::Shutdown()
 {
 	SAFE_RELEASE(Dx12CommandList);
 	SAFE_RELEASE(Dx12CommandQueue);

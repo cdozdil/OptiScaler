@@ -268,16 +268,16 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, 
 		}
 	}
 
-	if (!deviceContext->IsInited())
-	{
-		deviceContext->Init(D3D11Device, InDevCtx, InParameters);
+	//if (!deviceContext->IsInited())
+	//{
+	//	deviceContext->Init(D3D11Device, InDevCtx, InParameters);
 
-		if (!deviceContext->IsInited())
-		{
-			spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature deviceContext.XessInit is false, init failed!");
-			return NVSDK_NGX_Result_Fail;
-		}
-	}
+	//	if (!deviceContext->IsInited())
+	//	{
+	//		spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature deviceContext.XessInit is false, init failed!");
+	//		return NVSDK_NGX_Result_Fail;
+	//	}
+	//}
 
 	NVSDK_NGX_Result evResult = NVSDK_NGX_Result_Success;
 	if (!deviceContext->Evaluate(InDevCtx, InParameters))
