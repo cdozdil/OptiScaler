@@ -16,12 +16,6 @@ do {						\
 	}						\
 } while((void)0, 0);		
 
-// D3D11with12
-ID3D12Device* Dx12on11Device = nullptr;
-ID3D12CommandQueue* Dx12CommandQueue = nullptr;
-ID3D12CommandAllocator* Dx12CommandAllocator = nullptr;
-ID3D12GraphicsCommandList* Dx12CommandList = nullptr;
-
 bool XeSSFeatureDx11::CopyTextureFrom11To12(ID3D11Resource* d3d11texture, ID3D11Texture2D** pSharedTexture, D3D11_TEXTURE2D_DESC_C* sharedDesc, bool copy = true)
 {
 	ID3D11Texture2D* originalTexture = nullptr;
@@ -122,6 +116,8 @@ void XeSSFeatureDx11::ReleaseSharedResources()
 
 void XeSSFeatureDx11::GetHardwareAdapter(IDXGIFactory1* pFactory, IDXGIAdapter** ppAdapter, D3D_FEATURE_LEVEL featureLevel, bool requestHighPerformanceAdapter)
 {
+	spdlog::debug("XeSSFeatureDx11::GetHardwareAdapter");
+
 	*ppAdapter = nullptr;
 
 	IDXGIAdapter1* adapter;
@@ -190,6 +186,8 @@ void XeSSFeatureDx11::GetHardwareAdapter(IDXGIFactory1* pFactory, IDXGIAdapter**
 
 HRESULT XeSSFeatureDx11::CreateDx12Device(D3D_FEATURE_LEVEL featureLevel)
 {
+	spdlog::debug("XeSSFeatureDx11::CreateDx12Device");
+
 	if (Dx12on11Device)
 		return S_OK;
 
@@ -266,6 +264,8 @@ bool XeSSFeatureDx11::IsInited()
 
 bool XeSSFeatureDx11::Init(ID3D11Device* device, ID3D11DeviceContext* context, const NVSDK_NGX_Parameter* initParams)
 {
+	spdlog::debug("XeSSFeatureDx11::Init!");
+
 	if (IsInited())
 		return true;
 
@@ -296,6 +296,18 @@ bool XeSSFeatureDx11::Init(ID3D11Device* device, ID3D11DeviceContext* context, c
 		return false;
 	}
 
+	if (!Dx12on11Device)
+	{
+		auto fl = Dx11Device->GetFeatureLevel();
+		auto result = CreateDx12Device(fl);
+
+		if (result != S_OK || !Dx12on11Device)
+		{
+			spdlog::error("XeSSFeatureDx11::Init QueryInterface Dx12Device result: {0:x}", result);
+			return false;
+		}
+	}
+
 	spdlog::debug("XeSSFeatureDx11::Init calling InitXeSS");
 
 	if (Dx12on11Device && !InitXeSS(Dx12on11Device, initParams))
@@ -309,6 +321,11 @@ bool XeSSFeatureDx11::Init(ID3D11Device* device, ID3D11DeviceContext* context, c
 
 bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK_NGX_Parameter* InParameters)
 {
+	spdlog::debug("XeSSFeatureDx11::Evaluate");
+
+	if (!IsInited() || !_xessContext)
+		return false;
+
 	ID3D11DeviceContext4* dc;
 	auto result = InDeviceContext->QueryInterface(IID_PPV_ARGS(&dc));
 
@@ -323,29 +340,6 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		spdlog::warn("XeSSFeatureDx11::Evaluate Dx11DeviceContext changed!");
 		ReleaseSharedResources();
 		Dx11DeviceContext = dc;
-	}
-
-	if (!IsInited() || !_xessContext)
-	{
-		if (!Dx12on11Device)
-		{
-			auto fl = Dx11Device->GetFeatureLevel();
-			result = CreateDx12Device(fl);
-
-			if (result != S_OK || !Dx12on11Device)
-			{
-				spdlog::error("XeSSFeatureDx11::Init QueryInterface Dx12Device result: {0:x}", result);
-				return false;
-			}
-
-			if (!IsInited() && Dx12on11Device && !InitXeSS(Dx12on11Device, InParameters))
-			{
-				spdlog::error("XeSSFeatureDx11::Init InitXeSS fail!");
-				return false;
-			}
-		}
-		else
-			return false;
 	}
 
 
@@ -671,6 +665,8 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 void XeSSFeatureDx11::ReInit(const NVSDK_NGX_Parameter* InParameters)
 {
+	spdlog::debug("XeSSFeatureDx11::ReInit!");
+
 	SetInit(false);
 
 	if (_xessContext)
@@ -683,7 +679,7 @@ XeSSFeatureDx11::~XeSSFeatureDx11()
 {
 	spdlog::debug("XeSSFeatureDx11::Destroy!");
 
-	if (Dx11Device && Dx12on11Device && Dx12CommandQueue && Dx12CommandList)
+	if (Dx12on11Device && Dx12CommandQueue && Dx12CommandList)
 	{
 		ID3D12Fence* d3d12Fence;
 		Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
@@ -698,17 +694,13 @@ XeSSFeatureDx11::~XeSSFeatureDx11()
 		WaitForSingleObject(fenceEvent, INFINITE);
 		CloseHandle(fenceEvent);
 		d3d12Fence->Release();
+
+		SAFE_RELEASE(Dx12CommandList);
+		SAFE_RELEASE(Dx12CommandQueue);
+		SAFE_RELEASE(Dx12CommandAllocator);
+		SAFE_RELEASE(Dx12on11Device);
 	}
 
 	ReleaseSharedResources();
 }
-
-void IFeature_Dx11::Shutdown()
-{
-	SAFE_RELEASE(Dx12CommandList);
-	SAFE_RELEASE(Dx12CommandQueue);
-	SAFE_RELEASE(Dx12CommandAllocator);
-	SAFE_RELEASE(Dx12on11Device);
-}
-
 

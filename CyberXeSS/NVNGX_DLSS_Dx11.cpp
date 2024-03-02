@@ -63,7 +63,6 @@ NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_D3D11_Shutdown(void)
 
 	Dx11Contexts.clear();
 	D3D11Device = nullptr;
-	IFeature_Dx11::Shutdown();
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -212,9 +211,6 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* InHandle)
 		Dx11Contexts.erase(it);
 	}
 
-	if (Dx11Contexts.empty())
-		IFeature_Dx11::Shutdown();
-
 	return NVSDK_NGX_Result_Success;
 }
 
@@ -225,6 +221,7 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_GetFeatureRequirements(IDXGIAdapter* Adapter, c
 	*OutSupported = NVSDK_NGX_FeatureRequirement();
 	OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
 	OutSupported->MinHWArchitecture = 0;
+
 	//Some windows 10 os version
 	strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
 	return NVSDK_NGX_Result_Success;
@@ -267,17 +264,6 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, 
 			deviceContext->ReInit(InParameters);
 		}
 	}
-
-	//if (!deviceContext->IsInited())
-	//{
-	//	deviceContext->Init(D3D11Device, InDevCtx, InParameters);
-
-	//	if (!deviceContext->IsInited())
-	//	{
-	//		spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature deviceContext.XessInit is false, init failed!");
-	//		return NVSDK_NGX_Result_Fail;
-	//	}
-	//}
 
 	NVSDK_NGX_Result evResult = NVSDK_NGX_Result_Success;
 	if (!deviceContext->Evaluate(InDevCtx, InParameters))

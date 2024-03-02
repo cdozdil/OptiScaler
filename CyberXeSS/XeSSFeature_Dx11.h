@@ -24,8 +24,15 @@ using D3D11_TEXTURE2D_RESOURCE_C = struct D3D11_TEXTURE2D_RESOURCE_C
 class XeSSFeatureDx11 : public XeSSFeature, public IFeature_Dx11
 {
 private:
+	// D3D11
 	ID3D11Device5* Dx11Device = nullptr;
 	ID3D11DeviceContext4* Dx11DeviceContext = nullptr;
+
+	// D3D11with12
+	ID3D12Device* Dx12on11Device = nullptr;
+	ID3D12CommandQueue* Dx12CommandQueue = nullptr;
+	ID3D12CommandAllocator* Dx12CommandAllocator = nullptr;
+	ID3D12GraphicsCommandList* Dx12CommandList = nullptr;
 
 	D3D11_TEXTURE2D_RESOURCE_C dx11Color = {};
 	D3D11_TEXTURE2D_RESOURCE_C dx11Mv = {};
@@ -36,8 +43,8 @@ private:
 
 	bool CopyTextureFrom11To12(ID3D11Resource* d3d11texture, ID3D11Texture2D** pSharedTexture, D3D11_TEXTURE2D_DESC_C* sharedDesc, bool copy);
 	void ReleaseSharedResources();
-	static void GetHardwareAdapter(IDXGIFactory1* pFactory, IDXGIAdapter** ppAdapter, D3D_FEATURE_LEVEL featureLevel, bool requestHighPerformanceAdapter);
-	static HRESULT CreateDx12Device(D3D_FEATURE_LEVEL featureLevel);
+	void GetHardwareAdapter(IDXGIFactory1* pFactory, IDXGIAdapter** ppAdapter, D3D_FEATURE_LEVEL featureLevel, bool requestHighPerformanceAdapter);
+	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL featureLevel);
 
 protected:
 
