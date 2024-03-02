@@ -1,23 +1,23 @@
 #include "pch.h"
-#include "FSR3Feature_Dx12.h"
+#include "FSR2Feature_Dx12.h"
 #include "Config.h"
 
-bool FSR3FeatureDx12::Init(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters)
+bool FSR2FeatureDx12::Init(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters)
 {
 	if (IsInited())
 		return true;
 
 	Device = device;
 
-	return InitFSR3(device, InParameters);
+	return InitFSR2(device, InParameters);
 }
 
-bool FSR3FeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVSDK_NGX_Parameter* InParameters)
+bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVSDK_NGX_Parameter* InParameters)
 {
 	if (!IsInited())
 		return false;
 
-	FfxFsr3UpscalerDispatchDescription params{};
+	FfxFsr2DispatchDescription params{};
 
 	InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
 	InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffset.y);
@@ -26,7 +26,7 @@ bool FSR3FeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVS
 	InParameters->Get(NVSDK_NGX_Parameter_Reset, &reset);
 	params.reset = reset == 1;
 
-	FSR3Feature::SetRenderResolution(InParameters, &params);
+	FSR2Feature::SetRenderResolution(InParameters, &params);
 
 	spdlog::debug("FSR3FeatureDx12::Evaluate Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
@@ -202,11 +202,11 @@ bool FSR3FeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVS
 	params.preExposure = 1.0f;
 
 	spdlog::debug("FSR3FeatureDx12::Evaluate Dispatch!!");
-	auto result = ffxFsr3UpscalerContextDispatch(&_context, &params);
+	auto result = ffxFsr2ContextDispatch(&_context, &params);
 
 	if (result != FFX_OK)
 	{
-		spdlog::error("FSR3FeatureDx12::Evaluate ffxFsr3UpscalerContextDispatch error: {0:x}", result);
+		spdlog::error("FSR3FeatureDx12::Evaluate ffxFsr2ContextDispatch error: {0:x}", result);
 		return false;
 	}
 
@@ -244,16 +244,16 @@ bool FSR3FeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVS
 	return true;
 }
 
-void FSR3FeatureDx12::ReInit(const NVSDK_NGX_Parameter* InParameters)
+void FSR2FeatureDx12::ReInit(const NVSDK_NGX_Parameter* InParameters)
 {
 	SetInit(false);
 
 	if (IsInited())
 	{
-		auto errorCode = ffxFsr3UpscalerContextDestroy(&_context);
+		auto errorCode = ffxFsr2ContextDestroy(&_context);
 
 		if (errorCode != FFX_OK)
-			spdlog::error("FSR3Feature::~FSR3Feature ffxFsr3UpscalerContextDestroy error: {0:x}", errorCode);
+			spdlog::error("FSR3Feature::~FSR3Feature ffxFsr2ContextDestroy error: {0:x}", errorCode);
 
 		free(_contextDesc.backendInterface.scratchBuffer);
 	}
@@ -261,12 +261,12 @@ void FSR3FeatureDx12::ReInit(const NVSDK_NGX_Parameter* InParameters)
 	SetInit(Init(Device, InParameters));
 }
 
-void FSR3FeatureDx12::SetInit(bool value)
+void FSR2FeatureDx12::SetInit(bool value)
 {
-	FSR3Feature::SetInit(value);
+	FSR2Feature::SetInit(value);
 }
 
-bool FSR3FeatureDx12::IsInited()
+bool FSR2FeatureDx12::IsInited()
 {
-	return FSR3Feature::IsInited();
+	return FSR2Feature::IsInited();
 }

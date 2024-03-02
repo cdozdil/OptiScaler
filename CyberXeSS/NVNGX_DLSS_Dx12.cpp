@@ -4,7 +4,7 @@
 
 #include "Config.h"
 #include "XeSSFeature_Dx12.h"
-#include "FSR3Feature_Dx12.h"
+#include "FSR2Feature_Dx12.h"
 #include "NVNGX_Parameter.h"
 
 inline ID3D12Device* D3D12Device = nullptr;
@@ -171,7 +171,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
 	// Create feature
 	auto handleId = IFeature::GetNextHandleId();
-	Dx12Contexts[handleId] = std::make_unique<FSR3FeatureDx12>(handleId, InParameters);
+	Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12>(handleId, InParameters);
 	auto deviceContext = Dx12Contexts[handleId].get();
 	*OutHandle = deviceContext->Handle();
 

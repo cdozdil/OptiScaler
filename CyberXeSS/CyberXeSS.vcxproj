@@ -141,7 +141,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3d12.lib;dxguid.lib;libxess.lib;ffx_backend_dx12_x64d.lib;ffx_fsr3upscaler_x64d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3d12.lib;dxguid.lib;libxess.lib;ffx_backend_dx12_x64d.lib;ffx_fsr2_x64d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -163,7 +163,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3d12.lib;dxguid.lib;libxess.lib;ffx_backend_dx12_x64.lib;ffx_fsr3upscaler_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3d12.lib;dxguid.lib;libxess.lib;ffx_backend_dx12_x64.lib;ffx_fsr2_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
@@ -171,8 +171,8 @@
     <ClInclude Include="Config.h" />
     <ClInclude Include="CyberXess.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="FSR3Feature.h" />
-    <ClInclude Include="FSR3Feature_Dx12.h" />
+    <ClInclude Include="FSR2Feature.h" />
+    <ClInclude Include="FSR2Feature_Dx12.h" />
     <ClInclude Include="IFeature_Dx11.h" />
     <ClInclude Include="IFeature_Dx12.h" />
     <ClInclude Include="IFeature.h" />
@@ -185,8 +185,8 @@
   <ItemGroup>
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="CyberXess.cpp" />
-    <ClCompile Include="FSR3Feature.cpp" />
-    <ClCompile Include="FSR3Feature_Dx12.cpp" />
+    <ClCompile Include="FSR2Feature.cpp" />
+    <ClCompile Include="FSR2Feature_Dx12.cpp" />
     <ClCompile Include="IFeature.cpp" />
     <ClCompile Include="IFeature_Dx12.cpp" />
     <ClCompile Include="NVNGX_DLSS_Dx11.cpp" />

@@ -1,15 +1,15 @@
 #include "IFeature_Dx12.h"
-#include "FSR3Feature.h"
+#include "FSR2Feature.h"
 #include <string>
 
-class FSR3FeatureDx12 : public FSR3Feature, public IFeature_Dx12
+class FSR2FeatureDx12 : public FSR2Feature, public IFeature_Dx12
 {
 private:
 
 protected:
 
 public:
-	FSR3FeatureDx12(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters) : FSR3Feature(handleId, InParameters), IFeature_Dx12(handleId, InParameters)
+	FSR2FeatureDx12(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters) : FSR2Feature(handleId, InParameters), IFeature_Dx12(handleId, InParameters)
 	{
 	}
 

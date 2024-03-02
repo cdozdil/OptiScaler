@@ -62,10 +62,10 @@
     <ClInclude Include="XeSSFeature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FSR3Feature.h">
+    <ClInclude Include="FSR2Feature.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FSR3Feature_Dx12.h">
+    <ClInclude Include="FSR2Feature_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -110,10 +110,10 @@
     <ClCompile Include="XeSSFeature_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FSR3Feature.cpp">
+    <ClCompile Include="FSR2Feature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FSR3Feature_Dx12.cpp">
+    <ClCompile Include="FSR2Feature_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
