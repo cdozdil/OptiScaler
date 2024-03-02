@@ -80,14 +80,14 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\ffx-sdk\sdk\include;$(SolutionDir)external\fmt\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)external\xess\lib;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)external\xess\lib;$(SolutionDir)external\ffx-sdk\sdk\bin\ffx_sdk;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
     <TargetName>nvngx</TargetName>
-    <OutDir>E:\Games\God of War</OutDir>
+    <OutDir>E:\Games\Deep Rock Galactic\FSD\Binaries\Win64\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\ffx-sdk\sdk\include;$(SolutionDir)external\fmt\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
     <TargetName>nvngx</TargetName>
-    <LibraryPath>$(SolutionDir)external\xess\lib;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)external\xess\lib;$(SolutionDir)external\ffx-sdk\sdk\bin\ffx_sdk;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -141,7 +141,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3d12.lib;dxguid.lib;libxess.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3d12.lib;dxguid.lib;libxess.lib;ffx_backend_dx12_x64d.lib;ffx_fsr3upscaler_x64d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -163,7 +163,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3d12.lib;dxguid.lib;libxess.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3d12.lib;dxguid.lib;libxess.lib;ffx_backend_dx12_x64.lib;ffx_fsr3upscaler_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
@@ -171,6 +171,8 @@
     <ClInclude Include="Config.h" />
     <ClInclude Include="CyberXess.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="FSR3Feature.h" />
+    <ClInclude Include="FSR3Feature_Dx12.h" />
     <ClInclude Include="IFeature_Dx11.h" />
     <ClInclude Include="IFeature_Dx12.h" />
     <ClInclude Include="IFeature.h" />
@@ -183,6 +185,8 @@
   <ItemGroup>
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="CyberXess.cpp" />
+    <ClCompile Include="FSR3Feature.cpp" />
+    <ClCompile Include="FSR3Feature_Dx12.cpp" />
     <ClCompile Include="IFeature.cpp" />
     <ClCompile Include="IFeature_Dx12.cpp" />
     <ClCompile Include="NVNGX_DLSS_Dx11.cpp" />

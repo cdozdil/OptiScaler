@@ -9,10 +9,10 @@ void XeSSFeatureDx12::SetInit(bool value)
 
 bool XeSSFeatureDx12::IsInited()
 {
-    return XeSSFeature::IsInited();
+	return XeSSFeature::IsInited();
 }
 
-bool XeSSFeatureDx12::Init(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters) 
+bool XeSSFeatureDx12::Init(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters)
 {
 	if (IsInited())
 		return true;
@@ -22,7 +22,7 @@ bool XeSSFeatureDx12::Init(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	return InitXeSS(device, InParameters);
 }
 
-bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVSDK_NGX_Parameter* InParameters) 
+bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVSDK_NGX_Parameter* InParameters)
 {
 	if (!IsInited() || !_xessContext)
 		return false;
@@ -187,27 +187,27 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVS
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value());
 
-	if (Config::Instance()->MVResourceBarrier.has_value())
+	if (params.pVelocityTexture && Config::Instance()->MVResourceBarrier.has_value())
 		ResourceBarrier(commandList, params.pVelocityTexture,
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value());
 
-	if (Config::Instance()->OutputResourceBarrier.has_value())
+	if (paramOutput && Config::Instance()->OutputResourceBarrier.has_value())
 		ResourceBarrier(commandList, paramOutput,
 			D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-			(D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value());
+			(D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value());
 
-	if (Config::Instance()->DepthResourceBarrier.has_value())
+	if (params.pDepthTexture && Config::Instance()->DepthResourceBarrier.has_value())
 		ResourceBarrier(commandList, params.pDepthTexture,
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value());
 
-	if (Config::Instance()->ExposureResourceBarrier.has_value())
+	if (params.pExposureScaleTexture && Config::Instance()->ExposureResourceBarrier.has_value())
 		ResourceBarrier(commandList, params.pExposureScaleTexture,
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value());
 
-	if (Config::Instance()->MaskResourceBarrier.has_value())
+	if (params.pResponsivePixelMaskTexture &&  Config::Instance()->MaskResourceBarrier.has_value())
 		ResourceBarrier(commandList, params.pResponsivePixelMaskTexture,
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value());
@@ -215,7 +215,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVS
 	return true;
 }
 
-void XeSSFeatureDx12::ReInit(const NVSDK_NGX_Parameter* InParameters) 
+void XeSSFeatureDx12::ReInit(const NVSDK_NGX_Parameter* InParameters)
 {
 	SetInit(false);
 

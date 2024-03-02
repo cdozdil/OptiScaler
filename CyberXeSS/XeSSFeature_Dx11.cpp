@@ -371,7 +371,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 #pragma region Texture copies
 
-	D3D11_QUERY_DESC pQueryDesc;
+	D3D11_QUERY_DESC pQueryDesc{};
 	pQueryDesc.Query = D3D11_QUERY_EVENT;
 	pQueryDesc.MiscFlags = 0;
 	ID3D11Query* query1 = nullptr;

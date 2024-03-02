@@ -98,7 +98,13 @@ static void PrepareLogger()
 			if (shared_logger)
 			{
 				shared_logger->set_level(spdlog::level::level_enum::trace);
+
+#if _DEBUG
+				shared_logger->flush_on(spdlog::level::debug);
+#else
 				shared_logger->flush_on(spdlog::level::err);
+#endif // _DEBUG
+
 				spdlog::set_default_logger(shared_logger);
 			}
 		}
