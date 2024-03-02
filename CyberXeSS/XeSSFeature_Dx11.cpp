@@ -278,28 +278,22 @@ bool XeSSFeatureDx11::Init(ID3D11Device* device, ID3D11DeviceContext* context, c
 		return false;
 	}
 
-	if (!Dx11DeviceContext)
+	auto contextResult = context->QueryInterface(IID_PPV_ARGS(&Dx11DeviceContext));
+	if (contextResult != S_OK)
 	{
-		auto contextResult = context->QueryInterface(IID_PPV_ARGS(&Dx11DeviceContext));
-		if (contextResult != S_OK)
-		{
-			spdlog::error("XeSSFeatureDx11::Init QueryInterface ID3D11DeviceContext4 result: {0:x}", contextResult);
-			return false;
-		}
+		spdlog::error("XeSSFeatureDx11::Init QueryInterface ID3D11DeviceContext4 result: {0:x}", contextResult);
+		return false;
 	}
 
 	if (!device)
 		Dx11DeviceContext->GetDevice(&device);
 
-	if (!Dx11Device)
-	{
-		auto dx11DeviceResult = device->QueryInterface(IID_PPV_ARGS(&Dx11Device));
+	auto dx11DeviceResult = device->QueryInterface(IID_PPV_ARGS(&Dx11Device));
 
-		if (dx11DeviceResult != S_OK)
-		{
-			spdlog::error("XeSSFeatureDx11::Init QueryInterface ID3D11Device5 result: {0:x}", dx11DeviceResult);
-			return false;
-		}
+	if (dx11DeviceResult != S_OK)
+	{
+		spdlog::error("XeSSFeatureDx11::Init QueryInterface ID3D11Device5 result: {0:x}", dx11DeviceResult);
+		return false;
 	}
 
 	if (!Dx12on11Device)
