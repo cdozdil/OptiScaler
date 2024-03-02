@@ -296,18 +296,6 @@ bool XeSSFeatureDx11::Init(ID3D11Device* device, ID3D11DeviceContext* context, c
 		return false;
 	}
 
-	if (!Dx12on11Device)
-	{
-		auto fl = Dx11Device->GetFeatureLevel();
-		auto result = CreateDx12Device(fl);
-
-		if (result != S_OK || !Dx12on11Device)
-		{
-			spdlog::error("XeSSFeatureDx11::Init QueryInterface Dx12Device result: {0:x}", result);
-			return false;
-		}
-	}
-
 	spdlog::debug("XeSSFeatureDx11::Init calling InitXeSS");
 
 	if (!InitXeSS(Dx12on11Device, initParams))
@@ -338,6 +326,18 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		spdlog::warn("XeSSFeatureDx11::Evaluate Dx11DeviceContext changed!");
 		ReleaseSharedResources();
 		Dx11DeviceContext = dc;
+	}
+
+	if (!Dx12on11Device)
+	{
+		auto fl = Dx11Device->GetFeatureLevel();
+		auto result = CreateDx12Device(fl);
+
+		if (result != S_OK || !Dx12on11Device)
+		{
+			spdlog::error("XeSSFeatureDx11::Init QueryInterface Dx12Device result: {0:x}", result);
+			return false;
+		}
 	}
 
 	// Fence for syncing

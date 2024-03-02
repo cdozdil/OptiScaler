@@ -212,6 +212,9 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* InHandle)
 		Dx11Contexts.erase(it);
 	}
 
+	if (Dx11Contexts.empty())
+		IFeature_Dx11::Shutdown();
+
 	return NVSDK_NGX_Result_Success;
 }
 

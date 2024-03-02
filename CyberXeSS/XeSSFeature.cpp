@@ -148,7 +148,12 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	{
 		Config::Instance()->DisplayResolution = true;
 		xessParams.initFlags |= XESS_INIT_FLAG_HIGH_RES_MV;
-		spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (LowRes) {0:b}", xessParams.initFlags);
+		spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (!LowResMV) {0:b}", xessParams.initFlags);
+	}
+	else
+	{
+		Config::Instance()->DisplayResolution = false;
+		spdlog::info("XeSSContext::InitXeSS xessParams.initFlags (LowResMV) {0:b}", xessParams.initFlags);
 	}
 
 	if (!Config::Instance()->DisableReactiveMask.value_or(true))
