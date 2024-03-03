@@ -168,6 +168,7 @@
     </Link>
     <PostBuildEvent>
       <Command>md $(SolutionDir)x64\Release\a\
+move $(SolutionDir)x64\Release\nvngx.dll $(SolutionDir)x64\Release\a\
 copy $(ProjectDir)dlss\*.* $(SolutionDir)x64\Release\a\
 copy $(ProjectDir)xess\*.* $(SolutionDir)x64\Release\a\
 copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
