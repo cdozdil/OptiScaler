@@ -446,8 +446,3 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 
 	return true;
 }
-
-void FSR2FeatureVk::ReInit(const NVSDK_NGX_Parameter* InParameters)
-{
-	return;
-}

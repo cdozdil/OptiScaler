@@ -53,10 +53,6 @@ public:
 	{
 	}
 
-	// Inherited via XeSSFeature
-	void ReInit(const NVSDK_NGX_Parameter* InParameters) override;
-
-	// Inherited via IFeature_Dx11
 	bool Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters) override;
 	bool Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK_NGX_Parameter* InParameters) override;
 

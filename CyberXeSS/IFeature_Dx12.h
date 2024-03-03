@@ -12,7 +12,7 @@ protected:
 public:
 	virtual bool Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* InParameters) = 0;
 	virtual bool Evaluate(ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters) = 0;
-	virtual void ReInit(const NVSDK_NGX_Parameter* InParameters) = 0;
+	//virtual void ReInit(const NVSDK_NGX_Parameter* InParameters) = 0;
 
 	IFeature_Dx12(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) 
 	{

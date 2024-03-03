@@ -653,18 +653,6 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	return true;
 }
 
-void XeSSFeatureDx11::ReInit(const NVSDK_NGX_Parameter* InParameters)
-{
-	spdlog::debug("XeSSFeatureDx11::ReInit!");
-
-	SetInit(false);
-
-	if (_xessContext)
-		xessDestroyContext(_xessContext);
-
-	SetInit(Init(Device, DeviceContext, InParameters));
-}
-
 XeSSFeatureDx11::~XeSSFeatureDx11()
 {
 	spdlog::debug("XeSSFeatureDx11::XeSSFeatureDx11");

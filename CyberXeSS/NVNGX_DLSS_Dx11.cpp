@@ -248,23 +248,6 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, 
 		return NVSDK_NGX_Result_Success;
 	}
 
-	unsigned int width, outWidth, height, outHeight;
-	if (InParameters->Get(NVSDK_NGX_Parameter_Width, &width) == NVSDK_NGX_Result_Success &&
-		InParameters->Get(NVSDK_NGX_Parameter_Height, &height) == NVSDK_NGX_Result_Success &&
-		InParameters->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth) == NVSDK_NGX_Result_Success &&
-		InParameters->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight) == NVSDK_NGX_Result_Success)
-	{
-		width = width > outWidth ? width : outWidth;
-		height = height > outHeight ? height : outHeight;
-
-		if (deviceContext->IsInited() &&
-			(deviceContext->DisplayHeight() != height || deviceContext->DisplayWidth() != width))
-		{
-			spdlog::warn("NVSDK_NGX_D3D11_EvaluateFeature Display Width or Height changed, ReInit!");
-			deviceContext->ReInit(InParameters);
-		}
-	}
-
 	NVSDK_NGX_Result evResult = NVSDK_NGX_Result_Success;
 	if (!deviceContext->Evaluate(InDevCtx, InParameters))
 		evResult = NVSDK_NGX_Result_Fail;

@@ -208,15 +208,3 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	return true;
 }
-
-void XeSSFeatureDx12::ReInit(const NVSDK_NGX_Parameter* InParameters)
-{
-	spdlog::debug("XeSSFeatureDx12::ReInit");
-
-	SetInit(false);
-
-	if (_xessContext)
-		xessDestroyContext(_xessContext);
-
-	SetInit(Init(Device, InParameters));
-}

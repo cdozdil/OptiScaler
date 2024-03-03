@@ -25,5 +25,4 @@ public:
 
 	bool Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList, const NVSDK_NGX_Parameter* InParameters) override;
 	bool Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parameter* InParameters) override;
-	void ReInit(const NVSDK_NGX_Parameter* InParameters) override;
 };

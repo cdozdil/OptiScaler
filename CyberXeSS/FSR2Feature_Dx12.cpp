@@ -248,25 +248,6 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	return true;
 }
 
-void FSR2FeatureDx12::ReInit(const NVSDK_NGX_Parameter* InParameters)
-{
-	spdlog::error("FSR2FeatureDx12::ReInit");
-
-	SetInit(false);
-
-	if (IsInited())
-	{
-		auto errorCode = ffxFsr2ContextDestroy(&_context);
-
-		if (errorCode != FFX_OK)
-			spdlog::error("FSR2FeatureDx12::ReInit ffxFsr2ContextDestroy error: {0:x}", errorCode);
-
-		free(_contextDesc.backendInterface.scratchBuffer);
-	}
-
-	SetInit(Init(Device, InParameters));
-}
-
 bool FSR2FeatureDx12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("FSR2Feature::InitFSR2");
