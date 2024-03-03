@@ -3,6 +3,10 @@
 #include <map>
 #include "Config.h"
 
+#include <nvsdk_ngx.h>
+#include <nvsdk_ngx_defs.h>
+
+
 inline std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_Value input)
 {
 	std::optional<float> output;

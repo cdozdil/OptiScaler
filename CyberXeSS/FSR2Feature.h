@@ -32,7 +32,7 @@ protected:
 	FfxFsr2Context _context = {};
 	FfxFsr2ContextDescription _contextDesc = {};
 
-	virtual bool InitFSR2(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* InParameters) = 0;
+	virtual bool InitFSR2(const NVSDK_NGX_Parameter* InParameters) = 0;
 	
 	double MillisecondsNow();
 	double GetDeltaTime();

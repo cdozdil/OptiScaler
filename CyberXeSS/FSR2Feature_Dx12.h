@@ -14,7 +14,7 @@ class FSR2FeatureDx12 : public FSR2Feature, public IFeature_Dx12
 private:
 
 protected:
-	bool InitFSR2(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* InParameters);
+	bool InitFSR2(const NVSDK_NGX_Parameter* InParameters);
 
 public:
 	FSR2FeatureDx12(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : FSR2Feature(InHandleId, InParameters), IFeature_Dx12(InHandleId, InParameters), IFeature(InHandleId, InParameters)

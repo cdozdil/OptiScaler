@@ -2,7 +2,7 @@
 #include <vulkan/vulkan.hpp>
 #include "IFeature.h"
 
-class IFeature_Vk : public IFeature
+class IFeature_Vk : public virtual IFeature
 {
 protected:
 	VkInstance Instance = nullptr;

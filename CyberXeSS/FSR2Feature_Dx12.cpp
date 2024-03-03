@@ -11,7 +11,7 @@ bool FSR2FeatureDx12::Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* In
 
 	Device = InDevice;
 
-	return InitFSR2(InDevice, InParameters);
+	return InitFSR2(InParameters);
 }
 
 bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters)
@@ -267,14 +267,14 @@ void FSR2FeatureDx12::ReInit(const NVSDK_NGX_Parameter* InParameters)
 	SetInit(Init(Device, InParameters));
 }
 
-bool FSR2FeatureDx12::InitFSR2(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* InParameters)
+bool FSR2FeatureDx12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("FSR2Feature::InitFSR2");
 
 	if (IsInited())
 		return true;
 
-	if (InDevice == nullptr)
+	if (Device == nullptr)
 	{
 		spdlog::error("FSR2Feature::InitFSR2 D3D12Device is null!");
 		return false;
@@ -283,7 +283,7 @@ bool FSR2FeatureDx12::InitFSR2(ID3D12Device* InDevice, const NVSDK_NGX_Parameter
 	const size_t scratchBufferSize = ffxGetScratchMemorySizeDX12(FFX_FSR2_CONTEXT_COUNT);
 	void* scratchBuffer = calloc(scratchBufferSize, 1);
 
-	auto errorCode = ffxGetInterfaceDX12(&_contextDesc.backendInterface, InDevice, scratchBuffer, scratchBufferSize, FFX_FSR2_CONTEXT_COUNT);
+	auto errorCode = ffxGetInterfaceDX12(&_contextDesc.backendInterface, Device, scratchBuffer, scratchBufferSize, FFX_FSR2_CONTEXT_COUNT);
 
 	if (errorCode != FFX_OK)
 	{

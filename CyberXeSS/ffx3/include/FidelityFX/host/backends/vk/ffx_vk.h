@@ -28,7 +28,7 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
-#include <FidelityFX/host/ffx_interface.h>
+#include "ffx3/include/FidelityFX/host/ffx_interface.h"
 
 #if defined(__cplusplus)
 extern "C" {
