@@ -4,7 +4,7 @@
 
 bool FSR2FeatureDx12::Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* InParameters)
 {
-	spdlog::debug("FSR3FeatureDx12::Init");
+	spdlog::debug("FSR2FeatureDx12::Init");
 
 	if (IsInited())
 		return true;
@@ -16,7 +16,7 @@ bool FSR2FeatureDx12::Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* In
 
 bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters)
 {
-	spdlog::debug("FSR3FeatureDx12::Evaluate");
+	spdlog::debug("FSR2FeatureDx12::Evaluate");
 
 	if (!IsInited())
 		return false;
@@ -32,7 +32,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
-	spdlog::debug("FSR3FeatureDx12::Evaluate Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
+	spdlog::debug("FSR2FeatureDx12::Evaluate Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
 	params.commandList = ffxGetCommandListDX12(InCommandList);
 
@@ -42,7 +42,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	if (paramColor)
 	{
-		spdlog::debug("FSR3FeatureDx12::Evaluate Color exist..");
+		spdlog::debug("FSR2FeatureDx12::Evaluate Color exist..");
 
 		if (Config::Instance()->ColorResourceBarrier.has_value())
 			ResourceBarrier(InCommandList, paramColor,
@@ -53,7 +53,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 	else
 	{
-		spdlog::error("FSR3FeatureDx12::Evaluate Color not exist!!");
+		spdlog::error("FSR2FeatureDx12::Evaluate Color not exist!!");
 		return false;
 	}
 
@@ -63,7 +63,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	if (paramVelocity)
 	{
-		spdlog::debug("FSR3FeatureDx12::Evaluate MotionVectors exist..");
+		spdlog::debug("FSR2FeatureDx12::Evaluate MotionVectors exist..");
 
 		if (Config::Instance()->MVResourceBarrier.has_value())
 			ResourceBarrier(InCommandList, paramVelocity,
@@ -74,7 +74,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 	else
 	{
-		spdlog::error("FSR3FeatureDx12::Evaluate MotionVectors not exist!!");
+		spdlog::error("FSR2FeatureDx12::Evaluate MotionVectors not exist!!");
 		return false;
 	}
 
@@ -84,7 +84,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	if (paramOutput)
 	{
-		spdlog::debug("FSR3FeatureDx12::Evaluate Output exist..");
+		spdlog::debug("FSR2FeatureDx12::Evaluate Output exist..");
 
 		if (Config::Instance()->OutputResourceBarrier.has_value())
 			ResourceBarrier(InCommandList, paramOutput,
@@ -95,7 +95,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 	else
 	{
-		spdlog::error("FSR3FeatureDx12::Evaluate Output not exist!!");
+		spdlog::error("FSR2FeatureDx12::Evaluate Output not exist!!");
 		return false;
 	}
 
@@ -105,7 +105,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	if (paramDepth)
 	{
-		spdlog::debug("FSR3FeatureDx12::Evaluate Depth exist..");
+		spdlog::debug("FSR2FeatureDx12::Evaluate Depth exist..");
 
 		if (Config::Instance()->DepthResourceBarrier.has_value())
 			ResourceBarrier(InCommandList, paramDepth,
@@ -117,9 +117,9 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	else
 	{
 		if (!Config::Instance()->DisplayResolution.value_or(false))
-			spdlog::error("FSR3FeatureDx12::Evaluate Depth not exist!!");
+			spdlog::error("FSR2FeatureDx12::Evaluate Depth not exist!!");
 		else
-			spdlog::info("FSR3FeatureDx12::Evaluate Using high res motion vectors, depth is not needed!!");
+			spdlog::info("FSR2FeatureDx12::Evaluate Using high res motion vectors, depth is not needed!!");
 	}
 
 	ID3D12Resource* paramExp = nullptr;
@@ -129,9 +129,9 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&paramExp);
 
 		if (paramExp)
-			spdlog::debug("FSR3FeatureDx12::Evaluate ExposureTexture exist..");
+			spdlog::debug("FSR2FeatureDx12::Evaluate ExposureTexture exist..");
 		else
-			spdlog::debug("FSR3FeatureDx12::Evaluate AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
+			spdlog::debug("FSR2FeatureDx12::Evaluate AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
 
 		if (Config::Instance()->ExposureResourceBarrier.has_value())
 			ResourceBarrier(InCommandList, paramExp,
@@ -141,7 +141,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		params.exposure = ffxGetResourceDX12(paramExp, GetFfxResourceDescriptionDX12(paramExp), (wchar_t*)L"FSR3Upscale_Exposure", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 	else
-		spdlog::debug("FSR3FeatureDx12::Evaluate AutoExposure enabled!");
+		spdlog::debug("FSR2FeatureDx12::Evaluate AutoExposure enabled!");
 
 	ID3D12Resource* paramMask = nullptr;
 	if (!Config::Instance()->DisableReactiveMask.value_or(true))
@@ -150,9 +150,9 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramMask);
 
 		if (paramMask)
-			spdlog::debug("FSR3FeatureDx12::Evaluate Bias mask exist..");
+			spdlog::debug("FSR2FeatureDx12::Evaluate Bias mask exist..");
 		else
-			spdlog::debug("FSR3FeatureDx12::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
+			spdlog::debug("FSR2FeatureDx12::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
 
 		if (Config::Instance()->MaskResourceBarrier.has_value())
 			ResourceBarrier(InCommandList, paramMask,
@@ -172,7 +172,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		params.motionVectorScale.y = MVScaleY;
 	}
 	else
-		spdlog::warn("FSR3FeatureDx12::Evaluate Can't get motion vector scales!");
+		spdlog::warn("FSR2FeatureDx12::Evaluate Can't get motion vector scales!");
 
 
 	float shapness;
@@ -205,12 +205,12 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	params.frameTimeDelta = (float)GetDeltaTime();
 	params.preExposure = 1.0f;
 
-	spdlog::debug("FSR3FeatureDx12::Evaluate Dispatch!!");
+	spdlog::debug("FSR2FeatureDx12::Evaluate Dispatch!!");
 	auto result = ffxFsr2ContextDispatch(&_context, &params);
 
 	if (result != FFX_OK)
 	{
-		spdlog::error("FSR3FeatureDx12::Evaluate ffxFsr2ContextDispatch error: {0:x}", result);
+		spdlog::error("FSR2FeatureDx12::Evaluate ffxFsr2ContextDispatch error: {0:x}", result);
 		return false;
 	}
 
@@ -250,7 +250,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 void FSR2FeatureDx12::ReInit(const NVSDK_NGX_Parameter* InParameters)
 {
-	spdlog::error("FSR3Feature::ReInit");
+	spdlog::error("FSR2FeatureDx12::ReInit");
 
 	SetInit(false);
 
@@ -259,7 +259,7 @@ void FSR2FeatureDx12::ReInit(const NVSDK_NGX_Parameter* InParameters)
 		auto errorCode = ffxFsr2ContextDestroy(&_context);
 
 		if (errorCode != FFX_OK)
-			spdlog::error("FSR3Feature::ReInit ffxFsr2ContextDestroy error: {0:x}", errorCode);
+			spdlog::error("FSR2FeatureDx12::ReInit ffxFsr2ContextDestroy error: {0:x}", errorCode);
 
 		free(_contextDesc.backendInterface.scratchBuffer);
 	}
