@@ -38,7 +38,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVS
 
 	InParameters->Get(NVSDK_NGX_Parameter_Reset, &params.resetHistory);
 
-	XeSSFeature::SetRenderResolution(InParameters, &params);
+	GetRenderResolution(InParameters, &params.inputWidth, &params.inputHeight);
 
 	spdlog::debug("XeSSFeatureDx12::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 

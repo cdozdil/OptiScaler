@@ -27,27 +27,20 @@ inline static std::string ResultToString(xess_result_t result)
 }
 
 
-class XeSSFeature : public IFeature
+class XeSSFeature : public virtual IFeature
 {
 private:
-	bool _isInited = false;
 
 protected:
-	xess_context_handle_t _xessContext;
+	xess_context_handle_t _xessContext = nullptr;
 
 	bool InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters);
-
-	void SetRenderResolution(const NVSDK_NGX_Parameter* InParameters, xess_d3d12_execute_params_t* params) const;
-
-	void SetInit(bool value) override;
 
 public:
 
 	XeSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
 	{
 	}
-
-	bool IsInited() override;
-
+		
 	~XeSSFeature();
 };

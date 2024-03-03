@@ -7,16 +7,6 @@ inline void logCallback(const char* Message, xess_logging_level_t Level)
 	spdlog::log((spdlog::level::level_enum)((int)Level + 1), "FeatureContext::LogCallback XeSS Runtime ({0})", Message);
 }
 
-bool XeSSFeature::IsInited() 
-{ 
-	return _isInited; 
-}
-
-void XeSSFeature::SetInit(bool value) 
-{ 
-	_isInited = value; 
-}
-
 bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters)
 {
 	if (IsInited())
@@ -186,52 +176,9 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		return false;
 	}
 
-	_isInited = true;
+	SetInit(true);
 
 	return true;
-}
-
-void XeSSFeature::SetRenderResolution(const NVSDK_NGX_Parameter* InParameters, xess_d3d12_execute_params_t* params) const
-{
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, &params->inputWidth) != NVSDK_NGX_Result_Success ||
-		InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, &params->inputHeight) != NVSDK_NGX_Result_Success)
-	{
-		unsigned int width, height, outWidth, outHeight;
-
-		if (InParameters->Get(NVSDK_NGX_Parameter_Width, &width) == NVSDK_NGX_Result_Success &&
-			InParameters->Get(NVSDK_NGX_Parameter_Height, &height) == NVSDK_NGX_Result_Success)
-		{
-			if (InParameters->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth) == NVSDK_NGX_Result_Success &&
-				InParameters->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight) == NVSDK_NGX_Result_Success)
-			{
-				if (width < outWidth)
-				{
-					params->inputWidth = width;
-					params->inputHeight = height;
-					return;
-				}
-
-				params->inputWidth = outWidth;
-				params->inputHeight = outHeight;
-			}
-			else
-			{
-				if (width < RenderWidth())
-				{
-					params->inputWidth = width;
-					params->inputHeight = height;
-					return;
-				}
-
-				params->inputWidth = RenderWidth();
-				params->inputHeight = RenderHeight();
-				return;
-			}
-		}
-
-		params->inputWidth = RenderWidth();
-		params->inputHeight = RenderHeight();
-	}
 }
 
 XeSSFeature::~XeSSFeature()

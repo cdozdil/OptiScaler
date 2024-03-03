@@ -16,12 +16,12 @@ do {						\
 	}						\
 } while((void)0, 0);		
 
-bool XeSSFeatureDx11::CopyTextureFrom11To12(ID3D11Resource* d3d11texture, ID3D11Texture2D** pSharedTexture, D3D11_TEXTURE2D_DESC_C* sharedDesc, bool copy = true)
+bool XeSSFeatureDx11::CopyTextureFrom11To12(ID3D11Resource* InResource, ID3D11Texture2D** OutSharedResource, D3D11_TEXTURE2D_DESC_C* OutSharedDesc, bool InCopy = true)
 {
 	ID3D11Texture2D* originalTexture = nullptr;
 	D3D11_TEXTURE2D_DESC desc{};
 
-	auto result = d3d11texture->QueryInterface(IID_PPV_ARGS(&originalTexture));
+	auto result = InResource->QueryInterface(IID_PPV_ARGS(&originalTexture));
 
 	if (result != S_OK)
 		return false;
@@ -30,23 +30,23 @@ bool XeSSFeatureDx11::CopyTextureFrom11To12(ID3D11Resource* d3d11texture, ID3D11
 
 	if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) == 0)
 	{
-		if (desc.Width != sharedDesc->Width || desc.Height != sharedDesc->Height ||
-			desc.Format != sharedDesc->Format || desc.BindFlags != sharedDesc->BindFlags ||
-			(*pSharedTexture) == nullptr)
+		if (desc.Width != OutSharedDesc->Width || desc.Height != OutSharedDesc->Height ||
+			desc.Format != OutSharedDesc->Format || desc.BindFlags != OutSharedDesc->BindFlags ||
+			(*OutSharedResource) == nullptr)
 		{
-			if ((*pSharedTexture) != nullptr)
-				(*pSharedTexture)->Release();
+			if ((*OutSharedResource) != nullptr)
+				(*OutSharedResource)->Release();
 
-			ASSIGN_DESC(sharedDesc, desc);
-			sharedDesc->pointer = nullptr;
-			sharedDesc->handle = NULL;
+			ASSIGN_DESC(OutSharedDesc, desc);
+			OutSharedDesc->pointer = nullptr;
+			OutSharedDesc->handle = NULL;
 
 			desc.MiscFlags |= D3D11_RESOURCE_MISC_SHARED;
-			result = Dx11Device->CreateTexture2D(&desc, nullptr, pSharedTexture);
+			result = Dx11Device->CreateTexture2D(&desc, nullptr, OutSharedResource);
 
 			IDXGIResource1* resource;
 
-			result = (*pSharedTexture)->QueryInterface(IID_PPV_ARGS(&resource));
+			result = (*OutSharedResource)->QueryInterface(IID_PPV_ARGS(&resource));
 
 			if (result != S_OK)
 			{
@@ -55,7 +55,7 @@ bool XeSSFeatureDx11::CopyTextureFrom11To12(ID3D11Resource* d3d11texture, ID3D11
 			}
 
 			// Get shared handle
-			result = resource->GetSharedHandle(&sharedDesc->handle);
+			result = resource->GetSharedHandle(&OutSharedDesc->handle);
 
 			if (result != S_OK)
 			{
@@ -64,15 +64,15 @@ bool XeSSFeatureDx11::CopyTextureFrom11To12(ID3D11Resource* d3d11texture, ID3D11
 			}
 
 			resource->Release();
-			sharedDesc->pointer = (*pSharedTexture);
+			OutSharedDesc->pointer = (*OutSharedResource);
 		}
 
-		if (copy)
-			Dx11DeviceContext->CopyResource(*pSharedTexture, d3d11texture);
+		if (InCopy)
+			Dx11DeviceContext->CopyResource(*OutSharedResource, InResource);
 	}
 	else
 	{
-		if (sharedDesc->pointer != d3d11texture)
+		if (OutSharedDesc->pointer != InResource)
 		{
 			IDXGIResource1* resource;
 
@@ -85,7 +85,7 @@ bool XeSSFeatureDx11::CopyTextureFrom11To12(ID3D11Resource* d3d11texture, ID3D11
 			}
 
 			// Get shared handle
-			result = resource->GetSharedHandle(&sharedDesc->handle);
+			result = resource->GetSharedHandle(&OutSharedDesc->handle);
 
 			if (result != S_OK)
 			{
@@ -94,7 +94,7 @@ bool XeSSFeatureDx11::CopyTextureFrom11To12(ID3D11Resource* d3d11texture, ID3D11
 			}
 
 			resource->Release();
-			sharedDesc->pointer = d3d11texture;
+			OutSharedDesc->pointer = InResource;
 		}
 	}
 
@@ -114,22 +114,22 @@ void XeSSFeatureDx11::ReleaseSharedResources()
 	SAFE_RELEASE(dx11Exp.SharedTexture);
 }
 
-void XeSSFeatureDx11::GetHardwareAdapter(IDXGIFactory1* pFactory, IDXGIAdapter** ppAdapter, D3D_FEATURE_LEVEL featureLevel, bool requestHighPerformanceAdapter)
+void XeSSFeatureDx11::GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter)
 {
 	spdlog::debug("XeSSFeatureDx11::GetHardwareAdapter");
 
-	*ppAdapter = nullptr;
+	*InAdapter = nullptr;
 
 	IDXGIAdapter1* adapter;
 
 	IDXGIFactory6* factory6;
-	if (SUCCEEDED(pFactory->QueryInterface(IID_PPV_ARGS(&factory6))))
+	if (SUCCEEDED(InFactory->QueryInterface(IID_PPV_ARGS(&factory6))))
 	{
 		for (
 			UINT adapterIndex = 0;
 			DXGI_ERROR_NOT_FOUND != factory6->EnumAdapterByGpuPreference(
 				adapterIndex,
-				requestHighPerformanceAdapter == true ? DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE : DXGI_GPU_PREFERENCE_UNSPECIFIED,
+				InRequestHighPerformanceAdapter == true ? DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE : DXGI_GPU_PREFERENCE_UNSPECIFIED,
 				IID_PPV_ARGS(&adapter));
 				++adapterIndex)
 		{
@@ -146,18 +146,18 @@ void XeSSFeatureDx11::GetHardwareAdapter(IDXGIFactory1* pFactory, IDXGIAdapter**
 			// Check to see whether the adapter supports Direct3D 12, but don't create the
 			// actual device yet.
 
-			auto result = D3D12CreateDevice(adapter, featureLevel, _uuidof(ID3D12Device), nullptr);
+			auto result = D3D12CreateDevice(adapter, InFeatureLevel, _uuidof(ID3D12Device), nullptr);
 
 			if (result == S_FALSE)
 			{
-				*ppAdapter = adapter;
+				*InAdapter = adapter;
 				break;
 			}
 		}
 	}
 	else
 	{
-		for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(adapterIndex, &adapter); ++adapterIndex)
+		for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != InFactory->EnumAdapters1(adapterIndex, &adapter); ++adapterIndex)
 		{
 			DXGI_ADAPTER_DESC1 desc;
 			adapter->GetDesc1(&desc);
@@ -172,11 +172,11 @@ void XeSSFeatureDx11::GetHardwareAdapter(IDXGIFactory1* pFactory, IDXGIAdapter**
 			// Check to see whether the adapter supports Direct3D 12, but don't create the
 			// actual device yet.
 
-			auto result = D3D12CreateDevice(adapter, featureLevel, _uuidof(ID3D12Device), nullptr);
+			auto result = D3D12CreateDevice(adapter, InFeatureLevel, _uuidof(ID3D12Device), nullptr);
 
 			if (result == S_FALSE)
 			{
-				*ppAdapter = adapter;
+				*InAdapter = adapter;
 				break;
 			}
 		}
@@ -184,7 +184,7 @@ void XeSSFeatureDx11::GetHardwareAdapter(IDXGIFactory1* pFactory, IDXGIAdapter**
 
 }
 
-HRESULT XeSSFeatureDx11::CreateDx12Device(D3D_FEATURE_LEVEL featureLevel)
+HRESULT XeSSFeatureDx11::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
 {
 	spdlog::debug("XeSSFeatureDx11::CreateDx12Device");
 
@@ -203,7 +203,7 @@ HRESULT XeSSFeatureDx11::CreateDx12Device(D3D_FEATURE_LEVEL featureLevel)
 	}
 
 	IDXGIAdapter* hardwareAdapter = nullptr;
-	GetHardwareAdapter(factory, &hardwareAdapter, featureLevel, true);
+	GetHardwareAdapter(factory, &hardwareAdapter, InFeatureLevel, true);
 
 	if (hardwareAdapter == nullptr)
 	{
@@ -211,7 +211,7 @@ HRESULT XeSSFeatureDx11::CreateDx12Device(D3D_FEATURE_LEVEL featureLevel)
 		return E_NOINTERFACE;
 	}
 
-	result = D3D12CreateDevice(hardwareAdapter, featureLevel, IID_PPV_ARGS(&Dx12on11Device));
+	result = D3D12CreateDevice(hardwareAdapter, InFeatureLevel, IID_PPV_ARGS(&Dx12on11Device));
 
 	if (result != S_OK)
 	{
@@ -252,43 +252,33 @@ HRESULT XeSSFeatureDx11::CreateDx12Device(D3D_FEATURE_LEVEL featureLevel)
 	return S_OK;
 }
 
-void XeSSFeatureDx11::SetInit(bool value)
-{
-	XeSSFeature::SetInit(value);
-}
-
-bool XeSSFeatureDx11::IsInited()
-{
-	return XeSSFeature::IsInited();
-}
-
-bool XeSSFeatureDx11::Init(ID3D11Device* device, ID3D11DeviceContext* context, const NVSDK_NGX_Parameter* initParams)
+bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("XeSSFeatureDx11::Init!");
 
 	if (IsInited())
 		return true;
 
-	Device = device;
-	DeviceContext = context;
+	Device = InDevice;
+	DeviceContext = InContext;
 
-	if (!context)
+	if (!InContext)
 	{
 		spdlog::error("XeSSFeatureDx11::Init context is null!");
 		return false;
 	}
 
-	auto contextResult = context->QueryInterface(IID_PPV_ARGS(&Dx11DeviceContext));
+	auto contextResult = InContext->QueryInterface(IID_PPV_ARGS(&Dx11DeviceContext));
 	if (contextResult != S_OK)
 	{
 		spdlog::error("XeSSFeatureDx11::Init QueryInterface ID3D11DeviceContext4 result: {0:x}", contextResult);
 		return false;
 	}
 
-	if (!device)
-		Dx11DeviceContext->GetDevice(&device);
+	if (!InDevice)
+		Dx11DeviceContext->GetDevice(&InDevice);
 
-	auto dx11DeviceResult = device->QueryInterface(IID_PPV_ARGS(&Dx11Device));
+	auto dx11DeviceResult = InDevice->QueryInterface(IID_PPV_ARGS(&Dx11Device));
 
 	if (dx11DeviceResult != S_OK)
 	{
@@ -310,7 +300,7 @@ bool XeSSFeatureDx11::Init(ID3D11Device* device, ID3D11DeviceContext* context, c
 
 	spdlog::debug("XeSSFeatureDx11::Init calling InitXeSS");
 
-	if (Dx12on11Device && !InitXeSS(Dx12on11Device, initParams))
+	if (Dx12on11Device && !InitXeSS(Dx12on11Device, InParameters))
 	{
 		spdlog::error("XeSSFeatureDx11::Init InitXeSS fail!");
 		return false;
@@ -365,7 +355,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 	InParameters->Get(NVSDK_NGX_Parameter_Reset, &params.resetHistory);
 
-	XeSSFeature::SetRenderResolution(InParameters, &params);
+	GetRenderResolution(InParameters, &params.inputWidth, &params.inputHeight);
 
 	spdlog::debug("FeatureContext::XeSSInit Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 

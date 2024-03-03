@@ -10,19 +10,20 @@ private:
 	NVSDK_NGX_Handle* _handle;
 
 	bool _initParameters = false;
+	bool _isInited = false;
 
 	unsigned int _displayWidth = 0;
 	unsigned int _displayHeight = 0;
 	unsigned int _renderWidth = 0;
 	unsigned int _renderHeight = 0;
 	NVSDK_NGX_PerfQuality_Value _perfQualityValue;
+	
+	void SetHandle(unsigned int InHandleId);
 
 protected:
-	void SetHandle(unsigned int handleId);
-
 	bool SetInitParameters(const NVSDK_NGX_Parameter* InParameters);
-	
-	virtual void SetInit(bool value) = 0;
+	void GetRenderResolution(const NVSDK_NGX_Parameter* InParameters, unsigned int* OutWidth, unsigned int* OutHeight) const;
+	virtual void SetInit(bool InValue);
 
 public:
 	NVSDK_NGX_Handle* Handle() const { return _handle; };
@@ -34,11 +35,11 @@ public:
 	bool IsInitParameters() const { return _initParameters; };
 	static unsigned int GetNextHandleId() { return handleCounter++; }
 
-	virtual bool IsInited() = 0;
+	virtual bool IsInited();
 
-	IFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters)
+	IFeature(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters)
 	{
-		SetHandle(handleId);
+		SetHandle(InHandleId);
 		_initParameters = SetInitParameters(InParameters);
 	}
 

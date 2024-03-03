@@ -2,17 +2,17 @@
 #include "FSR2Feature_Dx12.h"
 #include "Config.h"
 
-bool FSR2FeatureDx12::Init(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters)
+bool FSR2FeatureDx12::Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* InParameters)
 {
 	if (IsInited())
 		return true;
 
-	Device = device;
+	Device = InDevice;
 
-	return InitFSR2(device, InParameters);
+	return InitFSR2(InDevice, InParameters);
 }
 
-bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVSDK_NGX_Parameter* InParameters)
+bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters)
 {
 	if (!IsInited())
 		return false;
@@ -26,11 +26,11 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVS
 	InParameters->Get(NVSDK_NGX_Parameter_Reset, &reset);
 	params.reset = reset == 1;
 
-	FSR2Feature::SetRenderResolution(InParameters, &params);
+	GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
 	spdlog::debug("FSR3FeatureDx12::Evaluate Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
-	params.commandList = ffxGetCommandListDX12(commandList);
+	params.commandList = ffxGetCommandListDX12(InCommandList);
 
 	ID3D12Resource* paramColor;
 	if (InParameters->Get(NVSDK_NGX_Parameter_Color, &paramColor) != NVSDK_NGX_Result_Success)
@@ -41,7 +41,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVS
 		spdlog::debug("FSR3FeatureDx12::Evaluate Color exist..");
 
 		if (Config::Instance()->ColorResourceBarrier.has_value())
-			ResourceBarrier(commandList, paramColor,
+			ResourceBarrier(InCommandList, paramColor,
 				(D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
@@ -62,7 +62,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVS
 		spdlog::debug("FSR3FeatureDx12::Evaluate MotionVectors exist..");
 
 		if (Config::Instance()->MVResourceBarrier.has_value())
-			ResourceBarrier(commandList, paramVelocity,
+			ResourceBarrier(InCommandList, paramVelocity,
 				(D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
@@ -83,7 +83,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVS
 		spdlog::debug("FSR3FeatureDx12::Evaluate Output exist..");
 
 		if (Config::Instance()->OutputResourceBarrier.has_value())
-			ResourceBarrier(commandList, paramOutput,
+			ResourceBarrier(InCommandList, paramOutput,
 				(D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
@@ -104,7 +104,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVS
 		spdlog::debug("FSR3FeatureDx12::Evaluate Depth exist..");
 
 		if (Config::Instance()->DepthResourceBarrier.has_value())
-			ResourceBarrier(commandList, paramDepth,
+			ResourceBarrier(InCommandList, paramDepth,
 				(D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
@@ -130,7 +130,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVS
 			spdlog::debug("FSR3FeatureDx12::Evaluate AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
 
 		if (Config::Instance()->ExposureResourceBarrier.has_value())
-			ResourceBarrier(commandList, paramExp,
+			ResourceBarrier(InCommandList, paramExp,
 				(D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
@@ -151,7 +151,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVS
 			spdlog::debug("FSR3FeatureDx12::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
 
 		if (Config::Instance()->MaskResourceBarrier.has_value())
-			ResourceBarrier(commandList, paramMask,
+			ResourceBarrier(InCommandList, paramMask,
 				(D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
@@ -212,32 +212,32 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* commandList, const NVS
 
 	// restore resource states
 	if (paramColor && Config::Instance()->ColorResourceBarrier.value_or(false))
-		ResourceBarrier(commandList, paramColor,
+		ResourceBarrier(InCommandList, paramColor,
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value());
 
 	if (paramVelocity && Config::Instance()->MVResourceBarrier.has_value())
-		ResourceBarrier(commandList, paramVelocity,
+		ResourceBarrier(InCommandList, paramVelocity,
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value());
 
 	if (paramOutput && Config::Instance()->OutputResourceBarrier.has_value())
-		ResourceBarrier(commandList, paramOutput,
+		ResourceBarrier(InCommandList, paramOutput,
 			D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
 			(D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value());
 
 	if (paramDepth && Config::Instance()->DepthResourceBarrier.has_value())
-		ResourceBarrier(commandList, paramDepth,
+		ResourceBarrier(InCommandList, paramDepth,
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value());
 
 	if (paramExp && Config::Instance()->ExposureResourceBarrier.has_value())
-		ResourceBarrier(commandList, paramExp,
+		ResourceBarrier(InCommandList, paramExp,
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value());
 
 	if (paramMask && Config::Instance()->MaskResourceBarrier.has_value())
-		ResourceBarrier(commandList, paramMask,
+		ResourceBarrier(InCommandList, paramMask,
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value());
 
@@ -259,14 +259,4 @@ void FSR2FeatureDx12::ReInit(const NVSDK_NGX_Parameter* InParameters)
 	}
 
 	SetInit(Init(Device, InParameters));
-}
-
-void FSR2FeatureDx12::SetInit(bool value)
-{
-	FSR2Feature::SetInit(value);
-}
-
-bool FSR2FeatureDx12::IsInited()
-{
-	return FSR2Feature::IsInited();
 }

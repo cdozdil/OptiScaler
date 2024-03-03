@@ -15,11 +15,6 @@ inline void logCallback(FfxMsgType type, const wchar_t* message)
 		spdlog::debug("FSR2Feature::LogCallback FSR Runtime: {0}", str);
 }
 
-void FSR2Feature::SetInit(bool value)
-{
-	_isInited = value;
-}
-
 double FSR2Feature::GetDeltaTime()
 {
 	double currentTime = MillisecondsNow();
@@ -33,17 +28,12 @@ bool FSR2Feature::IsDepthInverted() const
 	return _depthInverted;
 }
 
-bool FSR2Feature::IsInited()
-{
-	return _isInited;
-}
-
-bool FSR2Feature::InitFSR2(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters)
+bool FSR2Feature::InitFSR2(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* InParameters)
 {
 	if (IsInited())
 		return true;
 
-	if (device == nullptr)
+	if (InDevice == nullptr)
 	{
 		spdlog::error("FSR2Feature::InitFSR2 D3D12Device is null!");
 		return false;
@@ -52,7 +42,7 @@ bool FSR2Feature::InitFSR2(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	const size_t scratchBufferSize = ffxGetScratchMemorySizeDX12(FFX_FSR2_CONTEXT_COUNT);
 	void* scratchBuffer = calloc(scratchBufferSize, 1);
 
-	auto errorCode = ffxGetInterfaceDX12(&_contextDesc.backendInterface, device, scratchBuffer, scratchBufferSize, FFX_FSR2_CONTEXT_COUNT);
+	auto errorCode = ffxGetInterfaceDX12(&_contextDesc.backendInterface, InDevice, scratchBuffer, scratchBufferSize, FFX_FSR2_CONTEXT_COUNT);
 
 	if (errorCode != FFX_OK)
 	{
@@ -146,69 +136,9 @@ bool FSR2Feature::InitFSR2(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		return false;
 	}
 
-	_isInited = true;
+	SetInit(true);
 
 	return true;
-}
-
-FSR2Feature::~FSR2Feature()
-{
-	spdlog::debug("FSR2Feature::~FSR2Feature");
-
-	if (!IsInited())
-		return;
-
-	auto errorCode = ffxFsr2ContextDestroy(&_context);
-
-	if (errorCode != FFX_OK)
-		spdlog::error("FSR2Feature::~FSR2Feature ffxFsr2ContextDestroy error: {0:x}", errorCode);
-
-	free(_contextDesc.backendInterface.scratchBuffer);
-
-	SetInit(false);
-}
-
-void FSR2Feature::SetRenderResolution(const NVSDK_NGX_Parameter* InParameters, FfxFsr2DispatchDescription* params)  const
-{
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, &params->renderSize.width) != NVSDK_NGX_Result_Success ||
-		InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, &params->renderSize.height) != NVSDK_NGX_Result_Success)
-	{
-		unsigned int width, height, outWidth, outHeight;
-
-		if (InParameters->Get(NVSDK_NGX_Parameter_Width, &width) == NVSDK_NGX_Result_Success &&
-			InParameters->Get(NVSDK_NGX_Parameter_Height, &height) == NVSDK_NGX_Result_Success)
-		{
-			if (InParameters->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth) == NVSDK_NGX_Result_Success &&
-				InParameters->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight) == NVSDK_NGX_Result_Success)
-			{
-				if (width < outWidth)
-				{
-					params->renderSize.width = width;
-					params->renderSize.height = height;
-					return;
-				}
-
-				params->renderSize.width = outWidth;
-				params->renderSize.height = outHeight;
-			}
-			else
-			{
-				if (width < RenderWidth())
-				{
-					params->renderSize.width = width;
-					params->renderSize.height = height;
-					return;
-				}
-
-				params->renderSize.width = RenderWidth();
-				params->renderSize.height = RenderHeight();
-				return;
-			}
-		}
-
-		params->renderSize.width = RenderWidth();
-		params->renderSize.height = RenderHeight();
-	}
 }
 
 double FSR2Feature::MillisecondsNow()
@@ -230,4 +160,22 @@ double FSR2Feature::MillisecondsNow()
 
 	return milliseconds;
 }
+
+FSR2Feature::~FSR2Feature()
+{
+	spdlog::debug("FSR2Feature::~FSR2Feature");
+
+	if (!IsInited())
+		return;
+
+	auto errorCode = ffxFsr2ContextDestroy(&_context);
+
+	if (errorCode != FFX_OK)
+		spdlog::error("FSR2Feature::~FSR2Feature ffxFsr2ContextDestroy error: {0:x}", errorCode);
+
+	free(_contextDesc.backendInterface.scratchBuffer);
+
+	SetInit(false);
+}
+
 

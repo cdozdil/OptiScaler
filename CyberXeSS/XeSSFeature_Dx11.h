@@ -41,26 +41,24 @@ private:
 	D3D11_TEXTURE2D_RESOURCE_C dx11Exp = {};
 	D3D11_TEXTURE2D_RESOURCE_C dx11Out = {};
 
-	bool CopyTextureFrom11To12(ID3D11Resource* d3d11texture, ID3D11Texture2D** pSharedTexture, D3D11_TEXTURE2D_DESC_C* sharedDesc, bool copy);
+	bool CopyTextureFrom11To12(ID3D11Resource* InResource, ID3D11Texture2D** OutSharedResource, D3D11_TEXTURE2D_DESC_C* OutSharedDesc, bool InCopy);
 	void ReleaseSharedResources();
-	void GetHardwareAdapter(IDXGIFactory1* pFactory, IDXGIAdapter** ppAdapter, D3D_FEATURE_LEVEL featureLevel, bool requestHighPerformanceAdapter);
-	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL featureLevel);
+	void GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter);
+	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel);
 
 protected:
 
 public:
-	XeSSFeatureDx11(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters) : XeSSFeature(handleId, InParameters), IFeature_Dx11(handleId, InParameters)
+	XeSSFeatureDx11(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : XeSSFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters)
 	{
 	}
 
 	// Inherited via XeSSFeature
 	void ReInit(const NVSDK_NGX_Parameter* InParameters) override;
-	void SetInit(bool value) override;
-	bool IsInited() override;
 
 	// Inherited via IFeature_Dx11
-	bool Init(ID3D11Device* device, ID3D11DeviceContext* context, const NVSDK_NGX_Parameter* initParams) override;
-	bool Evaluate(ID3D11DeviceContext* deviceContext, const NVSDK_NGX_Parameter* initParams) override;
+	bool Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters) override;
+	bool Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK_NGX_Parameter* InParameters) override;
 
 	~XeSSFeatureDx11();
 };
