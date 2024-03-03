@@ -367,7 +367,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	ID3D11Query* query1 = nullptr;
 	result = Dx11Device->CreateQuery(&pQueryDesc, &query1);
 
-	if (result != S_OK || query1 == nullptr || query1 == NULL)
+	if (result != S_OK || !query1)
 	{
 		spdlog::error("XeSSFeatureDx11::Evaluate can't create query1!");
 		return false;
@@ -667,7 +667,7 @@ void XeSSFeatureDx11::ReInit(const NVSDK_NGX_Parameter* InParameters)
 
 XeSSFeatureDx11::~XeSSFeatureDx11()
 {
-	spdlog::debug("XeSSFeatureDx11::Destroy!");
+	spdlog::debug("XeSSFeatureDx11::XeSSFeatureDx11");
 
 	if (Dx12on11Device && Dx12CommandQueue && Dx12CommandList)
 	{
@@ -680,9 +680,15 @@ XeSSFeatureDx11::~XeSSFeatureDx11()
 		Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
 		auto fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-		d3d12Fence->SetEventOnCompletion(999, fenceEvent);
-		WaitForSingleObject(fenceEvent, INFINITE);
-		CloseHandle(fenceEvent);
+
+		if (d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
+		{
+			WaitForSingleObject(fenceEvent, INFINITE);
+			CloseHandle(fenceEvent);
+		}
+		else
+			spdlog::warn("XeSSFeatureDx11::XeSSFeatureDx11 can't get fenceEvent handle");
+
 		d3d12Fence->Release();
 
 		SAFE_RELEASE(Dx12CommandList);

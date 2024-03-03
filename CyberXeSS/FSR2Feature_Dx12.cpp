@@ -4,6 +4,8 @@
 
 bool FSR2FeatureDx12::Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* InParameters)
 {
+	spdlog::debug("FSR3FeatureDx12::Init");
+
 	if (IsInited())
 		return true;
 
@@ -14,6 +16,8 @@ bool FSR2FeatureDx12::Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* In
 
 bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters)
 {
+	spdlog::debug("FSR3FeatureDx12::Evaluate");
+
 	if (!IsInited())
 		return false;
 
@@ -24,7 +28,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	unsigned int reset;
 	InParameters->Get(NVSDK_NGX_Parameter_Reset, &reset);
-	params.reset = reset == 1;
+	params.reset = (reset == 1);
 
 	GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
@@ -246,6 +250,8 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 void FSR2FeatureDx12::ReInit(const NVSDK_NGX_Parameter* InParameters)
 {
+	spdlog::error("FSR3Feature::ReInit");
+
 	SetInit(false);
 
 	if (IsInited())
@@ -253,10 +259,125 @@ void FSR2FeatureDx12::ReInit(const NVSDK_NGX_Parameter* InParameters)
 		auto errorCode = ffxFsr2ContextDestroy(&_context);
 
 		if (errorCode != FFX_OK)
-			spdlog::error("FSR3Feature::~FSR3Feature ffxFsr2ContextDestroy error: {0:x}", errorCode);
+			spdlog::error("FSR3Feature::ReInit ffxFsr2ContextDestroy error: {0:x}", errorCode);
 
 		free(_contextDesc.backendInterface.scratchBuffer);
 	}
 
 	SetInit(Init(Device, InParameters));
+}
+
+bool FSR2FeatureDx12::InitFSR2(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* InParameters)
+{
+	spdlog::debug("FSR2Feature::InitFSR2");
+
+	if (IsInited())
+		return true;
+
+	if (InDevice == nullptr)
+	{
+		spdlog::error("FSR2Feature::InitFSR2 D3D12Device is null!");
+		return false;
+	}
+
+	const size_t scratchBufferSize = ffxGetScratchMemorySizeDX12(FFX_FSR2_CONTEXT_COUNT);
+	void* scratchBuffer = calloc(scratchBufferSize, 1);
+
+	auto errorCode = ffxGetInterfaceDX12(&_contextDesc.backendInterface, InDevice, scratchBuffer, scratchBufferSize, FFX_FSR2_CONTEXT_COUNT);
+
+	if (errorCode != FFX_OK)
+	{
+		spdlog::error("FSR2Feature::InitFSR2 ffxGetInterfaceDX12 error: {0:x}", errorCode);
+		free(scratchBuffer);
+		return false;
+	}
+
+	_contextDesc.maxRenderSize.width = RenderWidth();
+	_contextDesc.maxRenderSize.height = RenderHeight();
+	_contextDesc.displaySize.width = DisplayWidth();
+	_contextDesc.displaySize.height = DisplayHeight();
+
+	_contextDesc.flags = 0;
+
+	int featureFlags;
+	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);
+
+	bool Hdr = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
+	bool EnableSharpening = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
+	bool DepthInverted = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
+	bool JitterMotion = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
+	bool LowRes = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
+	bool AutoExposure = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
+
+	if (Config::Instance()->DepthInverted.value_or(DepthInverted))
+	{
+		Config::Instance()->DepthInverted = true;
+		_contextDesc.flags |= FFX_FSR2_ENABLE_DEPTH_INVERTED;
+		SetDepthInverted(true);
+		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (DepthInverted) {0:b}", _contextDesc.flags);
+	}
+
+	if (Config::Instance()->AutoExposure.value_or(AutoExposure))
+	{
+		Config::Instance()->AutoExposure = true;
+		_contextDesc.flags |= FFX_FSR2_ENABLE_AUTO_EXPOSURE;
+		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (AutoExposure) {0:b}", _contextDesc.flags);
+	}
+	else
+	{
+		Config::Instance()->AutoExposure = false;
+		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (!AutoExposure) {0:b}", _contextDesc.flags);
+	}
+
+	if (Config::Instance()->HDR.value_or(Hdr))
+	{
+		Config::Instance()->HDR = false;
+		_contextDesc.flags |= FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
+		spdlog::info("FSR2Feature::InitFSR2 xessParams.initFlags (HDR) {0:b}", _contextDesc.flags);
+	}
+	else
+	{
+		Config::Instance()->HDR = true;
+		spdlog::info("FSR2Feature::InitFSR2 xessParams.initFlags (!HDR) {0:b}", _contextDesc.flags);
+	}
+
+	if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
+	{
+		Config::Instance()->JitterCancellation = true;
+		_contextDesc.flags |= FFX_FSR2_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
+		spdlog::info("FSR2Feature::InitFSR2 xessParams.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
+	}
+
+	if (Config::Instance()->DisplayResolution.value_or(!LowRes))
+	{
+		Config::Instance()->DisplayResolution = true;
+		_contextDesc.flags |= FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
+		spdlog::info("FSR2Feature::InitFSR2 xessParams.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
+	}
+	else
+	{
+		Config::Instance()->DisplayResolution = false;
+		spdlog::info("FSR2Feature::InitFSR2 xessParams.initFlags (LowResMV) {0:b}", _contextDesc.flags);
+	}
+
+	_contextDesc.flags |= FFX_FSR2_ENABLE_DEPTH_INFINITE;
+
+#if _DEBUG
+	_contextDesc.flags |= FFX_FSR2_ENABLE_DEBUG_CHECKING;
+	_contextDesc.fpMessage = FfxLogCallback;
+#endif
+
+	spdlog::debug("FSR2Feature::InitFSR2 ffxFsr2ContextCreate!");
+
+	auto ret = ffxFsr2ContextCreate(&_context, &_contextDesc);
+
+	if (ret != FFX_OK)
+	{
+		spdlog::error("FSR2Feature::InitFSR2 ffxFsr2ContextCreate error: {0:x}", ret);
+		return false;
+	}
+
+	SetInit(true);
+
+	return true;
 }

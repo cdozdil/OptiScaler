@@ -17,8 +17,4 @@ public:
 	bool Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* InParameters) override;
 	bool Evaluate(ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters) override;
 	void ReInit(const NVSDK_NGX_Parameter* InParameters) override;
-
-	// Inherited via XeSSContext
-	void SetInit(bool value) override;
-	bool IsInited() override;
 };

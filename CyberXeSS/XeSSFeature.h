@@ -3,6 +3,11 @@
 #include "xess_debug.h"
 #include <string>
 
+//dumpParams.frame_count = 1;
+//dumpParams.frame_idx = cnt++;
+//dumpParams.path = "F:\\";
+//xessStartDump(deviceContext->XessContext, &dumpParams);
+
 inline static std::string ResultToString(xess_result_t result)
 {
 	switch (result)
@@ -25,7 +30,6 @@ inline static std::string ResultToString(xess_result_t result)
 	default: return "Unknown";
 	}
 }
-
 
 class XeSSFeature : public virtual IFeature
 {
