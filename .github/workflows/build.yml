@@ -45,11 +45,5 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: CyberXeSS
-        path: |
-          ${{ github.workspace }}\x64\Release\nvngx.dll
-          ${{ github.workspace }}\CyberXeSS\dlss\EnableSignatureOverride.reg
-          ${{ github.workspace }}\CyberXeSS\dlss\DisableSignatureOverride.reg
-          ${{ github.workspace }}\CyberXeSS\xess\libxess.dll
-          ${{ github.workspace }}\CyberXeSS\xess\XESS_LICENSE.pdf
-          ${{ github.workspace }}\nvngx.ini
+        path: ${{ github.workspace }}\x64\Release\a\*.*
         if-no-files-found: error
