@@ -17,3 +17,6 @@
 	path = external/ffx-sdk
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK.git
 	branch = release-FSR3-3.0.3
+[submodule "external/ffx-sdx-dx11"]
+	path = external/ffx-sdx-dx11
+	url = https://github.com/metarutaiga/FidelityFX-SDK-DX11.git
