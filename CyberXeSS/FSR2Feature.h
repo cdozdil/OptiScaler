@@ -1,7 +1,13 @@
 #pragma once
 #include "IFeature.h"
 
-#include "FidelityFX/host/ffx_fsr2.h"
+#include "ffx3/include/FidelityFX/host/ffx_fsr2.h"
+
+#ifdef _DEBUG
+#pragma comment(lib, "ffx3/lib/ffx_fsr2_x64d.lib")
+#else
+#pragma comment(lib, "ffx3/lib/ffx_fsr2_x64.lib")
+#endif // DEBUG
 
 inline void FfxLogCallback(FfxMsgType type, const wchar_t* message)
 {

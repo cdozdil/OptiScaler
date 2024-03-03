@@ -68,6 +68,141 @@
     <ClInclude Include="FSR2Feature_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\cas\ffx_cas.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\cas\ffx_cas_callbacks_glsl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\cas\ffx_cas_callbacks_hlsl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\cas\ffx_cas_resources.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\cas\ffx_cas_sharpen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_accumulate.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_callbacks_glsl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_callbacks_hlsl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_compute_luminance_pyramid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_depth_clip.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_lock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_postprocess_lock_status.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_rcas.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_reconstruct_dilated_velocity_and_previous_depth.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_reproject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_resources.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_sample.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_tcr_autogen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_upsample.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\spd\ffx_spd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\spd\ffx_spd_callbacks_glsl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\spd\ffx_spd_callbacks_hlsl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\spd\ffx_spd_downsample.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\spd\ffx_spd_resources.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\ffx_common_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\ffx_core.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\ffx_core_cpu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\ffx_core_glsl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\ffx_core_gpu_common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\ffx_core_gpu_common_half.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\ffx_core_hlsl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\ffx_core_portability.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\host\backends\dx12\d3dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\host\backends\dx12\ffx_dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\host\backends\vk\ffx_vk.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_assert.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_cas.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_error.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_fsr2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_fx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_interface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_spd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">

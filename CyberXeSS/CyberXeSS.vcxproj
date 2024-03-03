@@ -79,15 +79,15 @@
     <LibraryPath>$(XESS_SDK)\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\ffx-sdk\sdk\include;$(SolutionDir)external\fmt\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)external\xess\lib;$(SolutionDir)external\ffx-sdk\sdk\bin\ffx_sdk;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\fmt\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)external\xess\lib;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
     <TargetName>nvngx</TargetName>
     <OutDir>E:\Games\Deep Rock Galactic\FSD\Binaries\Win64\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\ffx-sdk\sdk\include;$(SolutionDir)external\fmt\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\fmt\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
     <TargetName>nvngx</TargetName>
-    <LibraryPath>$(SolutionDir)external\xess\lib;$(SolutionDir)external\ffx-sdk\sdk\bin\ffx_sdk;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)external\xess\lib;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -141,7 +141,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3d12.lib;dxguid.lib;libxess.lib;ffx_backend_dx12_x64d.lib;ffx_fsr2_x64d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3d12.lib;dxguid.lib;libxess.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -163,13 +163,58 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3d12.lib;dxguid.lib;libxess.lib;ffx_backend_dx12_x64.lib;ffx_fsr2_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3d12.lib;dxguid.lib;libxess.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Config.h" />
     <ClInclude Include="CyberXess.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\cas\ffx_cas.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\cas\ffx_cas_callbacks_glsl.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\cas\ffx_cas_callbacks_hlsl.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\cas\ffx_cas_resources.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\cas\ffx_cas_sharpen.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\ffx_common_types.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\ffx_core.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\ffx_core_cpu.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\ffx_core_glsl.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\ffx_core_gpu_common.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\ffx_core_gpu_common_half.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\ffx_core_hlsl.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\ffx_core_portability.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_accumulate.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_callbacks_glsl.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_callbacks_hlsl.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_common.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_compute_luminance_pyramid.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_depth_clip.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_lock.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_postprocess_lock_status.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_rcas.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_reconstruct_dilated_velocity_and_previous_depth.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_reproject.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_resources.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_sample.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_tcr_autogen.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\fsr2\ffx_fsr2_upsample.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\spd\ffx_spd.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\spd\ffx_spd_callbacks_glsl.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\spd\ffx_spd_callbacks_hlsl.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\spd\ffx_spd_downsample.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\gpu\spd\ffx_spd_resources.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\host\backends\dx12\d3dx12.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\host\backends\dx12\ffx_dx12.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\host\backends\vk\ffx_vk.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_assert.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_cas.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_error.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_fsr2.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_fx.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_interface.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_spd.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_types.h" />
+    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_util.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="FSR2Feature.h" />
     <ClInclude Include="FSR2Feature_Dx12.h" />
