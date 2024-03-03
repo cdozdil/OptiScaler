@@ -21,6 +21,12 @@ void Config::Reload()
 
 	if (ini.LoadFile(absoluteFileName.c_str()) == SI_OK)
 	{
+		// Upscalers
+		Dx11Upscaler = readString("Upscalers", "Dx11Upscaler", true);
+		Dx12Upscaler = readString("Upscalers", "Dx12Upscaler", true);
+		VulkanUpscaler = readString("Upscalers", "VulkanUpscaler", true);
+
+		// XeSS
 		BuildPipelines = readBool("XeSS", "BuildPipelines");
 		NetworkModel = readInt("XeSS", "NetworkModel");
 		OverrideQuality = readInt("XeSS", "OverrideQuality");

@@ -59,6 +59,10 @@ public:
 	std::optional<int32_t> MaskResourceBarrier;
 	std::optional<int32_t> OutputResourceBarrier;
 
+	std::optional<std::string> Dx11Upscaler;
+	std::optional<std::string> Dx12Upscaler;
+	std::optional<std::string> VulkanUpscaler;
+
 	void Reload();
 
 	static Config* Instance();
