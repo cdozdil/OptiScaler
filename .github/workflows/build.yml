@@ -49,4 +49,5 @@ jobs:
           ${{ github.workspace }}\x64\Release\*.dll
           ${{ github.workspace }}\CyberXeSS\dlss\*.*
           ${{ github.workspace }}\CyberXeSS\xess\*.*
+          ${{ github.workspace }}\nvngx.ini
         if-no-files-found: error
