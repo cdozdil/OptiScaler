@@ -245,29 +245,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 	const auto deviceContext = Dx12Contexts[InFeatureHandle->Id].get();
 
-	unsigned int width, outWidth, height, outHeight;
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_Width, &width) == NVSDK_NGX_Result_Success &&
-		InParameters->Get(NVSDK_NGX_Parameter_Height, &height) == NVSDK_NGX_Result_Success &&
-		InParameters->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth) == NVSDK_NGX_Result_Success &&
-		InParameters->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight) == NVSDK_NGX_Result_Success)
-	{
-		width = width > outWidth ? width : outWidth;
-		height = height > outHeight ? height : outHeight;
-
-		if (deviceContext->IsInited() && 
-			(deviceContext->DisplayHeight() != height || deviceContext->DisplayWidth() != width))
-		{
-			spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature Display Width or Height changed, ReInit!");
-			deviceContext->ReInit(InParameters);
-		}
-	}
-
-	//dumpParams.frame_count = 1;
-	//dumpParams.frame_idx = cnt++;
-	//dumpParams.path = "F:\\";
-	//xessStartDump(deviceContext->XessContext, &dumpParams);
-
 	if (deviceContext->Evaluate(InCmdList, InParameters))
 		return NVSDK_NGX_Result_Success;
 	else
