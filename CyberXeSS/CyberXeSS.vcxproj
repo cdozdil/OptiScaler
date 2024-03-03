@@ -166,6 +166,12 @@
       <AdditionalDependencies>d3d11.lib;dxgi.lib;d3d12.lib;dxguid.lib;libxess.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
+    <PostBuildEvent>
+      <Command>md $(SolutionDir)x64\Release\a\
+copy $(ProjectDir)dlss\*.* $(SolutionDir)x64\Release\a\
+copy $(ProjectDir)xess\*.* $(SolutionDir)x64\Release\a\
+copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Config.h" />
