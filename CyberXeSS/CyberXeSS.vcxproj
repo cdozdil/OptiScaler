@@ -177,16 +177,10 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
   <ItemGroup>
     <ClInclude Include="Config.h" />
     <ClInclude Include="CyberXess.h" />
+    <ClInclude Include="detours\detours.h" />
+    <ClInclude Include="detours\detver.h" />
+    <ClInclude Include="dllmain.h" />
     <ClInclude Include="ffx3dx11\include\FidelityFX\host\backends\dx11\ffx_dx11.h" />
-    <ClInclude Include="ffx3dx11\include\FidelityFX\host\backends\ffx_shader_blobs.h" />
-    <ClInclude Include="ffx3dx11\include\FidelityFX\host\ffx_assert.h" />
-    <ClInclude Include="ffx3dx11\include\FidelityFX\host\ffx_cas.h" />
-    <ClInclude Include="ffx3dx11\include\FidelityFX\host\ffx_error.h" />
-    <ClInclude Include="ffx3dx11\include\FidelityFX\host\ffx_fsr2.h" />
-    <ClInclude Include="ffx3dx11\include\FidelityFX\host\ffx_interface.h" />
-    <ClInclude Include="ffx3dx11\include\FidelityFX\host\ffx_spd.h" />
-    <ClInclude Include="ffx3dx11\include\FidelityFX\host\ffx_types.h" />
-    <ClInclude Include="ffx3dx11\include\FidelityFX\host\ffx_util.h" />
     <ClInclude Include="ffx3\include\FidelityFX\host\backends\dx12\d3dx12.h" />
     <ClInclude Include="ffx3\include\FidelityFX\host\backends\dx12\ffx_dx12.h" />
     <ClInclude Include="ffx3\include\FidelityFX\host\backends\vk\ffx_vk.h" />
@@ -201,6 +195,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="ffx3\include\FidelityFX\host\ffx_util.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="FSR2Feature.h" />
+    <ClInclude Include="FSR2Feature_Dx11.h" />
     <ClInclude Include="FSR2Feature_Dx12.h" />
     <ClInclude Include="FSR2Feature_Vk.h" />
     <ClInclude Include="IFeature_Dx11.h" />
@@ -216,6 +211,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="CyberXess.cpp" />
     <ClCompile Include="FSR2Feature.cpp" />
+    <ClCompile Include="FSR2Feature_Dx11.cpp" />
     <ClCompile Include="FSR2Feature_Dx12.cpp" />
     <ClCompile Include="FSR2Feature_Vk.cpp" />
     <ClCompile Include="IFeature.cpp" />
