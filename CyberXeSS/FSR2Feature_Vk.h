@@ -11,6 +11,13 @@
 #pragma comment(lib, "ffx3/lib/ffx_backend_vk_x64.lib")
 #endif // DEBUG
 
+#ifdef _DEBUG
+#pragma comment(lib, "ffx3/lib/ffx_fsr2_x64d.lib")
+#else
+#pragma comment(lib, "ffx3/lib/ffx_fsr2_x64.lib")
+#endif // DEBUG
+
+
 class FSR2FeatureVk : public FSR2Feature, public IFeature_Vk
 {
 private:

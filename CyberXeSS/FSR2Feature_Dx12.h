@@ -9,6 +9,7 @@
 #pragma comment(lib, "ffx3/lib/ffx_backend_dx12_x64.lib")
 #endif // DEBUG
 
+
 class FSR2FeatureDx12 : public FSR2Feature, public IFeature_Dx12
 {
 private:
