@@ -107,12 +107,6 @@
     <ClInclude Include="FSR2Feature_Vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ffx3dx11\include\FidelityFX\host\backends\dx11\ffx_dx11.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FSR2Feature_Dx11.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="detours\detours.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -171,9 +165,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FSR2Feature_Vk.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FSR2Feature_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
