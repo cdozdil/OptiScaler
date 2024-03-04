@@ -37,7 +37,6 @@ public:
 	std::optional<bool> CasOverrideSharpness;
 	std::optional<float> CasSharpness;
 
-
 	// Upscale Ratio Override
 	std::optional<bool> UpscaleRatioOverrideEnabled;
 	std::optional<float> UpscaleRatioOverrideValue;
@@ -59,9 +58,13 @@ public:
 	std::optional<int32_t> MaskResourceBarrier;
 	std::optional<int32_t> OutputResourceBarrier;
 
+	// Upscalers
 	std::optional<std::string> Dx11Upscaler;
 	std::optional<std::string> Dx12Upscaler;
 	std::optional<std::string> VulkanUpscaler;
+
+	// Vulkan
+	std::optional<bool> VulkanSpoofEnable;
 
 	void Reload();
 

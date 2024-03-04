@@ -12,6 +12,7 @@
 
 HMODULE dllModule;
 
+bool _hooksAttached = false;
 PFN_vkGetPhysicalDeviceProperties pfn_vkGetPhysicalDeviceProperties = nullptr;
 PFN_vkGetPhysicalDeviceProperties2 pfn_vkGetPhysicalDeviceProperties2 = nullptr;
 PFN_vkGetPhysicalDeviceProperties2KHR pfn_vkGetPhysicalDeviceProperties2KHR = nullptr;
@@ -47,6 +48,8 @@ void AttachHooks()
 	DetourAttach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties2KHR, hkGetPhysicalDeviceProperties2KHR);
 
 	DetourTransactionCommit();
+
+	_hooksAttached = true;
 }
 
 void DetachHooks()
@@ -186,7 +189,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 	case DLL_PROCESS_ATTACH:
 		DisableThreadLibraryCalls(hModule);
 		dllModule = hModule;
-		AttachHooks();
+
+		if (Config::Instance()->VulkanSpoofEnable.value_or(false))
+			AttachHooks();
+
 		PrepareLogger();
 		break;
 
@@ -197,7 +203,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 		break;
 
 	case DLL_PROCESS_DETACH:
-		DetachHooks();
+		if (_hooksAttached)
+			DetachHooks();
+
 		CloseLogger();
 		break;
 	}

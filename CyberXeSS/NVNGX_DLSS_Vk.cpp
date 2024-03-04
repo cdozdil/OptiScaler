@@ -10,11 +10,13 @@
 VkInstance vkInstance;
 VkPhysicalDevice vkPD;
 VkDevice vkDevice;
-static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Vk>> Dx12Contexts;
+PFN_vkGetInstanceProcAddr vkGIPA;
+PFN_vkGetDeviceProcAddr vkGDPA;
+
+static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Vk>> VkContexts;
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
-	spdlog::info("NVSDK_NGX_VULKAN_Init AppId: {0}", InApplicationId);
 	spdlog::info("NVSDK_NGX_VULKAN_Init AppId: {0}", InApplicationId);
 	spdlog::info("NVSDK_NGX_VULKAN_Init SDK: {0}", (int)InSDKVersion);
 
@@ -23,13 +25,34 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 	spdlog::info("NVSDK_NGX_VULKAN_Init LogLevel: {0}", Config::Instance()->LogLevel.value_or(2));
 
 	if (InInstance)
+	{
+		spdlog::info("NVSDK_NGX_VULKAN_Init InInstance exist!");
 		vkInstance = InInstance;
+	}
 
-	if(InPD)
+	if (InPD)
+	{
+		spdlog::info("NVSDK_NGX_VULKAN_Init InPD exist!");
 		vkPD = InPD;
+	}
 
 	if (InDevice)
+	{
+		spdlog::info("NVSDK_NGX_VULKAN_Init InDevice exist!");
 		vkDevice = InDevice;
+	}
+
+	if (InGDPA)
+	{
+		spdlog::info("NVSDK_NGX_VULKAN_Init InGDPA exist!");
+		vkGDPA = InGDPA;
+	}
+
+	if (InGIPA)
+	{
+		spdlog::info("NVSDK_NGX_VULKAN_Init InGIPA exist!");
+		vkGIPA = InGIPA;
+	}
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -54,10 +77,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_Shutdown(void)
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_Shutdown");
 
-	//CyberXessContext::instance()->VulkanDevice = nullptr;
-	//CyberXessContext::instance()->VulkanInstance = nullptr;
-	//CyberXessContext::instance()->VulkanPhysicalDevice = nullptr;
-	//CyberXessContext::instance()->Contexts.clear();
+	for (auto const& [key, val] : VkContexts)
+		NVSDK_NGX_D3D12_ReleaseFeature(val->Handle());
+
+	VkContexts.clear();
+
+	vkInstance = nullptr;
+	vkPD = nullptr;
+	vkDevice = nullptr;
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -65,16 +92,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_Shutdown(void)
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_Shutdown1(VkDevice InDevice)
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_Shutdown1");
-
-	//CyberXessContext::instance()->VulkanDevice = nullptr;
-	//CyberXessContext::instance()->VulkanInstance = nullptr;
-	//CyberXessContext::instance()->VulkanPhysicalDevice = nullptr;
-	//CyberXessContext::instance()->Contexts.clear();
-
-	return NVSDK_NGX_Result_Success;
+	return NVSDK_NGX_VULKAN_Shutdown();
 }
 
-NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetParameters(NVSDK_NGX_Parameter** OutParameters)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetParameters(NVSDK_NGX_Parameter** OutParameters)
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_GetParameters");
 
@@ -141,8 +162,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_DestroyParameters(NVS
 	if (InParameters == nullptr)
 		return NVSDK_NGX_Result_Fail;
 
-	InParameters->Reset();
 	delete InParameters;
+
 	return NVSDK_NGX_Result_Success;
 }
 
@@ -154,24 +175,52 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_GetScratchBufferSize(
 	return NVSDK_NGX_Result_Success;
 }
 
-NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_CreateFeature(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Feature InFeatureID, NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Handle** OutHandle)
-{
-	//return NVSDK_NGX_VULKAN_CreateFeature1(CyberXessContext::instance()->VulkanDevice, InCmdBuffer, InFeatureID, InParameters, OutHandle);
-	return NVSDK_NGX_Result_Fail;
-}
-
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice, VkCommandBuffer InCmdList, NVSDK_NGX_Feature InFeatureID, NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Handle** OutHandle)
 {
-	spdlog::debug("NVSDK_NGX_VULKAN_CreateFeature1!");
+	spdlog::info("NVSDK_NGX_VULKAN_CreateFeature1");
+
+	if (InFeatureID != NVSDK_NGX_Feature_SuperSampling)
+	{
+		spdlog::error("NVSDK_NGX_VULKAN_CreateFeature1 Can't create this feature ({0})!", (int)InFeatureID);
+		return NVSDK_NGX_Result_Fail;
+	}
+
+	// Create feature
+	auto handleId = IFeature::GetNextHandleId();
+
+	VkContexts[handleId] = std::make_unique<FSR2FeatureVk>(handleId, InParameters);
+
+	auto deviceContext = VkContexts[handleId].get();
+	*OutHandle = deviceContext->Handle();
+
+	if (deviceContext->Init(vkInstance, vkPD, InDevice, InCmdList, vkGIPA, vkGDPA, InParameters))
+		return NVSDK_NGX_Result_Success;
+
+	spdlog::error("NVSDK_NGX_VULKAN_CreateFeature1 CreateFeature failed");
 	return NVSDK_NGX_Result_FAIL_PlatformError;
+}
+
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_CreateFeature(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Feature InFeatureID, NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Handle** OutHandle)
+{
+	spdlog::info("NVSDK_NGX_VULKAN_CreateFeature");
+
+	return NVSDK_NGX_VULKAN_CreateFeature1(vkDevice, InCmdBuffer, InFeatureID, InParameters, OutHandle);
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle* InHandle)
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_ReleaseFeature");
 
-	//auto deviceContext = CyberXessContext::instance()->Contexts[InHandle->Id].get();
-	//CyberXessContext::instance()->DeleteContext(InHandle);
+	if (!InHandle)
+		return NVSDK_NGX_Result_Success;
+
+	auto handleId = InHandle->Id;
+
+	if (auto deviceContext = VkContexts[handleId].get(); deviceContext)
+	{
+		auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+		VkContexts.erase(it);
+	}
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -179,5 +228,20 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer InCmdList, const NVSDK_NGX_Handle* InFeatureHandle, const NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_EvaluateFeature");
-	return NVSDK_NGX_Result_FAIL_PlatformError;
+
+	if (!InCmdList)
+	{
+		spdlog::error("NVSDK_NGX_VULKAN_EvaluateFeature InCmdList is null!!!");
+		return NVSDK_NGX_Result_Fail;
+	}
+
+	if (InCallback)
+		spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature callback exist");
+
+	const auto deviceContext = VkContexts[InFeatureHandle->Id].get();
+
+	if (deviceContext->Evaluate(InCmdList, InParameters))
+		return NVSDK_NGX_Result_Success;
+	else
+		return NVSDK_NGX_Result_Fail;
 }

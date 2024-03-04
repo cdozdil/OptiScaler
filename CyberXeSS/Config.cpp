@@ -21,6 +21,9 @@ void Config::Reload()
 
 	if (ini.LoadFile(absoluteFileName.c_str()) == SI_OK)
 	{
+		// Vulkan
+		VulkanSpoofEnable = readBool("Vulkan", "NvidiaSpoofing");
+		
 		// Upscalers
 		Dx11Upscaler = readString("Upscalers", "Dx11Upscaler", true);
 		Dx12Upscaler = readString("Upscalers", "Dx12Upscaler", true);

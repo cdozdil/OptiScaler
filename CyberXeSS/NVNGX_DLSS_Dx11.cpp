@@ -147,6 +147,7 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_DestroyParameters(NVSDK_NGX_Parameter* InParame
 		return NVSDK_NGX_Result_Fail;
 
 	delete InParameters;
+
 	return NVSDK_NGX_Result_Success;
 }
 

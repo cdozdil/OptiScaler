@@ -1,12 +1,12 @@
 #include "FSR2Feature.h"
 #include "IFeature_Dx12.h"
 
-#include "ffx3/include/FidelityFX/host/backends/dx12/ffx_dx12.h"
+#include "FidelityFX/host/backends/dx12/ffx_dx12.h"
 
 #ifdef _DEBUG
-#pragma comment(lib, "ffx3/lib/ffx_backend_dx12_x64d.lib")
+#pragma comment(lib, "FidelityFX/lib/ffx_backend_dx12_x64d.lib")
 #else
-#pragma comment(lib, "ffx3/lib/ffx_backend_dx12_x64.lib")
+#pragma comment(lib, "FidelityFX/lib/ffx_backend_dx12_x64.lib")
 #endif // DEBUG
 
 

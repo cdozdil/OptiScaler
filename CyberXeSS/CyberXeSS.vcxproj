@@ -82,7 +82,7 @@
     <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\fmt\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)CyberXess\vulkan;$(SolutionDir)external\xess\lib;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
     <TargetName>nvngx</TargetName>
-    <OutDir>E:\Games\Deep Rock Galactic\FSD\Binaries\Win64\</OutDir>
+    <OutDir>F:\Games\No Man%27s Sky\Binaries</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\fmt\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
@@ -180,18 +180,15 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="detours\detours.h" />
     <ClInclude Include="detours\detver.h" />
     <ClInclude Include="dllmain.h" />
-    <ClInclude Include="ffx3\include\FidelityFX\host\backends\dx12\d3dx12.h" />
-    <ClInclude Include="ffx3\include\FidelityFX\host\backends\dx12\ffx_dx12.h" />
-    <ClInclude Include="ffx3\include\FidelityFX\host\backends\vk\ffx_vk.h" />
-    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_assert.h" />
-    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_cas.h" />
-    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_error.h" />
-    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_fsr2.h" />
-    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_fx.h" />
-    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_interface.h" />
-    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_spd.h" />
-    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_types.h" />
-    <ClInclude Include="ffx3\include\FidelityFX\host\ffx_util.h" />
+    <ClInclude Include="FidelityFX\host\backends\dx12\d3dx12.h" />
+    <ClInclude Include="FidelityFX\host\backends\dx12\ffx_dx12.h" />
+    <ClInclude Include="FidelityFX\host\backends\vk\ffx_vk.h" />
+    <ClInclude Include="FidelityFX\host\ffx_assert.h" />
+    <ClInclude Include="FidelityFX\host\ffx_error.h" />
+    <ClInclude Include="FidelityFX\host\ffx_fsr2.h" />
+    <ClInclude Include="FidelityFX\host\ffx_interface.h" />
+    <ClInclude Include="FidelityFX\host\ffx_types.h" />
+    <ClInclude Include="FidelityFX\host\ffx_util.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="FSR2Feature.h" />
     <ClInclude Include="FSR2Feature_Dx12.h" />

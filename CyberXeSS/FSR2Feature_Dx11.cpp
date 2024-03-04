@@ -55,7 +55,7 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
 	if (errorCode != FFX_OK)
 	{
-		spdlog::error("FSR2Feature::InitFSR2 ffxGetInterfaceDX12 error: {0:x}", errorCode);
+		spdlog::error("FSR2Feature::InitFSR2 ffxGetInterfaceDX12 error: {0}", ResultToString(errorCode));
 		free(scratchBuffer);
 		return false;
 	}
@@ -141,7 +141,7 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
 	if (ret != FFX_OK)
 	{
-		spdlog::error("FSR2Feature::InitFSR2 ffxFsr2ContextCreate error: {0:x}", ret);
+		spdlog::error("FSR2Feature::InitFSR2 ffxFsr2ContextCreate error: {0}", ResultToString(ret));
 		return false;
 	}
 
@@ -346,7 +346,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, const NVSDK_NGX_P
 
 	if (result != FFX_OK)
 	{
-		spdlog::error("FSR2FeatureDx11::Evaluate ffxFsr2ContextDispatch error: {0:x}", result);
+		spdlog::error("FSR2FeatureDx11::Evaluate ffxFsr2ContextDispatch error: {0}", ResultToString(result));
 		return false;
 	}
 

@@ -1,26 +1,29 @@
 #include <vulkan/vulkan.hpp>
 
-#include "ffx3/include/FidelityFX/host/backends/vk/ffx_vk.h"
+#include "FidelityFX/host/backends/vk/ffx_vk.h"
 
 #include "FSR2Feature.h"
 #include "IFeature_Vk.h"
 
 #ifdef _DEBUG
-#pragma comment(lib, "ffx3/lib/ffx_backend_vk_x64d.lib")
+#pragma comment(lib, "FidelityFX/lib/ffx_backend_vk_x64d.lib")
 #else
-#pragma comment(lib, "ffx3/lib/ffx_backend_vk_x64.lib")
+#pragma comment(lib, "FidelityFX/lib/ffx_backend_vk_x64.lib")
 #endif // DEBUG
 
-#ifdef _DEBUG
-#pragma comment(lib, "ffx3/lib/ffx_fsr2_x64d.lib")
+#ifdef FidelityFX
+#pragma comment(lib, "FidelityFX/lib/ffx_fsr2_x64d.lib")
 #else
-#pragma comment(lib, "ffx3/lib/ffx_fsr2_x64.lib")
+#pragma comment(lib, "FidelityFX/lib/ffx_fsr2_x64.lib")
 #endif // DEBUG
 
 
 class FSR2FeatureVk : public FSR2Feature, public IFeature_Vk
 {
 private:
+	VkDeviceContext _deviceContext{};
+	FfxDevice _ffxDevice = nullptr;
+	size_t _scratchBufferSize = 0;
 
 protected:
 	bool InitFSR2(const NVSDK_NGX_Parameter* InParameters);
@@ -30,6 +33,6 @@ public:
 	{
 	}
 
-	bool Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList, const NVSDK_NGX_Parameter* InParameters) override;
+	bool Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_Parameter* InParameters) override;
 	bool Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parameter* InParameters) override;
 };
