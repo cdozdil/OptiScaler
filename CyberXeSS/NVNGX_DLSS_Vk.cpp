@@ -74,28 +74,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_with_ProjectID(const char* 
 	return NVSDK_NGX_VULKAN_Init(0x1337, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InFeatureInfo, InSDKVersion);
 }
 
-NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_Shutdown(void)
-{
-	spdlog::debug("NVSDK_NGX_VULKAN_Shutdown");
-
-	for (auto const& [key, val] : VkContexts)
-		NVSDK_NGX_D3D12_ReleaseFeature(val->Handle());
-
-	VkContexts.clear();
-
-	vkInstance = nullptr;
-	vkPD = nullptr;
-	vkDevice = nullptr;
-
-	return NVSDK_NGX_Result_Success;
-}
-
-NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_Shutdown1(VkDevice InDevice)
-{
-	spdlog::debug("NVSDK_NGX_VULKAN_Shutdown1");
-	return NVSDK_NGX_VULKAN_Shutdown();
-}
-
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetParameters(NVSDK_NGX_Parameter** OutParameters)
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_GetParameters");
@@ -245,4 +223,26 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_EvaluateFeature(VkCom
 		return NVSDK_NGX_Result_Success;
 	else
 		return NVSDK_NGX_Result_Fail;
+}
+
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_Shutdown(void)
+{
+	spdlog::debug("NVSDK_NGX_VULKAN_Shutdown");
+
+	for (auto const& [key, val] : VkContexts)
+		NVSDK_NGX_VULKAN_ReleaseFeature(val->Handle());
+
+	VkContexts.clear();
+
+	vkInstance = nullptr;
+	vkPD = nullptr;
+	vkDevice = nullptr;
+
+	return NVSDK_NGX_Result_Success;
+}
+
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_VULKAN_Shutdown1(VkDevice InDevice)
+{
+	spdlog::debug("NVSDK_NGX_VULKAN_Shutdown1");
+	return NVSDK_NGX_VULKAN_Shutdown();
 }

@@ -34,8 +34,8 @@ inline FfxSurfaceFormat GetFfxSurfaceFormat(VkFormat format)
 		return FFX_SURFACE_FORMAT_R16G16_FLOAT;
 	case (VK_FORMAT_R16G16_UINT):
 		return FFX_SURFACE_FORMAT_R16G16_UINT;
-	case (VK_FORMAT_R16G16_SINT):
-		return FFX_SURFACE_FORMAT_R16G16_SINT;
+	//case (VK_FORMAT_R16G16_SINT):
+	//	return FFX_SURFACE_FORMAT_R16G16_SINT;
 	case (VK_FORMAT_R16_SFLOAT):
 		return FFX_SURFACE_FORMAT_R16_FLOAT;
 	case (VK_FORMAT_R16_UINT):
@@ -53,8 +53,8 @@ inline FfxSurfaceFormat GetFfxSurfaceFormat(VkFormat format)
 		return FFX_SURFACE_FORMAT_R32_FLOAT;
 	case (VK_FORMAT_R32G32B32A32_UINT):
 		return FFX_SURFACE_FORMAT_R32G32B32A32_UINT;
-	case (VK_FORMAT_A2R10G10B10_UNORM_PACK32):
-		return FFX_SURFACE_FORMAT_R10G10B10A2_UNORM;
+	//case (VK_FORMAT_A2R10G10B10_UNORM_PACK32):
+	//	return FFX_SURFACE_FORMAT_R10G10B10A2_UNORM;
 
 	default:
 		FFX_ASSERT_MESSAGE(false, "ValidationRemap: Unsupported format requested. Please implement.");

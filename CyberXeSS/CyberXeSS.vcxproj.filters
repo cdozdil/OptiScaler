@@ -77,31 +77,31 @@
     <ClInclude Include="dllmain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FidelityFX-1.0\host\backends\dx12\d3dx12.h">
+    <ClInclude Include="FidelityFX\host\backends\dx12\d3dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FidelityFX-1.0\host\backends\dx12\ffx_dx12.h">
+    <ClInclude Include="FidelityFX\host\backends\dx12\ffx_dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FidelityFX-1.0\host\backends\vk\ffx_vk.h">
+    <ClInclude Include="FidelityFX\host\backends\vk\ffx_vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FidelityFX-1.0\host\ffx_assert.h">
+    <ClInclude Include="FidelityFX\host\ffx_assert.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FidelityFX-1.0\host\ffx_error.h">
+    <ClInclude Include="FidelityFX\host\ffx_error.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FidelityFX-1.0\host\ffx_fsr2.h">
+    <ClInclude Include="FidelityFX\host\ffx_fsr2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FidelityFX-1.0\host\ffx_interface.h">
+    <ClInclude Include="FidelityFX\host\ffx_interface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FidelityFX-1.0\host\ffx_types.h">
+    <ClInclude Include="FidelityFX\host\ffx_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FidelityFX-1.0\host\ffx_util.h">
+    <ClInclude Include="FidelityFX\host\ffx_util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
