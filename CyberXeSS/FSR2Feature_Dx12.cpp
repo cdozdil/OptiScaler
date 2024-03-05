@@ -2,197 +2,160 @@
 #include "FSR2Feature_Dx12.h"
 #include "Config.h"
 
-//inline FfxSurfaceFormat ffxGetSurfaceFormatDX12_Local(DXGI_FORMAT format)
-//{
-//	switch (format) {
-//
-//	case(DXGI_FORMAT_R32G32B32A32_TYPELESS):
-//		return FFX_SURFACE_FORMAT_R32G32B32A32_TYPELESS;
-//	case(DXGI_FORMAT_R32G32B32A32_FLOAT):
-//		return FFX_SURFACE_FORMAT_R32G32B32A32_FLOAT;
-//	case DXGI_FORMAT_R32G32B32A32_UINT:
-//		return FFX_SURFACE_FORMAT_R32G32B32A32_UINT;
-//		//case DXGI_FORMAT_R32G32B32A32_SINT:
-//		//case DXGI_FORMAT_R32G32B32_TYPELESS:
-//		//case DXGI_FORMAT_R32G32B32_FLOAT:
-//		//case DXGI_FORMAT_R32G32B32_UINT:
-//		//case DXGI_FORMAT_R32G32B32_SINT:
-//
-//	case DXGI_FORMAT_R16G16B16A16_TYPELESS:
-//	case(DXGI_FORMAT_R16G16B16A16_FLOAT):
-//		return FFX_SURFACE_FORMAT_R16G16B16A16_FLOAT;
-//		//case DXGI_FORMAT_R16G16B16A16_UNORM:
-//		//case DXGI_FORMAT_R16G16B16A16_UINT:
-//		//case DXGI_FORMAT_R16G16B16A16_SNORM:
-//		//case DXGI_FORMAT_R16G16B16A16_SINT:
-//
-//	case DXGI_FORMAT_R32G32_TYPELESS:
-//	case DXGI_FORMAT_R32G32_FLOAT:
-//		return FFX_SURFACE_FORMAT_R32G32_FLOAT;
-//		//case DXGI_FORMAT_R32G32_FLOAT:
-//		//case DXGI_FORMAT_R32G32_UINT:
-//		//case DXGI_FORMAT_R32G32_SINT:
-//
-//	case DXGI_FORMAT_R32G8X24_TYPELESS:
-//	case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
-//	case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
-//		return FFX_SURFACE_FORMAT_R32_FLOAT;
-//
-//	case DXGI_FORMAT_R24G8_TYPELESS:
-//	case DXGI_FORMAT_D24_UNORM_S8_UINT:
-//	case DXGI_FORMAT_R24_UNORM_X8_TYPELESS:
-//		return FFX_SURFACE_FORMAT_R32_UINT;
-//
-//	case DXGI_FORMAT_X32_TYPELESS_G8X24_UINT:
-//	case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
-//		return FFX_SURFACE_FORMAT_R8_UINT;
-//
-//	case DXGI_FORMAT_R10G10B10A2_TYPELESS:
-//	//case DXGI_FORMAT_R10G10B10A2_UNORM:
-//	//	return FFX_SURFACE_FORMAT_R10G10B10A2_UNORM;
-//		//case DXGI_FORMAT_R10G10B10A2_UINT:
-//
-//	case (DXGI_FORMAT_R11G11B10_FLOAT):
-//		return FFX_SURFACE_FORMAT_R11G11B10_FLOAT;
-//
-//	case (DXGI_FORMAT_R8G8B8A8_TYPELESS):
-//		return FFX_SURFACE_FORMAT_R8G8B8A8_TYPELESS;
-//	case (DXGI_FORMAT_R8G8B8A8_UNORM):
-//		return FFX_SURFACE_FORMAT_R8G8B8A8_UNORM;
-//	case (DXGI_FORMAT_R8G8B8A8_UNORM_SRGB):
-//		return FFX_SURFACE_FORMAT_R8G8B8A8_SRGB;
-//		//case DXGI_FORMAT_R8G8B8A8_UINT:
-//	case DXGI_FORMAT_R8G8B8A8_SNORM:
-//		return FFX_SURFACE_FORMAT_R8G8B8A8_SNORM;
-//
-//	case DXGI_FORMAT_R16G16_TYPELESS:
-//	case (DXGI_FORMAT_R16G16_FLOAT):
-//		return FFX_SURFACE_FORMAT_R16G16_FLOAT;
-//		//case DXGI_FORMAT_R16G16_UNORM:
-//	case (DXGI_FORMAT_R16G16_UINT):
-//		return FFX_SURFACE_FORMAT_R16G16_UINT;
-//		//case DXGI_FORMAT_R16G16_SNORM
-//		//case DXGI_FORMAT_R16G16_SINT 
-//
-//		//case DXGI_FORMAT_R32_SINT:
-//	case DXGI_FORMAT_R32_UINT:
-//		return FFX_SURFACE_FORMAT_R32_UINT;
-//	case DXGI_FORMAT_R32_TYPELESS:
-//	case(DXGI_FORMAT_D32_FLOAT):
-//	case(DXGI_FORMAT_R32_FLOAT):
-//		return FFX_SURFACE_FORMAT_R32_FLOAT;
-//
-//	case DXGI_FORMAT_R8G8_TYPELESS:
-//	//case (DXGI_FORMAT_R8G8_UINT):
-//	//	return FFX_SURFACE_FORMAT_R8G8_UINT;
-//		//case DXGI_FORMAT_R8G8_UNORM:
-//		//case DXGI_FORMAT_R8G8_SNORM:
-//		//case DXGI_FORMAT_R8G8_SINT:
-//
-//	case DXGI_FORMAT_R16_TYPELESS:
-//	case (DXGI_FORMAT_R16_FLOAT):
-//		return FFX_SURFACE_FORMAT_R16_FLOAT;
-//	case (DXGI_FORMAT_R16_UINT):
-//		return FFX_SURFACE_FORMAT_R16_UINT;
-//	case DXGI_FORMAT_D16_UNORM:
-//	case (DXGI_FORMAT_R16_UNORM):
-//		return FFX_SURFACE_FORMAT_R16_UNORM;
-//	case (DXGI_FORMAT_R16_SNORM):
-//		return FFX_SURFACE_FORMAT_R16_SNORM;
-//		//case DXGI_FORMAT_R16_SINT:
-//
-//	case DXGI_FORMAT_R8_TYPELESS:
-//	case DXGI_FORMAT_R8_UNORM:
-//	case DXGI_FORMAT_A8_UNORM:
-//		return FFX_SURFACE_FORMAT_R8_UNORM;
-//	case DXGI_FORMAT_R8_UINT:
-//		return FFX_SURFACE_FORMAT_R8_UINT;
-//		//case DXGI_FORMAT_R8_SNORM:
-//		//case DXGI_FORMAT_R8_SINT:
-//		//case DXGI_FORMAT_R1_UNORM:
-//
-//	case(DXGI_FORMAT_UNKNOWN):
-//		return FFX_SURFACE_FORMAT_UNKNOWN;
-//	default:
-//		FFX_ASSERT_MESSAGE(false, "Format not yet supported");
-//		return FFX_SURFACE_FORMAT_UNKNOWN;
-//	}
-//}
-//
-//bool IsDepthDX12(DXGI_FORMAT format)
-//{
-//	return (format == DXGI_FORMAT_D16_UNORM) ||
-//		(format == DXGI_FORMAT_D32_FLOAT) ||
-//		(format == DXGI_FORMAT_D24_UNORM_S8_UINT) ||
-//		(format == DXGI_FORMAT_D32_FLOAT_S8X24_UINT);
-//}
-//
-//inline FfxResourceDescription GetFfxResourceDescriptionDX12(ID3D12Resource* pResource)
-//{
-//	FfxResourceDescription resourceDescription = {};
-//
-//	// This is valid
-//	if (!pResource)
-//		return resourceDescription;
-//
-//	if (pResource)
-//	{
-//		D3D12_RESOURCE_DESC desc = pResource->GetDesc();
-//
-//		if (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
-//		{
-//			resourceDescription.flags = FFX_RESOURCE_FLAGS_NONE;
-//			resourceDescription.usage = FFX_RESOURCE_USAGE_UAV;
-//			resourceDescription.width = (uint32_t)desc.Width;
-//			resourceDescription.height = (uint32_t)desc.Height;
-//			resourceDescription.format = ffxGetSurfaceFormatDX12_Local(desc.Format);
-//
-//			// What should we initialize this to?? No case for this yet
-//			resourceDescription.depth = 0;
-//			resourceDescription.mipCount = 0;
-//
-//			// Set the type
-//			resourceDescription.type = FFX_RESOURCE_TYPE_BUFFER;
-//		}
-//		else
-//		{
-//			// Set flags properly for resource registration
-//			resourceDescription.flags = FFX_RESOURCE_FLAGS_NONE;
-//			resourceDescription.usage = IsDepthDX12(desc.Format) ? FFX_RESOURCE_USAGE_DEPTHTARGET : FFX_RESOURCE_USAGE_READ_ONLY;
-//			if ((desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) == D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
-//				resourceDescription.usage = (FfxResourceUsage)(resourceDescription.usage | FFX_RESOURCE_USAGE_UAV);
-//
-//			resourceDescription.width = (uint32_t)desc.Width;
-//			resourceDescription.height = (uint32_t)desc.Height;
-//			resourceDescription.depth = desc.DepthOrArraySize;
-//			resourceDescription.mipCount = desc.MipLevels;
-//			resourceDescription.format = ffxGetSurfaceFormatDX12_Local(desc.Format);
-//
-//			switch (desc.Dimension)
-//			{
-//			case D3D12_RESOURCE_DIMENSION_TEXTURE1D:
-//				resourceDescription.type = FFX_RESOURCE_TYPE_TEXTURE1D;
-//				break;
-//			case D3D12_RESOURCE_DIMENSION_TEXTURE2D:
-//				if (desc.DepthOrArraySize == 1)
-//					resourceDescription.type = FFX_RESOURCE_TYPE_TEXTURE2D;
-//				else if (desc.DepthOrArraySize == 6)
-//					resourceDescription.type = FFX_RESOURCE_TYPE_TEXTURE_CUBE;
-//				else
-//					resourceDescription.type = FFX_RESOURCE_TYPE_TEXTURE2D;
-//				break;
-//			case D3D12_RESOURCE_DIMENSION_TEXTURE3D:
-//				resourceDescription.type = FFX_RESOURCE_TYPE_TEXTURE3D;
-//				break;
-//			default:
-//				FFX_ASSERT_MESSAGE(false, "FFXInterface: Cauldron: Unsupported texture dimension requested. Please implement.");
-//				break;
-//			}
-//		}
-//	}
-//
-//	return resourceDescription;
-//}
+inline FfxSurfaceFormat ffxGetSurfaceFormatDX12_Local(DXGI_FORMAT format)
+{
+	switch (format) {
+
+	case(DXGI_FORMAT_R32G32B32A32_TYPELESS):
+		return FFX_SURFACE_FORMAT_R32G32B32A32_TYPELESS;
+	case(DXGI_FORMAT_R32G32B32A32_FLOAT):
+		return FFX_SURFACE_FORMAT_R32G32B32A32_FLOAT;
+	case DXGI_FORMAT_R32G32B32A32_UINT:
+		return FFX_SURFACE_FORMAT_R32G32B32A32_UINT;
+		//case DXGI_FORMAT_R32G32B32A32_SINT:
+		//case DXGI_FORMAT_R32G32B32_TYPELESS:
+		//case DXGI_FORMAT_R32G32B32_FLOAT:
+		//case DXGI_FORMAT_R32G32B32_UINT:
+		//case DXGI_FORMAT_R32G32B32_SINT:
+
+	case DXGI_FORMAT_R16G16B16A16_TYPELESS:
+	case(DXGI_FORMAT_R16G16B16A16_FLOAT):
+		return FFX_SURFACE_FORMAT_R16G16B16A16_FLOAT;
+		//case DXGI_FORMAT_R16G16B16A16_UNORM:
+		//case DXGI_FORMAT_R16G16B16A16_UINT:
+		//case DXGI_FORMAT_R16G16B16A16_SNORM:
+		//case DXGI_FORMAT_R16G16B16A16_SINT:
+
+	case DXGI_FORMAT_R32G32_TYPELESS:
+	case DXGI_FORMAT_R32G32_FLOAT:
+		return FFX_SURFACE_FORMAT_R32G32_FLOAT;
+		//case DXGI_FORMAT_R32G32_FLOAT:
+		//case DXGI_FORMAT_R32G32_UINT:
+		//case DXGI_FORMAT_R32G32_SINT:
+
+	case DXGI_FORMAT_R32G8X24_TYPELESS:
+	case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
+	case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
+		return FFX_SURFACE_FORMAT_R32_FLOAT;
+
+	case DXGI_FORMAT_R24G8_TYPELESS:
+	case DXGI_FORMAT_D24_UNORM_S8_UINT:
+	case DXGI_FORMAT_R24_UNORM_X8_TYPELESS:
+		return FFX_SURFACE_FORMAT_R32_UINT;
+
+	case DXGI_FORMAT_X32_TYPELESS_G8X24_UINT:
+	case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
+		return FFX_SURFACE_FORMAT_R8_UINT;
+
+	case DXGI_FORMAT_R10G10B10A2_TYPELESS:
+		//case DXGI_FORMAT_R10G10B10A2_UNORM:
+		//	return FFX_SURFACE_FORMAT_R10G10B10A2_UNORM;
+			//case DXGI_FORMAT_R10G10B10A2_UINT:
+
+	case (DXGI_FORMAT_R11G11B10_FLOAT):
+		return FFX_SURFACE_FORMAT_R11G11B10_FLOAT;
+
+	case (DXGI_FORMAT_R8G8B8A8_TYPELESS):
+		return FFX_SURFACE_FORMAT_R8G8B8A8_TYPELESS;
+	case (DXGI_FORMAT_R8G8B8A8_UNORM):
+		return FFX_SURFACE_FORMAT_R8G8B8A8_UNORM;
+	case (DXGI_FORMAT_R8G8B8A8_UNORM_SRGB):
+		return FFX_SURFACE_FORMAT_R8G8B8A8_SRGB;
+		//case DXGI_FORMAT_R8G8B8A8_UINT:
+	case DXGI_FORMAT_R8G8B8A8_SNORM:
+		return FFX_SURFACE_FORMAT_R8G8B8A8_SNORM;
+
+	case DXGI_FORMAT_R16G16_TYPELESS:
+	case (DXGI_FORMAT_R16G16_FLOAT):
+		return FFX_SURFACE_FORMAT_R16G16_FLOAT;
+		//case DXGI_FORMAT_R16G16_UNORM:
+	case (DXGI_FORMAT_R16G16_UINT):
+		return FFX_SURFACE_FORMAT_R16G16_UINT;
+		//case DXGI_FORMAT_R16G16_SNORM
+		//case DXGI_FORMAT_R16G16_SINT 
+
+		//case DXGI_FORMAT_R32_SINT:
+	case DXGI_FORMAT_R32_UINT:
+		return FFX_SURFACE_FORMAT_R32_UINT;
+	case DXGI_FORMAT_R32_TYPELESS:
+	case(DXGI_FORMAT_D32_FLOAT):
+	case(DXGI_FORMAT_R32_FLOAT):
+		return FFX_SURFACE_FORMAT_R32_FLOAT;
+
+	case DXGI_FORMAT_R8G8_TYPELESS:
+		//case (DXGI_FORMAT_R8G8_UINT):
+		//	return FFX_SURFACE_FORMAT_R8G8_UINT;
+			//case DXGI_FORMAT_R8G8_UNORM:
+			//case DXGI_FORMAT_R8G8_SNORM:
+			//case DXGI_FORMAT_R8G8_SINT:
+
+	case DXGI_FORMAT_R16_TYPELESS:
+	case (DXGI_FORMAT_R16_FLOAT):
+		return FFX_SURFACE_FORMAT_R16_FLOAT;
+	case (DXGI_FORMAT_R16_UINT):
+		return FFX_SURFACE_FORMAT_R16_UINT;
+	case DXGI_FORMAT_D16_UNORM:
+	case (DXGI_FORMAT_R16_UNORM):
+		return FFX_SURFACE_FORMAT_R16_UNORM;
+	case (DXGI_FORMAT_R16_SNORM):
+		return FFX_SURFACE_FORMAT_R16_SNORM;
+		//case DXGI_FORMAT_R16_SINT:
+
+	case DXGI_FORMAT_R8_TYPELESS:
+	case DXGI_FORMAT_R8_UNORM:
+	case DXGI_FORMAT_A8_UNORM:
+		return FFX_SURFACE_FORMAT_R8_UNORM;
+	case DXGI_FORMAT_R8_UINT:
+		return FFX_SURFACE_FORMAT_R8_UINT;
+		//case DXGI_FORMAT_R8_SNORM:
+		//case DXGI_FORMAT_R8_SINT:
+		//case DXGI_FORMAT_R1_UNORM:
+
+	case(DXGI_FORMAT_UNKNOWN):
+		return FFX_SURFACE_FORMAT_UNKNOWN;
+	default:
+		FFX_ASSERT_MESSAGE(false, "Format not yet supported");
+		return FFX_SURFACE_FORMAT_UNKNOWN;
+	}
+}
+
+bool IsDepthDX12(DXGI_FORMAT format)
+{
+	return (format == DXGI_FORMAT_D16_UNORM) ||
+		(format == DXGI_FORMAT_D32_FLOAT) ||
+		(format == DXGI_FORMAT_D24_UNORM_S8_UINT) ||
+		(format == DXGI_FORMAT_D32_FLOAT_S8X24_UINT);
+}
+
+inline FfxResourceDescription GetFfxResourceDescriptionDX12(ID3D12Resource* pResource)
+{
+	FfxResourceDescription resourceDescription = {};
+
+	// This is valid
+	if (!pResource)
+		return resourceDescription;
+
+	if (pResource)
+	{
+		D3D12_RESOURCE_DESC desc = pResource->GetDesc();
+
+		// Set flags properly for resource registration
+		resourceDescription.flags = FFX_RESOURCE_FLAGS_NONE;
+		resourceDescription.usage = IsDepthDX12(desc.Format) ? FFX_RESOURCE_USAGE_DEPTHTARGET : FFX_RESOURCE_USAGE_READ_ONLY;
+		if ((desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) == D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
+			resourceDescription.usage = (FfxResourceUsage)(resourceDescription.usage | FFX_RESOURCE_USAGE_UAV);
+
+		resourceDescription.width = (uint32_t)desc.Width;
+		resourceDescription.height = (uint32_t)desc.Height;
+		resourceDescription.depth = desc.DepthOrArraySize;
+		resourceDescription.mipCount = desc.MipLevels;
+		resourceDescription.format = ffxGetSurfaceFormatDX12_Local(desc.Format);
+
+		resourceDescription.type = FFX_RESOURCE_TYPE_TEXTURE2D;
+	}
+
+	return resourceDescription;
+}
 
 bool FSR2FeatureDx12::Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* InParameters)
 {
@@ -241,7 +204,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				(D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		params.color = ffxGetResourceDX12(paramColor, GetFfxResourceDescriptionDX12(paramColor), (wchar_t*)L"FSR3Upscale_Color", FFX_RESOURCE_STATE_COMPUTE_READ);
+			params.color = ffxGetResourceDX12(paramColor, GetFfxResourceDescriptionDX12(paramColor), (wchar_t*)L"FSR3Upscale_Color", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 	else
 	{

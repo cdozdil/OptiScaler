@@ -82,7 +82,7 @@
     <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\fmt\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)CyberXess\vulkan;$(SolutionDir)external\xess\lib;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
     <TargetName>nvngx</TargetName>
-    <OutDir>F:\Games\No Man%27s Sky\Binaries</OutDir>
+    <OutDir>..\..\God of War</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)external\simpleini;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\fmt\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
@@ -175,6 +175,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\ffx-sdk-dx11\FidelityFX\host\backends\dx11\ffx_dx11.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="CyberXess.h" />
     <ClInclude Include="detours\detours.h" />
@@ -191,6 +192,8 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="FidelityFX\host\ffx_util.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="FSR2Feature.h" />
+    <ClInclude Include="FSR2Feature_Dx11.h" />
+    <ClInclude Include="FSR2Feature_Dx12.h" />
     <ClInclude Include="FSR2Feature_Vk.h" />
     <ClInclude Include="IFeature_Dx11.h" />
     <ClInclude Include="IFeature_Dx12.h" />
@@ -205,9 +208,13 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="CyberXess.cpp" />
     <ClCompile Include="FSR2Feature.cpp" />
+    <ClCompile Include="FSR2Feature_Dx11.cpp" />
+    <ClCompile Include="FSR2Feature_Dx12.cpp" />
     <ClCompile Include="FSR2Feature_Vk.cpp" />
     <ClCompile Include="IFeature.cpp" />
     <ClCompile Include="IFeature_Dx12.cpp" />
+    <ClCompile Include="NVNGX_DLSS_Dx11.cpp" />
+    <ClCompile Include="NVNGX_DLSS_Dx12.cpp" />
     <ClCompile Include="NVNGX_DLSS_Vk.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="XeSSFeature.cpp" />

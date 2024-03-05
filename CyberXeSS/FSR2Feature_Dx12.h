@@ -10,6 +10,12 @@
 #endif // DEBUG
 
 
+#ifdef _DEBUG
+#pragma comment(lib, "FidelityFX/lib/ffx_fsr2_x64d.lib")
+#else
+#pragma comment(lib, "FidelityFX/lib/ffx_fsr2_x64.lib")
+#endif // DEBUG
+
 class FSR2FeatureDx12 : public FSR2Feature, public IFeature_Dx12
 {
 private:
