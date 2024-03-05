@@ -17,12 +17,11 @@ static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeatu
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
-	spdlog::info("NVSDK_NGX_VULKAN_Init AppId: {0}", InApplicationId);
-	spdlog::info("NVSDK_NGX_VULKAN_Init SDK: {0}", (int)InSDKVersion);
-
-	spdlog::info("NVSDK_NGX_VULKAN_Init BuildPipelines: {0}", Config::Instance()->BuildPipelines.value_or(true));
-	spdlog::info("NVSDK_NGX_VULKAN_Init NetworkModel: {0}", Config::Instance()->NetworkModel.value_or(0));
-	spdlog::info("NVSDK_NGX_VULKAN_Init LogLevel: {0}", Config::Instance()->LogLevel.value_or(2));
+	spdlog::info("NVSDK_NGX_VULKAN_Init InApplicationId: {0}", InApplicationId);
+	std::wstring string(InApplicationDataPath);
+	std::string str(string.begin(), string.end());
+	spdlog::debug("NVSDK_NGX_VULKAN_Init InApplicationDataPath {0}", str);
+	spdlog::info("NVSDK_NGX_VULKAN_Init InSDKVersion: {0:x}", (int)InSDKVersion);
 
 	if (InInstance)
 	{
@@ -59,16 +58,18 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
-	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID Init!");
-	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID: {0}", InProjectId);
-	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID SDK: {0}", (int)InSDKVersion);
+	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InProjectId: {0}", InProjectId);
+	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InEngineType: {0}", (int)InEngineType);
+	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InEngineVersion: {0}", InEngineVersion);
 
 	return NVSDK_NGX_VULKAN_Init(0x1337, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InFeatureInfo, InSDKVersion);
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_with_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
-	spdlog::debug("NVSDK_NGX_VULKAN_Init_with_ProjectID: {0}", InProjectId);
+	spdlog::debug("NVSDK_NGX_VULKAN_Init_with_ProjectID InProjectId: {0}", InProjectId);
+	spdlog::debug("NVSDK_NGX_VULKAN_Init_with_ProjectID InEngineType {0}", (int)InEngineType);
+	spdlog::debug("NVSDK_NGX_VULKAN_Init_with_ProjectID InEngineVersion: {0}", InEngineVersion);
 
 	return NVSDK_NGX_VULKAN_Init(0x1337, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InFeatureInfo, InSDKVersion);
 }
