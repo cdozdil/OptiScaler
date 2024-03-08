@@ -175,7 +175,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\ffx-sdk-dx11\FidelityFX\host\backends\dx11\ffx_dx11.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="CyberXess.h" />
     <ClInclude Include="dllmain.h" />
