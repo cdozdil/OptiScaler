@@ -5,86 +5,6 @@
 #include <vulkan/vulkan.hpp>
 #include "nvsdk_ngx_vk.h"
 
-inline FfxSurfaceFormat GetFfxSurfaceFormat(VkFormat format)
-{
-	switch (format)
-	{
-	case (VK_FORMAT_R32G32B32A32_SINT):
-		return FFX_SURFACE_FORMAT_R32G32B32A32_TYPELESS;
-	case (VK_FORMAT_R32G32B32A32_SFLOAT):
-		return FFX_SURFACE_FORMAT_R32G32B32A32_FLOAT;
-	case (VK_FORMAT_R16G16B16A16_SFLOAT):
-		return FFX_SURFACE_FORMAT_R16G16B16A16_FLOAT;
-	case (VK_FORMAT_R32G32_SFLOAT):
-		return FFX_SURFACE_FORMAT_R32G32_FLOAT;
-	case (VK_FORMAT_R8_UINT):
-		return FFX_SURFACE_FORMAT_R8_UINT;
-	case (VK_FORMAT_R32_UINT):
-		return FFX_SURFACE_FORMAT_R32_UINT;
-	case (VK_FORMAT_R8G8B8A8_UINT):
-	case (VK_FORMAT_R8G8B8A8_SINT):
-		return FFX_SURFACE_FORMAT_R8G8B8A8_TYPELESS;
-	case (VK_FORMAT_R8G8B8A8_UNORM):
-		return FFX_SURFACE_FORMAT_R8G8B8A8_UNORM;
-	case (VK_FORMAT_R8G8B8A8_SRGB):
-		return FFX_SURFACE_FORMAT_R8G8B8A8_SRGB;
-	case (VK_FORMAT_B10G11R11_UFLOAT_PACK32):
-		return FFX_SURFACE_FORMAT_R11G11B10_FLOAT;
-	case (VK_FORMAT_R16G16_SFLOAT):
-		return FFX_SURFACE_FORMAT_R16G16_FLOAT;
-	case (VK_FORMAT_R16G16_UINT):
-		return FFX_SURFACE_FORMAT_R16G16_UINT;
-	//case (VK_FORMAT_R16G16_SINT):
-	//	return FFX_SURFACE_FORMAT_R16G16_SINT;
-	case (VK_FORMAT_R16_SFLOAT):
-		return FFX_SURFACE_FORMAT_R16_FLOAT;
-	case (VK_FORMAT_R16_UINT):
-		return FFX_SURFACE_FORMAT_R16_UINT;
-	case (VK_FORMAT_R16_UNORM):
-		return FFX_SURFACE_FORMAT_R16_UNORM;
-	case (VK_FORMAT_R16_SNORM):
-		return FFX_SURFACE_FORMAT_R16_SNORM;
-	case (VK_FORMAT_R8_UNORM):
-		return FFX_SURFACE_FORMAT_R8_UNORM;
-	case (VK_FORMAT_R8G8_UNORM):
-		return FFX_SURFACE_FORMAT_R8G8_UNORM;
-	case (VK_FORMAT_R32_SFLOAT):
-	case (VK_FORMAT_D32_SFLOAT):
-		return FFX_SURFACE_FORMAT_R32_FLOAT;
-	case (VK_FORMAT_R32G32B32A32_UINT):
-		return FFX_SURFACE_FORMAT_R32G32B32A32_UINT;
-	//case (VK_FORMAT_A2R10G10B10_UNORM_PACK32):
-	//	return FFX_SURFACE_FORMAT_R10G10B10A2_UNORM;
-
-	default:
-		FFX_ASSERT_MESSAGE(false, "ValidationRemap: Unsupported format requested. Please implement.");
-		return FFX_SURFACE_FORMAT_UNKNOWN;
-	}
-}
-
-inline FfxResourceDescription GetFfxResourceDescriptionVk(const void* pResource, FfxResourceUsage usage)
-{
-	FfxResourceDescription resourceDescription = { };
-
-	// This is valid
-	if (!pResource)
-		return resourceDescription;
-
-	auto vkResource = (NVSDK_NGX_Resource_VK*)pResource;
-
-	// Set flags properly for resource registration
-	resourceDescription.flags = FFX_RESOURCE_FLAGS_NONE;
-	resourceDescription.usage = usage;
-	resourceDescription.width = vkResource->Resource.ImageViewInfo.Width;
-	resourceDescription.height = vkResource->Resource.ImageViewInfo.Height;
-	resourceDescription.depth = 1;
-	resourceDescription.mipCount = 1;
-	resourceDescription.format = GetFfxSurfaceFormat(vkResource->Resource.ImageViewInfo.Format);
-	resourceDescription.type = FFX_RESOURCE_TYPE_TEXTURE2D;
-
-	return resourceDescription;
-}
-
 bool FSR2FeatureVk::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("FSR2FeatureVk::InitFSR2");
@@ -98,16 +18,10 @@ bool FSR2FeatureVk::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		return false;
 	}
 
-	_scratchBufferSize = ffxGetScratchMemorySizeVK(PhysicalDevice, FFX_FSR2_CONTEXT_COUNT);
-	void* scratchBuffer = calloc(_scratchBufferSize, 1);
+	auto scratchBufferSize = ffxFsr2GetScratchMemorySizeVK(PhysicalDevice);
+	void* scratchBuffer = calloc(scratchBufferSize, 1);
 
-	_deviceContext.vkDevice = Device;
-	_deviceContext.vkDeviceProcAddr = vkGetDeviceProcAddr;
-	_deviceContext.vkPhysicalDevice = PhysicalDevice;
-
-	_ffxDevice = ffxGetDeviceVK(&_deviceContext);
-
-	auto errorCode = ffxGetInterfaceVK(&_contextDesc.backendInterface, _ffxDevice, scratchBuffer, _scratchBufferSize, FFX_FSR2_CONTEXT_COUNT);
+	auto errorCode = ffxFsr2GetInterfaceVK(& _contextDesc.callbacks, scratchBuffer, scratchBufferSize, PhysicalDevice, vkGetDeviceProcAddr);
 
 	if (errorCode != FFX_OK)
 	{
@@ -116,6 +30,7 @@ bool FSR2FeatureVk::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		return false;
 	}
 
+	_contextDesc.device = ffxGetDeviceVK(Device);
 	_contextDesc.maxRenderSize.width = static_cast<uint32_t>(RenderWidth());
 	_contextDesc.maxRenderSize.height = static_cast<uint32_t>(RenderHeight());
 	_contextDesc.displaySize.width = static_cast<uint32_t>(DisplayWidth());
@@ -256,7 +171,10 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 		//		(D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value(),
 		//		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		params.color = ffxGetResourceVK(paramColor, GetFfxResourceDescriptionVk(paramColor, FFX_RESOURCE_USAGE_READ_ONLY), (wchar_t*)L"FSR3Upscale_Color", FFX_RESOURCE_STATE_COMPUTE_READ);
+		params.color = ffxGetTextureResourceVK(&_context, ((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Image,
+			((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.ImageView,
+			((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Height,
+			((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR3Upscale_Color", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 	else
 	{
@@ -276,7 +194,10 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 		//		(D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value(),
 		//		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		params.color = ffxGetResourceVK(paramVelocity, GetFfxResourceDescriptionVk(paramVelocity, FFX_RESOURCE_USAGE_READ_ONLY), (wchar_t*)L"FSR3Upscale_MotionVectors", FFX_RESOURCE_STATE_COMPUTE_READ);
+		params.motionVectors = ffxGetTextureResourceVK(&_context, ((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Image,
+			((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.ImageView,
+			((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Height,
+			((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR3Upscale_MotionVectors", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 	else
 	{
@@ -296,7 +217,10 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 		//		(D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value(),
 		//		D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-		params.output = ffxGetResourceVK(paramOutput, GetFfxResourceDescriptionVk(paramOutput, FFX_RESOURCE_USAGE_UAV), (wchar_t*)L"FSR3Upscale_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+		params.output = ffxGetTextureResourceVK(&_context, ((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Image,
+			((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.ImageView,
+			((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Height,
+			((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR3Upscale_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 	}
 	else
 	{
@@ -316,7 +240,10 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 		//		(D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value(),
 		//		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		params.depth = ffxGetResourceVK(paramDepth, GetFfxResourceDescriptionVk(paramDepth, FFX_RESOURCE_USAGE_READ_ONLY), (wchar_t*)L"FSR3Upscale_Depth", FFX_RESOURCE_STATE_COMPUTE_READ);
+		params.depth = ffxGetTextureResourceVK(&_context, ((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Image,
+			((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.ImageView,
+			((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Height,
+			((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR3Upscale_Depth", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 	else
 	{
@@ -332,16 +259,21 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 		InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExp);
 
 		if (paramExp)
+		{
 			spdlog::debug("FSR2FeatureVk::Evaluate ExposureTexture exist..");
+
+			//if (Config::Instance()->ExposureResourceBarrier.has_value())
+			//	ResourceBarrier(InCommandList, paramExp,
+			//		(D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value(),
+			//		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+			params.exposure = ffxGetTextureResourceVK(&_context, ((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.Image,
+				((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.ImageView,
+				((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.Height,
+				((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR3Upscale_Exposure", FFX_RESOURCE_STATE_COMPUTE_READ);
+		}
 		else
 			spdlog::debug("FSR2FeatureVk::Evaluate AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
-
-		//if (Config::Instance()->ExposureResourceBarrier.has_value())
-		//	ResourceBarrier(InCommandList, paramExp,
-		//		(D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value(),
-		//		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-		params.exposure = ffxGetResourceVK(paramExp, GetFfxResourceDescriptionVk(paramExp, FFX_RESOURCE_USAGE_READ_ONLY), (wchar_t*)L"FSR3Upscale_Exposure", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 	else
 		spdlog::debug("FSR2FeatureVk::Evaluate AutoExposure enabled!");
@@ -352,16 +284,22 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 		InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramMask);
 
 		if (paramMask)
+		{
 			spdlog::debug("FSR2FeatureVk::Evaluate Bias mask exist..");
+
+			//if (Config::Instance()->MaskResourceBarrier.has_value())
+			//	ResourceBarrier(InCommandList, paramMask,
+			//		(D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(),
+			//		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+			params.reactive = ffxGetTextureResourceVK(&_context, ((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Image,
+				((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.ImageView,
+				((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Height,
+				((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR3Upscale_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
+		}
 		else
 			spdlog::debug("FSR2FeatureVk::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
 
-		//if (Config::Instance()->MaskResourceBarrier.has_value())
-		//	ResourceBarrier(InCommandList, paramMask,
-		//		(D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(),
-		//		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-		params.reactive = ffxGetResourceVK(paramMask, GetFfxResourceDescriptionVk(paramMask, FFX_RESOURCE_USAGE_READ_ONLY), (wchar_t*)L"FSR3Upscale_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 
 	float MVScaleX;

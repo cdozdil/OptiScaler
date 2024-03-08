@@ -1,29 +1,14 @@
 #include <vulkan/vulkan.hpp>
 
-#include "FidelityFX/host/backends/vk/ffx_vk.h"
+#include <ffx_fsr2.h>
+#include <vk/ffx_fsr2_vk.h>
 
 #include "FSR2Feature.h"
 #include "IFeature_Vk.h"
 
-#ifdef _DEBUG
-#pragma comment(lib, "FidelityFX/lib/ffx_backend_vk_x64d.lib")
-#else
-#pragma comment(lib, "FidelityFX/lib/ffx_backend_vk_x64.lib")
-#endif // DEBUG
-
-#ifdef FidelityFX
-#pragma comment(lib, "FidelityFX/lib/ffx_fsr2_x64d.lib")
-#else
-#pragma comment(lib, "FidelityFX/lib/ffx_fsr2_x64.lib")
-#endif // DEBUG
-
-
 class FSR2FeatureVk : public FSR2Feature, public IFeature_Vk
 {
 private:
-	VkDeviceContext _deviceContext{};
-	FfxDevice _ffxDevice = nullptr;
-	size_t _scratchBufferSize = 0;
 
 protected:
 	bool InitFSR2(const NVSDK_NGX_Parameter* InParameters);

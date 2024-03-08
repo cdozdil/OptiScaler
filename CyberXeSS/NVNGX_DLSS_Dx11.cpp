@@ -4,6 +4,7 @@
 
 #include "Config.h"
 #include "XeSSFeature_Dx11.h"
+#include "FSR2Feature_Dx11.h"
 #include "NVNGX_Parameter.h"
 
 inline ID3D11Device* D3D11Device = nullptr;
@@ -174,7 +175,12 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext* InDevCtx, NV
 
 	// Create feature
 	auto handleId = IFeature::GetNextHandleId();
-	Dx11Contexts[handleId] = std::make_unique<XeSSFeatureDx11>(handleId, InParameters);
+
+	if (Config::Instance()->Dx11Upscaler.value_or("xess") == "fsr")
+		Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11>(handleId, InParameters);
+	else
+		Dx11Contexts[handleId] = std::make_unique<XeSSFeatureDx11>(handleId, InParameters);
+
 	auto deviceContext = Dx11Contexts[handleId].get();
 	*OutHandle = deviceContext->Handle();
 

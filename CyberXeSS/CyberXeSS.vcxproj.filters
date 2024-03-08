@@ -65,43 +65,16 @@
     <ClInclude Include="FSR2Feature.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FSR2Feature_Vk.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="detours\detours.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="detours\detver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="dllmain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FidelityFX\host\backends\dx12\d3dx12.h">
+    <ClInclude Include="FSR2Feature_Vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FidelityFX\host\backends\dx12\ffx_dx12.h">
+    <ClInclude Include="FSR2Feature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FidelityFX\host\backends\vk\ffx_vk.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FidelityFX\host\ffx_assert.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FidelityFX\host\ffx_error.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FidelityFX\host\ffx_fsr2.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FidelityFX\host\ffx_interface.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FidelityFX\host\ffx_types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FidelityFX\host\ffx_util.h">
+    <ClInclude Include="FSR2Feature_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -144,6 +117,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FSR2Feature_Vk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FSR2Feature_Dx11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FSR2Feature_Dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NVNGX_DLSS_Dx11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NVNGX_DLSS_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

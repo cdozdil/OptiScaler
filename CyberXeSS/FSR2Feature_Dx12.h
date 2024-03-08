@@ -1,13 +1,8 @@
 #include "FSR2Feature.h"
 #include "IFeature_Dx12.h"
 
-#include "FidelityFX/host/backends/dx12/ffx_dx12.h"
-
-#ifdef _DEBUG
-#pragma comment(lib, "FidelityFX/lib/ffx_backend_dx12_x64d.lib")
-#else
-#pragma comment(lib, "FidelityFX/lib/ffx_backend_dx12_x64.lib")
-#endif // DEBUG
+#include <ffx_fsr2.h>
+#include <dx12/ffx_fsr2_dx12.h>
 
 
 class FSR2FeatureDx12 : public FSR2Feature, public IFeature_Dx12
