@@ -177,7 +177,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
   <ItemGroup>
     <ClInclude Include="Config.h" />
     <ClInclude Include="CyberXess.h" />
-    <ClInclude Include="dllmain.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="FSR2Feature.h" />
     <ClInclude Include="FSR2Feature_Dx11.h" />

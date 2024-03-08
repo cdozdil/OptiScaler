@@ -1,68 +1,12 @@
 #include "pch.h"
-#include "dllmain.h"
 #include <iostream>
 
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
-#include "detours/detours.h"
 
 #include "Config.h"
 
-#pragma comment(lib, "detours/detours.lib")
-
 HMODULE dllModule;
-
-bool _hooksAttached = false;
-PFN_vkGetPhysicalDeviceProperties pfn_vkGetPhysicalDeviceProperties = nullptr;
-PFN_vkGetPhysicalDeviceProperties2 pfn_vkGetPhysicalDeviceProperties2 = nullptr;
-PFN_vkGetPhysicalDeviceProperties2KHR pfn_vkGetPhysicalDeviceProperties2KHR = nullptr;
-
-void WINAPI hkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, VkPhysicalDeviceProperties* properties)
-{
-	pfn_vkGetPhysicalDeviceProperties(physical_device, properties);
-	properties->vendorID = 0x10de;
-	properties->deviceID = 0x2684;
-}
-
-void WINAPI hkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysicalDeviceProperties2* properties2)
-{
-	pfn_vkGetPhysicalDeviceProperties2(phys_dev, properties2);
-	properties2->properties.vendorID = 0x10de;
-	properties2->properties.deviceID = 0x2684;
-}
-
-void WINAPI hkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhysicalDeviceProperties2* properties2)
-{
-	pfn_vkGetPhysicalDeviceProperties2KHR(phys_dev, properties2);
-	properties2->properties.vendorID = 0x10de;
-	properties2->properties.deviceID = 0x2684;
-}
-
-void AttachHooks()
-{
-	DetourTransactionBegin();
-	DetourUpdateThread(GetCurrentThread());
-
-	DetourAttach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties, hkGetPhysicalDeviceProperties);
-	DetourAttach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties2, hkGetPhysicalDeviceProperties2);
-	DetourAttach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties2KHR, hkGetPhysicalDeviceProperties2KHR);
-
-	DetourTransactionCommit();
-
-	_hooksAttached = true;
-}
-
-void DetachHooks()
-{
-	DetourTransactionBegin();
-	DetourUpdateThread(GetCurrentThread());
-
-	DetourDetach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties, hkGetPhysicalDeviceProperties);
-	DetourDetach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties2, hkGetPhysicalDeviceProperties2);
-	DetourDetach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties2KHR, hkGetPhysicalDeviceProperties2KHR);
-
-	DetourTransactionCommit();
-}
 
 static bool InitializeConsole()
 {
@@ -189,10 +133,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 	case DLL_PROCESS_ATTACH:
 		DisableThreadLibraryCalls(hModule);
 		dllModule = hModule;
-
-		if (Config::Instance()->VulkanSpoofEnable.value_or(false))
-			AttachHooks();
-
 		PrepareLogger();
 		break;
 
@@ -203,9 +143,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 		break;
 
 	case DLL_PROCESS_DETACH:
-		if (_hooksAttached)
-			DetachHooks();
-
 		CloseLogger();
 		break;
 	}
