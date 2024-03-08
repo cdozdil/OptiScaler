@@ -49,7 +49,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				(D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		params.color = ffxGetResourceDX12(&_context, paramColor, (wchar_t*)L"FSR3Upscale_Color", FFX_RESOURCE_STATE_COMPUTE_READ);
+		params.color = ffxGetResourceDX12(paramColor, GetFfxResourceDescriptionDX12(paramColor), (wchar_t*)L"FSR3Upscale_Color", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 	else
 	{

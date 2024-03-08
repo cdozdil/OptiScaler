@@ -82,7 +82,7 @@
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)CyberXeSS\fsr2\include;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)CyberXess\fsr2\lib;$(SolutionDir)CyberXess\vulkan;$(SolutionDir)external\xess\lib;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
     <TargetName>nvngx</TargetName>
-    <OutDir>F:\Games\No Man%27s Sky\Binaries</OutDir>
+    <OutDir>..\..\God of War</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)CyberXeSS\fsr2\include;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
@@ -175,6 +175,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\ffx-sdk-dx11\FidelityFX\host\backends\dx11\ffx_dx11.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="CyberXess.h" />
     <ClInclude Include="dllmain.h" />
