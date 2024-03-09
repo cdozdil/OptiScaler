@@ -21,9 +21,6 @@ void Config::Reload()
 
 	if (ini.LoadFile(absoluteFileName.c_str()) == SI_OK)
 	{
-		// Vulkan
-		VulkanSpoofEnable = readBool("Vulkan", "NvidiaSpoofing");
-		
 		// Upscalers
 		Dx11Upscaler = readString("Upscalers", "Dx11Upscaler", true);
 		Dx12Upscaler = readString("Upscalers", "Dx12Upscaler", true);
@@ -56,11 +53,13 @@ void Config::Reload()
 		else
 			LogLevel = spdlog::level::off;
 
+		// Sharpness
+		OverrideSharpness = readBool("Sharpness", "OverrideSharpness");
+		Sharpness = readFloat("Sharpness", "Sharpness");
+
 		// CAS
 		CasEnabled = readBool("CAS", "Enabled");
-		CasOverrideSharpness = readBool("CAS", "OverrideSharpness");
-		CasSharpness = readFloat("CAS", "Sharpness");
-		ColorSpaceConversion = readInt("CAS", "ColorSpaceConversion");
+		CasColorSpaceConversion = readInt("CAS", "ColorSpaceConversion");
 
 		// Depth
 		DepthInverted = readBool("Depth", "DepthInverted");

@@ -2,6 +2,24 @@
 #include <optional>
 #include <filesystem>
 
+typedef enum NVNGX_EngineType
+{
+	NVNGX_ENGINE_TYPE_CUSTOM = 0,
+	NVNGX_ENGINE_TYPE_UNREAL,
+	NVNGX_ENGINE_TYPE_UNITY,
+	NVNGX_ENGINE_TYPE_OMNIVERSE,
+	NVNGX_ENGINE_COUNT
+} NVNGX_EngineType;
+
+typedef enum GPU_Vendor
+{
+	AMD = 0,
+	NVIDIA,
+	INTEL,
+	OTHER,
+} GPU_Vendor;
+
+
 class Config
 {
 public:
@@ -33,9 +51,11 @@ public:
 
 	// CAS
 	std::optional<bool> CasEnabled;
-	std::optional<int> ColorSpaceConversion;
-	std::optional<bool> CasOverrideSharpness;
-	std::optional<float> CasSharpness;
+	std::optional<int> CasColorSpaceConversion;
+
+	//Sharpness 
+	std::optional<bool> OverrideSharpness;
+	std::optional<float> Sharpness;
 
 	// Upscale Ratio Override
 	std::optional<bool> UpscaleRatioOverrideEnabled;
@@ -63,8 +83,10 @@ public:
 	std::optional<std::string> Dx12Upscaler;
 	std::optional<std::string> VulkanUpscaler;
 
-	// Vulkan
-	std::optional<bool> VulkanSpoofEnable;
+	// Engine Info
+	NVNGX_EngineType NVNGX_Engine;
+	const char* NVNGX_EngineVersion;
+	const wchar_t* NVNGX_AppDataPath;
 
 	void Reload();
 
