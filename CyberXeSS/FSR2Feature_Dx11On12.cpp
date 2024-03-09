@@ -565,7 +565,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 			spdlog::error("FSR2FeatureDx11on12::Evaluate TransparencyMask OpenSharedHandle error: {0:x}", result);
 			return false;
 		}
-	
+
 		params.reactive = ffxGetResourceDX12(&_context, dx12Mask, (wchar_t*)L"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 
@@ -618,7 +618,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 
 	params.cameraFovAngleVertical = 1.047198f;
 
-	if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) != NVSDK_NGX_Result_Success)
+	if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) != NVSDK_NGX_Result_Success || params.frameTimeDelta < 1.0f)
 		params.frameTimeDelta = (float)GetDeltaTime();
 
 	params.preExposure = 1.0f;

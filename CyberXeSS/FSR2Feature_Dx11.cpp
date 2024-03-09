@@ -293,7 +293,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, const NVSDK_NGX_P
 
 	params.cameraFovAngleVertical = 1.047198f;
 
-	if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) != NVSDK_NGX_Result_Success)
+	if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) != NVSDK_NGX_Result_Success || params.frameTimeDelta < 1.0f)
 		params.frameTimeDelta = (float)GetDeltaTime();
 
 	params.preExposure = 1.0f;
