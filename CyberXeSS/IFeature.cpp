@@ -85,6 +85,6 @@ bool IFeature::IsInited()
 
 void IFeature::SetInit(bool InValue)
 {
-	spdlog::debug("IFeature::SetInit: {0}", InValue);
+	//spdlog::debug("IFeature::SetInit: {0}", InValue);
 	_isInited = InValue;
 }

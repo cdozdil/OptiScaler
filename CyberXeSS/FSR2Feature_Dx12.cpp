@@ -60,7 +60,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		}
 
-		params.color = ffxGetResourceDX12(&_context, paramColor, (wchar_t*)L"FSR3Upscale_Color", FFX_RESOURCE_STATE_COMPUTE_READ);
+		params.color = ffxGetResourceDX12(&_context, paramColor, (wchar_t*)L"FSR2_Color", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 	else
 	{
@@ -81,7 +81,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				(D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		params.motionVectors = ffxGetResourceDX12(&_context, paramVelocity, (wchar_t*)L"FSR3Upscale_MotionVectors", FFX_RESOURCE_STATE_COMPUTE_READ);
+		params.motionVectors = ffxGetResourceDX12(&_context, paramVelocity, (wchar_t*)L"FSR2_MotionVectors", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 	else
 	{
@@ -102,7 +102,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				(D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-		params.output = ffxGetResourceDX12(&_context, paramOutput, (wchar_t*)L"FSR3Upscale_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+		params.output = ffxGetResourceDX12(&_context, paramOutput, (wchar_t*)L"FSR2_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 	}
 	else
 	{
@@ -123,7 +123,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				(D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		params.depth = ffxGetResourceDX12(&_context, paramDepth, (wchar_t*)L"FSR3Upscale_Depth", FFX_RESOURCE_STATE_COMPUTE_READ);
+		params.depth = ffxGetResourceDX12(&_context, paramDepth, (wchar_t*)L"FSR2_Depth", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 	else
 	{
@@ -149,7 +149,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				(D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		params.exposure = ffxGetResourceDX12(&_context, paramExp, (wchar_t*)L"FSR3Upscale_Exposure", FFX_RESOURCE_STATE_COMPUTE_READ);
+		params.exposure = ffxGetResourceDX12(&_context, paramExp, (wchar_t*)L"FSR2_Exposure", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 	else
 		spdlog::debug("FSR2FeatureDx12::Evaluate AutoExposure enabled!");
@@ -170,7 +170,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				(D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		params.reactive = ffxGetResourceDX12(&_context, paramMask, (wchar_t*)L"FSR3Upscale_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
+		params.reactive = ffxGetResourceDX12(&_context, paramMask, (wchar_t*)L"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 
 	float MVScaleX;
@@ -195,7 +195,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		float shapness = 0.0f;
 		if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &shapness) == NVSDK_NGX_Result_Success)
 		{
-			params.enableSharpening = shapness != 0.0f && shapness != 1.0f;
+			params.enableSharpening = !(shapness == 0.0f || shapness == -1.0f);
 
 			if (params.enableSharpening)
 			{
@@ -210,17 +210,19 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	if (IsDepthInverted())
 	{
 		params.cameraFar = 0.0f;
-		params.cameraNear = FLT_MAX;
+		params.cameraNear = 1.0f;
 	}
 	else
 	{
 		params.cameraNear = 0.0f;
-		params.cameraFar = FLT_MAX;
+		params.cameraFar = 1.0f;
 	}
 
 	params.cameraFovAngleVertical = 1.047198f;
 
-	params.frameTimeDelta = (float)GetDeltaTime();
+	if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) != NVSDK_NGX_Result_Success)
+		params.frameTimeDelta = (float)GetDeltaTime();
+
 	params.preExposure = 1.0f;
 
 	spdlog::debug("FSR2FeatureDx12::Evaluate Dispatch!!");
@@ -360,7 +362,7 @@ bool FSR2FeatureDx12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
 	}
 
-	_contextDesc.flags |= FFX_FSR2_ENABLE_DEPTH_INFINITE;
+	//_contextDesc.flags |= FFX_FSR2_ENABLE_DEPTH_INFINITE;
 
 #if _DEBUG
 	_contextDesc.flags |= FFX_FSR2_ENABLE_DEBUG_CHECKING;

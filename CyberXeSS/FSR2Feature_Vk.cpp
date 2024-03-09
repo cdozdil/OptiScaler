@@ -21,7 +21,7 @@ bool FSR2FeatureVk::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	auto scratchBufferSize = ffxFsr2GetScratchMemorySizeVK(PhysicalDevice);
 	void* scratchBuffer = calloc(scratchBufferSize, 1);
 
-	auto errorCode = ffxFsr2GetInterfaceVK(& _contextDesc.callbacks, scratchBuffer, scratchBufferSize, PhysicalDevice, vkGetDeviceProcAddr);
+	auto errorCode = ffxFsr2GetInterfaceVK(&_contextDesc.callbacks, scratchBuffer, scratchBufferSize, PhysicalDevice, vkGetDeviceProcAddr);
 
 	if (errorCode != FFX_OK)
 	{
@@ -99,7 +99,7 @@ bool FSR2FeatureVk::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		spdlog::info("FSR2FeatureVk::InitFSR2 contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
 	}
 
-	_contextDesc.flags |= FFX_FSR2_ENABLE_DEPTH_INFINITE;
+	//_contextDesc.flags |= FFX_FSR2_ENABLE_DEPTH_INFINITE;
 
 #if _DEBUG
 	_contextDesc.flags |= FFX_FSR2_ENABLE_DEBUG_CHECKING;
@@ -174,7 +174,7 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 		params.color = ffxGetTextureResourceVK(&_context, ((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Image,
 			((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.ImageView,
 			((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Height,
-			((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR3Upscale_Color", FFX_RESOURCE_STATE_COMPUTE_READ);
+			((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR2_Color", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 	else
 	{
@@ -197,7 +197,7 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 		params.motionVectors = ffxGetTextureResourceVK(&_context, ((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Image,
 			((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.ImageView,
 			((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Height,
-			((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR3Upscale_MotionVectors", FFX_RESOURCE_STATE_COMPUTE_READ);
+			((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR2_MotionVectors", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 	else
 	{
@@ -220,7 +220,7 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 		params.output = ffxGetTextureResourceVK(&_context, ((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Image,
 			((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.ImageView,
 			((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Height,
-			((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR3Upscale_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+			((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR2_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 	}
 	else
 	{
@@ -243,7 +243,7 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 		params.depth = ffxGetTextureResourceVK(&_context, ((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Image,
 			((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.ImageView,
 			((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Height,
-			((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR3Upscale_Depth", FFX_RESOURCE_STATE_COMPUTE_READ);
+			((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR2_Depth", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 	else
 	{
@@ -270,7 +270,7 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 			params.exposure = ffxGetTextureResourceVK(&_context, ((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.Image,
 				((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.ImageView,
 				((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.Height,
-				((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR3Upscale_Exposure", FFX_RESOURCE_STATE_COMPUTE_READ);
+				((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR2_Exposure", FFX_RESOURCE_STATE_COMPUTE_READ);
 		}
 		else
 			spdlog::debug("FSR2FeatureVk::Evaluate AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
@@ -295,7 +295,7 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 			params.reactive = ffxGetTextureResourceVK(&_context, ((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Image,
 				((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.ImageView,
 				((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Height,
-				((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR3Upscale_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
+				((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
 		}
 		else
 			spdlog::debug("FSR2FeatureVk::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
@@ -324,7 +324,7 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 		float shapness = 0.0f;
 		if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &shapness) == NVSDK_NGX_Result_Success)
 		{
-			params.enableSharpening = shapness != 0.0f && shapness != 1.0f;
+			params.enableSharpening = !(shapness == 0.0f || shapness == -1.0f);
 
 			if (params.enableSharpening)
 			{
@@ -339,17 +339,19 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 	if (IsDepthInverted())
 	{
 		params.cameraFar = 0.0f;
-		params.cameraNear = FLT_MAX;
+		params.cameraNear = 1.0f;
 	}
 	else
 	{
 		params.cameraNear = 0.0f;
-		params.cameraFar = FLT_MAX;
+		params.cameraFar = 1.0f;
 	}
 
 	params.cameraFovAngleVertical = 1.047198f;
 
-	params.frameTimeDelta = (float)GetDeltaTime();
+	if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) != NVSDK_NGX_Result_Success)
+		params.frameTimeDelta = (float)GetDeltaTime();
+
 	params.preExposure = 1.0f;
 
 	spdlog::debug("FSR2FeatureVk::Evaluate Dispatch!!");
