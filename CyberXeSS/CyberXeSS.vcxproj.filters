@@ -74,6 +74,9 @@
     <ClInclude Include="FSR2Feature_Vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FSR2Feature_Dx11On12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -126,6 +129,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="NVNGX_DLSS_Vk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FSR2Feature_Dx11On12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

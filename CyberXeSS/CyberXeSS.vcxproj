@@ -181,6 +181,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="framework.h" />
     <ClInclude Include="FSR2Feature.h" />
     <ClInclude Include="FSR2Feature_Dx11.h" />
+    <ClInclude Include="FSR2Feature_Dx11On12.h" />
     <ClInclude Include="FSR2Feature_Dx12.h" />
     <ClInclude Include="FSR2Feature_Vk.h" />
     <ClInclude Include="IFeature_Dx11.h" />
@@ -197,6 +198,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="CyberXess.cpp" />
     <ClCompile Include="FSR2Feature.cpp" />
     <ClCompile Include="FSR2Feature_Dx11.cpp" />
+    <ClCompile Include="FSR2Feature_Dx11On12.cpp" />
     <ClCompile Include="FSR2Feature_Dx12.cpp" />
     <ClCompile Include="FSR2Feature_Vk.cpp" />
     <ClCompile Include="IFeature.cpp" />
