@@ -1,8 +1,8 @@
+#pragma once
 #include "pch.h"
 #include "FSR2Feature_Vk.h"
 #include "Config.h"
 
-#include <vulkan/vulkan.hpp>
 #include "nvsdk_ngx_vk.h"
 
 bool FSR2FeatureVk::InitFSR2(const NVSDK_NGX_Parameter* InParameters)

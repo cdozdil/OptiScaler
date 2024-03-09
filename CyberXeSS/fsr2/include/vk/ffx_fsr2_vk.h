@@ -34,7 +34,7 @@ extern "C" {
     ///
     /// @returns
     /// The size (in bytes) of the required scratch memory buffer for the VK backend.
-    FFX_API size_t ffxFsr2GetScratchMemorySizeVK(VkPhysicalDevice physicalDevice);
+    size_t ffxFsr2GetScratchMemorySizeVK(VkPhysicalDevice physicalDevice);
 
     /// Populate an interface with pointers for the VK backend.
     ///
@@ -51,7 +51,7 @@ extern "C" {
     /// FFX_ERROR_CODE_INVALID_POINTER          The <c><i>interface</i></c> pointer was <c><i>NULL</i></c>.
     /// 
     /// @ingroup FSR2 VK
-    FFX_API FfxErrorCode ffxFsr2GetInterfaceVK(
+    FfxErrorCode ffxFsr2GetInterfaceVK(
         FfxFsr2Interface* outInterface,
         void* scratchBuffer,
         size_t scratchBufferSize,
@@ -66,7 +66,7 @@ extern "C" {
     /// An abstract FidelityFX device.
     /// 
     /// @ingroup FSR2 VK
-    FFX_API FfxDevice ffxGetDeviceVK(VkDevice device);
+    FfxDevice ffxGetDeviceVK(VkDevice device);
 
     /// Create a <c><i>FfxCommandList</i></c> from a <c><i>VkCommandBuffer</i></c>.
     ///
@@ -76,7 +76,7 @@ extern "C" {
     /// An abstract FidelityFX command list.
     /// 
     /// @ingroup FSR2 VK
-    FFX_API FfxCommandList ffxGetCommandListVK(VkCommandBuffer cmdBuf);
+    FfxCommandList ffxGetCommandListVK(VkCommandBuffer cmdBuf);
 
     /// Create a <c><i>FfxResource</i></c> from a <c><i>VkImage</i></c>.
     ///
@@ -93,7 +93,7 @@ extern "C" {
     /// An abstract FidelityFX resources.
     /// 
     /// @ingroup FSR2 VK
-    FFX_API FfxResource ffxGetTextureResourceVK(FfxFsr2Context* context, 
+    FfxResource ffxGetTextureResourceVK(FfxFsr2Context* context, 
         VkImage imgVk, 
         VkImageView imageView, 
         uint32_t width, 
@@ -114,7 +114,7 @@ extern "C" {
     /// An abstract FidelityFX resources.
     /// 
     /// @ingroup FSR2 VK
-    FFX_API FfxResource ffxGetBufferResourceVK(FfxFsr2Context* context, 
+    FfxResource ffxGetBufferResourceVK(FfxFsr2Context* context, 
         VkBuffer bufVk, 
         uint32_t size, 
         const wchar_t* name = nullptr, 
@@ -129,7 +129,7 @@ extern "C" {
     /// A <c><i>VkImage</i></c>.
     /// 
     /// @ingroup FSR2 VK
-    FFX_API VkImage ffxGetVkImage(FfxFsr2Context* context, uint32_t resId);
+    VkImage ffxGetVkImage(FfxFsr2Context* context, uint32_t resId);
 
     /// Convert a <c><i>FfxResource</i></c> value to a <c><i>VkImageView</i></c>.
     ///
@@ -140,7 +140,7 @@ extern "C" {
     /// A <c><i>VkImage</i></c>.
     /// 
     /// @ingroup FSR2 VK
-    FFX_API VkImageView ffxGetVkImageView(FfxFsr2Context* context, uint32_t resId);
+    VkImageView ffxGetVkImageView(FfxFsr2Context* context, uint32_t resId);
 
     /// Convert a <c><i>FfxResource</i></c> value to a <c><i>VkImageLayout</i></c>.
     ///
@@ -151,7 +151,7 @@ extern "C" {
     /// A <c><i>VkImage</i></c>.
     /// 
     /// @ingroup FSR2 VK
-    FFX_API VkImageLayout ffxGetVkImageLayout(FfxFsr2Context* context, uint32_t resId);
+    VkImageLayout ffxGetVkImageLayout(FfxFsr2Context* context, uint32_t resId);
 
 #if defined(__cplusplus)
 }

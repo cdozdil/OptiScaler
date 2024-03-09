@@ -11,15 +11,6 @@ typedef enum NVNGX_EngineType
 	NVNGX_ENGINE_COUNT
 } NVNGX_EngineType;
 
-typedef enum GPU_Vendor
-{
-	AMD = 0,
-	NVIDIA,
-	INTEL,
-	OTHER,
-} GPU_Vendor;
-
-
 class Config
 {
 public:
@@ -84,9 +75,8 @@ public:
 	std::optional<std::string> VulkanUpscaler;
 
 	// Engine Info
-	NVNGX_EngineType NVNGX_Engine;
-	const char* NVNGX_EngineVersion;
-	const wchar_t* NVNGX_AppDataPath;
+	NVNGX_EngineType NVNGX_Engine = NVNGX_ENGINE_TYPE_CUSTOM;
+	bool NVNGX_EngineVersion5 = false;
 
 	void Reload();
 

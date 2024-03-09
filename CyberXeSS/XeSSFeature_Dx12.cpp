@@ -1,3 +1,4 @@
+#pragma once
 #include "pch.h"
 #include "XeSSFeature_Dx12.h"
 #include "Config.h"
@@ -49,7 +50,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		else if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL)
 		{
-			Config::Instance()->ColorResourceBarrier = (int)D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+			Config::Instance()->ColorResourceBarrier = (int)D3D12_RESOURCE_STATE_RENDER_TARGET;
 
 			ResourceBarrier(InCommandList, params.pColorTexture,
 				D3D12_RESOURCE_STATE_RENDER_TARGET,
@@ -184,7 +185,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 
 	// restore resource states
-	if (params.pColorTexture && (Config::Instance()->ColorResourceBarrier.value_or(false) || Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL))
+	if (params.pColorTexture && Config::Instance()->ColorResourceBarrier.has_value())
 		ResourceBarrier(InCommandList, params.pColorTexture,
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value());

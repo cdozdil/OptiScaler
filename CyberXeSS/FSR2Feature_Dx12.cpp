@@ -1,3 +1,4 @@
+#pragma once
 #include "pch.h"
 #include "FSR2Feature_Dx12.h"
 #include "Config.h"
@@ -52,7 +53,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		}
 		else if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL)
 		{
-			Config::Instance()->ColorResourceBarrier = (int)D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+			Config::Instance()->ColorResourceBarrier = (int)D3D12_RESOURCE_STATE_RENDER_TARGET;
 
 			ResourceBarrier(InCommandList, paramColor,
 				D3D12_RESOURCE_STATE_RENDER_TARGET,
@@ -232,7 +233,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 
 	// restore resource states
-	if (paramColor && (Config::Instance()->ColorResourceBarrier.value_or(false) || Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL))
+	if (paramColor && Config::Instance()->ColorResourceBarrier.has_value())
 		ResourceBarrier(InCommandList, paramColor,
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value());

@@ -1,3 +1,4 @@
+#pragma once
 #include "IFeature.h"
 #include "xess_d3d12.h"
 #include "xess_debug.h"

@@ -91,8 +91,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 		case NVSDK_NGX_PerfQuality_Value_Balanced:
 			//UE5 ratio fix
 			if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL &&
-				strlen(Config::Instance()->NVNGX_EngineVersion) > 0 &&
-				Config::Instance()->NVNGX_EngineVersion[0] == '5' &&
+				Config::Instance()->NVNGX_EngineVersion5 &&
 				Config::Instance()->Dx12Upscaler.value_or("xess") == "xess")
 			{
 				OutHeight = (unsigned int)((float)Height / 1.6666666667);
@@ -111,8 +110,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 		case NVSDK_NGX_PerfQuality_Value_MaxQuality:
 			//UE5 ratio fix
 			if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL &&
-				strlen(Config::Instance()->NVNGX_EngineVersion) > 0 &&
-				Config::Instance()->NVNGX_EngineVersion[0] == '5' &&
+				Config::Instance()->NVNGX_EngineVersion5 &&
 				Config::Instance()->Dx12Upscaler.value_or("xess") == "xess")
 			{
 				OutHeight = (unsigned int)((float)Height / 1.4285714286);
@@ -131,8 +129,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 		case NVSDK_NGX_PerfQuality_Value_UltraQuality:
 			//UE5 ratio fix
 			if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL &&
-				strlen(Config::Instance()->NVNGX_EngineVersion) > 0 &&
-				Config::Instance()->NVNGX_EngineVersion[0] == '5' &&
+				Config::Instance()->NVNGX_EngineVersion5 &&
 				Config::Instance()->Dx12Upscaler.value_or("xess") == "xess")
 			{
 				OutHeight = (unsigned int)((float)Height / 1.25);
@@ -157,8 +154,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 		default:
 			//UE5 ratio fix
 			if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL &&
-				strlen(Config::Instance()->NVNGX_EngineVersion) > 0 &&
-				Config::Instance()->NVNGX_EngineVersion[0] == '5' &&
+				Config::Instance()->NVNGX_EngineVersion5 &&
 				Config::Instance()->Dx12Upscaler.value_or("xess") == "xess")
 			{
 				OutHeight = (unsigned int)((float)Height / 1.6666666667);

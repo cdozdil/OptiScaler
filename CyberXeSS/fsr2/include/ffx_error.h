@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "ffx_types.h"
+#include <ffx_types.h>
 
 /// Typedef for error codes returned from functions in the FidelityFX SDK.
 typedef int32_t FfxErrorCode;

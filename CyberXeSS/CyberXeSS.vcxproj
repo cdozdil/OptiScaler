@@ -82,7 +82,7 @@
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)CyberXeSS\fsr2\include;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)CyberXess\fsr2\lib;$(SolutionDir)CyberXess\vulkan;$(SolutionDir)external\xess\lib;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
     <TargetName>nvngx</TargetName>
-    <OutDir>..\..\God of War</OutDir>
+    <OutDir>..\..\..\Games\Banishers Ghosts of New Eden\NWD\Binaries\Win64</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)CyberXeSS\fsr2\include;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
@@ -141,7 +141,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3d12.lib;dxguid.lib;libxess.lib;vulkan-1.lib;ffx_fsr2_api_x64d.lib;ffx_fsr2_api_dx11_x64d.lib;ffx_fsr2_api_dx12_x64d.lib;ffx_fsr2_api_vk_x64d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dxgi.lib;d3d11.lib;d3d12.lib;vulkan-1.lib;dxguid.lib;libxess.lib;ffx_fsr2_api_x64d.lib;ffx_fsr2_api_dx11_x64d.lib;ffx_fsr2_api_dx12_x64d.lib;ffx_fsr2_api_vk_x64d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -202,8 +202,8 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="IFeature_Dx12.cpp" />
     <ClCompile Include="NVNGX_DLSS_Dx11.cpp" />
     <ClCompile Include="NVNGX_DLSS_Dx12.cpp" />
-    <ClCompile Include="NVNGX_DLSS_Vk.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="NVNGX_DLSS_Vk.cpp" />
     <ClCompile Include="XeSSFeature.cpp" />
     <ClCompile Include="XeSSFeature.h" />
     <ClCompile Include="XeSSFeature_Dx11.cpp" />

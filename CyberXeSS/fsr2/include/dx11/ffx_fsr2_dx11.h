@@ -34,7 +34,7 @@ extern "C" {
 ///
 /// @returns
 /// The size (in bytes) of the required scratch memory buffer for the DX11 backend.
-FFX_API size_t ffxFsr2GetScratchMemorySizeDX11();
+size_t ffxFsr2GetScratchMemorySizeDX11();
 
 /// Populate an interface with pointers for the DX11 backend.
 ///
@@ -49,7 +49,7 @@ FFX_API size_t ffxFsr2GetScratchMemorySizeDX11();
 /// FFX_ERROR_CODE_INVALID_POINTER          The <c><i>interface</i></c> pointer was <c><i>NULL</i></c>.
 /// 
 /// @ingroup FSR2 DX11
-FFX_API FfxErrorCode ffxFsr2GetInterfaceDX11(
+FfxErrorCode ffxFsr2GetInterfaceDX11(
     FfxFsr2Interface* fsr2Interface,
     ID3D11Device* device,
     void* scratchBuffer,
@@ -63,7 +63,7 @@ FFX_API FfxErrorCode ffxFsr2GetInterfaceDX11(
 /// An abstract FidelityFX device.
 /// 
 /// @ingroup FSR2 DX11
-FFX_API FfxDevice ffxGetDeviceDX11(ID3D11Device* device);
+FfxDevice ffxGetDeviceDX11(ID3D11Device* device);
 
 /// Create a <c><i>FfxResource</i></c> from a <c><i>ID3D11Resource</i></c>.
 ///
@@ -76,7 +76,7 @@ FFX_API FfxDevice ffxGetDeviceDX11(ID3D11Device* device);
 /// An abstract FidelityFX resources.
 /// 
 /// @ingroup FSR2 DX11
-FFX_API FfxResource ffxGetResourceDX11(
+FfxResource ffxGetResourceDX11(
     FfxFsr2Context* context,
     ID3D11Resource* resDx11,
     const wchar_t* name = nullptr,
@@ -92,7 +92,7 @@ FFX_API FfxResource ffxGetResourceDX11(
 /// A <c><i>ID3D11Resource</i> pointer</c>.
 /// 
 /// @ingroup FSR2 DX11
-FFX_API ID3D11Resource* ffxGetDX11ResourcePtr(FfxFsr2Context* context, uint32_t resId);
+ID3D11Resource* ffxGetDX11ResourcePtr(FfxFsr2Context* context, uint32_t resId);
 
 #if defined(__cplusplus)
 }

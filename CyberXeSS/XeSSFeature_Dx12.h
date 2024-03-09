@@ -1,3 +1,4 @@
+#pragma once
 #include "IFeature_Dx12.h"
 #include "XeSSFeature.h"
 #include <string>

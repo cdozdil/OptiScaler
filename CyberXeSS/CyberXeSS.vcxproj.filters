@@ -65,25 +65,19 @@
     <ClInclude Include="FSR2Feature.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="dllmain.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FSR2Feature_Vk.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FSR2Feature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FSR2Feature_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FSR2Feature_Vk.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
       <Filter>Config</Filter>
-    </ClCompile>
-    <ClCompile Include="NVNGX_DLSS_Vk.cpp">
-      <Filter>NVNGX</Filter>
     </ClCompile>
     <ClCompile Include="XeSSFeature.cpp">
       <Filter>XeSS</Filter>
@@ -113,10 +107,13 @@
     <ClCompile Include="XeSSFeature_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FSR2Feature.cpp">
+    <ClCompile Include="NVNGX_DLSS_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FSR2Feature_Vk.cpp">
+    <ClCompile Include="NVNGX_DLSS_Dx11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FSR2Feature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FSR2Feature_Dx11.cpp">
@@ -125,10 +122,10 @@
     <ClCompile Include="FSR2Feature_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NVNGX_DLSS_Dx11.cpp">
+    <ClCompile Include="FSR2Feature_Vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NVNGX_DLSS_Dx12.cpp">
+    <ClCompile Include="NVNGX_DLSS_Vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

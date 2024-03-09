@@ -1,3 +1,4 @@
+#pragma once
 #include "pch.h"
 #include "FSR2Feature_Dx11.h"
 #include "Config.h"

@@ -1,3 +1,4 @@
+#pragma once
 #include "pch.h"
 
 #include <ankerl/unordered_dense.h>
@@ -20,8 +21,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext SDK: {0:x}", (int)InSDKVersion);
 	std::wstring string(InApplicationDataPath);
 	std::string str(string.begin(), string.end());
-	spdlog::debug("NVSDK_NGX_D3D12_Init_Ext InApplicationDataPath {0}", str);
-
+	spdlog::info("NVSDK_NGX_D3D12_Init_Ext InApplicationDataPath {0}", str);
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -36,13 +36,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init(unsigned long long InApplica
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType,
 	const char* InEngineVersion, const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
-	spdlog::debug("NVSDK_NGX_D3D12_Init_ProjectID InProjectId: {0}", InProjectId);
-	spdlog::debug("NVSDK_NGX_D3D12_Init_ProjectID InEngineType: {0}", (int)InEngineType);
-	spdlog::debug("NVSDK_NGX_D3D12_Init_ProjectID InEngineVersion: {0}", InEngineVersion);
+	spdlog::info("NVSDK_NGX_D3D12_Init_ProjectID InProjectId: {0}", InProjectId);
+	spdlog::info("NVSDK_NGX_D3D12_Init_ProjectID InEngineType: {0}", (int)InEngineType);
 
 	Config::Instance()->NVNGX_Engine = (NVNGX_EngineType)InEngineType;
-	Config::Instance()->NVNGX_EngineVersion = InEngineVersion;
-	Config::Instance()->NVNGX_AppDataPath = InApplicationDataPath;
+
+	if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL && InEngineVersion)
+	{
+		spdlog::debug("NVSDK_NGX_D3D12_Init_ProjectID InEngineVersion: {0}", InEngineVersion);
+		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
+	}
 
 	return NVSDK_NGX_D3D12_Init_Ext(0x1337, InApplicationDataPath, InDevice, InFeatureInfo, InSDKVersion, 0);
 }
@@ -50,13 +53,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProj
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion,
 	const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
-	spdlog::debug("NVSDK_NGX_D3D12_Init_with_ProjectID InProjectId: {0}", InProjectId);
-	spdlog::debug("NVSDK_NGX_D3D12_Init_with_ProjectID InEngineType: {0}", (int)InEngineType);
-	spdlog::debug("NVSDK_NGX_D3D12_Init_with_ProjectID InEngineVersion: {0}", InEngineVersion);
+	spdlog::info("NVSDK_NGX_D3D12_Init_with_ProjectID InProjectId: {0}", InProjectId);
+	spdlog::info("NVSDK_NGX_D3D12_Init_with_ProjectID InEngineType: {0}", (int)InEngineType);
 
 	Config::Instance()->NVNGX_Engine = (NVNGX_EngineType)InEngineType;
-	Config::Instance()->NVNGX_EngineVersion = InEngineVersion;
-	Config::Instance()->NVNGX_AppDataPath = InApplicationDataPath;
+
+	if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL && InEngineVersion)
+	{
+		spdlog::debug("NVSDK_NGX_D3D12_Init_with_ProjectID InEngineVersion: {0}", InEngineVersion);
+		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
+	}
 
 	return NVSDK_NGX_D3D12_Init_Ext(0x1337, InApplicationDataPath, InDevice, InFeatureInfo, InSDKVersion, 0);
 }

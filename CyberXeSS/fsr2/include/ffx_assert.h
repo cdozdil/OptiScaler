@@ -70,13 +70,13 @@ typedef void (*FfxAssertCallback)(const char* message);
 /// @returns
 /// Always returns true.
 ///
-FFX_API bool ffxAssertReport(const char* file, int32_t line, const char* condition, const char* msg);
+bool ffxAssertReport(const char* file, int32_t line, const char* condition, const char* msg);
 
 /// Provides the ability to set a callback for assert messages.
 ///
 /// @param [in] callback                The callback function that will receive assert messages.
 ///
-FFX_API void ffxAssertSetPrintingCallback(FfxAssertCallback callback);
+void ffxAssertSetPrintingCallback(FfxAssertCallback callback);
 
 #ifdef _DEBUG
 /// Standard assert macro.

@@ -1,3 +1,4 @@
+#pragma once
 #include "pch.h"
 
 #include <ankerl/unordered_dense.h>
@@ -39,12 +40,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_ProjectID(const char* InProj
 {
 	spdlog::debug("NVSDK_NGX_D3D11_Init_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::debug("NVSDK_NGX_D3D11_Init_ProjectID InEngineType: {0}", (int)InEngineType);
-	spdlog::debug("NVSDK_NGX_D3D11_Init_ProjectID InEngineVersion: {0}", InEngineVersion);
 
 	Config::Instance()->NVNGX_Engine = (NVNGX_EngineType)InEngineType;
-	Config::Instance()->NVNGX_EngineVersion = InEngineVersion;
-	Config::Instance()->NVNGX_AppDataPath = InApplicationDataPath;
 
+	if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL && InEngineVersion)
+	{
+		spdlog::debug("NVSDK_NGX_D3D11_Init_ProjectID InEngineVersion: {0}", InEngineVersion);
+		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
+	}
+	
 	return NVSDK_NGX_D3D11_Init_Ext(0x1337, InApplicationDataPath, InDevice, InFeatureInfo, InSDKVersion, 0);
 }
 
@@ -53,11 +57,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_with_ProjectID(const char* I
 {
 	spdlog::debug("NVSDK_NGX_D3D11_Init_with_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::debug("NVSDK_NGX_D3D11_Init_with_ProjectID InEngineType: {0}", (int)InEngineType);
-	spdlog::debug("NVSDK_NGX_D3D11_Init_with_ProjectID InEngineVersion: {0}", InEngineVersion);
 
 	Config::Instance()->NVNGX_Engine = (NVNGX_EngineType)InEngineType;
-	Config::Instance()->NVNGX_EngineVersion = InEngineVersion;
-	Config::Instance()->NVNGX_AppDataPath = InApplicationDataPath;
+
+	if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL && InEngineVersion)
+	{
+		spdlog::debug("NVSDK_NGX_D3D11_Init_with_ProjectID InEngineVersion: {0}", InEngineVersion);
+		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
+	}
 
 	return NVSDK_NGX_D3D11_Init_Ext(0x1337, InApplicationDataPath, InDevice, InFeatureInfo, InSDKVersion, 0);
 }
@@ -66,7 +73,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_with_ProjectID(const char* I
 
 #pragma region NVSDK_NGX_D3D11_Shutdown
 
-NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_D3D11_Shutdown(void)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown(void)
 {
 	spdlog::info("NVSDK_NGX_D3D11_Shutdown");
 
@@ -79,7 +86,7 @@ NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_D3D11_Shutdown(void)
 	return NVSDK_NGX_Result_Success;
 }
 
-NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_D3D11_Shutdown1(ID3D11Device* InDevice)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown1(ID3D11Device* InDevice)
 {
 	spdlog::info("NVSDK_NGX_D3D11_Shutdown1");
 	return NVSDK_NGX_D3D11_Shutdown();
@@ -89,7 +96,7 @@ NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_D3D11_Shutdown1(ID3D11Device* InDevice)
 
 #pragma region NVSDK_NGX_D3D11 Parameters
 
-NVSDK_NGX_Result NVSDK_NGX_D3D11_GetParameters(NVSDK_NGX_Parameter** OutParameters)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetParameters(NVSDK_NGX_Parameter** OutParameters)
 {
 	spdlog::debug("NVSDK_NGX_D3D11_GetParameters");
 
@@ -105,7 +112,7 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_GetParameters(NVSDK_NGX_Parameter** OutParamete
 	}
 }
 
-NVSDK_NGX_Result NVSDK_NGX_D3D11_GetCapabilityParameters(NVSDK_NGX_Parameter** OutParameters)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetCapabilityParameters(NVSDK_NGX_Parameter** OutParameters)
 {
 	spdlog::debug("NVSDK_NGX_D3D11_GetCapabilityParameters");
 
@@ -121,7 +128,7 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_GetCapabilityParameters(NVSDK_NGX_Parameter** O
 	}
 }
 
-NVSDK_NGX_Result NVSDK_NGX_D3D11_AllocateParameters(NVSDK_NGX_Parameter** OutParameters)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_AllocateParameters(NVSDK_NGX_Parameter** OutParameters)
 {
 	spdlog::debug("NVSDK_NGX_D3D11_AllocateParameters");
 
@@ -151,7 +158,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_PopulateParameters_Impl(NVSDK_NGX
 	return NVSDK_NGX_Result_Success;
 }
 
-NVSDK_NGX_Result NVSDK_NGX_D3D11_DestroyParameters(NVSDK_NGX_Parameter* InParameters)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_DestroyParameters(NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("NVSDK_NGX_D3D11_DestroyParameters");
 
@@ -163,7 +170,7 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_DestroyParameters(NVSDK_NGX_Parameter* InParame
 	return NVSDK_NGX_Result_Success;
 }
 
-NVSDK_NGX_Result NVSDK_NGX_D3D11_GetScratchBufferSize(NVSDK_NGX_Feature InFeatureId, const NVSDK_NGX_Parameter* InParameters, size_t* OutSizeInBytes)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetScratchBufferSize(NVSDK_NGX_Feature InFeatureId, const NVSDK_NGX_Parameter* InParameters, size_t* OutSizeInBytes)
 {
 	spdlog::warn("NVSDK_NGX_D3D11_GetScratchBufferSize -> 52428800");
 	*OutSizeInBytes = 52428800;
@@ -174,7 +181,7 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_GetScratchBufferSize(NVSDK_NGX_Feature InFeatur
 
 #pragma region NVSDK_NGX_D3D11 Feature
 
-NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext* InDevCtx, NVSDK_NGX_Feature InFeatureID, NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Handle** OutHandle)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext* InDevCtx, NVSDK_NGX_Feature InFeatureID, NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Handle** OutHandle)
 {
 	spdlog::info("NVSDK_NGX_D3D11_CreateFeature");
 
@@ -214,7 +221,7 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext* InDevCtx, NV
 	return NVSDK_NGX_Result_Fail;
 }
 
-NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* InHandle)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* InHandle)
 {
 	spdlog::info("NVSDK_NGX_D3D11_ReleaseFeature");
 
@@ -232,7 +239,7 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* InHandle)
 	return NVSDK_NGX_Result_Success;
 }
 
-NVSDK_NGX_Result NVSDK_NGX_D3D11_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
 {
 	spdlog::debug("NVSDK_NGX_D3D11_GetFeatureRequirements");
 
@@ -245,7 +252,7 @@ NVSDK_NGX_Result NVSDK_NGX_D3D11_GetFeatureRequirements(IDXGIAdapter* Adapter, c
 	return NVSDK_NGX_Result_Success;
 }
 
-NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, const NVSDK_NGX_Handle* InFeatureHandle, const NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, const NVSDK_NGX_Handle* InFeatureHandle, const NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
 {
 	spdlog::debug("NVSDK_NGX_D3D11_EvaluateFeature Handle: {0}", InFeatureHandle->Id);
 

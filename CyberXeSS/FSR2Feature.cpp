@@ -1,3 +1,4 @@
+#pragma once
 #include "pch.h"
 #include "FSR2Feature.h"
 #include "Config.h"

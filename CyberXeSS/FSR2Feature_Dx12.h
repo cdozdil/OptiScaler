@@ -1,3 +1,4 @@
+#pragma once
 #include "FSR2Feature.h"
 #include "IFeature_Dx12.h"
 

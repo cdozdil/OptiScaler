@@ -1,3 +1,4 @@
+#pragma once
 #include "pch.h"
 #include "Config.h"
 #include <SimpleIni.h>

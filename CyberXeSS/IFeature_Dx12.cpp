@@ -1,3 +1,4 @@
+#pragma once
 #include "IFeature_Dx12.h"
 
 void IFeature_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
