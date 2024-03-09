@@ -45,9 +45,19 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		spdlog::debug("FSR2FeatureDx12::Evaluate Color exist..");
 
 		if (Config::Instance()->ColorResourceBarrier.has_value())
+		{
 			ResourceBarrier(InCommandList, paramColor,
 				(D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		}
+		else if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL)
+		{
+			Config::Instance()->ColorResourceBarrier = (int)D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+
+			ResourceBarrier(InCommandList, paramColor,
+				D3D12_RESOURCE_STATE_RENDER_TARGET,
+				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		}
 
 		params.color = ffxGetResourceDX12(&_context, paramColor, (wchar_t*)L"FSR3Upscale_Color", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
@@ -174,18 +184,25 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	else
 		spdlog::warn("FSR2FeatureDx12::Evaluate Can't get motion vector scales!");
 
-
-	float shapness;
-	if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &shapness) == NVSDK_NGX_Result_Success)
+	if (Config::Instance()->OverrideSharpness.value_or(false))
 	{
-		params.enableSharpening = shapness != 0 && shapness != 1;
-
-		if (params.enableSharpening)
+		params.enableSharpening = true;
+		params.sharpness = Config::Instance()->Sharpness.value_or(0.3);
+	}
+	else
+	{
+		float shapness = 0.0f;
+		if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &shapness) == NVSDK_NGX_Result_Success)
 		{
-			if (shapness < 0)
-				params.sharpness = (shapness + 1.0f) / 2.0f;
-			else
-				params.sharpness = shapness;
+			params.enableSharpening = shapness != 0.0f && shapness != 1.0f;
+
+			if (params.enableSharpening)
+			{
+				if (shapness < 0)
+					params.sharpness = (shapness + 1.0f) / 2.0f;
+				else
+					params.sharpness = shapness;
+			}
 		}
 	}
 
@@ -215,7 +232,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 
 	// restore resource states
-	if (paramColor && Config::Instance()->ColorResourceBarrier.value_or(false))
+	if (paramColor && (Config::Instance()->ColorResourceBarrier.value_or(false) || Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL))
 		ResourceBarrier(InCommandList, paramColor,
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value());

@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include <ankerl/unordered_dense.h>
+#include <dxgi1_4.h>
 
 #include "Config.h"
 #include "XeSSFeature_Dx12.h"
@@ -22,9 +23,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 	spdlog::debug("NVSDK_NGX_D3D12_Init_Ext InApplicationDataPath {0}", str);
 
 
-	if (InDevice)
-		D3D12Device = InDevice;
-
 	return NVSDK_NGX_Result_Success;
 }
 
@@ -42,6 +40,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProj
 	spdlog::debug("NVSDK_NGX_D3D12_Init_ProjectID InEngineType: {0}", (int)InEngineType);
 	spdlog::debug("NVSDK_NGX_D3D12_Init_ProjectID InEngineVersion: {0}", InEngineVersion);
 
+	Config::Instance()->NVNGX_Engine = (NVNGX_EngineType)InEngineType;
+	Config::Instance()->NVNGX_EngineVersion = InEngineVersion;
+	Config::Instance()->NVNGX_AppDataPath = InApplicationDataPath;
+
 	return NVSDK_NGX_D3D12_Init_Ext(0x1337, InApplicationDataPath, InDevice, InFeatureInfo, InSDKVersion, 0);
 }
 
@@ -51,6 +53,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* I
 	spdlog::debug("NVSDK_NGX_D3D12_Init_with_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::debug("NVSDK_NGX_D3D12_Init_with_ProjectID InEngineType: {0}", (int)InEngineType);
 	spdlog::debug("NVSDK_NGX_D3D12_Init_with_ProjectID InEngineVersion: {0}", InEngineVersion);
+
+	Config::Instance()->NVNGX_Engine = (NVNGX_EngineType)InEngineType;
+	Config::Instance()->NVNGX_EngineVersion = InEngineVersion;
+	Config::Instance()->NVNGX_AppDataPath = InApplicationDataPath;
 
 	return NVSDK_NGX_D3D12_Init_Ext(0x1337, InApplicationDataPath, InDevice, InFeatureInfo, InSDKVersion, 0);
 }

@@ -47,6 +47,14 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			ResourceBarrier(InCommandList, params.pColorTexture,
 				(D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		else if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL)
+		{
+			Config::Instance()->ColorResourceBarrier = (int)D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+
+			ResourceBarrier(InCommandList, params.pColorTexture,
+				D3D12_RESOURCE_STATE_RENDER_TARGET,
+				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		}
 	}
 	else
 	{
@@ -176,7 +184,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 
 	// restore resource states
-	if (params.pColorTexture && Config::Instance()->ColorResourceBarrier.value_or(false))
+	if (params.pColorTexture && (Config::Instance()->ColorResourceBarrier.value_or(false) || Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL))
 		ResourceBarrier(InCommandList, params.pColorTexture,
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value());

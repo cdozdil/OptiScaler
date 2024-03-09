@@ -292,18 +292,25 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, const NVSDK_NGX_P
 	else
 		spdlog::warn("FSR2FeatureDx11::Evaluate Can't get motion vector scales!");
 
-
-	float shapness = 0.0f;
-	if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &shapness) == NVSDK_NGX_Result_Success)
+	if (Config::Instance()->OverrideSharpness.value_or(false))
 	{
-		params.enableSharpening = shapness != 0 && shapness != 1;
-
-		if (params.enableSharpening)
+		params.enableSharpening = true;
+		params.sharpness = Config::Instance()->Sharpness.value_or(0.3);
+	}
+	else
+	{
+		float shapness = 0.0f;
+		if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &shapness) == NVSDK_NGX_Result_Success)
 		{
-			if (shapness < 0)
-				params.sharpness = (shapness + 1.0f) / 2.0f;
-			else
-				params.sharpness = shapness;
+			params.enableSharpening = shapness != 0.0f && shapness != 1.0f;
+
+			if (params.enableSharpening)
+			{
+				if (shapness < 0)
+					params.sharpness = (shapness + 1.0f) / 2.0f;
+				else
+					params.sharpness = shapness;
+			}
 		}
 	}
 
