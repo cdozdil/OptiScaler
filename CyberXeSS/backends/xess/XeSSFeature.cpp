@@ -1,7 +1,8 @@
 #pragma once
-#include "pch.h"
+#include "../../pch.h"
+#include "../../Config.h"
+
 #include "XeSSFeature.h"
-#include "Config.h"
 
 inline void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
 {

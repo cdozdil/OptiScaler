@@ -1,5 +1,5 @@
 #pragma once
-#include "d3d12.h"
+#include <d3d12.h>
 #include "IFeature.h"
 
 class IFeature_Dx12 : public virtual IFeature

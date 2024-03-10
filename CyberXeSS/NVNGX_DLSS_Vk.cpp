@@ -5,7 +5,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "Config.h"
-#include "FSR2Feature_Vk.h"
+#include "backends/fsr2/FSR2Feature_Vk.h"
 #include "NVNGX_Parameter.h"
 
 VkInstance vkInstance;

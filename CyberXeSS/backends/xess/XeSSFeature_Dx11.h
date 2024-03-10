@@ -1,15 +1,10 @@
 #pragma once
-#include "IFeature_Dx11.h"
-#include "FSR2Feature.h"
-
+#include "../IFeature_Dx11.h"
+#include "XeSSFeature.h"
 #include <string>
-#include <d3d12.h>
 #include <d3d11_4.h>
 
-#include <ffx_fsr2.h>
-#include <dx12/ffx_fsr2_dx12.h>
-
-class FSR2FeatureDx11on12 : public FSR2Feature, public IFeature_Dx11
+class XeSSFeatureDx11 : public XeSSFeature, public IFeature_Dx11
 {
 private:
 	using D3D11_TEXTURE2D_DESC_C = struct D3D11_TEXTURE2D_DESC_C
@@ -52,15 +47,14 @@ private:
 	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel);
 
 protected:
-	bool InitFSR2(const NVSDK_NGX_Parameter* InParameters);
 
 public:
-	FSR2FeatureDx11on12(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : FSR2Feature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters)
+	XeSSFeatureDx11(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : XeSSFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters)
 	{
 	}
 
 	bool Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters) override;
 	bool Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK_NGX_Parameter* InParameters) override;
 
-	~FSR2FeatureDx11on12();
+	~XeSSFeatureDx11();
 };

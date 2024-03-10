@@ -4,9 +4,9 @@
 #include <ankerl/unordered_dense.h>
 
 #include "Config.h"
-#include "XeSSFeature_Dx11.h"
-#include "FSR2Feature_Dx11.h"
-#include "FSR2Feature_Dx11On12.h"
+#include "backends/xess/XeSSFeature_Dx11.h"
+#include "backends/fsr2/FSR2Feature_Dx11.h"
+#include "backends/fsr2/FSR2Feature_Dx11On12.h"
 #include "NVNGX_Parameter.h"
 
 inline ID3D11Device* D3D11Device = nullptr;

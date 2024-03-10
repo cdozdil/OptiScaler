@@ -5,7 +5,7 @@
 #include <vk/ffx_fsr2_vk.h>
 
 #include "FSR2Feature.h"
-#include "IFeature_Vk.h"
+#include "../IFeature_Vk.h"
 
 class FSR2FeatureVk : public FSR2Feature, public IFeature_Vk
 {

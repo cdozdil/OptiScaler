@@ -1,5 +1,5 @@
 #pragma once
-#include "IFeature_Dx11.h"
+#include "../IFeature_Dx11.h"
 #include "FSR2Feature.h"
 
 #include <ffx_fsr2.h>

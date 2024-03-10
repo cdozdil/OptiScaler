@@ -5,8 +5,8 @@
 #include <dxgi1_4.h>
 
 #include "Config.h"
-#include "XeSSFeature_Dx12.h"
-#include "FSR2Feature_Dx12.h"
+#include "backends/xess/XeSSFeature_Dx12.h"
+#include "backends/fsr2/FSR2Feature_Dx12.h"
 #include "NVNGX_Parameter.h"
 
 inline ID3D12Device* D3D12Device = nullptr;
