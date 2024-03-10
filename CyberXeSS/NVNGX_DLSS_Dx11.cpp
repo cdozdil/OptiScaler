@@ -4,9 +4,9 @@
 #include <ankerl/unordered_dense.h>
 
 #include "Config.h"
-#include "XeSSFeature_Dx11.h"
+//#include "XeSSFeature_Dx11.h"
 #include "FSR2Feature_Dx11.h"
-#include "FSR2Feature_Dx11On12.h"
+//#include "FSR2Feature_Dx11On12.h"
 #include "NVNGX_Parameter.h"
 
 inline ID3D11Device* D3D11Device = nullptr;
@@ -195,12 +195,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 	// Create feature
 	auto handleId = IFeature::GetNextHandleId();
 
-	if (Config::Instance()->Dx11Upscaler.value_or("xess") == "fsr")
+	//if (Config::Instance()->Dx11Upscaler.value_or("xess") == "fsr")
 		Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11>(handleId, InParameters);
-	else if (Config::Instance()->Dx11Upscaler.value_or("xess") == "fsr12")
-		Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12>(handleId, InParameters);
-	else
-		Dx11Contexts[handleId] = std::make_unique<XeSSFeatureDx11>(handleId, InParameters);
+	//else if (Config::Instance()->Dx11Upscaler.value_or("xess") == "fsr12")
+	//	Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12>(handleId, InParameters);
+	//else
+	//	Dx11Contexts[handleId] = std::make_unique<XeSSFeatureDx11>(handleId, InParameters);
 
 	auto deviceContext = Dx11Contexts[handleId].get();
 	*OutHandle = deviceContext->Handle();

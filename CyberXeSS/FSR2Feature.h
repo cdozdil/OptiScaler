@@ -1,5 +1,6 @@
 #pragma once
-#include <ffx_fsr2.h>
+#include <host/ffx_fsr2.h>
+#include <host/ffx_error.h>
 
 #include "IFeature.h"
 
@@ -27,14 +28,14 @@ inline static std::string ResultToString(FfxErrorCode result)
 	}
 }
 
-inline void FfxLogCallback(FfxFsr2MsgType type, const wchar_t* message)
+inline void FfxLogCallback(FfxMsgType type, const wchar_t* message)
 {
 	std::wstring string(message);
 	std::string str(string.begin(), string.end());
 
-	if (type == FFX_FSR2_MESSAGE_TYPE_ERROR)
+	if (type == FFX_MESSAGE_TYPE_ERROR)
 		spdlog::error("FSR2Feature::LogCallback FSR Runtime: {0}", str);
-	else if (type == FFX_FSR2_MESSAGE_TYPE_WARNING)
+	else if (type == FFX_MESSAGE_TYPE_WARNING)
 		spdlog::warn("FSR2Feature::LogCallback FSR Runtime: {0}", str);
 	else
 		spdlog::debug("FSR2Feature::LogCallback FSR Runtime: {0}", str);

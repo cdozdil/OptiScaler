@@ -164,7 +164,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3d12.lib;dxguid.lib;libxess.lib;vulkan-1.lib;ffx_fsr2_api_x64.lib;ffx_fsr2_api_dx11_x64.lib;ffx_fsr2_api_dx12_x64.lib;ffx_fsr2_api_vk_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3d12.lib;dxguid.lib;libxess.lib;vulkan-1.lib;ffx_x64.lib;ffx_fsr2_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
@@ -181,9 +181,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="framework.h" />
     <ClInclude Include="FSR2Feature.h" />
     <ClInclude Include="FSR2Feature_Dx11.h" />
-    <ClInclude Include="FSR2Feature_Dx11On12.h" />
-    <ClInclude Include="FSR2Feature_Dx12.h" />
-    <ClInclude Include="FSR2Feature_Vk.h" />
     <ClInclude Include="IFeature_Dx11.h" />
     <ClInclude Include="IFeature_Dx12.h" />
     <ClInclude Include="IFeature.h" />
@@ -191,27 +188,16 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="NVNGX_Parameter.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Util.h" />
-    <ClInclude Include="XeSSFeature_Dx11.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="CyberXess.cpp" />
     <ClCompile Include="FSR2Feature.cpp" />
     <ClCompile Include="FSR2Feature_Dx11.cpp" />
-    <ClCompile Include="FSR2Feature_Dx11On12.cpp" />
-    <ClCompile Include="FSR2Feature_Dx12.cpp" />
-    <ClCompile Include="FSR2Feature_Vk.cpp" />
     <ClCompile Include="IFeature.cpp" />
     <ClCompile Include="IFeature_Dx12.cpp" />
     <ClCompile Include="NVNGX_DLSS_Dx11.cpp" />
-    <ClCompile Include="NVNGX_DLSS_Dx12.cpp" />
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="NVNGX_DLSS_Vk.cpp" />
-    <ClCompile Include="XeSSFeature.cpp" />
-    <ClCompile Include="XeSSFeature.h" />
-    <ClCompile Include="XeSSFeature_Dx11.cpp" />
-    <ClCompile Include="XeSSFeature_Dx12.cpp" />
-    <ClCompile Include="XeSSFeature_Dx12.h" />
     <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

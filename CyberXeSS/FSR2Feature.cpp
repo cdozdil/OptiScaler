@@ -53,7 +53,7 @@ FSR2Feature::~FSR2Feature()
 	if (errorCode != FFX_OK)
 		spdlog::error("FSR2Feature::~FSR2Feature ffxFsr2ContextDestroy error: {0:x}", errorCode);
 
-	free(_contextDesc.callbacks.scratchBuffer);
+	free(_contextDesc.backendInterface.scratchBuffer);
 
 	SetInit(false);
 }
