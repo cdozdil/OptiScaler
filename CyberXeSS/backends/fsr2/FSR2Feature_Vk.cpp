@@ -345,12 +345,12 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 	if (IsDepthInverted())
 	{
 		params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.0f);
-		params.cameraNear = Config::Instance()->FsrCameraFar.value_or(1.0f);
+		params.cameraNear = Config::Instance()->FsrCameraFar.value_or(FLT_MAX);
 	}
 	else
 	{
 		params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.0f);
-		params.cameraFar = Config::Instance()->FsrCameraFar.value_or(1.0f);
+		params.cameraFar = Config::Instance()->FsrCameraFar.value_or(FLT_MAX);
 	}
 		
 	if (Config::Instance()->FsrVerticalFov.has_value())

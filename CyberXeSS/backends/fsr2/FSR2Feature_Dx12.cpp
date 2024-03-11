@@ -211,12 +211,12 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	if (IsDepthInverted())
 	{
 		params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.0f);
-		params.cameraNear = Config::Instance()->FsrCameraFar.value_or(1.0f);
+		params.cameraNear = Config::Instance()->FsrCameraFar.value_or(FLT_MAX);
 	}
 	else
 	{
 		params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.0f);
-		params.cameraFar = Config::Instance()->FsrCameraFar.value_or(1.0f);
+		params.cameraFar = Config::Instance()->FsrCameraFar.value_or(FLT_MAX);
 	}
 
 	if (Config::Instance()->FsrVerticalFov.has_value())
