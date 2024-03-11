@@ -9,12 +9,9 @@ Based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2]
 * ~~Added FidelityFX CAS shapening support, you can enable and adjust it from ini file.~~ (Currently CAS is disabled)
 
 **Supported backends:**
-
-**DX11** : XeSS (with DX12), FSR2 (native), FSR2 (with DX12)
-
-**DX12** : XeSS (native), FSR2 (native)
-
-**Vulkan** : FSR2 (native) 
+* **DX11** : XeSS (with DX12), FSR2 (native), FSR2 (with DX12)
+* **DX12** : XeSS (native), FSR2 (native)
+* **Vulkan** : FSR2 (native) 
 
 **Note**: (with DX12) backends have a performance penalty and not as performant as native ones.
 
