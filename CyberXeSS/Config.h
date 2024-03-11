@@ -74,6 +74,12 @@ public:
 	std::optional<std::string> Dx12Upscaler;
 	std::optional<std::string> VulkanUpscaler;
 
+	// fsr
+	std::optional<bool> FsrInfiniteDepth;
+	std::optional<float> FsrCameraNear;
+	std::optional<float> FsrCameraFar;
+	std::optional<float> FsrVerticalFov;
+
 	// Engine Info
 	NVNGX_EngineType NVNGX_Engine = NVNGX_ENGINE_TYPE_CUSTOM;
 	bool NVNGX_EngineVersion5 = false;

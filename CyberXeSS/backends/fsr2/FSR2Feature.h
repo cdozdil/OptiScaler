@@ -45,6 +45,8 @@ class FSR2Feature : public virtual IFeature
 private:
 	double _lastFrameTime;
 	bool _depthInverted = false;
+	unsigned int _lastWidth = 0;
+	unsigned int _lastHeight = 0;
 
 protected:
 	FfxFsr2Context _context = {};

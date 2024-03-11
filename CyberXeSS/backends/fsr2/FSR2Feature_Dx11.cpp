@@ -31,7 +31,7 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	}
 
 	const size_t scratchBufferSize = ffxFsr2GetScratchMemorySizeDX11();
-	void* scratchBuffer = malloc(scratchBufferSize);
+	void* scratchBuffer = calloc(scratchBufferSize, 1);
 
 	auto errorCode = ffxFsr2GetInterfaceDX11(&_contextDesc.callbacks, Device, scratchBuffer, scratchBufferSize);
 
