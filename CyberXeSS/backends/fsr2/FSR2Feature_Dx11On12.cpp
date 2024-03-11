@@ -334,17 +334,6 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 		Dx11DeviceContext = dc;
 	}
 
-
-	// Fence for syncing
-	ID3D12Fence* d3d12Fence;
-	result = Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
-
-	if (result != S_OK)
-	{
-		spdlog::error("FSR2FeatureDx11on12::Evaluate CreateFence d3d12fence error: {0:x}", result);
-		return false;
-	}
-
 	FfxFsr2DispatchDescription params{};
 
 	InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
@@ -360,22 +349,38 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 
 	params.commandList = ffxGetCommandListDX12(Dx12CommandList);
 
-#pragma region Texture copies
+	// fence operation results
+	HRESULT fr;
 
-	D3D11_QUERY_DESC pQueryDesc{};
-	pQueryDesc.Query = D3D11_QUERY_EVENT;
-	pQueryDesc.MiscFlags = 0;
-	ID3D11Query* query1 = nullptr;
-	result = Dx11Device->CreateQuery(&pQueryDesc, &query1);
+	ID3D11Fence* dx11fence_1;
+	fr = Dx11Device->CreateFence(0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(&dx11fence_1));
 
-	if (result != S_OK || !query1)
+	if (fr != S_OK)
 	{
-		spdlog::error("FSR2FeatureDx11on12::Evaluate can't create query1!");
+		spdlog::error("FSR2FeatureDx11on12::Evaluate Can't create dx11fence_1 {0:x}", fr);
 		return false;
 	}
 
-	// Associate the query with the copy operation
-	Dx11DeviceContext->Begin(query1);
+	HANDLE dx11_sharedHandle;
+	fr = dx11fence_1->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, &dx11_sharedHandle);
+
+	if (fr != S_OK)
+	{
+		spdlog::error("FSR2FeatureDx11on12::Evaluate Can't create sharedhandle for dx11fence_1 {0:x}", fr);
+		return false;
+	}
+
+	ID3D12Fence* dx12fence_1;
+	fr = Dx12on11Device->OpenSharedHandle(dx11_sharedHandle, IID_PPV_ARGS(&dx12fence_1));
+
+	if (fr != S_OK)
+	{
+		spdlog::error("FSR2FeatureDx11on12::Evaluate Can't create open sharedhandle for dx12fence_1 {0:x}", fr);
+		return false;
+	}
+
+#pragma region Texture copies
+
 
 	ID3D11Resource* paramColor;
 	if (InParameters->Get(NVSDK_NGX_Parameter_Color, &paramColor) != NVSDK_NGX_Result_Success)
@@ -473,17 +478,9 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 			spdlog::warn("FSR2FeatureDx11on12::Evaluate bias mask not exist and its enabled in config, it may cause problems!!");
 	}
 
-	// Execute dx11 commands 
-	Dx11DeviceContext->End(query1);
 	Dx11DeviceContext->Flush();
-
-	// Wait for the query to be ready
-	while (Dx11DeviceContext->GetData(query1, NULL, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE) {
-		//
-	}
-
-	// Release the query
-	query1->Release();
+	Dx11DeviceContext->Signal(dx11fence_1, 10);
+	Dx12CommandQueue->Wait(dx12fence_1, 10);
 
 	ID3D12Resource* dx12Color = nullptr;
 	if (paramColor)
@@ -582,7 +579,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 		params.motionVectorScale.y = MVScaleY;
 	}
 	else
-		spdlog::warn("FSR2FeatureDx12::Evaluate Can't get motion vector scales!");
+		spdlog::warn("FSR2FeatureDx11on12::Evaluate Can't get motion vector scales!");
 
 	if (Config::Instance()->OverrideSharpness.value_or(false))
 	{
@@ -624,7 +621,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 
 	params.preExposure = 1.0f;
 
-	spdlog::debug("FSR2FeatureDx12::Evaluate Dispatch!!");
+	spdlog::debug("FSR2FeatureDx11on12::Evaluate Dispatch!!");
 	auto ffxresult = ffxFsr2ContextDispatch(&_context, &params);
 
 	if (ffxresult != FFX_OK)
@@ -633,54 +630,77 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 		return false;
 	}
 
-	// Execute dx12 commands to process xess
+	ID3D12Fence* dx12fence_2;
+	fr = Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&dx12fence_2));
+
+	if (fr != S_OK)
+	{
+		spdlog::error("FSR2FeatureDx11on12::Evaluate Can't create dx12fence_2 {0:x}", fr);
+		return false;
+	}
+
+	HANDLE dx12_sharedHandle;
+	fr = Dx12on11Device->CreateSharedHandle(dx12fence_2, nullptr, GENERIC_ALL, nullptr, &dx12_sharedHandle);
+
+	if (fr != S_OK)
+	{
+		spdlog::error("FSR2FeatureDx11on12::Evaluate Can't create sharedhandle for dx12fence_2 {0:x}", fr);
+		return false;
+	}
+
+	ID3D11Fence* dx11fence_2;
+	fr = Dx11Device->OpenSharedFence(dx12_sharedHandle, IID_PPV_ARGS(&dx11fence_2));
+
+	if (fr != S_OK)
+	{
+		spdlog::error("FSR2FeatureDx11on12::Evaluate Can't create open sharedhandle for dx11fence_2 {0:x}", fr);
+		return false;
+	}
+
+	// Execute dx12 commands to process fsr
 	Dx12CommandList->Close();
 	ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
 	Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
-	// xess done
-	Dx12CommandQueue->Signal(d3d12Fence, 20);
+	// fsr done
+	Dx12CommandQueue->Signal(dx12fence_2, 20);
 
-	// wait for end of copy
-	if (d3d12Fence->GetCompletedValue() < 20)
+	// wait for fsr on dx12
+	Dx11DeviceContext->Wait(dx11fence_2, 20);
+
+	D3D11_QUERY_DESC pQueryDesc{};
+	pQueryDesc.Query = D3D11_QUERY_EVENT;
+	pQueryDesc.MiscFlags = 0;
+	ID3D11Query* query1 = nullptr;
+	result = Dx11Device->CreateQuery(&pQueryDesc, &query1);
+
+	if (result != S_OK || !query1)
 	{
-		auto fenceEvent12 = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-		if (fenceEvent12)
-		{
-			d3d12Fence->SetEventOnCompletion(20, fenceEvent12);
-			WaitForSingleObject(fenceEvent12, INFINITE);
-			CloseHandle(fenceEvent12);
-		}
-	}
-
-	d3d12Fence->Release();
-
-	//copy output back
-	ID3D11Query* query2 = nullptr;
-	result = Dx11Device->CreateQuery(&pQueryDesc, &query2);
-
-	if (result != S_OK || !query2)
-	{
-		spdlog::error("FSR2FeatureDx11on12::Evaluate can't create query2!");
+		spdlog::error("FSR2FeatureDx11on12::Evaluate can't create query1!");
 		return false;
 	}
 
 	// Associate the query with the copy operation
-	Dx11DeviceContext->Begin(query2);
+	Dx11DeviceContext->Begin(query1);
+
+	// copy back output
 	Dx11DeviceContext->CopyResource(paramOutput, dx11Out.SharedTexture);
 
+	Dx11DeviceContext->End(query1);
+
 	// Execute dx11 commands 
-	Dx11DeviceContext->End(query2);
 	Dx11DeviceContext->Flush();
 
-	// Wait for the query to be ready
-	while (Dx11DeviceContext->GetData(query2, NULL, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE) {
-		//
-	}
+	while (Dx11DeviceContext->GetData(query1, nullptr, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE);
 
 	// Release the query
-	query2->Release();
+	query1->Release();
+
+	// release fences
+	dx11fence_1->Release();
+	dx11fence_2->Release();
+	dx12fence_1->Release();
+	dx12fence_2->Release();
 
 	if (paramColor)
 		dx12Color->Release();
