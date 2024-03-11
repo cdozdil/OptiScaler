@@ -5,6 +5,7 @@
 #define WIN32_NO_STATUS
 #include <windows.h>
 #include <string>
+#include <stdint.h>
 #include <libloaderapi.h>
 
 #define NV_WINDOWS

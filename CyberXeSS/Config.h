@@ -11,6 +11,14 @@ typedef enum NVNGX_EngineType
 	NVNGX_ENGINE_COUNT
 } NVNGX_EngineType;
 
+typedef enum NVNGX_Api
+{
+	NVNGX_NOT_SELECTED = 0,
+	NVNGX_DX11,
+	NVNGX_DX12,
+	NVNGX_VULKAN,
+} NVNGX_Api;
+
 class Config
 {
 public:
@@ -76,6 +84,7 @@ public:
 
 	// fsr
 	std::optional<bool> FsrInfiniteDepth;
+	std::optional<bool> FsrDisableDx11ColorCheck;
 	std::optional<float> FsrCameraNear;
 	std::optional<float> FsrCameraFar;
 	std::optional<float> FsrVerticalFov;
@@ -83,6 +92,7 @@ public:
 	// Engine Info
 	NVNGX_EngineType NVNGX_Engine = NVNGX_ENGINE_TYPE_CUSTOM;
 	bool NVNGX_EngineVersion5 = false;
+	NVNGX_Api Api = NVNGX_NOT_SELECTED;
 
 	void Reload();
 

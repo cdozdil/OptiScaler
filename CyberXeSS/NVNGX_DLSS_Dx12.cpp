@@ -23,6 +23,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 	std::string str(string.begin(), string.end());
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext InApplicationDataPath {0}", str);
 
+	Config::Instance()->Api = NVNGX_DX12;
+
 	return NVSDK_NGX_Result_Success;
 }
 

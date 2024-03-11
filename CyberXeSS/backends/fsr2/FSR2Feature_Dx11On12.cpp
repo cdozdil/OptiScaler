@@ -731,7 +731,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 
 FSR2FeatureDx11on12::~FSR2FeatureDx11on12()
 {
-	spdlog::debug("FSR2FeatureDx11on12::FSR2FeatureDx11on12");
+	spdlog::debug("FSR2FeatureDx11on12::~FSR2FeatureDx11on12");
 
 	if (Dx12on11Device && Dx12CommandQueue && Dx12CommandList)
 	{

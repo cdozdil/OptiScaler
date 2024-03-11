@@ -4,6 +4,17 @@
 
 #include "FSR2Feature_Dx11.h"
 
+#define ASSIGN_DESC(dest, src) dest.Width = src.Width; dest.Height = src.Height; dest.Format = src.Format; dest.BindFlags = src.BindFlags; 
+
+#define SAFE_RELEASE(p)		\
+do {						\
+	if(p && p != nullptr)	\
+	{						\
+		(p)->Release();		\
+		(p) = nullptr;		\
+	}						\
+} while((void)0, 0);	
+
 bool FSR2FeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("FSR2FeatureDx11::Init");
@@ -15,6 +26,68 @@ bool FSR2FeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 	DeviceContext = InContext;
 
 	return InitFSR2(InParameters);
+}
+
+bool FSR2FeatureDx11::CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutTextureRes, UINT bindFlags, bool InCopy)
+{
+	ID3D11Texture2D* originalTexture = nullptr;
+	D3D11_TEXTURE2D_DESC desc{};
+
+	auto result = InResource->QueryInterface(IID_PPV_ARGS(&originalTexture));
+
+	if (result != S_OK)
+		return false;
+
+	originalTexture->GetDesc(&desc);
+
+	if (desc.BindFlags == bindFlags)
+	{
+		ASSIGN_DESC(OutTextureRes->Desc, desc);
+		OutTextureRes->Texture = originalTexture;
+		OutTextureRes->usingOriginal = true;
+		return true;
+	}
+
+	if (OutTextureRes->usingOriginal || OutTextureRes->Texture == nullptr ||
+		desc.Width != OutTextureRes->Desc.Width || desc.Height != OutTextureRes->Desc.Height ||
+		desc.Format != OutTextureRes->Desc.Format || desc.BindFlags != OutTextureRes->Desc.BindFlags)
+	{
+		if (OutTextureRes->Texture != nullptr)
+		{
+			if (!OutTextureRes->usingOriginal)
+				OutTextureRes->Texture->Release();
+			else
+				OutTextureRes->Texture = nullptr;
+		}
+
+		OutTextureRes->usingOriginal = false;
+		ASSIGN_DESC(OutTextureRes->Desc, desc);
+
+		desc.BindFlags = bindFlags;
+
+		result = Device->CreateTexture2D(&desc, nullptr, &OutTextureRes->Texture);
+
+		if (result != S_OK)
+		{
+			spdlog::error("FSR2FeatureDx11::CopyTexture CreateTexture2D error: {0:x}", result);
+			return false;
+		}
+	}
+
+	if (InCopy)
+		DeviceContext->CopyResource(OutTextureRes->Texture, InResource);
+
+	return true;
+}
+
+void FSR2FeatureDx11::ReleaseResources()
+{
+	spdlog::debug("FSR2FeatureDx11::ReleaseResources!");
+
+	if (!bufferColor.usingOriginal)
+	{
+		SAFE_RELEASE(bufferColor.Texture);
+	}
 }
 
 bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
@@ -135,7 +208,7 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	SetInit(true);
 
 	return true;
-	}
+}
 
 bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters)
 {
@@ -166,7 +239,22 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, const NVSDK_NGX_P
 	if (paramColor)
 	{
 		spdlog::debug("FSR2FeatureDx11::Evaluate Color exist..");
-		params.color = ffxGetResourceDX11(&_context, paramColor, (wchar_t*)L"FSR2_Color");
+
+		if (!Config::Instance()->FsrDisableDx11ColorCheck.value_or(false))
+		{
+			if (!CopyTexture(paramColor, &bufferColor, 40, true))
+			{
+				spdlog::debug("FSR2FeatureDx11::Evaluate Can't copy Color!");
+				return false;
+			}
+
+			if (bufferColor.Texture != nullptr)
+				params.color = ffxGetResourceDX11(&_context, bufferColor.Texture, (wchar_t*)L"FSR2_Color");
+			else
+				params.color = ffxGetResourceDX11(&_context, paramColor, (wchar_t*)L"FSR2_Color");
+		}
+		else
+			params.color = ffxGetResourceDX11(&_context, paramColor, (wchar_t*)L"FSR2_Color");
 	}
 	else
 	{
@@ -347,5 +435,29 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, const NVSDK_NGX_P
 	//		(D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value());
 
 	return true;
+}
+
+FSR2FeatureDx11::~FSR2FeatureDx11()
+{
+	spdlog::debug("FSR2FeatureDx11::~FSR2FeatureDx11");
+
+	D3D11_QUERY_DESC pQueryDesc{};
+	pQueryDesc.Query = D3D11_QUERY_EVENT;
+	pQueryDesc.MiscFlags = 0;
+	ID3D11Query* query = nullptr;
+	auto result = Device->CreateQuery(&pQueryDesc, &query);
+
+	if (DeviceContext != nullptr && result != S_OK)
+	{
+		DeviceContext->Begin(query);
+		DeviceContext->End(query);
+		DeviceContext->Flush();
+
+		while (DeviceContext->GetData(query, nullptr, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE);
+
+		query->Release();
+	}
+	
+	ReleaseResources();
 }
 

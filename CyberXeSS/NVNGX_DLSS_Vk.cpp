@@ -55,6 +55,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 		vkGIPA = InGIPA;
 	}
 
+	Config::Instance()->Api = NVNGX_VULKAN;
+
 	return NVSDK_NGX_Result_Success;
 }
 
