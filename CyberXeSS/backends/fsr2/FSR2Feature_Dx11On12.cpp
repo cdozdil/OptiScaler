@@ -478,7 +478,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 			spdlog::warn("FSR2FeatureDx11on12::Evaluate bias mask not exist and its enabled in config, it may cause problems!!");
 	}
 
-	Dx11DeviceContext->Flush();
+	//Dx11DeviceContext->Flush();
 	Dx11DeviceContext->Signal(dx11fence_1, 10);
 	Dx12CommandQueue->Wait(dx12fence_1, 10);
 
@@ -692,7 +692,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	Dx11DeviceContext->End(query1);
 
 	// Execute dx11 commands 
-	Dx11DeviceContext->Flush();
+	//Dx11DeviceContext->Flush();
 
 	while (Dx11DeviceContext->GetData(query1, nullptr, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE);
 

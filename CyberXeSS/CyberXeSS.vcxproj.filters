@@ -32,18 +32,6 @@
     <ClInclude Include="Config.h">
       <Filter>Config</Filter>
     </ClInclude>
-    <ClInclude Include="IFeature.h">
-      <Filter>IFeature</Filter>
-    </ClInclude>
-    <ClInclude Include="IFeature_Dx11.h">
-      <Filter>IFeature</Filter>
-    </ClInclude>
-    <ClInclude Include="IFeature_Dx12.h">
-      <Filter>IFeature</Filter>
-    </ClInclude>
-    <ClInclude Include="IFeature_Vk.h">
-      <Filter>IFeature</Filter>
-    </ClInclude>
     <ClInclude Include="NVNGX_Parameter.h">
       <Filter>NVNGX</Filter>
     </ClInclude>
@@ -53,46 +41,43 @@
     <ClInclude Include="CyberXess.h">
       <Filter>Other</Filter>
     </ClInclude>
-    <ClInclude Include="framework.h">
-      <Filter>Other</Filter>
-    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Other</Filter>
     </ClInclude>
-    <ClInclude Include="XeSSFeature_Dx11.h">
+    <ClInclude Include="backends\fsr2\FSR2Feature.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FSR2Feature.h">
+    <ClInclude Include="backends\fsr2\FSR2Feature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FSR2Feature_Dx11.h">
+    <ClInclude Include="backends\fsr2\FSR2Feature_Dx11On12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FSR2Feature_Dx12.h">
+    <ClInclude Include="backends\fsr2\FSR2Feature_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FSR2Feature_Vk.h">
+    <ClInclude Include="backends\fsr2\FSR2Feature_Vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FSR2Feature_Dx11On12.h">
+    <ClInclude Include="backends\IFeature_Dx11.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="backends\IFeature_Dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="backends\IFeature.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="backends\IFeature_Vk.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="backends\xess\XeSSFeature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
       <Filter>Config</Filter>
-    </ClCompile>
-    <ClCompile Include="XeSSFeature.cpp">
-      <Filter>XeSS</Filter>
-    </ClCompile>
-    <ClCompile Include="XeSSFeature.h">
-      <Filter>XeSS</Filter>
-    </ClCompile>
-    <ClCompile Include="XeSSFeature_Dx12.cpp">
-      <Filter>XeSS</Filter>
-    </ClCompile>
-    <ClCompile Include="XeSSFeature_Dx12.h">
-      <Filter>XeSS</Filter>
     </ClCompile>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="Util.cpp">
@@ -101,38 +86,50 @@
     <ClCompile Include="CyberXess.cpp">
       <Filter>Other</Filter>
     </ClCompile>
-    <ClCompile Include="IFeature.cpp">
-      <Filter>IFeature</Filter>
-    </ClCompile>
-    <ClCompile Include="IFeature_Dx12.cpp">
-      <Filter>IFeature</Filter>
-    </ClCompile>
-    <ClCompile Include="XeSSFeature_Dx11.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="NVNGX_DLSS_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="NVNGX_DLSS_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FSR2Feature.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FSR2Feature_Dx11.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FSR2Feature_Dx12.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FSR2Feature_Vk.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="NVNGX_DLSS_Vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FSR2Feature_Dx11On12.cpp">
+    <ClCompile Include="backends\fsr2\FSR2Feature.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\fsr2\FSR2Feature_Dx11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\fsr2\FSR2Feature_Dx11On12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\fsr2\FSR2Feature_Dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\fsr2\FSR2Feature_Vk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\IFeature.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\IFeature_Dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\xess\XeSSFeature.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\xess\XeSSFeature.h">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\xess\XeSSFeature_Dx11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\xess\XeSSFeature_Dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\xess\XeSSFeature_Dx12.h">
+      <Filter>Header Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
