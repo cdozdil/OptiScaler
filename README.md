@@ -1,7 +1,9 @@
 # DLSS2XeSS
 Drop-in DLSS replacement with XeSS for various games such as Cyberpunk 2077.
 
-Based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2](https://github.com/PotatoOfDoom/CyberFSR2). I have adapted it to use Intel's [XeSS](https://github.com/intel/xess/)
+Based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2](https://github.com/PotatoOfDoom/CyberFSR2). 
+
+I have adapted it to use Intel's [XeSS](https://github.com/intel/xess/) and AMD's [FSR2](https://github.com/GPUOpen-Effects/FidelityFX-FSR2)
 
 **With this branch:**
 * Added FSR 2.2.1 support for DX11 (Native or with DX12), DX12 and Vulkan
