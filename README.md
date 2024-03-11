@@ -15,7 +15,7 @@ I have adapted it to use Intel's [XeSS](https://github.com/intel/xess/) and AMD'
 * **DX12** : XeSS (native), FSR2 (native)
 * **Vulkan** : FSR2 (native) 
 
-**Note**: (with DX12) backends have a performance penalty and not as performant as native ones.
+**Note**: (with DX12) backends have better compatibility but comes with a performance penalty and are not as performant as native ones.
 
 ## Official Discord Channel: [CyberXeSS Support](https://discord.com/channels/995299945492008990/1131520508475752489)
 
