@@ -210,16 +210,19 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	if (IsDepthInverted())
 	{
-		params.cameraFar = 0.0f;
-		params.cameraNear = 1.0f;
+		params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.0f);
+		params.cameraNear = Config::Instance()->FsrCameraFar.value_or(1.0f);
 	}
 	else
 	{
-		params.cameraNear = 0.0f;
-		params.cameraFar = 1.0f;
+		params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.0f);
+		params.cameraFar = Config::Instance()->FsrCameraFar.value_or(1.0f);
 	}
 
-	params.cameraFovAngleVertical = 1.047198f;
+	if (Config::Instance()->FsrVerticalFov.has_value())
+		params.cameraFovAngleVertical = Config::Instance()->FsrVerticalFov.value() * 0.01745329251f;
+	else
+		params.cameraFovAngleVertical = 1.047198f;
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) != NVSDK_NGX_Result_Success || params.frameTimeDelta < 1.0f)
 		params.frameTimeDelta = (float)GetDeltaTime();
@@ -363,7 +366,12 @@ bool FSR2FeatureDx12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
 	}
 
-	//_contextDesc.flags |= FFX_FSR2_ENABLE_DEPTH_INFINITE;
+	if (Config::Instance()->FsrInfiniteDepth.value_or(false))
+	{
+		_contextDesc.flags |= FFX_FSR2_ENABLE_DEPTH_INFINITE;
+		spdlog::info("FSR2FeatureDx11::InitFSR2 xessParams.initFlags (DepthInfinite) {0:b}", _contextDesc.flags);
+	}
+
 
 #if _DEBUG
 	_contextDesc.flags |= FFX_FSR2_ENABLE_DEBUG_CHECKING;
