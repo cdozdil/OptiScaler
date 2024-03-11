@@ -1,4 +1,4 @@
-# DLSS2XeSS
+# DLSS to XeSS/FSR2
 Drop-in DLSS replacement with XeSS/FSR2 for DLSS2 supported games.
 
 Based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2](https://github.com/PotatoOfDoom/CyberFSR2). 
