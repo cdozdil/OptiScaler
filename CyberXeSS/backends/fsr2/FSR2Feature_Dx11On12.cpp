@@ -605,13 +605,13 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 
 	if (IsDepthInverted())
 	{
-		params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.0f);
-		params.cameraNear = Config::Instance()->FsrCameraFar.value_or(FLT_MAX);
+		params.cameraFar = 0.0f;
+		params.cameraNear = 1.0f;
 	}
 	else
 	{
-		params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.0f);
-		params.cameraFar = Config::Instance()->FsrCameraFar.value_or(FLT_MAX);
+		params.cameraFar = 1.0f;
+		params.cameraNear = 0.0f;
 	}
 
 	if (Config::Instance()->FsrVerticalFov.has_value())
@@ -857,13 +857,6 @@ bool FSR2FeatureDx11on12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		Config::Instance()->DisplayResolution = false;
 		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
 	}
-
-	if (Config::Instance()->FsrInfiniteDepth.value_or(false))
-	{
-		_contextDesc.flags |= FFX_FSR2_ENABLE_DEPTH_INFINITE;
-		spdlog::info("FSR2FeatureDx11::InitFSR2 xessParams.initFlags (DepthInfinite) {0:b}", _contextDesc.flags);
-	}
-
 
 #if _DEBUG
 	_contextDesc.flags |= FFX_FSR2_ENABLE_DEBUG_CHECKING;

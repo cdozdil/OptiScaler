@@ -83,11 +83,8 @@ public:
 	std::optional<std::string> VulkanUpscaler;
 
 	// fsr
-	std::optional<bool> FsrInfiniteDepth;
-	std::optional<bool> FsrDisableDx11ColorCheck;
-	std::optional<float> FsrCameraNear;
-	std::optional<float> FsrCameraFar;
 	std::optional<float> FsrVerticalFov;
+	std::optional<bool> FsrDisableDx11ColorCheck;
 
 	// Engine Info
 	NVNGX_EngineType NVNGX_Engine = NVNGX_ENGINE_TYPE_CUSTOM;

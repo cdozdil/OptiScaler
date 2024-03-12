@@ -96,10 +96,7 @@ void Config::Reload()
 		ExposureResourceBarrier = readInt("Hotfix", "ExposureResourceBarrier");
 		OutputResourceBarrier = readInt("Hotfix", "OutputResourceBarrier");
 
-		FsrInfiniteDepth = readBool("FSR", "InfiniteDepth"); 
 		FsrDisableDx11ColorCheck = readBool("FSR", "DisableDx11ColorBindingCheck");
-		FsrCameraNear = readFloat("FSR", "CameraNear");
-		FsrCameraFar = readFloat("FSR", "CameraFar");
 		FsrVerticalFov = readFloat("FSR", "VerticalFov");
 	}
 }
