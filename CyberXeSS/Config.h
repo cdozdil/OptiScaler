@@ -84,7 +84,6 @@ public:
 
 	// fsr
 	std::optional<float> FsrVerticalFov;
-	std::optional<bool> FsrDisableDx11ColorCheck;
 
 	// Engine Info
 	NVNGX_EngineType NVNGX_Engine = NVNGX_ENGINE_TYPE_CUSTOM;

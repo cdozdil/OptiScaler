@@ -234,19 +234,14 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, const NVSDK_NGX_P
 	{
 		spdlog::debug("FSR2FeatureDx11::Evaluate Color exist..");
 
-		if (!Config::Instance()->FsrDisableDx11ColorCheck.value_or(false))
+		if (!CopyTexture(paramColor, &bufferColor, 40, true))
 		{
-			if (!CopyTexture(paramColor, &bufferColor, 40, true))
-			{
-				spdlog::debug("FSR2FeatureDx11::Evaluate Can't copy Color!");
-				return false;
-			}
-
-			if (bufferColor.Texture != nullptr)
-				params.color = ffxGetResourceDX11(&_context, bufferColor.Texture, (wchar_t*)L"FSR2_Color");
-			else
-				params.color = ffxGetResourceDX11(&_context, paramColor, (wchar_t*)L"FSR2_Color");
+			spdlog::debug("FSR2FeatureDx11::Evaluate Can't copy Color!");
+			return false;
 		}
+
+		if (bufferColor.Texture != nullptr)
+			params.color = ffxGetResourceDX11(&_context, bufferColor.Texture, (wchar_t*)L"FSR2_Color");
 		else
 			params.color = ffxGetResourceDX11(&_context, paramColor, (wchar_t*)L"FSR2_Color");
 	}
@@ -451,7 +446,7 @@ FSR2FeatureDx11::~FSR2FeatureDx11()
 
 		query->Release();
 	}
-	
+
 	ReleaseResources();
 }
 
