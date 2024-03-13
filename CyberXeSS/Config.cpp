@@ -96,7 +96,6 @@ void Config::Reload()
 		ExposureResourceBarrier = readInt("Hotfix", "ExposureResourceBarrier");
 		OutputResourceBarrier = readInt("Hotfix", "OutputResourceBarrier");
 
-		FsrDisableDx11ColorCheck = readBool("FSR", "DisableDx11ColorBindingCheck");
 		FsrVerticalFov = readFloat("FSR", "VerticalFov");
 	}
 }

@@ -200,13 +200,21 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Max_Render_Height, Height);
 
 	InParams->Set(NVSDK_NGX_Parameter_SizeInBytes, Width * Height * 31);
+	InParams->Set(NVSDK_NGX_Parameter_DLSSMode, NVSDK_NGX_DLSS_Mode_DLSS_DLISP);
 
 	InParams->Set(NVSDK_NGX_EParameter_Scale, scalingRatio);
 	InParams->Set(NVSDK_NGX_EParameter_OutWidth, OutWidth);
 	InParams->Set(NVSDK_NGX_EParameter_OutHeight, OutHeight);
 	InParams->Set(NVSDK_NGX_EParameter_SizeInBytes, Width * Height * 31);
+	InParams->Set(NVSDK_NGX_EParameter_DLSSMode, NVSDK_NGX_DLSS_Mode_DLSS_DLISP);
 
-	spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback: Output Resolution: {0}x{1} Render Resolution: {2}x{3}", Width, Height, OutWidth, OutHeight);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, (uint32_t)0);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, (uint32_t)0);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, (uint32_t)0);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, (uint32_t)0);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, (uint32_t)0);
+
+	spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback: Render Resolution: {2}x{3} Output Resolution: {0}x{1} ", Width, Height, OutWidth, OutHeight);
 	return NVSDK_NGX_Result_Success;
 }
 
