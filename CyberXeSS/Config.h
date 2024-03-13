@@ -86,7 +86,7 @@ public:
 	std::optional<float> FsrVerticalFov;
 
 	// dx11wdx12
-	std::optional<bool> UseSyncQueries;
+	std::optional<int> UseSafeSyncQueries;
 
 
 	// Engine Info

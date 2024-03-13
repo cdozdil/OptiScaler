@@ -494,6 +494,9 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 			spdlog::warn("XeSSFeatureDx11::Evaluate bias mask not exist and its enabled in config, it may cause problems!!");
 	}
 
+	if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 0)
+		Dx11DeviceContext->Flush();
+
 	Dx11DeviceContext->Signal(dx11fence_1, 10);
 	Dx12CommandQueue->Wait(dx12fence_1, 10);
 
@@ -674,7 +677,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 
 	// copy back output
-	if (Config::Instance()->UseSyncQueries.value_or(false))
+	if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 1)
 	{
 		D3D11_QUERY_DESC pQueryDesc{};
 		pQueryDesc.Query = D3D11_QUERY_EVENT;
@@ -696,7 +699,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		Dx11DeviceContext->End(query1);
 
 		// Execute dx11 commands 
-		//Dx11DeviceContext->Flush();
+		Dx11DeviceContext->Flush();
 
 		// wait for completion
 		while (Dx11DeviceContext->GetData(query1, nullptr, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE);
