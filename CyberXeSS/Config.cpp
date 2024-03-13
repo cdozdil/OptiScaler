@@ -97,6 +97,8 @@ void Config::Reload()
 		OutputResourceBarrier = readInt("Hotfix", "OutputResourceBarrier");
 
 		FsrVerticalFov = readFloat("FSR", "VerticalFov");
+
+		UseSyncQueries = readBool("Dx11withDx12", "UseSyncQueries");
 	}
 }
 

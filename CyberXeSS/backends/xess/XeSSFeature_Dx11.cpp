@@ -672,8 +672,40 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	// wait for xess on dx12
 	Dx11DeviceContext->Wait(dx11fence_2, 20);
 
+
 	// copy back output
-	Dx11DeviceContext->CopyResource(paramOutput, dx11Out.SharedTexture);
+	if (Config::Instance()->UseSyncQueries.value_or(false))
+	{
+		D3D11_QUERY_DESC pQueryDesc{};
+		pQueryDesc.Query = D3D11_QUERY_EVENT;
+		pQueryDesc.MiscFlags = 0;
+		ID3D11Query* query1 = nullptr;
+		result = Dx11Device->CreateQuery(&pQueryDesc, &query1);
+
+		if (result != S_OK || !query1)
+		{
+			spdlog::error("FSR2FeatureDx11on12::Evaluate can't create query1!");
+			return false;
+		}
+
+		Dx11DeviceContext->Begin(query1);
+
+		// copy back output
+		Dx11DeviceContext->CopyResource(paramOutput, dx11Out.SharedTexture);
+
+		Dx11DeviceContext->End(query1);
+
+		// Execute dx11 commands 
+		//Dx11DeviceContext->Flush();
+
+		// wait for completion
+		while (Dx11DeviceContext->GetData(query1, nullptr, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE);
+
+		// Release the query
+		query1->Release();
+	}
+	else
+		Dx11DeviceContext->CopyResource(paramOutput, dx11Out.SharedTexture);
 
 	// release fences
 	dx11fence_1->Release();

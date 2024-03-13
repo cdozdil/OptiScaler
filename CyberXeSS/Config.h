@@ -85,6 +85,10 @@ public:
 	// fsr
 	std::optional<float> FsrVerticalFov;
 
+	// dx11wdx12
+	std::optional<bool> UseSyncQueries;
+
+
 	// Engine Info
 	NVNGX_EngineType NVNGX_Engine = NVNGX_ENGINE_TYPE_CUSTOM;
 	bool NVNGX_EngineVersion5 = false;
