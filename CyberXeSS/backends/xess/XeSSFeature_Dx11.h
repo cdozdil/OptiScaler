@@ -13,15 +13,16 @@ private:
 		UINT Height;
 		DXGI_FORMAT Format;
 		UINT BindFlags;
-		void* pointer = nullptr;
-		HANDLE handle = NULL;
 	};
 
 	using D3D11_TEXTURE2D_RESOURCE_C = struct D3D11_TEXTURE2D_RESOURCE_C
 	{
 		D3D11_TEXTURE2D_DESC_C Desc = {};
-		HANDLE SharedHandle = NULL;
+		ID3D11Texture2D* SourceTexture = nullptr;
 		ID3D11Texture2D* SharedTexture = nullptr;
+		ID3D12Resource* Dx12Resource = nullptr;
+		HANDLE Dx11Handle = NULL;
+		HANDLE Dx12Handle = NULL;
 	};
 
 	// D3D11
@@ -41,7 +42,7 @@ private:
 	D3D11_TEXTURE2D_RESOURCE_C dx11Exp = {};
 	D3D11_TEXTURE2D_RESOURCE_C dx11Out = {};
 
-	bool CopyTextureFrom11To12(ID3D11Resource* InResource, ID3D11Texture2D** OutSharedResource, D3D11_TEXTURE2D_DESC_C* OutSharedDesc, bool InCopy);
+	bool CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutResource, bool InCopy);
 	void ReleaseSharedResources();
 	void GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter);
 	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel);

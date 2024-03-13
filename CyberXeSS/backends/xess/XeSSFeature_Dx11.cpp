@@ -7,7 +7,7 @@
 #include <dxgi1_6.h>
 #include <d3d12.h>
 
-#define ASSIGN_DESC(dest, src) dest->Width = src.Width; dest->Height = src.Height; dest->Format = src.Format; dest->BindFlags = src.BindFlags; 
+#define ASSIGN_DESC(dest, src) dest.Width = src.Width; dest.Height = src.Height; dest.Format = src.Format; dest.BindFlags = src.BindFlags; 
 
 #define SAFE_RELEASE(p)		\
 do {						\
@@ -18,7 +18,7 @@ do {						\
 	}						\
 } while((void)0, 0);		
 
-bool XeSSFeatureDx11::CopyTextureFrom11To12(ID3D11Resource* InResource, ID3D11Texture2D** OutSharedResource, D3D11_TEXTURE2D_DESC_C* OutSharedDesc, bool InCopy = true)
+bool XeSSFeatureDx11::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutResource, bool InCopy = true)
 {
 	ID3D11Texture2D* originalTexture = nullptr;
 	D3D11_TEXTURE2D_DESC desc{};
@@ -32,23 +32,23 @@ bool XeSSFeatureDx11::CopyTextureFrom11To12(ID3D11Resource* InResource, ID3D11Te
 
 	if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) == 0)
 	{
-		if (desc.Width != OutSharedDesc->Width || desc.Height != OutSharedDesc->Height ||
-			desc.Format != OutSharedDesc->Format || desc.BindFlags != OutSharedDesc->BindFlags ||
-			(*OutSharedResource) == nullptr)
+		if (desc.Width != OutResource->Desc.Width || desc.Height != OutResource->Desc.Height ||
+			desc.Format != OutResource->Desc.Format || desc.BindFlags != OutResource->Desc.BindFlags ||
+			(OutResource->SharedTexture) == nullptr)
 		{
-			if ((*OutSharedResource) != nullptr)
-				(*OutSharedResource)->Release();
+			if (OutResource->SharedTexture != nullptr)
+				OutResource->SharedTexture->Release();
 
-			ASSIGN_DESC(OutSharedDesc, desc);
-			OutSharedDesc->pointer = nullptr;
-			OutSharedDesc->handle = NULL;
+			ASSIGN_DESC(OutResource->Desc, desc);
+			OutResource->Dx11Handle = NULL;
+			OutResource->Dx12Handle = NULL;
 
 			desc.MiscFlags |= D3D11_RESOURCE_MISC_SHARED;
-			result = Dx11Device->CreateTexture2D(&desc, nullptr, OutSharedResource);
+			result = Dx11Device->CreateTexture2D(&desc, nullptr, &OutResource->SharedTexture);
 
 			IDXGIResource1* resource;
 
-			result = (*OutSharedResource)->QueryInterface(IID_PPV_ARGS(&resource));
+			result = OutResource->SharedTexture->QueryInterface(IID_PPV_ARGS(&resource));
 
 			if (result != S_OK)
 			{
@@ -57,7 +57,7 @@ bool XeSSFeatureDx11::CopyTextureFrom11To12(ID3D11Resource* InResource, ID3D11Te
 			}
 
 			// Get shared handle
-			result = resource->GetSharedHandle(&OutSharedDesc->handle);
+			result = resource->GetSharedHandle(&OutResource->Dx11Handle);
 
 			if (result != S_OK)
 			{
@@ -66,15 +66,14 @@ bool XeSSFeatureDx11::CopyTextureFrom11To12(ID3D11Resource* InResource, ID3D11Te
 			}
 
 			resource->Release();
-			OutSharedDesc->pointer = (*OutSharedResource);
 		}
 
 		if (InCopy)
-			Dx11DeviceContext->CopyResource(*OutSharedResource, InResource);
+			Dx11DeviceContext->CopyResource(OutResource->SharedTexture, InResource);
 	}
 	else
 	{
-		if (OutSharedDesc->pointer != InResource)
+		if (OutResource->SharedTexture != InResource)
 		{
 			IDXGIResource1* resource;
 
@@ -87,7 +86,7 @@ bool XeSSFeatureDx11::CopyTextureFrom11To12(ID3D11Resource* InResource, ID3D11Te
 			}
 
 			// Get shared handle
-			result = resource->GetSharedHandle(&OutSharedDesc->handle);
+			result = resource->GetSharedHandle(&OutResource->Dx11Handle);
 
 			if (result != S_OK)
 			{
@@ -96,7 +95,8 @@ bool XeSSFeatureDx11::CopyTextureFrom11To12(ID3D11Resource* InResource, ID3D11Te
 			}
 
 			resource->Release();
-			OutSharedDesc->pointer = InResource;
+
+			OutResource->SharedTexture = (ID3D11Texture2D*)InResource;
 		}
 	}
 
@@ -108,12 +108,18 @@ void XeSSFeatureDx11::ReleaseSharedResources()
 {
 	spdlog::debug("XeSSFeatureDx11::ReleaseSharedResources start!");
 
-	SAFE_RELEASE(dx11Color.SharedTexture);
-	SAFE_RELEASE(dx11Mv.SharedTexture);
-	SAFE_RELEASE(dx11Out.SharedTexture);
-	SAFE_RELEASE(dx11Depth.SharedTexture);
-	SAFE_RELEASE(dx11Tm.SharedTexture);
-	SAFE_RELEASE(dx11Exp.SharedTexture);
+	SAFE_RELEASE(dx11Color.SharedTexture)
+		SAFE_RELEASE(dx11Mv.SharedTexture)
+		SAFE_RELEASE(dx11Out.SharedTexture)
+		SAFE_RELEASE(dx11Depth.SharedTexture)
+		SAFE_RELEASE(dx11Tm.SharedTexture)
+		SAFE_RELEASE(dx11Exp.SharedTexture)
+		SAFE_RELEASE(dx11Color.Dx12Resource)
+		SAFE_RELEASE(dx11Mv.Dx12Resource)
+		SAFE_RELEASE(dx11Out.Dx12Resource)
+		SAFE_RELEASE(dx11Depth.Dx12Resource)
+		SAFE_RELEASE(dx11Tm.Dx12Resource)
+		SAFE_RELEASE(dx11Exp.Dx12Resource)
 }
 
 void XeSSFeatureDx11::GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter)
@@ -399,7 +405,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	if (paramColor)
 	{
 		spdlog::debug("XeSSFeatureDx11::Evaluate Color exist..");
-		if (CopyTextureFrom11To12(paramColor, &dx11Color.SharedTexture, &dx11Color.Desc) == NULL)
+		if (CopyTextureFrom11To12(paramColor, &dx11Color) == NULL)
 			return false;
 	}
 	else
@@ -415,7 +421,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	if (paramMv)
 	{
 		spdlog::debug("XeSSFeatureDx11::Evaluate MotionVectors exist..");
-		if (CopyTextureFrom11To12(paramMv, &dx11Mv.SharedTexture, &dx11Mv.Desc) == false)
+		if (CopyTextureFrom11To12(paramMv, &dx11Mv) == false)
 			return false;
 	}
 	else
@@ -431,7 +437,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	if (paramOutput)
 	{
 		spdlog::debug("XeSSFeatureDx11::Evaluate Output exist..");
-		if (CopyTextureFrom11To12(paramOutput, &dx11Out.SharedTexture, &dx11Out.Desc, false) == false)
+		if (CopyTextureFrom11To12(paramOutput, &dx11Out, false) == false)
 			return false;
 	}
 	else
@@ -447,7 +453,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	if (paramDepth)
 	{
 		spdlog::debug("XeSSFeatureDx11::Evaluate Depth exist..");
-		if (CopyTextureFrom11To12(paramDepth, &dx11Depth.SharedTexture, &dx11Depth.Desc) == false)
+		if (CopyTextureFrom11To12(paramDepth, &dx11Depth) == false)
 			return false;
 	}
 	else
@@ -463,7 +469,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		{
 			spdlog::debug("XeSSFeatureDx11::Evaluate ExposureTexture exist..");
 
-			if (CopyTextureFrom11To12(paramExposure, &dx11Exp.SharedTexture, &dx11Exp.Desc) == false)
+			if (CopyTextureFrom11To12(paramExposure, &dx11Exp) == false)
 				return false;
 		}
 		else
@@ -481,82 +487,122 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		if (paramMask)
 		{
 			spdlog::debug("XeSSFeatureDx11::Evaluate Bias mask exist..");
-			if (CopyTextureFrom11To12(paramMask, &dx11Tm.SharedTexture, &dx11Tm.Desc) == false)
+			if (CopyTextureFrom11To12(paramMask, &dx11Tm) == false)
 				return false;
 		}
 		else
 			spdlog::warn("XeSSFeatureDx11::Evaluate bias mask not exist and its enabled in config, it may cause problems!!");
 	}
 
-	//Dx11DeviceContext->Flush();
 	Dx11DeviceContext->Signal(dx11fence_1, 10);
 	Dx12CommandQueue->Wait(dx12fence_1, 10);
 
 	if (paramColor)
 	{
-		result = Dx12on11Device->OpenSharedHandle(dx11Color.Desc.handle, IID_PPV_ARGS(&params.pColorTexture));
-
-		if (result != S_OK)
+		if (dx11Color.Dx12Handle != dx11Color.Dx11Handle)
 		{
-			spdlog::error("XeSSFeatureDx11::Evaluate Color OpenSharedHandle error: {0:x}", result);
-			return false;
+			result = Dx12on11Device->OpenSharedHandle(dx11Color.Dx11Handle, IID_PPV_ARGS(&dx11Color.Dx12Resource));
+
+			if (result != S_OK)
+			{
+				spdlog::error("XeSSFeatureDx11::Evaluate Color OpenSharedHandle error: {0:x}", result);
+				return false;
+			}
+
+			dx11Color.Dx12Handle = dx11Color.Dx11Handle;
 		}
+
+		params.pColorTexture = dx11Color.Dx12Resource;
 	}
 
 	if (paramMv)
 	{
-		result = Dx12on11Device->OpenSharedHandle(dx11Mv.Desc.handle, IID_PPV_ARGS(&params.pVelocityTexture));
-
-		if (result != S_OK)
+		if (dx11Mv.Dx12Handle != dx11Mv.Dx11Handle)
 		{
-			spdlog::error("XeSSFeatureDx11::Evaluate MotionVectors OpenSharedHandle error: {0:x}", result);
-			return false;
+			result = Dx12on11Device->OpenSharedHandle(dx11Mv.Dx11Handle, IID_PPV_ARGS(&dx11Mv.Dx12Resource));
+
+			if (result != S_OK)
+			{
+				spdlog::error("XeSSFeatureDx11::Evaluate MotionVectors OpenSharedHandle error: {0:x}", result);
+				return false;
+			}
+
+			dx11Mv.Dx11Handle = dx11Mv.Dx12Handle;
 		}
+
+		params.pVelocityTexture = dx11Mv.Dx12Resource;
 	}
 
 	if (paramOutput)
 	{
-		result = Dx12on11Device->OpenSharedHandle(dx11Out.Desc.handle, IID_PPV_ARGS(&params.pOutputTexture));
-		dx11Out.SharedHandle = dx11Out.Desc.handle;
-
-		if (result != S_OK)
+		if (dx11Out.Dx12Handle != dx11Out.Dx11Handle)
 		{
-			spdlog::error("XeSSFeatureDx11::Evaluate Output OpenSharedHandle error: {0:x}", result);
-			return false;
+			result = Dx12on11Device->OpenSharedHandle(dx11Out.Dx11Handle, IID_PPV_ARGS(&dx11Out.Dx12Resource));
+
+			if (result != S_OK)
+			{
+				spdlog::error("XeSSFeatureDx11::Evaluate Output OpenSharedHandle error: {0:x}", result);
+				return false;
+			}
+
+			dx11Out.Dx12Handle = dx11Out.Dx11Handle;
 		}
+
+		params.pOutputTexture = dx11Out.Dx12Resource;
 	}
 
 	if (paramDepth)
 	{
-		result = Dx12on11Device->OpenSharedHandle(dx11Depth.Desc.handle, IID_PPV_ARGS(&params.pDepthTexture));
-
-		if (result != S_OK)
+		if (dx11Depth.Dx12Handle != dx11Depth.Dx11Handle)
 		{
-			spdlog::error("XeSSFeatureDx11::Evaluate Depth OpenSharedHandle error: {0:x}", result);
-			return false;
+			result = Dx12on11Device->OpenSharedHandle(dx11Depth.Dx11Handle, IID_PPV_ARGS(&dx11Depth.Dx12Resource));
+
+			if (result != S_OK)
+			{
+				spdlog::error("XeSSFeatureDx11::Evaluate Depth OpenSharedHandle error: {0:x}", result);
+				return false;
+			}
+
+			dx11Depth.Dx12Handle = dx11Depth.Dx11Handle;
 		}
+
+		params.pDepthTexture = dx11Depth.Dx12Resource;
 	}
 
 	if (!Config::Instance()->AutoExposure.value_or(false) && paramExposure)
 	{
-		result = Dx12on11Device->OpenSharedHandle(dx11Exp.Desc.handle, IID_PPV_ARGS(&params.pExposureScaleTexture));
-
-		if (result != S_OK)
+		if (dx11Exp.Dx12Handle != dx11Exp.Dx11Handle)
 		{
-			spdlog::error("XeSSFeatureDx11::Evaluate ExposureTexture OpenSharedHandle error: {0:x}", result);
-			return false;
+			result = Dx12on11Device->OpenSharedHandle(dx11Exp.Dx11Handle, IID_PPV_ARGS(&dx11Exp.Dx12Resource));
+
+			if (result != S_OK)
+			{
+				spdlog::error("XeSSFeatureDx11::Evaluate ExposureTexture OpenSharedHandle error: {0:x}", result);
+				return false;
+			}
+
+			dx11Exp.Dx12Handle = dx11Exp.Dx11Handle;
 		}
+
+		params.pExposureScaleTexture = dx11Exp.Dx12Resource;
 	}
 
 	if (!Config::Instance()->DisableReactiveMask.value_or(true) && paramMask)
 	{
-		result = Dx12on11Device->OpenSharedHandle(dx11Tm.Desc.handle, IID_PPV_ARGS(&params.pResponsivePixelMaskTexture));
-
-		if (result != S_OK)
+		if (dx11Tm.Dx12Handle != dx11Tm.Dx11Handle)
 		{
-			spdlog::error("XeSSFeatureDx11::Evaluate TransparencyMask OpenSharedHandle error: {0:x}", result);
-			return false;
+			result = Dx12on11Device->OpenSharedHandle(dx11Tm.Dx11Handle, IID_PPV_ARGS(&dx11Tm.Dx12Resource));
+
+			if (result != S_OK)
+			{
+				spdlog::error("XeSSFeatureDx11::Evaluate TransparencyMask OpenSharedHandle error: {0:x}", result);
+				return false;
+			}
+
+			dx11Tm.Dx12Handle = dx11Tm.Dx11Handle;
 		}
+
+		params.pResponsivePixelMaskTexture = dx11Tm.Dx12Resource;
 	}
 
 #pragma endregion
@@ -626,57 +672,14 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	// wait for xess on dx12
 	Dx11DeviceContext->Wait(dx11fence_2, 20);
 
-	D3D11_QUERY_DESC pQueryDesc{};
-	pQueryDesc.Query = D3D11_QUERY_EVENT;
-	pQueryDesc.MiscFlags = 0;
-	ID3D11Query* query1 = nullptr;
-	result = Dx11Device->CreateQuery(&pQueryDesc, &query1);
-
-	if (result != S_OK || !query1)
-	{
-		spdlog::error("FSR2FeatureDx11on12::Evaluate can't create query1!");
-		return false;
-	}
-
-	Dx11DeviceContext->Begin(query1);
-
 	// copy back output
 	Dx11DeviceContext->CopyResource(paramOutput, dx11Out.SharedTexture);
-
-	Dx11DeviceContext->End(query1);
-
-	// Execute dx11 commands 
-	//Dx11DeviceContext->Flush();
-	
-	// wait for completion
-	while (Dx11DeviceContext->GetData(query1, nullptr, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE);
-
-	// Release the query
-	query1->Release();
 
 	// release fences
 	dx11fence_1->Release();
 	dx11fence_2->Release();
 	dx12fence_1->Release();
 	dx12fence_2->Release();
-
-	if (paramColor)
-		params.pColorTexture->Release();
-
-	if (paramMv)
-		params.pVelocityTexture->Release();
-
-	if (paramDepth)
-		params.pDepthTexture->Release();
-
-	if (!Config::Instance()->AutoExposure.value_or(false) && paramExposure)
-		params.pExposureScaleTexture->Release();
-
-	if (!Config::Instance()->DisableReactiveMask.value_or(true) && paramMask)
-		params.pResponsivePixelMaskTexture->Release();
-
-	if (paramOutput)
-		params.pOutputTexture->Release();
 
 	Dx12CommandAllocator->Reset();
 	Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);

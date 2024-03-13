@@ -206,6 +206,8 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	InParams->Set(NVSDK_NGX_EParameter_OutHeight, OutHeight);
 	InParams->Set(NVSDK_NGX_EParameter_SizeInBytes, Width * Height * 31);
 
+	InParams->Set(NVSDK_NGX_Parameter_DLSSMode, (int)NVSDK_NGX_DLSS_Mode_DLSS_DLISP);
+
 	spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback: Output Resolution: {0}x{1} Render Resolution: {2}x{3}", Width, Height, OutWidth, OutHeight);
 	return NVSDK_NGX_Result_Success;
 }

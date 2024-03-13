@@ -7,7 +7,7 @@
 #include <dxgi1_6.h>
 #include <d3d12.h>
 
-#define ASSIGN_DESC(dest, src) dest->Width = src.Width; dest->Height = src.Height; dest->Format = src.Format; dest->BindFlags = src.BindFlags; 
+#define ASSIGN_DESC(dest, src) dest.Width = src.Width; dest.Height = src.Height; dest.Format = src.Format; dest.BindFlags = src.BindFlags; 
 
 #define SAFE_RELEASE(p)		\
 do {						\
@@ -18,7 +18,7 @@ do {						\
 	}						\
 } while((void)0, 0);		
 
-bool FSR2FeatureDx11on12::CopyTextureFrom11To12(ID3D11Resource* InResource, ID3D11Texture2D** OutSharedResource, D3D11_TEXTURE2D_DESC_C* OutSharedDesc, bool InCopy = true)
+bool FSR2FeatureDx11on12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutResource, bool InCopy = true)
 {
 	ID3D11Texture2D* originalTexture = nullptr;
 	D3D11_TEXTURE2D_DESC desc{};
@@ -32,23 +32,23 @@ bool FSR2FeatureDx11on12::CopyTextureFrom11To12(ID3D11Resource* InResource, ID3D
 
 	if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) == 0)
 	{
-		if (desc.Width != OutSharedDesc->Width || desc.Height != OutSharedDesc->Height ||
-			desc.Format != OutSharedDesc->Format || desc.BindFlags != OutSharedDesc->BindFlags ||
-			(*OutSharedResource) == nullptr)
+		if (desc.Width != OutResource->Desc.Width || desc.Height != OutResource->Desc.Height ||
+			desc.Format != OutResource->Desc.Format || desc.BindFlags != OutResource->Desc.BindFlags ||
+			(OutResource->SharedTexture) == nullptr)
 		{
-			if ((*OutSharedResource) != nullptr)
-				(*OutSharedResource)->Release();
+			if (OutResource->SharedTexture != nullptr)
+				OutResource->SharedTexture->Release();
 
-			ASSIGN_DESC(OutSharedDesc, desc);
-			OutSharedDesc->pointer = nullptr;
-			OutSharedDesc->handle = NULL;
+			ASSIGN_DESC(OutResource->Desc, desc);
+			OutResource->Dx11Handle = NULL;
+			OutResource->Dx12Handle = NULL;
 
 			desc.MiscFlags |= D3D11_RESOURCE_MISC_SHARED;
-			result = Dx11Device->CreateTexture2D(&desc, nullptr, OutSharedResource);
+			result = Dx11Device->CreateTexture2D(&desc, nullptr, &OutResource->SharedTexture);
 
 			IDXGIResource1* resource;
 
-			result = (*OutSharedResource)->QueryInterface(IID_PPV_ARGS(&resource));
+			result = OutResource->SharedTexture->QueryInterface(IID_PPV_ARGS(&resource));
 
 			if (result != S_OK)
 			{
@@ -57,7 +57,7 @@ bool FSR2FeatureDx11on12::CopyTextureFrom11To12(ID3D11Resource* InResource, ID3D
 			}
 
 			// Get shared handle
-			result = resource->GetSharedHandle(&OutSharedDesc->handle);
+			result = resource->GetSharedHandle(&OutResource->Dx11Handle);
 
 			if (result != S_OK)
 			{
@@ -66,15 +66,14 @@ bool FSR2FeatureDx11on12::CopyTextureFrom11To12(ID3D11Resource* InResource, ID3D
 			}
 
 			resource->Release();
-			OutSharedDesc->pointer = (*OutSharedResource);
 		}
 
 		if (InCopy)
-			Dx11DeviceContext->CopyResource(*OutSharedResource, InResource);
+			Dx11DeviceContext->CopyResource(OutResource->SharedTexture, InResource);
 	}
 	else
 	{
-		if (OutSharedDesc->pointer != InResource)
+		if (OutResource->SharedTexture != InResource)
 		{
 			IDXGIResource1* resource;
 
@@ -87,7 +86,7 @@ bool FSR2FeatureDx11on12::CopyTextureFrom11To12(ID3D11Resource* InResource, ID3D
 			}
 
 			// Get shared handle
-			result = resource->GetSharedHandle(&OutSharedDesc->handle);
+			result = resource->GetSharedHandle(&OutResource->Dx11Handle);
 
 			if (result != S_OK)
 			{
@@ -96,7 +95,8 @@ bool FSR2FeatureDx11on12::CopyTextureFrom11To12(ID3D11Resource* InResource, ID3D
 			}
 
 			resource->Release();
-			OutSharedDesc->pointer = InResource;
+
+			OutResource->SharedTexture = (ID3D11Texture2D*)InResource;
 		}
 	}
 
@@ -108,12 +108,18 @@ void FSR2FeatureDx11on12::ReleaseSharedResources()
 {
 	spdlog::debug("FSR2FeatureDx11on12::ReleaseSharedResources start!");
 
-	SAFE_RELEASE(dx11Color.SharedTexture);
-	SAFE_RELEASE(dx11Mv.SharedTexture);
-	SAFE_RELEASE(dx11Out.SharedTexture);
-	SAFE_RELEASE(dx11Depth.SharedTexture);
-	SAFE_RELEASE(dx11Tm.SharedTexture);
-	SAFE_RELEASE(dx11Exp.SharedTexture);
+	SAFE_RELEASE(dx11Color.SharedTexture)
+	SAFE_RELEASE(dx11Mv.SharedTexture)
+	SAFE_RELEASE(dx11Out.SharedTexture)
+	SAFE_RELEASE(dx11Depth.SharedTexture)
+	SAFE_RELEASE(dx11Tm.SharedTexture)
+	SAFE_RELEASE(dx11Exp.SharedTexture)
+	SAFE_RELEASE(dx11Color.Dx12Resource)
+	SAFE_RELEASE(dx11Mv.Dx12Resource)
+	SAFE_RELEASE(dx11Out.Dx12Resource)
+	SAFE_RELEASE(dx11Depth.Dx12Resource)
+	SAFE_RELEASE(dx11Tm.Dx12Resource)
+	SAFE_RELEASE(dx11Exp.Dx12Resource)
 }
 
 void FSR2FeatureDx11on12::GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter)
@@ -389,7 +395,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	if (paramColor)
 	{
 		spdlog::debug("FSR2FeatureDx11on12::Evaluate Color exist..");
-		if (CopyTextureFrom11To12(paramColor, &dx11Color.SharedTexture, &dx11Color.Desc) == NULL)
+		if (CopyTextureFrom11To12(paramColor, &dx11Color) == NULL)
 			return false;
 	}
 	else
@@ -405,7 +411,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	if (paramMv)
 	{
 		spdlog::debug("FSR2FeatureDx11on12::Evaluate MotionVectors exist..");
-		if (CopyTextureFrom11To12(paramMv, &dx11Mv.SharedTexture, &dx11Mv.Desc) == false)
+		if (CopyTextureFrom11To12(paramMv, &dx11Mv) == false)
 			return false;
 	}
 	else
@@ -421,7 +427,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	if (paramOutput)
 	{
 		spdlog::debug("FSR2FeatureDx11on12::Evaluate Output exist..");
-		if (CopyTextureFrom11To12(paramOutput, &dx11Out.SharedTexture, &dx11Out.Desc, false) == false)
+		if (CopyTextureFrom11To12(paramOutput, &dx11Out, false) == false)
 			return false;
 	}
 	else
@@ -437,7 +443,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	if (paramDepth)
 	{
 		spdlog::debug("FSR2FeatureDx11on12::Evaluate Depth exist..");
-		if (CopyTextureFrom11To12(paramDepth, &dx11Depth.SharedTexture, &dx11Depth.Desc) == false)
+		if (CopyTextureFrom11To12(paramDepth, &dx11Depth) == false)
 			return false;
 	}
 	else
@@ -453,7 +459,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 		{
 			spdlog::debug("FSR2FeatureDx11on12::Evaluate ExposureTexture exist..");
 
-			if (CopyTextureFrom11To12(paramExposure, &dx11Exp.SharedTexture, &dx11Exp.Desc) == false)
+			if (CopyTextureFrom11To12(paramExposure, &dx11Exp) == false)
 				return false;
 		}
 		else
@@ -471,100 +477,123 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 		if (paramMask)
 		{
 			spdlog::debug("FSR2FeatureDx11on12::Evaluate Bias mask exist..");
-			if (CopyTextureFrom11To12(paramMask, &dx11Tm.SharedTexture, &dx11Tm.Desc) == false)
+			if (CopyTextureFrom11To12(paramMask, &dx11Tm) == false)
 				return false;
 		}
 		else
 			spdlog::warn("FSR2FeatureDx11on12::Evaluate bias mask not exist and its enabled in config, it may cause problems!!");
 	}
 
-	//Dx11DeviceContext->Flush();
 	Dx11DeviceContext->Signal(dx11fence_1, 10);
+
 	Dx12CommandQueue->Wait(dx12fence_1, 10);
 
-	ID3D12Resource* dx12Color = nullptr;
 	if (paramColor)
 	{
-		result = Dx12on11Device->OpenSharedHandle(dx11Color.Desc.handle, IID_PPV_ARGS(&dx12Color));
-
-		if (result != S_OK)
+		if (dx11Color.Dx12Handle != dx11Color.Dx11Handle)
 		{
-			spdlog::error("FSR2FeatureDx11on12::Evaluate Color OpenSharedHandle error: {0:x}", result);
-			return false;
+			result = Dx12on11Device->OpenSharedHandle(dx11Color.Dx11Handle, IID_PPV_ARGS(&dx11Color.Dx12Resource));
+
+			if (result != S_OK)
+			{
+				spdlog::error("FSR2FeatureDx11on12::Evaluate Color OpenSharedHandle error: {0:x}", result);
+				return false;
+			}
+
+			dx11Color.Dx12Handle = dx11Color.Dx11Handle;
 		}
 
-		params.color = ffxGetResourceDX12(&_context, dx12Color, (wchar_t*)L"FSR2_Color", FFX_RESOURCE_STATE_COMPUTE_READ);
+		params.color = ffxGetResourceDX12(&_context, dx11Color.Dx12Resource, (wchar_t*)L"FSR2_Color", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 
-	ID3D12Resource* dx12MV = nullptr;
 	if (paramMv)
 	{
-		result = Dx12on11Device->OpenSharedHandle(dx11Mv.Desc.handle, IID_PPV_ARGS(&dx12MV));
-
-		if (result != S_OK)
+		if (dx11Mv.Dx12Handle != dx11Mv.Dx11Handle)
 		{
-			spdlog::error("FSR2FeatureDx11on12::Evaluate MotionVectors OpenSharedHandle error: {0:x}", result);
-			return false;
+			result = Dx12on11Device->OpenSharedHandle(dx11Mv.Dx11Handle, IID_PPV_ARGS(&dx11Mv.Dx12Resource));
+
+			if (result != S_OK)
+			{
+				spdlog::error("FSR2FeatureDx11on12::Evaluate MotionVectors OpenSharedHandle error: {0:x}", result);
+				return false;
+			}
+
+			dx11Mv.Dx12Handle = dx11Mv.Dx11Handle;
 		}
 
-		params.motionVectors = ffxGetResourceDX12(&_context, dx12MV, (wchar_t*)L"FSR2_Motion", FFX_RESOURCE_STATE_COMPUTE_READ);
+		params.motionVectors = ffxGetResourceDX12(&_context, dx11Mv.Dx12Resource, (wchar_t*)L"FSR2_Motion", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 
-	ID3D12Resource* dx12Out = nullptr;
 	if (paramOutput)
 	{
-		result = Dx12on11Device->OpenSharedHandle(dx11Out.Desc.handle, IID_PPV_ARGS(&dx12Out));
-		dx11Out.SharedHandle = dx11Out.Desc.handle;
-
-		if (result != S_OK)
+		if (dx11Out.Dx12Handle != dx11Out.Dx11Handle)
 		{
-			spdlog::error("FSR2FeatureDx11on12::Evaluate Output OpenSharedHandle error: {0:x}", result);
-			return false;
+			result = Dx12on11Device->OpenSharedHandle(dx11Out.Dx11Handle, IID_PPV_ARGS(&dx11Out.Dx12Resource));
+
+			if (result != S_OK)
+			{
+				spdlog::error("FSR2FeatureDx11on12::Evaluate Output OpenSharedHandle error: {0:x}", result);
+				return false;
+			}
+
+			dx11Out.Dx12Handle = dx11Out.Dx11Handle;
 		}
 
-		params.output = ffxGetResourceDX12(&_context, dx12Out, (wchar_t*)L"FSR2_Out", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+		params.output = ffxGetResourceDX12(&_context, dx11Out.Dx12Resource, (wchar_t*)L"FSR2_Out", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 	}
 
-	ID3D12Resource* dx12Depth = nullptr;
 	if (paramDepth)
 	{
-		result = Dx12on11Device->OpenSharedHandle(dx11Depth.Desc.handle, IID_PPV_ARGS(&dx12Depth));
-
-		if (result != S_OK)
+		if (dx11Depth.Dx12Handle != dx11Depth.Dx11Handle)
 		{
-			spdlog::error("FSR2FeatureDx11on12::Evaluate Depth OpenSharedHandle error: {0:x}", result);
-			return false;
+			result = Dx12on11Device->OpenSharedHandle(dx11Depth.Dx11Handle, IID_PPV_ARGS(&dx11Depth.Dx12Resource));
+
+			if (result != S_OK)
+			{
+				spdlog::error("FSR2FeatureDx11on12::Evaluate Depth OpenSharedHandle error: {0:x}", result);
+				return false;
+			}
+
+			dx11Depth.Dx12Handle = dx11Depth.Dx11Handle;
 		}
 
-		params.depth = ffxGetResourceDX12(&_context, dx12Depth, (wchar_t*)L"FSR2_Depth", FFX_RESOURCE_STATE_COMPUTE_READ);
+		params.depth = ffxGetResourceDX12(&_context, dx11Depth.Dx12Resource, (wchar_t*)L"FSR2_Depth", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 
-	ID3D12Resource* dx12Exp = nullptr;
 	if (!Config::Instance()->AutoExposure.value_or(false) && paramExposure)
 	{
-		result = Dx12on11Device->OpenSharedHandle(dx11Exp.Desc.handle, IID_PPV_ARGS(&dx12Exp));
-
-		if (result != S_OK)
+		if (dx11Exp.Dx12Handle != dx11Exp.Dx11Handle)
 		{
-			spdlog::error("FSR2FeatureDx11on12::Evaluate ExposureTexture OpenSharedHandle error: {0:x}", result);
-			return false;
+			result = Dx12on11Device->OpenSharedHandle(dx11Exp.Dx11Handle, IID_PPV_ARGS(&dx11Exp.Dx12Resource));
+
+			if (result != S_OK)
+			{
+				spdlog::error("FSR2FeatureDx11on12::Evaluate ExposureTexture OpenSharedHandle error: {0:x}", result);
+				return false;
+			}
+
+			dx11Exp.Dx12Handle = dx11Exp.Dx11Handle;
 		}
 
-		params.exposure = ffxGetResourceDX12(&_context, dx12Exp, (wchar_t*)L"FSR2_Exp", FFX_RESOURCE_STATE_COMPUTE_READ);
+		params.exposure = ffxGetResourceDX12(&_context, dx11Exp.Dx12Resource, (wchar_t*)L"FSR2_Exp", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 
-	ID3D12Resource* dx12Mask = nullptr;
 	if (!Config::Instance()->DisableReactiveMask.value_or(true) && paramMask)
 	{
-		result = Dx12on11Device->OpenSharedHandle(dx11Tm.Desc.handle, IID_PPV_ARGS(&dx12Mask));
-
-		if (result != S_OK)
+		if (dx11Tm.Dx12Handle != dx11Tm.Dx11Handle)
 		{
-			spdlog::error("FSR2FeatureDx11on12::Evaluate TransparencyMask OpenSharedHandle error: {0:x}", result);
-			return false;
+			result = Dx12on11Device->OpenSharedHandle(dx11Tm.Dx11Handle, IID_PPV_ARGS(&dx11Tm.Dx12Resource));
+
+			if (result != S_OK)
+			{
+				spdlog::error("FSR2FeatureDx11on12::Evaluate TransparencyMask OpenSharedHandle error: {0:x}", result);
+				return false;
+			}
+
+			dx11Tm.Dx12Handle = dx11Tm.Dx11Handle;
 		}
 
-		params.reactive = ffxGetResourceDX12(&_context, dx12Mask, (wchar_t*)L"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
+		params.reactive = ffxGetResourceDX12(&_context, dx11Tm.Dx12Resource, (wchar_t*)L"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 
 #pragma endregion
@@ -671,57 +700,14 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	// wait for fsr on dx12
 	Dx11DeviceContext->Wait(dx11fence_2, 20);
 
-	D3D11_QUERY_DESC pQueryDesc{};
-	pQueryDesc.Query = D3D11_QUERY_EVENT;
-	pQueryDesc.MiscFlags = 0;
-	ID3D11Query* query1 = nullptr;
-	result = Dx11Device->CreateQuery(&pQueryDesc, &query1);
-
-	if (result != S_OK || !query1)
-	{
-		spdlog::error("FSR2FeatureDx11on12::Evaluate can't create query1!");
-		return false;
-	}
-
-	// Associate the query with the copy operation
-	Dx11DeviceContext->Begin(query1);
-
 	// copy back output
 	Dx11DeviceContext->CopyResource(paramOutput, dx11Out.SharedTexture);
-
-	Dx11DeviceContext->End(query1);
-
-	// Execute dx11 commands 
-	//Dx11DeviceContext->Flush();
-
-	while (Dx11DeviceContext->GetData(query1, nullptr, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE);
-
-	// Release the query
-	query1->Release();
 
 	// release fences
 	dx11fence_1->Release();
 	dx11fence_2->Release();
 	dx12fence_1->Release();
 	dx12fence_2->Release();
-
-	if (paramColor)
-		dx12Color->Release();
-
-	if (paramMv)
-		dx12MV->Release();
-
-	if (paramDepth)
-		dx12Depth->Release();
-
-	if (!Config::Instance()->AutoExposure.value_or(false) && paramExposure)
-		dx12Exp->Release();
-
-	if (!Config::Instance()->DisableReactiveMask.value_or(true) && paramMask)
-		dx12Mask->Release();
-
-	if (paramOutput)
-		dx12Out->Release();
 
 	Dx12CommandAllocator->Reset();
 	Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
