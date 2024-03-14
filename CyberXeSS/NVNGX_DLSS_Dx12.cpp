@@ -186,24 +186,25 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 	// Create feature
 	auto handleId = IFeature::GetNextHandleId();
 
-	int dlssEnablerUpscalerChoice = 0;
-	// Check if working with DLSS Enabler
 	// 0 : XeSS
 	// 1 : FSR2
-	if (InParameters && InParameters->Get("DLSSEnabler.Dx12Backend", &dlssEnablerUpscalerChoice) == NVSDK_NGX_Result_Success)
-	{
-		if (dlssEnablerUpscalerChoice == 1)
-			Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12>(handleId, InParameters);
-		else
-			Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, InParameters);
-	}
-	else
+	int upscalerChoice = 0; // Default XeSS
+
+	// ini first
+	if (Config::Instance()->Dx12Upscaler.has_value())
 	{
 		if (Config::Instance()->Dx12Upscaler.value_or("xess") == "fsr")
-			Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12>(handleId, InParameters);
-		else
-			Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, InParameters);
+			upscalerChoice = 1;
 	}
+	else if (InParameters)
+	{
+		InParameters->Get("DLSSEnabler.Dx12Backend", &upscalerChoice);
+	}
+
+	if (upscalerChoice == 1)
+		Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12>(handleId, InParameters);
+	else
+		Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, InParameters);
 
 	auto deviceContext = Dx12Contexts[handleId].get();
 	*OutHandle = deviceContext->Handle();
