@@ -95,7 +95,18 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				(D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-		params.pOutputTexture = paramOutput;
+		if (casActive)
+		{
+			if (casBuffer == nullptr && !CreateCasBufferResource(paramOutput, Device))
+			{
+				spdlog::error("XeSSFeatureDx12::Evaluate Can't create cas buffer!");
+				return false;
+			}
+
+			params.pOutputTexture = casBuffer;
+		}
+		else
+			params.pOutputTexture = paramOutput;
 	}
 	else
 	{
@@ -185,6 +196,10 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		return false;
 	}
 
+	//apply cas
+	if (casActive && !CasDispatch(InCommandList, InParameters, casBuffer, paramOutput))
+		return false;
+
 	// restore resource states
 	if (params.pColorTexture && Config::Instance()->ColorResourceBarrier.has_value())
 		ResourceBarrier(InCommandList, params.pColorTexture,
@@ -211,7 +226,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value());
 
-	if (params.pResponsivePixelMaskTexture &&  Config::Instance()->MaskResourceBarrier.has_value())
+	if (params.pResponsivePixelMaskTexture && Config::Instance()->MaskResourceBarrier.has_value())
 		ResourceBarrier(InCommandList, params.pResponsivePixelMaskTexture,
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value());

@@ -1,8 +1,9 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
 
-#include <ffx_fsr2.h>
-#include <vk/ffx_fsr2_vk.h>
+
+#include "../../fsr2/include/ffx_fsr2.h"
+#include "../../fsr2/include/vk/ffx_fsr2_vk.h"
 
 #include "FSR2Feature.h"
 #include "../IFeature_Vk.h"

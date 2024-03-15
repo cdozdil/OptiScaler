@@ -551,7 +551,18 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 			dx11Out.Dx12Handle = dx11Out.Dx11Handle;
 		}
 
-		params.pOutputTexture = dx11Out.Dx12Resource;
+		if (casActive)
+		{
+			if (casBuffer == nullptr && !CreateCasBufferResource(dx11Out.Dx12Resource, Dx12on11Device))
+			{
+				spdlog::error("XeSSFeatureDx12::Evaluate Can't create cas buffer!");
+				return false;
+			}
+
+			params.pOutputTexture = casBuffer;
+		}
+		else
+			params.pOutputTexture = dx11Out.Dx12Resource;
 	}
 
 	if (paramDepth)
@@ -636,6 +647,10 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		spdlog::error("XeSSFeatureDx11::Evaluate xessD3D12Execute error: {0}", ResultToString(xessResult));
 		return false;
 	}
+
+	//apply cas
+	if (casActive && !CasDispatch(Dx12CommandList, InParameters, casBuffer, dx11Out.Dx12Resource))
+		return false;
 
 	ID3D12Fence* dx12fence_2;
 	fr = Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&dx12fence_2));

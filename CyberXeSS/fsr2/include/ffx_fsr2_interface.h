@@ -21,14 +21,14 @@
 
 #pragma once
 
-#include <ffx_assert.h>
-#include <ffx_types.h>
-#include <ffx_error.h>
+#include "ffx_assert.h"
+#include "ffx_types.h"
+#include "ffx_error.h"
 
 // Include the FSR2 resources defined in the HLSL code. This shared here to avoid getting out of sync.
 #define FFX_CPU
-#include <shaders/ffx_fsr2_resources.h>
-#include <shaders/ffx_fsr2_common.h>
+#include "shaders/ffx_fsr2_resources.h"
+#include "shaders/ffx_fsr2_common.h"
 
 #if defined(__cplusplus)
 extern "C" {

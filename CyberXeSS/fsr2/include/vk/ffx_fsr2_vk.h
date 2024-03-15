@@ -24,7 +24,7 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
-#include <ffx_fsr2_interface.h>
+#include "../ffx_fsr2_interface.h"
 
 #if defined(__cplusplus)
 extern "C" {

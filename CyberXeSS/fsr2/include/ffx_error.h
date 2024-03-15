@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include <ffx_types.h>
+#include "ffx_types.h"
 
 /// Typedef for error codes returned from functions in the FidelityFX SDK.
 typedef int32_t FfxErrorCode;
@@ -44,16 +44,16 @@ static const FfxErrorCode FFX_ERROR_BACKEND_API_ERROR       = 0x8000000d;  ///< 
 static const FfxErrorCode FFX_ERROR_INSUFFICIENT_MEMORY     = 0x8000000e;  ///< The operation failed because there was not enough memory.
 
 /// Helper macro to return error code y from a function when a specific condition, x, is not met.
-#define FFX_RETURN_ON_ERROR(x, y)                   \
+#define FFX_CAS_RETURN_ON_ERROR(x, y)                   \
     if (!(x))                                       \
     {                                               \
         return (y);                                 \
     }
 
 /// Helper macro to return error code x from a function when it is not FFX_OK.
-#define FFX_VALIDATE(x)                             \
+#define FFX_CAS_VALIDATE(x)                             \
     {                                               \
         FfxErrorCode ret = x;                       \
-        FFX_RETURN_ON_ERROR(ret == FFX_OK, ret);    \
+        FFX_CAS_RETURN_ON_ERROR(ret == FFX_OK, ret);    \
     }
 

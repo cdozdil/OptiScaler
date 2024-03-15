@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include <ffx_types.h>
+#include "ffx_types.h"
 
 /// The value of Pi.
 const float FFX_PI = 3.141592653589793f;

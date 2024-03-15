@@ -74,6 +74,9 @@
     <ClInclude Include="backends\xess\XeSSFeature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="cas\include\backends\shared\ffx_shader_blobs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">

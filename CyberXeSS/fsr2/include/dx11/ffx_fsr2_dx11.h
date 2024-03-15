@@ -24,7 +24,7 @@
 #pragma once
 
 #include <d3d11.h>
-#include <ffx_fsr2_interface.h>
+#include "../ffx_fsr2_interface.h"
 
 #if defined(__cplusplus)
 extern "C" {

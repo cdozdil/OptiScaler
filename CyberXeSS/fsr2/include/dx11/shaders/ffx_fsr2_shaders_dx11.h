@@ -22,7 +22,7 @@
 #pragma once
 
 #include <stdint.h>
-#include <ffx_fsr2_interface.h>
+#include "../../ffx_fsr2_interface.h"
 
 #include <d3d11.h>
 #include <vector>
