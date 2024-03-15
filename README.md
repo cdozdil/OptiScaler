@@ -8,14 +8,14 @@ I have adapted it to use Intel's [XeSS](https://github.com/intel/xess/) too.
 **With this branch:**
 * Added FSR 2.2.1 support for DX11 (Native or with DX12), DX12 and Vulkan
 * Added Unreal engine detection and autofixes
-* ~~Added FidelityFX CAS shapening support, you can enable and adjust it from ini file.~~ (Currently CAS is disabled)
+* Added FidelityFX CAS shapening support, you can enable and adjust it from ini file.
 
 **Supported backends:**
 * **DX11** : XeSS (with DX12), FSR2 (native), FSR2 (with DX12)
 * **DX12** : XeSS (native), FSR2 (native)
 * **Vulkan** : FSR2 (native) 
 
-**Note**: (with DX12) backends have better compatibility but comes with a performance penalty and they are not as performant as native ones.
+**Note**: (with DX12) backends have a performance penalty (around %10-15).
 
 ## Official Discord Channel: [CyberXeSS Support](https://discord.com/channels/995299945492008990/1131520508475752489)
 
