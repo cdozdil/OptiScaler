@@ -95,7 +95,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				(D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-		if (casActive)
+		if (casActive && casSharpness > 0.0f)
 		{
 			if (casBuffer == nullptr && !CreateCasBufferResource(paramOutput, Device))
 			{
@@ -197,7 +197,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 
 	//apply cas
-	if (casActive && !CasDispatch(InCommandList, InParameters, casBuffer, paramOutput))
+	if (casActive && casSharpness > 0.0f && !CasDispatch(InCommandList, InParameters, casBuffer, paramOutput))
 		return false;
 
 	// restore resource states

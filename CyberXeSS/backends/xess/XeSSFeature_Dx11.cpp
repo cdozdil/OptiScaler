@@ -551,7 +551,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 			dx11Out.Dx12Handle = dx11Out.Dx11Handle;
 		}
 
-		if (casActive)
+		if (casActive && casSharpness > 0.0f)
 		{
 			if (casBuffer == nullptr && !CreateCasBufferResource(dx11Out.Dx12Resource, Dx12on11Device))
 			{
@@ -649,7 +649,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	}
 
 	//apply cas
-	if (casActive && !CasDispatch(Dx12CommandList, InParameters, casBuffer, dx11Out.Dx12Resource))
+	if (casActive && casSharpness > 0.0f && !CasDispatch(Dx12CommandList, InParameters, casBuffer, dx11Out.Dx12Resource))
 		return false;
 
 	ID3D12Fence* dx12fence_2;

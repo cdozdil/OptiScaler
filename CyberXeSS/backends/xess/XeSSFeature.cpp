@@ -399,11 +399,11 @@ void XeSSFeature::CasInit()
 
 	spdlog::debug("FeatureContext::CasInit Start!");
 
-	casActive = Config::Instance()->CasEnabled.value_or(false);
+	casActive = Config::Instance()->CasEnabled.value_or(true);
 	casSharpness = Config::Instance()->Sharpness.value_or(0.3);
 
 	if (casSharpness > 1 || casSharpness < 0)
-		casSharpness = 0.4f;
+		casSharpness = 0.3f;
 
 	casInit = true;
 }
