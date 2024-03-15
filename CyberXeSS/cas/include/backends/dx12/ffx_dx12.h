@@ -45,7 +45,7 @@ namespace FfxCas
     /// @returns
     /// The size (in bytes) of the required scratch memory buffer for the DX12 backend.
     /// @ingroup DX12Backend
-    FFX_API size_t ffxGetScratchMemorySizeDX12Cas(size_t maxContexts);
+    size_t ffxGetScratchMemorySizeDX12Cas(size_t maxContexts);
 
     /// Create a <c><i>FfxDevice</i></c> from a <c><i>ID3D12Device</i></c>.
     ///
@@ -55,7 +55,7 @@ namespace FfxCas
     /// An abstract FidelityFX device.
     ///
     /// @ingroup DX12Backend
-    FFX_API FfxDevice ffxGetDeviceDX12Cas(ID3D12Device* device);
+    FfxDevice ffxGetDeviceDX12Cas(ID3D12Device* device);
 
     /// Populate an interface with pointers for the DX12 backend.
     ///
@@ -72,8 +72,7 @@ namespace FfxCas
     /// FFX_ERROR_CODE_INVALID_POINTER          The <c><i>interface</i></c> pointer was <c><i>NULL</i></c>.
     ///
     /// @ingroup DX12Backend
-    FFX_API FfxErrorCode
-    ffxGetInterfaceDX12Cas(FfxInterface* backendInterface, FfxDevice device, void* scratchBuffer, size_t scratchBufferSize, size_t maxContexts);
+    FfxErrorCode ffxGetInterfaceDX12Cas(FfxInterface* backendInterface, FfxDevice device, void* scratchBuffer, size_t scratchBufferSize, size_t maxContexts);
 
     /// Create a <c><i>FfxCommandList</i></c> from a <c><i>ID3D12CommandList</i></c>.
     ///
@@ -83,7 +82,7 @@ namespace FfxCas
     /// An abstract FidelityFX command list.
     ///
     /// @ingroup DX12Backend
-    FFX_API FfxCommandList ffxGetCommandListDX12Cas(ID3D12CommandList* cmdList);
+    FfxCommandList ffxGetCommandListDX12Cas(ID3D12CommandList* cmdList);
 
     /// Fetch a <c><i>FfxResource</i></c> from a <c><i>GPUResource</i></c>.
     ///
@@ -96,7 +95,7 @@ namespace FfxCas
     /// An abstract FidelityFX resources.
     ///
     /// @ingroup DX12Backend
-    FFX_API FfxResource ffxGetResourceDX12Cas(ID3D12Resource*        dx12Resource,
+    FfxResource ffxGetResourceDX12Cas(ID3D12Resource*        dx12Resource,
                                            FfxResourceDescription ffxResDescription,
                                            wchar_t*               ffxResName,
                                            FfxResourceStates      state = FFX_RESOURCE_STATE_COMPUTE_READ);

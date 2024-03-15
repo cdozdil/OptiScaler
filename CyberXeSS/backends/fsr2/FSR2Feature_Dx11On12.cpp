@@ -109,17 +109,17 @@ void FSR2FeatureDx11on12::ReleaseSharedResources()
 	spdlog::debug("FSR2FeatureDx11on12::ReleaseSharedResources start!");
 
 	SAFE_RELEASE(dx11Color.SharedTexture)
-	SAFE_RELEASE(dx11Mv.SharedTexture)
-	SAFE_RELEASE(dx11Out.SharedTexture)
-	SAFE_RELEASE(dx11Depth.SharedTexture)
-	SAFE_RELEASE(dx11Tm.SharedTexture)
-	SAFE_RELEASE(dx11Exp.SharedTexture)
-	SAFE_RELEASE(dx11Color.Dx12Resource)
-	SAFE_RELEASE(dx11Mv.Dx12Resource)
-	SAFE_RELEASE(dx11Out.Dx12Resource)
-	SAFE_RELEASE(dx11Depth.Dx12Resource)
-	SAFE_RELEASE(dx11Tm.Dx12Resource)
-	SAFE_RELEASE(dx11Exp.Dx12Resource)
+		SAFE_RELEASE(dx11Mv.SharedTexture)
+		SAFE_RELEASE(dx11Out.SharedTexture)
+		SAFE_RELEASE(dx11Depth.SharedTexture)
+		SAFE_RELEASE(dx11Tm.SharedTexture)
+		SAFE_RELEASE(dx11Exp.SharedTexture)
+		SAFE_RELEASE(dx11Color.Dx12Resource)
+		SAFE_RELEASE(dx11Mv.Dx12Resource)
+		SAFE_RELEASE(dx11Out.Dx12Resource)
+		SAFE_RELEASE(dx11Depth.Dx12Resource)
+		SAFE_RELEASE(dx11Tm.Dx12Resource)
+		SAFE_RELEASE(dx11Exp.Dx12Resource)
 }
 
 void FSR2FeatureDx11on12::GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter)
@@ -358,31 +358,53 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	// fence operation results
 	HRESULT fr;
 
-	ID3D11Fence* dx11fence_1;
-	fr = Dx11Device->CreateFence(0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(&dx11fence_1));
-
-	if (fr != S_OK)
-	{
-		spdlog::error("FSR2FeatureDx11on12::Evaluate Can't create dx11fence_1 {0:x}", fr);
-		return false;
-	}
-
+	ID3D11Fence* dx11fence_1 = nullptr;
+	ID3D12Fence* dx12fence_1 = nullptr;
 	HANDLE dx11_sharedHandle;
-	fr = dx11fence_1->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, &dx11_sharedHandle);
 
-	if (fr != S_OK)
+	D3D11_QUERY_DESC pQueryDesc;
+	pQueryDesc.Query = D3D11_QUERY_EVENT;
+	pQueryDesc.MiscFlags = 0;
+	ID3D11Query* query0 = nullptr;
+
+	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 3)
 	{
-		spdlog::error("FSR2FeatureDx11on12::Evaluate Can't create sharedhandle for dx11fence_1 {0:x}", fr);
-		return false;
+		fr = Dx11Device->CreateFence(0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(&dx11fence_1));
+
+		if (fr != S_OK)
+		{
+			spdlog::error("FSR2FeatureDx11on12::Evaluate Can't create dx11fence_1 {0:x}", fr);
+			return false;
+		}
+
+		fr = dx11fence_1->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, &dx11_sharedHandle);
+
+		if (fr != S_OK)
+		{
+			spdlog::error("FSR2FeatureDx11on12::Evaluate Can't create sharedhandle for dx11fence_1 {0:x}", fr);
+			return false;
+		}
+
+		fr = Dx12on11Device->OpenSharedHandle(dx11_sharedHandle, IID_PPV_ARGS(&dx12fence_1));
+
+		if (fr != S_OK)
+		{
+			spdlog::error("FSR2FeatureDx11on12::Evaluate Can't create open sharedhandle for dx12fence_1 {0:x}", fr);
+			return false;
+		}
 	}
-
-	ID3D12Fence* dx12fence_1;
-	fr = Dx12on11Device->OpenSharedHandle(dx11_sharedHandle, IID_PPV_ARGS(&dx12fence_1));
-
-	if (fr != S_OK)
+	else
 	{
-		spdlog::error("FSR2FeatureDx11on12::Evaluate Can't create open sharedhandle for dx12fence_1 {0:x}", fr);
-		return false;
+		result = Device->CreateQuery(&pQueryDesc, &query0);
+
+		if (result != S_OK || query0 == nullptr)
+		{
+			spdlog::error("FeatureContext::FSR2FeatureDx11on12 can't create query1!");
+			return false;
+		}
+
+		// Associate the query with the copy operation
+		DeviceContext->Begin(query0);
 	}
 
 #pragma region Texture copies

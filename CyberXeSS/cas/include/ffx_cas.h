@@ -172,7 +172,7 @@ namespace FfxCas
     /// FFX_ERROR_BACKEND_API_ERROR         The operation failed because of an error returned from the backend.
     ///
     /// @ingroup ffxCas
-    FFX_API FfxErrorCode ffxCasContextCreate(FfxCasContext* pContext, const FfxCasContextDescription* pContextDescription);
+    FfxErrorCode ffxCasContextCreate(FfxCasContext* pContext, const FfxCasContextDescription* pContextDescription);
 
     /// @param [out] pContext                A pointer to a <c><i>FfxCasContext</i></c> structure to populate.
     /// @param [in]  pDispatchDescription    A pointer to a <c><i>FfxCasDispatchDescription</i></c> structure.
@@ -185,7 +185,7 @@ namespace FfxCas
     /// FFX_ERROR_BACKEND_API_ERROR         The operation failed because of an error returned from the backend.
     ///
     /// @ingroup ffxCas
-    FFX_API FfxErrorCode ffxCasContextDispatch(FfxCasContext* pContext, const FfxCasDispatchDescription* pDispatchDescription);
+    FfxErrorCode ffxCasContextDispatch(FfxCasContext* pContext, const FfxCasDispatchDescription* pDispatchDescription);
 
     /// Destroy the FidelityFX CAS context.
     ///
@@ -197,7 +197,7 @@ namespace FfxCas
     /// FFX_ERROR_CODE_NULL_POINTER         The operation failed because either <c><i>context</i></c> was <c><i>NULL</i></c>.
     ///
     /// @ingroup ffxCas
-    FFX_API FfxErrorCode ffxCasContextDestroy(FfxCasContext* pContext);
+    FfxErrorCode ffxCasContextDestroy(FfxCasContext* pContext);
 
 #if defined(__cplusplus)
     }

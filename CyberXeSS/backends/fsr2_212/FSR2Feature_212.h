@@ -27,11 +27,6 @@ inline static std::string ResultToString212(Fsr212::FfxErrorCode result)
 	}
 }
 
-inline void FfxLogCallback(const char* message)
-{
-	spdlog::debug("FSR2Feature::LogCallback FSR Runtime: {0}", message);
-}
-
 class FSR2Feature212 : public virtual IFeature
 {
 private:

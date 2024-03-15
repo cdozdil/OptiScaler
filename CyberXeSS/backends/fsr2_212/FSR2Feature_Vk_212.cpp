@@ -100,11 +100,6 @@ bool FSR2FeatureVk212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		spdlog::info("FSR2FeatureVk::InitFSR2 contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
 	}
 
-#if _DEBUG
-	_contextDesc.flags |= FFX_FSR2_ENABLE_DEBUG_CHECKING;
-	_contextDesc.fpMessage = FfxLogCallback;
-#endif
-
 	spdlog::debug("FSR2FeatureVk::InitFSR2 ffxFsr2ContextCreate!");
 
 	auto ret = Fsr212::ffxFsr2ContextCreate212(&_context, &_contextDesc);

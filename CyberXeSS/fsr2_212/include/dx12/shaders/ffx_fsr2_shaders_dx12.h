@@ -33,7 +33,7 @@ namespace Fsr212
 #endif // #if defined(__cplusplus)
 
         // A single shader blob and a description of its resources.
-        typedef struct Fsr2ShaderBlobDX12 {
+        typedef struct Fsr2ShaderBlobDX12_212 {
 
             const uint8_t* data;               // A pointer to the blob 
             const uint32_t  size;               // Size in bytes.
@@ -46,10 +46,10 @@ namespace Fsr212
             const uint32_t* boundSRVResources;  // Pointer to an array of bound SRV resources.
             const char** boundCBVResourceNames;
             const uint32_t* boundCBVResources;   // Pointer to an array of bound ConstantBuffers.
-        } Fsr2ShaderBlobDX12;
+        } Fsr2ShaderBlobDX12_212;
 
         // The different options which contribute to permutations.
-        typedef enum Fs2ShaderPermutationOptionsDX12 {
+        typedef enum Fs2ShaderPermutationOptionsDX12_212 {
 
             FSR2_SHADER_PERMUTATION_USE_LANCZOS_TYPE = (1 << 0),    // FFX_FSR2_OPTION_REPROJECT_USE_LANCZOS_TYPE. Off means reference, On means LUT
             FSR2_SHADER_PERMUTATION_HDR_COLOR_INPUT = (1 << 1),    // FFX_FSR2_OPTION_HDR_COLOR_INPUT
@@ -59,10 +59,10 @@ namespace Fsr212
             FSR2_SHADER_PERMUTATION_ENABLE_SHARPENING = (1 << 5),    // FFX_FSR2_OPTION_APPLY_SHARPENING
             FSR2_SHADER_PERMUTATION_FORCE_WAVE64 = (1 << 6),    // doesn't map to a define, selects different table
             FSR2_SHADER_PERMUTATION_ALLOW_FP16 = (1 << 7),    // FFX_USE_16BIT
-        } Fs2ShaderPermutationOptionsDX12;
+        } Fs2ShaderPermutationOptionsDX12_212;
 
         // Get a DX12 shader blob for the specified pass and permutation index.
-        Fsr2ShaderBlobDX12 fsr2GetPermutationBlobByIndex(FfxFsr2Pass passId, uint32_t permutationOptions);
+        Fsr2ShaderBlobDX12_212 fsr2GetPermutationBlobByIndex_212(FfxFsr2Pass passId, uint32_t permutationOptions);
 
 #if defined(__cplusplus)
     }

@@ -33,7 +33,7 @@ namespace Fsr212
 #endif // #if defined(__cplusplus)
 
         // A single shader blob and a description of its resources.
-        typedef struct Fsr2ShaderBlobVK {
+        typedef struct Fsr2ShaderBlobVK212 {
 
             const uint8_t* data;                       // A pointer to the blob 
             const uint32_t  size;                       // Size in bytes.
@@ -46,10 +46,10 @@ namespace Fsr212
             const uint32_t* boundSampledImageBindings;  // Pointer to an array of bound SRV resources.
             const char** boundUniformBufferNames;
             const uint32_t* boundUniformBufferBindings; // Pointer to an array of bound ConstantBuffers.
-        } Fsr2ShaderBlobVK;
+        } Fsr2ShaderBlobVK212;
 
         // The different options which contribute to permutations.
-        typedef enum Fs2ShaderPermutationOptionsVK {
+        typedef enum Fs2ShaderPermutationOptionsVK212 {
 
             FSR2_SHADER_PERMUTATION_REPROJECT_USE_LANCZOS_TYPE = (1 << 0),    // FFX_FSR2_OPTION_REPROJECT_USE_LANCZOS_TYPE
             FSR2_SHADER_PERMUTATION_HDR_COLOR_INPUT = (1 << 1),    // FFX_FSR2_OPTION_HDR_COLOR_INPUT
@@ -59,10 +59,10 @@ namespace Fsr212
             FSR2_SHADER_PERMUTATION_ENABLE_SHARPENING = (1 << 5),    // FFX_FSR2_OPTION_APPLY_SHARPENING
             FSR2_SHADER_PERMUTATION_FORCE_WAVE64 = (1 << 6),    // doesn't map to a define, selects different table
             FSR2_SHADER_PERMUTATION_ALLOW_FP16 = (1 << 7),    // FFX_USE_16BIT
-        } Fs2ShaderPermutationOptionsVK;
+        } Fs2ShaderPermutationOptionsVK212;
 
         // Get a VK shader blob for the specified pass and permutation index.
-        Fsr2ShaderBlobVK fsr2GetPermutationBlobByIndex(FfxFsr2Pass passId, uint32_t permutationOptions);
+        Fsr2ShaderBlobVK212 fsr2GetPermutationBlobByIndex212(FfxFsr2Pass passId, uint32_t permutationOptions);
 
 #if defined(__cplusplus)
     }
