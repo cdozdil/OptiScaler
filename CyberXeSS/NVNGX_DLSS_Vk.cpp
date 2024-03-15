@@ -6,6 +6,7 @@
 
 #include "Config.h"
 #include "backends/fsr2/FSR2Feature_Vk.h"
+#include "backends/fsr2_212/FSR2Feature_Vk_212.h"
 #include "NVNGX_Parameter.h"
 
 VkInstance vkInstance;
@@ -192,7 +193,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 	// Create feature
 	auto handleId = IFeature::GetNextHandleId();
 
-	VkContexts[handleId] = std::make_unique<FSR2FeatureVk>(handleId, InParameters);
+	if (Config::Instance()->VulkanUpscaler.value_or("fsr22") == "fsr21")
+		VkContexts[handleId] = std::make_unique<FSR2FeatureVk212>(handleId, InParameters);
+	else
+		VkContexts[handleId] = std::make_unique<FSR2FeatureVk>(handleId, InParameters);
 
 	auto deviceContext = VkContexts[handleId].get();
 	*OutHandle = deviceContext->Handle();

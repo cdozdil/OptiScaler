@@ -7,6 +7,7 @@
 #include "Config.h"
 #include "backends/xess/XeSSFeature_Dx12.h"
 #include "backends/fsr2/FSR2Feature_Dx12.h"
+#include "backends/fsr2_212/FSR2Feature_Dx12_212.h"
 #include "NVNGX_Parameter.h"
 
 inline ID3D12Device* D3D12Device = nullptr;
@@ -187,14 +188,17 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 	auto handleId = IFeature::GetNextHandleId();
 
 	// 0 : XeSS
-	// 1 : FSR2
+	// 1 : FSR2.2
+	// 2 : FSR2.1
 	int upscalerChoice = 0; // Default XeSS
 
 	// ini first
 	if (Config::Instance()->Dx12Upscaler.has_value())
 	{
-		if (Config::Instance()->Dx12Upscaler.value_or("xess") == "fsr")
+		if (Config::Instance()->Dx12Upscaler.value_or("xess") == "fsr22")
 			upscalerChoice = 1;
+		else if (Config::Instance()->Dx12Upscaler.value_or("xess") == "fsr21")
+			upscalerChoice = 2;
 	}
 	else if (InParameters)
 	{
@@ -203,6 +207,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
 	if (upscalerChoice == 1)
 		Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12>(handleId, InParameters);
+	else if (upscalerChoice == 2)
+		Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12_212>(handleId, InParameters);
 	else
 		Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, InParameters);
 

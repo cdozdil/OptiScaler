@@ -77,6 +77,18 @@
     <ClInclude Include="cas\include\backends\shared\ffx_shader_blobs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="backends\fsr2_212\FSR2Feature_212.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx11On12_212.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx12_212.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="backends\fsr2_212\FSR2Feature_Vk_212.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -133,6 +145,18 @@
     </ClCompile>
     <ClCompile Include="backends\xess\XeSSFeature_Dx12.h">
       <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\fsr2_212\FSR2Feature_212.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\fsr2_212\FSR2Feature_Dx11On12_212.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\fsr2_212\FSR2Feature_Dx12_212.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\fsr2_212\FSR2Feature_Vk_212.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
