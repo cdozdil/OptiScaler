@@ -4,6 +4,7 @@
 
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/sinks/callback_sink.h"
 
 #include "Config.h"
 
@@ -64,50 +65,55 @@ static void PrepareLogger()
 
 			std::shared_ptr<spdlog::logger> shared_logger = nullptr;
 
-			if (Config::Instance()->LogToConsole.value_or(true) && Config::Instance()->LogToFile.value_or(false))
+			std::vector<spdlog::sink_ptr> sinks;
+
+			if (Config::Instance()->LogToConsole.value_or(false))
 			{
 				auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 				console_sink->set_level(spdlog::level::level_enum::info);
-				console_sink->set_pattern("[XeSS] [%H:%M:%S.%f] [%L] %v");
+				console_sink->set_pattern("[%H:%M:%S.%f] [%L] %v");
 
+				sinks.push_back(console_sink);
+			}
+
+			if (Config::Instance()->LogToFile.value_or(false))
+			{
 				auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(Config::Instance()->LogFileName.value(), true);
 				file_sink->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or(2));
 				file_sink->set_pattern("[%H:%M:%S.%f] [%L] %v");
 
-				spdlog::logger logger("multi_sink", { console_sink, file_sink });
-				shared_logger = std::make_shared<spdlog::logger>(logger);
-			}
-			else if (Config::Instance()->LogToFile.value_or(false))
-			{
-				auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(Config::Instance()->LogFileName.value(), true);
-				file_sink->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or(2));
-				file_sink->set_pattern("[%H:%M:%S.%f] [%L] %v");
-
-				spdlog::logger logger("file_sink", { file_sink });
-				shared_logger = std::make_shared<spdlog::logger>(logger);
-			}
-			else if (Config::Instance()->LogToConsole.value_or(true))
-			{
-				auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-				console_sink->set_level(spdlog::level::level_enum::info);
-				console_sink->set_pattern("[XeSS] [%H:%M:%S.%f] [%L] %v");
-
-				spdlog::logger logger("console_sink", { console_sink });
-				shared_logger = std::make_shared<spdlog::logger>(logger);
+				sinks.push_back(file_sink);
 			}
 
-			if (shared_logger)
-			{
-				shared_logger->set_level(spdlog::level::level_enum::trace);
+			auto callback_sink = std::make_shared<spdlog::sinks::callback_sink_mt>([](const spdlog::details::log_msg& msg)
+				{
+					if (Config::Instance()->LogToNGX.value_or(false) &&
+						!Config::Instance()->NVSDK_Logger.DisableOtherLoggingSinks &&
+						Config::Instance()->NVSDK_Logger.LoggingCallback != nullptr &&
+						Config::Instance()->NVSDK_Logger.MinimumLoggingLevel != NVSDK_NGX_LOGGING_LEVEL_OFF &&
+						(Config::Instance()->NVSDK_Logger.MinimumLoggingLevel == NVSDK_NGX_LOGGING_LEVEL_VERBOSE || msg.level >= spdlog::level::info))
+					{
+						Config::Instance()->NVSDK_Logger.LoggingCallback(msg.payload.data(), NVSDK_NGX_LOGGING_LEVEL_ON, NVSDK_NGX_Feature_SuperSampling);
+					}
+				});
+
+			callback_sink->set_level(spdlog::level::level_enum::trace);
+			callback_sink->set_pattern("[%H:%M:%S.%f] [%L] %v");
+
+			sinks.push_back(callback_sink);
+
+			spdlog::logger logger("multi_sink", sinks.begin(), sinks.end());
+			shared_logger = std::make_shared<spdlog::logger>(logger);
+
+			shared_logger->set_level(spdlog::level::level_enum::trace);
 
 #if _DEBUG
-				shared_logger->flush_on(spdlog::level::debug);
+			shared_logger->flush_on(spdlog::level::debug);
 #else
-				shared_logger->flush_on(spdlog::level::err);
+			shared_logger->flush_on(spdlog::level::err);
 #endif // _DEBUG
 
-				spdlog::set_default_logger(shared_logger);
-			}
+			spdlog::set_default_logger(shared_logger);
 		}
 	}
 	catch (const spdlog::spdlog_ex& ex)

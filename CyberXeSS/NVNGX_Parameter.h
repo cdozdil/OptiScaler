@@ -3,10 +3,6 @@
 #include <map>
 #include "Config.h"
 
-#include <nvsdk_ngx.h>
-#include <nvsdk_ngx_defs.h>
-
-
 inline std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_Value input)
 {
 	std::optional<float> output;
@@ -90,7 +86,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 
 		case NVSDK_NGX_PerfQuality_Value_Balanced:
 			//UE5 ratio fix
-			if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL &&
+			if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL &&
 				Config::Instance()->NVNGX_EngineVersion5 &&
 				Config::Instance()->Dx12Upscaler.value_or("xess") == "xess")
 			{
@@ -109,7 +105,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 
 		case NVSDK_NGX_PerfQuality_Value_MaxQuality:
 			//UE5 ratio fix
-			if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL &&
+			if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL &&
 				Config::Instance()->NVNGX_EngineVersion5 &&
 				Config::Instance()->Dx12Upscaler.value_or("xess") == "xess")
 			{
@@ -128,7 +124,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 
 		case NVSDK_NGX_PerfQuality_Value_UltraQuality:
 			//UE5 ratio fix
-			if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL &&
+			if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL &&
 				Config::Instance()->NVNGX_EngineVersion5 &&
 				Config::Instance()->Dx12Upscaler.value_or("xess") == "xess")
 			{
@@ -153,7 +149,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 
 		default:
 			//UE5 ratio fix
-			if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL &&
+			if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL &&
 				Config::Instance()->NVNGX_EngineVersion5 &&
 				Config::Instance()->Dx12Upscaler.value_or("xess") == "xess")
 			{
@@ -240,7 +236,7 @@ inline void InitNGXParameters(NVSDK_NGX_Parameter* InParams)
 {
 	InParams->Set(NVSDK_NGX_Parameter_SuperSampling_Available, 1);
 
-	if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL)
+	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL)
 	{
 		InParams->Set(NVSDK_NGX_Parameter_SuperSampling_MinDriverVersionMajor, 10);
 		InParams->Set(NVSDK_NGX_Parameter_SuperSampling_MinDriverVersionMinor, 10);

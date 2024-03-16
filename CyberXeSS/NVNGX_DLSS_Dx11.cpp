@@ -2,8 +2,8 @@
 #include "pch.h"
 
 #include <ankerl/unordered_dense.h>
-
 #include "Config.h"
+
 #include "backends/xess/XeSSFeature_Dx11.h"
 #include "backends/fsr2/FSR2Feature_Dx11.h"
 #include "backends/fsr2/FSR2Feature_Dx11On12.h"
@@ -27,6 +27,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
 	if (InDevice)
 		D3D11Device = InDevice;
 
+	//if (InFeatureInfo)
+	//	Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
+
 	Config::Instance()->Api = NVNGX_DX11;
 
 	return NVSDK_NGX_Result_Success;
@@ -45,9 +48,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_ProjectID(const char* InProj
 	spdlog::debug("NVSDK_NGX_D3D11_Init_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::debug("NVSDK_NGX_D3D11_Init_ProjectID InEngineType: {0}", (int)InEngineType);
 
-	Config::Instance()->NVNGX_Engine = (NVNGX_EngineType)InEngineType;
+	Config::Instance()->NVNGX_Engine = InEngineType;
 
-	if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL && InEngineVersion)
+	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 	{
 		spdlog::debug("NVSDK_NGX_D3D11_Init_ProjectID InEngineVersion: {0}", InEngineVersion);
 		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
@@ -62,9 +65,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_with_ProjectID(const char* I
 	spdlog::debug("NVSDK_NGX_D3D11_Init_with_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::debug("NVSDK_NGX_D3D11_Init_with_ProjectID InEngineType: {0}", (int)InEngineType);
 
-	Config::Instance()->NVNGX_Engine = (NVNGX_EngineType)InEngineType;
+	Config::Instance()->NVNGX_Engine = InEngineType;
 
-	if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL && InEngineVersion)
+	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 	{
 		spdlog::debug("NVSDK_NGX_D3D11_Init_with_ProjectID InEngineVersion: {0}", InEngineVersion);
 		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';

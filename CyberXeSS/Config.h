@@ -2,15 +2,6 @@
 #include <optional>
 #include <filesystem>
 
-typedef enum NVNGX_EngineType
-{
-	NVNGX_ENGINE_TYPE_CUSTOM = 0,
-	NVNGX_ENGINE_TYPE_UNREAL,
-	NVNGX_ENGINE_TYPE_UNITY,
-	NVNGX_ENGINE_TYPE_OMNIVERSE,
-	NVNGX_ENGINE_COUNT
-} NVNGX_EngineType;
-
 typedef enum NVNGX_Api
 {
 	NVNGX_NOT_SELECTED = 0,
@@ -39,6 +30,7 @@ public:
 	std::optional<bool> LoggingEnabled;
 	std::optional<bool> LogToFile;
 	std::optional<bool> LogToConsole;
+	std::optional<bool> LogToNGX;
 	std::optional<bool> OpenConsole;
 	std::optional<int> LogLevel;
 	std::optional<std::string> LogFileName;
@@ -90,9 +82,10 @@ public:
 
 
 	// Engine Info
-	NVNGX_EngineType NVNGX_Engine = NVNGX_ENGINE_TYPE_CUSTOM;
+	NVSDK_NGX_EngineType NVNGX_Engine = NVSDK_NGX_ENGINE_TYPE_CUSTOM;
 	bool NVNGX_EngineVersion5 = false;
 	NVNGX_Api Api = NVNGX_NOT_SELECTED;
+	NVSDK_NGX_LoggingInfo NVSDK_Logger{ nullptr, NVSDK_NGX_LOGGING_LEVEL_OFF, false };
 
 	void Reload();
 

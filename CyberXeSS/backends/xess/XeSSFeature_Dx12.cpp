@@ -49,7 +49,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			ResourceBarrier(InCommandList, params.pColorTexture,
 				(D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		else if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL)
+		else if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL)
 		{
 			Config::Instance()->ColorResourceBarrier = (int)D3D12_RESOURCE_STATE_RENDER_TARGET;
 

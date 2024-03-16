@@ -24,6 +24,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 	std::string str(string.begin(), string.end());
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext InApplicationDataPath {0}", str);
 
+	//if (InFeatureInfo)
+	//	Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
+
 	Config::Instance()->Api = NVNGX_DX12;
 
 	return NVSDK_NGX_Result_Success;
@@ -42,9 +45,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProj
 	spdlog::info("NVSDK_NGX_D3D12_Init_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::info("NVSDK_NGX_D3D12_Init_ProjectID InEngineType: {0}", (int)InEngineType);
 
-	Config::Instance()->NVNGX_Engine = (NVNGX_EngineType)InEngineType;
+	Config::Instance()->NVNGX_Engine = InEngineType;
 
-	if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL && InEngineVersion)
+	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 	{
 		spdlog::debug("NVSDK_NGX_D3D12_Init_ProjectID InEngineVersion: {0}", InEngineVersion);
 		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
@@ -59,9 +62,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* I
 	spdlog::info("NVSDK_NGX_D3D12_Init_with_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::info("NVSDK_NGX_D3D12_Init_with_ProjectID InEngineType: {0}", (int)InEngineType);
 
-	Config::Instance()->NVNGX_Engine = (NVNGX_EngineType)InEngineType;
+	Config::Instance()->NVNGX_Engine = InEngineType;
 
-	if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL && InEngineVersion)
+	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 	{
 		spdlog::debug("NVSDK_NGX_D3D12_Init_with_ProjectID InEngineVersion: {0}", InEngineVersion);
 		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
@@ -187,6 +190,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 	// Create feature
 	auto handleId = IFeature::GetNextHandleId();
 
+	// backend selection
 	// 0 : XeSS
 	// 1 : FSR2.2
 	// 2 : FSR2.1
@@ -211,6 +215,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 		Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12_212>(handleId, InParameters);
 	else
 		Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, InParameters);
+
+	// nvsdk logging
+	// ini first
+	if (!Config::Instance()->LogToNGX.has_value())
+	{
+		int nvsdkLogging = 0;
+		InParameters->Get("DLSSEnabler.Logging", &nvsdkLogging);
+
+		Config::Instance()->LogToNGX = nvsdkLogging > 0;
+	}
 
 	auto deviceContext = Dx12Contexts[handleId].get();
 	*OutHandle = deviceContext->Handle();

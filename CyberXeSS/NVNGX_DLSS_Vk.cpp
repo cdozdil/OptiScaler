@@ -56,6 +56,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 		vkGIPA = InGIPA;
 	}
 
+	//if (InFeatureInfo)
+	//	Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
+
 	Config::Instance()->Api = NVNGX_VULKAN;
 
 	return NVSDK_NGX_Result_Success;
@@ -68,9 +71,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID(const char* InPro
 	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InEngineType: {0}", (int)InEngineType);
 	
-	Config::Instance()->NVNGX_Engine = (NVNGX_EngineType)InEngineType;
+	Config::Instance()->NVNGX_Engine = InEngineType;
 
-	if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL && InEngineVersion)
+	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 	{
 		spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InEngineVersion: {0}", InEngineVersion);
 		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
@@ -86,16 +89,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_with_ProjectID(const char* 
 	spdlog::debug("NVSDK_NGX_VULKAN_Init_with_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::debug("NVSDK_NGX_VULKAN_Init_with_ProjectID InEngineType {0}", (int)InEngineType);
 
-	Config::Instance()->NVNGX_Engine = (NVNGX_EngineType)InEngineType;
+	Config::Instance()->NVNGX_Engine = InEngineType;
 
-	if (Config::Instance()->NVNGX_Engine == NVNGX_ENGINE_TYPE_UNREAL && InEngineVersion)
+	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 	{
 		spdlog::debug("NVSDK_NGX_VULKAN_Init_with_ProjectID InEngineVersion: {0}", InEngineVersion);
 		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
 	}
-
-	Config::Instance()->NVNGX_Engine = (NVNGX_EngineType)InEngineType;
-	Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion;
 
 	return NVSDK_NGX_VULKAN_Init(0x1337, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InFeatureInfo, InSDKVersion);
 }

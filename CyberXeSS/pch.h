@@ -12,6 +12,8 @@
 #define NVSDK_NGX
 #define NGX_ENABLE_DEPRECATED_GET_PARAMETERS
 #define NGX_ENABLE_DEPRECATED_SHUTDOWN
+#include <nvsdk_ngx.h>
+#include <nvsdk_ngx_defs.h>
 
 #define SPDLOG_USE_STD_FORMAT
 #include "spdlog/spdlog.h"

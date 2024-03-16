@@ -14,12 +14,6 @@ Config::Config(std::wstring fileName)
 
 void Config::Reload()
 {
-	LogLevel = 2;
-	LoggingEnabled = false;
-
-	NetworkModel = 0;
-	BuildPipelines = true;
-
 	if (ini.LoadFile(absoluteFileName.c_str()) == SI_OK)
 	{
 		// Upscalers
@@ -32,27 +26,25 @@ void Config::Reload()
 		NetworkModel = readInt("XeSS", "NetworkModel");
 		OverrideQuality = readInt("XeSS", "OverrideQuality");
 
+		// logging
 		LoggingEnabled = readBool("Log", "LoggingEnabled");
 
 		if (LoggingEnabled.value_or(true))
-		{
 			LogLevel = readInt("Log", "LogLevel");
-			
-			LogToConsole = readBool("Log", "LogToConsole");
-			LogToFile = readBool("Log", "LogToFile");
-
-			OpenConsole = readBool("Log", "OpenConsole");
-
-			LogFileName = readString("Log", "LogFile");
-
-			if (!LogFileName.has_value())
-			{
-				auto logFile = Util::DllPath().parent_path() / "CyberXeSS.log";
-				LogFileName = logFile.string();
-			}
-		}
 		else
 			LogLevel = spdlog::level::off;
+
+		LogToConsole = readBool("Log", "LogToConsole");
+		LogToFile = readBool("Log", "LogToFile");
+		LogToNGX = readBool("Log", "LogToNGX");
+		OpenConsole = readBool("Log", "OpenConsole");
+		LogFileName = readString("Log", "LogFile");
+
+		if (!LogFileName.has_value())
+		{
+			auto logFile = Util::DllPath().parent_path() / "CyberXeSS.log";
+			LogFileName = logFile.string();
+		}
 
 		// Sharpness
 		OverrideSharpness = readBool("Sharpness", "OverrideSharpness");
@@ -88,16 +80,20 @@ void Config::Reload()
 			QualityRatio_UltraPerformance = readFloat("QualityOverrides", "QualityRatioUltraPerformance");
 		}
 
+		// hotfixes
 		DisableReactiveMask = readBool("Hotfix", "DisableReactiveMask");
+
 		ColorResourceBarrier = readInt("Hotfix", "ColorResourceBarrier");
 		MVResourceBarrier = readInt("Hotfix", "MotionVectorResourceBarrier");
 		DepthResourceBarrier = readInt("Hotfix", "DepthResourceBarrier");
-		MaskResourceBarrier = readInt("Hotfix", "ColorMaskResourceBarrier");		
+		MaskResourceBarrier = readInt("Hotfix", "ColorMaskResourceBarrier");
 		ExposureResourceBarrier = readInt("Hotfix", "ExposureResourceBarrier");
 		OutputResourceBarrier = readInt("Hotfix", "OutputResourceBarrier");
 
+		// fsr
 		FsrVerticalFov = readFloat("FSR", "VerticalFov");
 
+		// dx11wdx12
 		UseSafeSyncQueries = readInt("Dx11withDx12", "UseSafeSyncQueries");
 	}
 }
@@ -182,7 +178,7 @@ std::optional<bool> Config::readBool(std::string section, std::string key)
 
 Config* Config::Instance()
 {
-	if(!_config)
+	if (!_config)
 		_config = new Config(L"nvngx.ini");
 
 	return _config;
