@@ -1,5 +1,14 @@
 #pragma once
-#include "pch.h"
+#include <optional>
+#include <filesystem>
+
+typedef enum NVNGX_Api
+{
+	NVNGX_NOT_SELECTED = 0,
+	NVNGX_DX11,
+	NVNGX_DX12,
+	NVNGX_VULKAN,
+} NVNGX_Api;
 
 class Config
 {
@@ -21,6 +30,7 @@ public:
 	std::optional<bool> LoggingEnabled;
 	std::optional<bool> LogToFile;
 	std::optional<bool> LogToConsole;
+	std::optional<bool> LogToNGX;
 	std::optional<bool> OpenConsole;
 	std::optional<int> LogLevel;
 	std::optional<std::string> LogFileName;
@@ -32,10 +42,11 @@ public:
 
 	// CAS
 	std::optional<bool> CasEnabled;
-	std::optional<int> ColorSpaceConversion;
-	std::optional<bool> CasOverrideSharpness;
-	std::optional<float> CasSharpness;
+	std::optional<int> CasColorSpaceConversion;
 
+	//Sharpness 
+	std::optional<bool> OverrideSharpness;
+	std::optional<float> Sharpness;
 
 	// Upscale Ratio Override
 	std::optional<bool> UpscaleRatioOverrideEnabled;
@@ -58,10 +69,30 @@ public:
 	std::optional<int32_t> MaskResourceBarrier;
 	std::optional<int32_t> OutputResourceBarrier;
 
+	// Upscalers
+	std::optional<std::string> Dx11Upscaler;
+	std::optional<std::string> Dx12Upscaler;
+	std::optional<std::string> VulkanUpscaler;
+
+	// fsr
+	std::optional<float> FsrVerticalFov;
+
+	// dx11wdx12
+	std::optional<int> UseSafeSyncQueries;
+
+
+	// Engine Info
+	NVSDK_NGX_EngineType NVNGX_Engine = NVSDK_NGX_ENGINE_TYPE_CUSTOM;
+	bool NVNGX_EngineVersion5 = false;
+	NVNGX_Api Api = NVNGX_NOT_SELECTED;
+	NVSDK_NGX_LoggingInfo NVSDK_Logger{ nullptr, NVSDK_NGX_LOGGING_LEVEL_OFF, false };
+
 	void Reload();
 
+	static Config* Instance();
+
 private:
-	CSimpleIniA ini;
+	inline static Config* _config;
 
 	std::filesystem::path absoluteFileName;
 

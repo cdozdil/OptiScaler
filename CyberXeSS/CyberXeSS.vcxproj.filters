@@ -9,216 +9,153 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="IFeature">
+      <UniqueIdentifier>{0d5515bc-9b5a-4d33-a918-989059c29e08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Config">
+      <UniqueIdentifier>{eb352600-7864-4906-a7f8-b065f137cc80}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NVNGX">
+      <UniqueIdentifier>{5942b1ae-09d7-4444-8936-97ee514249b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="XeSS">
+      <UniqueIdentifier>{5b727ebe-fcfc-4b50-b956-8b7ba3456954}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Util">
+      <UniqueIdentifier>{8cf642d0-7481-41f8-b96f-f3ecfdd50752}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Other">
+      <UniqueIdentifier>{3ee7ea7b-4d96-4a1f-aa88-8dd4c5d506ee}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="framework.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Config.h">
+      <Filter>Config</Filter>
     </ClInclude>
-    <ClInclude Include="pch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CyberXess.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="NVNGX_Parameter.h">
+      <Filter>NVNGX</Filter>
     </ClInclude>
     <ClInclude Include="Util.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="CyberXess.h">
+      <Filter>Other</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Other</Filter>
+    </ClInclude>
+    <ClInclude Include="backends\fsr2\FSR2Feature.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Config.h">
+    <ClInclude Include="backends\fsr2\FSR2Feature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cas\ffx_cas_private.h">
+    <ClInclude Include="backends\fsr2\FSR2Feature_Dx11On12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cas\ffx_object_management.h">
+    <ClInclude Include="backends\fsr2\FSR2Feature_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cas\shared\ffx_shader_blobs.h">
+    <ClInclude Include="backends\fsr2\FSR2Feature_Vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_shaderblobs.h">
+    <ClInclude Include="backends\IFeature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_16bit_permutations.h">
+    <ClInclude Include="backends\IFeature_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_permutations.h">
+    <ClInclude Include="backends\IFeature.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_16bit_permutations.h">
+    <ClInclude Include="backends\IFeature_Vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_8af9cc39542bf35bb40b4bb8ae4d55b6.h">
+    <ClInclude Include="backends\xess\XeSSFeature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_16bit_9f81ecd320aa8aff19e833b4ddea7d0e.h">
+    <ClInclude Include="cas\include\backends\shared\ffx_shader_blobs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_16bit_14b6b45c19f8bef7f1c9c210a0b759b0.h">
+    <ClInclude Include="backends\fsr2_212\FSR2Feature_212.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_16bit_75e453678ddf59ccd581676c1ae1a2bd.h">
+    <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx11On12_212.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_16bit_370e66e23c2617f1d0d1a41ce92020d1.h">
+    <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx12_212.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_16bit_6356b189c5394e8ad58e0feed21340e9.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_16bit_b899ff1caf94993c974933c02dab0fb8.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_16bit_c65a1a3b559e19386ef3025d545a3c75.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_16bit_dea07810b46ba36566bd4aa1ff78a82a.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_16bit_f9509b7419ac3ee6c695698856e59a0b.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_16bit_f5892826f4370686e7fda97005b035f1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_88eec194ce38246cc0c6cef61356d750.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_614a6e8563a7739e2e1d1da9a912cfde.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_713b2dd57ee05ace40553c55be3046cb.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_88708abc518c21de032439084a94984f.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_d8fdba1e88140f2ffede2256569e6847.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_dd67b43cea4b5b5de2be677e3d8fbed2.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_ee2bdf5ae8a17c2f999bce0f168d7d77.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_fa3d883becd2c65411840779acf5d69a.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_fe571d470c8b4b84ac904f8b27772e65.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_5eac039bab8b5c1c000063672134a3c9.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_16bit_6a2787277532a9c0bbd0b938a8a52f93.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_16bit_63d861ab10fb45dd4581b0b9f04a68cd.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_16bit_071c6ce55ce3193bad742e5c24b3c4ca.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_16bit_477af1119a602c2fe95b47dbb192cc15.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_16bit_6826c6e0ba2ab6d8280fc00af0964aaa.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_16bit_391091f5c9521b4b9ae7b81e048857a6.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_16bit_a812826a8db423e775d5777a998f593d.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_16bit_b9ee87e9cec8de305f5b2603065fcc21.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_16bit_bf2fa42b327534c6759981f2cd5f9fbc.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_16bit_dcf57d714c2c7dbf7a034b385635f3f5.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_permutations.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_49b4d708efd7f819fd04bbaaffb26384.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_3121abbb07703be0f238c81f019132be.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_83902f06daf0596069bc80aebf06dcb2.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_939376e5371bfeaa5c316c9b8f966af7.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_4805066f235102778d56cc2ee4cb57d7.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_adaa0bf14c3e27aa53c21008b01bc19d.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_c9aaf6985030cbcf4344514366e3156c.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_e7c573b4d3534237e56145ee2076445f.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cas\shared\blob_accessors\ffx_cas_sharpen_pass_wave64_ec8c698e41b4daa7d74a1e6bd13b0240.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NGXParameter.h">
+    <ClInclude Include="backends\fsr2_212\FSR2Feature_Vk_212.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="dllmain.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Config.cpp">
+      <Filter>Config</Filter>
     </ClCompile>
-    <ClCompile Include="pch.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="Util.cpp">
+      <Filter>Util</Filter>
     </ClCompile>
     <ClCompile Include="CyberXess.cpp">
+      <Filter>Other</Filter>
+    </ClCompile>
+    <ClCompile Include="NVNGX_DLSS_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Util.cpp">
+    <ClCompile Include="NVNGX_DLSS_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Config.cpp">
+    <ClCompile Include="NVNGX_DLSS_Vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CyberXessDx12.cpp">
+    <ClCompile Include="backends\fsr2\FSR2Feature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CyberXessDx11.cpp">
+    <ClCompile Include="backends\fsr2\FSR2Feature_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CyberXessVk.cpp">
+    <ClCompile Include="backends\fsr2\FSR2Feature_Dx11On12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cas\ffx_cas.cpp">
+    <ClCompile Include="backends\fsr2\FSR2Feature_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cas\ffx_assert.cpp">
+    <ClCompile Include="backends\fsr2\FSR2Feature_Vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cas\ffx_object_management.cpp">
+    <ClCompile Include="backends\IFeature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cas\ffx_dx12.cpp">
+    <ClCompile Include="backends\IFeature_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cas\shared\ffx_shader_blobs.cpp">
+    <ClCompile Include="backends\xess\XeSSFeature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cas\shared\blob_accessors\ffx_cas_shaderblobs.cpp">
+    <ClCompile Include="backends\xess\XeSSFeature.h">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\xess\XeSSFeature_Dx11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\xess\XeSSFeature_Dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\xess\XeSSFeature_Dx12.h">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\fsr2_212\FSR2Feature_212.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\fsr2_212\FSR2Feature_Dx11On12_212.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\fsr2_212\FSR2Feature_Dx12_212.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\fsr2_212\FSR2Feature_Vk_212.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

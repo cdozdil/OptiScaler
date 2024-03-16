@@ -1,6 +1,10 @@
+#pragma once
 #include "pch.h"
 #include "Config.h"
+#include <SimpleIni.h>
 #include "Util.h"
+
+static CSimpleIniA ini;
 
 Config::Config(std::wstring fileName)
 {
@@ -10,50 +14,45 @@ Config::Config(std::wstring fileName)
 
 void Config::Reload()
 {
-	LogLevel = 2;
-	LoggingEnabled = false;
-
-	NetworkModel = 0;
-	BuildPipelines = true;
-
 	if (ini.LoadFile(absoluteFileName.c_str()) == SI_OK)
 	{
+		// Upscalers
+		Dx11Upscaler = readString("Upscalers", "Dx11Upscaler", true);
+		Dx12Upscaler = readString("Upscalers", "Dx12Upscaler", true);
+		VulkanUpscaler = readString("Upscalers", "VulkanUpscaler", true);
+
+		// XeSS
 		BuildPipelines = readBool("XeSS", "BuildPipelines");
 		NetworkModel = readInt("XeSS", "NetworkModel");
 		OverrideQuality = readInt("XeSS", "OverrideQuality");
 
+		// logging
 		LoggingEnabled = readBool("Log", "LoggingEnabled");
 
 		if (LoggingEnabled.value_or(true))
-		{
 			LogLevel = readInt("Log", "LogLevel");
-			
-			LogToConsole = readBool("Log", "LogToConsole");
-			LogToFile = readBool("Log", "LogToFile");
-
-			OpenConsole = readBool("Log", "OpenConsole");
-
-			LogFileName = readString("Log", "LogFile");
-
-			if (!LogFileName.has_value())
-			{
-				const auto now = std::chrono::system_clock::now();
-				auto str = std::format("{:%d%m%Y_%H%M%OS}", now);
-
-				auto path = Util::DllPath().parent_path();
-				auto logFile = path.string() + "/log_xess_" + str + ".log";
-
-				LogFileName = logFile;
-			}
-		}
 		else
 			LogLevel = spdlog::level::off;
 
+		LogToConsole = readBool("Log", "LogToConsole");
+		LogToFile = readBool("Log", "LogToFile");
+		LogToNGX = readBool("Log", "LogToNGX");
+		OpenConsole = readBool("Log", "OpenConsole");
+		LogFileName = readString("Log", "LogFile");
+
+		if (!LogFileName.has_value())
+		{
+			auto logFile = Util::DllPath().parent_path() / "CyberXeSS.log";
+			LogFileName = logFile.string();
+		}
+
+		// Sharpness
+		OverrideSharpness = readBool("Sharpness", "OverrideSharpness");
+		Sharpness = readFloat("Sharpness", "Sharpness");
+
 		// CAS
 		CasEnabled = readBool("CAS", "Enabled");
-		CasOverrideSharpness = readBool("CAS", "OverrideSharpness");
-		CasSharpness = readFloat("CAS", "Sharpness");
-		ColorSpaceConversion = readInt("CAS", "ColorSpaceConversion");
+		CasColorSpaceConversion = readInt("CAS", "ColorSpaceConversion");
 
 		// Depth
 		DepthInverted = readBool("Depth", "DepthInverted");
@@ -81,13 +80,21 @@ void Config::Reload()
 			QualityRatio_UltraPerformance = readFloat("QualityOverrides", "QualityRatioUltraPerformance");
 		}
 
+		// hotfixes
 		DisableReactiveMask = readBool("Hotfix", "DisableReactiveMask");
+
 		ColorResourceBarrier = readInt("Hotfix", "ColorResourceBarrier");
 		MVResourceBarrier = readInt("Hotfix", "MotionVectorResourceBarrier");
 		DepthResourceBarrier = readInt("Hotfix", "DepthResourceBarrier");
-		MaskResourceBarrier = readInt("Hotfix", "ColorMaskResourceBarrier");		
+		MaskResourceBarrier = readInt("Hotfix", "ColorMaskResourceBarrier");
 		ExposureResourceBarrier = readInt("Hotfix", "ExposureResourceBarrier");
 		OutputResourceBarrier = readInt("Hotfix", "OutputResourceBarrier");
+
+		// fsr
+		FsrVerticalFov = readFloat("FSR", "VerticalFov");
+
+		// dx11wdx12
+		UseSafeSyncQueries = readInt("Dx11withDx12", "UseSafeSyncQueries");
 	}
 }
 
@@ -169,3 +176,10 @@ std::optional<bool> Config::readBool(std::string section, std::string key)
 	return std::nullopt;
 }
 
+Config* Config::Instance()
+{
+	if (!_config)
+		_config = new Config(L"nvngx.ini");
+
+	return _config;
+}
