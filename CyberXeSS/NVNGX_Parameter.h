@@ -62,6 +62,9 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 
 	const std::optional<float> QualityRatio = GetQualityOverrideRatio(enumPQValue);
 
+	bool usingXess = (Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") == "xess") ||
+		(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->Dx12Upscaler.value_or("xess") == "xess");
+
 	if (QualityRatio.has_value()) {
 		OutHeight = (unsigned int)((float)Height / QualityRatio.value());
 		OutWidth = (unsigned int)((float)Width / QualityRatio.value());
@@ -73,9 +76,19 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 		switch (enumPQValue)
 		{
 		case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-			OutHeight = (unsigned int)((float)Height / 2.5);
-			OutWidth = (unsigned int)((float)Width / 2.5);
-			scalingRatio = 0.4f;
+			if (usingXess)
+			{
+				OutHeight = (unsigned int)((float)Height / 2.5);
+				OutWidth = (unsigned int)((float)Width / 2.5);
+				scalingRatio = 0.33333333f;
+			}
+			else
+			{
+				OutHeight = (unsigned int)((float)Height / 3.0);
+				OutWidth = (unsigned int)((float)Width / 3.0);
+				scalingRatio = 0.4f;
+			}
+
 			break;
 
 		case NVSDK_NGX_PerfQuality_Value_MaxPerf:
@@ -86,9 +99,9 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 
 		case NVSDK_NGX_PerfQuality_Value_Balanced:
 			//UE5 ratio fix
-			if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL &&
-				Config::Instance()->NVNGX_EngineVersion5 &&
-				Config::Instance()->Dx12Upscaler.value_or("xess") == "xess")
+			if (usingXess && 
+				Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL &&
+				Config::Instance()->NVNGX_EngineVersion5)
 			{
 				OutHeight = (unsigned int)((float)Height / 1.6666666667);
 				OutWidth = (unsigned int)((float)Width / 1.6666666667);
@@ -96,18 +109,18 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 			}
 			else
 			{
-				OutHeight = (unsigned int)((float)Height / 1.699215044247788);
-				OutWidth = (unsigned int)((float)Width / 1.699215044247788);
-				scalingRatio = 0.58850703f;
+				OutHeight = (unsigned int)((float)Height / 1.7);
+				OutWidth = (unsigned int)((float)Width / 1.7);
+				scalingRatio = 0.58823529f;
 			}
 
 			break;
 
 		case NVSDK_NGX_PerfQuality_Value_MaxQuality:
 			//UE5 ratio fix
-			if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL &&
-				Config::Instance()->NVNGX_EngineVersion5 &&
-				Config::Instance()->Dx12Upscaler.value_or("xess") == "xess")
+			if (usingXess && 
+				Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL &&
+				Config::Instance()->NVNGX_EngineVersion5)
 			{
 				OutHeight = (unsigned int)((float)Height / 1.4285714286);
 				OutWidth = (unsigned int)((float)Width / 1.4285714286);
@@ -124,9 +137,9 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 
 		case NVSDK_NGX_PerfQuality_Value_UltraQuality:
 			//UE5 ratio fix
-			if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL &&
-				Config::Instance()->NVNGX_EngineVersion5 &&
-				Config::Instance()->Dx12Upscaler.value_or("xess") == "xess")
+			if (usingXess && 
+				Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL &&
+				Config::Instance()->NVNGX_EngineVersion5)
 			{
 				OutHeight = (unsigned int)((float)Height / 1.25);
 				OutWidth = (unsigned int)((float)Width / 1.25);
@@ -134,9 +147,9 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 			}
 			else
 			{
-				OutHeight = (unsigned int)((float)Height / 1.304347826086957);
-				OutWidth = (unsigned int)((float)Width / 1.304347826086957);
-				scalingRatio = 0.76666666f;
+				OutHeight = (unsigned int)((float)Height / 1.3);
+				OutWidth = (unsigned int)((float)Width / 1.3);
+				scalingRatio = 0.769230769f;
 			}
 
 			break;
@@ -149,19 +162,19 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 
 		default:
 			//UE5 ratio fix
-			if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL &&
-				Config::Instance()->NVNGX_EngineVersion5 &&
-				Config::Instance()->Dx12Upscaler.value_or("xess") == "xess")
+			if (usingXess &&
+				Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL &&
+				Config::Instance()->NVNGX_EngineVersion5)
 			{
-				OutHeight = (unsigned int)((float)Height / 1.6666666667);
-				OutWidth = (unsigned int)((float)Width / 1.6666666667);
+				OutHeight = (unsigned int)((float)Height / 1.7);
+				OutWidth = (unsigned int)((float)Width / 1.7);
 				scalingRatio = 0.6f;
 			}
 			else
 			{
-				OutHeight = (unsigned int)((float)Height / 1.699215044247788);
-				OutWidth = (unsigned int)((float)Width / 1.699215044247788);
-				scalingRatio = 0.58850703f;
+				OutHeight = (unsigned int)((float)Height / 1.7);
+				OutWidth = (unsigned int)((float)Width / 1.7);
+				scalingRatio = 0.58823529f;
 			}
 
 			break;
@@ -169,7 +182,8 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	}
 
 	// Check for Unreal plugin
-	if (Width != Height)
+	// Only do this for xess
+	if (usingXess && Width != Height)
 	{
 		OutWidth = OutWidth + (OutWidth % 2);
 		OutHeight = OutHeight + (OutHeight % 2);
@@ -188,8 +202,16 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	}
 	else
 	{
-		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, (unsigned int)((float)Width / 2.5));
-		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, (unsigned int)((float)Height / 2.5));
+		if (usingXess)
+		{
+			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, (unsigned int)((float)Width / 2.5));
+			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, (unsigned int)((float)Height / 2.5));
+		}
+		else
+		{
+			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, (unsigned int)((float)Width / 3.0));
+			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, (unsigned int)((float)Height / 3.0));
+		}
 	}
 
 	InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Max_Render_Width, Width);
@@ -218,7 +240,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetStatsCallback(NVSDK_NGX_Par
 {
 	spdlog::debug("NVSDK_NGX_DLSS_GetStatsCallback");
 
-	if(!InParams)
+	if (!InParams)
 		return NVSDK_NGX_Result_Success;
 
 	unsigned int Width;
