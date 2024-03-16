@@ -198,11 +198,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 	// Create feature
 	auto handleId = IFeature::GetNextHandleId();
 
-	if (Config::Instance()->Dx11Upscaler.value_or("fsr") == "fsr")
+	if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "fsr22")
 		Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11>(handleId, InParameters);
-	else if (Config::Instance()->Dx11Upscaler.value_or("fsr") == "fsr22_12")
+	else if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "fsr22_12")
 		Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12>(handleId, InParameters);
-	else if (Config::Instance()->Dx11Upscaler.value_or("fsr") == "fsr21_12")
+	else if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "fsr21_12")
 		Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12_212>(handleId, InParameters);
 	else
 		Dx11Contexts[handleId] = std::make_unique<XeSSFeatureDx11>(handleId, InParameters);
