@@ -76,6 +76,7 @@ public:
 
 	// fsr
 	std::optional<float> FsrVerticalFov;
+	std::optional<float> FsrHorizontalFov;
 
 	// dx11wdx12
 	std::optional<int> UseSafeSyncQueries;

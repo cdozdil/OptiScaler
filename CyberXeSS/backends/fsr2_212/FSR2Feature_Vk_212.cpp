@@ -343,6 +343,8 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Par
 
 	if (Config::Instance()->FsrVerticalFov.has_value())
 		params.cameraFovAngleVertical = Config::Instance()->FsrVerticalFov.value() * 0.01745329251f;
+	else if (Config::Instance()->FsrHorizontalFov.value_or(0.0f) > 0.0f)
+		params.cameraFovAngleVertical = 2.0f * atan((tan(Config::Instance()->FsrHorizontalFov.value() * 0.01745329251f) * 0.5f) / (float)DisplayHeight() * (float)DisplayWidth());
 	else
 		params.cameraFovAngleVertical = 1.047198f;
 

@@ -92,6 +92,7 @@ void Config::Reload()
 
 		// fsr
 		FsrVerticalFov = readFloat("FSR", "VerticalFov");
+		FsrHorizontalFov = readFloat("FSR", "HorizontalFov");
 
 		// dx11wdx12
 		UseSafeSyncQueries = readInt("Dx11withDx12", "UseSafeSyncQueries");

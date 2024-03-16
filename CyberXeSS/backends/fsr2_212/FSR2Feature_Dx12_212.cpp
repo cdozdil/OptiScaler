@@ -28,6 +28,8 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 	InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
 	InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffset.y);
 
+	spdlog::debug("FSR2FeatureDx12::Evaluate Jitter Offset: {0}x{1}", params.jitterOffset.x, params.jitterOffset.y);
+
 	unsigned int reset;
 	InParameters->Get(NVSDK_NGX_Parameter_Reset, &reset);
 	params.reset = (reset == 1);
@@ -182,6 +184,8 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 	{
 		params.motionVectorScale.x = MVScaleX;
 		params.motionVectorScale.y = MVScaleY;
+
+		spdlog::debug("FSR2FeatureDx12::Evaluate MVScales: {0}x{1}", params.motionVectorScale.x, params.motionVectorScale.y);
 	}
 	else
 		spdlog::warn("FSR2FeatureDx12::Evaluate Can't get motion vector scales!");
@@ -208,6 +212,8 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 		}
 	}
 
+	spdlog::debug("FSR2FeatureDx12::Evaluate Sharpness: {0}", params.sharpness);
+
 	if (IsDepthInverted())
 	{
 		params.cameraFar = 0.0f;
@@ -221,11 +227,17 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 
 	if (Config::Instance()->FsrVerticalFov.has_value())
 		params.cameraFovAngleVertical = Config::Instance()->FsrVerticalFov.value() * 0.01745329251f;
+	else if (Config::Instance()->FsrHorizontalFov.value_or(0.0f) > 0.0f)
+		params.cameraFovAngleVertical = 2.0f * atan((tan(Config::Instance()->FsrHorizontalFov.value() * 0.01745329251f) * 0.5f) / (float)DisplayHeight() * (float)DisplayWidth());
 	else
 		params.cameraFovAngleVertical = 1.047198f;
 
+	spdlog::debug("FSR2FeatureDx12::Evaluate FsrVerticalFov: {0}", params.cameraFovAngleVertical);
+
 	if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) != NVSDK_NGX_Result_Success || params.frameTimeDelta < 1.0f)
 		params.frameTimeDelta = (float)GetDeltaTime();
+
+	spdlog::debug("FSR2FeatureDx12::Evaluate FrameTimeDeltaInMsec: {0}", params.frameTimeDelta);
 
 	params.preExposure = 1.0f;
 
@@ -298,8 +310,8 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	}
 
 	_contextDesc.device = Fsr212::ffxGetDeviceDX12_212(Device);
-	_contextDesc.maxRenderSize.width = RenderWidth();
-	_contextDesc.maxRenderSize.height = RenderHeight();
+	_contextDesc.maxRenderSize.width = DisplayWidth();
+	_contextDesc.maxRenderSize.height = DisplayHeight();
 	_contextDesc.displaySize.width = DisplayWidth();
 	_contextDesc.displaySize.height = DisplayHeight();
 
