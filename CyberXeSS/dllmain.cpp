@@ -7,8 +7,7 @@
 #include "spdlog/sinks/callback_sink.h"
 
 #include "Config.h"
-
-HMODULE dllModule;
+#include "Util.h"
 
 static bool InitializeConsole()
 {
@@ -139,18 +138,20 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 	{
 	case DLL_PROCESS_ATTACH:
 		DisableThreadLibraryCalls(hModule);
-		dllModule = hModule;
+
+		cyberDllModule = hModule;
+
+		if (currentHwnd == nullptr)
+			currentHwnd = Util::GetProcessWindow();
+
 		PrepareLogger();
-		break;
-
-	case DLL_THREAD_ATTACH:
-		break;
-
-	case DLL_THREAD_DETACH:
 		break;
 
 	case DLL_PROCESS_DETACH:
 		CloseLogger();
+		break;
+
+	default:
 		break;
 	}
 

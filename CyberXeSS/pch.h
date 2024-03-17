@@ -17,3 +17,6 @@
 
 #define SPDLOG_USE_STD_FORMAT
 #include "spdlog/spdlog.h"
+
+inline HMODULE cyberDllModule;
+inline HWND currentHwnd = nullptr;

@@ -10,6 +10,8 @@
 #include "backends/fsr2_212/FSR2Feature_Dx12_212.h"
 #include "NVNGX_Parameter.h"
 
+#include "imgui/imgui_dx12.h"
+
 inline ID3D12Device* D3D12Device = nullptr;
 static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
 
@@ -300,7 +302,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	const auto deviceContext = Dx12Contexts[InFeatureHandle->Id].get();
 
 	if (deviceContext->Evaluate(InCmdList, InParameters))
+	{
+		ID3D12Resource* out;
+		InParameters->Get(NVSDK_NGX_Parameter_Output, &out);
+
+		RenderImGui_DX12(currentHwnd, D3D12Device, InCmdList, out);
 		return NVSDK_NGX_Result_Success;
+	}
 	else
 		return NVSDK_NGX_Result_Fail;
 }

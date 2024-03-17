@@ -82,7 +82,7 @@
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)CyberXess\cas\lib;$(SolutionDir)CyberXess\fsr2\lib;$(SolutionDir)CyberXess\fsr2_212\lib;$(SolutionDir)CyberXess\vulkan;$(SolutionDir)external\xess\lib;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
     <TargetName>nvngx</TargetName>
-    <OutDir>F:\Games\Steam\steamapps\common\Ratchet &amp; Clank - Rift Apart</OutDir>
+    <OutDir>E:\Games\Deep Rock Galactic\FSD\Binaries\Win64\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -182,7 +182,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="backends\fsr2_212\FSR2Feature_Vk_212.h" />
     <ClInclude Include="cas\include\backends\shared\ffx_shader_blobs.h" />
     <ClInclude Include="Config.h" />
-    <ClInclude Include="CyberXess.h" />
     <ClInclude Include="backends\fsr2\FSR2Feature.h" />
     <ClInclude Include="backends\fsr2\FSR2Feature_Dx11.h" />
     <ClInclude Include="backends\fsr2\FSR2Feature_Dx11On12.h" />
@@ -192,6 +191,16 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="backends\IFeature_Dx12.h" />
     <ClInclude Include="backends\IFeature.h" />
     <ClInclude Include="backends\IFeature_Vk.h" />
+    <ClInclude Include="imgui\imgui\imconfig.h" />
+    <ClInclude Include="imgui\imgui\imgui.h" />
+    <ClInclude Include="imgui\imgui\imgui_impl_dx11.h" />
+    <ClInclude Include="imgui\imgui\imgui_impl_dx12.h" />
+    <ClInclude Include="imgui\imgui\imgui_impl_vulkan.h" />
+    <ClInclude Include="imgui\imgui\imgui_impl_win32.h" />
+    <ClInclude Include="imgui\imgui\imgui_internal.h" />
+    <ClInclude Include="imgui\imgui\imstb_rectpack.h" />
+    <ClInclude Include="imgui\imgui\imstb_textedit.h" />
+    <ClInclude Include="imgui\imgui\imstb_truetype.h" />
     <ClInclude Include="NVNGX_Parameter.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Util.h" />
@@ -203,7 +212,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="backends\fsr2_212\FSR2Feature_Dx12_212.cpp" />
     <ClCompile Include="backends\fsr2_212\FSR2Feature_Vk_212.cpp" />
     <ClCompile Include="Config.cpp" />
-    <ClCompile Include="CyberXess.cpp" />
     <ClCompile Include="backends\fsr2\FSR2Feature.cpp" />
     <ClCompile Include="backends\fsr2\FSR2Feature_Dx11.cpp" />
     <ClCompile Include="backends\fsr2\FSR2Feature_Dx11On12.cpp" />
@@ -211,6 +219,17 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="backends\fsr2\FSR2Feature_Vk.cpp" />
     <ClCompile Include="backends\IFeature.cpp" />
     <ClCompile Include="backends\IFeature_Dx12.cpp" />
+    <ClCompile Include="imgui\imgui\imgui.cpp" />
+    <ClCompile Include="imgui\imgui\imgui_demo.cpp" />
+    <ClCompile Include="imgui\imgui\imgui_draw.cpp" />
+    <ClCompile Include="imgui\imgui\imgui_impl_dx11.cpp" />
+    <ClCompile Include="imgui\imgui\imgui_impl_dx12.cpp" />
+    <ClCompile Include="imgui\imgui\imgui_impl_vulkan.cpp" />
+    <ClCompile Include="imgui\imgui\imgui_impl_win32.cpp" />
+    <ClCompile Include="imgui\imgui\imgui_tables.cpp" />
+    <ClCompile Include="imgui\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="imgui\imgui_dx12.cpp" />
+    <ClCompile Include="imgui\imgui_dx12.h" />
     <ClCompile Include="NVNGX_DLSS_Dx11.cpp" />
     <ClCompile Include="NVNGX_DLSS_Dx12.cpp" />
     <ClCompile Include="dllmain.cpp" />

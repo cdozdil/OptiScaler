@@ -5,6 +5,7 @@ namespace Util
 {
 	std::filesystem::path ExePath();
 	std::filesystem::path DllPath();
+	HWND GetProcessWindow();
 };
 
 inline void ThrowIfFailed(HRESULT hr)
