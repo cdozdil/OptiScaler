@@ -32,10 +32,10 @@ bool FSR2FeatureVk212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	}
 
 	_contextDesc.device = Fsr212::ffxGetDeviceVK212(Device);
-	_contextDesc.maxRenderSize.width = static_cast<uint32_t>(RenderWidth());
-	_contextDesc.maxRenderSize.height = static_cast<uint32_t>(RenderHeight());
-	_contextDesc.displaySize.width = static_cast<uint32_t>(DisplayWidth());
-	_contextDesc.displaySize.height = static_cast<uint32_t>(DisplayHeight());
+	_contextDesc.maxRenderSize.width = DisplayWidth();
+	_contextDesc.maxRenderSize.height = DisplayHeight();
+	_contextDesc.displaySize.width = DisplayWidth();
+	_contextDesc.displaySize.height = DisplayHeight();
 
 	_contextDesc.flags = 0;
 

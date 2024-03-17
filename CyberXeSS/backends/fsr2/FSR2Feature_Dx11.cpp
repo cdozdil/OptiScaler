@@ -116,8 +116,8 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	}
 
 	_contextDesc.device = ffxGetDeviceDX11(Device);
-	_contextDesc.maxRenderSize.width = RenderWidth();
-	_contextDesc.maxRenderSize.height = RenderHeight();
+	_contextDesc.maxRenderSize.width = DisplayWidth();
+	_contextDesc.maxRenderSize.height = DisplayHeight();
 	_contextDesc.displaySize.width = DisplayWidth();
 	_contextDesc.displaySize.height = DisplayHeight();
 
