@@ -10,9 +10,10 @@
 #include "backends/fsr2_212/FSR2Feature_Dx12_212.h"
 #include "NVNGX_Parameter.h"
 
-#include "imgui/imgui_dx12.h"
+#include "imgui/Imgui_Dx12.h"
 
 inline ID3D12Device* D3D12Device = nullptr;
+inline std::unique_ptr<Imgui_Dx12> ImguiDx12 = nullptr;
 static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
 
 #pragma region DLSS Init Calls
@@ -248,7 +249,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 #pragma endregion
 
 	if (deviceContext->Init(D3D12Device, InParameters))
+	{
+		if (ImguiDx12)
+			ImguiDx12.release();
+
+		ImguiDx12 = std::make_unique<Imgui_Dx12>(currentHwnd, D3D12Device);
+
 		return NVSDK_NGX_Result_Success;
+	}
 
 	spdlog::error("NVSDK_NGX_D3D12_CreateFeature: CreateFeature failed");
 	return NVSDK_NGX_Result_Fail;
@@ -303,10 +311,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 	if (deviceContext->Evaluate(InCmdList, InParameters))
 	{
-		ID3D12Resource* out;
-		InParameters->Get(NVSDK_NGX_Parameter_Output, &out);
+		if (ImguiDx12)
+		{
+			ID3D12Resource* out;
+			InParameters->Get(NVSDK_NGX_Parameter_Output, &out);
 
-		RenderImGui_DX12(currentHwnd, D3D12Device, InCmdList, out);
+			ImguiDx12->Render(InCmdList, out);
+		}
+
 		return NVSDK_NGX_Result_Success;
 	}
 	else
