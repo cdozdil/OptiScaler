@@ -182,7 +182,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="backends\fsr2_212\FSR2Feature_Vk_212.h" />
     <ClInclude Include="cas\include\backends\shared\ffx_shader_blobs.h" />
     <ClInclude Include="Config.h" />
-    <ClInclude Include="CyberXess.h" />
     <ClInclude Include="backends\fsr2\FSR2Feature.h" />
     <ClInclude Include="backends\fsr2\FSR2Feature_Dx11.h" />
     <ClInclude Include="backends\fsr2\FSR2Feature_Dx11On12.h" />
@@ -203,7 +202,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="backends\fsr2_212\FSR2Feature_Dx12_212.cpp" />
     <ClCompile Include="backends\fsr2_212\FSR2Feature_Vk_212.cpp" />
     <ClCompile Include="Config.cpp" />
-    <ClCompile Include="CyberXess.cpp" />
     <ClCompile Include="backends\fsr2\FSR2Feature.cpp" />
     <ClCompile Include="backends\fsr2\FSR2Feature_Dx11.cpp" />
     <ClCompile Include="backends\fsr2\FSR2Feature_Dx11On12.cpp" />

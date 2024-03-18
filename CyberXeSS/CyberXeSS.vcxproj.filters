@@ -38,9 +38,6 @@
     <ClInclude Include="Util.h">
       <Filter>Util</Filter>
     </ClInclude>
-    <ClInclude Include="CyberXess.h">
-      <Filter>Other</Filter>
-    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Other</Filter>
     </ClInclude>
@@ -97,9 +94,6 @@
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="Util.cpp">
       <Filter>Util</Filter>
-    </ClCompile>
-    <ClCompile Include="CyberXess.cpp">
-      <Filter>Other</Filter>
     </ClCompile>
     <ClCompile Include="NVNGX_DLSS_Dx12.cpp">
       <Filter>Source Files</Filter>
