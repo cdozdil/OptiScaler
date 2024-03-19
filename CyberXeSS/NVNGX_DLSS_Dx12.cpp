@@ -3,6 +3,7 @@
 
 #include <ankerl/unordered_dense.h>
 #include <dxgi1_4.h>
+#include "imgui/imgui/imgui_impl_dx12.h"
 
 #include "Config.h"
 #include "backends/xess/XeSSFeature_Dx12.h"
@@ -10,11 +11,8 @@
 #include "backends/fsr2_212/FSR2Feature_Dx12_212.h"
 #include "NVNGX_Parameter.h"
 
-#include "imgui/Imgui_Dx12.h"
-#include "Util.h"
-
 inline ID3D12Device* D3D12Device = nullptr;
-inline std::unique_ptr<Imgui_Dx12> ImguiDx12 = nullptr;
+//inline std::unique_ptr<Imgui_Dx12> ImguiDx12 = nullptr;
 static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
 inline HWND currentHwnd = nullptr;
 
@@ -92,9 +90,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 	Dx12Contexts.clear();
 
 	D3D12Device = nullptr;
-
-	if (ImguiDx12)
-		ImguiDx12.reset();
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -266,8 +261,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
 	if (deviceContext->Init(D3D12Device, InParameters))
 	{
-		if (ImguiDx12)
-			ImguiDx12.reset();
+		//if (ImguiDx12)
+		//	ImguiDx12.reset();
 
 		return NVSDK_NGX_Result_Success;
 	}
@@ -326,17 +321,22 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 	if (Config::Instance()->changeBackend)
 	{
-		Config::Instance()->changeBackend = false;
-		
+		// first release everything
 		auto handleId = InFeatureHandle->Id;
 
-		if (auto deviceContext = Dx12Contexts[handleId].get(); deviceContext)
+		if (auto dc = Dx12Contexts[handleId].get(); dc)
 		{
 			Dx12Contexts[handleId].reset();
 			auto it = std::find_if(Dx12Contexts.begin(), Dx12Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
-			Dx12Contexts.erase(it);			
+			Dx12Contexts.erase(it);
+
+			//if (ImguiDx12)
+			//	ImguiDx12.reset();
+
+			return NVSDK_NGX_Result_Success;
 		}
-		
+
+		// next frame prepare stuff
 		if (Config::Instance()->newBackend == "fsr22")
 		{
 			Config::Instance()->Dx12Upscaler = "fsr22";
@@ -353,38 +353,36 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 			Dx12Contexts[InFeatureHandle->Id] = std::make_unique<XeSSFeatureDx12>(InFeatureHandle->Id, InParameters);
 		}
 
-		deviceContext = Dx12Contexts[InFeatureHandle->Id].get();
-
-		if (deviceContext->Init(D3D12Device, InParameters))
+		if (Dx12Contexts[InFeatureHandle->Id].get()->Init(D3D12Device, InParameters))
 		{
-			if (ImguiDx12)
-				ImguiDx12.reset();
+			// next frame we will start rendering again
+			Config::Instance()->changeBackend = false;
+			return NVSDK_NGX_Result_Success;
 		}
-
-		return NVSDK_NGX_Result_Success;
+		else
+			return NVSDK_NGX_Result_Fail;
 	}
-	else
-		deviceContext = Dx12Contexts[InFeatureHandle->Id].get();
 
+	deviceContext = Dx12Contexts[InFeatureHandle->Id].get();
 
 	if (deviceContext->Evaluate(InCmdList, InParameters))
 	{
-		if (ImguiDx12 == nullptr)
-		{
-			if (currentHwnd == nullptr)
-				currentHwnd = Util::GetProcessWindow();
+		//if (ImguiDx12 == nullptr)
+		//{
+		//	if (currentHwnd == nullptr)
+		//		currentHwnd = Util::GetProcessWindow();
 
-			if (currentHwnd)
-				ImguiDx12 = std::make_unique<Imgui_Dx12>(currentHwnd, D3D12Device);
-		}
+		//	if (currentHwnd)
+		//		ImguiDx12 = std::make_unique<Imgui_Dx12>(currentHwnd, D3D12Device);
+		//}
 
-		if (ImguiDx12)
-		{
-			ID3D12Resource* out;
-			InParameters->Get(NVSDK_NGX_Parameter_Output, &out);
+		//if (ImguiDx12)
+		//{
+		//	ID3D12Resource* out;
+		//	InParameters->Get(NVSDK_NGX_Parameter_Output, &out);
 
-			ImguiDx12->Render(InCmdList, out);
-		}
+		//	ImguiDx12->Render(InCmdList, out);
+		//}
 
 		return NVSDK_NGX_Result_Success;
 	}

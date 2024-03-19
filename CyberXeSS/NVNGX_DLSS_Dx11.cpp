@@ -243,6 +243,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* 
 
 	if (auto deviceContext = Dx11Contexts[handleId].get(); deviceContext)
 	{
+		Dx11Contexts[handleId].reset();
 		auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 		Dx11Contexts.erase(it);
 	}

@@ -18,4 +18,5 @@
 #define SPDLOG_USE_STD_FORMAT
 #include "spdlog/spdlog.h"
 
-inline HMODULE cyberDllModule;
+inline HMODULE dllModule;
+inline DWORD processId;

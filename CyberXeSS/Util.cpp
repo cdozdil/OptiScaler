@@ -14,7 +14,7 @@ fs::path Util::DllPath()
 	if (dll.empty())
 	{
 		wchar_t dllPath[MAX_PATH];
-		GetModuleFileNameW(cyberDllModule, dllPath, MAX_PATH);
+		GetModuleFileNameW(dllModule, dllPath, MAX_PATH);
 		dll = fs::path(dllPath);
 	}
 
@@ -35,20 +35,23 @@ fs::path Util::ExePath()
 	return exe;
 }
 
-static BOOL CALLBACK EnumWindowsCallback(HWND handle, LPARAM lParam) {
-	const auto isMainWindow = [handle]() {
-		return GetWindow(handle, GW_OWNER) == nullptr && IsWindowVisible(handle);
-		};
+BOOL CALLBACK EnumWindowsCallback(HWND hWnd, LPARAM lParam)
+{
+	DWORD proc_id = 0;
+	GetWindowThreadProcessId(hWnd, &proc_id);
 
-	DWORD pID = 0;
-	GetWindowThreadProcessId(handle, &pID);
+	if (processId == proc_id)
+	{
+		auto main = GetWindow(hWnd, GW_OWNER);
 
-	if (GetCurrentProcessId() != pID || !isMainWindow() || handle == GetConsoleWindow())
-		return TRUE;
+		if (main && IsWindowVisible(main))
+		{
+			*(HWND*)lParam = main;
+			return FALSE;
+		}
+	}
 
-	*(HWND*)lParam = handle;
-
-	return FALSE;
+	return TRUE;
 }
 
 HWND Util::GetProcessWindow() {
@@ -57,7 +60,7 @@ HWND Util::GetProcessWindow() {
 
 	while (!hwnd) {
 		EnumWindows(EnumWindowsCallback, (LPARAM)&hwnd);
-		std::this_thread::sleep_for(std::chrono::milliseconds(200));
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	}
 
 	return hwnd;

@@ -226,6 +226,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
 
 	if (auto deviceContext = VkContexts[handleId].get(); deviceContext)
 	{
+		VkContexts[handleId].reset();
 		auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 		VkContexts.erase(it);
 	}
