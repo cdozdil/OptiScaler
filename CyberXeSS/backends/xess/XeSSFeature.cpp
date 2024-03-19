@@ -365,9 +365,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	}
 
 	CasInit();
-
-	if (casActive)
-		CreateCasContext(device);
+	CreateCasContext(device);
 
 	SetInit(true);
 
@@ -399,7 +397,6 @@ void XeSSFeature::CasInit()
 
 	spdlog::debug("FeatureContext::CasInit Start!");
 
-	casActive = Config::Instance()->CasEnabled.value_or(true);
 	casSharpness = Config::Instance()->Sharpness.value_or(0.3);
 
 	if (casSharpness > 1 || casSharpness < 0)
@@ -412,9 +409,6 @@ bool XeSSFeature::CreateCasContext(ID3D12Device* device)
 {
 	if (!casInit)
 		return false;
-
-	if (!casActive)
-		return true;
 
 	spdlog::debug("XeSSFeature::CreateCasContext Start!");
 
@@ -464,7 +458,7 @@ void XeSSFeature::DestroyCasContext()
 {
 	spdlog::debug("XeSSFeature::DestroyCasContext Start!");
 
-	if (!casActive || !casContextCreated)
+	if (!casContextCreated)
 		return;
 
 	auto errorCode = FfxCas::ffxCasContextDestroy(&casContext);
@@ -481,9 +475,6 @@ bool XeSSFeature::CreateCasBufferResource(ID3D12Resource* source, ID3D12Device* 
 {
 	if (!casInit)
 		return false;
-
-	if (!casActive)
-		return true;
 
 	if (source == nullptr)
 		return false;
@@ -521,23 +512,22 @@ bool XeSSFeature::CasDispatch(ID3D12CommandList* commandList, const NVSDK_NGX_Pa
 	if (!casInit)
 		return false;
 
-	if (!casActive)
-		return true;
-
 	spdlog::debug("XeSSFeature::CasDispatch Start!");
 
 	FfxCas::FfxCasDispatchDescription dispatchParameters = {};
 	dispatchParameters.commandList = FfxCas::ffxGetCommandListDX12Cas(commandList);
 	dispatchParameters.renderSize = { DisplayWidth(), DisplayHeight() };
 
-	if (initParams->Get(NVSDK_NGX_Parameter_Sharpness, &casSharpness) != NVSDK_NGX_Result_Success ||
-		Config::Instance()->OverrideSharpness.value_or(false))
-	{
-		casSharpness = Config::Instance()->Sharpness.value_or(0.4);
+	float dlssSharpness = 0.0f;
+	initParams->Get(NVSDK_NGX_Parameter_Sharpness, &dlssSharpness);
 
-		if (casSharpness > 1 || casSharpness < 0)
-			casSharpness = 0.4f;
-	}
+	if (Config::Instance()->OverrideSharpness.value_or(false))
+		casSharpness = Config::Instance()->Sharpness.value_or(0.3f);
+	else
+		casSharpness = dlssSharpness;
+
+	if (casSharpness > 1.0f || casSharpness <= 0.0f)
+		return true;
 
 	dispatchParameters.sharpness = casSharpness;
 

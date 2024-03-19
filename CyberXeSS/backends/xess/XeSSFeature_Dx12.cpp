@@ -13,7 +13,16 @@ bool XeSSFeatureDx12::Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* In
 
 	Device = InDevice;
 
-	return InitXeSS(InDevice, InParameters);
+	if (InitXeSS(InDevice, InParameters))
+	{
+		//if (auto currentHwnd = Util::GetProcessWindow(); currentHwnd)
+		if (auto currentHwnd = GetForegroundWindow(); currentHwnd)
+			Imgui = std::make_unique<Imgui_Dx12>(currentHwnd, Device);
+		
+		return true;
+	}
+
+	return false;
 }
 
 bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters)
@@ -95,7 +104,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				(D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-		if (casActive && casSharpness > 0.0f)
+		if (Config::Instance()->CasEnabled.value_or(true) && casSharpness > 0.0f)
 		{
 			if (casBuffer == nullptr && !CreateCasBufferResource(paramOutput, Device))
 			{
@@ -197,8 +206,11 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 
 	//apply cas
-	if (casActive && casSharpness > 0.0f && !CasDispatch(InCommandList, InParameters, casBuffer, paramOutput))
+	if (Config::Instance()->CasEnabled.value_or(true) && !CasDispatch(InCommandList, InParameters, casBuffer, paramOutput))
 		return false;
+
+	if (Imgui)
+		Imgui->Render(InCommandList, paramOutput);
 
 	// restore resource states
 	if (params.pColorTexture && Config::Instance()->ColorResourceBarrier.has_value())
@@ -232,4 +244,10 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			(D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value());
 
 	return true;
+}
+
+XeSSFeatureDx12::~XeSSFeatureDx12()
+{
+	if (Imgui)
+		Imgui.reset();
 }

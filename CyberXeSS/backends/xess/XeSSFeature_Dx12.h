@@ -16,4 +16,6 @@ public:
 
 	bool Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* InParameters) override;
 	bool Evaluate(ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters) override;
+
+	~XeSSFeatureDx12();
 };

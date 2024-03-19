@@ -140,6 +140,8 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		SetDepthInverted(true);
 		spdlog::info("FSR2FeatureDx11::InitFSR2 contextDesc.initFlags (DepthInverted) {0:b}", _contextDesc.flags);
 	}
+	else
+		Config::Instance()->DepthInverted = false;
 
 	if (Config::Instance()->AutoExposure.value_or(AutoExposure))
 	{
@@ -155,13 +157,13 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
 	if (Config::Instance()->HDR.value_or(Hdr))
 	{
-		Config::Instance()->HDR = false;
+		Config::Instance()->HDR = true;
 		_contextDesc.flags |= FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
 		spdlog::info("FSR2FeatureDx11::InitFSR2 xessParams.initFlags (HDR) {0:b}", _contextDesc.flags);
 	}
 	else
 	{
-		Config::Instance()->HDR = true;
+		Config::Instance()->HDR = false;
 		spdlog::info("FSR2FeatureDx11::InitFSR2 xessParams.initFlags (!HDR) {0:b}", _contextDesc.flags);
 	}
 
@@ -171,6 +173,8 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		_contextDesc.flags |= FFX_FSR2_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
 		spdlog::info("FSR2FeatureDx11::InitFSR2 xessParams.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
 	}
+	else
+		Config::Instance()->JitterCancellation = false;
 
 	if (Config::Instance()->DisplayResolution.value_or(!LowRes))
 	{

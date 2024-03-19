@@ -13,7 +13,16 @@ bool FSR2FeatureDx12::Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* In
 
 	Device = InDevice;
 
-	return InitFSR2(InParameters);
+	if (InitFSR2(InParameters))
+	{
+		//if (auto currentHwnd = Util::GetProcessWindow(); currentHwnd)
+		if (auto currentHwnd = GetForegroundWindow(); currentHwnd)
+			Imgui = std::make_unique<Imgui_Dx12>(currentHwnd, Device);
+
+		return true;
+	}
+
+	return false;
 }
 
 bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters)
@@ -240,6 +249,9 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		return false;
 	}
 
+	if (Imgui)
+		Imgui->Render(InCommandList, paramOutput);
+
 	// restore resource states
 	if (paramColor && Config::Instance()->ColorResourceBarrier.has_value())
 		ResourceBarrier(InCommandList, paramColor,
@@ -274,16 +286,22 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	return true;
 }
 
+FSR2FeatureDx12::~FSR2FeatureDx12()
+{
+	if (Imgui)
+		Imgui.reset();
+}
+
 bool FSR2FeatureDx12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 {
-	spdlog::debug("FSR2Feature::InitFSR2");
+	spdlog::debug("FSR2FeatureDx12::InitFSR2");
 
 	if (IsInited())
 		return true;
 
 	if (Device == nullptr)
 	{
-		spdlog::error("FSR2Feature::InitFSR2 D3D12Device is null!");
+		spdlog::error("FSR2FeatureDx12::InitFSR2 D3D12Device is null!");
 		return false;
 	}
 
@@ -294,7 +312,7 @@ bool FSR2FeatureDx12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
 	if (errorCode != FFX_OK)
 	{
-		spdlog::error("FSR2Feature::InitFSR2 ffxGetInterfaceDX12 error: {0}", ResultToString(errorCode));
+		spdlog::error("FSR2FeatureDx12::InitFSR2 ffxGetInterfaceDX12 error: {0}", ResultToString(errorCode));
 		free(scratchBuffer);
 		return false;
 	}
@@ -322,50 +340,54 @@ bool FSR2FeatureDx12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		Config::Instance()->DepthInverted = true;
 		_contextDesc.flags |= FFX_FSR2_ENABLE_DEPTH_INVERTED;
 		SetDepthInverted(true);
-		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (DepthInverted) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx12::InitFSR2 contextDesc.initFlags (DepthInverted) {0:b}", _contextDesc.flags);
 	}
+	else
+		Config::Instance()->DepthInverted = false;
 
 	if (Config::Instance()->AutoExposure.value_or(AutoExposure))
 	{
 		Config::Instance()->AutoExposure = true;
 		_contextDesc.flags |= FFX_FSR2_ENABLE_AUTO_EXPOSURE;
-		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (AutoExposure) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx12::InitFSR2 contextDesc.initFlags (AutoExposure) {0:b}", _contextDesc.flags);
 	}
 	else
 	{
 		Config::Instance()->AutoExposure = false;
-		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (!AutoExposure) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx12::InitFSR2 contextDesc.initFlags (!AutoExposure) {0:b}", _contextDesc.flags);
 	}
 
 	if (Config::Instance()->HDR.value_or(Hdr))
 	{
-		Config::Instance()->HDR = false;
+		Config::Instance()->HDR = true;
 		_contextDesc.flags |= FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
-		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (HDR) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx12::InitFSR2 xessParams.initFlags (HDR) {0:b}", _contextDesc.flags);
 	}
 	else
 	{
-		Config::Instance()->HDR = true;
-		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (!HDR) {0:b}", _contextDesc.flags);
+		Config::Instance()->HDR = false;
+		spdlog::info("FSR2FeatureDx12::InitFSR2 xessParams.initFlags (!HDR) {0:b}", _contextDesc.flags);
 	}
 
 	if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
 	{
 		Config::Instance()->JitterCancellation = true;
 		_contextDesc.flags |= FFX_FSR2_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
-		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx12::InitFSR2 xessParams.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
 	}
+	else
+		Config::Instance()->JitterCancellation = false;
 
 	if (Config::Instance()->DisplayResolution.value_or(!LowRes))
 	{
 		Config::Instance()->DisplayResolution = true;
 		_contextDesc.flags |= FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
-		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx12::InitFSR2 xessParams.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
 	}
 	else
 	{
 		Config::Instance()->DisplayResolution = false;
-		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx12::InitFSR2 xessParams.initFlags (LowResMV) {0:b}", _contextDesc.flags);
 	}
 
 #if _DEBUG
@@ -373,13 +395,13 @@ bool FSR2FeatureDx12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	_contextDesc.fpMessage = FfxLogCallback;
 #endif
 
-	spdlog::debug("FSR2Feature::InitFSR2 ffxFsr2ContextCreate!");
+	spdlog::debug("FSR2FeatureDx12::InitFSR2 ffxFsr2ContextCreate!");
 
 	auto ret = ffxFsr2ContextCreate(&_context, &_contextDesc);
 
 	if (ret != FFX_OK)
 	{
-		spdlog::error("FSR2Feature::InitFSR2 ffxFsr2ContextCreate error: {0}", ResultToString(ret));
+		spdlog::error("FSR2FeatureDx12::InitFSR2 ffxFsr2ContextCreate error: {0}", ResultToString(ret));
 		return false;
 	}
 

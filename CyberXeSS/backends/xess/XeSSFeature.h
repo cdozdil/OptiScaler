@@ -47,8 +47,7 @@ protected:
 	bool casInit = false;
 	bool casContextCreated = false;
 	bool casUpscale = false;
-	bool casActive = false;
-	float casSharpness = 0.4f;
+	float casSharpness = 0.3f;
 	ID3D12Resource* casBuffer = nullptr;
 	FfxCas::FfxCasContextDescription casContextDesc = {};
 

@@ -56,6 +56,8 @@ bool FSR2FeatureVk::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		SetDepthInverted(true);
 		spdlog::info("FSR2FeatureVk::InitFSR2 contextDesc.initFlags (DepthInverted) {0:b}", _contextDesc.flags);
 	}
+	else
+		Config::Instance()->DepthInverted = false;
 
 	if (Config::Instance()->AutoExposure.value_or(AutoExposure))
 	{
@@ -71,33 +73,35 @@ bool FSR2FeatureVk::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
 	if (Config::Instance()->HDR.value_or(Hdr))
 	{
-		Config::Instance()->HDR = false;
+		Config::Instance()->HDR = true;
 		_contextDesc.flags |= FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
-		spdlog::info("FSR2FeatureVk::InitFSR2 contextDesc.initFlags (HDR) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureVk::InitFSR2 xessParams.initFlags (HDR) {0:b}", _contextDesc.flags);
 	}
 	else
 	{
-		Config::Instance()->HDR = true;
-		spdlog::info("FSR2FeatureVk::InitFSR2 contextDesc.initFlags (!HDR) {0:b}", _contextDesc.flags);
+		Config::Instance()->HDR = false;
+		spdlog::info("FSR2FeatureVk::InitFSR2 xessParams.initFlags (!HDR) {0:b}", _contextDesc.flags);
 	}
 
 	if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
 	{
 		Config::Instance()->JitterCancellation = true;
 		_contextDesc.flags |= FFX_FSR2_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
-		spdlog::info("FSR2FeatureVk::InitFSR2 contextDesc.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureVk::InitFSR2 xessParams.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
 	}
+	else
+		Config::Instance()->JitterCancellation = false;
 
 	if (Config::Instance()->DisplayResolution.value_or(!LowRes))
 	{
 		Config::Instance()->DisplayResolution = true;
 		_contextDesc.flags |= FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
-		spdlog::info("FSR2FeatureVk::InitFSR2 contextDesc.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureVk::InitFSR2 xessParams.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
 	}
 	else
 	{
 		Config::Instance()->DisplayResolution = false;
-		spdlog::info("FSR2FeatureVk::InitFSR2 contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureVk::InitFSR2 xessParams.initFlags (LowResMV) {0:b}", _contextDesc.flags);
 	}
 
 #if _DEBUG

@@ -890,14 +890,14 @@ FSR2FeatureDx11on12_212::~FSR2FeatureDx11on12_212()
 
 bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 {
-	spdlog::debug("FSR2Feature::InitFSR2");
+	spdlog::debug("FSR2FeatureDx11on12_212::InitFSR2");
 
 	if (IsInited())
 		return true;
 
 	if (Device == nullptr)
 	{
-		spdlog::error("FSR2Feature::InitFSR2 D3D12Device is null!");
+		spdlog::error("FSR2FeatureDx11on12_212::InitFSR2 D3D12Device is null!");
 		return false;
 	}
 
@@ -908,7 +908,7 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
 	if (errorCode != Fsr212::FFX_OK)
 	{
-		spdlog::error("FSR2Feature::InitFSR2 ffxGetInterfaceDX12 error: {0}", ResultToString212(errorCode));
+		spdlog::error("FSR2FeatureDx11on12_212::InitFSR2 ffxGetInterfaceDX12 error: {0}", ResultToString212(errorCode));
 		free(scratchBuffer);
 		return false;
 	}
@@ -936,59 +936,63 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		Config::Instance()->DepthInverted = true;
 		_contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_DEPTH_INVERTED;
 		SetDepthInverted(true);
-		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (DepthInverted) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx11on12_212::InitFSR2 contextDesc.initFlags (DepthInverted) {0:b}", _contextDesc.flags);
 	}
+	else
+		Config::Instance()->DepthInverted = false;
 
 	if (Config::Instance()->AutoExposure.value_or(AutoExposure))
 	{
 		Config::Instance()->AutoExposure = true;
 		_contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_AUTO_EXPOSURE;
-		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (AutoExposure) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx11on12_212::InitFSR2 contextDesc.initFlags (AutoExposure) {0:b}", _contextDesc.flags);
 	}
 	else
 	{
 		Config::Instance()->AutoExposure = false;
-		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (!AutoExposure) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx11on12_212::InitFSR2 contextDesc.initFlags (!AutoExposure) {0:b}", _contextDesc.flags);
 	}
 
 	if (Config::Instance()->HDR.value_or(Hdr))
 	{
-		Config::Instance()->HDR = false;
+		Config::Instance()->HDR = true;
 		_contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
-		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (HDR) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx11on12_212::InitFSR2 xessParams.initFlags (HDR) {0:b}", _contextDesc.flags);
 	}
 	else
 	{
-		Config::Instance()->HDR = true;
-		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (!HDR) {0:b}", _contextDesc.flags);
+		Config::Instance()->HDR = false;
+		spdlog::info("FSR2FeatureDx11on12_212::InitFSR2 xessParams.initFlags (!HDR) {0:b}", _contextDesc.flags);
 	}
 
 	if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
 	{
 		Config::Instance()->JitterCancellation = true;
 		_contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
-		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx11on12_212::InitFSR2 xessParams.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
 	}
+	else
+		Config::Instance()->JitterCancellation = false;
 
 	if (Config::Instance()->DisplayResolution.value_or(!LowRes))
 	{
 		Config::Instance()->DisplayResolution = true;
 		_contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
-		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx11on12_212::InitFSR2 xessParams.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
 	}
 	else
 	{
 		Config::Instance()->DisplayResolution = false;
-		spdlog::info("FSR2Feature::InitFSR2 contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx11on12_212::InitFSR2 xessParams.initFlags (LowResMV) {0:b}", _contextDesc.flags);
 	}
 
-	spdlog::debug("FSR2Feature::InitFSR2 ffxFsr2ContextCreate!");
+	spdlog::debug("FSR2FeatureDx11on12_212::InitFSR2 ffxFsr2ContextCreate!");
 
 	auto ret = Fsr212::ffxFsr2ContextCreate212(&_context, &_contextDesc);
 
 	if (ret != Fsr212::FFX_OK)
 	{
-		spdlog::error("FSR2Feature::InitFSR2 ffxFsr2ContextCreate error: {0}", ResultToString212(ret));
+		spdlog::error("FSR2FeatureDx11on12_212::InitFSR2 ffxFsr2ContextCreate error: {0}", ResultToString212(ret));
 		return false;
 	}
 
