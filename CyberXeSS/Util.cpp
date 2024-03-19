@@ -46,22 +46,19 @@ static BOOL CALLBACK EnumWindowsCallback(HWND handle, LPARAM lParam) {
 	if (GetCurrentProcessId() != pID || !isMainWindow() || handle == GetConsoleWindow())
 		return TRUE;
 
-	*reinterpret_cast<HWND*>(lParam) = handle;
+	*(HWND*)lParam = handle;
 
 	return FALSE;
 }
 
 HWND Util::GetProcessWindow() {
 	HWND hwnd = nullptr;
-	EnumWindows(::EnumWindowsCallback, reinterpret_cast<LPARAM>(&hwnd));
+	EnumWindows(EnumWindowsCallback, (LPARAM)&hwnd);
 
 	while (!hwnd) {
-		EnumWindows(::EnumWindowsCallback, reinterpret_cast<LPARAM>(&hwnd));
+		EnumWindows(EnumWindowsCallback, (LPARAM)&hwnd);
 		std::this_thread::sleep_for(std::chrono::milliseconds(200));
 	}
-
-	char name[128];
-	GetWindowTextA(hwnd, name, RTL_NUMBER_OF(name));
 
 	return hwnd;
 }

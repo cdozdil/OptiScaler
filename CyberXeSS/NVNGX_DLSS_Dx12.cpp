@@ -11,10 +11,12 @@
 #include "NVNGX_Parameter.h"
 
 #include "imgui/Imgui_Dx12.h"
+#include "Util.h"
 
 inline ID3D12Device* D3D12Device = nullptr;
 inline std::unique_ptr<Imgui_Dx12> ImguiDx12 = nullptr;
 static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
+inline HWND currentHwnd = nullptr;
 
 #pragma region DLSS Init Calls
 
@@ -90,6 +92,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 	Dx12Contexts.clear();
 
 	D3D12Device = nullptr;
+
+	if (ImguiDx12)
+		ImguiDx12.reset();
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -206,6 +211,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 			upscalerChoice = 1;
 		else if (Config::Instance()->Dx12Upscaler.value_or("xess") == "fsr21")
 			upscalerChoice = 2;
+		else
+			Config::Instance()->Dx12Upscaler = "xess";
 	}
 	else if (InParameters)
 	{
@@ -213,11 +220,20 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 	}
 
 	if (upscalerChoice == 1)
+	{
+		Config::Instance()->Dx12Upscaler = "fsr22";
 		Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12>(handleId, InParameters);
+	}
 	else if (upscalerChoice == 2)
+	{
+		Config::Instance()->Dx12Upscaler = "fsr21";
 		Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12_212>(handleId, InParameters);
+	}
 	else
+	{
+		Config::Instance()->Dx12Upscaler = "xess";
 		Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, InParameters);
+	}
 
 	// nvsdk logging
 	// ini first
@@ -251,9 +267,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 	if (deviceContext->Init(D3D12Device, InParameters))
 	{
 		if (ImguiDx12)
-			ImguiDx12.release();
-
-		ImguiDx12 = std::make_unique<Imgui_Dx12>(currentHwnd, D3D12Device);
+			ImguiDx12.reset();
 
 		return NVSDK_NGX_Result_Success;
 	}
@@ -273,6 +287,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 
 	if (auto deviceContext = Dx12Contexts[handleId].get(); deviceContext)
 	{
+		Dx12Contexts[handleId].reset();
 		auto it = std::find_if(Dx12Contexts.begin(), Dx12Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 		Dx12Contexts.erase(it);
 	}
@@ -307,10 +322,62 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	if (InCallback)
 		spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature callback exist");
 
-	const auto deviceContext = Dx12Contexts[InFeatureHandle->Id].get();
+	IFeature_Dx12* deviceContext = nullptr;
+
+	if (Config::Instance()->changeBackend)
+	{
+		Config::Instance()->changeBackend = false;
+		
+		auto handleId = InFeatureHandle->Id;
+
+		if (auto deviceContext = Dx12Contexts[handleId].get(); deviceContext)
+		{
+			Dx12Contexts[handleId].reset();
+			auto it = std::find_if(Dx12Contexts.begin(), Dx12Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+			Dx12Contexts.erase(it);			
+		}
+		
+		if (Config::Instance()->newBackend == "fsr22")
+		{
+			Config::Instance()->Dx12Upscaler = "fsr22";
+			Dx12Contexts[InFeatureHandle->Id] = std::make_unique<FSR2FeatureDx12>(InFeatureHandle->Id, InParameters);
+		}
+		else if (Config::Instance()->newBackend == "fsr21")
+		{
+			Config::Instance()->Dx12Upscaler = "fsr21";
+			Dx12Contexts[InFeatureHandle->Id] = std::make_unique<FSR2FeatureDx12_212>(InFeatureHandle->Id, InParameters);
+		}
+		else
+		{
+			Config::Instance()->Dx12Upscaler = "xess";
+			Dx12Contexts[InFeatureHandle->Id] = std::make_unique<XeSSFeatureDx12>(InFeatureHandle->Id, InParameters);
+		}
+
+		deviceContext = Dx12Contexts[InFeatureHandle->Id].get();
+
+		if (deviceContext->Init(D3D12Device, InParameters))
+		{
+			if (ImguiDx12)
+				ImguiDx12.reset();
+		}
+
+		return NVSDK_NGX_Result_Success;
+	}
+	else
+		deviceContext = Dx12Contexts[InFeatureHandle->Id].get();
+
 
 	if (deviceContext->Evaluate(InCmdList, InParameters))
 	{
+		if (ImguiDx12 == nullptr)
+		{
+			if (currentHwnd == nullptr)
+				currentHwnd = Util::GetProcessWindow();
+
+			if (currentHwnd)
+				ImguiDx12 = std::make_unique<Imgui_Dx12>(currentHwnd, D3D12Device);
+		}
+
 		if (ImguiDx12)
 		{
 			ID3D12Resource* out;

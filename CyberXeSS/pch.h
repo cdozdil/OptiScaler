@@ -19,4 +19,3 @@
 #include "spdlog/spdlog.h"
 
 inline HMODULE cyberDllModule;
-inline HWND currentHwnd = nullptr;

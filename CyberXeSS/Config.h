@@ -88,6 +88,10 @@ public:
 	NVNGX_Api Api = NVNGX_NOT_SELECTED;
 	NVSDK_NGX_LoggingInfo NVSDK_Logger{ nullptr, NVSDK_NGX_LOGGING_LEVEL_OFF, false };
 
+	bool changeBackend = false;
+	std::string newBackend = "";
+	
+
 	void Reload();
 
 	static Config* Instance();

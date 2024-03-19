@@ -39,6 +39,12 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 	pCmdList->OMSetRenderTargets(1, &_renderTargetDescriptor[backbuf], FALSE, NULL);
 	pCmdList->SetDescriptorHeaps(1, &_srvDescHeap);
 
+	ID3D12Fence* dx12fence;
+	_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&dx12fence));
+
+	auto drawData = ImGui::GetDrawData();
+	ImGui_ImplDX12_RenderDrawData(drawData, pCmdList);
+
 	D3D12_RESOURCE_BARRIER bufferBarrier = { };
 	bufferBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	bufferBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -60,12 +66,26 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 	// Copy intermediate render target to your texture
 	pCmdList->CopyResource(_renderTargetResource[backbuf], outTexture);
 
+	dx12fence->Signal(10);
+
+	// wait for end of operation
+	if (dx12fence->GetCompletedValue() < 10)
+	{
+		auto fenceEvent12 = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+		if (fenceEvent12)
+		{
+			dx12fence->SetEventOnCompletion(20, fenceEvent12);
+			WaitForSingleObject(fenceEvent12, INFINITE);
+			CloseHandle(fenceEvent12);
+		}
+	}
+
 	bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
 	bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	pCmdList->ResourceBarrier(1, &bufferBarrier);
 
-	auto drawData = ImGui::GetDrawData();
-	ImGui_ImplDX12_RenderDrawData(drawData, pCmdList);
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
 
 	bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
@@ -85,6 +105,21 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 	bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
 	bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	pCmdList->ResourceBarrier(1, &bufferBarrier);
+
+	dx12fence->Signal(20);
+
+	// wait for end of operation
+	if (dx12fence->GetCompletedValue() < 20)
+	{
+		auto fenceEvent12 = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+		if (fenceEvent12)
+		{
+			dx12fence->SetEventOnCompletion(20, fenceEvent12);
+			WaitForSingleObject(fenceEvent12, INFINITE);
+			CloseHandle(fenceEvent12);
+		}
+	}
 }
 
 Imgui_Dx12::Imgui_Dx12(HWND handle, ID3D12Device* pDevice) : Imgui_Base(handle), _device(pDevice)

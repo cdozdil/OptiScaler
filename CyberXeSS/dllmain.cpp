@@ -141,9 +141,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 		cyberDllModule = hModule;
 
-		if (currentHwnd == nullptr)
-			currentHwnd = Util::GetProcessWindow();
-
 		PrepareLogger();
 		break;
 
