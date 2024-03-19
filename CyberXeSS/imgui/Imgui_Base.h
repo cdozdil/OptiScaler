@@ -12,6 +12,7 @@ private:
 	int _left;
 
 protected:
+	ImGuiContext* context;
 
 	void RenderMenu();
 

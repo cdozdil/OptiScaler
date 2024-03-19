@@ -6,7 +6,7 @@ long frameCounter = 0;
 
 bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outTexture)
 {
-	if(pCmdList == nullptr || outTexture == nullptr)
+	if (pCmdList == nullptr || outTexture == nullptr)
 		return false;
 
 	if (!IsVisible())
@@ -14,7 +14,7 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 
 	auto outDesc = outTexture->GetDesc();
 
-	if (!_dx12Init)
+	if (!_dx12Init && ImGui::GetIO().BackendRendererUserData == nullptr)
 	{
 		CreateRenderTarget(outDesc);
 		_dx12Init = ImGui_ImplDX12_Init(_device, 2, outDesc.Format, _srvDescHeap, _srvDescHeap->GetCPUDescriptorHandleForHeapStart(), _srvDescHeap->GetGPUDescriptorHandleForHeapStart());
@@ -59,27 +59,12 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 	outBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 	outBarrier.Transition.pResource = outTexture;
 	outBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+	bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
 	outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
 	pCmdList->ResourceBarrier(1, &outBarrier);
 
 	// Copy intermediate render target to your texture
 	pCmdList->CopyResource(_renderTargetResource[backbuf], outTexture);
-
-	dx12fence->Signal(10);
-
-	// wait for end of operation
-	if (dx12fence->GetCompletedValue() < 10)
-	{
-		auto fenceEvent12 = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-		if (fenceEvent12)
-		{
-			dx12fence->SetEventOnCompletion(20, fenceEvent12);
-			WaitForSingleObject(fenceEvent12, INFINITE);
-			CloseHandle(fenceEvent12);
-		}
-	}
 
 	bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
 	bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
@@ -98,28 +83,28 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 	// Copy intermediate render target to your texture
 	pCmdList->CopyResource(outTexture, _renderTargetResource[backbuf]);
 
-	outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-	outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-	pCmdList->ResourceBarrier(1, &outBarrier);
-
-	bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
-	bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	pCmdList->ResourceBarrier(1, &bufferBarrier);
-
-	dx12fence->Signal(20);
+	dx12fence->Signal(10);
 
 	// wait for end of operation
-	if (dx12fence->GetCompletedValue() < 20)
+	if (dx12fence->GetCompletedValue() < 10)
 	{
 		auto fenceEvent12 = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
 		if (fenceEvent12)
 		{
-			dx12fence->SetEventOnCompletion(20, fenceEvent12);
+			dx12fence->SetEventOnCompletion(10, fenceEvent12);
 			WaitForSingleObject(fenceEvent12, INFINITE);
 			CloseHandle(fenceEvent12);
 		}
 	}
+
+	outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+	outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
+	pCmdList->ResourceBarrier(1, &outBarrier);
+
+	bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
+	bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	pCmdList->ResourceBarrier(1, &bufferBarrier);
 }
 
 Imgui_Dx12::Imgui_Dx12(HWND handle, ID3D12Device* pDevice) : Imgui_Base(handle), _device(pDevice)
@@ -152,6 +137,22 @@ Imgui_Dx12::Imgui_Dx12(HWND handle, ID3D12Device* pDevice) : Imgui_Base(handle),
 
 Imgui_Dx12::~Imgui_Dx12()
 {
+	if (!_dx12Init)
+		return;
+
+
+	if (auto currCtx = ImGui::GetCurrentContext(); currCtx && context != currCtx)
+	{
+		ImGui::SetCurrentContext(context);
+		ImGui_ImplDX12_Shutdown();
+		ImGui::SetCurrentContext(currCtx);
+	}
+	else
+		ImGui_ImplDX12_Shutdown();
+
+	// hackzor
+	std::this_thread::sleep_for(std::chrono::milliseconds(400));
+
 	if (_rtvDescHeap)
 		_rtvDescHeap->Release();
 
@@ -163,11 +164,9 @@ Imgui_Dx12::~Imgui_Dx12()
 
 	if (_renderTargetResource[1])
 		_renderTargetResource[1]->Release();
-
-	ImGui_ImplDX12_Shutdown();
 }
 
-void Imgui_Dx12::CreateRenderTarget(const D3D12_RESOURCE_DESC& InDesc) 
+void Imgui_Dx12::CreateRenderTarget(const D3D12_RESOURCE_DESC& InDesc)
 {
 	for (UINT i = 0; i < 2; ++i) {
 
