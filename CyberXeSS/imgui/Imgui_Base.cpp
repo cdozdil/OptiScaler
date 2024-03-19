@@ -1,9 +1,9 @@
 #include "Imgui_Base.h"
 #include "../Config.h"
+#include "imgui/imgui_impl_win32.h"
 
-static WNDPROC _oWndProc = nullptr;
-static bool _isVisible = false;
-static HWND _handle;
+bool _isVisible = false;
+WNDPROC _oWndProc = nullptr;
 
 /*Forward declare message handler from imgui_impl_win32.cpp*/
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -159,6 +159,45 @@ void AddVulkanBackends(std::string* code, std::string* name)
 	}
 }
 
+void AddResourceBarrier(std::string name, std::optional<int>* value)
+{
+	const char* states[] = { "Auto", "COMMON", "VERTEX_AND_CONSTANT_BUFFER", "INDEX_BUFFER", "RENDER_TARGET", "UNORDERED_ACCESS", "DEPTH_WRITE",
+							"DEPTH_READ", "NON_PIXEL_SHADER_RESOURCE", "PIXEL_SHADER_RESOURCE", "STREAM_OUT", "INDIRECT_ARGUMENT", "COPY_DEST", "COPY_SOURCE",
+							"RESOLVE_DEST", "RESOLVE_SOURCE", "RAYTRACING_ACCELERATION_STRUCTURE", "SHADING_RATE_SOURCE", "GENERIC_READ", "ALL_SHADER_RESOURCE",
+							"PRESENT", "PREDICATION", "VIDEO_DECODE_READ", "VIDEO_DECODE_WRITE", "VIDEO_PROCESS_READ", "VIDEO_PROCESS_WRITE", "VIDEO_ENCODE_READ",
+							"VIDEO_ENCODE_WRITE" };
+	const int values[] = { -1, 0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 4194304, 16777216, 2755, 192, 0, 310, 65536,
+							131072, 262144, 524288, 2097152, 8388608 };
+
+	
+	int selected = value->value_or(-1);
+
+	const char* selectedName = "";
+
+	for (int n = 0; n < 28; n++)
+	{
+		if (values[n] == selected)
+		{
+			selectedName = states[n];
+			break;
+		}
+	}
+
+	if (ImGui::BeginCombo(name.c_str(), selectedName))
+	{
+		if (ImGui::Selectable(states[0], !value->has_value()))
+			value->reset();
+
+		for (int n = 0; n < 28; n++)
+		{
+			if (ImGui::Selectable(states[n], selected == values[n]))
+				*value = values[n];
+		}
+
+		ImGui::EndCombo();
+	}
+}
+
 void Imgui_Base::RenderMenu()
 {
 	ImGuiIO const& io = ImGui::GetIO(); (void)io;
@@ -172,7 +211,7 @@ void Imgui_Base::RenderMenu()
 		flags |= ImGuiWindowFlags_NoCollapse;
 
 		ImGui::SetNextWindowPos(ImVec2{ 350.0f, 300.0f }, ImGuiCond_FirstUseEver);
-		ImGui::SetNextWindowSize(ImVec2{ 770.0f, 486.0f }, ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2{ 770.0f, 495.0f }, ImGuiCond_FirstUseEver);
 
 		if (ImGui::Begin("CyberXeSS v0.4", nullptr, flags))
 		{
@@ -211,7 +250,6 @@ void Imgui_Base::RenderMenu()
 				if (ImGui::Button("Revert"))
 					Config::Instance()->newBackend = "";
 
-
 				// UPSCALER SPECIFIC -----------------------------
 				// XeSS
 				ImGui::BeginDisabled(currentBackend != "xess");
@@ -220,25 +258,26 @@ void Imgui_Base::RenderMenu()
 				if (bool cas = Config::Instance()->CasEnabled.value_or(true); ImGui::Checkbox("CAS", &cas))
 					Config::Instance()->CasEnabled = cas;
 
-				if (Config::Instance()->CasEnabled.value_or(true))
+				ImGui::BeginDisabled(!Config::Instance()->CasEnabled.value_or(true));
+
+				const char* cs[] = { "LINEAR", "GAMMA20", "GAMMA22", "SRGB_OUTPUT", "SRGB_INPUT_OUTPUT" };
+				const char* selectedCs = cs[Config::Instance()->ColorResourceBarrier.value_or(0)];
+
+				if (ImGui::BeginCombo("Color Space", selectedCs))
 				{
-					const char* cs[] = { "LINEAR", "GAMMA20", "GAMMA22", "SRGB_OUTPUT", "SRGB_INPUT_OUTPUT" };
-					const char* selectedCs = cs[Config::Instance()->ColorResourceBarrier.value_or(0)];
-
-					if (ImGui::BeginCombo("Color Space", selectedCs))
+					for (int n = 0; n < 5; n++)
 					{
-						for (int n = 0; n < 5; n++)
+						if (ImGui::Selectable(cs[n], (Config::Instance()->ColorResourceBarrier.value_or(0) == n)))
 						{
-							if (ImGui::Selectable(cs[n], (Config::Instance()->ColorResourceBarrier.value_or(0) == n)))
-							{
-								Config::Instance()->ColorResourceBarrier = n;
-								Config::Instance()->changeBackend = true;
-							}
+							Config::Instance()->ColorResourceBarrier = n;
+							Config::Instance()->changeBackend = true;
 						}
-
-						ImGui::EndCombo();
 					}
+
+					ImGui::EndCombo();
 				}
+				
+				ImGui::EndDisabled();
 
 				const char* quality[] = { "Auto", "Performance", "Balanced", "Quality", "Ultra Quality" };
 
@@ -300,9 +339,8 @@ void Imgui_Base::RenderMenu()
 					Config::Instance()->FsrHorizontalFov = fov;
 				}
 
-
 				// Dx11
-				ImGui::BeginDisabled((currentBackend == "fsr21_12") || (currentBackend == "fsr22_12"));
+				ImGui::BeginDisabled((currentBackend != "fsr21_12") && (currentBackend != "fsr22_12"));
 
 				const char* sync[] = { "Shared Fences", "Shared Fences + Flush", "Shared Fences + Query", "Only Queries" };
 
@@ -323,7 +361,6 @@ void Imgui_Base::RenderMenu()
 
 				ImGui::EndDisabled();
 
-
 				// SHARPNESS -----------------------------
 				ImGui::SeparatorText("Sharpness");
 
@@ -339,7 +376,7 @@ void Imgui_Base::RenderMenu()
 				ImGui::EndDisabled();
 
 
-				// UPSCALE RATIO OVERRIDE
+				// UPSCALE RATIO OVERRIDE -----------------
 				ImGui::SeparatorText("Upscale Ratio");
 				if (bool upOverride = Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false); ImGui::Checkbox("Ratio Override", &upOverride))
 					Config::Instance()->UpscaleRatioOverrideEnabled = upOverride;
@@ -353,7 +390,6 @@ void Imgui_Base::RenderMenu()
 				ImGui::EndDisabled();
 
 				ImGui::TableNextColumn();
-
 
 				// QUALITY OVERRIDES -----------------------------
 				ImGui::SeparatorText("Quality Overrides");
@@ -391,45 +427,71 @@ void Imgui_Base::RenderMenu()
 
 				ImGui::EndDisabled();
 
-
 				// INIT -----------------------------
 				ImGui::SeparatorText("Init Flags");
-
-				if (bool autoExposure = Config::Instance()->AutoExposure.value_or(false); ImGui::Checkbox("Auto Exposure", &autoExposure))
+				if (ImGui::BeginTable("init", 2))
 				{
-					Config::Instance()->AutoExposure = autoExposure;
-					Config::Instance()->changeBackend = true;
+					ImGui::TableNextColumn();
+					if (bool autoExposure = Config::Instance()->AutoExposure.value_or(false); ImGui::Checkbox("Auto Exposure", &autoExposure))
+					{
+						Config::Instance()->AutoExposure = autoExposure;
+						Config::Instance()->changeBackend = true;
+					}
+
+					ImGui::TableNextColumn();
+					if (bool hdr = Config::Instance()->HDR.value_or(false); ImGui::Checkbox("HDR", &hdr))
+					{
+						Config::Instance()->HDR = hdr;
+						Config::Instance()->changeBackend = true;
+					}
+
+					ImGui::TableNextColumn();
+					if (bool depth = Config::Instance()->DepthInverted.value_or(false); ImGui::Checkbox("Depth Inverted", &depth))
+					{
+						Config::Instance()->DepthInverted = depth;
+						Config::Instance()->changeBackend = true;
+					}
+
+					ImGui::TableNextColumn();
+					if (bool jitter = Config::Instance()->JitterCancellation.value_or(false); ImGui::Checkbox("Jitter Cancellation", &jitter))
+					{
+						Config::Instance()->JitterCancellation = jitter;
+						Config::Instance()->changeBackend = true;
+					}
+
+					ImGui::TableNextColumn();
+					if (bool mv = Config::Instance()->DisplayResolution.value_or(false); ImGui::Checkbox("Display Res. MV", &mv))
+					{
+						Config::Instance()->DisplayResolution = mv;
+						Config::Instance()->changeBackend = true;
+					}
+
+					ImGui::TableNextColumn();
+					if (bool rm = Config::Instance()->DisableReactiveMask.value_or(true); ImGui::Checkbox("Disable Reactive Mask", &rm))
+					{
+						Config::Instance()->DisableReactiveMask = rm;
+						Config::Instance()->changeBackend = true;
+					}
+
+					ImGui::EndTable();
 				}
 
-				if (bool hdr = Config::Instance()->HDR.value_or(false); ImGui::Checkbox("HDR", &hdr))
-				{
-					Config::Instance()->HDR = hdr;
-					Config::Instance()->changeBackend = true;
-				}
+				// BARRIERS -----------------------------
+				ImGui::SeparatorText("Resource Barriers");
+				ImGui::BeginDisabled(Config::Instance()->Api != NVNGX_DX12);
+				
+				AddResourceBarrier("Color", &Config::Instance()->ColorResourceBarrier);
+				AddResourceBarrier("Depth", &Config::Instance()->DepthResourceBarrier);
+				AddResourceBarrier("Motion", &Config::Instance()->MVResourceBarrier);
+				AddResourceBarrier("Exposure", &Config::Instance()->ExposureResourceBarrier);
+				AddResourceBarrier("Mask", &Config::Instance()->MaskResourceBarrier);
+				AddResourceBarrier("Output", &Config::Instance()->OutputResourceBarrier);
 
-				if (bool depth = Config::Instance()->DepthInverted.value_or(false); ImGui::Checkbox("Depth Inverted", &depth))
-				{
-					Config::Instance()->DepthInverted = depth;
-					Config::Instance()->changeBackend = true;
-				}
-
-				if (bool jitter = Config::Instance()->JitterCancellation.value_or(false); ImGui::Checkbox("Jitter Cancellation", &jitter))
-				{
-					Config::Instance()->JitterCancellation = jitter;
-					Config::Instance()->changeBackend = true;
-				}
-
-				if (bool mv = Config::Instance()->DisplayResolution.value_or(false); ImGui::Checkbox("Display Res. MV", &mv))
-				{
-					Config::Instance()->DisplayResolution = mv;
-					Config::Instance()->changeBackend = true;
-				}
+				ImGui::EndDisabled();
 
 				ImGui::EndTable();
 
-
-				// BOTTOM LINE
-
+				// BOTTOM LINE ---------------
 				ImGui::Separator();
 				ImGui::Spacing();
 
@@ -459,31 +521,44 @@ void Imgui_Base::RenderMenu()
 	ImGui::Render();
 }
 
+bool Imgui_Base::IsHandleDifferent()
+{
+	HWND frontWindow = GetForegroundWindow();
+
+	if (frontWindow == _handle)
+		return false;
+
+	DWORD procId;
+	GetWindowThreadProcessId(frontWindow, &procId);
+
+	return (processId == procId);
+}
+
 Imgui_Base::Imgui_Base(HWND handle)
 {
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	context = ImGui::CreateContext();
 	ImGui::SetCurrentContext(context);
-	ImGui::StyleColorsLight();
+	ImGui::StyleColorsDark();
 
 	auto style = ImGui::GetStyle();
-	style.Alpha = 1.0f;
-	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.80f, 0.80f, 0.80f, 1.00f);
-	style.Colors[ImGuiCol_NavHighlight] = ImVec4(0.40f, 0.40f, 0.90f, 1.00f);
-	style.Colors[ImGuiCol_NavHighlight] = ImVec4(0.40f, 0.40f, 0.90f, 1.00f);
-	style.Colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
-	style.Colors[ImGuiCol_Button] = ImVec4(0.70f, 0.70f, 1.00f, 1.00f);
+	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.1f, 0.1f, 0.1f, 0.20f);
+	style.Colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.10f, 0.10f, 0.10f, 0.20f);
 
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
 
+	io.MouseDrawCursor = _isVisible;
+	io.WantCaptureKeyboard = _isVisible;
+	io.WantCaptureMouse = _isVisible;
+	io.WantSetMousePos = _isVisible;
+
 	_handle = handle;
 
 	_baseInit = ImGui_ImplWin32_Init(_handle);
 
-	//Capture WndProc
 	if (_oWndProc == nullptr)
 		_oWndProc = (WNDPROC)SetWindowLongPtr(_handle, GWLP_WNDPROC, (LONG_PTR)WndProc);
 }
@@ -501,7 +576,7 @@ Imgui_Base::~Imgui_Base()
 	}
 	else
 	{
-		SetWindowLongPtr(_handle, GWLP_WNDPROC, (LONG_PTR)_oWndProc);
+		SetWindowLongPtr((HWND)ImGui::GetMainViewport()->PlatformHandleRaw, GWLP_WNDPROC, (LONG_PTR)_oWndProc);
 		_oWndProc = nullptr;
 
 		ImGui_ImplWin32_Shutdown();

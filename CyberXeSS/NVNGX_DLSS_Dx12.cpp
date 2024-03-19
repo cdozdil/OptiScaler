@@ -330,9 +330,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 			auto it = std::find_if(Dx12Contexts.begin(), Dx12Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 			Dx12Contexts.erase(it);
 
-			//if (ImguiDx12)
-			//	ImguiDx12.reset();
-
 			return NVSDK_NGX_Result_Success;
 		}
 
@@ -366,26 +363,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	deviceContext = Dx12Contexts[InFeatureHandle->Id].get();
 
 	if (deviceContext->Evaluate(InCmdList, InParameters))
-	{
-		//if (ImguiDx12 == nullptr)
-		//{
-		//	if (currentHwnd == nullptr)
-		//		currentHwnd = Util::GetProcessWindow();
-
-		//	if (currentHwnd)
-		//		ImguiDx12 = std::make_unique<Imgui_Dx12>(currentHwnd, D3D12Device);
-		//}
-
-		//if (ImguiDx12)
-		//{
-		//	ID3D12Resource* out;
-		//	InParameters->Get(NVSDK_NGX_Parameter_Output, &out);
-
-		//	ImguiDx12->Render(InCmdList, out);
-		//}
-
 		return NVSDK_NGX_Result_Success;
-	}
 	else
 		return NVSDK_NGX_Result_Fail;
 }

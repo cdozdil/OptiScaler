@@ -15,10 +15,7 @@ bool XeSSFeatureDx12::Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* In
 
 	if (InitXeSS(InDevice, InParameters))
 	{
-		//if (auto currentHwnd = Util::GetProcessWindow(); currentHwnd)
-		if (auto currentHwnd = GetForegroundWindow(); currentHwnd)
-			Imgui = std::make_unique<Imgui_Dx12>(currentHwnd, Device);
-		
+		Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
 		return true;
 	}
 
@@ -209,8 +206,16 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	if (Config::Instance()->CasEnabled.value_or(true) && !CasDispatch(InCommandList, InParameters, casBuffer, paramOutput))
 		return false;
 
+	// imgui
 	if (Imgui)
-		Imgui->Render(InCommandList, paramOutput);
+	{
+		if (Imgui->IsHandleDifferent())
+			Imgui.reset();
+		else
+			Imgui->Render(InCommandList, paramOutput);
+	}
+	else
+		Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
 
 	// restore resource states
 	if (params.pColorTexture && Config::Instance()->ColorResourceBarrier.has_value())

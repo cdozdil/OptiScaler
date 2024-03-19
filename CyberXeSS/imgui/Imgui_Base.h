@@ -1,15 +1,17 @@
 #include "../pch.h"
 #include "imgui/imgui.h"
-#include "imgui/imgui_impl_win32.h"
+
+LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 class Imgui_Base
 {
 private:
+	HWND _handle = nullptr;
 	bool _baseInit = false;
-	int _width;
-	int _height;
-	int _top;
-	int _left;
+	int _width = 400;
+	int _height = 400;
+	int _top = 10;
+	int _left = 10;
 
 protected:
 	ImGuiContext* context;
@@ -24,6 +26,8 @@ public:
 	int Height() { return _height; }
 	int Top() { return _top; }
 	int Left() { return _left; }
+	HWND Handle() { return _handle; }
+	bool IsHandleDifferent();
 
 	explicit Imgui_Base(HWND handle);
 
