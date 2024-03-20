@@ -134,7 +134,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 
 	// CTRL + HOME
-	if (msg == WM_KEYDOWN && wParam == VK_HOME && (GetKeyState(VK_CONTROL) & 0x8000))
+	if (msg == WM_KEYDOWN && wParam == VK_INSERT && (GetKeyState(VK_SHIFT) & 0x8000))
 	{
 		_isVisible = !_isVisible;
 		io.MouseDrawCursor = _isVisible;
@@ -370,7 +370,7 @@ void Imgui_Base::RenderMenu()
 			{
 				if (ImGui::BeginMenu("File"))
 				{
-					if (ImGui::MenuItem("Save ini", "Ctrl+S"))
+					if (ImGui::MenuItem("Save ini"))
 					{
 						auto result = Config::Instance()->ini.SaveFile("nvngx.ini");
 
@@ -379,7 +379,7 @@ void Imgui_Base::RenderMenu()
 
 					ImGui::Separator();
 
-					if (ImGui::MenuItem("Close", "Ctrl+Home"))
+					if (ImGui::MenuItem("Close", "Shift+Ins"))
 						_isVisible = false;
 
 					ImGui::EndMenu();
