@@ -67,8 +67,28 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	// Imgui
 	if (_isVisible)
 	{
-		ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
-		return true;
+		if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
+			return true;
+
+		switch (msg)
+		{
+		case WM_LBUTTONDOWN:
+		case WM_LBUTTONUP:
+		case WM_RBUTTONDOWN:
+		case WM_RBUTTONUP:
+		case WM_MBUTTONDOWN:
+		case WM_MBUTTONUP:
+		case WM_MOUSEWHEEL:
+		case WM_KEYDOWN: 
+		case WM_KEYUP: 
+		case WM_SYSKEYDOWN: 
+		case WM_SYSKEYUP:
+		case WM_MOUSEMOVE:
+			return true;
+
+		default:
+			break;
+		}
 	}
 
 	return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
@@ -208,7 +228,7 @@ void AddResourceBarrier(std::string name, std::optional<int>* value)
 	const int values[] = { -1, 0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 4194304, 16777216, 2755, 192, 0, 310, 65536,
 							131072, 262144, 524288, 2097152, 8388608 };
 
-	
+
 	int selected = value->value_or(-1);
 
 	const char* selectedName = "";
@@ -315,7 +335,7 @@ void Imgui_Base::RenderMenu()
 
 					ImGui::EndCombo();
 				}
-				
+
 				ImGui::EndDisabled();
 
 				const char* quality[] = { "Auto", "Performance", "Balanced", "Quality", "Ultra Quality" };
@@ -518,7 +538,7 @@ void Imgui_Base::RenderMenu()
 				// BARRIERS -----------------------------
 				ImGui::SeparatorText("Resource Barriers");
 				ImGui::BeginDisabled(Config::Instance()->Api != NVNGX_DX12);
-				
+
 				AddResourceBarrier("Color", &Config::Instance()->ColorResourceBarrier);
 				AddResourceBarrier("Depth", &Config::Instance()->DepthResourceBarrier);
 				AddResourceBarrier("Motion", &Config::Instance()->MVResourceBarrier);
@@ -587,7 +607,7 @@ Imgui_Base::Imgui_Base(HWND handle)
 
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 
 	io.MouseDrawCursor = _isVisible;
 	io.WantCaptureKeyboard = _isVisible;
@@ -600,6 +620,9 @@ Imgui_Base::Imgui_Base(HWND handle)
 
 	if (_oWndProc == nullptr)
 		_oWndProc = (WNDPROC)SetWindowLongPtr(_handle, GWLP_WNDPROC, (LONG_PTR)WndProc);
+
+	if (!pfn_SetCursorPos_hooked)
+		AttachHooks();
 }
 
 Imgui_Base::~Imgui_Base()
@@ -619,6 +642,9 @@ Imgui_Base::~Imgui_Base()
 		_oWndProc = nullptr;
 
 		ImGui_ImplWin32_Shutdown();
+
+		if (pfn_SetCursorPos_hooked)
+			DetachHooks();
 	}
 
 	ImGui::DestroyContext(context);
