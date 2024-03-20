@@ -165,16 +165,28 @@ Imgui_Dx12::~Imgui_Dx12()
 	std::this_thread::sleep_for(std::chrono::milliseconds(750));
 
 	if (_rtvDescHeap)
+	{
 		_rtvDescHeap->Release();
+		_rtvDescHeap = nullptr;
+	}
 
 	if (_srvDescHeap)
+	{
 		_srvDescHeap->Release();
+		_srvDescHeap = nullptr;
+	}
 
 	if (_renderTargetResource[0])
+	{
 		_renderTargetResource[0]->Release();
+		_renderTargetResource[0] = nullptr;
+	}
 
 	if (_renderTargetResource[1])
+	{
 		_renderTargetResource[1]->Release();
+		_renderTargetResource[1] = nullptr;
+	}
 }
 
 void Imgui_Dx12::CreateRenderTarget(const D3D12_RESOURCE_DESC& InDesc)

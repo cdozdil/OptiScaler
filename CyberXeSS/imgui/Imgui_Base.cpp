@@ -23,7 +23,7 @@ WNDPROC _oWndProc = nullptr;
 LRESULT WINAPI hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
 	if (_isVisible && Msg == 0x0020)
-		return true;
+		return TRUE;
 	else
 		return pfn_SendMessageW(hWnd, Msg, wParam, lParam);
 }
@@ -134,7 +134,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 
 	// CTRL + HOME
-	if (msg == WM_KEYDOWN && wParam == VK_INSERT) // && (GetKeyState(VK_CONTROL) & 0x8000))
+	if (msg == WM_KEYDOWN && wParam == VK_HOME && (GetKeyState(VK_CONTROL) & 0x8000))
 	{
 		_isVisible = !_isVisible;
 		io.MouseDrawCursor = _isVisible;
@@ -673,7 +673,7 @@ void Imgui_Base::RenderMenu()
 
 bool Imgui_Base::IsHandleDifferent()
 {
-	HWND frontWindow = Util::GetProcessWindow(); // GetForegroundWindow();
+	HWND frontWindow = GetForegroundWindow(); // Util::GetProcessWindow();
 
 	if (frontWindow == _handle)
 		return false;
@@ -681,7 +681,7 @@ bool Imgui_Base::IsHandleDifferent()
 	DWORD procId;
 	GetWindowThreadProcessId(frontWindow, &procId);
 
-	return (processId == procId);
+	return (processId != procId);
 }
 
 Imgui_Base::Imgui_Base(HWND handle)
@@ -711,6 +711,13 @@ Imgui_Base::Imgui_Base(HWND handle)
 
 	if (_oWndProc == nullptr)
 		_oWndProc = (WNDPROC)SetWindowLongPtr(_handle, GWLP_WNDPROC, (LONG_PTR)WndProc);
+
+	// hackzor
+	if (_oWndProc == nullptr)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+		_oWndProc = (WNDPROC)SetWindowLongPtr(_handle, GWLP_WNDPROC, (LONG_PTR)WndProc);
+	}
 
 	if (!pfn_SetCursorPos_hooked)
 		AttachHooks();

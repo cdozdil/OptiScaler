@@ -25,7 +25,13 @@ bool FSR2FeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 	Device = InDevice;
 	DeviceContext = InContext;
 
-	return InitFSR2(InParameters);
+	if (InitFSR2(InParameters)) 
+	{
+		Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+		return true;
+	}
+
+	return false;
 }
 
 bool FSR2FeatureDx11::CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutTextureRes, UINT bindFlags, bool InCopy)
@@ -398,36 +404,16 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, const NVSDK_NGX_P
 		return false;
 	}
 
-	// restore resource states
-	//if (paramColor && Config::Instance()->ColorResourceBarrier.value_or(false))
-	//	ResourceBarrier(InCommandList, paramColor,
-	//		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-	//		(D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value());
-
-	//if (paramVelocity && Config::Instance()->MVResourceBarrier.has_value())
-	//	ResourceBarrier(InCommandList, paramVelocity,
-	//		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-	//		(D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value());
-
-	//if (paramOutput && Config::Instance()->OutputResourceBarrier.has_value())
-	//	ResourceBarrier(InCommandList, paramOutput,
-	//		D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-	//		(D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value());
-
-	//if (paramDepth && Config::Instance()->DepthResourceBarrier.has_value())
-	//	ResourceBarrier(InCommandList, paramDepth,
-	//		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-	//		(D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value());
-
-	//if (paramExp && Config::Instance()->ExposureResourceBarrier.has_value())
-	//	ResourceBarrier(InCommandList, paramExp,
-	//		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-	//		(D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value());
-
-	//if (paramMask && Config::Instance()->MaskResourceBarrier.has_value())
-	//	ResourceBarrier(InCommandList, paramMask,
-	//		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-	//		(D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value());
+	// imgui
+	if (Imgui)
+	{
+		if (Imgui->IsHandleDifferent())
+			Imgui.reset();
+		else
+			Imgui->Render(InContext, paramOutput);
+	}
+	else
+		Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
 
 	return true;
 }
@@ -454,5 +440,8 @@ FSR2FeatureDx11::~FSR2FeatureDx11()
 	}
 
 	ReleaseResources();
+
+	if (Imgui)
+		Imgui.reset();
 }
 

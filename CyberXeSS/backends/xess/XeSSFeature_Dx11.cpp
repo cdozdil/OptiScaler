@@ -314,6 +314,7 @@ bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 		return false;
 	}
 
+	Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
 	return true;
 }
 
@@ -811,6 +812,17 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		query2->Release();
 	}
 
+	// imgui
+	if (Imgui)
+	{
+		if (Imgui->IsHandleDifferent())
+			Imgui.reset();
+		else
+			Imgui->Render(InDeviceContext, paramOutput);
+	}
+	else
+		Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+
 	// release fences
 	if (dx11fence_1)
 		dx11fence_1->Release();
@@ -863,5 +875,8 @@ XeSSFeatureDx11::~XeSSFeatureDx11()
 	}
 
 	ReleaseSharedResources();
+
+	if(Imgui)
+		Imgui.reset();
 }
 

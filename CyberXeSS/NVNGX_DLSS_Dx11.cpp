@@ -277,7 +277,55 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 	if (InCallback)
 		spdlog::warn("NVSDK_NGX_D3D11_EvaluateFeature callback exist");
 
-	auto deviceContext = Dx11Contexts[InFeatureHandle->Id].get();
+	IFeature_Dx11* deviceContext = nullptr;
+
+	if (Config::Instance()->changeBackend)
+	{
+		// first release everything
+		auto handleId = InFeatureHandle->Id;
+
+		if (auto dc = Dx11Contexts[handleId].get(); dc)
+		{
+			Dx11Contexts[handleId].reset();
+			auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+			Dx11Contexts.erase(it);
+
+			return NVSDK_NGX_Result_Success;
+		}
+
+		// next frame prepare stuff
+		if (Config::Instance()->newBackend == "fsr22")
+		{
+			Config::Instance()->Dx11Upscaler = "fsr22";
+			Dx11Contexts[InFeatureHandle->Id] = std::make_unique<FSR2FeatureDx11>(InFeatureHandle->Id, InParameters);
+		}
+		else if (Config::Instance()->newBackend == "fsr21_12")
+		{
+			Config::Instance()->Dx11Upscaler = "fsr21_12";
+			Dx11Contexts[InFeatureHandle->Id] = std::make_unique<FSR2FeatureDx11on12_212>(InFeatureHandle->Id, InParameters);
+		}
+		else if (Config::Instance()->newBackend == "fsr22_12")
+		{
+			Config::Instance()->Dx11Upscaler = "fsr22_12";
+			Dx11Contexts[InFeatureHandle->Id] = std::make_unique<FSR2FeatureDx11on12>(InFeatureHandle->Id, InParameters);
+		}
+		else
+		{
+			Config::Instance()->Dx11Upscaler = "xess";
+			Dx11Contexts[InFeatureHandle->Id] = std::make_unique<XeSSFeatureDx11>(InFeatureHandle->Id, InParameters);
+		}
+
+		if (Dx11Contexts[InFeatureHandle->Id].get()->Init(D3D11Device, InDevCtx, InParameters))
+		{
+			// next frame we will start rendering again
+			Config::Instance()->changeBackend = false;
+			return NVSDK_NGX_Result_Success;
+		}
+		else
+			return NVSDK_NGX_Result_Fail;
+	}
+
+	deviceContext = Dx11Contexts[InFeatureHandle->Id].get();
 
 	if (deviceContext == nullptr)
 	{
