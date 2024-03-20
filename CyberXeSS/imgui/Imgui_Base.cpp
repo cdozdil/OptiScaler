@@ -5,15 +5,35 @@
 #include "../detours/detours.h"
 #pragma comment(lib, "../detours/detours.lib")
 
+PFN_SetCursorPos pfn_SetPhysicalCursorPos = nullptr;
 PFN_SetCursorPos pfn_SetCursorPos = nullptr;
 PFN_mouse_event pfn_mouse_event = nullptr;
 PFN_SendInput pfn_SendInput = nullptr;
+PFN_SendMessageW pfn_SendMessageW = nullptr;
+bool pfn_SetPhysicalCursorPos_hooked = false;
 bool pfn_SetCursorPos_hooked = false;
 bool pfn_mouse_event_hooked = false;
 bool pfn_SendInput_hooked = false;
+bool pfn_SendMessageW_hooked = false;
 
 bool _isVisible = false;
 WNDPROC _oWndProc = nullptr;
+
+LRESULT WINAPI hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+{
+	if (_isVisible && Msg == 0x0020)
+		return TRUE;
+	else
+		return pfn_SendMessageW(hWnd, Msg, wParam, lParam);
+}
+
+BOOL WINAPI hkSetPhysicalCursorPos(int x, int y)
+{
+	if (_isVisible)
+		return TRUE;
+	else
+		return pfn_SetPhysicalCursorPos(x, y);
+}
 
 BOOL WINAPI hkSetCursorPos(int x, int y)
 {
@@ -45,9 +65,14 @@ void AttachHooks()
 	DetourUpdateThread(GetCurrentThread());
 		
 	// Detour the functions
+	pfn_SetPhysicalCursorPos = reinterpret_cast<PFN_SetCursorPos>(DetourFindFunction("user32.dll", "SetPhysicalCursorPos"));
 	pfn_SetCursorPos = reinterpret_cast<PFN_SetCursorPos>(DetourFindFunction("user32.dll", "SetCursorPos"));
 	pfn_mouse_event = reinterpret_cast<PFN_mouse_event>(DetourFindFunction("user32.dll", "mouse_event"));
 	pfn_SendInput = reinterpret_cast<PFN_SendInput>(DetourFindFunction("user32.dll", "SendInput"));
+	pfn_SendMessageW = reinterpret_cast<PFN_SendMessageW>(DetourFindFunction("user32.dll", "SendMessageW"));
+
+	if (pfn_SetPhysicalCursorPos && (pfn_SetPhysicalCursorPos != pfn_SetCursorPos))
+		pfn_SetPhysicalCursorPos_hooked = (DetourAttach(&(PVOID&)pfn_SetPhysicalCursorPos, hkSetPhysicalCursorPos) == 0);
 
 	if (pfn_SetCursorPos)
 		pfn_SetCursorPos_hooked = (DetourAttach(&(PVOID&)pfn_SetCursorPos, hkSetCursorPos) == 0);
@@ -58,6 +83,9 @@ void AttachHooks()
 	if (pfn_SendInput)
 		pfn_SendInput_hooked = (DetourAttach(&(PVOID&)pfn_SendInput, hkSendInput) == 0);
 
+	if (pfn_SendMessageW)
+		pfn_SendMessageW_hooked = (DetourAttach(&(PVOID&)pfn_SendMessageW, hkSendMessageW) == 0);
+
 	DetourTransactionCommit();
 }
 
@@ -65,6 +93,9 @@ void DetachHooks()
 {
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
+
+	if (pfn_SetPhysicalCursorPos_hooked)
+		DetourDetach(&(PVOID&)pfn_SetPhysicalCursorPos, hkSetPhysicalCursorPos);
 
 	if (pfn_SetCursorPos_hooked)
 		DetourDetach(&(PVOID&)pfn_SetCursorPos, hkSetCursorPos);
@@ -75,13 +106,20 @@ void DetachHooks()
 	if (pfn_SendInput_hooked)
 		DetourDetach(&(PVOID&)pfn_SendInput, hkSendInput);
 
+	if (pfn_SendMessageW_hooked)
+		DetourDetach(&(PVOID&)pfn_SendMessageW, hkSendMessageW);
+
+	pfn_SetPhysicalCursorPos_hooked = false;
 	pfn_SetCursorPos_hooked = false;
 	pfn_mouse_event_hooked = false;
 	pfn_SendInput_hooked = false;
+	pfn_SendMessageW_hooked = false;
 
+	pfn_SetPhysicalCursorPos = nullptr;
 	pfn_SetCursorPos = nullptr;
 	pfn_mouse_event = nullptr;
 	pfn_SendInput = nullptr;
+	pfn_SendMessageW = nullptr;
 
 	DetourTransactionCommit();
 }
@@ -125,6 +163,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_SYSKEYDOWN: 
 		case WM_SYSKEYUP:
 		case WM_MOUSEMOVE:
+		case WM_SETCURSOR:
 			return true;
 
 		default:
