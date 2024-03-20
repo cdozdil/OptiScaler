@@ -3,6 +3,7 @@
 #include "imgui/imgui_impl_win32.h"
 
 #include "../detours/detours.h"
+#include "../Util.h"
 #pragma comment(lib, "../detours/detours.lib")
 
 PFN_SetCursorPos pfn_SetPhysicalCursorPos = nullptr;
@@ -22,7 +23,7 @@ WNDPROC _oWndProc = nullptr;
 LRESULT WINAPI hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
 	if (_isVisible && Msg == 0x0020)
-		return TRUE;
+		return true;
 	else
 		return pfn_SendMessageW(hWnd, Msg, wParam, lParam);
 }
@@ -54,7 +55,7 @@ void WINAPI hkmouse_event(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG
 UINT WINAPI hkSendInput(UINT cInputs, LPINPUT pInputs, int cbSize)
 {
 	if (_isVisible)
-		return 0;
+		return TRUE;
 	else
 		return pfn_SendInput(cInputs, pInputs, cbSize);
 }
@@ -63,7 +64,7 @@ void AttachHooks()
 {
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
-		
+
 	// Detour the functions
 	pfn_SetPhysicalCursorPos = reinterpret_cast<PFN_SetCursorPos>(DetourFindFunction("user32.dll", "SetPhysicalCursorPos"));
 	pfn_SetCursorPos = reinterpret_cast<PFN_SetCursorPos>(DetourFindFunction("user32.dll", "SetCursorPos"));
@@ -133,21 +134,21 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 
 	// CTRL + HOME
-	if (msg == WM_KEYDOWN && wParam == VK_HOME && (GetKeyState(VK_CONTROL) & 0x8000))
+	if (msg == WM_KEYDOWN && wParam == VK_INSERT) // && (GetKeyState(VK_CONTROL) & 0x8000))
 	{
 		_isVisible = !_isVisible;
 		io.MouseDrawCursor = _isVisible;
 		io.WantCaptureKeyboard = _isVisible;
 		io.WantCaptureMouse = _isVisible;
 
-		return true;
+		return TRUE;
 	}
 
 	// Imgui
 	if (_isVisible)
 	{
 		if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
-			return true;
+			return TRUE;
 
 		switch (msg)
 		{
@@ -157,18 +158,28 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_RBUTTONUP:
 		case WM_MBUTTONDOWN:
 		case WM_MBUTTONUP:
-		case WM_MOUSEWHEEL:
-		case WM_KEYDOWN: 
-		case WM_KEYUP: 
-		case WM_SYSKEYDOWN: 
+		case WM_KEYDOWN:
+		case WM_KEYUP:
+		case WM_SYSKEYDOWN:
 		case WM_SYSKEYUP:
 		case WM_MOUSEMOVE:
 		case WM_SETCURSOR:
-			return true;
+		case WM_LBUTTONDBLCLK:
+		case WM_RBUTTONDBLCLK:
+		case WM_MBUTTONDBLCLK:
+		case WM_XBUTTONDOWN:
+		case WM_XBUTTONUP:
+		case WM_XBUTTONDBLCLK:
+		case WM_MOUSELAST:
+		case WM_INPUT:
+			return TRUE;
 
 		default:
 			break;
 		}
+
+		auto log = std::format("WNDPROC MSG : {}", msg);
+		OutputDebugStringA(log.c_str());
 	}
 
 	return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
@@ -662,7 +673,7 @@ void Imgui_Base::RenderMenu()
 
 bool Imgui_Base::IsHandleDifferent()
 {
-	HWND frontWindow = GetForegroundWindow();
+	HWND frontWindow = Util::GetProcessWindow(); // GetForegroundWindow();
 
 	if (frontWindow == _handle)
 		return false;

@@ -58,10 +58,10 @@ HWND Util::GetProcessWindow() {
 	HWND hwnd = nullptr;
 	EnumWindows(EnumWindowsCallback, (LPARAM)&hwnd);
 
-	while (!hwnd) {
-		EnumWindows(EnumWindowsCallback, (LPARAM)&hwnd);
-		std::this_thread::sleep_for(std::chrono::milliseconds(500));
-	}
+	//while (!hwnd) {
+	//	EnumWindows(EnumWindowsCallback, (LPARAM)&hwnd);
+	//	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	//}
 
 	return hwnd;
 }
