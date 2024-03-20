@@ -188,7 +188,7 @@ void AddResourceBarrier(std::string name, std::optional<int>* value)
 		if (ImGui::Selectable(states[0], !value->has_value()))
 			value->reset();
 
-		for (int n = 0; n < 28; n++)
+		for (int n = 1; n < 28; n++)
 		{
 			if (ImGui::Selectable(states[n], selected == values[n]))
 				*value = values[n];
