@@ -23,6 +23,8 @@ private:
 protected:
 	ImGuiContext* context;
 
+	long frameCounter = 0;
+
 	void RenderMenu();
 
 public:

@@ -54,6 +54,8 @@ bool Imgui_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTextur
 	if (pCmdList == nullptr || outTexture == nullptr)
 		return false;
 
+	frameCounter++;
+
 	if (!IsVisible())
 		return true;
 
@@ -100,9 +102,11 @@ Imgui_Dx11::~Imgui_Dx11()
 	if (!_dx11Init)
 		return;
 
+	ImGui::SetCurrentContext(context);
+	std::this_thread::sleep_for(std::chrono::milliseconds(250));
+
 	if (auto currCtx = ImGui::GetCurrentContext(); currCtx && context != currCtx)
 	{
-		ImGui::SetCurrentContext(context);
 		ImGui_ImplDX11_Shutdown();
 		ImGui::SetCurrentContext(currCtx);
 	}
@@ -110,7 +114,7 @@ Imgui_Dx11::~Imgui_Dx11()
 		ImGui_ImplDX11_Shutdown();
 
 	// hackzor
-	std::this_thread::sleep_for(std::chrono::milliseconds(750));
+	std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
 	if (_renderTargetTexture)
 	{

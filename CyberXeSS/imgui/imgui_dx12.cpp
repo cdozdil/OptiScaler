@@ -9,6 +9,8 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 	if (pCmdList == nullptr || outTexture == nullptr)
 		return false;
 
+	frameCounter++;
+
 	if (!IsVisible())
 		return true;
 
@@ -152,9 +154,26 @@ Imgui_Dx12::~Imgui_Dx12()
 	if (!_dx12Init)
 		return;
 
+	ID3D12Fence* d3d12Fence;
+	_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
+	d3d12Fence->Signal(999);
+
+	auto fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+	if (d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
+	{
+		WaitForSingleObject(fenceEvent, INFINITE);
+		CloseHandle(fenceEvent);
+	}
+
+	d3d12Fence->Release();
+
+	std::this_thread::sleep_for(std::chrono::milliseconds(250));
+
+	ImGui::SetCurrentContext(context);
+
 	if (auto currCtx = ImGui::GetCurrentContext(); currCtx && context != currCtx)
 	{
-		ImGui::SetCurrentContext(context);
 		ImGui_ImplDX12_Shutdown();
 		ImGui::SetCurrentContext(currCtx);
 	}
@@ -162,7 +181,7 @@ Imgui_Dx12::~Imgui_Dx12()
 		ImGui_ImplDX12_Shutdown();
 
 	// hackzor
-	std::this_thread::sleep_for(std::chrono::milliseconds(750));
+	std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
 	if (_rtvDescHeap)
 	{
