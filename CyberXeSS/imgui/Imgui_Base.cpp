@@ -6,7 +6,11 @@
 #pragma comment(lib, "../detours/detours.lib")
 
 PFN_SetCursorPos pfn_SetCursorPos = nullptr;
+PFN_mouse_event pfn_mouse_event = nullptr;
+PFN_SendInput pfn_SendInput = nullptr;
 bool pfn_SetCursorPos_hooked = false;
+bool pfn_mouse_event_hooked = false;
+bool pfn_SendInput_hooked = false;
 
 bool _isVisible = false;
 WNDPROC _oWndProc = nullptr;
@@ -19,6 +23,22 @@ BOOL WINAPI hkSetCursorPos(int x, int y)
 		return pfn_SetCursorPos(x, y);
 }
 
+void WINAPI hkmouse_event(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo)
+{
+	if (_isVisible)
+		return;
+	else
+		pfn_mouse_event(dwFlags, dx, dy, dwData, dwExtraInfo);
+}
+
+UINT WINAPI hkSendInput(UINT cInputs, LPINPUT pInputs, int cbSize)
+{
+	if (_isVisible)
+		return 0;
+	else
+		return pfn_SendInput(cInputs, pInputs, cbSize);
+}
+
 void AttachHooks()
 {
 	DetourTransactionBegin();
@@ -26,9 +46,17 @@ void AttachHooks()
 		
 	// Detour the functions
 	pfn_SetCursorPos = reinterpret_cast<PFN_SetCursorPos>(DetourFindFunction("user32.dll", "SetCursorPos"));
+	pfn_mouse_event = reinterpret_cast<PFN_mouse_event>(DetourFindFunction("user32.dll", "mouse_event"));
+	pfn_SendInput = reinterpret_cast<PFN_SendInput>(DetourFindFunction("user32.dll", "SendInput"));
 
 	if (pfn_SetCursorPos)
 		pfn_SetCursorPos_hooked = (DetourAttach(&(PVOID&)pfn_SetCursorPos, hkSetCursorPos) == 0);
+
+	if (pfn_mouse_event)
+		pfn_mouse_event_hooked = (DetourAttach(&(PVOID&)pfn_mouse_event, hkmouse_event) == 0);
+
+	if (pfn_SendInput)
+		pfn_SendInput_hooked = (DetourAttach(&(PVOID&)pfn_SendInput, hkSendInput) == 0);
 
 	DetourTransactionCommit();
 }
@@ -40,6 +68,20 @@ void DetachHooks()
 
 	if (pfn_SetCursorPos_hooked)
 		DetourDetach(&(PVOID&)pfn_SetCursorPos, hkSetCursorPos);
+
+	if (pfn_mouse_event_hooked)
+		DetourDetach(&(PVOID&)pfn_mouse_event, hkmouse_event);
+
+	if (pfn_SendInput_hooked)
+		DetourDetach(&(PVOID&)pfn_SendInput, hkSendInput);
+
+	pfn_SetCursorPos_hooked = false;
+	pfn_mouse_event_hooked = false;
+	pfn_SendInput_hooked = false;
+
+	pfn_SetCursorPos = nullptr;
+	pfn_mouse_event = nullptr;
+	pfn_SendInput = nullptr;
 
 	DetourTransactionCommit();
 }
@@ -59,7 +101,6 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		io.MouseDrawCursor = _isVisible;
 		io.WantCaptureKeyboard = _isVisible;
 		io.WantCaptureMouse = _isVisible;
-		io.WantSetMousePos = _isVisible;
 
 		return true;
 	}
@@ -641,10 +682,10 @@ Imgui_Base::~Imgui_Base()
 		SetWindowLongPtr((HWND)ImGui::GetMainViewport()->PlatformHandleRaw, GWLP_WNDPROC, (LONG_PTR)_oWndProc);
 		_oWndProc = nullptr;
 
-		ImGui_ImplWin32_Shutdown();
-
 		if (pfn_SetCursorPos_hooked)
 			DetachHooks();
+
+		ImGui_ImplWin32_Shutdown();
 	}
 
 	ImGui::DestroyContext(context);
