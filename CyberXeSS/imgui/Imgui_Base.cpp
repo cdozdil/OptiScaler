@@ -2,8 +2,47 @@
 #include "../Config.h"
 #include "imgui/imgui_impl_win32.h"
 
+#include "../detours/detours.h"
+#pragma comment(lib, "../detours/detours.lib")
+
+PFN_SetCursorPos pfn_SetCursorPos = nullptr;
+bool pfn_SetCursorPos_hooked = false;
+
 bool _isVisible = false;
 WNDPROC _oWndProc = nullptr;
+
+BOOL WINAPI hkSetCursorPos(int x, int y)
+{
+	if (_isVisible)
+		return TRUE;
+	else
+		return pfn_SetCursorPos(x, y);
+}
+
+void AttachHooks()
+{
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+		
+	// Detour the functions
+	pfn_SetCursorPos = reinterpret_cast<PFN_SetCursorPos>(DetourFindFunction("user32.dll", "SetCursorPos"));
+
+	if (pfn_SetCursorPos)
+		pfn_SetCursorPos_hooked = (DetourAttach(&(PVOID&)pfn_SetCursorPos, hkSetCursorPos) == 0);
+
+	DetourTransactionCommit();
+}
+
+void DetachHooks()
+{
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+
+	if (pfn_SetCursorPos_hooked)
+		DetourDetach(&(PVOID&)pfn_SetCursorPos, hkSetCursorPos);
+
+	DetourTransactionCommit();
+}
 
 /*Forward declare message handler from imgui_impl_win32.cpp*/
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

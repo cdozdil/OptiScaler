@@ -2,6 +2,7 @@
 #include "imgui/imgui.h"
 
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+typedef BOOL(WINAPI* PFN_SetCursorPos)(int x, int y);
 
 class Imgui_Base
 {
