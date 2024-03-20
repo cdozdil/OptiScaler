@@ -495,14 +495,22 @@ void Imgui_Base::RenderMenu()
 
 				if (useVFov)
 					fov = Config::Instance()->FsrVerticalFov.value_or(60.0f);
+				else
+					fov = Config::Instance()->FsrHorizontalFov.value_or(90.0f);
 
 				if (ImGui::RadioButton("Use Vert. Fov", useVFov))
+				{
+					fov = Config::Instance()->FsrVerticalFov.value_or(60.0f);
 					useVFov = true;
+				}
 
 				ImGui::SameLine();
 
 				if (ImGui::RadioButton("Use Horz. Fov", !useVFov))
+				{
+					fov = Config::Instance()->FsrHorizontalFov.value_or(90.0f);
 					useVFov = false;
+				}
 
 				if (useVFov)
 				{
