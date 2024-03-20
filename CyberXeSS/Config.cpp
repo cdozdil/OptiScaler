@@ -1,10 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "Config.h"
-#include <SimpleIni.h>
 #include "Util.h"
-
-static CSimpleIniA ini;
 
 Config::Config(std::wstring fileName)
 {

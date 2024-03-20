@@ -1,6 +1,7 @@
 #pragma once
 #include <optional>
 #include <filesystem>
+#include <SimpleIni.h>
 
 typedef enum NVNGX_Api
 {
@@ -91,6 +92,7 @@ public:
 	bool changeBackend = false;
 	std::string newBackend = "";
 	
+	CSimpleIniA ini;
 
 	void Reload();
 

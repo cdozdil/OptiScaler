@@ -359,12 +359,40 @@ void Imgui_Base::RenderMenu()
 		ImGuiWindowFlags flags = 0;
 		flags |= ImGuiWindowFlags_NoSavedSettings;
 		flags |= ImGuiWindowFlags_NoCollapse;
+		flags |= ImGuiWindowFlags_MenuBar;
 
 		ImGui::SetNextWindowPos(ImVec2{ 350.0f, 300.0f }, ImGuiCond_FirstUseEver);
-		ImGui::SetNextWindowSize(ImVec2{ 770.0f, 495.0f }, ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2{ 770.0f, 525.0f }, ImGuiCond_FirstUseEver);
 
 		if (ImGui::Begin("CyberXeSS v0.4", nullptr, flags))
 		{
+			if (ImGui::BeginMenuBar())
+			{
+				if (ImGui::BeginMenu("File"))
+				{
+					if (ImGui::MenuItem("Save ini", "Ctrl+S"))
+					{
+						auto result = Config::Instance()->ini.SaveFile("nvngx.ini");
+
+						// if(result < 0) Handle eror
+					}
+
+					ImGui::Separator();
+
+					if (ImGui::MenuItem("Close", "Ctrl+Home"))
+						_isVisible = false;
+
+					ImGui::EndMenu();
+				}
+
+				ImGui::MenuItem("Logs");
+
+				ImGui::MenuItem("About");
+
+
+				ImGui::EndMenuBar();
+			}
+
 			if (ImGui::BeginTable("main", 2))
 			{
 				ImGui::TableNextColumn();
@@ -673,15 +701,26 @@ void Imgui_Base::RenderMenu()
 
 bool Imgui_Base::IsHandleDifferent()
 {
-	HWND frontWindow = GetForegroundWindow(); // Util::GetProcessWindow();
+	DWORD procId;
+	GetWindowThreadProcessId(_handle, &procId);
 
-	if (frontWindow == _handle)
+	if (processId == procId)
 		return false;
 
-	DWORD procId;
+	HWND frontWindow = GetForegroundWindow(); // Util::GetProcessWindow();
+
+	if (frontWindow == nullptr || frontWindow == _handle)
+		return true;
+
 	GetWindowThreadProcessId(frontWindow, &procId);
 
-	return (processId != procId);
+	if (processId == procId);
+	{
+		_handle = frontWindow;
+		return false;
+	}
+
+	return true;
 }
 
 Imgui_Base::Imgui_Base(HWND handle)
@@ -709,15 +748,11 @@ Imgui_Base::Imgui_Base(HWND handle)
 
 	_baseInit = ImGui_ImplWin32_Init(_handle);
 
-	if (_oWndProc == nullptr)
-		_oWndProc = (WNDPROC)SetWindowLongPtr(_handle, GWLP_WNDPROC, (LONG_PTR)WndProc);
+	if (IsHandleDifferent())
+		return;
 
-	// hackzor
 	if (_oWndProc == nullptr)
-	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(250));
 		_oWndProc = (WNDPROC)SetWindowLongPtr(_handle, GWLP_WNDPROC, (LONG_PTR)WndProc);
-	}
 
 	if (!pfn_SetCursorPos_hooked)
 		AttachHooks();
