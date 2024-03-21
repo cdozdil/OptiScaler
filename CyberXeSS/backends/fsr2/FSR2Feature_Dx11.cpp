@@ -214,6 +214,10 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	return true;
 }
 
+FSR2FeatureDx11::FSR2FeatureDx11(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : FSR2Feature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters)
+{
+}
+
 bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("FSR2FeatureDx11::Evaluate");
@@ -422,26 +426,38 @@ FSR2FeatureDx11::~FSR2FeatureDx11()
 {
 	spdlog::debug("FSR2FeatureDx11::~FSR2FeatureDx11");
 
-	D3D11_QUERY_DESC pQueryDesc{};
-	pQueryDesc.Query = D3D11_QUERY_EVENT;
-	pQueryDesc.MiscFlags = 0;
-	ID3D11Query* query = nullptr;
-	auto result = Device->CreateQuery(&pQueryDesc, &query);
-
-	if (DeviceContext != nullptr && result != S_OK)
+	if (Device)
 	{
-		DeviceContext->Begin(query);
-		DeviceContext->End(query);
-		DeviceContext->Flush();
+		D3D11_QUERY_DESC pQueryDesc;
+		pQueryDesc.Query = D3D11_QUERY_EVENT;
+		pQueryDesc.MiscFlags = 0;
 
-		while (DeviceContext->GetData(query, nullptr, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE);
+		ID3D11Query* query = nullptr;
+		auto result = Device->CreateQuery(&pQueryDesc, &query);
 
-		query->Release();
+		if (result == S_OK)
+		{
+			// Associate the query with the copy operation
+			DeviceContext->Begin(query);
+
+			// Execute dx11 commands 
+			DeviceContext->End(query);
+			DeviceContext->Flush();
+
+			// Wait for the query to be ready
+			while (DeviceContext->GetData(query, NULL, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE)
+				std::this_thread::yield();
+
+			// Release the query
+			query->Release();
+		}
 	}
 
 	ReleaseResources();
 
 	if (Imgui)
 		Imgui.reset();
+
+	DeviceContext->Flush();
 }
 

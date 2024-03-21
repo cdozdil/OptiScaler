@@ -108,17 +108,17 @@ void FSR2FeatureDx11on12_212::ReleaseSharedResources()
 	spdlog::debug("FSR2FeatureDx11on12::ReleaseSharedResources start!");
 
 	SAFE_RELEASE(dx11Color.SharedTexture)
-	SAFE_RELEASE(dx11Mv.SharedTexture)
-	SAFE_RELEASE(dx11Out.SharedTexture)
-	SAFE_RELEASE(dx11Depth.SharedTexture)
-	SAFE_RELEASE(dx11Tm.SharedTexture)
-	SAFE_RELEASE(dx11Exp.SharedTexture)
-	SAFE_RELEASE(dx11Color.Dx12Resource)
-	SAFE_RELEASE(dx11Mv.Dx12Resource)
-	SAFE_RELEASE(dx11Out.Dx12Resource)
-	SAFE_RELEASE(dx11Depth.Dx12Resource)
-	SAFE_RELEASE(dx11Tm.Dx12Resource)
-	SAFE_RELEASE(dx11Exp.Dx12Resource)
+		SAFE_RELEASE(dx11Mv.SharedTexture)
+		SAFE_RELEASE(dx11Out.SharedTexture)
+		SAFE_RELEASE(dx11Depth.SharedTexture)
+		SAFE_RELEASE(dx11Tm.SharedTexture)
+		SAFE_RELEASE(dx11Exp.SharedTexture)
+		SAFE_RELEASE(dx11Color.Dx12Resource)
+		SAFE_RELEASE(dx11Mv.Dx12Resource)
+		SAFE_RELEASE(dx11Out.Dx12Resource)
+		SAFE_RELEASE(dx11Depth.Dx12Resource)
+		SAFE_RELEASE(dx11Tm.Dx12Resource)
+		SAFE_RELEASE(dx11Exp.Dx12Resource)
 }
 
 void FSR2FeatureDx11on12_212::GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter)
@@ -367,7 +367,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 	ID3D11Query* query0 = nullptr;
 
 	// 3 is query sync
-	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 3)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 4)
 	{
 		fr = Dx11Device->CreateFence(0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(&dx11fence_1));
 
@@ -414,7 +414,6 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 		// Associate the query with the copy operation
 		DeviceContext->Begin(query0);
 	}
-
 
 #pragma region Texture copies
 
@@ -517,13 +516,16 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 #pragma endregion
 
 	// 3 is query sync
-	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 3)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 4)
 	{
-		if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 0)
+		if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 1)
 			Dx11DeviceContext->Flush();
 
-		Dx11DeviceContext->Signal(dx11fence_1, 10);
-		Dx12CommandQueue->Wait(dx12fence_1, 10);
+		if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 0)
+		{
+			Dx11DeviceContext->Signal(dx11fence_1, 10);
+			Dx12CommandQueue->Wait(dx12fence_1, 10);
+		}
 	}
 	else
 	{
@@ -720,7 +722,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 	HANDLE dx12_sharedHandle;
 
 	// dispatch fences
-	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 3)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 4)
 	{
 		fr = Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&dx12fence_2));
 
@@ -753,15 +755,18 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 	Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
 	// fsr done
-	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 3)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 4)
 	{
-		Dx12CommandQueue->Signal(dx12fence_2, 20);
+		if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 0)
+		{
+			Dx12CommandQueue->Signal(dx12fence_2, 20);
 
-		// wait for fsr on dx12
-		Dx11DeviceContext->Wait(dx11fence_2, 20);
+			// wait for fsr on dx12
+			Dx11DeviceContext->Wait(dx11fence_2, 20);
+		}
 
 		// copy back output
-		if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 1)
+		if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 2)
 		{
 			ID3D11Query* query1 = nullptr;
 			result = Dx11Device->CreateQuery(&pQueryDesc, &query1);
@@ -868,15 +873,50 @@ FSR2FeatureDx11on12_212::~FSR2FeatureDx11on12_212()
 {
 	spdlog::debug("FSR2FeatureDx11on12::~FSR2FeatureDx11on12");
 
+	if (Dx11Device)
+	{
+		D3D11_QUERY_DESC pQueryDesc;
+		pQueryDesc.Query = D3D11_QUERY_EVENT;
+		pQueryDesc.MiscFlags = 0;
+
+		ID3D11Query* query = nullptr;
+		auto result = Dx11Device->CreateQuery(&pQueryDesc, &query);
+
+		if (result == S_OK)
+		{
+			// Associate the query with the copy operation
+			DeviceContext->Begin(query);
+
+			//copy output back
+
+			// Execute dx11 commands 
+			DeviceContext->End(query);
+			DeviceContext->Flush();
+
+			// Wait for the query to be ready
+			while (DeviceContext->GetData(query, NULL, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE)
+				std::this_thread::yield();
+
+			// Release the query
+			query->Release();
+		}
+	}
+
 	if (Dx12on11Device && Dx12CommandQueue && Dx12CommandList)
 	{
+		auto errorCode = Fsr212::ffxFsr2ContextDestroy212(&_context);
+
+		if (errorCode != Fsr212::FFX_OK)
+			spdlog::error("FSR2Feature::~FSR2Feature ffxFsr2ContextDestroy error: {0:x}", errorCode);
+
+		free(_contextDesc.callbacks.scratchBuffer);
+
 		ID3D12Fence* d3d12Fence;
 		Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
-		Dx12CommandQueue->Signal(d3d12Fence, 999);
-
 		Dx12CommandList->Close();
 		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
 		Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+		Dx12CommandQueue->Signal(d3d12Fence, 999);
 
 		auto fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
@@ -900,6 +940,9 @@ FSR2FeatureDx11on12_212::~FSR2FeatureDx11on12_212()
 
 	if (Imgui)
 		Imgui.reset();
+
+	DeviceContext->Flush();
+	SetInit(false);
 }
 
 bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)

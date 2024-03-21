@@ -50,9 +50,7 @@ private:
 protected:
 
 public:
-	XeSSFeatureDx11(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : XeSSFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters)
-	{
-	}
+	XeSSFeatureDx11(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters);
 
 	bool Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters) override;
 	bool Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK_NGX_Parameter* InParameters) override;

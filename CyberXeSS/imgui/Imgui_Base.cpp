@@ -425,6 +425,26 @@ void Imgui_Base::RenderMenu()
 				if (ImGui::Button("Revert"))
 					Config::Instance()->newBackend = "";
 
+				// Dx11
+				ImGui::BeginDisabled(Config::Instance()->Api != NVNGX_DX11);
+
+				const char* sync[] = { "No Syncing", "Shared Fences", "Shared Fences + Flush", "Shared Fences + Query", "Mostly Queries" };
+
+				const char* selectedSync = sync[Config::Instance()->UseSafeSyncQueries.value_or(0)];
+
+				if (ImGui::BeginCombo("Dx12wDx11 Sync", selectedSync))
+				{
+					for (int n = 0; n < 5; n++)
+					{
+						if (ImGui::Selectable(sync[n], (Config::Instance()->UseSafeSyncQueries.value_or(0) == n)))
+							Config::Instance()->UseSafeSyncQueries = n;
+					}
+
+					ImGui::EndCombo();
+				}
+
+				ImGui::EndDisabled();
+
 				// UPSCALER SPECIFIC -----------------------------
 				// XeSS
 				ImGui::BeginDisabled(currentBackend != "xess");
@@ -521,26 +541,6 @@ void Imgui_Base::RenderMenu()
 					ImGui::SliderFloat("Horz. FOV", &fov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat);
 					Config::Instance()->FsrHorizontalFov = fov;
 				}
-
-				// Dx11
-				ImGui::BeginDisabled((currentBackend != "fsr21_12") && (currentBackend != "fsr22_12"));
-
-				const char* sync[] = { "Shared Fences", "Shared Fences + Flush", "Shared Fences + Query", "Only Queries" };
-
-				const char* selectedSync = sync[Config::Instance()->UseSafeSyncQueries.value_or(0)];
-
-				if (ImGui::BeginCombo("Sync", selectedSync))
-				{
-					for (int n = 0; n < 4; n++)
-					{
-						if (ImGui::Selectable(sync[n], (Config::Instance()->UseSafeSyncQueries.value_or(0) == n)))
-							Config::Instance()->UseSafeSyncQueries = n;
-					}
-
-					ImGui::EndCombo();
-				}
-
-				ImGui::EndDisabled();
 
 				ImGui::EndDisabled();
 

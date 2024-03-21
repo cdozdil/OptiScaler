@@ -259,6 +259,10 @@ HRESULT XeSSFeatureDx11::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
 	return S_OK;
 }
 
+XeSSFeatureDx11::XeSSFeatureDx11(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : XeSSFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters)
+{
+}
+
 bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("XeSSFeatureDx11::Init!");
@@ -368,7 +372,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	ID3D11Query* query0 = nullptr;
 
 	// 3 is query sync
-	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 3)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 4)
 	{
 		fr = Dx11Device->CreateFence(0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(&dx11fence_1));
 
@@ -415,7 +419,6 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		// Associate the query with the copy operation
 		DeviceContext->Begin(query0);
 	}
-
 
 #pragma region Texture copies
 
@@ -518,13 +521,16 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 #pragma endregion
 
 	// 3 is query sync
-	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 3)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 4)
 	{
-		if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 0)
+		if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 1)
 			Dx11DeviceContext->Flush();
 
-		Dx11DeviceContext->Signal(dx11fence_1, 10);
-		Dx12CommandQueue->Wait(dx12fence_1, 10);
+		if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 0)
+		{
+			Dx11DeviceContext->Signal(dx11fence_1, 10);
+			Dx12CommandQueue->Wait(dx12fence_1, 10);
+		}
 	}
 	else
 	{
@@ -697,7 +703,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	HANDLE dx12_sharedHandle;
 
 	// dispatch fences
-	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 3)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 4)
 	{
 		fr = Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&dx12fence_2));
 
@@ -730,15 +736,18 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
 	// xess done
-	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 3)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 4)
 	{
-		Dx12CommandQueue->Signal(dx12fence_2, 20);
+		if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 0)
+		{
+			Dx12CommandQueue->Signal(dx12fence_2, 20);
 
-		// wait for fsr on dx12
-		Dx11DeviceContext->Wait(dx11fence_2, 20);
+			// wait for fsr on dx12
+			Dx11DeviceContext->Wait(dx11fence_2, 20);
+		}
 
 		// copy back output
-		if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 1)
+		if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 2)
 		{
 			ID3D11Query* query1 = nullptr;
 			result = Dx11Device->CreateQuery(&pQueryDesc, &query1);
@@ -845,15 +854,43 @@ XeSSFeatureDx11::~XeSSFeatureDx11()
 {
 	spdlog::debug("XeSSFeatureDx11::XeSSFeatureDx11");
 
+	if (Dx11Device)
+	{
+		D3D11_QUERY_DESC pQueryDesc;
+		pQueryDesc.Query = D3D11_QUERY_EVENT;
+		pQueryDesc.MiscFlags = 0;
+
+		ID3D11Query* query = nullptr;
+		auto result = Dx11Device->CreateQuery(&pQueryDesc, &query);
+
+		if (result == S_OK)
+		{
+			// Associate the query with the copy operation
+			DeviceContext->Begin(query);
+
+			//copy output back
+
+			// Execute dx11 commands 
+			DeviceContext->End(query);
+			DeviceContext->Flush();
+
+			// Wait for the query to be ready
+			while (DeviceContext->GetData(query, NULL, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE)
+				std::this_thread::yield();
+
+			// Release the query
+			query->Release();
+		}
+	}
+
 	if (Dx12on11Device && Dx12CommandQueue && Dx12CommandList)
 	{
 		ID3D12Fence* d3d12Fence;
 		Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
-		Dx12CommandQueue->Signal(d3d12Fence, 999);
-
 		Dx12CommandList->Close();
 		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
 		Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+		Dx12CommandQueue->Signal(d3d12Fence, 999);
 
 		auto fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
@@ -867,6 +904,17 @@ XeSSFeatureDx11::~XeSSFeatureDx11()
 
 		d3d12Fence->Release();
 
+		auto result = xessDestroyContext(_xessContext);
+		_xessContext = nullptr;
+
+		if (result != XESS_RESULT_SUCCESS)
+			spdlog::error("XeSSFeature::Destroy xessDestroyContext error: {0}", ResultToString(result));
+
+		DestroyCasContext();
+
+		if (casBuffer != nullptr)
+			casBuffer->Release();
+
 		SAFE_RELEASE(Dx12CommandList);
 		SAFE_RELEASE(Dx12CommandQueue);
 		SAFE_RELEASE(Dx12CommandAllocator);
@@ -875,7 +923,11 @@ XeSSFeatureDx11::~XeSSFeatureDx11()
 
 	ReleaseSharedResources();
 
-	if(Imgui)
+	if (Imgui)
 		Imgui.reset();
+
+	DeviceContext->Flush();
+
+	SetInit(false);
 }
 

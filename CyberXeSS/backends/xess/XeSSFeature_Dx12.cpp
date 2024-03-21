@@ -253,6 +253,26 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 XeSSFeatureDx12::~XeSSFeatureDx12()
 {
+	if (Device)
+	{
+		ID3D12Fence* d3d12Fence;
+		Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
+
+		d3d12Fence->Signal(999);
+
+		auto fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+		if (d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
+		{
+			WaitForSingleObject(fenceEvent, INFINITE);
+			CloseHandle(fenceEvent);
+		}
+		else
+			spdlog::warn("XeSSFeatureDx12::~XeSSFeatureDx12 can't get fenceEvent handle");
+
+		d3d12Fence->Release();
+	}
+
 	if (Imgui)
 		Imgui.reset();
 }

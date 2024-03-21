@@ -36,9 +36,7 @@ protected:
 	bool InitFSR2(const NVSDK_NGX_Parameter* InParameters) override;
 
 public:
-	FSR2FeatureDx11(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : FSR2Feature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters)
-	{
-	}
+	FSR2FeatureDx11(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters);
 
 
 	// Inherited via IFeature_Dx11
