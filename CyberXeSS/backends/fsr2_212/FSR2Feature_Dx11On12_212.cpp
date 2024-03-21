@@ -5,7 +5,6 @@
 #include "FSR2Feature_Dx11on12_212.h"
 
 #include <dxgi1_6.h>
-#include <d3d12.h>
 
 #define ASSIGN_DESC(dest, src) dest.Width = src.Width; dest.Height = src.Height; dest.Format = src.Format; dest.BindFlags = src.BindFlags; 
 
