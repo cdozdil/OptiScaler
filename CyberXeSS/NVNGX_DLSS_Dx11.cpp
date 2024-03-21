@@ -294,10 +294,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 		}
 
 		// next frame prepare stuff
-		if (Config::Instance()->newBackend == "fsr22")
+		if (Config::Instance()->newBackend == "xess")
 		{
-			Config::Instance()->Dx11Upscaler = "fsr22";
-			Dx11Contexts[InFeatureHandle->Id] = std::make_unique<FSR2FeatureDx11>(InFeatureHandle->Id, InParameters);
+			Config::Instance()->Dx11Upscaler = "xess";
+			Dx11Contexts[InFeatureHandle->Id] = std::make_unique<XeSSFeatureDx11>(InFeatureHandle->Id, InParameters);
 		}
 		else if (Config::Instance()->newBackend == "fsr21_12")
 		{
@@ -311,8 +311,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 		}
 		else
 		{
-			Config::Instance()->Dx11Upscaler = "xess";
-			Dx11Contexts[InFeatureHandle->Id] = std::make_unique<XeSSFeatureDx11>(InFeatureHandle->Id, InParameters);
+			Config::Instance()->Dx11Upscaler = "fsr22";
+			Dx11Contexts[InFeatureHandle->Id] = std::make_unique<FSR2FeatureDx11>(InFeatureHandle->Id, InParameters);
 		}
 
 		if (Dx11Contexts[InFeatureHandle->Id].get()->Init(D3D11Device, InDevCtx, InParameters))
