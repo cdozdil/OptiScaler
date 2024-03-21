@@ -1,9 +1,9 @@
-#include "Imgui_Base.h"
 #include "../Config.h"
+
+#include "Imgui_Base.h"
 #include "imgui/imgui_impl_win32.h"
 
 #include "../detours/detours.h"
-#include "../Util.h"
 #pragma comment(lib, "../detours/detours.lib")
 
 PFN_SetCursorPos pfn_SetPhysicalCursorPos = nullptr;
@@ -11,6 +11,7 @@ PFN_SetCursorPos pfn_SetCursorPos = nullptr;
 PFN_mouse_event pfn_mouse_event = nullptr;
 PFN_SendInput pfn_SendInput = nullptr;
 PFN_SendMessageW pfn_SendMessageW = nullptr;
+
 bool pfn_SetPhysicalCursorPos_hooked = false;
 bool pfn_SetCursorPos_hooked = false;
 bool pfn_mouse_event_hooked = false;
@@ -371,11 +372,7 @@ void Imgui_Base::RenderMenu()
 				if (ImGui::BeginMenu("File"))
 				{
 					if (ImGui::MenuItem("Save ini"))
-					{
-						auto result = Config::Instance()->ini.SaveFile("nvngx.ini");
-
-						// if(result < 0) Handle eror
-					}
+						Config::Instance()->SaveIni("nvngx.ini");
 
 					ImGui::Separator();
 

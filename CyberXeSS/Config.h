@@ -1,4 +1,5 @@
 #pragma once
+#include "pch.h"
 #include <optional>
 #include <filesystem>
 #include <SimpleIni.h>
@@ -82,7 +83,6 @@ public:
 	// dx11wdx12
 	std::optional<int> UseSafeSyncQueries;
 
-
 	// Engine Info
 	NVSDK_NGX_EngineType NVNGX_Engine = NVSDK_NGX_ENGINE_TYPE_CUSTOM;
 	bool NVNGX_EngineVersion5 = false;
@@ -92,15 +92,16 @@ public:
 	bool changeBackend = false;
 	std::string newBackend = "";
 	
-	CSimpleIniA ini;
 
 	void Reload();
+	bool SaveIni(std::string name);
 
 	static Config* Instance();
 
 private:
 	inline static Config* _config;
 
+	CSimpleIniA ini;
 	std::filesystem::path absoluteFileName;
 
 	std::optional<std::string> readString(std::string section, std::string key, bool lowercase = false);
