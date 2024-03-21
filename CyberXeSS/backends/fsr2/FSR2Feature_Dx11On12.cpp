@@ -367,7 +367,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	ID3D11Query* query0 = nullptr;
 
 	// 3 is query sync
-	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 4)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(1) < 4)
 	{
 		fr = Dx11Device->CreateFence(0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(&dx11fence_1));
 
@@ -517,12 +517,12 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 #pragma endregion
 
 	// 3 is query sync
-	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 4)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(1) < 4)
 	{
-		if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 1)
+		if (Config::Instance()->UseSafeSyncQueries.value_or(1) > 1)
 			Dx11DeviceContext->Flush();
 
-		if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 0)
+		if (Config::Instance()->UseSafeSyncQueries.value_or(1) > 0)
 		{
 			Dx11DeviceContext->Signal(dx11fence_1, 10);
 			Dx12CommandQueue->Wait(dx12fence_1, 10);
@@ -723,7 +723,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	HANDLE dx12_sharedHandle;
 
 	// dispatch fences
-	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 4)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(1) < 4)
 	{
 		fr = Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&dx12fence_2));
 
@@ -756,9 +756,9 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
 	// fsr done
-	if (Config::Instance()->UseSafeSyncQueries.value_or(0) < 4)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(1) < 4)
 	{
-		if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 0)
+		if (Config::Instance()->UseSafeSyncQueries.value_or(1) > 0)
 		{
 			Dx12CommandQueue->Signal(dx12fence_2, 20);
 
@@ -767,7 +767,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 		}
 
 		// copy back output
-		if (Config::Instance()->UseSafeSyncQueries.value_or(0) > 2)
+		if (Config::Instance()->UseSafeSyncQueries.value_or(1) > 2)
 		{
 			ID3D11Query* query1 = nullptr;
 			result = Dx11Device->CreateQuery(&pQueryDesc, &query1);

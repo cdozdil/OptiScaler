@@ -430,13 +430,13 @@ void Imgui_Base::RenderMenu()
 
 				const char* sync[] = { "No Syncing", "Shared Fences", "Shared Fences + Flush", "Shared Fences + Query", "Mostly Queries" };
 
-				const char* selectedSync = sync[Config::Instance()->UseSafeSyncQueries.value_or(0)];
+				const char* selectedSync = sync[Config::Instance()->UseSafeSyncQueries.value_or(1)];
 
 				if (ImGui::BeginCombo("Dx12wDx11 Sync", selectedSync))
 				{
 					for (int n = 0; n < 5; n++)
 					{
-						if (ImGui::Selectable(sync[n], (Config::Instance()->UseSafeSyncQueries.value_or(0) == n)))
+						if (ImGui::Selectable(sync[n], (Config::Instance()->UseSafeSyncQueries.value_or(1) == n)))
 							Config::Instance()->UseSafeSyncQueries = n;
 					}
 
