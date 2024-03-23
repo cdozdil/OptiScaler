@@ -79,7 +79,9 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	}
 
 	params.pColorTexture = dx11Color.Dx12Resource;
+	_hasColor = params.pColorTexture != nullptr;
 	params.pVelocityTexture = dx11Mv.Dx12Resource;
+	_hasMV = params.pVelocityTexture != nullptr;
 
 	if (Config::Instance()->CasEnabled.value_or(true) && casSharpness > 0.0f)
 	{
@@ -93,10 +95,15 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	}
 	else
 		params.pOutputTexture = dx11Out.Dx12Resource;
+	
+	_hasOutput = params.pOutputTexture != nullptr;
 
 	params.pDepthTexture = dx11Depth.Dx12Resource;
+	_hasDepth = params.pDepthTexture != nullptr;
 	params.pExposureScaleTexture = dx11Exp.Dx12Resource;
+	_hasExposure = params.pExposureScaleTexture != nullptr;
 	params.pResponsivePixelMaskTexture = dx11Tm.Dx12Resource;
+	_hasTM = params.pResponsivePixelMaskTexture != nullptr;
 
 	float MVScaleX;
 	float MVScaleY;
@@ -127,7 +134,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 	//apply cas
 	if (Config::Instance()->CasEnabled.value_or(true) && !CasDispatch(Dx12CommandList, InParameters, casBuffer, dx11Out.Dx12Resource))
-		return false;
+		Config::Instance()->CasEnabled = false;
 
 	// Execute dx12 commands to process xess
 	Dx12CommandList->Close();
@@ -161,13 +168,5 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 XeSSFeatureDx11::~XeSSFeatureDx11()
 {
 	spdlog::debug("XeSSFeatureDx11::XeSSFeatureDx11");
-
-	DestroyCasContext();
-
-	if (casBuffer != nullptr)
-	{
-		casBuffer->Release();
-		casBuffer = nullptr;
-	}
 }
 

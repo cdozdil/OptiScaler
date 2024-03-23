@@ -176,6 +176,13 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 	}
 
+	_hasColor = params.pColorTexture != nullptr;
+	_hasMV = params.pVelocityTexture != nullptr;
+	_hasOutput = params.pOutputTexture != nullptr;
+	_hasDepth = params.pDepthTexture != nullptr;
+	_hasExposure = params.pExposureScaleTexture != nullptr;
+	_hasTM = params.pResponsivePixelMaskTexture != nullptr;
+
 	float MVScaleX;
 	float MVScaleY;
 
@@ -204,7 +211,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	//apply cas
 	if (Config::Instance()->CasEnabled.value_or(true) && !CasDispatch(InCommandList, InParameters, casBuffer, paramOutput))
-		return false;
+		Config::Instance()->CasEnabled = false;
 
 	// imgui
 	if (Imgui)
@@ -253,26 +260,4 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 XeSSFeatureDx12::~XeSSFeatureDx12()
 {
-	if (Device)
-	{
-		ID3D12Fence* d3d12Fence;
-		Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
-
-		d3d12Fence->Signal(999);
-
-		auto fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-		if (d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
-		{
-			WaitForSingleObject(fenceEvent, INFINITE);
-			CloseHandle(fenceEvent);
-		}
-		else
-			spdlog::warn("XeSSFeatureDx12::~XeSSFeatureDx12 can't get fenceEvent handle");
-
-		d3d12Fence->Release();
-	}
-
-	if (Imgui)
-		Imgui.reset();
 }

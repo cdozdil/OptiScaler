@@ -276,6 +276,8 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	int featureFlags;
 	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);
 
+	_initFlags = featureFlags;
+
 	bool Hdr = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
 	bool EnableSharpening = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
 	bool DepthInverted = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
@@ -376,18 +378,22 @@ XeSSFeature::~XeSSFeature()
 {
 	spdlog::debug("XeSSFeature::XeSSFeature");
 
-	if (!_xessContext)
-		return;
+	if (_xessContext)
+	{
+		auto result = xessDestroyContext(_xessContext);
+		_xessContext = nullptr;
 
-	auto result = xessDestroyContext(_xessContext);
-
-	if (result != XESS_RESULT_SUCCESS)
-		spdlog::error("XeSSFeature::Destroy xessDestroyContext error: {0}", ResultToString(result));
+		if (result != XESS_RESULT_SUCCESS)
+			spdlog::error("XeSSFeature::Destroy xessDestroyContext error: {0}", ResultToString(result));
+	}
 
 	DestroyCasContext();
 
 	if (casBuffer != nullptr)
+	{
 		casBuffer->Release();
+		casBuffer = nullptr;
+	}
 }
 
 void XeSSFeature::CasInit()
@@ -435,8 +441,8 @@ bool XeSSFeature::CreateCasContext(ID3D12Device* device)
 		casCSC = 0;
 
 	casContextDesc.colorSpaceConversion = static_cast<FfxCas::FfxCasColorSpaceConversion>(casCSC);
-	casContextDesc.maxRenderSize.width = DisplayWidth();
-	casContextDesc.maxRenderSize.height = DisplayHeight();
+	casContextDesc.maxRenderSize.width = DisplayWidth() + 10;
+	casContextDesc.maxRenderSize.height = DisplayHeight() + 10;
 	casContextDesc.displaySize.width = DisplayWidth();
 	casContextDesc.displaySize.height = DisplayHeight();
 
@@ -520,14 +526,17 @@ bool XeSSFeature::CasDispatch(ID3D12CommandList* commandList, const NVSDK_NGX_Pa
 
 	float dlssSharpness = 0.0f;
 	initParams->Get(NVSDK_NGX_Parameter_Sharpness, &dlssSharpness);
+	_sharpness = dlssSharpness;
 
 	if (Config::Instance()->OverrideSharpness.value_or(false))
 		casSharpness = Config::Instance()->Sharpness.value_or(0.3f);
 	else
 		casSharpness = dlssSharpness;
 
-	if (casSharpness > 1.0f || casSharpness <= 0.0f)
+	if (casSharpness <= 0.0f)
 		return true;
+	else if (casSharpness > 1.0f)
+		casSharpness = 1.0f;
 
 	dispatchParameters.sharpness = casSharpness;
 
