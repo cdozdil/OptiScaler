@@ -125,6 +125,9 @@
     <ClInclude Include="detours\detours.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="imgui\Imgui_Dx11.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -222,6 +225,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="imgui\Imgui_Base.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\Imgui_Dx11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\IFeature_Dx11wDx12.h">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\IFeature_Dx11wDx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

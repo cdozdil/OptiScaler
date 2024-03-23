@@ -78,13 +78,3 @@ void IFeature::GetRenderResolution(const NVSDK_NGX_Parameter* InParameters, unsi
 	}
 }
 
-bool IFeature::IsInited()
-{
-	return _isInited;
-}
-
-void IFeature::SetInit(bool InValue)
-{
-	//spdlog::debug("IFeature::SetInit: {0}", InValue);
-	_isInited = InValue;
-}

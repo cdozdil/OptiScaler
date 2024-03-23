@@ -21,21 +21,38 @@ private:
 	void SetHandle(unsigned int InHandleId);
 
 protected:
+	float _sharpness = 0;
+	bool _hasColor = false;
+	bool _hasDepth = false;
+	bool _hasMV = false;
+	bool _hasTM = false;
+	bool _hasExposure = false;
+	bool _hasOutput = false;
+	int _initFlags = 0;
+
 	bool SetInitParameters(const NVSDK_NGX_Parameter* InParameters);
 	void GetRenderResolution(const NVSDK_NGX_Parameter* InParameters, unsigned int* OutWidth, unsigned int* OutHeight) const;
-	virtual void SetInit(bool InValue);
+	virtual void SetInit(bool InValue) { _isInited = InValue; }
 
 public:
 	NVSDK_NGX_Handle* Handle() const { return _handle; };
+	static unsigned int GetNextHandleId() { return handleCounter++; }
+
 	unsigned int DisplayWidth() const { return _displayWidth; };
 	unsigned int DisplayHeight() const { return _displayHeight; };
 	unsigned int RenderWidth() const { return _renderWidth; };
 	unsigned int RenderHeight() const { return _renderHeight; };
 	NVSDK_NGX_PerfQuality_Value PerfQualityValue() const { return _perfQualityValue; }
 	bool IsInitParameters() const { return _initParameters; };
-	static unsigned int GetNextHandleId() { return handleCounter++; }
-
-	virtual bool IsInited();
+	bool IsInited() const { return _isInited; }
+	float Sharpness() const { return _sharpness; }
+	bool HasColor() const { return _hasColor; }
+	bool HasDepth() const { return _hasDepth; }
+	bool HasMV() const { return _hasMV; }
+	bool HasTM() const { return _hasTM; }
+	bool HasExposure() const { return _hasExposure; }
+	bool HasOutput() const { return _hasOutput; }
+	int InitFlags() const { return _initFlags; }
 
 	IFeature(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters)
 	{
