@@ -12,7 +12,6 @@
 #include "NVNGX_Parameter.h"
 
 inline ID3D12Device* D3D12Device = nullptr;
-//inline std::unique_ptr<Imgui_Dx12> ImguiDx12 = nullptr;
 static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
 inline HWND currentHwnd = nullptr;
 
@@ -361,6 +360,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	}
 
 	deviceContext = Dx12Contexts[InFeatureHandle->Id].get();
+	Config::Instance()->CurrentFeature = deviceContext;
 
 	if (deviceContext == nullptr)
 	{

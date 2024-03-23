@@ -326,6 +326,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 	}
 
 	deviceContext = Dx11Contexts[InFeatureHandle->Id].get();
+	Config::Instance()->CurrentFeature = deviceContext;
 
 	if (deviceContext == nullptr)
 	{

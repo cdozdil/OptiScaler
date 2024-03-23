@@ -248,6 +248,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 		spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature callback exist");
 
 	const auto deviceContext = VkContexts[InFeatureHandle->Id].get();
+	Config::Instance()->CurrentFeature = deviceContext;
 
 	if (deviceContext->Evaluate(InCmdList, InParameters))
 		return NVSDK_NGX_Result_Success;
