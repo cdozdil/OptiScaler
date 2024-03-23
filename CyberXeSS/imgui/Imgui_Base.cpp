@@ -678,6 +678,12 @@ void Imgui_Base::RenderMenu()
 				ImGui::Separator();
 				ImGui::Spacing();
 
+				auto cf = Config::Instance()->CurrentFeature;
+				if (cf != nullptr)
+					ImGui::Text("%d x %d -> %d x %d (Shrp: %.2f)", cf->RenderWidth(), cf->RenderHeight(), cf->DisplayWidth(), cf->DisplayHeight(), cf->Sharpness());
+
+				ImGui::SameLine(0.0f, 4.0f);
+
 				ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
 				ImGui::SameLine(ImGui::GetWindowWidth() - 55.0f);
