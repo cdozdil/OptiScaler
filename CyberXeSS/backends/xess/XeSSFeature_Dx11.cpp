@@ -75,6 +75,14 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	if (!ProcessDx11Textures(InParameters))
 	{
 		spdlog::error("XeSSFeatureDx11::Evaluate Can't process Dx11 textures!");
+
+		Dx12CommandList->Close();
+		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+		Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+		Dx12CommandAllocator->Reset();
+		Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
 		return false;
 	}
 
@@ -88,6 +96,14 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		if (casBuffer == nullptr && !CreateCasBufferResource(dx11Out.Dx12Resource, Dx12on11Device))
 		{
 			spdlog::error("XeSSFeatureDx12::Evaluate Can't create cas buffer!");
+
+			Dx12CommandList->Close();
+			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+			Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+			Dx12CommandAllocator->Reset();
+			Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
 			return false;
 		}
 
@@ -116,6 +132,14 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		if (xessResult != XESS_RESULT_SUCCESS)
 		{
 			spdlog::error("XeSSFeatureDx11::Evaluate xessSetVelocityScale error: {0}", ResultToString(xessResult));
+
+			Dx12CommandList->Close();
+			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+			Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+			Dx12CommandAllocator->Reset();
+			Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
 			return false;
 		}
 	}
@@ -134,7 +158,18 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 	//apply cas
 	if (Config::Instance()->CasEnabled.value_or(true) && !CasDispatch(Dx12CommandList, InParameters, casBuffer, dx11Out.Dx12Resource))
+	{
 		Config::Instance()->CasEnabled = false;
+
+		Dx12CommandList->Close();
+		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+		Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+		Dx12CommandAllocator->Reset();
+		Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
+		return true;
+	}
 
 	// Execute dx12 commands to process xess
 	Dx12CommandList->Close();
@@ -144,6 +179,10 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	if (!CopyBackOutput())
 	{
 		spdlog::error("XeSSFeatureDx11::Evaluate Can't copy output texture back!");
+
+		Dx12CommandAllocator->Reset();
+		Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
 		return false;
 	}
 

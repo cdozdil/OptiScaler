@@ -211,7 +211,10 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	//apply cas
 	if (Config::Instance()->CasEnabled.value_or(true) && !CasDispatch(InCommandList, InParameters, casBuffer, paramOutput))
+	{
 		Config::Instance()->CasEnabled = false;
+		return true;
+	}
 
 	// imgui
 	if (Imgui)
