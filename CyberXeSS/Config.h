@@ -3,6 +3,7 @@
 #include <optional>
 #include <filesystem>
 #include <SimpleIni.h>
+#include "backends/IFeature.h"
 
 typedef enum NVNGX_Api
 {
@@ -88,6 +89,7 @@ public:
 	bool NVNGX_EngineVersion5 = false;
 	NVNGX_Api Api = NVNGX_NOT_SELECTED;
 	NVSDK_NGX_LoggingInfo NVSDK_Logger{ nullptr, NVSDK_NGX_LOGGING_LEVEL_OFF, false };
+	IFeature* CurrentFeature = nullptr;
 
 	bool changeBackend = false;
 	std::string newBackend = "";
