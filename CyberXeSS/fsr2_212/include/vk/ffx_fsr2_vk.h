@@ -37,7 +37,7 @@ namespace Fsr212
         ///
         /// @returns
         /// The size (in bytes) of the required scratch memory buffer for the VK backend.
-        FFX_API size_t ffxFsr2GetScratchMemorySizeVK212(VkPhysicalDevice physicalDevice);
+        size_t ffxFsr2GetScratchMemorySizeVK212(VkPhysicalDevice physicalDevice);
 
         /// Populate an interface with pointers for the VK backend.
         ///

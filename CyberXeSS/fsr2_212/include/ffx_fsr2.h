@@ -34,17 +34,17 @@ namespace Fsr212
     /// FidelityFX Super Resolution 2 major version.
     ///
     /// @ingroup FSR2
-#define FFX_FSR2_VERSION_MAJOR      (2)
+#define FFX_FSR2_VERSION_MAJOR_212      (2)
 
 /// FidelityFX Super Resolution 2 minor version.
 ///
 /// @ingroup FSR2
-#define FFX_FSR2_VERSION_MINOR      (1)
+#define FFX_FSR2_VERSION_MINOR_212      (1)
 
 /// FidelityFX Super Resolution 2 patch version.
 ///
 /// @ingroup FSR2
-#define FFX_FSR2_VERSION_PATCH      (2)
+#define FFX_FSR2_VERSION_PATCH_212      (2)
 
 /// The size of the context specified in 32bit values.
 ///
@@ -108,7 +108,7 @@ namespace Fsr212
             uint32_t                    flags;                              ///< A collection of <c><i>FfxFsr2InitializationFlagBits</i></c>.
             FfxDimensions2D             maxRenderSize;                      ///< The maximum size that rendering will be performed at.
             FfxDimensions2D             displaySize;                        ///< The size of the presentation resolution targeted by the upscaling process.
-            FfxFsr2Interface            callbacks;                          ///< A set of pointers to the backend implementation for FSR 2.0.
+            FfxFsr2Interface212            callbacks;                          ///< A set of pointers to the backend implementation for FSR 2.0.
             FfxDevice                   device;                             ///< The abstracted device which is passed to some callback functions.
         } FfxFsr2ContextDescription;
 

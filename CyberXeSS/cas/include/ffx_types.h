@@ -57,75 +57,75 @@ namespace FfxCas
 /// Maximum supported number of simultaneously bound SRVs.
 ///
 /// @ingroup Defines
-#define FFX_MAX_NUM_SRVS 16
+#define FFX_MAX_NUM_SRVS_CAS 16
 
 /// Maximum supported number of simultaneously bound UAVs.
 ///
 /// @ingroup Defines
-#define FFX_MAX_NUM_UAVS 16
+#define FFX_MAX_NUM_UAVS_CAS 16
 
 /// Maximum number of constant buffers bound.
 ///
 /// @ingroup Defines
-#define FFX_MAX_NUM_CONST_BUFFERS 3
+#define FFX_MAX_NUM_CONST_BUFFERS_CAS 3
 
 /// Maximum size of bound constant buffers.
-#define FFX_MAX_CONST_SIZE 256
+#define FFX_MAX_CONST_SIZE_CAS 256
 
 /// Maximum number of characters in a resource name
 ///
 /// @ingroup Defines
-#define FFX_RESOURCE_NAME_SIZE 64
+#define FFX_RESOURCE_NAME_SIZE_CAS 64
 
 /// Maximum number of queued frames in the backend
 ///
 /// @ingroup Defines
-#define FFX_MAX_QUEUED_FRAMES (4)
+#define FFX_MAX_QUEUED_FRAMES_CAS (4)
 
 /// Maximum number of resources per effect context
 ///
 /// @ingroup Defines
-#define FFX_MAX_RESOURCE_COUNT (64)
+#define FFX_MAX_RESOURCE_COUNT_CAS (64)
 
 /// Maximum number of passes per effect component
 ///
 /// @ingroup Defines
-#define FFX_MAX_PASS_COUNT (50)
+#define FFX_MAX_PASS_COUNT_CAS (50)
 
 /// Total ring buffer size needed for a single effect context
 ///
 /// @ingroup Defines
-#define FFX_RING_BUFFER_SIZE (FFX_MAX_QUEUED_FRAMES * FFX_MAX_PASS_COUNT * FFX_MAX_RESOURCE_COUNT)
+#define FFX_RING_BUFFER_SIZE_CAS (FFX_MAX_QUEUED_FRAMES_CAS * FFX_MAX_PASS_COUNT_CAS * FFX_MAX_RESOURCE_COUNT_CAS)
 
 /// Size of constant buffer entry in the ring buffer table
 ///
 /// @ingroup Defines
-#define FFX_BUFFER_SIZE (768)
+#define FFX_BUFFER_SIZE_CAS (768)
 
 /// Total ring buffer memory size for a single effect context
 ///
 /// @ingroup Defines
-#define FFX_RING_BUFFER_MEM_BLOCK_SIZE (FFX_RING_BUFFER_SIZE * FFX_BUFFER_SIZE)
+#define FFX_RING_BUFFER_MEM_BLOCK_SIZE_CAS (FFX_RING_BUFFER_SIZE_CAS * FFX_BUFFER_SIZE_CAS)
 
 /// Maximum number of barriers per flush
 ///
 /// @ingroup Defines
-#define FFX_MAX_BARRIERS (16)
+#define FFX_MAX_BARRIERS_CAS (16)
 
 /// Maximum number of GPU jobs per submission
 ///
 /// @ingroup Defines
-#define FFX_MAX_GPU_JOBS (64)
+#define FFX_MAX_GPU_JOBS_CAS (64)
 
 /// Maximum number of samplers supported
 ///
 /// @ingroup Defines
-#define FFX_MAX_SAMPLERS (16)
+#define FFX_MAX_SAMPLERS_CAS (16)
 
 /// Maximum number of simultaneous upload jobs
 ///
 /// @ingroup Defines
-#define UPLOAD_JOB_COUNT (16)
+#define UPLOAD_JOB_COUNT_CAS (16)
 
 // Off by default warnings
 #pragma warning(disable : 4365 4710 4820 5039)
@@ -553,7 +553,7 @@ namespace FfxCas
         void*                  resource;  ///< pointer to the resource.
         FfxResourceDescription description;
         FfxResourceStates      state;
-        wchar_t                name[FFX_RESOURCE_NAME_SIZE];  ///< (optional) Resource name.
+        wchar_t                name[FFX_RESOURCE_NAME_SIZE_CAS];  ///< (optional) Resource name.
     } FfxResource;
 
     /// An internal structure containing a handle to a resource and resource views
@@ -632,11 +632,11 @@ namespace FfxCas
         uint32_t            uavBufferCount;   ///< Count of Buffer UAVs used in this pipeline
         uint32_t            constCount;       ///< Count of constant buffers used in this pipeline
 
-        FfxResourceBinding uavTextureBindings[FFX_MAX_NUM_UAVS];               ///< Array of ResourceIdentifiers bound as texture UAVs
-        FfxResourceBinding srvTextureBindings[FFX_MAX_NUM_SRVS];               ///< Array of ResourceIdentifiers bound as texture SRVs
-        FfxResourceBinding srvBufferBindings[FFX_MAX_NUM_SRVS];                ///< Array of ResourceIdentifiers bound as buffer SRVs
-        FfxResourceBinding uavBufferBindings[FFX_MAX_NUM_UAVS];                ///< Array of ResourceIdentifiers bound as buffer UAVs
-        FfxResourceBinding constantBufferBindings[FFX_MAX_NUM_CONST_BUFFERS];  ///< Array of ResourceIdentifiers bound as CBs
+        FfxResourceBinding uavTextureBindings[FFX_MAX_NUM_UAVS_CAS];               ///< Array of ResourceIdentifiers bound as texture UAVs
+        FfxResourceBinding srvTextureBindings[FFX_MAX_NUM_SRVS_CAS];               ///< Array of ResourceIdentifiers bound as texture SRVs
+        FfxResourceBinding srvBufferBindings[FFX_MAX_NUM_SRVS_CAS];                ///< Array of ResourceIdentifiers bound as buffer SRVs
+        FfxResourceBinding uavBufferBindings[FFX_MAX_NUM_UAVS_CAS];                ///< Array of ResourceIdentifiers bound as buffer UAVs
+        FfxResourceBinding constantBufferBindings[FFX_MAX_NUM_CONST_BUFFERS_CAS];  ///< Array of ResourceIdentifiers bound as CBs
     } FfxPipelineState;
 
     /// A structure containing the data required to create a resource.
@@ -731,7 +731,7 @@ namespace FfxCas
     typedef struct FfxConstantBuffer
     {
         uint32_t num32BitEntries;           ///< The size (expressed in 32-bit chunks) stored in data.
-        uint32_t data[FFX_MAX_CONST_SIZE];  ///< Constant buffer data
+        uint32_t data[FFX_MAX_CONST_SIZE_CAS];  ///< Constant buffer data
     } FfxConstantBuffer;
 
     /// A structure describing a clear render job.
@@ -752,17 +752,17 @@ namespace FfxCas
         uint32_t            dimensions[3];                  ///< Dispatch dimensions.
         FfxResourceInternal cmdArgument;                    ///< Dispatch indirect cmd argument buffer
         uint32_t            cmdArgumentOffset;              ///< Dispatch indirect offset within the cmd argument buffer
-        FfxResourceInternal srvTextures[FFX_MAX_NUM_SRVS];  ///< SRV texture resources to be bound in the compute job.
-        wchar_t             srvTextureNames[FFX_MAX_NUM_SRVS][64];
-        FfxResourceInternal uavTextures[FFX_MAX_NUM_UAVS];     ///< UAV texture resources to be bound in the compute job.
-        uint32_t            uavTextureMips[FFX_MAX_NUM_UAVS];  ///< Mip level of UAV texture resources to be bound in the compute job.
-        wchar_t             uavTextureNames[FFX_MAX_NUM_UAVS][64];
-        FfxResourceInternal srvBuffers[FFX_MAX_NUM_SRVS];  ///< SRV buffer resources to be bound in the compute job.
-        wchar_t             srvBufferNames[FFX_MAX_NUM_SRVS][64];
-        FfxResourceInternal uavBuffers[FFX_MAX_NUM_UAVS];  ///< UAV buffer resources to be bound in the compute job.
-        wchar_t             uavBufferNames[FFX_MAX_NUM_UAVS][64];
-        FfxConstantBuffer   cbs[FFX_MAX_NUM_CONST_BUFFERS];  ///< Constant buffers to be bound in the compute job.
-        wchar_t             cbNames[FFX_MAX_NUM_CONST_BUFFERS][64];
+        FfxResourceInternal srvTextures[FFX_MAX_NUM_SRVS_CAS];  ///< SRV texture resources to be bound in the compute job.
+        wchar_t             srvTextureNames[FFX_MAX_NUM_SRVS_CAS][64];
+        FfxResourceInternal uavTextures[FFX_MAX_NUM_UAVS_CAS];     ///< UAV texture resources to be bound in the compute job.
+        uint32_t            uavTextureMips[FFX_MAX_NUM_UAVS_CAS];  ///< Mip level of UAV texture resources to be bound in the compute job.
+        wchar_t             uavTextureNames[FFX_MAX_NUM_UAVS_CAS][64];
+        FfxResourceInternal srvBuffers[FFX_MAX_NUM_SRVS_CAS];  ///< SRV buffer resources to be bound in the compute job.
+        wchar_t             srvBufferNames[FFX_MAX_NUM_SRVS_CAS][64];
+        FfxResourceInternal uavBuffers[FFX_MAX_NUM_UAVS_CAS];  ///< UAV buffer resources to be bound in the compute job.
+        wchar_t             uavBufferNames[FFX_MAX_NUM_UAVS_CAS][64];
+        FfxConstantBuffer   cbs[FFX_MAX_NUM_CONST_BUFFERS_CAS];  ///< Constant buffers to be bound in the compute job.
+        wchar_t             cbNames[FFX_MAX_NUM_CONST_BUFFERS_CAS][64];
     } FfxComputeJobDescription;
 
     /// A structure describing a copy render job.

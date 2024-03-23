@@ -57,7 +57,7 @@ namespace Fsr212
         /// 
         /// @ingroup FSR2 DX12
         FfxErrorCode ffxFsr2GetInterfaceDX12_212(
-            FfxFsr2Interface* fsr2Interface,
+            FfxFsr2Interface212* fsr2Interface,
             ID3D12Device* device,
             void* scratchBuffer,
             size_t scratchBufferSize);

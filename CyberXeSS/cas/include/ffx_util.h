@@ -35,12 +35,12 @@ namespace FfxCas
     /// The value of Pi.
     ///
     /// @ingroup Utils
-    const float FFX_PI = 3.141592653589793f;
+    const float FFX_PI_CAS = 3.141592653589793f;
 
     /// An epsilon value for floating point numbers.
     ///
     /// @ingroup Utils
-    const float FFX_EPSILON = 1e-06f;
+    const float FFX_EPSILON_CAS = 1e-06f;
 
 /// Helper macro to create the version number.
 ///

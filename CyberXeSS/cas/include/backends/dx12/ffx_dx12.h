@@ -72,7 +72,8 @@ namespace FfxCas
     /// FFX_ERROR_CODE_INVALID_POINTER          The <c><i>interface</i></c> pointer was <c><i>NULL</i></c>.
     ///
     /// @ingroup DX12Backend
-    FfxErrorCode ffxGetInterfaceDX12Cas(FfxInterface* backendInterface, FfxDevice device, void* scratchBuffer, size_t scratchBufferSize, size_t maxContexts);
+    FfxErrorCode
+    ffxGetInterfaceDX12Cas(FfxInterface* backendInterface, FfxDevice device, void* scratchBuffer, size_t scratchBufferSize, size_t maxContexts);
 
     /// Create a <c><i>FfxCommandList</i></c> from a <c><i>ID3D12CommandList</i></c>.
     ///
