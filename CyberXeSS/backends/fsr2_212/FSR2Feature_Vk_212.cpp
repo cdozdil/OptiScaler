@@ -49,6 +49,8 @@ bool FSR2FeatureVk212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	bool LowRes = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
 	bool AutoExposure = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
 
+	_initFlags = featureFlags;
+
 	if (Config::Instance()->DepthInverted.value_or(DepthInverted))
 	{
 		Config::Instance()->DepthInverted = true;
@@ -300,8 +302,15 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Par
 
 	}
 
-	float MVScaleX;
-	float MVScaleY;
+	_hasColor = params.color.resource != nullptr;
+	_hasDepth = params.depth.resource != nullptr;
+	_hasMV = params.motionVectors.resource != nullptr;
+	_hasExposure = params.exposure.resource != nullptr;
+	_hasTM = params.reactive.resource != nullptr;
+	_hasOutput = params.output.resource != nullptr;
+
+	float MVScaleX = 1.0f;
+	float MVScaleY = 1.0f;
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
 		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
@@ -310,11 +319,16 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Par
 		params.motionVectorScale.y = MVScaleY;
 	}
 	else
-		spdlog::warn("FSR2FeatureVk::Evaluate Can't get motion vector scales!");
+	{
+		spdlog::warn("FSR2FeatureVk_212::Evaluate Can't get motion vector scales!");
+
+		params.motionVectorScale.x = MVScaleX;
+		params.motionVectorScale.y = MVScaleY;
+	}
 
 	if (Config::Instance()->OverrideSharpness.value_or(false))
 	{
-		params.enableSharpening = true;
+		params.enableSharpening = Config::Instance()->Sharpness.value_or(0.3) > 0.0f;
 		params.sharpness = Config::Instance()->Sharpness.value_or(0.3);
 	}
 	else
@@ -322,12 +336,14 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Par
 		float shapness = 0.0f;
 		if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &shapness) == NVSDK_NGX_Result_Success)
 		{
-			params.enableSharpening = !(shapness == 0.0f || shapness == -1.0f);
+			_sharpness = shapness;
+
+			params.enableSharpening = shapness > 0.0f;
 
 			if (params.enableSharpening)
 			{
-				if (shapness < 0)
-					params.sharpness = (shapness + 1.0f) / 2.0f;
+				if (shapness > 1.0f)
+					params.sharpness = 1.0f;
 				else
 					params.sharpness = shapness;
 			}

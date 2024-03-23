@@ -22,7 +22,5 @@ public:
 	{
 	}
 
-	virtual ~IFeature_Dx12()
-	{
-	}
+	~IFeature_Dx12();
 };

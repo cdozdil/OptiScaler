@@ -17,5 +17,5 @@ public:
 	{
 	}
 
-	virtual ~IFeature_Dx11() {}
+	~IFeature_Dx11();
 };

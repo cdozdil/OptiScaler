@@ -182,23 +182,33 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 		params.reactive = Fsr212::ffxGetResourceDX12_212(&_context, paramMask, (wchar_t*)L"FSR2_Reactive", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 
-	float MVScaleX;
-	float MVScaleY;
+	_hasColor = params.color.resource != nullptr;
+	_hasDepth = params.depth.resource != nullptr;
+	_hasMV = params.motionVectors.resource != nullptr;
+	_hasExposure = params.exposure.resource != nullptr;
+	_hasTM = params.reactive.resource != nullptr;
+	_hasOutput = params.output.resource != nullptr;
+
+	float MVScaleX = 1.0f;
+	float MVScaleY = 1.0f;
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
 		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
 	{
 		params.motionVectorScale.x = MVScaleX;
 		params.motionVectorScale.y = MVScaleY;
-
-		spdlog::debug("FSR2FeatureDx12::Evaluate MVScales: {0}x{1}", params.motionVectorScale.x, params.motionVectorScale.y);
 	}
 	else
-		spdlog::warn("FSR2FeatureDx12::Evaluate Can't get motion vector scales!");
+	{
+		spdlog::warn("FSR2FeatureDx12_212::Evaluate Can't get motion vector scales!");
+
+		params.motionVectorScale.x = MVScaleX;
+		params.motionVectorScale.y = MVScaleY;
+	}
 
 	if (Config::Instance()->OverrideSharpness.value_or(false))
 	{
-		params.enableSharpening = true;
+		params.enableSharpening = Config::Instance()->Sharpness.value_or(0.3) > 0.0f;
 		params.sharpness = Config::Instance()->Sharpness.value_or(0.3);
 	}
 	else
@@ -206,12 +216,14 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 		float shapness = 0.0f;
 		if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &shapness) == NVSDK_NGX_Result_Success)
 		{
-			params.enableSharpening = !(shapness == 0.0f || shapness == -1.0f);
+			_sharpness = shapness;
+
+			params.enableSharpening = shapness > 0.0f;
 
 			if (params.enableSharpening)
 			{
-				if (shapness < 0)
-					params.sharpness = (shapness + 1.0f) / 2.0f;
+				if (shapness > 1.0f)
+					params.sharpness = 1.0f;
 				else
 					params.sharpness = shapness;
 			}
@@ -303,8 +315,6 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 
 FSR2FeatureDx12_212::~FSR2FeatureDx12_212()
 {
-	if (Imgui)
-		Imgui.reset();
 }
 
 bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
@@ -342,6 +352,8 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
 	int featureFlags;
 	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);
+
+	_initFlags = featureFlags;
 
 	bool Hdr = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
 	bool EnableSharpening = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;

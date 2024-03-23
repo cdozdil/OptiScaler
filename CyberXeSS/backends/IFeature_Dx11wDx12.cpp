@@ -743,35 +743,6 @@ IFeature_Dx11wDx12::~IFeature_Dx11wDx12()
 {
 	spdlog::debug("IFeature_Dx11wDx12::~IFeature_Dx11wDx12");
 
-	if (Dx11Device)
-	{
-		D3D11_QUERY_DESC pQueryDesc;
-		pQueryDesc.Query = D3D11_QUERY_EVENT;
-		pQueryDesc.MiscFlags = 0;
-
-		ID3D11Query* query = nullptr;
-		auto result = Dx11Device->CreateQuery(&pQueryDesc, &query);
-
-		if (result == S_OK)
-		{
-			// Associate the query with the copy operation
-			DeviceContext->Begin(query);
-
-			//copy output back
-
-			// Execute dx11 commands 
-			DeviceContext->End(query);
-			DeviceContext->Flush();
-
-			// Wait for the query to be ready
-			while (DeviceContext->GetData(query, NULL, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE)
-				std::this_thread::yield();
-
-			// Release the query
-			query->Release();
-		}
-	}
-
 	if (Dx12on11Device && Dx12CommandQueue && Dx12CommandList)
 	{
 		ID3D12Fence* d3d12Fence;
@@ -795,11 +766,4 @@ IFeature_Dx11wDx12::~IFeature_Dx11wDx12()
 	}
 
 	ReleaseSharedResources();
-
-	if (Imgui)
-		Imgui.reset();
-
-	DeviceContext->Flush();
-
-	SetInit(false);
 }

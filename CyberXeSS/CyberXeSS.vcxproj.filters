@@ -236,5 +236,8 @@
     <ClCompile Include="backends\IFeature_Dx11wDx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="backends\IFeature_Dx11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
