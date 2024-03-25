@@ -57,6 +57,7 @@ void Config::Reload()
 		// Color
 		AutoExposure = readBool("Color", "AutoExposure");
 		HDR = readBool("Color", "HDR");
+		ColorSpaceFix = readBool("Color", "ColorSpaceFix");
 
 		// MotionVectors
 		JitterCancellation = readBool("MotionVectors", "JitterCancellation");

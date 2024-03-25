@@ -51,6 +51,15 @@ protected:
 	ID3D12Resource* casBuffer = nullptr;
 	FfxCas::FfxCasContextDescription casContextDesc = {};
 
+	//rec709
+	bool _recInit = false;
+	ID3D12RootSignature* _recRootSignatureEncode = nullptr;
+	ID3D12RootSignature* _recRootSignatureDecode = nullptr;
+	ID3D12PipelineState* _recPSOEncode = nullptr;
+	ID3D12PipelineState* _recPSODecode = nullptr;
+	ID3D12Resource* _recBufferEncode = nullptr;
+	ID3D12Resource* _recBufferDecode = nullptr;
+
 	bool InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters);
 
 	void CasInit();
@@ -58,6 +67,11 @@ protected:
 	void DestroyCasContext();
 	bool CreateCasBufferResource(ID3D12Resource* source, ID3D12Device* device);
 	bool CasDispatch(ID3D12CommandList* commandList, const NVSDK_NGX_Parameter* initParams, ID3D12Resource* input, ID3D12Resource* output);
+
+	bool RecInit(ID3D12Device* InDevice);
+	bool RecDecode(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* input, ID3D12Resource* output);
+	bool RecEncode(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* input, ID3D12Resource* output);
+	bool CreateRecBufferResource(ID3D12Resource* source, ID3D12Device* device, ID3D12Resource** output);
 
 public:
 

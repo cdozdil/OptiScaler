@@ -58,6 +58,7 @@ protected:
 	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel);
 	bool ProcessDx11Textures(const NVSDK_NGX_Parameter* InParameters);
 	bool CopyBackOutput();
+	void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
 
 public:
 	virtual bool Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters) = 0;

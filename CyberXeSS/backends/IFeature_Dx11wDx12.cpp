@@ -12,6 +12,16 @@ do {						\
 	}						\
 } while((void)0, 0);	
 
+void IFeature_Dx11wDx12::ResourceBarrier(ID3D12GraphicsCommandList * commandList, ID3D12Resource * resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
+{
+	D3D12_RESOURCE_BARRIER barrier = {};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Transition.pResource = resource;
+	barrier.Transition.StateBefore = beforeState;
+	barrier.Transition.StateAfter = afterState;
+	barrier.Transition.Subresource = 0;
+	commandList->ResourceBarrier(1, &barrier);
+}
 bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutResource, bool InCopy)
 {
 	ID3D11Texture2D* originalTexture = nullptr;

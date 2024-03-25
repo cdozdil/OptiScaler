@@ -23,6 +23,7 @@ public:
 
 	// Color
 	std::optional<bool> AutoExposure;
+	std::optional<bool> ColorSpaceFix;
 	std::optional<bool> HDR;
 
 	// Motion

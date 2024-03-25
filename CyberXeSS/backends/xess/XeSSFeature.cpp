@@ -1,8 +1,45 @@
 #pragma once
 #include "../../pch.h"
 #include "../../Config.h"
+#include "../../imgui/d3dx12.h"
 
 #include "XeSSFeature.h"
+
+#include <d3dcompiler.h>
+
+struct Constants
+{
+	float Multiplier;
+};
+
+// pixel.rgb = pow(abs(pixel.rgb) * 4.0, 2.4) * sign(pixel.rgb);
+const std::string _recEncodeShaderCode = R"(
+Texture2D<float4> InputTexture : register(t0);
+RWTexture2D<float4> OutputTexture : register(u0);
+
+// Companding shader
+[numthreads(16,16,1)]
+void main(uint3 DTid : SV_DispatchThreadID)
+{
+    float4 pixel = InputTexture[DTid.xy];
+	pixel.rgb *= 10.0;
+    OutputTexture[DTid.xy] = pixel;
+})";
+
+//    
+// pixel.rgb = pow(abs(pixel.rgb), 0.4166666666666667) * sign(pixel.rgb) * 0.25;
+const std::string _recDecodeShaderCode = R"(
+Texture2D<float4> InputTexture : register(t0);
+RWTexture2D<float4> OutputTexture : register(u0);
+
+// Inverse companding shader
+[numthreads(16,16,1)]
+void main(uint3 DTid : SV_DispatchThreadID)
+{
+    float4 pixel = InputTexture[DTid.xy];
+	pixel.rgb *= 0.1;
+    OutputTexture[DTid.xy] = pixel;
+})";
 
 inline static std::string ResultToString(FfxCas::FfxErrorCode result)
 {
@@ -193,6 +230,52 @@ inline void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
 	spdlog::log((spdlog::level::level_enum)((int)Level + 1), "FeatureContext::LogCallback XeSS Runtime ({0})", Message);
 }
 
+static ID3DBlob* CompileShader(const char* shaderCode, const char* entryPoint, const char* target)
+{
+	ID3DBlob* shaderBlob = nullptr;
+	ID3DBlob* errorBlob = nullptr;
+
+	HRESULT hr = D3DCompile(shaderCode, strlen(shaderCode), nullptr, nullptr, nullptr, entryPoint, target, 0, 0, &shaderBlob, &errorBlob);
+
+	if (FAILED(hr))
+	{
+		if (errorBlob)
+		{
+			OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+			errorBlob->Release();
+		}
+
+		if (shaderBlob)
+			shaderBlob->Release();
+
+		return nullptr;
+	}
+
+	if (errorBlob)
+		errorBlob->Release();
+
+	return shaderBlob;
+}
+
+static bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootSignature, ID3D12PipelineState** pipelineState, ID3DBlob* shaderBlob)
+{
+	D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
+	psoDesc.pRootSignature = rootSignature;
+	psoDesc.CS = CD3DX12_SHADER_BYTECODE(const_cast<void*>(shaderBlob->GetBufferPointer()), shaderBlob->GetBufferSize());
+	//psoDesc.CS = { reinterpret_cast<UINT8*>(shaderBlob->GetBufferPointer()), shaderBlob->GetBufferSize() };
+	psoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+
+	HRESULT hr = device->CreateComputePipelineState(&psoDesc, IID_PPV_ARGS(pipelineState));
+
+	if (FAILED(hr))
+	{
+		// Handle error
+		return false;
+	}
+
+	return true;
+}
+
 bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("XeSSFeature::InitXeSS!");
@@ -369,6 +452,8 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	CasInit();
 	CreateCasContext(device);
 
+	RecInit(device);
+
 	SetInit(true);
 
 	return true;
@@ -502,6 +587,8 @@ bool XeSSFeature::CreateCasBufferResource(ID3D12Resource* source, ID3D12Device* 
 	if (casBuffer != nullptr)
 		casBuffer->Release();
 
+	texDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
 	hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&casBuffer));
 
 	if (hr != S_OK)
@@ -541,11 +628,360 @@ bool XeSSFeature::CasDispatch(ID3D12CommandList* commandList, const NVSDK_NGX_Pa
 	dispatchParameters.sharpness = casSharpness;
 
 	dispatchParameters.color = FfxCas::ffxGetResourceDX12Cas(input, GetFfxResourceDescriptionDX12(input), nullptr, FfxCas::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
-	dispatchParameters.output = FfxCas::ffxGetResourceDX12Cas(output, GetFfxResourceDescriptionDX12(output), nullptr, FfxCas::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
+	dispatchParameters.output = FfxCas::ffxGetResourceDX12Cas(output, GetFfxResourceDescriptionDX12(output), nullptr, FfxCas::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 
 	if (auto errorCode = FfxCas::ffxCasContextDispatch(&casContext, &dispatchParameters); errorCode != FfxCas::FFX_OK)
 	{
 		spdlog::error("FeatureContext::CasDispatch ffxCasContextDispatch error: {0}", ResultToString(errorCode));
+		return false;
+	}
+
+	return true;
+}
+
+bool XeSSFeature::RecInit(ID3D12Device* InDevice)
+{
+	// Describe and create the root signature
+	// ---------------------------------------------------
+	D3D12_DESCRIPTOR_RANGE descriptorRange[2];
+
+	// SRV Range (Input Texture)
+	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	descriptorRange[0].NumDescriptors = 1;
+	descriptorRange[0].BaseShaderRegister = 0; // Assuming t0 register in HLSL for SRV
+	descriptorRange[0].RegisterSpace = 0;
+	descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	// UAV Range (Output Texture)
+	descriptorRange[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+	descriptorRange[1].NumDescriptors = 1;
+	descriptorRange[1].BaseShaderRegister = 0; // Assuming u0 register in HLSL for UAV
+	descriptorRange[1].RegisterSpace = 0;
+	descriptorRange[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	// Define the root parameter (descriptor table)
+	// ---------------------------------------------------
+	D3D12_ROOT_PARAMETER rootParameters[2];
+
+	// Root Parameter for SRV
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[0].DescriptorTable.NumDescriptorRanges = 1; // One range (SRV)
+	rootParameters[0].DescriptorTable.pDescriptorRanges = &descriptorRange[0]; // Point to the SRV range
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	// Root Parameter for UAV
+	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[1].DescriptorTable.NumDescriptorRanges = 1; // One range (UAV)
+	rootParameters[1].DescriptorTable.pDescriptorRanges = &descriptorRange[1]; // Point to the UAV range
+	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	// A root signature is an array of root parameters
+	// ---------------------------------------------------
+	D3D12_ROOT_SIGNATURE_DESC rootSigDesc;
+	rootSigDesc.NumParameters = 2; // Two root parameters
+	rootSigDesc.pParameters = rootParameters;
+	rootSigDesc.NumStaticSamplers = 0;
+	rootSigDesc.pStaticSamplers = nullptr;
+	rootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
+
+	ID3DBlob* errorBlob;
+	ID3DBlob* signatureBlob;
+
+	do
+	{
+		auto hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
+
+		if (FAILED(hr))
+		{
+			break;
+		}
+
+		hr = InDevice->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(&_recRootSignatureDecode));
+
+		if (FAILED(hr))
+		{
+			break;
+		}
+
+	} while (false);
+
+	if (errorBlob != nullptr)
+	{
+		errorBlob->Release();
+		errorBlob = nullptr;
+	}
+
+	if (signatureBlob != nullptr)
+	{
+		signatureBlob->Release();
+		signatureBlob = nullptr;
+	}
+
+	if (_recRootSignatureDecode == nullptr)
+		return false;
+
+	ID3DBlob* errorBlob2;
+	ID3DBlob* signatureBlob2;
+
+	do
+	{
+		auto hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob2, &errorBlob2);
+
+		if (FAILED(hr))
+		{
+			break;
+		}
+
+		hr = InDevice->CreateRootSignature(0, signatureBlob2->GetBufferPointer(), signatureBlob2->GetBufferSize(), IID_PPV_ARGS(&_recRootSignatureEncode));
+
+		if (FAILED(hr))
+		{
+			break;
+		}
+
+	} while (false);
+
+	if (errorBlob2 != nullptr)
+	{
+		errorBlob2->Release();
+		errorBlob2 = nullptr;
+	}
+
+	if (signatureBlob2 != nullptr)
+	{
+		signatureBlob2->Release();
+		signatureBlob2 = nullptr;
+	}
+
+	if (_recRootSignatureEncode == nullptr)
+		return false;
+
+	// Compile shader blobs
+	auto _recEncodeShader = CompileShader(_recEncodeShaderCode.c_str(), "main", "cs_5_0");
+
+	if (_recEncodeShader == nullptr)
+	{
+		return false;
+	}
+
+	auto _recDecodeShader = CompileShader(_recDecodeShaderCode.c_str(), "main", "cs_5_0");
+
+	if (_recDecodeShader == nullptr)
+	{
+		return false;
+	}
+
+	do
+	{
+		// create pso objects
+		if (!CreateComputeShader(InDevice, _recRootSignatureEncode, &_recPSOEncode, _recEncodeShader))
+		{
+			break;
+		}
+
+		if (!CreateComputeShader(InDevice, _recRootSignatureDecode, &_recPSODecode, _recDecodeShader))
+		{
+			break;
+		}
+	} while (false);
+
+	if (_recEncodeShader != nullptr)
+	{
+		_recEncodeShader->Release();
+		_recEncodeShader = nullptr;
+	}
+
+	if (_recDecodeShader != nullptr)
+	{
+		_recDecodeShader->Release();
+		_recDecodeShader = nullptr;
+	}
+
+	_recInit = _recPSOEncode != nullptr && _recPSODecode != nullptr;
+
+	return _recInit;
+}
+
+bool XeSSFeature::RecDecode(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* input, ID3D12Resource* output)
+{
+	if (!_recInit)
+		return false;
+
+	ID3D12DescriptorHeap* srvHeap;
+	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+	heapDesc.NumDescriptors = 2; // One for SRV and one for UAV
+	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+	auto hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&srvHeap));
+
+	if (FAILED(hr))
+	{
+		return false;
+	}
+
+	auto srvHandle = srvHeap->GetCPUDescriptorHandleForHeapStart();
+	auto uavHandle = srvHandle;
+	uavHandle.ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	D3D12_GPU_DESCRIPTOR_HANDLE gpuSrvHandle = srvHeap->GetGPUDescriptorHandleForHeapStart();
+	D3D12_GPU_DESCRIPTOR_HANDLE gpuUavHandle = gpuSrvHandle;
+	gpuUavHandle.ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	// Create SRV for Input Texture
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = input->GetDesc().Format;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = 1;
+
+	InDevice->CreateShaderResourceView(input, &srvDesc, srvHandle);
+
+	// Create UAV for Output Texture
+	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+	uavDesc.Format = output->GetDesc().Format;
+	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+	uavDesc.Texture2D.MipSlice = 0;
+
+	InDevice->CreateUnorderedAccessView(output, nullptr, &uavDesc, uavHandle);
+
+	ID3D12DescriptorHeap* heaps[] = { srvHeap };
+	InCmdList->SetDescriptorHeaps(_countof(heaps), heaps);
+
+	InCmdList->SetComputeRootSignature(_recRootSignatureDecode);
+	InCmdList->SetPipelineState(_recPSODecode);
+
+	InCmdList->SetComputeRootDescriptorTable(0, gpuSrvHandle);
+	InCmdList->SetComputeRootDescriptorTable(1, gpuUavHandle);
+
+	UINT dispatchWidth = (input->GetDesc().Width + 7) / 16;
+	UINT dispatchHeight = (input->GetDesc().Height + 7) / 16;
+	InCmdList->Dispatch(dispatchWidth, dispatchHeight, 1);
+
+	//ID3D12Fence* d3d12Fence;
+	//InDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
+	//d3d12Fence->Signal(999);
+
+	//auto fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+	//if (d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
+	//{
+	//	WaitForSingleObject(fenceEvent, INFINITE);
+	//	CloseHandle(fenceEvent);
+	//}
+	//else
+	//	spdlog::warn("IFeature_Dx11wDx12::~IFeature_Dx11wDx12 can't get fenceEvent handle");
+
+	//d3d12Fence->Release();
+
+	return true;
+}
+
+bool XeSSFeature::RecEncode(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* input, ID3D12Resource* output)
+{
+	if (!_recInit)
+		return false;
+
+	ID3D12DescriptorHeap* srvHeap;
+	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+	heapDesc.NumDescriptors = 2; // One for SRV and one for UAV
+	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+	auto hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&srvHeap));
+
+	if (FAILED(hr))
+	{
+		return false;
+	}
+
+	auto srvHandle = srvHeap->GetCPUDescriptorHandleForHeapStart();
+	auto uavHandle = srvHandle;
+	uavHandle.ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	D3D12_GPU_DESCRIPTOR_HANDLE gpuSrvHandle = srvHeap->GetGPUDescriptorHandleForHeapStart();
+	D3D12_GPU_DESCRIPTOR_HANDLE gpuUavHandle = gpuSrvHandle;
+	gpuUavHandle.ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	// Create SRV for Input Texture
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = input->GetDesc().Format;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = 1;
+
+	InDevice->CreateShaderResourceView(input, &srvDesc, srvHandle);
+
+	// Create UAV for Output Texture
+	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+	uavDesc.Format = output->GetDesc().Format;
+	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+	uavDesc.Texture2D.MipSlice = 0;
+
+	InDevice->CreateUnorderedAccessView(output, nullptr, &uavDesc, uavHandle);
+
+	ID3D12DescriptorHeap* heaps[] = { srvHeap };
+	InCmdList->SetDescriptorHeaps(_countof(heaps), heaps);
+
+	InCmdList->SetComputeRootSignature(_recRootSignatureEncode);
+	InCmdList->SetPipelineState(_recPSOEncode);
+
+	InCmdList->SetComputeRootDescriptorTable(0, gpuSrvHandle);
+	InCmdList->SetComputeRootDescriptorTable(1, gpuUavHandle);
+
+	UINT dispatchWidth = (input->GetDesc().Width + 7) / 16;
+	UINT dispatchHeight = (input->GetDesc().Height + 7) / 16;
+	InCmdList->Dispatch(dispatchWidth, dispatchHeight, 1);
+
+	return true;
+}
+
+bool XeSSFeature::CreateRecBufferResource(ID3D12Resource* source, ID3D12Device* device, ID3D12Resource** output)
+{
+	if (!_recInit)
+		return false;
+
+	if (source == nullptr)
+		return false;
+
+	D3D12_RESOURCE_DESC texDesc = source->GetDesc();
+
+	if (*output != nullptr)
+	{
+		D3D12_RESOURCE_DESC outDesc = (*output)->GetDesc();
+
+		if (outDesc.Width != texDesc.Width || outDesc.Height != texDesc.Height || outDesc.Format != texDesc.Format)
+		{
+			(*output)->Release();
+			(*output) = nullptr;
+		}
+		else
+		{
+			return true;
+		}
+	}
+	spdlog::debug("XeSSFeature::CreateRecBufferResource Start!");
+
+	D3D12_HEAP_PROPERTIES heapProperties;
+	D3D12_HEAP_FLAGS heapFlags;
+	HRESULT hr = source->GetHeapProperties(&heapProperties, &heapFlags);
+
+	if (hr != S_OK)
+	{
+		spdlog::error("XeSSFeature::CreateRecBufferResource GetHeapProperties result: {0:x}", hr);
+		return false;
+	}
+
+	if (*output != nullptr)
+		(*output)->Release();
+
+	texDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+ 	hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(output));
+
+	if (hr != S_OK)
+	{
+		spdlog::error("XeSSFeature::CreateRecBufferResource CreateCommittedResource result: {0:x}", hr);
 		return false;
 	}
 
