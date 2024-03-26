@@ -71,6 +71,13 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		Config::Instance()->xessDebug = false;
 	}
 
+	if (Config::Instance()->changeCAS)
+	{
+		Config::Instance()->changeCAS = false;
+		CAS.reset();
+		CAS = std::make_unique<CAS_Dx12>(Dx12on11Device, DisplayWidth(), DisplayHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
+	}
+
 	// creatimg params for XeSS
 	xess_result_t xessResult;
 	xess_d3d12_execute_params_t params{};

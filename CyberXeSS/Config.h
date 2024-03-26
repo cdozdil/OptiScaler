@@ -93,6 +93,7 @@ public:
 	IFeature* CurrentFeature = nullptr;
 
 	bool changeBackend = false;
+	bool changeCAS = false;
 	std::string newBackend = "";
 	bool xessDebug = false;
 	

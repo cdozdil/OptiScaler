@@ -29,6 +29,13 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	if (!IsInited() || !_xessContext)
 		return false;
 
+	if (Config::Instance()->changeCAS)
+	{
+		Config::Instance()->changeCAS = false;
+		CAS.reset();
+		CAS = std::make_unique<CAS_Dx12>(Device, DisplayWidth(), DisplayHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
+	}
+
 	xess_result_t xessResult;
 	xess_d3d12_execute_params_t params{};
 

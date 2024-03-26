@@ -472,16 +472,16 @@ void Imgui_Base::RenderMenu()
 				ImGui::BeginDisabled(!Config::Instance()->CasEnabled.value_or(true));
 
 				const char* cs[] = { "LINEAR", "GAMMA20", "GAMMA22", "SRGB_OUTPUT", "SRGB_INPUT_OUTPUT" };
-				const char* selectedCs = cs[Config::Instance()->ColorResourceBarrier.value_or(0)];
+				const char* selectedCs = cs[Config::Instance()->CasColorSpaceConversion.value_or(0)];
 
 				if (ImGui::BeginCombo("Color Space", selectedCs))
 				{
 					for (int n = 0; n < 5; n++)
 					{
-						if (ImGui::Selectable(cs[n], (Config::Instance()->ColorResourceBarrier.value_or(0) == n)))
+						if (ImGui::Selectable(cs[n], (Config::Instance()->CasColorSpaceConversion.value_or(0) == n)))
 						{
-							Config::Instance()->ColorResourceBarrier = n;
-							Config::Instance()->changeBackend = true;
+							Config::Instance()->CasColorSpaceConversion = n;
+							Config::Instance()->changeCAS = true;
 						}
 					}
 

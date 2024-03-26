@@ -328,8 +328,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 			Dx12Contexts[handleId].reset();
 			auto it = std::find_if(Dx12Contexts.begin(), Dx12Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 			Dx12Contexts.erase(it);
-
-			//return NVSDK_NGX_Result_Success;
 		}
 
 		// next frame prepare stuff
@@ -350,11 +348,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		}
 
 		if (Dx12Contexts[InFeatureHandle->Id].get()->Init(D3D12Device, InParameters))
-		{
-			// next frame we will start rendering again
 			Config::Instance()->changeBackend = false;
-			//return NVSDK_NGX_Result_Success;
-		}
 		else
 			return NVSDK_NGX_Result_Fail;
 	}
