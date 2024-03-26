@@ -4,6 +4,10 @@
 
 #include "XeSSFeature_Dx11.h"
 
+#if _DEBUG
+#include "../../d3dx/D3DX11tex.h"
+#endif
+
 XeSSFeatureDx11::XeSSFeatureDx11(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : XeSSFeature(InHandleId, InParameters), IFeature_Dx11wDx12(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters)
 {
 }
@@ -56,6 +60,17 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		Dx11DeviceContext = dc;
 	}
 
+	if (Config::Instance()->xessDebug)
+	{
+		xess_dump_parameters_t dumpParams{};
+		dumpParams.frame_count = 3;
+		dumpParams.frame_idx = 1;
+		dumpParams.path = ".";
+		dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH | XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS;
+		xessStartDump(_xessContext, &dumpParams);
+		Config::Instance()->xessDebug = false;
+	}
+
 	// creatimg params for XeSS
 	xess_result_t xessResult;
 	xess_d3d12_execute_params_t params{};
@@ -69,6 +84,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	InParameters->Get(NVSDK_NGX_Parameter_Reset, &params.resetHistory);
 
 	GetRenderResolution(InParameters, &params.inputWidth, &params.inputHeight);
+	auto sharpness = GetSharpness(InParameters);
 
 	spdlog::debug("XeSSFeatureDx11::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
@@ -86,26 +102,24 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		return false;
 	}
 
-	if (Config::Instance()->ColorSpaceFix.value_or(false))
+	if (Config::Instance()->ColorSpaceFix.value_or(false) &&
+		ColorDecode->CreateBufferResource(Dx12on11Device, dx11Color.Dx12Resource, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) &&
+		ColorDecode->Dispatch(Dx12on11Device, Dx12CommandList, dx11Color.Dx12Resource, ColorDecode->Buffer(), 16, 16))
 	{
-		CreateRecBufferResource(dx11Color.Dx12Resource, Dx12on11Device, &_recBufferDecode);
-		ResourceBarrier(Dx12CommandList, _recBufferDecode, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-		if (RecDecode(Dx12on11Device, Dx12CommandList, dx11Color.Dx12Resource, _recBufferDecode))
-			params.pColorTexture = _recBufferDecode;
-		else
-			params.pColorTexture = dx11Color.Dx12Resource;
+		params.pColorTexture = ColorDecode->Buffer();
 	}
 	else
+	{
 		params.pColorTexture = dx11Color.Dx12Resource;
+	}
 
 	_hasColor = params.pColorTexture != nullptr;
 	params.pVelocityTexture = dx11Mv.Dx12Resource;
 	_hasMV = params.pVelocityTexture != nullptr;
 
-	if (Config::Instance()->CasEnabled.value_or(true) && casSharpness > 0.0f)
+	if (Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f)
 	{
-		if (casBuffer == nullptr && !CreateCasBufferResource(dx11Out.Dx12Resource, Dx12on11Device))
+		if (CAS->Buffer() == nullptr && !CAS->CreateBufferResource(Dx12on11Device, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
 			spdlog::error("XeSSFeatureDx12::Evaluate Can't create cas buffer!");
 
@@ -119,26 +133,17 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 			return false;
 		}
 
-		params.pOutputTexture = casBuffer;
+		params.pOutputTexture = CAS->Buffer();
 	}
 	else
 	{
-		if (Config::Instance()->ColorSpaceFix.value_or(false))
-		{
-			if (CreateRecBufferResource(dx11Out.Dx12Resource, Dx12on11Device, &_recBufferEncode))
-			{
-				ResourceBarrier(Dx12CommandList, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-				params.pOutputTexture = _recBufferEncode;
-			}
-			else
-				params.pOutputTexture = dx11Out.Dx12Resource;
-		}
+		if (Config::Instance()->ColorSpaceFix.value_or(false) && OutputEncode->CreateBufferResource(Dx12on11Device, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+			params.pOutputTexture = OutputEncode->Buffer();
 		else
 			params.pOutputTexture = dx11Out.Dx12Resource;
 	}
 
 	_hasOutput = params.pOutputTexture != nullptr;
-
 	params.pDepthTexture = dx11Depth.Dx12Resource;
 	_hasDepth = params.pDepthTexture != nullptr;
 	params.pExposureScaleTexture = dx11Exp.Dx12Resource;
@@ -182,14 +187,13 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	}
 
 	//apply cas
-	if (Config::Instance()->CasEnabled.value_or(true) && casSharpness > 0.0f)
+	if (Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f)
 	{
-		if (Config::Instance()->ColorSpaceFix.value_or(false))
-		{
-			CreateRecBufferResource(casBuffer, Dx12on11Device, &_recBufferEncode);
-			ResourceBarrier(Dx12CommandList, _recBufferEncode, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		ResourceBarrier(Dx12CommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-			if (!CasDispatch(Dx12CommandList, InParameters, casBuffer, _recBufferEncode))
+		if (Config::Instance()->ColorSpaceFix.value_or(false) && OutputEncode->CreateBufferResource(Dx12on11Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		{
+			if (!CAS->Dispatch(Dx12CommandList, sharpness, params.pOutputTexture, OutputEncode->Buffer()))
 			{
 				Config::Instance()->CasEnabled = false;
 
@@ -205,7 +209,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		}
 		else
 		{
-			if (!CasDispatch(Dx12CommandList, InParameters, casBuffer, dx11Out.Dx12Resource))
+			if (!CAS->Dispatch(Dx12CommandList, sharpness, CAS->Buffer(), dx11Out.Dx12Resource))
 			{
 				Config::Instance()->CasEnabled = false;
 
@@ -221,17 +225,21 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		}
 	}
 
+	if (OutputEncode->Buffer() && Config::Instance()->ColorSpaceFix.value_or(false))
+	{
+		OutputEncode->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		OutputEncode->Dispatch(Dx12on11Device, Dx12CommandList, OutputEncode->Buffer(), dx11Out.Dx12Resource, 16, 16);
+
+#if _DEBUG
+		D3DX11SaveTextureToFile(InDeviceContext, dx11Out.SharedTexture, D3DX11_IFF_JPG, L"D:\\aaaa.jpg");
+#endif // _DEBUG
+
+	}
+
 	// Execute dx12 commands to process xess
 	Dx12CommandList->Close();
 	ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
 	Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-
-	if (Config::Instance()->ColorSpaceFix.value_or(false))
-	{
-		ResourceBarrier(Dx12CommandList, _recBufferEncode, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		ResourceBarrier(Dx12CommandList, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		RecEncode(Dx12on11Device, Dx12CommandList, _recBufferEncode, dx11Out.Dx12Resource);
-	}
 
 	if (!CopyBackOutput())
 	{
@@ -253,7 +261,6 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	}
 	else
 		Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
-
 
 	Dx12CommandAllocator->Reset();
 	Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);

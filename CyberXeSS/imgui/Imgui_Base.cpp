@@ -450,8 +450,17 @@ void Imgui_Base::RenderMenu()
 				ImGui::BeginDisabled(currentBackend != "xess");
 				ImGui::SeparatorText("XeSS Settings");
 
+
 				if (bool cas = Config::Instance()->CasEnabled.value_or(true); ImGui::Checkbox("CAS", &cas))
 					Config::Instance()->CasEnabled = cas;
+
+				ImGui::SameLine(0.0f, 6.0f);
+				if (bool csf = Config::Instance()->ColorSpaceFix.value_or(true); ImGui::Checkbox("ColorSpace Fix", &csf))
+					Config::Instance()->ColorSpaceFix = csf;
+
+				ImGui::SameLine(0.0f, 6.0f);
+				if (bool dbg = Config::Instance()->xessDebug; ImGui::Checkbox("Debug Dump", &dbg))
+					Config::Instance()->xessDebug = dbg;
 
 				ImGui::BeginDisabled(!Config::Instance()->CasEnabled.value_or(true));
 
@@ -741,7 +750,7 @@ Imgui_Base::Imgui_Base(HWND handle)
 	context = ImGui::CreateContext();
 	ImGui::SetCurrentContext(context);
 	ImGui::StyleColorsDark();
-	
+
 
 	auto style = ImGui::GetStyle();
 	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.1f, 0.1f, 0.1f, 0.20f);

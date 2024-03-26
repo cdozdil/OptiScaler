@@ -23,7 +23,6 @@ public:
 
 	// Color
 	std::optional<bool> AutoExposure;
-	std::optional<bool> ColorSpaceFix;
 	std::optional<bool> HDR;
 
 	// Motion
@@ -43,6 +42,7 @@ public:
 	std::optional<bool> BuildPipelines;
 	std::optional<int32_t> NetworkModel;
 	std::optional<int32_t> OverrideQuality;
+	std::optional<bool> ColorSpaceFix;
 
 	// CAS
 	std::optional<bool> CasEnabled;
@@ -94,6 +94,7 @@ public:
 
 	bool changeBackend = false;
 	std::string newBackend = "";
+	bool xessDebug = false;
 	
 
 	void Reload();

@@ -5,12 +5,12 @@
 
 #define SAFE_RELEASE(p)		\
 do {						\
-	if(p && p != nullptr && p != NULL)	\
+	if(p && p != nullptr)	\
 	{						\
 		(p)->Release();		\
 		(p) = nullptr;		\
 	}						\
-} while((void)0, 0);	
+} while((void)0, 0)	
 
 void IFeature_Dx11wDx12::ResourceBarrier(ID3D12GraphicsCommandList * commandList, ID3D12Resource * resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
 {
@@ -22,6 +22,7 @@ void IFeature_Dx11wDx12::ResourceBarrier(ID3D12GraphicsCommandList * commandList
 	barrier.Transition.Subresource = 0;
 	commandList->ResourceBarrier(1, &barrier);
 }
+
 bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutResource, bool InCopy)
 {
 	ID3D11Texture2D* originalTexture = nullptr;
@@ -110,8 +111,6 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 
 void IFeature_Dx11wDx12::ReleaseSharedResources()
 {
-	spdlog::debug("IFeature_Dx11wDx12::ReleaseSharedResources start!");
-
 	SAFE_RELEASE(dx11Color.SharedTexture);
 	SAFE_RELEASE(dx11Mv.SharedTexture);
 	SAFE_RELEASE(dx11Out.SharedTexture);
@@ -593,11 +592,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 			spdlog::error("IFeature_Dx11wDx12::CopyBackOutput Can't create open sharedhandle for dx11fence_2 {0:x}", fr);
 			return false;
 		}
-	}
 
-	// xess done
-	if (Config::Instance()->UseSafeSyncQueries.value_or(1) < 4)
-	{
 		if (Config::Instance()->UseSafeSyncQueries.value_or(1) > 0)
 		{
 			Dx12CommandQueue->Signal(dx12fence_2, 20);
@@ -745,34 +740,43 @@ bool IFeature_Dx11wDx12::BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* I
 	return true;
 }
 
-IFeature_Dx11wDx12::IFeature_Dx11wDx12(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters)
+IFeature_Dx11wDx12::IFeature_Dx11wDx12(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters)
 {
 }
 
 IFeature_Dx11wDx12::~IFeature_Dx11wDx12()
 {
-	spdlog::debug("IFeature_Dx11wDx12::~IFeature_Dx11wDx12");
-
 	if (Dx12on11Device && Dx12CommandQueue && Dx12CommandList)
 	{
-		ID3D12Fence* d3d12Fence;
-		Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
-		Dx12CommandList->Close();
-		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-		Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-		Dx12CommandQueue->Signal(d3d12Fence, 999);
+		ID3D12Fence* d3d12Fence = nullptr;
 
-		auto fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-		if (d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
+		do
 		{
-			WaitForSingleObject(fenceEvent, INFINITE);
-			CloseHandle(fenceEvent);
-		}
-		else
-			spdlog::warn("IFeature_Dx11wDx12::~IFeature_Dx11wDx12 can't get fenceEvent handle");
+			if (Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence)) != S_OK)
+				break;
 
-		d3d12Fence->Release();
+			if (Dx12CommandList->Close() != S_OK)
+				break;
+
+			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+			Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+			Dx12CommandQueue->Signal(d3d12Fence, 999);
+
+			HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+			if (fenceEvent != NULL && d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
+			{
+				WaitForSingleObject(fenceEvent, INFINITE);
+				CloseHandle(fenceEvent);
+			}
+
+		} while (false);
+
+		if (d3d12Fence != nullptr)
+		{
+			d3d12Fence->Release();
+			d3d12Fence = nullptr;
+		}
 	}
 
 	ReleaseSharedResources();

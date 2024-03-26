@@ -10,7 +10,7 @@ private:
 protected:
 
 public:
-	XeSSFeatureDx12(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : XeSSFeature(InHandleId, InParameters), IFeature_Dx12(InHandleId, InParameters), IFeature(InHandleId, InParameters)
+	XeSSFeatureDx12(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters), IFeature_Dx12(InHandleId, InParameters), XeSSFeature(InHandleId, InParameters)
 	{
 	}
 

@@ -22,6 +22,7 @@ void Config::Reload()
 		BuildPipelines = readBool("XeSS", "BuildPipelines");
 		NetworkModel = readInt("XeSS", "NetworkModel");
 		OverrideQuality = readInt("XeSS", "OverrideQuality");
+		ColorSpaceFix = readBool("XeSS", "ColorSpaceFix");
 
 		// logging
 		LoggingEnabled = readBool("Log", "LoggingEnabled");
@@ -57,7 +58,6 @@ void Config::Reload()
 		// Color
 		AutoExposure = readBool("Color", "AutoExposure");
 		HDR = readBool("Color", "HDR");
-		ColorSpaceFix = readBool("Color", "ColorSpaceFix");
 
 		// MotionVectors
 		JitterCancellation = readBool("MotionVectors", "JitterCancellation");

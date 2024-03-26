@@ -12,7 +12,7 @@ protected:
 	ID3D12Device* Device = nullptr;
 	std::unique_ptr<Imgui_Dx12> Imgui = nullptr;
 
-	void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
+	void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState) const;
 
 public:
 	virtual bool Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* InParameters) = 0;

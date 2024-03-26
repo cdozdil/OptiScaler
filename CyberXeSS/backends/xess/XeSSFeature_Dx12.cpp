@@ -41,12 +41,14 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	InParameters->Get(NVSDK_NGX_Parameter_Reset, &params.resetHistory);
 
 	GetRenderResolution(InParameters, &params.inputWidth, &params.inputHeight);
+	auto sharpness = GetSharpness(InParameters);
 
 	spdlog::debug("XeSSFeatureDx12::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
 	ID3D12Resource* paramColor;
 	if (InParameters->Get(NVSDK_NGX_Parameter_Color, &paramColor) != NVSDK_NGX_Result_Success)
 		InParameters->Get(NVSDK_NGX_Parameter_Color, (void**)&paramColor);
+
 
 	if (paramColor)
 	{
@@ -66,17 +68,15 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		}
 
 		if (Config::Instance()->ColorSpaceFix.value_or(false) &&
-			CreateRecBufferResource(paramColor, Device, &_recBufferDecode) &&
-			RecDecode(Device, InCommandList, paramColor, _recBufferDecode))
+			ColorDecode->CreateBufferResource(Device, paramColor, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) &&
+			ColorDecode->Dispatch(Device, InCommandList, paramColor, ColorDecode->Buffer(), 16, 16))
 		{
-			ResourceBarrier(InCommandList, _recBufferDecode,
-				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-			params.pColorTexture = _recBufferDecode;
+			params.pColorTexture = ColorDecode->Buffer();
 		}
 		else
+		{
 			params.pColorTexture = paramColor;
+		}
 	}
 	else
 	{
@@ -115,23 +115,20 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				(D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-		if (Config::Instance()->CasEnabled.value_or(true) && casSharpness > 0.0f)
+		if (Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f)
 		{
-			if (casBuffer == nullptr && !CreateCasBufferResource(paramOutput, Device))
+			if (CAS->Buffer() == nullptr && !CAS->CreateBufferResource(Device, paramOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 			{
 				spdlog::error("XeSSFeatureDx12::Evaluate Can't create cas buffer!");
 				return false;
 			}
 
-			params.pOutputTexture = casBuffer;
+			params.pOutputTexture = CAS->Buffer();
 		}
 		else
 		{
-			if (Config::Instance()->ColorSpaceFix.value_or(false))
-			{
-				CreateRecBufferResource(paramOutput, Device, &_recBufferEncode);
-				params.pOutputTexture = _recBufferEncode;
-			}
+			if (Config::Instance()->ColorSpaceFix.value_or(false) && OutputEncode->CreateBufferResource(Device, paramOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+				params.pOutputTexture = OutputEncode->Buffer();
 			else
 				params.pOutputTexture = paramOutput;
 		}
@@ -232,11 +229,13 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 
 	//apply cas
-	if (Config::Instance()->CasEnabled.value_or(true) && casSharpness > 0.0f)
+	if (Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f)
 	{
-		if (Config::Instance()->ColorSpaceFix.value_or(false))
+		ResourceBarrier(InCommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+		if (Config::Instance()->ColorSpaceFix.value_or(false) && OutputEncode->CreateBufferResource(Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
-			if (!CreateRecBufferResource(casBuffer, Device, &_recBufferEncode) || !CasDispatch(InCommandList, InParameters, casBuffer, _recBufferEncode))
+			if (!CAS->Dispatch(InCommandList, sharpness, params.pOutputTexture, OutputEncode->Buffer()))
 			{
 				Config::Instance()->CasEnabled = false;
 				return true;
@@ -244,7 +243,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		}
 		else
 		{
-			if (!CasDispatch(InCommandList, InParameters, casBuffer, paramOutput))
+			if (!CAS->Dispatch(InCommandList, sharpness, params.pOutputTexture, paramOutput))
 			{
 				Config::Instance()->CasEnabled = false;
 				return true;
@@ -259,8 +258,8 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			Imgui.reset();
 		else
 		{
-			if (Config::Instance()->ColorSpaceFix.value_or(false))
-				Imgui->Render(InCommandList, _recBufferEncode);
+			if (OutputEncode->Buffer() != nullptr && Config::Instance()->ColorSpaceFix.value_or(false))
+				Imgui->Render(InCommandList, OutputEncode->Buffer());
 			else
 				Imgui->Render(InCommandList, paramOutput);
 		}
@@ -268,10 +267,10 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	else
 		Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
 
-	if (Config::Instance()->ColorSpaceFix.value_or(false))
+	if (OutputEncode->Buffer() && Config::Instance()->ColorSpaceFix.value_or(false))
 	{
-		ResourceBarrier(InCommandList, _recBufferEncode, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		RecEncode(Device, InCommandList, _recBufferEncode, paramOutput);
+		OutputEncode->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		OutputEncode->Dispatch(Device, InCommandList, OutputEncode->Buffer(), paramOutput, 16, 16);
 	}
 
 	// restore resource states
@@ -308,6 +307,4 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	return true;
 }
 
-XeSSFeatureDx12::~XeSSFeatureDx12()
-{
-}
+XeSSFeatureDx12::~XeSSFeatureDx12() = default;

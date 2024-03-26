@@ -1,5 +1,5 @@
 #include "Imgui_Dx12.h"
-#include "d3dx12.h"
+#include "../d3dx/d3dx12.h"
 #include "imgui/imgui_impl_dx12.h"
 
 long frameCounter = 0;
