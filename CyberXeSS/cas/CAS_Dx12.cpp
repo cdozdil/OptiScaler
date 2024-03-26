@@ -100,7 +100,6 @@ inline static FfxCas::FfxSurfaceFormat ffxGetSurfaceFormatDX12(DXGI_FORMAT forma
 		return FfxCas::FFX_SURFACE_FORMAT_R16_UNORM;
 	case (DXGI_FORMAT_R16_SNORM):
 		return FfxCas::FFX_SURFACE_FORMAT_R16_SNORM;
-		//case DXGI_FORMAT_R16_SINT:
 
 	case DXGI_FORMAT_R8_TYPELESS:
 	case DXGI_FORMAT_R8_UNORM:
@@ -225,6 +224,9 @@ bool CAS_Dx12::Dispatch(ID3D12CommandList* InCommandList, float InSharpness, ID3
 
 void CAS_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RESOURCE_STATES InState)
 {
+	if (_bufferState == InState)
+		return;
+
 	D3D12_RESOURCE_BARRIER barrier = {};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Transition.pResource = _buffer;

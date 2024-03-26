@@ -42,6 +42,7 @@ protected:
 
 	bool InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters);
 	float GetSharpness(const NVSDK_NGX_Parameter* InParameters);
+	bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, ID3D12Resource** OutDest, D3D12_RESOURCE_STATES InDestState);
 
 public:
 

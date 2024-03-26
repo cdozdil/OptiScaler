@@ -94,6 +94,9 @@ bool CS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
 
 void CS_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RESOURCE_STATES InState)
 {
+	if (_bufferState == InState)
+		return;
+
 	D3D12_RESOURCE_BARRIER barrier = {};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Transition.pResource = _buffer;
@@ -109,26 +112,26 @@ bool CS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 	if (!_init || InDevice == nullptr || InCmdList == nullptr || InResource == nullptr || OutResource == nullptr || InNumThreadsX == 0 || InNumThreadsY == 0)
 		return false;
 
-	ID3D12DescriptorHeap* _srvHeap = nullptr;
-	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-	heapDesc.NumDescriptors = 2; // One for SRV and one for UAV
-	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	_counter++;
+	_counter = _counter % 2;
 
-	auto hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap));
+	if (_cpuSrvHandle[_counter].ptr == NULL)
+		_cpuSrvHandle[_counter] = _srvHeap[_counter]->GetCPUDescriptorHandleForHeapStart();
 
-	if (FAILED(hr))
+	if (_cpuUavHandle[_counter].ptr == NULL)
 	{
-		return false;
+		_cpuUavHandle[_counter] = _cpuSrvHandle[_counter];
+		_cpuUavHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	}
 
-	auto srvHandle = _srvHeap->GetCPUDescriptorHandleForHeapStart();
-	auto uavHandle = srvHandle;
-	uavHandle.ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	if(_gpuSrvHandle[_counter].ptr == NULL)
+		_gpuSrvHandle[_counter] = _srvHeap[_counter]->GetGPUDescriptorHandleForHeapStart();
 
-	D3D12_GPU_DESCRIPTOR_HANDLE gpuSrvHandle = _srvHeap->GetGPUDescriptorHandleForHeapStart();
-	D3D12_GPU_DESCRIPTOR_HANDLE gpuUavHandle = gpuSrvHandle;
-	gpuUavHandle.ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	if (_gpuUavHandle[_counter].ptr == NULL)
+	{
+		_gpuUavHandle[_counter] = _gpuSrvHandle[_counter];
+		_gpuUavHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	}
 
 	// Create SRV for Input Texture
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -137,7 +140,7 @@ bool CS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MipLevels = 1;
 
-	InDevice->CreateShaderResourceView(InResource, &srvDesc, srvHandle);
+	InDevice->CreateShaderResourceView(InResource, &srvDesc, _cpuSrvHandle[_counter]);
 
 	// Create UAV for Output Texture
 	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
@@ -145,53 +148,25 @@ bool CS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 	uavDesc.Texture2D.MipSlice = 0;
 
-	InDevice->CreateUnorderedAccessView(OutResource, nullptr, &uavDesc, uavHandle);
+	InDevice->CreateUnorderedAccessView(OutResource, nullptr, &uavDesc, _cpuUavHandle[_counter]);
 
-	ID3D12DescriptorHeap* heaps[] = { _srvHeap };
+	ID3D12DescriptorHeap* heaps[] = { _srvHeap[_counter] };
 	InCmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 
 	InCmdList->SetComputeRootSignature(_rootSignature);
 	InCmdList->SetPipelineState(_pipelineState);
 
-	InCmdList->SetComputeRootDescriptorTable(0, gpuSrvHandle);
-	InCmdList->SetComputeRootDescriptorTable(1, gpuUavHandle);
+	InCmdList->SetComputeRootDescriptorTable(0, _gpuSrvHandle[_counter]);
+	InCmdList->SetComputeRootDescriptorTable(1, _gpuUavHandle[_counter]);
 
 	UINT dispatchWidth = (InResource->GetDesc().Width + InNumThreadsX - 1) / InNumThreadsX;
 	UINT dispatchHeight = (InResource->GetDesc().Height + InNumThreadsY - 1) / InNumThreadsY;
 	InCmdList->Dispatch(dispatchWidth, dispatchHeight, 1);
 
-	/*ID3D12Fence* d3d12Fence = nullptr;
-
-	do
-	{
-		if (InDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence)) != S_OK)
-			break;
-
-		d3d12Fence->Signal(999);
-
-		HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-		if (fenceEvent != NULL && d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
-		{
-			WaitForSingleObject(fenceEvent, INFINITE);
-			CloseHandle(fenceEvent);
-		}
-
-	} while (false);
-
-	if (d3d12Fence != nullptr)
-	{
-		d3d12Fence->Release();
-		d3d12Fence = nullptr;
-	}*/
-
-	_srvHeap->Release();
-	_srvHeap = nullptr;
-
 	return true;
 }
 
-CS_Dx12::CS_Dx12(ID3D12Device* InDevice, const char* InShaderCode, const char* InEntry, const char* InTarget)
+CS_Dx12::CS_Dx12(ID3D12Device* InDevice, std::string InShaderCode, std::string InEntry, std::string InTarget)
 {
 	// Describe and create the root signature
 // ---------------------------------------------------
@@ -275,7 +250,7 @@ CS_Dx12::CS_Dx12(ID3D12Device* InDevice, const char* InShaderCode, const char* I
 	}
 
 	// Compile shader blobs
-	auto _recEncodeShader = CompileShader(InShaderCode, InEntry, InTarget);
+	auto _recEncodeShader = CompileShader(InShaderCode.c_str(), InEntry.c_str(), InTarget.c_str());
 
 	if (_recEncodeShader == nullptr)
 	{
@@ -294,7 +269,26 @@ CS_Dx12::CS_Dx12(ID3D12Device* InDevice, const char* InShaderCode, const char* I
 		_recEncodeShader = nullptr;
 	}
 
-	_init = _pipelineState != nullptr;
+	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+	heapDesc.NumDescriptors = 2; // One for SRV and one for UAV
+	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+	auto hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[0]));
+
+	if (FAILED(hr))
+	{
+		return;
+	}
+
+	hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[1]));
+
+	if (FAILED(hr))
+	{
+		return;
+	}
+
+	_init = _srvHeap[1] != nullptr;
 }
 
 CS_Dx12::~CS_Dx12()
@@ -314,11 +308,17 @@ CS_Dx12::~CS_Dx12()
 		_pipelineState = nullptr;
 	}
 
-	//if (_srvHeap != nullptr)
-	//{
-	//	_srvHeap->Release();
-	//	_srvHeap = nullptr;
-	//}
+	if (_srvHeap[0] != nullptr)
+	{
+		_srvHeap[0]->Release();
+		_srvHeap[0] = nullptr;
+	}
+
+	if (_srvHeap[1] != nullptr)
+	{
+		_srvHeap[1]->Release();
+		_srvHeap[1] = nullptr;
+	}
 
 	if (_buffer != nullptr)
 	{

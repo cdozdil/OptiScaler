@@ -119,7 +119,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 	if (Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f)
 	{
-		if (CAS->Buffer() == nullptr && !CAS->CreateBufferResource(Dx12on11Device, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		if (!CAS->CreateBufferResource(Dx12on11Device, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
 			spdlog::error("XeSSFeatureDx12::Evaluate Can't create cas buffer!");
 
@@ -138,7 +138,10 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	else
 	{
 		if (Config::Instance()->ColorSpaceFix.value_or(false) && OutputEncode->CreateBufferResource(Dx12on11Device, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		{
+			OutputEncode->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			params.pOutputTexture = OutputEncode->Buffer();
+		}
 		else
 			params.pOutputTexture = dx11Out.Dx12Resource;
 	}
@@ -193,6 +196,8 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 		if (Config::Instance()->ColorSpaceFix.value_or(false) && OutputEncode->CreateBufferResource(Dx12on11Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
+			OutputEncode->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
 			if (!CAS->Dispatch(Dx12CommandList, sharpness, params.pOutputTexture, OutputEncode->Buffer()))
 			{
 				Config::Instance()->CasEnabled = false;
@@ -209,6 +214,8 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		}
 		else
 		{
+			CAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
 			if (!CAS->Dispatch(Dx12CommandList, sharpness, CAS->Buffer(), dx11Out.Dx12Resource))
 			{
 				Config::Instance()->CasEnabled = false;
@@ -228,18 +235,26 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	if (OutputEncode->Buffer() && Config::Instance()->ColorSpaceFix.value_or(false))
 	{
 		OutputEncode->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		OutputEncode->Dispatch(Dx12on11Device, Dx12CommandList, OutputEncode->Buffer(), dx11Out.Dx12Resource, 16, 16);
 
-#if _DEBUG
-		D3DX11SaveTextureToFile(InDeviceContext, dx11Out.SharedTexture, D3DX11_IFF_JPG, L"D:\\aaaa.jpg");
-#endif // _DEBUG
+		if (CreateBufferResource(Dx12on11Device, dx11Out.Dx12Resource, &_outBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		{
+			OutputEncode->Dispatch(Dx12on11Device, Dx12CommandList, OutputEncode->Buffer(), _outBuffer, 16, 16);
 
+			ResourceBarrier(Dx12CommandList, _outBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE);
+			ResourceBarrier(Dx12CommandList, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST);
+
+			Dx12CommandList->CopyResource(dx11Out.Dx12Resource, _outBuffer);
+		}
+		else
+		{
+			OutputEncode->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_COPY_SOURCE);
+			ResourceBarrier(Dx12CommandList, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST);
+		
+			Dx12CommandList->CopyResource(dx11Out.Dx12Resource, OutputEncode->Buffer());
+		}
+
+		ResourceBarrier(Dx12CommandList, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	}
-
-	// Execute dx12 commands to process xess
-	Dx12CommandList->Close();
-	ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-	Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
 	if (!CopyBackOutput())
 	{
@@ -250,6 +265,11 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 		return false;
 	}
+
+	// Execute dx12 commands to process xess
+	Dx12CommandList->Close();
+	ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+	Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
 	// imgui
 	if (Imgui)
@@ -270,6 +290,10 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 XeSSFeatureDx11::~XeSSFeatureDx11()
 {
-	spdlog::debug("XeSSFeatureDx11::XeSSFeatureDx11");
+	if (_outBuffer != nullptr)
+	{
+		_outBuffer->Release();
+		_outBuffer = nullptr;
+	}
 }
 

@@ -289,11 +289,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 			Dx11Contexts[handleId].reset();
 			auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 			Dx11Contexts.erase(it);
-
-			return NVSDK_NGX_Result_Success;
 		}
 
-		// next frame prepare stuff
+		// next prepare stuff
 		if (Config::Instance()->newBackend == "xess")
 		{
 			Config::Instance()->Dx11Upscaler = "xess";
@@ -317,9 +315,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 
 		if (Dx11Contexts[InFeatureHandle->Id].get()->Init(D3D11Device, InDevCtx, InParameters))
 		{
-			// next frame we will start rendering again
 			Config::Instance()->changeBackend = false;
-			return NVSDK_NGX_Result_Success;
+			//return NVSDK_NGX_Result_Success;
 		}
 		else
 			return NVSDK_NGX_Result_Fail;

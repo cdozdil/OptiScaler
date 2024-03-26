@@ -13,7 +13,7 @@ RWTexture2D<float4> OutputTexture : register(u0);
 void main(uint3 DTid : SV_DispatchThreadID)
 {
 	float4 pixel = InputTexture[DTid.xy];
-	pixel.rgb *= 10.0;
+	pixel.rgb *= 125.0;
 	OutputTexture[DTid.xy] = pixel;
 })";
 
@@ -26,7 +26,7 @@ RWTexture2D<float4> OutputTexture : register(u0);
 void main(uint3 DTid : SV_DispatchThreadID)
 {
 	float4 pixel = InputTexture[DTid.xy];
-	pixel.rgb *= 0.1;
+	pixel.rgb *= 0.008;
 	OutputTexture[DTid.xy] = pixel;
 })";
 
@@ -246,4 +246,49 @@ float XeSSFeature::GetSharpness(const NVSDK_NGX_Parameter* InParameters)
 	InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &sharpness);
 
 	return sharpness;
+}
+
+bool XeSSFeature::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, ID3D12Resource** OutDest, D3D12_RESOURCE_STATES InDestState)
+{
+	if (InDevice == nullptr || InSource == nullptr)
+		return false;
+
+	D3D12_RESOURCE_DESC texDesc = InSource->GetDesc();
+
+	if (*OutDest != nullptr)
+	{
+		auto bufDesc = (*OutDest)->GetDesc();
+
+		if (bufDesc.Width != texDesc.Width || bufDesc.Height != texDesc.Height || bufDesc.Format != texDesc.Format)
+		{
+			(*OutDest)->Release();
+			*OutDest = nullptr;
+		}
+		else
+			return true;
+	}
+
+	spdlog::debug("XeSSFeature::CreateCasBufferResource Start!");
+
+	D3D12_HEAP_PROPERTIES heapProperties;
+	D3D12_HEAP_FLAGS heapFlags;
+	HRESULT hr = InSource->GetHeapProperties(&heapProperties, &heapFlags);
+
+	if (hr != S_OK)
+	{
+		spdlog::error("XeSSFeature::CreateBufferResource GetHeapProperties result: {0:x}", hr);
+		return false;
+	}
+
+	texDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS | D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS;
+
+	hr = InDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, InDestState, nullptr, IID_PPV_ARGS(OutDest));
+
+	if (hr != S_OK)
+	{
+		spdlog::error("XeSSFeature::CreateBufferResource CreateCommittedResource result: {0:x}", hr);
+		return false;
+	}
+
+	return true;
 }
