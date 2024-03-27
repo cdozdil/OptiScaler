@@ -206,9 +206,15 @@ bool CAS_Dx12::Dispatch(ID3D12CommandList* InCommandList, float InSharpness, ID3
 
 	spdlog::debug("CAS_Dx12::CasDispatch Start!");
 
+	auto desc = InResource->GetDesc();
+
 	FfxCas::FfxCasDispatchDescription dispatchParameters = {};
 	dispatchParameters.commandList = FfxCas::ffxGetCommandListDX12Cas(InCommandList);
-	dispatchParameters.renderSize = { _width, _height };
+	dispatchParameters.renderSize = { (uint32_t)desc.Width, desc.Height };
+
+	if (InSharpness > 1.0f)
+		InSharpness = 1.0f;
+
 	dispatchParameters.sharpness = InSharpness;
 	dispatchParameters.color = FfxCas::ffxGetResourceDX12Cas(InResource, GetFfxResourceDescriptionDX12(InResource), nullptr, FfxCas::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
 	dispatchParameters.output = FfxCas::ffxGetResourceDX12Cas(OutResource, GetFfxResourceDescriptionDX12(OutResource), nullptr, FfxCas::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
