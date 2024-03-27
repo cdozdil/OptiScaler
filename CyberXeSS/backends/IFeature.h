@@ -11,13 +11,14 @@ private:
 
 	bool _initParameters = false;
 	bool _isInited = false;
+	int _featureFlags = 0;
 
 	unsigned int _displayWidth = 0;
 	unsigned int _displayHeight = 0;
 	unsigned int _renderWidth = 0;
 	unsigned int _renderHeight = 0;
 	NVSDK_NGX_PerfQuality_Value _perfQualityValue;
-	
+
 	void SetHandle(unsigned int InHandleId);
 
 protected:
@@ -37,6 +38,8 @@ protected:
 public:
 	NVSDK_NGX_Handle* Handle() const { return _handle; };
 	static unsigned int GetNextHandleId() { return handleCounter++; }
+
+	int GetFeatureFlags() const { return _featureFlags; }
 
 	unsigned int DisplayWidth() const { return _displayWidth; };
 	unsigned int DisplayHeight() const { return _displayHeight; };

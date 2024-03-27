@@ -320,8 +320,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 	if (Config::Instance()->changeBackend)
 	{
+		Config::Instance()->changeBackend = false;
+
 		// first release everything
 		auto handleId = InFeatureHandle->Id;
+		auto createParams = GetNGXParameters();
 
 		if (auto dc = Dx12Contexts[handleId].get(); dc)
 		{
@@ -334,22 +337,23 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		if (Config::Instance()->newBackend == "fsr22")
 		{
 			Config::Instance()->Dx12Upscaler = "fsr22";
-			Dx12Contexts[InFeatureHandle->Id] = std::make_unique<FSR2FeatureDx12>(InFeatureHandle->Id, InParameters);
+			spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature creating new FSR 2.2.1 feature");
+			Dx12Contexts[InFeatureHandle->Id] = std::make_unique<FSR2FeatureDx12>(InFeatureHandle->Id, createParams);
 		}
 		else if (Config::Instance()->newBackend == "fsr21")
 		{
 			Config::Instance()->Dx12Upscaler = "fsr21";
-			Dx12Contexts[InFeatureHandle->Id] = std::make_unique<FSR2FeatureDx12_212>(InFeatureHandle->Id, InParameters);
+			spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature creating new FSR 2.1.2 feature");
+			Dx12Contexts[InFeatureHandle->Id] = std::make_unique<FSR2FeatureDx12_212>(InFeatureHandle->Id, createParams);
 		}
 		else
 		{
 			Config::Instance()->Dx12Upscaler = "xess";
-			Dx12Contexts[InFeatureHandle->Id] = std::make_unique<XeSSFeatureDx12>(InFeatureHandle->Id, InParameters);
+			spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature creating new XeSS feature");
+			Dx12Contexts[InFeatureHandle->Id] = std::make_unique<XeSSFeatureDx12>(InFeatureHandle->Id, createParams);
 		}
 
-		if (Dx12Contexts[InFeatureHandle->Id].get()->Init(D3D12Device, InParameters))
-			Config::Instance()->changeBackend = false;
-		else
+		if (!Dx12Contexts[InFeatureHandle->Id].get()->Init(D3D12Device, createParams))
 			return NVSDK_NGX_Result_Fail;
 	}
 

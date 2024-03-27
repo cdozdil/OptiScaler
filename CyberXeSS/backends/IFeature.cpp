@@ -13,6 +13,8 @@ bool IFeature::SetInitParameters(const NVSDK_NGX_Parameter* InParameters)
 	unsigned int width, outWidth, height, outHeight;
 	int pqValue;
 
+	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &_featureFlags);
+
 	if (InParameters->Get(NVSDK_NGX_Parameter_Width, &width) == NVSDK_NGX_Result_Success &&
 		InParameters->Get(NVSDK_NGX_Parameter_Height, &height) == NVSDK_NGX_Result_Success &&
 		InParameters->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth) == NVSDK_NGX_Result_Success &&
