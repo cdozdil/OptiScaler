@@ -128,7 +128,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	{
 		if (!CAS->CreateBufferResource(Dx12on11Device, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
-			spdlog::error("XeSSFeatureDx12::Evaluate Can't create cas buffer!");
+			spdlog::error("XeSSFeatureDx11::Evaluate Can't create cas buffer!");
 
 			Dx12CommandList->Close();
 			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -184,7 +184,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		}
 	}
 	else
-		spdlog::warn("FeatureContext::XeSSExecuteDx12 Can't get motion vector scales!");
+		spdlog::warn("XeSSFeatureDx11::XeSSExecuteDx12 Can't get motion vector scales!");
 
 	// Execute xess
 	spdlog::debug("XeSSFeatureDx11::Evaluate Executing!!");

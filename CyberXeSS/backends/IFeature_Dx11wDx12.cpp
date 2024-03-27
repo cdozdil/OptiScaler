@@ -470,6 +470,9 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
 			dx11Color.Dx12Handle = dx11Color.Dx11Handle;
 		}
+
+		auto colorDesc = dx11Color.Dx12Resource->GetDesc();
+		spdlog::debug("XeSSFeatureDx11::Evaluate Color Resolution: {0}x{1}", colorDesc.Width, colorDesc.Height);
 	}
 
 	if (paramMv)

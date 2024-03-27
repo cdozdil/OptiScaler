@@ -198,7 +198,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 	else
 	{
-		spdlog::warn("FSR2Feature12::Evaluate Can't get motion vector scales!");
+		spdlog::warn("FSR2FeatureDx12::Evaluate Can't get motion vector scales!");
 
 		params.motionVectorScale.x = MVScaleX;
 		params.motionVectorScale.y = MVScaleY;

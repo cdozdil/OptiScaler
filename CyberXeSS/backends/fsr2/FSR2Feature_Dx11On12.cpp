@@ -69,7 +69,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 
 	if (!ProcessDx11Textures(InParameters))
 	{
-		spdlog::error("XeSSFeatureDx11::Evaluate Can't process Dx11 textures!");
+		spdlog::error("FSR2FeatureDx11on12::Evaluate Can't process Dx11 textures!");
 		return false;
 	}
 
@@ -158,7 +158,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 
 	if (ffxresult != FFX_OK)
 	{
-		spdlog::error("FSR2FeatureDx12::Evaluate ffxFsr2ContextDispatch error: {0}", ResultToString(ffxresult));
+		spdlog::error("FSR2FeatureDx11on12::Evaluate ffxFsr2ContextDispatch error: {0}", ResultToString(ffxresult));
 		return false;
 	}
 
@@ -170,7 +170,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	// fsr done
 	if (!CopyBackOutput())
 	{
-		spdlog::error("FSR2FeatureDx11on12_212::Evaluate Can't copy output texture back!");
+		spdlog::error("FSR2FeatureDx11on12::Evaluate Can't copy output texture back!");
 		return false;
 	}
 

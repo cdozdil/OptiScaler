@@ -46,12 +46,12 @@ FSR2Feature212::~FSR2Feature212()
 	if (!IsInited())
 		return;
 
-	spdlog::debug("FSR2Feature::~FSR2Feature");
+	spdlog::debug("FSR2Feature212::~FSR2Feature212");
 
 	auto errorCode = Fsr212::ffxFsr2ContextDestroy212(&_context);
 
 	if (errorCode != Fsr212::FFX_OK)
-		spdlog::error("FSR2Feature::~FSR2Feature ffxFsr2ContextDestroy error: {0:x}", errorCode);
+		spdlog::error("FSR2Feature212::~FSR2Feature212 ffxFsr2ContextDestroy error: {0:x}", errorCode);
 
 	free(_contextDesc.callbacks.scratchBuffer);
 

@@ -13,7 +13,7 @@ RWTexture2D<float4> OutputTexture : register(u0);
 void main(uint3 DTid : SV_DispatchThreadID)
 {
 	float4 pixel = InputTexture[DTid.xy];
-	pixel.rgb *= 125.0;
+	pixel.rgb *= 50.0;
 	OutputTexture[DTid.xy] = pixel;
 })";
 
@@ -26,7 +26,7 @@ RWTexture2D<float4> OutputTexture : register(u0);
 void main(uint3 DTid : SV_DispatchThreadID)
 {
 	float4 pixel = InputTexture[DTid.xy];
-	pixel.rgb *= 0.008;
+	pixel.rgb *= 0.02;
 	OutputTexture[DTid.xy] = pixel;
 })";
 
@@ -211,8 +211,8 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 	CAS = std::make_unique<CAS_Dx12>(device, DisplayWidth(), DisplayHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
 
-	ColorDecode = std::make_unique<CS_Dx12>(device, colorDecodeShaderCode.c_str(), "main", "cs_5_0");
-	OutputEncode = std::make_unique<CS_Dx12>(device, outputEncodeShaderCode.c_str(), "main", "cs_5_0");
+	ColorDecode = std::make_unique<CS_Dx12>("ColorDecode", device, colorDecodeShaderCode.c_str(), "main", "cs_5_0");
+	OutputEncode = std::make_unique<CS_Dx12>("OutputEncode", device, outputEncodeShaderCode.c_str(), "main", "cs_5_0");
 
 	SetInit(true);
 

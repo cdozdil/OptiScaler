@@ -215,7 +215,7 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 
 	if (paramOutput)
 	{
-		spdlog::debug("FSR3FeatureDx12::Evaluate Output exist..");
+		spdlog::debug("FSR2FeatureVk::Evaluate Output exist..");
 
 		//if (Config::Instance()->OutputResourceBarrier.has_value())
 		//	ResourceBarrier(InCommandList, paramOutput,

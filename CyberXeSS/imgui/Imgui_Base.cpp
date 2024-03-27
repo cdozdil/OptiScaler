@@ -758,7 +758,6 @@ Imgui_Base::Imgui_Base(HWND handle)
 	ImGui::SetCurrentContext(context);
 	ImGui::StyleColorsDark();
 
-
 	auto style = ImGui::GetStyle();
 	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.1f, 0.1f, 0.1f, 0.20f);
 	style.Colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.10f, 0.10f, 0.10f, 0.20f);
@@ -766,7 +765,6 @@ Imgui_Base::Imgui_Base(HWND handle)
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-	io.ConfigFlags |= ImGuiConfigFlags_IsSRGB;
 
 	io.MouseDrawCursor = _isVisible;
 	io.WantCaptureKeyboard = _isVisible;

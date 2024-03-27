@@ -16,8 +16,6 @@ IFeature_Dx11::~IFeature_Dx11()
 			// Associate the query with the copy operation
 			DeviceContext->Begin(query);
 
-			//copy output back
-
 			// Execute dx11 commands 
 			DeviceContext->End(query);
 			DeviceContext->Flush();
