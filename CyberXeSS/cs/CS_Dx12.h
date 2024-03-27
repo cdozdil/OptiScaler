@@ -10,6 +10,7 @@
 class CS_Dx12
 {
 private:
+	std::string _name = "";
 	bool _init = false;
 	ID3D12RootSignature* _rootSignature = nullptr;
 	ID3D12PipelineState* _pipelineState = nullptr;
@@ -31,7 +32,7 @@ public:
 	ID3D12Resource* Buffer() { return _buffer; }
 	bool IsInit() const { return _init; }
 
-	CS_Dx12(ID3D12Device* InDevice, std::string InShaderCode, std::string InEntry, std::string InTarget);
+	CS_Dx12(std::string InName, ID3D12Device* InDevice, std::string InShaderCode, std::string InEntry, std::string InTarget);
 
 	~CS_Dx12();
 };

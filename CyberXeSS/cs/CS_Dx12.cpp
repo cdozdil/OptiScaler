@@ -1,6 +1,6 @@
 #include "CS_Dx12.h"
 
-ID3DBlob* CompileShader(const char* shaderCode, const char* entryPoint, const char* target)
+static ID3DBlob* CompileShader(const char* shaderCode, const char* entryPoint, const char* target)
 {
 	ID3DBlob* shaderBlob = nullptr;
 	ID3DBlob* errorBlob = nullptr;
@@ -9,9 +9,11 @@ ID3DBlob* CompileShader(const char* shaderCode, const char* entryPoint, const ch
 
 	if (FAILED(hr))
 	{
+		spdlog::error("CompileShader error while compiling shader");
+
 		if (errorBlob)
 		{
-			OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+			spdlog::error("CompileShader error while compiling shader : {0}", (char*)errorBlob->GetBufferPointer());
 			errorBlob->Release();
 		}
 
@@ -27,7 +29,7 @@ ID3DBlob* CompileShader(const char* shaderCode, const char* entryPoint, const ch
 	return shaderBlob;
 }
 
-bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootSignature, ID3D12PipelineState** pipelineState, ID3DBlob* shaderBlob)
+static bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootSignature, ID3D12PipelineState** pipelineState, ID3DBlob* shaderBlob)
 {
 	D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
 	psoDesc.pRootSignature = rootSignature;
@@ -38,7 +40,7 @@ bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootSignatur
 
 	if (FAILED(hr))
 	{
-		// Handle error
+		spdlog::error("CreateComputeShader CreateComputePipelineState error {0:x}", hr);
 		return false;
 	}
 
@@ -65,7 +67,7 @@ bool CS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
 			return true;
 	}
 
-	spdlog::debug("CS_Dx12::CreateBufferResource Start!");
+	spdlog::debug("CS_Dx12::CreateBufferResource [{0}] Start!", _name);
 
 	D3D12_HEAP_PROPERTIES heapProperties;
 	D3D12_HEAP_FLAGS heapFlags;
@@ -73,7 +75,7 @@ bool CS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
 
 	if (hr != S_OK)
 	{
-		spdlog::error("CS_Dx12::CreateBufferResource GetHeapProperties result: {0:x}", hr);
+		spdlog::error("CS_Dx12::CreateBufferResource [{0}] GetHeapProperties result: {1:x}", _name.c_str(), hr);
 		return false;
 	}
 
@@ -83,7 +85,7 @@ bool CS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
 
 	if (hr != S_OK)
 	{
-		spdlog::error("CS_Dx12::CreateBufferResource CreateCommittedResource result: {0:x}", hr);
+		spdlog::error("CS_Dx12::CreateBufferResource [{0}] CreateCommittedResource result: {1:x}", _name, hr);
 		return false;
 	}
 
@@ -112,6 +114,8 @@ bool CS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 	if (!_init || InDevice == nullptr || InCmdList == nullptr || InResource == nullptr || OutResource == nullptr || InNumThreadsX == 0 || InNumThreadsY == 0)
 		return false;
 
+	spdlog::debug("CS_Dx12::Dispatch [{0}] Start!", _name);
+
 	_counter++;
 	_counter = _counter % 2;
 
@@ -124,7 +128,7 @@ bool CS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 		_cpuUavHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	}
 
-	if(_gpuSrvHandle[_counter].ptr == NULL)
+	if (_gpuSrvHandle[_counter].ptr == NULL)
 		_gpuSrvHandle[_counter] = _srvHeap[_counter]->GetGPUDescriptorHandleForHeapStart();
 
 	if (_gpuUavHandle[_counter].ptr == NULL)
@@ -166,10 +170,14 @@ bool CS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 	return true;
 }
 
-CS_Dx12::CS_Dx12(ID3D12Device* InDevice, std::string InShaderCode, std::string InEntry, std::string InTarget)
+CS_Dx12::CS_Dx12(std::string InName, ID3D12Device* InDevice, std::string InShaderCode, std::string InEntry, std::string InTarget)
 {
+	_name = InName;
+
+	spdlog::debug("CS_Dx12::CS_Dx12 {0} start!", _name);
+
 	// Describe and create the root signature
-// ---------------------------------------------------
+	// ---------------------------------------------------
 	D3D12_DESCRIPTOR_RANGE descriptorRange[2];
 
 	// SRV Range (Input Texture)
@@ -220,6 +228,7 @@ CS_Dx12::CS_Dx12(ID3D12Device* InDevice, std::string InShaderCode, std::string I
 
 		if (FAILED(hr))
 		{
+			spdlog::error("CS_Dx12::CS_Dx12 [{0}] D3D12SerializeRootSignature error {1:x}", _name, hr);
 			break;
 		}
 
@@ -227,6 +236,7 @@ CS_Dx12::CS_Dx12(ID3D12Device* InDevice, std::string InShaderCode, std::string I
 
 		if (FAILED(hr))
 		{
+			spdlog::error("CS_Dx12::CS_Dx12 [{0}] CreateRootSignature error {1:x}", _name, hr);
 			break;
 		}
 
@@ -246,6 +256,7 @@ CS_Dx12::CS_Dx12(ID3D12Device* InDevice, std::string InShaderCode, std::string I
 
 	if (_rootSignature == nullptr)
 	{
+		spdlog::error("CS_Dx12::CS_Dx12 [{0}] _rootSignature is null!", _name);
 		return;
 	}
 
@@ -254,12 +265,14 @@ CS_Dx12::CS_Dx12(ID3D12Device* InDevice, std::string InShaderCode, std::string I
 
 	if (_recEncodeShader == nullptr)
 	{
+		spdlog::error("CS_Dx12::CS_Dx12 [{0}] CompileShader error!", _name);
 		return;
 	}
 
 	// create pso objects
 	if (!CreateComputeShader(InDevice, _rootSignature, &_pipelineState, _recEncodeShader))
 	{
+		spdlog::error("CS_Dx12::CS_Dx12 [{0}] CreateComputeShader error!", _name);
 		return;
 	}
 
@@ -278,6 +291,7 @@ CS_Dx12::CS_Dx12(ID3D12Device* InDevice, std::string InShaderCode, std::string I
 
 	if (FAILED(hr))
 	{
+		spdlog::error("CS_Dx12::CS_Dx12 [{0}] CreateDescriptorHeap[0] error {1:x}", _name, hr);
 		return;
 	}
 
@@ -285,6 +299,7 @@ CS_Dx12::CS_Dx12(ID3D12Device* InDevice, std::string InShaderCode, std::string I
 
 	if (FAILED(hr))
 	{
+		spdlog::error("CS_Dx12::CS_Dx12 [{0}] CreateDescriptorHeap[1] error {1:x}", _name, hr);
 		return;
 	}
 
