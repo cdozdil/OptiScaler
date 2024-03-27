@@ -216,16 +216,19 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 	if (upscalerChoice == 1)
 	{
 		Config::Instance()->Dx12Upscaler = "fsr22";
+		spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature creating new FSR 2.2.1 feature");
 		Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12>(handleId, InParameters);
 	}
 	else if (upscalerChoice == 2)
 	{
 		Config::Instance()->Dx12Upscaler = "fsr21";
+		spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature creating new FSR 2.1.2 feature");
 		Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12_212>(handleId, InParameters);
 	}
 	else
 	{
 		Config::Instance()->Dx12Upscaler = "xess";
+		spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature creating new XeSS feature");
 		Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, InParameters);
 	}
 
@@ -259,12 +262,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 #pragma endregion
 
 	if (deviceContext->Init(D3D12Device, InParameters))
-	{
-		//if (ImguiDx12)
-		//	ImguiDx12.reset();
-
 		return NVSDK_NGX_Result_Success;
-	}
 
 	spdlog::error("NVSDK_NGX_D3D12_CreateFeature: CreateFeature failed");
 	return NVSDK_NGX_Result_Fail;
@@ -328,12 +326,19 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 		if (auto dc = Dx12Contexts[handleId].get(); dc)
 		{
+			createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
+			createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
+			createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
+			createParams->Set(NVSDK_NGX_Parameter_OutWidth, dc->DisplayWidth());
+			createParams->Set(NVSDK_NGX_Parameter_OutHeight, dc->DisplayHeight());
+			createParams->Set(NVSDK_NGX_Parameter_PerfQualityValue, dc->PerfQualityValue());
+
 			Dx12Contexts[handleId].reset();
 			auto it = std::find_if(Dx12Contexts.begin(), Dx12Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 			Dx12Contexts.erase(it);
 		}
 
-		// next frame prepare stuff
+		// prepare new upscaler
 		if (Config::Instance()->newBackend == "fsr22")
 		{
 			Config::Instance()->Dx12Upscaler = "fsr22";
@@ -353,7 +358,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 			Dx12Contexts[InFeatureHandle->Id] = std::make_unique<XeSSFeatureDx12>(InFeatureHandle->Id, createParams);
 		}
 
-		if (!Dx12Contexts[InFeatureHandle->Id].get()->Init(D3D12Device, createParams))
+		auto initResult = Dx12Contexts[InFeatureHandle->Id].get()->Init(D3D12Device, createParams);
+		free(createParams);
+
+		if (!initResult)
 			return NVSDK_NGX_Result_Fail;
 	}
 

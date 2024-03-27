@@ -202,13 +202,25 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 	auto handleId = IFeature::GetNextHandleId();
 
 	if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "xess")
+	{
+		spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new XeSS with Dx12 feature");
 		Dx11Contexts[handleId] = std::make_unique<XeSSFeatureDx11>(handleId, InParameters);
+	}
 	else if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "fsr22_12")
+	{
+		spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new FSR 2.2.1 with Dx12 feature");
 		Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12>(handleId, InParameters);
+	}
 	else if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "fsr21_12")
+	{
+		spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new FSR 2.1.2 with Dx12 feature");
 		Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12_212>(handleId, InParameters);
+	}
 	else
+	{
+		spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new native FSR 2.2.1 feature");
 		Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11>(handleId, InParameters);
+	}
 
 	auto deviceContext = Dx11Contexts[handleId].get();
 	*OutHandle = deviceContext->Handle();
@@ -328,7 +340,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 		}
 
 		// then init and continue
-		if (!Dx11Contexts[InFeatureHandle->Id].get()->Init(D3D11Device, InDevCtx, createParams))
+		auto initResult = Dx11Contexts[InFeatureHandle->Id].get()->Init(D3D11Device, InDevCtx, createParams);
+		free(createParams);
+
+		if (!initResult)
 			return NVSDK_NGX_Result_Fail;
 	}
 
