@@ -1,6 +1,6 @@
 #pragma once
 #include "pch.h"
-#include <map>
+#include <ankerl/unordered_dense.h>
 #include "Config.h"
 
 inline std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_Value input)
@@ -431,7 +431,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 	}
 
 private:
-	std::map<std::string, Parameter> m_values;
+	ankerl::unordered_dense::map<std::string, Parameter> m_values;
 	mutable std::mutex m_mutex;
 
 	template<typename T>
