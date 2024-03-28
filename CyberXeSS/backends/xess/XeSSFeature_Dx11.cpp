@@ -62,6 +62,8 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 	if (Config::Instance()->xessDebug)
 	{
+		spdlog::error("XeSSFeatureDx11::Evaluate xessDebug");
+
 		xess_dump_parameters_t dumpParams{};
 		dumpParams.frame_count = 3;
 		dumpParams.frame_idx = 1;

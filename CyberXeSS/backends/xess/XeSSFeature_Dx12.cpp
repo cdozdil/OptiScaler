@@ -29,6 +29,19 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	if (!IsInited() || !_xessContext)
 		return false;
 
+	if (Config::Instance()->xessDebug)
+	{
+		spdlog::error("XeSSFeatureDx12::Evaluate xessDebug");
+
+		xess_dump_parameters_t dumpParams{};
+		dumpParams.frame_count = 3;
+		dumpParams.frame_idx = 1;
+		dumpParams.path = ".";
+		dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH | XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS;
+		xessStartDump(_xessContext, &dumpParams);
+		Config::Instance()->xessDebug = false;
+	}
+
 	if (Config::Instance()->changeCAS)
 	{
 		Config::Instance()->changeCAS = false;
