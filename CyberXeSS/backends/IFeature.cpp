@@ -10,7 +10,10 @@ void IFeature::SetHandle(unsigned int InHandleId)
 
 bool IFeature::SetInitParameters(const NVSDK_NGX_Parameter* InParameters)
 {
-	unsigned int width, outWidth, height, outHeight;
+	unsigned int width;
+	unsigned int outWidth;
+	unsigned int height;
+	unsigned int outHeight;
 	int pqValue;
 
 	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &_featureFlags);
@@ -37,46 +40,57 @@ bool IFeature::SetInitParameters(const NVSDK_NGX_Parameter* InParameters)
 	return false;
 }
 
-void IFeature::GetRenderResolution(const NVSDK_NGX_Parameter* InParameters, unsigned int* OutWidth, unsigned int* OutHeight) const
+void IFeature::GetRenderResolution(const NVSDK_NGX_Parameter* InParameters, unsigned int* OutWidth, unsigned int* OutHeight) 
 {
 	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, OutWidth) != NVSDK_NGX_Result_Success ||
 		InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, OutHeight) != NVSDK_NGX_Result_Success)
 	{
-		unsigned int width, height, outWidth, outHeight;
+		unsigned int width;
+		unsigned int height;
+		unsigned int outWidth;
+		unsigned int outHeight;
 
-		if (InParameters->Get(NVSDK_NGX_Parameter_Width, &width) == NVSDK_NGX_Result_Success &&
-			InParameters->Get(NVSDK_NGX_Parameter_Height, &height) == NVSDK_NGX_Result_Success)
+		do
 		{
-			if (InParameters->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth) == NVSDK_NGX_Result_Success &&
-				InParameters->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight) == NVSDK_NGX_Result_Success)
+
+			if (InParameters->Get(NVSDK_NGX_Parameter_Width, &width) == NVSDK_NGX_Result_Success &&
+				InParameters->Get(NVSDK_NGX_Parameter_Height, &height) == NVSDK_NGX_Result_Success)
 			{
-				if (width < outWidth)
+				if (InParameters->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth) == NVSDK_NGX_Result_Success &&
+					InParameters->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight) == NVSDK_NGX_Result_Success)
 				{
-					*OutWidth = width;
-					*OutHeight = height;
+					if (width < outWidth)
+					{
+						*OutWidth = width;
+						*OutHeight = height;
+						break;
+					}
+
+					*OutWidth = outWidth;
+					*OutHeight = outHeight;
+				}
+				else
+				{
+					if (width < RenderWidth())
+					{
+						*OutWidth = width;
+						*OutHeight = height;
+						break;
+					}
+
+					*OutWidth = RenderWidth();
+					*OutHeight = RenderHeight();
 					return;
 				}
-
-				*OutWidth = outWidth;
-				*OutHeight = outHeight;
 			}
-			else
-			{
-				if (width < RenderWidth())
-				{
-					*OutWidth = width;
-					*OutHeight = height;
-					return;
-				}
 
-				*OutWidth = RenderWidth();
-				*OutHeight = RenderHeight();
-				return;
-			}
-		}
+			*OutWidth = RenderWidth();
+			*OutHeight = RenderHeight();
 
-		*OutWidth = RenderWidth();
-		*OutHeight = RenderHeight();
+		} while (false);
 	}
+
+	_renderWidth = *OutWidth;
+	_renderHeight = *OutHeight;
 }
 
