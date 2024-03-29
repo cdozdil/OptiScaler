@@ -75,9 +75,17 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 	if (Config::Instance()->changeCAS)
 	{
-		Config::Instance()->changeCAS = false;
-		CAS.reset();
-		CAS = std::make_unique<CAS_Dx12>(Dx12on11Device, DisplayWidth(), DisplayHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
+		if (CAS.get() != nullptr)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(250));
+			CAS.reset();
+		}
+		else
+		{
+			Config::Instance()->changeCAS = false;
+			std::this_thread::sleep_for(std::chrono::milliseconds(250));
+			CAS = std::make_unique<CAS_Dx12>(Dx12on11Device, DisplayWidth(), DisplayHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
+		}
 	}
 
 	// creatimg params for XeSS
@@ -126,7 +134,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	params.pVelocityTexture = dx11Mv.Dx12Resource;
 	_hasMV = params.pVelocityTexture != nullptr;
 
-	if (Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f)
+	if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f)
 	{
 		if (!CAS->CreateBufferResource(Dx12on11Device, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
@@ -199,7 +207,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	}
 
 	//apply cas
-	if (Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f)
+	if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f)
 	{
 		ResourceBarrier(Dx12CommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 

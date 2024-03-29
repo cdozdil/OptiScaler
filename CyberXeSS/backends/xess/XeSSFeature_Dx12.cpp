@@ -44,9 +44,17 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	if (Config::Instance()->changeCAS)
 	{
-		Config::Instance()->changeCAS = false;
-		CAS.reset();
-		CAS = std::make_unique<CAS_Dx12>(Device, DisplayWidth(), DisplayHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
+		if (CAS.get() != nullptr)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(250));
+			CAS.reset();
+		}
+		else
+		{
+			Config::Instance()->changeCAS = false;
+			std::this_thread::sleep_for(std::chrono::milliseconds(250));
+			CAS = std::make_unique<CAS_Dx12>(Device, DisplayWidth(), DisplayHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
+		}
 	}
 
 	xess_result_t xessResult;
@@ -135,7 +143,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			ResourceBarrier(InCommandList, paramOutput, (D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		}
 
-		if (Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f && CAS->CreateBufferResource(Device, paramOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f && CAS->CreateBufferResource(Device, paramOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
 			CAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			params.pOutputTexture = CAS->Buffer();
@@ -246,7 +254,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 
 	//apply cas
-	if (Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f && CAS->Buffer() != nullptr)
+	if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f && CAS->Buffer() != nullptr)
 	{
 		ResourceBarrier(InCommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 

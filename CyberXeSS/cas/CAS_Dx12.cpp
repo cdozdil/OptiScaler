@@ -247,6 +247,14 @@ CAS_Dx12::CAS_Dx12(ID3D12Device* InDevice, uint32_t InWidth, uint32_t InHeight, 
 {
 	spdlog::debug("CAS_Dx12::CAS_Dx12 Start!");
 
+	if (InDevice == nullptr)
+	{
+		spdlog::error("CAS_Dx12::CAS_Dx12 InDevice is nullptr!");
+		return;
+	}
+
+	Device = InDevice;
+
 	const size_t scratchBufferSize = FfxCas::ffxGetScratchMemorySizeDX12Cas(FFX_CAS_CONTEXT_COUNT);
 	void* casScratchBuffer = calloc(scratchBufferSize, 1);
 
@@ -293,6 +301,32 @@ CAS_Dx12::~CAS_Dx12()
 {
 	if (!_init)
 		return;
+
+	ID3D12Fence* d3d12Fence = nullptr;
+
+	do
+	{
+		if (Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence)) != S_OK)
+			break;
+
+		d3d12Fence->Signal(999);
+
+		HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+		if (fenceEvent != NULL && d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
+		{
+			WaitForSingleObject(fenceEvent, INFINITE);
+			CloseHandle(fenceEvent);
+		}
+
+	} while (false);
+
+	if (d3d12Fence != nullptr)
+	{
+		d3d12Fence->Release();
+		d3d12Fence = nullptr;
+	}
+
 
 	FfxCas::ffxCasContextDestroy(&_context);
 	free(_contextDesc.backendInterface.scratchBuffer);

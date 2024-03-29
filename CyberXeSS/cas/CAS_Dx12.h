@@ -18,6 +18,8 @@ private:
 	FfxCas::FfxCasContext _context{};
 	FfxCas::FfxCasContextDescription _contextDesc{};
 
+	ID3D12Device* Device = nullptr;
+
 	ID3D12Resource* _buffer = nullptr;
 	D3D12_RESOURCE_STATES _bufferState = D3D12_RESOURCE_STATE_COMMON;
 
