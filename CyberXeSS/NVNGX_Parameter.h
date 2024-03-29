@@ -99,7 +99,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 
 		case NVSDK_NGX_PerfQuality_Value_Balanced:
 			//UE5 ratio fix
-			if (usingXess && 
+			if (false && usingXess && 
 				Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL &&
 				Config::Instance()->NVNGX_EngineVersion5)
 			{
@@ -118,7 +118,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 
 		case NVSDK_NGX_PerfQuality_Value_MaxQuality:
 			//UE5 ratio fix
-			if (usingXess && 
+			if (false && usingXess &&
 				Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL &&
 				Config::Instance()->NVNGX_EngineVersion5)
 			{
@@ -137,7 +137,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 
 		case NVSDK_NGX_PerfQuality_Value_UltraQuality:
 			//UE5 ratio fix
-			if (usingXess && 
+			if (false && usingXess &&
 				Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL &&
 				Config::Instance()->NVNGX_EngineVersion5)
 			{
@@ -162,7 +162,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 
 		default:
 			//UE5 ratio fix
-			if (usingXess &&
+			if (false && usingXess &&
 				Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL &&
 				Config::Instance()->NVNGX_EngineVersion5)
 			{
@@ -183,7 +183,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 
 	// Check for Unreal plugin
 	// Only do this for xess
-	if (usingXess && Width != Height)
+	if (false && usingXess && Width != Height)
 	{
 		OutWidth = OutWidth + (OutWidth % 2);
 		OutHeight = OutHeight + (OutHeight % 2);
