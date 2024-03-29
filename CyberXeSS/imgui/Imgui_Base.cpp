@@ -457,12 +457,6 @@ void Imgui_Base::RenderMenu()
 				if (bool csf = Config::Instance()->ColorSpaceFix.value_or(false); ImGui::Checkbox("ColorSpace Fix", &csf))
 				{
 					Config::Instance()->ColorSpaceFix = csf;
-
-					if (!Config::Instance()->AutoExposure.value_or(false))
-					{
-						Config::Instance()->newBackend = "xess";
-						Config::Instance()->changeBackend = true;
-					}
 				}
 
 				ImGui::SameLine(0.0f, 6.0f);
@@ -472,7 +466,14 @@ void Imgui_Base::RenderMenu()
 				ImGui::BeginDisabled(!Config::Instance()->CasEnabled.value_or(true));
 
 				const char* cs[] = { "LINEAR", "GAMMA20", "GAMMA22", "SRGB_OUTPUT", "SRGB_INPUT_OUTPUT" };
-				const char* selectedCs = cs[Config::Instance()->CasColorSpaceConversion.value_or(0)];
+				auto configCs = Config::Instance()->CasColorSpaceConversion.value_or(0);
+
+				if (configCs < 0)
+					configCs = 0;
+				else if (configCs > 4)
+					configCs = 4;
+
+				const char* selectedCs = cs[configCs];
 
 				if (ImGui::BeginCombo("Color Space", selectedCs))
 				{
@@ -731,21 +732,15 @@ bool Imgui_Base::IsHandleDifferent()
 	DWORD procId;
 	GetWindowThreadProcessId(_handle, &procId);
 
-	if (processId == procId)
+	HWND frontWindow = GetForegroundWindow(); // Util::GetProcessWindow(); -- for linux compatibility
+
+	if (processId == procId && frontWindow == _handle)
 		return false;
-
-	HWND frontWindow = GetForegroundWindow(); // Util::GetProcessWindow();
-
-	if (frontWindow == nullptr || frontWindow == _handle)
-		return true;
 
 	GetWindowThreadProcessId(frontWindow, &procId);
 
-	if (processId == procId);
-	{
-		_handle = frontWindow;
-		return false;
-	}
+	_handle = frontWindow;
+	processId = procId;
 
 	return true;
 }
