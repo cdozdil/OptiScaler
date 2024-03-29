@@ -21,6 +21,7 @@ private:
 	D3D12_GPU_DESCRIPTOR_HANDLE _gpuUavHandle[2]{ { NULL }, { NULL } };
 	int _counter = 0;
 
+	ID3D12Device* _device = nullptr;
 	ID3D12Resource* _buffer = nullptr;
 	D3D12_RESOURCE_STATES _bufferState = D3D12_RESOURCE_STATE_COMMON;
 

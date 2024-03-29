@@ -170,9 +170,13 @@ bool CS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 	return true;
 }
 
-CS_Dx12::CS_Dx12(std::string InName, ID3D12Device* InDevice, std::string InShaderCode, std::string InEntry, std::string InTarget)
+CS_Dx12::CS_Dx12(std::string InName, ID3D12Device* InDevice, std::string InShaderCode, std::string InEntry, std::string InTarget) : _name(InName), _device(InDevice)
 {
-	_name = InName;
+	if (InDevice == nullptr)
+	{
+		spdlog::error("CS_Dx12::CS_Dx12 InDevice is nullptr!");
+		return;
+	}
 
 	spdlog::debug("CS_Dx12::CS_Dx12 {0} start!", _name);
 
@@ -310,6 +314,31 @@ CS_Dx12::~CS_Dx12()
 {
 	if (!_init)
 		return;
+
+	ID3D12Fence* d3d12Fence = nullptr;
+
+	do
+	{
+		if (_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence)) != S_OK)
+			break;
+
+		d3d12Fence->Signal(999);
+
+		HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+		if (fenceEvent != NULL && d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
+		{
+			WaitForSingleObject(fenceEvent, INFINITE);
+			CloseHandle(fenceEvent);
+		}
+
+	} while (false);
+
+	if (d3d12Fence != nullptr)
+	{
+		d3d12Fence->Release();
+		d3d12Fence = nullptr;
+	}
 
 	if (_rootSignature != nullptr)
 	{
