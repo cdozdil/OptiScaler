@@ -140,7 +140,7 @@ inline static FfxCas::FfxResourceDescription GetFfxResourceDescriptionDX12(ID3D1
 		if ((desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) == D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
 			resourceDescription.usage = (FfxCas::FfxResourceUsage)(resourceDescription.usage | FfxCas::FFX_RESOURCE_USAGE_UAV);
 
-		resourceDescription.width = desc.Width;
+		resourceDescription.width = (uint32_t)desc.Width;
 		resourceDescription.height = desc.Height;
 		resourceDescription.depth = desc.DepthOrArraySize;
 		resourceDescription.mipCount = desc.MipLevels;
@@ -150,6 +150,47 @@ inline static FfxCas::FfxResourceDescription GetFfxResourceDescriptionDX12(ID3D1
 	}
 
 	return resourceDescription;
+}
+
+
+
+void CAS_Dx12::Init()
+{
+	const size_t scratchBufferSize = FfxCas::ffxGetScratchMemorySizeDX12Cas(FFX_CAS_CONTEXT_COUNT);
+	void* casScratchBuffer = calloc(scratchBufferSize, 1);
+
+	auto errorCode = FfxCas::ffxGetInterfaceDX12Cas(&_contextDesc.backendInterface, Device, casScratchBuffer, scratchBufferSize, FFX_CAS_CONTEXT_COUNT);
+
+	if (errorCode != FfxCas::FFX_OK)
+	{
+		spdlog::error("CAS_Dx12::CAS_Dx12 ffxGetInterfaceDX12 error: {0}", ResultToString(errorCode));
+		_init = false;
+		return;
+	}
+
+	_contextDesc.flags |= FfxCas::FFX_CAS_SHARPEN_ONLY;
+
+	_contextDesc.colorSpaceConversion = static_cast<FfxCas::FfxCasColorSpaceConversion>(_colorSpace);
+	_contextDesc.maxRenderSize.width = _width + 16;		// Sometimes when using DLAA mode
+	_contextDesc.maxRenderSize.height = _height + 16;	// internal resolution is higher then display resolution
+	_contextDesc.displaySize.width = _width;
+	_contextDesc.displaySize.height = _height;
+
+	errorCode = FfxCas::ffxCasContextCreate(&_context, &_contextDesc);
+
+	if (errorCode != FfxCas::FFX_OK)
+	{
+		spdlog::error("CAS_Dx12::CAS_Dx12 ffxCasContextCreate error: {0}", ResultToString(errorCode));
+
+		_init = false;
+		free(_contextDesc.backendInterface.scratchBuffer);
+
+		return;
+	}
+
+	FfxCas::ffxAssertSetPrintingCallback(FfxCasLogCallback);
+
+	_init = true;
 }
 
 bool CAS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, D3D12_RESOURCE_STATES InState)
@@ -194,6 +235,7 @@ bool CAS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSo
 		return false;
 	}
 
+	_buffer->SetName(L"CAS_Buffer");
 	_bufferState = InState;
 
 	return true;
@@ -201,6 +243,9 @@ bool CAS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSo
 
 bool CAS_Dx12::Dispatch(ID3D12CommandList* InCommandList, float InSharpness, ID3D12Resource* InResource, ID3D12Resource* OutResource)
 {
+	if (!_init)
+		Init();
+
 	if (!_init || InCommandList == nullptr || InResource == nullptr || OutResource == nullptr || InSharpness <= 0.0f)
 		return false;
 
@@ -243,7 +288,7 @@ void CAS_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RE
 	_bufferState = InState;
 }
 
-CAS_Dx12::CAS_Dx12(ID3D12Device* InDevice, uint32_t InWidth, uint32_t InHeight, int colorSpace = 0)
+CAS_Dx12::CAS_Dx12(ID3D12Device* InDevice, uint32_t InWidth, uint32_t InHeight, int InColorSpace = 0)
 {
 	spdlog::debug("CAS_Dx12::CAS_Dx12 Start!");
 
@@ -255,47 +300,18 @@ CAS_Dx12::CAS_Dx12(ID3D12Device* InDevice, uint32_t InWidth, uint32_t InHeight, 
 
 	Device = InDevice;
 
-	const size_t scratchBufferSize = FfxCas::ffxGetScratchMemorySizeDX12Cas(FFX_CAS_CONTEXT_COUNT);
-	void* casScratchBuffer = calloc(scratchBufferSize, 1);
+	auto _colorSpace = InColorSpace;
 
-	auto errorCode = FfxCas::ffxGetInterfaceDX12Cas(&_contextDesc.backendInterface, InDevice, casScratchBuffer, scratchBufferSize, FFX_CAS_CONTEXT_COUNT);
-
-	if (errorCode != FfxCas::FFX_OK)
-	{
-		spdlog::error("CAS_Dx12::CAS_Dx12 ffxGetInterfaceDX12 error: {0}", ResultToString(errorCode));
-		_init = false;
-		return;
-	}
-
-	_contextDesc.flags |= FfxCas::FFX_CAS_SHARPEN_ONLY;
-
-	auto casCSC = colorSpace;
-
-	if (casCSC < 0 || casCSC > 4)
-		casCSC = 0;
+	if (_colorSpace < 0 || _colorSpace > 4)
+		_colorSpace = 0;
 
 	_width = InWidth;
 	_height = InHeight;
 
-	_contextDesc.colorSpaceConversion = static_cast<FfxCas::FfxCasColorSpaceConversion>(casCSC);
-	_contextDesc.maxRenderSize.width = InWidth + 16;		// Sometimes when using DLAA mode
-	_contextDesc.maxRenderSize.height = InHeight + 16;		// internal resolution is higher then display resolution
-	_contextDesc.displaySize.width = InWidth;
-	_contextDesc.displaySize.height = InHeight;
 
-	errorCode = FfxCas::ffxCasContextCreate(&_context, &_contextDesc);
-
-	if (errorCode != FfxCas::FFX_OK)
-	{
-		spdlog::error("CAS_Dx12::CAS_Dx12 ffxCasContextCreate error: {0}", ResultToString(errorCode));
-		_init = false;
-		return;
-	}
-
-	FfxCas::ffxAssertSetPrintingCallback(FfxCasLogCallback);
-
-	_init = true;
+	Init();
 }
+
 
 CAS_Dx12::~CAS_Dx12()
 {

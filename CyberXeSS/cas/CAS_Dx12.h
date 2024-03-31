@@ -14,6 +14,7 @@ private:
 	bool _init = false;
 	uint32_t _width = 0;
 	uint32_t _height = 0;
+	int _colorSpace;
 
 	FfxCas::FfxCasContext _context{};
 	FfxCas::FfxCasContextDescription _contextDesc{};
@@ -24,6 +25,8 @@ private:
 	D3D12_RESOURCE_STATES _bufferState = D3D12_RESOURCE_STATE_COMMON;
 
 
+	void Init();
+
 public:
 	bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, D3D12_RESOURCE_STATES InState);
 	void SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RESOURCE_STATES InState);
@@ -32,7 +35,7 @@ public:
 	ID3D12Resource* Buffer() { return _buffer; }
 	bool IsInit() const { return _init; }
 
-	CAS_Dx12(ID3D12Device* InDevice, uint32_t InWidth, uint32_t InHeight, int colorSpace);
+	CAS_Dx12(ID3D12Device* InDevice, uint32_t InWidth, uint32_t InHeight, int InColorSpace);
 
 	~CAS_Dx12();
 };

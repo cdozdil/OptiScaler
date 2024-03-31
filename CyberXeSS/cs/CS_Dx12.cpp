@@ -89,6 +89,8 @@ bool CS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
 		return false;
 	}
 
+	
+	_buffer->SetName(L"CS_Buffer");
 	_bufferState = InState;
 
 	return true;
