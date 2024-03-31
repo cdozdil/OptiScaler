@@ -210,8 +210,23 @@ Imgui_Dx12::~Imgui_Dx12()
 
 void Imgui_Dx12::CreateRenderTarget(const D3D12_RESOURCE_DESC& InDesc)
 {
-	for (UINT i = 0; i < 2; ++i) {
+	if (_renderTargetResource[0] != nullptr)
+	{
+		auto rtDesc = _renderTargetResource[0]->GetDesc();
 
+		if (InDesc.Width != rtDesc.Width || InDesc.Height != rtDesc.Height || InDesc.Format != rtDesc.Format)
+		{
+			_renderTargetResource[0]->Release();
+			_renderTargetResource[0] = nullptr;
+			_renderTargetResource[1]->Release();
+			_renderTargetResource[1] = nullptr;
+		}
+		else
+			return;
+	}
+
+	for (UINT i = 0; i < 2; ++i) 
+	{
 		D3D12_RESOURCE_DESC desc = {};
 		desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 		desc.Width = InDesc.Width;
@@ -224,12 +239,10 @@ void Imgui_Dx12::CreateRenderTarget(const D3D12_RESOURCE_DESC& InDesc)
 		desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 		desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
-
 		D3D12_HEAP_PROPERTIES heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 
 		ID3D12Resource* renderTarget;
 		auto result = _device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_RENDER_TARGET, nullptr, IID_PPV_ARGS(&renderTarget));
-
 
 		if (result == S_OK) {
 			renderTarget->SetName(L"Imgui_Dx12_renderTarget");

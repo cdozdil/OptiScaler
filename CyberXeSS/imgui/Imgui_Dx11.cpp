@@ -11,6 +11,20 @@ void Imgui_Dx11::CreateRenderTarget(ID3D11Resource* out)
 	D3D11_TEXTURE2D_DESC outDesc{};
 	outTexture2D->GetDesc(&outDesc);
 
+	if (_renderTargetTexture != nullptr)
+	{
+		D3D11_TEXTURE2D_DESC rtDesc;
+		_renderTargetTexture->GetDesc(&rtDesc);
+
+		if (outDesc.Width != rtDesc.Width || outDesc.Height != rtDesc.Height || outDesc.Format != rtDesc.Format)
+		{
+			_renderTargetTexture->Release();
+			_renderTargetTexture = nullptr;
+		}
+		else
+			return;
+	}
+
 	if ((outDesc.BindFlags & D3D11_BIND_RENDER_TARGET) > 0)
 	{
 		D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
