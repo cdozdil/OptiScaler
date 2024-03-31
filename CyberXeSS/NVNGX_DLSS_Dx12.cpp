@@ -4,6 +4,7 @@
 #include <ankerl/unordered_dense.h>
 #include <dxgi1_4.h>
 #include "imgui/imgui/imgui_impl_dx12.h"
+#include "detours/detours.h"
 
 #include "Config.h"
 #include "backends/xess/XeSSFeature_Dx12.h"
@@ -11,9 +12,77 @@
 #include "backends/fsr2_212/FSR2Feature_Dx12_212.h"
 #include "NVNGX_Parameter.h"
 
+typedef void(__fastcall* PFN_SetComputeRootSignature)(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature);
+
+static inline PFN_SetComputeRootSignature orgSetComputeRootSignature = nullptr;
+static inline PFN_SetComputeRootSignature orgSetGraphicRootSignature = nullptr;
+static inline ID3D12RootSignature* rootSigCompute = nullptr;
+static inline ID3D12RootSignature* rootSigGraphic = nullptr;
+static inline bool contextRendering = false;
+static inline ULONGLONG computeTime = 0;
+static inline ULONGLONG graphTime = 0;
+static inline ULONGLONG lastEvalTime = 0;
+
 inline ID3D12Device* D3D12Device = nullptr;
 static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
+
+inline static std::mutex RootSigatureMutex;
 inline HWND currentHwnd = nullptr;
+
+void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
+{
+	if (!contextRendering)
+	{
+		RootSigatureMutex.lock();
+		rootSigCompute = pRootSignature;
+		computeTime = GetTickCount64();
+		RootSigatureMutex.unlock();
+	}
+
+	return orgSetComputeRootSignature(commandList, pRootSignature);
+}
+
+void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
+{
+	if (!contextRendering)
+	{
+		RootSigatureMutex.lock();
+		rootSigGraphic = pRootSignature;
+		graphTime = GetTickCount64();
+		RootSigatureMutex.unlock();
+	}
+
+	return orgSetGraphicRootSignature(commandList, pRootSignature);
+}
+
+void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
+{
+	if (orgSetComputeRootSignature != nullptr)
+		return;
+
+	// Get the vtable pointer
+	PVOID* pVTable = *(PVOID**)InCmdList;
+
+	// Get the address of the SetComputeRootSignature function from the vtable
+	orgSetComputeRootSignature = (PFN_SetComputeRootSignature)pVTable[29];
+	orgSetGraphicRootSignature = (PFN_SetComputeRootSignature)pVTable[30];
+
+	// Apply the detour
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+	DetourAttach(&(PVOID&)orgSetComputeRootSignature, hkSetComputeRootSignature);
+	DetourAttach(&(PVOID&)orgSetGraphicRootSignature, hkSetGraphicRootSignature);
+	DetourTransactionCommit();
+}
+
+void UnhookSetComputeRootSignature()
+{
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+	DetourDetach(&(PVOID&)orgSetComputeRootSignature, hkSetComputeRootSignature);
+	DetourDetach(&(PVOID&)orgSetGraphicRootSignature, hkSetGraphicRootSignature);
+	DetourTransactionCommit();
+}
 
 #pragma region DLSS Init Calls
 
@@ -28,6 +97,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 
 	//if (InFeatureInfo)
 	//	Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
+
+	D3D12Device = InDevice;
 
 	Config::Instance()->Api = NVNGX_DX12;
 
@@ -89,6 +160,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 	Dx12Contexts.clear();
 
 	D3D12Device = nullptr;
+
+	UnhookSetComputeRootSignature();
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -262,7 +335,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 #pragma endregion
 
 	if (deviceContext->Init(D3D12Device, InParameters))
+	{
+		HookToCommandList(InCmdList);
 		return NVSDK_NGX_Result_Success;
+	}
 
 	spdlog::error("NVSDK_NGX_D3D12_CreateFeature: CreateFeature failed");
 	return NVSDK_NGX_Result_Fail;
@@ -303,6 +379,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetFeatureRequirements(IDXGIAdapt
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_Handle* InFeatureHandle, const NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
 {
+	auto evaluateStart = GetTickCount64();
+
+
 	spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature init!");
 
 	if (!InCmdList)
@@ -310,6 +389,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		spdlog::error("NVSDK_NGX_D3D12_EvaluateFeature InCmdList is null!!!");
 		return NVSDK_NGX_Result_Fail;
 	}
+
+	ID3D12RootSignature* orgComputeRootSig = nullptr;
+	ID3D12RootSignature* orgGraphicRootSig = nullptr;
+
+	RootSigatureMutex.lock();
+	orgComputeRootSig = rootSigCompute;
+	orgGraphicRootSig = rootSigGraphic;
+	RootSigatureMutex.unlock();
 
 	if (InCallback)
 		spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature callback exist");
@@ -374,7 +461,23 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		return NVSDK_NGX_Result_Success;
 	}
 
-	if (deviceContext->Evaluate(InCmdList, InParameters))
+	contextRendering = true;
+
+	bool evalResult = deviceContext->Evaluate(InCmdList, InParameters);
+
+	if (computeTime != 0 && computeTime > lastEvalTime && computeTime < evaluateStart && orgComputeRootSig != nullptr)
+		orgSetComputeRootSignature(InCmdList, orgComputeRootSig);
+
+	if (graphTime != 0 && graphTime > lastEvalTime && graphTime < evaluateStart && orgGraphicRootSig != nullptr)
+		orgSetGraphicRootSignature(InCmdList, orgGraphicRootSig);
+
+	contextRendering = false;
+	lastEvalTime = evaluateStart;
+
+	rootSigCompute = nullptr;
+	rootSigGraphic = nullptr;
+
+	if (evalResult)
 		return NVSDK_NGX_Result_Success;
 	else
 		return NVSDK_NGX_Result_Fail;
