@@ -59,11 +59,10 @@ bool Imgui_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTextur
 	if (!IsVisible())
 		return true;
 
+	CreateRenderTarget(outTexture);
+
 	if (!_dx11Init && ImGui::GetIO().BackendRendererUserData == nullptr)
-	{
-		CreateRenderTarget(outTexture);
 		_dx11Init = ImGui_ImplDX11_Init(_device, pCmdList);
-	}
 
 	if (!_dx11Init)
 		return false;

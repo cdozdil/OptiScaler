@@ -16,11 +16,10 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 
 	auto outDesc = outTexture->GetDesc();
 
+	CreateRenderTarget(outDesc);
+
 	if (!_dx12Init && ImGui::GetIO().BackendRendererUserData == nullptr)
-	{
-		CreateRenderTarget(outDesc);
 		_dx12Init = ImGui_ImplDX12_Init(_device, 2, outDesc.Format, _srvDescHeap, _srvDescHeap->GetCPUDescriptorHandleForHeapStart(), _srvDescHeap->GetGPUDescriptorHandleForHeapStart());
-	}
 
 	if (!_dx12Init)
 		return false;
@@ -30,7 +29,6 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 	auto backbuf = frameCounter % 2;
 
 	ImGui_ImplDX12_NewFrame();
-	Imgui_Base::RenderMenu();
 
 	D3D12_RENDER_TARGET_VIEW_DESC rtDesc = { };
 	rtDesc.Format = outDesc.Format;
@@ -48,12 +46,13 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 		pCmdList->ResourceBarrier(1, &outBarrier);
 
 		// Create RTV for out
-		_device->CreateRenderTargetView(outTexture, &rtDesc, _renderTargetDescriptor[backbuf]);
-
-		pCmdList->OMSetRenderTargets(1, &_renderTargetDescriptor[backbuf], FALSE, NULL);
 		pCmdList->SetDescriptorHeaps(1, &_srvDescHeap);
 
+		_device->CreateRenderTargetView(outTexture, &rtDesc, _renderTargetDescriptor[backbuf]);
+		pCmdList->OMSetRenderTargets(1, &_renderTargetDescriptor[backbuf], FALSE, NULL);
+
 		// Render
+		Imgui_Base::RenderMenu();
 		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
 
 		outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
@@ -63,12 +62,6 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 		return true;
 	}
 
-	// Create RTV for buffer
-	_device->CreateRenderTargetView(_renderTargetResource[backbuf], &rtDesc, _renderTargetDescriptor[backbuf]);
-
-	pCmdList->OMSetRenderTargets(1, &_renderTargetDescriptor[backbuf], FALSE, NULL);
-	pCmdList->SetDescriptorHeaps(1, &_srvDescHeap);
-
 	D3D12_RESOURCE_BARRIER outBarrier = { };
 	outBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	outBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -76,7 +69,6 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 	outBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 	outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 	outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
-	pCmdList->ResourceBarrier(1, &outBarrier);
 
 	D3D12_RESOURCE_BARRIER bufferBarrier = { };
 	bufferBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -85,7 +77,9 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 	bufferBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 	bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
-	pCmdList->ResourceBarrier(1, &bufferBarrier);
+
+	D3D12_RESOURCE_BARRIER barriers[] = { bufferBarrier, outBarrier };
+	pCmdList->ResourceBarrier(2, barriers);
 
 	// Copy out to buffer
 	pCmdList->CopyResource(_renderTargetResource[backbuf], outTexture);
@@ -95,16 +89,22 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 	bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	pCmdList->ResourceBarrier(1, &bufferBarrier);
 
+	// Create RTV for buffer
+	pCmdList->SetDescriptorHeaps(1, &_srvDescHeap);
+
+	_device->CreateRenderTargetView(_renderTargetResource[backbuf], &rtDesc, _renderTargetDescriptor[backbuf]);
+	pCmdList->OMSetRenderTargets(1, &_renderTargetDescriptor[backbuf], FALSE, nullptr);
+
 	// Render to buffer
+	Imgui_Base::RenderMenu();
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
 
 	outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
 	outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
-	pCmdList->ResourceBarrier(1, &outBarrier);
 
 	bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
-	pCmdList->ResourceBarrier(1, &bufferBarrier);
+	pCmdList->ResourceBarrier(2, barriers);
 
 	// Copy back buffer to out
 	pCmdList->CopyResource(outTexture, _renderTargetResource[backbuf]);
@@ -112,11 +112,10 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 	// fix states
 	bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
 	bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	pCmdList->ResourceBarrier(1, &bufferBarrier);
 
 	outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
 	outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-	pCmdList->ResourceBarrier(1, &outBarrier);
+	pCmdList->ResourceBarrier(2, barriers);
 
 	return true;
 }
@@ -131,6 +130,8 @@ Imgui_Dx12::Imgui_Dx12(HWND handle, ID3D12Device* pDevice) : Imgui_Base(handle),
 
 	if (pDevice->CreateDescriptorHeap(&rtvDesc, IID_PPV_ARGS(&_rtvDescHeap)) != S_OK)
 		return;
+
+	_rtvDescHeap->SetName(L"Imgui_Dx12_rtvHeap");
 
 	SIZE_T rtvDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = _rtvDescHeap->GetCPUDescriptorHandleForHeapStart();
@@ -147,6 +148,8 @@ Imgui_Dx12::Imgui_Dx12(HWND handle, ID3D12Device* pDevice) : Imgui_Base(handle),
 
 	if (pDevice->CreateDescriptorHeap(&srvDesc, IID_PPV_ARGS(&_srvDescHeap)) != S_OK)
 		return;
+
+	_srvDescHeap->SetName(L"Imgui_Dx12_srvDescHeap");
 }
 
 Imgui_Dx12::~Imgui_Dx12()
@@ -172,13 +175,10 @@ Imgui_Dx12::~Imgui_Dx12()
 
 	ImGui::SetCurrentContext(context);
 
-	if (auto currCtx = ImGui::GetCurrentContext(); currCtx && context != currCtx)
-	{
-		ImGui_ImplDX12_Shutdown();
+	ImGui_ImplDX12_Shutdown();
+
+	if (auto currCtx = ImGui::GetCurrentContext(); currCtx != nullptr && context != currCtx)
 		ImGui::SetCurrentContext(currCtx);
-	}
-	else
-		ImGui_ImplDX12_Shutdown();
 
 	// hackzor
 	std::this_thread::sleep_for(std::chrono::milliseconds(250));
@@ -224,12 +224,16 @@ void Imgui_Dx12::CreateRenderTarget(const D3D12_RESOURCE_DESC& InDesc)
 		desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 		desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
+
 		D3D12_HEAP_PROPERTIES heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 
 		ID3D12Resource* renderTarget;
 		auto result = _device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_RENDER_TARGET, nullptr, IID_PPV_ARGS(&renderTarget));
 
+
 		if (result == S_OK) {
+			renderTarget->SetName(L"Imgui_Dx12_renderTarget");
+
 			D3D12_RENDER_TARGET_VIEW_DESC rtDesc = { };
 			rtDesc.Format = InDesc.Format;
 			rtDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;

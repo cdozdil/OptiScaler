@@ -135,7 +135,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 
 	// CTRL + HOME
-	if (msg == WM_KEYDOWN && wParam == VK_INSERT && (GetKeyState(VK_SHIFT) & 0x8000))
+	if (msg == WM_KEYDOWN && wParam == VK_HOME) // && (GetKeyState(VK_SHIFT) & 0x8000))
 	{
 		_isVisible = !_isVisible;
 		io.MouseDrawCursor = _isVisible;
@@ -740,7 +740,6 @@ bool Imgui_Base::IsHandleDifferent()
 	GetWindowThreadProcessId(frontWindow, &procId);
 
 	_handle = frontWindow;
-	processId = procId;
 
 	return true;
 }
@@ -793,8 +792,11 @@ Imgui_Base::~Imgui_Base()
 	}
 	else
 	{
-		SetWindowLongPtr((HWND)ImGui::GetMainViewport()->PlatformHandleRaw, GWLP_WNDPROC, (LONG_PTR)_oWndProc);
-		_oWndProc = nullptr;
+		if (_oWndProc != nullptr)
+		{
+			SetWindowLongPtr((HWND)ImGui::GetMainViewport()->PlatformHandleRaw, GWLP_WNDPROC, (LONG_PTR)_oWndProc);
+			_oWndProc = nullptr;
+		}
 
 		if (pfn_SetCursorPos_hooked)
 			DetachHooks();
