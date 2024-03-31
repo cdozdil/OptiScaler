@@ -15,7 +15,9 @@ bool FSR2FeatureDx12_212::Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter
 
 	if(InitFSR2(InParameters))
 	{
-		Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+		if (Imgui == nullptr || Imgui.get() == nullptr)
+			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+		
 		return true;
 	}
 
@@ -269,15 +271,20 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 	}
 
 	// imgui
-	if (Imgui)
+	if (Imgui != nullptr && Imgui.get() != nullptr)
 	{
 		if (Imgui->IsHandleDifferent())
+		{
 			Imgui.reset();
+		}
 		else
 			Imgui->Render(InCommandList, paramOutput);
 	}
 	else
-		Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+	{
+		if (Imgui == nullptr || Imgui.get() == nullptr)
+			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+	}
 
 	// restore resource states
 	if (paramColor && Config::Instance()->ColorResourceBarrier.has_value())

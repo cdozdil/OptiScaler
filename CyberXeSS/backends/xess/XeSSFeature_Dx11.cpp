@@ -27,13 +27,22 @@ bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 
 	spdlog::debug("XeSSFeatureDx11::Init calling InitXeSS");
 
-	if (Dx12on11Device && !InitXeSS(Dx12on11Device, InParameters))
+	if (Dx12on11Device == nullptr)
+	{
+		spdlog::error("XeSSFeatureDx11::Init Dx12on11Device is null!");
+		return false;
+	}
+
+
+	if (!InitXeSS(Dx12on11Device, InParameters))
 	{
 		spdlog::error("XeSSFeatureDx11::Init InitXeSS fail!");
 		return false;
 	}
 
-	Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+	if (Imgui == nullptr || Imgui.get() == nullptr)
+		Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+
 	return true;
 }
 
@@ -101,6 +110,14 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	InParameters->Get(NVSDK_NGX_Parameter_Reset, &params.resetHistory);
 
 	GetRenderResolution(InParameters, &params.inputWidth, &params.inputHeight);
+
+	// UE5 weird color fix2
+	if (false && Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && Config::Instance()->NVNGX_EngineVersion5)
+	{
+		params.inputWidth -= (params.inputWidth % 2);
+		params.inputHeight -= (params.inputHeight % 2);
+	}
+
 	auto sharpness = GetSharpness(InParameters);
 
 	spdlog::debug("XeSSFeatureDx11::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
@@ -289,15 +306,20 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
 	// imgui
-	if (Imgui)
+	if (Imgui != nullptr && Imgui.get() != nullptr)
 	{
 		if (Imgui->IsHandleDifferent())
+		{
 			Imgui.reset();
+		}
 		else
-			Imgui->Render(DeviceContext, paramOutput);
+			Imgui->Render(InDeviceContext, paramOutput);
 	}
 	else
-		Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+	{
+		if (Imgui == nullptr || Imgui.get() == nullptr)
+			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+	}
 
 	Dx12CommandAllocator->Reset();
 	Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);

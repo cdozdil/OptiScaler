@@ -22,5 +22,10 @@ public:
 	{
 	}
 
+	void Shutdown() final
+	{
+		//
+	}
+
 	virtual ~IFeature_Vk() {}
 };

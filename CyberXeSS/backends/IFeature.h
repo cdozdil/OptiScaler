@@ -63,5 +63,6 @@ public:
 		_initParameters = SetInitParameters(InParameters);
 	}
 
+	virtual void Shutdown() = 0;
 	virtual ~IFeature() {}
 };

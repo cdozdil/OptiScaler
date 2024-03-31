@@ -19,13 +19,21 @@ bool FSR2FeatureDx11on12_212::Init(ID3D11Device* InDevice, ID3D11DeviceContext* 
 
 	spdlog::debug("FSR2FeatureDx11on12_212::Init calling InitFSR2");
 
-	if (Dx12on11Device && !InitFSR2(InParameters))
+	if (Dx12on11Device == nullptr)
+	{
+		spdlog::error("FSR2FeatureDx11on12_212::Init Dx12on11Device is null!");
+		return false;
+	}
+
+	if (!InitFSR2(InParameters))
 	{
 		spdlog::error("FSR2FeatureDx11on12_212::Init InitFSR2 fail!");
 		return false;
 	}
 
-	Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+	if (Imgui == nullptr || Imgui.get() == nullptr)
+		Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+
 	return true;
 }
 
@@ -175,15 +183,20 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 	}
 
 	// imgui
-	if (Imgui)
+	if (Imgui != nullptr && Imgui.get() != nullptr)
 	{
 		if (Imgui->IsHandleDifferent())
+		{
 			Imgui.reset();
+		}
 		else
 			Imgui->Render(InDeviceContext, paramOutput);
 	}
 	else
-		Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+	{
+		if (Imgui == nullptr || Imgui.get() == nullptr)
+			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+	}
 
 	Dx12CommandAllocator->Reset();
 	Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);

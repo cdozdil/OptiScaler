@@ -12,6 +12,12 @@ void IFeature_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID
 	InCommandList->ResourceBarrier(1, &barrier);
 }
 
+void IFeature_Dx12::Shutdown()
+{
+	if (Imgui == nullptr || Imgui.get() == nullptr)
+		Imgui.reset();
+}
+
 IFeature_Dx12::~IFeature_Dx12()
 {
 	if (Device)
@@ -41,7 +47,4 @@ IFeature_Dx12::~IFeature_Dx12()
 			d3d12Fence = nullptr;
 		}
 	}
-
-	if (Imgui)
-		Imgui.reset();
 }

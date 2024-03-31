@@ -15,7 +15,9 @@ bool XeSSFeatureDx12::Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* In
 
 	if (InitXeSS(InDevice, InParameters))
 	{
-		Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+		if (Imgui == nullptr || Imgui.get() == nullptr)
+			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+
 		return true;
 	}
 
@@ -69,6 +71,14 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	InParameters->Get(NVSDK_NGX_Parameter_Reset, &params.resetHistory);
 
 	GetRenderResolution(InParameters, &params.inputWidth, &params.inputHeight);
+
+	// UE5 weird color fix2
+	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && Config::Instance()->NVNGX_EngineVersion5)
+	{
+		params.inputWidth -= (params.inputWidth % 2);
+		params.inputHeight -= (params.inputHeight % 2);
+	}
+
 	auto sharpness = GetSharpness(InParameters);
 
 	spdlog::debug("XeSSFeatureDx12::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
@@ -81,6 +91,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	if (paramColor)
 	{
 		spdlog::debug("XeSSFeatureDx12::Evaluate Color exist..");
+		paramColor->SetName(L"paramColor");
 
 		if (Config::Instance()->ColorResourceBarrier.has_value())
 			ResourceBarrier(InCommandList, paramColor,
@@ -118,6 +129,8 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	if (params.pVelocityTexture)
 	{
 		spdlog::debug("XeSSFeatureDx12::Evaluate MotionVectors exist..");
+		params.pVelocityTexture->SetName(L"pVelocityTexture");
+
 
 		if (Config::Instance()->MVResourceBarrier.has_value())
 			ResourceBarrier(InCommandList, params.pVelocityTexture,
@@ -137,6 +150,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	if (paramOutput)
 	{
 		spdlog::debug("XeSSFeatureDx12::Evaluate Output exist..");
+		paramOutput->SetName(L"paramOutput");
 
 		if (Config::Instance()->OutputResourceBarrier.has_value())
 		{
@@ -170,6 +184,8 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	if (params.pDepthTexture)
 	{
 		spdlog::debug("XeSSFeatureDx12::Evaluate Depth exist..");
+		params.pDepthTexture->SetName(L"params.pDepthTexture");
+
 
 		if (Config::Instance()->DepthResourceBarrier.has_value())
 			ResourceBarrier(InCommandList, params.pDepthTexture,
@@ -281,20 +297,20 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 
 	// imgui
-	if (Imgui)
+	if (Imgui != nullptr && Imgui.get() != nullptr)
 	{
 		if (Imgui->IsHandleDifferent())
-			Imgui.reset();
-		else
 		{
-			if (OutputEncode->Buffer() != nullptr && Config::Instance()->ColorSpaceFix.value_or(false))
-				Imgui->Render(InCommandList, OutputEncode->Buffer());
-			else
-				Imgui->Render(InCommandList, paramOutput);
+			Imgui.reset();
 		}
+		else
+			Imgui->Render(InCommandList, paramOutput);
 	}
 	else
-		Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+	{
+		if (Imgui == nullptr || Imgui.get() == nullptr)
+			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+	}
 
 	if (OutputEncode->Buffer() && Config::Instance()->ColorSpaceFix.value_or(false))
 	{

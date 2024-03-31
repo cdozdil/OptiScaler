@@ -10,7 +10,7 @@ class IFeature_Dx12 : public virtual IFeature
 {
 protected:
 	ID3D12Device* Device = nullptr;
-	std::unique_ptr<Imgui_Dx12> Imgui = nullptr;
+	static inline std::unique_ptr<Imgui_Dx12> Imgui = nullptr;
 
 	void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState) const;
 
@@ -21,6 +21,8 @@ public:
 	IFeature_Dx12(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters)
 	{
 	}
+
+	void Shutdown() final;
 
 	~IFeature_Dx12();
 };
