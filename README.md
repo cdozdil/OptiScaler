@@ -8,7 +8,7 @@ I have adapted it to use Intel's [XeSS](https://github.com/intel/xess/) too.
 **With this branch:**
 * Added FSR 2.2.1 support for DX11 (Native or with DX12), DX12 and Vulkan
 * Added FSR 2.1.2 support for DX11 (with DX12), DX12 and Vulkan
-* Added Imgui in-game menu for DX11 & DX12
+* Added ImGui in-game menu for DX11 & DX12 (Shortcut key is **HOME**)
 * Added Unreal engine detection and autofixes
 * Added FidelityFX CAS shapening support, you can enable and adjust it from ini file.
 
