@@ -22,6 +22,8 @@ static inline bool contextRendering = false;
 static inline ULONGLONG computeTime = 0;
 static inline ULONGLONG graphTime = 0;
 static inline ULONGLONG lastEvalTime = 0;
+static inline NVSDK_NGX_Parameter* createParams;
+static inline int changeBackendCounter = 0;
 
 inline ID3D12Device* D3D12Device = nullptr;
 static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
@@ -381,7 +383,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 {
 	auto evaluateStart = GetTickCount64();
 
-
 	spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature init!");
 
 	if (!InCmdList)
@@ -402,17 +403,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature callback exist");
 
 	IFeature_Dx12* deviceContext = nullptr;
+	auto handleId = InFeatureHandle->Id;
 
 	if (Config::Instance()->changeBackend)
 	{
-		Config::Instance()->changeBackend = false;
-
 		// first release everything
-		auto handleId = InFeatureHandle->Id;
-		auto createParams = GetNGXParameters();
-
-		if (auto dc = Dx12Contexts[handleId].get(); dc)
+		if (Dx12Contexts.contains(handleId) && changeBackendCounter == 0)
 		{
+			auto dc = Dx12Contexts[handleId].get();
+
+			createParams = GetNGXParameters();
 			createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
 			createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
 			createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
@@ -420,39 +420,78 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 			createParams->Set(NVSDK_NGX_Parameter_OutHeight, dc->DisplayHeight());
 			createParams->Set(NVSDK_NGX_Parameter_PerfQualityValue, dc->PerfQualityValue());
 
+			dc = nullptr;
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+
 			Dx12Contexts[handleId].reset();
 			auto it = std::find_if(Dx12Contexts.begin(), Dx12Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 			Dx12Contexts.erase(it);
+
+			contextRendering = false;
+			lastEvalTime = evaluateStart;
+
+			rootSigCompute = nullptr;
+			rootSigGraphic = nullptr;
+
+			return NVSDK_NGX_Result_Success;
 		}
 
-		// prepare new upscaler
-		if (Config::Instance()->newBackend == "fsr22")
+		changeBackendCounter++;
+
+		if (changeBackendCounter == 1)
 		{
-			Config::Instance()->Dx12Upscaler = "fsr22";
-			spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature creating new FSR 2.2.1 feature");
-			Dx12Contexts[InFeatureHandle->Id] = std::make_unique<FSR2FeatureDx12>(InFeatureHandle->Id, createParams);
-		}
-		else if (Config::Instance()->newBackend == "fsr21")
-		{
-			Config::Instance()->Dx12Upscaler = "fsr21";
-			spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature creating new FSR 2.1.2 feature");
-			Dx12Contexts[InFeatureHandle->Id] = std::make_unique<FSR2FeatureDx12_212>(InFeatureHandle->Id, createParams);
-		}
-		else
-		{
-			Config::Instance()->Dx12Upscaler = "xess";
-			spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature creating new XeSS feature");
-			Dx12Contexts[InFeatureHandle->Id] = std::make_unique<XeSSFeatureDx12>(InFeatureHandle->Id, createParams);
+			// next frame create context
+			if (Config::Instance()->newBackend == "")
+				Config::Instance()->newBackend = Config::Instance()->Dx12Upscaler.value_or("xess");
+
+			// prepare new upscaler
+			if (Config::Instance()->newBackend == "fsr22")
+			{
+				Config::Instance()->Dx12Upscaler = "fsr22";
+				spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature creating new FSR 2.2.1 feature");
+				Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12>(handleId, createParams);
+			}
+			else if (Config::Instance()->newBackend == "fsr21")
+			{
+				Config::Instance()->Dx12Upscaler = "fsr21";
+				spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature creating new FSR 2.1.2 feature");
+				Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12_212>(handleId, createParams);
+			}
+			else
+			{
+				Config::Instance()->Dx12Upscaler = "xess";
+				spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature creating new XeSS feature");
+				Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, createParams);
+			}
+
+			return NVSDK_NGX_Result_Success;
 		}
 
-		auto initResult = Dx12Contexts[InFeatureHandle->Id].get()->Init(D3D12Device, createParams);
-		free(createParams);
+		if (changeBackendCounter == 2)
+		{
+			// anti crash :D
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-		if (!initResult)
-			return NVSDK_NGX_Result_Fail;
+			auto initResult = Dx12Contexts[handleId]->Init(D3D12Device, createParams);
+
+				// anti crash :D
+				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+			Config::Instance()->newBackend = "";
+			Config::Instance()->changeBackend = false;
+			free(createParams);
+			createParams = nullptr;
+			changeBackendCounter = 0;
+
+			if (!initResult)
+				return NVSDK_NGX_Result_Fail;
+		}
+
+		return NVSDK_NGX_Result_Success;
 	}
 
-	deviceContext = Dx12Contexts[InFeatureHandle->Id].get();
+	deviceContext = Dx12Contexts[handleId].get();
 	Config::Instance()->CurrentFeature = deviceContext;
 
 	if (deviceContext == nullptr)

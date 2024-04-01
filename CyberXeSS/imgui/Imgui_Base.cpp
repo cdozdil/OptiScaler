@@ -362,7 +362,10 @@ void Imgui_Base::RenderMenu()
 		flags |= ImGuiWindowFlags_NoCollapse;
 		flags |= ImGuiWindowFlags_MenuBar;
 
-		ImGui::SetNextWindowPos(ImVec2{ 350.0f, 300.0f }, ImGuiCond_FirstUseEver);
+		auto posX = (Config::Instance()->CurrentFeature->DisplayWidth() - 770.0f) / 2.0f;
+		auto posY = (Config::Instance()->CurrentFeature->DisplayHeight() - 525.0f) / 2.0f;
+
+		ImGui::SetNextWindowPos(ImVec2{ posX , posY }, ImGuiCond_FirstUseEver);
 		ImGui::SetNextWindowSize(ImVec2{ 770.0f, 525.0f }, ImGuiCond_FirstUseEver);
 
 		if (ImGui::Begin("CyberXeSS v0.4", nullptr, flags))
@@ -460,8 +463,24 @@ void Imgui_Base::RenderMenu()
 				}
 
 				ImGui::SameLine(0.0f, 6.0f);
-				if (bool dbg = Config::Instance()->xessDebug; ImGui::Checkbox("Debug Dump", &dbg))
+				if (bool dbg = Config::Instance()->xessDebug; ImGui::Checkbox("Dump", &dbg))
 					Config::Instance()->xessDebug = dbg;
+
+				ImGui::SameLine(0.0f, 6.0f);
+				int dbgCount = Config::Instance()->xessDebugFrames;
+
+				ImGui::PushItemWidth(85.0);
+				if (ImGui::InputInt("frames", &dbgCount))
+				{
+					if (dbgCount < 4)
+						dbgCount = 4;
+					else if (dbgCount > 999)
+						dbgCount = 999;
+
+					Config::Instance()->xessDebugFrames = dbgCount;
+				}
+
+				ImGui::PopItemWidth();
 
 				ImGui::BeginDisabled(!Config::Instance()->CasEnabled.value_or(true));
 

@@ -96,6 +96,7 @@ public:
 	bool changeCAS = false;
 	std::string newBackend = "";
 	bool xessDebug = false;
+	int xessDebugFrames = 5;
 	
 
 	void Reload();

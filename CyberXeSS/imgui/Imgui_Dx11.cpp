@@ -116,7 +116,7 @@ Imgui_Dx11::~Imgui_Dx11()
 		return;
 
 	ImGui::SetCurrentContext(context);
-	std::this_thread::sleep_for(std::chrono::milliseconds(250));
+	std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
 	if (auto currCtx = ImGui::GetCurrentContext(); currCtx && context != currCtx)
 	{
@@ -127,7 +127,7 @@ Imgui_Dx11::~Imgui_Dx11()
 		ImGui_ImplDX11_Shutdown();
 
 	// hackzor
-	std::this_thread::sleep_for(std::chrono::milliseconds(250));
+	std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
 	if (_renderTargetTexture)
 	{

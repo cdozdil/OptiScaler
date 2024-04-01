@@ -210,7 +210,6 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	}
 
 	CAS = std::make_unique<CAS_Dx12>(device, DisplayWidth(), DisplayHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
-
 	ColorDecode = std::make_unique<CS_Dx12>("ColorDecode", device, colorDecodeShaderCode.c_str(), "main", "cs_5_0");
 	OutputEncode = std::make_unique<CS_Dx12>("OutputEncode", device, outputEncodeShaderCode.c_str(), "main", "cs_5_0");
 
@@ -227,13 +226,13 @@ XeSSFeature::~XeSSFeature()
 		_xessContext = nullptr;
 	}
 
-	if (CAS != nullptr)
+	if (CAS != nullptr && CAS.get() != nullptr)
 		CAS.reset();
 
-	if (ColorDecode != nullptr)
+	if (ColorDecode != nullptr && ColorDecode.get() != nullptr)
 		ColorDecode.reset();
 
-	if (OutputEncode != nullptr)
+	if (OutputEncode != nullptr && OutputEncode.get() != nullptr)
 		OutputEncode.reset();
 }
 

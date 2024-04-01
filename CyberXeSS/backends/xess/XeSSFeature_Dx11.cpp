@@ -74,25 +74,30 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		spdlog::error("XeSSFeatureDx11::Evaluate xessDebug");
 
 		xess_dump_parameters_t dumpParams{};
-		dumpParams.frame_count = 3;
-		dumpParams.frame_idx = 1;
+		dumpParams.frame_count = Config::Instance()->xessDebugFrames;
+		dumpParams.frame_idx = dumpCount;
 		dumpParams.path = ".";
-		dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH | XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS;
+		dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH | XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS | XESS_DUMP_HISTORY | XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
+
+		if (!Config::Instance()->DisableReactiveMask.value_or(true))
+			dumpParams.dump_elements_mask |= XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
+
 		xessStartDump(_xessContext, &dumpParams);
 		Config::Instance()->xessDebug = false;
+		dumpCount += Config::Instance()->xessDebugFrames;
 	}
 
 	if (Config::Instance()->changeCAS)
 	{
 		if (CAS.get() != nullptr)
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(250));
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 			CAS.reset();
 		}
 		else
 		{
 			Config::Instance()->changeCAS = false;
-			std::this_thread::sleep_for(std::chrono::milliseconds(250));
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 			CAS = std::make_unique<CAS_Dx12>(Dx12on11Device, DisplayWidth(), DisplayHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
 		}
 	}

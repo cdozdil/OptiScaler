@@ -36,25 +36,30 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		spdlog::error("XeSSFeatureDx12::Evaluate xessDebug");
 
 		xess_dump_parameters_t dumpParams{};
-		dumpParams.frame_count = 3;
-		dumpParams.frame_idx = 1;
+		dumpParams.frame_count = Config::Instance()->xessDebugFrames;
+		dumpParams.frame_idx = dumpCount;
 		dumpParams.path = ".";
-		dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH | XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS;
+		dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH | XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS | XESS_DUMP_HISTORY;
+
+		if (!Config::Instance()->DisableReactiveMask.value_or(true))
+			dumpParams.dump_elements_mask |= XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
+
 		xessStartDump(_xessContext, &dumpParams);
 		Config::Instance()->xessDebug = false;
+		dumpCount += Config::Instance()->xessDebugFrames;		
 	}
 
 	if (Config::Instance()->changeCAS)
 	{
 		if (CAS.get() != nullptr)
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(250));
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 			CAS.reset();
 		}
 		else
 		{
 			Config::Instance()->changeCAS = false;
-			std::this_thread::sleep_for(std::chrono::milliseconds(250));
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 			CAS = std::make_unique<CAS_Dx12>(Device, DisplayWidth(), DisplayHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
 		}
 	}
@@ -73,11 +78,11 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	GetRenderResolution(InParameters, &params.inputWidth, &params.inputHeight);
 
 	// UE5 weird color fix2 - not helped :/
-	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && Config::Instance()->NVNGX_EngineVersion5)
-	{
-		params.inputWidth -= (params.inputWidth % 2);
-		params.inputHeight -= (params.inputHeight % 2);
-	}
+	//if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && Config::Instance()->NVNGX_EngineVersion5)
+	//{
+	//	params.inputWidth += (params.inputWidth % 2);
+	//	params.inputHeight += (params.inputHeight % 2);
+	//}
 
 	auto sharpness = GetSharpness(InParameters);
 
@@ -242,8 +247,8 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	_hasExposure = params.pExposureScaleTexture != nullptr;
 	_hasTM = params.pResponsivePixelMaskTexture != nullptr;
 
-	float MVScaleX;
-	float MVScaleY;
+	float MVScaleX = 1.0f;
+	float MVScaleY = 1.0f;
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
 		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
