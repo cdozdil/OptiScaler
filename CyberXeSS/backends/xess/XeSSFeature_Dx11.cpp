@@ -33,7 +33,6 @@ bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 		return false;
 	}
 
-
 	if (!InitXeSS(Dx12on11Device, InParameters))
 	{
 		spdlog::error("XeSSFeatureDx11::Init InitXeSS fail!");

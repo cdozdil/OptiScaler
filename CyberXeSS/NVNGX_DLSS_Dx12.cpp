@@ -475,8 +475,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 			auto initResult = Dx12Contexts[handleId]->Init(D3D12Device, createParams);
 
-				// anti crash :D
-				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+			// anti crash :D
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
 			Config::Instance()->newBackend = "";
 			Config::Instance()->changeBackend = false;
