@@ -8,6 +8,8 @@ void Imgui_Dx11::CreateRenderTarget(ID3D11Resource* out)
 	if (out->QueryInterface(IID_PPV_ARGS(&outTexture2D)) != S_OK)
 		return;
 
+	spdlog::debug("Imgui_Dx11::CreateRenderTarget");
+
 	D3D11_TEXTURE2D_DESC outDesc{};
 	outTexture2D->GetDesc(&outDesc);
 
@@ -73,6 +75,8 @@ bool Imgui_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTextur
 	if (!IsVisible())
 		return true;
 
+	spdlog::debug("Imgui_Dx11::Render");
+
 	CreateRenderTarget(outTexture);
 
 	if (!_dx11Init && ImGui::GetIO().BackendRendererUserData == nullptr)
@@ -115,19 +119,20 @@ Imgui_Dx11::~Imgui_Dx11()
 	if (!_dx11Init)
 		return;
 
+	spdlog::debug("Imgui_Dx11::~Imgui_Dx11");
+
 	ImGui::SetCurrentContext(context);
-	std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	spdlog::trace("Imgui_Dx11::~Imgui_Dx11 sleeping before ImGui_ImplDX11_Shutdown for 250ms");
+	std::this_thread::sleep_for(std::chrono::milliseconds(250));
+
+	ImGui_ImplDX11_Shutdown();
 
 	if (auto currCtx = ImGui::GetCurrentContext(); currCtx && context != currCtx)
-	{
-		ImGui_ImplDX11_Shutdown();
 		ImGui::SetCurrentContext(currCtx);
-	}
-	else
-		ImGui_ImplDX11_Shutdown();
 
 	// hackzor
-	std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	spdlog::trace("Imgui_Dx11::~Imgui_Dx11 sleeping after ImGui_ImplDX11_Shutdown for 250ms");
+	std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
 	if (_renderTargetTexture)
 	{

@@ -21,17 +21,17 @@ bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 
 	if (!BaseInit(InDevice, InContext, InParameters))
 	{
-		spdlog::debug("XeSSFeatureDx11::Init BaseInit failed!");
+		spdlog::error("XeSSFeatureDx11::Init BaseInit failed!");
 		return false;
 	}
-
-	spdlog::debug("XeSSFeatureDx11::Init calling InitXeSS");
 
 	if (Dx12on11Device == nullptr)
 	{
 		spdlog::error("XeSSFeatureDx11::Init Dx12on11Device is null!");
 		return false;
 	}
+
+	spdlog::debug("XeSSFeatureDx11::Init calling InitXeSS");
 
 	if (!InitXeSS(Dx12on11Device, InParameters))
 	{
@@ -40,7 +40,13 @@ bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 	}
 
 	if (Imgui == nullptr || Imgui.get() == nullptr)
+	{
+		spdlog::debug("XeSSFeatureDx11::Init Create Imgui!");
 		Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+	}
+
+	spdlog::trace("XeSSFeatureDx11::Init sleeping after XeSSContext creation for 500ms");
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
 	return true;
 }
@@ -90,13 +96,15 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	{
 		if (CAS.get() != nullptr)
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			spdlog::trace("XeSSFeatureDx11::Evaluate sleeping before CAS.reset() for 250ms");
+			std::this_thread::sleep_for(std::chrono::milliseconds(250));
 			CAS.reset();
 		}
 		else
 		{
 			Config::Instance()->changeCAS = false;
-			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			spdlog::trace("XeSSFeatureDx11::Evaluate sleeping before CAS creation for 250ms");
+			std::this_thread::sleep_for(std::chrono::milliseconds(250));
 			CAS = std::make_unique<CAS_Dx12>(Dx12on11Device, DisplayWidth(), DisplayHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
 		}
 	}
@@ -116,11 +124,11 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	GetRenderResolution(InParameters, &params.inputWidth, &params.inputHeight);
 
 	// UE5 weird color fix2
-	if (false && Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && Config::Instance()->NVNGX_EngineVersion5)
-	{
-		params.inputWidth -= (params.inputWidth % 2);
-		params.inputHeight -= (params.inputHeight % 2);
-	}
+	//if (false && Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && Config::Instance()->NVNGX_EngineVersion5)
+	//{
+	//	params.inputWidth -= (params.inputWidth % 2);
+	//	params.inputHeight -= (params.inputHeight % 2);
+	//}
 
 	auto sharpness = GetSharpness(InParameters);
 
@@ -139,6 +147,8 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 		return false;
 	}
+	else
+		spdlog::debug("XeSSFeatureDx11::Evaluate ProcessDx11Textures complete!");
 
 	if (Config::Instance()->ColorSpaceFix.value_or(false) &&
 		ColorDecode->CreateBufferResource(Dx12on11Device, dx11Color.Dx12Resource, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) &&
@@ -192,6 +202,8 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	params.pResponsivePixelMaskTexture = dx11Tm.Dx12Resource;
 	_hasTM = params.pResponsivePixelMaskTexture != nullptr;
 
+	spdlog::debug("XeSSFeatureDx11::Evaluate Textures -> params complete!");
+
 	float MVScaleX;
 	float MVScaleY;
 
@@ -230,6 +242,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	//apply cas
 	if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f)
 	{
+		spdlog::debug("XeSSFeatureDx11::Evaluate Apply CAS");
 		ResourceBarrier(Dx12CommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
 		if (Config::Instance()->ColorSpaceFix.value_or(false) && OutputEncode->CreateBufferResource(Dx12on11Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
@@ -272,6 +285,8 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 	if (OutputEncode->Buffer() && Config::Instance()->ColorSpaceFix.value_or(false))
 	{
+		spdlog::debug("XeSSFeatureDx11::Evaluate Apply Color Fix");
+
 		OutputEncode->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
 		if (CreateBufferResource(Dx12on11Device, dx11Out.Dx12Resource, &_outBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
@@ -304,26 +319,35 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		return false;
 	}
 
+	// imgui
+	if (_frameCount > 20)
+	{
+		if (Imgui != nullptr && Imgui.get() != nullptr)
+		{
+			spdlog::debug("XeSSFeatureDx11::Evaluate Apply Imgui");
+
+			if (Imgui->IsHandleDifferent())
+			{
+				spdlog::debug("XeSSFeatureDx11::Evaluate Imgui handle different, reset()!");
+				std::this_thread::sleep_for(std::chrono::milliseconds(250));
+				Imgui.reset();
+			}
+			else
+				Imgui->Render(InDeviceContext, paramOutput);
+		}
+		else
+		{
+			if (Imgui == nullptr || Imgui.get() == nullptr)
+				Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+		}
+	}
+
 	// Execute dx12 commands to process xess
 	Dx12CommandList->Close();
 	ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
 	Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
-	// imgui
-	if (Imgui != nullptr && Imgui.get() != nullptr)
-	{
-		if (Imgui->IsHandleDifferent())
-		{
-			Imgui.reset();
-		}
-		else
-			Imgui->Render(InDeviceContext, paramOutput);
-	}
-	else
-	{
-		if (Imgui == nullptr || Imgui.get() == nullptr)
-			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
-	}
+	_frameCount++;
 
 	Dx12CommandAllocator->Reset();
 	Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);

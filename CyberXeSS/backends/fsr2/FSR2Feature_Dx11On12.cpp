@@ -44,6 +44,8 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	if (!IsInited())
 		return false;
 
+	auto frame = _frameCount % 2;
+
 	ID3D11DeviceContext4* dc;
 	auto result = InDeviceContext->QueryInterface(IID_PPV_ARGS(&dc));
 
@@ -183,23 +185,28 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	}
 
 	// imgui
-	if (Imgui != nullptr && Imgui.get() != nullptr)
+	if (_frameCount > 20)
 	{
-		if (Imgui->IsHandleDifferent())
+		if (Imgui != nullptr && Imgui.get() != nullptr)
 		{
-			Imgui.reset();
+			if (Imgui->IsHandleDifferent())
+			{
+				Imgui.reset();
+			}
+			else
+				Imgui->Render(InDeviceContext, paramOutput);
 		}
 		else
-			Imgui->Render(InDeviceContext, paramOutput);
-	}
-	else
-	{
-		if (Imgui == nullptr || Imgui.get() == nullptr)
-			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+		{
+			if (Imgui == nullptr || Imgui.get() == nullptr)
+				Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+		}
 	}
 
 	Dx12CommandAllocator->Reset();
 	Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
+	_frameCount++;
 
 	return true;
 }

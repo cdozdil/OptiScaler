@@ -427,20 +427,25 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, const NVSDK_NGX_P
 	}
 
 	// imgui
-	if (Imgui != nullptr && Imgui.get() != nullptr)
+	if (_frameCount > 20)
 	{
-		if (Imgui->IsHandleDifferent())
+		if (Imgui != nullptr && Imgui.get() != nullptr)
 		{
-			Imgui.reset();
+			if (Imgui->IsHandleDifferent())
+			{
+				Imgui.reset();
+			}
+			else
+				Imgui->Render(InContext, paramOutput);
 		}
 		else
-			Imgui->Render(InContext, paramOutput);
+		{
+			if (Imgui == nullptr || Imgui.get() == nullptr)
+				Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+		}
 	}
-	else
-	{
-		if (Imgui == nullptr || Imgui.get() == nullptr)
-			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
-	}
+
+	_frameCount++;
 
 	return true;
 }

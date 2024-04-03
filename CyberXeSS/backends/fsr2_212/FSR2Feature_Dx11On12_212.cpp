@@ -44,6 +44,12 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 	if (!IsInited())
 		return false;
 
+	if (_frameCount == 1)
+	{
+		spdlog::trace("FSR2FeatureDx11on12_212::Evaluate sleeping before 2nd frame for 500ms");
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	}
+
 	ID3D11DeviceContext4* dc;
 	auto result = InDeviceContext->QueryInterface(IID_PPV_ARGS(&dc));
 
@@ -183,30 +189,37 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 	}
 
 	// imgui
-	if (Imgui != nullptr && Imgui.get() != nullptr)
+	if (_frameCount > 20)
 	{
-		if (Imgui->IsHandleDifferent())
+		if (Imgui != nullptr && Imgui.get() != nullptr)
 		{
-			Imgui.reset();
+			if (Imgui->IsHandleDifferent())
+			{
+				spdlog::debug("FSR2FeatureDx11on12_212::Evaluate Imgui handle different, reset()!");
+				std::this_thread::sleep_for(std::chrono::milliseconds(250));
+
+				Imgui.reset();
+			}
+			else
+				Imgui->Render(InDeviceContext, paramOutput);
 		}
 		else
-			Imgui->Render(InDeviceContext, paramOutput);
-	}
-	else
-	{
-		if (Imgui == nullptr || Imgui.get() == nullptr)
-			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+		{
+			if (Imgui == nullptr || Imgui.get() == nullptr)
+				Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+		}
 	}
 
 	Dx12CommandAllocator->Reset();
 	Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
+	_frameCount++;
 
 	return true;
 }
 
 FSR2FeatureDx11on12_212::~FSR2FeatureDx11on12_212()
 {
-	spdlog::debug("FSR2FeatureDx11on12_212::~FSR2FeatureDx11on12_212");
 }
 
 bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
@@ -318,6 +331,9 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		spdlog::error("FSR2FeatureDx11on12_212::InitFSR2 ffxFsr2ContextCreate error: {0}", ResultToString212(ret));
 		return false;
 	}
+
+	spdlog::trace("FSR2FeatureDx11on12_212::InitFSR2 sleeping after ffxFsr2ContextCreate creation for 500ms");
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
 	SetInit(true);
 

@@ -82,7 +82,7 @@
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)CyberXess\cas\lib;$(SolutionDir)CyberXess\fsr2\lib;$(SolutionDir)CyberXess\fsr2_212\lib;$(SolutionDir)CyberXess\vulkan;$(SolutionDir)external\xess\lib;$(SolutionDir)CyberXess\d3dx;$(LibraryPath)</LibraryPath>
     <TargetName>nvngx</TargetName>
-    <OutDir>D:\Folders\Games\Cyberpunk 2077\bin\x64\</OutDir>
+    <OutDir>E:\Games\God of War\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

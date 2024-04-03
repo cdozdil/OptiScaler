@@ -30,6 +30,7 @@ protected:
 	int _initFlags = 0;
 	unsigned int _renderWidth = 0;
 	unsigned int _renderHeight = 0;
+	long _frameCount = 0;
 
 	bool SetInitParameters(const NVSDK_NGX_Parameter* InParameters);
 	void GetRenderResolution(const NVSDK_NGX_Parameter* InParameters, unsigned int* OutWidth, unsigned int* OutHeight);

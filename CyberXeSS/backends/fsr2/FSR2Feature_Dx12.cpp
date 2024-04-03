@@ -263,19 +263,22 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 
 	// imgui
-	if (Imgui != nullptr && Imgui.get() != nullptr)
+	if (_frameCount > 20)
 	{
-		if (Imgui->IsHandleDifferent())
+		if (Imgui != nullptr && Imgui.get() != nullptr)
 		{
-			Imgui.reset();
+			if (Imgui->IsHandleDifferent())
+			{
+				Imgui.reset();
+			}
+			else
+				Imgui->Render(InCommandList, paramOutput);
 		}
 		else
-			Imgui->Render(InCommandList, paramOutput);
-	}
-	else
-	{
-		if (Imgui == nullptr || Imgui.get() == nullptr)
-			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+		{
+			if (Imgui == nullptr || Imgui.get() == nullptr)
+				Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+		}
 	}
 
 	// restore resource states
@@ -308,6 +311,8 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		ResourceBarrier(InCommandList, paramMask,
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value());
+
+	_frameCount++;
 
 	return true;
 }

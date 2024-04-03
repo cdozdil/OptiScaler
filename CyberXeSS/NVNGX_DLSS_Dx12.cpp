@@ -422,7 +422,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 			dc = nullptr;
 
-			std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+			spdlog::trace("NVSDK_NGX_D3D12_EvaluateFeature sleeping before reset of current feature for 1000ms");
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
 			Dx12Contexts[handleId].reset();
 			auto it = std::find_if(Dx12Contexts.begin(), Dx12Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
@@ -470,13 +471,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 		if (changeBackendCounter == 2)
 		{
-			// anti crash :D
-			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
 			auto initResult = Dx12Contexts[handleId]->Init(D3D12Device, createParams);
-
-			// anti crash :D
-			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
 			Config::Instance()->newBackend = "";
 			Config::Instance()->changeBackend = false;

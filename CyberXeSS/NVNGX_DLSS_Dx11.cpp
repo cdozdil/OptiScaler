@@ -206,38 +206,17 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 	if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "xess")
 	{
 		spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new XeSS with Dx12 feature");
-
-		// anti crash :D
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
 		Dx11Contexts[handleId] = std::make_unique<XeSSFeatureDx11>(handleId, InParameters);
-
-		// anti crash :D
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
 	else if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "fsr22_12")
 	{
 		spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new FSR 2.2.1 with Dx12 feature");
-
-		// anti crash :D
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
 		Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12>(handleId, InParameters);
-
-		// anti crash :D
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
 	else if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "fsr21_12")
 	{
 		spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new FSR 2.1.2 with Dx12 feature");
-
-		// anti crash :D
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
 		Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12_212>(handleId, InParameters);
-
-		// anti crash :D
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
 	else
 	{
@@ -278,6 +257,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* 
 
 	if (auto deviceContext = Dx11Contexts[handleId].get(); deviceContext)
 	{
+		spdlog::trace("NVSDK_NGX_D3D11_ReleaseFeature sleeping for 250ms before reset()!");
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
 		Dx11Contexts[handleId].reset();
 		auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 		Dx11Contexts.erase(it);
@@ -332,6 +314,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 			createParams->Set(NVSDK_NGX_Parameter_OutHeight, dc->DisplayHeight());
 			createParams->Set(NVSDK_NGX_Parameter_PerfQualityValue, dc->PerfQualityValue());
 
+			spdlog::trace("NVSDK_NGX_D3D11_EvaluateFeature sleeping before reset of current feature for 1000ms");
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
 			Dx11Contexts[handleId].reset();
 			auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 			Dx11Contexts.erase(it);
@@ -372,19 +357,22 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 				Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11>(handleId, createParams);
 			}
 
+			if (Config::Instance()->newBackend != "fsr22")
+			{
+				spdlog::trace("NVSDK_NGX_D3D11_EvaluateFeature sleeping after new creation of new feature for 1000ms");
+				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+			}
+
 			return NVSDK_NGX_Result_Success;
 		}
 
 
 		if (changeBackendCounter == 2)
 		{
-			// anti crash :D
-			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
 			// then init and continue
 			auto initResult = Dx11Contexts[handleId]->Init(D3D11Device, InDevCtx, createParams);
 
-			// anti crash :D
+			spdlog::trace("NVSDK_NGX_D3D11_EvaluateFeature sleeping after new Init of new feature for 1000ms");
 			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
 			free(createParams);

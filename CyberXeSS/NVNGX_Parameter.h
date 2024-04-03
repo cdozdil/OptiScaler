@@ -226,11 +226,12 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	InParams->Set(NVSDK_NGX_EParameter_SizeInBytes, Width * Height * 31);
 	InParams->Set(NVSDK_NGX_EParameter_DLSSMode, NVSDK_NGX_DLSS_Mode_DLSS_DLISP);
 
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, (uint32_t)0);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, (uint32_t)0);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, (uint32_t)0);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, (uint32_t)0);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, (uint32_t)0);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_A);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_A);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_A);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_A);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_A);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_A);
 
 	spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback: Output Resolution: {0}x{1} Render Resolution: {2}x{3}", Width, Height, OutWidth, OutHeight);
 	return NVSDK_NGX_Result_Success;

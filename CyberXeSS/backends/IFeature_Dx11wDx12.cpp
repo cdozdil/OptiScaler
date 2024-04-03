@@ -12,7 +12,7 @@ do {						\
 	}						\
 } while((void)0, 0)	
 
-void IFeature_Dx11wDx12::ResourceBarrier(ID3D12GraphicsCommandList * commandList, ID3D12Resource * resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
+void IFeature_Dx11wDx12::ResourceBarrier(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
 {
 	D3D12_RESOURCE_BARRIER barrier = {};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -124,12 +124,12 @@ void IFeature_Dx11wDx12::ReleaseSharedResources()
 	SAFE_RELEASE(dx11Tm.Dx12Resource);
 	SAFE_RELEASE(dx11Exp.Dx12Resource);
 
+	SAFE_RELEASE(paramOutput);
+
 	SAFE_RELEASE(Dx12CommandList);
 	SAFE_RELEASE(Dx12CommandQueue);
 	SAFE_RELEASE(Dx12CommandAllocator);
 	SAFE_RELEASE(Dx12on11Device);
-
-	SAFE_RELEASE(paramOutput);
 }
 
 void IFeature_Dx11wDx12::GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter)
@@ -205,65 +205,74 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
 {
 	spdlog::debug("IFeature_Dx11wDx12::CreateDx12Device");
 
-	if (Dx12on11Device)
-		return S_OK;
-
 	HRESULT result;
 
-	IDXGIFactory4* factory;
-	result = CreateDXGIFactory2(0, IID_PPV_ARGS(&factory));
-
-	if (result != S_OK)
+	if (Dx12on11Device == nullptr)
 	{
-		spdlog::error("IFeature_Dx11wDx12::CreateDx12Device Can't create factory: {0:x}", result);
-		return result;
+		IDXGIFactory4* factory;
+		result = CreateDXGIFactory2(0, IID_PPV_ARGS(&factory));
+
+		if (result != S_OK)
+		{
+			spdlog::error("IFeature_Dx11wDx12::CreateDx12Device Can't create factory: {0:x}", result);
+			return result;
+		}
+
+		IDXGIAdapter* hardwareAdapter = nullptr;
+		GetHardwareAdapter(factory, &hardwareAdapter, InFeatureLevel, true);
+
+		if (hardwareAdapter == nullptr)
+		{
+			spdlog::error("IFeature_Dx11wDx12::CreateDx12Device Can't get hardwareAdapter!");
+			return E_NOINTERFACE;
+		}
+
+		result = D3D12CreateDevice(hardwareAdapter, InFeatureLevel, IID_PPV_ARGS(&Dx12on11Device));
+
+		if (result != S_OK)
+		{
+			spdlog::error("IFeature_Dx11wDx12::CreateDx12Device Can't create device: {0:x}", result);
+			return result;
+		}
 	}
 
-	IDXGIAdapter* hardwareAdapter = nullptr;
-	GetHardwareAdapter(factory, &hardwareAdapter, InFeatureLevel, true);
-
-	if (hardwareAdapter == nullptr)
+	if (Dx12CommandQueue == nullptr)
 	{
-		spdlog::error("IFeature_Dx11wDx12::CreateDx12Device Can't get hardwareAdapter!");
-		return E_NOINTERFACE;
+		D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+		queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+		queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+		// CreateCommandQueue
+		result = Dx12on11Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&Dx12CommandQueue));
+
+		if (result != S_OK || Dx12CommandQueue == nullptr)
+		{
+			spdlog::debug("IFeature_Dx11wDx12::CreateDx12Device CreateCommandQueue result: {0:x}", result);
+			return E_NOINTERFACE;
+		}
 	}
 
-	result = D3D12CreateDevice(hardwareAdapter, InFeatureLevel, IID_PPV_ARGS(&Dx12on11Device));
-
-	if (result != S_OK)
+	if (Dx12CommandAllocator == nullptr)
 	{
-		spdlog::error("IFeature_Dx11wDx12::CreateDx12Device Can't create device: {0:x}", result);
-		return result;
+		result = Dx12on11Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&Dx12CommandAllocator));
+
+		if (result != S_OK)
+		{
+			spdlog::error("IFeature_Dx11wDx12::CreateDx12Device CreateCommandAllocator error: {0:x}", result);
+			return E_NOINTERFACE;
+		}
 	}
 
-	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-
-	// CreateCommandQueue
-	result = Dx12on11Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&Dx12CommandQueue));
-
-	if (result != S_OK || Dx12CommandQueue == nullptr)
+	if (Dx12CommandList == nullptr)
 	{
-		spdlog::debug("IFeature_Dx11wDx12::CreateDx12Device CreateCommandQueue result: {0:x}", result);
-		return E_NOINTERFACE;
-	}
+		// CreateCommandList
+		result = Dx12on11Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, Dx12CommandAllocator, nullptr, IID_PPV_ARGS(&Dx12CommandList));
 
-	result = Dx12on11Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&Dx12CommandAllocator));
-
-	if (result != S_OK)
-	{
-		spdlog::error("IFeature_Dx11wDx12::CreateDx12Device CreateCommandAllocator error: {0:x}", result);
-		return E_NOINTERFACE;
-	}
-
-	// CreateCommandList
-	result = Dx12on11Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, Dx12CommandAllocator, nullptr, IID_PPV_ARGS(&Dx12CommandList));
-
-	if (result != S_OK)
-	{
-		spdlog::error("IFeature_Dx11wDx12::CreateDx12Device CreateCommandList error: {0:x}", result);
-		return E_NOINTERFACE;
+		if (result != S_OK)
+		{
+			spdlog::error("IFeature_Dx11wDx12::CreateDx12Device CreateCommandList error: {0:x}", result);
+			return E_NOINTERFACE;
+		}
 	}
 
 	return S_OK;
@@ -283,7 +292,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 	ID3D11Query* query0 = nullptr;
 
 	// 3 is query sync
-	if (Config::Instance()->UseSafeSyncQueries.value_or(1) < 4)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(1) < 4 && _frameCount > 20)
 	{
 		fr = Dx11Device->CreateFence(0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(&dx11fence_1));
 
@@ -315,7 +324,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
 		if (result != S_OK)
 		{
-			spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures CreateFence d3d12fence error: {0:x}", result);
+			spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures CreateFence d3d12fence error: {0:x}", result);
 			return false;
 		}
 
@@ -332,6 +341,8 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 	}
 
 #pragma region Texture copies
+
+	auto frame = _frameCount % 2;
 
 	ID3D11Resource* paramColor;
 	if (InParameters->Get(NVSDK_NGX_Parameter_Color, &paramColor) != NVSDK_NGX_Result_Success)
@@ -427,23 +438,44 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 		else
 			spdlog::warn("IFeature_Dx11wDx12::ProcessDx11Textures bias mask not exist and its enabled in config, it may cause problems!!");
 	}
+	else
+		spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures DisableReactiveMask enabled!");
 
 #pragma endregion
 
 	// 3 is query sync
-	if (Config::Instance()->UseSafeSyncQueries.value_or(1) < 4)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(1) < 4 && _frameCount > 20)
 	{
 		if (Config::Instance()->UseSafeSyncQueries.value_or(1) > 1)
+		{
+			spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Dx11DeviceContext->Flush()!");
 			Dx11DeviceContext->Flush();
+		}
 
 		if (Config::Instance()->UseSafeSyncQueries.value_or(1) > 0)
 		{
-			Dx11DeviceContext->Signal(dx11fence_1, 10);
-			Dx12CommandQueue->Wait(dx12fence_1, 10);
+			spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Dx11 Signal & Dx12 Wait!");
+
+			fr = Dx11DeviceContext->Signal(dx11fence_1, 10);
+
+			if (fr != S_OK)
+			{
+				spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures Dx11DeviceContext->Signal(dx11fence_1, 10) : {0:x}!", fr);
+				return false;
+			}
+
+			fr = Dx12CommandQueue->Wait(dx12fence_1, 10);
+
+			if (fr != S_OK)
+			{
+				spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures Dx12CommandQueue->Wait(dx12fence_1, 10) : {0:x}!", fr);
+				return false;
+			}
 		}
 	}
 	else
 	{
+		spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Queries!");
 		DeviceContext->End(query0);
 		DeviceContext->Flush();
 
@@ -455,6 +487,8 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 	}
 
 #pragma region shared handles
+
+	spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures SharedHandles start!");
 
 	if (paramColor)
 	{
@@ -470,9 +504,6 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
 			dx11Color.Dx12Handle = dx11Color.Dx11Handle;
 		}
-
-		auto colorDesc = dx11Color.Dx12Resource->GetDesc();
-		spdlog::debug("XeSSFeatureDx11::Evaluate Color Resolution: {0}x{1}", colorDesc.Width, colorDesc.Height);
 	}
 
 	if (paramMv)
@@ -569,8 +600,10 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 	pQueryDesc.Query = D3D11_QUERY_EVENT;
 	pQueryDesc.MiscFlags = 0;
 
+	auto frame = _frameCount % 2;
+
 	// dispatch fences
-	if (Config::Instance()->UseSafeSyncQueries.value_or(1) < 4)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(1) < 4 && _frameCount > 20)
 	{
 		auto fr = Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&dx12fence_2));
 
@@ -637,7 +670,13 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 	}
 	else
 	{
-		Dx12CommandQueue->Signal(dx12fence_1, 20);
+		auto fr = Dx12CommandQueue->Signal(dx12fence_1, 20);
+
+		if (fr != S_OK)
+		{
+			spdlog::error("IFeature_Dx11wDx12::CopyBackOutput Dx12CommandQueue->Signal(dx12fence_1, 20) : {0:x}!", fr);
+			return false;
+		}
 
 		// wait for end of operation
 		if (dx12fence_1->GetCompletedValue() < 20)
@@ -646,7 +685,14 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 
 			if (fenceEvent12)
 			{
-				dx12fence_1->SetEventOnCompletion(20, fenceEvent12);
+				fr = dx12fence_1->SetEventOnCompletion(20, fenceEvent12);
+
+				if (fr != S_OK)
+				{
+					spdlog::error("IFeature_Dx11wDx12::CopyBackOutput dx12fence_1->SetEventOnCompletion(20, fenceEvent12) : {0:x}!", fr);
+					return false;
+				}
+
 				WaitForSingleObject(fenceEvent12, INFINITE);
 				CloseHandle(fenceEvent12);
 			}
@@ -728,12 +774,15 @@ bool IFeature_Dx11wDx12::BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* I
 		return false;
 	}
 
-	if (!Dx12on11Device)
+	if (Dx12on11Device == nullptr)
 	{
 		auto fl = Dx11Device->GetFeatureLevel();
 		auto result = CreateDx12Device(fl);
 
-		if (result != S_OK || !Dx12on11Device)
+		spdlog::trace("IFeature_Dx11wDx12::BaseInit sleeping after CreateDx12Device for 500ms");
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+		if (result != S_OK || Dx12on11Device == nullptr)
 		{
 			spdlog::error("IFeature_Dx11wDx12::BaseInit QueryInterface Dx12Device result: {0:x}", result);
 			return false;
@@ -783,4 +832,7 @@ IFeature_Dx11wDx12::~IFeature_Dx11wDx12()
 	}
 
 	ReleaseSharedResources();
+
+	spdlog::trace("IFeature_Dx11wDx12::~IFeature_Dx11wDx12 sleeping for 500ms");
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }

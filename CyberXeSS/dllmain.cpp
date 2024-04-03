@@ -107,7 +107,7 @@ static void PrepareLogger()
 			shared_logger->set_level(spdlog::level::level_enum::trace);
 
 #if _DEBUG
-			shared_logger->flush_on(spdlog::level::debug);
+			shared_logger->flush_on(spdlog::level::trace);
 #else
 			shared_logger->flush_on(spdlog::level::err);
 #endif // _DEBUG

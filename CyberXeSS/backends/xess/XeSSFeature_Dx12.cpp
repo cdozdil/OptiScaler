@@ -53,13 +53,15 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	{
 		if (CAS.get() != nullptr)
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			spdlog::trace("XeSSFeatureDx12::Evaluate sleeping before CAS.reset() for 250ms");
+			std::this_thread::sleep_for(std::chrono::milliseconds(250));
 			CAS.reset();
 		}
 		else
 		{
 			Config::Instance()->changeCAS = false;
-			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			spdlog::trace("XeSSFeatureDx12::Evaluate sleeping before CAS creation for 250ms");
+			std::this_thread::sleep_for(std::chrono::milliseconds(250));
 			CAS = std::make_unique<CAS_Dx12>(Device, DisplayWidth(), DisplayHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
 		}
 	}
@@ -301,19 +303,22 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 
 	// imgui
-	if (Imgui != nullptr && Imgui.get() != nullptr)
+	if (_frameCount > 20)
 	{
-		if (Imgui->IsHandleDifferent())
+		if (Imgui != nullptr && Imgui.get() != nullptr)
 		{
-			Imgui.reset();
+			if (Imgui->IsHandleDifferent())
+			{
+				Imgui.reset();
+			}
+			else
+				Imgui->Render(InCommandList, paramOutput);
 		}
 		else
-			Imgui->Render(InCommandList, paramOutput);
-	}
-	else
-	{
-		if (Imgui == nullptr || Imgui.get() == nullptr)
-			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+		{
+			if (Imgui == nullptr || Imgui.get() == nullptr)
+				Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+		}
 	}
 
 	if (OutputEncode->Buffer() && Config::Instance()->ColorSpaceFix.value_or(false))
@@ -352,6 +357,8 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		ResourceBarrier(InCommandList, params.pResponsivePixelMaskTexture,
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			(D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value());
+
+	_frameCount++;
 
 	return true;
 }
