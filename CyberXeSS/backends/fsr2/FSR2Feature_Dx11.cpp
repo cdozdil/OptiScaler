@@ -325,7 +325,12 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, const NVSDK_NGX_P
 		if (paramExp)
 			spdlog::debug("FSR2FeatureDx11::Evaluate ExposureTexture exist..");
 		else
+		{
 			spdlog::debug("FSR2FeatureDx11::Evaluate AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
+			Config::Instance()->AutoExposure = true;
+			Config::Instance()->changeBackend = true;
+			return true;
+		}
 
 		params.exposure = ffxGetResourceDX11(&_context, paramExp, (wchar_t*)L"FSR2_Exposure");
 	}

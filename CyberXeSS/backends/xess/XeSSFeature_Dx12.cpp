@@ -216,7 +216,12 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		if (params.pExposureScaleTexture)
 			spdlog::debug("XeSSFeatureDx12::Evaluate ExposureTexture exist..");
 		else
-			spdlog::debug("XeSSFeatureDx12::Evaluate AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
+		{
+			spdlog::warn("XeSSFeatureDx12::Evaluate AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
+			Config::Instance()->AutoExposure = true;
+			Config::Instance()->changeBackend = true;
+			return true;
+		}
 
 		if (Config::Instance()->ExposureResourceBarrier.has_value())
 			ResourceBarrier(InCommandList, params.pExposureScaleTexture,

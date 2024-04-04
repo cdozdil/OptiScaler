@@ -418,7 +418,11 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 				return false;
 		}
 		else
+		{
 			spdlog::warn("IFeature_Dx11wDx12::ProcessDx11Textures AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
+			Config::Instance()->AutoExposure = true;
+			Config::Instance()->changeBackend = true;
+		}
 	}
 	else
 		spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures AutoExposure enabled!");

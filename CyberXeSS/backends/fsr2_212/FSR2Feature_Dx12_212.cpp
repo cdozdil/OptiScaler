@@ -153,7 +153,12 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 		if (paramExp)
 			spdlog::debug("FSR2FeatureDx12_212::Evaluate ExposureTexture exist..");
 		else
+		{
 			spdlog::debug("FSR2FeatureDx12_212::Evaluate AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
+			Config::Instance()->AutoExposure = true;
+			Config::Instance()->changeBackend = true;
+			return true;
+		}
 
 		if (Config::Instance()->ExposureResourceBarrier.has_value())
 			ResourceBarrier(InCommandList, paramExp,
