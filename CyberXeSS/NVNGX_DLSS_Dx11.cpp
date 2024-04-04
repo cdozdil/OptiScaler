@@ -192,7 +192,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetScratchBufferSize(NVSDK_NGX_Fe
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext* InDevCtx, NVSDK_NGX_Feature InFeatureID, NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Handle** OutHandle)
 {
-	spdlog::info("NVSDK_NGX_D3D11_CreateFeature");
 
 	if (InFeatureID != NVSDK_NGX_Feature_SuperSampling)
 	{
@@ -202,6 +201,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 
 	// Create feature
 	auto handleId = IFeature::GetNextHandleId();
+	spdlog::info("NVSDK_NGX_D3D11_CreateFeature HandleId: {0}", handleId);
 
 	if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "xess")
 	{
@@ -254,6 +254,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* 
 		return NVSDK_NGX_Result_Success;
 
 	auto handleId = InHandle->Id;
+	spdlog::info("NVSDK_NGX_D3D11_ReleaseFeature releasing feature with id {0}", handleId);
 
 	if (auto deviceContext = Dx11Contexts[handleId].get(); deviceContext)
 	{
@@ -292,7 +293,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 	}
 
 	if (InCallback)
-		spdlog::warn("NVSDK_NGX_D3D11_EvaluateFeature callback exist");
+		spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature callback exist");
 
 	IFeature_Dx11* deviceContext = nullptr;
 
@@ -300,6 +301,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 
 	if (Config::Instance()->changeBackend)
 	{
+		if (Config::Instance()->newBackend == "")
+			Config::Instance()->newBackend = Config::Instance()->Dx11Upscaler.value_or("fsr22");
+
+		spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature changing backend to {0}", Config::Instance()->newBackend);
 
 		// first release everything
 		if (Dx11Contexts.contains(handleId) && changeBackendCounter == 0)
@@ -329,31 +334,28 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 		if (changeBackendCounter == 1)
 		{
 			// next frame prepare stuff
-			if (Config::Instance()->newBackend == "")
-				Config::Instance()->newBackend = Config::Instance()->Dx12Upscaler.value_or("fsr22");
-
 			if (Config::Instance()->newBackend == "xess")
 			{
 				Config::Instance()->Dx11Upscaler = "xess";
-				spdlog::warn("NVSDK_NGX_D3D11_EvaluateFeature creating new XeSS with Dx12 feature");
+				spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new XeSS with Dx12 feature");
 				Dx11Contexts[handleId] = std::make_unique<XeSSFeatureDx11>(handleId, createParams);
 			}
 			else if (Config::Instance()->newBackend == "fsr21_12")
 			{
 				Config::Instance()->Dx11Upscaler = "fsr21_12";
-				spdlog::warn("NVSDK_NGX_D3D11_EvaluateFeature creating new FSR 2.1.2 with Dx12 feature");
+				spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new FSR 2.1.2 with Dx12 feature");
 				Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12_212>(handleId, createParams);
 			}
 			else if (Config::Instance()->newBackend == "fsr22_12")
 			{
 				Config::Instance()->Dx11Upscaler = "fsr22_12";
-				spdlog::warn("NVSDK_NGX_D3D11_EvaluateFeature creating new FSR 2.2.1 with Dx12 feature");
+				spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new FSR 2.2.1 with Dx12 feature");
 				Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12>(handleId, createParams);
 			}
 			else
 			{
 				Config::Instance()->Dx11Upscaler = "fsr22";
-				spdlog::warn("NVSDK_NGX_D3D11_EvaluateFeature creating new native FSR 2.2.1 feature");
+				spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new native FSR 2.2.1 feature");
 				Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11>(handleId, createParams);
 			}
 

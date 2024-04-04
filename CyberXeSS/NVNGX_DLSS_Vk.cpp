@@ -182,7 +182,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetScratchBufferSize(NVSDK_NGX_F
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice, VkCommandBuffer InCmdList, NVSDK_NGX_Feature InFeatureID, NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Handle** OutHandle)
 {
-	spdlog::info("NVSDK_NGX_VULKAN_CreateFeature1");
 
 	if (InFeatureID != NVSDK_NGX_Feature_SuperSampling)
 	{
@@ -192,11 +191,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 
 	// Create feature
 	auto handleId = IFeature::GetNextHandleId();
+	spdlog::info("NVSDK_NGX_VULKAN_CreateFeature1 HandleId: {0}", handleId);
 
-	if (Config::Instance()->VulkanUpscaler.value_or("fsr22") == "fsr21")
-		VkContexts[handleId] = std::make_unique<FSR2FeatureVk212>(handleId, InParameters);
-	else
+	if (Config::Instance()->VulkanUpscaler.value_or("fsr21") == "fsr22")
 		VkContexts[handleId] = std::make_unique<FSR2FeatureVk>(handleId, InParameters);
+	else
+		VkContexts[handleId] = std::make_unique<FSR2FeatureVk212>(handleId, InParameters);
 
 	auto deviceContext = VkContexts[handleId].get();
 	*OutHandle = deviceContext->Handle();
@@ -223,6 +223,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
 		return NVSDK_NGX_Result_Success;
 
 	auto handleId = InHandle->Id;
+	spdlog::info("NVSDK_NGX_VULKAN_ReleaseFeature releasing feature with id {0}", handleId);
 
 	if (auto deviceContext = VkContexts[handleId].get(); deviceContext)
 	{
