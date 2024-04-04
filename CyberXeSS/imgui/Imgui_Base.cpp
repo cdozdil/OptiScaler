@@ -145,6 +145,12 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		return TRUE;
 	}
 
+	if (msg == WM_KEYDOWN && wParam == VK_DELETE && (GetKeyState(VK_SHIFT) & 0x8000))
+	{
+		Config::Instance()->xessDebug = true;
+		return TRUE;
+	}
+
 	// Imgui
 	if (_isVisible)
 	{
