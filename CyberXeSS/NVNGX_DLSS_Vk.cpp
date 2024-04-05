@@ -217,8 +217,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature(VkCommandBuffer In
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle* InHandle)
 {
-	spdlog::debug("NVSDK_NGX_VULKAN_ReleaseFeature");
-
 	if (!InHandle)
 		return NVSDK_NGX_Result_Success;
 

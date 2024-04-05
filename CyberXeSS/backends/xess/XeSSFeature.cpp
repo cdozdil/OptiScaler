@@ -85,7 +85,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		switch (PerfQualityValue())
 		{
 		case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
 			break;
 
 		case NVSDK_NGX_PerfQuality_Value_MaxPerf:
@@ -105,7 +105,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 			break;
 
 		case NVSDK_NGX_PerfQuality_Value_DLAA:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_AA;
 			break;
 
 		default:

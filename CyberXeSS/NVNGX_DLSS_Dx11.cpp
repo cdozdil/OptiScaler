@@ -248,8 +248,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* InHandle)
 {
-	spdlog::info("NVSDK_NGX_D3D11_ReleaseFeature");
-
 	if (!InHandle)
 		return NVSDK_NGX_Result_Success;
 

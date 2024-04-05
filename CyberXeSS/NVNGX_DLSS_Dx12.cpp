@@ -13,9 +13,12 @@
 #include "NVNGX_Parameter.h"
 
 typedef void(__fastcall* PFN_SetComputeRootSignature)(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature);
+typedef void(__fastcall* PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 
 static inline PFN_SetComputeRootSignature orgSetComputeRootSignature = nullptr;
 static inline PFN_SetComputeRootSignature orgSetGraphicRootSignature = nullptr;
+static inline PFN_CreateSampler orgCreateSampler = nullptr;
+
 static inline ID3D12RootSignature* rootSigCompute = nullptr;
 static inline ID3D12RootSignature* rootSigGraphic = nullptr;
 static inline bool contextRendering = false;
@@ -57,6 +60,35 @@ void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12Roo
 	return orgSetGraphicRootSignature(commandList, pRootSignature);
 }
 
+void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
+{
+	if (pDesc->MipLODBias < 0 && Config::Instance()->CurrentFeature != nullptr && Config::Instance()->Dx12Upscaler.value_or("xess") == "xess")
+	{
+		// XeSS 1.3 suggested mipbias
+		float result = log2((float)Config::Instance()->CurrentFeature->RenderWidth() / (float)Config::Instance()->CurrentFeature->DisplayWidth());
+
+		D3D12_SAMPLER_DESC newDesc{};
+
+		newDesc.AddressU = pDesc->AddressU;
+		newDesc.AddressV = pDesc->AddressV;
+		newDesc.AddressW = pDesc->AddressW;
+		newDesc.BorderColor[0] = pDesc->BorderColor[0];
+		newDesc.BorderColor[1] = pDesc->BorderColor[1];
+		newDesc.BorderColor[2] = pDesc->BorderColor[2];
+		newDesc.BorderColor[3] = pDesc->BorderColor[3];
+		newDesc.ComparisonFunc = pDesc->ComparisonFunc;
+		newDesc.Filter = pDesc->Filter;
+		newDesc.MaxAnisotropy = pDesc->MaxAnisotropy;
+		newDesc.MaxLOD = pDesc->MaxLOD;
+		newDesc.MinLOD = pDesc->MinLOD;
+		newDesc.MipLODBias = result;
+
+		return orgCreateSampler(device, &newDesc, DestDescriptor);
+	}
+
+	return orgCreateSampler(device, pDesc, DestDescriptor);
+}
+
 void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
 {
 	if (orgSetComputeRootSignature != nullptr)
@@ -77,16 +109,44 @@ void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
 	DetourTransactionCommit();
 }
 
+void HookToDevice(ID3D12Device* InDevice)
+{
+	if (orgCreateSampler != nullptr)
+		return;
+
+	// Get the vtable pointer
+	PVOID* pVTable = *(PVOID**)InDevice;
+
+	// Get the address of the SetComputeRootSignature function from the vtable
+	orgCreateSampler = (PFN_CreateSampler)pVTable[22];
+
+	// Apply the detour
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+	DetourAttach(&(PVOID&)orgCreateSampler, hkCreateSampler);
+	DetourTransactionCommit();
+}
+
 void UnhookSetComputeRootSignature()
 {
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
-	DetourDetach(&(PVOID&)orgSetComputeRootSignature, hkSetComputeRootSignature);
-	DetourDetach(&(PVOID&)orgSetGraphicRootSignature, hkSetGraphicRootSignature);
+
+	if (orgSetComputeRootSignature != nullptr)
+		DetourDetach(&(PVOID&)orgSetComputeRootSignature, hkSetComputeRootSignature);
+
+	if (orgSetGraphicRootSignature != nullptr)
+		DetourDetach(&(PVOID&)orgSetGraphicRootSignature, hkSetGraphicRootSignature);
+
+	if (orgCreateSampler != nullptr)
+		DetourDetach(&(PVOID&)orgCreateSampler, hkCreateSampler);
+
 	DetourTransactionCommit();
 }
 
 #pragma region DLSS Init Calls
+
+// 22
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath,
 	ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion, unsigned long long unknown0)
@@ -101,6 +161,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 	//	Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
 
 	D3D12Device = InDevice;
+
+	if (D3D12Device != nullptr)
+		HookToDevice(D3D12Device);
 
 	Config::Instance()->Api = NVNGX_DX12;
 
@@ -331,6 +394,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 			spdlog::error("NVSDK_NGX_D3D12_CreateFeature Can't get Dx12Device from InCmdList!");
 			return NVSDK_NGX_Result_Fail;
 		}
+
+		HookToDevice(D3D12Device);
 	}
 
 #pragma endregion
@@ -347,8 +412,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* InHandle)
 {
-	spdlog::info("NVSDK_NGX_D3D12_ReleaseFeature");
-
 	if (!InHandle)
 		return NVSDK_NGX_Result_Success;
 

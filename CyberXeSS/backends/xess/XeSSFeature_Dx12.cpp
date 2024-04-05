@@ -79,13 +79,6 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	GetRenderResolution(InParameters, &params.inputWidth, &params.inputHeight);
 
-	// UE5 weird color fix2 
-	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && Config::Instance()->NVNGX_EngineVersion5)
-	{
-		params.inputWidth -= (params.inputWidth % 2);
-		params.inputHeight -= (params.inputHeight % 2);
-	}
-
 	auto sharpness = GetSharpness(InParameters);
 
 	spdlog::debug("XeSSFeatureDx12::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
