@@ -62,10 +62,10 @@ void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12Roo
 
 void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
-	if (pDesc->MipLODBias < 0 && Config::Instance()->CurrentFeature != nullptr && Config::Instance()->Dx12Upscaler.value_or("xess") == "xess")
+	if (pDesc->MipLODBias < 0 && Config::Instance()->MipmapBiasOverride.has_value())
 	{
 		// XeSS 1.3 suggested mipbias
-		float result = log2((float)Config::Instance()->CurrentFeature->RenderWidth() / (float)Config::Instance()->CurrentFeature->DisplayWidth());
+		//float result = log2((float)Config::Instance()->CurrentFeature->RenderWidth() / (float)Config::Instance()->CurrentFeature->DisplayWidth());
 
 		D3D12_SAMPLER_DESC newDesc{};
 
@@ -81,7 +81,7 @@ void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D1
 		newDesc.MaxAnisotropy = pDesc->MaxAnisotropy;
 		newDesc.MaxLOD = pDesc->MaxLOD;
 		newDesc.MinLOD = pDesc->MinLOD;
-		newDesc.MipLODBias = result;
+		newDesc.MipLODBias = Config::Instance()->MipmapBiasOverride.value();
 
 		return orgCreateSampler(device, &newDesc, DestDescriptor);
 	}
@@ -566,10 +566,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 	bool evalResult = deviceContext->Evaluate(InCmdList, InParameters);
 
-	if (computeTime != 0 && computeTime > lastEvalTime && computeTime < evaluateStart && orgComputeRootSig != nullptr)
+	if (Config::Instance()->RestoreComputeSignature.value_or(false) && computeTime != 0 && computeTime > lastEvalTime && computeTime < evaluateStart && orgComputeRootSig != nullptr)
 		orgSetComputeRootSignature(InCmdList, orgComputeRootSig);
 
-	if (graphTime != 0 && graphTime > lastEvalTime && graphTime < evaluateStart && orgGraphicRootSig != nullptr)
+	if (Config::Instance()->RestoreGraphicSignature.value_or(false) && graphTime != 0 && graphTime > lastEvalTime && graphTime < evaluateStart && orgGraphicRootSig != nullptr)
 		orgSetGraphicRootSignature(InCmdList, orgGraphicRootSig);
 
 	contextRendering = false;

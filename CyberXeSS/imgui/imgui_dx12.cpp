@@ -173,7 +173,6 @@ Imgui_Dx12::~Imgui_Dx12()
 
 	ImGui::SetCurrentContext(context);
 
-	spdlog::trace("Imgui_Dx12::~Imgui_Dx12 sleeping before ImGui_ImplDX12_Shutdown for 250ms");
 	std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
 	ImGui_ImplDX12_Shutdown();
@@ -182,7 +181,6 @@ Imgui_Dx12::~Imgui_Dx12()
 		ImGui::SetCurrentContext(currCtx);
 
 	// hackzor
-	spdlog::trace("Imgui_Dx12::~Imgui_Dx12 sleeping after ImGui_ImplDX12_Shutdown for 250ms");
 	std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
 	if (_rtvDescHeap)

@@ -143,16 +143,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	else
 		spdlog::debug("XeSSFeatureDx11::Evaluate ProcessDx11Textures complete!");
 
-	if (Config::Instance()->ColorSpaceFix.value_or(false) &&
-		ColorDecode->CreateBufferResource(Dx12on11Device, dx11Color.Dx12Resource, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) &&
-		ColorDecode->Dispatch(Dx12on11Device, Dx12CommandList, dx11Color.Dx12Resource, ColorDecode->Buffer(), 16, 16))
-	{
-		params.pColorTexture = ColorDecode->Buffer();
-	}
-	else
-	{
-		params.pColorTexture = dx11Color.Dx12Resource;
-	}
+	params.pColorTexture = dx11Color.Dx12Resource;
 
 	_hasColor = params.pColorTexture != nullptr;
 	params.pVelocityTexture = dx11Mv.Dx12Resource;
@@ -178,13 +169,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	}
 	else
 	{
-		if (Config::Instance()->ColorSpaceFix.value_or(false) && OutputEncode->CreateBufferResource(Dx12on11Device, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
-		{
-			OutputEncode->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-			params.pOutputTexture = OutputEncode->Buffer();
-		}
-		else
-			params.pOutputTexture = dx11Out.Dx12Resource;
+		params.pOutputTexture = dx11Out.Dx12Resource;
 	}
 
 	_hasOutput = params.pOutputTexture != nullptr;
@@ -237,69 +222,21 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	{
 		spdlog::debug("XeSSFeatureDx11::Evaluate Apply CAS");
 		ResourceBarrier(Dx12CommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		CAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		if (Config::Instance()->ColorSpaceFix.value_or(false) && OutputEncode->CreateBufferResource(Dx12on11Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		if (!CAS->Dispatch(Dx12CommandList, sharpness, CAS->Buffer(), dx11Out.Dx12Resource))
 		{
-			OutputEncode->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			Config::Instance()->CasEnabled = false;
 
-			if (!CAS->Dispatch(Dx12CommandList, sharpness, params.pOutputTexture, OutputEncode->Buffer()))
-			{
-				Config::Instance()->CasEnabled = false;
+			Dx12CommandList->Close();
+			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+			Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
-				Dx12CommandList->Close();
-				ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-				Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+			Dx12CommandAllocator->Reset();
+			Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
 
-				Dx12CommandAllocator->Reset();
-				Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
-
-				return true;
-			}
+			return true;
 		}
-		else
-		{
-			CAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-			if (!CAS->Dispatch(Dx12CommandList, sharpness, CAS->Buffer(), dx11Out.Dx12Resource))
-			{
-				Config::Instance()->CasEnabled = false;
-
-				Dx12CommandList->Close();
-				ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-				Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-
-				Dx12CommandAllocator->Reset();
-				Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
-
-				return true;
-			}
-		}
-	}
-
-	if (OutputEncode->Buffer() && Config::Instance()->ColorSpaceFix.value_or(false))
-	{
-		spdlog::debug("XeSSFeatureDx11::Evaluate Apply Color Fix");
-
-		OutputEncode->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-		if (CreateBufferResource(Dx12on11Device, dx11Out.Dx12Resource, &_outBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
-		{
-			OutputEncode->Dispatch(Dx12on11Device, Dx12CommandList, OutputEncode->Buffer(), _outBuffer, 16, 16);
-
-			ResourceBarrier(Dx12CommandList, _outBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE);
-			ResourceBarrier(Dx12CommandList, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST);
-
-			Dx12CommandList->CopyResource(dx11Out.Dx12Resource, _outBuffer);
-		}
-		else
-		{
-			OutputEncode->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_COPY_SOURCE);
-			ResourceBarrier(Dx12CommandList, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST);
-		
-			Dx12CommandList->CopyResource(dx11Out.Dx12Resource, OutputEncode->Buffer());
-		}
-
-		ResourceBarrier(Dx12CommandList, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	}
 
 	if (!CopyBackOutput())

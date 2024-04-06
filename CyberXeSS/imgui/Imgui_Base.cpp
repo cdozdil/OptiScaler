@@ -1,4 +1,5 @@
 #include "../Config.h"
+#include "../Logger.h"
 
 #include "Imgui_Base.h"
 #include "imgui/imgui_impl_win32.h"
@@ -17,6 +18,8 @@ bool pfn_SetCursorPos_hooked = false;
 bool pfn_mouse_event_hooked = false;
 bool pfn_SendInput_hooked = false;
 bool pfn_SendMessageW_hooked = false;
+
+float mipBias = 0.0f;
 
 bool _isVisible = false;
 WNDPROC _oWndProc = nullptr;
@@ -369,10 +372,10 @@ void Imgui_Base::RenderMenu()
 		flags |= ImGuiWindowFlags_MenuBar;
 
 		auto posX = (Config::Instance()->CurrentFeature->DisplayWidth() - 770.0f) / 2.0f;
-		auto posY = (Config::Instance()->CurrentFeature->DisplayHeight() - 525.0f) / 2.0f;
+		auto posY = (Config::Instance()->CurrentFeature->DisplayHeight() - 610.0f) / 2.0f;
 
 		ImGui::SetNextWindowPos(ImVec2{ posX , posY }, ImGuiCond_FirstUseEver);
-		ImGui::SetNextWindowSize(ImVec2{ 770.0f, 525.0f }, ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2{ 770.0f, 610.0f }, ImGuiCond_FirstUseEver);
 
 		if (ImGui::Begin("CyberXeSS v0.4", nullptr, flags))
 		{
@@ -385,16 +388,13 @@ void Imgui_Base::RenderMenu()
 
 					ImGui::Separator();
 
-					if (ImGui::MenuItem("Close", "Shift+Ins"))
+					if (ImGui::MenuItem("Close", "Home"))
 						_isVisible = false;
 
 					ImGui::EndMenu();
 				}
 
-				ImGui::MenuItem("Logs");
-
 				ImGui::MenuItem("About");
-
 
 				ImGui::EndMenuBar();
 			}
@@ -429,7 +429,7 @@ void Imgui_Base::RenderMenu()
 				if (ImGui::Button("Apply") && Config::Instance()->newBackend != "" && Config::Instance()->newBackend != currentBackend)
 					Config::Instance()->changeBackend = true;
 
-				ImGui::SameLine();
+				ImGui::SameLine(0.0f, 6.0f);
 
 				if (ImGui::Button("Revert"))
 					Config::Instance()->newBackend = "";
@@ -459,17 +459,33 @@ void Imgui_Base::RenderMenu()
 				ImGui::BeginDisabled(currentBackend != "xess");
 				ImGui::SeparatorText("XeSS Settings");
 
+				const char* models[] = { "KPSS", "SPLAT", "MODEL_3", "MODEL_4", "MODEL_5", "MODEL_6" };
+				auto configModes = Config::Instance()->NetworkModel.value_or(0);
+
+				if (configModes < 0 || configModes > 5)
+					configModes = 0;
+
+				const char* selectedModel = models[configModes];
+
+				if (ImGui::BeginCombo("Network Models", selectedModel))
+				{
+					for (int n = 0; n < 6; n++)
+					{
+						if (ImGui::Selectable(models[n], (Config::Instance()->NetworkModel.value_or(0) == n)))
+						{
+							Config::Instance()->NetworkModel = n;
+							Config::Instance()->changeBackend = true;
+						}
+					}
+
+					ImGui::EndCombo();
+				}
+
 				if (bool cas = Config::Instance()->CasEnabled.value_or(true); ImGui::Checkbox("CAS", &cas))
 					Config::Instance()->CasEnabled = cas;
 
 				ImGui::SameLine(0.0f, 6.0f);
-				if (bool csf = Config::Instance()->ColorSpaceFix.value_or(false); ImGui::Checkbox("ColorSpace Fix", &csf))
-				{
-					Config::Instance()->ColorSpaceFix = csf;
-				}
-
-				ImGui::SameLine(0.0f, 6.0f);
-				if (bool dbg = Config::Instance()->xessDebug; ImGui::Checkbox("Dump", &dbg))
+				if (bool dbg = Config::Instance()->xessDebug; ImGui::Checkbox("Dump (Shift+Del)", &dbg))
 					Config::Instance()->xessDebug = dbg;
 
 				ImGui::SameLine(0.0f, 6.0f);
@@ -516,32 +532,6 @@ void Imgui_Base::RenderMenu()
 
 				ImGui::EndDisabled();
 
-				const char* quality[] = { "Auto", "Performance", "Balanced", "Quality", "Ultra Quality" };
-
-				const char* selectedQuality = "Auto";
-
-				if (Config::Instance()->OverrideQuality.has_value())
-					selectedQuality = quality[Config::Instance()->OverrideQuality.value() - 100];
-
-				if (ImGui::BeginCombo("Quality", selectedQuality))
-				{
-					if (ImGui::Selectable(quality[0], !Config::Instance()->OverrideQuality.has_value()))
-					{
-						Config::Instance()->OverrideQuality.reset();
-						Config::Instance()->changeBackend = true;
-					}
-
-					for (int n = 101; n < 105; n++)
-					{
-						if (ImGui::Selectable(quality[n - 100], (Config::Instance()->OverrideQuality.has_value() && Config::Instance()->OverrideQuality == n)))
-						{
-							Config::Instance()->OverrideQuality = n;
-							Config::Instance()->changeBackend = true;
-						}
-					}
-
-					ImGui::EndCombo();
-				}
 				ImGui::EndDisabled();
 
 				// FSR -----------------
@@ -550,16 +540,15 @@ void Imgui_Base::RenderMenu()
 
 				bool useVFov = Config::Instance()->FsrVerticalFov.has_value() || !Config::Instance()->FsrHorizontalFov.has_value();
 
-				float fov;
+				float vfov;
+				float hfov;
 
-				if (useVFov)
-					fov = Config::Instance()->FsrVerticalFov.value_or(60.0f);
-				else
-					fov = Config::Instance()->FsrHorizontalFov.value_or(90.0f);
+				vfov = Config::Instance()->FsrVerticalFov.value_or(60.0f);
+				hfov = Config::Instance()->FsrHorizontalFov.value_or(90.0f);
 
 				if (ImGui::RadioButton("Use Vert. Fov", useVFov))
 				{
-					fov = Config::Instance()->FsrVerticalFov.value_or(60.0f);
+					Config::Instance()->FsrHorizontalFov.reset();
 					useVFov = true;
 				}
 
@@ -567,23 +556,24 @@ void Imgui_Base::RenderMenu()
 
 				if (ImGui::RadioButton("Use Horz. Fov", !useVFov))
 				{
-					fov = Config::Instance()->FsrHorizontalFov.value_or(90.0f);
+					Config::Instance()->FsrVerticalFov.reset();
 					useVFov = false;
 				}
 
-				if (useVFov)
-				{
-					Config::Instance()->FsrHorizontalFov.reset();
-					ImGui::SliderFloat("Vert. FOV", &fov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat);
-					Config::Instance()->FsrVerticalFov = fov;
-				}
-				else
-				{
-					Config::Instance()->FsrVerticalFov.reset();
-					ImGui::SliderFloat("Horz. FOV", &fov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat);
-					Config::Instance()->FsrHorizontalFov = fov;
-				}
+				ImGui::BeginDisabled(!useVFov);
 
+				if (ImGui::SliderFloat("Vert. FOV", &vfov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
+					Config::Instance()->FsrVerticalFov = vfov;
+
+				ImGui::EndDisabled();
+
+				ImGui::BeginDisabled(useVFov);
+
+				if(ImGui::SliderFloat("Horz. FOV", &hfov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
+					Config::Instance()->FsrHorizontalFov = hfov;
+
+				ImGui::EndDisabled();
+				
 				ImGui::EndDisabled();
 
 				// SHARPNESS -----------------------------
@@ -600,6 +590,27 @@ void Imgui_Base::RenderMenu()
 
 				ImGui::EndDisabled();
 
+				// MIPMAP BIAS -----------------------------
+				ImGui::SeparatorText("Mipmap Bias");
+
+				if (Config::Instance()->MipmapBiasOverride.has_value())
+					mipBias = Config::Instance()->MipmapBiasOverride.value();
+
+				ImGui::SliderFloat("Mipmap Bias", &mipBias, -15.0f, 15.0f, "%.6f", ImGuiSliderFlags_NoRoundToFormat);
+
+				if (ImGui::Button("Set"))
+					Config::Instance()->MipmapBiasOverride = mipBias;
+
+				ImGui::SameLine(0.0f, 6.0f);
+
+				if (ImGui::Button("Reset"))
+				{
+					Config::Instance()->MipmapBiasOverride.reset();
+					mipBias = 0.0f;
+				}
+
+				auto color = ImVec4(128, 48, 48, 255);
+				ImGui::TextColored(color, "This will be applied after first resolution change!");
 
 				// UPSCALE RATIO OVERRIDE -----------------
 				ImGui::SeparatorText("Upscale Ratio");
@@ -640,13 +651,7 @@ void Imgui_Base::RenderMenu()
 				ImGui::SliderFloat("Performance", &qP, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
 				Config::Instance()->QualityRatio_Performance = qP;
 
-				float qUp;
-
-				if (currentBackend == "xess")
-					qUp = Config::Instance()->QualityRatio_UltraPerformance.value_or(2.5f);
-				else
-					qUp = Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0f);
-
+				float qUp = Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0f);
 				ImGui::SliderFloat("Ultra Performance", &qUp, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
 				Config::Instance()->QualityRatio_UltraPerformance = qUp;
 
@@ -713,6 +718,51 @@ void Imgui_Base::RenderMenu()
 				AddResourceBarrier("Output", &Config::Instance()->OutputResourceBarrier);
 
 				ImGui::EndDisabled();
+
+				// LOGGING -----------------------------
+				ImGui::Spacing();
+				ImGui::SeparatorText("Logging");
+
+				if (bool logging = Config::Instance()->LoggingEnabled.value_or(true); ImGui::Checkbox("Logging", &logging))
+				{
+					Config::Instance()->LoggingEnabled = logging;
+
+					if (logging)
+						spdlog::default_logger()->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or(2));
+					else
+						spdlog::default_logger()->set_level(spdlog::level::off);
+				}
+
+				ImGui::SameLine(0.0f, 6.0f);
+				if (bool toFile = Config::Instance()->LogToFile.value_or(false); ImGui::Checkbox("To File", &toFile))
+				{
+					Config::Instance()->LogToFile = toFile;
+					PrepareLogger();
+				}
+
+				ImGui::SameLine(0.0f, 6.0f);
+				if (bool toConsole = Config::Instance()->LogToConsole.value_or(false); ImGui::Checkbox("To Console", &toConsole))
+				{
+					Config::Instance()->LogToConsole = toConsole;
+					PrepareLogger();
+				}
+
+				const char* logLevels[] = { "Trace", "Debug", "Information", "Warning", "Error" };
+				const char* selectedLevel = logLevels[Config::Instance()->LogLevel.value_or(2)];
+
+				if (ImGui::BeginCombo("Log Level", selectedLevel))
+				{
+					for (int n = 0; n < 5; n++)
+					{
+						if (ImGui::Selectable(logLevels[n], (Config::Instance()->LogLevel.value_or(2) == n)))
+						{
+							Config::Instance()->LogLevel = n;
+							spdlog::default_logger()->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or(2));
+						}
+					}
+
+					ImGui::EndCombo();
+				}
 
 				ImGui::EndTable();
 

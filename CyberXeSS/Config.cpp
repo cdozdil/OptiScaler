@@ -21,8 +21,6 @@ void Config::Reload()
 		// XeSS
 		BuildPipelines = readBool("XeSS", "BuildPipelines");
 		NetworkModel = readInt("XeSS", "NetworkModel");
-		OverrideQuality = readInt("XeSS", "OverrideQuality");
-		ColorSpaceFix = readBool("XeSS", "ColorSpaceFix");
 
 		// logging
 		LoggingEnabled = readBool("Log", "LoggingEnabled");
@@ -80,6 +78,10 @@ void Config::Reload()
 
 		// hotfixes
 		DisableReactiveMask = readBool("Hotfix", "DisableReactiveMask");
+		MipmapBiasOverride = readFloat("Hotfix", "MipmapBiasOverride");
+
+		if (MipmapBiasOverride.has_value() && (MipmapBiasOverride.value() > 15.0 || MipmapBiasOverride.value() < -15.0))
+			MipmapBiasOverride.reset();
 
 		ColorResourceBarrier = readInt("Hotfix", "ColorResourceBarrier");
 		MVResourceBarrier = readInt("Hotfix", "MotionVectorResourceBarrier");
@@ -131,7 +133,6 @@ bool Config::SaveIni(std::string name)
 	// XeSS
 	ini.SetValue("XeSS", "BuildPipelines", GetBoolValue(Instance()->BuildPipelines).c_str());
 	ini.SetValue("XeSS", "NetworkModel", GetIntValue(Instance()->NetworkModel).c_str());
-	ini.SetValue("XeSS", "OverrideQuality", GetIntValue(Instance()->OverrideQuality).c_str());
 
 	// Sharpness
 	ini.SetValue("Sharpness", "OverrideSharpness", GetBoolValue(Instance()->OverrideSharpness).c_str());
@@ -166,6 +167,7 @@ bool Config::SaveIni(std::string name)
 
 	// hotfixes
 	ini.SetValue("Hotfix", "DisableReactiveMask", GetBoolValue(Instance()->DisableReactiveMask).c_str());
+	ini.SetValue("Hotfix", "MipmapBiasOverride", GetBoolValue(Instance()->MipmapBiasOverride).c_str());
 	ini.SetValue("Hotfix", "ColorResourceBarrier", GetIntValue(Instance()->ColorResourceBarrier).c_str());
 	ini.SetValue("Hotfix", "MotionVectorResourceBarrier", GetIntValue(Instance()->MVResourceBarrier).c_str());
 	ini.SetValue("Hotfix", "DepthResourceBarrier", GetIntValue(Instance()->DepthResourceBarrier).c_str());

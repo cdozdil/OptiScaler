@@ -41,8 +41,8 @@ public:
 	// XeSS
 	std::optional<bool> BuildPipelines;
 	std::optional<int32_t> NetworkModel;
-	std::optional<int32_t> OverrideQuality;
-	std::optional<bool> ColorSpaceFix;
+	//std::optional<int32_t> OverrideQuality;
+	//std::optional<bool> ColorSpaceFix;
 
 	// CAS
 	std::optional<bool> CasEnabled;
@@ -66,6 +66,9 @@ public:
 
 	//Hotfixes
 	std::optional<bool> DisableReactiveMask;
+	std::optional<float> MipmapBiasOverride;
+	std::optional<float> RestoreComputeSignature;
+	std::optional<float> RestoreGraphicSignature;
 	std::optional<int32_t> ColorResourceBarrier;
 	std::optional<int32_t> MVResourceBarrier;
 	std::optional<int32_t> DepthResourceBarrier;

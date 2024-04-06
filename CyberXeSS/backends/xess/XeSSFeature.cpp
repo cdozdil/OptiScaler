@@ -4,31 +4,29 @@
 
 #include "XeSSFeature.h"
 
-// pixel.rgb = pow(abs(pixel.rgb) * 4.0, 2.4) * sign(pixel.rgb);
-static const std::string outputEncodeShaderCode = R"(
-Texture2D<float4> InputTexture : register(t0);
-RWTexture2D<float4> OutputTexture : register(u0);
+//static const std::string outputEncodeShaderCode = R"(
+//Texture2D<float4> InputTexture : register(t0);
+//RWTexture2D<float4> OutputTexture : register(u0);
+//
+//[numthreads(16,16,1)]
+//void main(uint3 DTid : SV_DispatchThreadID)
+//{
+//	float4 pixel = InputTexture[DTid.xy];
+//	pixel.rgb *= 50.0;
+//	OutputTexture[DTid.xy] = pixel;
+//})";
 
-[numthreads(16,16,1)]
-void main(uint3 DTid : SV_DispatchThreadID)
-{
-	float4 pixel = InputTexture[DTid.xy];
-	pixel.rgb *= 50.0;
-	OutputTexture[DTid.xy] = pixel;
-})";
-
-// pixel.rgb = pow(abs(pixel.rgb), 0.4166666666666667) * sign(pixel.rgb) * 0.25;
-static const std::string colorDecodeShaderCode = R"(
-Texture2D<float4> InputTexture : register(t0);
-RWTexture2D<float4> OutputTexture : register(u0);
-
-[numthreads(16,16,1)]
-void main(uint3 DTid : SV_DispatchThreadID)
-{
-	float4 pixel = InputTexture[DTid.xy];
-	pixel.rgb *= 0.02;
-	OutputTexture[DTid.xy] = pixel;
-})";
+//static const std::string colorDecodeShaderCode = R"(
+//Texture2D<float4> InputTexture : register(t0);
+//RWTexture2D<float4> OutputTexture : register(u0);
+//
+//[numthreads(16,16,1)]
+//void main(uint3 DTid : SV_DispatchThreadID)
+//{
+//	float4 pixel = InputTexture[DTid.xy];
+//	pixel.rgb *= 0.02;
+//	OutputTexture[DTid.xy] = pixel;
+//})";
 
 
 inline void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
@@ -76,42 +74,35 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	xessParams.outputResolution.x = DisplayWidth();
 	xessParams.outputResolution.y = DisplayHeight();
 
-	if (Config::Instance()->OverrideQuality.has_value())
+	switch (PerfQualityValue())
 	{
-		xessParams.qualitySetting = (xess_quality_settings_t)Config::Instance()->OverrideQuality.value();
-	}
-	else
-	{
-		switch (PerfQualityValue())
-		{
-		case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
-			break;
+	case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
+		xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
+		break;
 
-		case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
-			break;
+	case NVSDK_NGX_PerfQuality_Value_MaxPerf:
+		xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
+		break;
 
-		case NVSDK_NGX_PerfQuality_Value_Balanced:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
-			break;
+	case NVSDK_NGX_PerfQuality_Value_Balanced:
+		xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
+		break;
 
-		case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
-			break;
+	case NVSDK_NGX_PerfQuality_Value_MaxQuality:
+		xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
+		break;
 
-		case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
-			break;
+	case NVSDK_NGX_PerfQuality_Value_UltraQuality:
+		xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
+		break;
 
-		case NVSDK_NGX_PerfQuality_Value_DLAA:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_AA;
-			break;
+	case NVSDK_NGX_PerfQuality_Value_DLAA:
+		xessParams.qualitySetting = XESS_QUALITY_SETTING_AA;
+		break;
 
-		default:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED; //Set out-of-range value for non-existing XESS_QUALITY_SETTING_BALANCED mode
-			break;
-		}
+	default:
+		xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED; //Set out-of-range value for non-existing XESS_QUALITY_SETTING_BALANCED mode
+		break;
 	}
 
 	xessParams.initFlags = XESS_INIT_FLAG_NONE;
@@ -135,7 +126,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		spdlog::info("XeSSFeature::InitXeSS xessParams.initFlags (DepthInverted) {0:b}", xessParams.initFlags);
 	}
 
-	if (Config::Instance()->AutoExposure.value_or(AutoExposure) || Config::Instance()->ColorSpaceFix.value_or(false))
+	if (Config::Instance()->AutoExposure.value_or(AutoExposure))
 	{
 		Config::Instance()->AutoExposure = true;
 		xessParams.initFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
@@ -201,6 +192,12 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 	spdlog::debug("XeSSFeature::InitXeSS xessD3D12Init!");
 
+	if (Config::Instance()->NetworkModel.has_value() && Config::Instance()->NetworkModel.value() >= 0 && Config::Instance()->NetworkModel.value() <= 5)
+	{
+		ret = xessSelectNetworkModel(_xessContext, (xess_network_model_t)Config::Instance()->NetworkModel.value());
+		spdlog::error("XeSSFeature::InitXeSS xessSelectNetworkModel result: {0}", ResultToString(ret));
+	}
+
 	ret = xessD3D12Init(_xessContext, &xessParams);
 
 	if (ret != XESS_RESULT_SUCCESS)
@@ -210,8 +207,6 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	}
 
 	CAS = std::make_unique<CAS_Dx12>(device, DisplayWidth(), DisplayHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
-	ColorDecode = std::make_unique<CS_Dx12>("ColorDecode", device, colorDecodeShaderCode.c_str(), "main", "cs_5_0");
-	OutputEncode = std::make_unique<CS_Dx12>("OutputEncode", device, outputEncodeShaderCode.c_str(), "main", "cs_5_0");
 
 	SetInit(true);
 
@@ -229,11 +224,11 @@ XeSSFeature::~XeSSFeature()
 	if (CAS != nullptr && CAS.get() != nullptr)
 		CAS.reset();
 
-	if (ColorDecode != nullptr && ColorDecode.get() != nullptr)
-		ColorDecode.reset();
+	//if (ColorDecode != nullptr && ColorDecode.get() != nullptr)
+	//	ColorDecode.reset();
 
-	if (OutputEncode != nullptr && OutputEncode.get() != nullptr)
-		OutputEncode.reset();
+	//if (OutputEncode != nullptr && OutputEncode.get() != nullptr)
+	//	OutputEncode.reset();
 }
 
 float XeSSFeature::GetSharpness(const NVSDK_NGX_Parameter* InParameters)
