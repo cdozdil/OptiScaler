@@ -100,6 +100,7 @@ public:
 	std::string newBackend = "";
 	bool xessDebug = false;
 	int xessDebugFrames = 5;
+	float lastMipBias = 0.0f;
 	
 
 	void Reload();

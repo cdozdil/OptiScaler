@@ -19,7 +19,13 @@ bool pfn_mouse_event_hooked = false;
 bool pfn_SendInput_hooked = false;
 bool pfn_SendMessageW_hooked = false;
 
+bool showMipmapCalcWindow = false;
 float mipBias = 0.0f;
+float mipBiasCalculated = 0.0f;
+uint32_t mipmapUpscalerQuality = 0;
+float mipmapUpscalerRatio = 0;
+uint32_t displayWidth = 0;
+uint32_t renderWidth = 0;
 
 bool _isVisible = false;
 WNDPROC _oWndProc = nullptr;
@@ -239,8 +245,6 @@ void AddDx11Backends(std::string* code, std::string* name)
 {
 	std::string selectedUpscalerName = "";
 
-	ImGui::Text("DirextX 11 - %s", (*name).c_str());
-
 	if (Config::Instance()->newBackend == "fsr22" || (Config::Instance()->newBackend == "" && *code == "fsr22"))
 		selectedUpscalerName = "FSR 2.2.1";
 	else if (Config::Instance()->newBackend == "fsr22_12" || (Config::Instance()->newBackend == "" && *code == "fsr22_12"))
@@ -272,8 +276,6 @@ void AddDx12Backends(std::string* code, std::string* name)
 {
 	std::string selectedUpscalerName = "";
 
-	ImGui::Text("DirextX 12 - %s", (*name).c_str());
-
 	if (Config::Instance()->newBackend == "fsr21" || (Config::Instance()->newBackend == "" && *code == "fsr21"))
 		selectedUpscalerName = "FSR 2.1.2";
 	else if (Config::Instance()->newBackend == "fsr22" || (Config::Instance()->newBackend == "" && *code == "fsr22"))
@@ -299,8 +301,6 @@ void AddDx12Backends(std::string* code, std::string* name)
 void AddVulkanBackends(std::string* code, std::string* name)
 {
 	std::string selectedUpscalerName = "";
-
-	ImGui::Text("Vulkan - %s", (*name).c_str());
 
 	if (Config::Instance()->newBackend == "fsr21" || (Config::Instance()->newBackend == "" && *code == "fsr21"))
 		selectedUpscalerName = "FSR 2.1.2";
@@ -369,36 +369,15 @@ void Imgui_Base::RenderMenu()
 		ImGuiWindowFlags flags = 0;
 		flags |= ImGuiWindowFlags_NoSavedSettings;
 		flags |= ImGuiWindowFlags_NoCollapse;
-		flags |= ImGuiWindowFlags_MenuBar;
 
 		auto posX = (Config::Instance()->CurrentFeature->DisplayWidth() - 770.0f) / 2.0f;
-		auto posY = (Config::Instance()->CurrentFeature->DisplayHeight() - 610.0f) / 2.0f;
+		auto posY = (Config::Instance()->CurrentFeature->DisplayHeight() - 620.0f) / 2.0f;
 
 		ImGui::SetNextWindowPos(ImVec2{ posX , posY }, ImGuiCond_FirstUseEver);
-		ImGui::SetNextWindowSize(ImVec2{ 770.0f, 610.0f }, ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2{ 770.0f, 620.0f }, ImGuiCond_FirstUseEver);
 
 		if (ImGui::Begin("CyberXeSS v0.4", nullptr, flags))
 		{
-			if (ImGui::BeginMenuBar())
-			{
-				if (ImGui::BeginMenu("File"))
-				{
-					if (ImGui::MenuItem("Save ini"))
-						Config::Instance()->SaveIni("nvngx.ini");
-
-					ImGui::Separator();
-
-					if (ImGui::MenuItem("Close", "Home"))
-						_isVisible = false;
-
-					ImGui::EndMenu();
-				}
-
-				ImGui::MenuItem("About");
-
-				ImGui::EndMenuBar();
-			}
-
 			if (ImGui::BeginTable("main", 2))
 			{
 				ImGui::TableNextColumn();
@@ -415,14 +394,17 @@ void Imgui_Base::RenderMenu()
 				switch (Config::Instance()->Api)
 				{
 				case NVNGX_DX11:
+					ImGui::Text("DirextX 11 - %s (%s)", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version());
 					AddDx11Backends(&currentBackend, &currentBackendName);
 					break;
 
 				case NVNGX_DX12:
+					ImGui::Text("DirextX 12 - %s (%s)", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version());
 					AddDx12Backends(&currentBackend, &currentBackendName);
 					break;
 
 				default:
+					ImGui::Text("Vulkan - %s (%s)", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version());
 					AddVulkanBackends(&currentBackend, &currentBackendName);
 				}
 
@@ -569,11 +551,11 @@ void Imgui_Base::RenderMenu()
 
 				ImGui::BeginDisabled(useVFov);
 
-				if(ImGui::SliderFloat("Horz. FOV", &hfov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
+				if (ImGui::SliderFloat("Horz. FOV", &hfov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
 					Config::Instance()->FsrHorizontalFov = hfov;
 
 				ImGui::EndDisabled();
-				
+
 				ImGui::EndDisabled();
 
 				// SHARPNESS -----------------------------
@@ -591,12 +573,16 @@ void Imgui_Base::RenderMenu()
 				ImGui::EndDisabled();
 
 				// MIPMAP BIAS -----------------------------
-				ImGui::SeparatorText("Mipmap Bias");
+				ImGui::SeparatorText("Mipmap Bias (Dx12)");
 
-				if (Config::Instance()->MipmapBiasOverride.has_value())
+				ImGui::BeginDisabled(Config::Instance()->Api != NVNGX_DX12);
+
+				if (Config::Instance()->MipmapBiasOverride.has_value() && mipBias == 0.0f)
 					mipBias = Config::Instance()->MipmapBiasOverride.value();
 
 				ImGui::SliderFloat("Mipmap Bias", &mipBias, -15.0f, 15.0f, "%.6f", ImGuiSliderFlags_NoRoundToFormat);
+
+				ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "This will be applied after first resolution change!");
 
 				if (ImGui::Button("Set"))
 					Config::Instance()->MipmapBiasOverride = mipBias;
@@ -609,8 +595,18 @@ void Imgui_Base::RenderMenu()
 					mipBias = 0.0f;
 				}
 
-				auto color = ImVec4(128, 48, 48, 255);
-				ImGui::TextColored(color, "This will be applied after first resolution change!");
+				ImGui::SameLine(0.0f, 6.0f);
+
+				if (ImGui::Button("Calculate"))
+				{
+					showMipmapCalcWindow = true;
+				}
+
+				ImGui::SameLine(0.0f, 6.0f);
+
+				ImGui::Text("Current : %.6f", Config::Instance()->lastMipBias);
+
+				ImGui::EndDisabled();
 
 				// UPSCALE RATIO OVERRIDE -----------------
 				ImGui::SeparatorText("Upscale Ratio");
@@ -707,7 +703,7 @@ void Imgui_Base::RenderMenu()
 				}
 
 				// BARRIERS -----------------------------
-				ImGui::SeparatorText("Resource Barriers");
+				ImGui::SeparatorText("Resource Barriers (Dx12)");
 				ImGui::BeginDisabled(Config::Instance()->Api != NVNGX_DX12);
 
 				AddResourceBarrier("Color", &Config::Instance()->ColorResourceBarrier);
@@ -719,8 +715,21 @@ void Imgui_Base::RenderMenu()
 
 				ImGui::EndDisabled();
 
+				// HOTFIXES -----------------------------
+				ImGui::SeparatorText("Hotfixes (Dx12)");
+
+				ImGui::BeginDisabled(Config::Instance()->Api != NVNGX_DX12);
+
+				if (bool crs = Config::Instance()->RestoreComputeSignature.value_or(false); ImGui::Checkbox("Restore Compute RS", &crs))
+					Config::Instance()->RestoreComputeSignature = crs;
+
+				ImGui::SameLine(0.0f, 6.0f);
+				if (bool grs = Config::Instance()->RestoreGraphicSignature.value_or(false); ImGui::Checkbox("Restore Graphic RS", &grs))
+					Config::Instance()->RestoreGraphicSignature = grs;
+
+				ImGui::EndDisabled();
+
 				// LOGGING -----------------------------
-				ImGui::Spacing();
 				ImGui::SeparatorText("Logging");
 
 				if (bool logging = Config::Instance()->LoggingEnabled.value_or(true); ImGui::Checkbox("Logging", &logging))
@@ -767,6 +776,7 @@ void Imgui_Base::RenderMenu()
 				ImGui::EndTable();
 
 				// BOTTOM LINE ---------------
+				ImGui::Spacing();
 				ImGui::Separator();
 				ImGui::Spacing();
 
@@ -778,10 +788,18 @@ void Imgui_Base::RenderMenu()
 
 				ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
-				ImGui::SameLine(ImGui::GetWindowWidth() - 55.0f);
+				ImGui::SameLine(ImGui::GetWindowWidth() - 130.0f);
+
+				if (ImGui::Button("Save INI"))
+					Config::Instance()->SaveIni("nvngx.ini");
+
+				ImGui::SameLine(0.0f, 6.0f);
 
 				if (ImGui::Button("Close"))
+				{
+					showMipmapCalcWindow = false;
 					_isVisible = false;
+				}
 
 				ImGui::Spacing();
 				ImGui::Separator();
@@ -796,6 +814,137 @@ void Imgui_Base::RenderMenu()
 			_height = size.y;
 
 			ImGui::End();
+		}
+
+		if (showMipmapCalcWindow)
+		{
+			posX = (Config::Instance()->CurrentFeature->DisplayWidth() - 450.0f) / 2.0f;
+			posY = (Config::Instance()->CurrentFeature->DisplayHeight() - 200.0f) / 2.0f;
+
+			ImGui::SetNextWindowPos(ImVec2{ posX , posY }, ImGuiCond_FirstUseEver);
+			ImGui::SetNextWindowSize(ImVec2{ 450.0f, 200.0f }, ImGuiCond_FirstUseEver);
+
+			if (displayWidth == 0)
+			{
+				displayWidth == Config::Instance()->CurrentFeature->DisplayWidth();
+				renderWidth == displayWidth / 3.0;
+				mipmapUpscalerQuality = 0;
+				mipmapUpscalerRatio = 3.0f;
+				mipBiasCalculated = log2((float)renderWidth / (float)displayWidth);
+			}
+
+			if (ImGui::Begin("Mipmap Bias", nullptr, flags))
+			{
+				if (ImGui::InputScalar("Display Width", ImGuiDataType_U32, &displayWidth, NULL, NULL, "%u"))
+				{
+					if (displayWidth <= 0)
+						displayWidth = Config::Instance()->CurrentFeature->DisplayWidth();
+
+					renderWidth = displayWidth / mipmapUpscalerRatio;
+					mipBiasCalculated = log2((float)renderWidth / (float)displayWidth);
+				}
+
+				const char* q[] = { "Ultra Performance", "Performance", "Balanced", "Quality", "Ultra Quality", "DLAA" };
+				float xr[] = { 3.0f, 2.3f, 2.0f, 1.7f, 1.5f, 1.0f };
+				float fr[] = { 3.0f, 2.0f, 1.7f, 1.5f, 1.3f, 1.0f };
+				auto configQ = mipmapUpscalerQuality;
+
+				const char* selectedQ = q[configQ];
+
+				ImGui::BeginDisabled(Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false));
+
+				if (ImGui::BeginCombo("Upscaler Quality", selectedQ))
+				{
+					for (int n = 0; n < 6; n++)
+					{
+						if (ImGui::Selectable(q[n], (mipmapUpscalerQuality == n)))
+						{
+							mipmapUpscalerQuality = n;
+
+							float ov = -1.0f;
+
+							if (Config::Instance()->QualityRatioOverrideEnabled.value_or(false))
+							{
+								switch (n)
+								{
+								case 0:
+									ov = Config::Instance()->QualityRatio_UltraPerformance.value_or(-1.0f);
+									break;
+
+								case 1:
+									ov = Config::Instance()->QualityRatio_Performance.value_or(-1.0f);
+									break;
+
+								case 2:
+									ov = Config::Instance()->QualityRatio_Balanced.value_or(-1.0f);
+									break;
+
+								case 3:
+									ov = Config::Instance()->QualityRatio_Quality.value_or(-1.0f);
+									break;
+
+								case 4:
+									ov = Config::Instance()->QualityRatio_UltraQuality.value_or(-1.0f);
+									break;
+								}
+							}
+
+							if (ov > 0.0f)
+							{
+								mipmapUpscalerRatio = ov;
+							}
+							else
+							{
+								if (Config::Instance()->Dx12Upscaler.value_or("xess") == "xess")
+									mipmapUpscalerRatio = xr[n];
+								else
+									mipmapUpscalerRatio = fr[n];
+							}
+
+							renderWidth = displayWidth / mipmapUpscalerRatio;
+							mipBiasCalculated = log2((float)renderWidth / (float)displayWidth);
+						}
+					}
+
+					ImGui::EndCombo();
+				}
+
+				ImGui::EndDisabled();
+
+				if (ImGui::SliderFloat("Upscaler Ratio", &mipmapUpscalerRatio, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
+				{
+					renderWidth = displayWidth / mipmapUpscalerRatio;
+					mipBiasCalculated = log2((float)renderWidth / (float)displayWidth);
+				}
+
+				if (ImGui::InputScalar("Render Width", ImGuiDataType_U32, &renderWidth, NULL, NULL, "%u"))
+					mipBiasCalculated = log2((float)renderWidth / (float)displayWidth);
+
+				ImGui::SliderFloat("Mipmap Bias", &mipBiasCalculated, -15.0f, 0.0f, "%.6f", ImGuiSliderFlags_NoRoundToFormat);
+
+				// BOTTOM LINE
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Spacing();
+
+				ImGui::SameLine(ImGui::GetWindowWidth() - 130.0f);
+
+				if (ImGui::Button("Use Value"))
+				{
+					mipBias = mipBiasCalculated;
+					showMipmapCalcWindow = false;
+				}
+
+				ImGui::SameLine(0.0f, 6.0f);
+
+				if (ImGui::Button("Close"))
+					showMipmapCalcWindow = false;
+
+				ImGui::Spacing();
+				ImGui::Separator();
+
+				ImGui::End();
+			}
 		}
 	}
 

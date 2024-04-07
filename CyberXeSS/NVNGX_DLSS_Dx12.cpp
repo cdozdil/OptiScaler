@@ -62,11 +62,8 @@ void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12Roo
 
 void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
-	if (pDesc->MipLODBias < 0 && Config::Instance()->MipmapBiasOverride.has_value())
+	if (pDesc->MipLODBias < 0.0f && Config::Instance()->MipmapBiasOverride.has_value())
 	{
-		// XeSS 1.3 suggested mipbias
-		//float result = log2((float)Config::Instance()->CurrentFeature->RenderWidth() / (float)Config::Instance()->CurrentFeature->DisplayWidth());
-
 		D3D12_SAMPLER_DESC newDesc{};
 
 		newDesc.AddressU = pDesc->AddressU;
@@ -83,8 +80,12 @@ void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D1
 		newDesc.MinLOD = pDesc->MinLOD;
 		newDesc.MipLODBias = Config::Instance()->MipmapBiasOverride.value();
 
+		Config::Instance()->lastMipBias = newDesc.MipLODBias;
+
 		return orgCreateSampler(device, &newDesc, DestDescriptor);
 	}
+	else if (pDesc->MipLODBias < 0.0f)
+		Config::Instance()->lastMipBias = pDesc->MipLODBias;
 
 	return orgCreateSampler(device, pDesc, DestDescriptor);
 }
