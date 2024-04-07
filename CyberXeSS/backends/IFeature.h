@@ -57,6 +57,8 @@ public:
 	bool HasExposure() const { return _hasExposure; }
 	bool HasOutput() const { return _hasOutput; }
 	int InitFlags() const { return _initFlags; }
+	virtual const char* Version() = 0;
+	virtual const char* Name() = 0;
 
 	IFeature(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters)
 	{

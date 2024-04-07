@@ -51,7 +51,10 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	auto ret = xessGetVersion(&ver);
 
 	if (ret == XESS_RESULT_SUCCESS)
+	{
 		spdlog::info("XeSSFeature::InitXeSS XeSS Version: {0}.{1}.{2}", ver.major, ver.minor, ver.patch);
+		_version = std::format("{0}.{1}.{2}", ver.major, ver.minor, ver.patch);
+	}
 	else
 		spdlog::warn("XeSSFeature::InitXeSS xessGetVersion error: {0}", ResultToString(ret));
 
@@ -286,3 +289,4 @@ bool XeSSFeature::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* I
 
 	return true;
 }
+
