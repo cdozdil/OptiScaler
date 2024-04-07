@@ -190,16 +190,8 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	}
 	else
 	{
-		if (usingXess)
-		{
-			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, (unsigned int)((float)Width / 2.5));
-			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, (unsigned int)((float)Height / 2.5));
-		}
-		else
-		{
-			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, (unsigned int)((float)Width / 3.0));
-			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, (unsigned int)((float)Height / 3.0));
-		}
+		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, (unsigned int)((float)Width / 3.0));
+		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, (unsigned int)((float)Height / 3.0));
 	}
 
 	InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Max_Render_Width, Width);
