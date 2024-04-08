@@ -4,31 +4,6 @@
 
 #include "XeSSFeature.h"
 
-//static const std::string outputEncodeShaderCode = R"(
-//Texture2D<float4> InputTexture : register(t0);
-//RWTexture2D<float4> OutputTexture : register(u0);
-//
-//[numthreads(16,16,1)]
-//void main(uint3 DTid : SV_DispatchThreadID)
-//{
-//	float4 pixel = InputTexture[DTid.xy];
-//	pixel.rgb *= 50.0;
-//	OutputTexture[DTid.xy] = pixel;
-//})";
-
-//static const std::string colorDecodeShaderCode = R"(
-//Texture2D<float4> InputTexture : register(t0);
-//RWTexture2D<float4> OutputTexture : register(u0);
-//
-//[numthreads(16,16,1)]
-//void main(uint3 DTid : SV_DispatchThreadID)
-//{
-//	float4 pixel = InputTexture[DTid.xy];
-//	pixel.rgb *= 0.02;
-//	OutputTexture[DTid.xy] = pixel;
-//})";
-
-
 inline void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
 {
 	spdlog::log((spdlog::level::level_enum)((int)Level + 1), "FeatureContext::LogCallback XeSS Runtime ({0})", Message);
@@ -74,39 +49,51 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 	xess_d3d12_init_params_t xessParams{};
 
-	xessParams.outputResolution.x = DisplayWidth();
-	xessParams.outputResolution.y = DisplayHeight();
-
-	switch (PerfQualityValue())
+	if (Config::Instance()->SuperSamplingEnabled.value_or(true))
 	{
-	case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
+		_targetWidth = RenderWidth() * Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
+		_targetHeight = RenderHeight() * Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
 		xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
-		break;
-
-	case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-		xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
-		break;
-
-	case NVSDK_NGX_PerfQuality_Value_Balanced:
-		xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
-		break;
-
-	case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-		xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
-		break;
-
-	case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-		xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
-		break;
-
-	case NVSDK_NGX_PerfQuality_Value_DLAA:
-		xessParams.qualitySetting = XESS_QUALITY_SETTING_AA;
-		break;
-
-	default:
-		xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED; //Set out-of-range value for non-existing XESS_QUALITY_SETTING_BALANCED mode
-		break;
 	}
+	else
+	{		
+		_targetWidth == DisplayWidth();
+		_targetHeight = DisplayHeight();
+
+		switch (PerfQualityValue())
+		{
+		case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
+			break;
+
+		case NVSDK_NGX_PerfQuality_Value_MaxPerf:
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
+			break;
+
+		case NVSDK_NGX_PerfQuality_Value_Balanced:
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
+			break;
+
+		case NVSDK_NGX_PerfQuality_Value_MaxQuality:
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
+			break;
+
+		case NVSDK_NGX_PerfQuality_Value_UltraQuality:
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
+			break;
+
+		case NVSDK_NGX_PerfQuality_Value_DLAA:
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_AA;
+			break;
+
+		default:
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED; //Set out-of-range value for non-existing XESS_QUALITY_SETTING_BALANCED mode
+			break;
+		}
+	}
+
+	xessParams.outputResolution.x = TargetWidth();
+	xessParams.outputResolution.y = TargetHeight();
 
 	xessParams.initFlags = XESS_INIT_FLAG_NONE;
 
@@ -209,8 +196,8 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		return false;
 	}
 
-	CAS = std::make_unique<CAS_Dx12>(device, DisplayWidth(), DisplayHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
-
+	CAS = std::make_unique<CAS_Dx12>(device, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
+	
 	SetInit(true);
 
 	return true;
@@ -226,12 +213,6 @@ XeSSFeature::~XeSSFeature()
 
 	if (CAS != nullptr && CAS.get() != nullptr)
 		CAS.reset();
-
-	//if (ColorDecode != nullptr && ColorDecode.get() != nullptr)
-	//	ColorDecode.reset();
-
-	//if (OutputEncode != nullptr && OutputEncode.get() != nullptr)
-	//	OutputEncode.reset();
 }
 
 float XeSSFeature::GetSharpness(const NVSDK_NGX_Parameter* InParameters)

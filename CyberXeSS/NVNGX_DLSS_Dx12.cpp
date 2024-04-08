@@ -62,7 +62,7 @@ void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12Roo
 
 void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
-	if (pDesc->MipLODBias < 0.0f && Config::Instance()->MipmapBiasOverride.has_value())
+ 	if (pDesc->MipLODBias < 0.0f && Config::Instance()->MipmapBiasOverride.has_value())
 	{
 		D3D12_SAMPLER_DESC newDesc{};
 
@@ -92,7 +92,7 @@ void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D1
 
 void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
 {
-	if (orgSetComputeRootSignature != nullptr)
+	if (orgSetComputeRootSignature != nullptr || orgSetGraphicRootSignature != nullptr)
 		return;
 
 	// Get the vtable pointer
@@ -105,8 +105,10 @@ void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
 	// Apply the detour
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
+
 	DetourAttach(&(PVOID&)orgSetComputeRootSignature, hkSetComputeRootSignature);
 	DetourAttach(&(PVOID&)orgSetGraphicRootSignature, hkSetGraphicRootSignature);
+
 	DetourTransactionCommit();
 }
 
@@ -147,18 +149,16 @@ void UnhookSetComputeRootSignature()
 
 #pragma region DLSS Init Calls
 
-// 22
-
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath,
-	ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion, unsigned long long unknown0)
+	ID3D12Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext AppId: {0}", InApplicationId);
-	spdlog::info("NVSDK_NGX_D3D12_Init_Ext SDK: {0:x}", (int)InSDKVersion);
+	spdlog::info("NVSDK_NGX_D3D12_Init_Ext SDK: {0:x}", (unsigned int)InSDKVersion);
 	std::wstring string(InApplicationDataPath);
 	std::string str(string.begin(), string.end());
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext InApplicationDataPath {0}", str);
 
-	//if (InFeatureInfo)
+	//if (Config::Instance()->NVSDK_Logger.LoggingCallback == nullptr && InFeatureInfo != nullptr)
 	//	Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
 
 	D3D12Device = InDevice;
@@ -175,7 +175,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init(unsigned long long InApplica
 	ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
 	spdlog::debug("NVSDK_NGX_D3D12_Init");
-	return NVSDK_NGX_D3D12_Init_Ext(InApplicationId, InApplicationDataPath, InDevice, InFeatureInfo, InSDKVersion, 0);
+
+	//if (Config::Instance()->NVSDK_Logger.LoggingCallback == nullptr && InFeatureInfo != nullptr)
+	//	Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
+
+	return NVSDK_NGX_D3D12_Init_Ext(InApplicationId, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType,
@@ -183,6 +187,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProj
 {
 	spdlog::info("NVSDK_NGX_D3D12_Init_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::info("NVSDK_NGX_D3D12_Init_ProjectID InEngineType: {0}", (int)InEngineType);
+
+	//if (Config::Instance()->NVSDK_Logger.LoggingCallback == nullptr && InFeatureInfo != nullptr)
+	//	Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
 
 	Config::Instance()->NVNGX_Engine = InEngineType;
 
@@ -192,7 +199,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProj
 		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
 	}
 
-	return NVSDK_NGX_D3D12_Init_Ext(0x1337, InApplicationDataPath, InDevice, InFeatureInfo, InSDKVersion, 0);
+	return NVSDK_NGX_D3D12_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion,
@@ -200,6 +207,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* I
 {
 	spdlog::info("NVSDK_NGX_D3D12_Init_with_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::info("NVSDK_NGX_D3D12_Init_with_ProjectID InEngineType: {0}", (int)InEngineType);
+
+	//if (Config::Instance()->NVSDK_Logger.LoggingCallback == nullptr && InFeatureInfo != nullptr)
+	//	Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
 
 	Config::Instance()->NVNGX_Engine = InEngineType;
 
@@ -209,7 +219,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* I
 		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
 	}
 
-	return NVSDK_NGX_D3D12_Init_Ext(0x1337, InApplicationDataPath, InDevice, InFeatureInfo, InSDKVersion, 0);
+	return NVSDK_NGX_D3D12_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
 }
 
 #pragma endregion
@@ -370,8 +380,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 		Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, InParameters);
 	}
 
-	// nvsdk logging
-	// ini first
+	// nvsdk logging - ini first
 	if (!Config::Instance()->LogToNGX.has_value())
 	{
 		int nvsdkLogging = 0;

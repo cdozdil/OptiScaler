@@ -17,6 +17,8 @@ void Config::Reload()
 		Dx11Upscaler = readString("Upscalers", "Dx11Upscaler", true);
 		Dx12Upscaler = readString("Upscalers", "Dx12Upscaler", true);
 		VulkanUpscaler = readString("Upscalers", "VulkanUpscaler", true);
+		SuperSamplingEnabled = readBool("Upscalers", "SuperSamplingEnabled");
+		SuperSamplingMultiplier = readFloat("Upscalers", "SuperSamplingMultiplier");
 
 		// XeSS
 		BuildPipelines = readBool("XeSS", "BuildPipelines");

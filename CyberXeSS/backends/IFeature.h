@@ -13,8 +13,6 @@ private:
 	bool _isInited = false;
 	int _featureFlags = 0;
 
-	unsigned int _displayWidth = 0;
-	unsigned int _displayHeight = 0;
 	NVSDK_NGX_PerfQuality_Value _perfQualityValue;
 
 	void SetHandle(unsigned int InHandleId);
@@ -30,6 +28,10 @@ protected:
 	int _initFlags = 0;
 	unsigned int _renderWidth = 0;
 	unsigned int _renderHeight = 0;
+	unsigned int _targetWidth = 0;
+	unsigned int _targetHeight = 0;
+	unsigned int _displayWidth = 0;
+	unsigned int _displayHeight = 0;
 	long _frameCount = 0;
 
 	bool SetInitParameters(const NVSDK_NGX_Parameter* InParameters);
@@ -44,6 +46,8 @@ public:
 
 	unsigned int DisplayWidth() const { return _displayWidth; };
 	unsigned int DisplayHeight() const { return _displayHeight; };
+	unsigned int TargetWidth() const { return _targetWidth; };
+	unsigned int TargetHeight() const { return _targetHeight; };
 	unsigned int RenderWidth() const { return _renderWidth; };
 	unsigned int RenderHeight() const { return _renderHeight; };
 	NVSDK_NGX_PerfQuality_Value PerfQualityValue() const { return _perfQualityValue; }

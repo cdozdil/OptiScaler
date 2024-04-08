@@ -55,7 +55,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 
 	if (result != S_OK)
 	{
-		spdlog::error("FSR2FeatureDx11on12_212::Evaluate CreateFence d3d12fence error: {0:x}", result);
+		spdlog::error("FSR2FeatureDx11on12_212::Evaluate QueryInterface error: {0:x}", result);
 		return false;
 	}
 

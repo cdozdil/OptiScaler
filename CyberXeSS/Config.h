@@ -41,8 +41,6 @@ public:
 	// XeSS
 	std::optional<bool> BuildPipelines;
 	std::optional<int32_t> NetworkModel;
-	//std::optional<int32_t> OverrideQuality;
-	//std::optional<bool> ColorSpaceFix;
 
 	// CAS
 	std::optional<bool> CasEnabled;
@@ -80,6 +78,9 @@ public:
 	std::optional<std::string> Dx11Upscaler;
 	std::optional<std::string> Dx12Upscaler;
 	std::optional<std::string> VulkanUpscaler;
+	
+	std::optional<bool> SuperSamplingEnabled;
+	std::optional<float> SuperSamplingMultiplier;
 
 	// fsr
 	std::optional<float> FsrVerticalFov;
@@ -102,6 +103,7 @@ public:
 	int xessDebugFrames = 5;
 	float lastMipBias = 0.0f;
 	
+
 
 	void Reload();
 	bool SaveIni(std::string name);

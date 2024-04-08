@@ -46,8 +46,6 @@ FSR2Feature212::~FSR2Feature212()
 	if (!IsInited())
 		return;
 
-	spdlog::debug("FSR2Feature212::~FSR2Feature212");
-
 	auto errorCode = Fsr212::ffxFsr2ContextDestroy212(&_context);
 
 	if (errorCode != Fsr212::FFX_OK)

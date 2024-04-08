@@ -1,5 +1,6 @@
 #pragma once
 #include "IFeature_Dx12.h"
+#include "../pch.h"
 
 void IFeature_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState) const
 {
@@ -10,6 +11,10 @@ void IFeature_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID
 	barrier.Transition.StateAfter = InAfterState;
 	barrier.Transition.Subresource = 0;
 	InCommandList->ResourceBarrier(1, &barrier);
+}
+
+IFeature_Dx12::IFeature_Dx12(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters)
+{
 }
 
 void IFeature_Dx12::Shutdown()

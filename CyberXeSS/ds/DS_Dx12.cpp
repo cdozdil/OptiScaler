@@ -1,4 +1,4 @@
-#include "CS_Dx12.h"
+#include "DS_Dx12.h"
 
 static ID3DBlob* CompileShader(const char* shaderCode, const char* entryPoint, const char* target)
 {
@@ -33,10 +33,10 @@ static bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootS
 {
 	D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
 	psoDesc.pRootSignature = rootSignature;
-	psoDesc.CS = CD3DX12_SHADER_BYTECODE(const_cast<void*>(shaderBlob->GetBufferPointer()), shaderBlob->GetBufferSize());
 	psoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	psoDesc.CS = CD3DX12_SHADER_BYTECODE(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize());
 
-	HRESULT hr = device->CreateComputePipelineState(&psoDesc, IID_PPV_ARGS(pipelineState));
+	HRESULT hr = device->CreateComputePipelineState(&psoDesc, __uuidof(ID3D12PipelineState*), (void**)pipelineState);
 
 	if (FAILED(hr))
 	{
@@ -47,7 +47,7 @@ static bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootS
 	return true;
 }
 
-bool CS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, D3D12_RESOURCE_STATES InState)
+bool DS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, D3D12_RESOURCE_STATES InState)
 {
 	if (InDevice == nullptr || InSource == nullptr)
 		return false;
@@ -58,7 +58,7 @@ bool CS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
 	{
 		auto bufDesc = _buffer->GetDesc();
 
-		if (bufDesc.Width != texDesc.Width || bufDesc.Height != texDesc.Height || bufDesc.Format != texDesc.Format)
+		if (bufDesc.Width != (UINT64)(texDesc.Width * Scale) || bufDesc.Height != (UINT)(texDesc.Height * Scale) || bufDesc.Format != texDesc.Format)
 		{
 			_buffer->Release();
 			_buffer = nullptr;
@@ -80,6 +80,8 @@ bool CS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
 	}
 
 	texDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS | D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS;
+	texDesc.Width *= Scale;
+	texDesc.Height *= Scale;
 
 	hr = InDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, InState, nullptr, IID_PPV_ARGS(&_buffer));
 
@@ -89,14 +91,14 @@ bool CS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
 		return false;
 	}
 
-	
+
 	_buffer->SetName(L"CS_Buffer");
 	_bufferState = InState;
 
 	return true;
 }
 
-void CS_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RESOURCE_STATES InState)
+void DS_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RESOURCE_STATES InState)
 {
 	if (_bufferState == InState)
 		return;
@@ -111,7 +113,7 @@ void CS_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RES
 	_bufferState = InState;
 }
 
-bool CS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource, ID3D12Resource* OutResource, uint32_t InNumThreadsX, uint32_t InNumThreadsY)
+bool DS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource, ID3D12Resource* OutResource, uint32_t InNumThreadsX, uint32_t InNumThreadsY)
 {
 	if (!_init || InDevice == nullptr || InCmdList == nullptr || InResource == nullptr || OutResource == nullptr || InNumThreadsX == 0 || InNumThreadsY == 0)
 		return false;
@@ -130,6 +132,12 @@ bool CS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 		_cpuUavHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	}
 
+	if (_cpuCbvHandle[_counter].ptr == NULL)
+	{
+		_cpuCbvHandle[_counter] = _cpuUavHandle[_counter];
+		_cpuCbvHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	}
+
 	if (_gpuSrvHandle[_counter].ptr == NULL)
 		_gpuSrvHandle[_counter] = _srvHeap[_counter]->GetGPUDescriptorHandleForHeapStart();
 
@@ -139,10 +147,19 @@ bool CS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 		_gpuUavHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	}
 
+	if (_gpuCbvHandle[_counter].ptr == NULL)
+	{
+		_gpuCbvHandle[_counter] = _gpuUavHandle[_counter];
+		_gpuCbvHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	}
+
+	auto inDesc = InResource->GetDesc();
+	auto outDesc = OutResource->GetDesc();
+
 	// Create SRV for Input Texture
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = InResource->GetDesc().Format;
+	srvDesc.Format = inDesc.Format;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MipLevels = 1;
 
@@ -150,11 +167,31 @@ bool CS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 
 	// Create UAV for Output Texture
 	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
-	uavDesc.Format = OutResource->GetDesc().Format;
+	uavDesc.Format = outDesc.Format;
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 	uavDesc.Texture2D.MipSlice = 0;
 
 	InDevice->CreateUnorderedAccessView(OutResource, nullptr, &uavDesc, _cpuUavHandle[_counter]);
+
+	// Create CBV for Constants
+	Constants constants;
+	constants.srcWidth = inDesc.Width;
+	constants.srcHeight = inDesc.Height;
+	constants.destWidth = outDesc.Width;
+	constants.destHeight = outDesc.Height;
+
+	// Copy the updated constant buffer data to the constant buffer resource
+	UINT8* pCBDataBegin;
+	CD3DX12_RANGE readRange(0, 0); // We do not intend to read from this resource on the CPU
+	_constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pCBDataBegin));
+	memcpy(pCBDataBegin, &constants, sizeof(constants));
+	_constantBuffer->Unmap(0, nullptr);
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+	cbvDesc.BufferLocation = _constantBuffer->GetGPUVirtualAddress();
+	cbvDesc.SizeInBytes = sizeof(constants);
+
+	InDevice->CreateConstantBufferView(&cbvDesc, _cpuCbvHandle[_counter]);
 
 	ID3D12DescriptorHeap* heaps[] = { _srvHeap[_counter] };
 	InCmdList->SetDescriptorHeaps(_countof(heaps), heaps);
@@ -164,6 +201,7 @@ bool CS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 
 	InCmdList->SetComputeRootDescriptorTable(0, _gpuSrvHandle[_counter]);
 	InCmdList->SetComputeRootDescriptorTable(1, _gpuUavHandle[_counter]);
+	InCmdList->SetComputeRootDescriptorTable(2, _gpuCbvHandle[_counter]);
 
 	UINT dispatchWidth = (InResource->GetDesc().Width + InNumThreadsX - 1) / InNumThreadsX;
 	UINT dispatchHeight = (InResource->GetDesc().Height + InNumThreadsY - 1) / InNumThreadsY;
@@ -172,7 +210,7 @@ bool CS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 	return true;
 }
 
-CS_Dx12::CS_Dx12(std::string InName, ID3D12Device* InDevice, std::string InShaderCode, std::string InEntry, std::string InTarget) : _name(InName), _device(InDevice)
+DS_Dx12::DS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), _device(InDevice)
 {
 	if (InDevice == nullptr)
 	{
@@ -184,7 +222,7 @@ CS_Dx12::CS_Dx12(std::string InName, ID3D12Device* InDevice, std::string InShade
 
 	// Describe and create the root signature
 	// ---------------------------------------------------
-	D3D12_DESCRIPTOR_RANGE descriptorRange[2];
+	D3D12_DESCRIPTOR_RANGE descriptorRange[3];
 
 	// SRV Range (Input Texture)
 	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
@@ -200,9 +238,16 @@ CS_Dx12::CS_Dx12(std::string InName, ID3D12Device* InDevice, std::string InShade
 	descriptorRange[1].RegisterSpace = 0;
 	descriptorRange[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
+	// CBV Range (Params)
+	descriptorRange[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	descriptorRange[2].NumDescriptors = 1;
+	descriptorRange[2].BaseShaderRegister = 0; // Assuming b0 register in HLSL for CBV
+	descriptorRange[2].RegisterSpace = 0;
+	descriptorRange[2].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
 	// Define the root parameter (descriptor table)
 	// ---------------------------------------------------
-	D3D12_ROOT_PARAMETER rootParameters[2];
+	D3D12_ROOT_PARAMETER rootParameters[3];
 
 	// Root Parameter for SRV
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
@@ -216,14 +261,24 @@ CS_Dx12::CS_Dx12(std::string InName, ID3D12Device* InDevice, std::string InShade
 	rootParameters[1].DescriptorTable.pDescriptorRanges = &descriptorRange[1];		// Point to the UAV range
 	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
+	// Root Parameter for CBV
+	rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[2].DescriptorTable.NumDescriptorRanges = 1;						// One range (CBV)
+	rootParameters[2].DescriptorTable.pDescriptorRanges = &descriptorRange[2];		// Point to the CBV range
+	rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
 	// A root signature is an array of root parameters
 	// ---------------------------------------------------
 	D3D12_ROOT_SIGNATURE_DESC rootSigDesc;
-	rootSigDesc.NumParameters = 2; // Two root parameters
+	rootSigDesc.NumParameters = 3; // Two root parameters
 	rootSigDesc.pParameters = rootParameters;
 	rootSigDesc.NumStaticSamplers = 0;
 	rootSigDesc.pStaticSamplers = nullptr;
 	rootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
+
+	D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(sizeof(Constants));
+	auto heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+	InDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&_constantBuffer));
 
 	ID3DBlob* errorBlob;
 	ID3DBlob* signatureBlob;
@@ -267,7 +322,7 @@ CS_Dx12::CS_Dx12(std::string InName, ID3D12Device* InDevice, std::string InShade
 	}
 
 	// Compile shader blobs
-	auto _recEncodeShader = CompileShader(InShaderCode.c_str(), InEntry.c_str(), InTarget.c_str());
+	ID3DBlob* _recEncodeShader = CompileShader(downsampleCode.c_str(), "ResizeLanczos", "cs_5_0");
 
 	if (_recEncodeShader == nullptr)
 	{
@@ -289,7 +344,7 @@ CS_Dx12::CS_Dx12(std::string InName, ID3D12Device* InDevice, std::string InShade
 	}
 
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-	heapDesc.NumDescriptors = 2; // One for SRV and one for UAV
+	heapDesc.NumDescriptors = 3; // SRV + UAV + CBV
 	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
@@ -309,10 +364,18 @@ CS_Dx12::CS_Dx12(std::string InName, ID3D12Device* InDevice, std::string InShade
 		return;
 	}
 
-	_init = _srvHeap[1] != nullptr;
+	hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[2]));
+
+	if (FAILED(hr))
+	{
+		spdlog::error("CS_Dx12::CS_Dx12 [{0}] CreateDescriptorHeap[2] error {1:x}", _name, hr);
+		return;
+	}
+
+	_init = _srvHeap[2] != nullptr;
 }
 
-CS_Dx12::~CS_Dx12()
+DS_Dx12::~DS_Dx12()
 {
 	if (!_init)
 		return;
@@ -366,9 +429,21 @@ CS_Dx12::~CS_Dx12()
 		_srvHeap[1] = nullptr;
 	}
 
+	if (_srvHeap[2] != nullptr)
+	{
+		_srvHeap[2]->Release();
+		_srvHeap[2] = nullptr;
+	}
+
 	if (_buffer != nullptr)
 	{
 		_buffer->Release();
 		_buffer = nullptr;
+	}
+
+	if (_constantBuffer != nullptr)
+	{
+		_constantBuffer->Release();
+		_constantBuffer = nullptr;
 	}
 }

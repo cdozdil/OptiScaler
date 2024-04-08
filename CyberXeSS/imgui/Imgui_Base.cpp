@@ -782,7 +782,7 @@ void Imgui_Base::RenderMenu()
 
 				auto cf = Config::Instance()->CurrentFeature;
 				if (cf != nullptr)
-					ImGui::Text("%d x %d -> %d x %d (Shrp: %.2f)", cf->RenderWidth(), cf->RenderHeight(), cf->DisplayWidth(), cf->DisplayHeight(), cf->Sharpness());
+					ImGui::Text("%dx%d -> %dx%d (%dx%d)", cf->RenderWidth(), cf->RenderHeight(), cf->TargetWidth(), cf->TargetHeight(), cf->DisplayWidth(), cf->DisplayHeight());
 
 				ImGui::SameLine(0.0f, 4.0f);
 
@@ -826,8 +826,8 @@ void Imgui_Base::RenderMenu()
 
 			if (displayWidth == 0)
 			{
-				displayWidth == Config::Instance()->CurrentFeature->DisplayWidth();
-				renderWidth == displayWidth / 3.0;
+				displayWidth = Config::Instance()->CurrentFeature->DisplayWidth();
+				renderWidth = displayWidth / 3.0;
 				mipmapUpscalerQuality = 0;
 				mipmapUpscalerRatio = 3.0f;
 				mipBiasCalculated = log2((float)renderWidth / (float)displayWidth);
