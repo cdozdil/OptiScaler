@@ -27,6 +27,9 @@ float mipmapUpscalerRatio = 0;
 uint32_t displayWidth = 0;
 uint32_t renderWidth = 0;
 
+float ssRatio = 0.0f;
+bool ssEnabled = false;
+
 bool _isVisible = false;
 WNDPROC _oWndProc = nullptr;
 
@@ -371,10 +374,10 @@ void Imgui_Base::RenderMenu()
 		flags |= ImGuiWindowFlags_NoCollapse;
 
 		auto posX = (Config::Instance()->CurrentFeature->DisplayWidth() - 770.0f) / 2.0f;
-		auto posY = (Config::Instance()->CurrentFeature->DisplayHeight() - 620.0f) / 2.0f;
+		auto posY = (Config::Instance()->CurrentFeature->DisplayHeight() - 670.0f) / 2.0f;
 
 		ImGui::SetNextWindowPos(ImVec2{ posX , posY }, ImGuiCond_FirstUseEver);
-		ImGui::SetNextWindowSize(ImVec2{ 770.0f, 620.0f }, ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2{ 770.0f, 670.0f }, ImGuiCond_FirstUseEver);
 
 		if (ImGui::Begin("CyberXeSS v0.4", nullptr, flags))
 		{
@@ -555,6 +558,38 @@ void Imgui_Base::RenderMenu()
 					Config::Instance()->FsrHorizontalFov = hfov;
 
 				ImGui::EndDisabled();
+
+				ImGui::EndDisabled();
+
+				// SUPERSAMPLING -----------------------------
+				ImGui::SeparatorText("Supersampling");
+
+				if (ssRatio == 0.0f)
+				{
+					ssRatio = Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
+					ssEnabled = Config::Instance()->SuperSamplingEnabled.value_or(false);
+				}
+
+				ImGui::BeginDisabled(
+					(Config::Instance()->Api == NVNGX_VULKAN || (Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") == "fsr22")) ||
+					Config::Instance()->DisplayResolution.value_or(false)
+				);
+
+				ImGui::Checkbox("Enable", &ssEnabled);
+
+				ImGui::SameLine(0.0f, 6.0f);
+
+				if (ImGui::Button("Apply Change"))
+				{
+					if (ssEnabled != Config::Instance()->SuperSamplingEnabled.value_or(false) || ssRatio != Config::Instance()->SuperSamplingMultiplier.value_or(3.0f))
+					{
+						Config::Instance()->SuperSamplingEnabled = ssEnabled;
+						Config::Instance()->SuperSamplingMultiplier = ssRatio;
+						Config::Instance()->changeBackend = true;
+					}
+				}
+
+				ImGui::SliderFloat("Ratio", &ssRatio, (float)Config::Instance()->CurrentFeature->DisplayWidth() / (float)Config::Instance()->CurrentFeature->RenderWidth(), 5.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
 
 				ImGui::EndDisabled();
 
