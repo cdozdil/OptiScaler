@@ -18,6 +18,8 @@ bool FSR2FeatureDx12_212::Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter
 		if (Imgui == nullptr || Imgui.get() == nullptr)
 			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
 
+		OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", InDevice);
+
 		return true;
 	}
 
@@ -43,6 +45,10 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 	params.reset = (reset == 1);
 
 	GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
+
+	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) &&
+		!Config::Instance()->DisplayResolution.value_or(false) &&
+		((float)DisplayWidth() / (float)params.renderSize.width) < Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
 
 	spdlog::debug("FSR2FeatureDx12_212::Evaluate Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
@@ -113,7 +119,20 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 				(D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value(),
 				D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-		params.output = Fsr212::ffxGetResourceDX12_212(&_context, paramOutput, (wchar_t*)L"FSR2_Output", Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+		if (useSS)
+		{
+			OUT_DS->Scale = (float)TargetWidth() / (float)DisplayWidth();
+
+			if (OUT_DS->CreateBufferResource(Device, paramOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+			{
+				OUT_DS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+				params.output = Fsr212::ffxGetResourceDX12_212(&_context, OUT_DS->Buffer(), (wchar_t*)L"FSR2_Output", Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+			}
+			else
+				params.output = Fsr212::ffxGetResourceDX12_212(&_context, paramOutput, (wchar_t*)L"FSR2_Output", Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+		}
+		else
+			params.output = Fsr212::ffxGetResourceDX12_212(&_context, paramOutput, (wchar_t*)L"FSR2_Output", Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 	}
 	else
 	{
@@ -275,6 +294,19 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 		return false;
 	}
 
+	if (useSS)
+	{
+		spdlog::debug("FSR2FeatureDx12_212::Evaluate downscaling output...");
+		OUT_DS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+		if (!OUT_DS->Dispatch(Device, InCommandList, OUT_DS->Buffer(), paramOutput, 16, 16))
+		{
+			Config::Instance()->SuperSamplingEnabled = false;
+			Config::Instance()->changeBackend = true;
+			return true;
+		}
+	}
+
 	// imgui
 	if (_frameCount > 20)
 	{
@@ -360,10 +392,6 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	}
 
 	_contextDesc.device = Fsr212::ffxGetDeviceDX12_212(Device);
-	_contextDesc.maxRenderSize.width = DisplayWidth();
-	_contextDesc.maxRenderSize.height = DisplayHeight();
-	_contextDesc.displaySize.width = DisplayWidth();
-	_contextDesc.displaySize.height = DisplayHeight();
 
 	_contextDesc.flags = 0;
 
@@ -433,6 +461,22 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		Config::Instance()->DisplayResolution = false;
 		spdlog::info("FSR2FeatureDx12_212::InitFSR2 xessParams.initFlags (LowResMV) {0:b}", _contextDesc.flags);
 	}
+
+	if (Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+	{
+		_targetWidth = RenderWidth() * Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
+		_targetHeight = RenderHeight() * Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
+	}
+	else
+	{
+		_targetWidth = DisplayWidth();
+		_targetHeight = DisplayHeight();
+	}
+
+	_contextDesc.maxRenderSize.width = TargetWidth();
+	_contextDesc.maxRenderSize.height = TargetHeight();
+	_contextDesc.displaySize.width = TargetWidth();
+	_contextDesc.displaySize.height = TargetHeight();
 
 	spdlog::debug("FSR2FeatureDx12_212::InitFSR2 ffxFsr2ContextCreate!");
 

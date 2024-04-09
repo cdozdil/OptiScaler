@@ -19,7 +19,6 @@ bool XeSSFeatureDx12::Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* In
 			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
 
 		OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", InDevice);
-		MV_US = std::make_unique<DS_Dx12>("MV Upsample", InDevice);
 
 		return true;
 	}
@@ -68,7 +67,6 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			CAS = std::make_unique<CAS_Dx12>(Device, DisplayWidth(), DisplayHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
 		}
 	}
-
 	xess_result_t xessResult;
 	xess_d3d12_execute_params_t params{};
 
@@ -83,6 +81,10 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	GetRenderResolution(InParameters, &params.inputWidth, &params.inputHeight);
 
 	auto sharpness = GetSharpness(InParameters);
+
+	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) && 
+				 !Config::Instance()->DisplayResolution.value_or(false) &&
+				 ((float)DisplayWidth() / (float)params.inputWidth) < Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
 
 	spdlog::debug("XeSSFeatureDx12::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
@@ -138,19 +140,6 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		}
-
-		if (Config::Instance()->DisplayResolution.value_or(false) && Config::Instance()->SuperSamplingEnabled.value_or(true))
-		{
-			spdlog::debug("XeSSFeatureDx12::Evaluate upscaling MotionVectors...");
-
-			MV_US->Scale = (float)TargetWidth() / (float)DisplayWidth();
-
-			if (MV_US->CreateBufferResource(Device, params.pVelocityTexture, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) &&
-				MV_US->Dispatch(Device, InCommandList, params.pVelocityTexture, MV_US->Buffer(), 8, 8))
-			{
-				params.pVelocityTexture = MV_US->Buffer();
-			}
-		}
 	}
 	else
 	{
@@ -173,7 +162,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			ResourceBarrier(InCommandList, paramOutput, (D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		}
 
-		if (Config::Instance()->SuperSamplingEnabled.value_or(true))
+		if (useSS)
 		{
 			OUT_DS->Scale = (float)TargetWidth() / (float)DisplayWidth();
 
@@ -304,7 +293,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 		CAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		if (Config::Instance()->SuperSamplingEnabled.value_or(true))
+		if (useSS)
 		{
 			if (!CAS->Dispatch(InCommandList, sharpness, params.pOutputTexture, OUT_DS->Buffer()))
 			{
@@ -322,12 +311,12 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		}
 	}
 
-	if (Config::Instance()->SuperSamplingEnabled.value_or(true))
+	if (useSS)
 	{
 		spdlog::debug("XeSSFeatureDx12::Evaluate downscaling output...");
 		OUT_DS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		if (!OUT_DS->Dispatch(Device, InCommandList, OUT_DS->Buffer(), paramOutput, 8, 8))
+		if (!OUT_DS->Dispatch(Device, InCommandList, OUT_DS->Buffer(), paramOutput, 16, 16))
 		{
 			Config::Instance()->SuperSamplingEnabled = false;
 			Config::Instance()->changeBackend = true;

@@ -125,6 +125,10 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 	auto sharpness = GetSharpness(InParameters);
 
+	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) &&
+		!Config::Instance()->DisplayResolution.value_or(false) &&
+		((float)DisplayWidth() / (float)params.inputWidth) < Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
+
 	spdlog::debug("XeSSFeatureDx11::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
 	if (!ProcessDx11Textures(InParameters))
@@ -149,22 +153,25 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	params.pVelocityTexture = dx11Mv.Dx12Resource;
 	_hasMV = params.pVelocityTexture != nullptr;
 
-	if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f)
+	if (useSS)
 	{
-		if (!CAS->CreateBufferResource(Dx12on11Device, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		OUT_DS->Scale = (float)TargetWidth() / (float)DisplayWidth();
+
+		if (OUT_DS->CreateBufferResource(Dx12on11Device, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
-			spdlog::error("XeSSFeatureDx11::Evaluate Can't create cas buffer!");
-
-			Dx12CommandList->Close();
-			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-			Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-
-			Dx12CommandAllocator->Reset();
-			Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
-
-			return false;
+			OUT_DS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			params.pOutputTexture = OUT_DS->Buffer();
 		}
+		else
+			params.pOutputTexture = dx11Out.Dx12Resource;
+	}
+	else
+		params.pOutputTexture = dx11Out.Dx12Resource;
 
+	if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f &&
+		CAS->CreateBufferResource(Dx12on11Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+	{
+		CAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		params.pOutputTexture = CAS->Buffer();
 	}
 	else
@@ -224,9 +231,49 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		ResourceBarrier(Dx12CommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		CAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		if (!CAS->Dispatch(Dx12CommandList, sharpness, CAS->Buffer(), dx11Out.Dx12Resource))
+		if (useSS)
 		{
-			Config::Instance()->CasEnabled = false;
+			if (!CAS->Dispatch(Dx12CommandList, sharpness, params.pOutputTexture, OUT_DS->Buffer()))
+			{
+				Config::Instance()->CasEnabled = false;
+
+				Dx12CommandList->Close();
+				ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+				Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+				Dx12CommandAllocator->Reset();
+				Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
+				return true;
+			}
+		}
+		else
+		{
+			if (!CAS->Dispatch(Dx12CommandList, sharpness, params.pOutputTexture, dx11Out.Dx12Resource))
+			{
+				Config::Instance()->CasEnabled = false;
+
+				Dx12CommandList->Close();
+				ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+				Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+				Dx12CommandAllocator->Reset();
+				Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
+				return true;
+			}
+		}
+	}
+
+	if (useSS)
+	{
+		spdlog::debug("XeSSFeatureDx11::Evaluate downscaling output...");
+		OUT_DS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+		if (!OUT_DS->Dispatch(Dx12on11Device, Dx12CommandList, OUT_DS->Buffer(), dx11Out.Dx12Resource, 16, 16))
+		{
+			Config::Instance()->SuperSamplingEnabled = false;
+			Config::Instance()->changeBackend = true;
 
 			Dx12CommandList->Close();
 			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };

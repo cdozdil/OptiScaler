@@ -49,52 +49,6 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 	xess_d3d12_init_params_t xessParams{};
 
-	if (Config::Instance()->SuperSamplingEnabled.value_or(true))
-	{
-		_targetWidth = RenderWidth() * Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
-		_targetHeight = RenderHeight() * Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
-		xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
-	}
-	else
-	{		
-		_targetWidth == DisplayWidth();
-		_targetHeight = DisplayHeight();
-
-		switch (PerfQualityValue())
-		{
-		case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
-			break;
-
-		case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
-			break;
-
-		case NVSDK_NGX_PerfQuality_Value_Balanced:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
-			break;
-
-		case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
-			break;
-
-		case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
-			break;
-
-		case NVSDK_NGX_PerfQuality_Value_DLAA:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_AA;
-			break;
-
-		default:
-			xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED; //Set out-of-range value for non-existing XESS_QUALITY_SETTING_BALANCED mode
-			break;
-		}
-	}
-
-	xessParams.outputResolution.x = TargetWidth();
-	xessParams.outputResolution.y = TargetHeight();
-
 	xessParams.initFlags = XESS_INIT_FLAG_NONE;
 
 	int featureFlags;
@@ -167,6 +121,51 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		spdlog::info("XeSSFeature::InitXeSS xessParams.initFlags (ReactiveMaskActive) {0:b}", xessParams.initFlags);
 	}
 
+	switch (PerfQualityValue())
+	{
+	case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
+		xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
+		break;
+
+	case NVSDK_NGX_PerfQuality_Value_MaxPerf:
+		xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
+		break;
+
+	case NVSDK_NGX_PerfQuality_Value_Balanced:
+		xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
+		break;
+
+	case NVSDK_NGX_PerfQuality_Value_MaxQuality:
+		xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
+		break;
+
+	case NVSDK_NGX_PerfQuality_Value_UltraQuality:
+		xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
+		break;
+
+	case NVSDK_NGX_PerfQuality_Value_DLAA:
+		xessParams.qualitySetting = XESS_QUALITY_SETTING_AA;
+		break;
+
+	default:
+		xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED; //Set out-of-range value for non-existing XESS_QUALITY_SETTING_BALANCED mode
+		break;
+	}
+
+	if (Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+	{
+		_targetWidth = RenderWidth() * Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
+		_targetHeight = RenderHeight() * Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
+	}
+	else
+	{
+		_targetWidth = DisplayWidth();
+		_targetHeight = DisplayHeight();
+	}
+
+	xessParams.outputResolution.x = TargetWidth();
+	xessParams.outputResolution.y = TargetHeight();
+
 	if (Config::Instance()->BuildPipelines.value_or(true))
 	{
 		spdlog::debug("XeSSFeature::InitXeSS xessD3D12BuildPipelines!");
@@ -197,7 +196,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	}
 
 	CAS = std::make_unique<CAS_Dx12>(device, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
-	
+
 	SetInit(true);
 
 	return true;
