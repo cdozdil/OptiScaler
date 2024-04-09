@@ -31,14 +31,7 @@ private:
 	int _counter = 0;
 
 	std::string downsampleCode = R"(
-#define PI 3.141592
-
-#define LANCZOS_N 3
-
-Texture2D<float4> _SrcImage;
-RWTexture2D<float4> _PixelValueWrite;
-
-cbuffer params
+cbuffer Params : register(b0)
 {
     int _SrcWidth;
     int _SrcHeight;
@@ -46,80 +39,46 @@ cbuffer params
     int _DstHeight;
 };
 
-bool IsValidPixelPosition(uint2 p, uint width, uint height)
-{
-    bool isValid = (p.x >= 0 && p.x < width  && p.y >= 0 && p.y < height);
-    return isValid ? true : false;
-}
+Texture2D<float4> InputTexture : register(t0);
+RWTexture2D<float4> OutputTexture : register(u0);
 
-float Sinc(float x)
+float bicubic_weight(float x)
 {
-    if(x == 0.0) return 1.0;
-    return sin(PI * x) / (PI * x);
-}
+    float a = -0.5f;
+    float absX = abs(x);
 
-float Lanczos(float x, float n)
-{
-    if(abs(x) >= n) return 0.0;
-    return Sinc(x) * Sinc(x/n);
+    if (absX <= 1.0f)
+        return (a + 2.0f) * absX * absX * absX - (a + 3.0f) * absX * absX + 1.0f;
+    else if (absX < 2.0f)
+        return a * absX * absX * absX - 5.0f * a * absX * absX + 8.0f * a * absX - 4.0f * a;
+    else
+        return 0.0f;
 }
 
 [numthreads(16, 16, 1)]
-void ResizeLanczos(uint3 id : SV_DispatchThreadID)
+void CSMain(uint3 DTid : SV_DispatchThreadID)
 {
-    if (!IsValidPixelPosition(id.xy, _DstWidth, _DstHeight))
+    if (DTid.x >= _DstWidth || DTid.y >= _DstHeight)
         return;
 
-    float2 range = float2(LANCZOS_N, LANCZOS_N);
-    float2 scaleFactor = float2((float)_DstWidth/_SrcWidth, (float)_DstHeight/_SrcHeight);
+    float2 uv = float2(DTid.x / (_DstWidth - 1.0f), DTid.y / (_DstHeight - 1.0f));
+    float2 pixel = uv * float2(_SrcWidth, _SrcHeight);
+    float2 texel = floor(pixel);
+    float2 t = pixel - texel;
+    t = t * t * (3.0f - 2.0f * t);
 
-    if(scaleFactor.x < 1.0)
-        range.x *= 1.0/scaleFactor.x;
-    else 
-        range.x *= scaleFactor.x;
-
-    if(scaleFactor.y < 1.0)
-        range.y *= 1.0/scaleFactor.y;
-    else
-        range.y *= scaleFactor.y;
-
-    float2 srcCenter = float2(_SrcWidth/2.0 - 0.5, _SrcHeight/2.0 - 0.5);
-    float2 dstCenter = float2(_DstWidth/2.0 - 0.5, _DstHeight/2.0 - 0.5);
-
-    float x = id.x - dstCenter.x;
-    float y = id.y - dstCenter.y;
-    float2 uv = float2(x/_DstWidth, y/_DstHeight);
-
-    float2 srcPixelPos = float2(uv.x*_SrcWidth + srcCenter.x, uv.y*_SrcHeight + srcCenter.y);
-
-    int startX = (int)clamp(srcPixelPos.x - range.x, 0, _SrcWidth - 1);
-    int startY = (int)clamp(srcPixelPos.y - range.y, 0, _SrcHeight - 1);
-    int endX   = (int)clamp(srcPixelPos.x + range.x, 0, _SrcWidth - 1);
-    int endY   = (int)clamp(srcPixelPos.y + range.y, 0, _SrcHeight - 1);
-
-    float scaleCorrectionX = LANCZOS_N / range.x;
-    float scaleCorrectionY = LANCZOS_N / range.y;
-    float totalWeight = 0.0;
-    float4 color = float4(0, 0, 0, 0);
-    for(int iy = startY; iy <= endY; iy++)
+    float4 result = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    for (int y = -1; y <= 2; y++)
     {
-        for(int ix = startX; ix <= endX; ix++)
+        for (int x = -1; x <= 2; x++)
         {
-            float dx = (ix - srcPixelPos.x) * scaleCorrectionX;
-            float dy = (iy - srcPixelPos.y) * scaleCorrectionY;
-
-            float weight = Lanczos(dx, LANCZOS_N) * Lanczos(dy, LANCZOS_N);
-            totalWeight += weight;
-            color += _SrcImage[int2(ix, iy)] * weight;
+            float4 color = InputTexture.Load(int3(texel.x + x, texel.y + y, 0));
+            float weight = bicubic_weight(x - t.x) * bicubic_weight(y - t.y);
+            result += color * weight;
         }
     }
 
-    if(totalWeight > 0.0)
-    {
-        color = color / totalWeight;
-    }
-
-    _PixelValueWrite[id.xy] = color;
+    OutputTexture[DTid.xy] = result;
 }
 )";
 
