@@ -15,7 +15,6 @@ protected:
 	ID3D12Device* Device = nullptr;
 	static inline std::unique_ptr<Imgui_Dx12> Imgui = nullptr;
 	std::unique_ptr<DS_Dx12> OUT_DS = nullptr;
-	std::unique_ptr<DS_Dx12> MV_US = nullptr;
 
 	void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState) const;
 

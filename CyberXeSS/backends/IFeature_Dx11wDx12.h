@@ -6,6 +6,7 @@
 #include <d3d11_4.h>
 #include <dxgi1_6.h>
 
+#include "../ds/DS_Dx12.h"
 
 class IFeature_Dx11wDx12 : public virtual IFeature_Dx11
 {
@@ -51,6 +52,8 @@ protected:
 	ID3D11Fence* dx11fence_2 = nullptr;
 	ID3D12Fence* dx12fence_2 = nullptr;
 	ID3D11Resource* paramOutput = nullptr;
+
+	std::unique_ptr<DS_Dx12> OUT_DS = nullptr;
 
 	bool CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutResource, bool InCopy);
 	void ReleaseSharedResources();
