@@ -7,6 +7,7 @@ class XeSSFeatureDx11 : public XeSSFeature, public IFeature_Dx11wDx12
 {
 private:
 	ID3D12Resource* _outBuffer;
+	bool _baseInit = false;
 
 protected:
 

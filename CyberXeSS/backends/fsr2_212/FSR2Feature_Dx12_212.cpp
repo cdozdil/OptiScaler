@@ -71,10 +71,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 		else if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL)
 		{
 			Config::Instance()->ColorResourceBarrier = (int)D3D12_RESOURCE_STATE_RENDER_TARGET;
-
-			ResourceBarrier(InCommandList, paramColor,
-				D3D12_RESOURCE_STATE_RENDER_TARGET,
-				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			ResourceBarrier(InCommandList, paramColor, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		}
 
 		params.color = Fsr212::ffxGetResourceDX12_212(&_context, paramColor, (wchar_t*)L"FSR2_Color", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
@@ -94,9 +91,31 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 		spdlog::debug("FSR2FeatureDx12_212::Evaluate MotionVectors exist..");
 
 		if (Config::Instance()->MVResourceBarrier.has_value())
-			ResourceBarrier(InCommandList, paramVelocity,
-				(D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value(),
-				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			ResourceBarrier(InCommandList, paramVelocity, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		else if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL)
+		{
+			Config::Instance()->MVResourceBarrier = (int)D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+			ResourceBarrier(InCommandList, paramVelocity, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		}
+
+		if (!Config::Instance()->DisplayResolution.has_value())
+		{
+			auto desc = paramVelocity->GetDesc();
+			bool lowResMV = desc.Width == params.renderSize.width;
+
+			if (Config::Instance()->DisplayResolution.value_or(false) && lowResMV)
+			{
+				spdlog::warn("FSR2FeatureDx12_212::Evaluate MotionVectors size and feature init config not matching!!");
+				Config::Instance()->DisplayResolution = false;
+				Config::Instance()->changeBackend = true;
+			}
+			else if (!Config::Instance()->DisplayResolution.value_or(false) && !lowResMV)
+			{
+				spdlog::warn("FSR2FeatureDx12_212::Evaluate MotionVectors size and feature init config not matching!!");
+				Config::Instance()->DisplayResolution = true;
+				Config::Instance()->changeBackend = true;
+			}
+		}
 
 		params.motionVectors = Fsr212::ffxGetResourceDX12_212(&_context, paramVelocity, (wchar_t*)L"FSR2_MotionVectors", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
@@ -452,13 +471,11 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
 	if (Config::Instance()->DisplayResolution.value_or(!LowRes))
 	{
-		Config::Instance()->DisplayResolution = true;
 		_contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
 		spdlog::info("FSR2FeatureDx12_212::InitFSR2 xessParams.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
 	}
 	else
 	{
-		Config::Instance()->DisplayResolution = false;
 		spdlog::info("FSR2FeatureDx12_212::InitFSR2 xessParams.initFlags (LowResMV) {0:b}", _contextDesc.flags);
 	}
 

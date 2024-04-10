@@ -19,36 +19,10 @@ bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 	if (IsInited())
 		return true;
 
-	if (!BaseInit(InDevice, InContext, InParameters))
-	{
-		spdlog::error("XeSSFeatureDx11::Init BaseInit failed!");
-		return false;
-	}
+	Device = InDevice;
+	DeviceContext = InContext;
 
-	if (Dx12on11Device == nullptr)
-	{
-		spdlog::error("XeSSFeatureDx11::Init Dx12on11Device is null!");
-		return false;
-	}
-
-	spdlog::debug("XeSSFeatureDx11::Init calling InitXeSS");
-
-	if (!InitXeSS(Dx12on11Device, InParameters))
-	{
-		spdlog::error("XeSSFeatureDx11::Init InitXeSS fail!");
-		return false;
-	}
-
-	if (Imgui == nullptr || Imgui.get() == nullptr)
-	{
-		spdlog::debug("XeSSFeatureDx11::Init Create Imgui!");
-		Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
-	}
-
-	spdlog::trace("XeSSFeatureDx11::Init sleeping after XeSSContext creation for 500ms");
-	std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-	OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", Dx12on11Device);
+	_baseInit = false;
 
 	return true;
 }
@@ -56,6 +30,42 @@ bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("XeSSFeatureDx11::Evaluate");
+
+	if (!_baseInit)
+	{
+		if (!BaseInit(Device, InDeviceContext, InParameters))
+		{
+			spdlog::error("XeSSFeatureDx11::Evaluate BaseInit failed!");
+			return false;
+		}
+
+		_baseInit = true;
+
+		if (Dx12on11Device == nullptr)
+		{
+			spdlog::error("XeSSFeatureDx11::Evaluate Dx12on11Device is null!");
+			return false;
+		}
+
+		spdlog::debug("XeSSFeatureDx11::Evaluate calling InitXeSS");
+
+		if (!InitXeSS(Dx12on11Device, InParameters))
+		{
+			spdlog::error("XeSSFeatureDx11::Evaluate InitXeSS fail!");
+			return false;
+		}
+
+		if (Imgui == nullptr || Imgui.get() == nullptr)
+		{
+			spdlog::debug("XeSSFeatureDx11::Evaluate Create Imgui!");
+			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+		}
+
+		spdlog::trace("XeSSFeatureDx11::Evaluate sleeping after XeSSContext creation for 1500ms");
+		std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+
+		OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", Dx12on11Device);
+	}
 
 	if (!IsInited() || !_xessContext)
 		return false;
@@ -184,6 +194,25 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	_hasExposure = params.pExposureScaleTexture != nullptr;
 	params.pResponsivePixelMaskTexture = dx11Tm.Dx12Resource;
 	_hasTM = params.pResponsivePixelMaskTexture != nullptr;
+
+	if (_hasMV && !Config::Instance()->DisplayResolution.has_value())
+	{
+		auto desc = dx11Mv.Dx12Resource->GetDesc();
+		bool lowResMV = desc.Width == params.inputWidth;
+
+		if (Config::Instance()->DisplayResolution.value_or(false) && lowResMV)
+		{
+			spdlog::warn("XeSSFeatureDx11::Evaluate MotionVectors size and feature init config not matching!!");
+			Config::Instance()->DisplayResolution = false;
+			Config::Instance()->changeBackend = true;
+		}
+		else if (!Config::Instance()->DisplayResolution.value_or(false) && !lowResMV)
+		{
+			spdlog::warn("XeSSFeatureDx11::Evaluate MotionVectors size and feature init config not matching!!");
+			Config::Instance()->DisplayResolution = true;
+			Config::Instance()->changeBackend = true;
+		}
+	}
 
 	spdlog::debug("XeSSFeatureDx11::Evaluate Textures -> params complete!");
 

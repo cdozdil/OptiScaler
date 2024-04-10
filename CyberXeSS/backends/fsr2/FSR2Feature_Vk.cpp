@@ -96,13 +96,11 @@ bool FSR2FeatureVk::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
 	if (Config::Instance()->DisplayResolution.value_or(!LowRes))
 	{
-		Config::Instance()->DisplayResolution = true;
 		_contextDesc.flags |= FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
 		spdlog::info("FSR2FeatureVk::InitFSR2 xessParams.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
 	}
 	else
 	{
-		Config::Instance()->DisplayResolution = false;
 		spdlog::info("FSR2FeatureVk::InitFSR2 xessParams.initFlags (LowResMV) {0:b}", _contextDesc.flags);
 	}
 

@@ -11,30 +11,10 @@ bool FSR2FeatureDx11on12_212::Init(ID3D11Device* InDevice, ID3D11DeviceContext* 
 	if (IsInited())
 		return true;
 
-	if (!BaseInit(InDevice, InContext, InParameters))
-	{
-		spdlog::debug("FSR2FeatureDx11on12_212::Init BaseInit failed!");
-		return false;
-	}
+	Device = InDevice;
+	DeviceContext = InContext;
 
-	spdlog::debug("FSR2FeatureDx11on12_212::Init calling InitFSR2");
-
-	if (Dx12on11Device == nullptr)
-	{
-		spdlog::error("FSR2FeatureDx11on12_212::Init Dx12on11Device is null!");
-		return false;
-	}
-
-	if (!InitFSR2(InParameters))
-	{
-		spdlog::error("FSR2FeatureDx11on12_212::Init InitFSR2 fail!");
-		return false;
-	}
-
-	if (Imgui == nullptr || Imgui.get() == nullptr)
-		Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
-
-	OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", Dx12on11Device);
+	_baseInit = false;
 
 	return true;
 }
@@ -42,6 +22,39 @@ bool FSR2FeatureDx11on12_212::Init(ID3D11Device* InDevice, ID3D11DeviceContext* 
 bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("FSR2FeatureDx11on12_212::Evaluate");
+
+	if (!_baseInit)
+	{
+		if (!BaseInit(Device, InDeviceContext, InParameters))
+		{
+			spdlog::debug("FSR2FeatureDx11on12_212::Init BaseInit failed!");
+			return false;
+		}
+
+		_baseInit = true;
+
+		spdlog::debug("FSR2FeatureDx11on12_212::Init calling InitFSR2");
+
+		if (Dx12on11Device == nullptr)
+		{
+			spdlog::error("FSR2FeatureDx11on12_212::Init Dx12on11Device is null!");
+			return false;
+		}
+
+		if (!InitFSR2(InParameters))
+		{
+			spdlog::error("FSR2FeatureDx11on12_212::Init InitFSR2 fail!");
+			return false;
+		}
+
+		if (Imgui == nullptr || Imgui.get() == nullptr)
+			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+
+		spdlog::trace("FSR2FeatureDx11on12_212::Evaluate sleeping after FSRContext creation for 1500ms");
+		std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+
+		OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", Dx12on11Device);
+	}
 
 	if (!IsInited())
 		return false;
@@ -114,6 +127,25 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 	_hasExposure = params.exposure.resource != nullptr;
 	_hasTM = params.reactive.resource != nullptr;
 	_hasOutput = params.output.resource != nullptr;
+
+	if (_hasMV && !Config::Instance()->DisplayResolution.has_value())
+	{
+		auto desc = dx11Mv.Dx12Resource->GetDesc();
+		bool lowResMV = desc.Width == params.renderSize.width;
+
+		if (Config::Instance()->DisplayResolution.value_or(false) && lowResMV)
+		{
+			spdlog::warn("FSR2FeatureDx11on12_212::Evaluate MotionVectors size and feature init config not matching!!");
+			Config::Instance()->DisplayResolution = false;
+			Config::Instance()->changeBackend = true;
+		}
+		else if (!Config::Instance()->DisplayResolution.value_or(false) && !lowResMV)
+		{
+			spdlog::warn("FSR2FeatureDx11on12_212::Evaluate MotionVectors size and feature init config not matching!!");
+			Config::Instance()->DisplayResolution = true;
+			Config::Instance()->changeBackend = true;
+		}
+	}
 
 #pragma endregion
 
@@ -343,13 +375,11 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
 	if (Config::Instance()->DisplayResolution.value_or(!LowRes))
 	{
-		Config::Instance()->DisplayResolution = true;
 		_contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
 		spdlog::info("FSR2FeatureDx11on12_212::InitFSR2 xessParams.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
 	}
 	else
 	{
-		Config::Instance()->DisplayResolution = false;
 		spdlog::info("FSR2FeatureDx11on12_212::InitFSR2 xessParams.initFlags (LowResMV) {0:b}", _contextDesc.flags);
 	}
 

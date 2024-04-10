@@ -103,13 +103,11 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 	if (Config::Instance()->DisplayResolution.value_or(!LowRes))
 	{
-		Config::Instance()->DisplayResolution = true;
 		xessParams.initFlags |= XESS_INIT_FLAG_HIGH_RES_MV;
 		spdlog::info("XeSSFeature::InitXeSS xessParams.initFlags (!LowResMV) {0:b}", xessParams.initFlags);
 	}
 	else
 	{
-		Config::Instance()->DisplayResolution = false;
 		spdlog::info("XeSSFeature::InitXeSS xessParams.initFlags (LowResMV) {0:b}", xessParams.initFlags);
 	}
 

@@ -188,13 +188,11 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
 	if (Config::Instance()->DisplayResolution.value_or(!LowRes))
 	{
-		Config::Instance()->DisplayResolution = true;
 		_contextDesc.flags |= FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
 		spdlog::info("FSR2FeatureDx11::InitFSR2 xessParams.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
 	}
 	else
 	{
-		Config::Instance()->DisplayResolution = false;
 		spdlog::info("FSR2FeatureDx11::InitFSR2 xessParams.initFlags (LowResMV) {0:b}", _contextDesc.flags);
 	}
 
@@ -277,6 +275,26 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, const NVSDK_NGX_P
 	{
 		spdlog::debug("FSR2FeatureDx11::Evaluate MotionVectors exist..");
 		params.motionVectors = ffxGetResourceDX11(&_context, paramVelocity, (wchar_t*)L"FSR2_MotionVectors");
+
+		if (!Config::Instance()->DisplayResolution.has_value())
+		{
+			D3D11_TEXTURE2D_DESC desc;
+			((ID3D11Texture2D*)paramVelocity)->GetDesc(&desc);
+			bool lowResMV = desc.Width == params.renderSize.width;
+
+			if (Config::Instance()->DisplayResolution.value_or(false) && lowResMV)
+			{
+				spdlog::warn("FSR2FeatureDx11::Evaluate MotionVectors size and feature init config not matching!!");
+				Config::Instance()->DisplayResolution = false;
+				Config::Instance()->changeBackend = true;
+			}
+			else if (!Config::Instance()->DisplayResolution.value_or(false) && !lowResMV)
+			{
+				spdlog::warn("FSR2FeatureDx11::Evaluate MotionVectors size and feature init config not matching!!");
+				Config::Instance()->DisplayResolution = true;
+				Config::Instance()->changeBackend = true;
+			}
+		}
 	}
 	else
 	{
