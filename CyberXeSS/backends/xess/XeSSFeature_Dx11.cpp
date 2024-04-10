@@ -48,6 +48,8 @@ bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 	spdlog::trace("XeSSFeatureDx11::Init sleeping after XeSSContext creation for 500ms");
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
+	OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", Dx12on11Device);
+
 	return true;
 }
 
@@ -173,10 +175,6 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	{
 		CAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		params.pOutputTexture = CAS->Buffer();
-	}
-	else
-	{
-		params.pOutputTexture = dx11Out.Dx12Resource;
 	}
 
 	_hasOutput = params.pOutputTexture != nullptr;
