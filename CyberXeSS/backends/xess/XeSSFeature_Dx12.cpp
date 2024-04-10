@@ -82,9 +82,11 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	auto sharpness = GetSharpness(InParameters);
 
+	float ssMulti = Version().major >= 1 && Version().minor >= 3 ? Config::Instance()->SuperSamplingMultiplier.value_or(3.0f) : Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
+
 	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) && 
 				 !Config::Instance()->DisplayResolution.value_or(false) &&
-				 ((float)DisplayWidth() / (float)params.inputWidth) < Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
+				 ((float)DisplayWidth() / (float)params.inputWidth) < ssMulti;
 
 	spdlog::debug("XeSSFeatureDx12::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 

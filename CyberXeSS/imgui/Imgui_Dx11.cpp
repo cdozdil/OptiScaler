@@ -119,10 +119,7 @@ Imgui_Dx11::~Imgui_Dx11()
 	if (!_dx11Init)
 		return;
 
-	spdlog::debug("Imgui_Dx11::~Imgui_Dx11");
-
 	ImGui::SetCurrentContext(context);
-	spdlog::trace("Imgui_Dx11::~Imgui_Dx11 sleeping before ImGui_ImplDX11_Shutdown for 250ms");
 	std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
 	ImGui_ImplDX11_Shutdown();
@@ -131,7 +128,6 @@ Imgui_Dx11::~Imgui_Dx11()
 		ImGui::SetCurrentContext(currCtx);
 
 	// hackzor
-	spdlog::trace("Imgui_Dx11::~Imgui_Dx11 sleeping after ImGui_ImplDX11_Shutdown for 250ms");
 	std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
 	if (_renderTargetTexture)

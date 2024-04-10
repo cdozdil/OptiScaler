@@ -47,6 +47,7 @@ private:
 	bool _depthInverted = false;
 	unsigned int _lastWidth = 0;
 	unsigned int _lastHeight = 0;
+	static inline feature_version _version{ 2, 2, 1 };
 
 protected:
 	FfxFsr2Context _context = {};
@@ -60,7 +61,7 @@ protected:
 
 public:
 	bool IsDepthInverted() const;
-	const char* Version() final { return "2.2.1"; }
+	feature_version Version() final { return _version; }
 	const char* Name() final { return "FSR"; }
 
 	FSR2Feature(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters)

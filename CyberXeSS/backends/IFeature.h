@@ -39,6 +39,13 @@ protected:
 	virtual void SetInit(bool InValue) { _isInited = InValue; }
 
 public:
+	typedef struct _feature_version
+	{
+		unsigned int major;
+		unsigned int minor;
+		unsigned int patch;
+	} feature_version;
+
 	NVSDK_NGX_Handle* Handle() const { return _handle; };
 	static unsigned int GetNextHandleId() { return handleCounter++; }
 
@@ -61,7 +68,7 @@ public:
 	bool HasExposure() const { return _hasExposure; }
 	bool HasOutput() const { return _hasOutput; }
 	int InitFlags() const { return _initFlags; }
-	virtual const char* Version() = 0;
+	virtual feature_version Version() = 0;
 	virtual const char* Name() = 0;
 
 	IFeature(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters)

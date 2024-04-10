@@ -34,6 +34,7 @@ class XeSSFeature : public virtual IFeature
 {
 private:
 	std::string _version = "1.3.0";
+	xess_version_t _xessVersion{};
 
 protected:
 	xess_context_handle_t _xessContext = nullptr;
@@ -43,10 +44,10 @@ protected:
 	bool InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters);
 	float GetSharpness(const NVSDK_NGX_Parameter* InParameters);
 	bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, ID3D12Resource** OutDest, D3D12_RESOURCE_STATES InDestState);
-	const char* Version() final { return _version.c_str(); }
-	const char* Name() final { return "XeSS"; }
 
 public:
+	feature_version Version() final { return feature_version{ _xessVersion.major, _xessVersion.minor, _xessVersion.patch }; }
+	const char* Name() final { return "XeSS"; }
 
 	XeSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
 	{
