@@ -124,27 +124,51 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	switch (PerfQualityValue())
 	{
 	case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-		xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
+		if(ver.major >= 1 && ver.minor >= 3)
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
+		else
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
+
 		break;
 
 	case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-		xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
+		if (ver.major >= 1 && ver.minor >= 3)
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
+		else
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
+
 		break;
 
 	case NVSDK_NGX_PerfQuality_Value_Balanced:
-		xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
+		if (ver.major >= 1 && ver.minor >= 3)
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
+		else
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
+
 		break;
 
 	case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-		xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
+		if (ver.major >= 1 && ver.minor >= 3)
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
+		else
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
+
 		break;
 
 	case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-		xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
+		if (ver.major >= 1 && ver.minor >= 3)
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY_PLUS;
+		else
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
+
 		break;
 
 	case NVSDK_NGX_PerfQuality_Value_DLAA:
-		xessParams.qualitySetting = XESS_QUALITY_SETTING_AA;
+		if (ver.major >= 1 && ver.minor >= 3)
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_AA;
+		else
+			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
+
 		break;
 
 	default:
