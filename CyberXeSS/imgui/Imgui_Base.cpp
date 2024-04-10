@@ -397,17 +397,17 @@ void Imgui_Base::RenderMenu()
 				switch (Config::Instance()->Api)
 				{
 				case NVNGX_DX11:
-					ImGui::Text("DirextX 11 - %s (%s)", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version());
+					ImGui::Text("DirextX 11 - %s (%d.%d.%d)", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
 					AddDx11Backends(&currentBackend, &currentBackendName);
 					break;
 
 				case NVNGX_DX12:
-					ImGui::Text("DirextX 12 - %s (%s)", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version());
+					ImGui::Text("DirextX 12 - %s (%d.%d.%d)", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
 					AddDx12Backends(&currentBackend, &currentBackendName);
 					break;
 
 				default:
-					ImGui::Text("Vulkan - %s (%s)", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version());
+					ImGui::Text("Vulkan - %s (%d.%d.%d)", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
 					AddVulkanBackends(&currentBackend, &currentBackendName);
 				}
 
@@ -564,9 +564,18 @@ void Imgui_Base::RenderMenu()
 				// SUPERSAMPLING -----------------------------
 				ImGui::SeparatorText("Supersampling");
 
+				bool isXess12 = (Config::Instance()->Dx12Upscaler.value_or("xess") == "xess" || Config::Instance()->Dx11Upscaler.value_or("fsr22") == "xess") &&
+					Config::Instance()->CurrentFeature->Version().major <= 1 && Config::Instance()->CurrentFeature->Version().minor <= 2;
+
+				float defaultRatio = isXess12 ? 2.5f : 3.0f;
+
 				if (ssRatio == 0.0f)
 				{
-					ssRatio = Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
+					if (isXess12)
+						ssRatio = Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
+					else
+						ssRatio = Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
+
 					ssEnabled = Config::Instance()->SuperSamplingEnabled.value_or(false);
 				}
 
@@ -581,7 +590,7 @@ void Imgui_Base::RenderMenu()
 
 				if (ImGui::Button("Apply Change"))
 				{
-					if (ssEnabled != Config::Instance()->SuperSamplingEnabled.value_or(false) || ssRatio != Config::Instance()->SuperSamplingMultiplier.value_or(3.0f))
+					if (ssEnabled != Config::Instance()->SuperSamplingEnabled.value_or(false) || ssRatio != Config::Instance()->SuperSamplingMultiplier.value_or(defaultRatio))
 					{
 						Config::Instance()->SuperSamplingEnabled = ssEnabled;
 						Config::Instance()->SuperSamplingMultiplier = ssRatio;
@@ -589,7 +598,8 @@ void Imgui_Base::RenderMenu()
 					}
 				}
 
-				ImGui::SliderFloat("Ratio", &ssRatio, (float)Config::Instance()->CurrentFeature->DisplayWidth() / (float)Config::Instance()->CurrentFeature->RenderWidth(), 5.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+				ImGui::SliderFloat("Ratio", &ssRatio, (float)Config::Instance()->CurrentFeature->DisplayWidth() / (float)Config::Instance()->CurrentFeature->RenderWidth(), 
+					isXess12 ? 2.5f : 5.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
 
 				ImGui::EndDisabled();
 
