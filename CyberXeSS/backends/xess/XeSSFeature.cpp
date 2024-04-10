@@ -22,13 +22,12 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		return false;
 	}
 
-	xess_version_t ver;
-	auto ret = xessGetVersion(&ver);
+	auto ret = xessGetVersion(&_xessVersion);
 
 	if (ret == XESS_RESULT_SUCCESS)
 	{
-		spdlog::info("XeSSFeature::InitXeSS XeSS Version: {0}.{1}.{2}", ver.major, ver.minor, ver.patch);
-		_version = std::format("{0}.{1}.{2}", ver.major, ver.minor, ver.patch);
+		spdlog::info("XeSSFeature::InitXeSS XeSS Version: {0}.{1}.{2}", _xessVersion.major, _xessVersion.minor, _xessVersion.patch);
+		_version = std::format("{0}.{1}.{2}", _xessVersion.major, _xessVersion.minor, _xessVersion.patch);
 	}
 	else
 		spdlog::warn("XeSSFeature::InitXeSS xessGetVersion error: {0}", ResultToString(ret));
@@ -124,7 +123,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	switch (PerfQualityValue())
 	{
 	case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-		if(ver.major >= 1 && ver.minor >= 3)
+		if(_xessVersion.major >= 1 && _xessVersion.minor >= 3)
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
 		else
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
@@ -132,7 +131,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		break;
 
 	case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-		if (ver.major >= 1 && ver.minor >= 3)
+		if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
 		else
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
@@ -140,7 +139,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		break;
 
 	case NVSDK_NGX_PerfQuality_Value_Balanced:
-		if (ver.major >= 1 && ver.minor >= 3)
+		if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
 		else
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
@@ -148,7 +147,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		break;
 
 	case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-		if (ver.major >= 1 && ver.minor >= 3)
+		if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
 		else
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
@@ -156,7 +155,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		break;
 
 	case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-		if (ver.major >= 1 && ver.minor >= 3)
+		if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY_PLUS;
 		else
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
@@ -164,7 +163,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		break;
 
 	case NVSDK_NGX_PerfQuality_Value_DLAA:
-		if (ver.major >= 1 && ver.minor >= 3)
+		if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_AA;
 		else
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
@@ -178,8 +177,31 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 	if (Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
 	{
-		_targetWidth = RenderWidth() * Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
-		_targetHeight = RenderHeight() * Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
+		float ssMulti;
+
+		if (Version().major >= 1 && Version().minor >= 3)
+		{
+			ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
+
+			if (ssMulti < 0.0f)
+			{
+				ssMulti = 3.0f;
+				Config::Instance()->SuperSamplingMultiplier = ssMulti;
+			}
+		}
+		else
+		{
+			ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
+
+			if (ssMulti < 0.0f || ssMulti > 2.5f)
+			{
+				ssMulti = 2.5f;
+				Config::Instance()->SuperSamplingMultiplier = ssMulti;
+			}
+		}
+
+		_targetWidth = RenderWidth() * ssMulti;
+		_targetHeight = RenderHeight() * ssMulti;
 	}
 	else
 	{
