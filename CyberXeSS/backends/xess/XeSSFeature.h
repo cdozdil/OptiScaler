@@ -47,7 +47,7 @@ protected:
 
 public:
 	feature_version Version() final { return feature_version{ _xessVersion.major, _xessVersion.minor, _xessVersion.patch }; }
-	const char* Name() final { return "XeSS"; }
+	const char* Name() override { return "XeSS"; }
 
 	XeSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
 	{

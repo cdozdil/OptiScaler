@@ -62,7 +62,7 @@ protected:
 public:
 	bool IsDepthInverted() const;
 	feature_version Version() final { return _version; }
-	const char* Name() final { return "FSR"; }
+	const char* Name() override { return "FSR"; }
 
 	FSR2Feature(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters)
 	{
