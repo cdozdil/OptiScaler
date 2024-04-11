@@ -146,7 +146,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		if (_hasMV && !Config::Instance()->DisplayResolution.has_value())
 		{
 			auto desc = params.pVelocityTexture->GetDesc();
-			bool lowResMV = desc.Width == params.inputWidth;
+			bool lowResMV = desc.Width < DisplayWidth();
 
 			if (Config::Instance()->DisplayResolution.value_or(false) && lowResMV)
 			{

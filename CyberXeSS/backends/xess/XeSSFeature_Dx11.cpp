@@ -198,7 +198,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	if (_hasMV && !Config::Instance()->DisplayResolution.has_value())
 	{
 		auto desc = dx11Mv.Dx12Resource->GetDesc();
-		bool lowResMV = desc.Width == params.inputWidth;
+		bool lowResMV = desc.Width < DisplayWidth();
 
 		if (Config::Instance()->DisplayResolution.value_or(false) && lowResMV)
 		{

@@ -133,7 +133,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	if (_hasMV && !Config::Instance()->DisplayResolution.has_value())
 	{
 		auto desc = dx11Mv.Dx12Resource->GetDesc();
-		bool lowResMV = desc.Width == params.renderSize.width;
+		bool lowResMV = desc.Width < DisplayWidth();
 
 		if (Config::Instance()->DisplayResolution.value_or(false) && lowResMV)
 		{

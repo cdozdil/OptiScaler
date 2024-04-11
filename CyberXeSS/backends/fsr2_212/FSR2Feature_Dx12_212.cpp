@@ -101,7 +101,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 		if (!Config::Instance()->DisplayResolution.has_value())
 		{
 			auto desc = paramVelocity->GetDesc();
-			bool lowResMV = desc.Width == params.renderSize.width;
+			bool lowResMV = desc.Width < DisplayWidth();
 
 			if (Config::Instance()->DisplayResolution.value_or(false) && lowResMV)
 			{
