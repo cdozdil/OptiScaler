@@ -143,7 +143,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		}
 
-		if (_hasMV && !Config::Instance()->DisplayResolution.has_value())
+		if (!Config::Instance()->DisplayResolution.has_value())
 		{
 			auto desc = params.pVelocityTexture->GetDesc();
 			bool lowResMV = desc.Width < DisplayWidth();
@@ -153,12 +153,14 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				spdlog::warn("XeSSFeatureDx12::Evaluate MotionVectors size and feature init config not matching!!");
 				Config::Instance()->DisplayResolution = false;
 				Config::Instance()->changeBackend = true;
+				return true;
 			}
 			else if (!Config::Instance()->DisplayResolution.value_or(false) && !lowResMV)
 			{
 				spdlog::warn("XeSSFeatureDx12::Evaluate MotionVectors size and feature init config not matching!!");
 				Config::Instance()->DisplayResolution = true;
 				Config::Instance()->changeBackend = true;
+				return true;
 			}
 		}
 	}

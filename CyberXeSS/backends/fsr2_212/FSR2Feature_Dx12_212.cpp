@@ -108,12 +108,14 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 				spdlog::warn("FSR2FeatureDx12_212::Evaluate MotionVectors size and feature init config not matching!!");
 				Config::Instance()->DisplayResolution = false;
 				Config::Instance()->changeBackend = true;
+				return true;
 			}
 			else if (!Config::Instance()->DisplayResolution.value_or(false) && !lowResMV)
 			{
 				spdlog::warn("FSR2FeatureDx12_212::Evaluate MotionVectors size and feature init config not matching!!");
 				Config::Instance()->DisplayResolution = true;
 				Config::Instance()->changeBackend = true;
+				return true;
 			}
 		}
 

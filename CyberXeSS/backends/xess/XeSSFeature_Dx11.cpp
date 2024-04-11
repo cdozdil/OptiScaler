@@ -31,6 +31,33 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 {
 	spdlog::debug("XeSSFeatureDx11::Evaluate");
 
+	// to prevent creation dx12 device if we are going to recreate feature
+	ID3D11Resource* paramVelocity;
+	if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
+		InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
+
+	if (paramVelocity && !Config::Instance()->DisplayResolution.has_value())
+	{
+		D3D11_TEXTURE2D_DESC desc;
+		((ID3D11Texture2D*)paramVelocity)->GetDesc(&desc);
+		bool lowResMV = desc.Width < DisplayWidth();
+
+		if (Config::Instance()->DisplayResolution.value_or(false) && lowResMV)
+		{
+			spdlog::warn("XeSSFeatureDx11::Evaluate MotionVectors size and feature init config not matching!!");
+			Config::Instance()->DisplayResolution = false;
+			Config::Instance()->changeBackend = true;
+			return true;
+		}
+		else if (!Config::Instance()->DisplayResolution.value_or(false) && !lowResMV)
+		{
+			spdlog::warn("XeSSFeatureDx11::Evaluate MotionVectors size and feature init config not matching!!");
+			Config::Instance()->DisplayResolution = true;
+			Config::Instance()->changeBackend = true;
+			return true;
+		}
+	}
+
 	if (!_baseInit)
 	{
 		if (!BaseInit(Device, InDeviceContext, InParameters))
@@ -194,25 +221,6 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	_hasExposure = params.pExposureScaleTexture != nullptr;
 	params.pResponsivePixelMaskTexture = dx11Tm.Dx12Resource;
 	_hasTM = params.pResponsivePixelMaskTexture != nullptr;
-
-	if (_hasMV && !Config::Instance()->DisplayResolution.has_value())
-	{
-		auto desc = dx11Mv.Dx12Resource->GetDesc();
-		bool lowResMV = desc.Width < DisplayWidth();
-
-		if (Config::Instance()->DisplayResolution.value_or(false) && lowResMV)
-		{
-			spdlog::warn("XeSSFeatureDx11::Evaluate MotionVectors size and feature init config not matching!!");
-			Config::Instance()->DisplayResolution = false;
-			Config::Instance()->changeBackend = true;
-		}
-		else if (!Config::Instance()->DisplayResolution.value_or(false) && !lowResMV)
-		{
-			spdlog::warn("XeSSFeatureDx11::Evaluate MotionVectors size and feature init config not matching!!");
-			Config::Instance()->DisplayResolution = true;
-			Config::Instance()->changeBackend = true;
-		}
-	}
 
 	spdlog::debug("XeSSFeatureDx11::Evaluate Textures -> params complete!");
 
