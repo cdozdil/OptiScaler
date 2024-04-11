@@ -281,15 +281,16 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, const NVSDK_NGX_P
 			D3D11_TEXTURE2D_DESC desc;
 			((ID3D11Texture2D*)paramVelocity)->GetDesc(&desc);
 			bool lowResMV = desc.Width < DisplayWidth();
-			
-			if (Config::Instance()->DisplayResolution.value_or(false) && lowResMV)
+			bool displaySizeEnabled = (GetFeatureFlags() | FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS) > 0;
+
+			if (displaySizeEnabled && lowResMV)
 			{
 				spdlog::warn("FSR2FeatureDx11::Evaluate MotionVectors size and feature init config not matching!!");
 				Config::Instance()->DisplayResolution = false;
 				Config::Instance()->changeBackend = true;
 				return true;
 			}
-			else if (!Config::Instance()->DisplayResolution.value_or(false) && !lowResMV)
+			else if (!displaySizeEnabled && !lowResMV)
 			{
 				spdlog::warn("FSR2FeatureDx11::Evaluate MotionVectors size and feature init config not matching!!");
 				Config::Instance()->DisplayResolution = true;

@@ -39,17 +39,20 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	if (paramVelocity && !Config::Instance()->DisplayResolution.has_value())
 	{
 		D3D11_TEXTURE2D_DESC desc;
-		((ID3D11Texture2D*)paramVelocity)->GetDesc(&desc);
+		ID3D11Texture2D* pvTexture;
+		paramVelocity->QueryInterface(IID_PPV_ARGS(&pvTexture));
+		pvTexture->GetDesc(&desc);
 		bool lowResMV = desc.Width < DisplayWidth();
+		bool displaySizeEnabled = (GetFeatureFlags() | XESS_INIT_FLAG_HIGH_RES_MV) > 0;
 
-		if (Config::Instance()->DisplayResolution.value_or(false) && lowResMV)
+		if (displaySizeEnabled && lowResMV)
 		{
 			spdlog::warn("XeSSFeatureDx11::Evaluate MotionVectors size and feature init config not matching!!");
 			Config::Instance()->DisplayResolution = false;
 			Config::Instance()->changeBackend = true;
 			return true;
 		}
-		else if (!Config::Instance()->DisplayResolution.value_or(false) && !lowResMV)
+		else if (!displaySizeEnabled && !lowResMV)
 		{
 			spdlog::warn("XeSSFeatureDx11::Evaluate MotionVectors size and feature init config not matching!!");
 			Config::Instance()->DisplayResolution = true;
