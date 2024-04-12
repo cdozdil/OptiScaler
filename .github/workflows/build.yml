@@ -44,6 +44,6 @@ jobs:
       
     - uses: actions/upload-artifact@v4
       with:
-        name: CyberXeSS
+        name: OmniScaler
         path: ${{ github.workspace }}\x64\Release\a\*.*
         if-no-files-found: error
