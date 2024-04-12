@@ -66,6 +66,7 @@ WINEPREFIX=/path/where/the/steam/library/is/steamapps/compatdata/1091500/pfx /bi
 * If there were a `libxess.dll` file and you have backed it up delete the new file and restore the backed up file. If you have overwrote old file **DO NOT** delete `libxess.dll` file. If there were no `libxess.dll` file it's safe to delete.
 
 ## Known Issues
+Please check [this](Issues.md) document for known issues and possible solutions for them.
 
 ## Compilation
 
