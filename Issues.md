@@ -1,7 +1,7 @@
 # Known Issues
 
 ## In-game Menu
-In-game menu is a recent addition have some issues on certain condutions.
+In-game menu is a recent addition and might have have some issues on certain condutions.
 
 * On some system and game combinations opening in-game menu might crash the game or cause graphical corruption (specially in Unreal Engine 5 games).
 
