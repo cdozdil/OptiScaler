@@ -18,7 +18,7 @@ Sometimes games exposure texture format is not recognizable to upscalers. Most o
 Most of the time enabling `AutoExposure=true` from `nvngx.ini` or selecting `Auto Exposure` at `Init Parameters` from in-game menu should fix these issues.
 
 ## Resource Barriers
-Unreal Engine DLSS plugin is known for sending DLSS resources in wrong states. Normally OmniScaler check Engine info of NVSDK and enable fixes automatically for Unreal Engine games but some games does not report engine correctly. This problem manifest itself as colored regions at the bottom of the screen most of the time. 
+Unreal Engine DLSS plugin is known for sending DLSS resources in wrong states. Normally OmniScaler check Engine info of NVSDK and enable necessary fixes automatically for Unreal Engine games but some games does not report engine info correctly. This problem manifest itself as colored regions at the bottom of the screen most of the time. 
 
 ![christmas lights](/images/christmas.png)
 
