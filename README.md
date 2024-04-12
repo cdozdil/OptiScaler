@@ -39,28 +39,24 @@ Currently OmniScaler can be used with DirectX 11, DirectX 12 and Vulkan but each
 * **FSR2 2.2.1** 
 
 ## Installation
-
-#### Windows 
 * Download the latest relase from releases.
 * Extract the contents of the archive next to the game executable file in your games folder. [1]
-* Run `EnableSignatureOverride.reg` and confirm merge. [2]
-* DLSS option should be appeared/enabled in settings. If it's not, you may try using [d3d12-proxy](https://github.com/cdozdil/d3d12-proxy/) for DirectX games and [vulkan-spoofer](https://github.com/cdozdil/vulkan-spoofer/) for Vulkan games.
+* Run `EnableSignatureOverride.reg` and confirm merge. [2][3]
+* DLSS option should be appeared/enabled in settings. If it's not, you may try using [d3d12-proxy](https://github.com/cdozdil/d3d12-proxy/) for DirectX games, [vulkan-spoofer](https://github.com/cdozdil/vulkan-spoofer/) for Vulkan games and [nvapi-dummy](https://github.com/FakeMichau/nvapi-dummy) for spoofing NVAPI.
 
 *[1] This package contains latest version of `libxess.dll` and if game folder contains any older version of same library it would be overwritten. Consider backing up or renaming existing file.*
 
 *[2] Normally Streamline and games check if nvngx.dll is signed, by merging this `.reg` file we are overriding this signature check.*
 
-#### Linux
-* Download the latest relase from releases.
-* Extract the contents of the archive next to the game executable file in your games folder.
-* Just run the following command with the appropriate file paths to install the tweaks manually:
-```
-WINEPREFIX=/path/where/the/steam/library/is/steamapps/compatdata/1091500/pfx /bin/wine64 regedit ../../common/Cyberpunk\ 2077/bin/x64/FidelityFx\ Super\ Resolution\ 2.0-3001-0-3-1656426926/EnableSignatureOverride.reg
-```
+*[3] Adding signature override on Linux - There are many possible setups, this one will focus on steam games:*
+* *Make sure you have protontricks installed*
+* *Run in a terminal protontricks <steam-appid> regedit, replace <steam-appid> with an id for your game*
+* *Press "registry" in the top left of the new window -> `Import Registry File` -> navigate to and select `EnableSignatureOverride.reg`*
+* *You should see a message saying that you successfully added the entries to the registry*
+
+*If your game is not on Steam, it all boils down to opening regedit inside your game's prefix and importing the file.*
 
 ## Uninstallation
-
-#### Windows 
 * Run `DisableSignatureOverride.reg` file 
 * Delete `EnableSignatureOverride.reg`, `DisableSignatureOverride.reg`, `nvngx.dll`, `nvngx.ini` files
 * If there were a `libxess.dll` file and you have backed it up delete the new file and restore the backed up file. If you have overwrote old file **DO NOT** delete `libxess.dll` file. If there were no `libxess.dll` file it's safe to delete.
