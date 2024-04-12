@@ -65,6 +65,8 @@ WINEPREFIX=/path/where/the/steam/library/is/steamapps/compatdata/1091500/pfx /bi
 * Delete `EnableSignatureOverride.reg`, `DisableSignatureOverride.reg`, `nvngx.dll`, `nvngx.ini` files
 * If there were a `libxess.dll` file and you have backed it up delete the new file and restore the backed up file. If you have overwrote old file **DO NOT** delete `libxess.dll` file. If there were no `libxess.dll` file it's safe to delete.
 
+## Known Issues
+
 ## Compilation
 
 ### Requirements
@@ -81,5 +83,5 @@ WINEPREFIX=/path/where/the/steam/library/is/steamapps/compatdata/1091500/pfx /bi
 * @LukeFZ & @Nukem for their great mods and sharing their knowledge 
 * @FakeMichau for support, ideas and OmniScaler name 
 * @QM for continous testing efforts and helping me to reach games
-* @Cryio, @krispy, @krisshietala, @Lordubuntu, @scz for their hard work on compatibility matrix
+* @Cryio, @krispy, @krisshietala, @Lordubuntu, @scz, @Veeqo for their hard work on compatibility matrix
 * @RazzerBrazzer and all DLSS2FSR community for all their support
