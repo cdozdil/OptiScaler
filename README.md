@@ -85,4 +85,4 @@ Please check [this](Issues.md) document for known issues and possible solutions 
 * @FakeMichau for support, ideas and OmniScaler name 
 * @QM for continous testing efforts and helping me to reach games
 * @Cryio, @krispy, @krisshietala, @Lordubuntu, @scz, @Veeqo for their hard work on compatibility matrix
-* @RazzerBrazzer and all DLSS2FSR community for all their support
+* @RazzerBrazzer and DLSS2FSR community for all their support
