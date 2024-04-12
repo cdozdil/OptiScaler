@@ -49,12 +49,12 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 			if (displaySizeEnabled && lowResMV)
 			{
-				spdlog::warn("FSR2FeatureDx11on12_212::Evaluate MotionVectors size and feature init config not matching, disabling display size MV!!");
+				spdlog::warn("XeSSFeatureDx11::Evaluate MotionVectors size and feature init config not matching, disabling display size MV!!");
 				Config::Instance()->DisplayResolution = false;
 			}
 			else if (!displaySizeEnabled && !lowResMV)
 			{
-				spdlog::warn("FSR2FeatureDx11on12_212::Evaluate MotionVectors size and feature init config not matching, enabling display size MV!!");
+				spdlog::warn("XeSSFeatureDx11::Evaluate MotionVectors size and feature init config not matching, enabling display size MV!!");
 				Config::Instance()->DisplayResolution = true;
 			}
 		}
