@@ -1,50 +1,69 @@
-# DLSS to XeSS/FSR2 (2.1 & 2.2)
-Drop-in DLSS replacement with XeSS/FSR2 for DLSS2 supported games.
+![OmniScaler](images/omniscaler.png)
 
-Based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2](https://github.com/PotatoOfDoom/CyberFSR2). 
+OmniScaler (was CyberXeSS) is drop-in DLSS2 to XeSS/FSR2 replacement for games. 
 
-I have adapted it to use Intel's [XeSS](https://github.com/intel/xess/) too.
+*This project is based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2](https://github.com/PotatoOfDoom/CyberFSR2).*
 
-**With this branch:**
-* Added FSR 2.2.1 support for DX11 (Native or with DX12), DX12 and Vulkan
-* Added FSR 2.1.2 support for DX11 (with DX12), DX12 and Vulkan
-* Added ImGui in-game menu for DX11 & DX12 (Shortcut key is **HOME**)
-* Added Unreal engine detection and autofixes
-* Added FidelityFX CAS shapening support, you can enable and adjust it from ini file.
+### Official Discord Server: [DLSS2FSR](https://discord.gg/2JDHx6kcXB)
 
-**Supported backends:**
-* **DX11** : XeSS (with DX12), FSR2 (native), FSR2 (with DX12)
-* **DX12** : XeSS (native), FSR2 (native)
-* **Vulkan** : FSR2 (native) 
+## How it works?
+OmniScaler implement's all necessary API methods of DLSS2 & NVAPI to act as a man in the middle. So from games perspective it's using DLSS2 but actually using OmniScaler and calls are interpreted/redirected to XeSS & FSR2.
 
-**Note**: (with DX12) backends have a performance penalty (around %10-15).
+## Features
+* An in-game menu for tuning and saving settings (Only on DirectX 11 & DirectX 12 APIs)
+* Full integration with [DLSS Enabler](https://www.nexusmods.com/site/mods/757) for DLSS-FG support
+* Fidelity FX CAS (Contrast Adaptive Sharpening) support for XeSS to mitigate relatively soft image upscaler generates
+* A supersampling option for backends running on DirectX 12
+* Autofixing colored lights on Unreal Engine & AMD graphics cards
+* Autofixing wrong motion vector informations and reducing ghosting on these games
+* Autofixing missing exposure texture information
 
-## Official Discord Channel: [CyberXeSS Support](https://discord.com/channels/995299945492008990/1131520508475752489)
+## Which APIs and upscalers supported?
+Currently OmniScaler can be used with DirectX 11, DirectX 12 and Vulkan but each API has different sets of upscaler options.
+
+#### For DirectX 11
+* **FSR2 2.2.1** native Direct11 implementation (Default upscaler)
+* **XeSS 1.x.x** with background DirectX12 processing [*]
+* **FSR2 2.1.2** with background DirectX12 processing [*]
+* **FSR2 2.2.1** with background DirectX12 processing [*]
+
+[*] This implementations uses a background DirectX12 device to be able to use Dirext12 only upscalers. There is %10-15 performance penalty for this method but allows much more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has it's own problems which some of them avoided by OmniScaler.
+
+#### For DirectX 12
+* **XeSS 1.x.x** (Default upscaler)
+* **FSR2 2.1.2** 
+* **FSR2 2.2.1** 
+
+#### For Vulkan
+* **FSR2 2.1.2** (Default upscaler)
+* **FSR2 2.2.1** 
 
 ## Installation
 
-### Windows 
+#### Windows 
 * Download the latest relase from releases.
-* Extract the contents of the archive next to the `nvngx_dlss.dll` file in your games folder.
-* Copy the [libxess.dll](https://raw.githubusercontent.com/intel/xess/main/bin/libxess.dll) to your game executable directory.
-* Run `EnableSignatureOverride.reg` and confirm merge.
-* That's it. Now DLSS option should appear in settings if not you may try using [d3d12-proxy](https://github.com/cdozdil/d3d12-proxy/releases/tag/v0.1.1) for DirectX games and [vulkan-spoofer](https://github.com/cdozdil/vulkan-spoofer/releases) for Vulkan games
-* 
+* Extract the contents of the archive next to the game executable file in your games folder. [1]
+* Run `EnableSignatureOverride.reg` and confirm merge. [2]
+* DLSS option should be appeared/enabled in settings. If it's not, you may try using [d3d12-proxy](https://github.com/cdozdil/d3d12-proxy/) for DirectX games and [vulkan-spoofer](https://github.com/cdozdil/vulkan-spoofer/) for Vulkan games.
 
-### Linux
+*[1] This package contains latest version of `libxess.dll` and if game folder contains any older version of same library it would be overwritten. Consider backing up or renaming existing file.*
+
+*[2] Normally Streamline and games check if nvngx.dll is signed, by merging this `.reg` file we are overriding this signature check.*
+
+#### Linux
 * Download the latest relase from releases.
-* Extract the contents of the archive next to the `nvngx_dlss.dll` file in your games folder.
-* Copy the [libxess.dll](https://raw.githubusercontent.com/intel/xess/main/bin/libxess.dll) to your game executable directory.
-* Run the linuxinstall.sh script
-* Or just run the following command with the appropriate file paths to install the tweaks manually:
+* Extract the contents of the archive next to the game executable file in your games folder.
+* Just run the following command with the appropriate file paths to install the tweaks manually:
 ```
 WINEPREFIX=/path/where/the/steam/library/is/steamapps/compatdata/1091500/pfx /bin/wine64 regedit ../../common/Cyberpunk\ 2077/bin/x64/FidelityFx\ Super\ Resolution\ 2.0-3001-0-3-1656426926/EnableSignatureOverride.reg
 ```
-* That's it. Now DLSS option should appear in settings if not you may try using [d3d12-proxy](https://github.com/cdozdil/d3d12-proxy/releases/tag/v0.1.1) for DirectX games and [vulkan-spoofer](https://github.com/cdozdil/vulkan-spoofer/releases) for Vulkan games
 
 ### Uninstallation
-* Just run `DisableSignatureOverride.reg`
-* Linux users should refer to prior command.
+
+#### Windows 
+* Run `DisableSignatureOverride.reg` file 
+* Delete `EnableSignatureOverride.reg`, `DisableSignatureOverride.reg`, `nvngx.dll`, `nvngx.ini` files
+* If there were a `libxess.dll` file and you have backed it up delete the new file and restore the backed up file. If you have overwrote old file **DO NOT** delete `libxess.dll` file. If there were no `libxess.dll` file it's safe to delete.
 
 ## Compilation
 
@@ -53,9 +72,5 @@ WINEPREFIX=/path/where/the/steam/library/is/steamapps/compatdata/1091500/pfx /bi
 
 ### Instructions
 * Clone this repo with all of its submodules.
-* Open the CyberXeSS.sln with Visual Studio 2022.
-* Copy the compiled `nvngx.dll` from the XeSS Directory to your game executable directory.
-* Copy the [libxess.dll](https://raw.githubusercontent.com/intel/xess/main/bin/libxess.dll) to your game executable directory.
-* Run the `EnableSignatureOverride.reg` to allow DLSS implementation to load unsigned DLSS versions
-* Run the game and set the quality in the DLSS settings
-* Play the game with XeSS
+* Open the OmniScaler.sln with Visual Studio 2022.
+* Build the project
