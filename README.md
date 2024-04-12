@@ -18,7 +18,7 @@ OmniScaler implement's all necessary API methods of DLSS2 & NVAPI to act as a ma
 * Autofixing wrong motion vector informations and reducing ghosting on these games
 * Autofixing missing exposure texture information
 
-## Which APIs and upscalers supported?
+## Which APIs and Upscalers are Supported?
 Currently OmniScaler can be used with DirectX 11, DirectX 12 and Vulkan but each API has different sets of upscaler options.
 
 #### For DirectX 11
