@@ -24,32 +24,32 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	spdlog::debug("FSR2FeatureDx11on12::Evaluate");
 
 	// to prevent creation dx12 device if we are going to recreate feature
-	ID3D11Resource* paramVelocity;
-	if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
-		InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
-
-	if (paramVelocity && !Config::Instance()->DisplayResolution.has_value())
+	// to prevent creation dx12 device if we are going to recreate feature
+	if (!Config::Instance()->DisplayResolution.has_value())
 	{
-		D3D11_TEXTURE2D_DESC desc;
-		ID3D11Texture2D* pvTexture;
-		paramVelocity->QueryInterface(IID_PPV_ARGS(&pvTexture));
-		pvTexture->GetDesc(&desc);
-		bool lowResMV = desc.Width < DisplayWidth();
-		bool displaySizeEnabled = (GetFeatureFlags() | FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS) > 0;
+		ID3D11Resource* paramVelocity = nullptr;
+		if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
+			InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
 
-		if (displaySizeEnabled && lowResMV)
+		if (paramVelocity != nullptr)
 		{
-			spdlog::warn("FSR2FeatureDx11on12::Evaluate MotionVectors size and feature init config not matching!!");
-			Config::Instance()->DisplayResolution = false;
-			Config::Instance()->changeBackend = true;
-			return true;
-		}
-		else if (!displaySizeEnabled && !lowResMV)
-		{
-			spdlog::warn("FSR2FeatureDx11on12::Evaluate MotionVectors size and feature init config not matching!!");
-			Config::Instance()->DisplayResolution = true;
-			Config::Instance()->changeBackend = true;
-			return true;
+			D3D11_TEXTURE2D_DESC desc;
+			ID3D11Texture2D* pvTexture;
+			paramVelocity->QueryInterface(IID_PPV_ARGS(&pvTexture));
+			pvTexture->GetDesc(&desc);
+			bool lowResMV = desc.Width < DisplayWidth();
+			bool displaySizeEnabled = (GetFeatureFlags() | FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS) > 0;
+
+			if (displaySizeEnabled && lowResMV)
+			{
+				spdlog::warn("FSR2FeatureDx11on12::Evaluate MotionVectors size and feature init config not matching, disabling display size MV!!");
+				Config::Instance()->DisplayResolution = false;
+			}
+			else if (!displaySizeEnabled && !lowResMV)
+			{
+				spdlog::warn("FSR2FeatureDx11on12::Evaluate MotionVectors size and feature init config not matching, enabling display size MV!!");
+				Config::Instance()->DisplayResolution = true;
+			}
 		}
 	}
 
