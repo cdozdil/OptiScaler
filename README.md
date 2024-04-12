@@ -58,7 +58,7 @@ Currently OmniScaler can be used with DirectX 11, DirectX 12 and Vulkan but each
 WINEPREFIX=/path/where/the/steam/library/is/steamapps/compatdata/1091500/pfx /bin/wine64 regedit ../../common/Cyberpunk\ 2077/bin/x64/FidelityFx\ Super\ Resolution\ 2.0-3001-0-3-1656426926/EnableSignatureOverride.reg
 ```
 
-### Uninstallation
+## Uninstallation
 
 #### Windows 
 * Run `DisableSignatureOverride.reg` file 
@@ -74,3 +74,12 @@ WINEPREFIX=/path/where/the/steam/library/is/steamapps/compatdata/1091500/pfx /bi
 * Clone this repo with all of its submodules.
 * Open the OmniScaler.sln with Visual Studio 2022.
 * Build the project
+
+## Thanks
+* @PotatoOfDoom for CyberFSR2
+* @Artur for DLSS Enabler and helping me to implement NVAPI correctly
+* @LukeFZ & @Nukem for their great mods and sharing their knowledge 
+* @FakeMichau for support, ideas and OmniScaler name 
+* @QM for continous testing efforts and helping me to reach games
+* @Cryio, @krispy, @krisshietala, @Lordubuntu, @scz for their hard work on compatibility matrix
+* @RazzerBrazzer and all DLSS2FSR community for all their support
