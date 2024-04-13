@@ -85,6 +85,9 @@ void Config::Reload()
 		if (MipmapBiasOverride.has_value() && (MipmapBiasOverride.value() > 15.0 || MipmapBiasOverride.value() < -15.0))
 			MipmapBiasOverride.reset();
 
+		RestoreComputeSignature = readBool("Hotfix", "RestoreComputeSignature");
+		RestoreGraphicSignature = readBool("Hotfix", "RestoreGraphicSignature");
+
 		ColorResourceBarrier = readInt("Hotfix", "ColorResourceBarrier");
 		MVResourceBarrier = readInt("Hotfix", "MotionVectorResourceBarrier");
 		DepthResourceBarrier = readInt("Hotfix", "DepthResourceBarrier");
@@ -131,6 +134,8 @@ bool Config::SaveIni(std::string name)
 	ini.SetValue("Upscalers", "Dx11Upscaler", Instance()->Dx11Upscaler.value_or("auto").c_str());
 	ini.SetValue("Upscalers", "Dx12Upscaler", Instance()->Dx12Upscaler.value_or("auto").c_str());
 	ini.SetValue("Upscalers", "VulkanUpscaler", Instance()->VulkanUpscaler.value_or("auto").c_str());
+	ini.SetValue("Upscalers", "SuperSamplingEnabled", GetBoolValue(Instance()->SuperSamplingEnabled).c_str());
+	ini.SetValue("Upscalers", "SuperSamplingMultiplier", GetFloatValue(Instance()->SuperSamplingMultiplier).c_str());
 
 	// XeSS
 	ini.SetValue("XeSS", "BuildPipelines", GetBoolValue(Instance()->BuildPipelines).c_str());
@@ -160,7 +165,7 @@ bool Config::SaveIni(std::string name)
 	ini.SetValue("UpscaleRatio", "UpscaleRatioOverrideValue", GetFloatValue(Instance()->UpscaleRatioOverrideValue).c_str());
 
 	// Quality Overrides
-	ini.SetValue("QualityOverrides", "QualityRatioOverrideEnabled", GetBoolValue(Instance()->QualityRatioOverrideEnabled).c_str());	
+	ini.SetValue("QualityOverrides", "QualityRatioOverrideEnabled", GetBoolValue(Instance()->QualityRatioOverrideEnabled).c_str());
 	ini.SetValue("QualityOverrides", "QualityRatioUltraQuality", GetFloatValue(Instance()->QualityRatio_UltraQuality).c_str());
 	ini.SetValue("QualityOverrides", "QualityRatioQuality", GetFloatValue(Instance()->QualityRatio_Quality).c_str());
 	ini.SetValue("QualityOverrides", "QualityRatioBalanced", GetFloatValue(Instance()->QualityRatio_Balanced).c_str());
@@ -170,6 +175,10 @@ bool Config::SaveIni(std::string name)
 	// hotfixes
 	ini.SetValue("Hotfix", "DisableReactiveMask", GetBoolValue(Instance()->DisableReactiveMask).c_str());
 	ini.SetValue("Hotfix", "MipmapBiasOverride", GetBoolValue(Instance()->MipmapBiasOverride).c_str());
+
+	ini.SetValue("Hotfix", "RestoreComputeSignature", GetBoolValue(Instance()->RestoreComputeSignature).c_str());
+	ini.SetValue("Hotfix", "RestoreGraphicSignature", GetBoolValue(Instance()->RestoreGraphicSignature).c_str());
+
 	ini.SetValue("Hotfix", "ColorResourceBarrier", GetIntValue(Instance()->ColorResourceBarrier).c_str());
 	ini.SetValue("Hotfix", "MotionVectorResourceBarrier", GetIntValue(Instance()->MVResourceBarrier).c_str());
 	ini.SetValue("Hotfix", "DepthResourceBarrier", GetIntValue(Instance()->DepthResourceBarrier).c_str());
@@ -183,7 +192,16 @@ bool Config::SaveIni(std::string name)
 
 	// dx11wdx12
 	ini.SetValue("Dx11withDx12", "UseSafeSyncQueries", GetIntValue(Instance()->UseSafeSyncQueries).c_str());
-	
+
+	// log
+	ini.SetValue("Log", "LoggingEnabled", GetBoolValue(Instance()->LoggingEnabled).c_str());
+	ini.SetValue("Log", "LogLevel", GetIntValue(Instance()->LogLevel).c_str());
+	ini.SetValue("Log", "LogToConsole", GetBoolValue(Instance()->LogToConsole).c_str());
+	ini.SetValue("Log", "LogToFile", GetBoolValue(Instance()->LogToFile).c_str());
+	ini.SetValue("Log", "LogToNGX", GetBoolValue(Instance()->LogToNGX).c_str());
+	ini.SetValue("Log", "OpenConsole", GetBoolValue(Instance()->OpenConsole).c_str());
+	ini.SetValue("Log", "LogFile", Instance()->LogFileName.value_or("auto").c_str());
+
 	return ini.SaveFile(name.c_str()) >= 0;
 }
 

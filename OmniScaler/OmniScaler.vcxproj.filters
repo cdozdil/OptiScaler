@@ -258,4 +258,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Library Include="vulkan\vulkan-1.lib" />
+  </ItemGroup>
 </Project>

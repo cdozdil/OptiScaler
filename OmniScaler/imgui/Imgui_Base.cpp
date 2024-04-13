@@ -567,15 +567,11 @@ void Imgui_Base::RenderMenu()
 				bool isXess12 = (Config::Instance()->Dx12Upscaler.value_or("xess") == "xess" || Config::Instance()->Dx11Upscaler.value_or("fsr22") == "xess") &&
 					Config::Instance()->CurrentFeature->Version().major <= 1 && Config::Instance()->CurrentFeature->Version().minor <= 2;
 
-				float defaultRatio = isXess12 ? 2.5f : 3.0f;
+				float defaultRatio = 2.5f;
 
 				if (ssRatio == 0.0f)
 				{
-					if (isXess12)
-						ssRatio = Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
-					else
-						ssRatio = Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
-
+					ssRatio = Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
 					ssEnabled = Config::Instance()->SuperSamplingEnabled.value_or(false);
 				}
 
@@ -598,7 +594,7 @@ void Imgui_Base::RenderMenu()
 					}
 				}
 
-				ImGui::SliderFloat("Ratio", &ssRatio, (float)Config::Instance()->CurrentFeature->DisplayWidth() / (float)Config::Instance()->CurrentFeature->RenderWidth(), 
+				ImGui::SliderFloat("Ratio", &ssRatio, (float)Config::Instance()->CurrentFeature->DisplayWidth() / (float)Config::Instance()->CurrentFeature->RenderWidth(),
 					isXess12 ? 2.5f : 5.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
 
 				ImGui::EndDisabled();

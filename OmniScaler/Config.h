@@ -65,8 +65,8 @@ public:
 	//Hotfixes
 	std::optional<bool> DisableReactiveMask;
 	std::optional<float> MipmapBiasOverride;
-	std::optional<float> RestoreComputeSignature;
-	std::optional<float> RestoreGraphicSignature;
+	std::optional<bool> RestoreComputeSignature;
+	std::optional<bool> RestoreGraphicSignature;
 	std::optional<int32_t> ColorResourceBarrier;
 	std::optional<int32_t> MVResourceBarrier;
 	std::optional<int32_t> DepthResourceBarrier;

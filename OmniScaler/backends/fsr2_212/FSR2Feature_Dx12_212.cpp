@@ -48,7 +48,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 
 	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) &&
 		!Config::Instance()->DisplayResolution.value_or(false) &&
-		((float)DisplayWidth() / (float)params.renderSize.width) < Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
+		((float)DisplayWidth() / (float)params.renderSize.width) < Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
 
 	spdlog::debug("FSR2FeatureDx12_212::Evaluate Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
@@ -484,8 +484,24 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
 	if (Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
 	{
-		_targetWidth = RenderWidth() * Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
-		_targetHeight = RenderHeight() * Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
+		float ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
+		float ssMultilimit = 5.0f;
+
+		if (ssMulti < 0.0f || ssMulti > ssMultilimit)
+		{
+			ssMulti = ssMultilimit;
+			Config::Instance()->SuperSamplingMultiplier = ssMulti;
+		}
+
+		_targetWidth = RenderWidth() * ssMulti;
+		_targetHeight = RenderHeight() * ssMulti;
+
+		if (_targetWidth <= DisplayWidth() || _targetHeight <= DisplayHeight())
+		{
+			Config::Instance()->SuperSamplingEnabled = false;
+			_targetWidth = DisplayWidth();
+			_targetHeight = DisplayHeight();
+		}
 	}
 	else
 	{

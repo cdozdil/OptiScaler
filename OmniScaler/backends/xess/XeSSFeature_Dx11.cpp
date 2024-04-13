@@ -168,7 +168,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) &&
 		!Config::Instance()->DisplayResolution.value_or(false) &&
-		((float)DisplayWidth() / (float)params.inputWidth) < Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
+		((float)DisplayWidth() / (float)params.inputWidth) < Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
 
 	spdlog::debug("XeSSFeatureDx11::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 

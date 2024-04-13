@@ -82,7 +82,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	auto sharpness = GetSharpness(InParameters);
 
-	float ssMulti = Version().major >= 1 && Version().minor >= 3 ? Config::Instance()->SuperSamplingMultiplier.value_or(3.0f) : Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
+	float ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
 
 	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) && 
 				 !Config::Instance()->DisplayResolution.value_or(false) &&
@@ -100,16 +100,13 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		paramColor->SetName(L"paramColor");
 
 		if (Config::Instance()->ColorResourceBarrier.has_value())
-			ResourceBarrier(InCommandList, paramColor,
-				(D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value(),
-				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		{
+			ResourceBarrier(InCommandList, paramColor, (D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		}
 		else if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL)
 		{
 			Config::Instance()->ColorResourceBarrier = (int)D3D12_RESOURCE_STATE_RENDER_TARGET;
-
-			ResourceBarrier(InCommandList, paramColor,
-				D3D12_RESOURCE_STATE_RENDER_TARGET,
-				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			ResourceBarrier(InCommandList, paramColor, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		}
 
 		params.pColorTexture = paramColor;
@@ -130,17 +127,12 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 		if (Config::Instance()->MVResourceBarrier.has_value())
 		{
-			ResourceBarrier(InCommandList, params.pVelocityTexture,
-				(D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value(),
-				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			ResourceBarrier(InCommandList, params.pVelocityTexture, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		}
 		else if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL)
 		{
 			Config::Instance()->MVResourceBarrier = (int)D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-
-			ResourceBarrier(InCommandList, params.pVelocityTexture,
-				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			ResourceBarrier(InCommandList, params.pVelocityTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		}
 
 		if (!Config::Instance()->DisplayResolution.has_value())
@@ -222,11 +214,8 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		spdlog::debug("XeSSFeatureDx12::Evaluate Depth exist..");
 		params.pDepthTexture->SetName(L"params.pDepthTexture");
 
-
 		if (Config::Instance()->DepthResourceBarrier.has_value())
-			ResourceBarrier(InCommandList, params.pDepthTexture,
-				(D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value(),
-				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			ResourceBarrier(InCommandList, params.pDepthTexture, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 	}
 	else
 	{
@@ -254,9 +243,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		}
 
 		if (Config::Instance()->ExposureResourceBarrier.has_value())
-			ResourceBarrier(InCommandList, params.pExposureScaleTexture,
-				(D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value(),
-				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			ResourceBarrier(InCommandList, params.pExposureScaleTexture, (D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 	}
 	else
 		spdlog::debug("XeSSFeatureDx12::Evaluate AutoExposure enabled!");
@@ -272,9 +259,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			spdlog::debug("XeSSFeatureDx12::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
 
 		if (Config::Instance()->MaskResourceBarrier.has_value())
-			ResourceBarrier(InCommandList, params.pResponsivePixelMaskTexture,
-				(D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(),
-				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			ResourceBarrier(InCommandList, params.pResponsivePixelMaskTexture, (D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 	}
 
 	_hasColor = params.pColorTexture != nullptr;
@@ -314,7 +299,6 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f && CAS->Buffer() != nullptr)
 	{
 		ResourceBarrier(InCommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
 		CAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
 		if (useSS)

@@ -121,7 +121,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	switch (PerfQualityValue())
 	{
 	case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-		if(_xessVersion.major >= 1 && _xessVersion.minor >= 3)
+		if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
 		else
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
@@ -175,31 +175,24 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 	if (Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
 	{
-		float ssMulti;
+		float ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
+		float ssMultilimit = (Version().major >= 1 && Version().minor >= 3) ? 5.0f : 2.5f;
 
-		if (Version().major >= 1 && Version().minor >= 3)
+		if (ssMulti < 0.0f || ssMulti > ssMultilimit)
 		{
-			ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(3.0f);
-
-			if (ssMulti < 0.0f)
-			{
-				ssMulti = 3.0f;
-				Config::Instance()->SuperSamplingMultiplier = ssMulti;
-			}
-		}
-		else
-		{
-			ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
-
-			if (ssMulti < 0.0f || ssMulti > 2.5f)
-			{
-				ssMulti = 2.5f;
-				Config::Instance()->SuperSamplingMultiplier = ssMulti;
-			}
+			ssMulti = ssMultilimit;
+			Config::Instance()->SuperSamplingMultiplier = ssMulti;
 		}
 
 		_targetWidth = RenderWidth() * ssMulti;
 		_targetHeight = RenderHeight() * ssMulti;
+
+		if (_targetWidth <= DisplayWidth() || _targetHeight <= DisplayHeight())
+		{
+			Config::Instance()->SuperSamplingEnabled = false;
+			_targetWidth = DisplayWidth();
+			_targetHeight = DisplayHeight();
+		}
 	}
 	else
 	{
