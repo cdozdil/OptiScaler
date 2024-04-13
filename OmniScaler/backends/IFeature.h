@@ -26,6 +26,7 @@ protected:
 	bool _hasExposure = false;
 	bool _hasOutput = false;
 	int _initFlags = 0;
+	bool _initFlagsReady = false;
 	unsigned int _renderWidth = 0;
 	unsigned int _renderHeight = 0;
 	unsigned int _targetWidth = 0;

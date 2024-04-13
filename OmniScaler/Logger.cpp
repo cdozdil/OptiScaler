@@ -84,22 +84,22 @@ void PrepareLogger()
 				sinks.push_back(file_sink);
 			}
 
-			//auto callback_sink = std::make_shared<spdlog::sinks::callback_sink_mt>([](const spdlog::details::log_msg& msg)
-			//	{
-			//		if (Config::Instance()->LogToNGX.value_or(false) &&
-			//			!Config::Instance()->NVSDK_Logger.DisableOtherLoggingSinks &&
-			//			Config::Instance()->NVSDK_Logger.LoggingCallback != nullptr &&
-			//			Config::Instance()->NVSDK_Logger.MinimumLoggingLevel != NVSDK_NGX_LOGGING_LEVEL_OFF &&
-			//			(Config::Instance()->NVSDK_Logger.MinimumLoggingLevel == NVSDK_NGX_LOGGING_LEVEL_VERBOSE || msg.level >= spdlog::level::info))
-			//		{
-			//			Config::Instance()->NVSDK_Logger.LoggingCallback(msg.payload.data(), NVSDK_NGX_LOGGING_LEVEL_ON, NVSDK_NGX_Feature_SuperSampling);
-			//		}
-			//	});
+			auto callback_sink = std::make_shared<spdlog::sinks::callback_sink_mt>([](const spdlog::details::log_msg& msg)
+				{
+					if (Config::Instance()->LogToNGX.value_or(false) &&
+						!Config::Instance()->NVSDK_Logger.DisableOtherLoggingSinks &&
+						Config::Instance()->NVSDK_Logger.LoggingCallback != nullptr &&
+						Config::Instance()->NVSDK_Logger.MinimumLoggingLevel != NVSDK_NGX_LOGGING_LEVEL_OFF &&
+						(Config::Instance()->NVSDK_Logger.MinimumLoggingLevel == NVSDK_NGX_LOGGING_LEVEL_VERBOSE || msg.level >= spdlog::level::info))
+					{
+						Config::Instance()->NVSDK_Logger.LoggingCallback(msg.payload.data(), NVSDK_NGX_LOGGING_LEVEL_ON, NVSDK_NGX_Feature_SuperSampling);
+					}
+				});
 
-			//callback_sink->set_level(spdlog::level::level_enum::trace);
-			//callback_sink->set_pattern("[%H:%M:%S.%f] [%L] %v");
+			callback_sink->set_level(spdlog::level::level_enum::trace);
+			callback_sink->set_pattern("[%H:%M:%S.%f] [%L] %v");
 
-			//sinks.push_back(callback_sink);
+			sinks.push_back(callback_sink);
 
 			spdlog::logger logger("multi_sink", sinks.begin(), sinks.end());
 			shared_logger = std::make_shared<spdlog::logger>(logger);

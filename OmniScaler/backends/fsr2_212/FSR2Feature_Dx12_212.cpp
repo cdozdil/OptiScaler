@@ -102,7 +102,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 		{
 			auto desc = paramVelocity->GetDesc();
 			bool lowResMV = desc.Width < DisplayWidth();
-			bool displaySizeEnabled = (GetFeatureFlags() | Fsr212::FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS) > 0;
+			bool displaySizeEnabled = (GetFeatureFlags() | NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
 
 			if (displaySizeEnabled && lowResMV)
 			{

@@ -158,8 +158,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 	std::string str(string.begin(), string.end());
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext InApplicationDataPath {0}", str);
 
-	//if (Config::Instance()->NVSDK_Logger.LoggingCallback == nullptr && InFeatureInfo != nullptr)
-	//	Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
+	if (Config::Instance()->NVSDK_Logger.LoggingCallback == nullptr && InFeatureInfo != nullptr)
+		Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
 
 	D3D12Device = InDevice;
 
@@ -175,21 +175,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init(unsigned long long InApplica
 	ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
 	spdlog::debug("NVSDK_NGX_D3D12_Init");
-
-	//if (Config::Instance()->NVSDK_Logger.LoggingCallback == nullptr && InFeatureInfo != nullptr)
-	//	Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
-
 	return NVSDK_NGX_D3D12_Init_Ext(InApplicationId, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType,
-	const char* InEngineVersion, const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
+	const char* InEngineVersion, const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
 	spdlog::info("NVSDK_NGX_D3D12_Init_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::info("NVSDK_NGX_D3D12_Init_ProjectID InEngineType: {0}", (int)InEngineType);
-
-	//if (Config::Instance()->NVSDK_Logger.LoggingCallback == nullptr && InFeatureInfo != nullptr)
-	//	Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
 
 	Config::Instance()->NVNGX_Engine = InEngineType;
 
@@ -207,9 +200,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* I
 {
 	spdlog::info("NVSDK_NGX_D3D12_Init_with_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::info("NVSDK_NGX_D3D12_Init_with_ProjectID InEngineType: {0}", (int)InEngineType);
-
-	//if (Config::Instance()->NVSDK_Logger.LoggingCallback == nullptr && InFeatureInfo != nullptr)
-	//	Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
 
 	Config::Instance()->NVNGX_Engine = InEngineType;
 

@@ -50,10 +50,15 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 	xessParams.initFlags = XESS_INIT_FLAG_NONE;
 
-	int featureFlags;
-	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);
-
-	_initFlags = featureFlags;
+	int featureFlags = 0;
+	if (!_initFlagsReady)
+	{
+		InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);
+		_initFlags = featureFlags;
+		_initFlagsReady = true;
+	}
+	else
+		featureFlags = _initFlags;
 
 	bool Hdr = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
 	bool EnableSharpening = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;

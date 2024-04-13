@@ -14,6 +14,9 @@ bool FSR2FeatureDx11on12_212::Init(ID3D11Device* InDevice, ID3D11DeviceContext* 
 	Device = InDevice;
 	DeviceContext = InContext;
 
+	if(InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &_initFlags) == NVSDK_NGX_Result_Success)
+		_initFlagsReady = true;
+
 	_baseInit = false;
 
 	return true;
@@ -37,7 +40,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 			paramVelocity->QueryInterface(IID_PPV_ARGS(&pvTexture));
 			pvTexture->GetDesc(&desc);
 			bool lowResMV = desc.Width < DisplayWidth();
-			bool displaySizeEnabled = (GetFeatureFlags() | Fsr212::FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS) > 0;
+			bool displaySizeEnabled = (InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
 
 			if (displaySizeEnabled && lowResMV)
 			{
@@ -51,7 +54,6 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 			}
 		}
 	}
-
 
 	if (!_baseInit)
 	{
@@ -326,13 +328,17 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	}
 
 	_contextDesc.device = Fsr212::ffxGetDeviceDX12_212(Dx12on11Device);
-
 	_contextDesc.flags = 0;
-
-	int featureFlags;
-	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);
-
-	_initFlags = featureFlags;
+	
+	int featureFlags = 0;
+	if (!_initFlagsReady)
+	{
+		InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);
+		_initFlags = featureFlags;
+		_initFlagsReady = true;
+	}
+	else
+		featureFlags = _initFlags;
 
 	bool Hdr = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
 	bool EnableSharpening = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;

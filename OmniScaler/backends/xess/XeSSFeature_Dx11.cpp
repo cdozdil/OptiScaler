@@ -22,6 +22,9 @@ bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 	Device = InDevice;
 	DeviceContext = InContext;
 
+	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &_initFlags) == NVSDK_NGX_Result_Success)
+		_initFlagsReady = true;
+
 	_baseInit = false;
 
 	return true;
@@ -40,12 +43,15 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 		if (paramVelocity != nullptr)
 		{
+			int featureFlags;
+			InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);
+
 			D3D11_TEXTURE2D_DESC desc;
 			ID3D11Texture2D* pvTexture;
 			paramVelocity->QueryInterface(IID_PPV_ARGS(&pvTexture));
 			pvTexture->GetDesc(&desc);
 			bool lowResMV = desc.Width < DisplayWidth();
-			bool displaySizeEnabled = (GetFeatureFlags() | XESS_INIT_FLAG_HIGH_RES_MV) > 0;
+			bool displaySizeEnabled = (InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
 
 			if (displaySizeEnabled && lowResMV)
 			{
