@@ -20,7 +20,7 @@ OmniScaler implement's all necessary API methods of DLSS2 & NVAPI to act as a ma
 * Ability to modify MipmapLODBias value of game
 
 ## Configuration
-Please check [this](Config.md) document for configuation parameters and explanations.
+Please check [this](Config.md) document for configuration parameters and explanations.
 
 ## Which APIs and Upscalers are Supported?
 Currently OmniScaler can be used with DirectX 11, DirectX 12 and Vulkan but each API has different sets of upscaler options.
