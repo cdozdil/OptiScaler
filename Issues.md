@@ -29,7 +29,7 @@ Solution for this issue is setting `ColorResourceBarrier=4` from `nvngx.ini` or 
 * As a result of spoofing Nvidia card to enable DLSS some games would use Nvidia optimized codepath which might lead to lower performance on other GPUs.
 
 ## Graphichal Corruption and Crashes
-As said earlier spoofing a Nvidia card may lead games to use specific codepaths also may cause
+As said earlier spoofing a Nvidia card may lead games to use specific codepaths that may cause
 
 * Grahichal corruptions
   
