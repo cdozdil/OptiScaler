@@ -79,7 +79,7 @@ Please check [this](Issues.md) document for known issues and possible solutions 
 * @PotatoOfDoom for CyberFSR2
 * @Artur for DLSS Enabler and helping me to implement NVAPI correctly
 * @LukeFZ & @Nukem for their great mods and sharing their knowledge 
-* @FakeMichau for support, ideas and OmniScaler name 
+* @FakeMichau for support, ideas and **OmniScaler** name 
 * @QM for continous testing efforts and helping me to reach games
 * @Cryio, @krispy, @krisshietala, @Lordubuntu, @scz, @Veeqo for their hard work on compatibility matrix
 * @RazzerBrazzer and DLSS2FSR community for all their support
