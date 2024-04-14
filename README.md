@@ -12,7 +12,7 @@ OmniScaler implement's all necessary API methods of DLSS2 & NVAPI to act as a ma
 ## Features
 * An in-game menu for tuning and saving settings (Only on DirectX 11 & DirectX 12 APIs)
 * Full integration with [DLSS Enabler](https://www.nexusmods.com/site/mods/757) for DLSS-FG support
-* Fidelity FX CAS (Contrast Adaptive Sharpening) support for XeSS to mitigate relatively soft image upscaler generates
+* CAS (Contrast Adaptive Sharpening) support for XeSS to mitigate relatively soft image upscaler generates
 * A supersampling option for backends running on DirectX 12
 * Autofixing colored lights on Unreal Engine & AMD graphics cards
 * Autofixing wrong motion vector init information 
