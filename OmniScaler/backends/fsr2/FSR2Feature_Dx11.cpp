@@ -281,22 +281,22 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, const NVSDK_NGX_P
 			D3D11_TEXTURE2D_DESC desc;
 			((ID3D11Texture2D*)paramVelocity)->GetDesc(&desc);
 			bool lowResMV = desc.Width < DisplayWidth();
-			bool displaySizeEnabled = (GetFeatureFlags() | NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
+			bool displaySizeEnabled = (GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
 
 			if (displaySizeEnabled && lowResMV)
 			{
-				spdlog::warn("FSR2FeatureDx11::Evaluate MotionVectors size and feature init config not matching!!");
+				spdlog::warn("FSR2FeatureDx11::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
 				Config::Instance()->DisplayResolution = false;
 				Config::Instance()->changeBackend = true;
 				return true;
 			}
-			else if (!displaySizeEnabled && !lowResMV)
-			{
-				spdlog::warn("FSR2FeatureDx11::Evaluate MotionVectors size and feature init config not matching!!");
-				Config::Instance()->DisplayResolution = true;
-				Config::Instance()->changeBackend = true;
-				return true;
-			}
+			//else if (!displaySizeEnabled && !lowResMV)
+			//{
+			//	spdlog::warn("FSR2FeatureDx11::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Enabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
+			//	Config::Instance()->DisplayResolution = true;
+			//	Config::Instance()->changeBackend = true;
+			//	return true;
+			//}
 		}
 	}
 	else
@@ -367,7 +367,12 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, const NVSDK_NGX_P
 		if (paramMask)
 			spdlog::debug("FSR2FeatureDx11::Evaluate Bias mask exist..");
 		else
-			spdlog::debug("FSR2FeatureDx11::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
+		{
+			spdlog::warn("FSR2FeatureDx11::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
+			Config::Instance()->DisableReactiveMask = true;
+			Config::Instance()->changeBackend = true;
+			return true;
+		}
 
 		params.reactive = ffxGetResourceDX11(&_context, paramMask, (wchar_t*)L"FSR2_Reactive");
 	}

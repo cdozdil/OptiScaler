@@ -44,14 +44,14 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 
 			if (displaySizeEnabled && lowResMV)
 			{
-				spdlog::warn("FSR2FeatureDx11on12::Evaluate MotionVectors size and feature init config not matching, disabling display size MV!!");
+				spdlog::warn("FSR2FeatureDx11on12::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
 				Config::Instance()->DisplayResolution = false;
 			}
-			else if (!displaySizeEnabled && !lowResMV)
-			{
-				spdlog::warn("FSR2FeatureDx11on12::Evaluate MotionVectors size and feature init config not matching, enabling display size MV!!");
-				Config::Instance()->DisplayResolution = true;
-			}
+			//else if (!displaySizeEnabled && !lowResMV)
+			//{
+			//	spdlog::warn("FSR2FeatureDx11on12::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Enabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
+			//	Config::Instance()->DisplayResolution = true;
+			//}
 		}
 	}
 

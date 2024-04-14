@@ -139,22 +139,22 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		{
 			auto desc = params.pVelocityTexture->GetDesc();
 			bool lowResMV = desc.Width < DisplayWidth();
-			bool displaySizeEnabled = (GetFeatureFlags() | NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
+			bool displaySizeEnabled = (GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
 
 			if (displaySizeEnabled && lowResMV)
 			{
-				spdlog::warn("XeSSFeatureDx12::Evaluate MotionVectors size and feature init config not matching!!");
+				spdlog::warn("XeSSFeatureDx12::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
 				Config::Instance()->DisplayResolution = false;
 				Config::Instance()->changeBackend = true;
 				return true;
 			}
-			else if (!displaySizeEnabled && !lowResMV)
-			{
-				spdlog::warn("XeSSFeatureDx12::Evaluate MotionVectors size and feature init config not matching!!");
-				Config::Instance()->DisplayResolution = true;
-				Config::Instance()->changeBackend = true;
-				return true;
-			}
+			//else if (!displaySizeEnabled && !lowResMV)
+			//{
+			//	spdlog::warn("XeSSFeatureDx12::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Enabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
+			//	Config::Instance()->DisplayResolution = true;
+			//	Config::Instance()->changeBackend = true;
+			//	return true;
+			//}
 		}
 	}
 	else
@@ -256,7 +256,12 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		if (params.pResponsivePixelMaskTexture)
 			spdlog::debug("XeSSFeatureDx12::Evaluate Bias mask exist..");
 		else
-			spdlog::debug("XeSSFeatureDx12::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
+		{
+			spdlog::warn("XeSSFeatureDx12::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
+			Config::Instance()->DisableReactiveMask = true;
+			Config::Instance()->changeBackend = true;
+			return true;
+		}
 
 		if (Config::Instance()->MaskResourceBarrier.has_value())
 			ResourceBarrier(InCommandList, params.pResponsivePixelMaskTexture, (D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);

@@ -77,19 +77,19 @@ bool FSR2FeatureVk212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	{
 		Config::Instance()->HDR = true;
 		_contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
-		spdlog::info("FSR2FeatureVk212::InitFSR2 xessParams.initFlags (HDR) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureVk212::InitFSR2 contextDesc.initFlags (HDR) {0:b}", _contextDesc.flags);
 	}
 	else
 	{
 		Config::Instance()->HDR = false;
-		spdlog::info("FSR2FeatureVk212::InitFSR2 xessParams.initFlags (!HDR) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureVk212::InitFSR2 contextDesc.initFlags (!HDR) {0:b}", _contextDesc.flags);
 	}
 
 	if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
 	{
 		Config::Instance()->JitterCancellation = true;
 		_contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
-		spdlog::info("FSR2FeatureVk212::InitFSR2 xessParams.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureVk212::InitFSR2 contextDesc.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
 	}
 	else
 		Config::Instance()->JitterCancellation = false;
@@ -97,11 +97,11 @@ bool FSR2FeatureVk212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	if (Config::Instance()->DisplayResolution.value_or(!LowRes))
 	{
 		_contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
-		spdlog::info("FSR2FeatureVk212::InitFSR2 xessParams.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureVk212::InitFSR2 contextDesc.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
 	}
 	else
 	{
-		spdlog::info("FSR2FeatureVk212::InitFSR2 xessParams.initFlags (LowResMV) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureVk212::InitFSR2 contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
 	}
 
 	spdlog::debug("FSR2FeatureVk212::InitFSR2 ffxFsr2ContextCreate!");

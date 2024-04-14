@@ -102,22 +102,22 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 		{
 			auto desc = paramVelocity->GetDesc();
 			bool lowResMV = desc.Width < DisplayWidth();
-			bool displaySizeEnabled = (GetFeatureFlags() | NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
+			bool displaySizeEnabled = (GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
 
 			if (displaySizeEnabled && lowResMV)
 			{
-				spdlog::warn("FSR2FeatureDx12_212::Evaluate MotionVectors size and feature init config not matching!!");
+				spdlog::warn("FSR2FeatureDx12_212::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
 				Config::Instance()->DisplayResolution = false;
 				Config::Instance()->changeBackend = true;
 				return true;
 			}
-			else if (!displaySizeEnabled && !lowResMV)
-			{
-				spdlog::warn("FSR2FeatureDx12_212::Evaluate MotionVectors size and feature init config not matching!!");
-				Config::Instance()->DisplayResolution = true;
-				Config::Instance()->changeBackend = true;
-				return true;
-			}
+			//else if (!displaySizeEnabled && !lowResMV)
+			//{
+			//	spdlog::warn("FSR2FeatureDx12_212::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Enabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
+			//	Config::Instance()->DisplayResolution = true;
+			//	Config::Instance()->changeBackend = true;
+			//	return true;
+			//}
 		}
 
 		params.motionVectors = Fsr212::ffxGetResourceDX12_212(&_context, paramVelocity, (wchar_t*)L"FSR2_MotionVectors", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
@@ -220,7 +220,12 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 		if (paramMask)
 			spdlog::debug("FSR2FeatureDx12_212::Evaluate Bias mask exist..");
 		else
-			spdlog::debug("FSR2FeatureDx12_212::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
+		{
+			spdlog::warn("FSR2FeatureDx12_212::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
+			Config::Instance()->DisableReactiveMask = true;
+			Config::Instance()->changeBackend = true;
+			return true;
+		}
 
 		if (Config::Instance()->MaskResourceBarrier.has_value())
 			ResourceBarrier(InCommandList, paramMask,
@@ -455,19 +460,19 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	{
 		Config::Instance()->HDR = true;
 		_contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
-		spdlog::info("FSR2FeatureDx12_212::InitFSR2 xessParams.initFlags (HDR) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx12_212::InitFSR2 contextDesc.initFlags (HDR) {0:b}", _contextDesc.flags);
 	}
 	else
 	{
 		Config::Instance()->HDR = false;
-		spdlog::info("FSR2FeatureDx12_212::InitFSR2 xessParams.initFlags (!HDR) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx12_212::InitFSR2 contextDesc.initFlags (!HDR) {0:b}", _contextDesc.flags);
 	}
 
 	if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
 	{
 		Config::Instance()->JitterCancellation = true;
 		_contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
-		spdlog::info("FSR2FeatureDx12_212::InitFSR2 xessParams.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx12_212::InitFSR2 contextDesc.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
 	}
 	else
 		Config::Instance()->JitterCancellation = false;
@@ -475,11 +480,11 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	if (Config::Instance()->DisplayResolution.value_or(!LowRes))
 	{
 		_contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
-		spdlog::info("FSR2FeatureDx12_212::InitFSR2 xessParams.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx12_212::InitFSR2 contextDesc.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
 	}
 	else
 	{
-		spdlog::info("FSR2FeatureDx12_212::InitFSR2 xessParams.initFlags (LowResMV) {0:b}", _contextDesc.flags);
+		spdlog::info("FSR2FeatureDx12_212::InitFSR2 contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
 	}
 
 	if (Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
