@@ -1,6 +1,8 @@
 # Configuration
 This document will try explain `nvngx.ini` / in-game menu settings as much as possible.
 
+![in-game menu](images/ingame_menu.png)
+
 ### Upscalers
 OmniScaler supports DirectX 11, DirectX 12 and Vulkan APIs with multiple upscaler backends. You can select which upscaler you would like to use from `[Upscalers]` section in `nvngx.ini` file.
 
@@ -125,3 +127,43 @@ From in-game menu it can be changed with realtime results.
 ![xess](images/xess.png)
 
 `Dump` option is for debugging purposes, which would dump input and output parameters and textures for XeSS to game folder.
+
+### FSR Settings
+
+```ini
+[FSR]
+; 0.0 to 180.0 - Default (auto) is 60.0
+VerticalFov=auto
+
+; If vertical fov is not defined will be used to calculate vertical fov
+; 0.0 to 180.0 - Default (auto) is off
+HorizontalFov=auto
+```
+
+For improving image quality you might try to match vertical or horzontal FOV of your game with these settings. Default is 60° vertical FOV and most of the time it works ok.
+
+From in-game menu it can be changed with realtime results.
+
+![fsr](images/fsr.png)
+
+### Shapness
+DLSS used to have shaprness option but later on it's removed. So some games have sharpness sliders and some not. With this option you can override or enable sharpness of final image. FSR has build it sharpness but for XeSS CAS option must be enabled.
+
+```ini
+[Sharpness]
+; Override DLSS sharpness paramater with fixed shapness value
+; true or false - Default (auto) is false
+OverrideSharpness=auto
+
+; Strength of sharpening, 
+; value range between 0.0 and 1.0 - Default (auto) is 0.3
+Sharpness=auto
+```
+
+From in-game menu it can be changed with realtime results.
+
+![sharpness](images/sharpness.png)
+
+
+
+
