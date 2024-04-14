@@ -148,13 +148,6 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				Config::Instance()->changeBackend = true;
 				return true;
 			}
-			//else if (!displaySizeEnabled && !lowResMV)
-			//{
-			//	spdlog::warn("XeSSFeatureDx12::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Enabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
-			//	Config::Instance()->DisplayResolution = true;
-			//	Config::Instance()->changeBackend = true;
-			//	return true;
-			//}
 		}
 	}
 	else
@@ -233,7 +226,12 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&params.pExposureScaleTexture);
 
 		if (params.pExposureScaleTexture)
+		{
 			spdlog::debug("XeSSFeatureDx12::Evaluate ExposureTexture exist..");
+
+			if (Config::Instance()->ExposureResourceBarrier.has_value())
+				ResourceBarrier(InCommandList, params.pExposureScaleTexture, (D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		}
 		else
 		{
 			spdlog::warn("XeSSFeatureDx12::Evaluate AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
@@ -241,9 +239,6 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			Config::Instance()->changeBackend = true;
 			return true;
 		}
-
-		if (Config::Instance()->ExposureResourceBarrier.has_value())
-			ResourceBarrier(InCommandList, params.pExposureScaleTexture, (D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 	}
 	else
 		spdlog::debug("XeSSFeatureDx12::Evaluate AutoExposure enabled!");
@@ -254,7 +249,12 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&params.pResponsivePixelMaskTexture);
 
 		if (params.pResponsivePixelMaskTexture)
+		{
 			spdlog::debug("XeSSFeatureDx12::Evaluate Bias mask exist..");
+
+			if (Config::Instance()->MaskResourceBarrier.has_value())
+				ResourceBarrier(InCommandList, params.pResponsivePixelMaskTexture, (D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		}
 		else
 		{
 			spdlog::warn("XeSSFeatureDx12::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
@@ -262,9 +262,6 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			Config::Instance()->changeBackend = true;
 			return true;
 		}
-
-		if (Config::Instance()->MaskResourceBarrier.has_value())
-			ResourceBarrier(InCommandList, params.pResponsivePixelMaskTexture, (D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 	}
 
 	_hasColor = params.pColorTexture != nullptr;

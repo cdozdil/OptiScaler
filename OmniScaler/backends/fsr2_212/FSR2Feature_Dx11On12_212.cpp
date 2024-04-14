@@ -47,11 +47,6 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 				spdlog::warn("FSR2FeatureDx11on12_212::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
 				Config::Instance()->DisplayResolution = false;
 			}
-			else if (!displaySizeEnabled && !lowResMV)
-			{
-				spdlog::warn("FSR2FeatureDx11on12_212::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Enabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
-				Config::Instance()->DisplayResolution = true;
-			}
 		}
 	}
 
@@ -129,7 +124,28 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 	if (!ProcessDx11Textures(InParameters))
 	{
 		spdlog::error("FSR2FeatureDx11on12_212::Evaluate Can't process Dx11 textures!");
+
+		Dx12CommandList->Close();
+		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+		Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+		Dx12CommandAllocator->Reset();
+		Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
 		return false;
+	}
+
+	// AutoExposure or ReactiveMask is nullptr
+	if (Config::Instance()->changeBackend)
+	{
+		Dx12CommandList->Close();
+		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+		Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+		Dx12CommandAllocator->Reset();
+		Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
+		return true;
 	}
 
 	params.color = Fsr212::ffxGetResourceDX12_212(&_context, dx11Color.Dx12Resource, (wchar_t*)L"FSR2_Color", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
@@ -232,6 +248,14 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 	if (ffxresult != Fsr212::FFX_OK)
 	{
 		spdlog::error("FSR2FeatureDx11on12_212::Evaluate ffxFsr2ContextDispatch error: {0}", ResultToString212(ffxresult));
+
+		Dx12CommandList->Close();
+		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+		Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+		Dx12CommandAllocator->Reset();
+		Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
 		return false;
 	}
 
@@ -260,6 +284,14 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 	if (!CopyBackOutput())
 	{
 		spdlog::error("FSR2FeatureDx11on12_212::Evaluate Can't copy output texture back!");
+
+		Dx12CommandList->Close();
+		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+		Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+		Dx12CommandAllocator->Reset();
+		Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
 		return false;
 	}
 

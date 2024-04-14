@@ -12,6 +12,13 @@
 #include "backends/fsr2_212/FSR2Feature_Dx12_212.h"
 #include "NVNGX_Parameter.h"
 
+inline ID3D12Device* D3D12Device = nullptr;
+static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
+static inline NVSDK_NGX_Parameter* createParams = nullptr;
+static inline int changeBackendCounter = 0;
+
+#pragma region Hooks
+
 typedef void(__fastcall* PFN_SetComputeRootSignature)(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature);
 typedef void(__fastcall* PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 
@@ -25,23 +32,16 @@ static inline bool contextRendering = false;
 static inline ULONGLONG computeTime = 0;
 static inline ULONGLONG graphTime = 0;
 static inline ULONGLONG lastEvalTime = 0;
-static inline NVSDK_NGX_Parameter* createParams;
-static inline int changeBackendCounter = 0;
-
-inline ID3D12Device* D3D12Device = nullptr;
-static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
-
-inline static std::mutex RootSigatureMutex;
-inline HWND currentHwnd = nullptr;
+inline static std::mutex sigatureMutex;
 
 void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
 	if (!contextRendering)
 	{
-		RootSigatureMutex.lock();
+		sigatureMutex.lock();
 		rootSigCompute = pRootSignature;
 		computeTime = GetTickCount64();
-		RootSigatureMutex.unlock();
+		sigatureMutex.unlock();
 	}
 
 	return orgSetComputeRootSignature(commandList, pRootSignature);
@@ -51,10 +51,10 @@ void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12Roo
 {
 	if (!contextRendering)
 	{
-		RootSigatureMutex.lock();
+		sigatureMutex.lock();
 		rootSigGraphic = pRootSignature;
 		graphTime = GetTickCount64();
-		RootSigatureMutex.unlock();
+		sigatureMutex.unlock();
 	}
 
 	return orgSetGraphicRootSignature(commandList, pRootSignature);
@@ -146,6 +146,8 @@ void UnhookSetComputeRootSignature()
 
 	DetourTransactionCommit();
 }
+
+#pragma endregion
 
 #pragma region DLSS Init Calls
 
@@ -459,10 +461,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	ID3D12RootSignature* orgComputeRootSig = nullptr;
 	ID3D12RootSignature* orgGraphicRootSig = nullptr;
 
-	RootSigatureMutex.lock();
+	sigatureMutex.lock();
 	orgComputeRootSig = rootSigCompute;
 	orgGraphicRootSig = rootSigGraphic;
-	RootSigatureMutex.unlock();
+	sigatureMutex.unlock();
 
 	if (InCallback)
 		spdlog::info("NVSDK_NGX_D3D12_EvaluateFeature callback exist");

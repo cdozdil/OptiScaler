@@ -16,6 +16,8 @@ PFN_vkGetInstanceProcAddr vkGIPA;
 PFN_vkGetDeviceProcAddr vkGDPA;
 
 static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Vk>> VkContexts;
+static inline NVSDK_NGX_Parameter* createParams = nullptr;
+static inline int changeBackendCounter = 0;
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD,
 	VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
@@ -70,7 +72,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID(const char* InPro
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InEngineType: {0}", (int)InEngineType);
-	
+
 	Config::Instance()->NVNGX_Engine = InEngineType;
 
 	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
@@ -244,9 +246,83 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 	}
 
 	if (InCallback)
-		spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature callback exist");
+		spdlog::warn("NVSDK_NGX_VULKAN_EvaluateFeature callback exist");
 
-	const auto deviceContext = VkContexts[InFeatureHandle->Id].get();
+	IFeature_Vk* deviceContext = nullptr;
+	auto handleId = InFeatureHandle->Id;
+
+	if (Config::Instance()->changeBackend)
+	{
+		if (Config::Instance()->newBackend == "")
+			Config::Instance()->newBackend = Config::Instance()->Dx12Upscaler.value_or("xess");
+
+		spdlog::info("NVSDK_NGX_VULKAN_EvaluateFeature changing backend to {0}", Config::Instance()->newBackend);
+
+		// first release everything
+		if (VkContexts.contains(handleId) && changeBackendCounter == 0)
+		{
+			auto dc = VkContexts[handleId].get();
+
+			createParams = GetNGXParameters();
+			createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
+			createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
+			createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
+			createParams->Set(NVSDK_NGX_Parameter_OutWidth, dc->DisplayWidth());
+			createParams->Set(NVSDK_NGX_Parameter_OutHeight, dc->DisplayHeight());
+			createParams->Set(NVSDK_NGX_Parameter_PerfQualityValue, dc->PerfQualityValue());
+
+			dc = nullptr;
+
+			spdlog::trace("NVSDK_NGX_VULKAN_EvaluateFeature sleeping before reset of current feature for 1000ms");
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+			VkContexts[handleId].reset();
+			auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+			VkContexts.erase(it);
+
+			return NVSDK_NGX_Result_Success;
+		}
+
+		changeBackendCounter++;
+
+		if (changeBackendCounter == 1)
+		{
+			// prepare new upscaler
+			if (Config::Instance()->newBackend == "fsr22")
+			{
+				Config::Instance()->Dx12Upscaler = "fsr22";
+				spdlog::info("NVSDK_NGX_VULKAN_EvaluateFeature creating new FSR 2.2.1 feature");
+				VkContexts[handleId] = std::make_unique<FSR2FeatureVk>(handleId, createParams);
+			}
+			else
+			{
+				Config::Instance()->Dx12Upscaler = "fsr21";
+				spdlog::info("NVSDK_NGX_VULKAN_EvaluateFeature creating new FSR 2.1.2 feature");
+				VkContexts[handleId] = std::make_unique<FSR2FeatureVk212>(handleId, createParams);
+			}
+
+			return NVSDK_NGX_Result_Success;
+		}
+
+		if (changeBackendCounter == 2)
+		{
+			// next frame create context
+			auto initResult = VkContexts[handleId]->Init(vkInstance, vkPD, vkDevice, InCmdList, vkGIPA, vkGDPA, createParams);
+
+			Config::Instance()->newBackend = "";
+			Config::Instance()->changeBackend = false;
+			free(createParams);
+			createParams = nullptr;
+			changeBackendCounter = 0;
+
+			if (!initResult)
+				return NVSDK_NGX_Result_Fail;
+		}
+
+		return NVSDK_NGX_Result_Success;
+	}
+
+	deviceContext = VkContexts[handleId].get();
 	Config::Instance()->CurrentFeature = deviceContext;
 
 	if (deviceContext->Evaluate(InCmdList, InParameters))

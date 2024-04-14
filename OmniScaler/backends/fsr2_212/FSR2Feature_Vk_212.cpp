@@ -164,15 +164,10 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Par
 	{
 		spdlog::debug("FSR2FeatureVk212::Evaluate Color exist..");
 
-		//if (Config::Instance()->MVResourceBarrier.has_value())
-		//	ResourceBarrier(InCommandList, paramVelocity,
-		//		(D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value(),
-		//		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
 		params.color = Fsr212::ffxGetTextureResourceVK212(&_context, ((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Image,
 			((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.ImageView,
 			((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Height,
-			((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR2_Color", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
+			((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Format, (wchar_t*)L"FSR2_Color", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 	else
 	{
@@ -187,15 +182,10 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Par
 	{
 		spdlog::debug("FSR2FeatureVk212::Evaluate MotionVectors exist..");
 
-		//if (Config::Instance()->MVResourceBarrier.has_value())
-		//	ResourceBarrier(InCommandList, paramVelocity,
-		//		(D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value(),
-		//		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
 		params.motionVectors = Fsr212::ffxGetTextureResourceVK212(&_context, ((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Image,
 			((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.ImageView,
 			((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Height,
-			((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR2_MotionVectors", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
+			((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Format, (wchar_t*)L"FSR2_MotionVectors", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 	else
 	{
@@ -210,15 +200,10 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Par
 	{
 		spdlog::debug("FSR2FeatureVk212::Evaluate Output exist..");
 
-		//if (Config::Instance()->OutputResourceBarrier.has_value())
-		//	ResourceBarrier(InCommandList, paramOutput,
-		//		(D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value(),
-		//		D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-
 		params.output = Fsr212::ffxGetTextureResourceVK212(&_context, ((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Image,
 			((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.ImageView,
 			((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Height,
-			((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR2_Output", Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+			((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Format, (wchar_t*)L"FSR2_Output", Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 	}
 	else
 	{
@@ -233,15 +218,10 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Par
 	{
 		spdlog::debug("FSR2FeatureVk212::Evaluate Depth exist..");
 
-		//if (Config::Instance()->DepthResourceBarrier.has_value())
-		//	ResourceBarrier(InCommandList, paramDepth,
-		//		(D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value(),
-		//		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
 		params.depth = Fsr212::ffxGetTextureResourceVK212(&_context, ((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Image,
 			((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.ImageView,
 			((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Height,
-			((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR2_Depth", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
+			((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Format, (wchar_t*)L"FSR2_Depth", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
 	}
 	else
 	{
@@ -260,18 +240,18 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Par
 		{
 			spdlog::debug("FSR2FeatureVk212::Evaluate ExposureTexture exist..");
 
-			//if (Config::Instance()->ExposureResourceBarrier.has_value())
-			//	ResourceBarrier(InCommandList, paramExp,
-			//		(D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value(),
-			//		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
 			params.exposure = Fsr212::ffxGetTextureResourceVK212(&_context, ((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.Image,
 				((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.ImageView,
 				((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.Height,
-				((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR2_Exposure", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
+				((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.Format, (wchar_t*)L"FSR2_Exposure", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
 		}
 		else
+		{
 			spdlog::debug("FSR2FeatureVk212::Evaluate AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
+			Config::Instance()->AutoExposure = true;
+			Config::Instance()->changeBackend = true;
+			return true;
+		}
 	}
 	else
 		spdlog::debug("FSR2FeatureVk212::Evaluate AutoExposure enabled!");
@@ -285,19 +265,18 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Par
 		{
 			spdlog::debug("FSR2FeatureVk212::Evaluate Bias mask exist..");
 
-			//if (Config::Instance()->MaskResourceBarrier.has_value())
-			//	ResourceBarrier(InCommandList, paramMask,
-			//		(D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(),
-			//		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
 			params.reactive = Fsr212::ffxGetTextureResourceVK212(&_context, ((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Image,
 				((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.ImageView,
 				((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Height,
-				((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Format, (wchar_t*)"FSR2_Reactive", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
+				((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Format, (wchar_t*)L"FSR2_Reactive", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
 		}
 		else
+		{
 			spdlog::debug("FSR2FeatureVk212::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
-
+			Config::Instance()->DisableReactiveMask = true;
+			Config::Instance()->changeBackend = true;
+			return true;
+		}
 	}
 
 	_hasColor = params.color.resource != nullptr;

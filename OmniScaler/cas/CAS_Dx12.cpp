@@ -300,14 +300,13 @@ CAS_Dx12::CAS_Dx12(ID3D12Device* InDevice, uint32_t InWidth, uint32_t InHeight, 
 
 	Device = InDevice;
 
-	auto _colorSpace = InColorSpace;
+	_colorSpace = InColorSpace;
 
 	if (_colorSpace < 0 || _colorSpace > 4)
 		_colorSpace = 0;
 
 	_width = InWidth;
 	_height = InHeight;
-
 
 	Init();
 }

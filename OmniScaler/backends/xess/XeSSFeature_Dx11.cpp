@@ -194,6 +194,19 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	else
 		spdlog::debug("XeSSFeatureDx11::Evaluate ProcessDx11Textures complete!");
 
+	// AutoExposure or ReactiveMask is nullptr
+	if (Config::Instance()->changeBackend)
+	{
+		Dx12CommandList->Close();
+		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+		Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+		Dx12CommandAllocator->Reset();
+		Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
+		return true;
+	}
+
 	params.pColorTexture = dx11Color.Dx12Resource;
 
 	_hasColor = params.pColorTexture != nullptr;
@@ -264,6 +277,14 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	if (xessResult != XESS_RESULT_SUCCESS)
 	{
 		spdlog::error("XeSSFeatureDx11::Evaluate xessD3D12Execute error: {0}", ResultToString(xessResult));
+
+		Dx12CommandList->Close();
+		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+		Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+		Dx12CommandAllocator->Reset();
+		Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
 		return false;
 	}
 
@@ -332,6 +353,10 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	if (!CopyBackOutput())
 	{
 		spdlog::error("XeSSFeatureDx11::Evaluate Can't copy output texture back!");
+
+		Dx12CommandList->Close();
+		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+		Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
 		Dx12CommandAllocator->Reset();
 		Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);

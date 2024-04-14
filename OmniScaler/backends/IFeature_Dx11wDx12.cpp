@@ -436,11 +436,16 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 		if (paramMask)
 		{
 			spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Bias mask exist..");
+
 			if (CopyTextureFrom11To12(paramMask, &dx11Tm, true) == false)
 				return false;
 		}
 		else
+		{
 			spdlog::warn("IFeature_Dx11wDx12::ProcessDx11Textures bias mask not exist and its enabled in config, it may cause problems!!");
+			Config::Instance()->DisableReactiveMask = true;
+			Config::Instance()->changeBackend = true;
+		}
 	}
 	else
 		spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures DisableReactiveMask enabled!");
