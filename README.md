@@ -15,9 +15,12 @@ OmniScaler implement's all necessary API methods of DLSS2 & NVAPI to act as a ma
 * Fidelity FX CAS (Contrast Adaptive Sharpening) support for XeSS to mitigate relatively soft image upscaler generates
 * A supersampling option for backends running on DirectX 12
 * Autofixing colored lights on Unreal Engine & AMD graphics cards
-* Autofixing wrong motion vector informations and reducing ghosting on these games
+* Autofixing wrong motion vector init information 
 * Autofixing missing exposure texture information
 * Ability to modify MipmapLODBias value of game
+
+## Configuration
+Please check [this](Config.md) document for configuation parameters and explanations.
 
 ## Which APIs and Upscalers are Supported?
 Currently OmniScaler can be used with DirectX 11, DirectX 12 and Vulkan but each API has different sets of upscaler options.
@@ -79,7 +82,7 @@ Please check [this](Issues.md) document for known issues and possible solutions 
 * @PotatoOfDoom for CyberFSR2
 * @Artur for DLSS Enabler and helping me to implement NVAPI correctly
 * @LukeFZ & @Nukem for their great mods and sharing their knowledge 
-* @FakeMichau for support, ideas and OmniScaler name 
+* @FakeMichau for support, ideas and **OmniScaler** name 
 * @QM for continous testing efforts and helping me to reach games
 * @Cryio, @krispy, @krisshietala, @Lordubuntu, @scz, @Veeqo for their hard work on compatibility matrix
 * @RazzerBrazzer and DLSS2FSR community for all their support
