@@ -22,6 +22,9 @@ OmniScaler implement's all necessary API methods of DLSS2 & NVAPI to act as a ma
 ## Configuration
 Please check [this](Config.md) document for configuration parameters and explanations.
 
+## Known Issues
+Please check [this](Issues.md) document for known issues and possible solutions for them.
+
 ## Which APIs and Upscalers are Supported?
 Currently OmniScaler can be used with DirectX 11, DirectX 12 and Vulkan but each API has different sets of upscaler options.
 
@@ -64,9 +67,6 @@ Currently OmniScaler can be used with DirectX 11, DirectX 12 and Vulkan but each
 * Run `DisableSignatureOverride.reg` file 
 * Delete `EnableSignatureOverride.reg`, `DisableSignatureOverride.reg`, `nvngx.dll`, `nvngx.ini` files
 * If there were a `libxess.dll` file and you have backed it up delete the new file and restore the backed up file. If you have overwrote old file **DO NOT** delete `libxess.dll` file. If there were no `libxess.dll` file it's safe to delete.
-
-## Known Issues
-Please check [this](Issues.md) document for known issues and possible solutions for them.
 
 ## Compilation
 
