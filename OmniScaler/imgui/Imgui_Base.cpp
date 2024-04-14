@@ -466,8 +466,11 @@ void Imgui_Base::RenderMenu()
 					ImGui::EndCombo();
 				}
 
-				if (bool cas = Config::Instance()->CasEnabled.value_or(true); ImGui::Checkbox("CAS", &cas))
+				if (bool cas = Config::Instance()->CasEnabled.value_or(false); ImGui::Checkbox("CAS", &cas))
+				{
 					Config::Instance()->CasEnabled = cas;
+					Config::Instance()->changeCAS = true;
+				}
 
 				ImGui::SameLine(0.0f, 6.0f);
 				if (bool dbg = Config::Instance()->xessDebug; ImGui::Checkbox("Dump (Shift+Del)", &dbg))
@@ -489,7 +492,7 @@ void Imgui_Base::RenderMenu()
 
 				ImGui::PopItemWidth();
 
-				ImGui::BeginDisabled(!Config::Instance()->CasEnabled.value_or(true));
+				ImGui::BeginDisabled(!Config::Instance()->CasEnabled.value_or(false));
 
 				const char* cs[] = { "LINEAR", "GAMMA20", "GAMMA22", "SRGB_OUTPUT", "SRGB_INPUT_OUTPUT" };
 				auto configCs = Config::Instance()->CasColorSpaceConversion.value_or(0);

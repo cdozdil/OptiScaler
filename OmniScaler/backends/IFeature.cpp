@@ -26,6 +26,8 @@ bool IFeature::SetInitParameters(const NVSDK_NGX_Parameter* InParameters)
 	{
 		_displayWidth = width > outWidth ? width : outWidth;
 		_displayHeight = height > outHeight ? height : outHeight;
+		_targetWidth = _displayWidth;
+		_targetHeight = _displayHeight;
 		_renderWidth = width < outWidth ? width : outWidth;
 		_renderHeight = height < outHeight ? height : outHeight;
 		_perfQualityValue = (NVSDK_NGX_PerfQuality_Value)pqValue;

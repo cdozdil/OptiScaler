@@ -7,7 +7,13 @@ inline std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_
 {
 	std::optional<float> output;
 
-	if (!(Config::Instance()->QualityRatioOverrideEnabled.has_value() && Config::Instance()->QualityRatioOverrideEnabled))
+	if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false))
+	{
+		output = Config::Instance()->UpscaleRatioOverrideValue.value_or(1.3f);
+		return  output;
+	}
+
+	if (!Config::Instance()->QualityRatioOverrideEnabled.value_or(false))
 		return output; // override not enabled
 
 	switch (input)
@@ -56,14 +62,14 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	if (InParams->Get(NVSDK_NGX_Parameter_PerfQualityValue, &PerfQualityValue) != NVSDK_NGX_Result_Success)
 		return NVSDK_NGX_Result_Fail;
 
+	bool usingXess = (Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") == "xess") ||
+		(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->Dx12Upscaler.value_or("xess") == "xess");
+
 	auto enumPQValue = (NVSDK_NGX_PerfQuality_Value)PerfQualityValue;
 
 	spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback Output Resolution: {0}x{1}", Width, Height);
 
 	const std::optional<float> QualityRatio = GetQualityOverrideRatio(enumPQValue);
-
-	bool usingXess = (Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") == "xess") ||
-		(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->Dx12Upscaler.value_or("xess") == "xess");
 
 	if (QualityRatio.has_value()) {
 		OutHeight = (unsigned int)((float)Height / QualityRatio.value());
@@ -124,7 +130,12 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	InParams->Set(NVSDK_NGX_Parameter_OutWidth, OutWidth);
 	InParams->Set(NVSDK_NGX_Parameter_OutHeight, OutHeight);
 
-	if (enumPQValue == NVSDK_NGX_PerfQuality_Value_DLAA)
+	if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false))
+	{
+		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, OutWidth);
+		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, OutWidth);
+	}
+	else if (enumPQValue == NVSDK_NGX_PerfQuality_Value_DLAA)
 	{
 		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, Width);
 		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, Height);

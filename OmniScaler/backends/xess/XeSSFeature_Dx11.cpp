@@ -34,40 +34,61 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 {
 	spdlog::debug("XeSSFeatureDx11::Evaluate");
 
-	// to prevent creation dx12 device if we are going to recreate feature
-	if (!Config::Instance()->DisplayResolution.has_value())
-	{
-		ID3D11Resource* paramVelocity = nullptr;
-		if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
-			InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
-
-		if (paramVelocity != nullptr)
-		{
-			int featureFlags;
-			InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);
-
-			D3D11_TEXTURE2D_DESC desc;
-			ID3D11Texture2D* pvTexture;
-			paramVelocity->QueryInterface(IID_PPV_ARGS(&pvTexture));
-			pvTexture->GetDesc(&desc);
-			bool lowResMV = desc.Width < DisplayWidth();
-			bool displaySizeEnabled = (InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
-
-			if (displaySizeEnabled && lowResMV)
-			{
-				spdlog::warn("XeSSFeatureDx11::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
-				Config::Instance()->DisplayResolution = false;
-			}
-			//else if (!displaySizeEnabled && !lowResMV)
-			//{
-			//	spdlog::warn("XeSSFeatureDx11::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Enabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
-			//	Config::Instance()->DisplayResolution = true;
-			//}
-		}
-	}
-
 	if (!_baseInit)
 	{
+		// to prevent creation dx12 device if we are going to recreate feature
+		if (!Config::Instance()->DisplayResolution.has_value())
+		{
+			ID3D11Resource* paramVelocity = nullptr;
+			if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
+				InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
+
+			if (paramVelocity != nullptr)
+			{
+				int featureFlags;
+				InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);
+
+				D3D11_TEXTURE2D_DESC desc;
+				ID3D11Texture2D* pvTexture;
+				paramVelocity->QueryInterface(IID_PPV_ARGS(&pvTexture));
+				pvTexture->GetDesc(&desc);
+				bool lowResMV = desc.Width < DisplayWidth();
+				bool displaySizeEnabled = (InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
+
+				if (displaySizeEnabled && lowResMV)
+				{
+					spdlog::warn("XeSSFeatureDx11::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
+					Config::Instance()->DisplayResolution = false;
+				}
+			}
+		}
+
+		if (!Config::Instance()->AutoExposure.has_value())
+		{
+			ID3D11Resource* paramExpo = nullptr;
+			if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExpo) != NVSDK_NGX_Result_Success)
+				InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&paramExpo);
+
+			if (paramExpo == nullptr)
+			{
+				spdlog::warn("XeSSFeatureDx11::Evaluate ExposureTexture is not exist, enabling AutoExposure!!");
+				Config::Instance()->AutoExposure = true;
+			}
+		}
+
+		if (!Config::Instance()->DisableReactiveMask.has_value())
+		{
+			ID3D11Resource* paramRM = nullptr;
+			if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramRM) != NVSDK_NGX_Result_Success)
+				InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramRM);
+
+			if (paramRM == nullptr)
+			{
+				spdlog::warn("XeSSFeatureDx11::Evaluate Bias mask not exist, enabling DisableReactiveMask!!");
+				Config::Instance()->DisableReactiveMask = true;
+			}
+		}
+
 		if (!BaseInit(Device, InDeviceContext, InParameters))
 		{
 			spdlog::error("XeSSFeatureDx11::Evaluate BaseInit failed!");
@@ -141,7 +162,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 	if (Config::Instance()->changeCAS)
 	{
-		if (CAS.get() != nullptr)
+		if (CAS != nullptr && CAS.get() != nullptr)
 		{
 			spdlog::trace("XeSSFeatureDx11::Evaluate sleeping before CAS.reset() for 250ms");
 			std::this_thread::sleep_for(std::chrono::milliseconds(250));
@@ -228,7 +249,8 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	else
 		params.pOutputTexture = dx11Out.Dx12Resource;
 
-	if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f &&
+	if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(false) && sharpness > 0.0f &&
+		CAS != nullptr && CAS.get() != nullptr &&
 		CAS->CreateBufferResource(Dx12on11Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 	{
 		CAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -289,7 +311,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	}
 
 	//apply cas
-	if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f)
+	if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(false) && sharpness > 0.0f && CAS != nullptr && CAS.get() != nullptr)
 	{
 		spdlog::debug("XeSSFeatureDx11::Evaluate Apply CAS");
 		ResourceBarrier(Dx12CommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -393,6 +415,9 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
 	_frameCount++;
+
+	if (_frameCount == 200 && !Config::Instance()->UseSafeSyncQueries.has_value())
+		Config::Instance()->UseSafeSyncQueries = 1;
 
 	Dx12CommandAllocator->Reset();
 	Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);

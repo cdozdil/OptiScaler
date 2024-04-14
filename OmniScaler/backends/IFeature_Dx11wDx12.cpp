@@ -292,7 +292,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 	ID3D11Query* query0 = nullptr;
 
 	// 3 is query sync
-	if (Config::Instance()->UseSafeSyncQueries.value_or(1) < 4 && _frameCount > 20)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(3) < 4 && _frameCount > 20)
 	{
 		fr = Dx11Device->CreateFence(0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(&dx11fence_1));
 
@@ -453,15 +453,15 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 #pragma endregion
 
 	// 3 is query sync
-	if (Config::Instance()->UseSafeSyncQueries.value_or(1) < 4 && _frameCount > 20)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(3) < 4 && _frameCount > 20)
 	{
-		if (Config::Instance()->UseSafeSyncQueries.value_or(1) > 1)
+		if (Config::Instance()->UseSafeSyncQueries.value_or(3) > 1)
 		{
 			spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Dx11DeviceContext->Flush()!");
 			Dx11DeviceContext->Flush();
 		}
 
-		if (Config::Instance()->UseSafeSyncQueries.value_or(1) > 0)
+		if (Config::Instance()->UseSafeSyncQueries.value_or(3) > 0)
 		{
 			spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Dx11 Signal & Dx12 Wait!");
 
@@ -612,7 +612,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 	auto frame = _frameCount % 2;
 
 	// dispatch fences
-	if (Config::Instance()->UseSafeSyncQueries.value_or(1) < 4 && _frameCount > 20)
+	if (Config::Instance()->UseSafeSyncQueries.value_or(3) < 4 && _frameCount > 20)
 	{
 		auto fr = Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&dx12fence_2));
 
@@ -638,7 +638,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 			return false;
 		}
 
-		if (Config::Instance()->UseSafeSyncQueries.value_or(1) > 0)
+		if (Config::Instance()->UseSafeSyncQueries.value_or(3) > 0)
 		{
 			Dx12CommandQueue->Signal(dx12fence_2, 20);
 
@@ -647,7 +647,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 		}
 
 		// copy back output
-		if (Config::Instance()->UseSafeSyncQueries.value_or(1) > 2)
+		if (Config::Instance()->UseSafeSyncQueries.value_or(3) > 2)
 		{
 			ID3D11Query* query1 = nullptr;
 			result = Dx11Device->CreateQuery(&pQueryDesc, &query1);

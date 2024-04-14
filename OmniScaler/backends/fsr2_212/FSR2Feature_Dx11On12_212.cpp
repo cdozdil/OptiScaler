@@ -26,32 +26,58 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 {
 	spdlog::debug("FSR2FeatureDx11on12_212::Evaluate");
 
-	// to prevent creation dx12 device if we are going to recreate feature
-	if (!Config::Instance()->DisplayResolution.has_value())
-	{
-		ID3D11Resource* paramVelocity = nullptr;
-		if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
-			InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
-
-		if (paramVelocity != nullptr)
-		{
-			D3D11_TEXTURE2D_DESC desc;
-			ID3D11Texture2D* pvTexture;
-			paramVelocity->QueryInterface(IID_PPV_ARGS(&pvTexture));
-			pvTexture->GetDesc(&desc);
-			bool lowResMV = desc.Width < DisplayWidth();
-			bool displaySizeEnabled = (InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
-
-			if (displaySizeEnabled && lowResMV)
-			{
-				spdlog::warn("FSR2FeatureDx11on12_212::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
-				Config::Instance()->DisplayResolution = false;
-			}
-		}
-	}
-
 	if (!_baseInit)
 	{
+		// to prevent creation dx12 device if we are going to recreate feature
+		if (!Config::Instance()->DisplayResolution.has_value())
+		{
+			ID3D11Resource* paramVelocity = nullptr;
+			if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
+				InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
+
+			if (paramVelocity != nullptr)
+			{
+				D3D11_TEXTURE2D_DESC desc;
+				ID3D11Texture2D* pvTexture;
+				paramVelocity->QueryInterface(IID_PPV_ARGS(&pvTexture));
+				pvTexture->GetDesc(&desc);
+				bool lowResMV = desc.Width < DisplayWidth();
+				bool displaySizeEnabled = (InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
+
+				if (displaySizeEnabled && lowResMV)
+				{
+					spdlog::warn("FSR2FeatureDx11on12_212::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
+					Config::Instance()->DisplayResolution = false;
+				}
+			}
+		}
+
+		if (!Config::Instance()->AutoExposure.has_value())
+		{
+			ID3D11Resource* paramExpo = nullptr;
+			if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExpo) != NVSDK_NGX_Result_Success)
+				InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&paramExpo);
+
+			if (paramExpo == nullptr)
+			{
+				spdlog::warn("FSR2FeatureDx11on12_212::Evaluate ExposureTexture is not exist, enabling AutoExposure!!");
+				Config::Instance()->AutoExposure = true;
+			}
+		}
+
+		if (!Config::Instance()->DisableReactiveMask.has_value())
+		{
+			ID3D11Resource* paramRM = nullptr;
+			if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramRM) != NVSDK_NGX_Result_Success)
+				InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramRM);
+
+			if (paramRM == nullptr)
+			{
+				spdlog::warn("FSR2FeatureDx11on12_212::Evaluate Bias mask not exist, enabling DisableReactiveMask!!");
+				Config::Instance()->DisableReactiveMask = true;
+			}
+		}
+
 		if (!BaseInit(Device, InDeviceContext, InParameters))
 		{
 			spdlog::debug("FSR2FeatureDx11on12_212::Init BaseInit failed!");
@@ -323,6 +349,9 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 	Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
 	_frameCount++;
+
+	if (_frameCount == 200 && !Config::Instance()->UseSafeSyncQueries.has_value())
+		Config::Instance()->UseSafeSyncQueries = 1;
 
 	Dx12CommandAllocator->Reset();
 	Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);

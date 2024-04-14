@@ -87,12 +87,12 @@ void PrepareLogger()
 			auto callback_sink = std::make_shared<spdlog::sinks::callback_sink_mt>([](const spdlog::details::log_msg& msg)
 				{
 					if (Config::Instance()->LogToNGX.value_or(false) &&
-						!Config::Instance()->NVSDK_Logger.DisableOtherLoggingSinks &&
 						Config::Instance()->NVSDK_Logger.LoggingCallback != nullptr &&
 						Config::Instance()->NVSDK_Logger.MinimumLoggingLevel != NVSDK_NGX_LOGGING_LEVEL_OFF &&
 						(Config::Instance()->NVSDK_Logger.MinimumLoggingLevel == NVSDK_NGX_LOGGING_LEVEL_VERBOSE || msg.level >= spdlog::level::info))
 					{
-						Config::Instance()->NVSDK_Logger.LoggingCallback(msg.payload.data(), NVSDK_NGX_LOGGING_LEVEL_ON, NVSDK_NGX_Feature_SuperSampling);
+						auto message = (char*)msg.payload.data();
+						Config::Instance()->NVSDK_Logger.LoggingCallback(message, NVSDK_NGX_LOGGING_LEVEL_ON, NVSDK_NGX_Feature_SuperSampling);
 					}
 				});
 
