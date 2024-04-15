@@ -35,11 +35,12 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 
 	originalTexture->GetDesc(&desc);
 
-	if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) == 0)
+	// check shared nt handle usage later
+	if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) == 0 && (desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE) == 0 && (desc.BindFlags & D3D11_BIND_DEPTH_STENCIL) == 0)
 	{
 		if (desc.Width != OutResource->Desc.Width || desc.Height != OutResource->Desc.Height ||
 			desc.Format != OutResource->Desc.Format || desc.BindFlags != OutResource->Desc.BindFlags ||
-			(OutResource->SharedTexture) == nullptr)
+			OutResource->SharedTexture == nullptr)
 		{
 			if (OutResource->SharedTexture != nullptr)
 				OutResource->SharedTexture->Release();
@@ -48,7 +49,53 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 			OutResource->Dx11Handle = NULL;
 			OutResource->Dx12Handle = NULL;
 
-			desc.MiscFlags |= D3D11_RESOURCE_MISC_SHARED;
+			desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
+			result = Dx11Device->CreateTexture2D(&desc, nullptr, &OutResource->SharedTexture);
+
+			IDXGIResource1* resource;
+
+			result = OutResource->SharedTexture->QueryInterface(IID_PPV_ARGS(&resource));
+
+			if (result != S_OK)
+			{
+				spdlog::error("IFeature_Dx11wDx12::CopyTextureFrom11To12 QueryInterface(resource) error: {0:x}", result);
+				return false;
+			}
+
+			// Get shared handle
+			DWORD access = DXGI_SHARED_RESOURCE_READ;
+
+			if (InCopy)
+				access |= DXGI_SHARED_RESOURCE_WRITE;
+
+			result = resource->CreateSharedHandle(NULL, access, NULL, &OutResource->Dx11Handle);
+
+			if (result != S_OK)
+			{
+				spdlog::error("IFeature_Dx11wDx12::CopyTextureFrom11To12 GetSharedHandle error: {0:x}", result);
+				return false;
+			}
+
+			resource->Release();
+		}
+
+		if (InCopy && OutResource->SharedTexture != nullptr)
+			Dx11DeviceContext->CopyResource(OutResource->SharedTexture, InResource);
+	}
+	else if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) == 0 && (desc.BindFlags & D3D11_BIND_DEPTH_STENCIL) != 0)
+	{
+		if (desc.Width != OutResource->Desc.Width || desc.Height != OutResource->Desc.Height ||
+			desc.Format != OutResource->Desc.Format || desc.BindFlags != OutResource->Desc.BindFlags ||
+			OutResource->SharedTexture == nullptr)
+		{
+			if (OutResource->SharedTexture != nullptr)
+				OutResource->SharedTexture->Release();
+
+			ASSIGN_DESC(OutResource->Desc, desc);
+			OutResource->Dx11Handle = NULL;
+			OutResource->Dx12Handle = NULL;
+
+			desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED;
 			result = Dx11Device->CreateTexture2D(&desc, nullptr, &OutResource->SharedTexture);
 
 			IDXGIResource1* resource;
@@ -73,7 +120,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 			resource->Release();
 		}
 
-		if (InCopy)
+		if (InCopy && OutResource->SharedTexture != nullptr)
 			Dx11DeviceContext->CopyResource(OutResource->SharedTexture, InResource);
 	}
 	else
@@ -91,7 +138,19 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 			}
 
 			// Get shared handle
-			result = resource->GetSharedHandle(&OutResource->Dx11Handle);
+			if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) != 0 && (desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE) != 0)
+			{
+				DWORD access = DXGI_SHARED_RESOURCE_READ;
+
+				if (InCopy)
+					access |= DXGI_SHARED_RESOURCE_WRITE;
+
+				result = resource->CreateSharedHandle(NULL, access, NULL, &OutResource->Dx11Handle);
+			}
+			else
+			{
+				result = resource->GetSharedHandle(&OutResource->Dx11Handle);
+			}
 
 			if (result != S_OK)
 			{
