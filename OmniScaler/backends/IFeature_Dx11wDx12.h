@@ -55,7 +55,7 @@ protected:
 
 	std::unique_ptr<DS_Dx12> OUT_DS = nullptr;
 
-	bool CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutResource, bool InCopy);
+	bool CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutResource, bool InCopy, bool InDepth);
 	void ReleaseSharedResources();
 	void GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter);
 	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel);

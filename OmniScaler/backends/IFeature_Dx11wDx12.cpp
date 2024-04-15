@@ -23,7 +23,7 @@ void IFeature_Dx11wDx12::ResourceBarrier(ID3D12GraphicsCommandList* commandList,
 	commandList->ResourceBarrier(1, &barrier);
 }
 
-bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutResource, bool InCopy)
+bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutResource, bool InCopy, bool InDepth)
 {
 	ID3D11Texture2D* originalTexture = nullptr;
 	D3D11_TEXTURE2D_DESC desc{};
@@ -36,14 +36,22 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 	originalTexture->GetDesc(&desc);
 
 	// check shared nt handle usage later
-	if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) == 0 && (desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE) == 0 && (desc.BindFlags & D3D11_BIND_DEPTH_STENCIL) == 0)
+	if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) == 0 && (desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE) == 0 && !InDepth)
 	{
 		if (desc.Width != OutResource->Desc.Width || desc.Height != OutResource->Desc.Height ||
 			desc.Format != OutResource->Desc.Format || desc.BindFlags != OutResource->Desc.BindFlags ||
 			OutResource->SharedTexture == nullptr)
 		{
 			if (OutResource->SharedTexture != nullptr)
+			{
 				OutResource->SharedTexture->Release();
+
+				if (OutResource->Dx11Handle != NULL)
+					CloseHandle(OutResource->Dx11Handle);
+
+				if (OutResource->Dx12Handle != NULL)
+					CloseHandle(OutResource->Dx12Handle);
+			}
 
 			ASSIGN_DESC(OutResource->Desc, desc);
 			OutResource->Dx11Handle = NULL;
@@ -82,14 +90,22 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 		if (InCopy && OutResource->SharedTexture != nullptr)
 			Dx11DeviceContext->CopyResource(OutResource->SharedTexture, InResource);
 	}
-	else if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) == 0 && (desc.BindFlags & D3D11_BIND_DEPTH_STENCIL) != 0)
+	else if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) == 0 && InDepth)
 	{
 		if (desc.Width != OutResource->Desc.Width || desc.Height != OutResource->Desc.Height ||
 			desc.Format != OutResource->Desc.Format || desc.BindFlags != OutResource->Desc.BindFlags ||
 			OutResource->SharedTexture == nullptr)
 		{
 			if (OutResource->SharedTexture != nullptr)
+			{
 				OutResource->SharedTexture->Release();
+
+				if (OutResource->Dx11Handle != NULL)
+					CloseHandle(OutResource->Dx11Handle);
+
+				if (OutResource->Dx12Handle != NULL)
+					CloseHandle(OutResource->Dx12Handle);
+			}
 
 			ASSIGN_DESC(OutResource->Desc, desc);
 			OutResource->Dx11Handle = NULL;
@@ -410,7 +426,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 	if (paramColor)
 	{
 		spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Color exist..");
-		if (CopyTextureFrom11To12(paramColor, &dx11Color, true) == NULL)
+		if (CopyTextureFrom11To12(paramColor, &dx11Color, true, false) == NULL)
 			return false;
 	}
 	else
@@ -426,7 +442,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 	if (paramMv)
 	{
 		spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures MotionVectors exist..");
-		if (CopyTextureFrom11To12(paramMv, &dx11Mv, true) == false)
+		if (CopyTextureFrom11To12(paramMv, &dx11Mv, true, false) == false)
 			return false;
 	}
 	else
@@ -441,7 +457,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 	if (paramOutput)
 	{
 		spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Output exist..");
-		if (CopyTextureFrom11To12(paramOutput, &dx11Out, false) == false)
+		if (CopyTextureFrom11To12(paramOutput, &dx11Out, false, false) == false)
 			return false;
 	}
 	else
@@ -457,7 +473,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 	if (paramDepth)
 	{
 		spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Depth exist..");
-		if (CopyTextureFrom11To12(paramDepth, &dx11Depth, true) == false)
+		if (CopyTextureFrom11To12(paramDepth, &dx11Depth, true, true) == false)
 			return false;
 	}
 	else
@@ -473,7 +489,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 		{
 			spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures ExposureTexture exist..");
 
-			if (CopyTextureFrom11To12(paramExposure, &dx11Exp, true) == false)
+			if (CopyTextureFrom11To12(paramExposure, &dx11Exp, true, false) == false)
 				return false;
 		}
 		else
@@ -496,7 +512,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 		{
 			spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Bias mask exist..");
 
-			if (CopyTextureFrom11To12(paramMask, &dx11Tm, true) == false)
+			if (CopyTextureFrom11To12(paramMask, &dx11Tm, true, false) == false)
 				return false;
 		}
 		else
