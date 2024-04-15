@@ -420,7 +420,8 @@ void Imgui_Base::RenderMenu()
 					Config::Instance()->newBackend = "";
 
 				// Dx11
-				ImGui::BeginDisabled(Config::Instance()->Api != NVNGX_DX11);
+				ImGui::BeginDisabled(Config::Instance()->Api != NVNGX_DX11 || 
+									(Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") == "fsr22"));
 
 				const char* sync[] = { "No Syncing", "Shared Fences", "Shared Fences + Flush", "Shared Fences + Query", "Mostly Queries" };
 
@@ -998,14 +999,15 @@ void Imgui_Base::RenderMenu()
 bool Imgui_Base::IsHandleDifferent()
 {
 	DWORD procId;
-	GetWindowThreadProcessId(_handle, &procId);
 
 	HWND frontWindow = GetForegroundWindow(); // Util::GetProcessWindow(); -- for linux compatibility
+	GetWindowThreadProcessId(frontWindow, &procId);
 
-	if (processId == procId && frontWindow == _handle)
+	if (processId != procId) 
 		return false;
 
-	GetWindowThreadProcessId(frontWindow, &procId);
+	if (frontWindow == _handle)
+		return false;
 
 	_handle = frontWindow;
 
