@@ -17,7 +17,7 @@ I have adapted it to use Intel's [XeSS](https://github.com/intel/xess/) too.
 
 **Note**: (with DX12) backends have a performance penalty (around %10-15).
 
-## Official Discord Channel: [CyberXeSS Support](https://discord.com/channels/995299945492008990/1131520508475752489)
+### Official Discord Server: [DLSS2FSR](https://discord.gg/2JDHx6kcXB)
 
 ## Installation
 
