@@ -24,15 +24,32 @@ Unreal Engine DLSS plugin is known for sending DLSS resources in wrong states. N
 
 Solution for this issue is setting `ColorResourceBarrier=4` from `nvngx.ini` or selecting `RENDER_TARGET` for `Color` at `Resource Barriers (Dx12)` from in-game menu.
 
+## Black Screen with XeSS
+Some users have reported that when they use XeSS upscaler backends result is screen with UI. In some cases downloading latest release of [DirectX Shader Compiler](https://github.com/microsoft/DirectXShaderCompiler/releases) and extracting `dxcompiler.dll`, `dxil.dll` from `bin\x64\` next to games exe file solved this issue.
+
+## CAS (Conrast Adaptive Sharpening)
+CAS added to XeSS backends to mitigate softness upscaler but CAS might cause some image issues too.
+
+![cas](/images/cas.png)<br>*Deep Rock Galactic*
+
+1. Bloom removed
+2. Color tone is changed
+
 ## Performance Issues
 * In general XeSS is heavier then FSR for GPUs so it's expected to be have lower performance even on Intel Arc GPUs.
 * As a result of spoofing Nvidia card to enable DLSS some games would use Nvidia optimized codepath which might lead to lower performance on other GPUs.
 
+## Display Resolution Motion Vectors
+Sometimes games set wrong init flag for `DisplayResolution` which would lead to excessive motion blur. Setting or resetting `DisplayResolution` would help solving this issue.
+
+![mv wrong](/images/mv_wrong.png)<br>*Deep Rock Galactic*
+
 ## Graphichal Corruption and Crashes
 As said earlier spoofing a Nvidia card may lead games to use specific codepaths that may cause
 
-* Grahichal corruptions
+* Graphichal corruptions
   
 ![talos principle 2](/images/talos.png)<br>*Talos Principle 2*
 
 * And crashes, speacially when Ray Tracing is active.
+
