@@ -212,6 +212,7 @@
     <ClInclude Include="Logger.h" />
     <ClInclude Include="NVNGX_Parameter.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Util.h" />
     <ClInclude Include="backends\xess\XeSSFeature_Dx11.h" />
   </ItemGroup>
@@ -259,6 +260,9 @@
   </ItemGroup>
   <ItemGroup>
     <Library Include="vulkan\vulkan-1.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="OmniScaler.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

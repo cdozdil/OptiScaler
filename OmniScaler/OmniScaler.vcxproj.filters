@@ -137,6 +137,9 @@
     <ClInclude Include="Logger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -260,5 +263,8 @@
   </ItemGroup>
   <ItemGroup>
     <Library Include="vulkan\vulkan-1.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="OmniScaler.rc" />
   </ItemGroup>
 </Project>
