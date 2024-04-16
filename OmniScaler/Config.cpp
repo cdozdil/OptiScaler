@@ -87,6 +87,7 @@ void Config::Reload()
 
 		RestoreComputeSignature = readBool("Hotfix", "RestoreComputeSignature");
 		RestoreGraphicSignature = readBool("Hotfix", "RestoreGraphicSignature");
+		UWPTempFolder = readBool("Hotfix", "UWPTempFolder");
 
 		ColorResourceBarrier = readInt("Hotfix", "ColorResourceBarrier");
 		MVResourceBarrier = readInt("Hotfix", "MotionVectorResourceBarrier");
