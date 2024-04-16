@@ -52,6 +52,7 @@ public:
 
 	// Upscale Ratio Override
 	std::optional<bool> UpscaleRatioOverrideEnabled;
+	std::optional<bool> DrsMaxOverrideEnabled;
 	std::optional<float> UpscaleRatioOverrideValue;
 	
 	// Quality Overrides

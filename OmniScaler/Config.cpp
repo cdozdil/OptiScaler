@@ -65,6 +65,7 @@ void Config::Reload()
 
 		//Upscale Ratio Override
 		UpscaleRatioOverrideEnabled = readBool("UpscaleRatio", "UpscaleRatioOverrideEnabled");
+		DrsMaxOverrideEnabled = readBool("UpscaleRatio", "DrsMaxOverrideEnabled");
 		UpscaleRatioOverrideValue = readFloat("UpscaleRatio", "UpscaleRatioOverrideValue");
 
 		// Quality Overrides

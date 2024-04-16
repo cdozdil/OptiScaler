@@ -64,7 +64,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			Config::Instance()->changeCAS = false;
 			spdlog::trace("XeSSFeatureDx12::Evaluate sleeping before CAS creation for 250ms");
 			std::this_thread::sleep_for(std::chrono::milliseconds(250));
-			CAS = std::make_unique<CAS_Dx12>(Device, DisplayWidth(), DisplayHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
+			CAS = std::make_unique<CAS_Dx12>(Device, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
 		}
 	}
 	xess_result_t xessResult;

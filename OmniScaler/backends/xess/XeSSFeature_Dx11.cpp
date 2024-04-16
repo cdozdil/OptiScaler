@@ -173,7 +173,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 			Config::Instance()->changeCAS = false;
 			spdlog::trace("XeSSFeatureDx11::Evaluate sleeping before CAS creation for 250ms");
 			std::this_thread::sleep_for(std::chrono::milliseconds(250));
-			CAS = std::make_unique<CAS_Dx12>(Dx12on11Device, DisplayWidth(), DisplayHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
+			CAS = std::make_unique<CAS_Dx12>(Dx12on11Device, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
 		}
 	}
 
