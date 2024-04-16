@@ -105,7 +105,7 @@ NetworkModel=auto
 
 [CAS]
 ; Enables CAS shapening for XeSS
-; true or false - Default (auto) is true
+; true or false - Default (auto) is false
 Enabled=auto
 
 ; Color space conversion for input and output
@@ -120,6 +120,11 @@ ColorSpaceConversion=auto
 #### CAS
 Normally XeSS tend to create softer final image compared to other upscalers and have no sharpening option to mitigate it. So OmniScaler allows you to use AMD's CAS sharpening filter on final image to balance upscaled images soft look. CAS is not perfect tho, on some games it causes some artifacts/issues like dissapering bloom effects, shifting color tone of image or causing black screen with no image at all.
 
+![cas](images/cas.png)
+
+1. Bloom removed
+2. Color tone is changed
+   
 `ColorSpaceConversion` for fixing color space conversion issues but **almost always** default setting would work ok.
 
 From in-game menu it can be changed with realtime results.
@@ -164,6 +169,110 @@ From in-game menu it can be changed with realtime results.
 
 ![sharpness](images/sharpness.png)
 
+### Upscaling Ratios
+OmniScaler provides different options to override and lock upscaling ratios.
 
+#### Upscale Ratio Override
+`UpscaleRatioOverride` lets you select a single upscale ratio for all quality presets. 
 
+```ini
+[UpscaleRatio]
+; Set this to true to enable the internal resolution override 
+; true or false - Default (auto) is false
+UpscaleRatioOverrideEnabled=auto
+
+; Set this to true to enable limiting DRS max resolution to overriden ratio
+; true or false - Default (auto) is false
+DrsMaxOverrideEnabled=auto
+
+; Set the forced upscale ratio value
+; Default (auto) is 1.3
+UpscaleRatioOverrideValue=auto
+```
+
+From in-game menu it can be changed and saved but usually after restarting game or resolution change setting become effective.
+
+![us ratio](images/us_ratio.png)
+
+#### Quality Ratio Override
+`QualityRatioOverride` lets you override upscale ratio for each quality quality preset. 
+
+```ini
+[QualityOverrides]
+; Set this to true to enable custom quality mode overrides
+; true or false - Default (auto) is false
+QualityRatioOverrideEnabled=auto
+
+; Set custom upscaling ratio for each quality mode
+;
+; Default (auto) values:
+; Ultra Quality         : 1.3
+; Quality               : 1.5
+; Balanced              : 1.7
+; Performance           : 2.0
+; Ultra Performance     : 3.0
+QualityRatioUltraQuality=auto
+QualityRatioQuality=auto
+QualityRatioBalanced=auto
+QualityRatioPerformance=auto
+QualityRatioUltraPerformance=auto
+```
+
+**When both overrides enabled `Upscale Ratio Override` have priority over `Quality Ratio Override`.**
+
+When `DrsMaxOverrideEnabled` is enabled it limits maximum internal rendering resolution to preset rendering resolution instead of display resolution for DRS supported games. When enabled it effectively disables DRS. Works with both `QualityRatioOverride` and `UpscaleRatioOverride` 
+
+From in-game menu it can be changed and saved but usually after restarting game or resolution change setting become effective.
+
+![quality ratio](images/q_ratio.png)
+
+### Init Flags
+These settings lets you override DLSS init flags to fix some issues.
+
+```ini
+[Depth]
+; Force add INVERTED_DEPTH to init flags
+; true or false - Default (auto) is DLSS value
+DepthInverted=auto
+
+[Color]
+; Force add ENABLE_AUTOEXPOSURE to init flags
+; Some Unreal Engine games needs this, fixes colors specially in dark areas
+; true or false - Default (auto) is  DLSS value
+AutoExposure=auto
+
+; Force add HDR_INPUT_COLOR to init flags
+; true or false - Default (auto) is  DLSS value
+HDR=auto
+
+[MotionVectors]
+; Force add JITTERED_MV flag to init flags
+; true or false - Default (auto) is  DLSS value
+JitterCancellation=auto
+
+; Force add HIGH_RES_MV flag to init flags
+; true or false - Default (auto) is  DLSS value
+DisplayResolution=auto
+
+[Hotfix]
+; Force remove RESPONSIVE_PIXEL_MASK from init flags
+; true or false - Default (auto) is true
+DisableReactiveMask=auto
+```
+
+Enabling `AutoExposure` helps you to correct issues with dark color or crushed colors.
+
+![exposure](/images/exposure.png)
+
+Enabling `HDR` reported to help on purples color hue on some games.
+
+Enabling `DisableReactiveMask` might help FSR backends in some games but usually it creates more issues than it solves. That's why it's disabled by default.
+
+Some games might motion vector size flag wrong which would cause excessive motion blur on camera movement. Enabling or disabling `DisplayResolution` might help on these situations.
+
+![wrong mv flag](/images/mv_wrong.png)
+
+From in-game menu they can be changed with realtime results.
+
+![init flags](images/init_flags.png)
 
