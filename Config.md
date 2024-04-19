@@ -72,7 +72,7 @@ For DirectX11 with `fsr21_12`, `fsr22_12` and `xess` upscaler options, OmniScale
 ;	0 - Safe syncing is off                         (fastest, most prone to errors)
 ;	1 - Only Fences
 ;	2 - Fences + Flush after Dx11 texture copies
-;	3 - Sync after output copy				
+;	3 - Sync after output copy				            (most compatible)
 ;	4 - No fences, all sync done with queries       (slowest)
 ;
 ; 0 is fastest, 4 is slowest
