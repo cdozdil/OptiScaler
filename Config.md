@@ -276,3 +276,113 @@ From in-game menu they can be changed with realtime results.
 
 ![init flags](images/init_flags.png)
 
+### Resource Barriers (Dx12 Only)
+Some games (specially Unreal Engine) sends input resources in wrong states to DLSS which leads to graphical issues (specially on AMD hardware). Normally OmniScaler tries to detect engine type and mitigate these issues but sometimes games does not report these info correctly. To fix issues these ini parameters would help. 
+
+![early christmas](images/christmas.png)
+
+**Setting wrong resource state here might lead to crash!**
+
+```ini
+[Hotfix]
+; Color texture resource state to fix for rainbow colors on AMD cards (for mostly UE games) 
+; For UE engine games on AMD, set it to D3D12_RESOURCE_STATE_RENDER_TARGET (4)
+; Default (auto) is state correction disabled
+ColorResourceBarrier=auto
+
+; MotionVector texture resource state, from this to D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE (for mostly debugging) 
+; Default (auto) is state correction disabled
+MotionVectorResourceBarrier=auto 
+
+; Depth texture resource state, from this D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE (for mostly debugging) 
+; Default (auto) is state correction disabled
+DepthResourceBarrier=auto
+
+; Color mask texture resource state, from this D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE (for mostly debugging) 
+; Default (auto) is state correction disabled
+ColorMaskResourceBarrier=auto
+
+; Exposure texture resource state, from this D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE (for mostly debugging) 
+; Default (auto) is state correction disabled
+ExposureResourceBarrier=auto
+
+; Output texture resource state, from this D3D12_RESOURCE_STATE_UNORDERED_ACCESS (for mostly debugging) 
+; Default (auto) is state correction disabled
+OutputResourceBarrier=auto
+```
+
+From in-game menu they can be changed with realtime results.
+
+![resource barriers](images/rb.png)
+
+### Mipmap LOD Bias Override (Dx12 Only)
+For archieving better texture clearity `MipmapLodBias` can be overriden with this setting. -15 is sharpest and +15 is blurriest.
+
+```ini
+[Hotfix]
+; Override mipmap lod bias for textures
+; -15.0 - 15.0 - Default (auto) is disabled
+MipmapBiasOverride=auto
+```
+
+**Adjusting MipmapLODBias have impact on performace!**
+
+From in-game menu it can be changed, needs resolution change to be effective.
+
+![mipmap lod bias](images/mipmap.png)
+
+### Restore Root Certificates (Dx12 Only)
+This hotfix is based on original CyberFSR2's restoring ComputeRootSignature logic, I have added restoring ComputeRootSignature option too. Haven't noticed any games needed these options.
+
+```ini
+[Hotfix]
+; Restore last used compute signature after upscaling
+; true or false - Default (auto) is false
+RestoreComputeSignature=auto
+
+; Restore last used graphics signature after upscaling
+; true or false - Default (auto) is false
+RestoreGraphicSignature=auto
+```
+
+From in-game menu they can be changed with realtime results.
+
+![root certificate](images/cs.png)
+
+### Logging
+```ini
+[Log]
+; Logging
+; true or false- Default (auto) is true
+LoggingEnabled=auto
+
+; Log file, if undefined log_xess_xxxx.log file in current folder
+;LogFile=./CyberXess.log
+
+; Verbosity level of file logs
+; 0 = Trace / 1 = Debug / 2 = Info / 3 = Warning / 4 = Error
+; Default (auto) is 2 = Info
+LogLevel=auto
+
+; Log to console (Log level is always 2 (Info) for performance reasons) 
+; true or false - Default (auto) is false
+LogToConsole=auto
+
+; Log to file 
+; true or false - Default (auto) is false
+LogToFile=auto
+
+; Log to NVNGX API
+; true or false - Default (auto) is false
+LogToNGX=auto
+
+; Open console window for logs
+; true or false - Default (auto) is false
+OpenConsole=auto
+```
+
+From in-game menu they can be changed with realtime results.
+
+![logging](images/logging.png)
+
+
