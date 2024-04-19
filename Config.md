@@ -1,10 +1,10 @@
 # Configuration
-This document will try explain `nvngx.ini` / in-game menu settings as much as possible.
+This document will try to explain the `nvngx.ini` and in-game menu settings as much as possible.
 
 ![in-game menu](images/ingame_menu.png)
 
 ### Upscalers
-OmniScaler supports DirectX 11, DirectX 12 and Vulkan APIs with multiple upscaler backends. You can select which upscaler you would like to use from `[Upscalers]` section in `nvngx.ini` file.
+OmniScaler supports DirectX 11, DirectX 12 and Vulkan APIs with multiple upscaler backends. You can select which upscaler to use in the `[Upscalers]` section of the `nvngx.ini` file.
 
 ```ini
 [Upscalers]
@@ -28,18 +28,18 @@ VulkanUpscaler=auto
 * `fsr22` means FSR 2.2.1
 * `xess` means XeSS
 
-*For DirectX11 `fsr21_12`, `fsr22_12` and `xess` uses a background DirectX12 device to be able to use Dirext12 only upscalers. There is %10-15 performance penalty for this method but allows much more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has it's own problems which some of them avoided by OmniScaler.*
+*For DirectX11 `fsr21_12`, `fsr22_12` and `xess` use a DirectX12 background device to be able to use DirectX12 only upscalers. There is a %10-15 performance penalty for this method, but it allows much more upscaler options. Also, the native DirectX11 implementation of FSR 2.2.1 is a backport from the Unity renderer and has it's own problems, some of which are avoided by OmniScaler.*
 
 For selecting upscalers from in-game menus `Upscalers` section could be used.
 
 ![upscalers](images/Upscalers.png)
 
 ### Pseudo SuperSampling
-With OmniScaler 0.4 there are new options for pseudo supersampling under `[Upscalers]`
+With OmniScaler 0.4 there are new options for pseudo-supersampling under `[Upscalers]`
 
 ```ini
 [Upscalers]
-; Enables supersampling option for Dx12 and Dx11 with Dx12 backends
+; Enable  pseudo-supersampling option for Dx12 and Dx11 with Dx12 backends
 ; true or false - Default (auto) is false
 SuperSamplingEnabled=auto
 
@@ -47,20 +47,21 @@ SuperSamplingEnabled=auto
 ; 0.0 - 5.0 - Default (auto) is 2.5
 SuperSamplingMultiplier=auto
 ```
-To explain it clearly for example normally when your game is running at 1080p and `Quality` selected as DLSS preset it would render a 720p image and sends it to upscaler with other necessary input information and generates a 1080p image as output.
 
-When supersampling is enabled it uses `SuperSamplingMultiplier` to calculate target render size of upscaler. For 720p with default multiplier (2.5) it would be 1800p. So now upscaler will upscale image to 1800p instead of 1080p then OmniSaler will downsample output image to 1080p.
+To explain it clearly, for example, normally when your game is running at 1080p and  `Quality` is selected as DLSS preset, it would render a 720p image and send it to the upscaler with other necessary input information and generate a 1080p image as output.
+
+If pseudo-supersampling is enabled, it uses `SuperSamplingMultiplier` to calculate the target render size of the upscaler. For 720p with default multiplier (2.5) it would be 1800p. So now the upscaler will upscale the image to 1800p instead of 1080p, then OmniSaler will downsample the output image to 1080p.
 
 ![pseudo superSampling](images/pss.png)
 
-Because of higher upscale target resolution there will be a performance loss compared to just upscaling. But subjectively it could create close to DLAA quality images with higher performance levels. 
+Because of the higher resolution of the upscaled target, there will be a performance loss compared to just upscaling. But subjectively it could produce images close to DLAA quality with higher performance levels.
 
-From in-game menu it can be changed with realtime results.
+It can be changed from the in-game menu with real-time results.
 
 ![pss config](images/pss_config.png)
 
 ### Dx11withDx12 Sync Settings
-For DirectX11 with `fsr21_12`, `fsr22_12` and `xess` upscaler options OmniScaler uses a background DirectX12 device to be able to use these Dirext12 only upscalers. This is a really niche feature and might cause insctability with GPU drivers (Specially on Intel). To mitigate and prevent crashes or graphical issues this option could be used.
+For DirectX11 with `fsr21_12`, `fsr22_12` and `xess` upscaler options, OmniScaler uses a DirectX12 background device to be able to use these DirectX12 only upscalers. This is a very niche feature and can cause issues with unstable GPU drivers (especially on Intel). To mitigate and prevent crashes or graphical issues, this option could be used.
 
 ```ini
 [Dx11withDx12]
@@ -80,7 +81,7 @@ For DirectX11 with `fsr21_12`, `fsr22_12` and `xess` upscaler options OmniScaler
 UseSafeSyncQueries=auto
 ```
 
-From in-game menu it can be changed with realtime results.
+It can be changed from the in-game menu with real-time results.
 
 ![dx11 sync setings](images/dx11sync.png)
 
@@ -113,21 +114,21 @@ Enabled=auto
 ColorSpaceConversion=auto
 ```
 
-`BuildPipelines` parameter allows building of XeSS pipelines during context creation to prevent stutter later on.
+The `BuildPipelines` parameter allows XeSS pipelines to be built during context creation to prevent stuttering later.
 
-`NetworkModel` is for selecting network model to be used with XeSS upscaling. **(Currently have no visible effect on upscaled image)**
+`NetworkModel` is for selecting the network model to be used with XeSS upscaling. **(Currently has no visible effect on the upscaled image)**
 
 #### CAS
-Normally XeSS tend to create softer final image compared to other upscalers and have no sharpening option to mitigate it. So OmniScaler allows you to use AMD's CAS sharpening filter on final image to balance upscaled images soft look. CAS is not perfect tho, on some games it causes some artifacts/issues like dissapering bloom effects, shifting color tone of image or causing black screen with no image at all.
+Normally XeSS tends to produce softer final image compared to other upscalers and has no sharpening option to mitigate it. So OmniScaler allows you to use AMD's CAS sharpening filter on the final image to balance upscaled images soft look. CAS is not perfect though, on some games it causes some artifacts/issues like dissapering bloom effects, shifting color tone of the image or causing black screen with no image at all.
 
 ![cas](images/cas.png)
 
 1. Bloom removed
 2. Color tone is changed
    
-`ColorSpaceConversion` for fixing color space conversion issues but **almost always** default setting would work ok.
+`ColorSpaceConversion` to fix color space conversion issues but **almost always** the default setting would work fine.
 
-From in-game menu it can be changed with realtime results.
+It can be changed from the in-game menu with real-time results.
 
 ![xess](images/xess.png)
 
@@ -145,14 +146,14 @@ VerticalFov=auto
 HorizontalFov=auto
 ```
 
-For improving image quality you might try to match vertical or horzontal FOV of your game with these settings. Default is 60° vertical FOV and most of the time it works ok.
+To improve the image quality you can try to match the vertical or horizontal FOV of your game with these settings. The default is 60° vertical FOV and most of the time it works fine.
 
-From in-game menu it can be changed with realtime results.
+It can be changed from the in-game menu with real-time results.
 
 ![fsr](images/fsr.png)
 
 ### Shapness
-DLSS used to have shaprness option but later on it's removed. So some games have sharpness sliders and some not. With this option you can override or enable sharpness of final image. FSR has build it sharpness but for XeSS CAS option must be enabled.
+DLSS used to have a sharpening option, but later it was removed. So some games have sharpness slider and some do not. With this option you can disable or enable the sharpness of the final image. FSR has built in sharpness but for XeSS CAS option must be enabled.
 
 ```ini
 [Sharpness]
@@ -165,15 +166,15 @@ OverrideSharpness=auto
 Sharpness=auto
 ```
 
-From in-game menu it can be changed with realtime results.
+It can be changed from the in-game menu with real-time results.
 
 ![sharpness](images/sharpness.png)
 
 ### Upscaling Ratios
-OmniScaler provides different options to override and lock upscaling ratios.
+OmniScaler provides several options for overriding and locking upscaling ratios.
 
 #### Upscale Ratio Override
-`UpscaleRatioOverride` lets you select a single upscale ratio for all quality presets. 
+`UpscaleRatioOverride` allows you to select a single upscale ratio for all quality presets.
 
 ```ini
 [UpscaleRatio]
@@ -190,12 +191,12 @@ DrsMaxOverrideEnabled=auto
 UpscaleRatioOverrideValue=auto
 ```
 
-From in-game menu it can be changed and saved but usually after restarting game or resolution change setting become effective.
+This can be changed and saved from the in-game menu, but usually the change will take effect after a restart or resolution change.
 
 ![us ratio](images/us_ratio.png)
 
 #### Quality Ratio Override
-`QualityRatioOverride` lets you override upscale ratio for each quality quality preset. 
+`QualityRatioOverride` allows you to override the upscale ratio for each quality preset.
 
 ```ini
 [QualityOverrides]
@@ -218,16 +219,17 @@ QualityRatioPerformance=auto
 QualityRatioUltraPerformance=auto
 ```
 
-**When both overrides enabled `Upscale Ratio Override` have priority over `Quality Ratio Override`.**
+**
+If both overrides are enabled, the `UpscaleRatioOverride` has priority over the `QualityRatioOverride`**
 
-When `DrsMaxOverrideEnabled` is enabled it limits maximum internal rendering resolution to preset rendering resolution instead of display resolution for DRS supported games. When enabled it effectively disables DRS. Works with both `QualityRatioOverride` and `UpscaleRatioOverride` 
+When `DrsMaxOverrideEnabled` is enabled, it limits the maximum internal rendering resolution to the default rendering resolution instead of the display resolution for DRS supported games. When enabled, it effectively disables DRS. Works with both `QualityRatioOverride` and `UpscaleRatioOverride`.
 
-From in-game menu it can be changed and saved but usually after restarting game or resolution change setting become effective.
+These can be changed and saved from the in-game menu, but usually the change will take effect after a restart or resolution change.
 
 ![quality ratio](images/q_ratio.png)
 
 ### Init Flags
-These settings lets you override DLSS init flags to fix some issues.
+These settings allow you to override the DLSS init flags to fix some issues.
 
 ```ini
 [Depth]
@@ -260,28 +262,29 @@ DisplayResolution=auto
 DisableReactiveMask=auto
 ```
 
-Enabling `AutoExposure` helps you to correct issues with dark color or crushed colors.
+Enabling `AutoExposure` helps correct problems with dark or washed-out colors.
 
 ![exposure](/images/exposure.png)
 
-Enabling `HDR` reported to help on purples color hue on some games.
+Enabling `HDR` has been reported to help with purple hue in some games.
 
-Enabling `DisableReactiveMask` might help FSR backends in some games but usually it creates more issues than it solves. That's why it's disabled by default.
+Enabling `DisableReactiveMask` can help FSR backends in some games, but it usually causes more problems than it solves. That's why it is disabled by default.
 
-Some games might motion vector size flag wrong which would cause excessive motion blur on camera movement. Enabling or disabling `DisplayResolution` might help on these situations.
+
+Some games may set the motion vector size flag incorrectly, causing excessive motion blur when the camera moves. Enabling or disabling `DisplayResolution` might help in these situations.
 
 ![wrong mv flag](/images/mv_wrong.png)
 
-From in-game menu they can be changed with realtime results.
+These can be changed from the in-game menu with real-time results.
 
 ![init flags](images/init_flags.png)
 
 ### Resource Barriers (Dx12 Only)
-Some games (specially Unreal Engine) sends input resources in wrong states to DLSS which leads to graphical issues (specially on AMD hardware). Normally OmniScaler tries to detect engine type and mitigate these issues but sometimes games does not report these info correctly. To fix issues these ini parameters would help. 
+Some games (especially Unreal Engine) send input resources to DLSS in wrong states, which leads to graphical problems (especially on AMD hardware). Normally OmniScaler tries to detect the engine type and mitigate these problems, but sometimes games do not report this information correctly. To fix problems, these ini parameters would help.
 
 ![early christmas](images/christmas.png)
 
-**Setting wrong resource state here might lead to crash!**
+**Setting a wrong resource state here can cause a crash!**
 
 ```ini
 [Hotfix]
@@ -311,12 +314,12 @@ ExposureResourceBarrier=auto
 OutputResourceBarrier=auto
 ```
 
-From in-game menu they can be changed with realtime results.
+These can be changed from the in-game menu with real-time results.
 
 ![resource barriers](images/rb.png)
 
 ### Mipmap LOD Bias Override (Dx12 Only)
-For archieving better texture clearity `MipmapLodBias` can be overriden with this setting. -15 is sharpest and +15 is blurriest.
+To achieve better texture clarity, `MipmapLodBias` can be overridden with this setting. -15 is the sharpest and +15 is the fuzziest.
 
 ```ini
 [Hotfix]
@@ -325,14 +328,14 @@ For archieving better texture clearity `MipmapLodBias` can be overriden with thi
 MipmapBiasOverride=auto
 ```
 
-**Adjusting MipmapLODBias have impact on performace!**
+**Adjusting MipmapLODBias has an impact on performace!**
 
-From in-game menu it can be changed, needs resolution change to be effective.
+It can be changed from the in-game menu, needs resolution change to be effective.
 
 ![mipmap lod bias](images/mipmap.png)
 
 ### Restore Root Certificates (Dx12 Only)
-This hotfix is based on original CyberFSR2's restoring ComputeRootSignature logic, I have added restoring ComputeRootSignature option too. Haven't noticed any games needed these options.
+This hotfix is based on the original CyberFSR2's restoring ComputeRootSignature logic, I also added the option to restore ComputeRootSignature. I haven't noticed any games that need these options.
 
 ```ini
 [Hotfix]
@@ -345,7 +348,7 @@ RestoreComputeSignature=auto
 RestoreGraphicSignature=auto
 ```
 
-From in-game menu they can be changed with realtime results.
+These can be changed from the in-game menu with real-time results.
 
 ![root certificate](images/cs.png)
 
@@ -381,7 +384,7 @@ LogToNGX=auto
 OpenConsole=auto
 ```
 
-From in-game menu they can be changed with realtime results.
+These can be changed from the in-game menu with real-time results.
 
 ![logging](images/logging.png)
 
