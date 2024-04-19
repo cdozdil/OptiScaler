@@ -12,6 +12,7 @@ OmniScaler (was CyberXeSS) is drop-in DLSS2 to XeSS/FSR2 replacement for games.
 OmniScaler implement's all necessary API methods of DLSS2 & NVAPI to act as a man in the middle. So from games perspective it's using DLSS2 but actually using OmniScaler and calls are interpreted/redirected to XeSS & FSR2.
 
 ## Features
+* Multiple upscaling backends (XeSS, FSR 2.1.2 and FSR 2.2.1)
 * An in-game menu for tuning and saving settings (Only on DirectX 11 & DirectX 12 APIs)
 * Full integration with [DLSS Enabler](https://www.nexusmods.com/site/mods/757) for DLSS-FG support
 * CAS (Contrast Adaptive Sharpening) support for XeSS to mitigate relatively soft image upscaler generates
@@ -19,7 +20,7 @@ OmniScaler implement's all necessary API methods of DLSS2 & NVAPI to act as a ma
 * Autofixing colored lights on Unreal Engine & AMD graphics cards
 * Autofixing wrong motion vector init information 
 * Autofixing missing exposure texture information
-* Ability to modify MipmapLODBias value of game
+* Ability to modify MipmapLodBias value of game
 
 ## Configuration
 Please check [this](Config.md) document for configuration parameters and explanations.
