@@ -43,7 +43,7 @@ With OmniScaler 0.4 there are new options for pseudo-supersampling under `[Upsca
 ; true or false - Default (auto) is false
 SuperSamplingEnabled=auto
 
-; Supersampling ratio 
+; Pseudo-supersampling ratio 
 ; 0.0 - 5.0 - Default (auto) is 2.5
 SuperSamplingMultiplier=auto
 ```
