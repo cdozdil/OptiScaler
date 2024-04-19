@@ -6,6 +6,8 @@ OmniScaler (was CyberXeSS) is drop-in DLSS2 to XeSS/FSR2 replacement for games.
 
 ### Official Discord Server: [DLSS2FSR](https://discord.gg/2JDHx6kcXB)
 
+**Do not use this mod with online games, it might trigger anti-cheat software and cause bans!**
+
 ## How it works?
 OmniScaler implement's all necessary API methods of DLSS2 & NVAPI to act as a man in the middle. So from games perspective it's using DLSS2 but actually using OmniScaler and calls are interpreted/redirected to XeSS & FSR2.
 
