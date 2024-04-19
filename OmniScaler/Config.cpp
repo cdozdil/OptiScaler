@@ -130,7 +130,7 @@ std::string GetFloatValue(std::optional<float> value)
 	return std::to_string(value.value());
 }
 
-bool Config::SaveIni(std::string name)
+bool Config::SaveIni()
 {
 	// Upscalers
 	ini.SetValue("Upscalers", "Dx11Upscaler", Instance()->Dx11Upscaler.value_or("auto").c_str());
@@ -204,7 +204,8 @@ bool Config::SaveIni(std::string name)
 	ini.SetValue("Log", "OpenConsole", GetBoolValue(Instance()->OpenConsole).c_str());
 	ini.SetValue("Log", "LogFile", Instance()->LogFileName.value_or("auto").c_str());
 
-	return ini.SaveFile(name.c_str()) >= 0;
+	auto fileName = absoluteFileName.wstring().c_str();
+	return ini.SaveFile(fileName) >= 0;
 }
 
 std::optional<std::string> Config::readString(std::string section, std::string key, bool lowercase)

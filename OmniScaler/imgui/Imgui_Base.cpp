@@ -420,8 +420,8 @@ void Imgui_Base::RenderMenu()
 					Config::Instance()->newBackend = "";
 
 				// Dx11
-				ImGui::BeginDisabled(Config::Instance()->Api != NVNGX_DX11 || 
-									(Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") == "fsr22"));
+				ImGui::BeginDisabled(Config::Instance()->Api != NVNGX_DX11 ||
+					(Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") == "fsr22"));
 
 				const char* sync[] = { "No Syncing", "Shared Fences", "Shared Fences + Flush", "Shared Fences + Query", "Mostly Queries" };
 
@@ -598,8 +598,7 @@ void Imgui_Base::RenderMenu()
 					}
 				}
 
-				ImGui::SliderFloat("Ratio", &ssRatio, (float)Config::Instance()->CurrentFeature->DisplayWidth() / (float)Config::Instance()->CurrentFeature->RenderWidth(),
-					isXess12 ? 2.5f : 5.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+				ImGui::SliderFloat("Ratio", &ssRatio, (float)Config::Instance()->CurrentFeature->DisplayWidth() / (float)Config::Instance()->CurrentFeature->RenderWidth(), isXess12 ? 2.5f : 5.0f, "%.2f");
 
 				ImGui::EndDisabled();
 
@@ -836,7 +835,7 @@ void Imgui_Base::RenderMenu()
 				ImGui::SameLine(ImGui::GetWindowWidth() - 130.0f);
 
 				if (ImGui::Button("Save INI"))
-					Config::Instance()->SaveIni("nvngx.ini");
+					Config::Instance()->SaveIni();
 
 				ImGui::SameLine(0.0f, 6.0f);
 
@@ -1003,7 +1002,7 @@ bool Imgui_Base::IsHandleDifferent()
 	HWND frontWindow = GetForegroundWindow(); // Util::GetProcessWindow(); -- for linux compatibility
 	GetWindowThreadProcessId(frontWindow, &procId);
 
-	if (processId != procId) 
+	if (processId != procId)
 		return false;
 
 	if (frontWindow == _handle)

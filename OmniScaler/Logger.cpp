@@ -5,6 +5,7 @@
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/sinks/callback_sink.h"
+#include "Util.h"
 
 static bool InitializeConsole()
 {
@@ -77,7 +78,8 @@ void PrepareLogger()
 
 			if (Config::Instance()->LogToFile.value_or(false))
 			{
-				auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(Config::Instance()->LogFileName.value_or("./OmniScaler.log"), true);
+				auto logFile = Util::DllPath().parent_path() / "OmniScaler.log";
+				auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(Config::Instance()->LogFileName.value_or(logFile.string()), true);
 				file_sink->set_level(spdlog::level::level_enum::trace);
 				file_sink->set_pattern("[%H:%M:%S.%f] [%L] %v");
 

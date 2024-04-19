@@ -91,13 +91,14 @@ public:
 	// dx11wdx12
 	std::optional<int> UseSafeSyncQueries;
 
-	// Engine Info
+	// nvngx info
 	NVSDK_NGX_EngineType NVNGX_Engine = NVSDK_NGX_ENGINE_TYPE_CUSTOM;
 	bool NVNGX_EngineVersion5 = false;
 	NVNGX_Api Api = NVNGX_NOT_SELECTED;
 	NVSDK_NGX_LoggingInfo NVSDK_Logger{ nullptr, NVSDK_NGX_LOGGING_LEVEL_OFF, false };
 	IFeature* CurrentFeature = nullptr;
 
+	// for realtime changes
 	bool changeBackend = false;
 	bool changeCAS = false;
 	std::string newBackend = "";
@@ -105,10 +106,8 @@ public:
 	int xessDebugFrames = 5;
 	float lastMipBias = 0.0f;
 	
-
-
 	void Reload();
-	bool SaveIni(std::string name);
+	bool SaveIni();
 
 	static Config* Instance();
 
