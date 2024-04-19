@@ -39,7 +39,7 @@ With OmniScaler 0.4 there are new options for pseudo-supersampling under `[Upsca
 
 ```ini
 [Upscalers]
-; Enable  pseudo-supersampling option for Dx12 and Dx11 with Dx12 backends
+; Enable pseudo-supersampling option for Dx12 and Dx11 with Dx12 backends
 ; true or false - Default (auto) is false
 SuperSamplingEnabled=auto
 
