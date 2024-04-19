@@ -51,7 +51,7 @@ Currently OmniScaler can be used with DirectX 11, DirectX 12 and Vulkan but each
 * Download the latest relase from releases.
 * Extract the contents of the archive next to the game executable file in your games folder. [1]
 * Run `EnableSignatureOverride.reg` and confirm merge. [2][3]
-* DLSS option should be appeared/enabled in games settings. If it's not, you may try using methods explained at [here](https://github.com/cdozdil/CyberXeSS/blob/imgui-intergration/Spoofing.md).
+* DLSS option should be appeared/enabled in games settings. If it's not, you may try using methods explained [here](https://github.com/cdozdil/CyberXeSS/blob/imgui-intergration/Spoofing.md).
 
 *[1] This package contains latest version of `libxess.dll` and if game folder contains any older version of same library it would be overwritten. Consider backing up or renaming existing file.*
 
