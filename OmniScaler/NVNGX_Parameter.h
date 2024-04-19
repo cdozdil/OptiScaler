@@ -130,7 +130,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	InParams->Set(NVSDK_NGX_Parameter_OutWidth, OutWidth);
 	InParams->Set(NVSDK_NGX_Parameter_OutHeight, OutHeight);
 
-	if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false) || Config::Instance()->SuperSamplingEnabled.value_or(false))
+	if (Config::Instance()->QualityRatioOverrideEnabled.value_or(false) || Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false) || Config::Instance()->SuperSamplingEnabled.value_or(false))
 	{
 		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, OutWidth);
 		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, OutHeight);
