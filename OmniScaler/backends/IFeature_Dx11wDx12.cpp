@@ -43,15 +43,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 			OutResource->SharedTexture == nullptr)
 		{
 			if (OutResource->SharedTexture != nullptr)
-			{
 				OutResource->SharedTexture->Release();
-
-				if (OutResource->Dx11Handle != NULL)
-					CloseHandle(OutResource->Dx11Handle);
-
-				if (OutResource->Dx12Handle != NULL)
-					CloseHandle(OutResource->Dx12Handle);
-			}
 
 			ASSIGN_DESC(OutResource->Desc, desc);
 			OutResource->Dx11Handle = NULL;
@@ -73,7 +65,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 			// Get shared handle
 			DWORD access = DXGI_SHARED_RESOURCE_READ;
 
-			if (InCopy)
+			if (!InCopy)
 				access |= DXGI_SHARED_RESOURCE_WRITE;
 
 			result = resource->CreateSharedHandle(NULL, access, NULL, &OutResource->Dx11Handle);
