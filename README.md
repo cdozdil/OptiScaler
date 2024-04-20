@@ -1,6 +1,6 @@
-![OmniScaler](images/omniscaler.png)
+![OptiScaler](images/optiscaler.png)
 
-OmniScaler (was CyberXeSS) is drop-in DLSS2 to XeSS/FSR2 replacement for games. 
+OptiScaler (was CyberXeSS) is drop-in DLSS2 to XeSS/FSR2 replacement for games. 
 
 *This project is based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2](https://github.com/PotatoOfDoom/CyberFSR2).*
 
@@ -9,7 +9,7 @@ OmniScaler (was CyberXeSS) is drop-in DLSS2 to XeSS/FSR2 replacement for games.
 **Do not use this mod with online games, it might trigger anti-cheat software and cause bans!**
 
 ## How it works?
-OmniScaler implement's all necessary API methods of DLSS2 & NVAPI to act as a man in the middle. So from games perspective it's using DLSS2 but actually using OmniScaler and calls are interpreted/redirected to XeSS & FSR2.
+OptiScaler implement's all necessary API methods of DLSS2 & NVAPI to act as a man in the middle. So from games perspective it's using DLSS2 but actually using OptiScaler and calls are interpreted/redirected to XeSS & FSR2.
 
 ## Features
 * Multiple upscaling backends (XeSS, FSR 2.1.2 and FSR 2.2.1)
@@ -29,7 +29,7 @@ Please check [this](Config.md) document for configuration parameters and explana
 Please check [this](Issues.md) document for known issues and possible solutions for them.
 
 ## Which APIs and Upscalers are Supported?
-Currently OmniScaler can be used with DirectX 11, DirectX 12 and Vulkan but each API has different sets of upscaler options.
+Currently OptiScaler can be used with DirectX 11, DirectX 12 and Vulkan but each API has different sets of upscaler options.
 
 #### For DirectX 11
 * **FSR2 2.2.1** native Direct11 implementation (Default upscaler)
@@ -37,7 +37,7 @@ Currently OmniScaler can be used with DirectX 11, DirectX 12 and Vulkan but each
 * **FSR2 2.1.2** with background DirectX12 processing [*]
 * **FSR2 2.2.1** with background DirectX12 processing [*]
 
-[*] This implementations uses a background DirectX12 device to be able to use Dirext12 only upscalers. There is %10-15 performance penalty for this method but allows much more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has it's own problems which some of them avoided by OmniScaler.
+[*] This implementations uses a background DirectX12 device to be able to use Dirext12 only upscalers. There is %10-15 performance penalty for this method but allows much more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has it's own problems which some of them avoided by OptiScaler.
 
 #### For DirectX 12
 * **XeSS 1.x.x** (Default upscaler)
@@ -78,14 +78,14 @@ Currently OmniScaler can be used with DirectX 11, DirectX 12 and Vulkan but each
 
 ### Instructions
 * Clone this repo with all of its submodules.
-* Open the OmniScaler.sln with Visual Studio 2022.
+* Open the OptiScaler.sln with Visual Studio 2022.
 * Build the project
 
 ## Thanks
 * @PotatoOfDoom for CyberFSR2
 * @Artur for DLSS Enabler and helping me to implement NVAPI correctly
 * @LukeFZ & @Nukem for their great mods and sharing their knowledge 
-* @FakeMichau for support, ideas and **OmniScaler** name 
+* @FakeMichau for support, testing and feature creep
 * @QM for continous testing efforts and helping me to reach games
 * @Cryio, @krispy, @krisshietala, @Lordubuntu, @scz, @Veeqo for their hard work on compatibility matrix
 * @RazzerBrazzer and DLSS2FSR community for all their support
