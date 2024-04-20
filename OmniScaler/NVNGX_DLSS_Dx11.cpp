@@ -91,6 +91,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown(void)
 
 	Dx11Contexts.clear();
 	D3D11Device = nullptr;
+	Config::Instance()->ActiveFeatureCount = 0;
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -240,7 +241,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 	}
 
 	if (deviceContext->Init(D3D11Device, InDevCtx, InParameters))
+	{
+		Config::Instance()->ActiveFeatureCount++;
 		return NVSDK_NGX_Result_Success;
+	}
 
 	spdlog::error("NVSDK_NGX_D3D11_CreateFeature: CreateFeature failed");
 	return NVSDK_NGX_Result_Fail;
@@ -263,6 +267,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* 
 		auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 		Dx11Contexts.erase(it);
 	}
+
+	Config::Instance()->ActiveFeatureCount--;
 
 	return NVSDK_NGX_Result_Success;
 }

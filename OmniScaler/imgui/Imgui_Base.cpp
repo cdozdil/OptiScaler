@@ -144,9 +144,12 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 //Win32 message handler
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	if(Config::Instance()->ActiveFeatureCount == 0)
+		return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
+
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 
-	// CTRL + HOME
+	// HOME
 	if (msg == WM_KEYDOWN && wParam == VK_HOME) // && (GetKeyState(VK_SHIFT) & 0x8000))
 	{
 		_isVisible = !_isVisible;

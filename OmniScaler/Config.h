@@ -97,6 +97,7 @@ public:
 	NVNGX_Api Api = NVNGX_NOT_SELECTED;
 	NVSDK_NGX_LoggingInfo NVSDK_Logger{ nullptr, NVSDK_NGX_LOGGING_LEVEL_OFF, false };
 	IFeature* CurrentFeature = nullptr;
+	int ActiveFeatureCount = 0;
 
 	// for realtime changes
 	bool changeBackend = false;

@@ -296,8 +296,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 		NVSDK_NGX_D3D12_ReleaseFeature(val->Handle());
 
 	Dx12Contexts.clear();
-
 	D3D12Device = nullptr;
+
+	Config::Instance()->ActiveFeatureCount = 0;
 
 	UnhookAll();
 
@@ -475,6 +476,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
 	if (deviceContext->Init(D3D12Device, InParameters))
 	{
+		Config::Instance()->ActiveFeatureCount++;
 		HookToCommandList(InCmdList);
 		return NVSDK_NGX_Result_Success;
 	}
@@ -499,6 +501,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 	}
 	else
 		spdlog::error("NVSDK_NGX_D3D12_ReleaseFeature can't release feature with id {0}!", handleId);
+
+	Config::Instance()->ActiveFeatureCount--;
 
 	return NVSDK_NGX_Result_Success;
 }
