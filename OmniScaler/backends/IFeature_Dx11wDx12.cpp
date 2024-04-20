@@ -43,7 +43,12 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 			OutResource->SharedTexture == nullptr)
 		{
 			if (OutResource->SharedTexture != nullptr)
+			{
 				OutResource->SharedTexture->Release();
+
+				if (OutResource->Dx11Handle != NULL)
+					CloseHandle(OutResource->Dx11Handle);
+			}
 
 			ASSIGN_DESC(OutResource->Desc, desc);
 			OutResource->Dx11Handle = NULL;
