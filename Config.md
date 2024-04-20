@@ -1,5 +1,5 @@
 # Configuration
-This document will try to explain the `nvngx.ini` and in-game menu settings as much as possible. Shortcut key for opening menu is **HOME**
+This document will try to explain the `nvngx.ini` and in-game menu (shortcut key for opening menu is **HOME**) settings as much as possible. 
 
 ![in-game menu](images/ingame_menu.png)
 
