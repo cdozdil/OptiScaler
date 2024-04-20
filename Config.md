@@ -4,7 +4,7 @@ This document will try to explain the `nvngx.ini` and in-game menu settings as m
 ![in-game menu](images/ingame_menu.png)
 
 ### Upscalers
-OmniScaler supports DirectX 11, DirectX 12 and Vulkan APIs with multiple upscaler backends. You can select which upscaler to use in the `[Upscalers]` section of the `nvngx.ini` file.
+OptiScaler supports DirectX 11, DirectX 12 and Vulkan APIs with multiple upscaler backends. You can select which upscaler to use in the `[Upscalers]` section of the `nvngx.ini` file.
 
 ```ini
 [Upscalers]
@@ -28,14 +28,14 @@ VulkanUpscaler=auto
 * `fsr22` means FSR 2.2.1
 * `xess` means XeSS
 
-*For DirectX11 `fsr21_12`, `fsr22_12` and `xess` use a DirectX12 background device to be able to use DirectX12 only upscalers. There is a %10-15 performance penalty for this method, but it allows much more upscaler options. Also, the native DirectX11 implementation of FSR 2.2.1 is a backport from the Unity renderer and has it's own problems, some of which are avoided by OmniScaler.*
+*For DirectX11 `fsr21_12`, `fsr22_12` and `xess` use a DirectX12 background device to be able to use DirectX12 only upscalers. There is a %10-15 performance penalty for this method, but it allows much more upscaler options. Also, the native DirectX11 implementation of FSR 2.2.1 is a backport from the Unity renderer and has it's own problems, some of which are avoided by OptiScaler.*
 
 For selecting upscalers from in-game menus `Upscalers` section could be used.
 
 ![upscalers](images/Upscalers.png)
 
 ### Pseudo SuperSampling
-With OmniScaler 0.4 there are new options for pseudo-supersampling under `[Upscalers]`
+With OptiScaler 0.4 there are new options for pseudo-supersampling under `[Upscalers]`
 
 ```ini
 [Upscalers]
@@ -61,7 +61,7 @@ It can be changed from the in-game menu with real-time results.
 ![pss config](images/pss_config.png)
 
 ### Dx11withDx12 Sync Settings
-For DirectX11 with `fsr21_12`, `fsr22_12` and `xess` upscaler options, OmniScaler uses a DirectX12 background device to be able to use these DirectX12 only upscalers. This is a very niche feature and can cause issues with unstable GPU drivers (especially on Intel). To mitigate and prevent crashes or graphical issues, this option could be used.
+For DirectX11 with `fsr21_12`, `fsr22_12` and `xess` upscaler options, OptiScaler uses a DirectX12 background device to be able to use these DirectX12 only upscalers. This is a very niche feature and can cause issues with unstable GPU drivers (especially on Intel). To mitigate and prevent crashes or graphical issues, this option could be used.
 
 ```ini
 [Dx11withDx12]
@@ -119,7 +119,7 @@ The `BuildPipelines` parameter allows XeSS pipelines to be built during context 
 `NetworkModel` is for selecting the network model to be used with XeSS upscaling. **(Currently has no visible effect on the upscaled image)**
 
 #### CAS
-Normally XeSS tends to produce softer final image compared to other upscalers and has no sharpening option to mitigate it. So OmniScaler allows you to use AMD's CAS sharpening filter on the final image to balance upscaled images soft look. CAS is not perfect though, on some games it causes some artifacts/issues like dissapering bloom effects, shifting color tone of the image or causing black screen with no image at all.
+Normally XeSS tends to produce softer final image compared to other upscalers and has no sharpening option to mitigate it. So OptiScaler allows you to use AMD's CAS sharpening filter on the final image to balance upscaled images soft look. CAS is not perfect though, on some games it causes some artifacts/issues like dissapering bloom effects, shifting color tone of the image or causing black screen with no image at all.
 
 ![cas](images/cas.png)
 
@@ -171,7 +171,7 @@ It can be changed from the in-game menu with real-time results.
 ![sharpness](images/sharpness.png)
 
 ### Upscaling Ratios
-OmniScaler provides several options for overriding and locking upscaling ratios.
+OptiScaler provides several options for overriding and locking upscaling ratios.
 
 #### Upscale Ratio Override
 `UpscaleRatioOverride` allows you to select a single upscale ratio for all quality presets.
@@ -280,7 +280,7 @@ These can be changed from the in-game menu with real-time results.
 ![init flags](images/init_flags.png)
 
 ### Resource Barriers (Dx12 Only)
-Some games (especially Unreal Engine) send input resources to DLSS in wrong states, which leads to graphical problems (especially on AMD hardware). Normally OmniScaler tries to detect the engine type and mitigate these problems, but sometimes games do not report this information correctly. To fix problems, these ini parameters would help.
+Some games (especially Unreal Engine) send input resources to DLSS in wrong states, which leads to graphical problems (especially on AMD hardware). Normally OptiScaler tries to detect the engine type and mitigate these problems, but sometimes games do not report this information correctly. To fix problems, these ini parameters would help.
 
 ![early christmas](images/christmas.png)
 
