@@ -22,15 +22,10 @@ static inline std::wstring appDataPath = L".";
 
 typedef void(__fastcall* PFN_SetComputeRootSignature)(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature);
 typedef void(__fastcall* PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
-typedef DWORD(WINAPI* PFN_GetTempPathW)(DWORD nBufferLength, LPWSTR lpBuffer);
-typedef HANDLE(WINAPI* PFN_CreateFileW)(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-	DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
 
 static inline PFN_SetComputeRootSignature orgSetComputeRootSignature = nullptr;
 static inline PFN_SetComputeRootSignature orgSetGraphicRootSignature = nullptr;
 static inline PFN_CreateSampler orgCreateSampler = nullptr;
-static inline PFN_GetTempPathW orgGetTempPathW = nullptr;
-static inline PFN_CreateFileW orgCreateFileW = nullptr;
 
 static inline ID3D12RootSignature* rootSigCompute = nullptr;
 static inline ID3D12RootSignature* rootSigGraphic = nullptr;
@@ -96,61 +91,6 @@ void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D1
 	return orgCreateSampler(device, pDesc, DestDescriptor);
 }
 
-HANDLE hkCreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-	DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile)
-{
-	std::wstring fn(lpFileName);
-	std::string lfn(fn.begin(), fn.end());
-
-	if (Util::DllPath().parent_path().string() == lfn)
-	{
-		std::string nfn(appDataPath.begin(), appDataPath.end());
-
-		spdlog::warn("hkCreateFileW : {0} -> {1}", lfn, nfn);
-		return orgCreateFileW(appDataPath.c_str(), dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
-	}
-
-	return orgCreateFileW(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
-}
-
-DWORD hkGetTempPathW(DWORD nBufferLength, LPWSTR lpBuffer)
-{
-	spdlog::debug("hkGetTempPathW!");
-
-	nBufferLength = appDataPath.size();
-	lpBuffer = appDataPath.data();
-
-	return nBufferLength;
-}
-
-void HookToTempFolder()
-{
-	if (orgGetTempPathW != nullptr)
-		return;
-
-	DetourTransactionBegin();
-	DetourUpdateThread(GetCurrentThread());
-	HMODULE hMod = GetModuleHandle(TEXT("kernel32.dll"));
-
-	if (hMod != 0)
-	{
-		orgGetTempPathW = (PFN_GetTempPathW)GetProcAddress(hMod, "GetTempPathW");
-		DetourAttach(&(PVOID&)orgGetTempPathW, hkGetTempPathW);
-
-		if (orgGetTempPathW != nullptr)
-			spdlog::debug("HookToTempFolder GetTempPathW hooked!");
-
-		orgCreateFileW = (PFN_CreateFileW)GetProcAddress(hMod, "CreateFileW");
-		DetourAttach(&(PVOID&)orgCreateFileW, hkCreateFileW);
-
-		if (orgCreateFileW != nullptr)
-			spdlog::debug("HookToTempFolder CreateFileW hooked!");
-
-	}
-
-	DetourTransactionCommit();
-}
-
 void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
 {
 	if (orgSetComputeRootSignature != nullptr || orgSetGraphicRootSignature != nullptr)
@@ -205,12 +145,6 @@ void UnhookAll()
 	if (orgCreateSampler != nullptr)
 		DetourDetach(&(PVOID&)orgCreateSampler, hkCreateSampler);
 
-	if (orgGetTempPathW != nullptr)
-		DetourDetach(&(PVOID&)orgGetTempPathW, hkGetTempPathW);
-
-	if (orgCreateFileW != nullptr)
-		DetourDetach(&(PVOID&)orgCreateFileW, hkCreateFileW);
-
 	DetourTransactionCommit();
 }
 
@@ -234,9 +168,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 
 	if (D3D12Device != nullptr)
 		HookToDevice(D3D12Device);
-
-	if (Config::Instance()->UWPTempFolder.value_or(false))
-		HookToTempFolder();
 
 	Config::Instance()->Api = NVNGX_DX12;
 
