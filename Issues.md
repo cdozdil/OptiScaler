@@ -10,6 +10,9 @@ In-game menu is a recent addition and may experience on certain condutions.
 * Changing settings mostly tested but might cause crashes (especially changing backends or reinitializing backends).
 * Some games do not release mouse control, kayboard & gamepag controls should still work in these situations.
 
+## DirectX 11 with DirectX 12 Upscalers
+This implementations uses a background DirectX12 device to be able to use Dirext12 only upscalers. There is %10-15 performance penalty for this method but allows much more upscaler options. Depending on system and game different `UseSafeSyncQueries` might be needed. Our tests shows that `1  - Shared Fences` is most performant option with good accuracy and `3  - Shared Fences + Query` is the most compatible but less performant option. 
+
 ## Exposure Texture
 Sometimes games exposure texture format is not recognized by upscalers. Most of the time manifests itself as crushed colors (especially in dark areas). 
 
@@ -27,9 +30,8 @@ Workaround is to set `ColorResourceBarrier=4` from `nvngx.ini` or select `RENDER
 ## Black Screen with XeSS
 Some users have reported that when using XeSS upscaler backend, the result is a black screen with UI. In some cases downloading the latest version of [DirectX Shader Compiler](https://github.com/microsoft/DirectXShaderCompiler/releases) and extracting `dxcompiler.dll`, `dxil.dll` from `bin\x64\` next to the game exe file resolved this issue.  
 
-Also on some cases going back to XeSS v1.1 helps. Known examples are;
-* Guardians of the Galaxy on some GPU/Driver (mostly on AMD) combinations
-* Minecraft RTX
+## Minecraft RTX
+XeSS 1.1 has the best compatibility with Minecraft RTX. But I've seen reports that with [various launchers](https://github.com/MCMrARM/mc-w10-version-launcher/releases) it's possible to use 1.2 and above as well.
 
 ## CAS (Conrast Adaptive Sharpening)
 CAS added to XeSS backends to mitigate softness of upscaler, but CAS can also cause some image problems.
