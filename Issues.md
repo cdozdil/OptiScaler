@@ -25,7 +25,11 @@ The Unreal Engine DLSS plugin is known to send DLSS resources in the wrong state
 Workaround is to set `ColorResourceBarrier=4` from `nvngx.ini` or select `RENDER_TARGET` for `Color` at `Resource Barriers (Dx12)` from the in-game menu.
 
 ## Black Screen with XeSS
-Some users have reported that when using XeSS upscaler backend, the result is a black screen with UI. In some cases downloading the latest version of [DirectX Shader Compiler](https://github.com/microsoft/DirectXShaderCompiler/releases) and extracting `dxcompiler.dll`, `dxil.dll` from `bin\x64\` next to the game exe file resolved this issue.
+Some users have reported that when using XeSS upscaler backend, the result is a black screen with UI. In some cases downloading the latest version of [DirectX Shader Compiler](https://github.com/microsoft/DirectXShaderCompiler/releases) and extracting `dxcompiler.dll`, `dxil.dll` from `bin\x64\` next to the game exe file resolved this issue.  
+
+Also on some cases going back to XeSS v1.1 helps. Known examples are;
+* Guardians of the Galaxy on some GPU/Driver (mostly on AMD) combinations
+* Minecraft RTX
 
 ## CAS (Conrast Adaptive Sharpening)
 CAS added to XeSS backends to mitigate softness of upscaler, but CAS can also cause some image problems.
