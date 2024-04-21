@@ -117,8 +117,11 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
 		}
 
-		spdlog::trace("XeSSFeatureDx11::Evaluate sleeping after XeSSContext creation for 1500ms");
-		std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+		if (Config::Instance()->Dx11DelayedInit.value_or(false))
+		{
+			spdlog::trace("XeSSFeatureDx11::Evaluate sleeping after XeSSContext creation for 1500ms");
+			std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+		}
 
 		OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", Dx12on11Device);
 	}

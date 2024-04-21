@@ -103,6 +103,8 @@ void Config::Reload()
 
 		// dx11wdx12
 		UseSafeSyncQueries = readInt("Dx11withDx12", "UseSafeSyncQueries");
+		Dx11DelayedInit = readInt("Dx11withDx12", "UseDelayedInit");
+
 	}
 }
 

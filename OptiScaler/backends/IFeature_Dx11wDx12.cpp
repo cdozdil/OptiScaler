@@ -860,8 +860,8 @@ bool IFeature_Dx11wDx12::BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* I
 		auto fl = Dx11Device->GetFeatureLevel();
 		auto result = CreateDx12Device(fl);
 
-		spdlog::trace("IFeature_Dx11wDx12::BaseInit sleeping after CreateDx12Device for 500ms");
-		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		//spdlog::trace("IFeature_Dx11wDx12::BaseInit sleeping after CreateDx12Device for 500ms");
+		//std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
 		if (result != S_OK || Dx12on11Device == nullptr)
 		{
@@ -914,6 +914,6 @@ IFeature_Dx11wDx12::~IFeature_Dx11wDx12()
 
 	ReleaseSharedResources();
 
-	spdlog::trace("IFeature_Dx11wDx12::~IFeature_Dx11wDx12 sleeping for 500ms");
-	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	//spdlog::trace("IFeature_Dx11wDx12::~IFeature_Dx11wDx12 sleeping for 500ms");
+	//std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }
