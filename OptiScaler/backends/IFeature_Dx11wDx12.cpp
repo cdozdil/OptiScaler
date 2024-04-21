@@ -155,7 +155,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 			{
 				DWORD access = DXGI_SHARED_RESOURCE_READ;
 
-				if (InCopy)
+				if (!InCopy)
 					access |= DXGI_SHARED_RESOURCE_WRITE;
 
 				result = resource->CreateSharedHandle(NULL, access, NULL, &OutResource->Dx11Handle);
@@ -392,7 +392,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 	}
 	else
 	{
-		auto result = Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&dx12fence_1));
+		result = Dx12on11Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&dx12fence_1));
 
 		if (result != S_OK)
 		{
