@@ -341,7 +341,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 	int upscalerChoice = 0; // Default XeSS
 
 	// ini first
-	if (Config::Instance()->Dx12Upscaler.has_value())
+
+	if (InParameters->Get("DLSSEnabler.Dx12Backend", &upscalerChoice) != NVSDK_NGX_Result_Success && 
+		Config::Instance()->Dx12Upscaler.has_value())
 	{
 		if (Config::Instance()->Dx12Upscaler.value_or("xess") == "fsr22")
 			upscalerChoice = 1;
@@ -349,10 +351,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 			upscalerChoice = 2;
 		else
 			Config::Instance()->Dx12Upscaler = "xess";
-	}
-	else if (InParameters)
-	{
-		InParameters->Get("DLSSEnabler.Dx12Backend", &upscalerChoice);
 	}
 
 	if (upscalerChoice == 1)
