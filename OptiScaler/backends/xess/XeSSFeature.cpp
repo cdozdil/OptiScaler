@@ -208,11 +208,91 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	xessParams.outputResolution.x = TargetWidth();
 	xessParams.outputResolution.y = TargetHeight();
 
+
+	// create heaps to prevent create heap errors of xess
+	if (Config::Instance()->CreateHeaps.value_or(true))
+	{
+		HRESULT hr;
+		xess_properties_t xessProps{};
+		ret = xessGetProperties(_xessContext, &xessParams.outputResolution, &xessProps);
+
+		if (ret == XESS_RESULT_SUCCESS)
+		{
+			CD3DX12_HEAP_DESC bufferHeapDesc(xessProps.tempBufferHeapSize, D3D12_HEAP_TYPE_DEFAULT);
+			hr = device->CreateHeap(&bufferHeapDesc, IID_PPV_ARGS(&_localBufferHeap));
+
+			if (SUCCEEDED(hr))
+			{
+				D3D12_HEAP_DESC textureHeapDesc{ xessProps.tempTextureHeapSize,
+					{D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_MEMORY_POOL_UNKNOWN, 0, 0},
+					0, D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES };
+
+				hr = device->CreateHeap(&textureHeapDesc, IID_PPV_ARGS(&_localTextureHeap));
+
+				if (SUCCEEDED(hr))
+				{
+					Config::Instance()->CreateHeaps = true;
+
+					spdlog::info("XeSSFeature::InitXeSS using _localBufferHeap & _localTextureHeap!");
+
+					xessParams.bufferHeapOffset = 0;
+					xessParams.textureHeapOffset = 0;
+					xessParams.pTempBufferHeap = _localBufferHeap;
+					xessParams.pTempTextureHeap = _localTextureHeap;
+				}
+				else
+				{
+					spdlog::error("XeSSFeature::InitXeSS CreateHeap textureHeapDesc failed {0:x}!", hr);
+				}
+			}
+			else
+			{
+				spdlog::error("XeSSFeature::InitXeSS CreateHeap bufferHeapDesc failed {0:x}!", hr);
+			}
+
+		}
+		else
+		{
+			spdlog::error("XeSSFeature::InitXeSS xessGetProperties failed {0}!", ResultToString(ret));
+		}
+	}
+
+	// try to build pipelines with local pipeline object
 	if (Config::Instance()->BuildPipelines.value_or(true))
 	{
 		spdlog::debug("XeSSFeature::InitXeSS xessD3D12BuildPipelines!");
 
-		ret = xessD3D12BuildPipelines(_xessContext, NULL, false, xessParams.initFlags);
+		ID3D12Device1* device1;
+		if (FAILED(device->QueryInterface(IID_PPV_ARGS(&device1))))
+		{
+			spdlog::error("XeSSFeature::InitXeSS QueryInterface device1 failed!");
+			ret = xessD3D12BuildPipelines(_xessContext, NULL, false, xessParams.initFlags);
+		}
+		else
+		{
+			HRESULT hr = device1->CreatePipelineLibrary(nullptr, 0, IID_PPV_ARGS(&_localPipeline));
+
+			if (FAILED(hr) || !_localPipeline)
+			{
+				spdlog::error("XeSSFeature::InitXeSS CreatePipelineLibrary failed {0:x}!", hr);
+				ret = xessD3D12BuildPipelines(_xessContext, NULL, false, xessParams.initFlags);
+			}
+			else
+			{
+				ret = xessD3D12BuildPipelines(_xessContext, _localPipeline, false, xessParams.initFlags);
+
+				if (ret != XESS_RESULT_SUCCESS)
+				{
+					spdlog::error("XeSSFeature::InitXeSS xessD3D12BuildPipelines error with _localPipeline: {0}", ResultToString(ret));
+					ret = xessD3D12BuildPipelines(_xessContext, NULL, false, xessParams.initFlags);
+				}
+				else
+				{
+					spdlog::info("XeSSFeature::InitXeSS using _localPipelines!");
+					xessParams.pPipelineLibrary = _localPipeline;
+				}
+			}
+		}
 
 		if (ret != XESS_RESULT_SUCCESS)
 		{
@@ -255,6 +335,24 @@ XeSSFeature::~XeSSFeature()
 
 	if (CAS != nullptr && CAS.get() != nullptr)
 		CAS.reset();
+
+	if (_localPipeline != nullptr)
+	{
+		_localPipeline->Release();
+		_localPipeline = nullptr;
+	}
+
+	if (_localBufferHeap != nullptr)
+	{
+		_localBufferHeap->Release();
+		_localBufferHeap = nullptr;
+	}
+
+	if (_localTextureHeap != nullptr)
+	{
+		_localTextureHeap->Release();
+		_localTextureHeap = nullptr;
+	}
 }
 
 float XeSSFeature::GetSharpness(const NVSDK_NGX_Parameter* InParameters)

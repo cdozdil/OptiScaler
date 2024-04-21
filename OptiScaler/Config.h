@@ -41,6 +41,8 @@ public:
 	// XeSS
 	std::optional<bool> BuildPipelines;
 	std::optional<int32_t> NetworkModel;
+	std::optional<bool> CreateHeaps;
+
 
 	// CAS
 	std::optional<bool> CasEnabled;
@@ -68,7 +70,6 @@ public:
 	std::optional<float> MipmapBiasOverride;
 	std::optional<bool> RestoreComputeSignature;
 	std::optional<bool> RestoreGraphicSignature;
-	std::optional<bool> UWPTempFolder;
 	std::optional<int32_t> ColorResourceBarrier;
 	std::optional<int32_t> MVResourceBarrier;
 	std::optional<int32_t> DepthResourceBarrier;

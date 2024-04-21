@@ -23,6 +23,7 @@ void Config::Reload()
 		// XeSS
 		BuildPipelines = readBool("XeSS", "BuildPipelines");
 		NetworkModel = readInt("XeSS", "NetworkModel");
+		CreateHeaps = readBool("XeSS", "CreateHeaps");
 
 		// logging
 		LoggingEnabled = readBool("Log", "LoggingEnabled");
@@ -88,7 +89,6 @@ void Config::Reload()
 
 		RestoreComputeSignature = readBool("Hotfix", "RestoreComputeSignature");
 		RestoreGraphicSignature = readBool("Hotfix", "RestoreGraphicSignature");
-		UWPTempFolder = readBool("Hotfix", "UWPTempFolder");
 
 		ColorResourceBarrier = readInt("Hotfix", "ColorResourceBarrier");
 		MVResourceBarrier = readInt("Hotfix", "MotionVectorResourceBarrier");

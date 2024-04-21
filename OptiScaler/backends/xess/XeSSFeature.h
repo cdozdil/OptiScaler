@@ -36,6 +36,10 @@ private:
 	std::string _version = "1.3.0";
 	xess_version_t _xessVersion{};
 
+	ID3D12PipelineLibrary* _localPipeline = nullptr;
+	ID3D12Heap* _localBufferHeap = nullptr;
+	ID3D12Heap* _localTextureHeap = nullptr;
+
 protected:
 	xess_context_handle_t _xessContext = nullptr;
 	std::unique_ptr<CAS_Dx12> CAS = nullptr;
