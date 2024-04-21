@@ -265,6 +265,6 @@
     <Library Include="vulkan\vulkan-1.lib" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="OmniScaler.rc" />
+    <ResourceCompile Include="OptiScaler.rc" />
   </ItemGroup>
 </Project>

@@ -380,8 +380,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 
 			if (Config::Instance()->Dx11DelayedInit.value_or(false))
 			{
-			spdlog::trace("NVSDK_NGX_D3D11_EvaluateFeature sleeping after new Init of new feature for 1000ms");
-			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+				spdlog::trace("NVSDK_NGX_D3D11_EvaluateFeature sleeping after new Init of new feature for 1000ms");
+				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 			}
 
 			free(createParams);
