@@ -13,7 +13,7 @@ OptiScaler implements all necessary API methods of DLSS2 & NVAPI to act as a man
 
 ## Features
 * Multiple upscaling backends (XeSS, FSR 2.1.2 and FSR 2.2.1)
-* Supports XeSS v1.3's new modes (Ultra Performance, NativeAA), but uses standart DLSS/FSR internal resolutions (not using XeSS 1.3 Performance (2.3x) mode, not matching any of the DLSS quality presets).
+* Supports XeSS v1.3's new modes (Ultra Performance, NativeAA), but uses standard DLSS/FSR internal resolutions (not using XeSS 1.3 Performance (2.3x) mode, not matching any of the DLSS quality presets).
 * An [in-game menu](https://github.com/cdozdil/OptiScaler/blob/master/Config.md) for tuning and saving settings (Only on DirectX 11 & DirectX 12 APIs, shortcut key is **HOME**)
 * Full integration with [DLSS Enabler](https://www.nexusmods.com/site/mods/757) for DLSS-FG support
 * [CAS (Contrast Adaptive Sharpening)](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#cas) support for XeSS to mitigate relatively soft image upscaler generates
