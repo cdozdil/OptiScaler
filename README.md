@@ -9,7 +9,7 @@ OptiScaler (was CyberXeSS) is drop-in DLSS2 to XeSS/FSR2 replacement for games.
 **Do not use this mod with online games, it might trigger anti-cheat software and cause bans!**
 
 ## How it works?
-OptiScaler implement's all necessary API methods of DLSS2 & NVAPI to act as a man in the middle. So from games perspective it's using DLSS2 but actually using OptiScaler and calls are interpreted/redirected to XeSS & FSR2.
+OptiScaler implements all necessary API methods of DLSS2 & NVAPI to act as a man in the middle. So from games perspective it's using DLSS2 but actually using OptiScaler and calls are interpreted/redirected to XeSS & FSR2.
 
 ## Features
 * Multiple upscaling backends (XeSS, FSR 2.1.2 and FSR 2.2.1)
