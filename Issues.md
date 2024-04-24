@@ -9,7 +9,7 @@ In-game menu is a recent addition and may experience on certain condutions.
 ![Banishers](/images/banishers.png)<br>*Banishers: Ghosts of New Eden*
 
 * Changing settings mostly tested but might cause crashes (especially changing backends or reinitializing backends).
-* In unity games menu will be upside down.
+* In games that use Unity Engine in-game menu will be upside down.
 
 ![barrel roll](/images/upsidedown.png)<br>*Sons of Forest*
 
