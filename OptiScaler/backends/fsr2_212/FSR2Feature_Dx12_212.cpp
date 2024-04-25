@@ -313,7 +313,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 		spdlog::debug("FSR2FeatureDx12_212::Evaluate downscaling output...");
 		OUT_DS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		if (!OUT_DS->Dispatch(Device, InCommandList, OUT_DS->Buffer(), paramOutput, 16, 16))
+		if (!OUT_DS->Dispatch(Device, InCommandList, OUT_DS->Buffer(), paramOutput))
 		{
 			Config::Instance()->SuperSamplingEnabled = false;
 			Config::Instance()->changeBackend = true;
