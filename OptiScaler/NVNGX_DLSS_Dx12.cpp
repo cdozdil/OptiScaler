@@ -161,8 +161,27 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 	std::string str(appDataPath.begin(), appDataPath.end());
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext InApplicationDataPath {0}", str);
 
-	if (Config::Instance()->NVSDK_Logger.LoggingCallback == nullptr && InFeatureInfo != nullptr)
+	if (InFeatureInfo != nullptr)
+	{
 		Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
+
+		for (size_t i = 0; i < InFeatureInfo->PathListInfo.Length; i++)
+		{
+			const wchar_t* path = InFeatureInfo->PathListInfo.Path[i];
+
+			std::wstring iniPathW(path);
+			std::string iniPath(iniPathW.begin(), iniPathW.end());
+
+			spdlog::debug("NVSDK_NGX_D3D12_Init_Ext InApplicationDataPath checking nvngx.ini file in: {0}", iniPath);
+
+			if (Config::Instance()->LoadFromPath(path))
+			{
+				spdlog::info("NVSDK_NGX_D3D12_Init_Ext InApplicationDataPath nvngx.ini file reloaded from: {0}", iniPath);
+
+				break;
+			}
+		}		
+	}
 
 	D3D12Device = InDevice;
 

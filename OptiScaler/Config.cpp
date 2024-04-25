@@ -9,7 +9,7 @@ Config::Config(std::wstring fileName)
 	Reload();
 }
 
-void Config::Reload()
+bool Config::Reload()
 {
 	if (ini.LoadFile(absoluteFileName.c_str()) == SI_OK)
 	{
@@ -107,7 +107,17 @@ void Config::Reload()
 		Dx11DelayedInit = readInt("Dx11withDx12", "UseDelayedInit");
 		SyncAfterDx12 = readInt("Dx11withDx12", "SyncAfterDx12");
 
+		return true;
 	}
+
+	return false;
+}
+
+bool Config::LoadFromPath(const wchar_t* InPath)
+{
+	std::filesystem::path iniPath(InPath);
+	absoluteFileName = iniPath / L"nvngx.ini";
+	return Reload();
 }
 
 std::string GetBoolValue(std::optional<bool> value)
@@ -145,6 +155,7 @@ bool Config::SaveIni()
 
 	// XeSS
 	ini.SetValue("XeSS", "BuildPipelines", GetBoolValue(Instance()->BuildPipelines).c_str());
+	ini.SetValue("XeSS", "CreateHeaps", GetBoolValue(Instance()->CreateHeaps).c_str());
 	ini.SetValue("XeSS", "NetworkModel", GetIntValue(Instance()->NetworkModel).c_str());
 
 	// Sharpness
@@ -197,7 +208,10 @@ bool Config::SaveIni()
 	ini.SetValue("FSR", "HorizontalFov", GetFloatValue(Instance()->FsrHorizontalFov).c_str());
 
 	// dx11wdx12
-	ini.SetValue("Dx11withDx12", "UseSafeSyncQueries", GetIntValue(Instance()->UseSafeSyncQueries).c_str());
+	ini.SetValue("Dx11withDx12", "TextureSyncMethod", GetIntValue(Instance()->TextureSyncMethod).c_str());
+	ini.SetValue("Dx11withDx12", "CopyBackSyncMethod", GetIntValue(Instance()->CopyBackSyncMethod).c_str());
+	ini.SetValue("Dx11withDx12", "SyncAfterDx12", GetBoolValue(Instance()->SyncAfterDx12).c_str());
+	ini.SetValue("Dx11withDx12", "UseDelayedInit", GetBoolValue(Instance()->Dx11DelayedInit).c_str());
 
 	// log
 	ini.SetValue("Log", "LoggingEnabled", GetBoolValue(Instance()->LoggingEnabled).c_str());

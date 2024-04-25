@@ -111,7 +111,8 @@ public:
 	int xessDebugFrames = 5;
 	float lastMipBias = 0.0f;
 	
-	void Reload();
+	bool Reload();
+	bool LoadFromPath(const wchar_t* InPath);
 	bool SaveIni();
 
 	static Config* Instance();
