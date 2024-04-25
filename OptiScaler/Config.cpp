@@ -102,8 +102,10 @@ void Config::Reload()
 		FsrHorizontalFov = readFloat("FSR", "HorizontalFov");
 
 		// dx11wdx12
-		UseSafeSyncQueries = readInt("Dx11withDx12", "UseSafeSyncQueries");
+		TextureSyncMethod = readInt("Dx11withDx12", "TextureSyncMethod");
+		CopyBackSyncMethod = readInt("Dx11withDx12", "CopyBackSyncMethod");
 		Dx11DelayedInit = readInt("Dx11withDx12", "UseDelayedInit");
+		SyncAfterDx12 = readInt("Dx11withDx12", "SyncAfterDx12");
 
 	}
 }

@@ -90,8 +90,10 @@ public:
 	std::optional<float> FsrHorizontalFov;
 
 	// dx11wdx12
-	std::optional<int> UseSafeSyncQueries;
+	std::optional<int> TextureSyncMethod;
+	std::optional<int> CopyBackSyncMethod;
 	std::optional<bool> Dx11DelayedInit;
+	std::optional<bool> SyncAfterDx12;
 
 	// nvngx info
 	NVSDK_NGX_EngineType NVNGX_Engine = NVSDK_NGX_ENGINE_TYPE_CUSTOM;

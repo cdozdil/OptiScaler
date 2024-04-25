@@ -35,7 +35,7 @@ protected:
 	ID3D11DeviceContext4* Dx11DeviceContext = nullptr;
 
 	// D3D11with12
-	ID3D12Device* Dx12on11Device = nullptr;
+	ID3D12Device* Dx12Device = nullptr;
 	ID3D12CommandQueue* Dx12CommandQueue = nullptr;
 	ID3D12CommandAllocator* Dx12CommandAllocator = nullptr;
 	ID3D12GraphicsCommandList* Dx12CommandList = nullptr;
@@ -47,16 +47,26 @@ protected:
 	D3D11_TEXTURE2D_RESOURCE_C dx11Exp = {};
 	D3D11_TEXTURE2D_RESOURCE_C dx11Out = {};
 
-	ID3D11Fence* dx11fence_1 = nullptr;
-	ID3D12Fence* dx12fence_1 = nullptr;
-	ID3D11Fence* dx11fence_2 = nullptr;
-	ID3D12Fence* dx12fence_2 = nullptr;
-	ID3D11Resource* paramOutput = nullptr;
+	ID3D11Fence* dx11FenceTextureCopy = nullptr;
+	ID3D12Fence* dx12FenceTextureCopy = nullptr;
+	ID3D12Fence* dx12FenceQuery = nullptr;
+	ID3D11Fence* dx11FenceCopySync = nullptr;
+	ID3D12Fence* dx12FenceCopySync = nullptr;
+	ID3D11Fence* dx11FenceCopyOutput = nullptr;
+	ID3D12Fence* dx12FenceCopyOutput = nullptr;
+	ID3D11Resource* paramOutput[2] = { nullptr,nullptr };
+	ID3D11Query* queryTextureCopy = nullptr;
+	ID3D11Query* queryCopyOutputFence = nullptr;
+	ID3D11Query* queryCopyOutput = nullptr;
+	HANDLE dx11SHForTextureCopy = NULL;
+	HANDLE dx11SHForCopyOutput = NULL;
+	HANDLE dx12SHForCopyOutput = NULL;
 
 	std::unique_ptr<DS_Dx12> OUT_DS = nullptr;
 
 	bool CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutResource, bool InCopy, bool InDepth);
 	void ReleaseSharedResources();
+	void ReleaseSyncResources();
 	void GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter);
 	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel);
 	bool ProcessDx11Textures(const NVSDK_NGX_Parameter* InParameters);
