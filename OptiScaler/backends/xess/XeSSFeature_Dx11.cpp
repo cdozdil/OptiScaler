@@ -97,7 +97,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 		_baseInit = true;
 
-		if (Dx12on11Device == nullptr)
+		if (Dx12Device == nullptr)
 		{
 			spdlog::error("XeSSFeatureDx11::Evaluate Dx12on11Device is null!");
 			return false;
@@ -105,7 +105,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 		spdlog::debug("XeSSFeatureDx11::Evaluate calling InitXeSS");
 
-		if (!InitXeSS(Dx12on11Device, InParameters))
+		if (!InitXeSS(Dx12Device, InParameters))
 		{
 			spdlog::error("XeSSFeatureDx11::Evaluate InitXeSS fail!");
 			return false;
@@ -123,7 +123,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 			std::this_thread::sleep_for(std::chrono::milliseconds(1500));
 		}
 
-		OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", Dx12on11Device);
+		OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", Dx12Device);
 	}
 
 	if (!IsInited() || !_xessContext)
@@ -176,7 +176,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 			Config::Instance()->changeCAS = false;
 			spdlog::trace("XeSSFeatureDx11::Evaluate sleeping before CAS creation for 250ms");
 			std::this_thread::sleep_for(std::chrono::milliseconds(250));
-			CAS = std::make_unique<CAS_Dx12>(Dx12on11Device, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
+			CAS = std::make_unique<CAS_Dx12>(Dx12Device, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
 		}
 	}
 
@@ -241,7 +241,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	{
 		OUT_DS->Scale = (float)TargetWidth() / (float)DisplayWidth();
 
-		if (OUT_DS->CreateBufferResource(Dx12on11Device, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		if (OUT_DS->CreateBufferResource(Dx12Device, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
 			OUT_DS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			params.pOutputTexture = OUT_DS->Buffer();
@@ -250,11 +250,15 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 			params.pOutputTexture = dx11Out.Dx12Resource;
 	}
 	else
+	{
 		params.pOutputTexture = dx11Out.Dx12Resource;
+	}
 
-	if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(false) && sharpness > 0.0f &&
+	if (!Config::Instance()->changeCAS &&
+		Config::Instance()->CasEnabled.value_or(false) &&
+		sharpness > 0.0f &&
 		CAS != nullptr && CAS.get() != nullptr &&
-		CAS->CreateBufferResource(Dx12on11Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		CAS->CreateBufferResource(Dx12Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 	{
 		CAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		params.pOutputTexture = CAS->Buffer();
@@ -359,7 +363,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		spdlog::debug("XeSSFeatureDx11::Evaluate downscaling output...");
 		OUT_DS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		if (!OUT_DS->Dispatch(Dx12on11Device, Dx12CommandList, OUT_DS->Buffer(), dx11Out.Dx12Resource, 16, 16))
+		if (!OUT_DS->Dispatch(Dx12Device, Dx12CommandList, OUT_DS->Buffer(), dx11Out.Dx12Resource))
 		{
 			Config::Instance()->SuperSamplingEnabled = false;
 			Config::Instance()->changeBackend = true;
@@ -375,40 +379,43 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		}
 	}
 
-	if (!CopyBackOutput())
+	if (!Config::Instance()->SyncAfterDx12.value_or(true))
 	{
-		spdlog::error("XeSSFeatureDx11::Evaluate Can't copy output texture back!");
-
-		Dx12CommandList->Close();
-		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-		Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-
-		Dx12CommandAllocator->Reset();
-		Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
-
-		return false;
-	}
-
-	// imgui
-	if (_frameCount > 20)
-	{
-		if (Imgui != nullptr && Imgui.get() != nullptr)
+		if (!CopyBackOutput())
 		{
-			spdlog::debug("XeSSFeatureDx11::Evaluate Apply Imgui");
+			spdlog::error("XeSSFeatureDx11::Evaluate Can't copy output texture back!");
 
-			if (Imgui->IsHandleDifferent())
+			Dx12CommandList->Close();
+			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+			Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+			Dx12CommandAllocator->Reset();
+			Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
+			return false;
+		}
+
+		// imgui
+		if (_frameCount > 20)
+		{
+			if (Imgui != nullptr && Imgui.get() != nullptr)
 			{
-				spdlog::debug("XeSSFeatureDx11::Evaluate Imgui handle different, reset()!");
-				std::this_thread::sleep_for(std::chrono::milliseconds(250));
-				Imgui.reset();
+				spdlog::debug("XeSSFeatureDx11::Evaluate Apply Imgui");
+
+				if (Imgui->IsHandleDifferent())
+				{
+					spdlog::debug("XeSSFeatureDx11::Evaluate Imgui handle different, reset()!");
+					std::this_thread::sleep_for(std::chrono::milliseconds(250));
+					Imgui.reset();
+				}
+				else
+					Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
 			}
 			else
-				Imgui->Render(InDeviceContext, paramOutput);
-		}
-		else
-		{
-			if (Imgui == nullptr || Imgui.get() == nullptr)
-				Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+			{
+				if (Imgui == nullptr || Imgui.get() == nullptr)
+					Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+			}
 		}
 	}
 
@@ -417,10 +424,56 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
 	Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
+	if (Config::Instance()->SyncAfterDx12.value_or(true))
+	{
+		if (!CopyBackOutput())
+		{
+			spdlog::error("XeSSFeatureDx11::Evaluate Can't copy output texture back!");
+
+			Dx12CommandList->Close();
+			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+			Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+			Dx12CommandAllocator->Reset();
+			Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
+			return false;
+		}
+
+		// imgui
+		if (_frameCount > 20)
+		{
+			if (Imgui != nullptr && Imgui.get() != nullptr)
+			{
+				spdlog::debug("XeSSFeatureDx11::Evaluate Apply Imgui");
+
+				if (Imgui->IsHandleDifferent())
+				{
+					spdlog::debug("XeSSFeatureDx11::Evaluate Imgui handle different, reset()!");
+					std::this_thread::sleep_for(std::chrono::milliseconds(250));
+					Imgui.reset();
+				}
+				else
+					Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
+			}
+			else
+			{
+				if (Imgui == nullptr || Imgui.get() == nullptr)
+					Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+			}
+		}
+	}
+
 	_frameCount++;
 
-	if (_frameCount == 200 && !Config::Instance()->UseSafeSyncQueries.has_value())
-		Config::Instance()->UseSafeSyncQueries = 1;
+	if (_frameCount == 200)
+	{
+		if (!Config::Instance()->TextureSyncMethod.has_value())
+			Config::Instance()->TextureSyncMethod = 1;
+
+		if (!Config::Instance()->CopyBackSyncMethod.has_value())
+			Config::Instance()->CopyBackSyncMethod = 5;
+	}
 
 	Dx12CommandAllocator->Reset();
 	Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);

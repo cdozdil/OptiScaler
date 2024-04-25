@@ -88,7 +88,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 
 		spdlog::debug("FSR2FeatureDx11on12::Evaluate calling InitFSR2");
 
-		if (Dx12on11Device == nullptr)
+		if (Dx12Device == nullptr)
 		{
 			spdlog::error("FSR2FeatureDx11on12::Evaluate Dx12on11Device is null!");
 			return false;
@@ -109,7 +109,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 			std::this_thread::sleep_for(std::chrono::milliseconds(1500));
 		}
 
-		OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", Dx12on11Device);
+		OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", Dx12Device);
 	}
 
 	if (!IsInited())
@@ -189,7 +189,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	{
 		OUT_DS->Scale = (float)TargetWidth() / (float)DisplayWidth();
 
-		if (OUT_DS->CreateBufferResource(Dx12on11Device, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		if (OUT_DS->CreateBufferResource(Dx12Device, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
 			OUT_DS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			params.output = ffxGetResourceDX12(&_context, OUT_DS->Buffer(), (wchar_t*)L"FSR2_Out", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -295,7 +295,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 		spdlog::debug("XeSSFeatureDx11::Evaluate downscaling output...");
 		OUT_DS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		if (!OUT_DS->Dispatch(Dx12on11Device, Dx12CommandList, OUT_DS->Buffer(), dx11Out.Dx12Resource, 16, 16))
+		if (!OUT_DS->Dispatch(Dx12Device, Dx12CommandList, OUT_DS->Buffer(), dx11Out.Dx12Resource))
 		{
 			Config::Instance()->SuperSamplingEnabled = false;
 			Config::Instance()->changeBackend = true;
@@ -311,37 +311,43 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 		}
 	}
 
-	// fsr done
-	if (!CopyBackOutput())
+	if (!Config::Instance()->SyncAfterDx12.value_or(true))
 	{
-		spdlog::error("FSR2FeatureDx11on12::Evaluate Can't copy output texture back!");
-
-		Dx12CommandList->Close();
-		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-		Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-
-		Dx12CommandAllocator->Reset();
-		Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
-
-		return false;
-	}
-
-	// imgui
-	if (_frameCount > 20)
-	{
-		if (Imgui != nullptr && Imgui.get() != nullptr)
+		if (!CopyBackOutput())
 		{
-			if (Imgui->IsHandleDifferent())
+			spdlog::error("FSR2FeatureDx11on12::Evaluate Can't copy output texture back!");
+
+			Dx12CommandList->Close();
+			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+			Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+			Dx12CommandAllocator->Reset();
+			Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
+			return false;
+		}
+
+		// imgui
+		if (_frameCount > 20)
+		{
+			if (Imgui != nullptr && Imgui.get() != nullptr)
 			{
-				Imgui.reset();
+				spdlog::debug("FSR2FeatureDx11on12::Evaluate Apply Imgui");
+
+				if (Imgui->IsHandleDifferent())
+				{
+					spdlog::debug("FSR2FeatureDx11on12::Evaluate Imgui handle different, reset()!");
+					std::this_thread::sleep_for(std::chrono::milliseconds(250));
+					Imgui.reset();
+				}
+				else
+					Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
 			}
 			else
-				Imgui->Render(InDeviceContext, paramOutput);
-		}
-		else
-		{
-			if (Imgui == nullptr || Imgui.get() == nullptr)
-				Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+			{
+				if (Imgui == nullptr || Imgui.get() == nullptr)
+					Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+			}
 		}
 	}
 
@@ -349,11 +355,57 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	Dx12CommandList->Close();
 	ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
 	Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+	
+	if (Config::Instance()->SyncAfterDx12.value_or(true))
+	{
+		if (!CopyBackOutput())
+		{
+			spdlog::error("FSR2FeatureDx11on12::Evaluate Can't copy output texture back!");
+
+			Dx12CommandList->Close();
+			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+			Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+			Dx12CommandAllocator->Reset();
+			Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
+			return false;
+		}
+
+		// imgui
+		if (_frameCount > 20)
+		{
+			if (Imgui != nullptr && Imgui.get() != nullptr)
+			{
+				spdlog::debug("FSR2FeatureDx11on12::Evaluate Apply Imgui");
+
+				if (Imgui->IsHandleDifferent())
+				{
+					spdlog::debug("FSR2FeatureDx11on12::Evaluate Imgui handle different, reset()!");
+					std::this_thread::sleep_for(std::chrono::milliseconds(250));
+					Imgui.reset();
+				}
+				else
+					Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
+			}
+			else
+			{
+				if (Imgui == nullptr || Imgui.get() == nullptr)
+					Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+			}
+		}
+	}
 
 	_frameCount++;
 
-	if (_frameCount == 200 && !Config::Instance()->UseSafeSyncQueries.has_value())
-		Config::Instance()->UseSafeSyncQueries = 1;
+	if (_frameCount == 200)
+	{
+		if (!Config::Instance()->TextureSyncMethod.has_value())
+			Config::Instance()->TextureSyncMethod = 1;
+
+		if (!Config::Instance()->CopyBackSyncMethod.has_value())
+			Config::Instance()->CopyBackSyncMethod = 5;
+	}
 
 	Dx12CommandAllocator->Reset();
 	Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
@@ -382,7 +434,7 @@ bool FSR2FeatureDx11on12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	const size_t scratchBufferSize = ffxFsr2GetScratchMemorySizeDX12();
 	void* scratchBuffer = calloc(scratchBufferSize, 1);
 
-	auto errorCode = ffxFsr2GetInterfaceDX12(&_contextDesc.callbacks, Dx12on11Device, scratchBuffer, scratchBufferSize);
+	auto errorCode = ffxFsr2GetInterfaceDX12(&_contextDesc.callbacks, Dx12Device, scratchBuffer, scratchBufferSize);
 
 	if (errorCode != FFX_OK)
 	{
@@ -391,7 +443,7 @@ bool FSR2FeatureDx11on12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		return false;
 	}
 
-	_contextDesc.device = ffxGetDeviceDX12(Dx12on11Device);
+	_contextDesc.device = ffxGetDeviceDX12(Dx12Device);
 	_contextDesc.flags = 0;
 
 	int featureFlags = 0;
