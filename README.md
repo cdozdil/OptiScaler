@@ -9,19 +9,19 @@ OptiScaler (was CyberXeSS) is drop-in DLSS2 to XeSS/FSR2 replacement for games.
 **Do not use this mod with online games, it might trigger anti-cheat software and cause bans!**
 
 ## How it works?
-OptiScaler implement's all necessary API methods of DLSS2 & NVAPI to act as a man in the middle. So from games perspective it's using DLSS2 but actually using OptiScaler and calls are interpreted/redirected to XeSS & FSR2.
+OptiScaler implements all necessary API methods of DLSS2 & NVAPI to act as a man in the middle. So from games perspective it's using DLSS2 but actually using OptiScaler and calls are interpreted/redirected to XeSS & FSR2.
 
 ## Features
 * Multiple upscaling backends (XeSS, FSR 2.1.2 and FSR 2.2.1)
-* Supports XeSS v1.3's new modes (Ultra Performance, NativeAA), but uses standart DLSS/FSR internal resolutions (not using 2.3x Performance mode).
-* An in-game menu for tuning and saving settings (Only on DirectX 11 & DirectX 12 APIs, shortcut key is **HOME**)
+* Supports XeSS v1.3's new modes (Ultra Performance, NativeAA), but uses standard DLSS/FSR internal resolutions (not using XeSS 1.3 Performance (2.3x) mode, not matching any of the DLSS quality presets).
+* An [in-game menu](https://github.com/cdozdil/OptiScaler/blob/master/Config.md) for tuning and saving settings (Only on DirectX 11 & DirectX 12 APIs, shortcut key is **HOME**)
 * Full integration with [DLSS Enabler](https://www.nexusmods.com/site/mods/757) for DLSS-FG support
-* CAS (Contrast Adaptive Sharpening) support for XeSS to mitigate relatively soft image upscaler generates
-* A pseudo-supersampling option for backends running on DirectX 12
-* Autofixing colored lights on Unreal Engine & AMD graphics cards
-* Autofixing wrong motion vector init information 
-* Autofixing missing exposure texture information
-* Ability to modify MipmapLodBias value of game
+* [CAS (Contrast Adaptive Sharpening)](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#cas) support for XeSS to mitigate relatively soft image upscaler generates
+* [Pseudo-supersampling](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#pseudo-supersampling) option for backends running on DirectX 12
+* Autofixing [colored lights](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#resource-barriers-dx12-only) on Unreal Engine & AMD graphics cards
+* Autofixing [wrong motion vector](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#init-flags) init information 
+* Autofixing [missing exposure texture](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#init-flags) information
+* Ability to modify [MipmapLodBias](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#mipmap-lod-bias-override-dx12-only) value of game
 
 ## Configuration
 Please check [this](Config.md) document for configuration parameters and explanations.

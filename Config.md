@@ -1,7 +1,7 @@
 # Configuration
 This document will try to explain the `nvngx.ini` and in-game menu (shortcut key for opening menu is **HOME**) settings as much as possible. 
 
-![in-game menu](images/ingame_menu.png)
+![in-game menu](images/menu.png)
 
 ### Upscalers
 OptiScaler supports DirectX 11, DirectX 12 and Vulkan APIs with multiple upscaler backends. You can select which upscaler to use in the `[Upscalers]` section of the `nvngx.ini` file.
@@ -72,7 +72,7 @@ For DirectX11 with `fsr21_12`, `fsr22_12` and `xess` upscaler options, OptiScale
 ;	0 - Safe syncing is off                         (fastest, most prone to errors)
 ;	1 - Only Fences
 ;	2 - Fences + Flush after Dx11 texture copies
-;	3 - Sync after output copy				            (most compatible)
+;	3 - Sync after output copy                      (most compatible)
 ;	4 - No fences, all sync done with queries       (slowest)
 ;
 ; 0 is fastest, 4 is slowest

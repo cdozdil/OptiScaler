@@ -3,12 +3,15 @@
 ## In-game Menu
 In-game menu is a recent addition and may experience on certain condutions.
 
+* Some games do not release mouse control, kayboard & gamepad controls should still work in these situations.
 * On some system and game combinations, opening the in-game menu may cause the game to crash or cause graphical corruption (especially in Unreal Engine 5 games).
 
 ![Banishers](/images/banishers.png)<br>*Banishers: Ghosts of New Eden*
 
 * Changing settings mostly tested but might cause crashes (especially changing backends or reinitializing backends).
-* Some games do not release mouse control, kayboard & gamepag controls should still work in these situations.
+* In games that use Unity Engine in-game menu will be upside down.
+
+![barrel roll](/images/upsidedown.png)<br>*Sons of Forest*
 
 ## DirectX 11 with DirectX 12 Upscalers
 This implementations uses a background DirectX12 device to be able to use Dirext12 only upscalers. There is %10-15 performance penalty for this method but allows much more upscaler options. Depending on system and game different `UseSafeSyncQueries` might be needed. Our tests shows that `1  - Shared Fences` is most performant option with good accuracy and `3  - Shared Fences + Query` is the most compatible but less performant option. 
