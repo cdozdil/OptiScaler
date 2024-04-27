@@ -128,7 +128,7 @@ BuildPipelines=auto
 NetworkModel=auto
 
 [CAS]
-; Enables CAS shapening for XeSS
+; Enables CAS sharpening for XeSS
 ; true or false - Default (auto) is false
 Enabled=auto
 
@@ -175,7 +175,7 @@ It can be changed from the in-game menu with real-time results.
 
 ![fsr](images/fsr.png)
 
-### Shapness
+### Sharpness
 DLSS used to have a sharpening option, but later it was removed. So some games have sharpness slider and some do not. With this option you can disable or enable the sharpness of the final image. FSR has built in sharpness but for XeSS CAS option must be enabled.
 
 ```ini
