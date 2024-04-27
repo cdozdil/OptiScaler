@@ -89,10 +89,21 @@ SyncAfterDx12=auto
 ; true or false - Default (auto) is false
 UseDelayedInit=auto
 ```
+Diagram below show flow of Dx11 with Dx12 upscaling process. Yellow circles are syncing (or possible syncing points). `SyncAfterDx12` selects when second sync will happen.
 
-It can be changed from the in-game menu with real-time results.
+![dx11 with dx12 flow](images/Dx11wDx12.png)
 
-![dx11 sync setings](images/dx11w12menu.png)
+`No syncing` : Self explanotory  
+`Fence` : Sync using shared `Fence`s (Signal & Wait). These should happen on GPU which is pretty fast.  
+`Fence + Event` : Sync using shared `Fence`s (Signal & Event). `Event`s are waited on CPU which is slower.  
+`Flush` : After Signal shared `Fence`, `Flush`es Dx11 DeviceContext.  
+`Query Only` : Uses Dx11 `Query` to sync, in general faster that `Event`s but slower than `Fence`s.  
+
+When using `Event`s for syncing output `SyncAfterDx12=false` is usually more performant.
+
+These can be changed from the in-game menu with real-time results (except `UseDelayedInit`).
+
+![dx11 sync setings](images/dx11wdx12menu.png)
 
 ### XeSS Settings
 
@@ -396,5 +407,17 @@ OpenConsole=auto
 These can be changed from the in-game menu with real-time results.
 
 ![logging](images/logging.png)
+
+### Menu
+```ini
+[Menu]
+; In-game ImGui menu scale
+; 1.0 to 2.0 - Default (auto) is 1.0
+Scale=auto
+```
+
+These can be changed from the in-game menu with real-time results.
+
+![menu scale](images/ui_scale.png)
 
 
