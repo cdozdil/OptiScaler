@@ -101,7 +101,8 @@ Diagram below show flow of Dx11 with Dx12 upscaling process. Yellow circles are 
 
 When using `Event`s for syncing output `SyncAfterDx12=false` is usually more performant.
 
-**These settings are game and hardware dependent, for optimal performance the user needs to tweak them per game.**
+
+**These settings are game and hardware dependent. Default values are set for balanced performance and stable image, for high performance the user might need to tweak them per game.**
 
 These can be changed from the in-game menu with real-time results (except `UseDelayedInit`).
 
