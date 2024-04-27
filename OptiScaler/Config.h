@@ -51,6 +51,9 @@ public:
 	//Sharpness 
 	std::optional<bool> OverrideSharpness;
 	std::optional<float> Sharpness;
+	
+	// menu
+	std::optional<float> MenuScale;
 
 	// Upscale Ratio Override
 	std::optional<bool> UpscaleRatioOverrideEnabled;

@@ -48,6 +48,9 @@ bool Config::Reload()
 		// Sharpness
 		OverrideSharpness = readBool("Sharpness", "OverrideSharpness");
 		Sharpness = readFloat("Sharpness", "Sharpness");
+		
+		// Menu
+		MenuScale = readFloat("Menu", "Scale");
 
 		// CAS
 		CasEnabled = readBool("CAS", "Enabled");
@@ -161,6 +164,9 @@ bool Config::SaveIni()
 	// Sharpness
 	ini.SetValue("Sharpness", "OverrideSharpness", GetBoolValue(Instance()->OverrideSharpness).c_str());
 	ini.SetValue("Sharpness", "Sharpness", GetFloatValue(Instance()->Sharpness).c_str());
+	
+	// ingame menu
+	ini.SetValue("Menu", "Scale", GetFloatValue(Instance()->MenuScale).c_str());
 
 	// CAS
 	ini.SetValue("CAS", "Enabled", GetBoolValue(Instance()->CasEnabled).c_str());

@@ -29,6 +29,9 @@ uint32_t renderWidth = 0;
 
 float ssRatio = 0.0f;
 bool ssEnabled = false;
+float imguiRatio = 1.0f;
+int selectedScale = 0;
+bool imguiSizeUpdate = true;
 
 bool _isVisible = false;
 WNDPROC _oWndProc = nullptr;
@@ -144,7 +147,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 //Win32 message handler
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	if(Config::Instance()->ActiveFeatureCount == 0)
+	if (Config::Instance()->ActiveFeatureCount == 0)
 		return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
 
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -369,21 +372,51 @@ void Imgui_Base::RenderMenu()
 	ImGuiIO const& io = ImGui::GetIO(); (void)io;
 
 	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
 
 	{
 		ImGuiWindowFlags flags = 0;
 		flags |= ImGuiWindowFlags_NoSavedSettings;
 		flags |= ImGuiWindowFlags_NoCollapse;
 
-		auto posX = (Config::Instance()->CurrentFeature->DisplayWidth() - 770.0f) / 2.0f;
-		auto posY = (Config::Instance()->CurrentFeature->DisplayHeight() - 670.0f) / 2.0f;
 
-		ImGui::SetNextWindowPos(ImVec2{ posX , posY }, ImGuiCond_FirstUseEver);
-		ImGui::SetNextWindowSize(ImVec2{ 770.0f, 670.0f }, ImGuiCond_FirstUseEver);
-
-		if (ImGui::Begin("OptiScaler v0.4.1", nullptr, flags))
+		if (imguiSizeUpdate)
 		{
+			imguiSizeUpdate = false;
+
+			ImGuiStyle& style = ImGui::GetStyle();
+			ImGuiStyle styleold = style; // Backup colors
+			style = ImGuiStyle(); // IMPORTANT: ScaleAllSizes will change the original size, so we should reset all style config
+			style.WindowBorderSize = 1.0f;
+			style.ChildBorderSize = 1.0f;
+			style.PopupBorderSize = 1.0f;
+			style.FrameBorderSize = 1.0f;
+			style.TabBorderSize = 1.0f;
+			style.WindowRounding = 0.0f;
+			style.ChildRounding = 0.0f;
+			style.PopupRounding = 0.0f;
+			style.FrameRounding = 0.0f;
+			style.ScrollbarRounding = 0.0f;
+			style.GrabRounding = 0.0f;
+			style.TabRounding = 0.0f;
+			style.ScaleAllSizes(imguiRatio);
+			CopyMemory(style.Colors, styleold.Colors, sizeof(style.Colors)); // Restore colors		
+		}
+
+		ImGui::NewFrame();
+
+		auto size = ImVec2{ 0.0f, 0.0f };
+		ImGui::SetNextWindowSize(size);
+
+		auto posX = ((float)Config::Instance()->CurrentFeature->DisplayWidth() - 770.0f) / 2.0f;
+		auto posY = ((float)Config::Instance()->CurrentFeature->DisplayHeight() - 685.0f) / 2.0f;
+
+		ImGui::SetNextWindowPos(ImVec2{ posX, posY }, ImGuiCond_FirstUseEver);
+
+
+		if (ImGui::Begin("OptiScaler v0.4.3", nullptr, flags))
+		{
+			ImGui::SetWindowFontScale(imguiRatio);
+
 			if (ImGui::BeginTable("main", 2))
 			{
 				ImGui::TableNextColumn();
@@ -423,23 +456,46 @@ void Imgui_Base::RenderMenu()
 					Config::Instance()->newBackend = "";
 
 				// Dx11
+				ImGui::SeparatorText("Dx11 with Dx12 Settings");
+
 				ImGui::BeginDisabled(Config::Instance()->Api != NVNGX_DX11 ||
 					(Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") == "fsr22"));
 
-				const char* sync[] = { "No Syncing", "Shared Fences", "Shared Fences + Flush", "Shared Fences + Query", "Mostly Queries" };
+				const char* sync[] = { "No Syncing", "Fence", "Fence + Event", "Fence + Flush", "Fence + Flush + Event", "Only Query" };
 
-				const char* selectedSync = sync[Config::Instance()->UseSafeSyncQueries.value_or(1)];
+				const char* selectedSync = sync[Config::Instance()->TextureSyncMethod.value_or(1)];
 
-				if (ImGui::BeginCombo("Dx12wDx11 Sync", selectedSync))
+				if (ImGui::BeginCombo("Input Sync", selectedSync))
 				{
-					for (int n = 0; n < 5; n++)
+					for (int n = 0; n < 6; n++)
 					{
-						if (ImGui::Selectable(sync[n], (Config::Instance()->UseSafeSyncQueries.value_or(1) == n)))
-							Config::Instance()->UseSafeSyncQueries = n;
+						if (ImGui::Selectable(sync[n], (Config::Instance()->TextureSyncMethod.value_or(1) == n)))
+							Config::Instance()->TextureSyncMethod = n;
 					}
 
 					ImGui::EndCombo();
 				}
+
+				const char* sync2[] = { "No Syncing", "Fence", "Fence + Event", "Fence + Flush", "Fence + Flush + Event", "Only Query" };
+
+				selectedSync = sync2[Config::Instance()->CopyBackSyncMethod.value_or(5)];
+
+				if (ImGui::BeginCombo("Output Sync", selectedSync))
+				{
+					for (int n = 0; n < 6; n++)
+					{
+						if (ImGui::Selectable(sync2[n], (Config::Instance()->CopyBackSyncMethod.value_or(5) == n)))
+							Config::Instance()->CopyBackSyncMethod = n;
+					}
+
+					ImGui::EndCombo();
+				}
+
+				if (bool afterDx12 = Config::Instance()->SyncAfterDx12.value_or(true); ImGui::Checkbox("Sync After Dx12", &afterDx12))
+				{
+					Config::Instance()->SyncAfterDx12 = afterDx12;
+				}
+
 
 				ImGui::EndDisabled();
 
@@ -655,6 +711,10 @@ void Imgui_Base::RenderMenu()
 
 				ImGui::EndDisabled();
 
+
+				ImGui::TableNextColumn();
+
+
 				// UPSCALE RATIO OVERRIDE -----------------
 				ImGui::SeparatorText("Upscale Ratio");
 				if (bool upOverride = Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false); ImGui::Checkbox("Ratio Override", &upOverride))
@@ -667,8 +727,6 @@ void Imgui_Base::RenderMenu()
 				Config::Instance()->UpscaleRatioOverrideValue = urOverride;
 
 				ImGui::EndDisabled();
-
-				ImGui::TableNextColumn();
 
 				// QUALITY OVERRIDES -----------------------------
 				ImGui::SeparatorText("Quality Overrides");
@@ -835,7 +893,31 @@ void Imgui_Base::RenderMenu()
 
 				ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
-				ImGui::SameLine(ImGui::GetWindowWidth() - 130.0f);
+				ImGui::SameLine(0.0f, 10.0f);
+
+				ImGui::PushItemWidth(90.0);
+
+				const char* uiScales[] = { "1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "2.0" };
+				const char* selectedScaleName = uiScales[selectedScale];
+
+				if (ImGui::BeginCombo("UI Scale", selectedScaleName))
+				{
+					for (int n = 0; n < 11; n++)
+					{
+						if (ImGui::Selectable(uiScales[n], (selectedScale == n)))
+						{
+							selectedScale = n;
+							imguiRatio = 1.0f + ((float)n / 10.0f);
+							imguiSizeUpdate = true;
+						}
+					}
+
+					ImGui::EndCombo();
+				}
+
+				ImGui::PopItemWidth();
+
+				ImGui::SameLine(0.0f, 20.0f);
 
 				if (ImGui::Button("Save INI"))
 					Config::Instance()->SaveIni();
@@ -865,8 +947,8 @@ void Imgui_Base::RenderMenu()
 
 		if (showMipmapCalcWindow)
 		{
-			posX = (Config::Instance()->CurrentFeature->DisplayWidth() - 450.0f) / 2.0f;
-			posY = (Config::Instance()->CurrentFeature->DisplayHeight() - 200.0f) / 2.0f;
+			auto posX = (Config::Instance()->CurrentFeature->DisplayWidth() - 450.0f) / 2.0f;
+			auto posY = (Config::Instance()->CurrentFeature->DisplayHeight() - 200.0f) / 2.0f;
 
 			ImGui::SetNextWindowPos(ImVec2{ posX , posY }, ImGuiCond_FirstUseEver);
 			ImGui::SetNextWindowSize(ImVec2{ 450.0f, 200.0f }, ImGuiCond_FirstUseEver);
@@ -1016,7 +1098,7 @@ bool Imgui_Base::IsHandleDifferent()
 	return true;
 }
 
-Imgui_Base::Imgui_Base(HWND handle)
+Imgui_Base::Imgui_Base(HWND handle) : _handle(handle)
 {
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
@@ -1037,18 +1119,31 @@ Imgui_Base::Imgui_Base(HWND handle)
 	io.WantCaptureMouse = _isVisible;
 	io.WantSetMousePos = _isVisible;
 
-	_handle = handle;
-
 	_baseInit = ImGui_ImplWin32_Init(_handle);
 
 	if (IsHandleDifferent())
 		return;
 
 	if (_oWndProc == nullptr)
+	{
 		_oWndProc = (WNDPROC)SetWindowLongPtr(_handle, GWLP_WNDPROC, (LONG_PTR)WndProc);
+		imguiRatio = ImGui_ImplWin32_GetDpiScaleForHwnd(_oWndProc);
+	}
 
 	if (!pfn_SetCursorPos_hooked)
 		AttachHooks();
+
+	auto scale = Config::Instance()->MenuScale.value_or(1.0f);
+
+	if (scale < 1.0f)
+		scale = 1.0f;
+
+	if (scale > 2.0f)
+		scale = 2.0f;
+
+
+	imguiRatio = scale;
+	selectedScale = (int)((scale - 1.0f) / 0.1f);
 }
 
 Imgui_Base::~Imgui_Base()
