@@ -89,7 +89,7 @@ SyncAfterDx12=auto
 ; true or false - Default (auto) is false
 UseDelayedInit=auto
 ```
-Diagram below show flow of Dx11 with Dx12 upscaling process. Yellow circles are syncing (or possible syncing points). `SyncAfterDx12` selects when second sync will happen.
+The diagram below shows the flow of Dx11 with Dx12 upscaling process. Yellow circles are sync points (or possible sync points). `SyncAfterDx12` selects when the second sync will happen.  
 
 ![dx11 with dx12 flow](images/Dx11wDx12.png)
 
