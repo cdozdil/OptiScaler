@@ -1,7 +1,7 @@
 # Configuration
 This document will try to explain the `nvngx.ini` and in-game menu (shortcut key for opening menu is **HOME**) settings as much as possible. 
 
-![in-game menu](images/menu.png)
+![in-game menu](images/menu043.png)
 
 ### Upscalers
 OptiScaler supports DirectX 11, DirectX 12 and Vulkan APIs with multiple upscaler backends. You can select which upscaler to use in the `[Upscalers]` section of the `nvngx.ini` file.
@@ -65,25 +65,45 @@ For DirectX11 with `fsr21_12`, `fsr22_12` and `xess` upscaler options, OptiScale
 
 ```ini
 [Dx11withDx12]
-; Safe syncing measures for Dx11 with Dx12
-; Might be needed for Intel Arc cards or different Dx11 drivers
+; Syncing meathods for Dx11 with Dx12
 ;
 ; Valid values are;
-;	0 - Safe syncing is off                         (fastest, most prone to errors)
-;	1 - Only Fences
-;	2 - Fences + Flush after Dx11 texture copies
-;	3 - Sync after output copy                      (most compatible)
-;	4 - No fences, all sync done with queries       (slowest)
-;
-; 0 is fastest, 4 is slowest
-;
+;	0 - No syncing                                  (fastest, most prone to errors)
+;	1 - Fence                                 
+;	2 - Fences + Flush 
+;	3 - Fences + Event
+;	4 - Fences + Flush + Event
+;	5 - Query Only
+
 ; Default (auto) is 1
-UseSafeSyncQueries=auto
+TextureSyncMethod=auto
+
+; Default (auto) is 5
+CopyBackSyncMethod=auto
+
+; Start output copy back sync after or before Dx12 execution
+; true or false - Default (auto) is true
+SyncAfterDx12=auto
+
+; Delay some operations during creation of D11wDx12 features to increase compatibility
+; true or false - Default (auto) is false
+UseDelayedInit=auto
 ```
+Diagram below show flow of Dx11 with Dx12 upscaling process. Yellow circles are syncing (or possible syncing points). `SyncAfterDx12` selects when second sync will happen.
 
-It can be changed from the in-game menu with real-time results.
+![dx11 with dx12 flow](images/Dx11wDx12.png)
 
-![dx11 sync setings](images/dx11sync.png)
+`No syncing` : Self explanotory  
+`Fence` : Sync using shared `Fence`s (Signal & Wait). These should happen on GPU which is pretty fast.  
+`Fence + Event` : Sync using shared `Fence`s (Signal & Event). `Event`s are waited on CPU which is slower.  
+`Flush` : After Signal shared `Fence`, `Flush`es Dx11 DeviceContext.  
+`Query Only` : Uses Dx11 `Query` to sync, in general faster that `Event`s but slower than `Fence`s.  
+
+When using `Event`s for syncing output `SyncAfterDx12=false` is usually more performant.
+
+These can be changed from the in-game menu with real-time results (except `UseDelayedInit`).
+
+![dx11 sync setings](images/dx11wdx12menu.png)
 
 ### XeSS Settings
 
@@ -387,5 +407,17 @@ OpenConsole=auto
 These can be changed from the in-game menu with real-time results.
 
 ![logging](images/logging.png)
+
+### Menu
+```ini
+[Menu]
+; In-game ImGui menu scale
+; 1.0 to 2.0 - Default (auto) is 1.0
+Scale=auto
+```
+
+These can be changed from the in-game menu with real-time results.
+
+![menu scale](images/ui_scale.png)
 
 
