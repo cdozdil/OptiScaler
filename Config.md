@@ -1,7 +1,7 @@
 # Configuration
 This document will try to explain the `nvngx.ini` and in-game menu (shortcut key for opening menu is **HOME**) settings as much as possible. 
 
-![in-game menu](images/menu.png)
+![in-game menu](images/menu043.png)
 
 ### Upscalers
 OptiScaler supports DirectX 11, DirectX 12 and Vulkan APIs with multiple upscaler backends. You can select which upscaler to use in the `[Upscalers]` section of the `nvngx.ini` file.
@@ -65,25 +65,34 @@ For DirectX11 with `fsr21_12`, `fsr22_12` and `xess` upscaler options, OptiScale
 
 ```ini
 [Dx11withDx12]
-; Safe syncing measures for Dx11 with Dx12
-; Might be needed for Intel Arc cards or different Dx11 drivers
+; Syncing meathods for Dx11 with Dx12
 ;
 ; Valid values are;
-;	0 - Safe syncing is off                         (fastest, most prone to errors)
-;	1 - Only Fences
-;	2 - Fences + Flush after Dx11 texture copies
-;	3 - Sync after output copy                      (most compatible)
-;	4 - No fences, all sync done with queries       (slowest)
-;
-; 0 is fastest, 4 is slowest
-;
+;	0 - No syncing                                  (fastest, most prone to errors)
+;	1 - Fence                                 
+;	2 - Fences + Flush 
+;	3 - Fences + Event
+;	4 - Fences + Flush + Event
+;	5 - Query Only
+
 ; Default (auto) is 1
-UseSafeSyncQueries=auto
+TextureSyncMethod=auto
+
+; Default (auto) is 5
+CopyBackSyncMethod=auto
+
+; Start output copy back sync after or before Dx12 execution
+; true or false - Default (auto) is true
+SyncAfterDx12=auto
+
+; Delay some operations during creation of D11wDx12 features to increase compatibility
+; true or false - Default (auto) is false
+UseDelayedInit=auto
 ```
 
 It can be changed from the in-game menu with real-time results.
 
-![dx11 sync setings](images/dx11sync.png)
+![dx11 sync setings](images/dx11w12menu.png)
 
 ### XeSS Settings
 
