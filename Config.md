@@ -89,7 +89,7 @@ SyncAfterDx12=auto
 ; true or false - Default (auto) is false
 UseDelayedInit=auto
 ```
-Diagram below show flow of Dx11 with Dx12 upscaling process. Yellow circles are syncing (or possible syncing points). `SyncAfterDx12` selects when second sync will happen.
+The diagram below shows the flow of Dx11 with Dx12 upscaling process. Yellow circles are sync points (or possible sync points). `SyncAfterDx12` selects when the second sync will happen.  
 
 ![dx11 with dx12 flow](images/Dx11wDx12.png)
 
@@ -100,6 +100,9 @@ Diagram below show flow of Dx11 with Dx12 upscaling process. Yellow circles are 
 `Query Only` : Uses Dx11 `Query` to sync, in general faster that `Event`s but slower than `Fence`s.  
 
 When using `Event`s for syncing output `SyncAfterDx12=false` is usually more performant.
+
+
+**These settings are game and hardware dependent. Default values are set for balanced performance and stable image, for high performance the user might need to tweak them per game.**
 
 These can be changed from the in-game menu with real-time results (except `UseDelayedInit`).
 
@@ -125,7 +128,7 @@ BuildPipelines=auto
 NetworkModel=auto
 
 [CAS]
-; Enables CAS shapening for XeSS
+; Enables CAS sharpening for XeSS
 ; true or false - Default (auto) is false
 Enabled=auto
 
@@ -172,7 +175,7 @@ It can be changed from the in-game menu with real-time results.
 
 ![fsr](images/fsr.png)
 
-### Shapness
+### Sharpness
 DLSS used to have a sharpening option, but later it was removed. So some games have sharpness slider and some do not. With this option you can disable or enable the sharpness of the final image. FSR has built in sharpness but for XeSS CAS option must be enabled.
 
 ```ini
