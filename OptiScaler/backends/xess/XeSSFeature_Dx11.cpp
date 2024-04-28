@@ -196,9 +196,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 	auto sharpness = GetSharpness(InParameters);
 
-	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) &&
-		!Config::Instance()->DisplayResolution.value_or(false) &&
-		((float)DisplayWidth() / (float)params.inputWidth) < Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
+	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
 
 	spdlog::debug("XeSSFeatureDx11::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
@@ -241,7 +239,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	{
 		OUT_DS->Scale = (float)TargetWidth() / (float)DisplayWidth();
 
-		if (OUT_DS->CreateBufferResource(Dx12Device, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		if (OUT_DS->CreateBufferResource(Dx12Device, dx11Out.Dx12Resource, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
 			OUT_DS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			params.pOutputTexture = OUT_DS->Buffer();

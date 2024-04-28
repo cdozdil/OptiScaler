@@ -84,9 +84,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	float ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
 
-	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) && 
-				 !Config::Instance()->DisplayResolution.value_or(false) &&
-				 ((float)DisplayWidth() / (float)params.inputWidth) < ssMulti;
+	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
 
 	spdlog::debug("XeSSFeatureDx12::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
@@ -175,7 +173,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		{
 			OUT_DS->Scale = (float)TargetWidth() / (float)DisplayWidth();
 
-			if (OUT_DS->CreateBufferResource(Device, paramOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+			if (OUT_DS->CreateBufferResource(Device, paramOutput, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 			{
 				OUT_DS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 				params.pOutputTexture = OUT_DS->Buffer();

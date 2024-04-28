@@ -180,24 +180,21 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 	if (Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
 	{
-		float ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
-		float ssMultilimit = (Version().major >= 1 && Version().minor >= 3) ? 5.0f : 2.5f;
+		float ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(1.5f);
 
-		if (ssMulti < 0.0f || ssMulti > ssMultilimit)
+		if (ssMulti < 1.0f)
 		{
-			ssMulti = ssMultilimit;
+			ssMulti = 1.0f;
+			Config::Instance()->SuperSamplingMultiplier = ssMulti;
+		}
+		else if (ssMulti > 3.0f)
+		{
+			ssMulti = 3.0f;
 			Config::Instance()->SuperSamplingMultiplier = ssMulti;
 		}
 
-		_targetWidth = RenderWidth() * ssMulti;
-		_targetHeight = RenderHeight() * ssMulti;
-
-		if (_targetWidth <= DisplayWidth() || _targetHeight <= DisplayHeight())
-		{
-			Config::Instance()->SuperSamplingEnabled = false;
-			_targetWidth = DisplayWidth();
-			_targetHeight = DisplayHeight();
-		}
+		_targetWidth = DisplayWidth() * ssMulti;
+		_targetHeight = DisplayHeight() * ssMulti;
 	}
 	else
 	{

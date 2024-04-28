@@ -44,9 +44,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
-	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) &&
-		!Config::Instance()->DisplayResolution.value_or(false) &&
-		((float)DisplayWidth() / (float)params.renderSize.width) < Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
+	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
 
 	spdlog::debug("FSR2FeatureDx12::Evaluate Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
@@ -136,7 +134,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		{
 			OUT_DS->Scale = (float)TargetWidth() / (float)DisplayWidth();
 
-			if (OUT_DS->CreateBufferResource(Device, paramOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+			if (OUT_DS->CreateBufferResource(Device, paramOutput, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 			{
 				OUT_DS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 				params.output = ffxGetResourceDX12(&_context, OUT_DS->Buffer(), (wchar_t*)L"FSR2_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -472,24 +470,21 @@ bool FSR2FeatureDx12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
 	if (Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
 	{
-		float ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
-		float ssMultilimit = 5.0f;
+		float ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(1.5f);
 
-		if (ssMulti < 0.0f || ssMulti > ssMultilimit)
+		if (ssMulti < 1.0f)
 		{
-			ssMulti = ssMultilimit;
+			ssMulti = 1.0f;
+			Config::Instance()->SuperSamplingMultiplier = ssMulti;
+		}
+		else if (ssMulti > 3.0f)
+		{
+			ssMulti = 3.0f;
 			Config::Instance()->SuperSamplingMultiplier = ssMulti;
 		}
 
-		_targetWidth = RenderWidth() * ssMulti;
-		_targetHeight = RenderHeight() * ssMulti;
-
-		if (_targetWidth <= DisplayWidth() || _targetHeight <= DisplayHeight())
-		{
-			Config::Instance()->SuperSamplingEnabled = false;
-			_targetWidth = DisplayWidth();
-			_targetHeight = DisplayHeight();
-		}
+		_targetWidth = DisplayWidth() * ssMulti;
+		_targetHeight = DisplayHeight() * ssMulti;
 	}
 	else
 	{

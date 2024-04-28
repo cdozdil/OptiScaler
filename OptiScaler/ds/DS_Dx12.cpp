@@ -47,7 +47,7 @@ static bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootS
 	return true;
 }
 
-bool DS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, D3D12_RESOURCE_STATES InState)
+bool DS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, uint32_t InWidth, uint32_t InHeight, D3D12_RESOURCE_STATES InState)
 {
 	if (InDevice == nullptr || InSource == nullptr)
 		return false;
@@ -58,7 +58,7 @@ bool DS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
 	{
 		auto bufDesc = _buffer->GetDesc();
 
-		if (bufDesc.Width != (UINT64)(texDesc.Width * Scale) || bufDesc.Height != (UINT)(texDesc.Height * Scale) || bufDesc.Format != texDesc.Format)
+		if (bufDesc.Width != (UINT64)(InWidth) || bufDesc.Height != (UINT)(InHeight) || bufDesc.Format != texDesc.Format)
 		{
 			_buffer->Release();
 			_buffer = nullptr;
@@ -80,8 +80,8 @@ bool DS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
 	}
 
 	texDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS | D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS;
-	texDesc.Width *= Scale;
-	texDesc.Height *= Scale;
+	texDesc.Width = InWidth;
+	texDesc.Height = InHeight;
 
 	hr = InDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, InState, nullptr, IID_PPV_ARGS(&_buffer));
 

@@ -142,9 +142,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 
 	GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
-	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) &&
-		!Config::Instance()->DisplayResolution.value_or(false) &&
-		((float)DisplayWidth() / (float)params.renderSize.width) < Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
+	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
 
 	spdlog::debug("FSR2FeatureDx11on12_212::Evaluate Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
@@ -187,7 +185,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 	{
 		OUT_DS->Scale = (float)TargetWidth() / (float)DisplayWidth();
 
-		if (OUT_DS->CreateBufferResource(Dx12Device, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		if (OUT_DS->CreateBufferResource(Dx12Device, dx11Out.Dx12Resource, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
 			OUT_DS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			params.output = Fsr212::ffxGetResourceDX12_212(&_context, OUT_DS->Buffer(), (wchar_t*)L"FSR2_Out", Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -515,24 +513,21 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
 	if (Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
 	{
-		float ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
-		float ssMultilimit = 5.0f;
+		float ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(1.5f);
 
-		if (ssMulti < 0.0f || ssMulti > ssMultilimit)
+		if (ssMulti < 1.0f)
 		{
-			ssMulti = ssMultilimit;
+			ssMulti = 1.0f;
+			Config::Instance()->SuperSamplingMultiplier = ssMulti;
+		}
+		else if (ssMulti > 3.0f)
+		{
+			ssMulti = 3.0f;
 			Config::Instance()->SuperSamplingMultiplier = ssMulti;
 		}
 
-		_targetWidth = RenderWidth() * ssMulti;
-		_targetHeight = RenderHeight() * ssMulti;
-
-		if (_targetWidth <= DisplayWidth() || _targetHeight <= DisplayHeight())
-		{
-			Config::Instance()->SuperSamplingEnabled = false;
-			_targetWidth = DisplayWidth();
-			_targetHeight = DisplayHeight();
-		}
+		_targetWidth = DisplayWidth() * ssMulti;
+		_targetHeight = DisplayHeight() * ssMulti;
 	}
 	else
 	{

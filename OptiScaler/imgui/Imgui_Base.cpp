@@ -378,7 +378,6 @@ void Imgui_Base::RenderMenu()
 		flags |= ImGuiWindowFlags_NoSavedSettings;
 		flags |= ImGuiWindowFlags_NoCollapse;
 
-
 		if (imguiSizeUpdate)
 		{
 			imguiSizeUpdate = false;
@@ -403,6 +402,8 @@ void Imgui_Base::RenderMenu()
 		}
 
 		ImGui::NewFrame();
+
+		auto cf = Config::Instance()->CurrentFeature;
 
 		auto size = ImVec2{ 0.0f, 0.0f };
 		ImGui::SetNextWindowSize(size);
@@ -634,7 +635,7 @@ void Imgui_Base::RenderMenu()
 
 				if (ssRatio == 0.0f)
 				{
-					ssRatio = Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
+					ssRatio = Config::Instance()->SuperSamplingMultiplier.value_or(defaultRatio);
 					ssEnabled = Config::Instance()->SuperSamplingEnabled.value_or(false);
 				}
 
@@ -647,17 +648,20 @@ void Imgui_Base::RenderMenu()
 
 				ImGui::SameLine(0.0f, 6.0f);
 
-				if (ImGui::Button("Apply Change"))
+				if (ImGui::Button("Apply Change") && (ssEnabled != Config::Instance()->SuperSamplingEnabled.value_or(false) ||
+					ssRatio != Config::Instance()->SuperSamplingMultiplier.value_or(defaultRatio)))
 				{
-					if (ssEnabled != Config::Instance()->SuperSamplingEnabled.value_or(false) || ssRatio != Config::Instance()->SuperSamplingMultiplier.value_or(defaultRatio))
-					{
-						Config::Instance()->SuperSamplingEnabled = ssEnabled;
-						Config::Instance()->SuperSamplingMultiplier = ssRatio;
-						Config::Instance()->changeBackend = true;
-					}
+					Config::Instance()->SuperSamplingEnabled = ssEnabled;
+					Config::Instance()->SuperSamplingMultiplier = ssRatio;
+					Config::Instance()->changeBackend = true;
 				}
 
-				ImGui::SliderFloat("Ratio", &ssRatio, (float)Config::Instance()->CurrentFeature->DisplayWidth() / (float)Config::Instance()->CurrentFeature->RenderWidth(), isXess12 ? 2.5f : 5.0f, "%.2f");
+				ImGui::SameLine(0.0f, 6.0f);
+
+				if (cf != nullptr)
+					ImGui::Text("%dx%d -> %dx%d", cf->RenderWidth(), cf->RenderHeight(), (uint32_t)(cf->DisplayWidth() * ssRatio), (uint32_t)(cf->DisplayHeight() * ssRatio));
+
+				ImGui::SliderFloat("Ratio", &ssRatio, 1.0f, 3.0f, "%.2f");
 
 				ImGui::EndDisabled();
 
@@ -885,7 +889,6 @@ void Imgui_Base::RenderMenu()
 				ImGui::Separator();
 				ImGui::Spacing();
 
-				auto cf = Config::Instance()->CurrentFeature;
 				if (cf != nullptr)
 					ImGui::Text("%dx%d -> %dx%d (%dx%d)", cf->RenderWidth(), cf->RenderHeight(), cf->TargetWidth(), cf->TargetHeight(), cf->DisplayWidth(), cf->DisplayHeight());
 
