@@ -1,6 +1,9 @@
 #pragma once
 #include "../../pch.h"
 #include "../../Config.h"
+#include "../../Util.h"
+
+#include "../../detours/detours.h"
 
 #include "XeSSFeature.h"
 
@@ -13,6 +16,12 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 {
 	spdlog::debug("XeSSFeature::InitXeSS!");
 
+	if (!_moduleLoaded)
+	{
+		spdlog::error("XeSSFeature::InitXeSS libxess.dll not loaded!");
+		return false;
+	}
+
 	if (IsInited())
 		return true;
 
@@ -22,7 +31,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		return false;
 	}
 
-	auto ret = xessGetVersion(&_xessVersion);
+	auto ret = GetVersion()(&_xessVersion);
 
 	if (ret == XESS_RESULT_SUCCESS)
 	{
@@ -32,7 +41,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	else
 		spdlog::warn("XeSSFeature::InitXeSS xessGetVersion error: {0}", ResultToString(ret));
 
-	ret = xessD3D12CreateContext(device, &_xessContext);
+	ret = D3D12CreateContext()(device, &_xessContext);
 
 	if (ret != XESS_RESULT_SUCCESS)
 	{
@@ -40,10 +49,10 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		return false;
 	}
 
-	ret = xessIsOptimalDriver(_xessContext);
+	ret = IsOptimalDriver()(_xessContext);
 	spdlog::debug("XeSSFeature::InitXeSS xessIsOptimalDriver : {0}", ResultToString(ret));
 
-	ret = xessSetLoggingCallback(_xessContext, XESS_LOGGING_LEVEL_DEBUG, XeSSLogCallback);
+	ret = SetLoggingCallback()(_xessContext, XESS_LOGGING_LEVEL_DEBUG, XeSSLogCallback);
 	spdlog::debug("XeSSFeature::InitXeSS xessSetLoggingCallback : {0}", ResultToString(ret));
 
 	xess_d3d12_init_params_t xessParams{};
@@ -211,7 +220,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	{
 		HRESULT hr;
 		xess_properties_t xessProps{};
-		ret = xessGetProperties(_xessContext, &xessParams.outputResolution, &xessProps);
+		ret = GetProperties()(_xessContext, &xessParams.outputResolution, &xessProps);
 
 		if (ret == XESS_RESULT_SUCCESS)
 		{
@@ -263,7 +272,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		if (FAILED(device->QueryInterface(IID_PPV_ARGS(&device1))))
 		{
 			spdlog::error("XeSSFeature::InitXeSS QueryInterface device1 failed!");
-			ret = xessD3D12BuildPipelines(_xessContext, NULL, false, xessParams.initFlags);
+			ret = D3D12BuildPipelines()(_xessContext, NULL, false, xessParams.initFlags);
 		}
 		else
 		{
@@ -272,16 +281,16 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 			if (FAILED(hr) || !_localPipeline)
 			{
 				spdlog::error("XeSSFeature::InitXeSS CreatePipelineLibrary failed {0:x}!", hr);
-				ret = xessD3D12BuildPipelines(_xessContext, NULL, false, xessParams.initFlags);
+				ret = D3D12BuildPipelines()(_xessContext, NULL, false, xessParams.initFlags);
 			}
 			else
 			{
-				ret = xessD3D12BuildPipelines(_xessContext, _localPipeline, false, xessParams.initFlags);
+				ret = D3D12BuildPipelines()(_xessContext, _localPipeline, false, xessParams.initFlags);
 
 				if (ret != XESS_RESULT_SUCCESS)
 				{
 					spdlog::error("XeSSFeature::InitXeSS xessD3D12BuildPipelines error with _localPipeline: {0}", ResultToString(ret));
-					ret = xessD3D12BuildPipelines(_xessContext, NULL, false, xessParams.initFlags);
+					ret = D3D12BuildPipelines()(_xessContext, NULL, false, xessParams.initFlags);
 				}
 				else
 				{
@@ -302,11 +311,11 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 	if (Config::Instance()->NetworkModel.has_value() && Config::Instance()->NetworkModel.value() >= 0 && Config::Instance()->NetworkModel.value() <= 5)
 	{
-		ret = xessSelectNetworkModel(_xessContext, (xess_network_model_t)Config::Instance()->NetworkModel.value());
+		ret = SelectNetworkModel()(_xessContext, (xess_network_model_t)Config::Instance()->NetworkModel.value());
 		spdlog::error("XeSSFeature::InitXeSS xessSelectNetworkModel result: {0}", ResultToString(ret));
 	}
 
-	ret = xessD3D12Init(_xessContext, &xessParams);
+	ret = D3D12Init()(_xessContext, &xessParams);
 
 	if (ret != XESS_RESULT_SUCCESS)
 	{
@@ -322,11 +331,65 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	return true;
 }
 
+XeSSFeature::XeSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
+{
+	_xessD3D12CreateContext = (PFN_xessD3D12CreateContext)DetourFindFunction("libxess.dll", "xessD3D12CreateContext");
+	_xessD3D12BuildPipelines = (PFN_xessD3D12BuildPipelines)DetourFindFunction("libxess.dll", "xessD3D12BuildPipelines");
+	_xessD3D12Init = (PRN_xessD3D12Init)DetourFindFunction("libxess.dll", "xessD3D12Init");
+	_xessD3D12Execute = (PFN_xessD3D12Execute)DetourFindFunction("libxess.dll", "xessD3D12Execute");
+	_xessSelectNetworkModel = (PFN_xessSelectNetworkModel)DetourFindFunction("libxess.dll", "xessSelectNetworkModel");
+	_xessStartDump = (PFN_xessStartDump)DetourFindFunction("libxess.dll", "xessStartDump");
+	_xessGetVersion = (PRN_xessGetVersion)DetourFindFunction("libxess.dll", "xessGetVersion");
+	_xessIsOptimalDriver = (PFN_xessIsOptimalDriver)DetourFindFunction("libxess.dll", "xessIsOptimalDriver");
+	_xessSetLoggingCallback = (PFN_xessSetLoggingCallback)DetourFindFunction("libxess.dll", "xessSetLoggingCallback");
+	_xessGetProperties = (PFN_xessGetProperties)DetourFindFunction("libxess.dll", "xessGetProperties");
+	_xessDestroyContext = (PFN_xessDestroyContext)DetourFindFunction("libxess.dll", "xessDestroyContext");
+	_xessSetVelocityScale = (PFN_xessSetVelocityScale)DetourFindFunction("libxess.dll", "xessSetVelocityScale");
+
+	if (_xessD3D12CreateContext && _xessD3D12BuildPipelines && _xessD3D12Init && _xessD3D12Execute && _xessSelectNetworkModel && _xessStartDump &&
+		_xessGetVersion && _xessIsOptimalDriver && _xessSetLoggingCallback && _xessGetProperties && _xessDestroyContext && _xessSetVelocityScale)
+	{
+		_moduleLoaded = true;
+		return;
+	}
+
+	if (Config::Instance()->XeSSLibrary.has_value())
+	{
+		std::filesystem::path cfgPath(Config::Instance()->XeSSLibrary.value().c_str());
+		cfgPath = cfgPath / L"libxess.dll";
+		_libxess = LoadLibraryW(cfgPath.c_str());
+	}
+
+	if (_libxess == nullptr)
+	{
+		auto path = Util::DllPath().parent_path() / L"libxess.dll";
+		_libxess = LoadLibraryW(path.c_str());
+	}
+
+	if (_libxess)
+	{
+		_xessD3D12CreateContext = (PFN_xessD3D12CreateContext)GetProcAddress(_libxess,"xessD3D12CreateContext");
+		_xessD3D12BuildPipelines = (PFN_xessD3D12BuildPipelines)GetProcAddress(_libxess,"xessD3D12BuildPipelines");
+		_xessD3D12Init = (PRN_xessD3D12Init)GetProcAddress(_libxess,"xessD3D12Init");
+		_xessD3D12Execute = (PFN_xessD3D12Execute)GetProcAddress(_libxess,"xessD3D12Execute");
+		_xessSelectNetworkModel = (PFN_xessSelectNetworkModel)GetProcAddress(_libxess,"xessSelectNetworkModel");
+		_xessStartDump = (PFN_xessStartDump)GetProcAddress(_libxess,"xessStartDump");
+		_xessGetVersion = (PRN_xessGetVersion)GetProcAddress(_libxess,"xessGetVersion");
+		_xessIsOptimalDriver = (PFN_xessIsOptimalDriver)GetProcAddress(_libxess,"xessIsOptimalDriver");
+		_xessSetLoggingCallback = (PFN_xessSetLoggingCallback)GetProcAddress(_libxess,"xessSetLoggingCallback");
+		_xessGetProperties = (PFN_xessGetProperties)GetProcAddress(_libxess,"xessGetProperties");
+		_xessDestroyContext = (PFN_xessDestroyContext)GetProcAddress(_libxess,"xessDestroyContext");
+		_xessSetVelocityScale = (PFN_xessSetVelocityScale)GetProcAddress(_libxess, "xessSetVelocityScale");
+
+		_moduleLoaded = true;
+	}
+}
+
 XeSSFeature::~XeSSFeature()
 {
 	if (_xessContext)
 	{
-		xessDestroyContext(_xessContext);
+		DestroyContext()(_xessContext);
 		_xessContext = nullptr;
 	}
 
@@ -349,6 +412,11 @@ XeSSFeature::~XeSSFeature()
 	{
 		_localTextureHeap->Release();
 		_localTextureHeap = nullptr;
+	}
+
+	if (_moduleLoaded && _libxess != nullptr)
+	{
+		FreeLibrary(_libxess);
 	}
 }
 

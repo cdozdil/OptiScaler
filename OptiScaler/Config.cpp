@@ -24,6 +24,7 @@ bool Config::Reload()
 		BuildPipelines = readBool("XeSS", "BuildPipelines");
 		NetworkModel = readInt("XeSS", "NetworkModel");
 		CreateHeaps = readBool("XeSS", "CreateHeaps");
+		XeSSLibrary = readString("XeSS", "LibraryPath");
 
 		// logging
 		LoggingEnabled = readBool("Log", "LoggingEnabled");

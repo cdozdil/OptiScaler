@@ -42,6 +42,7 @@ public:
 	std::optional<bool> BuildPipelines;
 	std::optional<int32_t> NetworkModel;
 	std::optional<bool> CreateHeaps;
+	std::optional<std::string> XeSSLibrary;
 
 
 	// CAS

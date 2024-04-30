@@ -30,8 +30,11 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 {
 	spdlog::debug("XeSSFeatureDx12::Evaluate");
 
-	if (!IsInited() || !_xessContext)
+	if (!IsInited() || !_xessContext || !ModuleLoaded())
+	{
+		spdlog::error("XeSSFeatureDx12::Evaluate Not inited!");
 		return false;
+	}
 
 	if (Config::Instance()->xessDebug)
 	{
@@ -46,7 +49,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		if (!Config::Instance()->DisableReactiveMask.value_or(true))
 			dumpParams.dump_elements_mask |= XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
 
-		xessStartDump(_xessContext, &dumpParams);
+		StartDump()(_xessContext, &dumpParams);
 		Config::Instance()->xessDebug = false;
 		dumpCount += Config::Instance()->xessDebugFrames;
 	}
@@ -276,7 +279,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
 		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
 	{
-		xessResult = xessSetVelocityScale(_xessContext, MVScaleX, MVScaleY);
+		xessResult = SetVelocityScale()(_xessContext, MVScaleX, MVScaleY);
 
 		if (xessResult != XESS_RESULT_SUCCESS)
 		{
@@ -288,7 +291,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		spdlog::warn("XeSSFeatureDx12::Evaluate Can't get motion vector scales!");
 
 	spdlog::debug("XeSSFeatureDx12::Evaluate Executing!!");
-	xessResult = xessD3D12Execute(_xessContext, InCommandList, &params);
+	xessResult = D3D12Execute()(_xessContext, InCommandList, &params);
 
 	if (xessResult != XESS_RESULT_SUCCESS)
 	{
