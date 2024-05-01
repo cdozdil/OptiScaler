@@ -33,6 +33,7 @@ protected:
 	unsigned int _displayWidth = 0;
 	unsigned int _displayHeight = 0;
 	long _frameCount = 0;
+	bool _moduleLoaded = false;
 
 	void SetHandle(unsigned int InHandleId);
 	bool SetInitParameters(const NVSDK_NGX_Parameter* InParameters);
@@ -72,6 +73,7 @@ public:
 	int InitFlags() const { return _initFlags; }
 	virtual feature_version Version() = 0;
 	virtual const char* Name() = 0;
+	bool ModuleLoaded() const { return _moduleLoaded; }
 
 	IFeature(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters)
 	{

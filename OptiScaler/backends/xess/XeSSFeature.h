@@ -67,7 +67,6 @@ private:
 	PFN_xessSetVelocityScale _xessSetVelocityScale = nullptr;
 
 	HMODULE _libxess = nullptr;
-	bool _moduleLoaded = false;
 
 protected:
 	xess_context_handle_t _xessContext = nullptr;
@@ -78,9 +77,7 @@ protected:
 	float GetSharpness(const NVSDK_NGX_Parameter* InParameters);
 	bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, ID3D12Resource** OutDest, D3D12_RESOURCE_STATES InDestState);
 
-	bool ModuleLoaded() const { return _moduleLoaded; }
-
-	PFN_xessD3D12CreateContext D3D12CreateContext() const { return _xessD3D12CreateContext; }
+		PFN_xessD3D12CreateContext D3D12CreateContext() const { return _xessD3D12CreateContext; }
 	PFN_xessD3D12BuildPipelines D3D12BuildPipelines() const { return _xessD3D12BuildPipelines; }
 	PRN_xessD3D12Init D3D12Init() const { return _xessD3D12Init; }
 	PFN_xessD3D12Execute D3D12Execute() const { return _xessD3D12Execute; }

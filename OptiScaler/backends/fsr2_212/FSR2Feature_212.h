@@ -53,6 +53,7 @@ public:
 
 	FSR2Feature212(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters)
 	{
+		_moduleLoaded = true;
 		_lastFrameTime = MillisecondsNow();
 	}
 

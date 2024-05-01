@@ -333,24 +333,35 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 XeSSFeature::XeSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
 {
-	_xessD3D12CreateContext = (PFN_xessD3D12CreateContext)DetourFindFunction("libxess.dll", "xessD3D12CreateContext");
-	_xessD3D12BuildPipelines = (PFN_xessD3D12BuildPipelines)DetourFindFunction("libxess.dll", "xessD3D12BuildPipelines");
-	_xessD3D12Init = (PRN_xessD3D12Init)DetourFindFunction("libxess.dll", "xessD3D12Init");
-	_xessD3D12Execute = (PFN_xessD3D12Execute)DetourFindFunction("libxess.dll", "xessD3D12Execute");
-	_xessSelectNetworkModel = (PFN_xessSelectNetworkModel)DetourFindFunction("libxess.dll", "xessSelectNetworkModel");
-	_xessStartDump = (PFN_xessStartDump)DetourFindFunction("libxess.dll", "xessStartDump");
-	_xessGetVersion = (PRN_xessGetVersion)DetourFindFunction("libxess.dll", "xessGetVersion");
-	_xessIsOptimalDriver = (PFN_xessIsOptimalDriver)DetourFindFunction("libxess.dll", "xessIsOptimalDriver");
-	_xessSetLoggingCallback = (PFN_xessSetLoggingCallback)DetourFindFunction("libxess.dll", "xessSetLoggingCallback");
-	_xessGetProperties = (PFN_xessGetProperties)DetourFindFunction("libxess.dll", "xessGetProperties");
-	_xessDestroyContext = (PFN_xessDestroyContext)DetourFindFunction("libxess.dll", "xessDestroyContext");
-	_xessSetVelocityScale = (PFN_xessSetVelocityScale)DetourFindFunction("libxess.dll", "xessSetVelocityScale");
+	PRN_xessGetVersion ptrMemoryGetVersion = (PRN_xessGetVersion)DetourFindFunction("libxess.dll", "xessGetVersion");
+	PRN_xessGetVersion ptrDllGetVersion = nullptr;
 
-	if (_xessD3D12CreateContext && _xessD3D12BuildPipelines && _xessD3D12Init && _xessD3D12Execute && _xessSelectNetworkModel && _xessStartDump &&
-		_xessGetVersion && _xessIsOptimalDriver && _xessSetLoggingCallback && _xessGetProperties && _xessDestroyContext && _xessSetVelocityScale)
+	xess_version_t memoryVersion{ 0,0,0,0 };
+	xess_version_t dllVersion{ 0,0,0,0 };
+
+	// if there is libxess already loaded 
+	if (ptrMemoryGetVersion)
 	{
-		_moduleLoaded = true;
-		return;
+		// get it's version to compare with dll
+		ptrMemoryGetVersion(&memoryVersion);
+		
+		spdlog::info("XeSSFeature::XeSSFeature libxess.dll v{0}.{1}.{2} already loaded.", memoryVersion.major, memoryVersion.minor, memoryVersion.patch);
+
+		_xessD3D12CreateContext = (PFN_xessD3D12CreateContext)DetourFindFunction("libxess.dll", "xessD3D12CreateContext");
+		_xessD3D12BuildPipelines = (PFN_xessD3D12BuildPipelines)DetourFindFunction("libxess.dll", "xessD3D12BuildPipelines");
+		_xessD3D12Init = (PRN_xessD3D12Init)DetourFindFunction("libxess.dll", "xessD3D12Init");
+		_xessGetVersion = (PRN_xessGetVersion)DetourFindFunction("libxess.dll", "xessGetVersion");
+		_xessD3D12Execute = (PFN_xessD3D12Execute)DetourFindFunction("libxess.dll", "xessD3D12Execute");
+		_xessSelectNetworkModel = (PFN_xessSelectNetworkModel)DetourFindFunction("libxess.dll", "xessSelectNetworkModel");
+		_xessStartDump = (PFN_xessStartDump)DetourFindFunction("libxess.dll", "xessStartDump");
+		_xessIsOptimalDriver = (PFN_xessIsOptimalDriver)DetourFindFunction("libxess.dll", "xessIsOptimalDriver");
+		_xessSetLoggingCallback = (PFN_xessSetLoggingCallback)DetourFindFunction("libxess.dll", "xessSetLoggingCallback");
+		_xessGetProperties = (PFN_xessGetProperties)DetourFindFunction("libxess.dll", "xessGetProperties");
+		_xessDestroyContext = (PFN_xessDestroyContext)DetourFindFunction("libxess.dll", "xessDestroyContext");
+		_xessSetVelocityScale = (PFN_xessSetVelocityScale)DetourFindFunction("libxess.dll", "xessSetVelocityScale");
+
+		_moduleLoaded = _xessD3D12CreateContext && _xessD3D12BuildPipelines && _xessD3D12Init && _xessD3D12Execute && _xessSelectNetworkModel && _xessStartDump &&
+			_xessGetVersion && _xessIsOptimalDriver && _xessSetLoggingCallback && _xessGetProperties && _xessDestroyContext && _xessSetVelocityScale;
 	}
 
 	if (Config::Instance()->XeSSLibrary.has_value())
@@ -368,20 +379,43 @@ XeSSFeature::XeSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 
 	if (_libxess)
 	{
-		_xessD3D12CreateContext = (PFN_xessD3D12CreateContext)GetProcAddress(_libxess,"xessD3D12CreateContext");
-		_xessD3D12BuildPipelines = (PFN_xessD3D12BuildPipelines)GetProcAddress(_libxess,"xessD3D12BuildPipelines");
-		_xessD3D12Init = (PRN_xessD3D12Init)GetProcAddress(_libxess,"xessD3D12Init");
-		_xessD3D12Execute = (PFN_xessD3D12Execute)GetProcAddress(_libxess,"xessD3D12Execute");
-		_xessSelectNetworkModel = (PFN_xessSelectNetworkModel)GetProcAddress(_libxess,"xessSelectNetworkModel");
-		_xessStartDump = (PFN_xessStartDump)GetProcAddress(_libxess,"xessStartDump");
-		_xessGetVersion = (PRN_xessGetVersion)GetProcAddress(_libxess,"xessGetVersion");
-		_xessIsOptimalDriver = (PFN_xessIsOptimalDriver)GetProcAddress(_libxess,"xessIsOptimalDriver");
-		_xessSetLoggingCallback = (PFN_xessSetLoggingCallback)GetProcAddress(_libxess,"xessSetLoggingCallback");
-		_xessGetProperties = (PFN_xessGetProperties)GetProcAddress(_libxess,"xessGetProperties");
-		_xessDestroyContext = (PFN_xessDestroyContext)GetProcAddress(_libxess,"xessDestroyContext");
-		_xessSetVelocityScale = (PFN_xessSetVelocityScale)GetProcAddress(_libxess, "xessSetVelocityScale");
+		ptrDllGetVersion = (PRN_xessGetVersion)GetProcAddress(_libxess, "xessGetVersion");
 
-		_moduleLoaded = true;
+		// query dll version
+		if (ptrDllGetVersion)
+		{
+			ptrDllGetVersion(&dllVersion);
+			spdlog::info("XeSSFeature::XeSSFeature Loaded libxess.dll v{0}.{1}.{2} file.", dllVersion.major, dllVersion.minor, dllVersion.patch);
+		}
+
+		// check versions and ptr if they are same we are loaded same file prevent freelibrary call
+		if (dllVersion.major == memoryVersion.major && dllVersion.minor == memoryVersion.minor &&
+			dllVersion.patch == memoryVersion.patch && dllVersion.reserved == memoryVersion.reserved &&
+			ptrDllGetVersion == ptrMemoryGetVersion)
+		{
+			spdlog::info("XeSSFeature::XeSSFeature Both libxess.dll versions are same!");
+			_libxess = nullptr;
+		}
+		else
+		{
+			spdlog::info("XeSSFeature::XeSSFeature Using loaded libxess.dll library!");
+
+			// we would like to prioritize file pointed at ini, use methods from loaded dll
+			_xessD3D12CreateContext = (PFN_xessD3D12CreateContext)GetProcAddress(_libxess, "xessD3D12CreateContext");
+			_xessD3D12BuildPipelines = (PFN_xessD3D12BuildPipelines)GetProcAddress(_libxess, "xessD3D12BuildPipelines");
+			_xessD3D12Init = (PRN_xessD3D12Init)GetProcAddress(_libxess, "xessD3D12Init");
+			_xessD3D12Execute = (PFN_xessD3D12Execute)GetProcAddress(_libxess, "xessD3D12Execute");
+			_xessSelectNetworkModel = (PFN_xessSelectNetworkModel)GetProcAddress(_libxess, "xessSelectNetworkModel");
+			_xessStartDump = (PFN_xessStartDump)GetProcAddress(_libxess, "xessStartDump");
+			_xessGetVersion = (PRN_xessGetVersion)GetProcAddress(_libxess, "xessGetVersion");
+			_xessIsOptimalDriver = (PFN_xessIsOptimalDriver)GetProcAddress(_libxess, "xessIsOptimalDriver");
+			_xessSetLoggingCallback = (PFN_xessSetLoggingCallback)GetProcAddress(_libxess, "xessSetLoggingCallback");
+			_xessGetProperties = (PFN_xessGetProperties)GetProcAddress(_libxess, "xessGetProperties");
+			_xessDestroyContext = (PFN_xessDestroyContext)GetProcAddress(_libxess, "xessDestroyContext");
+			_xessSetVelocityScale = (PFN_xessSetVelocityScale)GetProcAddress(_libxess, "xessSetVelocityScale");
+
+			_moduleLoaded = true;
+		}
 	}
 }
 

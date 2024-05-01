@@ -379,8 +379,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 	if (upscalerChoice == 0)
 	{
 		Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, InParameters);
-		
-		if (!Dx12Contexts[handleId]->IsInited())
+
+		if (!Dx12Contexts[handleId]->ModuleLoaded())
 		{
 			spdlog::error("NVSDK_NGX_D3D12_CreateFeature can't create new XeSS feature, Fallback to FSR2.1!");
 

@@ -215,8 +215,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 	{
 		Dx11Contexts[handleId] = std::make_unique<XeSSFeatureDx11>(handleId, InParameters);
 
-
-		if (!Dx11Contexts[handleId]->IsInited())
+		
+		if (!Dx11Contexts[handleId]->ModuleLoaded())
 		{
 			spdlog::error("NVSDK_NGX_D3D11_CreateFeature can't create new XeSS with Dx12 feature, Fallback to FSR2.2!");
 
