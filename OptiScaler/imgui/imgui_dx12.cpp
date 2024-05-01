@@ -171,17 +171,7 @@ Imgui_Dx12::~Imgui_Dx12()
 
 	d3d12Fence->Release();
 
-	ImGui::SetCurrentContext(context);
-
-	std::this_thread::sleep_for(std::chrono::milliseconds(250));
-
 	ImGui_ImplDX12_Shutdown();
-
-	if (auto currCtx = ImGui::GetCurrentContext(); currCtx != nullptr && context != currCtx)
-		ImGui::SetCurrentContext(currCtx);
-
-	// hackzor
-	std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
 	if (_rtvDescHeap)
 	{
