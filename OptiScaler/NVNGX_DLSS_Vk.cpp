@@ -28,6 +28,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 	spdlog::debug("NVSDK_NGX_VULKAN_Init InApplicationDataPath {0}", str);
 	spdlog::info("NVSDK_NGX_VULKAN_Init InSDKVersion: {0:x}", (int)InSDKVersion);
 
+	Config::Instance()->NVNGX_ApplicationId = InApplicationId;
+	Config::Instance()->NVNGX_ApplicationDataPath = InApplicationDataPath;
+	Config::Instance()->NVNGX_Version = InSDKVersion;
+	Config::Instance()->NVNGX_FeatureInfo = InFeatureInfo;
+
 	if (InInstance)
 	{
 		spdlog::info("NVSDK_NGX_VULKAN_Init InInstance exist!");
@@ -59,7 +64,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 	}
 
 	if (InFeatureInfo)
-		Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
+		Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
 
 	Config::Instance()->Api = NVNGX_VULKAN;
 
@@ -74,6 +79,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID(const char* InPro
 	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InEngineType: {0}", (int)InEngineType);
 
 	Config::Instance()->NVNGX_Engine = InEngineType;
+	Config::Instance()->NVNGX_EngineVersion = InEngineVersion;
 
 	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 	{
@@ -92,6 +98,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_with_ProjectID(const char* 
 	spdlog::debug("NVSDK_NGX_VULKAN_Init_with_ProjectID InEngineType {0}", (int)InEngineType);
 
 	Config::Instance()->NVNGX_Engine = InEngineType;
+	Config::Instance()->NVNGX_EngineVersion = InEngineVersion;
 
 	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 	{

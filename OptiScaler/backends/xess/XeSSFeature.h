@@ -30,18 +30,18 @@ inline static std::string ResultToString(xess_result_t result)
 	}
 }
 
-typedef xess_result_t(XESS_API* PFN_xessD3D12CreateContext)(ID3D12Device* pDevice, xess_context_handle_t* phContext);
-typedef xess_result_t(XESS_API* PFN_xessD3D12BuildPipelines)(xess_context_handle_t hContext, ID3D12PipelineLibrary* pPipelineLibrary, bool blocking, uint32_t initFlags);
-typedef xess_result_t(XESS_API* PRN_xessD3D12Init)(xess_context_handle_t hContext, const xess_d3d12_init_params_t* pInitParams);
-typedef xess_result_t(XESS_API* PFN_xessD3D12Execute)(xess_context_handle_t hContext, ID3D12GraphicsCommandList* pCommandList, const xess_d3d12_execute_params_t* pExecParams);
-typedef xess_result_t(XESS_API* PFN_xessSelectNetworkModel)(xess_context_handle_t hContext, xess_network_model_t network);
-typedef xess_result_t(XESS_API* PFN_xessStartDump)(xess_context_handle_t hContext, const xess_dump_parameters_t* dump_parameters);
-typedef xess_result_t(XESS_API* PRN_xessGetVersion)(xess_version_t* pVersion);
-typedef xess_result_t(XESS_API* PFN_xessIsOptimalDriver)(xess_context_handle_t hContext);
-typedef xess_result_t(XESS_API* PFN_xessSetLoggingCallback)(xess_context_handle_t hContext, xess_logging_level_t loggingLevel, xess_app_log_callback_t loggingCallback);
-typedef xess_result_t(XESS_API* PFN_xessGetProperties)(xess_context_handle_t hContext, const xess_2d_t* pOutputResolution, xess_properties_t* pBindingProperties);
-typedef xess_result_t(XESS_API* PFN_xessDestroyContext)(xess_context_handle_t hContext);
-typedef xess_result_t(XESS_API* PFN_xessSetVelocityScale)(xess_context_handle_t hContext, float x, float y);
+typedef xess_result_t(*PFN_xessD3D12CreateContext)(ID3D12Device* pDevice, xess_context_handle_t* phContext);
+typedef xess_result_t(*PFN_xessD3D12BuildPipelines)(xess_context_handle_t hContext, ID3D12PipelineLibrary* pPipelineLibrary, bool blocking, uint32_t initFlags);
+typedef xess_result_t(*PRN_xessD3D12Init)(xess_context_handle_t hContext, const xess_d3d12_init_params_t* pInitParams);
+typedef xess_result_t(*PFN_xessD3D12Execute)(xess_context_handle_t hContext, ID3D12GraphicsCommandList* pCommandList, const xess_d3d12_execute_params_t* pExecParams);
+typedef xess_result_t(*PFN_xessSelectNetworkModel)(xess_context_handle_t hContext, xess_network_model_t network);
+typedef xess_result_t(*PFN_xessStartDump)(xess_context_handle_t hContext, const xess_dump_parameters_t* dump_parameters);
+typedef xess_result_t(*PRN_xessGetVersion)(xess_version_t* pVersion);
+typedef xess_result_t(*PFN_xessIsOptimalDriver)(xess_context_handle_t hContext);
+typedef xess_result_t(*PFN_xessSetLoggingCallback)(xess_context_handle_t hContext, xess_logging_level_t loggingLevel, xess_app_log_callback_t loggingCallback);
+typedef xess_result_t(*PFN_xessGetProperties)(xess_context_handle_t hContext, const xess_2d_t* pOutputResolution, xess_properties_t* pBindingProperties);
+typedef xess_result_t(*PFN_xessDestroyContext)(xess_context_handle_t hContext);
+typedef xess_result_t(*PFN_xessSetVelocityScale)(xess_context_handle_t hContext, float x, float y);
 
 class XeSSFeature : public virtual IFeature
 {
@@ -66,7 +66,6 @@ private:
 	PFN_xessDestroyContext _xessDestroyContext = nullptr;
 	PFN_xessSetVelocityScale _xessSetVelocityScale = nullptr;
 
-
 	HMODULE _libxess = nullptr;
 	bool _moduleLoaded = false;
 
@@ -79,20 +78,20 @@ protected:
 	float GetSharpness(const NVSDK_NGX_Parameter* InParameters);
 	bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, ID3D12Resource** OutDest, D3D12_RESOURCE_STATES InDestState);
 
-	bool ModuleLoaded() { return _moduleLoaded; }
+	bool ModuleLoaded() const { return _moduleLoaded; }
 
-	PFN_xessD3D12CreateContext D3D12CreateContext() { return _xessD3D12CreateContext; }
-	PFN_xessD3D12BuildPipelines D3D12BuildPipelines() { return _xessD3D12BuildPipelines; }
-	PRN_xessD3D12Init D3D12Init() { return _xessD3D12Init; }
-	PFN_xessD3D12Execute D3D12Execute() { return _xessD3D12Execute; }
-	PFN_xessSelectNetworkModel SelectNetworkModel() { return _xessSelectNetworkModel; }
-	PFN_xessStartDump StartDump() { return _xessStartDump; }
-	PRN_xessGetVersion GetVersion() { return _xessGetVersion; }
-	PFN_xessIsOptimalDriver IsOptimalDriver() { return _xessIsOptimalDriver; }
-	PFN_xessSetLoggingCallback SetLoggingCallback() { return _xessSetLoggingCallback; }
-	PFN_xessGetProperties GetProperties() { return _xessGetProperties; }
-	PFN_xessDestroyContext DestroyContext() { return _xessDestroyContext; }
-	PFN_xessSetVelocityScale SetVelocityScale() { return _xessSetVelocityScale; }
+	PFN_xessD3D12CreateContext D3D12CreateContext() const { return _xessD3D12CreateContext; }
+	PFN_xessD3D12BuildPipelines D3D12BuildPipelines() const { return _xessD3D12BuildPipelines; }
+	PRN_xessD3D12Init D3D12Init() const { return _xessD3D12Init; }
+	PFN_xessD3D12Execute D3D12Execute() const { return _xessD3D12Execute; }
+	PFN_xessSelectNetworkModel SelectNetworkModel() const { return _xessSelectNetworkModel; }
+	PFN_xessStartDump StartDump() const { return _xessStartDump; }
+	PRN_xessGetVersion GetVersion() const { return _xessGetVersion; }
+	PFN_xessIsOptimalDriver IsOptimalDriver() const { return _xessIsOptimalDriver; }
+	PFN_xessSetLoggingCallback SetLoggingCallback() const { return _xessSetLoggingCallback; }
+	PFN_xessGetProperties GetProperties() const { return _xessGetProperties; }
+	PFN_xessDestroyContext DestroyContext() const { return _xessDestroyContext; }
+	PFN_xessSetVelocityScale SetVelocityScale() const { return _xessSetVelocityScale; }
 
 public:
 	feature_version Version() final { return feature_version{ _xessVersion.major, _xessVersion.minor, _xessVersion.patch }; }

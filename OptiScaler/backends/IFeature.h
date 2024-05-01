@@ -7,17 +7,16 @@ inline static unsigned int handleCounter = 1000000;
 class IFeature
 {
 private:
-	NVSDK_NGX_Handle* _handle;
-
 	bool _initParameters = false;
 	bool _isInited = false;
 	int _featureFlags = 0;
 
 	NVSDK_NGX_PerfQuality_Value _perfQualityValue;
 
-	void SetHandle(unsigned int InHandleId);
 
 protected:
+	NVSDK_NGX_Handle* _handle;
+
 	float _sharpness = 0;
 	bool _hasColor = false;
 	bool _hasDepth = false;
@@ -35,8 +34,10 @@ protected:
 	unsigned int _displayHeight = 0;
 	long _frameCount = 0;
 
+	void SetHandle(unsigned int InHandleId);
 	bool SetInitParameters(const NVSDK_NGX_Parameter* InParameters);
 	void GetRenderResolution(const NVSDK_NGX_Parameter* InParameters, unsigned int* OutWidth, unsigned int* OutHeight);
+
 	virtual void SetInit(bool InValue) { _isInited = InValue; }
 
 public:

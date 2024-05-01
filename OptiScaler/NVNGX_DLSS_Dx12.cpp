@@ -3,7 +3,6 @@
 
 #include <ankerl/unordered_dense.h>
 #include <dxgi1_4.h>
-#include "imgui/imgui/imgui_impl_dx12.h"
 #include "detours/detours.h"
 
 #include "Config.h"
@@ -161,9 +160,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 	std::string str(appDataPath.begin(), appDataPath.end());
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext InApplicationDataPath {0}", str);
 
+	Config::Instance()->NVNGX_ApplicationId = InApplicationId;
+	Config::Instance()->NVNGX_ApplicationDataPath = InApplicationDataPath;
+	Config::Instance()->NVNGX_Version = InSDKVersion;
+	Config::Instance()->NVNGX_FeatureInfo = InFeatureInfo;
+
 	if (InFeatureInfo != nullptr)
 	{
-		Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
+		Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
 
 		for (size_t i = 0; i < InFeatureInfo->PathListInfo.Length; i++)
 		{
@@ -207,6 +211,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProj
 	spdlog::info("NVSDK_NGX_D3D12_Init_ProjectID InEngineType: {0}", (int)InEngineType);
 
 	Config::Instance()->NVNGX_Engine = InEngineType;
+	Config::Instance()->NVNGX_EngineVersion = InEngineVersion;
 
 	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 	{
@@ -224,6 +229,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* I
 	spdlog::info("NVSDK_NGX_D3D12_Init_with_ProjectID InEngineType: {0}", (int)InEngineType);
 
 	Config::Instance()->NVNGX_Engine = InEngineType;
+	Config::Instance()->NVNGX_EngineVersion = InEngineVersion;
 
 	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 	{
@@ -368,8 +374,27 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 			upscalerChoice = 1;
 		else if (Config::Instance()->Dx12Upscaler.value_or("xess") == "fsr21")
 			upscalerChoice = 2;
+	}
+
+	if (upscalerChoice == 0)
+	{
+		Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, InParameters);
+		
+		if (!Dx12Contexts[handleId]->IsInited())
+		{
+			spdlog::error("NVSDK_NGX_D3D12_CreateFeature can't create new XeSS feature, Fallback to FSR2.1!");
+
+			Dx12Contexts[handleId].reset();
+			auto it = std::find_if(Dx12Contexts.begin(), Dx12Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+			Dx12Contexts.erase(it);
+
+			upscalerChoice = 2;
+		}
 		else
+		{
 			Config::Instance()->Dx12Upscaler = "xess";
+			spdlog::info("NVSDK_NGX_D3D12_CreateFeature creating new XeSS feature");
+		}
 	}
 
 	if (upscalerChoice == 1)
@@ -383,13 +408,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 		Config::Instance()->Dx12Upscaler = "fsr21";
 		spdlog::info("NVSDK_NGX_D3D12_CreateFeature creating new FSR 2.1.2 feature");
 		Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12_212>(handleId, InParameters);
-	}
-	else
-	{
-		Config::Instance()->Dx12Upscaler = "xess";
-		spdlog::info("NVSDK_NGX_D3D12_CreateFeature creating new XeSS feature");
-
-		Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, InParameters);
 	}
 
 	// nvsdk logging - ini first

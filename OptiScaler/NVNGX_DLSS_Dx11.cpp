@@ -26,11 +26,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
 	std::string str(string.begin(), string.end());
 	spdlog::debug("NVSDK_NGX_D3D11_Init_Ext InApplicationDataPath {0}", str);
 
+	Config::Instance()->NVNGX_ApplicationId = InApplicationId;
+	Config::Instance()->NVNGX_ApplicationDataPath = InApplicationDataPath;
+	Config::Instance()->NVNGX_Version = InSDKVersion;
+	Config::Instance()->NVNGX_FeatureInfo = InFeatureInfo;
+
 	if (InDevice)
 		D3D11Device = InDevice;
 
 	if (InFeatureInfo)
-		Config::Instance()->NVSDK_Logger = InFeatureInfo->LoggingInfo;
+		Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
 
 	Config::Instance()->Api = NVNGX_DX11;
 
@@ -51,6 +56,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_ProjectID(const char* InProj
 	spdlog::debug("NVSDK_NGX_D3D11_Init_ProjectID InEngineType: {0}", (int)InEngineType);
 
 	Config::Instance()->NVNGX_Engine = InEngineType;
+	Config::Instance()->NVNGX_EngineVersion = InEngineVersion;
 
 	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 	{
@@ -68,6 +74,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_with_ProjectID(const char* I
 	spdlog::debug("NVSDK_NGX_D3D11_Init_with_ProjectID InEngineType: {0}", (int)InEngineType);
 
 	Config::Instance()->NVNGX_Engine = InEngineType;
+	Config::Instance()->NVNGX_EngineVersion = InEngineVersion;
 
 	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 	{
@@ -206,10 +213,26 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 
 	if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "xess")
 	{
-		spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new XeSS with Dx12 feature");
 		Dx11Contexts[handleId] = std::make_unique<XeSSFeatureDx11>(handleId, InParameters);
+
+
+		if (!Dx11Contexts[handleId]->IsInited())
+		{
+			spdlog::error("NVSDK_NGX_D3D11_CreateFeature can't create new XeSS with Dx12 feature, Fallback to FSR2.2!");
+
+			Dx11Contexts[handleId].reset();
+			auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+			Dx11Contexts.erase(it);
+
+			Config::Instance()->Dx11Upscaler = "fsr22";
+		}
+		else
+		{
+			spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new XeSS with Dx12 feature");
+		}
 	}
-	else if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "fsr22_12")
+
+	if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "fsr22_12")
 	{
 		spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new FSR 2.2.1 with Dx12 feature");
 		Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12>(handleId, InParameters);
