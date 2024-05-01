@@ -160,23 +160,35 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		io.WantCaptureKeyboard = _isVisible;
 		io.WantCaptureMouse = _isVisible;
 
+		spdlog::trace("WndProc HOME pressed, {0}", _isVisible ? "opening ImGui" : "closing ImGui");
+
 		return TRUE;
 	}
 
+	// Debug dump
 	if (msg == WM_KEYDOWN && wParam == VK_DELETE && (GetKeyState(VK_SHIFT) & 0x8000))
 	{
 		Config::Instance()->xessDebug = true;
 		return TRUE;
 	}
 
-	// Imgui
+	// ImGui
 	if (_isVisible)
 	{
 		if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
+		{
+			spdlog::trace("WndProc ImGui handled, hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (unsigned long)hWnd, msg, (unsigned long)wParam, (unsigned long)lParam);
 			return TRUE;
+		}
 
 		switch (msg)
 		{
+		case WM_KEYUP:
+			if (wParam != VK_HOME)
+				return TRUE;
+
+			break;
+
 		case WM_LBUTTONDOWN:
 		case WM_LBUTTONUP:
 		case WM_RBUTTONDOWN:
@@ -184,7 +196,6 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_MBUTTONDOWN:
 		case WM_MBUTTONUP:
 		case WM_KEYDOWN:
-		case WM_KEYUP:
 		case WM_SYSKEYDOWN:
 		case WM_SYSKEYUP:
 		case WM_MOUSEMOVE:
@@ -197,14 +208,12 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_XBUTTONDBLCLK:
 		case WM_MOUSELAST:
 		case WM_INPUT:
+			spdlog::trace("WndProc switch handled, hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (unsigned long)hWnd, msg, (unsigned long)wParam, (unsigned long)lParam);
 			return TRUE;
 
 		default:
 			break;
 		}
-
-		auto log = std::format("WNDPROC MSG : {}", msg);
-		OutputDebugStringA(log.c_str());
 	}
 
 	return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
