@@ -215,7 +215,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 	{
 		Dx11Contexts[handleId] = std::make_unique<XeSSFeatureDx11>(handleId, InParameters);
 
-		
+
 		if (!Dx11Contexts[handleId]->ModuleLoaded())
 		{
 			spdlog::error("NVSDK_NGX_D3D11_CreateFeature can't create new XeSS with Dx12 feature, Fallback to FSR2.2!");
@@ -286,6 +286,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* 
 		spdlog::trace("NVSDK_NGX_D3D11_ReleaseFeature sleeping for 250ms before reset()!");
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
+		if (Config::Instance()->ActiveFeatureCount == 1)
+			Dx11Contexts[handleId]->Shutdown();
+
 		Dx11Contexts[handleId].reset();
 		auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 		Dx11Contexts.erase(it);
@@ -301,7 +304,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetFeatureRequirements(IDXGIAdapt
 	spdlog::debug("NVSDK_NGX_D3D11_GetFeatureRequirements");
 
 	*OutSupported = NVSDK_NGX_FeatureRequirement();
-	OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
+	OutSupported->FeatureSupported = (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling) ?
+									 NVSDK_NGX_FeatureSupportResult_Supported : NVSDK_NGX_FeatureSupportResult_AdapterUnsupported;
 	OutSupported->MinHWArchitecture = 0;
 
 	//Some windows 10 os version

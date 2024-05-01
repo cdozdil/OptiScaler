@@ -184,7 +184,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 
 				break;
 			}
-		}		
+		}
 	}
 
 	D3D12Device = InDevice;
@@ -352,7 +352,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 	if (InFeatureID != NVSDK_NGX_Feature_SuperSampling)
 	{
 		spdlog::error("NVSDK_NGX_D3D12_CreateFeature Can't create this feature ({0})!", (int)InFeatureID);
-		return NVSDK_NGX_Result_Fail;
+		return NVSDK_NGX_Result_FAIL_FeatureNotSupported;
 	}
 
 	// Create feature
@@ -367,7 +367,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
 	// ini first
 
-	if (InParameters->Get("DLSSEnabler.Dx12Backend", &upscalerChoice) != NVSDK_NGX_Result_Success && 
+	if (InParameters->Get("DLSSEnabler.Dx12Backend", &upscalerChoice) != NVSDK_NGX_Result_Success &&
 		Config::Instance()->Dx12Upscaler.has_value())
 	{
 		if (Config::Instance()->Dx12Upscaler.value_or("xess") == "fsr22")
@@ -461,6 +461,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 
 	if (auto deviceContext = Dx12Contexts[handleId].get(); deviceContext)
 	{
+		if (Config::Instance()->ActiveFeatureCount == 1)
+			Dx12Contexts[handleId]->Shutdown();
+
 		Dx12Contexts[handleId].reset();
 		auto it = std::find_if(Dx12Contexts.begin(), Dx12Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 		Dx12Contexts.erase(it);
@@ -479,7 +482,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetFeatureRequirements(IDXGIAdapt
 	spdlog::debug("NVSDK_NGX_D3D12_GetFeatureRequirements!");
 
 	*OutSupported = NVSDK_NGX_FeatureRequirement();
-	OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
+	OutSupported->FeatureSupported = (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling) ? 
+								     NVSDK_NGX_FeatureSupportResult_Supported : NVSDK_NGX_FeatureSupportResult_AdapterUnsupported;
 	OutSupported->MinHWArchitecture = 0;
 
 	//Some old windows 10 os version
