@@ -99,11 +99,18 @@ public:
 	std::optional<bool> Dx11DelayedInit;
 	std::optional<bool> SyncAfterDx12;
 
-	// nvngx info
+	// nvngx init parameters
+	unsigned long long NVNGX_ApplicationId = 1337;
+	const wchar_t* NVNGX_ApplicationDataPath = nullptr;
+	const char* NVNGX_ProjectId = nullptr;
+	NVSDK_NGX_Version NVNGX_Version{};
+	const NVSDK_NGX_FeatureCommonInfo* NVNGX_FeatureInfo = nullptr;
+	NVSDK_NGX_LoggingInfo NVNGX_Logger{ nullptr, NVSDK_NGX_LOGGING_LEVEL_OFF, false };
 	NVSDK_NGX_EngineType NVNGX_Engine = NVSDK_NGX_ENGINE_TYPE_CUSTOM;
+	const char* NVNGX_EngineVersion = nullptr;
 	bool NVNGX_EngineVersion5 = false;
 	NVNGX_Api Api = NVNGX_NOT_SELECTED;
-	NVSDK_NGX_LoggingInfo NVSDK_Logger{ nullptr, NVSDK_NGX_LOGGING_LEVEL_OFF, false };
+
 	IFeature* CurrentFeature = nullptr;
 	int ActiveFeatureCount = 0;
 
