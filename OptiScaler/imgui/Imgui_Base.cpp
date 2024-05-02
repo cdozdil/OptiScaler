@@ -1,5 +1,6 @@
 #include "../Config.h"
 #include "../Logger.h"
+#include "../Resource.h"
 
 #include "Imgui_Base.h"
 #include "imgui/imgui_impl_win32.h"
@@ -423,7 +424,7 @@ void Imgui_Base::RenderMenu()
 		ImGui::SetNextWindowPos(ImVec2{ posX, posY }, ImGuiCond_FirstUseEver);
 
 
-		if (ImGui::Begin("OptiScaler v0.4.3", nullptr, flags))
+		if (ImGui::Begin(std::format("OptiScaler v{}.{}.{}", VER_MAJOR_VERSION, VER_MINOR_VERSION, VER_HOTFIX_VERSION).c_str(), nullptr, flags))
 		{
 			ImGui::SetWindowFontScale(imguiRatio);
 
