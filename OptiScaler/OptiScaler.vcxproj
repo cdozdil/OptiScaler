@@ -82,7 +82,7 @@
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)cas\lib;$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
     <TargetName>nvngx</TargetName>
-    <OutDir>D:\Folders\Games\Deep Rock Galactic\FSD\Binaries\Win64\</OutDir>
+    <OutDir>C:\DLSS\No Man%27s Sky\Binaries\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -142,7 +142,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>dxgi.lib;d3d11.lib;d3d12.lib;vulkan-1.lib;dxguid.lib;libxess.lib;ffx_fsr2_api_x64d.lib;ffx_fsr2_api_dx11_x64d.lib;ffx_fsr2_api_dx12_x64d.lib;ffx_fsr2_api_vk_x64d.lib;ffx_cas_backend_dx12_x64d.lib;ffx_cas_x64d.lib;ffx_fsr2_212_api_dx12_x64d.lib;ffx_fsr2_212_api_vk_x64d.lib;ffx_fsr2_212_api_x64d.lib;d3dcompiler.lib;d3dx11.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dxgi.lib;d3d11.lib;d3d12.lib;vulkan-1.lib;dxguid.lib;ffx_fsr2_api_x64d.lib;ffx_fsr2_api_dx11_x64d.lib;ffx_fsr2_api_dx12_x64d.lib;ffx_fsr2_api_vk_x64d.lib;ffx_cas_backend_dx12_x64d.lib;ffx_cas_x64d.lib;ffx_fsr2_212_api_dx12_x64d.lib;ffx_fsr2_212_api_vk_x64d.lib;ffx_fsr2_212_api_x64d.lib;d3dcompiler.lib;d3dx11.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -164,7 +164,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>dxgi.lib;d3d11.lib;d3d12.lib;vulkan-1.lib;dxguid.lib;libxess.lib;ffx_fsr2_api_x64.lib;ffx_fsr2_api_dx11_x64.lib;ffx_fsr2_api_dx12_x64.lib;ffx_fsr2_api_vk_x64.lib;ffx_cas_backend_dx12_x64.lib;ffx_cas_x64.lib;ffx_fsr2_212_api_dx12_x64.lib;ffx_fsr2_212_api_vk_x64.lib;ffx_fsr2_212_api_x64.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dxgi.lib;d3d11.lib;d3d12.lib;vulkan-1.lib;dxguid.lib;ffx_fsr2_api_x64.lib;ffx_fsr2_api_dx11_x64.lib;ffx_fsr2_api_dx12_x64.lib;ffx_fsr2_api_vk_x64.lib;ffx_cas_backend_dx12_x64.lib;ffx_cas_x64.lib;ffx_fsr2_212_api_dx12_x64.lib;ffx_fsr2_212_api_vk_x64.lib;ffx_fsr2_212_api_x64.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
@@ -178,6 +178,11 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="backends\dlss\DLSSFeature.h" />
+    <ClInclude Include="backends\dlss\DLSSFeature_Dx11.h" />
+    <ClInclude Include="backends\dlss\DLSSFeature_Dx12.h" />
+    <ClInclude Include="backends\dlss\DLSSFeature_Vk.h" />
+    <ClInclude Include="backends\dlss\nvapi.h" />
     <ClInclude Include="cas\CAS_Dx12.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_212.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx11On12_212.h" />
@@ -217,6 +222,10 @@
     <ClInclude Include="backends\xess\XeSSFeature_Dx11.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="backends\dlss\DLSSFeature.cpp" />
+    <ClCompile Include="backends\dlss\DLSSFeature_Dx11.cpp" />
+    <ClCompile Include="backends\dlss\DLSSFeature_Dx12.cpp" />
+    <ClCompile Include="backends\dlss\DLSSFeature_Vk.cpp" />
     <ClCompile Include="cas\CAS_Dx12.cpp" />
     <ClCompile Include="backends\fsr2_212\FSR2Feature_212.cpp" />
     <ClCompile Include="backends\fsr2_212\FSR2Feature_Dx11On12_212.cpp" />
