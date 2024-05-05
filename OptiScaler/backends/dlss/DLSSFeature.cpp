@@ -8,35 +8,23 @@
 #include "../../Util.h"
 #include "../../pch.h"
 
+#pragma region spoofing hooks for 16xx
+
+// NvAPI_GPU_GetArchInfo hooking based on Nukem's spoofing code here
+// https://github.com/Nukem9/dlssg-to-fsr3/blob/89ddc8c1cce4593fb420e633a06605c3c4b9c3cf/source/wrapper_generic/nvapi.cpp#L50
+
 enum class NV_INTERFACE : uint32_t
 {
 	GPU_GetArchInfo = 0xD8265D24,
 	D3D12_SetRawScgPriority = 0x5DB3048A,
 };
 
-struct NV_SCG_PRIORITY_INFO
-{
-	void* CommandList; // 0
-	uint32_t Unknown2; // 8
-	uint32_t Unknown3; // C
-	uint8_t Unknown4;  // 10
-	uint8_t Unknown5;  // 11
-	uint8_t Unknown6;  // 12
-	uint8_t Unknown7;  // 13
-	uint32_t Unknown8; // 14
-};
-
 typedef void* (__stdcall* PFN_NvApi_QueryInterface)(NV_INTERFACE InterfaceId);
-typedef NVSDK_NGX_Result(*PFN_NVSDK_NGX_GetFeatureRequirements)(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported);
 
-using PfnNvAPI_QueryInterface = void* (__stdcall*)(NV_INTERFACE InterfaceId);
 using PfnNvAPI_GPU_GetArchInfo = uint32_t(__stdcall*)(void* GPUHandle, NV_GPU_ARCH_INFO* ArchInfo);
 
 PFN_NvApi_QueryInterface OriginalNvAPI_QueryInterface = nullptr;
 PfnNvAPI_GPU_GetArchInfo OriginalNvAPI_GPU_GetArchInfo = nullptr;
-
-PFN_NVSDK_NGX_GetFeatureRequirements Original_Dx11_GetFeatureRequirements = nullptr;
-PFN_NVSDK_NGX_GetFeatureRequirements Original_Dx12_GetFeatureRequirements = nullptr;
 
 uint32_t __stdcall HookedNvAPI_GPU_GetArchInfo(void* GPUHandle, NV_GPU_ARCH_INFO* ArchInfo)
 {
@@ -64,19 +52,6 @@ uint32_t __stdcall HookedNvAPI_GPU_GetArchInfo(void* GPUHandle, NV_GPU_ARCH_INFO
 	return 0xFFFFFFFF;
 }
 
-uint32_t __stdcall HookedNvAPI_D3D12_SetRawScgPriority(NV_SCG_PRIORITY_INFO* PriorityInfo)
-{
-	// SCG or "Simultaneous Compute and Graphics" is their fancy term for async compute. This is a completely
-	// undocumented driver hack used in early versions of sl.dlss_g.dll. Not a single hit on Google.
-	//
-	// nvngx_dlssg.dll feature evaluation somehow prevents crashes. Architecture-specific call? Literally no
-	// clue.
-	//
-	// This function must be stubbed. Otherwise expect undebuggable device removals.
-	spdlog::debug("DLSSFeature HookedNvAPI_D3D12_SetRawScgPriority!");
-	return 0;
-}
-
 void* __stdcall HookedNvAPI_QueryInterface(NV_INTERFACE InterfaceId)
 {
 	const auto result = OriginalNvAPI_QueryInterface(InterfaceId);
@@ -88,43 +63,6 @@ void* __stdcall HookedNvAPI_QueryInterface(NV_INTERFACE InterfaceId)
 			OriginalNvAPI_GPU_GetArchInfo = static_cast<PfnNvAPI_GPU_GetArchInfo>(result);
 			return &HookedNvAPI_GPU_GetArchInfo;
 		}
-
-		if (InterfaceId == NV_INTERFACE::D3D12_SetRawScgPriority)
-			return &HookedNvAPI_D3D12_SetRawScgPriority;
-	}
-
-	return result;
-}
-
-NVSDK_NGX_Result __stdcall Hooked_Dx12_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
-{
-	spdlog::debug("Hooked_Dx12_GetFeatureRequirements!");
-
-	auto result = Original_Dx12_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
-
-	if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
-	{
-		spdlog::info("Hooked_Dx12_GetFeatureRequirements Spoofing support!");
-		OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
-		OutSupported->MinHWArchitecture = 0;
-		strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
-	}
-
-	return result;
-}
-
-NVSDK_NGX_Result __stdcall Hooked_Dx11_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
-{
-	spdlog::debug("Hooked_Dx11_GetFeatureRequirements!");
-
-	auto result = Original_Dx11_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
-
-	if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
-	{
-		spdlog::info("Hooked_Dx11_GetFeatureRequirements Spoofing support!");
-		OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
-		OutSupported->MinHWArchitecture = 0;
-		strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
 	}
 
 	return result;
@@ -150,37 +88,9 @@ void HookNvApi()
 	}
 }
 
-void HookNgxApi(HMODULE nvngx)
+void UnhookNvApi()
 {
-	if (Original_Dx11_GetFeatureRequirements != nullptr || Original_Dx12_GetFeatureRequirements != nullptr)
-		return;
-
-	spdlog::debug("DLSSFeature Trying to hook NgxApi");
-
-	Original_Dx11_GetFeatureRequirements = (PFN_NVSDK_NGX_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_D3D11_GetFeatureRequirements");
-	Original_Dx12_GetFeatureRequirements = (PFN_NVSDK_NGX_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_D3D12_GetFeatureRequirements");
-
-	if (Original_Dx11_GetFeatureRequirements != nullptr || Original_Dx12_GetFeatureRequirements != nullptr)
-	{
-		spdlog::info("DLSSFeature NVSDK_NGX_D3D1X_GetFeatureRequirements found, hooking!");
-
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
-
-		if (Original_Dx11_GetFeatureRequirements != nullptr)
-			DetourAttach(&(PVOID&)Original_Dx11_GetFeatureRequirements, Hooked_Dx11_GetFeatureRequirements);
-
-		if (Original_Dx12_GetFeatureRequirements != nullptr)
-			DetourAttach(&(PVOID&)Original_Dx12_GetFeatureRequirements, Hooked_Dx12_GetFeatureRequirements);
-
-		DetourTransactionCommit();
-	}
-}
-
-void UnhookApis()
-{
-	if (OriginalNvAPI_QueryInterface != nullptr ||
-		Original_Dx11_GetFeatureRequirements != nullptr || Original_Dx12_GetFeatureRequirements != nullptr)
+	if (OriginalNvAPI_QueryInterface != nullptr)
 	{
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
@@ -188,15 +98,11 @@ void UnhookApis()
 		if (OriginalNvAPI_QueryInterface != nullptr)
 			DetourDetach(&(PVOID&)OriginalNvAPI_QueryInterface, HookedNvAPI_QueryInterface);
 
-		if (Original_Dx11_GetFeatureRequirements != nullptr)
-			DetourDetach(&(PVOID&)Original_Dx11_GetFeatureRequirements, Hooked_Dx11_GetFeatureRequirements);
-
-		if (Original_Dx12_GetFeatureRequirements != nullptr)
-			DetourDetach(&(PVOID&)Original_Dx12_GetFeatureRequirements, Hooked_Dx12_GetFeatureRequirements);
-
 		DetourTransactionCommit();
 	}
 }
+
+#pragma endregion
 
 void ProcessDx12Resources(const NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Parameter* OutParameters)
 {
@@ -648,7 +554,8 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 				}
 			}
 
-			// path from reg
+			// Checking _nvngx.dll / nvngx.dll location from registry based on DLSSTweaks 
+			// https://github.com/emoose/DLSSTweaks/blob/7ebf418c79670daad60a079c0e7b84096c6a7037/src/ProxyNvngx.cpp#L303
 			spdlog::info("DLSSFeature::DLSSFeature trying to load nvngx from registry path!");
 
 			HKEY regNGXCore;
@@ -721,10 +628,7 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 	}
 
 	if (_moduleLoaded)
-	{
 		HookNvApi();
-		HookNgxApi(_nvngx);
-	}
 }
 
 DLSSFeature::~DLSSFeature()
@@ -733,8 +637,9 @@ DLSSFeature::~DLSSFeature()
 
 void DLSSFeature::Shutdown()
 {
-	UnhookApis();
-
 	if (_nvngx != nullptr)
+	{
+		UnhookNvApi();
 		FreeLibrary(_nvngx);
+	}
 }
