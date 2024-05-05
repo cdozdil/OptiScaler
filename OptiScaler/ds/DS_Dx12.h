@@ -83,8 +83,8 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
 
 	OutputTexture[DTid.xy] = result;
 }
-)";
-
+)";	
+	
 	ID3D12Device* _device = nullptr;
 	ID3D12Resource* _buffer = nullptr;
 	ID3D12Resource* _constantBuffer = nullptr;

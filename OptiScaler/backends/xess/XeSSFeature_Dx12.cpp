@@ -4,7 +4,7 @@
 
 #include "XeSSFeature_Dx12.h"
 
-bool XeSSFeatureDx12::Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* InParameters)
+bool XeSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("XeSSFeatureDx12::Init");
 
@@ -16,7 +16,7 @@ bool XeSSFeatureDx12::Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* In
 	if (InitXeSS(InDevice, InParameters))
 	{
 		if (Imgui == nullptr || Imgui.get() == nullptr)
-			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), InDevice);
 
 		OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", InDevice);
 
@@ -85,7 +85,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	auto sharpness = GetSharpness(InParameters);
 
-	float ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(2.5f);
+	float ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(1.5f);
 
 	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
 

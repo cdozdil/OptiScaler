@@ -15,7 +15,7 @@ private:
 
 
 protected:
-	NVSDK_NGX_Handle* _handle;
+	NVSDK_NGX_Handle* _handle = nullptr;
 
 	float _sharpness = 0;
 	bool _hasColor = false;

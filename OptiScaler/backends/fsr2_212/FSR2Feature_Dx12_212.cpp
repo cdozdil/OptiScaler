@@ -4,7 +4,7 @@
 
 #include "FSR2Feature_Dx12_212.h"
 
-bool FSR2FeatureDx12_212::Init(ID3D12Device* InDevice, const NVSDK_NGX_Parameter* InParameters)
+bool FSR2FeatureDx12_212::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("FSR2FeatureDx12_212::Init");
 
@@ -477,9 +477,9 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	{
 		float ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(1.5f);
 
-		if (ssMulti < 1.0f)
+		if (ssMulti < 0.5f)
 		{
-			ssMulti = 1.0f;
+			ssMulti = 0.5f;
 			Config::Instance()->SuperSamplingMultiplier = ssMulti;
 		}
 		else if (ssMulti > 3.0f)
