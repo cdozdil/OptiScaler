@@ -6,6 +6,7 @@
 
 #include "Config.h"
 #include "backends/fsr2/FSR2Feature_Vk.h"
+#include "backends/dlss/DLSSFeature_Vk.h"
 #include "backends/fsr2_212/FSR2Feature_Vk_212.h"
 #include "NVNGX_Parameter.h"
 
@@ -19,6 +20,22 @@ static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeatu
 static inline NVSDK_NGX_Parameter* createParams = nullptr;
 static inline int changeBackendCounter = 0;
 
+//NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, struct VkInstance* InInstance, struct VkPhysicalDevice* InPD, struct VkDevice* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
+//{
+//	return NVSDK_NGX_Result_Success;
+//}
+//
+//NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, struct VkInstance* InInstance, struct VkPhysicalDevice* InPD, struct VkDevice* InDevice, void* InGIPA, void* InGDPA, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
+//{
+//	return NVSDK_NGX_Result_Success;
+//}
+//
+//NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, struct VkInstance* InInstance, struct VkPhysicalDevice* InPD, struct VkDevice* InDevice, void* InGIPA, void* InGDPA, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
+//{
+//	return NVSDK_NGX_Result_Success;
+//}
+
+
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD,
 	VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
@@ -26,12 +43,32 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 	std::wstring string(InApplicationDataPath);
 	std::string str(string.begin(), string.end());
 	spdlog::debug("NVSDK_NGX_VULKAN_Init InApplicationDataPath {0}", str);
-	spdlog::info("NVSDK_NGX_VULKAN_Init InSDKVersion: {0:x}", (int)InSDKVersion);
+	spdlog::info("NVSDK_NGX_VULKAN_Init InSDKVersion: {0:x}", (unsigned int)InSDKVersion);
 
 	Config::Instance()->NVNGX_ApplicationId = InApplicationId;
-	Config::Instance()->NVNGX_ApplicationDataPath = InApplicationDataPath;
+	Config::Instance()->NVNGX_ApplicationDataPath = std::wstring(InApplicationDataPath);
 	Config::Instance()->NVNGX_Version = InSDKVersion;
 	Config::Instance()->NVNGX_FeatureInfo = InFeatureInfo;
+
+	Config::Instance()->NVNGX_FeatureInfo_Paths.clear();
+
+	// No Man's Sky sends InFeatureInfo & InSDKVersion in wrong order 
+	// To prevent access violation added this check
+	if ((unsigned long)InFeatureInfo > 0x000001F)
+	{
+		for (size_t i = 0; i < InFeatureInfo->PathListInfo.Length; i++)
+		{
+			const wchar_t* path = InFeatureInfo->PathListInfo.Path[i];
+			Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(std::wstring(path));
+		}
+
+		Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
+	}
+	else
+	{
+		InFeatureInfo = nullptr;
+		Config::Instance()->NVNGX_Version = NVSDK_NGX_Version_API;
+	}
 
 	if (InInstance)
 	{
@@ -63,9 +100,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 		vkGIPA = InGIPA;
 	}
 
-	if (InFeatureInfo)
-		Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
-
 	Config::Instance()->Api = NVNGX_VULKAN;
 
 	return NVSDK_NGX_Result_Success;
@@ -78,8 +112,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID(const char* InPro
 	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InEngineType: {0}", (int)InEngineType);
 
+	Config::Instance()->NVNGX_ProjectId = std::string(InProjectId);
 	Config::Instance()->NVNGX_Engine = InEngineType;
-	Config::Instance()->NVNGX_EngineVersion = InEngineVersion;
+	Config::Instance()->NVNGX_EngineVersion = std::string(InEngineVersion);
 
 	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 	{
@@ -97,8 +132,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_with_ProjectID(const char* 
 	spdlog::debug("NVSDK_NGX_VULKAN_Init_with_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::debug("NVSDK_NGX_VULKAN_Init_with_ProjectID InEngineType {0}", (int)InEngineType);
 
+	Config::Instance()->NVNGX_ProjectId = std::string(InProjectId);
 	Config::Instance()->NVNGX_Engine = InEngineType;
-	Config::Instance()->NVNGX_EngineVersion = InEngineVersion;
+	Config::Instance()->NVNGX_EngineVersion = std::string(InEngineVersion);
 
 	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 	{
@@ -202,9 +238,30 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 	auto handleId = IFeature::GetNextHandleId();
 	spdlog::info("NVSDK_NGX_VULKAN_CreateFeature1 HandleId: {0}", handleId);
 
+	if (Config::Instance()->VulkanUpscaler.value_or("fsr21") == "dlss")
+	{
+		VkContexts[handleId] = std::make_unique<DLSSFeatureVk>(handleId, InParameters);
+
+
+		if (!VkContexts[handleId]->ModuleLoaded())
+		{
+			spdlog::error("NVSDK_NGX_VULKAN_CreateFeature1 can't create new DLSS feature, Fallback to FSR2.1!");
+
+			VkContexts[handleId].reset();
+			auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+			VkContexts.erase(it);
+
+			Config::Instance()->VulkanUpscaler = "fsr21";
+		}
+		else
+		{
+			spdlog::info("NVSDK_NGX_VULKAN_CreateFeature1 creating new DLSS feature");
+		}
+	}
+
 	if (Config::Instance()->VulkanUpscaler.value_or("fsr21") == "fsr22")
 		VkContexts[handleId] = std::make_unique<FSR2FeatureVk>(handleId, InParameters);
-	else
+	else if (Config::Instance()->VulkanUpscaler.value_or("fsr21") == "fsr21")
 		VkContexts[handleId] = std::make_unique<FSR2FeatureVk212>(handleId, InParameters);
 
 	auto deviceContext = VkContexts[handleId].get();
@@ -357,6 +414,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
 	vkDevice = nullptr;
 
 	Config::Instance()->ActiveFeatureCount = 0;
+
+	DLSSFeatureVk::Shutdown(vkDevice);
 
 	return NVSDK_NGX_Result_Success;
 }

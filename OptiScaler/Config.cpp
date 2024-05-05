@@ -25,6 +25,9 @@ bool Config::Reload()
 		NetworkModel = readInt("XeSS", "NetworkModel");
 		CreateHeaps = readBool("XeSS", "CreateHeaps");
 		XeSSLibrary = readString("XeSS", "LibraryPath");
+		
+		// DLSS
+		DLSSLibrary = readString("DLSS", "LibraryPath");
 
 		// logging
 		LoggingEnabled = readBool("Log", "LoggingEnabled");
@@ -162,6 +165,9 @@ bool Config::SaveIni()
 	ini.SetValue("XeSS", "CreateHeaps", GetBoolValue(Instance()->CreateHeaps).c_str());
 	ini.SetValue("XeSS", "NetworkModel", GetIntValue(Instance()->NetworkModel).c_str());
 	ini.SetValue("XeSS", "LibraryPath", Instance()->XeSSLibrary.value_or("auto").c_str());
+	
+	// DLSS
+	ini.SetValue("DLSS", "LibraryPath", Instance()->DLSSLibrary.value_or("auto").c_str());
 
 	// Sharpness
 	ini.SetValue("Sharpness", "OverrideSharpness", GetBoolValue(Instance()->OverrideSharpness).c_str());

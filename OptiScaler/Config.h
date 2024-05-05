@@ -44,6 +44,8 @@ public:
 	std::optional<bool> CreateHeaps;
 	std::optional<std::string> XeSSLibrary;
 
+	//DLSS
+	std::optional<std::string> DLSSLibrary;
 
 	// CAS
 	std::optional<bool> CasEnabled;
@@ -52,7 +54,7 @@ public:
 	//Sharpness 
 	std::optional<bool> OverrideSharpness;
 	std::optional<float> Sharpness;
-	
+
 	// menu
 	std::optional<float> MenuScale;
 
@@ -60,7 +62,7 @@ public:
 	std::optional<bool> UpscaleRatioOverrideEnabled;
 	std::optional<bool> DrsMaxOverrideEnabled;
 	std::optional<float> UpscaleRatioOverrideValue;
-	
+
 	// Quality Overrides
 	std::optional<bool> QualityRatioOverrideEnabled;
 	std::optional<float> QualityRatio_UltraQuality;
@@ -85,7 +87,7 @@ public:
 	std::optional<std::string> Dx11Upscaler;
 	std::optional<std::string> Dx12Upscaler;
 	std::optional<std::string> VulkanUpscaler;
-	
+
 	std::optional<bool> SuperSamplingEnabled;
 	std::optional<float> SuperSamplingMultiplier;
 
@@ -101,13 +103,14 @@ public:
 
 	// nvngx init parameters
 	unsigned long long NVNGX_ApplicationId = 1337;
-	const wchar_t* NVNGX_ApplicationDataPath = nullptr;
-	const char* NVNGX_ProjectId = nullptr;
+	std::wstring NVNGX_ApplicationDataPath;
+	std::string NVNGX_ProjectId;
 	NVSDK_NGX_Version NVNGX_Version{};
 	const NVSDK_NGX_FeatureCommonInfo* NVNGX_FeatureInfo = nullptr;
+	std::vector<std::wstring> NVNGX_FeatureInfo_Paths;
 	NVSDK_NGX_LoggingInfo NVNGX_Logger{ nullptr, NVSDK_NGX_LOGGING_LEVEL_OFF, false };
 	NVSDK_NGX_EngineType NVNGX_Engine = NVSDK_NGX_ENGINE_TYPE_CUSTOM;
-	const char* NVNGX_EngineVersion = nullptr;
+	std::string NVNGX_EngineVersion;
 	bool NVNGX_EngineVersion5 = false;
 	NVNGX_Api Api = NVNGX_NOT_SELECTED;
 
@@ -121,7 +124,7 @@ public:
 	bool xessDebug = false;
 	int xessDebugFrames = 5;
 	float lastMipBias = 0.0f;
-	
+
 	bool Reload();
 	bool LoadFromPath(const wchar_t* InPath);
 	bool SaveIni();

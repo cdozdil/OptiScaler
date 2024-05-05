@@ -237,6 +237,9 @@ std::string GetBackendName(std::string* code)
 	if (*code == "xess")
 		return "XeSS";
 
+	if (*code == "dlss")
+		return "DLSS";
+
 	return "????";
 }
 
@@ -270,6 +273,8 @@ void AddDx11Backends(std::string* code, std::string* name)
 		selectedUpscalerName = "FSR 2.2.1 w/Dx12";
 	else if (Config::Instance()->newBackend == "fsr21_12" || (Config::Instance()->newBackend == "" && *code == "fsr21_12"))
 		selectedUpscalerName = "FSR 2.1.2 w/Dx12";
+	else if (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss"))
+		selectedUpscalerName = "DLSS";
 	else
 		selectedUpscalerName = "XeSS w/Dx12";
 
@@ -278,7 +283,7 @@ void AddDx11Backends(std::string* code, std::string* name)
 		if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
 			Config::Instance()->newBackend = "fsr22";
 
-		if (ImGui::Selectable("XeSS w/Dx12", false, *code == "xess"))
+		if (ImGui::Selectable("XeSS w/Dx12", *code == "xess"))
 			Config::Instance()->newBackend = "xess";
 
 		if (ImGui::Selectable("FSR 2.1.2 w/Dx12", *code == "fsr21_12"))
@@ -286,6 +291,9 @@ void AddDx11Backends(std::string* code, std::string* name)
 
 		if (ImGui::Selectable("FSR 2.2.1 w/Dx12", *code == "fsr22_12"))
 			Config::Instance()->newBackend = "fsr22_12";
+
+		if (ImGui::Selectable("DLSS", *code == "dlss"))
+			Config::Instance()->newBackend = "dlss";
 
 		ImGui::EndCombo();
 	}
@@ -299,12 +307,14 @@ void AddDx12Backends(std::string* code, std::string* name)
 		selectedUpscalerName = "FSR 2.1.2";
 	else if (Config::Instance()->newBackend == "fsr22" || (Config::Instance()->newBackend == "" && *code == "fsr22"))
 		selectedUpscalerName = "FSR 2.2.1";
+	else if (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss"))
+		selectedUpscalerName = "DLSS";
 	else
 		selectedUpscalerName = "XeSS";
 
 	if (ImGui::BeginCombo("Select", selectedUpscalerName.c_str()))
 	{
-		if (ImGui::Selectable("XeSS", false, *code == "xess"))
+		if (ImGui::Selectable("XeSS", *code == "xess"))
 			Config::Instance()->newBackend = "xess";
 
 		if (ImGui::Selectable("FSR 2.1.2", *code == "fsr21"))
@@ -312,6 +322,9 @@ void AddDx12Backends(std::string* code, std::string* name)
 
 		if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
 			Config::Instance()->newBackend = "fsr22";
+
+		if (ImGui::Selectable("DLSS", *code == "dlss"))
+			Config::Instance()->newBackend = "dlss";
 
 		ImGui::EndCombo();
 	}
@@ -323,6 +336,8 @@ void AddVulkanBackends(std::string* code, std::string* name)
 
 	if (Config::Instance()->newBackend == "fsr21" || (Config::Instance()->newBackend == "" && *code == "fsr21"))
 		selectedUpscalerName = "FSR 2.1.2";
+	else if (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss"))
+		selectedUpscalerName = "DLSS";
 	else
 		selectedUpscalerName = "FSR 2.2.1";
 
@@ -333,6 +348,9 @@ void AddVulkanBackends(std::string* code, std::string* name)
 
 		if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
 			Config::Instance()->newBackend = "fsr22";
+
+		if (ImGui::Selectable("DLSS", *code == "dlss"))
+			Config::Instance()->newBackend = "dlss";
 
 		ImGui::EndCombo();
 	}
@@ -671,7 +689,7 @@ void Imgui_Base::RenderMenu()
 				if (cf != nullptr)
 					ImGui::Text("%dx%d -> %dx%d", cf->RenderWidth(), cf->RenderHeight(), (uint32_t)(cf->DisplayWidth() * ssRatio), (uint32_t)(cf->DisplayHeight() * ssRatio));
 
-				ImGui::SliderFloat("Ratio", &ssRatio, 1.0f, 3.0f, "%.2f");
+				ImGui::SliderFloat("Ratio", &ssRatio, 0.5f, 3.0f, "%.2f");
 
 				ImGui::EndDisabled();
 

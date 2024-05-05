@@ -9,6 +9,7 @@
 #include "backends/xess/XeSSFeature_Dx12.h"
 #include "backends/fsr2/FSR2Feature_Dx12.h"
 #include "backends/fsr2_212/FSR2Feature_Dx12_212.h"
+#include "backends/dlss/DLSSFeature_Dx12.h"
 #include "NVNGX_Parameter.h"
 
 inline ID3D12Device* D3D12Device = nullptr;
@@ -161,7 +162,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext InApplicationDataPath {0}", str);
 
 	Config::Instance()->NVNGX_ApplicationId = InApplicationId;
-	Config::Instance()->NVNGX_ApplicationDataPath = InApplicationDataPath;
+	Config::Instance()->NVNGX_ApplicationDataPath = std::wstring(InApplicationDataPath);
 	Config::Instance()->NVNGX_Version = InSDKVersion;
 	Config::Instance()->NVNGX_FeatureInfo = InFeatureInfo;
 
@@ -169,9 +170,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 	{
 		Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
 
+		Config::Instance()->NVNGX_FeatureInfo_Paths.clear();
+
 		for (size_t i = 0; i < InFeatureInfo->PathListInfo.Length; i++)
 		{
 			const wchar_t* path = InFeatureInfo->PathListInfo.Path[i];
+
+			Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(std::wstring(path));
 
 			std::wstring iniPathW(path);
 			std::string iniPath(iniPathW.begin(), iniPathW.end());
@@ -210,9 +215,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProj
 	spdlog::info("NVSDK_NGX_D3D12_Init_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::info("NVSDK_NGX_D3D12_Init_ProjectID InEngineType: {0}", (int)InEngineType);
 
-	Config::Instance()->NVNGX_ProjectId = InProjectId;
+	Config::Instance()->NVNGX_ProjectId = std::string(InProjectId);
 	Config::Instance()->NVNGX_Engine = InEngineType;
-	Config::Instance()->NVNGX_EngineVersion = InEngineVersion;
+	Config::Instance()->NVNGX_EngineVersion = std::string(InEngineVersion);
 
 	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 	{
@@ -229,9 +234,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* I
 	spdlog::info("NVSDK_NGX_D3D12_Init_with_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::info("NVSDK_NGX_D3D12_Init_with_ProjectID InEngineType: {0}", (int)InEngineType);
 
-	Config::Instance()->NVNGX_ProjectId = InProjectId;
+	Config::Instance()->NVNGX_ProjectId = std::string(InProjectId);
 	Config::Instance()->NVNGX_Engine = InEngineType;
-	Config::Instance()->NVNGX_EngineVersion = InEngineVersion;
+	Config::Instance()->NVNGX_EngineVersion = std::string(InEngineVersion);
 
 	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 	{
@@ -259,6 +264,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 	Config::Instance()->ActiveFeatureCount = 0;
 
 	UnhookAll();
+
+	DLSSFeatureDx12::Shutdown(D3D12Device);
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -365,6 +372,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 	// 0 : XeSS
 	// 1 : FSR2.2
 	// 2 : FSR2.1
+	// 3 : DLSS
 	int upscalerChoice = 0; // Default XeSS
 
 	// ini first
@@ -376,6 +384,29 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 			upscalerChoice = 1;
 		else if (Config::Instance()->Dx12Upscaler.value_or("xess") == "fsr21")
 			upscalerChoice = 2;
+		else if (Config::Instance()->Dx12Upscaler.value_or("xess") == "dlss")
+			upscalerChoice = 3;
+	}
+
+	if (upscalerChoice == 3)
+	{
+		Dx12Contexts[handleId] = std::make_unique<DLSSFeatureDx12>(handleId, InParameters);
+
+		if (!Dx12Contexts[handleId]->ModuleLoaded())
+		{
+			spdlog::error("NVSDK_NGX_D3D12_CreateFeature can't create new DLSS feature, Fallback to XeSS!");
+
+			Dx12Contexts[handleId].reset();
+			auto it = std::find_if(Dx12Contexts.begin(), Dx12Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+			Dx12Contexts.erase(it);
+
+			upscalerChoice = 0;
+		}
+		else
+		{
+			Config::Instance()->Dx12Upscaler = "dlss";
+			spdlog::info("NVSDK_NGX_D3D12_CreateFeature creating new DLSS feature");
+		}
 	}
 
 	if (upscalerChoice == 0)
@@ -442,7 +473,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
 #pragma endregion
 
-	if (deviceContext->Init(D3D12Device, InParameters))
+	if (deviceContext->Init(D3D12Device, InCmdList, InParameters))
 	{
 		Config::Instance()->ActiveFeatureCount++;
 		HookToCommandList(InCmdList);
@@ -574,6 +605,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 				spdlog::info("NVSDK_NGX_D3D12_EvaluateFeature creating new FSR 2.1.2 feature");
 				Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12_212>(handleId, createParams);
 			}
+			else if (Config::Instance()->newBackend == "dlss")
+			{
+				Config::Instance()->Dx12Upscaler = "dlss";
+				spdlog::info("NVSDK_NGX_D3D12_EvaluateFeature creating new DLSS feature");
+				Dx12Contexts[handleId] = std::make_unique<DLSSFeatureDx12>(handleId, createParams);
+			}
 			else
 			{
 				Config::Instance()->Dx12Upscaler = "xess";
@@ -587,7 +624,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		if (changeBackendCounter == 2)
 		{
 			// next frame create context
-			auto initResult = Dx12Contexts[handleId]->Init(D3D12Device, createParams);
+			auto initResult = Dx12Contexts[handleId]->Init(D3D12Device, InCmdList, createParams);
 
 			Config::Instance()->newBackend = "";
 			Config::Instance()->changeBackend = false;
@@ -596,7 +633,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 			changeBackendCounter = 0;
 
 			if (!initResult)
-				return NVSDK_NGX_Result_Fail;
+			{
+				spdlog::error("NVSDK_NGX_D3D12_EvaluateFeature init failed with {0} feature", Config::Instance()->Dx12Upscaler.value());
+
+				if (Config::Instance()->Dx12Upscaler == "dlss")
+					Config::Instance()->newBackend = "xess";
+				else 
+					Config::Instance()->newBackend = "fsr21";
+
+				Config::Instance()->changeBackend = true;
+			}
 		}
 
 		return NVSDK_NGX_Result_Success;
