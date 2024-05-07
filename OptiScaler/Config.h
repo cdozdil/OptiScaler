@@ -46,6 +46,13 @@ public:
 
 	//DLSS
 	std::optional<std::string> DLSSLibrary;
+	std::optional<bool> RenderPresetOverride;
+	std::optional<int> RenderPresetDLAA;
+	std::optional<int> RenderPresetUltraQuality;
+	std::optional<int> RenderPresetQuality;
+	std::optional<int> RenderPresetBalanced;
+	std::optional<int> RenderPresetPerformance;
+	std::optional<int> RenderPresetUltraPerformance;
 
 	// CAS
 	std::optional<bool> CasEnabled;

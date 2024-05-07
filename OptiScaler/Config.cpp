@@ -28,6 +28,31 @@ bool Config::Reload()
 		
 		// DLSS
 		DLSSLibrary = readString("DLSS", "LibraryPath");
+		RenderPresetOverride = readBool("DLSS", "RenderPresetOverride");
+		RenderPresetDLAA = readInt("DLSS", "RenderPresetDLAA");
+		RenderPresetUltraQuality = readInt("DLSS", "RenderPresetUltraQuality");
+		RenderPresetQuality = readInt("DLSS", "RenderPresetQuality");
+		RenderPresetBalanced = readInt("DLSS", "RenderPresetBalanced");
+		RenderPresetPerformance = readInt("DLSS", "RenderPresetPerformance");
+		RenderPresetUltraPerformance = readInt("DLSS", "RenderPresetUltraPerformance");
+
+		if (RenderPresetDLAA.has_value() && (RenderPresetDLAA.value() < 0 || RenderPresetDLAA.value() > 7))
+			RenderPresetDLAA.reset();
+
+		if (RenderPresetUltraQuality.has_value() && (RenderPresetUltraQuality.value() < 0 || RenderPresetUltraQuality.value() > 7))
+			RenderPresetUltraQuality.reset();
+
+		if (RenderPresetQuality.has_value() && (RenderPresetQuality.value() < 0 || RenderPresetQuality.value() > 7))
+			RenderPresetQuality.reset();
+
+		if (RenderPresetBalanced.has_value() && (RenderPresetBalanced.value() < 0 || RenderPresetBalanced.value() > 7))
+			RenderPresetBalanced.reset();
+
+		if (RenderPresetPerformance.has_value() && (RenderPresetPerformance.value() < 0 || RenderPresetPerformance.value() > 7))
+			RenderPresetPerformance.reset();
+
+		if (RenderPresetUltraPerformance.has_value() && (RenderPresetUltraPerformance.value() < 0 || RenderPresetUltraPerformance.value() > 7))
+			RenderPresetUltraPerformance.reset();
 
 		// logging
 		LoggingEnabled = readBool("Log", "LoggingEnabled");

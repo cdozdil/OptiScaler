@@ -7,7 +7,7 @@
 class DLSSFeature : public virtual IFeature
 {
 private:
-	feature_version _version = { 1, 0, 0 };
+	feature_version _version = { 0, 0, 0 };
 	inline static HMODULE _nvngx = nullptr;
 
 protected:

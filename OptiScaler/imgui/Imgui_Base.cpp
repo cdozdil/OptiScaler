@@ -37,6 +37,8 @@ bool imguiSizeUpdate = true;
 bool _isVisible = false;
 WNDPROC _oWndProc = nullptr;
 
+#pragma region "Hooks & WndProc"
+
 LRESULT WINAPI hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
 	if (_isVisible && Msg == 0x0020)
@@ -157,6 +159,10 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	if (msg == WM_KEYDOWN && wParam == VK_HOME) // && (GetKeyState(VK_SHIFT) & 0x8000))
 	{
 		_isVisible = !_isVisible;
+
+		if (!_isVisible)
+			showMipmapCalcWindow = false;
+
 		io.MouseDrawCursor = _isVisible;
 		io.WantCaptureKeyboard = _isVisible;
 		io.WantCaptureMouse = _isVisible;
@@ -219,6 +225,8 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
 }
+
+#pragma endregion
 
 std::string GetBackendName(std::string* code)
 {
@@ -358,7 +366,7 @@ void AddVulkanBackends(std::string* code, std::string* name)
 
 void AddResourceBarrier(std::string name, std::optional<int>* value)
 {
-	const char* states[] = { "Auto", "COMMON", "VERTEX_AND_CONSTANT_BUFFER", "INDEX_BUFFER", "RENDER_TARGET", "UNORDERED_ACCESS", "DEPTH_WRITE",
+	const char* states[] = { "AUTO", "COMMON", "VERTEX_AND_CONSTANT_BUFFER", "INDEX_BUFFER", "RENDER_TARGET", "UNORDERED_ACCESS", "DEPTH_WRITE",
 							"DEPTH_READ", "NON_PIXEL_SHADER_RESOURCE", "PIXEL_SHADER_RESOURCE", "STREAM_OUT", "INDIRECT_ARGUMENT", "COPY_DEST", "COPY_SOURCE",
 							"RESOLVE_DEST", "RESOLVE_SOURCE", "RAYTRACING_ACCELERATION_STRUCTURE", "SHADING_RATE_SOURCE", "GENERIC_READ", "ALL_SHADER_RESOURCE",
 							"PRESENT", "PREDICATION", "VIDEO_DECODE_READ", "VIDEO_DECODE_WRITE", "VIDEO_PROCESS_READ", "VIDEO_PROCESS_WRITE", "VIDEO_ENCODE_READ",
@@ -389,6 +397,41 @@ void AddResourceBarrier(std::string name, std::optional<int>* value)
 		{
 			if (ImGui::Selectable(states[n], selected == values[n]))
 				*value = values[n];
+		}
+
+		ImGui::EndCombo();
+	}
+}
+
+void AddRenderPreset(std::string name, std::optional<int>* value)
+{
+	const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G" };
+
+	int selected = value->value_or(0);
+
+	const char* selectedName = "";
+
+	for (int n = 0; n < 8; n++)
+	{
+		if (n == selected)
+		{
+			selectedName = presets[n];
+			break;
+		}
+	}
+
+	if (ImGui::BeginCombo(name.c_str(), selectedName))
+	{
+		if (ImGui::Selectable(presets[0], !value->has_value()))
+			value->reset();
+
+		for (int n = 1; n < 8; n++)
+		{
+			if (ImGui::Selectable(presets[n], selected == n))
+			{
+				if (n != selected)
+					*value = n;
+			}
 		}
 
 		ImGui::EndCombo();
@@ -484,220 +527,313 @@ void Imgui_Base::RenderMenu()
 				if (ImGui::Button("Revert"))
 					Config::Instance()->newBackend = "";
 
-				// Dx11
-				ImGui::SeparatorText("Dx11 with Dx12 Settings");
+				// DYNAMIC PROPERTIES -----------------------------
 
-				ImGui::BeginDisabled(Config::Instance()->Api != NVNGX_DX11 ||
-					(Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") == "fsr22"));
-
-				const char* sync[] = { "No Syncing", "Fence", "Fence + Event", "Fence + Flush", "Fence + Flush + Event", "Only Query" };
-
-				const char* selectedSync = sync[Config::Instance()->TextureSyncMethod.value_or(1)];
-
-				if (ImGui::BeginCombo("Input Sync", selectedSync))
+				// Dx11 with Dx12
+				if (Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "fsr22")
 				{
-					for (int n = 0; n < 6; n++)
+					ImGui::SeparatorText("Dx11 with Dx12 Settings");
+
+					const char* sync[] = { "No Syncing", "Fence", "Fence + Event", "Fence + Flush", "Fence + Flush + Event", "Only Query" };
+
+					const char* selectedSync = sync[Config::Instance()->TextureSyncMethod.value_or(1)];
+
+					if (ImGui::BeginCombo("Input Sync", selectedSync))
 					{
-						if (ImGui::Selectable(sync[n], (Config::Instance()->TextureSyncMethod.value_or(1) == n)))
-							Config::Instance()->TextureSyncMethod = n;
+						for (int n = 0; n < 6; n++)
+						{
+							if (ImGui::Selectable(sync[n], (Config::Instance()->TextureSyncMethod.value_or(1) == n)))
+								Config::Instance()->TextureSyncMethod = n;
+						}
+
+						ImGui::EndCombo();
 					}
 
-					ImGui::EndCombo();
-				}
+					const char* sync2[] = { "No Syncing", "Fence", "Fence + Event", "Fence + Flush", "Fence + Flush + Event", "Only Query" };
 
-				const char* sync2[] = { "No Syncing", "Fence", "Fence + Event", "Fence + Flush", "Fence + Flush + Event", "Only Query" };
+					selectedSync = sync2[Config::Instance()->CopyBackSyncMethod.value_or(5)];
 
-				selectedSync = sync2[Config::Instance()->CopyBackSyncMethod.value_or(5)];
-
-				if (ImGui::BeginCombo("Output Sync", selectedSync))
-				{
-					for (int n = 0; n < 6; n++)
+					if (ImGui::BeginCombo("Output Sync", selectedSync))
 					{
-						if (ImGui::Selectable(sync2[n], (Config::Instance()->CopyBackSyncMethod.value_or(5) == n)))
-							Config::Instance()->CopyBackSyncMethod = n;
+						for (int n = 0; n < 6; n++)
+						{
+							if (ImGui::Selectable(sync2[n], (Config::Instance()->CopyBackSyncMethod.value_or(5) == n)))
+								Config::Instance()->CopyBackSyncMethod = n;
+						}
+
+						ImGui::EndCombo();
 					}
 
-					ImGui::EndCombo();
+					if (bool afterDx12 = Config::Instance()->SyncAfterDx12.value_or(true); ImGui::Checkbox("Sync After Dx12", &afterDx12))
+					{
+						Config::Instance()->SyncAfterDx12 = afterDx12;
+					}
 				}
-
-				if (bool afterDx12 = Config::Instance()->SyncAfterDx12.value_or(true); ImGui::Checkbox("Sync After Dx12", &afterDx12))
-				{
-					Config::Instance()->SyncAfterDx12 = afterDx12;
-				}
-
-
-				ImGui::EndDisabled();
 
 				// UPSCALER SPECIFIC -----------------------------
-				// XeSS
-				ImGui::BeginDisabled(currentBackend != "xess");
-				ImGui::SeparatorText("XeSS Settings");
 
-				const char* models[] = { "KPSS", "SPLAT", "MODEL_3", "MODEL_4", "MODEL_5", "MODEL_6" };
-				auto configModes = Config::Instance()->NetworkModel.value_or(0);
-
-				if (configModes < 0 || configModes > 5)
-					configModes = 0;
-
-				const char* selectedModel = models[configModes];
-
-				if (ImGui::BeginCombo("Network Models", selectedModel))
+				// XeSS -----------------------------
+				if (currentBackend == "xess")
 				{
-					for (int n = 0; n < 6; n++)
+					ImGui::SeparatorText("XeSS Settings");
+
+					const char* models[] = { "KPSS", "SPLAT", "MODEL_3", "MODEL_4", "MODEL_5", "MODEL_6" };
+					auto configModes = Config::Instance()->NetworkModel.value_or(0);
+
+					if (configModes < 0 || configModes > 5)
+						configModes = 0;
+
+					const char* selectedModel = models[configModes];
+
+					if (ImGui::BeginCombo("Network Models", selectedModel))
 					{
-						if (ImGui::Selectable(models[n], (Config::Instance()->NetworkModel.value_or(0) == n)))
+						for (int n = 0; n < 6; n++)
 						{
-							Config::Instance()->NetworkModel = n;
-							Config::Instance()->changeBackend = true;
+							if (ImGui::Selectable(models[n], (Config::Instance()->NetworkModel.value_or(0) == n)))
+							{
+								Config::Instance()->NetworkModel = n;
+								Config::Instance()->changeBackend = true;
+							}
 						}
+
+						ImGui::EndCombo();
 					}
 
-					ImGui::EndCombo();
-				}
+					if (bool dbg = Config::Instance()->xessDebug; ImGui::Checkbox("Dump (Shift+Del)", &dbg))
+						Config::Instance()->xessDebug = dbg;
 
-				if (bool cas = Config::Instance()->CasEnabled.value_or(false); ImGui::Checkbox("CAS", &cas))
-				{
-					Config::Instance()->CasEnabled = cas;
-					Config::Instance()->changeCAS = true;
-				}
+					ImGui::SameLine(0.0f, 6.0f);
+					int dbgCount = Config::Instance()->xessDebugFrames;
 
-				ImGui::SameLine(0.0f, 6.0f);
-				if (bool dbg = Config::Instance()->xessDebug; ImGui::Checkbox("Dump (Shift+Del)", &dbg))
-					Config::Instance()->xessDebug = dbg;
-
-				ImGui::SameLine(0.0f, 6.0f);
-				int dbgCount = Config::Instance()->xessDebugFrames;
-
-				ImGui::PushItemWidth(85.0);
-				if (ImGui::InputInt("frames", &dbgCount))
-				{
-					if (dbgCount < 4)
-						dbgCount = 4;
-					else if (dbgCount > 999)
-						dbgCount = 999;
-
-					Config::Instance()->xessDebugFrames = dbgCount;
-				}
-
-				ImGui::PopItemWidth();
-
-				ImGui::BeginDisabled(!Config::Instance()->CasEnabled.value_or(false));
-
-				const char* cs[] = { "LINEAR", "GAMMA20", "GAMMA22", "SRGB_OUTPUT", "SRGB_INPUT_OUTPUT" };
-				auto configCs = Config::Instance()->CasColorSpaceConversion.value_or(0);
-
-				if (configCs < 0)
-					configCs = 0;
-				else if (configCs > 4)
-					configCs = 4;
-
-				const char* selectedCs = cs[configCs];
-
-				if (ImGui::BeginCombo("Color Space", selectedCs))
-				{
-					for (int n = 0; n < 5; n++)
+					ImGui::PushItemWidth(85.0);
+					if (ImGui::InputInt("frames", &dbgCount))
 					{
-						if (ImGui::Selectable(cs[n], (Config::Instance()->CasColorSpaceConversion.value_or(0) == n)))
-						{
-							Config::Instance()->CasColorSpaceConversion = n;
-							Config::Instance()->changeCAS = true;
-						}
+						if (dbgCount < 4)
+							dbgCount = 4;
+						else if (dbgCount > 999)
+							dbgCount = 999;
+
+						Config::Instance()->xessDebugFrames = dbgCount;
 					}
 
-					ImGui::EndCombo();
+					ImGui::PopItemWidth();
 				}
-
-				ImGui::EndDisabled();
-
-				ImGui::EndDisabled();
 
 				// FSR -----------------
-				ImGui::BeginDisabled(currentBackend == "xess");
-				ImGui::SeparatorText("FSR Settings");
-
-				bool useVFov = Config::Instance()->FsrVerticalFov.has_value() || !Config::Instance()->FsrHorizontalFov.has_value();
-
-				float vfov;
-				float hfov;
-
-				vfov = Config::Instance()->FsrVerticalFov.value_or(60.0f);
-				hfov = Config::Instance()->FsrHorizontalFov.value_or(90.0f);
-
-				if (ImGui::RadioButton("Use Vert. Fov", useVFov))
+				if (currentBackend.rfind("fsr", 0) == 0)
 				{
-					Config::Instance()->FsrHorizontalFov.reset();
-					useVFov = true;
+					ImGui::SeparatorText("FSR Settings");
+
+					bool useVFov = Config::Instance()->FsrVerticalFov.has_value() || !Config::Instance()->FsrHorizontalFov.has_value();
+
+					float vfov;
+					float hfov;
+
+					vfov = Config::Instance()->FsrVerticalFov.value_or(60.0f);
+					hfov = Config::Instance()->FsrHorizontalFov.value_or(90.0f);
+
+					if (ImGui::RadioButton("Use Vert. Fov", useVFov))
+					{
+						Config::Instance()->FsrHorizontalFov.reset();
+						useVFov = true;
+					}
+
+					ImGui::SameLine(0.0f, 6.0f);
+
+					if (ImGui::RadioButton("Use Horz. Fov", !useVFov))
+					{
+						Config::Instance()->FsrVerticalFov.reset();
+						useVFov = false;
+					}
+
+					ImGui::BeginDisabled(!useVFov);
+
+					if (ImGui::SliderFloat("Vert. FOV", &vfov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
+						Config::Instance()->FsrVerticalFov = vfov;
+
+					ImGui::EndDisabled();
+
+					ImGui::BeginDisabled(useVFov);
+
+					if (ImGui::SliderFloat("Horz. FOV", &hfov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
+						Config::Instance()->FsrHorizontalFov = hfov;
+
+					ImGui::EndDisabled();
 				}
 
-				ImGui::SameLine();
-
-				if (ImGui::RadioButton("Use Horz. Fov", !useVFov))
+				// DLSS -----------------
+				if (currentBackend == "dlss")
 				{
-					Config::Instance()->FsrVerticalFov.reset();
-					useVFov = false;
+					ImGui::SeparatorText("DLSS Settings");
+
+
+					if (bool pOverride = Config::Instance()->RenderPresetOverride.value_or(false); ImGui::Checkbox("Render Presets Override", &pOverride))
+						Config::Instance()->RenderPresetOverride = pOverride;
+
+					ImGui::SameLine(0.0f, 6.0f);
+
+					if (ImGui::Button("Apply Changes"))
+						Config::Instance()->changeBackend = true;
+
+					AddRenderPreset("DLAA", &Config::Instance()->RenderPresetDLAA);
+					AddRenderPreset("Ultra Quality", &Config::Instance()->RenderPresetUltraQuality);
+					AddRenderPreset("Quality", &Config::Instance()->RenderPresetQuality);
+					AddRenderPreset("Balanced", &Config::Instance()->RenderPresetBalanced);
+					AddRenderPreset("Performance", &Config::Instance()->RenderPresetPerformance);
+					AddRenderPreset("Ultra Performance", &Config::Instance()->RenderPresetUltraPerformance);
 				}
 
-				ImGui::BeginDisabled(!useVFov);
+				// CAS -----------------
+				if (Config::Instance()->Api == NVNGX_DX12 && currentBackend.rfind("fsr", 0))
+				{
+					ImGui::SeparatorText("CAS Settings");
 
-				if (ImGui::SliderFloat("Vert. FOV", &vfov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
-					Config::Instance()->FsrVerticalFov = vfov;
+					if (bool cas = Config::Instance()->CasEnabled.value_or(false); ImGui::Checkbox("CAS", &cas))
+					{
+						Config::Instance()->CasEnabled = cas;
 
-				ImGui::EndDisabled();
+						if (currentBackend == "dlss")
+							Config::Instance()->changeBackend = true;
+						else
+							Config::Instance()->changeCAS = true;
+					}
 
-				ImGui::BeginDisabled(useVFov);
+					ImGui::BeginDisabled(!Config::Instance()->CasEnabled.value_or(false));
 
-				if (ImGui::SliderFloat("Horz. FOV", &hfov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
-					Config::Instance()->FsrHorizontalFov = hfov;
+					const char* cs[] = { "LINEAR", "GAMMA20", "GAMMA22", "SRGB_OUTPUT", "SRGB_INPUT_OUTPUT" };
+					auto configCs = Config::Instance()->CasColorSpaceConversion.value_or(0);
 
-				ImGui::EndDisabled();
+					if (configCs < 0)
+						configCs = 0;
+					else if (configCs > 4)
+						configCs = 4;
 
-				ImGui::EndDisabled();
+					const char* selectedCs = cs[configCs];
+
+					if (ImGui::BeginCombo("Color Space", selectedCs))
+					{
+						for (int n = 0; n < 5; n++)
+						{
+							if (ImGui::Selectable(cs[n], (Config::Instance()->CasColorSpaceConversion.value_or(0) == n)))
+							{
+								Config::Instance()->CasColorSpaceConversion = n;
+								Config::Instance()->changeCAS = true;
+							}
+						}
+
+						ImGui::EndCombo();
+					}
+
+					ImGui::EndDisabled();
+				}
 
 				// SUPERSAMPLING -----------------------------
-				ImGui::SeparatorText("Supersampling");
-
-				bool isXess12 = (Config::Instance()->Dx12Upscaler.value_or("xess") == "xess" || Config::Instance()->Dx11Upscaler.value_or("fsr22") == "xess") &&
-					Config::Instance()->CurrentFeature->Version().major <= 1 && Config::Instance()->CurrentFeature->Version().minor <= 2;
-
-				float defaultRatio = 2.5f;
-
-				if (ssRatio == 0.0f)
+				if (Config::Instance()->Api == NVNGX_DX12 || 
+					(Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "fsr22" && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "dlss"))
 				{
-					ssRatio = Config::Instance()->SuperSamplingMultiplier.value_or(defaultRatio);
-					ssEnabled = Config::Instance()->SuperSamplingEnabled.value_or(false);
+					ImGui::SeparatorText("Supersampling");
+
+					float defaultRatio = 2.5f;
+
+					if (ssRatio == 0.0f)
+					{
+						ssRatio = Config::Instance()->SuperSamplingMultiplier.value_or(defaultRatio);
+						ssEnabled = Config::Instance()->SuperSamplingEnabled.value_or(false);
+					}
+
+					ImGui::Checkbox("Enable", &ssEnabled);
+
+					ImGui::SameLine(0.0f, 6.0f);
+
+					if (ImGui::Button("Apply Change") && (ssEnabled != Config::Instance()->SuperSamplingEnabled.value_or(false) ||
+						ssRatio != Config::Instance()->SuperSamplingMultiplier.value_or(defaultRatio)))
+					{
+						Config::Instance()->SuperSamplingEnabled = ssEnabled;
+						Config::Instance()->SuperSamplingMultiplier = ssRatio;
+						Config::Instance()->changeBackend = true;
+					}
+
+					ImGui::SameLine(0.0f, 6.0f);
+
+					if (cf != nullptr)
+						ImGui::Text("%dx%d -> %dx%d", cf->RenderWidth(), cf->RenderHeight(), (uint32_t)(cf->DisplayWidth() * ssRatio), (uint32_t)(cf->DisplayHeight() * ssRatio));
+
+					ImGui::SliderFloat("Ratio", &ssRatio, 0.5f, 3.0f, "%.2f");
 				}
 
-				ImGui::BeginDisabled(
-					(Config::Instance()->Api == NVNGX_VULKAN || (Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") == "fsr22")) ||
-					Config::Instance()->DisplayResolution.value_or(false)
-				);
-
-				ImGui::Checkbox("Enable", &ssEnabled);
-
-				ImGui::SameLine(0.0f, 6.0f);
-
-				if (ImGui::Button("Apply Change") && (ssEnabled != Config::Instance()->SuperSamplingEnabled.value_or(false) ||
-					ssRatio != Config::Instance()->SuperSamplingMultiplier.value_or(defaultRatio)))
+				// DX12 -----------------------------
+				if (Config::Instance()->Api == NVNGX_DX12)
 				{
-					Config::Instance()->SuperSamplingEnabled = ssEnabled;
-					Config::Instance()->SuperSamplingMultiplier = ssRatio;
-					Config::Instance()->changeBackend = true;
+					// MIPMAP BIAS -----------------------------
+					ImGui::SeparatorText("Mipmap Bias (Dx12)");
+
+					if (Config::Instance()->MipmapBiasOverride.has_value() && mipBias == 0.0f)
+						mipBias = Config::Instance()->MipmapBiasOverride.value();
+
+					ImGui::SliderFloat("Mipmap Bias", &mipBias, -15.0f, 15.0f, "%.6f", ImGuiSliderFlags_NoRoundToFormat);
+
+					ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "This will be applied after first resolution change!");
+
+					if (ImGui::Button("Set"))
+						Config::Instance()->MipmapBiasOverride = mipBias;
+
+					ImGui::SameLine(0.0f, 6.0f);
+
+					if (ImGui::Button("Reset"))
+					{
+						Config::Instance()->MipmapBiasOverride.reset();
+						mipBias = 0.0f;
+					}
+
+					ImGui::SameLine(0.0f, 6.0f);
+
+					if (ImGui::Button("Calculate"))
+					{
+						showMipmapCalcWindow = true;
+					}
+
+					ImGui::SameLine(0.0f, 6.0f);
+
+					ImGui::Text("Current : %.6f", Config::Instance()->lastMipBias);
+
+					// Non-DLSS hotfixes -----------------------------
+					if (currentBackend != "dlss")
+					{
+						// BARRIERS -----------------------------
+						ImGui::SeparatorText("Resource Barriers (Dx12)");
+
+						AddResourceBarrier("Color", &Config::Instance()->ColorResourceBarrier);
+						AddResourceBarrier("Depth", &Config::Instance()->DepthResourceBarrier);
+						AddResourceBarrier("Motion", &Config::Instance()->MVResourceBarrier);
+						AddResourceBarrier("Exposure", &Config::Instance()->ExposureResourceBarrier);
+						AddResourceBarrier("Mask", &Config::Instance()->MaskResourceBarrier);
+						AddResourceBarrier("Output", &Config::Instance()->OutputResourceBarrier);
+
+						// HOTFIXES -----------------------------
+						ImGui::SeparatorText("Hotfixes (Dx12)");
+
+						if (bool crs = Config::Instance()->RestoreComputeSignature.value_or(false); ImGui::Checkbox("Restore Compute RS", &crs))
+							Config::Instance()->RestoreComputeSignature = crs;
+
+						ImGui::SameLine(0.0f, 6.0f);
+						if (bool grs = Config::Instance()->RestoreGraphicSignature.value_or(false); ImGui::Checkbox("Restore Graphic RS", &grs))
+							Config::Instance()->RestoreGraphicSignature = grs;
+					}
 				}
 
-				ImGui::SameLine(0.0f, 6.0f);
-
-				if (cf != nullptr)
-					ImGui::Text("%dx%d -> %dx%d", cf->RenderWidth(), cf->RenderHeight(), (uint32_t)(cf->DisplayWidth() * ssRatio), (uint32_t)(cf->DisplayHeight() * ssRatio));
-
-				ImGui::SliderFloat("Ratio", &ssRatio, 0.5f, 3.0f, "%.2f");
-
-				ImGui::EndDisabled();
+				// NEXT COLUMN -----------------
+				ImGui::TableNextColumn();
 
 				// SHARPNESS -----------------------------
 				ImGui::SeparatorText("Sharpness");
 
 				if (bool overrideSharpness = Config::Instance()->OverrideSharpness.value_or(false); ImGui::Checkbox("Override", &overrideSharpness))
+				{
 					Config::Instance()->OverrideSharpness = overrideSharpness;
+
+					if (currentBackend == "dlss" && !Config::Instance()->CasEnabled.value_or(false))
+						Config::Instance()->changeBackend = true;
+				}
 
 				ImGui::BeginDisabled(!Config::Instance()->OverrideSharpness.value_or(false));
 
@@ -706,46 +842,6 @@ void Imgui_Base::RenderMenu()
 				Config::Instance()->Sharpness = sharpness;
 
 				ImGui::EndDisabled();
-
-				// MIPMAP BIAS -----------------------------
-				ImGui::SeparatorText("Mipmap Bias (Dx12)");
-
-				ImGui::BeginDisabled(Config::Instance()->Api != NVNGX_DX12);
-
-				if (Config::Instance()->MipmapBiasOverride.has_value() && mipBias == 0.0f)
-					mipBias = Config::Instance()->MipmapBiasOverride.value();
-
-				ImGui::SliderFloat("Mipmap Bias", &mipBias, -15.0f, 15.0f, "%.6f", ImGuiSliderFlags_NoRoundToFormat);
-
-				ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "This will be applied after first resolution change!");
-
-				if (ImGui::Button("Set"))
-					Config::Instance()->MipmapBiasOverride = mipBias;
-
-				ImGui::SameLine(0.0f, 6.0f);
-
-				if (ImGui::Button("Reset"))
-				{
-					Config::Instance()->MipmapBiasOverride.reset();
-					mipBias = 0.0f;
-				}
-
-				ImGui::SameLine(0.0f, 6.0f);
-
-				if (ImGui::Button("Calculate"))
-				{
-					showMipmapCalcWindow = true;
-				}
-
-				ImGui::SameLine(0.0f, 6.0f);
-
-				ImGui::Text("Current : %.6f", Config::Instance()->lastMipBias);
-
-				ImGui::EndDisabled();
-
-
-				ImGui::TableNextColumn();
-
 
 				// UPSCALE RATIO OVERRIDE -----------------
 				ImGui::SeparatorText("Upscale Ratio");
@@ -774,23 +870,23 @@ void Imgui_Base::RenderMenu()
 
 				float qUq = Config::Instance()->QualityRatio_UltraQuality.value_or(1.3f);
 				if (ImGui::SliderFloat("Ultra Quality", &qUq, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
-				Config::Instance()->QualityRatio_UltraQuality = qUq;
+					Config::Instance()->QualityRatio_UltraQuality = qUq;
 
 				float qQ = Config::Instance()->QualityRatio_Quality.value_or(1.5f);
 				if (ImGui::SliderFloat("Quality", &qQ, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
-				Config::Instance()->QualityRatio_Quality = qQ;
+					Config::Instance()->QualityRatio_Quality = qQ;
 
 				float qB = Config::Instance()->QualityRatio_Balanced.value_or(1.7f);
 				if (ImGui::SliderFloat("Balanced", &qB, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
-				Config::Instance()->QualityRatio_Balanced = qB;
+					Config::Instance()->QualityRatio_Balanced = qB;
 
 				float qP = Config::Instance()->QualityRatio_Performance.value_or(2.0f);
 				if (ImGui::SliderFloat("Performance", &qP, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
-				Config::Instance()->QualityRatio_Performance = qP;
+					Config::Instance()->QualityRatio_Performance = qP;
 
 				float qUp = Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0f);
 				if (ImGui::SliderFloat("Ultra Performance", &qUp, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
-				Config::Instance()->QualityRatio_UltraPerformance = qUp;
+					Config::Instance()->QualityRatio_UltraPerformance = qUp;
 
 				ImGui::EndDisabled();
 
@@ -842,33 +938,6 @@ void Imgui_Base::RenderMenu()
 
 					ImGui::EndTable();
 				}
-
-				// BARRIERS -----------------------------
-				ImGui::SeparatorText("Resource Barriers (Dx12)");
-				ImGui::BeginDisabled(Config::Instance()->Api != NVNGX_DX12);
-
-				AddResourceBarrier("Color", &Config::Instance()->ColorResourceBarrier);
-				AddResourceBarrier("Depth", &Config::Instance()->DepthResourceBarrier);
-				AddResourceBarrier("Motion", &Config::Instance()->MVResourceBarrier);
-				AddResourceBarrier("Exposure", &Config::Instance()->ExposureResourceBarrier);
-				AddResourceBarrier("Mask", &Config::Instance()->MaskResourceBarrier);
-				AddResourceBarrier("Output", &Config::Instance()->OutputResourceBarrier);
-
-				ImGui::EndDisabled();
-
-				// HOTFIXES -----------------------------
-				ImGui::SeparatorText("Hotfixes (Dx12)");
-
-				ImGui::BeginDisabled(Config::Instance()->Api != NVNGX_DX12);
-
-				if (bool crs = Config::Instance()->RestoreComputeSignature.value_or(false); ImGui::Checkbox("Restore Compute RS", &crs))
-					Config::Instance()->RestoreComputeSignature = crs;
-
-				ImGui::SameLine(0.0f, 6.0f);
-				if (bool grs = Config::Instance()->RestoreGraphicSignature.value_or(false); ImGui::Checkbox("Restore Graphic RS", &grs))
-					Config::Instance()->RestoreGraphicSignature = grs;
-
-				ImGui::EndDisabled();
 
 				// LOGGING -----------------------------
 				ImGui::SeparatorText("Logging");
@@ -926,11 +995,11 @@ void Imgui_Base::RenderMenu()
 
 				ImGui::SameLine(0.0f, 4.0f);
 
-				ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+				ImGui::Text("%.3f ms/frame (%.1f FPS) %d", 1000.0f / io.Framerate, io.Framerate, Config::Instance()->CurrentFeature->FrameCount());
 
 				ImGui::SameLine(0.0f, 10.0f);
 
-				ImGui::PushItemWidth(90.0);
+				ImGui::PushItemWidth(45.0f * imguiRatio);
 
 				const char* uiScales[] = { "1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "2.0" };
 				const char* selectedScaleName = uiScales[selectedScale];
@@ -952,7 +1021,7 @@ void Imgui_Base::RenderMenu()
 
 				ImGui::PopItemWidth();
 
-				ImGui::SameLine(0.0f, 20.0f);
+				ImGui::SameLine(0.0f, 15.0f);
 
 				if (ImGui::Button("Save INI"))
 					Config::Instance()->SaveIni();

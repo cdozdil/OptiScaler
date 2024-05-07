@@ -392,8 +392,21 @@ void DLSSFeature::ProcessEvaluateParams(const NVSDK_NGX_Parameter* InParameters)
 	if (InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &floatValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_Jitter_Offset_Y, floatValue);
 
-	if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &floatValue) == NVSDK_NGX_Result_Success)
+	// override sharpness
+	if (Config::Instance()->OverrideSharpness.value_or(false) && !(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->CasEnabled.value_or(false)))
+	{
+		auto sharpness = Config::Instance()->Sharpness.value_or(0.3f);
+		Parameters->Set(NVSDK_NGX_Parameter_Sharpness, sharpness);
+	}
+	// cas enabled
+	else if (Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->CasEnabled.value_or(false))
+		Parameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
+	// dlss value
+	else if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &floatValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_Sharpness, floatValue);
+	// fallback
+	else
+		Parameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_Reset, &intValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_Reset, intValue);
@@ -480,29 +493,152 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 	if (InParameters->Get(NVSDK_NGX_Parameter_VisibilityNodeMask, &uintValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_VisibilityNodeMask, uintValue);
 
-	if (InParameters->Get(NVSDK_NGX_Parameter_Width, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_Width, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_Height, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_Height, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_OutWidth, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_OutWidth, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_OutHeight, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_OutHeight, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_PerfQualityValue, &intValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_PerfQualityValue, intValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &intValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, intValue);
-
 	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Enable_Output_Subrects, &intValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Enable_Output_Subrects, intValue);
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_RTXValue, &intValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_RTXValue, intValue);
+
+	// Create flags -----------------------------
+	unsigned int featureFlags = 0;
+
+	bool isHdr = false;
+	bool mvLowRes = false;
+	bool mvJittered = false;
+	bool depthInverted = false;
+	bool sharpening = false;
+	bool autoExposure = false;
+
+	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &uintValue) == NVSDK_NGX_Result_Success)
+	{
+		isHdr = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_IsHDR) > 0;
+		mvLowRes = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) > 0;
+		mvJittered = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_MVJittered) > 0;
+		depthInverted = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted) > 0;
+		sharpening = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening) > 0;
+		autoExposure = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure) > 0;
+	}
+
+	if (Config::Instance()->DepthInverted.value_or(depthInverted))
+	{
+		Config::Instance()->DepthInverted = true;
+		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (DepthInverted) {0:b}", featureFlags);
+	}
+
+	if (Config::Instance()->AutoExposure.value_or(autoExposure))
+	{
+		Config::Instance()->AutoExposure = true;
+		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (AutoExposure) {0:b}", featureFlags);
+	}
+	else
+	{
+		Config::Instance()->AutoExposure = false;
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!AutoExposure) {0:b}", featureFlags);
+	}
+
+	if (!Config::Instance()->HDR.value_or(isHdr))
+	{
+		Config::Instance()->HDR = true;
+		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (HDR) {0:b}", featureFlags);
+	}
+	else
+	{
+		Config::Instance()->HDR = false;
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!HDR) {0:b}", featureFlags);
+	}
+
+	if (Config::Instance()->JitterCancellation.value_or(mvJittered))
+	{
+		Config::Instance()->JitterCancellation = true;
+		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (JitterCancellation) {0:b}", featureFlags);
+	}
+
+	if (Config::Instance()->DisplayResolution.value_or(!mvLowRes))
+	{
+		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!LowResMV) {0:b}", featureFlags);
+	}
+	else
+	{
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (LowResMV) {0:b}", featureFlags);
+	}
+
+	if (Config::Instance()->OverrideSharpness.value_or(sharpening) && !(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->CasEnabled.value_or(false)))
+	{
+		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (Sharpenin) {0:b}", featureFlags);
+	}
+	else
+	{
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!Sharpenin) {0:b}", featureFlags);
+	}
+
+	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, featureFlags);
+
+	// Resolution -----------------------------
+	if (Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+	{
+		float ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(1.5f);
+
+		if (ssMulti < 0.5f)
+		{
+			ssMulti = 0.5f;
+			Config::Instance()->SuperSamplingMultiplier = ssMulti;
+		}
+		else if (ssMulti > 3.0f)
+		{
+			ssMulti = 3.0f;
+			Config::Instance()->SuperSamplingMultiplier = ssMulti;
+		}
+
+		_targetWidth = DisplayWidth() * ssMulti;
+		_targetHeight = DisplayHeight() * ssMulti;
+	}
+	else
+	{
+		_targetWidth = DisplayWidth();
+		_targetHeight = DisplayHeight();
+	}
+
+	Parameters->Set(NVSDK_NGX_Parameter_Width, RenderWidth());
+	Parameters->Set(NVSDK_NGX_Parameter_Height, RenderHeight());
+	Parameters->Set(NVSDK_NGX_Parameter_OutWidth, TargetWidth());
+	Parameters->Set(NVSDK_NGX_Parameter_OutHeight, TargetHeight());
+
+	unsigned int RenderPresetDLAA = 0;
+	unsigned int RenderPresetUltraQuality = 0;
+	unsigned int RenderPresetQuality = 0;
+	unsigned int RenderPresetBalanced = 0;
+	unsigned int RenderPresetPerformance = 0;
+	unsigned int RenderPresetUltraPerformance = 0;
+
+	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, &RenderPresetDLAA);
+	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, &RenderPresetUltraQuality);
+	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, &RenderPresetQuality);
+	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, &RenderPresetBalanced);
+	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, &RenderPresetPerformance);
+	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, &RenderPresetUltraPerformance);
+
+	if (Config::Instance()->RenderPresetOverride.value_or(false))
+	{
+		RenderPresetDLAA = Config::Instance()->RenderPresetDLAA.value_or(RenderPresetDLAA);
+		RenderPresetUltraQuality = Config::Instance()->RenderPresetDLAA.value_or(RenderPresetUltraQuality);
+		RenderPresetQuality = Config::Instance()->RenderPresetDLAA.value_or(RenderPresetQuality);
+		RenderPresetBalanced = Config::Instance()->RenderPresetDLAA.value_or(RenderPresetBalanced);
+		RenderPresetPerformance = Config::Instance()->RenderPresetDLAA.value_or(RenderPresetPerformance);
+		RenderPresetUltraPerformance = Config::Instance()->RenderPresetDLAA.value_or(RenderPresetUltraPerformance);
+	}
+
+	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, RenderPresetDLAA);
+	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, RenderPresetUltraQuality);
+	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, RenderPresetQuality);
+	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, RenderPresetBalanced);
+	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, RenderPresetPerformance);
+	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, RenderPresetUltraPerformance);
 }
 
 void DLSSFeature::GetFeatureCommonInfo(NVSDK_NGX_FeatureCommonInfo* fcInfo)

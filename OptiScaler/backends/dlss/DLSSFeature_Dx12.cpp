@@ -130,11 +130,70 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 
 	NVSDK_NGX_Result nvResult;
-	ID3D12Resource* paramOutput;
 
 	if (_EvaluateFeature != nullptr)
 	{
+		if (Config::Instance()->changeCAS)
+		{
+			if (CAS != nullptr && CAS.get() != nullptr)
+			{
+				spdlog::trace("DLSSFeatureDx12::Evaluate sleeping before CAS.reset() for 250ms");
+				std::this_thread::sleep_for(std::chrono::milliseconds(250));
+				CAS.reset();
+			}
+			else
+			{
+				Config::Instance()->changeCAS = false;
+				spdlog::trace("DLSSFeatureDx12::Evaluate sleeping before CAS creation for 250ms");
+				std::this_thread::sleep_for(std::chrono::milliseconds(250));
+				CAS = std::make_unique<CAS_Dx12>(Device, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
+			}
+		}
+
 		ProcessEvaluateParams(InParameters);
+
+		ID3D12Resource* paramOutput = nullptr;
+		ID3D12Resource* setBuffer = nullptr;
+
+		bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
+		
+		Parameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput);
+
+		// supersampling
+		if (useSS)
+		{
+			OUT_DS->Scale = (float)TargetWidth() / (float)DisplayWidth();
+
+			if (OUT_DS->CreateBufferResource(Device, paramOutput, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+			{
+				OUT_DS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+				setBuffer = OUT_DS->Buffer();
+			}
+			else
+				setBuffer = paramOutput;
+		}
+		else
+			setBuffer = paramOutput;
+
+		// CAS sharpness & preperation
+		auto sharpness = GetSharpness(InParameters);
+
+		if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(false) && sharpness > 0.0f &&
+			CAS != nullptr && CAS.get() != nullptr &&
+			CAS->CreateBufferResource(Device, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		{
+			CAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+			setBuffer = CAS->Buffer();
+		}
+		// sharpness override
+		else if (Config::Instance()->OverrideSharpness.value_or(false))
+		{
+			sharpness = Config::Instance()->Sharpness.value_or(0.3);
+			Parameters->Set(NVSDK_NGX_Parameter_Sharpness, sharpness);
+		}
+
+		Parameters->Set(NVSDK_NGX_Parameter_Output, setBuffer);
 
 		nvResult = _EvaluateFeature(InCommandList, _p_dlssHandle, Parameters, NULL);
 
@@ -143,30 +202,68 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			spdlog::error("DLSSFeatureDx12::Evaluate _EvaluateFeature result: {0:X}", (unsigned int)nvResult);
 			return false;
 		}
+
+		// Apply CAS
+		if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(false) && sharpness > 0.0f && CAS != nullptr && CAS.get() != nullptr && CAS->Buffer() != nullptr)
+		{
+			ResourceBarrier(InCommandList, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			CAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+			if (useSS)
+			{
+				if (!CAS->Dispatch(InCommandList, sharpness, setBuffer, OUT_DS->Buffer()))
+				{
+					Config::Instance()->CasEnabled = false;
+					return true;
+				}
+			}
+			else
+			{
+				if (!CAS->Dispatch(InCommandList, sharpness, setBuffer, paramOutput))
+				{
+					Config::Instance()->CasEnabled = false;
+					return true;
+				}
+			}
+		}
+
+		// Downsampling
+		if (useSS)
+		{
+			spdlog::debug("XeSSFeatureDx12::Evaluate downscaling output...");
+			OUT_DS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+			if (!OUT_DS->Dispatch(Device, InCommandList, OUT_DS->Buffer(), paramOutput))
+			{
+				Config::Instance()->SuperSamplingEnabled = false;
+				Config::Instance()->changeBackend = true;
+				return true;
+			}
+		}
+
+		// imgui
+		if (_frameCount > 20 && Parameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput) == NVSDK_NGX_Result_Success)
+		{
+			if (Imgui != nullptr && Imgui.get() != nullptr)
+			{
+				if (Imgui->IsHandleDifferent())
+				{
+					Imgui.reset();
+				}
+				else
+					Imgui->Render(InCommandList, paramOutput);
+			}
+			else
+			{
+				if (Imgui == nullptr || Imgui.get() == nullptr)
+					Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+			}
+		}
 	}
 	else
 	{
 		spdlog::error("DLSSFeatureDx12::Evaluate _EvaluateFeature is nullptr");
 		return false;
-	}
-
-	// imgui
-	if (_frameCount > 20 && Parameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput) == NVSDK_NGX_Result_Success)
-	{
-		if (Imgui != nullptr && Imgui.get() != nullptr)
-		{
-			if (Imgui->IsHandleDifferent())
-			{
-				Imgui.reset();
-			}
-			else
-				Imgui->Render(InCommandList, paramOutput);
-		}
-		else
-		{
-			if (Imgui == nullptr || Imgui.get() == nullptr)
-				Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
-		}
 	}
 
 	_frameCount++;
@@ -236,4 +333,15 @@ DLSSFeatureDx12::~DLSSFeatureDx12()
 
 	if (_ReleaseFeature != nullptr)
 		_ReleaseFeature(_p_dlssHandle);
+}
+
+float DLSSFeatureDx12::GetSharpness(const NVSDK_NGX_Parameter* InParameters)
+{
+	if (Config::Instance()->OverrideSharpness.value_or(false))
+		return Config::Instance()->Sharpness.value_or(0.3);
+
+	float sharpness = 0.0f;
+	InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &sharpness);
+
+	return sharpness;
 }
