@@ -18,7 +18,7 @@ bool FSR2FeatureDx12_212::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList
 		if (Imgui == nullptr || Imgui.get() == nullptr)
 			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
 
-		OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", InDevice);
+		OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", InDevice, (RenderWidth() < DisplayWidth()));
 
 		return true;
 	}

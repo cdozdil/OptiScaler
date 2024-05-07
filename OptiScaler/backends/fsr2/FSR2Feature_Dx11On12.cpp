@@ -109,7 +109,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 			std::this_thread::sleep_for(std::chrono::milliseconds(1500));
 		}
 
-		OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", Dx12Device);
+		OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", Dx12Device, (RenderWidth() < DisplayWidth()));
 	}
 
 	if (!IsInited())

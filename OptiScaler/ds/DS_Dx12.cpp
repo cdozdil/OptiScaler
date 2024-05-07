@@ -210,7 +210,7 @@ bool DS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 	return true;
 }
 
-DS_Dx12::DS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), _device(InDevice)
+DS_Dx12::DS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : _name(InName), _device(InDevice), _upsample(InUpsample)
 {
 	if (InDevice == nullptr)
 	{
@@ -322,7 +322,8 @@ DS_Dx12::DS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), _d
 	}
 
 	// Compile shader blobs
-	ID3DBlob* _recEncodeShader = CompileShader(downsampleCode.c_str(), "CSMain", "cs_5_0");
+	ID3DBlob* _recEncodeShader = CompileShader(_upsample ? upsampleCode.c_str() : downsampleCode.c_str(), "CSMain", "cs_5_0");
+	//ID3DBlob* _recEncodeShader = CompileShader(upsampleCode.c_str(), "CSMain", "cs_6_0");
 
 	if (_recEncodeShader == nullptr)
 	{
