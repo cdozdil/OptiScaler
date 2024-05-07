@@ -20,6 +20,11 @@ bool Config::Reload()
 		SuperSamplingEnabled = readBool("Upscalers", "SuperSamplingEnabled");
 		SuperSamplingMultiplier = readFloat("Upscalers", "SuperSamplingMultiplier");
 
+		if (SuperSamplingMultiplier.has_value() && SuperSamplingMultiplier.value() < 0.5f)
+			SuperSamplingMultiplier = 0.5f;
+		else if (SuperSamplingMultiplier.has_value() && SuperSamplingMultiplier.value() > 3.0f)
+			SuperSamplingMultiplier = 3.0f;
+
 		// XeSS
 		BuildPipelines = readBool("XeSS", "BuildPipelines");
 		NetworkModel = readInt("XeSS", "NetworkModel");
@@ -104,12 +109,11 @@ bool Config::Reload()
 		// Quality Overrides
 		QualityRatioOverrideEnabled = readBool("QualityOverrides", "QualityRatioOverrideEnabled");
 		QualityRatio_DLAA = readFloat("QualityOverrides", "QualityRatioDLAA");
-			QualityRatio_UltraQuality = readFloat("QualityOverrides", "QualityRatioUltraQuality");
-			QualityRatio_Quality = readFloat("QualityOverrides", "QualityRatioQuality");
-			QualityRatio_Balanced = readFloat("QualityOverrides", "QualityRatioBalanced");
-			QualityRatio_Performance = readFloat("QualityOverrides", "QualityRatioPerformance");
-			QualityRatio_UltraPerformance = readFloat("QualityOverrides", "QualityRatioUltraPerformance");
-		}
+		QualityRatio_UltraQuality = readFloat("QualityOverrides", "QualityRatioUltraQuality");
+		QualityRatio_Quality = readFloat("QualityOverrides", "QualityRatioQuality");
+		QualityRatio_Balanced = readFloat("QualityOverrides", "QualityRatioBalanced");
+		QualityRatio_Performance = readFloat("QualityOverrides", "QualityRatioPerformance");
+		QualityRatio_UltraPerformance = readFloat("QualityOverrides", "QualityRatioUltraPerformance");
 
 		// hotfixes
 		DisableReactiveMask = readBool("Hotfix", "DisableReactiveMask");
