@@ -386,6 +386,13 @@ void DLSSFeature::ProcessEvaluateParams(const NVSDK_NGX_Parameter* InParameters)
 	int intValue;
 	unsigned int uintValue;
 
+	if (Config::Instance()->Api == NVNGX_DX12)
+		ProcessDx12Resources(InParameters, Parameters);
+	else if (Config::Instance()->Api == NVNGX_DX11)
+		ProcessDx11Resources(InParameters, Parameters);
+	else
+		ProcessVulkanResources(InParameters, Parameters);
+
 	if (InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &floatValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_Jitter_Offset_X, floatValue);
 
@@ -410,6 +417,8 @@ void DLSSFeature::ProcessEvaluateParams(const NVSDK_NGX_Parameter* InParameters)
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_Reset, &intValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_Reset, intValue);
+	else
+		Parameters->Set(NVSDK_NGX_Parameter_Reset, 0);
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &floatValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_MV_Scale_X, floatValue);
@@ -473,13 +482,6 @@ void DLSSFeature::ProcessEvaluateParams(const NVSDK_NGX_Parameter* InParameters)
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &floatValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, floatValue);
-
-	if (Config::Instance()->Api == NVNGX_DX12)
-		ProcessDx12Resources(InParameters, Parameters);
-	else if (Config::Instance()->Api == NVNGX_DX11)
-		ProcessDx11Resources(InParameters, Parameters);
-	else
-		ProcessVulkanResources(InParameters, Parameters);
 }
 
 void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
@@ -538,7 +540,7 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!AutoExposure) {0:b}", featureFlags);
 	}
 
-	if (!Config::Instance()->HDR.value_or(isHdr))
+	if (Config::Instance()->HDR.value_or(isHdr))
 	{
 		Config::Instance()->HDR = true;
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
