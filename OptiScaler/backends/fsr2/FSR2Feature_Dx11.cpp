@@ -131,7 +131,7 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
 	_contextDesc.flags = 0;
 
-	int featureFlags;
+	unsigned int featureFlags = 0;
 	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);
 
 	_initFlags = featureFlags;

@@ -39,7 +39,7 @@ bool FSR2FeatureVk212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
 	_contextDesc.flags = 0;
 
-	int featureFlags;
+	unsigned int featureFlags;
 	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);
 
 	bool Hdr = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;

@@ -441,7 +441,7 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	_contextDesc.device = Fsr212::ffxGetDeviceDX12_212(Dx12Device);
 	_contextDesc.flags = 0;
 	
-	int featureFlags = 0;
+	unsigned int featureFlags = 0;
 	if (!_initFlagsReady)
 	{
 		InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);

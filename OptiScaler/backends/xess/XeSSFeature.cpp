@@ -59,7 +59,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 	xessParams.initFlags = XESS_INIT_FLAG_NONE;
 
-	int featureFlags = 0;
+	unsigned int featureFlags = 0;
 	if (!_initFlagsReady)
 	{
 		InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);
