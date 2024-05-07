@@ -53,30 +53,25 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	float scalingRatio = 0.0f;
 	int PerfQualityValue;
 
-	if (InParams->Get(NVSDK_NGX_Parameter_Width, &Width) != NVSDK_NGX_Result_Success)
+	if (InParams->Get(NVSDK_NGX_Parameter_Width, &Width) != NVSDK_NGX_Result_Success ||
+		InParams->Get(NVSDK_NGX_Parameter_Height, &Height) != NVSDK_NGX_Result_Success ||
+		InParams->Get(NVSDK_NGX_Parameter_PerfQualityValue, &PerfQualityValue) != NVSDK_NGX_Result_Success)
 		return NVSDK_NGX_Result_Fail;
-
-	if (InParams->Get(NVSDK_NGX_Parameter_Height, &Height) != NVSDK_NGX_Result_Success)
-		return NVSDK_NGX_Result_Fail;
-
-	if (InParams->Get(NVSDK_NGX_Parameter_PerfQualityValue, &PerfQualityValue) != NVSDK_NGX_Result_Success)
-		return NVSDK_NGX_Result_Fail;
-
-	bool usingXess = (Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") == "xess") ||
-		(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->Dx12Upscaler.value_or("xess") == "xess");
 
 	auto enumPQValue = (NVSDK_NGX_PerfQuality_Value)PerfQualityValue;
 
-	spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback Output Resolution: {0}x{1}", Width, Height);
+	spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback Display Resolution: {0}x{1}", Width, Height);
 
 	const std::optional<float> QualityRatio = GetQualityOverrideRatio(enumPQValue);
 
-	if (QualityRatio.has_value()) {
+	if (QualityRatio.has_value()) 
+	{
 		OutHeight = (unsigned int)((float)Height / QualityRatio.value());
 		OutWidth = (unsigned int)((float)Width / QualityRatio.value());
 		scalingRatio = 1.0f / QualityRatio.value();
 	}
-	else {
+	else 
+	{
 		spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback Quality: {0}", PerfQualityValue);
 
 		switch (enumPQValue)
@@ -122,6 +117,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 			OutWidth = (unsigned int)((float)Width / 1.7);
 			scalingRatio = 1.0f / 1.7f;
 			break;
+
 		}
 	}
 
@@ -168,14 +164,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	InParams->Set(NVSDK_NGX_EParameter_SizeInBytes, Width * Height * 31);
 	InParams->Set(NVSDK_NGX_EParameter_DLSSMode, NVSDK_NGX_DLSS_Mode_DLSS);
 
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_A);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_A);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_A);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_A);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_A);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_A);
-
-	spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback: Output Resolution: {0}x{1} Render Resolution: {2}x{3}", Width, Height, OutWidth, OutHeight);
+	spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback: Display Resolution: {0}x{1} Render Resolution: {2}x{3}", Width, Height, OutWidth, OutHeight);
 	return NVSDK_NGX_Result_Success;
 }
 
@@ -234,6 +223,13 @@ inline void InitNGXParameters(NVSDK_NGX_Parameter* InParams)
 	InParams->Set(NVSDK_NGX_EParameter_MV_Scale_Y, 1.0f);
 	InParams->Set(NVSDK_NGX_EParameter_MV_Offset_X, 0.0f);
 	InParams->Set(NVSDK_NGX_EParameter_MV_Offset_Y, 0.0f);
+
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, (uint32_t)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
 }
 
 struct Parameter
@@ -400,8 +396,6 @@ private:
 
 		return NVSDK_NGX_Result_Success;
 	}
-
-
 };
 
 inline NVSDK_NGX_Parameter* GetNGXParameters()
