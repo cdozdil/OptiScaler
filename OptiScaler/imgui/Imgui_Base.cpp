@@ -530,7 +530,8 @@ void Imgui_Base::RenderMenu()
 				// DYNAMIC PROPERTIES -----------------------------
 
 				// Dx11 with Dx12
-				if (Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "fsr22")
+				if (Config::Instance()->Api == NVNGX_DX11 && 
+					Config::Instance()->Dx11Upscaler.value_or("fsr22") != "fsr22" && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "dlss")
 				{
 					ImGui::SeparatorText("Dx11 with Dx12 Settings");
 
