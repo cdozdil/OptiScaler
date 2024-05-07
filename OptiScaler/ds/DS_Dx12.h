@@ -190,8 +190,8 @@ float3x4 LoadSamples(uint idx, uint Stride)
 [numthreads(TILE_DIM_X, TILE_DIM_Y, 1)]
 void CSMain(uint3 DTid : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID, uint3 Gid : SV_GroupID, uint GI : SV_GroupIndex)
 {
-	float scaleX = 1.0f / ((float)_DstWidth / (float)_SrcWidth);
-	float scaleY = 1.0f / ((float)_DstHeight / (float)_SrcHeight);
+	float scaleX = (float)_SrcWidth / (float)_DstWidth;
+	float scaleY = (float)_SrcHeight / (float)_DstHeight;
 	const float2 kRcpScale = float2(scaleX, scaleY);
 	const float kA = 0.3f;
 	
@@ -234,7 +234,6 @@ void CSMain(uint3 DTid : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID, uin
 		WriteIdx += TILE_DIM_Y * SAMPLES_X;
 		StoreLDS(WriteIdx, mul(LoadSamples(ReadIdx, 1), xWeights));
 	}
-
 
 	GroupMemoryBarrierWithGroupSync();
 
