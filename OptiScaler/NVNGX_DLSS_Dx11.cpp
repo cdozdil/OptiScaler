@@ -405,6 +405,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 				spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new XeSS with Dx12 feature");
 				Dx11Contexts[handleId] = std::make_unique<XeSSFeatureDx11>(handleId, createParams);
 			}
+			else if (Config::Instance()->newBackend == "dlss")
+			{
+				Config::Instance()->Dx11Upscaler = "dlss";
+				spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new DLSS feature");
+				Dx11Contexts[handleId] = std::make_unique<DLSSFeatureDx11>(handleId, createParams);
+			}
 			else if (Config::Instance()->newBackend == "fsr21_12")
 			{
 				Config::Instance()->Dx11Upscaler = "fsr21_12";
@@ -424,7 +430,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 				Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11>(handleId, createParams);
 			}
 
-			if (Config::Instance()->Dx11DelayedInit.value_or(false) && Config::Instance()->newBackend != "fsr22")
+			if (Config::Instance()->Dx11DelayedInit.value_or(false) && Config::Instance()->newBackend != "fsr22" && Config::Instance()->newBackend != "dlss")
 			{
 				spdlog::trace("NVSDK_NGX_D3D11_EvaluateFeature sleeping after new creation of new feature for 1000ms");
 				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
