@@ -52,4 +52,7 @@ IFeature_Dx12::~IFeature_Dx12()
 			d3d12Fence = nullptr;
 		}
 	}
+
+	if (OUT_DS != nullptr && OUT_DS.get() != nullptr)
+		OUT_DS.reset();
 }
