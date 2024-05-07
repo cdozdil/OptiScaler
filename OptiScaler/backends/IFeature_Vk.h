@@ -13,7 +13,6 @@ protected:
 	PFN_vkGetInstanceProcAddr GIPA;
 	PFN_vkGetDeviceProcAddr GDPA;
 
-
 public:
 	virtual bool Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_Parameter* InParameters) = 0;
 	virtual bool Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parameter* InParameters) = 0;

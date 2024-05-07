@@ -17,6 +17,9 @@ bool DLSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 	NVSDK_NGX_Result nvResult;
 	bool initResult = false;
 
+	Device = InDevice;
+	DeviceContext = InContext;
+
 	do
 	{
 		if (!_dlssInited)

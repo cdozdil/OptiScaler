@@ -17,6 +17,10 @@ bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice 
 	NVSDK_NGX_Result nvResult;
 	bool initResult = false;
 
+	Instance = InInstance;
+	PhysicalDevice = InPD;
+	Device = InDevice;
+
 	do
 	{
 		if (!_dlssInited)

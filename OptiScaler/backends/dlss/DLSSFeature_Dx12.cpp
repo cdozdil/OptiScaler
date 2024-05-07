@@ -17,6 +17,8 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 	NVSDK_NGX_Result nvResult;
 	bool initResult = false;
 
+	Device = InDevice;
+
 	do
 	{
 		if (!_dlssInited)
@@ -230,7 +232,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		// Downsampling
 		if (useSS)
 		{
-			spdlog::debug("XeSSFeatureDx12::Evaluate downscaling output...");
+			spdlog::debug("DLSSFeatureDx12::Evaluate downscaling output...");
 			OUT_DS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
 			if (!OUT_DS->Dispatch(Device, InCommandList, OUT_DS->Buffer(), paramOutput))
@@ -242,7 +244,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		}
 
 		// imgui
-		if (_frameCount > 20 && Parameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput) == NVSDK_NGX_Result_Success)
+		if (_frameCount > 20 && paramOutput)
 		{
 			if (Imgui != nullptr && Imgui.get() != nullptr)
 			{
