@@ -65,6 +65,7 @@ public:
 
 	// Quality Overrides
 	std::optional<bool> QualityRatioOverrideEnabled;
+	std::optional<float> QualityRatio_DLAA;
 	std::optional<float> QualityRatio_UltraQuality;
 	std::optional<float> QualityRatio_Quality;
 	std::optional<float> QualityRatio_Balanced;

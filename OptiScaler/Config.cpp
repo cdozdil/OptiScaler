@@ -78,8 +78,7 @@ bool Config::Reload()
 
 		// Quality Overrides
 		QualityRatioOverrideEnabled = readBool("QualityOverrides", "QualityRatioOverrideEnabled");
-
-		if (QualityRatioOverrideEnabled.value_or(false)) {
+		QualityRatio_DLAA = readFloat("QualityOverrides", "QualityRatioDLAA");
 			QualityRatio_UltraQuality = readFloat("QualityOverrides", "QualityRatioUltraQuality");
 			QualityRatio_Quality = readFloat("QualityOverrides", "QualityRatioQuality");
 			QualityRatio_Balanced = readFloat("QualityOverrides", "QualityRatioBalanced");

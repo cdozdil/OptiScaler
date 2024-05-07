@@ -768,24 +768,28 @@ void Imgui_Base::RenderMenu()
 
 				ImGui::BeginDisabled(!Config::Instance()->QualityRatioOverrideEnabled.value_or(false));
 
+				float qDlaa = Config::Instance()->QualityRatio_DLAA.value_or(1.3f);
+				if (ImGui::SliderFloat("DLAA", &qDlaa, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
+					Config::Instance()->QualityRatio_DLAA = qDlaa;
+
 				float qUq = Config::Instance()->QualityRatio_UltraQuality.value_or(1.3f);
-				ImGui::SliderFloat("Ultra Quality", &qUq, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
+				if (ImGui::SliderFloat("Ultra Quality", &qUq, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
 				Config::Instance()->QualityRatio_UltraQuality = qUq;
 
 				float qQ = Config::Instance()->QualityRatio_Quality.value_or(1.5f);
-				ImGui::SliderFloat("Quality", &qQ, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
+				if (ImGui::SliderFloat("Quality", &qQ, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
 				Config::Instance()->QualityRatio_Quality = qQ;
 
 				float qB = Config::Instance()->QualityRatio_Balanced.value_or(1.7f);
-				ImGui::SliderFloat("Balanced", &qB, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
+				if (ImGui::SliderFloat("Balanced", &qB, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
 				Config::Instance()->QualityRatio_Balanced = qB;
 
 				float qP = Config::Instance()->QualityRatio_Performance.value_or(2.0f);
-				ImGui::SliderFloat("Performance", &qP, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
+				if (ImGui::SliderFloat("Performance", &qP, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
 				Config::Instance()->QualityRatio_Performance = qP;
 
 				float qUp = Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0f);
-				ImGui::SliderFloat("Ultra Performance", &qUp, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
+				if (ImGui::SliderFloat("Ultra Performance", &qUp, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
 				Config::Instance()->QualityRatio_UltraPerformance = qUp;
 
 				ImGui::EndDisabled();
