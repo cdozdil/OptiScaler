@@ -87,6 +87,19 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
 )";		
 	
 	std::string upsampleCode = R"(
+//
+// Copyright (c) Microsoft. All rights reserved.
+// This code is licensed under the MIT License (MIT).
+// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
+// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
+// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
+// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
+//
+// Developed by Minigraph
+//
+// Author(s):  James Stanard
+//
+
 Texture2D<float3> Source : register(t0);
 RWTexture2D<float3> Dest : register(u0);
 
@@ -175,16 +188,12 @@ float3x4 LoadSamples(uint idx, uint Stride)
 }
 
 [numthreads(TILE_DIM_X, TILE_DIM_Y, 1)]
-void CSMain(
-	uint3 DTid : SV_DispatchThreadID,
-	uint3 GTid : SV_GroupThreadID,
-	uint3 Gid  : SV_GroupID,
-	uint  GI   : SV_GroupIndex)
+void CSMain(uint3 DTid : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID, uint3 Gid : SV_GroupID, uint GI : SV_GroupIndex)
 {
 	float scaleX = 1.0f / ((float)_DstWidth / (float)_SrcWidth);
 	float scaleY = 1.0f / ((float)_DstHeight / (float)_SrcHeight);
 	const float2 kRcpScale = float2(scaleX, scaleY);
-	const float kA = 0.5f;
+	const float kA = 0.3f;
 	
 	// Number of samples needed from the source buffer to generate the output tile dimensions.
 	const uint2 SampleSpace = ceil(float2(TILE_DIM_X, TILE_DIM_Y) * kRcpScale + 3.0);
@@ -252,6 +261,7 @@ public:
 	float Scale = 1.0f;
 
 	ID3D12Resource* Buffer() { return _buffer; }
+	bool IsUpsampling() { return _upsample; }
 	bool IsInit() const { return _init; }
 
 	DS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample);

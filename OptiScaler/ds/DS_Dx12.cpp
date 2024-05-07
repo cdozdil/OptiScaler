@@ -203,8 +203,20 @@ bool DS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 	InCmdList->SetComputeRootDescriptorTable(1, _gpuUavHandle[_counter]);
 	InCmdList->SetComputeRootDescriptorTable(2, _gpuCbvHandle[_counter]);
 
-	UINT dispatchWidth = (InResource->GetDesc().Width + InNumThreadsX - 1) / InNumThreadsX;
-	UINT dispatchHeight = (InResource->GetDesc().Height + InNumThreadsY - 1) / InNumThreadsY;
+	UINT dispatchWidth = 0;
+	UINT dispatchHeight = 0;
+
+	if (_upsample)
+	{
+		dispatchWidth = (outDesc.Width + InNumThreadsX - 1) / InNumThreadsX;
+		dispatchHeight = (outDesc.Height + InNumThreadsY - 1) / InNumThreadsY;
+	}
+	else
+	{
+		dispatchWidth = (inDesc.Width + InNumThreadsX - 1) / InNumThreadsX;
+		dispatchHeight = (inDesc.Height + InNumThreadsY - 1) / InNumThreadsY;
+	}
+
 	InCmdList->Dispatch(dispatchWidth, dispatchHeight, 1);
 
 	return true;
@@ -323,8 +335,7 @@ DS_Dx12::DS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
 
 	// Compile shader blobs
 	ID3DBlob* _recEncodeShader = CompileShader(_upsample ? upsampleCode.c_str() : downsampleCode.c_str(), "CSMain", "cs_5_0");
-	//ID3DBlob* _recEncodeShader = CompileShader(upsampleCode.c_str(), "CSMain", "cs_6_0");
-
+	
 	if (_recEncodeShader == nullptr)
 	{
 		spdlog::error("CS_Dx12::CS_Dx12 [{0}] CompileShader error!", _name);
