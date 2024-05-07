@@ -74,6 +74,7 @@ public:
 	virtual feature_version Version() = 0;
 	virtual const char* Name() = 0;
 	bool ModuleLoaded() const { return _moduleLoaded; }
+	long FrameCount() { return _frameCount; }
 
 	IFeature(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters)
 	{
