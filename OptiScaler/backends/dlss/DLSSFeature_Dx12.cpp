@@ -112,6 +112,9 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 
 	if (initResult)
 	{
+		if (Config::Instance()->CasEnabled.value_or(false))
+			CAS = std::make_unique<CAS_Dx12>(InDevice, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
+
 		if (Imgui == nullptr || Imgui.get() == nullptr)
 			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), InDevice);
 
