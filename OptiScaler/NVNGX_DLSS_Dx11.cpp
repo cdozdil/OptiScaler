@@ -297,7 +297,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 		}
 	}
 
-	if (deviceContext->Init(D3D11Device, InDevCtx, InParameters))
+	if (deviceContext->Init(D3D11Device, InDevCtx, InParameters) && Dx11Contexts[handleId]->ModuleLoaded())
 	{
 		Config::Instance()->ActiveFeatureCount++;
 		return NVSDK_NGX_Result_Success;
@@ -456,7 +456,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 			Config::Instance()->changeBackend = false;
 			changeBackendCounter = 0;
 
-			if (!initResult)
+			if (!initResult || !Dx11Contexts[handleId]->ModuleLoaded())
 			{
 				spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature init failed with {0} feature", Config::Instance()->Dx12Upscaler.value());
 
