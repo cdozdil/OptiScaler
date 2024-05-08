@@ -47,7 +47,6 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 	GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
 	bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
-		//&& ((float)DisplayWidth() / (float)params.renderSize.width) < Config::Instance()->OutputScalingMultiplier.value_or(2.5f);
 
 	spdlog::debug("FSR2FeatureDx12_212::Evaluate Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 

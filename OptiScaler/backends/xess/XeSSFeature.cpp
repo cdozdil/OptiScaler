@@ -300,6 +300,9 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 			}
 		}
 
+		if (device1 != nullptr)
+			device1->Release();
+
 		if (ret != XESS_RESULT_SUCCESS)
 		{
 			spdlog::error("XeSSFeature::InitXeSS xessD3D12BuildPipelines error: {0}", ResultToString(ret));
@@ -323,8 +326,11 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		return false;
 	}
 
-	if (Config::Instance()->CasEnabled.value_or(false))
-		CAS = std::make_unique<CAS_Dx12>(device, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
+	/*if (Config::Instance()->CasEnabled.value_or(false))*/
+	RCAS = std::make_unique<RCAS_Dx12>("RCAS", device);
+
+	//if (Config::Instance()->CasEnabled.value_or(false))
+	//	CAS = std::make_unique<CAS_Dx12>(device, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
 
 	SetInit(true);
 
@@ -344,7 +350,7 @@ XeSSFeature::XeSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 	{
 		// get it's version to compare with dll
 		ptrMemoryGetVersion(&memoryVersion);
-		
+
 		spdlog::info("XeSSFeature::XeSSFeature libxess.dll v{0}.{1}.{2} already loaded.", memoryVersion.major, memoryVersion.minor, memoryVersion.patch);
 
 		_xessD3D12CreateContext = (PFN_xessD3D12CreateContext)DetourFindFunction("libxess.dll", "xessD3D12CreateContext");
@@ -427,8 +433,11 @@ XeSSFeature::~XeSSFeature()
 		_xessContext = nullptr;
 	}
 
-	if (CAS != nullptr && CAS.get() != nullptr)
-		CAS.reset();
+	if (RCAS != nullptr && RCAS.get() != nullptr)
+		RCAS.reset();
+
+	//if (CAS != nullptr && CAS.get() != nullptr)
+	//	CAS.reset();
 
 	if (_localPipeline != nullptr)
 	{

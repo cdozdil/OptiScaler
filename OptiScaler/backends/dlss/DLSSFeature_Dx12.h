@@ -1,7 +1,8 @@
 #pragma once
 #include "DLSSFeature.h"
 #include "../IFeature_Dx12.h"
-#include "../../cas/CAS_Dx12.h"
+//#include "../../cas/CAS_Dx12.h"
+#include "../../rcas/RCAS_Dx12.h"
 #include <string>
 
 typedef NVSDK_NGX_Result(*PFN_NVSDK_NGX_D3D12_Init_Ext)(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo);
@@ -29,7 +30,7 @@ private:
 	inline static PFN_NVSDK_NGX_D3D12_ReleaseFeature _ReleaseFeature = nullptr;
 	inline static PFN_NVSDK_NGX_D3D12_EvaluateFeature _EvaluateFeature = nullptr;
 	
-	std::unique_ptr<CAS_Dx12> CAS = nullptr;
+	std::unique_ptr<RCAS_Dx12> RCAS = nullptr;
 
 	float GetSharpness(const NVSDK_NGX_Parameter* InParameters);
 

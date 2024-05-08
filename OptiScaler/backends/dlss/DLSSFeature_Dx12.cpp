@@ -113,7 +113,10 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 	if (initResult)
 	{
 		if (Config::Instance()->CasEnabled.value_or(false))
-			CAS = std::make_unique<CAS_Dx12>(InDevice, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
+			RCAS = std::make_unique<RCAS_Dx12>("RCAS", InDevice);
+
+		//if (Config::Instance()->CasEnabled.value_or(false))
+		//	CAS = std::make_unique<CAS_Dx12>(InDevice, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
 
 		if (Imgui == nullptr || Imgui.get() == nullptr)
 			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), InDevice);
@@ -140,20 +143,37 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	{
 		if (Config::Instance()->changeCAS)
 		{
-			if (CAS != nullptr && CAS.get() != nullptr)
+			if (RCAS != nullptr && RCAS.get() != nullptr)
 			{
 				spdlog::trace("DLSSFeatureDx12::Evaluate sleeping before CAS.reset() for 250ms");
 				std::this_thread::sleep_for(std::chrono::milliseconds(250));
-				CAS.reset();
+				RCAS.reset();
 			}
 			else
 			{
 				Config::Instance()->changeCAS = false;
 				spdlog::trace("DLSSFeatureDx12::Evaluate sleeping before CAS creation for 250ms");
 				std::this_thread::sleep_for(std::chrono::milliseconds(250));
-				CAS = std::make_unique<CAS_Dx12>(Device, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
+				RCAS = std::make_unique<RCAS_Dx12>("RCAS", Device);
 			}
 		}
+
+		//if (Config::Instance()->changeCAS)
+		//{
+		//	if (CAS != nullptr && CAS.get() != nullptr)
+		//	{
+		//		spdlog::trace("DLSSFeatureDx12::Evaluate sleeping before CAS.reset() for 250ms");
+		//		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+		//		CAS.reset();
+		//	}
+		//	else
+		//	{
+		//		Config::Instance()->changeCAS = false;
+		//		spdlog::trace("DLSSFeatureDx12::Evaluate sleeping before CAS creation for 250ms");
+		//		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+		//		CAS = std::make_unique<CAS_Dx12>(Device, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
+		//	}
+		//}
 
 		ProcessEvaluateParams(InParameters);
 
@@ -184,12 +204,12 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		auto sharpness = GetSharpness(InParameters);
 
 		if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(false) && sharpness > 0.0f &&
-			CAS != nullptr && CAS.get() != nullptr &&
-			CAS->CreateBufferResource(Device, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+			RCAS != nullptr && RCAS.get() != nullptr &&
+			RCAS->CreateBufferResource(Device, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
-			CAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-			setBuffer = CAS->Buffer();
+			setBuffer = RCAS->Buffer();
 		}
 		// sharpness override
 		else if (Config::Instance()->OverrideSharpness.value_or(false))
@@ -197,6 +217,22 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			sharpness = Config::Instance()->Sharpness.value_or(0.3);
 			Parameters->Set(NVSDK_NGX_Parameter_Sharpness, sharpness);
 		}
+
+		//if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(false) && sharpness > 0.0f &&
+		//	CAS != nullptr && CAS.get() != nullptr &&
+		//	CAS->CreateBufferResource(Device, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		//{
+		//	CAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+		//	setBuffer = CAS->Buffer();
+		//}
+		//// sharpness override
+		//else if (Config::Instance()->OverrideSharpness.value_or(false))
+		//{
+		//	sharpness = Config::Instance()->Sharpness.value_or(0.3);
+		//	Parameters->Set(NVSDK_NGX_Parameter_Sharpness, sharpness);
+		//}
+
 
 		Parameters->Set(NVSDK_NGX_Parameter_Output, setBuffer);
 
@@ -209,14 +245,15 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		}
 
 		// Apply CAS
-		if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(false) && sharpness > 0.0f && CAS != nullptr && CAS.get() != nullptr && CAS->Buffer() != nullptr)
+		if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(false) && sharpness > 0.0f && RCAS != nullptr && RCAS.get() != nullptr && RCAS->Buffer() != nullptr)
 		{
 			ResourceBarrier(InCommandList, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-			CAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			RCAS->Sharpness = sharpness;
 
 			if (useSS)
 			{
-				if (!CAS->Dispatch(InCommandList, sharpness, setBuffer, OUT_DS->Buffer()))
+				if (!RCAS->Dispatch(Device, InCommandList, setBuffer, OUT_DS->Buffer()))
 				{
 					Config::Instance()->CasEnabled = false;
 					return true;
@@ -224,13 +261,36 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			}
 			else
 			{
-				if (!CAS->Dispatch(InCommandList, sharpness, setBuffer, paramOutput))
+				if (!RCAS->Dispatch(Device, InCommandList, setBuffer, paramOutput))
 				{
 					Config::Instance()->CasEnabled = false;
 					return true;
 				}
 			}
 		}
+
+		//if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(false) && sharpness > 0.0f && CAS != nullptr && CAS.get() != nullptr && CAS->Buffer() != nullptr)
+		//{
+		//	ResourceBarrier(InCommandList, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		//	CAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+		//	if (useSS)
+		//	{
+		//		if (!CAS->Dispatch(InCommandList, sharpness, setBuffer, OUT_DS->Buffer()))
+		//		{
+		//			Config::Instance()->CasEnabled = false;
+		//			return true;
+		//		}
+		//	}
+		//	else
+		//	{
+		//		if (!CAS->Dispatch(InCommandList, sharpness, setBuffer, paramOutput))
+		//		{
+		//			Config::Instance()->CasEnabled = false;
+		//			return true;
+		//		}
+		//	}
+		//}
 
 		// Downsampling
 		if (useSS)

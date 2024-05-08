@@ -2,6 +2,7 @@
 #include "../IFeature.h"
 #include "../../cas/CAS_Dx12.h"
 #include "../../ds/DS_Dx12.h"
+#include "../../rcas/RCAS_Dx12.h"
 
 #include "xess_d3d12.h"
 #include "xess_debug.h"
@@ -70,7 +71,8 @@ private:
 
 protected:
 	xess_context_handle_t _xessContext = nullptr;
-	std::unique_ptr<CAS_Dx12> CAS = nullptr;
+	//std::unique_ptr<CAS_Dx12> CAS = nullptr;
+	std::unique_ptr<RCAS_Dx12> RCAS = nullptr;
 	int dumpCount = 0;
 
 	bool InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters);

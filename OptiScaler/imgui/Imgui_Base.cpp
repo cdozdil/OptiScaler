@@ -30,7 +30,6 @@ uint32_t renderWidth = 0;
 
 float ssRatio = 0.0f;
 bool ssEnabled = false;
-float imguiRatio = 1.0f;
 int selectedScale = 0;
 bool imguiSizeUpdate = true;
 
@@ -468,7 +467,7 @@ void Imgui_Base::RenderMenu()
 			style.ScrollbarRounding = 0.0f;
 			style.GrabRounding = 0.0f;
 			style.TabRounding = 0.0f;
-			style.ScaleAllSizes(imguiRatio);
+			style.ScaleAllSizes(Config::Instance()->MenuScale.value_or(1.0));
 			CopyMemory(style.Colors, styleold.Colors, sizeof(style.Colors)); // Restore colors		
 		}
 
@@ -487,7 +486,7 @@ void Imgui_Base::RenderMenu()
 
 		if (ImGui::Begin(std::format("OptiScaler v{}.{}.{}", VER_MAJOR_VERSION, VER_MINOR_VERSION, VER_HOTFIX_VERSION).c_str(), nullptr, flags))
 		{
-			ImGui::SetWindowFontScale(imguiRatio);
+			ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0));
 
 			if (ImGui::BeginTable("main", 2))
 			{
@@ -684,12 +683,12 @@ void Imgui_Base::RenderMenu()
 					AddRenderPreset("Ultra Performance", &Config::Instance()->RenderPresetUltraPerformance);
 				}
 
-				// CAS -----------------
+				// RCAS -----------------
 				if (Config::Instance()->Api == NVNGX_DX12 && currentBackend.rfind("fsr", 0))
 				{
-					ImGui::SeparatorText("CAS Settings");
+					ImGui::SeparatorText("RCAS Settings");
 
-					if (bool cas = Config::Instance()->CasEnabled.value_or(false); ImGui::Checkbox("CAS", &cas))
+					if (bool cas = Config::Instance()->CasEnabled.value_or(currentBackend == "xess"); ImGui::Checkbox("Enable RCAS", &cas))
 					{
 						Config::Instance()->CasEnabled = cas;
 
@@ -699,33 +698,33 @@ void Imgui_Base::RenderMenu()
 							Config::Instance()->changeCAS = true;
 					}
 
-					ImGui::BeginDisabled(!Config::Instance()->CasEnabled.value_or(false));
+					//ImGui::BeginDisabled(!Config::Instance()->CasEnabled.value_or(false));
 
-					const char* cs[] = { "LINEAR", "GAMMA20", "GAMMA22", "SRGB_OUTPUT", "SRGB_INPUT_OUTPUT" };
-					auto configCs = Config::Instance()->CasColorSpaceConversion.value_or(0);
+					//const char* cs[] = { "LINEAR", "GAMMA20", "GAMMA22", "SRGB_OUTPUT", "SRGB_INPUT_OUTPUT" };
+					//auto configCs = Config::Instance()->CasColorSpaceConversion.value_or(0);
 
-					if (configCs < 0)
-						configCs = 0;
-					else if (configCs > 4)
-						configCs = 4;
+					//if (configCs < 0)
+					//	configCs = 0;
+					//else if (configCs > 4)
+					//	configCs = 4;
 
-					const char* selectedCs = cs[configCs];
+					//const char* selectedCs = cs[configCs];
 
-					if (ImGui::BeginCombo("Color Space", selectedCs))
-					{
-						for (int n = 0; n < 5; n++)
-						{
-							if (ImGui::Selectable(cs[n], (Config::Instance()->CasColorSpaceConversion.value_or(0) == n)))
-							{
-								Config::Instance()->CasColorSpaceConversion = n;
-								Config::Instance()->changeCAS = true;
-							}
-						}
+					//if (ImGui::BeginCombo("Color Space", selectedCs))
+					//{
+					//	for (int n = 0; n < 5; n++)
+					//	{
+					//		if (ImGui::Selectable(cs[n], (Config::Instance()->CasColorSpaceConversion.value_or(0) == n)))
+					//		{
+					//			Config::Instance()->CasColorSpaceConversion = n;
+					//			Config::Instance()->changeCAS = true;
+					//		}
+					//	}
 
-						ImGui::EndCombo();
-					}
+					//	ImGui::EndCombo();
+					//}
 
-					ImGui::EndDisabled();
+					//ImGui::EndDisabled();
 				}
 
 				// OUTPUT SCALING -----------------------------
@@ -865,7 +864,7 @@ void Imgui_Base::RenderMenu()
 
 				ImGui::BeginDisabled(!Config::Instance()->QualityRatioOverrideEnabled.value_or(false));
 
-				float qDlaa = Config::Instance()->QualityRatio_DLAA.value_or(1.3f);
+				float qDlaa = Config::Instance()->QualityRatio_DLAA.value_or(1.0f);
 				if (ImGui::SliderFloat("DLAA", &qDlaa, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
 					Config::Instance()->QualityRatio_DLAA = qDlaa;
 
@@ -1000,7 +999,7 @@ void Imgui_Base::RenderMenu()
 
 				ImGui::SameLine(0.0f, 10.0f);
 
-				ImGui::PushItemWidth(45.0f * imguiRatio);
+				ImGui::PushItemWidth(45.0f * Config::Instance()->MenuScale.value_or(1.0));
 
 				const char* uiScales[] = { "1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "2.0" };
 				const char* selectedScaleName = uiScales[selectedScale];
@@ -1012,7 +1011,7 @@ void Imgui_Base::RenderMenu()
 						if (ImGui::Selectable(uiScales[n], (selectedScale == n)))
 						{
 							selectedScale = n;
-							imguiRatio = 1.0f + ((float)n / 10.0f);
+							Config::Instance()->MenuScale = 1.0f + ((float)n / 10.0f);
 							imguiSizeUpdate = true;
 						}
 					}
@@ -1230,25 +1229,19 @@ Imgui_Base::Imgui_Base(HWND handle) : _handle(handle)
 		return;
 
 	if (_oWndProc == nullptr)
-	{
 		_oWndProc = (WNDPROC)SetWindowLongPtr(_handle, GWLP_WNDPROC, (LONG_PTR)WndProc);
-		imguiRatio = ImGui_ImplWin32_GetDpiScaleForHwnd(_oWndProc);
-	}
 
 	if (!pfn_SetCursorPos_hooked)
 		AttachHooks();
 
-	auto scale = Config::Instance()->MenuScale.value_or(1.0f);
+	if (Config::Instance()->MenuScale.value_or(1.0f) < 1.0f)
+		Config::Instance()->MenuScale = 1.0f;
 
-	if (scale < 1.0f)
-		scale = 1.0f;
-
-	if (scale > 2.0f)
-		scale = 2.0f;
+	if (Config::Instance()->MenuScale.value_or(1.0f) > 2.0f)
+		Config::Instance()->MenuScale = 2.0f;
 
 
-	imguiRatio = scale;
-	selectedScale = (int)((scale - 1.0f) / 0.1f);
+	selectedScale = (int)((Config::Instance()->MenuScale.value_or(1.0f) - 1.0f) / 0.1f);
 }
 
 Imgui_Base::~Imgui_Base()

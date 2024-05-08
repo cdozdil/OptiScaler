@@ -491,15 +491,23 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_CreationNodeMask, &uintValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_CreationNodeMask, uintValue);
+	else
+		Parameters->Set(NVSDK_NGX_Parameter_CreationNodeMask, 0);
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_VisibilityNodeMask, &uintValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_VisibilityNodeMask, uintValue);
+	else
+		Parameters->Set(NVSDK_NGX_Parameter_VisibilityNodeMask, 0);
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Enable_Output_Subrects, &intValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Enable_Output_Subrects, intValue);
+	else
+		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Enable_Output_Subrects, 0);
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_RTXValue, &intValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_RTXValue, intValue);
+	else
+		Parameters->Set(NVSDK_NGX_Parameter_RTXValue, 0);
 
 	// Create flags -----------------------------
 	unsigned int featureFlags = 0;
@@ -527,6 +535,10 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
 		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (DepthInverted) {0:b}", featureFlags);
 	}
+	else
+	{
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!DepthInverted) {0:b}", featureFlags);
+	}
 
 	if (Config::Instance()->AutoExposure.value_or(autoExposure))
 	{
@@ -536,7 +548,6 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 	}
 	else
 	{
-		Config::Instance()->AutoExposure = false;
 		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!AutoExposure) {0:b}", featureFlags);
 	}
 
@@ -558,15 +569,20 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
 		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (JitterCancellation) {0:b}", featureFlags);
 	}
+	else
+	{
+		Config::Instance()->JitterCancellation = false;
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!JitterCancellation) {0:b}", featureFlags);
+	}
 
 	if (Config::Instance()->DisplayResolution.value_or(!mvLowRes))
 	{
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!LowResMV) {0:b}", featureFlags);
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (LowResMV) {0:b}", featureFlags);
 	}
 	else
 	{
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (LowResMV) {0:b}", featureFlags);
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!LowResMV) {0:b}", featureFlags);
 	}
 
 	if (Config::Instance()->OverrideSharpness.value_or(sharpening) && !(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->CasEnabled.value_or(false)))
