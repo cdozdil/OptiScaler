@@ -56,6 +56,9 @@ bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice 
 			}
 
 			_dlssInited = true;
+
+			//delay between init and create feature
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 
 		if (_AllocateParameters != nullptr)

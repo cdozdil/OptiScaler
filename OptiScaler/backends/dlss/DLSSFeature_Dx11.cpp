@@ -54,6 +54,9 @@ bool DLSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 			}
 
 			_dlssInited = true;
+
+			//delay between init and create feature
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 
 		if (_AllocateParameters != nullptr)
