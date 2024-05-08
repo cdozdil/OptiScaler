@@ -101,9 +101,13 @@ bool Config::Reload()
 		JitterCancellation = readBool("MotionVectors", "JitterCancellation");
 		DisplayResolution = readBool("MotionVectors", "DisplayResolution");
 
+
+		// DRS
+		DrsMinOverrideEnabled = readBool("DRS", "DrsMinOverrideEnabled");
+		DrsMaxOverrideEnabled = readBool("DRS", "DrsMaxOverrideEnabled");
+
 		//Upscale Ratio Override
 		UpscaleRatioOverrideEnabled = readBool("UpscaleRatio", "UpscaleRatioOverrideEnabled");
-		DrsMaxOverrideEnabled = readBool("UpscaleRatio", "DrsMaxOverrideEnabled");
 		UpscaleRatioOverrideValue = readFloat("UpscaleRatio", "UpscaleRatioOverrideValue");
 
 		// Quality Overrides
@@ -117,6 +121,7 @@ bool Config::Reload()
 
 		// hotfixes
 		DisableReactiveMask = readBool("Hotfix", "DisableReactiveMask");
+		RoundInternalResolution = readInt("Hotfix", "RoundInternalResolution");
 		MipmapBiasOverride = readFloat("Hotfix", "MipmapBiasOverride");
 
 		if (MipmapBiasOverride.has_value() && (MipmapBiasOverride.value() > 15.0 || MipmapBiasOverride.value() < -15.0))

@@ -41,6 +41,7 @@ inline std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_
 		output = Config::Instance()->QualityRatio_Balanced.value_or(1.7);
 		break;
 	}
+
 	return output;
 }
 
@@ -121,12 +122,19 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 		}
 	}
 
+	if (Config::Instance()->RoundInternalResolution.has_value())
+	{
+		OutHeight -= OutHeight % Config::Instance()->RoundInternalResolution.value();
+		OutWidth -= OutWidth % Config::Instance()->RoundInternalResolution.value();
+	}
+
 	InParams->Set(NVSDK_NGX_Parameter_Scale, scalingRatio);
 	InParams->Set(NVSDK_NGX_Parameter_SuperSampling_ScaleFactor, scalingRatio);
 	InParams->Set(NVSDK_NGX_Parameter_OutWidth, OutWidth);
 	InParams->Set(NVSDK_NGX_Parameter_OutHeight, OutHeight);
 
-	if (Config::Instance()->QualityRatioOverrideEnabled.value_or(false) || Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false)) 
+	// DRS minimum resolution
+	if (Config::Instance()->DrsMinOverrideEnabled.value_or(false)) 
 	{
 		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, OutWidth);
 		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, OutHeight);
@@ -138,10 +146,23 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	}
 	else
 	{
-		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, (unsigned int)((float)Width / 3.0f));
-		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, (unsigned int)((float)Height / 3.0f));
+		// DLSS normally only supports DRS in range of 0.5 and 1.0
+		auto drsMinWidth = (unsigned int)((float)Width * 0.5f);
+		auto drsMinHeight = (unsigned int)((float)Height * 0.5f);
+
+		if (OutWidth < drsMinWidth || OutHeight < drsMinHeight)
+		{
+			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, OutWidth);
+			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, OutHeight);
+		}
+		else
+		{
+			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, drsMinWidth);
+			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, drsMinHeight);
+		}
 	}
 
+	// DRS maximum resolution
 	if (Config::Instance()->DrsMaxOverrideEnabled.value_or(false))
 	{
 		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Max_Render_Width, OutWidth);

@@ -890,6 +890,21 @@ void Imgui_Base::RenderMenu()
 
 				ImGui::EndDisabled();
 
+				// DRS -----------------------------
+				ImGui::SeparatorText("DRS (Dynamic Resolution Scaling)");
+				if (ImGui::BeginTable("drs", 2))
+				{
+					ImGui::TableNextColumn();
+					if (bool drsMin = Config::Instance()->DrsMinOverrideEnabled.value_or(false); ImGui::Checkbox("Override Minimum", &drsMin))
+						Config::Instance()->DrsMinOverrideEnabled = drsMin;
+
+					ImGui::TableNextColumn();
+					if (bool drsMax = Config::Instance()->DrsMaxOverrideEnabled.value_or(false); ImGui::Checkbox("Override Maximum", &drsMax))
+						Config::Instance()->DrsMaxOverrideEnabled = drsMax;
+
+					ImGui::EndTable();
+				}
+
 				// INIT -----------------------------
 				ImGui::SeparatorText("Init Flags");
 				if (ImGui::BeginTable("init", 2))
@@ -1188,7 +1203,7 @@ bool Imgui_Base::IsHandleDifferent()
 {
 	DWORD procId;
 
-	HWND frontWindow = GetForegroundWindow(); // Util::GetProcessWindow(); -- for linux compatibility
+	HWND frontWindow = GetForegroundWindow(); 
 	GetWindowThreadProcessId(frontWindow, &procId);
 
 	if (processId != procId)

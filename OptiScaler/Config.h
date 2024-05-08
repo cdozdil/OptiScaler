@@ -67,8 +67,11 @@ public:
 
 	// Upscale Ratio Override
 	std::optional<bool> UpscaleRatioOverrideEnabled;
-	std::optional<bool> DrsMaxOverrideEnabled;
 	std::optional<float> UpscaleRatioOverrideValue;
+
+	// DRS
+	std::optional<bool> DrsMinOverrideEnabled;
+	std::optional<bool> DrsMaxOverrideEnabled;
 
 	// Quality Overrides
 	std::optional<bool> QualityRatioOverrideEnabled;
@@ -81,6 +84,7 @@ public:
 
 	//Hotfixes
 	std::optional<bool> DisableReactiveMask;
+	std::optional<int> RoundInternalResolution;
 	std::optional<float> MipmapBiasOverride;
 	std::optional<bool> RestoreComputeSignature;
 	std::optional<bool> RestoreGraphicSignature;
