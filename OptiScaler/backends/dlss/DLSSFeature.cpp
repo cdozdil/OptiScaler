@@ -20,11 +20,14 @@ enum class NV_INTERFACE : uint32_t
 };
 
 typedef void* (__stdcall* PFN_NvApi_QueryInterface)(NV_INTERFACE InterfaceId);
+typedef NVSDK_NGX_Result(*PFN_NVSDK_NGX_GetFeatureRequirements)(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported);
 
 using PfnNvAPI_GPU_GetArchInfo = uint32_t(__stdcall*)(void* GPUHandle, NV_GPU_ARCH_INFO* ArchInfo);
 
 PFN_NvApi_QueryInterface OriginalNvAPI_QueryInterface = nullptr;
 PfnNvAPI_GPU_GetArchInfo OriginalNvAPI_GPU_GetArchInfo = nullptr;
+PFN_NVSDK_NGX_GetFeatureRequirements Original_Dx11_GetFeatureRequirements = nullptr;
+PFN_NVSDK_NGX_GetFeatureRequirements Original_Dx12_GetFeatureRequirements = nullptr;
 
 uint32_t __stdcall HookedNvAPI_GPU_GetArchInfo(void* GPUHandle, NV_GPU_ARCH_INFO* ArchInfo)
 {
@@ -68,6 +71,41 @@ void* __stdcall HookedNvAPI_QueryInterface(NV_INTERFACE InterfaceId)
 	return result;
 }
 
+NVSDK_NGX_Result __stdcall Hooked_Dx12_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
+{
+	spdlog::debug("Hooked_Dx12_GetFeatureRequirements!");
+
+	auto result = Original_Dx12_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
+
+	if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+	{
+		spdlog::info("Hooked_Dx12_GetFeatureRequirements Spoofing support!");
+		OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
+		OutSupported->MinHWArchitecture = 0;
+		strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
+	}
+
+	return result;
+}
+
+NVSDK_NGX_Result __stdcall Hooked_Dx11_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
+{
+	spdlog::debug("Hooked_Dx11_GetFeatureRequirements!");
+
+	auto result = Original_Dx11_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
+
+	if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+	{
+		spdlog::info("Hooked_Dx11_GetFeatureRequirements Spoofing support!");
+		OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
+		OutSupported->MinHWArchitecture = 0;
+		strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
+	}
+
+	return result;
+}
+
+
 void HookNvApi()
 {
 	if (OriginalNvAPI_QueryInterface != nullptr)
@@ -88,15 +126,49 @@ void HookNvApi()
 	}
 }
 
-void UnhookNvApi()
+void HookNgxApi(HMODULE nvngx)
 {
-	if (OriginalNvAPI_QueryInterface != nullptr)
+	if (Original_Dx11_GetFeatureRequirements != nullptr || Original_Dx12_GetFeatureRequirements != nullptr)
+		return;
+
+	spdlog::debug("DLSSFeature Trying to hook NgxApi");
+
+	Original_Dx11_GetFeatureRequirements = (PFN_NVSDK_NGX_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_D3D11_GetFeatureRequirements");
+	Original_Dx12_GetFeatureRequirements = (PFN_NVSDK_NGX_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_D3D12_GetFeatureRequirements");
+
+	if (Original_Dx11_GetFeatureRequirements != nullptr || Original_Dx12_GetFeatureRequirements != nullptr)
+	{
+		spdlog::info("DLSSFeature NVSDK_NGX_D3D1X_GetFeatureRequirements found, hooking!");
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+
+		if (Original_Dx11_GetFeatureRequirements != nullptr)
+			DetourAttach(&(PVOID&)Original_Dx11_GetFeatureRequirements, Hooked_Dx11_GetFeatureRequirements);
+
+		if (Original_Dx12_GetFeatureRequirements != nullptr)
+			DetourAttach(&(PVOID&)Original_Dx12_GetFeatureRequirements, Hooked_Dx12_GetFeatureRequirements);
+
+		DetourTransactionCommit();
+	}
+}
+
+void UnhookApis()
+{
+	if (OriginalNvAPI_QueryInterface != nullptr ||
+		Original_Dx11_GetFeatureRequirements != nullptr || Original_Dx12_GetFeatureRequirements != nullptr)
 	{
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
 
 		if (OriginalNvAPI_QueryInterface != nullptr)
 			DetourDetach(&(PVOID&)OriginalNvAPI_QueryInterface, HookedNvAPI_QueryInterface);
+
+		if (Original_Dx11_GetFeatureRequirements != nullptr)
+			DetourDetach(&(PVOID&)Original_Dx11_GetFeatureRequirements, Hooked_Dx11_GetFeatureRequirements);
+
+		if (Original_Dx12_GetFeatureRequirements != nullptr)
+			DetourDetach(&(PVOID&)Original_Dx12_GetFeatureRequirements, Hooked_Dx12_GetFeatureRequirements);
 
 		DetourTransactionCommit();
 	}
@@ -782,7 +854,10 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 	}
 
 	if (_moduleLoaded)
+	{
 		HookNvApi();
+		HookNgxApi(_nvngx);
+	}
 }
 
 DLSSFeature::~DLSSFeature()
@@ -793,7 +868,7 @@ void DLSSFeature::Shutdown()
 {
 	if (_nvngx != nullptr)
 	{
-		UnhookNvApi();
+		UnhookApis();
 		FreeLibrary(_nvngx);
 	}
 }
