@@ -85,9 +85,9 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	auto sharpness = GetSharpness(InParameters);
 
-	float ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(1.5f);
+	float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
 
-	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
+	bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
 
 	spdlog::debug("XeSSFeatureDx12::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
@@ -330,7 +330,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 		if (!OUT_DS->Dispatch(Device, InCommandList, OUT_DS->Buffer(), paramOutput))
 		{
-			Config::Instance()->SuperSamplingEnabled = false;
+			Config::Instance()->OutputScalingEnabled = false;
 			Config::Instance()->changeBackend = true;
 			return true;
 		}

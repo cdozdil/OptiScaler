@@ -199,7 +199,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 	auto sharpness = GetSharpness(InParameters);
 
-	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
+	bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
 
 	spdlog::debug("XeSSFeatureDx11::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
@@ -366,7 +366,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 		if (!OUT_DS->Dispatch(Dx12Device, Dx12CommandList, OUT_DS->Buffer(), dx11Out.Dx12Resource))
 		{
-			Config::Instance()->SuperSamplingEnabled = false;
+			Config::Instance()->OutputScalingEnabled = false;
 			Config::Instance()->changeBackend = true;
 
 			Dx12CommandList->Close();

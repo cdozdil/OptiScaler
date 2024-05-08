@@ -160,7 +160,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		ID3D12Resource* paramOutput = nullptr;
 		ID3D12Resource* setBuffer = nullptr;
 
-		bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
+		bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
 		
 		Parameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput);
 
@@ -240,7 +240,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 			if (!OUT_DS->Dispatch(Device, InCommandList, OUT_DS->Buffer(), paramOutput))
 			{
-				Config::Instance()->SuperSamplingEnabled = false;
+				Config::Instance()->OutputScalingEnabled = false;
 				Config::Instance()->changeBackend = true;
 				return true;
 			}

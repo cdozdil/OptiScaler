@@ -44,7 +44,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
-	bool useSS = Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
+	bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
 
 	spdlog::debug("FSR2FeatureDx12::Evaluate Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
@@ -309,7 +309,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 		if (!OUT_DS->Dispatch(Device, InCommandList, OUT_DS->Buffer(), paramOutput))
 		{
-			Config::Instance()->SuperSamplingEnabled = false;
+			Config::Instance()->OutputScalingEnabled = false;
 			Config::Instance()->changeBackend = true;
 			return true;
 		}
@@ -468,19 +468,19 @@ bool FSR2FeatureDx12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		spdlog::info("FSR2FeatureDx12::InitFSR2 contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
 	}
 
-	if (Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+	if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
 	{
-		float ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(1.5f);
+		float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
 
 		if (ssMulti < 0.5f)
 		{
 			ssMulti = 0.5f;
-			Config::Instance()->SuperSamplingMultiplier = ssMulti;
+			Config::Instance()->OutputScalingMultiplier = ssMulti;
 		}
 		else if (ssMulti > 3.0f)
 		{
 			ssMulti = 3.0f;
-			Config::Instance()->SuperSamplingMultiplier = ssMulti;
+			Config::Instance()->OutputScalingMultiplier = ssMulti;
 		}
 
 		_targetWidth = DisplayWidth() * ssMulti;

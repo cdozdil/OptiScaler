@@ -96,8 +96,8 @@ public:
 	std::optional<std::string> Dx12Upscaler;
 	std::optional<std::string> VulkanUpscaler;
 
-	std::optional<bool> SuperSamplingEnabled;
-	std::optional<float> SuperSamplingMultiplier;
+	std::optional<bool> OutputScalingEnabled;
+	std::optional<float> OutputScalingMultiplier;
 
 	// fsr
 	std::optional<float> FsrVerticalFov;

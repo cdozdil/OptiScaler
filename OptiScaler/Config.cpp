@@ -17,13 +17,13 @@ bool Config::Reload()
 		Dx11Upscaler = readString("Upscalers", "Dx11Upscaler", true);
 		Dx12Upscaler = readString("Upscalers", "Dx12Upscaler", true);
 		VulkanUpscaler = readString("Upscalers", "VulkanUpscaler", true);
-		SuperSamplingEnabled = readBool("Upscalers", "SuperSamplingEnabled");
-		SuperSamplingMultiplier = readFloat("Upscalers", "SuperSamplingMultiplier");
+		OutputScalingEnabled = readBool("Upscalers", "OutputScalingEnabled");
+		OutputScalingMultiplier = readFloat("Upscalers", "OutputScalingMultiplier");
 
-		if (SuperSamplingMultiplier.has_value() && SuperSamplingMultiplier.value() < 0.5f)
-			SuperSamplingMultiplier = 0.5f;
-		else if (SuperSamplingMultiplier.has_value() && SuperSamplingMultiplier.value() > 3.0f)
-			SuperSamplingMultiplier = 3.0f;
+		if (OutputScalingMultiplier.has_value() && OutputScalingMultiplier.value() < 0.5f)
+			OutputScalingMultiplier = 0.5f;
+		else if (OutputScalingMultiplier.has_value() && OutputScalingMultiplier.value() > 3.0f)
+			OutputScalingMultiplier = 3.0f;
 
 		// XeSS
 		BuildPipelines = readBool("XeSS", "BuildPipelines");
@@ -185,8 +185,8 @@ bool Config::SaveIni()
 	ini.SetValue("Upscalers", "Dx11Upscaler", Instance()->Dx11Upscaler.value_or("auto").c_str());
 	ini.SetValue("Upscalers", "Dx12Upscaler", Instance()->Dx12Upscaler.value_or("auto").c_str());
 	ini.SetValue("Upscalers", "VulkanUpscaler", Instance()->VulkanUpscaler.value_or("auto").c_str());
-	ini.SetValue("Upscalers", "SuperSamplingEnabled", GetBoolValue(Instance()->SuperSamplingEnabled).c_str());
-	ini.SetValue("Upscalers", "SuperSamplingMultiplier", GetFloatValue(Instance()->SuperSamplingMultiplier).c_str());
+	ini.SetValue("Upscalers", "OutputScalingEnabled", GetBoolValue(Instance()->OutputScalingEnabled).c_str());
+	ini.SetValue("Upscalers", "OutputScalingMultiplier", GetFloatValue(Instance()->OutputScalingMultiplier).c_str());
 
 	// XeSS
 	ini.SetValue("XeSS", "BuildPipelines", GetBoolValue(Instance()->BuildPipelines).c_str());

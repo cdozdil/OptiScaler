@@ -728,29 +728,29 @@ void Imgui_Base::RenderMenu()
 					ImGui::EndDisabled();
 				}
 
-				// SUPERSAMPLING -----------------------------
+				// OUTPUT SCALING -----------------------------
 				if (Config::Instance()->Api == NVNGX_DX12 || 
 					(Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "fsr22" && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "dlss"))
 				{
-					ImGui::SeparatorText("Supersampling");
+					ImGui::SeparatorText("Output Scaling");
 
-					float defaultRatio = 2.5f;
+					float defaultRatio = 1.5f;
 
 					if (ssRatio == 0.0f)
 					{
-						ssRatio = Config::Instance()->SuperSamplingMultiplier.value_or(defaultRatio);
-						ssEnabled = Config::Instance()->SuperSamplingEnabled.value_or(false);
+						ssRatio = Config::Instance()->OutputScalingMultiplier.value_or(defaultRatio);
+						ssEnabled = Config::Instance()->OutputScalingEnabled.value_or(false);
 					}
 
 					ImGui::Checkbox("Enable", &ssEnabled);
 
 					ImGui::SameLine(0.0f, 6.0f);
 
-					if (ImGui::Button("Apply Change") && (ssEnabled != Config::Instance()->SuperSamplingEnabled.value_or(false) ||
-						ssRatio != Config::Instance()->SuperSamplingMultiplier.value_or(defaultRatio)))
+					if (ImGui::Button("Apply Change") && (ssEnabled != Config::Instance()->OutputScalingEnabled.value_or(false) ||
+						ssRatio != Config::Instance()->OutputScalingMultiplier.value_or(defaultRatio)))
 					{
-						Config::Instance()->SuperSamplingEnabled = ssEnabled;
-						Config::Instance()->SuperSamplingMultiplier = ssRatio;
+						Config::Instance()->OutputScalingEnabled = ssEnabled;
+						Config::Instance()->OutputScalingMultiplier = ssRatio;
 						Config::Instance()->changeBackend = true;
 					}
 

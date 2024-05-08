@@ -582,19 +582,19 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, featureFlags);
 
 	// Resolution -----------------------------
-	if (Config::Instance()->SuperSamplingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+	if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
 	{
-		float ssMulti = Config::Instance()->SuperSamplingMultiplier.value_or(1.5f);
+		float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
 
 		if (ssMulti < 0.5f)
 		{
 			ssMulti = 0.5f;
-			Config::Instance()->SuperSamplingMultiplier = ssMulti;
+			Config::Instance()->OutputScalingMultiplier = ssMulti;
 		}
 		else if (ssMulti > 3.0f)
 		{
 			ssMulti = 3.0f;
-			Config::Instance()->SuperSamplingMultiplier = ssMulti;
+			Config::Instance()->OutputScalingMultiplier = ssMulti;
 		}
 
 		_targetWidth = DisplayWidth() * ssMulti;
