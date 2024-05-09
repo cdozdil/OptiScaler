@@ -287,6 +287,9 @@
     <ClCompile Include="rcas\RCAS_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="NVNGX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="vulkan\vulkan-1.lib" />

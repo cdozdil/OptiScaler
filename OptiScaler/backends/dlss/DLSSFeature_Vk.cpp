@@ -112,6 +112,8 @@ bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice 
 			break;
 		}
 
+		ReadVersion();
+
 		initResult = true;
 
 	} while (false);

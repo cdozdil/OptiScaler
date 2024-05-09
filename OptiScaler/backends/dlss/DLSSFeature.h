@@ -4,12 +4,14 @@
 #include "../../pch.h"
 #include <string>
 
+typedef uint32_t(*PFN_NVSDK_NGX_GetSnippetVersion)(void);
+
 class DLSSFeature : public virtual IFeature
 {
 private:
 	feature_version _version = { 0, 0, 0 };
 	inline static HMODULE _nvngx = nullptr;
-
+		
 protected:
 	NVSDK_NGX_Parameter* Parameters = nullptr;
 	NVSDK_NGX_Handle _dlssHandle = {};
@@ -27,6 +29,7 @@ protected:
 public:
 	feature_version Version() final { return feature_version{ _version.major, _version.minor, _version.patch }; }
 	const char* Name() override { return "DLSS"; }
+	void ReadVersion();
 
 	DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters);
 

@@ -56,6 +56,8 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 
 			//delay between init and create feature
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+			
 		}
 
 		if (_AllocateParameters != nullptr)
@@ -109,6 +111,8 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 			break;
 		}
 
+		ReadVersion();
+
 		initResult = true;
 
 	} while (false);
@@ -134,6 +138,12 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	if (!_moduleLoaded)
 	{
 		spdlog::error("DLSSFeatureDx12::Evaluate nvngx.dll or _nvngx.dll is not loaded!");
+		return false;
+	}
+
+	if (!IsInited())
+	{
+		spdlog::error("DLSSFeatureDx12::Evaluate Not inited!");
 		return false;
 	}
 
@@ -342,12 +352,15 @@ DLSSFeatureDx12::~DLSSFeatureDx12()
 
 	if (_ReleaseFeature != nullptr)
 		_ReleaseFeature(_p_dlssHandle);
+
+	if (RCAS != nullptr && RCAS.get() != nullptr)
+		RCAS.reset();
 }
 
 float DLSSFeatureDx12::GetSharpness(const NVSDK_NGX_Parameter* InParameters)
 {
 	if (Config::Instance()->OverrideSharpness.value_or(false))
-		return Config::Instance()->Sharpness.value_or(0.3);
+		return Config::Instance()->Sharpness.value_or(0.3f);
 
 	float sharpness = 0.0f;
 	InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &sharpness);

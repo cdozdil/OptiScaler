@@ -7,6 +7,8 @@
 #include "../../Config.h"
 #include "../../Util.h"
 #include "../../pch.h"
+#include "../../detours/detours.h"
+
 
 #pragma region spoofing hooks for 16xx
 
@@ -104,7 +106,6 @@ NVSDK_NGX_Result __stdcall Hooked_Dx11_GetFeatureRequirements(IDXGIAdapter* Adap
 
 	return result;
 }
-
 
 void HookNvApi()
 {
@@ -746,6 +747,58 @@ void DLSSFeature::GetFeatureCommonInfo(NVSDK_NGX_FeatureCommonInfo* fcInfo)
 	fcInfo->PathListInfo.Length = static_cast<unsigned int>(Config::Instance()->NVNGX_FeatureInfo_Paths.size());
 }
 
+void DLSSFeature::ReadVersion()
+{
+	PFN_NVSDK_NGX_GetSnippetVersion _GetSnippetVersion = nullptr;
+
+	_GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction("nvngx_dlss.dll", "NVSDK_NGX_GetSnippetVersion");
+
+	if (_GetSnippetVersion != nullptr)
+	{
+		auto result = _GetSnippetVersion();
+
+		_version.major = (result & 0x00FF0000) / 0x00010000;
+		_version.minor = (result & 0x0000FF00) / 0x00000100;
+		_version.patch = result & 0x000000FF / 0x00000001;
+
+		spdlog::info("DLSSFeature::ReadVersion DLSS v{0}.{1}.{2} loaded.", _version.major, _version.minor, _version.patch);
+		return;
+	}
+
+	for (size_t i = 0; i < Config::Instance()->NVNGX_FeatureInfo_Paths.size(); ++i)
+	{
+		auto path = std::filesystem::path(Config::Instance()->NVNGX_FeatureInfo_Paths[i].c_str());
+		auto file = path.parent_path() / L"nvngx_dlss.dll";
+
+		auto dlssModule = LoadLibraryW(file.wstring().c_str());
+
+		if (dlssModule)
+		{
+			
+			_GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)GetProcAddress(dlssModule, "NVSDK_NGX_GetSnippetVersion");
+
+			if (_GetSnippetVersion != nullptr)
+			{
+				auto result = _GetSnippetVersion();
+
+				_version.major = (result & 0x00FF0000) / 0x00010000;
+				_version.minor = (result & 0x0000FF00) / 0x00000100;
+				_version.patch = result & 0x000000FF / 0x00000001;
+
+				spdlog::info("DLSSFeature::ReadVersion DLSS v{0}.{1}.{2} loaded.", _version.major, _version.minor, _version.patch);
+			}
+
+			_GetSnippetVersion = nullptr;
+			FreeLibrary(dlssModule);
+
+			if (_version.major != 0)
+				return;
+		}
+	}
+
+	spdlog::info("DLSSFeature::ReadVersion GetProcAddress for NVSDK_NGX_GetSnippetVersion failed!");
+}
+
 DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
 {
 	if (_nvngx == nullptr)
@@ -767,7 +820,7 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 				{
 					spdlog::info("DLSSFeature::DLSSFeature _nvngx.dll loaded from {0}", path.string());
 					_moduleLoaded = true;
-					return;
+					break;
 				}
 
 				path = cfgPath / L"nvngx.dll";
@@ -778,7 +831,7 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 				{
 					spdlog::info("DLSSFeature::DLSSFeature nvngx.dll loaded from {0}", path.string());
 					_moduleLoaded = true;
-					return;
+					break;
 				}
 			}
 

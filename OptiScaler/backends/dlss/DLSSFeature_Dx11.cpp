@@ -110,6 +110,8 @@ bool DLSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 			break;
 		}
 
+		ReadVersion();
+
 		initResult = true;
 
 	} while (false);
