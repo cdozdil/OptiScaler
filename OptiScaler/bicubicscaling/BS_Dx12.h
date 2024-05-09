@@ -14,7 +14,7 @@ struct alignas(256) Constants
 	int32_t destHeight;
 };
 
-class DS_Dx12
+class BS_Dx12
 {
 private:
 	std::string _name = "";
@@ -263,7 +263,7 @@ public:
 	bool IsUpsampling() { return _upsample; }
 	bool IsInit() const { return _init; }
 
-	DS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample);
+	BS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample);
 
-	~DS_Dx12();
+	~BS_Dx12();
 };

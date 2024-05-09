@@ -121,7 +121,7 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 		if (Imgui == nullptr || Imgui.get() == nullptr)
 			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), InDevice);
 
-		OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", InDevice, (TargetWidth() < DisplayWidth()));
+		OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", InDevice, (TargetWidth() < DisplayWidth()));
 	}
 
 	SetInit(initResult);
@@ -170,12 +170,12 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		// supersampling
 		if (useSS)
 		{
-			OUT_DS->Scale = (float)TargetWidth() / (float)DisplayWidth();
+			OutputScaler->Scale = (float)TargetWidth() / (float)DisplayWidth();
 
-			if (OUT_DS->CreateBufferResource(Device, paramOutput, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+			if (OutputScaler->CreateBufferResource(Device, paramOutput, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 			{
-				OUT_DS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-				setBuffer = OUT_DS->Buffer();
+				OutputScaler->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+				setBuffer = OutputScaler->Buffer();
 			}
 			else
 				setBuffer = paramOutput;
@@ -220,7 +220,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 			if (useSS)
 			{
-				if (!RCAS->Dispatch(Device, InCommandList, setBuffer, OUT_DS->Buffer()))
+				if (!RCAS->Dispatch(Device, InCommandList, setBuffer, OutputScaler->Buffer()))
 				{
 					Config::Instance()->CasEnabled = false;
 					return true;
@@ -240,9 +240,9 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		if (useSS)
 		{
 			spdlog::debug("DLSSFeatureDx12::Evaluate downscaling output...");
-			OUT_DS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			OutputScaler->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-			if (!OUT_DS->Dispatch(Device, InCommandList, OUT_DS->Buffer(), paramOutput))
+			if (!OutputScaler->Dispatch(Device, InCommandList, OutputScaler->Buffer(), paramOutput))
 			{
 				Config::Instance()->OutputScalingEnabled = false;
 				Config::Instance()->changeBackend = true;

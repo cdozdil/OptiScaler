@@ -1,4 +1,4 @@
-#include "DS_Dx12.h"
+#include "BS_Dx12.h"
 
 static ID3DBlob* CompileShader(const char* shaderCode, const char* entryPoint, const char* target)
 {
@@ -47,7 +47,7 @@ static bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootS
 	return true;
 }
 
-bool DS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, uint32_t InWidth, uint32_t InHeight, D3D12_RESOURCE_STATES InState)
+bool BS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, uint32_t InWidth, uint32_t InHeight, D3D12_RESOURCE_STATES InState)
 {
 	if (InDevice == nullptr || InSource == nullptr)
 		return false;
@@ -98,7 +98,7 @@ bool DS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
 	return true;
 }
 
-void DS_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RESOURCE_STATES InState)
+void BS_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RESOURCE_STATES InState)
 {
 	if (_bufferState == InState)
 		return;
@@ -113,7 +113,7 @@ void DS_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RES
 	_bufferState = InState;
 }
 
-bool DS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource, ID3D12Resource* OutResource)
+bool BS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource, ID3D12Resource* OutResource)
 {
 	if (!_init || InDevice == nullptr || InCmdList == nullptr || InResource == nullptr || OutResource == nullptr)
 		return false;
@@ -222,7 +222,7 @@ bool DS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 	return true;
 }
 
-DS_Dx12::DS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : _name(InName), _device(InDevice), _upsample(InUpsample)
+BS_Dx12::BS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : _name(InName), _device(InDevice), _upsample(InUpsample)
 {
 	if (InDevice == nullptr)
 	{
@@ -387,7 +387,7 @@ DS_Dx12::DS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
 	_init = _srvHeap[2] != nullptr;
 }
 
-DS_Dx12::~DS_Dx12()
+BS_Dx12::~BS_Dx12()
 {
 	if (!_init)
 		return;

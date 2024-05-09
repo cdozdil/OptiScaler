@@ -6,7 +6,7 @@
 #include <d3d11_4.h>
 #include <dxgi1_6.h>
 
-#include "../ds/DS_Dx12.h"
+#include "../bicubicscaling/BS_Dx12.h"
 
 class IFeature_Dx11wDx12 : public virtual IFeature_Dx11
 {
@@ -62,16 +62,19 @@ protected:
 	HANDLE dx11SHForCopyOutput = NULL;
 	HANDLE dx12SHForCopyOutput = NULL;
 
-	std::unique_ptr<DS_Dx12> OUT_DS = nullptr;
+	std::unique_ptr<BS_Dx12> OutputScaler = nullptr;
+
+	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel);
+	void GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter);
 
 	bool CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutResource, bool InCopy, bool InDepth);
-	void ReleaseSharedResources();
-	void ReleaseSyncResources();
-	void GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter);
-	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel);
 	bool ProcessDx11Textures(const NVSDK_NGX_Parameter* InParameters);
 	bool CopyBackOutput();
+	
 	void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
+
+	void ReleaseSharedResources();
+	void ReleaseSyncResources();
 
 public:
 	virtual bool Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters) = 0;

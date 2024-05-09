@@ -109,7 +109,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 			std::this_thread::sleep_for(std::chrono::milliseconds(1500));
 		}
 
-		OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", Dx12Device, (TargetWidth() < DisplayWidth()));
+		OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", Dx12Device, (TargetWidth() < DisplayWidth()));
 	}
 
 	if (!IsInited())
@@ -183,12 +183,12 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 
 	if (useSS)
 	{
-		OUT_DS->Scale = (float)TargetWidth() / (float)DisplayWidth();
+		OutputScaler->Scale = (float)TargetWidth() / (float)DisplayWidth();
 
-		if (OUT_DS->CreateBufferResource(Dx12Device, dx11Out.Dx12Resource, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		if (OutputScaler->CreateBufferResource(Dx12Device, dx11Out.Dx12Resource, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
-			OUT_DS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-			params.output = Fsr212::ffxGetResourceDX12_212(&_context, OUT_DS->Buffer(), (wchar_t*)L"FSR2_Out", Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+			OutputScaler->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			params.output = Fsr212::ffxGetResourceDX12_212(&_context, OutputScaler->Buffer(), (wchar_t*)L"FSR2_Out", Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 		}
 		else
 			params.output = Fsr212::ffxGetResourceDX12_212(&_context, dx11Out.Dx12Resource, (wchar_t*)L"FSR2_Out", Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -289,9 +289,9 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 	if (useSS)
 	{
 		spdlog::debug("FSR2FeatureDx11on12_212::Evaluate downscaling output...");
-		OUT_DS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		OutputScaler->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		if (!OUT_DS->Dispatch(Dx12Device, Dx12CommandList, OUT_DS->Buffer(), dx11Out.Dx12Resource))
+		if (!OutputScaler->Dispatch(Dx12Device, Dx12CommandList, OutputScaler->Buffer(), dx11Out.Dx12Resource))
 		{
 			Config::Instance()->OutputScalingEnabled = false;
 			Config::Instance()->changeBackend = true;

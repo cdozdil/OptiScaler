@@ -53,6 +53,6 @@ IFeature_Dx12::~IFeature_Dx12()
 		}
 	}
 
-	if (OUT_DS != nullptr && OUT_DS.get() != nullptr)
-		OUT_DS.reset();
+	if (OutputScaler != nullptr && OutputScaler.get() != nullptr)
+		OutputScaler.reset();
 }

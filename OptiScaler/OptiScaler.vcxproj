@@ -199,7 +199,7 @@
     <ClInclude Include="backends\IFeature.h" />
     <ClInclude Include="backends\IFeature_Vk.h" />
     <ClInclude Include="detours\detours.h" />
-    <ClInclude Include="ds\DS_Dx12.h" />
+    <ClInclude Include="bicubicscaling\BS_Dx12.h" />
     <ClInclude Include="imgui\imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui\imgui.h" />
     <ClInclude Include="imgui\imgui\imgui_impl_dx11.h" />
@@ -241,7 +241,7 @@
     <ClCompile Include="backends\fsr2\FSR2Feature_Vk.cpp" />
     <ClCompile Include="backends\IFeature.cpp" />
     <ClCompile Include="backends\IFeature_Dx12.cpp" />
-    <ClCompile Include="ds\DS_Dx12.cpp" />
+    <ClCompile Include="bicubicscaling\BS_Dx12.cpp" />
     <ClCompile Include="imgui\imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui\imgui_demo.cpp" />
     <ClCompile Include="imgui\imgui\imgui_draw.cpp" />

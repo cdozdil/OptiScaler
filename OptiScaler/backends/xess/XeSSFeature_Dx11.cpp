@@ -123,7 +123,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 			std::this_thread::sleep_for(std::chrono::milliseconds(1500));
 		}
 
-		OUT_DS = std::make_unique<DS_Dx12>("Output Downsample", Dx12Device, (TargetWidth() < DisplayWidth()));
+		OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", Dx12Device, (TargetWidth() < DisplayWidth()));
 	}
 
 	if (!IsInited() || !_xessContext || !ModuleLoaded())
@@ -257,12 +257,12 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 	if (useSS)
 	{
-		OUT_DS->Scale = (float)TargetWidth() / (float)DisplayWidth();
+		OutputScaler->Scale = (float)TargetWidth() / (float)DisplayWidth();
 
-		if (OUT_DS->CreateBufferResource(Dx12Device, dx11Out.Dx12Resource, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		if (OutputScaler->CreateBufferResource(Dx12Device, dx11Out.Dx12Resource, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
-			OUT_DS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-			params.pOutputTexture = OUT_DS->Buffer();
+			OutputScaler->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			params.pOutputTexture = OutputScaler->Buffer();
 		}
 		else
 			params.pOutputTexture = dx11Out.Dx12Resource;
@@ -356,7 +356,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 		if (useSS)
 		{
-			if (!RCAS->Dispatch(Dx12Device, Dx12CommandList, params.pOutputTexture, OUT_DS->Buffer()))
+			if (!RCAS->Dispatch(Dx12Device, Dx12CommandList, params.pOutputTexture, OutputScaler->Buffer()))
 			{
 				Config::Instance()->CasEnabled = false;
 
@@ -396,7 +396,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 	//	if (useSS)
 	//	{
-	//		if (!CAS->Dispatch(Dx12CommandList, sharpness, params.pOutputTexture, OUT_DS->Buffer()))
+	//		if (!CAS->Dispatch(Dx12CommandList, sharpness, params.pOutputTexture, OutputScaler->Buffer()))
 	//		{
 	//			Config::Instance()->CasEnabled = false;
 
@@ -431,9 +431,9 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	if (useSS)
 	{
 		spdlog::debug("XeSSFeatureDx11::Evaluate downscaling output...");
-		OUT_DS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		OutputScaler->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		if (!OUT_DS->Dispatch(Dx12Device, Dx12CommandList, OUT_DS->Buffer(), dx11Out.Dx12Resource))
+		if (!OutputScaler->Dispatch(Dx12Device, Dx12CommandList, OutputScaler->Buffer(), dx11Out.Dx12Resource))
 		{
 			Config::Instance()->OutputScalingEnabled = false;
 			Config::Instance()->changeBackend = true;
