@@ -111,16 +111,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID(const char* InPro
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InEngineType: {0}", (int)InEngineType);
+	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InEngineVersion: {0}", InEngineVersion);
 
 	Config::Instance()->NVNGX_ProjectId = std::string(InProjectId);
 	Config::Instance()->NVNGX_Engine = InEngineType;
 	Config::Instance()->NVNGX_EngineVersion = std::string(InEngineVersion);
 
 	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
-	{
-		spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InEngineVersion: {0}", InEngineVersion);
 		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
-	}
+	else
+		Config::Instance()->NVNGX_EngineVersion5 = false;
 
 	return NVSDK_NGX_VULKAN_Init(0x1337, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InFeatureInfo, InSDKVersion);
 }
@@ -131,16 +131,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_with_ProjectID(const char* 
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_Init_with_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::debug("NVSDK_NGX_VULKAN_Init_with_ProjectID InEngineType {0}", (int)InEngineType);
+	spdlog::debug("NVSDK_NGX_VULKAN_Init_with_ProjectID InEngineVersion: {0}", InEngineVersion);
 
 	Config::Instance()->NVNGX_ProjectId = std::string(InProjectId);
 	Config::Instance()->NVNGX_Engine = InEngineType;
 	Config::Instance()->NVNGX_EngineVersion = std::string(InEngineVersion);
 
 	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
-	{
-		spdlog::debug("NVSDK_NGX_VULKAN_Init_with_ProjectID InEngineVersion: {0}", InEngineVersion);
 		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
-	}
+	else
+		Config::Instance()->NVNGX_EngineVersion5 = false;
 
 	return NVSDK_NGX_VULKAN_Init(0x1337, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InFeatureInfo, InSDKVersion);
 }
