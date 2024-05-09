@@ -41,7 +41,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 				ID3D11Texture2D* pvTexture;
 				paramVelocity->QueryInterface(IID_PPV_ARGS(&pvTexture));
 				pvTexture->GetDesc(&desc);
-				bool lowResMV = desc.Width < DisplayWidth();
+				bool lowResMV = desc.Width < TargetWidth();
 				bool displaySizeEnabled = (InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
 
 				if (displaySizeEnabled && lowResMV)

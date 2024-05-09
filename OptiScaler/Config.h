@@ -55,8 +55,7 @@ public:
 	std::optional<int> RenderPresetUltraPerformance;
 
 	// CAS
-	std::optional<bool> CasEnabled;
-	std::optional<int> CasColorSpaceConversion;
+	std::optional<bool> RcasEnabled;
 
 	//Sharpness 
 	std::optional<bool> OverrideSharpness;
@@ -131,7 +130,7 @@ public:
 
 	// for realtime changes
 	bool changeBackend = false;
-	bool changeCAS = false;
+	bool changeRCAS = false;
 	std::string newBackend = "";
 	bool xessDebug = false;
 	int xessDebugFrames = 5;

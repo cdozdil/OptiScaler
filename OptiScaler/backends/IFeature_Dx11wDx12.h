@@ -47,6 +47,8 @@ protected:
 	D3D11_TEXTURE2D_RESOURCE_C dx11Exp = {};
 	D3D11_TEXTURE2D_RESOURCE_C dx11Out = {};
 
+	ID3D11Resource* paramOutput[2] = { nullptr,nullptr };
+
 	ID3D11Fence* dx11FenceTextureCopy = nullptr;
 	ID3D12Fence* dx12FenceTextureCopy = nullptr;
 	ID3D12Fence* dx12FenceQuery = nullptr;
@@ -54,10 +56,11 @@ protected:
 	ID3D12Fence* dx12FenceCopySync = nullptr;
 	ID3D11Fence* dx11FenceCopyOutput = nullptr;
 	ID3D12Fence* dx12FenceCopyOutput = nullptr;
-	ID3D11Resource* paramOutput[2] = { nullptr,nullptr };
+	
 	ID3D11Query* queryTextureCopy = nullptr;
 	ID3D11Query* queryCopyOutputFence = nullptr;
 	ID3D11Query* queryCopyOutput = nullptr;
+	
 	HANDLE dx11SHForTextureCopy = NULL;
 	HANDLE dx11SHForCopyOutput = NULL;
 	HANDLE dx12SHForCopyOutput = NULL;

@@ -54,24 +54,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		dumpCount += Config::Instance()->xessDebugFrames;
 	}
 
-	//if (Config::Instance()->changeCAS)
-	//{
-	//	if (CAS != nullptr && CAS.get() != nullptr)
-	//	{
-	//		spdlog::trace("XeSSFeatureDx12::Evaluate sleeping before CAS.reset() for 250ms");
-	//		std::this_thread::sleep_for(std::chrono::milliseconds(250));
-	//		CAS.reset();
-	//	}
-	//	else
-	//	{
-	//		Config::Instance()->changeCAS = false;
-	//		spdlog::trace("XeSSFeatureDx12::Evaluate sleeping before CAS creation for 250ms");
-	//		std::this_thread::sleep_for(std::chrono::milliseconds(250));
-	//		CAS = std::make_unique<CAS_Dx12>(Device, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
-	//	}
-	//}
-
-	if (Config::Instance()->changeCAS)
+	if (Config::Instance()->changeRCAS)
 	{
 		if (RCAS != nullptr && RCAS.get() != nullptr)
 		{
@@ -81,7 +64,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		}
 		else
 		{
-			Config::Instance()->changeCAS = false;
+			Config::Instance()->changeRCAS = false;
 			spdlog::trace("XeSSFeatureDx12::Evaluate sleeping before CAS creation for 250ms");
 			std::this_thread::sleep_for(std::chrono::milliseconds(250));
 			RCAS = std::make_unique<RCAS_Dx12>("RCAS", Device);
@@ -157,7 +140,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		if (!Config::Instance()->DisplayResolution.has_value())
 		{
 			auto desc = params.pVelocityTexture->GetDesc();
-			bool lowResMV = desc.Width < DisplayWidth();
+			bool lowResMV = desc.Width < TargetWidth();
 			bool displaySizeEnabled = (GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
 
 			if (displaySizeEnabled && lowResMV)
@@ -205,7 +188,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		else
 			params.pOutputTexture = paramOutput;
 
-		if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f &&
+		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && sharpness > 0.0f &&
 			RCAS != nullptr && RCAS.get() != nullptr &&
 			RCAS->CreateBufferResource(Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
@@ -317,8 +300,8 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		return false;
 	}
 
-	//apply cas
-	if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f && RCAS != nullptr && RCAS.get() != nullptr && RCAS->Buffer() != nullptr)
+	// apply rcas
+	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && sharpness > 0.0f && RCAS != nullptr && RCAS.get() != nullptr && RCAS->Buffer() != nullptr)
 	{
 		ResourceBarrier(InCommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -329,7 +312,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		{
 			if (!RCAS->Dispatch(Device, InCommandList, params.pOutputTexture, OutputScaler->Buffer()))
 			{
-				Config::Instance()->CasEnabled = false;
+				Config::Instance()->RcasEnabled = false;
 				return true;
 			}
 		}
@@ -337,34 +320,11 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		{
 			if (!RCAS->Dispatch(Device, InCommandList, params.pOutputTexture, paramOutput))
 			{
-				Config::Instance()->CasEnabled = false;
+				Config::Instance()->RcasEnabled = false;
 				return true;
 			}
 		}
 	}
-
-	//if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(false) && sharpness > 0.0f && CAS != nullptr && CAS.get() != nullptr && CAS->Buffer() != nullptr)
-	//{
-	//	ResourceBarrier(InCommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	//	CAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-	//	if (useSS)
-	//	{
-	//		if (!CAS->Dispatch(InCommandList, sharpness, params.pOutputTexture, OutputScaler->Buffer()))
-	//		{
-	//			Config::Instance()->CasEnabled = false;
-	//			return true;
-	//		}
-	//	}
-	//	else
-	//	{
-	//		if (!CAS->Dispatch(InCommandList, sharpness, params.pOutputTexture, paramOutput))
-	//		{
-	//			Config::Instance()->CasEnabled = false;
-	//			return true;
-	//		}
-	//	}
-	//}
 
 	if (useSS)
 	{

@@ -115,7 +115,7 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 
 	if (initResult)
 	{
-		if (Config::Instance()->CasEnabled.value_or(false))
+		if (Config::Instance()->RcasEnabled.value_or(false))
 			RCAS = std::make_unique<RCAS_Dx12>("RCAS", InDevice);
 
 		if (Imgui == nullptr || Imgui.get() == nullptr)
@@ -141,7 +141,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	if (_EvaluateFeature != nullptr)
 	{
-		if (Config::Instance()->changeCAS)
+		if (Config::Instance()->changeRCAS)
 		{
 			if (RCAS != nullptr && RCAS.get() != nullptr)
 			{
@@ -151,7 +151,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			}
 			else
 			{
-				Config::Instance()->changeCAS = false;
+				Config::Instance()->changeRCAS = false;
 				spdlog::trace("DLSSFeatureDx12::Evaluate sleeping before CAS creation for 250ms");
 				std::this_thread::sleep_for(std::chrono::milliseconds(250));
 				RCAS = std::make_unique<RCAS_Dx12>("RCAS", Device);
@@ -183,10 +183,10 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		else
 			setBuffer = paramOutput;
 
-		// CAS sharpness & preperation
+		// RCAS sharpness & preperation
 		auto sharpness = GetSharpness(InParameters);
 
-		if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(false) && sharpness > 0.0f &&
+		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && sharpness > 0.0f &&
 			RCAS != nullptr && RCAS.get() != nullptr &&
 			RCAS->CreateBufferResource(Device, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
@@ -212,7 +212,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		}
 
 		// Apply CAS
-		if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(false) && sharpness > 0.0f && RCAS != nullptr && RCAS.get() != nullptr && RCAS->Buffer() != nullptr)
+		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && sharpness > 0.0f && RCAS != nullptr && RCAS.get() != nullptr && RCAS->Buffer() != nullptr)
 		{
 			ResourceBarrier(InCommandList, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 			RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -222,7 +222,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			{
 				if (!RCAS->Dispatch(Device, InCommandList, setBuffer, OutputScaler->Buffer()))
 				{
-					Config::Instance()->CasEnabled = false;
+					Config::Instance()->RcasEnabled = false;
 					return true;
 				}
 			}
@@ -230,7 +230,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			{
 				if (!RCAS->Dispatch(Device, InCommandList, setBuffer, paramOutput))
 				{
-					Config::Instance()->CasEnabled = false;
+					Config::Instance()->RcasEnabled = false;
 					return true;
 				}
 			}

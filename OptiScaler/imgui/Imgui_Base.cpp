@@ -688,43 +688,15 @@ void Imgui_Base::RenderMenu()
 				{
 					ImGui::SeparatorText("RCAS Settings");
 
-					if (bool cas = Config::Instance()->CasEnabled.value_or(currentBackend == "xess"); ImGui::Checkbox("Enable RCAS", &cas))
+					if (bool cas = Config::Instance()->RcasEnabled.value_or(currentBackend == "xess"); ImGui::Checkbox("Enable RCAS", &cas))
 					{
-						Config::Instance()->CasEnabled = cas;
+						Config::Instance()->RcasEnabled = cas;
 
 						if (currentBackend == "dlss")
 							Config::Instance()->changeBackend = true;
 						else
-							Config::Instance()->changeCAS = true;
+							Config::Instance()->changeRCAS = true;
 					}
-
-					//ImGui::BeginDisabled(!Config::Instance()->CasEnabled.value_or(false));
-
-					//const char* cs[] = { "LINEAR", "GAMMA20", "GAMMA22", "SRGB_OUTPUT", "SRGB_INPUT_OUTPUT" };
-					//auto configCs = Config::Instance()->CasColorSpaceConversion.value_or(0);
-
-					//if (configCs < 0)
-					//	configCs = 0;
-					//else if (configCs > 4)
-					//	configCs = 4;
-
-					//const char* selectedCs = cs[configCs];
-
-					//if (ImGui::BeginCombo("Color Space", selectedCs))
-					//{
-					//	for (int n = 0; n < 5; n++)
-					//	{
-					//		if (ImGui::Selectable(cs[n], (Config::Instance()->CasColorSpaceConversion.value_or(0) == n)))
-					//		{
-					//			Config::Instance()->CasColorSpaceConversion = n;
-					//			Config::Instance()->changeCAS = true;
-					//		}
-					//	}
-
-					//	ImGui::EndCombo();
-					//}
-
-					//ImGui::EndDisabled();
 				}
 
 				// OUTPUT SCALING -----------------------------
@@ -831,7 +803,7 @@ void Imgui_Base::RenderMenu()
 				{
 					Config::Instance()->OverrideSharpness = overrideSharpness;
 
-					if (currentBackend == "dlss" && !Config::Instance()->CasEnabled.value_or(false))
+					if (currentBackend == "dlss" && !Config::Instance()->RcasEnabled.value_or(false))
 						Config::Instance()->changeBackend = true;
 				}
 

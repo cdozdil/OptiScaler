@@ -52,7 +52,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 				ID3D11Texture2D* pvTexture;
 				paramVelocity->QueryInterface(IID_PPV_ARGS(&pvTexture));
 				pvTexture->GetDesc(&desc);
-				bool lowResMV = desc.Width < DisplayWidth();
+				bool lowResMV = desc.Width < TargetWidth();
 				bool displaySizeEnabled = (InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
 
 				if (displaySizeEnabled && lowResMV)
@@ -166,7 +166,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		dumpCount += Config::Instance()->xessDebugFrames;
 	}
 
-	if (Config::Instance()->changeCAS)
+	if (Config::Instance()->changeRCAS)
 	{
 		if (RCAS != nullptr && RCAS.get() != nullptr)
 		{
@@ -176,29 +176,12 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		}
 		else
 		{
-			Config::Instance()->changeCAS = false;
+			Config::Instance()->changeRCAS = false;
 			spdlog::trace("XeSSFeatureDx11::Evaluate sleeping before CAS creation for 250ms");
 			std::this_thread::sleep_for(std::chrono::milliseconds(250));
 			RCAS = std::make_unique<RCAS_Dx12>("RCAS", Dx12Device);
 		}
 	}
-
-	//if (Config::Instance()->changeCAS)
-	//{
-	//	if (CAS != nullptr && CAS.get() != nullptr)
-	//	{
-	//		spdlog::trace("XeSSFeatureDx11::Evaluate sleeping before CAS.reset() for 250ms");
-	//		std::this_thread::sleep_for(std::chrono::milliseconds(250));
-	//		CAS.reset();
-	//	}
-	//	else
-	//	{
-	//		Config::Instance()->changeCAS = false;
-	//		spdlog::trace("XeSSFeatureDx11::Evaluate sleeping before CAS creation for 250ms");
-	//		std::this_thread::sleep_for(std::chrono::milliseconds(250));
-	//		CAS = std::make_unique<CAS_Dx12>(Dx12Device, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
-	//	}
-	//}
 
 	// creatimg params for XeSS
 	xess_result_t xessResult;
@@ -272,8 +255,9 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		params.pOutputTexture = dx11Out.Dx12Resource;
 	}
 
-	if (!Config::Instance()->changeCAS &&
-		Config::Instance()->CasEnabled.value_or(true) &&
+	// RCAS
+	if (!Config::Instance()->changeRCAS &&
+		Config::Instance()->RcasEnabled.value_or(true) &&
 		sharpness > 0.0f &&
 		RCAS != nullptr && RCAS.get() != nullptr &&
 		RCAS->CreateBufferResource(Dx12Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
@@ -281,16 +265,6 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		RCAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		params.pOutputTexture = RCAS->Buffer();
 	}
-
-	//if (!Config::Instance()->changeCAS &&
-	//	Config::Instance()->CasEnabled.value_or(false) &&
-	//	sharpness > 0.0f &&
-	//	CAS != nullptr && CAS.get() != nullptr &&
-	//	CAS->CreateBufferResource(Dx12Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
-	//{
-	//	CAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	//	params.pOutputTexture = CAS->Buffer();
-	//}
 
 	_hasOutput = params.pOutputTexture != nullptr;
 	params.pDepthTexture = dx11Depth.Dx12Resource;
@@ -345,8 +319,8 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		return false;
 	}
 
-	//apply cas
-	if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(true) && sharpness > 0.0f && RCAS != nullptr && RCAS.get() != nullptr)
+	// apply rcas
+	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && sharpness > 0.0f && RCAS != nullptr && RCAS.get() != nullptr)
 	{
 		spdlog::debug("XeSSFeatureDx11::Evaluate Apply CAS");
 		ResourceBarrier(Dx12CommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -358,7 +332,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		{
 			if (!RCAS->Dispatch(Dx12Device, Dx12CommandList, params.pOutputTexture, OutputScaler->Buffer()))
 			{
-				Config::Instance()->CasEnabled = false;
+				Config::Instance()->RcasEnabled = false;
 
 				Dx12CommandList->Close();
 				ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -374,7 +348,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		{
 			if (!RCAS->Dispatch(Dx12Device, Dx12CommandList, params.pOutputTexture, dx11Out.Dx12Resource))
 			{
-				Config::Instance()->CasEnabled = false;
+				Config::Instance()->RcasEnabled = false;
 
 				Dx12CommandList->Close();
 				ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -387,46 +361,6 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 			}
 		}
 	}
-
-	//if (!Config::Instance()->changeCAS && Config::Instance()->CasEnabled.value_or(false) && sharpness > 0.0f && CAS != nullptr && CAS.get() != nullptr)
-	//{
-	//	spdlog::debug("XeSSFeatureDx11::Evaluate Apply CAS");
-	//	ResourceBarrier(Dx12CommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	//	CAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-	//	if (useSS)
-	//	{
-	//		if (!CAS->Dispatch(Dx12CommandList, sharpness, params.pOutputTexture, OutputScaler->Buffer()))
-	//		{
-	//			Config::Instance()->CasEnabled = false;
-
-	//			Dx12CommandList->Close();
-	//			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-	//			Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-
-	//			Dx12CommandAllocator->Reset();
-	//			Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
-
-	//			return true;
-	//		}
-	//	}
-	//	else
-	//	{
-	//		if (!CAS->Dispatch(Dx12CommandList, sharpness, params.pOutputTexture, dx11Out.Dx12Resource))
-	//		{
-	//			Config::Instance()->CasEnabled = false;
-
-	//			Dx12CommandList->Close();
-	//			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-	//			Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-
-	//			Dx12CommandAllocator->Reset();
-	//			Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
-
-	//			return true;
-	//		}
-	//	}
-	//}
 
 	if (useSS)
 	{

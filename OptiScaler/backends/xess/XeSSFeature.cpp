@@ -326,10 +326,10 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		return false;
 	}
 
-	/*if (Config::Instance()->CasEnabled.value_or(false))*/
+	/*if (Config::Instance()->RcasEnabled.value_or(false))*/
 	RCAS = std::make_unique<RCAS_Dx12>("RCAS", device);
 
-	//if (Config::Instance()->CasEnabled.value_or(false))
+	//if (Config::Instance()->RcasEnabled.value_or(false))
 	//	CAS = std::make_unique<CAS_Dx12>(device, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
 
 	SetInit(true);

@@ -472,13 +472,13 @@ void DLSSFeature::ProcessEvaluateParams(const NVSDK_NGX_Parameter* InParameters)
 		Parameters->Set(NVSDK_NGX_Parameter_Jitter_Offset_Y, floatValue);
 
 	// override sharpness
-	if (Config::Instance()->OverrideSharpness.value_or(false) && !(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->CasEnabled.value_or(false)))
+	if (Config::Instance()->OverrideSharpness.value_or(false) && !(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->RcasEnabled.value_or(false)))
 	{
 		auto sharpness = Config::Instance()->Sharpness.value_or(0.3f);
 		Parameters->Set(NVSDK_NGX_Parameter_Sharpness, sharpness);
 	}
 	// cas enabled
-	else if (Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->CasEnabled.value_or(false))
+	else if (Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->RcasEnabled.value_or(false))
 		Parameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
 	// dlss value
 	else if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &floatValue) == NVSDK_NGX_Result_Success)
@@ -593,6 +593,8 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &uintValue) == NVSDK_NGX_Result_Success)
 	{
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags {0:X}", uintValue);
+
 		isHdr = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_IsHDR) > 0;
 		mvLowRes = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) > 0;
 		mvJittered = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_MVJittered) > 0;
@@ -657,14 +659,14 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (LowResMV) {0:b}", featureFlags);
 	}
 
-	if (Config::Instance()->OverrideSharpness.value_or(sharpening) && !(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->CasEnabled.value_or(false)))
+	if (Config::Instance()->OverrideSharpness.value_or(sharpening) && !(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->RcasEnabled.value_or(false)))
 	{
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (Sharpenin) {0:b}", featureFlags);
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (Sharpening) {0:b}", featureFlags);
 	}
 	else
 	{
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!Sharpenin) {0:b}", featureFlags);
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!Sharpening) {0:b}", featureFlags);
 	}
 
 	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, featureFlags);

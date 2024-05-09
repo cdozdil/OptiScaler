@@ -87,8 +87,7 @@ bool Config::Reload()
 		MenuScale = readFloat("Menu", "Scale");
 
 		// CAS
-		CasEnabled = readBool("CAS", "Enabled");
-		CasColorSpaceConversion = readInt("CAS", "ColorSpaceConversion");
+		RcasEnabled = readBool("CAS", "Enabled");
 
 		// Depth
 		DepthInverted = readBool("Depth", "DepthInverted");
@@ -210,7 +209,7 @@ bool Config::SaveIni()
 	ini.SetValue("Menu", "Scale", GetFloatValue(Instance()->MenuScale).c_str());
 
 	// CAS
-	ini.SetValue("CAS", "Enabled", GetBoolValue(Instance()->CasEnabled).c_str());
+	ini.SetValue("CAS", "Enabled", GetBoolValue(Instance()->RcasEnabled).c_str());
 	ini.SetValue("CAS", "ColorSpaceConversion", GetIntValue(Instance()->CasColorSpaceConversion).c_str());
 
 	// Depth

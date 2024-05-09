@@ -280,7 +280,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, const NVSDK_NGX_P
 		{
 			D3D11_TEXTURE2D_DESC desc;
 			((ID3D11Texture2D*)paramVelocity)->GetDesc(&desc);
-			bool lowResMV = desc.Width < DisplayWidth();
+			bool lowResMV = desc.Width < TargetWidth();
 			bool displaySizeEnabled = (GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
 
 			if (displaySizeEnabled && lowResMV)
