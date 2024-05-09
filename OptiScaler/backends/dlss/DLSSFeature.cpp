@@ -647,7 +647,7 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!JitterCancellation) {0:b}", featureFlags);
 	}
 
-	if (Config::Instance()->DisplayResolution.value_or(!mvLowRes))
+	if (!Config::Instance()->DisplayResolution.value_or(!mvLowRes))
 	{
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
 		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (LowResMV) {0:b}", featureFlags);
