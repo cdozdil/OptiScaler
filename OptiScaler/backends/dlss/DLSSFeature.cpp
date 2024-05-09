@@ -647,14 +647,14 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!JitterCancellation) {0:b}", featureFlags);
 	}
 
-	if (!Config::Instance()->DisplayResolution.value_or(!mvLowRes))
+	if (Config::Instance()->DisplayResolution.value_or(!mvLowRes))
 	{
-		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (LowResMV) {0:b}", featureFlags);
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!LowResMV) {0:b}", featureFlags);
 	}
 	else
 	{
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!LowResMV) {0:b}", featureFlags);
+		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
+		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (LowResMV) {0:b}", featureFlags);
 	}
 
 	if (Config::Instance()->OverrideSharpness.value_or(sharpening) && !(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->CasEnabled.value_or(false)))
