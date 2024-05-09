@@ -210,7 +210,6 @@ bool Config::SaveIni()
 
 	// CAS
 	ini.SetValue("CAS", "Enabled", GetBoolValue(Instance()->RcasEnabled).c_str());
-	ini.SetValue("CAS", "ColorSpaceConversion", GetIntValue(Instance()->CasColorSpaceConversion).c_str());
 
 	// Depth
 	ini.SetValue("Depth", "DepthInverted", GetBoolValue(Instance()->DepthInverted).c_str());
