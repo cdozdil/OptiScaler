@@ -323,38 +323,56 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 	if (Config::Instance()->changeBackend)
 	{
 		if (Config::Instance()->newBackend == "")
-			Config::Instance()->newBackend = Config::Instance()->Dx12Upscaler.value_or("xess");
+			Config::Instance()->newBackend = Config::Instance()->VulkanUpscaler.value_or("fsr21");
 
-		spdlog::info("NVSDK_NGX_VULKAN_EvaluateFeature changing backend to {0}", Config::Instance()->newBackend);
+		changeBackendCounter++;
 
 		// first release everything
-		if (VkContexts.contains(handleId) && changeBackendCounter == 0)
+		if (changeBackendCounter == 1)
 		{
-			auto dc = VkContexts[handleId].get();
+			if (VkContexts.contains(handleId))
+			{
+				spdlog::info("NVSDK_NGX_VULKAN_EvaluateFeature changing backend to {0}", Config::Instance()->newBackend);
 
-			createParams = GetNGXParameters();
-			createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
-			createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
-			createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
-			createParams->Set(NVSDK_NGX_Parameter_OutWidth, dc->DisplayWidth());
-			createParams->Set(NVSDK_NGX_Parameter_OutHeight, dc->DisplayHeight());
-			createParams->Set(NVSDK_NGX_Parameter_PerfQualityValue, dc->PerfQualityValue());
+				auto dc = VkContexts[handleId].get();
 
-			dc = nullptr;
+				createParams = GetNGXParameters();
+				createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
+				createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
+				createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
+				createParams->Set(NVSDK_NGX_Parameter_OutWidth, dc->DisplayWidth());
+				createParams->Set(NVSDK_NGX_Parameter_OutHeight, dc->DisplayHeight());
+				createParams->Set(NVSDK_NGX_Parameter_PerfQualityValue, dc->PerfQualityValue());
 
-			spdlog::trace("NVSDK_NGX_VULKAN_EvaluateFeature sleeping before reset of current feature for 1000ms");
-			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+				dc = nullptr;
 
-			VkContexts[handleId].reset();
-			auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
-			VkContexts.erase(it);
+				spdlog::debug("NVSDK_NGX_VULKAN_EvaluateFeature sleeping before reset of current feature for 1000ms");
+				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+				VkContexts[handleId].reset();
+				auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+				VkContexts.erase(it);
+			}
+			else
+			{
+				spdlog::error("NVSDK_NGX_VULKAN_EvaluateFeature can't find handle {0} in VkContexts!", handleId);
+
+				Config::Instance()->newBackend = "";
+				Config::Instance()->changeBackend = false;
+
+				if (createParams != nullptr)
+				{
+					free(createParams);
+					createParams = nullptr;
+				}
+
+				changeBackendCounter = 0;
+			}
 
 			return NVSDK_NGX_Result_Success;
 		}
 
-		changeBackendCounter++;
-
-		if (changeBackendCounter == 1)
+		if (changeBackendCounter == 2)
 		{
 			// prepare new upscaler
 			if (Config::Instance()->newBackend == "fsr22")
@@ -373,7 +391,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 			return NVSDK_NGX_Result_Success;
 		}
 
-		if (changeBackendCounter == 2)
+		if (changeBackendCounter == 3)
 		{
 			// next frame create context
 			auto initResult = VkContexts[handleId]->Init(vkInstance, vkPD, vkDevice, InCmdList, vkGIPA, vkGDPA, createParams);
@@ -384,8 +402,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 			createParams = nullptr;
 			changeBackendCounter = 0;
 
-			if (!initResult)
-				return NVSDK_NGX_Result_Fail;
+			if (!initResult || !VkContexts[handleId]->ModuleLoaded())
+			{
+				spdlog::error("NVSDK_NGX_VULKAN_EvaluateFeature init failed with {0} feature", Config::Instance()->VulkanUpscaler.value());
+
+				Config::Instance()->newBackend = "fsr21";
+				Config::Instance()->changeBackend = true;
+			}
 		}
 
 		return NVSDK_NGX_Result_Success;
@@ -393,6 +416,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 
 	deviceContext = VkContexts[handleId].get();
 	Config::Instance()->CurrentFeature = deviceContext;
+
+	if (!deviceContext->IsInited() && (deviceContext->Name() == "XeSS" || deviceContext->Name() == "DLSS"))
+	{
+		Config::Instance()->newBackend = "fsr21";
+		Config::Instance()->changeBackend = true;
+		return NVSDK_NGX_Result_Success;
+	}
 
 	if (deviceContext->Evaluate(InCmdList, InParameters))
 		return NVSDK_NGX_Result_Success;

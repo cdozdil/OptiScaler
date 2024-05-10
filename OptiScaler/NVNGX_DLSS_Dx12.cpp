@@ -477,6 +477,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 	{
 		Config::Instance()->ActiveFeatureCount++;
 		HookToCommandList(InCmdList);
+
 		return NVSDK_NGX_Result_Success;
 	}
 
@@ -555,11 +556,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		if (Config::Instance()->newBackend == "")
 			Config::Instance()->newBackend = Config::Instance()->Dx12Upscaler.value_or("xess");
 
-		spdlog::info("NVSDK_NGX_D3D12_EvaluateFeature changing backend to {0}", Config::Instance()->newBackend);
+		changeBackendCounter++;
 
 		// first release everything
-		if (Dx12Contexts.contains(handleId) && changeBackendCounter == 0)
+		if (changeBackendCounter == 1)
 		{
+			if (Dx12Contexts.contains(handleId))
+			{
+				spdlog::info("NVSDK_NGX_D3D12_EvaluateFeature changing backend to {0}", Config::Instance()->newBackend);
+
 			auto dc = Dx12Contexts[handleId].get();
 
 			createParams = GetNGXParameters();
@@ -572,7 +577,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 			dc = nullptr;
 
-			spdlog::trace("NVSDK_NGX_D3D12_EvaluateFeature sleeping before reset of current feature for 1000ms");
+				spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature sleeping before reset of current feature for 1000ms");
 			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
 			Dx12Contexts[handleId].reset();
@@ -584,13 +589,27 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 			rootSigCompute = nullptr;
 			rootSigGraphic = nullptr;
+			}
+			else
+			{
+				spdlog::error("NVSDK_NGX_D3D12_EvaluateFeature can't find handle {0} in Dx12Contexts!", handleId);
+
+				Config::Instance()->newBackend = "";
+				Config::Instance()->changeBackend = false;
+
+				if (createParams != nullptr)
+				{
+					free(createParams);
+					createParams = nullptr;
+				}
+
+				changeBackendCounter = 0;
+			}
 
 			return NVSDK_NGX_Result_Success;
 		}
 
-		changeBackendCounter++;
-
-		if (changeBackendCounter == 1)
+		if (changeBackendCounter == 2)
 		{
 			// prepare new upscaler
 			if (Config::Instance()->newBackend == "fsr22")
@@ -621,7 +640,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 			return NVSDK_NGX_Result_Success;
 		}
 
-		if (changeBackendCounter == 2)
+		if (changeBackendCounter == 3)
 		{
 			// next frame create context
 			auto initResult = Dx12Contexts[handleId]->Init(D3D12Device, InCmdList, createParams);
@@ -656,6 +675,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature trying to use released handle, returning NVSDK_NGX_Result_Success");
 		return NVSDK_NGX_Result_Success;
 	}
+
+	if (!deviceContext->IsInited() && (deviceContext->Name() == "XeSS" || deviceContext->Name() == "DLSS"))
+	{
+		Config::Instance()->newBackend = "fsr21";
+		Config::Instance()->changeBackend = true;
+		return NVSDK_NGX_Result_Success;
+	}
+
+	ID3D12RootSignature* orgComputeRootSig = nullptr;
+	ID3D12RootSignature* orgGraphicRootSig = nullptr;
+
+	sigatureMutex.lock();
+	orgComputeRootSig = rootSigCompute;
+	orgGraphicRootSig = rootSigGraphic;
+	sigatureMutex.unlock();
 
 	contextRendering = true;
 

@@ -369,34 +369,52 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 		if (Config::Instance()->newBackend == "")
 			Config::Instance()->newBackend = Config::Instance()->Dx11Upscaler.value_or("fsr22");
 
-		spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature changing backend to {0}", Config::Instance()->newBackend);
+		changeBackendCounter++;
 
 		// first release everything
-		if (Dx11Contexts.contains(handleId) && changeBackendCounter == 0)
+		if (changeBackendCounter == 1)
 		{
-			auto dc = Dx11Contexts[handleId].get();
+			if (Dx11Contexts.contains(handleId))
+			{
+				spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature changing backend to {0}", Config::Instance()->newBackend);
 
-			createParams = GetNGXParameters();
-			createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
-			createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
-			createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
-			createParams->Set(NVSDK_NGX_Parameter_OutWidth, dc->DisplayWidth());
-			createParams->Set(NVSDK_NGX_Parameter_OutHeight, dc->DisplayHeight());
-			createParams->Set(NVSDK_NGX_Parameter_PerfQualityValue, dc->PerfQualityValue());
+				auto dc = Dx11Contexts[handleId].get();
 
-			spdlog::trace("NVSDK_NGX_D3D11_EvaluateFeature sleeping before reset of current feature for 1000ms");
-			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+				createParams = GetNGXParameters();
+				createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
+				createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
+				createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
+				createParams->Set(NVSDK_NGX_Parameter_OutWidth, dc->DisplayWidth());
+				createParams->Set(NVSDK_NGX_Parameter_OutHeight, dc->DisplayHeight());
+				createParams->Set(NVSDK_NGX_Parameter_PerfQualityValue, dc->PerfQualityValue());
 
-			Dx11Contexts[handleId].reset();
-			auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
-			Dx11Contexts.erase(it);
+				spdlog::trace("NVSDK_NGX_D3D11_EvaluateFeature sleeping before reset of current feature for 1000ms");
+				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+				Dx11Contexts[handleId].reset();
+				auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+				Dx11Contexts.erase(it);
+			}
+			else
+			{
+				spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature can't find handle {0} in Dx11Contexts!", handleId);
+
+				Config::Instance()->newBackend = "";
+				Config::Instance()->changeBackend = false;
+
+				if (createParams != nullptr)
+				{
+					free(createParams);
+					createParams = nullptr;
+				}
+
+				changeBackendCounter = 0;
+			}
 
 			return NVSDK_NGX_Result_Success;
 		}
 
-		changeBackendCounter++;
-
-		if (changeBackendCounter == 1)
+		if (changeBackendCounter == 2)
 		{
 			// next frame prepare stuff
 			if (Config::Instance()->newBackend == "xess")
@@ -439,8 +457,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 			return NVSDK_NGX_Result_Success;
 		}
 
-
-		if (changeBackendCounter == 2)
+		if (changeBackendCounter == 3)
 		{
 			// then init and continue
 			auto initResult = Dx11Contexts[handleId]->Init(D3D11Device, InDevCtx, createParams);
@@ -474,6 +491,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 	if (deviceContext == nullptr)
 	{
 		spdlog::debug("NVSDK_NGX_D3D11_EvaluateFeature trying to use released handle, returning NVSDK_NGX_Result_Success");
+		return NVSDK_NGX_Result_Success;
+	}
+
+	if (!deviceContext->IsInited() && (deviceContext->Name() == "XeSS" || deviceContext->Name() == "DLSS"))
+	{
+		Config::Instance()->newBackend = "fsr22";
+		Config::Instance()->changeBackend = true;
 		return NVSDK_NGX_Result_Success;
 	}
 
