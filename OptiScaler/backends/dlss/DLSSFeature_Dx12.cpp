@@ -119,7 +119,7 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 
 	if (initResult)
 	{
-		if (Config::Instance()->RcasEnabled.value_or(false))
+		if (Config::Instance()->RcasEnabled.value_or(Version().major == 3))
 			RCAS = std::make_unique<RCAS_Dx12>("RCAS", InDevice);
 
 		if (Imgui == nullptr || Imgui.get() == nullptr)
