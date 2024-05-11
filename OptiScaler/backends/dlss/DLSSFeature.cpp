@@ -741,7 +741,11 @@ void DLSSFeature::GetFeatureCommonInfo(NVSDK_NGX_FeatureCommonInfo* fcInfo)
 
 	// Copy the strings from the vector to the array
 	for (size_t i = 0; i < Config::Instance()->NVNGX_FeatureInfo_Paths.size(); ++i)
+	{
 		paths[i] = Config::Instance()->NVNGX_FeatureInfo_Paths[i].c_str();
+		std::string str(Config::Instance()->NVNGX_FeatureInfo_Paths[i].begin(), Config::Instance()->NVNGX_FeatureInfo_Paths[i].end());
+		spdlog::debug("DLSSFeature::GetFeatureCommonInfo paths[{0}]: {1}", i, str);
+	}
 
 	fcInfo->PathListInfo.Path = paths;
 	fcInfo->PathListInfo.Length = static_cast<unsigned int>(Config::Instance()->NVNGX_FeatureInfo_Paths.size());
@@ -765,36 +769,37 @@ void DLSSFeature::ReadVersion()
 		return;
 	}
 
-	for (size_t i = 0; i < Config::Instance()->NVNGX_FeatureInfo_Paths.size(); ++i)
-	{
-		auto path = std::filesystem::path(Config::Instance()->NVNGX_FeatureInfo_Paths[i].c_str());
-		auto file = path.parent_path() / L"nvngx_dlss.dll";
+	// Checking one from memory feels like safe way to do it
+	//for (size_t i = 0; i < Config::Instance()->NVNGX_FeatureInfo_Paths.size(); ++i)
+	//{
+	//	auto path = std::filesystem::path(Config::Instance()->NVNGX_FeatureInfo_Paths[i].c_str());
+	//	auto file = path.parent_path() / L"nvngx_dlss.dll";
 
-		auto dlssModule = LoadLibraryW(file.wstring().c_str());
+	//	auto dlssModule = LoadLibraryW(file.wstring().c_str());
 
-		if (dlssModule)
-		{
+	//	if (dlssModule)
+	//	{
 			
-			_GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)GetProcAddress(dlssModule, "NVSDK_NGX_GetSnippetVersion");
+	//		_GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)GetProcAddress(dlssModule, "NVSDK_NGX_GetSnippetVersion");
 
-			if (_GetSnippetVersion != nullptr)
-			{
-				auto result = _GetSnippetVersion();
+	//		if (_GetSnippetVersion != nullptr)
+	//		{
+	//			auto result = _GetSnippetVersion();
 
-				_version.major = (result & 0x00FF0000) / 0x00010000;
-				_version.minor = (result & 0x0000FF00) / 0x00000100;
-				_version.patch = result & 0x000000FF / 0x00000001;
+	//			_version.major = (result & 0x00FF0000) / 0x00010000;
+	//			_version.minor = (result & 0x0000FF00) / 0x00000100;
+	//			_version.patch = result & 0x000000FF / 0x00000001;
 
-				spdlog::info("DLSSFeature::ReadVersion DLSS v{0}.{1}.{2} loaded.", _version.major, _version.minor, _version.patch);
-			}
+	//			spdlog::info("DLSSFeature::ReadVersion DLSS v{0}.{1}.{2} loaded.", _version.major, _version.minor, _version.patch);
+	//		}
 
-			_GetSnippetVersion = nullptr;
-			FreeLibrary(dlssModule);
+	//		_GetSnippetVersion = nullptr;
+	//		FreeLibrary(dlssModule);
 
-			if (_version.major != 0)
-				return;
-		}
-	}
+	//		if (_version.major != 0)
+	//			return;
+	//	}
+	//}
 
 	spdlog::info("DLSSFeature::ReadVersion GetProcAddress for NVSDK_NGX_GetSnippetVersion failed!");
 }
