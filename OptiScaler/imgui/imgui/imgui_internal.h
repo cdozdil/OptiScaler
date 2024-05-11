@@ -1,4 +1,4 @@
-// dear imgui, v1.90.5 WIP
+// dear imgui, v1.90.6
 // (internal structures/api)
 
 // You may use this file to debug, understand or extend Dear ImGui features but we don't provide any guarantee of forward compatibility.
@@ -87,6 +87,8 @@ Index of this file:
 #pragma clang diagnostic ignored "-Wdouble-promotion"
 #pragma clang diagnostic ignored "-Wimplicit-int-float-conversion"  // warning: implicit conversion from 'xxx' to 'float' may lose precision
 #pragma clang diagnostic ignored "-Wmissing-noreturn"               // warning: function 'xxx' could be declared with attribute 'noreturn'
+#pragma clang diagnostic ignored "-Wdeprecated-enum-enum-conversion"// warning: bitwise operation between different enumeration types ('XXXFlags_' and 'XXXFlagsPrivate_') is deprecated
+#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"            // warning: 'xxx' is an unsafe pointer used for buffer access
 #elif defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpragmas"              // warning: unknown option after '#pragma GCC diagnostic' kind
@@ -124,7 +126,7 @@ struct ImDrawListSharedData;        // Data shared between all ImDrawList instan
 struct ImGuiColorMod;               // Stacked color modifier, backup of modified data so we can restore it
 struct ImGuiContext;                // Main Dear ImGui context
 struct ImGuiContextHook;            // Hook for extensions like ImGuiTestEngine
-struct ImGuiDataVarInfo;            // Variable information (e.g. to avoid style variables from an enum)
+struct ImGuiDataVarInfo;            // Variable information (e.g. to access style variables from an enum)
 struct ImGuiDataTypeInfo;           // Type information associated to a ImGuiDataType enum
 struct ImGuiGroupData;              // Stacked storage data for BeginGroup()/EndGroup()
 struct ImGuiInputTextState;         // Internal state of the currently focused/edited text input box
@@ -146,6 +148,7 @@ struct ImGuiStyleMod;               // Stacked style modifier, backup of modifie
 struct ImGuiTabBar;                 // Storage for a tab bar
 struct ImGuiTabItem;                // Storage for a tab item (within a tab bar)
 struct ImGuiTable;                  // Storage for a table
+struct ImGuiTableHeaderData;        // Storage for TableAngledHeadersRow()
 struct ImGuiTableColumn;            // Storage for one column of a table
 struct ImGuiTableInstanceData;      // Storage for one instance of a same table
 struct ImGuiTableTempData;          // Temporary storage for one table (one per table in the stack), shared between tables.
@@ -179,6 +182,7 @@ typedef int ImGuiSeparatorFlags;        // -> enum ImGuiSeparatorFlags_     // F
 typedef int ImGuiTextFlags;             // -> enum ImGuiTextFlags_          // Flags: for TextEx()
 typedef int ImGuiTooltipFlags;          // -> enum ImGuiTooltipFlags_       // Flags: for BeginTooltipEx()
 typedef int ImGuiTypingSelectFlags;     // -> enum ImGuiTypingSelectFlags_  // Flags: for GetTypingSelectRequest()
+typedef int ImGuiWindowRefreshFlags;    // -> enum ImGuiWindowRefreshFlags_ // Flags: for SetNextWindowRefreshPolicy()
 
 typedef void (*ImGuiErrorLogCallback)(void* user_data, const char* fmt, ...);
 
@@ -404,6 +408,7 @@ IMGUI_API int           ImTextCountCharsFromUtf8(const char* in_text, const char
 IMGUI_API int           ImTextCountUtf8BytesFromChar(const char* in_text, const char* in_text_end);                             // return number of bytes to express one char in UTF-8
 IMGUI_API int           ImTextCountUtf8BytesFromStr(const ImWchar* in_text, const ImWchar* in_text_end);                        // return number of bytes to express string in UTF-8
 IMGUI_API const char*   ImTextFindPreviousUtf8Codepoint(const char* in_text_start, const char* in_text_curr);                   // return previous UTF-8 code-point.
+IMGUI_API int           ImTextCountLines(const char* in_text, const char* in_text_end);                                         // return number of lines taken by text. trailing carriage return doesn't count as an extra line.
 
 // Helpers: File System
 #ifdef IMGUI_DISABLE_FILE_FUNCTIONS
@@ -498,7 +503,8 @@ IMGUI_API ImVec2     ImLineClosestPoint(const ImVec2& a, const ImVec2& b, const 
 IMGUI_API bool       ImTriangleContainsPoint(const ImVec2& a, const ImVec2& b, const ImVec2& c, const ImVec2& p);
 IMGUI_API ImVec2     ImTriangleClosestPoint(const ImVec2& a, const ImVec2& b, const ImVec2& c, const ImVec2& p);
 IMGUI_API void       ImTriangleBarycentricCoords(const ImVec2& a, const ImVec2& b, const ImVec2& c, const ImVec2& p, float& out_u, float& out_v, float& out_w);
-inline float         ImTriangleArea(const ImVec2& a, const ImVec2& b, const ImVec2& c) { return ImFabs((a.x * (b.y - c.y)) + (b.x * (c.y - a.y)) + (c.x * (a.y - b.y))) * 0.5f; }
+inline float         ImTriangleArea(const ImVec2& a, const ImVec2& b, const ImVec2& c)          { return ImFabs((a.x * (b.y - c.y)) + (b.x * (c.y - a.y)) + (c.x * (a.y - b.y))) * 0.5f; }
+inline bool          ImTriangleIsClockwise(const ImVec2& a, const ImVec2& b, const ImVec2& c)   { return ((b.x - a.x) * (c.y - b.y)) - ((c.x - b.x) * (b.y - a.y)) > 0.0f; }
 
 // Helper: ImVec1 (1D vector)
 // (this odd construct is used to facilitate the transition between 1D and 2D, and the maintenance of some branches/patches)
@@ -863,6 +869,7 @@ enum ImGuiInputTextFlagsPrivate_
     ImGuiInputTextFlags_Multiline           = 1 << 26,  // For internal use by InputTextMultiline()
     ImGuiInputTextFlags_NoMarkEdited        = 1 << 27,  // For internal use by functions using InputText() before reformatting data
     ImGuiInputTextFlags_MergedItem          = 1 << 28,  // For internal use by TempInputText(), will skip calling ItemAdd(). Require bounding-box to strictly match.
+    ImGuiInputTextFlags_LocalizeDecimalPoint= 1 << 29,  // For internal use by InputScalar() and TempInputScalar()
 };
 
 // Extend ImGuiButtonFlags_
@@ -1111,6 +1118,15 @@ struct IMGUI_API ImGuiInputTextState
 
 };
 
+enum ImGuiWindowRefreshFlags_
+{
+    ImGuiWindowRefreshFlags_None                = 0,
+    ImGuiWindowRefreshFlags_TryToAvoidRefresh   = 1 << 0,   // [EXPERIMENTAL] Try to keep existing contents, USER MUST NOT HONOR BEGIN() RETURNING FALSE AND NOT APPEND.
+    ImGuiWindowRefreshFlags_RefreshOnHover      = 1 << 1,   // [EXPERIMENTAL] Always refresh on hover
+    ImGuiWindowRefreshFlags_RefreshOnFocus      = 1 << 2,   // [EXPERIMENTAL] Always refresh on focus
+    // Refresh policy/frequency, Load Balancing etc.
+};
+
 enum ImGuiNextWindowDataFlags_
 {
     ImGuiNextWindowDataFlags_None               = 0,
@@ -1123,6 +1139,7 @@ enum ImGuiNextWindowDataFlags_
     ImGuiNextWindowDataFlags_HasBgAlpha         = 1 << 6,
     ImGuiNextWindowDataFlags_HasScroll          = 1 << 7,
     ImGuiNextWindowDataFlags_HasChildFlags      = 1 << 8,
+    ImGuiNextWindowDataFlags_HasRefreshPolicy   = 1 << 9,
 };
 
 // Storage for SetNexWindow** functions
@@ -1144,6 +1161,7 @@ struct ImGuiNextWindowData
     void*                       SizeCallbackUserData;
     float                       BgAlphaVal;             // Override background alpha
     ImVec2                      MenuBarOffsetMinVal;    // (Always on) This is not exposed publicly, so we don't clear it and it doesn't have a corresponding flag (could we? for consistency?)
+    ImGuiWindowRefreshFlags     RefreshFlagsVal;
 
     ImGuiNextWindowData()       { memset(this, 0, sizeof(*this)); }
     inline void ClearFlags()    { Flags = ImGuiNextWindowDataFlags_None; }
@@ -1349,7 +1367,6 @@ enum ImGuiInputSource
     ImGuiInputSource_Mouse,         // Note: may be Mouse or TouchScreen or Pen. See io.MouseSource to distinguish them.
     ImGuiInputSource_Keyboard,
     ImGuiInputSource_Gamepad,
-    ImGuiInputSource_Clipboard,     // Currently only used by InputText()
     ImGuiInputSource_COUNT
 };
 
@@ -1578,6 +1595,7 @@ enum ImGuiNavMoveFlags_
     ImGuiNavMoveFlags_Activate              = 1 << 12,  // Activate/select target item.
     ImGuiNavMoveFlags_NoSelect              = 1 << 13,  // Don't trigger selection by not setting g.NavJustMovedTo
     ImGuiNavMoveFlags_NoSetNavHighlight     = 1 << 14,  // Do not alter the visible state of keyboard vs mouse nav highlight
+    ImGuiNavMoveFlags_NoClearActiveId       = 1 << 15,  // (Experimental) Do not clear active id when applying move result
 };
 
 enum ImGuiNavLayer
@@ -1594,10 +1612,10 @@ struct ImGuiNavItemData
     ImGuiID             FocusScopeId;   // Init,Move    // Best candidate focus scope ID
     ImRect              RectRel;        // Init,Move    // Best candidate bounding box in window relative space
     ImGuiItemFlags      InFlags;        // ????,Move    // Best candidate item flags
-    ImGuiSelectionUserData SelectionUserData;//I+Mov    // Best candidate SetNextItemSelectionData() value.
     float               DistBox;        //      Move    // Best candidate box distance to current NavId
     float               DistCenter;     //      Move    // Best candidate center distance to current NavId
     float               DistAxial;      //      Move    // Best candidate axial distance to current NavId
+    ImGuiSelectionUserData SelectionUserData;//I+Mov    // Best candidate SetNextItemSelectionData() value.
 
     ImGuiNavItemData()  { Clear(); }
     void Clear()        { Window = NULL; ID = FocusScopeId = 0; InFlags = 0; SelectionUserData = -1; DistBox = DistCenter = DistAxial = FLT_MAX; }
@@ -2528,6 +2546,7 @@ struct IMGUI_API ImGuiWindow
     bool                    Collapsed;                          // Set when collapsing window to become only title-bar
     bool                    WantCollapseToggle;
     bool                    SkipItems;                          // Set when items can safely be all clipped (e.g. window not visible or collapsed)
+    bool                    SkipRefresh;                        // [EXPERIMENTAL] Reuse previous frame drawn contents, Begin() returns false.
     bool                    Appearing;                          // Set during the frame where the window is appearing (or re-appearing)
     bool                    Hidden;                             // Do not display (== HiddenFrames*** > 0)
     bool                    IsFallbackWindow;                   // Set on the "Debug##Default" window.
@@ -2767,11 +2786,22 @@ struct ImGuiTableColumn
 };
 
 // Transient cell data stored per row.
-// sizeof() ~ 6
+// sizeof() ~ 6 bytes
 struct ImGuiTableCellData
 {
     ImU32                       BgColor;    // Actual color
     ImGuiTableColumnIdx         Column;     // Column number
+};
+
+// Parameters for TableAngledHeadersRowEx()
+// This may end up being refactored for more general purpose.
+// sizeof() ~ 12 bytes
+struct ImGuiTableHeaderData
+{
+    ImGuiTableColumnIdx         Index;      // Column index
+    ImU32                       TextColor;
+    ImU32                       BgColor0;
+    ImU32                       BgColor1;
 };
 
 // Per-instance data that needs preserving across frames (seemingly most others do not need to be preserved aside from debug needs. Does that means they could be moved to ImGuiTableTempData?)
@@ -2859,7 +2889,7 @@ struct IMGUI_API ImGuiTable
     ImGuiTableSortSpecs         SortSpecs;                  // Public facing sorts specs, this is what we return in TableGetSortSpecs()
     ImGuiTableColumnIdx         SortSpecsCount;
     ImGuiTableColumnIdx         ColumnsEnabledCount;        // Number of enabled columns (<= ColumnsCount)
-    ImGuiTableColumnIdx         ColumnsEnabledFixedCount;   // Number of enabled columns (<= ColumnsCount)
+    ImGuiTableColumnIdx         ColumnsEnabledFixedCount;   // Number of enabled columns using fixed width (<= ColumnsCount)
     ImGuiTableColumnIdx         DeclColumnsCount;           // Count calls to TableSetupColumn()
     ImGuiTableColumnIdx         AngledHeadersCount;         // Count columns with angled headers
     ImGuiTableColumnIdx         HoveredColumnBody;          // Index of column whose visible region is being hovered. Important: == ColumnsCount when hovering empty region after the right-most column!
@@ -2912,12 +2942,13 @@ struct IMGUI_API ImGuiTable
 // Transient data that are only needed between BeginTable() and EndTable(), those buffers are shared (1 per level of stacked table).
 // - Accessing those requires chasing an extra pointer so for very frequently used data we leave them in the main table structure.
 // - We also leave out of this structure data that tend to be particularly useful for debugging/metrics.
-// sizeof() ~ 120 bytes.
+// sizeof() ~ 136 bytes.
 struct IMGUI_API ImGuiTableTempData
 {
     int                         TableIndex;                 // Index in g.Tables.Buf[] pool
     float                       LastTimeActive;             // Last timestamp this structure was used
     float                       AngledHeadersExtraWidth;    // Used in EndTable()
+    ImVector<ImGuiTableHeaderData> AngledHeadersRequests;   // Used in TableAngledHeadersRow()
 
     ImVec2                      UserOuterSize;              // outer_size.x passed to BeginTable()
     ImDrawListSplitter          DrawSplitter;
@@ -2989,6 +3020,7 @@ namespace ImGui
     IMGUI_API ImGuiWindow*  FindWindowByID(ImGuiID id);
     IMGUI_API ImGuiWindow*  FindWindowByName(const char* name);
     IMGUI_API void          UpdateWindowParentAndRootLinks(ImGuiWindow* window, ImGuiWindowFlags flags, ImGuiWindow* parent_window);
+    IMGUI_API void          UpdateWindowSkipRefresh(ImGuiWindow* window);
     IMGUI_API ImVec2        CalcWindowNextAutoFitSize(ImGuiWindow* window);
     IMGUI_API bool          IsWindowChildOf(ImGuiWindow* window, ImGuiWindow* potential_parent, bool popup_hierarchy);
     IMGUI_API bool          IsWindowWithinBeginStackOf(ImGuiWindow* window, ImGuiWindow* potential_parent);
@@ -3013,6 +3045,9 @@ namespace ImGui
     IMGUI_API void          BringWindowToDisplayBehind(ImGuiWindow* window, ImGuiWindow* above_window);
     IMGUI_API int           FindWindowDisplayIndex(ImGuiWindow* window);
     IMGUI_API ImGuiWindow*  FindBottomMostVisibleWindowWithinBeginStack(ImGuiWindow* window);
+
+    // Windows: Idle, Refresh Policies [EXPERIMENTAL]
+    IMGUI_API void          SetNextWindowRefreshPolicy(ImGuiWindowRefreshFlags flags);
 
     // Fonts, drawing
     IMGUI_API void          SetCurrentFont(ImFont* font);
@@ -3301,7 +3336,7 @@ namespace ImGui
     IMGUI_API float         TableGetHeaderAngledMaxLabelWidth();
     IMGUI_API void          TablePushBackgroundChannel();
     IMGUI_API void          TablePopBackgroundChannel();
-    IMGUI_API void          TableAngledHeadersRowEx(float angle, float max_label_width = 0.0f);
+    IMGUI_API void          TableAngledHeadersRowEx(ImGuiID row_id, float angle, float max_label_width, const ImGuiTableHeaderData* data, int data_count);
 
     // Tables: Internals
     inline    ImGuiTable*   GetCurrentTable() { ImGuiContext& g = *GImGui; return g.CurrentTable; }
