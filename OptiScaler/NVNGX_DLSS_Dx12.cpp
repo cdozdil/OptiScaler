@@ -550,7 +550,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	if (Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 100 && !ImGuiOverlayDx12::IsInitedDx12())
+	if (Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 300 && !ImGuiOverlayDx12::IsInitedDx12())
 	{
 		HWND consoleWindow = GetConsoleWindow();
 		bool consoleAllocated = false;

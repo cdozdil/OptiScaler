@@ -375,7 +375,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	if (Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 100 && !ImGuiOverlayDx11::IsInitedDx11())
+	if (Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 300 && !ImGuiOverlayDx11::IsInitedDx11())
 	{
 		HWND consoleWindow = GetConsoleWindow();
 		bool consoleAllocated = false;
