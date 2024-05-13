@@ -10,6 +10,10 @@
 #include "../Config.h"
 #pragma comment(lib, "../detours/detours.lib")
 
+// Vulkan overlay code adopted from here:
+// https://gist.github.com/mem99/0ec31ca302927457f86b1d6756aaa8c4
+// Need to check resize & recreate fixes
+
 static bool _isInited = false;
 
 static VkDevice _device = VK_NULL_HANDLE;

@@ -11,6 +11,9 @@
 #include "../detours/detours.h"
 #pragma comment(lib, "../detours/detours.lib")
 
+// Dx12 overlay code adoptes from 
+// https://github.com/bruhmoment21/UniversalHookX
+
 static int const NUM_BACK_BUFFERS = 3;
 static IDXGIFactory4* g_dxgiFactory = NULL;
 static ID3D12Device* g_pd3dDevice = NULL;

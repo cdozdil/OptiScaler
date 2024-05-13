@@ -11,6 +11,9 @@
 #include "../detours/detours.h"
 #pragma comment(lib, "../detours/detours.lib")
 
+// Dx12 overlay code adoptes from 
+// https://github.com/bruhmoment21/UniversalHookX
+
 static bool _isInited = false;
 
 static ID3D11Device* g_pd3dDevice = nullptr;
