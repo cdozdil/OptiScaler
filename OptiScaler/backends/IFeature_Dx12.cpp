@@ -19,8 +19,8 @@ IFeature_Dx12::IFeature_Dx12(unsigned int InHandleId, const NVSDK_NGX_Parameter*
 
 void IFeature_Dx12::Shutdown()
 {
-	if (Imgui != nullptr && Imgui.get() != nullptr)
-		Imgui.reset();
+	//if (Imgui != nullptr && Imgui.get() != nullptr)
+	//	Imgui.reset();
 }
 
 IFeature_Dx12::~IFeature_Dx12()

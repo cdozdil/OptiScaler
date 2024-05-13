@@ -11,6 +11,8 @@
 #include "backends/fsr2_212/FSR2Feature_Dx11On12_212.h"
 #include "NVNGX_Parameter.h"
 
+#include "imgui/imgui_overlay_dx11.h"
+
 inline ID3D11Device* D3D11Device = nullptr;
 static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx11>> Dx11Contexts;
 static inline NVSDK_NGX_Parameter* createParams;
@@ -112,6 +114,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown(void)
 	Config::Instance()->ActiveFeatureCount = 0;
 
 	DLSSFeatureDx11::Shutdown(D3D11Device);
+
+	if (ImGuiOverlayDx11::IsInitedDx11())
+		ImGuiOverlayDx11::ShutdownDx11();
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -220,6 +225,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 		return NVSDK_NGX_Result_Fail;
 	}
 
+	// DLSS Enabler check
+	int deAvail;
+	if (InParameters->Get("DLSSEnabler.Available", &deAvail) == NVSDK_NGX_Result_Success)
+	{
+		spdlog::info("NVSDK_NGX_D3D11_CreateFeature DLSSEnabler.Available: {0}", deAvail);
+		Config::Instance()->DE_Available = (deAvail > 0);
+	}
+
 	// Create feature
 	auto handleId = IFeature::GetNextHandleId();
 	spdlog::info("NVSDK_NGX_D3D11_CreateFeature HandleId: {0}", handleId);
@@ -317,11 +330,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* 
 
 	if (auto deviceContext = Dx11Contexts[handleId].get(); deviceContext)
 	{
+		if (deviceContext == Config::Instance()->CurrentFeature)
+			Config::Instance()->CurrentFeature = nullptr;
+
 		spdlog::trace("NVSDK_NGX_D3D11_ReleaseFeature sleeping for 250ms before reset()!");
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
 		if (Config::Instance()->ActiveFeatureCount == 1)
-			Dx11Contexts[handleId]->Shutdown();
+		{
+			deviceContext->Shutdown();
+		}
 
 		Dx11Contexts[handleId].reset();
 		auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
@@ -355,6 +373,26 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 	{
 		spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature InCmdList is null!!!");
 		return NVSDK_NGX_Result_Fail;
+	}
+
+	if (Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 100 && !ImGuiOverlayDx11::IsInitedDx11())
+	{
+		HWND consoleWindow = GetConsoleWindow();
+		bool consoleAllocated = false;
+
+		if (consoleWindow == NULL)
+		{
+			AllocConsole();
+			consoleWindow = GetConsoleWindow();
+			consoleAllocated = true;
+
+			ShowWindow(consoleWindow, SW_HIDE);
+		}
+
+		ImGuiOverlayDx11::InitDx11(consoleWindow);
+
+		if (consoleAllocated)
+			FreeConsole();
 	}
 
 	if (InCallback)
@@ -394,6 +432,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 				Dx11Contexts[handleId].reset();
 				auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 				Dx11Contexts.erase(it);
+
+				Config::Instance()->CurrentFeature = nullptr;
 			}
 			else
 			{
@@ -475,12 +515,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 
 			if (!initResult || !Dx11Contexts[handleId]->ModuleLoaded())
 			{
-				spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature init failed with {0} feature", Config::Instance()->Dx12Upscaler.value());
+				spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature init failed with {0} feature", Config::Instance()->newBackend);
 
 				Config::Instance()->newBackend = "fsr22";
 				Config::Instance()->changeBackend = true;
 			}
 		}
+
+		// if initial feature can't be inited
+		if (Config::Instance()->ActiveFeatureCount == 0)
+			Config::Instance()->ActiveFeatureCount = 1;
 
 		return NVSDK_NGX_Result_Success;
 	}

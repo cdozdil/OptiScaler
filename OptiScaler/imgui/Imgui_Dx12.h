@@ -9,6 +9,7 @@ private:
 	bool _dx12Init = false;
 	ID3D12Device* _device = nullptr;
 	
+	// Old resources
 	ID3D12Resource* _renderTargetResource[2] = { nullptr, nullptr };
 	ID3D12DescriptorHeap* _rtvDescHeap = nullptr;
 	ID3D12DescriptorHeap* _srvDescHeap = nullptr;

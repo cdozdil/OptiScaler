@@ -364,6 +364,8 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 		return false;
 	}
 
+	_frameCount++;
+
 	// restore resource states
 	//if (paramColor && Config::Instance()->ColorResourceBarrier.value_or(false))
 	//	ResourceBarrier(InCommandList, paramColor,

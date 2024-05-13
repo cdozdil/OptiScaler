@@ -100,8 +100,8 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 			return false;
 		}
 
-		if (Imgui == nullptr || Imgui.get() == nullptr)
-			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+		//if (Imgui == nullptr || Imgui.get() == nullptr)
+		//	Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
 
 		if (Config::Instance()->Dx11DelayedInit.value_or(false))
 		{
@@ -324,27 +324,27 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 		}
 
 		// imgui
-		if (_frameCount > 20)
-		{
-			if (Imgui != nullptr && Imgui.get() != nullptr)
-			{
-				spdlog::debug("FSR2FeatureDx11on12_212::Evaluate Apply Imgui");
+		//if (_frameCount > 20)
+		//{
+		//	if (Imgui != nullptr && Imgui.get() != nullptr)
+		//	{
+		//		spdlog::debug("FSR2FeatureDx11on12_212::Evaluate Apply Imgui");
 
-				if (Imgui->IsHandleDifferent())
-				{
-					spdlog::debug("FSR2FeatureDx11on12_212::Evaluate Imgui handle different, reset()!");
-					std::this_thread::sleep_for(std::chrono::milliseconds(250));
-					Imgui.reset();
-				}
-				else
-					Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
-			}
-			else
-			{
-				if (Imgui == nullptr || Imgui.get() == nullptr)
-					Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
-			}
-		}
+		//		if (Imgui->IsHandleDifferent())
+		//		{
+		//			spdlog::debug("FSR2FeatureDx11on12_212::Evaluate Imgui handle different, reset()!");
+		//			std::this_thread::sleep_for(std::chrono::milliseconds(250));
+		//			Imgui.reset();
+		//		}
+		//		else
+		//			Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
+		//	}
+		//	else
+		//	{
+		//		if (Imgui == nullptr || Imgui.get() == nullptr)
+		//			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+		//	}
+		//}
 	}
 		
 	// Execute dx12 commands to process fsr
@@ -369,27 +369,27 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 		}
 
 		// imgui
-		if (_frameCount > 20)
-		{
-			if (Imgui != nullptr && Imgui.get() != nullptr)
-			{
-				spdlog::debug("FSR2FeatureDx11on12_212::Evaluate Apply Imgui");
+		//if (_frameCount > 20)
+		//{
+		//	if (Imgui != nullptr && Imgui.get() != nullptr)
+		//	{
+		//		spdlog::debug("FSR2FeatureDx11on12_212::Evaluate Apply Imgui");
 
-				if (Imgui->IsHandleDifferent())
-				{
-					spdlog::debug("FSR2FeatureDx11on12_212::Evaluate Imgui handle different, reset()!");
-					std::this_thread::sleep_for(std::chrono::milliseconds(250));
-					Imgui.reset();
-				}
-				else
-					Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
-			}
-			else
-			{
-				if (Imgui == nullptr || Imgui.get() == nullptr)
-					Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
-			}
-		}
+		//		if (Imgui->IsHandleDifferent())
+		//		{
+		//			spdlog::debug("FSR2FeatureDx11on12_212::Evaluate Imgui handle different, reset()!");
+		//			std::this_thread::sleep_for(std::chrono::milliseconds(250));
+		//			Imgui.reset();
+		//		}
+		//		else
+		//			Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
+		//	}
+		//	else
+		//	{
+		//		if (Imgui == nullptr || Imgui.get() == nullptr)
+		//			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+		//	}
+		//}
 	}
 
 	_frameCount++;

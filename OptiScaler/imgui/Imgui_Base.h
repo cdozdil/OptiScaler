@@ -8,9 +8,6 @@ typedef UINT(WINAPI* PFN_SendInput)(UINT cInputs, LPINPUT pInputs, int cbSize);
 typedef void(WINAPI* PFN_mouse_event)(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo);
 typedef LRESULT(WINAPI* PFN_SendMessageW)(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
-LRESULT SendMessageW(
-);
-
 class Imgui_Base
 {
 private:
@@ -22,7 +19,7 @@ private:
 	int _left = 10;
 
 protected:
-	ImGuiContext* context;
+	ImGuiContext* context = nullptr;
 
 	long frameCounter = 0;
 

@@ -116,11 +116,11 @@ bool DLSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 
 	} while (false);
 
-	if (initResult)
-	{
-		if (Imgui == nullptr || Imgui.get() == nullptr)
-			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), InDevice);
-	}
+	//if (initResult)
+	//{
+	//	if (Imgui == nullptr || Imgui.get() == nullptr)
+	//		Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), InDevice);
+	//}
 
 	SetInit(initResult);
 
@@ -161,23 +161,23 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	}
 
 	// imgui
-	if (_frameCount > 20 && Parameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput) == NVSDK_NGX_Result_Success)
-	{
-		if (Imgui != nullptr && Imgui.get() != nullptr)
-		{
-			if (Imgui->IsHandleDifferent())
-			{
-				Imgui.reset();
-			}
-			else
-				Imgui->Render(InDeviceContext, paramOutput);
-		}
-		else
-		{
-			if (Imgui == nullptr || Imgui.get() == nullptr)
-				Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
-		}
-	}
+	//if (_frameCount > 20 && Parameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput) == NVSDK_NGX_Result_Success)
+	//{
+	//	if (Imgui != nullptr && Imgui.get() != nullptr)
+	//	{
+	//		if (Imgui->IsHandleDifferent())
+	//		{
+	//			Imgui.reset();
+	//		}
+	//		else
+	//			Imgui->Render(InDeviceContext, paramOutput);
+	//	}
+	//	else
+	//	{
+	//		if (Imgui == nullptr || Imgui.get() == nullptr)
+	//			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+	//	}
+	//}
 
 	_frameCount++;
 

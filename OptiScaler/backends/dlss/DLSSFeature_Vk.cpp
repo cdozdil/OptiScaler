@@ -151,6 +151,8 @@ bool DLSSFeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 		return false;
 	}
 
+	_frameCount++;
+
 	return true;
 }
 

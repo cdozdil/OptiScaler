@@ -15,8 +15,8 @@ bool XeSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 
 	if (InitXeSS(InDevice, InParameters))
 	{
-		if (Imgui == nullptr || Imgui.get() == nullptr)
-			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), InDevice);
+		//if (Imgui == nullptr || Imgui.get() == nullptr)
+		//	Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), InDevice);
 
 		OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", InDevice, (TargetWidth() < DisplayWidth()));
 
@@ -340,23 +340,23 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 
 	// imgui
-	if (_frameCount > 20)
-	{
-		if (Imgui != nullptr && Imgui.get() != nullptr)
-		{
-			if (Imgui->IsHandleDifferent())
-			{
-				Imgui.reset();
-			}
-			else
-				Imgui->Render(InCommandList, paramOutput);
-		}
-		else
-		{
-			if (Imgui == nullptr || Imgui.get() == nullptr)
-				Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
-		}
-	}
+	//if (_frameCount > 20)
+	//{
+	//	if (Imgui != nullptr && Imgui.get() != nullptr)
+	//	{
+	//		if (Imgui->IsHandleDifferent())
+	//		{
+	//			Imgui.reset();
+	//		}
+	//		else
+	//			Imgui->Render(InCommandList, paramOutput);
+	//	}
+	//	else
+	//	{
+	//		if (Imgui == nullptr || Imgui.get() == nullptr)
+	//			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+	//	}
+	//}
 
 	// restore resource states
 	if (params.pColorTexture && Config::Instance()->ColorResourceBarrier.has_value())

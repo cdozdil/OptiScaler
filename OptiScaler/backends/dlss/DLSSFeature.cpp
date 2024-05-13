@@ -779,7 +779,7 @@ void DLSSFeature::ReadVersion()
 
 	//	if (dlssModule)
 	//	{
-			
+
 	//		_GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)GetProcAddress(dlssModule, "NVSDK_NGX_GetSnippetVersion");
 
 	//		if (_GetSnippetVersion != nullptr)
@@ -810,6 +810,23 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 	{
 		do
 		{
+			// check dlss enabler
+			spdlog::info("DLSSFeature::DLSSFeature Trying to load dlss-enabler-ngx.dll");
+
+			_nvngx = LoadLibraryW(L"dlss-enabler-ngx.dll");
+
+			if (_nvngx)
+			{
+				Config::Instance()->DE_Available = true;
+				spdlog::info("DLSSFeature::DLSSFeature dlss-enabler-ngx.dll loaded from DLSS Enabler");
+				_moduleLoaded = true;
+				break;
+			}
+			else
+			{
+				spdlog::error("DLSSFeature::DLSSFeature dlss-enabler-ngx.dll could not be loaded from DLSS Enabler!");
+			}
+
 			// path from ini
 			if (Config::Instance()->DLSSLibrary.has_value())
 			{
@@ -913,7 +930,7 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 		_moduleLoaded = true;
 	}
 
-	if (_moduleLoaded)
+	if (_moduleLoaded && !Config::Instance()->DE_Available)
 	{
 		HookNvApi();
 		HookNgxApi(_nvngx);

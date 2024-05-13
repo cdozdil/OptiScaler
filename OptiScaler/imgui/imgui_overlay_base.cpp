@@ -1,42 +1,59 @@
+#include "imgui_overlay_base.h"
+
 #include "../Config.h"
 #include "../Logger.h"
 #include "../Resource.h"
 
-#include "Imgui_Base.h"
+#include "imgui/imgui.h"
 #include "imgui/imgui_impl_win32.h"
 
 #include "../detours/detours.h"
 #pragma comment(lib, "../detours/detours.lib")
 
 
-PFN_SetCursorPos pfn_SetPhysicalCursorPos = nullptr;
-PFN_SetCursorPos pfn_SetCursorPos = nullptr;
-PFN_mouse_event pfn_mouse_event = nullptr;
-PFN_SendInput pfn_SendInput = nullptr;
-PFN_SendMessageW pfn_SendMessageW = nullptr;
+// for hooking
+typedef BOOL(WINAPI* PFN_SetCursorPos)(int x, int y);
+typedef UINT(WINAPI* PFN_SendInput)(UINT cInputs, LPINPUT pInputs, int cbSize);
+typedef void(WINAPI* PFN_mouse_event)(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo);
+typedef LRESULT(WINAPI* PFN_SendMessageW)(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
-bool pfn_SetPhysicalCursorPos_hooked = false;
-bool pfn_SetCursorPos_hooked = false;
-bool pfn_mouse_event_hooked = false;
-bool pfn_SendInput_hooked = false;
-bool pfn_SendMessageW_hooked = false;
+static PFN_SetCursorPos pfn_SetPhysicalCursorPos = nullptr;
+static PFN_SetCursorPos pfn_SetCursorPos = nullptr;
+static PFN_mouse_event pfn_mouse_event = nullptr;
+static PFN_SendInput pfn_SendInput = nullptr;
+static PFN_SendMessageW pfn_SendMessageW = nullptr;
 
-bool showMipmapCalcWindow = false;
-float mipBias = 0.0f;
-float mipBiasCalculated = 0.0f;
-uint32_t mipmapUpscalerQuality = 0;
-float mipmapUpscalerRatio = 0;
-uint32_t displayWidth = 0;
-uint32_t renderWidth = 0;
-int deLimitFps = Config::Instance()->DE_FramerateLimit.value_or(0);
+static bool pfn_SetPhysicalCursorPos_hooked = false;
+static bool pfn_SetCursorPos_hooked = false;
+static bool pfn_mouse_event_hooked = false;
+static bool pfn_SendInput_hooked = false;
+static bool pfn_SendMessageW_hooked = false;
 
-float ssRatio = 0.0f;
-bool ssEnabled = false;
-int selectedScale = 0;
-bool imguiSizeUpdate = true;
+// internal values
+static HWND _handle = nullptr;
+static WNDPROC _oWndProc = nullptr;
+static bool _isVisible = false;
+static bool _isInited = false;
 
-bool _isVisible = false;
-WNDPROC _oWndProc = nullptr;
+// mipmap calculations
+static bool showMipmapCalcWindow = false;
+static float mipBias = 0.0f;
+static float mipBiasCalculated = 0.0f;
+static uint32_t mipmapUpscalerQuality = 0;
+static float mipmapUpscalerRatio = 0;
+static uint32_t displayWidth = 0;
+static uint32_t renderWidth = 0;
+
+// dlss enabler
+static int deLimitFps = 0;
+
+// output scaling
+static float ssRatio = 0.0f;
+static bool ssEnabled = false;
+
+// ui scale
+static int selectedScale = 0;
+static bool imguiSizeUpdate = true;
 
 #pragma region "Hooks & WndProc"
 
@@ -151,10 +168,24 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 //Win32 message handler
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	if (Config::Instance()->ActiveFeatureCount == 0)
-		return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
-
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+	if (Config::Instance()->ActiveFeatureCount == 0 || Config::Instance()->CurrentFeature == nullptr)
+	{
+		if (_isVisible)
+		{
+			spdlog::info("WndProc No active features, closing ImGui");
+
+			_isVisible = false;
+			showMipmapCalcWindow = false;
+
+			io.MouseDrawCursor = false;
+			io.WantCaptureKeyboard = false;
+			io.WantCaptureMouse = false;
+		}
+
+		return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
+	}
 
 	// HOME
 	if (msg == WM_KEYDOWN && wParam == VK_HOME) // && (GetKeyState(VK_SHIFT) & 0x8000))
@@ -229,7 +260,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 #pragma endregion
 
-std::string GetBackendName(std::string* code)
+static std::string GetBackendName(std::string* code)
 {
 	if (*code == "fsr21")
 		return "FSR 2.1.2";
@@ -252,7 +283,7 @@ std::string GetBackendName(std::string* code)
 	return "????";
 }
 
-std::string GetBackendCode(const NVNGX_Api api)
+static std::string GetBackendCode(const NVNGX_Api api)
 {
 	std::string code;
 
@@ -266,13 +297,13 @@ std::string GetBackendCode(const NVNGX_Api api)
 	return code;
 }
 
-void GetCurrentBackendInfo(const NVNGX_Api api, std::string* code, std::string* name)
+static void GetCurrentBackendInfo(const NVNGX_Api api, std::string* code, std::string* name)
 {
 	*code = GetBackendCode(api);
 	*name = GetBackendName(code);
 }
 
-void AddDx11Backends(std::string* code, std::string* name)
+static void AddDx11Backends(std::string* code, std::string* name)
 {
 	std::string selectedUpscalerName = "";
 
@@ -308,7 +339,7 @@ void AddDx11Backends(std::string* code, std::string* name)
 	}
 }
 
-void AddDx12Backends(std::string* code, std::string* name)
+static void AddDx12Backends(std::string* code, std::string* name)
 {
 	std::string selectedUpscalerName = "";
 
@@ -339,7 +370,7 @@ void AddDx12Backends(std::string* code, std::string* name)
 	}
 }
 
-void AddVulkanBackends(std::string* code, std::string* name)
+static void AddVulkanBackends(std::string* code, std::string* name)
 {
 	std::string selectedUpscalerName = "";
 
@@ -365,7 +396,7 @@ void AddVulkanBackends(std::string* code, std::string* name)
 	}
 }
 
-void AddResourceBarrier(std::string name, std::optional<int>* value)
+static void AddResourceBarrier(std::string name, std::optional<int>* value)
 {
 	const char* states[] = { "AUTO", "COMMON", "VERTEX_AND_CONSTANT_BUFFER", "INDEX_BUFFER", "RENDER_TARGET", "UNORDERED_ACCESS", "DEPTH_WRITE",
 							"DEPTH_READ", "NON_PIXEL_SHADER_RESOURCE", "PIXEL_SHADER_RESOURCE", "STREAM_OUT", "INDIRECT_ARGUMENT", "COPY_DEST", "COPY_SOURCE",
@@ -404,7 +435,7 @@ void AddResourceBarrier(std::string name, std::optional<int>* value)
 	}
 }
 
-void AddRenderPreset(std::string name, std::optional<int>* value)
+static void AddRenderPreset(std::string name, std::optional<int>* value)
 {
 	const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G" };
 
@@ -439,14 +470,72 @@ void AddRenderPreset(std::string name, std::optional<int>* value)
 	}
 }
 
-void Imgui_Base::RenderMenu()
+HWND ImGuiOverlayBase::Handle()
 {
-	if (Config::Instance()->OverlayMenu.value_or(true))
+	return _handle;
+}
+
+bool ImGuiOverlayBase::IsInited()
+{
+	return _isInited;
+}
+
+bool ImGuiOverlayBase::IsVisible()
+{
+	return _isVisible;
+}
+
+void ImGuiOverlayBase::Init(HWND InHandle)
+{
+	if (!Config::Instance()->OverlayMenu.value_or(true))
+		return;
+
+	spdlog::debug("ImGuiOverlayBase::Init!");
+
+	_handle = InHandle;
+
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGui::StyleColorsDark();
+
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+
+	io.MouseDrawCursor = _isVisible;
+	io.WantCaptureKeyboard = _isVisible;
+	io.WantCaptureMouse = _isVisible;
+	io.WantSetMousePos = _isVisible;
+
+	io.IniFilename = io.LogFilename = nullptr;
+
+	ImGui_ImplWin32_Init(InHandle);
+
+	if (_oWndProc == nullptr)
+		_oWndProc = (WNDPROC)SetWindowLongPtr(InHandle, GWLP_WNDPROC, (LONG_PTR)WndProc);
+
+	if (!pfn_SetCursorPos_hooked)
+		AttachHooks();
+
+	if (Config::Instance()->MenuScale.value_or(1.0f) < 1.0f)
+		Config::Instance()->MenuScale = 1.0f;
+
+	if (Config::Instance()->MenuScale.value_or(1.0f) > 2.0f)
+		Config::Instance()->MenuScale = 2.0f;
+
+	selectedScale = (int)((Config::Instance()->MenuScale.value_or(1.0f) - 1.0f) / 0.1f);
+	deLimitFps = Config::Instance()->DE_FramerateLimit.value_or(0);
+
+	_isInited = true;
+}
+
+void ImGuiOverlayBase::RenderMenu()
+{
+	if (!_isInited || !_isVisible || !Config::Instance()->OverlayMenu.value_or(true) || Config::Instance()->CurrentFeature == nullptr)
 		return;
 
 	ImGuiIO const& io = ImGui::GetIO(); (void)io;
-
-	ImGui_ImplWin32_NewFrame();
 
 	{
 		ImGuiWindowFlags flags = 0;
@@ -1040,14 +1129,6 @@ void Imgui_Base::RenderMenu()
 				ImGui::Separator();
 			}
 
-			auto pos = ImGui::GetWindowPos();
-			_top = pos.y;
-			_left = pos.x;
-
-			auto size = ImGui::GetWindowSize();
-			_width = size.x;
-			_height = size.y;
-
 			ImGui::End();
 		}
 
@@ -1185,105 +1266,17 @@ void Imgui_Base::RenderMenu()
 			}
 		}
 	}
-
-	ImGui::Render();
 }
 
-bool Imgui_Base::IsHandleDifferent()
+void ImGuiOverlayBase::Shutdown()
 {
-	if (Config::Instance()->OverlayMenu.value_or(true))
-		return false;
-
-	DWORD procId;
-
-	HWND frontWindow = GetForegroundWindow();
-	GetWindowThreadProcessId(frontWindow, &procId);
-
-	if (processId != procId)
-		return false;
-
-	if (frontWindow == _handle)
-		return false;
-
-	_handle = frontWindow;
-
-	return true;
-}
-
-Imgui_Base::Imgui_Base(HWND handle) : _handle(handle)
-{
-	if (Config::Instance()->OverlayMenu.value_or(true))
+	if (!_isInited)
 		return;
 
-	// Setup Dear ImGui context
-	IMGUI_CHECKVERSION();
-	context = ImGui::CreateContext();
-	ImGui::SetCurrentContext(context);
-	ImGui::StyleColorsDark();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
 
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+	DetachHooks();
 
-	io.MouseDrawCursor = _isVisible;
-	io.WantCaptureKeyboard = _isVisible;
-	io.WantCaptureMouse = _isVisible;
-	io.WantSetMousePos = _isVisible;
-
-	_baseInit = ImGui_ImplWin32_Init(_handle);
-
-	if (IsHandleDifferent())
-		return;
-
-	if (_oWndProc == nullptr)
-		_oWndProc = (WNDPROC)SetWindowLongPtr(_handle, GWLP_WNDPROC, (LONG_PTR)WndProc);
-
-	if (!pfn_SetCursorPos_hooked)
-		AttachHooks();
-
-	if (Config::Instance()->MenuScale.value_or(1.0f) < 1.0f)
-		Config::Instance()->MenuScale = 1.0f;
-
-	if (Config::Instance()->MenuScale.value_or(1.0f) > 2.0f)
-		Config::Instance()->MenuScale = 2.0f;
-
-	selectedScale = (int)((Config::Instance()->MenuScale.value_or(1.0f) - 1.0f) / 0.1f);
-}
-
-Imgui_Base::~Imgui_Base()
-{
-	if (!_baseInit)
-		return;
-
-	if (auto currCtx = ImGui::GetCurrentContext(); currCtx && context != currCtx)
-	{
-		ImGui::SetCurrentContext(context);
-		ImGui_ImplWin32_Shutdown();
-		ImGui::SetCurrentContext(currCtx);
-	}
-	else
-	{
-		if (_oWndProc != nullptr)
-		{
-			SetWindowLongPtr((HWND)ImGui::GetMainViewport()->PlatformHandleRaw, GWLP_WNDPROC, (LONG_PTR)_oWndProc);
-			_oWndProc = nullptr;
-		}
-
-		if (pfn_SetCursorPos_hooked)
-			DetachHooks();
-
-		ImGui_ImplWin32_Shutdown();
-	}
-
-	ImGui::DestroyContext(context);
-}
-
-bool Imgui_Base::IsVisible() const
-{
-	return _isVisible;
-}
-
-void Imgui_Base::SetVisible(bool visible) const
-{
-	_isVisible = visible;
+	_isInited = false;
 }

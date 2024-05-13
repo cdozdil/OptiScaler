@@ -33,3 +33,33 @@ std::filesystem::path Util::ExePath()
 	return exe;
 }
 
+static BOOL CALLBACK EnumWindowsCallback(HWND handle, LPARAM lParam) {
+	const auto isMainWindow = [handle]() {
+		return GetWindow(handle, GW_OWNER) == nullptr && IsWindowVisible(handle);
+		};
+
+
+	DWORD pID = 0;
+	GetWindowThreadProcessId(handle, &pID);
+
+	if (pID != processId || !isMainWindow() || handle == GetConsoleWindow())
+		return TRUE;
+
+	*reinterpret_cast<HWND*>(lParam) = handle;
+
+	return FALSE;
+}
+
+HWND Util::GetProcessWindow() {
+	HWND hwnd = nullptr;
+	EnumWindows(EnumWindowsCallback, reinterpret_cast<LPARAM>(&hwnd));
+
+	if (hwnd == nullptr)
+	{
+		spdlog::debug("Util::GetProcessWindow EnumWindows returned null using GetForegroundWindow()");
+		hwnd = GetForegroundWindow();
+	}
+
+	return hwnd;
+}
+

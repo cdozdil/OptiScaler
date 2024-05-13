@@ -63,6 +63,7 @@ public:
 
 	// menu
 	std::optional<float> MenuScale;
+	std::optional<bool> OverlayMenu;
 
 	// Upscale Ratio Override
 	std::optional<bool> UpscaleRatioOverrideEnabled;
@@ -124,6 +125,8 @@ public:
 	std::string NVNGX_EngineVersion;
 	bool NVNGX_EngineVersion5 = false;
 	NVNGX_Api Api = NVNGX_NOT_SELECTED;
+	std::optional<int> DE_FramerateLimit;
+	bool DE_Available = false;
 
 	IFeature* CurrentFeature = nullptr;
 	int ActiveFeatureCount = 0;

@@ -1,5 +1,6 @@
 #pragma once
 #include "pch.h"
+#include "Util.h"
 
 #include <ankerl/unordered_dense.h>
 #include <vulkan/vulkan.hpp>
@@ -9,6 +10,8 @@
 #include "backends/dlss/DLSSFeature_Vk.h"
 #include "backends/fsr2_212/FSR2Feature_Vk_212.h"
 #include "NVNGX_Parameter.h"
+
+#include "imgui/imgui_overlay_vk.h"
 
 VkInstance vkInstance;
 VkPhysicalDevice vkPD;
@@ -35,7 +38,6 @@ static inline int changeBackendCounter = 0;
 //	return NVSDK_NGX_Result_Success;
 //}
 
-
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD,
 	VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
@@ -54,21 +56,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 
 	// No Man's Sky sends InFeatureInfo & InSDKVersion in wrong order 
 	// To prevent access violation added this check
-	if ((unsigned long)InFeatureInfo > 0x000001F)
-	{
-		for (size_t i = 0; i < InFeatureInfo->PathListInfo.Length; i++)
-		{
-			const wchar_t* path = InFeatureInfo->PathListInfo.Path[i];
-			Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(std::wstring(path));
-		}
+	//if ((unsigned long)InFeatureInfo > 0x000001F)
+	//{
+	//	for (size_t i = 0; i < InFeatureInfo->PathListInfo.Length; i++)
+	//	{
+	//		const wchar_t* path = InFeatureInfo->PathListInfo.Path[i];
+	//		Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(std::wstring(path));
+	//	}
 
-		Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
-	}
-	else
-	{
-		InFeatureInfo = nullptr;
-		Config::Instance()->NVNGX_Version = NVSDK_NGX_Version_API;
-	}
+	//	Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
+	//}
+	//else
+	//{
+	//	InFeatureInfo = nullptr;
+	//	Config::Instance()->NVNGX_Version = NVSDK_NGX_Version_API;
+	//}
 
 	if (InInstance)
 	{
@@ -234,6 +236,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 		return NVSDK_NGX_Result_Fail;
 	}
 
+	// DLSS Enabler check
+	int deAvail;
+	if (InParameters->Get("DLSSEnabler.Available", &deAvail) == NVSDK_NGX_Result_Success)
+	{
+		spdlog::info("NVSDK_NGX_D3D11_CreateFeature DLSSEnabler.Available: {0}", deAvail);
+		Config::Instance()->DE_Available = (deAvail > 0);
+	}
+
 	// Create feature
 	auto handleId = IFeature::GetNextHandleId();
 	spdlog::info("NVSDK_NGX_VULKAN_CreateFeature1 HandleId: {0}", handleId);
@@ -294,6 +304,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
 
 	if (auto deviceContext = VkContexts[handleId].get(); deviceContext)
 	{
+		if (deviceContext == Config::Instance()->CurrentFeature)
+			Config::Instance()->CurrentFeature = nullptr;
+
+		if (Config::Instance()->ActiveFeatureCount == 1)
+		{
+			deviceContext->Shutdown();
+		}
+
 		VkContexts[handleId].reset();
 		auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 		VkContexts.erase(it);
@@ -312,6 +330,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 	{
 		spdlog::error("NVSDK_NGX_VULKAN_EvaluateFeature InCmdList is null!!!");
 		return NVSDK_NGX_Result_Fail;
+	}
+
+	if (Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 30 && !ImGuiOverlayVk::IsInitedVk())
+	{
+		auto hwnd = Util::GetProcessWindow();
+		ImGuiOverlayVk::InitVk(hwnd, vkDevice, vkInstance, vkPD);
 	}
 
 	if (InCallback)
@@ -352,6 +376,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 				VkContexts[handleId].reset();
 				auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 				VkContexts.erase(it);
+
+				Config::Instance()->CurrentFeature = nullptr;
 			}
 			else
 			{
@@ -377,13 +403,19 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 			// prepare new upscaler
 			if (Config::Instance()->newBackend == "fsr22")
 			{
-				Config::Instance()->Dx12Upscaler = "fsr22";
+				Config::Instance()->VulkanUpscaler = "fsr22";
 				spdlog::info("NVSDK_NGX_VULKAN_EvaluateFeature creating new FSR 2.2.1 feature");
 				VkContexts[handleId] = std::make_unique<FSR2FeatureVk>(handleId, createParams);
 			}
+			else if (Config::Instance()->newBackend == "dlss")
+			{
+				Config::Instance()->Dx12Upscaler = "dlss";
+				spdlog::info("NVSDK_NGX_VULKAN_EvaluateFeature creating new DLSS feature");
+				VkContexts[handleId] = std::make_unique<DLSSFeatureVk>(handleId, createParams);
+			}
 			else
 			{
-				Config::Instance()->Dx12Upscaler = "fsr21";
+				Config::Instance()->VulkanUpscaler = "fsr21";
 				spdlog::info("NVSDK_NGX_VULKAN_EvaluateFeature creating new FSR 2.1.2 feature");
 				VkContexts[handleId] = std::make_unique<FSR2FeatureVk212>(handleId, createParams);
 			}
@@ -404,12 +436,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 
 			if (!initResult || !VkContexts[handleId]->ModuleLoaded())
 			{
-				spdlog::error("NVSDK_NGX_VULKAN_EvaluateFeature init failed with {0} feature", Config::Instance()->VulkanUpscaler.value());
+				spdlog::error("NVSDK_NGX_VULKAN_EvaluateFeature init failed with {0} feature", Config::Instance()->newBackend);
 
 				Config::Instance()->newBackend = "fsr21";
 				Config::Instance()->changeBackend = true;
 			}
 		}
+
+		// if initial feature can't be inited
+		if (Config::Instance()->ActiveFeatureCount == 0)
+			Config::Instance()->ActiveFeatureCount = 1;
 
 		return NVSDK_NGX_Result_Success;
 	}
@@ -446,6 +482,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
 	Config::Instance()->ActiveFeatureCount = 0;
 
 	DLSSFeatureVk::Shutdown(vkDevice);
+
+	if (ImGuiOverlayVk::IsInitedVk())
+		ImGuiOverlayVk::ShutdownVk();
 
 	return NVSDK_NGX_Result_Success;
 }

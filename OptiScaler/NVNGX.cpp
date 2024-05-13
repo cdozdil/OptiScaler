@@ -50,19 +50,19 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_GetDriverVersionEx(uint32_t* Versions, 
 NVSDK_NGX_API uint32_t NVSDK_NGX_GetGPUArchitecture()
 {
 	spdlog::info("NVSDK_NGX_GetGPUArchitecture");
-	return NV_GPU_ARCHITECTURE_TU100; // NGXGpuArchitecture NV_GPU_ARCHITECTURE_AD100 (0x190)
+	return NV_GPU_ARCHITECTURE_TU100; 
 }
 
 NVSDK_NGX_API uint32_t NVSDK_NGX_GetSnippetVersion()
 {
 	spdlog::info("NVSDK_NGX_GetSnippetVersion");
-	return 0x30500; // NGXSnippetVersion 3.5.0
+	return 0x30500;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_ProcessCommand(const char* Command, const char* Value, void* Unknown)
 {
 	spdlog::debug("NVSDK_NGX_ProcessCommand({0}, {1}, void)", std::string(Command), std::string(Value));
-	return NVSDK_NGX_Result_Success; // Command gets logged but otherwise does nothing
+	return NVSDK_NGX_Result_Success; 
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_SetInfoCallback(void* Callback)
