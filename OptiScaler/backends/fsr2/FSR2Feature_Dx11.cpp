@@ -1,6 +1,7 @@
 #pragma once
 #include "../../pch.h"
 #include "../../Config.h"
+#include "../../Util.h"
 
 #include "FSR2Feature_Dx11.h"
 
@@ -27,8 +28,8 @@ bool FSR2FeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 
 	if (InitFSR2(InParameters))
 	{
-		//if (Imgui == nullptr || Imgui.get() == nullptr)
-		//	Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+		if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
+			Imgui = std::make_unique<Imgui_Dx11>(Util::GetProcessWindow(), Device);
 
 		return true;
 	}
@@ -216,7 +217,7 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	return true;
 }
 
-FSR2FeatureDx11::FSR2FeatureDx11(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : FSR2Feature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters)
+FSR2FeatureDx11::FSR2FeatureDx11(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), FSR2Feature(InHandleId, InParameters)
 {
 }
 
@@ -478,6 +479,5 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, const NVSDK_NGX_P
 
 FSR2FeatureDx11::~FSR2FeatureDx11()
 {
-	spdlog::debug("FSR2FeatureDx11::~FSR2FeatureDx11");
 }
 

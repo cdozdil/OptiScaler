@@ -116,11 +116,11 @@ bool DLSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 
 	} while (false);
 
-	//if (initResult)
-	//{
-	//	if (Imgui == nullptr || Imgui.get() == nullptr)
-	//		Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), InDevice);
-	//}
+	if (initResult)
+	{
+		if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
+			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), InDevice);
+	}
 
 	SetInit(initResult);
 

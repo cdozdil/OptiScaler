@@ -100,8 +100,8 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 			return false;
 		}
 
-		//if (Imgui == nullptr || Imgui.get() == nullptr)
-		//	Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+		if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
+			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
 
 		if (Config::Instance()->Dx11DelayedInit.value_or(false))
 		{
@@ -413,7 +413,6 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 
 FSR2FeatureDx11on12::~FSR2FeatureDx11on12()
 {
-	spdlog::debug("FSR2FeatureDx11on12::~FSR2FeatureDx11on12");
 }
 
 bool FSR2FeatureDx11on12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)

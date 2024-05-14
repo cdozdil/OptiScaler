@@ -111,11 +111,11 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 			return false;
 		}
 
-		//if (Imgui == nullptr || Imgui.get() == nullptr)
-		//{
-		//	spdlog::debug("XeSSFeatureDx11::Evaluate Create Imgui!");
-		//	Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
-		//}
+		if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
+		{
+			spdlog::debug("XeSSFeatureDx11::Evaluate Create Imgui!");
+			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+		}
 
 		if (Config::Instance()->Dx11DelayedInit.value_or(false))
 		{

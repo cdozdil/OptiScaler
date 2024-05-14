@@ -9,7 +9,6 @@
 #include "../../pch.h"
 #include "../../detours/detours.h"
 
-
 #pragma region spoofing hooks for 16xx
 
 // NvAPI_GPU_GetArchInfo hooking based on Nukem's spoofing code here
