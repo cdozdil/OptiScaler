@@ -36,17 +36,20 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
 
 	Config::Instance()->NVNGX_FeatureInfo_Paths.clear();
 
-	for (size_t i = 0; i < InFeatureInfo->PathListInfo.Length; i++)
+	if (InFeatureInfo != nullptr)
 	{
-		const wchar_t* path = InFeatureInfo->PathListInfo.Path[i];
-		Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(std::wstring(path));
+		for (size_t i = 0; i < InFeatureInfo->PathListInfo.Length; i++)
+		{
+			const wchar_t* path = InFeatureInfo->PathListInfo.Path[i];
+			Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(std::wstring(path));
+		}
+
+		if (InSDKVersion > 0x0000013)
+			Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
 	}
 
 	if (InDevice)
 		D3D11Device = InDevice;
-
-	if (InFeatureInfo)
-		Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
 
 	Config::Instance()->Api = NVNGX_DX11;
 
@@ -372,8 +375,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	if (Config::Instance()->OverlayMenu.value_or(true) && 
-		Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 300 && 
+	if (Config::Instance()->OverlayMenu.value_or(true) &&
+		Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 300 &&
 		!ImGuiOverlayDx11::IsInitedDx11())
 	{
 		HWND consoleWindow = GetConsoleWindow();

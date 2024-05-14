@@ -170,7 +170,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 
 	if (InFeatureInfo != nullptr)
 	{
-		Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
+		if (InSDKVersion > 0x0000013)
+			Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
 
 		Config::Instance()->NVNGX_FeatureInfo_Paths.clear();
 
