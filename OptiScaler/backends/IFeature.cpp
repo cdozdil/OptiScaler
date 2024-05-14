@@ -10,11 +10,11 @@ void IFeature::SetHandle(unsigned int InHandleId)
 
 bool IFeature::SetInitParameters(const NVSDK_NGX_Parameter* InParameters)
 {
-	unsigned int width;
-	unsigned int outWidth;
-	unsigned int height;
-	unsigned int outHeight;
-	int pqValue;
+	unsigned int width = 0;
+	unsigned int outWidth = 0;
+	unsigned int height = 0;
+	unsigned int outHeight = 0;
+	int pqValue = 1;
 
 	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &_featureFlags);
 
@@ -24,6 +24,22 @@ bool IFeature::SetInitParameters(const NVSDK_NGX_Parameter* InParameters)
 		InParameters->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight) == NVSDK_NGX_Result_Success &&
 		InParameters->Get(NVSDK_NGX_Parameter_PerfQualityValue, &pqValue) == NVSDK_NGX_Result_Success)
 	{
+		// Thanks to Crytek added these checks
+		if (width > 16384 || width < 0)
+			width = 0;
+
+		if (height > 16384 || height < 0)
+			height = 0;
+
+		if (outWidth > 16384 || outWidth < 0)
+			outWidth = 0;
+
+		if (outHeight > 16384 || outHeight < 0)
+			outHeight = 0;
+
+		if (pqValue > 5 || pqValue < 0)
+			pqValue = 1;
+
 		_displayWidth = width > outWidth ? width : outWidth;
 		_displayHeight = height > outHeight ? height : outHeight;
 		_targetWidth = _displayWidth;

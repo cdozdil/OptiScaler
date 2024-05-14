@@ -7,9 +7,11 @@ inline std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_
 {
 	std::optional<float> output;
 
-	if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false))
+	if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false) &&
+		Config::Instance()->UpscaleRatioOverrideValue.value_or(1.3f) >= 1.0f)
 	{
 		output = Config::Instance()->UpscaleRatioOverrideValue.value_or(1.3f);
+
 		return  output;
 	}
 
@@ -19,26 +21,43 @@ inline std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_
 	switch (input)
 	{
 	case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-		output = Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0);
+		if (Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0) >= 1.0f)
+			output = Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0);
+		
 		break;
+
 	case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-		output = Config::Instance()->QualityRatio_Performance.value_or(2.0);
+		if (Config::Instance()->QualityRatio_Performance.value_or(2.0) >= 1.0f)
+			output = Config::Instance()->QualityRatio_Performance.value_or(2.0);
+
 		break;
+
 	case NVSDK_NGX_PerfQuality_Value_Balanced:
-		output = Config::Instance()->QualityRatio_Balanced.value_or(1.7);
+		if (Config::Instance()->QualityRatio_Balanced.value_or(1.7) >= 1.0f)
+			output = Config::Instance()->QualityRatio_Balanced.value_or(1.7);
+
 		break;
+
 	case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-		output = Config::Instance()->QualityRatio_Quality.value_or(1.5);
+		if (Config::Instance()->QualityRatio_Quality.value_or(1.5) >= 1.0f)
+			output = Config::Instance()->QualityRatio_Quality.value_or(1.5);
+
 		break;
+
 	case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-		output = Config::Instance()->QualityRatio_UltraQuality.value_or(1.3);
+		if (Config::Instance()->QualityRatio_UltraQuality.value_or(1.3) >= 1.0f)
+			output = Config::Instance()->QualityRatio_UltraQuality.value_or(1.3);
+
 		break;
+
 	case NVSDK_NGX_PerfQuality_Value_DLAA:
-		output = Config::Instance()->QualityRatio_DLAA.value_or(1.0);
+		if (Config::Instance()->QualityRatio_DLAA.value_or(1.0) >= 1.0f)
+			output = Config::Instance()->QualityRatio_DLAA.value_or(1.0);
+
 		break;
+
 	default:
 		spdlog::warn("GetQualityOverrideRatio: Unknown quality: {0}", (int)input);
-		output = Config::Instance()->QualityRatio_Balanced.value_or(1.7);
 		break;
 	}
 
@@ -65,13 +84,13 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 
 	const std::optional<float> QualityRatio = GetQualityOverrideRatio(enumPQValue);
 
-	if (QualityRatio.has_value()) 
+	if (QualityRatio.has_value())
 	{
 		OutHeight = (unsigned int)((float)Height / QualityRatio.value());
 		OutWidth = (unsigned int)((float)Width / QualityRatio.value());
 		scalingRatio = 1.0f / QualityRatio.value();
 	}
-	else 
+	else
 	{
 		spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback Quality: {0}", PerfQualityValue);
 
@@ -134,7 +153,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	InParams->Set(NVSDK_NGX_Parameter_OutHeight, OutHeight);
 
 	// DRS minimum resolution
-	if (Config::Instance()->DrsMinOverrideEnabled.value_or(false)) 
+	if (Config::Instance()->DrsMinOverrideEnabled.value_or(false))
 	{
 		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, OutWidth);
 		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, OutHeight);
