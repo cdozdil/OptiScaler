@@ -56,21 +56,28 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 
 	// No Man's Sky sends InFeatureInfo & InSDKVersion in wrong order 
 	// To prevent access violation added this check
-	//if ((unsigned long)InFeatureInfo > 0x000001F)
-	//{
-	//	for (size_t i = 0; i < InFeatureInfo->PathListInfo.Length; i++)
-	//	{
-	//		const wchar_t* path = InFeatureInfo->PathListInfo.Path[i];
-	//		Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(std::wstring(path));
-	//	}
+	if (InFeatureInfo != nullptr && (unsigned long)InFeatureInfo > 0x000001F)
+	{
+		// Doom Ethernal is sending junk data
+		if (InFeatureInfo->PathListInfo.Length < 10)
+		{
+			for (size_t i = 0; i < InFeatureInfo->PathListInfo.Length; i++)
+			{
+				const wchar_t* path = InFeatureInfo->PathListInfo.Path[i];
+				Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(std::wstring(path));
+			}
+		}
 
-	//	Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
-	//}
-	//else
-	//{
-	//	InFeatureInfo = nullptr;
-	//	Config::Instance()->NVNGX_Version = NVSDK_NGX_Version_API;
-	//}
+		if (InSDKVersion > 0x0000013)
+			Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
+	}
+	else
+	{
+		Config::Instance()->NVNGX_FeatureInfo = nullptr;
+
+		if ((unsigned long)InFeatureInfo < 0x000001F)
+			Config::Instance()->NVNGX_Version = (NVSDK_NGX_Version)(unsigned long)InFeatureInfo;
+	}
 
 	if (InInstance)
 	{
@@ -328,9 +335,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	if (Config::Instance()->OverlayMenu.value_or(true) && 
-		Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 30 && 
-		!ImGuiOverlayVk::IsInitedVk())
+	if (Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 30 && !ImGuiOverlayVk::IsInitedVk())
 	{
 		auto hwnd = Util::GetProcessWindow();
 		ImGuiOverlayVk::InitVk(hwnd, vkDevice, vkInstance, vkPD);
@@ -480,7 +485,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
 
 	DLSSFeatureVk::Shutdown(vkDevice);
 
-	if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayVk::IsInitedVk())
+	if (ImGuiOverlayVk::IsInitedVk())
 		ImGuiOverlayVk::ShutdownVk();
 
 	return NVSDK_NGX_Result_Success;
