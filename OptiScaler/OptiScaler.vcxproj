@@ -82,7 +82,7 @@
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
     <TargetName>nvngx</TargetName>
-    <OutDir>..\..\No Man%27s Sky\Binaries</OutDir>
+    <OutDir>D:\Folders\Games\Deep Rock Galactic\FSD\Binaries\Win64\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -209,6 +209,10 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="imgui\imgui\imstb_rectpack.h" />
     <ClInclude Include="imgui\imgui\imstb_textedit.h" />
     <ClInclude Include="imgui\imgui\imstb_truetype.h" />
+    <ClInclude Include="imgui\imgui_dx_base.h" />
+    <ClInclude Include="imgui\imgui_common.h" />
+    <ClInclude Include="imgui\imgui_dx11.h" />
+    <ClInclude Include="imgui\imgui_dx12.h" />
     <ClInclude Include="imgui\imgui_overlay_base.h" />
     <ClInclude Include="imgui\imgui_overlay_dx11.h" />
     <ClInclude Include="imgui\imgui_overlay_dx12.h" />
@@ -251,6 +255,9 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="imgui\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="imgui\imgui\imgui_tables.cpp" />
     <ClCompile Include="imgui\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="imgui\imgui_dx_base.cpp" />
+    <ClCompile Include="imgui\imgui_dx11.cpp" />
+    <ClCompile Include="imgui\imgui_dx12.cpp" />
     <ClCompile Include="imgui\imgui_overlay_base.cpp" />
     <ClCompile Include="imgui\imgui_overlay_dx11.cpp" />
     <ClCompile Include="imgui\imgui_overlay_dx12.cpp" />

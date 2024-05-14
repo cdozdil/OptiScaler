@@ -15,8 +15,8 @@ bool FSR2FeatureDx12_212::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList
 
 	if (InitFSR2(InParameters))
 	{
-		//if (Imgui == nullptr || Imgui.get() == nullptr)
-		//	Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+		if (!Config::Instance()->OverlayMenu.value_or(true) && Imgui == nullptr || Imgui.get() == nullptr)
+			Imgui = std::make_unique<Imgui_Dx12>(Util::GetProcessWindow(), InDevice);
 
 		OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", InDevice, (TargetWidth() < DisplayWidth()));
 
@@ -320,23 +320,23 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 	}
 
 	// imgui
-	//if (_frameCount > 20)
-	//{
-	//	if (Imgui != nullptr && Imgui.get() != nullptr)
-	//	{
-	//		if (Imgui->IsHandleDifferent())
-	//		{
-	//			Imgui.reset();
-	//		}
-	//		else
-	//			Imgui->Render(InCommandList, paramOutput);
-	//	}
-	//	else
-	//	{
-	//		if (Imgui == nullptr || Imgui.get() == nullptr)
-	//			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
-	//	}
-	//}
+	if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30)
+	{
+		if (Imgui != nullptr && Imgui.get() != nullptr)
+		{
+			if (Imgui->IsHandleDifferent())
+			{
+				Imgui.reset();
+			}
+			else
+				Imgui->Render(InCommandList, paramOutput);
+		}
+		else
+		{
+			if (Imgui == nullptr || Imgui.get() == nullptr)
+				Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+		}
+	}
 
 	// restore resource states
 	if (paramColor && Config::Instance()->ColorResourceBarrier.has_value())

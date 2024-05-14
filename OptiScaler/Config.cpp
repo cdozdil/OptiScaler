@@ -85,6 +85,7 @@ bool Config::Reload()
 		
 		// Menu
 		MenuScale = readFloat("Menu", "Scale");
+		OverlayMenu = readBool("Menu", "OverlayMenu");
 
 		// CAS
 		RcasEnabled = readBool("CAS", "Enabled");
@@ -207,6 +208,7 @@ bool Config::SaveIni()
 	
 	// ingame menu
 	ini.SetValue("Menu", "Scale", GetFloatValue(Instance()->MenuScale).c_str());
+	ini.SetValue("Menu", "OverlayMenu", GetBoolValue(Instance()->OverlayMenu).c_str());
 
 	// CAS
 	ini.SetValue("CAS", "Enabled", GetBoolValue(Instance()->RcasEnabled).c_str());
@@ -228,6 +230,7 @@ bool Config::SaveIni()
 
 	// Quality Overrides
 	ini.SetValue("QualityOverrides", "QualityRatioOverrideEnabled", GetBoolValue(Instance()->QualityRatioOverrideEnabled).c_str());
+	ini.SetValue("QualityOverrides", "QualityRatioDLAA", GetFloatValue(Instance()->QualityRatio_DLAA).c_str());
 	ini.SetValue("QualityOverrides", "QualityRatioUltraQuality", GetFloatValue(Instance()->QualityRatio_UltraQuality).c_str());
 	ini.SetValue("QualityOverrides", "QualityRatioQuality", GetFloatValue(Instance()->QualityRatio_Quality).c_str());
 	ini.SetValue("QualityOverrides", "QualityRatioBalanced", GetFloatValue(Instance()->QualityRatio_Balanced).c_str());

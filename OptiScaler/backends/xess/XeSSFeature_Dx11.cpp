@@ -400,27 +400,27 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		}
 
 		// imgui
-		//if (_frameCount > 20)
-		//{
-		//	if (Imgui != nullptr && Imgui.get() != nullptr)
-		//	{
-		//		spdlog::debug("XeSSFeatureDx11::Evaluate Apply Imgui");
+		if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30)
+		{
+			if (Imgui != nullptr && Imgui.get() != nullptr)
+			{
+				spdlog::debug("XeSSFeatureDx11::Evaluate Apply Imgui");
 
-		//		if (Imgui->IsHandleDifferent())
-		//		{
-		//			spdlog::debug("XeSSFeatureDx11::Evaluate Imgui handle different, reset()!");
-		//			std::this_thread::sleep_for(std::chrono::milliseconds(250));
-		//			Imgui.reset();
-		//		}
-		//		else
-		//			Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
-		//	}
-		//	else
-		//	{
-		//		if (Imgui == nullptr || Imgui.get() == nullptr)
-		//			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
-		//	}
-		//}
+				if (Imgui->IsHandleDifferent())
+				{
+					spdlog::debug("XeSSFeatureDx11::Evaluate Imgui handle different, reset()!");
+					std::this_thread::sleep_for(std::chrono::milliseconds(250));
+					Imgui.reset();
+				}
+				else
+					Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
+			}
+			else
+			{
+				if (Imgui == nullptr || Imgui.get() == nullptr)
+					Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+			}
+		}
 	}
 
 	// Execute dx12 commands to process xess
@@ -445,27 +445,27 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		}
 
 		// imgui
-		//if (_frameCount > 20)
-		//{
-		//	if (Imgui != nullptr && Imgui.get() != nullptr)
-		//	{
-		//		spdlog::debug("XeSSFeatureDx11::Evaluate Apply Imgui");
+		if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30)
+		{
+			if (Imgui != nullptr && Imgui.get() != nullptr)
+			{
+				spdlog::debug("XeSSFeatureDx11::Evaluate Apply Imgui");
 
-		//		if (Imgui->IsHandleDifferent())
-		//		{
-		//			spdlog::debug("XeSSFeatureDx11::Evaluate Imgui handle different, reset()!");
-		//			std::this_thread::sleep_for(std::chrono::milliseconds(250));
-		//			Imgui.reset();
-		//		}
-		//		else
-		//			Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
-		//	}
-		//	else
-		//	{
-		//		if (Imgui == nullptr || Imgui.get() == nullptr)
-		//			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
-		//	}
-		//}
+				if (Imgui->IsHandleDifferent())
+				{
+					spdlog::debug("XeSSFeatureDx11::Evaluate Imgui handle different, reset()!");
+					std::this_thread::sleep_for(std::chrono::milliseconds(250));
+					Imgui.reset();
+				}
+				else
+					Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
+			}
+			else
+			{
+				if (Imgui == nullptr || Imgui.get() == nullptr)
+					Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+			}
+		}
 	}
 
 	_frameCount++;

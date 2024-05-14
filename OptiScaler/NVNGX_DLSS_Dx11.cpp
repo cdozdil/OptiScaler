@@ -111,11 +111,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown(void)
 
 	Dx11Contexts.clear();
 	D3D11Device = nullptr;
-	Config::Instance()->ActiveFeatureCount = 0;
+	Config::Instance()->CurrentFeature = nullptr;
 
 	DLSSFeatureDx11::Shutdown(D3D11Device);
 
-	if (ImGuiOverlayDx11::IsInitedDx11())
+	if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayDx11::IsInitedDx11())
 		ImGuiOverlayDx11::ShutdownDx11();
 
 	return NVSDK_NGX_Result_Success;
@@ -312,7 +312,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 
 	if (deviceContext->Init(D3D11Device, InDevCtx, InParameters) && Dx11Contexts[handleId]->ModuleLoaded())
 	{
-		Config::Instance()->ActiveFeatureCount++;
+		Config::Instance()->CurrentFeature = deviceContext;
 		return NVSDK_NGX_Result_Success;
 	}
 
@@ -330,23 +330,20 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* 
 
 	if (auto deviceContext = Dx11Contexts[handleId].get(); deviceContext)
 	{
-		if (deviceContext == Config::Instance()->CurrentFeature)
-			Config::Instance()->CurrentFeature = nullptr;
 
 		spdlog::trace("NVSDK_NGX_D3D11_ReleaseFeature sleeping for 250ms before reset()!");
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-		if (Config::Instance()->ActiveFeatureCount == 1)
+		if (deviceContext == Config::Instance()->CurrentFeature)
 		{
 			deviceContext->Shutdown();
+			Config::Instance()->CurrentFeature = nullptr;
 		}
 
 		Dx11Contexts[handleId].reset();
 		auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 		Dx11Contexts.erase(it);
 	}
-
-	Config::Instance()->ActiveFeatureCount--;
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -375,7 +372,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	if (Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 300 && !ImGuiOverlayDx11::IsInitedDx11())
+	if (Config::Instance()->OverlayMenu.value_or(true) && 
+		Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 300 && 
+		!ImGuiOverlayDx11::IsInitedDx11())
 	{
 		HWND consoleWindow = GetConsoleWindow();
 		bool consoleAllocated = false;
@@ -523,8 +522,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 		}
 
 		// if initial feature can't be inited
-		if (Config::Instance()->ActiveFeatureCount == 0)
-			Config::Instance()->ActiveFeatureCount = 1;
+		Config::Instance()->CurrentFeature = Dx11Contexts[handleId].get();
 
 		return NVSDK_NGX_Result_Success;
 	}

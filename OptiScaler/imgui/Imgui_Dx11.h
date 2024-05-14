@@ -1,11 +1,9 @@
 #pragma once
 
-#pragma once
-
-#include "Imgui_Base.h"
+#include "imgui_dx_base.h"
 #include <d3d11.h>
 
-class Imgui_Dx11 : public Imgui_Base
+class Imgui_Dx11 : public ImguiDxBase
 {
 private:
 	bool _dx11Init = false;

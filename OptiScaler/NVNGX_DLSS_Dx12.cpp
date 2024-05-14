@@ -259,13 +259,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 	Dx12Contexts.clear();
 	D3D12Device = nullptr;
 
-	Config::Instance()->ActiveFeatureCount = 0;
+	Config::Instance()->CurrentFeature = nullptr;
 
 	UnhookAll();
 
 	DLSSFeatureDx12::Shutdown(D3D12Device);
 
-	if(ImGuiOverlayDx12::IsInitedDx12())
+	if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayDx12::IsInitedDx12())
 		ImGuiOverlayDx12::ShutdownDx12();
 
 	return NVSDK_NGX_Result_Success;
@@ -483,7 +483,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
 	if (deviceContext->Init(D3D12Device, InCmdList, InParameters))
 	{
-		Config::Instance()->ActiveFeatureCount++;
+		Config::Instance()->CurrentFeature = deviceContext;
 		HookToCommandList(InCmdList);
 
 		return NVSDK_NGX_Result_Success;
@@ -504,10 +504,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 	if (auto deviceContext = Dx12Contexts[handleId].get(); deviceContext)
 	{
 		if (deviceContext == Config::Instance()->CurrentFeature)
-			Config::Instance()->CurrentFeature = nullptr;
-
-		if (Config::Instance()->ActiveFeatureCount == 1)
 		{
+			Config::Instance()->CurrentFeature = nullptr;
 			deviceContext->Shutdown();
 		}
 
@@ -517,8 +515,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 	}
 	else
 		spdlog::error("NVSDK_NGX_D3D12_ReleaseFeature can't release feature with id {0}!", handleId);
-
-	Config::Instance()->ActiveFeatureCount--;
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -550,7 +546,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	if (Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 300 && !ImGuiOverlayDx12::IsInitedDx12())
+	if (Config::Instance()->OverlayMenu.value_or(true) &&
+		Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 300 &&
+		!ImGuiOverlayDx12::IsInitedDx12())
 	{
 		HWND consoleWindow = GetConsoleWindow();
 		bool consoleAllocated = false;
@@ -563,7 +561,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 			ShowWindow(consoleWindow, SW_HIDE);
 		}
-		
+
 		ImGuiOverlayDx12::InitDx12(consoleWindow);
 
 		if (consoleAllocated)
@@ -710,8 +708,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		}
 
 		// if initial feature can't be inited
-		if (Config::Instance()->ActiveFeatureCount == 0)
-			Config::Instance()->ActiveFeatureCount = 1;
+		Config::Instance()->CurrentFeature = Dx12Contexts[handleId].get();
 
 		return NVSDK_NGX_Result_Success;
 	}

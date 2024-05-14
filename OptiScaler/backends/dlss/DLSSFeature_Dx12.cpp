@@ -122,8 +122,8 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 		if (Config::Instance()->RcasEnabled.value_or(Version().major == 3))
 			RCAS = std::make_unique<RCAS_Dx12>("RCAS", InDevice);
 
-		//if (Imgui == nullptr || Imgui.get() == nullptr)
-		//	Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), InDevice);
+		if (!Config::Instance()->OverlayMenu.value_or(true) && Imgui == nullptr || Imgui.get() == nullptr)
+			Imgui = std::make_unique<Imgui_Dx12>(Util::GetProcessWindow(), InDevice);
 
 		OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", InDevice, (TargetWidth() < DisplayWidth()));
 	}
@@ -261,23 +261,23 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		}
 
 		// imgui
-		//if (_frameCount > 20 && paramOutput)
-		//{
-		//	if (Imgui != nullptr && Imgui.get() != nullptr)
-		//	{
-		//		if (Imgui->IsHandleDifferent())
-		//		{
-		//			Imgui.reset();
-		//		}
-		//		else
-		//			Imgui->Render(InCommandList, paramOutput);
-		//	}
-		//	else
-		//	{
-		//		if (Imgui == nullptr || Imgui.get() == nullptr)
-		//			Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
-		//	}
-		//}
+		if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30 && paramOutput)
+		{
+			if (Imgui != nullptr && Imgui.get() != nullptr)
+			{
+				if (Imgui->IsHandleDifferent())
+				{
+					Imgui.reset();
+				}
+				else
+					Imgui->Render(InCommandList, paramOutput);
+			}
+			else
+			{
+				if (Imgui == nullptr || Imgui.get() == nullptr)
+					Imgui = std::make_unique<Imgui_Dx12>(Util::GetProcessWindow(), Device);
+			}
+		}
 	}
 	else
 	{

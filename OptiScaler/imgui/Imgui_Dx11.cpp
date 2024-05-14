@@ -1,5 +1,6 @@
 #include "Imgui_Dx11.h"
 #include "imgui/imgui_impl_dx11.h"
+#include "imgui/imgui_impl_win32.h"
 
 void Imgui_Dx11::CreateRenderTarget(ID3D11Resource* out)
 {
@@ -67,6 +68,9 @@ void Imgui_Dx11::CreateRenderTarget(ID3D11Resource* out)
 
 bool Imgui_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTexture)
 {
+	if (Config::Instance()->OverlayMenu.value_or(true))
+		return false;
+
 	if (pCmdList == nullptr || outTexture == nullptr)
 		return false;
 
@@ -86,7 +90,9 @@ bool Imgui_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTextur
 		return false;
 
 	ImGui_ImplDX11_NewFrame();
-	Imgui_Base::RenderMenu();
+	ImGui_ImplWin32_NewFrame();
+
+	ImguiDxBase::RenderMenu();
 
 	// Create RTV for out
 	pCmdList->OMSetRenderTargets(1, &_renderTargetView, nullptr);
@@ -110,7 +116,7 @@ bool Imgui_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTextur
 	return true;
 }
 
-Imgui_Dx11::Imgui_Dx11(HWND handle, ID3D11Device* pDevice) : Imgui_Base(handle), _device(pDevice)
+Imgui_Dx11::Imgui_Dx11(HWND handle, ID3D11Device* pDevice) : ImguiDxBase(handle), _device(pDevice)
 {
 }
 
@@ -119,13 +125,7 @@ Imgui_Dx11::~Imgui_Dx11()
 	if (!_dx11Init)
 		return;
 
-	ImGui::SetCurrentContext(context);
-	std::this_thread::sleep_for(std::chrono::milliseconds(250));
-
-	ImGui_ImplDX11_Shutdown();
-
-	if (auto currCtx = ImGui::GetCurrentContext(); currCtx && context != currCtx)
-		ImGui::SetCurrentContext(currCtx);
+	ImGuiCommon::Shutdown();
 
 	// hackzor
 	std::this_thread::sleep_for(std::chrono::milliseconds(250));

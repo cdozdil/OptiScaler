@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Imgui_Base.h"
+#include "imgui_dx_base.h"
 #include <d3d12.h>
 
-class Imgui_Dx12 : public Imgui_Base
+class Imgui_Dx12 : public ImguiDxBase
 {
 private:
 	bool _dx12Init = false;

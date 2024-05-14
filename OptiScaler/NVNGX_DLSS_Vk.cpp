@@ -279,7 +279,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 
 	if (deviceContext->Init(vkInstance, vkPD, InDevice, InCmdList, vkGIPA, vkGDPA, InParameters))
 	{
-		Config::Instance()->ActiveFeatureCount++;
+		Config::Instance()->CurrentFeature = deviceContext;
 		return NVSDK_NGX_Result_Success;
 	}
 
@@ -305,10 +305,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
 	if (auto deviceContext = VkContexts[handleId].get(); deviceContext)
 	{
 		if (deviceContext == Config::Instance()->CurrentFeature)
-			Config::Instance()->CurrentFeature = nullptr;
-
-		if (Config::Instance()->ActiveFeatureCount == 1)
 		{
+			Config::Instance()->CurrentFeature = nullptr;
 			deviceContext->Shutdown();
 		}
 
@@ -316,8 +314,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
 		auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 		VkContexts.erase(it);
 	}
-
-	Config::Instance()->ActiveFeatureCount--;
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -332,7 +328,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	if (Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 30 && !ImGuiOverlayVk::IsInitedVk())
+	if (Config::Instance()->OverlayMenu.value_or(true) && 
+		Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 30 && 
+		!ImGuiOverlayVk::IsInitedVk())
 	{
 		auto hwnd = Util::GetProcessWindow();
 		ImGuiOverlayVk::InitVk(hwnd, vkDevice, vkInstance, vkPD);
@@ -444,8 +442,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 		}
 
 		// if initial feature can't be inited
-		if (Config::Instance()->ActiveFeatureCount == 0)
-			Config::Instance()->ActiveFeatureCount = 1;
+		Config::Instance()->CurrentFeature = VkContexts[handleId].get();
 
 		return NVSDK_NGX_Result_Success;
 	}
@@ -479,11 +476,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
 	vkPD = nullptr;
 	vkDevice = nullptr;
 
-	Config::Instance()->ActiveFeatureCount = 0;
+	Config::Instance()->CurrentFeature = nullptr;
 
 	DLSSFeatureVk::Shutdown(vkDevice);
 
-	if (ImGuiOverlayVk::IsInitedVk())
+	if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayVk::IsInitedVk())
 		ImGuiOverlayVk::ShutdownVk();
 
 	return NVSDK_NGX_Result_Success;

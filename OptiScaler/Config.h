@@ -129,7 +129,6 @@ public:
 	bool DE_Available = false;
 
 	IFeature* CurrentFeature = nullptr;
-	int ActiveFeatureCount = 0;
 
 	// for realtime changes
 	bool changeBackend = false;

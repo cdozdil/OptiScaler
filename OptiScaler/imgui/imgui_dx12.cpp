@@ -1,11 +1,17 @@
 #include "Imgui_Dx12.h"
+
 #include "../d3dx/d3dx12.h"
+
 #include "imgui/imgui_impl_dx12.h"
+#include "imgui/imgui_impl_win32.h"
 
 long frameCounter = 0;
 
 bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outTexture)
 {
+	if (Config::Instance()->OverlayMenu.value_or(true))
+		return false;
+
 	if (pCmdList == nullptr || outTexture == nullptr)
 		return false;
 
@@ -27,8 +33,6 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 	frameCounter++;
 
 	auto backbuf = frameCounter % 2;
-
-	ImGui_ImplDX12_NewFrame();
 
 	D3D12_RENDER_TARGET_VIEW_DESC rtDesc = { };
 	rtDesc.Format = outDesc.Format;
@@ -52,7 +56,7 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 		pCmdList->OMSetRenderTargets(1, &_renderTargetDescriptor[backbuf], FALSE, NULL);
 
 		// Render
-		Imgui_Base::RenderMenu();
+		ImguiDxBase::RenderMenu();
 		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
 
 		outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
@@ -95,8 +99,12 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 	_device->CreateRenderTargetView(_renderTargetResource[backbuf], &rtDesc, _renderTargetDescriptor[backbuf]);
 	pCmdList->OMSetRenderTargets(1, &_renderTargetDescriptor[backbuf], FALSE, nullptr);
 
+	ImGui_ImplDX12_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+
 	// Render to buffer
-	Imgui_Base::RenderMenu();
+	ImguiDxBase::RenderMenu();
+
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
 
 	outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
@@ -120,8 +128,11 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 	return true;
 }
 
-Imgui_Dx12::Imgui_Dx12(HWND handle, ID3D12Device* pDevice) : Imgui_Base(handle), _device(pDevice)
+Imgui_Dx12::Imgui_Dx12(HWND handle, ID3D12Device* pDevice) : ImguiDxBase(handle), _device(pDevice)
 {
+	if (Config::Instance()->OverlayMenu.value_or(true))
+		return;
+
 	D3D12_DESCRIPTOR_HEAP_DESC rtvDesc = { };
 	rtvDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	rtvDesc.NumDescriptors = 2;
