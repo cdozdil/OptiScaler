@@ -29,8 +29,7 @@ void ImGuiOverlayBase::Init(HWND InHandle)
 	if (!Config::Instance()->OverlayMenu.value_or(true))
 		return;
 
-	spdlog::debug("ImGuiOverlayBase::Init!");
-
+	spdlog::debug("ImGuiOverlayBase::Init");
 	ImGuiCommon::Init(InHandle);
 }
 
@@ -44,5 +43,6 @@ void ImGuiOverlayBase::RenderMenu()
 
 void ImGuiOverlayBase::Shutdown()
 {
+	spdlog::debug("ImGuiOverlayBase::Shutdown");
 	ImGuiCommon::Shutdown();
 }

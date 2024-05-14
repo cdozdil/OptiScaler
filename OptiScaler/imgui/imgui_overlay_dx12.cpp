@@ -2,6 +2,7 @@
 #include "imgui_overlay_dx12.h"
 
 #include "../Util.h"
+#include "../Logger.h"
 
 #include <d3d12.h>
 
@@ -41,6 +42,8 @@ static int GetCorrectDXGIFormat(int eCurrentFormat)
 
 static bool CreateDeviceD3D12(HWND InHWnd)
 {
+	spdlog::debug("imgui_overlay_dx12::CreateDeviceD3D12 Handle: {0:X}", (unsigned long)InHWnd);
+
 	// Setup swap chain
 	DXGI_SWAP_CHAIN_DESC1 sd = { };
 	sd.BufferCount = NUM_BACK_BUFFERS;
@@ -56,26 +59,41 @@ static bool CreateDeviceD3D12(HWND InHWnd)
 	D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
 	result = D3D12CreateDevice(NULL, featureLevel, IID_PPV_ARGS(&g_pd3dDevice));
 	if (result != S_OK)
+	{
+		spdlog::error("imgui_overlay_dx12::CreateDeviceD3D12 D3D12CreateDevice: {0:X}", (unsigned long)result);
 		return false;
+	}
 
 	// Create device
 	D3D12_COMMAND_QUEUE_DESC desc = { };
 	result = g_pd3dDevice->CreateCommandQueue(&desc, IID_PPV_ARGS(&g_pd3dCommandQueue));
 	if (result != S_OK)
+	{
+		spdlog::error("imgui_overlay_dx12::CreateDeviceD3D12 CreateCommandQueue: {0:X}", (unsigned long)result);
 		return false;
+	}
 
 	IDXGISwapChain1* swapChain1 = NULL;
 	result = CreateDXGIFactory1(IID_PPV_ARGS(&g_dxgiFactory));
 	if (result != S_OK)
+	{
+		spdlog::error("imgui_overlay_dx12::CreateDeviceD3D12 CreateDXGIFactory1: {0:X}", (unsigned long)result);
 		return false;
+	}
 
 	result = g_dxgiFactory->CreateSwapChainForHwnd(g_pd3dCommandQueue, InHWnd, &sd, NULL, NULL, &swapChain1);
 	if (result != S_OK)
+	{
+		spdlog::error("imgui_overlay_dx12::CreateDeviceD3D12 CreateSwapChainForHwnd: {0:X}", (unsigned long)result);
 		return false;
+	}
 
 	result = swapChain1->QueryInterface(IID_PPV_ARGS(&g_pSwapChain));
 	if (result != S_OK)
+	{
+		spdlog::error("imgui_overlay_dx12::CreateDeviceD3D12 QueryInterface: {0:X}", (unsigned long)result);
 		return false;
+	}
 
 	swapChain1->Release();
 
@@ -84,6 +102,8 @@ static bool CreateDeviceD3D12(HWND InHWnd)
 
 static void CreateRenderTarget(IDXGISwapChain* pSwapChain)
 {
+	spdlog::info("imgui_overlay_dx12::CreateRenderTarget");
+
 	for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
 	{
 		ID3D12Resource* pBackBuffer = NULL;
@@ -102,9 +122,11 @@ static void CreateRenderTarget(IDXGISwapChain* pSwapChain)
 			g_mainRenderTargetResource[i] = pBackBuffer;
 		}
 	}
+
+	spdlog::info("imgui_overlay_dx12::CreateRenderTarget done!");
 }
 
-static void CleanupRenderTarget() 
+static void CleanupRenderTarget()
 {
 	for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
 	{
@@ -116,7 +138,7 @@ static void CleanupRenderTarget()
 	}
 }
 
-static void CleanupDeviceD3D12() 
+static void CleanupDeviceD3D12()
 {
 	CleanupRenderTarget();
 
@@ -166,7 +188,7 @@ static void CleanupDeviceD3D12()
 	}
 }
 
-static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain) 
+static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 {
 	auto prcHandle = Util::GetProcessWindow();
 
@@ -176,6 +198,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 	if (ImGuiOverlayBase::IsInited() && prcHandle != ImGuiOverlayBase::Handle())
 	{
 		spdlog::info("RenderImGui_DX12 New handle detected, shutting down ImGui!");
+
 		ImGuiOverlayDx12::ShutdownDx12();
 		ImGuiOverlayDx12::InitDx12(prcHandle);
 		return;
@@ -186,68 +209,107 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 
 	if (!ImGui::GetIO().BackendRendererUserData)
 	{
-		if (SUCCEEDED(pSwapChain->GetDevice(IID_PPV_ARGS(&g_pd3dDevice))))
+		spdlog::debug("imgui_overlay_dx12::RenderImGui_DX12 ImGui::GetIO().BackendRendererUserData == nullptr");
+
+		auto result = pSwapChain->GetDevice(IID_PPV_ARGS(&g_pd3dDevice));
+		if (result != S_OK)
 		{
-			{
-				D3D12_DESCRIPTOR_HEAP_DESC desc = { };
-				desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-				desc.NumDescriptors = NUM_BACK_BUFFERS;
-				desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-				desc.NodeMask = 1;
-				if (g_pd3dDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dRtvDescHeap)) != S_OK)
-					return;
+			spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 GetDevice: {0:X}", (unsigned long)result);
+			return;
+		}
 
-				SIZE_T rtvDescriptorSize = g_pd3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-				D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = g_pd3dRtvDescHeap->GetCPUDescriptorHandleForHeapStart();
-				for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i) {
-					g_mainRenderTargetDescriptor[i] = rtvHandle;
-					rtvHandle.ptr += rtvDescriptorSize;
-				}
+		{
+			D3D12_DESCRIPTOR_HEAP_DESC desc = { };
+			desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+			desc.NumDescriptors = NUM_BACK_BUFFERS;
+			desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+			desc.NodeMask = 1;
+
+			result = g_pd3dDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dRtvDescHeap));
+			if (result != S_OK)
+			{
+				spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 CreateDescriptorHeap(g_pd3dRtvDescHeap): {0:X}", (unsigned long)result);
+				return;
 			}
 
-			{
-				D3D12_DESCRIPTOR_HEAP_DESC desc = { };
-				desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-				desc.NumDescriptors = 1;
-				desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-				if (g_pd3dDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dSrvDescHeap)) != S_OK)
-					return;
-			}
+			SIZE_T rtvDescriptorSize = g_pd3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+			D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = g_pd3dRtvDescHeap->GetCPUDescriptorHandleForHeapStart();
 
 			for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
 			{
-				if (g_pd3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&g_commandAllocators[i])) != S_OK)
-					return;
+				g_mainRenderTargetDescriptor[i] = rtvHandle;
+				rtvHandle.ptr += rtvDescriptorSize;
 			}
-
-			if (g_pd3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, g_commandAllocators[0], NULL, IID_PPV_ARGS(&g_pd3dCommandList)) != S_OK ||
-				g_pd3dCommandList->Close() != S_OK)
-				return;
-
-			ImGui_ImplDX12_Init(g_pd3dDevice, NUM_BACK_BUFFERS,
-				DXGI_FORMAT_R8G8B8A8_UNORM, g_pd3dSrvDescHeap,
-				g_pd3dSrvDescHeap->GetCPUDescriptorHandleForHeapStart(),
-				g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart());
 		}
+
+		{
+			D3D12_DESCRIPTOR_HEAP_DESC desc = { };
+			desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+			desc.NumDescriptors = 1;
+			desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+			result = g_pd3dDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dSrvDescHeap));
+			if (result != S_OK)
+			{
+				spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 CreateDescriptorHeap(g_pd3dSrvDescHeap): {0:X}", (unsigned long)result);
+				return;
+			}
+		}
+
+		for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
+		{
+			result = g_pd3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&g_commandAllocators[i]));
+			if (result != S_OK)
+			{
+				spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 CreateCommandAllocator[{0}]: {1:X}", i, (unsigned long)result);
+				return;
+			}
+		}
+
+		result = g_pd3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, g_commandAllocators[0], NULL, IID_PPV_ARGS(&g_pd3dCommandList));
+		if (result != S_OK)
+		{
+			spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 CreateCommandList: {0:X}", (unsigned long)result);
+			return;
+		}
+
+		result = g_pd3dCommandList->Close();
+		if (result != S_OK)
+		{
+			spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 g_pd3dCommandList->Close: {0:X}", (unsigned long)result);
+			return;
+		}
+
+		ImGui_ImplDX12_Init(g_pd3dDevice, NUM_BACK_BUFFERS, DXGI_FORMAT_R8G8B8A8_UNORM, g_pd3dSrvDescHeap,
+			g_pd3dSrvDescHeap->GetCPUDescriptorHandleForHeapStart(), g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart());
 	}
 
 	if (_isInited)
 	{
 		if (!g_mainRenderTargetResource[0])
+		{
 			CreateRenderTarget(pSwapChain);
+			return;
+		}
 
 		if (ImGui::GetCurrentContext() && g_pd3dCommandQueue && g_mainRenderTargetResource[0])
 		{
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplWin32_NewFrame();
-			
+
 			ImGuiOverlayBase::RenderMenu();
-			
+
 			ImGui::Render();
 
 			UINT backBufferIdx = pSwapChain->GetCurrentBackBufferIndex();
 			ID3D12CommandAllocator* commandAllocator = g_commandAllocators[backBufferIdx];
-			commandAllocator->Reset();
+
+			auto result = commandAllocator->Reset();
+			if (result != S_OK)
+			{
+				spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 commandAllocator->Reset: {0:X}", (unsigned long)result);
+				return;
+			}
 
 			D3D12_RESOURCE_BARRIER barrier = { };
 			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -256,18 +318,39 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 			barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
 			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-			g_pd3dCommandList->Reset(commandAllocator, NULL);
-			g_pd3dCommandList->ResourceBarrier(1, &barrier);
 
+			result = g_pd3dCommandList->Reset(commandAllocator, NULL);
+			if (result != S_OK)
+			{
+				spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 g_pd3dCommandList->Reset: {0:X}", (unsigned long)result);
+				return;
+			}
+
+			g_pd3dCommandList->ResourceBarrier(1, &barrier);
 			g_pd3dCommandList->OMSetRenderTargets(1, &g_mainRenderTargetDescriptor[backBufferIdx], FALSE, NULL);
 			g_pd3dCommandList->SetDescriptorHeaps(1, &g_pd3dSrvDescHeap);
+
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), g_pd3dCommandList);
+
 			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 			g_pd3dCommandList->ResourceBarrier(1, &barrier);
-			g_pd3dCommandList->Close();
 
-			g_pd3dCommandQueue->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList* const*>(&g_pd3dCommandList));
+			result = g_pd3dCommandList->Close();
+			if (result != S_OK)
+			{
+				spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 g_pd3dCommandList->Close: {0:X}", (unsigned long)result);
+				return;
+			}
+
+			ID3D12CommandList* ppCommandLists[] = { g_pd3dCommandList };
+			g_pd3dCommandQueue->ExecuteCommandLists(1, ppCommandLists);
+			
+			spdlog::trace("RenderImGui_DX12 ExecuteCommandLists done!");
+		}
+		else
+		{
+			spdlog::debug("!(ImGui::GetCurrentContext() && g_pd3dCommandQueue && g_mainRenderTargetResource[0])");
 		}
 	}
 }
@@ -349,11 +432,18 @@ bool ImGuiOverlayDx12::IsInitedDx12()
 
 void ImGuiOverlayDx12::InitDx12(HWND InHandle)
 {
+	spdlog::info("RenderImGui_DX12 InitDx12 Handle: {0:X}", (unsigned long)InHandle);
+
 	if (!CreateDeviceD3D12(InHandle))
+	{
+		spdlog::error("imgui_overlay_dx12::InitDx12 CreateDeviceD3D12 failed!");
 		return;
+	}
 
 	if (g_pd3dDevice)
 	{
+		spdlog::error("imgui_overlay_dx12::InitDx12 Hooking!");
+
 		// Hook
 		void** pVTable = *reinterpret_cast<void***>(g_pSwapChain);
 		void** pCommandQueueVTable = *reinterpret_cast<void***>(g_pd3dCommandQueue);

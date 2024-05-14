@@ -1221,6 +1221,8 @@ public:
 	{
 		_handle = InHwnd;
 
+		spdlog::debug("ImGuiCommon::Init Handle: {0:X}", (unsigned long)_handle);
+
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
@@ -1237,10 +1239,14 @@ public:
 
 		io.IniFilename = io.LogFilename = nullptr;
 
-		ImGui_ImplWin32_Init(InHwnd);
+		bool initResult = ImGui_ImplWin32_Init(InHwnd);
+		spdlog::debug("ImGuiCommon::Init ImGui_ImplWin32_Init result: {0}", initResult);
 
 		if (_oWndProc == nullptr)
 			_oWndProc = (WNDPROC)SetWindowLongPtr(InHwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
+
+		spdlog::debug("ImGuiCommon::Init _oWndProc: {0:X}", (unsigned long)_oWndProc);
+
 
 		if (!pfn_SetCursorPos_hooked)
 			AttachHooks();
