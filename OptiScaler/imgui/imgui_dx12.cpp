@@ -25,7 +25,10 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 	CreateRenderTarget(outDesc);
 
 	if (!_dx12Init && ImGui::GetIO().BackendRendererUserData == nullptr)
-		_dx12Init = ImGui_ImplDX12_Init(_device, 2, outDesc.Format, _srvDescHeap, _srvDescHeap->GetCPUDescriptorHandleForHeapStart(), _srvDescHeap->GetGPUDescriptorHandleForHeapStart());
+	{
+		_dx12Init = ImGui_ImplDX12_Init(_device, 2, outDesc.Format, _srvDescHeap,
+			_srvDescHeap->GetCPUDescriptorHandleForHeapStart(), _srvDescHeap->GetGPUDescriptorHandleForHeapStart());
+	}
 
 	if (!_dx12Init)
 		return false;
@@ -54,6 +57,9 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 
 		_device->CreateRenderTargetView(outTexture, &rtDesc, _renderTargetDescriptor[backbuf]);
 		pCmdList->OMSetRenderTargets(1, &_renderTargetDescriptor[backbuf], FALSE, NULL);
+
+		ImGui_ImplDX12_NewFrame();
+		ImGui_ImplWin32_NewFrame();
 
 		// Render
 		ImguiDxBase::RenderMenu();
