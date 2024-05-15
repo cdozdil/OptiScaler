@@ -9,5 +9,5 @@ namespace ImGuiOverlayVk
 
 	void InitVk(HWND InHwnd, VkDevice InDevice, VkInstance InInstance, VkPhysicalDevice InPD);
 	void ShutdownVk();
-	void ReInitDx12(HWND InNewHwnd);
+	void ReInitVk(HWND InNewHwnd);
 }

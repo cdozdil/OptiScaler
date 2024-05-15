@@ -287,6 +287,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 	if (deviceContext->Init(vkInstance, vkPD, InDevice, InCmdList, vkGIPA, vkGDPA, InParameters))
 	{
 		Config::Instance()->CurrentFeature = deviceContext;
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		return NVSDK_NGX_Result_Success;
 	}
 
@@ -317,10 +318,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
 			deviceContext->Shutdown();
 		}
 
+		vkDeviceWaitIdle(vkDevice);
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
 		VkContexts[handleId].reset();
 		auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
 		VkContexts.erase(it);
 	}
+
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -335,7 +341,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	if (Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 30 && !ImGuiOverlayVk::IsInitedVk())
+	if (Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(90) && !ImGuiOverlayVk::IsInitedVk())
 	{
 		auto hwnd = Util::GetProcessWindow();
 		ImGuiOverlayVk::InitVk(hwnd, vkDevice, vkInstance, vkPD);

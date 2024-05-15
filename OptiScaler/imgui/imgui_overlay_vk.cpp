@@ -33,6 +33,8 @@ static VkSemaphore* g_ImVulkan_Semaphores = NULL;
 
 static void DestroyVulkanObjects(bool shutdown)
 {
+	vkDeviceWaitIdle(_device);
+
 	if (shutdown)
 	{
 		if (g_vkRenderPass)
@@ -260,7 +262,7 @@ static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR*
 	}
 
 	// Initialize ImGui and upload fonts
-	if (g_bInitialized == false)
+	if (!ImGui::GetIO().BackendRendererUserData)
 	{
 		g_ImVulkan_Info.Instance = _instance;
 		g_ImVulkan_Info.PhysicalDevice = _PD;
@@ -275,11 +277,8 @@ static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR*
 		g_ImVulkan_Info.RenderPass = g_vkRenderPass;
 
 		ImGui_ImplVulkan_Init(&g_ImVulkan_Info);
-	}
 
-	// Upload Fonts
-	if (g_bInitialized == false)
-	{
+		// Upload Fonts
 		// Use any command queue
 		VkCommandPool command_pool = g_ImVulkan_Frames[0].CommandPool;
 		VkCommandBuffer command_buffer = g_ImVulkan_Frames[0].CommandBuffer;
@@ -329,16 +328,13 @@ static VkResult VKAPI_CALL hkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pP
 	if (!g_bInitialized)
 		return VK_ERROR_OUT_OF_DATE_KHR;
 
-
 	if (!ImGuiOverlayBase::IsInited())
 		ImGuiOverlayBase::Init(Util::GetProcessWindow());
 
 	if (ImGuiOverlayBase::IsInited() && ImGuiOverlayBase::IsResetRequested())
 	{
 		spdlog::info("RenderImGui_Vk Reset request detected, shutting down ImGui!");
-		ImGuiOverlayVk::ShutdownVk();
-		ImGuiOverlayVk::InitVk(Util::GetProcessWindow(), _device, _instance, _PD);
-		return oQueuePresentKHR(queue, pPresentInfo);
+		ImGuiOverlayVk::ReInitVk(Util::GetProcessWindow());
 	}
 
 	if (!ImGuiOverlayBase::IsInited() || !ImGuiOverlayBase::IsVisible())
@@ -384,7 +380,7 @@ static VkResult VKAPI_CALL hkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pP
 
 	// Submit queue and semaphores
 	uint32_t semaphoreCount = pPresentInfo->waitSemaphoreCount;
-	if (semaphoreCount != 0) 
+	if (semaphoreCount != 0)
 	{
 		VkPipelineStageFlags waitStages[8] = { VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT };
 
@@ -398,7 +394,7 @@ static VkResult VKAPI_CALL hkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pP
 		submit_info.signalSemaphoreCount = 1;
 		submit_info.pSignalSemaphores = &g_ImVulkan_Semaphores[idx];
 
-		if (vkQueueSubmit(g_ImVulkan_Info.Queue, 1, &submit_info, fd->Fence) == VK_SUCCESS) 
+		if (vkQueueSubmit(g_ImVulkan_Info.Queue, 1, &submit_info, fd->Fence) == VK_SUCCESS)
 		{
 			pPresentInfo->pWaitSemaphores = &g_ImVulkan_Semaphores[idx];
 			pPresentInfo->waitSemaphoreCount = 1;
@@ -414,6 +410,8 @@ static VkResult VKAPI_CALL hkCreateSwapchainKHR(VkDevice device, const VkSwapcha
 	VkSwapchainKHR* pSwapchain)
 {
 	auto result = oCreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain);
+
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
 	if (result == VK_SUCCESS && device != NULL && pCreateInfo != NULL && pSwapchain != NULL)
 		CreateVulkanObjects(device, pCreateInfo, pAllocator, pSwapchain);
@@ -479,11 +477,12 @@ void ImGuiOverlayVk::ShutdownVk()
 	}
 
 	_isInited = false;
+	g_bInitialized = false;
 }
 
-void ImGuiOverlayVk::ReInitDx12(HWND InNewHwnd)
+void ImGuiOverlayVk::ReInitVk(HWND InNewHwnd)
 {
-	if (!_isInited)
+	if (!_isInited || !g_bInitialized)
 		return;
 
 	ImGui_ImplVulkan_Shutdown();
