@@ -376,7 +376,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 	}
 
 	if (Config::Instance()->OverlayMenu.value_or(true) &&
-		Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 300 &&
+		Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 90 &&
 		!ImGuiOverlayDx11::IsInitedDx11())
 	{
 		HWND consoleWindow = GetConsoleWindow();
