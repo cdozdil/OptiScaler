@@ -21,6 +21,7 @@ namespace ImGuiOverlayBase
 
 	bool IsInited();
 	bool IsVisible();
+	bool IsResetRequested();
 
 	void Init(HWND InHandle);
 	void RenderMenu();

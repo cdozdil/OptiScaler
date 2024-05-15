@@ -329,16 +329,15 @@ static VkResult VKAPI_CALL hkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pP
 	if (!g_bInitialized)
 		return VK_ERROR_OUT_OF_DATE_KHR;
 
-	auto prcHandle = Util::GetProcessWindow();
 
 	if (!ImGuiOverlayBase::IsInited())
-		ImGuiOverlayBase::Init(_hwnd);
+		ImGuiOverlayBase::Init(Util::GetProcessWindow());
 
-	if (ImGuiOverlayBase::IsInited() && prcHandle != ImGuiOverlayBase::Handle())
+	if (ImGuiOverlayBase::IsInited() && ImGuiOverlayBase::IsResetRequested())
 	{
-		spdlog::info("hkQueuePresentKHR New handle detected, shutting down ImGui!");
+		spdlog::info("RenderImGui_Vk Reset request detected, shutting down ImGui!");
 		ImGuiOverlayVk::ShutdownVk();
-		ImGuiOverlayVk::InitVk(prcHandle, _device, _instance, _PD);
+		ImGuiOverlayVk::InitVk(Util::GetProcessWindow(), _device, _instance, _PD);
 		return oQueuePresentKHR(queue, pPresentInfo);
 	}
 
@@ -480,4 +479,15 @@ void ImGuiOverlayVk::ShutdownVk()
 	}
 
 	_isInited = false;
+}
+
+void ImGuiOverlayVk::ReInitDx12(HWND InNewHwnd)
+{
+	if (!_isInited)
+		return;
+
+	ImGui_ImplVulkan_Shutdown();
+	ImGuiOverlayBase::Shutdown();
+	ImGuiOverlayBase::Init(InNewHwnd);
+	DestroyVulkanObjects(false);
 }

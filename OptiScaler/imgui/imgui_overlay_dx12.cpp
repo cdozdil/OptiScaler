@@ -218,17 +218,13 @@ static void CleanupDeviceD3D12()
 
 static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 {
-	auto prcHandle = Util::GetProcessWindow();
-
 	if (!ImGuiOverlayBase::IsInited())
-		ImGuiOverlayBase::Init(prcHandle);
+		ImGuiOverlayBase::Init(Util::GetProcessWindow());
 
-	if (ImGuiOverlayBase::IsInited() && prcHandle != ImGuiOverlayBase::Handle())
+	if (ImGuiOverlayBase::IsInited() && ImGuiOverlayBase::IsResetRequested())
 	{
-		spdlog::info("RenderImGui_DX12 New handle detected, shutting down ImGui!");
-
-		ImGuiOverlayDx12::ShutdownDx12();
-		ImGuiOverlayDx12::InitDx12(prcHandle);
+		spdlog::info("RenderImGui_DX12 Reset request detected, resetting ImGui!");
+		ImGuiOverlayDx12::ReInitDx12(Util::GetProcessWindow());
 		return;
 	}
 
@@ -411,16 +407,7 @@ static HRESULT WINAPI hkResizeBuffers1_Dx12(IDXGISwapChain3* pSwapChain, UINT Bu
 static void WINAPI hkExecuteCommandLists_Dx12(ID3D12CommandQueue* pCommandQueue, UINT NumCommandLists, ID3D12CommandList* ppCommandLists)
 {
 	if (!g_pd3dCommandQueue)
-	{
 		g_pd3dCommandQueue = pCommandQueue;
-
-		//DetourTransactionBegin();
-		//DetourUpdateThread(GetCurrentThread());
-
-		//DetourAttach(&(PVOID&)oExecuteCommandLists_Dx12, hkExecuteCommandLists_Dx12);
-
-		//DetourTransactionCommit();
-	}
 
 	return oExecuteCommandLists_Dx12(pCommandQueue, NumCommandLists, ppCommandLists);
 }
@@ -461,7 +448,7 @@ void ImGuiOverlayDx12::InitDx12(HWND InHandle)
 {
 	spdlog::info("RenderImGui_DX12 InitDx12 Handle: {0:X}", (unsigned long)InHandle);
 
-	if (!CreateDeviceD3D12(InHandle))
+	if (g_pd3dDevice == nullptr && !CreateDeviceD3D12(InHandle))
 	{
 		spdlog::error("imgui_overlay_dx12::InitDx12 CreateDeviceD3D12 failed!");
 		return;
@@ -551,5 +538,16 @@ void ImGuiOverlayDx12::ShutdownDx12()
 	}
 
 	_isInited = false;
+}
+
+void ImGuiOverlayDx12::ReInitDx12(HWND InNewHwnd)
+{
+	if (!_isInited)
+		return;
+
+	ImGui_ImplDX12_Shutdown();
+	ImGuiOverlayBase::Shutdown();
+	ImGuiOverlayBase::Init(InNewHwnd);
+	CleanupRenderTarget();
 }
 

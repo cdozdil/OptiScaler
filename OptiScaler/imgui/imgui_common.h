@@ -22,6 +22,7 @@ private:
 	inline static WNDPROC _oWndProc = nullptr;
 	inline static bool _isVisible = false;
 	inline static bool _isInited = false;
+	inline static bool _isResetRequested = false;
 
 	// mipmap calculations
 	inline static bool _showMipmapCalcWindow = false;
@@ -191,7 +192,7 @@ private:
 	{
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 
-		if (Config::Instance()->CurrentFeature == nullptr)
+		if (Config::Instance()->CurrentFeature == nullptr || _isResetRequested)
 		{
 			if (_isVisible)
 			{
@@ -208,14 +209,21 @@ private:
 			return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
 		}
 
-		// HOME
-		if (msg == WM_KEYDOWN && wParam == VK_HOME) // && (GetKeyState(VK_SHIFT) & 0x8000))
+		// END - REINIT MENU
+		if (msg == WM_KEYDOWN && wParam == Config::Instance()->ResetKey.value_or(VK_END))
+		{
+			_isResetRequested = true;
+			return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
+		}
+
+		// INSERT - OPEN MENU
+		if (msg == WM_KEYDOWN && wParam == Config::Instance()->ShortcutKey.value_or(VK_INSERT))
 		{
 			_isVisible = !_isVisible;
 
 			if (!_isVisible)
 				_showMipmapCalcWindow = false;
-			else if(pfn_ClipCursor_hooked)
+			else if (pfn_ClipCursor_hooked)
 				pfn_ClipCursor(nullptr);
 
 			io.MouseDrawCursor = _isVisible;
@@ -227,7 +235,7 @@ private:
 			return TRUE;
 		}
 
-		// Debug dump
+		// SHUFT + DEL - Debug dump
 		if (msg == WM_KEYDOWN && wParam == VK_DELETE && (GetKeyState(VK_SHIFT) & 0x8000))
 		{
 			Config::Instance()->xessDebug = true;
@@ -287,6 +295,7 @@ public:
 
 	static bool IsInited() { return _isInited; }
 	static bool IsVisible() { return _isVisible; }
+	static bool IsResetRequested() { return _isResetRequested; }
 	static HWND Handle() { return _handle; }
 
 	static std::string GetBackendName(std::string* code)
@@ -1240,6 +1249,7 @@ public:
 	static void Init(HWND InHwnd)
 	{
 		_handle = InHwnd;
+		_isResetRequested = false;
 
 		spdlog::debug("ImGuiCommon::Init Handle: {0:X}", (unsigned long)_handle);
 
@@ -1299,7 +1309,8 @@ public:
 
 		ImGui_ImplWin32_Shutdown();
 		ImGui::DestroyContext();
-		
+
 		_isInited = false;
+		_isResetRequested = false;
 	}
 };

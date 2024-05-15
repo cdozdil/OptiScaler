@@ -86,6 +86,8 @@ bool Config::Reload()
 		// Menu
 		MenuScale = readFloat("Menu", "Scale");
 		OverlayMenu = readBool("Menu", "OverlayMenu");
+		ShortcutKey = readInt("Menu", "ShortcutKey");
+		ResetKey = readInt("Menu", "ResetKey");
 
 		// CAS
 		RcasEnabled = readBool("CAS", "Enabled");
@@ -209,6 +211,8 @@ bool Config::SaveIni()
 	// ingame menu
 	ini.SetValue("Menu", "Scale", GetFloatValue(Instance()->MenuScale).c_str());
 	ini.SetValue("Menu", "OverlayMenu", GetBoolValue(Instance()->OverlayMenu).c_str());
+	ini.SetValue("Menu", "ResetKey", GetIntValue(Instance()->ResetKey).c_str());
+	ini.SetValue("Menu", "ShortcutKey", GetIntValue(Instance()->ShortcutKey).c_str());
 
 	// CAS
 	ini.SetValue("CAS", "Enabled", GetBoolValue(Instance()->RcasEnabled).c_str());

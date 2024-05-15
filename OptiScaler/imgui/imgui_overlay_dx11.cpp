@@ -112,16 +112,14 @@ static void CleanupDeviceD3D11()
 
 static void RenderImGui_DX11(IDXGISwapChain* pSwapChain)
 {
-	auto prcHandle = Util::GetProcessWindow();
-
 	if (!ImGuiOverlayBase::IsInited())
-		ImGuiOverlayBase::Init(prcHandle);
+		ImGuiOverlayBase::Init(Util::GetProcessWindow());
 
-	if (ImGuiOverlayBase::IsInited() && prcHandle != ImGuiOverlayBase::Handle())
+	if (ImGuiOverlayBase::IsInited() && ImGuiOverlayBase::IsResetRequested())
 	{
-		spdlog::info("RenderImGui_DX11 New handle detected, shutting down ImGui!");
+		spdlog::info("RenderImGui_DX12 Reset request detected, shutting down ImGui!");
 		ImGuiOverlayDx11::ShutdownDx11();
-		ImGuiOverlayDx11::InitDx11(prcHandle);
+		ImGuiOverlayDx11::InitDx11(Util::GetProcessWindow());
 		return;
 	}
 
@@ -225,7 +223,7 @@ bool ImGuiOverlayDx11::IsInitedDx11()
 
 void ImGuiOverlayDx11::InitDx11(HWND InHandle)
 {
-	if (!CreateDeviceD3D11(InHandle))
+	if (g_pd3dDevice == nullptr && !CreateDeviceD3D11(InHandle))
 	{
 		return;
 	}
@@ -316,4 +314,15 @@ void ImGuiOverlayDx11::ShutdownDx11()
 	}
 
 	_isInited = false;
+}
+
+void ImGuiOverlayDx11::ReInitDx11(HWND InNewHwnd)
+{
+	if (!_isInited)
+		return;
+
+	ImGui_ImplDX11_Shutdown();
+	ImGuiOverlayBase::Shutdown();
+	ImGuiOverlayBase::Init(InNewHwnd);
+	CleanupRenderTarget();
 }

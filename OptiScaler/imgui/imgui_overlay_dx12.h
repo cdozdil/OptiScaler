@@ -8,4 +8,5 @@ namespace ImGuiOverlayDx12
 
 	void InitDx12(HWND InHandle);
 	void ShutdownDx12();
+	void ReInitDx12(HWND InNewHwnd);
 }

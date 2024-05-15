@@ -8,4 +8,5 @@ namespace ImGuiOverlayDx11
 
 	void InitDx11(HWND InHandle);
 	void ShutdownDx11();
+	void ReInitDx11(HWND InNewHwnd);
 }
