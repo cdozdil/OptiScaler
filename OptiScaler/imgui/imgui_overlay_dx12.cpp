@@ -218,13 +218,18 @@ static void CleanupDeviceD3D12()
 
 static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 {
+	if (Config::Instance()->CurrentFeature != nullptr &&
+		Config::Instance()->CurrentFeature->FrameCount() <= Config::Instance()->MenuInitDelay.value_or(90) + 10)
+		return;
+
 	if (!ImGuiOverlayBase::IsInited())
 		ImGuiOverlayBase::Init(Util::GetProcessWindow());
 
 	if (ImGuiOverlayBase::IsInited() && ImGuiOverlayBase::IsResetRequested())
 	{
-		spdlog::info("RenderImGui_DX12 Reset request detected, resetting ImGui!");
-		ImGuiOverlayDx12::ReInitDx12(Util::GetProcessWindow());
+		auto hwnd = Util::GetProcessWindow();
+		spdlog::info("RenderImGui_DX12 Reset request detected, resetting ImGui, new handle {0:X}", (unsigned long)hwnd);
+		ImGuiOverlayDx12::ReInitDx12(hwnd);
 		return;
 	}
 
@@ -441,7 +446,7 @@ static HRESULT WINAPI hkCreateSwapChainForComposition_Dx12(IDXGIFactory* pFactor
 
 bool ImGuiOverlayDx12::IsInitedDx12()
 {
-	return ImGuiOverlayBase::IsInited() && _isInited;
+	return _isInited;
 }
 
 void ImGuiOverlayDx12::InitDx12(HWND InHandle)

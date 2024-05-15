@@ -3,6 +3,7 @@
 
 #include <ankerl/unordered_dense.h>
 #include "Config.h"
+#include "Util.h"
 
 #include "backends/xess/XeSSFeature_Dx11.h"
 #include "backends/dlss/DLSSFeature_Dx11.h"
@@ -376,9 +377,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 	}
 
 	if (Config::Instance()->OverlayMenu.value_or(true) &&
-		Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 90 &&
+		Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(90) &&
 		!ImGuiOverlayDx11::IsInitedDx11())
 	{
+		auto hwnd = Util::GetProcessWindow();
 		HWND consoleWindow = GetConsoleWindow();
 		bool consoleAllocated = false;
 
@@ -390,6 +392,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 
 			ShowWindow(consoleWindow, SW_HIDE);
 		}
+
+		SetForegroundWindow(hwnd);
+		SetFocus(hwnd);
 
 		ImGuiOverlayDx11::InitDx11(consoleWindow);
 

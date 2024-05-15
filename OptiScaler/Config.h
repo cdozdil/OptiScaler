@@ -66,6 +66,7 @@ public:
 	std::optional<bool> OverlayMenu;
 	std::optional<int> ShortcutKey;
 	std::optional<int> ResetKey;
+	std::optional<int> MenuInitDelay;
 
 	// Upscale Ratio Override
 	std::optional<bool> UpscaleRatioOverrideEnabled;

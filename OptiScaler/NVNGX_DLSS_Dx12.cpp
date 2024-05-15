@@ -548,9 +548,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	}
 
 	if (Config::Instance()->OverlayMenu.value_or(true) &&
-		Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 90 &&
+		Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(90) &&
 		!ImGuiOverlayDx12::IsInitedDx12())
 	{
+		auto hwnd = Util::GetProcessWindow();
+
 		HWND consoleWindow = GetConsoleWindow();
 		bool consoleAllocated = false;
 
@@ -562,6 +564,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 			ShowWindow(consoleWindow, SW_HIDE);
 		}
+
+		SetForegroundWindow(hwnd);
+		SetFocus(hwnd);
 
 		ImGuiOverlayDx12::InitDx12(consoleWindow);
 

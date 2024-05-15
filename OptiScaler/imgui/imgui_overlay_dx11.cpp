@@ -112,14 +112,16 @@ static void CleanupDeviceD3D11()
 
 static void RenderImGui_DX11(IDXGISwapChain* pSwapChain)
 {
-	if (!ImGuiOverlayBase::IsInited())
-		ImGuiOverlayBase::Init(Util::GetProcessWindow());
+	auto hwnd = Util::GetProcessWindow();
 
-	if (ImGuiOverlayBase::IsInited() && ImGuiOverlayBase::IsResetRequested())
+	if (!ImGuiOverlayBase::IsInited())
+		ImGuiOverlayBase::Init(hwnd);
+
+	if (ImGuiOverlayBase::IsInited() && (ImGuiOverlayBase::IsResetRequested() || hwnd != ImGuiOverlayBase::Handle()))
 	{
 		spdlog::info("RenderImGui_DX12 Reset request detected, shutting down ImGui!");
 		ImGuiOverlayDx11::ShutdownDx11();
-		ImGuiOverlayDx11::InitDx11(Util::GetProcessWindow());
+		ImGuiOverlayDx11::InitDx11(hwnd);
 		return;
 	}
 
