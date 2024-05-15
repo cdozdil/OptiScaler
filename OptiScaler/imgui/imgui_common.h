@@ -47,18 +47,21 @@ private:
 
 	// for hooking
 	typedef BOOL(WINAPI* PFN_SetCursorPos)(int x, int y);
+	typedef BOOL(WINAPI* PFN_ClipCursor)(const RECT* lpRect);
 	typedef UINT(WINAPI* PFN_SendInput)(UINT cInputs, LPINPUT pInputs, int cbSize);
 	typedef void(WINAPI* PFN_mouse_event)(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo);
 	typedef LRESULT(WINAPI* PFN_SendMessageW)(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
 	inline static PFN_SetCursorPos pfn_SetPhysicalCursorPos = nullptr;
 	inline static PFN_SetCursorPos pfn_SetCursorPos = nullptr;
+	inline static PFN_ClipCursor pfn_ClipCursor = nullptr;
 	inline static PFN_mouse_event pfn_mouse_event = nullptr;
 	inline static PFN_SendInput pfn_SendInput = nullptr;
 	inline static PFN_SendMessageW pfn_SendMessageW = nullptr;
 
 	inline static bool pfn_SetPhysicalCursorPos_hooked = false;
 	inline static bool pfn_SetCursorPos_hooked = false;
+	inline static bool pfn_ClipCursor_hooked = false;
 	inline static bool pfn_mouse_event_hooked = false;
 	inline static bool pfn_SendInput_hooked = false;
 	inline static bool pfn_SendMessageW_hooked = false;
@@ -87,6 +90,14 @@ private:
 			return pfn_SetCursorPos(x, y);
 	}
 
+	static BOOL WINAPI hkClipCursor(const RECT* lpRect)
+	{
+		if (_isVisible)
+			return TRUE;
+		else
+			return pfn_ClipCursor(lpRect);
+	}
+
 	static void WINAPI hkmouse_event(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo)
 	{
 		if (_isVisible)
@@ -111,6 +122,7 @@ private:
 		// Detour the functions
 		pfn_SetPhysicalCursorPos = reinterpret_cast<PFN_SetCursorPos>(DetourFindFunction("user32.dll", "SetPhysicalCursorPos"));
 		pfn_SetCursorPos = reinterpret_cast<PFN_SetCursorPos>(DetourFindFunction("user32.dll", "SetCursorPos"));
+		pfn_ClipCursor = reinterpret_cast<PFN_ClipCursor>(DetourFindFunction("user32.dll", "ClipCursor"));
 		pfn_mouse_event = reinterpret_cast<PFN_mouse_event>(DetourFindFunction("user32.dll", "mouse_event"));
 		pfn_SendInput = reinterpret_cast<PFN_SendInput>(DetourFindFunction("user32.dll", "SendInput"));
 		pfn_SendMessageW = reinterpret_cast<PFN_SendMessageW>(DetourFindFunction("user32.dll", "SendMessageW"));
@@ -120,6 +132,9 @@ private:
 
 		if (pfn_SetCursorPos)
 			pfn_SetCursorPos_hooked = (DetourAttach(&(PVOID&)pfn_SetCursorPos, hkSetCursorPos) == 0);
+
+		if (pfn_ClipCursor)
+			pfn_ClipCursor_hooked = (DetourAttach(&(PVOID&)pfn_ClipCursor, hkClipCursor) == 0);
 
 		if (pfn_mouse_event)
 			pfn_mouse_event_hooked = (DetourAttach(&(PVOID&)pfn_mouse_event, hkmouse_event) == 0);
@@ -143,6 +158,9 @@ private:
 
 		if (pfn_SetCursorPos_hooked)
 			DetourDetach(&(PVOID&)pfn_SetCursorPos, hkSetCursorPos);
+
+		if (pfn_ClipCursor_hooked)
+			DetourDetach(&(PVOID&)pfn_ClipCursor, hkClipCursor);
 
 		if (pfn_mouse_event_hooked)
 			DetourDetach(&(PVOID&)pfn_mouse_event, hkmouse_event);
@@ -197,6 +215,8 @@ private:
 
 			if (!_isVisible)
 				_showMipmapCalcWindow = false;
+			else if(pfn_ClipCursor_hooked)
+				pfn_ClipCursor(nullptr);
 
 			io.MouseDrawCursor = _isVisible;
 			io.WantCaptureKeyboard = _isVisible;
