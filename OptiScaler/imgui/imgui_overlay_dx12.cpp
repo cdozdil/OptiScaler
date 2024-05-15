@@ -3,6 +3,7 @@
 
 #include "../Util.h"
 #include "../Logger.h"
+#include "../Config.h"
 
 #include <d3d12.h>
 
@@ -73,7 +74,7 @@ static bool CreateDeviceD3D12(HWND InHWnd)
 
 	PFN_D3D12_CREATE_DEVICE slCD = (PFN_D3D12_CREATE_DEVICE)DetourFindFunction("sl.interposer.dll", "D3D12CreateDevice");
 
-	if (slCD != nullptr)
+	if (slCD != nullptr && Config::Instance()->NVNGX_Engine != NVSDK_NGX_ENGINE_TYPE_UNREAL)
 		result = slCD(NULL, featureLevel, IID_PPV_ARGS(&g_pd3dDevice));
 	else
 		result = D3D12CreateDevice(NULL, featureLevel, IID_PPV_ARGS(&g_pd3dDevice));
@@ -413,12 +414,12 @@ static void WINAPI hkExecuteCommandLists_Dx12(ID3D12CommandQueue* pCommandQueue,
 	{
 		g_pd3dCommandQueue = pCommandQueue;
 
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
+		//DetourTransactionBegin();
+		//DetourUpdateThread(GetCurrentThread());
 
-		DetourAttach(&(PVOID&)oExecuteCommandLists_Dx12, hkExecuteCommandLists_Dx12);
+		//DetourAttach(&(PVOID&)oExecuteCommandLists_Dx12, hkExecuteCommandLists_Dx12);
 
-		DetourTransactionCommit();
+		//DetourTransactionCommit();
 	}
 
 	return oExecuteCommandLists_Dx12(pCommandQueue, NumCommandLists, ppCommandLists);
