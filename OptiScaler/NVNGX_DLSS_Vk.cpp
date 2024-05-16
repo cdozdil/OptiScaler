@@ -341,11 +341,17 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	if (Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(90) && !ImGuiOverlayVk::IsInitedVk())
+	if (Config::Instance()->CurrentFeature != nullptr && !ImGuiOverlayVk::IsInitedVk() &&
+		Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(90))
 	{
 		auto hwnd = Util::GetProcessWindow();
 		ImGuiOverlayVk::InitVk(hwnd, vkDevice, vkInstance, vkPD);
 	}
+
+	// Check window recreation
+	HWND currentHandle = Util::GetProcessWindow();
+	if (ImGuiOverlayVk::IsInitedVk() && ImGuiOverlayVk::Handle() != currentHandle)
+		ImGuiOverlayVk::ReInitVk(currentHandle);
 
 	if (InCallback)
 		spdlog::warn("NVSDK_NGX_VULKAN_EvaluateFeature callback exist");

@@ -425,6 +425,11 @@ bool ImGuiOverlayVk::IsInitedVk()
 	return _isInited;
 }
 
+HWND ImGuiOverlayVk::Handle()
+{
+	return ImGuiOverlayBase::Handle();
+}
+
 void ImGuiOverlayVk::InitVk(HWND InHwnd, VkDevice InDevice, VkInstance InInstance, VkPhysicalDevice InPD)
 {
 	_hwnd = InHwnd;
