@@ -811,10 +811,14 @@ public:
 					}
 
 					// RCAS -----------------
-					bool casEnabled = (currentBackend == "xess" || (currentBackend == "dlss") && Config::Instance()->CurrentFeature->Version().major > 2);
-					if ((Config::Instance()->Api == NVNGX_DX12 && casEnabled) || (Config::Instance()->Api == NVNGX_DX11 && currentBackend == "xess"))
+					if (Config::Instance()->Api == NVNGX_DX12 || 
+						(Config::Instance()->Api == NVNGX_DX11 && currentBackend != "fsr22" && currentBackend != "dlss"))
 					{
 						ImGui::SeparatorText("RCAS Settings");
+
+						bool casEnabled = (Config::Instance()->Api == NVNGX_DX11 && currentBackend != "dlss" && currentBackend != "fsr22") ||
+							(Config::Instance()->Api == NVNGX_DX12 &&
+								(currentBackend == "xess" || (currentBackend == "dlss" && Config::Instance()->CurrentFeature->Version().major > 2)));
 
 						if (bool cas = Config::Instance()->RcasEnabled.value_or(casEnabled); ImGui::Checkbox("Enable RCAS", &cas))
 						{
@@ -948,6 +952,26 @@ public:
 					ImGui::SliderFloat("Sharpness", &sharpness, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
 					Config::Instance()->Sharpness = sharpness;
 
+					if (bool overrideMotionSharpness = Config::Instance()->MotionSharpnessEnabled.value_or(false); ImGui::Checkbox("Motion Sharpness", &overrideMotionSharpness))
+						Config::Instance()->MotionSharpnessEnabled = overrideMotionSharpness;
+
+					ImGui::BeginDisabled(!Config::Instance()->MotionSharpnessEnabled.value_or(false));
+					
+					ImGui::SameLine(0.0f, 6.0f);
+
+					if (bool overrideMSDebug = Config::Instance()->MotionSharpnessDebug.value_or(false); ImGui::Checkbox("MS Debug", &overrideMSDebug))
+						Config::Instance()->MotionSharpnessDebug = overrideMSDebug;
+
+					float motionSharpness = Config::Instance()->MotionMaxSharpness.value_or(0.8f);
+					ImGui::SliderFloat("Max Motion Sharpness", &motionSharpness, sharpness, 1.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
+					Config::Instance()->MotionMaxSharpness = motionSharpness;
+
+					float motionThreshod = Config::Instance()->MotionThreshold.value_or(25.0f);
+					ImGui::SliderFloat("Motion Threshod", &motionThreshod, 0.0f, 100.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat);
+					Config::Instance()->MotionThreshold = motionThreshod;
+
+					ImGui::EndDisabled();
+					
 					ImGui::EndDisabled();
 
 					// UPSCALE RATIO OVERRIDE -----------------

@@ -30,7 +30,7 @@ bool Config::Reload()
 		NetworkModel = readInt("XeSS", "NetworkModel");
 		CreateHeaps = readBool("XeSS", "CreateHeaps");
 		XeSSLibrary = readString("XeSS", "LibraryPath");
-		
+
 		// DLSS
 		DLSSLibrary = readString("DLSS", "LibraryPath");
 		RenderPresetOverride = readBool("DLSS", "RenderPresetOverride");
@@ -82,7 +82,36 @@ bool Config::Reload()
 		// Sharpness
 		OverrideSharpness = readBool("Sharpness", "OverrideSharpness");
 		Sharpness = readFloat("Sharpness", "Sharpness");
-		
+
+		MotionSharpnessEnabled = readBool("Sharpness", "MotionSharpnessEnabled");
+		MotionMaxSharpness = readFloat("Sharpness", "MotionMaxSharpness");
+		MotionSharpnessDebug = readBool("Sharpness", "MotionSharpnessDebug");
+		MotionThreshold = readFloat("Sharpness", "MotionThreshold");
+
+		if (Sharpness.has_value())
+		{
+			if (Sharpness.value() > 1.0f)
+				Sharpness = 1.0f;
+			else if (Sharpness.value() < 0.0f)
+				Sharpness.reset();
+		}
+
+		if (MotionMaxSharpness.has_value())
+		{
+			if (MotionMaxSharpness.value() > 1.0f)
+				MotionMaxSharpness = 1.0f;
+			else if (Sharpness.value_or(0.3f) && MotionMaxSharpness < Sharpness || MotionMaxSharpness.value() < 0.0f)
+				MotionMaxSharpness.reset();
+		}
+
+		if (MotionThreshold.has_value())
+		{
+			if (MotionThreshold.value() > 100.0f)
+				MotionThreshold = 100.0f;
+			else if (MotionThreshold.value() < 0.0f)
+				MotionThreshold.reset();
+		}
+
 		// Menu
 		MenuScale = readFloat("Menu", "Scale");
 		OverlayMenu = readBool("Menu", "OverlayMenu");
@@ -201,15 +230,19 @@ bool Config::SaveIni()
 	ini.SetValue("XeSS", "CreateHeaps", GetBoolValue(Instance()->CreateHeaps).c_str());
 	ini.SetValue("XeSS", "NetworkModel", GetIntValue(Instance()->NetworkModel).c_str());
 	ini.SetValue("XeSS", "LibraryPath", Instance()->XeSSLibrary.value_or("auto").c_str());
-	
+
 	// DLSS
 	ini.SetValue("DLSS", "LibraryPath", Instance()->DLSSLibrary.value_or("auto").c_str());
 
 	// Sharpness
 	ini.SetValue("Sharpness", "OverrideSharpness", GetBoolValue(Instance()->OverrideSharpness).c_str());
 	ini.SetValue("Sharpness", "Sharpness", GetFloatValue(Instance()->Sharpness).c_str());
-	
-	// ingame menu
+	ini.SetValue("Sharpness", "MotionSharpnessEnabled", GetBoolValue(Instance()->MotionSharpnessEnabled).c_str());
+	ini.SetValue("Sharpness", "MotionSharpnessDebug", GetBoolValue(Instance()->MotionSharpnessDebug).c_str());
+	ini.SetValue("Sharpness", "MotionMaxSharpness", GetFloatValue(Instance()->MotionMaxSharpness).c_str());
+	ini.SetValue("Sharpness", "MotionThreshold", GetFloatValue(Instance()->MotionThreshold).c_str());
+
+	// Ingame menu
 	ini.SetValue("Menu", "Scale", GetFloatValue(Instance()->MenuScale).c_str());
 	ini.SetValue("Menu", "OverlayMenu", GetBoolValue(Instance()->OverlayMenu).c_str());
 	ini.SetValue("Menu", "ResetKey", GetIntValue(Instance()->ResetKey).c_str());

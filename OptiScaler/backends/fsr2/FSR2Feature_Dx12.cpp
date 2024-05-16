@@ -19,6 +19,7 @@ bool FSR2FeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 			Imgui = std::make_unique<Imgui_Dx12>(Util::GetProcessWindow(), InDevice);
 
 		OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", InDevice, (TargetWidth() < DisplayWidth()));
+		RCAS = std::make_unique<RCAS_Dx12>("RCAS", InDevice);
 
 		return true;
 	}
@@ -33,10 +34,52 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	if (!IsInited())
 		return false;
 
+	if (Config::Instance()->RcasEnabled.value_or(false) && Config::Instance()->changeRCAS)
+	{
+		if (RCAS != nullptr && RCAS.get() != nullptr)
+		{
+			spdlog::trace("XeSSFeatureDx12::Evaluate sleeping before RCAS.reset() for 250ms");
+			std::this_thread::sleep_for(std::chrono::milliseconds(250));
+			RCAS.reset();
+		}
+		else
+		{
+			Config::Instance()->changeRCAS = false;
+			spdlog::trace("XeSSFeatureDx12::Evaluate sleeping before CAS creation for 250ms");
+			std::this_thread::sleep_for(std::chrono::milliseconds(250));
+			RCAS = std::make_unique<RCAS_Dx12>("RCAS", Device);
+		}
+	}
+
 	FfxFsr2DispatchDescription params{};
 
 	InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
 	InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffset.y);
+
+	float sharpness = 0.0f;
+
+	if (Config::Instance()->OverrideSharpness.value_or(false))
+	{
+		sharpness = Config::Instance()->Sharpness.value_or(0.3);
+	}
+	else if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &sharpness) == NVSDK_NGX_Result_Success)
+	{
+		if (sharpness > 1.0f)
+			sharpness = 1.0f;
+
+		_sharpness = sharpness;
+	}
+
+	if (Config::Instance()->RcasEnabled.value_or(false))
+	{
+		params.enableSharpening = false;
+		params.sharpness = 0.0f;
+	}
+	else
+	{
+		params.enableSharpening = sharpness > 0.0f;
+		params.sharpness = sharpness;
+	}
 
 	unsigned int reset;
 	InParameters->Get(NVSDK_NGX_Parameter_Reset, &reset);
@@ -144,6 +187,14 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		}
 		else
 			params.output = ffxGetResourceDX12(&_context, paramOutput, (wchar_t*)L"FSR2_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+
+		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && sharpness > 0.0f &&
+			RCAS != nullptr && RCAS.get() != nullptr &&
+			RCAS->CreateBufferResource(Device, (ID3D12Resource*)params.output.resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		{
+			RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			params.output = ffxGetResourceDX12(&_context, RCAS->Buffer(), (wchar_t*)L"FSR2_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+		}
 	}
 	else
 	{
@@ -300,6 +351,43 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	{
 		spdlog::error("FSR2FeatureDx12::Evaluate ffxFsr2ContextDispatch error: {0}", ResultToString(result));
 		return false;
+	}
+
+	// apply rcas
+	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && sharpness > 0.0f &&
+		RCAS != nullptr && RCAS.get() != nullptr && RCAS->Buffer() != nullptr)
+	{
+		if (params.output.resource != RCAS->Buffer())
+			ResourceBarrier(InCommandList, (ID3D12Resource*)params.output.resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+		RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+		RcasConstants rcasConstants{};
+
+		rcasConstants.Sharpness = sharpness;
+		rcasConstants.DisplayWidth = DisplayWidth();
+		rcasConstants.DisplayHeight = DisplayHeight();
+		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
+		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
+
+		if (useSS)
+		{
+			if (!RCAS->Dispatch(Device, InCommandList, (ID3D12Resource*)params.output.resource, (ID3D12Resource*)params.motionVectors.resource,
+				rcasConstants, OutputScaler->Buffer()))
+			{
+				Config::Instance()->RcasEnabled = false;
+				return true;
+			}
+		}
+		else
+		{
+			if (!RCAS->Dispatch(Device, InCommandList, (ID3D12Resource*)params.output.resource, (ID3D12Resource*)params.motionVectors.resource,
+				rcasConstants, paramOutput))
+			{
+				Config::Instance()->RcasEnabled = false;
+				return true;
+			}
+		}
 	}
 
 	if (useSS)

@@ -30,8 +30,6 @@ private:
 	inline static PFN_NVSDK_NGX_D3D12_ReleaseFeature _ReleaseFeature = nullptr;
 	inline static PFN_NVSDK_NGX_D3D12_EvaluateFeature _EvaluateFeature = nullptr;
 	
-	std::unique_ptr<RCAS_Dx12> RCAS = nullptr;
-
 	float GetSharpness(const NVSDK_NGX_Parameter* InParameters);
 
 protected:

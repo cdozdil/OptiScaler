@@ -61,6 +61,11 @@ public:
 	std::optional<bool> OverrideSharpness;
 	std::optional<float> Sharpness;
 
+	std::optional<bool> MotionSharpnessEnabled;
+	std::optional<bool> MotionSharpnessDebug;
+	std::optional<float> MotionMaxSharpness;
+	std::optional<float> MotionThreshold;
+
 	// menu
 	std::optional<float> MenuScale;
 	std::optional<bool> OverlayMenu;

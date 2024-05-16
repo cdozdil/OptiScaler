@@ -5,7 +5,9 @@
 #include "../pch.h"
 #include "../Util.h"
 #include "../imgui/Imgui_Dx12.h"
+
 #include "../bicubicscaling/BS_Dx12.h"
+#include "../rcas/RCAS_Dx12.h"
 
 class IFeature_Dx12 : public virtual IFeature
 {
@@ -13,6 +15,8 @@ protected:
 	ID3D12Device* Device = nullptr;
 	static inline std::unique_ptr<Imgui_Dx12> Imgui = nullptr;
 	std::unique_ptr<BS_Dx12> OutputScaler = nullptr;
+
+	std::unique_ptr<RCAS_Dx12> RCAS = nullptr;
 
 	void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState) const;
 

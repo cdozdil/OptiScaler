@@ -19,6 +19,7 @@ bool XeSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 			Imgui = std::make_unique<Imgui_Dx12>(Util::GetProcessWindow(), InDevice);
 
 		OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", InDevice, (TargetWidth() < DisplayWidth()));
+		RCAS = std::make_unique<RCAS_Dx12>("RCAS", InDevice);
 
 		return true;
 	}
@@ -303,14 +304,22 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	// apply rcas
 	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && sharpness > 0.0f && RCAS != nullptr && RCAS.get() != nullptr && RCAS->Buffer() != nullptr)
 	{
-		ResourceBarrier(InCommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		if (params.pOutputTexture != RCAS->Buffer())
+			ResourceBarrier(InCommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
 		RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-		RCAS->Sharpness = sharpness;
+		RcasConstants rcasConstants{};
+
+		rcasConstants.Sharpness = sharpness;
+		rcasConstants.DisplayWidth = DisplayWidth();
+		rcasConstants.DisplayHeight = DisplayHeight();
+		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
+		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
 
 		if (useSS)
 		{
-			if (!RCAS->Dispatch(Device, InCommandList, params.pOutputTexture, OutputScaler->Buffer()))
+			if (!RCAS->Dispatch(Device, InCommandList, params.pOutputTexture, params.pVelocityTexture, rcasConstants, OutputScaler->Buffer()))
 			{
 				Config::Instance()->RcasEnabled = false;
 				return true;
@@ -318,7 +327,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		}
 		else
 		{
-			if (!RCAS->Dispatch(Device, InCommandList, params.pOutputTexture, paramOutput))
+			if (!RCAS->Dispatch(Device, InCommandList, params.pOutputTexture, params.pVelocityTexture, rcasConstants, paramOutput))
 			{
 				Config::Instance()->RcasEnabled = false;
 				return true;
@@ -394,4 +403,8 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	return true;
 }
 
-XeSSFeatureDx12::~XeSSFeatureDx12() = default;
+XeSSFeatureDx12::~XeSSFeatureDx12()
+{
+	if (RCAS != nullptr && RCAS.get() != nullptr)
+		RCAS.reset();
+}

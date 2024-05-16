@@ -6,6 +6,7 @@
 namespace ImGuiOverlayVk
 {
 	bool IsInitedVk();
+	HWND Handle();
 
 	void InitVk(HWND InHwnd, VkDevice InDevice, VkInstance InInstance, VkPhysicalDevice InPD);
 	void ShutdownVk();

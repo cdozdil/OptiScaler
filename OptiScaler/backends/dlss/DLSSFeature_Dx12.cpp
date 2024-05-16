@@ -57,7 +57,7 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 			//delay between init and create feature
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-			
+
 		}
 
 		if (_AllocateParameters != nullptr)
@@ -125,7 +125,7 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 		if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
 			Imgui = std::make_unique<Imgui_Dx12>(Util::GetProcessWindow(), InDevice);
 
-		OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", InDevice, (TargetWidth() < DisplayWidth()));
+		OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", InDevice, (TargetWidth() < DisplayWidth()));		
 	}
 
 	SetInit(initResult);
@@ -171,11 +171,13 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		ProcessEvaluateParams(InParameters);
 
 		ID3D12Resource* paramOutput = nullptr;
+		ID3D12Resource* paramMotion = nullptr;
 		ID3D12Resource* setBuffer = nullptr;
 
 		bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
-		
+
 		Parameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput);
+		Parameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramMotion);
 
 		// supersampling
 		if (useSS)
@@ -224,13 +226,22 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		// Apply CAS
 		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && sharpness > 0.0f && RCAS != nullptr && RCAS.get() != nullptr && RCAS->Buffer() != nullptr)
 		{
-			ResourceBarrier(InCommandList, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			if (setBuffer != RCAS->Buffer())
+				ResourceBarrier(InCommandList, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
 			RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-			RCAS->Sharpness = sharpness;
+
+			RcasConstants rcasConstants{};
+
+			rcasConstants.Sharpness = sharpness;
+			rcasConstants.DisplayWidth = DisplayWidth();
+			rcasConstants.DisplayHeight = DisplayHeight();
+			InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
+			InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
 
 			if (useSS)
 			{
-				if (!RCAS->Dispatch(Device, InCommandList, setBuffer, OutputScaler->Buffer()))
+				if (!RCAS->Dispatch(Device, InCommandList, setBuffer, paramMotion, rcasConstants, OutputScaler->Buffer()))
 				{
 					Config::Instance()->RcasEnabled = false;
 					return true;
@@ -238,7 +249,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			}
 			else
 			{
-				if (!RCAS->Dispatch(Device, InCommandList, setBuffer, paramOutput))
+				if (!RCAS->Dispatch(Device, InCommandList, setBuffer, paramMotion, rcasConstants, paramOutput))
 				{
 					Config::Instance()->RcasEnabled = false;
 					return true;

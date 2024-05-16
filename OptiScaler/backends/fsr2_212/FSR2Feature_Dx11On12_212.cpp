@@ -110,6 +110,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 		}
 
 		OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", Dx12Device, (TargetWidth() < DisplayWidth()));
+		RCAS = std::make_unique<RCAS_Dx12>("RCAS", Dx12Device);
 	}
 
 	if (!IsInited())
@@ -131,10 +132,52 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 		Dx11DeviceContext = dc;
 	}
 
+	if (Config::Instance()->changeRCAS)
+	{
+		if (RCAS != nullptr && RCAS.get() != nullptr)
+		{
+			spdlog::trace("FSR2FeatureDx11on12_212::Evaluate sleeping before RCAS.reset() for 250ms");
+			std::this_thread::sleep_for(std::chrono::milliseconds(250));
+			RCAS.reset();
+		}
+		else
+		{
+			Config::Instance()->changeRCAS = false;
+			spdlog::trace("FSR2FeatureDx11on12_212::Evaluate sleeping before RCAS creation for 250ms");
+			std::this_thread::sleep_for(std::chrono::milliseconds(250));
+			RCAS = std::make_unique<RCAS_Dx12>("RCAS", Dx12Device);
+		}
+	}
+
 	Fsr212::FfxFsr2DispatchDescription params{};
 
 	InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
 	InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffset.y);
+
+	float sharpness = 0.0f;
+
+	if (Config::Instance()->OverrideSharpness.value_or(false))
+	{
+		sharpness = Config::Instance()->Sharpness.value_or(0.3);
+	}
+	else if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &sharpness) == NVSDK_NGX_Result_Success)
+	{
+		if (sharpness > 1.0f)
+			sharpness = 1.0f;
+
+		_sharpness = sharpness;
+	}
+
+	if (Config::Instance()->RcasEnabled.value_or(false))
+	{
+		params.enableSharpening = false;
+		params.sharpness = 0.0f;
+	}
+	else
+	{
+		params.enableSharpening = sharpness > 0.0f;
+		params.sharpness = sharpness;
+	}
 
 	unsigned int reset;
 	InParameters->Get(NVSDK_NGX_Parameter_Reset, &reset);
@@ -195,6 +238,14 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 	}
 	else
 		params.output = Fsr212::ffxGetResourceDX12_212(&_context, dx11Out.Dx12Resource, (wchar_t*)L"FSR2_Out", Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+
+	// RCAS
+	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && sharpness > 0.0f &&
+		RCAS != nullptr && RCAS.get() != nullptr && RCAS->CreateBufferResource(Dx12Device, (ID3D12Resource*)params.output.resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+	{
+		RCAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		params.output = Fsr212::ffxGetResourceDX12_212(&_context, RCAS->Buffer(), (wchar_t*)L"FSR2_Out", Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+	}
 
 	_hasColor = params.color.resource != nullptr;
 	_hasDepth = params.depth.resource != nullptr;
@@ -284,6 +335,60 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 		Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
 
 		return false;
+	}
+
+	// apply rcas
+	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && sharpness > 0.0f && RCAS != nullptr && RCAS.get() != nullptr)
+	{
+		spdlog::debug("XeSSFeatureDx11::Evaluate Apply CAS");
+		if (params.output.resource != RCAS->Buffer())
+			ResourceBarrier(Dx12CommandList, (ID3D12Resource*)params.output.resource, 
+				D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+		RCAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+		RcasConstants rcasConstants{};
+
+		rcasConstants.Sharpness = sharpness;
+		rcasConstants.DisplayWidth = DisplayWidth();
+		rcasConstants.DisplayHeight = DisplayHeight();
+		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
+		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
+
+		if (useSS)
+		{
+			if (!RCAS->Dispatch(Dx12Device, Dx12CommandList, (ID3D12Resource*)params.output.resource, 
+				(ID3D12Resource*)params.motionVectors.resource, rcasConstants, OutputScaler->Buffer()))
+			{
+				Config::Instance()->RcasEnabled = false;
+
+				Dx12CommandList->Close();
+				ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+				Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+				Dx12CommandAllocator->Reset();
+				Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
+				return true;
+			}
+		}
+		else
+		{
+			if (!RCAS->Dispatch(Dx12Device, Dx12CommandList, (ID3D12Resource*)params.output.resource, (
+				ID3D12Resource*)params.motionVectors.resource, rcasConstants, dx11Out.Dx12Resource))
+			{
+				Config::Instance()->RcasEnabled = false;
+
+				Dx12CommandList->Close();
+				ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+				Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+
+				Dx12CommandAllocator->Reset();
+				Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+
+				return true;
+			}
+		}
 	}
 
 	if (useSS)
@@ -393,15 +498,6 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 	}
 
 	_frameCount++;
-
-	if (_frameCount == 200)
-	{
-		if (!Config::Instance()->TextureSyncMethod.has_value())
-			Config::Instance()->TextureSyncMethod = 1;
-
-		if (!Config::Instance()->CopyBackSyncMethod.has_value())
-			Config::Instance()->CopyBackSyncMethod = 5;
-	}
 
 	Dx12CommandAllocator->Reset();
 	Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);

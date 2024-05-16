@@ -6,6 +6,7 @@
 #include "../../detours/detours.h"
 
 #include "XeSSFeature.h"
+#include "../../d3dx/d3dx12.h"
 
 inline void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
 {
@@ -326,12 +327,6 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		return false;
 	}
 
-	/*if (Config::Instance()->RcasEnabled.value_or(false))*/
-	RCAS = std::make_unique<RCAS_Dx12>("RCAS", device);
-
-	//if (Config::Instance()->RcasEnabled.value_or(false))
-	//	CAS = std::make_unique<CAS_Dx12>(device, TargetWidth(), TargetHeight(), Config::Instance()->CasColorSpaceConversion.value_or(0));
-
 	SetInit(true);
 
 	return true;
@@ -432,9 +427,6 @@ XeSSFeature::~XeSSFeature()
 		DestroyContext()(_xessContext);
 		_xessContext = nullptr;
 	}
-
-	if (RCAS != nullptr && RCAS.get() != nullptr)
-		RCAS.reset();
 
 	if (_localPipeline != nullptr)
 	{
