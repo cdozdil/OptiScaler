@@ -335,6 +335,7 @@ static VkResult VKAPI_CALL hkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pP
 	{
 		spdlog::info("RenderImGui_Vk Reset request detected, shutting down ImGui!");
 		ImGuiOverlayVk::ReInitVk(Util::GetProcessWindow());
+		return oQueuePresentKHR(queue, pPresentInfo);
 	}
 
 	if (!ImGuiOverlayBase::IsInited() || !ImGuiOverlayBase::IsVisible())
@@ -488,5 +489,5 @@ void ImGuiOverlayVk::ReInitVk(HWND InNewHwnd)
 	ImGui_ImplVulkan_Shutdown();
 	ImGuiOverlayBase::Shutdown();
 	ImGuiOverlayBase::Init(InNewHwnd);
-	DestroyVulkanObjects(false);
+	g_bInitialized = false;
 }

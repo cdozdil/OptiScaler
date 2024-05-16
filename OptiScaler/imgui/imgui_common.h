@@ -11,7 +11,6 @@
 #include "../detours/detours.h"
 #pragma comment(lib, "../detours/detours.lib")
 
-LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 class ImGuiCommon
@@ -251,6 +250,10 @@ private:
 				return TRUE;
 			}
 
+			auto rawCode = GET_RAWINPUT_CODE_WPARAM(wParam);
+			RAWINPUT rawData;
+			UINT rawDataSize = sizeof(rawData);
+
 			switch (msg)
 			{
 			case WM_KEYUP:
@@ -260,25 +263,75 @@ private:
 				break;
 
 			case WM_LBUTTONDOWN:
+				io.AddMouseButtonEvent(0, true);
+				return TRUE;
+
 			case WM_LBUTTONUP:
+				io.AddMouseButtonEvent(0, false);
+				return TRUE;
+
 			case WM_RBUTTONDOWN:
+				io.AddMouseButtonEvent(1, true);
+				return TRUE;
+
 			case WM_RBUTTONUP:
+				io.AddMouseButtonEvent(1, false);
+				return TRUE;
+
 			case WM_MBUTTONDOWN:
+				io.AddMouseButtonEvent(2, true);
+				return TRUE;
+
 			case WM_MBUTTONUP:
+				io.AddMouseButtonEvent(2, false);
+				return TRUE;
+
+			case WM_LBUTTONDBLCLK:
+				io.AddMouseButtonEvent(0, true);
+				return TRUE;
+			
+			case WM_RBUTTONDBLCLK:
+				io.AddMouseButtonEvent(1, true);
+				return TRUE;
+
+			case WM_MBUTTONDBLCLK:
+				io.AddMouseButtonEvent(2, true);
+				return TRUE;
+
 			case WM_KEYDOWN:
 			case WM_SYSKEYDOWN:
 			case WM_SYSKEYUP:
 			case WM_MOUSEMOVE:
 			case WM_SETCURSOR:
-			case WM_LBUTTONDBLCLK:
-			case WM_RBUTTONDBLCLK:
-			case WM_MBUTTONDBLCLK:
 			case WM_XBUTTONDOWN:
 			case WM_XBUTTONUP:
 			case WM_XBUTTONDBLCLK:
-			case WM_MOUSELAST:
-			case WM_INPUT:
 				spdlog::trace("WndProc switch handled, hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (unsigned long)hWnd, msg, (unsigned long)wParam, (unsigned long)lParam);
+				return TRUE;
+
+			case WM_INPUT:
+				if (GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, &rawData, &rawDataSize, sizeof(rawData.data)) != (UINT)-1 &&
+					rawData.header.dwType == RIM_TYPEMOUSE)
+				{
+					if (rawData.data.mouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
+						io.AddMouseButtonEvent(0, true);
+					else if (rawData.data.mouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP)
+						io.AddMouseButtonEvent(0, false);
+					if (rawData.data.mouse.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
+						io.AddMouseButtonEvent(1, true);
+					else if (rawData.data.mouse.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
+						io.AddMouseButtonEvent(1, false);
+					if (rawData.data.mouse.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
+						io.AddMouseButtonEvent(2, true);
+					else if (rawData.data.mouse.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP)
+						io.AddMouseButtonEvent(2, false);
+
+					if (rawData.data.mouse.usButtonFlags & RI_MOUSE_WHEEL)
+						io.AddMouseWheelEvent(0, static_cast<short>(rawData.data.mouse.usButtonData) / WHEEL_DELTA);
+				}
+				else
+					spdlog::trace("WndProc WM_INPUT hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (unsigned long)hWnd, msg, (unsigned long)wParam, (unsigned long)lParam);
+
 				return TRUE;
 
 			default:
