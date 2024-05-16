@@ -92,7 +92,7 @@ bool BS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
 	}
 
 
-	_buffer->SetName(L"CS_Buffer");
+	_buffer->SetName(L"Bicubic_Buffer");
 	_bufferState = InState;
 
 	return true;
