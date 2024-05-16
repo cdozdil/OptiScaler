@@ -34,7 +34,7 @@ private:
 	uint32_t InNumThreadsX = 32;
 	uint32_t InNumThreadsY = 32;
 							 
-	std::string downsampleCode = R"(
+	inline static std::string downsampleCode = R"(
 cbuffer Params : register(b0)
 {
 	int _SrcWidth;
@@ -86,7 +86,7 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
 }
 )";		
 	
-	std::string upsampleCode = R"(
+	inline static std::string upsampleCode = R"(
 //
 // Copyright (c) Microsoft. All rights reserved.
 // This code is licensed under the MIT License (MIT).

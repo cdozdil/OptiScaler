@@ -69,7 +69,7 @@ private:
 	uint32_t InNumThreadsX = 32;
 	uint32_t InNumThreadsY = 32;
 							 
-	std::string rcasCode = R"(
+	inline static std::string rcasCode = R"(
 cbuffer Params : register(b0)
 {
 	float Sharpness;
