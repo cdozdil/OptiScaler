@@ -74,7 +74,7 @@ static bool CreateDeviceD3D12(HWND InHWnd)
 
 	PFN_D3D12_CREATE_DEVICE slCD = (PFN_D3D12_CREATE_DEVICE)DetourFindFunction("sl.interposer.dll", "D3D12CreateDevice");
 
-	if (slCD != nullptr && Config::Instance()->NVNGX_Engine != NVSDK_NGX_ENGINE_TYPE_UNREAL)
+	if (slCD != nullptr && Config::Instance()->NVNGX_Engine != NVSDK_NGX_ENGINE_TYPE_UNREAL && Config::Instance()->HookSLDevice.value_or(true))
 		result = slCD(NULL, featureLevel, IID_PPV_ARGS(&g_pd3dDevice));
 	else
 		result = D3D12CreateDevice(NULL, featureLevel, IID_PPV_ARGS(&g_pd3dDevice));
@@ -98,7 +98,7 @@ static bool CreateDeviceD3D12(HWND InHWnd)
 
 	IDXGISwapChain1* swapChain1 = NULL;
 
-	if (slFactory != nullptr)
+	if (slFactory != nullptr && Config::Instance()->HookSLProxy.value_or(true))
 		result = slFactory(IID_PPV_ARGS(&g_dxgiFactory));
 	else
 		result = CreateDXGIFactory1(IID_PPV_ARGS(&g_dxgiFactory));

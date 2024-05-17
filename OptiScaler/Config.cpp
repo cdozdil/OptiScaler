@@ -118,6 +118,8 @@ bool Config::Reload()
 		ShortcutKey = readInt("Menu", "ShortcutKey");
 		ResetKey = readInt("Menu", "ResetKey");
 		MenuInitDelay = readInt("Menu", "MenuInitDelay");
+		HookSLDevice = readBool("Menu", "HookSLDevice");
+		HookSLProxy = readBool("Menu", "HookSLProxy");
 
 		// CAS
 		RcasEnabled = readBool("CAS", "Enabled");
@@ -248,6 +250,8 @@ bool Config::SaveIni()
 	ini.SetValue("Menu", "ResetKey", GetIntValue(Instance()->ResetKey).c_str());
 	ini.SetValue("Menu", "ShortcutKey", GetIntValue(Instance()->ShortcutKey).c_str());
 	ini.SetValue("Menu", "MenuInitDelay", GetIntValue(Instance()->MenuInitDelay).c_str());
+	ini.SetValue("Menu", "HookSLDevice", GetBoolValue(Instance()->HookSLDevice).c_str());
+	ini.SetValue("Menu", "HookSLProxy", GetBoolValue(Instance()->HookSLProxy).c_str());
 
 	// CAS
 	ini.SetValue("CAS", "Enabled", GetBoolValue(Instance()->RcasEnabled).c_str());

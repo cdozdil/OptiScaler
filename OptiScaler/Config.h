@@ -72,6 +72,8 @@ public:
 	std::optional<int> ShortcutKey;
 	std::optional<int> ResetKey;
 	std::optional<int> MenuInitDelay;
+	std::optional<bool> HookSLDevice;
+	std::optional<bool> HookSLProxy;
 
 	// Upscale Ratio Override
 	std::optional<bool> UpscaleRatioOverrideEnabled;
