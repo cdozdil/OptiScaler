@@ -341,7 +341,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	if (Config::Instance()->CurrentFeature != nullptr && !ImGuiOverlayVk::IsInitedVk() &&
+	if (Config::Instance()->OverlayMenu.value_or(true) && Config::Instance()->CurrentFeature != nullptr && !ImGuiOverlayVk::IsInitedVk() &&
 		Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(90))
 	{
 		auto hwnd = Util::GetProcessWindow();
@@ -349,9 +349,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 	}
 
 	// Check window recreation
-	HWND currentHandle = Util::GetProcessWindow();
-	if (ImGuiOverlayVk::IsInitedVk() && ImGuiOverlayVk::Handle() != currentHandle)
-		ImGuiOverlayVk::ReInitVk(currentHandle);
+	if (Config::Instance()->OverlayMenu.value_or(true))
+	{
+		HWND currentHandle = Util::GetProcessWindow();
+		if (ImGuiOverlayVk::IsInitedVk() && ImGuiOverlayVk::Handle() != currentHandle)
+			ImGuiOverlayVk::ReInitVk(currentHandle);
+	}
 
 	if (InCallback)
 		spdlog::warn("NVSDK_NGX_VULKAN_EvaluateFeature callback exist");
@@ -497,7 +500,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
 
 	DLSSFeatureVk::Shutdown(vkDevice);
 
-	if (ImGuiOverlayVk::IsInitedVk())
+	if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayVk::IsInitedVk())
 		ImGuiOverlayVk::ShutdownVk();
 
 	return NVSDK_NGX_Result_Success;

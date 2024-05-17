@@ -8,6 +8,9 @@
 //
 
 #pragma once
+
+#pragma comment(lib, "detours.lib")
+
 #ifndef _DETOURS_H_
 #define _DETOURS_H_
 

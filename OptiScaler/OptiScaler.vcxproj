@@ -80,7 +80,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
     <TargetName>nvngx</TargetName>
     <OutDir>D:\Folders\Games\Deep Rock Galactic\FSD\Binaries\Win64\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
@@ -88,7 +88,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
     <TargetName>nvngx</TargetName>
-    <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -220,6 +220,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="Logger.h" />
     <ClInclude Include="NVNGX_Parameter.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="rcas\RCAS_Common.h" />
     <ClInclude Include="rcas\RCAS_Dx12.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Util.h" />

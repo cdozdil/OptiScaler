@@ -9,7 +9,6 @@
 #include "imgui/imgui_impl_win32.h"
 
 #include "../detours/detours.h"
-#pragma comment(lib, "../detours/detours.lib")
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -257,7 +256,7 @@ private:
 			switch (msg)
 			{
 			case WM_KEYUP:
-				if (wParam != VK_HOME)
+				if (wParam != Config::Instance()->ShortcutKey.value_or(VK_INSERT))
 					return TRUE;
 
 				break;
@@ -816,11 +815,17 @@ public:
 					{
 						ImGui::SeparatorText("RCAS Settings");
 
-						bool casEnabled = (Config::Instance()->Api == NVNGX_DX11 && currentBackend != "dlss" && currentBackend != "fsr22") ||
-							(Config::Instance()->Api == NVNGX_DX12 &&
-								(currentBackend == "xess" || (currentBackend == "dlss" && Config::Instance()->CurrentFeature->Version().major > 2)));
+						bool rcasEnabled = (Config::Instance()->Api == NVNGX_DX11 && currentBackend == "xess") ||
+							(Config::Instance()->Api == NVNGX_DX12 && 
+								(currentBackend == "xess" || 
+									(currentBackend == "dlss" && 
+										(Config::Instance()->CurrentFeature->Version().major > 2 ||  
+										(Config::Instance()->CurrentFeature->Version().major == 2 && Config::Instance()->CurrentFeature->Version().minor >= 5 && Config::Instance()->CurrentFeature->Version().patch >= 1))
+									)
+								)
+							);
 
-						if (bool cas = Config::Instance()->RcasEnabled.value_or(casEnabled); ImGui::Checkbox("Enable RCAS", &cas))
+						if (bool cas = Config::Instance()->RcasEnabled.value_or(rcasEnabled); ImGui::Checkbox("Enable RCAS", &cas))
 						{
 							Config::Instance()->RcasEnabled = cas;
 							Config::Instance()->changeRCAS = true;
@@ -952,6 +957,8 @@ public:
 					ImGui::SliderFloat("Sharpness", &sharpness, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
 					Config::Instance()->Sharpness = sharpness;
 
+					ImGui::EndDisabled();
+
 					if (bool overrideMotionSharpness = Config::Instance()->MotionSharpnessEnabled.value_or(false); ImGui::Checkbox("Motion Sharpness", &overrideMotionSharpness))
 						Config::Instance()->MotionSharpnessEnabled = overrideMotionSharpness;
 
@@ -970,8 +977,6 @@ public:
 					ImGui::SliderFloat("Motion Threshod", &motionThreshod, 0.0f, 100.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat);
 					Config::Instance()->MotionThreshold = motionThreshod;
 
-					ImGui::EndDisabled();
-					
 					ImGui::EndDisabled();
 
 					// UPSCALE RATIO OVERRIDE -----------------

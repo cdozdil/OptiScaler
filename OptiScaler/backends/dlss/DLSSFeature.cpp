@@ -1,12 +1,12 @@
-#include "DLSSFeature.h"
-#include <filesystem>
-
-#include "nvapi.h"
-#include "../../detours/detours.h"
-
+#include "../../pch.h"
 #include "../../Config.h"
 #include "../../Util.h"
-#include "../../pch.h"
+
+#include "DLSSFeature.h"
+
+#include "nvapi.h"
+
+#include <filesystem>
 #include "../../detours/detours.h"
 
 #pragma region spoofing hooks for 16xx

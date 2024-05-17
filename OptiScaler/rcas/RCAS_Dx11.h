@@ -3,10 +3,9 @@
 #include "../pch.h"
 #include "RCAS_Common.h"
 
-#include <d3d12.h>
-#include "../d3dx/d3dx12.h"
+#include <d3d11.h>
 
-class RCAS_Dx12
+class RCAS_Dx11
 {
 private:
 	struct alignas(256) InternalConstants
@@ -31,24 +30,23 @@ private:
 	bool _init = false;
 	int _counter = 0;
 
-	ID3D12RootSignature* _rootSignature = nullptr;
-	ID3D12PipelineState* _pipelineState = nullptr;
-	ID3D12DescriptorHeap* _srvHeap[4] = { nullptr, nullptr, nullptr, nullptr };
-	D3D12_CPU_DESCRIPTOR_HANDLE _cpuSrvHandle[2]{ { NULL }, { NULL } };
-	D3D12_CPU_DESCRIPTOR_HANDLE _cpuSrvHandle2[2]{ { NULL }, { NULL } };
-	D3D12_CPU_DESCRIPTOR_HANDLE _cpuUavHandle[2]{ { NULL }, { NULL } };
-	D3D12_CPU_DESCRIPTOR_HANDLE _cpuCbvHandle[2]{ { NULL }, { NULL } };
-	D3D12_GPU_DESCRIPTOR_HANDLE _gpuSrvHandle[2]{ { NULL }, { NULL } };
-	D3D12_GPU_DESCRIPTOR_HANDLE _gpuSrvHandle2[2]{ { NULL }, { NULL } };
-	D3D12_GPU_DESCRIPTOR_HANDLE _gpuUavHandle[2]{ { NULL }, { NULL } };
-	D3D12_GPU_DESCRIPTOR_HANDLE _gpuCbvHandle[2]{ { NULL }, { NULL } };
+	//ID3D12RootSignature* _rootSignature = nullptr;
+	//ID3D12PipelineState* _pipelineState = nullptr;
+	//ID3D12DescriptorHeap* _srvHeap[4] = { nullptr, nullptr, nullptr, nullptr };
+	//D3D12_CPU_DESCRIPTOR_HANDLE _cpuSrvHandle[2]{ { NULL }, { NULL } };
+	//D3D12_CPU_DESCRIPTOR_HANDLE _cpuSrvHandle2[2]{ { NULL }, { NULL } };
+	//D3D12_CPU_DESCRIPTOR_HANDLE _cpuUavHandle[2]{ { NULL }, { NULL } };
+	//D3D12_CPU_DESCRIPTOR_HANDLE _cpuCbvHandle[2]{ { NULL }, { NULL } };
+	//D3D12_GPU_DESCRIPTOR_HANDLE _gpuSrvHandle[2]{ { NULL }, { NULL } };
+	//D3D12_GPU_DESCRIPTOR_HANDLE _gpuSrvHandle2[2]{ { NULL }, { NULL } };
+	//D3D12_GPU_DESCRIPTOR_HANDLE _gpuUavHandle[2]{ { NULL }, { NULL } };
+	//D3D12_GPU_DESCRIPTOR_HANDLE _gpuCbvHandle[2]{ { NULL }, { NULL } };
 
-	inline static bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootSignature, ID3D12PipelineState** pipelineState, ID3DBlob* shaderBlob);
-
-	ID3D12Device* _device = nullptr;
-	ID3D12Resource* _buffer = nullptr;
-	ID3D12Resource* _constantBuffer = nullptr;
-	D3D12_RESOURCE_STATES _bufferState = D3D12_RESOURCE_STATE_COMMON;
+	ID3D11Device* _device = nullptr;
+	ID3D11DeviceContext* _deviceContext = nullptr;
+	ID3D11Resource* _buffer = nullptr;
+	ID3D11Buffer* _constantBuffer = nullptr;
+	//D3D12_RESOURCE_STATES _bufferState = D3D12_RESOURCE_STATE_COMMON;
 
 	uint32_t InNumThreadsX = 32;
 	uint32_t InNumThreadsY = 32;
@@ -151,16 +149,15 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
   Dest[DTid.xy] = output;
 }
 )";	
-
+		
 public:
-	bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, D3D12_RESOURCE_STATES InState);
-	void SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RESOURCE_STATES InState);
-	bool Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource, ID3D12Resource* InMotionVectors, RcasConstants InConstants, ID3D12Resource* OutResource);
+	bool CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InSource);
+	bool Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, ID3D11Resource* InResource, ID3D11Resource* InMotionVectors, RcasConstants InConstants, ID3D11Resource* OutResource);
 
-	ID3D12Resource* Buffer() { return _buffer; }
+	ID3D11Resource* Buffer() { return _buffer; }
 	bool IsInit() const { return _init; }
 
-	RCAS_Dx12(std::string InName, ID3D12Device* InDevice);
+	RCAS_Dx11(std::string InName, ID3D11Device* InDevice);
 
-	~RCAS_Dx12();
+	~RCAS_Dx11();
 };

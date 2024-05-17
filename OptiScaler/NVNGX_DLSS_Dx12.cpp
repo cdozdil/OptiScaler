@@ -1,18 +1,17 @@
 #pragma once
-#include "pch.h"
-
-#include <ankerl/unordered_dense.h>
-#include <dxgi1_4.h>
-#include "detours/detours.h"
-
 #include "Config.h"
-#include "backends/xess/XeSSFeature_Dx12.h"
-#include "backends/fsr2/FSR2Feature_Dx12.h"
-#include "backends/fsr2_212/FSR2Feature_Dx12_212.h"
-#include "backends/dlss/DLSSFeature_Dx12.h"
 #include "NVNGX_Parameter.h"
 
+#include "backends/dlss/DLSSFeature_Dx12.h"
+#include "backends/fsr2/FSR2Feature_Dx12.h"
+#include "backends/fsr2_212/FSR2Feature_Dx12_212.h"
+#include "backends/xess/XeSSFeature_Dx12.h"
+
 #include "imgui/imgui_overlay_dx12.h"
+
+#include "detours/detours.h"
+#include <ankerl/unordered_dense.h>
+#include <dxgi1_4.h>
 
 inline ID3D12Device* D3D12Device = nullptr;
 static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
@@ -572,6 +571,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 		if (consoleAllocated)
 			FreeConsole();
+	}
+
+	// Check window recreation
+	if (Config::Instance()->OverlayMenu.value_or(true))
+	{
+		HWND currentHandle = Util::GetProcessWindow();
+		if (ImGuiOverlayDx12::IsInitedDx12() && ImGuiOverlayDx12::Handle() != currentHandle)
+			ImGuiOverlayDx12::ReInitDx12(currentHandle);
 	}
 
 	if (InCallback)

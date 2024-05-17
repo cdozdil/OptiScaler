@@ -1,18 +1,19 @@
 #pragma once
 #include "pch.h"
 
-#include <ankerl/unordered_dense.h>
 #include "Config.h"
+#include "NVNGX_Parameter.h"
 #include "Util.h"
 
-#include "backends/xess/XeSSFeature_Dx11.h"
 #include "backends/dlss/DLSSFeature_Dx11.h"
 #include "backends/fsr2/FSR2Feature_Dx11.h"
 #include "backends/fsr2/FSR2Feature_Dx11On12.h"
 #include "backends/fsr2_212/FSR2Feature_Dx11On12_212.h"
-#include "NVNGX_Parameter.h"
+#include "backends/xess/XeSSFeature_Dx11.h"
 
 #include "imgui/imgui_overlay_dx11.h"
+
+#include <ankerl/unordered_dense.h>
 
 inline ID3D11Device* D3D11Device = nullptr;
 static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx11>> Dx11Contexts;
@@ -401,6 +402,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 		if (consoleAllocated)
 			FreeConsole();
 	}
+
+	// Check window recreation
+	HWND currentHandle = Util::GetProcessWindow();
+	if (ImGuiOverlayDx11::IsInitedDx11() && ImGuiOverlayDx11::Handle() != currentHandle)
+		ImGuiOverlayDx11::ReInitDx11(currentHandle);
 
 	if (InCallback)
 		spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature callback exist");

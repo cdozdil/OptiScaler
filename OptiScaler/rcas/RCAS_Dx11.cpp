@@ -1,7 +1,8 @@
-#include "RCAS_Dx12.h"
+#include "RCAS_Dx11.h"
 #include "../Config.h"
 
-bool RCAS_Dx12::CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootSignature, ID3D12PipelineState** pipelineState, ID3DBlob* shaderBlob)
+
+static bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootSignature, ID3D12PipelineState** pipelineState, ID3DBlob* shaderBlob)
 {
 	D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
 	psoDesc.pRootSignature = rootSignature;
@@ -19,7 +20,7 @@ bool RCAS_Dx12::CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* r
 	return true;
 }
 
-bool RCAS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, D3D12_RESOURCE_STATES InState)
+bool RCAS_Dx11::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, D3D12_RESOURCE_STATES InState)
 {
 	if (InDevice == nullptr || InSource == nullptr)
 		return false;
@@ -39,7 +40,7 @@ bool RCAS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InS
 			return true;
 	}
 
-	spdlog::debug("RCAS_Dx12::CreateBufferResource [{0}] Start!", _name);
+	spdlog::debug("RCAS_Dx11::CreateBufferResource [{0}] Start!", _name);
 
 	D3D12_HEAP_PROPERTIES heapProperties;
 	D3D12_HEAP_FLAGS heapFlags;
@@ -47,7 +48,7 @@ bool RCAS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InS
 
 	if (hr != S_OK)
 	{
-		spdlog::error("RCAS_Dx12::CreateBufferResource [{0}] GetHeapProperties result: {1:x}", _name.c_str(), hr);
+		spdlog::error("RCAS_Dx11::CreateBufferResource [{0}] GetHeapProperties result: {1:x}", _name.c_str(), hr);
 		return false;
 	}
 
@@ -59,7 +60,7 @@ bool RCAS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InS
 
 	if (hr != S_OK)
 	{
-		spdlog::error("RCAS_Dx12::CreateBufferResource [{0}] CreateCommittedResource result: {1:x}", _name, hr);
+		spdlog::error("RCAS_Dx11::CreateBufferResource [{0}] CreateCommittedResource result: {1:x}", _name, hr);
 		return false;
 	}
 
@@ -70,28 +71,12 @@ bool RCAS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InS
 	return true;
 }
 
-void RCAS_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RESOURCE_STATES InState)
-{
-	if (_bufferState == InState)
-		return;
-
-	D3D12_RESOURCE_BARRIER barrier = {};
-	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrier.Transition.pResource = _buffer;
-	barrier.Transition.StateBefore = _bufferState;
-	barrier.Transition.StateAfter = InState;
-	barrier.Transition.Subresource = 0;
-	InCommandList->ResourceBarrier(1, &barrier);
-
-	_bufferState = InState;
-}
-
-bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource, ID3D12Resource* InMotionVectors, RcasConstants InConstants, ID3D12Resource* OutResource)
+bool RCAS_Dx11::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource, ID3D12Resource* InMotionVectors, RcasConstants InConstants, ID3D12Resource* OutResource)
 {
 	if (!_init || InDevice == nullptr || InCmdList == nullptr || InResource == nullptr || OutResource == nullptr)
 		return false;
 
-	spdlog::debug("RCAS_Dx12::Dispatch [{0}] Start!", _name);
+	spdlog::debug("RCAS_Dx11::Dispatch [{0}] Start!", _name);
 
 	_counter++;
 	_counter = _counter % 2;
@@ -218,15 +203,15 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
 	return true;
 }
 
-RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), _device(InDevice)
+RCAS_Dx11::RCAS_Dx11(std::string InName, ID3D12Device* InDevice) : _name(InName), _device(InDevice)
 {
 	if (InDevice == nullptr)
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 InDevice is nullptr!");
+		spdlog::error("RCAS_Dx11::RCAS_Dx11 InDevice is nullptr!");
 		return;
 	}
 
-	spdlog::debug("RCAS_Dx12::RCAS_Dx12 {0} start!", _name);
+	spdlog::debug("RCAS_Dx11::RCAS_Dx11 {0} start!", _name);
 
 	// Describe and create the root signature
 	// ---------------------------------------------------
@@ -309,7 +294,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 		if (FAILED(hr))
 		{
-			spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] D3D12SerializeRootSignature error {1:x}", _name, hr);
+			spdlog::error("RCAS_Dx11::RCAS_Dx11 [{0}] D3D12SerializeRootSignature error {1:x}", _name, hr);
 			break;
 		}
 
@@ -317,7 +302,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 		if (FAILED(hr))
 		{
-			spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateRootSignature error {1:x}", _name, hr);
+			spdlog::error("RCAS_Dx11::RCAS_Dx11 [{0}] CreateRootSignature error {1:x}", _name, hr);
 			break;
 		}
 
@@ -337,7 +322,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	if (_rootSignature == nullptr)
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] _rootSignature is null!", _name);
+		spdlog::error("RCAS_Dx11::RCAS_Dx11 [{0}] _rootSignature is null!", _name);
 		return;
 	}
 
@@ -346,14 +331,14 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	if (_recEncodeShader == nullptr)
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CompileShader error!", _name);
+		spdlog::error("RCAS_Dx11::RCAS_Dx11 [{0}] CompileShader error!", _name);
 		return;
 	}
 
 	// create pso objects
 	if (!CreateComputeShader(InDevice, _rootSignature, &_pipelineState, _recEncodeShader))
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateComputeShader error!", _name);
+		spdlog::error("RCAS_Dx11::RCAS_Dx11 [{0}] CreateComputeShader error!", _name);
 		return;
 	}
 
@@ -372,7 +357,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	if (FAILED(hr))
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateDescriptorHeap[0] error {1:x}", _name, hr);
+		spdlog::error("RCAS_Dx11::RCAS_Dx11 [{0}] CreateDescriptorHeap[0] error {1:x}", _name, hr);
 		return;
 	}
 
@@ -380,7 +365,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	if (FAILED(hr))
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateDescriptorHeap[1] error {1:x}", _name, hr);
+		spdlog::error("RCAS_Dx11::RCAS_Dx11 [{0}] CreateDescriptorHeap[1] error {1:x}", _name, hr);
 		return;
 	}
 
@@ -388,7 +373,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	if (FAILED(hr))
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateDescriptorHeap[2] error {1:x}", _name, hr);
+		spdlog::error("RCAS_Dx11::RCAS_Dx11 [{0}] CreateDescriptorHeap[2] error {1:x}", _name, hr);
 		return;
 	}
 
@@ -396,14 +381,14 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	if (FAILED(hr))
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateDescriptorHeap[3] error {1:x}", _name, hr);
+		spdlog::error("RCAS_Dx11::RCAS_Dx11 [{0}] CreateDescriptorHeap[3] error {1:x}", _name, hr);
 		return;
 	}
 
 	_init = _srvHeap[3] != nullptr;
 }
 
-RCAS_Dx12::~RCAS_Dx12()
+RCAS_Dx11::~RCAS_Dx11()
 {
 	if (!_init)
 		return;
