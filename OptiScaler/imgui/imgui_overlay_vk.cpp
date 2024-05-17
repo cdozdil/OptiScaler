@@ -8,7 +8,6 @@
 
 #include "../detours/detours.h"
 #include "../Config.h"
-#pragma comment(lib, "../detours/detours.lib")
 
 // Vulkan overlay code adopted from here:
 // https://gist.github.com/mem99/0ec31ca302927457f86b1d6756aaa8c4
@@ -490,6 +489,8 @@ void ImGuiOverlayVk::ReInitVk(HWND InNewHwnd)
 {
 	if (!_isInited || !g_bInitialized)
 		return;
+
+	spdlog::debug("ImGuiOverlayVk::ReInitVk hwnd: {0:X}", (unsigned long)InNewHwnd);
 
 	ImGui_ImplVulkan_Shutdown();
 	ImGuiOverlayBase::Shutdown();

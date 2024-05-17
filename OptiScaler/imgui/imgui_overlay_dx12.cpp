@@ -11,7 +11,6 @@
 #include "imgui/imgui_impl_win32.h"
 
 #include "../detours/detours.h"
-#pragma comment(lib, "../detours/detours.lib")
 
 // Dx12 overlay code adoptes from 
 // https://github.com/bruhmoment21/UniversalHookX
@@ -74,7 +73,7 @@ static bool CreateDeviceD3D12(HWND InHWnd)
 
 	PFN_D3D12_CREATE_DEVICE slCD = (PFN_D3D12_CREATE_DEVICE)DetourFindFunction("sl.interposer.dll", "D3D12CreateDevice");
 
-	if (slCD != nullptr && Config::Instance()->NVNGX_Engine != NVSDK_NGX_ENGINE_TYPE_UNREAL && Config::Instance()->HookSLDevice.value_or(true))
+	if (slCD != nullptr && Config::Instance()->NVNGX_Engine != NVSDK_NGX_ENGINE_TYPE_UNREAL && Config::Instance()->HookSLDevice.value_or(false))
 		result = slCD(NULL, featureLevel, IID_PPV_ARGS(&g_pd3dDevice));
 	else
 		result = D3D12CreateDevice(NULL, featureLevel, IID_PPV_ARGS(&g_pd3dDevice));
@@ -449,6 +448,11 @@ bool ImGuiOverlayDx12::IsInitedDx12()
 	return _isInited;
 }
 
+HWND ImGuiOverlayDx12::Handle()
+{
+	return ImGuiOverlayBase::Handle();
+}
+
 void ImGuiOverlayDx12::InitDx12(HWND InHandle)
 {
 	spdlog::info("RenderImGui_DX12 InitDx12 Handle: {0:X}", (unsigned long)InHandle);
@@ -514,7 +518,7 @@ void ImGuiOverlayDx12::InitDx12(HWND InHandle)
 
 void ImGuiOverlayDx12::ShutdownDx12()
 {
-	if (_isInited)
+	if (_isInited && ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
 		ImGui_ImplDX12_Shutdown();
 
 	ImGuiOverlayBase::Shutdown();
@@ -550,9 +554,15 @@ void ImGuiOverlayDx12::ReInitDx12(HWND InNewHwnd)
 	if (!_isInited)
 		return;
 
-	ImGui_ImplDX12_Shutdown();
+	spdlog::debug("ImGuiOverlayDx12::ReInitDx12 hwnd: {0:X}", (unsigned long)InNewHwnd);
+
+	if (ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
+		ImGui_ImplDX12_Shutdown();
+
+
 	ImGuiOverlayBase::Shutdown();
 	ImGuiOverlayBase::Init(InNewHwnd);
+
 	CleanupRenderTarget();
 }
 

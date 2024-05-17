@@ -9,7 +9,6 @@
 #include "imgui/imgui_impl_win32.h"
 
 #include "../detours/detours.h"
-#pragma comment(lib, "../detours/detours.lib")
 
 // Dx12 overlay code adoptes from 
 // https://github.com/bruhmoment21/UniversalHookX
@@ -223,6 +222,11 @@ bool ImGuiOverlayDx11::IsInitedDx11()
 	return _isInited;
 }
 
+HWND ImGuiOverlayDx11::Handle()
+{
+	return ImGuiOverlayBase::Handle();
+}
+
 void ImGuiOverlayDx11::InitDx11(HWND InHandle)
 {
 	if (g_pd3dDevice == nullptr && !CreateDeviceD3D11(InHandle))
@@ -289,11 +293,11 @@ void ImGuiOverlayDx11::InitDx11(HWND InHandle)
 
 void ImGuiOverlayDx11::ShutdownDx11()
 {
-	if (_isInited)
+	if (_isInited && ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
 		ImGui_ImplDX11_Shutdown();
 
 	ImGuiOverlayBase::Shutdown();
-	
+
 	if (_isInited)
 	{
 		CleanupDeviceD3D11();
@@ -323,8 +327,13 @@ void ImGuiOverlayDx11::ReInitDx11(HWND InNewHwnd)
 	if (!_isInited)
 		return;
 
-	ImGui_ImplDX11_Shutdown();
+	spdlog::debug("ImGuiOverlayDx11::ReInitDx11 hwnd: {0:X}", (unsigned long)InNewHwnd);
+
+	if (ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
+		ImGui_ImplDX11_Shutdown();
+
 	ImGuiOverlayBase::Shutdown();
 	ImGuiOverlayBase::Init(InNewHwnd);
+
 	CleanupRenderTarget();
 }
