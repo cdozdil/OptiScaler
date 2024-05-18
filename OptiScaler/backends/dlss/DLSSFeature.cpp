@@ -758,6 +758,8 @@ void DLSSFeature::ReadVersion()
 
 	if (_GetSnippetVersion != nullptr)
 	{
+		spdlog::trace("DLSSFeature::ReadVersion DLSS _GetSnippetVersion ptr: {0:X}", (unsigned long)_GetSnippetVersion);
+
 		auto result = _GetSnippetVersion();
 
 		_version.major = (result & 0x00FF0000) / 0x00010000;
@@ -817,7 +819,7 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 			if (_nvngx)
 			{
 				Config::Instance()->DE_Available = true;
-				spdlog::info("DLSSFeature::DLSSFeature dlss-enabler-ngx.dll loaded from DLSS Enabler");
+				spdlog::info("DLSSFeature::DLSSFeature dlss-enabler-ngx.dll loaded from DLSS Enabler, ptr: {0:X}", (unsigned long)_nvngx);
 				_moduleLoaded = true;
 				break;
 			}
@@ -839,7 +841,7 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 
 				if (_nvngx)
 				{
-					spdlog::info("DLSSFeature::DLSSFeature _nvngx.dll loaded from {0}", path.string());
+					spdlog::info("DLSSFeature::DLSSFeature _nvngx.dll loaded from {0}, ptr: {1:X}", path.string(), (unsigned long)_nvngx);
 					_moduleLoaded = true;
 					break;
 				}
@@ -850,7 +852,7 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 
 				if (_nvngx)
 				{
-					spdlog::info("DLSSFeature::DLSSFeature nvngx.dll loaded from {0}", path.string());
+					spdlog::info("DLSSFeature::DLSSFeature nvngx.dll loaded from {0}, ptr: {1:X}", path.string(), (unsigned long)_nvngx);
 					_moduleLoaded = true;
 					break;
 				}
@@ -891,7 +893,7 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 
 			if (_nvngx)
 			{
-				spdlog::info("DLSSFeature::DLSSFeature _nvngx.dll loaded from {0}", nvngxPath.string());
+				spdlog::info("DLSSFeature::DLSSFeature _nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (unsigned long)_nvngx);
 				_moduleLoaded = true;
 				break;
 			}
@@ -903,7 +905,7 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 
 			if (_nvngx)
 			{
-				spdlog::info("DLSSFeature::DLSSFeature nvngx.dll loaded from {0}", nvngxPath.string());
+				spdlog::info("DLSSFeature::DLSSFeature nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (unsigned long)_nvngx);
 				_moduleLoaded = true;
 				break;
 			}
@@ -918,7 +920,7 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 
 			if (_nvngx)
 			{
-				spdlog::info("DLSSFeature::DLSSFeature _nvngx.dll loaded from {0}", nvngxPath.string());
+				spdlog::info("DLSSFeature::DLSSFeature _nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (unsigned long)_nvngx);
 				_moduleLoaded = true;
 			}
 

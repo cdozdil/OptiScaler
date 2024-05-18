@@ -238,6 +238,56 @@ DLSSFeatureDx11::DLSSFeatureDx11(unsigned int InHandleId, const NVSDK_NGX_Parame
 	if (_EvaluateFeature == nullptr)
 		_EvaluateFeature = (PFN_NVSDK_NGX_D3D11_EvaluateFeature)GetProcAddress(NVNGX(), "NVSDK_NGX_D3D11_EvaluateFeature");
 
+	if (_Init_with_ProjectID)
+		spdlog::trace("DLSSFeatureDx11::DLSSFeatureDx11 _Init_with_ProjectID ptr: {0:X}", (unsigned long)_Init_with_ProjectID);
+	else
+		spdlog::warn("DLSSFeatureDx11::DLSSFeatureDx11 _Init_with_ProjectID ptr: nullptr");
+
+	if (_Init_with_ProjectID)
+		spdlog::trace("DLSSFeatureDx11::DLSSFeatureDx11 _Init_Ext ptr: {0:X}", (unsigned long)_Init_Ext);
+	else
+		spdlog::warn("DLSSFeatureDx11::DLSSFeatureDx11 _Init_Ext ptr: nullptr");
+
+	if (_Init_with_ProjectID)
+		spdlog::trace("DLSSFeatureDx11::DLSSFeatureDx11 _Shutdown ptr: {0:X}", (unsigned long)_Shutdown);
+	else
+		spdlog::warn("DLSSFeatureDx11::DLSSFeatureDx11 _Shutdown ptr: nullptr");
+
+	if (_Init_with_ProjectID)
+		spdlog::trace("DLSSFeatureDx11::DLSSFeatureDx11 _Shutdown1 ptr: {0:X}", (unsigned long)_Shutdown1);
+	else
+		spdlog::warn("DLSSFeatureDx11::DLSSFeatureDx11 _Shutdown1 ptr: nullptr");
+
+	if (_Init_with_ProjectID)
+		spdlog::trace("DLSSFeatureDx11::DLSSFeatureDx11 _GetParameters ptr: {0:X}", (unsigned long)_GetParameters);
+	else
+		spdlog::warn("DLSSFeatureDx11::DLSSFeatureDx11 _GetParameters ptr: nullptr");
+
+	if (_Init_with_ProjectID)
+		spdlog::trace("DLSSFeatureDx11::DLSSFeatureDx11 _AllocateParameters ptr: {0:X}", (unsigned long)_AllocateParameters);
+	else
+		spdlog::warn("DLSSFeatureDx11::DLSSFeatureDx11 _AllocateParameters ptr: nullptr");
+
+	if (_Init_with_ProjectID)
+		spdlog::trace("DLSSFeatureDx11::DLSSFeatureDx11 _DestroyParameters ptr: {0:X}", (unsigned long)_DestroyParameters);
+	else
+		spdlog::warn("DLSSFeatureDx11::DLSSFeatureDx11 _DestroyParameters ptr: nullptr");
+
+	if (_Init_with_ProjectID)
+		spdlog::trace("DLSSFeatureDx11::DLSSFeatureDx11 _CreateFeature ptr: {0:X}", (unsigned long)_CreateFeature);
+	else
+		spdlog::warn("DLSSFeatureDx11::DLSSFeatureDx11 _CreateFeature ptr: nullptr");
+
+	if (_Init_with_ProjectID)
+		spdlog::trace("DLSSFeatureDx11::DLSSFeatureDx11 _ReleaseFeature ptr: {0:X}", (unsigned long)_ReleaseFeature);
+	else
+		spdlog::warn("DLSSFeatureDx11::DLSSFeatureDx11 _ReleaseFeature ptr: nullptr");
+
+	if (_Init_with_ProjectID)
+		spdlog::trace("DLSSFeatureDx11::DLSSFeatureDx11 _EvaluateFeature ptr: {0:X}", (unsigned long)_EvaluateFeature);
+	else
+		spdlog::warn("DLSSFeatureDx11::DLSSFeatureDx11 _EvaluateFeature ptr: nullptr");
+
 	_moduleLoaded = (_Init_with_ProjectID != nullptr || _Init_Ext != nullptr) && (_Shutdown != nullptr || _Shutdown1 != nullptr) &&
 		(_GetParameters != nullptr || _AllocateParameters != nullptr) && _DestroyParameters != nullptr && _CreateFeature != nullptr &&
 		_ReleaseFeature != nullptr && _EvaluateFeature != nullptr;
