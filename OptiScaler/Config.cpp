@@ -83,11 +83,23 @@ bool Config::Reload()
 		OverrideSharpness = readBool("Sharpness", "OverrideSharpness");
 		Sharpness = readFloat("Sharpness", "Sharpness");
 
-		MotionSharpnessEnabled = readBool("Sharpness", "MotionSharpnessEnabled");
-		MotionSharpness = readFloat("Sharpness", "MotionSharpness");
-		MotionSharpnessDebug = readBool("Sharpness", "MotionSharpnessDebug");
-		MotionThreshold = readFloat("Sharpness", "MotionThreshold");
-		MotionScaleLimit = readFloat("Sharpness", "MotionScaleLimit");
+		// Menu
+		MenuScale = readFloat("Menu", "Scale");
+		OverlayMenu = readBool("Menu", "OverlayMenu");
+		ShortcutKey = readInt("Menu", "ShortcutKey");
+		ResetKey = readInt("Menu", "ResetKey");
+		MenuInitDelay = readInt("Menu", "MenuInitDelay");
+		HookSLDevice = readBool("Menu", "HookSLDevice");
+		HookSLProxy = readBool("Menu", "HookSLProxy");
+
+		// CAS
+		RcasEnabled = readBool("CAS", "Enabled");
+
+		MotionSharpnessEnabled = readBool("CAS", "MotionSharpnessEnabled");
+		MotionSharpness = readFloat("CAS", "MotionSharpness");
+		MotionSharpnessDebug = readBool("CAS", "MotionSharpnessDebug");
+		MotionThreshold = readFloat("CAS", "MotionThreshold");
+		MotionScaleLimit = readFloat("CAS", "MotionScaleLimit");
 
 		if (Sharpness.has_value())
 		{
@@ -120,18 +132,6 @@ bool Config::Reload()
 			else if (MotionScaleLimit.value() < 0.0f)
 				MotionScaleLimit.reset();
 		}
-
-		// Menu
-		MenuScale = readFloat("Menu", "Scale");
-		OverlayMenu = readBool("Menu", "OverlayMenu");
-		ShortcutKey = readInt("Menu", "ShortcutKey");
-		ResetKey = readInt("Menu", "ResetKey");
-		MenuInitDelay = readInt("Menu", "MenuInitDelay");
-		HookSLDevice = readBool("Menu", "HookSLDevice");
-		HookSLProxy = readBool("Menu", "HookSLProxy");
-
-		// CAS
-		RcasEnabled = readBool("CAS", "Enabled");
 
 		// Depth
 		DepthInverted = readBool("Depth", "DepthInverted");
@@ -248,10 +248,6 @@ bool Config::SaveIni()
 	// Sharpness
 	ini.SetValue("Sharpness", "OverrideSharpness", GetBoolValue(Instance()->OverrideSharpness).c_str());
 	ini.SetValue("Sharpness", "Sharpness", GetFloatValue(Instance()->Sharpness).c_str());
-	ini.SetValue("Sharpness", "MotionSharpnessEnabled", GetBoolValue(Instance()->MotionSharpnessEnabled).c_str());
-	ini.SetValue("Sharpness", "MotionSharpnessDebug", GetBoolValue(Instance()->MotionSharpnessDebug).c_str());
-	ini.SetValue("Sharpness", "MotionSharpness", GetFloatValue(Instance()->MotionSharpness).c_str());
-	ini.SetValue("Sharpness", "MotionThreshold", GetFloatValue(Instance()->MotionThreshold).c_str());
 
 	// Ingame menu
 	ini.SetValue("Menu", "Scale", GetFloatValue(Instance()->MenuScale).c_str());
@@ -264,6 +260,11 @@ bool Config::SaveIni()
 
 	// CAS
 	ini.SetValue("CAS", "Enabled", GetBoolValue(Instance()->RcasEnabled).c_str());
+	ini.SetValue("CAS", "MotionSharpnessEnabled", GetBoolValue(Instance()->MotionSharpnessEnabled).c_str());
+	ini.SetValue("CAS", "MotionSharpnessDebug", GetBoolValue(Instance()->MotionSharpnessDebug).c_str());
+	ini.SetValue("CAS", "MotionSharpness", GetFloatValue(Instance()->MotionSharpness).c_str());
+	ini.SetValue("CAS", "MotionThreshold", GetFloatValue(Instance()->MotionThreshold).c_str());
+	ini.SetValue("CAS", "MotionScaleLimit", GetFloatValue(Instance()->MotionScaleLimit).c_str());
 
 	// Depth
 	ini.SetValue("Depth", "DepthInverted", GetBoolValue(Instance()->DepthInverted).c_str());
