@@ -567,7 +567,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		SetForegroundWindow(hwnd);
 		SetFocus(hwnd);
 
-		ImGuiOverlayDx12::InitDx12(consoleWindow);
+		ImGuiOverlayDx12::InitDx12(consoleWindow, D3D12Device);
 
 		if (consoleAllocated)
 			FreeConsole();
