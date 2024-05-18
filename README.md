@@ -1,6 +1,6 @@
 ![OptiScaler](images/optiscaler.png)
 
-OptiScaler (was CyberXeSS) is drop-in DLSS2 to XeSS/FSR2 replacement for games. 
+OptiScaler (was CyberXeSS) is drop-in DLSS2 to XeSS/FSR2/DLSS replacement for games. 
 
 *This project is based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2](https://github.com/PotatoOfDoom/CyberFSR2).*
 
@@ -9,15 +9,16 @@ OptiScaler (was CyberXeSS) is drop-in DLSS2 to XeSS/FSR2 replacement for games.
 **Do not use this mod with online games, it might trigger anti-cheat software and cause bans!**
 
 ## How it works?
-OptiScaler implements all necessary API methods of DLSS2 & NVAPI to act as a man in the middle. So from games perspective it's using DLSS2 but actually using OptiScaler and calls are interpreted/redirected to XeSS & FSR2.
+OptiScaler implements all necessary API methods of DLSS2 & NVAPI to act as a man in the middle. So from games perspective it's using DLSS2 but actually using OptiScaler and calls are interpreted/redirected to XeSS & FSR2 or DLSS with OptiScaler's tweaks and enchancements.
 
 ## Features
-* Multiple upscaling backends (XeSS, FSR 2.1.2 and FSR 2.2.1)
+* Multiple upscaling backends (XeSS, FSR 2.1.2, FSR 2.2.1, DLSS)
 * Supports XeSS v1.3's new modes (Ultra Performance, NativeAA), but uses standard DLSS/FSR internal resolutions (not using XeSS 1.3 Performance (2.3x) mode, not matching any of the DLSS quality presets).
-* An [in-game menu](https://github.com/cdozdil/OptiScaler/blob/master/Config.md) for tuning and saving settings (Only on DirectX 11 & DirectX 12 APIs, shortcut key is **HOME**)
+* An [in-game menu](https://github.com/cdozdil/OptiScaler/blob/master/Config.md) for tuning and saving settings on the fly (New shortcut key is **INSERT** to prevent clashing with Reshade)
 * Full integration with [DLSS Enabler](https://www.nexusmods.com/site/mods/757) for DLSS-FG support
-* [CAS (Contrast Adaptive Sharpening)](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#cas) support for XeSS to mitigate relatively soft image upscaler generates
-* [Pseudo-supersampling](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#pseudo-supersampling) option for backends running on DirectX 12
+* **RCAS** (Contrast Adaptive Sharpening) support for all Dx12 & Dx11 with Dx12 upscalers
+* **Output Scaling** option (0.5x to 3.0x) for backends running on Dx12 & Dx11 with Dx12
+* Ability to modify DLSS presets on the fly
 * Autofixing [colored lights](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#resource-barriers-dx12-only) on Unreal Engine & AMD graphics cards
 * Autofixing [wrong motion vector](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#init-flags) init information 
 * Autofixing [missing exposure texture](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#init-flags) information
@@ -37,18 +38,21 @@ Currently OptiScaler can be used with DirectX 11, DirectX 12 and Vulkan but each
 * **XeSS 1.x.x** with background DirectX12 processing [*]
 * **FSR2 2.1.2** with background DirectX12 processing [*]
 * **FSR2 2.2.1** with background DirectX12 processing [*]
+* **DLSS** native Direct11 implementation
 
 [*] This implementations uses a background DirectX12 device to be able to use Dirext12 only upscalers. There is %10-15 performance penalty for this method but allows much more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has it's own problems which some of them avoided by OptiScaler.
 
 #### For DirectX 12
 * **XeSS 1.x.x** (Default upscaler)
 * **FSR2 2.1.2** 
-* **FSR2 2.2.1** 
+* **FSR2 2.2.1**
+* **DLSS**
 
 #### For Vulkan
 * **FSR2 2.1.2** (Default upscaler)
 * **FSR2 2.2.1** 
-
+* **DLSS**
+  
 ## Installation
 * Download the latest relase from releases.
 * Extract the contents of the archive next to the game executable file in your games folder. [1]
