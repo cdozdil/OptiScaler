@@ -34,7 +34,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 	if (!IsInited())
 		return false;
 
-	if (Config::Instance()->RcasEnabled.value_or(false) && Config::Instance()->changeRCAS)
+	/*if (Config::Instance()->RcasEnabled.value_or(false) && Config::Instance()->changeRCAS)
 	{
 		if (RCAS != nullptr && RCAS.get() != nullptr)
 		{
@@ -49,7 +49,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 			std::this_thread::sleep_for(std::chrono::milliseconds(250));
 			RCAS = std::make_unique<RCAS_Dx12>("RCAS", Device);
 		}
-	}
+	}*/
 
 	Fsr212::FfxFsr2DispatchDescription params{};
 
@@ -335,7 +335,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 	}
 
 	// apply rcas
-	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && 
+	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && 
 		(sharpness > 0.0f || Config::Instance()->MotionSharpnessEnabled.value_or(false)) &&
 		RCAS != nullptr && RCAS.get() != nullptr && RCAS->Buffer() != nullptr)
 	{
@@ -351,6 +351,9 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 		rcasConstants.DisplayHeight = DisplayHeight();
 		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
 		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
+		rcasConstants.DisplaySizeMV = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
+		rcasConstants.RenderHeight = RenderHeight();
+		rcasConstants.RenderWidth = RenderWidth();
 
 		if (useSS)
 		{

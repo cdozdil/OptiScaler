@@ -153,10 +153,10 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
 	constants.Sharpness = InConstants.Sharpness;
 	constants.Debug = Config::Instance()->MotionSharpnessDebug.value_or(false) ? 1 : 0;
 	constants.Threshold = Config::Instance()->MotionThreshold.value_or(0.0f);
-	constants.ScaleLimit = Config::Instance()->MotionScaleLimit.value_or(20.0f);
+	constants.ScaleLimit = Config::Instance()->MotionScaleLimit.value_or(10.0f);
 
-	constants.DisplaySizeMV = mvDesc.Width == inDesc.Width;
-	constants.MotionTextureScale = (float)mvDesc.Width / (float)inDesc.Width;
+	constants.DisplaySizeMV = InConstants.DisplaySizeMV ? 1 : 0;
+	constants.MotionTextureScale = (float)InConstants.RenderWidth / (float)InConstants.DisplayWidth;
 
 	// Create SRV for Input Texture
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};

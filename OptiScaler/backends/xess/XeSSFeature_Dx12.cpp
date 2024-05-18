@@ -319,6 +319,9 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		rcasConstants.DisplayHeight = DisplayHeight();
 		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
 		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
+		rcasConstants.DisplaySizeMV = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
+		rcasConstants.RenderHeight = RenderHeight();
+		rcasConstants.RenderWidth = RenderWidth();
 
 		if (useSS)
 		{

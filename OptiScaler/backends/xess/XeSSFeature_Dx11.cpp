@@ -53,7 +53,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 				paramVelocity->QueryInterface(IID_PPV_ARGS(&pvTexture));
 				pvTexture->GetDesc(&desc);
 				bool lowResMV = desc.Width < TargetWidth();
-				bool displaySizeEnabled = (InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
+				bool displaySizeEnabled = (GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
 
 				if (displaySizeEnabled && lowResMV)
 				{
@@ -338,6 +338,9 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		rcasConstants.DisplayHeight = DisplayHeight();
 		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
 		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
+		rcasConstants.DisplaySizeMV = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
+		rcasConstants.RenderHeight = RenderHeight();
+		rcasConstants.RenderWidth = RenderWidth();
 
 		if (useSS)
 		{

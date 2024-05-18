@@ -116,10 +116,12 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 		initResult = true;
 
 	} while (false);
+	 
+	bool rcasEnabled = (Version().major > 2 || (Version().major == 2 && Version().minor >= 5 && Version().patch >= 1));
 
 	if (initResult)
 	{
-		if (Config::Instance()->RcasEnabled.value_or(Version().major == 3))
+		if (Config::Instance()->RcasEnabled.value_or(rcasEnabled))
 			RCAS = std::make_unique<RCAS_Dx12>("RCAS", InDevice);
 
 		if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
@@ -146,6 +148,8 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		spdlog::error("DLSSFeatureDx12::Evaluate Not inited!");
 		return false;
 	}
+
+	bool rcasEnabled = (Version().major > 2 || (Version().major == 2 && Version().minor >= 5 && Version().patch >= 1));
 
 	NVSDK_NGX_Result nvResult;
 
@@ -198,7 +202,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		// RCAS sharpness & preperation
 		auto sharpness = GetSharpness(InParameters);
 
-		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && 
+		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
 			(sharpness > 0.0f || Config::Instance()->MotionSharpnessEnabled.value_or(false)) &&
 			RCAS != nullptr && RCAS.get() != nullptr &&
 			RCAS->CreateBufferResource(Device, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
@@ -225,7 +229,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		}
 
 		// Apply CAS
-		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && 
+		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
 			(sharpness > 0.0f || Config::Instance()->MotionSharpnessEnabled.value_or(false)) && 
 			RCAS != nullptr && RCAS.get() != nullptr && RCAS->Buffer() != nullptr)
 		{
@@ -241,6 +245,9 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			rcasConstants.DisplayHeight = DisplayHeight();
 			InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
 			InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
+			rcasConstants.DisplaySizeMV = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
+			rcasConstants.RenderHeight = RenderHeight();
+			rcasConstants.RenderWidth = RenderWidth();
 
 			if (useSS)
 			{

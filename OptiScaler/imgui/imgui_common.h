@@ -327,7 +327,7 @@ private:
 			{
 				spdlog::info("WndProc No active features, closing ImGui");
 
-				if (pfn_ClipCursor_hooked)
+				if (pfn_ClipCursor_hooked && _lastCursorLimit != nullptr)
 					pfn_ClipCursor(_lastCursorLimit);
 
 				_isVisible = false;
@@ -355,12 +355,12 @@ private:
 
 			if (!_isVisible)
 			{
-				if (pfn_ClipCursor_hooked)
+				if (pfn_ClipCursor_hooked && _lastCursorLimit != nullptr)
 					pfn_ClipCursor(_lastCursorLimit);
 
 				_showMipmapCalcWindow = false;
 			}
-			else if (pfn_ClipCursor_hooked)
+			else if (pfn_ClipCursor_hooked && _lastCursorLimit != nullptr)
 			{
 				pfn_ClipCursor(nullptr);
 
@@ -450,7 +450,7 @@ private:
 			case WM_KEYDOWN:
 				imguiKey = ImGui_ImplWin32_VirtualKeyToImGuiKey(wParam);
 				io.AddKeyEvent(imguiKey, true);
-				
+
 				break;
 
 			case WM_SYSKEYDOWN:
@@ -987,11 +987,38 @@ public:
 									)
 								);
 
-						if (bool cas = Config::Instance()->RcasEnabled.value_or(rcasEnabled); ImGui::Checkbox("Enable RCAS", &cas))
-						{
-							Config::Instance()->RcasEnabled = cas;
-							Config::Instance()->changeRCAS = true;
-						}
+						if (bool rcas = Config::Instance()->RcasEnabled.value_or(rcasEnabled); ImGui::Checkbox("Enable RCAS", &rcas))
+							Config::Instance()->RcasEnabled = rcas;
+
+
+						ImGui::BeginDisabled(!Config::Instance()->RcasEnabled.value_or(rcasEnabled));
+
+						if (bool overrideMotionSharpness = Config::Instance()->MotionSharpnessEnabled.value_or(false); ImGui::Checkbox("Motion Sharpness", &overrideMotionSharpness))
+							Config::Instance()->MotionSharpnessEnabled = overrideMotionSharpness;
+
+						ImGui::BeginDisabled(!Config::Instance()->MotionSharpnessEnabled.value_or(false));
+
+						ImGui::SameLine(0.0f, 6.0f);
+
+						if (bool overrideMSDebug = Config::Instance()->MotionSharpnessDebug.value_or(false); ImGui::Checkbox("MS Debug", &overrideMSDebug))
+							Config::Instance()->MotionSharpnessDebug = overrideMSDebug;
+
+						float motionSharpness = Config::Instance()->MotionSharpness.value_or(0.4f);
+						ImGui::SliderFloat("Max Motion Sharpness", &motionSharpness, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
+						Config::Instance()->MotionSharpness = motionSharpness;
+
+						float motionThreshod = Config::Instance()->MotionThreshold.value_or(0.0f);
+						ImGui::SliderFloat("Motion Threshod", &motionThreshod, 0.0f, 100.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat);
+						Config::Instance()->MotionThreshold = motionThreshod;
+
+						float motionScale = Config::Instance()->MotionScaleLimit.value_or(10.0f);
+						ImGui::SliderFloat("Motion Scale", &motionScale, 0.0f, 100.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat);
+						Config::Instance()->MotionScaleLimit = motionScale;
+
+						ImGui::EndDisabled();
+						
+						ImGui::EndDisabled();
+
 					}
 
 					// DLSS Enabler -----------------
@@ -1118,30 +1145,6 @@ public:
 					float sharpness = Config::Instance()->Sharpness.value_or(0.3f);
 					ImGui::SliderFloat("Sharpness", &sharpness, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
 					Config::Instance()->Sharpness = sharpness;
-
-					ImGui::EndDisabled();
-
-					if (bool overrideMotionSharpness = Config::Instance()->MotionSharpnessEnabled.value_or(false); ImGui::Checkbox("Motion Sharpness", &overrideMotionSharpness))
-						Config::Instance()->MotionSharpnessEnabled = overrideMotionSharpness;
-
-					ImGui::BeginDisabled(!Config::Instance()->MotionSharpnessEnabled.value_or(false));
-
-					ImGui::SameLine(0.0f, 6.0f);
-
-					if (bool overrideMSDebug = Config::Instance()->MotionSharpnessDebug.value_or(false); ImGui::Checkbox("MS Debug", &overrideMSDebug))
-						Config::Instance()->MotionSharpnessDebug = overrideMSDebug;
-
-					float motionSharpness = Config::Instance()->MotionSharpness.value_or(0.4f);
-					ImGui::SliderFloat("Max Motion Sharpness", &motionSharpness, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
-					Config::Instance()->MotionSharpness = motionSharpness;
-
-					float motionThreshod = Config::Instance()->MotionThreshold.value_or(0.0f);
-					ImGui::SliderFloat("Motion Threshod", &motionThreshod, 0.0f, 100.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat);
-					Config::Instance()->MotionThreshold = motionThreshod;
-
-					float motionScale = Config::Instance()->MotionScaleLimit.value_or(25.0f);
-					ImGui::SliderFloat("Motion Scale", &motionScale, 0.0f, 100.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat);
-					Config::Instance()->MotionScaleLimit = motionScale;
 
 					ImGui::EndDisabled();
 

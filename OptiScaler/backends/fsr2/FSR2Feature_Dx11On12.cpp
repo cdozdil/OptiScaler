@@ -242,7 +242,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 		params.output = ffxGetResourceDX12(&_context, dx11Out.Dx12Resource, (wchar_t*)L"FSR2_Out", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 
 	// RCAS
-	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && 
+	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && 
 		(sharpness > 0.0f || Config::Instance()->MotionSharpnessEnabled.value_or(false)) &&
 		RCAS != nullptr && RCAS.get() != nullptr && 
 		RCAS->CreateBufferResource(Dx12Device, (ID3D12Resource*)params.output.resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
@@ -342,7 +342,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 	}
 
 	// apply rcas
-	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && 
+	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && 
 		(sharpness > 0.0f || Config::Instance()->MotionSharpnessEnabled.value_or(false)) && 
 		RCAS != nullptr && RCAS.get() != nullptr)
 	{
@@ -360,6 +360,9 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, const N
 		rcasConstants.DisplayHeight = DisplayHeight();
 		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
 		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
+		rcasConstants.DisplaySizeMV = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
+		rcasConstants.RenderHeight = RenderHeight();
+		rcasConstants.RenderWidth = RenderWidth();
 
 		if (useSS)
 		{

@@ -113,6 +113,14 @@ bool Config::Reload()
 				MotionThreshold.reset();
 		}
 
+		if (MotionScaleLimit.has_value())
+		{
+			if (MotionScaleLimit.value() > 100.0f)
+				MotionScaleLimit = 100.0f;
+			else if (MotionScaleLimit.value() < 0.0f)
+				MotionScaleLimit.reset();
+		}
+
 		// Menu
 		MenuScale = readFloat("Menu", "Scale");
 		OverlayMenu = readBool("Menu", "OverlayMenu");

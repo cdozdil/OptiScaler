@@ -18,6 +18,9 @@ struct RcasConstants
 	float MvScaleY;
 	float Threshold;
 	float ScaleLimit;
+
+	int RenderWidth;
+	int RenderHeight;
 	int DisplayWidth;
 	int DisplayHeight;
 };
