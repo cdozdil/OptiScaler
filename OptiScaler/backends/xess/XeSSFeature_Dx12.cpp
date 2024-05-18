@@ -55,23 +55,6 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		dumpCount += Config::Instance()->xessDebugFrames;
 	}
 
-	if (Config::Instance()->changeRCAS)
-	{
-		if (RCAS != nullptr && RCAS.get() != nullptr)
-		{
-			spdlog::trace("XeSSFeatureDx12::Evaluate sleeping before RCAS.reset() for 250ms");
-			std::this_thread::sleep_for(std::chrono::milliseconds(250));
-			RCAS.reset();
-		}
-		else
-		{
-			Config::Instance()->changeRCAS = false;
-			spdlog::trace("XeSSFeatureDx12::Evaluate sleeping before CAS creation for 250ms");
-			std::this_thread::sleep_for(std::chrono::milliseconds(250));
-			RCAS = std::make_unique<RCAS_Dx12>("RCAS", Device);
-		}
-	}
-
 	xess_result_t xessResult;
 	xess_d3d12_execute_params_t params{};
 

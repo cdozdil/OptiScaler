@@ -155,23 +155,6 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 	if (_EvaluateFeature != nullptr)
 	{
-		if (Config::Instance()->changeRCAS)
-		{
-			if (RCAS != nullptr && RCAS.get() != nullptr)
-			{
-				spdlog::trace("DLSSFeatureDx12::Evaluate sleeping before CAS.reset() for 250ms");
-				std::this_thread::sleep_for(std::chrono::milliseconds(250));
-				RCAS.reset();
-			}
-			else
-			{
-				Config::Instance()->changeRCAS = false;
-				spdlog::trace("DLSSFeatureDx12::Evaluate sleeping before CAS creation for 250ms");
-				std::this_thread::sleep_for(std::chrono::milliseconds(250));
-				RCAS = std::make_unique<RCAS_Dx12>("RCAS", Device);
-			}
-		}
-
 		ProcessEvaluateParams(InParameters);
 
 		ID3D12Resource* paramOutput = nullptr;

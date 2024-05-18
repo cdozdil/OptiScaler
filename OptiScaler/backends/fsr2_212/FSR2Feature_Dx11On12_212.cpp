@@ -132,23 +132,6 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 		Dx11DeviceContext = dc;
 	}
 
-	if (Config::Instance()->changeRCAS)
-	{
-		if (RCAS != nullptr && RCAS.get() != nullptr)
-		{
-			spdlog::trace("FSR2FeatureDx11on12_212::Evaluate sleeping before RCAS.reset() for 250ms");
-			std::this_thread::sleep_for(std::chrono::milliseconds(250));
-			RCAS.reset();
-		}
-		else
-		{
-			Config::Instance()->changeRCAS = false;
-			spdlog::trace("FSR2FeatureDx11on12_212::Evaluate sleeping before RCAS creation for 250ms");
-			std::this_thread::sleep_for(std::chrono::milliseconds(250));
-			RCAS = std::make_unique<RCAS_Dx12>("RCAS", Dx12Device);
-		}
-	}
-
 	Fsr212::FfxFsr2DispatchDescription params{};
 
 	InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);

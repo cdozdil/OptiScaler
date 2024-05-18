@@ -167,23 +167,6 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		dumpCount += Config::Instance()->xessDebugFrames;
 	}
 
-	if (Config::Instance()->changeRCAS)
-	{
-		if (RCAS != nullptr && RCAS.get() != nullptr)
-		{
-			spdlog::trace("XeSSFeatureDx11::Evaluate sleeping before CAS.reset() for 250ms");
-			std::this_thread::sleep_for(std::chrono::milliseconds(250));
-			RCAS.reset();
-		}
-		else
-		{
-			Config::Instance()->changeRCAS = false;
-			spdlog::trace("XeSSFeatureDx11::Evaluate sleeping before CAS creation for 250ms");
-			std::this_thread::sleep_for(std::chrono::milliseconds(250));
-			RCAS = std::make_unique<RCAS_Dx12>("RCAS", Dx12Device);
-		}
-	}
-
 	// creatimg params for XeSS
 	xess_result_t xessResult;
 	xess_d3d12_execute_params_t params{};
@@ -259,7 +242,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	// RCAS
 	if (!Config::Instance()->changeRCAS &&
 		Config::Instance()->RcasEnabled.value_or(true) &&
-		sharpness > 0.0f &&
+		(sharpness > 0.0f || Config::Instance()->MotionSharpnessEnabled.value_or(false)) &&
 		RCAS != nullptr && RCAS.get() != nullptr &&
 		RCAS->CreateBufferResource(Dx12Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 	{
@@ -326,13 +309,13 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 		RCAS != nullptr && RCAS.get() != nullptr)
 	{
 		spdlog::debug("XeSSFeatureDx11::Evaluate Apply CAS");
+
 		if (params.pOutputTexture != RCAS->Buffer())
 			ResourceBarrier(Dx12CommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
 		RCAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
 		RcasConstants rcasConstants{};
-
 		rcasConstants.Sharpness = sharpness;
 		rcasConstants.DisplayWidth = DisplayWidth();
 		rcasConstants.DisplayHeight = DisplayHeight();
