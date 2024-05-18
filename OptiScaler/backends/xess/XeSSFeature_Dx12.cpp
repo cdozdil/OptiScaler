@@ -189,7 +189,8 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		else
 			params.pOutputTexture = paramOutput;
 
-		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && sharpness > 0.0f &&
+		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && 
+			(sharpness > 0.0f || Config::Instance()->MotionSharpnessEnabled.value_or(false)) &&
 			RCAS != nullptr && RCAS.get() != nullptr &&
 			RCAS->CreateBufferResource(Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
@@ -302,7 +303,9 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 
 	// apply rcas
-	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && sharpness > 0.0f && RCAS != nullptr && RCAS.get() != nullptr && RCAS->Buffer() != nullptr)
+	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && 
+		(sharpness > 0.0f || Config::Instance()->MotionSharpnessEnabled.value_or(false)) && 
+		RCAS != nullptr && RCAS.get() != nullptr && RCAS->Buffer() != nullptr)
 	{
 		if (params.pOutputTexture != RCAS->Buffer())
 			ResourceBarrier(InCommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);

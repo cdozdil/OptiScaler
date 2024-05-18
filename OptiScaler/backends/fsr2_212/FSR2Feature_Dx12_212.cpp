@@ -186,7 +186,8 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 		else
 			params.output = Fsr212::ffxGetResourceDX12_212(&_context, paramOutput, (wchar_t*)L"FSR2_Output", Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 
-		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && sharpness > 0.0f &&
+		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && 
+			(sharpness > 0.0f || Config::Instance()->MotionSharpnessEnabled.value_or(false)) &&
 			RCAS != nullptr && RCAS.get() != nullptr &&
 			RCAS->CreateBufferResource(Device, (ID3D12Resource*)params.output.resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
@@ -334,7 +335,8 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 	}
 
 	// apply rcas
-	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && sharpness > 0.0f && 
+	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && 
+		(sharpness > 0.0f || Config::Instance()->MotionSharpnessEnabled.value_or(false)) &&
 		RCAS != nullptr && RCAS.get() != nullptr && RCAS->Buffer() != nullptr)
 	{
 		if (params.output.resource != RCAS->Buffer())

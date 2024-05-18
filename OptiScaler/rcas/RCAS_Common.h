@@ -17,6 +17,7 @@ struct RcasConstants
 	float MvScaleX;
 	float MvScaleY;
 	float Threshold;
+	float ScaleLimit;
 	int DisplayWidth;
 	int DisplayHeight;
 };

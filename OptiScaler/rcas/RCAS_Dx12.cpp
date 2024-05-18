@@ -147,12 +147,13 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
 	constants.DisplayHeight = InConstants.DisplayHeight;
 	constants.DisplayWidth = InConstants.DisplayWidth;
 	constants.DynamicSharpenEnabled = Config::Instance()->MotionSharpnessEnabled.value_or(false) ? 1 : 0;
-	constants.MotionSharpness = Config::Instance()->MotionMaxSharpness.value_or(0.8f);
+	constants.MotionSharpness = Config::Instance()->MotionSharpness.value_or(0.4f);
 	constants.MvScaleX = InConstants.MvScaleX;
 	constants.MvScaleY = InConstants.MvScaleY;
 	constants.Sharpness = InConstants.Sharpness;
 	constants.Debug = Config::Instance()->MotionSharpnessDebug.value_or(false) ? 1 : 0;
-	constants.Threshold = Config::Instance()->MotionThreshold.value_or(25.0f);
+	constants.Threshold = Config::Instance()->MotionThreshold.value_or(0.0f);
+	constants.ScaleLimit = Config::Instance()->MotionScaleLimit.value_or(20.0f);
 
 	constants.DisplaySizeMV = mvDesc.Width == inDesc.Width;
 	constants.MotionTextureScale = (float)mvDesc.Width / (float)inDesc.Width;

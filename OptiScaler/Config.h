@@ -63,8 +63,9 @@ public:
 
 	std::optional<bool> MotionSharpnessEnabled;
 	std::optional<bool> MotionSharpnessDebug;
-	std::optional<float> MotionMaxSharpness;
+	std::optional<float> MotionSharpness;
 	std::optional<float> MotionThreshold;
+	std::optional<float> MotionScaleLimit;
 
 	// menu
 	std::optional<float> MenuScale;

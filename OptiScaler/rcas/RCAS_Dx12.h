@@ -23,6 +23,7 @@ private:
 		float MvScaleX;
 		float MvScaleY;
 		float Threshold;
+		float ScaleLimit;
 		int DisplayWidth;
 		int DisplayHeight;
 	};
@@ -68,6 +69,7 @@ cbuffer Params : register(b0)
 	float MvScaleX;
 	float MvScaleY;
 	float Threshold;
+	float ScaleLimit;
 	int DisplayWidth;
 	int DisplayHeight;
 };
@@ -89,9 +91,7 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
   if(DynamicSharpenEnabled > 0 && MotionSharpness > Sharpness)
   {
 	float2 mv;
-	float mx;
-	float my;
-	float factor = MotionSharpness - Sharpness;
+	float motion;
 	float add = 0.0f;
 
 	if(DisplaySizeMV > 0)
@@ -99,18 +99,18 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
 	else
 	  mv = Motion.Load(int3(DTid.x * MotionTextureScale, DTid.y * MotionTextureScale, 0)).rg;
 
-	mx = abs(mv.r * MvScaleX);
-	my = abs(mv.g * MvScaleY);
+	motion = max(abs(mv.r * MvScaleX), abs(mv.g * MvScaleY));
 
-	if(mx > my)
-		add = (mx / Threshold) * factor;
-	else
-		add = (my / Threshold) * factor;
+	if(motion > Threshold)
+		add = (motion / (ScaleLimit - Threshold)) * MotionSharpness;
 	
-	if(add > factor)
-		add = factor;
+	if(add > MotionSharpness)
+		add = MotionSharpness;
 
 	setSharpness += add;
+
+	if(setSharpness > 1.0f)
+	  setSharpness = 1.0f;
   }
 
   float3 e = Source.Load(int3(DTid.x, DTid.y, 0)).rgb;

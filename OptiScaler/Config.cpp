@@ -84,9 +84,10 @@ bool Config::Reload()
 		Sharpness = readFloat("Sharpness", "Sharpness");
 
 		MotionSharpnessEnabled = readBool("Sharpness", "MotionSharpnessEnabled");
-		MotionMaxSharpness = readFloat("Sharpness", "MotionMaxSharpness");
+		MotionSharpness = readFloat("Sharpness", "MotionSharpness");
 		MotionSharpnessDebug = readBool("Sharpness", "MotionSharpnessDebug");
 		MotionThreshold = readFloat("Sharpness", "MotionThreshold");
+		MotionScaleLimit = readFloat("Sharpness", "MotionScaleLimit");
 
 		if (Sharpness.has_value())
 		{
@@ -96,12 +97,12 @@ bool Config::Reload()
 				Sharpness.reset();
 		}
 
-		if (MotionMaxSharpness.has_value())
+		if (MotionSharpness.has_value())
 		{
-			if (MotionMaxSharpness.value() > 1.0f)
-				MotionMaxSharpness = 1.0f;
-			else if (Sharpness.value_or(0.3f) && MotionMaxSharpness < Sharpness || MotionMaxSharpness.value() < 0.0f)
-				MotionMaxSharpness.reset();
+			if (MotionSharpness.value() > 1.0f)
+				MotionSharpness = 1.0f;
+			else if (Sharpness.value_or(0.3f) && MotionSharpness < Sharpness || MotionSharpness.value() < 0.0f)
+				MotionSharpness.reset();
 		}
 
 		if (MotionThreshold.has_value())
@@ -241,7 +242,7 @@ bool Config::SaveIni()
 	ini.SetValue("Sharpness", "Sharpness", GetFloatValue(Instance()->Sharpness).c_str());
 	ini.SetValue("Sharpness", "MotionSharpnessEnabled", GetBoolValue(Instance()->MotionSharpnessEnabled).c_str());
 	ini.SetValue("Sharpness", "MotionSharpnessDebug", GetBoolValue(Instance()->MotionSharpnessDebug).c_str());
-	ini.SetValue("Sharpness", "MotionMaxSharpness", GetFloatValue(Instance()->MotionMaxSharpness).c_str());
+	ini.SetValue("Sharpness", "MotionSharpness", GetFloatValue(Instance()->MotionSharpness).c_str());
 	ini.SetValue("Sharpness", "MotionThreshold", GetFloatValue(Instance()->MotionThreshold).c_str());
 
 	// Ingame menu
