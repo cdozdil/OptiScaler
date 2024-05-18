@@ -920,9 +920,15 @@ public:
 						vfov = Config::Instance()->FsrVerticalFov.value_or(60.0f);
 						hfov = Config::Instance()->FsrHorizontalFov.value_or(90.0f);
 
+						if (useVFov && !Config::Instance()->FsrVerticalFov.has_value())
+							Config::Instance()->FsrVerticalFov = vfov;
+						else if (!useVFov && !Config::Instance()->FsrHorizontalFov.has_value())
+							Config::Instance()->FsrHorizontalFov = hfov;
+
 						if (ImGui::RadioButton("Use Vert. Fov", useVFov))
 						{
 							Config::Instance()->FsrHorizontalFov.reset();
+							Config::Instance()->FsrVerticalFov = vfov;
 							useVFov = true;
 						}
 
@@ -931,6 +937,7 @@ public:
 						if (ImGui::RadioButton("Use Horz. Fov", !useVFov))
 						{
 							Config::Instance()->FsrVerticalFov.reset();
+							Config::Instance()->FsrHorizontalFov = hfov;
 							useVFov = false;
 						}
 
