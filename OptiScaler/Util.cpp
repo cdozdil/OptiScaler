@@ -35,7 +35,7 @@ std::filesystem::path Util::ExePath()
 
 static BOOL CALLBACK EnumWindowsCallback(HWND handle, LPARAM lParam) {
 	const auto isMainWindow = [handle]() {
-		return GetWindow(handle, GW_OWNER) == nullptr && IsWindowVisible(handle);
+		return GetWindow(handle, GW_OWNER) == nullptr && IsWindowVisible(handle) && handle != GetConsoleWindow();
 		};
 
 
