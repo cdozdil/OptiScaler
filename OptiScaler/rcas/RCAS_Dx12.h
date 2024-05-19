@@ -159,6 +159,7 @@ public:
 
 	ID3D12Resource* Buffer() { return _buffer; }
 	bool IsInit() const { return _init; }
+	bool CanRender() const { return _init && _buffer != nullptr; }
 
 	RCAS_Dx12(std::string InName, ID3D12Device* InDevice);
 
