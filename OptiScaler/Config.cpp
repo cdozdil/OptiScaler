@@ -89,6 +89,7 @@ bool Config::Reload()
 		ShortcutKey = readInt("Menu", "ShortcutKey");
 		ResetKey = readInt("Menu", "ResetKey");
 		MenuInitDelay = readInt("Menu", "MenuInitDelay");
+		HookD3D12 = readBool("Menu", "HookD3D12");
 		HookSLDevice = readBool("Menu", "HookSLDevice");
 		HookSLProxy = readBool("Menu", "HookSLProxy");
 		HookFSR3Proxy = readBool("Menu", "HookFSR3Proxy");
@@ -256,6 +257,7 @@ bool Config::SaveIni()
 	ini.SetValue("Menu", "ResetKey", GetIntValue(Instance()->ResetKey).c_str());
 	ini.SetValue("Menu", "ShortcutKey", GetIntValue(Instance()->ShortcutKey).c_str());
 	ini.SetValue("Menu", "MenuInitDelay", GetIntValue(Instance()->MenuInitDelay).c_str());
+	ini.SetValue("Menu", "HookD3D12", GetBoolValue(Instance()->HookD3D12).c_str());
 	ini.SetValue("Menu", "HookSLDevice", GetBoolValue(Instance()->HookSLDevice).c_str());
 	ini.SetValue("Menu", "HookSLProxy", GetBoolValue(Instance()->HookSLProxy).c_str());
 	ini.SetValue("Menu", "HookFSR3Proxy", GetBoolValue(Instance()->HookFSR3Proxy).c_str());

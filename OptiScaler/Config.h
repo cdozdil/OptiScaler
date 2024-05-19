@@ -73,6 +73,7 @@ public:
 	std::optional<int> ShortcutKey;
 	std::optional<int> ResetKey;
 	std::optional<int> MenuInitDelay;
+	std::optional<bool> HookD3D12;
 	std::optional<bool> HookSLDevice;
 	std::optional<bool> HookSLProxy;
 	std::optional<bool> HookFSR3Proxy;
