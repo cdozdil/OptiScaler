@@ -1015,11 +1015,11 @@ public:
 						Config::Instance()->MotionSharpness = motionSharpness;
 
 						float motionThreshod = Config::Instance()->MotionThreshold.value_or(0.0f);
-						ImGui::SliderFloat("Motion Threshod", &motionThreshod, 0.0f, 100.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat);
+						ImGui::SliderFloat("Motion Threshod", &motionThreshod, 0.0f, 100.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
 						Config::Instance()->MotionThreshold = motionThreshod;
 
 						float motionScale = Config::Instance()->MotionScaleLimit.value_or(10.0f);
-						ImGui::SliderFloat("Motion Scale", &motionScale, 0.0f, 100.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat);
+						ImGui::SliderFloat("Motion Scale", &motionScale, 0.0f, 100.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
 						Config::Instance()->MotionScaleLimit = motionScale;
 
 						ImGui::EndDisabled();
