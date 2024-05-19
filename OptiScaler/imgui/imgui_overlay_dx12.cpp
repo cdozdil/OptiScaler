@@ -16,7 +16,7 @@
 // Dx12 overlay code adoptes from 
 // https://github.com/bruhmoment21/UniversalHookX
 
-static int const NUM_BACK_BUFFERS = 2;
+static int const NUM_BACK_BUFFERS = 4;
 static IDXGIFactory4* g_dxgiFactory = nullptr;
 static ID3D12Device* g_pd3dDeviceParam = nullptr;
 static ID3D12Device* g_pd3dDevice = nullptr;
@@ -54,6 +54,7 @@ static PFN_ffxGetDX12SwapchainPtr offxGetDX12SwapchainPtr = nullptr;
 
 static bool _isInited = false;
 static bool _reInit = false;
+static unsigned long _frames = 0;
 
 static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain);
 
@@ -205,7 +206,7 @@ static void* WINAPI hkffxGetDX12SwapchainPtr(void* ffxSwapChain)
 
 			DetourTransactionBegin();
 			DetourUpdateThread(GetCurrentThread());
-			
+
 			DetourDetach(&(PVOID&)offxGetDX12SwapchainPtr, hkffxGetDX12SwapchainPtr);
 			offxGetDX12SwapchainPtr = nullptr;
 			_reInit = false;
@@ -374,9 +375,19 @@ static void CreateRenderTarget(IDXGISwapChain* pSwapChain)
 {
 	spdlog::info("imgui_overlay_dx12::CreateRenderTarget");
 
-	for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
+	DXGI_SWAP_CHAIN_DESC desc;
+	HRESULT hr = pSwapChain->GetDesc(&desc);
+
+	if (hr != S_OK)
+	{
+		spdlog::error("imgui_overlay_dx12::CreateRenderTarget pSwapChain->GetDesc: {0:X}", (unsigned long)hr);
+		return;
+	}
+
+	for (UINT i = 0; i < desc.BufferCount; ++i)
 	{
 		ID3D12Resource* pBackBuffer = NULL;
+
 		auto result = pSwapChain->GetBuffer(i, IID_PPV_ARGS(&pBackBuffer));
 
 		if (result != S_OK)
@@ -526,6 +537,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 		for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
 		{
 			result = g_pd3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&g_commandAllocators[i]));
+
 			if (result != S_OK)
 			{
 				spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 CreateCommandAllocator[{0}]: {1:X}", i, (unsigned long)result);
@@ -568,6 +580,8 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 
 			ImGui::Render();
 
+
+			_frames++;
 			UINT backBufferIdx = pSwapChain->GetCurrentBackBufferIndex();
 			ID3D12CommandAllocator* commandAllocator = g_commandAllocators[backBufferIdx];
 
@@ -586,7 +600,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
 			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
-			result = g_pd3dCommandList->Reset(commandAllocator, NULL);
+			result = g_pd3dCommandList->Reset(commandAllocator, nullptr);
 			if (result != S_OK)
 			{
 				spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 g_pd3dCommandList->Reset: {0:X}", (unsigned long)result);
@@ -794,7 +808,7 @@ void ImGuiOverlayDx12::ReInitDx12(HWND InNewHwnd)
 	if (!_isInited)
 		return;
 
-	spdlog::debug("ImGuiOverlayDx12::ReInitDx12 hwnd: {0:X}", (unsigned long)InNewHwnd);
+	spdlog::info("ImGuiOverlayDx12::ReInitDx12 hwnd: {0:X}", (unsigned long)InNewHwnd);
 
 	if (ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
 		ImGui_ImplDX12_Shutdown();

@@ -374,7 +374,7 @@ private:
 			io.WantCaptureKeyboard = _isVisible;
 			io.WantCaptureMouse = _isVisible;
 
-			spdlog::trace("WndProc HOME pressed, {0}", _isVisible ? "opening ImGui" : "closing ImGui");
+			spdlog::trace("WndProc Menu key pressed, {0}", _isVisible ? "opening ImGui" : "closing ImGui");
 
 			return TRUE;
 		}
