@@ -91,7 +91,7 @@ bool Config::Reload()
 		MenuInitDelay = readInt("Menu", "MenuInitDelay");
 		HookSLDevice = readBool("Menu", "HookSLDevice");
 		HookSLProxy = readBool("Menu", "HookSLProxy");
-		HookUniscalerProxy = readBool("Menu", "HookUniscalerProxy");
+		HookFSR3Proxy = readBool("Menu", "HookFSR3Proxy");
 
 		// CAS
 		RcasEnabled = readBool("CAS", "Enabled");
@@ -258,7 +258,7 @@ bool Config::SaveIni()
 	ini.SetValue("Menu", "MenuInitDelay", GetIntValue(Instance()->MenuInitDelay).c_str());
 	ini.SetValue("Menu", "HookSLDevice", GetBoolValue(Instance()->HookSLDevice).c_str());
 	ini.SetValue("Menu", "HookSLProxy", GetBoolValue(Instance()->HookSLProxy).c_str());
-	ini.SetValue("Menu", "HookUniscalerProxy", GetBoolValue(Instance()->HookUniscalerProxy).c_str());
+	ini.SetValue("Menu", "HookFSR3Proxy", GetBoolValue(Instance()->HookFSR3Proxy).c_str());
 
 	// CAS
 	ini.SetValue("CAS", "Enabled", GetBoolValue(Instance()->RcasEnabled).c_str());

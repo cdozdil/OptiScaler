@@ -75,7 +75,7 @@ public:
 	std::optional<int> MenuInitDelay;
 	std::optional<bool> HookSLDevice;
 	std::optional<bool> HookSLProxy;
-	std::optional<bool> HookUniscalerProxy;
+	std::optional<bool> HookFSR3Proxy;
 
 	// Upscale Ratio Override
 	std::optional<bool> UpscaleRatioOverrideEnabled;
