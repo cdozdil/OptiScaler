@@ -225,7 +225,8 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 	// RCAS
 	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && 
 		(sharpness > 0.0f || Config::Instance()->MotionSharpnessEnabled.value_or(false)) &&
-		RCAS != nullptr && RCAS.get() != nullptr && RCAS->CreateBufferResource(Dx12Device, (ID3D12Resource*)params.output.resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() && 
+		RCAS->CreateBufferResource(Dx12Device, (ID3D12Resource*)params.output.resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 	{
 		RCAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		params.output = Fsr212::ffxGetResourceDX12_212(&_context, RCAS->Buffer(), (wchar_t*)L"FSR2_Out", Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -324,7 +325,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, con
 	// apply rcas
 	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && 
 		(sharpness > 0.0f || Config::Instance()->MotionSharpnessEnabled.value_or(false)) && 
-		RCAS != nullptr && RCAS.get() != nullptr)
+		RCAS != nullptr && RCAS.get() != nullptr && RCAS->CanRender())
 	{
 		spdlog::debug("XeSSFeatureDx11::Evaluate Apply CAS");
 		if (params.output.resource != RCAS->Buffer())

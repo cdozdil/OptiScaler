@@ -34,23 +34,6 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 	if (!IsInited())
 		return false;
 
-	/*if (Config::Instance()->RcasEnabled.value_or(false) && Config::Instance()->changeRCAS)
-	{
-		if (RCAS != nullptr && RCAS.get() != nullptr)
-		{
-			spdlog::trace("XeSSFeatureDx12::Evaluate sleeping before RCAS.reset() for 250ms");
-			std::this_thread::sleep_for(std::chrono::milliseconds(250));
-			RCAS.reset();
-		}
-		else
-		{
-			Config::Instance()->changeRCAS = false;
-			spdlog::trace("XeSSFeatureDx12::Evaluate sleeping before CAS creation for 250ms");
-			std::this_thread::sleep_for(std::chrono::milliseconds(250));
-			RCAS = std::make_unique<RCAS_Dx12>("RCAS", Device);
-		}
-	}*/
-
 	Fsr212::FfxFsr2DispatchDescription params{};
 
 	InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
@@ -188,7 +171,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 
 		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && 
 			(sharpness > 0.0f || Config::Instance()->MotionSharpnessEnabled.value_or(false)) &&
-			RCAS != nullptr && RCAS.get() != nullptr &&
+			RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() &&
 			RCAS->CreateBufferResource(Device, (ID3D12Resource*)params.output.resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
 			RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -337,7 +320,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 	// apply rcas
 	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && 
 		(sharpness > 0.0f || Config::Instance()->MotionSharpnessEnabled.value_or(false)) &&
-		RCAS != nullptr && RCAS.get() != nullptr && RCAS->Buffer() != nullptr)
+		RCAS != nullptr && RCAS.get() != nullptr && RCAS->CanRender())
 	{
 		if (params.output.resource != RCAS->Buffer())
 			ResourceBarrier(InCommandList, (ID3D12Resource*)params.output.resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
