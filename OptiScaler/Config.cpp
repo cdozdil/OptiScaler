@@ -115,7 +115,7 @@ bool Config::Reload()
 		{
 			if (MotionSharpness.value() > 1.0f)
 				MotionSharpness = 1.0f;
-			else if (Sharpness.value_or(0.3f) && MotionSharpness < Sharpness || MotionSharpness.value() < 0.0f)
+			else if (MotionSharpness.value() < 0.0f)
 				MotionSharpness.reset();
 		}
 

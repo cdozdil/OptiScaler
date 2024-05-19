@@ -170,7 +170,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 			params.output = Fsr212::ffxGetResourceDX12_212(&_context, paramOutput, (wchar_t*)L"FSR2_Output", Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 
 		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && 
-			(sharpness > 0.0f || Config::Instance()->MotionSharpnessEnabled.value_or(false)) &&
+			(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
 			RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() &&
 			RCAS->CreateBufferResource(Device, (ID3D12Resource*)params.output.resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
@@ -319,7 +319,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 
 	// apply rcas
 	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && 
-		(sharpness > 0.0f || Config::Instance()->MotionSharpnessEnabled.value_or(false)) &&
+		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
 		RCAS != nullptr && RCAS.get() != nullptr && RCAS->CanRender())
 	{
 		if (params.output.resource != RCAS->Buffer())
@@ -330,8 +330,8 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 		RcasConstants rcasConstants{};
 
 		rcasConstants.Sharpness = sharpness;
-		rcasConstants.DisplayWidth = DisplayWidth();
-		rcasConstants.DisplayHeight = DisplayHeight();
+		rcasConstants.DisplayWidth = TargetWidth();
+		rcasConstants.DisplayHeight = TargetHeight();
 		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
 		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
 		rcasConstants.DisplaySizeMV = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
