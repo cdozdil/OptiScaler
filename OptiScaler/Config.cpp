@@ -131,7 +131,7 @@ bool Config::Reload()
 		{
 			if (MotionScaleLimit.value() > 100.0f)
 				MotionScaleLimit = 100.0f;
-			else if (MotionScaleLimit.value() < 0.0f)
+			else if (MotionScaleLimit.value() < 0.01f)
 				MotionScaleLimit.reset();
 		}
 

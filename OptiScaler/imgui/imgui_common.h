@@ -1011,15 +1011,15 @@ public:
 							Config::Instance()->MotionSharpnessDebug = overrideMSDebug;
 
 						float motionSharpness = Config::Instance()->MotionSharpness.value_or(0.4f);
-						ImGui::SliderFloat("Max Motion Sharpness", &motionSharpness, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
+						ImGui::SliderFloat("MotionSharpness", &motionSharpness, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
 						Config::Instance()->MotionSharpness = motionSharpness;
 
 						float motionThreshod = Config::Instance()->MotionThreshold.value_or(0.0f);
-						ImGui::SliderFloat("Motion Threshod", &motionThreshod, 0.0f, 100.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+						ImGui::SliderFloat("MotionThreshod", &motionThreshod, 0.0f, 100.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
 						Config::Instance()->MotionThreshold = motionThreshod;
 
 						float motionScale = Config::Instance()->MotionScaleLimit.value_or(10.0f);
-						ImGui::SliderFloat("Motion Scale", &motionScale, 0.0f, 100.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+						ImGui::SliderFloat("MotionRange", &motionScale, 0.01f, 100.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
 						Config::Instance()->MotionScaleLimit = motionScale;
 
 						ImGui::EndDisabled();
