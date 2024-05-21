@@ -360,9 +360,23 @@ private:
 
 				_showMipmapCalcWindow = false;
 			}
-			else if (pfn_ClipCursor_hooked && _lastCursorLimit != nullptr)
+			else if (pfn_ClipCursor_hooked)
 			{
-				pfn_ClipCursor(nullptr);
+				if (_lastCursorLimit != nullptr)
+					pfn_ClipCursor(nullptr);
+
+				RECT windowRect = {};
+
+				if (GetWindowRect(_handle, &windowRect))
+				{
+					auto x = windowRect.left + (windowRect.right - windowRect.left) / 2;
+					auto y = windowRect.top + (windowRect.bottom - windowRect.top) / 2;
+
+					if (pfn_SetCursorPos != nullptr)
+						pfn_SetCursorPos(x, y);
+					else
+						SetCursorPos(x, y);
+				}
 
 				//if (GetWindowRect(_handle, &_cursorLimit))
 				//	pfn_ClipCursor(&_cursorLimit);
@@ -1023,7 +1037,7 @@ public:
 						Config::Instance()->MotionScaleLimit = motionScale;
 
 						ImGui::EndDisabled();
-						
+
 						ImGui::EndDisabled();
 
 					}
