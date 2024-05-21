@@ -67,12 +67,13 @@ static PFN_CreateSwapChainForHwnd oCreateSwapChainForHwnd_SL = nullptr;
 static PFN_CreateSwapChainForComposition oCreateSwapChainForComposition_SL = nullptr;
 static PFN_CreateSwapChainForCoreWindow oCreateSwapChainForCoreWindow_SL = nullptr;
 
-static PFN_ffxGetDX12SwapchainPtr offxGetDX12SwapchainPtr_Mod = nullptr;
-static PFN_ffxGetDX12SwapchainPtr offxGetDX12SwapchainPtr_FSR3 = nullptr;
+static PFN_ffxGetDX12SwapchainPtr offxGetDX12Swapchain_Mod = nullptr;
+static PFN_ffxGetDX12SwapchainPtr offxGetDX12Swapchain_FSR3 = nullptr;
 
 static bool _isInited = false;
 static bool _changeQueue = false;
-static unsigned long _frames = 0;
+static int _changeQueueCount = 0;
+static bool _showRenderImGuiDebugOnce = true;
 
 static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain);
 
@@ -281,13 +282,15 @@ bool IsCommandQueue(void* ptr) {
 }
 
 // Hook for ffxGetDX12SwapchainPtr with FSR3 Mods
-static void* WINAPI hkffxGetDX12SwapchainPtr_Mod(void* InSwapChain)
+static void* WINAPI hkffxGetDX12Swapchain_Mod(void* InSwapChain)
 {
 	spdlog::debug("imgui_overlay_dx12::hkffxGetDX12SwapchainPtr_Mod!");
 
 	if (oPresent_Dx12_Mod == nullptr && IsIDXGISwapChain4(InSwapChain))
 	{
+		void* result = nullptr;
 		IDXGISwapChain3* swapChain3 = nullptr;
+
 		IDXGISwapChain* swapChain4 = reinterpret_cast<IDXGISwapChain*>(InSwapChain);
 		swapChain4->QueryInterface(IID_PPV_ARGS(&swapChain3));
 
@@ -321,40 +324,49 @@ static void* WINAPI hkffxGetDX12SwapchainPtr_Mod(void* InSwapChain)
 
 			DetourTransactionCommit();
 
-			spdlog::debug("imgui_overlay_dx12::hkffxGetDX12SwapchainPtr_Mod added swapchain hooks!");
+			spdlog::info("imgui_overlay_dx12::hkffxGetDX12SwapchainPtr_Mod added swapchain hooks!");
+
+			// get result of this call
+			result = offxGetDX12Swapchain_Mod(InSwapChain);
 
 			DetourTransactionBegin();
 			DetourUpdateThread(GetCurrentThread());
 
-			DetourDetach(&(PVOID&)offxGetDX12SwapchainPtr_Mod, hkffxGetDX12SwapchainPtr_Mod);
-			offxGetDX12SwapchainPtr_Mod = nullptr;
+			DetourDetach(&(PVOID&)offxGetDX12Swapchain_Mod, hkffxGetDX12Swapchain_Mod);
+			offxGetDX12Swapchain_Mod = nullptr;
 
 			DetourTransactionCommit();
 
-			spdlog::debug("imgui_overlay_dx12::hkffxGetDX12SwapchainPtr_Mod disabled hkffxGetDX12SwapchainPtr hook!");
+			spdlog::info("imgui_overlay_dx12::hkffxGetDX12SwapchainPtr_Mod disabled hkffxGetDX12SwapchainPtr hook!");
 		}
 
 		if (swapChain3 != nullptr)
 			swapChain3->Release();
+
+		if (offxGetDX12Swapchain_Mod == nullptr)
+			return result;
 	}
 
-	return offxGetDX12SwapchainPtr_Mod(InSwapChain);
+	return offxGetDX12Swapchain_Mod(InSwapChain);
 }
 
 // Hook for ffxGetDX12SwapchainPtr with native FSR3 
-static void* WINAPI hkffxGetDX12SwapchainPtr_FSR3(void* InSwapChain)
+static void* WINAPI hkffxGetDX12Swapchain_FSR3(void* InSwapChain)
 {
 	spdlog::debug("imgui_overlay_dx12::hkffxGetDX12SwapchainPtr_FSR3!");
 
 	if (oPresent_Dx12_FSR3 == nullptr && IsIDXGISwapChain4(InSwapChain))
 	{
+		void* result = nullptr;
 		IDXGISwapChain3* swapChain3 = nullptr;
+
 		IDXGISwapChain* swapChain4 = reinterpret_cast<IDXGISwapChain*>(InSwapChain);
 		swapChain4->QueryInterface(IID_PPV_ARGS(&swapChain3));
 
 		if (swapChain3 != nullptr)
 		{
 			_swapChain_FSR3 = swapChain3;
+
 			spdlog::debug("imgui_overlay_dx12::hkffxGetDX12SwapchainPtr_FSR3 swapchain captured: {0:X}", (unsigned long)swapChain3);
 
 			void** pVTable = *reinterpret_cast<void***>(swapChain3);
@@ -382,31 +394,44 @@ static void* WINAPI hkffxGetDX12SwapchainPtr_FSR3(void* InSwapChain)
 
 			DetourTransactionCommit();
 
-			spdlog::debug("imgui_overlay_dx12::hkffxGetDX12SwapchainPtr_FSR3 added swapchain hooks!");
+			spdlog::info("imgui_overlay_dx12::hkffxGetDX12SwapchainPtr_FSR3 added swapchain hooks!");
+
+			// get result of this call
+			result = offxGetDX12Swapchain_FSR3(InSwapChain);
 
 			DetourTransactionBegin();
 			DetourUpdateThread(GetCurrentThread());
 
-			DetourDetach(&(PVOID&)offxGetDX12SwapchainPtr_FSR3, hkffxGetDX12SwapchainPtr_Mod);
-			offxGetDX12SwapchainPtr_Mod = nullptr;
+			DetourDetach(&(PVOID&)offxGetDX12Swapchain_FSR3, hkffxGetDX12Swapchain_FSR3);
+			offxGetDX12Swapchain_FSR3 = nullptr;
 			DetourTransactionCommit();
 
-			spdlog::debug("imgui_overlay_dx12::hkffxGetDX12SwapchainPtr_FSR3 disabled hkffxGetDX12SwapchainPtr_FSR3 hook!");
+			spdlog::info("imgui_overlay_dx12::hkffxGetDX12SwapchainPtr_FSR3 disabled hkffxGetDX12SwapchainPtr_FSR3 hook!");
 		}
 
 		if (swapChain3 != nullptr)
 			swapChain3->Release();
+
+		if (offxGetDX12Swapchain_FSR3 == nullptr)
+			return result;
 	}
 
-	return offxGetDX12SwapchainPtr_FSR3(InSwapChain);
+	return offxGetDX12Swapchain_FSR3(InSwapChain);
 }
 
 static void WINAPI hkExecuteCommandLists_Dx12(ID3D12CommandQueue* pCommandQueue, UINT NumCommandLists, ID3D12CommandList* ppCommandLists)
 {
 
-	if (g_pd3dCommandQueue == nullptr || (_changeQueue && g_pd3dCommandQueue != pCommandQueue))
+	if (_changeQueue)
+		_changeQueueCount++;
+
+	if (g_pd3dCommandQueue == nullptr || (_changeQueue && (g_pd3dCommandQueue != pCommandQueue || _changeQueueCount > 10)))
 	{
-		spdlog::info("hkExecuteCommandLists_Dx12 pCommandQueue: {0:X}", (unsigned long)pCommandQueue);
+		if (g_pd3dCommandQueue != nullptr)
+			spdlog::info("hkExecuteCommandLists_Dx12 new g_pd3dCommandQueue: {0:X} -> {0:X}", (unsigned long)g_pd3dCommandQueue, (unsigned long)pCommandQueue);
+		else
+			spdlog::info("hkExecuteCommandLists_Dx12 new g_pd3dCommandQueue: {0:X}", (unsigned long)pCommandQueue);
+
 		g_pd3dCommandQueue = pCommandQueue;
 		_changeQueue = false;
 	}
@@ -472,7 +497,7 @@ static HRESULT WINAPI hkCreateSwapChainForComposition_SL(IDXGIFactory* pFactory,
 
 static bool CreateDeviceD3D12(HWND InHWnd, ID3D12Device* InDevice)
 {
-	spdlog::debug("imgui_overlay_dx12::CreateDeviceD3D12 Handle: {0:X}", (unsigned long)InHWnd);
+	spdlog::info("imgui_overlay_dx12::CreateDeviceD3D12 Handle: {0:X}", (unsigned long)InHWnd);
 
 	// Setup swap chain
 	DXGI_SWAP_CHAIN_DESC1 sd = { };
@@ -547,9 +572,9 @@ static bool CreateDeviceD3D12(HWND InHWnd, ID3D12Device* InDevice)
 	if (Config::Instance()->HookFSR3Proxy.value_or(true))
 	{
 		// Check for Uniscaler
-		offxGetDX12SwapchainPtr_Mod = (PFN_ffxGetDX12SwapchainPtr)DetourFindFunction("Uniscaler.asi", "ffxGetDX12SwapchainPtr");
+		offxGetDX12Swapchain_Mod = (PFN_ffxGetDX12SwapchainPtr)DetourFindFunction("Uniscaler.asi", "ffxGetSwapchainDX12");
 
-		if (offxGetDX12SwapchainPtr_Mod != nullptr)
+		if (offxGetDX12Swapchain_Mod != nullptr)
 		{
 			spdlog::info("imgui_overlay_dx12::CreateDeviceD3D12 Uniscaler's ffxGetDX12SwapchainPtr found");
 			isUniscaler = true;
@@ -557,29 +582,29 @@ static bool CreateDeviceD3D12(HWND InHWnd, ID3D12Device* InDevice)
 		else
 		{
 			// Check for Nukem's
-			offxGetDX12SwapchainPtr_Mod = (PFN_ffxGetDX12SwapchainPtr)DetourFindFunction("dlssg_to_fsr3_amd_is_better.dll", "ffxGetDX12SwapchainPtr");
+			offxGetDX12Swapchain_Mod = (PFN_ffxGetDX12SwapchainPtr)DetourFindFunction("dlssg_to_fsr3_amd_is_better.dll", "ffxGetSwapchainDX12");
 
-			if (offxGetDX12SwapchainPtr_Mod)
+			if (offxGetDX12Swapchain_Mod)
 				spdlog::info("imgui_overlay_dx12::CreateDeviceD3D12 Nukem's ffxGetDX12SwapchainPtr found");
 		}
 
 		// Check for native FSR3 (if game has native FSR3-FG)
-		offxGetDX12SwapchainPtr_FSR3 = (PFN_ffxGetDX12SwapchainPtr)DetourFindFunction("ffx_backend_dx12_x64.dll", "ffxGetDX12SwapchainPtr");
+		offxGetDX12Swapchain_FSR3 = (PFN_ffxGetDX12SwapchainPtr)DetourFindFunction("ffx_backend_dx12_x64.dll", "ffxGetSwapchainDX12");
 
-		if (offxGetDX12SwapchainPtr_FSR3)
+		if (offxGetDX12Swapchain_FSR3)
 			spdlog::info("imgui_overlay_dx12::CreateDeviceD3D12 FSR3's offxGetDX12SwapchainPtr found");
 
 		// Hook FSR3 ffxGetDX12SwapchainPtr methods
-		if (offxGetDX12SwapchainPtr_Mod != nullptr || offxGetDX12SwapchainPtr_FSR3 != nullptr)
+		if (offxGetDX12Swapchain_Mod != nullptr || offxGetDX12Swapchain_FSR3 != nullptr)
 		{
 			DetourTransactionBegin();
 			DetourUpdateThread(GetCurrentThread());
 
-			if (offxGetDX12SwapchainPtr_Mod != nullptr)
-				DetourAttach(&(PVOID&)offxGetDX12SwapchainPtr_Mod, hkffxGetDX12SwapchainPtr_Mod);
+			if (offxGetDX12Swapchain_Mod != nullptr)
+				DetourAttach(&(PVOID&)offxGetDX12Swapchain_Mod, hkffxGetDX12Swapchain_Mod);
 
-			if (offxGetDX12SwapchainPtr_FSR3 != nullptr)
-				DetourAttach(&(PVOID&)offxGetDX12SwapchainPtr_FSR3, hkffxGetDX12SwapchainPtr_FSR3);
+			if (offxGetDX12Swapchain_FSR3 != nullptr)
+				DetourAttach(&(PVOID&)offxGetDX12Swapchain_FSR3, hkffxGetDX12Swapchain_FSR3);
 
 			DetourTransactionCommit();
 		}
@@ -989,6 +1014,8 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 
 		if (ImGui::GetCurrentContext() && g_pd3dCommandQueue && g_mainRenderTargetResource[0])
 		{
+			_showRenderImGuiDebugOnce = true;
+
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplWin32_NewFrame();
 
@@ -997,7 +1024,6 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 			ImGui::Render();
 
 
-			_frames++;
 			UINT backBufferIdx = pSwapChain->GetCurrentBackBufferIndex();
 			ID3D12CommandAllocator* commandAllocator = g_commandAllocators[backBufferIdx];
 
@@ -1051,37 +1077,12 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 		}
 		else
 		{
-			spdlog::debug("!(ImGui::GetCurrentContext() && g_pd3dCommandQueue && g_mainRenderTargetResource[0])");
+			if (_showRenderImGuiDebugOnce)
+				spdlog::info("RenderImGui_DX12 !(ImGui::GetCurrentContext() && g_pd3dCommandQueue && g_mainRenderTargetResource[0])");
+
+			_showRenderImGuiDebugOnce = false;
 		}
 	}
-}
-
-bool ImGuiOverlayDx12::IsInitedDx12()
-{
-	return _isInited;
-}
-
-HWND ImGuiOverlayDx12::Handle()
-{
-	return ImGuiOverlayBase::Handle();
-}
-
-void ImGuiOverlayDx12::InitDx12(HWND InHandle, ID3D12Device* InDevice)
-{
-	spdlog::info("RenderImGui_DX12 InitDx12 Handle: {0:X}", (unsigned long)InHandle);
-
-	g_pd3dDeviceParam = InDevice;
-
-	if (g_pd3dDevice == nullptr && CreateDeviceD3D12(InHandle, InDevice))
-	{
-		_isInited = true;
-	}
-	else
-	{
-		spdlog::error("imgui_overlay_dx12::InitDx12 CreateDeviceD3D12 failed!");
-	}
-
-	CleanupDeviceD3D12(InDevice);
 }
 
 void DeatachAllHooks()
@@ -1137,16 +1138,16 @@ void DeatachAllHooks()
 		oResizeBuffers1_Dx12_FSR3 = nullptr;
 	}
 
-	if (offxGetDX12SwapchainPtr_Mod)
+	if (offxGetDX12Swapchain_Mod)
 	{
-		DetourDetach(&(PVOID&)offxGetDX12SwapchainPtr_Mod, hkffxGetDX12SwapchainPtr_Mod);
-		offxGetDX12SwapchainPtr_Mod = nullptr;
+		DetourDetach(&(PVOID&)offxGetDX12Swapchain_Mod, hkffxGetDX12Swapchain_Mod);
+		offxGetDX12Swapchain_Mod = nullptr;
 	}
 
-	if (offxGetDX12SwapchainPtr_FSR3)
+	if (offxGetDX12Swapchain_FSR3)
 	{
-		DetourDetach(&(PVOID&)offxGetDX12SwapchainPtr_FSR3, hkffxGetDX12SwapchainPtr_FSR3);
-		offxGetDX12SwapchainPtr_FSR3 = nullptr;
+		DetourDetach(&(PVOID&)offxGetDX12Swapchain_FSR3, hkffxGetDX12Swapchain_FSR3);
+		offxGetDX12Swapchain_FSR3 = nullptr;
 	}
 
 	if (oCreateSwapChain_SL)
@@ -1260,6 +1261,34 @@ void DeatachAllHooks()
 	DetourTransactionCommit();
 }
 
+bool ImGuiOverlayDx12::IsInitedDx12()
+{
+	return _isInited;
+}
+
+HWND ImGuiOverlayDx12::Handle()
+{
+	return ImGuiOverlayBase::Handle();
+}
+
+void ImGuiOverlayDx12::InitDx12(HWND InHandle, ID3D12Device* InDevice)
+{
+	spdlog::info("RenderImGui_DX12 InitDx12 Handle: {0:X}", (unsigned long)InHandle);
+
+	g_pd3dDeviceParam = InDevice;
+
+	if (g_pd3dDevice == nullptr && CreateDeviceD3D12(InHandle, InDevice))
+	{
+		_isInited = true;
+	}
+	else
+	{
+		spdlog::error("imgui_overlay_dx12::InitDx12 CreateDeviceD3D12 failed!");
+	}
+
+	CleanupDeviceD3D12(InDevice);
+}
+
 void ImGuiOverlayDx12::ShutdownDx12()
 {
 	if (_isInited && ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
@@ -1293,5 +1322,6 @@ void ImGuiOverlayDx12::ReInitDx12(HWND InNewHwnd)
 	CleanupRenderTarget();
 
 	_changeQueue = true;
+	_changeQueueCount = 0;
 }
 
