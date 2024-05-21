@@ -1057,6 +1057,10 @@ public:
 					if (Config::Instance()->Api == NVNGX_DX12 ||
 						(Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "fsr22" && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "dlss"))
 					{
+						// if motion vectors are not display size
+						ImGui::BeginDisabled((Config::Instance()->DisplayResolution.has_value() && !Config::Instance()->DisplayResolution.value()) ||
+											 (!Config::Instance()->DisplayResolution.has_value() && (Config::Instance()->CurrentFeature->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes)));
+
 						ImGui::SeparatorText("Output Scaling");
 
 						float defaultRatio = 1.5f;
@@ -1085,6 +1089,8 @@ public:
 							ImGui::Text("%dx%d -> %dx%d", cf->RenderWidth(), cf->RenderHeight(), (uint32_t)(cf->DisplayWidth() * _ssRatio), (uint32_t)(cf->DisplayHeight() * _ssRatio));
 
 						ImGui::SliderFloat("Ratio", &_ssRatio, 0.5f, 3.0f, "%.2f");
+
+						ImGui::EndDisabled();
 					}
 
 					// DX12 -----------------------------
@@ -1267,6 +1273,13 @@ public:
 						if (bool mv = Config::Instance()->DisplayResolution.value_or(false); ImGui::Checkbox("Display Res. MV", &mv))
 						{
 							Config::Instance()->DisplayResolution = mv;
+
+							if (!mv)
+							{
+								Config::Instance()->OutputScalingEnabled = false;
+								_ssEnabled = false;
+							}
+
 							Config::Instance()->changeBackend = true;
 						}
 
@@ -1414,7 +1427,7 @@ public:
 					}
 
 					const char* q[] = { "Ultra Performance", "Performance", "Balanced", "Quality", "Ultra Quality", "DLAA" };
-					float xr[] = { 3.0f, 2.3f, 2.0f, 1.7f, 1.5f, 1.0f };
+					//float xr[] = { 3.0f, 2.3f, 2.0f, 1.7f, 1.5f, 1.0f };
 					float fr[] = { 3.0f, 2.0f, 1.7f, 1.5f, 1.3f, 1.0f };
 					auto configQ = _mipmapUpscalerQuality;
 
@@ -1459,16 +1472,9 @@ public:
 								}
 
 								if (ov > 0.0f)
-								{
 									_mipmapUpscalerRatio = ov;
-								}
 								else
-								{
-									if (Config::Instance()->Dx12Upscaler.value_or("xess") == "xess")
-										_mipmapUpscalerRatio = xr[n];
-									else
-										_mipmapUpscalerRatio = fr[n];
-								}
+									_mipmapUpscalerRatio = fr[n];
 
 								_renderWidth = _displayWidth / _mipmapUpscalerRatio;
 								_mipBiasCalculated = log2((float)_renderWidth / (float)_displayWidth);
@@ -1521,6 +1527,7 @@ public:
 	static void Init(HWND InHwnd)
 	{
 		_handle = InHwnd;
+		_isVisible = false;
 		_isResetRequested = false;
 
 		spdlog::debug("ImGuiCommon::Init Handle: {0:X}", (unsigned long)_handle);
@@ -1583,6 +1590,7 @@ public:
 		ImGui::DestroyContext();
 
 		_isInited = false;
+		_isVisible = false;
 		_isResetRequested = false;
 	}
 };
