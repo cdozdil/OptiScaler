@@ -53,13 +53,18 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 				paramVelocity->QueryInterface(IID_PPV_ARGS(&pvTexture));
 				pvTexture->GetDesc(&desc);
 				bool lowResMV = desc.Width < TargetWidth();
-				bool displaySizeEnabled = (GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
+				bool displaySizeEnabled = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
 
 				if (displaySizeEnabled && lowResMV)
 				{
-					spdlog::warn("XeSSFeatureDx11::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
+					spdlog::warn("XeSSFeatureDx11::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, TargetWidth(), displaySizeEnabled);
 					Config::Instance()->DisplayResolution = false;
 				}
+
+				pvTexture->Release();
+				pvTexture = nullptr;
+
+				Config::Instance()->DisplayResolution = displaySizeEnabled;
 			}
 		}
 
@@ -224,8 +229,6 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 	if (useSS)
 	{
-		OutputScaler->Scale = (float)TargetWidth() / (float)DisplayWidth();
-
 		if (OutputScaler->CreateBufferResource(Dx12Device, dx11Out.Dx12Resource, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
 			OutputScaler->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -240,11 +243,9 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	}
 
 	// RCAS
-	if (!Config::Instance()->changeRCAS &&
-		Config::Instance()->RcasEnabled.value_or(true) &&
+	if (Config::Instance()->RcasEnabled.value_or(true) &&
 		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
-		RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() &&
-		RCAS->CreateBufferResource(Dx12Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() && RCAS->CreateBufferResource(Dx12Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 	{
 		RCAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		params.pOutputTexture = RCAS->Buffer();
@@ -304,7 +305,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	}
 
 	// apply rcas
-	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && 
+	if (Config::Instance()->RcasEnabled.value_or(true) && 
 		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
 		RCAS != nullptr && RCAS.get() != nullptr && RCAS->CanRender())
 	{

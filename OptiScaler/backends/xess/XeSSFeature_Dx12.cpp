@@ -125,7 +125,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		{
 			auto desc = params.pVelocityTexture->GetDesc();
 			bool lowResMV = desc.Width < TargetWidth();
-			bool displaySizeEnabled = (GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
+			bool displaySizeEnabled = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
 
 			if (displaySizeEnabled && lowResMV)
 			{
@@ -134,6 +134,8 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 				Config::Instance()->changeBackend = true;
 				return true;
 			}
+
+			Config::Instance()->DisplayResolution = displaySizeEnabled;
 		}
 	}
 	else
@@ -159,8 +161,6 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 		if (useSS)
 		{
-			OutputScaler->Scale = (float)TargetWidth() / (float)DisplayWidth();
-
 			if (OutputScaler->CreateBufferResource(Device, paramOutput, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 			{
 				OutputScaler->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -172,10 +172,9 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		else
 			params.pOutputTexture = paramOutput;
 
-		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && 
+		if (Config::Instance()->RcasEnabled.value_or(true) && 
 			(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
-			RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() &&
-			RCAS->CreateBufferResource(Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+			RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() && RCAS->CreateBufferResource(Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
 			RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			params.pOutputTexture = RCAS->Buffer();
@@ -286,7 +285,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	}
 
 	// apply rcas
-	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(true) && 
+	if (Config::Instance()->RcasEnabled.value_or(true) && 
 		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
 		RCAS != nullptr && RCAS.get() != nullptr && RCAS->CanRender())
 	{

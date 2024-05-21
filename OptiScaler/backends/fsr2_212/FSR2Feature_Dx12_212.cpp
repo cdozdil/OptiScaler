@@ -124,15 +124,17 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 		{
 			auto desc = paramVelocity->GetDesc();
 			bool lowResMV = desc.Width < TargetWidth();
-			bool displaySizeEnabled = (GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0;
+			bool displaySizeEnabled = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
 
 			if (displaySizeEnabled && lowResMV)
 			{
-				spdlog::warn("FSR2FeatureDx12_212::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
+				spdlog::warn("FSR2FeatureDx12_212::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, TargetWidth(), displaySizeEnabled);
 				Config::Instance()->DisplayResolution = false;
 				Config::Instance()->changeBackend = true;
 				return true;
 			}
+
+			Config::Instance()->DisplayResolution = displaySizeEnabled;
 		}
 
 		params.motionVectors = Fsr212::ffxGetResourceDX12_212(&_context, paramVelocity, (wchar_t*)L"FSR2_MotionVectors", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
@@ -156,8 +158,6 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 
 		if (useSS)
 		{
-			OutputScaler->Scale = (float)TargetWidth() / (float)DisplayWidth();
-
 			if (OutputScaler->CreateBufferResource(Device, paramOutput, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 			{
 				OutputScaler->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -169,10 +169,9 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 		else
 			params.output = Fsr212::ffxGetResourceDX12_212(&_context, paramOutput, (wchar_t*)L"FSR2_Output", Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 
-		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && 
+		if (Config::Instance()->RcasEnabled.value_or(false) && 
 			(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
-			RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() &&
-			RCAS->CreateBufferResource(Device, (ID3D12Resource*)params.output.resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+			RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() && RCAS->CreateBufferResource(Device, (ID3D12Resource*)params.output.resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
 			RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			params.output = Fsr212::ffxGetResourceDX12_212(&_context, RCAS->Buffer(), (wchar_t*)L"FSR2_Output", Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -295,7 +294,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 	if (Config::Instance()->FsrVerticalFov.has_value())
 		params.cameraFovAngleVertical = Config::Instance()->FsrVerticalFov.value() * 0.0174532925199433f;
 	else if (Config::Instance()->FsrHorizontalFov.value_or(0.0f) > 0.0f)
-		params.cameraFovAngleVertical = 2.0f * atan((tan(Config::Instance()->FsrHorizontalFov.value() * 0.0174532925199433f) * 0.5f) / (float)DisplayHeight() * (float)DisplayWidth());
+		params.cameraFovAngleVertical = 2.0f * atan((tan(Config::Instance()->FsrHorizontalFov.value() * 0.0174532925199433f) * 0.5f) / (float)TargetHeight() * (float)TargetWidth());
 	else
 		params.cameraFovAngleVertical = 1.0471975511966f;
 
@@ -318,7 +317,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, con
 	}
 
 	// apply rcas
-	if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(false) && 
+	if (Config::Instance()->RcasEnabled.value_or(false) && 
 		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
 		RCAS != nullptr && RCAS.get() != nullptr && RCAS->CanRender())
 	{

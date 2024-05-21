@@ -169,8 +169,6 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		// supersampling
 		if (useSS)
 		{
-			OutputScaler->Scale = (float)TargetWidth() / (float)DisplayWidth();
-
 			if (OutputScaler->CreateBufferResource(Device, paramOutput, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 			{
 				OutputScaler->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -185,15 +183,14 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		// RCAS sharpness & preperation
 		auto sharpness = GetSharpness(InParameters);
 
-		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
+		if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
 			(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
-			RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() && 
-			RCAS->CreateBufferResource(Device, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+			RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() && RCAS->CreateBufferResource(Device, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
 			RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-
 			setBuffer = RCAS->Buffer();
 		}
+
 		// sharpness override
 		else if (Config::Instance()->OverrideSharpness.value_or(false))
 		{
@@ -212,7 +209,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		}
 
 		// Apply CAS
-		if (!Config::Instance()->changeRCAS && Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
+		if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
 			(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
 			RCAS != nullptr && RCAS.get() != nullptr && RCAS->CanRender())
 		{
