@@ -34,6 +34,12 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 	if (!IsInited())
 		return false;
 
+	if (!RCAS->IsInit())
+		Config::Instance()->RcasEnabled = false;
+	
+	if (!OutputScaler->IsInit())
+		Config::Instance()->OutputScalingEnabled = false;
+
 	FfxFsr2DispatchDescription params{};
 
 	InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);

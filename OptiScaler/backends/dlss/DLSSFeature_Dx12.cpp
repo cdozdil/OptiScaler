@@ -149,6 +149,13 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		return false;
 	}
 
+
+	if (!RCAS->IsInit())
+		Config::Instance()->RcasEnabled = false;
+
+	if (!OutputScaler->IsInit())
+		Config::Instance()->OutputScalingEnabled = false;
+
 	bool rcasEnabled = (Version().major > 2 || (Version().major == 2 && Version().minor >= 5 && Version().patch >= 1));
 
 	NVSDK_NGX_Result nvResult;
@@ -185,7 +192,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 		if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
 			(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
-			RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() && RCAS->CreateBufferResource(Device, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+			RCAS->IsInit() && RCAS->CreateBufferResource(Device, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
 			RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			setBuffer = RCAS->Buffer();
@@ -211,7 +218,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		// Apply CAS
 		if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
 			(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
-			RCAS != nullptr && RCAS.get() != nullptr && RCAS->CanRender())
+			RCAS->CanRender())
 		{
 			if (setBuffer != RCAS->Buffer())
 				ResourceBarrier(InCommandList, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
