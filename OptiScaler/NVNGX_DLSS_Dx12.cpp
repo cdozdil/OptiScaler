@@ -169,8 +169,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 
 	if (InFeatureInfo != nullptr)
 	{
+		
 		if (InSDKVersion > 0x0000013)
+		{
 			Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
+
+			if (Config::Instance()->NVNGX_Logger.LoggingCallback != nullptr)
+				spdlog::info("NVSDK_NGX_D3D12_Init_Ext NVSDK Logging callback received!");
+		}
 
 		Config::Instance()->NVNGX_FeatureInfo_Paths.clear();
 
@@ -667,24 +673,34 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 		if (changeBackendCounter == 2)
 		{
+			// backend selection
+			// 0 : XeSS
+			// 1 : FSR2.2
+			// 2 : FSR2.1
+			// 3 : DLSS
+			int upscalerChoice = 0;
+
 			// prepare new upscaler
 			if (Config::Instance()->newBackend == "fsr22")
 			{
 				Config::Instance()->Dx12Upscaler = "fsr22";
 				spdlog::info("NVSDK_NGX_D3D12_EvaluateFeature creating new FSR 2.2.1 feature");
 				Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12>(handleId, createParams);
+				upscalerChoice = 1;
 			}
 			else if (Config::Instance()->newBackend == "fsr21")
 			{
 				Config::Instance()->Dx12Upscaler = "fsr21";
 				spdlog::info("NVSDK_NGX_D3D12_EvaluateFeature creating new FSR 2.1.2 feature");
 				Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12_212>(handleId, createParams);
+				upscalerChoice = 2;
 			}
 			else if (Config::Instance()->newBackend == "dlss")
 			{
 				Config::Instance()->Dx12Upscaler = "dlss";
 				spdlog::info("NVSDK_NGX_D3D12_EvaluateFeature creating new DLSS feature");
 				Dx12Contexts[handleId] = std::make_unique<DLSSFeatureDx12>(handleId, createParams);
+				upscalerChoice = 3;
 			}
 			else
 			{
@@ -692,6 +708,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 				spdlog::info("NVSDK_NGX_D3D12_EvaluateFeature creating new XeSS feature");
 				Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, createParams);
 			}
+
+			InParameters->Set("DLSSEnabler.Dx12Backend", upscalerChoice);
 
 			return NVSDK_NGX_Result_Success;
 		}
@@ -712,9 +730,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 				spdlog::error("NVSDK_NGX_D3D12_EvaluateFeature init failed with {0} feature", Config::Instance()->newBackend);
 
 				if (Config::Instance()->Dx12Upscaler == "dlss")
+				{
 					Config::Instance()->newBackend = "xess";
+					InParameters->Set("DLSSEnabler.Dx12Backend", 0);
+				}
 				else
+				{
 					Config::Instance()->newBackend = "fsr21";
+					InParameters->Set("DLSSEnabler.Dx12Backend", 2);
+				}
 
 				Config::Instance()->changeBackend = true;
 			}
