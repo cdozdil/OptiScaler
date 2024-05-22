@@ -1058,8 +1058,8 @@ public:
 						(Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "fsr22" && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "dlss"))
 					{
 						// if motion vectors are not display size
-						ImGui::BeginDisabled((Config::Instance()->DisplayResolution.has_value() && !Config::Instance()->DisplayResolution.value()) ||
-											 (!Config::Instance()->DisplayResolution.has_value() && (Config::Instance()->CurrentFeature->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes)));
+						ImGui::BeginDisabled((Config::Instance()->DisplayResolution.has_value() && Config::Instance()->DisplayResolution.value()) ||
+											 (!Config::Instance()->DisplayResolution.has_value() && !(Config::Instance()->CurrentFeature->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes)));
 
 						ImGui::SeparatorText("Output Scaling");
 
