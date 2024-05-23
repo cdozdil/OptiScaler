@@ -74,6 +74,7 @@ static bool _isInited = false;
 static int _changeFFXModHookCounter = 0;
 static bool _showRenderImGuiDebugOnce = true;
 static bool _usingDLSSG = false;
+static bool _usingFSR3 = false;
 
 static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain);
 
@@ -103,7 +104,7 @@ static void CleanupRenderTarget()
 // Hooks for native Dx12
 static HRESULT WINAPI hkPresent_Dx12(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT Flags)
 {
-	if (!_usingDLSSG)
+	if (!_usingDLSSG && !_usingFSR3)
 		RenderImGui_DX12(pSwapChain);
 
 	return oPresent_Dx12(pSwapChain, SyncInterval, Flags);
@@ -111,7 +112,7 @@ static HRESULT WINAPI hkPresent_Dx12(IDXGISwapChain3* pSwapChain, UINT SyncInter
 
 static HRESULT WINAPI hkPresent1_Dx12(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters)
 {
-	if (!_usingDLSSG)
+	if (!_usingDLSSG && !_usingFSR3)
 		RenderImGui_DX12(pSwapChain);
 
 	return oPresent1_Dx12(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
@@ -119,7 +120,7 @@ static HRESULT WINAPI hkPresent1_Dx12(IDXGISwapChain3* pSwapChain, UINT SyncInte
 
 static HRESULT WINAPI hkResizeBuffers_Dx12(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
-	if (!_usingDLSSG)
+	if (!_usingDLSSG && !_usingFSR3)
 		CleanupRenderTarget();
 
 	return oResizeBuffers_Dx12(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
@@ -187,40 +188,58 @@ static HRESULT WINAPI hkPresent_Dx12_FSR3(IDXGISwapChain3* pSwapChain, UINT Sync
 {
 	HRESULT result;
 
-	if (oPresent_Dx12_FSR3 == oPresent_Dx12)
-		return oPresent_Dx12_FSR3(pSwapChain, SyncInterval, Flags);
+	//if (oPresent_Dx12_FSR3 == oPresent_Dx12)
+	//	return oPresent_Dx12_FSR3(pSwapChain, SyncInterval, Flags);
 
-	if (_swapChain_FSR3)
-		RenderImGui_DX12(_swapChain_FSR3);
-	else
-		RenderImGui_DX12(pSwapChain);
+	if (_usingFSR3)
+	{
+		if (_swapChain_Mod)
+			RenderImGui_DX12(_swapChain_FSR3);
+		else
+			RenderImGui_DX12(pSwapChain);
+	}
+
+	_usingFSR3 = true;
 
 	return oPresent_Dx12_FSR3(pSwapChain, SyncInterval, Flags);
 }
 
 static HRESULT WINAPI hkPresent1_Dx12_FSR3(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters)
 {
-	if (oPresent1_Dx12_FSR3 == oPresent1_Dx12)
-		return oPresent1_Dx12_FSR3(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
+	//if (oPresent1_Dx12_FSR3 == oPresent1_Dx12)
+	//	return oPresent1_Dx12_FSR3(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
 
-	if (_swapChain_FSR3)
-		RenderImGui_DX12(_swapChain_FSR3);
-	else
-		RenderImGui_DX12(pSwapChain);
+	if (_usingFSR3)
+	{
+		if (_swapChain_Mod)
+			RenderImGui_DX12(_swapChain_FSR3);
+		else
+			RenderImGui_DX12(pSwapChain);
+	}
+
+	_usingFSR3 = true;
 
 	return oPresent1_Dx12_FSR3(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
 }
 
 static HRESULT WINAPI hkResizeBuffers_Dx12_FSR3(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
-	CleanupRenderTarget();
+	if (_usingFSR3)
+		CleanupRenderTarget();
+
+	_usingFSR3 = true;
+
 	return oResizeBuffers_Dx12_FSR3(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
 }
 
 static HRESULT WINAPI hkResizeBuffers1_Dx12_FSR3(IDXGISwapChain3* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat,
 	UINT SwapChainFlags, const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
-	CleanupRenderTarget();
+	if (_usingFSR3)
+		CleanupRenderTarget();
+
+	_usingFSR3 = true;
+
 	return oResizeBuffers1_Dx12_FSR3(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
 }
 
@@ -228,8 +247,8 @@ static HRESULT WINAPI hkResizeBuffers1_Dx12_FSR3(IDXGISwapChain3* pSwapChain, UI
 static HRESULT WINAPI hkPresent_Dx12_Mod(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT Flags)
 {
 
-	if (oPresent_Dx12_Mod == oPresent_Dx12)
-		return oPresent_Dx12_Mod(pSwapChain, SyncInterval, Flags);
+	//if (oPresent_Dx12_Mod == oPresent_Dx12)
+	//	return oPresent_Dx12_Mod(pSwapChain, SyncInterval, Flags);
 
 	if (_swapChain_Mod)
 		RenderImGui_DX12(_swapChain_Mod);
@@ -241,8 +260,8 @@ static HRESULT WINAPI hkPresent_Dx12_Mod(IDXGISwapChain3* pSwapChain, UINT SyncI
 
 static HRESULT WINAPI hkPresent1_Dx12_Mod(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters)
 {
-	if (oPresent1_Dx12_Mod == oPresent1_Dx12)
-		return oPresent1_Dx12_Mod(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
+	//if (oPresent1_Dx12_Mod == oPresent1_Dx12)
+	//	return oPresent1_Dx12_Mod(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
 
 	if (_swapChain_Mod)
 		RenderImGui_DX12(_swapChain_Mod);
