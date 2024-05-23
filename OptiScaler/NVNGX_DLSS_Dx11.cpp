@@ -51,7 +51,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
 			std::wstring iniPathW(path);
 			std::string iniPath(iniPathW.begin(), iniPathW.end());
 			Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(iniPathW);
-			spdlog::debug("NVSDK_NGX_D3D11_Init_Ext InApplicationDataPath[{0}]: {1}", i, iniPath);
+			spdlog::debug("NVSDK_NGX_D3D11_Init_Ext PathListInfo[{0}]: {1}", i, iniPath);
 
 		}
 	}

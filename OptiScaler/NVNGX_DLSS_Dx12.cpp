@@ -176,7 +176,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 
 	if (InFeatureInfo != nullptr)
 	{
-
 		for (size_t i = 0; i < InFeatureInfo->PathListInfo.Length; i++)
 		{
 			const wchar_t* path = InFeatureInfo->PathListInfo.Path[i];
@@ -186,10 +185,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 			std::wstring iniPathW(path);
 			std::string iniPath(iniPathW.begin(), iniPathW.end());
 
-			spdlog::debug("NVSDK_NGX_D3D12_Init_Ext InApplicationDataPath checking nvngx.ini file in: {0}", iniPath);
+			spdlog::debug("NVSDK_NGX_D3D12_Init_Ext PathListInfo[{1}] checking nvngx.ini file in: {0}", iniPath, i);
 
 			if (Config::Instance()->LoadFromPath(path))
-				spdlog::info("NVSDK_NGX_D3D12_Init_Ext InApplicationDataPath nvngx.ini file reloaded from: {0}", iniPath);
+				spdlog::info("NVSDK_NGX_D3D12_Init_Ext PathListInfo[{1}] nvngx.ini file reloaded from: {0}", iniPath, i);
 		}
 	}
 

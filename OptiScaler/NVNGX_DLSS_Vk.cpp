@@ -87,10 +87,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 		for (size_t i = 0; i < Config::Instance()->NVNGX_FeatureInfo_Paths.size(); ++i)
 		{
 			std::string str(Config::Instance()->NVNGX_FeatureInfo_Paths[i].begin(), Config::Instance()->NVNGX_FeatureInfo_Paths[i].end());
-			spdlog::debug("NVSDK_NGX_VULKAN_Init InApplicationDataPath[{0}]: {1}", i, str);
+			spdlog::debug("NVSDK_NGX_VULKAN_Init PathListInfo[{0}]: {1}", i, str);
 		}
 	}
-
 
 	if (InInstance)
 	{
