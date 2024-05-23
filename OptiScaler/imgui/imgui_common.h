@@ -783,7 +783,7 @@ public:
 
 			ImGui::SetNextWindowPos(ImVec2{ posX, posY }, ImGuiCond_FirstUseEver);
 
-			if (ImGui::Begin(std::format("OptiScaler v{}.{}.{}", VER_MAJOR_VERSION, VER_MINOR_VERSION, VER_HOTFIX_VERSION).c_str(), NULL, flags))
+			if (ImGui::Begin(VER_PRODUCT_NAME, NULL, flags))
 			{
 				if (!_showMipmapCalcWindow && !ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow))
 					ImGui::SetWindowFocus();

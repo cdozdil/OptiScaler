@@ -25,16 +25,21 @@ static inline int changeBackendCounter = 0;
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, ID3D11Device* InDevice,
 	NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
+	Config::Instance()->NVNGX_ApplicationId = InApplicationId;
+	Config::Instance()->NVNGX_ApplicationDataPath = std::wstring(InApplicationDataPath);
+	Config::Instance()->NVNGX_Version = InSDKVersion;
+	Config::Instance()->NVNGX_FeatureInfo = InFeatureInfo;
+
+	if (InFeatureInfo != nullptr && InSDKVersion > 0x0000013)
+		Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
+
+	spdlog::info("{0} loaded", VER_PRODUCT_NAME);
+
 	spdlog::info("NVSDK_NGX_D3D11_Init_Ext AppId: {0}", InApplicationId);
 	spdlog::info("NVSDK_NGX_D3D11_Init_Ext SDK: {0:x}", (int)InSDKVersion);
 	std::wstring string(InApplicationDataPath);
 	std::string str(string.begin(), string.end());
 	spdlog::debug("NVSDK_NGX_D3D11_Init_Ext InApplicationDataPath {0}", str);
-
-	Config::Instance()->NVNGX_ApplicationId = InApplicationId;
-	Config::Instance()->NVNGX_ApplicationDataPath = std::wstring(InApplicationDataPath);
-	Config::Instance()->NVNGX_Version = InSDKVersion;
-	Config::Instance()->NVNGX_FeatureInfo = InFeatureInfo;
 
 	Config::Instance()->NVNGX_FeatureInfo_Paths.clear();
 
@@ -43,11 +48,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
 		for (size_t i = 0; i < InFeatureInfo->PathListInfo.Length; i++)
 		{
 			const wchar_t* path = InFeatureInfo->PathListInfo.Path[i];
-			Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(std::wstring(path));
-		}
+			std::wstring iniPathW(path);
+			std::string iniPath(iniPathW.begin(), iniPathW.end());
+			Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(iniPathW);
+			spdlog::debug("NVSDK_NGX_D3D11_Init_Ext InApplicationDataPath[{0}]: {1}", i, iniPath);
 
-		if (InSDKVersion > 0x0000013)
-			Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
+		}
 	}
 
 	if (InDevice)
@@ -61,13 +67,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, ID3D11Device* InDevice,
 	const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
-	spdlog::debug("NVSDK_NGX_D3D11_Init");
-	return NVSDK_NGX_D3D11_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
+	auto result = NVSDK_NGX_D3D11_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
+	spdlog::debug("NVSDK_NGX_D3D11_Init was called NVSDK_NGX_D3D11_Init_Ext");
+	return result;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType,
 	const char* InEngineVersion, const wchar_t* InApplicationDataPath, ID3D11Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
+	auto result = NVSDK_NGX_D3D11_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
+
 	spdlog::info("NVSDK_NGX_D3D11_Init_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::info("NVSDK_NGX_D3D11_Init_ProjectID InEngineType: {0}", (int)InEngineType);
 	spdlog::info("NVSDK_NGX_D3D11_Init_ProjectID InEngineVersion: {0}", InEngineVersion);
@@ -81,12 +90,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_ProjectID(const char* InProj
 	else
 		Config::Instance()->NVNGX_EngineVersion5 = false;
 
-	return NVSDK_NGX_D3D11_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
+	return result;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_with_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion,
 	const wchar_t* InApplicationDataPath, ID3D11Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
+	auto result = NVSDK_NGX_D3D11_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
+
 	spdlog::info("NVSDK_NGX_D3D11_Init_with_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::info("NVSDK_NGX_D3D11_Init_with_ProjectID InEngineType: {0}", (int)InEngineType);
 	spdlog::info("NVSDK_NGX_D3D11_Init_with_ProjectID InEngineVersion: {0}", InEngineVersion);
@@ -100,7 +111,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_with_ProjectID(const char* I
 	else
 		Config::Instance()->NVNGX_EngineVersion5 = false;
 
-	return NVSDK_NGX_D3D11_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
+	return result;
 }
 
 #pragma endregion
@@ -294,7 +305,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 		spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new FSR 2.1.2 with Dx12 feature");
 		Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12_212>(handleId, InParameters);
 	}
-	else 
+	else
 	{
 		spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new native FSR 2.2.1 feature");
 		Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11>(handleId, InParameters);
