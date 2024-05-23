@@ -173,6 +173,9 @@
     <ClInclude Include="rcas\RCAS_Common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="dllmain.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -326,5 +329,10 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OptiScaler.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Source.def">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
