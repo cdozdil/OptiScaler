@@ -1274,7 +1274,7 @@ public:
 						{
 							Config::Instance()->DisplayResolution = mv;
 
-							if (!mv)
+							if (mv)
 							{
 								Config::Instance()->OutputScalingEnabled = false;
 								_ssEnabled = false;
