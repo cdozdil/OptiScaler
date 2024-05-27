@@ -3,6 +3,10 @@
 #include "Logger.h"
 #include "resource.h"
 #include "Util.h"
+#include "Config.h"
+
+#include "imgui/imgui_overlay_dx11.h"
+#include "imgui/imgui_overlay_dx12.h"
 
 #include "detours/detours.h"
 
@@ -21,6 +25,11 @@ std::string nvngxExA("nvngx");
 std::wstring nvngxW(L"nvngx.dll");
 std::wstring nvngxExW(L"nvngx");
 
+std::string nvapiA("nvapi64.dll");
+std::string nvapiExA("nvapi64");
+std::wstring nvapiW(L"nvapi64.dll");
+std::wstring nvapiExW(L"nvapi64");
+
 std::string dllNameA;
 std::string dllNameExA;
 std::wstring dllNameW;
@@ -28,6 +37,36 @@ std::wstring dllNameExW;
 
 void AttachHooks();
 void DeatachHooks();
+
+HMODULE LoadNvApi()
+{
+	HMODULE nvapi = nullptr;
+
+	if (Config::Instance()->NvapiDllPath.has_value())
+	{
+		nvapi = o_LoadLibraryA(Config::Instance()->NvapiDllPath->c_str());
+
+		if (nvapi != nullptr)
+		{
+			spdlog::info("LoadNvApi nvapi64.dll loaded from {0}", Config::Instance()->NvapiDllPath.value());
+			return nvapi;
+		}
+	}
+
+	if (nvapi == nullptr)
+	{
+		auto localPath = Util::DllPath().parent_path() / "nvapi64.dll";
+		nvapi = o_LoadLibraryA(localPath.string().c_str());
+
+		if (nvapi != nullptr)
+		{
+			spdlog::info("LoadNvApi nvapi64.dll loaded from {0}", localPath.string());
+			return nvapi;
+		}
+	}
+
+	return nullptr;
+}
 
 HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 {
@@ -37,19 +76,39 @@ HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 	for (size_t i = 0; i < lcaseLibName.size(); i++)
 		lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
-	auto pos = lcaseLibName.rfind(nvngxA);
+	size_t pos;
 
-	if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxA.size()))
+	if (!Config::Instance()->dlssDisableHook)
 	{
-		spdlog::info("LoadLibraryA nvngx call: {0}, returning this dll!", libName);
-		return dllModule;
+		pos = lcaseLibName.rfind(nvngxA);
+
+		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxA.size()))
+		{
+			spdlog::info("LoadLibraryA nvngx call: {0}, returning this dll!", libName);
+			return dllModule;
+		}
 	}
-	
+
+	if (Config::Instance()->OverrideNvapiDll.value_or(false))
+	{
+		pos = lcaseLibName.rfind(nvapiA);
+
+		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiA.size()))
+		{
+			spdlog::info("LoadLibraryA {0} call!", libName);
+
+			auto nvapi = LoadNvApi();
+
+			if (nvapi != nullptr)
+				return nvapi;
+		}
+	}
+
 	pos = lcaseLibName.rfind(dllNameA);
 
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
 	{
-		spdlog::info("LoadLibraryA winmm call: {0}, returning this dll!", libName);
+		spdlog::info("LoadLibraryA {0} call returning this dll!", libName);
 		return dllModule;
 	}
 
@@ -65,13 +124,34 @@ HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 	for (size_t i = 0; i < lcaseLibName.size(); i++)
 		lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
-	auto pos = lcaseLibName.rfind(nvngxW);
+	size_t pos;
 
-	if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxW.size()))
+	if (!Config::Instance()->dlssDisableHook)
 	{
-		std::string libNameA(lcaseLibName.begin(), lcaseLibName.end());
-		spdlog::info("LoadLibraryW nvngx call: {0}, returning this dll!", libNameA);
-		return dllModule;
+		pos = lcaseLibName.rfind(nvngxW);
+
+		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxW.size()))
+		{
+			std::string libNameA(lcaseLibName.begin(), lcaseLibName.end());
+			spdlog::info("LoadLibraryW nvngx call: {0}, returning this dll!", libNameA);
+			return dllModule;
+		}
+	}
+
+	if (Config::Instance()->OverrideNvapiDll.value_or(false))
+	{
+		pos = lcaseLibName.rfind(nvapiW);
+
+		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiW.size()))
+		{
+			std::string libNameA(lcaseLibName.begin(), lcaseLibName.end());
+			spdlog::info("LoadLibraryW {0} call!", libNameA);
+
+			auto nvapi = LoadNvApi();
+
+			if (nvapi != nullptr)
+				return nvapi;
+		}
 	}
 
 	pos = lcaseLibName.rfind(dllNameW);
@@ -79,7 +159,7 @@ HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
 	{
 		std::string libNameA(lcaseLibName.begin(), lcaseLibName.end());
-		spdlog::info("LoadLibraryW winmm call: {0}, returning this dll!", libNameA);
+		spdlog::info("LoadLibraryW {0} call, returning this dll!", libNameA);
 		return dllModule;
 	}
 
@@ -95,20 +175,52 @@ HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 	for (size_t i = 0; i < lcaseLibName.size(); i++)
 		lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
-	auto pos = lcaseLibName.rfind(nvngxA);
+	size_t pos;
 
-	if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxA.size()))
+	if (!Config::Instance()->dlssDisableHook)
 	{
-		spdlog::info("LoadLibraryA nvngx call: {0}, returning this dll!", libName);
-		return dllModule;
+		pos = lcaseLibName.rfind(nvngxA);
+
+		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxA.size()))
+		{
+			spdlog::info("LoadLibraryA nvngx call: {0}, returning this dll!", libName);
+			return dllModule;
+		}
+
+		pos = lcaseLibName.rfind(nvngxExA);
+
+		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxExA.size()))
+		{
+			spdlog::info("LoadLibraryA nvngx call: {0}, returning this dll!", libName);
+			return dllModule;
+		}
 	}
 
-	pos = lcaseLibName.rfind(nvngxExA);
-
-	if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxExA.size()))
+	if (Config::Instance()->OverrideNvapiDll.value_or(false))
 	{
-		spdlog::info("LoadLibraryA nvngx call: {0}, returning this dll!", libName);
-		return dllModule;
+		pos = lcaseLibName.rfind(nvapiExA);
+
+		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiExA.size()))
+		{
+			spdlog::info("LoadLibraryExA {0} call!", libName);
+
+			auto nvapi = LoadNvApi();
+
+			if (nvapi != nullptr)
+				return nvapi;
+		}
+
+		pos = lcaseLibName.rfind(nvapiA);
+
+		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiA.size()))
+		{
+			spdlog::info("LoadLibraryExA {0} call!", libName);
+
+			auto nvapi = LoadNvApi();
+
+			if (nvapi != nullptr)
+				return nvapi;
+		}
 	}
 
 	pos = lcaseLibName.rfind(dllNameA);
@@ -139,23 +251,58 @@ HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 	for (size_t i = 0; i < lcaseLibName.size(); i++)
 		lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
-	auto pos = lcaseLibName.rfind(nvngxW);
+	size_t pos;
 
-	if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxW.size()))
+	if (!Config::Instance()->dlssDisableHook)
 	{
-		std::string libNameA(libName.begin(), libName.end());
-		spdlog::info("LoadLibraryW nvngx call: {0}, returning this dll!", libNameA);
-		return dllModule;
+		pos = lcaseLibName.rfind(nvngxW);
+
+		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxW.size()))
+		{
+			std::string libNameA(libName.begin(), libName.end());
+			spdlog::info("LoadLibraryW nvngx call: {0}, returning this dll!", libNameA);
+			return dllModule;
+		}
+
+		pos = lcaseLibName.rfind(nvngxExW);
+
+		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxExW.size()))
+		{
+			std::string libNameA(libName.begin(), libName.end());
+			spdlog::info("LoadLibraryW nvngx call: {0}, returning this dll!", libNameA);
+			return dllModule;
+		}
 	}
 
-	pos = lcaseLibName.rfind(nvngxExW);
-
-	if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxExW.size()))
+	if (Config::Instance()->OverrideNvapiDll.value_or(false))
 	{
-		std::string libNameA(libName.begin(), libName.end());
-		spdlog::info("LoadLibraryW nvngx call: {0}, returning this dll!", libNameA);
-		return dllModule;
+		pos = lcaseLibName.rfind(nvapiExW);
+
+		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiExW.size()))
+		{
+			std::string libNameA(lcaseLibName.begin(), lcaseLibName.end());
+			spdlog::info("LoadLibraryExW {0} call!", libNameA);
+
+			auto nvapi = LoadNvApi();
+
+			if (nvapi != nullptr)
+				return nvapi;
+		}
+
+		pos = lcaseLibName.rfind(nvapiW);
+
+		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiW.size()))
+		{
+			std::string libNameA(lcaseLibName.begin(), lcaseLibName.end());
+			spdlog::info("LoadLibraryExW {0} call!", libNameA);
+
+			auto nvapi = LoadNvApi();
+
+			if (nvapi != nullptr)
+				return nvapi;
+		}
 	}
+
 
 	pos = lcaseLibName.rfind(dllNameW);
 
@@ -262,7 +409,7 @@ void CheckWorkingMode()
 		spdlog::info("OptiScaler working as native upscaler: {0}", filename);
 		return;
 	}
-	
+
 	HMODULE dll = nullptr;
 
 	if (lCaseFilename == "version.dll")
@@ -423,7 +570,15 @@ void CheckWorkingMode()
 	if (dll != nullptr)
 	{
 		spdlog::info("Attaching LoadLibrary hooks");
+
 		AttachHooks();
+
+		if (!Config::Instance()->DisableEarlyHooking.value_or(false))
+		{
+			spdlog::info("Trying to early bind of Dx12 ImGui hooks");
+			ImGuiOverlayDx12::EarlyBind();
+		}
+
 		return;
 	}
 
@@ -441,8 +596,14 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 		processId = GetCurrentProcessId();
 
 		PrepareLogger();
+		spdlog::info("{0} loaded", VER_PRODUCT_NAME);
 
 		CheckWorkingMode();
+
+		if (!Config::Instance()->DisableEarlyHooking.value_or(false))
+		{
+			ImGuiOverlayDx12::BindMods();
+		}
 
 		break;
 
