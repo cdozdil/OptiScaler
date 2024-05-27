@@ -164,8 +164,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 	if (InFeatureInfo != nullptr && InSDKVersion > 0x0000013)
 		Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
 
-	spdlog::info("{0} loaded", VER_PRODUCT_NAME);
-
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext AppId: {0}", InApplicationId);
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext SDK: {0:x}", (unsigned int)InSDKVersion);
 	appDataPath = InApplicationDataPath;

@@ -74,8 +74,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 			Config::Instance()->NVNGX_Version = (NVSDK_NGX_Version)(unsigned long)InFeatureInfo;
 	}
 
-	spdlog::info("{0} loaded", VER_PRODUCT_NAME);
-
 	spdlog::info("NVSDK_NGX_VULKAN_Init InApplicationId: {0}", InApplicationId);
 	spdlog::info("NVSDK_NGX_VULKAN_Init InSDKVersion: {0:x}", (unsigned int)InSDKVersion);
 	std::wstring string(InApplicationDataPath);
