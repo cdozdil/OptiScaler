@@ -29,7 +29,6 @@ struct ImGui_ImplVulkan_InitInfo g_ImVulkan_Info = { };
 struct ImGui_ImplVulkanH_Frame* g_ImVulkan_Frames = NULL;
 static VkSemaphore* g_ImVulkan_Semaphores = NULL;
 
-
 static void DestroyVulkanObjects(bool shutdown)
 {
 	vkDeviceWaitIdle(_device);
