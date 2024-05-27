@@ -20,6 +20,21 @@ static ID3D11DeviceContext* g_pd3dDeviceContext = nullptr;
 static ID3D11RenderTargetView* g_pd3dRenderTarget = nullptr;
 static IDXGISwapChain* g_pSwapChain = nullptr;
 
+static PFN_Present oPresent_Dx11 = nullptr;
+static PFN_Present1 oPresent1_Dx11 = nullptr;
+static PFN_ResizeBuffers oResizeBuffers_Dx11 = nullptr;
+static PFN_ResizeBuffers1 oResizeBuffers1_Dx11 = nullptr;
+static PFN_CreateSwapChain oCreateSwapChain_Dx11 = nullptr;
+static PFN_CreateSwapChainForHwnd oCreateSwapChainForHwnd_Dx11 = nullptr;
+static PFN_CreateSwapChainForCoreWindow oCreateSwapChainForCoreWindow_Dx11 = nullptr;
+static PFN_CreateSwapChainForComposition oCreateSwapChainForComposition_Dx11 = nullptr;
+
+static void CleanupRenderTarget();
+static void CleanupDeviceD3D11();
+static bool CreateDeviceD3D11(HWND hWnd);
+static void CreateRenderTarget(IDXGISwapChain* pSwapChain);
+static void RenderImGui_DX11(IDXGISwapChain* pSwapChain);
+
 static int GetCorrectDXGIFormat(int eCurrentFormat)
 {
 	switch (eCurrentFormat)
@@ -29,6 +44,90 @@ static int GetCorrectDXGIFormat(int eCurrentFormat)
 	}
 
 	return eCurrentFormat;
+}
+
+static HRESULT WINAPI hkPresent_Dx11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags)
+{
+	RenderImGui_DX11(pSwapChain);
+	return oPresent_Dx11(pSwapChain, SyncInterval, Flags);
+}
+
+static HRESULT WINAPI hkPresent1_Dx11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters)
+{
+	RenderImGui_DX11(pSwapChain);
+	return oPresent1_Dx11(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
+}
+
+static HRESULT WINAPI hkResizeBuffers_Dx11(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
+{
+	CleanupRenderTarget();
+	return oResizeBuffers_Dx11(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
+}
+
+static HRESULT WINAPI hkResizeBuffers1_Dx11(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat,
+	UINT SwapChainFlags, const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
+{
+	CleanupRenderTarget();
+	return oResizeBuffers1_Dx11(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
+}
+
+static HRESULT WINAPI hkCreateSwapChain_Dx11(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain)
+{
+	CleanupRenderTarget();
+	return oCreateSwapChain_Dx11(pFactory, pDevice, pDesc, ppSwapChain);
+}
+
+static HRESULT WINAPI hkCreateSwapChainForHwnd_Dx11(IDXGIFactory* pFactory, IUnknown* pDevice, HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* pDesc,
+	const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
+{
+	CleanupRenderTarget();
+	return oCreateSwapChainForHwnd_Dx11(pFactory, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
+}
+
+static HRESULT WINAPI hkCreateSwapChainForCoreWindow_Dx11(IDXGIFactory* pFactory, IUnknown* pDevice, IUnknown* pWindow, const DXGI_SWAP_CHAIN_DESC1* pDesc,
+	IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
+{
+	CleanupRenderTarget();
+	return oCreateSwapChainForCoreWindow_Dx11(pFactory, pDevice, pWindow, pDesc, pRestrictToOutput, ppSwapChain);
+}
+
+static HRESULT WINAPI hkCreateSwapChainForComposition_Dx11(IDXGIFactory* pFactory, IUnknown* pDevice, const DXGI_SWAP_CHAIN_DESC1* pDesc, IDXGIOutput* pRestrictToOutput,
+	IDXGISwapChain1** ppSwapChain)
+{
+	CleanupRenderTarget();
+	return oCreateSwapChainForComposition_Dx11(pFactory, pDevice, pDesc, pRestrictToOutput, ppSwapChain);
+}
+
+static void CleanupRenderTarget()
+{
+	if (g_pd3dRenderTarget)
+	{
+		g_pd3dRenderTarget->Release();
+		g_pd3dRenderTarget = NULL;
+	}
+}
+
+static void CleanupDeviceD3D11()
+{
+	CleanupRenderTarget();
+
+	if (g_pSwapChain)
+	{
+		g_pSwapChain->Release();
+		g_pSwapChain = nullptr;
+	}
+
+	if (g_pd3dDevice)
+	{
+		g_pd3dDevice->Release();
+		g_pd3dDevice = nullptr;
+	}
+
+	if (g_pd3dDeviceContext)
+	{
+		g_pd3dDeviceContext->Release();
+		g_pd3dDeviceContext = nullptr;
+	}
 }
 
 static bool CreateDeviceD3D11(HWND hWnd)
@@ -55,6 +154,60 @@ static bool CreateDeviceD3D11(HWND hWnd)
 		return false;
 	}
 
+	// Hook
+	IDXGIDevice* pDXGIDevice = NULL;
+	g_pd3dDevice->QueryInterface(IID_PPV_ARGS(&pDXGIDevice));
+
+	IDXGIAdapter* pDXGIAdapter = NULL;
+	pDXGIDevice->GetAdapter(&pDXGIAdapter);
+
+	IDXGIFactory* pIDXGIFactory = NULL;
+	pDXGIAdapter->GetParent(IID_PPV_ARGS(&pIDXGIFactory));
+
+	if (!pIDXGIFactory)
+	{
+		return false;
+	}
+
+	void** pVTable = *reinterpret_cast<void***>(g_pSwapChain);
+	void** pFactoryVTable = *reinterpret_cast<void***>(pIDXGIFactory);
+
+	pIDXGIFactory->Release();
+	pIDXGIFactory = nullptr;
+	pDXGIAdapter->Release();
+	pDXGIAdapter = nullptr;
+	pDXGIDevice->Release();
+	pDXGIDevice = nullptr;
+
+	CleanupDeviceD3D11();
+
+	oCreateSwapChain_Dx11 = (PFN_CreateSwapChain)pFactoryVTable[10];
+	oCreateSwapChainForHwnd_Dx11 = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
+	oCreateSwapChainForCoreWindow_Dx11 = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
+	oCreateSwapChainForComposition_Dx11 = (PFN_CreateSwapChainForComposition)pFactoryVTable[24];
+
+	oPresent_Dx11 = (PFN_Present)pVTable[8];
+	oPresent1_Dx11 = (PFN_Present1)pVTable[22];
+
+	oResizeBuffers_Dx11 = (PFN_ResizeBuffers)pVTable[13];
+	oResizeBuffers1_Dx11 = (PFN_ResizeBuffers1)pVTable[39];
+
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+
+	DetourAttach(&(PVOID&)oCreateSwapChain_Dx11, hkCreateSwapChain_Dx11);
+	DetourAttach(&(PVOID&)oCreateSwapChainForHwnd_Dx11, hkCreateSwapChainForHwnd_Dx11);
+	DetourAttach(&(PVOID&)oCreateSwapChainForCoreWindow_Dx11, hkCreateSwapChainForCoreWindow_Dx11);
+	DetourAttach(&(PVOID&)oCreateSwapChainForComposition_Dx11, hkCreateSwapChainForComposition_Dx11);
+
+	DetourAttach(&(PVOID&)oPresent_Dx11, hkPresent_Dx11);
+	DetourAttach(&(PVOID&)oPresent1_Dx11, hkPresent1_Dx11);
+
+	DetourAttach(&(PVOID&)oResizeBuffers_Dx11, hkResizeBuffers_Dx11);
+	DetourAttach(&(PVOID&)oResizeBuffers1_Dx11, hkResizeBuffers1_Dx11);
+
+	DetourTransactionCommit();
+
 	return true;
 }
 
@@ -74,38 +227,6 @@ static void CreateRenderTarget(IDXGISwapChain* pSwapChain)
 
 		g_pd3dDevice->CreateRenderTargetView(pBackBuffer, &desc, &g_pd3dRenderTarget);
 		pBackBuffer->Release();
-	}
-}
-
-static void CleanupRenderTarget()
-{
-	if (g_pd3dRenderTarget)
-	{
-		g_pd3dRenderTarget->Release();
-		g_pd3dRenderTarget = NULL;
-	}
-}
-
-static void CleanupDeviceD3D11()
-{
-	CleanupRenderTarget();
-
-	if (g_pSwapChain)
-	{
-		g_pSwapChain->Release();
-		g_pSwapChain = NULL;
-	}
-
-	if (g_pd3dDevice)
-	{
-		g_pd3dDevice->Release();
-		g_pd3dDevice = NULL;
-	}
-
-	if (g_pd3dDeviceContext)
-	{
-		g_pd3dDeviceContext->Release();
-		g_pd3dDeviceContext = NULL;
 	}
 }
 
@@ -157,66 +278,6 @@ static void RenderImGui_DX11(IDXGISwapChain* pSwapChain)
 	}
 }
 
-PFN_Present oPresent_Dx11 = nullptr;
-static HRESULT WINAPI hkPresent_Dx11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags)
-{
-	RenderImGui_DX11(pSwapChain);
-	return oPresent_Dx11(pSwapChain, SyncInterval, Flags);
-}
-
-PFN_Present1 oPresent1_Dx11 = nullptr;
-static HRESULT WINAPI hkPresent1_Dx11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters)
-{
-	RenderImGui_DX11(pSwapChain);
-	return oPresent1_Dx11(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
-}
-
-PFN_ResizeBuffers oResizeBuffers_Dx11 = nullptr;
-static HRESULT WINAPI hkResizeBuffers_Dx11(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
-{
-	CleanupRenderTarget();
-	return oResizeBuffers_Dx11(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
-}
-
-PFN_ResizeBuffers1 oResizeBuffers1_Dx11 = nullptr;
-static HRESULT WINAPI hkResizeBuffers1_Dx11(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat,
-	UINT SwapChainFlags, const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
-{
-	CleanupRenderTarget();
-	return oResizeBuffers1_Dx11(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
-}
-
-PFN_CreateSwapChain oCreateSwapChain_Dx11 = nullptr;
-static HRESULT WINAPI hkCreateSwapChain_Dx11(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain)
-{
-	CleanupRenderTarget();
-	return oCreateSwapChain_Dx11(pFactory, pDevice, pDesc, ppSwapChain);
-}
-
-PFN_CreateSwapChainForHwnd oCreateSwapChainForHwnd_Dx11 = nullptr;
-static HRESULT WINAPI hkCreateSwapChainForHwnd_Dx11(IDXGIFactory* pFactory, IUnknown* pDevice, HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* pDesc,
-	const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
-{
-	CleanupRenderTarget();
-	return oCreateSwapChainForHwnd_Dx11(pFactory, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
-}
-
-PFN_CreateSwapChainForCoreWindow oCreateSwapChainForCoreWindow_Dx11 = nullptr;
-static HRESULT WINAPI hkCreateSwapChainForCoreWindow_Dx11(IDXGIFactory* pFactory, IUnknown* pDevice, IUnknown* pWindow, const DXGI_SWAP_CHAIN_DESC1* pDesc,
-	IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
-{
-	CleanupRenderTarget();
-	return oCreateSwapChainForCoreWindow_Dx11(pFactory, pDevice, pWindow, pDesc, pRestrictToOutput, ppSwapChain);
-}
-
-PFN_CreateSwapChainForComposition oCreateSwapChainForComposition_Dx11 = nullptr;
-static HRESULT WINAPI hkCreateSwapChainForComposition_Dx11(IDXGIFactory* pFactory, IUnknown* pDevice, const DXGI_SWAP_CHAIN_DESC1* pDesc, IDXGIOutput* pRestrictToOutput,
-	IDXGISwapChain1** ppSwapChain)
-{
-	CleanupRenderTarget();
-	return oCreateSwapChainForComposition_Dx11(pFactory, pDevice, pDesc, pRestrictToOutput, ppSwapChain);
-}
-
 bool ImGuiOverlayDx11::IsInitedDx11()
 {
 	return _isInited;
@@ -229,66 +290,8 @@ HWND ImGuiOverlayDx11::Handle()
 
 void ImGuiOverlayDx11::InitDx11(HWND InHandle)
 {
-	if (g_pd3dDevice == nullptr && !CreateDeviceD3D11(InHandle))
-	{
-		return;
-	}
-
-	if (g_pd3dDevice)
-	{
-		// Hook
-		IDXGIDevice* pDXGIDevice = NULL;
-		g_pd3dDevice->QueryInterface(IID_PPV_ARGS(&pDXGIDevice));
-
-		IDXGIAdapter* pDXGIAdapter = NULL;
-		pDXGIDevice->GetAdapter(&pDXGIAdapter);
-
-		IDXGIFactory* pIDXGIFactory = NULL;
-		pDXGIAdapter->GetParent(IID_PPV_ARGS(&pIDXGIFactory));
-
-		if (!pIDXGIFactory)
-		{
-			return;
-		}
-
-		pIDXGIFactory->Release();
-		pDXGIAdapter->Release();
-		pDXGIDevice->Release();
-
-		void** pVTable = *reinterpret_cast<void***>(g_pSwapChain);
-		void** pFactoryVTable = *reinterpret_cast<void***>(pIDXGIFactory);
-
-		oCreateSwapChain_Dx11 = (PFN_CreateSwapChain)pFactoryVTable[10];
-		oCreateSwapChainForHwnd_Dx11 = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
-		oCreateSwapChainForCoreWindow_Dx11 = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
-		oCreateSwapChainForComposition_Dx11 = (PFN_CreateSwapChainForComposition)pFactoryVTable[24];
-
-		oPresent_Dx11 = (PFN_Present)pVTable[8];
-		oPresent1_Dx11 = (PFN_Present1)pVTable[22];
-
-		oResizeBuffers_Dx11 = (PFN_ResizeBuffers)pVTable[13];
-		oResizeBuffers1_Dx11 = (PFN_ResizeBuffers1)pVTable[39];
-
-		CleanupDeviceD3D11();
-
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
-
-		DetourAttach(&(PVOID&)oCreateSwapChain_Dx11, hkCreateSwapChain_Dx11);
-		DetourAttach(&(PVOID&)oCreateSwapChainForHwnd_Dx11, hkCreateSwapChainForHwnd_Dx11);
-		DetourAttach(&(PVOID&)oCreateSwapChainForCoreWindow_Dx11, hkCreateSwapChainForCoreWindow_Dx11);
-		DetourAttach(&(PVOID&)oCreateSwapChainForComposition_Dx11, hkCreateSwapChainForComposition_Dx11);
-
-		DetourAttach(&(PVOID&)oPresent_Dx11, hkPresent_Dx11);
-		DetourAttach(&(PVOID&)oPresent1_Dx11, hkPresent1_Dx11);
-
-		DetourAttach(&(PVOID&)oResizeBuffers_Dx11, hkResizeBuffers_Dx11);
-		DetourAttach(&(PVOID&)oResizeBuffers1_Dx11, hkResizeBuffers1_Dx11);
-
-		DetourTransactionCommit();
-
+	if (!_isInited && g_pd3dDevice == nullptr && CreateDeviceD3D11(InHandle))
 		_isInited = true;
-	}
 }
 
 void ImGuiOverlayDx11::ShutdownDx11()
