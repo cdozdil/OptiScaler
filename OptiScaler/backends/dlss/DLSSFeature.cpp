@@ -809,6 +809,8 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 {
 	if (_nvngx == nullptr)
 	{
+		Config::Instance()->dlssDisableHook = true;
+
 		do
 		{
 			// check dlss enabler
@@ -867,53 +869,56 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 
 			result = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"System\\CurrentControlSet\\Services\\nvlddmkm\\NGXCore", 0, KEY_READ, &regNGXCore);
 
-			if (result != ERROR_SUCCESS)
+			if (result == ERROR_SUCCESS)
+			{
+				wchar_t regNGXCorePath[260];
+				DWORD NGXCorePathSize = 260;
+
+				result = RegQueryValueExW(regNGXCore, L"NGXPath", nullptr, nullptr, (LPBYTE)regNGXCorePath, &NGXCorePathSize);
+
+				if (result == ERROR_SUCCESS)
+				{
+					std::filesystem::path nvngxModulePath(regNGXCorePath);
+
+					auto nvngxPath = nvngxModulePath / "_nvngx.dll";
+					spdlog::info("DLSSFeature::DLSSFeature trying to load _nvngx.dll path: {0}", nvngxPath.string());
+
+					_nvngx = LoadLibraryW(nvngxPath.wstring().c_str());
+
+					if (_nvngx)
+					{
+						spdlog::info("DLSSFeature::DLSSFeature _nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (unsigned long)_nvngx);
+						_moduleLoaded = true;
+						break;
+					}
+
+					nvngxPath = nvngxModulePath / "nvngx.dll";
+					spdlog::info("DLSSFeature::DLSSFeature trying to load nvngx.dll path: {0}", nvngxPath.string());
+
+					_nvngx = LoadLibraryW(nvngxPath.wstring().c_str());
+
+					if (_nvngx)
+					{
+						spdlog::info("DLSSFeature::DLSSFeature nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (unsigned long)_nvngx);
+						_moduleLoaded = true;
+						break;
+					}
+				}
+				else
+				{
+					spdlog::error("DLSSFeature::DLSSFeature can't load NGXPath value {0:X}", (unsigned int)result);
+				}
+			}
+			else
 			{
 				spdlog::error("DLSSFeature::DLSSFeature can't open NGXCore key {0:X}", (unsigned int)result);
-				break;
 			}
 
-			wchar_t regNGXCorePath[260];
-			DWORD NGXCorePathSize = 260;
-
-			result = RegQueryValueExW(regNGXCore, L"NGXPath", nullptr, nullptr, (LPBYTE)regNGXCorePath, &NGXCorePathSize);
-
-			if (result != ERROR_SUCCESS)
-			{
-				spdlog::error("DLSSFeature::DLSSFeature can't load NGXPath value {0:X}", (unsigned int)result);
-				break;
-			}
-
-			std::filesystem::path nvngxModulePath(regNGXCorePath);
-
-			auto nvngxPath = nvngxModulePath / "_nvngx.dll";
-			spdlog::info("DLSSFeature::DLSSFeature trying to load _nvngx.dll path: {0}", nvngxPath.string());
-
-			_nvngx = LoadLibraryW(nvngxPath.wstring().c_str());
-
-			if (_nvngx)
-			{
-				spdlog::info("DLSSFeature::DLSSFeature _nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (unsigned long)_nvngx);
-				_moduleLoaded = true;
-				break;
-			}
-
-			nvngxPath = nvngxModulePath / "nvngx.dll";
-			spdlog::info("DLSSFeature::DLSSFeature trying to load nvngx.dll path: {0}", nvngxPath.string());
-
-			_nvngx = LoadLibraryW(nvngxPath.wstring().c_str());
-
-			if (_nvngx)
-			{
-				spdlog::info("DLSSFeature::DLSSFeature nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (unsigned long)_nvngx);
-				_moduleLoaded = true;
-				break;
-			}
 
 			// dll path
 			spdlog::info("DLSSFeature::DLSSFeature trying to load nvngx from dll path!");
 
-			nvngxPath = Util::DllPath().parent_path() / L"_nvngx.dll";
+			auto nvngxPath = Util::DllPath().parent_path() / L"_nvngx.dll";
 			spdlog::info("DLSSFeature::DLSSFeature trying to load _nvngx.dll path: {0}", nvngxPath.string());
 
 			_nvngx = LoadLibraryW(nvngxPath.wstring().c_str());
@@ -925,6 +930,8 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 			}
 
 		} while (false);
+
+		Config::Instance()->dlssDisableHook = false;
 	}
 	else
 	{
