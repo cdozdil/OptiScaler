@@ -19,8 +19,8 @@
 #define STRINGIZE(s) STRINGIZE_(s)
 
 #define VER_MAJOR_VERSION   0
-#define VER_MINOR_VERSION   5
-#define VER_HOTFIX_VERSION  6
+#define VER_MINOR_VERSION   6
+#define VER_HOTFIX_VERSION  0
 #define VER_BUILD_NUMBER    3
 #define VER_PRE_RELEASE     
 
