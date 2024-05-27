@@ -90,7 +90,6 @@ bool Config::Reload()
 		ResetKey = readInt("Menu", "ResetKey");
 		MenuInitDelay = readInt("Menu", "MenuInitDelay");
 		HookD3D12 = readBool("Menu", "HookD3D12");
-		HookSLDevice = readBool("Menu", "HookSLDevice");
 		HookSLProxy = readBool("Menu", "HookSLProxy");
 		HookFSR3Proxy = readBool("Menu", "HookFSR3Proxy");
 
@@ -192,6 +191,10 @@ bool Config::Reload()
 		Dx11DelayedInit = readInt("Dx11withDx12", "UseDelayedInit");
 		SyncAfterDx12 = readInt("Dx11withDx12", "SyncAfterDx12");
 
+		// nvapi
+		OverrideNvapiDll = readBool("NvApi", "OverrideNvapiDll");
+		NvapiDllPath = readString("NvApi", "NvapiDllPath", true);
+
 		return true;
 	}
 
@@ -246,6 +249,13 @@ bool Config::SaveIni()
 
 	// DLSS
 	ini.SetValue("DLSS", "LibraryPath", Instance()->DLSSLibrary.value_or("auto").c_str());
+	ini.SetValue("DLSS", "RenderPresetOverride", GetBoolValue(Instance()->RenderPresetOverride).c_str());
+	ini.SetValue("DLSS", "RenderPresetDLAA", GetIntValue(Instance()->RenderPresetDLAA).c_str());
+	ini.SetValue("DLSS", "RenderPresetUltraQuality", GetIntValue(Instance()->RenderPresetUltraQuality).c_str());
+	ini.SetValue("DLSS", "RenderPresetQuality", GetIntValue(Instance()->RenderPresetQuality).c_str());
+	ini.SetValue("DLSS", "RenderPresetBalanced", GetIntValue(Instance()->RenderPresetBalanced).c_str());
+	ini.SetValue("DLSS", "RenderPresetPerformance", GetIntValue(Instance()->RenderPresetPerformance).c_str());
+	ini.SetValue("DLSS", "RenderPresetUltraPerformance", GetIntValue(Instance()->RenderPresetUltraPerformance).c_str());
 
 	// Sharpness
 	ini.SetValue("Sharpness", "OverrideSharpness", GetBoolValue(Instance()->OverrideSharpness).c_str());
@@ -257,8 +267,8 @@ bool Config::SaveIni()
 	ini.SetValue("Menu", "ResetKey", GetIntValue(Instance()->ResetKey).c_str());
 	ini.SetValue("Menu", "ShortcutKey", GetIntValue(Instance()->ShortcutKey).c_str());
 	ini.SetValue("Menu", "MenuInitDelay", GetIntValue(Instance()->MenuInitDelay).c_str());
+	ini.SetValue("Menu", "DisableEarlyHooking", GetBoolValue(Instance()->DisableEarlyHooking).c_str());
 	ini.SetValue("Menu", "HookD3D12", GetBoolValue(Instance()->HookD3D12).c_str());
-	ini.SetValue("Menu", "HookSLDevice", GetBoolValue(Instance()->HookSLDevice).c_str());
 	ini.SetValue("Menu", "HookSLProxy", GetBoolValue(Instance()->HookSLProxy).c_str());
 	ini.SetValue("Menu", "HookFSR3Proxy", GetBoolValue(Instance()->HookFSR3Proxy).c_str());
 
@@ -281,7 +291,7 @@ bool Config::SaveIni()
 	ini.SetValue("MotionVectors", "JitterCancellation", GetBoolValue(Instance()->JitterCancellation).c_str());
 	ini.SetValue("MotionVectors", "DisplayResolution", GetBoolValue(Instance()->DisplayResolution).c_str());
 
-	//Upscale Ratio Override
+	// Upscale Ratio Override
 	ini.SetValue("UpscaleRatio", "UpscaleRatioOverrideEnabled", GetBoolValue(Instance()->UpscaleRatioOverrideEnabled).c_str());
 	ini.SetValue("UpscaleRatio", "UpscaleRatioOverrideValue", GetFloatValue(Instance()->UpscaleRatioOverrideValue).c_str());
 
@@ -294,7 +304,7 @@ bool Config::SaveIni()
 	ini.SetValue("QualityOverrides", "QualityRatioPerformance", GetFloatValue(Instance()->QualityRatio_Performance).c_str());
 	ini.SetValue("QualityOverrides", "QualityRatioUltraPerformance", GetFloatValue(Instance()->QualityRatio_UltraPerformance).c_str());
 
-	// hotfixes
+	// Hotfixes
 	ini.SetValue("Hotfix", "DisableReactiveMask", GetBoolValue(Instance()->DisableReactiveMask).c_str());
 	ini.SetValue("Hotfix", "MipmapBiasOverride", GetBoolValue(Instance()->MipmapBiasOverride).c_str());
 
@@ -308,17 +318,17 @@ bool Config::SaveIni()
 	ini.SetValue("Hotfix", "ExposureResourceBarrier", GetIntValue(Instance()->ExposureResourceBarrier).c_str());
 	ini.SetValue("Hotfix", "OutputResourceBarrier", GetIntValue(Instance()->OutputResourceBarrier).c_str());
 
-	// fsr
+	// FSR
 	ini.SetValue("FSR", "VerticalFov", GetFloatValue(Instance()->FsrVerticalFov).c_str());
 	ini.SetValue("FSR", "HorizontalFov", GetFloatValue(Instance()->FsrHorizontalFov).c_str());
 
-	// dx11wdx12
+	// Dx11 with Dx12
 	ini.SetValue("Dx11withDx12", "TextureSyncMethod", GetIntValue(Instance()->TextureSyncMethod).c_str());
 	ini.SetValue("Dx11withDx12", "CopyBackSyncMethod", GetIntValue(Instance()->CopyBackSyncMethod).c_str());
 	ini.SetValue("Dx11withDx12", "SyncAfterDx12", GetBoolValue(Instance()->SyncAfterDx12).c_str());
 	ini.SetValue("Dx11withDx12", "UseDelayedInit", GetBoolValue(Instance()->Dx11DelayedInit).c_str());
 
-	// log
+	// Logging
 	ini.SetValue("Log", "LoggingEnabled", GetBoolValue(Instance()->LoggingEnabled).c_str());
 	ini.SetValue("Log", "LogLevel", GetIntValue(Instance()->LogLevel).c_str());
 	ini.SetValue("Log", "LogToConsole", GetBoolValue(Instance()->LogToConsole).c_str());
@@ -327,8 +337,12 @@ bool Config::SaveIni()
 	ini.SetValue("Log", "OpenConsole", GetBoolValue(Instance()->OpenConsole).c_str());
 	ini.SetValue("Log", "LogFile", Instance()->LogFileName.value_or("auto").c_str());
 
-	auto fileName = absoluteFileName.wstring().c_str();
-	return ini.SaveFile(fileName) >= 0;
+	// nvapi
+	ini.SetValue("NvApi", "OverrideNvapiDll", GetBoolValue(Instance()->OverrideNvapiDll).c_str());
+	ini.SetValue("NvApi", "NvapiDllPath", Instance()->NvapiDllPath.value_or("auto").c_str());
+
+
+	return ini.SaveFile(absoluteFileName.wstring().c_str()) >= 0;
 }
 
 std::optional<std::string> Config::readString(std::string section, std::string key, bool lowercase)

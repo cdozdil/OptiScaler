@@ -73,8 +73,8 @@ public:
 	std::optional<int> ShortcutKey;
 	std::optional<int> ResetKey;
 	std::optional<int> MenuInitDelay;
+	std::optional<bool> DisableEarlyHooking;
 	std::optional<bool> HookD3D12;
-	std::optional<bool> HookSLDevice;
 	std::optional<bool> HookSLProxy;
 	std::optional<bool> HookFSR3Proxy;
 
@@ -126,6 +126,10 @@ public:
 	std::optional<bool> Dx11DelayedInit;
 	std::optional<bool> SyncAfterDx12;
 
+	// nvapi override
+	std::optional<bool> OverrideNvapiDll;
+	std::optional<std::string> NvapiDllPath;
+
 	// nvngx init parameters
 	unsigned long long NVNGX_ApplicationId = 1337;
 	std::wstring NVNGX_ApplicationDataPath;
@@ -138,18 +142,25 @@ public:
 	std::string NVNGX_EngineVersion;
 	bool NVNGX_EngineVersion5 = false;
 	NVNGX_Api Api = NVNGX_NOT_SELECTED;
-	std::optional<int> DE_FramerateLimit;
+	
+	// dlss enabler
 	bool DE_Available = false;
-
-	IFeature* CurrentFeature = nullptr;
+	std::optional<int> DE_FramerateLimit;
+	std::optional<bool> DE_DynamicLimit;
 
 	// for realtime changes
 	bool changeBackend = false;
-	bool changeRCAS = false;
 	std::string newBackend = "";
+
+	// XeSS debug stuff
 	bool xessDebug = false;
 	int xessDebugFrames = 5;
 	float lastMipBias = 0.0f;
+
+	// dlss 
+	bool dlssDisableHook = false;
+
+	IFeature* CurrentFeature = nullptr;
 
 	bool Reload();
 	bool LoadFromPath(const wchar_t* InPath);
