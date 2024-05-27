@@ -13,70 +13,203 @@
 
 #include "../detours/detours.h"
 
+#include "wrapped_swapchain.h"
+#include "wrapped_command_queue.h"
+
 // Dx12 overlay code adoptes from 
 // https://github.com/bruhmoment21/UniversalHookX
 
-static int const NUM_BACK_BUFFERS = 4;
-static IDXGIFactory4* g_dxgiFactory = nullptr;
 static ID3D12Device* g_pd3dDeviceParam = nullptr;
-static ID3D12Device* g_pd3dDevice = nullptr;
+
+static int const NUM_BACK_BUFFERS = 4;
 static ID3D12DescriptorHeap* g_pd3dRtvDescHeap = nullptr;
 static ID3D12DescriptorHeap* g_pd3dSrvDescHeap = nullptr;
 static ID3D12CommandQueue* g_pd3dCommandQueue = nullptr;
 static ID3D12GraphicsCommandList* g_pd3dCommandList = nullptr;
-static IDXGISwapChain3* g_pSwapChain = nullptr;
 static ID3D12CommandAllocator* g_commandAllocators[NUM_BACK_BUFFERS] = { };
 static ID3D12Resource* g_mainRenderTargetResource[NUM_BACK_BUFFERS] = { };
 static D3D12_CPU_DESCRIPTOR_HANDLE g_mainRenderTargetDescriptor[NUM_BACK_BUFFERS] = { };
 
 typedef void(WINAPI* PFN_ExecuteCommandLists)(ID3D12CommandQueue*, UINT, ID3D12CommandList*);
-typedef HRESULT(WINAPI* PFN_CreateDXGIFactory1)(REFIID riid, void** ppFactory);
-typedef void* (WINAPI* PFN_ffxGetDX12SwapchainPtr)(void* ffxSwapChain);
+typedef ULONG(WINAPI* PFN_Release)(IUnknown*);
 
+typedef void* (WINAPI* PFN_ffxGetDX12SwapchainPtr)(void* ffxSwapChain);
+typedef HRESULT(WINAPI* PFN_CreateCommandQueue)(ID3D12Device* This, const D3D12_COMMAND_QUEUE_DESC* pDesc, REFIID riid, void** ppCommandQueue);
+typedef HRESULT(WINAPI* PFN_CreateDXGIFactory1)(REFIID riid, void** ppFactory);
+
+// Dx12
 static PFN_Present oPresent_Dx12 = nullptr;
 static PFN_Present1 oPresent1_Dx12 = nullptr;
 static PFN_ResizeBuffers oResizeBuffers_Dx12 = nullptr;
 static PFN_ResizeBuffers1 oResizeBuffers1_Dx12 = nullptr;
 
+// Dx12 early binding
+static PFN_D3D12_CREATE_DEVICE oD3D12CreateDevice = nullptr;
+static PFN_CreateCommandQueue oCreateCommandQueue = nullptr;
+static PFN_CreateDXGIFactory1 oCreateDXGIFactory1 = nullptr;
+static PFN_Release oCommandQueueRelease = nullptr;
+
+// Streamline
 static PFN_Present oPresent_SL = nullptr;
 static PFN_Present1 oPresent1_SL = nullptr;
 static PFN_ResizeBuffers oResizeBuffers_SL = nullptr;
 static PFN_ResizeBuffers1 oResizeBuffers1_SL = nullptr;
 
+// Native FSR3
 static PFN_Present oPresent_Dx12_FSR3 = nullptr;
 static PFN_Present1 oPresent1_Dx12_FSR3 = nullptr;
 static PFN_ResizeBuffers oResizeBuffers_Dx12_FSR3 = nullptr;
 static PFN_ResizeBuffers1 oResizeBuffers1_Dx12_FSR3 = nullptr;
-static IDXGISwapChain3* _swapChain_FSR3 = nullptr;
 
+// Mod FSR3
 static PFN_Present oPresent_Dx12_Mod = nullptr;
 static PFN_Present1 oPresent1_Dx12_Mod = nullptr;
 static PFN_ResizeBuffers oResizeBuffers_Dx12_Mod = nullptr;
 static PFN_ResizeBuffers1 oResizeBuffers1_Dx12_Mod = nullptr;
-static IDXGISwapChain3* _swapChain_Mod = nullptr;
 
+// Dx12
 static PFN_ExecuteCommandLists oExecuteCommandLists_Dx12 = nullptr;
 
+// Streamline 
+static PFN_ExecuteCommandLists oExecuteCommandLists_SL = nullptr;
+
+// Dx12 Late Binding
 static PFN_CreateSwapChain oCreateSwapChain_Dx12 = nullptr;
 static PFN_CreateSwapChainForHwnd oCreateSwapChainForHwnd_Dx12 = nullptr;
 static PFN_CreateSwapChainForComposition oCreateSwapChainForComposition_Dx12 = nullptr;
 static PFN_CreateSwapChainForCoreWindow oCreateSwapChainForCoreWindow_Dx12 = nullptr;
 
+// Dx12 early binding
+static PFN_CreateSwapChain oCreateSwapChain_EB = nullptr;
+static PFN_CreateSwapChainForHwnd oCreateSwapChainForHwnd_EB = nullptr;
+static PFN_CreateSwapChainForComposition oCreateSwapChainForComposition_EB = nullptr;
+static PFN_CreateSwapChainForCoreWindow oCreateSwapChainForCoreWindow_EB = nullptr;
+
+// Streamline
 static PFN_CreateSwapChain oCreateSwapChain_SL = nullptr;
 static PFN_CreateSwapChainForHwnd oCreateSwapChainForHwnd_SL = nullptr;
 static PFN_CreateSwapChainForComposition oCreateSwapChainForComposition_SL = nullptr;
 static PFN_CreateSwapChainForCoreWindow oCreateSwapChainForCoreWindow_SL = nullptr;
 
+// Mod FSR3
 static PFN_ffxGetDX12SwapchainPtr offxGetDX12Swapchain_Mod = nullptr;
+
+// Native FSR3
 static PFN_ffxGetDX12SwapchainPtr offxGetDX12Swapchain_FSR3 = nullptr;
 
 static bool _isInited = false;
-static int _changeFFXModHookCounter = 0;
+static bool _reInit = false;
+static bool _dx12BindingActive = false; // To prevent wrapping of swapchains created for hook by mod
+
+static bool _isEarlyBind = false;	// if dx12 calls loaded early (non native nvngx mode)
+
+static bool _usingNative = false;	// Native Dx12 present received a call
+static bool _usingDLSSG = false;	// Streamline presenct received a call
+static bool _usingFSR3_Native = false;	// FSR3 native present received a call
+static bool _usingFSR3_Mod = false;	// FSR3 mod received present call
+
+/*
+* From what I've observed priotry order is
+* 1. FSR3 Native
+* 2. FSR3 Mod (only if Uniscaler is active)
+* 3. Streamline (For Nukem & native SL)
+* 4. Native (For non-fg situations)
+*/
+
+static bool _bindedNative = false;	// if native dx12 calls detoured
+static bool _bindedDLSSG = false;	// if streamline calls detoured
+static bool _bindedFSR3_Native = false;		// if fsr3 native calls detoured
+static bool _bindedFSR3_Uniscaler = false;	// if Uniscaler calls detoured
+static bool _bindedFSR3_Nukem = false;	// if Nukem's calls detoured
+static bool _bindedFSR3_Mod = false;	// if fsr3 mod calls detoured (_bindedFSR3_Uniscaler || _bindedFSR3_Nukem)
+
+// Optiscaler will try to capture right commandqueue for each possible swapchain
+static ID3D12CommandQueue* _cqFsr3Mod = nullptr;	// Not used
+static ID3D12CommandQueue* _cqFsr3Native = nullptr;	// Not used
+static ID3D12CommandQueue* _cqSL = nullptr;	// Not used
+static ID3D12CommandQueue* _cqDx12 = nullptr;
+
+// for showing 
 static bool _showRenderImGuiDebugOnce = true;
-static bool _usingDLSSG = false;
-static bool _usingFSR3 = false;
+
+// FFXModHookCounter for disabling to prevent 
+static int _changeFFXModHookCounter_Mod = 0;
+static int _changeFFXModHookCounter_Native = 0;
+
+enum RenderSource
+{
+	Unknown,
+	Dx12,
+	SL,
+	FSR3_Mod,
+	FSR3_Native
+};
+
+const std::string renderSourceNames[] = { "Unknown", "Dx12", "SL", "FSR3 Mod", "FSR3 Native" };
+
+static RenderSource _lastActiveSource = Unknown;
 
 static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain);
+static bool BindAll(HWND InHWnd, ID3D12Device* InDevice);
+static void DeatachAllHooks(bool reInit);
+static void CleanupRenderTarget(bool clearQueue);
+
+static bool IsActivePath(RenderSource source, bool justQuery = false)
+{
+	bool result = false;
+
+	switch (source)
+	{
+	case Dx12:
+		result = !IsActivePath(SL, true) && !IsActivePath(FSR3_Mod, true) && !IsActivePath(FSR3_Native, true) && _usingNative && _cqDx12 != nullptr;
+
+		if (result)
+			g_pd3dCommandQueue = _cqDx12;
+
+		break;
+
+	case SL:
+		result = !IsActivePath(FSR3_Native) && _usingDLSSG && (_cqSL != nullptr || _cqDx12 != nullptr);
+
+		if (result)
+			g_pd3dCommandQueue = _cqDx12;
+
+		break;
+
+	case FSR3_Mod:
+		result = !IsActivePath(FSR3_Native) && _usingFSR3_Mod && _cqDx12 != nullptr;
+
+		if (result)
+			g_pd3dCommandQueue = _cqDx12;
+
+		break;
+
+	case FSR3_Native:
+		result = _usingFSR3_Native && _cqDx12 != nullptr;
+
+		if (result)
+			g_pd3dCommandQueue = _cqDx12;
+
+		break;
+
+	}
+
+	if (!justQuery && result && _lastActiveSource != source)
+	{
+		spdlog::info("ImGuiOverlayDx12::IsActivePath changed from {0} to {1}!", renderSourceNames[(int)_lastActiveSource], renderSourceNames[(int)source]);
+		CleanupRenderTarget(true);
+		_lastActiveSource = source;
+	}
+
+	return result;
+}
+
+static bool IsBeingUsed(IDXGISwapChain1* InSwapchain)
+{
+	HWND hwnd = nullptr;
+	InSwapchain->GetHwnd(&hwnd);
+	return hwnd == ImGuiOverlayBase::Handle();
+}
 
 static int GetCorrectDXGIFormat(int eCurrentFormat)
 {
@@ -89,8 +222,10 @@ static int GetCorrectDXGIFormat(int eCurrentFormat)
 	return eCurrentFormat;
 }
 
-static void CleanupRenderTarget()
+static void CleanupRenderTarget(bool clearQueue)
 {
+	spdlog::debug("ImGuiOverlayDx12::CleanupRenderTarget({0})!", clearQueue);
+
 	for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
 	{
 		if (g_mainRenderTargetResource[i])
@@ -99,169 +234,288 @@ static void CleanupRenderTarget()
 			g_mainRenderTargetResource[i] = NULL;
 		}
 	}
+
+	if (clearQueue)
+	{
+		if (ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
+			ImGui_ImplDX12_Shutdown();
+
+		if (g_pd3dRtvDescHeap != nullptr)
+		{
+			g_pd3dRtvDescHeap->Release();
+			g_pd3dRtvDescHeap = nullptr;
+
+		}
+
+		if (g_pd3dSrvDescHeap != nullptr)
+		{
+			g_pd3dSrvDescHeap->Release();
+			g_pd3dSrvDescHeap = nullptr;
+
+		}
+
+		for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
+		{
+			if (g_commandAllocators[i] != nullptr)
+			{
+				g_commandAllocators[i]->Release();
+				g_commandAllocators[i] = nullptr;
+			}
+		}
+
+		if (g_pd3dCommandList != nullptr)
+		{
+			g_pd3dCommandList->Release();
+			g_pd3dCommandList = nullptr;
+		}
+	}
+
+	_lastActiveSource = Unknown;
+
+	_changeFFXModHookCounter_Mod = 0;
+	_changeFFXModHookCounter_Native = 0;
+
+	_usingNative = false;
+	_usingDLSSG = false;
+	_usingFSR3_Native = false;
+	_usingFSR3_Mod = false;
 }
 
-// Hooks for native Dx12
+#pragma region Hooks for native EB Prensent Methods
+
+static HRESULT WINAPI hkPresent_EB(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT Flags)
+{
+	if ((Flags & DXGI_PRESENT_TEST) || (Flags & DXGI_PRESENT_RESTART))
+		return S_OK;
+
+	if (IsActivePath(Dx12))
+		RenderImGui_DX12(pSwapChain);
+
+	_usingNative = IsBeingUsed(pSwapChain);
+
+	return S_OK;
+}
+
+static HRESULT WINAPI hkPresent1_EB(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters)
+{
+	if ((PresentFlags & DXGI_PRESENT_TEST) || (PresentFlags & DXGI_PRESENT_RESTART))
+		return S_OK;
+
+	if (IsActivePath(Dx12))
+		RenderImGui_DX12(pSwapChain);
+
+	_usingNative = IsBeingUsed(pSwapChain);
+
+	return S_OK;
+}
+
+#pragma endregion
+
+#pragma region Hooks for native Dx12 Present & Resize Buffer methods
+
 static HRESULT WINAPI hkPresent_Dx12(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT Flags)
 {
-	if (!_usingDLSSG && !_usingFSR3)
+	if ((Flags & DXGI_PRESENT_TEST) || (Flags & DXGI_PRESENT_RESTART))
+		return oPresent_Dx12(pSwapChain, SyncInterval, Flags);
+
+	if (IsActivePath(Dx12))
 		RenderImGui_DX12(pSwapChain);
+
+	_usingNative = IsBeingUsed(pSwapChain);
 
 	return oPresent_Dx12(pSwapChain, SyncInterval, Flags);
 }
 
 static HRESULT WINAPI hkPresent1_Dx12(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters)
 {
-	if (!_usingDLSSG && !_usingFSR3)
+	if ((PresentFlags & DXGI_PRESENT_TEST) || (PresentFlags & DXGI_PRESENT_RESTART))
+		return oPresent1_Dx12(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
+
+	if (IsActivePath(Dx12))
 		RenderImGui_DX12(pSwapChain);
+
+	_usingNative = IsBeingUsed(pSwapChain);
 
 	return oPresent1_Dx12(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
 }
 
 static HRESULT WINAPI hkResizeBuffers_Dx12(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
-	if (!_usingDLSSG && !_usingFSR3)
-		CleanupRenderTarget();
+	auto result = oResizeBuffers_Dx12(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
 
-	return oResizeBuffers_Dx12(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
+	if (!_isEarlyBind && IsActivePath(Dx12))
+		CleanupRenderTarget(false);
+
+	return result;
 }
 
 static HRESULT WINAPI hkResizeBuffers1_Dx12(IDXGISwapChain3* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat,
 	UINT SwapChainFlags, const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
-	if (!_usingDLSSG && !_usingFSR3)
-		CleanupRenderTarget();
+	auto result = oResizeBuffers1_Dx12(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
 
-	return oResizeBuffers1_Dx12(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
+	if (!_isEarlyBind && IsActivePath(Dx12))
+		CleanupRenderTarget(false);
+
+	return result;
 }
 
-// Hooks for native StreamLine
+#pragma endregion
+
+#pragma region Hooks for native StreamLine Present & Resize Buffer methods
+
 static HRESULT WINAPI hkPresent_SL(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT Flags)
 {
-	if (_usingDLSSG)
+	if ((Flags & DXGI_PRESENT_TEST) || (Flags & DXGI_PRESENT_RESTART))
+		return oPresent_SL(pSwapChain, SyncInterval, Flags);
+
+	if (IsActivePath(SL))
 		RenderImGui_DX12(pSwapChain);
 
-	_usingDLSSG = true;
+	_usingDLSSG = IsBeingUsed(pSwapChain);
 
 	return oPresent_SL(pSwapChain, SyncInterval, Flags);
 }
 
 static HRESULT WINAPI hkPresent1_SL(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters)
 {
-	if (_usingDLSSG)
+	if ((PresentFlags & DXGI_PRESENT_TEST) || (PresentFlags & DXGI_PRESENT_RESTART))
+		return oPresent1_SL(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
+
+	if (IsActivePath(SL))
 		RenderImGui_DX12(pSwapChain);
 
-	_usingDLSSG = true;
+	_usingDLSSG = IsBeingUsed(pSwapChain);
 
 	return oPresent1_SL(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
 }
 
 static HRESULT WINAPI hkResizeBuffers_SL(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
-	if (_usingDLSSG)
-		CleanupRenderTarget();
+	auto result = oResizeBuffers_SL(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
 
-	_usingDLSSG = true;
+	if (!_isEarlyBind && IsActivePath(SL))
+		CleanupRenderTarget(false);
 
-	return oResizeBuffers_SL(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
+	return result;
 }
 
 static HRESULT WINAPI hkResizeBuffers1_SL(IDXGISwapChain3* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat,
 	UINT SwapChainFlags, const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
-	if (_usingDLSSG)
-		CleanupRenderTarget();
+	auto result = oResizeBuffers1_SL(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
 
-	_usingDLSSG = true;
+	if (!_isEarlyBind && IsActivePath(SL))
+		CleanupRenderTarget(false);
 
-	return oResizeBuffers1_SL(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
+	return result;
 }
 
-// Hooks for native Native FSR3
+#pragma endregion
+
+#pragma region Hooks for Native FSR3 Present & Resize Buffer methods
+
 static HRESULT WINAPI hkPresent_Dx12_FSR3(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT Flags)
 {
-	if (_usingFSR3)
-	{
-		if (_swapChain_FSR3)
-			RenderImGui_DX12(_swapChain_FSR3);
-		else
-			RenderImGui_DX12(pSwapChain);
-	}
+	if ((Flags & DXGI_PRESENT_TEST) || (Flags & DXGI_PRESENT_RESTART))
+		return oPresent_Dx12_FSR3(pSwapChain, SyncInterval, Flags);
 
-	_usingFSR3 = true;
+	if (IsActivePath(FSR3_Native))
+		RenderImGui_DX12(pSwapChain);
+
+	_usingFSR3_Native = IsBeingUsed(pSwapChain);
 
 	return oPresent_Dx12_FSR3(pSwapChain, SyncInterval, Flags);
 }
 
 static HRESULT WINAPI hkPresent1_Dx12_FSR3(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters)
 {
-	if (_usingFSR3)
-	{
-		if (_swapChain_FSR3)
-			RenderImGui_DX12(_swapChain_FSR3);
-		else
-			RenderImGui_DX12(pSwapChain);
-	}
+	if ((PresentFlags & DXGI_PRESENT_TEST) || (PresentFlags & DXGI_PRESENT_RESTART))
+		return oPresent1_Dx12_FSR3(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
 
-	_usingFSR3 = true;
+	if (IsActivePath(FSR3_Native))
+		RenderImGui_DX12(pSwapChain);
+
+	_usingFSR3_Native = IsBeingUsed(pSwapChain);
 
 	return oPresent1_Dx12_FSR3(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
 }
 
 static HRESULT WINAPI hkResizeBuffers_Dx12_FSR3(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
-	if (_usingFSR3)
-		CleanupRenderTarget();
+	auto result = oResizeBuffers_Dx12_FSR3(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
 
-	_usingFSR3 = true;
+	if (!_isEarlyBind && IsActivePath(FSR3_Native))
+		CleanupRenderTarget(false);
 
-	return oResizeBuffers_Dx12_FSR3(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
+	return result;
 }
 
 static HRESULT WINAPI hkResizeBuffers1_Dx12_FSR3(IDXGISwapChain3* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat,
 	UINT SwapChainFlags, const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
-	if (_usingFSR3)
-		CleanupRenderTarget();
+	auto result = oResizeBuffers1_Dx12_FSR3(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
 
-	_usingFSR3 = true;
+	if (!_isEarlyBind && IsActivePath(FSR3_Native))
+		CleanupRenderTarget(false);
 
-	return oResizeBuffers1_Dx12_FSR3(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
+	return result;
 }
 
-// Hooks for native Native FSR3 Mods
+#pragma endregion
+
+#pragma region Hooks for FSR3 Mods Present & Resize Buffer methods
+
 static HRESULT WINAPI hkPresent_Dx12_Mod(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT Flags)
 {
-	if (_swapChain_Mod)
-		RenderImGui_DX12(_swapChain_Mod);
-	else
+	if ((Flags & DXGI_PRESENT_TEST) || (Flags & DXGI_PRESENT_RESTART))
+		return oPresent_Dx12_FSR3(pSwapChain, SyncInterval, Flags);
+
+	if (IsActivePath(FSR3_Mod))
 		RenderImGui_DX12(pSwapChain);
+
+	_usingFSR3_Mod = IsBeingUsed(pSwapChain);
 
 	return oPresent_Dx12_Mod(pSwapChain, SyncInterval, Flags);
 }
 
 static HRESULT WINAPI hkPresent1_Dx12_Mod(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters)
 {
-	if (_swapChain_Mod)
-		RenderImGui_DX12(_swapChain_Mod);
-	else
+	if ((PresentFlags & DXGI_PRESENT_TEST) || (PresentFlags & DXGI_PRESENT_RESTART))
+		return oPresent1_Dx12_FSR3(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
+
+	if (IsActivePath(FSR3_Mod))
 		RenderImGui_DX12(pSwapChain);
+
+	_usingFSR3_Mod = IsBeingUsed(pSwapChain);
 
 	return oPresent1_Dx12_Mod(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
 }
 
 static HRESULT WINAPI hkResizeBuffers_Dx12_Mod(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
-	CleanupRenderTarget();
-	return oResizeBuffers_Dx12_Mod(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
+	auto result = oResizeBuffers_Dx12_Mod(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
+
+	if (!_isEarlyBind && IsActivePath(FSR3_Mod))
+		CleanupRenderTarget(false);
+
+	return result;
 }
 
 static HRESULT WINAPI hkResizeBuffers1_Dx12_Mod(IDXGISwapChain3* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat,
 	UINT SwapChainFlags, const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
-	CleanupRenderTarget();
-	return oResizeBuffers1_Dx12_Mod(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
+	auto result = oResizeBuffers1_Dx12_Mod(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
+
+	if (!_isEarlyBind && IsActivePath(FSR3_Mod))
+		CleanupRenderTarget(false);
+
+	return result;
 }
+
+#pragma endregion
+
+#pragma region Hook for ffxGetDX12Swapchain
 
 bool IsIDXGISwapChain4(void* ptr) {
 	if (ptr == nullptr) {
@@ -269,16 +523,24 @@ bool IsIDXGISwapChain4(void* ptr) {
 	}
 
 	// Use a smart pointer to manage the queried interface
-	IDXGISwapChain4* swapChain4;
+	IDXGISwapChain4* swapChain4 = nullptr;
 
 	// Use structured exception handling to catch access violations
 	__try {
 		HRESULT hr = static_cast<IUnknown*>(ptr)->QueryInterface(IID_PPV_ARGS(&swapChain4));
+
+		if (swapChain4 != nullptr)
+		{
+			swapChain4->Release();
+			swapChain4 = nullptr;
+		}
+
 		return SUCCEEDED(hr);
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER) {
 		return false;
 	}
+
 }
 
 bool IsCommandQueue(void* ptr) {
@@ -287,11 +549,18 @@ bool IsCommandQueue(void* ptr) {
 	}
 
 	// Use a smart pointer to manage the queried interface
-	ID3D12CommandQueue* queue;
+	ID3D12CommandQueue* queue = nullptr;
 
 	// Use structured exception handling to catch access violations
 	__try {
 		HRESULT hr = static_cast<IUnknown*>(ptr)->QueryInterface(IID_PPV_ARGS(&queue));
+
+		if (queue != nullptr)
+		{
+			queue->Release();
+			queue = nullptr;
+		}
+
 		return SUCCEEDED(hr);
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER) {
@@ -299,24 +568,26 @@ bool IsCommandQueue(void* ptr) {
 	}
 }
 
-// Hook for ffxGetDX12SwapchainPtr with FSR3 Mods
-static void* WINAPI hkffxGetDX12Swapchain_Mod(void* InSwapChain)
+// Hook for ffxGetDX12SwapchainPtr for Mod's 
+static void* WINAPI hkffxGetDX12Swapchain_Mod(void* InParam)
 {
-	spdlog::debug("imgui_overlay_dx12::hkffxGetDX12Swapchain_Mod ({0})!", _changeFFXModHookCounter);
+	if (_changeFFXModHookCounter_Mod > 1000 || oPresent_Dx12_Mod != nullptr)
+		return offxGetDX12Swapchain_Mod(InParam);
+
+	spdlog::debug("ImGuiOverlayDx12::hkffxGetDX12Swapchain_Mod ({0})!", _changeFFXModHookCounter_Mod);
 
 	void* result = nullptr;
 
-	if (oPresent_Dx12_Mod == nullptr && IsIDXGISwapChain4(InSwapChain))
+	if (oPresent_Dx12_Mod == nullptr && IsIDXGISwapChain4(InParam))
 	{
 		IDXGISwapChain3* swapChain3 = nullptr;
 
-		IDXGISwapChain* swapChain4 = reinterpret_cast<IDXGISwapChain*>(InSwapChain);
+		IDXGISwapChain* swapChain4 = reinterpret_cast<IDXGISwapChain*>(InParam);
 		swapChain4->QueryInterface(IID_PPV_ARGS(&swapChain3));
 
 		if (swapChain3 != nullptr)
 		{
-			_swapChain_Mod = swapChain3;
-			spdlog::debug("imgui_overlay_dx12::hkffxGetDX12Swapchain_Mod swapchain captured: {0:X}", (unsigned long)swapChain3);
+			spdlog::debug("ImGuiOverlayDx12::hkffxGetDX12Swapchain_Mod swapchain captured: {0:X}", (unsigned long)swapChain3);
 
 			void** pVTable = *reinterpret_cast<void***>(swapChain3);
 
@@ -343,20 +614,10 @@ static void* WINAPI hkffxGetDX12Swapchain_Mod(void* InSwapChain)
 
 			DetourTransactionCommit();
 
-			spdlog::info("imgui_overlay_dx12::hkffxGetDX12Swapchain_Mod added swapchain hooks!");
+			spdlog::info("ImGuiOverlayDx12::hkffxGetDX12Swapchain_Mod added swapchain hooks!");
 
 			// get result of this call
-			result = offxGetDX12Swapchain_Mod(InSwapChain);
-
-			DetourTransactionBegin();
-			DetourUpdateThread(GetCurrentThread());
-
-			DetourDetach(&(PVOID&)offxGetDX12Swapchain_Mod, hkffxGetDX12Swapchain_Mod);
-			offxGetDX12Swapchain_Mod = nullptr;
-
-			DetourTransactionCommit();
-
-			spdlog::info("imgui_overlay_dx12::hkffxGetDX12Swapchain_Mod disabled hkffxGetDX12SwapchainPtr hook!");
+			result = offxGetDX12Swapchain_Mod(InParam);
 		}
 
 		if (swapChain3 != nullptr)
@@ -366,7 +627,7 @@ static void* WINAPI hkffxGetDX12Swapchain_Mod(void* InSwapChain)
 			return result;
 	}
 
-	result = offxGetDX12Swapchain_Mod(InSwapChain);
+	result = offxGetDX12Swapchain_Mod(InParam);
 
 	if (oPresent_Dx12_Mod == nullptr && result != nullptr && IsIDXGISwapChain4(result))
 	{
@@ -377,8 +638,7 @@ static void* WINAPI hkffxGetDX12Swapchain_Mod(void* InSwapChain)
 
 		if (swapChain3 != nullptr)
 		{
-			_swapChain_Mod = swapChain3;
-			spdlog::debug("imgui_overlay_dx12::hkffxGetDX12Swapchain_Mod swapchain captured: {0:X}", (unsigned long)swapChain3);
+			spdlog::debug("ImGuiOverlayDx12::hkffxGetDX12Swapchain_Mod swapchain captured: {0:X}", (unsigned long)swapChain3);
 
 			void** pVTable = *reinterpret_cast<void***>(swapChain3);
 
@@ -405,59 +665,38 @@ static void* WINAPI hkffxGetDX12Swapchain_Mod(void* InSwapChain)
 
 			DetourTransactionCommit();
 
-			spdlog::info("imgui_overlay_dx12::hkffxGetDX12Swapchain_Mod added swapchain hooks!");
-
-			DetourTransactionBegin();
-			DetourUpdateThread(GetCurrentThread());
-
-			DetourDetach(&(PVOID&)offxGetDX12Swapchain_Mod, hkffxGetDX12Swapchain_Mod);
-			offxGetDX12Swapchain_Mod = nullptr;
-
-			DetourTransactionCommit();
-
-			spdlog::info("imgui_overlay_dx12::hkffxGetDX12Swapchain_Mod disabled hkffxGetDX12SwapchainPtr hook!");
+			spdlog::info("ImGuiOverlayDx12::hkffxGetDX12Swapchain_Mod added swapchain hooks!");
 		}
 
 		if (swapChain3 != nullptr)
 			swapChain3->Release();
 	}
 
-	_changeFFXModHookCounter++;
-
-	if (_changeFFXModHookCounter > 300 && oPresent_Dx12_Mod == nullptr)
-	{
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
-
-		DetourDetach(&(PVOID&)offxGetDX12Swapchain_Mod, hkffxGetDX12Swapchain_Mod);
-		offxGetDX12Swapchain_Mod = nullptr;
-
-		DetourTransactionCommit();
-
-		spdlog::info("imgui_overlay_dx12::hkffxGetDX12Swapchain_Mod disabled hkffxGetDX12Swapchain_Mod hook for preventing slowdown!");
-	}
+	_changeFFXModHookCounter_Mod++;
 
 	return result;
 }
 
 // Hook for ffxGetDX12SwapchainPtr with native FSR3 
-static void* WINAPI hkffxGetDX12Swapchain_FSR3(void* InSwapChain)
+static void* WINAPI hkffxGetDX12Swapchain_FSR3(void* InParam)
 {
-	spdlog::debug("imgui_overlay_dx12::hkffxGetDX12Swapchain_FSR3 ({0})!", _changeFFXModHookCounter);
+	if (_changeFFXModHookCounter_Native > 1000 || oPresent_Dx12_FSR3 != nullptr)
+		return offxGetDX12Swapchain_FSR3(InParam);
+
+	spdlog::debug("ImGuiOverlayDx12::hkffxGetDX12Swapchain_FSR3 ({0})!", _changeFFXModHookCounter_Mod);
 
 	void* result = nullptr;
 
-	if (oPresent_Dx12_FSR3 == nullptr && IsIDXGISwapChain4(InSwapChain))
+	if (oPresent_Dx12_FSR3 == nullptr && IsIDXGISwapChain4(InParam))
 	{
 		IDXGISwapChain3* swapChain3 = nullptr;
 
-		IDXGISwapChain* swapChain4 = reinterpret_cast<IDXGISwapChain*>(InSwapChain);
+		IDXGISwapChain* swapChain4 = reinterpret_cast<IDXGISwapChain*>(InParam);
 		swapChain4->QueryInterface(IID_PPV_ARGS(&swapChain3));
 
 		if (swapChain3 != nullptr)
 		{
-			_swapChain_FSR3 = swapChain3;
-			spdlog::debug("imgui_overlay_dx12::hkffxGetDX12Swapchain_FSR3 swapchain captured: {0:X}", (unsigned long)swapChain3);
+			spdlog::debug("ImGuiOverlayDx12::hkffxGetDX12Swapchain_FSR3 swapchain captured: {0:X}", (unsigned long)swapChain3);
 
 			void** pVTable = *reinterpret_cast<void***>(swapChain3);
 
@@ -484,20 +723,10 @@ static void* WINAPI hkffxGetDX12Swapchain_FSR3(void* InSwapChain)
 
 			DetourTransactionCommit();
 
-			spdlog::info("imgui_overlay_dx12::hkffxGetDX12Swapchain_FSR3 added swapchain hooks!");
+			spdlog::info("ImGuiOverlayDx12::hkffxGetDX12Swapchain_FSR3 added swapchain hooks!");
 
 			// get result of this call
-			result = offxGetDX12Swapchain_FSR3(InSwapChain);
-
-			DetourTransactionBegin();
-			DetourUpdateThread(GetCurrentThread());
-
-			DetourDetach(&(PVOID&)offxGetDX12Swapchain_FSR3, hkffxGetDX12Swapchain_FSR3);
-			offxGetDX12Swapchain_FSR3 = nullptr;
-
-			DetourTransactionCommit();
-
-			spdlog::info("imgui_overlay_dx12::hkffxGetDX12Swapchain_FSR3 disabled hkffxGetDX12SwapchainPtr hook!");
+			result = offxGetDX12Swapchain_FSR3(InParam);
 		}
 
 		if (swapChain3 != nullptr)
@@ -507,19 +736,17 @@ static void* WINAPI hkffxGetDX12Swapchain_FSR3(void* InSwapChain)
 			return result;
 	}
 
-	result = offxGetDX12Swapchain_FSR3(InSwapChain);
+	result = offxGetDX12Swapchain_FSR3(InParam);
 
 	if (oPresent_Dx12_FSR3 == nullptr && result != nullptr && IsIDXGISwapChain4(result))
 	{
 		IDXGISwapChain3* swapChain3 = nullptr;
-
 		IDXGISwapChain* swapChain4 = reinterpret_cast<IDXGISwapChain*>(result);
 		swapChain4->QueryInterface(IID_PPV_ARGS(&swapChain3));
 
 		if (swapChain3 != nullptr)
 		{
-			_swapChain_FSR3 = swapChain3;
-			spdlog::debug("imgui_overlay_dx12::hkffxGetDX12Swapchain_FSR3 swapchain captured: {0:X}", (unsigned long)swapChain3);
+			spdlog::debug("ImGuiOverlayDx12::hkffxGetDX12Swapchain_FSR3 swapchain captured: {0:X}", (unsigned long)swapChain3);
 
 			void** pVTable = *reinterpret_cast<void***>(swapChain3);
 
@@ -546,249 +773,598 @@ static void* WINAPI hkffxGetDX12Swapchain_FSR3(void* InSwapChain)
 
 			DetourTransactionCommit();
 
-			spdlog::info("imgui_overlay_dx12::hkffxGetDX12Swapchain_FSR3 added swapchain hooks!");
-
-			DetourTransactionBegin();
-			DetourUpdateThread(GetCurrentThread());
-
-			DetourDetach(&(PVOID&)offxGetDX12Swapchain_FSR3, hkffxGetDX12Swapchain_FSR3);
-			offxGetDX12Swapchain_FSR3 = nullptr;
-
-			DetourTransactionCommit();
-
-			spdlog::info("imgui_overlay_dx12::hkffxGetDX12Swapchain_FSR3 disabled hkffxGetDX12SwapchainPtr hook!");
+			spdlog::info("ImGuiOverlayDx12::hkffxGetDX12Swapchain_FSR3 added swapchain hooks!");
 		}
 
 		if (swapChain3 != nullptr)
 			swapChain3->Release();
 	}
 
-	_changeFFXModHookCounter++;
-
-	if (_changeFFXModHookCounter > 300 && oPresent_Dx12_FSR3 == nullptr)
-	{
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
-
-		DetourDetach(&(PVOID&)offxGetDX12Swapchain_FSR3, hkffxGetDX12Swapchain_FSR3);
-		offxGetDX12Swapchain_FSR3 = nullptr;
-
-		DetourTransactionCommit();
-
-		spdlog::info("imgui_overlay_dx12::hkffxGetDX12Swapchain_FSR3 disabled hkffxGetDX12Swapchain_FSR3 hook for preventing slowdown!");
-	}
+	_changeFFXModHookCounter_Native++;
 
 	return result;
 }
 
+#pragma endregion
+
+#pragma region Hooks for ExecuteCommandLists 
+
 static void WINAPI hkExecuteCommandLists_Dx12(ID3D12CommandQueue* pCommandQueue, UINT NumCommandLists, ID3D12CommandList* ppCommandLists)
 {
-	if (g_pd3dCommandQueue == nullptr)
+	if (_cqDx12 == nullptr)
 	{
-		spdlog::info("imgui_overlay_dx12::hkExecuteCommandLists_Dx12 new g_pd3dCommandQueue: {0:X}", (unsigned long)pCommandQueue);
-		g_pd3dCommandQueue = pCommandQueue;
+		auto desc = pCommandQueue->GetDesc();
+
+		if (desc.Type == D3D12_COMMAND_LIST_TYPE_DIRECT || _bindedFSR3_Uniscaler)
+		{
+			spdlog::info("ImGuiOverlayDx12::hkExecuteCommandLists_Dx12 new _cqDx12: {0:X}", (unsigned long)pCommandQueue);
+			_cqDx12 = pCommandQueue;
+		}
 	}
 
 	return oExecuteCommandLists_Dx12(pCommandQueue, NumCommandLists, ppCommandLists);
 }
 
-// Hook for DXGIFactory for native DX12
+static void WINAPI hkExecuteCommandLists_SL(ID3D12CommandQueue* pCommandQueue, UINT NumCommandLists, ID3D12CommandList* ppCommandLists)
+{
+	if (_cqSL == nullptr)
+	{
+		auto desc = pCommandQueue->GetDesc();
+
+		if (desc.Type == D3D12_COMMAND_LIST_TYPE_DIRECT)
+		{
+			spdlog::info("ImGuiOverlayDx12::hkExecuteCommandLists_SL new _cqSL: {0:X}", (unsigned long)pCommandQueue);
+			_cqSL = pCommandQueue;
+		}
+	}
+
+	return oExecuteCommandLists_SL(pCommandQueue, NumCommandLists, ppCommandLists);
+}
+
+#pragma endregion
+
+#pragma region Hook for DXGIFactory for native DX12
+
 static HRESULT WINAPI hkCreateSwapChain_Dx12(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain)
 {
-	CleanupRenderTarget();
-	return oCreateSwapChain_Dx12(pFactory, pDevice, pDesc, ppSwapChain);
+	//if (IsActivePath(Dx12))
+	CleanupRenderTarget(true);
+
+	auto result = oCreateSwapChain_Dx12(pFactory, pDevice, pDesc, ppSwapChain);
+
+	return result;
 }
 
 static HRESULT WINAPI hkCreateSwapChainForHwnd_Dx12(IDXGIFactory* pFactory, IUnknown* pDevice, HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* pDesc,
 	const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
-	CleanupRenderTarget();
-	return oCreateSwapChainForHwnd_Dx12(pFactory, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
+	//if (IsActivePath(Dx12))
+	CleanupRenderTarget(true);
+
+	auto result = oCreateSwapChainForHwnd_Dx12(pFactory, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
+
+	return result;
 }
 
 static HRESULT WINAPI hkCreateSwapChainForCoreWindow_Dx12(IDXGIFactory* pFactory, IUnknown* pDevice, IUnknown* pWindow, const DXGI_SWAP_CHAIN_DESC1* pDesc,
 	IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
-	CleanupRenderTarget();
-	return oCreateSwapChainForCoreWindow_Dx12(pFactory, pDevice, pWindow, pDesc, pRestrictToOutput, ppSwapChain);
+	//if (IsActivePath(Dx12))
+	CleanupRenderTarget(true);
+
+	auto result = oCreateSwapChainForCoreWindow_Dx12(pFactory, pDevice, pWindow, pDesc, pRestrictToOutput, ppSwapChain);
+
+	return result;
 }
 
 static HRESULT WINAPI hkCreateSwapChainForComposition_Dx12(IDXGIFactory* pFactory, IUnknown* pDevice, const DXGI_SWAP_CHAIN_DESC1* pDesc,
 	IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
-	CleanupRenderTarget();
-	return oCreateSwapChainForComposition_Dx12(pFactory, pDevice, pDesc, pRestrictToOutput, ppSwapChain);
+	//if (IsActivePath(Dx12))
+	CleanupRenderTarget(true);
+
+	auto result = oCreateSwapChainForComposition_Dx12(pFactory, pDevice, pDesc, pRestrictToOutput, ppSwapChain);
+
+	return result;
 }
 
-// Hook for DXGIFactory for native StreamLine
+#pragma endregion
+
+#pragma region Hook for DXGIFactory for Early bindind
+
+static void HookToSwapChain_EB(IDXGISwapChain* InSwapChain)
+{
+	if (InSwapChain != nullptr)
+	{
+		void** pVTable = *reinterpret_cast<void***>(InSwapChain);
+
+		oPresent_Dx12 = (PFN_Present)pVTable[8];
+		oPresent1_Dx12 = (PFN_Present1)pVTable[22];
+
+		oResizeBuffers_Dx12 = (PFN_ResizeBuffers)pVTable[13];
+		oResizeBuffers1_Dx12 = (PFN_ResizeBuffers1)pVTable[39];
+
+		if (oPresent_Dx12 != nullptr)
+		{
+			spdlog::info("ImGuiOverlayDx12::CreateDeviceD3D12 Hooking native SwapChain");
+
+			DetourTransactionBegin();
+			DetourUpdateThread(GetCurrentThread());
+
+			DetourAttach(&(PVOID&)oPresent_Dx12, hkPresent_Dx12);
+			DetourAttach(&(PVOID&)oPresent1_Dx12, hkPresent1_Dx12);
+
+			DetourAttach(&(PVOID&)oResizeBuffers_Dx12, hkResizeBuffers_Dx12);
+			DetourAttach(&(PVOID&)oResizeBuffers1_Dx12, hkResizeBuffers1_Dx12);
+
+			DetourTransactionCommit();
+		}
+	}
+}
+
+static HRESULT WINAPI hkCreateSwapChain_EB(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain)
+{
+	CleanupRenderTarget(true);
+
+	auto result = oCreateSwapChain_EB(pFactory, pDevice, pDesc, ppSwapChain);
+
+	if (result == S_OK && !_dx12BindingActive)
+	{
+		*ppSwapChain = new WrappedIDXGISwapChain4((*ppSwapChain), hkPresent_EB, hkPresent1_EB, CleanupRenderTarget);
+	}
+
+	return result;
+}
+
+static HRESULT WINAPI hkCreateSwapChainForHwnd_EB(IDXGIFactory* pFactory, IUnknown* pDevice, HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* pDesc,
+	const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
+{
+	CleanupRenderTarget(true);
+
+	auto result = oCreateSwapChainForHwnd_EB(pFactory, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
+
+	if (result == S_OK && !_dx12BindingActive)
+	{
+		*ppSwapChain = new WrappedIDXGISwapChain4((*ppSwapChain), hkPresent_EB, hkPresent1_EB, CleanupRenderTarget);
+	}
+
+	return result;
+}
+
+static HRESULT WINAPI hkCreateSwapChainForCoreWindow_EB(IDXGIFactory* pFactory, IUnknown* pDevice, IUnknown* pWindow, const DXGI_SWAP_CHAIN_DESC1* pDesc,
+	IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
+{
+	CleanupRenderTarget(true);
+
+	auto result = oCreateSwapChainForCoreWindow_EB(pFactory, pDevice, pWindow, pDesc, pRestrictToOutput, ppSwapChain);
+
+	if (result == S_OK && !_dx12BindingActive)
+	{
+		*ppSwapChain = new WrappedIDXGISwapChain4((*ppSwapChain), hkPresent_EB, hkPresent1_EB, CleanupRenderTarget);
+	}
+
+	return result;
+}
+
+static HRESULT WINAPI hkCreateSwapChainForComposition_EB(IDXGIFactory* pFactory, IUnknown* pDevice, const DXGI_SWAP_CHAIN_DESC1* pDesc,
+	IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
+{
+	CleanupRenderTarget(true);
+
+	auto result = oCreateSwapChainForComposition_EB(pFactory, pDevice, pDesc, pRestrictToOutput, ppSwapChain);
+
+	if (result == S_OK && !_dx12BindingActive)
+	{
+		*ppSwapChain = new WrappedIDXGISwapChain4((*ppSwapChain), hkPresent_EB, hkPresent1_EB, CleanupRenderTarget);
+	}
+
+	return result;
+}
+
+#pragma endregion
+
+#pragma region Hook for DXGIFactory for native StreamLine
+
 static HRESULT WINAPI hkCreateSwapChain_SL(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain)
 {
-	CleanupRenderTarget();
-	return oCreateSwapChain_SL(pFactory, pDevice, pDesc, ppSwapChain);
+	if (!_isEarlyBind)
+		CleanupRenderTarget(true);
+
+	auto result = oCreateSwapChain_SL(pFactory, pDevice, pDesc, ppSwapChain);
+
+	return result;
 }
 
 static HRESULT WINAPI hkCreateSwapChainForHwnd_SL(IDXGIFactory* pFactory, IUnknown* pDevice, HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* pDesc,
 	const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
-	CleanupRenderTarget();
-	return oCreateSwapChainForHwnd_SL(pFactory, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
+	if (!_isEarlyBind)
+		CleanupRenderTarget(true);
+
+	auto result = oCreateSwapChainForHwnd_SL(pFactory, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
+
+	return result;
 }
 
 static HRESULT WINAPI hkCreateSwapChainForCoreWindow_SL(IDXGIFactory* pFactory, IUnknown* pDevice, IUnknown* pWindow, const DXGI_SWAP_CHAIN_DESC1* pDesc,
 	IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
-	CleanupRenderTarget();
-	return oCreateSwapChainForCoreWindow_SL(pFactory, pDevice, pWindow, pDesc, pRestrictToOutput, ppSwapChain);
+	if (!_isEarlyBind)
+		CleanupRenderTarget(true);
+
+	auto result = oCreateSwapChainForCoreWindow_SL(pFactory, pDevice, pWindow, pDesc, pRestrictToOutput, ppSwapChain);
+
+	return result;
 }
 
 static HRESULT WINAPI hkCreateSwapChainForComposition_SL(IDXGIFactory* pFactory, IUnknown* pDevice, const DXGI_SWAP_CHAIN_DESC1* pDesc,
 	IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
-	CleanupRenderTarget();
-	return oCreateSwapChainForComposition_SL(pFactory, pDevice, pDesc, pRestrictToOutput, ppSwapChain);
+	if (!_isEarlyBind)
+		CleanupRenderTarget(true);
+
+	auto result = oCreateSwapChainForComposition_SL(pFactory, pDevice, pDesc, pRestrictToOutput, ppSwapChain);;
+
+	return result;
 }
 
-static bool CreateDeviceD3D12(HWND InHWnd, ID3D12Device* InDevice)
+#pragma endregion
+
+#pragma region Hooks for early binding
+
+static ULONG WINAPI hkCommandQueueRelease(IUnknown* This)
 {
-	spdlog::info("imgui_overlay_dx12::CreateDeviceD3D12 Handle: {0:X}", (unsigned long)InHWnd);
+	auto result = oCommandQueueRelease(This);
 
-	bool isUniscaler = false;
-
-	HRESULT result;
-
-	// Create queue
-	D3D12_COMMAND_QUEUE_DESC desc = { };
-	result = InDevice->CreateCommandQueue(&desc, IID_PPV_ARGS(&g_pd3dCommandQueue));
-	if (result != S_OK)
+	if (result == 0)
 	{
-		spdlog::error("imgui_overlay_dx12::CreateDeviceD3D12 CreateCommandQueue: {0:X}", (unsigned long)result);
-		return false;
+		if (This == _cqDx12)
+			_cqDx12 = nullptr;
+		else if (This == _cqFsr3Mod)
+			_cqFsr3Mod = nullptr;
+		else if (This == _cqFsr3Native)
+			_cqFsr3Native = nullptr;
+		else if (This == _cqSL)
+			_cqSL = nullptr;
 	}
 
-	if (g_pd3dCommandQueue != nullptr)
-	{
-		void** pCommandQueueVTable = *reinterpret_cast<void***>(g_pd3dCommandQueue);
+	return result;
+}
 
+static HRESULT WINAPI hkCreateCommandQueue(ID3D12Device* This, const D3D12_COMMAND_QUEUE_DESC* pDesc, REFIID riid, void** ppCommandQueue)
+{
+	auto result = oCreateCommandQueue(This, pDesc, riid, ppCommandQueue);
+
+	if (result == S_OK && oExecuteCommandLists_Dx12 == nullptr && pDesc->Type == D3D12_COMMAND_LIST_TYPE_DIRECT)
+	{
+		auto cq = (ID3D12CommandQueue*)*ppCommandQueue;
+
+		void** pCommandQueueVTable = *reinterpret_cast<void***>(cq);
+
+		oCommandQueueRelease = (PFN_Release)pCommandQueueVTable[2];
 		oExecuteCommandLists_Dx12 = (PFN_ExecuteCommandLists)pCommandQueueVTable[10];
 
 		if (oExecuteCommandLists_Dx12 != nullptr)
 		{
-			spdlog::info("imgui_overlay_dx12::CreateDeviceD3D12 hooking CommandQueue");
+			spdlog::info("ImGuiOverlayDx12::hkCreateCommandQueue hooking CommandQueue");
 
 			DetourTransactionBegin();
 			DetourUpdateThread(GetCurrentThread());
 
 			DetourAttach(&(PVOID&)oExecuteCommandLists_Dx12, hkExecuteCommandLists_Dx12);
+			DetourAttach(&(PVOID&)oCommandQueueRelease, hkCommandQueueRelease);
 
 			DetourTransactionCommit();
 		}
 
-		g_pd3dCommandQueue->Release();
-		g_pd3dCommandQueue = nullptr;
+		cq = nullptr;
 	}
+
+	if (result == S_OK && _cqDx12 == nullptr && pDesc->Type == D3D12_COMMAND_LIST_TYPE_DIRECT)
+	{
+		_cqDx12 = (ID3D12CommandQueue*)(*ppCommandQueue);
+		//*ppCommandQueue = new WrappedID3D12CommandQueue(g_pd3dCommandQueue);
+	}
+
+	return result;
+}
+
+static HRESULT WINAPI hkD3D12CreateDevice(IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
+{
+	auto result = oD3D12CreateDevice(pAdapter, MinimumFeatureLevel, riid, ppDevice);
+
+	if (result == S_OK && oCreateCommandQueue == nullptr)
+	{
+		auto device = (ID3D12Device*)*ppDevice;
+
+		void** pCommandQueueVTable = *reinterpret_cast<void***>(device);
+
+		oCreateCommandQueue = (PFN_CreateCommandQueue)pCommandQueueVTable[8];
+
+		if (oCreateCommandQueue != nullptr)
+		{
+			spdlog::info("ImGuiOverlayDx12::hkD3D12CreateDevice hooking D3D12Device");
+
+			DetourTransactionBegin();
+			DetourUpdateThread(GetCurrentThread());
+
+			DetourAttach(&(PVOID&)oCreateCommandQueue, hkCreateCommandQueue);
+
+			DetourTransactionCommit();
+		}
+	}
+
+	return result;
+}
+
+static HRESULT WINAPI hkCreateDXGIFactory1(REFIID riid, void** ppFactory)
+{
+	auto result = oCreateDXGIFactory1(riid, ppFactory);
+
+	if (result == S_OK && oCreateSwapChain_EB == nullptr)
+	{
+		auto factory = (IDXGIFactory*)*ppFactory;
+		IDXGIFactory4* factory4 = nullptr;
+
+		if (factory->QueryInterface(IID_PPV_ARGS(&factory4)) == S_OK)
+		{
+			void** pFactoryVTable = *reinterpret_cast<void***>(factory4);
+
+			oCreateSwapChain_EB = (PFN_CreateSwapChain)pFactoryVTable[10];
+			oCreateSwapChainForHwnd_EB = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
+			oCreateSwapChainForCoreWindow_EB = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
+			oCreateSwapChainForComposition_EB = (PFN_CreateSwapChainForComposition)pFactoryVTable[24];
+
+			if (oCreateSwapChain_EB != nullptr)
+			{
+				spdlog::info("ImGuiOverlayDx12::hkCreateDXGIFactory1 Hooking native DXGIFactory");
+
+				DetourTransactionBegin();
+				DetourUpdateThread(GetCurrentThread());
+
+				DetourAttach(&(PVOID&)oCreateSwapChain_EB, hkCreateSwapChain_EB);
+				DetourAttach(&(PVOID&)oCreateSwapChainForHwnd_EB, hkCreateSwapChainForHwnd_EB);
+				DetourAttach(&(PVOID&)oCreateSwapChainForCoreWindow_EB, hkCreateSwapChainForCoreWindow_EB);
+				DetourAttach(&(PVOID&)oCreateSwapChainForComposition_EB, hkCreateSwapChainForComposition_EB);
+
+				DetourTransactionCommit();
+			}
+
+			factory4->Release();
+			factory4 = nullptr;
+		}
+	}
+
+	return result;
+}
+
+#pragma endregion
+
+#pragma region Bindings
+
+static bool CheckDx12(ID3D12Device* InDevice)
+{
+	HRESULT result;
+
+	// Native DX12 CommandQueue Bind
+	if (oExecuteCommandLists_Dx12 == nullptr)
+	{
+		ID3D12Device* device = InDevice;
+
+		if (device == nullptr)
+		{
+			// Create device
+			D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
+
+			result = D3D12CreateDevice(NULL, featureLevel, IID_PPV_ARGS(&device));
+
+			if (result != S_OK)
+			{
+				spdlog::error("ImGuiOverlayDx12::CheckDx12 D3D12CreateDevice: {0:X}", (unsigned long)result);
+				return false;
+			}
+		}
+
+		// Create queue
+		ID3D12CommandQueue* cq = nullptr;
+		D3D12_COMMAND_QUEUE_DESC desc = { };
+		result = device->CreateCommandQueue(&desc, IID_PPV_ARGS(&cq));
+		if (result != S_OK)
+		{
+			spdlog::error("ImGuiOverlayDx12::CheckDx12 CreateCommandQueue: {0:X}", (unsigned long)result);
+			return false;
+		}
+
+		if (cq != nullptr)
+		{
+			void** pCommandQueueVTable = *reinterpret_cast<void***>(cq);
+
+			oExecuteCommandLists_Dx12 = (PFN_ExecuteCommandLists)pCommandQueueVTable[10];
+
+			if (oExecuteCommandLists_Dx12 != nullptr)
+			{
+				spdlog::info("ImGuiOverlayDx12::CheckDx12 hooking CommandQueue");
+
+				DetourTransactionBegin();
+				DetourUpdateThread(GetCurrentThread());
+
+				DetourAttach(&(PVOID&)oExecuteCommandLists_Dx12, hkExecuteCommandLists_Dx12);
+
+				DetourTransactionCommit();
+			}
+
+			cq->Release();
+			cq = nullptr;
+		}
+
+		if (device != InDevice && device != nullptr)
+		{
+			device->Release();
+			device = nullptr;
+		}
+	}
+
+	return true;
+}
+
+static bool CheckMods()
+{
 
 	// Check for FSR3-FG & Mods
 	if (Config::Instance()->HookFSR3Proxy.value_or(true))
 	{
-		// Check for Uniscaler
-		offxGetDX12Swapchain_Mod = (PFN_ffxGetDX12SwapchainPtr)DetourFindFunction("Uniscaler.asi", "ffxGetSwapchainDX12");
-
-		if (offxGetDX12Swapchain_Mod != nullptr)
+		if (offxGetDX12Swapchain_Mod == nullptr)
 		{
-			spdlog::info("imgui_overlay_dx12::CreateDeviceD3D12 Uniscaler's ffxGetDX12SwapchainPtr found");
-			isUniscaler = true;
-		}
-		else
-		{
-			// Check for Nukem's
-			offxGetDX12Swapchain_Mod = (PFN_ffxGetDX12SwapchainPtr)DetourFindFunction("dlssg_to_fsr3_amd_is_better.dll", "ffxGetSwapchainDX12");
+			// Check for Uniscaler
+			offxGetDX12Swapchain_Mod = (PFN_ffxGetDX12SwapchainPtr)DetourFindFunction("Uniscaler.asi", "ffxGetSwapchainDX12");
 
 			if (offxGetDX12Swapchain_Mod != nullptr)
-				spdlog::info("imgui_overlay_dx12::CreateDeviceD3D12 Nukem's ffxGetDX12SwapchainPtr found");
+			{
+				spdlog::info("ImGuiOverlayDx12::CheckMods Uniscaler's ffxGetDX12SwapchainPtr found");
+				_bindedFSR3_Uniscaler = true;
+				_bindedFSR3_Mod = true;
+			}
+			else
+			{
+				// Check for Nukem's
+				offxGetDX12Swapchain_Mod = (PFN_ffxGetDX12SwapchainPtr)DetourFindFunction("dlssg_to_fsr3_amd_is_better.dll", "ffxGetSwapchainDX12");
+
+				if (offxGetDX12Swapchain_Mod != nullptr)
+				{
+					spdlog::info("ImGuiOverlayDx12::CheckMods Nukem's ffxGetDX12SwapchainPtr found");
+					_bindedFSR3_Mod = true;
+				}
+			}
 		}
 
-		// Check for native FSR3 (if game has native FSR3-FG)
-		offxGetDX12Swapchain_FSR3 = (PFN_ffxGetDX12SwapchainPtr)DetourFindFunction("ffx_backend_dx12_x64.dll", "ffxGetSwapchainDX12");
+		if (offxGetDX12Swapchain_FSR3 == nullptr)
+		{
+			// Check for native FSR3 (if game has native FSR3-FG)
+			offxGetDX12Swapchain_FSR3 = (PFN_ffxGetDX12SwapchainPtr)DetourFindFunction("ffx_backend_dx12_x64.dll", "ffxGetSwapchainDX12");
 
-		if (offxGetDX12Swapchain_FSR3)
-			spdlog::info("imgui_overlay_dx12::CreateDeviceD3D12 FSR3's offxGetDX12SwapchainPtr found");
+
+			if (offxGetDX12Swapchain_FSR3)
+			{
+				spdlog::info("ImGuiOverlayDx12::CheckMods FSR3's offxGetDX12SwapchainPtr found");
+				_bindedFSR3_Native = true;
+			}
+		}
 
 		// Hook FSR3 ffxGetDX12SwapchainPtr methods
-		if (offxGetDX12Swapchain_Mod != nullptr || offxGetDX12Swapchain_FSR3 != nullptr)
+		if ((offxGetDX12Swapchain_Mod != nullptr && _bindedFSR3_Mod) || (offxGetDX12Swapchain_FSR3 != nullptr && _bindedFSR3_Native))
 		{
 			DetourTransactionBegin();
 			DetourUpdateThread(GetCurrentThread());
 
 			// Use SL calls for Nukem's mod
-			if (offxGetDX12Swapchain_Mod != nullptr && isUniscaler)
+			if (offxGetDX12Swapchain_Mod != nullptr && _bindedFSR3_Uniscaler)
+			{
 				DetourAttach(&(PVOID&)offxGetDX12Swapchain_Mod, hkffxGetDX12Swapchain_Mod);
+			}
 
-			if (offxGetDX12Swapchain_FSR3 != nullptr)
+			if (offxGetDX12Swapchain_FSR3 != nullptr && _bindedFSR3_Native)
+			{
 				DetourAttach(&(PVOID&)offxGetDX12Swapchain_FSR3, hkffxGetDX12Swapchain_FSR3);
+			}
 
 			DetourTransactionCommit();
 		}
 	}
 
+	return true;
+}
+
+static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
+{
+	spdlog::info("ImGuiOverlayDx12::CreateDeviceD3D12 Handle: {0:X}", (unsigned long)InHWnd);
+
+	HRESULT result;
+
+
+	if (!CheckDx12(InDevice))
+	{
+		_dx12BindingActive = false;
+		return false;
+	}
+
+	_dx12BindingActive = false;
+
+	CheckMods();
+
 	// Uniscaler captures and uses latest swapchain
 	// Avoid creating and hooking swapchains to prevent crashes
 	// Try to create native DXGIFactory
-	if (Config::Instance()->HookD3D12.value_or(true))
+	if (!_bindedFSR3_Uniscaler && oPresent_Dx12 == nullptr && Config::Instance()->HookD3D12.value_or(true))
 	{
+		_dx12BindingActive = true;
+
 		// Create device
+		ID3D12Device* device = nullptr;
 		D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
 
-		result = D3D12CreateDevice(NULL, featureLevel, IID_PPV_ARGS(&g_pd3dDevice));
+		result = D3D12CreateDevice(NULL, featureLevel, IID_PPV_ARGS(&device));
 
 		if (result != S_OK)
 		{
-			spdlog::error("imgui_overlay_dx12::CreateDeviceD3D12 D3D12CreateDevice: {0:X}", (unsigned long)result);
+			spdlog::error("ImGuiOverlayDx12::BindAll Dx12 D3D12CreateDevice: {0:X}", (unsigned long)result);
+			_dx12BindingActive = false;
+
 			return false;
 		}
 
 		// Create queue
+		ID3D12CommandQueue* cq = nullptr;
 		D3D12_COMMAND_QUEUE_DESC desc = { };
-		result = g_pd3dDevice->CreateCommandQueue(&desc, IID_PPV_ARGS(&g_pd3dCommandQueue));
+		result = device->CreateCommandQueue(&desc, IID_PPV_ARGS(&cq));
 		if (result != S_OK)
 		{
-			spdlog::error("imgui_overlay_dx12::CreateDeviceD3D12 CreateCommandQueue2: {0:X}", (unsigned long)result);
+			spdlog::error("ImGuiOverlayDx12::BindAll Dx12 CreateCommandQueue2: {0:X}", (unsigned long)result);
+			_dx12BindingActive = false;
+
 			return false;
 		}
 
+		IDXGIFactory4* factory = nullptr;
 		IDXGISwapChain1* swapChain1 = nullptr;
+		IDXGISwapChain3* swapChain3 = nullptr;
 
-		spdlog::info("imgui_overlay_dx12::CreateDeviceD3D12 Creating DXGIFactory for hooking");
-		result = CreateDXGIFactory1(IID_PPV_ARGS(&g_dxgiFactory));
+		spdlog::info("ImGuiOverlayDx12::BindAll Dx12 Creating DXGIFactory for hooking");
+		result = CreateDXGIFactory1(IID_PPV_ARGS(&factory));
 
 		if (result != S_OK)
 		{
-			spdlog::error("imgui_overlay_dx12::CreateDeviceD3D12 CreateDXGIFactory1: {0:X}", (unsigned long)result);
+			spdlog::error("ImGuiOverlayDx12::BindAll Dx12 CreateDXGIFactory1: {0:X}", (unsigned long)result);
+			_dx12BindingActive = false;
+
 			return false;
 		}
 
-		void** pFactoryVTable = *reinterpret_cast<void***>(g_dxgiFactory);
-
-		oCreateSwapChain_Dx12 = (PFN_CreateSwapChain)pFactoryVTable[10];
-		oCreateSwapChainForHwnd_Dx12 = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
-		oCreateSwapChainForCoreWindow_Dx12 = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
-		oCreateSwapChainForComposition_Dx12 = (PFN_CreateSwapChainForComposition)pFactoryVTable[24];
-
-		if (oCreateSwapChain_Dx12 != nullptr)
+		if (oCreateSwapChain_Dx12 == nullptr)
 		{
-			spdlog::info("imgui_overlay_dx12::CreateDeviceD3D12 Hooking native DXGIFactory");
+			void** pFactoryVTable = *reinterpret_cast<void***>(factory);
 
-			DetourTransactionBegin();
-			DetourUpdateThread(GetCurrentThread());
+			oCreateSwapChain_Dx12 = (PFN_CreateSwapChain)pFactoryVTable[10];
+			oCreateSwapChainForHwnd_Dx12 = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
+			oCreateSwapChainForCoreWindow_Dx12 = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
+			oCreateSwapChainForComposition_Dx12 = (PFN_CreateSwapChainForComposition)pFactoryVTable[24];
 
-			DetourAttach(&(PVOID&)oCreateSwapChain_Dx12, hkCreateSwapChain_Dx12);
-			DetourAttach(&(PVOID&)oCreateSwapChainForHwnd_Dx12, hkCreateSwapChainForHwnd_Dx12);
-			DetourAttach(&(PVOID&)oCreateSwapChainForCoreWindow_Dx12, hkCreateSwapChainForCoreWindow_Dx12);
-			DetourAttach(&(PVOID&)oCreateSwapChainForComposition_Dx12, hkCreateSwapChainForComposition_Dx12);
-			DetourTransactionCommit();
+			if (oCreateSwapChain_Dx12 != nullptr)
+			{
+				spdlog::info("ImGuiOverlayDx12::BindAll Hooking native DXGIFactory");
+
+				DetourTransactionBegin();
+				DetourUpdateThread(GetCurrentThread());
+
+				DetourAttach(&(PVOID&)oCreateSwapChain_Dx12, hkCreateSwapChain_Dx12);
+				DetourAttach(&(PVOID&)oCreateSwapChainForHwnd_Dx12, hkCreateSwapChainForHwnd_Dx12);
+				DetourAttach(&(PVOID&)oCreateSwapChainForCoreWindow_Dx12, hkCreateSwapChainForCoreWindow_Dx12);
+				DetourAttach(&(PVOID&)oCreateSwapChainForComposition_Dx12, hkCreateSwapChainForComposition_Dx12);
+				DetourTransactionCommit();
+			}
 		}
 
 		// Hook DXGI Factory 
-		if (g_dxgiFactory != nullptr && g_pd3dCommandQueue != nullptr)
+		if (factory != nullptr && cq != nullptr && oPresent_Dx12 == nullptr)
 		{
 			// Setup swap chain
 			DXGI_SWAP_CHAIN_DESC1 sd = { };
@@ -800,27 +1376,26 @@ static bool CreateDeviceD3D12(HWND InHWnd, ID3D12Device* InDevice)
 			sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
 			// Create SwapChain
-			result = g_dxgiFactory->CreateSwapChainForHwnd(g_pd3dCommandQueue, InHWnd, &sd, NULL, NULL, &swapChain1);
+			result = oCreateSwapChainForHwnd_Dx12(factory, cq, InHWnd, &sd, NULL, NULL, &swapChain1);
 			if (result != S_OK)
 			{
-				spdlog::error("imgui_overlay_dx12::CreateDeviceD3D12 CreateSwapChainForHwnd: {0:X}", (unsigned long)result);
+				spdlog::error("ImGuiOverlayDx12::BindAll Dx12 CreateSwapChainForHwnd: {0:X}", (unsigned long)result);
+				_dx12BindingActive = false;
 				return false;
 			}
 
-			result = swapChain1->QueryInterface(IID_PPV_ARGS(&g_pSwapChain));
+			result = swapChain1->QueryInterface(IID_PPV_ARGS(&swapChain3));
 			if (result != S_OK)
 			{
-				spdlog::error("imgui_overlay_dx12::CreateDeviceD3D12 QueryInterface: {0:X}", (unsigned long)result);
+				spdlog::error("ImGuiOverlayDx12::BindAll Dx12 QueryInterface: {0:X}", (unsigned long)result);
+				_dx12BindingActive = false;
 				return false;
 			}
-
-			swapChain1->Release();
-			swapChain1 = nullptr;
 		}
 
-		if (g_pSwapChain != nullptr)
+		if (swapChain3 != nullptr && oPresent_Dx12 == nullptr)
 		{
-			void** pVTable = *reinterpret_cast<void***>(g_pSwapChain);
+			void** pVTable = *reinterpret_cast<void***>(swapChain3);
 
 			oPresent_Dx12 = (PFN_Present)pVTable[8];
 			oPresent1_Dx12 = (PFN_Present1)pVTable[22];
@@ -830,7 +1405,7 @@ static bool CreateDeviceD3D12(HWND InHWnd, ID3D12Device* InDevice)
 
 			if (oPresent_Dx12 != nullptr)
 			{
-				spdlog::info("imgui_overlay_dx12::CreateDeviceD3D12 Hooking native SwapChain");
+				spdlog::info("ImGuiOverlayDx12::BindAll Dx12 Hooking native SwapChain");
 
 				DetourTransactionBegin();
 				DetourUpdateThread(GetCurrentThread());
@@ -843,211 +1418,260 @@ static bool CreateDeviceD3D12(HWND InHWnd, ID3D12Device* InDevice)
 
 				DetourTransactionCommit();
 			}
-
-			g_pSwapChain->Release();
-			g_pSwapChain = nullptr;
 		}
 
-		if (g_dxgiFactory != nullptr)
+		if (swapChain3 != nullptr)
 		{
-			g_dxgiFactory->Release();
-			g_dxgiFactory = nullptr;
+			swapChain3->Release();
+			swapChain3 = nullptr;
 		}
 
-		if (g_pd3dCommandQueue != nullptr)
+		if (swapChain1 != nullptr)
 		{
-			g_pd3dCommandQueue->Release();
-			g_pd3dCommandQueue = nullptr;
+			swapChain1->Release();
+			swapChain1 = nullptr;
 		}
 
-		if (g_pd3dDevice != nullptr)
+		if (factory != nullptr)
 		{
-			g_pd3dDevice->Release();
-			g_pd3dDevice = nullptr;
+			factory->Release();
+			factory = nullptr;
 		}
-	}
+
+		if (cq != nullptr)
+		{
+			cq->Release();
+			cq = nullptr;
+		}
+
+		if (device != nullptr)
+		{
+			device->Release();
+			device = nullptr;
+		}
+
+	}	_dx12BindingActive = false;
+
 
 	// If not using uniscaler, attaching to sl is needed
 	// Try to create SL DXGIFactory
-	if ((offxGetDX12Swapchain_Mod != nullptr && !isUniscaler) || Config::Instance()->HookSLProxy.value_or(true))
+	if (oPresent_SL == nullptr && Config::Instance()->HookSLProxy.value_or(true))
 	{
 		// Create device
+		ID3D12Device* device;
 		D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
 
 		// check for sl.interposer
 		PFN_D3D12_CREATE_DEVICE slCD = (PFN_D3D12_CREATE_DEVICE)DetourFindFunction("sl.interposer.dll", "D3D12CreateDevice");
 
 		if (slCD != nullptr)
-			spdlog::info("imgui_overlay_dx12::CreateDeviceD3D12 sl.interposer.dll D3D12CreateDevice found");
-
-		if (slCD != nullptr) //&& Config::Instance()->NVNGX_Engine != NVSDK_NGX_ENGINE_TYPE_UNREAL && Config::Instance()->HookSLDevice.value_or(false))
-			result = slCD(NULL, featureLevel, IID_PPV_ARGS(&g_pd3dDevice));
-		else
-			result = D3D12CreateDevice(NULL, featureLevel, IID_PPV_ARGS(&g_pd3dDevice));
-
-		if (result != S_OK)
 		{
-			spdlog::error("imgui_overlay_dx12::CreateDeviceD3D12 D3D12CreateDevice: {0:X}", (unsigned long)result);
-			return false;
-		}
+			spdlog::info("ImGuiOverlayDx12::BindAll sl.interposer.dll D3D12CreateDevice found");
 
-		// Create queue
-		D3D12_COMMAND_QUEUE_DESC desc = { };
-		result = g_pd3dDevice->CreateCommandQueue(&desc, IID_PPV_ARGS(&g_pd3dCommandQueue));
-		if (result != S_OK)
-		{
-			spdlog::error("imgui_overlay_dx12::CreateDeviceD3D12 CreateCommandQueue1: {0:X}", (unsigned long)result);
-			return false;
-		}
+			result = slCD(NULL, featureLevel, IID_PPV_ARGS(&device));
 
-		// Check for sl.interposer
-		PFN_CreateDXGIFactory1 slFactory = (PFN_CreateDXGIFactory1)DetourFindFunction("sl.interposer.dll", "CreateDXGIFactory1");
-
-		if (slFactory != nullptr)
-			spdlog::info("imgui_overlay_dx12::CreateDeviceD3D12 sl.interposer.dll CreateDXGIFactory1 found");
-
-		IDXGISwapChain1* swapChain1 = nullptr;
-
-		if (slFactory != nullptr)
-		{
-			if (g_dxgiFactory != nullptr)
-			{
-				g_dxgiFactory->Release();
-				g_dxgiFactory = nullptr;
-			}
-
-			result = slFactory(IID_PPV_ARGS(&g_dxgiFactory));
+			if (result != S_OK)
+				result = D3D12CreateDevice(NULL, featureLevel, IID_PPV_ARGS(&device));
 
 			if (result != S_OK)
 			{
-				spdlog::error("imgui_overlay_dx12::CreateDeviceD3D12 SL CreateDXGIFactory1: {0:X}", (unsigned long)result);
+				spdlog::error("ImGuiOverlayDx12::BindAll SL D3D12CreateDevice: {0:X}", (unsigned long)result);
 				return false;
 			}
 
-			void** pFactoryVTable = *reinterpret_cast<void***>(g_dxgiFactory);
-
-			oCreateSwapChain_SL = (PFN_CreateSwapChain)pFactoryVTable[10];
-			oCreateSwapChainForHwnd_SL = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
-			oCreateSwapChainForCoreWindow_SL = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
-			oCreateSwapChainForComposition_SL = (PFN_CreateSwapChainForComposition)pFactoryVTable[24];
-
-			if (oCreateSwapChain_SL != nullptr)
+			// Create queue
+			ID3D12CommandQueue* cq = nullptr;
+			D3D12_COMMAND_QUEUE_DESC desc = { };
+			result = device->CreateCommandQueue(&desc, IID_PPV_ARGS(&cq));
+			if (result != S_OK)
 			{
-				spdlog::info("imgui_overlay_dx12::CreateDeviceD3D12 hooking SL DXGIFactory");
-
-				DetourTransactionBegin();
-				DetourUpdateThread(GetCurrentThread());
-
-				DetourAttach(&(PVOID&)oCreateSwapChain_SL, hkCreateSwapChain_SL);
-				DetourAttach(&(PVOID&)oCreateSwapChainForHwnd_SL, hkCreateSwapChainForHwnd_SL);
-				DetourAttach(&(PVOID&)oCreateSwapChainForCoreWindow_SL, hkCreateSwapChainForCoreWindow_SL);
-				DetourAttach(&(PVOID&)oCreateSwapChainForComposition_SL, hkCreateSwapChainForComposition_SL);
-
-				DetourTransactionCommit();
+				spdlog::error("ImGuiOverlayDx12::BindAll SL CreateCommandQueue1: {0:X}", (unsigned long)result);
+				return false;
 			}
 
-			// Hook DXGI Factory 
-			if (g_dxgiFactory != nullptr && g_pd3dCommandQueue != nullptr)
+			if (cq != nullptr)
 			{
-				// Setup swap chain
-				DXGI_SWAP_CHAIN_DESC1 sd = { };
-				sd.BufferCount = NUM_BACK_BUFFERS;
-				sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-				sd.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
-				sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-				sd.SampleDesc.Count = 1;
-				sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+				void** pCommandQueueVTable = *reinterpret_cast<void***>(cq);
 
-				// Create SwapChain
-				result = g_dxgiFactory->CreateSwapChainForHwnd(g_pd3dCommandQueue, InHWnd, &sd, NULL, NULL, &swapChain1);
-				if (result != S_OK)
+				oExecuteCommandLists_SL = (PFN_ExecuteCommandLists)pCommandQueueVTable[10];
+
+				if (oExecuteCommandLists_SL != nullptr)
 				{
-					spdlog::error("imgui_overlay_dx12::CreateDeviceD3D12 SL CreateSwapChainForHwnd: {0:X}", (unsigned long)result);
-					return false;
-				}
-
-				if (g_pSwapChain != nullptr)
-				{
-					g_pSwapChain->Release();
-					g_pSwapChain = nullptr;
-				}
-
-				result = swapChain1->QueryInterface(IID_PPV_ARGS(&g_pSwapChain));
-				if (result != S_OK)
-				{
-					spdlog::error("imgui_overlay_dx12::CreateDeviceD3D12 SL QueryInterface: {0:X}", (unsigned long)result);
-					return false;
-				}
-
-				swapChain1->Release();
-				swapChain1 = nullptr;
-			}
-
-			if (g_pSwapChain != nullptr)
-			{
-				void** pVTable = *reinterpret_cast<void***>(g_pSwapChain);
-
-				oPresent_SL = (PFN_Present)pVTable[8];
-				oPresent1_SL = (PFN_Present1)pVTable[22];
-
-				oResizeBuffers_SL = (PFN_ResizeBuffers)pVTable[13];
-				oResizeBuffers1_SL = (PFN_ResizeBuffers1)pVTable[39];
-
-				if (oPresent_SL != nullptr)
-				{
-					spdlog::info("imgui_overlay_dx12::CreateDeviceD3D12 hooking SL SwapChain");
+					spdlog::info("ImGuiOverlayDx12::BindAll SL hooking CommandQueue");
 
 					DetourTransactionBegin();
 					DetourUpdateThread(GetCurrentThread());
 
-					DetourAttach(&(PVOID&)oPresent_SL, hkPresent_SL);
-					DetourAttach(&(PVOID&)oPresent1_SL, hkPresent1_SL);
-
-					DetourAttach(&(PVOID&)oResizeBuffers_SL, hkResizeBuffers_SL);
-					DetourAttach(&(PVOID&)oResizeBuffers1_SL, hkResizeBuffers1_SL);
+					DetourAttach(&(PVOID&)oExecuteCommandLists_SL, hkExecuteCommandLists_SL);
 
 					DetourTransactionCommit();
 				}
-
-				g_pSwapChain->Release();
-				g_pSwapChain = nullptr;
 			}
 
-			if (g_dxgiFactory != nullptr)
+			if (!_bindedFSR3_Uniscaler)
 			{
-				g_dxgiFactory->Release();
-				g_dxgiFactory = nullptr;
+				// Check for sl.interposer
+				PFN_CreateDXGIFactory1 slFactory = (PFN_CreateDXGIFactory1)DetourFindFunction("sl.interposer.dll", "CreateDXGIFactory1");
+
+				if (slFactory != nullptr)
+					spdlog::info("ImGuiOverlayDx12::BindAll sl.interposer.dll CreateDXGIFactory1 found");
+
+				IDXGIFactory4* factory = nullptr;
+				IDXGISwapChain1* swapChain1 = nullptr;
+				IDXGISwapChain3* swapChain3 = nullptr;
+
+				if (slFactory != nullptr)
+				{
+					result = slFactory(IID_PPV_ARGS(&factory));
+
+					if (result != S_OK)
+					{
+						spdlog::error("ImGuiOverlayDx12::BindAll SL CreateDXGIFactory1: {0:X}", (unsigned long)result);
+						return false;
+					}
+
+					if (oCreateSwapChain_SL == nullptr)
+					{
+						void** pFactoryVTable = *reinterpret_cast<void***>(factory);
+
+						oCreateSwapChain_SL = (PFN_CreateSwapChain)pFactoryVTable[10];
+						oCreateSwapChainForHwnd_SL = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
+						oCreateSwapChainForCoreWindow_SL = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
+						oCreateSwapChainForComposition_SL = (PFN_CreateSwapChainForComposition)pFactoryVTable[24];
+
+						if (oCreateSwapChain_SL != nullptr)
+						{
+							spdlog::info("ImGuiOverlayDx12::BindAll hooking SL DXGIFactory");
+
+							DetourTransactionBegin();
+							DetourUpdateThread(GetCurrentThread());
+
+							if (oCreateSwapChain_SL != oCreateSwapChain_EB && oCreateSwapChain_SL != oCreateSwapChain_Dx12)
+								DetourAttach(&(PVOID&)oCreateSwapChain_SL, hkCreateSwapChain_SL);
+
+							if (oCreateSwapChainForHwnd_SL != oCreateSwapChainForHwnd_EB && oCreateSwapChainForHwnd_SL != oCreateSwapChainForHwnd_Dx12)
+								DetourAttach(&(PVOID&)oCreateSwapChainForHwnd_SL, hkCreateSwapChainForHwnd_SL);
+
+							if (oCreateSwapChainForCoreWindow_SL != oCreateSwapChainForCoreWindow_EB && oCreateSwapChainForCoreWindow_SL != oCreateSwapChainForCoreWindow_Dx12)
+								DetourAttach(&(PVOID&)oCreateSwapChainForCoreWindow_SL, hkCreateSwapChainForCoreWindow_SL);
+
+							if (oCreateSwapChainForComposition_SL != oCreateSwapChainForComposition_EB && oCreateSwapChainForComposition_SL != oCreateSwapChainForComposition_Dx12)
+								DetourAttach(&(PVOID&)oCreateSwapChainForComposition_SL, hkCreateSwapChainForComposition_SL);
+
+							DetourTransactionCommit();
+						}
+					}
+
+					// Hook DXGI Factory 
+					if (factory != nullptr && cq != nullptr && oPresent_SL == nullptr)
+					{
+						// Setup swap chain
+						DXGI_SWAP_CHAIN_DESC1 sd = { };
+						sd.BufferCount = NUM_BACK_BUFFERS;
+						sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+						sd.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+						sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+						sd.SampleDesc.Count = 1;
+						sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+
+						// Create SwapChain
+						result = oCreateSwapChainForHwnd_SL(factory, cq, InHWnd, &sd, NULL, NULL, &swapChain1);
+						if (result != S_OK)
+						{
+							spdlog::error("ImGuiOverlayDx12::BindAll SL CreateSwapChainForHwnd: {0:X}", (unsigned long)result);
+							return false;
+						}
+
+						result = swapChain1->QueryInterface(IID_PPV_ARGS(&swapChain3));
+						if (result != S_OK)
+						{
+							spdlog::error("ImGuiOverlayDx12::BindAll SL QueryInterface: {0:X}", (unsigned long)result);
+							return false;
+						}
+					}
+
+					if (swapChain3 != nullptr && oPresent_SL == nullptr)
+					{
+						void** pVTable = *reinterpret_cast<void***>(swapChain3);
+
+						oPresent_SL = (PFN_Present)pVTable[8];
+						oPresent1_SL = (PFN_Present1)pVTable[22];
+
+						oResizeBuffers_SL = (PFN_ResizeBuffers)pVTable[13];
+						oResizeBuffers1_SL = (PFN_ResizeBuffers1)pVTable[39];
+
+						if (oPresent_SL != nullptr)
+						{
+							spdlog::info("ImGuiOverlayDx12::BindAll hooking SL SwapChain");
+
+							DetourTransactionBegin();
+							DetourUpdateThread(GetCurrentThread());
+
+							if (oPresent_SL != oPresent_Dx12)
+								DetourAttach(&(PVOID&)oPresent_SL, hkPresent_SL);
+
+							if (oPresent1_SL != oPresent1_Dx12)
+								DetourAttach(&(PVOID&)oPresent1_SL, hkPresent1_SL);
+
+							if (oResizeBuffers_SL != oResizeBuffers_Dx12)
+								DetourAttach(&(PVOID&)oResizeBuffers_SL, hkResizeBuffers_SL);
+
+							if (oResizeBuffers1_SL != oResizeBuffers1_Dx12)
+								DetourAttach(&(PVOID&)oResizeBuffers1_SL, hkResizeBuffers1_SL);
+
+							DetourTransactionCommit();
+						}
+					}
+
+					if (swapChain3 != nullptr)
+					{
+						swapChain3->Release();
+						swapChain3 = nullptr;
+					}
+
+					if (swapChain1 != nullptr)
+					{
+						swapChain1->Release();
+						swapChain1 = nullptr;
+					}
+
+					if (factory != nullptr)
+					{
+						factory->Release();
+						factory = nullptr;
+					}
+				}
 			}
-		}
 
-		if (g_pd3dCommandQueue != nullptr)
-		{
-			g_pd3dCommandQueue->Release();
-			g_pd3dCommandQueue = nullptr;
-		}
+			if (cq != nullptr)
+			{
+				cq->Release();
+				cq = nullptr;
+			}
 
-		if (g_pd3dDevice != nullptr)
-		{
-			g_pd3dDevice->Release();
-			g_pd3dDevice = nullptr;
+			if (device != nullptr)
+			{
+				device->Release();
+				device = nullptr;
+			}
 		}
 	}
-
-	g_pd3dDevice = InDevice;
 
 	return true;
 }
 
-static void CreateRenderTarget(IDXGISwapChain* pSwapChain)
+#pragma endregion
+
+static void CreateRenderTarget(ID3D12Device* device, IDXGISwapChain* pSwapChain)
 {
-	spdlog::info("imgui_overlay_dx12::CreateRenderTarget");
+	spdlog::info("ImGuiOverlayDx12::CreateRenderTarget");
 
 	DXGI_SWAP_CHAIN_DESC desc;
 	HRESULT hr = pSwapChain->GetDesc(&desc);
 
 	if (hr != S_OK)
 	{
-		spdlog::error("imgui_overlay_dx12::CreateRenderTarget pSwapChain->GetDesc: {0:X}", (unsigned long)hr);
+		spdlog::error("ImGuiOverlayDx12::CreateRenderTarget pSwapChain->GetDesc: {0:X}", (unsigned long)hr);
 		return;
 	}
 
@@ -1059,7 +1683,7 @@ static void CreateRenderTarget(IDXGISwapChain* pSwapChain)
 
 		if (result != S_OK)
 		{
-			spdlog::error("imgui_overlay_dx12::CreateRenderTarget pSwapChain->GetBuffer: {0:X}", (unsigned long)result);
+			spdlog::error("ImGuiOverlayDx12::CreateRenderTarget pSwapChain->GetBuffer: {0:X}", (unsigned long)result);
 			return;
 		}
 
@@ -1072,23 +1696,17 @@ static void CreateRenderTarget(IDXGISwapChain* pSwapChain)
 			desc.Format = static_cast<DXGI_FORMAT>(GetCorrectDXGIFormat(sd.BufferDesc.Format));
 			desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
-			g_pd3dDevice->CreateRenderTargetView(pBackBuffer, &desc, g_mainRenderTargetDescriptor[i]);
+			device->CreateRenderTargetView(pBackBuffer, &desc, g_mainRenderTargetDescriptor[i]);
 			g_mainRenderTargetResource[i] = pBackBuffer;
 		}
 	}
 
-	spdlog::info("imgui_overlay_dx12::CreateRenderTarget done!");
+	spdlog::info("ImGuiOverlayDx12::CreateRenderTarget done!");
 }
 
 static void CleanupDeviceD3D12(ID3D12Device* InDevice)
 {
-	CleanupRenderTarget();
-
-	if (g_pSwapChain)
-	{
-		g_pSwapChain->Release();
-		g_pSwapChain = NULL;
-	}
+	CleanupRenderTarget(true);
 
 	for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
 	{
@@ -1116,53 +1734,52 @@ static void CleanupDeviceD3D12(ID3D12Device* InDevice)
 		g_pd3dSrvDescHeap->Release();
 		g_pd3dSrvDescHeap = NULL;
 	}
-
-	if (g_pd3dDevice != InDevice)
-	{
-		g_pd3dDevice->Release();
-		g_pd3dDevice = NULL;
-	}
-
-	if (g_dxgiFactory)
-	{
-		g_dxgiFactory->Release();
-		g_dxgiFactory = NULL;
-	}
 }
 
 static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 {
+	// Wait until upscaler feature is ready
 	if (Config::Instance()->CurrentFeature != nullptr &&
 		Config::Instance()->CurrentFeature->FrameCount() <= Config::Instance()->MenuInitDelay.value_or(90) + 10)
 	{
 		return;
 	}
 
+	// Init base
 	if (!ImGuiOverlayBase::IsInited())
 		ImGuiOverlayBase::Init(Util::GetProcessWindow());
 
+	// If handle is changed
 	if (ImGuiOverlayBase::IsInited() && ImGuiOverlayBase::IsResetRequested())
 	{
 		auto hwnd = Util::GetProcessWindow();
-		spdlog::info("imgui_overlay_dx12::RenderImGui_DX12 Reset request detected, resetting ImGui, new handle {0:X}", (unsigned long)hwnd);
+		spdlog::info("ImGuiOverlayDx12::RenderImGui_DX12 Reset request detected, resetting ImGui, new handle {0:X}", (unsigned long)hwnd);
 		ImGuiOverlayDx12::ReInitDx12(hwnd);
 	}
 
-	if (!ImGuiOverlayBase::IsInited() || !ImGuiOverlayBase::IsVisible())
+	if (!ImGuiOverlayBase::IsInited())
 		return;
 
-	if (!ImGui::GetIO().BackendRendererUserData)
+	// Draw only when menu activated
+	if (!ImGuiOverlayBase::IsVisible())
+		return;
+
+	// Get device from swapchain
+	ID3D12Device* device = nullptr;
+	auto result = pSwapChain->GetDevice(IID_PPV_ARGS(&device));
+
+	if (result != S_OK)
 	{
-		spdlog::debug("imgui_overlay_dx12::RenderImGui_DX12 ImGui::GetIO().BackendRendererUserData == nullptr");
+		spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 GetDevice: {0:X}", (unsigned long)result);
+		return;
+	}
+
+	// Generate ImGui resources
+	if (!ImGui::GetIO().BackendRendererUserData && g_pd3dCommandQueue != nullptr)
+	{
+		spdlog::debug("ImGuiOverlayDx12::RenderImGui_DX12 ImGui::GetIO().BackendRendererUserData == nullptr");
 
 		HRESULT result;
-
-		//auto result = pSwapChain->GetDevice(IID_PPV_ARGS(&g_pd3dDevice));
-		//if (result != S_OK)
-		//{
-		//	spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 GetDevice: {0:X}", (unsigned long)result);
-		//	return;
-		//}
 
 		{
 			D3D12_DESCRIPTOR_HEAP_DESC desc = { };
@@ -1171,14 +1788,14 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 			desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 			desc.NodeMask = 1;
 
-			result = g_pd3dDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dRtvDescHeap));
+			result = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dRtvDescHeap));
 			if (result != S_OK)
 			{
-				spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 CreateDescriptorHeap(g_pd3dRtvDescHeap): {0:X}", (unsigned long)result);
+				spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 CreateDescriptorHeap(g_pd3dRtvDescHeap): {0:X}", (unsigned long)result);
 				return;
 			}
 
-			SIZE_T rtvDescriptorSize = g_pd3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+			SIZE_T rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 			D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = g_pd3dRtvDescHeap->GetCPUDescriptorHandleForHeapStart();
 
 			for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
@@ -1194,51 +1811,55 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 			desc.NumDescriptors = 1;
 			desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
-			result = g_pd3dDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dSrvDescHeap));
+			result = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dSrvDescHeap));
 			if (result != S_OK)
 			{
-				spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 CreateDescriptorHeap(g_pd3dSrvDescHeap): {0:X}", (unsigned long)result);
+				spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 CreateDescriptorHeap(g_pd3dSrvDescHeap): {0:X}", (unsigned long)result);
 				return;
 			}
 		}
 
 		for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
 		{
-			result = g_pd3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&g_commandAllocators[i]));
+			result = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&g_commandAllocators[i]));
 
 			if (result != S_OK)
 			{
-				spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 CreateCommandAllocator[{0}]: {1:X}", i, (unsigned long)result);
+				spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 CreateCommandAllocator[{0}]: {1:X}", i, (unsigned long)result);
 				return;
 			}
 		}
 
-		result = g_pd3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, g_commandAllocators[0], NULL, IID_PPV_ARGS(&g_pd3dCommandList));
+		result = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, g_commandAllocators[0], NULL, IID_PPV_ARGS(&g_pd3dCommandList));
 		if (result != S_OK)
 		{
-			spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 CreateCommandList: {0:X}", (unsigned long)result);
+			spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 CreateCommandList: {0:X}", (unsigned long)result);
 			return;
 		}
 
 		result = g_pd3dCommandList->Close();
 		if (result != S_OK)
 		{
-			spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 g_pd3dCommandList->Close: {0:X}", (unsigned long)result);
+			spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 g_pd3dCommandList->Close: {0:X}", (unsigned long)result);
 			return;
 		}
 
-		ImGui_ImplDX12_Init(g_pd3dDevice, NUM_BACK_BUFFERS, DXGI_FORMAT_R8G8B8A8_UNORM, g_pd3dSrvDescHeap,
+		ImGui_ImplDX12_Init(device, NUM_BACK_BUFFERS, DXGI_FORMAT_R8G8B8A8_UNORM, g_pd3dSrvDescHeap,
 			g_pd3dSrvDescHeap->GetCPUDescriptorHandleForHeapStart(), g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart());
+
+		return;
 	}
 
-	if (_isInited)
+	if (ImGuiOverlayDx12::IsInitedDx12())
 	{
+		// Generate render targets
 		if (!g_mainRenderTargetResource[0])
 		{
-			CreateRenderTarget(pSwapChain);
+			CreateRenderTarget(device, pSwapChain);
 			return;
 		}
 
+		// If everything is ready render the frame
 		if (ImGui::GetCurrentContext() && g_pd3dCommandQueue && g_mainRenderTargetResource[0])
 		{
 			_showRenderImGuiDebugOnce = true;
@@ -1257,7 +1878,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 			auto result = commandAllocator->Reset();
 			if (result != S_OK)
 			{
-				spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 commandAllocator->Reset: {0:X}", (unsigned long)result);
+				spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 commandAllocator->Reset: {0:X}", (unsigned long)result);
 				return;
 			}
 
@@ -1272,7 +1893,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 			result = g_pd3dCommandList->Reset(commandAllocator, nullptr);
 			if (result != S_OK)
 			{
-				spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 g_pd3dCommandList->Reset: {0:X}", (unsigned long)result);
+				spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 g_pd3dCommandList->Reset: {0:X}", (unsigned long)result);
 				return;
 			}
 
@@ -1289,7 +1910,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 			result = g_pd3dCommandList->Close();
 			if (result != S_OK)
 			{
-				spdlog::error("imgui_overlay_dx12::RenderImGui_DX12 g_pd3dCommandList->Close: {0:X}", (unsigned long)result);
+				spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 g_pd3dCommandList->Close: {0:X}", (unsigned long)result);
 				return;
 			}
 
@@ -1300,192 +1921,174 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 			else
 				g_pd3dCommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
-			spdlog::trace("imgui_overlay_dx12::RenderImGui_DX12 ExecuteCommandLists done!");
+			spdlog::trace("ImGuiOverlayDx12::RenderImGui_DX12 ExecuteCommandLists done!");
 		}
 		else
 		{
 			if (_showRenderImGuiDebugOnce)
-				spdlog::info("imgui_overlay_dx12::RenderImGui_DX12 !(ImGui::GetCurrentContext() && g_pd3dCommandQueue && g_mainRenderTargetResource[0])");
+				spdlog::info("ImGuiOverlayDx12::RenderImGui_DX12 !(ImGui::GetCurrentContext() && g_pd3dCommandQueue && g_mainRenderTargetResource[0])");
 
 			_showRenderImGuiDebugOnce = false;
 		}
 	}
+
+	if (device != nullptr)
+	{
+		device->Release();
+		device = nullptr;
+	}
 }
 
-void DeatachAllHooks()
+void DeatachAllHooks(bool reInit = false)
 {
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 
-	if (oPresent_Dx12_Mod)
-	{
-		DetourDetach(&(PVOID&)oPresent_Dx12_Mod, hkPresent_Dx12_Mod);
-		oPresent_Dx12_Mod = nullptr;
-	}
-
-	if (oPresent1_Dx12_Mod)
-	{
-		DetourDetach(&(PVOID&)oPresent1_Dx12_Mod, hkPresent1_Dx12_Mod);
-		oPresent1_Dx12_Mod = nullptr;
-	}
-
-	if (oResizeBuffers_Dx12_Mod)
-	{
-		DetourDetach(&(PVOID&)oResizeBuffers_Dx12_Mod, hkResizeBuffers_Dx12_Mod);
-		oResizeBuffers_Dx12_Mod = nullptr;
-	}
-
-	if (oResizeBuffers1_Dx12_Mod)
-	{
-		DetourDetach(&(PVOID&)oResizeBuffers1_Dx12_Mod, hkResizeBuffers1_Dx12_Mod);
-		oResizeBuffers1_Dx12_Mod = nullptr;
-	}
-
-	if (oPresent_Dx12_FSR3)
-	{
-		DetourDetach(&(PVOID&)oPresent_Dx12_FSR3, hkPresent_Dx12_FSR3);
-		oPresent_Dx12_FSR3 = nullptr;
-	}
-
-	if (oPresent1_Dx12_FSR3)
-	{
-		DetourDetach(&(PVOID&)oPresent1_Dx12_FSR3, hkPresent1_Dx12_FSR3);
-		oPresent1_Dx12_FSR3 = nullptr;
-	}
-
-	if (oResizeBuffers_Dx12_FSR3)
-	{
-		DetourDetach(&(PVOID&)oResizeBuffers_Dx12_FSR3, hkResizeBuffers_Dx12_FSR3);
-		oResizeBuffers_Dx12_FSR3 = nullptr;
-	}
-
-	if (oResizeBuffers1_Dx12_FSR3)
-	{
-		DetourDetach(&(PVOID&)oResizeBuffers1_Dx12_FSR3, hkResizeBuffers1_Dx12_FSR3);
-		oResizeBuffers1_Dx12_FSR3 = nullptr;
-	}
-
-	if (offxGetDX12Swapchain_Mod)
-	{
-		DetourDetach(&(PVOID&)offxGetDX12Swapchain_Mod, hkffxGetDX12Swapchain_Mod);
-		offxGetDX12Swapchain_Mod = nullptr;
-	}
-
-	if (offxGetDX12Swapchain_FSR3)
-	{
-		DetourDetach(&(PVOID&)offxGetDX12Swapchain_FSR3, hkffxGetDX12Swapchain_FSR3);
-		offxGetDX12Swapchain_FSR3 = nullptr;
-	}
-
-	if (oCreateSwapChain_SL)
-	{
-		DetourDetach(&(PVOID&)oCreateSwapChain_SL, hkCreateSwapChain_SL);
-		oCreateSwapChain_SL = nullptr;
-	}
-
-	if (oCreateSwapChainForHwnd_SL)
-	{
-		DetourDetach(&(PVOID&)oCreateSwapChainForHwnd_SL, hkCreateSwapChainForHwnd_SL);
-		oCreateSwapChainForHwnd_SL = nullptr;
-	}
-
-	if (oCreateSwapChainForCoreWindow_SL)
-	{
-		DetourDetach(&(PVOID&)oCreateSwapChainForCoreWindow_SL, hkCreateSwapChainForCoreWindow_SL);
-		oCreateSwapChainForCoreWindow_SL = nullptr;
-	}
-
-	if (oCreateSwapChainForComposition_SL)
-	{
-		DetourDetach(&(PVOID&)oCreateSwapChainForComposition_SL, hkCreateSwapChainForComposition_SL);
-		oCreateSwapChainForComposition_SL = nullptr;
-	}
-
-	if (oExecuteCommandLists_Dx12)
-	{
-		DetourDetach(&(PVOID&)oExecuteCommandLists_Dx12, hkExecuteCommandLists_Dx12);
-		oExecuteCommandLists_Dx12 = nullptr;
-	}
-
-	if (oPresent_SL)
-	{
-		DetourDetach(&(PVOID&)oPresent_SL, hkPresent_SL);
-		oPresent_SL = nullptr;
-	}
-
-	if (oPresent1_SL)
-	{
-		DetourDetach(&(PVOID&)oPresent1_SL, hkPresent1_SL);
-		oPresent1_SL = nullptr;
-	}
-
-	if (oResizeBuffers_SL)
-	{
-		DetourDetach(&(PVOID&)oResizeBuffers_SL, hkResizeBuffers_SL);
-		oResizeBuffers_SL = nullptr;
-	}
-
-	if (oResizeBuffers1_SL)
-	{
-		DetourDetach(&(PVOID&)oResizeBuffers1_SL, hkResizeBuffers1_SL);
-		oResizeBuffers1_SL = nullptr;
-	}
-
-	if (oCreateSwapChain_Dx12)
-	{
-		DetourDetach(&(PVOID&)oCreateSwapChain_Dx12, hkCreateSwapChain_Dx12);
-		oCreateSwapChain_Dx12 = nullptr;
-	}
-
-	if (oCreateSwapChainForHwnd_Dx12)
-	{
-		DetourDetach(&(PVOID&)oCreateSwapChainForHwnd_Dx12, hkCreateSwapChainForHwnd_Dx12);
-		oCreateSwapChainForHwnd_Dx12 = nullptr;
-	}
-
-	if (oCreateSwapChainForCoreWindow_Dx12)
-	{
-		DetourDetach(&(PVOID&)oCreateSwapChainForCoreWindow_Dx12, hkCreateSwapChainForCoreWindow_Dx12);
-		oCreateSwapChainForCoreWindow_Dx12 = nullptr;
-	}
-
-	if (oCreateSwapChainForComposition_Dx12)
-	{
-		DetourDetach(&(PVOID&)oCreateSwapChainForComposition_Dx12, hkCreateSwapChainForComposition_Dx12);
-		oCreateSwapChainForComposition_Dx12 = nullptr;
-	}
-
-	if (oExecuteCommandLists_Dx12)
-	{
-		DetourDetach(&(PVOID&)oExecuteCommandLists_Dx12, hkExecuteCommandLists_Dx12);
-		oExecuteCommandLists_Dx12 = nullptr;
-	}
-
-	if (oPresent_Dx12)
-	{
+	if (oPresent_Dx12 != nullptr && !reInit)
 		DetourDetach(&(PVOID&)oPresent_Dx12, hkPresent_Dx12);
-		oPresent_Dx12 = nullptr;
-	}
 
-	if (oPresent1_Dx12)
-	{
+	if (oPresent1_Dx12 != nullptr && !reInit)
 		DetourDetach(&(PVOID&)oPresent1_Dx12, hkPresent1_Dx12);
-		oPresent1_Dx12 = nullptr;
-	}
 
-	if (oResizeBuffers_Dx12)
-	{
+	if (oResizeBuffers_Dx12 != nullptr && !reInit)
 		DetourDetach(&(PVOID&)oResizeBuffers_Dx12, hkResizeBuffers_Dx12);
-		oResizeBuffers_Dx12 = nullptr;
-	}
 
-	if (oResizeBuffers1_Dx12)
-	{
+	if (oResizeBuffers1_Dx12 != nullptr && !reInit)
 		DetourDetach(&(PVOID&)oResizeBuffers1_Dx12, hkResizeBuffers1_Dx12);
-		oResizeBuffers1_Dx12 = nullptr;
-	}
+
+	if (oD3D12CreateDevice != nullptr)
+		DetourDetach(&(PVOID&)oD3D12CreateDevice, hkD3D12CreateDevice);
+
+	if (oCreateCommandQueue != nullptr)
+		DetourDetach(&(PVOID&)oCreateCommandQueue, hkCreateCommandQueue);
+
+	if (oCreateDXGIFactory1 != nullptr)
+		DetourDetach(&(PVOID&)oCreateDXGIFactory1, hkCreateDXGIFactory1);
+
+	if (oPresent_SL != nullptr && !reInit)
+		DetourDetach(&(PVOID&)oPresent_SL, hkPresent_SL);
+
+	if (oPresent1_SL != nullptr && !reInit)
+		DetourDetach(&(PVOID&)oPresent1_SL, hkPresent1_SL);
+
+	if (oResizeBuffers_SL != nullptr && !reInit)
+		DetourDetach(&(PVOID&)oResizeBuffers_SL, hkResizeBuffers_SL);
+
+	if (oResizeBuffers1_SL != nullptr && !reInit)
+		DetourDetach(&(PVOID&)oResizeBuffers1_SL, hkResizeBuffers1_SL);
+
+	if (oPresent_Dx12_FSR3 != nullptr)
+		DetourDetach(&(PVOID&)oPresent_Dx12_FSR3, hkPresent_Dx12_FSR3);
+
+	if (oPresent1_Dx12_FSR3 != nullptr)
+		DetourDetach(&(PVOID&)oPresent1_Dx12_FSR3, hkPresent1_Dx12_FSR3);
+
+	if (oResizeBuffers_Dx12_FSR3 != nullptr)
+		DetourDetach(&(PVOID&)oResizeBuffers_Dx12_FSR3, hkResizeBuffers_Dx12_FSR3);
+
+	if (oResizeBuffers1_Dx12_FSR3 != nullptr)
+		DetourDetach(&(PVOID&)oResizeBuffers1_Dx12_FSR3, hkResizeBuffers1_Dx12_FSR3);
+
+	if (oPresent_Dx12_Mod != nullptr)
+		DetourDetach(&(PVOID&)oPresent_Dx12_Mod, hkPresent_Dx12_Mod);
+
+	if (oPresent1_Dx12_Mod != nullptr)
+		DetourDetach(&(PVOID&)oPresent1_Dx12_Mod, hkPresent1_Dx12_Mod);
+
+	if (oResizeBuffers_Dx12_Mod != nullptr)
+		DetourDetach(&(PVOID&)oResizeBuffers_Dx12_Mod, hkResizeBuffers_Dx12_Mod);
+
+	if (oResizeBuffers1_Dx12_Mod != nullptr)
+		DetourDetach(&(PVOID&)oResizeBuffers1_Dx12_Mod, hkResizeBuffers1_Dx12_Mod);
+
+	if (oExecuteCommandLists_Dx12 != nullptr && !reInit)
+		DetourDetach(&(PVOID&)oExecuteCommandLists_Dx12, hkExecuteCommandLists_Dx12);
+
+	if (oCreateSwapChain_Dx12 != nullptr)
+		DetourDetach(&(PVOID&)oCreateSwapChain_Dx12, hkCreateSwapChain_Dx12);
+
+	if (oCreateSwapChainForHwnd_Dx12 != nullptr)
+		DetourDetach(&(PVOID&)oCreateSwapChainForHwnd_Dx12, hkCreateSwapChainForHwnd_Dx12);
+
+	if (oCreateSwapChainForComposition_Dx12 != nullptr)
+		DetourDetach(&(PVOID&)oCreateSwapChainForComposition_Dx12, hkCreateSwapChainForComposition_Dx12);
+
+	if (oCreateSwapChainForCoreWindow_Dx12 != nullptr)
+		DetourDetach(&(PVOID&)oCreateSwapChainForCoreWindow_Dx12, hkCreateSwapChainForCoreWindow_Dx12);
+
+	if (oCreateSwapChain_EB != nullptr)
+		DetourDetach(&(PVOID&)oCreateSwapChain_EB, hkCreateSwapChain_EB);
+
+	if (oCreateSwapChainForHwnd_EB != nullptr)
+		DetourDetach(&(PVOID&)oCreateSwapChainForHwnd_EB, hkCreateSwapChainForHwnd_EB);
+
+	if (oCreateSwapChainForComposition_EB != nullptr)
+		DetourDetach(&(PVOID&)oCreateSwapChainForComposition_EB, hkCreateSwapChainForComposition_EB);
+
+	if (oCreateSwapChainForCoreWindow_EB != nullptr)
+		DetourDetach(&(PVOID&)oCreateSwapChainForCoreWindow_EB, hkCreateSwapChainForCoreWindow_EB);
+
+	if (oCreateSwapChain_SL != nullptr)
+		DetourDetach(&(PVOID&)oCreateSwapChain_SL, hkCreateSwapChain_SL);
+
+	if (oCreateSwapChainForHwnd_SL != nullptr)
+		DetourDetach(&(PVOID&)oCreateSwapChainForHwnd_SL, hkCreateSwapChainForHwnd_SL);
+
+	if (oCreateSwapChainForComposition_SL != nullptr)
+		DetourDetach(&(PVOID&)oCreateSwapChainForComposition_SL, hkCreateSwapChainForComposition_SL);
+
+	if (oCreateSwapChainForCoreWindow_SL != nullptr)
+		DetourDetach(&(PVOID&)oCreateSwapChainForCoreWindow_SL, hkCreateSwapChainForCoreWindow_SL);
+
+	if (offxGetDX12Swapchain_Mod != nullptr)
+		DetourDetach(&(PVOID&)offxGetDX12Swapchain_Mod, hkffxGetDX12Swapchain_Mod);
+
+	if (offxGetDX12Swapchain_FSR3 != nullptr)
+		DetourDetach(&(PVOID&)offxGetDX12Swapchain_FSR3, hkffxGetDX12Swapchain_FSR3);
 
 	DetourTransactionCommit();
+
+	offxGetDX12Swapchain_Mod = nullptr;
+	offxGetDX12Swapchain_FSR3 = nullptr;
+	oD3D12CreateDevice = nullptr;
+	oCreateCommandQueue = nullptr;
+	oCreateDXGIFactory1 = nullptr;
+	oPresent_Dx12_FSR3 = nullptr;
+	oPresent1_Dx12_FSR3 = nullptr;
+	oResizeBuffers_Dx12_FSR3 = nullptr;
+	oResizeBuffers1_Dx12_FSR3 = nullptr;
+	oPresent_Dx12_Mod = nullptr;
+	oPresent1_Dx12_Mod = nullptr;
+	oResizeBuffers_Dx12_Mod = nullptr;
+	oResizeBuffers1_Dx12_Mod = nullptr;
+
+	oCreateSwapChain_Dx12 = nullptr;
+	oCreateSwapChainForHwnd_Dx12 = nullptr;
+	oCreateSwapChainForComposition_Dx12 = nullptr;
+	oCreateSwapChainForCoreWindow_Dx12 = nullptr;
+	oCreateSwapChain_SL = nullptr;
+	oCreateSwapChain_EB = nullptr;
+	oCreateSwapChainForHwnd_EB = nullptr;
+	oCreateSwapChainForComposition_EB = nullptr;
+	oCreateSwapChainForCoreWindow_EB = nullptr;
+	oCreateSwapChainForHwnd_SL = nullptr;
+	oCreateSwapChainForComposition_SL = nullptr;
+	oCreateSwapChainForCoreWindow_SL = nullptr;
+
+	if (!reInit)
+	{
+		oPresent_Dx12 = nullptr;
+		oPresent1_Dx12 = nullptr;
+		oResizeBuffers_Dx12 = nullptr;
+		oResizeBuffers1_Dx12 = nullptr;
+
+		oPresent_SL = nullptr;
+		oPresent1_SL = nullptr;
+		oResizeBuffers_SL = nullptr;
+		oResizeBuffers1_SL = nullptr;
+
+		oExecuteCommandLists_Dx12 = nullptr;
+	}
 }
 
 bool ImGuiOverlayDx12::IsInitedDx12()
@@ -1504,16 +2107,14 @@ void ImGuiOverlayDx12::InitDx12(HWND InHandle, ID3D12Device* InDevice)
 
 	g_pd3dDeviceParam = InDevice;
 
-	if (g_pd3dDevice == nullptr && CreateDeviceD3D12(InHandle, InDevice))
+	if (InDevice == nullptr || !_isInited)
 	{
-		_isInited = true;
-	}
-	else
-	{
-		spdlog::error("ImGuiOverlayDx12::InitDx12 CreateDeviceD3D12 failed!");
-	}
+		if (!BindAll(InHandle, InDevice))
+			spdlog::error("ImGuiOverlayDx12::InitDx12 BindAll failed!");
 
-	CleanupDeviceD3D12(InDevice);
+		_isInited = true;
+		CleanupDeviceD3D12(InDevice);
+	}
 }
 
 void ImGuiOverlayDx12::ShutdownDx12()
@@ -1548,6 +2149,54 @@ void ImGuiOverlayDx12::ReInitDx12(HWND InNewHwnd)
 	ImGuiOverlayBase::Shutdown();
 	ImGuiOverlayBase::Init(InNewHwnd);
 
-	CleanupRenderTarget();
+	CleanupRenderTarget(true);
+}
+
+void ImGuiOverlayDx12::EarlyBind()
+{
+	if (_isInited)
+		return;
+
+	auto d3d12Module = LoadLibraryW(L"d3d12.dll");
+
+	if (d3d12Module == nullptr)
+		return;
+
+	oD3D12CreateDevice = (PFN_D3D12_CREATE_DEVICE)GetProcAddress(d3d12Module, "D3D12CreateDevice");
+
+	if (oD3D12CreateDevice != nullptr)
+	{
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+
+		DetourAttach(&(PVOID&)oD3D12CreateDevice, hkD3D12CreateDevice);
+
+		DetourTransactionCommit();
+	}
+
+	auto dxgiModule = LoadLibraryW(L"dxgi.dll");
+
+	if (dxgiModule == nullptr)
+		return;
+
+	oCreateDXGIFactory1 = (PFN_CreateDXGIFactory1)GetProcAddress(dxgiModule, "CreateDXGIFactory1");
+
+	if (oCreateDXGIFactory1 != nullptr)
+	{
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+
+		if (oCreateDXGIFactory1 != nullptr)
+			DetourAttach(&(PVOID&)oCreateDXGIFactory1, hkCreateDXGIFactory1);
+
+		DetourTransactionCommit();
+	}
+
+	_isEarlyBind = !(oD3D12CreateDevice == nullptr || oCreateDXGIFactory1 == nullptr);
+}
+
+void ImGuiOverlayDx12::BindMods()
+{
+	CheckMods();
 }
 
