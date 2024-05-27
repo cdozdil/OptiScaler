@@ -341,6 +341,26 @@ private:
 			return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
 		}
 
+		bool rawRead = false;
+		bool vmInputMenu = false;
+		bool vmInputReset = false;
+		auto rawCode = GET_RAWINPUT_CODE_WPARAM(wParam);
+		RAWINPUT rawData;
+		UINT rawDataSize = sizeof(rawData);
+		ImGuiKey imguiKey;
+
+		if (msg == WM_INPUT &&
+			GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, &rawData, &rawDataSize, sizeof(rawData.data)) != (UINT)-1)
+		{
+			rawRead = true;
+			if (rawData.header.dwType == RIM_TYPEKEYBOARD && rawData.data.keyboard.VKey != 0)
+			{
+				vmInputMenu = rawData.data.keyboard.VKey == Config::Instance()->ShortcutKey.value_or(VK_INSERT);
+				vmInputReset = rawData.data.keyboard.VKey == Config::Instance()->ResetKey.value_or(VK_END);
+			}
+		}
+
+
 		// END - REINIT MENU
 		if (msg == WM_KEYDOWN && wParam == Config::Instance()->ResetKey.value_or(VK_END))
 		{
@@ -365,23 +385,23 @@ private:
 				if (_lastCursorLimit != nullptr)
 					pfn_ClipCursor(nullptr);
 
-				RECT windowRect = {};
-
-				if (GetWindowRect(_handle, &windowRect))
-				{
-					auto x = windowRect.left + (windowRect.right - windowRect.left) / 2;
-					auto y = windowRect.top + (windowRect.bottom - windowRect.top) / 2;
-
-					if (pfn_SetCursorPos != nullptr)
-						pfn_SetCursorPos(x, y);
-					else
-						SetCursorPos(x, y);
-				}
-
 				//if (GetWindowRect(_handle, &_cursorLimit))
 				//	pfn_ClipCursor(&_cursorLimit);
 				//else
 				//	pfn_ClipCursor(nullptr);
+			}
+
+			RECT windowRect = {};
+
+			if (GetWindowRect(_handle, &windowRect))
+			{
+				auto x = windowRect.left + (windowRect.right - windowRect.left) / 2;
+				auto y = windowRect.top + (windowRect.bottom - windowRect.top) / 2;
+
+				if (pfn_SetCursorPos != nullptr)
+					pfn_SetCursorPos(x, y);
+				else
+					SetCursorPos(x, y);
 			}
 
 			io.MouseDrawCursor = _isVisible;
@@ -408,11 +428,6 @@ private:
 				spdlog::trace("WndProc ImGui handled, hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (unsigned long)hWnd, msg, (unsigned long)wParam, (unsigned long)lParam);
 				return TRUE;
 			}
-
-			auto rawCode = GET_RAWINPUT_CODE_WPARAM(wParam);
-			RAWINPUT rawData;
-			UINT rawDataSize = sizeof(rawData);
-			ImGuiKey imguiKey;
 
 			switch (msg)
 			{
@@ -478,7 +493,7 @@ private:
 				return TRUE;
 
 			case WM_INPUT:
-				if (GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, &rawData, &rawDataSize, sizeof(rawData.data)) == (UINT)-1)
+				if (!rawRead)
 					return TRUE;
 
 				if (rawData.header.dwType == RIM_TYPEMOUSE)
@@ -499,11 +514,7 @@ private:
 					if (rawData.data.mouse.usButtonFlags & RI_MOUSE_WHEEL)
 						io.AddMouseWheelEvent(0, static_cast<short>(rawData.data.mouse.usButtonData) / WHEEL_DELTA);
 				}
-				//else if (rawData.header.dwType == RIM_TYPEKEYBOARD && rawData.data.keyboard.VKey != 0)
-				//{
-				//	imguiKey = ImGui_ImplWin32_VirtualKeyToImGuiKey(rawData.data.keyboard.VKey);
-				//	io.AddKeyEvent(imguiKey, (rawData.data.keyboard.Flags && RI_KEY_MAKE) > 0);
-				//}
+
 				else
 					spdlog::trace("WndProc WM_INPUT hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (unsigned long)hWnd, msg, (unsigned long)wParam, (unsigned long)lParam);
 
@@ -1059,7 +1070,7 @@ public:
 					{
 						// if motion vectors are not display size
 						ImGui::BeginDisabled((Config::Instance()->DisplayResolution.has_value() && Config::Instance()->DisplayResolution.value()) ||
-											 (!Config::Instance()->DisplayResolution.has_value() && !(Config::Instance()->CurrentFeature->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes)));
+							(!Config::Instance()->DisplayResolution.has_value() && !(Config::Instance()->CurrentFeature->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes)));
 
 						ImGui::SeparatorText("Output Scaling");
 
