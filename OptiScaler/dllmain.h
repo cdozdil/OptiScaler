@@ -1266,15 +1266,15 @@ struct dxgi_dll
 	}
 } dxgi;
 
-PFN_GetDesc ptrGetDesc = nullptr;
-PFN_GetDesc1 ptrGetDesc1 = nullptr;
-PFN_GetDesc2 ptrGetDesc2 = nullptr;
-PFN_GetDesc3 ptrGetDesc3 = nullptr;
+static PFN_GetDesc ptrGetDesc = nullptr;
+static PFN_GetDesc1 ptrGetDesc1 = nullptr;
+static PFN_GetDesc2 ptrGetDesc2 = nullptr;
+static PFN_GetDesc3 ptrGetDesc3 = nullptr;
 
-PFN_EnumAdapters ptrEnumAdapters = nullptr;
-PFN_EnumAdapters1 ptrEnumAdapters1 = nullptr;
-PFN_EnumAdapterByLuid ptrEnumAdapterByLuid = nullptr;
-PFN_EnumAdapterByGpuPreference ptrEnumAdapterByGpuPreference = nullptr;
+static PFN_EnumAdapters ptrEnumAdapters = nullptr;
+static PFN_EnumAdapters1 ptrEnumAdapters1 = nullptr;
+static PFN_EnumAdapterByLuid ptrEnumAdapterByLuid = nullptr;
+static PFN_EnumAdapterByGpuPreference ptrEnumAdapterByGpuPreference = nullptr;
 
 void AttachToAdapter(IUnknown* unkAdapter);
 void AttachToFactory(IUnknown* unkFactory);
@@ -1493,7 +1493,7 @@ void AttachToAdapter(IUnknown* unkAdapter)
 {
 	PVOID* pVTable = *(PVOID**)unkAdapter;
 
-	IDXGIAdapter* adapter;
+	IDXGIAdapter* adapter = nullptr;
 	if (ptrGetDesc == nullptr && unkAdapter->QueryInterface(__uuidof(IDXGIAdapter), (void**)&adapter) == S_OK)
 	{
 		DetourTransactionBegin();
@@ -1504,11 +1504,12 @@ void AttachToAdapter(IUnknown* unkAdapter)
 		DetourAttach(&(PVOID&)ptrGetDesc, detGetDesc);
 
 		DetourTransactionCommit();
-
-		adapter->Release();
 	}
 
-	IDXGIAdapter1* adapter1;
+	if (adapter != nullptr)
+		adapter->Release();
+
+	IDXGIAdapter1* adapter1 = nullptr;
 	if (ptrGetDesc1 == nullptr && unkAdapter->QueryInterface(__uuidof(IDXGIAdapter1), (void**)&adapter1) == S_OK)
 	{
 		DetourTransactionBegin();
@@ -1519,11 +1520,12 @@ void AttachToAdapter(IUnknown* unkAdapter)
 		DetourAttach(&(PVOID&)ptrGetDesc1, detGetDesc1);
 
 		DetourTransactionCommit();
-
-		adapter1->Release();
 	}
 
-	IDXGIAdapter2* adapter2;
+	if (adapter1 != nullptr)
+		adapter1->Release();
+
+	IDXGIAdapter2* adapter2 = nullptr;
 	if (ptrGetDesc2 == nullptr && unkAdapter->QueryInterface(__uuidof(IDXGIAdapter2), (void**)&adapter2) == S_OK)
 	{
 		DetourTransactionBegin();
@@ -1534,11 +1536,12 @@ void AttachToAdapter(IUnknown* unkAdapter)
 		DetourAttach(&(PVOID&)ptrGetDesc2, detGetDesc2);
 
 		DetourTransactionCommit();
-
-		adapter2->Release();
 	}
 
-	IDXGIAdapter4* adapter4;
+	if (adapter2 != nullptr)
+		adapter2->Release();
+
+	IDXGIAdapter4* adapter4 = nullptr;
 	if (ptrGetDesc3 == nullptr && unkAdapter->QueryInterface(__uuidof(IDXGIAdapter4), (void**)&adapter4) == S_OK)
 	{
 		DetourTransactionBegin();
@@ -1549,9 +1552,10 @@ void AttachToAdapter(IUnknown* unkAdapter)
 		DetourAttach(&(PVOID&)ptrGetDesc3, detGetDesc3);
 
 		DetourTransactionCommit();
-
-		adapter4->Release();
 	}
+
+	if (adapter4 != nullptr)
+		adapter4->Release();
 }
 
 void AttachToFactory(IUnknown* unkFactory)

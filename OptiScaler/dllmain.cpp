@@ -5,7 +5,6 @@
 #include "Util.h"
 #include "Config.h"
 
-#include "imgui/imgui_overlay_dx11.h"
 #include "imgui/imgui_overlay_dx12.h"
 
 #include "detours/detours.h"
@@ -84,7 +83,7 @@ HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 
 		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxA.size()))
 		{
-			spdlog::info("LoadLibraryA nvngx call: {0}, returning this dll!", libName);
+			spdlog::info("hkLoadLibraryA nvngx call: {0}, returning this dll!", libName);
 			return dllModule;
 		}
 	}
@@ -95,7 +94,7 @@ HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 
 		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiA.size()))
 		{
-			spdlog::info("LoadLibraryA {0} call!", libName);
+			spdlog::info("hkLoadLibraryA {0} call!", libName);
 
 			auto nvapi = LoadNvApi();
 
@@ -108,7 +107,7 @@ HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
 	{
-		spdlog::info("LoadLibraryA {0} call returning this dll!", libName);
+		spdlog::info("hkLoadLibraryA {0} call returning this dll!", libName);
 		return dllModule;
 	}
 
@@ -124,6 +123,8 @@ HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 	for (size_t i = 0; i < lcaseLibName.size(); i++)
 		lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
+	std::string lcaseLibNameA(lcaseLibName.begin(), lcaseLibName.end());
+
 	size_t pos;
 
 	if (!Config::Instance()->dlssDisableHook)
@@ -132,8 +133,7 @@ HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 
 		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxW.size()))
 		{
-			std::string libNameA(lcaseLibName.begin(), lcaseLibName.end());
-			spdlog::info("LoadLibraryW nvngx call: {0}, returning this dll!", libNameA);
+			spdlog::info("hkLoadLibraryW nvngx call: {0}, returning this dll!", lcaseLibNameA);
 			return dllModule;
 		}
 	}
@@ -144,8 +144,7 @@ HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 
 		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiW.size()))
 		{
-			std::string libNameA(lcaseLibName.begin(), lcaseLibName.end());
-			spdlog::info("LoadLibraryW {0} call!", libNameA);
+			spdlog::info("hkLoadLibraryW {0} call!", lcaseLibNameA);
 
 			auto nvapi = LoadNvApi();
 
@@ -158,8 +157,7 @@ HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
 	{
-		std::string libNameA(lcaseLibName.begin(), lcaseLibName.end());
-		spdlog::info("LoadLibraryW {0} call, returning this dll!", libNameA);
+		spdlog::info("hkLoadLibraryW {0} call, returning this dll!", lcaseLibNameA);
 		return dllModule;
 	}
 
@@ -183,7 +181,7 @@ HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 
 		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxA.size()))
 		{
-			spdlog::info("LoadLibraryA nvngx call: {0}, returning this dll!", libName);
+			spdlog::info("hkLoadLibraryExA nvngx call: {0}, returning this dll!", libName);
 			return dllModule;
 		}
 
@@ -191,7 +189,7 @@ HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 
 		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxExA.size()))
 		{
-			spdlog::info("LoadLibraryA nvngx call: {0}, returning this dll!", libName);
+			spdlog::info("hkLoadLibraryExA nvngx call: {0}, returning this dll!", libName);
 			return dllModule;
 		}
 	}
@@ -202,7 +200,7 @@ HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 
 		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiExA.size()))
 		{
-			spdlog::info("LoadLibraryExA {0} call!", libName);
+			spdlog::info("hkLoadLibraryExA {0} call!", libName);
 
 			auto nvapi = LoadNvApi();
 
@@ -214,7 +212,7 @@ HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 
 		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiA.size()))
 		{
-			spdlog::info("LoadLibraryExA {0} call!", libName);
+			spdlog::info("hkLoadLibraryExA {0} call!", libName);
 
 			auto nvapi = LoadNvApi();
 
@@ -227,7 +225,7 @@ HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
 	{
-		spdlog::info("LoadLibraryA winmm call: {0}, returning this dll!", libName);
+		spdlog::info("hkLoadLibraryExA {0} call, returning this dll!", libName);
 		return dllModule;
 	}
 
@@ -235,7 +233,7 @@ HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExA.size()))
 	{
-		spdlog::info("LoadLibraryA winmm call: {0}, returning this dll!", libName);
+		spdlog::info("hkLoadLibraryExA {0} call, returning this dll!", libName);
 		return dllModule;
 	}
 
@@ -251,6 +249,8 @@ HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 	for (size_t i = 0; i < lcaseLibName.size(); i++)
 		lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
+	std::string lcaseLibNameA(lcaseLibName.begin(), lcaseLibName.end());
+
 	size_t pos;
 
 	if (!Config::Instance()->dlssDisableHook)
@@ -259,8 +259,7 @@ HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 
 		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxW.size()))
 		{
-			std::string libNameA(libName.begin(), libName.end());
-			spdlog::info("LoadLibraryW nvngx call: {0}, returning this dll!", libNameA);
+			spdlog::info("hkLoadLibraryExW nvngx call: {0}, returning this dll!", lcaseLibNameA);
 			return dllModule;
 		}
 
@@ -268,8 +267,7 @@ HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 
 		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxExW.size()))
 		{
-			std::string libNameA(libName.begin(), libName.end());
-			spdlog::info("LoadLibraryW nvngx call: {0}, returning this dll!", libNameA);
+			spdlog::info("hkLoadLibraryExW nvngx call: {0}, returning this dll!", lcaseLibNameA);
 			return dllModule;
 		}
 	}
@@ -280,8 +278,7 @@ HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 
 		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiExW.size()))
 		{
-			std::string libNameA(lcaseLibName.begin(), lcaseLibName.end());
-			spdlog::info("LoadLibraryExW {0} call!", libNameA);
+			spdlog::info("hkLoadLibraryExW {0} call!", lcaseLibNameA);
 
 			auto nvapi = LoadNvApi();
 
@@ -293,8 +290,7 @@ HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 
 		if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiW.size()))
 		{
-			std::string libNameA(lcaseLibName.begin(), lcaseLibName.end());
-			spdlog::info("LoadLibraryExW {0} call!", libNameA);
+			spdlog::info("hkLoadLibraryExW {0} call!", lcaseLibNameA);
 
 			auto nvapi = LoadNvApi();
 
@@ -303,13 +299,11 @@ HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 		}
 	}
 
-
 	pos = lcaseLibName.rfind(dllNameW);
 
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
 	{
-		std::string libNameA(libName.begin(), libName.end());
-		spdlog::info("LoadLibraryW winmm call: {0}, returning this dll!", libNameA);
+		spdlog::info("hkLoadLibraryExW {0} call, returning this dll!", lcaseLibNameA);
 		return dllModule;
 	}
 
@@ -317,8 +311,7 @@ HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExW.size()))
 	{
-		std::string libNameA(libName.begin(), libName.end());
-		spdlog::info("LoadLibraryW winmm call: {0}, returning this dll!", libNameA);
+		spdlog::info("hkLoadLibraryExW {0} call, returning this dll!", lcaseLibNameA);
 		return dllModule;
 	}
 
@@ -400,6 +393,10 @@ void CheckWorkingMode()
 {
 	std::string filename = Util::DllPath().filename().string();
 	std::string lCaseFilename(filename);
+	wchar_t sysFolder[MAX_PATH];
+	GetSystemDirectory(sysFolder, MAX_PATH);
+	std::filesystem::path sysPath(sysFolder);
+
 
 	for (size_t i = 0; i < lCaseFilename.size(); i++)
 		lCaseFilename[i] = std::tolower(lCaseFilename[i]);
@@ -414,15 +411,12 @@ void CheckWorkingMode()
 
 	if (lCaseFilename == "version.dll")
 	{
-		dll = LoadLibraryA("version-original.dll");
+		dll = LoadLibrary(L"version-original.dll");
 
 		if (dll == nullptr)
 		{
-			char dllpath[MAX_PATH];
-			GetSystemDirectoryA(dllpath, MAX_PATH);
-			std::string syspath(dllpath);
-			syspath += "\\version.dll";
-			dll = LoadLibraryA(syspath.c_str());
+			auto sysFilePath = sysPath / L"version.dll";
+			dll = LoadLibrary(sysFilePath.wstring().c_str());
 
 			spdlog::info("OptiScaler working as version.dll, system dll loaded");
 		}
@@ -445,15 +439,12 @@ void CheckWorkingMode()
 
 	if (lCaseFilename == "winmm.dll")
 	{
-		dll = LoadLibraryA("winmm-original.dll");
+		dll = LoadLibrary(L"winmm-original.dll");
 
 		if (dll == nullptr)
 		{
-			char dllpath[MAX_PATH];
-			GetSystemDirectoryA(dllpath, MAX_PATH);
-			std::string syspath(dllpath);
-			syspath += "\\winmm.dll";
-			dll = LoadLibraryA(syspath.c_str());
+			auto sysFilePath = sysPath / L"winmm.dll";
+			dll = LoadLibrary(sysFilePath.wstring().c_str());
 
 			spdlog::info("OptiScaler working as winmm.dll, system dll loaded");
 		}
@@ -476,15 +467,12 @@ void CheckWorkingMode()
 
 	if (lCaseFilename == "wininet.dll")
 	{
-		dll = LoadLibraryA("wininet-original.dll");
+		dll = LoadLibrary(L"wininet-original.dll");
 
 		if (dll == nullptr)
 		{
-			char dllpath[MAX_PATH];
-			GetSystemDirectoryA(dllpath, MAX_PATH);
-			std::string syspath(dllpath);
-			syspath += "\\wininet.dll";
-			dll = LoadLibraryA(syspath.c_str());
+			auto sysFilePath = sysPath / L"wininet.dll";
+			dll = LoadLibrary(sysFilePath.wstring().c_str());
 
 			spdlog::info("OptiScaler working as wininet.dll, system dll loaded");
 		}
@@ -505,17 +493,27 @@ void CheckWorkingMode()
 		}
 	}
 
+	if (lCaseFilename == "optiscaler.asi")
+	{
+		spdlog::info("OptiScaler working as OptiScaler.asi");
+
+		// quick hack for testing
+		dll = dllModule;
+
+		dllNameA = "optiscaler.asi";
+		dllNameExA = "optiscaler";
+		dllNameW = L"optiscaler.asi";
+		dllNameExW = L"optiscaler";
+	}
+
 	if (lCaseFilename == "winhttp.dll")
 	{
-		dll = LoadLibraryA("winhttp-original.dll");
+		dll = LoadLibrary(L"winhttp-original.dll");
 
 		if (dll == nullptr)
 		{
-			char dllpath[MAX_PATH];
-			GetSystemDirectoryA(dllpath, MAX_PATH);
-			std::string syspath(dllpath);
-			syspath += "\\winhttp.dll";
-			dll = LoadLibraryA(syspath.c_str());
+			auto sysFilePath = sysPath / L"winhttp.dll";
+			dll = LoadLibrary(sysFilePath.wstring().c_str());
 
 			spdlog::info("OptiScaler working as winhttp.dll, system dll loaded");
 		}
@@ -538,21 +536,18 @@ void CheckWorkingMode()
 
 	if (lCaseFilename == "dxgi.dll")
 	{
-		dll = LoadLibraryA("dxgi-original.dll");
+		dll = LoadLibrary(L"dxgi-original.dll");
 
 		if (dll == nullptr)
 		{
-			char dllpath[MAX_PATH];
-			GetSystemDirectoryA(dllpath, MAX_PATH);
-			std::string syspath(dllpath);
-			syspath += "\\dxgi.dll";
-			dll = LoadLibraryA(syspath.c_str());
+			auto sysFilePath = sysPath / L"dxgi.dll";
+			dll = LoadLibrary(sysFilePath.wstring().c_str());
 
 			spdlog::info("OptiScaler working as dxgi.dll, system dll loaded");
 		}
 		else
 		{
-			spdlog::info("OptiScaler working as dxgi.dll, winhttp-original.dll loaded");
+			spdlog::info("OptiScaler working as dxgi.dll, dxgi-original.dll loaded");
 		}
 
 		if (dll != nullptr)
@@ -561,10 +556,10 @@ void CheckWorkingMode()
 			dllNameExA = "dxgi";
 			dllNameW = L"dxgi.dll";
 			dllNameExW = L"dxgi";
-
-			shared.LoadOriginalLibrary(dll);
-			dxgi.LoadOriginalLibrary(dll);
 		}
+
+		shared.LoadOriginalLibrary(dll);
+		dxgi.LoadOriginalLibrary(dll);
 	}
 
 	if (dll != nullptr)
