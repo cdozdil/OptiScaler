@@ -14,7 +14,6 @@
 #include "../detours/detours.h"
 
 #include "wrapped_swapchain.h"
-#include "wrapped_command_queue.h"
 
 // Dx12 overlay code adoptes from 
 // https://github.com/bruhmoment21/UniversalHookX
@@ -136,6 +135,13 @@ static bool _showRenderImGuiDebugOnce = true;
 static int _changeFFXModHookCounter_Mod = 0;
 static int _changeFFXModHookCounter_Native = 0;
 
+// present counters
+static long _nativeCounter;
+static long _slCounter;
+static long _fsr3ModCounter;
+static long _fsr3NativeCounter;
+
+
 enum RenderSource
 {
 	Unknown,
@@ -161,7 +167,8 @@ static bool IsActivePath(RenderSource source, bool justQuery = false)
 	switch (source)
 	{
 	case Dx12:
-		result = !IsActivePath(SL, true) && !IsActivePath(FSR3_Mod, true) && !IsActivePath(FSR3_Native, true) && _usingNative && _cqDx12 != nullptr;
+		// native need 2x more frames to be sure because of fg
+		result = _nativeCounter > 170 && !IsActivePath(SL, true) && !IsActivePath(FSR3_Mod, true) && !IsActivePath(FSR3_Native, true) && _usingNative && _cqDx12 != nullptr;
 
 		if (result)
 			g_pd3dCommandQueue = _cqDx12;
@@ -169,7 +176,7 @@ static bool IsActivePath(RenderSource source, bool justQuery = false)
 		break;
 
 	case SL:
-		result = !IsActivePath(FSR3_Native) && _usingDLSSG && (_cqSL != nullptr || _cqDx12 != nullptr);
+		result = _slCounter > 75 && !IsActivePath(FSR3_Native, true) && _usingDLSSG && (_cqSL != nullptr || _cqDx12 != nullptr);
 
 		if (result)
 			g_pd3dCommandQueue = _cqDx12;
@@ -177,7 +184,7 @@ static bool IsActivePath(RenderSource source, bool justQuery = false)
 		break;
 
 	case FSR3_Mod:
-		result = !IsActivePath(FSR3_Native) && _usingFSR3_Mod && _cqDx12 != nullptr;
+		result = _fsr3ModCounter > 65 && !IsActivePath(FSR3_Native, true) && _usingFSR3_Mod && _cqDx12 != nullptr;
 
 		if (result)
 			g_pd3dCommandQueue = _cqDx12;
@@ -185,7 +192,7 @@ static bool IsActivePath(RenderSource source, bool justQuery = false)
 		break;
 
 	case FSR3_Native:
-		result = _usingFSR3_Native && _cqDx12 != nullptr;
+		result = _fsr3NativeCounter > 30 && _usingFSR3_Native && _cqDx12 != nullptr;
 
 		if (result)
 			g_pd3dCommandQueue = _cqDx12;
@@ -237,8 +244,12 @@ static void CleanupRenderTarget(bool clearQueue)
 
 	if (clearQueue)
 	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
 		if (ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
 			ImGui_ImplDX12_Shutdown();
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
 		if (g_pd3dRtvDescHeap != nullptr)
 		{
@@ -271,6 +282,10 @@ static void CleanupRenderTarget(bool clearQueue)
 	}
 
 	_lastActiveSource = Unknown;
+	_nativeCounter = 0;
+	_slCounter = 0;
+	_fsr3ModCounter = 0;
+	_fsr3NativeCounter = 0;
 
 	_changeFFXModHookCounter_Mod = 0;
 	_changeFFXModHookCounter_Native = 0;
@@ -291,7 +306,16 @@ static HRESULT WINAPI hkPresent_EB(IDXGISwapChain3* pSwapChain, UINT SyncInterva
 	if (IsActivePath(Dx12))
 		RenderImGui_DX12(pSwapChain);
 
-	_usingNative = IsBeingUsed(pSwapChain);
+	if (IsBeingUsed(pSwapChain))
+	{
+		_nativeCounter++;
+		_usingNative = true;
+	}
+	else
+	{
+		_nativeCounter = 0;
+		_usingNative = false;
+	}
 
 	return S_OK;
 }
@@ -304,7 +328,17 @@ static HRESULT WINAPI hkPresent1_EB(IDXGISwapChain3* pSwapChain, UINT SyncInterv
 	if (IsActivePath(Dx12))
 		RenderImGui_DX12(pSwapChain);
 
-	_usingNative = IsBeingUsed(pSwapChain);
+	if (IsBeingUsed(pSwapChain))
+	{
+		_nativeCounter++;
+		_usingNative = true;
+	}
+	else
+	{
+		_nativeCounter = 0;
+		_usingNative = false;
+	}
+
 
 	return S_OK;
 }
@@ -318,10 +352,19 @@ static HRESULT WINAPI hkPresent_Dx12(IDXGISwapChain3* pSwapChain, UINT SyncInter
 	if ((Flags & DXGI_PRESENT_TEST) || (Flags & DXGI_PRESENT_RESTART))
 		return oPresent_Dx12(pSwapChain, SyncInterval, Flags);
 
-	if (IsActivePath(Dx12))
+	if (!_isEarlyBind && IsActivePath(Dx12))
 		RenderImGui_DX12(pSwapChain);
 
-	_usingNative = IsBeingUsed(pSwapChain);
+	if (IsBeingUsed(pSwapChain))
+	{
+		_nativeCounter++;
+		_usingNative = true;
+	}
+	else
+	{
+		_nativeCounter = 0;
+		_usingNative = false;
+	}
 
 	return oPresent_Dx12(pSwapChain, SyncInterval, Flags);
 }
@@ -331,10 +374,21 @@ static HRESULT WINAPI hkPresent1_Dx12(IDXGISwapChain3* pSwapChain, UINT SyncInte
 	if ((PresentFlags & DXGI_PRESENT_TEST) || (PresentFlags & DXGI_PRESENT_RESTART))
 		return oPresent1_Dx12(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
 
-	if (IsActivePath(Dx12))
+	if (!_isEarlyBind && IsActivePath(Dx12))
 		RenderImGui_DX12(pSwapChain);
 
 	_usingNative = IsBeingUsed(pSwapChain);
+
+	if (IsBeingUsed(pSwapChain))
+	{
+		_nativeCounter++;
+		_usingNative = true;
+	}
+	else
+	{
+		_nativeCounter = 0;
+		_usingNative = false;
+	}
 
 	return oPresent1_Dx12(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
 }
@@ -372,7 +426,16 @@ static HRESULT WINAPI hkPresent_SL(IDXGISwapChain3* pSwapChain, UINT SyncInterva
 	if (IsActivePath(SL))
 		RenderImGui_DX12(pSwapChain);
 
-	_usingDLSSG = IsBeingUsed(pSwapChain);
+	if (IsBeingUsed(pSwapChain))
+	{
+		_slCounter++;
+		_usingDLSSG = true;
+	}
+	else
+	{
+		_slCounter = 0;
+		_usingDLSSG = false;
+	}
 
 	return oPresent_SL(pSwapChain, SyncInterval, Flags);
 }
@@ -385,7 +448,16 @@ static HRESULT WINAPI hkPresent1_SL(IDXGISwapChain3* pSwapChain, UINT SyncInterv
 	if (IsActivePath(SL))
 		RenderImGui_DX12(pSwapChain);
 
-	_usingDLSSG = IsBeingUsed(pSwapChain);
+	if (IsBeingUsed(pSwapChain))
+	{
+		_slCounter++;
+		_usingDLSSG = true;
+	}
+	else
+	{
+		_slCounter = 0;
+		_usingDLSSG = false;
+	}
 
 	return oPresent1_SL(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
 }
@@ -423,7 +495,16 @@ static HRESULT WINAPI hkPresent_Dx12_FSR3(IDXGISwapChain3* pSwapChain, UINT Sync
 	if (IsActivePath(FSR3_Native))
 		RenderImGui_DX12(pSwapChain);
 
-	_usingFSR3_Native = IsBeingUsed(pSwapChain);
+	if (IsBeingUsed(pSwapChain))
+	{
+		_fsr3NativeCounter++;
+		_usingFSR3_Native = true;
+	}
+	else
+	{
+		_fsr3NativeCounter = 0;
+		_usingFSR3_Native = false;
+	}
 
 	return oPresent_Dx12_FSR3(pSwapChain, SyncInterval, Flags);
 }
@@ -436,7 +517,16 @@ static HRESULT WINAPI hkPresent1_Dx12_FSR3(IDXGISwapChain3* pSwapChain, UINT Syn
 	if (IsActivePath(FSR3_Native))
 		RenderImGui_DX12(pSwapChain);
 
-	_usingFSR3_Native = IsBeingUsed(pSwapChain);
+	if (IsBeingUsed(pSwapChain))
+	{
+		_fsr3NativeCounter++;
+		_usingFSR3_Native = true;
+	}
+	else
+	{
+		_fsr3NativeCounter = 0;
+		_usingFSR3_Native = false;
+	}
 
 	return oPresent1_Dx12_FSR3(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
 }
@@ -474,7 +564,16 @@ static HRESULT WINAPI hkPresent_Dx12_Mod(IDXGISwapChain3* pSwapChain, UINT SyncI
 	if (IsActivePath(FSR3_Mod))
 		RenderImGui_DX12(pSwapChain);
 
-	_usingFSR3_Mod = IsBeingUsed(pSwapChain);
+	if (IsBeingUsed(pSwapChain))
+	{
+		_fsr3ModCounter++;
+		_usingFSR3_Mod = true;
+	}
+	else
+	{
+		_fsr3ModCounter = 0;
+		_usingFSR3_Mod = false;
+	}
 
 	return oPresent_Dx12_Mod(pSwapChain, SyncInterval, Flags);
 }
@@ -487,7 +586,17 @@ static HRESULT WINAPI hkPresent1_Dx12_Mod(IDXGISwapChain3* pSwapChain, UINT Sync
 	if (IsActivePath(FSR3_Mod))
 		RenderImGui_DX12(pSwapChain);
 
-	_usingFSR3_Mod = IsBeingUsed(pSwapChain);
+	if (IsBeingUsed(pSwapChain))
+	{
+		_fsr3ModCounter++;
+		_usingFSR3_Mod = true;
+	}
+	else
+	{
+		_fsr3ModCounter = 0;
+		_usingFSR3_Mod = false;
+	}
+
 
 	return oPresent1_Dx12_Mod(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
 }
@@ -1099,6 +1208,8 @@ static HRESULT WINAPI hkD3D12CreateDevice(IUnknown* pAdapter, D3D_FEATURE_LEVEL 
 
 static HRESULT WINAPI hkCreateDXGIFactory1(REFIID riid, void** ppFactory)
 {
+	spdlog::info("ImGuiOverlayDx12::hkCreateDXGIFactory1");
+
 	auto result = oCreateDXGIFactory1(riid, ppFactory);
 
 	if (result == S_OK && oCreateSwapChain_EB == nullptr)
@@ -2157,7 +2268,7 @@ void ImGuiOverlayDx12::EarlyBind()
 	if (_isInited)
 		return;
 
-	auto d3d12Module = LoadLibraryW(L"d3d12.dll");
+	auto d3d12Module = LoadLibrary(L"d3d12.dll");
 
 	if (d3d12Module == nullptr)
 		return;
@@ -2174,7 +2285,7 @@ void ImGuiOverlayDx12::EarlyBind()
 		DetourTransactionCommit();
 	}
 
-	auto dxgiModule = LoadLibraryW(L"dxgi.dll");
+	auto dxgiModule = LoadLibrary(L"dxgi.dll");
 
 	if (dxgiModule == nullptr)
 		return;
@@ -2192,7 +2303,7 @@ void ImGuiOverlayDx12::EarlyBind()
 		DetourTransactionCommit();
 	}
 
-	_isEarlyBind = !(oD3D12CreateDevice == nullptr || oCreateDXGIFactory1 == nullptr);
+	_isEarlyBind = oD3D12CreateDevice != nullptr && oCreateDXGIFactory1 != nullptr;
 }
 
 void ImGuiOverlayDx12::BindMods()
