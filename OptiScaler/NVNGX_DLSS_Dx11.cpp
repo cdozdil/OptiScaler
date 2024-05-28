@@ -303,7 +303,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 		spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new FSR 2.1.2 with Dx12 feature");
 		Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12_212>(handleId, InParameters);
 	}
-	else
+	else if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "fsr22")
 	{
 		spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new native FSR 2.2.1 feature");
 		Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11>(handleId, InParameters);
@@ -503,7 +503,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 				spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new FSR 2.2.1 with Dx12 feature");
 				Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12>(handleId, createParams);
 			}
-			else
+			else if (Config::Instance()->newBackend == "fsr22")
 			{
 				Config::Instance()->Dx11Upscaler = "fsr22";
 				spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new native FSR 2.2.1 feature");
