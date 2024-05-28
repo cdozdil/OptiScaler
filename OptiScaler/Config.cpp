@@ -89,6 +89,7 @@ bool Config::Reload()
 		ShortcutKey = readInt("Menu", "ShortcutKey");
 		ResetKey = readInt("Menu", "ResetKey");
 		MenuInitDelay = readInt("Menu", "MenuInitDelay");
+		DisableEarlyHooking = readBool("Menu", "DisableEarlyHooking");
 		HookD3D12 = readBool("Menu", "HookD3D12");
 		HookSLProxy = readBool("Menu", "HookSLProxy");
 		HookFSR3Proxy = readBool("Menu", "HookFSR3Proxy");
