@@ -1,5 +1,8 @@
 #include "wrapped_swapchain.h"
 
+// Used RenderDoc's wrapped object as referance
+// https://github.com/baldurk/renderdoc/blob/v1.x/renderdoc/driver/dxgi/dxgi_wrapped.cpp
+
 WrappedIDXGISwapChain4::WrappedIDXGISwapChain4(IDXGISwapChain* real, 
 	std::function<HRESULT(IDXGISwapChain3*, UINT, UINT)> renderTrig,
 	std::function<HRESULT(IDXGISwapChain3*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*)> renderTrig1, 
@@ -105,7 +108,7 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::QueryInterface(REFIID riid, vo
 		}
 	}
 
-	return E_NOINTERFACE; // RefCountDXGIObject::QueryInterface("IDXGISwapChain", riid, ppvObject);
+	return E_NOINTERFACE; 
 }
 
 HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
