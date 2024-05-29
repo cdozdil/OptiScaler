@@ -1439,10 +1439,9 @@ HRESULT _CreateDXGIFactory(REFIID riid, _COM_Outptr_ void** ppFactory)
 	HRESULT result = dxgi.CreateDxgiFactory(riid, (void**)&factory);
 
 	if (result == S_OK)
-	{
 		AttachToFactory(factory);
-		*ppFactory = factory;
-	}
+
+	*ppFactory = factory;
 
 	return result;
 }
@@ -1453,10 +1452,9 @@ HRESULT _CreateDXGIFactory1(REFIID riid, _COM_Outptr_ void** ppFactory)
 	HRESULT result = dxgi.CreateDxgiFactory1(riid, (void**)&factory1);
 
 	if (result == S_OK)
-	{
 		AttachToFactory(factory1);
-		*ppFactory = factory1;
-	}
+
+	*ppFactory = factory1;
 
 	return result;
 }
@@ -1467,10 +1465,9 @@ HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFacto
 	HRESULT result = dxgi.CreateDxgiFactory2(Flags, riid, (void**)&factory);
 
 	if (result == S_OK)
-	{
 		AttachToFactory(factory);
-		*ppFactory = factory;
-	}
+
+	*ppFactory = factory;
 
 	return result;
 }
