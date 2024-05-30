@@ -142,8 +142,6 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
 	auto mvDesc = InMotionVectors->GetDesc();
 	auto outDesc = OutResource->GetDesc();
 
-	InternalConstants constants{};
-
 	// Create SRV for Input Texture
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
