@@ -1054,14 +1054,26 @@ public:
 					}
 
 					// DLSS Enabler -----------------
-					if (Config::Instance()->DE_FramerateLimit.has_value())
+					if (Config::Instance()->DE_FramerateLimit.has_value() || 
+						(Config::Instance()->DE_DynamicLimitAvailable.has_value() && Config::Instance()->DE_DynamicLimitAvailable.value() > 0))
 					{
 						ImGui::SeparatorText("DLSS Enabler");
 
-						ImGui::SliderInt("FPS Limit", &_deLimitFps, 0, 200);
+						if (Config::Instance()->DE_FramerateLimit.has_value())
+						{
+							ImGui::SliderInt("FPS Limit", &_deLimitFps, 0, 200);
 
-						if (ImGui::Button("Apply Limit"))
-							Config::Instance()->DE_FramerateLimit = _deLimitFps;
+							if (ImGui::Button("Apply Limit"))
+								Config::Instance()->DE_FramerateLimit = _deLimitFps;
+						}
+
+						if (Config::Instance()->DE_DynamicLimitAvailable.has_value() && Config::Instance()->DE_DynamicLimitAvailable.value() > 0)
+						{
+							bool dfgEnabled = Config::Instance()->DE_DynamicLimitEnabled.value_or(false);
+
+							if (ImGui::Checkbox("Dynamic Frame Generation", &dfgEnabled))
+								Config::Instance()->DE_DynamicLimitEnabled = dfgEnabled;
+						}
 					}
 
 					// OUTPUT SCALING -----------------------------
@@ -1603,5 +1615,37 @@ public:
 		_isInited = false;
 		_isVisible = false;
 		_isResetRequested = false;
+	}
+
+	static void HideMenu()
+	{
+		if (!_isVisible)
+			return;
+
+		_isVisible = false;
+
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+		if (pfn_ClipCursor_hooked && _lastCursorLimit != nullptr)
+			pfn_ClipCursor(_lastCursorLimit);
+
+		_showMipmapCalcWindow = false;
+
+		RECT windowRect = {};
+
+		if (GetWindowRect(_handle, &windowRect))
+		{
+			auto x = windowRect.left + (windowRect.right - windowRect.left) / 2;
+			auto y = windowRect.top + (windowRect.bottom - windowRect.top) / 2;
+
+			if (pfn_SetCursorPos != nullptr)
+				pfn_SetCursorPos(x, y);
+			else
+				SetCursorPos(x, y);
+		}
+
+		io.MouseDrawCursor = _isVisible;
+		io.WantCaptureKeyboard = _isVisible;
+		io.WantCaptureMouse = _isVisible;
 	}
 };
