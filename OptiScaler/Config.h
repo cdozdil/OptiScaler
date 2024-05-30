@@ -146,7 +146,8 @@ public:
 	// dlss enabler
 	bool DE_Available = false;
 	std::optional<int> DE_FramerateLimit;
-	std::optional<bool> DE_DynamicLimit;
+	std::optional<int> DE_DynamicLimitAvailable;	// DFG.Available
+	std::optional<int> DE_DynamicLimitEnabled;		// DFG.Enabled
 
 	// for realtime changes
 	bool changeBackend = false;
