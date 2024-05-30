@@ -26,4 +26,5 @@ namespace ImGuiOverlayBase
 	void Init(HWND InHandle);
 	void RenderMenu();
 	void Shutdown();
+	void HideMenu();
 }

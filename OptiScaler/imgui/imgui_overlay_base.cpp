@@ -51,3 +51,8 @@ void ImGuiOverlayBase::Shutdown()
 	spdlog::debug("ImGuiOverlayBase::Shutdown");
 	ImGuiCommon::Shutdown();
 }
+
+void ImGuiOverlayBase::HideMenu()
+{
+	ImGuiCommon::HideMenu();
+}
