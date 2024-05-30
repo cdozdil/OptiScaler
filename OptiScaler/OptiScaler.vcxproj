@@ -81,8 +81,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
-    <TargetName>dxgi</TargetName>
-    <OutDir>D:\Folders\Games\SteamLibrary\steamapps\common\Ghost of Tsushima DIRECTOR%27S CUT\</OutDir>
+    <TargetName>dlss-enabler-upscaler</TargetName>
+    <OutDir>D:\Folders\Games\Banishers Ghosts of New Eden\NWD\Binaries\Win64\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -160,6 +160,8 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
