@@ -88,7 +88,7 @@ void RCAS_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_R
 
 bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource, ID3D12Resource* InMotionVectors, RcasConstants InConstants, ID3D12Resource* OutResource)
 {
-	if (!_init || InDevice == nullptr || InCmdList == nullptr || InResource == nullptr || OutResource == nullptr)
+	if (!_init || InDevice == nullptr || InCmdList == nullptr || InResource == nullptr || OutResource == nullptr || InMotionVectors == nullptr)
 		return false;
 
 	spdlog::debug("RCAS_Dx12::Dispatch [{0}] Start!", _name);
@@ -144,20 +144,6 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
 
 	InternalConstants constants{};
 
-	constants.DisplayHeight = InConstants.DisplayHeight;
-	constants.DisplayWidth = InConstants.DisplayWidth;
-	constants.DynamicSharpenEnabled = Config::Instance()->MotionSharpnessEnabled.value_or(false) ? 1 : 0;
-	constants.MotionSharpness = Config::Instance()->MotionSharpness.value_or(0.4f);
-	constants.MvScaleX = InConstants.MvScaleX;
-	constants.MvScaleY = InConstants.MvScaleY;
-	constants.Sharpness = InConstants.Sharpness;
-	constants.Debug = Config::Instance()->MotionSharpnessDebug.value_or(false) ? 1 : 0;
-	constants.Threshold = Config::Instance()->MotionThreshold.value_or(0.0f);
-	constants.ScaleLimit = Config::Instance()->MotionScaleLimit.value_or(10.0f);
-
-	constants.DisplaySizeMV = InConstants.DisplaySizeMV ? 1 : 0;
-	constants.MotionTextureScale = (float)InConstants.RenderWidth / (float)InConstants.DisplayWidth;
-
 	// Create SRV for Input Texture
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -184,17 +170,48 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
 
 	InDevice->CreateUnorderedAccessView(OutResource, nullptr, &uavDesc, _cpuUavHandle[_counter]);
 
+	InternalConstants constants{};
+	constants.DisplayHeight = InConstants.DisplayHeight;
+	constants.DisplayWidth = InConstants.DisplayWidth;
+	constants.DynamicSharpenEnabled = Config::Instance()->MotionSharpnessEnabled.value_or(false) ? 1 : 0;
+	constants.MotionSharpness = Config::Instance()->MotionSharpness.value_or(0.4f);
+	constants.MvScaleX = InConstants.MvScaleX;
+	constants.MvScaleY = InConstants.MvScaleY;
+	constants.Sharpness = InConstants.Sharpness;
+	constants.Debug = Config::Instance()->MotionSharpnessDebug.value_or(false) ? 1 : 0;
+	constants.Threshold = Config::Instance()->MotionThreshold.value_or(0.0f);
+	constants.ScaleLimit = Config::Instance()->MotionScaleLimit.value_or(10.0f);
+	constants.DisplaySizeMV = InConstants.DisplaySizeMV ? 1 : 0;
+
+	if (InConstants.RenderWidth == 0 || InConstants.DisplayWidth == 0)
+		constants.MotionTextureScale = 1.0f;
+	else
+		constants.MotionTextureScale = (float)InConstants.RenderWidth / (float)InConstants.DisplayWidth;
+
 	// Copy the updated constant buffer data to the constant buffer resource
-	UINT8* pCBDataBegin;
-	CD3DX12_RANGE readRange(0, 0); // We do not intend to read from this resource on the CPU
-	_constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pCBDataBegin));
+	BYTE* pCBDataBegin;
+	CD3DX12_RANGE readRange(0, 0);  // We do not intend to read from this resource on the CPU
+	auto result = _constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pCBDataBegin));
+
+	if (result != S_OK)
+	{
+		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] _constantBuffer->Map error {1:x}", _name, (unsigned int)result);
+		return false;
+	}
+
+	if (pCBDataBegin == nullptr)
+	{
+		_constantBuffer->Unmap(0, nullptr);
+		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] pCBDataBegin is null!", _name);
+		return false;
+	}
+
 	memcpy(pCBDataBegin, &constants, sizeof(constants));
 	_constantBuffer->Unmap(0, nullptr);
 
 	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
 	cbvDesc.BufferLocation = _constantBuffer->GetGPUVirtualAddress();
 	cbvDesc.SizeInBytes = sizeof(constants);
-
 	InDevice->CreateConstantBufferView(&cbvDesc, _cpuCbvHandle[_counter]);
 
 	ID3D12DescriptorHeap* heaps[] = { _srvHeap[_counter] };
@@ -299,7 +316,14 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(sizeof(InternalConstants));
 	auto heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-	InDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&_constantBuffer));
+
+	auto result = InDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&_constantBuffer));
+
+	if (result != S_OK)
+	{
+		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateCommittedResource error {1:x}", _name, (unsigned int)result);
+		return;
+	}
 
 	ID3DBlob* errorBlob;
 	ID3DBlob* signatureBlob;
@@ -310,7 +334,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 		if (FAILED(hr))
 		{
-			spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] D3D12SerializeRootSignature error {1:x}", _name, hr);
+			spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] D3D12SerializeRootSignature error {1:x}", _name, (unsigned int)hr);
 			break;
 		}
 
@@ -318,7 +342,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 		if (FAILED(hr))
 		{
-			spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateRootSignature error {1:x}", _name, hr);
+			spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateRootSignature error {1:x}", _name, (unsigned int)hr);
 			break;
 		}
 
@@ -373,7 +397,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	if (FAILED(hr))
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateDescriptorHeap[0] error {1:x}", _name, hr);
+		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateDescriptorHeap[0] error {1:x}", _name, (unsigned int)hr);
 		return;
 	}
 
@@ -381,7 +405,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	if (FAILED(hr))
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateDescriptorHeap[1] error {1:x}", _name, hr);
+		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateDescriptorHeap[1] error {1:x}", _name, (unsigned int)hr);
 		return;
 	}
 
@@ -389,7 +413,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	if (FAILED(hr))
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateDescriptorHeap[2] error {1:x}", _name, hr);
+		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateDescriptorHeap[2] error {1:x}", _name, (unsigned int)hr);
 		return;
 	}
 
@@ -397,7 +421,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	if (FAILED(hr))
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateDescriptorHeap[3] error {1:x}", _name, hr);
+		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateDescriptorHeap[3] error {1:x}", _name, (unsigned int)hr);
 		return;
 	}
 
