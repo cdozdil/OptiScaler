@@ -568,7 +568,7 @@ void CheckWorkingMode()
 
 		AttachHooks();
 
-		if (!Config::Instance()->DisableEarlyHooking.value_or(false))
+		if (!Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))
 		{
 			spdlog::info("Trying to early bind of Dx12 ImGui hooks");
 			ImGuiOverlayDx12::EarlyBind();
@@ -595,7 +595,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 		CheckWorkingMode();
 
-		if (!Config::Instance()->DisableEarlyHooking.value_or(false))
+		if (!Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))
 		{
 			ImGuiOverlayDx12::BindMods();
 		}
