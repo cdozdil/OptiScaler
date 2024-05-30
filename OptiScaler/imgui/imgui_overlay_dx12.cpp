@@ -18,6 +18,18 @@
 // Dx12 overlay code adoptes from 
 // https://github.com/bruhmoment21/UniversalHookX
 
+typedef struct FfxFrameGenerationConfig
+{
+	IDXGISwapChain4* swapChain;
+	void* presentCallback;
+	void* frameGenerationCallback;
+	bool  frameGenerationEnabled;
+	bool  allowAsyncWorkloads;
+	void* HUDLessColor;
+	uint32_t flags;
+	bool onlyPresentInterpolated;
+} FfxFrameGenerationConfig;
+
 static ID3D12Device* g_pd3dDeviceParam = nullptr;
 
 static int const NUM_BACK_BUFFERS = 4;
@@ -35,6 +47,8 @@ typedef ULONG(WINAPI* PFN_Release)(IUnknown*);
 typedef void* (WINAPI* PFN_ffxGetDX12SwapchainPtr)(void* ffxSwapChain);
 typedef int32_t(WINAPI* PFN_ffxCreateFrameinterpolationSwapchainForHwndDX12)(HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* desc1,
 	const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* fullscreenDesc, ID3D12CommandQueue* queue, IDXGIFactory* dxgiFactory, IDXGISwapChain4** outGameSwapChain);
+
+typedef int32_t(WINAPI* PFN_ffxFsr3ConfigureFrameGeneration)(void* context, const FfxFrameGenerationConfig* config);
 
 typedef HRESULT(WINAPI* PFN_CreateCommandQueue)(ID3D12Device* This, const D3D12_COMMAND_QUEUE_DESC* pDesc, REFIID riid, void** ppCommandQueue);
 typedef HRESULT(WINAPI* PFN_CreateDXGIFactory1)(REFIID riid, void** ppFactory);
@@ -98,9 +112,11 @@ static PFN_CreateSwapChainForCoreWindow oCreateSwapChainForCoreWindow_SL = nullp
 
 // Mod FSR3
 static PFN_ffxCreateFrameinterpolationSwapchainForHwndDX12 offxCreateFrameinterpolationSwapchainForHwndDX12_Mod = nullptr;
+static PFN_ffxFsr3ConfigureFrameGeneration offxFsr3ConfigureFrameGeneration_Mod = nullptr;
 
 // Native FSR3
 static PFN_ffxCreateFrameinterpolationSwapchainForHwndDX12 offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3 = nullptr;
+static PFN_ffxFsr3ConfigureFrameGeneration offxFsr3ConfigureFrameGeneration_FSR3 = nullptr;
 
 static bool _isInited = false;
 static bool _reInit = false;
@@ -678,6 +694,43 @@ static int32_t WINAPI hkffxCreateFrameinterpolationSwapchainForHwndDX12_Mod(HWND
 	return result;
 }
 
+static int32_t WINAPI hkffxFsr3ConfigureFrameGeneration_Mod(void* context, FfxFrameGenerationConfig* config)
+{
+	auto result = offxFsr3ConfigureFrameGeneration_Mod(context, config);
+
+	if (oPresent_Mod == nullptr && config->swapChain != nullptr)
+	{
+		void** pVTable = *reinterpret_cast<void***>(config->swapChain);
+
+		oPresent_Mod = (PFN_Present)pVTable[8];
+		oPresent1_Mod = (PFN_Present1)pVTable[22];
+		oResizeBuffers_Mod = (PFN_ResizeBuffers)pVTable[13];
+		oResizeBuffers1_Mod = (PFN_ResizeBuffers1)pVTable[39];
+
+		// Apply the detour
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+
+		if (oPresent_Mod != nullptr)
+			DetourAttach(&(PVOID&)oPresent_Mod, hkPresent_Mod);
+
+		if (oPresent1_Mod != nullptr)
+			DetourAttach(&(PVOID&)oPresent1_Mod, hkPresent1_Mod);
+
+		if (oResizeBuffers_Mod != nullptr)
+			DetourAttach(&(PVOID&)oResizeBuffers_Mod, hkResizeBuffers_Mod);
+
+		if (oResizeBuffers1_Mod != nullptr)
+			DetourAttach(&(PVOID&)oResizeBuffers1_Mod, hkResizeBuffers1_Mod);
+
+		DetourTransactionCommit();
+
+		spdlog::info("ImGuiOverlayDx12::hkffxFsr3ConfigureFrameGeneration_Mod added swapchain hooks!");
+	}
+
+	return result;
+}
+
 static int32_t WINAPI hkffxCreateFrameinterpolationSwapchainForHwndDX12_FSR3(HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* desc1,
 	const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* fullscreenDesc, ID3D12CommandQueue* queue, IDXGIFactory* dxgiFactory, IDXGISwapChain4** outGameSwapChain)
 {
@@ -711,6 +764,43 @@ static int32_t WINAPI hkffxCreateFrameinterpolationSwapchainForHwndDX12_FSR3(HWN
 		DetourTransactionCommit();
 
 		spdlog::info("ImGuiOverlayDx12::hkffxCreateFrameinterpolationSwapchainForHwndDX12_FSR3 added swapchain hooks!");
+	}
+
+	return result;
+}
+
+static int32_t WINAPI hkffxFsr3ConfigureFrameGeneration_FSR3(void* context, FfxFrameGenerationConfig* config)
+{
+	auto result = offxFsr3ConfigureFrameGeneration_FSR3(context, config);
+
+	if (oPresent_FSR3 == nullptr && config->swapChain != nullptr)
+	{
+		void** pVTable = *reinterpret_cast<void***>(config->swapChain);
+
+		oPresent_FSR3 = (PFN_Present)pVTable[8];
+		oPresent1_FSR3 = (PFN_Present1)pVTable[22];
+		oResizeBuffers_FSR3 = (PFN_ResizeBuffers)pVTable[13];
+		oResizeBuffers1_FSR3 = (PFN_ResizeBuffers1)pVTable[39];
+
+		// Apply the detour
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+
+		if (oPresent_FSR3 != nullptr)
+			DetourAttach(&(PVOID&)oPresent_FSR3, hkPresent_FSR3);
+
+		if (oPresent1_Mod != nullptr)
+			DetourAttach(&(PVOID&)oPresent1_FSR3, hkPresent1_FSR3);
+
+		if (oResizeBuffers_Mod != nullptr)
+			DetourAttach(&(PVOID&)oResizeBuffers_FSR3, hkResizeBuffers_FSR3);
+
+		if (oResizeBuffers1_Mod != nullptr)
+			DetourAttach(&(PVOID&)oResizeBuffers1_FSR3, hkResizeBuffers1_FSR3);
+
+		DetourTransactionCommit();
+
+		spdlog::info("ImGuiOverlayDx12::hkffxFsr3ConfigureFrameGeneration_FSR3 added swapchain hooks!");
 	}
 
 	return result;
@@ -1121,6 +1211,7 @@ static bool CheckFSR3()
 		{
 			// Check for Uniscaler
 			offxCreateFrameinterpolationSwapchainForHwndDX12_Mod = (PFN_ffxCreateFrameinterpolationSwapchainForHwndDX12)DetourFindFunction("Uniscaler.asi", "ffxCreateFrameinterpolationSwapchainForHwndDX12");
+			offxFsr3ConfigureFrameGeneration_Mod = (PFN_ffxFsr3ConfigureFrameGeneration)DetourFindFunction("Uniscaler.asi", "ffxFsr3ConfigureFrameGeneration");
 
 			if (offxCreateFrameinterpolationSwapchainForHwndDX12_Mod != nullptr)
 			{
@@ -1132,6 +1223,7 @@ static bool CheckFSR3()
 			{
 				// Check for Nukem's
 				offxCreateFrameinterpolationSwapchainForHwndDX12_Mod = (PFN_ffxCreateFrameinterpolationSwapchainForHwndDX12)DetourFindFunction("dlssg_to_fsr3_amd_is_better.dll", "ffxCreateFrameinterpolationSwapchainForHwndDX12");
+				offxFsr3ConfigureFrameGeneration_Mod = (PFN_ffxFsr3ConfigureFrameGeneration)DetourFindFunction("dlssg_to_fsr3_amd_is_better.dll", "ffxFsr3ConfigureFrameGeneration");
 
 				if (offxCreateFrameinterpolationSwapchainForHwndDX12_Mod != nullptr)
 				{
@@ -1147,6 +1239,7 @@ static bool CheckFSR3()
 				DetourUpdateThread(GetCurrentThread());
 
 				DetourAttach(&(PVOID&)offxCreateFrameinterpolationSwapchainForHwndDX12_Mod, hkffxCreateFrameinterpolationSwapchainForHwndDX12_Mod);
+				DetourAttach(&(PVOID&)offxFsr3ConfigureFrameGeneration_Mod, hkffxFsr3ConfigureFrameGeneration_Mod);
 
 				DetourTransactionCommit();
 			}
@@ -1156,11 +1249,12 @@ static bool CheckFSR3()
 		{
 			// Check for native FSR3 (if game has native FSR3-FG)
 			offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3 = (PFN_ffxCreateFrameinterpolationSwapchainForHwndDX12)DetourFindFunction("ffx_backend_dx12_x64.dll", "ffxCreateFrameinterpolationSwapchainForHwndDX12");
+			offxFsr3ConfigureFrameGeneration_FSR3 = (PFN_ffxFsr3ConfigureFrameGeneration)DetourFindFunction("ffx_fsr3_x64.dll", "ffxFsr3ConfigureFrameGeneration");
 
 
 			if (offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3)
 			{
-				spdlog::info("ImGuiOverlayDx12::CheckMods FSR3's offxGetDX12SwapchainPtr found");
+				spdlog::info("ImGuiOverlayDx12::CheckMods FSR3's ffxCreateFrameinterpolationSwapchainForHwndDX12 found");
 				_bindedFSR3_Native = true;
 			}
 
@@ -1171,6 +1265,8 @@ static bool CheckFSR3()
 				DetourUpdateThread(GetCurrentThread());
 
 				DetourAttach(&(PVOID&)offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3, hkffxCreateFrameinterpolationSwapchainForHwndDX12_FSR3);
+				DetourAttach(&(PVOID&)offxFsr3ConfigureFrameGeneration_FSR3, hkffxFsr3ConfigureFrameGeneration_FSR3);
+
 
 				DetourTransactionCommit();
 			}
@@ -1196,7 +1292,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 	// Uniscaler captures and uses latest swapchain
 	// Avoid creating and hooking swapchains to prevent crashes
 	// If EarlyBind no need to bind again
-	if (!_isEarlyBind && !_bindedFSR3_Uniscaler && oPresent_Dx12 == nullptr && Config::Instance()->HookD3D12.value_or(true))
+	if (!_isEarlyBind && oPresent_Dx12 == nullptr && Config::Instance()->HookD3D12.value_or(true))
 	{
 		// Create device
 		ID3D12Device* device = nullptr;
@@ -1212,6 +1308,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 
 		// Create queue
 		ID3D12CommandQueue* cq = nullptr;
+
 		D3D12_COMMAND_QUEUE_DESC desc = { };
 		result = device->CreateCommandQueue(&desc, IID_PPV_ARGS(&cq));
 		if (result != S_OK)
@@ -1258,7 +1355,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 		}
 
 		// Hook DXGI Factory 
-		if (factory != nullptr && cq != nullptr && oPresent_Dx12 == nullptr)
+		if (!_bindedFSR3_Uniscaler && factory != nullptr && cq != nullptr && oPresent_Dx12 == nullptr)
 		{
 			// Setup swap chain
 			DXGI_SWAP_CHAIN_DESC1 sd = { };
