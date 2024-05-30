@@ -589,26 +589,51 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	if (InCallback)
 		spdlog::info("NVSDK_NGX_D3D12_EvaluateFeature callback exist");
 
-	IFeature_Dx12* deviceContext = nullptr;
-	auto handleId = InFeatureHandle->Id;
-
-	int limit;
-	if (InParameters->Get("FramerateLimit", &limit) == NVSDK_NGX_Result_Success)
+	// DLSS Enabler
 	{
-		if (Config::Instance()->DE_FramerateLimit.has_value())
+		int limit = 0;
+		if (InParameters->Get("FramerateLimit", &limit) == NVSDK_NGX_Result_Success)
 		{
-			if (Config::Instance()->DE_FramerateLimit.value() != limit)
+			if (Config::Instance()->DE_FramerateLimit.has_value())
 			{
-				spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature DLSS Enabler FramerateLimit initial new value: {0}", Config::Instance()->DE_FramerateLimit.value());
-				InParameters->Set("FramerateLimit", Config::Instance()->DE_FramerateLimit.value());
+				if (Config::Instance()->DE_FramerateLimit.value() != limit)
+				{
+					spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature DLSS Enabler FramerateLimit new value: {0}", Config::Instance()->DE_FramerateLimit.value());
+					InParameters->Set("FramerateLimit", Config::Instance()->DE_FramerateLimit.value());
+				}
+			}
+			else
+			{
+				spdlog::info("NVSDK_NGX_D3D12_EvaluateFeature DLSS Enabler FramerateLimit initial value: {0}", limit);
+				Config::Instance()->DE_FramerateLimit = limit;
 			}
 		}
-		else
+
+		int dfgAvail = 0;
+		if (InParameters->Get("DFG.Available", &dfgAvail) == NVSDK_NGX_Result_Success)
+			Config::Instance()->DE_DynamicLimitAvailable = dfgAvail;
+
+		int dfgEnabled = 0;
+		if (InParameters->Get("DFG.Enabled", &dfgEnabled) == NVSDK_NGX_Result_Success)
 		{
-			spdlog::info("NVSDK_NGX_D3D12_EvaluateFeature DLSS Enabler FramerateLimit initial value: {0}", limit);
-			Config::Instance()->DE_FramerateLimit = limit;
+			if (Config::Instance()->DE_DynamicLimitEnabled.has_value())
+			{
+				if (Config::Instance()->DE_DynamicLimitEnabled.value() != dfgEnabled)
+				{
+					spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature DLSS Enabler DFG {0}", Config::Instance()->DE_DynamicLimitEnabled.value() == 0 ? "disabled" : "enabled");
+					InParameters->Set("DFG.Enabled", Config::Instance()->DE_DynamicLimitEnabled.value());
+				}
+			}
+			else
+			{
+				spdlog::info("NVSDK_NGX_D3D12_EvaluateFeature DLSS Enabler FramerateLimit initial value: {0} ({1})", dfgEnabled == 0 ? "disabled" : "enabled", dfgEnabled);
+				Config::Instance()->DE_DynamicLimitEnabled = dfgEnabled;
+			}
 		}
 	}
+
+	IFeature_Dx12* deviceContext = nullptr;
+	auto handleId = InFeatureHandle->Id;
 
 	if (Config::Instance()->changeBackend)
 	{
@@ -788,6 +813,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 	rootSigCompute = nullptr;
 	rootSigGraphic = nullptr;
+
+	ImGuiOverlayDx12::CaptureQueue(InCmdList);
 
 	if (evalResult)
 		return NVSDK_NGX_Result_Success;
