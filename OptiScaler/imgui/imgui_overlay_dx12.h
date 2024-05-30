@@ -13,4 +13,5 @@ namespace ImGuiOverlayDx12
 	void ReInitDx12(HWND InNewHwnd);
 	void EarlyBind();
 	void BindMods();
+	void CaptureQueue(ID3D12CommandList* InCommandList);
 }
