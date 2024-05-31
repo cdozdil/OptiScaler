@@ -589,7 +589,7 @@ static HRESULT WINAPI hkResizeBuffers1_FSR3(IDXGISwapChain3* pSwapChain, UINT Bu
 static HRESULT WINAPI hkPresent_Mod(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT Flags)
 {
 	if ((Flags & DXGI_PRESENT_TEST) || (Flags & DXGI_PRESENT_RESTART))
-		return oPresent_FSR3(pSwapChain, SyncInterval, Flags);
+		return oPresent_Mod(pSwapChain, SyncInterval, Flags);
 
 	if (IsActivePath(FSR3_Mod))
 		RenderImGui_DX12(pSwapChain);
@@ -611,7 +611,7 @@ static HRESULT WINAPI hkPresent_Mod(IDXGISwapChain3* pSwapChain, UINT SyncInterv
 static HRESULT WINAPI hkPresent1_Mod(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters)
 {
 	if ((PresentFlags & DXGI_PRESENT_TEST) || (PresentFlags & DXGI_PRESENT_RESTART))
-		return oPresent1_FSR3(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
+		return oPresent1_Mod(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
 
 	if (IsActivePath(FSR3_Mod))
 		RenderImGui_DX12(pSwapChain);
