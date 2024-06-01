@@ -770,38 +770,6 @@ void DLSSFeature::ReadVersion()
 		return;
 	}
 
-	// Checking one from memory feels like safe way to do it
-	//for (size_t i = 0; i < Config::Instance()->NVNGX_FeatureInfo_Paths.size(); ++i)
-	//{
-	//	auto path = std::filesystem::path(Config::Instance()->NVNGX_FeatureInfo_Paths[i].c_str());
-	//	auto file = path.parent_path() / L"nvngx_dlss.dll";
-
-	//	auto dlssModule = LoadLibraryW(file.wstring().c_str());
-
-	//	if (dlssModule)
-	//	{
-
-	//		_GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)GetProcAddress(dlssModule, "NVSDK_NGX_GetSnippetVersion");
-
-	//		if (_GetSnippetVersion != nullptr)
-	//		{
-	//			auto result = _GetSnippetVersion();
-
-	//			_version.major = (result & 0x00FF0000) / 0x00010000;
-	//			_version.minor = (result & 0x0000FF00) / 0x00000100;
-	//			_version.patch = result & 0x000000FF / 0x00000001;
-
-	//			spdlog::info("DLSSFeature::ReadVersion DLSS v{0}.{1}.{2} loaded.", _version.major, _version.minor, _version.patch);
-	//		}
-
-	//		_GetSnippetVersion = nullptr;
-	//		FreeLibrary(dlssModule);
-
-	//		if (_version.major != 0)
-	//			return;
-	//	}
-	//}
-
 	spdlog::info("DLSSFeature::ReadVersion GetProcAddress for NVSDK_NGX_GetSnippetVersion failed!");
 }
 
@@ -860,58 +828,40 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 				}
 			}
 
-			// Checking _nvngx.dll / nvngx.dll location from registry based on DLSSTweaks 
-			// https://github.com/emoose/DLSSTweaks/blob/7ebf418c79670daad60a079c0e7b84096c6a7037/src/ProxyNvngx.cpp#L303
 			spdlog::info("DLSSFeature::DLSSFeature trying to load nvngx from registry path!");
 
-			HKEY regNGXCore;
-			LSTATUS result;
+			// path from registry
+			auto regNGXCorePath = Util::NvngxPath();
 
-			result = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"System\\CurrentControlSet\\Services\\nvlddmkm\\NGXCore", 0, KEY_READ, &regNGXCore);
-
-			if (result == ERROR_SUCCESS)
+			if (regNGXCorePath.has_value())
 			{
-				wchar_t regNGXCorePath[260];
-				DWORD NGXCorePathSize = 260;
+				auto nvngxPath = regNGXCorePath.value() / "_nvngx.dll";
+				spdlog::info("DLSSFeature::DLSSFeature trying to load _nvngx.dll path: {0}", nvngxPath.string());
 
-				result = RegQueryValueExW(regNGXCore, L"NGXPath", nullptr, nullptr, (LPBYTE)regNGXCorePath, &NGXCorePathSize);
+				_nvngx = LoadLibraryW(nvngxPath.wstring().c_str());
 
-				if (result == ERROR_SUCCESS)
+				if (_nvngx)
 				{
-					std::filesystem::path nvngxModulePath(regNGXCorePath);
-
-					auto nvngxPath = nvngxModulePath / "_nvngx.dll";
-					spdlog::info("DLSSFeature::DLSSFeature trying to load _nvngx.dll path: {0}", nvngxPath.string());
-
-					_nvngx = LoadLibraryW(nvngxPath.wstring().c_str());
-
-					if (_nvngx)
-					{
-						spdlog::info("DLSSFeature::DLSSFeature _nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (unsigned long)_nvngx);
-						_moduleLoaded = true;
-						break;
-					}
-
-					nvngxPath = nvngxModulePath / "nvngx.dll";
-					spdlog::info("DLSSFeature::DLSSFeature trying to load nvngx.dll path: {0}", nvngxPath.string());
-
-					_nvngx = LoadLibraryW(nvngxPath.wstring().c_str());
-
-					if (_nvngx)
-					{
-						spdlog::info("DLSSFeature::DLSSFeature nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (unsigned long)_nvngx);
-						_moduleLoaded = true;
-						break;
-					}
+					spdlog::info("DLSSFeature::DLSSFeature _nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (unsigned long)_nvngx);
+					_moduleLoaded = true;
+					break;
 				}
-				else
+
+				nvngxPath = regNGXCorePath.value() / "nvngx.dll";
+				spdlog::info("DLSSFeature::DLSSFeature trying to load nvngx.dll path: {0}", nvngxPath.string());
+
+				_nvngx = LoadLibraryW(nvngxPath.wstring().c_str());
+
+				if (_nvngx)
 				{
-					spdlog::error("DLSSFeature::DLSSFeature can't load NGXPath value {0:X}", (unsigned int)result);
+					spdlog::info("DLSSFeature::DLSSFeature nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (unsigned long)_nvngx);
+					_moduleLoaded = true;
+					break;
 				}
 			}
 			else
 			{
-				spdlog::error("DLSSFeature::DLSSFeature can't open NGXCore key {0:X}", (unsigned int)result);
+				spdlog::warn("DLSSFeature::DLSSFeature can't load NGXPath value!");
 			}
 
 
