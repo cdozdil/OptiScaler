@@ -73,6 +73,9 @@ public:
 	std::optional<int> ShortcutKey;
 	std::optional<int> ResetKey;
 	std::optional<int> MenuInitDelay;
+
+	// hooks
+	std::optional<bool> HookOriginalNvngxOnly;
 	std::optional<bool> DisableEarlyHooking;
 	std::optional<bool> HookD3D12;
 	std::optional<bool> HookSLProxy;
@@ -125,6 +128,7 @@ public:
 	std::optional<int> CopyBackSyncMethod;
 	std::optional<bool> Dx11DelayedInit;
 	std::optional<bool> SyncAfterDx12;
+	std::optional<bool> DontUseNTShared;
 
 	// nvapi override
 	std::optional<bool> OverrideNvapiDll;

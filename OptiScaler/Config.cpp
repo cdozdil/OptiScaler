@@ -89,14 +89,16 @@ bool Config::Reload()
 		ShortcutKey = readInt("Menu", "ShortcutKey");
 		ResetKey = readInt("Menu", "ResetKey");
 		MenuInitDelay = readInt("Menu", "MenuInitDelay");
-		DisableEarlyHooking = readBool("Menu", "DisableEarlyHooking");
-		HookD3D12 = readBool("Menu", "HookD3D12");
-		HookSLProxy = readBool("Menu", "HookSLProxy");
-		HookFSR3Proxy = readBool("Menu", "HookFSR3Proxy");
+
+		// Hooks
+		HookOriginalNvngxOnly = readBool("Hooks", "HookOriginalNvngxOnly");
+		DisableEarlyHooking = readBool("Hooks", "DisableEarlyHooking");
+		HookD3D12 = readBool("Hooks", "HookD3D12");
+		HookSLProxy = readBool("Hooks", "HookSLProxy");
+		HookFSR3Proxy = readBool("Hooks", "HookFSR3Proxy");
 
 		// CAS
 		RcasEnabled = readBool("CAS", "Enabled");
-
 		MotionSharpnessEnabled = readBool("CAS", "MotionSharpnessEnabled");
 		MotionSharpness = readFloat("CAS", "MotionSharpness");
 		MotionSharpnessDebug = readBool("CAS", "MotionSharpnessDebug");
@@ -268,6 +270,9 @@ bool Config::SaveIni()
 	ini.SetValue("Menu", "ResetKey", GetIntValue(Instance()->ResetKey).c_str());
 	ini.SetValue("Menu", "ShortcutKey", GetIntValue(Instance()->ShortcutKey).c_str());
 	ini.SetValue("Menu", "MenuInitDelay", GetIntValue(Instance()->MenuInitDelay).c_str());
+
+	// Hooks
+	ini.SetValue("Menu", "HookOriginalNvngxOnly", GetBoolValue(Instance()->HookOriginalNvngxOnly).c_str());
 	ini.SetValue("Menu", "DisableEarlyHooking", GetBoolValue(Instance()->DisableEarlyHooking).c_str());
 	ini.SetValue("Menu", "HookD3D12", GetBoolValue(Instance()->HookD3D12).c_str());
 	ini.SetValue("Menu", "HookSLProxy", GetBoolValue(Instance()->HookSLProxy).c_str());
@@ -328,6 +333,7 @@ bool Config::SaveIni()
 	ini.SetValue("Dx11withDx12", "CopyBackSyncMethod", GetIntValue(Instance()->CopyBackSyncMethod).c_str());
 	ini.SetValue("Dx11withDx12", "SyncAfterDx12", GetBoolValue(Instance()->SyncAfterDx12).c_str());
 	ini.SetValue("Dx11withDx12", "UseDelayedInit", GetBoolValue(Instance()->Dx11DelayedInit).c_str());
+	ini.SetValue("Dx11withDx12", "DontUseNTShared", GetBoolValue(Instance()->DontUseNTShared).c_str());
 
 	// Logging
 	ini.SetValue("Log", "LoggingEnabled", GetBoolValue(Instance()->LoggingEnabled).c_str());
