@@ -19,6 +19,32 @@ std::filesystem::path Util::DllPath()
 	return dll;
 }
 
+std::optional<std::filesystem::path> Util::NvngxPath()
+{
+	// Checking _nvngx.dll / nvngx.dll location from registry based on DLSSTweaks 
+	// https://github.com/emoose/DLSSTweaks/blob/7ebf418c79670daad60a079c0e7b84096c6a7037/src/ProxyNvngx.cpp#L303
+	spdlog::info("Util::NvngxPath trying to load nvngx from registry path!");
+
+	HKEY regNGXCore;
+	LSTATUS ls;
+	std::optional<std::filesystem::path> result;
+
+	ls = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"System\\CurrentControlSet\\Services\\nvlddmkm\\NGXCore", 0, KEY_READ, &regNGXCore);
+
+	if (ls == ERROR_SUCCESS)
+	{
+		wchar_t regNGXCorePath[260];
+		DWORD NGXCorePathSize = 260;
+
+		ls = RegQueryValueExW(regNGXCore, L"NGXPath", nullptr, nullptr, (LPBYTE)regNGXCorePath, &NGXCorePathSize);
+
+		if (ls == ERROR_SUCCESS)
+			result = std::filesystem::path(regNGXCorePath);
+	}
+
+	return result;
+}
+
 std::filesystem::path Util::ExePath()
 {
 	static std::filesystem::path exe;
