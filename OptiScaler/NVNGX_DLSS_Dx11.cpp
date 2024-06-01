@@ -239,14 +239,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	// DLSS Enabler check
-	int deAvail;
-	if (InParameters->Get("DLSSEnabler.Available", &deAvail) == NVSDK_NGX_Result_Success)
-	{
-		spdlog::info("NVSDK_NGX_D3D11_CreateFeature DLSSEnabler.Available: {0}", deAvail);
-		Config::Instance()->DE_Available = (deAvail > 0);
-	}
-
 	// Create feature
 	auto handleId = IFeature::GetNextHandleId();
 	spdlog::info("NVSDK_NGX_D3D11_CreateFeature HandleId: {0}", handleId);
@@ -384,6 +376,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 	{
 		spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature InCmdList is null!!!");
 		return NVSDK_NGX_Result_Fail;
+	}
+
+	// DLSS Enabler check
+	int deAvail;
+	if (InParameters->Get("DLSSEnabler.Available", &deAvail) == NVSDK_NGX_Result_Success)
+	{
+		if (Config::Instance()->DE_Available != (deAvail > 0))
+			spdlog::info("NVSDK_NGX_D3D11_CreateFeature DLSSEnabler.Available: {0}", deAvail);
+
+		Config::Instance()->DE_Available = (deAvail > 0);
 	}
 
 	if (Config::Instance()->OverlayMenu.value_or(true) &&

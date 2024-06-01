@@ -188,6 +188,8 @@ static void CleanupRenderTarget(bool clearQueue);
 
 static void ClearActivePathInfo()
 {
+	spdlog::debug("ImGuiOverlayDx12::ClearActivePathInfo!");
+
 	_lastActiveSource = Unknown;
 	_nativeCounter = 0;
 	_slCounter = 0;
