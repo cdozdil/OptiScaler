@@ -878,9 +878,12 @@ public:
 						}
 
 						if (bool afterDx12 = Config::Instance()->SyncAfterDx12.value_or(true); ImGui::Checkbox("Sync After Dx12", &afterDx12))
-						{
 							Config::Instance()->SyncAfterDx12 = afterDx12;
-						}
+
+						ImGui::SameLine(0.0f, 6.0f);
+
+						if (bool dontUseNTShared = Config::Instance()->DontUseNTShared.value_or(false); ImGui::Checkbox("Don't Use NTShared", &dontUseNTShared))
+							Config::Instance()->DontUseNTShared = dontUseNTShared;
 					}
 
 					// UPSCALER SPECIFIC -----------------------------
@@ -995,12 +998,12 @@ public:
 						if (ImGui::Button("Apply Changes"))
 							Config::Instance()->changeBackend = true;
 
-						AddRenderPreset("DLAA", &Config::Instance()->RenderPresetDLAA);
-						AddRenderPreset("Ultra Quality", &Config::Instance()->RenderPresetUltraQuality);
-						AddRenderPreset("Quality", &Config::Instance()->RenderPresetQuality);
-						AddRenderPreset("Balanced", &Config::Instance()->RenderPresetBalanced);
-						AddRenderPreset("Performance", &Config::Instance()->RenderPresetPerformance);
-						AddRenderPreset("Ultra Performance", &Config::Instance()->RenderPresetUltraPerformance);
+						AddRenderPreset("DLAA Preset", &Config::Instance()->RenderPresetDLAA);
+						AddRenderPreset("UltraQ Preset", &Config::Instance()->RenderPresetUltraQuality);
+						AddRenderPreset("Quality Preset", &Config::Instance()->RenderPresetQuality);
+						AddRenderPreset("Balanced Preset", &Config::Instance()->RenderPresetBalanced);
+						AddRenderPreset("Perf Preset", &Config::Instance()->RenderPresetPerformance);
+						AddRenderPreset("UltraP Preset", &Config::Instance()->RenderPresetUltraPerformance);
 					}
 
 					// RCAS -----------------
