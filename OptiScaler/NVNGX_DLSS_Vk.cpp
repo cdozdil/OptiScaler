@@ -261,7 +261,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 	int deAvail;
 	if (InParameters->Get("DLSSEnabler.Available", &deAvail) == NVSDK_NGX_Result_Success)
 	{
-		spdlog::info("NVSDK_NGX_D3D11_CreateFeature DLSSEnabler.Available: {0}", deAvail);
+		spdlog::info("NVSDK_NGX_VULKAN_CreateFeature1 DLSSEnabler.Available: {0}", deAvail);
 		Config::Instance()->DE_Available = (deAvail > 0);
 	}
 
