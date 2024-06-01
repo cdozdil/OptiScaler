@@ -566,6 +566,38 @@ void CheckWorkingMode()
 	{
 		spdlog::info("Attaching LoadLibrary hooks");
 
+		if (Config::Instance()->HookOriginalNvngxOnly.value_or(false))
+		{
+			auto regPath = Util::NvngxPath();
+
+			if (regPath.has_value())
+			{
+				nvngxA = (regPath.value() / "nvngx.dll").string();
+
+				for (size_t i = 0; i < nvngxA.size(); i++)
+					nvngxA[i] = std::tolower(nvngxA[i]);
+
+				nvngxExA = (regPath.value() / "nvngx").string();
+
+				for (size_t i = 0; i < nvngxExA.size(); i++)
+					nvngxExA[i] = std::tolower(nvngxExA[i]);
+
+				nvngxW = (regPath.value() / L"nvngx.dll").wstring();
+
+				for (size_t i = 0; i < nvngxW.size(); i++)
+					nvngxW[i] = std::tolower(nvngxW[i]);
+
+				nvngxExW = (regPath.value() / L"nvngx").wstring();
+
+				for (size_t i = 0; i < nvngxExW.size(); i++)
+					nvngxExW[i] = std::tolower(nvngxExW[i]);
+			}
+			else
+			{
+				spdlog::warn("Can't read nvngx.dll address from registry, returning to default behavior!");
+			}
+		}
+
 		AttachHooks();
 
 		if (!Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))
