@@ -138,8 +138,8 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 
 HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput* pTarget)
 {
-	//if (ClearTrig != nullptr)
-	//	ClearTrig(true);
+	if (ClearTrig != nullptr)
+		ClearTrig(true);
 
 	return m_pReal->SetFullscreenState(Fullscreen, pTarget);
 }
