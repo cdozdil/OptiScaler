@@ -237,7 +237,7 @@ std::string GetFloatValue(std::optional<float> value)
 
 bool Config::SaveIni()
 {
-	// Upscalers
+	// Upscalers 
 	ini.SetValue("Upscalers", "Dx11Upscaler", Instance()->Dx11Upscaler.value_or("auto").c_str());
 	ini.SetValue("Upscalers", "Dx12Upscaler", Instance()->Dx12Upscaler.value_or("auto").c_str());
 	ini.SetValue("Upscalers", "VulkanUpscaler", Instance()->VulkanUpscaler.value_or("auto").c_str());
@@ -272,11 +272,11 @@ bool Config::SaveIni()
 	ini.SetValue("Menu", "MenuInitDelay", GetIntValue(Instance()->MenuInitDelay).c_str());
 
 	// Hooks
-	ini.SetValue("Menu", "HookOriginalNvngxOnly", GetBoolValue(Instance()->HookOriginalNvngxOnly).c_str());
-	ini.SetValue("Menu", "DisableEarlyHooking", GetBoolValue(Instance()->DisableEarlyHooking).c_str());
-	ini.SetValue("Menu", "HookD3D12", GetBoolValue(Instance()->HookD3D12).c_str());
-	ini.SetValue("Menu", "HookSLProxy", GetBoolValue(Instance()->HookSLProxy).c_str());
-	ini.SetValue("Menu", "HookFSR3Proxy", GetBoolValue(Instance()->HookFSR3Proxy).c_str());
+	ini.SetValue("Hooks", "HookOriginalNvngxOnly", GetBoolValue(Instance()->HookOriginalNvngxOnly).c_str());
+	ini.SetValue("Hooks", "DisableEarlyHooking", GetBoolValue(Instance()->DisableEarlyHooking).c_str());
+	ini.SetValue("Hooks", "HookD3D12", GetBoolValue(Instance()->HookD3D12).c_str());
+	ini.SetValue("Hooks", "HookSLProxy", GetBoolValue(Instance()->HookSLProxy).c_str());
+	ini.SetValue("Hooks", "HookFSR3Proxy", GetBoolValue(Instance()->HookFSR3Proxy).c_str());
 
 	// CAS
 	ini.SetValue("CAS", "Enabled", GetBoolValue(Instance()->RcasEnabled).c_str());
@@ -313,7 +313,8 @@ bool Config::SaveIni()
 	// Hotfixes
 	ini.SetValue("Hotfix", "DisableReactiveMask", GetBoolValue(Instance()->DisableReactiveMask).c_str());
 	ini.SetValue("Hotfix", "MipmapBiasOverride", GetBoolValue(Instance()->MipmapBiasOverride).c_str());
-
+	ini.SetValue("Hotfix", "RoundInternalResolution", GetIntValue(Instance()->RoundInternalResolution).c_str());
+	
 	ini.SetValue("Hotfix", "RestoreComputeSignature", GetBoolValue(Instance()->RestoreComputeSignature).c_str());
 	ini.SetValue("Hotfix", "RestoreGraphicSignature", GetBoolValue(Instance()->RestoreGraphicSignature).c_str());
 
@@ -348,6 +349,9 @@ bool Config::SaveIni()
 	ini.SetValue("NvApi", "OverrideNvapiDll", GetBoolValue(Instance()->OverrideNvapiDll).c_str());
 	ini.SetValue("NvApi", "NvapiDllPath", Instance()->NvapiDllPath.value_or("auto").c_str());
 
+	// DRS
+	ini.SetValue("DRS", "DrsMinOverrideEnabled", GetBoolValue(Instance()->DrsMinOverrideEnabled).c_str());
+	ini.SetValue("DRS", "DrsMaxOverrideEnabled", GetBoolValue(Instance()->DrsMaxOverrideEnabled).c_str());
 
 	return ini.SaveFile(absoluteFileName.wstring().c_str()) >= 0;
 }

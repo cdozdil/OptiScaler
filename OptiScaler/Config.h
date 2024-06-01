@@ -29,7 +29,7 @@ public:
 	std::optional<bool> JitterCancellation;
 	std::optional<bool> DisplayResolution;
 
-	//Logging
+	// Logging
 	std::optional<bool> LoggingEnabled;
 	std::optional<bool> LogToFile;
 	std::optional<bool> LogToConsole;
@@ -56,16 +56,15 @@ public:
 
 	// CAS
 	std::optional<bool> RcasEnabled;
-
-	//Sharpness 
-	std::optional<bool> OverrideSharpness;
-	std::optional<float> Sharpness;
-
 	std::optional<bool> MotionSharpnessEnabled;
 	std::optional<bool> MotionSharpnessDebug;
 	std::optional<float> MotionSharpness;
 	std::optional<float> MotionThreshold;
 	std::optional<float> MotionScaleLimit;
+
+	//Sharpness 
+	std::optional<bool> OverrideSharpness;
+	std::optional<float> Sharpness;
 
 	// menu
 	std::optional<float> MenuScale;
@@ -100,10 +99,12 @@ public:
 
 	//Hotfixes
 	std::optional<bool> DisableReactiveMask;
-	std::optional<int> RoundInternalResolution;
 	std::optional<float> MipmapBiasOverride;
+	std::optional<int> RoundInternalResolution;
+
 	std::optional<bool> RestoreComputeSignature;
 	std::optional<bool> RestoreGraphicSignature;
+
 	std::optional<int32_t> ColorResourceBarrier;
 	std::optional<int32_t> MVResourceBarrier;
 	std::optional<int32_t> DepthResourceBarrier;
@@ -115,7 +116,6 @@ public:
 	std::optional<std::string> Dx11Upscaler;
 	std::optional<std::string> Dx12Upscaler;
 	std::optional<std::string> VulkanUpscaler;
-
 	std::optional<bool> OutputScalingEnabled;
 	std::optional<float> OutputScalingMultiplier;
 
