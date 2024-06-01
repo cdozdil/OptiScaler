@@ -19,6 +19,7 @@ protected:
 		UINT Height = 0;
 		DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN;
 		UINT BindFlags = 0;
+		UINT MiscFlags = 0;
 	};
 
 	using D3D11_TEXTURE2D_RESOURCE_C = struct D3D11_TEXTURE2D_RESOURCE_C
