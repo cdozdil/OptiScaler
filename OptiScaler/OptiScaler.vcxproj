@@ -231,6 +231,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="backends\IFeature_Vk.h" />
     <ClInclude Include="detours\detours.h" />
     <ClInclude Include="dllmain.h" />
+    <ClInclude Include="backends\IFeatureEvaluateParams_DLSS.h" />
     <ClInclude Include="imgui\imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui\imgui.h" />
     <ClInclude Include="imgui\imgui\imgui_impl_dx11.h" />
