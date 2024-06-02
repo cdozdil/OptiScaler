@@ -36,13 +36,16 @@ protected:
 
 public:
 	bool IsInited() { return _isInited; }
+
 	uint32_t RenderWidth() { return _renderWidth; }
 	uint32_t RenderHeight() { return _renderHeight; }
 	uint32_t DisplayWidth() { return _displayWidth; }
 	uint32_t DisplayHeight() { return _displayHeight; }
 	uint32_t TargetWidth() { return _targetWidth; }
 	uint32_t TargetHeight() { return _targetHeight; }
+
 	CommonQualityPreset QualityPreset() { return _pqValue; }
+
 	bool AutoExposure() { return _autoExposure; }
 	bool Hdr() { return _hdr; }
 	bool Sharpening() { return _sharpening; }
@@ -50,5 +53,4 @@ public:
 	bool JitterCancellation() { return _jitterCancellation; }
 	bool DisplayResolutionMV() { return _displayResMV; }
 	bool DepthInverted() { return _depthInverted; }
-
 };
