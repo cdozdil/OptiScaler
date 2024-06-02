@@ -117,7 +117,7 @@ bool FSR2FeatureVk212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	SetInit(true);
 
 	return true;
-	}
+}
 
 bool FSR2FeatureVk212::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_Parameter* InParameters)
 {

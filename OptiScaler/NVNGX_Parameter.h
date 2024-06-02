@@ -3,6 +3,19 @@
 #include <ankerl/unordered_dense.h>
 #include "Config.h"
 
+struct NVNGX_Init_Info
+{
+	unsigned long long ApplicationId;
+	std::wstring ApplicationDataPath= L"";
+	std::string ProjectId = "";
+	NVSDK_NGX_Version Version{};
+	const NVSDK_NGX_FeatureCommonInfo* FeatureCommonInfo = nullptr;
+	std::vector<std::wstring> FeatureInfoPaths;
+	NVSDK_NGX_LoggingInfo Logger{ nullptr, NVSDK_NGX_LOGGING_LEVEL_OFF, false };
+	NVSDK_NGX_EngineType Engine = NVSDK_NGX_ENGINE_TYPE_CUSTOM;
+	std::string EngineVersion;
+};
+
 inline std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_Value input)
 {
 	std::optional<float> output;

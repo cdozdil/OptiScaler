@@ -179,6 +179,15 @@
     <ClInclude Include="imgui\wrapped_swapchain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="backends\IFeatureCreateParams.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="backends\IFeatureCreateParams_DLSS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="backends\IFeatureEvaluateParams.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
