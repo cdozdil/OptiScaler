@@ -1,4 +1,8 @@
 #pragma once
+#include "IFeatureCreateParams.h"
+#include "IFeatureEvaluateParams.h"
+
+
 #include <nvsdk_ngx.h>
 #include <nvsdk_ngx_defs.h>
 
@@ -16,6 +20,7 @@ private:
 
 protected:
 	NVSDK_NGX_Handle* _handle = nullptr;
+	IFeatureCreateParams _createParams = {};
 
 	float _sharpness = 0;
 	bool _hasColor = false;

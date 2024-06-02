@@ -1,5 +1,6 @@
 #pragma once
 #include "../IFeature_Dx12.h"
+#include "../IFeatureCreateParams.h"
 #include "XeSSFeature.h"
 #include <string>
 
@@ -16,6 +17,7 @@ public:
 
 	bool Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters) override;
 	bool Evaluate(ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters) override;
+	bool Evaluate(ID3D12GraphicsCommandList* InCommandList, const IFeatureEvaluateParams* InParams) override;
 
 	~XeSSFeatureDx12();
 };
