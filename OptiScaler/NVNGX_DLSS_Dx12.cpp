@@ -15,6 +15,8 @@
 
 inline ID3D12Device* D3D12Device = nullptr;
 static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
+static inline NVNGX_Init_Info NVNGXInitInfo = {};
+
 static inline NVSDK_NGX_Parameter* createParams = nullptr;
 static inline int changeBackendCounter = 0;
 static inline std::wstring appDataPath = L".";
@@ -161,6 +163,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 	Config::Instance()->NVNGX_Version = InSDKVersion;
 	Config::Instance()->NVNGX_FeatureInfo = InFeatureInfo;
 
+	NVNGXInitInfo.ApplicationId = InApplicationId;
+	NVNGXInitInfo.ApplicationDataPath = std::wstring(InApplicationDataPath);
+	NVNGXInitInfo.Version = InSDKVersion;
+	NVNGXInitInfo.FeatureCommonInfo = InFeatureInfo;
+
 	if (InFeatureInfo != nullptr && InSDKVersion > 0x0000013)
 		Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
 
@@ -174,6 +181,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext InApplicationDataPath {0}", str);
 
 	Config::Instance()->NVNGX_FeatureInfo_Paths.clear();
+	NVNGXInitInfo.FeatureInfoPaths.clear();
 
 	if (InFeatureInfo != nullptr)
 	{
@@ -182,6 +190,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 			const wchar_t* path = InFeatureInfo->PathListInfo.Path[i];
 
 			Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(std::wstring(path));
+			NVNGXInitInfo.FeatureInfoPaths.push_back(std::wstring(path));
 
 			std::wstring iniPathW(path);
 
@@ -226,6 +235,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProj
 	Config::Instance()->NVNGX_Engine = InEngineType;
 	Config::Instance()->NVNGX_EngineVersion = std::string(InEngineVersion);
 
+	NVNGXInitInfo.ProjectId = std::string(InProjectId);
+	NVNGXInitInfo.Engine = InEngineType;
+	NVNGXInitInfo.EngineVersion = std::string(InEngineVersion);
+
 	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
 	else
@@ -239,6 +252,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* I
 {
 	auto result = NVSDK_NGX_D3D12_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
 
+
+
 	spdlog::info("NVSDK_NGX_D3D12_Init_with_ProjectID InProjectId: {0}", InProjectId);
 	spdlog::info("NVSDK_NGX_D3D12_Init_with_ProjectID InEngineType: {0}", (int)InEngineType);
 	spdlog::info("NVSDK_NGX_D3D12_Init_with_ProjectID InEngineVersion: {0}", InEngineVersion);
@@ -246,6 +261,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* I
 	Config::Instance()->NVNGX_ProjectId = std::string(InProjectId);
 	Config::Instance()->NVNGX_Engine = InEngineType;
 	Config::Instance()->NVNGX_EngineVersion = std::string(InEngineVersion);
+
+	NVNGXInitInfo.ProjectId = std::string(InProjectId);
+	NVNGXInitInfo.Engine = InEngineType;
+	NVNGXInitInfo.EngineVersion = std::string(InEngineVersion);
 
 	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
 		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
