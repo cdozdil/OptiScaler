@@ -4,7 +4,7 @@
 class IFeatureEvaluateParams
 {
 private:
-	inline static double _lastFrameTime = -1.0;
+	inline static double _lastFrameTime = -1;
 
 	inline static double MillisecondsNow()
 	{
