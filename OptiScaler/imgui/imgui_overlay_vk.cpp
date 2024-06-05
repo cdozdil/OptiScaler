@@ -489,7 +489,7 @@ void ImGuiOverlayVk::ReInitVk(HWND InNewHwnd)
 	if (!_isInited || !g_bInitialized)
 		return;
 
-	spdlog::debug("ImGuiOverlayVk::ReInitVk hwnd: {0:X}", (unsigned long)InNewHwnd);
+	spdlog::debug("ImGuiOverlayVk::ReInitVk hwnd: {0:X}", (UINT64)InNewHwnd);
 
 	ImGui_ImplVulkan_Shutdown();
 	ImGuiOverlayBase::Shutdown();

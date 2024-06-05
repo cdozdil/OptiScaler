@@ -425,7 +425,7 @@ private:
 		{
 			if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
 			{
-				spdlog::trace("WndProc ImGui handled, hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (unsigned long)hWnd, msg, (unsigned long)wParam, (unsigned long)lParam);
+				spdlog::trace("WndProc ImGui handled, hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (ULONG64)hWnd, msg, (ULONG64)wParam, (ULONG64)lParam);
 				return TRUE;
 			}
 
@@ -489,7 +489,7 @@ private:
 			case WM_XBUTTONDOWN:
 			case WM_XBUTTONUP:
 			case WM_XBUTTONDBLCLK:
-				spdlog::trace("WndProc switch handled, hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (unsigned long)hWnd, msg, (unsigned long)wParam, (unsigned long)lParam);
+				spdlog::trace("WndProc switch handled, hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (ULONG64)hWnd, msg, (ULONG64)wParam, (ULONG64)lParam);
 				return TRUE;
 
 			case WM_INPUT:
@@ -516,7 +516,7 @@ private:
 				}
 
 				else
-					spdlog::trace("WndProc WM_INPUT hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (unsigned long)hWnd, msg, (unsigned long)wParam, (unsigned long)lParam);
+					spdlog::trace("WndProc WM_INPUT hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (ULONG64)hWnd, msg, (ULONG64)wParam, (ULONG64)lParam);
 
 				return TRUE;
 
@@ -1432,7 +1432,7 @@ public:
 				if (_displayWidth == 0)
 				{
 					_displayWidth = Config::Instance()->CurrentFeature->DisplayWidth();
-					_renderWidth = _displayWidth / 3.0;
+					_renderWidth = _displayWidth / 3.0f;
 					_mipmapUpscalerQuality = 0;
 					_mipmapUpscalerRatio = 3.0f;
 					_mipBiasCalculated = log2((float)_renderWidth / (float)_displayWidth);
@@ -1556,7 +1556,7 @@ public:
 		_isVisible = false;
 		_isResetRequested = false;
 
-		spdlog::debug("ImGuiCommon::Init Handle: {0:X}", (unsigned long)_handle);
+		spdlog::debug("ImGuiCommon::Init Handle: {0:X}", (ULONG64)_handle);
 
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
@@ -1580,7 +1580,7 @@ public:
 		if (_oWndProc == nullptr)
 			_oWndProc = (WNDPROC)SetWindowLongPtr(InHwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
 
-		spdlog::debug("ImGuiCommon::Init _oWndProc: {0:X}", (unsigned long)_oWndProc);
+		spdlog::debug("ImGuiCommon::Init _oWndProc: {0:X}", (ULONG64)_oWndProc);
 
 
 		if (!pfn_SetCursorPos_hooked)

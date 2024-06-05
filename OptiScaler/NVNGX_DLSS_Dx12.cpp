@@ -167,7 +167,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext AppId: {0}", InApplicationId);
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext SDK: {0:x}", (unsigned int)InSDKVersion);
 	appDataPath = InApplicationDataPath;
-	std::string str(appDataPath.begin(), appDataPath.end());
+
+	std::string str(appDataPath.length(), 0);
+	std::transform(appDataPath.begin(), appDataPath.end(), str.begin(), [](wchar_t c) { return (char)c; });
+
 	spdlog::info("NVSDK_NGX_D3D12_Init_Ext InApplicationDataPath {0}", str);
 
 	Config::Instance()->NVNGX_FeatureInfo_Paths.clear();
@@ -181,7 +184,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 			Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(std::wstring(path));
 
 			std::wstring iniPathW(path);
-			std::string iniPath(iniPathW.begin(), iniPathW.end());
+
+			std::string iniPath(iniPathW.length(), 0);
+			std::transform(iniPathW.begin(), iniPathW.end(), iniPath.begin(), [](wchar_t c) { return (char)c; });
 
 			spdlog::debug("NVSDK_NGX_D3D12_Init_Ext PathListInfo[{1}] checking nvngx.ini file in: {0}", iniPath, i);
 

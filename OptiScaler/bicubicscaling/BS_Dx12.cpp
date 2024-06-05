@@ -174,10 +174,10 @@ bool BS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 	InDevice->CreateUnorderedAccessView(OutResource, nullptr, &uavDesc, _cpuUavHandle[_counter]);
 
 	// Create CBV for Constants
-	Constants constants;
-	constants.srcWidth = inDesc.Width;
+	Constants constants{};
+	constants.srcWidth = static_cast<uint32_t>(inDesc.Width);
 	constants.srcHeight = inDesc.Height;
-	constants.destWidth = outDesc.Width;
+	constants.destWidth = static_cast<uint32_t>(outDesc.Width);
 	constants.destHeight = outDesc.Height;
 
 	// Copy the updated constant buffer data to the constant buffer resource
@@ -208,12 +208,12 @@ bool BS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 
 	if (_upsample)
 	{
-		dispatchWidth = (outDesc.Width + InNumThreadsX - 1) / InNumThreadsX;
+		dispatchWidth = static_cast<UINT>((outDesc.Width + InNumThreadsX - 1) / InNumThreadsX);
 		dispatchHeight = (outDesc.Height + InNumThreadsY - 1) / InNumThreadsY;
 	}
 	else
 	{
-		dispatchWidth = (inDesc.Width + InNumThreadsX - 1) / InNumThreadsX;
+		dispatchWidth = static_cast<UINT>((inDesc.Width + InNumThreadsX - 1) / InNumThreadsX);
 		dispatchHeight = (inDesc.Height + InNumThreadsY - 1) / InNumThreadsY;
 	}
 
@@ -335,7 +335,7 @@ BS_Dx12::BS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
 
 	// Compile shader blobs
 	ID3DBlob* _recEncodeShader = CompileShader(_upsample ? upsampleCode.c_str() : downsampleCode.c_str(), "CSMain", "cs_5_0");
-	
+
 	if (_recEncodeShader == nullptr)
 	{
 		spdlog::error("CS_Dx12::CS_Dx12 [{0}] CompileShader error!", _name);
