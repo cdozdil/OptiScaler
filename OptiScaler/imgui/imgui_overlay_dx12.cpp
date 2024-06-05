@@ -826,7 +826,7 @@ static void WINAPI hkExecuteCommandLists_Dx12(ID3D12CommandQueue* pCommandQueue,
 		{
 			if (ppCommandLists[i] == _dlssCommandList)
 			{
-				spdlog::info("ImGuiOverlayDx12::hkExecuteCommandLists_Dx12 new _cqDx12: {0:X}", (unsigned long)pCommandQueue);
+				spdlog::info("ImGuiOverlayDx12::hkExecuteCommandLists_Dx12 new _cqDx12: {0:X}", (ULONG64)pCommandQueue);
 				_cqDx12 = pCommandQueue;
 				break;
 			}
@@ -845,7 +845,7 @@ static void WINAPI hkExecuteCommandLists_SL(ID3D12CommandQueue* pCommandQueue, U
 
 		if (desc.Type == D3D12_COMMAND_LIST_TYPE_DIRECT)
 		{
-			spdlog::info("ImGuiOverlayDx12::hkExecuteCommandLists_SL new _cqSL: {0:X}", (unsigned long)pCommandQueue);
+			spdlog::info("ImGuiOverlayDx12::hkExecuteCommandLists_SL new _cqSL: {0:X}", (ULONG64)pCommandQueue);
 			_cqSL = pCommandQueue;
 		}
 	}
@@ -1300,7 +1300,7 @@ static bool CheckFSR3()
 
 static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 {
-	spdlog::info("ImGuiOverlayDx12::CreateDeviceD3D12 Handle: {0:X}", (unsigned long)InHWnd);
+	spdlog::info("ImGuiOverlayDx12::CreateDeviceD3D12 Handle: {0:X}", (ULONG64)InHWnd);
 
 	HRESULT result;
 
@@ -1765,7 +1765,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 		if (ImGuiOverlayBase::IsInited() && ImGuiOverlayBase::IsResetRequested())
 		{
 			auto hwnd = Util::GetProcessWindow();
-			spdlog::info("ImGuiOverlayDx12::RenderImGui_DX12 Reset request detected, resetting ImGui, new handle {0:X}", (unsigned long)hwnd);
+			spdlog::info("ImGuiOverlayDx12::RenderImGui_DX12 Reset request detected, resetting ImGui, new handle {0:X}", (ULONG64)hwnd);
 			ImGuiOverlayDx12::ReInitDx12(hwnd);
 		}
 
@@ -1969,156 +1969,247 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 	}
 }
 
-void DeatachAllHooks(bool reInit = false)
+void DeatachAllHooks()
 {
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 
-	if (oPresent_Dx12 != nullptr && !reInit)
-		DetourDetach(&(PVOID&)oPresent_Dx12, hkPresent_Dx12);
-
-	if (oPresent1_Dx12 != nullptr && !reInit)
-		DetourDetach(&(PVOID&)oPresent1_Dx12, hkPresent1_Dx12);
-
-	if (oResizeBuffers_Dx12 != nullptr && !reInit)
-		DetourDetach(&(PVOID&)oResizeBuffers_Dx12, hkResizeBuffers_Dx12);
-
-	if (oResizeBuffers1_Dx12 != nullptr && !reInit)
-		DetourDetach(&(PVOID&)oResizeBuffers1_Dx12, hkResizeBuffers1_Dx12);
-
 	if (oD3D12CreateDevice != nullptr)
+	{
 		DetourDetach(&(PVOID&)oD3D12CreateDevice, hkD3D12CreateDevice);
+		oD3D12CreateDevice = nullptr;
+	}
 
 	if (oCreateCommandQueue != nullptr)
+	{
 		DetourDetach(&(PVOID&)oCreateCommandQueue, hkCreateCommandQueue);
+		oCreateCommandQueue = nullptr;
+	}
 
 	if (oCreateDXGIFactory1 != nullptr)
+	{
 		DetourDetach(&(PVOID&)oCreateDXGIFactory1, hkCreateDXGIFactory1);
+		oCreateDXGIFactory1 = nullptr;
+	}
 
-	if (oPresent_SL != nullptr && !reInit)
+	if (oCreateDXGIFactory2 != nullptr)
+	{
+		DetourDetach(&(PVOID&)oCreateDXGIFactory2, hkCreateDXGIFactory2);
+		oCreateDXGIFactory2 = nullptr;
+	}
+
+	if (oCommandQueueRelease != nullptr)
+	{
+		DetourDetach(&(PVOID&)oCommandQueueRelease, hkCommandQueueRelease);
+		oCommandQueueRelease = nullptr;
+	}
+
+	if (oPresent_Dx12 != nullptr)
+	{
+		DetourDetach(&(PVOID&)oPresent_Dx12, hkPresent_Dx12);
+		oPresent_Dx12 = nullptr;
+	}
+
+	if (oPresent1_Dx12 != nullptr)
+	{
+		DetourDetach(&(PVOID&)oPresent1_Dx12, hkPresent1_Dx12);
+		oPresent1_Dx12 = nullptr;
+	}
+
+	if (oResizeBuffers_Dx12 != nullptr)
+	{
+		DetourDetach(&(PVOID&)oResizeBuffers_Dx12, hkResizeBuffers_Dx12);
+		oResizeBuffers_Dx12 = nullptr;
+	}
+
+	if (oResizeBuffers1_Dx12 != nullptr)
+	{
+		DetourDetach(&(PVOID&)oResizeBuffers1_Dx12, hkResizeBuffers1_Dx12);
+		oResizeBuffers1_Dx12 = nullptr;
+	}
+
+	if (oPresent_SL != nullptr)
+	{
 		DetourDetach(&(PVOID&)oPresent_SL, hkPresent_SL);
+		oPresent_SL = nullptr;
+	}
 
-	if (oPresent1_SL != nullptr && !reInit)
+	if (oPresent1_SL != nullptr)
+	{
 		DetourDetach(&(PVOID&)oPresent1_SL, hkPresent1_SL);
+		oPresent1_SL = nullptr;
+	}
 
-	if (oResizeBuffers_SL != nullptr && !reInit)
+	if (oResizeBuffers_SL != nullptr)
+	{
 		DetourDetach(&(PVOID&)oResizeBuffers_SL, hkResizeBuffers_SL);
+		oResizeBuffers_SL = nullptr;
+	}
 
-	if (oResizeBuffers1_SL != nullptr && !reInit)
+	if (oResizeBuffers1_SL != nullptr)
+	{
 		DetourDetach(&(PVOID&)oResizeBuffers1_SL, hkResizeBuffers1_SL);
+		oResizeBuffers1_SL = nullptr;
+	}
 
 	if (oPresent_FSR3 != nullptr)
+	{
 		DetourDetach(&(PVOID&)oPresent_FSR3, hkPresent_FSR3);
+		oPresent_FSR3 = nullptr;
+	}
 
 	if (oPresent1_FSR3 != nullptr)
+	{
 		DetourDetach(&(PVOID&)oPresent1_FSR3, hkPresent1_FSR3);
+		oPresent1_FSR3 = nullptr;
+	}
 
 	if (oResizeBuffers_FSR3 != nullptr)
+	{
 		DetourDetach(&(PVOID&)oResizeBuffers_FSR3, hkResizeBuffers_FSR3);
+		oResizeBuffers_FSR3 = nullptr;
+	}
 
 	if (oResizeBuffers1_FSR3 != nullptr)
+	{
 		DetourDetach(&(PVOID&)oResizeBuffers1_FSR3, hkResizeBuffers1_FSR3);
+		oResizeBuffers1_FSR3 = nullptr;
+	}
 
 	if (oPresent_Mod != nullptr)
+	{
 		DetourDetach(&(PVOID&)oPresent_Mod, hkPresent_Mod);
+		oPresent_Mod = nullptr;
+	}
 
 	if (oPresent1_Mod != nullptr)
+	{
 		DetourDetach(&(PVOID&)oPresent1_Mod, hkPresent1_Mod);
+		oPresent1_Mod = nullptr;
+	}
 
 	if (oResizeBuffers_Mod != nullptr)
+	{
 		DetourDetach(&(PVOID&)oResizeBuffers_Mod, hkResizeBuffers_Mod);
+		oResizeBuffers_Mod = nullptr;
+	}
 
 	if (oResizeBuffers1_Mod != nullptr)
-		DetourDetach(&(PVOID&)oResizeBuffers1_Mod, hkResizeBuffers1_Mod);
-
-	if (oExecuteCommandLists_Dx12 != nullptr && !reInit)
-		DetourDetach(&(PVOID&)oExecuteCommandLists_Dx12, hkExecuteCommandLists_Dx12);
-
-	if (oCreateSwapChain_Dx12 != nullptr)
-		DetourDetach(&(PVOID&)oCreateSwapChain_Dx12, hkCreateSwapChain_Dx12);
-
-	if (oCreateSwapChainForHwnd_Dx12 != nullptr)
-		DetourDetach(&(PVOID&)oCreateSwapChainForHwnd_Dx12, hkCreateSwapChainForHwnd_Dx12);
-
-	if (oCreateSwapChainForComposition_Dx12 != nullptr)
-		DetourDetach(&(PVOID&)oCreateSwapChainForComposition_Dx12, hkCreateSwapChainForComposition_Dx12);
-
-	if (oCreateSwapChainForCoreWindow_Dx12 != nullptr)
-		DetourDetach(&(PVOID&)oCreateSwapChainForCoreWindow_Dx12, hkCreateSwapChainForCoreWindow_Dx12);
-
-	if (oCreateSwapChain_EB != nullptr)
-		DetourDetach(&(PVOID&)oCreateSwapChain_EB, hkCreateSwapChain_EB);
-
-	if (oCreateSwapChainForHwnd_EB != nullptr)
-		DetourDetach(&(PVOID&)oCreateSwapChainForHwnd_EB, hkCreateSwapChainForHwnd_EB);
-
-	if (oCreateSwapChainForComposition_EB != nullptr)
-		DetourDetach(&(PVOID&)oCreateSwapChainForComposition_EB, hkCreateSwapChainForComposition_EB);
-
-	if (oCreateSwapChainForCoreWindow_EB != nullptr)
-		DetourDetach(&(PVOID&)oCreateSwapChainForCoreWindow_EB, hkCreateSwapChainForCoreWindow_EB);
-
-	if (oCreateSwapChain_SL != nullptr)
-		DetourDetach(&(PVOID&)oCreateSwapChain_SL, hkCreateSwapChain_SL);
-
-	if (oCreateSwapChainForHwnd_SL != nullptr)
-		DetourDetach(&(PVOID&)oCreateSwapChainForHwnd_SL, hkCreateSwapChainForHwnd_SL);
-
-	if (oCreateSwapChainForComposition_SL != nullptr)
-		DetourDetach(&(PVOID&)oCreateSwapChainForComposition_SL, hkCreateSwapChainForComposition_SL);
-
-	if (oCreateSwapChainForCoreWindow_SL != nullptr)
-		DetourDetach(&(PVOID&)oCreateSwapChainForCoreWindow_SL, hkCreateSwapChainForCoreWindow_SL);
-
-	if (offxCreateFrameinterpolationSwapchainForHwndDX12_Mod != nullptr)
-		DetourDetach(&(PVOID&)offxCreateFrameinterpolationSwapchainForHwndDX12_Mod, hkffxCreateFrameinterpolationSwapchainForHwndDX12_Mod);
-
-	if (offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3 != nullptr)
-		DetourDetach(&(PVOID&)offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3, hkffxCreateFrameinterpolationSwapchainForHwndDX12_FSR3);
-
-	DetourTransactionCommit();
-
-	offxCreateFrameinterpolationSwapchainForHwndDX12_Mod = nullptr;
-	offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3 = nullptr;
-	oD3D12CreateDevice = nullptr;
-	oCreateCommandQueue = nullptr;
-	oCreateDXGIFactory1 = nullptr;
-	oPresent_FSR3 = nullptr;
-	oPresent1_FSR3 = nullptr;
-	oResizeBuffers_FSR3 = nullptr;
-	oResizeBuffers1_FSR3 = nullptr;
-	oPresent_Mod = nullptr;
-	oPresent1_Mod = nullptr;
-	oResizeBuffers_Mod = nullptr;
-	oResizeBuffers1_Mod = nullptr;
-
-	oCreateSwapChain_Dx12 = nullptr;
-	oCreateSwapChainForHwnd_Dx12 = nullptr;
-	oCreateSwapChainForComposition_Dx12 = nullptr;
-	oCreateSwapChainForCoreWindow_Dx12 = nullptr;
-	oCreateSwapChain_SL = nullptr;
-	oCreateSwapChain_EB = nullptr;
-	oCreateSwapChainForHwnd_EB = nullptr;
-	oCreateSwapChainForComposition_EB = nullptr;
-	oCreateSwapChainForCoreWindow_EB = nullptr;
-	oCreateSwapChainForHwnd_SL = nullptr;
-	oCreateSwapChainForComposition_SL = nullptr;
-	oCreateSwapChainForCoreWindow_SL = nullptr;
-
-	if (!reInit)
 	{
-		oPresent_Dx12 = nullptr;
-		oPresent1_Dx12 = nullptr;
-		oResizeBuffers_Dx12 = nullptr;
-		oResizeBuffers1_Dx12 = nullptr;
+		DetourDetach(&(PVOID&)oResizeBuffers1_Mod, hkResizeBuffers1_Mod);
+		oResizeBuffers1_Mod = nullptr;
+	}
 
-		oPresent_SL = nullptr;
-		oPresent1_SL = nullptr;
-		oResizeBuffers_SL = nullptr;
-		oResizeBuffers1_SL = nullptr;
-
+	if (oExecuteCommandLists_Dx12 != nullptr)
+	{
+		DetourDetach(&(PVOID&)oExecuteCommandLists_Dx12, hkExecuteCommandLists_Dx12);
 		oExecuteCommandLists_Dx12 = nullptr;
 	}
+
+	if (oExecuteCommandLists_SL != nullptr)
+	{
+		DetourDetach(&(PVOID&)oExecuteCommandLists_SL, hkExecuteCommandLists_SL);
+		oExecuteCommandLists_SL = nullptr;
+	}
+
+	if (oCreateSwapChain_Dx12 != nullptr)
+	{
+		DetourDetach(&(PVOID&)oCreateSwapChain_Dx12, hkCreateSwapChain_Dx12);
+		oCreateSwapChain_Dx12 = nullptr;
+	}
+
+	if (oCreateSwapChainForHwnd_Dx12 != nullptr)
+	{
+		DetourDetach(&(PVOID&)oCreateSwapChainForHwnd_Dx12, hkCreateSwapChainForHwnd_Dx12);
+		oCreateSwapChainForHwnd_Dx12 = nullptr;
+	}
+
+	if (oCreateSwapChainForComposition_Dx12 != nullptr)
+	{
+		DetourDetach(&(PVOID&)oCreateSwapChainForComposition_Dx12, hkCreateSwapChainForComposition_Dx12);
+		oCreateSwapChainForComposition_Dx12 = nullptr;
+	}
+
+	if (oCreateSwapChainForCoreWindow_Dx12 != nullptr)
+	{
+		DetourDetach(&(PVOID&)oCreateSwapChainForCoreWindow_Dx12, hkCreateSwapChainForCoreWindow_Dx12);
+		oCreateSwapChainForCoreWindow_Dx12 = nullptr;
+	}
+
+	if (oCreateSwapChain_EB != nullptr)
+	{
+		DetourDetach(&(PVOID&)oCreateSwapChain_EB, hkCreateSwapChain_EB);
+		oCreateSwapChain_EB = nullptr;
+	}
+
+	if (oCreateSwapChainForHwnd_EB != nullptr)
+	{
+		DetourDetach(&(PVOID&)oCreateSwapChainForHwnd_EB, hkCreateSwapChainForHwnd_EB);
+		oCreateSwapChainForHwnd_EB = nullptr;
+	}
+
+	if (oCreateSwapChainForComposition_EB != nullptr)
+	{
+		DetourDetach(&(PVOID&)oCreateSwapChainForComposition_EB, hkCreateSwapChainForComposition_EB);
+		oCreateSwapChainForComposition_EB = nullptr;
+	}
+
+	if (oCreateSwapChainForCoreWindow_EB != nullptr)
+	{
+		DetourDetach(&(PVOID&)oCreateSwapChainForCoreWindow_EB, hkCreateSwapChainForCoreWindow_EB);
+		oCreateSwapChainForCoreWindow_EB = nullptr;
+	}
+
+	if (oCreateSwapChain_SL != nullptr)
+	{
+		DetourDetach(&(PVOID&)oCreateSwapChain_SL, hkCreateSwapChain_SL);
+		oCreateSwapChain_SL = nullptr;
+	}
+
+	if (oCreateSwapChainForHwnd_SL != nullptr)
+	{
+		DetourDetach(&(PVOID&)oCreateSwapChainForHwnd_SL, hkCreateSwapChainForHwnd_SL);
+		oCreateSwapChainForHwnd_SL = nullptr;
+	}
+
+	if (oCreateSwapChainForComposition_SL != nullptr)
+	{
+		DetourDetach(&(PVOID&)oCreateSwapChainForComposition_SL, hkCreateSwapChainForComposition_SL);
+		oCreateSwapChainForComposition_SL = nullptr;
+	}
+
+	if (oCreateSwapChainForCoreWindow_SL != nullptr)
+	{
+		DetourDetach(&(PVOID&)oCreateSwapChainForCoreWindow_SL, hkCreateSwapChainForCoreWindow_SL);
+		oCreateSwapChainForCoreWindow_SL = nullptr;
+	}
+
+	if (offxCreateFrameinterpolationSwapchainForHwndDX12_Mod != nullptr)
+	{
+		DetourDetach(&(PVOID&)offxCreateFrameinterpolationSwapchainForHwndDX12_Mod, hkffxCreateFrameinterpolationSwapchainForHwndDX12_Mod);
+		offxCreateFrameinterpolationSwapchainForHwndDX12_Mod = nullptr;
+	}
+
+	if (offxFsr3ConfigureFrameGeneration_Mod != nullptr)
+	{
+		DetourDetach(&(PVOID&)offxFsr3ConfigureFrameGeneration_Mod, hkffxFsr3ConfigureFrameGeneration_Mod);
+		offxFsr3ConfigureFrameGeneration_Mod = nullptr;
+	}
+
+	if (offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3 != nullptr)
+	{
+		DetourDetach(&(PVOID&)offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3, hkffxCreateFrameinterpolationSwapchainForHwndDX12_FSR3);
+		offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3 = nullptr;
+	}
+
+	if (offxFsr3ConfigureFrameGeneration_FSR3 != nullptr)
+	{
+		DetourDetach(&(PVOID&)offxFsr3ConfigureFrameGeneration_FSR3, hkffxFsr3ConfigureFrameGeneration_FSR3);
+		offxFsr3ConfigureFrameGeneration_FSR3 = nullptr;
+	}
+
+
+	DetourTransactionCommit();
 }
 
 bool ImGuiOverlayDx12::IsInitedDx12()
@@ -2133,7 +2224,7 @@ HWND ImGuiOverlayDx12::Handle()
 
 void ImGuiOverlayDx12::InitDx12(HWND InHandle, ID3D12Device* InDevice)
 {
-	spdlog::info("ImGuiOverlayDx12::RenderImGui_DX12 InitDx12 Handle: {0:X}", (unsigned long)InHandle);
+	spdlog::info("ImGuiOverlayDx12::RenderImGui_DX12 InitDx12 Handle: {0:X}", (ULONG64)InHandle);
 
 	g_pd3dDeviceParam = InDevice;
 
@@ -2149,17 +2240,17 @@ void ImGuiOverlayDx12::InitDx12(HWND InHandle, ID3D12Device* InDevice)
 
 void ImGuiOverlayDx12::ShutdownDx12()
 {
+	spdlog::info("ImGuiOverlayDx12::ShutdownDx12");
+
 	if (_isInited && ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
 		ImGui_ImplDX12_Shutdown();
 
 	ImGuiOverlayBase::Shutdown();
 
 	if (_isInited)
-	{
 		CleanupDeviceD3D12(g_pd3dDeviceParam);
 
-		DeatachAllHooks();
-	}
+	DeatachAllHooks();
 
 	_isInited = false;
 }
@@ -2171,7 +2262,7 @@ void ImGuiOverlayDx12::ReInitDx12(HWND InNewHwnd)
 
 	std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
-	spdlog::info("ImGuiOverlayDx12::ReInitDx12 hwnd: {0:X}", (unsigned long)InNewHwnd);
+	spdlog::info("ImGuiOverlayDx12::ReInitDx12 hwnd: {0:X}", (ULONG64)InNewHwnd);
 
 	if (ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
 		ImGui_ImplDX12_Shutdown();
