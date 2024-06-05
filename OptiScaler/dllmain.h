@@ -1305,7 +1305,7 @@ HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
 {
 	auto result = ptrGetDesc2(This, pDesc);
 
-	if (result == S_OK) // && (pDesc->VendorId == 0x8086 || pDesc->VendorId == 0x1002))
+	if (result == S_OK && (pDesc->VendorId == 0x8086 || pDesc->VendorId == 0x1002 || pDesc->VendorId == 0x10de))
 	{
 		pDesc->VendorId = 0x10de;
 		pDesc->DeviceId = 0x2684;
@@ -1325,7 +1325,7 @@ HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
 {
 	auto result = ptrGetDesc1(This, pDesc);
 
-	if (result == S_OK) // && pDesc->VendorId == 0x8086 || pDesc->VendorId == 0x1002)
+	if (result == S_OK && (pDesc->VendorId == 0x8086 || pDesc->VendorId == 0x1002 || pDesc->VendorId == 0x10de))
 	{
 		pDesc->VendorId = 0x10de;
 		pDesc->DeviceId = 0x2684;
@@ -1345,7 +1345,7 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
 {
 	auto result = ptrGetDesc(This, pDesc);
 
-	if (result == S_OK) // && (pDesc->VendorId == 0x8086 || pDesc->VendorId == 0x1002))
+	if (result == S_OK && (pDesc->VendorId == 0x8086 || pDesc->VendorId == 0x1002 || pDesc->VendorId == 0x10de))
 	{
 		pDesc->VendorId = 0x10de;
 		pDesc->DeviceId = 0x2684;
@@ -1369,7 +1369,7 @@ HRESULT WINAPI detEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, 
 {
 	AttachToFactory(This);
 
-	IDXGIAdapter* adapter;
+	IDXGIAdapter* adapter = nullptr;
 	auto result = ptrEnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, (void**)&adapter);
 
 	if (result == S_OK)
@@ -1385,7 +1385,7 @@ HRESULT WINAPI detEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFII
 {
 	AttachToFactory(This);
 
-	IDXGIAdapter* adapter;
+	IDXGIAdapter* adapter = nullptr;
 	auto result = ptrEnumAdapterByLuid(This, AdapterLuid, riid, (void**)&adapter);
 
 	if (result == S_OK)
@@ -1401,7 +1401,7 @@ HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1
 {
 	AttachToFactory(This);
 
-	IDXGIAdapter1* adapter;
+	IDXGIAdapter1* adapter = nullptr;
 	auto result = ptrEnumAdapters1(This, Adapter, &adapter);
 
 	if (result == S_OK)
@@ -1417,7 +1417,7 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
 {
 	AttachToFactory(This);
 
-	IDXGIAdapter* adapter;
+	IDXGIAdapter* adapter = nullptr;
 	auto result = ptrEnumAdapters(This, Adapter, &adapter);
 
 	if (result == S_OK)
