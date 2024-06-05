@@ -13,7 +13,6 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 		return false;
 	}
 
-	HRESULT result;
 	NVSDK_NGX_Result nvResult;
 	bool initResult = false;
 
@@ -60,35 +59,35 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 
 		}
 
-		if (_AllocateParameters != nullptr)
-		{
-			spdlog::debug("DLSSFeatureDx12::Init _AllocateParameters will be used");
+		//if (_AllocateParameters != nullptr)
+		//{
+		//	spdlog::debug("DLSSFeatureDx12::Init _AllocateParameters will be used");
 
-			nvResult = _AllocateParameters(&Parameters);
+		//	nvResult = _AllocateParameters(&Parameters);
 
-			if (nvResult != NVSDK_NGX_Result_Success)
-			{
-				spdlog::error("DLSSFeatureDx12::Init _AllocateParameters result: {0:X}", (unsigned int)nvResult);
-				break;
-			}
-		}
-		else if (_GetParameters != nullptr)
-		{
-			spdlog::debug("DLSSFeatureDx12::Init _GetParameters will be used");
+		//	if (nvResult != NVSDK_NGX_Result_Success)
+		//	{
+		//		spdlog::error("DLSSFeatureDx12::Init _AllocateParameters result: {0:X}", (unsigned int)nvResult);
+		//		break;
+		//	}
+		//}
+		//else if (_GetParameters != nullptr)
+		//{
+		//	spdlog::debug("DLSSFeatureDx12::Init _GetParameters will be used");
 
-			nvResult = _GetParameters(&Parameters);
+		//	nvResult = _GetParameters(&Parameters);
 
-			if (nvResult != NVSDK_NGX_Result_Success)
-			{
-				spdlog::error("DLSSFeatureDx12::Init _GetParameters result: {0:X}", (unsigned int)nvResult);
-				break;
-			}
-		}
-		else
-		{
-			spdlog::error("DLSSFeatureDx12::Init _AllocateParameters and _GetParameters are both nullptr!");
-			break;
-		}
+		//	if (nvResult != NVSDK_NGX_Result_Success)
+		//	{
+		//		spdlog::error("DLSSFeatureDx12::Init _GetParameters result: {0:X}", (unsigned int)nvResult);
+		//		break;
+		//	}
+		//}
+		//else
+		//{
+		//	spdlog::error("DLSSFeatureDx12::Init _AllocateParameters and _GetParameters are both nullptr!");
+		//	break;
+		//}
 
 		spdlog::info("DLSSFeatureDx12::Evaluate Creating DLSS feature");
 
@@ -352,52 +351,52 @@ DLSSFeatureDx12::DLSSFeatureDx12(unsigned int InHandleId, const NVSDK_NGX_Parame
 		_EvaluateFeature = (PFN_NVSDK_NGX_D3D12_EvaluateFeature)GetProcAddress(NVNGX(), "NVSDK_NGX_D3D12_EvaluateFeature");
 
 	if (_Init_with_ProjectID)
-		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _Init_with_ProjectID ptr: {0:X}", (unsigned long)_Init_with_ProjectID);
+		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _Init_with_ProjectID ptr: {0:X}", (ULONG64)_Init_with_ProjectID);
 	else
 		spdlog::warn("DLSSFeatureDx12::DLSSFeatureDx12 _Init_with_ProjectID ptr: nullptr");
 
 	if (_Init_with_ProjectID)
-		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _Init_Ext ptr: {0:X}", (unsigned long)_Init_Ext);
+		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _Init_Ext ptr: {0:X}", (ULONG64)_Init_Ext);
 	else
 		spdlog::warn("DLSSFeatureDx12::DLSSFeatureDx12 _Init_Ext ptr: nullptr");
 
 	if (_Init_with_ProjectID)
-		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _Shutdown ptr: {0:X}", (unsigned long)_Shutdown);
+		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _Shutdown ptr: {0:X}", (ULONG64)_Shutdown);
 	else
 		spdlog::warn("DLSSFeatureDx12::DLSSFeatureDx12 _Shutdown ptr: nullptr");
 
 	if (_Init_with_ProjectID)
-		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _Shutdown1 ptr: {0:X}", (unsigned long)_Shutdown1);
+		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _Shutdown1 ptr: {0:X}", (ULONG64)_Shutdown1);
 	else
 		spdlog::warn("DLSSFeatureDx12::DLSSFeatureDx12 _Shutdown1 ptr: nullptr");
 
 	if (_Init_with_ProjectID)
-		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _GetParameters ptr: {0:X}", (unsigned long)_GetParameters);
+		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _GetParameters ptr: {0:X}", (ULONG64)_GetParameters);
 	else
 		spdlog::warn("DLSSFeatureDx12::DLSSFeatureDx12 _GetParameters ptr: nullptr");
 
 	if (_Init_with_ProjectID)
-		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _AllocateParameters ptr: {0:X}", (unsigned long)_AllocateParameters);
+		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _AllocateParameters ptr: {0:X}", (ULONG64)_AllocateParameters);
 	else
 		spdlog::warn("DLSSFeatureDx12::DLSSFeatureDx12 _AllocateParameters ptr: nullptr");
 
 	if (_Init_with_ProjectID)
-		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _DestroyParameters ptr: {0:X}", (unsigned long)_DestroyParameters);
+		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _DestroyParameters ptr: {0:X}", (ULONG64)_DestroyParameters);
 	else
 		spdlog::warn("DLSSFeatureDx12::DLSSFeatureDx12 _DestroyParameters ptr: nullptr");
 
 	if (_Init_with_ProjectID)
-		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _CreateFeature ptr: {0:X}", (unsigned long)_CreateFeature);
+		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _CreateFeature ptr: {0:X}", (ULONG64)_CreateFeature);
 	else
 		spdlog::warn("DLSSFeatureDx12::DLSSFeatureDx12 _CreateFeature ptr: nullptr");
 
 	if (_Init_with_ProjectID)
-		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _ReleaseFeature ptr: {0:X}", (unsigned long)_ReleaseFeature);
+		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _ReleaseFeature ptr: {0:X}", (ULONG64)_ReleaseFeature);
 	else
 		spdlog::warn("DLSSFeatureDx12::DLSSFeatureDx12 _ReleaseFeature ptr: nullptr");
 
 	if (_Init_with_ProjectID)
-		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _EvaluateFeature ptr: {0:X}", (unsigned long)_EvaluateFeature);
+		spdlog::trace("DLSSFeatureDx12::DLSSFeatureDx12 _EvaluateFeature ptr: {0:X}", (ULONG64)_EvaluateFeature);
 	else
 		spdlog::warn("DLSSFeatureDx12::DLSSFeatureDx12 _EvaluateFeature ptr: nullptr");
 
