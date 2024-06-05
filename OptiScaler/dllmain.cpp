@@ -123,7 +123,9 @@ HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 	for (size_t i = 0; i < lcaseLibName.size(); i++)
 		lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
-	std::string lcaseLibNameA(lcaseLibName.begin(), lcaseLibName.end());
+
+	std::string lcaseLibNameA(lcaseLibName.length(), 0);
+	std::transform(lcaseLibName.begin(), lcaseLibName.end(), lcaseLibNameA.begin(), [](wchar_t c) { return (char)c; });
 
 	size_t pos;
 
@@ -249,7 +251,8 @@ HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 	for (size_t i = 0; i < lcaseLibName.size(); i++)
 		lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
-	std::string lcaseLibNameA(lcaseLibName.begin(), lcaseLibName.end());
+	std::string lcaseLibNameA(lcaseLibName.length(), 0);
+	std::transform(lcaseLibName.begin(), lcaseLibName.end(), lcaseLibNameA.begin(), [](wchar_t c) { return (char)c; });
 
 	size_t pos;
 
@@ -384,7 +387,7 @@ void AttachHooks()
 
 		if (o_LoadLibraryExW)
 			DetourAttach(&(PVOID&)o_LoadLibraryExW, hkLoadLibraryExW);
-
+			
 		DetourTransactionCommit();
 	}
 }
