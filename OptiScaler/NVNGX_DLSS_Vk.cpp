@@ -13,6 +13,7 @@
 #include "NVNGX_Parameter.h"
 
 #include "imgui/imgui_overlay_vk.h"
+#include "imgui/imgui_overlay_dx12.h"
 
 VkInstance vkInstance;
 VkPhysicalDevice vkPD;
@@ -51,7 +52,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 
 	// No Man's Sky sends InFeatureInfo & InSDKVersion in wrong order 
 	// To prevent access violation added this check
-	if (InFeatureInfo != nullptr && (unsigned long)InFeatureInfo > 0x000001F)
+	if (InFeatureInfo != nullptr && (ULONG64)InFeatureInfo > 0x000001F)
 	{
 		if (InSDKVersion > 0x0000013)
 			Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
@@ -70,21 +71,26 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 	{
 		Config::Instance()->NVNGX_FeatureInfo = nullptr;
 
-		if ((unsigned long)InFeatureInfo < 0x000001F)
+		if ((ULONG64)InFeatureInfo < 0x000001F)
 			Config::Instance()->NVNGX_Version = (NVSDK_NGX_Version)(unsigned long)InFeatureInfo;
 	}
 
 	spdlog::info("NVSDK_NGX_VULKAN_Init InApplicationId: {0}", InApplicationId);
 	spdlog::info("NVSDK_NGX_VULKAN_Init InSDKVersion: {0:x}", (unsigned int)InSDKVersion);
 	std::wstring string(InApplicationDataPath);
-	std::string str(string.begin(), string.end());
+
+	std::string str(string.length(), 0);
+	std::transform(string.begin(), string.end(), str.begin(), [](wchar_t c) { return (char)c; });
+
 	spdlog::debug("NVSDK_NGX_VULKAN_Init InApplicationDataPath {0}", str);
 
 	if (Config::Instance()->NVNGX_FeatureInfo_Paths.size() > 0)
 	{
 		for (size_t i = 0; i < Config::Instance()->NVNGX_FeatureInfo_Paths.size(); ++i)
 		{
-			std::string str(Config::Instance()->NVNGX_FeatureInfo_Paths[i].begin(), Config::Instance()->NVNGX_FeatureInfo_Paths[i].end());
+			std::string str(Config::Instance()->NVNGX_FeatureInfo_Paths[i].length(), 0);
+			std::transform(Config::Instance()->NVNGX_FeatureInfo_Paths[i].begin(), Config::Instance()->NVNGX_FeatureInfo_Paths[i].end(), str.begin(), [](wchar_t c) { return (char)c; });
+
 			spdlog::debug("NVSDK_NGX_VULKAN_Init PathListInfo[{0}]: {1}", i, str);
 		}
 	}
@@ -360,6 +366,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 	if (Config::Instance()->OverlayMenu.value_or(true) && Config::Instance()->CurrentFeature != nullptr && !ImGuiOverlayVk::IsInitedVk() &&
 		Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(90))
 	{
+		ImGuiOverlayDx12::ShutdownDx12();
 		auto hwnd = Util::GetProcessWindow();
 		ImGuiOverlayVk::InitVk(hwnd, vkDevice, vkInstance, vkPD);
 	}

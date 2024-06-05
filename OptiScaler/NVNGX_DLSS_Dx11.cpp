@@ -12,6 +12,7 @@
 #include "backends/xess/XeSSFeature_Dx11.h"
 
 #include "imgui/imgui_overlay_dx11.h"
+#include "imgui/imgui_overlay_dx12.h"
 
 #include <ankerl/unordered_dense.h>
 
@@ -36,7 +37,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
 	spdlog::info("NVSDK_NGX_D3D11_Init_Ext AppId: {0}", InApplicationId);
 	spdlog::info("NVSDK_NGX_D3D11_Init_Ext SDK: {0:x}", (int)InSDKVersion);
 	std::wstring string(InApplicationDataPath);
-	std::string str(string.begin(), string.end());
+
+	std::string str(string.length(), 0);
+	std::transform(string.begin(), string.end(), str.begin(), [](wchar_t c) { return (char)c; });
+	
 	spdlog::debug("NVSDK_NGX_D3D11_Init_Ext InApplicationDataPath {0}", str);
 
 	Config::Instance()->NVNGX_FeatureInfo_Paths.clear();
@@ -47,7 +51,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
 		{
 			const wchar_t* path = InFeatureInfo->PathListInfo.Path[i];
 			std::wstring iniPathW(path);
-			std::string iniPath(iniPathW.begin(), iniPathW.end());
+
+			std::string iniPath(iniPathW.length(), 0);
+			std::transform(iniPathW.begin(), iniPathW.end(), iniPath.begin(), [](wchar_t c) { return (char)c; });
+
 			Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(iniPathW);
 			spdlog::debug("NVSDK_NGX_D3D11_Init_Ext PathListInfo[{0}]: {1}", i, iniPath);
 
@@ -392,6 +399,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 		Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(90) &&
 		!ImGuiOverlayDx11::IsInitedDx11())
 	{
+		ImGuiOverlayDx12::ShutdownDx12();
+
 		auto hwnd = Util::GetProcessWindow();
 		HWND consoleWindow = GetConsoleWindow();
 		bool consoleAllocated = false;
