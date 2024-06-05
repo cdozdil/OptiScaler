@@ -361,14 +361,7 @@ std::optional<std::string> Config::readString(std::string section, std::string k
 	std::string value = ini.GetValue(section.c_str(), key.c_str(), "auto");
 
 	std::string lower = value;
-	std::transform(
-		lower.begin(), lower.end(),
-		lower.begin(),
-		[](unsigned char c)
-		{
-			return std::tolower(c);
-		}
-	);
+	std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return std::tolower(c); });
 
 	if (lower == "auto")
 	{
