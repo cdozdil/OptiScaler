@@ -182,24 +182,36 @@ void ProcessDx12Resources(const NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Par
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_Color, &d3d12Resource) == NVSDK_NGX_Result_Success)
 		OutParameters->Set(NVSDK_NGX_Parameter_Color, d3d12Resource);
+	else
+		spdlog::error("DLSSFeature::ProcessDx12Resources no color input!");
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_Output, &d3d12Resource) == NVSDK_NGX_Result_Success)
 		OutParameters->Set(NVSDK_NGX_Parameter_Output, d3d12Resource);
+	else
+		spdlog::error("DLSSFeature::ProcessDx12Resources no color output!");
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &d3d12Resource) == NVSDK_NGX_Result_Success)
 		OutParameters->Set(NVSDK_NGX_Parameter_Depth, d3d12Resource);
+	else
+		spdlog::warn("DLSSFeature::ProcessDx12Resources no depth input!");
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &d3d12Resource) == NVSDK_NGX_Result_Success)
 		OutParameters->Set(NVSDK_NGX_Parameter_MotionVectors, d3d12Resource);
+	else
+		spdlog::error("DLSSFeature::ProcessDx12Resources no motion input!");
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_TransparencyMask, &d3d12Resource) == NVSDK_NGX_Result_Success)
 		OutParameters->Set(NVSDK_NGX_Parameter_TransparencyMask, d3d12Resource);
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &d3d12Resource) == NVSDK_NGX_Result_Success)
 		OutParameters->Set(NVSDK_NGX_Parameter_ExposureTexture, d3d12Resource);
+	else
+		spdlog::debug("DLSSFeature::ProcessDx12Resources no exposure input!");
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &d3d12Resource) == NVSDK_NGX_Result_Success)
 		OutParameters->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, d3d12Resource);
+	else
+		spdlog::debug("DLSSFeature::ProcessDx12Resources no mask input!");
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Albedo, &d3d12Resource) == NVSDK_NGX_Result_Success)
 		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Albedo, d3d12Resource);
@@ -467,9 +479,13 @@ void DLSSFeature::ProcessEvaluateParams(const NVSDK_NGX_Parameter* InParameters)
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &floatValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_Jitter_Offset_X, floatValue);
+	else
+		spdlog::error("DLSSFeature::ProcessEvaluateParams no jitter offset x!");
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &floatValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_Jitter_Offset_Y, floatValue);
+	else
+		spdlog::error("DLSSFeature::ProcessEvaluateParams no jitter offset y!");
 
 	// override sharpness
 	if (Config::Instance()->OverrideSharpness.value_or(false) && !(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->RcasEnabled.value_or(false)))
@@ -494,9 +510,19 @@ void DLSSFeature::ProcessEvaluateParams(const NVSDK_NGX_Parameter* InParameters)
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &floatValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_MV_Scale_X, floatValue);
+	else
+	{
+		spdlog::error("DLSSFeature::ProcessEvaluateParams no motion scale x!");
+		Parameters->Set(NVSDK_NGX_Parameter_MV_Scale_X, 1.0f);
+	}
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &floatValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_MV_Scale_Y, floatValue);
+	else
+	{
+		spdlog::error("DLSSFeature::ProcessEvaluateParams no motion scale y!");
+		Parameters->Set(NVSDK_NGX_Parameter_MV_Scale_Y, 1.0f);
+	}
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_TonemapperType, &uintValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_TonemapperType, uintValue);
@@ -742,7 +768,10 @@ void DLSSFeature::GetFeatureCommonInfo(NVSDK_NGX_FeatureCommonInfo* fcInfo)
 	for (size_t i = 0; i < Config::Instance()->NVNGX_FeatureInfo_Paths.size(); ++i)
 	{
 		paths[i] = Config::Instance()->NVNGX_FeatureInfo_Paths[i].c_str();
-		std::string str(Config::Instance()->NVNGX_FeatureInfo_Paths[i].begin(), Config::Instance()->NVNGX_FeatureInfo_Paths[i].end());
+
+		std::string str(Config::Instance()->NVNGX_FeatureInfo_Paths[i].length(), 0);
+		std::transform(Config::Instance()->NVNGX_FeatureInfo_Paths[i].begin(), Config::Instance()->NVNGX_FeatureInfo_Paths[i].end(), str.begin(), [](wchar_t c) { return (char)c; });
+
 		spdlog::debug("DLSSFeature::GetFeatureCommonInfo paths[{0}]: {1}", i, str);
 	}
 
@@ -758,7 +787,7 @@ void DLSSFeature::ReadVersion()
 
 	if (_GetSnippetVersion != nullptr)
 	{
-		spdlog::trace("DLSSFeature::ReadVersion DLSS _GetSnippetVersion ptr: {0:X}", (unsigned long)_GetSnippetVersion);
+		spdlog::trace("DLSSFeature::ReadVersion DLSS _GetSnippetVersion ptr: {0:X}", (ULONG64)_GetSnippetVersion);
 
 		auto result = _GetSnippetVersion();
 
@@ -789,7 +818,7 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 			if (_nvngx)
 			{
 				Config::Instance()->DE_Available = true;
-				spdlog::info("DLSSFeature::DLSSFeature dlss-enabler-ngx.dll loaded from DLSS Enabler, ptr: {0:X}", (unsigned long)_nvngx);
+				spdlog::info("DLSSFeature::DLSSFeature dlss-enabler-ngx.dll loaded from DLSS Enabler, ptr: {0:X}", (ULONG64)_nvngx);
 				_moduleLoaded = true;
 				break;
 			}
@@ -811,7 +840,7 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 
 				if (_nvngx)
 				{
-					spdlog::info("DLSSFeature::DLSSFeature _nvngx.dll loaded from {0}, ptr: {1:X}", path.string(), (unsigned long)_nvngx);
+					spdlog::info("DLSSFeature::DLSSFeature _nvngx.dll loaded from {0}, ptr: {1:X}", path.string(), (ULONG64)_nvngx);
 					_moduleLoaded = true;
 					break;
 				}
@@ -822,7 +851,7 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 
 				if (_nvngx)
 				{
-					spdlog::info("DLSSFeature::DLSSFeature nvngx.dll loaded from {0}, ptr: {1:X}", path.string(), (unsigned long)_nvngx);
+					spdlog::info("DLSSFeature::DLSSFeature nvngx.dll loaded from {0}, ptr: {1:X}", path.string(), (ULONG64)_nvngx);
 					_moduleLoaded = true;
 					break;
 				}
@@ -842,7 +871,7 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 
 				if (_nvngx)
 				{
-					spdlog::info("DLSSFeature::DLSSFeature _nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (unsigned long)_nvngx);
+					spdlog::info("DLSSFeature::DLSSFeature _nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (ULONG64)_nvngx);
 					_moduleLoaded = true;
 					break;
 				}
@@ -854,7 +883,7 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 
 				if (_nvngx)
 				{
-					spdlog::info("DLSSFeature::DLSSFeature nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (unsigned long)_nvngx);
+					spdlog::info("DLSSFeature::DLSSFeature nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (ULONG64)_nvngx);
 					_moduleLoaded = true;
 					break;
 				}
@@ -875,7 +904,7 @@ DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 
 			if (_nvngx)
 			{
-				spdlog::info("DLSSFeature::DLSSFeature _nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (unsigned long)_nvngx);
+				spdlog::info("DLSSFeature::DLSSFeature _nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (ULONG64)_nvngx);
 				_moduleLoaded = true;
 			}
 
