@@ -8,11 +8,11 @@
 #include "../../d3dx/D3DX11tex.h"
 #endif
 
-XeSSFeatureDx11::XeSSFeatureDx11(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : IFeature_Dx11wDx12(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters), XeSSFeature(InHandleId, InParameters)
+XeSSFeatureDx11::XeSSFeatureDx11(unsigned int InHandleId, const IFeatureCreateParams InParameters) : IFeature_Dx11wDx12(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters), XeSSFeature(InHandleId, InParameters)
 {
 }
 
-bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters)
+bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext)
 {
 	spdlog::debug("XeSSFeatureDx11::Init!");
 
@@ -22,15 +22,12 @@ bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 	Device = InDevice;
 	DeviceContext = InContext;
 
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &_initFlags) == NVSDK_NGX_Result_Success)
-		_initFlagsReady = true;
-
 	_baseInit = false;	
 
 	return true;
 }
 
-bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK_NGX_Parameter* InParameters)
+bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const IFeatureEvaluateParams* InParameters)
 {
 	spdlog::debug("XeSSFeatureDx11::Evaluate");
 
@@ -182,23 +179,27 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	xess_result_t xessResult;
 	xess_d3d12_execute_params_t params{};
 
-	InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffsetX);
-	InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffsetY);
+	params.jitterOffsetX = InParams->JitterOffsetX();
+	params.jitterOffsetY = InParams->JitterOffsetY();
+	params.exposureScale = InParams->ExposureScale();
+	params.resetHistory = InParams->Reset() ? 1 : 0;
 
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, &params.exposureScale) != NVSDK_NGX_Result_Success)
-		params.exposureScale = 1.0f;
+	if (InParams->RenderWidth() > 0)
+		params.inputWidth = InParams->RenderWidth();
+	else
+		params.inputWidth = RenderWidth();
 
-	InParameters->Get(NVSDK_NGX_Parameter_Reset, &params.resetHistory);
+	if (InParams->RenderHeight() > 0)
+		params.inputHeight = InParams->RenderHeight();
+	else
+		params.inputHeight = RenderHeight();
 
-	GetRenderResolution(InParameters, &params.inputWidth, &params.inputHeight);
+	spdlog::debug("XeSSFeatureDx12::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
-	auto sharpness = GetSharpness(InParameters);
+	auto sharpness = InParams->Sharpness();
 
-	bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
 
-	spdlog::debug("XeSSFeatureDx11::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
-
-	if (!ProcessDx11Textures(InParameters))
+	if (!BeforeEvaluate(InParameters))
 	{
 		spdlog::error("XeSSFeatureDx11::Evaluate Can't process Dx11 textures!");
 
@@ -228,42 +229,10 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	}
 
 	params.pColorTexture = dx11Color.Dx12Resource;
-
-	_hasColor = params.pColorTexture != nullptr;
 	params.pVelocityTexture = dx11Mv.Dx12Resource;
-	_hasMV = params.pVelocityTexture != nullptr;
-
-	if (useSS)
-	{
-		if (OutputScaler->CreateBufferResource(Dx12Device, dx11Out.Dx12Resource, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
-		{
-			OutputScaler->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-			params.pOutputTexture = OutputScaler->Buffer();
-		}
-		else
-			params.pOutputTexture = dx11Out.Dx12Resource;
-	}
-	else
-	{
-		params.pOutputTexture = dx11Out.Dx12Resource;
-	}
-
-	// RCAS
-	if (Config::Instance()->RcasEnabled.value_or(true) &&
-		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
-		RCAS->IsInit() && RCAS->CreateBufferResource(Dx12Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
-	{
-		RCAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		params.pOutputTexture = RCAS->Buffer();
-	}
-
-	_hasOutput = params.pOutputTexture != nullptr;
 	params.pDepthTexture = dx11Depth.Dx12Resource;
-	_hasDepth = params.pDepthTexture != nullptr;
 	params.pExposureScaleTexture = dx11Exp.Dx12Resource;
-	_hasExposure = params.pExposureScaleTexture != nullptr;
 	params.pResponsivePixelMaskTexture = dx11Tm.Dx12Resource;
-	_hasTM = params.pResponsivePixelMaskTexture != nullptr;
 
 	spdlog::debug("XeSSFeatureDx11::Evaluate Textures -> params complete!");
 

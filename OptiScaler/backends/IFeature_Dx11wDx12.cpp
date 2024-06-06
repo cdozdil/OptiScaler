@@ -389,11 +389,11 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
 	return S_OK;
 }
 
-bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParameters)
+bool IFeature_Dx11wDx12::BeforeEvaluate(const IFeatureEvaluateParams* InParams, ID3D12Resource* OutputTexture)
 {
 	HRESULT result;
 
-	// Query only
+	// Query sync
 	if (Config::Instance()->TextureSyncMethod.value_or(1) == 5 || _frameCount < 200)
 	{
 		if (queryTextureCopy == nullptr)
@@ -417,10 +417,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
 #pragma region Texture copies
 
-	ID3D11Resource* paramColor;
-	if (InParameters->Get(NVSDK_NGX_Parameter_Color, &paramColor) != NVSDK_NGX_Result_Success)
-		InParameters->Get(NVSDK_NGX_Parameter_Color, (void**)&paramColor);
-
+	auto paramColor = (ID3D11Resource*)InParams->InputColor();
 	if (paramColor)
 	{
 		spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Color exist..");
@@ -433,10 +430,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 		return false;
 	}
 
-	ID3D11Resource* paramMv;
-	if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramMv) != NVSDK_NGX_Result_Success)
-		InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramMv);
-
+	auto paramMv = (ID3D11Resource*)InParams->InputMotion();
 	if (paramMv)
 	{
 		spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures MotionVectors exist..");
@@ -449,9 +443,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 		return false;
 	}
 
-	if (InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput[_frameCount % 2]) != NVSDK_NGX_Result_Success)
-		InParameters->Get(NVSDK_NGX_Parameter_Output, (void**)&paramOutput[_frameCount % 2]);
-
+	paramOutput[_frameCount % 2] = (ID3D11Resource*)InParams->OutputColor();
 	if (paramOutput[_frameCount % 2])
 	{
 		spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Output exist..");
@@ -464,10 +456,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 		return false;
 	}
 
-	ID3D11Resource* paramDepth;
-	if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
-		InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
-
+	auto paramDepth = (ID3D11Resource*)InParams->InputDepth();
 	if (paramDepth)
 	{
 		spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Depth exist..");
@@ -475,14 +464,13 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 			return false;
 	}
 	else
+	{
 		spdlog::error("IFeature_Dx11wDx12::Evaluate Depth not exist!!");
+	}
 
-	ID3D11Resource* paramExposure = nullptr;
+	auto paramExposure = (ID3D11Resource*)InParams->InputExposure();
 	if (!Config::Instance()->AutoExposure.value_or(false))
 	{
-		if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExposure) != NVSDK_NGX_Result_Success)
-			InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&paramExposure);
-
 		if (paramExposure)
 		{
 			spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures ExposureTexture exist..");
@@ -498,14 +486,13 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 		}
 	}
 	else
+	{
 		spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures AutoExposure enabled!");
+	}
 
-	ID3D11Resource* paramMask = nullptr;
+	ID3D11Resource* paramMask = (ID3D11Resource*)InParams->InputMask();
 	if (!Config::Instance()->DisableReactiveMask.value_or(true))
 	{
-		if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramMask) != NVSDK_NGX_Result_Success)
-			InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramMask);
-
 		if (paramMask)
 		{
 			spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Bias mask exist..");
@@ -525,7 +512,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
 #pragma endregion
 
-	// query sync
+	// Query sync
 	if (Config::Instance()->TextureSyncMethod.value_or(1) == 5 || _frameCount < 200)
 	{
 		spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Queries!");
@@ -727,10 +714,36 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
 #pragma endregion
 
+	auto useOutputScaling = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(_createParams.DisplayResolutionMV());
+
+	if (useOutputScaling)
+	{
+		if (OutputScaler->CreateBufferResource(Dx12Device, dx11Out.Dx12Resource, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		{
+			OutputScaler->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			OutputTexture = OutputScaler->Buffer();
+		}
+		else
+			OutputTexture = dx11Out.Dx12Resource;
+	}
+	else
+	{
+		OutputTexture = dx11Out.Dx12Resource;
+	}
+
+	// RCAS
+	if (Config::Instance()->RcasEnabled.value_or(UseRcas()) &&
+		(InParams->Sharpness() > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+		RCAS->IsInit() && RCAS->CreateBufferResource(Dx12Device, OutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+	{
+		RCAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		OutputTexture = RCAS->Buffer();
+	}
+
 	return true;
 }
 
-bool IFeature_Dx11wDx12::CopyBackOutput()
+bool IFeature_Dx11wDx12::AfterEvaluate(const IFeatureEvaluateParams* InParams, ID3D12Resource* OutputTexture)
 {
 	HRESULT result;
 
@@ -922,7 +935,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 	return true;
 }
 
-bool IFeature_Dx11wDx12::BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters)
+bool IFeature_Dx11wDx12::BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* InContext)
 {
 	spdlog::debug("IFeature_Dx11wDx12::BaseInit!");
 
@@ -961,10 +974,7 @@ bool IFeature_Dx11wDx12::BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* I
 		auto fl = Dx11Device->GetFeatureLevel();
 		auto result = CreateDx12Device(fl);
 
-		//spdlog::trace("IFeature_Dx11wDx12::BaseInit sleeping after CreateDx12Device for 500ms");
-		//std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-		if (result != S_OK || Dx12Device == nullptr)
+			if (result != S_OK || Dx12Device == nullptr)
 		{
 			spdlog::error("IFeature_Dx11wDx12::BaseInit QueryInterface Dx12Device result: {0:x}", result);
 			return false;
@@ -974,7 +984,7 @@ bool IFeature_Dx11wDx12::BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* I
 	return true;
 }
 
-IFeature_Dx11wDx12::IFeature_Dx11wDx12(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters)
+IFeature_Dx11wDx12::IFeature_Dx11wDx12(unsigned int InHandleId, const IFeatureCreateParams InParameters) : IFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters)
 {
 }
 
@@ -1014,4 +1024,10 @@ IFeature_Dx11wDx12::~IFeature_Dx11wDx12()
 	}
 
 	ReleaseSharedResources();
+
+	if (OutputScaler != nullptr && OutputScaler.get() != nullptr)
+		OutputScaler.reset();
+
+	if (RCAS != nullptr && RCAS.get() != nullptr)
+		RCAS.reset();
 }

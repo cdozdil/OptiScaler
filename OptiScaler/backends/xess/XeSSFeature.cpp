@@ -8,12 +8,12 @@
 #include "XeSSFeature.h"
 #include "../../d3dx/d3dx12.h"
 
-inline void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
+inline static void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
 {
 	spdlog::log((spdlog::level::level_enum)((int)Level + 1), "FeatureContext::LogCallback XeSS Runtime ({0})", Message);
 }
 
-bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters)
+bool XeSSFeature::InitXeSS(ID3D12Device* device, const IFeatureCreateParams InParams)
 {
 	spdlog::debug("XeSSFeature::InitXeSS!");
 
@@ -60,31 +60,14 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 	xessParams.initFlags = XESS_INIT_FLAG_NONE;
 
-	unsigned int featureFlags = 0;
-	if (!_initFlagsReady)
-	{
-		InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);
-		_initFlags = featureFlags;
-		_initFlagsReady = true;
-	}
-	else
-		featureFlags = _initFlags;
-
-	bool Hdr = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
-	bool EnableSharpening = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
-	bool DepthInverted = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
-	bool JitterMotion = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
-	bool LowRes = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
-	bool AutoExposure = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
-
-	if (Config::Instance()->DepthInverted.value_or(DepthInverted))
+	if (Config::Instance()->DepthInverted.value_or(InParams.DepthInverted()))
 	{
 		Config::Instance()->DepthInverted = true;
 		xessParams.initFlags |= XESS_INIT_FLAG_INVERTED_DEPTH;
 		spdlog::info("XeSSFeature::InitXeSS xessParams.initFlags (DepthInverted) {0:b}", xessParams.initFlags);
 	}
 
-	if (Config::Instance()->AutoExposure.value_or(AutoExposure))
+	if (Config::Instance()->AutoExposure.value_or(InParams.AutoExposure()))
 	{
 		Config::Instance()->AutoExposure = true;
 		xessParams.initFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
@@ -97,7 +80,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		spdlog::info("XeSSFeature::InitXeSS xessParams.initFlags (!AutoExposure) {0:b}", xessParams.initFlags);
 	}
 
-	if (!Config::Instance()->HDR.value_or(Hdr))
+	if (!Config::Instance()->HDR.value_or(InParams.Hdr()))
 	{
 		Config::Instance()->HDR = false;
 		xessParams.initFlags |= XESS_INIT_FLAG_LDR_INPUT_COLOR;
@@ -109,14 +92,14 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		spdlog::info("XeSSFeature::InitXeSS xessParams.initFlags (HDR) {0:b}", xessParams.initFlags);
 	}
 
-	if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
+	if (Config::Instance()->JitterCancellation.value_or(InParams.JitterCancellation()))
 	{
 		Config::Instance()->JitterCancellation = true;
 		xessParams.initFlags |= XESS_INIT_FLAG_JITTERED_MV;
 		spdlog::info("XeSSFeature::InitXeSS xessParams.initFlags (JitterCancellation) {0:b}", xessParams.initFlags);
 	}
 
-	if (Config::Instance()->DisplayResolution.value_or(!LowRes))
+	if (Config::Instance()->DisplayResolution.value_or(InParams.DisplayResolutionMV()))
 	{
 		xessParams.initFlags |= XESS_INIT_FLAG_HIGH_RES_MV;
 		spdlog::info("XeSSFeature::InitXeSS xessParams.initFlags (!LowResMV) {0:b}", xessParams.initFlags);
@@ -133,9 +116,9 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		spdlog::info("XeSSFeature::InitXeSS xessParams.initFlags (ReactiveMaskActive) {0:b}", xessParams.initFlags);
 	}
 
-	switch (PerfQualityValue())
+	switch (InParams.QualityPreset())
 	{
-	case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
+	case UltraPerformance:
 		if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
 		else
@@ -143,7 +126,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 		break;
 
-	case NVSDK_NGX_PerfQuality_Value_MaxPerf:
+	case Performance:
 		if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
 		else
@@ -151,7 +134,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 		break;
 
-	case NVSDK_NGX_PerfQuality_Value_Balanced:
+	case Balanced:
 		if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
 		else
@@ -159,7 +142,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 		break;
 
-	case NVSDK_NGX_PerfQuality_Value_MaxQuality:
+	case Quality:
 		if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
 		else
@@ -167,7 +150,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 		break;
 
-	case NVSDK_NGX_PerfQuality_Value_UltraQuality:
+	case UltraQuality:
 		if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY_PLUS;
 		else
@@ -175,7 +158,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 		break;
 
-	case NVSDK_NGX_PerfQuality_Value_DLAA:
+	case NativeAA:
 		if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
 			xessParams.qualitySetting = XESS_QUALITY_SETTING_AA;
 		else
@@ -188,33 +171,8 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		break;
 	}
 
-	if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
-	{
-		float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
-
-		if (ssMulti < 0.5f)
-		{
-			ssMulti = 0.5f;
-			Config::Instance()->OutputScalingMultiplier = ssMulti;
-		}
-		else if (ssMulti > 3.0f)
-		{
-			ssMulti = 3.0f;
-			Config::Instance()->OutputScalingMultiplier = ssMulti;
-		}
-
-		_targetWidth = DisplayWidth() * ssMulti;
-		_targetHeight = DisplayHeight() * ssMulti;
-	}
-	else
-	{
-		_targetWidth = DisplayWidth();
-		_targetHeight = DisplayHeight();
-	}
-
 	xessParams.outputResolution.x = TargetWidth();
 	xessParams.outputResolution.y = TargetHeight();
-
 
 	// create heaps to prevent create heap errors of xess
 	if (Config::Instance()->CreateHeaps.value_or(true))
@@ -332,7 +290,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	return true;
 }
 
-XeSSFeature::XeSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
+XeSSFeature::XeSSFeature(unsigned int handleId, const IFeatureCreateParams InParams) : IFeature(handleId, InParams)
 {
 	PRN_xessGetVersion ptrMemoryGetVersion = (PRN_xessGetVersion)DetourFindFunction("libxess.dll", "xessGetVersion");
 	PRN_xessGetVersion ptrDllGetVersion = nullptr;
@@ -346,7 +304,7 @@ XeSSFeature::XeSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 		// get it's version to compare with dll
 		ptrMemoryGetVersion(&memoryVersion);
 
-		spdlog::info("XeSSFeature::XeSSFeature libxess.dll v{0}.{1}.{2} already loaded.", memoryVersion.major, memoryVersion.minor, memoryVersion.patch);
+		spdlog::info("XeSSFeature::XeSSFeature DetourFindFunction loaded libxess.dll v{0}.{1}.{2}.", memoryVersion.major, memoryVersion.minor, memoryVersion.patch);
 
 		_xessD3D12CreateContext = (PFN_xessD3D12CreateContext)DetourFindFunction("libxess.dll", "xessD3D12CreateContext");
 		_xessD3D12BuildPipelines = (PFN_xessD3D12BuildPipelines)DetourFindFunction("libxess.dll", "xessD3D12BuildPipelines");
@@ -368,14 +326,26 @@ XeSSFeature::XeSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InPar
 	if (Config::Instance()->XeSSLibrary.has_value())
 	{
 		std::filesystem::path cfgPath(Config::Instance()->XeSSLibrary.value().c_str());
-		cfgPath = cfgPath / L"libxess.dll";
-		_libxess = LoadLibraryW(cfgPath.c_str());
+		auto loadPath = cfgPath / L"opti.libxess.dll";
+		_libxess = LoadLibraryW(loadPath.c_str());
+
+		if (_libxess == nullptr)
+		{
+			loadPath = cfgPath / L"libxess.dll";
+			_libxess = LoadLibraryW(loadPath.c_str());
+		}
 	}
 
 	if (_libxess == nullptr)
 	{
-		auto path = Util::DllPath().parent_path() / L"libxess.dll";
+		auto path = Util::DllPath().parent_path() / L"opti.libxess.dll";
 		_libxess = LoadLibraryW(path.c_str());
+
+		if (_libxess == nullptr)
+		{
+			path = Util::DllPath().parent_path() / L"libxess.dll";
+			_libxess = LoadLibraryW(path.c_str());
+		}
 	}
 
 	if (_libxess)
@@ -448,61 +418,5 @@ XeSSFeature::~XeSSFeature()
 
 	if (_moduleLoaded && _libxess != nullptr)
 		FreeLibrary(_libxess);
-}
-
-float XeSSFeature::GetSharpness(const NVSDK_NGX_Parameter* InParameters)
-{
-	if (Config::Instance()->OverrideSharpness.value_or(false))
-		return Config::Instance()->Sharpness.value_or(0.3f);
-
-	float sharpness = 0.0f;
-	InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &sharpness);
-
-	return sharpness;
-}
-
-bool XeSSFeature::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, ID3D12Resource** OutDest, D3D12_RESOURCE_STATES InDestState)
-{
-	if (InDevice == nullptr || InSource == nullptr)
-		return false;
-
-	D3D12_RESOURCE_DESC texDesc = InSource->GetDesc();
-
-	if (*OutDest != nullptr)
-	{
-		auto bufDesc = (*OutDest)->GetDesc();
-
-		if (bufDesc.Width != texDesc.Width || bufDesc.Height != texDesc.Height || bufDesc.Format != texDesc.Format)
-		{
-			(*OutDest)->Release();
-			*OutDest = nullptr;
-		}
-		else
-			return true;
-	}
-
-	spdlog::debug("XeSSFeature::CreateCasBufferResource Start!");
-
-	D3D12_HEAP_PROPERTIES heapProperties;
-	D3D12_HEAP_FLAGS heapFlags;
-	HRESULT hr = InSource->GetHeapProperties(&heapProperties, &heapFlags);
-
-	if (hr != S_OK)
-	{
-		spdlog::error("XeSSFeature::CreateBufferResource GetHeapProperties result: {0:x}", hr);
-		return false;
-	}
-
-	texDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS | D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS;
-
-	hr = InDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, InDestState, nullptr, IID_PPV_ARGS(OutDest));
-
-	if (hr != S_OK)
-	{
-		spdlog::error("XeSSFeature::CreateBufferResource CreateCommittedResource result: {0:x}", hr);
-		return false;
-	}
-
-	return true;
 }
 

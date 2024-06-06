@@ -70,25 +70,25 @@ protected:
 	std::unique_ptr<BS_Dx12> OutputScaler = nullptr;
 	std::unique_ptr<RCAS_Dx12> RCAS = nullptr;
 
-	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel);
 	void GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter);
+	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel);
+	void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
 
 	bool CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutResource, bool InCopy, bool InDepth);
-	bool ProcessDx11Textures(const NVSDK_NGX_Parameter* InParameters);
-	bool CopyBackOutput();
-	
-	void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
 
 	void ReleaseSharedResources();
 	void ReleaseSyncResources();
 
+	bool BeforeEvaluate(const IFeatureEvaluateParams* InParams, ID3D12Resource* OutputTexture);
+	bool AfterEvaluate(const IFeatureEvaluateParams* InParams, ID3D12Resource* OutputTexture);
+
 public:
-	virtual bool Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters) = 0;
-	virtual bool Evaluate(ID3D11DeviceContext* DeviceContext, const NVSDK_NGX_Parameter* InParameters) = 0;
+	virtual bool Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext) = 0;
+	virtual bool Evaluate(ID3D11DeviceContext* DeviceContext, const IFeatureEvaluateParams* InParameters) = 0;
 
-	bool BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters);
+	bool BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* InContext);
 
-	IFeature_Dx11wDx12(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters);
+	IFeature_Dx11wDx12(unsigned int InHandleId, const IFeatureCreateParams InParameters);
 
 	~IFeature_Dx11wDx12();
 };

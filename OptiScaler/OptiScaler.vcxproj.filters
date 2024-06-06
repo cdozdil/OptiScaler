@@ -188,6 +188,9 @@
     <ClInclude Include="backends\IFeatureEvaluateParams.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="backends\IFeatureEvaluateParams_DLSS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -219,9 +222,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="backends\fsr2\FSR2Feature_Vk.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="backends\IFeature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="backends\IFeature_Dx12.cpp">

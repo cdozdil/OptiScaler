@@ -10,10 +10,10 @@ protected:
 	inline static std::unique_ptr<Imgui_Dx11> Imgui = nullptr;
 
 public:
-	virtual bool Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters) = 0;
-	virtual bool Evaluate(ID3D11DeviceContext* DeviceContext, const NVSDK_NGX_Parameter* InParameters) = 0;
+	virtual bool Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext) = 0;
+	virtual bool Evaluate(ID3D11DeviceContext* DeviceContext, const IFeatureEvaluateParams* InParameters) = 0;
 
-	IFeature_Dx11(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters)
+	IFeature_Dx11(unsigned int InHandleId, const IFeatureCreateParams InParams) : IFeature(InHandleId, InParams)
 	{
 	}
 

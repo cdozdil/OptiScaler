@@ -1,5 +1,6 @@
 #pragma once
 #include "../IFeature.h"
+#include "../IFeatureCreateParams.h"
 
 #include "xess_d3d12.h"
 #include "xess_debug.h"
@@ -72,8 +73,7 @@ protected:
 	int dumpCount = 0;
 
 	bool InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters);
-	float GetSharpness(const NVSDK_NGX_Parameter* InParameters);
-	bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, ID3D12Resource** OutDest, D3D12_RESOURCE_STATES InDestState);
+	bool InitXeSS(ID3D12Device* device, const IFeatureCreateParams InParams);
 
 	PFN_xessD3D12CreateContext D3D12CreateContext() const { return _xessD3D12CreateContext; }
 	PFN_xessD3D12BuildPipelines D3D12BuildPipelines() const { return _xessD3D12BuildPipelines; }
@@ -89,10 +89,10 @@ protected:
 	PFN_xessSetVelocityScale SetVelocityScale() const { return _xessSetVelocityScale; }
 
 public:
-	feature_version Version() final { return feature_version{ _xessVersion.major, _xessVersion.minor, _xessVersion.patch }; }
+	FeatureVersion Version() final { return FeatureVersion{ _xessVersion.major, _xessVersion.minor, _xessVersion.patch }; }
 	const char* Name() override { return "XeSS"; }
 
-	XeSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters);
+	XeSSFeature(unsigned int handleId, const IFeatureCreateParams InParameters);
 
 	~XeSSFeature();
 };

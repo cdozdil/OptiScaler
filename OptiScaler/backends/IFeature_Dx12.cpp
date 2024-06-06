@@ -1,5 +1,6 @@
 #pragma once
 #include "IFeature_Dx12.h"
+
 #include "../pch.h"
 
 
@@ -17,7 +18,6 @@ void IFeature_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID
 bool IFeature_Dx12::BeforeEvaluate(ID3D12GraphicsCommandList* InCommandList, const IFeatureEvaluateParams* InParams, ID3D12Resource* OutputTexture)
 {
 	auto useOutputScaling = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(_createParams.DisplayResolutionMV());
-	auto outputScalingMultiplier = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
 
 	auto paramColor = (ID3D12Resource*)InParams->InputColor();
 	auto paramMotion = (ID3D12Resource*)InParams->InputMotion();
@@ -77,9 +77,7 @@ bool IFeature_Dx12::BeforeEvaluate(ID3D12GraphicsCommandList* InCommandList, con
 		paramOutput->SetName(L"paramOutput");
 
 		if (Config::Instance()->OutputResourceBarrier.has_value())
-		{
 			ResourceBarrier(InCommandList, paramOutput, (D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		}
 
 		if (useOutputScaling)
 		{
@@ -89,12 +87,16 @@ bool IFeature_Dx12::BeforeEvaluate(ID3D12GraphicsCommandList* InCommandList, con
 				OutputTexture = OutputScaler->Buffer();
 			}
 			else
+			{
 				OutputTexture = paramOutput;
+			}
 		}
 		else
+		{
 			OutputTexture = paramOutput;
+		}
 
-		if (Config::Instance()->RcasEnabled.value_or(true) &&
+		if (Config::Instance()->RcasEnabled.value_or(UseRcas()) &&
 			(InParams->Sharpness() > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
 			RCAS->IsInit() && RCAS->CreateBufferResource(Device, OutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
@@ -188,7 +190,7 @@ void IFeature_Dx12::AfterEvaluate(ID3D12GraphicsCommandList* InCommandList, cons
 	auto paramMask = (ID3D12Resource*)InParams->InputMask();
 
 	// apply rcas
-	if (Config::Instance()->RcasEnabled.value_or(true) &&
+	if (Config::Instance()->RcasEnabled.value_or(UseRcas()) &&
 		(InParams->Sharpness() > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
 		RCAS->CanRender())
 	{
@@ -289,7 +291,7 @@ void IFeature_Dx12::AfterEvaluate(ID3D12GraphicsCommandList* InCommandList, cons
 			(D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value());
 }
 
-IFeature_Dx12::IFeature_Dx12(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters)
+IFeature_Dx12::IFeature_Dx12(unsigned int InHandleId, const IFeatureCreateParams InParameters)
 {
 }
 
@@ -331,4 +333,7 @@ IFeature_Dx12::~IFeature_Dx12()
 
 	if (OutputScaler != nullptr && OutputScaler.get() != nullptr)
 		OutputScaler.reset();
+
+	if (RCAS != nullptr && RCAS.get() != nullptr)
+		RCAS.reset();
 }

@@ -19,17 +19,14 @@ protected:
 	std::unique_ptr<RCAS_Dx12> RCAS = nullptr;
 
 	void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState) const;
-
-public:
-	virtual bool Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters) = 0;
-	virtual bool Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, const IFeatureCreateParams InParams) = 0;
-	virtual bool Evaluate(ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters) = 0;
-	virtual bool Evaluate(ID3D12GraphicsCommandList* InCommandList, const IFeatureEvaluateParams* InParams) = 0;
-
 	bool BeforeEvaluate(ID3D12GraphicsCommandList* InCommandList, const IFeatureEvaluateParams* InParams, ID3D12Resource* OutputTexture);
 	void AfterEvaluate(ID3D12GraphicsCommandList* InCommandList, const IFeatureEvaluateParams* InParams, ID3D12Resource* OutputTexture);
 
-	IFeature_Dx12(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters);
+public:
+	virtual bool Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList) = 0;
+	virtual bool Evaluate(ID3D12GraphicsCommandList* InCommandList, const IFeatureEvaluateParams* InParams) = 0;
+
+	IFeature_Dx12(unsigned int InHandleId, const IFeatureCreateParams InParameters);
 
 	void Shutdown() final;
 
