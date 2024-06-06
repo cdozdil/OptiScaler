@@ -51,6 +51,7 @@ typedef int32_t(WINAPI* PFN_ffxCreateFrameinterpolationSwapchainForHwndDX12)(HWN
 typedef int32_t(WINAPI* PFN_ffxFsr3ConfigureFrameGeneration)(void* context, const FfxFrameGenerationConfig* config);
 
 typedef HRESULT(WINAPI* PFN_CreateCommandQueue)(ID3D12Device* This, const D3D12_COMMAND_QUEUE_DESC* pDesc, REFIID riid, void** ppCommandQueue);
+typedef HRESULT(WINAPI* PFN_CreateDXGIFactory)(REFIID riid, void** ppFactory);
 typedef HRESULT(WINAPI* PFN_CreateDXGIFactory1)(REFIID riid, void** ppFactory);
 typedef HRESULT(WINAPI* PFN_CreateDXGIFactory2)(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFactory);
 
@@ -58,6 +59,7 @@ typedef HRESULT(WINAPI* PFN_CreateDXGIFactory2)(UINT Flags, REFIID riid, _COM_Ou
 // Dx12 early binding
 static PFN_D3D12_CREATE_DEVICE oD3D12CreateDevice = nullptr;
 static PFN_CreateCommandQueue oCreateCommandQueue = nullptr;
+static PFN_CreateDXGIFactory oCreateDXGIFactory = nullptr;
 static PFN_CreateDXGIFactory1 oCreateDXGIFactory1 = nullptr;
 static PFN_CreateDXGIFactory2 oCreateDXGIFactory2 = nullptr;
 static PFN_Release oCommandQueueRelease = nullptr;
@@ -1073,11 +1075,41 @@ static HRESULT WINAPI hkD3D12CreateDevice(IUnknown* pAdapter, D3D_FEATURE_LEVEL 
 	return result;
 }
 
-static HRESULT WINAPI hkCreateDXGIFactory1(REFIID riid, void** ppFactory)
+
+static HRESULT WINAPI hkCreateDXGIFactory(REFIID riid, void** ppFactory)
 {
 	auto result = oCreateDXGIFactory1(riid, ppFactory);
 
 	if (result == S_OK && oCreateSwapChain_EB == nullptr)
+	{
+		auto factory = (IDXGIFactory*)*ppFactory;
+
+
+		void** pFactoryVTable = *reinterpret_cast<void***>(factory);
+
+		oCreateSwapChain_EB = (PFN_CreateSwapChain)pFactoryVTable[10];
+
+		if (oCreateSwapChain_EB != nullptr)
+		{
+			spdlog::info("ImGuiOverlayDx12::hkCreateDXGIFactory Hooking native DXGIFactory");
+
+			DetourTransactionBegin();
+			DetourUpdateThread(GetCurrentThread());
+
+			DetourAttach(&(PVOID&)oCreateSwapChain_EB, hkCreateSwapChain_EB);
+
+			DetourTransactionCommit();
+		}
+	}
+
+	return result;
+}
+
+static HRESULT WINAPI hkCreateDXGIFactory1(REFIID riid, void** ppFactory)
+{
+	auto result = oCreateDXGIFactory1(riid, ppFactory);
+
+	if (result == S_OK && oCreateSwapChainForHwnd_EB == nullptr)
 	{
 		auto factory = (IDXGIFactory*)*ppFactory;
 		IDXGIFactory4* factory4 = nullptr;
@@ -1086,19 +1118,27 @@ static HRESULT WINAPI hkCreateDXGIFactory1(REFIID riid, void** ppFactory)
 		{
 			void** pFactoryVTable = *reinterpret_cast<void***>(factory4);
 
-			oCreateSwapChain_EB = (PFN_CreateSwapChain)pFactoryVTable[10];
+			bool skip = false;
+
+			if (oCreateSwapChain_EB == nullptr)
+				oCreateSwapChain_EB = (PFN_CreateSwapChain)pFactoryVTable[10];
+			else
+				skip = true;
+
 			oCreateSwapChainForHwnd_EB = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
 			oCreateSwapChainForCoreWindow_EB = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
 			oCreateSwapChainForComposition_EB = (PFN_CreateSwapChainForComposition)pFactoryVTable[24];
 
-			if (oCreateSwapChain_EB != nullptr)
+			if (oCreateSwapChainForHwnd_EB != nullptr)
 			{
 				spdlog::info("ImGuiOverlayDx12::hkCreateDXGIFactory1 Hooking native DXGIFactory");
 
 				DetourTransactionBegin();
 				DetourUpdateThread(GetCurrentThread());
 
-				DetourAttach(&(PVOID&)oCreateSwapChain_EB, hkCreateSwapChain_EB);
+				if (!skip)
+					DetourAttach(&(PVOID&)oCreateSwapChain_EB, hkCreateSwapChain_EB);
+
 				DetourAttach(&(PVOID&)oCreateSwapChainForHwnd_EB, hkCreateSwapChainForHwnd_EB);
 				DetourAttach(&(PVOID&)oCreateSwapChainForCoreWindow_EB, hkCreateSwapChainForCoreWindow_EB);
 				DetourAttach(&(PVOID&)oCreateSwapChainForComposition_EB, hkCreateSwapChainForComposition_EB);
@@ -1118,7 +1158,7 @@ static HRESULT WINAPI hkCreateDXGIFactory2(UINT Flags, REFIID riid, _COM_Outptr_
 {
 	auto result = oCreateDXGIFactory2(Flags, riid, ppFactory);
 
-	if (result == S_OK && oCreateSwapChain_EB == nullptr)
+	if (result == S_OK && oCreateSwapChainForHwnd_EB == nullptr)
 	{
 		auto factory = (IDXGIFactory*)*ppFactory;
 		IDXGIFactory4* factory4 = nullptr;
@@ -1127,19 +1167,27 @@ static HRESULT WINAPI hkCreateDXGIFactory2(UINT Flags, REFIID riid, _COM_Outptr_
 		{
 			void** pFactoryVTable = *reinterpret_cast<void***>(factory4);
 
-			oCreateSwapChain_EB = (PFN_CreateSwapChain)pFactoryVTable[10];
+			bool skip = false;
+
+			if (oCreateSwapChain_EB == nullptr)
+				oCreateSwapChain_EB = (PFN_CreateSwapChain)pFactoryVTable[10];
+			else
+				skip = true;
+
 			oCreateSwapChainForHwnd_EB = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
 			oCreateSwapChainForCoreWindow_EB = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
 			oCreateSwapChainForComposition_EB = (PFN_CreateSwapChainForComposition)pFactoryVTable[24];
 
-			if (oCreateSwapChain_EB != nullptr)
+			if (oCreateSwapChainForHwnd_EB != nullptr)
 			{
 				spdlog::info("ImGuiOverlayDx12::hkCreateDXGIFactory1 Hooking native DXGIFactory");
 
 				DetourTransactionBegin();
 				DetourUpdateThread(GetCurrentThread());
 
-				DetourAttach(&(PVOID&)oCreateSwapChain_EB, hkCreateSwapChain_EB);
+				if (!skip)
+					DetourAttach(&(PVOID&)oCreateSwapChain_EB, hkCreateSwapChain_EB);
+
 				DetourAttach(&(PVOID&)oCreateSwapChainForHwnd_EB, hkCreateSwapChainForHwnd_EB);
 				DetourAttach(&(PVOID&)oCreateSwapChainForCoreWindow_EB, hkCreateSwapChainForCoreWindow_EB);
 				DetourAttach(&(PVOID&)oCreateSwapChainForComposition_EB, hkCreateSwapChainForComposition_EB);
@@ -1300,10 +1348,9 @@ static bool CheckFSR3()
 
 static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 {
-	spdlog::info("ImGuiOverlayDx12::CreateDeviceD3D12 Handle: {0:X}", (ULONG64)InHWnd);
+	spdlog::info("ImGuiOverlayDx12::BindAll Handle: {0:X}", (ULONG64)InHWnd);
 
 	HRESULT result;
-
 
 	if (!CheckDx12(InDevice))
 		return false;
@@ -1314,7 +1361,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 	// Uniscaler captures and uses latest swapchain
 	// Avoid creating and hooking swapchains to prevent crashes
 	// If EarlyBind no need to bind again
-	if (!_isEarlyBind && oPresent_Dx12 == nullptr && Config::Instance()->HookD3D12.value_or(true))
+	if (oPresent_Dx12 == nullptr && Config::Instance()->HookD3D12.value_or(true))
 	{
 		// Create device
 		ID3D12Device* device = nullptr;
@@ -1352,7 +1399,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 			return false;
 		}
 
-		if (oCreateSwapChain_Dx12 == nullptr)
+		if (!_isEarlyBind && oCreateSwapChain_Dx12 == nullptr)
 		{
 			void** pFactoryVTable = *reinterpret_cast<void***>(factory);
 
@@ -1389,7 +1436,11 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 			sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
 			// Create SwapChain
-			result = oCreateSwapChainForHwnd_Dx12(factory, cq, InHWnd, &sd, NULL, NULL, &swapChain1);
+			if(_isEarlyBind)
+				result = factory->CreateSwapChainForHwnd(cq, InHWnd, &sd, NULL, NULL, &swapChain1);
+			else
+				result = oCreateSwapChainForHwnd_Dx12(factory, cq, InHWnd, &sd, NULL, NULL, &swapChain1);
+
 			if (result != S_OK)
 			{
 				spdlog::error("ImGuiOverlayDx12::BindAll Dx12 CreateSwapChainForHwnd: {0:X}", (unsigned long)result);
@@ -2300,6 +2351,7 @@ void ImGuiOverlayDx12::EarlyBind()
 	if (dxgiModule == nullptr)
 		return;
 
+	oCreateDXGIFactory = (PFN_CreateDXGIFactory)GetProcAddress(dxgiModule, "CreateDXGIFactory");
 	oCreateDXGIFactory1 = (PFN_CreateDXGIFactory1)GetProcAddress(dxgiModule, "CreateDXGIFactory1");
 	oCreateDXGIFactory2 = (PFN_CreateDXGIFactory2)GetProcAddress(dxgiModule, "CreateDXGIFactory2");
 
@@ -2307,6 +2359,9 @@ void ImGuiOverlayDx12::EarlyBind()
 	{
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
+
+		if (oCreateDXGIFactory != nullptr)
+			DetourAttach(&(PVOID&)oCreateDXGIFactory, hkCreateDXGIFactory);
 
 		if (oCreateDXGIFactory1 != nullptr)
 			DetourAttach(&(PVOID&)oCreateDXGIFactory1, hkCreateDXGIFactory1);
