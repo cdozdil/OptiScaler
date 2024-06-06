@@ -589,23 +589,15 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_CreationNodeMask, &uintValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_CreationNodeMask, uintValue);
-	else
-		Parameters->Set(NVSDK_NGX_Parameter_CreationNodeMask, 0);
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_VisibilityNodeMask, &uintValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_VisibilityNodeMask, uintValue);
-	else
-		Parameters->Set(NVSDK_NGX_Parameter_VisibilityNodeMask, 0);
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Enable_Output_Subrects, &intValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Enable_Output_Subrects, intValue);
-	else
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Enable_Output_Subrects, 0);
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_RTXValue, &intValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_RTXValue, intValue);
-	else
-		Parameters->Set(NVSDK_NGX_Parameter_RTXValue, 0);
 
 	// Create flags -----------------------------
 	unsigned int featureFlags = 0;
@@ -621,12 +613,12 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 	{
 		spdlog::info("DLSSFeature::ProcessInitParams featureFlags {0:X}", uintValue);
 
-		isHdr = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_IsHDR) > 0;
-		mvLowRes = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) > 0;
-		mvJittered = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_MVJittered) > 0;
-		depthInverted = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted) > 0;
-		sharpening = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening) > 0;
-		autoExposure = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure) > 0;
+		isHdr = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_IsHDR);
+		mvLowRes = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
+		mvJittered = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_MVJittered);
+		depthInverted = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted);
+		sharpening = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening);
+		autoExposure = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure);
 	}
 
 	if (Config::Instance()->DepthInverted.value_or(depthInverted))
