@@ -14,7 +14,7 @@ private:
 	inline static HMODULE _nvngx = nullptr;
 		
 protected:
-	NVSDK_NGX_Parameter* Parameters = GetNGXParameters();
+	NVSDK_NGX_Parameter* Parameters = GetNGXParameters("DLSS");
 	NVSDK_NGX_Handle _dlssHandle = {};
 	NVSDK_NGX_Handle* _p_dlssHandle = nullptr;
 	inline static bool _dlssInited = false;
