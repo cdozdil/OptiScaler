@@ -72,7 +72,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 		Config::Instance()->NVNGX_FeatureInfo = nullptr;
 
 		if ((ULONG64)InFeatureInfo < 0x000001F)
-			Config::Instance()->NVNGX_Version = (NVSDK_NGX_Version)(unsigned long)InFeatureInfo;
+			Config::Instance()->NVNGX_Version = (NVSDK_NGX_Version)(unsigned int)InFeatureInfo;
 	}
 
 	spdlog::info("NVSDK_NGX_VULKAN_Init InApplicationId: {0}", InApplicationId);
@@ -180,7 +180,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetParameters(NVSDK_NGX_Paramete
 
 	try
 	{
-		*OutParameters = GetNGXParameters();
+		*OutParameters = GetNGXParameters("OptiVk");
 		return NVSDK_NGX_Result_Success;
 	}
 	catch (const std::exception& ex)
@@ -212,7 +212,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetCapabilityParameters(NVSDK_NG
 
 	try
 	{
-		*OutParameters = GetNGXParameters();
+		*OutParameters = GetNGXParameters("OptiVk");
 		return NVSDK_NGX_Result_Success;
 	}
 	catch (const std::exception& ex)
@@ -401,7 +401,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 
 				auto dc = VkContexts[handleId].get();
 
-				createParams = GetNGXParameters();
+				createParams = GetNGXParameters("OptiVk");
 				createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
 				createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
 				createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());

@@ -158,7 +158,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetParameters(NVSDK_NGX_Parameter
 
 	try
 	{
-		*OutParameters = GetNGXParameters();
+		*OutParameters = GetNGXParameters("OptiDx11");
 		return NVSDK_NGX_Result_Success;
 	}
 	catch (const std::exception& ex)
@@ -174,7 +174,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetCapabilityParameters(NVSDK_NGX
 
 	try
 	{
-		*OutParameters = GetNGXParameters();
+		*OutParameters = GetNGXParameters("OptiDx11");
 		return NVSDK_NGX_Result_Success;
 	}
 	catch (const std::exception& ex)
@@ -451,7 +451,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 
 				auto dc = Dx11Contexts[handleId].get();
 
-				createParams = GetNGXParameters();
+				createParams = GetNGXParameters("OptiDx11");
 				createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
 				createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
 				createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
