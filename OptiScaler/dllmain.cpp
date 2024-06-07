@@ -77,6 +77,8 @@ HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 
 	size_t pos;
 
+	spdlog::trace("hkLoadLibraryA call: {0}", lcaseLibName);
+
 	if (!Config::Instance()->dlssDisableHook)
 	{
 		pos = lcaseLibName.rfind(nvngxA);
@@ -127,6 +129,8 @@ HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 	std::string lcaseLibNameA(lcaseLibName.length(), 0);
 	std::transform(lcaseLibName.begin(), lcaseLibName.end(), lcaseLibNameA.begin(), [](wchar_t c) { return (char)c; });
 
+	spdlog::trace("hkLoadLibraryW call: {0}", lcaseLibNameA);
+
 	size_t pos;
 
 	if (!Config::Instance()->dlssDisableHook)
@@ -174,6 +178,8 @@ HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 
 	for (size_t i = 0; i < lcaseLibName.size(); i++)
 		lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+
+	spdlog::trace("hkLoadLibraryExA call: {0}", lcaseLibName);
 
 	size_t pos;
 
@@ -253,6 +259,8 @@ HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 
 	std::string lcaseLibNameA(lcaseLibName.length(), 0);
 	std::transform(lcaseLibName.begin(), lcaseLibName.end(), lcaseLibNameA.begin(), [](wchar_t c) { return (char)c; });
+
+	spdlog::trace("hkLoadLibraryExW call: {0}", lcaseLibNameA);
 
 	size_t pos;
 
@@ -387,7 +395,7 @@ void AttachHooks()
 
 		if (o_LoadLibraryExW)
 			DetourAttach(&(PVOID&)o_LoadLibraryExW, hkLoadLibraryExW);
-			
+
 		DetourTransactionCommit();
 	}
 }
@@ -421,7 +429,8 @@ void CheckWorkingMode()
 			auto sysFilePath = sysPath / L"version.dll";
 			dll = LoadLibrary(sysFilePath.wstring().c_str());
 
-			spdlog::info("OptiScaler working as version.dll, system dll loaded");
+			if (dll != nullptr)
+				spdlog::info("OptiScaler working as version.dll, system dll loaded");
 		}
 		else
 		{
@@ -438,6 +447,10 @@ void CheckWorkingMode()
 			shared.LoadOriginalLibrary(dll);
 			version.LoadOriginalLibrary(dll);
 		}
+		else
+		{
+			spdlog::error("OptiScaler can't find original version.dll!");
+		}
 	}
 
 	if (lCaseFilename == "winmm.dll")
@@ -449,7 +462,8 @@ void CheckWorkingMode()
 			auto sysFilePath = sysPath / L"winmm.dll";
 			dll = LoadLibrary(sysFilePath.wstring().c_str());
 
-			spdlog::info("OptiScaler working as winmm.dll, system dll loaded");
+			if (dll != nullptr)
+				spdlog::info("OptiScaler working as winmm.dll, system dll loaded");
 		}
 		else
 		{
@@ -466,6 +480,10 @@ void CheckWorkingMode()
 			shared.LoadOriginalLibrary(dll);
 			winmm.LoadOriginalLibrary(dll);
 		}
+		else
+		{
+			spdlog::error("OptiScaler can't find original winmm.dll!");
+		}
 	}
 
 	if (lCaseFilename == "wininet.dll")
@@ -477,7 +495,8 @@ void CheckWorkingMode()
 			auto sysFilePath = sysPath / L"wininet.dll";
 			dll = LoadLibrary(sysFilePath.wstring().c_str());
 
-			spdlog::info("OptiScaler working as wininet.dll, system dll loaded");
+			if (dll != nullptr)
+				spdlog::info("OptiScaler working as wininet.dll, system dll loaded");
 		}
 		else
 		{
@@ -493,6 +512,10 @@ void CheckWorkingMode()
 
 			shared.LoadOriginalLibrary(dll);
 			wininet.LoadOriginalLibrary(dll);
+		}
+		else
+		{
+			spdlog::error("OptiScaler can't find original wininet.dll!");
 		}
 	}
 
@@ -518,7 +541,8 @@ void CheckWorkingMode()
 			auto sysFilePath = sysPath / L"winhttp.dll";
 			dll = LoadLibrary(sysFilePath.wstring().c_str());
 
-			spdlog::info("OptiScaler working as winhttp.dll, system dll loaded");
+			if (dll != nullptr)
+				spdlog::info("OptiScaler working as winhttp.dll, system dll loaded");
 		}
 		else
 		{
@@ -535,6 +559,10 @@ void CheckWorkingMode()
 			shared.LoadOriginalLibrary(dll);
 			winhttp.LoadOriginalLibrary(dll);
 		}
+		else
+		{
+			spdlog::error("OptiScaler can't find original winhttp.dll!");
+		}
 	}
 
 	if (lCaseFilename == "dxgi.dll")
@@ -546,7 +574,8 @@ void CheckWorkingMode()
 			auto sysFilePath = sysPath / L"dxgi.dll";
 			dll = LoadLibrary(sysFilePath.wstring().c_str());
 
-			spdlog::info("OptiScaler working as dxgi.dll, system dll loaded");
+			if (dll != nullptr)
+				spdlog::info("OptiScaler working as dxgi.dll, system dll loaded");
 		}
 		else
 		{
@@ -559,10 +588,14 @@ void CheckWorkingMode()
 			dllNameExA = "dxgi";
 			dllNameW = L"dxgi.dll";
 			dllNameExW = L"dxgi";
-		}
 
-		shared.LoadOriginalLibrary(dll);
-		dxgi.LoadOriginalLibrary(dll);
+			shared.LoadOriginalLibrary(dll);
+			dxgi.LoadOriginalLibrary(dll);
+		}
+		else
+		{
+			spdlog::error("OptiScaler can't find original dxgi.dll!");
+		}
 	}
 
 	if (dll != nullptr)
@@ -603,16 +636,10 @@ void CheckWorkingMode()
 
 		AttachHooks();
 
-		if (!Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))
-		{
-			spdlog::info("Trying to early bind of Dx12 ImGui hooks");
-			ImGuiOverlayDx12::EarlyBind();
-		}
-
 		return;
 	}
 
-	spdlog::info("Unsupported dll name: {0}", filename);
+	spdlog::error("Unsupported dll name: {0}", filename);
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
@@ -632,7 +659,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 		if (!Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))
 		{
-			ImGuiOverlayDx12::BindMods();
+			ImGuiOverlayDx12::Dx12Bind();
+			ImGuiOverlayDx12::FSR3Bind();
 		}
 
 		break;

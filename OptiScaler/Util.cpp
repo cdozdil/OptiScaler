@@ -39,7 +39,11 @@ std::optional<std::filesystem::path> Util::NvngxPath()
 		ls = RegQueryValueExW(regNGXCore, L"NGXPath", nullptr, nullptr, (LPBYTE)regNGXCorePath, &NGXCorePathSize);
 
 		if (ls == ERROR_SUCCESS)
-			result = std::filesystem::path(regNGXCorePath);
+		{
+			auto path = std::filesystem::path(regNGXCorePath);
+			spdlog::info("Util::NvngxPath nvngx registry path: {0}", path.string());
+			return path;
+		}
 	}
 
 	return result;

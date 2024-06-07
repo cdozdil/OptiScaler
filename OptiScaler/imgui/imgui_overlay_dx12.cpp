@@ -55,7 +55,6 @@ typedef HRESULT(WINAPI* PFN_CreateDXGIFactory)(REFIID riid, void** ppFactory);
 typedef HRESULT(WINAPI* PFN_CreateDXGIFactory1)(REFIID riid, void** ppFactory);
 typedef HRESULT(WINAPI* PFN_CreateDXGIFactory2)(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFactory);
 
-
 // Dx12 early binding
 static PFN_D3D12_CREATE_DEVICE oD3D12CreateDevice = nullptr;
 static PFN_CreateCommandQueue oCreateCommandQueue = nullptr;
@@ -2324,7 +2323,7 @@ void ImGuiOverlayDx12::ReInitDx12(HWND InNewHwnd)
 	ClearActivePathInfo();
 }
 
-void ImGuiOverlayDx12::EarlyBind()
+void ImGuiOverlayDx12::Dx12Bind()
 {
 	if (_isInited)
 		return;
@@ -2375,7 +2374,7 @@ void ImGuiOverlayDx12::EarlyBind()
 	_isEarlyBind = oD3D12CreateDevice != nullptr && oCreateDXGIFactory1 != nullptr;
 }
 
-void ImGuiOverlayDx12::BindMods()
+void ImGuiOverlayDx12::FSR3Bind()
 {
 	CheckFSR3();
 }

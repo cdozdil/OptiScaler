@@ -29,7 +29,7 @@ protected:
 
 public:
 	feature_version Version() final { return feature_version{ _version.major, _version.minor, _version.patch }; }
-	const char* Name() override { return "DLSS"; }
+	const char* Name() final { return "DLSS"; } 
 	void ReadVersion();
 
 	DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters);
