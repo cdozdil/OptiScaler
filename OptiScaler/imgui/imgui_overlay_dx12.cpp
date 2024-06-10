@@ -163,6 +163,7 @@ static long _changeFFXModHookCounter_Native = 0;
 
 // present counters
 static long _nativeCounter;
+static long _nativeCounterEB;
 static long _slCounter;
 static long _fsr3ModCounter;
 static long _fsr3NativeCounter;
@@ -193,6 +194,7 @@ static void ClearActivePathInfo()
 
 	_lastActiveSource = Unknown;
 	_nativeCounter = 0;
+	_nativeCounterEB = 0;
 	_slCounter = 0;
 	_fsr3ModCounter = 0;
 	_fsr3NativeCounter = 0;
@@ -215,7 +217,7 @@ static bool IsActivePath(SwapchainSource source, bool justQuery = false)
 	{
 	case Dx12:
 		// native need 2x more frames to be sure because of fg
-		result = _nativeCounter > 170 && !IsActivePath(SL, true) && !IsActivePath(FSR3_Mod, true) && !IsActivePath(FSR3_Native, true) && _usingNative && _cqDx12 != nullptr;
+		result = (_nativeCounter > 170 || _nativeCounterEB > 170) && !IsActivePath(SL, true) && !IsActivePath(FSR3_Mod, true) && !IsActivePath(FSR3_Native, true) && _usingNative && _cqDx12 != nullptr;
 
 		if (result)
 			g_pd3dCommandQueue = _cqDx12;
@@ -341,12 +343,12 @@ static HRESULT WINAPI hkPresent_EB(IDXGISwapChain3* pSwapChain, UINT SyncInterva
 
 	if (IsBeingUsed(pSwapChain))
 	{
-		_nativeCounter++;
+		_nativeCounterEB++;
 		_usingNative = true;
 	}
 	else
 	{
-		_nativeCounter = 0;
+		_nativeCounterEB = 0;
 		_usingNative = false;
 	}
 
@@ -363,12 +365,12 @@ static HRESULT WINAPI hkPresent1_EB(IDXGISwapChain3* pSwapChain, UINT SyncInterv
 
 	if (IsBeingUsed(pSwapChain))
 	{
-		_nativeCounter++;
+		_nativeCounterEB++;
 		_usingNative = true;
 	}
 	else
 	{
-		_nativeCounter = 0;
+		_nativeCounterEB = 0;
 		_usingNative = false;
 	}
 
@@ -385,7 +387,7 @@ static HRESULT WINAPI hkPresent_Dx12(IDXGISwapChain3* pSwapChain, UINT SyncInter
 	if ((Flags & DXGI_PRESENT_TEST) || (Flags & DXGI_PRESENT_RESTART))
 		return oPresent_Dx12(pSwapChain, SyncInterval, Flags);
 
-	if (!_isEarlyBind && IsActivePath(Dx12))
+	if ((!_isEarlyBind || _nativeCounterEB == 0) && IsActivePath(Dx12))
 		RenderImGui_DX12(pSwapChain);
 
 	if (IsBeingUsed(pSwapChain))
@@ -407,7 +409,7 @@ static HRESULT WINAPI hkPresent1_Dx12(IDXGISwapChain3* pSwapChain, UINT SyncInte
 	if ((PresentFlags & DXGI_PRESENT_TEST) || (PresentFlags & DXGI_PRESENT_RESTART))
 		return oPresent1_Dx12(pSwapChain, SyncInterval, PresentFlags, pPresentParameters);
 
-	if (!_isEarlyBind && IsActivePath(Dx12))
+	if ((!_isEarlyBind || _nativeCounterEB == 0) && IsActivePath(Dx12))
 		RenderImGui_DX12(pSwapChain);
 
 	_usingNative = IsBeingUsed(pSwapChain);
@@ -1435,7 +1437,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 			sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
 			// Create SwapChain
-			if(_isEarlyBind)
+			if (_isEarlyBind)
 				result = factory->CreateSwapChainForHwnd(cq, InHWnd, &sd, NULL, NULL, &swapChain1);
 			else
 				result = oCreateSwapChainForHwnd_Dx12(factory, cq, InHWnd, &sd, NULL, NULL, &swapChain1);
@@ -1473,9 +1475,9 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 
 				DetourAttach(&(PVOID&)oPresent_Dx12, hkPresent_Dx12);
 				DetourAttach(&(PVOID&)oPresent1_Dx12, hkPresent1_Dx12);
-
 				DetourAttach(&(PVOID&)oResizeBuffers_Dx12, hkResizeBuffers_Dx12);
 				DetourAttach(&(PVOID&)oResizeBuffers1_Dx12, hkResizeBuffers1_Dx12);
+
 
 				DetourTransactionCommit();
 			}
