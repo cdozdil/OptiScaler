@@ -47,6 +47,7 @@ protected:
 
 	float _sharpness = 0.0f;
 	float _exposureScale = 1.0f;
+	float _preExposure = 1.0f;
 	float _frameTimeDelta = 0.0f;
 
 	bool _reset = false;
@@ -65,6 +66,8 @@ public:
 			_lastFrameTime = currentTime;
 		}
 	}
+
+	virtual ParamterSource Source() { return Base; }
 
 	bool IsInited() const { return _isInited; }
 

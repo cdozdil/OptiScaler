@@ -1,17 +1,6 @@
 #pragma once
 #include "../pch.h"
 
-enum CommonQualityPreset
-{
-	NativeAA,
-	UltraQuality,
-	Quality,
-	Balanced,
-	Performance,
-	UltraPerformance,
-	Undefined
-};
-
 class IFeatureCreateParams
 {
 protected:
@@ -35,22 +24,24 @@ protected:
 	bool _depthInverted = false;
 
 public:
-	bool IsInited() { return _isInited; }
+	bool IsInited() const { return _isInited; }
 
-	uint32_t RenderWidth() { return _renderWidth; }
-	uint32_t RenderHeight() { return _renderHeight; }
-	uint32_t DisplayWidth() { return _displayWidth; }
-	uint32_t DisplayHeight() { return _displayHeight; }
-	uint32_t TargetWidth() { return _targetWidth; }
-	uint32_t TargetHeight() { return _targetHeight; }
+	virtual ParamterSource Source() { return Base; }
 
-	CommonQualityPreset QualityPreset() { return _pqValue; }
+	uint32_t RenderWidth() const { return _renderWidth; }
+	uint32_t RenderHeight() const { return _renderHeight; }
+	uint32_t DisplayWidth() const { return _displayWidth; }
+	uint32_t DisplayHeight() const { return _displayHeight; }
+	uint32_t TargetWidth() const { return _targetWidth; }
+	uint32_t TargetHeight() const { return _targetHeight; }
 
-	bool AutoExposure() { return _autoExposure; }
-	bool Hdr() { return _hdr; }
-	bool Sharpening() { return _sharpening; }
-	bool DisableReactiveMask() { return _disableReactiveMask; }
-	bool JitterCancellation() { return _jitterCancellation; }
-	bool DisplayResolutionMV() { return _displayResMV; }
-	bool DepthInverted() { return _depthInverted; }
+	CommonQualityPreset QualityPreset() const { return _pqValue; }
+
+	bool AutoExposure() const { return _autoExposure; }
+	bool Hdr() const { return _hdr; }
+	bool Sharpening() const { return _sharpening; }
+	bool DisableReactiveMask() const { return _disableReactiveMask; }
+	bool JitterCancellation() const { return _jitterCancellation; }
+	bool DisplayResolutionMV() const { return _displayResMV; }
+	bool DepthInverted() const { return _depthInverted; }
 };

@@ -10,6 +10,7 @@ class IFeatureCreateParams_DLSS : public IFeatureCreateParams
 {
 private:
 	const NVNGX_Init_Info _initInfo;
+	const NVSDK_NGX_Parameter* _nvParameter = nullptr;
 
 	inline static CommonQualityPreset GetQualityPreset(int pqValue)
 	{
@@ -51,6 +52,8 @@ public:
 	{
 		if (InParameters == nullptr)
 			return;
+
+		_nvParameter = InParameters;
 
 		NVSDK_NGX_Result result;
 
@@ -191,4 +194,8 @@ public:
 	}
 
 	NVNGX_Init_Info InitInfo() { return _initInfo; }
+
+	const NVSDK_NGX_Parameter* NvParameter() { return _nvParameter; }
+
+	ParamterSource Source() final { return DLSS; }
 };
