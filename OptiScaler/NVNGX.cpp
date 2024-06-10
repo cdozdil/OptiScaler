@@ -20,7 +20,7 @@ NVSDK_NGX_API uint32_t NVSDK_NGX_GetApplicationId()
 NVSDK_NGX_API uint32_t NVSDK_NGX_GetDriverVersion()
 {
 	spdlog::debug("NVSDK_NGX_GetDriverVersion");
-	return 0x2080000; // NGXMinimumDriverVersion 520.00
+	return 0x23A0000; // NGXMinimumDriverVersion 570.00
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_GetDriverVersionEx(uint32_t* Versions, uint32_t InputVersionCount, uint32_t* TotalDriverVersionCount)
@@ -38,7 +38,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_GetDriverVersionEx(uint32_t* Versions, 
 
 	if (Versions && InputVersionCount >= 1)
 	{
-		Versions[0] = 0x208; // 520
+		Versions[0] = 0x23A; // 570
 
 		if (InputVersionCount >= 2)
 			Versions[1] = 0;
