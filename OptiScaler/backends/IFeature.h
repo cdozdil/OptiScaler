@@ -14,16 +14,16 @@ typedef struct _feature_version
 	unsigned int patch;
 } FeatureVersion;
 
-inline static unsigned int handleCounter = 1000000;
 
 class IFeature
 {
 private:
 	bool _isInited = false;
+	inline static unsigned int handleCounter = 1000000;
 
 protected:
 	unsigned int _handleId = 0;
-	IFeatureCreateParams _createParams = {};
+	IFeatureCreateParams _createParams;
 
 	bool _hasColor = false;
 	bool _hasDepth = false;
@@ -31,7 +31,7 @@ protected:
 	bool _hasTM = false;
 	bool _hasExposure = false;
 	bool _hasOutput = false;
-	
+
 	unsigned int _renderWidth = 0;
 	unsigned int _renderHeight = 0;
 	unsigned int _targetWidth = 0;
@@ -44,20 +44,20 @@ protected:
 	long _frameCount = 0;
 	bool _moduleLoaded = false;
 
-	void SetHandle(unsigned int InHandleId) 
+	void SetHandle(unsigned int InHandleId)
 	{
 		_handleId = InHandleId;
 		spdlog::info("IFeatureContext::SetHandle Handle: {0}", _handleId);
 	}
 
-	void SetInit(bool InValue) 
-	{ 
-		_isInited = InValue; 
+	void SetInit(bool InValue)
+	{
+		_isInited = InValue;
 	}
 
 public:
 	static unsigned int GetNextHandleId() { return handleCounter++; }
-	
+
 	unsigned int DisplayWidth() const { return _displayWidth; };
 	unsigned int DisplayHeight() const { return _displayHeight; };
 	unsigned int TargetWidth() const { return _targetWidth; };
@@ -65,10 +65,11 @@ public:
 	unsigned int RenderWidth() const { return _renderWidth; };
 	unsigned int RenderHeight() const { return _renderHeight; };
 	CommonQualityPreset PerfQualityValue() const { return _createParams.QualityPreset(); }
-	
-	
+
+	const IFeatureCreateParams CreateParams() { return _createParams; }
+
 	bool IsInited() const { return _isInited; }
-	
+
 	float Sharpness() const { return _sharpness; }
 	bool HasColor() const { return _hasColor; }
 	bool HasDepth() const { return _hasDepth; }
@@ -76,9 +77,9 @@ public:
 	bool HasTM() const { return _hasTM; }
 	bool HasExposure() const { return _hasExposure; }
 	bool HasOutput() const { return _hasOutput; }
-	
-	virtual FeatureVersion Version() = 0;
-	virtual const char* Name() = 0;
+
+	virtual FeatureVersion Version() { return {}; }
+	virtual const char* Name() { return "Base"; }
 
 	bool ModuleLoaded() const { return _moduleLoaded; }
 	long FrameCount() const { return _frameCount; }

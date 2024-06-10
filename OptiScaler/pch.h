@@ -18,5 +18,24 @@
 #define SPDLOG_USE_STD_FORMAT
 #include "spdlog/spdlog.h"
 
+enum ParamterSource
+{
+	Base,
+	DLSS,
+	XeSS,
+	FSR
+};
+
+enum CommonQualityPreset
+{
+	NativeAA,
+	UltraQuality,
+	Quality,
+	Balanced,
+	Performance,
+	UltraPerformance,
+	Undefined
+};
+
 inline HMODULE dllModule;
 inline DWORD processId;

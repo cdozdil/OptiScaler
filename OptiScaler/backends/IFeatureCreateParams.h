@@ -1,17 +1,6 @@
 #pragma once
 #include "../pch.h"
 
-enum CommonQualityPreset
-{
-	NativeAA,
-	UltraQuality,
-	Quality,
-	Balanced,
-	Performance,
-	UltraPerformance,
-	Undefined
-};
-
 class IFeatureCreateParams
 {
 protected:
@@ -36,6 +25,8 @@ protected:
 
 public:
 	bool IsInited() const { return _isInited; }
+
+	virtual ParamterSource Source() { return Base; }
 
 	uint32_t RenderWidth() const { return _renderWidth; }
 	uint32_t RenderHeight() const { return _renderHeight; }

@@ -25,10 +25,6 @@ protected:
 public:
 	virtual bool Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList) = 0;
 	virtual bool Evaluate(ID3D12GraphicsCommandList* InCommandList, const IFeatureEvaluateParams* InParams) = 0;
-	virtual bool Evaluate(ID3D12GraphicsCommandList* InCommandList, const IFeatureEvaluateParams* InParams) = 0;
-
-	bool BeforeEvaluate(ID3D12GraphicsCommandList* InCommandList, const IFeatureEvaluateParams* InParams, ID3D12Resource* OutputTexture);
-	void AfterEvaluate(ID3D12GraphicsCommandList* InCommandList, const IFeatureEvaluateParams* InParams, ID3D12Resource* OutputTexture);
 
 	IFeature_Dx12(unsigned int InHandleId, const IFeatureCreateParams InParameters);
 
