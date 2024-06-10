@@ -42,16 +42,10 @@ bool IFeature::SetInitParameters(const NVSDK_NGX_Parameter* InParameters)
 
 		_displayWidth = width > outWidth ? width : outWidth;
 		_displayHeight = height > outHeight ? height : outHeight;
+		_renderWidth = width < outWidth ? width : outWidth;
+		_renderHeight = height < outHeight ? height : outHeight;
 		_targetWidth = _displayWidth;
 		_targetHeight = _displayHeight;
-
-		if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, &_renderWidth) != NVSDK_NGX_Result_Success ||
-			InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, &_renderHeight) != NVSDK_NGX_Result_Success)
-		{
-			_renderWidth = width < outWidth ? width : outWidth;
-			_renderHeight = height < outHeight ? height : outHeight;
-		}
-
 		_perfQualityValue = (NVSDK_NGX_PerfQuality_Value)pqValue;
 
 		spdlog::info("IFeatureContext::SetInitParameters Render Resolution: {0}x{1}, Display Resolution {2}x{3}, Quality: {4}",
