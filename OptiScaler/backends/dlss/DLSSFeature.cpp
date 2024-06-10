@@ -578,6 +578,11 @@ void DLSSFeature::ProcessEvaluateParams(const NVSDK_NGX_Parameter* InParameters)
 	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Indicator_Invert_Y_Axis, &uintValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Indicator_Invert_Y_Axis, uintValue);
 
+	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, &floatValue) == NVSDK_NGX_Result_Success)
+		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, floatValue);
+	else
+		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, 1.0f);
+
 	if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &floatValue) == NVSDK_NGX_Result_Success)
 		Parameters->Set(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, floatValue);
 }
@@ -742,6 +747,24 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 		RenderPresetPerformance = Config::Instance()->RenderPresetPerformance.value_or(RenderPresetPerformance);
 		RenderPresetUltraPerformance = Config::Instance()->RenderPresetUltraPerformance.value_or(RenderPresetUltraPerformance);
 	}
+
+	if (RenderPresetDLAA < 0 || RenderPresetDLAA > 5)
+		RenderPresetDLAA = 0;
+
+	if (RenderPresetUltraQuality < 0 || RenderPresetUltraQuality > 5)
+		RenderPresetUltraQuality = 0;
+
+	if (RenderPresetQuality < 0 || RenderPresetQuality > 5)
+		RenderPresetQuality = 0;
+
+	if (RenderPresetBalanced < 0 || RenderPresetBalanced > 5)
+		RenderPresetBalanced = 0;
+
+	if (RenderPresetPerformance < 0 || RenderPresetPerformance > 5)
+		RenderPresetPerformance = 0;
+
+	if (RenderPresetUltraPerformance < 0 || RenderPresetUltraPerformance > 5)
+		RenderPresetUltraPerformance = 0;
 
 	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, RenderPresetDLAA);
 	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, RenderPresetUltraQuality);
