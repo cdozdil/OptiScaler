@@ -32,7 +32,7 @@ private:
 	inline static uint32_t _renderWidth = 0;
 
 	// dlss enabler
-	inline static int _deLimitFps = 0;
+	inline static int _deLimitFps = -1;
 
 	// output scaling
 	inline static float _ssRatio = 0.0f;
@@ -1064,6 +1064,9 @@ public:
 
 						if (Config::Instance()->DE_FramerateLimit.has_value())
 						{
+							if (_deLimitFps < 0)
+								_deLimitFps = Config::Instance()->DE_FramerateLimit.value();
+
 							ImGui::SliderInt("FPS Limit", &_deLimitFps, 0, 200);
 
 							if (ImGui::Button("Apply Limit"))
