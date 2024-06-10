@@ -58,35 +58,39 @@ bool DLSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 
-		//if (_AllocateParameters != nullptr)
-		//{
-		//	spdlog::debug("DLSSFeatureDx11::Init _AllocateParameters will be used");
+		if (_AllocateParameters != nullptr)
+		{
+			spdlog::debug("DLSSFeatureDx11::Init _AllocateParameters will be used");
 
-		//	nvResult = _AllocateParameters(&Parameters);
+			nvResult = _AllocateParameters(&Parameters);
 
-		//	if (nvResult != NVSDK_NGX_Result_Success)
-		//	{
-		//		spdlog::error("DLSSFeatureDx11::Init _AllocateParameters result: {0:X}", (unsigned int)nvResult);
-		//		break;
-		//	}
-		//}
-		//else if (_GetParameters != nullptr)
-		//{
-		//	spdlog::debug("DLSSFeatureDx11::Init _GetParameters will be used");
+			if (nvResult != NVSDK_NGX_Result_Success)
+			{
+				spdlog::error("DLSSFeatureDx11::Init _AllocateParameters result: {0:X}", (unsigned int)nvResult);
+				break;
+			}
 
-		//	nvResult = _GetParameters(&Parameters);
+			DumpNvParams(Parameters);
+		}
+		else if (_GetParameters != nullptr)
+		{
+			spdlog::debug("DLSSFeatureDx11::Init _GetParameters will be used");
 
-		//	if (nvResult != NVSDK_NGX_Result_Success)
-		//	{
-		//		spdlog::error("DLSSFeatureDx11::Init _GetParameters result: {0:X}", (unsigned int)nvResult);
-		//		break;
-		//	}
-		//}
-		//else
-		//{
-		//	spdlog::error("DLSSFeatureDx11::Init _AllocateParameters and _GetParameters are both nullptr!");
-		//	break;
-		//}
+			nvResult = _GetParameters(&Parameters);
+
+			if (nvResult != NVSDK_NGX_Result_Success)
+			{
+				spdlog::error("DLSSFeatureDx11::Init _GetParameters result: {0:X}", (unsigned int)nvResult);
+				break;
+			}
+
+			DumpNvParams(Parameters);
+		}
+		else
+		{
+			spdlog::error("DLSSFeatureDx11::Init _AllocateParameters and _GetParameters are both nullptr!");
+			break;
+		}
 
 		spdlog::info("DLSSFeatureDx12::Evaluate Creating DLSS feature");
 
@@ -299,6 +303,6 @@ DLSSFeatureDx11::~DLSSFeatureDx11()
 	if (Parameters != nullptr && _DestroyParameters != nullptr)
 		_DestroyParameters(Parameters);
 
-	if (_ReleaseFeature != nullptr)
+	if (_ReleaseFeature != nullptr && _p_dlssHandle != nullptr)
 		_ReleaseFeature(_p_dlssHandle);
 }

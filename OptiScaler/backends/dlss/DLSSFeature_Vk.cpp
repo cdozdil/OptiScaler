@@ -1,7 +1,8 @@
-#include "DLSSFeature_Vk.h"
-#include <dxgi1_4.h>
-#include "../../Config.h"
 #include "../../pch.h"
+#include "../../Config.h"
+#include "../../Logger.h"
+
+#include "DLSSFeature_Vk.h"
 
 bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_Parameter* InParameters)
 {
@@ -61,35 +62,39 @@ bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice 
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 
-		//if (_AllocateParameters != nullptr)
-		//{
-		//	spdlog::debug("DLSSFeatureVk::Init _AllocateParameters will be used");
+		if (_AllocateParameters != nullptr)
+		{
+			spdlog::debug("DLSSFeatureVk::Init _AllocateParameters will be used");
 
-		//	nvResult = _AllocateParameters(&Parameters);
+			nvResult = _AllocateParameters(&Parameters);
 
-		//	if (nvResult != NVSDK_NGX_Result_Success)
-		//	{
-		//		spdlog::error("DLSSFeatureVk::Init _AllocateParameters result: {0:X}", (unsigned int)nvResult);
-		//		break;
-		//	}
-		//}
-		//else if (_GetParameters != nullptr)
-		//{
-		//	spdlog::debug("DLSSFeatureVk::Init _GetParameters will be used");
+			if (nvResult != NVSDK_NGX_Result_Success)
+			{
+				spdlog::error("DLSSFeatureVk::Init _AllocateParameters result: {0:X}", (unsigned int)nvResult);
+				break;
+			}
 
-		//	nvResult = _GetParameters(&Parameters);
+			DumpNvParams(Parameters);
+		}
+		else if (_GetParameters != nullptr)
+		{
+			spdlog::debug("DLSSFeatureVk::Init _GetParameters will be used");
 
-		//	if (nvResult != NVSDK_NGX_Result_Success)
-		//	{
-		//		spdlog::error("DLSSFeatureVk::Init _GetParameters result: {0:X}", (unsigned int)nvResult);
-		//		break;
-		//	}
-		//}
-		//else
-		//{
-		//	spdlog::error("DLSSFeatureVk::Init _AllocateParameters and _GetParameters are both nullptr!");
-		//	break;
-		//}
+			nvResult = _GetParameters(&Parameters);
+
+			if (nvResult != NVSDK_NGX_Result_Success)
+			{
+				spdlog::error("DLSSFeatureVk::Init _GetParameters result: {0:X}", (unsigned int)nvResult);
+				break;
+			}
+
+			DumpNvParams(Parameters);
+		}
+		else
+		{
+			spdlog::error("DLSSFeatureVk::Init _AllocateParameters and _GetParameters are both nullptr!");
+			break;
+		}
 
 		spdlog::info("DLSSFeatureVk::Evaluate Creating DLSS feature");
 
@@ -216,6 +221,6 @@ DLSSFeatureVk::~DLSSFeatureVk()
 	if (Parameters != nullptr && _DestroyParameters != nullptr)
 		_DestroyParameters(Parameters);
 
-	if (_ReleaseFeature != nullptr)
+	if (_ReleaseFeature != nullptr && _p_dlssHandle != nullptr)
 		_ReleaseFeature(_p_dlssHandle);
 }

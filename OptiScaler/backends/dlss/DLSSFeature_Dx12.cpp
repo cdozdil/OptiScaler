@@ -59,35 +59,39 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 
 		}
 
-		//if (_AllocateParameters != nullptr)
-		//{
-		//	spdlog::debug("DLSSFeatureDx12::Init _AllocateParameters will be used");
+		if (_AllocateParameters != nullptr)
+		{
+			spdlog::debug("DLSSFeatureDx12::Init _AllocateParameters will be used");
 
-		//	nvResult = _AllocateParameters(&Parameters);
+			nvResult = _AllocateParameters(&Parameters);
 
-		//	if (nvResult != NVSDK_NGX_Result_Success)
-		//	{
-		//		spdlog::error("DLSSFeatureDx12::Init _AllocateParameters result: {0:X}", (unsigned int)nvResult);
-		//		break;
-		//	}
-		//}
-		//else if (_GetParameters != nullptr)
-		//{
-		//	spdlog::debug("DLSSFeatureDx12::Init _GetParameters will be used");
+			if (nvResult != NVSDK_NGX_Result_Success)
+			{
+				spdlog::error("DLSSFeatureDx12::Init _AllocateParameters result: {0:X}", (unsigned int)nvResult);
+				break;
+			}
 
-		//	nvResult = _GetParameters(&Parameters);
+			DumpNvParams(Parameters);
+		}
+		else if (_GetParameters != nullptr)
+		{
+			spdlog::debug("DLSSFeatureDx12::Init _GetParameters will be used");
 
-		//	if (nvResult != NVSDK_NGX_Result_Success)
-		//	{
-		//		spdlog::error("DLSSFeatureDx12::Init _GetParameters result: {0:X}", (unsigned int)nvResult);
-		//		break;
-		//	}
-		//}
-		//else
-		//{
-		//	spdlog::error("DLSSFeatureDx12::Init _AllocateParameters and _GetParameters are both nullptr!");
-		//	break;
-		//}
+			nvResult = _GetParameters(&Parameters);
+
+			if (nvResult != NVSDK_NGX_Result_Success)
+			{
+				spdlog::error("DLSSFeatureDx12::Init _GetParameters result: {0:X}", (unsigned int)nvResult);
+				break;
+			}
+
+			DumpNvParams(Parameters);
+		}
+		else
+		{
+			spdlog::error("DLSSFeatureDx12::Init _AllocateParameters and _GetParameters are both nullptr!");
+			break;
+		}
 
 		spdlog::info("DLSSFeatureDx12::Evaluate Creating DLSS feature");
 
@@ -193,6 +197,9 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
 			RCAS->IsInit() && RCAS->CreateBufferResource(Device, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
+			// Disable DLSS sharpness
+			Parameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
+
 			RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			setBuffer = RCAS->Buffer();
 		}
@@ -412,7 +419,7 @@ DLSSFeatureDx12::~DLSSFeatureDx12()
 	if (Parameters != nullptr && _DestroyParameters != nullptr)
 		_DestroyParameters(Parameters);
 
-	if (_ReleaseFeature != nullptr)
+	if (_ReleaseFeature != nullptr && _p_dlssHandle != nullptr)
 		_ReleaseFeature(_p_dlssHandle);
 
 	if (RCAS != nullptr && RCAS.get() != nullptr)
