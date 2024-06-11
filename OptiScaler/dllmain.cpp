@@ -77,7 +77,10 @@ HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 
 	size_t pos;
 
+#ifdef DEBUG
 	spdlog::trace("hkLoadLibraryA call: {0}", lcaseLibName);
+#endif // DEBUG
+
 
 	if (!Config::Instance()->dlssDisableHook)
 	{
@@ -129,7 +132,9 @@ HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 	std::string lcaseLibNameA(lcaseLibName.length(), 0);
 	std::transform(lcaseLibName.begin(), lcaseLibName.end(), lcaseLibNameA.begin(), [](wchar_t c) { return (char)c; });
 
+#ifdef DEBUG
 	spdlog::trace("hkLoadLibraryW call: {0}", lcaseLibNameA);
+#endif
 
 	size_t pos;
 
@@ -179,7 +184,9 @@ HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 	for (size_t i = 0; i < lcaseLibName.size(); i++)
 		lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
+#ifdef DEBUG
 	spdlog::trace("hkLoadLibraryExA call: {0}", lcaseLibName);
+#endif
 
 	size_t pos;
 
@@ -260,7 +267,9 @@ HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 	std::string lcaseLibNameA(lcaseLibName.length(), 0);
 	std::transform(lcaseLibName.begin(), lcaseLibName.end(), lcaseLibNameA.begin(), [](wchar_t c) { return (char)c; });
 
+#ifdef DEBUG
 	spdlog::trace("hkLoadLibraryExW call: {0}", lcaseLibNameA);
+#endif
 
 	size_t pos;
 

@@ -18,5 +18,9 @@
 #define SPDLOG_USE_STD_FORMAT
 #include "spdlog/spdlog.h"
 
+// Enables logging of DLSS NV Parameters
+//#define DLSS_PARAM_DUMP
+
 inline HMODULE dllModule;
 inline DWORD processId;
+

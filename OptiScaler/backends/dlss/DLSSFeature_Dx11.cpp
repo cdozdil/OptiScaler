@@ -70,7 +70,9 @@ bool DLSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 				break;
 			}
 
+#ifdef DLSS_PARAM_DUMP
 			DumpNvParams(Parameters);
+#endif
 		}
 		else if (_GetParameters != nullptr)
 		{
@@ -84,7 +86,9 @@ bool DLSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 				break;
 			}
 
+#ifdef DLSS_PARAM_DUMP
 			DumpNvParams(Parameters);
+#endif
 		}
 		else
 		{

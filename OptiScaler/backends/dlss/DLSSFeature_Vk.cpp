@@ -74,7 +74,9 @@ bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice 
 				break;
 			}
 
+#ifdef DLSS_PARAM_DUMP
 			DumpNvParams(Parameters);
+#endif
 		}
 		else if (_GetParameters != nullptr)
 		{
@@ -88,7 +90,9 @@ bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice 
 				break;
 			}
 
+#ifdef DLSS_PARAM_DUMP
 			DumpNvParams(Parameters);
+#endif
 		}
 		else
 		{

@@ -71,7 +71,9 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 				break;
 			}
 
+#ifdef DLSS_PARAM_DUMP
 			DumpNvParams(Parameters);
+#endif
 		}
 		else if (_GetParameters != nullptr)
 		{
@@ -85,7 +87,9 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 				break;
 			}
 
+#ifdef DLSS_PARAM_DUMP
 			DumpNvParams(Parameters);
+#endif
 		}
 		else
 		{

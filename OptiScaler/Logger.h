@@ -2,10 +2,12 @@
 #include "pch.h"
 #include <ankerl/unordered_dense.h>
 
-inline static ankerl::unordered_dense::map<std::string, std::string> nvParamNames;
-
 void PrepareLogger();
 void CloseLogger();
+
+#ifdef DLSS_PARAM_DUMP
+
+inline static ankerl::unordered_dense::map<std::string, std::string> nvParamNames;
 
 inline static void FillNvParamNames()
 {
@@ -304,3 +306,5 @@ inline static void DumpNvParams(const NVSDK_NGX_Parameter* InParams)
 		spdlog::debug("DumpNvParams {0} => ULL: {1}, F: {2}, D: {3}, UI: {4}, I: {5}, V*: {6:x}", key, ull, f, d, ui, i, (UINT64)v);
 	}
 }
+
+#endif
