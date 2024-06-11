@@ -450,7 +450,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 			}
 			else if (Config::Instance()->newBackend == "dlss")
 			{
-				Config::Instance()->Dx12Upscaler = "dlss";
+				Config::Instance()->VulkanUpscaler = "dlss";
 				spdlog::info("NVSDK_NGX_VULKAN_EvaluateFeature creating new DLSS feature");
 				VkContexts[handleId] = std::make_unique<DLSSFeatureVk>(handleId, createParams);
 			}
