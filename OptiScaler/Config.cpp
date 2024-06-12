@@ -198,6 +198,10 @@ bool Config::Reload()
 		OverrideNvapiDll = readBool("NvApi", "OverrideNvapiDll");
 		NvapiDllPath = readString("NvApi", "NvapiDllPath", true);
 
+		// spoofing
+		DxgiSpoofing = readBool("Spoofing", "Dxgi");
+		VulkanSpoofing = readBool("Spoofing", "Vulkan");		
+
 		return true;
 	}
 
@@ -352,6 +356,10 @@ bool Config::SaveIni()
 	// DRS
 	ini.SetValue("DRS", "DrsMinOverrideEnabled", GetBoolValue(Instance()->DrsMinOverrideEnabled).c_str());
 	ini.SetValue("DRS", "DrsMaxOverrideEnabled", GetBoolValue(Instance()->DrsMaxOverrideEnabled).c_str());
+
+	// Spoofing
+	ini.SetValue("Spoofing", "Dxgi", GetBoolValue(Instance()->DxgiSpoofing).c_str());
+	ini.SetValue("Spoofing", "Vulkan", GetBoolValue(Instance()->VulkanSpoofing).c_str());
 
 	return ini.SaveFile(absoluteFileName.wstring().c_str()) >= 0;
 }

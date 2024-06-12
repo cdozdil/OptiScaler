@@ -1,7 +1,43 @@
 #pragma once
 #include "pch.h"
+#include "Config.h"
+
 #include "detours/detours.h"
 #include "dxgi1_6.h"
+
+#pragma region DXGI definitions
+
+typedef HRESULT(WINAPI* PFN_CREATE_DXGI_FACTORY)(REFIID riid, _COM_Outptr_ void** ppFactory);
+typedef HRESULT(WINAPI* PFN_CREATE_DXGI_FACTORY_2)(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFactory);
+typedef HRESULT(WINAPI* PFN_DECLARE_ADAPTER_REMOVAL_SUPPORT)();
+typedef HRESULT(WINAPI* PFN_GET_DEBUG_INTERFACE)(UINT Flags, REFIID riid, void** ppDebug);
+
+typedef HRESULT(WINAPI* PFN_GetDesc)(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc);
+typedef HRESULT(WINAPI* PFN_GetDesc1)(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc);
+typedef HRESULT(WINAPI* PFN_GetDesc2)(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc);
+typedef HRESULT(WINAPI* PFN_GetDesc3)(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc);
+
+typedef HRESULT(WINAPI* PFN_EnumAdapterByGpuPreference)(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, void** ppvAdapter);
+typedef HRESULT(WINAPI* PFN_EnumAdapterByLuid)(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, void** ppvAdapter);
+typedef HRESULT(WINAPI* PFN_EnumAdapters1)(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1** ppAdapter);
+typedef HRESULT(WINAPI* PFN_EnumAdapters)(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** ppAdapter);
+
+static PFN_GetDesc ptrGetDesc = nullptr;
+static PFN_GetDesc1 ptrGetDesc1 = nullptr;
+static PFN_GetDesc2 ptrGetDesc2 = nullptr;
+static PFN_GetDesc3 ptrGetDesc3 = nullptr;
+
+static PFN_EnumAdapters ptrEnumAdapters = nullptr;
+static PFN_EnumAdapters1 ptrEnumAdapters1 = nullptr;
+static PFN_EnumAdapterByLuid ptrEnumAdapterByLuid = nullptr;
+static PFN_EnumAdapterByGpuPreference ptrEnumAdapterByGpuPreference = nullptr;
+
+void AttachToAdapter(IUnknown* unkAdapter);
+void AttachToFactory(IUnknown* unkFactory);
+
+#pragma endregion
+
+#pragma region Structs
 
 struct shared
 {
@@ -1231,21 +1267,6 @@ struct winhttp_dll
 	}
 } winhttp;
 
-typedef HRESULT(WINAPI* PFN_CREATE_DXGI_FACTORY)(REFIID riid, _COM_Outptr_ void** ppFactory);
-typedef HRESULT(WINAPI* PFN_CREATE_DXGI_FACTORY_2)(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFactory);
-typedef HRESULT(WINAPI* PFN_DECLARE_ADAPTER_REMOVAL_SUPPORT)();
-typedef HRESULT(WINAPI* PFN_GET_DEBUG_INTERFACE)(UINT Flags, REFIID riid, void** ppDebug);
-
-typedef HRESULT(WINAPI* PFN_GetDesc)(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc);
-typedef HRESULT(WINAPI* PFN_GetDesc1)(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc);
-typedef HRESULT(WINAPI* PFN_GetDesc2)(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc);
-typedef HRESULT(WINAPI* PFN_GetDesc3)(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc);
-
-typedef HRESULT(WINAPI* PFN_EnumAdapterByGpuPreference)(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, void** ppvAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapterByLuid)(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, void** ppvAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapters1)(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1** ppAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapters)(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** ppAdapter);
-
 struct dxgi_dll
 {
 	HMODULE dll;
@@ -1266,26 +1287,15 @@ struct dxgi_dll
 	}
 } dxgi;
 
-static PFN_GetDesc ptrGetDesc = nullptr;
-static PFN_GetDesc1 ptrGetDesc1 = nullptr;
-static PFN_GetDesc2 ptrGetDesc2 = nullptr;
-static PFN_GetDesc3 ptrGetDesc3 = nullptr;
+#pragma endregion
 
-static PFN_EnumAdapters ptrEnumAdapters = nullptr;
-static PFN_EnumAdapters1 ptrEnumAdapters1 = nullptr;
-static PFN_EnumAdapterByLuid ptrEnumAdapterByLuid = nullptr;
-static PFN_EnumAdapterByGpuPreference ptrEnumAdapterByGpuPreference = nullptr;
-
-void AttachToAdapter(IUnknown* unkAdapter);
-void AttachToFactory(IUnknown* unkFactory);
-
-#pragma region Adapter
+#pragma region DXGI Adapter methods
 
 HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
 {
 	auto result = ptrGetDesc3(This, pDesc);
 
-	if (result == S_OK) // && (pDesc->VendorId == 0x8086 || pDesc->VendorId == 0x1002))
+	if (result == S_OK && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
 	{
 		pDesc->VendorId = 0x10de;
 		pDesc->DeviceId = 0x2684;
@@ -1305,7 +1315,7 @@ HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
 {
 	auto result = ptrGetDesc2(This, pDesc);
 
-	if (result == S_OK && (pDesc->VendorId == 0x8086 || pDesc->VendorId == 0x1002 || pDesc->VendorId == 0x10de))
+	if (result == S_OK && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
 	{
 		pDesc->VendorId = 0x10de;
 		pDesc->DeviceId = 0x2684;
@@ -1325,7 +1335,7 @@ HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
 {
 	auto result = ptrGetDesc1(This, pDesc);
 
-	if (result == S_OK && (pDesc->VendorId == 0x8086 || pDesc->VendorId == 0x1002 || pDesc->VendorId == 0x10de))
+	if (result == S_OK && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
 	{
 		pDesc->VendorId = 0x10de;
 		pDesc->DeviceId = 0x2684;
@@ -1345,7 +1355,7 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
 {
 	auto result = ptrGetDesc(This, pDesc);
 
-	if (result == S_OK && (pDesc->VendorId == 0x8086 || pDesc->VendorId == 0x1002 || pDesc->VendorId == 0x10de))
+	if (result == S_OK && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
 	{
 		pDesc->VendorId = 0x10de;
 		pDesc->DeviceId = 0x2684;
@@ -1363,7 +1373,7 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
 
 #pragma endregion
 
-#pragma region Factory
+#pragma region DXGI Factory methods
 
 HRESULT WINAPI detEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, void** ppvAdapter)
 {
@@ -1431,7 +1441,7 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
 
 #pragma endregion
 
-#pragma region DXGI
+#pragma region DXGI methods
 
 HRESULT _CreateDXGIFactory(REFIID riid, _COM_Outptr_ void** ppFactory)
 {
@@ -1484,7 +1494,7 @@ HRESULT _DXGIGetDebugInterface1(UINT Flags, REFIID riid, void** ppDebug)
 
 #pragma endregion
 
-#pragma region Hooks
+#pragma region DXGI Attach methods
 
 void AttachToAdapter(IUnknown* unkAdapter)
 {
@@ -1622,15 +1632,18 @@ void AttachToFactory(IUnknown* unkFactory)
 
 #pragma endregion 
 
+#pragma region Shared methods
 
-// shared
 void _DllCanUnloadNow() { shared.DllCanUnloadNow(); }
 void _DllGetClassObject() { shared.DllGetClassObject(); }
 void _DllRegisterServer() { shared.DllRegisterServer(); }
 void _DllUnregisterServer() { shared.DllUnregisterServer(); }
 void _DebugSetMute() { shared.DebugSetMute(); }
 
-// winmm
+#pragma endregion 
+
+#pragma region WinMM Methods
+
 void _CloseDriver() { winmm.CloseDriver(); }
 void _DefDriverProc() { winmm.DefDriverProc(); }
 void _DriverCallback() { winmm.DriverCallback(); }
@@ -1824,7 +1837,10 @@ void _waveOutWrite() { winmm.waveOutWrite(); }
 void _wid32Message() { winmm.wid32Message(); }
 void _wod32Message() { winmm.wod32Message(); }
 
-// winhttp
+#pragma endregion 
+
+#pragma region WinHTTP methods
+
 void _Private1() { winhttp.Private1(); }
 void _SvchostPushServiceGlobals() { winhttp.SvchostPushServiceGlobals(); }
 void _WinHttpAddRequestHeaders() { winhttp.WinHttpAddRequestHeaders(); }
@@ -1906,7 +1922,10 @@ void _WinHttpWebSocketShutdown() { winhttp.WinHttpWebSocketShutdown(); }
 void _WinHttpWriteData() { winhttp.WinHttpWriteData(); }
 void _WinHttpWriteProxySettings() { winhttp.WinHttpWriteProxySettings(); }
 
-// wininet
+#pragma endregion 
+
+#pragma region WinInet methods
+
 void _AppCacheCheckManifest() { wininet.AppCacheCheckManifest(); }
 void _AppCacheCloseHandle() { wininet.AppCacheCloseHandle(); }
 void _AppCacheCreateAndCommitFile() { wininet.AppCacheCreateAndCommitFile(); }
@@ -2201,7 +2220,10 @@ void _UrlCacheSetGlobalLimit() { wininet.UrlCacheSetGlobalLimit(); }
 void _UrlCacheUpdateEntryExtraData() { wininet.UrlCacheUpdateEntryExtraData(); }
 void _UrlZonesDetach() { wininet.UrlZonesDetach(); }
 
-// version
+#pragma endregion 
+
+#pragma region Version methods
+
 void _GetFileVersionInfoA() { version.GetFileVersionInfoA(); }
 void _GetFileVersionInfoByHandle() { version.GetFileVersionInfoByHandle(); }
 void _GetFileVersionInfoExA() { version.GetFileVersionInfoExA(); }
@@ -2219,3 +2241,5 @@ void _VerLanguageNameA() { version.VerLanguageNameA(); }
 void _VerLanguageNameW() { version.VerLanguageNameW(); }
 void _VerQueryValueA() { version.VerQueryValueA(); }
 void _VerQueryValueW() { version.VerQueryValueW(); }
+
+#pragma endregion 

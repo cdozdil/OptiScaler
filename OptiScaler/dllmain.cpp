@@ -3,11 +3,12 @@
 #include "Logger.h"
 #include "resource.h"
 #include "Util.h"
-#include "Config.h"
 
 #include "imgui/imgui_overlay_dx12.h"
 
-#include "detours/detours.h"
+#include <vulkan/vulkan_core.h>
+
+#pragma warning (disable : 4996)
 
 typedef HMODULE(WINAPI* PFN_LoadLibraryA)(LPCSTR lpLibFileName);
 typedef HMODULE(WINAPI* PFN_LoadLibraryW)(LPCWSTR lpLibFileName);
@@ -18,6 +19,9 @@ PFN_LoadLibraryA o_LoadLibraryA = nullptr;
 PFN_LoadLibraryW o_LoadLibraryW = nullptr;
 PFN_LoadLibraryExA o_LoadLibraryExA = nullptr;
 PFN_LoadLibraryExW o_LoadLibraryExW = nullptr;
+PFN_vkGetPhysicalDeviceProperties o_vkGetPhysicalDeviceProperties = nullptr;
+PFN_vkGetPhysicalDeviceProperties2 o_vkGetPhysicalDeviceProperties2 = nullptr;
+PFN_vkGetPhysicalDeviceProperties2KHR o_vkGetPhysicalDeviceProperties2KHR = nullptr;
 
 std::string nvngxA("nvngx.dll");
 std::string nvngxExA("nvngx");
@@ -339,6 +343,40 @@ HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 	return result;
 }
 
+void WINAPI hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, VkPhysicalDeviceProperties* properties)
+{
+	o_vkGetPhysicalDeviceProperties(physical_device, properties);
+
+	std::strcpy(properties->deviceName, "NVIDIA GeForce RTX 4090");
+	properties->vendorID = 0x10de;
+	properties->deviceID = 0x2684;
+	//properties->deviceType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+	properties->driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
+}
+
+void WINAPI hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysicalDeviceProperties2* properties2)
+{
+	o_vkGetPhysicalDeviceProperties2(phys_dev, properties2);
+
+	std::strcpy(properties2->properties.deviceName, "NVIDIA GeForce RTX 4090");
+	properties2->properties.vendorID = 0x10de;
+	properties2->properties.deviceID = 0x2684;
+	//properties2->properties.deviceType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+	properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
+
+}
+
+void WINAPI hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhysicalDeviceProperties2* properties2)
+{
+	o_vkGetPhysicalDeviceProperties2KHR(phys_dev, properties2);
+
+	std::strcpy(properties2->properties.deviceName, "NVIDIA GeForce RTX 4090");
+	properties2->properties.vendorID = 0x10de;
+	properties2->properties.deviceID = 0x2684;
+	//properties2->properties.deviceType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+	properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
+}
+
 void DeatachHooks()
 {
 	if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
@@ -371,6 +409,24 @@ void DeatachHooks()
 			o_LoadLibraryExW = nullptr;
 		}
 
+		if (o_vkGetPhysicalDeviceProperties)
+		{
+			DetourDetach(&(PVOID&)o_vkGetPhysicalDeviceProperties, hkvkGetPhysicalDeviceProperties);
+			o_vkGetPhysicalDeviceProperties = nullptr;
+		}
+
+		if (o_vkGetPhysicalDeviceProperties2)
+		{
+			DetourDetach(&(PVOID&)o_vkGetPhysicalDeviceProperties2, hkvkGetPhysicalDeviceProperties2);
+			o_vkGetPhysicalDeviceProperties2 = nullptr;
+		}
+
+		if (o_vkGetPhysicalDeviceProperties2KHR)
+		{
+			DetourDetach(&(PVOID&)o_vkGetPhysicalDeviceProperties2KHR, hkvkGetPhysicalDeviceProperties2KHR);
+			o_vkGetPhysicalDeviceProperties2KHR = nullptr;
+		}
+
 		DetourTransactionCommit();
 
 		FreeLibrary(shared.dll);
@@ -379,33 +435,57 @@ void DeatachHooks()
 
 void AttachHooks()
 {
-	if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr)
-		return;
-
-	// Detour the functions
-	o_LoadLibraryA = reinterpret_cast<PFN_LoadLibraryA>(DetourFindFunction("kernel32.dll", "LoadLibraryA"));
-	o_LoadLibraryW = reinterpret_cast<PFN_LoadLibraryW>(DetourFindFunction("kernel32.dll", "LoadLibraryW"));
-	o_LoadLibraryExA = reinterpret_cast<PFN_LoadLibraryExA>(DetourFindFunction("kernel32.dll", "LoadLibraryExA"));
-	o_LoadLibraryExW = reinterpret_cast<PFN_LoadLibraryExW>(DetourFindFunction("kernel32.dll", "LoadLibraryExW"));
-
-	if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
+	if (o_LoadLibraryA == nullptr || o_LoadLibraryW == nullptr)
 	{
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
+		// Detour the functions
+		o_LoadLibraryA = reinterpret_cast<PFN_LoadLibraryA>(DetourFindFunction("kernel32.dll", "LoadLibraryA"));
+		o_LoadLibraryW = reinterpret_cast<PFN_LoadLibraryW>(DetourFindFunction("kernel32.dll", "LoadLibraryW"));
+		o_LoadLibraryExA = reinterpret_cast<PFN_LoadLibraryExA>(DetourFindFunction("kernel32.dll", "LoadLibraryExA"));
+		o_LoadLibraryExW = reinterpret_cast<PFN_LoadLibraryExW>(DetourFindFunction("kernel32.dll", "LoadLibraryExW"));
 
-		if (o_LoadLibraryA)
-			DetourAttach(&(PVOID&)o_LoadLibraryA, hkLoadLibraryA);
+		if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
+		{
+			DetourTransactionBegin();
+			DetourUpdateThread(GetCurrentThread());
 
-		if (o_LoadLibraryW)
-			DetourAttach(&(PVOID&)o_LoadLibraryW, hkLoadLibraryW);
+			if (o_LoadLibraryA)
+				DetourAttach(&(PVOID&)o_LoadLibraryA, hkLoadLibraryA);
 
-		if (o_LoadLibraryExA)
-			DetourAttach(&(PVOID&)o_LoadLibraryExA, hkLoadLibraryExA);
+			if (o_LoadLibraryW)
+				DetourAttach(&(PVOID&)o_LoadLibraryW, hkLoadLibraryW);
 
-		if (o_LoadLibraryExW)
-			DetourAttach(&(PVOID&)o_LoadLibraryExW, hkLoadLibraryExW);
+			if (o_LoadLibraryExA)
+				DetourAttach(&(PVOID&)o_LoadLibraryExA, hkLoadLibraryExA);
 
-		DetourTransactionCommit();
+			if (o_LoadLibraryExW)
+				DetourAttach(&(PVOID&)o_LoadLibraryExW, hkLoadLibraryExW);
+
+			DetourTransactionCommit();
+		}
+	}
+
+	if (Config::Instance()->VulkanSpoofing.value_or(false) && o_vkGetPhysicalDeviceProperties == nullptr)
+	{
+		o_vkGetPhysicalDeviceProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties"));
+		o_vkGetPhysicalDeviceProperties2 = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties2"));
+		o_vkGetPhysicalDeviceProperties2KHR = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2KHR>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties2KHR"));
+
+		if (o_vkGetPhysicalDeviceProperties != nullptr)
+		{
+			DetourTransactionBegin();
+			DetourUpdateThread(GetCurrentThread());
+
+			if (o_vkGetPhysicalDeviceProperties)
+				DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceProperties, hkvkGetPhysicalDeviceProperties);
+
+			if (o_vkGetPhysicalDeviceProperties2)
+				DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceProperties2, hkvkGetPhysicalDeviceProperties2);
+
+			if (o_vkGetPhysicalDeviceProperties2KHR)
+				DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceProperties2KHR, hkvkGetPhysicalDeviceProperties2KHR);
+
+			DetourTransactionCommit();
+		}
 	}
 }
 
@@ -645,6 +725,12 @@ void CheckWorkingMode()
 
 		AttachHooks();
 
+		if (!Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))
+		{
+			ImGuiOverlayDx12::Dx12Bind();
+			ImGuiOverlayDx12::FSR3Bind();
+		}
+
 		return;
 	}
 
@@ -665,12 +751,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 		spdlog::info("{0} loaded", VER_PRODUCT_NAME);
 
 		CheckWorkingMode();
-
-		if (!Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))
-		{
-			ImGuiOverlayDx12::Dx12Bind();
-			ImGuiOverlayDx12::FSR3Bind();
-		}
 
 		break;
 

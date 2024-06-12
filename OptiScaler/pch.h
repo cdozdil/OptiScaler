@@ -21,6 +21,8 @@
 // Enables logging of DLSS NV Parameters
 //#define DLSS_PARAM_DUMP
 
+#define _CRT_SECURE_NO_DEPRECATE
+
 inline HMODULE dllModule;
 inline DWORD processId;
 

@@ -134,6 +134,10 @@ public:
 	std::optional<bool> OverrideNvapiDll;
 	std::optional<std::string> NvapiDllPath;
 
+	// spoofing
+	std::optional<bool> DxgiSpoofing;
+	std::optional<bool> VulkanSpoofing;
+
 	// nvngx init parameters
 	unsigned long long NVNGX_ApplicationId = 1337;
 	std::wstring NVNGX_ApplicationDataPath;
