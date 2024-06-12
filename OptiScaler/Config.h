@@ -138,6 +138,10 @@ public:
 	std::optional<bool> DxgiSpoofing;
 	std::optional<bool> VulkanSpoofing;
 
+	// plugins
+	std::optional<std::string> PluginPath;
+
+
 	// nvngx init parameters
 	unsigned long long NVNGX_ApplicationId = 1337;
 	std::wstring NVNGX_ApplicationDataPath;

@@ -202,6 +202,12 @@ bool Config::Reload()
 		DxgiSpoofing = readBool("Spoofing", "Dxgi");
 		VulkanSpoofing = readBool("Spoofing", "Vulkan");		
 
+		// plugins
+		PluginPath = readString("Plugins", "Path", true);
+
+		if (!PluginPath.has_value())
+			PluginPath = (Util::DllPath().parent_path() / "plugins").string();
+
 		return true;
 	}
 
@@ -360,6 +366,10 @@ bool Config::SaveIni()
 	// Spoofing
 	ini.SetValue("Spoofing", "Dxgi", GetBoolValue(Instance()->DxgiSpoofing).c_str());
 	ini.SetValue("Spoofing", "Vulkan", GetBoolValue(Instance()->VulkanSpoofing).c_str());
+
+	// Plugins
+	ini.SetValue("Plugins", "Path", Instance()->PluginPath.value_or("auto").c_str());
+
 
 	return ini.SaveFile(absoluteFileName.wstring().c_str()) >= 0;
 }

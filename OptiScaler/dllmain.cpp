@@ -73,6 +73,9 @@ HMODULE LoadNvApi()
 
 HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 {
+	if (lpLibFileName == nullptr)
+		return NULL;
+
 	std::string libName(lpLibFileName);
 	std::string lcaseLibName(libName);
 
@@ -126,6 +129,9 @@ HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 
 HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 {
+	if (lpLibFileName == nullptr)
+		return NULL;
+
 	std::wstring libName(lpLibFileName);
 	std::wstring lcaseLibName(libName);
 
@@ -182,6 +188,9 @@ HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 
 HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 {
+	if (lpLibFileName == nullptr)
+		return NULL;
+
 	std::string libName(lpLibFileName);
 	std::string lcaseLibName(libName);
 
@@ -262,6 +271,9 @@ HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 
 HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 {
+	if (lpLibFileName == nullptr)
+		return NULL;
+
 	std::wstring libName(lpLibFileName);
 	std::wstring lcaseLibName(libName);
 
@@ -496,6 +508,7 @@ void CheckWorkingMode()
 	wchar_t sysFolder[MAX_PATH];
 	GetSystemDirectory(sysFolder, MAX_PATH);
 	std::filesystem::path sysPath(sysFolder);
+	std::filesystem::path pluginPath(Config::Instance()->PluginPath.value());
 
 
 	for (size_t i = 0; i < lCaseFilename.size(); i++)
@@ -511,20 +524,32 @@ void CheckWorkingMode()
 
 	if (lCaseFilename == "version.dll")
 	{
-		dll = LoadLibrary(L"version-original.dll");
-
-		if (dll == nullptr)
+		do
 		{
+			auto pluginFilePath = pluginPath / L"version.dll";
+			dll = LoadLibrary(pluginFilePath.wstring().c_str());
+
+			if (dll != nullptr)
+			{
+				spdlog::info("OptiScaler working as version.dll, original dll loaded from plugin folder");
+				break;
+			}
+
+			dll = LoadLibrary(L"version-original.dll");
+
+			if (dll != nullptr)
+			{
+				spdlog::info("OptiScaler working as version.dll, version-original.dll loaded");
+				break;
+			}
+
 			auto sysFilePath = sysPath / L"version.dll";
 			dll = LoadLibrary(sysFilePath.wstring().c_str());
 
 			if (dll != nullptr)
 				spdlog::info("OptiScaler working as version.dll, system dll loaded");
-		}
-		else
-		{
-			spdlog::info("OptiScaler working as version.dll, version-original.dll loaded");
-		}
+		
+		} while (false);
 
 		if (dll != nullptr)
 		{
@@ -544,20 +569,32 @@ void CheckWorkingMode()
 
 	if (lCaseFilename == "winmm.dll")
 	{
-		dll = LoadLibrary(L"winmm-original.dll");
-
-		if (dll == nullptr)
+		do
 		{
+			auto pluginFilePath = pluginPath / L"winmm.dll";
+			dll = LoadLibrary(pluginFilePath.wstring().c_str());
+
+			if (dll != nullptr)
+			{
+				spdlog::info("OptiScaler working as winmm.dll, original dll loaded from plugin folder");
+				break;
+			}
+
+			dll = LoadLibrary(L"winmm-original.dll");
+
+			if (dll != nullptr)
+			{
+				spdlog::info("OptiScaler working as winmm.dll, winmm-original.dll loaded");
+				break;
+			}
+
 			auto sysFilePath = sysPath / L"winmm.dll";
 			dll = LoadLibrary(sysFilePath.wstring().c_str());
 
 			if (dll != nullptr)
 				spdlog::info("OptiScaler working as winmm.dll, system dll loaded");
-		}
-		else
-		{
-			spdlog::info("OptiScaler working as winmm.dll, winmm-original.dll loaded");
-		}
+
+		} while (false);
 
 		if (dll != nullptr)
 		{
@@ -577,20 +614,32 @@ void CheckWorkingMode()
 
 	if (lCaseFilename == "wininet.dll")
 	{
-		dll = LoadLibrary(L"wininet-original.dll");
-
-		if (dll == nullptr)
+		do
 		{
+			auto pluginFilePath = pluginPath / L"wininet.dll";
+			dll = LoadLibrary(pluginFilePath.wstring().c_str());
+
+			if (dll != nullptr)
+			{
+				spdlog::info("OptiScaler working as wininet.dll, original dll loaded from plugin folder");
+				break;
+			}
+
+			dll = LoadLibrary(L"wininet-original.dll");
+
+			if (dll != nullptr)
+			{
+				spdlog::info("OptiScaler working as wininet.dll, wininet-original.dll loaded");
+				break;
+			}
+
 			auto sysFilePath = sysPath / L"wininet.dll";
 			dll = LoadLibrary(sysFilePath.wstring().c_str());
 
 			if (dll != nullptr)
 				spdlog::info("OptiScaler working as wininet.dll, system dll loaded");
-		}
-		else
-		{
-			spdlog::info("OptiScaler working as wininet.dll, wininet-original.dll loaded");
-		}
+
+		} while (false);
 
 		if (dll != nullptr)
 		{
@@ -623,20 +672,32 @@ void CheckWorkingMode()
 
 	if (lCaseFilename == "winhttp.dll")
 	{
-		dll = LoadLibrary(L"winhttp-original.dll");
-
-		if (dll == nullptr)
+		do
 		{
+			auto pluginFilePath = pluginPath / L"winhttp.dll";
+			dll = LoadLibrary(pluginFilePath.wstring().c_str());
+
+			if (dll != nullptr)
+			{
+				spdlog::info("OptiScaler working as winhttp.dll, original dll loaded from plugin folder");
+				break;
+			}
+
+			dll = LoadLibrary(L"winhttp-original.dll");
+
+			if (dll != nullptr)
+			{
+				spdlog::info("OptiScaler working as winhttp.dll, winhttp-original.dll loaded");
+				break;
+			}
+
 			auto sysFilePath = sysPath / L"winhttp.dll";
 			dll = LoadLibrary(sysFilePath.wstring().c_str());
 
 			if (dll != nullptr)
 				spdlog::info("OptiScaler working as winhttp.dll, system dll loaded");
-		}
-		else
-		{
-			spdlog::info("OptiScaler working as winhttp.dll, winhttp-original.dll loaded");
-		}
+
+		} while (false);
 
 		if (dll != nullptr)
 		{
@@ -656,20 +717,32 @@ void CheckWorkingMode()
 
 	if (lCaseFilename == "dxgi.dll")
 	{
-		dll = LoadLibrary(L"dxgi-original.dll");
-
-		if (dll == nullptr)
+		do
 		{
+			auto pluginFilePath = pluginPath / L"dxgi.dll";
+			dll = LoadLibrary(pluginFilePath.wstring().c_str());
+
+			if (dll != nullptr)
+			{
+				spdlog::info("OptiScaler working as dxgi.dll, original dll loaded from plugin folder");
+				break;
+			}
+
+			dll = LoadLibrary(L"dxgi-original.dll");
+
+			if (dll != nullptr)
+			{
+				spdlog::info("OptiScaler working as dxgi.dll, dxgi-original.dll loaded");
+				break;
+			}
+
 			auto sysFilePath = sysPath / L"dxgi.dll";
 			dll = LoadLibrary(sysFilePath.wstring().c_str());
 
 			if (dll != nullptr)
 				spdlog::info("OptiScaler working as dxgi.dll, system dll loaded");
-		}
-		else
-		{
-			spdlog::info("OptiScaler working as dxgi.dll, dxgi-original.dll loaded");
-		}
+
+		} while (false);
 
 		if (dll != nullptr)
 		{
