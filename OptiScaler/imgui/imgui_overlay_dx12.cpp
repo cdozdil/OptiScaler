@@ -1806,6 +1806,16 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 		if (Config::Instance()->CurrentFeature != nullptr &&
 			Config::Instance()->CurrentFeature->FrameCount() <= Config::Instance()->MenuInitDelay.value_or(90) + 10)
 		{
+			spdlog::info("ImGuiOverlayDx12::RenderImGui_DX12 Upscaler feature not created, closing menu");
+			ImGuiOverlayBase::HideMenu();
+			break;
+		}
+
+		// If path is not selected yet
+		if (_lastActiveSource == Unknown)
+		{
+			spdlog::info("ImGuiOverlayDx12::RenderImGui_DX12 Swapchain not captured, closing menu");
+			ImGuiOverlayBase::HideMenu();
 			break;
 		}
 
