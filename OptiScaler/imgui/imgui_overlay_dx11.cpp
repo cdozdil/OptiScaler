@@ -282,9 +282,8 @@ static void RenderImGui_DX11(IDXGISwapChain* pSwapChain)
 
 	if (_isInited)
 	{
-		if (!g_pd3dRenderTarget) {
+		if (!g_pd3dRenderTarget) 
 			CreateRenderTarget(pSwapChain);
-		}
 
 		if (ImGui::GetCurrentContext() && g_pd3dRenderTarget)
 		{
