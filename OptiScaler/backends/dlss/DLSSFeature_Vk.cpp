@@ -26,47 +26,21 @@ bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice 
 	{
 		if (!_dlssInited)
 		{
-			NVSDK_NGX_FeatureCommonInfo fcInfo{};
+			_dlssInited = NVNGXProxy::InitVulkan(InInstance, InPD, InDevice, InGIPA, InGDPA);
 
-			GetFeatureCommonInfo(&fcInfo);
+			if (!_dlssInited)
+				return false;
 
-			if (Config::Instance()->NVNGX_ProjectId != "" && _Init_with_ProjectID != nullptr)
-			{
-				spdlog::debug("DLSSFeatureVk::Init _Init_with_ProjectID!");
-
-				nvResult = _Init_with_ProjectID(Config::Instance()->NVNGX_ProjectId.c_str(), Config::Instance()->NVNGX_Engine, Config::Instance()->NVNGX_EngineVersion.c_str(),
-					Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InInstance, InPD, InDevice, InGIPA, InGDPA, Config::Instance()->NVNGX_Version, &fcInfo);
-			}
-			else if (_Init_Ext != nullptr)
-			{
-				spdlog::debug("DLSSFeatureVk::Init _Init_Ext!");
-
-				nvResult = _Init_Ext(Config::Instance()->NVNGX_ApplicationId, Config::Instance()->NVNGX_ApplicationDataPath.c_str(),
-					InInstance, InPD, InDevice, InGIPA, InGDPA, Config::Instance()->NVNGX_Version, &fcInfo);
-			}
-			else
-			{
-				spdlog::error("DLSSFeatureVk::Init _Init_with_ProjectID and  is null");
-				break;
-			}
-
-			if (nvResult != NVSDK_NGX_Result_Success)
-			{
-				spdlog::error("DLSSFeatureVk::Init _Init_with_ProjectID result: {0:X}", (unsigned int)nvResult);
-				break;
-			}
-
-			_dlssInited = true;
 
 			//delay between init and create feature
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 
-		if (_AllocateParameters != nullptr)
+		if (NVNGXProxy::VULKAN_AllocateParameters() != nullptr)
 		{
 			spdlog::debug("DLSSFeatureVk::Init _AllocateParameters will be used");
 
-			nvResult = _AllocateParameters(&Parameters);
+			nvResult = NVNGXProxy::VULKAN_AllocateParameters()(&Parameters);
 
 			if (nvResult != NVSDK_NGX_Result_Success)
 			{
@@ -78,11 +52,11 @@ bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice 
 			DumpNvParams(Parameters);
 #endif
 		}
-		else if (_GetParameters != nullptr)
+		else if (NVNGXProxy::VULKAN_GetParameters() != nullptr)
 		{
 			spdlog::debug("DLSSFeatureVk::Init _GetParameters will be used");
 
-			nvResult = _GetParameters(&Parameters);
+			nvResult = NVNGXProxy::VULKAN_GetParameters()(&Parameters);
 
 			if (nvResult != NVSDK_NGX_Result_Success)
 			{
@@ -102,12 +76,12 @@ bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice 
 
 		spdlog::info("DLSSFeatureVk::Evaluate Creating DLSS feature");
 
-		if (_CreateFeature != nullptr)
+		if (NVNGXProxy::VULKAN_CreateFeature() != nullptr)
 		{
 			ProcessInitParams(InParameters);
 
 			_p_dlssHandle = &_dlssHandle;
-			nvResult = _CreateFeature(InCmdList, NVSDK_NGX_Feature_SuperSampling, Parameters, &_p_dlssHandle);
+			nvResult = NVNGXProxy::VULKAN_CreateFeature()(InCmdList, NVSDK_NGX_Feature_SuperSampling, Parameters, &_p_dlssHandle);
 
 			if (nvResult != NVSDK_NGX_Result_Success)
 			{
@@ -142,11 +116,11 @@ bool DLSSFeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 
 	NVSDK_NGX_Result nvResult;
 
-	if (_EvaluateFeature != nullptr)
+	if (NVNGXProxy::VULKAN_EvaluateFeature() != nullptr)
 	{
 		ProcessEvaluateParams(InParameters);
 
-		nvResult = _EvaluateFeature(InCmdBuffer, _p_dlssHandle, Parameters, NULL);
+		nvResult = NVNGXProxy::VULKAN_EvaluateFeature()(InCmdBuffer, _p_dlssHandle, Parameters, NULL);
 
 		if (nvResult != NVSDK_NGX_Result_Success)
 		{
@@ -169,10 +143,10 @@ void DLSSFeatureVk::Shutdown(VkDevice InDevice)
 {
 	if (_dlssInited)
 	{
-		if (_Shutdown != nullptr)
-			_Shutdown();
-		else if (_Shutdown1 != nullptr)
-			_Shutdown1(InDevice);
+		if (NVNGXProxy::VULKAN_Shutdown() != nullptr)
+			NVNGXProxy::VULKAN_Shutdown()();
+		else if (NVNGXProxy::VULKAN_Shutdown1() != nullptr)
+			NVNGXProxy::VULKAN_Shutdown1()(InDevice);
 	}
 
 	DLSSFeature::Shutdown();
@@ -180,51 +154,26 @@ void DLSSFeatureVk::Shutdown(VkDevice InDevice)
 
 DLSSFeatureVk::DLSSFeatureVk(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters), IFeature_Vk(InHandleId, InParameters), DLSSFeature(InHandleId, InParameters)
 {
-	if (!_moduleLoaded)
-		return;
+	if (NVNGXProxy::NVNGXModule() == nullptr)
+	{
+		spdlog::info("DLSSFeatureVk::DLSSFeatureVk nvngx.dll not loaded, now loading");
+		NVNGXProxy::InitNVNGX();
+	}
 
-	if (_Init_with_ProjectID == nullptr)
-		_Init_with_ProjectID = (PFN_NVSDK_NGX_VULKAN_Init_ProjectID)GetProcAddress(NVNGX(), "NVSDK_NGX_VULKAN_Init_ProjectID");
-
-	if (_Init_Ext == nullptr)
-		_Init_Ext = (PFN_NVSDK_NGX_VULKAN_Init)GetProcAddress(NVNGX(), "NVSDK_NGX_VULKAN_Init");
-
-	if (_Shutdown == nullptr)
-		_Shutdown = (PFN_NVSDK_NGX_VULKAN_Shutdown)GetProcAddress(NVNGX(), "NVSDK_NGX_VULKAN_Shutdown");
-
-	if (_Shutdown1 == nullptr)
-		_Shutdown1 = (PFN_NVSDK_NGX_VULKAN_Shutdown1)GetProcAddress(NVNGX(), "NVSDK_NGX_VULKAN_Shutdown1");
-
-	if (_GetParameters == nullptr)
-		_GetParameters = (PFN_NVSDK_NGX_VULKAN_GetParameters)GetProcAddress(NVNGX(), "NVSDK_NGX_VULKAN_GetParameters");
-
-	if (_AllocateParameters == nullptr)
-		_AllocateParameters = (PFN_NVSDK_NGX_VULKAN_AllocateParameters)GetProcAddress(NVNGX(), "NVSDK_NGX_VULKAN_AllocateParameters");
-
-	if (_DestroyParameters == nullptr)
-		_DestroyParameters = (PFN_NVSDK_NGX_VULKAN_DestroyParameters)GetProcAddress(NVNGX(), "NVSDK_NGX_VULKAN_DestroyParameters");
-
-	if (_CreateFeature == nullptr)
-		_CreateFeature = (PFN_NVSDK_NGX_VULKAN_CreateFeature)GetProcAddress(NVNGX(), "NVSDK_NGX_VULKAN_CreateFeature");
-
-	if (_ReleaseFeature == nullptr)
-		_ReleaseFeature = (PFN_NVSDK_NGX_VULKAN_ReleaseFeature)GetProcAddress(NVNGX(), "NVSDK_NGX_VULKAN_ReleaseFeature");
-
-	if (_EvaluateFeature == nullptr)
-		_EvaluateFeature = (PFN_NVSDK_NGX_VULKAN_EvaluateFeature)GetProcAddress(NVNGX(), "NVSDK_NGX_VULKAN_EvaluateFeature");
-
-	_moduleLoaded = (_Init_with_ProjectID != nullptr || _Init_Ext != nullptr) && (_Shutdown != nullptr || _Shutdown1 != nullptr) &&
-		(_GetParameters != nullptr || _AllocateParameters != nullptr) && _DestroyParameters != nullptr && _CreateFeature != nullptr &&
-		_ReleaseFeature != nullptr && _EvaluateFeature != nullptr;
+	_moduleLoaded = (NVNGXProxy::VULKAN_Init_with_ProjectID() != nullptr || NVNGXProxy::VULKAN_Init_Ext() != nullptr) &&
+		(NVNGXProxy::VULKAN_Shutdown() != nullptr || NVNGXProxy::VULKAN_Shutdown1() != nullptr) &&
+		(NVNGXProxy::VULKAN_GetParameters() != nullptr || NVNGXProxy::VULKAN_AllocateParameters() != nullptr) &&
+		NVNGXProxy::VULKAN_DestroyParameters() != nullptr && NVNGXProxy::VULKAN_CreateFeature() != nullptr &&
+		NVNGXProxy::VULKAN_ReleaseFeature() != nullptr && NVNGXProxy::VULKAN_EvaluateFeature() != nullptr;
 
 	spdlog::info("DLSSFeatureVk::DLSSFeatureVk binding complete!");
 }
 
 DLSSFeatureVk::~DLSSFeatureVk()
 {
-	if (Parameters != nullptr && _DestroyParameters != nullptr)
-		_DestroyParameters(Parameters);
+	if (Parameters != nullptr && NVNGXProxy::VULKAN_DestroyParameters() != nullptr)
+		NVNGXProxy::VULKAN_DestroyParameters()(Parameters);
 
-	if (_ReleaseFeature != nullptr && _p_dlssHandle != nullptr)
-		_ReleaseFeature(_p_dlssHandle);
+	if (NVNGXProxy::VULKAN_ReleaseFeature() != nullptr && _p_dlssHandle != nullptr)
+		NVNGXProxy::VULKAN_ReleaseFeature()(_p_dlssHandle);
 }

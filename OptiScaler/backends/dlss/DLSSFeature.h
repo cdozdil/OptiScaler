@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../IFeature.h"
 #include "../../pch.h"
-#include <string>
+#include "../../NVNGX_Proxy.h"
+#include "../IFeature.h"
 
 typedef uint32_t(*PFN_NVSDK_NGX_GetSnippetVersion)(void);
 
@@ -10,7 +10,6 @@ class DLSSFeature : public virtual IFeature
 {
 private:
 	feature_version _version = { 0, 0, 0 };
-	inline static HMODULE _nvngx = nullptr;
 		
 protected:
 	NVSDK_NGX_Parameter* Parameters = nullptr;
@@ -18,11 +17,8 @@ protected:
 	NVSDK_NGX_Handle* _p_dlssHandle = nullptr;
 	inline static bool _dlssInited = false;
 
-	HMODULE NVNGX() { return _nvngx; }
-
 	void ProcessEvaluateParams(const NVSDK_NGX_Parameter* InParameters);
 	void ProcessInitParams(const NVSDK_NGX_Parameter* InParameters);
-	void GetFeatureCommonInfo(NVSDK_NGX_FeatureCommonInfo* fcInfo);
 
 	static void Shutdown();
 
