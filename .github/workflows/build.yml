@@ -42,8 +42,11 @@ jobs:
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
       run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
       
+    - name: Compress the artifact 
+      run: 7z a ${{ github.workspace }}\OptiScaler.7z ${{ github.workspace }}\x64\Release\a\*.*
+
     - uses: actions/upload-artifact@v4
       with:
         name: OptiScaler
-        path: ${{ github.workspace }}\x64\Release\a\*.*
+        path: ${{ github.workspace }}\OptiScaler.7z
         if-no-files-found: error
