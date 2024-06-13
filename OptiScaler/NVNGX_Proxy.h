@@ -145,15 +145,11 @@ private:
 
 	inline static PFN_UpdateFeature _UpdateFeature = nullptr;
 
+public:
 	static void InitNVNGX()
 	{
 		// if dll already loaded
 		if (_dll != nullptr)
-			return;
-
-		// path from registry
-		auto regNGXCorePath = Util::NvngxPath();
-		if (!regNGXCorePath.has_value())
 			return;
 
 		spdlog::debug("NVNGXProxy::InitNVNGX");
@@ -162,6 +158,7 @@ private:
 
 		do
 		{
+			// From DLSS Enabler
 			_dll = LoadLibrary(L"dlss-enabler-ngx.dll");
 			spdlog::info("NVNGXProxy::InitNVNGX trying to load dlss-enabler-ngx.dll");
 
@@ -171,6 +168,39 @@ private:
 				spdlog::info("NVNGXProxy::InitNVNGX dlss-enabler-ngx.dll loaded from DLSS Enabler, ptr: {0:X}", (ULONG64)_dll);
 				break;
 			}
+
+			// From ini
+			if (Config::Instance()->DLSSLibrary.has_value())
+			{
+				spdlog::info("NVNGXProxy::InitNVNGX trying to load nvngx from ini path!");
+
+				std::filesystem::path cfgPath(Config::Instance()->DLSSLibrary.value().c_str());
+				auto path = cfgPath / L"_nvngx.dll";
+
+				spdlog::info("NVNGXProxy::InitNVNGX trying to load _nvngx.dll path: {0}", path.string());
+				_dll = LoadLibraryW(path.c_str());
+
+				if (_dll)
+				{
+					spdlog::info("NVNGXProxy::InitNVNGX _nvngx.dll loaded from {0}, ptr: {1:X}", path.string(), (ULONG64)_dll);
+					break;
+				}
+
+				path = cfgPath / L"nvngx.dll";
+				spdlog::info("NVNGXProxy::InitNVNGX trying to load nvngx.dll path: {0}", path.string());
+				_dll = LoadLibraryW(path.c_str());
+
+				if (_dll)
+				{
+					spdlog::info("NVNGXProxy::InitNVNGX nvngx.dll loaded from {0}, ptr: {1:X}", path.string(), (ULONG64)_dll);
+					break;
+				}
+			}
+
+			// From registry
+			auto regNGXCorePath = Util::NvngxPath();
+			if (!regNGXCorePath.has_value())
+				break;
 
 			auto nvngxPath = regNGXCorePath.value() / "_nvngx.dll";
 			spdlog::info("NVNGXProxy::InitNVNGX trying to load _nvngx.dll path: {0}", nvngxPath.string());
@@ -193,7 +223,7 @@ private:
 
 		if (_dll)
 		{
-			spdlog::debug("NVNGXProxy::InitNVNGX getting nvngx method addresses");
+			spdlog::info("NVNGXProxy::InitNVNGX getting nvngx method addresses");
 
 			_D3D11_Init = (PFN_D3D11_Init)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Init");
 			_D3D11_Init_with_ProjectID = (PFN_D3D11_Init_with_ProjectID)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Init_with_ProjectID");
@@ -272,7 +302,11 @@ private:
 		fcInfo->PathListInfo.Length = static_cast<unsigned int>(Config::Instance()->NVNGX_FeatureInfo_Paths.size());
 	}
 
-public:
+	static HMODULE NVNGXModule()
+	{
+		return _dll;
+	}
+
 	// DirectX11
 	static bool InitDx11(ID3D11Device* InDevice)
 	{
@@ -305,6 +339,46 @@ public:
 
 		_dx11Inited = (nvResult == NVSDK_NGX_Result_Success);
 		return _dx11Inited;
+	}
+
+	static PFN_D3D11_Init_with_ProjectID D3D11_Init_with_ProjectID()
+	{
+		if (!_dx11Inited)
+			return nullptr;
+
+		return _D3D11_Init_with_ProjectID;
+	}
+
+	static PFN_D3D11_Init_Ext D3D11_Init_Ext()
+	{
+		if (!_dx11Inited)
+			return nullptr;
+
+		return _D3D11_Init_Ext;
+	}
+
+	static PFN_D3D11_AllocateParameters D3D11_AllocateParameters()
+	{
+		if (!_dx11Inited)
+			return nullptr;
+
+		return _D3D11_AllocateParameters;
+	}
+
+	static PFN_D3D11_GetParameters D3D11_GetParameters()
+	{
+		if (!_dx11Inited)
+			return nullptr;
+
+		return _D3D11_GetParameters;
+	}
+
+	static PFN_D3D11_DestroyParameters D3D11_DestroyParameters()
+	{
+		if (!_dx11Inited)
+			return nullptr;
+
+		return _D3D11_DestroyParameters;
 	}
 
 	static PFN_D3D11_CreateFeature D3D11_CreateFeature()
@@ -379,6 +453,46 @@ public:
 
 		_dx12Inited = (nvResult == NVSDK_NGX_Result_Success);
 		return _dx12Inited;
+	}
+
+	static PFN_D3D12_Init_with_ProjectID D3D12_Init_with_ProjectID()
+	{
+		if (!_dx12Inited)
+			return nullptr;
+
+		return _D3D12_Init_with_ProjectID;
+	}
+
+	static PFN_D3D12_Init_Ext D3D12_Init_Ext()
+	{
+		if (!_dx12Inited)
+			return nullptr;
+
+		return _D3D12_Init_Ext;
+	}
+
+	static PFN_D3D12_AllocateParameters D3D12_AllocateParameters()
+	{
+		if (!_dx12Inited)
+			return nullptr;
+
+		return _D3D12_AllocateParameters;
+	}
+
+	static PFN_D3D12_GetParameters D3D12_GetParameters()
+	{
+		if (!_dx12Inited)
+			return nullptr;
+
+		return _D3D12_GetParameters;
+	}
+
+	static PFN_D3D12_DestroyParameters D3D12_DestroyParameters()
+	{
+		if (!_dx12Inited)
+			return nullptr;
+
+		return _D3D12_DestroyParameters;
 	}
 
 	static PFN_D3D12_CreateFeature D3D12_CreateFeature()
@@ -456,6 +570,46 @@ public:
 		return true;
 	}
 
+	static PFN_VULKAN_Init_with_ProjectID VULKAN_Init_with_ProjectID()
+	{
+		if (!_vulkanInited)
+			return nullptr;
+
+		return _VULKAN_Init_with_ProjectID;
+	}
+
+	static PFN_VULKAN_Init_Ext VULKAN_Init_Ext()
+	{
+		if (!_vulkanInited)
+			return nullptr;
+
+		return _VULKAN_Init_Ext;
+	}
+
+	static PFN_VULKAN_AllocateParameters VULKAN_AllocateParameters()
+	{
+		if (!_vulkanInited)
+			return nullptr;
+
+		return _VULKAN_AllocateParameters;
+	}
+
+	static PFN_VULKAN_GetParameters VULKAN_GetParameters()
+	{
+		if (!_vulkanInited)
+			return nullptr;
+
+		return _VULKAN_GetParameters;
+	}
+
+	static PFN_VULKAN_DestroyParameters VULKAN_DestroyParameters()
+	{
+		if (!_vulkanInited)
+			return nullptr;
+
+		return _VULKAN_DestroyParameters;
+	}
+
 	static PFN_VULKAN_CreateFeature VULKAN_CreateFeature()
 	{
 		if (!_vulkanInited)
@@ -511,4 +665,5 @@ public:
 
 		return _UpdateFeature;
 	}
+
 };
