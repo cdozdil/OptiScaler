@@ -3,7 +3,7 @@
 #include <ankerl/unordered_dense.h>
 #include "Config.h"
 
-inline std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_Value input)
+inline static std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_Value input)
 {
 	std::optional<float> output;
 
@@ -64,7 +64,7 @@ inline std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_
 	return output;
 }
 
-inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVSDK_NGX_Parameter* InParams)
+inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVSDK_NGX_Parameter* InParams)
 {
 	unsigned int Width;
 	unsigned int Height;
@@ -206,7 +206,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallback(NVS
 	return NVSDK_NGX_Result_Success;
 }
 
-inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetStatsCallback(NVSDK_NGX_Parameter* InParams)
+inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetStatsCallback(NVSDK_NGX_Parameter* InParams)
 {
 	spdlog::debug("NVSDK_NGX_DLSS_GetStatsCallback");
 
@@ -223,7 +223,7 @@ inline NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetStatsCallback(NVSDK_NGX_Par
 	return NVSDK_NGX_Result_Success;
 }
 
-inline void InitNGXParameters(NVSDK_NGX_Parameter* InParams)
+inline static void InitNGXParameters(NVSDK_NGX_Parameter* InParams)
 {
 	InParams->Set(NVSDK_NGX_Parameter_SuperSampling_Available, 1);
 
@@ -449,7 +449,7 @@ private:
 	}
 };
 
-inline NVSDK_NGX_Parameter* GetNGXParameters(std::string InName)
+inline static NVSDK_NGX_Parameter* GetNGXParameters(std::string InName)
 {
 	auto params = new NVNGX_Parameters();
 	params->Name = InName;
