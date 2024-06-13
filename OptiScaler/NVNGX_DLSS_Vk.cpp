@@ -25,34 +25,25 @@ static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeatu
 static inline NVSDK_NGX_Parameter* createParams = nullptr;
 static inline int changeBackendCounter = 0;
 
-//NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, struct VkInstance* InInstance, struct VkPhysicalDevice* InPD, struct VkDevice* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
-//{
-//	return NVSDK_NGX_Result_Success;
-//}
-//
-//NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, struct VkInstance* InInstance, struct VkPhysicalDevice* InPD, struct VkDevice* InDevice, void* InGIPA, void* InGDPA, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
-//{
-//	return NVSDK_NGX_Result_Success;
-//}
-//
-//NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, struct VkInstance* InInstance, struct VkPhysicalDevice* InPD, struct VkDevice* InDevice, void* InGIPA, void* InGDPA, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
-//{
-//	return NVSDK_NGX_Result_Success;
-//}
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD,
+	VkDevice InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
+{
+	spdlog::debug("NVSDK_NGX_VULKAN_Init_Ext");
+	return NVSDK_NGX_VULKAN_Init_Ext2(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, vkGetInstanceProcAddr, vkGetDeviceProcAddr, InSDKVersion, InFeatureInfo);
+}
 
-NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD,
-	VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD,
+	VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
 	Config::Instance()->NVNGX_ApplicationId = InApplicationId;
 	Config::Instance()->NVNGX_ApplicationDataPath = std::wstring(InApplicationDataPath);
 	Config::Instance()->NVNGX_Version = InSDKVersion;
 	Config::Instance()->NVNGX_FeatureInfo = InFeatureInfo;
+	Config::Instance()->NVNGX_Version = InSDKVersion;
 
 	Config::Instance()->NVNGX_FeatureInfo_Paths.clear();
 
-	// No Man's Sky sends InFeatureInfo & InSDKVersion in wrong order 
-	// To prevent access violation added this check
-	if (InFeatureInfo != nullptr && (ULONG64)InFeatureInfo > 0x000001F)
+	if (InFeatureInfo != nullptr)
 	{
 		if (InSDKVersion > 0x0000013)
 			Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
@@ -67,22 +58,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 			}
 		}
 	}
-	else
-	{
-		Config::Instance()->NVNGX_FeatureInfo = nullptr;
 
-		if ((ULONG64)InFeatureInfo < 0x000001F)
-			Config::Instance()->NVNGX_Version = (NVSDK_NGX_Version)(unsigned int)InFeatureInfo;
-	}
-
-	spdlog::info("NVSDK_NGX_VULKAN_Init InApplicationId: {0}", InApplicationId);
-	spdlog::info("NVSDK_NGX_VULKAN_Init InSDKVersion: {0:x}", (unsigned int)InSDKVersion);
+	spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InApplicationId: {0}", InApplicationId);
+	spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InSDKVersion: {0:x}", (unsigned int)InSDKVersion);
 	std::wstring string(InApplicationDataPath);
 
 	std::string str(string.length(), 0);
 	std::transform(string.begin(), string.end(), str.begin(), [](wchar_t c) { return (char)c; });
 
-	spdlog::debug("NVSDK_NGX_VULKAN_Init InApplicationDataPath {0}", str);
+	spdlog::debug("NVSDK_NGX_VULKAN_Init_Ext2 InApplicationDataPath {0}", str);
 
 	if (Config::Instance()->NVNGX_FeatureInfo_Paths.size() > 0)
 	{
@@ -91,37 +75,37 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 			std::string str(Config::Instance()->NVNGX_FeatureInfo_Paths[i].length(), 0);
 			std::transform(Config::Instance()->NVNGX_FeatureInfo_Paths[i].begin(), Config::Instance()->NVNGX_FeatureInfo_Paths[i].end(), str.begin(), [](wchar_t c) { return (char)c; });
 
-			spdlog::debug("NVSDK_NGX_VULKAN_Init PathListInfo[{0}]: {1}", i, str);
+			spdlog::debug("NVSDK_NGX_VULKAN_Init_Ext2 PathListInfo[{0}]: {1}", i, str);
 		}
 	}
 
 	if (InInstance)
 	{
-		spdlog::info("NVSDK_NGX_VULKAN_Init InInstance exist!");
+		spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InInstance exist!");
 		vkInstance = InInstance;
 	}
 
 	if (InPD)
 	{
-		spdlog::info("NVSDK_NGX_VULKAN_Init InPD exist!");
+		spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InPD exist!");
 		vkPD = InPD;
 	}
 
 	if (InDevice)
 	{
-		spdlog::info("NVSDK_NGX_VULKAN_Init InDevice exist!");
+		spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InDevice exist!");
 		vkDevice = InDevice;
 	}
 
 	if (InGDPA)
 	{
-		spdlog::info("NVSDK_NGX_VULKAN_Init InGDPA exist!");
+		spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InGDPA exist!");
 		vkGDPA = InGDPA;
 	}
 
 	if (InGIPA)
 	{
-		spdlog::info("NVSDK_NGX_VULKAN_Init InGIPA exist!");
+		spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InGIPA exist!");
 		vkGIPA = InGIPA;
 	}
 
@@ -130,15 +114,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 	return NVSDK_NGX_Result_Success;
 }
 
-NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion,
-	const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA,
-	NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath,
+	VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
-	auto result = NVSDK_NGX_VULKAN_Init(0x1337, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InFeatureInfo, InSDKVersion);
+	auto result = NVSDK_NGX_VULKAN_Init_Ext2(0x1337, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InSDKVersion, InFeatureInfo);
 
-	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InProjectId: {0}", InProjectId);
-	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InEngineType: {0}", (int)InEngineType);
-	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID InEngineVersion: {0}", InEngineVersion);
+	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID_Ext InProjectId: {0}", InProjectId);
+	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID_Ext InEngineType: {0}", (int)InEngineType);
+	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID_Ext InEngineVersion: {0}", InEngineVersion);
 
 	Config::Instance()->NVNGX_ProjectId = std::string(InProjectId);
 	Config::Instance()->NVNGX_Engine = InEngineType;
@@ -152,26 +135,20 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID(const char* InPro
 	return result;
 }
 
-NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_with_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion,
-	const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA,
-	const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD,
+	VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
-	auto result = NVSDK_NGX_VULKAN_Init(0x1337, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InFeatureInfo, InSDKVersion);
+	spdlog::debug("NVSDK_NGX_VULKAN_Init");
+	return NVSDK_NGX_VULKAN_Init_Ext2(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InSDKVersion, InFeatureInfo);
 
-	spdlog::debug("NVSDK_NGX_VULKAN_Init_with_ProjectID InProjectId: {0}", InProjectId);
-	spdlog::debug("NVSDK_NGX_VULKAN_Init_with_ProjectID InEngineType {0}", (int)InEngineType);
-	spdlog::debug("NVSDK_NGX_VULKAN_Init_with_ProjectID InEngineVersion: {0}", InEngineVersion);
+}
 
-	Config::Instance()->NVNGX_ProjectId = std::string(InProjectId);
-	Config::Instance()->NVNGX_Engine = InEngineType;
-	Config::Instance()->NVNGX_EngineVersion = std::string(InEngineVersion);
-
-	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
-		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
-	else
-		Config::Instance()->NVNGX_EngineVersion5 = false;
-
-	return result;
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion,
+	const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA,
+	NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
+{
+	spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID");
+	return NVSDK_NGX_VULKAN_Init_ProjectID_Ext(InProjectId, InEngineType, InEngineVersion, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InSDKVersion, InFeatureInfo);
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetParameters(NVSDK_NGX_Parameter** OutParameters)
