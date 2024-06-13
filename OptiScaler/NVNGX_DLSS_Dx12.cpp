@@ -1,6 +1,8 @@
 #pragma once
 #include "Config.h"
+
 #include "NVNGX_Parameter.h"
+#include "NVNGX_Proxy.h"
 
 #include "backends/dlss/DLSSFeature_Dx12.h"
 #include "backends/fsr2/FSR2Feature_Dx12.h"
@@ -278,12 +280,27 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 	if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayDx12::IsInitedDx12())
 		ImGuiOverlayDx12::ShutdownDx12();
 
+	if (NVNGXProxy::D3D12_Shutdown() != nullptr)
+	{
+		spdlog::info("NVSDK_NGX_D3D12_Shutdown D3D12_Shutdown");
+		auto result = NVNGXProxy::D3D12_Shutdown()();
+		spdlog::info("NVSDK_NGX_D3D12_Shutdown D3D12_Shutdown result: {0:X}", (UINT)result);
+	}
+
 	return NVSDK_NGX_Result_Success;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown1(ID3D12Device* InDevice)
 {
 	spdlog::info("NVSDK_NGX_D3D12_Shutdown1");
+
+	if (NVNGXProxy::D3D12_Shutdown1() != nullptr)
+	{
+		spdlog::info("NVSDK_NGX_D3D12_Shutdown1 D3D12_Shutdown1");
+		auto result = NVNGXProxy::D3D12_Shutdown1()(InDevice);
+		spdlog::info("NVSDK_NGX_D3D12_Shutdown1 D3D12_Shutdown1 result: {0:X}", (UINT)result);
+	}
+
 	return NVSDK_NGX_D3D12_Shutdown();
 }
 
@@ -371,8 +388,18 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 {
 	if (InFeatureID != NVSDK_NGX_Feature_SuperSampling)
 	{
-		spdlog::error("NVSDK_NGX_D3D12_CreateFeature Can't create this feature ({0})!", (int)InFeatureID);
-		return NVSDK_NGX_Result_FAIL_FeatureNotSupported;
+		if (NVNGXProxy::InitDx12(D3D12Device) && NVNGXProxy::D3D12_CreateFeature() != nullptr)
+		{
+			spdlog::info("NVSDK_NGX_D3D12_CreateFeature calling D3D12_CreateFeature for ({0})", (int)InFeatureID);
+			auto result = NVNGXProxy::D3D12_CreateFeature()(InCmdList, InFeatureID, InParameters, OutHandle);
+			spdlog::info("NVSDK_NGX_D3D12_CreateFeature D3D12_CreateFeature result for ({0}): {1:X}", (int)InFeatureID, (UINT)result);
+			return result;
+		}
+		else
+		{
+			spdlog::error("NVSDK_NGX_D3D12_CreateFeature Can't create this feature ({0})!", (int)InFeatureID);
+			return NVSDK_NGX_Result_FAIL_FeatureNotSupported;
+		}
 	}
 
 	// DLSS Enabler check
@@ -509,6 +536,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 		return NVSDK_NGX_Result_Success;
 
 	auto handleId = InHandle->Id;
+	if (handleId < 1000000)
+	{
+		if (NVNGXProxy::D3D12_ReleaseFeature() != nullptr)
+		{
+			spdlog::info("NVSDK_NGX_D3D12_ReleaseFeature D3D12_ReleaseFeature result for ({0})", handleId);
+			auto result = NVNGXProxy::D3D12_ReleaseFeature()(InHandle);
+			spdlog::info("NVSDK_NGX_D3D12_ReleaseFeature D3D12_ReleaseFeature result for ({0}): {1:X}", handleId, (UINT)result);
+			return result;
+		}
+		else
+		{
+			return NVSDK_NGX_Result_FAIL_FeatureNotFound;
+		}
+	}
+
 	spdlog::info("NVSDK_NGX_D3D12_ReleaseFeature releasing feature with id {0}", handleId);
 
 	if (auto deviceContext = Dx12Contexts[handleId].get(); deviceContext)
@@ -554,6 +596,22 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	{
 		spdlog::error("NVSDK_NGX_D3D12_EvaluateFeature InCmdList is null!!!");
 		return NVSDK_NGX_Result_Fail;
+	}
+
+	auto handleId = InFeatureHandle->Id;
+	if (handleId < 1000000)
+	{
+		if (NVNGXProxy::D3D12_EvaluateFeature() != nullptr)
+		{
+			spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature D3D12_EvaluateFeature for ({0})", handleId);
+			auto result = NVNGXProxy::D3D12_EvaluateFeature()(InCmdList, InFeatureHandle, InParameters, InCallback);
+			spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature D3D12_EvaluateFeature result for ({0}): {1:X}", handleId, (UINT)result);
+			return result;
+		}
+		else
+		{
+			return NVSDK_NGX_Result_FAIL_FeatureNotFound;
+		}
 	}
 
 	if (Config::Instance()->OverlayMenu.value_or(true) &&
@@ -648,7 +706,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	}
 
 	IFeature_Dx12* deviceContext = nullptr;
-	auto handleId = InFeatureHandle->Id;
 
 	if (Config::Instance()->changeBackend)
 	{
