@@ -236,6 +236,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProj
 	return result;
 }
 
+// Not sure about this one, original nvngx does not export this method
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion,
 	const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
@@ -571,19 +572,33 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 	return NVSDK_NGX_Result_Success;
 }
 
-NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo,
-	NVSDK_NGX_FeatureRequirement* OutSupported)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
 {
-	spdlog::debug("NVSDK_NGX_D3D12_GetFeatureRequirements!");
+	spdlog::debug("NVSDK_NGX_D3D12_GetFeatureRequirements for ({0})", (int)FeatureDiscoveryInfo->FeatureID);
 
-	*OutSupported = NVSDK_NGX_FeatureRequirement();
-	OutSupported->FeatureSupported = (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling) ?
-		NVSDK_NGX_FeatureSupportResult_Supported : NVSDK_NGX_FeatureSupportResult_AdapterUnsupported;
-	OutSupported->MinHWArchitecture = 0;
+	if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+	{
+		*OutSupported = NVSDK_NGX_FeatureRequirement();
+		OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
+		OutSupported->MinHWArchitecture = 0;
 
-	//Some old windows 10 os version
-	strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
-	return NVSDK_NGX_Result_Success;
+		//Some old windows 10 os version
+		strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
+		return NVSDK_NGX_Result_Success;
+	}
+
+	if (NVNGXProxy::NVNGXModule() == nullptr)
+		NVNGXProxy::InitNVNGX();
+
+	if (NVNGXProxy::D3D12_GetFeatureRequirements() != nullptr)
+	{
+		spdlog::debug("NVSDK_NGX_D3D12_GetFeatureRequirements D3D12_GetFeatureRequirements for ({0})", (int)FeatureDiscoveryInfo->FeatureID);
+		auto result = NVNGXProxy::D3D12_GetFeatureRequirements()(Adapter, FeatureDiscoveryInfo, OutSupported);
+		spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature D3D12_EvaluateFeature result for ({0}): {1:X}", (int)FeatureDiscoveryInfo->FeatureID, (UINT)result);
+		return result;
+	}
+
+	return NVSDK_NGX_Result_FAIL_FeatureNotSupported;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_Handle* InFeatureHandle, NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
@@ -714,6 +729,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 		changeBackendCounter++;
 
+		spdlog::info("NVSDK_NGX_D3D12_EvaluateFeature changeBackend is true, counter: {0}", changeBackendCounter);
+
 		// first release everything
 		if (changeBackendCounter == 1)
 		{
@@ -767,6 +784,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 			return NVSDK_NGX_Result_Success;
 		}
 
+		// create new feature
 		if (changeBackendCounter == 2)
 		{
 			// backend selection
@@ -810,15 +828,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 			return NVSDK_NGX_Result_Success;
 		}
 
+		// init feature
 		if (changeBackendCounter == 3)
 		{
-			// next frame create context
 			auto initResult = Dx12Contexts[handleId]->Init(D3D12Device, InCmdList, createParams);
 
-			Config::Instance()->newBackend = "";
-			Config::Instance()->changeBackend = false;
-			free(createParams);
-			createParams = nullptr;
 			changeBackendCounter = 0;
 
 			if (!initResult)
@@ -838,6 +852,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 				Config::Instance()->changeBackend = true;
 			}
+			else
+			{
+				spdlog::info("NVSDK_NGX_D3D12_EvaluateFeature init successful for {0}, upscaler changed", Config::Instance()->newBackend);
+
+				Config::Instance()->newBackend = "";
+				Config::Instance()->changeBackend = false;
+			}
+
+			free(createParams);
+			createParams = nullptr;
 		}
 
 		// if initial feature can't be inited
@@ -847,7 +871,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	}
 
 	deviceContext = Dx12Contexts[handleId].get();
-	Config::Instance()->CurrentFeature = deviceContext;
 
 	if (deviceContext == nullptr)
 	{
@@ -857,10 +880,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 	if (!deviceContext->IsInited() && (deviceContext->Name() == "XeSS" || deviceContext->Name() == "DLSS"))
 	{
+		spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature InCmdList {0} is not inited, falling back to FSR 2.1.2", deviceContext->Name());
 		Config::Instance()->newBackend = "fsr21";
 		Config::Instance()->changeBackend = true;
 		return NVSDK_NGX_Result_Success;
 	}
+
+	Config::Instance()->CurrentFeature = deviceContext;
 
 	ID3D12RootSignature* orgComputeRootSig = nullptr;
 	ID3D12RootSignature* orgGraphicRootSig = nullptr;

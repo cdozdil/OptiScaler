@@ -7,7 +7,7 @@
 #include <vulkan/vulkan.hpp>
 
 typedef NVSDK_NGX_Result(*PFN_CUDA_Init)(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion);
-typedef NVSDK_NGX_Result(*PFN_CUDA_Init_with_ProjectID)(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion);
+typedef NVSDK_NGX_Result(*PFN_CUDA_Init_ProjectID)(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo);
 typedef NVSDK_NGX_Result(*PFN_CUDA_Shutdown)(void);
 typedef NVSDK_NGX_Result(*PFN_CUDA_GetParameters)(NVSDK_NGX_Parameter** OutParameters);
 typedef NVSDK_NGX_Result(*PFN_CUDA_AllocateParameters)(NVSDK_NGX_Parameter** OutParameters);
@@ -19,7 +19,7 @@ typedef NVSDK_NGX_Result(*PFN_CUDA_EvaluateFeature)(const NVSDK_NGX_Handle* InFe
 typedef NVSDK_NGX_Result(*PFN_CUDA_ReleaseFeature)(NVSDK_NGX_Handle* InHandle);
 
 typedef NVSDK_NGX_Result(*PFN_D3D11_Init)(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, ID3D11Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion);
-typedef NVSDK_NGX_Result(*PFN_D3D11_Init_with_ProjectID)(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, ID3D11Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion);
+typedef NVSDK_NGX_Result(*PFN_D3D11_Init_ProjectID)(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, ID3D11Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo);
 typedef NVSDK_NGX_Result(*PFN_D3D11_Init_Ext)(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, ID3D11Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo);
 typedef NVSDK_NGX_Result(*PFN_D3D11_Shutdown)(void);
 typedef NVSDK_NGX_Result(*PFN_D3D11_Shutdown1)(ID3D11Device* InDevice);
@@ -34,7 +34,7 @@ typedef NVSDK_NGX_Result(*PFN_D3D11_GetFeatureRequirements)(IDXGIAdapter* Adapte
 typedef NVSDK_NGX_Result(*PFN_D3D11_EvaluateFeature)(ID3D11DeviceContext* InDevCtx, const NVSDK_NGX_Handle* InFeatureHandle, const NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback);
 
 typedef NVSDK_NGX_Result(*PFN_D3D12_Init)(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion);
-typedef NVSDK_NGX_Result(*PFN_D3D12_Init_with_ProjectID)(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion);
+typedef NVSDK_NGX_Result(*PFN_D3D12_Init_ProjectID)(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo);
 typedef NVSDK_NGX_Result(*PFN_D3D12_Init_Ext)(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo);
 typedef NVSDK_NGX_Result(*PFN_D3D12_Shutdown)(void);
 typedef NVSDK_NGX_Result(*PFN_D3D12_Shutdown1)(ID3D12Device* InDevice);
@@ -55,7 +55,7 @@ typedef NVSDK_NGX_Result(*PFN_VULKAN_Init)(unsigned long long InApplicationId, c
 typedef NVSDK_NGX_Result(*PFN_VULKAN_Init_Ext)(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo);
 typedef NVSDK_NGX_Result(*PFN_VULKAN_Init_Ext2)(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo);
 typedef NVSDK_NGX_Result(*PFN_VULKAN_Init_ProjectID_Ext)(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo);
-typedef NVSDK_NGX_Result(*PFN_VULKAN_Init_with_ProjectID)(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion);
+typedef NVSDK_NGX_Result(*PFN_VULKAN_Init_ProjectID)(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo);
 typedef NVSDK_NGX_Result(*PFN_VULKAN_Shutdown)(void);
 typedef NVSDK_NGX_Result(*PFN_VULKAN_Shutdown1)(VkDevice InDevice);
 typedef NVSDK_NGX_Result(*PFN_VULKAN_GetParameters)(NVSDK_NGX_Parameter** OutParameters);
@@ -81,7 +81,7 @@ private:
 	inline static bool _vulkanInited = false;
 
 	inline static PFN_CUDA_Init _CUDA_Init = nullptr;
-	inline static PFN_CUDA_Init_with_ProjectID _CUDA_Init_with_ProjectID = nullptr;
+	inline static PFN_CUDA_Init_ProjectID _CUDA_Init_ProjectID = nullptr;
 	inline static PFN_CUDA_Shutdown _CUDA_Shutdown = nullptr;
 	inline static PFN_CUDA_GetParameters _CUDA_GetParameters = nullptr;
 	inline static PFN_CUDA_AllocateParameters _CUDA_AllocateParameters = nullptr;
@@ -93,7 +93,7 @@ private:
 	inline static PFN_CUDA_ReleaseFeature _CUDA_ReleaseFeature = nullptr;
 
 	inline static PFN_D3D11_Init _D3D11_Init = nullptr;
-	inline static PFN_D3D11_Init_with_ProjectID _D3D11_Init_with_ProjectID = nullptr;
+	inline static PFN_D3D11_Init_ProjectID _D3D11_Init_ProjectID = nullptr;
 	inline static PFN_D3D11_Init_Ext _D3D11_Init_Ext = nullptr;
 	inline static PFN_D3D11_Shutdown _D3D11_Shutdown = nullptr;
 	inline static PFN_D3D11_Shutdown1 _D3D11_Shutdown1 = nullptr;
@@ -108,7 +108,7 @@ private:
 	inline static PFN_D3D11_EvaluateFeature _D3D11_EvaluateFeature = nullptr;
 
 	inline static PFN_D3D12_Init _D3D12_Init = nullptr;
-	inline static PFN_D3D12_Init_with_ProjectID _D3D12_Init_with_ProjectID = nullptr;
+	inline static PFN_D3D12_Init_ProjectID _D3D12_Init_ProjectID = nullptr;
 	inline static PFN_D3D12_Init_Ext _D3D12_Init_Ext = nullptr;
 	inline static PFN_D3D12_Shutdown _D3D12_Shutdown = nullptr;
 	inline static PFN_D3D12_Shutdown1 _D3D12_Shutdown1 = nullptr;
@@ -124,7 +124,7 @@ private:
 
 	inline static PFN_VULKAN_RequiredExtensions _VULKAN_RequiredExtensions = nullptr;
 	inline static PFN_VULKAN_Init _VULKAN_Init = nullptr;
-	inline static PFN_VULKAN_Init_with_ProjectID _VULKAN_Init_with_ProjectID = nullptr;
+	inline static PFN_VULKAN_Init_ProjectID _VULKAN_Init_ProjectID = nullptr;
 	inline static PFN_VULKAN_Init_Ext _VULKAN_Init_Ext = nullptr;
 	inline static PFN_VULKAN_Init_Ext2 _VULKAN_Init_Ext2 = nullptr;
 	inline static PFN_VULKAN_Init_ProjectID_Ext _VULKAN_Init_ProjectID_Ext = nullptr;
@@ -226,7 +226,7 @@ public:
 			spdlog::info("NVNGXProxy::InitNVNGX getting nvngx method addresses");
 
 			_D3D11_Init = (PFN_D3D11_Init)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Init");
-			_D3D11_Init_with_ProjectID = (PFN_D3D11_Init_with_ProjectID)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Init_with_ProjectID");
+			_D3D11_Init_ProjectID = (PFN_D3D11_Init_ProjectID)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Init_ProjectID");
 			_D3D11_Init_Ext = (PFN_D3D11_Init_Ext)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Init_Ext");
 			_D3D11_Shutdown = (PFN_D3D11_Shutdown)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Shutdown");
 			_D3D11_Shutdown1 = (PFN_D3D11_Shutdown1)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Shutdown1");
@@ -241,7 +241,7 @@ public:
 			_D3D11_EvaluateFeature = (PFN_D3D11_EvaluateFeature)GetProcAddress(_dll, "NVSDK_NGX_D3D11_EvaluateFeature");
 
 			_D3D12_Init = (PFN_D3D12_Init)GetProcAddress(_dll, "NVSDK_NGX_D3D12_Init");
-			_D3D12_Init_with_ProjectID = (PFN_D3D12_Init_with_ProjectID)GetProcAddress(_dll, "NVSDK_NGX_D3D12_Init_with_ProjectID");
+			_D3D12_Init_ProjectID = (PFN_D3D12_Init_ProjectID)GetProcAddress(_dll, "NVSDK_NGX_D3D12_Init_ProjectID");
 			_D3D12_Init_Ext = (PFN_D3D12_Init_Ext)GetProcAddress(_dll, "NVSDK_NGX_D3D12_Init_Ext");
 			_D3D12_Shutdown = (PFN_D3D12_Shutdown)GetProcAddress(_dll, "NVSDK_NGX_D3D12_Shutdown");
 			_D3D12_Shutdown1 = (PFN_D3D12_Shutdown1)GetProcAddress(_dll, "NVSDK_NGX_D3D12_Shutdown1");
@@ -260,7 +260,7 @@ public:
 			_VULKAN_Init_Ext = (PFN_VULKAN_Init_Ext)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Init_Ext");
 			_VULKAN_Init_Ext2 = (PFN_VULKAN_Init_Ext2)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Init_Ext2");
 			_VULKAN_Init_ProjectID_Ext = (PFN_VULKAN_Init_ProjectID_Ext)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Init_ProjectID_Ext");
-			_VULKAN_Init_with_ProjectID = (PFN_VULKAN_Init_with_ProjectID)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Init_with_ProjectID");
+			_VULKAN_Init_ProjectID = (PFN_VULKAN_Init_ProjectID)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Init_ProjectID");
 			_VULKAN_Shutdown = (PFN_VULKAN_Shutdown)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Shutdown");
 			_VULKAN_Shutdown1 = (PFN_VULKAN_Shutdown1)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Shutdown1");
 			_VULKAN_GetParameters = (PFN_VULKAN_GetParameters)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_GetParameters");
@@ -322,12 +322,12 @@ public:
 		GetFeatureCommonInfo(&fcInfo);
 		NVSDK_NGX_Result nvResult = NVSDK_NGX_Result_Fail;
 
-		if (Config::Instance()->NVNGX_ProjectId != "" && _D3D11_Init_with_ProjectID != nullptr)
+		if (Config::Instance()->NVNGX_ProjectId != "" && _D3D11_Init_ProjectID != nullptr)
 		{
-			spdlog::debug("NVNGXProxy::InitDx11 _D3D11_Init_with_ProjectID!");
+			spdlog::debug("NVNGXProxy::InitDx11 _D3D11_Init_ProjectID!");
 
-			nvResult = _D3D11_Init_with_ProjectID(Config::Instance()->NVNGX_ProjectId.c_str(), Config::Instance()->NVNGX_Engine, Config::Instance()->NVNGX_EngineVersion.c_str(),
-				Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InDevice, &fcInfo, Config::Instance()->NVNGX_Version);
+			nvResult = _D3D11_Init_ProjectID(Config::Instance()->NVNGX_ProjectId.c_str(), Config::Instance()->NVNGX_Engine, Config::Instance()->NVNGX_EngineVersion.c_str(),
+				Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InDevice, Config::Instance()->NVNGX_Version, &fcInfo);
 		}
 		else if (_D3D11_Init_Ext != nullptr)
 		{
@@ -341,12 +341,12 @@ public:
 		return _dx11Inited;
 	}
 
-	static PFN_D3D11_Init_with_ProjectID D3D11_Init_with_ProjectID()
+	static PFN_D3D11_Init_ProjectID D3D11_Init_ProjectID()
 	{
 		if (!_dx11Inited)
 			return nullptr;
 
-		return _D3D11_Init_with_ProjectID;
+		return _D3D11_Init_ProjectID;
 	}
 
 	static PFN_D3D11_Init_Ext D3D11_Init_Ext()
@@ -355,6 +355,11 @@ public:
 			return nullptr;
 
 		return _D3D11_Init_Ext;
+	}
+
+	static PFN_D3D11_GetFeatureRequirements D3D11_GetFeatureRequirements()
+	{
+		return _D3D11_GetFeatureRequirements;
 	}
 
 	static PFN_D3D11_AllocateParameters D3D11_AllocateParameters()
@@ -436,12 +441,12 @@ public:
 		GetFeatureCommonInfo(&fcInfo);
 		NVSDK_NGX_Result nvResult = NVSDK_NGX_Result_Fail;
 
-		if (Config::Instance()->NVNGX_ProjectId != "" && _D3D12_Init_with_ProjectID != nullptr)
+		if (Config::Instance()->NVNGX_ProjectId != "" && _D3D12_Init_ProjectID != nullptr)
 		{
-			spdlog::debug("NVNGXProxy::InitDx12 _D3D12_Init_with_ProjectID!");
+			spdlog::debug("NVNGXProxy::InitDx12 _D3D12_Init_ProjectID!");
 
-			nvResult = _D3D12_Init_with_ProjectID(Config::Instance()->NVNGX_ProjectId.c_str(), Config::Instance()->NVNGX_Engine, Config::Instance()->NVNGX_EngineVersion.c_str(),
-				Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InDevice, &fcInfo, Config::Instance()->NVNGX_Version);
+			nvResult = _D3D12_Init_ProjectID(Config::Instance()->NVNGX_ProjectId.c_str(), Config::Instance()->NVNGX_Engine, Config::Instance()->NVNGX_EngineVersion.c_str(),
+				Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InDevice, Config::Instance()->NVNGX_Version, &fcInfo);
 		}
 		else if (_D3D12_Init_Ext != nullptr)
 		{
@@ -455,12 +460,12 @@ public:
 		return _dx12Inited;
 	}
 
-	static PFN_D3D12_Init_with_ProjectID D3D12_Init_with_ProjectID()
+	static PFN_D3D12_Init_ProjectID D3D12_Init_ProjectID()
 	{
 		if (!_dx12Inited)
 			return nullptr;
 
-		return _D3D12_Init_with_ProjectID;
+		return _D3D12_Init_ProjectID;
 	}
 
 	static PFN_D3D12_Init_Ext D3D12_Init_Ext()
@@ -469,6 +474,11 @@ public:
 			return nullptr;
 
 		return _D3D12_Init_Ext;
+	}
+
+	static PFN_D3D12_GetFeatureRequirements D3D12_GetFeatureRequirements()
+	{
+		return _D3D12_GetFeatureRequirements;
 	}
 
 	static PFN_D3D12_AllocateParameters D3D12_AllocateParameters()
@@ -550,12 +560,12 @@ public:
 		GetFeatureCommonInfo(&fcInfo);
 		NVSDK_NGX_Result nvResult = NVSDK_NGX_Result_Fail;
 
-		if (Config::Instance()->NVNGX_ProjectId != "" && _VULKAN_Init_with_ProjectID != nullptr)
+		if (Config::Instance()->NVNGX_ProjectId != "" && _VULKAN_Init_ProjectID != nullptr)
 		{
-			spdlog::debug("NVNGXProxy::InitVulkan _D3D12_Init_with_ProjectID!");
+			spdlog::debug("NVNGXProxy::InitVulkan _D3D12_Init_ProjectID!");
 
-			nvResult = _VULKAN_Init_with_ProjectID(Config::Instance()->NVNGX_ProjectId.c_str(), Config::Instance()->NVNGX_Engine, Config::Instance()->NVNGX_EngineVersion.c_str(),
-				Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InInstance, InPD, InDevice, InGIPA, InGDPA, &fcInfo, Config::Instance()->NVNGX_Version);
+			nvResult = _VULKAN_Init_ProjectID(Config::Instance()->NVNGX_ProjectId.c_str(), Config::Instance()->NVNGX_Engine, Config::Instance()->NVNGX_EngineVersion.c_str(),
+				Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InInstance, InPD, InDevice, InGIPA, InGDPA, Config::Instance()->NVNGX_Version, &fcInfo);
 		}
 		else if (_VULKAN_Init_Ext != nullptr)
 		{
@@ -565,17 +575,17 @@ public:
 
 		spdlog::debug("NVNGXProxy::InitVulkan result: {0:X}", (UINT)nvResult);
 
-		_dx12Inited = (nvResult == NVSDK_NGX_Result_Success);
+		_vulkanInited = (nvResult == NVSDK_NGX_Result_Success);
 
 		return true;
 	}
 
-	static PFN_VULKAN_Init_with_ProjectID VULKAN_Init_with_ProjectID()
+	static PFN_VULKAN_Init_ProjectID VULKAN_Init_ProjectID()
 	{
 		if (!_vulkanInited)
 			return nullptr;
 
-		return _VULKAN_Init_with_ProjectID;
+		return _VULKAN_Init_ProjectID;
 	}
 
 	static PFN_VULKAN_Init_Ext VULKAN_Init_Ext()

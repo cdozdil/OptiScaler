@@ -39,7 +39,7 @@ std::wstring dllNameW;
 std::wstring dllNameExW;
 
 void AttachHooks();
-void DeatachHooks();
+void DetachHooks();
 
 HMODULE LoadNvApi()
 {
@@ -64,6 +64,17 @@ HMODULE LoadNvApi()
 		if (nvapi != nullptr)
 		{
 			spdlog::info("LoadNvApi nvapi64.dll loaded from {0}", localPath.string());
+			return nvapi;
+		}
+	}
+
+	if (nvapi == nullptr)
+	{
+		nvapi = o_LoadLibraryA("nvapi64.dll");
+
+		if (nvapi != nullptr)
+		{
+			spdlog::info("LoadNvApi Fallback! nvapi64.dll loaded from system");
 			return nvapi;
 		}
 	}
@@ -389,7 +400,7 @@ void WINAPI hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhy
 	properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
 }
 
-void DeatachHooks()
+void DetachHooks()
 {
 	if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
 	{
@@ -829,7 +840,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 	case DLL_PROCESS_DETACH:
 		CloseLogger();
-		DeatachHooks();
+		DetachHooks();
 
 		break;
 

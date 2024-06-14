@@ -6,7 +6,7 @@
 
 bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_Parameter* InParameters)
 {
-	if (!_moduleLoaded)
+	if (NVNGXProxy::NVNGXModule() == nullptr)
 	{
 		spdlog::error("DLSSFeatureVk::Init nvngx.dll not loaded!");
 
@@ -31,6 +31,11 @@ bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice 
 			if (!_dlssInited)
 				return false;
 
+			_moduleLoaded = (NVNGXProxy::VULKAN_Init_ProjectID() != nullptr || NVNGXProxy::VULKAN_Init_Ext() != nullptr) &&
+				(NVNGXProxy::VULKAN_Shutdown() != nullptr || NVNGXProxy::VULKAN_Shutdown1() != nullptr) &&
+				(NVNGXProxy::VULKAN_GetParameters() != nullptr || NVNGXProxy::VULKAN_AllocateParameters() != nullptr) &&
+				NVNGXProxy::VULKAN_DestroyParameters() != nullptr && NVNGXProxy::VULKAN_CreateFeature() != nullptr &&
+				NVNGXProxy::VULKAN_ReleaseFeature() != nullptr && NVNGXProxy::VULKAN_EvaluateFeature() != nullptr;
 
 			//delay between init and create feature
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -159,12 +164,6 @@ DLSSFeatureVk::DLSSFeatureVk(unsigned int InHandleId, const NVSDK_NGX_Parameter*
 		spdlog::info("DLSSFeatureVk::DLSSFeatureVk nvngx.dll not loaded, now loading");
 		NVNGXProxy::InitNVNGX();
 	}
-
-	_moduleLoaded = (NVNGXProxy::VULKAN_Init_with_ProjectID() != nullptr || NVNGXProxy::VULKAN_Init_Ext() != nullptr) &&
-		(NVNGXProxy::VULKAN_Shutdown() != nullptr || NVNGXProxy::VULKAN_Shutdown1() != nullptr) &&
-		(NVNGXProxy::VULKAN_GetParameters() != nullptr || NVNGXProxy::VULKAN_AllocateParameters() != nullptr) &&
-		NVNGXProxy::VULKAN_DestroyParameters() != nullptr && NVNGXProxy::VULKAN_CreateFeature() != nullptr &&
-		NVNGXProxy::VULKAN_ReleaseFeature() != nullptr && NVNGXProxy::VULKAN_EvaluateFeature() != nullptr;
 
 	spdlog::info("DLSSFeatureVk::DLSSFeatureVk binding complete!");
 }
