@@ -185,7 +185,7 @@ static SwapchainSource _lastActiveSource = Unknown;
 
 static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain);
 static bool BindAll(HWND InHWnd, ID3D12Device* InDevice);
-static void DeatachAllHooks(bool reInit);
+static void DeatachAllHooks();
 static void CleanupRenderTarget(bool clearQueue);
 
 static void ClearActivePathInfo()
@@ -1889,6 +1889,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 			{
 				spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 CreateDescriptorHeap(g_pd3dRtvDescHeap): {0:X}", (unsigned long)result);
 				ImGuiOverlayBase::HideMenu();
+				CleanupRenderTarget(true);
 				return;
 			}
 
@@ -1913,6 +1914,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 			{
 				spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 CreateDescriptorHeap(g_pd3dSrvDescHeap): {0:X}", (unsigned long)result);
 				ImGuiOverlayBase::HideMenu();
+				CleanupRenderTarget(true);
 				return;
 			}
 		}
@@ -1925,6 +1927,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 			{
 				spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 CreateCommandAllocator[{0}]: {1:X}", i, (unsigned long)result);
 				ImGuiOverlayBase::HideMenu();
+				CleanupRenderTarget(true);
 				return;
 			}
 		}
@@ -1934,6 +1937,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 		{
 			spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 CreateCommandList: {0:X}", (unsigned long)result);
 			ImGuiOverlayBase::HideMenu();
+			CleanupRenderTarget(true);
 			return;
 		}
 
@@ -1942,6 +1946,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 		{
 			spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 g_pd3dCommandList->Close: {0:X}", (unsigned long)result);
 			ImGuiOverlayBase::HideMenu();
+			CleanupRenderTarget(false);
 			return;
 		}
 
@@ -1980,6 +1985,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 			if (result != S_OK)
 			{
 				spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 commandAllocator->Reset: {0:X}", (unsigned long)result);
+				CleanupRenderTarget(false);
 				return;
 			}
 
@@ -2012,6 +2018,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 			if (result != S_OK)
 			{
 				spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 g_pd3dCommandList->Close: {0:X}", (unsigned long)result);
+				CleanupRenderTarget(true);
 				return;
 			}
 
