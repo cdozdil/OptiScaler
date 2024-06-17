@@ -32,6 +32,7 @@ bool Config::Reload()
 		XeSSLibrary = readString("XeSS", "LibraryPath");
 
 		// DLSS
+		DLSSEnabled = readBool("DLSS", "Enabled");
 		DLSSLibrary = readString("DLSS", "LibraryPath");
 		RenderPresetOverride = readBool("DLSS", "RenderPresetOverride");
 		RenderPresetDLAA = readInt("DLSS", "RenderPresetDLAA");
@@ -261,6 +262,7 @@ bool Config::SaveIni()
 	ini.SetValue("XeSS", "LibraryPath", Instance()->XeSSLibrary.value_or("auto").c_str());
 
 	// DLSS
+	ini.SetValue("DLSS", "Enabled", GetBoolValue(Instance()->DLSSEnabled).c_str());
 	ini.SetValue("DLSS", "LibraryPath", Instance()->DLSSLibrary.value_or("auto").c_str());
 	ini.SetValue("DLSS", "RenderPresetOverride", GetBoolValue(Instance()->RenderPresetOverride).c_str());
 	ini.SetValue("DLSS", "RenderPresetDLAA", GetIntValue(Instance()->RenderPresetDLAA).c_str());

@@ -341,25 +341,42 @@ public:
 		return _dx11Inited;
 	}
 
+	static void SetDx11Inited()
+	{
+		_dx11Inited = true;
+	}
+
+	static bool IsDx11Inited()
+	{
+		return _dx11Inited;
+	}
+
 	static PFN_D3D11_Init_ProjectID D3D11_Init_ProjectID()
 	{
-		if (!_dx11Inited)
-			return nullptr;
-
 		return _D3D11_Init_ProjectID;
+	}
+
+	static PFN_D3D11_Init D3D11_Init()
+	{
+		return _D3D11_Init;
 	}
 
 	static PFN_D3D11_Init_Ext D3D11_Init_Ext()
 	{
-		if (!_dx11Inited)
-			return nullptr;
-
 		return _D3D11_Init_Ext;
 	}
 
 	static PFN_D3D11_GetFeatureRequirements D3D11_GetFeatureRequirements()
 	{
 		return _D3D11_GetFeatureRequirements;
+	}
+
+	static PFN_D3D11_GetCapabilityParameters D3D11_GetCapabilityParameters()
+	{
+		if (!_dx11Inited)
+			return nullptr;
+
+		return _D3D11_GetCapabilityParameters;
 	}
 
 	static PFN_D3D11_AllocateParameters D3D11_AllocateParameters()
@@ -443,42 +460,59 @@ public:
 
 		if (Config::Instance()->NVNGX_ProjectId != "" && _D3D12_Init_ProjectID != nullptr)
 		{
-			spdlog::debug("NVNGXProxy::InitDx12 _D3D12_Init_ProjectID!");
+			spdlog::info("NVNGXProxy::InitDx12 _D3D12_Init_ProjectID!");
 
 			nvResult = _D3D12_Init_ProjectID(Config::Instance()->NVNGX_ProjectId.c_str(), Config::Instance()->NVNGX_Engine, Config::Instance()->NVNGX_EngineVersion.c_str(),
 				Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InDevice, Config::Instance()->NVNGX_Version, &fcInfo);
 		}
 		else if (_D3D12_Init_Ext != nullptr)
 		{
-			spdlog::debug("NVNGXProxy::InitDx12 _D3D12_Init_Ext!");
+			spdlog::info("NVNGXProxy::InitDx12 _D3D12_Init_Ext!");
 			nvResult = _D3D12_Init_Ext(Config::Instance()->NVNGX_ApplicationId, Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InDevice, Config::Instance()->NVNGX_Version, &fcInfo);
 		}
 
-		spdlog::debug("NVNGXProxy::InitDx12 result: {0:X}", (UINT)nvResult);
+		spdlog::info("NVNGXProxy::InitDx12 result: {0:X}", (UINT)nvResult);
 
 		_dx12Inited = (nvResult == NVSDK_NGX_Result_Success);
 		return _dx12Inited;
 	}
 
+	static void SetDx12Inited()
+	{
+		_dx12Inited = true;
+	}
+
+	static bool IsDx12Inited()
+	{
+		return _dx12Inited;
+	}
+
 	static PFN_D3D12_Init_ProjectID D3D12_Init_ProjectID()
 	{
-		if (!_dx12Inited)
-			return nullptr;
-
 		return _D3D12_Init_ProjectID;
+	}
+
+	static PFN_D3D12_Init D3D12_Init()
+	{
+		return _D3D12_Init;
 	}
 
 	static PFN_D3D12_Init_Ext D3D12_Init_Ext()
 	{
-		if (!_dx12Inited)
-			return nullptr;
-
 		return _D3D12_Init_Ext;
 	}
 
 	static PFN_D3D12_GetFeatureRequirements D3D12_GetFeatureRequirements()
 	{
 		return _D3D12_GetFeatureRequirements;
+	}
+
+	static PFN_D3D12_GetCapabilityParameters D3D12_GetCapabilityParameters()
+	{
+		if (!_dx12Inited)
+			return nullptr;
+
+		return _D3D12_GetCapabilityParameters;
 	}
 
 	static PFN_D3D12_AllocateParameters D3D12_AllocateParameters()
@@ -580,20 +614,47 @@ public:
 		return true;
 	}
 
+	static void SetVulkanInited()
+	{
+		_vulkanInited = true;
+	}
+
+	static bool IsVulkanInited()
+	{
+		return _vulkanInited;
+	}
+
 	static PFN_VULKAN_Init_ProjectID VULKAN_Init_ProjectID()
 	{
-		if (!_vulkanInited)
-			return nullptr;
-
 		return _VULKAN_Init_ProjectID;
+	}
+
+	static PFN_VULKAN_Init_ProjectID_Ext VULKAN_Init_ProjectID_Ext()
+	{
+		return _VULKAN_Init_ProjectID_Ext;
 	}
 
 	static PFN_VULKAN_Init_Ext VULKAN_Init_Ext()
 	{
+		return _VULKAN_Init_Ext;
+	}
+
+	static PFN_VULKAN_Init_Ext2 VULKAN_Init_Ext2()
+	{
+		return _VULKAN_Init_Ext2;
+	}
+
+	static PFN_VULKAN_Init VULKAN_Init()
+	{
+		return _VULKAN_Init;
+	}
+
+	static PFN_VULKAN_GetCapabilityParameters VULKAN_GetCapabilityParameters()
+	{
 		if (!_vulkanInited)
 			return nullptr;
 
-		return _VULKAN_Init_Ext;
+		return _VULKAN_GetCapabilityParameters;
 	}
 
 	static PFN_VULKAN_AllocateParameters VULKAN_AllocateParameters()

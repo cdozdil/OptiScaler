@@ -45,6 +45,7 @@ public:
 	std::optional<std::string> XeSSLibrary;
 
 	//DLSS
+	std::optional<bool> DLSSEnabled;
 	std::optional<std::string> DLSSLibrary;
 	std::optional<bool> RenderPresetOverride;
 	std::optional<int> RenderPresetDLAA;

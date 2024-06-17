@@ -1,8 +1,10 @@
 #pragma once
 #include "dllmain.h"
-#include "Logger.h"
 #include "resource.h"
+
+#include "Logger.h"
 #include "Util.h"
+#include "NVNGX_Proxy.h"
 
 #include "imgui/imgui_overlay_dx12.h"
 
@@ -835,6 +837,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 		spdlog::info("{0} loaded", VER_PRODUCT_NAME);
 
 		CheckWorkingMode();
+
+		NVNGXProxy::InitNVNGX();
+		
+		if (NVNGXProxy::NVNGXModule() == nullptr)
+			Config::Instance()->DLSSEnabled = false;
 
 		break;
 
