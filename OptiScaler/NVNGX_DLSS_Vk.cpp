@@ -245,7 +245,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetParameters(NVSDK_NGX_Paramete
 	{
 		spdlog::info("NVSDK_NGX_VULKAN_GetParameters calling NVNGXProxy::VULKAN_GetParameters");
 
-		auto result = NVNGXProxy::VULKAN_GetParameters()(OutParameters);
+		*OutParameters = GetNGXParameters("OptiVk");
+		auto result = NVNGXProxy::VULKAN_GetParameters()(&((NVNGX_Parameters*)*OutParameters)->OriginalParam);
 
 		spdlog::info("NVSDK_NGX_VULKAN_GetParameters calling NVNGXProxy::VULKAN_GetParameters result: {0:X}", (UINT)result);
 
@@ -265,7 +266,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_AllocateParameters(NVSDK_NGX_Par
 	{
 		spdlog::info("NVSDK_NGX_VULKAN_AllocateParameters calling NVNGXProxy::VULKAN_AllocateParameters");
 
-		auto result = NVNGXProxy::VULKAN_AllocateParameters()(OutParameters);
+		*OutParameters = new NVNGX_Parameters();
+		auto result = NVNGXProxy::VULKAN_AllocateParameters()(&((NVNGX_Parameters*)*OutParameters)->OriginalParam);
 
 		spdlog::info("NVSDK_NGX_VULKAN_AllocateParameters calling NVNGXProxy::VULKAN_AllocateParameters result: {0:X}", (UINT)result);
 
@@ -285,7 +287,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetCapabilityParameters(NVSDK_NG
 	{
 		spdlog::info("NVSDK_NGX_VULKAN_GetCapabilityParameters calling NVNGXProxy::VULKAN_GetCapabilityParameters");
 
-		auto result = NVNGXProxy::VULKAN_GetCapabilityParameters()(OutParameters);
+		*OutParameters = GetNGXParameters("OptiVk");
+		auto result = NVNGXProxy::VULKAN_GetCapabilityParameters()(&((NVNGX_Parameters*)*OutParameters)->OriginalParam);
 
 		spdlog::info("NVSDK_NGX_VULKAN_GetCapabilityParameters calling NVNGXProxy::VULKAN_GetCapabilityParameters result: {0:X}", (UINT)result);
 
@@ -315,6 +318,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_DestroyParameters(NVSDK_NGX_Para
 
 	if (InParameters == nullptr)
 		return NVSDK_NGX_Result_Fail;
+
+	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_DestroyParameters() != nullptr)
+	{
+		spdlog::info("NVSDK_NGX_VULKAN_DestroyParameters calling NVNGXProxy::VULKAN_DestroyParameters");
+
+		auto result = NVNGXProxy::VULKAN_DestroyParameters()(((NVNGX_Parameters*)InParameters)->OriginalParam);
+
+		spdlog::info("NVSDK_NGX_VULKAN_DestroyParameters calling NVNGXProxy::VULKAN_DestroyParameters result: {0:X}", (UINT)result);
+	}
 
 	delete InParameters;
 
@@ -452,7 +464,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer InCmdList, const NVSDK_NGX_Handle* InFeatureHandle, const NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
 {
-	spdlog::debug("NVSDK_NGX_VULKAN_EvaluateFeature");
+	spdlog::debug("NVSDK_NGX_VULKAN_EvaluateFeature FeatureId: {0}", InFeatureHandle->Id);
 
 	if (!InCmdList)
 	{

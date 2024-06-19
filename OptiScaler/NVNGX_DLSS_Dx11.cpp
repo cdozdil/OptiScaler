@@ -226,7 +226,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetParameters(NVSDK_NGX_Parameter
 	{
 		spdlog::info("NVSDK_NGX_D3D11_GetParameters calling NVNGXProxy::D3D11_GetParameters");
 
-		auto result = NVNGXProxy::D3D11_GetParameters()(OutParameters);
+		*OutParameters = GetNGXParameters("OptiDx11");
+		auto result = NVNGXProxy::D3D11_GetParameters()(&((NVNGX_Parameters*)*OutParameters)->OriginalParam);
 
 		spdlog::info("NVSDK_NGX_D3D11_GetParameters calling NVNGXProxy::D3D11_GetParameters result: {0:X}", (UINT)result);
 
@@ -246,7 +247,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetCapabilityParameters(NVSDK_NGX
 	{
 		spdlog::info("NVSDK_NGX_D3D11_GetCapabilityParameters calling NVNGXProxy::D3D11_GetCapabilityParameters");
 
-		auto result = NVNGXProxy::D3D11_GetCapabilityParameters()(OutParameters);
+		*OutParameters = GetNGXParameters("OptiDx11");
+		auto result = NVNGXProxy::D3D11_GetCapabilityParameters()(&((NVNGX_Parameters*)*OutParameters)->OriginalParam);
 
 		spdlog::info("NVSDK_NGX_D3D11_GetCapabilityParameters calling NVNGXProxy::D3D11_GetCapabilityParameters result: {0:X}", (UINT)result);
 
@@ -266,7 +268,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_AllocateParameters(NVSDK_NGX_Para
 	{
 		spdlog::info("NVSDK_NGX_D3D11_AllocateParameters calling NVNGXProxy::D3D11_AllocateParameters");
 
-		auto result = NVNGXProxy::D3D11_AllocateParameters()(OutParameters);
+		*OutParameters = new NVNGX_Parameters();
+		auto result = NVNGXProxy::D3D11_AllocateParameters()(&((NVNGX_Parameters*)*OutParameters)->OriginalParam);
 
 		spdlog::info("NVSDK_NGX_D3D11_AllocateParameters calling NVNGXProxy::D3D11_AllocateParameters result: {0:X}", (UINT)result);
 
@@ -294,20 +297,17 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_DestroyParameters(NVSDK_NGX_Param
 {
 	spdlog::debug("NVSDK_NGX_D3D11_DestroyParameters");
 
+	if (InParameters == nullptr)
+		return NVSDK_NGX_Result_Fail;
+
 	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D11_DestroyParameters() != nullptr)
 	{
 		spdlog::info("NVSDK_NGX_D3D11_DestroyParameters calling NVNGXProxy::D3D11_DestroyParameters");
 
-		auto result = NVNGXProxy::D3D11_DestroyParameters()(InParameters);
+		auto result = NVNGXProxy::D3D11_DestroyParameters()(((NVNGX_Parameters*)InParameters)->OriginalParam);
 
 		spdlog::info("NVSDK_NGX_D3D11_DestroyParameters calling NVNGXProxy::D3D11_DestroyParameters result: {0:X}", (UINT)result);
-
-		if (result == NVSDK_NGX_Result_Success)
-			return result;
 	}
-
-	if (InParameters == nullptr)
-		return NVSDK_NGX_Result_Fail;
 
 	delete InParameters;
 
