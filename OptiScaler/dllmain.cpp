@@ -837,11 +837,37 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 		spdlog::info("{0} loaded", VER_PRODUCT_NAME);
 
 		CheckWorkingMode();
-
-		NVNGXProxy::InitNVNGX();
 		
-		if (NVNGXProxy::NVNGXModule() == nullptr)
-			Config::Instance()->DLSSEnabled = false;
+		// Check if real DLSS available
+		if (Config::Instance()->DLSSEnabled.value_or(true))
+		{
+			NVNGXProxy::InitNVNGX();
+
+			if (NVNGXProxy::NVNGXModule() == nullptr)
+			{
+				Config::Instance()->DLSSEnabled = false;
+
+				if (Config::Instance()->Dx11Upscaler.has_value() && Config::Instance()->Dx11Upscaler.value() == "dlss")
+					Config::Instance()->Dx11Upscaler.reset();
+
+				if (Config::Instance()->Dx12Upscaler.has_value() && Config::Instance()->Dx12Upscaler.value() == "dlss")
+					Config::Instance()->Dx12Upscaler.reset();
+
+				if (Config::Instance()->VulkanUpscaler.has_value() && Config::Instance()->VulkanUpscaler.value() == "dlss")
+					Config::Instance()->VulkanUpscaler.reset();
+			}
+			else
+			{
+				if (!Config::Instance()->Dx11Upscaler.has_value())
+					Config::Instance()->Dx11Upscaler = "dlss";
+
+				if (!Config::Instance()->Dx12Upscaler.has_value())
+					Config::Instance()->Dx12Upscaler = "dlss";
+
+				if (!Config::Instance()->VulkanUpscaler.has_value())
+					Config::Instance()->VulkanUpscaler = "dlss";
+			}
+		}
 
 		break;
 
