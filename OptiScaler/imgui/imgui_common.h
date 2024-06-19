@@ -653,7 +653,7 @@ public:
 
 		if (Config::Instance()->newBackend == "fsr21" || (Config::Instance()->newBackend == "" && *code == "fsr21"))
 			selectedUpscalerName = "FSR 2.1.2";
-		else if (Config::Instance()->DLSSEnabled.value_or(true) &&  (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
+		else if (Config::Instance()->DLSSEnabled.value_or(true) && (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
 			selectedUpscalerName = "DLSS";
 		else
 			selectedUpscalerName = "FSR 2.2.1";
@@ -1057,21 +1057,18 @@ public:
 					}
 
 					// DLSS Enabler -----------------
-					if (Config::Instance()->DE_FramerateLimit.has_value() || 
+					if (Config::Instance()->DE_Available || Config::Instance()->DE_FramerateLimit.has_value() ||
 						(Config::Instance()->DE_DynamicLimitAvailable.has_value() && Config::Instance()->DE_DynamicLimitAvailable.value() > 0))
 					{
 						ImGui::SeparatorText("DLSS Enabler");
 
-						if (Config::Instance()->DE_FramerateLimit.has_value())
-						{
-							if (_deLimitFps < 0)
-								_deLimitFps = Config::Instance()->DE_FramerateLimit.value();
+						if (_deLimitFps < 0)
+							_deLimitFps = Config::Instance()->DE_FramerateLimit.value();
 
-							ImGui::SliderInt("FPS Limit", &_deLimitFps, 0, 200);
+						ImGui::SliderInt("FPS Limit", &_deLimitFps, 0, 200);
 
-							if (ImGui::Button("Apply Limit"))
-								Config::Instance()->DE_FramerateLimit = _deLimitFps;
-						}
+						if (ImGui::Button("Apply Limit"))
+							Config::Instance()->DE_FramerateLimit = _deLimitFps;
 
 						if (Config::Instance()->DE_DynamicLimitAvailable.has_value() && Config::Instance()->DE_DynamicLimitAvailable.value() > 0)
 						{
