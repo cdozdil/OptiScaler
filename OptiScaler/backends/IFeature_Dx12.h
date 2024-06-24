@@ -21,10 +21,10 @@ protected:
 	void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState) const;
 
 public:
-	virtual bool Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters) = 0;
-	virtual bool Evaluate(ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters) = 0;
+	virtual bool Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters) = 0;
+	virtual bool Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters) = 0;
 
-	IFeature_Dx12(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters);
+	IFeature_Dx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters);
 
 	void Shutdown() final;
 

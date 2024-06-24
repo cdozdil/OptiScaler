@@ -13,7 +13,7 @@ void IFeature_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID
 	InCommandList->ResourceBarrier(1, &barrier);
 }
 
-IFeature_Dx12::IFeature_Dx12(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters)
+IFeature_Dx12::IFeature_Dx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
 {
 }
 

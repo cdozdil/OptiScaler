@@ -8,11 +8,11 @@
 #include "../../d3dx/D3DX11tex.h"
 #endif
 
-XeSSFeatureDx11::XeSSFeatureDx11(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : IFeature_Dx11wDx12(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters), XeSSFeature(InHandleId, InParameters)
+XeSSFeatureDx11::XeSSFeatureDx11(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : IFeature_Dx11wDx12(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters), XeSSFeature(InHandleId, InParameters)
 {
 }
 
-bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters)
+bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("XeSSFeatureDx11::Init!");
 
@@ -30,7 +30,7 @@ bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 	return true;
 }
 
-bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK_NGX_Parameter* InParameters)
+bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("XeSSFeatureDx11::Evaluate");
 

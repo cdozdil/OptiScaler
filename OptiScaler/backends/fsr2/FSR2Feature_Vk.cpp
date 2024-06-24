@@ -124,7 +124,7 @@ bool FSR2FeatureVk::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 	return true;
 	}
 
-bool FSR2FeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_Parameter* InParameters)
+bool FSR2FeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("FSR2FeatureVk::Init");
 
@@ -140,7 +140,7 @@ bool FSR2FeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice 
 	return InitFSR2(InParameters);
 }
 
-bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parameter* InParameters)
+bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("FSR2FeatureVk::Evaluate");
 

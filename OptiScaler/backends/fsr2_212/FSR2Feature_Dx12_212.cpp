@@ -4,7 +4,7 @@
 
 #include "FSR2Feature_Dx12_212.h"
 
-bool FSR2FeatureDx12_212::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters)
+bool FSR2FeatureDx12_212::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("FSR2FeatureDx12_212::Init");
 
@@ -27,7 +27,7 @@ bool FSR2FeatureDx12_212::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList
 	return false;
 }
 
-bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters)
+bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters)
 {
 	spdlog::debug("FSR2FeatureDx12_212::Evaluate");
 

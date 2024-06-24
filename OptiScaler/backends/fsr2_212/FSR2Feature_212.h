@@ -51,7 +51,7 @@ public:
 	feature_version Version() final { return _version; }
 	const char* Name() override { return "FSR"; }
 
-	FSR2Feature212(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters)
+	FSR2Feature212(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters)
 	{
 		_moduleLoaded = true;
 		_lastFrameTime = MillisecondsNow();

@@ -76,7 +76,7 @@ public:
 	bool ModuleLoaded() const { return _moduleLoaded; }
 	long FrameCount() { return _frameCount; }
 
-	IFeature(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters)
+	IFeature(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
 	{
 		SetHandle(InHandleId);
 		_initParameters = SetInitParameters(InParameters);

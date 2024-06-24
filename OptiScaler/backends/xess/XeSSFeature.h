@@ -92,7 +92,7 @@ public:
 	feature_version Version() final { return feature_version{ _xessVersion.major, _xessVersion.minor, _xessVersion.patch }; }
 	const char* Name() override { return "XeSS"; }
 
-	XeSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters);
+	XeSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters);
 
 	~XeSSFeature();
 };
