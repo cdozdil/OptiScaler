@@ -8,13 +8,13 @@ void IFeature::SetHandle(unsigned int InHandleId)
 	spdlog::info("IFeatureContext::SetHandle Handle: {0}", _handle->Id);
 }
 
-bool IFeature::SetInitParameters(const NVSDK_NGX_Parameter* InParameters)
+bool IFeature::SetInitParameters(NVSDK_NGX_Parameter* InParameters)
 {
 	unsigned int width = 0;
 	unsigned int outWidth = 0;
 	unsigned int height = 0;
 	unsigned int outHeight = 0;
-	int pqValue = 1;
+	int pqValue = 0;
 
 	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &_featureFlags);
 
@@ -42,11 +42,31 @@ bool IFeature::SetInitParameters(const NVSDK_NGX_Parameter* InParameters)
 
 		_displayWidth = width > outWidth ? width : outWidth;
 		_displayHeight = height > outHeight ? height : outHeight;
-		_renderWidth = width < outWidth ? width : outWidth;
-		_renderHeight = height < outHeight ? height : outHeight;
 		_targetWidth = _displayWidth;
 		_targetHeight = _displayHeight;
+		_renderWidth = width < outWidth ? width : outWidth;
+		_renderHeight = height < outHeight ? height : outHeight;
+
 		_perfQualityValue = (NVSDK_NGX_PerfQuality_Value)pqValue;
+
+		//Should not be needed but who knows
+		if (_perfQualityValue == NVSDK_NGX_PerfQuality_Value_DLAA)
+		{
+			_renderWidth = _displayWidth;
+			_renderHeight = _displayHeight;
+		}
+		
+		//Should not be needed but who knows
+		if (_renderWidth == _displayWidth && _renderHeight == _displayHeight && _perfQualityValue != NVSDK_NGX_PerfQuality_Value_DLAA)
+		{
+			_perfQualityValue == NVSDK_NGX_PerfQuality_Value_DLAA;
+			pqValue = (int)_perfQualityValue;
+			InParameters->Set(NVSDK_NGX_Parameter_PerfQualityValue, pqValue);
+			InParameters->Set(NVSDK_NGX_Parameter_Width, _displayWidth);
+			InParameters->Set(NVSDK_NGX_Parameter_Height, _displayHeight);
+			InParameters->Set(NVSDK_NGX_Parameter_OutWidth, _displayWidth);
+			InParameters->Set(NVSDK_NGX_Parameter_OutHeight, _displayHeight);
+		}
 
 		spdlog::info("IFeatureContext::SetInitParameters Render Resolution: {0}x{1}, Display Resolution {2}x{3}, Quality: {4}",
 			_renderWidth, _renderHeight, _displayWidth, _displayHeight, pqValue);
@@ -58,7 +78,7 @@ bool IFeature::SetInitParameters(const NVSDK_NGX_Parameter* InParameters)
 	return false;
 }
 
-void IFeature::GetRenderResolution(const NVSDK_NGX_Parameter* InParameters, unsigned int* OutWidth, unsigned int* OutHeight) 
+void IFeature::GetRenderResolution(const NVSDK_NGX_Parameter* InParameters, unsigned int* OutWidth, unsigned int* OutHeight)
 {
 	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, OutWidth) != NVSDK_NGX_Result_Success ||
 		InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, OutHeight) != NVSDK_NGX_Result_Success)
@@ -70,7 +90,6 @@ void IFeature::GetRenderResolution(const NVSDK_NGX_Parameter* InParameters, unsi
 
 		do
 		{
-
 			if (InParameters->Get(NVSDK_NGX_Parameter_Width, &width) == NVSDK_NGX_Result_Success &&
 				InParameters->Get(NVSDK_NGX_Parameter_Height, &height) == NVSDK_NGX_Result_Success)
 			{

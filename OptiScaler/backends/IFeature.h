@@ -36,7 +36,7 @@ protected:
 	bool _moduleLoaded = false;
 
 	void SetHandle(unsigned int InHandleId);
-	bool SetInitParameters(const NVSDK_NGX_Parameter* InParameters);
+	bool SetInitParameters(NVSDK_NGX_Parameter* InParameters);
 	void GetRenderResolution(const NVSDK_NGX_Parameter* InParameters, unsigned int* OutWidth, unsigned int* OutHeight);
 
 	virtual void SetInit(bool InValue) { _isInited = InValue; }

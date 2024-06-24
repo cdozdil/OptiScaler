@@ -197,6 +197,7 @@ void DLSSFeature::ProcessEvaluateParams(NVSDK_NGX_Parameter* InParameters)
 		InParameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
 	}
 
+	// Read render resolution
 	unsigned int width;
 	unsigned int height;
 	GetRenderResolution(InParameters, &width, &height);
