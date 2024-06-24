@@ -176,433 +176,31 @@ void UnhookApis()
 
 #pragma endregion
 
-void ProcessDx12Resources(const NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Parameter* OutParameters)
-{
-	ID3D12Resource* d3d12Resource;
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_Color, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_Color, d3d12Resource);
-	else
-		spdlog::error("DLSSFeature::ProcessDx12Resources no color input!");
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_Output, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_Output, d3d12Resource);
-	else
-		spdlog::error("DLSSFeature::ProcessDx12Resources no color output!");
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_Depth, d3d12Resource);
-	else
-		spdlog::warn("DLSSFeature::ProcessDx12Resources no depth input!");
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_MotionVectors, d3d12Resource);
-	else
-		spdlog::error("DLSSFeature::ProcessDx12Resources no motion input!");
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_TransparencyMask, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_TransparencyMask, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_ExposureTexture, d3d12Resource);
-	else
-		spdlog::debug("DLSSFeature::ProcessDx12Resources no exposure input!");
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, d3d12Resource);
-	else
-		spdlog::debug("DLSSFeature::ProcessDx12Resources no mask input!");
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Albedo, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Albedo, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Roughness, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Roughness, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Metallic, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Metallic, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Specular, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Specular, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Subsurface, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Subsurface, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Normals, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Normals, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_ShadingModelId, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_ShadingModelId, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_MaterialId, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_MaterialId, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_8, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_8, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_9, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_9, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_10, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_10, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_11, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_11, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_12, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_12, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_13, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_13, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_14, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_14, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_15, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_15, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors3D, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_MotionVectors3D, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_IsParticleMask, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_IsParticleMask, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_AnimatedTextureMask, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_AnimatedTextureMask, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DepthHighRes, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_DepthHighRes, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_Position_ViewSpace, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_Position_ViewSpace, d3d12Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectorsReflection, &d3d12Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_MotionVectorsReflection, d3d12Resource);
-}
-
-void ProcessDx11Resources(const NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Parameter* OutParameters)
-{
-	ID3D11Resource* d3d11Resource;
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_Color, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_Color, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_Output, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_Output, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_Depth, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_MotionVectors, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_TransparencyMask, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_TransparencyMask, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_ExposureTexture, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Albedo, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Albedo, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Roughness, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Roughness, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Metallic, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Metallic, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Specular, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Specular, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Subsurface, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Subsurface, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Normals, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Normals, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_ShadingModelId, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_ShadingModelId, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_MaterialId, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_MaterialId, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_8, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_8, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_9, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_9, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_10, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_10, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_11, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_11, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_12, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_12, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_13, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_13, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_14, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_14, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_15, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_15, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors3D, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_MotionVectors3D, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_IsParticleMask, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_IsParticleMask, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_AnimatedTextureMask, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_AnimatedTextureMask, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DepthHighRes, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_DepthHighRes, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_Position_ViewSpace, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_Position_ViewSpace, d3d11Resource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectorsReflection, &d3d11Resource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_MotionVectorsReflection, d3d11Resource);
-}
-
-void ProcessVulkanResources(const NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Parameter* OutParameters)
-{
-	void* vkResource;
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_Color, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_Color, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_Output, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_Output, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_Depth, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_MotionVectors, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_TransparencyMask, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_TransparencyMask, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_ExposureTexture, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Albedo, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Albedo, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Roughness, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Roughness, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Metallic, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Metallic, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Specular, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Specular, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Subsurface, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Subsurface, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Normals, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Normals, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_ShadingModelId, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_ShadingModelId, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_MaterialId, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_MaterialId, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_8, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_8, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_9, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_9, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_10, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_10, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_11, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_11, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_12, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_12, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_13, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_13, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_14, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_14, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_GBuffer_Atrrib_15, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_GBuffer_Atrrib_15, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors3D, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_MotionVectors3D, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_IsParticleMask, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_IsParticleMask, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_AnimatedTextureMask, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_AnimatedTextureMask, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DepthHighRes, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_DepthHighRes, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_Position_ViewSpace, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_Position_ViewSpace, vkResource);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectorsReflection, &vkResource) == NVSDK_NGX_Result_Success)
-		OutParameters->Set(NVSDK_NGX_Parameter_MotionVectorsReflection, vkResource);
-}
-
-void DLSSFeature::ProcessEvaluateParams(const NVSDK_NGX_Parameter* InParameters)
+void DLSSFeature::ProcessEvaluateParams(NVSDK_NGX_Parameter* InParameters)
 {
 	float floatValue;
-	int intValue;
-	unsigned int uintValue;
-
-	if (Config::Instance()->Api == NVNGX_DX12)
-		ProcessDx12Resources(InParameters, Parameters);
-	else if (Config::Instance()->Api == NVNGX_DX11)
-		ProcessDx11Resources(InParameters, Parameters);
-	else
-		ProcessVulkanResources(InParameters, Parameters);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &floatValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_Jitter_Offset_X, floatValue);
-	else
-		spdlog::error("DLSSFeature::ProcessEvaluateParams no jitter offset x!");
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &floatValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_Jitter_Offset_Y, floatValue);
-	else
-		spdlog::error("DLSSFeature::ProcessEvaluateParams no jitter offset y!");
 
 	// override sharpness
 	if (Config::Instance()->OverrideSharpness.value_or(false) && !(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->RcasEnabled.value_or(false)))
 	{
 		auto sharpness = Config::Instance()->Sharpness.value_or(0.3f);
-		Parameters->Set(NVSDK_NGX_Parameter_Sharpness, sharpness);
+		InParameters->Set(NVSDK_NGX_Parameter_Sharpness, sharpness);
 	}
-	// cas enabled
+	// rcas enabled
 	else if (Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->RcasEnabled.value_or(false))
-		Parameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
+	{
+		InParameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
+	}
 	// dlss value
-	else if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &floatValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_Sharpness, floatValue);
-	// fallback
-	else
-		Parameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_Reset, &intValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_Reset, intValue);
-	else
-		Parameters->Set(NVSDK_NGX_Parameter_Reset, 0);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &floatValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_MV_Scale_X, floatValue);
-	else
+	else if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &floatValue) != NVSDK_NGX_Result_Success)
 	{
-		spdlog::error("DLSSFeature::ProcessEvaluateParams no motion scale x!");
-		Parameters->Set(NVSDK_NGX_Parameter_MV_Scale_X, 1.0f);
+		InParameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
 	}
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &floatValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_MV_Scale_Y, floatValue);
-	else
-	{
-		spdlog::error("DLSSFeature::ProcessEvaluateParams no motion scale y!");
-		Parameters->Set(NVSDK_NGX_Parameter_MV_Scale_Y, 1.0f);
-	}
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_TonemapperType, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_TonemapperType, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_X, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_X, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_Y, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_Y, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_X, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_X, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_Y, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_Y, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_X, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_X, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_Y, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_Y, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Translucency_SubrectBase_X, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Input_Translucency_SubrectBase_X, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Translucency_SubrectBase_Y, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Input_Translucency_SubrectBase_Y, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_X, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_X, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_Y, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_Y, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &floatValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, floatValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Indicator_Invert_X_Axis, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Indicator_Invert_X_Axis, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Indicator_Invert_Y_Axis, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Indicator_Invert_Y_Axis, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, &floatValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, floatValue);
-	else
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, 1.0f);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &floatValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, floatValue);
 }
 
-void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
+void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 {
 	unsigned int uintValue;
-	int intValue;
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_CreationNodeMask, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_CreationNodeMask, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_VisibilityNodeMask, &uintValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_VisibilityNodeMask, uintValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Enable_Output_Subrects, &intValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_DLSS_Enable_Output_Subrects, intValue);
-
-	if (InParameters->Get(NVSDK_NGX_Parameter_RTXValue, &intValue) == NVSDK_NGX_Result_Success)
-		Parameters->Set(NVSDK_NGX_Parameter_RTXValue, intValue);
 
 	// Create flags -----------------------------
 	unsigned int featureFlags = 0;
@@ -692,7 +290,7 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!Sharpening) {0:b}", featureFlags);
 	}
 
-	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, featureFlags);
+	InParameters->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, featureFlags);
 
 	// Resolution -----------------------------
 	if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
@@ -719,10 +317,10 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 		_targetHeight = DisplayHeight();
 	}
 
-	Parameters->Set(NVSDK_NGX_Parameter_Width, RenderWidth());
-	Parameters->Set(NVSDK_NGX_Parameter_Height, RenderHeight());
-	Parameters->Set(NVSDK_NGX_Parameter_OutWidth, TargetWidth());
-	Parameters->Set(NVSDK_NGX_Parameter_OutHeight, TargetHeight());
+	InParameters->Set(NVSDK_NGX_Parameter_Width, RenderWidth());
+	InParameters->Set(NVSDK_NGX_Parameter_Height, RenderHeight());
+	InParameters->Set(NVSDK_NGX_Parameter_OutWidth, TargetWidth());
+	InParameters->Set(NVSDK_NGX_Parameter_OutHeight, TargetHeight());
 
 	unsigned int RenderPresetDLAA = 0;
 	unsigned int RenderPresetUltraQuality = 0;
@@ -731,12 +329,23 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 	unsigned int RenderPresetPerformance = 0;
 	unsigned int RenderPresetUltraPerformance = 0;
 
-	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, &RenderPresetDLAA);
-	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, &RenderPresetUltraQuality);
-	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, &RenderPresetQuality);
-	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, &RenderPresetBalanced);
-	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, &RenderPresetPerformance);
-	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, &RenderPresetUltraPerformance);
+	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, &RenderPresetDLAA) != NVSDK_NGX_Result_Success)
+		InParameters->Get("RayReconstruction.Hint.Render.Preset.DLAA", &RenderPresetDLAA);
+
+	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, &RenderPresetUltraQuality) != NVSDK_NGX_Result_Success)
+		InParameters->Get("RayReconstruction.Hint.Render.Preset.UltraQuality", &RenderPresetUltraQuality);
+
+	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, &RenderPresetQuality) != NVSDK_NGX_Result_Success)
+		InParameters->Get("RayReconstruction.Hint.Render.Preset.Quality", &RenderPresetQuality);
+
+	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, &RenderPresetBalanced) != NVSDK_NGX_Result_Success)
+		InParameters->Get("RayReconstruction.Hint.Render.Preset.Balanced", &RenderPresetBalanced);
+
+	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, &RenderPresetPerformance) != NVSDK_NGX_Result_Success)
+		InParameters->Get("RayReconstruction.Hint.Render.Preset.Performance", &RenderPresetPerformance);
+
+	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, &RenderPresetUltraPerformance) != NVSDK_NGX_Result_Success)
+		InParameters->Get("RayReconstruction.Hint.Render.Preset.UltraPerformance", &RenderPresetUltraPerformance);
 
 	if (Config::Instance()->RenderPresetOverride.value_or(false))
 	{
@@ -766,12 +375,18 @@ void DLSSFeature::ProcessInitParams(const NVSDK_NGX_Parameter* InParameters)
 	if (RenderPresetUltraPerformance < 0 || RenderPresetUltraPerformance > 5)
 		RenderPresetUltraPerformance = 0;
 
-	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, RenderPresetDLAA);
-	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, RenderPresetUltraQuality);
-	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, RenderPresetQuality);
-	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, RenderPresetBalanced);
-	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, RenderPresetPerformance);
-	Parameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, RenderPresetUltraPerformance);
+	InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, RenderPresetDLAA);
+	InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, RenderPresetUltraQuality);
+	InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, RenderPresetQuality);
+	InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, RenderPresetBalanced);
+	InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, RenderPresetPerformance);
+	InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, RenderPresetUltraPerformance);
+	InParameters->Set("RayReconstruction.Hint.Render.Preset.DLAA", RenderPresetDLAA);
+	InParameters->Set("RayReconstruction.Hint.Render.Preset.UltraQuality", RenderPresetUltraQuality);
+	InParameters->Set("RayReconstruction.Hint.Render.Preset.Quality", RenderPresetQuality);
+	InParameters->Set("RayReconstruction.Hint.Render.Preset.Balanced", RenderPresetBalanced);
+	InParameters->Set("RayReconstruction.Hint.Render.Preset.Performance", RenderPresetPerformance);
+	InParameters->Set("RayReconstruction.Hint.Render.Preset.UltraPerformance", RenderPresetUltraPerformance);
 }
 
 void DLSSFeature::ReadVersion()
@@ -797,7 +412,7 @@ void DLSSFeature::ReadVersion()
 	spdlog::info("DLSSFeature::ReadVersion GetProcAddress for NVSDK_NGX_GetSnippetVersion failed!");
 }
 
-DLSSFeature::DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
+DLSSFeature::DLSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
 {
 	if (NVNGXProxy::NVNGXModule() == nullptr)
 		NVNGXProxy::InitNVNGX();

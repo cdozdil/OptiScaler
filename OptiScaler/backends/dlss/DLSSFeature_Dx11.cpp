@@ -3,7 +3,7 @@
 #include "../../Config.h"
 #include "../../pch.h"
 
-bool DLSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, const NVSDK_NGX_Parameter* InParameters)
+bool DLSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters)
 {
 	if (NVNGXProxy::NVNGXModule() == nullptr)
 	{
@@ -37,62 +37,24 @@ bool DLSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 
-		if (NVNGXProxy::D3D11_AllocateParameters() != nullptr)
-		{
-			spdlog::debug("DLSSFeatureDx11::Init _AllocateParameters will be used");
-
-			nvResult = NVNGXProxy::D3D11_AllocateParameters()(&Parameters);
-
-			if (nvResult != NVSDK_NGX_Result_Success)
-			{
-				spdlog::error("DLSSFeatureDx11::Init _AllocateParameters result: {0:X}", (unsigned int)nvResult);
-				break;
-			}
-
-#ifdef DLSS_PARAM_DUMP
-			DumpNvParams(Parameters);
-#endif
-		}
-		else if (NVNGXProxy::D3D11_GetParameters() != nullptr)
-		{
-			spdlog::debug("DLSSFeatureDx11::Init _GetParameters will be used");
-
-			nvResult = NVNGXProxy::D3D11_GetParameters()(&Parameters);
-
-			if (nvResult != NVSDK_NGX_Result_Success)
-			{
-				spdlog::error("DLSSFeatureDx11::Init _GetParameters result: {0:X}", (unsigned int)nvResult);
-				break;
-			}
-
-#ifdef DLSS_PARAM_DUMP
-			DumpNvParams(Parameters);
-#endif
-		}
-		else
-		{
-			spdlog::error("DLSSFeatureDx11::Init _AllocateParameters and _GetParameters are both nullptr!");
-			break;
-		}
-
-		spdlog::info("DLSSFeatureDx12::Evaluate Creating DLSS feature");
+		spdlog::info("DLSSFeatureDx11::Init Creating DLSS feature");
 
 		if (NVNGXProxy::D3D11_CreateFeature() != nullptr)
 		{
 			ProcessInitParams(InParameters);
 
 			_p_dlssHandle = &_dlssHandle;
-			nvResult = NVNGXProxy::D3D11_CreateFeature()(InContext, NVSDK_NGX_Feature_SuperSampling, Parameters, &_p_dlssHandle);
+			nvResult = NVNGXProxy::D3D11_CreateFeature()(InContext, NVSDK_NGX_Feature_SuperSampling, InParameters, &_p_dlssHandle);
 
 			if (nvResult != NVSDK_NGX_Result_Success)
 			{
-				spdlog::error("DLSSFeatureDx12::Evaluate _CreateFeature result: {0:X}", (unsigned int)nvResult);
+				spdlog::error("DLSSFeatureDx11::Init _CreateFeature result: {0:X}", (unsigned int)nvResult);
 				break;
 			}
 		}
 		else
 		{
-			spdlog::error("DLSSFeatureDx12::Evaluate _CreateFeature is nullptr");
+			spdlog::error("DLSSFeatureDx11::Init _CreateFeature is nullptr");
 			break;
 		}
 
@@ -113,7 +75,7 @@ bool DLSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 	return initResult;
 }
 
-bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK_NGX_Parameter* InParameters)
+bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_Parameter* InParameters)
 {
 	if (!_moduleLoaded)
 	{
@@ -128,7 +90,7 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 	{
 		ProcessEvaluateParams(InParameters);
 
-		nvResult = NVNGXProxy::D3D11_EvaluateFeature()(InDeviceContext, _p_dlssHandle, Parameters, NULL);
+		nvResult = NVNGXProxy::D3D11_EvaluateFeature()(InDeviceContext, _p_dlssHandle, InParameters, NULL);
 
 		if (nvResult != NVSDK_NGX_Result_Success)
 		{
@@ -148,7 +110,7 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, const NVSDK
 
 	// imgui
 	if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30 && 
-		Parameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput) == NVSDK_NGX_Result_Success)
+		InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput) == NVSDK_NGX_Result_Success)
 	{
 		if (Imgui != nullptr && Imgui.get() != nullptr)
 		{
@@ -182,7 +144,7 @@ void DLSSFeatureDx11::Shutdown(ID3D11Device* InDevice)
 	DLSSFeature::Shutdown();
 }
 
-DLSSFeatureDx11::DLSSFeatureDx11(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), DLSSFeature(InHandleId, InParameters)
+DLSSFeatureDx11::DLSSFeatureDx11(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), DLSSFeature(InHandleId, InParameters)
 {
 	if (NVNGXProxy::NVNGXModule() == nullptr)
 	{
@@ -195,9 +157,6 @@ DLSSFeatureDx11::DLSSFeatureDx11(unsigned int InHandleId, const NVSDK_NGX_Parame
 
 DLSSFeatureDx11::~DLSSFeatureDx11()
 {
-	if (Parameters != nullptr && NVNGXProxy::D3D11_DestroyParameters() != nullptr)
-		NVNGXProxy::D3D11_DestroyParameters()(Parameters);
-
 	if (NVNGXProxy::D3D11_ReleaseFeature() != nullptr && _p_dlssHandle != nullptr)
 		NVNGXProxy::D3D11_ReleaseFeature()(_p_dlssHandle);
 }

@@ -12,13 +12,12 @@ private:
 	feature_version _version = { 0, 0, 0 };
 		
 protected:
-	NVSDK_NGX_Parameter* Parameters = nullptr;
 	NVSDK_NGX_Handle _dlssHandle = {};
 	NVSDK_NGX_Handle* _p_dlssHandle = nullptr;
 	inline static bool _dlssInited = false;
 
-	void ProcessEvaluateParams(const NVSDK_NGX_Parameter* InParameters);
-	void ProcessInitParams(const NVSDK_NGX_Parameter* InParameters);
+	void ProcessEvaluateParams(NVSDK_NGX_Parameter* InParameters);
+	void ProcessInitParams(NVSDK_NGX_Parameter* InParameters);
 
 	static void Shutdown();
 
@@ -27,7 +26,7 @@ public:
 	const char* Name() final { return "DLSS"; } 
 	void ReadVersion();
 
-	DLSSFeature(unsigned int handleId, const NVSDK_NGX_Parameter* InParameters);
+	DLSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters);
 
 	~DLSSFeature();
 };

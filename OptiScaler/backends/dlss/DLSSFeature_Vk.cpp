@@ -4,7 +4,7 @@
 
 #include "DLSSFeature_Vk.h"
 
-bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_Parameter* InParameters)
+bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Parameter* InParameters)
 {
 	if (NVNGXProxy::NVNGXModule() == nullptr)
 	{
@@ -41,44 +41,6 @@ bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice 
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 
-		if (NVNGXProxy::VULKAN_AllocateParameters() != nullptr)
-		{
-			spdlog::debug("DLSSFeatureVk::Init _AllocateParameters will be used");
-
-			nvResult = NVNGXProxy::VULKAN_AllocateParameters()(&Parameters);
-
-			if (nvResult != NVSDK_NGX_Result_Success)
-			{
-				spdlog::error("DLSSFeatureVk::Init _AllocateParameters result: {0:X}", (unsigned int)nvResult);
-				break;
-			}
-
-#ifdef DLSS_PARAM_DUMP
-			DumpNvParams(Parameters);
-#endif
-		}
-		else if (NVNGXProxy::VULKAN_GetParameters() != nullptr)
-		{
-			spdlog::debug("DLSSFeatureVk::Init _GetParameters will be used");
-
-			nvResult = NVNGXProxy::VULKAN_GetParameters()(&Parameters);
-
-			if (nvResult != NVSDK_NGX_Result_Success)
-			{
-				spdlog::error("DLSSFeatureVk::Init _GetParameters result: {0:X}", (unsigned int)nvResult);
-				break;
-			}
-
-#ifdef DLSS_PARAM_DUMP
-			DumpNvParams(Parameters);
-#endif
-		}
-		else
-		{
-			spdlog::error("DLSSFeatureVk::Init _AllocateParameters and _GetParameters are both nullptr!");
-			break;
-		}
-
 		spdlog::info("DLSSFeatureVk::Evaluate Creating DLSS feature");
 
 		if (NVNGXProxy::VULKAN_CreateFeature() != nullptr)
@@ -86,7 +48,7 @@ bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice 
 			ProcessInitParams(InParameters);
 
 			_p_dlssHandle = &_dlssHandle;
-			nvResult = NVNGXProxy::VULKAN_CreateFeature()(InCmdList, NVSDK_NGX_Feature_SuperSampling, Parameters, &_p_dlssHandle);
+			nvResult = NVNGXProxy::VULKAN_CreateFeature()(InCmdList, NVSDK_NGX_Feature_SuperSampling, InParameters, &_p_dlssHandle);
 
 			if (nvResult != NVSDK_NGX_Result_Success)
 			{
@@ -111,7 +73,7 @@ bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice 
 	return initResult;
 }
 
-bool DLSSFeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parameter* InParameters)
+bool DLSSFeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* InParameters)
 {
 	if (!_moduleLoaded)
 	{
@@ -125,7 +87,7 @@ bool DLSSFeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Parame
 	{
 		ProcessEvaluateParams(InParameters);
 
-		nvResult = NVNGXProxy::VULKAN_EvaluateFeature()(InCmdBuffer, _p_dlssHandle, Parameters, NULL);
+		nvResult = NVNGXProxy::VULKAN_EvaluateFeature()(InCmdBuffer, _p_dlssHandle, InParameters, NULL);
 
 		if (nvResult != NVSDK_NGX_Result_Success)
 		{
@@ -157,7 +119,7 @@ void DLSSFeatureVk::Shutdown(VkDevice InDevice)
 	DLSSFeature::Shutdown();
 }
 
-DLSSFeatureVk::DLSSFeatureVk(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters), IFeature_Vk(InHandleId, InParameters), DLSSFeature(InHandleId, InParameters)
+DLSSFeatureVk::DLSSFeatureVk(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters), IFeature_Vk(InHandleId, InParameters), DLSSFeature(InHandleId, InParameters)
 {
 	if (NVNGXProxy::NVNGXModule() == nullptr)
 	{
@@ -170,9 +132,6 @@ DLSSFeatureVk::DLSSFeatureVk(unsigned int InHandleId, const NVSDK_NGX_Parameter*
 
 DLSSFeatureVk::~DLSSFeatureVk()
 {
-	if (Parameters != nullptr && NVNGXProxy::VULKAN_DestroyParameters() != nullptr)
-		NVNGXProxy::VULKAN_DestroyParameters()(Parameters);
-
 	if (NVNGXProxy::VULKAN_ReleaseFeature() != nullptr && _p_dlssHandle != nullptr)
 		NVNGXProxy::VULKAN_ReleaseFeature()(_p_dlssHandle);
 }

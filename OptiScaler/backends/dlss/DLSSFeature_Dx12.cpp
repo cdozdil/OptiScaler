@@ -3,7 +3,7 @@
 #include "../../Config.h"
 #include "../../pch.h"
 
-bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters)
+bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters)
 {
 	if (NVNGXProxy::NVNGXModule() == nullptr)
 	{
@@ -36,44 +36,6 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 
-		if (NVNGXProxy::D3D12_AllocateParameters() != nullptr)
-		{
-			spdlog::debug("DLSSFeatureDx12::Init _AllocateParameters will be used");
-
-			nvResult = NVNGXProxy::D3D12_AllocateParameters()(&Parameters);
-
-			if (nvResult != NVSDK_NGX_Result_Success)
-			{
-				spdlog::error("DLSSFeatureDx12::Init _AllocateParameters result: {0:X}", (unsigned int)nvResult);
-				break;
-			}
-
-#ifdef DLSS_PARAM_DUMP
-			DumpNvParams(Parameters);
-#endif
-		}
-		else if (NVNGXProxy::D3D12_GetParameters() != nullptr)
-		{
-			spdlog::debug("DLSSFeatureDx12::Init _GetParameters will be used");
-
-			nvResult = NVNGXProxy::D3D12_GetParameters()(&Parameters);
-
-			if (nvResult != NVSDK_NGX_Result_Success)
-			{
-				spdlog::error("DLSSFeatureDx12::Init _GetParameters result: {0:X}", (unsigned int)nvResult);
-				break;
-			}
-
-#ifdef DLSS_PARAM_DUMP
-			DumpNvParams(Parameters);
-#endif
-		}
-		else
-		{
-			spdlog::error("DLSSFeatureDx12::Init _AllocateParameters and _GetParameters are both nullptr!");
-			break;
-		}
-
 		spdlog::info("DLSSFeatureDx12::Evaluate Creating DLSS feature");
 
 		if (NVNGXProxy::D3D12_CreateFeature() != nullptr)
@@ -81,7 +43,7 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 			ProcessInitParams(InParameters);
 
 			_p_dlssHandle = &_dlssHandle;
-			nvResult = NVNGXProxy::D3D12_CreateFeature()(InCommandList, NVSDK_NGX_Feature_SuperSampling, Parameters, &_p_dlssHandle);
+			nvResult = NVNGXProxy::D3D12_CreateFeature()(InCommandList, NVSDK_NGX_Feature_SuperSampling, InParameters, &_p_dlssHandle);
 
 			if (nvResult != NVSDK_NGX_Result_Success)
 			{
@@ -115,7 +77,7 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 		if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
 			Imgui = std::make_unique<Imgui_Dx12>(Util::GetProcessWindow(), InDevice);
 
-		OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", InDevice, (TargetWidth() < DisplayWidth()));
+		OutputScaler = std::make_unique<BS_Dx12>("OutputScaling", InDevice, (TargetWidth() < DisplayWidth()));
 	}
 
 	SetInit(initResult);
@@ -123,7 +85,7 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 	return initResult;
 }
 
-bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const NVSDK_NGX_Parameter* InParameters)
+bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters)
 {
 	if (!_moduleLoaded)
 	{
@@ -157,8 +119,8 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 
 		bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
 
-		Parameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput);
-		Parameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramMotion);
+		InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput);
+		InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramMotion);
 
 		// supersampling
 		if (useSS)
@@ -182,7 +144,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 			RCAS->IsInit() && RCAS->CreateBufferResource(Device, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
 			// Disable DLSS sharpness
-			Parameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
+			InParameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
 
 			RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			setBuffer = RCAS->Buffer();
@@ -192,12 +154,12 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 		else if (Config::Instance()->OverrideSharpness.value_or(false))
 		{
 			sharpness = Config::Instance()->Sharpness.value_or(0.3);
-			Parameters->Set(NVSDK_NGX_Parameter_Sharpness, sharpness);
+			InParameters->Set(NVSDK_NGX_Parameter_Sharpness, sharpness);
 		}
 
-		Parameters->Set(NVSDK_NGX_Parameter_Output, setBuffer);
+		InParameters->Set(NVSDK_NGX_Parameter_Output, setBuffer);
 
-		nvResult = NVNGXProxy::D3D12_EvaluateFeature()(InCommandList, _p_dlssHandle, Parameters, NULL);
+		nvResult = NVNGXProxy::D3D12_EvaluateFeature()(InCommandList, _p_dlssHandle, InParameters, NULL);
 
 		if (nvResult != NVSDK_NGX_Result_Success)
 		{
@@ -276,6 +238,9 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, const N
 					Imgui = std::make_unique<Imgui_Dx12>(Util::GetProcessWindow(), Device);
 			}
 		}
+
+		// set original output texture back
+		InParameters->Set(NVSDK_NGX_Parameter_Output, paramOutput);
 	}
 	else
 	{
@@ -301,7 +266,7 @@ void DLSSFeatureDx12::Shutdown(ID3D12Device* InDevice)
 	DLSSFeature::Shutdown();
 }
 
-DLSSFeatureDx12::DLSSFeatureDx12(unsigned int InHandleId, const NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters), IFeature_Dx12(InHandleId, InParameters), DLSSFeature(InHandleId, InParameters)
+DLSSFeatureDx12::DLSSFeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters), IFeature_Dx12(InHandleId, InParameters), DLSSFeature(InHandleId, InParameters)
 {
 	if (NVNGXProxy::NVNGXModule() == nullptr)
 	{
@@ -314,9 +279,6 @@ DLSSFeatureDx12::DLSSFeatureDx12(unsigned int InHandleId, const NVSDK_NGX_Parame
 
 DLSSFeatureDx12::~DLSSFeatureDx12()
 {
-	if (Parameters != nullptr && NVNGXProxy::D3D12_DestroyParameters() != nullptr)
-		NVNGXProxy::D3D12_DestroyParameters()(Parameters);
-
 	if (NVNGXProxy::D3D12_ReleaseFeature() != nullptr && _p_dlssHandle != nullptr)
 		NVNGXProxy::D3D12_ReleaseFeature()(_p_dlssHandle);
 
