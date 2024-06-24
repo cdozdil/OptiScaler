@@ -81,8 +81,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
-    <TargetName>nvngx</TargetName>
-    <OutDir>D:\Folders\Games\Cyberpunk 2077\bin\x64\</OutDir>
+    <TargetName>dlss-enabler-upscaler</TargetName>
+    <OutDir>D:\Folders\Games\SteamLibrary\steamapps\common\Ghost of Tsushima DIRECTOR%27S CUT\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -183,6 +183,10 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="backends\dlssd\DLSSDFeature.h" />
+    <ClInclude Include="backends\dlssd\DLSSDFeature_Dx11.h" />
+    <ClInclude Include="backends\dlssd\DLSSDFeature_Dx12.h" />
+    <ClInclude Include="backends\dlssd\DLSSDFeature_Vk.h" />
     <ClInclude Include="backends\dlss\DLSSFeature.h" />
     <ClInclude Include="backends\dlss\DLSSFeature_Dx11.h" />
     <ClInclude Include="backends\dlss\DLSSFeature_Dx12.h" />
@@ -236,6 +240,10 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="backends\xess\XeSSFeature_Dx11.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="backends\dlssd\DLSSDFeature.cpp" />
+    <ClCompile Include="backends\dlssd\DLSSDFeature_Dx11.cpp" />
+    <ClCompile Include="backends\dlssd\DLSSDFeature_Dx12.cpp" />
+    <ClCompile Include="backends\dlssd\DLSSDFeature_Vk.cpp" />
     <ClCompile Include="backends\dlss\DLSSFeature.cpp" />
     <ClCompile Include="backends\dlss\DLSSFeature_Dx11.cpp" />
     <ClCompile Include="backends\dlss\DLSSFeature_Dx12.cpp" />

@@ -9,6 +9,7 @@
 #include "Config.h"
 #include "backends/fsr2/FSR2Feature_Vk.h"
 #include "backends/dlss/DLSSFeature_Vk.h"
+#include "backends/dlssd/DLSSDFeature_Vk.h"
 #include "backends/fsr2_212/FSR2Feature_Vk_212.h"
 
 #include "NVNGX_Parameter.h"
@@ -244,14 +245,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetParameters(NVSDK_NGX_Paramete
 	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_GetParameters() != nullptr)
 	{
 		spdlog::info("NVSDK_NGX_VULKAN_GetParameters calling NVNGXProxy::VULKAN_GetParameters");
-
-		*OutParameters = GetNGXParameters("OptiVk");
-		auto result = NVNGXProxy::VULKAN_GetParameters()(&((NVNGX_Parameters*)*OutParameters)->OriginalParam);
-
+		auto result = NVNGXProxy::VULKAN_GetParameters()(OutParameters);
 		spdlog::info("NVSDK_NGX_VULKAN_GetParameters calling NVNGXProxy::VULKAN_GetParameters result: {0:X}", (UINT)result);
 
 		if (result == NVSDK_NGX_Result_Success)
+		{
+			InitNGXParameters(*OutParameters);
 			return result;
+		}
 	}
 
 	*OutParameters = GetNGXParameters("OptiVk");
@@ -265,10 +266,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_AllocateParameters(NVSDK_NGX_Par
 	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_AllocateParameters() != nullptr)
 	{
 		spdlog::info("NVSDK_NGX_VULKAN_AllocateParameters calling NVNGXProxy::VULKAN_AllocateParameters");
-
-		*OutParameters = new NVNGX_Parameters();
-		auto result = NVNGXProxy::VULKAN_AllocateParameters()(&((NVNGX_Parameters*)*OutParameters)->OriginalParam);
-
+		auto result = NVNGXProxy::VULKAN_AllocateParameters()(OutParameters);
 		spdlog::info("NVSDK_NGX_VULKAN_AllocateParameters calling NVNGXProxy::VULKAN_AllocateParameters result: {0:X}", (UINT)result);
 
 		if (result == NVSDK_NGX_Result_Success)
@@ -286,14 +284,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetCapabilityParameters(NVSDK_NG
 	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::IsDx12Inited() && NVNGXProxy::VULKAN_GetCapabilityParameters() != nullptr)
 	{
 		spdlog::info("NVSDK_NGX_VULKAN_GetCapabilityParameters calling NVNGXProxy::VULKAN_GetCapabilityParameters");
-
-		*OutParameters = GetNGXParameters("OptiVk");
-		auto result = NVNGXProxy::VULKAN_GetCapabilityParameters()(&((NVNGX_Parameters*)*OutParameters)->OriginalParam);
-
+		auto result = NVNGXProxy::VULKAN_GetCapabilityParameters()(OutParameters);
 		spdlog::info("NVSDK_NGX_VULKAN_GetCapabilityParameters calling NVNGXProxy::VULKAN_GetCapabilityParameters result: {0:X}", (UINT)result);
 
 		if (result == NVSDK_NGX_Result_Success)
+		{
+			InitNGXParameters(*OutParameters);
 			return result;
+		}
 	}
 
 	*OutParameters = GetNGXParameters("OptiVk");
@@ -322,10 +320,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_DestroyParameters(NVSDK_NGX_Para
 	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_DestroyParameters() != nullptr)
 	{
 		spdlog::info("NVSDK_NGX_VULKAN_DestroyParameters calling NVNGXProxy::VULKAN_DestroyParameters");
-
-		auto result = NVNGXProxy::VULKAN_DestroyParameters()(((NVNGX_Parameters*)InParameters)->OriginalParam);
-
+		auto result = NVNGXProxy::VULKAN_DestroyParameters()(InParameters);
 		spdlog::info("NVSDK_NGX_VULKAN_DestroyParameters calling NVNGXProxy::VULKAN_DestroyParameters result: {0:X}", (UINT)result);
+
+		return result;
 	}
 
 	delete InParameters;
@@ -343,7 +341,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetScratchBufferSize(NVSDK_NGX_F
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice, VkCommandBuffer InCmdList, NVSDK_NGX_Feature InFeatureID, NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Handle** OutHandle)
 {
-	if (InFeatureID != NVSDK_NGX_Feature_SuperSampling)
+	if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
 	{
 		if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::InitVulkan(vkInstance, vkPD, vkDevice, vkGIPA, vkGDPA) && NVNGXProxy::VULKAN_CreateFeature1() != nullptr)
 		{
@@ -362,31 +360,45 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 	auto handleId = IFeature::GetNextHandleId();
 	spdlog::info("NVSDK_NGX_VULKAN_CreateFeature1 HandleId: {0}", handleId);
 
-	if (Config::Instance()->VulkanUpscaler.value_or("fsr21") == "dlss" && Config::Instance()->DLSSEnabled.value_or(true))
+	if (InFeatureID == NVSDK_NGX_Feature_SuperSampling)
 	{
-		VkContexts[handleId] = std::make_unique<DLSSFeatureVk>(handleId, InParameters);
-
-
-		if (!VkContexts[handleId]->ModuleLoaded())
+		if (Config::Instance()->VulkanUpscaler.value_or("fsr21") == "dlss")
 		{
-			spdlog::error("NVSDK_NGX_VULKAN_CreateFeature1 can't create new DLSS feature, Fallback to FSR2.1!");
+			if (Config::Instance()->DLSSEnabled.value_or(true))
+			{
+				VkContexts[handleId] = std::make_unique<DLSSFeatureVk>(handleId, InParameters);
 
-			VkContexts[handleId].reset();
-			auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
-			VkContexts.erase(it);
+				if (!VkContexts[handleId]->ModuleLoaded())
+				{
+					spdlog::error("NVSDK_NGX_VULKAN_CreateFeature1 can't create new DLSS feature, Fallback to FSR2.1!");
 
-			Config::Instance()->VulkanUpscaler = "fsr21";
+					VkContexts[handleId].reset();
+					auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+					VkContexts.erase(it);
+
+					Config::Instance()->VulkanUpscaler = "fsr21";
+				}
+				else
+				{
+					spdlog::info("NVSDK_NGX_VULKAN_CreateFeature1 creating new DLSS feature");
+				}
+			}
+			else
+			{
+				Config::Instance()->VulkanUpscaler.reset();
+			}
 		}
-		else
-		{
-			spdlog::info("NVSDK_NGX_VULKAN_CreateFeature1 creating new DLSS feature");
-		}
+
+		if (Config::Instance()->VulkanUpscaler.value_or("fsr21") == "fsr22")
+			VkContexts[handleId] = std::make_unique<FSR2FeatureVk>(handleId, InParameters);
+		else if (Config::Instance()->VulkanUpscaler.value_or("fsr21") == "fsr21")
+			VkContexts[handleId] = std::make_unique<FSR2FeatureVk212>(handleId, InParameters);
 	}
-
-	if (Config::Instance()->VulkanUpscaler.value_or("fsr21") == "fsr22")
-		VkContexts[handleId] = std::make_unique<FSR2FeatureVk>(handleId, InParameters);
-	else if (Config::Instance()->VulkanUpscaler.value_or("fsr21") == "fsr21")
-		VkContexts[handleId] = std::make_unique<FSR2FeatureVk212>(handleId, InParameters);
+	else
+	{
+		spdlog::info("NVSDK_NGX_VULKAN_CreateFeature1 creating new DLSSD feature");
+		VkContexts[handleId] = std::make_unique<DLSSDFeatureVk>(handleId, InParameters);
+	}
 
 	auto deviceContext = VkContexts[handleId].get();
 	*OutHandle = deviceContext->Handle();
@@ -406,7 +418,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature(VkCommandBuffer In
 {
 	spdlog::info("NVSDK_NGX_VULKAN_CreateFeature");
 
-	if (InFeatureID != NVSDK_NGX_Feature_SuperSampling)
+	if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
 	{
 		if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::InitVulkan(vkInstance, vkPD, vkDevice, vkGIPA, vkGDPA) && NVNGXProxy::VULKAN_CreateFeature() != nullptr)
 		{
@@ -462,7 +474,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
 	return NVSDK_NGX_Result_Success;
 }
 
-NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer InCmdList, const NVSDK_NGX_Handle* InFeatureHandle, const NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer InCmdList, const NVSDK_NGX_Handle* InFeatureHandle, NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_EvaluateFeature FeatureId: {0}", InFeatureHandle->Id);
 
@@ -534,7 +546,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 
 				auto dc = VkContexts[handleId].get();
 
-				createParams = GetNGXParameters("OptiVk");
+				if (Config::Instance()->newBackend != "dlssd" && Config::Instance()->newBackend != "dlss")
+					createParams = GetNGXParameters("OptiVk");
+				else
+					createParams = InParameters;
+
 				createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
 				createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
 				createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
@@ -587,6 +603,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 				spdlog::info("NVSDK_NGX_VULKAN_EvaluateFeature creating new DLSS feature");
 				VkContexts[handleId] = std::make_unique<DLSSFeatureVk>(handleId, createParams);
 			}
+			else if (Config::Instance()->newBackend == "dlssd")
+			{
+				spdlog::info("NVSDK_NGX_VULKAN_EvaluateFeature creating new DLSSD feature");
+				VkContexts[handleId] = std::make_unique<DLSSDFeatureVk>(handleId, InParameters);
+			}
 			else
 			{
 				Config::Instance()->VulkanUpscaler = "fsr21";
@@ -602,18 +623,38 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 			// next frame create context
 			auto initResult = VkContexts[handleId]->Init(vkInstance, vkPD, vkDevice, InCmdList, vkGIPA, vkGDPA, createParams);
 
-			Config::Instance()->newBackend = "";
-			Config::Instance()->changeBackend = false;
-			free(createParams);
-			createParams = nullptr;
 			changeBackendCounter = 0;
 
 			if (!initResult || !VkContexts[handleId]->ModuleLoaded())
 			{
 				spdlog::error("NVSDK_NGX_VULKAN_EvaluateFeature init failed with {0} feature", Config::Instance()->newBackend);
 
-				Config::Instance()->newBackend = "fsr21";
-				Config::Instance()->changeBackend = true;
+				if (Config::Instance()->newBackend != "dlssd")
+				{
+					Config::Instance()->newBackend = "fsr21";
+					Config::Instance()->changeBackend = true;
+				}
+				else
+				{
+					Config::Instance()->newBackend = "";
+					Config::Instance()->changeBackend = false;
+					return NVSDK_NGX_Result_Success;
+				}
+			}
+			else
+			{
+				spdlog::info("NVSDK_NGX_VULKAN_EvaluateFeature init successful for {0}, upscaler changed", Config::Instance()->newBackend);
+
+				Config::Instance()->newBackend = "";
+				Config::Instance()->changeBackend = false;
+			}
+
+			// if opti nvparam release it
+			int optiParam = 0;
+			if (createParams->Get("OptiScaler", &optiParam) == NVSDK_NGX_Result_Success && optiParam == 1)
+			{
+				free(createParams);
+				createParams = nullptr;
 			}
 		}
 
