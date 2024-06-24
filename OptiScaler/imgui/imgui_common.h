@@ -32,7 +32,7 @@ private:
 	inline static uint32_t _renderWidth = 0;
 
 	// dlss enabler
-	inline static int _deLimitFps = -1;
+	inline static int _deLimitFps = 0;
 
 	// output scaling
 	inline static float _ssRatio = 0.0f;
@@ -1085,27 +1085,13 @@ public:
 					{
 						ImGui::SeparatorText("DLSS Enabler");
 
-						if (Config::Instance()->DE_FramerateLimit.has_value())
-						{
-							if (_deLimitFps < 0)
-								_deLimitFps = Config::Instance()->DE_FramerateLimit.value();
+						if (Config::Instance()->DE_FramerateLimit.has_value() && _deLimitFps == 0)
+							_deLimitFps = Config::Instance()->DE_FramerateLimit.value();
 
-							ImGui::SliderInt("FPS Limit", &_deLimitFps, 0, 200);
+						ImGui::SliderInt("FPS Limit", &_deLimitFps, 0, 200);
 
-							if (ImGui::Button("Apply Limit"))
-								Config::Instance()->DE_FramerateLimit = _deLimitFps;
-						}
-						else
-						{
-							int limit = 0;
-							ImGui::SliderInt("FPS Limit", &limit, 0, 200);
-
-							if (ImGui::Button("Apply Limit"))
-							{
-								Config::Instance()->DE_FramerateLimit = limit;
-								_deLimitFps = limit;
-							}
-						}
+						if (ImGui::Button("Apply Limit"))
+							Config::Instance()->DE_FramerateLimit = _deLimitFps;
 
 						if (Config::Instance()->DE_DynamicLimitAvailable.has_value() && Config::Instance()->DE_DynamicLimitAvailable.value() > 0)
 						{
