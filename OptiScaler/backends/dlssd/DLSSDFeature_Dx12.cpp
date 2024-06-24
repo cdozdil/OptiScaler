@@ -1,0 +1,290 @@
+#include "DLSSDFeature_Dx12.h"
+#include <dxgi1_4.h>
+#include "../../Config.h"
+#include "../../pch.h"
+
+bool DLSSDFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters)
+{
+	if (NVNGXProxy::NVNGXModule() == nullptr)
+	{
+		spdlog::error("DLSSDFeatureDx12::Init nvngx.dll not loaded!");
+		SetInit(false);
+		return false;
+	}
+
+	NVSDK_NGX_Result nvResult;
+	bool initResult = false;
+
+	Device = InDevice;
+
+	do
+	{
+		if (!_dlssdInited)
+		{
+			_dlssdInited = NVNGXProxy::InitDx12(InDevice);
+
+			if (!_dlssdInited)
+				return false;
+
+			_moduleLoaded = (NVNGXProxy::D3D12_Init_ProjectID() != nullptr || NVNGXProxy::D3D12_Init_Ext() != nullptr) &&
+				(NVNGXProxy::D3D12_Shutdown() != nullptr || NVNGXProxy::D3D12_Shutdown1() != nullptr) &&
+				(NVNGXProxy::D3D12_GetParameters() != nullptr || NVNGXProxy::D3D12_AllocateParameters() != nullptr) &&
+				NVNGXProxy::D3D12_DestroyParameters() != nullptr && NVNGXProxy::D3D12_CreateFeature() != nullptr &&
+				NVNGXProxy::D3D12_ReleaseFeature() != nullptr && NVNGXProxy::D3D12_EvaluateFeature() != nullptr;
+
+			//delay between init and create feature
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		}
+
+		spdlog::info("DLSSDFeatureDx12::Init Creating DLSSD feature");
+
+		if (NVNGXProxy::D3D12_CreateFeature() != nullptr)
+		{
+			ProcessInitParams(InParameters);
+
+			_p_dlssdHandle = &_dlssdHandle;
+			nvResult = NVNGXProxy::D3D12_CreateFeature()(InCommandList, NVSDK_NGX_Feature_RayReconstruction, InParameters, &_p_dlssdHandle);
+
+			if (nvResult != NVSDK_NGX_Result_Success)
+			{
+				spdlog::error("DLSSDFeatureDx12::Init _CreateFeature result: {0:X}", (unsigned int)nvResult);
+				break;
+			}
+			else
+			{
+				spdlog::info("DLSSDFeatureDx12::Init _CreateFeature result: NVSDK_NGX_Result_Success, HandleId: {0}", _p_dlssdHandle->Id);
+			}
+		}
+		else
+		{
+			spdlog::error("DLSSDFeatureDx12::Init _CreateFeature is nullptr");
+			break;
+		}
+
+		ReadVersion();
+
+		initResult = true;
+
+	} while (false);
+
+	bool rcasEnabled = true;
+
+	if (initResult)
+	{
+		if (Config::Instance()->RcasEnabled.value_or(rcasEnabled))
+			RCAS = std::make_unique<RCAS_Dx12>("RCAS", InDevice);
+
+		if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
+			Imgui = std::make_unique<Imgui_Dx12>(Util::GetProcessWindow(), InDevice);
+
+		OutputScaler = std::make_unique<BS_Dx12>("OutputScaling", InDevice, (TargetWidth() < DisplayWidth()));
+	}
+
+	SetInit(initResult);
+
+	return initResult;
+}
+
+bool DLSSDFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters)
+{
+	if (!_moduleLoaded)
+	{
+		spdlog::error("DLSSDFeatureDx12::Evaluate nvngx.dll or _nvngx.dll is not loaded!");
+		return false;
+	}
+
+	if (!IsInited())
+	{
+		spdlog::error("DLSSDFeatureDx12::Evaluate Not inited!");
+		return false;
+	}
+
+	bool rcasEnabled = true;
+
+	if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) && (RCAS == nullptr || RCAS.get() == nullptr || !RCAS->IsInit()))
+		Config::Instance()->RcasEnabled = false;
+
+	if (!OutputScaler->IsInit())
+		Config::Instance()->OutputScalingEnabled = false;
+
+	NVSDK_NGX_Result nvResult;
+
+	if (NVNGXProxy::D3D12_EvaluateFeature() != nullptr)
+	{
+		ProcessEvaluateParams(InParameters);
+
+		ID3D12Resource* paramOutput = nullptr;
+		ID3D12Resource* paramMotion = nullptr;
+		ID3D12Resource* setBuffer = nullptr;
+
+		bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
+
+		InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput);
+		InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramMotion);
+
+		// supersampling
+		if (useSS)
+		{
+			if (OutputScaler->CreateBufferResource(Device, paramOutput, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+			{
+				OutputScaler->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+				setBuffer = OutputScaler->Buffer();
+			}
+			else
+				setBuffer = paramOutput;
+		}
+		else
+		{
+			setBuffer = paramOutput;
+		}
+
+		// RCAS sharpness & preperation
+		auto sharpness = GetSharpness(InParameters);
+
+		if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
+			(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+			RCAS->IsInit() && RCAS->CreateBufferResource(Device, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+		{
+			// Disable DLSS sharpness
+			InParameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
+
+			RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			setBuffer = RCAS->Buffer();
+		}
+		// sharpness override
+		else if (Config::Instance()->OverrideSharpness.value_or(false))
+		{
+			sharpness = Config::Instance()->Sharpness.value_or(0.3);
+			InParameters->Set(NVSDK_NGX_Parameter_Sharpness, sharpness);
+		}
+
+		InParameters->Set(NVSDK_NGX_Parameter_Output, setBuffer);
+
+		nvResult = NVNGXProxy::D3D12_EvaluateFeature()(InCommandList, _p_dlssdHandle, InParameters, NULL);
+
+		if (nvResult != NVSDK_NGX_Result_Success)
+		{
+			spdlog::error("DLSSDFeatureDx12::Evaluate _EvaluateFeature result: {0:X}", (unsigned int)nvResult);
+			return false;
+		}
+
+		// Apply CAS
+		if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
+			(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+			RCAS->CanRender())
+		{
+			if (setBuffer != RCAS->Buffer())
+				ResourceBarrier(InCommandList, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+			RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+			RcasConstants rcasConstants{};
+
+			rcasConstants.Sharpness = sharpness;
+			rcasConstants.DisplayWidth = TargetWidth();
+			rcasConstants.DisplayHeight = TargetHeight();
+			InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
+			InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
+			rcasConstants.DisplaySizeMV = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
+			rcasConstants.RenderHeight = RenderHeight();
+			rcasConstants.RenderWidth = RenderWidth();
+
+			if (useSS)
+			{
+				if (!RCAS->Dispatch(Device, InCommandList, setBuffer, paramMotion, rcasConstants, OutputScaler->Buffer()))
+				{
+					Config::Instance()->RcasEnabled = false;
+					return true;
+				}
+			}
+			else
+			{
+				if (!RCAS->Dispatch(Device, InCommandList, setBuffer, paramMotion, rcasConstants, paramOutput))
+				{
+					Config::Instance()->RcasEnabled = false;
+					return true;
+				}
+			}
+		}
+
+		// Downsampling
+		if (useSS)
+		{
+			spdlog::debug("DLSSDFeatureDx12::Evaluate downscaling output...");
+			OutputScaler->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+			if (!OutputScaler->Dispatch(Device, InCommandList, OutputScaler->Buffer(), paramOutput))
+			{
+				Config::Instance()->OutputScalingEnabled = false;
+				Config::Instance()->changeBackend = true;
+				return true;
+			}
+		}
+
+		// imgui
+		if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30 && paramOutput)
+		{
+			if (Imgui != nullptr && Imgui.get() != nullptr)
+			{
+				if (Imgui->IsHandleDifferent())
+				{
+					Imgui.reset();
+				}
+				else
+					Imgui->Render(InCommandList, paramOutput);
+			}
+			else
+			{
+				if (Imgui == nullptr || Imgui.get() == nullptr)
+					Imgui = std::make_unique<Imgui_Dx12>(Util::GetProcessWindow(), Device);
+			}
+		}
+
+		// set original output texture back
+		InParameters->Set(NVSDK_NGX_Parameter_Output, paramOutput);
+	}
+	else
+	{
+		spdlog::error("DLSSDFeatureDx12::Evaluate _EvaluateFeature is nullptr");
+		return false;
+	}
+
+	_frameCount++;
+
+	return true;
+}
+
+void DLSSDFeatureDx12::Shutdown(ID3D12Device* InDevice)
+{
+}
+
+DLSSDFeatureDx12::DLSSDFeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters), IFeature_Dx12(InHandleId, InParameters), DLSSDFeature(InHandleId, InParameters)
+{
+	if (NVNGXProxy::NVNGXModule() == nullptr)
+	{
+		spdlog::info("DLSSDFeatureDx12::DLSSDFeatureDx12 nvngx.dll not loaded, now loading");
+		NVNGXProxy::InitNVNGX();
+	}
+
+	spdlog::info("DLSSDFeatureDx12::DLSSDFeatureDx12 binding complete!");
+}
+
+DLSSDFeatureDx12::~DLSSDFeatureDx12()
+{
+	if (NVNGXProxy::D3D12_ReleaseFeature() != nullptr && _p_dlssdHandle != nullptr)
+		NVNGXProxy::D3D12_ReleaseFeature()(_p_dlssdHandle);
+
+	if (RCAS != nullptr && RCAS.get() != nullptr)
+		RCAS.reset();
+}
+
+float DLSSDFeatureDx12::GetSharpness(const NVSDK_NGX_Parameter* InParameters)
+{
+	if (Config::Instance()->OverrideSharpness.value_or(false))
+		return Config::Instance()->Sharpness.value_or(0.3f);
+
+	float sharpness = 0.0f;
+	InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &sharpness);
+
+	return sharpness;
+}
