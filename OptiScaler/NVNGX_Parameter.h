@@ -194,15 +194,157 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallb
 	}
 
 	InParams->Set(NVSDK_NGX_Parameter_SizeInBytes, Width * Height * 31);
-	InParams->Set(NVSDK_NGX_Parameter_DLSSMode, NVSDK_NGX_DLSS_Mode_DLSS);
+	InParams->Set(NVSDK_NGX_Parameter_DLSSMode, NVSDK_NGX_DLSS_Mode_DLSS_DLISP);
 
 	InParams->Set(NVSDK_NGX_EParameter_Scale, scalingRatio);
 	InParams->Set(NVSDK_NGX_EParameter_OutWidth, OutWidth);
 	InParams->Set(NVSDK_NGX_EParameter_OutHeight, OutHeight);
 	InParams->Set(NVSDK_NGX_EParameter_SizeInBytes, Width * Height * 31);
-	InParams->Set(NVSDK_NGX_EParameter_DLSSMode, NVSDK_NGX_DLSS_Mode_DLSS);
+	InParams->Set(NVSDK_NGX_EParameter_DLSSMode, NVSDK_NGX_DLSS_Mode_DLSS_DLISP);
 
 	spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback: Display Resolution: {0}x{1} Render Resolution: {2}x{3}", Width, Height, OutWidth, OutHeight);
+	return NVSDK_NGX_Result_Success;
+}
+
+inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSSD_GetOptimalSettingsCallback(NVSDK_NGX_Parameter* InParams)
+{
+	unsigned int Width;
+	unsigned int Height;
+	unsigned int OutWidth;
+	unsigned int OutHeight;
+	float scalingRatio = 0.0f;
+	int PerfQualityValue;
+
+	if (InParams->Get(NVSDK_NGX_Parameter_Width, &Width) != NVSDK_NGX_Result_Success ||
+		InParams->Get(NVSDK_NGX_Parameter_Height, &Height) != NVSDK_NGX_Result_Success ||
+		InParams->Get(NVSDK_NGX_Parameter_PerfQualityValue, &PerfQualityValue) != NVSDK_NGX_Result_Success)
+		return NVSDK_NGX_Result_Fail;
+
+	auto enumPQValue = (NVSDK_NGX_PerfQuality_Value)PerfQualityValue;
+
+	spdlog::debug("NVSDK_NGX_DLSSD_GetOptimalSettingsCallback Display Resolution: {0}x{1}", Width, Height);
+
+	const std::optional<float> QualityRatio = GetQualityOverrideRatio(enumPQValue);
+
+	if (QualityRatio.has_value())
+	{
+		OutHeight = (unsigned int)((float)Height / QualityRatio.value());
+		OutWidth = (unsigned int)((float)Width / QualityRatio.value());
+		scalingRatio = 1.0f / QualityRatio.value();
+	}
+	else
+	{
+		spdlog::debug("NVSDK_NGX_DLSSD_GetOptimalSettingsCallback Quality: {0}", PerfQualityValue);
+
+		switch (enumPQValue)
+		{
+		case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
+			OutHeight = (unsigned int)((float)Height / 3.0);
+			OutWidth = (unsigned int)((float)Width / 3.0);
+			scalingRatio = 0.33333333f;
+			break;
+
+		case NVSDK_NGX_PerfQuality_Value_MaxPerf:
+			OutHeight = (unsigned int)((float)Height / 2.0);
+			OutWidth = (unsigned int)((float)Width / 2.0);
+			scalingRatio = 0.5f;
+			break;
+
+		case NVSDK_NGX_PerfQuality_Value_Balanced:
+			OutHeight = (unsigned int)((float)Height / 1.7);
+			OutWidth = (unsigned int)((float)Width / 1.7);
+			scalingRatio = 1.0f / 1.7f;
+			break;
+
+		case NVSDK_NGX_PerfQuality_Value_MaxQuality:
+			OutHeight = (unsigned int)((float)Height / 1.5);
+			OutWidth = (unsigned int)((float)Width / 1.5);
+			scalingRatio = 1.0f / 1.5f;
+			break;
+
+		case NVSDK_NGX_PerfQuality_Value_UltraQuality:
+			OutHeight = (unsigned int)((float)Height / 1.3);
+			OutWidth = (unsigned int)((float)Width / 1.3);
+			scalingRatio = 1.0f / 1.3f;
+			break;
+
+		case NVSDK_NGX_PerfQuality_Value_DLAA:
+			OutHeight = Height;
+			OutWidth = Width;
+			scalingRatio = 1.0f;
+			break;
+
+		default:
+			OutHeight = (unsigned int)((float)Height / 1.7);
+			OutWidth = (unsigned int)((float)Width / 1.7);
+			scalingRatio = 1.0f / 1.7f;
+			break;
+
+		}
+	}
+
+	if (Config::Instance()->RoundInternalResolution.has_value())
+	{
+		OutHeight -= OutHeight % Config::Instance()->RoundInternalResolution.value();
+		OutWidth -= OutWidth % Config::Instance()->RoundInternalResolution.value();
+	}
+
+	InParams->Set(NVSDK_NGX_Parameter_Scale, scalingRatio);
+	InParams->Set(NVSDK_NGX_Parameter_SuperSampling_ScaleFactor, scalingRatio);
+	InParams->Set(NVSDK_NGX_Parameter_OutWidth, OutWidth);
+	InParams->Set(NVSDK_NGX_Parameter_OutHeight, OutHeight);
+
+	// DRS minimum resolution
+	if (Config::Instance()->DrsMinOverrideEnabled.value_or(false))
+	{
+		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, OutWidth);
+		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, OutHeight);
+	}
+	else if (enumPQValue == NVSDK_NGX_PerfQuality_Value_DLAA)
+	{
+		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, Width);
+		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, Height);
+	}
+	else
+	{
+		// DLSS normally only supports DRS in range of 0.5 and 1.0
+		auto drsMinWidth = (unsigned int)((float)Width * 0.5f);
+		auto drsMinHeight = (unsigned int)((float)Height * 0.5f);
+
+		if (OutWidth < drsMinWidth || OutHeight < drsMinHeight)
+		{
+			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, OutWidth);
+			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, OutHeight);
+		}
+		else
+		{
+			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, drsMinWidth);
+			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, drsMinHeight);
+		}
+	}
+
+	// DRS maximum resolution
+	if (Config::Instance()->DrsMaxOverrideEnabled.value_or(false))
+	{
+		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Max_Render_Width, OutWidth);
+		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Max_Render_Height, OutHeight);
+	}
+	else
+	{
+		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Max_Render_Width, Width);
+		InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Max_Render_Height, Height);
+	}
+
+	InParams->Set(NVSDK_NGX_Parameter_SizeInBytes, Width * Height * 31);
+	InParams->Set(NVSDK_NGX_Parameter_DLSSMode, NVSDK_NGX_DLSS_Mode_DLSS_DLISP);
+
+	InParams->Set(NVSDK_NGX_EParameter_Scale, scalingRatio);
+	InParams->Set(NVSDK_NGX_EParameter_OutWidth, OutWidth);
+	InParams->Set(NVSDK_NGX_EParameter_OutHeight, OutHeight);
+	InParams->Set(NVSDK_NGX_EParameter_SizeInBytes, Width * Height * 31);
+	InParams->Set(NVSDK_NGX_EParameter_DLSSMode, NVSDK_NGX_DLSS_Mode_DLSS_DLISP);
+
+	spdlog::debug("NVSDK_NGX_DLSSD_GetOptimalSettingsCallback: Display Resolution: {0}x{1} Render Resolution: {2}x{3}", Width, Height, OutWidth, OutHeight);
 	return NVSDK_NGX_Result_Success;
 }
 
@@ -243,6 +385,7 @@ inline static void InitNGXParameters(NVSDK_NGX_Parameter* InParams)
 	InParams->Set(NVSDK_NGX_Parameter_OptLevel, 0);
 	InParams->Set(NVSDK_NGX_Parameter_IsDevSnippetBranch, 0);
 	InParams->Set(NVSDK_NGX_Parameter_DLSSOptimalSettingsCallback, NVSDK_NGX_DLSS_GetOptimalSettingsCallback);
+	InParams->Set("DLSSDOptimalSettingsCallback", NVSDK_NGX_DLSSD_GetOptimalSettingsCallback);
 	InParams->Set(NVSDK_NGX_Parameter_DLSSGetStatsCallback, NVSDK_NGX_DLSS_GetStatsCallback);
 	InParams->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
 	InParams->Set(NVSDK_NGX_Parameter_MV_Scale_X, 1.0f);
@@ -264,16 +407,19 @@ inline static void InitNGXParameters(NVSDK_NGX_Parameter* InParams)
 	InParams->Set(NVSDK_NGX_EParameter_MV_Offset_X, 0.0f);
 	InParams->Set(NVSDK_NGX_EParameter_MV_Offset_Y, 0.0f);
 
+	InParams->Set("RayReconstruction.Hint.Render.Preset.DLAA", (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set("RayReconstruction.Hint.Render.Preset.UltraQuality", (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set("RayReconstruction.Hint.Render.Preset.Quality", (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set("RayReconstruction.Hint.Render.Preset.Balanced", (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set("RayReconstruction.Hint.Render.Preset.Performance", (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set("RayReconstruction.Hint.Render.Preset.UltraPerformance", (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+
 	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
 	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
 	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
 	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
 	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
 	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-
-	InParams->Set(NVSDK_NGX_Parameter_ResourceAllocCallback, NULL);
-	InParams->Set(NVSDK_NGX_Parameter_ResourceReleaseCallback, NULL);
-	// InParams->Set("Debug", 0); // From DD2
 
 	InParams->Set(NVSDK_NGX_Parameter_CreationNodeMask, 1);
 	InParams->Set(NVSDK_NGX_Parameter_VisibilityNodeMask, 1);
@@ -400,7 +546,9 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 
 		if (OriginalParam != nullptr)
 		{
+			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original ulong('{0}')", key, Name);
 			result = OriginalParam->Get(key, value);
+			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original ulong('{0}') result: {2:X}", key, Name, (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
 			{
@@ -423,7 +571,9 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 
 		if (OriginalParam != nullptr)
 		{
+			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original float('{0}')", key, Name);
 			result = OriginalParam->Get(key, value);
+			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original float('{0}') result: {2:X}", key, Name, (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
 			{
@@ -446,7 +596,9 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		
 		if (OriginalParam != nullptr)
 		{
+			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original double('{0}')", key, Name);
 			result = OriginalParam->Get(key, value);
+			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original double('{0}') result: {2:X}", key, Name, (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
 			{
@@ -469,7 +621,9 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		
 		if (OriginalParam != nullptr)
 		{
+			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original uint('{0}')", key, Name);
 			result = OriginalParam->Get(key, value);
+			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original uint('{0}') result: {2:X}", key, Name, (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
 			{
@@ -491,7 +645,9 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		
 		if (OriginalParam != nullptr)
 		{
+			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original int('{0}')", key, Name);
 			result = OriginalParam->Get(key, value);
+			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original int('{0}') result: {2:X}", key, Name, (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
 			{
@@ -514,7 +670,9 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		
 		if (OriginalParam != nullptr)
 		{
+			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original void('{0}')", key, Name);
 			result = OriginalParam->Get(key, value);
+			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original void('{0}') result: {2:X}", key, Name, (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
 			{
@@ -537,7 +695,9 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		
 		if (OriginalParam != nullptr)
 		{
+			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original d3d11('{0}')", key, Name);
 			result = OriginalParam->Get(key, value);
+			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original d3d11('{0}') result: {2:X}", key, Name, (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
 			{
@@ -560,7 +720,9 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		
 		if (OriginalParam != nullptr)
 		{
+			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original d3d12('{0}')", key, Name);
 			result = OriginalParam->Get(key, value);
+			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original d3d12('{0}') result: {2:X}", key, Name, (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
 			{
@@ -630,6 +792,7 @@ inline static NVNGX_Parameters* GetNGXParameters(std::string InName)
 	auto params = new NVNGX_Parameters();
 	params->Name = InName;
 	InitNGXParameters(params);
+	params->Set("OptiScaler", 1);
 
 	return params;
 }
