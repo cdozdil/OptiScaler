@@ -166,6 +166,8 @@ Imgui_Dx12::Imgui_Dx12(HWND handle, ID3D12Device* pDevice) : ImguiDxBase(handle)
 	if (pDevice->CreateDescriptorHeap(&srvDesc, IID_PPV_ARGS(&_srvDescHeap)) != S_OK)
 		return;
 
+	Dx12Ready();
+
 	_srvDescHeap->SetName(L"Imgui_Dx12_srvDescHeap");
 }
 

@@ -420,6 +420,7 @@ static VkResult VKAPI_CALL hkCreateSwapchainKHR(VkDevice device, const VkSwapcha
 
 bool ImGuiOverlayVk::IsInitedVk()
 {
+	ImGuiOverlayBase::VulkanReady();
 	return _isInited;
 }
 

@@ -14,6 +14,21 @@ HWND ImGuiOverlayBase::Handle()
 	return ImGuiCommon::Handle();
 }
 
+void ImGuiOverlayBase::Dx11Ready()
+{
+	ImGuiCommon::Dx11Inited();
+}
+
+void ImGuiOverlayBase::Dx12Ready()
+{
+	ImGuiCommon::Dx12Inited();
+}
+
+void ImGuiOverlayBase::VulkanReady()
+{
+	ImGuiCommon::VulkanInited();
+}
+
 bool ImGuiOverlayBase::IsInited()
 {
 	return ImGuiCommon::IsInited();

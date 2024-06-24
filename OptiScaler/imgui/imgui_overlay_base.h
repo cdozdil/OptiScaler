@@ -19,6 +19,10 @@ namespace ImGuiOverlayBase
 {
 	HWND Handle();
 
+	void Dx11Ready();
+	void Dx12Ready();
+	void VulkanReady();
+
 	bool IsInited();
 	bool IsVisible();
 	bool IsResetRequested();

@@ -118,6 +118,7 @@ bool Imgui_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTextur
 
 Imgui_Dx11::Imgui_Dx11(HWND handle, ID3D11Device* pDevice) : ImguiDxBase(handle), _device(pDevice)
 {
+	Dx11Ready();
 }
 
 Imgui_Dx11::~Imgui_Dx11()

@@ -24,6 +24,8 @@ public:
 	int Left() { return _left; }
 	HWND Handle() { return _handle; }
 	bool IsHandleDifferent();
+	void Dx11Ready();
+	void Dx12Ready();
 
 	explicit ImguiDxBase(HWND handle);
 

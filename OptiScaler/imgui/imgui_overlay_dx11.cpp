@@ -313,7 +313,10 @@ HWND ImGuiOverlayDx11::Handle()
 void ImGuiOverlayDx11::InitDx11(HWND InHandle)
 {
 	if (!_isInited && g_pd3dDevice == nullptr && CreateDeviceD3D11(InHandle))
+	{
+		ImGuiOverlayBase::Dx11Ready();
 		_isInited = true;
+	}
 }
 
 void ImGuiOverlayDx11::ShutdownDx11()

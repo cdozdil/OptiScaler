@@ -2310,6 +2310,7 @@ void ImGuiOverlayDx12::InitDx12(HWND InHandle, ID3D12Device* InDevice)
 		if (!BindAll(InHandle, InDevice))
 			spdlog::error("ImGuiOverlayDx12::InitDx12 BindAll failed!");
 
+		ImGuiOverlayBase::Dx12Ready();
 		_isInited = true;
 		CleanupDeviceD3D12(InDevice);
 	}

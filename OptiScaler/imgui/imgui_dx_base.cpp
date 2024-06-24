@@ -31,6 +31,16 @@ bool ImguiDxBase::IsHandleDifferent()
 	return true;
 }
 
+void ImguiDxBase::Dx11Ready()
+{
+	ImGuiCommon::Dx11Inited();
+}
+
+void ImguiDxBase::Dx12Ready()
+{
+	ImGuiCommon::Dx12Inited();
+}
+
 ImguiDxBase::ImguiDxBase(HWND handle) : _handle(handle)
 {
 	if (Config::Instance()->OverlayMenu.value_or(true))

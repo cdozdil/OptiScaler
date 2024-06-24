@@ -42,6 +42,10 @@ private:
 	inline static int _selectedScale = 0;
 	inline static bool _imguiSizeUpdate = true;
 
+	inline static bool _dx11Ready = false;
+	inline static bool _dx12Ready = false;
+	inline static bool _vulkanReady = false;
+
 	inline static ImGuiKey ImGui_ImplWin32_VirtualKeyToImGuiKey(WPARAM wParam)
 	{
 		switch (wParam)
@@ -321,7 +325,7 @@ private:
 	{
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 
-		if (Config::Instance()->CurrentFeature == nullptr || _isResetRequested)
+		if (Config::Instance()->CurrentFeature == nullptr || _isResetRequested || (!_dx11Ready && !_dx12Ready && !_vulkanReady))
 		{
 			if (_isVisible)
 			{
@@ -532,6 +536,9 @@ private:
 
 public:
 
+	static void Dx11Inited() { _dx11Ready = true; }
+	static void Dx12Inited() { _dx12Ready = true; }
+	static void VulkanInited() { _vulkanReady = true; }
 	static bool IsInited() { return _isInited; }
 	static bool IsVisible() { return _isVisible; }
 	static bool IsResetRequested() { return _isResetRequested; }
@@ -549,7 +556,7 @@ public:
 			return "FSR 2.1.2 w/Dx12";
 
 		if (*code == "fsr22_12")
-			return "FSR 2.2.1  w/Dx12";
+			return "FSR 2.2.1 w/Dx12";
 
 		if (*code == "xess")
 			return "XeSS";
@@ -818,26 +825,37 @@ public:
 					{
 					case NVNGX_DX11:
 						ImGui::Text("DirextX 11 - %s (%d.%d.%d)", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
-						AddDx11Backends(&currentBackend, &currentBackendName);
+
+						if (Config::Instance()->CurrentFeature->Name() != "DLSSD")
+							AddDx11Backends(&currentBackend, &currentBackendName);
+
 						break;
 
 					case NVNGX_DX12:
 						ImGui::Text("DirextX 12 - %s (%d.%d.%d)", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
-						AddDx12Backends(&currentBackend, &currentBackendName);
+
+						if (Config::Instance()->CurrentFeature->Name() != "DLSSD")
+							AddDx12Backends(&currentBackend, &currentBackendName);
+
 						break;
 
 					default:
 						ImGui::Text("Vulkan - %s (%d.%d.%d)", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
-						AddVulkanBackends(&currentBackend, &currentBackendName);
+
+						if (Config::Instance()->CurrentFeature->Name() != "DLSSD")
+							AddVulkanBackends(&currentBackend, &currentBackendName);
 					}
 
-					if (ImGui::Button("Apply") && Config::Instance()->newBackend != "" && Config::Instance()->newBackend != currentBackend)
-						Config::Instance()->changeBackend = true;
+					if (Config::Instance()->CurrentFeature->Name() != "DLSSD")
+					{
+						if (ImGui::Button("Apply") && Config::Instance()->newBackend != "" && Config::Instance()->newBackend != currentBackend)
+							Config::Instance()->changeBackend = true;
 
-					ImGui::SameLine(0.0f, 6.0f);
+						ImGui::SameLine(0.0f, 6.0f);
 
-					if (ImGui::Button("Revert"))
-						Config::Instance()->newBackend = "";
+						if (ImGui::Button("Revert"))
+							Config::Instance()->newBackend = "";
+					}
 
 					// DYNAMIC PROPERTIES -----------------------------
 
@@ -889,7 +907,7 @@ public:
 					// UPSCALER SPECIFIC -----------------------------
 
 					// XeSS -----------------------------
-					if (currentBackend == "xess")
+					if (currentBackend == "xess" && Config::Instance()->CurrentFeature->Name() != "DLSSD")
 					{
 						ImGui::SeparatorText("XeSS Settings");
 
@@ -936,7 +954,7 @@ public:
 					}
 
 					// FSR -----------------
-					if (currentBackend.rfind("fsr", 0) == 0)
+					if (currentBackend.rfind("fsr", 0) == 0 && Config::Instance()->CurrentFeature->Name() != "DLSSD")
 					{
 						ImGui::SeparatorText("FSR Settings");
 
@@ -985,10 +1003,10 @@ public:
 					}
 
 					// DLSS -----------------
-					if (Config::Instance()->DLSSEnabled.value_or(true) && currentBackend == "dlss" && Config::Instance()->CurrentFeature->Version().major > 2)
+					if ((Config::Instance()->DLSSEnabled.value_or(true) && currentBackend == "dlss" && Config::Instance()->CurrentFeature->Version().major > 2) ||
+						Config::Instance()->CurrentFeature->Name() == "DLSSD")
 					{
 						ImGui::SeparatorText("DLSS Settings");
-
 
 						if (bool pOverride = Config::Instance()->RenderPresetOverride.value_or(false); ImGui::Checkbox("Render Presets Override", &pOverride))
 							Config::Instance()->RenderPresetOverride = pOverride;
@@ -996,7 +1014,12 @@ public:
 						ImGui::SameLine(0.0f, 6.0f);
 
 						if (ImGui::Button("Apply Changes"))
+						{
+							if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
+								Config::Instance()->newBackend = "dlssd";
+
 							Config::Instance()->changeBackend = true;
+						}
 
 						AddRenderPreset("DLAA Preset", &Config::Instance()->RenderPresetDLAA);
 						AddRenderPreset("UltraQ Preset", &Config::Instance()->RenderPresetUltraQuality);
@@ -1062,13 +1085,27 @@ public:
 					{
 						ImGui::SeparatorText("DLSS Enabler");
 
-						if (_deLimitFps < 0)
-							_deLimitFps = Config::Instance()->DE_FramerateLimit.value();
+						if (Config::Instance()->DE_FramerateLimit.has_value())
+						{
+							if (_deLimitFps < 0)
+								_deLimitFps = Config::Instance()->DE_FramerateLimit.value();
 
-						ImGui::SliderInt("FPS Limit", &_deLimitFps, 0, 200);
+							ImGui::SliderInt("FPS Limit", &_deLimitFps, 0, 200);
 
-						if (ImGui::Button("Apply Limit"))
-							Config::Instance()->DE_FramerateLimit = _deLimitFps;
+							if (ImGui::Button("Apply Limit"))
+								Config::Instance()->DE_FramerateLimit = _deLimitFps;
+						}
+						else
+						{
+							int limit = 0;
+							ImGui::SliderInt("FPS Limit", &limit, 0, 200);
+
+							if (ImGui::Button("Apply Limit"))
+							{
+								Config::Instance()->DE_FramerateLimit = limit;
+								_deLimitFps = limit;
+							}
+						}
 
 						if (Config::Instance()->DE_DynamicLimitAvailable.has_value() && Config::Instance()->DE_DynamicLimitAvailable.value() > 0)
 						{
@@ -1106,6 +1143,10 @@ public:
 						{
 							Config::Instance()->OutputScalingEnabled = _ssEnabled;
 							Config::Instance()->OutputScalingMultiplier = _ssRatio;
+
+							if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
+								Config::Instance()->newBackend = "dlssd";
+
 							Config::Instance()->changeBackend = true;
 						}
 
@@ -1271,6 +1312,10 @@ public:
 						if (bool autoExposure = Config::Instance()->AutoExposure.value_or(false); ImGui::Checkbox("Auto Exposure", &autoExposure))
 						{
 							Config::Instance()->AutoExposure = autoExposure;
+
+							if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
+								Config::Instance()->newBackend = "dlssd";
+
 							Config::Instance()->changeBackend = true;
 						}
 
@@ -1278,6 +1323,10 @@ public:
 						if (bool hdr = Config::Instance()->HDR.value_or(false); ImGui::Checkbox("HDR", &hdr))
 						{
 							Config::Instance()->HDR = hdr;
+
+							if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
+								Config::Instance()->newBackend = "dlssd";
+
 							Config::Instance()->changeBackend = true;
 						}
 
@@ -1285,6 +1334,10 @@ public:
 						if (bool depth = Config::Instance()->DepthInverted.value_or(false); ImGui::Checkbox("Depth Inverted", &depth))
 						{
 							Config::Instance()->DepthInverted = depth;
+
+							if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
+								Config::Instance()->newBackend = "dlssd";
+
 							Config::Instance()->changeBackend = true;
 						}
 
@@ -1292,6 +1345,10 @@ public:
 						if (bool jitter = Config::Instance()->JitterCancellation.value_or(false); ImGui::Checkbox("Jitter Cancellation", &jitter))
 						{
 							Config::Instance()->JitterCancellation = jitter;
+
+							if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
+								Config::Instance()->newBackend = "dlssd";
+
 							Config::Instance()->changeBackend = true;
 						}
 
@@ -1306,6 +1363,9 @@ public:
 								_ssEnabled = false;
 							}
 
+							if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
+								Config::Instance()->newBackend = "dlssd";
+
 							Config::Instance()->changeBackend = true;
 						}
 
@@ -1313,6 +1373,10 @@ public:
 						if (bool rm = Config::Instance()->DisableReactiveMask.value_or(true); ImGui::Checkbox("Disable Reactive Mask", &rm))
 						{
 							Config::Instance()->DisableReactiveMask = rm;
+
+							if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
+								Config::Instance()->newBackend = "dlssd";
+
 							Config::Instance()->changeBackend = true;
 						}
 
