@@ -951,6 +951,14 @@ public:
 						}
 
 						ImGui::PopItemWidth();
+
+						bool noSpoof = Config::Instance()->DxgiXessNoSpoof.value_or(true);
+						if (Config::Instance()->IsDxgiMode && ImGui::Checkbox("Disable DXGI Spoofing for XeSS", &noSpoof))
+						{
+							Config::Instance()->DxgiXessNoSpoof = noSpoof;
+							Config::Instance()->newBackend = "xess";
+							Config::Instance()->changeBackend = true;
+						}
 					}
 
 					// FSR -----------------
