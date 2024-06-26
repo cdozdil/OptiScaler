@@ -181,11 +181,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char* I
 	Config::Instance()->NVNGX_Engine = InEngineType;
 	Config::Instance()->NVNGX_EngineVersion = std::string(InEngineVersion);
 
-	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
-		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
-	else
-		Config::Instance()->NVNGX_EngineVersion5 = false;
-
 	return result;
 }
 
@@ -362,7 +357,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 
 	if (InFeatureID == NVSDK_NGX_Feature_SuperSampling)
 	{
-		if (Config::Instance()->VulkanUpscaler.value_or("fsr21") == "dlss")
+		std::string defaultUpscaler = "fsr21";
+
+		// If original NVNGX available use DLSS as base upscaler
+		if (NVNGXProxy::IsVulkanInited())
+			defaultUpscaler = "dlss";
+
+		if (Config::Instance()->VulkanUpscaler.value_or(defaultUpscaler) == "dlss")
 		{
 			if (Config::Instance()->DLSSEnabled.value_or(true))
 			{
@@ -389,9 +390,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 			}
 		}
 
-		if (Config::Instance()->VulkanUpscaler.value_or("fsr21") == "fsr22")
+		if (Config::Instance()->VulkanUpscaler.value_or(defaultUpscaler) == "fsr22")
 			VkContexts[handleId] = std::make_unique<FSR2FeatureVk>(handleId, InParameters);
-		else if (Config::Instance()->VulkanUpscaler.value_or("fsr21") == "fsr21")
+		else if (Config::Instance()->VulkanUpscaler.value_or(defaultUpscaler) == "fsr21")
 			VkContexts[handleId] = std::make_unique<FSR2FeatureVk212>(handleId, InParameters);
 	}
 	else

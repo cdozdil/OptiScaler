@@ -14,6 +14,8 @@ std::filesystem::path Util::DllPath()
 		wchar_t dllPath[MAX_PATH];
 		GetModuleFileNameW(dllModule, dllPath, MAX_PATH);
 		dll = std::filesystem::path(dllPath);
+
+		spdlog::info("Dll path: {0}", dll.parent_path().string());
 	}
 
 	return dll;

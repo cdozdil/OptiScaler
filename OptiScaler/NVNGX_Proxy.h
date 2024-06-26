@@ -307,6 +307,11 @@ public:
 		return _dll;
 	}
 
+	static bool IsNVNGXInited()
+	{
+		return _dll != nullptr && (_dx11Inited || _dx12Inited || _vulkanInited) && Config::Instance()->DLSSEnabled.value_or(true);
+	}
+
 	// DirectX11
 	static bool InitDx11(ID3D11Device* InDevice)
 	{

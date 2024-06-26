@@ -168,6 +168,7 @@ static long _slCounter;
 static long _fsr3ModCounter;
 static long _fsr3NativeCounter;
 
+inline static std::mutex _dx12CleanMutex;
 
 enum SwapchainSource
 {
@@ -282,6 +283,8 @@ static void CleanupRenderTarget(bool clearQueue)
 {
 	spdlog::debug("ImGuiOverlayDx12::CleanupRenderTarget({0})!", clearQueue);
 
+	_dx12CleanMutex.lock();
+
 	for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
 	{
 		if (g_mainRenderTargetResource[i])
@@ -293,7 +296,7 @@ static void CleanupRenderTarget(bool clearQueue)
 
 	if (clearQueue)
 	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(300));
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
 		if (ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
 			ImGui_ImplDX12_Shutdown();
@@ -329,6 +332,8 @@ static void CleanupRenderTarget(bool clearQueue)
 	}
 
 	ClearActivePathInfo();
+
+	_dx12CleanMutex.unlock();
 }
 
 #pragma region Hooks for native EB Prensent Methods

@@ -1,7 +1,10 @@
 #pragma once
 #include "pch.h"
-#include <ankerl/unordered_dense.h>
 #include "Config.h"
+
+#include <ankerl/unordered_dense.h>
+
+//#define ENABLE_ENCAPSULATED_PARAMS
 
 inline static std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_Value input)
 {
@@ -524,7 +527,10 @@ struct Parameter
 struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 {
 	std::string Name;
+
+#ifdef ENABLE_ENCAPSULATED_PARAMS
 	NVSDK_NGX_Parameter* OriginalParam = nullptr;
+#endif // ENABLE_ENCAPSULATED_PARAMS
 
 	void Set(const char* key, unsigned long long value) override { spdlog::trace("NVNGX_Parameters[{2}]::Set ulong('{0}', {1})", key, value, Name); setT(key, value); }
 	void Set(const char* key, float value) override { spdlog::trace("NVNGX_Parameters[{2}]::Set float('{0}', {1})", key, value, Name); setT(key, value); }
@@ -544,6 +550,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 			return NVSDK_NGX_Result_Success;
 		}
 
+#ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
 			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original ulong('{0}')", key, Name);
@@ -556,6 +563,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 				return result;
 			}
 		}
+#endif // ENABLE_ENCAPSULATED_PARAMS
 
 		return NVSDK_NGX_Result_Fail;
 	}
@@ -569,6 +577,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 			return NVSDK_NGX_Result_Success;
 		}
 
+#ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
 			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original float('{0}')", key, Name);
@@ -581,6 +590,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 				return result;
 			}
 		}
+#endif // ENABLE_ENCAPSULATED_PARAMS
 
 		return NVSDK_NGX_Result_Fail;
 	}
@@ -594,6 +604,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 			return NVSDK_NGX_Result_Success; 
 		} 
 		
+#ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
 			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original double('{0}')", key, Name);
@@ -606,6 +617,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 				return result;
 			}
 		}
+#endif // ENABLE_ENCAPSULATED_PARAMS
 
 		return NVSDK_NGX_Result_Fail;
 	}
@@ -619,6 +631,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 			return NVSDK_NGX_Result_Success; 
 		} 
 		
+#ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
 			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original uint('{0}')", key, Name);
@@ -631,6 +644,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 				return result;
 			}
 		}
+#endif // ENABLE_ENCAPSULATED_PARAMS
 
 		return NVSDK_NGX_Result_Fail;
 	}
@@ -643,6 +657,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 			return NVSDK_NGX_Result_Success; 
 		} 
 		
+#ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
 			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original int('{0}')", key, Name);
@@ -655,6 +670,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 				return result;
 			}
 		}
+#endif // ENABLE_ENCAPSULATED_PARAMS
 
 		return NVSDK_NGX_Result_Fail;
 	}
@@ -668,6 +684,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 			return NVSDK_NGX_Result_Success; 
 		} 
 		
+#ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
 			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original void('{0}')", key, Name);
@@ -680,6 +697,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 				return result;
 			}
 		}
+#endif // ENABLE_ENCAPSULATED_PARAMS
 
 		return NVSDK_NGX_Result_Fail;
 	}
@@ -693,6 +711,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 			return NVSDK_NGX_Result_Success; 
 		} 
 		
+#ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
 			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original d3d11('{0}')", key, Name);
@@ -705,6 +724,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 				return result;
 			}
 		}
+#endif // ENABLE_ENCAPSULATED_PARAMS
 
 		return NVSDK_NGX_Result_Fail;
 	}
@@ -718,6 +738,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 			return NVSDK_NGX_Result_Success; 
 		} 
 		
+#ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
 			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original d3d12('{0}')", key, Name);
@@ -730,6 +751,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 				return result;
 			}
 		}
+#endif // ENABLE_ENCAPSULATED_PARAMS
 
 		return NVSDK_NGX_Result_Fail;
 	}
@@ -796,4 +818,3 @@ inline static NVNGX_Parameters* GetNGXParameters(std::string InName)
 
 	return params;
 }
-

@@ -286,11 +286,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProj
 	Config::Instance()->NVNGX_Engine = InEngineType;
 	Config::Instance()->NVNGX_EngineVersion = std::string(InEngineVersion);
 
-	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
-		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
-	else
-		Config::Instance()->NVNGX_EngineVersion5 = false;
-
 	return result;
 }
 
@@ -307,11 +302,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* I
 	Config::Instance()->NVNGX_ProjectId = std::string(InProjectId);
 	Config::Instance()->NVNGX_Engine = InEngineType;
 	Config::Instance()->NVNGX_EngineVersion = std::string(InEngineVersion);
-
-	if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && InEngineVersion)
-		Config::Instance()->NVNGX_EngineVersion5 = InEngineVersion[0] == '5';
-	else
-		Config::Instance()->NVNGX_EngineVersion5 = false;
 
 	return result;
 }
@@ -502,6 +492,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 		Config::Instance()->DE_Available = (deAvail > 0);
 	}
 
+	// nvsdk logging - ini first
+	if (!Config::Instance()->LogToNGX.has_value())
+	{
+		int nvsdkLogging = 0;
+		InParameters->Get("DLSSEnabler.Logging", &nvsdkLogging);
+		Config::Instance()->LogToNGX = nvsdkLogging > 0;
+	}
+
 	if (InFeatureID == NVSDK_NGX_Feature_SuperSampling)
 	{
 		// backend selection
@@ -509,19 +507,29 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 		// 1 : FSR2.2
 		// 2 : FSR2.1
 		// 3 : DLSS
+
 		int upscalerChoice = 0; // Default XeSS
 
-		// ini first
-		if (InParameters->Get("DLSSEnabler.Dx12Backend", &upscalerChoice) != NVSDK_NGX_Result_Success &&
-			Config::Instance()->Dx12Upscaler.has_value())
+		// If original NVNGX available use DLSS as base upscaler
+		if (NVNGXProxy::IsDx12Inited())
+			upscalerChoice = 3;
+
+		// if Enabler does not set any upscaler
+		if (InParameters->Get("DLSSEnabler.Dx12Backend", &upscalerChoice) != NVSDK_NGX_Result_Success && Config::Instance()->Dx12Upscaler.has_value())
 		{
-			if (Config::Instance()->Dx12Upscaler.value_or("xess") == "fsr22")
+			spdlog::info("NVSDK_NGX_D3D12_CreateFeature DLSS Enabler does not set any upscaler using ini: {0}", Config::Instance()->Dx12Upscaler.value());
+
+			if (Config::Instance()->Dx12Upscaler.value() == "xess")
+				upscalerChoice = 0;
+			else if (Config::Instance()->Dx12Upscaler.value() == "fsr22")
 				upscalerChoice = 1;
-			else if (Config::Instance()->Dx12Upscaler.value_or("xess") == "fsr21")
+			else if (Config::Instance()->Dx12Upscaler.value() == "fsr21")
 				upscalerChoice = 2;
-			else if (Config::Instance()->Dx12Upscaler.value_or("xess") == "dlss" && Config::Instance()->DLSSEnabled.value_or(true))
+			else if (Config::Instance()->Dx12Upscaler.value() == "dlss" && Config::Instance()->DLSSEnabled.value_or(true))
 				upscalerChoice = 3;
 		}
+
+		spdlog::info("NVSDK_NGX_D3D12_CreateFeature upscalerChoice: {0}", upscalerChoice);
 
 		if (upscalerChoice == 3)
 		{
@@ -529,7 +537,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
 			if (!Dx12Contexts[handleId]->ModuleLoaded())
 			{
-				spdlog::error("NVSDK_NGX_D3D12_CreateFeature can't create new DLSS feature, Fallback to XeSS!");
+				spdlog::error("NVSDK_NGX_D3D12_CreateFeature can't create new DLSS feature, fallback to XeSS!");
 
 				Dx12Contexts[handleId].reset();
 				auto it = std::find_if(Dx12Contexts.begin(), Dx12Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
@@ -576,15 +584,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 			Config::Instance()->Dx12Upscaler = "fsr21";
 			spdlog::info("NVSDK_NGX_D3D12_CreateFeature creating new FSR 2.1.2 feature");
 			Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12_212>(handleId, InParameters);
-		}
-
-		// nvsdk logging - ini first
-		if (!Config::Instance()->LogToNGX.has_value())
-		{
-			int nvsdkLogging = 0;
-			InParameters->Get("DLSSEnabler.Logging", &nvsdkLogging);
-
-			Config::Instance()->LogToNGX = nvsdkLogging > 0;
 		}
 	}
 	else

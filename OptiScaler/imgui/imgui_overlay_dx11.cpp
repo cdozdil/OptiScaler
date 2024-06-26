@@ -30,6 +30,8 @@ static PFN_CreateSwapChainForHwnd oCreateSwapChainForHwnd_Dx11 = nullptr;
 static PFN_CreateSwapChainForCoreWindow oCreateSwapChainForCoreWindow_Dx11 = nullptr;
 static PFN_CreateSwapChainForComposition oCreateSwapChainForComposition_Dx11 = nullptr;
 
+inline static std::mutex _dx11CleanMutex;
+
 static void CleanupRenderTarget();
 static void CleanupDeviceD3D11();
 static bool CreateDeviceD3D11(HWND hWnd);
@@ -103,11 +105,15 @@ static void CleanupRenderTarget()
 {
 	spdlog::debug("ImGuiOverlayDx11::CleanupRenderTarget");
 	
+	_dx11CleanMutex.lock();
+
 	if (g_pd3dRenderTarget)
 	{
 		g_pd3dRenderTarget->Release();
 		g_pd3dRenderTarget = NULL;
 	}
+
+	_dx11CleanMutex.unlock();
 }
 
 static void CleanupDeviceD3D11()

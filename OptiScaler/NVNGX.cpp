@@ -87,20 +87,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_UpdateFeature(const NVSDK_NGX_Applicati
 {
 	spdlog::debug("NVSDK_NGX_UpdateFeature");
 
-	if (FeatureID != NVSDK_NGX_Feature_SuperSampling)
-	{
-		if (NVNGXProxy::UpdateFeature() != nullptr)
-		{
-			auto result = NVNGXProxy::UpdateFeature()(ApplicationId, FeatureID);
-			spdlog::error("NVSDK_NGX_UpdateFeature NVNGXProxy result for feature ({0}): {1:X}", (int)FeatureID, (UINT)result);
-			return result;
-		}
-		else
-		{
-			spdlog::error("NVSDK_NGX_UpdateFeature Can't update this feature ({0})!", (int)FeatureID);
-			return NVSDK_NGX_Result_FAIL_FeatureNotSupported;
-		}
-	}
+	// To test with puredark mods
+	//if (FeatureID != NVSDK_NGX_Feature_SuperSampling)
+	//{
+	//	if (NVNGXProxy::UpdateFeature() != nullptr)
+	//	{
+	//		auto result = NVNGXProxy::UpdateFeature()(ApplicationId, FeatureID);
+	//		spdlog::error("NVSDK_NGX_UpdateFeature NVNGXProxy result for feature ({0}): {1:X}", (int)FeatureID, (UINT)result);
+	//		return result;
+	//	}
+	//	else
+	//	{
+	//		spdlog::error("NVSDK_NGX_UpdateFeature Can't update this feature ({0})!", (int)FeatureID);
+	//		return NVSDK_NGX_Result_Fail;
+	//	}
+	//}
 
 	if (ApplicationId != nullptr)
 	{
@@ -115,11 +116,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_UpdateFeature(const NVSDK_NGX_Applicati
 			Config::Instance()->NVNGX_Engine = ApplicationId->v.ProjectDesc.EngineType;
 			Config::Instance()->NVNGX_EngineVersion = std::string(ApplicationId->v.ProjectDesc.EngineVersion);
 
-			if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && ApplicationId->v.ProjectDesc.EngineVersion)
-				Config::Instance()->NVNGX_EngineVersion5 = ApplicationId->v.ProjectDesc.EngineVersion[0] == '5';
-			else
-				Config::Instance()->NVNGX_EngineVersion5 = false;
-
 			spdlog::info("NVSDK_NGX_UpdateFeature Update InProjectId: {0}", Config::Instance()->NVNGX_ProjectId);
 			spdlog::info("NVSDK_NGX_UpdateFeature Update InEngineType: {0}", (int)Config::Instance()->NVNGX_Engine);
 			spdlog::info("NVSDK_NGX_UpdateFeature Update InEngineVersion: {0}", Config::Instance()->NVNGX_EngineVersion);
@@ -130,5 +126,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_UpdateFeature(const NVSDK_NGX_Applicati
 		}
 	}
 
-	return NVSDK_NGX_Result_Success;
+	// To test with puredark mods
+	return NVSDK_NGX_Result_Fail;
 }

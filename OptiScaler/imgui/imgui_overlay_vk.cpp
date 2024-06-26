@@ -22,6 +22,7 @@ static HWND _hwnd;
 
 static bool g_bInitialized = false;
 static bool g_bEnabled = false;
+inline static std::mutex _vkCleanMutex;
 
 // vk hook stuff
 static VkRenderPass g_vkRenderPass = VK_NULL_HANDLE;
@@ -490,10 +491,14 @@ void ImGuiOverlayVk::ReInitVk(HWND InNewHwnd)
 	if (!_isInited || !g_bInitialized)
 		return;
 
+	_vkCleanMutex.lock();
+
 	spdlog::debug("ImGuiOverlayVk::ReInitVk hwnd: {0:X}", (UINT64)InNewHwnd);
 
 	ImGui_ImplVulkan_Shutdown();
 	ImGuiOverlayBase::Shutdown();
 	ImGuiOverlayBase::Init(InNewHwnd);
 	g_bInitialized = false;
+
+	_vkCleanMutex.unlock();
 }
