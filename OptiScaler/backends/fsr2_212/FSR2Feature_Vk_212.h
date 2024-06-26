@@ -1,5 +1,4 @@
 #pragma once
-#include <vulkan/vulkan.hpp>
 
 
 #include "../../fsr2_212/include/ffx_fsr2.h"

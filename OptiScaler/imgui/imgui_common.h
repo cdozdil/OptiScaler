@@ -4,7 +4,6 @@
 #include "../Config.h"
 #include "../Resource.h"
 #include "../Logger.h"
-#include "../NVNGX_Proxy.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_win32.h"
@@ -598,7 +597,7 @@ public:
 			selectedUpscalerName = "FSR 2.2.1 w/Dx12";
 		else if (Config::Instance()->newBackend == "fsr21_12" || (Config::Instance()->newBackend == "" && *code == "fsr21_12"))
 			selectedUpscalerName = "FSR 2.1.2 w/Dx12";
-		else if (NVNGXProxy::IsNVNGXInited() && (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
+		else if (Config::Instance()->DLSSEnabled.value_or(true) && (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
 			selectedUpscalerName = "DLSS";
 		else
 			selectedUpscalerName = "XeSS w/Dx12";
@@ -617,7 +616,7 @@ public:
 			if (ImGui::Selectable("FSR 2.2.1 w/Dx12", *code == "fsr22_12"))
 				Config::Instance()->newBackend = "fsr22_12";
 
-			if (NVNGXProxy::IsNVNGXInited() && ImGui::Selectable("DLSS", *code == "dlss"))
+			if (Config::Instance()->DLSSEnabled.value_or(true) && ImGui::Selectable("DLSS", *code == "dlss"))
 				Config::Instance()->newBackend = "dlss";
 
 			ImGui::EndCombo();
@@ -632,7 +631,7 @@ public:
 			selectedUpscalerName = "FSR 2.1.2";
 		else if (Config::Instance()->newBackend == "fsr22" || (Config::Instance()->newBackend == "" && *code == "fsr22"))
 			selectedUpscalerName = "FSR 2.2.1";
-		else if (NVNGXProxy::IsNVNGXInited() && (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
+		else if (Config::Instance()->DLSSEnabled.value_or(true) && (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
 			selectedUpscalerName = "DLSS";
 		else
 			selectedUpscalerName = "XeSS";
@@ -648,7 +647,7 @@ public:
 			if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
 				Config::Instance()->newBackend = "fsr22";
 
-			if (NVNGXProxy::IsNVNGXInited() && ImGui::Selectable("DLSS", *code == "dlss"))
+			if (Config::Instance()->DLSSEnabled.value_or(true) && ImGui::Selectable("DLSS", *code == "dlss"))
 				Config::Instance()->newBackend = "dlss";
 
 			ImGui::EndCombo();
@@ -661,7 +660,7 @@ public:
 
 		if (Config::Instance()->newBackend == "fsr21" || (Config::Instance()->newBackend == "" && *code == "fsr21"))
 			selectedUpscalerName = "FSR 2.1.2";
-		else if (NVNGXProxy::IsNVNGXInited() && (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
+		else if (Config::Instance()->DLSSEnabled.value_or(true) && (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
 			selectedUpscalerName = "DLSS";
 		else
 			selectedUpscalerName = "FSR 2.2.1";

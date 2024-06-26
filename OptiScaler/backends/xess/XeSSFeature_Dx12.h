@@ -1,7 +1,6 @@
 #pragma once
 #include "../IFeature_Dx12.h"
 #include "XeSSFeature.h"
-#include <string>
 
 class XeSSFeatureDx12 : public XeSSFeature, public IFeature_Dx12
 {
