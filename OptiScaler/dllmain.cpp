@@ -43,7 +43,7 @@ std::wstring dllNameExW;
 void AttachHooks();
 void DetachHooks();
 
-HMODULE LoadNvApi()
+static HMODULE LoadNvApi()
 {
 	HMODULE nvapi = nullptr;
 
@@ -84,7 +84,7 @@ HMODULE LoadNvApi()
 	return nullptr;
 }
 
-HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
+static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 {
 	if (lpLibFileName == nullptr)
 		return NULL;
@@ -140,7 +140,7 @@ HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 	return result;
 }
 
-HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
+static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 {
 	if (lpLibFileName == nullptr)
 		return NULL;
@@ -199,7 +199,7 @@ HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 	return result;
 }
 
-HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
+static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 {
 	if (lpLibFileName == nullptr)
 		return NULL;
@@ -282,7 +282,7 @@ HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 	return result;
 }
 
-HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
+static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 {
 	if (lpLibFileName == nullptr)
 		return NULL;
@@ -368,7 +368,7 @@ HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 	return result;
 }
 
-void WINAPI hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, VkPhysicalDeviceProperties* properties)
+static void WINAPI hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, VkPhysicalDeviceProperties* properties)
 {
 	o_vkGetPhysicalDeviceProperties(physical_device, properties);
 
@@ -379,7 +379,7 @@ void WINAPI hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, Vk
 	properties->driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
 }
 
-void WINAPI hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysicalDeviceProperties2* properties2)
+static void WINAPI hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysicalDeviceProperties2* properties2)
 {
 	o_vkGetPhysicalDeviceProperties2(phys_dev, properties2);
 
@@ -391,7 +391,7 @@ void WINAPI hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysic
 
 }
 
-void WINAPI hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhysicalDeviceProperties2* properties2)
+static void WINAPI hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhysicalDeviceProperties2* properties2)
 {
 	o_vkGetPhysicalDeviceProperties2KHR(phys_dev, properties2);
 
@@ -402,7 +402,7 @@ void WINAPI hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhy
 	properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
 }
 
-void DetachHooks()
+static void DetachHooks()
 {
 	if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
 	{
@@ -458,7 +458,7 @@ void DetachHooks()
 	}
 }
 
-void AttachHooks()
+static void AttachHooks()
 {
 	if (o_LoadLibraryA == nullptr || o_LoadLibraryW == nullptr)
 	{
@@ -514,7 +514,7 @@ void AttachHooks()
 	}
 }
 
-void CheckWorkingMode()
+static void CheckWorkingMode()
 {
 	std::string filename = Util::DllPath().filename().string();
 	std::string lCaseFilename(filename);
