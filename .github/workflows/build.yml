@@ -49,4 +49,5 @@ jobs:
       with:
         name: OptiScaler
         path: ${{ github.workspace }}\OptiScaler.7z
+        compression-level: 0
         if-no-files-found: error

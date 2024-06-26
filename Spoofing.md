@@ -42,6 +42,6 @@ dxgi.customDeviceDesc = "NVIDIA GeForce RTX 4090"
 ### NVAPI
 For spoofing NVAPI with Proton set this envvar `PROTON_FORCE_NVAPI=1`
 
-## Goghor's DLSS Enabler's
-Goghor have created DLSS Enabler mods for a lot of games which can be found on his [Nexus](https://www.nexusmods.com/spidermanmilesmorales/users/12564231?tab=user+files&BH=0) profile.   
+## Goghor's DLSS Unlocker's
+Goghor have created DLSS Unlocker mods for a lot of games which can be found on his [Nexus](https://www.nexusmods.com/spidermanmilesmorales/users/12564231?tab=user+files&BH=0) profile.   
 For example as far as I know for Doom Eternal still only way to enable DLSS is his mod.
