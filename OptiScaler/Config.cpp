@@ -3,15 +3,22 @@
 #include "Config.h"
 #include "Util.h"
 
-Config::Config(std::wstring fileName)
-{
-	absoluteFileName = Util::DllPath().parent_path() / fileName;
-	Reload();
+bool isInteger(const std::string& str, int& value) {
+	std::istringstream iss(str);
+	return (iss >> value) && iss.eof();
 }
 
-bool Config::Reload()
+Config::Config(std::wstring fileName)
 {
-	if (ini.LoadFile(absoluteFileName.c_str()) == SI_OK)
+	absoluteFileName = Util::DllPath().parent_path() / fileName;;
+	Reload(absoluteFileName);
+}
+
+bool Config::Reload(std::filesystem::path iniPath)
+{
+	spdlog::info("Trying to load ini from: {0}", iniPath.string());
+
+	if (ini.LoadFile(iniPath.c_str()) == SI_OK)
 	{
 		// Upscalers
 		Dx11Upscaler = readString("Upscalers", "Dx11Upscaler", true);
@@ -203,7 +210,7 @@ bool Config::Reload()
 		// spoofing
 		DxgiSpoofing = readBool("Spoofing", "Dxgi");
 		DxgiXessNoSpoof = readBool("Spoofing", "DxgiXessNoSpoof");
-		VulkanSpoofing = readBool("Spoofing", "Vulkan");		
+		VulkanSpoofing = readBool("Spoofing", "Vulkan");
 
 		// plugins
 		PluginPath = readString("Plugins", "Path", true);
@@ -268,8 +275,15 @@ bool Config::Reload()
 bool Config::LoadFromPath(const wchar_t* InPath)
 {
 	std::filesystem::path iniPath(InPath);
-	absoluteFileName = iniPath / L"nvngx.ini";
-	return Reload();
+	auto newPath = iniPath / L"nvngx.ini";
+
+	if (Reload(newPath))
+	{
+		absoluteFileName = newPath;
+		return true;
+	}
+
+	return false;
 }
 
 std::string GetBoolValue(std::optional<bool> value)
@@ -352,6 +366,7 @@ bool Config::SaveIni()
 	ini.SetValue("Menu", "ResetKey", GetIntValue(Instance()->ResetKey).c_str());
 	ini.SetValue("Menu", "ShortcutKey", GetIntValue(Instance()->ShortcutKey).c_str());
 	ini.SetValue("Menu", "MenuInitDelay", GetIntValue(Instance()->MenuInitDelay).c_str());
+	ini.SetValue("Menu", "ExtraEnablerSettings", GetBoolValue(Instance()->ExtraEnablerSettings).c_str());
 
 	// Hooks
 	ini.SetValue("Hooks", "HookOriginalNvngxOnly", GetBoolValue(Instance()->HookOriginalNvngxOnly).c_str());
@@ -396,7 +411,7 @@ bool Config::SaveIni()
 	ini.SetValue("Hotfix", "DisableReactiveMask", GetBoolValue(Instance()->DisableReactiveMask).c_str());
 	ini.SetValue("Hotfix", "MipmapBiasOverride", GetFloatValue(Instance()->MipmapBiasOverride).c_str());
 	ini.SetValue("Hotfix", "RoundInternalResolution", GetIntValue(Instance()->RoundInternalResolution).c_str());
-	
+
 	ini.SetValue("Hotfix", "RestoreComputeSignature", GetBoolValue(Instance()->RestoreComputeSignature).c_str());
 	ini.SetValue("Hotfix", "RestoreGraphicSignature", GetBoolValue(Instance()->RestoreGraphicSignature).c_str());
 
@@ -443,6 +458,7 @@ bool Config::SaveIni()
 	// Plugins
 	ini.SetValue("Plugins", "Path", Instance()->PluginPath.value_or("auto").c_str());
 
+	spdlog::info("Trying to save ini to: {0}", absoluteFileName.string());
 
 	return ini.SaveFile(absoluteFileName.wstring().c_str()) >= 0;
 }
@@ -455,9 +471,8 @@ std::optional<std::string> Config::readString(std::string section, std::string k
 	std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return std::tolower(c); });
 
 	if (lower == "auto")
-	{
 		return std::nullopt;
-	}
+
 	return lowercase ? lower : value;
 }
 

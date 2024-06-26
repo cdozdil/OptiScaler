@@ -155,7 +155,7 @@ public:
 	NVSDK_NGX_LoggingInfo NVNGX_Logger{ nullptr, NVSDK_NGX_LOGGING_LEVEL_OFF, false };
 	NVSDK_NGX_EngineType NVNGX_Engine = NVSDK_NGX_ENGINE_TYPE_CUSTOM;
 	std::string NVNGX_EngineVersion;
-	bool NVNGX_EngineVersion5 = false;
+	
 	NVNGX_Api Api = NVNGX_NOT_SELECTED;
 	
 	// dlss enabler
@@ -187,7 +187,7 @@ public:
 
 	IFeature* CurrentFeature = nullptr;
 
-	bool Reload();
+	bool Reload(std::filesystem::path iniPath);
 	bool LoadFromPath(const wchar_t* InPath);
 	bool SaveIni();
 
