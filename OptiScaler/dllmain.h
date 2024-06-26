@@ -1291,11 +1291,22 @@ struct dxgi_dll
 
 #pragma region DXGI Adapter methods
 
+bool SkipSpoofing()
+{
+	auto result = Config::Instance()->xessSkipSpoofing && Config::Instance()->DxgiXessNoSpoof.value_or(true);
+
+	if (result)
+		spdlog::info("SkipSpoofing skipping spoofing for XeSS");
+
+	return result;
+}
+
 HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
 {
 	auto result = ptrGetDesc3(This, pDesc);
+	auto skip = SkipSpoofing();
 
-	if (result == S_OK && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+	if (result == S_OK && !skip && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
 	{
 		pDesc->VendorId = 0x10de;
 		pDesc->DeviceId = 0x2684;
@@ -1314,8 +1325,9 @@ HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
 HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
 {
 	auto result = ptrGetDesc2(This, pDesc);
+	auto skip = SkipSpoofing();
 
-	if (result == S_OK && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+	if (result == S_OK && !skip && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
 	{
 		pDesc->VendorId = 0x10de;
 		pDesc->DeviceId = 0x2684;
@@ -1334,8 +1346,9 @@ HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
 HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
 {
 	auto result = ptrGetDesc1(This, pDesc);
+	auto skip = SkipSpoofing();
 
-	if (result == S_OK && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+	if (result == S_OK && !skip && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
 	{
 		pDesc->VendorId = 0x10de;
 		pDesc->DeviceId = 0x2684;
@@ -1354,8 +1367,9 @@ HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
 HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
 {
 	auto result = ptrGetDesc(This, pDesc);
+	auto skip = SkipSpoofing();
 
-	if (result == S_OK && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+	if (result == S_OK && !skip && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
 	{
 		pDesc->VendorId = 0x10de;
 		pDesc->DeviceId = 0x2684;

@@ -201,6 +201,7 @@ bool Config::Reload()
 
 		// spoofing
 		DxgiSpoofing = readBool("Spoofing", "Dxgi");
+		DxgiXessNoSpoof = readBool("Spoofing", "DxgiXessNoSpoof");
 		VulkanSpoofing = readBool("Spoofing", "Vulkan");		
 
 		// plugins
@@ -367,6 +368,7 @@ bool Config::SaveIni()
 
 	// Spoofing
 	ini.SetValue("Spoofing", "Dxgi", GetBoolValue(Instance()->DxgiSpoofing).c_str());
+	ini.SetValue("Spoofing", "DxgiXessNoSpoof", GetBoolValue(Instance()->DxgiXessNoSpoof).c_str());
 	ini.SetValue("Spoofing", "Vulkan", GetBoolValue(Instance()->VulkanSpoofing).c_str());
 
 	// Plugins

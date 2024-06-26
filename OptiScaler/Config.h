@@ -137,6 +137,7 @@ public:
 
 	// spoofing
 	std::optional<bool> DxgiSpoofing;
+	std::optional<bool> DxgiXessNoSpoof;
 	std::optional<bool> VulkanSpoofing;
 
 	// plugins
@@ -173,6 +174,11 @@ public:
 
 	// dlss 
 	bool dlssDisableHook = false;
+	bool xessSkipSpoofing = false;
+
+	// linux check
+	bool IsRunningOnLinux = false;
+	bool IsDxgiMode = false;
 
 	IFeature* CurrentFeature = nullptr;
 

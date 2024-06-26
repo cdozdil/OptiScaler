@@ -32,6 +32,8 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		return false;
 	}
 
+	Config::Instance()->xessSkipSpoofing = true;
+
 	auto ret = GetVersion()(&_xessVersion);
 
 	if (ret == XESS_RESULT_SUCCESS)
@@ -215,7 +217,6 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 	xessParams.outputResolution.x = TargetWidth();
 	xessParams.outputResolution.y = TargetHeight();
 
-
 	// create heaps to prevent create heap errors of xess
 	if (Config::Instance()->CreateHeaps.value_or(true))
 	{
@@ -249,12 +250,13 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 				}
 				else
 				{
-					spdlog::error("XeSSFeature::InitXeSS CreateHeap textureHeapDesc failed {0:x}!", hr);
+					_localBufferHeap->Release();
+					spdlog::error("XeSSFeature::InitXeSS CreateHeap textureHeapDesc failed {0:x}!", (UINT)hr);
 				}
 			}
 			else
 			{
-				spdlog::error("XeSSFeature::InitXeSS CreateHeap bufferHeapDesc failed {0:x}!", hr);
+				spdlog::error("XeSSFeature::InitXeSS CreateHeap bufferHeapDesc failed {0:x}!", (UINT)hr);
 			}
 
 		}
@@ -281,7 +283,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 			if (FAILED(hr) || !_localPipeline)
 			{
-				spdlog::error("XeSSFeature::InitXeSS CreatePipelineLibrary failed {0:x}!", hr);
+				spdlog::error("XeSSFeature::InitXeSS CreatePipelineLibrary failed {0:x}!", (UINT)hr);
 				ret = D3D12BuildPipelines()(_xessContext, NULL, false, xessParams.initFlags);
 			}
 			else
@@ -321,6 +323,8 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 	ret = D3D12Init()(_xessContext, &xessParams);
 
+	Config::Instance()->xessSkipSpoofing = false;
+
 	if (ret != XESS_RESULT_SUCCESS)
 	{
 		spdlog::error("XeSSFeature::InitXeSS xessD3D12Init error: {0}", ResultToString(ret));
@@ -334,6 +338,8 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 XeSSFeature::XeSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
 {
+	Config::Instance()->xessSkipSpoofing = true;
+
 	PRN_xessGetVersion ptrMemoryGetVersion = (PRN_xessGetVersion)DetourFindFunction("libxess.dll", "xessGetVersion");
 	PRN_xessGetVersion ptrDllGetVersion = nullptr;
 
@@ -418,6 +424,8 @@ XeSSFeature::XeSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameter
 			_moduleLoaded = true;
 		}
 	}
+
+	Config::Instance()->xessSkipSpoofing = false;
 }
 
 XeSSFeature::~XeSSFeature()
