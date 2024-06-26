@@ -12,12 +12,14 @@
 
 #pragma warning (disable : 4996)
 
+typedef BOOL(WINAPI* PFN_FreeLibrary)(HMODULE lpLibrary);
 typedef HMODULE(WINAPI* PFN_LoadLibraryA)(LPCSTR lpLibFileName);
 typedef HMODULE(WINAPI* PFN_LoadLibraryW)(LPCWSTR lpLibFileName);
 typedef HMODULE(WINAPI* PFN_LoadLibraryExA)(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 typedef HMODULE(WINAPI* PFN_LoadLibraryExW)(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 typedef const char* (CDECL* PFN_wine_get_version)(void);
 
+PFN_FreeLibrary o_FreeLibrary = nullptr;
 PFN_LoadLibraryA o_LoadLibraryA = nullptr;
 PFN_LoadLibraryW o_LoadLibraryW = nullptr;
 PFN_LoadLibraryExA o_LoadLibraryExA = nullptr;
@@ -26,20 +28,22 @@ PFN_vkGetPhysicalDeviceProperties o_vkGetPhysicalDeviceProperties = nullptr;
 PFN_vkGetPhysicalDeviceProperties2 o_vkGetPhysicalDeviceProperties2 = nullptr;
 PFN_vkGetPhysicalDeviceProperties2KHR o_vkGetPhysicalDeviceProperties2KHR = nullptr;
 
-std::string nvngxA("nvngx.dll");
-std::string nvngxExA("nvngx");
-std::wstring nvngxW(L"nvngx.dll");
-std::wstring nvngxExW(L"nvngx");
+static std::string nvngxA("nvngx.dll");
+static std::string nvngxExA("nvngx");
+static std::wstring nvngxW(L"nvngx.dll");
+static std::wstring nvngxExW(L"nvngx");
 
-std::string nvapiA("nvapi64.dll");
-std::string nvapiExA("nvapi64");
-std::wstring nvapiW(L"nvapi64.dll");
-std::wstring nvapiExW(L"nvapi64");
+static std::string nvapiA("nvapi64.dll");
+static std::string nvapiExA("nvapi64");
+static std::wstring nvapiW(L"nvapi64.dll");
+static std::wstring nvapiExW(L"nvapi64");
 
-std::string dllNameA;
-std::string dllNameExA;
-std::wstring dllNameW;
-std::wstring dllNameExW;
+static std::string dllNameA;
+static std::string dllNameExA;
+static std::wstring dllNameW;
+static std::wstring dllNameExW;
+
+static int loadCount = 0;
 
 void AttachHooks();
 void DetachHooks();
@@ -83,6 +87,25 @@ static HMODULE LoadNvApi()
 	}
 
 	return nullptr;
+}
+
+static BOOL hkFreeLibrary(HMODULE lpLibrary)
+{
+	if (lpLibrary == nullptr)
+		return FALSE;
+
+	if (lpLibrary == dllModule)
+	{
+		loadCount--;
+		spdlog::info("hkFreeLibrary call for this module loadCount: {0}", loadCount);
+
+		if (loadCount == 0)
+			return o_FreeLibrary(lpLibrary);
+		else
+			return TRUE;
+	}
+
+	return o_FreeLibrary(lpLibrary);
 }
 
 static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
@@ -134,6 +157,7 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
 	{
 		spdlog::info("hkLoadLibraryA {0} call returning this dll!", libName);
+		loadCount++;
 		return dllModule;
 	}
 
@@ -193,6 +217,7 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
 	{
 		spdlog::info("hkLoadLibraryW {0} call, returning this dll!", lcaseLibNameA);
+		loadCount++;
 		return dllModule;
 	}
 
@@ -268,6 +293,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
 	{
 		spdlog::info("hkLoadLibraryExA {0} call, returning this dll!", libName);
+		loadCount++;
 		return dllModule;
 	}
 
@@ -276,6 +302,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExA.size()))
 	{
 		spdlog::info("hkLoadLibraryExA {0} call, returning this dll!", libName);
+		loadCount++;
 		return dllModule;
 	}
 
@@ -354,6 +381,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
 	{
 		spdlog::info("hkLoadLibraryExW {0} call, returning this dll!", lcaseLibNameA);
+		loadCount++;
 		return dllModule;
 	}
 
@@ -362,6 +390,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExW.size()))
 	{
 		spdlog::info("hkLoadLibraryExW {0} call, returning this dll!", lcaseLibNameA);
+		loadCount++;
 		return dllModule;
 	}
 
@@ -410,6 +439,12 @@ static void DetachHooks()
 		DetourTransactionBegin();
 
 		DetourUpdateThread(GetCurrentThread());
+
+		if (o_FreeLibrary)
+		{
+			DetourDetach(&(PVOID&)o_FreeLibrary, hkFreeLibrary);
+			o_FreeLibrary = nullptr;
+		}
 
 		if (o_LoadLibraryA)
 		{
@@ -464,6 +499,7 @@ static void AttachHooks()
 	if (o_LoadLibraryA == nullptr || o_LoadLibraryW == nullptr)
 	{
 		// Detour the functions
+		o_FreeLibrary = reinterpret_cast<PFN_FreeLibrary>(DetourFindFunction("kernel32.dll", "FreeLibrary"));
 		o_LoadLibraryA = reinterpret_cast<PFN_LoadLibraryA>(DetourFindFunction("kernel32.dll", "LoadLibraryA"));
 		o_LoadLibraryW = reinterpret_cast<PFN_LoadLibraryW>(DetourFindFunction("kernel32.dll", "LoadLibraryW"));
 		o_LoadLibraryExA = reinterpret_cast<PFN_LoadLibraryExA>(DetourFindFunction("kernel32.dll", "LoadLibraryExA"));
@@ -473,6 +509,9 @@ static void AttachHooks()
 		{
 			DetourTransactionBegin();
 			DetourUpdateThread(GetCurrentThread());
+
+			if (o_FreeLibrary)
+				DetourAttach(&(PVOID&)o_FreeLibrary, hkFreeLibrary);
 
 			if (o_LoadLibraryA)
 				DetourAttach(&(PVOID&)o_LoadLibraryA, hkLoadLibraryA);
@@ -854,6 +893,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH:
+		loadCount++;
+
 		DisableThreadLibraryCalls(hModule);
 
 		dllModule = hModule;
@@ -898,7 +939,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 	case DLL_PROCESS_DETACH:
 		CloseLogger();
 		DetachHooks();
-
 		break;
 
 	default:
