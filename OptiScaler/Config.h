@@ -73,6 +73,7 @@ public:
 	std::optional<int> ShortcutKey;
 	std::optional<int> ResetKey;
 	std::optional<int> MenuInitDelay;
+	std::optional<bool> ExtraEnablerSettings;
 
 	// hooks
 	std::optional<bool> HookOriginalNvngxOnly;
@@ -159,9 +160,13 @@ public:
 	
 	// dlss enabler
 	bool DE_Available = false;
-	std::optional<int> DE_FramerateLimit;
+	std::optional<int> DE_FramerateLimit;			// off - vsync - number
+	std::optional<bool> DE_FramerateLimitVsync;
 	std::optional<int> DE_DynamicLimitAvailable;	// DFG.Available
 	std::optional<int> DE_DynamicLimitEnabled;		// DFG.Enabled
+	std::optional<std::string> DE_Generator;		// auto - fsr3 - dlssg
+	std::optional<std::string> DE_Reflex;			// on - boost - off
+	std::optional<std::string> DE_ReflexEmu;		// auto - on - off
 
 	// for realtime changes
 	bool changeBackend = false;
@@ -172,7 +177,7 @@ public:
 	int xessDebugFrames = 5;
 	float lastMipBias = 0.0f;
 
-	// dlss 
+	// dlss hook
 	bool dlssDisableHook = false;
 	bool xessSkipSpoofing = false;
 

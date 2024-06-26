@@ -1060,14 +1060,14 @@ public:
 
 						ImGui::BeginDisabled(!Config::Instance()->RcasEnabled.value_or(rcasEnabled));
 
-						if (bool overrideMotionSharpness = Config::Instance()->MotionSharpnessEnabled.value_or(false); ImGui::Checkbox("Motion Sharpness", &overrideMotionSharpness))
+						if (bool overrideMotionSharpness = Config::Instance()->MotionSharpnessEnabled.value_or(false); ImGui::Checkbox("Motion Adaptive Sharpness", &overrideMotionSharpness))
 							Config::Instance()->MotionSharpnessEnabled = overrideMotionSharpness;
 
 						ImGui::BeginDisabled(!Config::Instance()->MotionSharpnessEnabled.value_or(false));
 
 						ImGui::SameLine(0.0f, 6.0f);
 
-						if (bool overrideMSDebug = Config::Instance()->MotionSharpnessDebug.value_or(false); ImGui::Checkbox("MS Debug", &overrideMSDebug))
+						if (bool overrideMSDebug = Config::Instance()->MotionSharpnessDebug.value_or(false); ImGui::Checkbox("MAS Debug", &overrideMSDebug))
 							Config::Instance()->MotionSharpnessDebug = overrideMSDebug;
 
 						float motionSharpness = Config::Instance()->MotionSharpness.value_or(0.4f);
@@ -1089,10 +1089,11 @@ public:
 					}
 
 					// DLSS Enabler -----------------
-					if (Config::Instance()->DE_Available || Config::Instance()->DE_FramerateLimit.has_value() ||
-						(Config::Instance()->DE_DynamicLimitAvailable.has_value() && Config::Instance()->DE_DynamicLimitAvailable.value() > 0))
+					if (Config::Instance()->DE_Available)
 					{
 						ImGui::SeparatorText("DLSS Enabler");
+
+						ImGui::BeginDisabled(Config::Instance()->DE_FramerateLimitVsync.value_or(false));
 
 						if (Config::Instance()->DE_FramerateLimit.has_value() && _deLimitFps == 0)
 							_deLimitFps = Config::Instance()->DE_FramerateLimit.value();
@@ -1102,12 +1103,93 @@ public:
 						if (ImGui::Button("Apply Limit"))
 							Config::Instance()->DE_FramerateLimit = _deLimitFps;
 
+						ImGui::EndDisabled();
+
+						ImGui::SameLine(0.0f, 6.0f);
+
+						bool fpsLimitVsync = Config::Instance()->DE_FramerateLimitVsync.value_or(false);
+						if (ImGui::Checkbox("VSync", &fpsLimitVsync))
+							Config::Instance()->DE_FramerateLimitVsync = fpsLimitVsync;
+
 						if (Config::Instance()->DE_DynamicLimitAvailable.has_value() && Config::Instance()->DE_DynamicLimitAvailable.value() > 0)
 						{
-							bool dfgEnabled = Config::Instance()->DE_DynamicLimitEnabled.value_or(false);
+							ImGui::SameLine(0.0f, 6.0f);
 
-							if (ImGui::Checkbox("Dynamic Frame Generation", &dfgEnabled))
+							bool dfgEnabled = Config::Instance()->DE_DynamicLimitEnabled.value_or(false);
+							if (ImGui::Checkbox("Dynamic Frame Gen.", &dfgEnabled))
 								Config::Instance()->DE_DynamicLimitEnabled = dfgEnabled;
+						}
+
+						bool extraSettings = Config::Instance()->ExtraEnablerSettings.value_or(false);
+						if (ImGui::Checkbox("Advanced Settings", &extraSettings))
+							Config::Instance()->ExtraEnablerSettings = extraSettings;
+
+						if (Config::Instance()->ExtraEnablerSettings.value_or(false))
+						{
+							std::string selected;
+
+							if (Config::Instance()->DE_Generator.value_or("auto") == "auto")
+								selected = "Auto";
+							else if (Config::Instance()->DE_Generator.value_or("auto") == "fsr3")
+								selected = "FSR3";
+							else if (Config::Instance()->DE_Generator.value_or("auto") == "dlssg")
+								selected = "DLSS-G";
+
+							if (ImGui::BeginCombo("Generator", selected.c_str()))
+							{
+								if (ImGui::Selectable("Auto", Config::Instance()->DE_Generator.value_or("auto") == "auto"))
+									Config::Instance()->DE_Generator = "auto";
+
+								if (ImGui::Selectable("FSR3", Config::Instance()->DE_Generator.value_or("auto") == "fsr3"))
+									Config::Instance()->DE_Generator = "fsr3";
+
+								if (ImGui::Selectable("DLSS-G", Config::Instance()->DE_Generator.value_or("auto") == "dlggs"))
+									Config::Instance()->DE_Generator = "dlggs";
+
+								ImGui::EndCombo();
+							}
+
+							if (Config::Instance()->DE_Reflex.value_or("on") == "on")
+								selected = "On";
+							else if (Config::Instance()->DE_Reflex.value_or("on") == "boost")
+								selected = "Boost";
+							else if (Config::Instance()->DE_Reflex.value_or("on") == "off")
+								selected = "Off";
+
+							if (ImGui::BeginCombo("Reflex", selected.c_str()))
+							{
+								if (ImGui::Selectable("On", Config::Instance()->DE_Reflex.value_or("on") == "on"))
+									Config::Instance()->DE_Reflex = "on";
+
+								if (ImGui::Selectable("Boost", Config::Instance()->DE_Reflex.value_or("on") == "boost"))
+									Config::Instance()->DE_Reflex = "boost";
+
+								if (ImGui::Selectable("Off", Config::Instance()->DE_Reflex.value_or("on") == "off"))
+									Config::Instance()->DE_Reflex = "off";
+
+								ImGui::EndCombo();
+							}
+
+							if (Config::Instance()->DE_ReflexEmu.value_or("auto") == "auto")
+								selected = "Auto";
+							else if (Config::Instance()->DE_ReflexEmu.value_or("auto") == "on")
+								selected = "On";
+							else if (Config::Instance()->DE_ReflexEmu.value_or("auto") == "off")
+								selected = "Off";
+
+							if (ImGui::BeginCombo("Reflex Emu", selected.c_str()))
+							{
+								if (ImGui::Selectable("Auto", Config::Instance()->DE_ReflexEmu.value_or("auto") == "auto"))
+									Config::Instance()->DE_ReflexEmu = "auto";
+
+								if (ImGui::Selectable("On", Config::Instance()->DE_ReflexEmu.value_or("auto") == "on"))
+									Config::Instance()->DE_ReflexEmu = "on";
+
+								if (ImGui::Selectable("Off", Config::Instance()->DE_ReflexEmu.value_or("auto") == "off"))
+									Config::Instance()->DE_ReflexEmu = "off";
+
+								ImGui::EndCombo();
+							}
 						}
 					}
 

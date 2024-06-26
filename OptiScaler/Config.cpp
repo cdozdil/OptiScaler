@@ -90,6 +90,7 @@ bool Config::Reload()
 		ShortcutKey = readInt("Menu", "ShortcutKey");
 		ResetKey = readInt("Menu", "ResetKey");
 		MenuInitDelay = readInt("Menu", "MenuInitDelay");
+		ExtraEnablerSettings = readBool("Menu", "ExtraEnablerSettings");
 
 		// Hooks
 		HookOriginalNvngxOnly = readBool("Hooks", "HookOriginalNvngxOnly");
@@ -210,6 +211,54 @@ bool Config::Reload()
 		if (!PluginPath.has_value())
 			PluginPath = (Util::DllPath().parent_path() / "plugins").string();
 
+		// DLSS Enabler
+		std::optional<std::string> buffer;
+		int value = 0;
+
+		DE_Generator = readString("FrameGeneration", "Generator", true);
+
+		if (DE_Generator.has_value() && DE_Generator.value() != "fsr3" && DE_Generator.value() != "dlssg")
+			DE_Generator.reset();
+
+		buffer = readString("FrameGeneration", "FramerateLimit", true);
+		if (buffer.has_value())
+		{
+			if (buffer.value() == "vsync")
+			{
+				DE_FramerateLimit = 0;
+				DE_FramerateLimitVsync = true;
+			}
+			else if (isInteger(buffer.value(), value))
+			{
+				DE_FramerateLimit = value;
+				DE_FramerateLimitVsync = false;
+			}
+			else
+			{
+				DE_FramerateLimit = 0;
+				DE_FramerateLimitVsync = false;
+			}
+		}
+
+		buffer.reset();
+		buffer = readString("FrameGeneration", "FrameGenerationMode", true);
+		if (buffer.has_value() && buffer.value() == "dynamic")
+		{
+			DE_DynamicLimitAvailable = 1;
+			DE_DynamicLimitEnabled = 1;
+		}
+
+		DE_Reflex = readString("FrameGeneration", "Reflex", true);
+
+		if (DE_Reflex.has_value() && DE_Reflex.value() != "off" && DE_Reflex.value() != "boost" && DE_Reflex.value() != "on")
+			DE_Reflex.reset();
+
+		DE_ReflexEmu = readString("FrameGeneration", "ReflexEmulation", true);
+
+		if (DE_ReflexEmu.has_value() && DE_ReflexEmu.value() != "off" && DE_ReflexEmu.value() != "on")
+			DE_ReflexEmu.reset();
+
+
 		return true;
 	}
 
@@ -249,6 +298,26 @@ std::string GetFloatValue(std::optional<float> value)
 
 bool Config::SaveIni()
 {
+	// DLSS Enabler
+	if (DE_Available)
+	{
+		ini.SetValue("FrameGeneration", "Generator", Instance()->DE_Generator.value_or("auto").c_str());
+		ini.SetValue("FrameGeneration", "Reflex", Instance()->DE_Reflex.value_or("on").c_str());
+		ini.SetValue("FrameGeneration", "ReflexEmulation", Instance()->DE_ReflexEmu.value_or("auto").c_str());
+
+		if (DE_FramerateLimitVsync.has_value() && DE_FramerateLimitVsync.value())
+			ini.SetValue("FrameGeneration", "FramerateLimit", "vsync");
+		else if (!DE_FramerateLimit.has_value() || (DE_FramerateLimit.has_value() && DE_FramerateLimit.value() < 1))
+			ini.SetValue("FrameGeneration", "FramerateLimit", "off");
+		else
+			ini.SetValue("FrameGeneration", "FramerateLimit", std::to_string(DE_FramerateLimit.value()).c_str());
+
+		if (DE_DynamicLimitEnabled.has_value() && DE_DynamicLimitEnabled.value())
+			ini.SetValue("FrameGeneration", "FrameGenerationMode", "dynamic");
+		else
+			ini.SetValue("FrameGeneration", "FrameGenerationMode", "auto");
+	}
+
 	// Upscalers 
 	ini.SetValue("Upscalers", "Dx11Upscaler", Instance()->Dx11Upscaler.value_or("auto").c_str());
 	ini.SetValue("Upscalers", "Dx12Upscaler", Instance()->Dx12Upscaler.value_or("auto").c_str());
