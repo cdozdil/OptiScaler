@@ -514,6 +514,28 @@ static void AttachHooks()
 	}
 }
 
+static bool IsRunningOnWine()
+{
+	HMODULE ntdll = GetModuleHandle(L"ntdll.dll");
+
+	if (!ntdll)
+	{
+		spdlog::warn("IsRunningOnWine Not running on NT!?!");
+		return true;
+	}
+
+	auto pWineGetVersion = (PFN_wine_get_version)GetProcAddress(ntdll, "wine_get_version");
+
+	if (pWineGetVersion)
+	{
+		spdlog::info("IsRunningOnWine Running on Wine {0}!", pWineGetVersion());
+		return true;
+	}
+
+	spdlog::warn("IsRunningOnWine Wine not detected");
+	return false;
+}
+
 static void CheckWorkingMode()
 {
 	std::string filename = Util::DllPath().filename().string();
@@ -766,6 +788,9 @@ static void CheckWorkingMode()
 
 			shared.LoadOriginalLibrary(dll);
 			dxgi.LoadOriginalLibrary(dll);
+
+			Config::Instance()->IsRunningOnLinux = IsRunningOnWine();
+			Config::Instance()->IsDxgiMode = true;
 		}
 		else
 		{
