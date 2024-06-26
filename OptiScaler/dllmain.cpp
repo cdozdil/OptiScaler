@@ -833,6 +833,15 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 		dllModule = hModule;
 		processId = GetCurrentProcessId();
 
+#ifdef VER_PRE_RELEASE
+		// Enable file logging for pre builds
+		Config::Instance()->LogToFile = true;
+
+		// Set log level to debug
+		if (Config::Instance()->LogLevel.value_or(2) > 1)
+			Config::Instance()->LogLevel = 1;
+#endif
+
 		PrepareLogger();
 		spdlog::info("{0} loaded", VER_PRODUCT_NAME);
 
