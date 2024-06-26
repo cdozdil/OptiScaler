@@ -16,6 +16,7 @@ typedef HMODULE(WINAPI* PFN_LoadLibraryA)(LPCSTR lpLibFileName);
 typedef HMODULE(WINAPI* PFN_LoadLibraryW)(LPCWSTR lpLibFileName);
 typedef HMODULE(WINAPI* PFN_LoadLibraryExA)(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 typedef HMODULE(WINAPI* PFN_LoadLibraryExW)(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
+typedef const char* (CDECL* PFN_wine_get_version)(void);
 
 PFN_LoadLibraryA o_LoadLibraryA = nullptr;
 PFN_LoadLibraryW o_LoadLibraryW = nullptr;
@@ -543,7 +544,7 @@ static void CheckWorkingMode()
 	wchar_t sysFolder[MAX_PATH];
 	GetSystemDirectory(sysFolder, MAX_PATH);
 	std::filesystem::path sysPath(sysFolder);
-	std::filesystem::path pluginPath(Config::Instance()->PluginPath.value());
+	std::filesystem::path pluginPath(Config::Instance()->PluginPath.value_or(".\plugins"));
 
 
 	for (size_t i = 0; i < lCaseFilename.size(); i++)
@@ -583,7 +584,7 @@ static void CheckWorkingMode()
 
 			if (dll != nullptr)
 				spdlog::info("OptiScaler working as version.dll, system dll loaded");
-		
+
 		} while (false);
 
 		if (dll != nullptr)
@@ -871,7 +872,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 		spdlog::info("{0} loaded", VER_PRODUCT_NAME);
 
 		CheckWorkingMode();
-		
+
 		// Check if real DLSS available
 		if (Config::Instance()->DLSSEnabled.value_or(true))
 		{
@@ -879,27 +880,16 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 			if (NVNGXProxy::NVNGXModule() == nullptr)
 			{
-				Config::Instance()->DLSSEnabled = false;
-
-				if (Config::Instance()->Dx11Upscaler.has_value() && Config::Instance()->Dx11Upscaler.value() == "dlss")
-					Config::Instance()->Dx11Upscaler.reset();
-
-				if (Config::Instance()->Dx12Upscaler.has_value() && Config::Instance()->Dx12Upscaler.value() == "dlss")
-					Config::Instance()->Dx12Upscaler.reset();
-
-				if (Config::Instance()->VulkanUpscaler.has_value() && Config::Instance()->VulkanUpscaler.value() == "dlss")
-					Config::Instance()->VulkanUpscaler.reset();
+				spdlog::info("Can't load nvngx.dll, disabling DLSS");
 			}
 			else
 			{
-				if (!Config::Instance()->Dx11Upscaler.has_value())
-					Config::Instance()->Dx11Upscaler = "dlss";
+				spdlog::info("nvngx.dll loaded, setting DLSS as default upscaler and disabling spoofing.");
 
-				if (!Config::Instance()->Dx12Upscaler.has_value())
-					Config::Instance()->Dx12Upscaler = "dlss";
+				if (Config::Instance()->IsDxgiMode)
+					Config::Instance()->DxgiSpoofing = false;
 
-				if (!Config::Instance()->VulkanUpscaler.has_value())
-					Config::Instance()->VulkanUpscaler = "dlss";
+				Config::Instance()->VulkanSpoofing = false;
 			}
 		}
 
