@@ -32,7 +32,7 @@ private:
 	inline static uint32_t _renderWidth = 0;
 
 	// dlss enabler
-	inline static int _deLimitFps = 0;
+	inline static int _deLimitFps = 500;
 
 	// output scaling
 	inline static float _ssRatio = 0.0f;
@@ -42,6 +42,7 @@ private:
 	inline static int _selectedScale = 0;
 	inline static bool _imguiSizeUpdate = true;
 
+	// ovarlay states
 	inline static bool _dx11Ready = false;
 	inline static bool _dx12Ready = false;
 	inline static bool _vulkanReady = false;
@@ -1094,7 +1095,8 @@ public:
 
 						ImGui::BeginDisabled(Config::Instance()->DE_FramerateLimitVsync.value_or(false));
 
-						if (Config::Instance()->DE_FramerateLimit.has_value() && _deLimitFps == 0)
+						// set inital value
+						if (Config::Instance()->DE_FramerateLimit.has_value() && _deLimitFps > 200)
 							_deLimitFps = Config::Instance()->DE_FramerateLimit.value();
 
 						ImGui::SliderInt("FPS Limit", &_deLimitFps, 0, 200);
@@ -1142,8 +1144,8 @@ public:
 								if (ImGui::Selectable("FSR3", Config::Instance()->DE_Generator.value_or("auto") == "fsr3"))
 									Config::Instance()->DE_Generator = "fsr3";
 
-								if (ImGui::Selectable("DLSS-G", Config::Instance()->DE_Generator.value_or("auto") == "dlggs"))
-									Config::Instance()->DE_Generator = "dlggs";
+								if (ImGui::Selectable("DLSS-G", Config::Instance()->DE_Generator.value_or("auto") == "dlssg"))
+									Config::Instance()->DE_Generator = "dlssg";
 
 								ImGui::EndCombo();
 							}
