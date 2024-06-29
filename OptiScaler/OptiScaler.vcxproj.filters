@@ -137,7 +137,7 @@
     <ClInclude Include="backends\dlss\DLSSFeature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\dlss\nvapi.h">
+    <ClInclude Include="nvapi\nvapi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="backends\dlss\DLSSFeature_Vk.h">

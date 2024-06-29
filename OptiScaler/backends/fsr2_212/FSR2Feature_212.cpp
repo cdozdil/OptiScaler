@@ -48,9 +48,6 @@ FSR2Feature212::~FSR2Feature212()
 
 	auto errorCode = Fsr212::ffxFsr2ContextDestroy212(&_context);
 
-	//if (errorCode != Fsr212::FFX_OK)
-	//	spdlog::error("FSR2Feature212::~FSR2Feature212 ffxFsr2ContextDestroy error: {0:x}", errorCode);
-
 	free(_contextDesc.callbacks.scratchBuffer);
 
 	SetInit(false);

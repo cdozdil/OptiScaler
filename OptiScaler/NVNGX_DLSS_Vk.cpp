@@ -276,7 +276,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetCapabilityParameters(NVSDK_NG
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_GetCapabilityParameters");
 
-	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::IsDx12Inited() && NVNGXProxy::VULKAN_GetCapabilityParameters() != nullptr)
+	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::IsVulkanInited() && NVNGXProxy::VULKAN_GetCapabilityParameters() != nullptr)
 	{
 		spdlog::info("NVSDK_NGX_VULKAN_GetCapabilityParameters calling NVNGXProxy::VULKAN_GetCapabilityParameters");
 		auto result = NVNGXProxy::VULKAN_GetCapabilityParameters()(OutParameters);

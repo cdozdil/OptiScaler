@@ -81,8 +81,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
-    <TargetName>dlss-enabler-upscaler</TargetName>
-    <OutDir>D:\Folders\Games\Banishers Ghosts of New Eden\NWD\Binaries\Win64\</OutDir>
+    <TargetName>version</TargetName>
+    <OutDir>D:\Folders\Games\No Man%27s Sky\Binaries\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -191,7 +191,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="backends\dlss\DLSSFeature_Dx11.h" />
     <ClInclude Include="backends\dlss\DLSSFeature_Dx12.h" />
     <ClInclude Include="backends\dlss\DLSSFeature_Vk.h" />
-    <ClInclude Include="backends\dlss\nvapi.h" />
+    <ClInclude Include="nvapi\nvapi.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_212.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx11On12_212.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx12_212.h" />
