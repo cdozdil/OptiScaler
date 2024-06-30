@@ -253,7 +253,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetCapabilityParameters(NVSDK_NGX
 		}
 	}
 
-	*OutParameters = GetNGXParameters("OptiDx11");
+	if (*OutParameters == nullptr)
+		*OutParameters = GetNGXParameters("OptiDx11");
+	else
+		InitNGXParameters(*OutParameters);
+
 	return NVSDK_NGX_Result_Success;
 }
 
@@ -347,7 +351,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 		std::string defaultUpscaler = "fsr22";
 
 		// If original NVNGX available use DLSS as base upscaler
-		if(NVNGXProxy::IsDx11Inited())
+		if (NVNGXProxy::IsDx11Inited())
 			defaultUpscaler = "dlss";
 
 		if (Config::Instance()->Dx11Upscaler.value_or(defaultUpscaler) == "xess")

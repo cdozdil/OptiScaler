@@ -288,8 +288,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetCapabilityParameters(NVSDK_NG
 			return result;
 		}
 	}
+	
+	if (*OutParameters == nullptr)
+		*OutParameters = GetNGXParameters("OptiVk");
+	else
+		InitNGXParameters(*OutParameters);
 
-	*OutParameters = GetNGXParameters("OptiVk");
 	return NVSDK_NGX_Result_Success;
 }
 

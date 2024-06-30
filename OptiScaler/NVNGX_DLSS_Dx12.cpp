@@ -394,8 +394,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetCapabilityParameters(NVSDK_NGX
 			return NVSDK_NGX_Result_Success;
 		}
 	}
+	
+	if (*OutParameters == nullptr)
+		*OutParameters = GetNGXParameters("OptiDx12");
+	else
+		InitNGXParameters(*OutParameters);
 
-	*OutParameters = GetNGXParameters("OptiDx12");
 	return NVSDK_NGX_Result_Success;
 }
 
