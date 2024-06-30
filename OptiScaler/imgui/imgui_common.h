@@ -861,7 +861,7 @@ public:
 					// DYNAMIC PROPERTIES -----------------------------
 
 					// Dx11 with Dx12
-					if (Config::Instance()->Api == NVNGX_DX11 &&
+					if (Config::Instance()->AdvancedSettings.value_or(false) && Config::Instance()->Api == NVNGX_DX11 &&
 						Config::Instance()->Dx11Upscaler.value_or("fsr22") != "fsr22" && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "dlss")
 					{
 						ImGui::SeparatorText("Dx11 with Dx12 Settings");
@@ -927,6 +927,7 @@ public:
 								if (ImGui::Selectable(models[n], (Config::Instance()->NetworkModel.value_or(0) == n)))
 								{
 									Config::Instance()->NetworkModel = n;
+									Config::Instance()->newBackend = currentBackend;
 									Config::Instance()->changeBackend = true;
 								}
 							}
@@ -1026,6 +1027,8 @@ public:
 						{
 							if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
 								Config::Instance()->newBackend = "dlssd";
+							else
+								Config::Instance()->newBackend = currentBackend;
 
 							Config::Instance()->changeBackend = true;
 						}
@@ -1121,11 +1124,7 @@ public:
 								Config::Instance()->DE_DynamicLimitEnabled = dfgEnabled;
 						}
 
-						bool extraSettings = Config::Instance()->ExtraEnablerSettings.value_or(false);
-						if (ImGui::Checkbox("Advanced Settings", &extraSettings))
-							Config::Instance()->ExtraEnablerSettings = extraSettings;
-
-						if (Config::Instance()->ExtraEnablerSettings.value_or(false))
+						if (Config::Instance()->AdvancedSettings.value_or(false))
 						{
 							std::string selected;
 
@@ -1224,6 +1223,9 @@ public:
 
 							if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
 								Config::Instance()->newBackend = "dlssd";
+							else
+								Config::Instance()->newBackend = currentBackend;
+
 
 							Config::Instance()->changeBackend = true;
 						}
@@ -1239,7 +1241,7 @@ public:
 					}
 
 					// DX12 -----------------------------
-					if (Config::Instance()->Api == NVNGX_DX12)
+					if (Config::Instance()->AdvancedSettings.value_or(false) && Config::Instance()->Api == NVNGX_DX12)
 					{
 						// MIPMAP BIAS -----------------------------
 						ImGui::SeparatorText("Mipmap Bias (Dx12)");
@@ -1309,7 +1311,10 @@ public:
 						Config::Instance()->OverrideSharpness = overrideSharpness;
 
 						if (currentBackend == "dlss" && Config::Instance()->CurrentFeature->Version().major < 3)
+						{
+							Config::Instance()->newBackend = currentBackend;
 							Config::Instance()->changeBackend = true;
+						}
 					}
 
 					ImGui::BeginDisabled(!Config::Instance()->OverrideSharpness.value_or(false));
@@ -1393,6 +1398,8 @@ public:
 
 							if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
 								Config::Instance()->newBackend = "dlssd";
+							else
+								Config::Instance()->newBackend = currentBackend;
 
 							Config::Instance()->changeBackend = true;
 						}
@@ -1404,58 +1411,72 @@ public:
 
 							if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
 								Config::Instance()->newBackend = "dlssd";
+							else
+								Config::Instance()->newBackend = currentBackend;
 
 							Config::Instance()->changeBackend = true;
 						}
 
 						ImGui::TableNextColumn();
-						if (bool depth = Config::Instance()->DepthInverted.value_or(false); ImGui::Checkbox("Depth Inverted", &depth))
+
+						if (Config::Instance()->AdvancedSettings.value_or(false))
 						{
-							Config::Instance()->DepthInverted = depth;
-
-							if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
-								Config::Instance()->newBackend = "dlssd";
-
-							Config::Instance()->changeBackend = true;
-						}
-
-						ImGui::TableNextColumn();
-						if (bool jitter = Config::Instance()->JitterCancellation.value_or(false); ImGui::Checkbox("Jitter Cancellation", &jitter))
-						{
-							Config::Instance()->JitterCancellation = jitter;
-
-							if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
-								Config::Instance()->newBackend = "dlssd";
-
-							Config::Instance()->changeBackend = true;
-						}
-
-						ImGui::TableNextColumn();
-						if (bool mv = Config::Instance()->DisplayResolution.value_or(false); ImGui::Checkbox("Display Res. MV", &mv))
-						{
-							Config::Instance()->DisplayResolution = mv;
-
-							if (mv)
+							if (bool depth = Config::Instance()->DepthInverted.value_or(false); ImGui::Checkbox("Depth Inverted", &depth))
 							{
-								Config::Instance()->OutputScalingEnabled = false;
-								_ssEnabled = false;
+								Config::Instance()->DepthInverted = depth;
+
+								if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
+									Config::Instance()->newBackend = "dlssd";
+								else
+									Config::Instance()->newBackend = currentBackend;
+
+								Config::Instance()->changeBackend = true;
 							}
 
-							if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
-								Config::Instance()->newBackend = "dlssd";
+							ImGui::TableNextColumn();
+							if (bool jitter = Config::Instance()->JitterCancellation.value_or(false); ImGui::Checkbox("Jitter Cancellation", &jitter))
+							{
+								Config::Instance()->JitterCancellation = jitter;
 
-							Config::Instance()->changeBackend = true;
-						}
+								if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
+									Config::Instance()->newBackend = "dlssd";
+								else
+									Config::Instance()->newBackend = currentBackend;
 
-						ImGui::TableNextColumn();
-						if (bool rm = Config::Instance()->DisableReactiveMask.value_or(true); ImGui::Checkbox("Disable Reactive Mask", &rm))
-						{
-							Config::Instance()->DisableReactiveMask = rm;
+								Config::Instance()->changeBackend = true;
+							}
 
-							if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
-								Config::Instance()->newBackend = "dlssd";
+							ImGui::TableNextColumn();
+							if (bool mv = Config::Instance()->DisplayResolution.value_or(false); ImGui::Checkbox("Display Res. MV", &mv))
+							{
+								Config::Instance()->DisplayResolution = mv;
 
-							Config::Instance()->changeBackend = true;
+								if (mv)
+								{
+									Config::Instance()->OutputScalingEnabled = false;
+									_ssEnabled = false;
+								}
+
+								if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
+									Config::Instance()->newBackend = "dlssd";
+								else
+									Config::Instance()->newBackend = currentBackend;
+
+								Config::Instance()->changeBackend = true;
+							}
+
+							ImGui::TableNextColumn();
+							if (bool rm = Config::Instance()->DisableReactiveMask.value_or(true); ImGui::Checkbox("Disable Reactive Mask", &rm))
+							{
+								Config::Instance()->DisableReactiveMask = rm;
+
+								if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
+									Config::Instance()->newBackend = "dlssd";
+								else
+									Config::Instance()->newBackend = currentBackend;
+
+								Config::Instance()->changeBackend = true;
+							}
 						}
 
 						ImGui::EndTable();
@@ -1504,6 +1525,15 @@ public:
 
 						ImGui::EndCombo();
 					}
+
+					// ADVANCED SETTINGS -----------------------------
+					ImGui::SeparatorText("Advanced Settings");
+
+					bool advancedSettings = Config::Instance()->AdvancedSettings.value_or(false);
+					if (ImGui::Checkbox("Enable Advanced Settings", &advancedSettings))
+						Config::Instance()->AdvancedSettings = advancedSettings;
+
+
 
 					ImGui::EndTable();
 

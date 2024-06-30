@@ -73,7 +73,7 @@ public:
 	std::optional<int> ShortcutKey;
 	std::optional<int> ResetKey;
 	std::optional<int> MenuInitDelay;
-	std::optional<bool> ExtraEnablerSettings;
+	std::optional<bool> AdvancedSettings;
 
 	// hooks
 	std::optional<bool> HookOriginalNvngxOnly;

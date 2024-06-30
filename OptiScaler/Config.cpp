@@ -97,7 +97,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 		ShortcutKey = readInt("Menu", "ShortcutKey");
 		ResetKey = readInt("Menu", "ResetKey");
 		MenuInitDelay = readInt("Menu", "MenuInitDelay");
-		ExtraEnablerSettings = readBool("Menu", "ExtraEnablerSettings");
+		AdvancedSettings = readBool("Menu", "AdvancedSettings");
 
 		// Hooks
 		HookOriginalNvngxOnly = readBool("Hooks", "HookOriginalNvngxOnly");
@@ -366,7 +366,7 @@ bool Config::SaveIni()
 	ini.SetValue("Menu", "ResetKey", GetIntValue(Instance()->ResetKey).c_str());
 	ini.SetValue("Menu", "ShortcutKey", GetIntValue(Instance()->ShortcutKey).c_str());
 	ini.SetValue("Menu", "MenuInitDelay", GetIntValue(Instance()->MenuInitDelay).c_str());
-	ini.SetValue("Menu", "ExtraEnablerSettings", GetBoolValue(Instance()->ExtraEnablerSettings).c_str());
+	ini.SetValue("Menu", "AdvancedSettings", GetBoolValue(Instance()->AdvancedSettings).c_str());
 
 	// Hooks
 	ini.SetValue("Hooks", "HookOriginalNvngxOnly", GetBoolValue(Instance()->HookOriginalNvngxOnly).c_str());
