@@ -382,6 +382,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 				else
 				{
 					spdlog::info("NVSDK_NGX_VULKAN_CreateFeature1 creating new DLSS feature");
+					Config::Instance()->VulkanUpscaler = "dlss";
 				}
 			}
 			else
@@ -391,9 +392,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 		}
 
 		if (Config::Instance()->VulkanUpscaler.value_or(defaultUpscaler) == "fsr22")
+		{
+
 			VkContexts[handleId] = std::make_unique<FSR2FeatureVk>(handleId, InParameters);
+			Config::Instance()->VulkanUpscaler = "fsr22";
+		}
 		else if (Config::Instance()->VulkanUpscaler.value_or(defaultUpscaler) == "fsr21")
+		{
 			VkContexts[handleId] = std::make_unique<FSR2FeatureVk212>(handleId, InParameters);
+			Config::Instance()->VulkanUpscaler = "fsr21";
+		}
 	}
 	else
 	{
@@ -533,7 +541,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 
 	if (Config::Instance()->changeBackend)
 	{
-		if (Config::Instance()->newBackend == "" && (!Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->newBackend == "dlss"))
+		if (Config::Instance()->newBackend == "")
 			Config::Instance()->newBackend = Config::Instance()->VulkanUpscaler.value_or("fsr21");
 
 		changeBackendCounter++;
