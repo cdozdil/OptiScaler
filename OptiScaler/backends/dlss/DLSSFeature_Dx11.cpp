@@ -94,12 +94,12 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 		if (nvResult != NVSDK_NGX_Result_Success)
 		{
-			spdlog::error("DLSSFeatureDx12::Evaluate _EvaluateFeature result: {0:X}", (unsigned int)nvResult);
+			spdlog::error("DLSSFeatureDx11::Evaluate _EvaluateFeature result: {0:X}", (unsigned int)nvResult);
 			return false;
 		}
 		else
 		{
-			spdlog::trace("DLSSFeatureDx12::Evaluate _EvaluateFeature ok!");
+			spdlog::trace("DLSSFeatureDx11::Evaluate _EvaluateFeature ok!");
 		}
 	}
 	else
