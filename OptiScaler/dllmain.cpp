@@ -910,7 +910,16 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 #endif
 
 		PrepareLogger();
+
 		spdlog::info("{0} loaded", VER_PRODUCT_NAME);
+		spdlog::info("============================");
+		spdlog::warn("");
+		spdlog::warn("OptiScaler is freely downloadable from https://github.com/cdozdil/OptiScaler/releases or https://www.nexusmods.com//mods/1/&game_id=6571");
+		spdlog::warn("");
+		spdlog::warn("If you paid for these files, you've been scammed");
+		spdlog::warn("");
+		spdlog::warn("DO NOT USE IN MULTIPLAYER GAMES");
+		spdlog::warn("");
 
 		CheckWorkingMode();
 
