@@ -42,7 +42,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
 			spdlog::info("NVSDK_NGX_D3D11_Init_Ext calling NVNGXProxy::D3D11_Init_Ext result: {0:X}", (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
-				NVNGXProxy::SetDx11Inited();
+				NVNGXProxy::SetDx11Inited(true);
 		}
 	}
 
@@ -105,7 +105,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init(unsigned long long InApplica
 			spdlog::info("NVSDK_NGX_D3D11_Init calling NVNGXProxy::D3D11_Init result: {0:X}", (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
-				NVNGXProxy::SetDx11Inited();
+				NVNGXProxy::SetDx11Inited(true);
 		}
 	}
 
@@ -130,7 +130,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_ProjectID(const char* InProj
 			spdlog::info("NVSDK_NGX_D3D11_Init_ProjectID calling NVNGXProxy::D3D11_Init_ProjectID result: {0:X}", (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
-				NVNGXProxy::SetDx11Inited();
+				NVNGXProxy::SetDx11Inited(true);
 		}
 	}
 
@@ -186,9 +186,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown()
 	if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayDx11::IsInitedDx11())
 		ImGuiOverlayDx11::ShutdownDx11();
 
-	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D11_Shutdown() != nullptr)
+	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx11Inited() && NVNGXProxy::D3D11_Shutdown() != nullptr)
 	{
 		auto result = NVNGXProxy::D3D11_Shutdown()();
+		NVNGXProxy::SetDx11Inited(false);
 		spdlog::info("NVSDK_NGX_D3D11_Shutdown D3D11_Shutdown result: {0:X}", (UINT)result);
 	}
 
@@ -199,9 +200,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown1(ID3D11Device* InDevice)
 {
 	spdlog::info("NVSDK_NGX_D3D11_Shutdown1");
 
-	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D11_Shutdown1() != nullptr)
+	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx11Inited() && NVNGXProxy::D3D11_Shutdown1() != nullptr)
 	{
 		auto result = NVNGXProxy::D3D11_Shutdown1()(InDevice);
+		NVNGXProxy::SetDx11Inited(false);
 		spdlog::info("NVSDK_NGX_D3D11_Shutdown1 D3D11_Shutdown1 result: {0:X}", (UINT)result);
 	}
 

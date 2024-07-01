@@ -44,7 +44,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext(unsigned long long InAp
 			spdlog::info("NVSDK_NGX_VULKAN_Init_Ext calling NVNGXProxy::VULKAN_Init_Ext result: {0:X}", (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
-				NVNGXProxy::SetVulkanInited();
+				NVNGXProxy::SetVulkanInited(true);
 		}
 	}
 
@@ -68,7 +68,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InA
 			spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 calling NVNGXProxy::VULKAN_Init_Ext2 result: {0:X}", (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
-				NVNGXProxy::SetVulkanInited();
+				NVNGXProxy::SetVulkanInited(true);
 		}
 	}
 
@@ -167,7 +167,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char* I
 			spdlog::info("NVSDK_NGX_VULKAN_Init_ProjectID_Ext calling NVNGXProxy::VULKAN_Init_ProjectID_Ext result: {0:X}", (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
-				NVNGXProxy::SetVulkanInited();
+				NVNGXProxy::SetVulkanInited(true);
 		}
 	}
 
@@ -200,7 +200,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 			spdlog::info("NVSDK_NGX_VULKAN_Init calling NVNGXProxy::VULKAN_Init result: {0:X}", (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
-				NVNGXProxy::SetVulkanInited();
+				NVNGXProxy::SetVulkanInited(true);
 		}
 	}
 
@@ -225,7 +225,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID(const char* InPro
 			spdlog::info("NVSDK_NGX_VULKAN_Init_ProjectID calling NVNGXProxy::VULKAN_Init_ProjectID result: {0:X}", (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
-				NVNGXProxy::SetVulkanInited();
+				NVNGXProxy::SetVulkanInited(true);
 		}
 	}
 
@@ -714,9 +714,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
 		ImGuiOverlayVk::ShutdownVk();
 
 
-	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::VULKAN_Shutdown() != nullptr)
+	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsVulkanInited() && NVNGXProxy::VULKAN_Shutdown() != nullptr)
 	{
 		auto result = NVNGXProxy::VULKAN_Shutdown()();
+		NVNGXProxy::SetVulkanInited(false);
 		spdlog::info("NVSDK_NGX_VULKAN_Shutdown VULKAN_Shutdown result: {0:X}", (UINT)result);
 	}
 
@@ -727,9 +728,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown1(VkDevice InDevice)
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_Shutdown1");
 
-	if (NVNGXProxy::VULKAN_Shutdown1() != nullptr)
+	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsVulkanInited() && NVNGXProxy::VULKAN_Shutdown1() != nullptr)
 	{
 		auto result = NVNGXProxy::VULKAN_Shutdown1()(InDevice);
+		NVNGXProxy::SetVulkanInited(false);
 		spdlog::info("NVSDK_NGX_VULKAN_Shutdown1 VULKAN_Shutdown1 result: {0:X}", (UINT)result);
 	}
 

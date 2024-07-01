@@ -525,9 +525,9 @@ public:
 		return _dx11Inited;
 	}
 
-	static void SetDx11Inited()
+	static void SetDx11Inited(bool value)
 	{
-		_dx11Inited = true;
+		_dx11Inited = value;
 	}
 
 	static bool IsDx11Inited()
@@ -661,9 +661,9 @@ public:
 		return _dx12Inited;
 	}
 
-	static void SetDx12Inited()
+	static void SetDx12Inited(bool value)
 	{
-		_dx12Inited = true;
+		_dx12Inited = value;
 	}
 
 	static bool IsDx12Inited()
@@ -798,9 +798,9 @@ public:
 		return true;
 	}
 
-	static void SetVulkanInited()
+	static void SetVulkanInited(bool value)
 	{
-		_vulkanInited = true;
+		_vulkanInited = value;
 	}
 
 	static bool IsVulkanInited()
