@@ -283,6 +283,9 @@ static void CleanupRenderTarget(bool clearQueue)
 {
 	spdlog::debug("ImGuiOverlayDx12::CleanupRenderTarget({0})!", clearQueue);
 
+	if (!_isInited)
+		return;
+
 	_dx12CleanMutex.lock();
 
 	for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
