@@ -113,10 +113,13 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::QueryInterface(REFIID riid, vo
 
 HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
+	spdlog::debug("WrappedIDXGISwapChain4::ResizeBuffers");
+
 	if (ClearTrig != nullptr)
 		ClearTrig(false);
 
 	HRESULT ret = m_pReal->ResizeBuffers(BufferCount, Width, Height, NewFormat, SwapChainFlags);
+
 	return ret;
 }
 
@@ -129,6 +132,8 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetContainingOutput(IDXGIOutpu
 HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT Format, UINT SwapChainFlags,
 	_In_reads_(BufferCount) const UINT* pCreationNodeMask, _In_reads_(BufferCount) IUnknown* const* ppPresentQueue)
 {
+	spdlog::debug("WrappedIDXGISwapChain4::ResizeBuffers1");
+
 	if (ClearTrig != nullptr)
 		ClearTrig(false);
 
@@ -138,6 +143,8 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 
 HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput* pTarget)
 {
+	spdlog::debug("WrappedIDXGISwapChain4::SetFullscreenState");
+
 	if (ClearTrig != nullptr)
 		ClearTrig(true);
 
