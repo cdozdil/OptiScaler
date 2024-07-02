@@ -1251,7 +1251,7 @@ public:
 
 						ImGui::SliderFloat("Mipmap Bias", &_mipBias, -15.0f, 15.0f, "%.6f", ImGuiSliderFlags_NoRoundToFormat);
 
-						ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "This will be applied after first resolution change!");
+						ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "This will be applied after resolution/preset change!");
 
 						if (ImGui::Button("Set"))
 							Config::Instance()->MipmapBiasOverride = _mipBias;
