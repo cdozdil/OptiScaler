@@ -3,7 +3,17 @@
 #include "Config.h"
 #include "Util.h"
 
-bool isInteger(const std::string& str, int& value) {
+static inline int64_t GetTicks()
+{
+	LARGE_INTEGER ticks;
+
+	if (!QueryPerformanceCounter(&ticks))
+		return 0;
+
+	return ticks.QuadPart;
+}
+
+static inline bool isInteger(const std::string& str, int& value) {
 	std::istringstream iss(str);
 	return (iss >> value) && iss.eof();
 }
@@ -80,11 +90,20 @@ bool Config::Reload(std::filesystem::path iniPath)
 		LogToNGX = readBool("Log", "LogToNGX");
 		OpenConsole = readBool("Log", "OpenConsole");
 		LogFileName = readString("Log", "LogFile");
+		LogSingleFile = readBool("Log", "SingleFile");
 
 		if (!LogFileName.has_value())
 		{
-			auto logFile = Util::DllPath().parent_path() / "OptiScaler.log";
-			LogFileName = logFile.string();
+			if (LogSingleFile.value_or(true))
+			{
+				auto logFile = Util::DllPath().parent_path() / "OptiScaler.log";
+				LogFileName = logFile.string();
+			}
+			else
+			{
+				auto logFile = Util::DllPath().parent_path() / ("OptiScaler_" + std::to_string(GetTicks()) + ".log");
+				LogFileName = logFile.string();
+			}
 		}
 
 		// Sharpness
@@ -441,6 +460,7 @@ bool Config::SaveIni()
 	ini.SetValue("Log", "LogToNGX", GetBoolValue(Instance()->LogToNGX).c_str());
 	ini.SetValue("Log", "OpenConsole", GetBoolValue(Instance()->OpenConsole).c_str());
 	ini.SetValue("Log", "LogFile", Instance()->LogFileName.value_or("auto").c_str());
+	ini.SetValue("Log", "SingleFile", GetBoolValue(Instance()->LogSingleFile).c_str());
 
 	// nvapi
 	ini.SetValue("NvApi", "OverrideNvapiDll", GetBoolValue(Instance()->OverrideNvapiDll).c_str());

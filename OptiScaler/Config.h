@@ -37,6 +37,7 @@ public:
 	std::optional<bool> OpenConsole;
 	std::optional<int> LogLevel;
 	std::optional<std::string> LogFileName;
+	std::optional<bool> LogSingleFile;
 
 	// XeSS
 	std::optional<bool> BuildPipelines;
