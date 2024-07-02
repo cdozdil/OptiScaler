@@ -438,10 +438,10 @@ static HRESULT WINAPI hkPresent1_Dx12(IDXGISwapChain3* pSwapChain, UINT SyncInte
 
 static HRESULT WINAPI hkResizeBuffers_Dx12(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
-	auto result = oResizeBuffers_Dx12(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
-
 	if (!_isEarlyBind && IsActivePath(Dx12))
 		CleanupRenderTarget(false);
+
+	auto result = oResizeBuffers_Dx12(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
 
 	return result;
 }
@@ -449,10 +449,10 @@ static HRESULT WINAPI hkResizeBuffers_Dx12(IDXGISwapChain* pSwapChain, UINT Buff
 static HRESULT WINAPI hkResizeBuffers1_Dx12(IDXGISwapChain3* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat,
 	UINT SwapChainFlags, const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
-	auto result = oResizeBuffers1_Dx12(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
-
 	if (!_isEarlyBind && IsActivePath(Dx12))
 		CleanupRenderTarget(false);
+
+	auto result = oResizeBuffers1_Dx12(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
 
 	return result;
 }
@@ -507,10 +507,10 @@ static HRESULT WINAPI hkPresent1_SL(IDXGISwapChain3* pSwapChain, UINT SyncInterv
 
 static HRESULT WINAPI hkResizeBuffers_SL(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
-	auto result = oResizeBuffers_SL(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
-
 	if (!_isEarlyBind && IsActivePath(SL))
 		CleanupRenderTarget(false);
+
+	auto result = oResizeBuffers_SL(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
 
 	return result;
 }
@@ -518,10 +518,10 @@ static HRESULT WINAPI hkResizeBuffers_SL(IDXGISwapChain* pSwapChain, UINT Buffer
 static HRESULT WINAPI hkResizeBuffers1_SL(IDXGISwapChain3* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat,
 	UINT SwapChainFlags, const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
-	auto result = oResizeBuffers1_SL(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
-
 	if (!_isEarlyBind && IsActivePath(SL))
 		CleanupRenderTarget(false);
+
+	auto result = oResizeBuffers1_SL(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
 
 	return result;
 }
@@ -576,10 +576,10 @@ static HRESULT WINAPI hkPresent1_FSR3(IDXGISwapChain3* pSwapChain, UINT SyncInte
 
 static HRESULT WINAPI hkResizeBuffers_FSR3(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
-	auto result = oResizeBuffers_FSR3(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
-
 	if (!_isEarlyBind && IsActivePath(FSR3_Native))
 		CleanupRenderTarget(false);
+
+	auto result = oResizeBuffers_FSR3(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
 
 	return result;
 }
@@ -587,10 +587,10 @@ static HRESULT WINAPI hkResizeBuffers_FSR3(IDXGISwapChain* pSwapChain, UINT Buff
 static HRESULT WINAPI hkResizeBuffers1_FSR3(IDXGISwapChain3* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat,
 	UINT SwapChainFlags, const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
-	auto result = oResizeBuffers1_FSR3(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
-
 	if (!_isEarlyBind && IsActivePath(FSR3_Native))
 		CleanupRenderTarget(false);
+
+	auto result = oResizeBuffers1_FSR3(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
 
 	return result;
 }
@@ -646,10 +646,10 @@ static HRESULT WINAPI hkPresent1_Mod(IDXGISwapChain3* pSwapChain, UINT SyncInter
 
 static HRESULT WINAPI hkResizeBuffers_Mod(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
-	auto result = oResizeBuffers_Mod(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
-
 	if (!_isEarlyBind && IsActivePath(FSR3_Mod))
 		CleanupRenderTarget(false);
+
+	auto result = oResizeBuffers_Mod(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
 
 	return result;
 }
@@ -657,10 +657,10 @@ static HRESULT WINAPI hkResizeBuffers_Mod(IDXGISwapChain* pSwapChain, UINT Buffe
 static HRESULT WINAPI hkResizeBuffers1_Mod(IDXGISwapChain3* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat,
 	UINT SwapChainFlags, const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
-	auto result = oResizeBuffers1_Mod(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
-
 	if (!_isEarlyBind && IsActivePath(FSR3_Mod))
 		CleanupRenderTarget(false);
+
+	auto result = oResizeBuffers1_Mod(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
 
 	return result;
 }
