@@ -129,7 +129,7 @@ void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
 
 void HookToDevice(ID3D12Device* InDevice)
 {
-	if (orgCreateSampler != nullptr || InDevice == nullptr)
+	if (!ImGuiOverlayDx12::IsEarlyBind() && orgCreateSampler != nullptr || InDevice == nullptr)
 		return;
 
 	// Get the vtable pointer

@@ -18,6 +18,10 @@
 // Dx12 overlay code adoptes from 
 // https://github.com/bruhmoment21/UniversalHookX
 
+// MipMap hooks
+typedef void(__fastcall* PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+static inline PFN_CreateSampler orgCreateSampler = nullptr;
+
 typedef struct FfxFrameGenerationConfig
 {
 	IDXGISwapChain4* swapChain;
@@ -338,6 +342,68 @@ static void CleanupRenderTarget(bool clearQueue)
 
 	_dx12CleanMutex.unlock();
 }
+
+#pragma region Mipmap Hook
+
+static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
+{
+	if (pDesc->MipLODBias < 0.0f && Config::Instance()->MipmapBiasOverride.has_value())
+	{
+		spdlog::info("hkCreateSampler Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
+
+		D3D12_SAMPLER_DESC newDesc{};
+
+		newDesc.AddressU = pDesc->AddressU;
+		newDesc.AddressV = pDesc->AddressV;
+		newDesc.AddressW = pDesc->AddressW;
+		newDesc.BorderColor[0] = pDesc->BorderColor[0];
+		newDesc.BorderColor[1] = pDesc->BorderColor[1];
+		newDesc.BorderColor[2] = pDesc->BorderColor[2];
+		newDesc.BorderColor[3] = pDesc->BorderColor[3];
+		newDesc.ComparisonFunc = pDesc->ComparisonFunc;
+		newDesc.Filter = pDesc->Filter;
+		newDesc.MaxAnisotropy = pDesc->MaxAnisotropy;
+		newDesc.MaxLOD = pDesc->MaxLOD;
+		newDesc.MinLOD = pDesc->MinLOD;
+		newDesc.MipLODBias = Config::Instance()->MipmapBiasOverride.value();
+
+		Config::Instance()->lastMipBias = newDesc.MipLODBias;
+
+		return orgCreateSampler(device, &newDesc, DestDescriptor);
+	}
+	else if (pDesc->MipLODBias < 0.0f)
+	{
+		Config::Instance()->lastMipBias = pDesc->MipLODBias;
+	}
+
+	return orgCreateSampler(device, pDesc, DestDescriptor);
+}
+
+
+static void HookToDevice(ID3D12Device* InDevice)
+{
+	if (!ImGuiOverlayDx12::IsEarlyBind() && orgCreateSampler != nullptr || InDevice == nullptr)
+		return;
+
+	// Get the vtable pointer
+	PVOID* pVTable = *(PVOID**)InDevice;
+
+	// Get the address of the SetComputeRootSignature function from the vtable
+	orgCreateSampler = (PFN_CreateSampler)pVTable[22];
+
+	// Apply the detour
+	if (orgCreateSampler != nullptr)
+	{
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+
+		DetourAttach(&(PVOID&)orgCreateSampler, hkCreateSampler);
+
+		DetourTransactionCommit();
+	}
+}
+
+#pragma endregion
 
 #pragma region Hooks for native EB Prensent Methods
 
@@ -1063,6 +1129,8 @@ static HRESULT WINAPI hkD3D12CreateDevice(IUnknown* pAdapter, D3D_FEATURE_LEVEL 
 	if (result == S_OK && oCreateCommandQueue == nullptr)
 	{
 		auto device = (ID3D12Device*)*ppDevice;
+
+		HookToDevice(device);
 
 		void** pCommandQueueVTable = *reinterpret_cast<void***>(device);
 
@@ -2293,6 +2361,11 @@ void DeatachAllHooks()
 		offxFsr3ConfigureFrameGeneration_FSR3 = nullptr;
 	}
 
+	if (orgCreateSampler != nullptr)
+	{
+		DetourDetach(&(PVOID&)orgCreateSampler, hkCreateSampler);
+		orgCreateSampler = nullptr;
+	}
 
 	DetourTransactionCommit();
 }
@@ -2300,6 +2373,11 @@ void DeatachAllHooks()
 bool ImGuiOverlayDx12::IsInitedDx12()
 {
 	return _isInited;
+}
+
+bool ImGuiOverlayDx12::IsEarlyBind()
+{
+	return _isEarlyBind;
 }
 
 HWND ImGuiOverlayDx12::Handle()
@@ -2322,41 +2400,6 @@ void ImGuiOverlayDx12::InitDx12(HWND InHandle, ID3D12Device* InDevice)
 		_isInited = true;
 		CleanupDeviceD3D12(InDevice);
 	}
-}
-
-void ImGuiOverlayDx12::ShutdownDx12()
-{
-	spdlog::info("ImGuiOverlayDx12::ShutdownDx12");
-
-	if (_isInited && ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
-		ImGui_ImplDX12_Shutdown();
-
-	ImGuiOverlayBase::Shutdown();
-
-	if (_isInited)
-		CleanupDeviceD3D12(g_pd3dDeviceParam);
-
-	DeatachAllHooks();
-
-	_isInited = false;
-}
-
-void ImGuiOverlayDx12::ReInitDx12(HWND InNewHwnd)
-{
-	if (!_isInited)
-		return;
-
-	std::this_thread::sleep_for(std::chrono::milliseconds(300));
-
-	spdlog::info("ImGuiOverlayDx12::ReInitDx12 hwnd: {0:X}", (ULONG64)InNewHwnd);
-
-	if (ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
-		ImGui_ImplDX12_Shutdown();
-
-	ImGuiOverlayBase::Shutdown();
-	ImGuiOverlayBase::Init(InNewHwnd);
-
-	ClearActivePathInfo();
 }
 
 void ImGuiOverlayDx12::Dx12Bind()
@@ -2419,5 +2462,40 @@ void ImGuiOverlayDx12::FSR3Bind()
 void ImGuiOverlayDx12::CaptureQueue(ID3D12CommandList* InCommandList)
 {
 	_dlssCommandList = InCommandList;
+}
+
+void ImGuiOverlayDx12::ShutdownDx12()
+{
+	spdlog::info("ImGuiOverlayDx12::ShutdownDx12");
+
+	if (_isInited && ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
+		ImGui_ImplDX12_Shutdown();
+
+	ImGuiOverlayBase::Shutdown();
+
+	if (_isInited)
+		CleanupDeviceD3D12(g_pd3dDeviceParam);
+
+	DeatachAllHooks();
+
+	_isInited = false;
+}
+
+void ImGuiOverlayDx12::ReInitDx12(HWND InNewHwnd)
+{
+	if (!_isInited)
+		return;
+
+	std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+	spdlog::info("ImGuiOverlayDx12::ReInitDx12 hwnd: {0:X}", (ULONG64)InNewHwnd);
+
+	if (ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
+		ImGui_ImplDX12_Shutdown();
+
+	ImGuiOverlayBase::Shutdown();
+	ImGuiOverlayBase::Init(InNewHwnd);
+
+	ClearActivePathInfo();
 }
 

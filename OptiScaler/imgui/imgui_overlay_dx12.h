@@ -6,6 +6,7 @@
 namespace ImGuiOverlayDx12
 {
 	bool IsInitedDx12();
+	bool IsEarlyBind();
 	HWND Handle();
 
 	void InitDx12(HWND InHandle, ID3D12Device* InDevice);
