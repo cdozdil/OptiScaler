@@ -44,6 +44,7 @@ static std::wstring dllNameW;
 static std::wstring dllNameExW;
 
 static int loadCount = 0;
+static bool dontCount = false;
 
 void AttachHooks();
 void DetachHooks();
@@ -157,11 +158,16 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
 	{
 		spdlog::info("hkLoadLibraryA {0} call returning this dll!", libName);
-		loadCount++;
+
+		if (!dontCount)
+			loadCount++;
+
 		return dllModule;
 	}
 
+	dontCount = true;
 	auto result = o_LoadLibraryA(lpLibFileName);
+	dontCount = false;
 	return result;
 }
 
@@ -217,11 +223,17 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
 	{
 		spdlog::info("hkLoadLibraryW {0} call, returning this dll!", lcaseLibNameA);
-		loadCount++;
+
+		if (!dontCount)
+			loadCount++;
+
 		return dllModule;
 	}
 
+	dontCount = true;
 	auto result = o_LoadLibraryW(lpLibFileName);
+	dontCount = false
+		;
 	return result;
 }
 
@@ -293,7 +305,10 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
 	{
 		spdlog::info("hkLoadLibraryExA {0} call, returning this dll!", libName);
-		loadCount++;
+
+		if (!dontCount)
+			loadCount++;
+
 		return dllModule;
 	}
 
@@ -302,11 +317,17 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExA.size()))
 	{
 		spdlog::info("hkLoadLibraryExA {0} call, returning this dll!", libName);
-		loadCount++;
+
+		if (!dontCount)
+			loadCount++;
+
 		return dllModule;
 	}
 
+	dontCount = true;
 	auto result = o_LoadLibraryExA(lpLibFileName, hFile, dwFlags);
+	dontCount = false;
+
 	return result;
 }
 
@@ -381,7 +402,10 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
 	{
 		spdlog::info("hkLoadLibraryExW {0} call, returning this dll!", lcaseLibNameA);
-		loadCount++;
+
+		if (!dontCount)
+			loadCount++;
+
 		return dllModule;
 	}
 
@@ -390,11 +414,17 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
 	if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExW.size()))
 	{
 		spdlog::info("hkLoadLibraryExW {0} call, returning this dll!", lcaseLibNameA);
-		loadCount++;
+
+		if (!dontCount)
+			loadCount++;
+
 		return dllModule;
 	}
 
+	dontCount = true;
 	auto result = o_LoadLibraryExW(lpLibFileName, hFile, dwFlags);
+	dontCount = false;
+
 	return result;
 }
 
@@ -907,19 +937,22 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 		// Set log level to debug
 		if (Config::Instance()->LogLevel.value_or(2) > 1)
 			Config::Instance()->LogLevel = 1;
+
+		//Config::Instance()->LogSingleFile = false;
 #endif
 
 		PrepareLogger();
 
 		spdlog::info("{0} loaded", VER_PRODUCT_NAME);
-		spdlog::info("=================================");
+		spdlog::info("---------------------------------");
 		spdlog::warn("OptiScaler is freely downloadable from https://github.com/cdozdil/OptiScaler/releases");
-		//spdlog::warn("or https://www.nexusmods.com//mods/1/&game_id=6571");
-		spdlog::warn("If you paid for these files, you've been scammed");
+		// spdlog::warn("or https://www.nexusmods.com/mods/1/&game_id=6571");
+		spdlog::warn("If you paid for these files, you've been scammed!");
 		spdlog::warn("DO NOT USE IN MULTIPLAYER GAMES");
 		spdlog::warn("");
 
 		CheckWorkingMode();
+		spdlog::info("LogLevel: {0}", Config::Instance()->LogLevel.value_or(2));
 
 		// Check if real DLSS available
 		if (Config::Instance()->DLSSEnabled.value_or(true))

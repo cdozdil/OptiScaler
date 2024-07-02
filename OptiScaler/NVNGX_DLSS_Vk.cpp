@@ -268,7 +268,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_AllocateParameters(NVSDK_NGX_Par
 			return result;
 	}
 
-	*OutParameters = new NVNGX_Parameters();
+	auto params = new NVNGX_Parameters();
+	params->Name = "OptiVk";
+	*OutParameters = params;
+
 	return NVSDK_NGX_Result_Success;
 }
 

@@ -278,7 +278,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_AllocateParameters(NVSDK_NGX_Para
 			return result;
 	}
 
-	*OutParameters = new NVNGX_Parameters();
+	auto params = new NVNGX_Parameters();
+	params->Name = "OptiDx11";
+	*OutParameters = params;
+
 	return NVSDK_NGX_Result_Success;
 }
 

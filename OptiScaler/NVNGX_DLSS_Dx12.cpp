@@ -21,7 +21,6 @@ static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeatu
 static inline NVSDK_NGX_Parameter* createParams = nullptr;
 static inline int changeBackendCounter = 0;
 static inline std::wstring appDataPath = L".";
-static inline unsigned int _rrHandleId = 0;
 
 #pragma region Hooks
 
@@ -40,7 +39,7 @@ static inline ULONGLONG graphTime = 0;
 static inline ULONGLONG lastEvalTime = 0;
 inline static std::mutex sigatureMutex;
 
-void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
+static void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
 	if (!contextRendering)
 	{
@@ -53,7 +52,7 @@ void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12Roo
 	return orgSetComputeRootSignature(commandList, pRootSignature);
 }
 
-void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
+static void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
 	if (!contextRendering)
 	{
@@ -66,10 +65,12 @@ void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12Roo
 	return orgSetGraphicRootSignature(commandList, pRootSignature);
 }
 
-void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
+static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
 	if (pDesc->MipLODBias < 0.0f && Config::Instance()->MipmapBiasOverride.has_value())
 	{
+		spdlog::info("hkCreateSampler Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
+
 		D3D12_SAMPLER_DESC newDesc{};
 
 		newDesc.AddressU = pDesc->AddressU;
@@ -91,7 +92,9 @@ void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D1
 		return orgCreateSampler(device, &newDesc, DestDescriptor);
 	}
 	else if (pDesc->MipLODBias < 0.0f)
+	{
 		Config::Instance()->lastMipBias = pDesc->MipLODBias;
+	}
 
 	return orgCreateSampler(device, pDesc, DestDescriptor);
 }
@@ -109,18 +112,24 @@ void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
 	orgSetGraphicRootSignature = (PFN_SetComputeRootSignature)pVTable[30];
 
 	// Apply the detour
-	DetourTransactionBegin();
-	DetourUpdateThread(GetCurrentThread());
+	if (orgSetComputeRootSignature != nullptr || orgSetGraphicRootSignature != nullptr)
+	{
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
 
-	DetourAttach(&(PVOID&)orgSetComputeRootSignature, hkSetComputeRootSignature);
-	DetourAttach(&(PVOID&)orgSetGraphicRootSignature, hkSetGraphicRootSignature);
+		if (orgSetComputeRootSignature != nullptr)
+			DetourAttach(&(PVOID&)orgSetComputeRootSignature, hkSetComputeRootSignature);
 
-	DetourTransactionCommit();
+		if (orgSetGraphicRootSignature != nullptr)
+			DetourAttach(&(PVOID&)orgSetGraphicRootSignature, hkSetGraphicRootSignature);
+
+		DetourTransactionCommit();
+	}
 }
 
 void HookToDevice(ID3D12Device* InDevice)
 {
-	if (orgCreateSampler != nullptr)
+	if (orgCreateSampler != nullptr || InDevice == nullptr)
 		return;
 
 	// Get the vtable pointer
@@ -130,10 +139,15 @@ void HookToDevice(ID3D12Device* InDevice)
 	orgCreateSampler = (PFN_CreateSampler)pVTable[22];
 
 	// Apply the detour
-	DetourTransactionBegin();
-	DetourUpdateThread(GetCurrentThread());
-	DetourAttach(&(PVOID&)orgCreateSampler, hkCreateSampler);
-	DetourTransactionCommit();
+	if (orgCreateSampler != nullptr)
+	{
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+
+		DetourAttach(&(PVOID&)orgCreateSampler, hkCreateSampler);
+
+		DetourTransactionCommit();
+	}
 }
 
 void UnhookAll()
@@ -142,13 +156,22 @@ void UnhookAll()
 	DetourUpdateThread(GetCurrentThread());
 
 	if (orgSetComputeRootSignature != nullptr)
+	{
 		DetourDetach(&(PVOID&)orgSetComputeRootSignature, hkSetComputeRootSignature);
+		orgSetComputeRootSignature = nullptr;
+	}
 
 	if (orgSetGraphicRootSignature != nullptr)
+	{
 		DetourDetach(&(PVOID&)orgSetGraphicRootSignature, hkSetGraphicRootSignature);
+		orgSetGraphicRootSignature = nullptr;
+	}
 
 	if (orgCreateSampler != nullptr)
+	{
 		DetourDetach(&(PVOID&)orgCreateSampler, hkCreateSampler);
+		orgCreateSampler = nullptr;
+	}
 
 	DetourTransactionCommit();
 }
@@ -396,7 +419,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetCapabilityParameters(NVSDK_NGX
 			return NVSDK_NGX_Result_Success;
 		}
 	}
-	
+
 	if (*OutParameters == nullptr)
 		*OutParameters = GetNGXParameters("OptiDx12");
 	else
@@ -419,7 +442,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_AllocateParameters(NVSDK_NGX_Para
 			return result;
 	}
 
-	*OutParameters = new NVNGX_Parameters();
+	auto params = new NVNGX_Parameters();
+	params->Name = "OptiDx12";
+	*OutParameters = params;
+
 	return NVSDK_NGX_Result_Success;
 }
 
@@ -591,6 +617,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 			spdlog::info("NVSDK_NGX_D3D12_CreateFeature creating new FSR 2.1.2 feature");
 			Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12_212>(handleId, InParameters);
 		}
+
+		// write back finel selected upscaler 
+		InParameters->Set("DLSSEnabler.Dx12Backend", upscalerChoice);
 	}
 	else
 	{
@@ -753,10 +782,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 			spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature D3D12_EvaluateFeature for ({0})", handleId);
 			auto result = NVNGXProxy::D3D12_EvaluateFeature()(InCmdList, InFeatureHandle, InParameters, InCallback);
 			spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature D3D12_EvaluateFeature result for ({0}): {1:X}", handleId, (UINT)result);
-
-			// Hide menu when RR is active
-			if (handleId == _rrHandleId)
-				Config::Instance()->CurrentFeature = nullptr;
 
 			return result;
 		}
@@ -945,6 +970,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 				Config::Instance()->Dx12Upscaler = "xess";
 				spdlog::info("NVSDK_NGX_D3D12_EvaluateFeature creating new XeSS feature");
 				Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, createParams);
+				upscalerChoice = 0;
 			}
 
 			InParameters->Set("DLSSEnabler.Dx12Backend", upscalerChoice);
@@ -976,14 +1002,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 						InParameters->Set("DLSSEnabler.Dx12Backend", 2);
 					}
 
-					Config::Instance()->changeBackend = true;
 				}
 				else
 				{
-					Config::Instance()->changeBackend = false;
-					Config::Instance()->newBackend = "";
-					return NVSDK_NGX_Result_Success;
+					// Retry DLSSD
+					Config::Instance()->newBackend = "dlssd";
 				}
+
+				Config::Instance()->changeBackend = true;
+				return NVSDK_NGX_Result_Success;
 			}
 			else
 			{
