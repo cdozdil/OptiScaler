@@ -18,6 +18,11 @@ static inline bool isInteger(const std::string& str, int& value) {
 	return (iss >> value) && iss.eof();
 }
 
+static inline bool isFloat(const std::string& str, float& value) {
+	std::istringstream iss(str);
+	return (iss >> value) && iss.eof();
+}
+
 Config::Config(std::wstring fileName)
 {
 	absoluteFileName = Util::DllPath().parent_path() / fileName;;
@@ -499,9 +504,15 @@ std::optional<std::string> Config::readString(std::string section, std::string k
 std::optional<float> Config::readFloat(std::string section, std::string key)
 {
 	auto value = readString(section, key);
+
 	try
 	{
-		return std::stof(value.value());
+		float result;
+
+		if (value.has_value() && isFloat(value.value(), result))
+			return result;
+
+		return std::nullopt;
 	}
 	catch (const std::bad_optional_access&) // missing or auto value
 	{
@@ -522,7 +533,12 @@ std::optional<int> Config::readInt(std::string section, std::string key)
 	auto value = readString(section, key);
 	try
 	{
-		return std::stoi(value.value());
+		int result;
+
+		if (value.has_value() && isInteger(value.value(), result))
+			return result;
+
+		return std::nullopt;
 	}
 	catch (const std::bad_optional_access&) // missing or auto value
 	{
