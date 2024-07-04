@@ -139,11 +139,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InA
 		spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InGDPA exist!");
 		vkGDPA = InGDPA;
 	}
+	else
+	{
+		spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InGDPA does not exist!");
+		vkGDPA = vkGetDeviceProcAddr;
+	}
 
 	if (InGIPA)
 	{
 		spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InGIPA exist!");
 		vkGIPA = InGIPA;
+	}
+	else
+	{
+		spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InGIPA does not exist!");
+		vkGIPA = vkGetInstanceProcAddr;
 	}
 
 	Config::Instance()->Api = NVNGX_VULKAN;

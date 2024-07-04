@@ -502,7 +502,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetFeatureRequirements(IDXGIAdapt
 
 	if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
 	{
-		*OutSupported = NVSDK_NGX_FeatureRequirement();
+		if (OutSupported == nullptr)
+			*OutSupported = NVSDK_NGX_FeatureRequirement();
+
 		OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
 		OutSupported->MinHWArchitecture = 0;
 
@@ -522,6 +524,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetFeatureRequirements(IDXGIAdapt
 		return result;
 	}
 
+	OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_AdapterUnsupported;
 	return NVSDK_NGX_Result_FAIL_FeatureNotSupported;
 }
 
