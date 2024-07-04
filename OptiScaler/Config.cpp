@@ -235,6 +235,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 		DxgiSpoofing = readBool("Spoofing", "Dxgi");
 		DxgiXessNoSpoof = readBool("Spoofing", "DxgiXessNoSpoof");
 		VulkanSpoofing = readBool("Spoofing", "Vulkan");
+		VulkanExtensionSpoofing = readBool("Spoofing", "VulkanExtensionSpoofing");
 
 		// plugins
 		PluginPath = readString("Plugins", "Path", true);
@@ -479,6 +480,7 @@ bool Config::SaveIni()
 	ini.SetValue("Spoofing", "Dxgi", GetBoolValue(Instance()->DxgiSpoofing).c_str());
 	ini.SetValue("Spoofing", "DxgiXessNoSpoof", GetBoolValue(Instance()->DxgiXessNoSpoof).c_str());
 	ini.SetValue("Spoofing", "Vulkan", GetBoolValue(Instance()->VulkanSpoofing).c_str());
+	ini.SetValue("Spoofing", "VulkanExtensionSpoofing", GetBoolValue(Instance()->VulkanExtensionSpoofing).c_str());
 
 	// Plugins
 	ini.SetValue("Plugins", "Path", Instance()->PluginPath.value_or("auto").c_str());

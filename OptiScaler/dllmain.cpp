@@ -27,6 +27,8 @@ PFN_LoadLibraryExW o_LoadLibraryExW = nullptr;
 PFN_vkGetPhysicalDeviceProperties o_vkGetPhysicalDeviceProperties = nullptr;
 PFN_vkGetPhysicalDeviceProperties2 o_vkGetPhysicalDeviceProperties2 = nullptr;
 PFN_vkGetPhysicalDeviceProperties2KHR o_vkGetPhysicalDeviceProperties2KHR = nullptr;
+PFN_vkEnumerateInstanceExtensionProperties o_vkEnumerateInstanceExtensionProperties = nullptr;
+PFN_vkEnumerateDeviceExtensionProperties o_vkEnumerateDeviceExtensionProperties = nullptr;
 
 static std::string nvngxA("nvngx.dll");
 static std::string nvngxExA("nvngx");
@@ -462,6 +464,66 @@ static void WINAPI hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev
 	properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
 }
 
+static VkResult WINAPI hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice physicalDevice, const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties)
+{
+	auto result = o_vkEnumerateDeviceExtensionProperties(physicalDevice, pLayerName, pPropertyCount, pProperties);
+
+	if (result != VK_SUCCESS)
+		return result;
+
+	if (pLayerName == nullptr && pProperties == nullptr)
+	{
+		*pPropertyCount += 3;
+		return result;
+	}
+
+	if (pLayerName == nullptr)
+	{
+		VkExtensionProperties bi{ VK_NVX_BINARY_IMPORT_EXTENSION_NAME, VK_NVX_BINARY_IMPORT_SPEC_VERSION };
+		memcpy(&pProperties[*pPropertyCount], &bi, sizeof(VkExtensionProperties));
+
+		VkExtensionProperties ivh{ VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME, VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION };
+		memcpy(&pProperties[*pPropertyCount + 1], &ivh, sizeof(VkExtensionProperties));
+		
+		VkExtensionProperties pd{ VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME, VK_KHR_PUSH_DESCRIPTOR_SPEC_VERSION };
+		memcpy(&pProperties[*pPropertyCount + 2], &pd, sizeof(VkExtensionProperties));
+
+		*pPropertyCount += 3;
+	}
+
+	return result;
+}
+
+static VkResult WINAPI hkvkEnumerateInstanceExtensionProperties(const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties)
+{
+	auto result = o_vkEnumerateInstanceExtensionProperties(pLayerName, pPropertyCount, pProperties);
+
+	if (result != VK_SUCCESS)
+		return result;
+
+	if (pLayerName == nullptr && pProperties == nullptr)
+	{
+		*pPropertyCount += 3;
+		return result;
+	}
+
+	if (pLayerName == nullptr && pProperties != nullptr)
+	{
+		VkExtensionProperties bi{ VK_NVX_BINARY_IMPORT_EXTENSION_NAME, VK_NVX_BINARY_IMPORT_SPEC_VERSION };
+		memcpy(&pProperties[*pPropertyCount], &bi, sizeof(VkExtensionProperties));
+
+		VkExtensionProperties ivh{ VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME, VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION };
+		memcpy(&pProperties[*pPropertyCount + 1], &ivh, sizeof(VkExtensionProperties));
+		
+		VkExtensionProperties pd{ VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME, VK_KHR_PUSH_DESCRIPTOR_SPEC_VERSION };
+		memcpy(&pProperties[*pPropertyCount + 2], &pd, sizeof(VkExtensionProperties));
+
+		*pPropertyCount += 3;
+	}
+
+	return result;
+}
+
 static void DetachHooks()
 {
 	if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
@@ -537,6 +599,8 @@ static void AttachHooks()
 
 		if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
 		{
+			spdlog::info("Attaching LoadLibrary hooks");
+
 			DetourTransactionBegin();
 			DetourUpdateThread(GetCurrentThread());
 
@@ -567,6 +631,8 @@ static void AttachHooks()
 
 		if (o_vkGetPhysicalDeviceProperties != nullptr)
 		{
+			spdlog::info("Attaching Vulkan device spoofing hooks");
+
 			DetourTransactionBegin();
 			DetourUpdateThread(GetCurrentThread());
 
@@ -578,6 +644,28 @@ static void AttachHooks()
 
 			if (o_vkGetPhysicalDeviceProperties2KHR)
 				DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceProperties2KHR, hkvkGetPhysicalDeviceProperties2KHR);
+
+			DetourTransactionCommit();
+		}
+	}
+
+	if (Config::Instance()->VulkanExtensionSpoofing.value_or(false) && o_vkEnumerateInstanceExtensionProperties == nullptr)
+	{
+		o_vkEnumerateInstanceExtensionProperties = reinterpret_cast<PFN_vkEnumerateInstanceExtensionProperties>(DetourFindFunction("vulkan-1.dll", "vkEnumerateInstanceExtensionProperties"));
+		o_vkEnumerateDeviceExtensionProperties = reinterpret_cast<PFN_vkEnumerateDeviceExtensionProperties>(DetourFindFunction("vulkan-1.dll", "vkEnumerateDeviceExtensionProperties"));
+
+		if (o_vkEnumerateInstanceExtensionProperties != nullptr || o_vkEnumerateDeviceExtensionProperties != nullptr)
+		{
+			spdlog::info("Attaching Vulkan extensions spoofing hooks");
+
+			DetourTransactionBegin();
+			DetourUpdateThread(GetCurrentThread());
+
+			if (o_vkEnumerateInstanceExtensionProperties)
+				DetourAttach(&(PVOID&)o_vkEnumerateInstanceExtensionProperties, hkvkEnumerateInstanceExtensionProperties);
+
+			if (o_vkEnumerateDeviceExtensionProperties)
+				DetourAttach(&(PVOID&)o_vkEnumerateDeviceExtensionProperties, hkvkEnumerateDeviceExtensionProperties);
 
 			DetourTransactionCommit();
 		}
@@ -613,8 +701,7 @@ static void CheckWorkingMode()
 	wchar_t sysFolder[MAX_PATH];
 	GetSystemDirectory(sysFolder, MAX_PATH);
 	std::filesystem::path sysPath(sysFolder);
-	std::filesystem::path pluginPath(Config::Instance()->PluginPath.value_or(".\plugins"));
-
+	std::filesystem::path pluginPath(Config::Instance()->PluginPath.value_or(".\\plugins"));
 
 	for (size_t i = 0; i < lCaseFilename.size(); i++)
 		lCaseFilename[i] = std::tolower(lCaseFilename[i]);
@@ -870,8 +957,6 @@ static void CheckWorkingMode()
 
 	if (dll != nullptr)
 	{
-		spdlog::info("Attaching LoadLibrary hooks");
-
 		if (Config::Instance()->HookOriginalNvngxOnly.value_or(false))
 		{
 			auto regPath = Util::NvngxPath();
