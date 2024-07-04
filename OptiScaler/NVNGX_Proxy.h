@@ -113,13 +113,13 @@ inline static void HookNvApi()
 	if (OriginalNvAPI_QueryInterface != nullptr)
 		return;
 
-	spdlog::debug("DLSSFeature Trying to hook NvApi");
+	spdlog::debug("NVNGXProxy::HookNvApi Trying to hook NvApi");
 	OriginalNvAPI_QueryInterface = (PFN_NvApi_QueryInterface)DetourFindFunction("nvapi64.dll", "nvapi_QueryInterface");
-	spdlog::debug("DLSSFeature OriginalNvAPI_QueryInterface = {0:X}", (unsigned long long)OriginalNvAPI_QueryInterface);
+	spdlog::debug("NVNGXProxy::HookNvApi OriginalNvAPI_QueryInterface = {0:X}", (unsigned long long)OriginalNvAPI_QueryInterface);
 
 	if (OriginalNvAPI_QueryInterface != nullptr)
 	{
-		spdlog::info("DLSSFeature NvAPI_QueryInterface found, hooking!");
+		spdlog::info("NVNGXProxy::HookNvApi NvAPI_QueryInterface found, hooking!");
 
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
@@ -157,20 +157,28 @@ inline static void HookNgxApi(HMODULE nvngx)
 
 inline static void UnhookApis()
 {
-	if (OriginalNvAPI_QueryInterface != nullptr ||
-		Original_Dx11_GetFeatureRequirements != nullptr || Original_Dx12_GetFeatureRequirements != nullptr)
+	if (OriginalNvAPI_QueryInterface != nullptr || Original_Dx11_GetFeatureRequirements != nullptr || Original_Dx12_GetFeatureRequirements != nullptr)
 	{
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
 
 		if (OriginalNvAPI_QueryInterface != nullptr)
+		{
 			DetourDetach(&(PVOID&)OriginalNvAPI_QueryInterface, HookedNvAPI_QueryInterface);
+			OriginalNvAPI_QueryInterface = nullptr;
+		}
 
 		if (Original_Dx11_GetFeatureRequirements != nullptr)
+		{
 			DetourDetach(&(PVOID&)Original_Dx11_GetFeatureRequirements, Hooked_Dx11_GetFeatureRequirements);
+			Original_Dx11_GetFeatureRequirements = nullptr;
+		}
 
 		if (Original_Dx12_GetFeatureRequirements != nullptr)
+		{
 			DetourDetach(&(PVOID&)Original_Dx12_GetFeatureRequirements, Hooked_Dx12_GetFeatureRequirements);
+			Original_Dx12_GetFeatureRequirements = nullptr;
+		}
 
 		DetourTransactionCommit();
 	}
@@ -394,8 +402,11 @@ public:
 
 		} while (false);
 
-		if (_dll)
+		if (_dll != nullptr)
 		{
+			HookNvApi();
+			HookNgxApi(_dll);
+
 			spdlog::info("NVNGXProxy::InitNVNGX getting nvngx method addresses");
 
 			_D3D11_Init = (PFN_D3D11_Init)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Init");
@@ -450,12 +461,6 @@ public:
 			_VULKAN_EvaluateFeature = (PFN_VULKAN_EvaluateFeature)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_EvaluateFeature");
 
 			_UpdateFeature = (PFN_UpdateFeature)GetProcAddress(_dll, "NVSDK_NGX_UpdateFeature");
-		}
-
-		if (_dll != nullptr)
-		{
-			HookNvApi();
-			HookNgxApi(_dll);
 		}
 
 		Config::Instance()->dlssDisableHook = false;
