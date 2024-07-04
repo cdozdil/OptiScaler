@@ -1603,7 +1603,11 @@ public:
 
 				if (_displayWidth == 0)
 				{
-					_displayWidth = Config::Instance()->CurrentFeature->DisplayWidth();
+					if (Config::Instance()->OutputScalingEnabled.value_or(false))
+						_displayWidth = Config::Instance()->CurrentFeature->DisplayWidth() * Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
+					else
+						_displayWidth = Config::Instance()->CurrentFeature->DisplayWidth();
+
 					_renderWidth = _displayWidth / 3.0f;
 					_mipmapUpscalerQuality = 0;
 					_mipmapUpscalerRatio = 3.0f;
@@ -1618,14 +1622,19 @@ public:
 					if (ImGui::InputScalar("Display Width", ImGuiDataType_U32, &_displayWidth, NULL, NULL, "%u"))
 					{
 						if (_displayWidth <= 0)
-							_displayWidth = Config::Instance()->CurrentFeature->DisplayWidth();
+						{
+							if (Config::Instance()->OutputScalingEnabled.value_or(false))
+								_displayWidth = Config::Instance()->CurrentFeature->DisplayWidth() * Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
+							else
+								_displayWidth = Config::Instance()->CurrentFeature->DisplayWidth();
+
+						}
 
 						_renderWidth = _displayWidth / _mipmapUpscalerRatio;
 						_mipBiasCalculated = log2((float)_renderWidth / (float)_displayWidth);
 					}
 
 					const char* q[] = { "Ultra Performance", "Performance", "Balanced", "Quality", "Ultra Quality", "DLAA" };
-					//float xr[] = { 3.0f, 2.3f, 2.0f, 1.7f, 1.5f, 1.0f };
 					float fr[] = { 3.0f, 2.0f, 1.7f, 1.5f, 1.3f, 1.0f };
 					auto configQ = _mipmapUpscalerQuality;
 
