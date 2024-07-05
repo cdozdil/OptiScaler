@@ -465,8 +465,8 @@ static void WINAPI hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, V
 		{
 			auto ddp = (VkPhysicalDeviceDriverProperties*)(void*)next;
 			ddp->driverID = VK_DRIVER_ID_NVIDIA_PROPRIETARY;
-			std::strcpy(ddp->driverName, "NVIDIA proprietary driver");
-			std::strcpy(ddp->driverInfo, "559.0.0 (NVIDIA proprietary shader compiler)");
+			std::strcpy(ddp->driverName, "NVIDIA");
+			std::strcpy(ddp->driverInfo, "559.0.0");
 		}
 
 		next = (VkDummyProps*)next->pNext;
