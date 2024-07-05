@@ -183,6 +183,8 @@ void UnhookAll()
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath,
 	ID3D12Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
+	spdlog::debug("NVSDK_NGX_D3D12_Init_Ext");
+	
 	Config::Instance()->NVNGX_ApplicationId = InApplicationId;
 	Config::Instance()->NVNGX_ApplicationDataPath = std::wstring(InApplicationDataPath);
 	Config::Instance()->NVNGX_Version = InSDKVersion;
@@ -255,6 +257,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath,
 	ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
+	spdlog::debug("NVSDK_NGX_D3D12_Init");
+
 	if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx12Inited())
 	{
 		if (NVNGXProxy::NVNGXModule() == nullptr)
@@ -281,6 +285,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init(unsigned long long InApplica
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType,
 	const char* InEngineVersion, const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
+	spdlog::debug("NVSDK_NGX_D3D12_Init_ProjectID");
+
 	if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx12Inited())
 	{
 		if (NVNGXProxy::NVNGXModule() == nullptr)
@@ -316,6 +322,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProj
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion,
 	const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
+	spdlog::debug("NVSDK_NGX_D3D12_Init_with_ProjectID");
+
 	auto result = NVSDK_NGX_D3D12_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
 
 	spdlog::info("NVSDK_NGX_D3D12_Init_with_ProjectID InProjectId: {0}", InProjectId);
@@ -486,6 +494,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_DestroyParameters(NVSDK_NGX_Param
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsCommandList* InCmdList, NVSDK_NGX_Feature InFeatureID, NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Handle** OutHandle)
 {
+	spdlog::debug("NVSDK_NGX_D3D12_CreateFeature");
+
 	if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
 	{
 		if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::InitDx12(D3D12Device) && NVNGXProxy::D3D12_CreateFeature() != nullptr)
@@ -662,10 +672,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* InHandle)
 {
+	spdlog::debug("NVSDK_NGX_D3D12_ReleaseFeature");
+
 	if (!InHandle)
 		return NVSDK_NGX_Result_Success;
 
 	auto handleId = InHandle->Id;
+	spdlog::info("NVSDK_NGX_D3D12_ReleaseFeature releasing feature with id {0}", handleId);
+
 	if (handleId < 1000000)
 	{
 		if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D12_ReleaseFeature() != nullptr)
@@ -682,7 +696,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 		}
 	}
 
-	spdlog::info("NVSDK_NGX_D3D12_ReleaseFeature releasing feature with id {0}", handleId);
 
 	if (auto deviceContext = Dx12Contexts[handleId].get(); deviceContext)
 	{
@@ -737,6 +750,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetFeatureRequirements(IDXGIAdapt
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_Handle* InFeatureHandle, NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
 {
+	spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature");
+
 	auto evaluateStart = GetTickCount64();
 
 	auto handleId = InFeatureHandle->Id;
@@ -1061,6 +1076,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		sigatureMutex.lock();
 		orgComputeRootSig = rootSigCompute;
 		orgGraphicRootSig = rootSigGraphic;
+
+		spdlog::trace("NVSDK_NGX_D3D12_EvaluateFeature orgComputeRootSig: {0:X}, orgGraphicRootSig: {1:X}", (UINT64)orgComputeRootSig, (UINT64)orgGraphicRootSig);
+
 		sigatureMutex.unlock();
 
 		contextRendering = true;
@@ -1070,10 +1088,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 	if (deviceContext->Name() != "DLSSD")
 	{
-		if (Config::Instance()->RestoreComputeSignature.value_or(false) && computeTime != 0 && computeTime > lastEvalTime && computeTime < evaluateStart && orgComputeRootSig != nullptr)
+		if (Config::Instance()->RestoreComputeSignature.value_or(false) && computeTime != 0 && computeTime > lastEvalTime && computeTime <= evaluateStart && orgComputeRootSig != nullptr)
 			orgSetComputeRootSignature(InCmdList, orgComputeRootSig);
 
-		if (Config::Instance()->RestoreGraphicSignature.value_or(false) && graphTime != 0 && graphTime > lastEvalTime && graphTime < evaluateStart && orgGraphicRootSig != nullptr)
+		if (Config::Instance()->RestoreGraphicSignature.value_or(false) && graphTime != 0 && graphTime > lastEvalTime && graphTime <= evaluateStart && orgGraphicRootSig != nullptr)
 			orgSetGraphicRootSignature(InCmdList, orgGraphicRootSig);
 
 		contextRendering = false;
