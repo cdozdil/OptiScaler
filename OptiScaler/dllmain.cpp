@@ -19,16 +19,24 @@ typedef HMODULE(WINAPI* PFN_LoadLibraryExA)(LPCSTR lpLibFileName, HANDLE hFile, 
 typedef HMODULE(WINAPI* PFN_LoadLibraryExW)(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 typedef const char* (CDECL* PFN_wine_get_version)(void);
 
-PFN_FreeLibrary o_FreeLibrary = nullptr;
-PFN_LoadLibraryA o_LoadLibraryA = nullptr;
-PFN_LoadLibraryW o_LoadLibraryW = nullptr;
-PFN_LoadLibraryExA o_LoadLibraryExA = nullptr;
-PFN_LoadLibraryExW o_LoadLibraryExW = nullptr;
-PFN_vkGetPhysicalDeviceProperties o_vkGetPhysicalDeviceProperties = nullptr;
-PFN_vkGetPhysicalDeviceProperties2 o_vkGetPhysicalDeviceProperties2 = nullptr;
-PFN_vkGetPhysicalDeviceProperties2KHR o_vkGetPhysicalDeviceProperties2KHR = nullptr;
-PFN_vkEnumerateInstanceExtensionProperties o_vkEnumerateInstanceExtensionProperties = nullptr;
-PFN_vkEnumerateDeviceExtensionProperties o_vkEnumerateDeviceExtensionProperties = nullptr;
+typedef struct VkDummyProps {
+	VkStructureType    sType;
+	void* pNext;
+} VkDummyProps;
+
+static PFN_FreeLibrary o_FreeLibrary = nullptr;
+static PFN_LoadLibraryA o_LoadLibraryA = nullptr;
+static PFN_LoadLibraryW o_LoadLibraryW = nullptr;
+static PFN_LoadLibraryExA o_LoadLibraryExA = nullptr;
+static PFN_LoadLibraryExW o_LoadLibraryExW = nullptr;
+static PFN_vkGetPhysicalDeviceProperties o_vkGetPhysicalDeviceProperties = nullptr;
+static PFN_vkGetPhysicalDeviceProperties2 o_vkGetPhysicalDeviceProperties2 = nullptr;
+
+static PFN_vkEnumerateInstanceExtensionProperties o_vkEnumerateInstanceExtensionProperties = nullptr;
+static PFN_vkEnumerateDeviceExtensionProperties o_vkEnumerateDeviceExtensionProperties = nullptr;
+
+static uint32_t vkEnumerateInstanceExtensionPropertiesCount = 0;
+static uint32_t vkEnumerateDeviceExtensionPropertiesCount = 0;
 
 static std::string nvngxA("nvngx.dll");
 static std::string nvngxExA("nvngx");
@@ -437,7 +445,6 @@ static void WINAPI hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_dev
 	std::strcpy(properties->deviceName, "NVIDIA GeForce RTX 4090");
 	properties->vendorID = 0x10de;
 	properties->deviceID = 0x2684;
-	//properties->deviceType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 	properties->driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
 }
 
@@ -448,47 +455,49 @@ static void WINAPI hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, V
 	std::strcpy(properties2->properties.deviceName, "NVIDIA GeForce RTX 4090");
 	properties2->properties.vendorID = 0x10de;
 	properties2->properties.deviceID = 0x2684;
-	//properties2->properties.deviceType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 	properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
 
-}
+	auto next = (VkDummyProps*)properties2->pNext;
 
-static void WINAPI hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhysicalDeviceProperties2* properties2)
-{
-	o_vkGetPhysicalDeviceProperties2KHR(phys_dev, properties2);
+	while (next != nullptr)
+	{
+		if (next->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES)
+		{
+			auto ddp = (VkPhysicalDeviceDriverProperties*)(void*)next;
+			ddp->driverID = VK_DRIVER_ID_NVIDIA_PROPRIETARY;
+			std::strcpy(ddp->driverName, "NVIDIA proprietary driver");
+			std::strcpy(ddp->driverInfo, "559.0.0 (NVIDIA proprietary shader compiler)");
+		}
 
-	std::strcpy(properties2->properties.deviceName, "NVIDIA GeForce RTX 4090");
-	properties2->properties.vendorID = 0x10de;
-	properties2->properties.deviceID = 0x2684;
-	//properties2->properties.deviceType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
-	properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
+		next = (VkDummyProps*)next->pNext;
+	}
 }
 
 static VkResult WINAPI hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice physicalDevice, const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties)
 {
+	auto count = *pPropertyCount;
 	auto result = o_vkEnumerateDeviceExtensionProperties(physicalDevice, pLayerName, pPropertyCount, pProperties);
 
 	if (result != VK_SUCCESS)
 		return result;
 
-	if (pLayerName == nullptr && pProperties == nullptr)
+	if (pLayerName == nullptr && pProperties == nullptr && count == 0)
 	{
-		*pPropertyCount += 3;
+		*pPropertyCount += 2;
+		vkEnumerateDeviceExtensionPropertiesCount = *pPropertyCount;
 		return result;
 	}
 
-	if (pLayerName == nullptr)
+	if (pLayerName == nullptr && pProperties != nullptr && *pPropertyCount > 0)
 	{
+		if (count == vkEnumerateDeviceExtensionPropertiesCount)
+			*pPropertyCount = count;
+
 		VkExtensionProperties bi{ VK_NVX_BINARY_IMPORT_EXTENSION_NAME, VK_NVX_BINARY_IMPORT_SPEC_VERSION };
-		memcpy(&pProperties[*pPropertyCount], &bi, sizeof(VkExtensionProperties));
+		memcpy(&pProperties[*pPropertyCount - 1], &bi, sizeof(VkExtensionProperties));
 
 		VkExtensionProperties ivh{ VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME, VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION };
-		memcpy(&pProperties[*pPropertyCount + 1], &ivh, sizeof(VkExtensionProperties));
-		
-		VkExtensionProperties pd{ VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME, VK_KHR_PUSH_DESCRIPTOR_SPEC_VERSION };
-		memcpy(&pProperties[*pPropertyCount + 2], &pd, sizeof(VkExtensionProperties));
-
-		*pPropertyCount += 3;
+		memcpy(&pProperties[*pPropertyCount - 2], &ivh, sizeof(VkExtensionProperties));
 	}
 
 	return result;
@@ -496,29 +505,29 @@ static VkResult WINAPI hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice p
 
 static VkResult WINAPI hkvkEnumerateInstanceExtensionProperties(const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties)
 {
+	auto count = *pPropertyCount;
 	auto result = o_vkEnumerateInstanceExtensionProperties(pLayerName, pPropertyCount, pProperties);
 
 	if (result != VK_SUCCESS)
 		return result;
 
-	if (pLayerName == nullptr && pProperties == nullptr)
+	if (pLayerName == nullptr && pProperties == nullptr && count == 0)
 	{
-		*pPropertyCount += 3;
+		*pPropertyCount += 2;
+		vkEnumerateInstanceExtensionPropertiesCount = *pPropertyCount;
 		return result;
 	}
 
-	if (pLayerName == nullptr && pProperties != nullptr)
+	if (pLayerName == nullptr && pProperties != nullptr && *pPropertyCount > 0)
 	{
+		if (vkEnumerateInstanceExtensionPropertiesCount == count)
+			*pPropertyCount = count;
+
 		VkExtensionProperties bi{ VK_NVX_BINARY_IMPORT_EXTENSION_NAME, VK_NVX_BINARY_IMPORT_SPEC_VERSION };
-		memcpy(&pProperties[*pPropertyCount], &bi, sizeof(VkExtensionProperties));
+		memcpy(&pProperties[*pPropertyCount - 1], &bi, sizeof(VkExtensionProperties));
 
 		VkExtensionProperties ivh{ VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME, VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION };
-		memcpy(&pProperties[*pPropertyCount + 1], &ivh, sizeof(VkExtensionProperties));
-		
-		VkExtensionProperties pd{ VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME, VK_KHR_PUSH_DESCRIPTOR_SPEC_VERSION };
-		memcpy(&pProperties[*pPropertyCount + 2], &pd, sizeof(VkExtensionProperties));
-
-		*pPropertyCount += 3;
+		memcpy(&pProperties[*pPropertyCount - 2], &ivh, sizeof(VkExtensionProperties));
 	}
 
 	return result;
@@ -574,12 +583,6 @@ static void DetachHooks()
 			o_vkGetPhysicalDeviceProperties2 = nullptr;
 		}
 
-		if (o_vkGetPhysicalDeviceProperties2KHR)
-		{
-			DetourDetach(&(PVOID&)o_vkGetPhysicalDeviceProperties2KHR, hkvkGetPhysicalDeviceProperties2KHR);
-			o_vkGetPhysicalDeviceProperties2KHR = nullptr;
-		}
-
 		DetourTransactionCommit();
 
 		FreeLibrary(shared.dll);
@@ -627,7 +630,6 @@ static void AttachHooks()
 	{
 		o_vkGetPhysicalDeviceProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties"));
 		o_vkGetPhysicalDeviceProperties2 = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties2"));
-		o_vkGetPhysicalDeviceProperties2KHR = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2KHR>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties2KHR"));
 
 		if (o_vkGetPhysicalDeviceProperties != nullptr)
 		{
@@ -641,9 +643,6 @@ static void AttachHooks()
 
 			if (o_vkGetPhysicalDeviceProperties2)
 				DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceProperties2, hkvkGetPhysicalDeviceProperties2);
-
-			if (o_vkGetPhysicalDeviceProperties2KHR)
-				DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceProperties2KHR, hkvkGetPhysicalDeviceProperties2KHR);
 
 			DetourTransactionCommit();
 		}
