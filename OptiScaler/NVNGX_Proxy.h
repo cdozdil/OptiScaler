@@ -838,6 +838,11 @@ public:
 		return _VULKAN_Init;
 	}
 
+	static PFN_VULKAN_GetFeatureRequirements VULKAN_GetFeatureRequirements()
+	{
+		return _VULKAN_GetFeatureRequirements;
+	}
+
 	static PFN_VULKAN_GetCapabilityParameters VULKAN_GetCapabilityParameters()
 	{
 		if (!_vulkanInited)

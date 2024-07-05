@@ -141,6 +141,7 @@ public:
 	std::optional<bool> DxgiSpoofing;
 	std::optional<bool> DxgiXessNoSpoof;
 	std::optional<bool> VulkanSpoofing;
+	std::optional<bool> VulkanExtensionSpoofing;
 
 	// plugins
 	std::optional<std::string> PluginPath;

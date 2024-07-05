@@ -41,7 +41,7 @@ inline static std::mutex sigatureMutex;
 
 static void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
-	if (!contextRendering)
+	if (!contextRendering && commandList != nullptr && pRootSignature != nullptr)
 	{
 		sigatureMutex.lock();
 		rootSigCompute = pRootSignature;
@@ -54,7 +54,7 @@ static void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID
 
 static void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
-	if (!contextRendering)
+	if (!contextRendering && commandList != nullptr && pRootSignature != nullptr)
 	{
 		sigatureMutex.lock();
 		rootSigGraphic = pRootSignature;
@@ -67,6 +67,9 @@ static void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID
 
 static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
+	if (pDesc == nullptr || device == nullptr)
+		return;
+
 	if (pDesc->MipLODBias < 0.0f && Config::Instance()->MipmapBiasOverride.has_value())
 	{
 		spdlog::info("hkCreateSampler Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
@@ -104,14 +107,11 @@ void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
 	if (orgSetComputeRootSignature != nullptr || orgSetGraphicRootSignature != nullptr)
 		return;
 
-	// Get the vtable pointer
 	PVOID* pVTable = *(PVOID**)InCmdList;
 
-	// Get the address of the SetComputeRootSignature function from the vtable
 	orgSetComputeRootSignature = (PFN_SetComputeRootSignature)pVTable[29];
 	orgSetGraphicRootSignature = (PFN_SetComputeRootSignature)pVTable[30];
 
-	// Apply the detour
 	if (orgSetComputeRootSignature != nullptr || orgSetGraphicRootSignature != nullptr)
 	{
 		DetourTransactionBegin();
@@ -132,13 +132,10 @@ void HookToDevice(ID3D12Device* InDevice)
 	if (!ImGuiOverlayDx12::IsEarlyBind() && orgCreateSampler != nullptr || InDevice == nullptr)
 		return;
 
-	// Get the vtable pointer
 	PVOID* pVTable = *(PVOID**)InDevice;
 
-	// Get the address of the SetComputeRootSignature function from the vtable
 	orgCreateSampler = (PFN_CreateSampler)pVTable[22];
 
-	// Apply the detour
 	if (orgCreateSampler != nullptr)
 	{
 		DetourTransactionBegin();
@@ -721,7 +718,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetFeatureRequirements(IDXGIAdapt
 
 	if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
 	{
-		*OutSupported = NVSDK_NGX_FeatureRequirement();
+		if (OutSupported == nullptr)
+			*OutSupported = NVSDK_NGX_FeatureRequirement();
+
 		OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
 		OutSupported->MinHWArchitecture = 0;
 
@@ -745,6 +744,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetFeatureRequirements(IDXGIAdapt
 		spdlog::debug("NVSDK_NGX_D3D12_GetFeatureRequirements D3D12_GetFeatureRequirements not available for ({0})", (int)FeatureDiscoveryInfo->FeatureID);
 	}
 
+	OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_AdapterUnsupported;
 	return NVSDK_NGX_Result_FAIL_FeatureNotSupported;
 }
 

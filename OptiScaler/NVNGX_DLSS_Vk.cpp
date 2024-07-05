@@ -139,11 +139,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InA
 		spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InGDPA exist!");
 		vkGDPA = InGDPA;
 	}
+	else
+	{
+		spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InGDPA does not exist!");
+		vkGDPA = vkGetDeviceProcAddr;
+	}
 
 	if (InGIPA)
 	{
 		spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InGIPA exist!");
 		vkGIPA = InGIPA;
+	}
+	else
+	{
+		spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InGIPA does not exist!");
+		vkGIPA = vkGetInstanceProcAddr;
 	}
 
 	Config::Instance()->Api = NVNGX_VULKAN;
@@ -275,6 +285,42 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_AllocateParameters(NVSDK_NGX_Par
 	return NVSDK_NGX_Result_Success;
 }
 
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureRequirements(VkInstance VulkanInstance, VkPhysicalDevice PhysicalDevice, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
+{
+	spdlog::debug("NVSDK_NGX_VULKAN_GetFeatureRequirements for ({0})", (int)FeatureDiscoveryInfo->FeatureID);
+
+	if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+	{
+		if (OutSupported == nullptr)
+			*OutSupported = NVSDK_NGX_FeatureRequirement();
+
+		OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
+		OutSupported->MinHWArchitecture = 0;
+
+		//Some old windows 10 os version
+		strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
+		return NVSDK_NGX_Result_Success;
+	}
+
+	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() == nullptr)
+		NVNGXProxy::InitNVNGX();
+
+	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D12_GetFeatureRequirements() != nullptr)
+	{
+		spdlog::debug("NVSDK_NGX_D3D12_GetFeatureRequirements NVSDK_NGX_VULKAN_GetFeatureRequirements for ({0})", (int)FeatureDiscoveryInfo->FeatureID);
+		auto result = NVNGXProxy::VULKAN_GetFeatureRequirements()(VulkanInstance, PhysicalDevice, FeatureDiscoveryInfo, OutSupported);
+		spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature NVSDK_NGX_VULKAN_GetFeatureRequirements result for ({0}): {1:X}", (int)FeatureDiscoveryInfo->FeatureID, (UINT)result);
+		return result;
+	}
+	else
+	{
+		spdlog::debug("NVSDK_NGX_VULKAN_GetFeatureRequirements VULKAN_GetFeatureRequirements not available for ({0})", (int)FeatureDiscoveryInfo->FeatureID);
+	}
+
+	OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_AdapterUnsupported;
+	return NVSDK_NGX_Result_FAIL_FeatureNotSupported;
+}
+
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetCapabilityParameters(NVSDK_NGX_Parameter** OutParameters)
 {
 	spdlog::debug("NVSDK_NGX_VULKAN_GetCapabilityParameters");
@@ -291,7 +337,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetCapabilityParameters(NVSDK_NG
 			return result;
 		}
 	}
-	
+
 	if (*OutParameters == nullptr)
 		*OutParameters = GetNGXParameters("OptiVk");
 	else
@@ -329,6 +375,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_DestroyParameters(NVSDK_NGX_Para
 	}
 
 	delete InParameters;
+	InParameters = nullptr;
 
 	return NVSDK_NGX_Result_Success;
 }

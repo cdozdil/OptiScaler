@@ -347,9 +347,12 @@ static void CleanupRenderTarget(bool clearQueue)
 
 static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
+	if (pDesc == nullptr || device == nullptr)
+		return;
+
 	if (pDesc->MipLODBias < 0.0f && Config::Instance()->MipmapBiasOverride.has_value())
 	{
-		spdlog::info("hkCreateSampler Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
+		spdlog::info("ImGuiOverlayDx12::hkCreateSampler Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
 
 		D3D12_SAMPLER_DESC newDesc{};
 
