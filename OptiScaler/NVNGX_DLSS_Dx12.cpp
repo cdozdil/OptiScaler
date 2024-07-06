@@ -40,13 +40,23 @@ static inline ULONGLONG graphTime = 0;
 static inline ULONGLONG lastEvalTime = 0;
 inline static std::mutex sigatureMutex;
 
+static inline int64_t GetTicks()
+{
+	LARGE_INTEGER ticks;
+
+	if (!QueryPerformanceCounter(&ticks))
+		return 0;
+
+	return ticks.QuadPart;
+}
+
 static void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
 	if (!contextRendering && commandList != nullptr && pRootSignature != nullptr)
 	{
 		sigatureMutex.lock();
 		rootSigCompute = pRootSignature;
-		computeTime = GetTickCount64();
+		computeTime = GetTicks();
 		sigatureMutex.unlock();
 	}
 
@@ -59,7 +69,7 @@ static void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID
 	{
 		sigatureMutex.lock();
 		rootSigGraphic = pRootSignature;
-		graphTime = GetTickCount64();
+		graphTime = GetTicks();
 		sigatureMutex.unlock();
 	}
 
@@ -182,7 +192,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 	ID3D12Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
 	spdlog::debug("NVSDK_NGX_D3D12_Init_Ext");
-	
+
 	Config::Instance()->NVNGX_ApplicationId = InApplicationId;
 	Config::Instance()->NVNGX_ApplicationDataPath = std::wstring(InApplicationDataPath);
 	Config::Instance()->NVNGX_Version = InSDKVersion;
@@ -636,7 +646,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 	}
 
 	auto deviceContext = Dx12Contexts[handleId].get();
-	*OutHandle = deviceContext->Handle();
+
+	if (*OutHandle == nullptr)
+		*OutHandle = new NVSDK_NGX_Handle{ handleId };
+	else
+		(*OutHandle)->Id = handleId;
 
 #pragma region Check for Dx12Device Device
 
@@ -759,7 +773,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	if (InFeatureHandle == nullptr)
 		return NVSDK_NGX_Result_Fail;
 
-	auto evaluateStart = GetTickCount64();
+	auto evaluateStart = GetTicks();
 
 	auto handleId = InFeatureHandle->Id;
 	spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature FeatureId: {0}", handleId);
@@ -823,11 +837,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		return NVSDK_NGX_Result_Success;
 
 	// Check window recreation
-	if (Config::Instance()->OverlayMenu.value_or(true))
+	if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayDx12::IsInitedDx12())
 	{
+		contextRendering = true;
+
 		HWND currentHandle = Util::GetProcessWindow();
-		if (ImGuiOverlayDx12::IsInitedDx12() && ImGuiOverlayDx12::Handle() != currentHandle)
+		if (ImGuiOverlayDx12::Handle() != currentHandle)
 			ImGuiOverlayDx12::ReInitDx12(currentHandle);
+
+		contextRendering = false;
 	}
 
 	if (InCallback)
@@ -1090,34 +1108,64 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	if (deviceContext->Name() != "DLSSD")
 	{
 		sigatureMutex.lock();
+
 		orgComputeRootSig = rootSigCompute;
 		orgGraphicRootSig = rootSigGraphic;
 
 		spdlog::trace("NVSDK_NGX_D3D12_EvaluateFeature orgComputeRootSig: {0:X}, orgGraphicRootSig: {1:X}", (UINT64)orgComputeRootSig, (UINT64)orgGraphicRootSig);
 
-		sigatureMutex.unlock();
-
 		contextRendering = true;
+
+		sigatureMutex.unlock();
 	}
 
 	bool evalResult = deviceContext->Evaluate(InCmdList, InParameters);
 
-	if (deviceContext->Name() != "DLSSD")
+	if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
 	{
-		if (Config::Instance()->RestoreComputeSignature.value_or(false) && computeTime != 0 && computeTime > lastEvalTime && computeTime < evaluateStart && orgComputeRootSig != nullptr)
-			orgSetComputeRootSignature(InCmdList, orgComputeRootSig);
+		sigatureMutex.lock();
 
-		if (Config::Instance()->RestoreGraphicSignature.value_or(false) && graphTime != 0 && graphTime > lastEvalTime && graphTime < evaluateStart && orgGraphicRootSig != nullptr)
+		if (Config::Instance()->RestoreComputeSignature.value_or(false) && computeTime != 0 && computeTime > lastEvalTime && computeTime <= evaluateStart && orgComputeRootSig != nullptr)
+		{
+			spdlog::trace("NVSDK_NGX_D3D12_EvaluateFeature restore orgComputeRootSig: {0:X}", (UINT64)orgComputeRootSig);
+			orgSetComputeRootSignature(InCmdList, orgComputeRootSig);
+		}
+		else
+		{
+			if (Config::Instance()->RestoreComputeSignature.value_or(false))
+			{
+				spdlog::trace("NVSDK_NGX_D3D12_EvaluateFeature orgComputeRootSig lastEvalTime: {0}", lastEvalTime);
+				spdlog::trace("NVSDK_NGX_D3D12_EvaluateFeature orgComputeRootSig computeTime: {0}", computeTime);
+				spdlog::trace("NVSDK_NGX_D3D12_EvaluateFeature orgComputeRootSig evaluateStart: {0}", evaluateStart);
+			}
+		}
+
+		if (Config::Instance()->RestoreGraphicSignature.value_or(false) && graphTime != 0 && graphTime > lastEvalTime && graphTime <= evaluateStart && orgGraphicRootSig != nullptr)
+		{
+			spdlog::trace("NVSDK_NGX_D3D12_EvaluateFeature restore orgGraphicRootSig: {0:X}", (UINT64)orgGraphicRootSig);
 			orgSetGraphicRootSignature(InCmdList, orgGraphicRootSig);
+		}
+		else
+		{
+			if (Config::Instance()->RestoreGraphicSignature.value_or(false))
+			{
+				spdlog::trace("NVSDK_NGX_D3D12_EvaluateFeature orgGraphicRootSig lastEvalTime: {0}", lastEvalTime);
+				spdlog::trace("NVSDK_NGX_D3D12_EvaluateFeature orgGraphicRootSig computeTime: {0}", graphTime);
+				spdlog::trace("NVSDK_NGX_D3D12_EvaluateFeature orgGraphicRootSig evaluateStart: {0}", evaluateStart);
+			}
+		}
 
 		contextRendering = false;
 		lastEvalTime = evaluateStart;
 
 		rootSigCompute = nullptr;
 		rootSigGraphic = nullptr;
+
+		sigatureMutex.unlock();
 	}
 
-	ImGuiOverlayDx12::CaptureQueue(InCmdList);
+	if (Config::Instance()->OverlayMenu.value_or(true))
+		ImGuiOverlayDx12::CaptureQueue(InCmdList);
 
 	spdlog::trace("NVSDK_NGX_D3D12_EvaluateFeature done: {0:X}", (UINT)evalResult);
 
