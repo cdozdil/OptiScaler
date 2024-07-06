@@ -410,19 +410,19 @@ inline static void InitNGXParameters(NVSDK_NGX_Parameter* InParams)
 	InParams->Set(NVSDK_NGX_EParameter_MV_Offset_X, 0.0f);
 	InParams->Set(NVSDK_NGX_EParameter_MV_Offset_Y, 0.0f);
 
-	InParams->Set("RayReconstruction.Hint.Render.Preset.DLAA", (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-	InParams->Set("RayReconstruction.Hint.Render.Preset.UltraQuality", (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-	InParams->Set("RayReconstruction.Hint.Render.Preset.Quality", (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-	InParams->Set("RayReconstruction.Hint.Render.Preset.Balanced", (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-	InParams->Set("RayReconstruction.Hint.Render.Preset.Performance", (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-	InParams->Set("RayReconstruction.Hint.Render.Preset.UltraPerformance", (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set("RayReconstruction.Hint.Render.Preset.DLAA", (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set("RayReconstruction.Hint.Render.Preset.UltraQuality", (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set("RayReconstruction.Hint.Render.Preset.Quality", (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set("RayReconstruction.Hint.Render.Preset.Balanced", (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set("RayReconstruction.Hint.Render.Preset.Performance", (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set("RayReconstruction.Hint.Render.Preset.UltraPerformance", (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
 
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, (int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+	InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
 
 	InParams->Set(NVSDK_NGX_Parameter_CreationNodeMask, 1);
 	InParams->Set(NVSDK_NGX_Parameter_VisibilityNodeMask, 1);

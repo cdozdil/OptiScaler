@@ -675,6 +675,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 		return NVSDK_NGX_Result_Success;
 
 	auto handleId = InHandle->Id;
+
 	spdlog::info("NVSDK_NGX_D3D12_ReleaseFeature releasing feature with id {0}", handleId);
 
 	if (handleId < 1000000)
@@ -693,8 +694,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 		}
 	}
 
-
-	if (auto deviceContext = Dx12Contexts[handleId].get(); deviceContext)
+	if (auto deviceContext = Dx12Contexts[handleId].get(); deviceContext != nullptr)
 	{
 		if (deviceContext == Config::Instance()->CurrentFeature)
 		{
@@ -707,7 +707,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 		Dx12Contexts.erase(it);
 	}
 	else
+	{
 		spdlog::error("NVSDK_NGX_D3D12_ReleaseFeature can't release feature with id {0}!", handleId);
+	}
 
 	return NVSDK_NGX_Result_Success;
 }
@@ -719,7 +721,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetFeatureRequirements(IDXGIAdapt
 	if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
 	{
 		if (OutSupported == nullptr)
-			*OutSupported = NVSDK_NGX_FeatureRequirement();
+			OutSupported = new NVSDK_NGX_FeatureRequirement();
 
 		OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
 		OutSupported->MinHWArchitecture = 0;
@@ -751,6 +753,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetFeatureRequirements(IDXGIAdapt
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_Handle* InFeatureHandle, NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
 {
 	spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature");
+
+	if (InFeatureHandle == nullptr)
+		return NVSDK_NGX_Result_Fail;
 
 	auto evaluateStart = GetTickCount64();
 
@@ -1088,10 +1093,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 	if (deviceContext->Name() != "DLSSD")
 	{
-		if (Config::Instance()->RestoreComputeSignature.value_or(false) && computeTime != 0 && computeTime > lastEvalTime && computeTime <= evaluateStart && orgComputeRootSig != nullptr)
+		if (Config::Instance()->RestoreComputeSignature.value_or(false) && computeTime != 0 && computeTime > lastEvalTime && computeTime < evaluateStart && orgComputeRootSig != nullptr)
 			orgSetComputeRootSignature(InCmdList, orgComputeRootSig);
 
-		if (Config::Instance()->RestoreGraphicSignature.value_or(false) && graphTime != 0 && graphTime > lastEvalTime && graphTime <= evaluateStart && orgGraphicRootSig != nullptr)
+		if (Config::Instance()->RestoreGraphicSignature.value_or(false) && graphTime != 0 && graphTime > lastEvalTime && graphTime < evaluateStart && orgGraphicRootSig != nullptr)
 			orgSetGraphicRootSignature(InCmdList, orgGraphicRootSig);
 
 		contextRendering = false;
@@ -1102,6 +1107,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 	}
 
 	ImGuiOverlayDx12::CaptureQueue(InCmdList);
+
+	spdlog::trace("NVSDK_NGX_D3D12_EvaluateFeature done: {0:X}", (UINT)evalResult);
 
 	if (evalResult)
 		return NVSDK_NGX_Result_Success;

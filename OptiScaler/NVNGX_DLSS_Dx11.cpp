@@ -503,7 +503,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetFeatureRequirements(IDXGIAdapt
 	if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
 	{
 		if (OutSupported == nullptr)
-			*OutSupported = NVSDK_NGX_FeatureRequirement();
+			OutSupported = new NVSDK_NGX_FeatureRequirement();
 
 		OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
 		OutSupported->MinHWArchitecture = 0;
