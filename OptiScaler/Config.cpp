@@ -208,7 +208,8 @@ bool Config::Reload(std::filesystem::path iniPath)
 			MipmapBiasOverride.reset();
 
 		RestoreComputeSignature = readBool("Hotfix", "RestoreComputeSignature");
-		RestoreGraphicSignature = readBool("Hotfix", "RestoreGraphicSignature");
+		RestoreComputeSignature = readBool("Hotfix", "RestoreComputeSignature");
+		SkipFirstFrames = readInt("Hotfix", "SkipFirstFrames");
 
 		ColorResourceBarrier = readInt("Hotfix", "ColorResourceBarrier");
 		MVResourceBarrier = readInt("Hotfix", "MotionVectorResourceBarrier");
@@ -439,6 +440,7 @@ bool Config::SaveIni()
 
 	ini.SetValue("Hotfix", "RestoreComputeSignature", GetBoolValue(Instance()->RestoreComputeSignature).c_str());
 	ini.SetValue("Hotfix", "RestoreGraphicSignature", GetBoolValue(Instance()->RestoreGraphicSignature).c_str());
+	ini.SetValue("Hotfix", "SkipFirstFrames", GetIntValue(Instance()->SkipFirstFrames).c_str());
 
 	ini.SetValue("Hotfix", "ColorResourceBarrier", GetIntValue(Instance()->ColorResourceBarrier).c_str());
 	ini.SetValue("Hotfix", "MotionVectorResourceBarrier", GetIntValue(Instance()->MVResourceBarrier).c_str());

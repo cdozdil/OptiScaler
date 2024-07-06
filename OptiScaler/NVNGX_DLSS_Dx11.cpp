@@ -23,6 +23,7 @@ inline ID3D11Device* D3D11Device = nullptr;
 static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx11>> Dx11Contexts;
 static inline NVSDK_NGX_Parameter* createParams;
 static inline int changeBackendCounter = 0;
+static inline int evalCounter = 0;
 
 #pragma region NVSDK_NGX_D3D11_Init
 
@@ -434,12 +435,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 
 	if (!D3D11Device)
 	{
-		spdlog::debug("NVSDK_NGX_D3D12_CreateFeature Get Dx11Device from InDevCtx!");
+		spdlog::debug("NVSDK_NGX_D3D11_CreateFeature Get Dx11Device from InDevCtx!");
 		InDevCtx->GetDevice(&D3D11Device);
+		evalCounter = 0;
 
 		if (!D3D11Device)
 		{
-			spdlog::error("NVSDK_NGX_D3D12_CreateFeature Can't get Dx11Device from InDevCtx!");
+			spdlog::error("NVSDK_NGX_D3D11_CreateFeature Can't get Dx11Device from InDevCtx!");
 			return NVSDK_NGX_Result_Fail;
 		}
 	}
@@ -539,6 +541,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 	}
 
 	auto handleId = InFeatureHandle->Id;
+
 	if (handleId < 1000000)
 	{
 		if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D11_EvaluateFeature() != nullptr)
@@ -552,6 +555,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 			return NVSDK_NGX_Result_FAIL_FeatureNotFound;
 		}
 	}
+
+	evalCounter++;
+	if (Config::Instance()->SkipFirstFrames.has_value() && evalCounter < Config::Instance()->SkipFirstFrames.value())
+		return NVSDK_NGX_Result_Success;
 
 	// DLSS Enabler check
 	int deAvail;
@@ -741,6 +748,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 
 				Config::Instance()->newBackend = "";
 				Config::Instance()->changeBackend = false;
+				evalCounter = 0;
 			}
 
 			// if opti nvparam release it

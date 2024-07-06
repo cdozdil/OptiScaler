@@ -20,6 +20,7 @@ inline ID3D12Device* D3D12Device = nullptr;
 static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
 static inline NVSDK_NGX_Parameter* createParams = nullptr;
 static inline int changeBackendCounter = 0;
+static inline int evalCounter = 0;
 static inline std::wstring appDataPath = L".";
 
 #pragma region Hooks
@@ -659,6 +660,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 	{
 		Config::Instance()->CurrentFeature = deviceContext;
 		HookToCommandList(InCmdList);
+		evalCounter = 0;
 
 		return NVSDK_NGX_Result_Success;
 	}
@@ -772,6 +774,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 		Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(90) &&
 		!ImGuiOverlayDx12::IsInitedDx12())
 	{
+		contextRendering = true;
+
 		auto hwnd = Util::GetProcessWindow();
 
 		HWND consoleWindow = GetConsoleWindow();
@@ -793,6 +797,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 		if (consoleAllocated)
 			FreeConsole();
+
+		contextRendering = false;
 	}
 
 	if (handleId < 1000000)
@@ -811,6 +817,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 			return NVSDK_NGX_Result_FAIL_FeatureNotFound;
 		}
 	}
+
+	evalCounter++;
+	if (Config::Instance()->SkipFirstFrames.has_value() && evalCounter < Config::Instance()->SkipFirstFrames.value())
+		return NVSDK_NGX_Result_Success;
 
 	// Check window recreation
 	if (Config::Instance()->OverlayMenu.value_or(true))
@@ -1038,6 +1048,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 				Config::Instance()->newBackend = "";
 				Config::Instance()->changeBackend = false;
+				evalCounter = 0;
 			}
 
 			// if opti nvparam release it

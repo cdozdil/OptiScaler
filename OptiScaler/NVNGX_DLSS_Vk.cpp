@@ -27,6 +27,7 @@ PFN_vkGetDeviceProcAddr vkGDPA;
 static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Vk>> VkContexts;
 static inline NVSDK_NGX_Parameter* createParams = nullptr;
 static inline int changeBackendCounter = 0;
+static inline int evalCounter = 0;
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
@@ -470,6 +471,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 	{
 		Config::Instance()->CurrentFeature = deviceContext;
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		evalCounter = 0;
+
 		return NVSDK_NGX_Result_Success;
 	}
 
@@ -561,6 +564,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 			return NVSDK_NGX_Result_FAIL_FeatureNotFound;
 		}
 	}
+
+	evalCounter++;
+	if (Config::Instance()->SkipFirstFrames.has_value() && evalCounter < Config::Instance()->SkipFirstFrames.value())
+		return NVSDK_NGX_Result_Success;
 
 	// DLSS Enabler check
 	int deAvail;
@@ -710,6 +717,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 
 				Config::Instance()->newBackend = "";
 				Config::Instance()->changeBackend = false;
+				evalCounter = 0;
 			}
 
 			// if opti nvparam release it

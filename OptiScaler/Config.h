@@ -107,6 +107,7 @@ public:
 
 	std::optional<bool> RestoreComputeSignature;
 	std::optional<bool> RestoreGraphicSignature;
+	std::optional<int> SkipFirstFrames;
 
 	std::optional<int32_t> ColorResourceBarrier;
 	std::optional<int32_t> MVResourceBarrier;
