@@ -2390,7 +2390,7 @@ HWND ImGuiOverlayDx12::Handle()
 
 void ImGuiOverlayDx12::InitDx12(HWND InHandle, ID3D12Device* InDevice)
 {
-	spdlog::info("ImGuiOverlayDx12::RenderImGui_DX12 InitDx12 Handle: {0:X}", (ULONG64)InHandle);
+	spdlog::info("ImGuiOverlayDx12::InitDx12 Handle: {0:X}", (ULONG64)InHandle);
 
 	g_pd3dDeviceParam = InDevice;
 
