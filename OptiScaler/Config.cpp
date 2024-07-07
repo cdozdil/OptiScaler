@@ -83,13 +83,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 			RenderPresetUltraPerformance.reset();
 
 		// logging
-		LoggingEnabled = readBool("Log", "LoggingEnabled");
-
-		if (LoggingEnabled.value_or(true))
-			LogLevel = readInt("Log", "LogLevel");
-		else
-			LogLevel = spdlog::level::off;
-
+		LogLevel = readInt("Log", "LogLevel");
 		LogToConsole = readBool("Log", "LogToConsole");
 		LogToFile = readBool("Log", "LogToFile");
 		LogToNGX = readBool("Log", "LogToNGX");
@@ -461,7 +455,6 @@ bool Config::SaveIni()
 	ini.SetValue("Dx11withDx12", "DontUseNTShared", GetBoolValue(Instance()->DontUseNTShared).c_str());
 
 	// Logging
-	ini.SetValue("Log", "LoggingEnabled", GetBoolValue(Instance()->LoggingEnabled).c_str());
 	ini.SetValue("Log", "LogLevel", GetIntValue(Instance()->LogLevel).c_str());
 	ini.SetValue("Log", "LogToConsole", GetBoolValue(Instance()->LogToConsole).c_str());
 	ini.SetValue("Log", "LogToFile", GetBoolValue(Instance()->LogToFile).c_str());
