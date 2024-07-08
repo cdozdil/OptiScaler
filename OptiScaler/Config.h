@@ -30,7 +30,6 @@ public:
 	std::optional<bool> DisplayResolution;
 
 	// Logging
-	std::optional<bool> LoggingEnabled;
 	std::optional<bool> LogToFile;
 	std::optional<bool> LogToConsole;
 	std::optional<bool> LogToNGX;
