@@ -85,7 +85,7 @@
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_UpdateFeature(const NVSDK_NGX_Application_Identifier* ApplicationId, const NVSDK_NGX_Feature FeatureID)
 {
-	spdlog::debug("NVSDK_NGX_UpdateFeature");
+	spdlog::debug("NVSDK_NGX_UpdateFeature FeatureId: {0}", (UINT)FeatureID);
 
 	// To test with puredark mods
 	//if (FeatureID != NVSDK_NGX_Feature_SuperSampling)
@@ -127,5 +127,5 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_UpdateFeature(const NVSDK_NGX_Applicati
 	}
 
 	// To test with puredark mods
-	return NVSDK_NGX_Result_Fail;
+	return NVSDK_NGX_Result_Success;
 }
