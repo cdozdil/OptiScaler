@@ -17,7 +17,7 @@ OptiScaler implements all necessary API methods of DLSS2 & NVAPI to act as a man
 * Supports DLSS-D (Ray Reconstruction) on Nvidia cards (Supports changing presets and using OptiScaler enchanchements)
 * Ability to modify DLSS/DLSS-D presets on the fly
 * Supports XeSS v1.3's Ultra Performance, NativeAA modes (**Not using XeSS 1.3 scaling ratios**) 
-* An [in-game menu](https://github.com/cdozdil/OptiScaler/blob/master/Config.md) for tuning and saving settings on the fly (New shortcut key is **INSERT** to prevent clashing with Reshade)
+* An [in-game menu](https://github.com/cdozdil/OptiScaler/blob/master/Config.md) for tuning and saving settings on the fly (Shortcut key is **INSERT**)
 * Full integration with [DLSS Enabler](https://www.nexusmods.com/site/mods/757) for DLSS-FG support
 * **RCAS** support with **MAS** (Motion Adaptive Sharpening) for all Dx12 & Dx11 with Dx12 upscalers
 * **Output Scaling** option (0.5x to 3.0x) for backends running on Dx12 & Dx11 with Dx12
