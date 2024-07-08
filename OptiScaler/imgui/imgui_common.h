@@ -1485,17 +1485,11 @@ public:
 					// LOGGING -----------------------------
 					ImGui::SeparatorText("Logging");
 
-					if (bool logging = Config::Instance()->LoggingEnabled.value_or(true); ImGui::Checkbox("Logging", &logging))
-					{
-						Config::Instance()->LoggingEnabled = logging;
+					if (Config::Instance()->LogToConsole.value_or(false) || Config::Instance()->LogToFile.value_or(false) || Config::Instance()->LogToNGX.value_or(false))
+						spdlog::default_logger()->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or(2));
+					else
+						spdlog::default_logger()->set_level(spdlog::level::off);
 
-						if (logging)
-							spdlog::default_logger()->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or(2));
-						else
-							spdlog::default_logger()->set_level(spdlog::level::off);
-					}
-
-					ImGui::SameLine(0.0f, 6.0f);
 					if (bool toFile = Config::Instance()->LogToFile.value_or(false); ImGui::Checkbox("To File", &toFile))
 					{
 						Config::Instance()->LogToFile = toFile;

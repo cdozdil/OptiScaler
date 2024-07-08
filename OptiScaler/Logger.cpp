@@ -58,7 +58,7 @@ void PrepareLogger()
 		if (spdlog::default_logger() != nullptr)
 			spdlog::default_logger().reset();
 
-		if (Config::Instance()->LoggingEnabled.value_or(true))
+		if (Config::Instance()->LogToConsole.value_or(false) || Config::Instance()->LogToFile.value_or(false) || Config::Instance()->LogToNGX.value_or(false))
 		{
 			if (Config::Instance()->OpenConsole.value_or(false))
 				InitializeConsole();
