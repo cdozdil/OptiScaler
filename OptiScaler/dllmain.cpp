@@ -1052,7 +1052,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 				spdlog::info("nvngx.dll loaded, setting DLSS as default upscaler and disabling spoofing.");
 
 				if (Config::Instance()->IsDxgiMode)
+				{
 					Config::Instance()->DxgiSpoofing = false;
+					Config::Instance()->DxgiXessNoSpoof = true;
+					Config::Instance()->DxgiBlacklist.reset();
+				}
 
 				Config::Instance()->VulkanSpoofing = false;
 				Config::Instance()->VulkanExtensionSpoofing = false;

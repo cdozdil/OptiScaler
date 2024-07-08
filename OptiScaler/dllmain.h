@@ -5,6 +5,10 @@
 #include "detours/detours.h"
 #include "dxgi1_6.h"
 
+#include <DbgHelp.h>
+#pragma comment(lib, "Dbghelp.lib")
+
+
 #pragma region DXGI definitions
 
 typedef HRESULT(WINAPI* PFN_CREATE_DXGI_FACTORY)(REFIID riid, _COM_Outptr_ void** ppFactory);
@@ -1295,8 +1299,55 @@ bool SkipSpoofing()
 {
 	auto result = Config::Instance()->xessSkipSpoofing && Config::Instance()->DxgiXessNoSpoof.value_or(true);
 
-	if (result)
+	if (result && Config::Instance()->DxgiBlacklist.has_value())
 		spdlog::info("SkipSpoofing skipping spoofing for XeSS");
+
+	if (!result && !Config::Instance()->IsRunningOnLinux)
+	{
+		result = true;
+
+		// Walk the call stack to find the DLL that is calling the hooked function
+		void* callers[100];
+		unsigned short frames = CaptureStackBackTrace(0, 100, callers, NULL);
+		HANDLE process = GetCurrentProcess();
+		//std::string list = "slInit|slGetPluginFunction|nvapi_QueryInterface";
+
+		if (SymInitialize(process, NULL, TRUE))
+		{
+			SYMBOL_INFO* symbol = (SYMBOL_INFO*)calloc(sizeof(SYMBOL_INFO) + 256 * sizeof(char), 1);
+
+			if (symbol != nullptr)
+			{
+				symbol->MaxNameLen = 255;
+				symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+
+				for (unsigned int i = 0; i < frames; i++)
+				{
+					if (SymFromAddr(process, (DWORD64)callers[i], 0, symbol))
+					{
+						auto sn = std::string(symbol->Name);
+						auto pos = Config::Instance()->DxgiBlacklist.value().rfind(sn);
+
+						spdlog::debug("SkipSpoofing checking for: {0} ({1})", sn, i);
+
+						if (pos != std::string::npos)
+						{
+							spdlog::info("SkipSpoofing spoofing for: {0}", sn);
+							result = false;
+							break;
+						}
+					}
+				}
+
+				free(symbol);
+			}
+
+			SymCleanup(process);
+		}
+
+		if (result)
+			spdlog::debug("SkipSpoofing skipping spoofing, blacklisting active");
+	}
 
 	return result;
 }

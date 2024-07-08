@@ -140,6 +140,7 @@ public:
 	// spoofing
 	std::optional<bool> DxgiSpoofing;
 	std::optional<bool> DxgiXessNoSpoof;
+	std::optional<std::string> DxgiBlacklist;
 	std::optional<bool> VulkanSpoofing;
 	std::optional<bool> VulkanExtensionSpoofing;
 

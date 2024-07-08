@@ -229,6 +229,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 		// spoofing
 		DxgiSpoofing = readBool("Spoofing", "Dxgi");
 		DxgiXessNoSpoof = readBool("Spoofing", "DxgiXessNoSpoof");
+		DxgiBlacklist = readString("Spoofing", "DxgiBlacklist");
 		VulkanSpoofing = readBool("Spoofing", "Vulkan");
 		VulkanExtensionSpoofing = readBool("Spoofing", "VulkanExtensionSpoofing");
 
@@ -474,6 +475,7 @@ bool Config::SaveIni()
 	// Spoofing
 	ini.SetValue("Spoofing", "Dxgi", GetBoolValue(Instance()->DxgiSpoofing).c_str());
 	ini.SetValue("Spoofing", "DxgiXessNoSpoof", GetBoolValue(Instance()->DxgiXessNoSpoof).c_str());
+	ini.SetValue("Spoofing", "DxgiBlacklist", Instance()->DxgiBlacklist.value_or("auto").c_str());
 	ini.SetValue("Spoofing", "Vulkan", GetBoolValue(Instance()->VulkanSpoofing).c_str());
 	ini.SetValue("Spoofing", "VulkanExtensionSpoofing", GetBoolValue(Instance()->VulkanExtensionSpoofing).c_str());
 
