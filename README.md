@@ -63,7 +63,7 @@ Step-by-step installation (**Nvidia users please skip step 1 & 2**):
 2. Rename the copy of `nvngx_dlss.dll` in games exe folder to `nvngx.dll`.
 3. Rename OptiScaler's `nvngx.dll` to one of the supported filenames (I prefer `dxgi.dll`, it also eliminates the need for d3d12 proxy) and copy it to the games exe folder. 
 
-Linux should add renamed dll to overrides:
+Linux users should add renamed dll to overrides:
 ```
 WINEDLLOVERRIDES=dxgi=n,b %COMMAND% 
 ```
