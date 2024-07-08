@@ -29,38 +29,8 @@ OptiScaler implements all necessary API methods of DLSS2 & NVAPI to act as a man
 * Autofixes for [colored lights](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#resource-barriers-dx12-only) on Unreal Engine & AMD graphics cards 
 * Autofixes for [missing exposure texture](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#init-flags) information
 * Ability to modify [Mipmap Lod Bias](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#mipmap-lod-bias-override-dx12-only) value of game 
-
-## Configuration
-Please check [this](Config.md) document for configuration parameters and explanations. *(Will be updated)*
-
-## Known Issues
-Please check [this](Issues.md) document for known issues and possible solutions for them. *(Will be updated)*
-
-## Which APIs and Upscalers are Supported?
-Currently OptiScaler can be used with DirectX 11, DirectX 12 and Vulkan but each API has different sets of upscaler options.
-
-#### For DirectX 11
-* **FSR2 2.2.1** native DirectX11 implementation (Default upscaler)
-* **XeSS 1.x.x** with background DirectX12 processing [*]
-* **FSR2 2.1.2** with background DirectX12 processing [*]
-* **FSR2 2.2.1** with background DirectX12 processing [*]
-* **DLSS** native DirectX11 implementation
-
-[*] This implementations uses a background DirectX12 device to be able to use Dirext12 only upscalers. There is %10-15 performance penalty for this method but allows much more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has it's own problems which some of them avoided by OptiScaler.
-
-#### For DirectX 12
-* **XeSS 1.x.x** (Default upscaler)
-* **FSR2 2.1.2** 
-* **FSR2 2.2.1**
-* **DLSS**
-
-#### For Vulkan
-* **FSR2 2.1.2** (Default upscaler)
-* **FSR2 2.2.1** 
-* **DLSS**
-  
+ 
 ## Installation
-
 ### Install as `nvngx.dll`
 * Download the latest relase from releases.
 * Extract the contents of the archive next to the game executable file in your games folder. [1]
@@ -116,6 +86,35 @@ To solve this problem you need to install `d3dcompiler_47` with `WineTricks` or 
 * Run `DisableSignatureOverride.reg` file 
 * Delete `EnableSignatureOverride.reg`, `DisableSignatureOverride.reg`, `nvngx.dll`, `nvngx.ini` files
 * If there were a `libxess.dll` file and you have backed it up delete the new file and restore the backed up file. If you have overwrote old file **DO NOT** delete `libxess.dll` file. If there were no `libxess.dll` file it's safe to delete.
+
+## Configuration
+Please check [this](Config.md) document for configuration parameters and explanations. *(Will be updated)*
+
+## Known Issues
+Please check [this](Issues.md) document for known issues and possible solutions for them. *(Will be updated)*
+
+## Which APIs and Upscalers are Supported?
+Currently OptiScaler can be used with DirectX 11, DirectX 12 and Vulkan but each API has different sets of upscaler options.
+
+#### For DirectX 11
+* **FSR2 2.2.1** native DirectX11 implementation (Default upscaler)
+* **XeSS 1.x.x** with background DirectX12 processing [*]
+* **FSR2 2.1.2** with background DirectX12 processing [*]
+* **FSR2 2.2.1** with background DirectX12 processing [*]
+* **DLSS** native DirectX11 implementation
+
+[*] This implementations uses a background DirectX12 device to be able to use Dirext12 only upscalers. There is %10-15 performance penalty for this method but allows much more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has it's own problems which some of them avoided by OptiScaler.
+
+#### For DirectX 12
+* **XeSS 1.x.x** (Default upscaler)
+* **FSR2 2.1.2** 
+* **FSR2 2.2.1**
+* **DLSS**
+
+#### For Vulkan
+* **FSR2 2.1.2** (Default upscaler)
+* **FSR2 2.2.1** 
+* **DLSS**
 
 ## Compilation
 
