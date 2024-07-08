@@ -1074,7 +1074,7 @@ public:
 							Config::Instance()->MotionSharpnessDebug = overrideMSDebug;
 
 						float motionSharpness = Config::Instance()->MotionSharpness.value_or(0.4f);
-						ImGui::SliderFloat("MotionSharpness", &motionSharpness, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
+						ImGui::SliderFloat("MotionSharpness", &motionSharpness, -1.0f, 1.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
 						Config::Instance()->MotionSharpness = motionSharpness;
 
 						float motionThreshod = Config::Instance()->MotionThreshold.value_or(0.0f);

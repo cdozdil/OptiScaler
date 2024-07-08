@@ -150,8 +150,8 @@ bool Config::Reload(std::filesystem::path iniPath)
 		{
 			if (MotionSharpness.value() > 1.0f)
 				MotionSharpness = 1.0f;
-			else if (MotionSharpness.value() < 0.0f)
-				MotionSharpness.reset();
+			else if (MotionSharpness.value() < -1.0f)
+				MotionSharpness = 1.0f;
 		}
 
 		if (MotionThreshold.has_value())

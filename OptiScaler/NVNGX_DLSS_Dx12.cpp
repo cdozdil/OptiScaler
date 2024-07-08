@@ -166,7 +166,7 @@ void UnhookAll()
 	if (orgSetComputeRootSignature != nullptr)
 	{
 		DetourDetach(&(PVOID&)orgSetComputeRootSignature, hkSetComputeRootSignature);
-		orgSetComputeRootSignature = nullptr;
+		orgSetComputeRootSignature = nullptr;	
 	}
 
 	if (orgSetGraphicRootSignature != nullptr)

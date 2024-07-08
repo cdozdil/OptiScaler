@@ -1055,6 +1055,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 					Config::Instance()->DxgiSpoofing = false;
 
 				Config::Instance()->VulkanSpoofing = false;
+				Config::Instance()->VulkanExtensionSpoofing = false;
 			}
 		}
 
