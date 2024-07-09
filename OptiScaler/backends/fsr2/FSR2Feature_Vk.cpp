@@ -354,6 +354,8 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* I
 		params.frameTimeDelta = (float)GetDeltaTime();
 
 	params.preExposure = 1.0f;
+	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure);
+
 
 	spdlog::debug("FSR2FeatureVk::Evaluate Dispatch!!");
 	auto result = ffxFsr2ContextDispatch(&_context, &params);

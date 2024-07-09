@@ -314,6 +314,8 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
 		params.frameTimeDelta = (float)GetDeltaTime();
 
 	params.preExposure = 1.0f;
+	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure);
+
 
 	spdlog::debug("FSR2FeatureDx11on12::Evaluate Dispatch!!");
 	auto ffxresult = ffxFsr2ContextDispatch(&_context, &params);
