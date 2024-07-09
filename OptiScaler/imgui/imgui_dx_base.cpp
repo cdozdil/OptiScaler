@@ -1,6 +1,6 @@
 #include "../Config.h"
 #include "../Logger.h"
-#include "../Resource.h"
+#include "../resource.h"
 #include "../Util.h"
 
 #include "imgui_common.h"

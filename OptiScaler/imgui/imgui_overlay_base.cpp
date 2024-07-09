@@ -3,7 +3,7 @@
 
 #include "../Config.h"
 #include "../Logger.h"
-#include "../Resource.h"
+#include "../resource.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_win32.h"

@@ -2,7 +2,7 @@
 
 #include "../pch.h"
 #include "../Config.h"
-#include "../Resource.h"
+#include "../resource.h"
 #include "../Logger.h"
 
 #include "imgui/imgui.h"
