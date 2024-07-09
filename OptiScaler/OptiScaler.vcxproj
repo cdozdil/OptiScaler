@@ -79,14 +79,14 @@
     <LibraryPath>$(XESS_SDK)\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
-    <TargetName>dxgi</TargetName>
-    <OutDir>D:\Folders\Games\Deep Rock Galactic\FSD\Binaries\Win64\</OutDir>
+    <TargetName>nvngx</TargetName>
+    <OutDir>D:\Folders\Games\DOOM Eternal\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
     <TargetName>nvngx</TargetName>
     <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
@@ -179,6 +179,8 @@ move $(SolutionDir)x64\Release\nvngx.dll $(SolutionDir)x64\Release\a\
 copy $(SolutionDir)external\nvngx_dlss_sdk\regs\*.* $(SolutionDir)x64\Release\a\
 copy $(SolutionDir)external\xess\licenses\LICENSE.pdf $(SolutionDir)x64\Release\a\XeSS_LICENSE.pdf
 copy $(SolutionDir)external\xess\bin\libxess.dll $(SolutionDir)x64\Release\a\
+copy $(SolutionDir)external\FidelityFX-SDK\PrebuiltSignedDLL\amd_fidelityfx_dx12.dll $(SolutionDir)x64\Release\a\
+copy $(ProjectDir)fsr31\amd_fidelityfx_vk.dll $(SolutionDir)x64\Release\a\
 copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -191,6 +193,10 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="backends\dlss\DLSSFeature_Dx11.h" />
     <ClInclude Include="backends\dlss\DLSSFeature_Dx12.h" />
     <ClInclude Include="backends\dlss\DLSSFeature_Vk.h" />
+    <ClInclude Include="backends\fsr31\FSR31Feature.h" />
+    <ClInclude Include="backends\fsr31\FSR31Feature_Dx11On12.h" />
+    <ClInclude Include="backends\fsr31\FSR31Feature_Dx12.h" />
+    <ClInclude Include="backends\fsr31\FSR31Feature_Vk.h" />
     <ClInclude Include="nvapi\nvapi.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_212.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx11On12_212.h" />
@@ -252,6 +258,10 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="backends\fsr2_212\FSR2Feature_Dx11On12_212.cpp" />
     <ClCompile Include="backends\fsr2_212\FSR2Feature_Dx12_212.cpp" />
     <ClCompile Include="backends\fsr2_212\FSR2Feature_Vk_212.cpp" />
+    <ClCompile Include="backends\fsr31\FSR31Feature.cpp" />
+    <ClCompile Include="backends\fsr31\FSR31Feature_Dx11On12.cpp" />
+    <ClCompile Include="backends\fsr31\FSR31Feature_Dx12.cpp" />
+    <ClCompile Include="backends\fsr31\FSR31Feature_Vk.cpp" />
     <ClCompile Include="backends\IFeature_Dx11.cpp" />
     <ClCompile Include="backends\IFeature_Dx11wDx12.cpp" />
     <ClCompile Include="backends\IFeature_Dx11wDx12.h" />
@@ -302,6 +312,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ResourceCompile Include="OptiScaler.rc" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\external\FidelityFX-SDK\ffx-api\bin\amd_fidelityfx_vk.dll" />
     <None Include="Source.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

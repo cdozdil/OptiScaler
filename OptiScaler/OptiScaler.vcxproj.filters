@@ -194,6 +194,18 @@
     <ClInclude Include="backends\dlssd\DLSSDFeature_Vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="backends\fsr31\FSR31Feature.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="backends\fsr31\FSR31Feature_Dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="backends\fsr31\FSR31Feature_Dx11On12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="backends\fsr31\FSR31Feature_Vk.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -356,6 +368,18 @@
     <ClCompile Include="backends\dlssd\DLSSDFeature_Vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="backends\fsr31\FSR31Feature.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\fsr31\FSR31Feature_Dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\fsr31\FSR31Feature_Dx11On12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="backends\fsr31\FSR31Feature_Vk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="vulkan\vulkan-1.lib" />
@@ -367,5 +391,6 @@
     <None Include="Source.def">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="..\external\FidelityFX-SDK\ffx-api\bin\amd_fidelityfx_vk.dll" />
   </ItemGroup>
 </Project>
