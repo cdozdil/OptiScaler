@@ -45,1250 +45,1250 @@ void AttachToFactory(IUnknown* unkFactory);
 
 struct shared
 {
-	HMODULE dll;
-	FARPROC DllCanUnloadNow;
-	FARPROC DllGetClassObject;
-	FARPROC DllRegisterServer;
-	FARPROC DllUnregisterServer;
-	FARPROC DebugSetMute;
+    HMODULE dll;
+    FARPROC DllCanUnloadNow;
+    FARPROC DllGetClassObject;
+    FARPROC DllRegisterServer;
+    FARPROC DllUnregisterServer;
+    FARPROC DebugSetMute;
 
-	void LoadOriginalLibrary(HMODULE module)
-	{
-		dll = module;
-		DllCanUnloadNow = GetProcAddress(module, "DllCanUnloadNow");
-		DllGetClassObject = GetProcAddress(module, "DllGetClassObject");
-		DllRegisterServer = GetProcAddress(module, "DllRegisterServer");
-		DllUnregisterServer = GetProcAddress(module, "DllUnregisterServer");
-		DebugSetMute = GetProcAddress(module, "DebugSetMute");
-	}
+    void LoadOriginalLibrary(HMODULE module)
+    {
+        dll = module;
+        DllCanUnloadNow = GetProcAddress(module, "DllCanUnloadNow");
+        DllGetClassObject = GetProcAddress(module, "DllGetClassObject");
+        DllRegisterServer = GetProcAddress(module, "DllRegisterServer");
+        DllUnregisterServer = GetProcAddress(module, "DllUnregisterServer");
+        DebugSetMute = GetProcAddress(module, "DebugSetMute");
+    }
 } shared;
 
 struct wininet_dll
 {
-	HMODULE dll;
-	FARPROC AppCacheCheckManifest;
-	FARPROC AppCacheCloseHandle;
-	FARPROC AppCacheCreateAndCommitFile;
-	FARPROC AppCacheDeleteGroup;
-	FARPROC AppCacheDeleteIEGroup;
-	FARPROC AppCacheDuplicateHandle;
-	FARPROC AppCacheFinalize;
-	FARPROC AppCacheFreeDownloadList;
-	FARPROC AppCacheFreeGroupList;
-	FARPROC AppCacheFreeIESpace;
-	FARPROC AppCacheFreeSpace;
-	FARPROC AppCacheGetDownloadList;
-	FARPROC AppCacheGetFallbackUrl;
-	FARPROC AppCacheGetGroupList;
-	FARPROC AppCacheGetIEGroupList;
-	FARPROC AppCacheGetInfo;
-	FARPROC AppCacheGetManifestUrl;
-	FARPROC AppCacheLookup;
-	FARPROC CommitUrlCacheEntryA;
-	FARPROC CommitUrlCacheEntryBinaryBlob;
-	FARPROC CommitUrlCacheEntryW;
-	FARPROC CreateMD5SSOHash;
-	FARPROC CreateUrlCacheContainerA;
-	FARPROC CreateUrlCacheContainerW;
-	FARPROC CreateUrlCacheEntryA;
-	FARPROC CreateUrlCacheEntryExW;
-	FARPROC CreateUrlCacheEntryW;
-	FARPROC CreateUrlCacheGroup;
-	FARPROC DeleteIE3Cache;
-	FARPROC DeleteUrlCacheContainerA;
-	FARPROC DeleteUrlCacheContainerW;
-	FARPROC DeleteUrlCacheEntry;
-	FARPROC DeleteUrlCacheEntryA;
-	FARPROC DeleteUrlCacheEntryW;
-	FARPROC DeleteUrlCacheGroup;
-	FARPROC DeleteWpadCacheForNetworks;
-	FARPROC DetectAutoProxyUrl;
-	FARPROC DispatchAPICall;
-	FARPROC DllInstall;
-	FARPROC FindCloseUrlCache;
-	FARPROC FindFirstUrlCacheContainerA;
-	FARPROC FindFirstUrlCacheContainerW;
-	FARPROC FindFirstUrlCacheEntryA;
-	FARPROC FindFirstUrlCacheEntryExA;
-	FARPROC FindFirstUrlCacheEntryExW;
-	FARPROC FindFirstUrlCacheEntryW;
-	FARPROC FindFirstUrlCacheGroup;
-	FARPROC FindNextUrlCacheContainerA;
-	FARPROC FindNextUrlCacheContainerW;
-	FARPROC FindNextUrlCacheEntryA;
-	FARPROC FindNextUrlCacheEntryExA;
-	FARPROC FindNextUrlCacheEntryExW;
-	FARPROC FindNextUrlCacheEntryW;
-	FARPROC FindNextUrlCacheGroup;
-	FARPROC ForceNexusLookup;
-	FARPROC ForceNexusLookupExW;
-	FARPROC FreeUrlCacheSpaceA;
-	FARPROC FreeUrlCacheSpaceW;
-	FARPROC FtpCommandA;
-	FARPROC FtpCommandW;
-	FARPROC FtpCreateDirectoryA;
-	FARPROC FtpCreateDirectoryW;
-	FARPROC FtpDeleteFileA;
-	FARPROC FtpDeleteFileW;
-	FARPROC FtpFindFirstFileA;
-	FARPROC FtpFindFirstFileW;
-	FARPROC FtpGetCurrentDirectoryA;
-	FARPROC FtpGetCurrentDirectoryW;
-	FARPROC FtpGetFileA;
-	FARPROC FtpGetFileEx;
-	FARPROC FtpGetFileSize;
-	FARPROC FtpGetFileW;
-	FARPROC FtpOpenFileA;
-	FARPROC FtpOpenFileW;
-	FARPROC FtpPutFileA;
-	FARPROC FtpPutFileEx;
-	FARPROC FtpPutFileW;
-	FARPROC FtpRemoveDirectoryA;
-	FARPROC FtpRemoveDirectoryW;
-	FARPROC FtpRenameFileA;
-	FARPROC FtpRenameFileW;
-	FARPROC FtpSetCurrentDirectoryA;
-	FARPROC FtpSetCurrentDirectoryW;
-	FARPROC _GetFileExtensionFromUrl;
-	FARPROC GetProxyDllInfo;
-	FARPROC GetUrlCacheConfigInfoA;
-	FARPROC GetUrlCacheConfigInfoW;
-	FARPROC GetUrlCacheEntryBinaryBlob;
-	FARPROC GetUrlCacheEntryInfoA;
-	FARPROC GetUrlCacheEntryInfoExA;
-	FARPROC GetUrlCacheEntryInfoExW;
-	FARPROC GetUrlCacheEntryInfoW;
-	FARPROC GetUrlCacheGroupAttributeA;
-	FARPROC GetUrlCacheGroupAttributeW;
-	FARPROC GetUrlCacheHeaderData;
-	FARPROC GopherCreateLocatorA;
-	FARPROC GopherCreateLocatorW;
-	FARPROC GopherFindFirstFileA;
-	FARPROC GopherFindFirstFileW;
-	FARPROC GopherGetAttributeA;
-	FARPROC GopherGetAttributeW;
-	FARPROC GopherGetLocatorTypeA;
-	FARPROC GopherGetLocatorTypeW;
-	FARPROC GopherOpenFileA;
-	FARPROC GopherOpenFileW;
-	FARPROC HttpAddRequestHeadersA;
-	FARPROC HttpAddRequestHeadersW;
-	FARPROC HttpCheckDavCompliance;
-	FARPROC HttpCloseDependencyHandle;
-	FARPROC HttpDuplicateDependencyHandle;
-	FARPROC HttpEndRequestA;
-	FARPROC HttpEndRequestW;
-	FARPROC HttpGetServerCredentials;
-	FARPROC HttpGetTunnelSocket;
-	FARPROC HttpIsHostHstsEnabled;
-	FARPROC HttpOpenDependencyHandle;
-	FARPROC HttpOpenRequestA;
-	FARPROC HttpOpenRequestW;
-	FARPROC HttpPushClose;
-	FARPROC HttpPushEnable;
-	FARPROC HttpPushWait;
-	FARPROC HttpQueryInfoA;
-	FARPROC HttpQueryInfoW;
-	FARPROC HttpSendRequestA;
-	FARPROC HttpSendRequestExA;
-	FARPROC HttpSendRequestExW;
-	FARPROC HttpSendRequestW;
-	FARPROC HttpWebSocketClose;
-	FARPROC HttpWebSocketCompleteUpgrade;
-	FARPROC HttpWebSocketQueryCloseStatus;
-	FARPROC HttpWebSocketReceive;
-	FARPROC HttpWebSocketSend;
-	FARPROC HttpWebSocketShutdown;
-	FARPROC IncrementUrlCacheHeaderData;
-	FARPROC InternetAlgIdToStringA;
-	FARPROC InternetAlgIdToStringW;
-	FARPROC InternetAttemptConnect;
-	FARPROC InternetAutodial;
-	FARPROC InternetAutodialCallback;
-	FARPROC InternetAutodialHangup;
-	FARPROC InternetCanonicalizeUrlA;
-	FARPROC InternetCanonicalizeUrlW;
-	FARPROC InternetCheckConnectionA;
-	FARPROC InternetCheckConnectionW;
-	FARPROC InternetClearAllPerSiteCookieDecisions;
-	FARPROC InternetCloseHandle;
-	FARPROC InternetCombineUrlA;
-	FARPROC InternetCombineUrlW;
-	FARPROC InternetConfirmZoneCrossing;
-	FARPROC InternetConfirmZoneCrossingA;
-	FARPROC InternetConfirmZoneCrossingW;
-	FARPROC InternetConnectA;
-	FARPROC InternetConnectW;
-	FARPROC InternetConvertUrlFromWireToWideChar;
-	FARPROC InternetCrackUrlA;
-	FARPROC InternetCrackUrlW;
-	FARPROC InternetCreateUrlA;
-	FARPROC InternetCreateUrlW;
-	FARPROC InternetDial;
-	FARPROC InternetDialA;
-	FARPROC InternetDialW;
-	FARPROC InternetEnumPerSiteCookieDecisionA;
-	FARPROC InternetEnumPerSiteCookieDecisionW;
-	FARPROC InternetErrorDlg;
-	FARPROC InternetFindNextFileA;
-	FARPROC InternetFindNextFileW;
-	FARPROC InternetFortezzaCommand;
-	FARPROC InternetFreeCookies;
-	FARPROC InternetFreeProxyInfoList;
-	FARPROC InternetGetCertByURL;
-	FARPROC InternetGetCertByURLA;
-	FARPROC InternetGetConnectedState;
-	FARPROC InternetGetConnectedStateEx;
-	FARPROC InternetGetConnectedStateExA;
-	FARPROC InternetGetConnectedStateExW;
-	FARPROC InternetGetCookieA;
-	FARPROC InternetGetCookieEx2;
-	FARPROC InternetGetCookieExA;
-	FARPROC InternetGetCookieExW;
-	FARPROC InternetGetCookieW;
-	FARPROC InternetGetLastResponseInfoA;
-	FARPROC InternetGetLastResponseInfoW;
-	FARPROC InternetGetPerSiteCookieDecisionA;
-	FARPROC InternetGetPerSiteCookieDecisionW;
-	FARPROC InternetGetProxyForUrl;
-	FARPROC InternetGetSecurityInfoByURL;
-	FARPROC InternetGetSecurityInfoByURLA;
-	FARPROC InternetGetSecurityInfoByURLW;
-	FARPROC InternetGoOnline;
-	FARPROC InternetGoOnlineA;
-	FARPROC InternetGoOnlineW;
-	FARPROC InternetHangUp;
-	FARPROC InternetInitializeAutoProxyDll;
-	FARPROC InternetLockRequestFile;
-	FARPROC InternetOpenA;
-	FARPROC InternetOpenUrlA;
-	FARPROC InternetOpenUrlW;
-	FARPROC InternetOpenW;
-	FARPROC InternetQueryDataAvailable;
-	FARPROC InternetQueryFortezzaStatus;
-	FARPROC InternetQueryOptionA;
-	FARPROC InternetQueryOptionW;
-	FARPROC InternetReadFile;
-	FARPROC InternetReadFileExA;
-	FARPROC InternetReadFileExW;
-	FARPROC InternetSecurityProtocolToStringA;
-	FARPROC InternetSecurityProtocolToStringW;
-	FARPROC InternetSetCookieA;
-	FARPROC InternetSetCookieEx2;
-	FARPROC InternetSetCookieExA;
-	FARPROC InternetSetCookieExW;
-	FARPROC InternetSetCookieW;
-	FARPROC InternetSetDialState;
-	FARPROC InternetSetDialStateA;
-	FARPROC InternetSetDialStateW;
-	FARPROC InternetSetFilePointer;
-	FARPROC InternetSetOptionA;
-	FARPROC InternetSetOptionExA;
-	FARPROC InternetSetOptionExW;
-	FARPROC InternetSetOptionW;
-	FARPROC InternetSetPerSiteCookieDecisionA;
-	FARPROC InternetSetPerSiteCookieDecisionW;
-	FARPROC InternetSetStatusCallback;
-	FARPROC InternetSetStatusCallbackA;
-	FARPROC InternetSetStatusCallbackW;
-	FARPROC InternetShowSecurityInfoByURL;
-	FARPROC InternetShowSecurityInfoByURLA;
-	FARPROC InternetShowSecurityInfoByURLW;
-	FARPROC InternetTimeFromSystemTime;
-	FARPROC InternetTimeFromSystemTimeA;
-	FARPROC InternetTimeFromSystemTimeW;
-	FARPROC InternetTimeToSystemTime;
-	FARPROC InternetTimeToSystemTimeA;
-	FARPROC InternetTimeToSystemTimeW;
-	FARPROC InternetUnlockRequestFile;
-	FARPROC InternetWriteFile;
-	FARPROC InternetWriteFileExA;
-	FARPROC InternetWriteFileExW;
-	FARPROC IsHostInProxyBypassList;
-	FARPROC IsUrlCacheEntryExpiredA;
-	FARPROC IsUrlCacheEntryExpiredW;
-	FARPROC LoadUrlCacheContent;
-	FARPROC ParseX509EncodedCertificateForListBoxEntry;
-	FARPROC PrivacyGetZonePreferenceW;
-	FARPROC PrivacySetZonePreferenceW;
-	FARPROC ReadUrlCacheEntryStream;
-	FARPROC ReadUrlCacheEntryStreamEx;
-	FARPROC RegisterUrlCacheNotification;
-	FARPROC ResumeSuspendedDownload;
-	FARPROC RetrieveUrlCacheEntryFileA;
-	FARPROC RetrieveUrlCacheEntryFileW;
-	FARPROC RetrieveUrlCacheEntryStreamA;
-	FARPROC RetrieveUrlCacheEntryStreamW;
-	FARPROC RunOnceUrlCache;
-	FARPROC SetUrlCacheConfigInfoA;
-	FARPROC SetUrlCacheConfigInfoW;
-	FARPROC SetUrlCacheEntryGroup;
-	FARPROC SetUrlCacheEntryGroupA;
-	FARPROC SetUrlCacheEntryGroupW;
-	FARPROC SetUrlCacheEntryInfoA;
-	FARPROC SetUrlCacheEntryInfoW;
-	FARPROC SetUrlCacheGroupAttributeA;
-	FARPROC SetUrlCacheGroupAttributeW;
-	FARPROC SetUrlCacheHeaderData;
-	FARPROC ShowCertificate;
-	FARPROC ShowClientAuthCerts;
-	FARPROC ShowSecurityInfo;
-	FARPROC ShowX509EncodedCertificate;
-	FARPROC UnlockUrlCacheEntryFile;
-	FARPROC UnlockUrlCacheEntryFileA;
-	FARPROC UnlockUrlCacheEntryFileW;
-	FARPROC UnlockUrlCacheEntryStream;
-	FARPROC UpdateUrlCacheContentPath;
-	FARPROC UrlCacheCheckEntriesExist;
-	FARPROC UrlCacheCloseEntryHandle;
-	FARPROC UrlCacheContainerSetEntryMaximumAge;
-	FARPROC UrlCacheCreateContainer;
-	FARPROC UrlCacheFindFirstEntry;
-	FARPROC UrlCacheFindNextEntry;
-	FARPROC UrlCacheFreeEntryInfo;
-	FARPROC UrlCacheFreeGlobalSpace;
-	FARPROC UrlCacheGetContentPaths;
-	FARPROC UrlCacheGetEntryInfo;
-	FARPROC UrlCacheGetGlobalCacheSize;
-	FARPROC UrlCacheGetGlobalLimit;
-	FARPROC UrlCacheReadEntryStream;
-	FARPROC UrlCacheReloadSettings;
-	FARPROC UrlCacheRetrieveEntryFile;
-	FARPROC UrlCacheRetrieveEntryStream;
-	FARPROC UrlCacheServer;
-	FARPROC UrlCacheSetGlobalLimit;
-	FARPROC UrlCacheUpdateEntryExtraData;
-	FARPROC UrlZonesDetach;
+    HMODULE dll;
+    FARPROC AppCacheCheckManifest;
+    FARPROC AppCacheCloseHandle;
+    FARPROC AppCacheCreateAndCommitFile;
+    FARPROC AppCacheDeleteGroup;
+    FARPROC AppCacheDeleteIEGroup;
+    FARPROC AppCacheDuplicateHandle;
+    FARPROC AppCacheFinalize;
+    FARPROC AppCacheFreeDownloadList;
+    FARPROC AppCacheFreeGroupList;
+    FARPROC AppCacheFreeIESpace;
+    FARPROC AppCacheFreeSpace;
+    FARPROC AppCacheGetDownloadList;
+    FARPROC AppCacheGetFallbackUrl;
+    FARPROC AppCacheGetGroupList;
+    FARPROC AppCacheGetIEGroupList;
+    FARPROC AppCacheGetInfo;
+    FARPROC AppCacheGetManifestUrl;
+    FARPROC AppCacheLookup;
+    FARPROC CommitUrlCacheEntryA;
+    FARPROC CommitUrlCacheEntryBinaryBlob;
+    FARPROC CommitUrlCacheEntryW;
+    FARPROC CreateMD5SSOHash;
+    FARPROC CreateUrlCacheContainerA;
+    FARPROC CreateUrlCacheContainerW;
+    FARPROC CreateUrlCacheEntryA;
+    FARPROC CreateUrlCacheEntryExW;
+    FARPROC CreateUrlCacheEntryW;
+    FARPROC CreateUrlCacheGroup;
+    FARPROC DeleteIE3Cache;
+    FARPROC DeleteUrlCacheContainerA;
+    FARPROC DeleteUrlCacheContainerW;
+    FARPROC DeleteUrlCacheEntry;
+    FARPROC DeleteUrlCacheEntryA;
+    FARPROC DeleteUrlCacheEntryW;
+    FARPROC DeleteUrlCacheGroup;
+    FARPROC DeleteWpadCacheForNetworks;
+    FARPROC DetectAutoProxyUrl;
+    FARPROC DispatchAPICall;
+    FARPROC DllInstall;
+    FARPROC FindCloseUrlCache;
+    FARPROC FindFirstUrlCacheContainerA;
+    FARPROC FindFirstUrlCacheContainerW;
+    FARPROC FindFirstUrlCacheEntryA;
+    FARPROC FindFirstUrlCacheEntryExA;
+    FARPROC FindFirstUrlCacheEntryExW;
+    FARPROC FindFirstUrlCacheEntryW;
+    FARPROC FindFirstUrlCacheGroup;
+    FARPROC FindNextUrlCacheContainerA;
+    FARPROC FindNextUrlCacheContainerW;
+    FARPROC FindNextUrlCacheEntryA;
+    FARPROC FindNextUrlCacheEntryExA;
+    FARPROC FindNextUrlCacheEntryExW;
+    FARPROC FindNextUrlCacheEntryW;
+    FARPROC FindNextUrlCacheGroup;
+    FARPROC ForceNexusLookup;
+    FARPROC ForceNexusLookupExW;
+    FARPROC FreeUrlCacheSpaceA;
+    FARPROC FreeUrlCacheSpaceW;
+    FARPROC FtpCommandA;
+    FARPROC FtpCommandW;
+    FARPROC FtpCreateDirectoryA;
+    FARPROC FtpCreateDirectoryW;
+    FARPROC FtpDeleteFileA;
+    FARPROC FtpDeleteFileW;
+    FARPROC FtpFindFirstFileA;
+    FARPROC FtpFindFirstFileW;
+    FARPROC FtpGetCurrentDirectoryA;
+    FARPROC FtpGetCurrentDirectoryW;
+    FARPROC FtpGetFileA;
+    FARPROC FtpGetFileEx;
+    FARPROC FtpGetFileSize;
+    FARPROC FtpGetFileW;
+    FARPROC FtpOpenFileA;
+    FARPROC FtpOpenFileW;
+    FARPROC FtpPutFileA;
+    FARPROC FtpPutFileEx;
+    FARPROC FtpPutFileW;
+    FARPROC FtpRemoveDirectoryA;
+    FARPROC FtpRemoveDirectoryW;
+    FARPROC FtpRenameFileA;
+    FARPROC FtpRenameFileW;
+    FARPROC FtpSetCurrentDirectoryA;
+    FARPROC FtpSetCurrentDirectoryW;
+    FARPROC _GetFileExtensionFromUrl;
+    FARPROC GetProxyDllInfo;
+    FARPROC GetUrlCacheConfigInfoA;
+    FARPROC GetUrlCacheConfigInfoW;
+    FARPROC GetUrlCacheEntryBinaryBlob;
+    FARPROC GetUrlCacheEntryInfoA;
+    FARPROC GetUrlCacheEntryInfoExA;
+    FARPROC GetUrlCacheEntryInfoExW;
+    FARPROC GetUrlCacheEntryInfoW;
+    FARPROC GetUrlCacheGroupAttributeA;
+    FARPROC GetUrlCacheGroupAttributeW;
+    FARPROC GetUrlCacheHeaderData;
+    FARPROC GopherCreateLocatorA;
+    FARPROC GopherCreateLocatorW;
+    FARPROC GopherFindFirstFileA;
+    FARPROC GopherFindFirstFileW;
+    FARPROC GopherGetAttributeA;
+    FARPROC GopherGetAttributeW;
+    FARPROC GopherGetLocatorTypeA;
+    FARPROC GopherGetLocatorTypeW;
+    FARPROC GopherOpenFileA;
+    FARPROC GopherOpenFileW;
+    FARPROC HttpAddRequestHeadersA;
+    FARPROC HttpAddRequestHeadersW;
+    FARPROC HttpCheckDavCompliance;
+    FARPROC HttpCloseDependencyHandle;
+    FARPROC HttpDuplicateDependencyHandle;
+    FARPROC HttpEndRequestA;
+    FARPROC HttpEndRequestW;
+    FARPROC HttpGetServerCredentials;
+    FARPROC HttpGetTunnelSocket;
+    FARPROC HttpIsHostHstsEnabled;
+    FARPROC HttpOpenDependencyHandle;
+    FARPROC HttpOpenRequestA;
+    FARPROC HttpOpenRequestW;
+    FARPROC HttpPushClose;
+    FARPROC HttpPushEnable;
+    FARPROC HttpPushWait;
+    FARPROC HttpQueryInfoA;
+    FARPROC HttpQueryInfoW;
+    FARPROC HttpSendRequestA;
+    FARPROC HttpSendRequestExA;
+    FARPROC HttpSendRequestExW;
+    FARPROC HttpSendRequestW;
+    FARPROC HttpWebSocketClose;
+    FARPROC HttpWebSocketCompleteUpgrade;
+    FARPROC HttpWebSocketQueryCloseStatus;
+    FARPROC HttpWebSocketReceive;
+    FARPROC HttpWebSocketSend;
+    FARPROC HttpWebSocketShutdown;
+    FARPROC IncrementUrlCacheHeaderData;
+    FARPROC InternetAlgIdToStringA;
+    FARPROC InternetAlgIdToStringW;
+    FARPROC InternetAttemptConnect;
+    FARPROC InternetAutodial;
+    FARPROC InternetAutodialCallback;
+    FARPROC InternetAutodialHangup;
+    FARPROC InternetCanonicalizeUrlA;
+    FARPROC InternetCanonicalizeUrlW;
+    FARPROC InternetCheckConnectionA;
+    FARPROC InternetCheckConnectionW;
+    FARPROC InternetClearAllPerSiteCookieDecisions;
+    FARPROC InternetCloseHandle;
+    FARPROC InternetCombineUrlA;
+    FARPROC InternetCombineUrlW;
+    FARPROC InternetConfirmZoneCrossing;
+    FARPROC InternetConfirmZoneCrossingA;
+    FARPROC InternetConfirmZoneCrossingW;
+    FARPROC InternetConnectA;
+    FARPROC InternetConnectW;
+    FARPROC InternetConvertUrlFromWireToWideChar;
+    FARPROC InternetCrackUrlA;
+    FARPROC InternetCrackUrlW;
+    FARPROC InternetCreateUrlA;
+    FARPROC InternetCreateUrlW;
+    FARPROC InternetDial;
+    FARPROC InternetDialA;
+    FARPROC InternetDialW;
+    FARPROC InternetEnumPerSiteCookieDecisionA;
+    FARPROC InternetEnumPerSiteCookieDecisionW;
+    FARPROC InternetErrorDlg;
+    FARPROC InternetFindNextFileA;
+    FARPROC InternetFindNextFileW;
+    FARPROC InternetFortezzaCommand;
+    FARPROC InternetFreeCookies;
+    FARPROC InternetFreeProxyInfoList;
+    FARPROC InternetGetCertByURL;
+    FARPROC InternetGetCertByURLA;
+    FARPROC InternetGetConnectedState;
+    FARPROC InternetGetConnectedStateEx;
+    FARPROC InternetGetConnectedStateExA;
+    FARPROC InternetGetConnectedStateExW;
+    FARPROC InternetGetCookieA;
+    FARPROC InternetGetCookieEx2;
+    FARPROC InternetGetCookieExA;
+    FARPROC InternetGetCookieExW;
+    FARPROC InternetGetCookieW;
+    FARPROC InternetGetLastResponseInfoA;
+    FARPROC InternetGetLastResponseInfoW;
+    FARPROC InternetGetPerSiteCookieDecisionA;
+    FARPROC InternetGetPerSiteCookieDecisionW;
+    FARPROC InternetGetProxyForUrl;
+    FARPROC InternetGetSecurityInfoByURL;
+    FARPROC InternetGetSecurityInfoByURLA;
+    FARPROC InternetGetSecurityInfoByURLW;
+    FARPROC InternetGoOnline;
+    FARPROC InternetGoOnlineA;
+    FARPROC InternetGoOnlineW;
+    FARPROC InternetHangUp;
+    FARPROC InternetInitializeAutoProxyDll;
+    FARPROC InternetLockRequestFile;
+    FARPROC InternetOpenA;
+    FARPROC InternetOpenUrlA;
+    FARPROC InternetOpenUrlW;
+    FARPROC InternetOpenW;
+    FARPROC InternetQueryDataAvailable;
+    FARPROC InternetQueryFortezzaStatus;
+    FARPROC InternetQueryOptionA;
+    FARPROC InternetQueryOptionW;
+    FARPROC InternetReadFile;
+    FARPROC InternetReadFileExA;
+    FARPROC InternetReadFileExW;
+    FARPROC InternetSecurityProtocolToStringA;
+    FARPROC InternetSecurityProtocolToStringW;
+    FARPROC InternetSetCookieA;
+    FARPROC InternetSetCookieEx2;
+    FARPROC InternetSetCookieExA;
+    FARPROC InternetSetCookieExW;
+    FARPROC InternetSetCookieW;
+    FARPROC InternetSetDialState;
+    FARPROC InternetSetDialStateA;
+    FARPROC InternetSetDialStateW;
+    FARPROC InternetSetFilePointer;
+    FARPROC InternetSetOptionA;
+    FARPROC InternetSetOptionExA;
+    FARPROC InternetSetOptionExW;
+    FARPROC InternetSetOptionW;
+    FARPROC InternetSetPerSiteCookieDecisionA;
+    FARPROC InternetSetPerSiteCookieDecisionW;
+    FARPROC InternetSetStatusCallback;
+    FARPROC InternetSetStatusCallbackA;
+    FARPROC InternetSetStatusCallbackW;
+    FARPROC InternetShowSecurityInfoByURL;
+    FARPROC InternetShowSecurityInfoByURLA;
+    FARPROC InternetShowSecurityInfoByURLW;
+    FARPROC InternetTimeFromSystemTime;
+    FARPROC InternetTimeFromSystemTimeA;
+    FARPROC InternetTimeFromSystemTimeW;
+    FARPROC InternetTimeToSystemTime;
+    FARPROC InternetTimeToSystemTimeA;
+    FARPROC InternetTimeToSystemTimeW;
+    FARPROC InternetUnlockRequestFile;
+    FARPROC InternetWriteFile;
+    FARPROC InternetWriteFileExA;
+    FARPROC InternetWriteFileExW;
+    FARPROC IsHostInProxyBypassList;
+    FARPROC IsUrlCacheEntryExpiredA;
+    FARPROC IsUrlCacheEntryExpiredW;
+    FARPROC LoadUrlCacheContent;
+    FARPROC ParseX509EncodedCertificateForListBoxEntry;
+    FARPROC PrivacyGetZonePreferenceW;
+    FARPROC PrivacySetZonePreferenceW;
+    FARPROC ReadUrlCacheEntryStream;
+    FARPROC ReadUrlCacheEntryStreamEx;
+    FARPROC RegisterUrlCacheNotification;
+    FARPROC ResumeSuspendedDownload;
+    FARPROC RetrieveUrlCacheEntryFileA;
+    FARPROC RetrieveUrlCacheEntryFileW;
+    FARPROC RetrieveUrlCacheEntryStreamA;
+    FARPROC RetrieveUrlCacheEntryStreamW;
+    FARPROC RunOnceUrlCache;
+    FARPROC SetUrlCacheConfigInfoA;
+    FARPROC SetUrlCacheConfigInfoW;
+    FARPROC SetUrlCacheEntryGroup;
+    FARPROC SetUrlCacheEntryGroupA;
+    FARPROC SetUrlCacheEntryGroupW;
+    FARPROC SetUrlCacheEntryInfoA;
+    FARPROC SetUrlCacheEntryInfoW;
+    FARPROC SetUrlCacheGroupAttributeA;
+    FARPROC SetUrlCacheGroupAttributeW;
+    FARPROC SetUrlCacheHeaderData;
+    FARPROC ShowCertificate;
+    FARPROC ShowClientAuthCerts;
+    FARPROC ShowSecurityInfo;
+    FARPROC ShowX509EncodedCertificate;
+    FARPROC UnlockUrlCacheEntryFile;
+    FARPROC UnlockUrlCacheEntryFileA;
+    FARPROC UnlockUrlCacheEntryFileW;
+    FARPROC UnlockUrlCacheEntryStream;
+    FARPROC UpdateUrlCacheContentPath;
+    FARPROC UrlCacheCheckEntriesExist;
+    FARPROC UrlCacheCloseEntryHandle;
+    FARPROC UrlCacheContainerSetEntryMaximumAge;
+    FARPROC UrlCacheCreateContainer;
+    FARPROC UrlCacheFindFirstEntry;
+    FARPROC UrlCacheFindNextEntry;
+    FARPROC UrlCacheFreeEntryInfo;
+    FARPROC UrlCacheFreeGlobalSpace;
+    FARPROC UrlCacheGetContentPaths;
+    FARPROC UrlCacheGetEntryInfo;
+    FARPROC UrlCacheGetGlobalCacheSize;
+    FARPROC UrlCacheGetGlobalLimit;
+    FARPROC UrlCacheReadEntryStream;
+    FARPROC UrlCacheReloadSettings;
+    FARPROC UrlCacheRetrieveEntryFile;
+    FARPROC UrlCacheRetrieveEntryStream;
+    FARPROC UrlCacheServer;
+    FARPROC UrlCacheSetGlobalLimit;
+    FARPROC UrlCacheUpdateEntryExtraData;
+    FARPROC UrlZonesDetach;
 
-	void LoadOriginalLibrary(HMODULE module)
-	{
-		dll = module;
-		shared.LoadOriginalLibrary(dll);
-		AppCacheCheckManifest = GetProcAddress(dll, "AppCacheCheckManifest");
-		AppCacheCloseHandle = GetProcAddress(dll, "AppCacheCloseHandle");
-		AppCacheCreateAndCommitFile = GetProcAddress(dll, "AppCacheCreateAndCommitFile");
-		AppCacheDeleteGroup = GetProcAddress(dll, "AppCacheDeleteGroup");
-		AppCacheDeleteIEGroup = GetProcAddress(dll, "AppCacheDeleteIEGroup");
-		AppCacheDuplicateHandle = GetProcAddress(dll, "AppCacheDuplicateHandle");
-		AppCacheFinalize = GetProcAddress(dll, "AppCacheFinalize");
-		AppCacheFreeDownloadList = GetProcAddress(dll, "AppCacheFreeDownloadList");
-		AppCacheFreeGroupList = GetProcAddress(dll, "AppCacheFreeGroupList");
-		AppCacheFreeIESpace = GetProcAddress(dll, "AppCacheFreeIESpace");
-		AppCacheFreeSpace = GetProcAddress(dll, "AppCacheFreeSpace");
-		AppCacheGetDownloadList = GetProcAddress(dll, "AppCacheGetDownloadList");
-		AppCacheGetFallbackUrl = GetProcAddress(dll, "AppCacheGetFallbackUrl");
-		AppCacheGetGroupList = GetProcAddress(dll, "AppCacheGetGroupList");
-		AppCacheGetIEGroupList = GetProcAddress(dll, "AppCacheGetIEGroupList");
-		AppCacheGetInfo = GetProcAddress(dll, "AppCacheGetInfo");
-		AppCacheGetManifestUrl = GetProcAddress(dll, "AppCacheGetManifestUrl");
-		AppCacheLookup = GetProcAddress(dll, "AppCacheLookup");
-		CommitUrlCacheEntryA = GetProcAddress(dll, "CommitUrlCacheEntryA");
-		CommitUrlCacheEntryBinaryBlob = GetProcAddress(dll, "CommitUrlCacheEntryBinaryBlob");
-		CommitUrlCacheEntryW = GetProcAddress(dll, "CommitUrlCacheEntryW");
-		CreateMD5SSOHash = GetProcAddress(dll, "CreateMD5SSOHash");
-		CreateUrlCacheContainerA = GetProcAddress(dll, "CreateUrlCacheContainerA");
-		CreateUrlCacheContainerW = GetProcAddress(dll, "CreateUrlCacheContainerW");
-		CreateUrlCacheEntryA = GetProcAddress(dll, "CreateUrlCacheEntryA");
-		CreateUrlCacheEntryExW = GetProcAddress(dll, "CreateUrlCacheEntryExW");
-		CreateUrlCacheEntryW = GetProcAddress(dll, "CreateUrlCacheEntryW");
-		CreateUrlCacheGroup = GetProcAddress(dll, "CreateUrlCacheGroup");
-		DeleteIE3Cache = GetProcAddress(dll, "DeleteIE3Cache");
-		DeleteUrlCacheContainerA = GetProcAddress(dll, "DeleteUrlCacheContainerA");
-		DeleteUrlCacheContainerW = GetProcAddress(dll, "DeleteUrlCacheContainerW");
-		DeleteUrlCacheEntry = GetProcAddress(dll, "DeleteUrlCacheEntry");
-		DeleteUrlCacheEntryA = GetProcAddress(dll, "DeleteUrlCacheEntryA");
-		DeleteUrlCacheEntryW = GetProcAddress(dll, "DeleteUrlCacheEntryW");
-		DeleteUrlCacheGroup = GetProcAddress(dll, "DeleteUrlCacheGroup");
-		DeleteWpadCacheForNetworks = GetProcAddress(dll, "DeleteWpadCacheForNetworks");
-		DetectAutoProxyUrl = GetProcAddress(dll, "DetectAutoProxyUrl");
-		DispatchAPICall = GetProcAddress(dll, "DispatchAPICall");
-		DllInstall = GetProcAddress(dll, "DllInstall");
-		FindCloseUrlCache = GetProcAddress(dll, "FindCloseUrlCache");
-		FindFirstUrlCacheContainerA = GetProcAddress(dll, "FindFirstUrlCacheContainerA");
-		FindFirstUrlCacheContainerW = GetProcAddress(dll, "FindFirstUrlCacheContainerW");
-		FindFirstUrlCacheEntryA = GetProcAddress(dll, "FindFirstUrlCacheEntryA");
-		FindFirstUrlCacheEntryExA = GetProcAddress(dll, "FindFirstUrlCacheEntryExA");
-		FindFirstUrlCacheEntryExW = GetProcAddress(dll, "FindFirstUrlCacheEntryExW");
-		FindFirstUrlCacheEntryW = GetProcAddress(dll, "FindFirstUrlCacheEntryW");
-		FindFirstUrlCacheGroup = GetProcAddress(dll, "FindFirstUrlCacheGroup");
-		FindNextUrlCacheContainerA = GetProcAddress(dll, "FindNextUrlCacheContainerA");
-		FindNextUrlCacheContainerW = GetProcAddress(dll, "FindNextUrlCacheContainerW");
-		FindNextUrlCacheEntryA = GetProcAddress(dll, "FindNextUrlCacheEntryA");
-		FindNextUrlCacheEntryExA = GetProcAddress(dll, "FindNextUrlCacheEntryExA");
-		FindNextUrlCacheEntryExW = GetProcAddress(dll, "FindNextUrlCacheEntryExW");
-		FindNextUrlCacheEntryW = GetProcAddress(dll, "FindNextUrlCacheEntryW");
-		FindNextUrlCacheGroup = GetProcAddress(dll, "FindNextUrlCacheGroup");
-		ForceNexusLookup = GetProcAddress(dll, "ForceNexusLookup");
-		ForceNexusLookupExW = GetProcAddress(dll, "ForceNexusLookupExW");
-		FreeUrlCacheSpaceA = GetProcAddress(dll, "FreeUrlCacheSpaceA");
-		FreeUrlCacheSpaceW = GetProcAddress(dll, "FreeUrlCacheSpaceW");
-		FtpCommandA = GetProcAddress(dll, "FtpCommandA");
-		FtpCommandW = GetProcAddress(dll, "FtpCommandW");
-		FtpCreateDirectoryA = GetProcAddress(dll, "FtpCreateDirectoryA");
-		FtpCreateDirectoryW = GetProcAddress(dll, "FtpCreateDirectoryW");
-		FtpDeleteFileA = GetProcAddress(dll, "FtpDeleteFileA");
-		FtpDeleteFileW = GetProcAddress(dll, "FtpDeleteFileW");
-		FtpFindFirstFileA = GetProcAddress(dll, "FtpFindFirstFileA");
-		FtpFindFirstFileW = GetProcAddress(dll, "FtpFindFirstFileW");
-		FtpGetCurrentDirectoryA = GetProcAddress(dll, "FtpGetCurrentDirectoryA");
-		FtpGetCurrentDirectoryW = GetProcAddress(dll, "FtpGetCurrentDirectoryW");
-		FtpGetFileA = GetProcAddress(dll, "FtpGetFileA");
-		FtpGetFileEx = GetProcAddress(dll, "FtpGetFileEx");
-		FtpGetFileSize = GetProcAddress(dll, "FtpGetFileSize");
-		FtpGetFileW = GetProcAddress(dll, "FtpGetFileW");
-		FtpOpenFileA = GetProcAddress(dll, "FtpOpenFileA");
-		FtpOpenFileW = GetProcAddress(dll, "FtpOpenFileW");
-		FtpPutFileA = GetProcAddress(dll, "FtpPutFileA");
-		FtpPutFileEx = GetProcAddress(dll, "FtpPutFileEx");
-		FtpPutFileW = GetProcAddress(dll, "FtpPutFileW");
-		FtpRemoveDirectoryA = GetProcAddress(dll, "FtpRemoveDirectoryA");
-		FtpRemoveDirectoryW = GetProcAddress(dll, "FtpRemoveDirectoryW");
-		FtpRenameFileA = GetProcAddress(dll, "FtpRenameFileA");
-		FtpRenameFileW = GetProcAddress(dll, "FtpRenameFileW");
-		FtpSetCurrentDirectoryA = GetProcAddress(dll, "FtpSetCurrentDirectoryA");
-		FtpSetCurrentDirectoryW = GetProcAddress(dll, "FtpSetCurrentDirectoryW");
-		_GetFileExtensionFromUrl = GetProcAddress(dll, "_GetFileExtensionFromUrl");
-		GetProxyDllInfo = GetProcAddress(dll, "GetProxyDllInfo");
-		GetUrlCacheConfigInfoA = GetProcAddress(dll, "GetUrlCacheConfigInfoA");
-		GetUrlCacheConfigInfoW = GetProcAddress(dll, "GetUrlCacheConfigInfoW");
-		GetUrlCacheEntryBinaryBlob = GetProcAddress(dll, "GetUrlCacheEntryBinaryBlob");
-		GetUrlCacheEntryInfoA = GetProcAddress(dll, "GetUrlCacheEntryInfoA");
-		GetUrlCacheEntryInfoExA = GetProcAddress(dll, "GetUrlCacheEntryInfoExA");
-		GetUrlCacheEntryInfoExW = GetProcAddress(dll, "GetUrlCacheEntryInfoExW");
-		GetUrlCacheEntryInfoW = GetProcAddress(dll, "GetUrlCacheEntryInfoW");
-		GetUrlCacheGroupAttributeA = GetProcAddress(dll, "GetUrlCacheGroupAttributeA");
-		GetUrlCacheGroupAttributeW = GetProcAddress(dll, "GetUrlCacheGroupAttributeW");
-		GetUrlCacheHeaderData = GetProcAddress(dll, "GetUrlCacheHeaderData");
-		GopherCreateLocatorA = GetProcAddress(dll, "GopherCreateLocatorA");
-		GopherCreateLocatorW = GetProcAddress(dll, "GopherCreateLocatorW");
-		GopherFindFirstFileA = GetProcAddress(dll, "GopherFindFirstFileA");
-		GopherFindFirstFileW = GetProcAddress(dll, "GopherFindFirstFileW");
-		GopherGetAttributeA = GetProcAddress(dll, "GopherGetAttributeA");
-		GopherGetAttributeW = GetProcAddress(dll, "GopherGetAttributeW");
-		GopherGetLocatorTypeA = GetProcAddress(dll, "GopherGetLocatorTypeA");
-		GopherGetLocatorTypeW = GetProcAddress(dll, "GopherGetLocatorTypeW");
-		GopherOpenFileA = GetProcAddress(dll, "GopherOpenFileA");
-		GopherOpenFileW = GetProcAddress(dll, "GopherOpenFileW");
-		HttpAddRequestHeadersA = GetProcAddress(dll, "HttpAddRequestHeadersA");
-		HttpAddRequestHeadersW = GetProcAddress(dll, "HttpAddRequestHeadersW");
-		HttpCheckDavCompliance = GetProcAddress(dll, "HttpCheckDavCompliance");
-		HttpCloseDependencyHandle = GetProcAddress(dll, "HttpCloseDependencyHandle");
-		HttpDuplicateDependencyHandle = GetProcAddress(dll, "HttpDuplicateDependencyHandle");
-		HttpEndRequestA = GetProcAddress(dll, "HttpEndRequestA");
-		HttpEndRequestW = GetProcAddress(dll, "HttpEndRequestW");
-		HttpGetServerCredentials = GetProcAddress(dll, "HttpGetServerCredentials");
-		HttpGetTunnelSocket = GetProcAddress(dll, "HttpGetTunnelSocket");
-		HttpIsHostHstsEnabled = GetProcAddress(dll, "HttpIsHostHstsEnabled");
-		HttpOpenDependencyHandle = GetProcAddress(dll, "HttpOpenDependencyHandle");
-		HttpOpenRequestA = GetProcAddress(dll, "HttpOpenRequestA");
-		HttpOpenRequestW = GetProcAddress(dll, "HttpOpenRequestW");
-		HttpPushClose = GetProcAddress(dll, "HttpPushClose");
-		HttpPushEnable = GetProcAddress(dll, "HttpPushEnable");
-		HttpPushWait = GetProcAddress(dll, "HttpPushWait");
-		HttpQueryInfoA = GetProcAddress(dll, "HttpQueryInfoA");
-		HttpQueryInfoW = GetProcAddress(dll, "HttpQueryInfoW");
-		HttpSendRequestA = GetProcAddress(dll, "HttpSendRequestA");
-		HttpSendRequestExA = GetProcAddress(dll, "HttpSendRequestExA");
-		HttpSendRequestExW = GetProcAddress(dll, "HttpSendRequestExW");
-		HttpSendRequestW = GetProcAddress(dll, "HttpSendRequestW");
-		HttpWebSocketClose = GetProcAddress(dll, "HttpWebSocketClose");
-		HttpWebSocketCompleteUpgrade = GetProcAddress(dll, "HttpWebSocketCompleteUpgrade");
-		HttpWebSocketQueryCloseStatus = GetProcAddress(dll, "HttpWebSocketQueryCloseStatus");
-		HttpWebSocketReceive = GetProcAddress(dll, "HttpWebSocketReceive");
-		HttpWebSocketSend = GetProcAddress(dll, "HttpWebSocketSend");
-		HttpWebSocketShutdown = GetProcAddress(dll, "HttpWebSocketShutdown");
-		IncrementUrlCacheHeaderData = GetProcAddress(dll, "IncrementUrlCacheHeaderData");
-		InternetAlgIdToStringA = GetProcAddress(dll, "InternetAlgIdToStringA");
-		InternetAlgIdToStringW = GetProcAddress(dll, "InternetAlgIdToStringW");
-		InternetAttemptConnect = GetProcAddress(dll, "InternetAttemptConnect");
-		InternetAutodial = GetProcAddress(dll, "InternetAutodial");
-		InternetAutodialCallback = GetProcAddress(dll, "InternetAutodialCallback");
-		InternetAutodialHangup = GetProcAddress(dll, "InternetAutodialHangup");
-		InternetCanonicalizeUrlA = GetProcAddress(dll, "InternetCanonicalizeUrlA");
-		InternetCanonicalizeUrlW = GetProcAddress(dll, "InternetCanonicalizeUrlW");
-		InternetCheckConnectionA = GetProcAddress(dll, "InternetCheckConnectionA");
-		InternetCheckConnectionW = GetProcAddress(dll, "InternetCheckConnectionW");
-		InternetClearAllPerSiteCookieDecisions = GetProcAddress(dll, "InternetClearAllPerSiteCookieDecisions");
-		InternetCloseHandle = GetProcAddress(dll, "InternetCloseHandle");
-		InternetCombineUrlA = GetProcAddress(dll, "InternetCombineUrlA");
-		InternetCombineUrlW = GetProcAddress(dll, "InternetCombineUrlW");
-		InternetConfirmZoneCrossing = GetProcAddress(dll, "InternetConfirmZoneCrossing");
-		InternetConfirmZoneCrossingA = GetProcAddress(dll, "InternetConfirmZoneCrossingA");
-		InternetConfirmZoneCrossingW = GetProcAddress(dll, "InternetConfirmZoneCrossingW");
-		InternetConnectA = GetProcAddress(dll, "InternetConnectA");
-		InternetConnectW = GetProcAddress(dll, "InternetConnectW");
-		InternetConvertUrlFromWireToWideChar = GetProcAddress(dll, "InternetConvertUrlFromWireToWideChar");
-		InternetCrackUrlA = GetProcAddress(dll, "InternetCrackUrlA");
-		InternetCrackUrlW = GetProcAddress(dll, "InternetCrackUrlW");
-		InternetCreateUrlA = GetProcAddress(dll, "InternetCreateUrlA");
-		InternetCreateUrlW = GetProcAddress(dll, "InternetCreateUrlW");
-		InternetDial = GetProcAddress(dll, "InternetDial");
-		InternetDialA = GetProcAddress(dll, "InternetDialA");
-		InternetDialW = GetProcAddress(dll, "InternetDialW");
-		InternetEnumPerSiteCookieDecisionA = GetProcAddress(dll, "InternetEnumPerSiteCookieDecisionA");
-		InternetEnumPerSiteCookieDecisionW = GetProcAddress(dll, "InternetEnumPerSiteCookieDecisionW");
-		InternetErrorDlg = GetProcAddress(dll, "InternetErrorDlg");
-		InternetFindNextFileA = GetProcAddress(dll, "InternetFindNextFileA");
-		InternetFindNextFileW = GetProcAddress(dll, "InternetFindNextFileW");
-		InternetFortezzaCommand = GetProcAddress(dll, "InternetFortezzaCommand");
-		InternetFreeCookies = GetProcAddress(dll, "InternetFreeCookies");
-		InternetFreeProxyInfoList = GetProcAddress(dll, "InternetFreeProxyInfoList");
-		InternetGetCertByURL = GetProcAddress(dll, "InternetGetCertByURL");
-		InternetGetCertByURLA = GetProcAddress(dll, "InternetGetCertByURLA");
-		InternetGetConnectedState = GetProcAddress(dll, "InternetGetConnectedState");
-		InternetGetConnectedStateEx = GetProcAddress(dll, "InternetGetConnectedStateEx");
-		InternetGetConnectedStateExA = GetProcAddress(dll, "InternetGetConnectedStateExA");
-		InternetGetConnectedStateExW = GetProcAddress(dll, "InternetGetConnectedStateExW");
-		InternetGetCookieA = GetProcAddress(dll, "InternetGetCookieA");
-		InternetGetCookieEx2 = GetProcAddress(dll, "InternetGetCookieEx2");
-		InternetGetCookieExA = GetProcAddress(dll, "InternetGetCookieExA");
-		InternetGetCookieExW = GetProcAddress(dll, "InternetGetCookieExW");
-		InternetGetCookieW = GetProcAddress(dll, "InternetGetCookieW");
-		InternetGetLastResponseInfoA = GetProcAddress(dll, "InternetGetLastResponseInfoA");
-		InternetGetLastResponseInfoW = GetProcAddress(dll, "InternetGetLastResponseInfoW");
-		InternetGetPerSiteCookieDecisionA = GetProcAddress(dll, "InternetGetPerSiteCookieDecisionA");
-		InternetGetPerSiteCookieDecisionW = GetProcAddress(dll, "InternetGetPerSiteCookieDecisionW");
-		InternetGetProxyForUrl = GetProcAddress(dll, "InternetGetProxyForUrl");
-		InternetGetSecurityInfoByURL = GetProcAddress(dll, "InternetGetSecurityInfoByURL");
-		InternetGetSecurityInfoByURLA = GetProcAddress(dll, "InternetGetSecurityInfoByURLA");
-		InternetGetSecurityInfoByURLW = GetProcAddress(dll, "InternetGetSecurityInfoByURLW");
-		InternetGoOnline = GetProcAddress(dll, "InternetGoOnline");
-		InternetGoOnlineA = GetProcAddress(dll, "InternetGoOnlineA");
-		InternetGoOnlineW = GetProcAddress(dll, "InternetGoOnlineW");
-		InternetHangUp = GetProcAddress(dll, "InternetHangUp");
-		InternetInitializeAutoProxyDll = GetProcAddress(dll, "InternetInitializeAutoProxyDll");
-		InternetLockRequestFile = GetProcAddress(dll, "InternetLockRequestFile");
-		InternetOpenA = GetProcAddress(dll, "InternetOpenA");
-		InternetOpenUrlA = GetProcAddress(dll, "InternetOpenUrlA");
-		InternetOpenUrlW = GetProcAddress(dll, "InternetOpenUrlW");
-		InternetOpenW = GetProcAddress(dll, "InternetOpenW");
-		InternetQueryDataAvailable = GetProcAddress(dll, "InternetQueryDataAvailable");
-		InternetQueryFortezzaStatus = GetProcAddress(dll, "InternetQueryFortezzaStatus");
-		InternetQueryOptionA = GetProcAddress(dll, "InternetQueryOptionA");
-		InternetQueryOptionW = GetProcAddress(dll, "InternetQueryOptionW");
-		InternetReadFile = GetProcAddress(dll, "InternetReadFile");
-		InternetReadFileExA = GetProcAddress(dll, "InternetReadFileExA");
-		InternetReadFileExW = GetProcAddress(dll, "InternetReadFileExW");
-		InternetSecurityProtocolToStringA = GetProcAddress(dll, "InternetSecurityProtocolToStringA");
-		InternetSecurityProtocolToStringW = GetProcAddress(dll, "InternetSecurityProtocolToStringW");
-		InternetSetCookieA = GetProcAddress(dll, "InternetSetCookieA");
-		InternetSetCookieEx2 = GetProcAddress(dll, "InternetSetCookieEx2");
-		InternetSetCookieExA = GetProcAddress(dll, "InternetSetCookieExA");
-		InternetSetCookieExW = GetProcAddress(dll, "InternetSetCookieExW");
-		InternetSetCookieW = GetProcAddress(dll, "InternetSetCookieW");
-		InternetSetDialState = GetProcAddress(dll, "InternetSetDialState");
-		InternetSetDialStateA = GetProcAddress(dll, "InternetSetDialStateA");
-		InternetSetDialStateW = GetProcAddress(dll, "InternetSetDialStateW");
-		InternetSetFilePointer = GetProcAddress(dll, "InternetSetFilePointer");
-		InternetSetOptionA = GetProcAddress(dll, "InternetSetOptionA");
-		InternetSetOptionExA = GetProcAddress(dll, "InternetSetOptionExA");
-		InternetSetOptionExW = GetProcAddress(dll, "InternetSetOptionExW");
-		InternetSetOptionW = GetProcAddress(dll, "InternetSetOptionW");
-		InternetSetPerSiteCookieDecisionA = GetProcAddress(dll, "InternetSetPerSiteCookieDecisionA");
-		InternetSetPerSiteCookieDecisionW = GetProcAddress(dll, "InternetSetPerSiteCookieDecisionW");
-		InternetSetStatusCallback = GetProcAddress(dll, "InternetSetStatusCallback");
-		InternetSetStatusCallbackA = GetProcAddress(dll, "InternetSetStatusCallbackA");
-		InternetSetStatusCallbackW = GetProcAddress(dll, "InternetSetStatusCallbackW");
-		InternetShowSecurityInfoByURL = GetProcAddress(dll, "InternetShowSecurityInfoByURL");
-		InternetShowSecurityInfoByURLA = GetProcAddress(dll, "InternetShowSecurityInfoByURLA");
-		InternetShowSecurityInfoByURLW = GetProcAddress(dll, "InternetShowSecurityInfoByURLW");
-		InternetTimeFromSystemTime = GetProcAddress(dll, "InternetTimeFromSystemTime");
-		InternetTimeFromSystemTimeA = GetProcAddress(dll, "InternetTimeFromSystemTimeA");
-		InternetTimeFromSystemTimeW = GetProcAddress(dll, "InternetTimeFromSystemTimeW");
-		InternetTimeToSystemTime = GetProcAddress(dll, "InternetTimeToSystemTime");
-		InternetTimeToSystemTimeA = GetProcAddress(dll, "InternetTimeToSystemTimeA");
-		InternetTimeToSystemTimeW = GetProcAddress(dll, "InternetTimeToSystemTimeW");
-		InternetUnlockRequestFile = GetProcAddress(dll, "InternetUnlockRequestFile");
-		InternetWriteFile = GetProcAddress(dll, "InternetWriteFile");
-		InternetWriteFileExA = GetProcAddress(dll, "InternetWriteFileExA");
-		InternetWriteFileExW = GetProcAddress(dll, "InternetWriteFileExW");
-		IsHostInProxyBypassList = GetProcAddress(dll, "IsHostInProxyBypassList");
-		IsUrlCacheEntryExpiredA = GetProcAddress(dll, "IsUrlCacheEntryExpiredA");
-		IsUrlCacheEntryExpiredW = GetProcAddress(dll, "IsUrlCacheEntryExpiredW");
-		LoadUrlCacheContent = GetProcAddress(dll, "LoadUrlCacheContent");
-		ParseX509EncodedCertificateForListBoxEntry = GetProcAddress(dll, "ParseX509EncodedCertificateForListBoxEntry");
-		PrivacyGetZonePreferenceW = GetProcAddress(dll, "PrivacyGetZonePreferenceW");
-		PrivacySetZonePreferenceW = GetProcAddress(dll, "PrivacySetZonePreferenceW");
-		ReadUrlCacheEntryStream = GetProcAddress(dll, "ReadUrlCacheEntryStream");
-		ReadUrlCacheEntryStreamEx = GetProcAddress(dll, "ReadUrlCacheEntryStreamEx");
-		RegisterUrlCacheNotification = GetProcAddress(dll, "RegisterUrlCacheNotification");
-		ResumeSuspendedDownload = GetProcAddress(dll, "ResumeSuspendedDownload");
-		RetrieveUrlCacheEntryFileA = GetProcAddress(dll, "RetrieveUrlCacheEntryFileA");
-		RetrieveUrlCacheEntryFileW = GetProcAddress(dll, "RetrieveUrlCacheEntryFileW");
-		RetrieveUrlCacheEntryStreamA = GetProcAddress(dll, "RetrieveUrlCacheEntryStreamA");
-		RetrieveUrlCacheEntryStreamW = GetProcAddress(dll, "RetrieveUrlCacheEntryStreamW");
-		RunOnceUrlCache = GetProcAddress(dll, "RunOnceUrlCache");
-		SetUrlCacheConfigInfoA = GetProcAddress(dll, "SetUrlCacheConfigInfoA");
-		SetUrlCacheConfigInfoW = GetProcAddress(dll, "SetUrlCacheConfigInfoW");
-		SetUrlCacheEntryGroup = GetProcAddress(dll, "SetUrlCacheEntryGroup");
-		SetUrlCacheEntryGroupA = GetProcAddress(dll, "SetUrlCacheEntryGroupA");
-		SetUrlCacheEntryGroupW = GetProcAddress(dll, "SetUrlCacheEntryGroupW");
-		SetUrlCacheEntryInfoA = GetProcAddress(dll, "SetUrlCacheEntryInfoA");
-		SetUrlCacheEntryInfoW = GetProcAddress(dll, "SetUrlCacheEntryInfoW");
-		SetUrlCacheGroupAttributeA = GetProcAddress(dll, "SetUrlCacheGroupAttributeA");
-		SetUrlCacheGroupAttributeW = GetProcAddress(dll, "SetUrlCacheGroupAttributeW");
-		SetUrlCacheHeaderData = GetProcAddress(dll, "SetUrlCacheHeaderData");
-		ShowCertificate = GetProcAddress(dll, "ShowCertificate");
-		ShowClientAuthCerts = GetProcAddress(dll, "ShowClientAuthCerts");
-		ShowSecurityInfo = GetProcAddress(dll, "ShowSecurityInfo");
-		ShowX509EncodedCertificate = GetProcAddress(dll, "ShowX509EncodedCertificate");
-		UnlockUrlCacheEntryFile = GetProcAddress(dll, "UnlockUrlCacheEntryFile");
-		UnlockUrlCacheEntryFileA = GetProcAddress(dll, "UnlockUrlCacheEntryFileA");
-		UnlockUrlCacheEntryFileW = GetProcAddress(dll, "UnlockUrlCacheEntryFileW");
-		UnlockUrlCacheEntryStream = GetProcAddress(dll, "UnlockUrlCacheEntryStream");
-		UpdateUrlCacheContentPath = GetProcAddress(dll, "UpdateUrlCacheContentPath");
-		UrlCacheCheckEntriesExist = GetProcAddress(dll, "UrlCacheCheckEntriesExist");
-		UrlCacheCloseEntryHandle = GetProcAddress(dll, "UrlCacheCloseEntryHandle");
-		UrlCacheContainerSetEntryMaximumAge = GetProcAddress(dll, "UrlCacheContainerSetEntryMaximumAge");
-		UrlCacheCreateContainer = GetProcAddress(dll, "UrlCacheCreateContainer");
-		UrlCacheFindFirstEntry = GetProcAddress(dll, "UrlCacheFindFirstEntry");
-		UrlCacheFindNextEntry = GetProcAddress(dll, "UrlCacheFindNextEntry");
-		UrlCacheFreeEntryInfo = GetProcAddress(dll, "UrlCacheFreeEntryInfo");
-		UrlCacheFreeGlobalSpace = GetProcAddress(dll, "UrlCacheFreeGlobalSpace");
-		UrlCacheGetContentPaths = GetProcAddress(dll, "UrlCacheGetContentPaths");
-		UrlCacheGetEntryInfo = GetProcAddress(dll, "UrlCacheGetEntryInfo");
-		UrlCacheGetGlobalCacheSize = GetProcAddress(dll, "UrlCacheGetGlobalCacheSize");
-		UrlCacheGetGlobalLimit = GetProcAddress(dll, "UrlCacheGetGlobalLimit");
-		UrlCacheReadEntryStream = GetProcAddress(dll, "UrlCacheReadEntryStream");
-		UrlCacheReloadSettings = GetProcAddress(dll, "UrlCacheReloadSettings");
-		UrlCacheRetrieveEntryFile = GetProcAddress(dll, "UrlCacheRetrieveEntryFile");
-		UrlCacheRetrieveEntryStream = GetProcAddress(dll, "UrlCacheRetrieveEntryStream");
-		UrlCacheServer = GetProcAddress(dll, "UrlCacheServer");
-		UrlCacheSetGlobalLimit = GetProcAddress(dll, "UrlCacheSetGlobalLimit");
-		UrlCacheUpdateEntryExtraData = GetProcAddress(dll, "UrlCacheUpdateEntryExtraData");
-		UrlZonesDetach = GetProcAddress(dll, "UrlZonesDetach");
-	}
+    void LoadOriginalLibrary(HMODULE module)
+    {
+        dll = module;
+        shared.LoadOriginalLibrary(dll);
+        AppCacheCheckManifest = GetProcAddress(dll, "AppCacheCheckManifest");
+        AppCacheCloseHandle = GetProcAddress(dll, "AppCacheCloseHandle");
+        AppCacheCreateAndCommitFile = GetProcAddress(dll, "AppCacheCreateAndCommitFile");
+        AppCacheDeleteGroup = GetProcAddress(dll, "AppCacheDeleteGroup");
+        AppCacheDeleteIEGroup = GetProcAddress(dll, "AppCacheDeleteIEGroup");
+        AppCacheDuplicateHandle = GetProcAddress(dll, "AppCacheDuplicateHandle");
+        AppCacheFinalize = GetProcAddress(dll, "AppCacheFinalize");
+        AppCacheFreeDownloadList = GetProcAddress(dll, "AppCacheFreeDownloadList");
+        AppCacheFreeGroupList = GetProcAddress(dll, "AppCacheFreeGroupList");
+        AppCacheFreeIESpace = GetProcAddress(dll, "AppCacheFreeIESpace");
+        AppCacheFreeSpace = GetProcAddress(dll, "AppCacheFreeSpace");
+        AppCacheGetDownloadList = GetProcAddress(dll, "AppCacheGetDownloadList");
+        AppCacheGetFallbackUrl = GetProcAddress(dll, "AppCacheGetFallbackUrl");
+        AppCacheGetGroupList = GetProcAddress(dll, "AppCacheGetGroupList");
+        AppCacheGetIEGroupList = GetProcAddress(dll, "AppCacheGetIEGroupList");
+        AppCacheGetInfo = GetProcAddress(dll, "AppCacheGetInfo");
+        AppCacheGetManifestUrl = GetProcAddress(dll, "AppCacheGetManifestUrl");
+        AppCacheLookup = GetProcAddress(dll, "AppCacheLookup");
+        CommitUrlCacheEntryA = GetProcAddress(dll, "CommitUrlCacheEntryA");
+        CommitUrlCacheEntryBinaryBlob = GetProcAddress(dll, "CommitUrlCacheEntryBinaryBlob");
+        CommitUrlCacheEntryW = GetProcAddress(dll, "CommitUrlCacheEntryW");
+        CreateMD5SSOHash = GetProcAddress(dll, "CreateMD5SSOHash");
+        CreateUrlCacheContainerA = GetProcAddress(dll, "CreateUrlCacheContainerA");
+        CreateUrlCacheContainerW = GetProcAddress(dll, "CreateUrlCacheContainerW");
+        CreateUrlCacheEntryA = GetProcAddress(dll, "CreateUrlCacheEntryA");
+        CreateUrlCacheEntryExW = GetProcAddress(dll, "CreateUrlCacheEntryExW");
+        CreateUrlCacheEntryW = GetProcAddress(dll, "CreateUrlCacheEntryW");
+        CreateUrlCacheGroup = GetProcAddress(dll, "CreateUrlCacheGroup");
+        DeleteIE3Cache = GetProcAddress(dll, "DeleteIE3Cache");
+        DeleteUrlCacheContainerA = GetProcAddress(dll, "DeleteUrlCacheContainerA");
+        DeleteUrlCacheContainerW = GetProcAddress(dll, "DeleteUrlCacheContainerW");
+        DeleteUrlCacheEntry = GetProcAddress(dll, "DeleteUrlCacheEntry");
+        DeleteUrlCacheEntryA = GetProcAddress(dll, "DeleteUrlCacheEntryA");
+        DeleteUrlCacheEntryW = GetProcAddress(dll, "DeleteUrlCacheEntryW");
+        DeleteUrlCacheGroup = GetProcAddress(dll, "DeleteUrlCacheGroup");
+        DeleteWpadCacheForNetworks = GetProcAddress(dll, "DeleteWpadCacheForNetworks");
+        DetectAutoProxyUrl = GetProcAddress(dll, "DetectAutoProxyUrl");
+        DispatchAPICall = GetProcAddress(dll, "DispatchAPICall");
+        DllInstall = GetProcAddress(dll, "DllInstall");
+        FindCloseUrlCache = GetProcAddress(dll, "FindCloseUrlCache");
+        FindFirstUrlCacheContainerA = GetProcAddress(dll, "FindFirstUrlCacheContainerA");
+        FindFirstUrlCacheContainerW = GetProcAddress(dll, "FindFirstUrlCacheContainerW");
+        FindFirstUrlCacheEntryA = GetProcAddress(dll, "FindFirstUrlCacheEntryA");
+        FindFirstUrlCacheEntryExA = GetProcAddress(dll, "FindFirstUrlCacheEntryExA");
+        FindFirstUrlCacheEntryExW = GetProcAddress(dll, "FindFirstUrlCacheEntryExW");
+        FindFirstUrlCacheEntryW = GetProcAddress(dll, "FindFirstUrlCacheEntryW");
+        FindFirstUrlCacheGroup = GetProcAddress(dll, "FindFirstUrlCacheGroup");
+        FindNextUrlCacheContainerA = GetProcAddress(dll, "FindNextUrlCacheContainerA");
+        FindNextUrlCacheContainerW = GetProcAddress(dll, "FindNextUrlCacheContainerW");
+        FindNextUrlCacheEntryA = GetProcAddress(dll, "FindNextUrlCacheEntryA");
+        FindNextUrlCacheEntryExA = GetProcAddress(dll, "FindNextUrlCacheEntryExA");
+        FindNextUrlCacheEntryExW = GetProcAddress(dll, "FindNextUrlCacheEntryExW");
+        FindNextUrlCacheEntryW = GetProcAddress(dll, "FindNextUrlCacheEntryW");
+        FindNextUrlCacheGroup = GetProcAddress(dll, "FindNextUrlCacheGroup");
+        ForceNexusLookup = GetProcAddress(dll, "ForceNexusLookup");
+        ForceNexusLookupExW = GetProcAddress(dll, "ForceNexusLookupExW");
+        FreeUrlCacheSpaceA = GetProcAddress(dll, "FreeUrlCacheSpaceA");
+        FreeUrlCacheSpaceW = GetProcAddress(dll, "FreeUrlCacheSpaceW");
+        FtpCommandA = GetProcAddress(dll, "FtpCommandA");
+        FtpCommandW = GetProcAddress(dll, "FtpCommandW");
+        FtpCreateDirectoryA = GetProcAddress(dll, "FtpCreateDirectoryA");
+        FtpCreateDirectoryW = GetProcAddress(dll, "FtpCreateDirectoryW");
+        FtpDeleteFileA = GetProcAddress(dll, "FtpDeleteFileA");
+        FtpDeleteFileW = GetProcAddress(dll, "FtpDeleteFileW");
+        FtpFindFirstFileA = GetProcAddress(dll, "FtpFindFirstFileA");
+        FtpFindFirstFileW = GetProcAddress(dll, "FtpFindFirstFileW");
+        FtpGetCurrentDirectoryA = GetProcAddress(dll, "FtpGetCurrentDirectoryA");
+        FtpGetCurrentDirectoryW = GetProcAddress(dll, "FtpGetCurrentDirectoryW");
+        FtpGetFileA = GetProcAddress(dll, "FtpGetFileA");
+        FtpGetFileEx = GetProcAddress(dll, "FtpGetFileEx");
+        FtpGetFileSize = GetProcAddress(dll, "FtpGetFileSize");
+        FtpGetFileW = GetProcAddress(dll, "FtpGetFileW");
+        FtpOpenFileA = GetProcAddress(dll, "FtpOpenFileA");
+        FtpOpenFileW = GetProcAddress(dll, "FtpOpenFileW");
+        FtpPutFileA = GetProcAddress(dll, "FtpPutFileA");
+        FtpPutFileEx = GetProcAddress(dll, "FtpPutFileEx");
+        FtpPutFileW = GetProcAddress(dll, "FtpPutFileW");
+        FtpRemoveDirectoryA = GetProcAddress(dll, "FtpRemoveDirectoryA");
+        FtpRemoveDirectoryW = GetProcAddress(dll, "FtpRemoveDirectoryW");
+        FtpRenameFileA = GetProcAddress(dll, "FtpRenameFileA");
+        FtpRenameFileW = GetProcAddress(dll, "FtpRenameFileW");
+        FtpSetCurrentDirectoryA = GetProcAddress(dll, "FtpSetCurrentDirectoryA");
+        FtpSetCurrentDirectoryW = GetProcAddress(dll, "FtpSetCurrentDirectoryW");
+        _GetFileExtensionFromUrl = GetProcAddress(dll, "_GetFileExtensionFromUrl");
+        GetProxyDllInfo = GetProcAddress(dll, "GetProxyDllInfo");
+        GetUrlCacheConfigInfoA = GetProcAddress(dll, "GetUrlCacheConfigInfoA");
+        GetUrlCacheConfigInfoW = GetProcAddress(dll, "GetUrlCacheConfigInfoW");
+        GetUrlCacheEntryBinaryBlob = GetProcAddress(dll, "GetUrlCacheEntryBinaryBlob");
+        GetUrlCacheEntryInfoA = GetProcAddress(dll, "GetUrlCacheEntryInfoA");
+        GetUrlCacheEntryInfoExA = GetProcAddress(dll, "GetUrlCacheEntryInfoExA");
+        GetUrlCacheEntryInfoExW = GetProcAddress(dll, "GetUrlCacheEntryInfoExW");
+        GetUrlCacheEntryInfoW = GetProcAddress(dll, "GetUrlCacheEntryInfoW");
+        GetUrlCacheGroupAttributeA = GetProcAddress(dll, "GetUrlCacheGroupAttributeA");
+        GetUrlCacheGroupAttributeW = GetProcAddress(dll, "GetUrlCacheGroupAttributeW");
+        GetUrlCacheHeaderData = GetProcAddress(dll, "GetUrlCacheHeaderData");
+        GopherCreateLocatorA = GetProcAddress(dll, "GopherCreateLocatorA");
+        GopherCreateLocatorW = GetProcAddress(dll, "GopherCreateLocatorW");
+        GopherFindFirstFileA = GetProcAddress(dll, "GopherFindFirstFileA");
+        GopherFindFirstFileW = GetProcAddress(dll, "GopherFindFirstFileW");
+        GopherGetAttributeA = GetProcAddress(dll, "GopherGetAttributeA");
+        GopherGetAttributeW = GetProcAddress(dll, "GopherGetAttributeW");
+        GopherGetLocatorTypeA = GetProcAddress(dll, "GopherGetLocatorTypeA");
+        GopherGetLocatorTypeW = GetProcAddress(dll, "GopherGetLocatorTypeW");
+        GopherOpenFileA = GetProcAddress(dll, "GopherOpenFileA");
+        GopherOpenFileW = GetProcAddress(dll, "GopherOpenFileW");
+        HttpAddRequestHeadersA = GetProcAddress(dll, "HttpAddRequestHeadersA");
+        HttpAddRequestHeadersW = GetProcAddress(dll, "HttpAddRequestHeadersW");
+        HttpCheckDavCompliance = GetProcAddress(dll, "HttpCheckDavCompliance");
+        HttpCloseDependencyHandle = GetProcAddress(dll, "HttpCloseDependencyHandle");
+        HttpDuplicateDependencyHandle = GetProcAddress(dll, "HttpDuplicateDependencyHandle");
+        HttpEndRequestA = GetProcAddress(dll, "HttpEndRequestA");
+        HttpEndRequestW = GetProcAddress(dll, "HttpEndRequestW");
+        HttpGetServerCredentials = GetProcAddress(dll, "HttpGetServerCredentials");
+        HttpGetTunnelSocket = GetProcAddress(dll, "HttpGetTunnelSocket");
+        HttpIsHostHstsEnabled = GetProcAddress(dll, "HttpIsHostHstsEnabled");
+        HttpOpenDependencyHandle = GetProcAddress(dll, "HttpOpenDependencyHandle");
+        HttpOpenRequestA = GetProcAddress(dll, "HttpOpenRequestA");
+        HttpOpenRequestW = GetProcAddress(dll, "HttpOpenRequestW");
+        HttpPushClose = GetProcAddress(dll, "HttpPushClose");
+        HttpPushEnable = GetProcAddress(dll, "HttpPushEnable");
+        HttpPushWait = GetProcAddress(dll, "HttpPushWait");
+        HttpQueryInfoA = GetProcAddress(dll, "HttpQueryInfoA");
+        HttpQueryInfoW = GetProcAddress(dll, "HttpQueryInfoW");
+        HttpSendRequestA = GetProcAddress(dll, "HttpSendRequestA");
+        HttpSendRequestExA = GetProcAddress(dll, "HttpSendRequestExA");
+        HttpSendRequestExW = GetProcAddress(dll, "HttpSendRequestExW");
+        HttpSendRequestW = GetProcAddress(dll, "HttpSendRequestW");
+        HttpWebSocketClose = GetProcAddress(dll, "HttpWebSocketClose");
+        HttpWebSocketCompleteUpgrade = GetProcAddress(dll, "HttpWebSocketCompleteUpgrade");
+        HttpWebSocketQueryCloseStatus = GetProcAddress(dll, "HttpWebSocketQueryCloseStatus");
+        HttpWebSocketReceive = GetProcAddress(dll, "HttpWebSocketReceive");
+        HttpWebSocketSend = GetProcAddress(dll, "HttpWebSocketSend");
+        HttpWebSocketShutdown = GetProcAddress(dll, "HttpWebSocketShutdown");
+        IncrementUrlCacheHeaderData = GetProcAddress(dll, "IncrementUrlCacheHeaderData");
+        InternetAlgIdToStringA = GetProcAddress(dll, "InternetAlgIdToStringA");
+        InternetAlgIdToStringW = GetProcAddress(dll, "InternetAlgIdToStringW");
+        InternetAttemptConnect = GetProcAddress(dll, "InternetAttemptConnect");
+        InternetAutodial = GetProcAddress(dll, "InternetAutodial");
+        InternetAutodialCallback = GetProcAddress(dll, "InternetAutodialCallback");
+        InternetAutodialHangup = GetProcAddress(dll, "InternetAutodialHangup");
+        InternetCanonicalizeUrlA = GetProcAddress(dll, "InternetCanonicalizeUrlA");
+        InternetCanonicalizeUrlW = GetProcAddress(dll, "InternetCanonicalizeUrlW");
+        InternetCheckConnectionA = GetProcAddress(dll, "InternetCheckConnectionA");
+        InternetCheckConnectionW = GetProcAddress(dll, "InternetCheckConnectionW");
+        InternetClearAllPerSiteCookieDecisions = GetProcAddress(dll, "InternetClearAllPerSiteCookieDecisions");
+        InternetCloseHandle = GetProcAddress(dll, "InternetCloseHandle");
+        InternetCombineUrlA = GetProcAddress(dll, "InternetCombineUrlA");
+        InternetCombineUrlW = GetProcAddress(dll, "InternetCombineUrlW");
+        InternetConfirmZoneCrossing = GetProcAddress(dll, "InternetConfirmZoneCrossing");
+        InternetConfirmZoneCrossingA = GetProcAddress(dll, "InternetConfirmZoneCrossingA");
+        InternetConfirmZoneCrossingW = GetProcAddress(dll, "InternetConfirmZoneCrossingW");
+        InternetConnectA = GetProcAddress(dll, "InternetConnectA");
+        InternetConnectW = GetProcAddress(dll, "InternetConnectW");
+        InternetConvertUrlFromWireToWideChar = GetProcAddress(dll, "InternetConvertUrlFromWireToWideChar");
+        InternetCrackUrlA = GetProcAddress(dll, "InternetCrackUrlA");
+        InternetCrackUrlW = GetProcAddress(dll, "InternetCrackUrlW");
+        InternetCreateUrlA = GetProcAddress(dll, "InternetCreateUrlA");
+        InternetCreateUrlW = GetProcAddress(dll, "InternetCreateUrlW");
+        InternetDial = GetProcAddress(dll, "InternetDial");
+        InternetDialA = GetProcAddress(dll, "InternetDialA");
+        InternetDialW = GetProcAddress(dll, "InternetDialW");
+        InternetEnumPerSiteCookieDecisionA = GetProcAddress(dll, "InternetEnumPerSiteCookieDecisionA");
+        InternetEnumPerSiteCookieDecisionW = GetProcAddress(dll, "InternetEnumPerSiteCookieDecisionW");
+        InternetErrorDlg = GetProcAddress(dll, "InternetErrorDlg");
+        InternetFindNextFileA = GetProcAddress(dll, "InternetFindNextFileA");
+        InternetFindNextFileW = GetProcAddress(dll, "InternetFindNextFileW");
+        InternetFortezzaCommand = GetProcAddress(dll, "InternetFortezzaCommand");
+        InternetFreeCookies = GetProcAddress(dll, "InternetFreeCookies");
+        InternetFreeProxyInfoList = GetProcAddress(dll, "InternetFreeProxyInfoList");
+        InternetGetCertByURL = GetProcAddress(dll, "InternetGetCertByURL");
+        InternetGetCertByURLA = GetProcAddress(dll, "InternetGetCertByURLA");
+        InternetGetConnectedState = GetProcAddress(dll, "InternetGetConnectedState");
+        InternetGetConnectedStateEx = GetProcAddress(dll, "InternetGetConnectedStateEx");
+        InternetGetConnectedStateExA = GetProcAddress(dll, "InternetGetConnectedStateExA");
+        InternetGetConnectedStateExW = GetProcAddress(dll, "InternetGetConnectedStateExW");
+        InternetGetCookieA = GetProcAddress(dll, "InternetGetCookieA");
+        InternetGetCookieEx2 = GetProcAddress(dll, "InternetGetCookieEx2");
+        InternetGetCookieExA = GetProcAddress(dll, "InternetGetCookieExA");
+        InternetGetCookieExW = GetProcAddress(dll, "InternetGetCookieExW");
+        InternetGetCookieW = GetProcAddress(dll, "InternetGetCookieW");
+        InternetGetLastResponseInfoA = GetProcAddress(dll, "InternetGetLastResponseInfoA");
+        InternetGetLastResponseInfoW = GetProcAddress(dll, "InternetGetLastResponseInfoW");
+        InternetGetPerSiteCookieDecisionA = GetProcAddress(dll, "InternetGetPerSiteCookieDecisionA");
+        InternetGetPerSiteCookieDecisionW = GetProcAddress(dll, "InternetGetPerSiteCookieDecisionW");
+        InternetGetProxyForUrl = GetProcAddress(dll, "InternetGetProxyForUrl");
+        InternetGetSecurityInfoByURL = GetProcAddress(dll, "InternetGetSecurityInfoByURL");
+        InternetGetSecurityInfoByURLA = GetProcAddress(dll, "InternetGetSecurityInfoByURLA");
+        InternetGetSecurityInfoByURLW = GetProcAddress(dll, "InternetGetSecurityInfoByURLW");
+        InternetGoOnline = GetProcAddress(dll, "InternetGoOnline");
+        InternetGoOnlineA = GetProcAddress(dll, "InternetGoOnlineA");
+        InternetGoOnlineW = GetProcAddress(dll, "InternetGoOnlineW");
+        InternetHangUp = GetProcAddress(dll, "InternetHangUp");
+        InternetInitializeAutoProxyDll = GetProcAddress(dll, "InternetInitializeAutoProxyDll");
+        InternetLockRequestFile = GetProcAddress(dll, "InternetLockRequestFile");
+        InternetOpenA = GetProcAddress(dll, "InternetOpenA");
+        InternetOpenUrlA = GetProcAddress(dll, "InternetOpenUrlA");
+        InternetOpenUrlW = GetProcAddress(dll, "InternetOpenUrlW");
+        InternetOpenW = GetProcAddress(dll, "InternetOpenW");
+        InternetQueryDataAvailable = GetProcAddress(dll, "InternetQueryDataAvailable");
+        InternetQueryFortezzaStatus = GetProcAddress(dll, "InternetQueryFortezzaStatus");
+        InternetQueryOptionA = GetProcAddress(dll, "InternetQueryOptionA");
+        InternetQueryOptionW = GetProcAddress(dll, "InternetQueryOptionW");
+        InternetReadFile = GetProcAddress(dll, "InternetReadFile");
+        InternetReadFileExA = GetProcAddress(dll, "InternetReadFileExA");
+        InternetReadFileExW = GetProcAddress(dll, "InternetReadFileExW");
+        InternetSecurityProtocolToStringA = GetProcAddress(dll, "InternetSecurityProtocolToStringA");
+        InternetSecurityProtocolToStringW = GetProcAddress(dll, "InternetSecurityProtocolToStringW");
+        InternetSetCookieA = GetProcAddress(dll, "InternetSetCookieA");
+        InternetSetCookieEx2 = GetProcAddress(dll, "InternetSetCookieEx2");
+        InternetSetCookieExA = GetProcAddress(dll, "InternetSetCookieExA");
+        InternetSetCookieExW = GetProcAddress(dll, "InternetSetCookieExW");
+        InternetSetCookieW = GetProcAddress(dll, "InternetSetCookieW");
+        InternetSetDialState = GetProcAddress(dll, "InternetSetDialState");
+        InternetSetDialStateA = GetProcAddress(dll, "InternetSetDialStateA");
+        InternetSetDialStateW = GetProcAddress(dll, "InternetSetDialStateW");
+        InternetSetFilePointer = GetProcAddress(dll, "InternetSetFilePointer");
+        InternetSetOptionA = GetProcAddress(dll, "InternetSetOptionA");
+        InternetSetOptionExA = GetProcAddress(dll, "InternetSetOptionExA");
+        InternetSetOptionExW = GetProcAddress(dll, "InternetSetOptionExW");
+        InternetSetOptionW = GetProcAddress(dll, "InternetSetOptionW");
+        InternetSetPerSiteCookieDecisionA = GetProcAddress(dll, "InternetSetPerSiteCookieDecisionA");
+        InternetSetPerSiteCookieDecisionW = GetProcAddress(dll, "InternetSetPerSiteCookieDecisionW");
+        InternetSetStatusCallback = GetProcAddress(dll, "InternetSetStatusCallback");
+        InternetSetStatusCallbackA = GetProcAddress(dll, "InternetSetStatusCallbackA");
+        InternetSetStatusCallbackW = GetProcAddress(dll, "InternetSetStatusCallbackW");
+        InternetShowSecurityInfoByURL = GetProcAddress(dll, "InternetShowSecurityInfoByURL");
+        InternetShowSecurityInfoByURLA = GetProcAddress(dll, "InternetShowSecurityInfoByURLA");
+        InternetShowSecurityInfoByURLW = GetProcAddress(dll, "InternetShowSecurityInfoByURLW");
+        InternetTimeFromSystemTime = GetProcAddress(dll, "InternetTimeFromSystemTime");
+        InternetTimeFromSystemTimeA = GetProcAddress(dll, "InternetTimeFromSystemTimeA");
+        InternetTimeFromSystemTimeW = GetProcAddress(dll, "InternetTimeFromSystemTimeW");
+        InternetTimeToSystemTime = GetProcAddress(dll, "InternetTimeToSystemTime");
+        InternetTimeToSystemTimeA = GetProcAddress(dll, "InternetTimeToSystemTimeA");
+        InternetTimeToSystemTimeW = GetProcAddress(dll, "InternetTimeToSystemTimeW");
+        InternetUnlockRequestFile = GetProcAddress(dll, "InternetUnlockRequestFile");
+        InternetWriteFile = GetProcAddress(dll, "InternetWriteFile");
+        InternetWriteFileExA = GetProcAddress(dll, "InternetWriteFileExA");
+        InternetWriteFileExW = GetProcAddress(dll, "InternetWriteFileExW");
+        IsHostInProxyBypassList = GetProcAddress(dll, "IsHostInProxyBypassList");
+        IsUrlCacheEntryExpiredA = GetProcAddress(dll, "IsUrlCacheEntryExpiredA");
+        IsUrlCacheEntryExpiredW = GetProcAddress(dll, "IsUrlCacheEntryExpiredW");
+        LoadUrlCacheContent = GetProcAddress(dll, "LoadUrlCacheContent");
+        ParseX509EncodedCertificateForListBoxEntry = GetProcAddress(dll, "ParseX509EncodedCertificateForListBoxEntry");
+        PrivacyGetZonePreferenceW = GetProcAddress(dll, "PrivacyGetZonePreferenceW");
+        PrivacySetZonePreferenceW = GetProcAddress(dll, "PrivacySetZonePreferenceW");
+        ReadUrlCacheEntryStream = GetProcAddress(dll, "ReadUrlCacheEntryStream");
+        ReadUrlCacheEntryStreamEx = GetProcAddress(dll, "ReadUrlCacheEntryStreamEx");
+        RegisterUrlCacheNotification = GetProcAddress(dll, "RegisterUrlCacheNotification");
+        ResumeSuspendedDownload = GetProcAddress(dll, "ResumeSuspendedDownload");
+        RetrieveUrlCacheEntryFileA = GetProcAddress(dll, "RetrieveUrlCacheEntryFileA");
+        RetrieveUrlCacheEntryFileW = GetProcAddress(dll, "RetrieveUrlCacheEntryFileW");
+        RetrieveUrlCacheEntryStreamA = GetProcAddress(dll, "RetrieveUrlCacheEntryStreamA");
+        RetrieveUrlCacheEntryStreamW = GetProcAddress(dll, "RetrieveUrlCacheEntryStreamW");
+        RunOnceUrlCache = GetProcAddress(dll, "RunOnceUrlCache");
+        SetUrlCacheConfigInfoA = GetProcAddress(dll, "SetUrlCacheConfigInfoA");
+        SetUrlCacheConfigInfoW = GetProcAddress(dll, "SetUrlCacheConfigInfoW");
+        SetUrlCacheEntryGroup = GetProcAddress(dll, "SetUrlCacheEntryGroup");
+        SetUrlCacheEntryGroupA = GetProcAddress(dll, "SetUrlCacheEntryGroupA");
+        SetUrlCacheEntryGroupW = GetProcAddress(dll, "SetUrlCacheEntryGroupW");
+        SetUrlCacheEntryInfoA = GetProcAddress(dll, "SetUrlCacheEntryInfoA");
+        SetUrlCacheEntryInfoW = GetProcAddress(dll, "SetUrlCacheEntryInfoW");
+        SetUrlCacheGroupAttributeA = GetProcAddress(dll, "SetUrlCacheGroupAttributeA");
+        SetUrlCacheGroupAttributeW = GetProcAddress(dll, "SetUrlCacheGroupAttributeW");
+        SetUrlCacheHeaderData = GetProcAddress(dll, "SetUrlCacheHeaderData");
+        ShowCertificate = GetProcAddress(dll, "ShowCertificate");
+        ShowClientAuthCerts = GetProcAddress(dll, "ShowClientAuthCerts");
+        ShowSecurityInfo = GetProcAddress(dll, "ShowSecurityInfo");
+        ShowX509EncodedCertificate = GetProcAddress(dll, "ShowX509EncodedCertificate");
+        UnlockUrlCacheEntryFile = GetProcAddress(dll, "UnlockUrlCacheEntryFile");
+        UnlockUrlCacheEntryFileA = GetProcAddress(dll, "UnlockUrlCacheEntryFileA");
+        UnlockUrlCacheEntryFileW = GetProcAddress(dll, "UnlockUrlCacheEntryFileW");
+        UnlockUrlCacheEntryStream = GetProcAddress(dll, "UnlockUrlCacheEntryStream");
+        UpdateUrlCacheContentPath = GetProcAddress(dll, "UpdateUrlCacheContentPath");
+        UrlCacheCheckEntriesExist = GetProcAddress(dll, "UrlCacheCheckEntriesExist");
+        UrlCacheCloseEntryHandle = GetProcAddress(dll, "UrlCacheCloseEntryHandle");
+        UrlCacheContainerSetEntryMaximumAge = GetProcAddress(dll, "UrlCacheContainerSetEntryMaximumAge");
+        UrlCacheCreateContainer = GetProcAddress(dll, "UrlCacheCreateContainer");
+        UrlCacheFindFirstEntry = GetProcAddress(dll, "UrlCacheFindFirstEntry");
+        UrlCacheFindNextEntry = GetProcAddress(dll, "UrlCacheFindNextEntry");
+        UrlCacheFreeEntryInfo = GetProcAddress(dll, "UrlCacheFreeEntryInfo");
+        UrlCacheFreeGlobalSpace = GetProcAddress(dll, "UrlCacheFreeGlobalSpace");
+        UrlCacheGetContentPaths = GetProcAddress(dll, "UrlCacheGetContentPaths");
+        UrlCacheGetEntryInfo = GetProcAddress(dll, "UrlCacheGetEntryInfo");
+        UrlCacheGetGlobalCacheSize = GetProcAddress(dll, "UrlCacheGetGlobalCacheSize");
+        UrlCacheGetGlobalLimit = GetProcAddress(dll, "UrlCacheGetGlobalLimit");
+        UrlCacheReadEntryStream = GetProcAddress(dll, "UrlCacheReadEntryStream");
+        UrlCacheReloadSettings = GetProcAddress(dll, "UrlCacheReloadSettings");
+        UrlCacheRetrieveEntryFile = GetProcAddress(dll, "UrlCacheRetrieveEntryFile");
+        UrlCacheRetrieveEntryStream = GetProcAddress(dll, "UrlCacheRetrieveEntryStream");
+        UrlCacheServer = GetProcAddress(dll, "UrlCacheServer");
+        UrlCacheSetGlobalLimit = GetProcAddress(dll, "UrlCacheSetGlobalLimit");
+        UrlCacheUpdateEntryExtraData = GetProcAddress(dll, "UrlCacheUpdateEntryExtraData");
+        UrlZonesDetach = GetProcAddress(dll, "UrlZonesDetach");
+    }
 } wininet;
 
 struct version_dll
 {
-	HMODULE dll;
-	FARPROC GetFileVersionInfoA;
-	FARPROC GetFileVersionInfoByHandle;
-	FARPROC GetFileVersionInfoExA;
-	FARPROC GetFileVersionInfoExW;
-	FARPROC GetFileVersionInfoSizeA;
-	FARPROC GetFileVersionInfoSizeExA;
-	FARPROC GetFileVersionInfoSizeExW;
-	FARPROC GetFileVersionInfoSizeW;
-	FARPROC GetFileVersionInfoW;
-	FARPROC VerFindFileA;
-	FARPROC VerFindFileW;
-	FARPROC VerInstallFileA;
-	FARPROC VerInstallFileW;
-	FARPROC VerLanguageNameA;
-	FARPROC VerLanguageNameW;
-	FARPROC VerQueryValueA;
-	FARPROC VerQueryValueW;
+    HMODULE dll;
+    FARPROC GetFileVersionInfoA;
+    FARPROC GetFileVersionInfoByHandle;
+    FARPROC GetFileVersionInfoExA;
+    FARPROC GetFileVersionInfoExW;
+    FARPROC GetFileVersionInfoSizeA;
+    FARPROC GetFileVersionInfoSizeExA;
+    FARPROC GetFileVersionInfoSizeExW;
+    FARPROC GetFileVersionInfoSizeW;
+    FARPROC GetFileVersionInfoW;
+    FARPROC VerFindFileA;
+    FARPROC VerFindFileW;
+    FARPROC VerInstallFileA;
+    FARPROC VerInstallFileW;
+    FARPROC VerLanguageNameA;
+    FARPROC VerLanguageNameW;
+    FARPROC VerQueryValueA;
+    FARPROC VerQueryValueW;
 
-	void LoadOriginalLibrary(HMODULE module)
-	{
-		dll = module;
-		shared.LoadOriginalLibrary(dll);
-		GetFileVersionInfoA = GetProcAddress(dll, "GetFileVersionInfoA");
-		GetFileVersionInfoByHandle = GetProcAddress(dll, "GetFileVersionInfoByHandle");
-		GetFileVersionInfoExA = GetProcAddress(dll, "GetFileVersionInfoExA");
-		GetFileVersionInfoExW = GetProcAddress(dll, "GetFileVersionInfoExW");
-		GetFileVersionInfoSizeA = GetProcAddress(dll, "GetFileVersionInfoSizeA");
-		GetFileVersionInfoSizeExA = GetProcAddress(dll, "GetFileVersionInfoSizeExA");
-		GetFileVersionInfoSizeExW = GetProcAddress(dll, "GetFileVersionInfoSizeExW");
-		GetFileVersionInfoSizeW = GetProcAddress(dll, "GetFileVersionInfoSizeW");
-		GetFileVersionInfoW = GetProcAddress(dll, "GetFileVersionInfoW");
-		VerFindFileA = GetProcAddress(dll, "VerFindFileA");
-		VerFindFileW = GetProcAddress(dll, "VerFindFileW");
-		VerInstallFileA = GetProcAddress(dll, "VerInstallFileA");
-		VerInstallFileW = GetProcAddress(dll, "VerInstallFileW");
-		VerLanguageNameA = GetProcAddress(dll, "VerLanguageNameA");
-		VerLanguageNameW = GetProcAddress(dll, "VerLanguageNameW");
-		VerQueryValueA = GetProcAddress(dll, "VerQueryValueA");
-		VerQueryValueW = GetProcAddress(dll, "VerQueryValueW");
-	}
+    void LoadOriginalLibrary(HMODULE module)
+    {
+        dll = module;
+        shared.LoadOriginalLibrary(dll);
+        GetFileVersionInfoA = GetProcAddress(dll, "GetFileVersionInfoA");
+        GetFileVersionInfoByHandle = GetProcAddress(dll, "GetFileVersionInfoByHandle");
+        GetFileVersionInfoExA = GetProcAddress(dll, "GetFileVersionInfoExA");
+        GetFileVersionInfoExW = GetProcAddress(dll, "GetFileVersionInfoExW");
+        GetFileVersionInfoSizeA = GetProcAddress(dll, "GetFileVersionInfoSizeA");
+        GetFileVersionInfoSizeExA = GetProcAddress(dll, "GetFileVersionInfoSizeExA");
+        GetFileVersionInfoSizeExW = GetProcAddress(dll, "GetFileVersionInfoSizeExW");
+        GetFileVersionInfoSizeW = GetProcAddress(dll, "GetFileVersionInfoSizeW");
+        GetFileVersionInfoW = GetProcAddress(dll, "GetFileVersionInfoW");
+        VerFindFileA = GetProcAddress(dll, "VerFindFileA");
+        VerFindFileW = GetProcAddress(dll, "VerFindFileW");
+        VerInstallFileA = GetProcAddress(dll, "VerInstallFileA");
+        VerInstallFileW = GetProcAddress(dll, "VerInstallFileW");
+        VerLanguageNameA = GetProcAddress(dll, "VerLanguageNameA");
+        VerLanguageNameW = GetProcAddress(dll, "VerLanguageNameW");
+        VerQueryValueA = GetProcAddress(dll, "VerQueryValueA");
+        VerQueryValueW = GetProcAddress(dll, "VerQueryValueW");
+    }
 } version;
 
 struct winmm_dll
 {
-	HMODULE dll;
-	FARPROC CloseDriver;
-	FARPROC DefDriverProc;
-	FARPROC DriverCallback;
-	FARPROC DrvGetModuleHandle;
-	FARPROC GetDriverModuleHandle;
-	FARPROC NotifyCallbackData;
-	FARPROC OpenDriver;
-	FARPROC PlaySound;
-	FARPROC PlaySoundA;
-	FARPROC PlaySoundW;
-	FARPROC SendDriverMessage;
-	FARPROC WOW32DriverCallback;
-	FARPROC WOW32ResolveMultiMediaHandle;
-	FARPROC WOWAppExit;
-	FARPROC aux32Message;
-	FARPROC auxGetDevCapsA;
-	FARPROC auxGetDevCapsW;
-	FARPROC auxGetNumDevs;
-	FARPROC auxGetVolume;
-	FARPROC auxOutMessage;
-	FARPROC auxSetVolume;
-	FARPROC joy32Message;
-	FARPROC joyConfigChanged;
-	FARPROC joyGetDevCapsA;
-	FARPROC joyGetDevCapsW;
-	FARPROC joyGetNumDevs;
-	FARPROC joyGetPos;
-	FARPROC joyGetPosEx;
-	FARPROC joyGetThreshold;
-	FARPROC joyReleaseCapture;
-	FARPROC joySetCapture;
-	FARPROC joySetThreshold;
-	FARPROC mci32Message;
-	FARPROC mciDriverNotify;
-	FARPROC mciDriverYield;
-	FARPROC mciExecute;
-	FARPROC mciFreeCommandResource;
-	FARPROC mciGetCreatorTask;
-	FARPROC mciGetDeviceIDA;
-	FARPROC mciGetDeviceIDFromElementIDA;
-	FARPROC mciGetDeviceIDFromElementIDW;
-	FARPROC mciGetDeviceIDW;
-	FARPROC mciGetDriverData;
-	FARPROC mciGetErrorStringA;
-	FARPROC mciGetErrorStringW;
-	FARPROC mciGetYieldProc;
-	FARPROC mciLoadCommandResource;
-	FARPROC mciSendCommandA;
-	FARPROC mciSendCommandW;
-	FARPROC mciSendStringA;
-	FARPROC mciSendStringW;
-	FARPROC mciSetDriverData;
-	FARPROC mciSetYieldProc;
-	FARPROC mid32Message;
-	FARPROC midiConnect;
-	FARPROC midiDisconnect;
-	FARPROC midiInAddBuffer;
-	FARPROC midiInClose;
-	FARPROC midiInGetDevCapsA;
-	FARPROC midiInGetDevCapsW;
-	FARPROC midiInGetErrorTextA;
-	FARPROC midiInGetErrorTextW;
-	FARPROC midiInGetID;
-	FARPROC midiInGetNumDevs;
-	FARPROC midiInMessage;
-	FARPROC midiInOpen;
-	FARPROC midiInPrepareHeader;
-	FARPROC midiInReset;
-	FARPROC midiInStart;
-	FARPROC midiInStop;
-	FARPROC midiInUnprepareHeader;
-	FARPROC midiOutCacheDrumPatches;
-	FARPROC midiOutCachePatches;
-	FARPROC midiOutClose;
-	FARPROC midiOutGetDevCapsA;
-	FARPROC midiOutGetDevCapsW;
-	FARPROC midiOutGetErrorTextA;
-	FARPROC midiOutGetErrorTextW;
-	FARPROC midiOutGetID;
-	FARPROC midiOutGetNumDevs;
-	FARPROC midiOutGetVolume;
-	FARPROC midiOutLongMsg;
-	FARPROC midiOutMessage;
-	FARPROC midiOutOpen;
-	FARPROC midiOutPrepareHeader;
-	FARPROC midiOutReset;
-	FARPROC midiOutSetVolume;
-	FARPROC midiOutShortMsg;
-	FARPROC midiOutUnprepareHeader;
-	FARPROC midiStreamClose;
-	FARPROC midiStreamOpen;
-	FARPROC midiStreamOut;
-	FARPROC midiStreamPause;
-	FARPROC midiStreamPosition;
-	FARPROC midiStreamProperty;
-	FARPROC midiStreamRestart;
-	FARPROC midiStreamStop;
-	FARPROC mixerClose;
-	FARPROC mixerGetControlDetailsA;
-	FARPROC mixerGetControlDetailsW;
-	FARPROC mixerGetDevCapsA;
-	FARPROC mixerGetDevCapsW;
-	FARPROC mixerGetID;
-	FARPROC mixerGetLineControlsA;
-	FARPROC mixerGetLineControlsW;
-	FARPROC mixerGetLineInfoA;
-	FARPROC mixerGetLineInfoW;
-	FARPROC mixerGetNumDevs;
-	FARPROC mixerMessage;
-	FARPROC mixerOpen;
-	FARPROC mixerSetControlDetails;
-	FARPROC mmDrvInstall;
-	FARPROC mmGetCurrentTask;
-	FARPROC mmTaskBlock;
-	FARPROC mmTaskCreate;
-	FARPROC mmTaskSignal;
-	FARPROC mmTaskYield;
-	FARPROC mmioAdvance;
-	FARPROC mmioAscend;
-	FARPROC mmioClose;
-	FARPROC mmioCreateChunk;
-	FARPROC mmioDescend;
-	FARPROC mmioFlush;
-	FARPROC mmioGetInfo;
-	FARPROC mmioInstallIOProcA;
-	FARPROC mmioInstallIOProcW;
-	FARPROC mmioOpenA;
-	FARPROC mmioOpenW;
-	FARPROC mmioRead;
-	FARPROC mmioRenameA;
-	FARPROC mmioRenameW;
-	FARPROC mmioSeek;
-	FARPROC mmioSendMessage;
-	FARPROC mmioSetBuffer;
-	FARPROC mmioSetInfo;
-	FARPROC mmioStringToFOURCCA;
-	FARPROC mmioStringToFOURCCW;
-	FARPROC mmioWrite;
-	FARPROC mmsystemGetVersion;
-	FARPROC mod32Message;
-	FARPROC mxd32Message;
-	FARPROC sndPlaySoundA;
-	FARPROC sndPlaySoundW;
-	FARPROC tid32Message;
-	FARPROC timeBeginPeriod;
-	FARPROC timeEndPeriod;
-	FARPROC timeGetDevCaps;
-	FARPROC timeGetSystemTime;
-	FARPROC timeGetTime;
-	FARPROC timeKillEvent;
-	FARPROC timeSetEvent;
-	FARPROC waveInAddBuffer;
-	FARPROC waveInClose;
-	FARPROC waveInGetDevCapsA;
-	FARPROC waveInGetDevCapsW;
-	FARPROC waveInGetErrorTextA;
-	FARPROC waveInGetErrorTextW;
-	FARPROC waveInGetID;
-	FARPROC waveInGetNumDevs;
-	FARPROC waveInGetPosition;
-	FARPROC waveInMessage;
-	FARPROC waveInOpen;
-	FARPROC waveInPrepareHeader;
-	FARPROC waveInReset;
-	FARPROC waveInStart;
-	FARPROC waveInStop;
-	FARPROC waveInUnprepareHeader;
-	FARPROC waveOutBreakLoop;
-	FARPROC waveOutClose;
-	FARPROC waveOutGetDevCapsA;
-	FARPROC waveOutGetDevCapsW;
-	FARPROC waveOutGetErrorTextA;
-	FARPROC waveOutGetErrorTextW;
-	FARPROC waveOutGetID;
-	FARPROC waveOutGetNumDevs;
-	FARPROC waveOutGetPitch;
-	FARPROC waveOutGetPlaybackRate;
-	FARPROC waveOutGetPosition;
-	FARPROC waveOutGetVolume;
-	FARPROC waveOutMessage;
-	FARPROC waveOutOpen;
-	FARPROC waveOutPause;
-	FARPROC waveOutPrepareHeader;
-	FARPROC waveOutReset;
-	FARPROC waveOutRestart;
-	FARPROC waveOutSetPitch;
-	FARPROC waveOutSetPlaybackRate;
-	FARPROC waveOutSetVolume;
-	FARPROC waveOutUnprepareHeader;
-	FARPROC waveOutWrite;
-	FARPROC wid32Message;
-	FARPROC wod32Message;
+    HMODULE dll;
+    FARPROC CloseDriver;
+    FARPROC DefDriverProc;
+    FARPROC DriverCallback;
+    FARPROC DrvGetModuleHandle;
+    FARPROC GetDriverModuleHandle;
+    FARPROC NotifyCallbackData;
+    FARPROC OpenDriver;
+    FARPROC PlaySound;
+    FARPROC PlaySoundA;
+    FARPROC PlaySoundW;
+    FARPROC SendDriverMessage;
+    FARPROC WOW32DriverCallback;
+    FARPROC WOW32ResolveMultiMediaHandle;
+    FARPROC WOWAppExit;
+    FARPROC aux32Message;
+    FARPROC auxGetDevCapsA;
+    FARPROC auxGetDevCapsW;
+    FARPROC auxGetNumDevs;
+    FARPROC auxGetVolume;
+    FARPROC auxOutMessage;
+    FARPROC auxSetVolume;
+    FARPROC joy32Message;
+    FARPROC joyConfigChanged;
+    FARPROC joyGetDevCapsA;
+    FARPROC joyGetDevCapsW;
+    FARPROC joyGetNumDevs;
+    FARPROC joyGetPos;
+    FARPROC joyGetPosEx;
+    FARPROC joyGetThreshold;
+    FARPROC joyReleaseCapture;
+    FARPROC joySetCapture;
+    FARPROC joySetThreshold;
+    FARPROC mci32Message;
+    FARPROC mciDriverNotify;
+    FARPROC mciDriverYield;
+    FARPROC mciExecute;
+    FARPROC mciFreeCommandResource;
+    FARPROC mciGetCreatorTask;
+    FARPROC mciGetDeviceIDA;
+    FARPROC mciGetDeviceIDFromElementIDA;
+    FARPROC mciGetDeviceIDFromElementIDW;
+    FARPROC mciGetDeviceIDW;
+    FARPROC mciGetDriverData;
+    FARPROC mciGetErrorStringA;
+    FARPROC mciGetErrorStringW;
+    FARPROC mciGetYieldProc;
+    FARPROC mciLoadCommandResource;
+    FARPROC mciSendCommandA;
+    FARPROC mciSendCommandW;
+    FARPROC mciSendStringA;
+    FARPROC mciSendStringW;
+    FARPROC mciSetDriverData;
+    FARPROC mciSetYieldProc;
+    FARPROC mid32Message;
+    FARPROC midiConnect;
+    FARPROC midiDisconnect;
+    FARPROC midiInAddBuffer;
+    FARPROC midiInClose;
+    FARPROC midiInGetDevCapsA;
+    FARPROC midiInGetDevCapsW;
+    FARPROC midiInGetErrorTextA;
+    FARPROC midiInGetErrorTextW;
+    FARPROC midiInGetID;
+    FARPROC midiInGetNumDevs;
+    FARPROC midiInMessage;
+    FARPROC midiInOpen;
+    FARPROC midiInPrepareHeader;
+    FARPROC midiInReset;
+    FARPROC midiInStart;
+    FARPROC midiInStop;
+    FARPROC midiInUnprepareHeader;
+    FARPROC midiOutCacheDrumPatches;
+    FARPROC midiOutCachePatches;
+    FARPROC midiOutClose;
+    FARPROC midiOutGetDevCapsA;
+    FARPROC midiOutGetDevCapsW;
+    FARPROC midiOutGetErrorTextA;
+    FARPROC midiOutGetErrorTextW;
+    FARPROC midiOutGetID;
+    FARPROC midiOutGetNumDevs;
+    FARPROC midiOutGetVolume;
+    FARPROC midiOutLongMsg;
+    FARPROC midiOutMessage;
+    FARPROC midiOutOpen;
+    FARPROC midiOutPrepareHeader;
+    FARPROC midiOutReset;
+    FARPROC midiOutSetVolume;
+    FARPROC midiOutShortMsg;
+    FARPROC midiOutUnprepareHeader;
+    FARPROC midiStreamClose;
+    FARPROC midiStreamOpen;
+    FARPROC midiStreamOut;
+    FARPROC midiStreamPause;
+    FARPROC midiStreamPosition;
+    FARPROC midiStreamProperty;
+    FARPROC midiStreamRestart;
+    FARPROC midiStreamStop;
+    FARPROC mixerClose;
+    FARPROC mixerGetControlDetailsA;
+    FARPROC mixerGetControlDetailsW;
+    FARPROC mixerGetDevCapsA;
+    FARPROC mixerGetDevCapsW;
+    FARPROC mixerGetID;
+    FARPROC mixerGetLineControlsA;
+    FARPROC mixerGetLineControlsW;
+    FARPROC mixerGetLineInfoA;
+    FARPROC mixerGetLineInfoW;
+    FARPROC mixerGetNumDevs;
+    FARPROC mixerMessage;
+    FARPROC mixerOpen;
+    FARPROC mixerSetControlDetails;
+    FARPROC mmDrvInstall;
+    FARPROC mmGetCurrentTask;
+    FARPROC mmTaskBlock;
+    FARPROC mmTaskCreate;
+    FARPROC mmTaskSignal;
+    FARPROC mmTaskYield;
+    FARPROC mmioAdvance;
+    FARPROC mmioAscend;
+    FARPROC mmioClose;
+    FARPROC mmioCreateChunk;
+    FARPROC mmioDescend;
+    FARPROC mmioFlush;
+    FARPROC mmioGetInfo;
+    FARPROC mmioInstallIOProcA;
+    FARPROC mmioInstallIOProcW;
+    FARPROC mmioOpenA;
+    FARPROC mmioOpenW;
+    FARPROC mmioRead;
+    FARPROC mmioRenameA;
+    FARPROC mmioRenameW;
+    FARPROC mmioSeek;
+    FARPROC mmioSendMessage;
+    FARPROC mmioSetBuffer;
+    FARPROC mmioSetInfo;
+    FARPROC mmioStringToFOURCCA;
+    FARPROC mmioStringToFOURCCW;
+    FARPROC mmioWrite;
+    FARPROC mmsystemGetVersion;
+    FARPROC mod32Message;
+    FARPROC mxd32Message;
+    FARPROC sndPlaySoundA;
+    FARPROC sndPlaySoundW;
+    FARPROC tid32Message;
+    FARPROC timeBeginPeriod;
+    FARPROC timeEndPeriod;
+    FARPROC timeGetDevCaps;
+    FARPROC timeGetSystemTime;
+    FARPROC timeGetTime;
+    FARPROC timeKillEvent;
+    FARPROC timeSetEvent;
+    FARPROC waveInAddBuffer;
+    FARPROC waveInClose;
+    FARPROC waveInGetDevCapsA;
+    FARPROC waveInGetDevCapsW;
+    FARPROC waveInGetErrorTextA;
+    FARPROC waveInGetErrorTextW;
+    FARPROC waveInGetID;
+    FARPROC waveInGetNumDevs;
+    FARPROC waveInGetPosition;
+    FARPROC waveInMessage;
+    FARPROC waveInOpen;
+    FARPROC waveInPrepareHeader;
+    FARPROC waveInReset;
+    FARPROC waveInStart;
+    FARPROC waveInStop;
+    FARPROC waveInUnprepareHeader;
+    FARPROC waveOutBreakLoop;
+    FARPROC waveOutClose;
+    FARPROC waveOutGetDevCapsA;
+    FARPROC waveOutGetDevCapsW;
+    FARPROC waveOutGetErrorTextA;
+    FARPROC waveOutGetErrorTextW;
+    FARPROC waveOutGetID;
+    FARPROC waveOutGetNumDevs;
+    FARPROC waveOutGetPitch;
+    FARPROC waveOutGetPlaybackRate;
+    FARPROC waveOutGetPosition;
+    FARPROC waveOutGetVolume;
+    FARPROC waveOutMessage;
+    FARPROC waveOutOpen;
+    FARPROC waveOutPause;
+    FARPROC waveOutPrepareHeader;
+    FARPROC waveOutReset;
+    FARPROC waveOutRestart;
+    FARPROC waveOutSetPitch;
+    FARPROC waveOutSetPlaybackRate;
+    FARPROC waveOutSetVolume;
+    FARPROC waveOutUnprepareHeader;
+    FARPROC waveOutWrite;
+    FARPROC wid32Message;
+    FARPROC wod32Message;
 
-	void LoadOriginalLibrary(HMODULE module)
-	{
-		dll = module;
-		shared.LoadOriginalLibrary(dll);
-		CloseDriver = GetProcAddress(dll, "CloseDriver");
-		DefDriverProc = GetProcAddress(dll, "DefDriverProc");
-		DriverCallback = GetProcAddress(dll, "DriverCallback");
-		DrvGetModuleHandle = GetProcAddress(dll, "DrvGetModuleHandle");
-		GetDriverModuleHandle = GetProcAddress(dll, "GetDriverModuleHandle");
-		NotifyCallbackData = GetProcAddress(dll, "NotifyCallbackData");
-		OpenDriver = GetProcAddress(dll, "OpenDriver");
-		PlaySound = GetProcAddress(dll, "PlaySound");
-		PlaySoundA = GetProcAddress(dll, "PlaySoundA");
-		PlaySoundW = GetProcAddress(dll, "PlaySoundW");
-		SendDriverMessage = GetProcAddress(dll, "SendDriverMessage");
-		WOW32DriverCallback = GetProcAddress(dll, "WOW32DriverCallback");
-		WOW32ResolveMultiMediaHandle = GetProcAddress(dll, "WOW32ResolveMultiMediaHandle");
-		WOWAppExit = GetProcAddress(dll, "WOWAppExit");
-		aux32Message = GetProcAddress(dll, "aux32Message");
-		auxGetDevCapsA = GetProcAddress(dll, "auxGetDevCapsA");
-		auxGetDevCapsW = GetProcAddress(dll, "auxGetDevCapsW");
-		auxGetNumDevs = GetProcAddress(dll, "auxGetNumDevs");
-		auxGetVolume = GetProcAddress(dll, "auxGetVolume");
-		auxOutMessage = GetProcAddress(dll, "auxOutMessage");
-		auxSetVolume = GetProcAddress(dll, "auxSetVolume");
-		joy32Message = GetProcAddress(dll, "joy32Message");
-		joyConfigChanged = GetProcAddress(dll, "joyConfigChanged");
-		joyGetDevCapsA = GetProcAddress(dll, "joyGetDevCapsA");
-		joyGetDevCapsW = GetProcAddress(dll, "joyGetDevCapsW");
-		joyGetNumDevs = GetProcAddress(dll, "joyGetNumDevs");
-		joyGetPos = GetProcAddress(dll, "joyGetPos");
-		joyGetPosEx = GetProcAddress(dll, "joyGetPosEx");
-		joyGetThreshold = GetProcAddress(dll, "joyGetThreshold");
-		joyReleaseCapture = GetProcAddress(dll, "joyReleaseCapture");
-		joySetCapture = GetProcAddress(dll, "joySetCapture");
-		joySetThreshold = GetProcAddress(dll, "joySetThreshold");
-		mci32Message = GetProcAddress(dll, "mci32Message");
-		mciDriverNotify = GetProcAddress(dll, "mciDriverNotify");
-		mciDriverYield = GetProcAddress(dll, "mciDriverYield");
-		mciExecute = GetProcAddress(dll, "mciExecute");
-		mciFreeCommandResource = GetProcAddress(dll, "mciFreeCommandResource");
-		mciGetCreatorTask = GetProcAddress(dll, "mciGetCreatorTask");
-		mciGetDeviceIDA = GetProcAddress(dll, "mciGetDeviceIDA");
-		mciGetDeviceIDFromElementIDA = GetProcAddress(dll, "mciGetDeviceIDFromElementIDA");
-		mciGetDeviceIDFromElementIDW = GetProcAddress(dll, "mciGetDeviceIDFromElementIDW");
-		mciGetDeviceIDW = GetProcAddress(dll, "mciGetDeviceIDW");
-		mciGetDriverData = GetProcAddress(dll, "mciGetDriverData");
-		mciGetErrorStringA = GetProcAddress(dll, "mciGetErrorStringA");
-		mciGetErrorStringW = GetProcAddress(dll, "mciGetErrorStringW");
-		mciGetYieldProc = GetProcAddress(dll, "mciGetYieldProc");
-		mciLoadCommandResource = GetProcAddress(dll, "mciLoadCommandResource");
-		mciSendCommandA = GetProcAddress(dll, "mciSendCommandA");
-		mciSendCommandW = GetProcAddress(dll, "mciSendCommandW");
-		mciSendStringA = GetProcAddress(dll, "mciSendStringA");
-		mciSendStringW = GetProcAddress(dll, "mciSendStringW");
-		mciSetDriverData = GetProcAddress(dll, "mciSetDriverData");
-		mciSetYieldProc = GetProcAddress(dll, "mciSetYieldProc");
-		mid32Message = GetProcAddress(dll, "mid32Message");
-		midiConnect = GetProcAddress(dll, "midiConnect");
-		midiDisconnect = GetProcAddress(dll, "midiDisconnect");
-		midiInAddBuffer = GetProcAddress(dll, "midiInAddBuffer");
-		midiInClose = GetProcAddress(dll, "midiInClose");
-		midiInGetDevCapsA = GetProcAddress(dll, "midiInGetDevCapsA");
-		midiInGetDevCapsW = GetProcAddress(dll, "midiInGetDevCapsW");
-		midiInGetErrorTextA = GetProcAddress(dll, "midiInGetErrorTextA");
-		midiInGetErrorTextW = GetProcAddress(dll, "midiInGetErrorTextW");
-		midiInGetID = GetProcAddress(dll, "midiInGetID");
-		midiInGetNumDevs = GetProcAddress(dll, "midiInGetNumDevs");
-		midiInMessage = GetProcAddress(dll, "midiInMessage");
-		midiInOpen = GetProcAddress(dll, "midiInOpen");
-		midiInPrepareHeader = GetProcAddress(dll, "midiInPrepareHeader");
-		midiInReset = GetProcAddress(dll, "midiInReset");
-		midiInStart = GetProcAddress(dll, "midiInStart");
-		midiInStop = GetProcAddress(dll, "midiInStop");
-		midiInUnprepareHeader = GetProcAddress(dll, "midiInUnprepareHeader");
-		midiOutCacheDrumPatches = GetProcAddress(dll, "midiOutCacheDrumPatches");
-		midiOutCachePatches = GetProcAddress(dll, "midiOutCachePatches");
-		midiOutClose = GetProcAddress(dll, "midiOutClose");
-		midiOutGetDevCapsA = GetProcAddress(dll, "midiOutGetDevCapsA");
-		midiOutGetDevCapsW = GetProcAddress(dll, "midiOutGetDevCapsW");
-		midiOutGetErrorTextA = GetProcAddress(dll, "midiOutGetErrorTextA");
-		midiOutGetErrorTextW = GetProcAddress(dll, "midiOutGetErrorTextW");
-		midiOutGetID = GetProcAddress(dll, "midiOutGetID");
-		midiOutGetNumDevs = GetProcAddress(dll, "midiOutGetNumDevs");
-		midiOutGetVolume = GetProcAddress(dll, "midiOutGetVolume");
-		midiOutLongMsg = GetProcAddress(dll, "midiOutLongMsg");
-		midiOutMessage = GetProcAddress(dll, "midiOutMessage");
-		midiOutOpen = GetProcAddress(dll, "midiOutOpen");
-		midiOutPrepareHeader = GetProcAddress(dll, "midiOutPrepareHeader");
-		midiOutReset = GetProcAddress(dll, "midiOutReset");
-		midiOutSetVolume = GetProcAddress(dll, "midiOutSetVolume");
-		midiOutShortMsg = GetProcAddress(dll, "midiOutShortMsg");
-		midiOutUnprepareHeader = GetProcAddress(dll, "midiOutUnprepareHeader");
-		midiStreamClose = GetProcAddress(dll, "midiStreamClose");
-		midiStreamOpen = GetProcAddress(dll, "midiStreamOpen");
-		midiStreamOut = GetProcAddress(dll, "midiStreamOut");
-		midiStreamPause = GetProcAddress(dll, "midiStreamPause");
-		midiStreamPosition = GetProcAddress(dll, "midiStreamPosition");
-		midiStreamProperty = GetProcAddress(dll, "midiStreamProperty");
-		midiStreamRestart = GetProcAddress(dll, "midiStreamRestart");
-		midiStreamStop = GetProcAddress(dll, "midiStreamStop");
-		mixerClose = GetProcAddress(dll, "mixerClose");
-		mixerGetControlDetailsA = GetProcAddress(dll, "mixerGetControlDetailsA");
-		mixerGetControlDetailsW = GetProcAddress(dll, "mixerGetControlDetailsW");
-		mixerGetDevCapsA = GetProcAddress(dll, "mixerGetDevCapsA");
-		mixerGetDevCapsW = GetProcAddress(dll, "mixerGetDevCapsW");
-		mixerGetID = GetProcAddress(dll, "mixerGetID");
-		mixerGetLineControlsA = GetProcAddress(dll, "mixerGetLineControlsA");
-		mixerGetLineControlsW = GetProcAddress(dll, "mixerGetLineControlsW");
-		mixerGetLineInfoA = GetProcAddress(dll, "mixerGetLineInfoA");
-		mixerGetLineInfoW = GetProcAddress(dll, "mixerGetLineInfoW");
-		mixerGetNumDevs = GetProcAddress(dll, "mixerGetNumDevs");
-		mixerMessage = GetProcAddress(dll, "mixerMessage");
-		mixerOpen = GetProcAddress(dll, "mixerOpen");
-		mixerSetControlDetails = GetProcAddress(dll, "mixerSetControlDetails");
-		mmDrvInstall = GetProcAddress(dll, "mmDrvInstall");
-		mmGetCurrentTask = GetProcAddress(dll, "mmGetCurrentTask");
-		mmTaskBlock = GetProcAddress(dll, "mmTaskBlock");
-		mmTaskCreate = GetProcAddress(dll, "mmTaskCreate");
-		mmTaskSignal = GetProcAddress(dll, "mmTaskSignal");
-		mmTaskYield = GetProcAddress(dll, "mmTaskYield");
-		mmioAdvance = GetProcAddress(dll, "mmioAdvance");
-		mmioAscend = GetProcAddress(dll, "mmioAscend");
-		mmioClose = GetProcAddress(dll, "mmioClose");
-		mmioCreateChunk = GetProcAddress(dll, "mmioCreateChunk");
-		mmioDescend = GetProcAddress(dll, "mmioDescend");
-		mmioFlush = GetProcAddress(dll, "mmioFlush");
-		mmioGetInfo = GetProcAddress(dll, "mmioGetInfo");
-		mmioInstallIOProcA = GetProcAddress(dll, "mmioInstallIOProcA");
-		mmioInstallIOProcW = GetProcAddress(dll, "mmioInstallIOProcW");
-		mmioOpenA = GetProcAddress(dll, "mmioOpenA");
-		mmioOpenW = GetProcAddress(dll, "mmioOpenW");
-		mmioRead = GetProcAddress(dll, "mmioRead");
-		mmioRenameA = GetProcAddress(dll, "mmioRenameA");
-		mmioRenameW = GetProcAddress(dll, "mmioRenameW");
-		mmioSeek = GetProcAddress(dll, "mmioSeek");
-		mmioSendMessage = GetProcAddress(dll, "mmioSendMessage");
-		mmioSetBuffer = GetProcAddress(dll, "mmioSetBuffer");
-		mmioSetInfo = GetProcAddress(dll, "mmioSetInfo");
-		mmioStringToFOURCCA = GetProcAddress(dll, "mmioStringToFOURCCA");
-		mmioStringToFOURCCW = GetProcAddress(dll, "mmioStringToFOURCCW");
-		mmioWrite = GetProcAddress(dll, "mmioWrite");
-		mmsystemGetVersion = GetProcAddress(dll, "mmsystemGetVersion");
-		mod32Message = GetProcAddress(dll, "mod32Message");
-		mxd32Message = GetProcAddress(dll, "mxd32Message");
-		sndPlaySoundA = GetProcAddress(dll, "sndPlaySoundA");
-		sndPlaySoundW = GetProcAddress(dll, "sndPlaySoundW");
-		tid32Message = GetProcAddress(dll, "tid32Message");
-		timeBeginPeriod = GetProcAddress(dll, "timeBeginPeriod");
-		timeEndPeriod = GetProcAddress(dll, "timeEndPeriod");
-		timeGetDevCaps = GetProcAddress(dll, "timeGetDevCaps");
-		timeGetSystemTime = GetProcAddress(dll, "timeGetSystemTime");
-		timeGetTime = GetProcAddress(dll, "timeGetTime");
-		timeKillEvent = GetProcAddress(dll, "timeKillEvent");
-		timeSetEvent = GetProcAddress(dll, "timeSetEvent");
-		waveInAddBuffer = GetProcAddress(dll, "waveInAddBuffer");
-		waveInClose = GetProcAddress(dll, "waveInClose");
-		waveInGetDevCapsA = GetProcAddress(dll, "waveInGetDevCapsA");
-		waveInGetDevCapsW = GetProcAddress(dll, "waveInGetDevCapsW");
-		waveInGetErrorTextA = GetProcAddress(dll, "waveInGetErrorTextA");
-		waveInGetErrorTextW = GetProcAddress(dll, "waveInGetErrorTextW");
-		waveInGetID = GetProcAddress(dll, "waveInGetID");
-		waveInGetNumDevs = GetProcAddress(dll, "waveInGetNumDevs");
-		waveInGetPosition = GetProcAddress(dll, "waveInGetPosition");
-		waveInMessage = GetProcAddress(dll, "waveInMessage");
-		waveInOpen = GetProcAddress(dll, "waveInOpen");
-		waveInPrepareHeader = GetProcAddress(dll, "waveInPrepareHeader");
-		waveInReset = GetProcAddress(dll, "waveInReset");
-		waveInStart = GetProcAddress(dll, "waveInStart");
-		waveInStop = GetProcAddress(dll, "waveInStop");
-		waveInUnprepareHeader = GetProcAddress(dll, "waveInUnprepareHeader");
-		waveOutBreakLoop = GetProcAddress(dll, "waveOutBreakLoop");
-		waveOutClose = GetProcAddress(dll, "waveOutClose");
-		waveOutGetDevCapsA = GetProcAddress(dll, "waveOutGetDevCapsA");
-		waveOutGetDevCapsW = GetProcAddress(dll, "waveOutGetDevCapsW");
-		waveOutGetErrorTextA = GetProcAddress(dll, "waveOutGetErrorTextA");
-		waveOutGetErrorTextW = GetProcAddress(dll, "waveOutGetErrorTextW");
-		waveOutGetID = GetProcAddress(dll, "waveOutGetID");
-		waveOutGetNumDevs = GetProcAddress(dll, "waveOutGetNumDevs");
-		waveOutGetPitch = GetProcAddress(dll, "waveOutGetPitch");
-		waveOutGetPlaybackRate = GetProcAddress(dll, "waveOutGetPlaybackRate");
-		waveOutGetPosition = GetProcAddress(dll, "waveOutGetPosition");
-		waveOutGetVolume = GetProcAddress(dll, "waveOutGetVolume");
-		waveOutMessage = GetProcAddress(dll, "waveOutMessage");
-		waveOutOpen = GetProcAddress(dll, "waveOutOpen");
-		waveOutPause = GetProcAddress(dll, "waveOutPause");
-		waveOutPrepareHeader = GetProcAddress(dll, "waveOutPrepareHeader");
-		waveOutReset = GetProcAddress(dll, "waveOutReset");
-		waveOutRestart = GetProcAddress(dll, "waveOutRestart");
-		waveOutSetPitch = GetProcAddress(dll, "waveOutSetPitch");
-		waveOutSetPlaybackRate = GetProcAddress(dll, "waveOutSetPlaybackRate");
-		waveOutSetVolume = GetProcAddress(dll, "waveOutSetVolume");
-		waveOutUnprepareHeader = GetProcAddress(dll, "waveOutUnprepareHeader");
-		waveOutWrite = GetProcAddress(dll, "waveOutWrite");
-		wid32Message = GetProcAddress(dll, "wid32Message");
-		wod32Message = GetProcAddress(dll, "wod32Message");
-	}
+    void LoadOriginalLibrary(HMODULE module)
+    {
+        dll = module;
+        shared.LoadOriginalLibrary(dll);
+        CloseDriver = GetProcAddress(dll, "CloseDriver");
+        DefDriverProc = GetProcAddress(dll, "DefDriverProc");
+        DriverCallback = GetProcAddress(dll, "DriverCallback");
+        DrvGetModuleHandle = GetProcAddress(dll, "DrvGetModuleHandle");
+        GetDriverModuleHandle = GetProcAddress(dll, "GetDriverModuleHandle");
+        NotifyCallbackData = GetProcAddress(dll, "NotifyCallbackData");
+        OpenDriver = GetProcAddress(dll, "OpenDriver");
+        PlaySound = GetProcAddress(dll, "PlaySound");
+        PlaySoundA = GetProcAddress(dll, "PlaySoundA");
+        PlaySoundW = GetProcAddress(dll, "PlaySoundW");
+        SendDriverMessage = GetProcAddress(dll, "SendDriverMessage");
+        WOW32DriverCallback = GetProcAddress(dll, "WOW32DriverCallback");
+        WOW32ResolveMultiMediaHandle = GetProcAddress(dll, "WOW32ResolveMultiMediaHandle");
+        WOWAppExit = GetProcAddress(dll, "WOWAppExit");
+        aux32Message = GetProcAddress(dll, "aux32Message");
+        auxGetDevCapsA = GetProcAddress(dll, "auxGetDevCapsA");
+        auxGetDevCapsW = GetProcAddress(dll, "auxGetDevCapsW");
+        auxGetNumDevs = GetProcAddress(dll, "auxGetNumDevs");
+        auxGetVolume = GetProcAddress(dll, "auxGetVolume");
+        auxOutMessage = GetProcAddress(dll, "auxOutMessage");
+        auxSetVolume = GetProcAddress(dll, "auxSetVolume");
+        joy32Message = GetProcAddress(dll, "joy32Message");
+        joyConfigChanged = GetProcAddress(dll, "joyConfigChanged");
+        joyGetDevCapsA = GetProcAddress(dll, "joyGetDevCapsA");
+        joyGetDevCapsW = GetProcAddress(dll, "joyGetDevCapsW");
+        joyGetNumDevs = GetProcAddress(dll, "joyGetNumDevs");
+        joyGetPos = GetProcAddress(dll, "joyGetPos");
+        joyGetPosEx = GetProcAddress(dll, "joyGetPosEx");
+        joyGetThreshold = GetProcAddress(dll, "joyGetThreshold");
+        joyReleaseCapture = GetProcAddress(dll, "joyReleaseCapture");
+        joySetCapture = GetProcAddress(dll, "joySetCapture");
+        joySetThreshold = GetProcAddress(dll, "joySetThreshold");
+        mci32Message = GetProcAddress(dll, "mci32Message");
+        mciDriverNotify = GetProcAddress(dll, "mciDriverNotify");
+        mciDriverYield = GetProcAddress(dll, "mciDriverYield");
+        mciExecute = GetProcAddress(dll, "mciExecute");
+        mciFreeCommandResource = GetProcAddress(dll, "mciFreeCommandResource");
+        mciGetCreatorTask = GetProcAddress(dll, "mciGetCreatorTask");
+        mciGetDeviceIDA = GetProcAddress(dll, "mciGetDeviceIDA");
+        mciGetDeviceIDFromElementIDA = GetProcAddress(dll, "mciGetDeviceIDFromElementIDA");
+        mciGetDeviceIDFromElementIDW = GetProcAddress(dll, "mciGetDeviceIDFromElementIDW");
+        mciGetDeviceIDW = GetProcAddress(dll, "mciGetDeviceIDW");
+        mciGetDriverData = GetProcAddress(dll, "mciGetDriverData");
+        mciGetErrorStringA = GetProcAddress(dll, "mciGetErrorStringA");
+        mciGetErrorStringW = GetProcAddress(dll, "mciGetErrorStringW");
+        mciGetYieldProc = GetProcAddress(dll, "mciGetYieldProc");
+        mciLoadCommandResource = GetProcAddress(dll, "mciLoadCommandResource");
+        mciSendCommandA = GetProcAddress(dll, "mciSendCommandA");
+        mciSendCommandW = GetProcAddress(dll, "mciSendCommandW");
+        mciSendStringA = GetProcAddress(dll, "mciSendStringA");
+        mciSendStringW = GetProcAddress(dll, "mciSendStringW");
+        mciSetDriverData = GetProcAddress(dll, "mciSetDriverData");
+        mciSetYieldProc = GetProcAddress(dll, "mciSetYieldProc");
+        mid32Message = GetProcAddress(dll, "mid32Message");
+        midiConnect = GetProcAddress(dll, "midiConnect");
+        midiDisconnect = GetProcAddress(dll, "midiDisconnect");
+        midiInAddBuffer = GetProcAddress(dll, "midiInAddBuffer");
+        midiInClose = GetProcAddress(dll, "midiInClose");
+        midiInGetDevCapsA = GetProcAddress(dll, "midiInGetDevCapsA");
+        midiInGetDevCapsW = GetProcAddress(dll, "midiInGetDevCapsW");
+        midiInGetErrorTextA = GetProcAddress(dll, "midiInGetErrorTextA");
+        midiInGetErrorTextW = GetProcAddress(dll, "midiInGetErrorTextW");
+        midiInGetID = GetProcAddress(dll, "midiInGetID");
+        midiInGetNumDevs = GetProcAddress(dll, "midiInGetNumDevs");
+        midiInMessage = GetProcAddress(dll, "midiInMessage");
+        midiInOpen = GetProcAddress(dll, "midiInOpen");
+        midiInPrepareHeader = GetProcAddress(dll, "midiInPrepareHeader");
+        midiInReset = GetProcAddress(dll, "midiInReset");
+        midiInStart = GetProcAddress(dll, "midiInStart");
+        midiInStop = GetProcAddress(dll, "midiInStop");
+        midiInUnprepareHeader = GetProcAddress(dll, "midiInUnprepareHeader");
+        midiOutCacheDrumPatches = GetProcAddress(dll, "midiOutCacheDrumPatches");
+        midiOutCachePatches = GetProcAddress(dll, "midiOutCachePatches");
+        midiOutClose = GetProcAddress(dll, "midiOutClose");
+        midiOutGetDevCapsA = GetProcAddress(dll, "midiOutGetDevCapsA");
+        midiOutGetDevCapsW = GetProcAddress(dll, "midiOutGetDevCapsW");
+        midiOutGetErrorTextA = GetProcAddress(dll, "midiOutGetErrorTextA");
+        midiOutGetErrorTextW = GetProcAddress(dll, "midiOutGetErrorTextW");
+        midiOutGetID = GetProcAddress(dll, "midiOutGetID");
+        midiOutGetNumDevs = GetProcAddress(dll, "midiOutGetNumDevs");
+        midiOutGetVolume = GetProcAddress(dll, "midiOutGetVolume");
+        midiOutLongMsg = GetProcAddress(dll, "midiOutLongMsg");
+        midiOutMessage = GetProcAddress(dll, "midiOutMessage");
+        midiOutOpen = GetProcAddress(dll, "midiOutOpen");
+        midiOutPrepareHeader = GetProcAddress(dll, "midiOutPrepareHeader");
+        midiOutReset = GetProcAddress(dll, "midiOutReset");
+        midiOutSetVolume = GetProcAddress(dll, "midiOutSetVolume");
+        midiOutShortMsg = GetProcAddress(dll, "midiOutShortMsg");
+        midiOutUnprepareHeader = GetProcAddress(dll, "midiOutUnprepareHeader");
+        midiStreamClose = GetProcAddress(dll, "midiStreamClose");
+        midiStreamOpen = GetProcAddress(dll, "midiStreamOpen");
+        midiStreamOut = GetProcAddress(dll, "midiStreamOut");
+        midiStreamPause = GetProcAddress(dll, "midiStreamPause");
+        midiStreamPosition = GetProcAddress(dll, "midiStreamPosition");
+        midiStreamProperty = GetProcAddress(dll, "midiStreamProperty");
+        midiStreamRestart = GetProcAddress(dll, "midiStreamRestart");
+        midiStreamStop = GetProcAddress(dll, "midiStreamStop");
+        mixerClose = GetProcAddress(dll, "mixerClose");
+        mixerGetControlDetailsA = GetProcAddress(dll, "mixerGetControlDetailsA");
+        mixerGetControlDetailsW = GetProcAddress(dll, "mixerGetControlDetailsW");
+        mixerGetDevCapsA = GetProcAddress(dll, "mixerGetDevCapsA");
+        mixerGetDevCapsW = GetProcAddress(dll, "mixerGetDevCapsW");
+        mixerGetID = GetProcAddress(dll, "mixerGetID");
+        mixerGetLineControlsA = GetProcAddress(dll, "mixerGetLineControlsA");
+        mixerGetLineControlsW = GetProcAddress(dll, "mixerGetLineControlsW");
+        mixerGetLineInfoA = GetProcAddress(dll, "mixerGetLineInfoA");
+        mixerGetLineInfoW = GetProcAddress(dll, "mixerGetLineInfoW");
+        mixerGetNumDevs = GetProcAddress(dll, "mixerGetNumDevs");
+        mixerMessage = GetProcAddress(dll, "mixerMessage");
+        mixerOpen = GetProcAddress(dll, "mixerOpen");
+        mixerSetControlDetails = GetProcAddress(dll, "mixerSetControlDetails");
+        mmDrvInstall = GetProcAddress(dll, "mmDrvInstall");
+        mmGetCurrentTask = GetProcAddress(dll, "mmGetCurrentTask");
+        mmTaskBlock = GetProcAddress(dll, "mmTaskBlock");
+        mmTaskCreate = GetProcAddress(dll, "mmTaskCreate");
+        mmTaskSignal = GetProcAddress(dll, "mmTaskSignal");
+        mmTaskYield = GetProcAddress(dll, "mmTaskYield");
+        mmioAdvance = GetProcAddress(dll, "mmioAdvance");
+        mmioAscend = GetProcAddress(dll, "mmioAscend");
+        mmioClose = GetProcAddress(dll, "mmioClose");
+        mmioCreateChunk = GetProcAddress(dll, "mmioCreateChunk");
+        mmioDescend = GetProcAddress(dll, "mmioDescend");
+        mmioFlush = GetProcAddress(dll, "mmioFlush");
+        mmioGetInfo = GetProcAddress(dll, "mmioGetInfo");
+        mmioInstallIOProcA = GetProcAddress(dll, "mmioInstallIOProcA");
+        mmioInstallIOProcW = GetProcAddress(dll, "mmioInstallIOProcW");
+        mmioOpenA = GetProcAddress(dll, "mmioOpenA");
+        mmioOpenW = GetProcAddress(dll, "mmioOpenW");
+        mmioRead = GetProcAddress(dll, "mmioRead");
+        mmioRenameA = GetProcAddress(dll, "mmioRenameA");
+        mmioRenameW = GetProcAddress(dll, "mmioRenameW");
+        mmioSeek = GetProcAddress(dll, "mmioSeek");
+        mmioSendMessage = GetProcAddress(dll, "mmioSendMessage");
+        mmioSetBuffer = GetProcAddress(dll, "mmioSetBuffer");
+        mmioSetInfo = GetProcAddress(dll, "mmioSetInfo");
+        mmioStringToFOURCCA = GetProcAddress(dll, "mmioStringToFOURCCA");
+        mmioStringToFOURCCW = GetProcAddress(dll, "mmioStringToFOURCCW");
+        mmioWrite = GetProcAddress(dll, "mmioWrite");
+        mmsystemGetVersion = GetProcAddress(dll, "mmsystemGetVersion");
+        mod32Message = GetProcAddress(dll, "mod32Message");
+        mxd32Message = GetProcAddress(dll, "mxd32Message");
+        sndPlaySoundA = GetProcAddress(dll, "sndPlaySoundA");
+        sndPlaySoundW = GetProcAddress(dll, "sndPlaySoundW");
+        tid32Message = GetProcAddress(dll, "tid32Message");
+        timeBeginPeriod = GetProcAddress(dll, "timeBeginPeriod");
+        timeEndPeriod = GetProcAddress(dll, "timeEndPeriod");
+        timeGetDevCaps = GetProcAddress(dll, "timeGetDevCaps");
+        timeGetSystemTime = GetProcAddress(dll, "timeGetSystemTime");
+        timeGetTime = GetProcAddress(dll, "timeGetTime");
+        timeKillEvent = GetProcAddress(dll, "timeKillEvent");
+        timeSetEvent = GetProcAddress(dll, "timeSetEvent");
+        waveInAddBuffer = GetProcAddress(dll, "waveInAddBuffer");
+        waveInClose = GetProcAddress(dll, "waveInClose");
+        waveInGetDevCapsA = GetProcAddress(dll, "waveInGetDevCapsA");
+        waveInGetDevCapsW = GetProcAddress(dll, "waveInGetDevCapsW");
+        waveInGetErrorTextA = GetProcAddress(dll, "waveInGetErrorTextA");
+        waveInGetErrorTextW = GetProcAddress(dll, "waveInGetErrorTextW");
+        waveInGetID = GetProcAddress(dll, "waveInGetID");
+        waveInGetNumDevs = GetProcAddress(dll, "waveInGetNumDevs");
+        waveInGetPosition = GetProcAddress(dll, "waveInGetPosition");
+        waveInMessage = GetProcAddress(dll, "waveInMessage");
+        waveInOpen = GetProcAddress(dll, "waveInOpen");
+        waveInPrepareHeader = GetProcAddress(dll, "waveInPrepareHeader");
+        waveInReset = GetProcAddress(dll, "waveInReset");
+        waveInStart = GetProcAddress(dll, "waveInStart");
+        waveInStop = GetProcAddress(dll, "waveInStop");
+        waveInUnprepareHeader = GetProcAddress(dll, "waveInUnprepareHeader");
+        waveOutBreakLoop = GetProcAddress(dll, "waveOutBreakLoop");
+        waveOutClose = GetProcAddress(dll, "waveOutClose");
+        waveOutGetDevCapsA = GetProcAddress(dll, "waveOutGetDevCapsA");
+        waveOutGetDevCapsW = GetProcAddress(dll, "waveOutGetDevCapsW");
+        waveOutGetErrorTextA = GetProcAddress(dll, "waveOutGetErrorTextA");
+        waveOutGetErrorTextW = GetProcAddress(dll, "waveOutGetErrorTextW");
+        waveOutGetID = GetProcAddress(dll, "waveOutGetID");
+        waveOutGetNumDevs = GetProcAddress(dll, "waveOutGetNumDevs");
+        waveOutGetPitch = GetProcAddress(dll, "waveOutGetPitch");
+        waveOutGetPlaybackRate = GetProcAddress(dll, "waveOutGetPlaybackRate");
+        waveOutGetPosition = GetProcAddress(dll, "waveOutGetPosition");
+        waveOutGetVolume = GetProcAddress(dll, "waveOutGetVolume");
+        waveOutMessage = GetProcAddress(dll, "waveOutMessage");
+        waveOutOpen = GetProcAddress(dll, "waveOutOpen");
+        waveOutPause = GetProcAddress(dll, "waveOutPause");
+        waveOutPrepareHeader = GetProcAddress(dll, "waveOutPrepareHeader");
+        waveOutReset = GetProcAddress(dll, "waveOutReset");
+        waveOutRestart = GetProcAddress(dll, "waveOutRestart");
+        waveOutSetPitch = GetProcAddress(dll, "waveOutSetPitch");
+        waveOutSetPlaybackRate = GetProcAddress(dll, "waveOutSetPlaybackRate");
+        waveOutSetVolume = GetProcAddress(dll, "waveOutSetVolume");
+        waveOutUnprepareHeader = GetProcAddress(dll, "waveOutUnprepareHeader");
+        waveOutWrite = GetProcAddress(dll, "waveOutWrite");
+        wid32Message = GetProcAddress(dll, "wid32Message");
+        wod32Message = GetProcAddress(dll, "wod32Message");
+    }
 } winmm;
 
 struct winhttp_dll
 {
-	HMODULE dll;
-	FARPROC Private1;
-	FARPROC SvchostPushServiceGlobals;
-	FARPROC WinHttpAddRequestHeaders;
-	FARPROC WinHttpAddRequestHeadersEx;
-	FARPROC WinHttpAutoProxySvcMain;
-	FARPROC WinHttpCheckPlatform;
-	FARPROC WinHttpCloseHandle;
-	FARPROC WinHttpConnect;
-	FARPROC WinHttpConnectionDeletePolicyEntries;
-	FARPROC WinHttpConnectionDeleteProxyInfo;
-	FARPROC WinHttpConnectionFreeNameList;
-	FARPROC WinHttpConnectionFreeProxyInfo;
-	FARPROC WinHttpConnectionFreeProxyList;
-	FARPROC WinHttpConnectionGetNameList;
-	FARPROC WinHttpConnectionGetProxyInfo;
-	FARPROC WinHttpConnectionGetProxyList;
-	FARPROC WinHttpConnectionOnlyConvert;
-	FARPROC WinHttpConnectionOnlyReceive;
-	FARPROC WinHttpConnectionOnlySend;
-	FARPROC WinHttpConnectionSetPolicyEntries;
-	FARPROC WinHttpConnectionSetProxyInfo;
-	FARPROC WinHttpConnectionUpdateIfIndexTable;
-	FARPROC WinHttpCrackUrl;
-	FARPROC WinHttpCreateProxyResolver;
-	FARPROC WinHttpCreateUrl;
-	FARPROC WinHttpDetectAutoProxyConfigUrl;
-	FARPROC WinHttpFreeProxyResult;
-	FARPROC WinHttpFreeProxyResultEx;
-	FARPROC WinHttpFreeProxySettings;
-	FARPROC WinHttpFreeProxySettingsEx;
-	FARPROC WinHttpFreeQueryConnectionGroupResult;
-	FARPROC WinHttpGetDefaultProxyConfiguration;
-	FARPROC WinHttpGetIEProxyConfigForCurrentUser;
-	FARPROC WinHttpGetProxyForUrl;
-	FARPROC WinHttpGetProxyForUrlEx;
-	FARPROC WinHttpGetProxyForUrlEx2;
-	FARPROC WinHttpGetProxyForUrlHvsi;
-	FARPROC WinHttpGetProxyResult;
-	FARPROC WinHttpGetProxyResultEx;
-	FARPROC WinHttpGetProxySettingsEx;
-	FARPROC WinHttpGetProxySettingsResultEx;
-	FARPROC WinHttpGetProxySettingsVersion;
-	FARPROC WinHttpGetTunnelSocket;
-	FARPROC WinHttpOpen;
-	FARPROC WinHttpOpenRequest;
-	FARPROC WinHttpPacJsWorkerMain;
-	FARPROC WinHttpProbeConnectivity;
-	FARPROC WinHttpQueryAuthSchemes;
-	FARPROC WinHttpQueryConnectionGroup;
-	FARPROC WinHttpQueryDataAvailable;
-	FARPROC WinHttpQueryHeaders;
-	FARPROC WinHttpQueryHeadersEx;
-	FARPROC WinHttpQueryOption;
-	FARPROC WinHttpReadData;
-	FARPROC WinHttpReadDataEx;
-	FARPROC WinHttpReadProxySettings;
-	FARPROC WinHttpReadProxySettingsHvsi;
-	FARPROC WinHttpReceiveResponse;
-	FARPROC WinHttpRegisterProxyChangeNotification;
-	FARPROC WinHttpResetAutoProxy;
-	FARPROC WinHttpSaveProxyCredentials;
-	FARPROC WinHttpSendRequest;
-	FARPROC WinHttpSetCredentials;
-	FARPROC WinHttpSetDefaultProxyConfiguration;
-	FARPROC WinHttpSetOption;
-	FARPROC WinHttpSetProxySettingsPerUser;
-	FARPROC WinHttpSetSecureLegacyServersAppCompat;
-	FARPROC WinHttpSetStatusCallback;
-	FARPROC WinHttpSetTimeouts;
-	FARPROC WinHttpTimeFromSystemTime;
-	FARPROC WinHttpTimeToSystemTime;
-	FARPROC WinHttpUnregisterProxyChangeNotification;
-	FARPROC WinHttpWebSocketClose;
-	FARPROC WinHttpWebSocketCompleteUpgrade;
-	FARPROC WinHttpWebSocketQueryCloseStatus;
-	FARPROC WinHttpWebSocketReceive;
-	FARPROC WinHttpWebSocketSend;
-	FARPROC WinHttpWebSocketShutdown;
-	FARPROC WinHttpWriteData;
-	FARPROC WinHttpWriteProxySettings;
+    HMODULE dll;
+    FARPROC Private1;
+    FARPROC SvchostPushServiceGlobals;
+    FARPROC WinHttpAddRequestHeaders;
+    FARPROC WinHttpAddRequestHeadersEx;
+    FARPROC WinHttpAutoProxySvcMain;
+    FARPROC WinHttpCheckPlatform;
+    FARPROC WinHttpCloseHandle;
+    FARPROC WinHttpConnect;
+    FARPROC WinHttpConnectionDeletePolicyEntries;
+    FARPROC WinHttpConnectionDeleteProxyInfo;
+    FARPROC WinHttpConnectionFreeNameList;
+    FARPROC WinHttpConnectionFreeProxyInfo;
+    FARPROC WinHttpConnectionFreeProxyList;
+    FARPROC WinHttpConnectionGetNameList;
+    FARPROC WinHttpConnectionGetProxyInfo;
+    FARPROC WinHttpConnectionGetProxyList;
+    FARPROC WinHttpConnectionOnlyConvert;
+    FARPROC WinHttpConnectionOnlyReceive;
+    FARPROC WinHttpConnectionOnlySend;
+    FARPROC WinHttpConnectionSetPolicyEntries;
+    FARPROC WinHttpConnectionSetProxyInfo;
+    FARPROC WinHttpConnectionUpdateIfIndexTable;
+    FARPROC WinHttpCrackUrl;
+    FARPROC WinHttpCreateProxyResolver;
+    FARPROC WinHttpCreateUrl;
+    FARPROC WinHttpDetectAutoProxyConfigUrl;
+    FARPROC WinHttpFreeProxyResult;
+    FARPROC WinHttpFreeProxyResultEx;
+    FARPROC WinHttpFreeProxySettings;
+    FARPROC WinHttpFreeProxySettingsEx;
+    FARPROC WinHttpFreeQueryConnectionGroupResult;
+    FARPROC WinHttpGetDefaultProxyConfiguration;
+    FARPROC WinHttpGetIEProxyConfigForCurrentUser;
+    FARPROC WinHttpGetProxyForUrl;
+    FARPROC WinHttpGetProxyForUrlEx;
+    FARPROC WinHttpGetProxyForUrlEx2;
+    FARPROC WinHttpGetProxyForUrlHvsi;
+    FARPROC WinHttpGetProxyResult;
+    FARPROC WinHttpGetProxyResultEx;
+    FARPROC WinHttpGetProxySettingsEx;
+    FARPROC WinHttpGetProxySettingsResultEx;
+    FARPROC WinHttpGetProxySettingsVersion;
+    FARPROC WinHttpGetTunnelSocket;
+    FARPROC WinHttpOpen;
+    FARPROC WinHttpOpenRequest;
+    FARPROC WinHttpPacJsWorkerMain;
+    FARPROC WinHttpProbeConnectivity;
+    FARPROC WinHttpQueryAuthSchemes;
+    FARPROC WinHttpQueryConnectionGroup;
+    FARPROC WinHttpQueryDataAvailable;
+    FARPROC WinHttpQueryHeaders;
+    FARPROC WinHttpQueryHeadersEx;
+    FARPROC WinHttpQueryOption;
+    FARPROC WinHttpReadData;
+    FARPROC WinHttpReadDataEx;
+    FARPROC WinHttpReadProxySettings;
+    FARPROC WinHttpReadProxySettingsHvsi;
+    FARPROC WinHttpReceiveResponse;
+    FARPROC WinHttpRegisterProxyChangeNotification;
+    FARPROC WinHttpResetAutoProxy;
+    FARPROC WinHttpSaveProxyCredentials;
+    FARPROC WinHttpSendRequest;
+    FARPROC WinHttpSetCredentials;
+    FARPROC WinHttpSetDefaultProxyConfiguration;
+    FARPROC WinHttpSetOption;
+    FARPROC WinHttpSetProxySettingsPerUser;
+    FARPROC WinHttpSetSecureLegacyServersAppCompat;
+    FARPROC WinHttpSetStatusCallback;
+    FARPROC WinHttpSetTimeouts;
+    FARPROC WinHttpTimeFromSystemTime;
+    FARPROC WinHttpTimeToSystemTime;
+    FARPROC WinHttpUnregisterProxyChangeNotification;
+    FARPROC WinHttpWebSocketClose;
+    FARPROC WinHttpWebSocketCompleteUpgrade;
+    FARPROC WinHttpWebSocketQueryCloseStatus;
+    FARPROC WinHttpWebSocketReceive;
+    FARPROC WinHttpWebSocketSend;
+    FARPROC WinHttpWebSocketShutdown;
+    FARPROC WinHttpWriteData;
+    FARPROC WinHttpWriteProxySettings;
 
-	void LoadOriginalLibrary(HMODULE module)
-	{
-		dll = module;
-		shared.LoadOriginalLibrary(dll);
-		Private1 = GetProcAddress(dll, "Private1");
-		SvchostPushServiceGlobals = GetProcAddress(dll, "SvchostPushServiceGlobals");
-		WinHttpAddRequestHeaders = GetProcAddress(dll, "WinHttpAddRequestHeaders");
-		WinHttpAddRequestHeadersEx = GetProcAddress(dll, "WinHttpAddRequestHeadersEx");
-		WinHttpAutoProxySvcMain = GetProcAddress(dll, "WinHttpAutoProxySvcMain");
-		WinHttpCheckPlatform = GetProcAddress(dll, "WinHttpCheckPlatform");
-		WinHttpCloseHandle = GetProcAddress(dll, "WinHttpCloseHandle");
-		WinHttpConnect = GetProcAddress(dll, "WinHttpConnect");
-		WinHttpConnectionDeletePolicyEntries = GetProcAddress(dll, "WinHttpConnectionDeletePolicyEntries");
-		WinHttpConnectionDeleteProxyInfo = GetProcAddress(dll, "WinHttpConnectionDeleteProxyInfo");
-		WinHttpConnectionFreeNameList = GetProcAddress(dll, "WinHttpConnectionFreeNameList");
-		WinHttpConnectionFreeProxyInfo = GetProcAddress(dll, "WinHttpConnectionFreeProxyInfo");
-		WinHttpConnectionFreeProxyList = GetProcAddress(dll, "WinHttpConnectionFreeProxyList");
-		WinHttpConnectionGetNameList = GetProcAddress(dll, "WinHttpConnectionGetNameList");
-		WinHttpConnectionGetProxyInfo = GetProcAddress(dll, "WinHttpConnectionGetProxyInfo");
-		WinHttpConnectionGetProxyList = GetProcAddress(dll, "WinHttpConnectionGetProxyList");
-		WinHttpConnectionOnlyConvert = GetProcAddress(dll, "WinHttpConnectionOnlyConvert");
-		WinHttpConnectionOnlyReceive = GetProcAddress(dll, "WinHttpConnectionOnlyReceive");
-		WinHttpConnectionOnlySend = GetProcAddress(dll, "WinHttpConnectionOnlySend");
-		WinHttpConnectionSetPolicyEntries = GetProcAddress(dll, "WinHttpConnectionSetPolicyEntries");
-		WinHttpConnectionSetProxyInfo = GetProcAddress(dll, "WinHttpConnectionSetProxyInfo");
-		WinHttpConnectionUpdateIfIndexTable = GetProcAddress(dll, "WinHttpConnectionUpdateIfIndexTable");
-		WinHttpCrackUrl = GetProcAddress(dll, "WinHttpCrackUrl");
-		WinHttpCreateProxyResolver = GetProcAddress(dll, "WinHttpCreateProxyResolver");
-		WinHttpCreateUrl = GetProcAddress(dll, "WinHttpCreateUrl");
-		WinHttpDetectAutoProxyConfigUrl = GetProcAddress(dll, "WinHttpDetectAutoProxyConfigUrl");
-		WinHttpFreeProxyResult = GetProcAddress(dll, "WinHttpFreeProxyResult");
-		WinHttpFreeProxyResultEx = GetProcAddress(dll, "WinHttpFreeProxyResultEx");
-		WinHttpFreeProxySettings = GetProcAddress(dll, "WinHttpFreeProxySettings");
-		WinHttpFreeProxySettingsEx = GetProcAddress(dll, "WinHttpFreeProxySettingsEx");
-		WinHttpFreeQueryConnectionGroupResult = GetProcAddress(dll, "WinHttpFreeQueryConnectionGroupResult");
-		WinHttpGetDefaultProxyConfiguration = GetProcAddress(dll, "WinHttpGetDefaultProxyConfiguration");
-		WinHttpGetIEProxyConfigForCurrentUser = GetProcAddress(dll, "WinHttpGetIEProxyConfigForCurrentUser");
-		WinHttpGetProxyForUrl = GetProcAddress(dll, "WinHttpGetProxyForUrl");
-		WinHttpGetProxyForUrlEx = GetProcAddress(dll, "WinHttpGetProxyForUrlEx");
-		WinHttpGetProxyForUrlEx2 = GetProcAddress(dll, "WinHttpGetProxyForUrlEx2");
-		WinHttpGetProxyForUrlHvsi = GetProcAddress(dll, "WinHttpGetProxyForUrlHvsi");
-		WinHttpGetProxyResult = GetProcAddress(dll, "WinHttpGetProxyResult");
-		WinHttpGetProxyResultEx = GetProcAddress(dll, "WinHttpGetProxyResultEx");
-		WinHttpGetProxySettingsEx = GetProcAddress(dll, "WinHttpGetProxySettingsEx");
-		WinHttpGetProxySettingsResultEx = GetProcAddress(dll, "WinHttpGetProxySettingsResultEx");
-		WinHttpGetProxySettingsVersion = GetProcAddress(dll, "WinHttpGetProxySettingsVersion");
-		WinHttpGetTunnelSocket = GetProcAddress(dll, "WinHttpGetTunnelSocket");
-		WinHttpOpen = GetProcAddress(dll, "WinHttpOpen");
-		WinHttpOpenRequest = GetProcAddress(dll, "WinHttpOpenRequest");
-		WinHttpPacJsWorkerMain = GetProcAddress(dll, "WinHttpPacJsWorkerMain");
-		WinHttpProbeConnectivity = GetProcAddress(dll, "WinHttpProbeConnectivity");
-		WinHttpQueryAuthSchemes = GetProcAddress(dll, "WinHttpQueryAuthSchemes");
-		WinHttpQueryConnectionGroup = GetProcAddress(dll, "WinHttpQueryConnectionGroup");
-		WinHttpQueryDataAvailable = GetProcAddress(dll, "WinHttpQueryDataAvailable");
-		WinHttpQueryHeaders = GetProcAddress(dll, "WinHttpQueryHeaders");
-		WinHttpQueryHeadersEx = GetProcAddress(dll, "WinHttpQueryHeadersEx");
-		WinHttpQueryOption = GetProcAddress(dll, "WinHttpQueryOption");
-		WinHttpReadData = GetProcAddress(dll, "WinHttpReadData");
-		WinHttpReadDataEx = GetProcAddress(dll, "WinHttpReadDataEx");
-		WinHttpReadProxySettings = GetProcAddress(dll, "WinHttpReadProxySettings");
-		WinHttpReadProxySettingsHvsi = GetProcAddress(dll, "WinHttpReadProxySettingsHvsi");
-		WinHttpReceiveResponse = GetProcAddress(dll, "WinHttpReceiveResponse");
-		WinHttpRegisterProxyChangeNotification = GetProcAddress(dll, "WinHttpRegisterProxyChangeNotification");
-		WinHttpResetAutoProxy = GetProcAddress(dll, "WinHttpResetAutoProxy");
-		WinHttpSaveProxyCredentials = GetProcAddress(dll, "WinHttpSaveProxyCredentials");
-		WinHttpSendRequest = GetProcAddress(dll, "WinHttpSendRequest");
-		WinHttpSetCredentials = GetProcAddress(dll, "WinHttpSetCredentials");
-		WinHttpSetDefaultProxyConfiguration = GetProcAddress(dll, "WinHttpSetDefaultProxyConfiguration");
-		WinHttpSetOption = GetProcAddress(dll, "WinHttpSetOption");
-		WinHttpSetProxySettingsPerUser = GetProcAddress(dll, "WinHttpSetProxySettingsPerUser");
-		WinHttpSetSecureLegacyServersAppCompat = GetProcAddress(dll, "WinHttpSetSecureLegacyServersAppCompat");
-		WinHttpSetStatusCallback = GetProcAddress(dll, "WinHttpSetStatusCallback");
-		WinHttpSetTimeouts = GetProcAddress(dll, "WinHttpSetTimeouts");
-		WinHttpTimeFromSystemTime = GetProcAddress(dll, "WinHttpTimeFromSystemTime");
-		WinHttpTimeToSystemTime = GetProcAddress(dll, "WinHttpTimeToSystemTime");
-		WinHttpUnregisterProxyChangeNotification = GetProcAddress(dll, "WinHttpUnregisterProxyChangeNotification");
-		WinHttpWebSocketClose = GetProcAddress(dll, "WinHttpWebSocketClose");
-		WinHttpWebSocketCompleteUpgrade = GetProcAddress(dll, "WinHttpWebSocketCompleteUpgrade");
-		WinHttpWebSocketQueryCloseStatus = GetProcAddress(dll, "WinHttpWebSocketQueryCloseStatus");
-		WinHttpWebSocketReceive = GetProcAddress(dll, "WinHttpWebSocketReceive");
-		WinHttpWebSocketSend = GetProcAddress(dll, "WinHttpWebSocketSend");
-		WinHttpWebSocketShutdown = GetProcAddress(dll, "WinHttpWebSocketShutdown");
-		WinHttpWriteData = GetProcAddress(dll, "WinHttpWriteData");
-		WinHttpWriteProxySettings = GetProcAddress(dll, "WinHttpWriteProxySettings");
-	}
+    void LoadOriginalLibrary(HMODULE module)
+    {
+        dll = module;
+        shared.LoadOriginalLibrary(dll);
+        Private1 = GetProcAddress(dll, "Private1");
+        SvchostPushServiceGlobals = GetProcAddress(dll, "SvchostPushServiceGlobals");
+        WinHttpAddRequestHeaders = GetProcAddress(dll, "WinHttpAddRequestHeaders");
+        WinHttpAddRequestHeadersEx = GetProcAddress(dll, "WinHttpAddRequestHeadersEx");
+        WinHttpAutoProxySvcMain = GetProcAddress(dll, "WinHttpAutoProxySvcMain");
+        WinHttpCheckPlatform = GetProcAddress(dll, "WinHttpCheckPlatform");
+        WinHttpCloseHandle = GetProcAddress(dll, "WinHttpCloseHandle");
+        WinHttpConnect = GetProcAddress(dll, "WinHttpConnect");
+        WinHttpConnectionDeletePolicyEntries = GetProcAddress(dll, "WinHttpConnectionDeletePolicyEntries");
+        WinHttpConnectionDeleteProxyInfo = GetProcAddress(dll, "WinHttpConnectionDeleteProxyInfo");
+        WinHttpConnectionFreeNameList = GetProcAddress(dll, "WinHttpConnectionFreeNameList");
+        WinHttpConnectionFreeProxyInfo = GetProcAddress(dll, "WinHttpConnectionFreeProxyInfo");
+        WinHttpConnectionFreeProxyList = GetProcAddress(dll, "WinHttpConnectionFreeProxyList");
+        WinHttpConnectionGetNameList = GetProcAddress(dll, "WinHttpConnectionGetNameList");
+        WinHttpConnectionGetProxyInfo = GetProcAddress(dll, "WinHttpConnectionGetProxyInfo");
+        WinHttpConnectionGetProxyList = GetProcAddress(dll, "WinHttpConnectionGetProxyList");
+        WinHttpConnectionOnlyConvert = GetProcAddress(dll, "WinHttpConnectionOnlyConvert");
+        WinHttpConnectionOnlyReceive = GetProcAddress(dll, "WinHttpConnectionOnlyReceive");
+        WinHttpConnectionOnlySend = GetProcAddress(dll, "WinHttpConnectionOnlySend");
+        WinHttpConnectionSetPolicyEntries = GetProcAddress(dll, "WinHttpConnectionSetPolicyEntries");
+        WinHttpConnectionSetProxyInfo = GetProcAddress(dll, "WinHttpConnectionSetProxyInfo");
+        WinHttpConnectionUpdateIfIndexTable = GetProcAddress(dll, "WinHttpConnectionUpdateIfIndexTable");
+        WinHttpCrackUrl = GetProcAddress(dll, "WinHttpCrackUrl");
+        WinHttpCreateProxyResolver = GetProcAddress(dll, "WinHttpCreateProxyResolver");
+        WinHttpCreateUrl = GetProcAddress(dll, "WinHttpCreateUrl");
+        WinHttpDetectAutoProxyConfigUrl = GetProcAddress(dll, "WinHttpDetectAutoProxyConfigUrl");
+        WinHttpFreeProxyResult = GetProcAddress(dll, "WinHttpFreeProxyResult");
+        WinHttpFreeProxyResultEx = GetProcAddress(dll, "WinHttpFreeProxyResultEx");
+        WinHttpFreeProxySettings = GetProcAddress(dll, "WinHttpFreeProxySettings");
+        WinHttpFreeProxySettingsEx = GetProcAddress(dll, "WinHttpFreeProxySettingsEx");
+        WinHttpFreeQueryConnectionGroupResult = GetProcAddress(dll, "WinHttpFreeQueryConnectionGroupResult");
+        WinHttpGetDefaultProxyConfiguration = GetProcAddress(dll, "WinHttpGetDefaultProxyConfiguration");
+        WinHttpGetIEProxyConfigForCurrentUser = GetProcAddress(dll, "WinHttpGetIEProxyConfigForCurrentUser");
+        WinHttpGetProxyForUrl = GetProcAddress(dll, "WinHttpGetProxyForUrl");
+        WinHttpGetProxyForUrlEx = GetProcAddress(dll, "WinHttpGetProxyForUrlEx");
+        WinHttpGetProxyForUrlEx2 = GetProcAddress(dll, "WinHttpGetProxyForUrlEx2");
+        WinHttpGetProxyForUrlHvsi = GetProcAddress(dll, "WinHttpGetProxyForUrlHvsi");
+        WinHttpGetProxyResult = GetProcAddress(dll, "WinHttpGetProxyResult");
+        WinHttpGetProxyResultEx = GetProcAddress(dll, "WinHttpGetProxyResultEx");
+        WinHttpGetProxySettingsEx = GetProcAddress(dll, "WinHttpGetProxySettingsEx");
+        WinHttpGetProxySettingsResultEx = GetProcAddress(dll, "WinHttpGetProxySettingsResultEx");
+        WinHttpGetProxySettingsVersion = GetProcAddress(dll, "WinHttpGetProxySettingsVersion");
+        WinHttpGetTunnelSocket = GetProcAddress(dll, "WinHttpGetTunnelSocket");
+        WinHttpOpen = GetProcAddress(dll, "WinHttpOpen");
+        WinHttpOpenRequest = GetProcAddress(dll, "WinHttpOpenRequest");
+        WinHttpPacJsWorkerMain = GetProcAddress(dll, "WinHttpPacJsWorkerMain");
+        WinHttpProbeConnectivity = GetProcAddress(dll, "WinHttpProbeConnectivity");
+        WinHttpQueryAuthSchemes = GetProcAddress(dll, "WinHttpQueryAuthSchemes");
+        WinHttpQueryConnectionGroup = GetProcAddress(dll, "WinHttpQueryConnectionGroup");
+        WinHttpQueryDataAvailable = GetProcAddress(dll, "WinHttpQueryDataAvailable");
+        WinHttpQueryHeaders = GetProcAddress(dll, "WinHttpQueryHeaders");
+        WinHttpQueryHeadersEx = GetProcAddress(dll, "WinHttpQueryHeadersEx");
+        WinHttpQueryOption = GetProcAddress(dll, "WinHttpQueryOption");
+        WinHttpReadData = GetProcAddress(dll, "WinHttpReadData");
+        WinHttpReadDataEx = GetProcAddress(dll, "WinHttpReadDataEx");
+        WinHttpReadProxySettings = GetProcAddress(dll, "WinHttpReadProxySettings");
+        WinHttpReadProxySettingsHvsi = GetProcAddress(dll, "WinHttpReadProxySettingsHvsi");
+        WinHttpReceiveResponse = GetProcAddress(dll, "WinHttpReceiveResponse");
+        WinHttpRegisterProxyChangeNotification = GetProcAddress(dll, "WinHttpRegisterProxyChangeNotification");
+        WinHttpResetAutoProxy = GetProcAddress(dll, "WinHttpResetAutoProxy");
+        WinHttpSaveProxyCredentials = GetProcAddress(dll, "WinHttpSaveProxyCredentials");
+        WinHttpSendRequest = GetProcAddress(dll, "WinHttpSendRequest");
+        WinHttpSetCredentials = GetProcAddress(dll, "WinHttpSetCredentials");
+        WinHttpSetDefaultProxyConfiguration = GetProcAddress(dll, "WinHttpSetDefaultProxyConfiguration");
+        WinHttpSetOption = GetProcAddress(dll, "WinHttpSetOption");
+        WinHttpSetProxySettingsPerUser = GetProcAddress(dll, "WinHttpSetProxySettingsPerUser");
+        WinHttpSetSecureLegacyServersAppCompat = GetProcAddress(dll, "WinHttpSetSecureLegacyServersAppCompat");
+        WinHttpSetStatusCallback = GetProcAddress(dll, "WinHttpSetStatusCallback");
+        WinHttpSetTimeouts = GetProcAddress(dll, "WinHttpSetTimeouts");
+        WinHttpTimeFromSystemTime = GetProcAddress(dll, "WinHttpTimeFromSystemTime");
+        WinHttpTimeToSystemTime = GetProcAddress(dll, "WinHttpTimeToSystemTime");
+        WinHttpUnregisterProxyChangeNotification = GetProcAddress(dll, "WinHttpUnregisterProxyChangeNotification");
+        WinHttpWebSocketClose = GetProcAddress(dll, "WinHttpWebSocketClose");
+        WinHttpWebSocketCompleteUpgrade = GetProcAddress(dll, "WinHttpWebSocketCompleteUpgrade");
+        WinHttpWebSocketQueryCloseStatus = GetProcAddress(dll, "WinHttpWebSocketQueryCloseStatus");
+        WinHttpWebSocketReceive = GetProcAddress(dll, "WinHttpWebSocketReceive");
+        WinHttpWebSocketSend = GetProcAddress(dll, "WinHttpWebSocketSend");
+        WinHttpWebSocketShutdown = GetProcAddress(dll, "WinHttpWebSocketShutdown");
+        WinHttpWriteData = GetProcAddress(dll, "WinHttpWriteData");
+        WinHttpWriteProxySettings = GetProcAddress(dll, "WinHttpWriteProxySettings");
+    }
 } winhttp;
 
 struct dxgi_dll
 {
-	HMODULE dll;
-	PFN_CREATE_DXGI_FACTORY CreateDxgiFactory;
-	PFN_CREATE_DXGI_FACTORY CreateDxgiFactory1;
-	PFN_CREATE_DXGI_FACTORY_2 CreateDxgiFactory2;
-	PFN_DECLARE_ADAPTER_REMOVAL_SUPPORT DeclareAdapterRemovalSupport;
-	PFN_GET_DEBUG_INTERFACE GetDebugInterface;
+    HMODULE dll;
+    PFN_CREATE_DXGI_FACTORY CreateDxgiFactory;
+    PFN_CREATE_DXGI_FACTORY CreateDxgiFactory1;
+    PFN_CREATE_DXGI_FACTORY_2 CreateDxgiFactory2;
+    PFN_DECLARE_ADAPTER_REMOVAL_SUPPORT DeclareAdapterRemovalSupport;
+    PFN_GET_DEBUG_INTERFACE GetDebugInterface;
 
-	void LoadOriginalLibrary(HMODULE module)
-	{
-		dll = module;
-		CreateDxgiFactory = (PFN_CREATE_DXGI_FACTORY)GetProcAddress(module, "CreateDXGIFactory");
-		CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY)GetProcAddress(module, "CreateDXGIFactory1");
-		CreateDxgiFactory2 = (PFN_CREATE_DXGI_FACTORY_2)GetProcAddress(module, "CreateDXGIFactory2");
-		DeclareAdapterRemovalSupport = (PFN_DECLARE_ADAPTER_REMOVAL_SUPPORT)GetProcAddress(module, "DXGIDeclareAdapterRemovalSupport");
-		GetDebugInterface = (PFN_GET_DEBUG_INTERFACE)GetProcAddress(module, "DXGIGetDebugInterface1");
-	}
+    void LoadOriginalLibrary(HMODULE module)
+    {
+        dll = module;
+        CreateDxgiFactory = (PFN_CREATE_DXGI_FACTORY)GetProcAddress(module, "CreateDXGIFactory");
+        CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY)GetProcAddress(module, "CreateDXGIFactory1");
+        CreateDxgiFactory2 = (PFN_CREATE_DXGI_FACTORY_2)GetProcAddress(module, "CreateDXGIFactory2");
+        DeclareAdapterRemovalSupport = (PFN_DECLARE_ADAPTER_REMOVAL_SUPPORT)GetProcAddress(module, "DXGIDeclareAdapterRemovalSupport");
+        GetDebugInterface = (PFN_GET_DEBUG_INTERFACE)GetProcAddress(module, "DXGIGetDebugInterface1");
+    }
 } dxgi;
 
 #pragma endregion
@@ -1297,143 +1297,143 @@ struct dxgi_dll
 
 bool SkipSpoofing()
 {
-	auto result = Config::Instance()->xessSkipSpoofing && Config::Instance()->DxgiXessNoSpoof.value_or(true);
+    auto result = Config::Instance()->xessSkipSpoofing && Config::Instance()->DxgiXessNoSpoof.value_or(true);
 
-	if (result && Config::Instance()->DxgiBlacklist.has_value())
-		spdlog::info("SkipSpoofing skipping spoofing for XeSS");
+    if (result)
+        spdlog::info("SkipSpoofing skipping spoofing for XeSS");
 
-	if (!result && !Config::Instance()->IsRunningOnLinux)
-	{
-		result = true;
+    if (!result && Config::Instance()->DxgiBlacklist.has_value() && !Config::Instance()->IsRunningOnLinux)
+    {
+        result = true;
 
-		// Walk the call stack to find the DLL that is calling the hooked function
-		void* callers[100];
-		unsigned short frames = CaptureStackBackTrace(0, 100, callers, NULL);
-		HANDLE process = GetCurrentProcess();
-		//std::string list = "slInit|slGetPluginFunction|nvapi_QueryInterface";
+        // Walk the call stack to find the DLL that is calling the hooked function
+        void* callers[100];
+        unsigned short frames = CaptureStackBackTrace(0, 100, callers, NULL);
+        HANDLE process = GetCurrentProcess();
+        //std::string list = "slInit|slGetPluginFunction|nvapi_QueryInterface";
 
-		if (SymInitialize(process, NULL, TRUE))
-		{
-			SYMBOL_INFO* symbol = (SYMBOL_INFO*)calloc(sizeof(SYMBOL_INFO) + 256 * sizeof(char), 1);
+        if (SymInitialize(process, NULL, TRUE))
+        {
+            SYMBOL_INFO* symbol = (SYMBOL_INFO*)calloc(sizeof(SYMBOL_INFO) + 256 * sizeof(char), 1);
 
-			if (symbol != nullptr)
-			{
-				symbol->MaxNameLen = 255;
-				symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+            if (symbol != nullptr)
+            {
+                symbol->MaxNameLen = 255;
+                symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
 
-				for (unsigned int i = 0; i < frames; i++)
-				{
-					if (SymFromAddr(process, (DWORD64)callers[i], 0, symbol))
-					{
-						auto sn = std::string(symbol->Name);
-						auto pos = Config::Instance()->DxgiBlacklist.value().rfind(sn);
+                for (unsigned int i = 0; i < frames; i++)
+                {
+                    if (SymFromAddr(process, (DWORD64)callers[i], 0, symbol))
+                    {
+                        auto sn = std::string(symbol->Name);
+                        auto pos = Config::Instance()->DxgiBlacklist.value().rfind(sn);
 
-						spdlog::debug("SkipSpoofing checking for: {0} ({1})", sn, i);
+                        spdlog::debug("SkipSpoofing checking for: {0} ({1})", sn, i);
 
-						if (pos != std::string::npos)
-						{
-							spdlog::info("SkipSpoofing spoofing for: {0}", sn);
-							result = false;
-							break;
-						}
-					}
-				}
+                        if (pos != std::string::npos)
+                        {
+                            spdlog::info("SkipSpoofing spoofing for: {0}", sn);
+                            result = false;
+                            break;
+                        }
+                    }
+                }
 
-				free(symbol);
-			}
+                free(symbol);
+            }
 
-			SymCleanup(process);
-		}
+            SymCleanup(process);
+        }
 
-		if (result)
-			spdlog::debug("SkipSpoofing skipping spoofing, blacklisting active");
-	}
+        if (result)
+            spdlog::debug("SkipSpoofing skipping spoofing, blacklisting active");
+    }
 
-	return result;
+    return result;
 }
 
 HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
 {
-	auto result = ptrGetDesc3(This, pDesc);
-	auto skip = SkipSpoofing();
+    auto result = ptrGetDesc3(This, pDesc);
+    auto skip = SkipSpoofing();
 
-	if (result == S_OK && !skip && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
-	{
-		pDesc->VendorId = 0x10de;
-		pDesc->DeviceId = 0x2684;
+    if (result == S_OK && !skip && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+    {
+        pDesc->VendorId = 0x10de;
+        pDesc->DeviceId = 0x2684;
 
-		std::wstring name(L"NVIDIA GeForce RTX 4090");
-		const wchar_t* szName = name.c_str();
-		std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-		std::memcpy(pDesc->Description, szName, 54);
-	}
+        std::wstring name(L"NVIDIA GeForce RTX 4090");
+        const wchar_t* szName = name.c_str();
+        std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
+        std::memcpy(pDesc->Description, szName, 54);
+    }
 
-	AttachToAdapter(This);
+    AttachToAdapter(This);
 
-	return result;
+    return result;
 }
 
 HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
 {
-	auto result = ptrGetDesc2(This, pDesc);
-	auto skip = SkipSpoofing();
+    auto result = ptrGetDesc2(This, pDesc);
+    auto skip = SkipSpoofing();
 
-	if (result == S_OK && !skip && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
-	{
-		pDesc->VendorId = 0x10de;
-		pDesc->DeviceId = 0x2684;
+    if (result == S_OK && !skip && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+    {
+        pDesc->VendorId = 0x10de;
+        pDesc->DeviceId = 0x2684;
 
-		std::wstring name(L"NVIDIA GeForce RTX 4090");
-		const wchar_t* szName = name.c_str();
-		std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-		std::memcpy(pDesc->Description, szName, 54);
-	}
+        std::wstring name(L"NVIDIA GeForce RTX 4090");
+        const wchar_t* szName = name.c_str();
+        std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
+        std::memcpy(pDesc->Description, szName, 54);
+    }
 
-	AttachToAdapter(This);
+    AttachToAdapter(This);
 
-	return result;
+    return result;
 }
 
 HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
 {
-	auto result = ptrGetDesc1(This, pDesc);
-	auto skip = SkipSpoofing();
+    auto result = ptrGetDesc1(This, pDesc);
+    auto skip = SkipSpoofing();
 
-	if (result == S_OK && !skip && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
-	{
-		pDesc->VendorId = 0x10de;
-		pDesc->DeviceId = 0x2684;
+    if (result == S_OK && !skip && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+    {
+        pDesc->VendorId = 0x10de;
+        pDesc->DeviceId = 0x2684;
 
-		std::wstring name(L"NVIDIA GeForce RTX 4090");
-		const wchar_t* szName = name.c_str();
-		std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-		std::memcpy(pDesc->Description, szName, 54);
-	}
+        std::wstring name(L"NVIDIA GeForce RTX 4090");
+        const wchar_t* szName = name.c_str();
+        std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
+        std::memcpy(pDesc->Description, szName, 54);
+    }
 
-	AttachToAdapter(This);
+    AttachToAdapter(This);
 
-	return result;
+    return result;
 }
 
 HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
 {
-	auto result = ptrGetDesc(This, pDesc);
-	auto skip = SkipSpoofing();
+    auto result = ptrGetDesc(This, pDesc);
+    auto skip = SkipSpoofing();
 
-	if (result == S_OK && !skip && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
-	{
-		pDesc->VendorId = 0x10de;
-		pDesc->DeviceId = 0x2684;
+    if (result == S_OK && !skip && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+    {
+        pDesc->VendorId = 0x10de;
+        pDesc->DeviceId = 0x2684;
 
-		std::wstring name(L"NVIDIA GeForce RTX 4090");
-		const wchar_t* szName = name.c_str();
-		std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-		std::memcpy(pDesc->Description, szName, 54);
-	}
+        std::wstring name(L"NVIDIA GeForce RTX 4090");
+        const wchar_t* szName = name.c_str();
+        std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
+        std::memcpy(pDesc->Description, szName, 54);
+    }
 
-	AttachToAdapter(This);
+    AttachToAdapter(This);
 
-	return result;
+    return result;
 }
 
 #pragma endregion
@@ -1442,66 +1442,66 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
 
 HRESULT WINAPI detEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, void** ppvAdapter)
 {
-	AttachToFactory(This);
+    AttachToFactory(This);
 
-	IDXGIAdapter* adapter = nullptr;
-	auto result = ptrEnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, (void**)&adapter);
+    IDXGIAdapter* adapter = nullptr;
+    auto result = ptrEnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, (void**)&adapter);
 
-	if (result == S_OK)
-	{
-		AttachToAdapter(adapter);
-		*ppvAdapter = adapter;
-	}
+    if (result == S_OK)
+    {
+        AttachToAdapter(adapter);
+        *ppvAdapter = adapter;
+    }
 
-	return result;
+    return result;
 }
 
 HRESULT WINAPI detEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, void** ppvAdapter)
 {
-	AttachToFactory(This);
+    AttachToFactory(This);
 
-	IDXGIAdapter* adapter = nullptr;
-	auto result = ptrEnumAdapterByLuid(This, AdapterLuid, riid, (void**)&adapter);
+    IDXGIAdapter* adapter = nullptr;
+    auto result = ptrEnumAdapterByLuid(This, AdapterLuid, riid, (void**)&adapter);
 
-	if (result == S_OK)
-	{
-		AttachToAdapter(adapter);
-		*ppvAdapter = adapter;
-	}
+    if (result == S_OK)
+    {
+        AttachToAdapter(adapter);
+        *ppvAdapter = adapter;
+    }
 
-	return result;
+    return result;
 }
 
 HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1** ppAdapter)
 {
-	AttachToFactory(This);
+    AttachToFactory(This);
 
-	IDXGIAdapter1* adapter = nullptr;
-	auto result = ptrEnumAdapters1(This, Adapter, &adapter);
+    IDXGIAdapter1* adapter = nullptr;
+    auto result = ptrEnumAdapters1(This, Adapter, &adapter);
 
-	if (result == S_OK)
-	{
-		AttachToAdapter(adapter);
-		*ppAdapter = adapter;
-	}
+    if (result == S_OK)
+    {
+        AttachToAdapter(adapter);
+        *ppAdapter = adapter;
+    }
 
-	return result;
+    return result;
 }
 
 HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** ppAdapter)
 {
-	AttachToFactory(This);
+    AttachToFactory(This);
 
-	IDXGIAdapter* adapter = nullptr;
-	auto result = ptrEnumAdapters(This, Adapter, &adapter);
+    IDXGIAdapter* adapter = nullptr;
+    auto result = ptrEnumAdapters(This, Adapter, &adapter);
 
-	if (result == S_OK)
-	{
-		AttachToAdapter(adapter);
-		*ppAdapter = adapter;
-	}
+    if (result == S_OK)
+    {
+        AttachToAdapter(adapter);
+        *ppAdapter = adapter;
+    }
 
-	return result;
+    return result;
 }
 
 #pragma endregion
@@ -1510,51 +1510,51 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
 
 HRESULT _CreateDXGIFactory(REFIID riid, _COM_Outptr_ void** ppFactory)
 {
-	IDXGIFactory* factory;
-	HRESULT result = dxgi.CreateDxgiFactory(riid, (void**)&factory);
+    IDXGIFactory* factory;
+    HRESULT result = dxgi.CreateDxgiFactory(riid, (void**)&factory);
 
-	if (result == S_OK)
-		AttachToFactory(factory);
+    if (result == S_OK)
+        AttachToFactory(factory);
 
-	*ppFactory = factory;
+    *ppFactory = factory;
 
-	return result;
+    return result;
 }
 
 HRESULT _CreateDXGIFactory1(REFIID riid, _COM_Outptr_ void** ppFactory)
 {
-	IDXGIFactory1* factory1;
-	HRESULT result = dxgi.CreateDxgiFactory1(riid, (void**)&factory1);
+    IDXGIFactory1* factory1;
+    HRESULT result = dxgi.CreateDxgiFactory1(riid, (void**)&factory1);
 
-	if (result == S_OK)
-		AttachToFactory(factory1);
+    if (result == S_OK)
+        AttachToFactory(factory1);
 
-	*ppFactory = factory1;
+    *ppFactory = factory1;
 
-	return result;
+    return result;
 }
 
 HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFactory)
 {
-	IDXGIFactory* factory;
-	HRESULT result = dxgi.CreateDxgiFactory2(Flags, riid, (void**)&factory);
+    IDXGIFactory* factory;
+    HRESULT result = dxgi.CreateDxgiFactory2(Flags, riid, (void**)&factory);
 
-	if (result == S_OK)
-		AttachToFactory(factory);
+    if (result == S_OK)
+        AttachToFactory(factory);
 
-	*ppFactory = factory;
+    *ppFactory = factory;
 
-	return result;
+    return result;
 }
 
 HRESULT _DXGIDeclareAdapterRemovalSupport()
 {
-	return dxgi.DeclareAdapterRemovalSupport();
+    return dxgi.DeclareAdapterRemovalSupport();
 }
 
 HRESULT _DXGIGetDebugInterface1(UINT Flags, REFIID riid, void** ppDebug)
 {
-	return dxgi.GetDebugInterface(Flags, riid, ppDebug);
+    return dxgi.GetDebugInterface(Flags, riid, ppDebug);
 }
 
 #pragma endregion
@@ -1563,136 +1563,136 @@ HRESULT _DXGIGetDebugInterface1(UINT Flags, REFIID riid, void** ppDebug)
 
 void AttachToAdapter(IUnknown* unkAdapter)
 {
-	PVOID* pVTable = *(PVOID**)unkAdapter;
+    PVOID* pVTable = *(PVOID**)unkAdapter;
 
-	IDXGIAdapter* adapter = nullptr;
-	if (ptrGetDesc == nullptr && unkAdapter->QueryInterface(__uuidof(IDXGIAdapter), (void**)&adapter) == S_OK)
-	{
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
+    IDXGIAdapter* adapter = nullptr;
+    if (ptrGetDesc == nullptr && unkAdapter->QueryInterface(__uuidof(IDXGIAdapter), (void**)&adapter) == S_OK)
+    {
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
 
-		ptrGetDesc = (PFN_GetDesc)pVTable[8];
+        ptrGetDesc = (PFN_GetDesc)pVTable[8];
 
-		DetourAttach(&(PVOID&)ptrGetDesc, detGetDesc);
+        DetourAttach(&(PVOID&)ptrGetDesc, detGetDesc);
 
-		DetourTransactionCommit();
-	}
+        DetourTransactionCommit();
+    }
 
-	if (adapter != nullptr)
-		adapter->Release();
+    if (adapter != nullptr)
+        adapter->Release();
 
-	IDXGIAdapter1* adapter1 = nullptr;
-	if (ptrGetDesc1 == nullptr && unkAdapter->QueryInterface(__uuidof(IDXGIAdapter1), (void**)&adapter1) == S_OK)
-	{
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
+    IDXGIAdapter1* adapter1 = nullptr;
+    if (ptrGetDesc1 == nullptr && unkAdapter->QueryInterface(__uuidof(IDXGIAdapter1), (void**)&adapter1) == S_OK)
+    {
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
 
-		ptrGetDesc1 = (PFN_GetDesc1)pVTable[10];
+        ptrGetDesc1 = (PFN_GetDesc1)pVTable[10];
 
-		DetourAttach(&(PVOID&)ptrGetDesc1, detGetDesc1);
+        DetourAttach(&(PVOID&)ptrGetDesc1, detGetDesc1);
 
-		DetourTransactionCommit();
-	}
+        DetourTransactionCommit();
+    }
 
-	if (adapter1 != nullptr)
-		adapter1->Release();
+    if (adapter1 != nullptr)
+        adapter1->Release();
 
-	IDXGIAdapter2* adapter2 = nullptr;
-	if (ptrGetDesc2 == nullptr && unkAdapter->QueryInterface(__uuidof(IDXGIAdapter2), (void**)&adapter2) == S_OK)
-	{
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
+    IDXGIAdapter2* adapter2 = nullptr;
+    if (ptrGetDesc2 == nullptr && unkAdapter->QueryInterface(__uuidof(IDXGIAdapter2), (void**)&adapter2) == S_OK)
+    {
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
 
-		ptrGetDesc2 = (PFN_GetDesc2)pVTable[11];
+        ptrGetDesc2 = (PFN_GetDesc2)pVTable[11];
 
-		DetourAttach(&(PVOID&)ptrGetDesc2, detGetDesc2);
+        DetourAttach(&(PVOID&)ptrGetDesc2, detGetDesc2);
 
-		DetourTransactionCommit();
-	}
+        DetourTransactionCommit();
+    }
 
-	if (adapter2 != nullptr)
-		adapter2->Release();
+    if (adapter2 != nullptr)
+        adapter2->Release();
 
-	IDXGIAdapter4* adapter4 = nullptr;
-	if (ptrGetDesc3 == nullptr && unkAdapter->QueryInterface(__uuidof(IDXGIAdapter4), (void**)&adapter4) == S_OK)
-	{
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
+    IDXGIAdapter4* adapter4 = nullptr;
+    if (ptrGetDesc3 == nullptr && unkAdapter->QueryInterface(__uuidof(IDXGIAdapter4), (void**)&adapter4) == S_OK)
+    {
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
 
-		ptrGetDesc3 = (PFN_GetDesc3)pVTable[18];
+        ptrGetDesc3 = (PFN_GetDesc3)pVTable[18];
 
-		DetourAttach(&(PVOID&)ptrGetDesc3, detGetDesc3);
+        DetourAttach(&(PVOID&)ptrGetDesc3, detGetDesc3);
 
-		DetourTransactionCommit();
-	}
+        DetourTransactionCommit();
+    }
 
-	if (adapter4 != nullptr)
-		adapter4->Release();
+    if (adapter4 != nullptr)
+        adapter4->Release();
 }
 
 void AttachToFactory(IUnknown* unkFactory)
 {
-	PVOID* pVTable = *(PVOID**)unkFactory;
+    PVOID* pVTable = *(PVOID**)unkFactory;
 
-	IDXGIFactory* factory;
-	if (ptrEnumAdapters == nullptr && unkFactory->QueryInterface(__uuidof(IDXGIFactory), (void**)&factory) == S_OK)
-	{
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
+    IDXGIFactory* factory;
+    if (ptrEnumAdapters == nullptr && unkFactory->QueryInterface(__uuidof(IDXGIFactory), (void**)&factory) == S_OK)
+    {
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
 
-		ptrEnumAdapters = (PFN_EnumAdapters)pVTable[7];
+        ptrEnumAdapters = (PFN_EnumAdapters)pVTable[7];
 
-		DetourAttach(&(PVOID&)ptrEnumAdapters, detEnumAdapters);
+        DetourAttach(&(PVOID&)ptrEnumAdapters, detEnumAdapters);
 
-		DetourTransactionCommit();
+        DetourTransactionCommit();
 
-		factory->Release();
-	}
+        factory->Release();
+    }
 
-	IDXGIFactory1* factory1;
-	if (ptrEnumAdapters1 == nullptr && unkFactory->QueryInterface(__uuidof(IDXGIFactory1), (void**)&factory1) == S_OK)
-	{
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
+    IDXGIFactory1* factory1;
+    if (ptrEnumAdapters1 == nullptr && unkFactory->QueryInterface(__uuidof(IDXGIFactory1), (void**)&factory1) == S_OK)
+    {
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
 
-		ptrEnumAdapters1 = (PFN_EnumAdapters1)pVTable[12];
+        ptrEnumAdapters1 = (PFN_EnumAdapters1)pVTable[12];
 
-		DetourAttach(&(PVOID&)ptrEnumAdapters1, detEnumAdapters1);
+        DetourAttach(&(PVOID&)ptrEnumAdapters1, detEnumAdapters1);
 
-		DetourTransactionCommit();
+        DetourTransactionCommit();
 
-		factory1->Release();
-	}
+        factory1->Release();
+    }
 
-	IDXGIFactory4* factory4;
-	if (ptrEnumAdapterByLuid == nullptr && unkFactory->QueryInterface(__uuidof(IDXGIFactory4), (void**)&factory4) == S_OK)
-	{
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
+    IDXGIFactory4* factory4;
+    if (ptrEnumAdapterByLuid == nullptr && unkFactory->QueryInterface(__uuidof(IDXGIFactory4), (void**)&factory4) == S_OK)
+    {
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
 
-		ptrEnumAdapterByLuid = (PFN_EnumAdapterByLuid)pVTable[26];
+        ptrEnumAdapterByLuid = (PFN_EnumAdapterByLuid)pVTable[26];
 
-		DetourAttach(&(PVOID&)ptrEnumAdapterByLuid, detEnumAdapterByLuid);
+        DetourAttach(&(PVOID&)ptrEnumAdapterByLuid, detEnumAdapterByLuid);
 
-		DetourTransactionCommit();
+        DetourTransactionCommit();
 
-		factory4->Release();
-	}
+        factory4->Release();
+    }
 
-	IDXGIFactory6* factory6;
-	if (ptrEnumAdapterByGpuPreference == nullptr && unkFactory->QueryInterface(__uuidof(IDXGIFactory6), (void**)&factory6) == S_OK)
-	{
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
+    IDXGIFactory6* factory6;
+    if (ptrEnumAdapterByGpuPreference == nullptr && unkFactory->QueryInterface(__uuidof(IDXGIFactory6), (void**)&factory6) == S_OK)
+    {
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
 
-		ptrEnumAdapterByGpuPreference = (PFN_EnumAdapterByGpuPreference)pVTable[29];
+        ptrEnumAdapterByGpuPreference = (PFN_EnumAdapterByGpuPreference)pVTable[29];
 
-		DetourAttach(&(PVOID&)ptrEnumAdapterByGpuPreference, detEnumAdapterByGpuPreference);
+        DetourAttach(&(PVOID&)ptrEnumAdapterByGpuPreference, detEnumAdapterByGpuPreference);
 
-		DetourTransactionCommit();
+        DetourTransactionCommit();
 
-		factory6->Release();
-	}
+        factory6->Release();
+    }
 }
 
 #pragma endregion 
