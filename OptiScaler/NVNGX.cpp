@@ -127,5 +127,5 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_UpdateFeature(const NVSDK_NGX_Applicati
 	}
 
 	// To test with puredark mods
-	return NVSDK_NGX_Result_Success;
+	return NVSDK_NGX_Result_Fail;
 }
