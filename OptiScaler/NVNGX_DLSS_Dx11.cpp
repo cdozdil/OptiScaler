@@ -12,6 +12,7 @@
 #include "backends/fsr2/FSR2Feature_Dx11.h"
 #include "backends/fsr2/FSR2Feature_Dx11On12.h"
 #include "backends/fsr2_212/FSR2Feature_Dx11On12_212.h"
+#include "backends/fsr31/FSR31Feature_Dx11On12.h"
 #include "backends/xess/XeSSFeature_Dx11.h"
 
 #include "imgui/imgui_overlay_dx11.h"
@@ -29,139 +30,139 @@ static inline int evalCounter = 0;
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, ID3D11Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
-	if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx11Inited())
-	{
-		if (NVNGXProxy::NVNGXModule() == nullptr)
-			NVNGXProxy::InitNVNGX();
+    if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx11Inited())
+    {
+        if (NVNGXProxy::NVNGXModule() == nullptr)
+            NVNGXProxy::InitNVNGX();
 
-		if (NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D11_Init_Ext() != nullptr)
-		{
-			spdlog::info("NVSDK_NGX_D3D11_Init_Ext calling NVNGXProxy::D3D11_Init_Ext");
+        if (NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D11_Init_Ext() != nullptr)
+        {
+            spdlog::info("NVSDK_NGX_D3D11_Init_Ext calling NVNGXProxy::D3D11_Init_Ext");
 
-			auto result = NVNGXProxy::D3D11_Init_Ext()(InApplicationId, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
+            auto result = NVNGXProxy::D3D11_Init_Ext()(InApplicationId, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
 
-			spdlog::info("NVSDK_NGX_D3D11_Init_Ext calling NVNGXProxy::D3D11_Init_Ext result: {0:X}", (UINT)result);
+            spdlog::info("NVSDK_NGX_D3D11_Init_Ext calling NVNGXProxy::D3D11_Init_Ext result: {0:X}", (UINT)result);
 
-			if (result == NVSDK_NGX_Result_Success)
-				NVNGXProxy::SetDx11Inited(true);
-		}
-	}
+            if (result == NVSDK_NGX_Result_Success)
+                NVNGXProxy::SetDx11Inited(true);
+        }
+    }
 
-	Config::Instance()->NVNGX_ApplicationId = InApplicationId;
-	Config::Instance()->NVNGX_ApplicationDataPath = std::wstring(InApplicationDataPath);
-	Config::Instance()->NVNGX_Version = InSDKVersion;
-	Config::Instance()->NVNGX_FeatureInfo = InFeatureInfo;
+    Config::Instance()->NVNGX_ApplicationId = InApplicationId;
+    Config::Instance()->NVNGX_ApplicationDataPath = std::wstring(InApplicationDataPath);
+    Config::Instance()->NVNGX_Version = InSDKVersion;
+    Config::Instance()->NVNGX_FeatureInfo = InFeatureInfo;
 
-	if (InFeatureInfo != nullptr && InSDKVersion > 0x0000013)
-		Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
+    if (InFeatureInfo != nullptr && InSDKVersion > 0x0000013)
+        Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
 
-	spdlog::info("NVSDK_NGX_D3D11_Init_Ext AppId: {0}", InApplicationId);
-	spdlog::info("NVSDK_NGX_D3D11_Init_Ext SDK: {0:x}", (int)InSDKVersion);
-	std::wstring string(InApplicationDataPath);
+    spdlog::info("NVSDK_NGX_D3D11_Init_Ext AppId: {0}", InApplicationId);
+    spdlog::info("NVSDK_NGX_D3D11_Init_Ext SDK: {0:x}", (int)InSDKVersion);
+    std::wstring string(InApplicationDataPath);
 
-	std::string str(string.length(), 0);
-	std::transform(string.begin(), string.end(), str.begin(), [](wchar_t c) { return (char)c; });
+    std::string str(string.length(), 0);
+    std::transform(string.begin(), string.end(), str.begin(), [](wchar_t c) { return (char)c; });
 
-	spdlog::debug("NVSDK_NGX_D3D11_Init_Ext InApplicationDataPath {0}", str);
+    spdlog::debug("NVSDK_NGX_D3D11_Init_Ext InApplicationDataPath {0}", str);
 
-	Config::Instance()->NVNGX_FeatureInfo_Paths.clear();
+    Config::Instance()->NVNGX_FeatureInfo_Paths.clear();
 
-	if (InFeatureInfo != nullptr)
-	{
-		for (size_t i = 0; i < InFeatureInfo->PathListInfo.Length; i++)
-		{
-			const wchar_t* path = InFeatureInfo->PathListInfo.Path[i];
-			std::wstring iniPathW(path);
+    if (InFeatureInfo != nullptr)
+    {
+        for (size_t i = 0; i < InFeatureInfo->PathListInfo.Length; i++)
+        {
+            const wchar_t* path = InFeatureInfo->PathListInfo.Path[i];
+            std::wstring iniPathW(path);
 
-			std::string iniPath(iniPathW.length(), 0);
-			std::transform(iniPathW.begin(), iniPathW.end(), iniPath.begin(), [](wchar_t c) { return (char)c; });
+            std::string iniPath(iniPathW.length(), 0);
+            std::transform(iniPathW.begin(), iniPathW.end(), iniPath.begin(), [](wchar_t c) { return (char)c; });
 
-			Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(iniPathW);
-			spdlog::debug("NVSDK_NGX_D3D11_Init_Ext PathListInfo[{0}]: {1}", i, iniPath);
+            Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(iniPathW);
+            spdlog::debug("NVSDK_NGX_D3D11_Init_Ext PathListInfo[{0}]: {1}", i, iniPath);
 
-		}
-	}
+        }
+    }
 
-	if (InDevice)
-		D3D11Device = InDevice;
+    if (InDevice)
+        D3D11Device = InDevice;
 
-	Config::Instance()->Api = NVNGX_DX11;
+    Config::Instance()->Api = NVNGX_DX11;
 
-	return NVSDK_NGX_Result_Success;
+    return NVSDK_NGX_Result_Success;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, ID3D11Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
-	if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx11Inited())
-	{
-		if (NVNGXProxy::NVNGXModule() == nullptr)
-			NVNGXProxy::InitNVNGX();
+    if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx11Inited())
+    {
+        if (NVNGXProxy::NVNGXModule() == nullptr)
+            NVNGXProxy::InitNVNGX();
 
-		if (NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D11_Init() != nullptr)
-		{
-			spdlog::info("NVSDK_NGX_D3D11_Init calling NVNGXProxy::D3D11_Init");
+        if (NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D11_Init() != nullptr)
+        {
+            spdlog::info("NVSDK_NGX_D3D11_Init calling NVNGXProxy::D3D11_Init");
 
-			auto result = NVNGXProxy::D3D11_Init()(InApplicationId, InApplicationDataPath, InDevice, InFeatureInfo, InSDKVersion);
+            auto result = NVNGXProxy::D3D11_Init()(InApplicationId, InApplicationDataPath, InDevice, InFeatureInfo, InSDKVersion);
 
-			spdlog::info("NVSDK_NGX_D3D11_Init calling NVNGXProxy::D3D11_Init result: {0:X}", (UINT)result);
+            spdlog::info("NVSDK_NGX_D3D11_Init calling NVNGXProxy::D3D11_Init result: {0:X}", (UINT)result);
 
-			if (result == NVSDK_NGX_Result_Success)
-				NVNGXProxy::SetDx11Inited(true);
-		}
-	}
+            if (result == NVSDK_NGX_Result_Success)
+                NVNGXProxy::SetDx11Inited(true);
+        }
+    }
 
-	auto result = NVSDK_NGX_D3D11_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
-	spdlog::debug("NVSDK_NGX_D3D11_Init was called NVSDK_NGX_D3D11_Init_Ext");
-	return result;
+    auto result = NVSDK_NGX_D3D11_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
+    spdlog::debug("NVSDK_NGX_D3D11_Init was called NVSDK_NGX_D3D11_Init_Ext");
+    return result;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, ID3D11Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
-	if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx11Inited())
-	{
-		if (NVNGXProxy::NVNGXModule() == nullptr)
-			NVNGXProxy::InitNVNGX();
+    if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx11Inited())
+    {
+        if (NVNGXProxy::NVNGXModule() == nullptr)
+            NVNGXProxy::InitNVNGX();
 
-		if (NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D11_Init_ProjectID() != nullptr)
-		{
-			spdlog::info("NVSDK_NGX_D3D11_Init_ProjectID calling NVNGXProxy::D3D11_Init_ProjectID");
+        if (NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D11_Init_ProjectID() != nullptr)
+        {
+            spdlog::info("NVSDK_NGX_D3D11_Init_ProjectID calling NVNGXProxy::D3D11_Init_ProjectID");
 
-			auto result = NVNGXProxy::D3D11_Init_ProjectID()(InProjectId, InEngineType, InEngineVersion, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
+            auto result = NVNGXProxy::D3D11_Init_ProjectID()(InProjectId, InEngineType, InEngineVersion, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
 
-			spdlog::info("NVSDK_NGX_D3D11_Init_ProjectID calling NVNGXProxy::D3D11_Init_ProjectID result: {0:X}", (UINT)result);
+            spdlog::info("NVSDK_NGX_D3D11_Init_ProjectID calling NVNGXProxy::D3D11_Init_ProjectID result: {0:X}", (UINT)result);
 
-			if (result == NVSDK_NGX_Result_Success)
-				NVNGXProxy::SetDx11Inited(true);
-		}
-	}
+            if (result == NVSDK_NGX_Result_Success)
+                NVNGXProxy::SetDx11Inited(true);
+        }
+    }
 
-	auto result = NVSDK_NGX_D3D11_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
+    auto result = NVSDK_NGX_D3D11_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
 
-	spdlog::info("NVSDK_NGX_D3D11_Init_ProjectID InProjectId: {0}", InProjectId);
-	spdlog::info("NVSDK_NGX_D3D11_Init_ProjectID InEngineType: {0}", (int)InEngineType);
-	spdlog::info("NVSDK_NGX_D3D11_Init_ProjectID InEngineVersion: {0}", InEngineVersion);
+    spdlog::info("NVSDK_NGX_D3D11_Init_ProjectID InProjectId: {0}", InProjectId);
+    spdlog::info("NVSDK_NGX_D3D11_Init_ProjectID InEngineType: {0}", (int)InEngineType);
+    spdlog::info("NVSDK_NGX_D3D11_Init_ProjectID InEngineVersion: {0}", InEngineVersion);
 
-	Config::Instance()->NVNGX_ProjectId = std::string(InProjectId);
-	Config::Instance()->NVNGX_Engine = InEngineType;
-	Config::Instance()->NVNGX_EngineVersion = std::string(InEngineVersion);
+    Config::Instance()->NVNGX_ProjectId = std::string(InProjectId);
+    Config::Instance()->NVNGX_Engine = InEngineType;
+    Config::Instance()->NVNGX_EngineVersion = std::string(InEngineVersion);
 
-	return result;
+    return result;
 }
 
 // Not sure about this one, original nvngx does not export this method
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_with_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, ID3D11Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
-	auto result = NVSDK_NGX_D3D11_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
+    auto result = NVSDK_NGX_D3D11_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
 
-	spdlog::info("NVSDK_NGX_D3D11_Init_with_ProjectID InProjectId: {0}", InProjectId);
-	spdlog::info("NVSDK_NGX_D3D11_Init_with_ProjectID InEngineType: {0}", (int)InEngineType);
-	spdlog::info("NVSDK_NGX_D3D11_Init_with_ProjectID InEngineVersion: {0}", InEngineVersion);
+    spdlog::info("NVSDK_NGX_D3D11_Init_with_ProjectID InProjectId: {0}", InProjectId);
+    spdlog::info("NVSDK_NGX_D3D11_Init_with_ProjectID InEngineType: {0}", (int)InEngineType);
+    spdlog::info("NVSDK_NGX_D3D11_Init_with_ProjectID InEngineVersion: {0}", InEngineVersion);
 
-	Config::Instance()->NVNGX_ProjectId = std::string(InProjectId);
-	Config::Instance()->NVNGX_Engine = InEngineType;
-	Config::Instance()->NVNGX_EngineVersion = std::string(InEngineVersion);
+    Config::Instance()->NVNGX_ProjectId = std::string(InProjectId);
+    Config::Instance()->NVNGX_Engine = InEngineType;
+    Config::Instance()->NVNGX_EngineVersion = std::string(InEngineVersion);
 
-	return result;
+    return result;
 }
 
 #pragma endregion
@@ -170,45 +171,45 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_with_ProjectID(const char* I
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown()
 {
-	spdlog::info("NVSDK_NGX_D3D11_Shutdown");
+    spdlog::info("NVSDK_NGX_D3D11_Shutdown");
 
-	for (auto const& [key, val] : Dx11Contexts)
-	{
-		if (val)
-			NVSDK_NGX_D3D11_ReleaseFeature(val->Handle());
-	}
+    for (auto const& [key, val] : Dx11Contexts)
+    {
+        if (val)
+            NVSDK_NGX_D3D11_ReleaseFeature(val->Handle());
+    }
 
-	Dx11Contexts.clear();
-	D3D11Device = nullptr;
-	Config::Instance()->CurrentFeature = nullptr;
+    Dx11Contexts.clear();
+    D3D11Device = nullptr;
+    Config::Instance()->CurrentFeature = nullptr;
 
-	DLSSFeatureDx11::Shutdown(D3D11Device);
+    DLSSFeatureDx11::Shutdown(D3D11Device);
 
-	if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayDx11::IsInitedDx11())
-		ImGuiOverlayDx11::ShutdownDx11();
+    if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayDx11::IsInitedDx11())
+        ImGuiOverlayDx11::ShutdownDx11();
 
-	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx11Inited() && NVNGXProxy::D3D11_Shutdown() != nullptr)
-	{
-		auto result = NVNGXProxy::D3D11_Shutdown()();
-		NVNGXProxy::SetDx11Inited(false);
-		spdlog::info("NVSDK_NGX_D3D11_Shutdown D3D11_Shutdown result: {0:X}", (UINT)result);
-	}
+    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx11Inited() && NVNGXProxy::D3D11_Shutdown() != nullptr)
+    {
+        auto result = NVNGXProxy::D3D11_Shutdown()();
+        NVNGXProxy::SetDx11Inited(false);
+        spdlog::info("NVSDK_NGX_D3D11_Shutdown D3D11_Shutdown result: {0:X}", (UINT)result);
+    }
 
-	return NVSDK_NGX_Result_Success;
+    return NVSDK_NGX_Result_Success;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown1(ID3D11Device* InDevice)
 {
-	spdlog::info("NVSDK_NGX_D3D11_Shutdown1");
+    spdlog::info("NVSDK_NGX_D3D11_Shutdown1");
 
-	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx11Inited() && NVNGXProxy::D3D11_Shutdown1() != nullptr)
-	{
-		auto result = NVNGXProxy::D3D11_Shutdown1()(InDevice);
-		NVNGXProxy::SetDx11Inited(false);
-		spdlog::info("NVSDK_NGX_D3D11_Shutdown1 D3D11_Shutdown1 result: {0:X}", (UINT)result);
-	}
+    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx11Inited() && NVNGXProxy::D3D11_Shutdown1() != nullptr)
+    {
+        auto result = NVNGXProxy::D3D11_Shutdown1()(InDevice);
+        NVNGXProxy::SetDx11Inited(false);
+        spdlog::info("NVSDK_NGX_D3D11_Shutdown1 D3D11_Shutdown1 result: {0:X}", (UINT)result);
+    }
 
-	return NVSDK_NGX_D3D11_Shutdown();
+    return NVSDK_NGX_D3D11_Shutdown();
 }
 
 #pragma endregion
@@ -217,113 +218,113 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown1(ID3D11Device* InDevice)
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetParameters(NVSDK_NGX_Parameter** OutParameters)
 {
-	spdlog::debug("NVSDK_NGX_D3D11_GetParameters");
+    spdlog::debug("NVSDK_NGX_D3D11_GetParameters");
 
-	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D11_GetParameters() != nullptr)
-	{
-		spdlog::info("NVSDK_NGX_D3D11_GetParameters calling NVNGXProxy::D3D11_GetParameters");
-		auto result = NVNGXProxy::D3D11_GetParameters()(OutParameters);
+    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D11_GetParameters() != nullptr)
+    {
+        spdlog::info("NVSDK_NGX_D3D11_GetParameters calling NVNGXProxy::D3D11_GetParameters");
+        auto result = NVNGXProxy::D3D11_GetParameters()(OutParameters);
 
-		spdlog::info("NVSDK_NGX_D3D11_GetParameters calling NVNGXProxy::D3D11_GetParameters result: {0:X}", (UINT)result);
+        spdlog::info("NVSDK_NGX_D3D11_GetParameters calling NVNGXProxy::D3D11_GetParameters result: {0:X}", (UINT)result);
 
-		if (result == NVSDK_NGX_Result_Success)
-		{
-			InitNGXParameters(*OutParameters);
-			return result;
-		}
-	}
+        if (result == NVSDK_NGX_Result_Success)
+        {
+            InitNGXParameters(*OutParameters);
+            return result;
+        }
+    }
 
-	*OutParameters = GetNGXParameters("OptiDx11");
-	return NVSDK_NGX_Result_Success;
+    *OutParameters = GetNGXParameters("OptiDx11");
+    return NVSDK_NGX_Result_Success;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetCapabilityParameters(NVSDK_NGX_Parameter** OutParameters)
 {
-	spdlog::debug("NVSDK_NGX_D3D11_GetCapabilityParameters");
+    spdlog::debug("NVSDK_NGX_D3D11_GetCapabilityParameters");
 
-	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::IsDx11Inited() && NVNGXProxy::D3D11_GetCapabilityParameters() != nullptr)
-	{
-		spdlog::info("NVSDK_NGX_D3D11_GetCapabilityParameters calling NVNGXProxy::D3D11_GetCapabilityParameters");
+    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::IsDx11Inited() && NVNGXProxy::D3D11_GetCapabilityParameters() != nullptr)
+    {
+        spdlog::info("NVSDK_NGX_D3D11_GetCapabilityParameters calling NVNGXProxy::D3D11_GetCapabilityParameters");
 
-		auto result = NVNGXProxy::D3D11_GetCapabilityParameters()(OutParameters);
+        auto result = NVNGXProxy::D3D11_GetCapabilityParameters()(OutParameters);
 
-		spdlog::info("NVSDK_NGX_D3D11_GetCapabilityParameters calling NVNGXProxy::D3D11_GetCapabilityParameters result: {0:X}", (UINT)result);
+        spdlog::info("NVSDK_NGX_D3D11_GetCapabilityParameters calling NVNGXProxy::D3D11_GetCapabilityParameters result: {0:X}", (UINT)result);
 
-		if (result == NVSDK_NGX_Result_Success)
-		{
-			InitNGXParameters(*OutParameters);
-			return result;
-		}
-	}
+        if (result == NVSDK_NGX_Result_Success)
+        {
+            InitNGXParameters(*OutParameters);
+            return result;
+        }
+    }
 
-	if (*OutParameters == nullptr)
-		*OutParameters = GetNGXParameters("OptiDx11");
-	else
-		InitNGXParameters(*OutParameters);
+    if (*OutParameters == nullptr)
+        *OutParameters = GetNGXParameters("OptiDx11");
+    else
+        InitNGXParameters(*OutParameters);
 
-	return NVSDK_NGX_Result_Success;
+    return NVSDK_NGX_Result_Success;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_AllocateParameters(NVSDK_NGX_Parameter** OutParameters)
 {
-	spdlog::debug("NVSDK_NGX_D3D11_AllocateParameters");
+    spdlog::debug("NVSDK_NGX_D3D11_AllocateParameters");
 
-	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D11_AllocateParameters() != nullptr)
-	{
-		spdlog::info("NVSDK_NGX_D3D11_AllocateParameters calling NVNGXProxy::D3D11_AllocateParameters");
-		auto result = NVNGXProxy::D3D11_AllocateParameters()(OutParameters);
+    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D11_AllocateParameters() != nullptr)
+    {
+        spdlog::info("NVSDK_NGX_D3D11_AllocateParameters calling NVNGXProxy::D3D11_AllocateParameters");
+        auto result = NVNGXProxy::D3D11_AllocateParameters()(OutParameters);
 
-		spdlog::info("NVSDK_NGX_D3D11_AllocateParameters calling NVNGXProxy::D3D11_AllocateParameters result: {0:X}", (UINT)result);
+        spdlog::info("NVSDK_NGX_D3D11_AllocateParameters calling NVNGXProxy::D3D11_AllocateParameters result: {0:X}", (UINT)result);
 
-		if (result == NVSDK_NGX_Result_Success)
-			return result;
-	}
+        if (result == NVSDK_NGX_Result_Success)
+            return result;
+    }
 
-	auto params = new NVNGX_Parameters();
-	params->Name = "OptiDx11";
-	*OutParameters = params;
+    auto params = new NVNGX_Parameters();
+    params->Name = "OptiDx11";
+    *OutParameters = params;
 
-	return NVSDK_NGX_Result_Success;
+    return NVSDK_NGX_Result_Success;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_PopulateParameters_Impl(NVSDK_NGX_Parameter* InParameters)
 {
-	spdlog::debug("NVSDK_NGX_D3D11_PopulateParameters_Impl");
+    spdlog::debug("NVSDK_NGX_D3D11_PopulateParameters_Impl");
 
-	if (InParameters == nullptr)
-		return NVSDK_NGX_Result_Fail;
+    if (InParameters == nullptr)
+        return NVSDK_NGX_Result_Fail;
 
-	InitNGXParameters(InParameters);
+    InitNGXParameters(InParameters);
 
-	return NVSDK_NGX_Result_Success;
+    return NVSDK_NGX_Result_Success;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_DestroyParameters(NVSDK_NGX_Parameter* InParameters)
 {
-	spdlog::debug("NVSDK_NGX_D3D11_DestroyParameters");
+    spdlog::debug("NVSDK_NGX_D3D11_DestroyParameters");
 
-	if (InParameters == nullptr)
-		return NVSDK_NGX_Result_Fail;
+    if (InParameters == nullptr)
+        return NVSDK_NGX_Result_Fail;
 
-	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D11_DestroyParameters() != nullptr)
-	{
-		spdlog::info("NVSDK_NGX_D3D11_DestroyParameters calling NVNGXProxy::D3D11_DestroyParameters");
-		auto result = NVNGXProxy::D3D11_DestroyParameters()(InParameters);
-		spdlog::info("NVSDK_NGX_D3D11_DestroyParameters calling NVNGXProxy::D3D11_DestroyParameters result: {0:X}", (UINT)result);
+    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D11_DestroyParameters() != nullptr)
+    {
+        spdlog::info("NVSDK_NGX_D3D11_DestroyParameters calling NVNGXProxy::D3D11_DestroyParameters");
+        auto result = NVNGXProxy::D3D11_DestroyParameters()(InParameters);
+        spdlog::info("NVSDK_NGX_D3D11_DestroyParameters calling NVNGXProxy::D3D11_DestroyParameters result: {0:X}", (UINT)result);
 
-		return result;
-	}
+        return result;
+    }
 
-	delete InParameters;
+    delete InParameters;
 
-	return NVSDK_NGX_Result_Success;
+    return NVSDK_NGX_Result_Success;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetScratchBufferSize(NVSDK_NGX_Feature InFeatureId, const NVSDK_NGX_Parameter* InParameters, size_t* OutSizeInBytes)
 {
-	spdlog::warn("NVSDK_NGX_D3D11_GetScratchBufferSize -> 52428800");
-	*OutSizeInBytes = 52428800;
-	return NVSDK_NGX_Result_Success;
+    spdlog::warn("NVSDK_NGX_D3D11_GetScratchBufferSize -> 52428800");
+    *OutSizeInBytes = 52428800;
+    return NVSDK_NGX_Result_Success;
 }
 
 #pragma endregion
@@ -332,460 +333,486 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetScratchBufferSize(NVSDK_NGX_Fe
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext* InDevCtx, NVSDK_NGX_Feature InFeatureID, NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Handle** OutHandle)
 {
-	// FeatureId check
-	if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
-	{
-		if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::InitDx11(D3D11Device) && NVNGXProxy::D3D11_CreateFeature() != nullptr)
-		{
-			auto result = NVNGXProxy::D3D11_CreateFeature()(InDevCtx, InFeatureID, InParameters, OutHandle);
-			spdlog::info("NVSDK_NGX_D3D11_CreateFeature D3D11_CreateFeature result for ({0}): {1:X}", (int)InFeatureID, (UINT)result);
-			return result;
-		}
-		else
-		{
-			spdlog::error("NVSDK_NGX_D3D11_CreateFeature Can't create this feature ({0})!", (int)InFeatureID);
-			return NVSDK_NGX_Result_Fail;
-		}
-	}
+    // FeatureId check
+    if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
+    {
+        if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::InitDx11(D3D11Device) && NVNGXProxy::D3D11_CreateFeature() != nullptr)
+        {
+            auto result = NVNGXProxy::D3D11_CreateFeature()(InDevCtx, InFeatureID, InParameters, OutHandle);
+            spdlog::info("NVSDK_NGX_D3D11_CreateFeature D3D11_CreateFeature result for ({0}): {1:X}", (int)InFeatureID, (UINT)result);
+            return result;
+        }
+        else
+        {
+            spdlog::error("NVSDK_NGX_D3D11_CreateFeature Can't create this feature ({0})!", (int)InFeatureID);
+            return NVSDK_NGX_Result_Fail;
+        }
+    }
 
-	// CreateFeature
-	auto handleId = IFeature::GetNextHandleId();
-	spdlog::info("NVSDK_NGX_D3D11_CreateFeature HandleId: {0}", handleId);
+    // CreateFeature
+    auto handleId = IFeature::GetNextHandleId();
+    spdlog::info("NVSDK_NGX_D3D11_CreateFeature HandleId: {0}", handleId);
 
-	if (InFeatureID == NVSDK_NGX_Feature_SuperSampling)
-	{
-		std::string defaultUpscaler = "fsr22";
+    if (InFeatureID == NVSDK_NGX_Feature_SuperSampling)
+    {
+        std::string defaultUpscaler = "fsr22";
 
-		// If original NVNGX available use DLSS as base upscaler
-		if (NVNGXProxy::IsDx11Inited())
-			defaultUpscaler = "dlss";
+        // If original NVNGX available use DLSS as base upscaler
+        if (NVNGXProxy::IsDx11Inited())
+            defaultUpscaler = "dlss";
 
-		if (Config::Instance()->Dx11Upscaler.value_or(defaultUpscaler) == "xess")
-		{
-			Dx11Contexts[handleId] = std::make_unique<XeSSFeatureDx11>(handleId, InParameters);
+        if (Config::Instance()->Dx11Upscaler.value_or(defaultUpscaler) == "xess")
+        {
+            Dx11Contexts[handleId] = std::make_unique<XeSSFeatureDx11>(handleId, InParameters);
 
 
-			if (!Dx11Contexts[handleId]->ModuleLoaded())
-			{
-				spdlog::error("NVSDK_NGX_D3D11_CreateFeature can't create new XeSS with Dx12 feature, Fallback to FSR2.2!");
+            if (!Dx11Contexts[handleId]->ModuleLoaded())
+            {
+                spdlog::error("NVSDK_NGX_D3D11_CreateFeature can't create new XeSS with Dx12 feature, Fallback to FSR2.2!");
 
-				Dx11Contexts[handleId].reset();
-				auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
-				Dx11Contexts.erase(it);
+                Dx11Contexts[handleId].reset();
+                auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+                Dx11Contexts.erase(it);
 
-				Config::Instance()->Dx11Upscaler = "fsr22";
-			}
-			else
-			{
-				spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new XeSS with Dx12 feature");
-			}
-		}
+                Config::Instance()->Dx11Upscaler = "fsr22";
+            }
+            else
+            {
+                spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new XeSS with Dx12 feature");
+            }
+        }
 
-		if (Config::Instance()->Dx11Upscaler.value_or(defaultUpscaler) == "dlss")
-		{
-			if (Config::Instance()->DLSSEnabled.value_or(true))
-			{
-				Dx11Contexts[handleId] = std::make_unique<DLSSFeatureDx11>(handleId, InParameters);
+        if (Config::Instance()->Dx11Upscaler.value_or(defaultUpscaler) == "dlss")
+        {
+            if (Config::Instance()->DLSSEnabled.value_or(true))
+            {
+                Dx11Contexts[handleId] = std::make_unique<DLSSFeatureDx11>(handleId, InParameters);
 
-				if (!Dx11Contexts[handleId]->ModuleLoaded())
-				{
-					spdlog::error("NVSDK_NGX_D3D11_CreateFeature can't create new DLSS feature, Fallback to FSR2.2!");
+                if (!Dx11Contexts[handleId]->ModuleLoaded())
+                {
+                    spdlog::error("NVSDK_NGX_D3D11_CreateFeature can't create new DLSS feature, Fallback to FSR2.2!");
 
-					Dx11Contexts[handleId].reset();
-					auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
-					Dx11Contexts.erase(it);
+                    Dx11Contexts[handleId].reset();
+                    auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+                    Dx11Contexts.erase(it);
 
-					Config::Instance()->Dx11Upscaler = "fsr22";
-				}
-				else
-				{
-					spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new DLSS feature");
-				}
-			}
-			else
-			{
-				Config::Instance()->Dx11Upscaler.reset();
-			}
-		}
+                    Config::Instance()->Dx11Upscaler = "fsr22";
+                }
+                else
+                {
+                    spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new DLSS feature");
+                }
+            }
+            else
+            {
+                Config::Instance()->Dx11Upscaler.reset();
+            }
+        }
 
-		if (Config::Instance()->Dx11Upscaler.value_or(defaultUpscaler) == "fsr22_12")
-		{
-			spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new FSR 2.2.1 with Dx12 feature");
-			Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12>(handleId, InParameters);
-		}
-		else if (Config::Instance()->Dx11Upscaler.value_or(defaultUpscaler) == "fsr21_12")
-		{
-			spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new FSR 2.1.2 with Dx12 feature");
-			Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12_212>(handleId, InParameters);
-		}
-		else if (Config::Instance()->Dx11Upscaler.value_or(defaultUpscaler) == "fsr22")
-		{
-			spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new native FSR 2.2.1 feature");
-			Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11>(handleId, InParameters);
-		}
-	}
-	else
-	{
-		spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new DLSSD feature");
-		Dx11Contexts[handleId] = std::make_unique<DLSSDFeatureDx11>(handleId, InParameters);
-	}
+        if (Config::Instance()->Dx11Upscaler.value_or(defaultUpscaler) == "fsr31_12")
+        {
+            Dx11Contexts[handleId] = std::make_unique<FSR31FeatureDx11on12>(handleId, InParameters);
 
-	auto deviceContext = Dx11Contexts[handleId].get();
-	*OutHandle = deviceContext->Handle();
+            if (!Dx11Contexts[handleId]->ModuleLoaded())
+            {
+                spdlog::error("NVSDK_NGX_D3D11_CreateFeature can't create new FSR 3.1 feature, Fallback to FSR2.2!");
 
-	if (!D3D11Device)
-	{
-		spdlog::debug("NVSDK_NGX_D3D11_CreateFeature Get Dx11Device from InDevCtx!");
-		InDevCtx->GetDevice(&D3D11Device);
-		evalCounter = 0;
+                Dx11Contexts[handleId].reset();
+                auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+                Dx11Contexts.erase(it);
 
-		if (!D3D11Device)
-		{
-			spdlog::error("NVSDK_NGX_D3D11_CreateFeature Can't get Dx11Device from InDevCtx!");
-			return NVSDK_NGX_Result_Fail;
-		}
-	}
+                Config::Instance()->Dx11Upscaler = "fsr22";
+            }
+            else
+            {
+                spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new FSR 3.1 feature");
+            }
+        }
 
-	if (deviceContext->Init(D3D11Device, InDevCtx, InParameters) && Dx11Contexts[handleId]->ModuleLoaded())
-	{
-		Config::Instance()->CurrentFeature = deviceContext;
-		return NVSDK_NGX_Result_Success;
-	}
+        if (Config::Instance()->Dx11Upscaler.value_or(defaultUpscaler) == "fsr22_12")
+        {
+            spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new FSR 2.2.1 with Dx12 feature");
+            Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12>(handleId, InParameters);
+        }
+        else if (Config::Instance()->Dx11Upscaler.value_or(defaultUpscaler) == "fsr21_12")
+        {
+            spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new FSR 2.1.2 with Dx12 feature");
+            Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12_212>(handleId, InParameters);
+        }
+        else if (Config::Instance()->Dx11Upscaler.value_or(defaultUpscaler) == "fsr22")
+        {
+            spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new native FSR 2.2.1 feature");
+            Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11>(handleId, InParameters);
+        }
+    }
+    else
+    {
+        spdlog::info("NVSDK_NGX_D3D11_CreateFeature creating new DLSSD feature");
+        Dx11Contexts[handleId] = std::make_unique<DLSSDFeatureDx11>(handleId, InParameters);
+    }
 
-	spdlog::error("NVSDK_NGX_D3D11_CreateFeature: CreateFeature failed");
-	return NVSDK_NGX_Result_Fail;
+    auto deviceContext = Dx11Contexts[handleId].get();
+    *OutHandle = deviceContext->Handle();
+
+    if (!D3D11Device)
+    {
+        spdlog::debug("NVSDK_NGX_D3D11_CreateFeature Get Dx11Device from InDevCtx!");
+        InDevCtx->GetDevice(&D3D11Device);
+        evalCounter = 0;
+
+        if (!D3D11Device)
+        {
+            spdlog::error("NVSDK_NGX_D3D11_CreateFeature Can't get Dx11Device from InDevCtx!");
+            return NVSDK_NGX_Result_Fail;
+        }
+    }
+
+    if (deviceContext->ModuleLoaded() && deviceContext->Init(D3D11Device, InDevCtx, InParameters))
+    {
+        Config::Instance()->CurrentFeature = deviceContext;
+        return NVSDK_NGX_Result_Success;
+    }
+
+    spdlog::error("NVSDK_NGX_D3D11_CreateFeature: CreateFeature failed");
+
+    Config::Instance()->newBackend = "fsr22";
+    Config::Instance()->changeBackend = true;
+
+    return NVSDK_NGX_Result_Success;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* InHandle)
 {
-	if (!InHandle)
-		return NVSDK_NGX_Result_Success;
+    if (!InHandle)
+        return NVSDK_NGX_Result_Success;
 
-	auto handleId = InHandle->Id;
-	if (handleId < 1000000)
-	{
-		if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D11_ReleaseFeature() != nullptr)
-		{
-			auto result = NVNGXProxy::D3D11_ReleaseFeature()(InHandle);
-			spdlog::info("NVSDK_NGX_D3D11_ReleaseFeature D3D11_ReleaseFeature result for ({0}): {1:X}", handleId, (UINT)result);
-			return result;
-		}
-		else
-		{
-			return NVSDK_NGX_Result_FAIL_FeatureNotFound;
-		}
-	}
+    auto handleId = InHandle->Id;
+    if (handleId < 1000000)
+    {
+        if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D11_ReleaseFeature() != nullptr)
+        {
+            auto result = NVNGXProxy::D3D11_ReleaseFeature()(InHandle);
+            spdlog::info("NVSDK_NGX_D3D11_ReleaseFeature D3D11_ReleaseFeature result for ({0}): {1:X}", handleId, (UINT)result);
+            return result;
+        }
+        else
+        {
+            return NVSDK_NGX_Result_FAIL_FeatureNotFound;
+        }
+    }
 
-	spdlog::info("NVSDK_NGX_D3D11_ReleaseFeature releasing feature with id {0}", handleId);
+    spdlog::info("NVSDK_NGX_D3D11_ReleaseFeature releasing feature with id {0}", handleId);
 
-	if (auto deviceContext = Dx11Contexts[handleId].get(); deviceContext != nullptr)
-	{
+    if (auto deviceContext = Dx11Contexts[handleId].get(); deviceContext != nullptr)
+    {
 
-		spdlog::trace("NVSDK_NGX_D3D11_ReleaseFeature sleeping for 250ms before reset()!");
-		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        spdlog::trace("NVSDK_NGX_D3D11_ReleaseFeature sleeping for 250ms before reset()!");
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-		if (deviceContext == Config::Instance()->CurrentFeature)
-		{
-			deviceContext->Shutdown();
-			Config::Instance()->CurrentFeature = nullptr;
-		}
+        if (deviceContext == Config::Instance()->CurrentFeature)
+        {
+            deviceContext->Shutdown();
+            Config::Instance()->CurrentFeature = nullptr;
+        }
 
-		Dx11Contexts[handleId].reset();
-		auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
-		Dx11Contexts.erase(it);
-	}
+        Dx11Contexts[handleId].reset();
+        auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+        Dx11Contexts.erase(it);
+    }
 
-	return NVSDK_NGX_Result_Success;
+    return NVSDK_NGX_Result_Success;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
 {
-	spdlog::debug("NVSDK_NGX_D3D11_GetFeatureRequirements");
+    spdlog::debug("NVSDK_NGX_D3D11_GetFeatureRequirements");
 
-	if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
-	{
-		if (OutSupported == nullptr)
-			OutSupported = new NVSDK_NGX_FeatureRequirement();
+    if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+    {
+        if (OutSupported == nullptr)
+            OutSupported = new NVSDK_NGX_FeatureRequirement();
 
-		OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
-		OutSupported->MinHWArchitecture = 0;
+        OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
+        OutSupported->MinHWArchitecture = 0;
 
-		//Some windows 10 os version
-		strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
-		return NVSDK_NGX_Result_Success;
-	}
+        //Some windows 10 os version
+        strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
+        return NVSDK_NGX_Result_Success;
+    }
 
-	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() == nullptr)
-		NVNGXProxy::InitNVNGX();
+    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() == nullptr)
+        NVNGXProxy::InitNVNGX();
 
-	if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D11_GetFeatureRequirements() != nullptr)
-	{
-		spdlog::debug("NVSDK_NGX_D3D11_GetFeatureRequirements D3D11_GetFeatureRequirements for ({0})", (int)FeatureDiscoveryInfo->FeatureID);
-		auto result = NVNGXProxy::D3D11_GetFeatureRequirements()(Adapter, FeatureDiscoveryInfo, OutSupported);
-		spdlog::debug("NVSDK_NGX_D3D11_EvaluateFeature D3D11_EvaluateFeature result for ({0}): {1:X}", (int)FeatureDiscoveryInfo->FeatureID, (UINT)result);
-		return result;
-	}
+    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D11_GetFeatureRequirements() != nullptr)
+    {
+        spdlog::debug("NVSDK_NGX_D3D11_GetFeatureRequirements D3D11_GetFeatureRequirements for ({0})", (int)FeatureDiscoveryInfo->FeatureID);
+        auto result = NVNGXProxy::D3D11_GetFeatureRequirements()(Adapter, FeatureDiscoveryInfo, OutSupported);
+        spdlog::debug("NVSDK_NGX_D3D11_EvaluateFeature D3D11_EvaluateFeature result for ({0}): {1:X}", (int)FeatureDiscoveryInfo->FeatureID, (UINT)result);
+        return result;
+    }
 
-	OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_AdapterUnsupported;
-	return NVSDK_NGX_Result_FAIL_FeatureNotSupported;
+    OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_AdapterUnsupported;
+    return NVSDK_NGX_Result_FAIL_FeatureNotSupported;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, const NVSDK_NGX_Handle* InFeatureHandle, NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
 {
-	spdlog::debug("NVSDK_NGX_D3D11_EvaluateFeature Handle: {0}", InFeatureHandle->Id);
+    spdlog::debug("NVSDK_NGX_D3D11_EvaluateFeature Handle: {0}", InFeatureHandle->Id);
 
-	if (!InDevCtx)
-	{
-		spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature InCmdList is null!!!");
-		return NVSDK_NGX_Result_Fail;
-	}
+    if (!InDevCtx)
+    {
+        spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature InCmdList is null!!!");
+        return NVSDK_NGX_Result_Fail;
+    }
 
-	auto handleId = InFeatureHandle->Id;
+    auto handleId = InFeatureHandle->Id;
 
-	if (handleId < 1000000)
-	{
-		if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D11_EvaluateFeature() != nullptr)
-		{
-			auto result = NVNGXProxy::D3D11_EvaluateFeature()(InDevCtx, InFeatureHandle, InParameters, InCallback);
-			spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature D3D11_EvaluateFeature result for ({0}): {1:X}", handleId, (UINT)result);
-			return result;
-		}
-		else
-		{
-			return NVSDK_NGX_Result_FAIL_FeatureNotFound;
-		}
-	}
+    if (handleId < 1000000)
+    {
+        if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D11_EvaluateFeature() != nullptr)
+        {
+            auto result = NVNGXProxy::D3D11_EvaluateFeature()(InDevCtx, InFeatureHandle, InParameters, InCallback);
+            spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature D3D11_EvaluateFeature result for ({0}): {1:X}", handleId, (UINT)result);
+            return result;
+        }
+        else
+        {
+            return NVSDK_NGX_Result_FAIL_FeatureNotFound;
+        }
+    }
 
-	evalCounter++;
-	if (Config::Instance()->SkipFirstFrames.has_value() && evalCounter < Config::Instance()->SkipFirstFrames.value())
-		return NVSDK_NGX_Result_Success;
+    evalCounter++;
+    if (Config::Instance()->SkipFirstFrames.has_value() && evalCounter < Config::Instance()->SkipFirstFrames.value())
+        return NVSDK_NGX_Result_Success;
 
-	// DLSS Enabler check
-	int deAvail;
-	if (InParameters->Get("DLSSEnabler.Available", &deAvail) == NVSDK_NGX_Result_Success)
-	{
-		if (Config::Instance()->DE_Available != (deAvail > 0))
-			spdlog::info("NVSDK_NGX_D3D11_CreateFeature DLSSEnabler.Available: {0}", deAvail);
+    // DLSS Enabler check
+    int deAvail;
+    if (InParameters->Get("DLSSEnabler.Available", &deAvail) == NVSDK_NGX_Result_Success)
+    {
+        if (Config::Instance()->DE_Available != (deAvail > 0))
+            spdlog::info("NVSDK_NGX_D3D11_CreateFeature DLSSEnabler.Available: {0}", deAvail);
 
-		Config::Instance()->DE_Available = (deAvail > 0);
-	}
+        Config::Instance()->DE_Available = (deAvail > 0);
+    }
 
-	if (Config::Instance()->OverlayMenu.value_or(true) &&
-		Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(90) &&
-		!ImGuiOverlayDx11::IsInitedDx11())
-	{
-		ImGuiOverlayDx12::ShutdownDx12();
+    if (Config::Instance()->OverlayMenu.value_or(true) &&
+        Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(90) &&
+        !ImGuiOverlayDx11::IsInitedDx11())
+    {
+        ImGuiOverlayDx12::ShutdownDx12();
 
-		auto hwnd = Util::GetProcessWindow();
-		HWND consoleWindow = GetConsoleWindow();
-		bool consoleAllocated = false;
+        auto hwnd = Util::GetProcessWindow();
+        HWND consoleWindow = GetConsoleWindow();
+        bool consoleAllocated = false;
 
-		if (consoleWindow == NULL)
-		{
-			AllocConsole();
-			consoleWindow = GetConsoleWindow();
-			consoleAllocated = true;
+        if (consoleWindow == NULL)
+        {
+            AllocConsole();
+            consoleWindow = GetConsoleWindow();
+            consoleAllocated = true;
 
-			ShowWindow(consoleWindow, SW_HIDE);
-		}
+            ShowWindow(consoleWindow, SW_HIDE);
+        }
 
-		SetForegroundWindow(hwnd);
-		SetFocus(hwnd);
+        SetForegroundWindow(hwnd);
+        SetFocus(hwnd);
 
-		ImGuiOverlayDx11::InitDx11(consoleWindow);
+        ImGuiOverlayDx11::InitDx11(consoleWindow);
 
-		if (consoleAllocated)
-			FreeConsole();
-	}
+        if (consoleAllocated)
+            FreeConsole();
+    }
 
-	// Check window recreation
-	HWND currentHandle = Util::GetProcessWindow();
-	if (ImGuiOverlayDx11::IsInitedDx11() && ImGuiOverlayDx11::Handle() != currentHandle)
-		ImGuiOverlayDx11::ReInitDx11(currentHandle);
+    // Check window recreation
+    HWND currentHandle = Util::GetProcessWindow();
+    if (ImGuiOverlayDx11::IsInitedDx11() && ImGuiOverlayDx11::Handle() != currentHandle)
+        ImGuiOverlayDx11::ReInitDx11(currentHandle);
 
-	if (InCallback)
-		spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature callback exist");
+    if (InCallback)
+        spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature callback exist");
 
-	IFeature_Dx11* deviceContext = nullptr;
+    IFeature_Dx11* deviceContext = nullptr;
 
-	if (Config::Instance()->changeBackend)
-	{
-		if (Config::Instance()->newBackend == "" || (!Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->newBackend == "dlss"))
-			Config::Instance()->newBackend = Config::Instance()->Dx11Upscaler.value_or("fsr22");
+    if (Config::Instance()->changeBackend)
+    {
+        if (Config::Instance()->newBackend == "" || (!Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->newBackend == "dlss"))
+            Config::Instance()->newBackend = Config::Instance()->Dx11Upscaler.value_or("fsr22");
 
-		changeBackendCounter++;
+        changeBackendCounter++;
 
-		// first release everything
-		if (changeBackendCounter == 1)
-		{
-			if (Dx11Contexts.contains(handleId))
-			{
-				spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature changing backend to {0}", Config::Instance()->newBackend);
+        // first release everything
+        if (changeBackendCounter == 1)
+        {
+            if (Dx11Contexts.contains(handleId))
+            {
+                spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature changing backend to {0}", Config::Instance()->newBackend);
 
-				auto dc = Dx11Contexts[handleId].get();
+                auto dc = Dx11Contexts[handleId].get();
 
-				if (Config::Instance()->newBackend != "dlssd" && Config::Instance()->newBackend != "dlss")
-					createParams = GetNGXParameters("OptiDx11");
-				else
-					createParams = InParameters;
+                if (Config::Instance()->newBackend != "dlssd" && Config::Instance()->newBackend != "dlss")
+                    createParams = GetNGXParameters("OptiDx11");
+                else
+                    createParams = InParameters;
 
-				createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
-				createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
-				createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
-				createParams->Set(NVSDK_NGX_Parameter_OutWidth, dc->DisplayWidth());
-				createParams->Set(NVSDK_NGX_Parameter_OutHeight, dc->DisplayHeight());
-				createParams->Set(NVSDK_NGX_Parameter_PerfQualityValue, dc->PerfQualityValue());
+                createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
+                createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
+                createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
+                createParams->Set(NVSDK_NGX_Parameter_OutWidth, dc->DisplayWidth());
+                createParams->Set(NVSDK_NGX_Parameter_OutHeight, dc->DisplayHeight());
+                createParams->Set(NVSDK_NGX_Parameter_PerfQualityValue, dc->PerfQualityValue());
 
-				spdlog::trace("NVSDK_NGX_D3D11_EvaluateFeature sleeping before reset of current feature for 1000ms");
-				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                spdlog::trace("NVSDK_NGX_D3D11_EvaluateFeature sleeping before reset of current feature for 1000ms");
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-				Dx11Contexts[handleId].reset();
-				auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
-				Dx11Contexts.erase(it);
+                Dx11Contexts[handleId].reset();
+                auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+                Dx11Contexts.erase(it);
 
-				Config::Instance()->CurrentFeature = nullptr;
-			}
-			else
-			{
-				spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature can't find handle {0} in Dx11Contexts!", handleId);
+                Config::Instance()->CurrentFeature = nullptr;
+            }
+            else
+            {
+                spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature can't find handle {0} in Dx11Contexts!", handleId);
 
-				Config::Instance()->newBackend = "";
-				Config::Instance()->changeBackend = false;
+                Config::Instance()->newBackend = "";
+                Config::Instance()->changeBackend = false;
 
-				if (createParams != nullptr)
-				{
-					free(createParams);
-					createParams = nullptr;
-				}
+                if (createParams != nullptr)
+                {
+                    free(createParams);
+                    createParams = nullptr;
+                }
 
-				changeBackendCounter = 0;
-			}
+                changeBackendCounter = 0;
+            }
 
-			return NVSDK_NGX_Result_Success;
-		}
+            return NVSDK_NGX_Result_Success;
+        }
 
-		if (changeBackendCounter == 2)
-		{
-			// next frame prepare stuff
-			if (Config::Instance()->newBackend == "xess")
-			{
-				Config::Instance()->Dx11Upscaler = "xess";
-				spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new XeSS with Dx12 feature");
-				Dx11Contexts[handleId] = std::make_unique<XeSSFeatureDx11>(handleId, createParams);
-			}
-			else if (Config::Instance()->newBackend == "dlss")
-			{
-				Config::Instance()->Dx11Upscaler = "dlss";
-				spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new DLSS feature");
-				Dx11Contexts[handleId] = std::make_unique<DLSSFeatureDx11>(handleId, createParams);
-			}
-			else if (Config::Instance()->newBackend == "dlssd")
-			{
-				spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new DLSSD feature");
-				Dx11Contexts[handleId] = std::make_unique<DLSSDFeatureDx11>(handleId, InParameters);
-			}
-			else if (Config::Instance()->newBackend == "fsr21_12")
-			{
-				Config::Instance()->Dx11Upscaler = "fsr21_12";
-				spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new FSR 2.1.2 with Dx12 feature");
-				Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12_212>(handleId, createParams);
-			}
-			else if (Config::Instance()->newBackend == "fsr22_12")
-			{
-				Config::Instance()->Dx11Upscaler = "fsr22_12";
-				spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new FSR 2.2.1 with Dx12 feature");
-				Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12>(handleId, createParams);
-			}
-			else if (Config::Instance()->newBackend == "fsr22")
-			{
-				Config::Instance()->Dx11Upscaler = "fsr22";
-				spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new native FSR 2.2.1 feature");
-				Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11>(handleId, createParams);
-			}
+        if (changeBackendCounter == 2)
+        {
+            // next frame prepare stuff
+            if (Config::Instance()->newBackend == "xess")
+            {
+                Config::Instance()->Dx11Upscaler = "xess";
+                spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new XeSS with Dx12 feature");
+                Dx11Contexts[handleId] = std::make_unique<XeSSFeatureDx11>(handleId, createParams);
+            }
+            else if (Config::Instance()->newBackend == "dlss")
+            {
+                Config::Instance()->Dx11Upscaler = "dlss";
+                spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new DLSS feature");
+                Dx11Contexts[handleId] = std::make_unique<DLSSFeatureDx11>(handleId, createParams);
+            }
+            else if (Config::Instance()->newBackend == "dlssd")
+            {
+                spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new DLSSD feature");
+                Dx11Contexts[handleId] = std::make_unique<DLSSDFeatureDx11>(handleId, InParameters);
+            }
+            else if (Config::Instance()->newBackend == "fsr21_12")
+            {
+                Config::Instance()->Dx11Upscaler = "fsr21_12";
+                spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new FSR 2.1.2 with Dx12 feature");
+                Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12_212>(handleId, createParams);
+            }
+            else if (Config::Instance()->newBackend == "fsr31_12")
+            {
+                Config::Instance()->Dx11Upscaler = "fsr31_12";
+                spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new FSR 3.1 with Dx12 feature");
+                Dx11Contexts[handleId] = std::make_unique<FSR31FeatureDx11on12>(handleId, createParams);
+            }
+            else if (Config::Instance()->newBackend == "fsr22_12")
+            {
+                Config::Instance()->Dx11Upscaler = "fsr22_12";
+                spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new FSR 2.2.1 with Dx12 feature");
+                Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12>(handleId, createParams);
+            }
+            else if (Config::Instance()->newBackend == "fsr22")
+            {
+                Config::Instance()->Dx11Upscaler = "fsr22";
+                spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature creating new native FSR 2.2.1 feature");
+                Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11>(handleId, createParams);
+            }
 
-			if (Config::Instance()->Dx11DelayedInit.value_or(false) &&
-				Config::Instance()->newBackend != "fsr22" && Config::Instance()->newBackend != "dlss" && Config::Instance()->newBackend != "dlssd")
-			{
-				spdlog::trace("NVSDK_NGX_D3D11_EvaluateFeature sleeping after new creation of new feature for 1000ms");
-				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-			}
+            if (Config::Instance()->Dx11DelayedInit.value_or(false) &&
+                Config::Instance()->newBackend != "fsr22" && Config::Instance()->newBackend != "dlss" && Config::Instance()->newBackend != "dlssd")
+            {
+                spdlog::trace("NVSDK_NGX_D3D11_EvaluateFeature sleeping after new creation of new feature for 1000ms");
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            }
 
-			return NVSDK_NGX_Result_Success;
-		}
+            return NVSDK_NGX_Result_Success;
+        }
 
-		if (changeBackendCounter == 3)
-		{
-			// then init and continue
-			auto initResult = Dx11Contexts[handleId]->Init(D3D11Device, InDevCtx, createParams);
+        if (changeBackendCounter == 3)
+        {
+            // then init and continue
+            auto initResult = Dx11Contexts[handleId]->Init(D3D11Device, InDevCtx, createParams);
 
-			if (Config::Instance()->Dx11DelayedInit.value_or(false))
-			{
-				spdlog::trace("NVSDK_NGX_D3D11_EvaluateFeature sleeping after new Init of new feature for 1000ms");
-				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-			}
+            if (Config::Instance()->Dx11DelayedInit.value_or(false))
+            {
+                spdlog::trace("NVSDK_NGX_D3D11_EvaluateFeature sleeping after new Init of new feature for 1000ms");
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            }
 
-			changeBackendCounter = 0;
+            changeBackendCounter = 0;
 
-			if (!initResult || !Dx11Contexts[handleId]->ModuleLoaded())
-			{
-				spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature init failed with {0} feature", Config::Instance()->newBackend);
+            if (!initResult || !Dx11Contexts[handleId]->ModuleLoaded())
+            {
+                spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature init failed with {0} feature", Config::Instance()->newBackend);
 
-				if (Config::Instance()->newBackend != "dlssd")
-				{
-					Config::Instance()->newBackend = "fsr22";
-					Config::Instance()->changeBackend = true;
-				}
-				else
-				{
-					Config::Instance()->newBackend = "";
-					Config::Instance()->changeBackend = false;
-					return NVSDK_NGX_Result_Fail;
-				}
-			}
-			else
-			{
-				spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature init successful for {0}, upscaler changed", Config::Instance()->newBackend);
+                if (Config::Instance()->newBackend != "dlssd")
+                {
+                    Config::Instance()->newBackend = "fsr22";
+                    Config::Instance()->changeBackend = true;
+                }
+                else
+                {
+                    Config::Instance()->newBackend = "";
+                    Config::Instance()->changeBackend = false;
+                    return NVSDK_NGX_Result_Fail;
+                }
+            }
+            else
+            {
+                spdlog::info("NVSDK_NGX_D3D11_EvaluateFeature init successful for {0}, upscaler changed", Config::Instance()->newBackend);
 
-				Config::Instance()->newBackend = "";
-				Config::Instance()->changeBackend = false;
-				evalCounter = 0;
-			}
+                Config::Instance()->newBackend = "";
+                Config::Instance()->changeBackend = false;
+                evalCounter = 0;
+            }
 
-			// if opti nvparam release it
-			int optiParam = 0;
-			if (createParams->Get("OptiScaler", &optiParam) == NVSDK_NGX_Result_Success && optiParam == 1)
-			{
-				free(createParams);
-				createParams = nullptr;
-			}
-		}
+            // if opti nvparam release it
+            int optiParam = 0;
+            if (createParams->Get("OptiScaler", &optiParam) == NVSDK_NGX_Result_Success && optiParam == 1)
+            {
+                free(createParams);
+                createParams = nullptr;
+            }
+        }
 
-		// if initial feature can't be inited
-		Config::Instance()->CurrentFeature = Dx11Contexts[handleId].get();
+        // if initial feature can't be inited
+        Config::Instance()->CurrentFeature = Dx11Contexts[handleId].get();
 
-		return NVSDK_NGX_Result_Success;
-	}
+        return NVSDK_NGX_Result_Success;
+    }
 
-	deviceContext = Dx11Contexts[handleId].get();
-	Config::Instance()->CurrentFeature = deviceContext;
+    deviceContext = Dx11Contexts[handleId].get();
+    Config::Instance()->CurrentFeature = deviceContext;
 
-	if (deviceContext == nullptr)
-	{
-		spdlog::debug("NVSDK_NGX_D3D11_EvaluateFeature trying to use released handle, returning NVSDK_NGX_Result_Success");
-		return NVSDK_NGX_Result_Success;
-	}
+    if (deviceContext == nullptr)
+    {
+        spdlog::debug("NVSDK_NGX_D3D11_EvaluateFeature trying to use released handle, returning NVSDK_NGX_Result_Success");
+        return NVSDK_NGX_Result_Success;
+    }
 
-	if (!deviceContext->IsInited() && (deviceContext->Name() == "XeSS" || deviceContext->Name() == "DLSS"))
-	{
-		Config::Instance()->newBackend = "fsr22";
-		Config::Instance()->changeBackend = true;
-		return NVSDK_NGX_Result_Success;
-	}
+    if (!deviceContext->Evaluate(InDevCtx, InParameters) && !deviceContext->IsInited() && (deviceContext->Name() == "XeSS" || deviceContext->Name() == "DLSS" || deviceContext->Name() == "FSR3 w/Dx12"))
+    {
+        Config::Instance()->newBackend = "fsr22";
+        Config::Instance()->changeBackend = true;
+    }
 
-	if (!deviceContext->Evaluate(InDevCtx, InParameters))
-		return NVSDK_NGX_Result_Fail;
-
-	return NVSDK_NGX_Result_Success;
+    return NVSDK_NGX_Result_Success;
 }
 
 #pragma endregion

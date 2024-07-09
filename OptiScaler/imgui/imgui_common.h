@@ -553,6 +553,9 @@ public:
 		if (*code == "fsr22")
 			return "FSR 2.2.1";
 
+		if (*code == "fsr31")
+			return "FSR 3.1";
+
 		if (*code == "fsr21_12")
 			return "FSR 2.1.2 w/Dx12";
 
@@ -598,6 +601,8 @@ public:
 			selectedUpscalerName = "FSR 2.2.1 w/Dx12";
 		else if (Config::Instance()->newBackend == "fsr21_12" || (Config::Instance()->newBackend == "" && *code == "fsr21_12"))
 			selectedUpscalerName = "FSR 2.1.2 w/Dx12";
+		else if (Config::Instance()->newBackend == "fsr31_12" || (Config::Instance()->newBackend == "" && *code == "fsr31_12"))
+			selectedUpscalerName = "FSR 3.1 w/Dx12";
 		else if (Config::Instance()->DLSSEnabled.value_or(true) && (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
 			selectedUpscalerName = "DLSS";
 		else
@@ -617,6 +622,9 @@ public:
 			if (ImGui::Selectable("FSR 2.2.1 w/Dx12", *code == "fsr22_12"))
 				Config::Instance()->newBackend = "fsr22_12";
 
+			if (ImGui::Selectable("FSR 3.1 w/Dx12", *code == "fsr31_12"))
+				Config::Instance()->newBackend = "fsr31_12";
+
 			if (Config::Instance()->DLSSEnabled.value_or(true) && ImGui::Selectable("DLSS", *code == "dlss"))
 				Config::Instance()->newBackend = "dlss";
 
@@ -632,6 +640,8 @@ public:
 			selectedUpscalerName = "FSR 2.1.2";
 		else if (Config::Instance()->newBackend == "fsr22" || (Config::Instance()->newBackend == "" && *code == "fsr22"))
 			selectedUpscalerName = "FSR 2.2.1";
+		else if (Config::Instance()->newBackend == "fsr31" || (Config::Instance()->newBackend == "" && *code == "fsr31"))
+			selectedUpscalerName = "FSR 3.1";
 		else if (Config::Instance()->DLSSEnabled.value_or(true) && (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
 			selectedUpscalerName = "DLSS";
 		else
@@ -648,6 +658,9 @@ public:
 			if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
 				Config::Instance()->newBackend = "fsr22";
 
+			if (ImGui::Selectable("FSR 3.1", *code == "fsr31"))
+				Config::Instance()->newBackend = "fsr31";
+
 			if (Config::Instance()->DLSSEnabled.value_or(true) && ImGui::Selectable("DLSS", *code == "dlss"))
 				Config::Instance()->newBackend = "dlss";
 
@@ -661,6 +674,8 @@ public:
 
 		if (Config::Instance()->newBackend == "fsr21" || (Config::Instance()->newBackend == "" && *code == "fsr21"))
 			selectedUpscalerName = "FSR 2.1.2";
+		else if (Config::Instance()->newBackend == "fsr31" || (Config::Instance()->newBackend == "" && *code == "fsr31"))
+			selectedUpscalerName = "FSR 3.1";
 		else if (Config::Instance()->DLSSEnabled.value_or(true) && (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
 			selectedUpscalerName = "DLSS";
 		else
@@ -673,6 +688,9 @@ public:
 
 			if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
 				Config::Instance()->newBackend = "fsr22";
+
+			if (ImGui::Selectable("FSR 3.1", *code == "fsr31"))
+				Config::Instance()->newBackend = "fsr31";
 
 			if (Config::Instance()->DLSSEnabled.value_or(true) && ImGui::Selectable("DLSS", *code == "dlss"))
 				Config::Instance()->newBackend = "dlss";
