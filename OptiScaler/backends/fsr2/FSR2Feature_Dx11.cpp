@@ -112,6 +112,8 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		return false;
 	}
 
+	Config::Instance()->dxgiSkipSpoofing = true;
+
 	const size_t scratchBufferSize = ffxFsr2GetScratchMemorySizeDX11();
 	void* scratchBuffer = calloc(scratchBufferSize, 1);
 
@@ -211,6 +213,8 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 		spdlog::error("FSR2FeatureDx11::InitFSR2 ffxFsr2ContextCreate error: {0}", ResultToString(errorCode));
 		return false;
 	}
+
+	Config::Instance()->dxgiSkipSpoofing = false;
 
 	SetInit(true);
 
@@ -425,13 +429,13 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 
 	if (IsDepthInverted())
 	{
-		params.cameraFar = 0.0f;
-		params.cameraNear = 1.0f;
+		params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.1f);
+		params.cameraNear = Config::Instance()->FsrCameraFar.value_or(10.0f);
 	}
 	else
 	{
-		params.cameraFar = 1.0f;
-		params.cameraNear = 0.0f;
+		params.cameraFar = Config::Instance()->FsrCameraFar.value_or(10.0f);
+		params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.1f);
 	}
 
 	if (Config::Instance()->FsrVerticalFov.has_value())

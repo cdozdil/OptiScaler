@@ -17,7 +17,7 @@ FSR31FeatureDx12::FSR31FeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter*
 
     _moduleLoaded = _configure != nullptr;
 
-    if(_moduleLoaded)
+    if (_moduleLoaded)
         spdlog::info("FSR31FeatureDx12::FSR31FeatureDx12 amd_fidelityfx_dx12.dll methods loaded!");
     else
         spdlog::error("FSR31FeatureDx12::FSR31FeatureDx12 can't load amd_fidelityfx_dx12.dll methods!");
@@ -61,6 +61,9 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
 
     struct ffxDispatchDescUpscale params = { 0 };
     params.header.type = FFX_API_DISPATCH_DESC_TYPE_UPSCALE;
+
+    if (Config::Instance()->FsrDebugView.value_or(false))
+        params.flags = FFX_UPSCALE_FLAG_DRAW_DEBUG_VIEW;
 
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffset.y);
@@ -308,13 +311,13 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
 
     if (IsDepthInverted())
     {
-        params.cameraFar = 0.0f;
-        params.cameraNear = 1.0f;
+        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.1f);
+        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(10.0f);
     }
     else
     {
-        params.cameraFar = 1.0f;
-        params.cameraNear = 0.0f;
+        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(10.0f);
+        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.1f);
     }
 
     if (Config::Instance()->FsrVerticalFov.has_value())
@@ -325,6 +328,10 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
         params.cameraFovAngleVertical = 1.0471975511966f;
 
     spdlog::debug("FSR31FeatureDx12::Evaluate FsrVerticalFov: {0}", params.cameraFovAngleVertical);
+
+    params.upscaleSize.width = TargetWidth();
+    params.upscaleSize.height = TargetHeight();
+    params.viewSpaceToMetersFactor = 1.0f;
 
     if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) != NVSDK_NGX_Result_Success || params.frameTimeDelta < 1.0f)
         params.frameTimeDelta = (float)GetDeltaTime();
@@ -472,6 +479,26 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
+    Config::Instance()->dxgiSkipSpoofing = true;
+
+    ffxQueryDescGetVersions versionQuery{};
+    versionQuery.header.type = FFX_API_QUERY_DESC_TYPE_GET_VERSIONS;
+    versionQuery.createDescType = FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE;
+    versionQuery.device = Device; // only for DirectX 12 applications
+    uint64_t versionCount = 0;
+    versionQuery.outputCount = &versionCount;
+    // get number of versions for allocation
+    _query(nullptr, &versionQuery.header);
+
+    std::vector<const char*> versionNames;
+    std::vector<uint64_t> versionIds;
+    versionIds.resize(versionCount);
+    versionNames.resize(versionCount);
+    versionQuery.versionIds = versionIds.data();
+    versionQuery.versionNames = versionNames.data();
+    // fill version ids and names arrays.
+    _query(nullptr, &versionQuery.header);
+
     _contextDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE;
 
     _contextDesc.fpMessage = FfxLogCallback;
@@ -487,9 +514,8 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     bool JitterMotion = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
     bool LowRes = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
     bool AutoExposure = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
-    
+
     _contextDesc.flags = 0;
-    _contextDesc.flags |= FFX_UPSCALE_ENABLE_DEBUG_CHECKING;
 
     if (Config::Instance()->DepthInverted.value_or(DepthInverted))
     {
@@ -576,7 +602,13 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     ffxCreateBackendDX12Desc backendDesc = { 0 };
     backendDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_DX12;
     backendDesc.device = Device;
+
     _contextDesc.header.pNext = &backendDesc.header;
+
+    //ffxOverrideVersion ov = { 0 };
+    //ov.header.type = FFX_API_DESC_TYPE_OVERRIDE_VERSION;
+    //ov.versionId = versionIds[1];
+    //backendDesc.header.pNext = &ov.header;
 
     spdlog::debug("FSR31FeatureDx12::InitFSR3 _createContext!");
     auto ret = _createContext(&_context, &_contextDesc.header, NULL);
@@ -586,6 +618,8 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         spdlog::error("FSR31FeatureDx12::InitFSR3 _createContext error: {0}", ResultToString(ret));
         return false;
     }
+
+    Config::Instance()->dxgiSkipSpoofing = false;
 
     SetInit(true);
 

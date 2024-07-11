@@ -125,6 +125,9 @@ public:
 	// fsr
 	std::optional<float> FsrVerticalFov;
 	std::optional<float> FsrHorizontalFov;
+	std::optional<float> FsrCameraNear;
+	std::optional<float> FsrCameraFar;
+	std::optional<bool> FsrDebugView;
 
 	// dx11wdx12
 	std::optional<int> TextureSyncMethod;
@@ -182,7 +185,7 @@ public:
 
 	// dlss hook
 	bool dlssDisableHook = false;
-	bool xessSkipSpoofing = false;
+	bool dxgiSkipSpoofing = false;
 
 	// linux check
 	bool IsRunningOnLinux = false;

@@ -44,9 +44,9 @@ FSR31FeatureVk::FSR31FeatureVk(unsigned int InHandleId, NVSDK_NGX_Parameter* InP
     _moduleLoaded = _configure != nullptr;
 
     if (_moduleLoaded)
-        spdlog::info("FSR31FeatureDx12::FSR31FeatureVk amd_fidelityfx_dx12.dll methods loaded!");
+        spdlog::info("FSR31FeatureVk::FSR31FeatureVk amd_fidelityfx_vk.dll methods loaded!");
     else
-        spdlog::error("FSR31FeatureVk::FSR31FeatureVk can't load amd_fidelityfx_dx12.dll methods!");
+        spdlog::error("FSR31FeatureVk::FSR31FeatureVk can't load amd_fidelityfx_vk.dll methods!");
 }
 
 bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
@@ -193,6 +193,9 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
 
     struct ffxDispatchDescUpscale params = { 0 };
     params.header.type = FFX_API_DISPATCH_DESC_TYPE_UPSCALE;
+
+    if (Config::Instance()->FsrDebugView.value_or(false))
+        params.flags = FFX_UPSCALE_FLAG_DRAW_DEBUG_VIEW;
 
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffset.y);
@@ -373,13 +376,13 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
 
     if (IsDepthInverted())
     {
-        params.cameraFar = 0.0f;
-        params.cameraNear = 1.0f;
+        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.1f);
+        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(10.0f);
     }
     else
     {
-        params.cameraFar = 1.0f;
-        params.cameraNear = 0.0f;
+        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(10.0f);
+        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.1f);
     }
 
     if (Config::Instance()->FsrVerticalFov.has_value())

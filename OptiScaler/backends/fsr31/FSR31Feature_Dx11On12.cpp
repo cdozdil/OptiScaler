@@ -167,6 +167,9 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
     struct ffxDispatchDescUpscale params = { 0 };
     params.header.type = FFX_API_DISPATCH_DESC_TYPE_UPSCALE;
 
+    if (Config::Instance()->FsrDebugView.value_or(false))
+        params.flags = FFX_UPSCALE_FLAG_DRAW_DEBUG_VIEW;
+
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffset.y);
 
@@ -314,13 +317,13 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
 
     if (IsDepthInverted())
     {
-        params.cameraFar = 0.0f;
-        params.cameraNear = 1.0f;
+        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.1f);
+        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(10.0f);
     }
     else
     {
-        params.cameraFar = 1.0f;
-        params.cameraNear = 0.0f;
+        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(10.0f);
+        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.1f);
     }
 
     if (Config::Instance()->FsrVerticalFov.has_value())
@@ -545,11 +548,13 @@ bool FSR31FeatureDx11on12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
+    Config::Instance()->dxgiSkipSpoofing = true;
+
     _contextDesc.flags = 0;
     _contextDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE;
 
     _contextDesc.fpMessage = FfxLogCallback;
-    
+
     unsigned int featureFlags = 0;
     if (!_initFlagsReady)
     {
@@ -667,6 +672,8 @@ bool FSR31FeatureDx11on12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
 
     spdlog::trace("FSR31FeatureDx11on12::InitFSR2 sleeping after _createContext creation for 500ms");
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    Config::Instance()->dxgiSkipSpoofing = false;
 
     SetInit(true);
 
