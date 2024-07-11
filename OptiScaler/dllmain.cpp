@@ -1055,7 +1055,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 				if (Config::Instance()->IsDxgiMode)
 				{
 					Config::Instance()->DxgiSpoofing = false;
-					Config::Instance()->DxgiXessNoSpoof = true;
+					Config::Instance()->DxgiSkipSpoofForUpscalers = true;
 					Config::Instance()->DxgiBlacklist.reset();
 				}
 
