@@ -34,6 +34,9 @@ private:
     // dlss enabler
     inline static int _deLimitFps = 500;
 
+    // fsr3x
+    inline static int _fsr3xIndex = -1;
+
     // output scaling
     inline static float _ssRatio = 0.0f;
     inline static bool _ssEnabled = false;
@@ -554,7 +557,7 @@ public:
             return "FSR 2.2.1";
 
         if (*code == "fsr31")
-            return "FSR 3.1";
+            return "FSR 3.1.0";
 
         if (*code == "fsr21_12")
             return "FSR 2.1.2 w/Dx12";
@@ -602,7 +605,7 @@ public:
         else if (Config::Instance()->newBackend == "fsr21_12" || (Config::Instance()->newBackend == "" && *code == "fsr21_12"))
             selectedUpscalerName = "FSR 2.1.2 w/Dx12";
         else if (Config::Instance()->newBackend == "fsr31_12" || (Config::Instance()->newBackend == "" && *code == "fsr31_12"))
-            selectedUpscalerName = "FSR 3.1 w/Dx12";
+            selectedUpscalerName = "FSR 3.1.0 w/Dx12";
         else if (Config::Instance()->DLSSEnabled.value_or(true) && (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
             selectedUpscalerName = "DLSS";
         else
@@ -622,7 +625,7 @@ public:
             if (ImGui::Selectable("FSR 2.2.1 w/Dx12", *code == "fsr22_12"))
                 Config::Instance()->newBackend = "fsr22_12";
 
-            if (ImGui::Selectable("FSR 3.1 w/Dx12", *code == "fsr31_12"))
+            if (ImGui::Selectable("FSR 3.1.0 w/Dx12", *code == "fsr31_12"))
                 Config::Instance()->newBackend = "fsr31_12";
 
             if (Config::Instance()->DLSSEnabled.value_or(true) && ImGui::Selectable("DLSS", *code == "dlss"))
@@ -658,7 +661,7 @@ public:
             if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
                 Config::Instance()->newBackend = "fsr22";
 
-            if (ImGui::Selectable("FSR 3.1", *code == "fsr31"))
+            if (ImGui::Selectable("FSR 3.1.0", *code == "fsr31"))
                 Config::Instance()->newBackend = "fsr31";
 
             if (Config::Instance()->DLSSEnabled.value_or(true) && ImGui::Selectable("DLSS", *code == "dlss"))
@@ -689,7 +692,7 @@ public:
             if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
                 Config::Instance()->newBackend = "fsr22";
 
-            if (ImGui::Selectable("FSR 3.1", *code == "fsr31"))
+            if (ImGui::Selectable("FSR 3.1.0", *code == "fsr31"))
                 Config::Instance()->newBackend = "fsr31";
 
             if (Config::Instance()->DLSSEnabled.value_or(true) && ImGui::Selectable("DLSS", *code == "dlss"))
@@ -986,6 +989,32 @@ public:
                     {
                         ImGui::SeparatorText("FSR Settings");
 
+                        if (_fsr3xIndex < 0)
+                            _fsr3xIndex = Config::Instance()->Fsr3xIndex.value_or(0);
+
+                        if (currentBackend == "fsr31" || currentBackend == "fsr31_12")
+                        {
+                            auto currentName = std::format("FSR {}", Config::Instance()->fsr3xVersionNames[_fsr3xIndex]);
+                            if (ImGui::BeginCombo("Upscaler", currentName.c_str()))
+                            {
+                                for (int n = 0; n < Config::Instance()->fsr3xVersionIds.size(); n++)
+                                {
+                                    auto name = std::format("FSR {}", Config::Instance()->fsr3xVersionNames[n]);
+                                    if (ImGui::Selectable(name.c_str(), Config::Instance()->Fsr3xIndex.value_or(0) == n))
+                                        _fsr3xIndex = n;
+                                }
+
+                                ImGui::EndCombo();
+                            }
+
+                            if (ImGui::Button("Apply Change") && _fsr3xIndex != Config::Instance()->Fsr3xIndex.value_or(0))
+                            {
+                                Config::Instance()->Fsr3xIndex = _fsr3xIndex;
+                                Config::Instance()->newBackend = currentBackend;
+                                Config::Instance()->changeBackend = true;
+                            }
+                        }
+
                         bool useVFov = Config::Instance()->FsrVerticalFov.has_value() || !Config::Instance()->FsrHorizontalFov.has_value();
 
                         float vfov;
@@ -1037,9 +1066,9 @@ public:
                             cameraNear = Config::Instance()->FsrCameraNear.value_or(0.1f);
                             cameraFar = Config::Instance()->FsrCameraFar.value_or(10.0f);
                             
-                            if (currentBackend != "fsr22" && currentBackend != "fsr22_12")
+                            if (currentBackend == "fsr31" || currentBackend == "fsr31_12")
                             {
-                                if (bool dView = Config::Instance()->FsrDebugView.value_or(false); ImGui::Checkbox("FSR 3.1 Debug View", &dView))
+                                if (bool dView = Config::Instance()->FsrDebugView.value_or(false); ImGui::Checkbox("FSR 3.1.0 Debug View", &dView))
                                     Config::Instance()->FsrDebugView = dView;
                             }
 
@@ -1048,7 +1077,6 @@ public:
 
                             if (ImGui::SliderFloat("Camera Far", &cameraFar, 0.1f, 1000.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
                                 Config::Instance()->FsrCameraFar = cameraFar;
-
                         }
                     }
 

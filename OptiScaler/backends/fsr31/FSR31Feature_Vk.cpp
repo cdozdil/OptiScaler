@@ -65,6 +65,22 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
+    ffxQueryDescGetVersions versionQuery{};
+    versionQuery.header.type = FFX_API_QUERY_DESC_TYPE_GET_VERSIONS;
+    versionQuery.createDescType = FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE;
+    //versionQuery.device = Device; // only for DirectX 12 applications
+    uint64_t versionCount = 0;
+    versionQuery.outputCount = &versionCount;
+    // get number of versions for allocation
+    _query(nullptr, &versionQuery.header);
+
+    Config::Instance()->fsr3xVersionIds.resize(versionCount);
+    Config::Instance()->fsr3xVersionNames.resize(versionCount);
+    versionQuery.versionIds = Config::Instance()->fsr3xVersionIds.data();
+    versionQuery.versionNames = Config::Instance()->fsr3xVersionNames.data();
+    // fill version ids and names arrays.
+    _query(nullptr, &versionQuery.header);
+
     _contextDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE;
 
     _contextDesc.fpMessage = FfxLogCallback;
@@ -154,6 +170,14 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
 
     _contextDesc.header.pNext = &backendDesc.header;
 
+    if (Config::Instance()->Fsr3xIndex.value_or(0) < 0 || Config::Instance()->Fsr3xIndex.value_or(0) >= Config::Instance()->fsr3xVersionIds.size())
+        Config::Instance()->Fsr3xIndex = 0;
+
+    ffxOverrideVersion ov = { 0 };
+    ov.header.type = FFX_API_DESC_TYPE_OVERRIDE_VERSION;
+    ov.versionId = Config::Instance()->fsr3xVersionIds[Config::Instance()->Fsr3xIndex.value_or(0)];
+    backendDesc.header.pNext = &ov.header;
+
     spdlog::debug("FSR31FeatureVk::InitFSR3 _createContext!");
     auto ret = _createContext(&_context, &_contextDesc.header, NULL);
 
@@ -162,6 +186,11 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         spdlog::error("FSR31FeatureVk::InitFSR3 _createContext error: {0}", ResultToString(ret));
         return false;
     }
+
+    auto version = Config::Instance()->fsr3xVersionNames[Config::Instance()->Fsr3xIndex.value_or(0)];
+    _name = std::format("FSR {}", version);
+    parse_version(version);
+
 
     SetInit(true);
 

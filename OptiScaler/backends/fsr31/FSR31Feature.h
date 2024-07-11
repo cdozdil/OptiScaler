@@ -5,7 +5,6 @@
 #include "../IFeature.h"
 #include "../../detours/detours.h"
 
-
 inline static std::string ResultToString(ffxReturnCode_t result)
 {
     switch (result)
@@ -45,6 +44,8 @@ private:
     static inline feature_version _version{ 3, 1, 0 };
 
 protected:
+    std::string _name = "FSR 3.1.0";
+
     ffxContext _context = nullptr;
     ffxCreateContextDescUpscale _contextDesc = {};
 
@@ -60,10 +61,16 @@ protected:
     double GetDeltaTime();
     void SetDepthInverted(bool InValue);
 
+    static inline void parse_version(const char* version_str) {
+        if (sscanf_s(version_str, "%u.%u.%u", &_version.major, &_version.minor, &_version.patch) != 3) {
+            spdlog::warn("FSR31Feature::parse_version can't parse {0}", version_str);
+        }
+    }
+
 public:
     bool IsDepthInverted() const;
     feature_version Version() final { return _version; }
-    const char* Name() override { return "FSR 3.1"; }
+    const char* Name() override { return _name.c_str(); }
 
     FSR31Feature(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters)
     {

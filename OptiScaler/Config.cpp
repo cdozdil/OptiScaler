@@ -220,6 +220,7 @@ bool Config::Reload(std::filesystem::path iniPath)
         FsrCameraNear = readFloat("FSR", "CameraNear");
         FsrCameraFar = readFloat("FSR", "CameraFar");
         FsrDebugView = readBool("FSR", "DebugView");
+        Fsr3xIndex = readInt("FSR", "UpscalerIndex");
 
         // dx11wdx12
         TextureSyncMethod = readInt("Dx11withDx12", "TextureSyncMethod");
@@ -455,6 +456,7 @@ bool Config::SaveIni()
     ini.SetValue("FSR", "CameraNear", GetFloatValue(Instance()->FsrCameraNear).c_str());
     ini.SetValue("FSR", "CameraFar", GetFloatValue(Instance()->FsrCameraFar).c_str());
     ini.SetValue("FSR", "DebugView", GetBoolValue(Instance()->FsrDebugView).c_str());
+    ini.SetValue("FSR", "UpscalerIndex", GetIntValue(Instance()->Fsr3xIndex).c_str());
 
     // Dx11 with Dx12
     ini.SetValue("Dx11withDx12", "TextureSyncMethod", GetIntValue(Instance()->TextureSyncMethod).c_str());

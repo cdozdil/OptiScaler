@@ -128,6 +128,7 @@ public:
 	std::optional<float> FsrCameraNear;
 	std::optional<float> FsrCameraFar;
 	std::optional<bool> FsrDebugView;
+	std::optional<int> Fsr3xIndex;
 
 	// dx11wdx12
 	std::optional<int> TextureSyncMethod;
@@ -185,7 +186,14 @@ public:
 
 	// dlss hook
 	bool dlssDisableHook = false;
+
+	// spoofing
 	bool dxgiSkipSpoofing = false;
+
+	// fsr3.x
+	std::vector<const char*> fsr3xVersionNames;
+	std::vector<uint64_t> fsr3xVersionIds;
+
 
 	// linux check
 	bool IsRunningOnLinux = false;
