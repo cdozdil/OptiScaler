@@ -1297,10 +1297,10 @@ struct dxgi_dll
 
 bool SkipSpoofing()
 {
-    auto result = Config::Instance()->xessSkipSpoofing && Config::Instance()->DxgiXessNoSpoof.value_or(true);
+    auto result = Config::Instance()->dxgiSkipSpoofing && Config::Instance()->DxgiSkipSpoofForUpscalers.value_or(true);
 
     if (result)
-        spdlog::info("SkipSpoofing skipping spoofing for XeSS");
+        spdlog::info("SkipSpoofing dxgiSkipSpoofing true, skipping spoofing");
 
     if (!result && Config::Instance()->DxgiBlacklist.has_value() && !Config::Instance()->IsRunningOnLinux)
     {
