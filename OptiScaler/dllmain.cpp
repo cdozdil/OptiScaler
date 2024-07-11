@@ -1046,6 +1046,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 			if (NVNGXProxy::NVNGXModule() == nullptr)
 			{
 				spdlog::info("Can't load nvngx.dll, disabling DLSS");
+				Config::Instance()->DLSSEnabled = false;
 			}
 			else
 			{
