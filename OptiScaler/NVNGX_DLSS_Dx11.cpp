@@ -505,8 +505,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* 
 
     if (auto deviceContext = Dx11Contexts[handleId].get(); deviceContext != nullptr)
     {
-
-        spdlog::trace("NVSDK_NGX_D3D11_ReleaseFeature sleeping for 250ms before reset()!");
+        spdlog::trace("NVSDK_NGX_D3D11_ReleaseFeature sleeping for 500ms before reset()!");
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         if (deviceContext == Config::Instance()->CurrentFeature)
@@ -518,6 +517,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* 
         Dx11Contexts[handleId].reset();
         auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
         Dx11Contexts.erase(it);
+
+        if (Config::Instance()->Dx11DelayedInit.value_or(false))
+        {
+            spdlog::trace("NVSDK_NGX_D3D11_ReleaseFeature sleeping for 500ms after reset()!");
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
     }
 
     return NVSDK_NGX_Result_Success;
@@ -557,9 +562,19 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetFeatureRequirements(IDXGIAdapt
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceContext* InDevCtx, const NVSDK_NGX_Handle* InFeatureHandle, NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
 {
-    spdlog::debug("NVSDK_NGX_D3D11_EvaluateFeature Handle: {0}", InFeatureHandle->Id);
+    if (InFeatureHandle == nullptr)
+    {
+        spdlog::debug("NVSDK_NGX_D3D11_EvaluateFeature InFeatureHandle is null");
+        return NVSDK_NGX_Result_Fail;
+        // returning success to prevent breaking flow of the app
+        // return NVSDK_NGX_Result_Success;
+    }
+    else
+    {
+        spdlog::debug("NVSDK_NGX_D3D11_EvaluateFeature Handle: {0}", InFeatureHandle->Id);
+    }
 
-    if (!InDevCtx)
+    if (InDevCtx == nullptr)
     {
         spdlog::error("NVSDK_NGX_D3D11_EvaluateFeature InCmdList is null!!!");
         return NVSDK_NGX_Result_Fail;

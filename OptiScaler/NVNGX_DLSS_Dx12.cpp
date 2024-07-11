@@ -583,7 +583,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
                 upscalerChoice = 4;
         }
 
-        spdlog::info("NVSDK_NGX_D3D12_CreateFeature upscalerChoice: {0}", upscalerChoice);
+        spdlog::info("NVSDK_NGX_D3D12_CreateFeature DLSS Enabler upscalerChoice: {0}", upscalerChoice);
 
         if (upscalerChoice == 3)
         {
@@ -795,10 +795,17 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetFeatureRequirements(IDXGIAdapt
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_Handle* InFeatureHandle, NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
 {
-    spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature");
-
     if (InFeatureHandle == nullptr)
+    {
+        spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature InFeatureHandle is null");
         return NVSDK_NGX_Result_Fail;
+        // returning success to prevent breaking flow of the app
+        // return NVSDK_NGX_Result_Success;
+    }
+    else
+    {
+        spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature Handle: {0}", InFeatureHandle->Id);
+    }
 
     auto evaluateStart = GetTicks();
 
@@ -1127,7 +1134,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         return NVSDK_NGX_Result_Success;
     }
 
-    if (!deviceContext->IsInited() && (deviceContext->Name() == "XeSS" || deviceContext->Name() == "DLSS" || deviceContext->Name() == "FSR 3.1"))
+    if (!deviceContext->IsInited() && Config::Instance()->Dx12Upscaler.value_or("xess") != "fsr21") 
     {
         spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature InCmdList {0} is not inited, falling back to FSR 2.1.2", deviceContext->Name());
         Config::Instance()->newBackend = "fsr21";

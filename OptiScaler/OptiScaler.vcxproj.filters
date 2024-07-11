@@ -391,6 +391,5 @@
     <None Include="Source.def">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="..\external\FidelityFX-SDK\ffx-api\bin\amd_fidelityfx_vk.dll" />
   </ItemGroup>
 </Project>

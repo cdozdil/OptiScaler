@@ -561,13 +561,23 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
     return NVSDK_NGX_Result_Success;
 }
 
-NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer InCmdList, const NVSDK_NGX_Handle* InFeatureHandle, NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Handle* InFeatureHandle, NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
 {
-    spdlog::debug("NVSDK_NGX_VULKAN_EvaluateFeature FeatureId: {0}", InFeatureHandle->Id);
-
-    if (!InCmdList)
+    if (InFeatureHandle == nullptr)
     {
-        spdlog::error("NVSDK_NGX_VULKAN_EvaluateFeature InCmdList is null!!!");
+        spdlog::debug("NVSDK_NGX_VULKAN_EvaluateFeature InFeatureHandle is null");
+        return NVSDK_NGX_Result_Fail;
+        // returning success to prevent breaking flow of the app
+        // return NVSDK_NGX_Result_Success;
+    }
+    else
+    {
+        spdlog::debug("NVSDK_NGX_VULKAN_EvaluateFeature Handle: {0}", InFeatureHandle->Id);
+    }
+
+    if (InCmdBuffer == nullptr)
+    {
+        spdlog::error("NVSDK_NGX_VULKAN_EvaluateFeature InCmdBuffer is null!!!");
         return NVSDK_NGX_Result_Fail;
     }
 
@@ -576,7 +586,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     {
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::VULKAN_EvaluateFeature() != nullptr)
         {
-            auto result = NVNGXProxy::VULKAN_EvaluateFeature()(InCmdList, InFeatureHandle, InParameters, InCallback);
+            auto result = NVNGXProxy::VULKAN_EvaluateFeature()(InCmdBuffer, InFeatureHandle, InParameters, InCallback);
             spdlog::info("NVSDK_NGX_VULKAN_EvaluateFeature VULKAN_EvaluateFeature result for ({0}): {1:X}", handleId, (UINT)result);
             return result;
         }
@@ -718,7 +728,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
         if (changeBackendCounter == 3)
         {
             // next frame create context
-            auto initResult = VkContexts[handleId]->Init(vkInstance, vkPD, vkDevice, InCmdList, vkGIPA, vkGDPA, createParams);
+            auto initResult = VkContexts[handleId]->Init(vkInstance, vkPD, vkDevice, InCmdBuffer, vkGIPA, vkGDPA, createParams);
 
             changeBackendCounter = 0;
 
@@ -765,14 +775,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     deviceContext = VkContexts[handleId].get();
     Config::Instance()->CurrentFeature = deviceContext;
 
-    if (!deviceContext->IsInited() && (deviceContext->Name() == "XeSS" || deviceContext->Name() == "DLSS" || deviceContext->Name() == "FSR 3.1"))
+    if (!deviceContext->IsInited() && Config::Instance()->Dx12Upscaler.value_or("fsr21") != "fsr21")
     {
         Config::Instance()->newBackend = "fsr21";
         Config::Instance()->changeBackend = true;
         return NVSDK_NGX_Result_Success;
     }
 
-    if (deviceContext->Evaluate(InCmdList, InParameters))
+    if (deviceContext->Evaluate(InCmdBuffer, InParameters))
         return NVSDK_NGX_Result_Success;
     else
         return NVSDK_NGX_Result_Fail;
