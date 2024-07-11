@@ -33,7 +33,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 		return false;
 	}
 
-	Config::Instance()->xessSkipSpoofing = true;
+	Config::Instance()->dxgiSkipSpoofing = true;
 
 	auto ret = GetVersion()(&_xessVersion);
 
@@ -324,7 +324,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 	ret = D3D12Init()(_xessContext, &xessParams);
 
-	Config::Instance()->xessSkipSpoofing = false;
+	Config::Instance()->dxgiSkipSpoofing = false;
 
 	if (ret != XESS_RESULT_SUCCESS)
 	{
@@ -339,7 +339,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 XeSSFeature::XeSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
 {
-	Config::Instance()->xessSkipSpoofing = true;
+	Config::Instance()->dxgiSkipSpoofing = true;
 
 	PRN_xessGetVersion ptrMemoryGetVersion = (PRN_xessGetVersion)DetourFindFunction("libxess.dll", "xessGetVersion");
 	PRN_xessGetVersion ptrDllGetVersion = nullptr;
@@ -426,7 +426,7 @@ XeSSFeature::XeSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameter
 		}
 	}
 
-	Config::Instance()->xessSkipSpoofing = false;
+	Config::Instance()->dxgiSkipSpoofing = false;
 }
 
 XeSSFeature::~XeSSFeature()
