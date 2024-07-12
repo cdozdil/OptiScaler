@@ -18,16 +18,13 @@ class Config
 public:
 	Config(std::wstring fileName);
 
-	// Depth
+	// Init flags
 	std::optional<bool> DepthInverted;
-
-	// Color
 	std::optional<bool> AutoExposure;
 	std::optional<bool> HDR;
-
-	// Motion
 	std::optional<bool> JitterCancellation;
 	std::optional<bool> DisplayResolution;
+	std::optional<bool> DisableReactiveMask;
 
 	// Logging
 	std::optional<bool> LogToFile;
@@ -100,7 +97,6 @@ public:
 	std::optional<float> QualityRatio_UltraPerformance;
 
 	//Hotfixes
-	std::optional<bool> DisableReactiveMask;
 	std::optional<float> MipmapBiasOverride;
 	std::optional<int> RoundInternalResolution;
 
