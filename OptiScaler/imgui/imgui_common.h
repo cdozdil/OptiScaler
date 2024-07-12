@@ -1063,8 +1063,8 @@ public:
                             float cameraNear;
                             float cameraFar;
 
-                            cameraNear = Config::Instance()->FsrCameraNear.value_or(0.1f);
-                            cameraFar = Config::Instance()->FsrCameraFar.value_or(10.0f);
+                            cameraNear = Config::Instance()->FsrCameraNear.value_or(0.0001f);
+                            cameraFar = Config::Instance()->FsrCameraFar.value_or(0.9999f);
                             
                             if (currentBackend == "fsr31" || currentBackend == "fsr31_12")
                             {
@@ -1072,10 +1072,10 @@ public:
                                     Config::Instance()->FsrDebugView = dView;
                             }
 
-                            if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.1f, 10.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
+                            if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.0001f, 0.9999f, "%.4f", ImGuiSliderFlags_NoRoundToFormat))
                                 Config::Instance()->FsrCameraNear = cameraNear;
 
-                            if (ImGui::SliderFloat("Camera Far", &cameraFar, 0.1f, 1000.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
+                            if (ImGui::SliderFloat("Camera Far", &cameraFar, 0.0001f, 0.9999f, "%.4f", ImGuiSliderFlags_NoRoundToFormat))
                                 Config::Instance()->FsrCameraFar = cameraFar;
                         }
                     }

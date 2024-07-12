@@ -296,11 +296,11 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
     if (IsDepthInverted())
     {
         params.cameraFar = 0.0001f;
-        params.cameraNear = 1.0f;
+        params.cameraNear = 0.9999f;
     }
     else
     {
-        params.cameraFar = 1.0f;
+        params.cameraFar = 0.9999f;
         params.cameraNear = 0.0001f;
     }
 
