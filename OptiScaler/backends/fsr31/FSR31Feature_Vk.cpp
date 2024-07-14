@@ -1,6 +1,7 @@
 #pragma once
 #include "../../pch.h"
 #include "../../Config.h"
+#include "../../Util.h"
 
 #include "FSR31Feature_Vk.h"
 
@@ -42,6 +43,23 @@ FSR31FeatureVk::FSR31FeatureVk(unsigned int InHandleId, NVSDK_NGX_Parameter* InP
     _query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxQuery");
 
     _moduleLoaded = _configure != nullptr;
+
+    if (!_moduleLoaded)
+    {
+        auto file = Util::DllPath().parent_path() / "amd_fidelityfx_vk.dll";
+        auto _dll = LoadLibrary(file.wstring().c_str());
+
+        if (_dll != nullptr)
+        {
+            _configure = (PfnFfxConfigure)GetProcAddress(_dll, "ffxConfigure");
+            _createContext = (PfnFfxCreateContext)GetProcAddress(_dll, "ffxCreateContext");
+            _destroyContext = (PfnFfxDestroyContext)GetProcAddress(_dll, "ffxDestroyContext");
+            _dispatch = (PfnFfxDispatch)GetProcAddress(_dll, "ffxDispatch");
+            _query = (PfnFfxQuery)GetProcAddress(_dll, "ffxQuery");
+
+            _moduleLoaded = _configure != nullptr;
+        }
+    }
 
     if (_moduleLoaded)
         spdlog::info("FSR31FeatureVk::FSR31FeatureVk amd_fidelityfx_vk.dll methods loaded!");

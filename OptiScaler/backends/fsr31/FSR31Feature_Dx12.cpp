@@ -1,6 +1,7 @@
 #pragma once
 #include "../../pch.h"
 #include "../../Config.h"
+#include "../../Util.h"
 
 #include "FSR31Feature_Dx12.h"
 
@@ -16,6 +17,23 @@ FSR31FeatureDx12::FSR31FeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter*
     _query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxQuery");
 
     _moduleLoaded = _configure != nullptr;
+
+    if (!_moduleLoaded)
+    {
+        auto file = Util::DllPath().parent_path() / "amd_fidelityfx_dx12.dll";
+        auto _dll = LoadLibrary(file.wstring().c_str());
+
+        if (_dll != nullptr)
+        {
+            _configure = (PfnFfxConfigure)GetProcAddress(_dll, "ffxConfigure");
+            _createContext = (PfnFfxCreateContext)GetProcAddress(_dll, "ffxCreateContext");
+            _destroyContext = (PfnFfxDestroyContext)GetProcAddress(_dll, "ffxDestroyContext");
+            _dispatch = (PfnFfxDispatch)GetProcAddress(_dll, "ffxDispatch");
+            _query = (PfnFfxQuery)GetProcAddress(_dll, "ffxQuery");
+            
+            _moduleLoaded = _configure != nullptr;
+        }
+    }
 
     if (_moduleLoaded)
         spdlog::info("FSR31FeatureDx12::FSR31FeatureDx12 amd_fidelityfx_dx12.dll methods loaded!");
