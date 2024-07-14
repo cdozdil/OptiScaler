@@ -370,14 +370,14 @@ private:
 
 
         // END - REINIT MENU
-        if (msg == WM_KEYDOWN && wParam == Config::Instance()->ResetKey.value_or(VK_END))
+        if ((msg == WM_KEYDOWN && wParam == Config::Instance()->ResetKey.value_or(VK_END)) || vmInputReset)
         {
             _isResetRequested = true;
             return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
         }
 
         // INSERT - OPEN MENU
-        if (msg == WM_KEYDOWN && wParam == Config::Instance()->ShortcutKey.value_or(VK_INSERT))
+        if ((msg == WM_KEYDOWN && wParam == Config::Instance()->ShortcutKey.value_or(VK_INSERT)) || vmInputMenu)
         {
             _isVisible = !_isVisible;
 
@@ -1014,6 +1014,13 @@ public:
                                 Config::Instance()->changeBackend = true;
                             }
                         }
+
+                        //if (bool enablePAG = Config::Instance()->FsrUsePAG.value_or(false); ImGui::Checkbox("Enable Potato Anti-Ghosting", &enablePAG))
+                        //{
+                        //    Config::Instance()->FsrUsePAG = enablePAG;
+                        //    Config::Instance()->newBackend = currentBackend;
+                        //    Config::Instance()->changeBackend = true;
+                        //}
 
                         bool useVFov = Config::Instance()->FsrVerticalFov.has_value() || !Config::Instance()->FsrHorizontalFov.has_value();
 

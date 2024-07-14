@@ -20,6 +20,7 @@ bool FSR2FeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 
         OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", InDevice, (TargetWidth() < DisplayWidth()));
         RCAS = std::make_unique<RCAS_Dx12>("RCAS", InDevice);
+        //PAG = std::make_unique<PAG_Dx12>("PAG", InDevice);
 
         return true;
     }
@@ -238,8 +239,18 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
     else
         spdlog::debug("FSR2FeatureDx12::Evaluate AutoExposure enabled!");
 
+    bool pagOK = false;
+    //if (Config::Instance()->FsrUsePAG.value_or(false) && PAG != nullptr && PAG.get() != nullptr && PAG->IsInit() &&
+    //    PAG->Dispatch(Device, InCommandList, paramColor, paramDepth, paramVelocity, { params.jitterOffset.x, params.jitterOffset.y }))
+    //{
+    //    pagOK = true;
+
+    //    params.reactive = ffxGetResourceDX12(&_context, PAG->ReactiveMask(), (wchar_t*)L"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
+    //    params.motionVectors = ffxGetResourceDX12(&_context, PAG->MotionVector(), (wchar_t*)L"FSR2_MotionVectors", FFX_RESOURCE_STATE_COMPUTE_READ);
+    //}
+
     ID3D12Resource* paramMask = nullptr;
-    if (!Config::Instance()->DisableReactiveMask.value_or(true))
+    if (!pagOK && !Config::Instance()->DisableReactiveMask.value_or(true))
     {
         if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramMask) != NVSDK_NGX_Result_Success)
             InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramMask);
@@ -497,7 +508,7 @@ bool FSR2FeatureDx12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     bool EnableSharpening = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
     bool DepthInverted = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
     bool JitterMotion = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
-    bool LowRes = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
+    bool LowRes = Config::Instance()->FsrUsePAG.value_or(false) || (featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
     bool AutoExposure = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
 
     if (Config::Instance()->DepthInverted.value_or(DepthInverted))
