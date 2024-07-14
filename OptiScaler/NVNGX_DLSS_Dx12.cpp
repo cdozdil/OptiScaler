@@ -581,9 +581,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
                 upscalerChoice = 3;
             else if (Config::Instance()->Dx12Upscaler.value() == "fsr31")
                 upscalerChoice = 4;
+            
+            spdlog::info("NVSDK_NGX_D3D12_CreateFeature upscalerChoice: {0}", upscalerChoice);
+        }
+        else
+        {
+            spdlog::info("NVSDK_NGX_D3D12_CreateFeature DLSS Enabler upscalerChoice: {0}", upscalerChoice);
         }
 
-        spdlog::info("NVSDK_NGX_D3D12_CreateFeature DLSS Enabler upscalerChoice: {0}", upscalerChoice);
 
         if (upscalerChoice == 3)
         {
@@ -644,7 +649,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
             else
             {
                 Config::Instance()->Dx12Upscaler = "fsr31";
-                spdlog::info("NVSDK_NGX_D3D12_CreateFeature creating new XeSS feature");
+                spdlog::info("NVSDK_NGX_D3D12_CreateFeature creating new FSR 3.1 feature");
             }
         }
 

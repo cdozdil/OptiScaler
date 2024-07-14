@@ -50,6 +50,17 @@ inline static uint32_t __stdcall HookedNvAPI_GPU_GetArchInfo(void* GPUHandle, NV
 
 				spdlog::info("NVNGXProxy::HookedNvAPI_GPU_GetArchInfo Spoofed arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
 			}
+			//else if (ArchInfo->architecture < NV_GPU_ARCHITECTURE_TU100 && ArchInfo->architecture >= NV_GPU_ARCHITECTURE_GP100)
+			//{
+			//	spdlog::info("NVNGXProxy::HookedNvAPI_GPU_GetArchInfo Spoofing below 16xx arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
+
+			//	ArchInfo->architecture = NV_GPU_ARCHITECTURE_TU100;
+			//	ArchInfo->architecture_id = NV_GPU_ARCHITECTURE_TU100;
+			//	ArchInfo->implementation = NV_GPU_ARCH_IMPLEMENTATION_TU106;
+			//	ArchInfo->implementation_id = NV_GPU_ARCH_IMPLEMENTATION_TU106;
+
+			//	spdlog::info("NVNGXProxy::HookedNvAPI_GPU_GetArchInfo Spoofed arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
+			//}
 		}
 
 		return status;
@@ -80,12 +91,13 @@ inline static NVSDK_NGX_Result __stdcall Hooked_Dx12_GetFeatureRequirements(IDXG
 
 	auto result = Original_Dx12_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
 
-	if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+	if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
 	{
 		spdlog::info("NVNGXProxy::Hooked_Dx12_GetFeatureRequirements Spoofing support!");
 		OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
 		OutSupported->MinHWArchitecture = 0;
 		strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
+		return NVSDK_NGX_Result_Success;
 	}
 
 	return result;
@@ -97,12 +109,13 @@ inline static NVSDK_NGX_Result __stdcall Hooked_Dx11_GetFeatureRequirements(IDXG
 
 	auto result = Original_Dx11_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
 
-	if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+	if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
 	{
 		spdlog::info("NVNGXProxy::Hooked_Dx11_GetFeatureRequirements Spoofing support!");
 		OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
 		OutSupported->MinHWArchitecture = 0;
 		strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
+		return NVSDK_NGX_Result_Success;
 	}
 
 	return result;
