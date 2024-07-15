@@ -11,6 +11,15 @@ inline static DXGI_FORMAT GetDepthFormat(DXGI_FORMAT InFormat)
         case DXGI_FORMAT_R32G8X24_TYPELESS:
             return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
 
+        case DXGI_FORMAT_R32_TYPELESS:
+            return DXGI_FORMAT_R32_FLOAT;
+
+        case DXGI_FORMAT_R16_TYPELESS:
+            return DXGI_FORMAT_R16_FLOAT;
+
+        case DXGI_FORMAT_R16G16_TYPELESS:
+            return DXGI_FORMAT_R16G16_FLOAT;
+
         default:
             break;
     }
@@ -26,7 +35,23 @@ inline static DXGI_FORMAT GetStencilFormat(DXGI_FORMAT InFormat)
             return DXGI_FORMAT_D24_UNORM_S8_UINT;
 
         case DXGI_FORMAT_R32G8X24_TYPELESS:
-            return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+            return DXGI_FORMAT_X32_TYPELESS_G8X24_UINT;
+
+        case DXGI_FORMAT_R32_TYPELESS:
+            return DXGI_FORMAT_R32_FLOAT;
+
+        case DXGI_FORMAT_R16G16_TYPELESS:
+            return DXGI_FORMAT_R16G16_FLOAT;
+
+        case DXGI_FORMAT_R16_TYPELESS:
+            return DXGI_FORMAT_R16_FLOAT;
+
+        case DXGI_FORMAT_R8G8_TYPELESS:
+            return DXGI_FORMAT_R8G8_UINT;
+
+        case DXGI_FORMAT_R8_TYPELESS:
+            return DXGI_FORMAT_R8_UINT;
+
 
         default:
             break;
@@ -141,8 +166,6 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
     // Create Depth History
     if (_historyDepth == nullptr)
         CreateReferencedResource(InDevice, InDepth, L"PAG_HistoryDepth", &_historyDepth, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-    else
-        SetResourceState(InCmdList, _historyDepth, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
     // Create Output Motion Vectors
     if (_motionVector == nullptr)
@@ -162,13 +185,22 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
     if (_debug == nullptr)
         CreateReferencedResource(InDevice, InColor, L"PAG_Debug", &_debug, D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
                                  DXGI_FORMAT_UNKNOWN, 0, 0, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-    else
-        SetResourceState(InCmdList, _debug, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
     auto _histDepthDesc = _historyDepth->GetDesc();
     auto _rMaskhDesc = _reactiveMask->GetDesc();
     auto _mvhDesc = _motionVector->GetDesc();
     auto _debugDesc = _debug->GetDesc();
+
+    // CBV
+    if (_cpuCbvHandle[_counter].ptr == NULL)
+    {
+        // CPU
+        _cpuCbvHandle[_counter] = _srvHeap[_counter]->GetCPUDescriptorHandleForHeapStart();
+
+        // GPU
+        _gpuCbvHandle[_counter] = _srvHeap[_counter]->GetGPUDescriptorHandleForHeapStart();
+    }
+
 
     // SRV
     for (size_t i = 0; i < 6; i++)
@@ -177,28 +209,22 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
         if (_cpuSrvHandle[i][_counter].ptr == NULL)
         {
             if (i == 0)
-            {
-                _cpuSrvHandle[i][_counter] = _srvHeap[_counter]->GetCPUDescriptorHandleForHeapStart();
-            }
+                _cpuSrvHandle[i][_counter] = _cpuCbvHandle[_counter];
             else
-            {
                 _cpuSrvHandle[i][_counter] = _cpuSrvHandle[i - 1][_counter];
-                _cpuSrvHandle[i][_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-            }
+
+            _cpuSrvHandle[i][_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
         }
 
         // GPU
         if (_gpuSrvHandle[i][_counter].ptr == NULL)
         {
             if (i == 0)
-            {
-                _gpuSrvHandle[i][_counter] = _srvHeap[_counter]->GetGPUDescriptorHandleForHeapStart();
-            }
+                _gpuSrvHandle[i][_counter] = _gpuCbvHandle[_counter];
             else
-            {
                 _gpuSrvHandle[i][_counter] = _gpuSrvHandle[i - 1][_counter];
-                _gpuSrvHandle[i][_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-            }
+
+            _gpuSrvHandle[i][_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
         }
     }
 
@@ -209,63 +235,44 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
         if (_cpuUavHandle[i][_counter].ptr == NULL)
         {
             if (i == 0)
-            {
-                _cpuUavHandle[i][_counter] = _cpuSrvHandle[4][_counter];
-                _cpuUavHandle[i][_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-            }
+                _cpuUavHandle[i][_counter] = _cpuSrvHandle[5][_counter];
             else
-            {
                 _cpuUavHandle[i][_counter] = _cpuUavHandle[i - 1][_counter];
-                _cpuUavHandle[i][_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-            }
+
+            _cpuUavHandle[i][_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
         }
 
         // GPU
         if (_gpuUavHandle[i][_counter].ptr == NULL)
         {
             if (i == 0)
-            {
-                _gpuUavHandle[i][_counter] = _gpuSrvHandle[4][_counter];
-                _gpuUavHandle[i][_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-            }
+                _gpuUavHandle[i][_counter] = _gpuSrvHandle[5][_counter];
             else
-            {
                 _gpuUavHandle[i][_counter] = _gpuUavHandle[i - 1][_counter];
-                _gpuUavHandle[i][_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-            }
+
+            _gpuUavHandle[i][_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
         }
-    }
-
-    // CBV
-    if (_cpuCbvHandle[_counter].ptr == NULL)
-    {
-        // CPU
-        _cpuCbvHandle[_counter] = _cpuUavHandle[2][_counter];
-        _cpuCbvHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-        // GPU
-        _gpuCbvHandle[_counter] = _gpuUavHandle[2][_counter];
-        _gpuCbvHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     }
 
     // RVs for SRVs
     ID3D12Resource* srvResources[6] = { InColor, InDepth, InDepth, InMotionVectors, nullptr, _historyDepth };
-    D3D12_RESOURCE_DESC* srvResourceDescs[6] = { &inColorDesc, &inDepthDesc, &inDepthDesc, &inMvDesc, nullptr, &_histDepthDesc };
-    DXGI_FORMAT srvResourceFmts[6] = { inColorDesc.Format, GetDepthFormat(inDepthDesc.Format), GetDepthFormat(inDepthDesc.Format),
-        inMvDesc.Format, DXGI_FORMAT_UNKNOWN, GetDepthFormat(_histDepthDesc.Format) };
+    DXGI_FORMAT srvResourceFmts[6] = { inColorDesc.Format, GetDepthFormat(inDepthDesc.Format), GetStencilFormat(inDepthDesc.Format),
+        inMvDesc.Format, DXGI_FORMAT_R16_FLOAT, GetStencilFormat(_histDepthDesc.Format) };
 
     for (size_t i = 0; i < 6; i++)
     {
-        if (srvResources[i] != nullptr)
-        {
-            D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            srvDesc.Format = srvResourceFmts[i];
-            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-            srvDesc.Texture2D.MipLevels = 1;
+        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        srvDesc.Format = srvResourceFmts[i];
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        srvDesc.Texture2D.MostDetailedMip = 0;
+        srvDesc.Texture2D.MipLevels = 1;
 
-            InDevice->CreateShaderResourceView(srvResources[i], &srvDesc, _cpuSrvHandle[i][_counter]);
-        }
+        // Stencil ones
+        if ((i == 2 || i == 5) && (srvResourceFmts[i] == DXGI_FORMAT_X32_TYPELESS_G8X24_UINT || srvResourceFmts[i] == DXGI_FORMAT_D24_UNORM_S8_UINT))
+            srvDesc.Texture2D.PlaneSlice = 1;
+
+        InDevice->CreateShaderResourceView(srvResources[i], &srvDesc, _cpuSrvHandle[i][_counter]);
     }
 
     // RVs for UAVs
@@ -324,18 +331,13 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
     InCmdList->SetPipelineState(_pipelineState);
 
     //// GPU CBV Handles
-    //InCmdList->SetComputeRootDescriptorTable(0, _gpuCbvHandle[_counter]);
+    InCmdList->SetComputeRootDescriptorTable(0, _gpuCbvHandle[_counter]);
 
-    //// GPU SRV Handles
-    //for (size_t i = 0; i < 6; i++)
-    //{
-    //    if (i != 4)
-    //        InCmdList->SetComputeRootDescriptorTable(1, _gpuSrvHandle[i][_counter]);
-    //}
+    // GPU SRV Handles
+    InCmdList->SetComputeRootDescriptorTable(1, _gpuSrvHandle[0][_counter]);
 
-    //// GPU UAV Handles
-    //for (size_t i = 0; i < 3; i++)
-    //    InCmdList->SetComputeRootDescriptorTable(2, _gpuUavHandle[i][_counter]);
+    // GPU UAV Handles
+    InCmdList->SetComputeRootDescriptorTable(2, _gpuUavHandle[0][_counter]);
 
 
     UINT dispatchWidth = 0;
@@ -344,18 +346,19 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
     dispatchWidth = (inColorDesc.Width + InNumThreadsX - 1) / InNumThreadsX;
     dispatchHeight = (inColorDesc.Height + InNumThreadsY - 1) / InNumThreadsY;
 
-    //InCmdList->Dispatch(dispatchWidth, dispatchHeight, 1);
+    InCmdList->Dispatch(dispatchWidth, dispatchHeight, 1);
 
     InDepth->SetName(L"DLSS_DepthInput");
     SetResourceState(InCmdList, InDepth, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_SOURCE);
     SetResourceState(InCmdList, _historyDepth, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-    SetResourceState(InCmdList, _motionVector, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-    SetResourceState(InCmdList, _reactiveMask, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
     SetResourceState(InCmdList, _debug, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
     InCmdList->CopyResource(_historyDepth, InDepth);
 
+    SetResourceState(InCmdList, _historyDepth, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
     SetResourceState(InCmdList, InDepth, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+    SetResourceState(InCmdList, _motionVector, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+    SetResourceState(InCmdList, _reactiveMask, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
     return true;
 }

@@ -57,6 +57,7 @@ bool FSR31FeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* I
 
         OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", InDevice, (TargetWidth() < DisplayWidth()));
         RCAS = std::make_unique<RCAS_Dx12>("RCAS", InDevice);
+        PAG = std::make_unique<PAG_Dx12>("PAG", InDevice);
 
         return true;
     }
@@ -275,10 +276,31 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
         }
     }
     else
+    {
         spdlog::debug("FSR31FeatureDx12::Evaluate AutoExposure enabled!");
+    }
+
+    // PAG
+    bool pagOK = false;
+    if (Config::Instance()->FsrUsePAG.value_or(false) && PAG != nullptr && PAG.get() != nullptr && PAG->IsInit() &&
+        PAG->Dispatch(Device, InCommandList, paramColor, paramDepth, paramVelocity, { params.jitterOffset.x, params.jitterOffset.y }))
+    {
+        pagOK = true;
+
+        params.reactive = ffxApiGetResourceDX12(PAG->ReactiveMask(), FFX_API_RESOURCE_STATE_COMPUTE_READ);
+        params.motionVectors = ffxApiGetResourceDX12(PAG->MotionVector(), FFX_API_RESOURCE_STATE_COMPUTE_READ);
+    }
+    else
+    {
+        if (Config::Instance()->FsrUsePAG.value_or(false))
+        {
+            spdlog::debug("FSR31FeatureDx12::Evaluate PAG has an issue, disabling!");
+            Config::Instance()->FsrUsePAG = false;
+        }
+    }
 
     ID3D12Resource* paramMask = nullptr;
-    if (!Config::Instance()->DisableReactiveMask.value_or(true))
+    if (!pagOK && !Config::Instance()->DisableReactiveMask.value_or(true))
     {
         if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramMask) != NVSDK_NGX_Result_Success)
             InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramMask);
@@ -528,7 +550,7 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     bool EnableSharpening = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
     bool DepthInverted = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
     bool JitterMotion = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
-    bool LowRes = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
+    bool LowRes = Config::Instance()->FsrUsePAG.value_or(false) || (featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
     bool AutoExposure = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
 
     _contextDesc.flags = 0;

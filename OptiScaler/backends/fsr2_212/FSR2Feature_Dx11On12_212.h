@@ -1,6 +1,7 @@
 #pragma once
-#include "../IFeature_Dx11wDx12.h"
 #include "FSR2Feature_212.h"
+#include "../IFeature_Dx11wDx12.h"
+#include "../../pag/PAG_Dx12.h"
 
 #include "../../fsr2_212/include/ffx_fsr2.h"
 #include "../../fsr2_212/include/dx12/ffx_fsr2_dx12.h"
@@ -9,6 +10,7 @@ class FSR2FeatureDx11on12_212 : public FSR2Feature212, public IFeature_Dx11wDx12
 {
 private:
 	bool _baseInit = false;
+	std::unique_ptr<PAG_Dx12> PAG = nullptr;
 
 protected:
 	bool InitFSR2(const NVSDK_NGX_Parameter* InParameters);

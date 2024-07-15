@@ -20,14 +20,14 @@ bool FSR2FeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 
         OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", InDevice, (TargetWidth() < DisplayWidth()));
         RCAS = std::make_unique<RCAS_Dx12>("RCAS", InDevice);
-        //PAG = std::make_unique<PAG_Dx12>("PAG", InDevice);
+        PAG = std::make_unique<PAG_Dx12>("PAG", InDevice);
 
         return true;
     }
 
     return false;
 }
-
+    
 bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters)
 {
     spdlog::debug("FSR2FeatureDx12::Evaluate");
@@ -239,15 +239,24 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
     else
         spdlog::debug("FSR2FeatureDx12::Evaluate AutoExposure enabled!");
 
+    // PAG
     bool pagOK = false;
-    //if (Config::Instance()->FsrUsePAG.value_or(false) && PAG != nullptr && PAG.get() != nullptr && PAG->IsInit() &&
-    //    PAG->Dispatch(Device, InCommandList, paramColor, paramDepth, paramVelocity, { params.jitterOffset.x, params.jitterOffset.y }))
-    //{
-    //    pagOK = true;
+    if (Config::Instance()->FsrUsePAG.value_or(false) && PAG != nullptr && PAG.get() != nullptr && PAG->IsInit() &&
+        PAG->Dispatch(Device, InCommandList, paramColor, paramDepth, paramVelocity, { params.jitterOffset.x, params.jitterOffset.y }))
+    {
+        pagOK = true;
 
-    //    params.reactive = ffxGetResourceDX12(&_context, PAG->ReactiveMask(), (wchar_t*)L"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
-    //    params.motionVectors = ffxGetResourceDX12(&_context, PAG->MotionVector(), (wchar_t*)L"FSR2_MotionVectors", FFX_RESOURCE_STATE_COMPUTE_READ);
-    //}
+        params.reactive = ffxGetResourceDX12(&_context, PAG->ReactiveMask(), (wchar_t*)L"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
+        params.motionVectors = ffxGetResourceDX12(&_context, PAG->MotionVector(), (wchar_t*)L"FSR2_MotionVectors", FFX_RESOURCE_STATE_COMPUTE_READ);
+    }
+    else
+    {
+        if (Config::Instance()->FsrUsePAG.value_or(false))
+        {
+            spdlog::debug("FSR2FeatureDx12::Evaluate PAG has an issue, disabling!");
+            Config::Instance()->FsrUsePAG = false;
+        }
+    }
 
     ID3D12Resource* paramMask = nullptr;
     if (!pagOK && !Config::Instance()->DisableReactiveMask.value_or(true))

@@ -1015,12 +1015,12 @@ public:
                             }
                         }
 
-                        //if (bool enablePAG = Config::Instance()->FsrUsePAG.value_or(false); ImGui::Checkbox("Enable Potato Anti-Ghosting", &enablePAG))
-                        //{
-                        //    Config::Instance()->FsrUsePAG = enablePAG;
-                        //    Config::Instance()->newBackend = currentBackend;
-                        //    Config::Instance()->changeBackend = true;
-                        //}
+                        if (bool enablePAG = Config::Instance()->FsrUsePAG.value_or(false); ImGui::Checkbox("Enable PotatoOfDoom Anti-Ghosting", &enablePAG))
+                        {
+                            Config::Instance()->FsrUsePAG = enablePAG;
+                            Config::Instance()->newBackend = currentBackend;
+                            Config::Instance()->changeBackend = true;
+                        }
 
                         bool useVFov = Config::Instance()->FsrVerticalFov.has_value() || !Config::Instance()->FsrHorizontalFov.has_value();
 
