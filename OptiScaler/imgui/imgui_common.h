@@ -1534,6 +1534,7 @@ public:
                             }
 
                             ImGui::TableNextColumn();
+                            ImGui::BeginDisabled(!Config::Instance()->CurrentFeature->AccessToReactiveMask());
                             if (bool rm = Config::Instance()->DisableReactiveMask.value_or(true); ImGui::Checkbox("Disable Reactive Mask", &rm))
                             {
                                 Config::Instance()->DisableReactiveMask = rm;
@@ -1544,6 +1545,7 @@ public:
                                     Config::Instance()->changeBackend = true;
                                 }
                             }
+                            ImGui::EndDisabled();
                         }
 
                         ImGui::EndTable();

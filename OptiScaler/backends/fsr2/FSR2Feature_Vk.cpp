@@ -261,19 +261,20 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* I
     else
         spdlog::debug("FSR2FeatureVk::Evaluate AutoExposure enabled!");
 
-    void* paramMask = nullptr;
+    void* paramReactiveMask = nullptr;
+    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
+
     if (!Config::Instance()->DisableReactiveMask.value_or(true))
     {
-        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramMask);
-
-        if (paramMask)
+        if (paramReactiveMask)
         {
             spdlog::debug("FSR2FeatureVk::Evaluate Bias mask exist..");
 
-            params.reactive = ffxGetTextureResourceVK(&_context, ((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Image,
-                                                      ((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.ImageView,
-                                                      ((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Height,
-                                                      ((NVSDK_NGX_Resource_VK*)paramMask)->Resource.ImageViewInfo.Format, (wchar_t*)L"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
+            params.reactive = ffxGetTextureResourceVK(&_context, ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Image,
+                                                      ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.ImageView,
+                                                      ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Height,
+                                                      ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Format, (wchar_t*)L"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
         }
         else
         {
@@ -288,7 +289,8 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* I
     _hasDepth = params.depth.resource != nullptr;
     _hasMV = params.motionVectors.resource != nullptr;
     _hasExposure = params.exposure.resource != nullptr;
-    _hasTM = params.reactive.resource != nullptr;
+    _hasTM = params.transparencyAndComposition.resource != nullptr;
+    _accessToReactiveMask = paramReactiveMask != nullptr;
     _hasOutput = params.output.resource != nullptr;
 
     float MVScaleX = 1.0f;

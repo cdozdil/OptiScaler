@@ -236,12 +236,15 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	else
 		spdlog::debug("XeSSFeatureDx12::Evaluate AutoExposure enabled!");
 
+	ID3D12Resource* paramReactiveMask = nullptr;
+	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
+		InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
+
 	if (!Config::Instance()->DisableReactiveMask.value_or(true))
 	{
-		if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &params.pResponsivePixelMaskTexture) != NVSDK_NGX_Result_Success)
-			InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&params.pResponsivePixelMaskTexture);
+		params.pResponsivePixelMaskTexture = paramReactiveMask;
 
-		if (params.pResponsivePixelMaskTexture)
+		if (paramReactiveMask)
 		{
 			spdlog::debug("XeSSFeatureDx12::Evaluate Bias mask exist..");
 
@@ -262,7 +265,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	_hasOutput = params.pOutputTexture != nullptr;
 	_hasDepth = params.pDepthTexture != nullptr;
 	_hasExposure = params.pExposureScaleTexture != nullptr;
-	_hasTM = params.pResponsivePixelMaskTexture != nullptr;
+	_accessToReactiveMask = paramReactiveMask != nullptr;
 
 	float MVScaleX = 1.0f;
 	float MVScaleY = 1.0f;
