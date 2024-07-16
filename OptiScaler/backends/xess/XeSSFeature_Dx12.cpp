@@ -265,7 +265,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	_hasOutput = params.pOutputTexture != nullptr;
 	_hasDepth = params.pDepthTexture != nullptr;
 	_hasExposure = params.pExposureScaleTexture != nullptr;
-	_hasReactiveMask = paramReactiveMask != nullptr;
+	_accessToReactiveMask = paramReactiveMask != nullptr;
 
 	float MVScaleX = 1.0f;
 	float MVScaleY = 1.0f;

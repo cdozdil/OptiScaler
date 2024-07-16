@@ -22,7 +22,7 @@ protected:
 	bool _hasDepth = false;
 	bool _hasMV = false;
 	bool _hasTM = false;
-	bool _hasReactiveMask = false;
+	bool _accessToReactiveMask = false;
 	bool _hasExposure = false;
 	bool _hasOutput = false;
 	int _initFlags = 0;
@@ -69,7 +69,7 @@ public:
 	bool HasDepth() const { return _hasDepth; }
 	bool HasMV() const { return _hasMV; }
 	bool HasTM() const { return _hasTM; }
-	bool HasReactiveMask() const { return _hasReactiveMask; }
+	bool AccessToReactiveMask() const { return _accessToReactiveMask; }
 	bool HasExposure() const { return _hasExposure; }
 	bool HasOutput() const { return _hasOutput; }
 	int InitFlags() const { return _initFlags; }

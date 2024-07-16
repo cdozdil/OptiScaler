@@ -76,7 +76,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
         ID3D11Resource* paramReactiveMask = nullptr;
         if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
             InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
-        _hasReactiveMask = paramReactiveMask != nullptr;
+        _accessToReactiveMask = paramReactiveMask != nullptr;
 
         if (!Config::Instance()->DisableReactiveMask.has_value())
         {
@@ -250,7 +250,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
     _hasMV = params.motionVectors.resource != nullptr;
     _hasExposure = params.exposure.resource != nullptr;
     _hasTM = params.transparencyAndComposition.resource != nullptr;
-    _hasReactiveMask = params.reactive.resource != nullptr;
+    _accessToReactiveMask = params.reactive.resource != nullptr;
     _hasOutput = params.output.resource != nullptr;
 
 #pragma endregion

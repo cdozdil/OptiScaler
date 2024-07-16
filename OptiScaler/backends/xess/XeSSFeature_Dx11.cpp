@@ -84,7 +84,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		ID3D11Resource* paramReactiveMask = nullptr;
 		if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
 			InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
-		_hasReactiveMask = paramReactiveMask != nullptr;
+		_accessToReactiveMask = paramReactiveMask != nullptr;
 
 		if (!Config::Instance()->DisableReactiveMask.has_value())
 		{

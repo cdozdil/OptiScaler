@@ -384,7 +384,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 	_hasMV = params.motionVectors.resource != nullptr;
 	_hasExposure = params.exposure.resource != nullptr;
 	_hasTM = params.transparencyAndComposition.resource != nullptr;
-	_hasReactiveMask = paramReactiveMask != nullptr;
+	_accessToReactiveMask = paramReactiveMask != nullptr;
 	_hasOutput = params.output.resource != nullptr;
 
 	float MVScaleX = 1.0f;
