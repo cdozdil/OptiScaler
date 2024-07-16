@@ -194,13 +194,13 @@ void IFeature_Dx11wDx12::ReleaseSharedResources()
     SAFE_RELEASE(dx11Mv.SharedTexture);
     SAFE_RELEASE(dx11Out.SharedTexture);
     SAFE_RELEASE(dx11Depth.SharedTexture);
-    SAFE_RELEASE(dx11Tm.SharedTexture);
+    SAFE_RELEASE(dx11Reactive.SharedTexture);
     SAFE_RELEASE(dx11Exp.SharedTexture);
     SAFE_RELEASE(dx11Color.Dx12Resource);
     SAFE_RELEASE(dx11Mv.Dx12Resource);
     SAFE_RELEASE(dx11Out.Dx12Resource);
     SAFE_RELEASE(dx11Depth.Dx12Resource);
-    SAFE_RELEASE(dx11Tm.Dx12Resource);
+    SAFE_RELEASE(dx11Reactive.Dx12Resource);
     SAFE_RELEASE(dx11Exp.Dx12Resource);
 
     ReleaseSyncResources();
@@ -510,7 +510,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         {
             spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Bias mask exist..");
 
-            if (CopyTextureFrom11To12(paramMask, &dx11Tm, true, Config::Instance()->DontUseNTShared.value_or(false)) == false)
+            if (CopyTextureFrom11To12(paramMask, &dx11Reactive, true, Config::Instance()->DontUseNTShared.value_or(false)) == false)
                 return false;
         }
         // This is only needed for XeSS
@@ -710,12 +710,12 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         dx11Exp.Dx12Handle = dx11Exp.Dx11Handle;
     }
 
-    if (!Config::Instance()->DisableReactiveMask.value_or(true) && paramMask && dx11Tm.Dx12Handle != dx11Tm.Dx11Handle)
+    if (!Config::Instance()->DisableReactiveMask.value_or(true) && paramMask && dx11Reactive.Dx12Handle != dx11Reactive.Dx11Handle)
     {
-        if (dx11Tm.Dx12Handle != NULL)
-            CloseHandle(dx11Tm.Dx12Handle);
+        if (dx11Reactive.Dx12Handle != NULL)
+            CloseHandle(dx11Reactive.Dx12Handle);
 
-        result = Dx12Device->OpenSharedHandle(dx11Tm.Dx11Handle, IID_PPV_ARGS(&dx11Tm.Dx12Resource));
+        result = Dx12Device->OpenSharedHandle(dx11Reactive.Dx11Handle, IID_PPV_ARGS(&dx11Reactive.Dx12Resource));
 
         if (result != S_OK)
         {
@@ -723,7 +723,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
             return false;
         }
 
-        dx11Tm.Dx12Handle = dx11Tm.Dx11Handle;
+        dx11Reactive.Dx12Handle = dx11Reactive.Dx11Handle;
     }
 
 #pragma endregion

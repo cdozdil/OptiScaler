@@ -259,7 +259,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
     params.motionVectors = ffxApiGetResourceDX12(dx11Mv.Dx12Resource, FFX_API_RESOURCE_STATE_COMPUTE_READ);
     params.depth = ffxApiGetResourceDX12(dx11Depth.Dx12Resource, FFX_API_RESOURCE_STATE_COMPUTE_READ);
     params.exposure = ffxApiGetResourceDX12(dx11Exp.Dx12Resource, FFX_API_RESOURCE_STATE_COMPUTE_READ);
-    params.reactive = ffxApiGetResourceDX12(dx11Tm.Dx12Resource, FFX_API_RESOURCE_STATE_COMPUTE_READ);
+    params.reactive = ffxApiGetResourceDX12(dx11Reactive.Dx12Resource, FFX_API_RESOURCE_STATE_COMPUTE_READ);
 
     // Output Scaling
     if (useSS)
@@ -288,7 +288,8 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
     _hasDepth = params.depth.resource != nullptr;
     _hasMV = params.motionVectors.resource != nullptr;
     _hasExposure = params.exposure.resource != nullptr;
-    _hasTM = params.reactive.resource != nullptr;
+    _hasTM = params.transparencyAndComposition.resource != nullptr;
+    _hasReactiveMask = params.reactive.resource != nullptr;
     _hasOutput = params.output.resource != nullptr;
 
 #pragma endregion

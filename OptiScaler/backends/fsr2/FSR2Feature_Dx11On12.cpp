@@ -218,7 +218,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
     params.motionVectors = ffxGetResourceDX12(&_context, dx11Mv.Dx12Resource, L"FSR2_Motion", FFX_RESOURCE_STATE_COMPUTE_READ);
     params.depth = ffxGetResourceDX12(&_context, dx11Depth.Dx12Resource, L"FSR2_Depth", FFX_RESOURCE_STATE_COMPUTE_READ);
     params.exposure = ffxGetResourceDX12(&_context, dx11Exp.Dx12Resource, L"FSR2_Exp", FFX_RESOURCE_STATE_COMPUTE_READ);
-    params.reactive = ffxGetResourceDX12(&_context, dx11Tm.Dx12Resource, L"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
+    params.reactive = ffxGetResourceDX12(&_context, dx11Reactive.Dx12Resource, L"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
 
     // OutputScaling
     if (useSS)
@@ -251,7 +251,8 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
     _hasDepth = params.depth.resource != nullptr;
     _hasMV = params.motionVectors.resource != nullptr;
     _hasExposure = params.exposure.resource != nullptr;
-    _hasTM = params.reactive.resource != nullptr;
+    _hasTM = params.transparencyAndComposition.resource != nullptr;
+    _hasReactiveMask = params.reactive.resource != nullptr;
     _hasOutput = params.output.resource != nullptr;
 
 #pragma endregion

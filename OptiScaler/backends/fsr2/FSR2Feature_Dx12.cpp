@@ -259,7 +259,8 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
     _hasDepth = params.depth.resource != nullptr;
     _hasMV = params.motionVectors.resource != nullptr;
     _hasExposure = params.exposure.resource != nullptr;
-    _hasTM = params.reactive.resource != nullptr;
+    _hasTM = params.transparencyAndComposition.resource != nullptr;
+    _hasReactiveMask = params.reactive.resource != nullptr;
     _hasOutput = params.output.resource != nullptr;
 
     float MVScaleX = 1.0f;

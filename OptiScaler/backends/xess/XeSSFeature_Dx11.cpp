@@ -262,8 +262,8 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 	_hasDepth = params.pDepthTexture != nullptr;
 	params.pExposureScaleTexture = dx11Exp.Dx12Resource;
 	_hasExposure = params.pExposureScaleTexture != nullptr;
-	params.pResponsivePixelMaskTexture = dx11Tm.Dx12Resource;
-	_hasTM = params.pResponsivePixelMaskTexture != nullptr;
+	params.pResponsivePixelMaskTexture = dx11Reactive.Dx12Resource;
+	_hasReactiveMask = params.pResponsivePixelMaskTexture != nullptr;
 
 	spdlog::debug("XeSSFeatureDx11::Evaluate Textures -> params complete!");
 

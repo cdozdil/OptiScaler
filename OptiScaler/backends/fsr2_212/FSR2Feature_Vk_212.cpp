@@ -283,7 +283,8 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     _hasDepth = params.depth.resource != nullptr;
     _hasMV = params.motionVectors.resource != nullptr;
     _hasExposure = params.exposure.resource != nullptr;
-    _hasTM = params.reactive.resource != nullptr;
+    _hasTM = params.transparencyAndComposition.resource != nullptr;
+    _hasReactiveMask = params.reactive.resource != nullptr;
     _hasOutput = params.output.resource != nullptr;
 
     float MVScaleX = 1.0f;
