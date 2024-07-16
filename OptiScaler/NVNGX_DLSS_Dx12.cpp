@@ -437,10 +437,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetCapabilityParameters(NVSDK_NGX
         }
     }
 
-    //if (*OutParameters == nullptr)
-        *OutParameters = GetNGXParameters("OptiDx12");
-    //else
-    //    InitNGXParameters(*OutParameters);
+    *OutParameters = GetNGXParameters("OptiDx12");
 
     return NVSDK_NGX_Result_Success;
 }
@@ -581,7 +578,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
                 upscalerChoice = 3;
             else if (Config::Instance()->Dx12Upscaler.value() == "fsr31")
                 upscalerChoice = 4;
-            
+
             spdlog::info("NVSDK_NGX_D3D12_CreateFeature upscalerChoice: {0}", upscalerChoice);
         }
         else
@@ -1139,7 +1136,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         return NVSDK_NGX_Result_Success;
     }
 
-    if (!deviceContext->IsInited() && Config::Instance()->Dx12Upscaler.value_or("xess") != "fsr21") 
+    if (!deviceContext->IsInited() && Config::Instance()->Dx12Upscaler.value_or("xess") != "fsr21")
     {
         spdlog::warn("NVSDK_NGX_D3D12_EvaluateFeature InCmdList {0} is not inited, falling back to FSR 2.1.2", deviceContext->Name());
         Config::Instance()->newBackend = "fsr21";

@@ -257,10 +257,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetCapabilityParameters(NVSDK_NGX
         }
     }
 
-    if (*OutParameters == nullptr)
-        *OutParameters = GetNGXParameters("OptiDx11");
-    else
-        InitNGXParameters(*OutParameters);
+    *OutParameters = GetNGXParameters("OptiDx11");
 
     return NVSDK_NGX_Result_Success;
 }
