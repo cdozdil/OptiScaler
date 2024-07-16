@@ -1015,13 +1015,6 @@ public:
                             }
                         }
 
-                        if (bool enablePAG = Config::Instance()->FsrUsePAG.value_or(false); ImGui::Checkbox("Enable PotatoOfDoom Anti-Ghosting", &enablePAG))
-                        {
-                            Config::Instance()->FsrUsePAG = enablePAG;
-                            Config::Instance()->newBackend = currentBackend;
-                            Config::Instance()->changeBackend = true;
-                        }
-
                         bool useVFov = Config::Instance()->FsrVerticalFov.has_value() || !Config::Instance()->FsrHorizontalFov.has_value();
 
                         float vfov;
@@ -1070,8 +1063,8 @@ public:
                             float cameraNear;
                             float cameraFar;
 
-                            cameraNear = Config::Instance()->FsrCameraNear.value_or(0.0001f);
-                            cameraFar = Config::Instance()->FsrCameraFar.value_or(0.9999f);
+                            cameraNear = Config::Instance()->FsrCameraNear.value_or(0.01f);
+                            cameraFar = Config::Instance()->FsrCameraFar.value_or(0.99f);
                             
                             if (currentBackend == "fsr31" || currentBackend == "fsr31_12")
                             {
@@ -1079,10 +1072,10 @@ public:
                                     Config::Instance()->FsrDebugView = dView;
                             }
 
-                            if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.0001f, 0.9999f, "%.4f", ImGuiSliderFlags_NoRoundToFormat))
+                            if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.01f, 9.99f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
                                 Config::Instance()->FsrCameraNear = cameraNear;
 
-                            if (ImGui::SliderFloat("Camera Far", &cameraFar, 0.0001f, 0.9999f, "%.4f", ImGuiSliderFlags_NoRoundToFormat))
+                            if (ImGui::SliderFloat("Camera Far", &cameraFar, 0.01f, 9.99f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
                                 Config::Instance()->FsrCameraFar = cameraFar;
                         }
                     }
@@ -1545,12 +1538,11 @@ public:
                             {
                                 Config::Instance()->DisableReactiveMask = rm;
 
-                                if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
-                                    Config::Instance()->newBackend = "dlssd";
-                                else
+                                if (currentBackend == "xess")
+                                {
                                     Config::Instance()->newBackend = currentBackend;
-
-                                Config::Instance()->changeBackend = true;
+                                    Config::Instance()->changeBackend = true;
+                                }
                             }
                         }
 
