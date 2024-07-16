@@ -239,8 +239,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="Logger.h" />
     <ClInclude Include="NVNGX_Parameter.h" />
     <ClInclude Include="NVNGX_Proxy.h" />
-    <ClInclude Include="pag\PAG_Common.h" />
-    <ClInclude Include="pag\PAG_Dx12.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="rcas\RCAS_Common.h" />
     <ClInclude Include="rcas\RCAS_Dx12.h" />
@@ -305,7 +303,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="backends\xess\XeSSFeature_Dx11.cpp" />
     <ClCompile Include="backends\xess\XeSSFeature_Dx12.cpp" />
     <ClCompile Include="backends\xess\XeSSFeature_Dx12.h" />
-    <ClCompile Include="pag\PAG_Dx12.cpp" />
     <ClCompile Include="rcas\RCAS_Dx12.cpp" />
     <ClCompile Include="Util.cpp" />
   </ItemGroup>
