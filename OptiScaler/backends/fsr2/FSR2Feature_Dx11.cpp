@@ -359,16 +359,16 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 	else
 		spdlog::debug("FSR2FeatureDx11::Evaluate AutoExposure enabled!");
 
-	ID3D11Resource* paramMask = nullptr;
+	ID3D11Resource* paramReactiveMask = nullptr;
+	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
+		InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
+
 	if (!Config::Instance()->DisableReactiveMask.value_or(true))
 	{
-		if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramMask) != NVSDK_NGX_Result_Success)
-			InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramMask);
-
-		if (paramMask)
+		if (paramReactiveMask)
 		{
 			spdlog::debug("FSR2FeatureDx11::Evaluate Bias mask exist..");
-			params.reactive = ffxGetResourceDX11(&_context, paramMask, (wchar_t*)L"FSR2_Reactive");
+			params.reactive = ffxGetResourceDX11(&_context, paramReactiveMask, (wchar_t*)L"FSR2_Reactive");
 		}
 		else
 		{
@@ -384,7 +384,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 	_hasMV = params.motionVectors.resource != nullptr;
 	_hasExposure = params.exposure.resource != nullptr;
 	_hasTM = params.transparencyAndComposition.resource != nullptr;
-	_hasReactiveMask = params.reactive.resource != nullptr;
+	_hasReactiveMask = paramReactiveMask != nullptr;
 	_hasOutput = params.output.resource != nullptr;
 
 	float MVScaleX = 1.0f;

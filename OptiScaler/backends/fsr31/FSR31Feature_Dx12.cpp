@@ -279,20 +279,20 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
         spdlog::debug("FSR31FeatureDx12::Evaluate AutoExposure enabled!");
     }
 
-    ID3D12Resource* paramMask = nullptr;
+    ID3D12Resource* paramReactiveMask = nullptr;
+    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
+
     if (!Config::Instance()->DisableReactiveMask.value_or(true))
     {
-        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramMask) != NVSDK_NGX_Result_Success)
-            InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramMask);
-
-        if (paramMask)
+        if (paramReactiveMask)
         {
             spdlog::debug("FSR31FeatureDx12::Evaluate Bias mask exist..");
 
             if (Config::Instance()->MaskResourceBarrier.has_value())
-                ResourceBarrier(InCommandList, paramMask, (D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                ResourceBarrier(InCommandList, paramReactiveMask, (D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-            params.reactive = ffxApiGetResourceDX12(paramMask, FFX_API_RESOURCE_STATE_COMPUTE_READ);
+            params.reactive = ffxApiGetResourceDX12(paramReactiveMask, FFX_API_RESOURCE_STATE_COMPUTE_READ);
         }
     }
 
@@ -301,7 +301,7 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     _hasMV = params.motionVectors.resource != nullptr;
     _hasExposure = params.exposure.resource != nullptr;
     _hasTM = params.transparencyAndComposition.resource != nullptr;
-    _hasReactiveMask = params.reactive.resource != nullptr;
+    _hasReactiveMask = paramReactiveMask != nullptr;
     _hasOutput = params.output.resource != nullptr;
 
     float MVScaleX = 1.0f;
@@ -463,8 +463,8 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
                         D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
                         (D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value());
 
-    if (paramMask && Config::Instance()->MaskResourceBarrier.has_value())
-        ResourceBarrier(InCommandList, paramMask,
+    if (paramReactiveMask && Config::Instance()->MaskResourceBarrier.has_value())
+        ResourceBarrier(InCommandList, paramReactiveMask,
                         D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
                         (D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value());
 

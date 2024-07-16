@@ -500,17 +500,17 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
     else
         spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures AutoExposure enabled!");
 
-    ID3D11Resource* paramMask = nullptr;
+    ID3D11Resource* paramReactiveMask = nullptr;
+    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
+
     if (!Config::Instance()->DisableReactiveMask.value_or(true))
     {
-        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramMask) != NVSDK_NGX_Result_Success)
-            InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramMask);
-
-        if (paramMask)
+        if (paramReactiveMask)
         {
             spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Bias mask exist..");
 
-            if (CopyTextureFrom11To12(paramMask, &dx11Reactive, true, Config::Instance()->DontUseNTShared.value_or(false)) == false)
+            if (CopyTextureFrom11To12(paramReactiveMask, &dx11Reactive, true, Config::Instance()->DontUseNTShared.value_or(false)) == false)
                 return false;
         }
         // This is only needed for XeSS
@@ -710,7 +710,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         dx11Exp.Dx12Handle = dx11Exp.Dx11Handle;
     }
 
-    if (!Config::Instance()->DisableReactiveMask.value_or(true) && paramMask && dx11Reactive.Dx12Handle != dx11Reactive.Dx11Handle)
+    if (!Config::Instance()->DisableReactiveMask.value_or(true) && paramReactiveMask && dx11Reactive.Dx12Handle != dx11Reactive.Dx11Handle)
     {
         if (dx11Reactive.Dx12Handle != NULL)
             CloseHandle(dx11Reactive.Dx12Handle);

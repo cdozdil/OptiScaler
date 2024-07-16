@@ -73,13 +73,14 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
             }
         }
 
+        ID3D11Resource* paramReactiveMask = nullptr;
+        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
+            InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
+        _hasReactiveMask = paramReactiveMask != nullptr;
+
         if (!Config::Instance()->DisableReactiveMask.has_value())
         {
-            ID3D11Resource* paramRM = nullptr;
-            if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramRM) != NVSDK_NGX_Result_Success)
-                InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramRM);
-
-            if (paramRM == nullptr)
+            if (!paramReactiveMask)
             {
                 spdlog::warn("FSR2FeatureDx11with12_212::Evaluate Bias mask not exist, enabling DisableReactiveMask!!");
                 Config::Instance()->DisableReactiveMask = true;

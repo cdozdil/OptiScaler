@@ -81,13 +81,14 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 			}
 		}
 
+		ID3D11Resource* paramReactiveMask = nullptr;
+		if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
+			InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
+		_hasReactiveMask = paramReactiveMask != nullptr;
+
 		if (!Config::Instance()->DisableReactiveMask.has_value())
 		{
-			ID3D11Resource* paramRM = nullptr;
-			if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramRM) != NVSDK_NGX_Result_Success)
-				InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramRM);
-
-			if (paramRM == nullptr)
+			if (!paramReactiveMask)
 			{
 				spdlog::warn("XeSSFeatureDx11::Evaluate Bias mask not exist, enabling DisableReactiveMask!!");
 				Config::Instance()->DisableReactiveMask = true;
@@ -263,7 +264,6 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 	params.pExposureScaleTexture = dx11Exp.Dx12Resource;
 	_hasExposure = params.pExposureScaleTexture != nullptr;
 	params.pResponsivePixelMaskTexture = dx11Reactive.Dx12Resource;
-	_hasReactiveMask = params.pResponsivePixelMaskTexture != nullptr;
 
 	spdlog::debug("XeSSFeatureDx11::Evaluate Textures -> params complete!");
 
