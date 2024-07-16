@@ -5,6 +5,11 @@
 #include "../Logger.h"
 #include "../Config.h"
 
+#include "ffx_api.h"
+#include "ffx_framegeneration.h"
+#include "dx12/ffx_api_dx12.h"
+
+
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
@@ -122,6 +127,9 @@ static PFN_ffxFsr3ConfigureFrameGeneration offxFsr3ConfigureFrameGeneration_Mod 
 // Native FSR3
 static PFN_ffxCreateFrameinterpolationSwapchainForHwndDX12 offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3 = nullptr;
 static PFN_ffxFsr3ConfigureFrameGeneration offxFsr3ConfigureFrameGeneration_FSR3 = nullptr;
+// FSR3.1
+static PfnFfxCreateContext oFfxCreateContext_FSR3 = nullptr;
+static PfnFfxConfigure oFfxConfigure_FSR3 = nullptr;
 
 static bool _isInited = false;
 static bool _reInit = false;
@@ -855,6 +863,62 @@ static int32_t WINAPI hkffxCreateFrameinterpolationSwapchainForHwndDX12_FSR3(HWN
     return result;
 }
 
+static ffxReturnCode_t hkFfxCreateContext_FSR3(ffxContext* context, ffxCreateContextDescHeader* desc, const ffxAllocationCallbacks* memCb)
+{
+    auto result = oFfxCreateContext_FSR3(context, desc, memCb);
+
+    if (oPresent_FSR3 == nullptr)
+    {
+        auto header = (ffxCreateContextDescHeader*)desc;
+
+        while (header != nullptr)
+        {
+            if (header->type == FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_WRAP_DX12 ||
+                header->type == FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_NEW_DX12 ||
+                header->type == FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_FOR_HWND_DX12)
+            {
+                auto cscHeader = (ffxCreateContextDescFrameGenerationSwapChainWrapDX12*)header;
+
+                if (*cscHeader->swapchain != nullptr)
+                {
+                    void** pVTable = *reinterpret_cast<void***>(*cscHeader->swapchain);
+
+                    oPresent_FSR3 = (PFN_Present)pVTable[8];
+                    oPresent1_FSR3 = (PFN_Present1)pVTable[22];
+                    oResizeBuffers_FSR3 = (PFN_ResizeBuffers)pVTable[13];
+                    oResizeBuffers1_FSR3 = (PFN_ResizeBuffers1)pVTable[39];
+
+                    // Apply the detour
+                    DetourTransactionBegin();
+                    DetourUpdateThread(GetCurrentThread());
+
+                    if (oPresent_FSR3 != nullptr)
+                        DetourAttach(&(PVOID&)oPresent_FSR3, hkPresent_FSR3);
+
+                    if (oPresent1_Mod != nullptr)
+                        DetourAttach(&(PVOID&)oPresent1_FSR3, hkPresent1_FSR3);
+
+                    if (oResizeBuffers_Mod != nullptr)
+                        DetourAttach(&(PVOID&)oResizeBuffers_FSR3, hkResizeBuffers_FSR3);
+
+                    if (oResizeBuffers1_Mod != nullptr)
+                        DetourAttach(&(PVOID&)oResizeBuffers1_FSR3, hkResizeBuffers1_FSR3);
+
+                    DetourTransactionCommit();
+
+                    spdlog::info("ImGuiOverlayDx12::hkFfxCreateContext_FSR3 added swapchain hooks!");
+
+                    break;
+                }
+            }
+
+            header = (ffxCreateContextDescHeader*)header->pNext;
+        }
+    }
+
+    return result;
+}
+
 static int32_t WINAPI hkffxFsr3ConfigureFrameGeneration_FSR3(void* context, FfxFrameGenerationConfig* config)
 {
     auto result = offxFsr3ConfigureFrameGeneration_FSR3(context, config);
@@ -891,6 +955,61 @@ static int32_t WINAPI hkffxFsr3ConfigureFrameGeneration_FSR3(void* context, FfxF
 
     return result;
 }
+
+static ffxReturnCode_t hkFfxConfigure_FSR3(ffxContext* context, const ffxConfigureDescHeader* desc)
+{
+    auto result = oFfxConfigure_FSR3(context, desc);
+
+    if (oPresent_FSR3 == nullptr)
+    {
+        auto header = (ffxConfigureDescHeader*)desc;
+
+        while (header != nullptr)
+        {
+            if (header->type == FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION)
+            {
+                auto cfgHeader = (ffxConfigureDescFrameGeneration*)header;
+
+                if (cfgHeader->swapChain != nullptr)
+                {
+                    void** pVTable = *reinterpret_cast<void***>(cfgHeader->swapChain);
+
+                    oPresent_FSR3 = (PFN_Present)pVTable[8];
+                    oPresent1_FSR3 = (PFN_Present1)pVTable[22];
+                    oResizeBuffers_FSR3 = (PFN_ResizeBuffers)pVTable[13];
+                    oResizeBuffers1_FSR3 = (PFN_ResizeBuffers1)pVTable[39];
+
+                    // Apply the detour
+                    DetourTransactionBegin();
+                    DetourUpdateThread(GetCurrentThread());
+
+                    if (oPresent_FSR3 != nullptr)
+                        DetourAttach(&(PVOID&)oPresent_FSR3, hkPresent_FSR3);
+
+                    if (oPresent1_Mod != nullptr)
+                        DetourAttach(&(PVOID&)oPresent1_FSR3, hkPresent1_FSR3);
+
+                    if (oResizeBuffers_Mod != nullptr)
+                        DetourAttach(&(PVOID&)oResizeBuffers_FSR3, hkResizeBuffers_FSR3);
+
+                    if (oResizeBuffers1_Mod != nullptr)
+                        DetourAttach(&(PVOID&)oResizeBuffers1_FSR3, hkResizeBuffers1_FSR3);
+
+                    DetourTransactionCommit();
+
+                    spdlog::info("ImGuiOverlayDx12::hkFfxConfigure_FSR3 added swapchain hooks!");
+
+                    break;
+                }
+            }
+
+            header = (ffxCreateContextDescHeader*)header->pNext;
+        }
+    }
+
+    return result;
+}
+
 
 #pragma endregion
 
@@ -1395,22 +1514,18 @@ static bool CheckFSR3()
             }
         }
 
-        if (offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3 == nullptr)
+        if (offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3 == nullptr && oFfxCreateContext_FSR3 == nullptr)
         {
             // Check for native FSR3 (if game has native FSR3-FG)
             offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3 = (PFN_ffxCreateFrameinterpolationSwapchainForHwndDX12)DetourFindFunction("ffx_backend_dx12_x64.dll", "ffxCreateFrameinterpolationSwapchainForHwndDX12");
             offxFsr3ConfigureFrameGeneration_FSR3 = (PFN_ffxFsr3ConfigureFrameGeneration)DetourFindFunction("ffx_fsr3_x64.dll", "ffxFsr3ConfigureFrameGeneration");
 
-
+            // Hook FSR3 ffxGetDX12SwapchainPtr methods
             if (offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3)
             {
                 spdlog::info("ImGuiOverlayDx12::CheckMods FSR3's ffxCreateFrameinterpolationSwapchainForHwndDX12 found");
                 _bindedFSR3_Native = true;
-            }
 
-            // Hook FSR3 ffxGetDX12SwapchainPtr methods
-            if (offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3 != nullptr && _bindedFSR3_Native)
-            {
                 DetourTransactionBegin();
                 DetourUpdateThread(GetCurrentThread());
 
@@ -1419,6 +1534,28 @@ static bool CheckFSR3()
 
 
                 DetourTransactionCommit();
+            }
+            else
+            {
+                oFfxCreateContext_FSR3 = (PfnFfxCreateContext)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxCreateContext");
+                oFfxConfigure_FSR3 = (PfnFfxConfigure)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxConfigure");
+
+                if (oFfxCreateContext_FSR3)
+                {
+                    spdlog::info("ImGuiOverlayDx12::CheckMods FSR3's ffxCreateContext found");
+                    _bindedFSR3_Native = true;
+
+                    DetourTransactionBegin();
+                    DetourUpdateThread(GetCurrentThread());
+
+                    if (oFfxCreateContext_FSR3 != nullptr)
+                        DetourAttach(&(PVOID&)oFfxCreateContext_FSR3, hkFfxCreateContext_FSR3);
+
+                    if (oFfxConfigure_FSR3 != nullptr)
+                        DetourAttach(&(PVOID&)oFfxConfigure_FSR3, hkFfxConfigure_FSR3);
+
+                    DetourTransactionCommit();
+                }
             }
         }
     }

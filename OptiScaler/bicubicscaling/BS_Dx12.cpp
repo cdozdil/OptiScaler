@@ -417,16 +417,16 @@ BS_Dx12::~BS_Dx12()
 		d3d12Fence = nullptr;
 	}
 
-	if (_rootSignature != nullptr)
-	{
-		_rootSignature->Release();
-		_rootSignature = nullptr;
-	}
-
 	if (_pipelineState != nullptr)
 	{
 		_pipelineState->Release();
 		_pipelineState = nullptr;
+	}
+
+	if (_rootSignature != nullptr)
+	{
+		_rootSignature->Release();
+		_rootSignature = nullptr;
 	}
 
 	if (_srvHeap[0] != nullptr)

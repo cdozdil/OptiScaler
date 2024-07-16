@@ -25,6 +25,9 @@ void IFeature_Dx12::Shutdown()
 
 IFeature_Dx12::~IFeature_Dx12()
 {
+	if (OutputScaler != nullptr && OutputScaler.get() != nullptr)
+		OutputScaler.reset();
+
 	if (Device)
 	{
 		ID3D12Fence* d3d12Fence = nullptr;
@@ -52,7 +55,4 @@ IFeature_Dx12::~IFeature_Dx12()
 			d3d12Fence = nullptr;
 		}
 	}
-
-	if (OutputScaler != nullptr && OutputScaler.get() != nullptr)
-		OutputScaler.reset();
 }
