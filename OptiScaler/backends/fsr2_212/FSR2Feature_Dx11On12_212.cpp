@@ -119,7 +119,6 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
 
         OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", Dx12Device, (TargetWidth() < DisplayWidth()));
         RCAS = std::make_unique<RCAS_Dx12>("RCAS", Dx12Device);
-        PAG = std::make_unique<PAG_Dx12>("PAG", Dx12Device);
     }
 
     if (!IsInited())
@@ -219,31 +218,8 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
     params.color = Fsr212::ffxGetResourceDX12_212(&_context, dx11Color.Dx12Resource, (wchar_t*)L"FSR2_Color", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
     params.motionVectors = Fsr212::ffxGetResourceDX12_212(&_context, dx11Mv.Dx12Resource, (wchar_t*)L"FSR2_Motion", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
     params.depth = Fsr212::ffxGetResourceDX12_212(&_context, dx11Depth.Dx12Resource, (wchar_t*)L"FSR2_Depth", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
-
-    if (!Config::Instance()->AutoExposure.value_or(false))
-        params.exposure = Fsr212::ffxGetResourceDX12_212(&_context, dx11Exp.Dx12Resource, (wchar_t*)L"FSR2_Exp", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
-
-    // PAG
-    bool pagOK = false;
-    if (Config::Instance()->FsrUsePAG.value_or(false) && PAG != nullptr && PAG.get() != nullptr && PAG->IsInit() &&
-        PAG->Dispatch(Dx12Device, Dx12CommandList, dx11Color.Dx12Resource, dx11Depth.Dx12Resource, dx11Mv.Dx12Resource, { params.jitterOffset.x, params.jitterOffset.y }))
-    {
-        pagOK = true;
-
-        params.reactive = Fsr212::ffxGetResourceDX12_212(&_context, PAG->ReactiveMask(), (wchar_t*)L"FSR2_Reactive", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
-        params.motionVectors = Fsr212::ffxGetResourceDX12_212(&_context, PAG->MotionVector(), (wchar_t*)L"FSR2_MotionVectors", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
-    }
-    else
-    {
-        if (Config::Instance()->FsrUsePAG.value_or(false))
-        {
-            spdlog::debug("FSR2FeatureDx11with12_212::Evaluate PAG has an issue, disabling!");
-            Config::Instance()->FsrUsePAG = false;
-        }
-    }
-
-    if (!pagOK && !Config::Instance()->DisableReactiveMask.value_or(true))
-        params.reactive = Fsr212::ffxGetResourceDX12_212(&_context, dx11Tm.Dx12Resource, (wchar_t*)L"FSR2_Reactive", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
+    params.exposure = Fsr212::ffxGetResourceDX12_212(&_context, dx11Exp.Dx12Resource, (wchar_t*)L"FSR2_Exp", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
+    params.reactive = Fsr212::ffxGetResourceDX12_212(&_context, dx11Tm.Dx12Resource, (wchar_t*)L"FSR2_Reactive", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
 
     // OutputScaling
     if (useSS)

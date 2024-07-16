@@ -57,7 +57,6 @@ bool FSR31FeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* I
 
         OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", InDevice, (TargetWidth() < DisplayWidth()));
         RCAS = std::make_unique<RCAS_Dx12>("RCAS", InDevice);
-        PAG = std::make_unique<PAG_Dx12>("PAG", InDevice);
 
         return true;
     }
@@ -280,27 +279,8 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
         spdlog::debug("FSR31FeatureDx12::Evaluate AutoExposure enabled!");
     }
 
-    // PAG
-    bool pagOK = false;
-    if (Config::Instance()->FsrUsePAG.value_or(false) && PAG != nullptr && PAG.get() != nullptr && PAG->IsInit() &&
-        PAG->Dispatch(Device, InCommandList, paramColor, paramDepth, paramVelocity, { params.jitterOffset.x, params.jitterOffset.y }))
-    {
-        pagOK = true;
-
-        params.reactive = ffxApiGetResourceDX12(PAG->ReactiveMask(), FFX_API_RESOURCE_STATE_COMPUTE_READ);
-        params.motionVectors = ffxApiGetResourceDX12(PAG->MotionVector(), FFX_API_RESOURCE_STATE_COMPUTE_READ);
-    }
-    else
-    {
-        if (Config::Instance()->FsrUsePAG.value_or(false))
-        {
-            spdlog::debug("FSR31FeatureDx12::Evaluate PAG has an issue, disabling!");
-            Config::Instance()->FsrUsePAG = false;
-        }
-    }
-
     ID3D12Resource* paramMask = nullptr;
-    if (!pagOK && !Config::Instance()->DisableReactiveMask.value_or(true))
+    if (!Config::Instance()->DisableReactiveMask.value_or(true))
     {
         if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramMask) != NVSDK_NGX_Result_Success)
             InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramMask);
@@ -313,13 +293,6 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
                 ResourceBarrier(InCommandList, paramMask, (D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
             params.reactive = ffxApiGetResourceDX12(paramMask, FFX_API_RESOURCE_STATE_COMPUTE_READ);
-        }
-        else
-        {
-            spdlog::warn("FSR31FeatureDx12::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
-            Config::Instance()->DisableReactiveMask = true;
-            Config::Instance()->changeBackend = true;
-            return true;
         }
     }
 
@@ -351,13 +324,13 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
 
     if (IsDepthInverted())
     {
-        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.0001f);
-        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(0.9999f);
+        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.01f);
+        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(0.99f);
     }
     else
     {
-        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(0.9999f);
-        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.0001f);
+        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(0.99f);
+        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.01f);
     }
 
     if (Config::Instance()->FsrVerticalFov.has_value())
@@ -550,7 +523,7 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     bool EnableSharpening = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
     bool DepthInverted = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
     bool JitterMotion = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
-    bool LowRes = Config::Instance()->FsrUsePAG.value_or(false) || (featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
+    bool LowRes = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
     bool AutoExposure = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
 
     _contextDesc.flags = 0;
