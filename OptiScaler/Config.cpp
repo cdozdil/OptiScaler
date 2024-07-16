@@ -50,7 +50,6 @@ bool Config::Reload(std::filesystem::path iniPath)
             FsrCameraFar = readFloat("FSR", "CameraFar");
             FsrDebugView = readBool("FSR", "DebugView");
             Fsr3xIndex = readInt("FSR", "UpscalerIndex");
-            FsrUsePAG = readBool("FSR", "UsePAG");
         }
 
         // XeSS
@@ -419,7 +418,6 @@ bool Config::SaveIni()
         ini.SetValue("FSR", "CameraFar", GetFloatValue(Instance()->FsrCameraFar).c_str());
         ini.SetValue("FSR", "DebugView", GetBoolValue(Instance()->FsrDebugView).c_str());
         ini.SetValue("FSR", "UpscalerIndex", GetIntValue(Instance()->Fsr3xIndex).c_str());
-        ini.SetValue("FSR", "UsePAG", GetBoolValue(Instance()->FsrUsePAG).c_str());
     }
 
     // XeSS

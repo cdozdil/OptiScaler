@@ -125,7 +125,6 @@ public:
 	std::optional<float> FsrCameraFar;
 	std::optional<bool> FsrDebugView;
 	std::optional<int> Fsr3xIndex;
-	std::optional<bool> FsrUsePAG;
 
 	// dx11wdx12
 	std::optional<int> TextureSyncMethod;
