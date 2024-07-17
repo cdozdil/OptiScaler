@@ -1651,9 +1651,8 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
             {
                 // Setup swap chain
                 DXGI_SWAP_CHAIN_DESC1 sd = { };
-                sd.BufferCount = NUM_BACK_BUFFERS;
+                sd.BufferCount = 2;
                 sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-                sd.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
                 sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
                 sd.SampleDesc.Count = 1;
                 sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
@@ -1868,9 +1867,8 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
                         {
                             // Setup swap chain
                             DXGI_SWAP_CHAIN_DESC1 sd = { };
-                            sd.BufferCount = NUM_BACK_BUFFERS;
+                            sd.BufferCount = 2;
                             sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-                            sd.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
                             sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
                             sd.SampleDesc.Count = 1;
                             sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
