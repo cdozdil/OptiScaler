@@ -91,13 +91,12 @@ inline static NVSDK_NGX_Result __stdcall Hooked_Dx12_GetFeatureRequirements(IDXG
 
 	auto result = Original_Dx12_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
 
-	if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+	if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
 	{
 		spdlog::info("NVNGXProxy::Hooked_Dx12_GetFeatureRequirements Spoofing support!");
 		OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
 		OutSupported->MinHWArchitecture = 0;
 		strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
-		return NVSDK_NGX_Result_Success;
 	}
 
 	return result;
@@ -109,13 +108,12 @@ inline static NVSDK_NGX_Result __stdcall Hooked_Dx11_GetFeatureRequirements(IDXG
 
 	auto result = Original_Dx11_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
 
-	if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+	if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
 	{
 		spdlog::info("NVNGXProxy::Hooked_Dx11_GetFeatureRequirements Spoofing support!");
 		OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
 		OutSupported->MinHWArchitecture = 0;
 		strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
-		return NVSDK_NGX_Result_Success;
 	}
 
 	return result;
@@ -418,7 +416,7 @@ public:
 			GetSystemDirectory(sysFolder, MAX_PATH);
 			std::filesystem::path sysPath(sysFolder);
 
-			auto nvngxPath = sysPath / "_nvngx.dll";
+			nvngxPath = sysPath / "_nvngx.dll";
 			spdlog::info("NVNGXProxy::InitNVNGX trying to load _nvngx.dll path: {0}", nvngxPath.string());
 
 			_dll = LoadLibraryW(nvngxPath.wstring().c_str());
