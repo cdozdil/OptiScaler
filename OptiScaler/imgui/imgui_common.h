@@ -1007,7 +1007,7 @@ public:
                                 ImGui::EndCombo();
                             }
 
-                            if (ImGui::Button("Apply Change") && _fsr3xIndex != Config::Instance()->Fsr3xIndex.value_or(0))
+                            if (ImGui::Button("Change Upscaler") && _fsr3xIndex != Config::Instance()->Fsr3xIndex.value_or(0))
                             {
                                 Config::Instance()->Fsr3xIndex = _fsr3xIndex;
                                 Config::Instance()->newBackend = currentBackend;
@@ -1606,7 +1606,9 @@ public:
                     ImGui::Spacing();
 
                     if (cf != nullptr)
-                        ImGui::Text("%dx%d -> %dx%d (%dx%d)", cf->RenderWidth(), cf->RenderHeight(), cf->TargetWidth(), cf->TargetHeight(), cf->DisplayWidth(), cf->DisplayHeight());
+                        ImGui::Text("%dx%d -> %dx%d (%.1f) [%dx%d (%.1f)]",
+                                    cf->RenderWidth(), cf->RenderHeight(), cf->TargetWidth(), cf->TargetHeight(), (float)cf->TargetWidth() / (float)cf->RenderWidth(), 
+                                    cf->DisplayWidth(), cf->DisplayHeight(), (float)cf->DisplayWidth() / (float)cf->RenderWidth());
 
                     ImGui::SameLine(0.0f, 4.0f);
 
