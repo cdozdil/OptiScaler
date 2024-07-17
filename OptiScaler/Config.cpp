@@ -62,6 +62,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // DLSS
         {
+            // Don't enable again if set false because of no nvngx found
             if (!DLSSEnabled.has_value())
                 DLSSEnabled = readBool("DLSS", "Enabled");
 
@@ -128,7 +129,11 @@ bool Config::Reload(std::filesystem::path iniPath)
         // Menu
         {
             MenuScale = readFloat("Menu", "Scale");
-            OverlayMenu = readBool("Menu", "OverlayMenu");
+
+            // Don't enable again if set false because of Linux issue
+            if (!OverlayMenu.has_value())
+                OverlayMenu = readBool("Menu", "OverlayMenu");
+
             ShortcutKey = readInt("Menu", "ShortcutKey");
             ResetKey = readInt("Menu", "ResetKey");
             MenuInitDelay = readInt("Menu", "MenuInitDelay");

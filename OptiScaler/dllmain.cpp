@@ -1034,9 +1034,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 		spdlog::warn("If you paid for these files, you've been scammed!");
 		spdlog::warn("DO NOT USE IN MULTIPLAYER GAMES");
 		spdlog::warn("");
+            spdlog::info("LogLevel: {0}", Config::Instance()->LogLevel.value_or(2));
+            spdlog::warn("");
 
-		CheckWorkingMode();
-		spdlog::info("LogLevel: {0}", Config::Instance()->LogLevel.value_or(2));
+            // Check for Linux
+            Config::Instance()->IsRunningOnLinux = IsRunningOnWine();
 
 		// Check if real DLSS available
 		if (Config::Instance()->DLSSEnabled.value_or(true))
@@ -1052,6 +1054,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 			{
 				spdlog::info("nvngx.dll loaded, setting DLSS as default upscaler and disabling spoofing.");
 
+                    Config::Instance()->DLSSEnabled = true;
+
 				if (Config::Instance()->IsDxgiMode)
 				{
 					Config::Instance()->DxgiSpoofing = false;
@@ -1061,8 +1065,15 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 				Config::Instance()->VulkanSpoofing = false;
 				Config::Instance()->VulkanExtensionSpoofing = false;
+
+                    // Disable Overlay Menu because of crashes on Linux with Nvidia GPUs
+                    if (Config::Instance()->IsRunningOnLinux && !Config::Instance()->OverlayMenu.has_value())
+                        Config::Instance()->OverlayMenu = false;
 			}
 		}
+
+            // Check for working mode and attach hooks
+            CheckWorkingMode();
 
 		break;
 

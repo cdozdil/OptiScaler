@@ -391,32 +391,35 @@ public:
 
 			// From registry
 			auto regNGXCorePath = Util::NvngxPath();
-			if (!regNGXCorePath.has_value())
-				break;
-
-			auto nvngxPath = regNGXCorePath.value() / "_nvngx.dll";
-			spdlog::info("NVNGXProxy::InitNVNGX trying to load _nvngx.dll path: {0}", nvngxPath.string());
-
-			_dll = LoadLibraryW(nvngxPath.wstring().c_str());
-			if (_dll)
+			if (regNGXCorePath.has_value())
 			{
-				spdlog::info("NVNGXProxy::InitNVNGX _nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (ULONG64)_dll);
-				break;
+				auto nvngxPath = regNGXCorePath.value() / "_nvngx.dll";
+				spdlog::info("NVNGXProxy::InitNVNGX trying to load _nvngx.dll path: {0}", nvngxPath.string());
+
+				_dll = LoadLibraryW(nvngxPath.wstring().c_str());
+				if (_dll)
+				{
+					spdlog::info("NVNGXProxy::InitNVNGX _nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (ULONG64)_dll);
+					break;
+				}
+
+				nvngxPath = regNGXCorePath.value() / "nvngx.dll";
+				spdlog::info("NVNGXProxy::InitNVNGX trying to load nvngx.dll path: {0}", nvngxPath.string());
+
+				_dll = LoadLibraryW(nvngxPath.wstring().c_str());
+				if (_dll)
+				{
+					spdlog::info("NVNGXProxy::InitNVNGX nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (ULONG64)_dll);
+					break;
+				}
 			}
-
-			nvngxPath = regNGXCorePath.value() / "nvngx.dll";
-			spdlog::info("NVNGXProxy::InitNVNGX trying to load nvngx.dll path: {0}", nvngxPath.string());
-
-			_dll = LoadLibraryW(nvngxPath.wstring().c_str());
-			if (_dll)
-				spdlog::info("NVNGXProxy::InitNVNGX nvngx.dll loaded from {0}, ptr: {1:X}", nvngxPath.string(), (ULONG64)_dll);
 
 			// From System32
 			wchar_t sysFolder[MAX_PATH];
 			GetSystemDirectory(sysFolder, MAX_PATH);
 			std::filesystem::path sysPath(sysFolder);
 
-			nvngxPath = sysPath / "_nvngx.dll";
+			auto nvngxPath = sysPath / "_nvngx.dll";
 			spdlog::info("NVNGXProxy::InitNVNGX trying to load _nvngx.dll path: {0}", nvngxPath.string());
 
 			_dll = LoadLibraryW(nvngxPath.wstring().c_str());
