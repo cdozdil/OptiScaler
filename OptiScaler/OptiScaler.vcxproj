@@ -180,6 +180,7 @@ copy $(SolutionDir)external\nvngx_dlss_sdk\regs\*.* $(SolutionDir)x64\Release\a\
 copy $(SolutionDir)external\xess\licenses\LICENSE.pdf $(SolutionDir)x64\Release\a\XeSS_LICENSE.pdf
 copy $(SolutionDir)external\xess\bin\libxess.dll $(SolutionDir)x64\Release\a\
 copy $(SolutionDir)external\FidelityFX-SDK\PrebuiltSignedDLL\amd_fidelityfx_dx12.dll $(SolutionDir)x64\Release\a\
+copy $(SolutionDir)external\FidelityFX-SDK\LICENSE.txt $(SolutionDir)x64\Release\a\FidelityFX_LICENSE.txt
 copy $(ProjectDir)fsr31\amd_fidelityfx_vk.dll $(SolutionDir)x64\Release\a\
 copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     </PostBuildEvent>
