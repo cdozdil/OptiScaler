@@ -32,9 +32,11 @@ static PFN_LoadLibraryExA o_LoadLibraryExA = nullptr;
 static PFN_LoadLibraryExW o_LoadLibraryExW = nullptr;
 static PFN_vkGetPhysicalDeviceProperties o_vkGetPhysicalDeviceProperties = nullptr;
 static PFN_vkGetPhysicalDeviceProperties2 o_vkGetPhysicalDeviceProperties2 = nullptr;
+static PFN_vkGetPhysicalDeviceProperties2KHR o_vkGetPhysicalDeviceProperties2KHR = nullptr;
 
 static PFN_vkEnumerateInstanceExtensionProperties o_vkEnumerateInstanceExtensionProperties = nullptr;
 static PFN_vkEnumerateDeviceExtensionProperties o_vkEnumerateDeviceExtensionProperties = nullptr;
+static PFN_vkCreateDevice o_vkCreateDevice = nullptr;
 
 static uint32_t vkEnumerateInstanceExtensionPropertiesCount = 0;
 static uint32_t vkEnumerateDeviceExtensionPropertiesCount = 0;
@@ -485,7 +487,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
 
 #pragma region Vulkan Hooks
 
-static void WINAPI hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, VkPhysicalDeviceProperties* properties)
+static void hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, VkPhysicalDeviceProperties* properties)
 {
     o_vkGetPhysicalDeviceProperties(physical_device, properties);
 
@@ -495,7 +497,7 @@ static void WINAPI hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_dev
     properties->driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
 }
 
-static void WINAPI hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysicalDeviceProperties2* properties2)
+static void hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysicalDeviceProperties2* properties2)
 {
     o_vkGetPhysicalDeviceProperties2(phys_dev, properties2);
 
@@ -520,7 +522,87 @@ static void WINAPI hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, V
     }
 }
 
-static VkResult WINAPI hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice physicalDevice, const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties)
+static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhysicalDeviceProperties2* properties2)
+{
+    o_vkGetPhysicalDeviceProperties2KHR(phys_dev, properties2);
+
+    std::strcpy(properties2->properties.deviceName, "NVIDIA GeForce RTX 4090");
+    properties2->properties.vendorID = 0x10de;
+    properties2->properties.deviceID = 0x2684;
+    properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
+
+    auto next = (VkDummyProps*)properties2->pNext;
+
+    while (next != nullptr)
+    {
+        if (next->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES)
+        {
+            auto ddp = (VkPhysicalDeviceDriverProperties*)(void*)next;
+            ddp->driverID = VK_DRIVER_ID_NVIDIA_PROPRIETARY;
+            std::strcpy(ddp->driverName, "NVIDIA");
+            std::strcpy(ddp->driverInfo, "559.0");
+        }
+
+        next = (VkDummyProps*)next->pNext;
+    }
+}
+
+static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice)
+{
+    spdlog::debug("hkvkCreateDevice");
+
+    if (!Config::Instance()->VulkanExtensionSpoofing.value_or(false))
+    {
+        spdlog::debug("hkvkCreateDevice extension spoofing is disabled");
+        return o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
+    }
+
+    std::vector<const char*> newExtensionList;
+
+
+    auto bVK_KHR_get_memory_requirements2 = false;
+    //auto GL_EXT_shader_image_load_formatted = false;
+
+    spdlog::debug("hkvkCreateDevice checking extensions and removing VK_NVX_BINARY_IMPORT & VK_NVX_IMAGE_VIEW_HANDLE from list");
+    for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
+    {
+        if (std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_BINARY_IMPORT_EXTENSION_NAME) == 0 || std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME) == 0)
+        {
+            spdlog::debug("hkvkCreateDevice removing {0}", pCreateInfo->ppEnabledExtensionNames[i]);
+        }
+        else
+        {
+            spdlog::debug("hkvkCreateDevice adding {0}", pCreateInfo->ppEnabledExtensionNames[i]);
+            newExtensionList.push_back(pCreateInfo->ppEnabledExtensionNames[i]);
+        }
+
+        if (std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME) == 0)
+            bVK_KHR_get_memory_requirements2 = true;
+        //else if (std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], "GL_EXT_shader_image_load_formatted") == 0)
+        //    GL_EXT_shader_image_load_formatted = true;
+    }
+
+    if(!bVK_KHR_get_memory_requirements2)
+        newExtensionList.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
+
+    //if(!GL_EXT_shader_image_load_formatted)
+    //    newExtensionList.push_back("GL_EXT_shader_image_load_formatted");
+
+    pCreateInfo->enabledExtensionCount = static_cast<uint32_t>(newExtensionList.size());
+    pCreateInfo->ppEnabledExtensionNames = newExtensionList.data();
+    
+    spdlog::debug("hkvkCreateDevice final extension count: {0}", pCreateInfo->enabledExtensionCount);
+    spdlog::debug("hkvkCreateDevice final extensions:");
+    for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
+        spdlog::debug("hkvkCreateDevice   {0}", pCreateInfo->ppEnabledExtensionNames[i]);
+
+    auto result = o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
+    spdlog::debug("hkvkCreateDevice o_vkCreateDevice result: {0:X}", (UINT)result);
+
+    return result;
+}
+
+static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice physicalDevice, const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties)
 {
     auto count = *pPropertyCount;
     auto result = o_vkEnumerateDeviceExtensionProperties(physicalDevice, pLayerName, pPropertyCount, pProperties);
@@ -550,7 +632,7 @@ static VkResult WINAPI hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice p
     return result;
 }
 
-static VkResult WINAPI hkvkEnumerateInstanceExtensionProperties(const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties)
+static VkResult hkvkEnumerateInstanceExtensionProperties(const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties)
 {
     auto count = *pPropertyCount;
     auto result = o_vkEnumerateInstanceExtensionProperties(pLayerName, pPropertyCount, pProperties);
@@ -632,6 +714,12 @@ static void DetachHooks()
             o_vkGetPhysicalDeviceProperties2 = nullptr;
         }
 
+        if (o_vkGetPhysicalDeviceProperties2KHR)
+        {
+            DetourDetach(&(PVOID&)o_vkGetPhysicalDeviceProperties2KHR, hkvkGetPhysicalDeviceProperties2KHR);
+            o_vkGetPhysicalDeviceProperties2KHR = nullptr;
+        }
+
         DetourTransactionCommit();
 
         FreeLibrary(shared.dll);
@@ -679,6 +767,7 @@ static void AttachHooks()
     {
         o_vkGetPhysicalDeviceProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties"));
         o_vkGetPhysicalDeviceProperties2 = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties2"));
+        o_vkGetPhysicalDeviceProperties2KHR = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2KHR>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties2KHR"));
 
         if (o_vkGetPhysicalDeviceProperties != nullptr)
         {
@@ -693,6 +782,9 @@ static void AttachHooks()
             if (o_vkGetPhysicalDeviceProperties2)
                 DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceProperties2, hkvkGetPhysicalDeviceProperties2);
 
+            if (o_vkGetPhysicalDeviceProperties2KHR)
+                DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceProperties2KHR, hkvkGetPhysicalDeviceProperties2KHR);
+
             DetourTransactionCommit();
         }
     }
@@ -701,6 +793,7 @@ static void AttachHooks()
     {
         o_vkEnumerateInstanceExtensionProperties = reinterpret_cast<PFN_vkEnumerateInstanceExtensionProperties>(DetourFindFunction("vulkan-1.dll", "vkEnumerateInstanceExtensionProperties"));
         o_vkEnumerateDeviceExtensionProperties = reinterpret_cast<PFN_vkEnumerateDeviceExtensionProperties>(DetourFindFunction("vulkan-1.dll", "vkEnumerateDeviceExtensionProperties"));
+        o_vkCreateDevice = reinterpret_cast<PFN_vkCreateDevice>(DetourFindFunction("vulkan-1.dll", "vkCreateDevice"));
 
         if (o_vkEnumerateInstanceExtensionProperties != nullptr || o_vkEnumerateDeviceExtensionProperties != nullptr)
         {
@@ -714,6 +807,9 @@ static void AttachHooks()
 
             if (o_vkEnumerateDeviceExtensionProperties)
                 DetourAttach(&(PVOID&)o_vkEnumerateDeviceExtensionProperties, hkvkEnumerateDeviceExtensionProperties);
+
+            if (o_vkCreateDevice)
+                DetourAttach(&(PVOID&)o_vkCreateDevice, hkvkCreateDevice);
 
             DetourTransactionCommit();
         }
@@ -1048,14 +1144,13 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 #endif
 
             PrepareLogger();
-            spdlog::info("{0} loaded", VER_PRODUCT_NAME);
-            spdlog::info("---------------------------------");
+            spdlog::warn("{0} loaded", VER_PRODUCT_NAME);
+            spdlog::warn("---------------------------------");
             spdlog::warn("OptiScaler is freely downloadable from https://github.com/cdozdil/OptiScaler/releases");
             spdlog::warn("If you paid for these files, you've been scammed!");
             spdlog::warn("DO NOT USE IN MULTIPLAYER GAMES");
             spdlog::warn("");
-            spdlog::info("LogLevel: {0}", Config::Instance()->LogLevel.value_or(2));
-            spdlog::warn("");
+            spdlog::warn("LogLevel: {0}", Config::Instance()->LogLevel.value_or(2));
 
             // Check for Linux
             Config::Instance()->IsRunningOnLinux = IsRunningOnWine();
@@ -1063,6 +1158,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             // Check if real DLSS available
             if (Config::Instance()->DLSSEnabled.value_or(true))
             {
+                spdlog::info("");
                 NVNGXProxy::InitNVNGX();
 
                 if (NVNGXProxy::NVNGXModule() == nullptr)
@@ -1093,7 +1189,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             }
 
             // Check for working mode and attach hooks
+            spdlog::info("");
             CheckWorkingMode();
+            spdlog::info("");
 
             break;
 

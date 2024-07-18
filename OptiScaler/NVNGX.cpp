@@ -127,5 +127,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_UpdateFeature(const NVSDK_NGX_Applicati
 	}
 
 	// To test with puredark mods
+	spdlog::debug("NVSDK_NGX_UpdateFeature FeatureId finished, returning NVSDK_NGX_Result_Fail");
+
 	return NVSDK_NGX_Result_Fail;
 }
