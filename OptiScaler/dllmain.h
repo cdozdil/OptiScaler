@@ -1310,7 +1310,6 @@ bool SkipSpoofing()
         void* callers[100];
         unsigned short frames = CaptureStackBackTrace(0, 100, callers, NULL);
         HANDLE process = GetCurrentProcess();
-        //std::string list = "slInit|slGetPluginFunction|nvapi_QueryInterface";
 
         if (SymInitialize(process, NULL, TRUE))
         {
@@ -1365,7 +1364,9 @@ HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
         std::wstring name(L"NVIDIA GeForce RTX 4090");
         const wchar_t* szName = name.c_str();
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-        std::memcpy(pDesc->Description, szName, 54);
+        std::memcpy(pDesc->Description, szName, 50);
+
+        spdlog::debug("detGetDesc3 spoofing");
     }
 
     AttachToAdapter(This);
@@ -1386,7 +1387,9 @@ HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
         std::wstring name(L"NVIDIA GeForce RTX 4090");
         const wchar_t* szName = name.c_str();
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-        std::memcpy(pDesc->Description, szName, 54);
+        std::memcpy(pDesc->Description, szName, 50);
+
+        spdlog::debug("detGetDesc2 spoofing");
     }
 
     AttachToAdapter(This);
@@ -1407,7 +1410,9 @@ HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
         std::wstring name(L"NVIDIA GeForce RTX 4090");
         const wchar_t* szName = name.c_str();
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-        std::memcpy(pDesc->Description, szName, 54);
+        std::memcpy(pDesc->Description, szName, 50);
+
+        spdlog::debug("detGetDesc1 spoofing");
     }
 
     AttachToAdapter(This);
@@ -1428,7 +1433,9 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
         std::wstring name(L"NVIDIA GeForce RTX 4090");
         const wchar_t* szName = name.c_str();
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-        std::memcpy(pDesc->Description, szName, 54);
+        std::memcpy(pDesc->Description, szName, 50);
+
+        spdlog::debug("detGetDesc spoofing");
     }
 
     AttachToAdapter(This);

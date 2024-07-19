@@ -37,6 +37,7 @@ static PFN_vkGetPhysicalDeviceProperties2KHR o_vkGetPhysicalDeviceProperties2KHR
 static PFN_vkEnumerateInstanceExtensionProperties o_vkEnumerateInstanceExtensionProperties = nullptr;
 static PFN_vkEnumerateDeviceExtensionProperties o_vkEnumerateDeviceExtensionProperties = nullptr;
 static PFN_vkCreateDevice o_vkCreateDevice = nullptr;
+static PFN_vkCreateInstance o_vkCreateInstance = nullptr;
 
 static uint32_t vkEnumerateInstanceExtensionPropertiesCount = 0;
 static uint32_t vkEnumerateDeviceExtensionPropertiesCount = 0;
@@ -640,6 +641,36 @@ static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhy
     }
 }
 
+static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance)
+{
+    spdlog::debug("hkvkCreateInstance for {0}", pCreateInfo->pApplicationInfo->pApplicationName);
+
+    spdlog::debug("hkvkCreateInstance extensions ({0}):", pCreateInfo->enabledExtensionCount);
+    for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
+        spdlog::debug("hkvkCreateInstance   {0}", pCreateInfo->ppEnabledExtensionNames[i]);
+
+    spdlog::debug("hkvkCreateInstance layers ({0}):", pCreateInfo->enabledLayerCount);
+    for (size_t i = 0; i < pCreateInfo->enabledLayerCount; i++)
+        spdlog::debug("hkvkCreateInstance   {0}", pCreateInfo->ppEnabledLayerNames[i]);
+
+    // Skip spoofing for Intel Arc
+    Config::Instance()->dxgiSkipSpoofing = true;
+    auto result = o_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
+    Config::Instance()->dxgiSkipSpoofing = false;
+
+    spdlog::debug("hkvkCreateInstance o_vkCreateInstance result: {0:X}", (INT)result);
+
+    auto head = (VkBaseInStructure*)pCreateInfo;
+
+    while (head->pNext != nullptr)
+    {
+        head = (VkBaseInStructure*)head->pNext;
+        spdlog::debug("hkvkCreateInstance o_vkCreateInstance type: {0:X}", (UINT)head->sType);
+    }
+
+    return result;
+}
+
 static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice)
 {
     spdlog::debug("hkvkCreateDevice");
@@ -647,14 +678,19 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
     if (!Config::Instance()->VulkanExtensionSpoofing.value_or(false))
     {
         spdlog::debug("hkvkCreateDevice extension spoofing is disabled");
+
+        Config::Instance()->dxgiSkipSpoofing = true;
         return o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
+        Config::Instance()->dxgiSkipSpoofing = false;
     }
+
+    spdlog::debug("hkvkCreateDevice layers ({0}):", pCreateInfo->enabledLayerCount);
+    for (size_t i = 0; i < pCreateInfo->enabledLayerCount; i++)
+        spdlog::debug("hkvkCreateDevice   {0}", pCreateInfo->ppEnabledLayerNames[i]);
 
     std::vector<const char*> newExtensionList;
 
-
     auto bVK_KHR_get_memory_requirements2 = false;
-    //auto GL_EXT_shader_image_load_formatted = false;
 
     spdlog::debug("hkvkCreateDevice checking extensions and removing VK_NVX_BINARY_IMPORT & VK_NVX_IMAGE_VIEW_HANDLE from list");
     for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
@@ -667,30 +703,29 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
         {
             spdlog::debug("hkvkCreateDevice adding {0}", pCreateInfo->ppEnabledExtensionNames[i]);
             newExtensionList.push_back(pCreateInfo->ppEnabledExtensionNames[i]);
-        }
 
-        if (std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME) == 0)
-            bVK_KHR_get_memory_requirements2 = true;
-        //else if (std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], "GL_EXT_shader_image_load_formatted") == 0)
-        //    GL_EXT_shader_image_load_formatted = true;
+            if (std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME) == 0)
+                bVK_KHR_get_memory_requirements2 = true;
+        }
     }
 
     if (!bVK_KHR_get_memory_requirements2)
         newExtensionList.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
-
-    //if(!GL_EXT_shader_image_load_formatted)
-    //    newExtensionList.push_back("GL_EXT_shader_image_load_formatted");
 
     pCreateInfo->enabledExtensionCount = static_cast<uint32_t>(newExtensionList.size());
     pCreateInfo->ppEnabledExtensionNames = newExtensionList.data();
 
     spdlog::debug("hkvkCreateDevice final extension count: {0}", pCreateInfo->enabledExtensionCount);
     spdlog::debug("hkvkCreateDevice final extensions:");
+
     for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
         spdlog::debug("hkvkCreateDevice   {0}", pCreateInfo->ppEnabledExtensionNames[i]);
 
+    // Skip spoofing for Intel Arc
+    Config::Instance()->dxgiSkipSpoofing = true;
     auto result = o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
-    spdlog::debug("hkvkCreateDevice o_vkCreateDevice result: {0:X}", (UINT)result);
+    Config::Instance()->dxgiSkipSpoofing = false;
+    spdlog::debug("hkvkCreateDevice o_vkCreateDevice result: {0:X}", (INT)result);
 
     return result;
 }
@@ -813,6 +848,32 @@ static void DetachHooks()
             o_vkGetPhysicalDeviceProperties2KHR = nullptr;
         }
 
+        if (o_vkEnumerateInstanceExtensionProperties)
+        {
+            DetourDetach(&(PVOID&)o_vkEnumerateInstanceExtensionProperties, hkvkEnumerateInstanceExtensionProperties);
+            o_vkEnumerateInstanceExtensionProperties = nullptr;
+        }
+
+        if (o_vkEnumerateDeviceExtensionProperties)
+        {
+            DetourDetach(&(PVOID&)o_vkEnumerateDeviceExtensionProperties, hkvkEnumerateDeviceExtensionProperties);
+            o_vkEnumerateDeviceExtensionProperties = nullptr;
+        }
+
+
+        if (o_vkCreateDevice)
+        {
+            DetourDetach(&(PVOID&)o_vkCreateDevice, hkvkCreateDevice);
+            o_vkCreateDevice = nullptr;
+        }
+
+
+        if (o_vkCreateInstance)
+        {
+            DetourDetach(&(PVOID&)o_vkCreateInstance, hkvkCreateInstance);
+            o_vkCreateInstance = nullptr;
+        }
+
         DetourTransactionCommit();
 
         FreeLibrary(shared.dll);
@@ -887,6 +948,7 @@ static void AttachHooks()
         o_vkEnumerateInstanceExtensionProperties = reinterpret_cast<PFN_vkEnumerateInstanceExtensionProperties>(DetourFindFunction("vulkan-1.dll", "vkEnumerateInstanceExtensionProperties"));
         o_vkEnumerateDeviceExtensionProperties = reinterpret_cast<PFN_vkEnumerateDeviceExtensionProperties>(DetourFindFunction("vulkan-1.dll", "vkEnumerateDeviceExtensionProperties"));
         o_vkCreateDevice = reinterpret_cast<PFN_vkCreateDevice>(DetourFindFunction("vulkan-1.dll", "vkCreateDevice"));
+        o_vkCreateInstance = reinterpret_cast<PFN_vkCreateInstance>(DetourFindFunction("vulkan-1.dll", "vkCreateInstance"));
 
         if (o_vkEnumerateInstanceExtensionProperties != nullptr || o_vkEnumerateDeviceExtensionProperties != nullptr)
         {
@@ -903,6 +965,9 @@ static void AttachHooks()
 
             if (o_vkCreateDevice)
                 DetourAttach(&(PVOID&)o_vkCreateDevice, hkvkCreateDevice);
+
+            if (o_vkCreateInstance)
+                DetourAttach(&(PVOID&)o_vkCreateInstance, hkvkCreateInstance);
 
             DetourTransactionCommit();
         }
