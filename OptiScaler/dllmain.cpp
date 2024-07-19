@@ -196,7 +196,7 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
     }
 
     // Dxgi.dll
-    if (Config::Instance()->HookDxgiFile.value_or(true))
+    if (Config::Instance()->DxgiSpoofing.value_or(true))
     {
         pos = lcaseLibName.rfind(dxgiA);
 
@@ -286,7 +286,7 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
     }
 
     // Dxgi.dll
-    if (Config::Instance()->HookDxgiFile.value_or(true))
+    if (Config::Instance()->DxgiSpoofing.value_or(true))
     {
         pos = lcaseLibName.rfind(dxgiW);
 
@@ -407,7 +407,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
     }
 
     // Dxgi.dll
-    if (Config::Instance()->HookDxgiFile.value_or(true))
+    if (Config::Instance()->DxgiSpoofing.value_or(true))
     {
         pos = lcaseLibName.rfind(dxgiExA);
 
@@ -543,7 +543,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
     }
 
     // Dxgi.dll
-    if (Config::Instance()->HookDxgiFile.value_or(true))
+    if (Config::Instance()->DxgiSpoofing.value_or(true))
     {
         pos = lcaseLibName.rfind(dxgiExW);
 
@@ -1262,7 +1262,7 @@ static void CheckWorkingMode()
         }
     }
 
-    if (lCaseFilename != "dxgi.dll" && Config::Instance()->HookDxgiFile.value_or(true))
+    if (!Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
     {
         spdlog::info("HookDxgiFile is enabled loading dxgi.dll");
 
@@ -1297,7 +1297,7 @@ static void CheckWorkingMode()
                 break;
             }
 
-            Config::Instance()->HookDxgiFile = false;
+            Config::Instance()->DxgiSpoofing = false;
 
         } while (false);
     }
@@ -1380,9 +1380,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
                         Config::Instance()->DxgiBlacklist.reset();
                     }
-
-                    if (!Config::Instance()->HookDxgiFile.has_value())
-                        Config::Instance()->HookDxgiFile = false;
 
                     if (!Config::Instance()->VulkanSpoofing.has_value())
                         Config::Instance()->VulkanSpoofing = false;
