@@ -1273,7 +1273,7 @@ struct winhttp_dll
 
 struct dxgi_dll
 {
-    HMODULE dll;
+    HMODULE dll = nullptr;
     PFN_CREATE_DXGI_FACTORY CreateDxgiFactory;
     PFN_CREATE_DXGI_FACTORY CreateDxgiFactory1;
     PFN_CREATE_DXGI_FACTORY_2 CreateDxgiFactory2;

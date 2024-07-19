@@ -46,6 +46,11 @@ static std::string nvngxExA("nvngx");
 static std::wstring nvngxW(L"nvngx.dll");
 static std::wstring nvngxExW(L"nvngx");
 
+static std::string dxgiA("dxgi.dll");
+static std::string dxgiExA("dxgi");
+static std::wstring dxgiW(L"dxgi.dll");
+static std::wstring dxgiExW(L"dxgi");
+
 static std::string nvapiA("nvapi64.dll");
 static std::string nvapiExA("nvapi64");
 static std::wstring nvapiW(L"nvapi64.dll");
@@ -189,6 +194,22 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
         return dllModule;
     }
 
+    // Dxgi.dll
+    if (Config::Instance()->HookDxgiFile.value_or(true))
+    {
+        pos = lcaseLibName.rfind(dxgiA);
+
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiA.size()))
+        {
+            spdlog::info("hkLoadLibraryA HookDxgiFile returning this dll!");
+
+            if (!dontCount)
+                loadCount++;
+
+            return dllModule;
+        }
+    }
+
     dontCount = true;
     auto result = o_LoadLibraryA(lpLibFileName);
     dontCount = false;
@@ -261,6 +282,22 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
             loadCount++;
 
         return dllModule;
+    }
+
+    // Dxgi.dll
+    if (Config::Instance()->HookDxgiFile.value_or(true))
+    {
+        pos = lcaseLibName.rfind(dxgiW);
+
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiW.size()))
+        {
+            spdlog::info("hkLoadLibraryW HookDxgiFile returning this dll!");
+
+            if (!dontCount)
+                loadCount++;
+
+            return dllModule;
+        }
     }
 
     dontCount = true;
@@ -366,6 +403,34 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
             loadCount++;
 
         return dllModule;
+    }
+
+    // Dxgi.dll
+    if (Config::Instance()->HookDxgiFile.value_or(true))
+    {
+        pos = lcaseLibName.rfind(dxgiExA);
+
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiExA.size()))
+        {
+            spdlog::info("hkLoadLibraryExA HookDxgiFile returning this dll!");
+
+            if (!dontCount)
+                loadCount++;
+
+            return dllModule;
+        }
+
+        pos = lcaseLibName.rfind(dxgiA);
+
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiA.size()))
+        {
+            spdlog::info("hkLoadLibraryExA HookDxgiFile returning this dll!");
+
+            if (!dontCount)
+                loadCount++;
+
+            return dllModule;
+        }
     }
 
     dontCount = true;
@@ -476,6 +541,34 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
         return dllModule;
     }
 
+    // Dxgi.dll
+    if (Config::Instance()->HookDxgiFile.value_or(true))
+    {
+        pos = lcaseLibName.rfind(dxgiExW);
+
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiExW.size()))
+        {
+            spdlog::info("hkLoadLibraryExA HookDxgiFile returning this dll!");
+
+            if (!dontCount)
+                loadCount++;
+
+            return dllModule;
+        }
+
+        pos = lcaseLibName.rfind(dxgiW);
+
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiW.size()))
+        {
+            spdlog::info("hkLoadLibraryExA HookDxgiFile returning this dll!");
+
+            if (!dontCount)
+                loadCount++;
+
+            return dllModule;
+        }
+    }
+
     dontCount = true;
     auto result = o_LoadLibraryExW(lpLibFileName, hFile, dwFlags);
     dontCount = false;
@@ -582,7 +675,7 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
         //    GL_EXT_shader_image_load_formatted = true;
     }
 
-    if(!bVK_KHR_get_memory_requirements2)
+    if (!bVK_KHR_get_memory_requirements2)
         newExtensionList.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
 
     //if(!GL_EXT_shader_image_load_formatted)
@@ -590,7 +683,7 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
 
     pCreateInfo->enabledExtensionCount = static_cast<uint32_t>(newExtensionList.size());
     pCreateInfo->ppEnabledExtensionNames = newExtensionList.data();
-    
+
     spdlog::debug("hkvkCreateDevice final extension count: {0}", pCreateInfo->enabledExtensionCount);
     spdlog::debug("hkvkCreateDevice final extensions:");
     for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
@@ -1104,6 +1197,46 @@ static void CheckWorkingMode()
         }
     }
 
+    if (lCaseFilename != "dxgi.dll" && Config::Instance()->HookDxgiFile.value_or(true))
+    {
+        spdlog::info("HookDxgiFile is enabled loading dxgi.dll");
+
+        do
+        {
+            auto pluginFilePath = pluginPath / L"dxgi.dll";
+            auto dxgiDll = LoadLibrary(pluginFilePath.wstring().c_str());
+
+            if (dxgiDll != nullptr)
+            {
+                spdlog::info("HookDxgiFile is enabled, original dll loaded from plugin folder");
+                dxgi.LoadOriginalLibrary(dxgiDll);
+                break;
+            }
+
+            dxgiDll = LoadLibrary(L"dxgi-original.dll");
+
+            if (dxgiDll != nullptr)
+            {
+                spdlog::info("HookDxgiFile is enabled, dxgi-original.dll loaded");
+                dxgi.LoadOriginalLibrary(dxgiDll);
+                break;
+            }
+
+            auto sysFilePath = sysPath / L"dxgi.dll";
+            dxgiDll = LoadLibrary(sysFilePath.wstring().c_str());
+
+            if (dxgiDll != nullptr)
+            {
+                spdlog::info("HookDxgiFile is enabled, system dll loaded");
+                dxgi.LoadOriginalLibrary(dxgiDll);
+                break;
+            }
+
+            Config::Instance()->HookDxgiFile = false;
+
+        } while (false);
+    }
+
     if (dll != nullptr)
     {
         AttachHooks();
@@ -1168,19 +1301,29 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 }
                 else
                 {
-                    spdlog::info("nvngx.dll loaded, setting DLSS as default upscaler and disabling spoofing.");
+                    spdlog::info("nvngx.dll loaded, setting DLSS as default upscaler and disabling spoofing options set to auto");
 
                     Config::Instance()->DLSSEnabled = true;
 
                     if (Config::Instance()->IsDxgiMode)
                     {
-                        Config::Instance()->DxgiSpoofing = false;
-                        Config::Instance()->DxgiSkipSpoofForUpscalers = true;
+                        if (!Config::Instance()->DxgiSpoofing.has_value())
+                        {
+                            Config::Instance()->DxgiSpoofing = false;
+                            Config::Instance()->DxgiSkipSpoofForUpscalers = true;
+                        }
+
                         Config::Instance()->DxgiBlacklist.reset();
                     }
 
-                    Config::Instance()->VulkanSpoofing = false;
-                    Config::Instance()->VulkanExtensionSpoofing = false;
+                    if (!Config::Instance()->HookDxgiFile.has_value())
+                        Config::Instance()->HookDxgiFile = false;
+
+                    if (!Config::Instance()->VulkanSpoofing.has_value())
+                        Config::Instance()->VulkanSpoofing = false;
+
+                    if (!Config::Instance()->VulkanExtensionSpoofing.has_value())
+                        Config::Instance()->VulkanExtensionSpoofing = false;
 
                     // Disable Overlay Menu because of crashes on Linux with Nvidia GPUs
                     if (Config::Instance()->IsRunningOnLinux && !Config::Instance()->OverlayMenu.has_value())
