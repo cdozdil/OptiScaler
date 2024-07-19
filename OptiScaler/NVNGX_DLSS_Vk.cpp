@@ -32,6 +32,8 @@ static inline int evalCounter = 0;
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
+    spdlog::debug("NVSDK_NGX_VULKAN_Init_Ext");
+
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
     {
         if (NVNGXProxy::NVNGXModule() == nullptr)
@@ -40,22 +42,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext(unsigned long long InAp
         if (NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_Init_Ext() != nullptr)
         {
             spdlog::info("NVSDK_NGX_VULKAN_Init_Ext calling NVNGXProxy::VULKAN_Init_Ext");
-
             auto result = NVNGXProxy::VULKAN_Init_Ext()(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, InSDKVersion, InFeatureInfo);
-
-            spdlog::info("NVSDK_NGX_VULKAN_Init_Ext calling NVNGXProxy::VULKAN_Init_Ext result: {0:X}", (UINT)result);
+            spdlog::info("NVSDK_NGX_VULKAN_Init_Ext NVNGXProxy::VULKAN_Init_Ext result: {0:X}", (UINT)result);
 
             if (result == NVSDK_NGX_Result_Success)
                 NVNGXProxy::SetVulkanInited(true);
         }
     }
 
-    spdlog::debug("NVSDK_NGX_VULKAN_Init_Ext");
     return NVSDK_NGX_VULKAN_Init_Ext2(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, vkGetInstanceProcAddr, vkGetDeviceProcAddr, InSDKVersion, InFeatureInfo);
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
+    spdlog::debug("NVSDK_NGX_VULKAN_Init_Ext2");
+
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
     {
         if (NVNGXProxy::NVNGXModule() == nullptr)
@@ -64,10 +65,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InA
         if (NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_Init_Ext2() != nullptr)
         {
             spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 calling NVNGXProxy::VULKAN_Init_Ext2");
-
             auto result = NVNGXProxy::VULKAN_Init_Ext2()(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InSDKVersion, InFeatureInfo);
-
-            spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 calling NVNGXProxy::VULKAN_Init_Ext2 result: {0:X}", (UINT)result);
+            spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 NVNGXProxy::VULKAN_Init_Ext2 result: {0:X}", (UINT)result);
 
             if (result == NVSDK_NGX_Result_Success)
                 NVNGXProxy::SetVulkanInited(true);
@@ -165,6 +164,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InA
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
+    spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID_Ext");
+
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
     {
         if (NVNGXProxy::NVNGXModule() == nullptr)
@@ -173,10 +174,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char* I
         if (NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_Init_ProjectID_Ext() != nullptr)
         {
             spdlog::info("NVSDK_NGX_VULKAN_Init_ProjectID_Ext calling NVNGXProxy::VULKAN_Init_ProjectID_Ext");
-
             auto result = NVNGXProxy::VULKAN_Init_ProjectID_Ext()(InProjectId, InEngineType, InEngineVersion, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InSDKVersion, InFeatureInfo);
-
-            spdlog::info("NVSDK_NGX_VULKAN_Init_ProjectID_Ext calling NVNGXProxy::VULKAN_Init_ProjectID_Ext result: {0:X}", (UINT)result);
+            spdlog::info("NVSDK_NGX_VULKAN_Init_ProjectID_Ext NVNGXProxy::VULKAN_Init_ProjectID_Ext result: {0:X}", (UINT)result);
 
             if (result == NVSDK_NGX_Result_Success)
                 NVNGXProxy::SetVulkanInited(true);
@@ -198,6 +197,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char* I
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
+    spdlog::debug("NVSDK_NGX_VULKAN_Init");
+
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
     {
         if (NVNGXProxy::NVNGXModule() == nullptr)
@@ -206,23 +207,22 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
         if (NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_Init() != nullptr)
         {
             spdlog::info("NVSDK_NGX_VULKAN_Init calling NVNGXProxy::VULKAN_Init");
-
             auto result = NVNGXProxy::VULKAN_Init()(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InFeatureInfo, InSDKVersion);
-
-            spdlog::info("NVSDK_NGX_VULKAN_Init calling NVNGXProxy::VULKAN_Init result: {0:X}", (UINT)result);
+            spdlog::info("NVSDK_NGX_VULKAN_Init NVNGXProxy::VULKAN_Init result: {0:X}", (UINT)result);
 
             if (result == NVSDK_NGX_Result_Success)
                 NVNGXProxy::SetVulkanInited(true);
         }
     }
 
-    spdlog::debug("NVSDK_NGX_VULKAN_Init");
     return NVSDK_NGX_VULKAN_Init_Ext2(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InSDKVersion, InFeatureInfo);
 
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
+    spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID");
+
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
     {
         if (NVNGXProxy::NVNGXModule() == nullptr)
@@ -231,17 +231,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID(const char* InPro
         if (NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_Init_ProjectID() != nullptr)
         {
             spdlog::info("NVSDK_NGX_VULKAN_Init_ProjectID calling NVNGXProxy::VULKAN_Init_ProjectID");
-
             auto result = NVNGXProxy::VULKAN_Init_ProjectID()(InProjectId, InEngineType, InEngineVersion, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InSDKVersion, InFeatureInfo);
-
-            spdlog::info("NVSDK_NGX_VULKAN_Init_ProjectID calling NVNGXProxy::VULKAN_Init_ProjectID result: {0:X}", (UINT)result);
+            spdlog::info("NVSDK_NGX_VULKAN_Init_ProjectID NVNGXProxy::VULKAN_Init_ProjectID result: {0:X}", (UINT)result);
 
             if (result == NVSDK_NGX_Result_Success)
                 NVNGXProxy::SetVulkanInited(true);
         }
     }
 
-    spdlog::debug("NVSDK_NGX_VULKAN_Init_ProjectID");
     return NVSDK_NGX_VULKAN_Init_ProjectID_Ext(InProjectId, InEngineType, InEngineVersion, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InSDKVersion, InFeatureInfo);
 }
 
@@ -253,7 +250,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetParameters(NVSDK_NGX_Paramete
     {
         spdlog::info("NVSDK_NGX_VULKAN_GetParameters calling NVNGXProxy::VULKAN_GetParameters");
         auto result = NVNGXProxy::VULKAN_GetParameters()(OutParameters);
-        spdlog::info("NVSDK_NGX_VULKAN_GetParameters calling NVNGXProxy::VULKAN_GetParameters result: {0:X}", (UINT)result);
+        spdlog::info("NVSDK_NGX_VULKAN_GetParameters NVNGXProxy::VULKAN_GetParameters result: {0:X}", (UINT)result);
 
         if (result == NVSDK_NGX_Result_Success)
         {
@@ -266,6 +263,134 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetParameters(NVSDK_NGX_Paramete
     return NVSDK_NGX_Result_Success;
 }
 
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements(const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, uint32_t* OutExtensionCount, VkExtensionProperties** OutExtensionProperties)
+{
+    spdlog::debug("NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements FeatureID: {0}", (UINT)FeatureDiscoveryInfo->FeatureID);
+
+    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_GetFeatureInstanceExtensionRequirements() != nullptr)
+    {
+        spdlog::info("NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements calling NVNGXProxy::VULKAN_GetFeatureInstanceExtensionRequirements");
+        auto result = NVNGXProxy::VULKAN_GetFeatureInstanceExtensionRequirements()(FeatureDiscoveryInfo, OutExtensionCount, OutExtensionProperties);
+        spdlog::info("NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements NVNGXProxy::VULKAN_GetFeatureInstanceExtensionRequirements result: {0:X}", (UINT)result);
+
+        if (result == NVSDK_NGX_Result_Success)
+        {
+            if (*OutExtensionCount > 0)
+                spdlog::debug("NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements required extensions: {0}", *OutExtensionCount);
+
+            return result;
+        }
+    }
+
+    if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+    {
+        if (NVNGXProxy::NVNGXModule() != nullptr)
+        {
+            spdlog::info("NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements returning no extensions are needed");
+            *OutExtensionCount = 0;
+        }
+
+        // Only Nvidia hardware should reach here, so in any case returning known extensions for DLSS
+        //if (OutExtensionProperties == nullptr)
+        //{
+
+        //    if (NVNGXProxy::NVNGXModule() != nullptr)
+        //    {
+        //        spdlog::info("NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements returning 3 extensions are needed");
+        //        *OutExtensionCount = 3;
+        //    }
+        //    else
+        //    {
+        //        spdlog::info("NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements returning no extensions are needed");
+        //        *OutExtensionCount = 0;
+        //    }
+        //}
+        //else if (*OutExtensionCount == 3)
+        //{
+        //    spdlog::info("NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements returning extension infos");
+
+        //    strncpy_s(OutExtensionProperties[0]->extensionName, (VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME + '\0'), 39);
+        //    OutExtensionProperties[0]->specVersion = VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_SPEC_VERSION;
+
+        //    strncpy_s(OutExtensionProperties[1]->extensionName, (VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME + '\0'), 36);
+        //    OutExtensionProperties[1]->specVersion = VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_SPEC_VERSION;
+
+        //    strncpy_s(OutExtensionProperties[2]->extensionName, (VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME + '\0'), 39);
+        //    OutExtensionProperties[2]->specVersion = VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_SPEC_VERSION;
+        //}
+
+        return NVSDK_NGX_Result_Success;
+    }
+
+    return NVSDK_NGX_Result_Fail;
+}
+
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements(VkInstance Instance, VkPhysicalDevice PhysicalDevice, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, uint32_t* OutExtensionCount, VkExtensionProperties** OutExtensionProperties)
+{
+    spdlog::debug("NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements FeatureID: {0}", (UINT)FeatureDiscoveryInfo->FeatureID);
+
+    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_GetFeatureDeviceExtensionRequirements() != nullptr)
+    {
+        spdlog::info("NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements calling NVNGXProxy::VULKAN_GetFeatureDeviceExtensionRequirements");
+        auto result = NVNGXProxy::VULKAN_GetFeatureDeviceExtensionRequirements()(Instance, PhysicalDevice, FeatureDiscoveryInfo, OutExtensionCount, OutExtensionProperties);
+        spdlog::info("NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements NVNGXProxy::VULKAN_GetFeatureDeviceExtensionRequirements result: {0:X}", (UINT)result);
+
+        if (result == NVSDK_NGX_Result_Success)
+        {
+            if (*OutExtensionCount > 0)
+                spdlog::debug("NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements required extensions: {0}", *OutExtensionCount);
+
+            return result;
+        }
+    }
+
+    if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+    {
+        if (OutExtensionProperties == nullptr)
+        {
+            spdlog::info("NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements returning no extensions are needed!");
+            *OutExtensionCount = 0;
+        }
+        
+        // Only Nvidia hardware should reach here, so in any case returning known extensions for DLSS
+        //if (OutExtensionProperties == nullptr)
+        //{
+
+        //    if (NVNGXProxy::NVNGXModule() != nullptr)
+        //    {
+
+        //        spdlog::info("NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements returning 4 extensions are needed!");
+        //        *OutExtensionCount = 4;
+        //    }
+        //    else
+        //    {
+        //        spdlog::info("NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements returning no extensions are needed!");
+        //        *OutExtensionCount = 0;
+        //    }
+        //}
+        //else if (*OutExtensionCount == 4)
+        //{
+        //    spdlog::info("NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements returning extension infos");
+
+        //    strncpy_s(OutExtensionProperties[0]->extensionName, (VK_NVX_BINARY_IMPORT_EXTENSION_NAME + '\0'), 21);
+        //    OutExtensionProperties[0]->specVersion = VK_NVX_BINARY_IMPORT_SPEC_VERSION;
+
+        //    strncpy_s(OutExtensionProperties[1]->extensionName, (VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME + '\0'), 25);
+        //    OutExtensionProperties[1]->specVersion = VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION;
+
+        //    strncpy_s(OutExtensionProperties[2]->extensionName, (VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME + '\0'), 29);
+        //    OutExtensionProperties[2]->specVersion = VK_EXT_BUFFER_DEVICE_ADDRESS_SPEC_VERSION;
+
+        //    strncpy_s(OutExtensionProperties[3]->extensionName, (VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME + '\0'), 23);
+        //    OutExtensionProperties[3]->specVersion = VK_KHR_PUSH_DESCRIPTOR_SPEC_VERSION;
+        //}
+
+        return NVSDK_NGX_Result_Success;
+    }
+
+    return NVSDK_NGX_Result_Fail;
+}
+
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_AllocateParameters(NVSDK_NGX_Parameter** OutParameters)
 {
     spdlog::debug("NVSDK_NGX_VULKAN_AllocateParameters");
@@ -274,7 +399,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_AllocateParameters(NVSDK_NGX_Par
     {
         spdlog::info("NVSDK_NGX_VULKAN_AllocateParameters calling NVNGXProxy::VULKAN_AllocateParameters");
         auto result = NVNGXProxy::VULKAN_AllocateParameters()(OutParameters);
-        spdlog::info("NVSDK_NGX_VULKAN_AllocateParameters calling NVNGXProxy::VULKAN_AllocateParameters result: {0:X}", (UINT)result);
+        spdlog::info("NVSDK_NGX_VULKAN_AllocateParameters NVNGXProxy::VULKAN_AllocateParameters result: {0:X}", (UINT)result);
 
         if (result == NVSDK_NGX_Result_Success)
             return result;
@@ -289,7 +414,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_AllocateParameters(NVSDK_NGX_Par
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureRequirements(VkInstance VulkanInstance, VkPhysicalDevice PhysicalDevice, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
 {
-    spdlog::debug("NVSDK_NGX_VULKAN_GetFeatureRequirements for ({0})", (int)FeatureDiscoveryInfo->FeatureID);
+    spdlog::debug("NVSDK_NGX_VULKAN_GetFeatureRequirements for FeatureID: {0}", (int)FeatureDiscoveryInfo->FeatureID);
 
     if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
     {
@@ -309,14 +434,18 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureRequirements(VkInstanc
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D12_GetFeatureRequirements() != nullptr)
     {
-        spdlog::debug("NVSDK_NGX_D3D12_GetFeatureRequirements NVSDK_NGX_VULKAN_GetFeatureRequirements for ({0})", (int)FeatureDiscoveryInfo->FeatureID);
+        spdlog::debug("NVSDK_NGX_VULKAN_GetFeatureRequirements calling NVNGXProxy::VULKAN_GetFeatureRequirements");
         auto result = NVNGXProxy::VULKAN_GetFeatureRequirements()(VulkanInstance, PhysicalDevice, FeatureDiscoveryInfo, OutSupported);
-        spdlog::debug("NVSDK_NGX_D3D12_EvaluateFeature NVSDK_NGX_VULKAN_GetFeatureRequirements result for ({0}): {1:X}", (int)FeatureDiscoveryInfo->FeatureID, (UINT)result);
+        spdlog::debug("NVSDK_NGX_VULKAN_GetFeatureRequirements NVNGXProxy::VULKAN_GetFeatureRequirements result {0:X}", (UINT)result);
+
+        if (result == NVSDK_NGX_Result_Success)
+            spdlog::debug("NVSDK_NGX_VULKAN_GetFeatureRequirements NVSDK_NGX_VULKAN_GetFeatureRequirements FeatureSupported: {0}", (UINT)OutSupported->FeatureSupported);
+
         return result;
     }
     else
     {
-        spdlog::debug("NVSDK_NGX_VULKAN_GetFeatureRequirements VULKAN_GetFeatureRequirements not available for ({0})", (int)FeatureDiscoveryInfo->FeatureID);
+        spdlog::debug("NVSDK_NGX_VULKAN_GetFeatureRequirements VULKAN_GetFeatureRequirements not available for FeatureID: {0}", (int)FeatureDiscoveryInfo->FeatureID);
     }
 
     OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_AdapterUnsupported;
