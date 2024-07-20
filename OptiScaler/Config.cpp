@@ -31,7 +31,11 @@ Config::Config(std::wstring fileName)
 
 bool Config::Reload(std::filesystem::path iniPath)
 {
-    spdlog::info("Trying to load ini from: {0}", iniPath.string());
+    auto pathWStr = iniPath.wstring();
+    std::string pathStr(pathWStr.length(), 0);
+    std::transform(pathWStr.begin(), pathWStr.end(), pathStr.begin(), [](wchar_t c) { return (char)c; });
+
+    spdlog::info("Trying to load ini from: {0}", pathStr);
 
     if (ini.LoadFile(iniPath.c_str()) == SI_OK)
     {
@@ -57,7 +61,11 @@ bool Config::Reload(std::filesystem::path iniPath)
             BuildPipelines = readBool("XeSS", "BuildPipelines");
             NetworkModel = readInt("XeSS", "NetworkModel");
             CreateHeaps = readBool("XeSS", "CreateHeaps");
-            XeSSLibrary = readString("XeSS", "LibraryPath");
+
+            auto xessLibraryPathA = readString("XeSS", "LibraryPath");
+
+            if(xessLibraryPathA.has_value())
+                XeSSLibrary = string_to_wstring(xessLibraryPathA.value());
         }
 
         // DLSS
@@ -66,7 +74,11 @@ bool Config::Reload(std::filesystem::path iniPath)
             if (!DLSSEnabled.has_value())
                 DLSSEnabled = readBool("DLSS", "Enabled");
 
-            DLSSLibrary = readString("DLSS", "LibraryPath");
+            auto dlssLibraryPathA = readString("DLSS", "LibraryPath");
+
+            if (dlssLibraryPathA.has_value())
+                DLSSLibrary = string_to_wstring(dlssLibraryPathA.value());
+
             RenderPresetOverride = readBool("DLSS", "RenderPresetOverride");
             RenderPresetDLAA = readInt("DLSS", "RenderPresetDLAA");
             RenderPresetUltraQuality = readInt("DLSS", "RenderPresetUltraQuality");
@@ -102,7 +114,12 @@ bool Config::Reload(std::filesystem::path iniPath)
             LogToFile = readBool("Log", "LogToFile");
             LogToNGX = readBool("Log", "LogToNGX");
             OpenConsole = readBool("Log", "OpenConsole");
-            LogFileName = readString("Log", "LogFile");
+
+            auto logFileA = readString("Log", "LogFile");
+
+            if (logFileA.has_value())
+                LogFileName = string_to_wstring(logFileA.value());
+
             LogSingleFile = readBool("Log", "SingleFile");
 
             if (!LogFileName.has_value())
@@ -110,12 +127,12 @@ bool Config::Reload(std::filesystem::path iniPath)
                 if (LogSingleFile.value_or(true))
                 {
                     auto logFile = Util::DllPath().parent_path() / "OptiScaler.log";
-                    LogFileName = logFile.string();
+                    LogFileName = logFile.wstring();
                 }
                 else
                 {
                     auto logFile = Util::DllPath().parent_path() / ("OptiScaler_" + std::to_string(GetTicks()) + ".log");
-                    LogFileName = logFile.string();
+                    LogFileName = logFile.wstring();
                 }
             }
         }
@@ -267,7 +284,11 @@ bool Config::Reload(std::filesystem::path iniPath)
         // NvApi
         {
             OverrideNvapiDll = readBool("NvApi", "OverrideNvapiDll");
-            NvapiDllPath = readString("NvApi", "NvapiDllPath", true);
+
+            auto nvapiPathA = readString("NvApi", "NvapiDllPath", true);
+
+            if (nvapiPathA.has_value())
+                NvapiDllPath = string_to_wstring(nvapiPathA.value());
         }
 
         // Spoofing
@@ -281,10 +302,18 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Plugins
         {
-            PluginPath = readString("Plugins", "Path", true);
 
-            if (!PluginPath.has_value())
-                PluginPath = (Util::DllPath().parent_path() / "plugins").string();
+            auto pluginsPathA = readString("Plugins", "Path", true);
+
+            if (!pluginsPathA.has_value())
+            {
+                auto pluginFolder = (Util::DllPath().parent_path() / "plugins");
+                PluginPath = pluginFolder.wstring();
+            }
+            else
+            {
+                PluginPath = string_to_wstring(pluginsPathA.value());
+            }
         }
 
         // DLSS Enabler
@@ -430,13 +459,13 @@ bool Config::SaveIni()
         ini.SetValue("XeSS", "BuildPipelines", GetBoolValue(Instance()->BuildPipelines).c_str());
         ini.SetValue("XeSS", "CreateHeaps", GetBoolValue(Instance()->CreateHeaps).c_str());
         ini.SetValue("XeSS", "NetworkModel", GetIntValue(Instance()->NetworkModel).c_str());
-        ini.SetValue("XeSS", "LibraryPath", Instance()->XeSSLibrary.value_or("auto").c_str());
+        ini.SetValue("XeSS", "LibraryPath", Instance()->XeSSLibrary.has_value() ? wstring_to_string(Instance()->XeSSLibrary.value()).c_str() : "auto");
     }
 
     // DLSS
     {
         ini.SetValue("DLSS", "Enabled", GetBoolValue(Instance()->DLSSEnabled).c_str());
-        ini.SetValue("DLSS", "LibraryPath", Instance()->DLSSLibrary.value_or("auto").c_str());
+        ini.SetValue("DLSS", "LibraryPath", Instance()->DLSSLibrary.has_value() ? wstring_to_string(Instance()->DLSSLibrary.value()).c_str() : "auto");
         ini.SetValue("DLSS", "RenderPresetOverride", GetBoolValue(Instance()->RenderPresetOverride).c_str());
         ini.SetValue("DLSS", "RenderPresetDLAA", GetIntValue(Instance()->RenderPresetDLAA).c_str());
         ini.SetValue("DLSS", "RenderPresetUltraQuality", GetIntValue(Instance()->RenderPresetUltraQuality).c_str());
@@ -541,14 +570,14 @@ bool Config::SaveIni()
         ini.SetValue("Log", "LogToFile", GetBoolValue(Instance()->LogToFile).c_str());
         ini.SetValue("Log", "LogToNGX", GetBoolValue(Instance()->LogToNGX).c_str());
         ini.SetValue("Log", "OpenConsole", GetBoolValue(Instance()->OpenConsole).c_str());
-        ini.SetValue("Log", "LogFile", Instance()->LogFileName.value_or("auto").c_str());
+        ini.SetValue("Log", "LogFile", Instance()->LogFileName.has_value() ? wstring_to_string(Instance()->LogFileName.value()).c_str() : "auto");
         ini.SetValue("Log", "SingleFile", GetBoolValue(Instance()->LogSingleFile).c_str());
     }
 
     // NvApi
     {
         ini.SetValue("NvApi", "OverrideNvapiDll", GetBoolValue(Instance()->OverrideNvapiDll).c_str());
-        ini.SetValue("NvApi", "NvapiDllPath", Instance()->NvapiDllPath.value_or("auto").c_str());
+        ini.SetValue("NvApi", "NvapiDllPath", Instance()->NvapiDllPath.has_value() ? wstring_to_string(Instance()->NvapiDllPath.value()).c_str() : "auto");
     }
 
     // DRS
@@ -568,10 +597,14 @@ bool Config::SaveIni()
 
     // Plugins
     {
-        ini.SetValue("Plugins", "Path", Instance()->PluginPath.value_or("auto").c_str());
+        ini.SetValue("Plugins", "Path", Instance()->PluginPath.has_value() ? wstring_to_string(Instance()->PluginPath.value()).c_str() : "auto");
     }
 
-    spdlog::info("Trying to save ini to: {0}", absoluteFileName.string());
+    auto pathWStr = absoluteFileName.wstring();
+    std::string pathStr(pathWStr.length(), 0);
+    std::transform(pathWStr.begin(), pathWStr.end(), pathStr.begin(), [](wchar_t c) { return (char)c; });
+
+    spdlog::info("Trying to save ini to: {0}", pathStr);
 
     return ini.SaveFile(absoluteFileName.wstring().c_str()) >= 0;
 }

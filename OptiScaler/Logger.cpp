@@ -79,7 +79,7 @@ void PrepareLogger()
 			if (Config::Instance()->LogToFile.value_or(false))
 			{
 				auto logFile = Util::DllPath().parent_path() / "OptiScaler.log";
-				auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(Config::Instance()->LogFileName.value_or(logFile.string()), true);
+				auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(Config::Instance()->LogFileName.value_or(logFile.wstring()), true);
 				file_sink->set_level(spdlog::level::level_enum::trace);
 				file_sink->set_pattern("[%H:%M:%S.%f] [%L] %v");
 

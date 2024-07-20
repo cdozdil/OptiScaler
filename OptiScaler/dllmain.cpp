@@ -74,30 +74,30 @@ static HMODULE LoadNvApi()
 
     if (Config::Instance()->NvapiDllPath.has_value())
     {
-        nvapi = o_LoadLibraryA(Config::Instance()->NvapiDllPath->c_str());
+        nvapi = o_LoadLibraryW(Config::Instance()->NvapiDllPath->c_str());
 
         if (nvapi != nullptr)
         {
-            spdlog::info("LoadNvApi nvapi64.dll loaded from {0}", Config::Instance()->NvapiDllPath.value());
+            spdlog::info("LoadNvApi nvapi64.dll loaded from {0}", wstring_to_string(Config::Instance()->NvapiDllPath.value()));
             return nvapi;
         }
     }
 
     if (nvapi == nullptr)
     {
-        auto localPath = Util::DllPath().parent_path() / "nvapi64.dll";
-        nvapi = o_LoadLibraryA(localPath.string().c_str());
+        auto localPath = Util::DllPath().parent_path() / L"nvapi64.dll";
+        nvapi = o_LoadLibraryW(localPath.wstring().c_str());
 
         if (nvapi != nullptr)
         {
-            spdlog::info("LoadNvApi nvapi64.dll loaded from {0}", localPath.string());
+            spdlog::info("LoadNvApi nvapi64.dll loaded from {0}", wstring_to_string(localPath.wstring()));
             return nvapi;
         }
     }
 
     if (nvapi == nullptr)
     {
-        nvapi = o_LoadLibraryA("nvapi64.dll");
+        nvapi = o_LoadLibraryW(L"nvapi64.dll");
 
         if (nvapi != nullptr)
         {
@@ -151,12 +151,12 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
     if (!Config::Instance()->dlssDisableHook)
     {
         // exe path
-        auto exePath = Util::ExePath().parent_path().string();
+        auto exePath = Util::ExePath().parent_path().wstring();
 
         for (size_t i = 0; i < exePath.size(); i++)
             exePath[i] = std::tolower(exePath[i]);
 
-        auto pos2 = lcaseLibName.rfind(exePath);
+        auto pos2 = lcaseLibName.rfind(wstring_to_string(exePath));
         pos = lcaseLibName.rfind(nvngxA);
 
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxA.size()) &&
@@ -329,12 +329,12 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
     if (!Config::Instance()->dlssDisableHook)
     {
         // exe path
-        auto exePath = Util::ExePath().parent_path().string();
+        auto exePath = Util::ExePath().parent_path().wstring();
 
         for (size_t i = 0; i < exePath.size(); i++)
             exePath[i] = std::tolower(exePath[i]);
 
-        auto pos2 = lcaseLibName.rfind(exePath);
+        auto pos2 = lcaseLibName.rfind(wstring_to_string(exePath));
         pos = lcaseLibName.rfind(nvngxA);
 
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxA.size()) &&
@@ -1003,7 +1003,7 @@ static void CheckWorkingMode()
     wchar_t sysFolder[MAX_PATH];
     GetSystemDirectory(sysFolder, MAX_PATH);
     std::filesystem::path sysPath(sysFolder);
-    std::filesystem::path pluginPath(Config::Instance()->PluginPath.value_or((Util::DllPath().parent_path() / "plugins").string()));
+    std::filesystem::path pluginPath(Config::Instance()->PluginPath.value_or((Util::DllPath().parent_path() / L"plugins").wstring()));
 
     for (size_t i = 0; i < lCaseFilename.size(); i++)
         lCaseFilename[i] = std::tolower(lCaseFilename[i]);

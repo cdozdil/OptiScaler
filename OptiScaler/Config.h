@@ -32,18 +32,18 @@ public:
 	std::optional<bool> LogToNGX;
 	std::optional<bool> OpenConsole;
 	std::optional<int> LogLevel;
-	std::optional<std::string> LogFileName;
+	std::optional<std::wstring> LogFileName;
 	std::optional<bool> LogSingleFile;
 
 	// XeSS
 	std::optional<bool> BuildPipelines;
 	std::optional<int32_t> NetworkModel;
 	std::optional<bool> CreateHeaps;
-	std::optional<std::string> XeSSLibrary;
+	std::optional<std::wstring> XeSSLibrary;
 
 	//DLSS
 	std::optional<bool> DLSSEnabled;
-	std::optional<std::string> DLSSLibrary;
+	std::optional<std::wstring> DLSSLibrary;
 	std::optional<bool> RenderPresetOverride;
 	std::optional<int> RenderPresetDLAA;
 	std::optional<int> RenderPresetUltraQuality;
@@ -115,6 +115,8 @@ public:
 	std::optional<std::string> Dx11Upscaler;
 	std::optional<std::string> Dx12Upscaler;
 	std::optional<std::string> VulkanUpscaler;
+
+	// Output Scaling
 	std::optional<bool> OutputScalingEnabled;
 	std::optional<float> OutputScalingMultiplier;
 
@@ -135,7 +137,7 @@ public:
 
 	// nvapi override
 	std::optional<bool> OverrideNvapiDll;
-	std::optional<std::string> NvapiDllPath;
+	std::optional<std::wstring> NvapiDllPath;
 
 	// spoofing
 	std::optional<bool> DxgiSpoofing;
@@ -145,7 +147,7 @@ public:
 	std::optional<bool> VulkanExtensionSpoofing;
 
 	// plugins
-	std::optional<std::string> PluginPath;
+	std::optional<std::wstring> PluginPath;
 
 
 	// nvngx init parameters
