@@ -45,10 +45,22 @@ private:
     inline static int _selectedScale = 0;
     inline static bool _imguiSizeUpdate = true;
 
-    // ovarlay states
+    // overlay states
     inline static bool _dx11Ready = false;
     inline static bool _dx12Ready = false;
     inline static bool _vulkanReady = false;
+
+    inline static void ShowTooltip(const char* tip) {
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip(tip);
+    }
+
+    inline static void ShowHelpMarker(const char* tip)
+    {
+        ImGui::SameLine();
+        ImGui::TextDisabled("(?)");
+        ShowTooltip(tip);
+    }
 
     inline static ImGuiKey ImGui_ImplWin32_VirtualKeyToImGuiKey(WPARAM wParam)
     {
@@ -744,6 +756,15 @@ public:
     static void AddRenderPreset(std::string name, std::optional<int>* value)
     {
         const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G" };
+        const char* presetsDesc[] = { "Whatever the game uses", 
+            "Intended for Performance/Balanced/Quality modes.\nAn older variant best suited to combat ghosting for elements with missing inputs, such as motion vectors.", 
+            "Intended for Ultra Performance mode.\nSimilar to Preset A but for Ultra Performance mode.",
+            "Intended for Performance/Balanced/Quality modes.\nGenerally favors current frame information;\nwell suited for fast-paced game content.",
+            "Default preset for Performance/Balanced/Quality modes;\ngenerally favors image stability.",
+            "DLSS 3.7+, a better D preset",
+            "Default preset for Ultra Performance and DLAA modes",
+            "Unused"
+        };
 
         int selected = value->value_or(0);
 
@@ -762,6 +783,7 @@ public:
         {
             if (ImGui::Selectable(presets[0], !value->has_value()))
                 value->reset();
+            ShowTooltip(presetsDesc[0]);
 
             for (int n = 1; n < 8; n++)
             {
@@ -770,6 +792,7 @@ public:
                     if (n != selected)
                         *value = n;
                 }
+                ShowTooltip(presetsDesc[n]);
             }
 
             ImGui::EndCombo();
@@ -836,6 +859,7 @@ public:
 
                     // UPSCALERS -----------------------------
                     ImGui::SeparatorText("Upscalers");
+                    ShowTooltip("Which copium you choose?");
 
                     std::string selectedUpscalerName = "";
                     std::string currentBackend;
@@ -869,11 +893,14 @@ public:
                     }
 
                     bool noSpoof = Config::Instance()->DxgiSkipSpoofForUpscalers.value_or(true);
-                    if (Config::Instance()->IsDxgiMode && ImGui::Checkbox("Disable DXGI Spoofing for upscalers", &noSpoof))
+                    if (Config::Instance()->IsDxgiMode)
                     {
-                        Config::Instance()->DxgiSkipSpoofForUpscalers = noSpoof;
-                        Config::Instance()->newBackend = currentBackend;
-                        Config::Instance()->changeBackend = true;
+                        if (ImGui::Checkbox("Disable DXGI Spoofing for upscalers", &noSpoof)) {
+                            Config::Instance()->DxgiSkipSpoofForUpscalers = noSpoof;
+                            Config::Instance()->newBackend = currentBackend;
+                            Config::Instance()->changeBackend = true;
+                        }
+                        ShowHelpMarker("Allows Intel ARC GPUs to use XMX model with XeSS");
                     }
 
                     if (Config::Instance()->CurrentFeature->Name() != "DLSSD")
@@ -897,6 +924,15 @@ public:
 
                         const char* sync[] = { "No Syncing", "Fence", "Fence + Event", "Fence + Flush", "Fence + Flush + Event", "Only Query" };
 
+                        const char* syncDesc[] = { 
+                            "Self explanatory",
+                            "Sync using shared Fences(Signal& Wait). These should happen on GPU which is pretty fast.",
+                            "Sync using shared Fences(Signal& Event). Events are waited on CPU which is slower.",
+                            "Like Fence but flushes Dx11 DeviceContext after Signal shared Fence.",
+                            "Like Fence + Event but flushes Dx11 DeviceContext after Signal shared Fence.",
+                            "Uses Dx11 Query to sync, in general faster than Events but slower than Fences."
+                        };
+
                         const char* selectedSync = sync[Config::Instance()->TextureSyncMethod.value_or(1)];
 
                         if (ImGui::BeginCombo("Input Sync", selectedSync))
@@ -905,6 +941,7 @@ public:
                             {
                                 if (ImGui::Selectable(sync[n], (Config::Instance()->TextureSyncMethod.value_or(1) == n)))
                                     Config::Instance()->TextureSyncMethod = n;
+                                ShowTooltip(syncDesc[n]);
                             }
 
                             ImGui::EndCombo();
@@ -920,6 +957,7 @@ public:
                             {
                                 if (ImGui::Selectable(sync2[n], (Config::Instance()->CopyBackSyncMethod.value_or(5) == n)))
                                     Config::Instance()->CopyBackSyncMethod = n;
+                                ShowTooltip(syncDesc[n]);
                             }
 
                             ImGui::EndCombo();
@@ -927,6 +965,7 @@ public:
 
                         if (bool afterDx12 = Config::Instance()->SyncAfterDx12.value_or(true); ImGui::Checkbox("Sync After Dx12", &afterDx12))
                             Config::Instance()->SyncAfterDx12 = afterDx12;
+                        ShowHelpMarker("When using Events for syncing output SyncAfterDx12=false is usually more performant.");
 
                         ImGui::SameLine(0.0f, 6.0f);
 
@@ -963,6 +1002,7 @@ public:
 
                             ImGui::EndCombo();
                         }
+                        ShowHelpMarker("Likely don't do much");
 
                         if (bool dbg = Config::Instance()->xessDebug; ImGui::Checkbox("Dump (Shift+Del)", &dbg))
                             Config::Instance()->xessDebug = dbg;
@@ -1006,6 +1046,7 @@ public:
 
                                 ImGui::EndCombo();
                             }
+                            ShowHelpMarker("List of upscalers reported by FFX SDK");
 
                             if (ImGui::Button("Apply Change") && _fsr3xIndex != Config::Instance()->Fsr3xIndex.value_or(0))
                             {
@@ -1050,6 +1091,7 @@ public:
                             Config::Instance()->FsrVerticalFov = vfov;
 
                         ImGui::EndDisabled();
+                        ShowHelpMarker("Might help achieve better image quality");
 
                         ImGui::BeginDisabled(useVFov);
 
@@ -1057,6 +1099,7 @@ public:
                             Config::Instance()->FsrHorizontalFov = hfov;
 
                         ImGui::EndDisabled();
+                        ShowHelpMarker("Might help achieve better image quality");
 
                         if (Config::Instance()->AdvancedSettings.value_or(false) && currentBackend != "fsr21" && currentBackend != "fsr21_12")
                         {
@@ -1070,13 +1113,24 @@ public:
                             {
                                 if (bool dView = Config::Instance()->FsrDebugView.value_or(false); ImGui::Checkbox("FSR 3.1.0 Debug View", &dView))
                                     Config::Instance()->FsrDebugView = dView;
+                                ShowHelpMarker("Top left: Dilated Motion Vectors\n"
+                                    "Top middle: Protected Areas\n"
+                                    "Top right: Dilated Depth\n"
+                                    "Middle: Upscaled frame\n"
+                                    "Bottom left: Disocclusion mask\n"
+                                    "Bottom middle: Reactiveness\n"
+                                    "Bottom right: Detail Protection Takedown");
                             }
 
                             if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.01f, 9.99f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
                                 Config::Instance()->FsrCameraNear = cameraNear;
+                            ShowHelpMarker("Might help achieve better image quality\n"
+                                "And potentially less ghosting");
 
                             if (ImGui::SliderFloat("Camera Far", &cameraFar, 0.01f, 9.99f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
                                 Config::Instance()->FsrCameraFar = cameraFar;
+                            ShowHelpMarker("Might help achieve better image quality\n"
+                                "And potentially less ghosting");
                         }
                     }
 
@@ -1088,6 +1142,8 @@ public:
 
                         if (bool pOverride = Config::Instance()->RenderPresetOverride.value_or(false); ImGui::Checkbox("Render Presets Override", &pOverride))
                             Config::Instance()->RenderPresetOverride = pOverride;
+                        ShowHelpMarker("Each render preset has it strengths and weaknesses\n"
+                            "Override to potentially improve image quality");
 
                         ImGui::SameLine(0.0f, 6.0f);
 
@@ -1127,19 +1183,28 @@ public:
 
                         if (bool rcas = Config::Instance()->RcasEnabled.value_or(rcasEnabled); ImGui::Checkbox("Enable RCAS", &rcas))
                             Config::Instance()->RcasEnabled = rcas;
-
+                        ShowHelpMarker("A sharpening filter\n"
+                            "By default uses a sharpening value provided by the game\n"
+                            "Select 'Override' under 'Sharpness' and adjust the slider to change it\n\n"
+                            "Some upscalers have it's own sharpness filter so RCAS is not always needed");
 
                         ImGui::BeginDisabled(!Config::Instance()->RcasEnabled.value_or(rcasEnabled));
 
                         if (bool overrideMotionSharpness = Config::Instance()->MotionSharpnessEnabled.value_or(false); ImGui::Checkbox("Motion Adaptive Sharpness", &overrideMotionSharpness))
                             Config::Instance()->MotionSharpnessEnabled = overrideMotionSharpness;
+                        ImGui::EndDisabled();
+                        ShowHelpMarker("Applies more sharpness to things in motion");
 
-                        ImGui::BeginDisabled(!Config::Instance()->MotionSharpnessEnabled.value_or(false));
+                        ImGui::BeginDisabled(!Config::Instance()->MotionSharpnessEnabled.value_or(false) || !Config::Instance()->RcasEnabled.value_or(rcasEnabled));
 
                         ImGui::SameLine(0.0f, 6.0f);
 
                         if (bool overrideMSDebug = Config::Instance()->MotionSharpnessDebug.value_or(false); ImGui::Checkbox("MAS Debug", &overrideMSDebug))
                             Config::Instance()->MotionSharpnessDebug = overrideMSDebug;
+                        ImGui::EndDisabled();
+                        ShowHelpMarker("Areas that are more red will have more sharpness applied\n"
+                            "Green areas will get reduced sharpness");
+                        ImGui::BeginDisabled(!Config::Instance()->MotionSharpnessEnabled.value_or(false) || !Config::Instance()->RcasEnabled.value_or(rcasEnabled));
 
                         float motionSharpness = Config::Instance()->MotionSharpness.value_or(0.4f);
                         ImGui::SliderFloat("MotionSharpness", &motionSharpness, -1.0f, 1.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
@@ -1154,9 +1219,6 @@ public:
                         Config::Instance()->MotionScaleLimit = motionScale;
 
                         ImGui::EndDisabled();
-
-                        ImGui::EndDisabled();
-
                     }
 
                     // DLSS Enabler -----------------
@@ -1182,6 +1244,7 @@ public:
                         bool fpsLimitVsync = Config::Instance()->DE_FramerateLimitVsync.value_or(false);
                         if (ImGui::Checkbox("VSync", &fpsLimitVsync))
                             Config::Instance()->DE_FramerateLimitVsync = fpsLimitVsync;
+                        ShowHelpMarker("Limit FPS to your monitor's refresh rate\nNot really vsync");
 
                         if (Config::Instance()->DE_DynamicLimitAvailable.has_value() && Config::Instance()->DE_DynamicLimitAvailable.value() > 0)
                         {
@@ -1190,6 +1253,9 @@ public:
                             bool dfgEnabled = Config::Instance()->DE_DynamicLimitEnabled.value_or(false);
                             if (ImGui::Checkbox("Dynamic Frame Gen.", &dfgEnabled))
                                 Config::Instance()->DE_DynamicLimitEnabled = dfgEnabled;
+                            ShowHelpMarker("Enables FG only when FPS would go below FPS Limit.\n"
+                                "This will result in higher input latency in situation of low fps\n"
+                                "but motion smoothness will be preserved.");
                         }
 
                         if (Config::Instance()->AdvancedSettings.value_or(false))
@@ -1216,6 +1282,7 @@ public:
 
                                 ImGui::EndCombo();
                             }
+                            ShowHelpMarker("Frame Generation algorithm to be used");
 
                             if (Config::Instance()->DE_Reflex.value_or("on") == "on")
                                 selected = "On";
@@ -1258,6 +1325,7 @@ public:
 
                                 ImGui::EndCombo();
                             }
+                            ShowHelpMarker("Doesn't reduce the input latency\nbut may stabilize the frame rate");
                         }
                     }
 
@@ -1280,6 +1348,11 @@ public:
                         }
 
                         ImGui::Checkbox("Enable", &_ssEnabled);
+                        ShowHelpMarker("Upscales the image internally to a selected resolution\n"
+                            "Then scales it to your resolution\n\n"
+                            "Values <1.0 might make upscaler less expensive\n"
+                            "Values >1.0 might make image sharper at the cost of performance\n\n"
+                            "You can see each step at the bottom of this menu");
 
                         ImGui::SameLine(0.0f, 6.0f);
 
@@ -1318,6 +1391,10 @@ public:
                             _mipBias = Config::Instance()->MipmapBiasOverride.value();
 
                         ImGui::SliderFloat("Mipmap Bias", &_mipBias, -15.0f, 15.0f, "%.6f", ImGuiSliderFlags_NoRoundToFormat);
+                        ShowHelpMarker("Can help with blurry textures in broken games\n"
+                            "Negative values will make textures sharper\n"
+                            "Positive values will make textures more blurry\n\n"
+                            "Has a small performance impact");
 
                         ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "This will be applied after resolution/preset change!");
 
@@ -1384,6 +1461,8 @@ public:
                             Config::Instance()->changeBackend = true;
                         }
                     }
+                    ShowHelpMarker("Ignores the value sent by the game\n"
+                        "and uses the value set below");
 
                     ImGui::BeginDisabled(!Config::Instance()->OverrideSharpness.value_or(false));
 
@@ -1397,6 +1476,10 @@ public:
                     ImGui::SeparatorText("Upscale Ratio");
                     if (bool upOverride = Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false); ImGui::Checkbox("Ratio Override", &upOverride))
                         Config::Instance()->UpscaleRatioOverrideEnabled = upOverride;
+                    ShowHelpMarker("Let's you override every upscaler preset\n"
+                        "with a value set below\n\n"
+                        "1.5x on a 1080p screen means internal resolution of 720p\n"
+                        "1080 / 1.5 = 720");
 
                     ImGui::BeginDisabled(!Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false));
 
@@ -1411,6 +1494,10 @@ public:
 
                     if (bool qOverride = Config::Instance()->QualityRatioOverrideEnabled.value_or(false); ImGui::Checkbox("Quality Override", &qOverride))
                         Config::Instance()->QualityRatioOverrideEnabled = qOverride;
+                    ShowHelpMarker("Let's you override each preset's ratio individually\n"
+                        "Note that not every game supports every quality preset\n\n"
+                        "1.5x on a 1080p screen means internal resolution of 720p\n"
+                        "1080 / 1.5 = 720");
 
                     ImGui::BeginDisabled(!Config::Instance()->QualityRatioOverrideEnabled.value_or(false));
 
@@ -1447,10 +1534,12 @@ public:
                         ImGui::TableNextColumn();
                         if (bool drsMin = Config::Instance()->DrsMinOverrideEnabled.value_or(false); ImGui::Checkbox("Override Minimum", &drsMin))
                             Config::Instance()->DrsMinOverrideEnabled = drsMin;
+                        ShowHelpMarker("Fix for games ignoring official DRS limits");
 
                         ImGui::TableNextColumn();
                         if (bool drsMax = Config::Instance()->DrsMaxOverrideEnabled.value_or(false); ImGui::Checkbox("Override Maximum", &drsMax))
                             Config::Instance()->DrsMaxOverrideEnabled = drsMax;
+                        ShowHelpMarker("Fix for games ignoring official DRS limits");
 
                         ImGui::EndTable();
                     }
@@ -1471,6 +1560,8 @@ public:
 
                             Config::Instance()->changeBackend = true;
                         }
+                        ShowHelpMarker("Some Unreal Engine games need this\n"
+                            "Might fix colors, especially in dark areas");
 
                         ImGui::TableNextColumn();
                         if (bool hdr = Config::Instance()->HDR.value_or(false); ImGui::Checkbox("HDR", &hdr))
@@ -1484,6 +1575,7 @@ public:
 
                             Config::Instance()->changeBackend = true;
                         }
+                        ShowHelpMarker("Might help with purple hue in some games");
 
                         ImGui::TableNextColumn();
 
@@ -1500,6 +1592,7 @@ public:
 
                                 Config::Instance()->changeBackend = true;
                             }
+                            ShowHelpMarker("You shouldn't need to change it");
 
                             ImGui::TableNextColumn();
                             if (bool jitter = Config::Instance()->JitterCancellation.value_or(false); ImGui::Checkbox("Jitter Cancellation", &jitter))
@@ -1513,6 +1606,7 @@ public:
 
                                 Config::Instance()->changeBackend = true;
                             }
+                            ShowHelpMarker("Fix for games that send motion data with preapplied jitter");
 
                             ImGui::TableNextColumn();
                             if (bool mv = Config::Instance()->DisplayResolution.value_or(false); ImGui::Checkbox("Display Res. MV", &mv))
@@ -1532,9 +1626,12 @@ public:
 
                                 Config::Instance()->changeBackend = true;
                             }
+                            ShowHelpMarker("Mostly a fix for Unreal Engine games\n"
+                                "Top left part of the screen will be blurry");
 
                             ImGui::TableNextColumn();
-                            ImGui::BeginDisabled(!Config::Instance()->CurrentFeature->AccessToReactiveMask());
+                            auto accessToReactiveMask = Config::Instance()->CurrentFeature->AccessToReactiveMask();
+                            ImGui::BeginDisabled(!accessToReactiveMask);
                             if (bool rm = Config::Instance()->DisableReactiveMask.value_or(true); ImGui::Checkbox("Disable Reactive Mask", &rm))
                             {
                                 Config::Instance()->DisableReactiveMask = rm;
@@ -1546,6 +1643,12 @@ public:
                                 }
                             }
                             ImGui::EndDisabled();
+                            if (accessToReactiveMask)
+                                ShowHelpMarker("Allows the use of a reactive mask\n"
+                                    "Keep in mind that a reactive mask sent to DLSS\n"
+                                    "will not produce a good image in combination with FSR/XeSS");
+                            else
+                                ShowHelpMarker("Option disabled because tha game doesn't provide a reactive mask");
                         }
 
                         ImGui::EndTable();
