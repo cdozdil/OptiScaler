@@ -1585,16 +1585,22 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
         // If EarlyBind no need to bind again
         if (oPresent_Dx12 == nullptr && Config::Instance()->HookD3D12.value_or(true))
         {
-            // Create device
-            ID3D12Device* device = nullptr;
-            D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
+            ID3D12Device* device = InDevice;
 
-            result = D3D12CreateDevice(NULL, featureLevel, IID_PPV_ARGS(&device));
-
-            if (result != S_OK)
+            if (device == nullptr)
             {
-                spdlog::error("ImGuiOverlayDx12::BindAll Dx12 D3D12CreateDevice: {0:X}", (unsigned long)result);
-                break;
+                D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
+
+                if (oD3D12CreateDevice == nullptr)
+                    result = D3D12CreateDevice(NULL, featureLevel, IID_PPV_ARGS(&device));
+                else
+                    result = oD3D12CreateDevice(NULL, featureLevel, IID_PPV_ARGS(&device));
+
+                if (result != S_OK)
+                {
+                    spdlog::error("ImGuiOverlayDx12::BindAll Dx12 D3D12CreateDevice: {0:X}", (unsigned long)result);
+                    break;
+                }
             }
 
             // Create queue
