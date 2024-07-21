@@ -542,11 +542,7 @@ public:
         for (size_t i = 0; i < Config::Instance()->NVNGX_FeatureInfo_Paths.size(); ++i)
         {
             paths[i] = Config::Instance()->NVNGX_FeatureInfo_Paths[i].c_str();
-
-            std::string str(Config::Instance()->NVNGX_FeatureInfo_Paths[i].length(), 0);
-            std::transform(Config::Instance()->NVNGX_FeatureInfo_Paths[i].begin(), Config::Instance()->NVNGX_FeatureInfo_Paths[i].end(), str.begin(), [](wchar_t c) { return (char)c; });
-
-            spdlog::debug("NVNGXProxy::GetFeatureCommonInfo paths[{0}]: {1}", i, str);
+            spdlog::debug("NVNGXProxy::GetFeatureCommonInfo paths[{0}]: {1}", i, wstring_to_string(Config::Instance()->NVNGX_FeatureInfo_Paths[i]));
         }
 
         fcInfo->PathListInfo.Path = paths;

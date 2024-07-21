@@ -32,11 +32,8 @@ Config::Config(std::wstring fileName)
 bool Config::Reload(std::filesystem::path iniPath)
 {
     auto pathWStr = iniPath.wstring();
-    std::string pathStr(pathWStr.length(), 0);
-    std::transform(pathWStr.begin(), pathWStr.end(), pathStr.begin(), [](wchar_t c) { return (char)c; });
 
-    spdlog::info("Trying to load ini from: {0}", pathStr);
-
+    spdlog::info("Trying to load ini from: {0}", wstring_to_string(pathWStr));
     if (ini.LoadFile(iniPath.c_str()) == SI_OK)
     {
         // Upscalers
@@ -601,10 +598,8 @@ bool Config::SaveIni()
     }
 
     auto pathWStr = absoluteFileName.wstring();
-    std::string pathStr(pathWStr.length(), 0);
-    std::transform(pathWStr.begin(), pathWStr.end(), pathStr.begin(), [](wchar_t c) { return (char)c; });
 
-    spdlog::info("Trying to save ini to: {0}", pathStr);
+    spdlog::info("Trying to save ini to: {0}", wstring_to_string(pathWStr));
 
     return ini.SaveFile(absoluteFileName.wstring().c_str()) >= 0;
 }

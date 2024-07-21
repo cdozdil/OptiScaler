@@ -60,10 +60,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
     spdlog::info("NVSDK_NGX_D3D11_Init_Ext SDK: {0:x}", (int)InSDKVersion);
     std::wstring string(InApplicationDataPath);
 
-    std::string str(string.length(), 0);
-    std::transform(string.begin(), string.end(), str.begin(), [](wchar_t c) { return (char)c; });
-
-    spdlog::debug("NVSDK_NGX_D3D11_Init_Ext InApplicationDataPath {0}", str);
+    spdlog::debug("NVSDK_NGX_D3D11_Init_Ext InApplicationDataPath {0}", wstring_to_string(string));
 
     Config::Instance()->NVNGX_FeatureInfo_Paths.clear();
 
@@ -74,11 +71,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
             const wchar_t* path = InFeatureInfo->PathListInfo.Path[i];
             std::wstring iniPathW(path);
 
-            std::string iniPath(iniPathW.length(), 0);
-            std::transform(iniPathW.begin(), iniPathW.end(), iniPath.begin(), [](wchar_t c) { return (char)c; });
-
             Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(iniPathW);
-            spdlog::debug("NVSDK_NGX_D3D11_Init_Ext PathListInfo[{0}]: {1}", i, iniPath);
+            spdlog::debug("NVSDK_NGX_D3D11_Init_Ext PathListInfo[{0}]: {1}", i, wstring_to_string(iniPathW));
 
         }
     }

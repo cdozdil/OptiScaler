@@ -28,19 +28,11 @@
 inline HMODULE dllModule;
 inline DWORD processId;
 
-inline static std::string wstring_to_string(const std::wstring& wstr)
+inline static std::string wstring_to_string(const std::wstring& wide_str) 
 {
-    size_t len = std::wcstombs(nullptr, wstr.c_str(), 0);
-
-    if (len == static_cast<size_t>(-1))
-    {
-        throw std::runtime_error("Conversion error");
-    }
-
-    std::vector<char> str(len + 1);
-    std::wcstombs(str.data(), wstr.c_str(), len + 1);
-
-    return std::string(str.data());
+    std::string str(wide_str.length(), 0);
+    std::transform(wide_str.begin(), wide_str.end(), str.begin(), [](wchar_t c) { return (char)c; });
+    return str;
 }
 
 inline static std::wstring string_to_wstring(const std::string& str)

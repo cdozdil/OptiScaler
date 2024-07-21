@@ -98,22 +98,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InA
     }
 
     spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InApplicationId: {0}", InApplicationId);
-    spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InSDKVersion: {0:x}", (unsigned int)InSDKVersion);
+    spdlog::info("NVSDK_NGX_VULKAN_Init_Ext2 InSDKVersion: {0:x}", (UINT)InSDKVersion);
     std::wstring string(InApplicationDataPath);
 
-    std::string str(string.length(), 0);
-    std::transform(string.begin(), string.end(), str.begin(), [](wchar_t c) { return (char)c; });
-
-    spdlog::debug("NVSDK_NGX_VULKAN_Init_Ext2 InApplicationDataPath {0}", str);
+    spdlog::debug("NVSDK_NGX_VULKAN_Init_Ext2 InApplicationDataPath {0}", wstring_to_string(string));
 
     if (Config::Instance()->NVNGX_FeatureInfo_Paths.size() > 0)
     {
         for (size_t i = 0; i < Config::Instance()->NVNGX_FeatureInfo_Paths.size(); ++i)
         {
-            std::string str(Config::Instance()->NVNGX_FeatureInfo_Paths[i].length(), 0);
-            std::transform(Config::Instance()->NVNGX_FeatureInfo_Paths[i].begin(), Config::Instance()->NVNGX_FeatureInfo_Paths[i].end(), str.begin(), [](wchar_t c) { return (char)c; });
-
-            spdlog::debug("NVSDK_NGX_VULKAN_Init_Ext2 PathListInfo[{0}]: {1}", i, str);
+            spdlog::debug("NVSDK_NGX_VULKAN_Init_Ext2 PathListInfo[{0}]: {1}", i, wstring_to_string(Config::Instance()->NVNGX_FeatureInfo_Paths[i]));
         }
     }
 

@@ -1424,7 +1424,7 @@ static bool CheckDx12(ID3D12Device* InDevice)
 
             if (result != S_OK)
             {
-                spdlog::error("ImGuiOverlayDx12::CheckDx12 D3D12CreateDevice: {0:X}", (unsigned long)result);
+                spdlog::error("ImGuiOverlayDx12::CheckDx12 D3D12CreateDevice: {0:X}", (UINT)result);
                 return false;
             }
         }
@@ -1435,7 +1435,7 @@ static bool CheckDx12(ID3D12Device* InDevice)
         result = device->CreateCommandQueue(&desc, IID_PPV_ARGS(&cq));
         if (result != S_OK)
         {
-            spdlog::error("ImGuiOverlayDx12::CheckDx12 CreateCommandQueue: {0:X}", (unsigned long)result);
+            spdlog::error("ImGuiOverlayDx12::CheckDx12 CreateCommandQueue: {0:X}", (UINT)result);
             return false;
         }
 
@@ -1484,7 +1484,7 @@ static bool CheckFSR3()
 
             if (offxCreateFrameinterpolationSwapchainForHwndDX12_Mod != nullptr)
             {
-                spdlog::info("ImGuiOverlayDx12::CheckMods Uniscaler's ffxCreateFrameinterpolationSwapchainForHwndDX12 found");
+                spdlog::info("ImGuiOverlayDx12::CheckFSR3 Uniscaler's ffxCreateFrameinterpolationSwapchainForHwndDX12 found");
                 _bindedFSR3_Uniscaler = true;
                 _bindedFSR3_Mod = true;
             }
@@ -1496,7 +1496,7 @@ static bool CheckFSR3()
 
                 if (offxCreateFrameinterpolationSwapchainForHwndDX12_Mod != nullptr)
                 {
-                    spdlog::info("ImGuiOverlayDx12::CheckMods Nukem's ffxCreateFrameinterpolationSwapchainForHwndDX12 found");
+                    spdlog::info("ImGuiOverlayDx12::CheckFSR3 Nukem's ffxCreateFrameinterpolationSwapchainForHwndDX12 found");
                     _bindedFSR3_Mod = true;
                 }
             }
@@ -1523,7 +1523,7 @@ static bool CheckFSR3()
             // Hook FSR3 ffxGetDX12SwapchainPtr methods
             if (offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3)
             {
-                spdlog::info("ImGuiOverlayDx12::CheckMods FSR3's ffxCreateFrameinterpolationSwapchainForHwndDX12 found");
+                spdlog::info("ImGuiOverlayDx12::CheckFSR3 FSR3's ffxCreateFrameinterpolationSwapchainForHwndDX12 found");
                 _bindedFSR3_Native = true;
 
                 DetourTransactionBegin();
@@ -1542,7 +1542,7 @@ static bool CheckFSR3()
 
                 if (oFfxCreateContext_FSR3)
                 {
-                    spdlog::info("ImGuiOverlayDx12::CheckMods FSR3's ffxCreateContext found");
+                    spdlog::info("ImGuiOverlayDx12::CheckFSR3 FSR3's ffxCreateContext found");
                     _bindedFSR3_Native = true;
 
                     DetourTransactionBegin();
@@ -1573,7 +1573,6 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 
     do
     {
-
         if (!CheckDx12(InDevice))
             break;
 

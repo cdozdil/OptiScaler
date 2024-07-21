@@ -228,8 +228,7 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
     for (size_t i = 0; i < lcaseLibName.size(); i++)
         lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
-    std::string lcaseLibNameA(lcaseLibName.length(), 0);
-    std::transform(lcaseLibName.begin(), lcaseLibName.end(), lcaseLibNameA.begin(), [](wchar_t c) { return (char)c; });
+    auto lcaseLibNameA = wstring_to_string(lcaseLibName);
 
 #ifdef DEBUG
     spdlog::trace("hkLoadLibraryW call: {0}", lcaseLibNameA);
@@ -452,8 +451,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
     for (size_t i = 0; i < lcaseLibName.size(); i++)
         lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
-    std::string lcaseLibNameA(lcaseLibName.length(), 0);
-    std::transform(lcaseLibName.begin(), lcaseLibName.end(), lcaseLibNameA.begin(), [](wchar_t c) { return (char)c; });
+    auto lcaseLibNameA = wstring_to_string(lcaseLibName);
 
 #ifdef DEBUG
     spdlog::trace("hkLoadLibraryExW call: {0}", lcaseLibNameA);

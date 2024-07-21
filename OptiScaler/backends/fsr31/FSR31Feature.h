@@ -23,15 +23,13 @@ inline static std::string ResultToString(ffxReturnCode_t result)
 inline static void FfxLogCallback(uint32_t type, const wchar_t* message)
 {
     std::wstring string(message);
-    std::string str(string.length(), 0);
-    std::transform(string.begin(), string.end(), str.begin(), [](wchar_t c) { return (char)c; });
 
     //if (type == FFX_API_MESSAGE_TYPE_ERROR)
     //	spdlog::error("FSR31Feature::LogCallback FSR Runtime: {0}", str);
     //else if (type == FFX_API_MESSAGE_TYPE_WARNING)
     //	spdlog::warn("FSR31Feature::LogCallback FSR Runtime: {0}", str);
     //else
-    spdlog::debug("FSR31Feature::LogCallback FSR Runtime: {0}", str);
+    spdlog::debug("FSR31Feature::LogCallback FSR Runtime: {0}", wstring_to_string(string));
 }
 
 class FSR31Feature : public virtual IFeature
