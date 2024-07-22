@@ -1,3 +1,18 @@
+LIBRARY "DXGI"
+EXPORTS  
+CreateDXGIFactory = _CreateDXGIFactory 
+CreateDXGIFactory1 = _CreateDXGIFactory1 
+CreateDXGIFactory2 = _CreateDXGIFactory2 
+DXGID3D10CreateDevice = _DXGID3D10CreateDevice 
+DXGID3D10CreateLayeredDevice = _DXGID3D10CreateLayeredDevice 
+DXGID3D10GetLayeredDeviceSize = _DXGID3D10GetLayeredDeviceSize 
+DXGID3D10ETWRundown = _DXGID3D10ETWRundown 
+DXGID3D10RegisterLayers = _DXGID3D10RegisterLayers 
+DXGIDumpJournal = _DXGIDumpJournal 
+DXGIDeclareAdapterRemovalSupport = _DXGIDeclareAdapterRemovalSupport 
+DXGIGetDebugInterface1 = _DXGIGetDebugInterface1 
+DXGIReportAdapterConfiguration = _DXGIReportAdapterConfiguration 
+
 LIBRARY "wininet"
 EXPORTS
 AppCacheCheckManifest = _AppCacheCheckManifest
@@ -597,11 +612,3 @@ WinHttpWebSocketSend = _WinHttpWebSocketSend
 WinHttpWebSocketShutdown = _WinHttpWebSocketShutdown
 WinHttpWriteData = _WinHttpWriteData
 WinHttpWriteProxySettings = _WinHttpWriteProxySettings
-
-LIBRARY "DXGI"
-EXPORTS  
-CreateDXGIFactory = _CreateDXGIFactory
-CreateDXGIFactory1 = _CreateDXGIFactory1
-CreateDXGIFactory2 = _CreateDXGIFactory2
-DXGIDeclareAdapterRemovalSupport = _DXGIDeclareAdapterRemovalSupport
-DXGIGetDebugInterface1 = _DXGIGetDebugInterface1

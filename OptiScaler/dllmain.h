@@ -1274,20 +1274,54 @@ struct winhttp_dll
 struct dxgi_dll
 {
     HMODULE dll = nullptr;
+    
     PFN_CREATE_DXGI_FACTORY CreateDxgiFactory;
     PFN_CREATE_DXGI_FACTORY CreateDxgiFactory1;
     PFN_CREATE_DXGI_FACTORY_2 CreateDxgiFactory2;
-    PFN_DECLARE_ADAPTER_REMOVAL_SUPPORT DeclareAdapterRemovalSupport;
-    PFN_GET_DEBUG_INTERFACE GetDebugInterface;
+
+    FARPROC dxgiDeclareAdapterRemovalSupport;
+    FARPROC dxgiGetDebugInterface;
+    FARPROC dxgiApplyCompatResolutionQuirking = nullptr;
+    FARPROC dxgiCompatString = nullptr;
+    FARPROC dxgiCompatValue = nullptr;
+    FARPROC dxgiD3D10CreateDevice = nullptr;
+    FARPROC dxgiD3D10CreateLayeredDevice = nullptr;
+    FARPROC dxgiD3D10GetLayeredDeviceSize = nullptr;
+    FARPROC dxgiD3D10RegisterLayers = nullptr;
+    FARPROC dxgiD3D10ETWRundown = nullptr;
+    FARPROC dxgiDumpJournal = nullptr;
+    FARPROC dxgiReportAdapterConfiguration = nullptr;
+    FARPROC dxgiPIXBeginCapture = nullptr;
+    FARPROC dxgiPIXEndCapture = nullptr;
+    FARPROC dxgiPIXGetCaptureState = nullptr;
+    FARPROC dxgiSetAppCompatStringPointer = nullptr;
+    FARPROC dxgiUpdateHMDEmulationStatus = nullptr;
 
     void LoadOriginalLibrary(HMODULE module)
     {
-        dll = module;
+        dll = module;        
+
         CreateDxgiFactory = (PFN_CREATE_DXGI_FACTORY)GetProcAddress(module, "CreateDXGIFactory");
         CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY)GetProcAddress(module, "CreateDXGIFactory1");
         CreateDxgiFactory2 = (PFN_CREATE_DXGI_FACTORY_2)GetProcAddress(module, "CreateDXGIFactory2");
-        DeclareAdapterRemovalSupport = (PFN_DECLARE_ADAPTER_REMOVAL_SUPPORT)GetProcAddress(module, "DXGIDeclareAdapterRemovalSupport");
-        GetDebugInterface = (PFN_GET_DEBUG_INTERFACE)GetProcAddress(module, "DXGIGetDebugInterface1");
+
+        dxgiDeclareAdapterRemovalSupport =GetProcAddress(module, "DXGIDeclareAdapterRemovalSupport");
+        dxgiGetDebugInterface = GetProcAddress(module, "DXGIGetDebugInterface1");
+        dxgiApplyCompatResolutionQuirking = GetProcAddress(module, "ApplyCompatResolutionQuirking");
+        dxgiCompatString = GetProcAddress(module, "CompatString");
+        dxgiCompatValue = GetProcAddress(module, "CompatValue");
+        dxgiD3D10CreateDevice = GetProcAddress(module, "DXGID3D10CreateDevice");
+        dxgiD3D10CreateLayeredDevice = GetProcAddress(module, "DXGID3D10CreateLayeredDevice");
+        dxgiD3D10GetLayeredDeviceSize = GetProcAddress(module, "DXGID3D10GetLayeredDeviceSize");
+        dxgiD3D10RegisterLayers = GetProcAddress(module, "DXGID3D10RegisterLayers");
+        dxgiD3D10ETWRundown = GetProcAddress(module, "DXGID3D10ETWRundown");
+        dxgiDumpJournal = GetProcAddress(module, "DXGIDumpJournal");
+        dxgiReportAdapterConfiguration = GetProcAddress(module, "DXGIReportAdapterConfiguration");
+        dxgiPIXBeginCapture = GetProcAddress(module, "PIXBeginCapture");
+        dxgiPIXEndCapture = GetProcAddress(module, "PIXEndCapture");
+        dxgiPIXGetCaptureState = GetProcAddress(module, "PIXGetCaptureState");
+        dxgiSetAppCompatStringPointer = GetProcAddress(module, "SetAppCompatStringPointer");
+        dxgiUpdateHMDEmulationStatus = GetProcAddress(module, "UpdateHMDEmulationStatus");
     }
 } dxgi;
 
@@ -1300,7 +1334,7 @@ bool SkipSpoofing()
     auto result = Config::Instance()->dxgiSkipSpoofing && Config::Instance()->DxgiSkipSpoofForUpscalers.value_or(true);
 
     if (result)
-        spdlog::info("SkipSpoofing dxgiSkipSpoofing true, skipping spoofing");
+        spdlog::trace("SkipSpoofing dxgiSkipSpoofing true, skipping spoofing");
 
     if (!result && Config::Instance()->DxgiBlacklist.has_value() && !Config::Instance()->IsRunningOnLinux)
     {
@@ -1366,7 +1400,9 @@ HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
         std::memcpy(pDesc->Description, szName, 50);
 
+#ifdef _DEBUG
         spdlog::debug("detGetDesc3 spoofing");
+#endif
     }
 
     AttachToAdapter(This);
@@ -1389,7 +1425,9 @@ HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
         std::memcpy(pDesc->Description, szName, 50);
 
+#ifdef _DEBUG
         spdlog::debug("detGetDesc2 spoofing");
+#endif
     }
 
     AttachToAdapter(This);
@@ -1412,7 +1450,9 @@ HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
         std::memcpy(pDesc->Description, szName, 50);
 
+#ifdef _DEBUG
         spdlog::debug("detGetDesc1 spoofing");
+#endif
     }
 
     AttachToAdapter(This);
@@ -1435,7 +1475,9 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
         std::memcpy(pDesc->Description, szName, 50);
 
+#ifdef _DEBUG
         spdlog::debug("detGetDesc spoofing");
+#endif
     }
 
     AttachToAdapter(This);
@@ -1556,12 +1598,100 @@ HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFacto
 
 HRESULT _DXGIDeclareAdapterRemovalSupport()
 {
-    return dxgi.DeclareAdapterRemovalSupport();
+    spdlog::debug("_DXGIDeclareAdapterRemovalSupport");
+    return dxgi.dxgiDeclareAdapterRemovalSupport();
 }
 
-HRESULT _DXGIGetDebugInterface1(UINT Flags, REFIID riid, void** ppDebug)
+HRESULT _DXGIGetDebugInterface1()
 {
-    return dxgi.GetDebugInterface(Flags, riid, ppDebug);
+    spdlog::debug("_DXGIGetDebugInterface1");
+    return dxgi.dxgiGetDebugInterface();
+}
+
+void _ApplyCompatResolutionQuirking() 
+{ 
+    spdlog::debug("_ApplyCompatResolutionQuirking");
+    dxgi.dxgiApplyCompatResolutionQuirking();
+}
+
+void _CompatString() 
+{ 
+    spdlog::debug("_CompatString");
+    dxgi.dxgiCompatString();
+}
+
+void _CompatValue() 
+{ 
+    spdlog::debug("_CompatValue");
+    dxgi.dxgiCompatValue();
+}
+
+void _DXGID3D10CreateDevice() 
+{ 
+    spdlog::debug("_DXGID3D10CreateDevice");
+    dxgi.dxgiD3D10CreateDevice();
+}
+
+void _DXGID3D10CreateLayeredDevice() 
+{ 
+    spdlog::debug("_DXGID3D10CreateLayeredDevice");
+    dxgi.dxgiD3D10CreateLayeredDevice();
+}
+
+void _DXGID3D10GetLayeredDeviceSize() 
+{ 
+    spdlog::debug("_DXGID3D10GetLayeredDeviceSize");
+    dxgi.dxgiD3D10GetLayeredDeviceSize();
+}
+
+void _DXGID3D10RegisterLayers() 
+{ 
+    spdlog::debug("_DXGID3D10RegisterLayers");
+    dxgi.dxgiD3D10RegisterLayers();
+}
+
+void _DXGID3D10ETWRundown()
+{ 
+    spdlog::debug("_DXGID3D10ETWRundown");
+    dxgi.dxgiD3D10ETWRundown();
+}
+
+void _DXGIDumpJournal() 
+{ 
+    spdlog::debug("_DXGIDumpJournal");
+    dxgi.dxgiDumpJournal();
+}
+
+void _DXGIReportAdapterConfiguration() 
+{ 
+    spdlog::debug("_DXGIReportAdapterConfiguration");
+    dxgi.dxgiReportAdapterConfiguration();
+}
+
+void _PIXBeginCapture() 
+{ 
+    spdlog::debug("_PIXBeginCapture");
+    dxgi.dxgiPIXBeginCapture();
+}
+
+void _PIXEndCapture() 
+{ 
+    dxgi.dxgiPIXEndCapture();
+}
+
+void _PIXGetCaptureState() 
+{ 
+    dxgi.dxgiPIXGetCaptureState();
+}
+
+void _SetAppCompatStringPointer() 
+{ 
+    dxgi.dxgiSetAppCompatStringPointer();
+}
+
+void _UpdateHMDEmulationStatus() 
+{ 
+    dxgi.dxgiUpdateHMDEmulationStatus();
 }
 
 #pragma endregion
