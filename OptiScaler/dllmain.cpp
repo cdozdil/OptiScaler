@@ -17,6 +17,7 @@ typedef HMODULE(WINAPI* PFN_LoadLibraryA)(LPCSTR lpLibFileName);
 typedef HMODULE(WINAPI* PFN_LoadLibraryW)(LPCWSTR lpLibFileName);
 typedef HMODULE(WINAPI* PFN_LoadLibraryExA)(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 typedef HMODULE(WINAPI* PFN_LoadLibraryExW)(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
+typedef FARPROC(WINAPI* PFN_GetProcAddress)(HMODULE hModule, LPCSTR lpProcName);
 typedef const char* (CDECL* PFN_wine_get_version)(void);
 
 typedef struct VkDummyProps
@@ -30,6 +31,7 @@ static PFN_LoadLibraryA o_LoadLibraryA = nullptr;
 static PFN_LoadLibraryW o_LoadLibraryW = nullptr;
 static PFN_LoadLibraryExA o_LoadLibraryExA = nullptr;
 static PFN_LoadLibraryExW o_LoadLibraryExW = nullptr;
+static PFN_GetProcAddress o_GetProcAddress = nullptr;
 static PFN_vkGetPhysicalDeviceProperties o_vkGetPhysicalDeviceProperties = nullptr;
 static PFN_vkGetPhysicalDeviceProperties2 o_vkGetPhysicalDeviceProperties2 = nullptr;
 static PFN_vkGetPhysicalDeviceProperties2KHR o_vkGetPhysicalDeviceProperties2KHR = nullptr;
@@ -111,6 +113,14 @@ static HMODULE LoadNvApi()
 
 #pragma region Load & Free Library hooks
 
+static FARPROC hkGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
+{
+    if (hModule == dllModule)
+        spdlog::info("hkGetProcAddress trying to get process address of {0}", lpProcName);
+
+    return o_GetProcAddress(hModule, lpProcName);
+}
+
 static BOOL hkFreeLibrary(HMODULE lpLibrary)
 {
     if (lpLibrary == nullptr)
@@ -163,6 +173,10 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
             (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
         {
             spdlog::info("hkLoadLibraryA nvngx call: {0}, returning this dll!", libName);
+
+            if (!dontCount)
+                loadCount++;
+
             return dllModule;
         }
     }
@@ -252,6 +266,10 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
             (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
         {
             spdlog::info("hkLoadLibraryW nvngx call: {0}, returning this dll!", lcaseLibNameA);
+
+            if (!dontCount)
+                loadCount++;
+
             return dllModule;
         }
     }
@@ -340,6 +358,10 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
             (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
         {
             spdlog::info("hkLoadLibraryExA nvngx call: {0}, returning this dll!", libName);
+
+            if (!dontCount)
+                loadCount++;
+
             return dllModule;
         }
 
@@ -349,6 +371,10 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
             (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
         {
             spdlog::info("hkLoadLibraryExA nvngx call: {0}, returning this dll!", libName);
+
+            if (!dontCount)
+                loadCount++;
+
             return dllModule;
         }
     }
@@ -475,6 +501,10 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
             (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
         {
             spdlog::info("hkLoadLibraryExW nvngx call: {0}, returning this dll!", lcaseLibNameA);
+
+            if (!dontCount)
+                loadCount++;
+
             return dllModule;
         }
 
@@ -484,6 +514,10 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
             (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
         {
             spdlog::info("hkLoadLibraryExW nvngx call: {0}, returning this dll!", lcaseLibNameA);
+
+            if (!dontCount)
+                loadCount++;
+
             return dllModule;
         }
     }
@@ -828,6 +862,12 @@ static void DetachHooks()
             o_LoadLibraryExW = nullptr;
         }
 
+        if (o_GetProcAddress)
+        {
+            DetourDetach(&(PVOID&)o_GetProcAddress, hkGetProcAddress);
+            o_GetProcAddress = nullptr;
+        }
+
         if (o_vkGetPhysicalDeviceProperties)
         {
             DetourDetach(&(PVOID&)o_vkGetPhysicalDeviceProperties, hkvkGetPhysicalDeviceProperties);
@@ -858,13 +898,11 @@ static void DetachHooks()
             o_vkEnumerateDeviceExtensionProperties = nullptr;
         }
 
-
         if (o_vkCreateDevice)
         {
             DetourDetach(&(PVOID&)o_vkCreateDevice, hkvkCreateDevice);
             o_vkCreateDevice = nullptr;
         }
-
 
         if (o_vkCreateInstance)
         {
@@ -888,6 +926,9 @@ static void AttachHooks()
         o_LoadLibraryW = reinterpret_cast<PFN_LoadLibraryW>(DetourFindFunction("kernel32.dll", "LoadLibraryW"));
         o_LoadLibraryExA = reinterpret_cast<PFN_LoadLibraryExA>(DetourFindFunction("kernel32.dll", "LoadLibraryExA"));
         o_LoadLibraryExW = reinterpret_cast<PFN_LoadLibraryExW>(DetourFindFunction("kernel32.dll", "LoadLibraryExW"));
+#ifdef _DEBUG
+        o_GetProcAddress = reinterpret_cast<PFN_GetProcAddress>(DetourFindFunction("kernel32.dll", "GetProcAddress"));
+#endif // DEBUG
 
         if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
         {
@@ -910,6 +951,9 @@ static void AttachHooks()
 
             if (o_LoadLibraryExW)
                 DetourAttach(&(PVOID&)o_LoadLibraryExW, hkLoadLibraryExW);
+
+            if (o_GetProcAddress)
+                DetourAttach(&(PVOID&)o_GetProcAddress, hkGetProcAddress);
 
             DetourTransactionCommit();
         }
@@ -943,10 +987,10 @@ static void AttachHooks()
 
     if (Config::Instance()->VulkanExtensionSpoofing.value_or(false) && o_vkEnumerateInstanceExtensionProperties == nullptr)
     {
-        o_vkEnumerateInstanceExtensionProperties = reinterpret_cast<PFN_vkEnumerateInstanceExtensionProperties>(DetourFindFunction("vulkan-1.dll", "vkEnumerateInstanceExtensionProperties"));
-        o_vkEnumerateDeviceExtensionProperties = reinterpret_cast<PFN_vkEnumerateDeviceExtensionProperties>(DetourFindFunction("vulkan-1.dll", "vkEnumerateDeviceExtensionProperties"));
         o_vkCreateDevice = reinterpret_cast<PFN_vkCreateDevice>(DetourFindFunction("vulkan-1.dll", "vkCreateDevice"));
         o_vkCreateInstance = reinterpret_cast<PFN_vkCreateInstance>(DetourFindFunction("vulkan-1.dll", "vkCreateInstance"));
+        o_vkEnumerateInstanceExtensionProperties = reinterpret_cast<PFN_vkEnumerateInstanceExtensionProperties>(DetourFindFunction("vulkan-1.dll", "vkEnumerateInstanceExtensionProperties"));
+        o_vkEnumerateDeviceExtensionProperties = reinterpret_cast<PFN_vkEnumerateDeviceExtensionProperties>(DetourFindFunction("vulkan-1.dll", "vkEnumerateDeviceExtensionProperties"));
 
         if (o_vkEnumerateInstanceExtensionProperties != nullptr || o_vkEnumerateDeviceExtensionProperties != nullptr)
         {
@@ -1319,12 +1363,19 @@ static void CheckWorkingMode()
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
+
     switch (ul_reason_for_call)
     {
         case DLL_PROCESS_ATTACH:
-            loadCount++;
+            if (loadCount > 1)
+            {
+                spdlog::info("DllMain DLL_PROCESS_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
+                return TRUE;
+            }
 
             DisableThreadLibraryCalls(hModule);
+
+            loadCount++;
 
             dllModule = hModule;
             processId = GetCurrentProcessId();
@@ -1336,8 +1387,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             // Set log level to debug
             if (Config::Instance()->LogLevel.value_or(2) > 1)
                 Config::Instance()->LogLevel = 1;
-
-            //Config::Instance()->LogSingleFile = false;
 #endif
 
             PrepareLogger();
@@ -1400,11 +1449,29 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             break;
 
         case DLL_PROCESS_DETACH:
+#ifdef _DEBUG
+            spdlog::trace("DllMain DLL_PROCESS_DETACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
+#endif
+            spdlog::info("Unloading OptiScaler");
             CloseLogger();
             DetachHooks();
+
+            break;
+
+        case DLL_THREAD_ATTACH:
+#ifdef _DEBUG
+            spdlog::trace("DllMain DLL_THREAD_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
+#endif
+            break;
+
+        case DLL_THREAD_DETACH:
+#ifdef _DEBUG
+            spdlog::trace("DllMain DLL_THREAD_DETACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
+#endif
             break;
 
         default:
+            spdlog::info("DllMain reason: {0:X}", ul_reason_for_call);
             break;
     }
 
