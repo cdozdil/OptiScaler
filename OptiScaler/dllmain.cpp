@@ -1260,45 +1260,46 @@ static void CheckWorkingMode()
         }
     }
 
-    if (!Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
-    {
-        spdlog::info("HookDxgiFile is enabled loading dxgi.dll");
+    // Disabled DXGI late hooking, looks like not helpful and breaking compability with other mods
+    //if (!Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
+    //{
+    //    spdlog::info("HookDxgiFile is enabled loading dxgi.dll");
 
-        do
-        {
-            auto pluginFilePath = pluginPath / L"dxgi.dll";
-            auto dxgiDll = LoadLibrary(pluginFilePath.wstring().c_str());
+    //    do
+    //    {
+    //        auto pluginFilePath = pluginPath / L"dxgi.dll";
+    //        auto dxgiDll = LoadLibrary(pluginFilePath.wstring().c_str());
 
-            if (dxgiDll != nullptr)
-            {
-                spdlog::info("HookDxgiFile is enabled, original dll loaded from plugin folder");
-                dxgi.LoadOriginalLibrary(dxgiDll);
-                break;
-            }
+    //        if (dxgiDll != nullptr)
+    //        {
+    //            spdlog::info("HookDxgiFile is enabled, original dll loaded from plugin folder");
+    //            dxgi.LoadOriginalLibrary(dxgiDll);
+    //            break;
+    //        }
 
-            dxgiDll = LoadLibrary(L"dxgi-original.dll");
+    //        dxgiDll = LoadLibrary(L"dxgi-original.dll");
 
-            if (dxgiDll != nullptr)
-            {
-                spdlog::info("HookDxgiFile is enabled, dxgi-original.dll loaded");
-                dxgi.LoadOriginalLibrary(dxgiDll);
-                break;
-            }
+    //        if (dxgiDll != nullptr)
+    //        {
+    //            spdlog::info("HookDxgiFile is enabled, dxgi-original.dll loaded");
+    //            dxgi.LoadOriginalLibrary(dxgiDll);
+    //            break;
+    //        }
 
-            auto sysFilePath = sysPath / L"dxgi.dll";
-            dxgiDll = LoadLibrary(sysFilePath.wstring().c_str());
+    //        auto sysFilePath = sysPath / L"dxgi.dll";
+    //        dxgiDll = LoadLibrary(sysFilePath.wstring().c_str());
 
-            if (dxgiDll != nullptr)
-            {
-                spdlog::info("HookDxgiFile is enabled, system dll loaded");
-                dxgi.LoadOriginalLibrary(dxgiDll);
-                break;
-            }
+    //        if (dxgiDll != nullptr)
+    //        {
+    //            spdlog::info("HookDxgiFile is enabled, system dll loaded");
+    //            dxgi.LoadOriginalLibrary(dxgiDll);
+    //            break;
+    //        }
 
-            Config::Instance()->DxgiSpoofing = false;
+    //        Config::Instance()->DxgiSpoofing = false;
 
-        } while (false);
-    }
+    //    } while (false);
+    //}
 
     if (dll != nullptr)
     {
