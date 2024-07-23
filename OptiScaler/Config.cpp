@@ -72,9 +72,12 @@ bool Config::Reload(std::filesystem::path iniPath)
                 DLSSEnabled = readBool("DLSS", "Enabled");
 
             auto dlssLibraryPathA = readString("DLSS", "LibraryPath");
-
             if (dlssLibraryPathA.has_value())
                 DLSSLibrary = string_to_wstring(dlssLibraryPathA.value());
+
+            dlssLibraryPathA = readString("DLSS", "NVNGX_DLSS_Path");
+            if (dlssLibraryPathA.has_value())
+                NVNGX_DLSS_Library = string_to_wstring(dlssLibraryPathA.value());
 
             RenderPresetOverride = readBool("DLSS", "RenderPresetOverride");
             RenderPresetDLAA = readInt("DLSS", "RenderPresetDLAA");
@@ -463,6 +466,7 @@ bool Config::SaveIni()
     {
         ini.SetValue("DLSS", "Enabled", GetBoolValue(Instance()->DLSSEnabled).c_str());
         ini.SetValue("DLSS", "LibraryPath", Instance()->DLSSLibrary.has_value() ? wstring_to_string(Instance()->DLSSLibrary.value()).c_str() : "auto");
+        ini.SetValue("DLSS", "NVNGX_DLSS_Library", Instance()->NVNGX_DLSS_Library.has_value() ? wstring_to_string(Instance()->NVNGX_DLSS_Library.value()).c_str() : "auto");
         ini.SetValue("DLSS", "RenderPresetOverride", GetBoolValue(Instance()->RenderPresetOverride).c_str());
         ini.SetValue("DLSS", "RenderPresetDLAA", GetIntValue(Instance()->RenderPresetDLAA).c_str());
         ini.SetValue("DLSS", "RenderPresetUltraQuality", GetIntValue(Instance()->RenderPresetUltraQuality).c_str());

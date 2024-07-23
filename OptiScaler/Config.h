@@ -44,6 +44,7 @@ public:
 	//DLSS
 	std::optional<bool> DLSSEnabled;
 	std::optional<std::wstring> DLSSLibrary;
+	std::optional<std::wstring> NVNGX_DLSS_Library;
 	std::optional<bool> RenderPresetOverride;
 	std::optional<int> RenderPresetDLAA;
 	std::optional<int> RenderPresetUltraQuality;

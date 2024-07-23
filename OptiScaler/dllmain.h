@@ -1331,7 +1331,7 @@ struct dxgi_dll
 
 bool SkipSpoofing()
 {
-    auto result = Config::Instance()->dxgiSkipSpoofing && Config::Instance()->DxgiSkipSpoofForUpscalers.value_or(true);
+    auto result = !Config::Instance()->DxgiSpoofing.value_or(true) || (Config::Instance()->dxgiSkipSpoofing && Config::Instance()->DxgiSkipSpoofForUpscalers.value_or(true));
 
     if (result)
         spdlog::trace("SkipSpoofing dxgiSkipSpoofing true, skipping spoofing");
