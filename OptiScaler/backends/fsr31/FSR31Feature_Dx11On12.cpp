@@ -156,6 +156,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
 
         OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", Dx12Device, (TargetWidth() < DisplayWidth()));
         RCAS = std::make_unique<RCAS_Dx12>("RCAS", Dx12Device);
+        Bias = std::make_unique<Bias_Dx12>("Bias", Dx12Device);
     }
 
     if (!IsInited())
@@ -260,7 +261,24 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
     params.motionVectors = ffxApiGetResourceDX12(dx11Mv.Dx12Resource, FFX_API_RESOURCE_STATE_COMPUTE_READ);
     params.depth = ffxApiGetResourceDX12(dx11Depth.Dx12Resource, FFX_API_RESOURCE_STATE_COMPUTE_READ);
     params.exposure = ffxApiGetResourceDX12(dx11Exp.Dx12Resource, FFX_API_RESOURCE_STATE_COMPUTE_READ);
-    params.reactive = ffxApiGetResourceDX12(dx11Reactive.Dx12Resource, FFX_API_RESOURCE_STATE_COMPUTE_READ);
+
+    if (dx11Reactive.Dx12Resource != nullptr)
+    {
+        if (Config::Instance()->FsrUseMaskForTransparency.value_or(true))
+            params.transparencyAndComposition = ffxApiGetResourceDX12(dx11Reactive.Dx12Resource, FFX_API_RESOURCE_STATE_COMPUTE_READ);
+
+        if (Config::Instance()->DlssReactiveMaskBias.value_or(0.45f) > 0.0f && 
+            Bias->IsInit() && Bias->CreateBufferResource(Dx12Device, dx11Reactive.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
+        {
+            Bias->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+            if (Bias->Dispatch(Dx12Device, Dx12CommandList, dx11Reactive.Dx12Resource, Config::Instance()->DlssReactiveMaskBias.value_or(0.45f), Bias->Buffer()))
+            {
+                Bias->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                params.reactive = ffxApiGetResourceDX12(Bias->Buffer(), FFX_API_RESOURCE_STATE_COMPUTE_READ);
+            }
+        }
+    }
 
     // Output Scaling
     if (useSS)
@@ -380,7 +398,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
         (sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
         RCAS->CanRender())
     {
-        spdlog::debug("XeSSFeatureDx11::Evaluate Apply CAS");
+        spdlog::debug("FSR31FeatureDx11with12::Evaluate Apply CAS");
         if (params.output.resource != RCAS->Buffer())
             ResourceBarrier(Dx12CommandList, (ID3D12Resource*)params.output.resource,
                             D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);

@@ -51,6 +51,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             FsrCameraFar = readFloat("FSR", "CameraFar");
             FsrDebugView = readBool("FSR", "DebugView");
             Fsr3xIndex = readInt("FSR", "UpscalerIndex");
+            FsrUseMaskForTransparency = readBool("FSR", "UseReactiveMaskForTransparency");
         }
 
         // XeSS
@@ -227,6 +228,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             JitterCancellation = readBool("InitFlags", "JitterCancellation");
             DisplayResolution = readBool("InitFlags", "DisplayResolution");
             DisableReactiveMask = readBool("InitFlags", "DisableReactiveMask");
+            DlssReactiveMaskBias = readFloat("UpscaleRatio", "DlssReactiveMaskBias");
         }
 
 
@@ -452,6 +454,7 @@ bool Config::SaveIni()
         ini.SetValue("FSR", "CameraFar", GetFloatValue(Instance()->FsrCameraFar).c_str());
         ini.SetValue("FSR", "DebugView", GetBoolValue(Instance()->FsrDebugView).c_str());
         ini.SetValue("FSR", "UpscalerIndex", GetIntValue(Instance()->Fsr3xIndex).c_str());
+        ini.SetValue("FSR", "UseReactiveMaskForTransparency", GetBoolValue(Instance()->FsrUseMaskForTransparency).c_str());
     }
 
     // XeSS
@@ -519,6 +522,7 @@ bool Config::SaveIni()
         ini.SetValue("InitFlags", "JitterCancellation", GetBoolValue(Instance()->JitterCancellation).c_str());
         ini.SetValue("InitFlags", "DisplayResolution", GetBoolValue(Instance()->DisplayResolution).c_str());
         ini.SetValue("InitFlags", "DisableReactiveMask", GetBoolValue(Instance()->DisableReactiveMask).c_str());
+        ini.SetValue("InitFlags", "DlssReactiveMaskBias", GetFloatValue(Instance()->DlssReactiveMaskBias).c_str());
     }
 
     // Upscale Ratio Override

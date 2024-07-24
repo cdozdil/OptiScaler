@@ -2,6 +2,7 @@
 #include "IFeature_Dx11.h"
 #include "../imgui/Imgui_Dx11.h"
 #include "../rcas/RCAS_Dx12.h"
+#include "../bias/Bias_Dx12.h"
 
 #include <d3d12.h>
 #include <d3d11_4.h>
@@ -69,6 +70,7 @@ protected:
 
 	std::unique_ptr<BS_Dx12> OutputScaler = nullptr;
 	std::unique_ptr<RCAS_Dx12> RCAS = nullptr;
+	std::unique_ptr<Bias_Dx12> Bias = nullptr;
 
 	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel);
 	void GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter);

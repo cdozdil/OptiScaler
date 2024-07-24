@@ -117,6 +117,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
 
         OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", Dx12Device, (TargetWidth() < DisplayWidth()));
         RCAS = std::make_unique<RCAS_Dx12>("RCAS", Dx12Device);
+        Bias = std::make_unique<Bias_Dx12>("Bias", Dx12Device);
     }
 
     if (!IsInited())
@@ -219,7 +220,24 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
     params.motionVectors = ffxGetResourceDX12(&_context, dx11Mv.Dx12Resource, L"FSR2_Motion", FFX_RESOURCE_STATE_COMPUTE_READ);
     params.depth = ffxGetResourceDX12(&_context, dx11Depth.Dx12Resource, L"FSR2_Depth", FFX_RESOURCE_STATE_COMPUTE_READ);
     params.exposure = ffxGetResourceDX12(&_context, dx11Exp.Dx12Resource, L"FSR2_Exp", FFX_RESOURCE_STATE_COMPUTE_READ);
-    params.reactive = ffxGetResourceDX12(&_context, dx11Reactive.Dx12Resource, L"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
+
+    if (dx11Reactive.Dx12Resource != nullptr)
+    {
+        if (Config::Instance()->FsrUseMaskForTransparency.value_or(true))
+            params.transparencyAndComposition = ffxGetResourceDX12(&_context, dx11Reactive.Dx12Resource, (wchar_t*)L"FSR2_Transparency", FFX_RESOURCE_STATE_COMPUTE_READ);
+
+        if (Bias->IsInit() && Bias->CreateBufferResource(Dx12Device, dx11Reactive.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
+        {
+            Bias->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.45f) > 0.0f && 
+                Bias->Dispatch(Dx12Device, Dx12CommandList, dx11Reactive.Dx12Resource, Config::Instance()->DlssReactiveMaskBias.value_or(0.45f), Bias->Buffer()))
+            {
+                Bias->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                params.reactive = ffxGetResourceDX12(&_context, Bias->Buffer(), (wchar_t*)L"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
+            }
+        }
+    }
 
     // OutputScaling
     if (useSS)

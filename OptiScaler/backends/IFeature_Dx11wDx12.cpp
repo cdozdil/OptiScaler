@@ -504,11 +504,12 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
         InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
 
-    if (!Config::Instance()->DisableReactiveMask.value_or(true))
+    if (!Config::Instance()->DisableReactiveMask.value_or(paramReactiveMask == nullptr))
     {
         if (paramReactiveMask)
         {
-            spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Bias mask exist..");
+            Config::Instance()->DisableReactiveMask = false;
+            spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Input Bias mask exist..");
 
             if (CopyTextureFrom11To12(paramReactiveMask, &dx11Reactive, true, Config::Instance()->DontUseNTShared.value_or(false)) == false)
                 return false;
@@ -516,7 +517,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         // This is only needed for XeSS
         else if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "xess") 
         {
-            spdlog::warn("IFeature_Dx11wDx12::ProcessDx11Textures bias mask not exist and its enabled in config, it may cause problems!!");
+            spdlog::warn("IFeature_Dx11wDx12::ProcessDx11Textures bias mask not exist and it's enabled in config, it may cause problems!!");
             Config::Instance()->DisableReactiveMask = true;
             Config::Instance()->changeBackend = true;
         }

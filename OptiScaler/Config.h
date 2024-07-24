@@ -25,6 +25,7 @@ public:
 	std::optional<bool> JitterCancellation;
 	std::optional<bool> DisplayResolution;
 	std::optional<bool> DisableReactiveMask;
+	std::optional<float> DlssReactiveMaskBias;
 
 	// Logging
 	std::optional<bool> LogToFile;
@@ -128,6 +129,7 @@ public:
 	std::optional<float> FsrCameraFar;
 	std::optional<bool> FsrDebugView;
 	std::optional<int> Fsr3xIndex;
+	std::optional<bool> FsrUseMaskForTransparency;
 
 	// dx11wdx12
 	std::optional<int> TextureSyncMethod;

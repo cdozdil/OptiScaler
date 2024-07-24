@@ -4,7 +4,6 @@
 
 #include "dx12/ffx_api_dx12.h"
 
-
 class FSR31FeatureDx12 : public FSR31Feature, public IFeature_Dx12
 {
 private:

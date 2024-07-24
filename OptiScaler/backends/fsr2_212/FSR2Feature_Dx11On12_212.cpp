@@ -120,6 +120,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
 
         OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", Dx12Device, (TargetWidth() < DisplayWidth()));
         RCAS = std::make_unique<RCAS_Dx12>("RCAS", Dx12Device);
+        Bias = std::make_unique<Bias_Dx12>("Bias", Dx12Device);
     }
 
     if (!IsInited())
@@ -220,7 +221,24 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
     params.motionVectors = Fsr212::ffxGetResourceDX12_212(&_context, dx11Mv.Dx12Resource, (wchar_t*)L"FSR2_Motion", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
     params.depth = Fsr212::ffxGetResourceDX12_212(&_context, dx11Depth.Dx12Resource, (wchar_t*)L"FSR2_Depth", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
     params.exposure = Fsr212::ffxGetResourceDX12_212(&_context, dx11Exp.Dx12Resource, (wchar_t*)L"FSR2_Exp", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
-    params.reactive = Fsr212::ffxGetResourceDX12_212(&_context, dx11Reactive.Dx12Resource, (wchar_t*)L"FSR2_Reactive", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
+
+    if (dx11Reactive.Dx12Resource != nullptr)
+    {
+        if (Config::Instance()->FsrUseMaskForTransparency.value_or(true))
+            params.transparencyAndComposition = Fsr212::ffxGetResourceDX12_212(&_context, dx11Reactive.Dx12Resource, (wchar_t*)L"FSR2_Transparency", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
+
+        if (Bias->IsInit() && Bias->CreateBufferResource(Dx12Device, dx11Reactive.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
+        {
+            Bias->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.45f) > 0.0f && 
+                Bias->Dispatch(Dx12Device, Dx12CommandList, dx11Reactive.Dx12Resource, Config::Instance()->DlssReactiveMaskBias.value_or(0.45f), Bias->Buffer()))
+            {
+                Bias->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                params.reactive = Fsr212::ffxGetResourceDX12_212(&_context, Bias->Buffer(), (wchar_t*)L"FSR2_Reactive", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
+            }
+        }
+    }
 
     // OutputScaling
     if (useSS)

@@ -239,7 +239,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
             Config::Instance()->NVNGX_FeatureInfo_Paths.push_back(std::wstring(path));
 
             std::wstring iniPathW(path);
-
             spdlog::debug("NVSDK_NGX_D3D12_Init_Ext PathListInfo[{1}] checking nvngx.ini file in: {0}", wstring_to_string(iniPathW), i);
 
             if (Config::Instance()->LoadFromPath(path))
@@ -558,20 +557,23 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
             upscalerChoice = 3;
 
         // if Enabler does not set any upscaler
-        if (InParameters->Get("DLSSEnabler.Dx12Backend", &upscalerChoice) != NVSDK_NGX_Result_Success && Config::Instance()->Dx12Upscaler.has_value())
+        if (InParameters->Get("DLSSEnabler.Dx12Backend", &upscalerChoice) != NVSDK_NGX_Result_Success)
         {
             spdlog::info("NVSDK_NGX_D3D12_CreateFeature DLSS Enabler does not set any upscaler using ini: {0}", Config::Instance()->Dx12Upscaler.value());
 
-            if (Config::Instance()->Dx12Upscaler.value() == "xess")
-                upscalerChoice = 0;
-            else if (Config::Instance()->Dx12Upscaler.value() == "fsr22")
-                upscalerChoice = 1;
-            else if (Config::Instance()->Dx12Upscaler.value() == "fsr21")
-                upscalerChoice = 2;
-            else if (Config::Instance()->Dx12Upscaler.value() == "dlss" && Config::Instance()->DLSSEnabled.value_or(true))
-                upscalerChoice = 3;
-            else if (Config::Instance()->Dx12Upscaler.value() == "fsr31")
-                upscalerChoice = 4;
+            if (Config::Instance()->Dx12Upscaler.has_value())
+            {
+                if (Config::Instance()->Dx12Upscaler.value() == "xess")
+                    upscalerChoice = 0;
+                else if (Config::Instance()->Dx12Upscaler.value() == "fsr22")
+                    upscalerChoice = 1;
+                else if (Config::Instance()->Dx12Upscaler.value() == "fsr21")
+                    upscalerChoice = 2;
+                else if (Config::Instance()->Dx12Upscaler.value() == "dlss" && Config::Instance()->DLSSEnabled.value_or(true))
+                    upscalerChoice = 3;
+                else if (Config::Instance()->Dx12Upscaler.value() == "fsr31")
+                    upscalerChoice = 4;
+            }
 
             spdlog::info("NVSDK_NGX_D3D12_CreateFeature upscalerChoice: {0}", upscalerChoice);
         }

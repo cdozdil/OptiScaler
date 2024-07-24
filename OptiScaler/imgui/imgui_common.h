@@ -906,7 +906,16 @@ public:
                     if (Config::Instance()->CurrentFeature->Name() != "DLSSD")
                     {
                         if (ImGui::Button("Apply") && Config::Instance()->newBackend != "" && Config::Instance()->newBackend != currentBackend)
+                        {
+                            if (Config::Instance()->newBackend == "xess")
+                            {
+                                // Reseting them for xess 
+                                Config::Instance()->DisableReactiveMask.reset();
+                                Config::Instance()->DlssReactiveMaskBias.reset();
+                            }
+
                             Config::Instance()->changeBackend = true;
+                        }
 
                         ImGui::SameLine(0.0f, 6.0f);
 
@@ -1132,6 +1141,10 @@ public:
                             ShowHelpMarker("Might help achieve better image quality\n"
                                 "And potentially less ghosting");
                         }
+
+                        auto useAsTransparency = Config::Instance()->FsrUseMaskForTransparency.value_or(true);
+                        if (ImGui::Checkbox("Use Reactive Mask as Transparency Mask", &useAsTransparency))
+                            Config::Instance()->FsrUseMaskForTransparency = useAsTransparency;
                     }
 
                     // DLSS -----------------
@@ -1652,6 +1665,10 @@ public:
                         }
 
                         ImGui::EndTable();
+
+                        auto bias = Config::Instance()->DlssReactiveMaskBias.value_or(0.45f);
+                        if (Config::Instance()->AdvancedSettings.value_or(false) && ImGui::SliderFloat("Reactive Mask Bias", &bias, 0.0f, 0.9f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
+                            Config::Instance()->DlssReactiveMaskBias = bias;
                     }
 
                     // LOGGING -----------------------------

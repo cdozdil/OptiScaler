@@ -20,6 +20,7 @@ bool XeSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 
 		OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", InDevice, (TargetWidth() < DisplayWidth()));
 		RCAS = std::make_unique<RCAS_Dx12>("RCAS", InDevice);
+		Bias = std::make_unique<Bias_Dx12>("Bias", InDevice);
 
 		return true;
 	}
@@ -240,16 +241,27 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
 		InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
 
-	if (!Config::Instance()->DisableReactiveMask.value_or(true))
+	if (!Config::Instance()->DisableReactiveMask.value_or(paramReactiveMask == nullptr))
 	{
-		params.pResponsivePixelMaskTexture = paramReactiveMask;
-
 		if (paramReactiveMask)
 		{
-			spdlog::debug("XeSSFeatureDx12::Evaluate Bias mask exist..");
+			spdlog::debug("XeSSFeatureDx12::Evaluate Input Bias mask exist..");
+			Config::Instance()->DisableReactiveMask = false;
 
 			if (Config::Instance()->MaskResourceBarrier.has_value())
 				ResourceBarrier(InCommandList, params.pResponsivePixelMaskTexture, (D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+			if (Config::Instance()->DlssReactiveMaskBias.value_or(0.0f) > 0.0f &&
+				Bias->IsInit() && Bias->CreateBufferResource(Device, paramReactiveMask, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
+			{
+				Bias->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+				if (Bias->Dispatch(Device, InCommandList, paramReactiveMask, Config::Instance()->DlssReactiveMaskBias.value_or(0.0f), Bias->Buffer()))
+				{
+					Bias->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+					params.pResponsivePixelMaskTexture = Bias->Buffer();
+				}
+			}
 		}
 		else
 		{
