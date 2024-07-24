@@ -72,6 +72,10 @@ static std::wstring dllNameExW;
 static int loadCount = 0;
 static bool dontCount = false;
 
+static bool isNvngxMode = false;
+static bool isWorkingWithEnabler = false;
+static bool isNvngxAvailable = false;
+
 void AttachHooks();
 void DetachHooks();
 
@@ -122,7 +126,7 @@ static HMODULE LoadNvgxDlss(std::wstring originalPath)
 
     if (Config::Instance()->NVNGX_DLSS_Library.has_value())
     {
-        nvngxDlss = o_LoadLibraryW(Config::Instance()->NvapiDllPath->c_str());
+        nvngxDlss = o_LoadLibraryW(Config::Instance()->NVNGX_DLSS_Library.value().c_str());
 
         if (nvngxDlss != nullptr)
         {
@@ -1085,7 +1089,7 @@ static void AttachHooks()
         }
     }
 
-    if (Config::Instance()->VulkanSpoofing.value_or(false) && o_vkGetPhysicalDeviceProperties == nullptr)
+    if (!isNvngxMode && Config::Instance()->VulkanSpoofing.value_or(false) && o_vkGetPhysicalDeviceProperties == nullptr)
     {
         o_vkGetPhysicalDeviceProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties"));
         o_vkGetPhysicalDeviceProperties2 = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties2"));
@@ -1111,7 +1115,7 @@ static void AttachHooks()
         }
     }
 
-    if (Config::Instance()->VulkanExtensionSpoofing.value_or(false) && o_vkEnumerateInstanceExtensionProperties == nullptr)
+    if (!isNvngxMode && Config::Instance()->VulkanExtensionSpoofing.value_or(false) && o_vkEnumerateInstanceExtensionProperties == nullptr)
     {
         o_vkCreateDevice = reinterpret_cast<PFN_vkCreateDevice>(DetourFindFunction("vulkan-1.dll", "vkCreateDevice"));
         o_vkCreateInstance = reinterpret_cast<PFN_vkCreateInstance>(DetourFindFunction("vulkan-1.dll", "vkCreateInstance"));
@@ -1189,6 +1193,9 @@ static void CheckWorkingMode()
             dllNameExA = "OptiScaler_DontLoad";
             dllNameW = L"OptiScaler_DontLoad.dll";
             dllNameExW = L"OptiScaler_DontLoad";
+
+            isNvngxMode = true;
+            isWorkingWithEnabler = lCaseFilename == "dlss-enabler-upscaler.dll";
 
             modeFound = true;
             break;
@@ -1461,7 +1468,7 @@ static void CheckWorkingMode()
 
     } while (false);
 
-    if (!Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
+    if (!isNvngxMode && !Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
     {
         spdlog::info("HookDxgiFile is enabled loading dxgi.dll");
 
@@ -1502,9 +1509,10 @@ static void CheckWorkingMode()
 
     if (modeFound)
     {
-        AttachHooks();
+        if (!isWorkingWithEnabler)
+            AttachHooks();
 
-        if (!Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))
+        if (!isNvngxMode && !Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))
         {
             ImGuiOverlayDx12::Dx12Bind();
             ImGuiOverlayDx12::FSR3Bind();
@@ -1587,6 +1595,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                     // Disable Overlay Menu because of crashes on Linux with Nvidia GPUs
                     if (Config::Instance()->IsRunningOnLinux && !Config::Instance()->OverlayMenu.has_value())
                         Config::Instance()->OverlayMenu = false;
+
+                    isNvngxAvailable = true;
                 }
             }
 
@@ -1610,13 +1620,13 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
         case DLL_THREAD_ATTACH:
 #ifdef _DEBUG
-            spdlog::trace("DllMain DLL_THREAD_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
+            // spdlog::trace("DllMain DLL_THREAD_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
 #endif
             break;
 
         case DLL_THREAD_DETACH:
 #ifdef _DEBUG
-            spdlog::trace("DllMain DLL_THREAD_DETACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
+            // spdlog::trace("DllMain DLL_THREAD_DETACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
 #endif
             break;
 
