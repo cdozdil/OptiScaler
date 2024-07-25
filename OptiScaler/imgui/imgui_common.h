@@ -52,7 +52,12 @@ private:
 
     inline static void ShowTooltip(const char* tip) {
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip(tip);
+        {
+            ImGui::BeginTooltip();
+            ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0)); // Scale the tooltip text
+            ImGui::Text(tip);
+            ImGui::EndTooltip();
+        }
     }
 
     inline static void ShowHelpMarker(const char* tip)
