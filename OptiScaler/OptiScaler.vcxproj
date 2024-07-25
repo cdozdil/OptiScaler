@@ -81,8 +81,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
-    <TargetName>nvngx</TargetName>
-    <OutDir>D:\Folders\Games\God of War\</OutDir>
+    <TargetName>dxgi</TargetName>
+    <OutDir>D:\Folders\Games\Cyberpunk 2077\bin\x64\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -176,11 +176,13 @@
     <PostBuildEvent>
       <Command>md $(SolutionDir)x64\Release\a\
 move $(SolutionDir)x64\Release\nvngx.dll $(SolutionDir)x64\Release\a\
-copy $(SolutionDir)external\nvngx_dlss_sdk\regs\*.* $(SolutionDir)x64\Release\a\
-copy $(SolutionDir)external\xess\licenses\LICENSE.pdf $(SolutionDir)x64\Release\a\XeSS_LICENSE.pdf
+md $(SolutionDir)x64\Release\a\DlssOverrides
+copy $(SolutionDir)external\nvngx_dlss_sdk\regs\*.* $(SolutionDir)x64\Release\a\DlssOverrides
+md $(SolutionDir)x64\Release\a\Licenses
+copy $(SolutionDir)external\xess\licenses\LICENSE.pdf $(SolutionDir)x64\Release\a\Licenses\XeSS_LICENSE.pdf
 copy $(SolutionDir)external\xess\bin\libxess.dll $(SolutionDir)x64\Release\a\
 copy $(SolutionDir)external\FidelityFX-SDK\PrebuiltSignedDLL\amd_fidelityfx_dx12.dll $(SolutionDir)x64\Release\a\
-copy $(SolutionDir)external\FidelityFX-SDK\LICENSE.txt $(SolutionDir)x64\Release\a\FidelityFX_LICENSE.txt
+copy $(SolutionDir)external\FidelityFX-SDK\LICENSE.txt $(SolutionDir)x64\Release\a\Licenses\FidelityFX_LICENSE.txt
 copy $(ProjectDir)fsr31\amd_fidelityfx_vk.dll $(SolutionDir)x64\Release\a\
 copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     </PostBuildEvent>
