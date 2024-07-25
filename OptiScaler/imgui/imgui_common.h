@@ -1148,9 +1148,13 @@ public:
 
                         if (Config::Instance()->CurrentFeature->AccessToReactiveMask())
                         {
+                            ImGui::BeginDisabled(Config::Instance()->DisableReactiveMask.value_or(false));
+
                             auto useAsTransparency = Config::Instance()->FsrUseMaskForTransparency.value_or(true);
                             if (ImGui::Checkbox("Use Reactive Mask as Transparency Mask", &useAsTransparency))
                                 Config::Instance()->FsrUseMaskForTransparency = useAsTransparency;
+
+                            ImGui::EndDisabled();
                         }
                     }
 
@@ -1652,7 +1656,9 @@ public:
                             ImGui::TableNextColumn();
                             auto accessToReactiveMask = Config::Instance()->CurrentFeature->AccessToReactiveMask();
                             ImGui::BeginDisabled(!accessToReactiveMask);
-                            if (bool rm = Config::Instance()->DisableReactiveMask.value_or(true); ImGui::Checkbox("Disable Reactive Mask", &rm))
+
+                            bool rm = Config::Instance()->DisableReactiveMask.value_or(!accessToReactiveMask || currentBackend == "dlss" || currentBackend == "xess");
+                            if (ImGui::Checkbox("Disable Reactive Mask", &rm))
                             {
                                 Config::Instance()->DisableReactiveMask = rm;
 
@@ -1662,7 +1668,9 @@ public:
                                     Config::Instance()->changeBackend = true;
                                 }
                             }
+
                             ImGui::EndDisabled();
+
                             if (accessToReactiveMask)
                                 ShowHelpMarker("Allows the use of a reactive mask\n"
                                                "Keep in mind that a reactive mask sent to DLSS\n"
@@ -1675,6 +1683,8 @@ public:
 
                         if (Config::Instance()->CurrentFeature->AccessToReactiveMask() && currentBackend != "dlss")
                         {
+                            ImGui::BeginDisabled(Config::Instance()->DisableReactiveMask.value_or(currentBackend == "xess"));
+
                             bool binaryMask = Config::Instance()->Api == NVNGX_VULKAN || currentBackend == "xess";
                             auto bias = Config::Instance()->DlssReactiveMaskBias.value_or(binaryMask ? 0.0f : 0.45f);
 
@@ -1696,6 +1706,8 @@ public:
                                         Config::Instance()->DlssReactiveMaskBias.reset();
                                 }
                             }
+
+                            ImGui::EndDisabled();
                         }
 
                         if (Config::Instance()->AdvancedSettings.value_or(false))

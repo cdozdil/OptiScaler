@@ -374,7 +374,6 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 		{
 			spdlog::warn("FSR2FeatureDx11::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
 			Config::Instance()->DisableReactiveMask = true;
-			Config::Instance()->changeBackend = true;
 			return true;
 		}
 	}

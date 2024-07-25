@@ -711,7 +711,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         dx11Exp.Dx12Handle = dx11Exp.Dx11Handle;
     }
 
-    if (!Config::Instance()->DisableReactiveMask.value_or(true) && paramReactiveMask && dx11Reactive.Dx12Handle != dx11Reactive.Dx11Handle)
+    if (!Config::Instance()->DisableReactiveMask.value_or(false) && paramReactiveMask && dx11Reactive.Dx12Handle != dx11Reactive.Dx11Handle)
     {
         if (dx11Reactive.Dx12Handle != NULL)
             CloseHandle(dx11Reactive.Dx12Handle);

@@ -241,7 +241,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
 		InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
 
-	if (!Config::Instance()->DisableReactiveMask.value_or(paramReactiveMask == nullptr))
+	if (!Config::Instance()->DisableReactiveMask.value_or(true))
 	{
 		if (paramReactiveMask)
 		{
