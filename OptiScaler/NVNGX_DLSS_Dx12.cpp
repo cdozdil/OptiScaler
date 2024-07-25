@@ -559,7 +559,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
         // if Enabler does not set any upscaler
         if (InParameters->Get("DLSSEnabler.Dx12Backend", &upscalerChoice) != NVSDK_NGX_Result_Success)
         {
-            spdlog::info("NVSDK_NGX_D3D12_CreateFeature DLSS Enabler does not set any upscaler using ini: {0}", Config::Instance()->Dx12Upscaler.value());
 
             if (Config::Instance()->Dx12Upscaler.has_value())
             {
