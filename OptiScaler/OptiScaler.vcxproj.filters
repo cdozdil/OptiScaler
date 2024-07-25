@@ -209,10 +209,22 @@
     <ClInclude Include="ag\pag_common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="bias\Bias_Dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="bias\Bias_Common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="bias\Bias_Dx12.h">
+    <ClInclude Include="bias\precompile\Bias_Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rcas\precompile\RCAS_Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bicubicscaling\precompile\BCDS_Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bicubicscaling\precompile\BCUS_Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
