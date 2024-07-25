@@ -1699,6 +1699,19 @@ public:
                     }
                         }
 
+                        if (Config::Instance()->AdvancedSettings.value_or(false))
+                        {
+                            bool pcShaders = Config::Instance()->UsePrecompiledShaders.value_or(true);
+
+                            if (ImGui::Checkbox("Use Precompiled Shaders", &pcShaders))
+                            {
+                                Config::Instance()->UsePrecompiledShaders = pcShaders;
+                                Config::Instance()->newBackend = currentBackend;
+                                Config::Instance()->changeBackend = true;
+                            }
+                        }
+                    }
+
                     // LOGGING -----------------------------
                     ImGui::SeparatorText("Logging");
 
@@ -1831,6 +1844,8 @@ public:
                 {
                     if (!ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow))
                         ImGui::SetWindowFocus();
+
+                    ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0));
 
                     if (ImGui::InputScalar("Display Width", ImGuiDataType_U32, &_displayWidth, NULL, NULL, "%u"))
                     {
