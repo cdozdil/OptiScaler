@@ -315,13 +315,13 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
 
     if (IsDepthInverted())
     {
-        params.cameraFar = 0.0001f;
-        params.cameraNear = 0.9999f;
+        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.01f);
+        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(0.99f);
     }
     else
     {
-        params.cameraFar = 0.9999f;
-        params.cameraNear = 0.0001f;
+        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(0.99f);
+        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.01f);
     }
 
     if (Config::Instance()->FsrVerticalFov.has_value())

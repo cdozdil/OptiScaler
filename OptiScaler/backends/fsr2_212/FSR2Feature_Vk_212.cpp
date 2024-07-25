@@ -260,16 +260,27 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
         InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
 
-    if (!Config::Instance()->DisableReactiveMask.value_or(true))
+    if (paramReactiveMask && Config::Instance()->FsrUseMaskForTransparency.value_or(true))
+    {
+        params.transparencyAndComposition = Fsr212::ffxGetTextureResourceVK212(&_context, ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Image,
+                                                                               ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.ImageView,
+                                                                               ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Height,
+                                                                               ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Format, (wchar_t*)L"FSR2_Transparency", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
+    }
+
+    if (!Config::Instance()->DisableReactiveMask.value_or(paramReactiveMask == nullptr))
     {
         if (paramReactiveMask)
         {
             spdlog::debug("FSR2FeatureVk212::Evaluate Bias mask exist..");
-
-            params.reactive = Fsr212::ffxGetTextureResourceVK212(&_context, ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Image,
-                                                                 ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.ImageView,
-                                                                 ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Height,
-                                                                 ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Format, (wchar_t*)L"FSR2_Reactive", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
+            
+            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.0f) > 0.0f)
+            {
+                params.reactive = Fsr212::ffxGetTextureResourceVK212(&_context, ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Image,
+                                                                     ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.ImageView,
+                                                                     ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Height,
+                                                                     ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Format, (wchar_t*)L"FSR2_Reactive", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
+            }
         }
         else
         {
@@ -331,13 +342,13 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
 
     if (IsDepthInverted())
     {
-        params.cameraFar = 0.0001f;
-        params.cameraNear = 1.0f;
+        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.01f);
+        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(0.99f);
     }
     else
     {
-        params.cameraFar = 1.0f;
-        params.cameraNear = 0.0001f;
+        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(0.99f);
+        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.01f);
     }
 
     if (Config::Instance()->FsrVerticalFov.has_value())

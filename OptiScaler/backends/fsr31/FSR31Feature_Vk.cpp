@@ -355,7 +355,14 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
         InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
 
-    if (!Config::Instance()->DisableReactiveMask.value_or(true))
+    if (paramReactiveMask && Config::Instance()->FsrUseMaskForTransparency.value_or(true))
+    {
+        params.transparencyAndComposition = ffxApiGetResourceVK(((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Image,
+                                                                ffxApiGetImageResourceDescriptionVKLocal((NVSDK_NGX_Resource_VK*)paramReactiveMask),
+                                                                FFX_API_RESOURCE_STATE_COMPUTE_READ);
+    }
+
+    if (!Config::Instance()->DisableReactiveMask.value_or(paramReactiveMask == nullptr))
     {
         InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask);
 
@@ -363,9 +370,12 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         {
             spdlog::debug("FSR31FeatureVk::Evaluate Bias mask exist..");
 
-            params.reactive = ffxApiGetResourceVK(((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Image,
-                                                  ffxApiGetImageResourceDescriptionVKLocal((NVSDK_NGX_Resource_VK*)paramReactiveMask),
-                                                  FFX_API_RESOURCE_STATE_COMPUTE_READ);
+            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.0f) > 0.0f)
+            {
+                params.reactive = ffxApiGetResourceVK(((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Image,
+                                                      ffxApiGetImageResourceDescriptionVKLocal((NVSDK_NGX_Resource_VK*)paramReactiveMask),
+                                                      FFX_API_RESOURCE_STATE_COMPUTE_READ);
+            }
         }
         else
         {
