@@ -28,6 +28,27 @@
 inline HMODULE dllModule;
 inline DWORD processId;
 
+#define LOG_TRACE(msg, ...) \
+    spdlog::trace(__FUNCTION__ " " msg, ##__VA_ARGS__)
+
+#define LOG_DEBUG(msg, ...) \
+    spdlog::debug(__FUNCTION__ " " msg, ##__VA_ARGS__)
+
+#define LOG_INFO(msg, ...) \
+    spdlog::info(__FUNCTION__ " " msg, ##__VA_ARGS__)
+
+#define LOG_WARN(msg, ...) \
+    spdlog::warn(__FUNCTION__ " " msg, ##__VA_ARGS__)
+
+#define LOG_ERROR(msg, ...) \
+    spdlog::error(__FUNCTION__ " " msg, ##__VA_ARGS__)
+
+#define LOG_FUNC() \
+    spdlog::trace(__FUNCTION__)
+
+#define LOG_FUNC_RESULT(result) \
+    spdlog::trace(__FUNCTION__ " result: {0:X}" , (UINT)result)
+
 inline static std::string wstring_to_string(const std::wstring& wide_str) 
 {
     std::string str(wide_str.length(), 0);
