@@ -1,4 +1,8 @@
 #include "Bias_Dx12.h"
+
+#include "Bias_Common.h"
+#include "precompile/Bias_Shader.h"
+
 #include "../Config.h"
 
 bool Bias_Dx12::CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootSignature, ID3D12PipelineState** pipelineState, ID3DBlob* shaderBlob)
@@ -320,26 +324,43 @@ Bias_Dx12::Bias_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 		return;
 	}
 
-	// Compile shader blobs
-	ID3DBlob* _recEncodeShader = BiasCompileShader(biasShader.c_str(), "CSMain", "cs_5_0");
-
-	if (_recEncodeShader == nullptr)
+	if (Config::Instance()->UsePrecompiledShaders.value_or(true))
 	{
-		spdlog::error("Bias_Dx12::Bias_Dx12 [{0}] CompileShader error!", _name);
-		return;
+		D3D12_COMPUTE_PIPELINE_STATE_DESC computePsoDesc = {};
+		computePsoDesc.pRootSignature = _rootSignature;
+		computePsoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+		computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bias_cso), sizeof(bias_cso));
+		auto hr = InDevice->CreateComputePipelineState(&computePsoDesc, __uuidof(ID3D12PipelineState*), (void**)&_pipelineState);
+
+		if (FAILED(hr))
+		{
+			spdlog::error("Bias_Dx12::Bias_Dx12 [{0}] CreateComputePipelineState error: {1:X}", _name, hr);
+			return;
+		}
 	}
-
-	// create pso objects
-	if (!CreateComputeShader(InDevice, _rootSignature, &_pipelineState, _recEncodeShader))
+	else
 	{
-		spdlog::error("Bias_Dx12::Bias_Dx12 [{0}] CreateComputeShader error!", _name);
-		return;
-	}
+		// Compile shader blobs
+		ID3DBlob* _recEncodeShader = BiasCompileShader(biasShader.c_str(), "CSMain", "cs_5_0");
 
-	if (_recEncodeShader != nullptr)
-	{
-		_recEncodeShader->Release();
-		_recEncodeShader = nullptr;
+		if (_recEncodeShader == nullptr)
+		{
+			spdlog::error("Bias_Dx12::Bias_Dx12 [{0}] CompileShader error!", _name);
+			return;
+		}
+
+		// create pso objects
+		if (!CreateComputeShader(InDevice, _rootSignature, &_pipelineState, _recEncodeShader))
+		{
+			spdlog::error("Bias_Dx12::Bias_Dx12 [{0}] CreateComputeShader error!", _name);
+			return;
+		}
+
+		if (_recEncodeShader != nullptr)
+		{
+			_recEncodeShader->Release();
+			_recEncodeShader = nullptr;
+		}
 	}
 
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};

@@ -266,6 +266,8 @@ bool Config::Reload(std::filesystem::path iniPath)
             RestoreComputeSignature = readBool("Hotfix", "RestoreComputeSignature");
             RestoreComputeSignature = readBool("Hotfix", "RestoreComputeSignature");
             SkipFirstFrames = readInt("Hotfix", "SkipFirstFrames");
+            
+            UsePrecompiledShaders = readBool("Hotfix", "UsePrecompiledShaders");
 
             ColorResourceBarrier = readInt("Hotfix", "ColorResourceBarrier");
             MVResourceBarrier = readInt("Hotfix", "MotionVectorResourceBarrier");
@@ -550,6 +552,8 @@ bool Config::SaveIni()
         ini.SetValue("Hotfix", "RestoreComputeSignature", GetBoolValue(Instance()->RestoreComputeSignature).c_str());
         ini.SetValue("Hotfix", "RestoreGraphicSignature", GetBoolValue(Instance()->RestoreGraphicSignature).c_str());
         ini.SetValue("Hotfix", "SkipFirstFrames", GetIntValue(Instance()->SkipFirstFrames).c_str());
+        
+        ini.SetValue("Hotfix", "UsePrecompiledShaders", GetBoolValue(Instance()->UsePrecompiledShaders).c_str());
 
         ini.SetValue("Hotfix", "ColorResourceBarrier", GetIntValue(Instance()->ColorResourceBarrier).c_str());
         ini.SetValue("Hotfix", "MotionVectorResourceBarrier", GetIntValue(Instance()->MVResourceBarrier).c_str());
