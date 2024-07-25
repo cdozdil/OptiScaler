@@ -381,20 +381,22 @@ private:
             if (rawData.header.dwType == RIM_TYPEKEYBOARD && rawData.data.keyboard.VKey != 0)
             {
                 vmInputMenu = rawData.data.keyboard.VKey == Config::Instance()->ShortcutKey.value_or(VK_INSERT);
-                vmInputReset = rawData.data.keyboard.VKey == Config::Instance()->ResetKey.value_or(VK_END);
+                //vmInputReset = rawData.data.keyboard.VKey == Config::Instance()->ResetKey.value_or(VK_END);
             }
         }
 
 
         // END - REINIT MENU
-        if ((msg == WM_KEYDOWN && wParam == Config::Instance()->ResetKey.value_or(VK_END)) || vmInputReset)
-        {
-            _isResetRequested = true;
-            return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
-        }
+        //if ((msg == WM_KEYDOWN && wParam == Config::Instance()->ResetKey.value_or(VK_END)) || vmInputReset)
+        //{
+        //    _isResetRequested = true;
+        //    return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
+        //}
 
         // INSERT - OPEN MENU
-        if ((msg == WM_KEYDOWN && wParam == Config::Instance()->ShortcutKey.value_or(VK_INSERT)) || vmInputMenu)
+        if (((msg == WM_KEYDOWN && wParam == Config::Instance()->ShortcutKey.value_or(VK_INSERT)) || vmInputMenu) && 
+            Config::Instance()->CurrentFeature != nullptr && 
+            Config::Instance()->CurrentFeature->FrameCount() > (170 + Config::Instance()->MenuInitDelay.value_or(90)))
         {
             _isVisible = !_isVisible;
 

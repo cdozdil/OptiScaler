@@ -70,7 +70,6 @@ public:
 	std::optional<float> MenuScale;
 	std::optional<bool> OverlayMenu;
 	std::optional<int> ShortcutKey;
-	std::optional<int> ResetKey;
 	std::optional<int> MenuInitDelay;
 	std::optional<bool> AdvancedSettings;
 

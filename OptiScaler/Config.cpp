@@ -153,7 +153,6 @@ bool Config::Reload(std::filesystem::path iniPath)
                 OverlayMenu = readBool("Menu", "OverlayMenu");
 
             ShortcutKey = readInt("Menu", "ShortcutKey");
-            ResetKey = readInt("Menu", "ResetKey");
             MenuInitDelay = readInt("Menu", "MenuInitDelay");
             AdvancedSettings = readBool("Menu", "AdvancedSettings");
         }
@@ -491,7 +490,6 @@ bool Config::SaveIni()
     {
         ini.SetValue("Menu", "Scale", GetFloatValue(Instance()->MenuScale).c_str());
         ini.SetValue("Menu", "OverlayMenu", GetBoolValue(Instance()->OverlayMenu).c_str());
-        ini.SetValue("Menu", "ResetKey", GetIntValue(Instance()->ResetKey).c_str());
         ini.SetValue("Menu", "ShortcutKey", GetIntValue(Instance()->ShortcutKey).c_str());
         ini.SetValue("Menu", "MenuInitDelay", GetIntValue(Instance()->MenuInitDelay).c_str());
         ini.SetValue("Menu", "AdvancedSettings", GetBoolValue(Instance()->AdvancedSettings).c_str());
