@@ -255,6 +255,8 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
         }
     }
 
+    if (!isNvngxMode)
+    {
     // Opti dll
     pos = lcaseLibName.rfind(dllNameA);
     if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
@@ -268,7 +270,7 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
     }
 
     // Dxgi.dll
-    if (Config::Instance()->DxgiSpoofing.value_or(true))
+        if (Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
     {
         pos = lcaseLibName.rfind(dxgiA);
 
@@ -281,6 +283,7 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 
             return dllModule;
         }
+    }
     }
 
     dontCount = true;
@@ -348,18 +351,6 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
         }
     }
 
-    // Opti dll
-    pos = lcaseLibName.rfind(dllNameW);
-    if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
-    {
-        spdlog::info("hkLoadLibraryW {0} call, returning this dll!", lcaseLibNameA);
-
-        if (!dontCount)
-            loadCount++;
-
-        return dllModule;
-    }
-
     // nvngx_dlss.dll
     if (Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->NVNGX_DLSS_Library.has_value())
     {
@@ -376,8 +367,22 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
         }
     }
 
+    if (!isNvngxMode)
+    {
+        // Opti dll
+        pos = lcaseLibName.rfind(dllNameW);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
+
+            if (!dontCount)
+                loadCount++;
+
+            return dllModule;
+        }
+
     // Dxgi.dll
-    if (Config::Instance()->DxgiSpoofing.value_or(true))
+        if (Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
     {
         pos = lcaseLibName.rfind(dxgiW);
 
@@ -390,6 +395,7 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 
             return dllModule;
         }
+    }
     }
 
     dontCount = true;
@@ -509,6 +515,8 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
         }
     }
 
+    if (!isNvngxMode)
+    {
     // Opti dll
     pos = lcaseLibName.rfind(dllNameA);
     if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
@@ -534,7 +542,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
     }
 
     // Dxgi.dll
-    if (Config::Instance()->DxgiSpoofing.value_or(true))
+        if (Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
     {
         pos = lcaseLibName.rfind(dxgiExA);
 
@@ -559,6 +567,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
 
             return dllModule;
         }
+    }
     }
 
     dontCount = true;
@@ -680,6 +689,8 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
         }
     }
 
+    if (!isNvngxMode)
+    {
     // Opti dll
     pos = lcaseLibName.rfind(dllNameW);
     if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
@@ -705,7 +716,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
     }
 
     // Dxgi.dll
-    if (Config::Instance()->DxgiSpoofing.value_or(true))
+        if (Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
     {
         pos = lcaseLibName.rfind(dxgiExW);
 
@@ -730,6 +741,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
 
             return dllModule;
         }
+    }
     }
 
     dontCount = true;
@@ -1481,6 +1493,7 @@ static void CheckWorkingMode()
             {
                 spdlog::info("HookDxgiFile is enabled, original dll loaded from plugin folder");
                 dxgi.LoadOriginalLibrary(dxgiDll);
+                Config::Instance()->IsDxgiMode = true;
                 break;
             }
 
@@ -1490,6 +1503,7 @@ static void CheckWorkingMode()
             {
                 spdlog::info("HookDxgiFile is enabled, dxgi-original.dll loaded");
                 dxgi.LoadOriginalLibrary(dxgiDll);
+                Config::Instance()->IsDxgiMode = true;
                 break;
             }
 
@@ -1500,6 +1514,7 @@ static void CheckWorkingMode()
             {
                 spdlog::info("HookDxgiFile is enabled, system dll loaded");
                 dxgi.LoadOriginalLibrary(dxgiDll);
+                Config::Instance()->IsDxgiMode = true;
                 break;
             }
 
@@ -1631,7 +1646,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             break;
 
         default:
-            spdlog::info("DllMain reason: {0:X}", ul_reason_for_call);
+            spdlog::warn("DllMain reason: {0:X}", ul_reason_for_call);
             break;
     }
 
