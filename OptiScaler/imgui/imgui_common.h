@@ -1147,9 +1147,12 @@ public:
                                 "And potentially less ghosting");
                         }
 
+                        if (Config::Instance()->CurrentFeature->AccessToReactiveMask())
+                        {
                         auto useAsTransparency = Config::Instance()->FsrUseMaskForTransparency.value_or(true);
                         if (ImGui::Checkbox("Use Reactive Mask as Transparency Mask", &useAsTransparency))
                             Config::Instance()->FsrUseMaskForTransparency = useAsTransparency;
+                    }
                     }
 
                     // DLSS -----------------
@@ -1671,10 +1674,30 @@ public:
 
                         ImGui::EndTable();
 
-                        auto bias = Config::Instance()->DlssReactiveMaskBias.value_or(0.45f);
-                        if (Config::Instance()->AdvancedSettings.value_or(false) && ImGui::SliderFloat("Reactive Mask Bias", &bias, 0.0f, 0.9f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
+                        if (Config::Instance()->CurrentFeature->AccessToReactiveMask() && currentBackend != "dlss")
+                        {
+                            bool binaryMask = Config::Instance()->Api == NVNGX_VULKAN || currentBackend == "xess";
+                            auto bias = Config::Instance()->DlssReactiveMaskBias.value_or(binaryMask ? 0.0f : 0.45f);
+
+                            if (!binaryMask)
+                            {
+                                if (ImGui::SliderFloat("React. Mask Bias", &bias, 0.0f, 0.9f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
                             Config::Instance()->DlssReactiveMaskBias = bias;
+
+                                ShowHelpMarker("Values above 0 activates usage of reactive mask");
+                            }
+                            else
+                            {
+                                bool useRM = bias > 0.0f;
+                                if (ImGui::Checkbox("Use Binary Reactive Mask", &useRM))
+                                {
+                                    if (useRM)
+                                        Config::Instance()->DlssReactiveMaskBias = 0.45f;
+                                    else
+                                        Config::Instance()->DlssReactiveMaskBias.reset();
+                                }
                     }
+                        }
 
                     // LOGGING -----------------------------
                     ImGui::SeparatorText("Logging");
