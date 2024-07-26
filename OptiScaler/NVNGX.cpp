@@ -11,25 +11,25 @@
 //
 //NVSDK_NGX_API uint32_t NVSDK_NGX_GetAPIVersion()
 //{
-//	LOG_DEBUG("NVSDK_NGX_GetAPIVersion");
+//	LOG_FUNC();
 //	return 19;
 //}
 //
 //NVSDK_NGX_API uint32_t NVSDK_NGX_GetApplicationId()
 //{
-//	LOG_DEBUG("NVSDK_NGX_GetApplicationId");
+//	LOG_FUNC();
 //	return Config::Instance()->NVNGX_ApplicationId;
 //}
 //
 //NVSDK_NGX_API uint32_t NVSDK_NGX_GetDriverVersion()
 //{
-//	LOG_DEBUG("NVSDK_NGX_GetDriverVersion");
+//	LOG_FUNC();
 //	return 0x23A0000; // NGXMinimumDriverVersion 570.00
 //}
 //
 //NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_GetDriverVersionEx(uint32_t* Versions, uint32_t InputVersionCount, uint32_t* TotalDriverVersionCount)
 //{
-//	LOG_DEBUG("NVSDK_NGX_GetDriverVersionEx");
+//	LOG_FUNC();
 //
 //	if (!Versions && !TotalDriverVersionCount)
 //	{
@@ -53,13 +53,13 @@
 //
 //NVSDK_NGX_API uint32_t NVSDK_NGX_GetGPUArchitecture()
 //{
-//	LOG_INFO("NVSDK_NGX_GetGPUArchitecture");
+//	LOG_FUNC();
 //	return NV_GPU_ARCHITECTURE_TU100; 
 //}
 //
 //NVSDK_NGX_API uint32_t NVSDK_NGX_GetSnippetVersion()
 //{
-//	LOG_INFO("NVSDK_NGX_GetSnippetVersion");
+//	LOG_FUNC();
 //	return 0x30500;
 //}
 //
@@ -71,13 +71,13 @@
 //
 //NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_SetInfoCallback(void* Callback)
 //{
-//	LOG_DEBUG("NVSDK_NGX_SetInfoCallback");
+//	LOG_FUNC();
 //	return NVSDK_NGX_Result_Success;
 //}
 //
 //NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_SetTelemetryEvaluateCallback(void* Callback)
 //{
-//	LOG_DEBUG("NVSDK_NGX_SetTelemetryEvaluateCallback");
+//	LOG_FUNC();
 //	return NVSDK_NGX_Result_Success;
 //}
 
