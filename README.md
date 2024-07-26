@@ -82,6 +82,11 @@ To solve this problem you need to install `d3dcompiler_47` with `WineTricks` or 
 
 **Please don't rename the ini file, it should stay as `nvngx.ini`**.
 
+### Update OptiScaler version when using DLSS Enabler  
+1. Delete/rename `dlss-enabler-upscaler.dll` in game folder
+2. Copy `nvngx.dll` file from OptiScaler 7zip file to game folder
+3. Rename `nvngx.dll` to `dlss-enabler-upscaler.dll`
+
 ## Uninstallation
 * Run `DisableSignatureOverride.reg` file 
 * Delete `EnableSignatureOverride.reg`, `DisableSignatureOverride.reg`, `nvngx.dll`, `nvngx.ini` files
