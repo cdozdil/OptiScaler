@@ -6,7 +6,7 @@
 
 bool XeSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters)
 {
-	spdlog::debug("XeSSFeatureDx12::Init");
+	LOG_FUNC();
 
 	if (IsInited())
 		return true;
@@ -18,7 +18,7 @@ bool XeSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 		if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
 			Imgui = std::make_unique<Imgui_Dx12>(Util::GetProcessWindow(), InDevice);
 
-		OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", InDevice, (TargetWidth() < DisplayWidth()));
+		OutputScaler = std::make_unique<BS_Dx12>("Output Scaling", InDevice, (TargetWidth() < DisplayWidth()));
 		RCAS = std::make_unique<RCAS_Dx12>("RCAS", InDevice);
 		Bias = std::make_unique<Bias_Dx12>("Bias", InDevice);
 
@@ -30,11 +30,11 @@ bool XeSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 
 bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters)
 {
-	spdlog::debug("XeSSFeatureDx12::Evaluate");
+	LOG_FUNC();
 
 	if (!IsInited() || !_xessContext || !ModuleLoaded())
 	{
-		spdlog::error("XeSSFeatureDx12::Evaluate Not inited!");
+		LOG_ERROR("Not inited!");
 		return false;
 	}
 
@@ -46,7 +46,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 	if (Config::Instance()->xessDebug)
 	{
-		spdlog::error("XeSSFeatureDx12::Evaluate xessDebug");
+		LOG_ERROR("xessDebug");
 
 		xess_dump_parameters_t dumpParams{};
 		dumpParams.frame_count = Config::Instance()->xessDebugFrames;
@@ -81,7 +81,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 	bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
 
-	spdlog::debug("XeSSFeatureDx12::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
+	LOG_DEBUG("Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
 	ID3D12Resource* paramColor;
 	if (InParameters->Get(NVSDK_NGX_Parameter_Color, &paramColor) != NVSDK_NGX_Result_Success)
@@ -89,7 +89,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 	if (paramColor)
 	{
-		spdlog::debug("XeSSFeatureDx12::Evaluate Color exist..");
+		LOG_DEBUG("Color exist..");
 		paramColor->SetName(L"paramColor");
 
 		if (Config::Instance()->ColorResourceBarrier.has_value())
@@ -106,7 +106,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	}
 	else
 	{
-		spdlog::error("XeSSFeatureDx12::Evaluate Color not exist!!");
+		LOG_ERROR("Color not exist!!");
 		return false;
 	}
 
@@ -115,7 +115,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 	if (params.pVelocityTexture)
 	{
-		spdlog::debug("XeSSFeatureDx12::Evaluate MotionVectors exist..");
+		LOG_DEBUG("MotionVectors exist..");
 		params.pVelocityTexture->SetName(L"pVelocityTexture");
 
 		if (Config::Instance()->MVResourceBarrier.has_value())
@@ -136,7 +136,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 			if (displaySizeEnabled && lowResMV)
 			{
-				spdlog::warn("XeSSFeatureDx12::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
+				LOG_WARN("MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
 				Config::Instance()->DisplayResolution = false;
 				Config::Instance()->changeBackend = true;
 				return true;
@@ -147,7 +147,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	}
 	else
 	{
-		spdlog::error("XeSSFeatureDx12::Evaluate MotionVectors not exist!!");
+		LOG_ERROR("MotionVectors not exist!!");
 		return false;
 	}
 
@@ -158,7 +158,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 	if (paramOutput)
 	{
-		spdlog::debug("XeSSFeatureDx12::Evaluate Output exist..");
+		LOG_DEBUG("Output exist..");
 		paramOutput->SetName(L"paramOutput");
 
 		if (Config::Instance()->OutputResourceBarrier.has_value())
@@ -189,7 +189,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	}
 	else
 	{
-		spdlog::error("XeSSFeatureDx12::Evaluate Output not exist!!");
+		LOG_ERROR("Output not exist!!");
 		return false;
 	}
 
@@ -198,7 +198,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 	if (params.pDepthTexture)
 	{
-		spdlog::debug("XeSSFeatureDx12::Evaluate Depth exist..");
+		LOG_DEBUG("Depth exist..");
 		params.pDepthTexture->SetName(L"params.pDepthTexture");
 
 		if (Config::Instance()->DepthResourceBarrier.has_value())
@@ -207,9 +207,9 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	else
 	{
 		if (!Config::Instance()->DisplayResolution.value_or(false))
-			spdlog::error("XeSSFeatureDx12::Evaluate Depth not exist!!");
+			LOG_ERROR("Depth not exist!!");
 		else
-			spdlog::info("XeSSFeatureDx12::Evaluate Using high res motion vectors, depth is not needed!!");
+			LOG_INFO("Using high res motion vectors, depth is not needed!!");
 
 		params.pDepthTexture = nullptr;
 	}
@@ -221,21 +221,21 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 		if (params.pExposureScaleTexture)
 		{
-			spdlog::debug("XeSSFeatureDx12::Evaluate ExposureTexture exist..");
+			LOG_DEBUG("ExposureTexture exist..");
 
 			if (Config::Instance()->ExposureResourceBarrier.has_value())
 				ResourceBarrier(InCommandList, params.pExposureScaleTexture, (D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		}
 		else
 		{
-			spdlog::warn("XeSSFeatureDx12::Evaluate AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
+			LOG_WARN("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
 			Config::Instance()->AutoExposure = true;
 			Config::Instance()->changeBackend = true;
 			return true;
 		}
 	}
 	else
-		spdlog::debug("XeSSFeatureDx12::Evaluate AutoExposure enabled!");
+		LOG_DEBUG("AutoExposure enabled!");
 
 	ID3D12Resource* paramReactiveMask = nullptr;
 	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
@@ -245,7 +245,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	{
 		if (paramReactiveMask)
 		{
-			spdlog::debug("XeSSFeatureDx12::Evaluate Input Bias mask exist..");
+			LOG_DEBUG("Input Bias mask exist..");
 			Config::Instance()->DisableReactiveMask = false;
 
 			if (Config::Instance()->MaskResourceBarrier.has_value())
@@ -265,7 +265,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		}
 		else
 		{
-			spdlog::warn("XeSSFeatureDx12::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
+			LOG_WARN("Bias mask not exist and its enabled in config, it may cause problems!!");
 			Config::Instance()->DisableReactiveMask = true;
 			Config::Instance()->changeBackend = true;
 			return true;
@@ -289,19 +289,19 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 		if (xessResult != XESS_RESULT_SUCCESS)
 		{
-			spdlog::error("XeSSFeatureDx12::Evaluate xessSetVelocityScale: {0}", ResultToString(xessResult));
+			LOG_ERROR("xessSetVelocityScale: {0}", ResultToString(xessResult));
 			return false;
 		}
 	}
 	else
-		spdlog::warn("XeSSFeatureDx12::Evaluate Can't get motion vector scales!");
+		LOG_WARN("Can't get motion vector scales!");
 
-	spdlog::debug("XeSSFeatureDx12::Evaluate Executing!!");
+	LOG_DEBUG("Executing!!");
 	xessResult = D3D12Execute()(_xessContext, InCommandList, &params);
 
 	if (xessResult != XESS_RESULT_SUCCESS)
 	{
-		spdlog::error("XeSSFeatureDx12::Evaluate xessD3D12Execute error: {0}", ResultToString(xessResult));
+		LOG_ERROR("xessD3D12Execute error: {0}", ResultToString(xessResult));
 		return false;
 	}
 
@@ -346,7 +346,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 	if (useSS)
 	{
-		spdlog::debug("XeSSFeatureDx12::Evaluate downscaling output...");
+		LOG_DEBUG("scaling output...");
 		OutputScaler->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
 		if (!OutputScaler->Dispatch(Device, InCommandList, OutputScaler->Buffer(), paramOutput))

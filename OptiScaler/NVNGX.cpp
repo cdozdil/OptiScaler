@@ -11,29 +11,29 @@
 //
 //NVSDK_NGX_API uint32_t NVSDK_NGX_GetAPIVersion()
 //{
-//	spdlog::debug("NVSDK_NGX_GetAPIVersion");
+//	LOG_DEBUG("NVSDK_NGX_GetAPIVersion");
 //	return 19;
 //}
 //
 //NVSDK_NGX_API uint32_t NVSDK_NGX_GetApplicationId()
 //{
-//	spdlog::debug("NVSDK_NGX_GetApplicationId");
+//	LOG_DEBUG("NVSDK_NGX_GetApplicationId");
 //	return Config::Instance()->NVNGX_ApplicationId;
 //}
 //
 //NVSDK_NGX_API uint32_t NVSDK_NGX_GetDriverVersion()
 //{
-//	spdlog::debug("NVSDK_NGX_GetDriverVersion");
+//	LOG_DEBUG("NVSDK_NGX_GetDriverVersion");
 //	return 0x23A0000; // NGXMinimumDriverVersion 570.00
 //}
 //
 //NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_GetDriverVersionEx(uint32_t* Versions, uint32_t InputVersionCount, uint32_t* TotalDriverVersionCount)
 //{
-//	spdlog::debug("NVSDK_NGX_GetDriverVersionEx");
+//	LOG_DEBUG("NVSDK_NGX_GetDriverVersionEx");
 //
 //	if (!Versions && !TotalDriverVersionCount)
 //	{
-//		spdlog::error("NVSDK_NGX_GetDriverVersionEx invalid parameter!");
+//		LOG_ERROR("invalid parameter!");
 //		return NVSDK_NGX_Result_FAIL_InvalidParameter;
 //	}
 //
@@ -53,31 +53,31 @@
 //
 //NVSDK_NGX_API uint32_t NVSDK_NGX_GetGPUArchitecture()
 //{
-//	spdlog::info("NVSDK_NGX_GetGPUArchitecture");
+//	LOG_INFO("NVSDK_NGX_GetGPUArchitecture");
 //	return NV_GPU_ARCHITECTURE_TU100; 
 //}
 //
 //NVSDK_NGX_API uint32_t NVSDK_NGX_GetSnippetVersion()
 //{
-//	spdlog::info("NVSDK_NGX_GetSnippetVersion");
+//	LOG_INFO("NVSDK_NGX_GetSnippetVersion");
 //	return 0x30500;
 //}
 //
 //NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_ProcessCommand(const char* Command, const char* Value, void* Unknown)
 //{
-//	spdlog::debug("NVSDK_NGX_ProcessCommand({0}, {1}, void)", std::string(Command), std::string(Value));
+//	LOG_DEBUG("NVSDK_NGX_ProcessCommand({0}, {1}, void)", std::string(Command), std::string(Value));
 //	return NVSDK_NGX_Result_Success; 
 //}
 //
 //NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_SetInfoCallback(void* Callback)
 //{
-//	spdlog::debug("NVSDK_NGX_SetInfoCallback");
+//	LOG_DEBUG("NVSDK_NGX_SetInfoCallback");
 //	return NVSDK_NGX_Result_Success;
 //}
 //
 //NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_SetTelemetryEvaluateCallback(void* Callback)
 //{
-//	spdlog::debug("NVSDK_NGX_SetTelemetryEvaluateCallback");
+//	LOG_DEBUG("NVSDK_NGX_SetTelemetryEvaluateCallback");
 //	return NVSDK_NGX_Result_Success;
 //}
 
@@ -85,7 +85,7 @@
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_UpdateFeature(const NVSDK_NGX_Application_Identifier* ApplicationId, const NVSDK_NGX_Feature FeatureID)
 {
-	spdlog::debug("NVSDK_NGX_UpdateFeature FeatureId: {0}", (UINT)FeatureID);
+	LOG_DEBUG("FeatureId: {0}", (UINT)FeatureID);
 
 	// To test with puredark mods
 	//if (FeatureID != NVSDK_NGX_Feature_SuperSampling)
@@ -93,12 +93,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_UpdateFeature(const NVSDK_NGX_Applicati
 	//	if (NVNGXProxy::UpdateFeature() != nullptr)
 	//	{
 	//		auto result = NVNGXProxy::UpdateFeature()(ApplicationId, FeatureID);
-	//		spdlog::error("NVSDK_NGX_UpdateFeature NVNGXProxy result for feature ({0}): {1:X}", (int)FeatureID, (UINT)result);
+	//		LOG_ERROR("NVNGXProxy result for feature ({0}): {1:X}", (int)FeatureID, (UINT)result);
 	//		return result;
 	//	}
 	//	else
 	//	{
-	//		spdlog::error("NVSDK_NGX_UpdateFeature Can't update this feature ({0})!", (int)FeatureID);
+	//		LOG_ERROR("Can't update this feature ({0})!", (int)FeatureID);
 	//		return NVSDK_NGX_Result_Fail;
 	//	}
 	//}
@@ -107,7 +107,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_UpdateFeature(const NVSDK_NGX_Applicati
 	{
 		if (ApplicationId->IdentifierType == NVSDK_NGX_Application_Identifier_Type_Application_Id)
 		{
-			spdlog::info("NVSDK_NGX_UpdateFeature Update ApplicationId: {0:X}", ApplicationId->v.ApplicationId);
+			LOG_INFO("Update ApplicationId: {0:X}", ApplicationId->v.ApplicationId);
 			Config::Instance()->NVNGX_ApplicationId = ApplicationId->v.ApplicationId;
 		}
 		else if (ApplicationId->IdentifierType == NVSDK_NGX_Application_Identifier_Type_Project_Id)
@@ -116,18 +116,18 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_UpdateFeature(const NVSDK_NGX_Applicati
 			Config::Instance()->NVNGX_Engine = ApplicationId->v.ProjectDesc.EngineType;
 			Config::Instance()->NVNGX_EngineVersion = std::string(ApplicationId->v.ProjectDesc.EngineVersion);
 
-			spdlog::info("NVSDK_NGX_UpdateFeature Update InProjectId: {0}", Config::Instance()->NVNGX_ProjectId);
-			spdlog::info("NVSDK_NGX_UpdateFeature Update InEngineType: {0}", (int)Config::Instance()->NVNGX_Engine);
-			spdlog::info("NVSDK_NGX_UpdateFeature Update InEngineVersion: {0}", Config::Instance()->NVNGX_EngineVersion);
+			LOG_INFO("Update InProjectId: {0}", Config::Instance()->NVNGX_ProjectId);
+			LOG_INFO("Update InEngineType: {0}", (int)Config::Instance()->NVNGX_Engine);
+			LOG_INFO("Update InEngineVersion: {0}", Config::Instance()->NVNGX_EngineVersion);
 		}
 		else
 		{
-			spdlog::error("NVSDK_NGX_UpdateFeature Unknown IdentifierType ({0})!", (int)ApplicationId->IdentifierType);
+			LOG_ERROR("Unknown IdentifierType ({0})!", (int)ApplicationId->IdentifierType);
 		}
 	}
 
 	// To test with puredark mods
-	spdlog::debug("NVSDK_NGX_UpdateFeature FeatureId finished, returning NVSDK_NGX_Result_Fail");
+	LOG_DEBUG("FeatureId finished, returning NVSDK_NGX_Result_Fail");
 
 	return NVSDK_NGX_Result_Fail;
 }

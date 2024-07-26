@@ -1334,7 +1334,7 @@ bool SkipSpoofing()
     auto result = !Config::Instance()->DxgiSpoofing.value_or(true) || (Config::Instance()->dxgiSkipSpoofing && Config::Instance()->DxgiSkipSpoofForUpscalers.value_or(true));
 
     if (result)
-        spdlog::trace("SkipSpoofing dxgiSkipSpoofing true, skipping spoofing");
+        LOG_TRACE("dxgiSkipSpoofing true, skipping spoofing");
 
     if (!result && Config::Instance()->DxgiBlacklist.has_value() && !Config::Instance()->IsRunningOnLinux)
     {
@@ -1361,11 +1361,11 @@ bool SkipSpoofing()
                         auto sn = std::string(symbol->Name);
                         auto pos = Config::Instance()->DxgiBlacklist.value().rfind(sn);
 
-                        spdlog::debug("SkipSpoofing checking for: {0} ({1})", sn, i);
+                        LOG_DEBUG("checking for: {0} ({1})", sn, i);
 
                         if (pos != std::string::npos)
                         {
-                            spdlog::info("SkipSpoofing spoofing for: {0}", sn);
+                            LOG_INFO("spoofing for: {0}", sn);
                             result = false;
                             break;
                         }
@@ -1379,7 +1379,7 @@ bool SkipSpoofing()
         }
 
         if (result)
-            spdlog::debug("SkipSpoofing skipping spoofing, blacklisting active");
+            LOG_DEBUG("skipping spoofing, blacklisting active");
     }
 
     return result;
@@ -1401,7 +1401,7 @@ HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
         std::memcpy(pDesc->Description, szName, 50);
 
 #ifdef _DEBUG
-        spdlog::debug("detGetDesc3 spoofing");
+        LOG_DEBUG("spoofing");
 #endif
     }
 
@@ -1426,7 +1426,7 @@ HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
         std::memcpy(pDesc->Description, szName, 50);
 
 #ifdef _DEBUG
-        spdlog::debug("detGetDesc2 spoofing");
+        LOG_DEBUG("spoofing");
 #endif
     }
 
@@ -1451,7 +1451,7 @@ HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
         std::memcpy(pDesc->Description, szName, 50);
 
 #ifdef _DEBUG
-        spdlog::debug("detGetDesc1 spoofing");
+        LOG_DEBUG("spoofing");
 #endif
     }
 
@@ -1476,7 +1476,7 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
         std::memcpy(pDesc->Description, szName, 50);
 
 #ifdef _DEBUG
-        spdlog::debug("detGetDesc spoofing");
+        LOG_DEBUG("spoofing");
 #endif
     }
 
@@ -1598,99 +1598,103 @@ HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFacto
 
 HRESULT _DXGIDeclareAdapterRemovalSupport()
 {
-    spdlog::debug("_DXGIDeclareAdapterRemovalSupport");
+    LOG_FUNC();
     return dxgi.dxgiDeclareAdapterRemovalSupport();
 }
 
 HRESULT _DXGIGetDebugInterface1()
 {
-    spdlog::debug("_DXGIGetDebugInterface1");
+    LOG_FUNC();
     return dxgi.dxgiGetDebugInterface();
 }
 
 void _ApplyCompatResolutionQuirking() 
 { 
-    spdlog::debug("_ApplyCompatResolutionQuirking");
+    LOG_FUNC();
     dxgi.dxgiApplyCompatResolutionQuirking();
 }
 
 void _CompatString() 
 { 
-    spdlog::debug("_CompatString");
+    LOG_FUNC();
     dxgi.dxgiCompatString();
 }
 
 void _CompatValue() 
 { 
-    spdlog::debug("_CompatValue");
+    LOG_FUNC();
     dxgi.dxgiCompatValue();
 }
 
 void _DXGID3D10CreateDevice() 
 { 
-    spdlog::debug("_DXGID3D10CreateDevice");
+    LOG_FUNC();
     dxgi.dxgiD3D10CreateDevice();
 }
 
 void _DXGID3D10CreateLayeredDevice() 
 { 
-    spdlog::debug("_DXGID3D10CreateLayeredDevice");
+    LOG_FUNC();
     dxgi.dxgiD3D10CreateLayeredDevice();
 }
 
 void _DXGID3D10GetLayeredDeviceSize() 
 { 
-    spdlog::debug("_DXGID3D10GetLayeredDeviceSize");
+    LOG_FUNC();
     dxgi.dxgiD3D10GetLayeredDeviceSize();
 }
 
 void _DXGID3D10RegisterLayers() 
 { 
-    spdlog::debug("_DXGID3D10RegisterLayers");
+    LOG_FUNC();
     dxgi.dxgiD3D10RegisterLayers();
 }
 
 void _DXGID3D10ETWRundown()
 { 
-    spdlog::debug("_DXGID3D10ETWRundown");
+    LOG_FUNC();
     dxgi.dxgiD3D10ETWRundown();
 }
 
 void _DXGIDumpJournal() 
 { 
-    spdlog::debug("_DXGIDumpJournal");
+    LOG_FUNC();
     dxgi.dxgiDumpJournal();
 }
 
 void _DXGIReportAdapterConfiguration() 
 { 
-    spdlog::debug("_DXGIReportAdapterConfiguration");
+    LOG_FUNC();
     dxgi.dxgiReportAdapterConfiguration();
 }
 
 void _PIXBeginCapture() 
 { 
-    spdlog::debug("_PIXBeginCapture");
+    LOG_FUNC();
     dxgi.dxgiPIXBeginCapture();
 }
 
 void _PIXEndCapture() 
 { 
+    LOG_FUNC();
     dxgi.dxgiPIXEndCapture();
 }
 
 void _PIXGetCaptureState() 
 { 
+    LOG_FUNC();
     dxgi.dxgiPIXGetCaptureState();
 }
 
 void _SetAppCompatStringPointer() 
 { 
+    LOG_FUNC();
     dxgi.dxgiSetAppCompatStringPointer();
 }
 
 void _UpdateHMDEmulationStatus() 
 { 
+    LOG_FUNC();
     dxgi.dxgiUpdateHMDEmulationStatus();
 }
 

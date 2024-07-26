@@ -15,7 +15,7 @@ std::filesystem::path Util::DllPath()
 		GetModuleFileNameW(dllModule, dllPath, MAX_PATH);
 		dll = std::filesystem::path(dllPath);
 
-		spdlog::info("Dll path: {0}", wstring_to_string(dll.wstring()));
+		LOG_INFO("{0}", wstring_to_string(dll.wstring()));
 	}
 
 	return dll;
@@ -25,7 +25,7 @@ std::optional<std::filesystem::path> Util::NvngxPath()
 {
 	// Checking _nvngx.dll / nvngx.dll location from registry based on DLSSTweaks 
 	// https://github.com/emoose/DLSSTweaks/blob/7ebf418c79670daad60a079c0e7b84096c6a7037/src/ProxyNvngx.cpp#L303
-	spdlog::info("Util::NvngxPath trying to load nvngx from registry path!");
+	LOG_INFO("trying to load nvngx from registry path!");
 
 	HKEY regNGXCore;
 	LSTATUS ls;
@@ -43,7 +43,7 @@ std::optional<std::filesystem::path> Util::NvngxPath()
 		if (ls == ERROR_SUCCESS)
 		{
 			auto path = std::filesystem::path(regNGXCorePath);
-			spdlog::info("Util::NvngxPath nvngx registry path: {0}", path.string());
+			LOG_INFO("nvngx registry path: {0}", path.string());
 			return path;
 		}
 	}
@@ -88,7 +88,7 @@ HWND Util::GetProcessWindow() {
 
 	if (hwnd == nullptr)
 	{
-		spdlog::debug("Util::GetProcessWindow EnumWindows returned null using GetForegroundWindow()");
+		LOG_DEBUG("EnumWindows returned null using GetForegroundWindow()");
 		hwnd = GetForegroundWindow();
 	}
 

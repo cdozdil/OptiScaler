@@ -34,7 +34,7 @@ static inline FfxApiResourceDescription ffxApiGetImageResourceDescriptionVKLocal
 
 FSR31FeatureVk::FSR31FeatureVk(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : FSR31Feature(InHandleId, InParameters), IFeature_Vk(InHandleId, InParameters), IFeature(InHandleId, InParameters)
 {
-    spdlog::debug("FSR31FeatureVk::FSR31FeatureVk Loading amd_fidelityfx_vk.dll methods");
+    LOG_DEBUG("Loading amd_fidelityfx_vk.dll methods");
 
     _configure = (PfnFfxConfigure)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxConfigure");
     _createContext = (PfnFfxCreateContext)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxCreateContext");
@@ -62,14 +62,14 @@ FSR31FeatureVk::FSR31FeatureVk(unsigned int InHandleId, NVSDK_NGX_Parameter* InP
     }
 
     if (_moduleLoaded)
-        spdlog::info("FSR31FeatureVk::FSR31FeatureVk amd_fidelityfx_vk.dll methods loaded!");
+        LOG_INFO("amd_fidelityfx_vk.dll methods loaded!");
     else
-        spdlog::error("FSR31FeatureVk::FSR31FeatureVk can't load amd_fidelityfx_vk.dll methods!");
+        LOG_ERROR("can't load amd_fidelityfx_vk.dll methods!");
 }
 
 bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
 {
-    spdlog::debug("FSR31FeatureVk::InitFSR3");
+    LOG_DEBUG("FSR31FeatureVk::InitFSR3");
 
     if (!ModuleLoaded())
         return false;
@@ -79,7 +79,7 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
 
     if (PhysicalDevice == nullptr)
     {
-        spdlog::error("FSR31FeatureVk::InitFSR3 PhysicalDevice is null!");
+        LOG_ERROR("PhysicalDevice is null!");
         return false;
     }
 
@@ -123,7 +123,7 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         Config::Instance()->DepthInverted = true;
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_DEPTH_INVERTED;
         SetDepthInverted(true);
-        spdlog::info("FSR31FeatureVk::InitFSR3 contextDesc.initFlags (DepthInverted) {0:b}", _contextDesc.flags);
+        LOG_INFO("contextDesc.initFlags (DepthInverted) {0:b}", _contextDesc.flags);
     }
     else
         Config::Instance()->DepthInverted = false;
@@ -132,31 +132,31 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     {
         Config::Instance()->AutoExposure = true;
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_AUTO_EXPOSURE;
-        spdlog::info("FSR31FeatureVk::InitFSR3 contextDesc.initFlags (AutoExposure) {0:b}", _contextDesc.flags);
+        LOG_INFO("contextDesc.initFlags (AutoExposure) {0:b}", _contextDesc.flags);
     }
     else
     {
         Config::Instance()->AutoExposure = false;
-        spdlog::info("FSR31FeatureVk::InitFSR3 contextDesc.initFlags (!AutoExposure) {0:b}", _contextDesc.flags);
+        LOG_INFO("contextDesc.initFlags (!AutoExposure) {0:b}", _contextDesc.flags);
     }
 
     if (Config::Instance()->HDR.value_or(Hdr))
     {
         Config::Instance()->HDR = true;
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_HIGH_DYNAMIC_RANGE;
-        spdlog::info("FSR31FeatureVk::InitFSR3 contextDesc.initFlags (HDR) {0:b}", _contextDesc.flags);
+        LOG_INFO("contextDesc.initFlags (HDR) {0:b}", _contextDesc.flags);
     }
     else
     {
         Config::Instance()->HDR = false;
-        spdlog::info("FSR31FeatureVk::InitFSR3 contextDesc.initFlags (!HDR) {0:b}", _contextDesc.flags);
+        LOG_INFO("contextDesc.initFlags (!HDR) {0:b}", _contextDesc.flags);
     }
 
     if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
     {
         Config::Instance()->JitterCancellation = true;
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
-        spdlog::info("FSR31FeatureVk::InitFSR2 contextDesc.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
+        LOG_INFO("FSR31FeatureVk::InitFSR2 contextDesc.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
     }
     else
         Config::Instance()->JitterCancellation = false;
@@ -164,11 +164,11 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     if (Config::Instance()->DisplayResolution.value_or(!LowRes))
     {
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
-        spdlog::info("FSR31FeatureVk::InitFSR3 contextDesc.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
+        LOG_INFO("contextDesc.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
     }
     else
     {
-        spdlog::info("FSR31FeatureVk::InitFSR3 contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
+        LOG_INFO("contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
     }
 
     _contextDesc.maxRenderSize.width = TargetWidth();
@@ -196,12 +196,12 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     ov.versionId = Config::Instance()->fsr3xVersionIds[Config::Instance()->Fsr3xIndex.value_or(0)];
     backendDesc.header.pNext = &ov.header;
 
-    spdlog::debug("FSR31FeatureVk::InitFSR3 _createContext!");
+    LOG_DEBUG("_createContext!");
     auto ret = _createContext(&_context, &_contextDesc.header, NULL);
 
     if (ret != FFX_API_RETURN_OK)
     {
-        spdlog::error("FSR31FeatureVk::InitFSR3 _createContext error: {0}", ResultToString(ret));
+        LOG_ERROR("_createContext error: {0}", ResultToString(ret));
         return false;
     }
 
@@ -217,7 +217,7 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
 
 bool FSR31FeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Parameter* InParameters)
 {
-    spdlog::debug("FSR31FeatureVk::Init");
+    LOG_FUNC();
 
     if (IsInited())
         return true;
@@ -233,7 +233,7 @@ bool FSR31FeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice
 
 bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* InParameters)
 {
-    spdlog::debug("FSR31FeatureVk::Evaluate");
+    LOG_FUNC();
 
     if (!IsInited())
         return false;
@@ -253,7 +253,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
 
     GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
-    spdlog::debug("FSR31FeatureVk::Evaluate Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
+    LOG_DEBUG("Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
     params.commandList = InCmdBuffer;
 
@@ -262,7 +262,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
 
     if (paramColor)
     {
-        spdlog::debug("FSR31FeatureVk::Evaluate Color exist..");
+        LOG_DEBUG("Color exist..");
 
         params.color = ffxApiGetResourceVK(((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Image,
                                            ffxApiGetImageResourceDescriptionVKLocal((NVSDK_NGX_Resource_VK*)paramColor),
@@ -270,7 +270,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     }
     else
     {
-        spdlog::error("FSR31FeatureVk::Evaluate Color not exist!!");
+        LOG_ERROR("Color not exist!!");
         return false;
     }
 
@@ -279,7 +279,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
 
     if (paramVelocity)
     {
-        spdlog::debug("FSR31FeatureVk::Evaluate MotionVectors exist..");
+        LOG_DEBUG("MotionVectors exist..");
 
         params.motionVectors = ffxApiGetResourceVK(((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Image,
                                                    ffxApiGetImageResourceDescriptionVKLocal((NVSDK_NGX_Resource_VK*)paramVelocity),
@@ -287,7 +287,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     }
     else
     {
-        spdlog::error("FSR31FeatureVk::Evaluate MotionVectors not exist!!");
+        LOG_ERROR("MotionVectors not exist!!");
         return false;
     }
 
@@ -296,7 +296,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
 
     if (paramOutput)
     {
-        spdlog::debug("FSR31FeatureVk::Evaluate Output exist..");
+        LOG_DEBUG("Output exist..");
 
         params.output = ffxApiGetResourceVK(((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Image,
                                             ffxApiGetImageResourceDescriptionVKLocal((NVSDK_NGX_Resource_VK*)paramOutput, true),
@@ -304,7 +304,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     }
     else
     {
-        spdlog::error("FSR31FeatureVk::Evaluate Output not exist!!");
+        LOG_ERROR("Output not exist!!");
         return false;
     }
 
@@ -313,7 +313,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
 
     if (paramDepth)
     {
-        spdlog::debug("FSR31FeatureVk::Evaluate Depth exist..");
+        LOG_DEBUG("Depth exist..");
 
         params.depth = ffxApiGetResourceVK(((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Image,
                                            ffxApiGetImageResourceDescriptionVKLocal((NVSDK_NGX_Resource_VK*)paramDepth),
@@ -322,9 +322,9 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     else
     {
         if (!Config::Instance()->DisplayResolution.value_or(false))
-            spdlog::error("FSR31FeatureVk::Evaluate Depth not exist!!");
+            LOG_ERROR("Depth not exist!!");
         else
-            spdlog::info("FSR31FeatureVk::Evaluate Using high res motion vectors, depth is not needed!!");
+            LOG_INFO("Using high res motion vectors, depth is not needed!!");
     }
 
     void* paramExp = nullptr;
@@ -334,7 +334,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
 
         if (paramExp)
         {
-            spdlog::debug("FSR31FeatureVk::Evaluate ExposureTexture exist..");
+            LOG_DEBUG("ExposureTexture exist..");
 
             params.exposure = ffxApiGetResourceVK(((NVSDK_NGX_Resource_VK*)paramExp)->Resource.ImageViewInfo.Image,
                                                   ffxApiGetImageResourceDescriptionVKLocal((NVSDK_NGX_Resource_VK*)paramExp),
@@ -342,14 +342,14 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         }
         else
         {
-            spdlog::debug("FSR31FeatureVk::Evaluate AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
+            LOG_DEBUG("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
             Config::Instance()->AutoExposure = true;
             Config::Instance()->changeBackend = true;
             return true;
         }
     }
     else
-        spdlog::debug("FSR31FeatureVk::Evaluate AutoExposure enabled!");
+        LOG_DEBUG("AutoExposure enabled!");
 
     void* paramReactiveMask = nullptr;
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
@@ -368,7 +368,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
 
         if (paramReactiveMask)
         {
-            spdlog::debug("FSR31FeatureVk::Evaluate Bias mask exist..");
+            LOG_DEBUG("Bias mask exist..");
 
             if (Config::Instance()->DlssReactiveMaskBias.value_or(0.0f) > 0.0f)
             {
@@ -379,7 +379,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         }
         else
         {
-            spdlog::debug("FSR31FeatureVk::Evaluate Bias mask not exist and its enabled in config, it may cause problems!!");
+            LOG_DEBUG("Bias mask not exist and its enabled in config, it may cause problems!!");
             Config::Instance()->DisableReactiveMask = true;
             Config::Instance()->changeBackend = true;
             return true;
@@ -405,7 +405,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     }
     else
     {
-        spdlog::warn("FSR31FeatureVk::Evaluate Can't get motion vector scales!");
+        LOG_WARN("Can't get motion vector scales!");
 
         params.motionVectorScale.x = MVScaleX;
         params.motionVectorScale.y = MVScaleY;
@@ -459,47 +459,16 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     params.preExposure = 1.0f;    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure);
 
 
-    spdlog::debug("FSR31FeatureVk::Evaluate Dispatch!!");
+    LOG_DEBUG("Dispatch!!");
     auto result = _dispatch(&_context, &params.header);
 
     if (result != FFX_API_RETURN_OK)
     {
-        spdlog::error("FSR31FeatureVk::Evaluate ffxFsr2ContextDispatch error: {0}", ResultToString(result));
+        LOG_ERROR("ffxFsr2ContextDispatch error: {0}", ResultToString(result));
         return false;
     }
 
     _frameCount++;
-
-    // restore resource states
-    //if (paramColor && Config::Instance()->ColorResourceBarrier.value_or(false))
-    //	ResourceBarrier(InCommandList, paramColor,
-    //		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-    //		(D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value());
-
-    //if (paramVelocity && Config::Instance()->MVResourceBarrier.has_value())
-    //	ResourceBarrier(InCommandList, paramVelocity,
-    //		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-    //		(D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value());
-
-    //if (paramOutput && Config::Instance()->OutputResourceBarrier.has_value())
-    //	ResourceBarrier(InCommandList, paramOutput,
-    //		D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-    //		(D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value());
-
-    //if (paramDepth && Config::Instance()->DepthResourceBarrier.has_value())
-    //	ResourceBarrier(InCommandList, paramDepth,
-    //		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-    //		(D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value());
-
-    //if (paramExp && Config::Instance()->ExposureResourceBarrier.has_value())
-    //	ResourceBarrier(InCommandList, paramExp,
-    //		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-    //		(D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value());
-
-    //if (paramMask && Config::Instance()->MaskResourceBarrier.has_value())
-    //	ResourceBarrier(InCommandList, paramMask,
-    //		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-    //		(D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value());
 
     return true;
 }

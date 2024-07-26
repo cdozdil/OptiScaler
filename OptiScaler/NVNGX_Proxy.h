@@ -43,7 +43,7 @@ inline static uint32_t __stdcall HookedNvAPI_GPU_GetArchInfo(void* GPUHandle, NV
 
         if (status == 0 && ArchInfo)
         {
-            spdlog::debug("NVNGXProxy::HookedNvAPI_GPU_GetArchInfo From api arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
+            LOG_DEBUG("From api arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
 
             // for 16xx cards
             if (ArchInfo->architecture == NV_GPU_ARCHITECTURE_TU100 && ArchInfo->implementation > NV_GPU_ARCH_IMPLEMENTATION_TU106)
@@ -51,18 +51,18 @@ inline static uint32_t __stdcall HookedNvAPI_GPU_GetArchInfo(void* GPUHandle, NV
                 ArchInfo->implementation = NV_GPU_ARCH_IMPLEMENTATION_TU106;
                 ArchInfo->implementation_id = NV_GPU_ARCH_IMPLEMENTATION_TU106;
 
-                spdlog::info("NVNGXProxy::HookedNvAPI_GPU_GetArchInfo Spoofed arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
+                LOG_INFO("Spoofed arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
             }
             //else if (ArchInfo->architecture < NV_GPU_ARCHITECTURE_TU100 && ArchInfo->architecture >= NV_GPU_ARCHITECTURE_GP100)
             //{
-            //	spdlog::info("NVNGXProxy::HookedNvAPI_GPU_GetArchInfo Spoofing below 16xx arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
+            //	LOG_INFO("Spoofing below 16xx arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
 
             //	ArchInfo->architecture = NV_GPU_ARCHITECTURE_TU100;
             //	ArchInfo->architecture_id = NV_GPU_ARCHITECTURE_TU100;
             //	ArchInfo->implementation = NV_GPU_ARCH_IMPLEMENTATION_TU106;
             //	ArchInfo->implementation_id = NV_GPU_ARCH_IMPLEMENTATION_TU106;
 
-            //	spdlog::info("NVNGXProxy::HookedNvAPI_GPU_GetArchInfo Spoofed arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
+            //	LOG_INFO("Spoofed arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
             //}
         }
 
@@ -90,13 +90,13 @@ inline static void* __stdcall HookedNvAPI_QueryInterface(NV_INTERFACE InterfaceI
 
 inline static NVSDK_NGX_Result __stdcall Hooked_Dx12_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
 {
-    spdlog::debug("NVNGXProxy::Hooked_Dx12_GetFeatureRequirements!");
+    LOG_FUNC();
 
     auto result = Original_Dx12_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
 
     if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
     {
-        spdlog::info("NVNGXProxy::Hooked_Dx12_GetFeatureRequirements Spoofing support!");
+        LOG_INFO("Spoofing support!");
         OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
         OutSupported->MinHWArchitecture = 0;
         strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
@@ -107,13 +107,13 @@ inline static NVSDK_NGX_Result __stdcall Hooked_Dx12_GetFeatureRequirements(IDXG
 
 inline static NVSDK_NGX_Result __stdcall Hooked_Dx11_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
 {
-    spdlog::debug("NVNGXProxy::Hooked_Dx11_GetFeatureRequirements!");
+    LOG_FUNC();
 
     auto result = Original_Dx11_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
 
     if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
     {
-        spdlog::info("NVNGXProxy::Hooked_Dx11_GetFeatureRequirements Spoofing support!");
+        LOG_INFO("Spoofing support!");
         OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
         OutSupported->MinHWArchitecture = 0;
         strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
@@ -125,13 +125,13 @@ inline static NVSDK_NGX_Result __stdcall Hooked_Dx11_GetFeatureRequirements(IDXG
 inline static NVSDK_NGX_Result __stdcall Hooked_Vulkan_GetFeatureRequirements(const VkInstance Instance, const VkPhysicalDevice PhysicalDevice,
                                                                               const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
 {
-    spdlog::debug("NVNGXProxy::Hooked_Vulkan_GetFeatureRequirements!");
+    LOG_FUNC();
 
     auto result = Original_Vulkan_GetFeatureRequirements(Instance, PhysicalDevice, FeatureDiscoveryInfo, OutSupported);
 
     if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
     {
-        spdlog::info("NVNGXProxy::Hooked_Vulkan_GetFeatureRequirements Spoofing support!");
+        LOG_INFO("Spoofing support!");
         OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
         OutSupported->MinHWArchitecture = 0;
         strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
@@ -145,13 +145,13 @@ inline static void HookNvApi()
     if (OriginalNvAPI_QueryInterface != nullptr)
         return;
 
-    spdlog::debug("NVNGXProxy::HookNvApi Trying to hook NvApi");
+    LOG_DEBUG("Trying to hook NvApi");
     OriginalNvAPI_QueryInterface = (PFN_NvApi_QueryInterface)DetourFindFunction("nvapi64.dll", "nvapi_QueryInterface");
-    spdlog::debug("NVNGXProxy::HookNvApi OriginalNvAPI_QueryInterface = {0:X}", (unsigned long long)OriginalNvAPI_QueryInterface);
+    LOG_DEBUG("OriginalNvAPI_QueryInterface = {0:X}", (unsigned long long)OriginalNvAPI_QueryInterface);
 
     if (OriginalNvAPI_QueryInterface != nullptr)
     {
-        spdlog::info("NVNGXProxy::HookNvApi NvAPI_QueryInterface found, hooking!");
+        LOG_INFO("NvAPI_QueryInterface found, hooking!");
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
@@ -165,7 +165,7 @@ inline static void HookNgxApi(HMODULE nvngx)
     if (Original_Dx11_GetFeatureRequirements != nullptr || Original_Dx12_GetFeatureRequirements != nullptr)
         return;
 
-    spdlog::debug("DLSSFeature Trying to hook NgxApi");
+    LOG_DEBUG("Trying to hook NgxApi");
 
     Original_Dx11_GetFeatureRequirements = (PFN_NVSDK_NGX_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_D3D11_GetFeatureRequirements");
     Original_Dx12_GetFeatureRequirements = (PFN_NVSDK_NGX_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_D3D12_GetFeatureRequirements");
@@ -173,7 +173,7 @@ inline static void HookNgxApi(HMODULE nvngx)
 
     if (Original_Dx11_GetFeatureRequirements != nullptr || Original_Dx12_GetFeatureRequirements != nullptr)
     {
-        spdlog::info("DLSSFeature NVSDK_NGX_D3D1X_GetFeatureRequirements found, hooking!");
+        LOG_INFO("NVSDK_NGX_D3D1X_GetFeatureRequirements found, hooking!");
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
@@ -375,7 +375,7 @@ public:
         if (_dll != nullptr)
             return;
 
-        spdlog::debug("NVNGXProxy::InitNVNGX");
+        LOG_FUNC();
 
         Config::Instance()->dlssDisableHook = true;
 
@@ -383,19 +383,19 @@ public:
         {
             // From DLSS Enabler
             _dll = LoadLibrary(L"dlss-enabler-ngx.dll");
-            spdlog::info("NVNGXProxy::InitNVNGX trying to load dlss-enabler-ngx.dll");
+            LOG_INFO("trying to load dlss-enabler-ngx.dll");
 
             if (_dll)
             {
                 Config::Instance()->DE_Available = true;
-                spdlog::info("NVNGXProxy::InitNVNGX dlss-enabler-ngx.dll loaded from DLSS Enabler, ptr: {0:X}", (ULONG64)_dll);
+                LOG_INFO("dlss-enabler-ngx.dll loaded from DLSS Enabler, ptr: {0:X}", (ULONG64)_dll);
                 break;
             }
 
             // From nvngx.ini path
             if (Config::Instance()->DLSSLibrary.has_value())
             {
-                spdlog::info("NVNGXProxy::InitNVNGX trying to load nvngx from ini path!");
+                LOG_INFO("trying to load nvngx from ini path!");
 
                 std::filesystem::path cfgPath(Config::Instance()->DLSSLibrary.value().c_str());
 
@@ -405,7 +405,7 @@ public:
 
                     if (_dll)
                     {
-                        spdlog::info("NVNGXProxy::InitNVNGX _nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(cfgPath.wstring()), (ULONG64)_dll);
+                        LOG_INFO("_nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(cfgPath.wstring()), (ULONG64)_dll);
                         break;
                     }
                 }
@@ -413,22 +413,22 @@ public:
                 {
                     auto path = cfgPath / L"_nvngx.dll";
 
-                    spdlog::info("NVNGXProxy::InitNVNGX trying to load _nvngx.dll path: {0}", wstring_to_string(cfgPath.wstring()));
+                    LOG_INFO("trying to load _nvngx.dll path: {0}", wstring_to_string(cfgPath.wstring()));
                     _dll = LoadLibraryW(path.c_str());
 
                     if (_dll)
                     {
-                        spdlog::info("NVNGXProxy::InitNVNGX _nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(cfgPath.wstring()), (ULONG64)_dll);
+                        LOG_INFO("_nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(cfgPath.wstring()), (ULONG64)_dll);
                         break;
                     }
 
                     path = cfgPath / L"nvngx.dll";
-                    spdlog::info("NVNGXProxy::InitNVNGX trying to load nvngx.dll path: {0}", wstring_to_string(cfgPath.wstring()));
+                    LOG_INFO("trying to load nvngx.dll path: {0}", wstring_to_string(cfgPath.wstring()));
                     _dll = LoadLibraryW(path.c_str());
 
                     if (_dll)
                     {
-                        spdlog::info("NVNGXProxy::InitNVNGX nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(cfgPath.wstring()), (ULONG64)_dll);
+                        LOG_INFO("nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(cfgPath.wstring()), (ULONG64)_dll);
                         break;
                     }
                 }
@@ -439,22 +439,22 @@ public:
             if (regNGXCorePath.has_value())
             {
                 auto nvngxPath = regNGXCorePath.value() / L"_nvngx.dll";
-                spdlog::info("NVNGXProxy::InitNVNGX trying to load _nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
+                LOG_INFO("trying to load _nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
 
                 _dll = LoadLibraryW(nvngxPath.wstring().c_str());
                 if (_dll)
                 {
-                    spdlog::info("NVNGXProxy::InitNVNGX _nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(nvngxPath.wstring()), (ULONG64)_dll);
+                    LOG_INFO("_nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(nvngxPath.wstring()), (ULONG64)_dll);
                     break;
                 }
 
                 nvngxPath = regNGXCorePath.value() / L"nvngx.dll";
-                spdlog::info("NVNGXProxy::InitNVNGX trying to load nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
+                LOG_INFO("trying to load nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
 
                 _dll = LoadLibraryW(nvngxPath.wstring().c_str());
                 if (_dll)
                 {
-                    spdlog::info("NVNGXProxy::InitNVNGX nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(nvngxPath.wstring()), (ULONG64)_dll);
+                    LOG_INFO("nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(nvngxPath.wstring()), (ULONG64)_dll);
                     break;
                 }
             }
@@ -465,21 +465,21 @@ public:
             std::filesystem::path sysPath(sysFolder);
 
             auto nvngxPath = sysPath / L"_nvngx.dll";
-            spdlog::info("NVNGXProxy::InitNVNGX trying to load _nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
+            LOG_INFO("trying to load _nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
 
             _dll = LoadLibraryW(nvngxPath.wstring().c_str());
             if (_dll)
             {
-                spdlog::info("NVNGXProxy::InitNVNGX _nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(nvngxPath.wstring()), (ULONG64)_dll);
+                LOG_INFO("_nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(nvngxPath.wstring()), (ULONG64)_dll);
                 break;
             }
 
             nvngxPath = sysPath / L"nvngx.dll";
-            spdlog::info("NVNGXProxy::InitNVNGX trying to load nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
+            LOG_INFO("trying to load nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
 
             _dll = LoadLibraryW(nvngxPath.wstring().c_str());
             if (_dll)
-                spdlog::info("NVNGXProxy::InitNVNGX nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(nvngxPath.wstring()), (ULONG64)_dll);
+                LOG_INFO("nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(nvngxPath.wstring()), (ULONG64)_dll);
 
         } while (false);
 
@@ -488,7 +488,7 @@ public:
             HookNvApi();
             HookNgxApi(_dll);
 
-            spdlog::info("NVNGXProxy::InitNVNGX getting nvngx method addresses");
+            LOG_INFO("getting nvngx method addresses");
 
             _D3D11_Init = (PFN_D3D11_Init)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Init");
             _D3D11_Init_ProjectID = (PFN_D3D11_Init_ProjectID)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Init_ProjectID");
@@ -556,7 +556,7 @@ public:
         for (size_t i = 0; i < Config::Instance()->NVNGX_FeatureInfo_Paths.size(); ++i)
         {
             paths[i] = Config::Instance()->NVNGX_FeatureInfo_Paths[i].c_str();
-            spdlog::debug("NVNGXProxy::GetFeatureCommonInfo paths[{0}]: {1}", i, wstring_to_string(Config::Instance()->NVNGX_FeatureInfo_Paths[i]));
+            LOG_DEBUG("paths[{0}]: {1}", i, wstring_to_string(Config::Instance()->NVNGX_FeatureInfo_Paths[i]));
         }
 
         fcInfo->PathListInfo.Path = paths;
@@ -590,18 +590,18 @@ public:
 
         if (Config::Instance()->NVNGX_ProjectId != "" && _D3D11_Init_ProjectID != nullptr)
         {
-            spdlog::debug("NVNGXProxy::InitDx11 _D3D11_Init_ProjectID!");
+            LOG_DEBUG("_D3D11_Init_ProjectID!");
 
             nvResult = _D3D11_Init_ProjectID(Config::Instance()->NVNGX_ProjectId.c_str(), Config::Instance()->NVNGX_Engine, Config::Instance()->NVNGX_EngineVersion.c_str(),
                                              Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InDevice, Config::Instance()->NVNGX_Version, &fcInfo);
         }
         else if (_D3D11_Init_Ext != nullptr)
         {
-            spdlog::debug("NVNGXProxy::InitDx11 _D3D11_Init_Ext!");
+            LOG_DEBUG("_D3D11_Init_Ext!");
             nvResult = _D3D11_Init_Ext(Config::Instance()->NVNGX_ApplicationId, Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InDevice, Config::Instance()->NVNGX_Version, &fcInfo);
         }
 
-        spdlog::debug("NVNGXProxy::InitDx11 result: {0:X}", (UINT)nvResult);
+        LOG_DEBUG("result: {0:X}", (UINT)nvResult);
 
         _dx11Inited = (nvResult == NVSDK_NGX_Result_Success);
         return _dx11Inited;
@@ -726,18 +726,18 @@ public:
 
         if (Config::Instance()->NVNGX_ProjectId != "" && _D3D12_Init_ProjectID != nullptr)
         {
-            spdlog::info("NVNGXProxy::InitDx12 _D3D12_Init_ProjectID!");
+            LOG_INFO("_D3D12_Init_ProjectID!");
 
             nvResult = _D3D12_Init_ProjectID(Config::Instance()->NVNGX_ProjectId.c_str(), Config::Instance()->NVNGX_Engine, Config::Instance()->NVNGX_EngineVersion.c_str(),
                                              Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InDevice, Config::Instance()->NVNGX_Version, &fcInfo);
         }
         else if (_D3D12_Init_Ext != nullptr)
         {
-            spdlog::info("NVNGXProxy::InitDx12 _D3D12_Init_Ext!");
+            LOG_INFO("_D3D12_Init_Ext!");
             nvResult = _D3D12_Init_Ext(Config::Instance()->NVNGX_ApplicationId, Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InDevice, Config::Instance()->NVNGX_Version, &fcInfo);
         }
 
-        spdlog::info("NVNGXProxy::InitDx12 result: {0:X}", (UINT)nvResult);
+        LOG_INFO("result: {0:X}", (UINT)nvResult);
 
         _dx12Inited = (nvResult == NVSDK_NGX_Result_Success);
         return _dx12Inited;
@@ -862,18 +862,17 @@ public:
 
         if (Config::Instance()->NVNGX_ProjectId != "" && _VULKAN_Init_ProjectID != nullptr)
         {
-            spdlog::debug("NVNGXProxy::InitVulkan _D3D12_Init_ProjectID!");
-
+            LOG_DEBUG("_VULKAN_Init_ProjectID!");
             nvResult = _VULKAN_Init_ProjectID(Config::Instance()->NVNGX_ProjectId.c_str(), Config::Instance()->NVNGX_Engine, Config::Instance()->NVNGX_EngineVersion.c_str(),
                                               Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InInstance, InPD, InDevice, InGIPA, InGDPA, Config::Instance()->NVNGX_Version, &fcInfo);
         }
         else if (_VULKAN_Init_Ext != nullptr)
         {
-            spdlog::debug("NVNGXProxy::InitVulkan _D3D12_Init_Ext!");
+            LOG_DEBUG("_VULKAN_Init_Ext!");
             nvResult = _VULKAN_Init_Ext(Config::Instance()->NVNGX_ApplicationId, Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InInstance, InPD, InDevice, Config::Instance()->NVNGX_Version, &fcInfo);
         }
 
-        spdlog::debug("NVNGXProxy::InitVulkan result: {0:X}", (UINT)nvResult);
+        LOG_DEBUG("result: {0:X}", (UINT)nvResult);
 
         _vulkanInited = (nvResult == NVSDK_NGX_Result_Success);
 

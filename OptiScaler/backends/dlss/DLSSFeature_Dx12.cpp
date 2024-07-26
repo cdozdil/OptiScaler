@@ -7,7 +7,7 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 {
 	if (NVNGXProxy::NVNGXModule() == nullptr)
 	{
-		spdlog::error("DLSSFeatureDx12::Init nvngx.dll not loaded!");
+		LOG_ERROR("nvngx.dll not loaded!");
 		SetInit(false);
 		return false;
 	}
@@ -36,7 +36,7 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 
-		spdlog::info("DLSSFeatureDx12::Evaluate Creating DLSS feature");
+		LOG_INFO("Creating DLSS feature");
 
 		if (NVNGXProxy::D3D12_CreateFeature() != nullptr)
 		{
@@ -47,17 +47,17 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 
 			if (nvResult != NVSDK_NGX_Result_Success)
 			{
-				spdlog::error("DLSSFeatureDx12::Evaluate _CreateFeature result: {0:X}", (unsigned int)nvResult);
+				LOG_ERROR("_CreateFeature result: {0:X}", (unsigned int)nvResult);
 				break;
 			}
 			else
 			{
-				spdlog::info("DLSSFeatureDx12::Evaluate _CreateFeature result: NVSDK_NGX_Result_Success");
+				LOG_INFO("_CreateFeature result: NVSDK_NGX_Result_Success");
 			}
 		}
 		else
 		{
-			spdlog::error("DLSSFeatureDx12::Evaluate _CreateFeature is nullptr");
+			LOG_ERROR("_CreateFeature is nullptr");
 			break;
 		}
 
@@ -89,13 +89,13 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 {
 	if (!_moduleLoaded)
 	{
-		spdlog::error("DLSSFeatureDx12::Evaluate nvngx.dll or _nvngx.dll is not loaded!");
+		LOG_ERROR("nvngx.dll or _nvngx.dll is not loaded!");
 		return false;
 	}
 
 	if (!IsInited())
 	{
-		spdlog::error("DLSSFeatureDx12::Evaluate Not inited!");
+		LOG_ERROR("Not inited!");
 		return false;
 	}
 
@@ -163,7 +163,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 		if (nvResult != NVSDK_NGX_Result_Success)
 		{
-			spdlog::error("DLSSFeatureDx12::Evaluate _EvaluateFeature result: {0:X}", (unsigned int)nvResult);
+			LOG_ERROR("_EvaluateFeature result: {0:X}", (unsigned int)nvResult);
 			return false;
 		}
 
@@ -209,7 +209,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		// Downsampling
 		if (useSS)
 		{
-			spdlog::debug("DLSSFeatureDx12::Evaluate downscaling output...");
+			LOG_DEBUG("downscaling output...");
 			OutputScaler->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
 			if (!OutputScaler->Dispatch(Device, InCommandList, OutputScaler->Buffer(), paramOutput))
@@ -244,7 +244,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	}
 	else
 	{
-		spdlog::error("DLSSFeatureDx12::Evaluate _EvaluateFeature is nullptr");
+		LOG_ERROR("_EvaluateFeature is nullptr");
 		return false;
 	}
 
@@ -270,11 +270,11 @@ DLSSFeatureDx12::DLSSFeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* I
 {
 	if (NVNGXProxy::NVNGXModule() == nullptr)
 	{
-		spdlog::info("DLSSFeatureDx12::DLSSFeatureDx12 nvngx.dll not loaded, now loading");
+		LOG_INFO("nvngx.dll not loaded, now loading");
 		NVNGXProxy::InitNVNGX();
 	}
 
-	spdlog::info("DLSSFeatureDx12::DLSSFeatureDx12 binding complete!");
+	LOG_INFO("binding complete!");
 }
 
 DLSSFeatureDx12::~DLSSFeatureDx12()

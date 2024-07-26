@@ -89,7 +89,7 @@ static HMODULE LoadNvApi()
 
         if (nvapi != nullptr)
         {
-            spdlog::info("LoadNvApi nvapi64.dll loaded from {0}", wstring_to_string(Config::Instance()->NvapiDllPath.value()));
+            LOG_INFO("nvapi64.dll loaded from {0}", wstring_to_string(Config::Instance()->NvapiDllPath.value()));
             return nvapi;
         }
     }
@@ -101,7 +101,7 @@ static HMODULE LoadNvApi()
 
         if (nvapi != nullptr)
         {
-            spdlog::info("LoadNvApi nvapi64.dll loaded from {0}", wstring_to_string(localPath.wstring()));
+            LOG_INFO("nvapi64.dll loaded from {0}", wstring_to_string(localPath.wstring()));
             return nvapi;
         }
     }
@@ -112,7 +112,7 @@ static HMODULE LoadNvApi()
 
         if (nvapi != nullptr)
         {
-            spdlog::info("LoadNvApi Fallback! nvapi64.dll loaded from system");
+            LOG_WARN("nvapi64.dll loaded from system!");
             return nvapi;
         }
     }
@@ -130,12 +130,12 @@ static HMODULE LoadNvgxDlss(std::wstring originalPath)
 
         if (nvngxDlss != nullptr)
         {
-            spdlog::info("LoadNvApi nvngx_dlss.dll loaded from {0}", wstring_to_string(Config::Instance()->NVNGX_DLSS_Library.value()));
+            LOG_INFO("nvngx_dlss.dll loaded from {0}", wstring_to_string(Config::Instance()->NVNGX_DLSS_Library.value()));
             return nvngxDlss;
         }
         else
         {
-            spdlog::warn("LoadNvApi nvngx_dlss.dll can't found at {0}", wstring_to_string(Config::Instance()->NVNGX_DLSS_Library.value()));
+            LOG_WARN("nvngx_dlss.dll can't found at {0}", wstring_to_string(Config::Instance()->NVNGX_DLSS_Library.value()));
         }
     }
 
@@ -145,7 +145,7 @@ static HMODULE LoadNvgxDlss(std::wstring originalPath)
 
         if (nvngxDlss != nullptr)
         {
-            spdlog::info("LoadNvApi nvngx_dlss.dll loaded from {0}", wstring_to_string(originalPath));
+            LOG_INFO("nvngx_dlss.dll loaded from {0}", wstring_to_string(originalPath));
             return nvngxDlss;
         }
     }
@@ -158,7 +158,7 @@ static HMODULE LoadNvgxDlss(std::wstring originalPath)
 static FARPROC hkGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 {
     if (hModule == dllModule)
-        spdlog::info("hkGetProcAddress trying to get process address of {0}", lpProcName);
+        LOG_INFO("Trying to get process address of {0}", lpProcName);
 
     return o_GetProcAddress(hModule, lpProcName);
 }
@@ -171,7 +171,7 @@ static BOOL hkFreeLibrary(HMODULE lpLibrary)
     if (lpLibrary == dllModule)
     {
         loadCount--;
-        spdlog::info("hkFreeLibrary call for this module loadCount: {0}", loadCount);
+        LOG_INFO("Call for this module loadCount: {0}", loadCount);
 
         if (loadCount == 0)
             return o_FreeLibrary(lpLibrary);
@@ -196,7 +196,7 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
     size_t pos;
 
 #ifdef DEBUG
-    spdlog::trace("hkLoadLibraryA call: {0}", lcaseLibName);
+    LOG_TRACE("call: {0}", lcaseLibName);
 #endif // DEBUG
 
     // If Opti is not loading nvngx.dll
@@ -214,7 +214,7 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxA.size()) &&
             (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
         {
-            spdlog::info("hkLoadLibraryA nvngx call: {0}, returning this dll!", libName);
+            LOG_INFO("nvngx call: {0}, returning this dll!", libName);
 
             if (!dontCount)
                 loadCount++;
@@ -230,7 +230,7 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiA.size()))
         {
-            spdlog::info("hkLoadLibraryA {0} call!", libName);
+            LOG_INFO("{0} call!", libName);
 
             auto nvapi = LoadNvApi();
 
@@ -246,7 +246,7 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxDlssA.size()))
         {
-            spdlog::info("hkLoadLibraryA {0} call!", libName);
+            LOG_INFO("{0} call!", libName);
 
             auto nvngxDlss = LoadNvgxDlss(string_to_wstring(libName));
 
@@ -257,33 +257,33 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 
     if (!isNvngxMode)
     {
-    // Opti dll
-    pos = lcaseLibName.rfind(dllNameA);
-    if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
-    {
-        spdlog::info("hkLoadLibraryA {0} call returning this dll!", libName);
-
-        if (!dontCount)
-            loadCount++;
-
-        return dllModule;
-    }
-
-    // Dxgi.dll
-        if (Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
-    {
-        pos = lcaseLibName.rfind(dxgiA);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiA.size()))
+        // Opti dll
+        pos = lcaseLibName.rfind(dllNameA);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
         {
-            spdlog::info("hkLoadLibraryA HookDxgiFile returning this dll!");
+            LOG_INFO("{0} call returning this dll!", libName);
 
             if (!dontCount)
                 loadCount++;
 
             return dllModule;
         }
-    }
+
+        // Dxgi.dll
+        if (Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
+        {
+            pos = lcaseLibName.rfind(dxgiA);
+
+            if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiA.size()))
+            {
+                LOG_INFO("HookDxgiFile returning this dll!");
+
+                if (!dontCount)
+                    loadCount++;
+
+                return dllModule;
+            }
+        }
     }
 
     dontCount = true;
@@ -294,6 +294,8 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 
 static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 {
+    LOG_FUNC();
+
     if (lpLibFileName == nullptr)
         return NULL;
 
@@ -306,7 +308,7 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
     auto lcaseLibNameA = wstring_to_string(lcaseLibName);
 
 #ifdef DEBUG
-    spdlog::trace("hkLoadLibraryW call: {0}", lcaseLibNameA);
+    LOG_TRACE("call: {0}", lcaseLibNameA);
 #endif
 
     size_t pos;
@@ -326,7 +328,7 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxW.size()) &&
             (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
         {
-            spdlog::info("hkLoadLibraryW nvngx call: {0}, returning this dll!", lcaseLibNameA);
+            LOG_INFO("nvngx call: {0}, returning this dll!", lcaseLibNameA);
 
             if (!dontCount)
                 loadCount++;
@@ -342,7 +344,7 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiW.size()))
         {
-            spdlog::info("hkLoadLibraryW {0} call!", lcaseLibNameA);
+            LOG_INFO("{0} call!", lcaseLibNameA);
 
             auto nvapi = LoadNvApi();
 
@@ -358,7 +360,7 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxDlssW.size()))
         {
-            spdlog::info("hkLoadLibraryW {0} call!", wstring_to_string(libName));
+            LOG_INFO("{0} call!", wstring_to_string(libName));
 
             auto nvngxDlss = LoadNvgxDlss(libName);
 
@@ -381,21 +383,21 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
             return dllModule;
         }
 
-    // Dxgi.dll
+        // Dxgi.dll
         if (Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
-    {
-        pos = lcaseLibName.rfind(dxgiW);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiW.size()))
         {
-            spdlog::info("hkLoadLibraryW HookDxgiFile returning this dll!");
+            pos = lcaseLibName.rfind(dxgiW);
 
-            if (!dontCount)
-                loadCount++;
+            if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiW.size()))
+            {
+                LOG_INFO("HookDxgiFile returning this dll!");
 
-            return dllModule;
+                if (!dontCount)
+                    loadCount++;
+
+                return dllModule;
+            }
         }
-    }
     }
 
     dontCount = true;
@@ -417,7 +419,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
         lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
 #ifdef DEBUG
-    spdlog::trace("hkLoadLibraryExA call: {0}", lcaseLibName);
+    LOG_TRACE("call: {0}", lcaseLibName);
 #endif
 
     size_t pos;
@@ -437,7 +439,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxA.size()) &&
             (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
         {
-            spdlog::info("hkLoadLibraryExA nvngx call: {0}, returning this dll!", libName);
+            LOG_INFO("nvngx call: {0}, returning this dll!", libName);
 
             if (!dontCount)
                 loadCount++;
@@ -450,7 +452,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxExA.size()) &&
             (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
         {
-            spdlog::info("hkLoadLibraryExA nvngx call: {0}, returning this dll!", libName);
+            LOG_INFO("nvngx call: {0}, returning this dll!", libName);
 
             if (!dontCount)
                 loadCount++;
@@ -466,7 +468,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
 
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiExA.size()))
         {
-            spdlog::info("hkLoadLibraryExA {0} call!", libName);
+            LOG_INFO("{0} call!", libName);
 
             auto nvapi = LoadNvApi();
 
@@ -478,7 +480,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
 
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiA.size()))
         {
-            spdlog::info("hkLoadLibraryExA {0} call!", libName);
+            LOG_INFO("{0} call!", libName);
 
             auto nvapi = LoadNvApi();
 
@@ -494,7 +496,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
 
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxDlssExA.size()))
         {
-            spdlog::info("hkLoadLibraryExA {0} call!", libName);
+            LOG_INFO("{0} call!", libName);
 
             auto nvngxDlss = LoadNvgxDlss(string_to_wstring(libName));
 
@@ -506,7 +508,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
 
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxDlssA.size()))
         {
-            spdlog::info("hkLoadLibraryExA {0} call!", libName);
+            LOG_INFO("{0} call!", libName);
 
             auto nvngxDlss = LoadNvgxDlss(string_to_wstring(libName));
 
@@ -517,57 +519,57 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
 
     if (!isNvngxMode)
     {
-    // Opti dll
-    pos = lcaseLibName.rfind(dllNameA);
-    if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
-    {
-        spdlog::info("hkLoadLibraryExA {0} call, returning this dll!", libName);
+        // Opti dll
+        pos = lcaseLibName.rfind(dllNameA);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", libName);
 
-        if (!dontCount)
-            loadCount++;
+            if (!dontCount)
+                loadCount++;
 
-        return dllModule;
-    }
+            return dllModule;
+        }
 
-    // Opti dll
-    pos = lcaseLibName.rfind(dllNameExA);
-    if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExA.size()))
-    {
-        spdlog::info("hkLoadLibraryExA {0} call, returning this dll!", libName);
+        // Opti dll
+        pos = lcaseLibName.rfind(dllNameExA);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExA.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", libName);
 
-        if (!dontCount)
-            loadCount++;
+            if (!dontCount)
+                loadCount++;
 
-        return dllModule;
-    }
+            return dllModule;
+        }
 
-    // Dxgi.dll
+        // Dxgi.dll
         if (Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
-    {
-        pos = lcaseLibName.rfind(dxgiExA);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiExA.size()))
         {
-            spdlog::info("hkLoadLibraryExA HookDxgiFile returning this dll!");
+            pos = lcaseLibName.rfind(dxgiExA);
 
-            if (!dontCount)
-                loadCount++;
+            if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiExA.size()))
+            {
+                LOG_INFO("HookDxgiFile returning this dll!");
 
-            return dllModule;
+                if (!dontCount)
+                    loadCount++;
+
+                return dllModule;
+            }
+
+            pos = lcaseLibName.rfind(dxgiA);
+
+            if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiA.size()))
+            {
+                LOG_INFO("HookDxgiFile returning this dll!");
+
+                if (!dontCount)
+                    loadCount++;
+
+                return dllModule;
+            }
         }
-
-        pos = lcaseLibName.rfind(dxgiA);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiA.size()))
-        {
-            spdlog::info("hkLoadLibraryExA HookDxgiFile returning this dll!");
-
-            if (!dontCount)
-                loadCount++;
-
-            return dllModule;
-        }
-    }
     }
 
     dontCount = true;
@@ -591,7 +593,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
     auto lcaseLibNameA = wstring_to_string(lcaseLibName);
 
 #ifdef DEBUG
-    spdlog::trace("hkLoadLibraryExW call: {0}", lcaseLibNameA);
+    LOG_TRACE("call: {0}", lcaseLibNameA);
 #endif
 
     size_t pos;
@@ -611,7 +613,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxW.size()) &&
             (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
         {
-            spdlog::info("hkLoadLibraryExW nvngx call: {0}, returning this dll!", lcaseLibNameA);
+            LOG_INFO("nvngx call: {0}, returning this dll!", lcaseLibNameA);
 
             if (!dontCount)
                 loadCount++;
@@ -624,7 +626,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxExW.size()) &&
             (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
         {
-            spdlog::info("hkLoadLibraryExW nvngx call: {0}, returning this dll!", lcaseLibNameA);
+            LOG_INFO("nvngx call: {0}, returning this dll!", lcaseLibNameA);
 
             if (!dontCount)
                 loadCount++;
@@ -640,7 +642,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
 
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiExW.size()))
         {
-            spdlog::info("hkLoadLibraryExW {0} call!", lcaseLibNameA);
+            LOG_INFO("{0} call!", lcaseLibNameA);
 
             auto nvapi = LoadNvApi();
 
@@ -652,7 +654,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
 
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiW.size()))
         {
-            spdlog::info("hkLoadLibraryExW {0} call!", lcaseLibNameA);
+            LOG_INFO("{0} call!", lcaseLibNameA);
 
             auto nvapi = LoadNvApi();
 
@@ -668,7 +670,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
 
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxDlssExW.size()))
         {
-            spdlog::info("hkLoadLibraryExW {0} call!", wstring_to_string(libName));
+            LOG_INFO("{0} call!", wstring_to_string(libName));
 
             auto nvngxDlss = LoadNvgxDlss(libName);
 
@@ -680,7 +682,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
 
         if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxDlssW.size()))
         {
-            spdlog::info("hkLoadLibraryExW {0} call!", wstring_to_string(libName));
+            LOG_INFO("{0} call!", wstring_to_string(libName));
 
             auto nvngxDlss = LoadNvgxDlss(libName);
 
@@ -691,57 +693,57 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
 
     if (!isNvngxMode)
     {
-    // Opti dll
-    pos = lcaseLibName.rfind(dllNameW);
-    if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
-    {
-        spdlog::info("hkLoadLibraryExW {0} call, returning this dll!", lcaseLibNameA);
+        // Opti dll
+        pos = lcaseLibName.rfind(dllNameW);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
 
-        if (!dontCount)
-            loadCount++;
+            if (!dontCount)
+                loadCount++;
 
-        return dllModule;
-    }
+            return dllModule;
+        }
 
-    // Opti dll
-    pos = lcaseLibName.rfind(dllNameExW);
-    if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExW.size()))
-    {
-        spdlog::info("hkLoadLibraryExW {0} call, returning this dll!", lcaseLibNameA);
+        // Opti dll
+        pos = lcaseLibName.rfind(dllNameExW);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExW.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
 
-        if (!dontCount)
-            loadCount++;
+            if (!dontCount)
+                loadCount++;
 
-        return dllModule;
-    }
+            return dllModule;
+        }
 
-    // Dxgi.dll
+        // Dxgi.dll
         if (Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
-    {
-        pos = lcaseLibName.rfind(dxgiExW);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiExW.size()))
         {
-            spdlog::info("hkLoadLibraryExA HookDxgiFile returning this dll!");
+            pos = lcaseLibName.rfind(dxgiExW);
 
-            if (!dontCount)
-                loadCount++;
+            if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiExW.size()))
+            {
+                LOG_INFO("HookDxgiFile returning this dll!");
 
-            return dllModule;
+                if (!dontCount)
+                    loadCount++;
+
+                return dllModule;
+            }
+
+            pos = lcaseLibName.rfind(dxgiW);
+
+            if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiW.size()))
+            {
+                LOG_INFO("HookDxgiFile returning this dll!");
+
+                if (!dontCount)
+                    loadCount++;
+
+                return dllModule;
+            }
         }
-
-        pos = lcaseLibName.rfind(dxgiW);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiW.size()))
-        {
-            spdlog::info("hkLoadLibraryExA HookDxgiFile returning this dll!");
-
-            if (!dontCount)
-                loadCount++;
-
-            return dllModule;
-        }
-    }
     }
 
     dontCount = true;
@@ -817,29 +819,29 @@ static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhy
 
 static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance)
 {
-    spdlog::debug("hkvkCreateInstance for {0}", pCreateInfo->pApplicationInfo->pApplicationName);
+    LOG_DEBUG("for {0}", pCreateInfo->pApplicationInfo->pApplicationName);
 
-    spdlog::debug("hkvkCreateInstance extensions ({0}):", pCreateInfo->enabledExtensionCount);
+    LOG_DEBUG("extensions ({0}):", pCreateInfo->enabledExtensionCount);
     for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
-        spdlog::debug("hkvkCreateInstance   {0}", pCreateInfo->ppEnabledExtensionNames[i]);
+        LOG_DEBUG("  {0}", pCreateInfo->ppEnabledExtensionNames[i]);
 
-    spdlog::debug("hkvkCreateInstance layers ({0}):", pCreateInfo->enabledLayerCount);
+    LOG_DEBUG("layers ({0}):", pCreateInfo->enabledLayerCount);
     for (size_t i = 0; i < pCreateInfo->enabledLayerCount; i++)
-        spdlog::debug("hkvkCreateInstance   {0}", pCreateInfo->ppEnabledLayerNames[i]);
+        LOG_DEBUG("  {0}", pCreateInfo->ppEnabledLayerNames[i]);
 
     // Skip spoofing for Intel Arc
     Config::Instance()->dxgiSkipSpoofing = true;
     auto result = o_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
     Config::Instance()->dxgiSkipSpoofing = false;
 
-    spdlog::debug("hkvkCreateInstance o_vkCreateInstance result: {0:X}", (INT)result);
+    LOG_DEBUG("o_vkCreateInstance result: {0:X}", (INT)result);
 
     auto head = (VkBaseInStructure*)pCreateInfo;
 
     while (head->pNext != nullptr)
     {
         head = (VkBaseInStructure*)head->pNext;
-        spdlog::debug("hkvkCreateInstance o_vkCreateInstance type: {0:X}", (UINT)head->sType);
+        LOG_DEBUG("o_vkCreateInstance type: {0:X}", (UINT)head->sType);
     }
 
     return result;
@@ -847,35 +849,35 @@ static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, cons
 
 static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice)
 {
-    spdlog::debug("hkvkCreateDevice");
+    LOG_FUNC();
 
     if (!Config::Instance()->VulkanExtensionSpoofing.value_or(false))
     {
-        spdlog::debug("hkvkCreateDevice extension spoofing is disabled");
+        LOG_DEBUG("extension spoofing is disabled");
 
         Config::Instance()->dxgiSkipSpoofing = true;
         return o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
         Config::Instance()->dxgiSkipSpoofing = false;
     }
 
-    spdlog::debug("hkvkCreateDevice layers ({0}):", pCreateInfo->enabledLayerCount);
+    LOG_DEBUG("layers ({0}):", pCreateInfo->enabledLayerCount);
     for (size_t i = 0; i < pCreateInfo->enabledLayerCount; i++)
-        spdlog::debug("hkvkCreateDevice   {0}", pCreateInfo->ppEnabledLayerNames[i]);
+        LOG_DEBUG("  {0}", pCreateInfo->ppEnabledLayerNames[i]);
 
     std::vector<const char*> newExtensionList;
 
     auto bVK_KHR_get_memory_requirements2 = false;
 
-    spdlog::debug("hkvkCreateDevice checking extensions and removing VK_NVX_BINARY_IMPORT & VK_NVX_IMAGE_VIEW_HANDLE from list");
+    LOG_DEBUG("checking extensions and removing VK_NVX_BINARY_IMPORT & VK_NVX_IMAGE_VIEW_HANDLE from list");
     for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
     {
         if (std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_BINARY_IMPORT_EXTENSION_NAME) == 0 || std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME) == 0)
         {
-            spdlog::debug("hkvkCreateDevice removing {0}", pCreateInfo->ppEnabledExtensionNames[i]);
+            LOG_DEBUG("removing {0}", pCreateInfo->ppEnabledExtensionNames[i]);
         }
         else
         {
-            spdlog::debug("hkvkCreateDevice adding {0}", pCreateInfo->ppEnabledExtensionNames[i]);
+            LOG_DEBUG("adding {0}", pCreateInfo->ppEnabledExtensionNames[i]);
             newExtensionList.push_back(pCreateInfo->ppEnabledExtensionNames[i]);
 
             if (std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME) == 0)
@@ -889,23 +891,26 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
     pCreateInfo->enabledExtensionCount = static_cast<uint32_t>(newExtensionList.size());
     pCreateInfo->ppEnabledExtensionNames = newExtensionList.data();
 
-    spdlog::debug("hkvkCreateDevice final extension count: {0}", pCreateInfo->enabledExtensionCount);
-    spdlog::debug("hkvkCreateDevice final extensions:");
+    LOG_DEBUG("final extension count: {0}", pCreateInfo->enabledExtensionCount);
+    LOG_DEBUG("final extensions:");
 
     for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
-        spdlog::debug("hkvkCreateDevice   {0}", pCreateInfo->ppEnabledExtensionNames[i]);
+        LOG_DEBUG("  {0}", pCreateInfo->ppEnabledExtensionNames[i]);
 
     // Skip spoofing for Intel Arc
     Config::Instance()->dxgiSkipSpoofing = true;
     auto result = o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
     Config::Instance()->dxgiSkipSpoofing = false;
-    spdlog::debug("hkvkCreateDevice o_vkCreateDevice result: {0:X}", (INT)result);
+
+    LOG_FUNC_RESULT(result);
 
     return result;
 }
 
 static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice physicalDevice, const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties)
 {
+    LOG_FUNC();
+
     auto count = *pPropertyCount;
     auto result = o_vkEnumerateDeviceExtensionProperties(physicalDevice, pLayerName, pPropertyCount, pProperties);
 
@@ -931,11 +936,15 @@ static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice physical
         memcpy(&pProperties[*pPropertyCount - 2], &ivh, sizeof(VkExtensionProperties));
     }
 
+    LOG_FUNC_RESULT(result);
+
     return result;
 }
 
 static VkResult hkvkEnumerateInstanceExtensionProperties(const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties)
 {
+    LOG_FUNC();
+
     auto count = *pPropertyCount;
     auto result = o_vkEnumerateInstanceExtensionProperties(pLayerName, pPropertyCount, pProperties);
 
@@ -960,6 +969,8 @@ static VkResult hkvkEnumerateInstanceExtensionProperties(const char* pLayerName,
         VkExtensionProperties ivh{ VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME, VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION };
         memcpy(&pProperties[*pPropertyCount - 2], &ivh, sizeof(VkExtensionProperties));
     }
+
+    LOG_FUNC_RESULT(result);
 
     return result;
 }
@@ -1060,6 +1071,8 @@ static void DetachHooks()
 
 static void AttachHooks()
 {
+    LOG_FUNC();
+
     if (o_LoadLibraryA == nullptr || o_LoadLibraryW == nullptr)
     {
         // Detour the functions
@@ -1074,7 +1087,7 @@ static void AttachHooks()
 
         if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
         {
-            spdlog::info("Attaching LoadLibrary hooks");
+            LOG_INFO("Attaching LoadLibrary hooks");
 
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
@@ -1109,7 +1122,7 @@ static void AttachHooks()
 
         if (o_vkGetPhysicalDeviceProperties != nullptr)
         {
-            spdlog::info("Attaching Vulkan device spoofing hooks");
+            LOG_INFO("Attaching Vulkan device spoofing hooks");
 
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
@@ -1136,7 +1149,7 @@ static void AttachHooks()
 
         if (o_vkEnumerateInstanceExtensionProperties != nullptr || o_vkEnumerateDeviceExtensionProperties != nullptr)
         {
-            spdlog::info("Attaching Vulkan extensions spoofing hooks");
+            LOG_INFO("Attaching Vulkan extensions spoofing hooks");
 
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
@@ -1160,6 +1173,8 @@ static void AttachHooks()
 
 static bool IsRunningOnWine()
 {
+    LOG_FUNC();
+
     HMODULE ntdll = GetModuleHandle(L"ntdll.dll");
 
     if (!ntdll)
@@ -1172,7 +1187,7 @@ static bool IsRunningOnWine()
 
     if (pWineGetVersion)
     {
-        spdlog::info("IsRunningOnWine Running on Wine {0}!", pWineGetVersion());
+        LOG_INFO("IsRunningOnWine Running on Wine {0}!", pWineGetVersion());
         return true;
     }
 
@@ -1182,6 +1197,8 @@ static bool IsRunningOnWine()
 
 static void CheckWorkingMode()
 {
+    LOG_FUNC();
+
     bool modeFound = false;
     std::string filename = Util::DllPath().filename().string();
     std::string lCaseFilename(filename);
@@ -1199,7 +1216,7 @@ static void CheckWorkingMode()
     {
         if (lCaseFilename == "nvngx.dll" || lCaseFilename == "_nvngx.dll" || lCaseFilename == "dlss-enabler-upscaler.dll")
         {
-            spdlog::info("OptiScaler working as native upscaler: {0}", filename);
+            LOG_INFO("OptiScaler working as native upscaler: {0}", filename);
 
             dllNameA = "OptiScaler_DontLoad.dll";
             dllNameExA = "OptiScaler_DontLoad";
@@ -1223,7 +1240,7 @@ static void CheckWorkingMode()
 
                 if (dll != nullptr)
                 {
-                    spdlog::info("OptiScaler working as version.dll, original dll loaded from plugin folder");
+                    LOG_INFO("OptiScaler working as version.dll, original dll loaded from plugin folder");
                     break;
                 }
 
@@ -1231,7 +1248,7 @@ static void CheckWorkingMode()
 
                 if (dll != nullptr)
                 {
-                    spdlog::info("OptiScaler working as version.dll, version-original.dll loaded");
+                    LOG_INFO("OptiScaler working as version.dll, version-original.dll loaded");
                     break;
                 }
 
@@ -1239,7 +1256,7 @@ static void CheckWorkingMode()
                 dll = LoadLibrary(sysFilePath.wstring().c_str());
 
                 if (dll != nullptr)
-                    spdlog::info("OptiScaler working as version.dll, system dll loaded");
+                    LOG_INFO("OptiScaler working as version.dll, system dll loaded");
 
             } while (false);
 
@@ -1273,7 +1290,7 @@ static void CheckWorkingMode()
 
                 if (dll != nullptr)
                 {
-                    spdlog::info("OptiScaler working as winmm.dll, original dll loaded from plugin folder");
+                    LOG_INFO("OptiScaler working as winmm.dll, original dll loaded from plugin folder");
                     break;
                 }
 
@@ -1281,7 +1298,7 @@ static void CheckWorkingMode()
 
                 if (dll != nullptr)
                 {
-                    spdlog::info("OptiScaler working as winmm.dll, winmm-original.dll loaded");
+                    LOG_INFO("OptiScaler working as winmm.dll, winmm-original.dll loaded");
                     break;
                 }
 
@@ -1289,7 +1306,7 @@ static void CheckWorkingMode()
                 dll = LoadLibrary(sysFilePath.wstring().c_str());
 
                 if (dll != nullptr)
-                    spdlog::info("OptiScaler working as winmm.dll, system dll loaded");
+                    LOG_INFO("OptiScaler working as winmm.dll, system dll loaded");
 
             } while (false);
 
@@ -1322,7 +1339,7 @@ static void CheckWorkingMode()
 
                 if (dll != nullptr)
                 {
-                    spdlog::info("OptiScaler working as wininet.dll, original dll loaded from plugin folder");
+                    LOG_INFO("OptiScaler working as wininet.dll, original dll loaded from plugin folder");
                     break;
                 }
 
@@ -1330,7 +1347,7 @@ static void CheckWorkingMode()
 
                 if (dll != nullptr)
                 {
-                    spdlog::info("OptiScaler working as wininet.dll, wininet-original.dll loaded");
+                    LOG_INFO("OptiScaler working as wininet.dll, wininet-original.dll loaded");
                     break;
                 }
 
@@ -1338,7 +1355,7 @@ static void CheckWorkingMode()
                 dll = LoadLibrary(sysFilePath.wstring().c_str());
 
                 if (dll != nullptr)
-                    spdlog::info("OptiScaler working as wininet.dll, system dll loaded");
+                    LOG_INFO("OptiScaler working as wininet.dll, system dll loaded");
 
             } while (false);
 
@@ -1364,7 +1381,7 @@ static void CheckWorkingMode()
         // optiscaler.dll
         if (lCaseFilename == "optiscaler.asi")
         {
-            spdlog::info("OptiScaler working as OptiScaler.asi");
+            LOG_INFO("OptiScaler working as OptiScaler.asi");
 
             // quick hack for testing
             dll = dllModule;
@@ -1388,7 +1405,7 @@ static void CheckWorkingMode()
 
                 if (dll != nullptr)
                 {
-                    spdlog::info("OptiScaler working as winhttp.dll, original dll loaded from plugin folder");
+                    LOG_INFO("OptiScaler working as winhttp.dll, original dll loaded from plugin folder");
                     break;
                 }
 
@@ -1396,7 +1413,7 @@ static void CheckWorkingMode()
 
                 if (dll != nullptr)
                 {
-                    spdlog::info("OptiScaler working as winhttp.dll, winhttp-original.dll loaded");
+                    LOG_INFO("OptiScaler working as winhttp.dll, winhttp-original.dll loaded");
                     break;
                 }
 
@@ -1404,7 +1421,7 @@ static void CheckWorkingMode()
                 dll = LoadLibrary(sysFilePath.wstring().c_str());
 
                 if (dll != nullptr)
-                    spdlog::info("OptiScaler working as winhttp.dll, system dll loaded");
+                    LOG_INFO("OptiScaler working as winhttp.dll, system dll loaded");
 
             } while (false);
 
@@ -1437,7 +1454,7 @@ static void CheckWorkingMode()
 
                 if (dll != nullptr)
                 {
-                    spdlog::info("OptiScaler working as dxgi.dll, original dll loaded from plugin folder");
+                    LOG_INFO("OptiScaler working as dxgi.dll, original dll loaded from plugin folder");
                     break;
                 }
 
@@ -1445,7 +1462,7 @@ static void CheckWorkingMode()
 
                 if (dll != nullptr)
                 {
-                    spdlog::info("OptiScaler working as dxgi.dll, dxgi-original.dll loaded");
+                    LOG_INFO("OptiScaler working as dxgi.dll, dxgi-original.dll loaded");
                     break;
                 }
 
@@ -1453,7 +1470,7 @@ static void CheckWorkingMode()
                 dll = LoadLibrary(sysFilePath.wstring().c_str());
 
                 if (dll != nullptr)
-                    spdlog::info("OptiScaler working as dxgi.dll, system dll loaded");
+                    LOG_INFO("OptiScaler working as dxgi.dll, system dll loaded");
 
             } while (false);
 
@@ -1482,7 +1499,7 @@ static void CheckWorkingMode()
 
     if (!isNvngxMode && !Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
     {
-        spdlog::info("HookDxgiFile is enabled loading dxgi.dll");
+        LOG_INFO("DxgiSpoofing is enabled loading dxgi.dll");
 
         do
         {
@@ -1491,7 +1508,7 @@ static void CheckWorkingMode()
 
             if (dxgiDll != nullptr)
             {
-                spdlog::info("HookDxgiFile is enabled, original dll loaded from plugin folder");
+                LOG_INFO("DxgiSpoofing is enabled, original dll loaded from plugin folder");
                 dxgi.LoadOriginalLibrary(dxgiDll);
                 Config::Instance()->IsDxgiMode = true;
                 break;
@@ -1501,7 +1518,7 @@ static void CheckWorkingMode()
 
             if (dxgiDll != nullptr)
             {
-                spdlog::info("HookDxgiFile is enabled, dxgi-original.dll loaded");
+                LOG_INFO("DxgiSpoofing is enabled, dxgi-original.dll loaded");
                 dxgi.LoadOriginalLibrary(dxgiDll);
                 Config::Instance()->IsDxgiMode = true;
                 break;
@@ -1512,7 +1529,7 @@ static void CheckWorkingMode()
 
             if (dxgiDll != nullptr)
             {
-                spdlog::info("HookDxgiFile is enabled, system dll loaded");
+                LOG_INFO("DxgiSpoofing is enabled, system dll loaded");
                 dxgi.LoadOriginalLibrary(dxgiDll);
                 Config::Instance()->IsDxgiMode = true;
                 break;
@@ -1525,7 +1542,7 @@ static void CheckWorkingMode()
     if (modeFound)
     {
         //if (!isWorkingWithEnabler)
-            AttachHooks();
+        AttachHooks();
 
         if (!isNvngxMode && !Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))
         {
@@ -1536,7 +1553,7 @@ static void CheckWorkingMode()
         return;
     }
 
-    spdlog::error("Unsupported dll name: {0}", filename);
+    LOG_ERROR("Unsupported dll name: {0}", filename);
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
@@ -1547,7 +1564,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         case DLL_PROCESS_ATTACH:
             if (loadCount > 1)
             {
-                spdlog::info("DllMain DLL_PROCESS_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
+                LOG_INFO("DLL_PROCESS_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
                 return TRUE;
             }
 
@@ -1599,8 +1616,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                     if (!Config::Instance()->DxgiSpoofing.has_value())
                         Config::Instance()->DxgiSpoofing = false;
 
-                    Config::Instance()->DxgiBlacklist.reset();
-
                     if (!Config::Instance()->VulkanSpoofing.has_value())
                         Config::Instance()->VulkanSpoofing = false;
 
@@ -1624,7 +1639,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
         case DLL_PROCESS_DETACH:
 #ifdef _DEBUG
-            spdlog::trace("DllMain DLL_PROCESS_DETACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
+            LOG_TRACE("DLL_PROCESS_DETACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
 #endif
             spdlog::info("");
             spdlog::info("Unloading OptiScaler");
@@ -1635,18 +1650,18 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
         case DLL_THREAD_ATTACH:
 #ifdef _DEBUG
-            // spdlog::trace("DllMain DLL_THREAD_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
+            // LOG_TRACE("DllMain DLL_THREAD_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
 #endif
             break;
 
         case DLL_THREAD_DETACH:
 #ifdef _DEBUG
-            // spdlog::trace("DllMain DLL_THREAD_DETACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
+            // LOG_TRACE("DLL_THREAD_DETACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
 #endif
             break;
 
         default:
-            spdlog::warn("DllMain reason: {0:X}", ul_reason_for_call);
+            LOG_WARN("Call reason: {0:X}", ul_reason_for_call);
             break;
     }
 

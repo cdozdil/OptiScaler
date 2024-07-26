@@ -8,7 +8,7 @@ bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice 
 {
 	if (NVNGXProxy::NVNGXModule() == nullptr)
 	{
-		spdlog::error("DLSSFeatureVk::Init nvngx.dll not loaded!");
+		LOG_ERROR("nvngx.dll not loaded!");
 
 		SetInit(false);
 		return false;
@@ -41,7 +41,7 @@ bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice 
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 
-		spdlog::info("DLSSFeatureVk::Evaluate Creating DLSS feature");
+		LOG_INFO("Creating DLSS feature");
 
 		if (NVNGXProxy::VULKAN_CreateFeature() != nullptr)
 		{
@@ -52,13 +52,13 @@ bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice 
 
 			if (nvResult != NVSDK_NGX_Result_Success)
 			{
-				spdlog::error("DLSSFeatureVk::Evaluate _CreateFeature result: {0:X}", (unsigned int)nvResult);
+				LOG_ERROR("_CreateFeature result: {0:X}", (unsigned int)nvResult);
 				break;
 			}
 		}
 		else
 		{
-			spdlog::error("DLSSFeatureVk::Evaluate _CreateFeature is nullptr");
+			LOG_ERROR("_CreateFeature is nullptr");
 			break;
 		}
 
@@ -77,7 +77,7 @@ bool DLSSFeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* I
 {
 	if (!_moduleLoaded)
 	{
-		spdlog::error("DLSSFeatureVk::Evaluate nvngx.dll or _nvngx.dll is not loaded!");
+		LOG_ERROR("nvngx.dll or _nvngx.dll is not loaded!");
 			return false;
 	}
 
@@ -91,13 +91,13 @@ bool DLSSFeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* I
 
 		if (nvResult != NVSDK_NGX_Result_Success)
 		{
-			spdlog::error("DLSSFeatureVk::Evaluate _EvaluateFeature result: {0:X}", (unsigned int)nvResult);
+			LOG_ERROR("_EvaluateFeature result: {0:X}", (unsigned int)nvResult);
 			return false;
 		}
 	}
 	else
 	{
-		spdlog::error("DLSSFeatureVk::Evaluate _EvaluateFeature is nullptr");
+		LOG_ERROR("_EvaluateFeature is nullptr");
 		return false;
 	}
 
@@ -123,11 +123,11 @@ DLSSFeatureVk::DLSSFeatureVk(unsigned int InHandleId, NVSDK_NGX_Parameter* InPar
 {
 	if (NVNGXProxy::NVNGXModule() == nullptr)
 	{
-		spdlog::info("DLSSFeatureVk::DLSSFeatureVk nvngx.dll not loaded, now loading");
+		LOG_INFO("nvngx.dll not loaded, now loading");
 		NVNGXProxy::InitNVNGX();
 	}
 
-	spdlog::info("DLSSFeatureVk::DLSSFeatureVk binding complete!");
+	LOG_INFO("binding complete!");
 }
 
 DLSSFeatureVk::~DLSSFeatureVk()

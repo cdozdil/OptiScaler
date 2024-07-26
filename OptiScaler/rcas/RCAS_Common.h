@@ -152,11 +152,11 @@ static ID3DBlob* CompileShader(const char* shaderCode, const char* entryPoint, c
 
     if (FAILED(hr))
     {
-        spdlog::error("CompileShader error while compiling shader");
+        LOG_ERROR("error while compiling shader");
 
         if (errorBlob)
         {
-            spdlog::error("CompileShader error while compiling shader : {0}", (char*)errorBlob->GetBufferPointer());
+            LOG_ERROR("error while compiling shader : {0}", (char*)errorBlob->GetBufferPointer());
             errorBlob->Release();
         }
 

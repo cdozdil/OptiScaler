@@ -49,7 +49,7 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &uintValue) == NVSDK_NGX_Result_Success)
 	{
-		spdlog::info("DLSSDFeature::ProcessInitParams featureFlags {0:X}", uintValue);
+		LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags {0:X}", uintValue);
 
 		isHdr = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_IsHDR);
 		mvLowRes = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
@@ -63,66 +63,66 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 	{
 		Config::Instance()->DepthInverted = true;
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
-		spdlog::info("DLSSDFeature::ProcessInitParams featureFlags (DepthInverted) {0:b}", featureFlags);
+		LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (DepthInverted) {0:b}", featureFlags);
 	}
 	else
 	{
-		spdlog::info("DLSSDFeature::ProcessInitParams featureFlags (!DepthInverted) {0:b}", featureFlags);
+		LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (!DepthInverted) {0:b}", featureFlags);
 	}
 
 	if (Config::Instance()->AutoExposure.value_or(autoExposure))
 	{
 		Config::Instance()->AutoExposure = true;
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
-		spdlog::info("DLSSDFeature::ProcessInitParams featureFlags (AutoExposure) {0:b}", featureFlags);
+		LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (AutoExposure) {0:b}", featureFlags);
 	}
 	else
 	{
-		spdlog::info("DLSSDFeature::ProcessInitParams featureFlags (!AutoExposure) {0:b}", featureFlags);
+		LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (!AutoExposure) {0:b}", featureFlags);
 	}
 
 	if (Config::Instance()->HDR.value_or(isHdr))
 	{
 		Config::Instance()->HDR = true;
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
-		spdlog::info("DLSSDFeature::ProcessInitParams featureFlags (HDR) {0:b}", featureFlags);
+		LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (HDR) {0:b}", featureFlags);
 	}
 	else
 	{
 		Config::Instance()->HDR = false;
-		spdlog::info("DLSSDFeature::ProcessInitParams featureFlags (!HDR) {0:b}", featureFlags);
+		LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (!HDR) {0:b}", featureFlags);
 	}
 
 	if (Config::Instance()->JitterCancellation.value_or(mvJittered))
 	{
 		Config::Instance()->JitterCancellation = true;
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
-		spdlog::info("DLSSDFeature::ProcessInitParams featureFlags (JitterCancellation) {0:b}", featureFlags);
+		LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (JitterCancellation) {0:b}", featureFlags);
 	}
 	else
 	{
 		Config::Instance()->JitterCancellation = false;
-		spdlog::info("DLSSDFeature::ProcessInitParams featureFlags (!JitterCancellation) {0:b}", featureFlags);
+		LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (!JitterCancellation) {0:b}", featureFlags);
 	}
 
 	if (Config::Instance()->DisplayResolution.value_or(!mvLowRes))
 	{
-		spdlog::info("DLSSDFeature::ProcessInitParams featureFlags (!LowResMV) {0:b}", featureFlags);
+		LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (!LowResMV) {0:b}", featureFlags);
 	}
 	else
 	{
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
-		spdlog::info("DLSSDFeature::ProcessInitParams featureFlags (LowResMV) {0:b}", featureFlags);
+		LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (LowResMV) {0:b}", featureFlags);
 	}
 
 	if (Config::Instance()->OverrideSharpness.value_or(sharpening) && !(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->RcasEnabled.value_or(false)))
 	{
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
-		spdlog::info("DLSSDFeature::ProcessInitParams featureFlags (Sharpening) {0:b}", featureFlags);
+		LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (Sharpening) {0:b}", featureFlags);
 	}
 	else
 	{
-		spdlog::info("DLSSDFeature::ProcessInitParams featureFlags (!Sharpening) {0:b}", featureFlags);
+		LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (!Sharpening) {0:b}", featureFlags);
 	}
 
 	InParameters->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, featureFlags);
@@ -232,7 +232,7 @@ void DLSSDFeature::ReadVersion()
 
 	if (_GetSnippetVersion != nullptr)
 	{
-		spdlog::trace("DLSSDFeature::ReadVersion DLSSD _GetSnippetVersion ptr: {0:X}", (ULONG64)_GetSnippetVersion);
+		LOG_TRACE("_GetSnippetVersion ptr: {0:X}", (ULONG64)_GetSnippetVersion);
 
 		auto result = _GetSnippetVersion();
 
@@ -240,11 +240,11 @@ void DLSSDFeature::ReadVersion()
 		_version.minor = (result & 0x0000FF00) / 0x00000100;
 		_version.patch = result & 0x000000FF / 0x00000001;
 
-		spdlog::info("DLSSDFeature::ReadVersion DLSSD v{0}.{1}.{2} loaded.", _version.major, _version.minor, _version.patch);
+		LOG_INFO("v{0}.{1}.{2} loaded.", _version.major, _version.minor, _version.patch);
 		return;
 	}
 
-	spdlog::info("DLSSDFeature::ReadVersion GetProcAddress for NVSDK_NGX_GetSnippetVersion failed!");
+	LOG_INFO("GetProcAddress for NVSDK_NGX_GetSnippetVersion failed!");
 }
 
 DLSSDFeature::DLSSDFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)

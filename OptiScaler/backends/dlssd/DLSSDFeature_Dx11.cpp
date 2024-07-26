@@ -7,7 +7,7 @@ bool DLSSDFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
 {
 	if (NVNGXProxy::NVNGXModule() == nullptr)
 	{
-		spdlog::error("DLSSDFeatureDx11::Init nvngx.dll not loaded!");
+		LOG_ERROR("nvngx.dll not loaded!");
 
 		SetInit(false);
 		return false;
@@ -37,7 +37,7 @@ bool DLSSDFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 
-		spdlog::info("DLSSDFeatureDx11::Init Creating DLSSD feature");
+		LOG_INFO("Creating DLSSD feature");
 
 		if (NVNGXProxy::D3D11_CreateFeature() != nullptr)
 		{
@@ -48,17 +48,17 @@ bool DLSSDFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
 
 			if (nvResult != NVSDK_NGX_Result_Success)
 			{
-				spdlog::error("DLSSDFeatureDx11::Init _CreateFeature result: {0:X}", (unsigned int)nvResult);
+				LOG_ERROR("_CreateFeature result: {0:X}", (unsigned int)nvResult);
 				break;
 			}
 			else
 			{
-				spdlog::info("DLSSDFeatureDx11::Init _CreateFeature result: NVSDK_NGX_Result_Success, HandleId: {0}", _p_dlssdHandle->Id);
+				LOG_INFO("_CreateFeature result: NVSDK_NGX_Result_Success, HandleId: {0}", _p_dlssdHandle->Id);
 			}
 		}
 		else
 		{
-			spdlog::error("DLSSDFeatureDx11::Init _CreateFeature is nullptr");
+			LOG_ERROR("_CreateFeature is nullptr");
 			break;
 		}
 
@@ -83,7 +83,7 @@ bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_
 {
 	if (!_moduleLoaded)
 	{
-		spdlog::error("DLSSDFeatureDx11::Evaluate nvngx.dll or _nvngx.dll is not loaded!");
+		LOG_ERROR("nvngx.dll or _nvngx.dll is not loaded!");
 		return false;
 	}
 
@@ -98,17 +98,17 @@ bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_
 
 		if (nvResult != NVSDK_NGX_Result_Success)
 		{
-			spdlog::error("DLSSDFeatureDx12::Evaluate _EvaluateFeature result: {0:X}", (unsigned int)nvResult);
+			LOG_ERROR("_EvaluateFeature result: {0:X}", (unsigned int)nvResult);
 			return false;
 		}
 		else
 		{
-			spdlog::trace("DLSSDFeatureDx12::Evaluate _EvaluateFeature ok!");
+			LOG_TRACE("_EvaluateFeature ok!");
 		}
 	}
 	else
 	{
-		spdlog::error("DLSSDFeatureDx11::Evaluate _EvaluateFeature is nullptr");
+		LOG_ERROR("_EvaluateFeature is nullptr");
 		return false;
 	}
 
@@ -143,11 +143,11 @@ DLSSDFeatureDx11::DLSSDFeatureDx11(unsigned int InHandleId, NVSDK_NGX_Parameter*
 {
 	if (NVNGXProxy::NVNGXModule() == nullptr)
 	{
-		spdlog::info("DLSSDFeatureDx11::DLSSDFeatureDx11 nvngx.dll not loaded, now loading");
+		LOG_INFO("nvngx.dll not loaded, now loading");
 		NVNGXProxy::InitNVNGX();
 	}
 
-	spdlog::info("DLSSDFeatureDx11::DLSSDFeatureDx11 binding complete!");
+	LOG_INFO("binding complete!");
 }
 
 DLSSDFeatureDx11::~DLSSDFeatureDx11()

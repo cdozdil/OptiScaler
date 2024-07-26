@@ -10,8 +10,8 @@ protected:
 	VkInstance Instance = nullptr;
 	VkPhysicalDevice PhysicalDevice = nullptr;
 	VkDevice Device = nullptr;
-	PFN_vkGetInstanceProcAddr GIPA;
-	PFN_vkGetDeviceProcAddr GDPA;
+	PFN_vkGetInstanceProcAddr GIPA = nullptr;
+	PFN_vkGetDeviceProcAddr GDPA = nullptr;
 
 public:
 	virtual bool Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Parameter* InParameters) = 0;

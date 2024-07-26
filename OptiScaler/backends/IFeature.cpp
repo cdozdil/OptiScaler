@@ -5,7 +5,7 @@
 void IFeature::SetHandle(unsigned int InHandleId)
 {
 	_handle = new NVSDK_NGX_Handle{ InHandleId };
-	spdlog::info("IFeatureContext::SetHandle Handle: {0}", _handle->Id);
+	LOG_INFO("Handle: {0}", _handle->Id);
 }
 
 bool IFeature::SetInitParameters(NVSDK_NGX_Parameter* InParameters)
@@ -68,13 +68,13 @@ bool IFeature::SetInitParameters(NVSDK_NGX_Parameter* InParameters)
 		//	InParameters->Set(NVSDK_NGX_Parameter_OutHeight, _displayHeight);
 		//}
 
-		spdlog::info("IFeatureContext::SetInitParameters Render Resolution: {0}x{1}, Display Resolution {2}x{3}, Quality: {4}",
+		LOG_INFO("Render Resolution: {0}x{1}, Display Resolution {2}x{3}, Quality: {4}",
 			_renderWidth, _renderHeight, _displayWidth, _displayHeight, pqValue);
 
 		return true;
 	}
 
-	spdlog::error("IFeatureContext::SetInitParameters Can't set parameters!");
+	LOG_ERROR("Can't set parameters!");
 	return false;
 }
 

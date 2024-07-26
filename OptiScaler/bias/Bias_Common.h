@@ -30,11 +30,11 @@ static ID3DBlob* BiasCompileShader(const char* shaderCode, const char* entryPoin
 
     if (FAILED(hr))
     {
-        spdlog::error("CompileShader error while compiling shader");
+        LOG_ERROR("error while compiling shader");
 
         if (errorBlob)
         {
-            spdlog::error("CompileShader error while compiling shader : {0}", (char*)errorBlob->GetBufferPointer());
+            LOG_ERROR("error while compiling shader : {0}", (char*)errorBlob->GetBufferPointer());
             errorBlob->Release();
         }
 

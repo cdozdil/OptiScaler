@@ -6,6 +6,8 @@
 
 void DLSSFeature::ProcessEvaluateParams(NVSDK_NGX_Parameter* InParameters)
 {
+	LOG_FUNC();
+
 	float floatValue;
 
 	// override sharpness
@@ -29,10 +31,14 @@ void DLSSFeature::ProcessEvaluateParams(NVSDK_NGX_Parameter* InParameters)
 	unsigned int width;
 	unsigned int height;
 	GetRenderResolution(InParameters, &width, &height);
+
+	LOG_FUNC_RESULT(0);
 }
 
 void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 {
+	LOG_FUNC();
+
 	unsigned int uintValue;
 
 	// Create flags -----------------------------
@@ -47,7 +53,7 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &uintValue) == NVSDK_NGX_Result_Success)
 	{
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags {0:X}", uintValue);
+		LOG_INFO("featureFlags {0:X}", uintValue);
 
 		isHdr = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_IsHDR);
 		mvLowRes = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
@@ -61,66 +67,66 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 	{
 		Config::Instance()->DepthInverted = true;
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (DepthInverted) {0:b}", featureFlags);
+		LOG_INFO("featureFlags (DepthInverted) {0:b}", featureFlags);
 	}
 	else
 	{
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!DepthInverted) {0:b}", featureFlags);
+		LOG_INFO("featureFlags (!DepthInverted) {0:b}", featureFlags);
 	}
 
 	if (Config::Instance()->AutoExposure.value_or(autoExposure))
 	{
 		Config::Instance()->AutoExposure = true;
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (AutoExposure) {0:b}", featureFlags);
+		LOG_INFO("featureFlags (AutoExposure) {0:b}", featureFlags);
 	}
 	else
 	{
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!AutoExposure) {0:b}", featureFlags);
+		LOG_INFO("featureFlags (!AutoExposure) {0:b}", featureFlags);
 	}
 
 	if (Config::Instance()->HDR.value_or(isHdr))
 	{
 		Config::Instance()->HDR = true;
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (HDR) {0:b}", featureFlags);
+		LOG_INFO("featureFlags (HDR) {0:b}", featureFlags);
 	}
 	else
 	{
 		Config::Instance()->HDR = false;
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!HDR) {0:b}", featureFlags);
+		LOG_INFO("featureFlags (!HDR) {0:b}", featureFlags);
 	}
 
 	if (Config::Instance()->JitterCancellation.value_or(mvJittered))
 	{
 		Config::Instance()->JitterCancellation = true;
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (JitterCancellation) {0:b}", featureFlags);
+		LOG_INFO("featureFlags (JitterCancellation) {0:b}", featureFlags);
 	}
 	else
 	{
 		Config::Instance()->JitterCancellation = false;
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!JitterCancellation) {0:b}", featureFlags);
+		LOG_INFO("featureFlags (!JitterCancellation) {0:b}", featureFlags);
 	}
 
 	if (Config::Instance()->DisplayResolution.value_or(!mvLowRes))
 	{
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!LowResMV) {0:b}", featureFlags);
+		LOG_INFO("featureFlags (!LowResMV) {0:b}", featureFlags);
 	}
 	else
 	{
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (LowResMV) {0:b}", featureFlags);
+		LOG_INFO("featureFlags (LowResMV) {0:b}", featureFlags);
 	}
 
 	if (Config::Instance()->OverrideSharpness.value_or(sharpening) && !(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->RcasEnabled.value_or(false)))
 	{
 		featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (Sharpening) {0:b}", featureFlags);
+		LOG_INFO("featureFlags (Sharpening) {0:b}", featureFlags);
 	}
 	else
 	{
-		spdlog::info("DLSSFeature::ProcessInitParams featureFlags (!Sharpening) {0:b}", featureFlags);
+		LOG_INFO("featureFlags (!Sharpening) {0:b}", featureFlags);
 	}
 
 	InParameters->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, featureFlags);
@@ -220,17 +226,21 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 	InParameters->Set("RayReconstruction.Hint.Render.Preset.Balanced", RenderPresetBalanced);
 	InParameters->Set("RayReconstruction.Hint.Render.Preset.Performance", RenderPresetPerformance);
 	InParameters->Set("RayReconstruction.Hint.Render.Preset.UltraPerformance", RenderPresetUltraPerformance);
+
+	LOG_FUNC_RESULT(0);
 }
 
 void DLSSFeature::ReadVersion()
 {
+	LOG_FUNC();
+
 	PFN_NVSDK_NGX_GetSnippetVersion _GetSnippetVersion = nullptr;
 
 	_GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction("nvngx_dlss.dll", "NVSDK_NGX_GetSnippetVersion");
 
 	if (_GetSnippetVersion != nullptr)
 	{
-		spdlog::trace("DLSSFeature::ReadVersion DLSS _GetSnippetVersion ptr: {0:X}", (ULONG64)_GetSnippetVersion);
+		LOG_TRACE("_GetSnippetVersion ptr: {0:X}", (ULONG64)_GetSnippetVersion);
 
 		auto result = _GetSnippetVersion();
 
@@ -238,15 +248,17 @@ void DLSSFeature::ReadVersion()
 		_version.minor = (result & 0x0000FF00) / 0x00000100;
 		_version.patch = result & 0x000000FF / 0x00000001;
 
-		spdlog::info("DLSSFeature::ReadVersion DLSS v{0}.{1}.{2} loaded.", _version.major, _version.minor, _version.patch);
+		LOG_INFO("DLSS v{0}.{1}.{2} loaded.", _version.major, _version.minor, _version.patch);
 		return;
 	}
 
-	spdlog::info("DLSSFeature::ReadVersion GetProcAddress for NVSDK_NGX_GetSnippetVersion failed!");
+	LOG_WARN("GetProcAddress for NVSDK_NGX_GetSnippetVersion failed!");
 }
 
 DLSSFeature::DLSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
 {
+	LOG_FUNC();
+
 	if (NVNGXProxy::NVNGXModule() == nullptr)
 		NVNGXProxy::InitNVNGX();
 
@@ -257,6 +269,8 @@ DLSSFeature::DLSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameter
 	}
 
 	_moduleLoaded = NVNGXProxy::NVNGXModule() != nullptr;
+
+	LOG_FUNC_RESULT(_moduleLoaded);
 }
 
 DLSSFeature::~DLSSFeature()
@@ -265,6 +279,10 @@ DLSSFeature::~DLSSFeature()
 
 void DLSSFeature::Shutdown()
 {
+	LOG_FUNC();
+
 	if (NVNGXProxy::NVNGXModule() != nullptr)
 		UnhookApis();
+
+	LOG_FUNC_RESULT(0);
 }

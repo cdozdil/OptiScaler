@@ -203,7 +203,7 @@ static void CleanupRenderTarget(bool clearQueue);
 
 static void ClearActivePathInfo()
 {
-    spdlog::debug("ImGuiOverlayDx12::ClearActivePathInfo!");
+    LOG_FUNC();
 
     _lastActiveSource = Unknown;
     _nativeCounter = 0;
@@ -265,7 +265,7 @@ static bool IsActivePath(SwapchainSource source, bool justQuery = false)
 
     if (!justQuery && result && _lastActiveSource != source)
     {
-        spdlog::info("ImGuiOverlayDx12::IsActivePath changed from {0} to {1}!", swapchainSourceNames[(int)_lastActiveSource], swapchainSourceNames[(int)source]);
+        LOG_INFO("changed from {0} to {1}!", swapchainSourceNames[(int)_lastActiveSource], swapchainSourceNames[(int)source]);
         ClearActivePathInfo();
         _lastActiveSource = source;
     }
@@ -296,7 +296,7 @@ static void CleanupRenderTarget(bool clearQueue)
     if (!_isInited || _skipCleanup)
         return;
 
-    spdlog::debug("ImGuiOverlayDx12::CleanupRenderTarget({0})!", clearQueue);
+    LOG_DEBUG("clearQueue: {0}!", clearQueue);
 
     _dx12CleanMutex.lock();
 
@@ -360,7 +360,7 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
 
     if (pDesc->MipLODBias < 0.0f && Config::Instance()->MipmapBiasOverride.has_value())
     {
-        spdlog::info("ImGuiOverlayDx12::hkCreateSampler Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
+        LOG_INFO("Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
 
         D3D12_SAMPLER_DESC newDesc{};
 
@@ -780,7 +780,7 @@ static int32_t WINAPI hkffxCreateFrameinterpolationSwapchainForHwndDX12_Mod(HWND
 
         DetourTransactionCommit();
 
-        spdlog::info("ImGuiOverlayDx12::hkffxCreateFrameinterpolationSwapchainForHwndDX12_Mod added swapchain hooks!");
+        LOG_INFO("added swapchain hooks!");
     }
 
     return result;
@@ -817,7 +817,7 @@ static int32_t WINAPI hkffxFsr3ConfigureFrameGeneration_Mod(void* context, FfxFr
 
         DetourTransactionCommit();
 
-        spdlog::info("ImGuiOverlayDx12::hkffxFsr3ConfigureFrameGeneration_Mod added swapchain hooks!");
+        LOG_INFO("added swapchain hooks!");
     }
 
     return result;
@@ -857,7 +857,7 @@ static int32_t WINAPI hkffxCreateFrameinterpolationSwapchainForHwndDX12_FSR3(HWN
 
         DetourTransactionCommit();
 
-        spdlog::info("ImGuiOverlayDx12::hkffxCreateFrameinterpolationSwapchainForHwndDX12_FSR3 added swapchain hooks!");
+        LOG_INFO("added swapchain hooks!");
     }
 
     return result;
@@ -906,7 +906,7 @@ static ffxReturnCode_t hkFfxCreateContext_FSR3(ffxContext* context, ffxCreateCon
 
                     DetourTransactionCommit();
 
-                    spdlog::info("ImGuiOverlayDx12::hkFfxCreateContext_FSR3 added swapchain hooks!");
+                    LOG_INFO("added swapchain hooks!");
 
                     break;
                 }
@@ -950,7 +950,7 @@ static int32_t WINAPI hkffxFsr3ConfigureFrameGeneration_FSR3(void* context, FfxF
 
         DetourTransactionCommit();
 
-        spdlog::info("ImGuiOverlayDx12::hkffxFsr3ConfigureFrameGeneration_FSR3 added swapchain hooks!");
+        LOG_INFO("added swapchain hooks!");
     }
 
     return result;
@@ -997,7 +997,7 @@ static ffxReturnCode_t hkFfxConfigure_FSR3(ffxContext* context, const ffxConfigu
 
                     DetourTransactionCommit();
 
-                    spdlog::info("ImGuiOverlayDx12::hkFfxConfigure_FSR3 added swapchain hooks!");
+                    LOG_INFO("added swapchain hooks!");
 
                     break;
                 }
@@ -1025,7 +1025,7 @@ static void WINAPI hkExecuteCommandLists_Dx12(ID3D12CommandQueue* pCommandQueue,
         {
             if (ppCommandLists[i] == _dlssCommandList)
             {
-                spdlog::info("ImGuiOverlayDx12::hkExecuteCommandLists_Dx12 new _cqDx12: {0:X}", (ULONG64)pCommandQueue);
+                LOG_INFO("new _cqDx12: {0:X}", (ULONG64)pCommandQueue);
                 _cqDx12 = pCommandQueue;
                 break;
             }
@@ -1044,7 +1044,7 @@ static void WINAPI hkExecuteCommandLists_SL(ID3D12CommandQueue* pCommandQueue, U
 
         if (desc.Type == D3D12_COMMAND_LIST_TYPE_DIRECT)
         {
-            spdlog::info("ImGuiOverlayDx12::hkExecuteCommandLists_SL new _cqSL: {0:X}", (ULONG64)pCommandQueue);
+            LOG_INFO("_cqSL: {0:X}", (ULONG64)pCommandQueue);
             _cqSL = pCommandQueue;
         }
     }
@@ -1099,7 +1099,7 @@ static HRESULT WINAPI hkCreateSwapChain_EB(IDXGIFactory* pFactory, IUnknown* pDe
 
     if (result == S_OK && !_dx12BindingActive)
     {
-        spdlog::debug("ImGuiOverlayDx12::hkCreateSwapChain_EB created new WrappedIDXGISwapChain4");
+        LOG_DEBUG("created new WrappedIDXGISwapChain4");
         *ppSwapChain = new WrappedIDXGISwapChain4((*ppSwapChain), hkPresent_EB, hkPresent1_EB, CleanupRenderTarget);
     }
 
@@ -1115,7 +1115,7 @@ static HRESULT WINAPI hkCreateSwapChainForHwnd_EB(IDXGIFactory* pFactory, IUnkno
 
     if (result == S_OK && !_dx12BindingActive)
     {
-        spdlog::debug("ImGuiOverlayDx12::hkCreateSwapChainForHwnd_EB created new WrappedIDXGISwapChain4");
+        LOG_DEBUG("created new WrappedIDXGISwapChain4");
         *ppSwapChain = new WrappedIDXGISwapChain4((*ppSwapChain), hkPresent_EB, hkPresent1_EB, CleanupRenderTarget);
     }
 
@@ -1131,7 +1131,7 @@ static HRESULT WINAPI hkCreateSwapChainForCoreWindow_EB(IDXGIFactory* pFactory, 
 
     if (result == S_OK && !_dx12BindingActive)
     {
-        spdlog::debug("ImGuiOverlayDx12::hkCreateSwapChainForCoreWindow_EB created new WrappedIDXGISwapChain4");
+        LOG_DEBUG("created new WrappedIDXGISwapChain4");
         *ppSwapChain = new WrappedIDXGISwapChain4((*ppSwapChain), hkPresent_EB, hkPresent1_EB, CleanupRenderTarget);
     }
 
@@ -1147,7 +1147,7 @@ static HRESULT WINAPI hkCreateSwapChainForComposition_EB(IDXGIFactory* pFactory,
 
     if (result == S_OK && !_dx12BindingActive)
     {
-        spdlog::debug("ImGuiOverlayDx12::oCreateSwapChainForComposition_EB created new WrappedIDXGISwapChain4");
+        LOG_DEBUG("created new WrappedIDXGISwapChain4");
         *ppSwapChain = new WrappedIDXGISwapChain4((*ppSwapChain), hkPresent_EB, hkPresent1_EB, CleanupRenderTarget);
     }
 
@@ -1227,7 +1227,7 @@ static HRESULT WINAPI hkCreateCommandQueue(ID3D12Device* This, const D3D12_COMMA
 
         if (oExecuteCommandLists_Dx12 != nullptr)
         {
-            spdlog::info("ImGuiOverlayDx12::hkCreateCommandQueue hooking CommandQueue");
+            LOG_INFO("hooking CommandQueue");
 
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
@@ -1260,7 +1260,7 @@ static HRESULT WINAPI hkD3D12CreateDevice(IUnknown* pAdapter, D3D_FEATURE_LEVEL 
 
         if (oCreateCommandQueue != nullptr)
         {
-            spdlog::info("ImGuiOverlayDx12::hkD3D12CreateDevice hooking D3D12Device");
+            LOG_INFO("hooking D3D12Device");
 
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
@@ -1290,7 +1290,7 @@ static HRESULT WINAPI hkCreateDXGIFactory(REFIID riid, void** ppFactory)
 
         if (oCreateSwapChain_EB != nullptr)
         {
-            spdlog::info("ImGuiOverlayDx12::hkCreateDXGIFactory Hooking native DXGIFactory");
+            LOG_INFO("Hooking native DXGIFactory");
 
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
@@ -1330,7 +1330,7 @@ static HRESULT WINAPI hkCreateDXGIFactory1(REFIID riid, void** ppFactory)
 
             if (oCreateSwapChainForHwnd_EB != nullptr)
             {
-                spdlog::info("ImGuiOverlayDx12::hkCreateDXGIFactory1 Hooking native DXGIFactory");
+                LOG_INFO("Hooking native DXGIFactory");
 
                 DetourTransactionBegin();
                 DetourUpdateThread(GetCurrentThread());
@@ -1379,7 +1379,7 @@ static HRESULT WINAPI hkCreateDXGIFactory2(UINT Flags, REFIID riid, _COM_Outptr_
 
             if (oCreateSwapChainForHwnd_EB != nullptr)
             {
-                spdlog::info("ImGuiOverlayDx12::hkCreateDXGIFactory1 Hooking native DXGIFactory");
+                LOG_INFO("Hooking native DXGIFactory");
 
                 DetourTransactionBegin();
                 DetourUpdateThread(GetCurrentThread());
@@ -1424,7 +1424,7 @@ static bool CheckDx12(ID3D12Device* InDevice)
 
             if (result != S_OK)
             {
-                spdlog::error("ImGuiOverlayDx12::CheckDx12 D3D12CreateDevice: {0:X}", (UINT)result);
+                LOG_ERROR("D3D12CreateDevice: {0:X}", (UINT)result);
                 return false;
             }
         }
@@ -1435,7 +1435,7 @@ static bool CheckDx12(ID3D12Device* InDevice)
         result = device->CreateCommandQueue(&desc, IID_PPV_ARGS(&cq));
         if (result != S_OK)
         {
-            spdlog::error("ImGuiOverlayDx12::CheckDx12 CreateCommandQueue: {0:X}", (UINT)result);
+            LOG_ERROR("CreateCommandQueue: {0:X}", (UINT)result);
             return false;
         }
 
@@ -1447,7 +1447,7 @@ static bool CheckDx12(ID3D12Device* InDevice)
 
             if (oExecuteCommandLists_Dx12 != nullptr)
             {
-                spdlog::info("ImGuiOverlayDx12::CheckDx12 hooking CommandQueue");
+                LOG_INFO("hooking CommandQueue");
 
                 DetourTransactionBegin();
                 DetourUpdateThread(GetCurrentThread());
@@ -1484,7 +1484,7 @@ static bool CheckFSR3()
 
             if (offxCreateFrameinterpolationSwapchainForHwndDX12_Mod != nullptr)
             {
-                spdlog::info("ImGuiOverlayDx12::CheckFSR3 Uniscaler's ffxCreateFrameinterpolationSwapchainForHwndDX12 found");
+                LOG_INFO("Uniscaler's ffxCreateFrameinterpolationSwapchainForHwndDX12 found");
                 _bindedFSR3_Uniscaler = true;
                 _bindedFSR3_Mod = true;
             }
@@ -1496,7 +1496,7 @@ static bool CheckFSR3()
 
                 if (offxCreateFrameinterpolationSwapchainForHwndDX12_Mod != nullptr)
                 {
-                    spdlog::info("ImGuiOverlayDx12::CheckFSR3 Nukem's ffxCreateFrameinterpolationSwapchainForHwndDX12 found");
+                    LOG_INFO("Nukem's ffxCreateFrameinterpolationSwapchainForHwndDX12 found");
                     _bindedFSR3_Mod = true;
                 }
             }
@@ -1523,7 +1523,7 @@ static bool CheckFSR3()
             // Hook FSR3 ffxGetDX12SwapchainPtr methods
             if (offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3)
             {
-                spdlog::info("ImGuiOverlayDx12::CheckFSR3 FSR3's ffxCreateFrameinterpolationSwapchainForHwndDX12 found");
+                LOG_INFO("FSR3's ffxCreateFrameinterpolationSwapchainForHwndDX12 found");
                 _bindedFSR3_Native = true;
 
                 DetourTransactionBegin();
@@ -1542,7 +1542,7 @@ static bool CheckFSR3()
 
                 if (oFfxCreateContext_FSR3)
                 {
-                    spdlog::info("ImGuiOverlayDx12::CheckFSR3 FSR3's ffxCreateContext found");
+                    LOG_INFO("FSR3's ffxCreateContext found");
                     _bindedFSR3_Native = true;
 
                     DetourTransactionBegin();
@@ -1565,7 +1565,7 @@ static bool CheckFSR3()
 
 static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 {
-    spdlog::info("ImGuiOverlayDx12::BindAll Handle: {0:X}", (ULONG64)InHWnd);
+    LOG_INFO("Handle: {0:X}", (ULONG64)InHWnd);
 
     HRESULT result;
 
@@ -1597,7 +1597,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 
                 if (result != S_OK)
                 {
-                    spdlog::error("ImGuiOverlayDx12::BindAll Dx12 D3D12CreateDevice: {0:X}", (unsigned long)result);
+                    LOG_ERROR("Dx12 D3D12CreateDevice: {0:X}", (unsigned long)result);
                     break;
                 }
             }
@@ -1609,7 +1609,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
             result = device->CreateCommandQueue(&desc, IID_PPV_ARGS(&cq));
             if (result != S_OK)
             {
-                spdlog::error("ImGuiOverlayDx12::BindAll Dx12 CreateCommandQueue2: {0:X}", (unsigned long)result);
+                LOG_ERROR("Dx12 CreateCommandQueue2: {0:X}", (unsigned long)result);
                 break;
             }
 
@@ -1617,12 +1617,12 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
             IDXGISwapChain1* swapChain1 = nullptr;
             IDXGISwapChain3* swapChain3 = nullptr;
 
-            spdlog::info("ImGuiOverlayDx12::BindAll Dx12 Creating DXGIFactory for hooking");
+            LOG_INFO("Dx12 Creating DXGIFactory for hooking");
             result = CreateDXGIFactory1(IID_PPV_ARGS(&factory));
 
             if (result != S_OK)
             {
-                spdlog::error("ImGuiOverlayDx12::BindAll Dx12 CreateDXGIFactory1: {0:X}", (unsigned long)result);
+                LOG_ERROR("Dx12 CreateDXGIFactory1: {0:X}", (unsigned long)result);
                 break;
             }
 
@@ -1637,7 +1637,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 
                 if (oCreateSwapChain_Dx12 != nullptr)
                 {
-                    spdlog::info("ImGuiOverlayDx12::BindAll Hooking native DXGIFactory");
+                    LOG_INFO("Hooking native DXGIFactory");
 
                     DetourTransactionBegin();
                     DetourUpdateThread(GetCurrentThread());
@@ -1669,14 +1669,14 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 
                 if (result != S_OK)
                 {
-                    spdlog::error("ImGuiOverlayDx12::BindAll Dx12 CreateSwapChainForHwnd: {0:X}", (unsigned long)result);
+                    LOG_ERROR("Dx12 CreateSwapChainForHwnd: {0:X}", (unsigned long)result);
                     break;
                 }
 
                 result = swapChain1->QueryInterface(IID_PPV_ARGS(&swapChain3));
                 if (result != S_OK)
                 {
-                    spdlog::error("ImGuiOverlayDx12::BindAll Dx12 QueryInterface: {0:X}", (unsigned long)result);
+                    LOG_ERROR("Dx12 QueryInterface: {0:X}", (unsigned long)result);
                     break;
                 }
             }
@@ -1693,7 +1693,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 
                 if (oPresent_Dx12 != nullptr)
                 {
-                    spdlog::info("ImGuiOverlayDx12::BindAll Dx12 Hooking native SwapChain");
+                    LOG_INFO("Dx12 Hooking native SwapChain");
 
                     DetourTransactionBegin();
                     DetourUpdateThread(GetCurrentThread());
@@ -1753,7 +1753,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 
             if (slCD != nullptr)
             {
-                spdlog::info("ImGuiOverlayDx12::BindAll sl.interposer.dll D3D12CreateDevice found");
+                LOG_INFO("sl.interposer.dll D3D12CreateDevice found");
 
                 result = slCD(NULL, featureLevel, IID_PPV_ARGS(&device));
 
@@ -1762,7 +1762,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 
                 if (result != S_OK)
                 {
-                    spdlog::error("ImGuiOverlayDx12::BindAll SL D3D12CreateDevice: {0:X}", (unsigned long)result);
+                    LOG_ERROR("SL D3D12CreateDevice: {0:X}", (unsigned long)result);
                     break;
                 }
 
@@ -1772,7 +1772,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
                 result = device->CreateCommandQueue(&desc, IID_PPV_ARGS(&cq));
                 if (result != S_OK)
                 {
-                    spdlog::error("ImGuiOverlayDx12::BindAll SL CreateCommandQueue1: {0:X}", (unsigned long)result);
+                    LOG_ERROR("SL CreateCommandQueue1: {0:X}", (unsigned long)result);
                     break;
                 }
 
@@ -1784,7 +1784,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 
                     if (oExecuteCommandLists_SL != nullptr)
                     {
-                        spdlog::info("ImGuiOverlayDx12::BindAll SL hooking CommandQueue");
+                        LOG_INFO("SL hooking CommandQueue");
 
                         DetourTransactionBegin();
                         DetourUpdateThread(GetCurrentThread());
@@ -1801,7 +1801,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
                     PFN_CreateDXGIFactory1 slFactory = (PFN_CreateDXGIFactory1)DetourFindFunction("sl.interposer.dll", "CreateDXGIFactory1");
 
                     if (slFactory != nullptr)
-                        spdlog::info("ImGuiOverlayDx12::BindAll sl.interposer.dll CreateDXGIFactory1 found");
+                        LOG_INFO("sl.interposer.dll CreateDXGIFactory1 found");
 
                     IDXGIFactory4* factory = nullptr;
                     IDXGISwapChain1* swapChain1 = nullptr;
@@ -1812,7 +1812,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
                         result = slFactory(IID_PPV_ARGS(&factory));
                         if (result != S_OK)
                         {
-                            spdlog::error("ImGuiOverlayDx12::BindAll SL CreateDXGIFactory1: {0:X}", (unsigned long)result);
+                            LOG_ERROR("SL CreateDXGIFactory1: {0:X}", (unsigned long)result);
                             break;
                         }
 
@@ -1827,7 +1827,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 
                             if (oCreateSwapChain_SL != nullptr)
                             {
-                                spdlog::info("ImGuiOverlayDx12::BindAll hooking SL DXGIFactory");
+                                LOG_INFO("hooking SL DXGIFactory");
 
                                 DetourTransactionBegin();
                                 DetourUpdateThread(GetCurrentThread());
@@ -1835,35 +1835,35 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
                                 if (oCreateSwapChain_SL != nullptr)
                                 {
                                     DetourAttach(&(PVOID&)oCreateSwapChain_SL, hkCreateSwapChain_SL);
-                                    spdlog::debug("ImGuiOverlayDx12::BindAll oCreateSwapChain_SL attached");
+                                    LOG_DEBUG("oCreateSwapChain_SL attached");
                                 }
 
                                 if (oCreateSwapChainForHwnd_SL != nullptr)
                                 {
                                     DetourAttach(&(PVOID&)oCreateSwapChainForHwnd_SL, hkCreateSwapChainForHwnd_SL);
-                                    spdlog::debug("ImGuiOverlayDx12::BindAll oCreateSwapChainForHwnd_SL attached");
+                                    LOG_DEBUG("oCreateSwapChainForHwnd_SL attached");
                                 }
 
                                 if (oCreateSwapChainForCoreWindow_SL != nullptr)
                                 {
                                     DetourAttach(&(PVOID&)oCreateSwapChainForCoreWindow_SL, hkCreateSwapChainForCoreWindow_SL);
-                                    spdlog::debug("ImGuiOverlayDx12::BindAll oCreateSwapChainForCoreWindow_SL attached");
+                                    LOG_DEBUG("oCreateSwapChainForCoreWindow_SL attached");
                                 }
 
                                 if (oCreateSwapChainForComposition_SL != nullptr)
                                 {
                                     DetourAttach(&(PVOID&)oCreateSwapChainForComposition_SL, hkCreateSwapChainForComposition_SL);
-                                    spdlog::debug("ImGuiOverlayDx12::BindAll oCreateSwapChainForComposition_SL attached");
+                                    LOG_DEBUG("oCreateSwapChainForComposition_SL attached");
                                 }
 
                                 DetourTransactionCommit();
 
-                                spdlog::info("ImGuiOverlayDx12::BindAll attached to DXGIFactory");
+                                LOG_INFO("attached to DXGIFactory");
                             }
                         }
                         else
                         {
-                            spdlog::info("ImGuiOverlayDx12::BindAll oCreateSwapChain_SL != nullptr");
+                            LOG_INFO("oCreateSwapChain_SL != nullptr");
                         }
 
                         // Hook DXGI Factory 
@@ -1881,30 +1881,30 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
                             result = oCreateSwapChainForHwnd_SL(factory, cq, InHWnd, &sd, NULL, NULL, &swapChain1);
                             if (result != S_OK)
                             {
-                                spdlog::error("ImGuiOverlayDx12::BindAll SL CreateSwapChainForHwnd: {0:X}", (unsigned long)result);
+                                LOG_ERROR("SL CreateSwapChainForHwnd: {0:X}", (unsigned long)result);
                                 break;
                             }
 
-                            spdlog::debug("ImGuiOverlayDx12::BindAll SL SwapChain created");
+                            LOG_DEBUG("SL SwapChain created");
 
                             result = swapChain1->QueryInterface(IID_PPV_ARGS(&swapChain3));
                             if (result != S_OK)
                             {
-                                spdlog::error("ImGuiOverlayDx12::BindAll SL QueryInterface: {0:X}", (unsigned long)result);
+                                LOG_ERROR("SL QueryInterface: {0:X}", (unsigned long)result);
                                 break;
                             }
 
-                            spdlog::debug("ImGuiOverlayDx12::BindAll ISwapChain3 accuired from SL SwapChain");
+                            LOG_DEBUG("ISwapChain3 accuired from SL SwapChain");
                         }
                         else
                         {
-                            spdlog::debug("ImGuiOverlayDx12::BindAll CreateSwapChainForHwnd_SL factory: {0}null, cq: {1}null, oCreateSwapChainForHwnd_SL: {2}null",
+                            LOG_DEBUG("CreateSwapChainForHwnd_SL factory: {0}null, cq: {1}null, oCreateSwapChainForHwnd_SL: {2}null",
                                           !factory ? "" : "not ", !cq ? "" : "not ", !oCreateSwapChainForHwnd_SL ? "" : "not ");
                         }
 
                         if (swapChain3 != nullptr)
                         {
-                            spdlog::debug("ImGuiOverlayDx12::BindAll Hooking SL SwapChain3 methods");
+                            LOG_DEBUG("Hooking SL SwapChain3 methods");
 
                             void** pVTable = *reinterpret_cast<void***>(swapChain3);
 
@@ -1933,12 +1933,12 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 
                                 DetourTransactionCommit();
 
-                                spdlog::info("ImGuiOverlayDx12::BindAll hooked SL SwapChain");
+                                LOG_INFO("hooked SL SwapChain");
                             }
                         }
                         else
                         {
-                            spdlog::debug("ImGuiOverlayDx12::BindAll Hook SwapChain3 swapChain3 == nullptr");
+                            LOG_DEBUG("Hook SwapChain3 swapChain3 == nullptr");
                         }
 
                         if (swapChain3 != nullptr)
@@ -1975,14 +1975,14 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
             }
         }
 
-        spdlog::debug("ImGuiOverlayDx12::BindAll completed successfully");
+        LOG_DEBUG("completed successfully");
 
         _skipCleanup = false;
         return true;
 
     } while (false);
 
-    spdlog::debug("ImGuiOverlayDx12::BindAll completed with errors!");
+    LOG_DEBUG("completed with errors!");
 
     _skipCleanup = false;
     return false;
@@ -1992,14 +1992,14 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
 
 static void CreateRenderTarget(ID3D12Device* device, IDXGISwapChain* pSwapChain)
 {
-    spdlog::info("ImGuiOverlayDx12::CreateRenderTarget");
+    LOG_FUNC();
 
     DXGI_SWAP_CHAIN_DESC desc;
     HRESULT hr = pSwapChain->GetDesc(&desc);
 
     if (hr != S_OK)
     {
-        spdlog::error("ImGuiOverlayDx12::CreateRenderTarget pSwapChain->GetDesc: {0:X}", (unsigned long)hr);
+        LOG_ERROR("pSwapChain->GetDesc: {0:X}", (unsigned long)hr);
         return;
     }
 
@@ -2011,7 +2011,7 @@ static void CreateRenderTarget(ID3D12Device* device, IDXGISwapChain* pSwapChain)
 
         if (result != S_OK)
         {
-            spdlog::error("ImGuiOverlayDx12::CreateRenderTarget pSwapChain->GetBuffer: {0:X}", (unsigned long)result);
+            LOG_ERROR("pSwapChain->GetBuffer: {0:X}", (unsigned long)result);
             return;
         }
 
@@ -2029,7 +2029,7 @@ static void CreateRenderTarget(ID3D12Device* device, IDXGISwapChain* pSwapChain)
         }
     }
 
-    spdlog::info("ImGuiOverlayDx12::CreateRenderTarget done!");
+    LOG_INFO("done!");
 }
 
 static void CleanupDeviceD3D12(ID3D12Device* InDevice)
@@ -2074,7 +2074,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
         {
             if (ImGuiOverlayBase::IsVisible())
             {
-                spdlog::info("ImGuiOverlayDx12::RenderImGui_DX12 Upscaler feature not created, closing menu");
+                LOG_INFO("Upscaler feature not created, closing menu");
                 ImGuiOverlayBase::HideMenu();
             }
 
@@ -2086,7 +2086,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
         {
             if (ImGuiOverlayBase::IsVisible())
             {
-                spdlog::info("ImGuiOverlayDx12::RenderImGui_DX12 Swapchain not captured, closing menu");
+                LOG_INFO("Swapchain not captured, closing menu");
                 ImGuiOverlayBase::HideMenu();
             }
 
@@ -2101,7 +2101,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
         if (ImGuiOverlayBase::IsInited() && ImGuiOverlayBase::IsResetRequested())
         {
             auto hwnd = Util::GetProcessWindow();
-            spdlog::info("ImGuiOverlayDx12::RenderImGui_DX12 Reset request detected, resetting ImGui, new handle {0:X}", (ULONG64)hwnd);
+            LOG_INFO("Reset request detected, resetting ImGui, new handle {0:X}", (ULONG64)hwnd);
             ImGuiOverlayDx12::ReInitDx12(hwnd);
         }
 
@@ -2131,7 +2131,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 
     if (result != S_OK)
     {
-        spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 GetDevice: {0:X}", (unsigned long)result);
+        LOG_ERROR("GetDevice: {0:X}", (unsigned long)result);
         ImGuiOverlayBase::HideMenu();
         return;
     }
@@ -2139,7 +2139,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
     // Generate ImGui resources
     if (!ImGui::GetIO().BackendRendererUserData && g_pd3dCommandQueue != nullptr)
     {
-        spdlog::debug("ImGuiOverlayDx12::RenderImGui_DX12 ImGui::GetIO().BackendRendererUserData == nullptr");
+        LOG_DEBUG("ImGui::GetIO().BackendRendererUserData == nullptr");
 
         HRESULT result;
 
@@ -2153,7 +2153,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
             result = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dRtvDescHeap));
             if (result != S_OK)
             {
-                spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 CreateDescriptorHeap(g_pd3dRtvDescHeap): {0:X}", (unsigned long)result);
+                LOG_ERROR("CreateDescriptorHeap(g_pd3dRtvDescHeap): {0:X}", (unsigned long)result);
                 ImGuiOverlayBase::HideMenu();
                 CleanupRenderTarget(true);
                 return;
@@ -2178,7 +2178,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
             result = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dSrvDescHeap));
             if (result != S_OK)
             {
-                spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 CreateDescriptorHeap(g_pd3dSrvDescHeap): {0:X}", (unsigned long)result);
+                LOG_ERROR("CreateDescriptorHeap(g_pd3dSrvDescHeap): {0:X}", (unsigned long)result);
                 ImGuiOverlayBase::HideMenu();
                 CleanupRenderTarget(true);
                 return;
@@ -2191,7 +2191,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 
             if (result != S_OK)
             {
-                spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 CreateCommandAllocator[{0}]: {1:X}", i, (unsigned long)result);
+                LOG_ERROR("CreateCommandAllocator[{0}]: {1:X}", i, (unsigned long)result);
                 ImGuiOverlayBase::HideMenu();
                 CleanupRenderTarget(true);
                 return;
@@ -2201,7 +2201,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
         result = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, g_commandAllocators[0], NULL, IID_PPV_ARGS(&g_pd3dCommandList));
         if (result != S_OK)
         {
-            spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 CreateCommandList: {0:X}", (unsigned long)result);
+            LOG_ERROR("CreateCommandList: {0:X}", (unsigned long)result);
             ImGuiOverlayBase::HideMenu();
             CleanupRenderTarget(true);
             return;
@@ -2210,7 +2210,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
         result = g_pd3dCommandList->Close();
         if (result != S_OK)
         {
-            spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 g_pd3dCommandList->Close: {0:X}", (unsigned long)result);
+            LOG_ERROR("g_pd3dCommandList->Close: {0:X}", (unsigned long)result);
             ImGuiOverlayBase::HideMenu();
             CleanupRenderTarget(false);
             return;
@@ -2250,7 +2250,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
             auto result = commandAllocator->Reset();
             if (result != S_OK)
             {
-                spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 commandAllocator->Reset: {0:X}", (unsigned long)result);
+                LOG_ERROR("commandAllocator->Reset: {0:X}", (unsigned long)result);
                 CleanupRenderTarget(false);
                 return;
             }
@@ -2266,7 +2266,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
             result = g_pd3dCommandList->Reset(commandAllocator, nullptr);
             if (result != S_OK)
             {
-                spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 g_pd3dCommandList->Reset: {0:X}", (unsigned long)result);
+                LOG_ERROR("g_pd3dCommandList->Reset: {0:X}", (unsigned long)result);
                 return;
             }
 
@@ -2283,7 +2283,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
             result = g_pd3dCommandList->Close();
             if (result != S_OK)
             {
-                spdlog::error("ImGuiOverlayDx12::RenderImGui_DX12 g_pd3dCommandList->Close: {0:X}", (unsigned long)result);
+                LOG_ERROR("g_pd3dCommandList->Close: {0:X}", (unsigned long)result);
                 CleanupRenderTarget(true);
                 return;
             }
@@ -2298,7 +2298,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
         else
         {
             if (_showRenderImGuiDebugOnce)
-                spdlog::info("ImGuiOverlayDx12::RenderImGui_DX12 !(ImGui::GetCurrentContext() && g_pd3dCommandQueue && g_mainRenderTargetResource[0])");
+                LOG_INFO("!(ImGui::GetCurrentContext() && g_pd3dCommandQueue && g_mainRenderTargetResource[0])");
 
             ImGuiOverlayBase::HideMenu();
             _showRenderImGuiDebugOnce = false;
@@ -2577,14 +2577,14 @@ HWND ImGuiOverlayDx12::Handle()
 
 void ImGuiOverlayDx12::InitDx12(HWND InHandle, ID3D12Device* InDevice)
 {
-    spdlog::info("ImGuiOverlayDx12::InitDx12 Handle: {0:X}", (ULONG64)InHandle);
+    LOG_INFO("Handle: {0:X}", (ULONG64)InHandle);
 
     g_pd3dDeviceParam = InDevice;
 
     if (InDevice == nullptr || !_isInited)
     {
         if (!BindAll(InHandle, InDevice))
-            spdlog::error("ImGuiOverlayDx12::InitDx12 BindAll failed!");
+            LOG_ERROR("BindAll failed!");
 
         ImGuiOverlayBase::Dx12Ready();
         _isInited = true;
@@ -2662,7 +2662,7 @@ void ImGuiOverlayDx12::CaptureQueue(ID3D12CommandList* InCommandList)
 
 void ImGuiOverlayDx12::ShutdownDx12()
 {
-    spdlog::info("ImGuiOverlayDx12::ShutdownDx12");
+    LOG_INFO("");
 
     if (_isInited && ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
         ImGui_ImplDX12_Shutdown();
@@ -2684,7 +2684,7 @@ void ImGuiOverlayDx12::ReInitDx12(HWND InNewHwnd)
 
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
-    spdlog::info("ImGuiOverlayDx12::ReInitDx12 hwnd: {0:X}", (ULONG64)InNewHwnd);
+    LOG_INFO("hwnd: {0:X}", (ULONG64)InNewHwnd);
 
     if (ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
         ImGui_ImplDX12_Shutdown();

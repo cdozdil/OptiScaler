@@ -9,7 +9,7 @@ void Imgui_Dx11::CreateRenderTarget(ID3D11Resource* out)
 	if (out->QueryInterface(IID_PPV_ARGS(&outTexture2D)) != S_OK)
 		return;
 
-	spdlog::debug("Imgui_Dx11::CreateRenderTarget");
+	LOG_FUNC();
 
 	D3D11_TEXTURE2D_DESC outDesc{};
 	outTexture2D->GetDesc(&outDesc);
@@ -79,7 +79,7 @@ bool Imgui_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTextur
 	if (!IsVisible())
 		return true;
 
-	spdlog::debug("Imgui_Dx11::Render");
+	LOG_FUNC();
 
 	CreateRenderTarget(outTexture);
 

@@ -1,6 +1,5 @@
 #pragma once
 #include "../../pch.h"
-#include "../../Config.h"
 #include "FSR2Feature.h"
 
 double FSR2Feature::GetDeltaTime()
@@ -47,9 +46,6 @@ FSR2Feature::~FSR2Feature()
 		return;
 
 	auto errorCode = ffxFsr2ContextDestroy(&_context);
-
-	//if (errorCode != FFX_OK)
-	//	spdlog::error("FSR2Feature::~FSR2Feature ffxFsr2ContextDestroy error: {0:x}", errorCode);
 
 	free(_contextDesc.callbacks.scratchBuffer);
 

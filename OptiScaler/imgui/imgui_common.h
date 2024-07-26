@@ -350,7 +350,7 @@ private:
         {
             if (_isVisible)
             {
-                spdlog::info("WndProc No active features, closing ImGui");
+                LOG_INFO("No active features, closing ImGui");
 
                 if (pfn_ClipCursor_hooked && _lastCursorLimit != nullptr)
                     pfn_ClipCursor(_lastCursorLimit);
@@ -435,7 +435,7 @@ private:
             io.WantCaptureKeyboard = _isVisible;
             io.WantCaptureMouse = _isVisible;
 
-            spdlog::trace("WndProc Menu key pressed, {0}", _isVisible ? "opening ImGui" : "closing ImGui");
+            LOG_TRACE("Menu key pressed, {0}", _isVisible ? "opening ImGui" : "closing ImGui");
 
             return TRUE;
         }
@@ -452,7 +452,7 @@ private:
         {
             if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
             {
-                spdlog::trace("WndProc ImGui handled, hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (ULONG64)hWnd, msg, (ULONG64)wParam, (ULONG64)lParam);
+                LOG_TRACE("ImGui handled, hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (ULONG64)hWnd, msg, (ULONG64)wParam, (ULONG64)lParam);
                 return TRUE;
             }
 
@@ -516,7 +516,7 @@ private:
                 case WM_XBUTTONDOWN:
                 case WM_XBUTTONUP:
                 case WM_XBUTTONDBLCLK:
-                    spdlog::trace("WndProc switch handled, hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (ULONG64)hWnd, msg, (ULONG64)wParam, (ULONG64)lParam);
+                    LOG_TRACE("switch handled, hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (ULONG64)hWnd, msg, (ULONG64)wParam, (ULONG64)lParam);
                     return TRUE;
 
                 case WM_INPUT:
@@ -543,7 +543,7 @@ private:
                     }
 
                     else
-                        spdlog::trace("WndProc WM_INPUT hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (ULONG64)hWnd, msg, (ULONG64)wParam, (ULONG64)lParam);
+                        LOG_TRACE("WM_INPUT hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (ULONG64)hWnd, msg, (ULONG64)wParam, (ULONG64)lParam);
 
                     return TRUE;
 
@@ -1976,7 +1976,7 @@ public:
         _isVisible = false;
         _isResetRequested = false;
 
-        spdlog::debug("ImGuiCommon::Init Handle: {0:X}", (ULONG64)_handle);
+        LOG_DEBUG("Handle: {0:X}", (ULONG64)_handle);
 
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
@@ -1995,12 +1995,12 @@ public:
         io.IniFilename = io.LogFilename = nullptr;
 
         bool initResult = ImGui_ImplWin32_Init(InHwnd);
-        spdlog::debug("ImGuiCommon::Init ImGui_ImplWin32_Init result: {0}", initResult);
+        LOG_DEBUG("ImGui_ImplWin32_Init result: {0}", initResult);
 
         if (_oWndProc == nullptr)
             _oWndProc = (WNDPROC)SetWindowLongPtr(InHwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
 
-        spdlog::debug("ImGuiCommon::Init _oWndProc: {0:X}", (ULONG64)_oWndProc);
+        LOG_DEBUG("_oWndProc: {0:X}", (ULONG64)_oWndProc);
 
 
         if (!pfn_SetCursorPos_hooked)

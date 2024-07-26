@@ -14,7 +14,7 @@ XeSSFeatureDx11::XeSSFeatureDx11(unsigned int InHandleId, NVSDK_NGX_Parameter* I
 
 bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters)
 {
-	spdlog::debug("XeSSFeatureDx11::Init!");
+	LOG_FUNC();
 
 	if (IsInited())
 		return true;
@@ -32,7 +32,7 @@ bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 
 bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_Parameter* InParameters)
 {
-	spdlog::debug("XeSSFeatureDx11::Evaluate");
+	LOG_FUNC();
 
 	if (!_baseInit)
 	{
@@ -57,7 +57,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 				if (displaySizeEnabled && lowResMV)
 				{
-					spdlog::warn("XeSSFeatureDx11::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, TargetWidth(), displaySizeEnabled);
+					LOG_WARN("MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, TargetWidth(), displaySizeEnabled);
 					Config::Instance()->DisplayResolution = false;
 				}
 
@@ -76,7 +76,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 			if (paramExpo == nullptr)
 			{
-				spdlog::warn("XeSSFeatureDx11::Evaluate ExposureTexture is not exist, enabling AutoExposure!!");
+				LOG_WARN("ExposureTexture is not exist, enabling AutoExposure!!");
 				Config::Instance()->AutoExposure = true;
 			}
 		}
@@ -90,14 +90,14 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		{
 			if (!paramReactiveMask)
 			{
-				spdlog::warn("XeSSFeatureDx11::Evaluate Bias mask not exist, enabling DisableReactiveMask!!");
+				LOG_WARN("Bias mask not exist, enabling DisableReactiveMask!!");
 				Config::Instance()->DisableReactiveMask = true;
 			}
 		}
 
 		if (!BaseInit(Device, InDeviceContext, InParameters))
 		{
-			spdlog::error("XeSSFeatureDx11::Evaluate BaseInit failed!");
+			LOG_ERROR("BaseInit failed!");
 			return false;
 		}
 
@@ -105,38 +105,38 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 		if (Dx12Device == nullptr)
 		{
-			spdlog::error("XeSSFeatureDx11::Evaluate Dx12on11Device is null!");
+			LOG_ERROR("Dx12on11Device is null!");
 			return false;
 		}
 
-		spdlog::debug("XeSSFeatureDx11::Evaluate calling InitXeSS");
+		LOG_DEBUG("calling InitXeSS");
 
 		if (!InitXeSS(Dx12Device, InParameters))
 		{
-			spdlog::error("XeSSFeatureDx11::Evaluate InitXeSS fail!");
+			LOG_ERROR("InitXeSS fail!");
 			return false;
 		}
 
 		if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
 		{
-			spdlog::debug("XeSSFeatureDx11::Evaluate Create Imgui!");
+			LOG_DEBUG("Create Imgui!");
 			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
 		}
 
 		if (Config::Instance()->Dx11DelayedInit.value_or(false))
 		{
-			spdlog::trace("XeSSFeatureDx11::Evaluate sleeping after XeSSContext creation for 1500ms");
+			LOG_TRACE("sleeping after XeSSContext creation for 1500ms");
 			std::this_thread::sleep_for(std::chrono::milliseconds(1500));
 		}
 
-		OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", Dx12Device, (TargetWidth() < DisplayWidth()));
+		OutputScaler = std::make_unique<BS_Dx12>("Output Scaling", Dx12Device, (TargetWidth() < DisplayWidth()));
 		RCAS = std::make_unique<RCAS_Dx12>("RCAS", Dx12Device);
 		Bias = std::make_unique<Bias_Dx12>("Bias", Dx12Device);
 	}
 
 	if (!IsInited() || !_xessContext || !ModuleLoaded())
 	{
-		spdlog::error("XeSSFeatureDx11::Evaluate Not inited!");
+		LOG_ERROR("Not inited!");
 		return false;
 	}
 
@@ -151,20 +151,20 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 	if (result != S_OK)
 	{
-		spdlog::error("XeSSFeatureDx11::Evaluate CreateFence d3d12fence error: {0:x}", result);
+		LOG_ERROR("CreateFence d3d12fence error: {0:x}", result);
 		return false;
 	}
 
 	if (dc != Dx11DeviceContext)
 	{
-		spdlog::warn("XeSSFeatureDx11::Evaluate Dx11DeviceContext changed!");
+		LOG_WARN("Dx11DeviceContext changed!");
 		ReleaseSharedResources();
 		Dx11DeviceContext = dc;
 	}
 
 	if (Config::Instance()->xessDebug)
 	{
-		spdlog::error("XeSSFeatureDx11::Evaluate xessDebug");
+		LOG_ERROR("xessDebug");
 
 		xess_dump_parameters_t dumpParams{};
 		dumpParams.frame_count = Config::Instance()->xessDebugFrames;
@@ -198,11 +198,11 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 	bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
 
-	spdlog::debug("XeSSFeatureDx11::Evaluate Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
+	LOG_DEBUG("Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
 	if (!ProcessDx11Textures(InParameters))
 	{
-		spdlog::error("XeSSFeatureDx11::Evaluate Can't process Dx11 textures!");
+		LOG_ERROR("Can't process Dx11 textures!");
 
 		Dx12CommandList->Close();
 		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -214,7 +214,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		return false;
 	}
 	else
-		spdlog::debug("XeSSFeatureDx11::Evaluate ProcessDx11Textures complete!");
+		LOG_DEBUG("ProcessDx11Textures complete!");
 
 	// AutoExposure or ReactiveMask is nullptr
 	if (Config::Instance()->changeBackend)
@@ -280,7 +280,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		}
 	}
 
-	spdlog::debug("XeSSFeatureDx11::Evaluate Textures -> params complete!");
+	LOG_DEBUG("Textures -> params complete!");
 
 	float MVScaleX;
 	float MVScaleY;
@@ -292,7 +292,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 		if (xessResult != XESS_RESULT_SUCCESS)
 		{
-			spdlog::error("XeSSFeatureDx11::Evaluate xessSetVelocityScale error: {0}", ResultToString(xessResult));
+			LOG_ERROR("xessSetVelocityScale error: {0}", ResultToString(xessResult));
 
 			Dx12CommandList->Close();
 			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -305,15 +305,15 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		}
 	}
 	else
-		spdlog::warn("XeSSFeatureDx11::XeSSExecuteDx12 Can't get motion vector scales!");
+		LOG_WARN("Can't get motion vector scales!");
 
 	// Execute xess
-	spdlog::debug("XeSSFeatureDx11::Evaluate Executing!!");
+	LOG_DEBUG("Executing!!");
 	xessResult = D3D12Execute()(_xessContext, Dx12CommandList, &params);
 
 	if (xessResult != XESS_RESULT_SUCCESS)
 	{
-		spdlog::error("XeSSFeatureDx11::Evaluate xessD3D12Execute error: {0}", ResultToString(xessResult));
+		LOG_ERROR("xessD3D12Execute error: {0}", ResultToString(xessResult));
 
 		Dx12CommandList->Close();
 		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -330,7 +330,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
 		RCAS->CanRender())
 	{
-		spdlog::debug("XeSSFeatureDx11::Evaluate Apply CAS");
+		LOG_DEBUG("Apply RCAS");
 
 		if (params.pOutputTexture != RCAS->Buffer())
 			ResourceBarrier(Dx12CommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -383,7 +383,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 	if (useSS)
 	{
-		spdlog::debug("XeSSFeatureDx11::Evaluate downscaling output...");
+		LOG_DEBUG("scaling output...");
 		OutputScaler->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
 		if (!OutputScaler->Dispatch(Dx12Device, Dx12CommandList, OutputScaler->Buffer(), dx11Out.Dx12Resource))
@@ -406,7 +406,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 	{
 		if (!CopyBackOutput())
 		{
-			spdlog::error("XeSSFeatureDx11::Evaluate Can't copy output texture back!");
+			LOG_ERROR("Can't copy output texture back!");
 
 			Dx12CommandList->Close();
 			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -423,11 +423,11 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		{
 			if (Imgui != nullptr && Imgui.get() != nullptr)
 			{
-				spdlog::debug("XeSSFeatureDx11::Evaluate Apply Imgui");
+				LOG_DEBUG("Apply Imgui");
 
 				if (Imgui->IsHandleDifferent())
 				{
-					spdlog::debug("XeSSFeatureDx11::Evaluate Imgui handle different, reset()!");
+					LOG_DEBUG("Imgui handle different, reset()!");
 					std::this_thread::sleep_for(std::chrono::milliseconds(250));
 					Imgui.reset();
 				}
@@ -451,7 +451,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 	{
 		if (!CopyBackOutput())
 		{
-			spdlog::error("XeSSFeatureDx11::Evaluate Can't copy output texture back!");
+			LOG_ERROR("Can't copy output texture back!");
 
 			Dx12CommandList->Close();
 			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -468,11 +468,11 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		{
 			if (Imgui != nullptr && Imgui.get() != nullptr)
 			{
-				spdlog::debug("XeSSFeatureDx11::Evaluate Apply Imgui");
+				LOG_DEBUG("Apply Imgui");
 
 				if (Imgui->IsHandleDifferent())
 				{
-					spdlog::debug("XeSSFeatureDx11::Evaluate Imgui handle different, reset()!");
+					LOG_DEBUG("Imgui handle different, reset()!");
 					std::this_thread::sleep_for(std::chrono::milliseconds(250));
 					Imgui.reset();
 				}

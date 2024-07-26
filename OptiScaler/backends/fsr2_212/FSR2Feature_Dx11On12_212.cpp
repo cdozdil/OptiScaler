@@ -6,7 +6,7 @@
 
 bool FSR2FeatureDx11on12_212::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters)
 {
-    spdlog::debug("FSR2FeatureDx11with12_212::Init!");
+    LOG_FUNC();
 
     if (IsInited())
         return true;
@@ -24,7 +24,7 @@ bool FSR2FeatureDx11on12_212::Init(ID3D11Device* InDevice, ID3D11DeviceContext* 
 
 bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_Parameter* InParameters)
 {
-    spdlog::debug("FSR2FeatureDx11with12_212::Evaluate");
+    LOG_FUNC();
 
     if (!_baseInit)
     {
@@ -46,7 +46,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
 
                 if (displaySizeEnabled && lowResMV)
                 {
-                    spdlog::warn("FSR2FeatureDx11with12_212::Evaluate MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, TargetWidth(), displaySizeEnabled);
+                    LOG_WARN("MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, TargetWidth(), displaySizeEnabled);
                     Config::Instance()->DisplayResolution = false;
                 }
 
@@ -68,7 +68,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
 
             if (paramExpo == nullptr)
             {
-                spdlog::warn("FSR2FeatureDx11with12_212::Evaluate ExposureTexture is not exist, enabling AutoExposure!!");
+                LOG_WARN("ExposureTexture is not exist, enabling AutoExposure!!");
                 Config::Instance()->AutoExposure = true;
             }
         }
@@ -82,30 +82,30 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
         {
             if (!paramReactiveMask)
             {
-                spdlog::warn("FSR2FeatureDx11with12_212::Evaluate Bias mask not exist, enabling DisableReactiveMask!!");
+                LOG_WARN("Bias mask not exist, enabling DisableReactiveMask!!");
                 Config::Instance()->DisableReactiveMask = true;
             }
         }
 
         if (!BaseInit(Device, InDeviceContext, InParameters))
         {
-            spdlog::debug("FSR2FeatureDx11with12_212::Init BaseInit failed!");
+            LOG_DEBUG("FSR2FeatureDx11with12_212::Init BaseInit failed!");
             return false;
         }
 
         _baseInit = true;
 
-        spdlog::debug("FSR2FeatureDx11with12_212::Init calling InitFSR2");
+        LOG_DEBUG("FSR2FeatureDx11with12_212::Init calling InitFSR2");
 
         if (Dx12Device == nullptr)
         {
-            spdlog::error("FSR2FeatureDx11with12_212::Init Dx12on11Device is null!");
+            LOG_ERROR("FSR2FeatureDx11with12_212::Init Dx12on11Device is null!");
             return false;
         }
 
         if (!InitFSR2(InParameters))
         {
-            spdlog::error("FSR2FeatureDx11with12_212::Init InitFSR2 fail!");
+            LOG_ERROR("FSR2FeatureDx11with12_212::Init InitFSR2 fail!");
             return false;
         }
 
@@ -114,11 +114,11 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
 
         if (Config::Instance()->Dx11DelayedInit.value_or(false))
         {
-            spdlog::trace("FSR2FeatureDx11with12_212::Evaluate sleeping after FSRContext creation for 1500ms");
+            LOG_TRACE("sleeping after FSRContext creation for 1500ms");
             std::this_thread::sleep_for(std::chrono::milliseconds(1500));
         }
 
-        OutputScaler = std::make_unique<BS_Dx12>("Output Downsample", Dx12Device, (TargetWidth() < DisplayWidth()));
+        OutputScaler = std::make_unique<BS_Dx12>("Output Scaling", Dx12Device, (TargetWidth() < DisplayWidth()));
         RCAS = std::make_unique<RCAS_Dx12>("RCAS", Dx12Device);
         Bias = std::make_unique<Bias_Dx12>("Bias", Dx12Device);
     }
@@ -137,13 +137,13 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
 
     if (result != S_OK)
     {
-        spdlog::error("FSR2FeatureDx11with12_212::Evaluate QueryInterface error: {0:x}", result);
+        LOG_ERROR("QueryInterface error: {0:x}", result);
         return false;
     }
 
     if (dc != Dx11DeviceContext)
     {
-        spdlog::warn("FSR2FeatureDx11with12_212::Evaluate Dx11DeviceContext changed!");
+        LOG_WARN("Dx11DeviceContext changed!");
         ReleaseSharedResources();
         Dx11DeviceContext = dc;
     }
@@ -186,13 +186,13 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
 
     bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
 
-    spdlog::debug("FSR2FeatureDx11with12_212::Evaluate Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
+    LOG_DEBUG("Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
     params.commandList = Fsr212::ffxGetCommandListDX12_212(Dx12CommandList);
 
     if (!ProcessDx11Textures(InParameters))
     {
-        spdlog::error("FSR2FeatureDx11with12_212::Evaluate Can't process Dx11 textures!");
+        LOG_ERROR("Can't process Dx11 textures!");
 
         Dx12CommandList->Close();
         ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -283,7 +283,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
     }
     else
     {
-        spdlog::warn("FSR2FeatureDx11with12_212::Evaluate Can't get motion vector scales!");
+        LOG_WARN("Can't get motion vector scales!");
 
         params.motionVectorScale.x = MVScaleX;
         params.motionVectorScale.y = MVScaleY;
@@ -337,12 +337,12 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
     params.preExposure = 1.0f;
     InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure);
 
-    spdlog::debug("FSR2FeatureDx11with12_212::Evaluate Dispatch!!");
+    LOG_DEBUG("Dispatch!!");
     auto ffxresult = Fsr212::ffxFsr2ContextDispatch212(&_context, &params);
 
     if (ffxresult != Fsr212::FFX_OK)
     {
-        spdlog::error("FSR2FeatureDx11with12_212::Evaluate ffxFsr2ContextDispatch error: {0}", ResultToString212(ffxresult));
+        LOG_ERROR("ffxFsr2ContextDispatch error: {0}", ResultToString212(ffxresult));
 
         Dx12CommandList->Close();
         ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -359,7 +359,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
         (sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
         RCAS->CanRender())
     {
-        spdlog::debug("XeSSFeatureDx11::Evaluate Apply CAS");
+        LOG_DEBUG("Apply RCAS");
         if (params.output.resource != RCAS->Buffer())
             ResourceBarrier(Dx12CommandList, (ID3D12Resource*)params.output.resource,
                             D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -415,7 +415,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
 
     if (useSS)
     {
-        spdlog::debug("FSR2FeatureDx11with12_212::Evaluate downscaling output...");
+        LOG_DEBUG("scaling output...");
         OutputScaler->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
         if (!OutputScaler->Dispatch(Dx12Device, Dx12CommandList, OutputScaler->Buffer(), dx11Out.Dx12Resource))
@@ -438,7 +438,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
     {
         if (!CopyBackOutput())
         {
-            spdlog::error("FSR2FeatureDx11with12_212::Evaluate Can't copy output texture back!");
+            LOG_ERROR("Can't copy output texture back!");
 
             Dx12CommandList->Close();
             ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -455,11 +455,11 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
         {
             if (Imgui != nullptr && Imgui.get() != nullptr)
             {
-                spdlog::debug("FSR2FeatureDx11with12_212::Evaluate Apply Imgui");
+                LOG_DEBUG("Apply Imgui");
 
                 if (Imgui->IsHandleDifferent())
                 {
-                    spdlog::debug("FSR2FeatureDx11with12_212::Evaluate Imgui handle different, reset()!");
+                    LOG_DEBUG("Imgui handle different, reset()!");
                     std::this_thread::sleep_for(std::chrono::milliseconds(250));
                     Imgui.reset();
                 }
@@ -483,7 +483,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
     {
         if (!CopyBackOutput())
         {
-            spdlog::error("FSR2FeatureDx11with12_212::Evaluate Can't copy output texture back!");
+            LOG_ERROR("Can't copy output texture back!");
 
             Dx12CommandList->Close();
             ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -500,11 +500,11 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
         {
             if (Imgui != nullptr && Imgui.get() != nullptr)
             {
-                spdlog::debug("FSR2FeatureDx11with12_212::Evaluate Apply Imgui");
+                LOG_DEBUG("Apply Imgui");
 
                 if (Imgui->IsHandleDifferent())
                 {
-                    spdlog::debug("FSR2FeatureDx11with12_212::Evaluate Imgui handle different, reset()!");
+                    LOG_DEBUG("Imgui handle different, reset()!");
                     std::this_thread::sleep_for(std::chrono::milliseconds(250));
                     Imgui.reset();
                 }
@@ -533,14 +533,14 @@ FSR2FeatureDx11on12_212::~FSR2FeatureDx11on12_212()
 
 bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 {
-    spdlog::debug("FSR2FeatureDx11with12_212::InitFSR2");
+    LOG_FUNC();
 
     if (IsInited())
         return true;
 
     if (Device == nullptr)
     {
-        spdlog::error("FSR2FeatureDx11with12_212::InitFSR2 D3D12Device is null!");
+        LOG_ERROR("D3D12Device is null!");
         return false;
     }
 
@@ -553,7 +553,7 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
     if (errorCode != Fsr212::FFX_OK)
     {
-        spdlog::error("FSR2FeatureDx11with12_212::InitFSR2 ffxGetInterfaceDX12 error: {0}", ResultToString212(errorCode));
+        LOG_ERROR("ffxGetInterfaceDX12 error: {0}", ResultToString212(errorCode));
         free(scratchBuffer);
         return false;
     }
@@ -583,7 +583,7 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         Config::Instance()->DepthInverted = true;
         _contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_DEPTH_INVERTED;
         SetDepthInverted(true);
-        spdlog::info("FSR2FeatureDx11with12_212::InitFSR2 contextDesc.initFlags (DepthInverted) {0:b}", _contextDesc.flags);
+        LOG_INFO("contextDesc.initFlags (DepthInverted) {0:b}", _contextDesc.flags);
     }
     else
         Config::Instance()->DepthInverted = false;
@@ -592,31 +592,31 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     {
         Config::Instance()->AutoExposure = true;
         _contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_AUTO_EXPOSURE;
-        spdlog::info("FSR2FeatureDx11with12_212::InitFSR2 contextDesc.initFlags (AutoExposure) {0:b}", _contextDesc.flags);
+        LOG_INFO("contextDesc.initFlags (AutoExposure) {0:b}", _contextDesc.flags);
     }
     else
     {
         Config::Instance()->AutoExposure = false;
-        spdlog::info("FSR2FeatureDx11with12_212::InitFSR2 contextDesc.initFlags (!AutoExposure) {0:b}", _contextDesc.flags);
+        LOG_INFO("contextDesc.initFlags (!AutoExposure) {0:b}", _contextDesc.flags);
     }
 
     if (Config::Instance()->HDR.value_or(Hdr))
     {
         Config::Instance()->HDR = true;
         _contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
-        spdlog::info("FSR2FeatureDx11with12_212::InitFSR2 contextDesc.initFlags (HDR) {0:b}", _contextDesc.flags);
+        LOG_INFO("contextDesc.initFlags (HDR) {0:b}", _contextDesc.flags);
     }
     else
     {
         Config::Instance()->HDR = false;
-        spdlog::info("FSR2FeatureDx11with12_212::InitFSR2 contextDesc.initFlags (!HDR) {0:b}", _contextDesc.flags);
+        LOG_INFO("contextDesc.initFlags (!HDR) {0:b}", _contextDesc.flags);
     }
 
     if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
     {
         Config::Instance()->JitterCancellation = true;
         _contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
-        spdlog::info("FSR2FeatureDx11with12_212::InitFSR2 contextDesc.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
+        LOG_INFO("contextDesc.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
     }
     else
         Config::Instance()->JitterCancellation = false;
@@ -624,11 +624,11 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     if (Config::Instance()->DisplayResolution.value_or(!LowRes))
     {
         _contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
-        spdlog::info("FSR2FeatureDx11with12_212::InitFSR2 contextDesc.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
+        LOG_INFO("contextDesc.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
     }
     else
     {
-        spdlog::info("FSR2FeatureDx11with12_212::InitFSR2 contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
+        LOG_INFO("contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
     }
 
     if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
@@ -660,17 +660,17 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     _contextDesc.displaySize.width = TargetWidth();
     _contextDesc.displaySize.height = TargetHeight();
 
-    spdlog::debug("FSR2FeatureDx11with12_212::InitFSR2 ffxFsr2ContextCreate!");
+    LOG_DEBUG("ffxFsr2ContextCreate!");
 
     auto ret = Fsr212::ffxFsr2ContextCreate212(&_context, &_contextDesc);
 
     if (ret != Fsr212::FFX_OK)
     {
-        spdlog::error("FSR2FeatureDx11with12_212::InitFSR2 ffxFsr2ContextCreate error: {0}", ResultToString212(ret));
+        LOG_ERROR("ffxFsr2ContextCreate error: {0}", ResultToString212(ret));
         return false;
     }
 
-    spdlog::trace("FSR2FeatureDx11with12_212::InitFSR2 sleeping after ffxFsr2ContextCreate creation for 500ms");
+    LOG_TRACE("sleeping after ffxFsr2ContextCreate creation for 500ms");
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     Config::Instance()->dxgiSkipSpoofing = false;

@@ -60,7 +60,7 @@ inline static std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQ
 		break;
 
 	default:
-		spdlog::warn("GetQualityOverrideRatio: Unknown quality: {0}", (int)input);
+		LOG_WARN("Unknown quality: {0}", (int)input);
 		break;
 	}
 
@@ -83,7 +83,7 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallb
 
 	auto enumPQValue = (NVSDK_NGX_PerfQuality_Value)PerfQualityValue;
 
-	spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback Display Resolution: {0}x{1}", Width, Height);
+	LOG_DEBUG("Display Resolution: {0}x{1}", Width, Height);
 
 	const std::optional<float> QualityRatio = GetQualityOverrideRatio(enumPQValue);
 
@@ -95,7 +95,7 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallb
 	}
 	else
 	{
-		spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback Quality: {0}", PerfQualityValue);
+		LOG_DEBUG("Quality: {0}", PerfQualityValue);
 
 		switch (enumPQValue)
 		{
@@ -205,7 +205,7 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallb
 	InParams->Set(NVSDK_NGX_EParameter_SizeInBytes, Width * Height * 31);
 	InParams->Set(NVSDK_NGX_EParameter_DLSSMode, NVSDK_NGX_DLSS_Mode_DLSS_DLISP);
 
-	spdlog::debug("NVSDK_NGX_DLSS_GetOptimalSettingsCallback: Display Resolution: {0}x{1} Render Resolution: {2}x{3}", Width, Height, OutWidth, OutHeight);
+	LOG_DEBUG("NVSDK_NGX_DLSS_GetOptimalSettingsCallback: Display Resolution: {0}x{1} Render Resolution: {2}x{3}", Width, Height, OutWidth, OutHeight);
 	return NVSDK_NGX_Result_Success;
 }
 
@@ -225,7 +225,7 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSSD_GetOptimalSettingsCall
 
 	auto enumPQValue = (NVSDK_NGX_PerfQuality_Value)PerfQualityValue;
 
-	spdlog::debug("NVSDK_NGX_DLSSD_GetOptimalSettingsCallback Display Resolution: {0}x{1}", Width, Height);
+	LOG_DEBUG("Display Resolution: {0}x{1}", Width, Height);
 
 	const std::optional<float> QualityRatio = GetQualityOverrideRatio(enumPQValue);
 
@@ -237,7 +237,7 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSSD_GetOptimalSettingsCall
 	}
 	else
 	{
-		spdlog::debug("NVSDK_NGX_DLSSD_GetOptimalSettingsCallback Quality: {0}", PerfQualityValue);
+		LOG_DEBUG("Quality: {0}", PerfQualityValue);
 
 		switch (enumPQValue)
 		{
@@ -347,13 +347,13 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSSD_GetOptimalSettingsCall
 	InParams->Set(NVSDK_NGX_EParameter_SizeInBytes, Width * Height * 31);
 	InParams->Set(NVSDK_NGX_EParameter_DLSSMode, NVSDK_NGX_DLSS_Mode_DLSS_DLISP);
 
-	spdlog::debug("NVSDK_NGX_DLSSD_GetOptimalSettingsCallback: Display Resolution: {0}x{1} Render Resolution: {2}x{3}", Width, Height, OutWidth, OutHeight);
+	LOG_DEBUG("Display Resolution: {0}x{1} Render Resolution: {2}x{3}", Width, Height, OutWidth, OutHeight);
 	return NVSDK_NGX_Result_Success;
 }
 
 inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetStatsCallback(NVSDK_NGX_Parameter* InParams)
 {
-	spdlog::debug("NVSDK_NGX_DLSS_GetStatsCallback");
+	LOG_DEBUG("NVSDK_NGX_DLSS_GetStatsCallback");
 
 	if (!InParams)
 		return NVSDK_NGX_Result_Success;
@@ -532,34 +532,34 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 	NVSDK_NGX_Parameter* OriginalParam = nullptr;
 #endif // ENABLE_ENCAPSULATED_PARAMS
 
-	void Set(const char* key, unsigned long long value) override { spdlog::trace("NVNGX_Parameters[{2}]::Set ulong('{0}', {1})", key, value, Name); setT(key, value); }
-	void Set(const char* key, float value) override { spdlog::trace("NVNGX_Parameters[{2}]::Set float('{0}', {1})", key, value, Name); setT(key, value); }
-	void Set(const char* key, double value) override { spdlog::trace("NVNGX_Parameters[{2}]::Set double('{0}', {1})", key, value, Name); setT(key, value); }
-	void Set(const char* key, unsigned int value) override { spdlog::trace("NVNGX_Parameters[{2}]::Set uint('{0}', {1})", key, value, Name); setT(key, value); }
-	void Set(const char* key, int value) override { spdlog::trace("NVNGX_Parameters[{2}]::Set int('{0}', {1})", key, value, Name); setT(key, value); }
-	void Set(const char* key, void* value) override { spdlog::trace("NVNGX_Parameters[{2}]::Set void('{0}', '{1}null')", key, value == nullptr ? "" : "not ", Name); setT(key, value); }
-	void Set(const char* key, ID3D11Resource* value) override { spdlog::trace("NVNGX_Parameters[{2}]::Set d3d11('{0}', '{1}null')", key, value == nullptr ? "" : "not ", Name); setT(key, value); }
-	void Set(const char* key, ID3D12Resource* value) override { spdlog::trace("NVNGX_Parameters[{2}]::Set d3d12('{0}', '{1}null')", key, value == nullptr ? "" : "not ", Name); setT(key, value); }
+	void Set(const char* key, unsigned long long value) override { LOG_TRACE("ulong('{0}', {1})", key, value); setT(key, value); }
+	void Set(const char* key, float value) override { LOG_TRACE("float('{0}', {1})", key, value); setT(key, value); }
+	void Set(const char* key, double value) override { LOG_TRACE("double('{0}', {1})", key, value); setT(key, value); }
+	void Set(const char* key, unsigned int value) override { LOG_TRACE("uint('{0}', {1})", key, value); setT(key, value); }
+	void Set(const char* key, int value) override { LOG_TRACE("int('{0}', {1})", key, value); setT(key, value); }
+	void Set(const char* key, void* value) override { LOG_TRACE("void('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
+	void Set(const char* key, ID3D11Resource* value) override { LOG_TRACE("d3d11('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
+	void Set(const char* key, ID3D12Resource* value) override { LOG_TRACE("d3d12('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
 
 	NVSDK_NGX_Result Get(const char* key, unsigned long long* value) const override
 	{
 		auto result = getT(key, value);
 		if (result == NVSDK_NGX_Result_Success)
 		{
-			spdlog::trace("NVNGX_Parameters[{2}]::Get ulong('{0}', {1})", key, *value, Name);
+			LOG_TRACE("ulong('{0}', {1})", key, *value);
 			return NVSDK_NGX_Result_Success;
 		}
 
 #ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
-			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original ulong('{0}')", key, Name);
+			LOG_TRACE("calling original ulong('{0}')", key);
 			result = OriginalParam->Get(key, value);
-			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original ulong('{0}') result: {2:X}", key, Name, (UINT)result);
+			LOG_TRACE("calling original ulong('{0}') result: {1:X}", key, (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
 			{
-				spdlog::trace("NVNGX_Parameters[{2}]::Get from original ulong('{0}', {1})", key, *value, Name);
+				LOG_TRACE("from original ulong('{0}', {1})", key, *value);
 				return result;
 			}
 		}
@@ -573,20 +573,20 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		auto result = getT(key, value);
 		if (result == NVSDK_NGX_Result_Success)
 		{
-			spdlog::trace("NVNGX_Parameters[{2}]::Get float('{0}', {1})", key, *value, Name);
+			LOG_TRACE("float('{0}', {1})", key, *value);
 			return NVSDK_NGX_Result_Success;
 		}
 
 #ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
-			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original float('{0}')", key, Name);
+			LOG_TRACE("calling original float('{0}')", key);
 			result = OriginalParam->Get(key, value);
-			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original float('{0}') result: {2:X}", key, Name, (UINT)result);
+			LOG_TRACE("calling original float('{0}') result: {1:X}", key, (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
 			{
-				spdlog::trace("NVNGX_Parameters[{2}]::Get from original float('{0}', {1})", key, *value, Name);
+				LOG_TRACE("from original float('{0}', {1})", key, *value);
 				return result;
 			}
 		}
@@ -600,20 +600,20 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		auto result = getT(key, value); 
 		if (result == NVSDK_NGX_Result_Success) 
 		{ 
-			spdlog::trace("NVNGX_Parameters[{2}]::Get double('{0}', {1})", key, *value, Name); 
+			LOG_TRACE("double('{0}', {1})", key, *value); 
 			return NVSDK_NGX_Result_Success; 
 		} 
 		
 #ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
-			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original double('{0}')", key, Name);
+			LOG_TRACE("calling original double('{0}')", key);
 			result = OriginalParam->Get(key, value);
-			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original double('{0}') result: {2:X}", key, Name, (UINT)result);
+			LOG_TRACE("calling original double('{0}') result: {1:X}", key, (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
 			{
-				spdlog::trace("NVNGX_Parameters[{2}]::Get from original double('{0}', {1})", key, *value, Name);
+				LOG_TRACE("from original double('{0}', {1})", key, *value);
 				return result;
 			}
 		}
@@ -627,20 +627,20 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		auto result = getT(key, value); 
 		if (result == NVSDK_NGX_Result_Success) 
 		{ 
-			spdlog::trace("NVNGX_Parameters[{2}]::Get uint('{0}', {1})", key, *value, Name); 
+			LOG_TRACE("uint('{0}', {1})", key, *value); 
 			return NVSDK_NGX_Result_Success; 
 		} 
 		
 #ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
-			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original uint('{0}')", key, Name);
+			LOG_TRACE("calling original uint('{0}')", key);
 			result = OriginalParam->Get(key, value);
-			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original uint('{0}') result: {2:X}", key, Name, (UINT)result);
+			LOG_TRACE("calling original uint('{0}') result: {1:X}", key, (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
 			{
-				spdlog::trace("NVNGX_Parameters[{2}]::Get from original uint('{0}', {1})", key, *value, Name);
+				LOG_TRACE("from original uint('{0}', {1})", key, *value);
 				return result;
 			}
 		}
@@ -653,20 +653,20 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 	{ 
 		auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) 
 		{ 
-			spdlog::trace("NVNGX_Parameters[{2}]::Get int('{0}', {1})", key, *value, Name); 
+			LOG_TRACE("int('{0}', {1})", key, *value); 
 			return NVSDK_NGX_Result_Success; 
 		} 
 		
 #ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
-			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original int('{0}')", key, Name);
+			LOG_TRACE("calling original int('{0}')", key);
 			result = OriginalParam->Get(key, value);
-			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original int('{0}') result: {2:X}", key, Name, (UINT)result);
+			LOG_TRACE("calling original int('{0}') result: {1:X}", key, (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
 			{
-				spdlog::trace("NVNGX_Parameters[{2}]::Get from original int('{0}', {1})", key, *value, Name);
+				LOG_TRACE("from original int('{0}', {1})", key, *value);
 				return result;
 			}
 		}
@@ -680,20 +680,20 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		auto result = getT(key, value); 
 		if (result == NVSDK_NGX_Result_Success) 
 		{ 
-			spdlog::trace("NVNGX_Parameters[{1}]::Get void('{0}')", key, Name); 
+			LOG_TRACE("void('{0}')", key); 
 			return NVSDK_NGX_Result_Success; 
 		} 
 		
 #ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
-			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original void('{0}')", key, Name);
+			LOG_TRACE("calling original void('{0}')", key);
 			result = OriginalParam->Get(key, value);
-			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original void('{0}') result: {2:X}", key, Name, (UINT)result);
+			LOG_TRACE("calling original void('{0}') result: {1:X}", key, (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
 			{
-				spdlog::trace("NVNGX_Parameters[{1}]::Get from original void('{0}')", key, Name);
+				LOG_TRACE("from original void('{0}')", key);
 				return result;
 			}
 		}
@@ -707,20 +707,20 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		auto result = getT(key, value); 
 		if (result == NVSDK_NGX_Result_Success) 
 		{ 
-			spdlog::trace("NVNGX_Parameters[{1}]::Get d3d11('{0}')", key, Name); 
+			LOG_TRACE("d3d11('{0}')", key); 
 			return NVSDK_NGX_Result_Success; 
 		} 
 		
 #ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
-			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original d3d11('{0}')", key, Name);
+			LOG_TRACE("calling original d3d11('{0}')", key);
 			result = OriginalParam->Get(key, value);
-			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original d3d11('{0}') result: {2:X}", key, Name, (UINT)result);
+			LOG_TRACE("calling original d3d11('{0}') result: {1:X}", key, (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
 			{
-				spdlog::trace("NVNGX_Parameters[{1}]::Get from original d3d11('{0}')", key, Name);
+				LOG_TRACE("from original d3d11('{0}')", key);
 				return result;
 			}
 		}
@@ -734,20 +734,20 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		auto result = getT(key, value); 
 		if (result == NVSDK_NGX_Result_Success) 
 		{ 
-			spdlog::trace("NVNGX_Parameters[{1}]::Get d3d12('{0}')", key, Name); 
+			LOG_TRACE("d3d12('{0}')", key); 
 			return NVSDK_NGX_Result_Success; 
 		} 
 		
 #ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
-			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original d3d12('{0}')", key, Name);
+			LOG_TRACE("calling original d3d12('{0}')", key);
 			result = OriginalParam->Get(key, value);
-			spdlog::trace("NVNGX_Parameters[{1}]::Get calling original d3d12('{0}') result: {2:X}", key, Name, (UINT)result);
+			LOG_TRACE("calling original d3d12('{0}') result: {1:X}", key, (UINT)result);
 
 			if (result == NVSDK_NGX_Result_Success)
 			{
-				spdlog::trace("NVNGX_Parameters[{1}]::Get from original d3d12('{0}')", key, Name);
+				LOG_TRACE("from original d3d12('{0}')", key);
 				return result;
 			}
 		}
@@ -761,11 +761,11 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		if (!m_values.empty())
 			m_values.clear();
 
-		spdlog::debug("NVNGX_Parameters[{0}]::Reset Start", Name);
+		LOG_DEBUG("Start");
 
 		InitNGXParameters(this);
 
-		spdlog::debug("NVNGX_Parameters[{0}]::Reset End", Name);
+		LOG_DEBUG("End");
 	}
 
 	std::vector<std::string> enumerate() const
@@ -798,7 +798,7 @@ private:
 
 		if (k == m_values.end())
 		{
-			spdlog::debug("NVNGX_Parameters[{1}]::GetT('{0}', FAIL)", key, Name);
+			LOG_DEBUG("('{0}', FAIL)", key);
 			return NVSDK_NGX_Result_Fail;
 		};
 

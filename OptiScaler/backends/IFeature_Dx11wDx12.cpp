@@ -12,6 +12,8 @@ do {						\
 	}						\
 } while((void)0, 0)	
 
+
+
 void IFeature_Dx11wDx12::ResourceBarrier(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
 {
     D3D12_RESOURCE_BARRIER barrier = {};
@@ -61,7 +63,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::CopyTextureFrom11To12 CreateTexture2D error: {0:x}", result);
+                LOG_ERROR("CreateTexture2D error: {0:x}", result);
                 return false;
             }
 
@@ -71,7 +73,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::CopyTextureFrom11To12 QueryInterface(resource) error: {0:x}", result);
+                LOG_ERROR("QueryInterface(resource) error: {0:x}", result);
                 return false;
             }
 
@@ -85,7 +87,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::CopyTextureFrom11To12 GetSharedHandle error: {0:x}", result);
+                LOG_ERROR("GetSharedHandle error: {0:x}", result);
                 return false;
             }
 
@@ -124,7 +126,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::CopyTextureFrom11To12 QueryInterface(resource) error: {0:x}", result);
+                LOG_ERROR("QueryInterface(resource) error: {0:x}", result);
                 return false;
             }
 
@@ -133,7 +135,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::CopyTextureFrom11To12 GetSharedHandle error: {0:x}", result);
+                LOG_ERROR("GetSharedHandle error: {0:x}", result);
                 return false;
             }
 
@@ -153,7 +155,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::CopyTextureFrom11To12 QueryInterface(resource) error: {0:x}", result);
+                LOG_ERROR("QueryInterface(resource) error: {0:x}", result);
                 return false;
             }
 
@@ -174,7 +176,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::CopyTextureFrom11To12 GetSharedHandle error: {0:x}", result);
+                LOG_ERROR("GetSharedHandle error: {0:x}", result);
                 return false;
             }
 
@@ -245,7 +247,7 @@ void IFeature_Dx11wDx12::ReleaseSyncResources()
 
 void IFeature_Dx11wDx12::GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter)
 {
-    spdlog::debug("IFeature_Dx11wDx12::GetHardwareAdapter");
+    LOG_FUNC();
 
     *InAdapter = nullptr;
 
@@ -314,7 +316,7 @@ void IFeature_Dx11wDx12::GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapt
 
 HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
 {
-    spdlog::debug("IFeature_Dx11wDx12::CreateDx12Device");
+    LOG_FUNC();
 
     HRESULT result;
 
@@ -325,7 +327,7 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
 
         if (result != S_OK)
         {
-            spdlog::error("IFeature_Dx11wDx12::CreateDx12Device Can't create factory: {0:x}", result);
+            LOG_ERROR("Can't create factory: {0:x}", result);
             return result;
         }
 
@@ -334,7 +336,7 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
 
         if (hardwareAdapter == nullptr)
         {
-            spdlog::error("IFeature_Dx11wDx12::CreateDx12Device Can't get hardwareAdapter!");
+            LOG_ERROR("Can't get hardwareAdapter!");
             return E_NOINTERFACE;
         }
 
@@ -342,7 +344,7 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
 
         if (result != S_OK)
         {
-            spdlog::error("IFeature_Dx11wDx12::CreateDx12Device Can't create device: {0:x}", result);
+            LOG_ERROR("Can't create device: {0:x}", result);
             return result;
         }
     }
@@ -358,7 +360,7 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
 
         if (result != S_OK || Dx12CommandQueue == nullptr)
         {
-            spdlog::debug("IFeature_Dx11wDx12::CreateDx12Device CreateCommandQueue result: {0:x}", result);
+            LOG_DEBUG("CreateCommandQueue result: {0:x}", result);
             return E_NOINTERFACE;
         }
     }
@@ -369,7 +371,7 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
 
         if (result != S_OK)
         {
-            spdlog::error("IFeature_Dx11wDx12::CreateDx12Device CreateCommandAllocator error: {0:x}", result);
+            LOG_ERROR("CreateCommandAllocator error: {0:x}", result);
             return E_NOINTERFACE;
         }
     }
@@ -381,7 +383,7 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
 
         if (result != S_OK)
         {
-            spdlog::error("IFeature_Dx11wDx12::CreateDx12Device CreateCommandList error: {0:x}", result);
+            LOG_ERROR("CreateCommandList error: {0:x}", result);
             return E_NOINTERFACE;
         }
     }
@@ -406,7 +408,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
             if (result != S_OK || queryTextureCopy == nullptr)
             {
-                spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures can't create queryTextureCopy!");
+                LOG_ERROR("can't create queryTextureCopy!");
                 return false;
             }
         }
@@ -423,13 +425,13 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
     if (paramColor)
     {
-        spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Color exist..");
+        LOG_DEBUG("Color exist..");
         if (CopyTextureFrom11To12(paramColor, &dx11Color, true, Config::Instance()->DontUseNTShared.value_or(false)) == NULL)
             return false;
     }
     else
     {
-        spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures Color not exist!!");
+        LOG_ERROR("Color not exist!!");
         return false;
     }
 
@@ -439,13 +441,13 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
     if (paramMv)
     {
-        spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures MotionVectors exist..");
+        LOG_DEBUG("MotionVectors exist..");
         if (CopyTextureFrom11To12(paramMv, &dx11Mv, true, Config::Instance()->DontUseNTShared.value_or(false)) == false)
             return false;
     }
     else
     {
-        spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures MotionVectors not exist!!");
+        LOG_ERROR("MotionVectors not exist!!");
         return false;
     }
 
@@ -454,13 +456,13 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
     if (paramOutput[_frameCount % 2])
     {
-        spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Output exist..");
+        LOG_DEBUG("Output exist..");
         if (CopyTextureFrom11To12(paramOutput[_frameCount % 2], &dx11Out, false, Config::Instance()->DontUseNTShared.value_or(true)) == false)
             return false;
     }
     else
     {
-        spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures Output not exist!!");
+        LOG_ERROR("Output not exist!!");
         return false;
     }
 
@@ -470,12 +472,12 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
     if (paramDepth)
     {
-        spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Depth exist..");
+        LOG_DEBUG("Depth exist..");
         if (CopyTextureFrom11To12(paramDepth, &dx11Depth, true, true) == false)
             return false;
     }
     else
-        spdlog::error("IFeature_Dx11wDx12::Evaluate Depth not exist!!");
+        LOG_ERROR("IFeature_Dx11wDx12::Evaluate Depth not exist!!");
 
     ID3D11Resource* paramExposure = nullptr;
     if (!Config::Instance()->AutoExposure.value_or(false))
@@ -485,20 +487,20 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
         if (paramExposure)
         {
-            spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures ExposureTexture exist..");
+            LOG_DEBUG("ExposureTexture exist..");
 
             if (CopyTextureFrom11To12(paramExposure, &dx11Exp, true, Config::Instance()->DontUseNTShared.value_or(false)) == false)
                 return false;
         }
         else
         {
-            spdlog::warn("IFeature_Dx11wDx12::ProcessDx11Textures AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
+            LOG_WARN("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
             Config::Instance()->AutoExposure = true;
             Config::Instance()->changeBackend = true;
         }
     }
     else
-        spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures AutoExposure enabled!");
+        LOG_DEBUG("AutoExposure enabled!");
 
     ID3D11Resource* paramReactiveMask = nullptr;
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
@@ -509,7 +511,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         if (paramReactiveMask)
         {
             Config::Instance()->DisableReactiveMask = false;
-            spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Input Bias mask exist..");
+            LOG_DEBUG("Input Bias mask exist..");
 
             if (CopyTextureFrom11To12(paramReactiveMask, &dx11Reactive, true, Config::Instance()->DontUseNTShared.value_or(false)) == false)
                 return false;
@@ -517,20 +519,20 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         // This is only needed for XeSS
         else if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "xess") 
         {
-            spdlog::warn("IFeature_Dx11wDx12::ProcessDx11Textures bias mask not exist and it's enabled in config, it may cause problems!!");
+            LOG_WARN("bias mask not exist and it's enabled in config, it may cause problems!!");
             Config::Instance()->DisableReactiveMask = true;
             Config::Instance()->changeBackend = true;
         }
     }
     else
-        spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures DisableReactiveMask enabled!");
+        LOG_DEBUG("DisableReactiveMask enabled!");
 
 #pragma endregion
 
     // query sync
     if (Config::Instance()->TextureSyncMethod.value_or(1) == 5 || _frameCount < 200)
     {
-        spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Queries!");
+        LOG_DEBUG("Queries!");
         DeviceContext->End(queryTextureCopy);
         DeviceContext->Flush();
 
@@ -546,7 +548,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures Can't create dx11FenceTextureCopy {0:x}", result);
+                LOG_ERROR("Can't create dx11FenceTextureCopy {0:x}", result);
                 return false;
             }
         }
@@ -557,7 +559,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures Can't create sharedhandle for dx11FenceTextureCopy {0:x}", result);
+                LOG_ERROR("Can't create sharedhandle for dx11FenceTextureCopy {0:x}", result);
                 return false;
             }
 
@@ -565,7 +567,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures Can't create open sharedhandle for dx12FenceTextureCopy {0:x}", result);
+                LOG_ERROR("Can't create open sharedhandle for dx12FenceTextureCopy {0:x}", result);
                 return false;
             }
         }
@@ -573,13 +575,13 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         // Fence
         if (Config::Instance()->TextureSyncMethod.value_or(1) > 0)
         {
-            spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Dx11 Signal & Dx12 Wait!");
+            LOG_DEBUG("Dx11 Signal & Dx12 Wait!");
 
             result = Dx11DeviceContext->Signal(dx11FenceTextureCopy, 10);
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures Dx11DeviceContext->Signal(dx11FenceTextureCopy, 10) : {0:x}!", result);
+                LOG_ERROR("Dx11DeviceContext->Signal(dx11FenceTextureCopy, 10) : {0:x}!", result);
                 return false;
             }
         }
@@ -587,7 +589,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         // Flush
         if (Config::Instance()->TextureSyncMethod.value_or(1) > 2)
         {
-            spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures Dx11DeviceContext->Flush()!");
+            LOG_DEBUG("Dx11DeviceContext->Flush()!");
             Dx11DeviceContext->Flush();
         }
 
@@ -598,7 +600,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures Dx12CommandQueue->Wait(dx12fence_1, 10) : {0:x}!", result);
+                LOG_ERROR("Dx12CommandQueue->Wait(dx12fence_1, 10) : {0:x}!", result);
                 return false;
             }
         }
@@ -616,7 +618,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
                     if (result != S_OK)
                     {
-                        spdlog::error("IFeature_Dx11wDx12::CopyBackOutput dx12FenceTextureCopy->SetEventOnCompletion(10, fenceEvent12) : {0:x}!", result);
+                        LOG_ERROR("dx12FenceTextureCopy->SetEventOnCompletion(10, fenceEvent12) : {0:x}!", result);
                         return false;
                     }
 
@@ -629,7 +631,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
 #pragma region shared handles
 
-    spdlog::debug("IFeature_Dx11wDx12::ProcessDx11Textures SharedHandles start!");
+    LOG_DEBUG("SharedHandles start!");
 
     if (paramColor && dx11Color.Dx12Handle != dx11Color.Dx11Handle)
     {
@@ -640,7 +642,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
         if (result != S_OK)
         {
-            spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures Color OpenSharedHandle error: {0:x}", result);
+            LOG_ERROR("Color OpenSharedHandle error: {0:x}", result);
             return false;
         }
 
@@ -656,7 +658,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
         if (result != S_OK)
         {
-            spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures MotionVectors OpenSharedHandle error: {0:x}", result);
+            LOG_ERROR("MotionVectors OpenSharedHandle error: {0:x}", result);
             return false;
         }
 
@@ -672,7 +674,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
         if (result != S_OK)
         {
-            spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures Output OpenSharedHandle error: {0:x}", result);
+            LOG_ERROR("Output OpenSharedHandle error: {0:x}", result);
             return false;
         }
 
@@ -688,7 +690,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
         if (result != S_OK)
         {
-            spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures Depth OpenSharedHandle error: {0:x}", result);
+            LOG_ERROR("Depth OpenSharedHandle error: {0:x}", result);
             return false;
         }
 
@@ -704,7 +706,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
         if (result != S_OK)
         {
-            spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures ExposureTexture OpenSharedHandle error: {0:x}", result);
+            LOG_ERROR("ExposureTexture OpenSharedHandle error: {0:x}", result);
             return false;
         }
 
@@ -720,7 +722,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
         if (result != S_OK)
         {
-            spdlog::error("IFeature_Dx11wDx12::ProcessDx11Textures TransparencyMask OpenSharedHandle error: {0:x}", result);
+            LOG_ERROR("TransparencyMask OpenSharedHandle error: {0:x}", result);
             return false;
         }
 
@@ -752,7 +754,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::CopyBackOutput Can't create dx12FenceCopySync {0:x}", result);
+                LOG_ERROR("Can't create dx12FenceCopySync {0:x}", result);
                 return false;
             }
         }
@@ -763,7 +765,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::CopyBackOutput Can't create sharedhandle for dx12FenceCopySync {0:x}", result);
+                LOG_ERROR("Can't create sharedhandle for dx12FenceCopySync {0:x}", result);
                 return false;
             }
 
@@ -771,7 +773,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::CopyBackOutput Can't create open sharedhandle for dx11FenceCopySync {0:x}", result);
+                LOG_ERROR("Can't create open sharedhandle for dx11FenceCopySync {0:x}", result);
                 return false;
             }
         }
@@ -796,7 +798,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 
                     if (result != S_OK)
                     {
-                        spdlog::error("IFeature_Dx11wDx12::CopyBackOutput dx12FenceCopySync->SetEventOnCompletion(20, fenceEvent12) : {0:x}!", result);
+                        LOG_ERROR("dx12FenceCopySync->SetEventOnCompletion(20, fenceEvent12) : {0:x}!", result);
                         return false;
                     }
 
@@ -812,7 +814,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::CopyBackOutput Can't create dx11FenceCopyOutput {0:x}", result);
+                LOG_ERROR("Can't create dx11FenceCopyOutput {0:x}", result);
                 return false;
             }
         }
@@ -823,7 +825,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::CopyBackOutput Can't create sharedhandle for dx11FenceTextureCopy {0:x}", result);
+                LOG_ERROR("Can't create sharedhandle for dx11FenceTextureCopy {0:x}", result);
                 return false;
             }
 
@@ -831,7 +833,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::CopyBackOutput Can't create open sharedhandle for dx12FenceTextureCopy {0:x}", result);
+                LOG_ERROR("Can't create open sharedhandle for dx12FenceTextureCopy {0:x}", result);
                 return false;
             }
         }
@@ -843,7 +845,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 
         if (result != S_OK)
         {
-            spdlog::error("IFeature_Dx11wDx12::CopyBackOutput Dx11DeviceContext->Signal(dx11FenceTextureCopy, 30) : {0:x}!", result);
+            LOG_ERROR("Dx11DeviceContext->Signal(dx11FenceTextureCopy, 30) : {0:x}!", result);
             return false;
         }
 
@@ -857,7 +859,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 
             if (result != S_OK)
             {
-                spdlog::error("IFeature_Dx11wDx12::CopyBackOutput Dx12CommandQueue->Wait(dx12FenceTextureCopy, 30) : {0:x}!", result);
+                LOG_ERROR("Dx12CommandQueue->Wait(dx12FenceTextureCopy, 30) : {0:x}!", result);
                 return false;
             }
         }
@@ -874,7 +876,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 
                     if (result != S_OK)
                     {
-                        spdlog::error("IFeature_Dx11wDx12::CopyBackOutput dx12FenceCopyOutput->SetEventOnCompletion(30, fenceEvent12) : {0:x}!", result);
+                        LOG_ERROR("dx12FenceCopyOutput->SetEventOnCompletion(30, fenceEvent12) : {0:x}!", result);
                         return false;
                     }
 
@@ -899,7 +901,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 
             if (result != S_OK || !queryCopyOutputFence)
             {
-                spdlog::error("IFeature_Dx11wDx12::CopyBackOutput can't create queryCopyOutputFence!");
+                LOG_ERROR("can't create queryCopyOutputFence!");
                 return false;
             }
         }
@@ -926,7 +928,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 
 bool IFeature_Dx11wDx12::BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters)
 {
-    spdlog::debug("IFeature_Dx11wDx12::BaseInit!");
+    LOG_FUNC();
 
     if (IsInited())
         return true;
@@ -936,14 +938,14 @@ bool IFeature_Dx11wDx12::BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* I
 
     if (!InContext)
     {
-        spdlog::error("IFeature_Dx11wDx12::BaseInit context is null!");
+        LOG_ERROR("context is null!");
         return false;
     }
 
     auto contextResult = InContext->QueryInterface(IID_PPV_ARGS(&Dx11DeviceContext));
     if (contextResult != S_OK)
     {
-        spdlog::error("IFeature_Dx11wDx12::BaseInit QueryInterface ID3D11DeviceContext4 result: {0:x}", contextResult);
+        LOG_ERROR("QueryInterface ID3D11DeviceContext4 result: {0:x}", contextResult);
         return false;
     }
 
@@ -954,7 +956,7 @@ bool IFeature_Dx11wDx12::BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* I
 
     if (dx11DeviceResult != S_OK)
     {
-        spdlog::error("IFeature_Dx11wDx12::BaseInit QueryInterface ID3D11Device5 result: {0:x}", dx11DeviceResult);
+        LOG_ERROR("QueryInterface ID3D11Device5 result: {0:x}", dx11DeviceResult);
         return false;
     }
 
@@ -963,12 +965,12 @@ bool IFeature_Dx11wDx12::BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* I
         auto fl = Dx11Device->GetFeatureLevel();
         auto result = CreateDx12Device(fl);
 
-        //spdlog::trace("IFeature_Dx11wDx12::BaseInit sleeping after CreateDx12Device for 500ms");
+        //LOG_TRACE("sleeping after CreateDx12Device for 500ms");
         //std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         if (result != S_OK || Dx12Device == nullptr)
         {
-            spdlog::error("IFeature_Dx11wDx12::BaseInit QueryInterface Dx12Device result: {0:x}", result);
+            LOG_ERROR("QueryInterface Dx12Device result: {0:x}", result);
             return false;
         }
     }

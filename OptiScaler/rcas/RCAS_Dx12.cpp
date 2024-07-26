@@ -15,7 +15,7 @@ bool RCAS_Dx12::CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* r
 
 	if (FAILED(hr))
 	{
-		spdlog::error("CreateComputeShader CreateComputePipelineState error {0:x}", hr);
+		LOG_ERROR("CreateComputePipelineState error {0:x}", hr);
 		return false;
 	}
 
@@ -42,7 +42,7 @@ bool RCAS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InS
 			return true;
 	}
 
-	spdlog::debug("RCAS_Dx12::CreateBufferResource [{0}] Start!", _name);
+	LOG_DEBUG("[{0}] Start!", _name);
 
 	D3D12_HEAP_PROPERTIES heapProperties;
 	D3D12_HEAP_FLAGS heapFlags;
@@ -50,7 +50,7 @@ bool RCAS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InS
 
 	if (hr != S_OK)
 	{
-		spdlog::error("RCAS_Dx12::CreateBufferResource [{0}] GetHeapProperties result: {1:x}", _name.c_str(), hr);
+		LOG_ERROR("[{0}] GetHeapProperties result: {1:x}", _name.c_str(), hr);
 		return false;
 	}
 
@@ -62,7 +62,7 @@ bool RCAS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InS
 
 	if (hr != S_OK)
 	{
-		spdlog::error("RCAS_Dx12::CreateBufferResource [{0}] CreateCommittedResource result: {1:x}", _name, hr);
+		LOG_ERROR("[{0}] CreateCommittedResource result: {1:x}", _name, hr);
 		return false;
 	}
 
@@ -94,7 +94,7 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
 	if (!_init || InDevice == nullptr || InCmdList == nullptr || InResource == nullptr || OutResource == nullptr || InMotionVectors == nullptr)
 		return false;
 
-	spdlog::debug("RCAS_Dx12::Dispatch [{0}] Start!", _name);
+	LOG_DEBUG("[{0}] Start!", _name);
 
 	_counter++;
 	_counter = _counter % 2;
@@ -196,14 +196,14 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
 
 	if (result != S_OK)
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] _constantBuffer->Map error {1:x}", _name, (unsigned int)result);
+		LOG_ERROR("[{0}] _constantBuffer->Map error {1:x}", _name, (unsigned int)result);
 		return false;
 	}
 
 	if (pCBDataBegin == nullptr)
 	{
 		_constantBuffer->Unmap(0, nullptr);
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] pCBDataBegin is null!", _name);
+		LOG_ERROR("[{0}] pCBDataBegin is null!", _name);
 		return false;
 	}
 
@@ -241,11 +241,11 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 {
 	if (InDevice == nullptr)
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 InDevice is nullptr!");
+		LOG_ERROR("InDevice is nullptr!");
 		return;
 	}
 
-	spdlog::debug("RCAS_Dx12::RCAS_Dx12 {0} start!", _name);
+	LOG_DEBUG("{0} start!", _name);
 
 	// Describe and create the root signature
 	// ---------------------------------------------------
@@ -322,7 +322,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	if (result != S_OK)
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateCommittedResource error {1:x}", _name, (unsigned int)result);
+		LOG_ERROR("[{0}] CreateCommittedResource error {1:x}", _name, (unsigned int)result);
 		return;
 	}
 
@@ -335,7 +335,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 		if (FAILED(hr))
 		{
-			spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] D3D12SerializeRootSignature error {1:x}", _name, (unsigned int)hr);
+			LOG_ERROR("[{0}] D3D12SerializeRootSignature error {1:x}", _name, (unsigned int)hr);
 			break;
 		}
 
@@ -343,7 +343,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 		if (FAILED(hr))
 		{
-			spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateRootSignature error {1:x}", _name, (unsigned int)hr);
+			LOG_ERROR("[{0}] CreateRootSignature error {1:x}", _name, (unsigned int)hr);
 			break;
 		}
 
@@ -363,7 +363,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	if (_rootSignature == nullptr)
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] _rootSignature is null!", _name);
+		LOG_ERROR("[{0}] _rootSignature is null!", _name);
 		return;
 	}
 
@@ -377,7 +377,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 		if (FAILED(hr))
 		{
-			spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateComputePipelineState error: {1:X}", _name, hr);
+			LOG_ERROR("[{0}] CreateComputePipelineState error: {1:X}", _name, hr);
 			return;
 		}
 	}
@@ -388,14 +388,14 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 		if (_recEncodeShader == nullptr)
 		{
-			spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CompileShader error!", _name);
+			LOG_ERROR("[{0}] CompileShader error!", _name);
 			return;
 		}
 
 		// create pso objects
 		if (!CreateComputeShader(InDevice, _rootSignature, &_pipelineState, _recEncodeShader))
 		{
-			spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateComputeShader error!", _name);
+			LOG_ERROR("[{0}] CreateComputeShader error!", _name);
 			return;
 		}
 
@@ -415,7 +415,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	if (FAILED(hr))
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateDescriptorHeap[0] error {1:x}", _name, (unsigned int)hr);
+		LOG_ERROR("[{0}] CreateDescriptorHeap[0] error {1:x}", _name, (unsigned int)hr);
 		return;
 	}
 
@@ -423,7 +423,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	if (FAILED(hr))
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateDescriptorHeap[1] error {1:x}", _name, (unsigned int)hr);
+		LOG_ERROR("[{0}] CreateDescriptorHeap[1] error {1:x}", _name, (unsigned int)hr);
 		return;
 	}
 
@@ -431,7 +431,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	if (FAILED(hr))
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateDescriptorHeap[2] error {1:x}", _name, (unsigned int)hr);
+		LOG_ERROR("[{0}] CreateDescriptorHeap[2] error {1:x}", _name, (unsigned int)hr);
 		return;
 	}
 
@@ -439,7 +439,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	if (FAILED(hr))
 	{
-		spdlog::error("RCAS_Dx12::RCAS_Dx12 [{0}] CreateDescriptorHeap[3] error {1:x}", _name, (unsigned int)hr);
+		LOG_ERROR("[{0}] CreateDescriptorHeap[3] error {1:x}", _name, (unsigned int)hr);
 		return;
 	}
 

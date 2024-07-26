@@ -7,7 +7,7 @@ bool DLSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 {
 	if (NVNGXProxy::NVNGXModule() == nullptr)
 	{
-		spdlog::error("DLSSFeatureDx11::Init nvngx.dll not loaded!");
+		LOG_ERROR("nvngx.dll not loaded!");
 
 		SetInit(false);
 		return false;
@@ -37,7 +37,7 @@ bool DLSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 
-		spdlog::info("DLSSFeatureDx11::Init Creating DLSS feature");
+		LOG_INFO("Creating DLSS feature");
 
 		if (NVNGXProxy::D3D11_CreateFeature() != nullptr)
 		{
@@ -48,13 +48,13 @@ bool DLSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 
 			if (nvResult != NVSDK_NGX_Result_Success)
 			{
-				spdlog::error("DLSSFeatureDx11::Init _CreateFeature result: {0:X}", (unsigned int)nvResult);
+				LOG_ERROR("_CreateFeature result: {0:X}", (unsigned int)nvResult);
 				break;
 			}
 		}
 		else
 		{
-			spdlog::error("DLSSFeatureDx11::Init _CreateFeature is nullptr");
+			LOG_ERROR("_CreateFeature is nullptr");
 			break;
 		}
 
@@ -79,7 +79,7 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 {
 	if (!_moduleLoaded)
 	{
-		spdlog::error("DLSSFeatureDx11::Evaluate nvngx.dll or _nvngx.dll is not loaded!");
+		LOG_ERROR("nvngx.dll or _nvngx.dll is not loaded!");
 		return false;
 	}
 
@@ -94,17 +94,17 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 		if (nvResult != NVSDK_NGX_Result_Success)
 		{
-			spdlog::error("DLSSFeatureDx11::Evaluate _EvaluateFeature result: {0:X}", (unsigned int)nvResult);
+			LOG_ERROR("_EvaluateFeature result: {0:X}", (unsigned int)nvResult);
 			return false;
 		}
 		else
 		{
-			spdlog::trace("DLSSFeatureDx11::Evaluate _EvaluateFeature ok!");
+			LOG_TRACE("_EvaluateFeature ok!");
 		}
 	}
 	else
 	{
-		spdlog::error("DLSSFeatureDx11::Evaluate _EvaluateFeature is nullptr");
+		LOG_ERROR("_EvaluateFeature is nullptr");
 		return false;
 	}
 
@@ -148,11 +148,11 @@ DLSSFeatureDx11::DLSSFeatureDx11(unsigned int InHandleId, NVSDK_NGX_Parameter* I
 {
 	if (NVNGXProxy::NVNGXModule() == nullptr)
 	{
-		spdlog::info("DLSSFeatureDx11::DLSSFeatureDx11 nvngx.dll not loaded, now loading");
+		LOG_INFO("nvngx.dll not loaded, now loading");
 		NVNGXProxy::InitNVNGX();
 	}
 
-	spdlog::info("DLSSFeatureDx11::DLSSFeatureDx11 binding complete!");
+	LOG_INFO("binding complete!");
 }
 
 DLSSFeatureDx11::~DLSSFeatureDx11()

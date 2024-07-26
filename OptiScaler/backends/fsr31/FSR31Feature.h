@@ -25,11 +25,11 @@ inline static void FfxLogCallback(uint32_t type, const wchar_t* message)
     std::wstring string(message);
 
     //if (type == FFX_API_MESSAGE_TYPE_ERROR)
-    //	spdlog::error("FSR31Feature::LogCallback FSR Runtime: {0}", str);
+    //	LOG_ERROR("FSR Runtime: {0}", str);
     //else if (type == FFX_API_MESSAGE_TYPE_WARNING)
-    //	spdlog::warn("FSR31Feature::LogCallback FSR Runtime: {0}", str);
+    //	LOG_WARN("FSR Runtime: {0}", str);
     //else
-    spdlog::debug("FSR31Feature::LogCallback FSR Runtime: {0}", wstring_to_string(string));
+    LOG_DEBUG("FSR Runtime: {0}", wstring_to_string(string));
 }
 
 class FSR31Feature : public virtual IFeature
@@ -60,9 +60,8 @@ protected:
     void SetDepthInverted(bool InValue);
 
     static inline void parse_version(const char* version_str) {
-        if (sscanf_s(version_str, "%u.%u.%u", &_version.major, &_version.minor, &_version.patch) != 3) {
-            spdlog::warn("FSR31Feature::parse_version can't parse {0}", version_str);
-        }
+        if (sscanf_s(version_str, "%u.%u.%u", &_version.major, &_version.minor, &_version.patch) != 3)
+            LOG_WARN("can't parse {0}", version_str);
     }
 
 public:

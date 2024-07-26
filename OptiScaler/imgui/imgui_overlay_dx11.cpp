@@ -103,7 +103,7 @@ static HRESULT WINAPI hkCreateSwapChainForComposition_Dx11(IDXGIFactory* pFactor
 
 static void CleanupRenderTarget()
 {
-	spdlog::debug("ImGuiOverlayDx11::CleanupRenderTarget");
+	LOG_FUNC();
 	
 	_dx11CleanMutex.lock();
 
@@ -118,7 +118,7 @@ static void CleanupRenderTarget()
 
 static void CleanupDeviceD3D11()
 {
-	spdlog::debug("ImGuiOverlayDx11::CleanupDeviceD3D11");
+	LOG_FUNC();
 
 	CleanupRenderTarget();
 
@@ -143,7 +143,7 @@ static void CleanupDeviceD3D11()
 
 static bool CreateDeviceD3D11(HWND hWnd)
 {
-	spdlog::info("ImGuiOverlayDx11::CreateDeviceD3D11({0:X})", (ULONG64)hWnd);
+	LOG_INFO("hWnd: {0:X}", (ULONG64)hWnd);
 
 	// Create the D3DDevice
 	DXGI_SWAP_CHAIN_DESC swapChainDesc = { };
@@ -163,7 +163,7 @@ static bool CreateDeviceD3D11(HWND hWnd)
 	HRESULT hr = D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_NULL, NULL, 0, featureLevels, 2, D3D11_SDK_VERSION, &swapChainDesc, &g_pSwapChain, &g_pd3dDevice, nullptr, nullptr);
 	if (hr != S_OK)
 	{
-		spdlog::error("ImGuiOverlayDx11::CreateDeviceD3D11 D3D11CreateDeviceAndSwapChain error: {0:X}", (ULONG64)hWnd);
+		LOG_ERROR("D3D11CreateDeviceAndSwapChain error: {0:X}", (ULONG64)hWnd);
 		return false;
 	}
 
@@ -172,7 +172,7 @@ static bool CreateDeviceD3D11(HWND hWnd)
 	hr = g_pd3dDevice->QueryInterface(IID_PPV_ARGS(&pDXGIDevice));
 	if (hr != S_OK)
 	{
-		spdlog::error("ImGuiOverlayDx11::CreateDeviceD3D11 QueryInterface error: {0:X}", (ULONG64)hWnd);
+		LOG_ERROR("QueryInterface error: {0:X}", (ULONG64)hWnd);
 		return false;
 	}
 
@@ -180,7 +180,7 @@ static bool CreateDeviceD3D11(HWND hWnd)
 	hr = pDXGIDevice->GetAdapter(&pDXGIAdapter);
 	if (hr != S_OK)
 	{
-		spdlog::error("ImGuiOverlayDx11::CreateDeviceD3D11 GetAdapter error: {0:X}", (ULONG64)hWnd);
+		LOG_ERROR("GetAdapter error: {0:X}", (ULONG64)hWnd);
 		return false;
 	}
 
@@ -188,13 +188,13 @@ static bool CreateDeviceD3D11(HWND hWnd)
 	hr = pDXGIAdapter->GetParent(IID_PPV_ARGS(&pIDXGIFactory));
 	if (hr != S_OK)
 	{
-		spdlog::error("ImGuiOverlayDx11::CreateDeviceD3D11 GetParent error: {0:X}", (ULONG64)hWnd);
+		LOG_ERROR("GetParent error: {0:X}", (ULONG64)hWnd);
 		return false;
 	}
 
 	if (!pIDXGIFactory)
 	{
-		spdlog::error("ImGuiOverlayDx11::CreateDeviceD3D11 pIDXGIFactory is null");
+		LOG_ERROR("pIDXGIFactory is null");
 		return false;
 	}
 
@@ -268,7 +268,7 @@ static void RenderImGui_DX11(IDXGISwapChain* pSwapChain)
 
 	if (ImGuiOverlayBase::IsInited() && (ImGuiOverlayBase::IsResetRequested() || hwnd != ImGuiOverlayBase::Handle()))
 	{
-		spdlog::info("RenderImGui_DX12 Reset request detected, shutting down ImGui!");
+		LOG_INFO("Reset request detected, shutting down ImGui!");
 		ImGuiOverlayDx11::ShutdownDx11();
 		ImGuiOverlayDx11::InitDx11(hwnd);
 		return;
@@ -361,7 +361,7 @@ void ImGuiOverlayDx11::ReInitDx11(HWND InNewHwnd)
 	if (!_isInited)
 		return;
 
-	spdlog::debug("ImGuiOverlayDx11::ReInitDx11 hwnd: {0:X}", (ULONG64)InNewHwnd);
+	LOG_DEBUG("hwnd: {0:X}", (ULONG64)InNewHwnd);
 
 	if (ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
 		ImGui_ImplDX11_Shutdown();

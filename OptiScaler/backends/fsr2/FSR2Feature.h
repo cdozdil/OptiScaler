@@ -32,11 +32,11 @@ inline static void FfxLogCallback(FfxFsr2MsgType type, const wchar_t* message)
 	std::wstring string(message);
 
 	//if (type == FFX_FSR2_MESSAGE_TYPE_ERROR)
-	//	spdlog::error("FSR2Feature::LogCallback FSR Runtime: {0}", str);
+	//	LOG_ERROR("FSR Runtime: {0}", str);
 	//else if (type == FFX_FSR2_MESSAGE_TYPE_WARNING)
-	//	spdlog::warn("FSR2Feature::LogCallback FSR Runtime: {0}", str);
+	//	LOG_WARN("FSR Runtime: {0}", str);
 	//else
-	spdlog::debug("FSR2Feature::LogCallback FSR Runtime: {0}", wstring_to_string(string));
+	LOG_DEBUG("FSR Runtime: {0}", wstring_to_string(string));
 }
 
 class FSR2Feature : public virtual IFeature
