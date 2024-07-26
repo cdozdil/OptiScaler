@@ -76,7 +76,7 @@ Alternatively you can create a new folder called `plugins` and put other mods fi
 ![image](https://github.com/cdozdil/OptiScaler/assets/35529761/c4bf2a85-107b-49ac-b002-59d00fd06982)
 
 #### Shader Compilation error on Linux
-If you are using OptiScaler with Linux and you have problems with `RCAS` or `Output Scaling`, you will probably see this message in your logs.
+If you are using OptiScaler with Linux and you have problems with `RCAS`, `Reactive Mask Bias` or `Output Scaling`, you will probably notice this message in your logs.
 ```
 CompileShader error compiling shader : <anonymous>:83:26: E5005: Function "rcp" is not defined.
 ```
