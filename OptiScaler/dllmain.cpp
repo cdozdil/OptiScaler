@@ -200,7 +200,7 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 #endif // DEBUG
 
     // If Opti is not loading nvngx.dll
-    if (!Config::Instance()->dlssDisableHook)
+    if (!isWorkingWithEnabler && !Config::Instance()->dlssDisableHook)
     {
         // exe path
         auto exePath = Util::ExePath().parent_path().wstring();
@@ -224,7 +224,7 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
     }
 
     // NvApi64.dll
-    if (Config::Instance()->OverrideNvapiDll.value_or(false))
+    if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or(false))
     {
         pos = lcaseLibName.rfind(nvapiA);
 
@@ -312,7 +312,7 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
     size_t pos;
 
     // If Opti is not loading nvngx.dll
-    if (!Config::Instance()->dlssDisableHook)
+    if (!isWorkingWithEnabler && !Config::Instance()->dlssDisableHook)
     {
         // exe path
         auto exePathW = Util::ExePath().parent_path().wstring();
@@ -336,7 +336,7 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
     }
 
     // NvApi64.dll
-    if (Config::Instance()->OverrideNvapiDll.value_or(false))
+    if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or(false))
     {
         pos = lcaseLibName.rfind(nvapiW);
 
@@ -423,7 +423,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
     size_t pos;
 
     // If Opti is not loading nvngx.dll
-    if (!Config::Instance()->dlssDisableHook)
+    if (!isWorkingWithEnabler && !Config::Instance()->dlssDisableHook)
     {
         // exe path
         auto exePath = Util::ExePath().parent_path().wstring();
@@ -460,7 +460,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
     }
 
     // NvApi64.dll
-    if (Config::Instance()->OverrideNvapiDll.value_or(false))
+    if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or(false))
     {
         pos = lcaseLibName.rfind(nvapiExA);
 
@@ -597,7 +597,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
     size_t pos;
 
     // If Opti is not loading nvngx.dll
-    if (!Config::Instance()->dlssDisableHook)
+    if (!isWorkingWithEnabler && !Config::Instance()->dlssDisableHook)
     {
         // exe path
         auto exePathW = Util::ExePath().parent_path().wstring();
@@ -634,7 +634,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
     }
 
     // NvApi64.dll
-    if (Config::Instance()->OverrideNvapiDll.value_or(false))
+    if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or(false))
     {
         pos = lcaseLibName.rfind(nvapiExW);
 
@@ -1197,7 +1197,7 @@ static void CheckWorkingMode()
 
     do
     {
-        if (lCaseFilename == "nvngx.dll" || lCaseFilename == "nvngx_dlss.dll" || lCaseFilename == "_nvngx.dll" || lCaseFilename == "dlss-enabler-upscaler.dll")
+        if (lCaseFilename == "nvngx.dll" || lCaseFilename == "_nvngx.dll" || lCaseFilename == "dlss-enabler-upscaler.dll")
         {
             spdlog::info("OptiScaler working as native upscaler: {0}", filename);
 
@@ -1524,7 +1524,7 @@ static void CheckWorkingMode()
 
     if (modeFound)
     {
-        if (!isWorkingWithEnabler)
+        //if (!isWorkingWithEnabler)
             AttachHooks();
 
         if (!isNvngxMode && !Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))
