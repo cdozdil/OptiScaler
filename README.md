@@ -50,18 +50,20 @@ OptiScaler implements all necessary API methods of DLSS2 & NVAPI to act as a man
 *If your game is not on Steam, it all boils down to opening regedit inside your game's prefix and importing the file.*
 
 ### Installation for DLSS 3.7 and above as `non-nvngx`
-With DLSS 3.7 Nvidia disabled signature check override, this means `nvngx.dll` or `_nvngx.dll` must be signed by Nvidia. For this override I am using a method developed by **Artur** (developer of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)). Also this method increases compatibility of `OverlayMenu`. OptiScaler supports being loaded by these filenames:  
+With DLSS 3.7 Nvidia disabled signature check override, this means `nvngx.dll` or `_nvngx.dll` must be signed by Nvidia. For this override I am using a method developed by **Artur** (developer of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)). Also this method increases compatibility of `OverlayMenu`. 
+
+Step-by-step installation (**Nvidia users please skip step 1 & 2**):
+1. We need an Nvidia signed dll file to bypass signature checks. All games that support DLSS come with `nvngx_dlss.dll`. Most of the time it's in the games exe folder. Some games and engines keep these third party dll's in different folders (like `plugins`). So we need to find the `nvngx_dlss.dll` file and copy it to the games exe folder. If it's already in the games exe folder, make a copy of it.
+2. Rename the copy of `nvngx_dlss.dll` in games exe folder to `nvngx.dll`.
+3. Rename OptiScaler's `nvngx.dll` to one of the supported filenames (I prefer `dxgi.dll`, it also eliminates the need for d3d12 proxy) and copy it to the games exe folder. 
+
+OptiScaler supports being loaded by these filenames:  
 * dxgi.dll (with Nvidia GPU spoofing for non-Nvidia cards)
 * winmm.dll
 * version.dll
 * wininet.dll
 * winhttp.dll
 * OptiScaler.asi (with an ASI loader)
-
-Step-by-step installation (**Nvidia users please skip step 1 & 2**):
-1. We need an Nvidia signed dll file to bypass signature checks. All games that support DLSS come with `nvngx_dlss.dll`. Most of the time it's in the games exe folder. Some games and engines keep these third party dll's in different folders (like `plugins`). So we need to find the `nvngx_dlss.dll` file and copy it to the games exe folder. If it's already in the games exe folder, make a copy of it.
-2. Rename the copy of `nvngx_dlss.dll` in games exe folder to `nvngx.dll`.
-3. Rename OptiScaler's `nvngx.dll` to one of the supported filenames (I prefer `dxgi.dll`, it also eliminates the need for d3d12 proxy) and copy it to the games exe folder. 
 
 Linux users should add renamed dll to overrides:
 ```
@@ -74,13 +76,18 @@ Alternatively you can create a new folder called `plugins` and put other mods fi
 ![image](https://github.com/cdozdil/OptiScaler/assets/35529761/c4bf2a85-107b-49ac-b002-59d00fd06982)
 
 #### Shader Compilation error on Linux
-If you are using OptiScaler with Linux and you have problems with `RCAS` or `Output Scaling`, you will probably see this message in your logs.
+If you are using OptiScaler with Linux and you have problems with `RCAS`, `Reactive Mask Bias` or `Output Scaling`, you will probably notice this message in your logs.
 ```
 CompileShader error compiling shader : <anonymous>:83:26: E5005: Function "rcp" is not defined.
 ```
 To solve this problem you need to install `d3dcompiler_47` with `WineTricks` or `ProtonTricks`. OptiScaler uses custom shaders for these features and depends on this compiler file to compile these shaders at runtime. 
 
 **Please don't rename the ini file, it should stay as `nvngx.ini`**.
+
+## Update OptiScaler version when using DLSS Enabler  
+1. Delete/rename `dlss-enabler-upscaler.dll` in game folder
+2. Copy `nvngx.dll` file from OptiScaler 7zip file to game folder
+3. Rename `nvngx.dll` to `dlss-enabler-upscaler.dll`
 
 ## Uninstallation
 * Run `DisableSignatureOverride.reg` file 
