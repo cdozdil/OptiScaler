@@ -18,6 +18,7 @@ typedef HMODULE(WINAPI* PFN_LoadLibraryW)(LPCWSTR lpLibFileName);
 typedef HMODULE(WINAPI* PFN_LoadLibraryExA)(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 typedef HMODULE(WINAPI* PFN_LoadLibraryExW)(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 typedef FARPROC(WINAPI* PFN_GetProcAddress)(HMODULE hModule, LPCSTR lpProcName);
+
 typedef const char* (CDECL* PFN_wine_get_version)(void);
 
 typedef struct VkDummyProps
@@ -48,11 +49,6 @@ static std::string nvngxA("nvngx.dll");
 static std::string nvngxExA("nvngx");
 static std::wstring nvngxW(L"nvngx.dll");
 static std::wstring nvngxExW(L"nvngx");
-
-static std::string dxgiA("dxgi.dll");
-static std::string dxgiExA("dxgi");
-static std::wstring dxgiW(L"dxgi.dll");
-static std::wstring dxgiExW(L"dxgi");
 
 static std::string nvapiA("nvapi64.dll");
 static std::string nvapiExA("nvapi64");
@@ -268,22 +264,6 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 
             return dllModule;
         }
-
-        // Dxgi.dll
-        if (Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
-        {
-            pos = lcaseLibName.rfind(dxgiA);
-
-            if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiA.size()))
-            {
-                LOG_INFO("HookDxgiFile returning this dll!");
-
-                if (!dontCount)
-                    loadCount++;
-
-                return dllModule;
-            }
-        }
     }
 
     dontCount = true;
@@ -381,22 +361,6 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
                 loadCount++;
 
             return dllModule;
-        }
-
-        // Dxgi.dll
-        if (Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
-        {
-            pos = lcaseLibName.rfind(dxgiW);
-
-            if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiW.size()))
-            {
-                LOG_INFO("HookDxgiFile returning this dll!");
-
-                if (!dontCount)
-                    loadCount++;
-
-                return dllModule;
-            }
         }
     }
 
@@ -541,34 +505,6 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
                 loadCount++;
 
             return dllModule;
-        }
-
-        // Dxgi.dll
-        if (Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
-        {
-            pos = lcaseLibName.rfind(dxgiExA);
-
-            if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiExA.size()))
-            {
-                LOG_INFO("HookDxgiFile returning this dll!");
-
-                if (!dontCount)
-                    loadCount++;
-
-                return dllModule;
-            }
-
-            pos = lcaseLibName.rfind(dxgiA);
-
-            if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiA.size()))
-            {
-                LOG_INFO("HookDxgiFile returning this dll!");
-
-                if (!dontCount)
-                    loadCount++;
-
-                return dllModule;
-            }
         }
     }
 
@@ -715,34 +651,6 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
                 loadCount++;
 
             return dllModule;
-        }
-
-        // Dxgi.dll
-        if (Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
-        {
-            pos = lcaseLibName.rfind(dxgiExW);
-
-            if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiExW.size()))
-            {
-                LOG_INFO("HookDxgiFile returning this dll!");
-
-                if (!dontCount)
-                    loadCount++;
-
-                return dllModule;
-            }
-
-            pos = lcaseLibName.rfind(dxgiW);
-
-            if (pos != std::string::npos && pos == (lcaseLibName.size() - dxgiW.size()))
-            {
-                LOG_INFO("HookDxgiFile returning this dll!");
-
-                if (!dontCount)
-                    loadCount++;
-
-                return dllModule;
-            }
         }
     }
 
@@ -1061,6 +969,27 @@ static void DetachHooks()
         {
             DetourDetach(&(PVOID&)o_vkCreateInstance, hkvkCreateInstance);
             o_vkCreateInstance = nullptr;
+        }
+
+        if (!Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
+        {
+            if (dxgi.CreateDxgiFactory != nullptr)
+            {
+                DetourDetach(&(PVOID&)dxgi.CreateDxgiFactory, _CreateDXGIFactory);
+                dxgi.CreateDxgiFactory = nullptr;
+            }
+
+            if (dxgi.CreateDxgiFactory1 != nullptr)
+            {
+                DetourDetach(&(PVOID&)dxgi.CreateDxgiFactory1, _CreateDXGIFactory1);
+                dxgi.CreateDxgiFactory1 = nullptr;
+            }
+
+            if (dxgi.CreateDxgiFactory2 != nullptr)
+            {
+                DetourDetach(&(PVOID&)dxgi.CreateDxgiFactory2, _CreateDXGIFactory2);
+                dxgi.CreateDxgiFactory2 = nullptr;
+            }
         }
 
         DetourTransactionCommit();
@@ -1497,51 +1426,37 @@ static void CheckWorkingMode()
 
     } while (false);
 
-    if (!isNvngxMode && !Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
+    // hook dxgi when not working as dxgi.dll
+    if (!Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
     {
         LOG_INFO("DxgiSpoofing is enabled loading dxgi.dll");
+        
+        dxgi.CreateDxgiFactory = (PFN_CREATE_DXGI_FACTORY)DetourFindFunction("dxgi.dll", "CreateDXGIFactory");
+        dxgi.CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY)DetourFindFunction("dxgi.dll", "CreateDXGIFactory1");
+        dxgi.CreateDxgiFactory2 = (PFN_CREATE_DXGI_FACTORY_2)DetourFindFunction("dxgi.dll", "CreateDXGIFactory2");
 
-        do
+        if (dxgi.CreateDxgiFactory != nullptr || dxgi.CreateDxgiFactory1 != nullptr || dxgi.CreateDxgiFactory2 != nullptr)
         {
-            auto pluginFilePath = pluginPath / L"dxgi.dll";
-            auto dxgiDll = LoadLibrary(pluginFilePath.wstring().c_str());
+            LOG_INFO("dxgi.dll found, hooking CreateDxgiFactory methods");
 
-            if (dxgiDll != nullptr)
-            {
-                LOG_INFO("DxgiSpoofing is enabled, original dll loaded from plugin folder");
-                dxgi.LoadOriginalLibrary(dxgiDll);
-                Config::Instance()->IsDxgiMode = true;
-                break;
-            }
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
 
-            dxgiDll = LoadLibrary(L"dxgi-original.dll");
+            if (dxgi.CreateDxgiFactory != nullptr)
+                DetourAttach(&(PVOID&)dxgi.CreateDxgiFactory, _CreateDXGIFactory);
 
-            if (dxgiDll != nullptr)
-            {
-                LOG_INFO("DxgiSpoofing is enabled, dxgi-original.dll loaded");
-                dxgi.LoadOriginalLibrary(dxgiDll);
-                Config::Instance()->IsDxgiMode = true;
-                break;
-            }
+            if (dxgi.CreateDxgiFactory1 != nullptr)
+                DetourAttach(&(PVOID&)dxgi.CreateDxgiFactory1, _CreateDXGIFactory1);
 
-            auto sysFilePath = sysPath / L"dxgi.dll";
-            dxgiDll = LoadLibrary(sysFilePath.wstring().c_str());
+            if (dxgi.CreateDxgiFactory2 != nullptr)
+                DetourAttach(&(PVOID&)dxgi.CreateDxgiFactory2, _CreateDXGIFactory2);
 
-            if (dxgiDll != nullptr)
-            {
-                LOG_INFO("DxgiSpoofing is enabled, system dll loaded");
-                dxgi.LoadOriginalLibrary(dxgiDll);
-                Config::Instance()->IsDxgiMode = true;
-                break;
-            }
-
-            Config::Instance()->DxgiSpoofing = false;
-        } while (false);
+            DetourTransactionCommit();
+        }
     }
 
     if (modeFound)
     {
-        //if (!isWorkingWithEnabler)
         AttachHooks();
 
         if (!isNvngxMode && !Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))

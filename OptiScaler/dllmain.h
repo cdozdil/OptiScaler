@@ -26,15 +26,19 @@ typedef HRESULT(WINAPI* PFN_EnumAdapterByLuid)(IDXGIFactory4* This, LUID Adapter
 typedef HRESULT(WINAPI* PFN_EnumAdapters1)(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1** ppAdapter);
 typedef HRESULT(WINAPI* PFN_EnumAdapters)(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** ppAdapter);
 
-static PFN_GetDesc ptrGetDesc = nullptr;
-static PFN_GetDesc1 ptrGetDesc1 = nullptr;
-static PFN_GetDesc2 ptrGetDesc2 = nullptr;
-static PFN_GetDesc3 ptrGetDesc3 = nullptr;
+inline static PFN_GetDesc ptrGetDesc = nullptr;
+inline static PFN_GetDesc1 ptrGetDesc1 = nullptr;
+inline static PFN_GetDesc2 ptrGetDesc2 = nullptr;
+inline static PFN_GetDesc3 ptrGetDesc3 = nullptr;
 
-static PFN_EnumAdapters ptrEnumAdapters = nullptr;
-static PFN_EnumAdapters1 ptrEnumAdapters1 = nullptr;
-static PFN_EnumAdapterByLuid ptrEnumAdapterByLuid = nullptr;
-static PFN_EnumAdapterByGpuPreference ptrEnumAdapterByGpuPreference = nullptr;
+inline static PFN_EnumAdapters ptrEnumAdapters = nullptr;
+inline static PFN_EnumAdapters1 ptrEnumAdapters1 = nullptr;
+inline static PFN_EnumAdapterByLuid ptrEnumAdapterByLuid = nullptr;
+inline static PFN_EnumAdapterByGpuPreference ptrEnumAdapterByGpuPreference = nullptr;
+
+//inline static PFN_CREATE_DXGI_FACTORY o_CreateDXGIFactory = nullptr;
+//inline static PFN_CREATE_DXGI_FACTORY o_CreateDXGIFactory1 = nullptr;
+//inline static PFN_CREATE_DXGI_FACTORY_2 o_CreateDXGIFactory2 = nullptr;
 
 void AttachToAdapter(IUnknown* unkAdapter);
 void AttachToFactory(IUnknown* unkFactory);
@@ -1274,7 +1278,7 @@ struct winhttp_dll
 struct dxgi_dll
 {
     HMODULE dll = nullptr;
-    
+
     PFN_CREATE_DXGI_FACTORY CreateDxgiFactory;
     PFN_CREATE_DXGI_FACTORY CreateDxgiFactory1;
     PFN_CREATE_DXGI_FACTORY_2 CreateDxgiFactory2;
@@ -1299,13 +1303,13 @@ struct dxgi_dll
 
     void LoadOriginalLibrary(HMODULE module)
     {
-        dll = module;        
+        dll = module;
 
         CreateDxgiFactory = (PFN_CREATE_DXGI_FACTORY)GetProcAddress(module, "CreateDXGIFactory");
         CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY)GetProcAddress(module, "CreateDXGIFactory1");
         CreateDxgiFactory2 = (PFN_CREATE_DXGI_FACTORY_2)GetProcAddress(module, "CreateDXGIFactory2");
 
-        dxgiDeclareAdapterRemovalSupport =GetProcAddress(module, "DXGIDeclareAdapterRemovalSupport");
+        dxgiDeclareAdapterRemovalSupport = GetProcAddress(module, "DXGIDeclareAdapterRemovalSupport");
         dxgiGetDebugInterface = GetProcAddress(module, "DXGIGetDebugInterface1");
         dxgiApplyCompatResolutionQuirking = GetProcAddress(module, "ApplyCompatResolutionQuirking");
         dxgiCompatString = GetProcAddress(module, "CompatString");
@@ -1608,92 +1612,92 @@ HRESULT _DXGIGetDebugInterface1()
     return dxgi.dxgiGetDebugInterface();
 }
 
-void _ApplyCompatResolutionQuirking() 
-{ 
+void _ApplyCompatResolutionQuirking()
+{
     LOG_FUNC();
     dxgi.dxgiApplyCompatResolutionQuirking();
 }
 
-void _CompatString() 
-{ 
+void _CompatString()
+{
     LOG_FUNC();
     dxgi.dxgiCompatString();
 }
 
-void _CompatValue() 
-{ 
+void _CompatValue()
+{
     LOG_FUNC();
     dxgi.dxgiCompatValue();
 }
 
-void _DXGID3D10CreateDevice() 
-{ 
+void _DXGID3D10CreateDevice()
+{
     LOG_FUNC();
     dxgi.dxgiD3D10CreateDevice();
 }
 
-void _DXGID3D10CreateLayeredDevice() 
-{ 
+void _DXGID3D10CreateLayeredDevice()
+{
     LOG_FUNC();
     dxgi.dxgiD3D10CreateLayeredDevice();
 }
 
-void _DXGID3D10GetLayeredDeviceSize() 
-{ 
+void _DXGID3D10GetLayeredDeviceSize()
+{
     LOG_FUNC();
     dxgi.dxgiD3D10GetLayeredDeviceSize();
 }
 
-void _DXGID3D10RegisterLayers() 
-{ 
+void _DXGID3D10RegisterLayers()
+{
     LOG_FUNC();
     dxgi.dxgiD3D10RegisterLayers();
 }
 
 void _DXGID3D10ETWRundown()
-{ 
+{
     LOG_FUNC();
     dxgi.dxgiD3D10ETWRundown();
 }
 
-void _DXGIDumpJournal() 
-{ 
+void _DXGIDumpJournal()
+{
     LOG_FUNC();
     dxgi.dxgiDumpJournal();
 }
 
-void _DXGIReportAdapterConfiguration() 
-{ 
+void _DXGIReportAdapterConfiguration()
+{
     LOG_FUNC();
     dxgi.dxgiReportAdapterConfiguration();
 }
 
-void _PIXBeginCapture() 
-{ 
+void _PIXBeginCapture()
+{
     LOG_FUNC();
     dxgi.dxgiPIXBeginCapture();
 }
 
-void _PIXEndCapture() 
-{ 
+void _PIXEndCapture()
+{
     LOG_FUNC();
     dxgi.dxgiPIXEndCapture();
 }
 
-void _PIXGetCaptureState() 
-{ 
+void _PIXGetCaptureState()
+{
     LOG_FUNC();
     dxgi.dxgiPIXGetCaptureState();
 }
 
-void _SetAppCompatStringPointer() 
-{ 
+void _SetAppCompatStringPointer()
+{
     LOG_FUNC();
     dxgi.dxgiSetAppCompatStringPointer();
 }
 
-void _UpdateHMDEmulationStatus() 
-{ 
+void _UpdateHMDEmulationStatus()
+{
     LOG_FUNC();
     dxgi.dxgiUpdateHMDEmulationStatus();
 }
