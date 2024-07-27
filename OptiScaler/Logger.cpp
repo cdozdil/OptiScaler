@@ -10,31 +10,30 @@
 static bool InitializeConsole()
 {
 	// Allocate a console for this app
-	if (!AllocConsole()) {
+	if (!AllocConsole()) 
 		return false;
-	}
-
+	
 	FILE* pFile;
 
 	// Redirect STDIN if the console has an input handle
-	if (GetStdHandle(STD_INPUT_HANDLE) != INVALID_HANDLE_VALUE) {
-		if (freopen_s(&pFile, "CONIN$", "r", stdin) != 0) {
+	if (GetStdHandle(STD_INPUT_HANDLE) != INVALID_HANDLE_VALUE) 
+	{
+		if (freopen_s(&pFile, "CONIN$", "r", stdin) != 0) 
 			return false;
-		}
 	}
 
 	// Redirect STDOUT if the console has an output handle
-	if (GetStdHandle(STD_OUTPUT_HANDLE) != INVALID_HANDLE_VALUE) {
-		if (freopen_s(&pFile, "CONOUT$", "w", stdout) != 0) {
+	if (GetStdHandle(STD_OUTPUT_HANDLE) != INVALID_HANDLE_VALUE) 
+	{
+		if (freopen_s(&pFile, "CONOUT$", "w", stdout) != 0) 
 			return false;
-		}
 	}
 
 	// Redirect STDERR if the console has an error handle
-	if (GetStdHandle(STD_ERROR_HANDLE) != INVALID_HANDLE_VALUE) {
-		if (freopen_s(&pFile, "CONOUT$", "w", stderr) != 0) {
+	if (GetStdHandle(STD_ERROR_HANDLE) != INVALID_HANDLE_VALUE) 
+	{
+		if (freopen_s(&pFile, "CONOUT$", "w", stderr) != 0) 
 			return false;
-		}
 	}
 
 	// Clear the error state for each of the C++ standard streams
@@ -47,6 +46,12 @@ static bool InitializeConsole()
 
 	// Make C++ standard streams point to console as well.
 	std::ios::sync_with_stdio();
+
+	if (Config::Instance()->DebugWait.value_or(false))
+	{
+		std::cout << "Press ENTER to continue..." << std::endl;
+		std::cin.get();
+	}
 
 	return true;
 }

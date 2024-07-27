@@ -706,8 +706,17 @@ bool FSR31FeatureDx11on12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         _targetHeight = DisplayHeight();
     }
 
-    _contextDesc.maxRenderSize.width = TargetWidth();
-    _contextDesc.maxRenderSize.height = TargetHeight();
+    if (Config::Instance()->ExtendedLimits.value_or(false))
+    {
+        _contextDesc.maxRenderSize.width = RenderWidth() < TargetWidth() ? TargetWidth() : RenderWidth();
+        _contextDesc.maxRenderSize.height = RenderHeight() < TargetHeight() ? TargetHeight() : RenderHeight();
+    }
+    else
+    {
+        _contextDesc.maxRenderSize.width = TargetWidth();
+        _contextDesc.maxRenderSize.height = TargetHeight();
+    }
+
     _contextDesc.maxUpscaleSize.width = TargetWidth();
     _contextDesc.maxUpscaleSize.height = TargetHeight();
 

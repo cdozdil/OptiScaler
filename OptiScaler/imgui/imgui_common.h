@@ -394,8 +394,8 @@ private:
         //}
 
         // INSERT - OPEN MENU
-        if (((msg == WM_KEYDOWN && wParam == Config::Instance()->ShortcutKey.value_or(VK_INSERT)) || vmInputMenu) && 
-            Config::Instance()->CurrentFeature != nullptr && 
+        if (((msg == WM_KEYDOWN && wParam == Config::Instance()->ShortcutKey.value_or(VK_INSERT)) || vmInputMenu) &&
+            Config::Instance()->CurrentFeature != nullptr &&
             Config::Instance()->CurrentFeature->FrameCount() > (170 + Config::Instance()->MenuInitDelay.value_or(90)))
         {
             _isVisible = !_isVisible;
@@ -1497,6 +1497,10 @@ public:
                     ImGui::EndDisabled();
 
                     // UPSCALE RATIO OVERRIDE -----------------
+
+                    auto minSliderLimit = Config::Instance()->ExtendedLimits.value_or(false) ? 0.1f : 1.0f;
+                    auto maxSliderLimit = Config::Instance()->ExtendedLimits.value_or(false) ? 6.0f : 3.0f;
+
                     ImGui::SeparatorText("Upscale Ratio");
                     if (bool upOverride = Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false); ImGui::Checkbox("Ratio Override", &upOverride))
                         Config::Instance()->UpscaleRatioOverrideEnabled = upOverride;
@@ -1508,7 +1512,7 @@ public:
                     ImGui::BeginDisabled(!Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false));
 
                     float urOverride = Config::Instance()->UpscaleRatioOverrideValue.value_or(1.3f);
-                    ImGui::SliderFloat("Override Ratio", &urOverride, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
+                    ImGui::SliderFloat("Override Ratio", &urOverride, minSliderLimit, maxSliderLimit, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
                     Config::Instance()->UpscaleRatioOverrideValue = urOverride;
 
                     ImGui::EndDisabled();
@@ -1526,27 +1530,27 @@ public:
                     ImGui::BeginDisabled(!Config::Instance()->QualityRatioOverrideEnabled.value_or(false));
 
                     float qDlaa = Config::Instance()->QualityRatio_DLAA.value_or(1.0f);
-                    if (ImGui::SliderFloat("DLAA", &qDlaa, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
+                    if (ImGui::SliderFloat("DLAA", &qDlaa, minSliderLimit, maxSliderLimit, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
                         Config::Instance()->QualityRatio_DLAA = qDlaa;
 
                     float qUq = Config::Instance()->QualityRatio_UltraQuality.value_or(1.3f);
-                    if (ImGui::SliderFloat("Ultra Quality", &qUq, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
+                    if (ImGui::SliderFloat("Ultra Quality", &qUq, minSliderLimit, maxSliderLimit, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
                         Config::Instance()->QualityRatio_UltraQuality = qUq;
 
                     float qQ = Config::Instance()->QualityRatio_Quality.value_or(1.5f);
-                    if (ImGui::SliderFloat("Quality", &qQ, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
+                    if (ImGui::SliderFloat("Quality", &qQ, minSliderLimit, maxSliderLimit, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
                         Config::Instance()->QualityRatio_Quality = qQ;
 
                     float qB = Config::Instance()->QualityRatio_Balanced.value_or(1.7f);
-                    if (ImGui::SliderFloat("Balanced", &qB, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
+                    if (ImGui::SliderFloat("Balanced", &qB, minSliderLimit, maxSliderLimit, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
                         Config::Instance()->QualityRatio_Balanced = qB;
 
                     float qP = Config::Instance()->QualityRatio_Performance.value_or(2.0f);
-                    if (ImGui::SliderFloat("Performance", &qP, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
+                    if (ImGui::SliderFloat("Performance", &qP, minSliderLimit, maxSliderLimit, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
                         Config::Instance()->QualityRatio_Performance = qP;
 
                     float qUp = Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0f);
-                    if (ImGui::SliderFloat("Ultra Performance", &qUp, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
+                    if (ImGui::SliderFloat("Ultra Performance", &qUp, minSliderLimit, maxSliderLimit, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
                         Config::Instance()->QualityRatio_UltraPerformance = qUp;
 
                     ImGui::EndDisabled();
@@ -1768,6 +1772,16 @@ public:
                     if (ImGui::Checkbox("Enable Advanced Settings", &advancedSettings))
                         Config::Instance()->AdvancedSettings = advancedSettings;
 
+                    if (advancedSettings) 
+                    {
+                        bool extendedLimits = Config::Instance()->ExtendedLimits.value_or(false);
+                        if (ImGui::Checkbox("Enable Extended Limits", &extendedLimits))
+                            Config::Instance()->ExtendedLimits = extendedLimits;
+
+                        ShowHelpMarker("Extended sliders limit for quality presets\n\n"
+                                       "Using this option changes resolution detection logic\n"
+                                       "and might cause issues and crashes!");
+                    }
 
 
                     ImGui::EndTable();
@@ -1932,7 +1946,10 @@ public:
 
                     ImGui::EndDisabled();
 
-                    if (ImGui::SliderFloat("Upscaler Ratio", &_mipmapUpscalerRatio, 1.0f, 3.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
+                    if (ImGui::SliderFloat("Upscaler Ratio", &_mipmapUpscalerRatio, 
+                        Config::Instance()->ExtendedLimits.value_or(false) ? 0.1f : 1.0f, 
+                        Config::Instance()->ExtendedLimits.value_or(false) ? 6.0f : 3.0f, 
+                        "%.2f", ImGuiSliderFlags_NoRoundToFormat))
                     {
                         _renderWidth = _displayWidth / _mipmapUpscalerRatio;
                         _mipBiasCalculated = log2((float)_renderWidth / (float)_displayWidth);
@@ -2002,7 +2019,6 @@ public:
 
         LOG_DEBUG("_oWndProc: {0:X}", (ULONG64)_oWndProc);
 
-
         if (!pfn_SetCursorPos_hooked)
             AttachHooks();
 
@@ -2013,7 +2029,6 @@ public:
             Config::Instance()->MenuScale = 2.0f;
 
         _selectedScale = (int)((Config::Instance()->MenuScale.value_or(1.0f) - 1.0f) / 0.1f);
-
         _isInited = true;
     }
 

@@ -115,6 +115,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             LogToFile = readBool("Log", "LogToFile");
             LogToNGX = readBool("Log", "LogToNGX");
             OpenConsole = readBool("Log", "OpenConsole");
+            DebugWait = readBool("Log", "DebugWait");
 
             auto logFileA = readString("Log", "LogFile");
 
@@ -155,6 +156,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             ShortcutKey = readInt("Menu", "ShortcutKey");
             MenuInitDelay = readInt("Menu", "MenuInitDelay");
             AdvancedSettings = readBool("Menu", "AdvancedSettings");
+            ExtendedLimits = readBool("Menu", "ExtendedLimits");
         }
 
         // Hooks
@@ -493,6 +495,7 @@ bool Config::SaveIni()
         ini.SetValue("Menu", "ShortcutKey", GetIntValue(Instance()->ShortcutKey).c_str());
         ini.SetValue("Menu", "MenuInitDelay", GetIntValue(Instance()->MenuInitDelay).c_str());
         ini.SetValue("Menu", "AdvancedSettings", GetBoolValue(Instance()->AdvancedSettings).c_str());
+        ini.SetValue("Menu", "ExtendedLimits", GetBoolValue(Instance()->ExtendedLimits).c_str());
     }
 
     // Hooks

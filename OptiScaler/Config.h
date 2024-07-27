@@ -32,6 +32,7 @@ public:
 	std::optional<bool> LogToConsole;
 	std::optional<bool> LogToNGX;
 	std::optional<bool> OpenConsole;
+	std::optional<bool> DebugWait;
 	std::optional<int> LogLevel;
 	std::optional<std::wstring> LogFileName;
 	std::optional<bool> LogSingleFile;
@@ -72,6 +73,7 @@ public:
 	std::optional<int> ShortcutKey;
 	std::optional<int> MenuInitDelay;
 	std::optional<bool> AdvancedSettings;
+	std::optional<bool> ExtendedLimits;
 
 	// hooks
 	std::optional<bool> HookOriginalNvngxOnly;

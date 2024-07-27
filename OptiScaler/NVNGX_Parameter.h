@@ -10,8 +10,10 @@ inline static std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQ
 {
 	std::optional<float> output;
 
+	auto sliderLimit = Config::Instance()->ExtendedLimits.value_or(false) ? 0.1f : 1.0f;
+
 	if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false) &&
-		Config::Instance()->UpscaleRatioOverrideValue.value_or(1.3f) >= 1.0f)
+		Config::Instance()->UpscaleRatioOverrideValue.value_or(1.3f) >= sliderLimit)
 	{
 		output = Config::Instance()->UpscaleRatioOverrideValue.value_or(1.3f);
 
@@ -24,37 +26,37 @@ inline static std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQ
 	switch (input)
 	{
 	case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-		if (Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0) >= 1.0f)
+		if (Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0) >= sliderLimit)
 			output = Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0);
 
 		break;
 
 	case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-		if (Config::Instance()->QualityRatio_Performance.value_or(2.0) >= 1.0f)
+		if (Config::Instance()->QualityRatio_Performance.value_or(2.0) >= sliderLimit)
 			output = Config::Instance()->QualityRatio_Performance.value_or(2.0);
 
 		break;
 
 	case NVSDK_NGX_PerfQuality_Value_Balanced:
-		if (Config::Instance()->QualityRatio_Balanced.value_or(1.7) >= 1.0f)
+		if (Config::Instance()->QualityRatio_Balanced.value_or(1.7) >= sliderLimit)
 			output = Config::Instance()->QualityRatio_Balanced.value_or(1.7);
 
 		break;
 
 	case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-		if (Config::Instance()->QualityRatio_Quality.value_or(1.5) >= 1.0f)
+		if (Config::Instance()->QualityRatio_Quality.value_or(1.5) >= sliderLimit)
 			output = Config::Instance()->QualityRatio_Quality.value_or(1.5);
 
 		break;
 
 	case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-		if (Config::Instance()->QualityRatio_UltraQuality.value_or(1.3) >= 1.0f)
+		if (Config::Instance()->QualityRatio_UltraQuality.value_or(1.3) >= sliderLimit)
 			output = Config::Instance()->QualityRatio_UltraQuality.value_or(1.3);
 
 		break;
 
 	case NVSDK_NGX_PerfQuality_Value_DLAA:
-		if (Config::Instance()->QualityRatio_DLAA.value_or(1.0) >= 1.0f)
+		if (Config::Instance()->QualityRatio_DLAA.value_or(1.0) >= sliderLimit)
 			output = Config::Instance()->QualityRatio_DLAA.value_or(1.0);
 
 		break;
@@ -172,16 +174,16 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallb
 		auto drsMinWidth = (unsigned int)((float)Width * 0.5f);
 		auto drsMinHeight = (unsigned int)((float)Height * 0.5f);
 
-		if (OutWidth < drsMinWidth || OutHeight < drsMinHeight)
-		{
-			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, OutWidth);
-			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, OutHeight);
-		}
-		else
-		{
+		//if (OutWidth < drsMinWidth || OutHeight < drsMinHeight)
+		//{
+		//	InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, OutWidth);
+		//	InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, OutHeight);
+		//}
+		//else
+		//{
 			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, drsMinWidth);
 			InParams->Set(NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, drsMinHeight);
-		}
+		//}
 	}
 
 	// DRS maximum resolution
@@ -595,15 +597,15 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	NVSDK_NGX_Result Get(const char* key, double* value) const override 
-	{ 
-		auto result = getT(key, value); 
-		if (result == NVSDK_NGX_Result_Success) 
-		{ 
-			LOG_TRACE("double('{0}', {1})", key, *value); 
-			return NVSDK_NGX_Result_Success; 
-		} 
-		
+	NVSDK_NGX_Result Get(const char* key, double* value) const override
+	{
+		auto result = getT(key, value);
+		if (result == NVSDK_NGX_Result_Success)
+		{
+			LOG_TRACE("double('{0}', {1})", key, *value);
+			return NVSDK_NGX_Result_Success;
+		}
+
 #ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
@@ -622,15 +624,15 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	NVSDK_NGX_Result Get(const char* key, unsigned int* value) const override 
-	{ 
-		auto result = getT(key, value); 
-		if (result == NVSDK_NGX_Result_Success) 
-		{ 
-			LOG_TRACE("uint('{0}', {1})", key, *value); 
-			return NVSDK_NGX_Result_Success; 
-		} 
-		
+	NVSDK_NGX_Result Get(const char* key, unsigned int* value) const override
+	{
+		auto result = getT(key, value);
+		if (result == NVSDK_NGX_Result_Success)
+		{
+			LOG_TRACE("uint('{0}', {1})", key, *value);
+			return NVSDK_NGX_Result_Success;
+		}
+
 #ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
@@ -649,14 +651,14 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	NVSDK_NGX_Result Get(const char* key, int* value) const override 
-	{ 
-		auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success) 
-		{ 
-			LOG_TRACE("int('{0}', {1})", key, *value); 
-			return NVSDK_NGX_Result_Success; 
-		} 
-		
+	NVSDK_NGX_Result Get(const char* key, int* value) const override
+	{
+		auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success)
+		{
+			LOG_TRACE("int('{0}', {1})", key, *value);
+			return NVSDK_NGX_Result_Success;
+		}
+
 #ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
@@ -675,15 +677,15 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	NVSDK_NGX_Result Get(const char* key, void** value) const override 
-	{ 
-		auto result = getT(key, value); 
-		if (result == NVSDK_NGX_Result_Success) 
-		{ 
-			LOG_TRACE("void('{0}')", key); 
-			return NVSDK_NGX_Result_Success; 
-		} 
-		
+	NVSDK_NGX_Result Get(const char* key, void** value) const override
+	{
+		auto result = getT(key, value);
+		if (result == NVSDK_NGX_Result_Success)
+		{
+			LOG_TRACE("void('{0}')", key);
+			return NVSDK_NGX_Result_Success;
+		}
+
 #ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
@@ -702,15 +704,15 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	NVSDK_NGX_Result Get(const char* key, ID3D11Resource** value) const override 
-	{ 
-		auto result = getT(key, value); 
-		if (result == NVSDK_NGX_Result_Success) 
-		{ 
-			LOG_TRACE("d3d11('{0}')", key); 
-			return NVSDK_NGX_Result_Success; 
-		} 
-		
+	NVSDK_NGX_Result Get(const char* key, ID3D11Resource** value) const override
+	{
+		auto result = getT(key, value);
+		if (result == NVSDK_NGX_Result_Success)
+		{
+			LOG_TRACE("d3d11('{0}')", key);
+			return NVSDK_NGX_Result_Success;
+		}
+
 #ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{
@@ -729,15 +731,15 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 		return NVSDK_NGX_Result_Fail;
 	}
 
-	NVSDK_NGX_Result Get(const char* key, ID3D12Resource** value) const override 
-	{ 
-		auto result = getT(key, value); 
-		if (result == NVSDK_NGX_Result_Success) 
-		{ 
-			LOG_TRACE("d3d12('{0}')", key); 
-			return NVSDK_NGX_Result_Success; 
-		} 
-		
+	NVSDK_NGX_Result Get(const char* key, ID3D12Resource** value) const override
+	{
+		auto result = getT(key, value);
+		if (result == NVSDK_NGX_Result_Success)
+		{
+			LOG_TRACE("d3d12('{0}')", key);
+			return NVSDK_NGX_Result_Success;
+		}
+
 #ifdef ENABLE_ENCAPSULATED_PARAMS
 		if (OriginalParam != nullptr)
 		{

@@ -256,7 +256,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
             if (Config::Instance()->FsrUseMaskForTransparency.value_or(true))
                 params.transparencyAndComposition = Fsr212::ffxGetResourceDX12_212(&_context, paramReactiveMask, (wchar_t*)L"FSR2_Transparency", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
 
-            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.45f) > 0.0f && 
+            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.45f) > 0.0f &&
                 Bias->IsInit() && Bias->CreateBufferResource(Device, paramReactiveMask, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
             {
                 Bias->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -573,8 +573,17 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         _targetHeight = DisplayHeight();
     }
 
-    _contextDesc.maxRenderSize.width = TargetWidth();
-    _contextDesc.maxRenderSize.height = TargetHeight();
+    if (Config::Instance()->ExtendedLimits.value_or(false))
+    {
+        _contextDesc.maxRenderSize.width = RenderWidth() < TargetWidth() ? TargetWidth() : RenderWidth();
+        _contextDesc.maxRenderSize.height = RenderHeight() < TargetHeight() ? TargetHeight() : RenderHeight();
+    }
+    else
+    {
+        _contextDesc.maxRenderSize.width = TargetWidth();
+        _contextDesc.maxRenderSize.height = TargetHeight();
+    }
+
     _contextDesc.displaySize.width = TargetWidth();
     _contextDesc.displaySize.height = TargetHeight();
 

@@ -32,8 +32,18 @@ bool FSR2FeatureVk212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     }
 
     _contextDesc.device = Fsr212::ffxGetDeviceVK212(Device);
-    _contextDesc.maxRenderSize.width = DisplayWidth();
-    _contextDesc.maxRenderSize.height = DisplayHeight();
+
+    if (Config::Instance()->ExtendedLimits.value_or(false))
+    {
+        _contextDesc.maxRenderSize.width = RenderWidth() < DisplayWidth() ? DisplayWidth() : RenderWidth();
+        _contextDesc.maxRenderSize.height = RenderHeight() < DisplayHeight() ? DisplayHeight() : RenderHeight();
+    }
+    else
+    {
+        _contextDesc.maxRenderSize.width = DisplayWidth();
+        _contextDesc.maxRenderSize.height = DisplayHeight();
+    }
+
     _contextDesc.displaySize.width = DisplayWidth();
     _contextDesc.displaySize.height = DisplayHeight();
 

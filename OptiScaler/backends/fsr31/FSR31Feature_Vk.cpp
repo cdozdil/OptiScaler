@@ -171,10 +171,19 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         LOG_INFO("contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
     }
 
-    _contextDesc.maxRenderSize.width = TargetWidth();
-    _contextDesc.maxRenderSize.height = TargetHeight();
-    _contextDesc.maxUpscaleSize.width = TargetWidth();
-    _contextDesc.maxUpscaleSize.height = TargetHeight();
+    if (Config::Instance()->ExtendedLimits.value_or(false))
+    {
+        _contextDesc.maxRenderSize.width = RenderWidth() < DisplayWidth() ? DisplayWidth() : RenderWidth();
+        _contextDesc.maxRenderSize.height = RenderHeight() < DisplayHeight() ? DisplayHeight() : RenderHeight();
+    }
+    else
+    {
+        _contextDesc.maxRenderSize.width = DisplayWidth();
+        _contextDesc.maxRenderSize.height = DisplayHeight();
+    }
+
+    _contextDesc.maxUpscaleSize.width = DisplayWidth();
+    _contextDesc.maxUpscaleSize.height = DisplayHeight();
 
     ffxCreateBackendVKDesc backendDesc = { 0 };
     backendDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_VK;

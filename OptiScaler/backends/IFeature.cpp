@@ -1,6 +1,7 @@
 #pragma once
 #include "../pch.h"
 #include "IFeature.h"
+#include "../Config.h"
 
 void IFeature::SetHandle(unsigned int InHandleId)
 {
@@ -25,48 +26,44 @@ bool IFeature::SetInitParameters(NVSDK_NGX_Parameter* InParameters)
 		InParameters->Get(NVSDK_NGX_Parameter_PerfQualityValue, &pqValue) == NVSDK_NGX_Result_Success)
 	{
 		// Thanks to Crytek added these checks
-		if (width > 16384 || width < 0)
+		if (width > 16384 || width < 20)
 			width = 0;
 
-		if (height > 16384 || height < 0)
+		if (height > 16384 || height < 20)
 			height = 0;
 
-		if (outWidth > 16384 || outWidth < 0)
+		if (outWidth > 16384 || outWidth < 20)
 			outWidth = 0;
 
-		if (outHeight > 16384 || outHeight < 0)
+		if (outHeight > 16384 || outHeight < 20)
 			outHeight = 0;
 
 		if (pqValue > 5 || pqValue < 0)
 			pqValue = 1;
 
-		_displayWidth = width > outWidth ? width : outWidth;
-		_displayHeight = height > outHeight ? height : outHeight;
-		_targetWidth = _displayWidth;
-		_targetHeight = _displayHeight;
-		_renderWidth = width < outWidth ? width : outWidth;
-		_renderHeight = height < outHeight ? height : outHeight;
+		// When using extended limits render res might be bigger than display res
+		// it might create rendering issues but extending limits is an advanced option after all
+		if (!Config::Instance()->ExtendedLimits.value_or(false))
+		{
+			_displayWidth = width > outWidth ? width : outWidth;
+			_displayHeight = height > outHeight ? height : outHeight;
+			_targetWidth = _displayWidth;
+			_targetHeight = _displayHeight;
+			_renderWidth = width < outWidth ? width : outWidth;
+			_renderHeight = height < outHeight ? height : outHeight;
+		}
+		else
+		{
+			_displayWidth = outWidth;
+			_displayHeight = outHeight;
+			_targetWidth = _displayWidth;
+			_targetHeight = _displayHeight;
+			_renderWidth = width;
+			_renderHeight = height;
+		}
+
 
 		_perfQualityValue = (NVSDK_NGX_PerfQuality_Value)pqValue;
-
-		//Should not be needed but who knows
-		//if (_perfQualityValue == NVSDK_NGX_PerfQuality_Value_DLAA)
-		//{
-		//	_renderWidth = _displayWidth;
-		//	_renderHeight = _displayHeight;
-		//}
-		
-		//Should not be needed but who knows
-		//if (_renderWidth == _displayWidth && _renderHeight == _displayHeight && _perfQualityValue != NVSDK_NGX_PerfQuality_Value_DLAA)
-		//{
-		//	_perfQualityValue == NVSDK_NGX_PerfQuality_Value_DLAA;
-		//	pqValue = (int)_perfQualityValue;
-		//	InParameters->Set(NVSDK_NGX_Parameter_PerfQualityValue, pqValue);
-		//	InParameters->Set(NVSDK_NGX_Parameter_Width, _displayWidth);
-		//	InParameters->Set(NVSDK_NGX_Parameter_Height, _displayHeight);
-		//	InParameters->Set(NVSDK_NGX_Parameter_OutWidth, _displayWidth);
-		//	InParameters->Set(NVSDK_NGX_Parameter_OutHeight, _displayHeight);
-		//}
 
 		LOG_INFO("Render Resolution: {0}x{1}, Display Resolution {2}x{3}, Quality: {4}",
 			_renderWidth, _renderHeight, _displayWidth, _displayHeight, pqValue);
