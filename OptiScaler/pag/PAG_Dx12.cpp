@@ -386,7 +386,6 @@ PAG_Dx12::PAG_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), 
     }
 
     // Create the root signature
-// Create the root signature
     CD3DX12_ROOT_PARAMETER rootParameters[3];
 
     // CBV

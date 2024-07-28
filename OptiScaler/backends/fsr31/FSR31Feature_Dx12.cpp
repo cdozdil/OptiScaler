@@ -625,19 +625,35 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         _targetHeight = DisplayHeight();
     }
 
+    // extended limits changes how resolution 
     if (Config::Instance()->ExtendedLimits.value_or(false))
     {
         _contextDesc.maxRenderSize.width = RenderWidth() < TargetWidth() ? TargetWidth() : RenderWidth();
         _contextDesc.maxRenderSize.height = RenderHeight() < TargetHeight() ? TargetHeight() : RenderHeight();
+
+        // if output scaling active let it to handle downsampling
+        if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+        {
+            _contextDesc.maxUpscaleSize.width = _contextDesc.maxRenderSize.width;
+            _contextDesc.maxUpscaleSize.height = _contextDesc.maxRenderSize.height;
+
+            // update target res
+            _targetWidth = _contextDesc.maxUpscaleSize.width;
+            _targetHeight = _contextDesc.maxUpscaleSize.height;
+        }
+        else
+        {
+            _contextDesc.maxUpscaleSize.width = TargetWidth();
+            _contextDesc.maxUpscaleSize.height = TargetHeight();
+        }
     }
     else
     {
         _contextDesc.maxRenderSize.width = TargetWidth();
         _contextDesc.maxRenderSize.height = TargetHeight();
+        _contextDesc.maxUpscaleSize.width = TargetWidth();
+        _contextDesc.maxUpscaleSize.height = TargetHeight();
     }
-
-    _contextDesc.maxUpscaleSize.width = TargetWidth();
-    _contextDesc.maxUpscaleSize.height = TargetHeight();
 
     ffxCreateBackendDX12Desc backendDesc = { 0 };
     backendDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_DX12;
