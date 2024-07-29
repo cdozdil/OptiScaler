@@ -10,18 +10,18 @@ OptiScaler is drop-in DLSS2 to XeSS/FSR2/FSR3/DLSS replacement for games.
 
 ## Installation
 ### Install as `non-nvngx`
-With DLSS 3.7 Nvidia disabled signature check override, this means `nvngx.dll` or `_nvngx.dll` must be signed by Nvidia. For this override I am using a method developed by **Artur** (developer of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)).  
+With DLSS 3.7 Nvidia disabled signature check override, this means `nvngx.dll` or `_nvngx.dll` must be signed by Nvidia. For this override I use a method developed by **Artur** (developer of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)).  
 
-This method increases compatibility of `OverlayMenu`, allows OptiScaler to **spoof DXGI and Vulkan** and overriding `nvapi64.dll`.  
+This method increases the compatibility of `OverlayMenu`, allows OptiScaler to **spoof DXGI and Vulkan** and overriding `nvapi64.dll`.  
 In short this installation method allows OptiScaler to work with all it's features.
 
-Step-by-step installation (**Nvidia users, step 3 is enough for you**):
+Step-by-step installation (**Nvidia users please use step 3 only**):
 1. We need an Nvidia signed dll file to bypass signature checks. All games that support DLSS come with `nvngx_dlss.dll`. Most of the time it's in the games exe folder. Some games and engines keep these third party dll's in different folders (like `plugins`). So we need to find the `nvngx_dlss.dll` file and copy it to the games exe folder. If it's already in the games exe folder, make a copy of it.
-2. Rename the copy of `nvngx_dlss.dll` in games exe folder to `nvngx.dll`.
-3. Rename OptiScaler's `nvngx.dll` to one of the supported filenames (I prefer `dxgi.dll`, it also eliminates the need for d3d12 proxy) and copy it to the games exe folder.
+2. Rename the copy of `nvngx_dlss.dll` in the games exe folder to `nvngx.dll`.
+3. Rename OptiScaler's `nvngx.dll` to one of the supported filenames (I prefer `dxgi.dll`, it also eliminates the need for the d3d12-proxy) and copy it to the games exe folder.
 4. If your GPU is not an Nvidia one, check [here](#spoofing-nvidia) for spoofing options.
 
-OptiScaler supports being loaded by these filenames:  
+OptiScaler supports these filenames:  
 * dxgi.dll (with Nvidia GPU spoofing for non-Nvidia cards)
 * winmm.dll
 * version.dll
@@ -34,16 +34,16 @@ Linux users should add renamed dll to overrides:
 WINEDLLOVERRIDES=dxgi=n,b %COMMAND% 
 ```
 
-If there is another mod (Reshade etc.) that uses the same filename (for example `dxgi.dll`), if you rename it with `-original` suffix (for example `dxgi-original.dll`), OptiScaler will load this file instead of the original library.   
+If there is another mod (e.g. Reshade etc.) that uses the same filename (e.g. `dxgi.dll`), if you rename it with the `-original` suffix (e.g. `dxgi-original.dll`), OptiScaler will load this file instead of the original library.   
 
-Alternatively you can create a new folder called `plugins` and put other mods files in this folder. OptiScaler will check this folder and if finds same dll file (for example `dxgi.dll`) will load this file instead of the original library. 
+Alternatively you can create a new folder called `plugins` and put other mods files in this folder. OptiScaler will check this folder and if it finds the same dll file (for example `dxgi.dll`), it will load this file instead of the original library. 
 ![image](https://github.com/cdozdil/OptiScaler/assets/35529761/c4bf2a85-107b-49ac-b002-59d00fd06982)
 
 **Please don't rename the ini file, it should stay as `nvngx.ini`**.
 
 ### Install as `nvngx.dll`
 Step-by-step installation (**Nvidia users, please skip step 4**):
-1. Download the latest relase from releases.
+1. Download the latest relase from [releases](https://github.com/cdozdil/OptiScaler/releases).
 2. Extract the contents of the archive next to the game executable file in your games folder. [1]
 3. Run `EnableSignatureOverride.reg` from `DlssOverrides` folder and confirm merge. [2][3]
 4. If your GPU is not an Nvidia one, check [here](#spoofing-nvidia) for spoofing options.
