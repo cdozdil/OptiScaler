@@ -433,5 +433,4 @@ FodyWeavers.xsd
 *.out
 *.app
 CyberFSR/imgui.ini
-/CyberXeSS/ffx3dx11/lib/ffx_fsr2_x64d.idb
-/CyberXeSS/ffx3dx11/lib/ffx_x64d.idb
+

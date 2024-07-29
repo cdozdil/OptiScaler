@@ -227,6 +227,9 @@
     <ClInclude Include="bicubicscaling\precompile\BCUS_Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="bicubicscaling\precompile\FSR_Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
