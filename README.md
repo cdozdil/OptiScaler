@@ -17,10 +17,10 @@ This method increases the compatibility of `OverlayMenu`, allows OptiScaler to *
 Step-by-step installation (**Nvidia users please use step 3 only**):
 1. We need an Nvidia signed dll file to bypass signature checks. All games that support DLSS come with `nvngx_dlss.dll`. Most of the time it's in the games exe folder. Some games and engines keep these third party dll's in different folders (like `plugins`). So we need to find the `nvngx_dlss.dll` file and copy it to the games exe folder. If it's already in the games exe folder, make a copy of it.
 2. Rename the copy of `nvngx_dlss.dll` in the games exe folder to `nvngx.dll`.
-3. Rename OptiScaler's `nvngx.dll` to one of the supported filenames (I prefer `dxgi.dll`, it also eliminates the need for the d3d12-proxy) and copy it to the games exe folder.
+3. Rename OptiScaler's `nvngx.dll` to one of the [supported filenames](#optiscaler-supports-these-filenames) (I prefer `dxgi.dll`, it also eliminates the need for the d3d12-proxy) and copy it to the games exe folder.
 4. If your GPU is not an Nvidia one, check [here](#spoofing-nvidia) for spoofing options.
 
-OptiScaler supports these filenames:  
+#### OptiScaler supports these filenames
 * dxgi.dll (with Nvidia GPU spoofing for non-Nvidia cards)
 * winmm.dll
 * version.dll
