@@ -1426,19 +1426,19 @@ public:
                             if (ImGui::Selectable("Auto", !Config::Instance()->AnisotropyOverride.has_value()))
                                 Config::Instance()->AnisotropyOverride.reset();
 
-                            if (ImGui::Selectable("1", Config::Instance()->AnisotropyOverride.value() == 1))
+                            if (ImGui::Selectable("1", Config::Instance()->AnisotropyOverride.value_or(0) == 1))
                                 Config::Instance()->AnisotropyOverride = 1;
                                 
-                            if (ImGui::Selectable("2", Config::Instance()->AnisotropyOverride.value() == 2))
+                            if (ImGui::Selectable("2", Config::Instance()->AnisotropyOverride.value_or(0) == 2))
                                 Config::Instance()->AnisotropyOverride = 2;
                                 
-                            if (ImGui::Selectable("4", Config::Instance()->AnisotropyOverride.value() == 4))
+                            if (ImGui::Selectable("4", Config::Instance()->AnisotropyOverride.value_or(0) == 4))
                                 Config::Instance()->AnisotropyOverride = 4;
                                 
-                            if (ImGui::Selectable("8", Config::Instance()->AnisotropyOverride.value() == 8))
+                            if (ImGui::Selectable("8", Config::Instance()->AnisotropyOverride.value_or(0) == 8))
                                 Config::Instance()->AnisotropyOverride = 8;
                                 
-                            if (ImGui::Selectable("16", Config::Instance()->AnisotropyOverride.value() == 16))
+                            if (ImGui::Selectable("16", Config::Instance()->AnisotropyOverride.value_or(0) == 16))
                                 Config::Instance()->AnisotropyOverride = 16;
                                 
                             ImGui::EndCombo();

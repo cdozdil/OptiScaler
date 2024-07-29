@@ -117,13 +117,13 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
         if (pDesc->MipLODBias < 0.0f)
         {
             LOG_INFO("Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
-            Config::Instance()->lastMipBias = newDesc.MipLODBias;
             newDesc.MipLODBias = Config::Instance()->MipmapBiasOverride.value();
+            Config::Instance()->lastMipBias = newDesc.MipLODBias;
         }
     }
     else
     {
-        newDesc.MipLODBias = pDesc->MaxAnisotropy;
+        newDesc.MipLODBias = pDesc->MipLODBias;
     }
 
     return orgCreateSampler(device, &newDesc, DestDescriptor);
