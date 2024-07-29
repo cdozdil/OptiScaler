@@ -12,7 +12,8 @@ OptiScaler (was CyberXeSS) is drop-in DLSS2 to XeSS/FSR2/FSR3/DLSS replacement f
 ### Install as `non-nvngx`
 With DLSS 3.7 Nvidia disabled signature check override, this means `nvngx.dll` or `_nvngx.dll` must be signed by Nvidia. For this override I am using a method developed by **Artur** (developer of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)).  
 
-This method increases compatibility of `OverlayMenu`, allows OptiScaler to **spoof DXGI and Vulkan** and overriding `nvapi64.dll`. In short this installation method allows OptiScaler to work as it's fullest.
+This method increases compatibility of `OverlayMenu`, allows OptiScaler to **spoof DXGI and Vulkan** and overriding `nvapi64.dll`.  
+In short this installation method allows OptiScaler to work with all it's features.
 
 Step-by-step installation (**Nvidia users, step 3 is enough for you**):
 1. We need an Nvidia signed dll file to bypass signature checks. All games that support DLSS come with `nvngx_dlss.dll`. Most of the time it's in the games exe folder. Some games and engines keep these third party dll's in different folders (like `plugins`). So we need to find the `nvngx_dlss.dll` file and copy it to the games exe folder. If it's already in the games exe folder, make a copy of it.
