@@ -1,6 +1,6 @@
 ![OptiScaler](images/optiscaler.png)
 
-OptiScaler (was CyberXeSS) is drop-in DLSS2 to XeSS/FSR2/FSR3/DLSS replacement for games. 
+OptiScaler is drop-in DLSS2 to XeSS/FSR2/FSR3/DLSS replacement for games. 
 
 ### Official Discord Server: [DLSS2FSR](https://discord.gg/2JDHx6kcXB)
 
