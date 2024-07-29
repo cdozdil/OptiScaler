@@ -2,39 +2,21 @@
 
 OptiScaler (was CyberXeSS) is drop-in DLSS2 to XeSS/FSR2/FSR3/DLSS replacement for games. 
 
-*This project is based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2](https://github.com/PotatoOfDoom/CyberFSR2).*
-
 ### Official Discord Server: [DLSS2FSR](https://discord.gg/2JDHx6kcXB)
 
 **Do not use this mod with online games, it might trigger anti-cheat software and cause bans!**
 
+*This project is based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2](https://github.com/PotatoOfDoom/CyberFSR2).*
+
 ## Installation
-### Install as `nvngx.dll`
-* Download the latest relase from releases.
-* Extract the contents of the archive next to the game executable file in your games folder. [1]
-* Run `EnableSignatureOverride.reg` and confirm merge. [2][3]
-* DLSS option should be appeared/enabled in games settings.
-* If DLSS still not selectable, please check methods explained [here](https://github.com/cdozdil/OptiScaler/blob/master/Spoofing.md).
+### Install as `non-nvngx`
+With DLSS 3.7 Nvidia disabled signature check override, this means `nvngx.dll` or `_nvngx.dll` must be signed by Nvidia. For this override I am using a method developed by **Artur** (developer of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)). Also this method increases compatibility of `OverlayMenu` and allows OptiScaler to **spoof DXGI and Vulkan**. 
 
-*[1] This package contains latest version of `libxess.dll` and if game folder contains any older version of same library it would be overwritten. Consider backing up or renaming existing file.*
-
-*[2] Normally Streamline and games check if nvngx.dll is signed, by merging this `.reg` file we are overriding this signature check.*
-
-*[3] Adding signature override on Linux - There are many possible setups, this one will focus on steam games:*
-* *Make sure you have protontricks installed*
-* *Run in a terminal protontricks <steam-appid> regedit, replace <steam-appid> with an id for your game*
-* *Press "registry" in the top left of the new window -> `Import Registry File` -> navigate to and select `EnableSignatureOverride.reg`*
-* *You should see a message saying that you successfully added the entries to the registry*
-
-*If your game is not on Steam, it all boils down to opening regedit inside your game's prefix and importing the file.*
-
-### Installation for DLSS 3.7 and above as `non-nvngx`
-With DLSS 3.7 Nvidia disabled signature check override, this means `nvngx.dll` or `_nvngx.dll` must be signed by Nvidia. For this override I am using a method developed by **Artur** (developer of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)). Also this method increases compatibility of `OverlayMenu`. 
-
-Step-by-step installation (**Nvidia users please skip step 1 & 2**):
+Step-by-step installation (**Nvidia users, step 3 is enough for you**):
 1. We need an Nvidia signed dll file to bypass signature checks. All games that support DLSS come with `nvngx_dlss.dll`. Most of the time it's in the games exe folder. Some games and engines keep these third party dll's in different folders (like `plugins`). So we need to find the `nvngx_dlss.dll` file and copy it to the games exe folder. If it's already in the games exe folder, make a copy of it.
 2. Rename the copy of `nvngx_dlss.dll` in games exe folder to `nvngx.dll`.
-3. Rename OptiScaler's `nvngx.dll` to one of the supported filenames (I prefer `dxgi.dll`, it also eliminates the need for d3d12 proxy) and copy it to the games exe folder. 
+3. Rename OptiScaler's `nvngx.dll` to one of the supported filenames (I prefer `dxgi.dll`, it also eliminates the need for d3d12 proxy) and copy it to the games exe folder.
+4. If your GPU is not an Nvidia one, check [here](#spoofing-nvidia) for spoofing options.
 
 OptiScaler supports being loaded by these filenames:  
 * dxgi.dll (with Nvidia GPU spoofing for non-Nvidia cards)
@@ -54,14 +36,29 @@ If there is another mod (Reshade etc.) that uses the same filename (for example 
 Alternatively you can create a new folder called `plugins` and put other mods files in this folder. OptiScaler will check this folder and if finds same dll file (for example `dxgi.dll`) will load this file instead of the original library. 
 ![image](https://github.com/cdozdil/OptiScaler/assets/35529761/c4bf2a85-107b-49ac-b002-59d00fd06982)
 
-#### Shader Compilation error on Linux
-If you are using OptiScaler with Linux and you have problems with `RCAS`, `Reactive Mask Bias` or `Output Scaling`, you will probably notice this message in your logs.
-```
-CompileShader error compiling shader : <anonymous>:83:26: E5005: Function "rcp" is not defined.
-```
-To solve this problem you need to install `d3dcompiler_47` with `WineTricks` or `ProtonTricks`. OptiScaler uses custom shaders for these features and depends on this compiler file to compile these shaders at runtime. 
-
 **Please don't rename the ini file, it should stay as `nvngx.ini`**.
+
+### Install as `nvngx.dll`
+Step-by-step installation (**Nvidia users, please skip step 4**):
+1. Download the latest relase from releases.
+2. Extract the contents of the archive next to the game executable file in your games folder. [1]
+3. Run `EnableSignatureOverride.reg` from `DlssOverrides` folder and confirm merge. [2][3]
+4. If your GPU is not an Nvidia one, check [here](#spoofing-nvidia) for spoofing options.
+
+*[1] This package contains latest version of `libxess.dll` and if game folder contains any older version of same library it would be overwritten. Consider backing up or renaming existing file.*
+
+*[2] Normally Streamline and games check if nvngx.dll is signed, by merging this `.reg` file we are overriding this signature check.*
+
+*[3] Adding signature override on Linux - There are many possible setups, this one will focus on steam games:*
+* *Make sure you have protontricks installed*
+* *Run in a terminal protontricks <steam-appid> regedit, replace <steam-appid> with an id for your game*
+* *Press "registry" in the top left of the new window -> `Import Registry File` -> navigate to and select `EnableSignatureOverride.reg`*
+* *You should see a message saying that you successfully added the entries to the registry*
+
+*If your game is not on Steam, it all boils down to opening regedit inside your game's prefix and importing the file.*
+
+## Spoofing Nvidia 
+Most games have checks for enabling DLSS options. To enable DLSS options in these games there are several methods explained [here](https://github.com/cdozdil/OptiScaler/blob/master/Spoofing.md)
 
 ## Update OptiScaler version when using DLSS Enabler  
 1. Delete/rename `dlss-enabler-upscaler.dll` in game folder
@@ -72,7 +69,6 @@ To solve this problem you need to install `d3dcompiler_47` with `WineTricks` or 
 * Run `DisableSignatureOverride.reg` file 
 * Delete `EnableSignatureOverride.reg`, `DisableSignatureOverride.reg`, `nvngx.dll`, `nvngx.ini` files
 * If there were a `libxess.dll` file and you have backed it up delete the new file and restore the backed up file. If you have overwrote old file **DO NOT** delete `libxess.dll` file. If there were no `libxess.dll` file it's safe to delete.
-
 
 ## How it works?
 OptiScaler implements all necessary API methods of DLSS2 & NVAPI to act as a man in the middle. So from games perspective it's using DLSS2 but actually using OptiScaler and calls are interpreted/redirected to XeSS & FSR2 or DLSS with OptiScaler's tweaks and enchancements.
@@ -100,7 +96,7 @@ OptiScaler implements all necessary API methods of DLSS2 & NVAPI to act as a man
 Please check [this](Config.md) document for configuration parameters and explanations. *(Will be updated)*
 
 ## Known Issues
-Please check [this](Issues.md) document for known issues and possible solutions for them. *(Will be updated)*
+Please check [this](Issues.md) document for known issues and possible solutions for them.
 
 ## Which APIs and Upscalers are Supported?
 Currently OptiScaler can be used with DirectX 11, DirectX 12 and Vulkan but each API has different sets of upscaler options.
