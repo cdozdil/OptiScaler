@@ -156,10 +156,59 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 		_targetHeight = DisplayHeight();
 	}
 
-	InParameters->Set(NVSDK_NGX_Parameter_Width, RenderWidth());
-	InParameters->Set(NVSDK_NGX_Parameter_Height, RenderHeight());
-	InParameters->Set(NVSDK_NGX_Parameter_OutWidth, TargetWidth());
-	InParameters->Set(NVSDK_NGX_Parameter_OutHeight, TargetHeight());
+	// extended limits changes how resolution 
+	if (Config::Instance()->ExtendedLimits.value_or(false))
+	{
+		InParameters->Set(NVSDK_NGX_Parameter_Width, RenderWidth());
+		InParameters->Set(NVSDK_NGX_Parameter_Height, RenderHeight());
+
+		_targetWidth = RenderWidth() < TargetWidth() ? TargetWidth() : RenderWidth();
+		_targetHeight = RenderHeight() < TargetHeight() ? TargetHeight() : RenderHeight();
+		InParameters->Set(NVSDK_NGX_Parameter_OutWidth, _targetWidth);
+		InParameters->Set(NVSDK_NGX_Parameter_OutHeight, _targetHeight);
+
+		// enable output scaling to restore image
+		if (!Config::Instance()->DisplayResolution.value_or(false) && _targetWidth == RenderWidth())
+		{
+			Config::Instance()->OutputScalingMultiplier = 1.0f;
+			Config::Instance()->OutputScalingEnabled = true;
+		}
+	}
+	else
+	{
+		InParameters->Set(NVSDK_NGX_Parameter_Width, RenderWidth());
+		InParameters->Set(NVSDK_NGX_Parameter_Height, RenderHeight());
+		InParameters->Set(NVSDK_NGX_Parameter_OutWidth, TargetWidth());
+		InParameters->Set(NVSDK_NGX_Parameter_OutHeight, TargetHeight());
+	}
+
+	//if (Config::Instance()->ExtendedLimits.value_or(false))
+	//{
+	//	InParameters->Set(NVSDK_NGX_Parameter_Width, RenderWidth() < TargetWidth() ? TargetWidth() : RenderWidth());
+	//	InParameters->Set(NVSDK_NGX_Parameter_Height, RenderHeight() < TargetHeight() ? TargetHeight() : RenderHeight());
+
+	//	// if output scaling active let it to handle downsampling
+	//	if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+	//	{
+	//		// update target res
+	//		_targetWidth = RenderWidth() < TargetWidth() ? TargetWidth() : RenderWidth();
+	//		_targetHeight = RenderHeight() < TargetHeight() ? TargetHeight() : RenderHeight();
+	//		InParameters->Set(NVSDK_NGX_Parameter_OutWidth, _targetWidth);
+	//		InParameters->Set(NVSDK_NGX_Parameter_OutHeight, _targetHeight);
+	//	}
+	//	else
+	//	{
+	//		InParameters->Set(NVSDK_NGX_Parameter_OutWidth, TargetWidth());
+	//		InParameters->Set(NVSDK_NGX_Parameter_OutHeight, TargetHeight());
+	//	}
+	//}
+	//else
+	//{
+	//	InParameters->Set(NVSDK_NGX_Parameter_Width, RenderWidth());
+	//	InParameters->Set(NVSDK_NGX_Parameter_Height, RenderHeight());
+	//	InParameters->Set(NVSDK_NGX_Parameter_OutWidth, TargetWidth());
+	//	InParameters->Set(NVSDK_NGX_Parameter_OutHeight, TargetHeight());
+	//}
 
 	unsigned int RenderPresetDLAA = 0;
 	unsigned int RenderPresetUltraQuality = 0;

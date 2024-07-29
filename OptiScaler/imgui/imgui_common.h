@@ -410,6 +410,8 @@ private:
             }
             else if (pfn_ClipCursor_hooked)
             {
+                _ssRatio = 0;
+
                 if (_lastCursorLimit != nullptr)
                     pfn_ClipCursor(nullptr);
 
@@ -1382,14 +1384,21 @@ public:
 
                         ImGui::SameLine(0.0f, 6.0f);
 
-                        ImGui::Checkbox("Use FSR EASU", &_ssUseFsr);
+
+                        ImGui::BeginDisabled(!_ssEnabled);
+                        ImGui::Checkbox("Use FSR 1", &_ssUseFsr);
+                        ImGui::EndDisabled();
+                        ShowHelpMarker("Use FSR 1's upscaling pass instead of bicubic");
 
                         ImGui::SameLine(0.0f, 6.0f);
 
-                        if (ImGui::Button("Apply Change") && 
-                            (_ssEnabled != Config::Instance()->OutputScalingEnabled.value_or(false) ||
+                        bool applyEnabled = _ssEnabled != Config::Instance()->OutputScalingEnabled.value_or(false) ||
                             _ssRatio != Config::Instance()->OutputScalingMultiplier.value_or(defaultRatio) ||
-                            _ssUseFsr != Config::Instance()->OutputScalingUseFsr.value_or(true)))
+                            _ssUseFsr != Config::Instance()->OutputScalingUseFsr.value_or(true);
+
+                        ImGui::BeginDisabled(!applyEnabled);
+
+                        if (ImGui::Button("Apply Change"))
                         {
                             Config::Instance()->OutputScalingEnabled = _ssEnabled;
                             Config::Instance()->OutputScalingMultiplier = _ssRatio;
@@ -1404,12 +1413,17 @@ public:
                             Config::Instance()->changeBackend = true;
                         }
 
+                        ImGui::EndDisabled();
 
+
+                        ImGui::BeginDisabled(!_ssEnabled);
                         ImGui::SliderFloat("Ratio", &_ssRatio, 0.5f, 3.0f, "%.2f");
+                        ImGui::EndDisabled();
 
                         if (cf != nullptr)
-                            ImGui::Text("%dx%d -> %dx%d", cf->RenderWidth(), cf->RenderHeight(), (uint32_t)(cf->DisplayWidth() * _ssRatio), (uint32_t)(cf->DisplayHeight() * _ssRatio));
-                        
+                            ImGui::Text("Output Scaling is %s: %dx%d -> %dx%d", Config::Instance()->OutputScalingEnabled.value_or(false) ? "ENABLED" : "DISABLED",
+                                        cf->RenderWidth(), cf->RenderHeight(), (uint32_t)(cf->DisplayWidth() * _ssRatio), (uint32_t)(cf->DisplayHeight() * _ssRatio));
+
                         ImGui::EndDisabled();
                     }
 
@@ -1428,7 +1442,7 @@ public:
                                        "Positive values will make textures more blurry\n\n"
                                        "Has a small performance impact");
 
-                        auto selectedAF = Config::Instance()->AnisotropyOverride.has_value() ? std::to_string(Config::Instance()->AnisotropyOverride.value()) : "Auto";                        
+                        auto selectedAF = Config::Instance()->AnisotropyOverride.has_value() ? std::to_string(Config::Instance()->AnisotropyOverride.value()) : "Auto";
                         if (ImGui::BeginCombo("Force Anisotropy", selectedAF.c_str()))
                         {
                             if (ImGui::Selectable("Auto", !Config::Instance()->AnisotropyOverride.has_value()))
@@ -1436,19 +1450,19 @@ public:
 
                             if (ImGui::Selectable("1", Config::Instance()->AnisotropyOverride.value_or(0) == 1))
                                 Config::Instance()->AnisotropyOverride = 1;
-                                
+
                             if (ImGui::Selectable("2", Config::Instance()->AnisotropyOverride.value_or(0) == 2))
                                 Config::Instance()->AnisotropyOverride = 2;
-                                
+
                             if (ImGui::Selectable("4", Config::Instance()->AnisotropyOverride.value_or(0) == 4))
                                 Config::Instance()->AnisotropyOverride = 4;
-                                
+
                             if (ImGui::Selectable("8", Config::Instance()->AnisotropyOverride.value_or(0) == 8))
                                 Config::Instance()->AnisotropyOverride = 8;
-                                
+
                             if (ImGui::Selectable("16", Config::Instance()->AnisotropyOverride.value_or(0) == 16))
                                 Config::Instance()->AnisotropyOverride = 16;
-                                
+
                             ImGui::EndCombo();
                         }
 
@@ -1804,7 +1818,7 @@ public:
                     if (ImGui::Checkbox("Enable Advanced Settings", &advancedSettings))
                         Config::Instance()->AdvancedSettings = advancedSettings;
 
-                    if (advancedSettings) 
+                    if (advancedSettings)
                     {
                         bool extendedLimits = Config::Instance()->ExtendedLimits.value_or(false);
                         if (ImGui::Checkbox("Enable Extended Limits", &extendedLimits))
@@ -1978,9 +1992,9 @@ public:
 
                     ImGui::EndDisabled();
 
-                    if (ImGui::SliderFloat("Upscaler Ratio", &_mipmapUpscalerRatio, 
-                        Config::Instance()->ExtendedLimits.value_or(false) ? 0.1f : 1.0f, 
-                        Config::Instance()->ExtendedLimits.value_or(false) ? 6.0f : 3.0f, 
+                    if (ImGui::SliderFloat("Upscaler Ratio", &_mipmapUpscalerRatio,
+                        Config::Instance()->ExtendedLimits.value_or(false) ? 0.1f : 1.0f,
+                        Config::Instance()->ExtendedLimits.value_or(false) ? 6.0f : 3.0f,
                         "%.2f", ImGuiSliderFlags_NoRoundToFormat))
                     {
                         _renderWidth = _displayWidth / _mipmapUpscalerRatio;

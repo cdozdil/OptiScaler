@@ -215,8 +215,25 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         _targetHeight = DisplayHeight();
     }
 
-    xessParams.outputResolution.x = TargetWidth();
-    xessParams.outputResolution.y = TargetHeight();
+    if (Config::Instance()->ExtendedLimits.value_or(false))
+    {
+        _targetWidth = RenderWidth() < TargetWidth() ? TargetWidth() : RenderWidth();
+        _targetHeight = RenderHeight() < TargetHeight() ? TargetHeight() : RenderHeight();
+        xessParams.outputResolution.x = _targetWidth;
+        xessParams.outputResolution.y = _targetHeight;
+
+        // enable output scaling to restore image
+        if (!Config::Instance()->DisplayResolution.value_or(false) && _targetWidth == RenderWidth())
+        {
+            Config::Instance()->OutputScalingMultiplier = 1.0f;
+            Config::Instance()->OutputScalingEnabled = true;
+        }
+    }
+    else
+    {
+        xessParams.outputResolution.x = TargetWidth();
+        xessParams.outputResolution.y = TargetHeight();
+    }
 
     // create heaps to prevent create heap errors of xess
     if (Config::Instance()->CreateHeaps.value_or(true))
