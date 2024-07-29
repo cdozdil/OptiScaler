@@ -1,15 +1,14 @@
 # Known Issues
 
 ## In-game Menu
-In-game menu is a recent addition and may experience on certain condutions.
 
 * Some games do not release mouse control, kayboard & gamepad controls should still work in these situations.
-* On some system and game combinations, opening the in-game menu may cause the game to crash or cause graphical corruption (especially in Unreal Engine 5 games).
+* On some system and game combinations, opening the old in-game menu may cause the game to crash or cause graphical corruption (especially in Unreal Engine 5 games).
 
 ![Banishers](/images/banishers.png)<br>*Banishers: Ghosts of New Eden*
 
 * Changing settings mostly tested but might cause crashes (especially changing backends or reinitializing backends).
-* In games that use Unity Engine in-game menu will be upside down.
+* In games that use Unity Engine old in-game menu will be upside down.
 
 ![barrel roll](/images/upsidedown.png)<br>*Sons of Forest*
 
