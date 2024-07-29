@@ -28,7 +28,7 @@ VulkanExtensionSpoofing=auto
 
 #### vulkan-spoofer
 Alternatively for spoofing `GetPhysicalDeviceProperties` checks vulkan-spoofer can be used. This mod reports your GPU as RTX 4090.   
-Compatiblity is a bit hit and miss, works for No Man's Sky but not working with Doom Eternal.  
+Compatiblity is a bit hit and miss, works for No Man's Sky (not working with latest streamline patch) but not working with Doom Eternal.  
 ##### Usage 
 Just place version.dll file next to games executable.  
 ##### Link 
