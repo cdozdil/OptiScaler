@@ -154,6 +154,8 @@
 //==============================================================================================================================
 // Call to setup required constant values (works on CPU or GPU).
 
+#ifndef A_GPU 
+
 #include "ffx_a.h"
 
 struct alignas(256) UpscaleShaderConstants {
@@ -172,6 +174,7 @@ struct alignas(256) SharpenShaderConstants {
     AU1 squaredRadius;
     AU1 debugMode;
 };
+#endif 
 
 A_STATIC void FsrEasuCon(
 outAU4 con0,
