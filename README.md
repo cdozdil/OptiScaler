@@ -13,7 +13,8 @@ OptiScaler (was CyberXeSS) is drop-in DLSS2 to XeSS/FSR2/FSR3/DLSS replacement f
 * Download the latest relase from releases.
 * Extract the contents of the archive next to the game executable file in your games folder. [1]
 * Run `EnableSignatureOverride.reg` and confirm merge. [2][3]
-* DLSS option should be appeared/enabled in games settings. If it's not, you may try using methods explained [here](https://github.com/cdozdil/OptiScaler/blob/master/Spoofing.md).
+* DLSS option should be appeared/enabled in games settings.
+* If DLSS still not selectable, please check methods explained [here](https://github.com/cdozdil/OptiScaler/blob/master/Spoofing.md).
 
 *[1] This package contains latest version of `libxess.dll` and if game folder contains any older version of same library it would be overwritten. Consider backing up or renaming existing file.*
 
