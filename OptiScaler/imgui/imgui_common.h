@@ -1408,8 +1408,8 @@ public:
                     // DX12 -----------------------------
                     if (Config::Instance()->AdvancedSettings.value_or(false) && Config::Instance()->Api == NVNGX_DX12)
                     {
-                        // MIPMAP BIAS -----------------------------
-                        ImGui::SeparatorText("Mipmap Bias (Dx12)");
+                        // MIPMAP BIAS & Anisotropy -----------------------------
+                        ImGui::SeparatorText("Mipmap Bias & Anisotropy (Dx12)");
 
                         if (Config::Instance()->MipmapBiasOverride.has_value() && _mipBias == 0.0f)
                             _mipBias = Config::Instance()->MipmapBiasOverride.value();
@@ -1420,7 +1420,31 @@ public:
                                        "Positive values will make textures more blurry\n\n"
                                        "Has a small performance impact");
 
-                        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "This will be applied after resolution/preset change!");
+                        auto selectedAF = Config::Instance()->AnisotropyOverride.has_value() ? std::to_string(Config::Instance()->AnisotropyOverride.value()) : "Auto";                        
+                        if (ImGui::BeginCombo("Force Anisotropy", selectedAF.c_str()))
+                        {
+                            if (ImGui::Selectable("Auto", !Config::Instance()->AnisotropyOverride.has_value()))
+                                Config::Instance()->AnisotropyOverride.reset();
+
+                            if (ImGui::Selectable("1", Config::Instance()->AnisotropyOverride.value() == 1))
+                                Config::Instance()->AnisotropyOverride = 1;
+                                
+                            if (ImGui::Selectable("2", Config::Instance()->AnisotropyOverride.value() == 2))
+                                Config::Instance()->AnisotropyOverride = 2;
+                                
+                            if (ImGui::Selectable("4", Config::Instance()->AnisotropyOverride.value() == 4))
+                                Config::Instance()->AnisotropyOverride = 4;
+                                
+                            if (ImGui::Selectable("8", Config::Instance()->AnisotropyOverride.value() == 8))
+                                Config::Instance()->AnisotropyOverride = 8;
+                                
+                            if (ImGui::Selectable("16", Config::Instance()->AnisotropyOverride.value() == 16))
+                                Config::Instance()->AnisotropyOverride = 16;
+                                
+                            ImGui::EndCombo();
+                        }
+
+                        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "These will be applied after resolution/preset change!");
 
                         if (ImGui::Button("Set"))
                             Config::Instance()->MipmapBiasOverride = _mipBias;

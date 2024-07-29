@@ -101,6 +101,7 @@ public:
 
 	//Hotfixes
 	std::optional<float> MipmapBiasOverride;
+	std::optional<int> AnisotropyOverride;
 	std::optional<int> RoundInternalResolution;
 
 	std::optional<bool> RestoreComputeSignature;

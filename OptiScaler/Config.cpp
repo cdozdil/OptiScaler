@@ -259,10 +259,14 @@ bool Config::Reload(std::filesystem::path iniPath)
         // Hotfixes
         {
             RoundInternalResolution = readInt("Hotfix", "RoundInternalResolution");
+            
             MipmapBiasOverride = readFloat("Hotfix", "MipmapBiasOverride");
-
             if (MipmapBiasOverride.has_value() && (MipmapBiasOverride.value() > 15.0 || MipmapBiasOverride.value() < -15.0))
                 MipmapBiasOverride.reset();
+
+            AnisotropyOverride = readInt("Hotfix", "AnisotropyOverride");
+            if (AnisotropyOverride.has_value() && (AnisotropyOverride.value() > 16 || AnisotropyOverride.value() < 1))
+                AnisotropyOverride.reset();
 
             RestoreComputeSignature = readBool("Hotfix", "RestoreComputeSignature");
             RestoreComputeSignature = readBool("Hotfix", "RestoreComputeSignature");

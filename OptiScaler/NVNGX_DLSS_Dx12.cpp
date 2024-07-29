@@ -82,36 +82,51 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
     if (pDesc == nullptr || device == nullptr)
         return;
 
-    if (pDesc->MipLODBias < 0.0f && Config::Instance()->MipmapBiasOverride.has_value())
+    D3D12_SAMPLER_DESC newDesc{};
+
+    newDesc.AddressU = pDesc->AddressU;
+    newDesc.AddressV = pDesc->AddressV;
+    newDesc.AddressW = pDesc->AddressW;
+    newDesc.BorderColor[0] = pDesc->BorderColor[0];
+    newDesc.BorderColor[1] = pDesc->BorderColor[1];
+    newDesc.BorderColor[2] = pDesc->BorderColor[2];
+    newDesc.BorderColor[3] = pDesc->BorderColor[3];
+    newDesc.ComparisonFunc = pDesc->ComparisonFunc;
+
+    if (Config::Instance()->AnisotropyOverride.has_value() &&
+        (pDesc->Filter == D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT ||
+        pDesc->Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT ||
+        pDesc->Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR ||
+        pDesc->Filter <= D3D12_FILTER_ANISOTROPIC))
     {
-        LOG_INFO("Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
-
-        D3D12_SAMPLER_DESC newDesc{};
-
-        newDesc.AddressU = pDesc->AddressU;
-        newDesc.AddressV = pDesc->AddressV;
-        newDesc.AddressW = pDesc->AddressW;
-        newDesc.BorderColor[0] = pDesc->BorderColor[0];
-        newDesc.BorderColor[1] = pDesc->BorderColor[1];
-        newDesc.BorderColor[2] = pDesc->BorderColor[2];
-        newDesc.BorderColor[3] = pDesc->BorderColor[3];
-        newDesc.ComparisonFunc = pDesc->ComparisonFunc;
+        LOG_INFO("Overriding Anisotrpic filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value());
+        newDesc.Filter = D3D12_FILTER_ANISOTROPIC;
+        newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
+    }
+    else
+    {
         newDesc.Filter = pDesc->Filter;
         newDesc.MaxAnisotropy = pDesc->MaxAnisotropy;
-        newDesc.MaxLOD = pDesc->MaxLOD;
-        newDesc.MinLOD = pDesc->MinLOD;
-        newDesc.MipLODBias = Config::Instance()->MipmapBiasOverride.value();
-
-        Config::Instance()->lastMipBias = newDesc.MipLODBias;
-
-        return orgCreateSampler(device, &newDesc, DestDescriptor);
     }
-    else if (pDesc->MipLODBias < 0.0f)
+
+    newDesc.MaxLOD = pDesc->MaxLOD;
+    newDesc.MinLOD = pDesc->MinLOD;
+
+    if (Config::Instance()->MipmapBiasOverride.has_value())
     {
-        Config::Instance()->lastMipBias = pDesc->MipLODBias;
+        if (pDesc->MipLODBias < 0.0f)
+        {
+            LOG_INFO("Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
+            Config::Instance()->lastMipBias = newDesc.MipLODBias;
+            newDesc.MipLODBias = Config::Instance()->MipmapBiasOverride.value();
+        }
+    }
+    else
+    {
+        newDesc.MipLODBias = pDesc->MaxAnisotropy;
     }
 
-    return orgCreateSampler(device, pDesc, DestDescriptor);
+    return orgCreateSampler(device, &newDesc, DestDescriptor);
 }
 
 void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
@@ -248,7 +263,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 
     D3D12Device = InDevice;
 
-    if (D3D12Device != nullptr)
+    if (!ImGuiOverlayDx12::IsEarlyBind() && D3D12Device != nullptr)
         HookToDevice(D3D12Device);
 
     Config::Instance()->Api = NVNGX_DX12;
