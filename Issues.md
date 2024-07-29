@@ -36,13 +36,12 @@ Some users have reported that when using XeSS upscaler backend, the result is a 
 ## Minecraft RTX
 XeSS 1.1 has the best compatibility with Minecraft RTX. But I've seen reports that with [various launchers](https://github.com/MCMrARM/mc-w10-version-launcher/releases) it's possible to use 1.2 and above as well.
 
-## CAS (Conrast Adaptive Sharpening)
-CAS added to XeSS backends to mitigate softness of upscaler, but CAS can also cause some image problems.
-
-![cas](/images/cas.png)<br>*Deep Rock Galactic*
-
-1. Bloom removed
-2. Hue is changed
+## Shader Compilation error on Linux
+If you are using OptiScaler with Linux and you have problems with `RCAS`, `Reactive Mask Bias` or `Output Scaling`, you will probably notice this message in your logs.
+```
+CompileShader error compiling shader : <anonymous>:83:26: E5005: Function "rcp" is not defined.
+```
+To solve this problem you need to install `d3dcompiler_47` with `WineTricks` or `ProtonTricks`. OptiScaler uses custom shaders for these features and depends on this compiler file to compile these shaders at runtime. 
 
 ## Performance Issues
 * In general XeSS is heavier than FSR for GPUs so it's expected to be have lower performance even on Intel Arc GPUs.
