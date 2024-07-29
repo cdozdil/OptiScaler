@@ -214,6 +214,7 @@ bool Config::Reload(std::filesystem::path iniPath)
         {
             OutputScalingEnabled = readBool("OutputScaling", "Enabled");
             OutputScalingMultiplier = readFloat("OutputScaling", "Multiplier");
+            OutputScalingUseFsr = readBool("OutputScaling", "UseFsr");
 
             if (OutputScalingMultiplier.has_value() && OutputScalingMultiplier.value() < 0.5f)
                 OutputScalingMultiplier = 0.5f;
@@ -451,6 +452,7 @@ bool Config::SaveIni()
     {
         ini.SetValue("OutputScaling", "Enabled", GetBoolValue(Instance()->OutputScalingEnabled).c_str());
         ini.SetValue("OutputScaling", "Multiplier", GetFloatValue(Instance()->OutputScalingMultiplier).c_str());
+        ini.SetValue("OutputScaling", "UseFsr", GetBoolValue(Instance()->OutputScalingUseFsr).c_str());
     }
 
     // FSR
@@ -681,7 +683,7 @@ std::optional<int> Config::readInt(std::string section, std::string key)
     {
         return std::nullopt;
     }
-    catch (const std::out_of_range&) // out of range for 32 bit float
+    catch (const std::out_of_range&) // out// out of range for 32 bit float
     {
         return std::nullopt;
     }

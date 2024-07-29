@@ -40,6 +40,7 @@ private:
     // output scaling
     inline static float _ssRatio = 0.0f;
     inline static bool _ssEnabled = false;
+    inline static bool _ssUseFsr = false;
 
     // ui scale
     inline static int _selectedScale = 0;
@@ -1369,6 +1370,7 @@ public:
                         {
                             _ssRatio = Config::Instance()->OutputScalingMultiplier.value_or(defaultRatio);
                             _ssEnabled = Config::Instance()->OutputScalingEnabled.value_or(false);
+                            _ssUseFsr = Config::Instance()->OutputScalingUseFsr.value_or(true);
                         }
 
                         ImGui::Checkbox("Enable", &_ssEnabled);
@@ -1380,11 +1382,18 @@ public:
 
                         ImGui::SameLine(0.0f, 6.0f);
 
-                        if (ImGui::Button("Apply Change") && (_ssEnabled != Config::Instance()->OutputScalingEnabled.value_or(false) ||
-                            _ssRatio != Config::Instance()->OutputScalingMultiplier.value_or(defaultRatio)))
+                        ImGui::Checkbox("Use FSR EASU", &_ssUseFsr);
+
+                        ImGui::SameLine(0.0f, 6.0f);
+
+                        if (ImGui::Button("Apply Change") && 
+                            (_ssEnabled != Config::Instance()->OutputScalingEnabled.value_or(false) ||
+                            _ssRatio != Config::Instance()->OutputScalingMultiplier.value_or(defaultRatio) ||
+                            _ssUseFsr != Config::Instance()->OutputScalingUseFsr.value_or(true)))
                         {
                             Config::Instance()->OutputScalingEnabled = _ssEnabled;
                             Config::Instance()->OutputScalingMultiplier = _ssRatio;
+                            Config::Instance()->OutputScalingUseFsr = _ssUseFsr;
 
                             if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
                                 Config::Instance()->newBackend = "dlssd";
@@ -1395,13 +1404,12 @@ public:
                             Config::Instance()->changeBackend = true;
                         }
 
-                        ImGui::SameLine(0.0f, 6.0f);
-
-                        if (cf != nullptr)
-                            ImGui::Text("%dx%d -> %dx%d", cf->RenderWidth(), cf->RenderHeight(), (uint32_t)(cf->DisplayWidth() * _ssRatio), (uint32_t)(cf->DisplayHeight() * _ssRatio));
 
                         ImGui::SliderFloat("Ratio", &_ssRatio, 0.5f, 3.0f, "%.2f");
 
+                        if (cf != nullptr)
+                            ImGui::Text("%dx%d -> %dx%d", cf->RenderWidth(), cf->RenderHeight(), (uint32_t)(cf->DisplayWidth() * _ssRatio), (uint32_t)(cf->DisplayHeight() * _ssRatio));
+                        
                         ImGui::EndDisabled();
                     }
 
