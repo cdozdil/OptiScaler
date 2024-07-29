@@ -58,7 +58,7 @@ Step-by-step installation (**Nvidia users, please skip step 4**):
 *If your game is not on Steam, it all boils down to opening regedit inside your game's prefix and importing the file.*
 
 ## Spoofing Nvidia 
-Most games have checks for enabling DLSS options. To enable DLSS options in these games there are several methods explained [here](https://github.com/cdozdil/OptiScaler/blob/master/Spoofing.md)
+Most games have checks for enabling DLSS options. To enable DLSS options in these games there are several methods which explained [here](https://github.com/cdozdil/OptiScaler/blob/master/Spoofing.md)
 
 ## Update OptiScaler version when using DLSS Enabler  
 1. Delete/rename `dlss-enabler-upscaler.dll` in game folder
