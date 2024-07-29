@@ -6,7 +6,7 @@
 #include "../Util.h"
 #include "../imgui/Imgui_Dx12.h"
 
-#include "../bicubicscaling/BS_Dx12.h"
+#include "../output_scaling/OS_Dx12.h"
 #include "../rcas/RCAS_Dx12.h"
 #include "../bias/Bias_Dx12.h"
 
@@ -15,7 +15,7 @@ class IFeature_Dx12 : public virtual IFeature
 protected:
 	ID3D12Device* Device = nullptr;
 	static inline std::unique_ptr<Imgui_Dx12> Imgui = nullptr;
-	std::unique_ptr<BS_Dx12> OutputScaler = nullptr;
+	std::unique_ptr<OS_Dx12> OutputScaler = nullptr;
 	std::unique_ptr<RCAS_Dx12> RCAS = nullptr;
 	std::unique_ptr<Bias_Dx12> Bias = nullptr;
 

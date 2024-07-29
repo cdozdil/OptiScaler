@@ -8,7 +8,7 @@
 #include <d3d11_4.h>
 #include <dxgi1_6.h>
 
-#include "../bicubicscaling/BS_Dx12.h"
+#include "../output_scaling/OS_Dx12.h"
 
 class IFeature_Dx11wDx12 : public virtual IFeature_Dx11
 {
@@ -68,7 +68,7 @@ protected:
 	HANDLE dx11SHForCopyOutput = NULL;
 	HANDLE dx12SHForCopyOutput = NULL;
 
-	std::unique_ptr<BS_Dx12> OutputScaler = nullptr;
+	std::unique_ptr<OS_Dx12> OutputScaler = nullptr;
 	std::unique_ptr<RCAS_Dx12> RCAS = nullptr;
 	std::unique_ptr<Bias_Dx12> Bias = nullptr;
 

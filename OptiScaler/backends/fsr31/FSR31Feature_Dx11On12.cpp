@@ -154,7 +154,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
             std::this_thread::sleep_for(std::chrono::milliseconds(1500));
         }
 
-        OutputScaler = std::make_unique<BS_Dx12>("Output Scaling", Dx12Device, (TargetWidth() < DisplayWidth()));
+        OutputScaler = std::make_unique<OS_Dx12>("Output Scaling", Dx12Device, (TargetWidth() < DisplayWidth()));
         RCAS = std::make_unique<RCAS_Dx12>("RCAS", Dx12Device);
         Bias = std::make_unique<Bias_Dx12>("Bias", Dx12Device);
     }

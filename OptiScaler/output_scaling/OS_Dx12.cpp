@@ -1,4 +1,4 @@
-#include "BS_Dx12.h"
+#include "OS_Dx12.h"
 
 // FSR compute shader is from : https://github.com/fholger/vrperfkit/
 #define A_CPU
@@ -58,7 +58,7 @@ static bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootS
     return true;
 }
 
-bool BS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, uint32_t InWidth, uint32_t InHeight, D3D12_RESOURCE_STATES InState)
+bool OS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, uint32_t InWidth, uint32_t InHeight, D3D12_RESOURCE_STATES InState)
 {
     if (InDevice == nullptr || InSource == nullptr)
         return false;
@@ -109,7 +109,7 @@ bool BS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
     return true;
 }
 
-void BS_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RESOURCE_STATES InState)
+void OS_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RESOURCE_STATES InState)
 {
     if (_bufferState == InState)
         return;
@@ -124,7 +124,7 @@ void BS_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RES
     _bufferState = InState;
 }
 
-bool BS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource, ID3D12Resource* OutResource)
+bool OS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource, ID3D12Resource* OutResource)
 {
     if (!_init || InDevice == nullptr || InCmdList == nullptr || InResource == nullptr || OutResource == nullptr)
         return false;
@@ -239,25 +239,15 @@ bool BS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     UINT dispatchWidth = 0;
     UINT dispatchHeight = 0;
 
-    // fsr upscaling
-    if (Config::Instance()->OutputScalingUseFsr.value_or(true))
+    if (_upsample || Config::Instance()->OutputScalingUseFsr.value_or(true))
     {
-        // [numthreads(64, 1, 1)]
         dispatchWidth = static_cast<UINT>((outDesc.Width + InNumThreadsX - 1) / InNumThreadsX);
         dispatchHeight = (outDesc.Height + InNumThreadsY - 1) / InNumThreadsY;
     }
     else
     {
-        if (_upsample)
-        {
-            dispatchWidth = static_cast<UINT>((outDesc.Width + InNumThreadsX - 1) / InNumThreadsX);
-            dispatchHeight = (outDesc.Height + InNumThreadsY - 1) / InNumThreadsY;
-        }
-        else
-        {
-            dispatchWidth = static_cast<UINT>((inDesc.Width + InNumThreadsX - 1) / InNumThreadsX);
-            dispatchHeight = (inDesc.Height + InNumThreadsY - 1) / InNumThreadsY;
-        }
+        dispatchWidth = static_cast<UINT>((inDesc.Width + InNumThreadsX - 1) / InNumThreadsX);
+        dispatchHeight = (inDesc.Height + InNumThreadsY - 1) / InNumThreadsY;
     }
 
     InCmdList->Dispatch(dispatchWidth, dispatchHeight, 1);
@@ -265,7 +255,7 @@ bool BS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     return true;
 }
 
-BS_Dx12::BS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : _name(InName), _device(InDevice), _upsample(InUpsample)
+OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : _name(InName), _device(InDevice), _upsample(InUpsample)
 {
     if (InDevice == nullptr)
     {
@@ -487,7 +477,7 @@ BS_Dx12::BS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
     _init = _srvHeap[2] != nullptr;
 }
 
-BS_Dx12::~BS_Dx12()
+OS_Dx12::~OS_Dx12()
 {
     if (!_init)
         return;
