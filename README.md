@@ -76,18 +76,19 @@ Most games have checks for enabling DLSS options. To enable DLSS options in thes
 OptiScaler implements all necessary API methods of DLSS2 & NVAPI to act as a man in the middle. So from games perspective it's using DLSS2 but actually using OptiScaler and calls are interpreted/redirected to XeSS & FSR2 or DLSS with OptiScaler's tweaks and enchancements.
 
 ## Features
-* Supports multiple upscaling backends (XeSS, FSR 2.1.2, FSR 2.2.1, FSR 3.1, DLSS)
-* Supports DLSS 3.7 and above (check installation for 3.7 specific instructions)
+* Supports multiple upscaling backends (XeSS, FSR 2.1.2, FSR 2.2.1, FSR 3.1 and DLSS)
+* Supports DLSS 3.7 and above (check [installation instructions](#install-as-non-nvngx))
 * Supports DLSS-D (Ray Reconstruction) on Nvidia cards (Supports changing presets and using OptiScaler enchanchements)
 * Ability to modify DLSS/DLSS-D presets on the fly
-* Supports XeSS v1.3.X's Ultra Performance, NativeAA modes (**Not using XeSS 1.3.X scaling ratios**) 
+* Supports XeSS v1.3.x's Ultra Performance, NativeAA modes (**Not using XeSS 1.3.x scaling ratios**) 
 * An [in-game menu](https://github.com/cdozdil/OptiScaler/blob/master/Config.md) for tuning and saving settings on the fly (Shortcut key is **INSERT**)
 * Full integration with [DLSS Enabler](https://www.nexusmods.com/site/mods/757) for DLSS-FG support
-* **RCAS** support with **MAS** (Motion Adaptive Sharpening) for all Dx12 & Dx11 with Dx12 upscalers
-* **Output Scaling** option (0.5x to 3.0x) for backends running on Dx12 & Dx11 with Dx12
+* **RCAS** support with **MAS** (Motion Adaptive Sharpening) for all Dx12 & Dx11withDx12 upscalers
+* **Output Scaling** option (0.5x to 3.0x) for backends running on Dx12 & Dx11withDx12
 * Supports DXGI spoofing (when running as `dxgi.dll`) as Nvidia GPUs (with XeSS detection to enable XMX on Intel Arc cards)
-* Supports Vulkan spoofing (needs to be enabled from `nvngi.ini`) as Nvidia GPUs (not working for Doom Eternal and RTX Remix)
+* Supports Vulkan spoofing (needs to be enabled from `nvngi.ini`) as Nvidia GPUs (not working for Doom Eternal)
 * Supports loading specific `nvapi64.dll` file (when running in non-nvngx mode)
+* Supports loading specific `nvngx_dlss.dll` file (when running in non-nvngx mode)
 * Supports overriding scaling ratios
 * Supports overriding DRS range
 * Autofixes for [colored lights](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#resource-barriers-dx12-only) on Unreal Engine & AMD graphics cards 
