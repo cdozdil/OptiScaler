@@ -21,6 +21,10 @@ Just place version.dll file next to games executable.
 ### NVAPI
 For spoofing NVAPI calls nvapi-dummy can be used. Mod tries to implement most used calls and respond to almost all calls.
 ##### Usage 
+Just put `nvapi64.dll` next to OptiScaler and set `OverrideNvapiDll=true` from `nvngx.ini`. This only works when OptiScaler is working as non-nvngx (not as `nvngx.dll`).
+
+For using without OptiScaler:  
+
 You need to put `nvapi64.dll` file to your `%WINDIR%\System32` but **be careful!**
 * If you are an NVidia user **backup your original file** and restore after mod usage is over.
 * Do not use this mod with online games, it might cause anti cheat issues or banning.
@@ -42,6 +46,6 @@ dxgi.customDeviceDesc = "NVIDIA GeForce RTX 4090"
 ### NVAPI
 For spoofing NVAPI with Proton set this envvar `PROTON_FORCE_NVAPI=1`
 
-## Goghor's DLSS Enabler's
+## Goghor's DLSS Unlocker's
 Goghor have created DLSS Enabler mods for a lot of games which can be found on his [Nexus](https://www.nexusmods.com/spidermanmilesmorales/users/12564231?tab=user+files&BH=0) profile.   
 For example as far as I know for Doom Eternal still only way to enable DLSS is his mod.
