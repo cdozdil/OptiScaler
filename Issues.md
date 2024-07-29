@@ -1,15 +1,14 @@
 # Known Issues
 
 ## In-game Menu
-In-game menu is a recent addition and may experience on certain condutions.
 
 * Some games do not release mouse control, kayboard & gamepad controls should still work in these situations.
-* On some system and game combinations, opening the in-game menu may cause the game to crash or cause graphical corruption (especially in Unreal Engine 5 games).
+* On some system and game combinations, opening the old in-game menu may cause the game to crash or cause graphical corruption (especially in Unreal Engine 5 games).
 
 ![Banishers](/images/banishers.png)<br>*Banishers: Ghosts of New Eden*
 
 * Changing settings mostly tested but might cause crashes (especially changing backends or reinitializing backends).
-* In games that use Unity Engine in-game menu will be upside down.
+* In games that use Unity Engine old in-game menu will be upside down.
 
 ![barrel roll](/images/upsidedown.png)<br>*Sons of Forest*
 
@@ -36,13 +35,12 @@ Some users have reported that when using XeSS upscaler backend, the result is a 
 ## Minecraft RTX
 XeSS 1.1 has the best compatibility with Minecraft RTX. But I've seen reports that with [various launchers](https://github.com/MCMrARM/mc-w10-version-launcher/releases) it's possible to use 1.2 and above as well.
 
-## CAS (Conrast Adaptive Sharpening)
-CAS added to XeSS backends to mitigate softness of upscaler, but CAS can also cause some image problems.
-
-![cas](/images/cas.png)<br>*Deep Rock Galactic*
-
-1. Bloom removed
-2. Hue is changed
+## Shader Compilation error on Linux
+If you are using OptiScaler with Linux and you have problems with `RCAS`, `Reactive Mask Bias` or `Output Scaling`, you will probably notice this message in your logs.
+```
+CompileShader error compiling shader : <anonymous>:83:26: E5005: Function "rcp" is not defined.
+```
+To solve this problem you need to install `d3dcompiler_47` with `WineTricks` or `ProtonTricks`. OptiScaler uses custom shaders for these features and depends on this compiler file to compile these shaders at runtime. 
 
 ## Performance Issues
 * In general XeSS is heavier than FSR for GPUs so it's expected to be have lower performance even on Intel Arc GPUs.
