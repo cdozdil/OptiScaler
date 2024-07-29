@@ -3,15 +3,31 @@ Except from first generation of DLSS2 games they all have some kind of NVidia ve
 To bypass these checks modders have developed some tools.
 
 ## Windows
-### DirectX
-For spoofing DXGI adapter checks d3d12-proxy can be used. This mod reports your GPU as RTX 4090.   
+### DXGI
+OptiScaler have built-in DXGI spoofing option which is enabled by default when working as non-nvngx (not as `nvngx.dll`).  
+
+#### d3d12-proxy
+Alternatively for spoofing DXGI adapter checks d3d12-proxy can be used. This mod reports your GPU as RTX 4090.   
 ##### Usage 
 Just place dxgi.dll file next to games executable.  
 ##### Link 
 [d3d12-proxy](https://github.com/cdozdil/d3d12-proxy/releases)   
 
 ### Vulkan
-For spoofing `GetPhysicalDeviceProperties` checks vulkan-spoofer can be used. This mod reports your GPU as RTX 4090.   
+OptiScaler have built-in Vulkan spoofing options when working as non-nvngx (not as `nvngx.dll`).  
+Vulkan spoofing by default disabled and should be enabled from `nvngx.ini` 
+```ini
+; Enables Nvidia GPU spoofing for Vulkan
+; true or false - Default (auto) is false
+Vulkan=auto
+
+; Enables Nvidia extension spoofing for Vulkan
+; true or false - Default (auto) is false
+VulkanExtensionSpoofing=auto
+```
+
+#### vulkan-spoofer
+Alternatively for spoofing `GetPhysicalDeviceProperties` checks vulkan-spoofer can be used. This mod reports your GPU as RTX 4090.   
 Compatiblity is a bit hit and miss, works for No Man's Sky but not working with Doom Eternal.  
 ##### Usage 
 Just place version.dll file next to games executable.  
