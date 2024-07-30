@@ -11,7 +11,7 @@ RWTexture2D<float4> OutputTexture : register(u0);
 
 float bicubic_weight(float x)
 {
-    float a = -0.5f;
+    float a = -0.75f;
     float absX = abs(x);
 
     if (absX <= 1.0f)
