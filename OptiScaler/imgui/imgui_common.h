@@ -1423,8 +1423,10 @@ public:
                         ImGui::EndDisabled();
 
                         if (cf != nullptr)
-                            ImGui::Text("Output Scaling is %s: %dx%d -> %dx%d", Config::Instance()->OutputScalingEnabled.value_or(false) ? "ENABLED" : "DISABLED",
-                                        cf->RenderWidth(), cf->RenderHeight(), (uint32_t)(cf->DisplayWidth() * _ssRatio), (uint32_t)(cf->DisplayHeight() * _ssRatio));
+                        {
+                            ImGui::Text("Output Scaling is %s, target res: %dx%d", Config::Instance()->OutputScalingEnabled.value_or(false) ? "ENABLED" : "DISABLED",
+                                        (uint32_t)(cf->DisplayWidth() * _ssRatio), (uint32_t)(cf->DisplayHeight() * _ssRatio));
+                        }
 
                         ImGui::EndDisabled();
                     }
