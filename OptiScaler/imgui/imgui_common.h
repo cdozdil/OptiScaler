@@ -1418,9 +1418,7 @@ public:
                         }
                         ImGui::EndDisabled();
 
-                        ImGui::BeginDisabled(!_ssEnabled ||
-                                             ((currentBackend == "xess" || currentBackend == "dlss") &&
-                                             Config::Instance()->CurrentFeature->RenderWidth() > Config::Instance()->CurrentFeature->DisplayWidth()));
+                        ImGui::BeginDisabled(!_ssEnabled || Config::Instance()->CurrentFeature->RenderWidth() > Config::Instance()->CurrentFeature->DisplayWidth());
                         ImGui::SliderFloat("Ratio", &_ssRatio, 0.5f, 3.0f, "%.2f");
                         ImGui::EndDisabled();
 

@@ -631,6 +631,8 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         _contextDesc.maxRenderSize.width = RenderWidth();
         _contextDesc.maxRenderSize.height = RenderHeight();
 
+        Config::Instance()->OutputScalingMultiplier = 1.0f;
+
         // if output scaling active let it to handle downsampling
         if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
         {
@@ -638,8 +640,9 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
             _contextDesc.maxUpscaleSize.height = _contextDesc.maxRenderSize.height;
 
             // update target res
-            _targetWidth = _contextDesc.maxUpscaleSize.width;
-            _targetHeight = _contextDesc.maxUpscaleSize.height;
+            _targetWidth = _contextDesc.maxRenderSize.width;
+            _targetHeight = _contextDesc.maxRenderSize.height;
+
         }
         else
         {

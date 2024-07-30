@@ -267,7 +267,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
         if (Config::Instance()->FsrUseMaskForTransparency.value_or(true))
             params.transparencyAndComposition = ffxApiGetResourceDX12(dx11Reactive.Dx12Resource, FFX_API_RESOURCE_STATE_COMPUTE_READ);
 
-        if (Config::Instance()->DlssReactiveMaskBias.value_or(0.45f) > 0.0f && 
+        if (Config::Instance()->DlssReactiveMaskBias.value_or(0.45f) > 0.0f &&
             Bias->IsInit() && Bias->CreateBufferResource(Dx12Device, dx11Reactive.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
         {
             Bias->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -712,6 +712,8 @@ bool FSR31FeatureDx11on12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         _contextDesc.maxRenderSize.width = RenderWidth();
         _contextDesc.maxRenderSize.height = RenderHeight();
 
+        Config::Instance()->OutputScalingMultiplier = 1.0f;
+
         // if output scaling active let it to handle downsampling
         if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
         {
@@ -719,8 +721,9 @@ bool FSR31FeatureDx11on12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
             _contextDesc.maxUpscaleSize.height = _contextDesc.maxRenderSize.height;
 
             // update target res
-            _targetWidth = _contextDesc.maxUpscaleSize.width;
-            _targetHeight = _contextDesc.maxUpscaleSize.height;
+            _targetWidth = _contextDesc.maxRenderSize.width;
+            _targetHeight = _contextDesc.maxRenderSize.height;
+
         }
         else
         {

@@ -579,6 +579,8 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         _contextDesc.maxRenderSize.width = RenderWidth();
         _contextDesc.maxRenderSize.height = RenderHeight();
 
+        Config::Instance()->OutputScalingMultiplier = 1.0f;
+        
         // if output scaling active let it to handle downsampling
         if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
         {
@@ -586,8 +588,8 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
             _contextDesc.displaySize.height = _contextDesc.maxRenderSize.height;
 
             // update target res
-            _targetWidth = _contextDesc.displaySize.width;
-            _targetHeight = _contextDesc.displaySize.height;
+            _targetWidth = _contextDesc.maxRenderSize.width;
+            _targetHeight = _contextDesc.maxRenderSize.height;
         }
         else
         {
@@ -602,9 +604,6 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         _contextDesc.displaySize.width = TargetWidth();
         _contextDesc.displaySize.height = TargetHeight();
     }
-
-    _contextDesc.displaySize.width = TargetWidth();
-    _contextDesc.displaySize.height = TargetHeight();
 
     LOG_DEBUG("ffxFsr2ContextCreate!");
 

@@ -27,7 +27,7 @@ bool FSR2FeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 
     return false;
 }
-    
+
 bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters)
 {
     LOG_FUNC();
@@ -256,7 +256,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
             if (Config::Instance()->FsrUseMaskForTransparency.value_or(true))
                 params.transparencyAndComposition = ffxGetResourceDX12(&_context, paramReactiveMask, (wchar_t*)L"FSR2_Transparency", FFX_RESOURCE_STATE_COMPUTE_READ);
 
-            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.45f) > 0.0f && 
+            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.45f) > 0.0f &&
                 Bias->IsInit() && Bias->CreateBufferResource(Device, paramReactiveMask, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
             {
                 Bias->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -597,15 +597,18 @@ bool FSR2FeatureDx12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         _contextDesc.maxRenderSize.width = RenderWidth();
         _contextDesc.maxRenderSize.height = RenderHeight();
 
+        Config::Instance()->OutputScalingMultiplier = 1.0f;
+
         // if output scaling active let it to handle downsampling
         if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
         {
+
             _contextDesc.displaySize.width = _contextDesc.maxRenderSize.width;
             _contextDesc.displaySize.height = _contextDesc.maxRenderSize.height;
 
             // update target res
-            _targetWidth = _contextDesc.displaySize.width;
-            _targetHeight = _contextDesc.displaySize.height;
+            _targetWidth = _contextDesc.maxRenderSize.width;
+            _targetHeight = _contextDesc.maxRenderSize.height;
         }
         else
         {
@@ -620,9 +623,6 @@ bool FSR2FeatureDx12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         _contextDesc.displaySize.width = TargetWidth();
         _contextDesc.displaySize.height = TargetHeight();
     }
-
-    _contextDesc.displaySize.width = TargetWidth();
-    _contextDesc.displaySize.height = TargetHeight();
 
 #if _DEBUG
     _contextDesc.flags |= FFX_FSR2_ENABLE_DEBUG_CHECKING;

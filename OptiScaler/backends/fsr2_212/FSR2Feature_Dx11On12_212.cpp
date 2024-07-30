@@ -231,7 +231,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
         {
             Bias->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.45f) > 0.0f && 
+            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.45f) > 0.0f &&
                 Bias->Dispatch(Dx12Device, Dx12CommandList, dx11Reactive.Dx12Resource, Config::Instance()->DlssReactiveMaskBias.value_or(0.45f), Bias->Buffer()))
             {
                 Bias->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -661,6 +661,8 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         _contextDesc.maxRenderSize.width = RenderWidth();
         _contextDesc.maxRenderSize.height = RenderHeight();
 
+        Config::Instance()->OutputScalingMultiplier = 1.0f;
+
         // if output scaling active let it to handle downsampling
         if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
         {
@@ -668,8 +670,8 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
             _contextDesc.displaySize.height = _contextDesc.maxRenderSize.height;
 
             // update target res
-            _targetWidth = _contextDesc.displaySize.width;
-            _targetHeight = _contextDesc.displaySize.height;
+            _targetWidth = _contextDesc.maxRenderSize.width;
+            _targetHeight = _contextDesc.maxRenderSize.height;
         }
         else
         {
@@ -684,9 +686,6 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         _contextDesc.displaySize.width = TargetWidth();
         _contextDesc.displaySize.height = TargetHeight();
     }
-
-    _contextDesc.displaySize.width = TargetWidth();
-    _contextDesc.displaySize.height = TargetHeight();
 
     LOG_DEBUG("ffxFsr2ContextCreate!");
 
