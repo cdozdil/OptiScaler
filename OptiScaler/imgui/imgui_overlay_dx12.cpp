@@ -387,19 +387,17 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
 
     newDesc.MaxLOD = pDesc->MaxLOD;
     newDesc.MinLOD = pDesc->MinLOD;
+    newDesc.MipLODBias = pDesc->MipLODBias;
 
-    if (Config::Instance()->MipmapBiasOverride.has_value())
+    if (newDesc.MipLODBias < 0.0f)
     {
-        if (pDesc->MipLODBias < 0.0f)
+        if (Config::Instance()->MipmapBiasOverride.has_value())
         {
             LOG_INFO("Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
             newDesc.MipLODBias = Config::Instance()->MipmapBiasOverride.value();
-            Config::Instance()->lastMipBias = newDesc.MipLODBias;
         }
-    }
-    else
-    {
-        newDesc.MipLODBias = pDesc->MipLODBias;
+
+        Config::Instance()->lastMipBias = newDesc.MipLODBias;
     }
 
     return orgCreateSampler(device, &newDesc, DestDescriptor);
@@ -1914,7 +1912,7 @@ static bool BindAll(HWND InHWnd, ID3D12Device* InDevice)
                         else
                         {
                             LOG_DEBUG("CreateSwapChainForHwnd_SL factory: {0}null, cq: {1}null, oCreateSwapChainForHwnd_SL: {2}null",
-                                          !factory ? "" : "not ", !cq ? "" : "not ", !oCreateSwapChainForHwnd_SL ? "" : "not ");
+                                      !factory ? "" : "not ", !cq ? "" : "not ", !oCreateSwapChainForHwnd_SL ? "" : "not ");
                         }
 
                         if (swapChain3 != nullptr)
