@@ -625,6 +625,7 @@ bool FSR2FeatureDx11on12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         LOG_INFO("contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
     }
 
+    // output scaling
     if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
     {
         float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
@@ -650,10 +651,10 @@ bool FSR2FeatureDx11on12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     }
 
     // extended limits changes how resolution 
-    if (Config::Instance()->ExtendedLimits.value_or(false))
+    if (RenderWidth() > DisplayWidth())
     {
-        _contextDesc.maxRenderSize.width = RenderWidth() < TargetWidth() ? TargetWidth() : RenderWidth();
-        _contextDesc.maxRenderSize.height = RenderHeight() < TargetHeight() ? TargetHeight() : RenderHeight();
+        _contextDesc.maxRenderSize.width = RenderWidth();
+        _contextDesc.maxRenderSize.height = RenderHeight();
 
         // if output scaling active let it to handle downsampling
         if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
@@ -667,8 +668,8 @@ bool FSR2FeatureDx11on12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         }
         else
         {
-            _contextDesc.displaySize.width = TargetWidth();
-            _contextDesc.displaySize.height = TargetHeight();
+            _contextDesc.displaySize.width = DisplayWidth();
+            _contextDesc.displaySize.height = DisplayHeight();
         }
     }
     else
@@ -678,7 +679,6 @@ bool FSR2FeatureDx11on12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         _contextDesc.displaySize.width = TargetWidth();
         _contextDesc.displaySize.height = TargetHeight();
     }
-
 
 #if _DEBUG
     _contextDesc.flags |= FFX_FSR2_ENABLE_DEBUG_CHECKING;

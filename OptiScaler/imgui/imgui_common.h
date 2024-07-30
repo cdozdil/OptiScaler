@@ -1375,7 +1375,13 @@ public:
                             _ssUseFsr = Config::Instance()->OutputScalingUseFsr.value_or(true);
                         }
 
+
+
+                        ImGui::BeginDisabled((currentBackend == "xess" || currentBackend == "dlss") &&
+                                             Config::Instance()->CurrentFeature->RenderWidth() > Config::Instance()->CurrentFeature->DisplayWidth());
                         ImGui::Checkbox("Enable", &_ssEnabled);
+                        ImGui::EndDisabled();
+
                         ShowHelpMarker("Upscales the image internally to a selected resolution\n"
                                        "Then scales it to your resolution\n\n"
                                        "Values <1.0 might make upscaler less expensive\n"
@@ -1383,7 +1389,6 @@ public:
                                        "You can see each step at the bottom of this menu");
 
                         ImGui::SameLine(0.0f, 6.0f);
-
 
                         ImGui::BeginDisabled(!_ssEnabled);
                         ImGui::Checkbox("Use FSR 1", &_ssUseFsr);
@@ -1397,7 +1402,6 @@ public:
                             _ssUseFsr != Config::Instance()->OutputScalingUseFsr.value_or(true);
 
                         ImGui::BeginDisabled(!applyEnabled);
-
                         if (ImGui::Button("Apply Change"))
                         {
                             Config::Instance()->OutputScalingEnabled = _ssEnabled;
@@ -1412,11 +1416,11 @@ public:
 
                             Config::Instance()->changeBackend = true;
                         }
-
                         ImGui::EndDisabled();
 
-
-                        ImGui::BeginDisabled(!_ssEnabled);
+                        ImGui::BeginDisabled(!_ssEnabled ||
+                                             ((currentBackend == "xess" || currentBackend == "dlss") &&
+                                             Config::Instance()->CurrentFeature->RenderWidth() > Config::Instance()->CurrentFeature->DisplayWidth()));
                         ImGui::SliderFloat("Ratio", &_ssRatio, 0.5f, 3.0f, "%.2f");
                         ImGui::EndDisabled();
 
@@ -1815,7 +1819,7 @@ public:
                     ImGui::SeparatorText("Advanced Settings");
 
                     bool advancedSettings = Config::Instance()->AdvancedSettings.value_or(false);
-                    if (ImGui::Checkbox("Enable Advanced Settings", &advancedSettings))
+                    if (ImGui::Checkbox("Show Advanced Settings", &advancedSettings))
                         Config::Instance()->AdvancedSettings = advancedSettings;
 
                     if (advancedSettings)

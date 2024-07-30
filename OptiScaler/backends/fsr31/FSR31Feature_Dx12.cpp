@@ -626,10 +626,10 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     }
 
     // extended limits changes how resolution 
-    if (Config::Instance()->ExtendedLimits.value_or(false))
+    if (RenderWidth() > DisplayWidth())
     {
-        _contextDesc.maxRenderSize.width = RenderWidth() < TargetWidth() ? TargetWidth() : RenderWidth();
-        _contextDesc.maxRenderSize.height = RenderHeight() < TargetHeight() ? TargetHeight() : RenderHeight();
+        _contextDesc.maxRenderSize.width = RenderWidth();
+        _contextDesc.maxRenderSize.height = RenderHeight();
 
         // if output scaling active let it to handle downsampling
         if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
@@ -643,8 +643,8 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         }
         else
         {
-            _contextDesc.maxUpscaleSize.width = TargetWidth();
-            _contextDesc.maxUpscaleSize.height = TargetHeight();
+            _contextDesc.maxUpscaleSize.width = DisplayWidth();
+            _contextDesc.maxUpscaleSize.height = DisplayHeight();
         }
     }
     else
