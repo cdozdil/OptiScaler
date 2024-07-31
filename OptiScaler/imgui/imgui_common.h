@@ -1435,7 +1435,7 @@ public:
                     if (Config::Instance()->AdvancedSettings.value_or(false) && Config::Instance()->Api == NVNGX_DX12)
                     {
                         // MIPMAP BIAS & Anisotropy -----------------------------
-                        ImGui::SeparatorText("Mipmap Bias & Anisotropy (Dx12)");
+                        ImGui::SeparatorText("Mipmap Bias (Dx12)");
 
                         if (Config::Instance()->MipmapBiasOverride.has_value() && _mipBias == 0.0f)
                             _mipBias = Config::Instance()->MipmapBiasOverride.value();
@@ -1445,6 +1445,39 @@ public:
                                        "Negative values will make textures sharper\n"
                                        "Positive values will make textures more blurry\n\n"
                                        "Has a small performance impact");
+
+
+                        ImGui::BeginDisabled(Config::Instance()->MipmapBiasOverride.has_value() && Config::Instance()->MipmapBiasOverride.value() == _mipBias);
+                        if (ImGui::Button("Set"))
+                            Config::Instance()->MipmapBiasOverride = _mipBias;
+                        ImGui::EndDisabled();
+
+                        ImGui::SameLine(0.0f, 6.0f);
+
+                        ImGui::BeginDisabled(!Config::Instance()->MipmapBiasOverride.has_value());
+                        if (ImGui::Button("Reset"))
+                        {
+                            Config::Instance()->MipmapBiasOverride.reset();
+                            _mipBias = 0.0f;
+                        }
+                        ImGui::EndDisabled();
+
+                        ImGui::SameLine(0.0f, 6.0f);
+
+                        if (ImGui::Button("Calculate Mipmap Bias"))
+                            _showMipmapCalcWindow = true;
+
+                        if (Config::Instance()->MipmapBiasOverride.has_value())
+                            ImGui::Text("Current : %.6f, Target: %.6f", Config::Instance()->lastMipBias, Config::Instance()->MipmapBiasOverride.value());
+                        else
+                            ImGui::Text("Current : %.6f", Config::Instance()->lastMipBias);
+
+                        ImGui::Text("New bias will be applied after resolution/preset change!");
+
+                        // MIPMAP BIAS & Anisotropy -----------------------------
+                        ImGui::SeparatorText("Anisotropy (Dx12)");
+
+                        ImGui::PushItemWidth(65.0f * Config::Instance()->MenuScale.value_or(1.0));
 
                         auto selectedAF = Config::Instance()->AnisotropyOverride.has_value() ? std::to_string(Config::Instance()->AnisotropyOverride.value()) : "Auto";
                         if (ImGui::BeginCombo("Force Anisotropy", selectedAF.c_str()))
@@ -1470,29 +1503,9 @@ public:
                             ImGui::EndCombo();
                         }
 
-                        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "These will be applied after resolution/preset change!");
+                        ImGui::PopItemWidth();
 
-                        if (ImGui::Button("Set"))
-                            Config::Instance()->MipmapBiasOverride = _mipBias;
-
-                        ImGui::SameLine(0.0f, 6.0f);
-
-                        if (ImGui::Button("Reset"))
-                        {
-                            Config::Instance()->MipmapBiasOverride.reset();
-                            _mipBias = 0.0f;
-                        }
-
-                        ImGui::SameLine(0.0f, 6.0f);
-
-                        if (ImGui::Button("Calculate"))
-                        {
-                            _showMipmapCalcWindow = true;
-                        }
-
-                        ImGui::SameLine(0.0f, 6.0f);
-
-                        ImGui::Text("Current : %.6f", Config::Instance()->lastMipBias);
+                        ImGui::Text("New value will be applied after resolution/preset change!");
 
                         // Non-DLSS hotfixes -----------------------------
                         if (currentBackend != "dlss")
