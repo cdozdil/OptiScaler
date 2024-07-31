@@ -1194,7 +1194,7 @@ public:
 
                     // RCAS -----------------
                     if (Config::Instance()->Api == NVNGX_DX12 ||
-                        (Config::Instance()->Api == NVNGX_DX11 && currentBackend != "fsr22" && currentBackend != "dlss"))
+                        (Config::Instance()->Api == NVNGX_DX11 && currentBackend != "dlss"))
                     {
                         ImGui::SeparatorText("RCAS Settings");
 
@@ -1475,12 +1475,12 @@ public:
                         ImGui::Text("Will be applied after RESOLUTION or PRESENT change !!!");
 
                         // MIPMAP BIAS & Anisotropy -----------------------------
-                        ImGui::SeparatorText("Anisotropy (Dx12)");
+                        ImGui::SeparatorText("Anisotropic Filtering (Dx12)");
 
                         ImGui::PushItemWidth(65.0f * Config::Instance()->MenuScale.value_or(1.0));
 
                         auto selectedAF = Config::Instance()->AnisotropyOverride.has_value() ? std::to_string(Config::Instance()->AnisotropyOverride.value()) : "Auto";
-                        if (ImGui::BeginCombo("Force Anisotropy", selectedAF.c_str()))
+                        if (ImGui::BeginCombo("Force Anisotropic Filtering", selectedAF.c_str()))
                         {
                             if (ImGui::Selectable("Auto", !Config::Instance()->AnisotropyOverride.has_value()))
                                 Config::Instance()->AnisotropyOverride.reset();
