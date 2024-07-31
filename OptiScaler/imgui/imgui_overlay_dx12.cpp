@@ -373,9 +373,9 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
         (pDesc->Filter == D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT ||
         pDesc->Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT ||
         pDesc->Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR ||
-        pDesc->Filter <= D3D12_FILTER_ANISOTROPIC))
+        pDesc->Filter == D3D12_FILTER_ANISOTROPIC))
     {
-        LOG_INFO("Overriding Anisotrpic ({2:X}) filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
+        LOG_INFO("Overriding Anisotrpic ({2}) filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
         newDesc.Filter = D3D12_FILTER_ANISOTROPIC;
         newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
     }
