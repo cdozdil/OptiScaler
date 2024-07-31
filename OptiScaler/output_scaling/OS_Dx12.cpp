@@ -1,7 +1,7 @@
 #include "OS_Dx12.h"
 
-// FSR compute shader is from : https://github.com/fholger/vrperfkit/
 #define A_CPU
+// FSR compute shader is from : https://github.com/fholger/vrperfkit/
 
 #include "precompile/BCDS_Shader.h"
 #include "precompile/BCUS_Shader.h"
@@ -193,8 +193,8 @@ bool OS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
         UpscaleShaderConstants constants{};
 
         FsrEasuCon(constants.const0, constants.const1, constants.const2, constants.const3,
-                   inDesc.Width, inDesc.Height, 
                    Config::Instance()->CurrentFeature->TargetWidth(), Config::Instance()->CurrentFeature->TargetHeight(),
+                   inDesc.Width, inDesc.Height,
                    Config::Instance()->CurrentFeature->DisplayWidth(), Config::Instance()->CurrentFeature->DisplayHeight());
 
         // Copy the updated constant buffer data to the constant buffer resource
@@ -400,7 +400,7 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
         else
         {
             if (_upsample)
-                computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcus_cso), sizeof(bcus_cso));
+            computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcus_cso), sizeof(bcus_cso));
             else
                 computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcds_cso), sizeof(bcds_cso));
         }
