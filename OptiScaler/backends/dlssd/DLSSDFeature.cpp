@@ -128,7 +128,7 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
     InParameters->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, featureFlags);
 
     // Resolution -----------------------------
-    if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+    if (Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
     {
         float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
 

@@ -224,7 +224,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
 
     GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
-    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
+    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false) && RenderWidth() != DisplayWidth();
 
     LOG_DEBUG("Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
@@ -707,7 +707,7 @@ bool FSR31FeatureDx11on12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     }
 
     // extended limits changes how resolution 
-    if (RenderWidth() > DisplayWidth())
+    if (Config::Instance()->ExtendedLimits.value_or(false) && RenderWidth() > DisplayWidth())
     {
         _contextDesc.maxRenderSize.width = RenderWidth();
         _contextDesc.maxRenderSize.height = RenderHeight();
@@ -733,8 +733,8 @@ bool FSR31FeatureDx11on12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     }
     else
     {
-        _contextDesc.maxRenderSize.width = TargetWidth();
-        _contextDesc.maxRenderSize.height = TargetHeight();
+        _contextDesc.maxRenderSize.width = TargetWidth() > DisplayWidth() ? TargetWidth() : DisplayWidth();
+        _contextDesc.maxRenderSize.height = TargetHeight() > DisplayHeight() ? TargetHeight() : DisplayHeight();
         _contextDesc.maxUpscaleSize.width = TargetWidth();
         _contextDesc.maxUpscaleSize.height = TargetHeight();
     }
