@@ -1472,7 +1472,7 @@ public:
                         else
                             ImGui::Text("Current : %.6f", Config::Instance()->lastMipBias);
 
-                        ImGui::Text("New bias will be applied after resolution/preset change!");
+                        ImGui::Text("Will be applied after RESOLUTION or PRESENT change !!!");
 
                         // MIPMAP BIAS & Anisotropy -----------------------------
                         ImGui::SeparatorText("Anisotropy (Dx12)");
@@ -1505,7 +1505,7 @@ public:
 
                         ImGui::PopItemWidth();
 
-                        ImGui::Text("New value will be applied after resolution/preset change!");
+                        ImGui::Text("Will be applied after RESOLUTION or PRESENT change !!!");
 
                         // Non-DLSS hotfixes -----------------------------
                         if (currentBackend != "dlss")
@@ -1521,13 +1521,12 @@ public:
                             AddResourceBarrier("Output", &Config::Instance()->OutputResourceBarrier);
 
                             // HOTFIXES -----------------------------
-                            ImGui::SeparatorText("Hotfixes (Dx12)");
+                            ImGui::SeparatorText("Root Signatures (Dx12)");
 
-                            if (bool crs = Config::Instance()->RestoreComputeSignature.value_or(false); ImGui::Checkbox("Restore Compute RS", &crs))
+                            if (bool crs = Config::Instance()->RestoreComputeSignature.value_or(false); ImGui::Checkbox("Restore Compute Root Signature", &crs))
                                 Config::Instance()->RestoreComputeSignature = crs;
-
-                            ImGui::SameLine(0.0f, 6.0f);
-                            if (bool grs = Config::Instance()->RestoreGraphicSignature.value_or(false); ImGui::Checkbox("Restore Graphic RS", &grs))
+                                                        
+                            if (bool grs = Config::Instance()->RestoreGraphicSignature.value_or(false); ImGui::Checkbox("Restore Graphic Root Signature", &grs))
                                 Config::Instance()->RestoreGraphicSignature = grs;
                         }
                     }
