@@ -4,7 +4,7 @@
 
 #include <dxgi1_4.h>
 
-LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+// LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 typedef HRESULT(__fastcall* PFN_Present)(IDXGISwapChain*, UINT, UINT);
 typedef HRESULT(__fastcall* PFN_Present1)(IDXGISwapChain*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*);
@@ -15,20 +15,21 @@ typedef HRESULT(__fastcall* PFN_CreateSwapChainForHwnd)(IDXGIFactory*, IUnknown*
 typedef HRESULT(__fastcall* PFN_CreateSwapChainForCoreWindow)(IDXGIFactory*, IUnknown*, IUnknown*, const DXGI_SWAP_CHAIN_DESC1*, IDXGIOutput*, IDXGISwapChain1**);
 typedef HRESULT(__fastcall* PFN_CreateSwapChainForComposition)(IDXGIFactory*, IUnknown*, const DXGI_SWAP_CHAIN_DESC1*, IDXGIOutput*, IDXGISwapChain1**);
 
-namespace ImGuiOverlayBase
+class ImGuiOverlayBase
 {
-	HWND Handle();
+public:
+	static HWND Handle();
 
-	void Dx11Ready();
-	void Dx12Ready();
-	void VulkanReady();
+	static void Dx11Ready();
+	static void Dx12Ready();
+	static void VulkanReady();
 
-	bool IsInited();
-	bool IsVisible();
-	bool IsResetRequested();
+	static bool IsInited();
+	static bool IsVisible();
+	static bool IsResetRequested();
 
-	void Init(HWND InHandle);
-	void RenderMenu();
-	void Shutdown();
-	void HideMenu();
-}
+	static void Init(HWND InHandle);
+	static void RenderMenu();
+	static void Shutdown();
+	static void HideMenu();
+};
