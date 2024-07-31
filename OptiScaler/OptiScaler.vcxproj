@@ -82,7 +82,7 @@
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
     <TargetName>dxgi</TargetName>
-    <OutDir>D:\Folders\Games\Deep Rock Galactic\FSD\Binaries\Win64\</OutDir>
+    <OutDir>D:\Folders\Games\God of War\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -251,6 +251,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="pch.h" />
     <ClInclude Include="rcas\precompile\RCAS_Shader.h" />
     <ClInclude Include="rcas\RCAS_Common.h" />
+    <ClInclude Include="rcas\RCAS_Dx11.h" />
     <ClInclude Include="rcas\RCAS_Dx12.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Util.h" />
@@ -314,6 +315,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="backends\xess\XeSSFeature_Dx12.cpp" />
     <ClCompile Include="backends\xess\XeSSFeature_Dx12.h" />
     <ClCompile Include="output_scaling\OS_Dx12.cpp" />
+    <ClCompile Include="rcas\RCAS_Dx11.cpp" />
     <ClCompile Include="rcas\RCAS_Dx12.cpp" />
     <ClCompile Include="Util.cpp" />
   </ItemGroup>
