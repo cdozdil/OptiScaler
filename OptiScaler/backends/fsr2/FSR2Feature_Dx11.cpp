@@ -31,6 +31,8 @@ bool FSR2FeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
         if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
             Imgui = std::make_unique<Imgui_Dx11>(Util::GetProcessWindow(), Device);
 
+        RCAS = std::make_unique<RCAS_Dx11>("RCAS", InDevice);
+        
         return true;
     }
 
@@ -241,6 +243,9 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
     if (!IsInited())
         return false;
 
+    if (!RCAS->IsInit())
+        Config::Instance()->RcasEnabled = false;
+
     FfxFsr2DispatchDescription params{};
 
     params.commandList = InContext;
@@ -255,6 +260,30 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
     GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
     LOG_DEBUG("Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
+
+    float sharpness = 0.0f;
+    if (Config::Instance()->OverrideSharpness.value_or(false))
+    {
+        sharpness = Config::Instance()->Sharpness.value_or(0.3);
+    }
+    else if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &sharpness) == NVSDK_NGX_Result_Success)
+    {
+        if (sharpness > 1.0f)
+            sharpness = 1.0f;
+
+        _sharpness = sharpness;
+    }
+
+    if (Config::Instance()->RcasEnabled.value_or(false))
+    {
+        params.enableSharpening = false;
+        params.sharpness = 0.0f;
+    }
+    else
+    {
+        params.enableSharpening = sharpness > 0.0f;
+        params.sharpness = sharpness;
+    }
 
     ID3D11Resource* paramColor;
     if (InParameters->Get(NVSDK_NGX_Parameter_Color, &paramColor) != NVSDK_NGX_Result_Success)
@@ -322,6 +351,13 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
     {
         LOG_DEBUG("Output exist..");
         params.output = ffxGetResourceDX11(&_context, paramOutput, (wchar_t*)L"FSR2_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+
+        if (Config::Instance()->RcasEnabled.value_or(false) &&
+            (sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+            RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() && RCAS->CreateBufferResource(Device, (ID3D11Texture2D*)params.output.resource))
+        {
+            params.output = ffxGetResourceDX11(&_context, RCAS->Buffer(), (wchar_t*)L"FSR2_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+        }
     }
     else
     {
@@ -412,30 +448,6 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
         params.motionVectorScale.y = MVScaleY;
     }
 
-    if (Config::Instance()->OverrideSharpness.value_or(false))
-    {
-        params.enableSharpening = Config::Instance()->Sharpness.value_or(0.3) > 0.0f;
-        params.sharpness = Config::Instance()->Sharpness.value_or(0.3);
-    }
-    else
-    {
-        float shapness = 0.0f;
-        if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &shapness) == NVSDK_NGX_Result_Success)
-        {
-            _sharpness = shapness;
-
-            params.enableSharpening = shapness > 0.0f;
-
-            if (params.enableSharpening)
-            {
-                if (shapness > 1.0f)
-                    params.sharpness = 1.0f;
-                else
-                    params.sharpness = shapness;
-            }
-        }
-    }
-
     if (IsDepthInverted())
     {
         params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.01f);
@@ -467,6 +479,30 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
     {
         LOG_ERROR("ffxFsr2ContextDispatch error: {0}", ResultToString(result));
         return false;
+    }
+
+    // apply rcas
+    if (Config::Instance()->RcasEnabled.value_or(false) &&
+        (sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+        RCAS != nullptr && RCAS.get() != nullptr && RCAS->CanRender())
+    {
+        RcasConstants rcasConstants{};
+
+        rcasConstants.Sharpness = sharpness;
+        rcasConstants.DisplayWidth = TargetWidth();
+        rcasConstants.DisplayHeight = TargetHeight();
+        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
+        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
+        rcasConstants.DisplaySizeMV = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
+        rcasConstants.RenderHeight = RenderHeight();
+        rcasConstants.RenderWidth = RenderWidth();
+
+        if (!RCAS->Dispatch(Device, InContext, (ID3D11Texture2D*)params.output.resource, 
+            (ID3D11Texture2D*)params.motionVectors.resource, rcasConstants, (ID3D11Texture2D*)paramOutput))
+        {
+            Config::Instance()->RcasEnabled = false;
+            return true;
+        }
     }
 
     // imgui
