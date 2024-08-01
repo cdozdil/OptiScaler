@@ -1,27 +1,32 @@
-![OptiScaler](images/optiscaler.png)
+![opti-logo](https://github.com/user-attachments/assets/c7dad5da-0b29-4710-8a57-b58e4e407abd)
 
-OptiScaler is drop-in DLSS2 to XeSS/FSR2/FSR3/DLSS replacement for games. 
+OptiScaler is a middleware that enables the use of various upscaling technologies in games that only support DLSS2. It primarily allows non-Nvidia users to use upscaling in DLSS-only games by interpreting DLSS2 inputs and applying them to XeSS, FSR2, or FSR3. Additionally, it provides extensive customization options for all users, including those with Nvidia GPUs using DLSS.
 
-### Official Discord Server: [DLSS2FSR](https://discord.gg/2JDHx6kcXB)
+Key aspects of OptiScaler:
+- Enables XeSS, FSR2, and FSR3 in DLSS2-only games
+- Provides tuning options for DLSS users
+- Offers a wide range of tweaks and enhancements (RCAS & MAS, Output Scaling, DLSS Presets, Ratio & DRS Overrides etc.)
+- Allows users to fine-tune their upscaling experience
 
-**Do not use this mod with online games, it might trigger anti-cheat software and cause bans!**
+## Official Discord Server: [DLSS2FSR](https://discord.gg/2JDHx6kcXB)
 
 *This project is based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2](https://github.com/PotatoOfDoom/CyberFSR2).*
 
 ## Installation
+> **Warning**: Do not use this mod with online games. It may trigger anti-cheat software and cause bans!
+
 ### Install as `non-nvngx`
-With DLSS 3.7 Nvidia disabled signature check override, this means `nvngx.dll` or `_nvngx.dll` must be signed by Nvidia. For this override I use a method developed by **Artur** (developer of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)).  
+To overcome DLSS 3.7's signature check requirements, I implemented a method developed by **Artur** (creator of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)). Later, this method increased the compatibility of `OverlayMenu`, allowed OptiScaler to **spoof DXGI and Vulkan**, let users override the `nvapi64.dll` and even let users to force Anitsotropic Filtering and Mipmap Lod Bias. In short, this installation method allowed OptiScaler to provide more features to users.
 
-This method increases the compatibility of `OverlayMenu`, allows OptiScaler to **spoof DXGI and Vulkan** and overriding `nvapi64.dll`. In short this installation method allows OptiScaler to work with all it's features.
-
-Step-by-step installation (**Nvidia users please use step 3 only**):
+Step-by-step installation (**Nvidia users please skip to step 3**):
 1. We need an Nvidia signed dll file to bypass signature checks. All games that support DLSS come with `nvngx_dlss.dll`. Most of the time it's in the games exe folder. Some games and engines keep these third party dll's in different folders (like `plugins`). So we need to find the `nvngx_dlss.dll` file and copy it to the games exe folder. If it's already in the games exe folder, make a copy of it.
 2. Rename the copy of `nvngx_dlss.dll` in the games exe folder to `nvngx.dll`.
-3. Rename OptiScaler's `nvngx.dll` to one of the [supported filenames](#optiscaler-supports-these-filenames) (I prefer `dxgi.dll`, it also eliminates the need for the d3d12-proxy) and copy it to the games exe folder [1].
-4. If your GPU is not an Nvidia one, check [here](#spoofing-nvidia) for spoofing options.
+3. Rename OptiScaler's `nvngx.dll` to one of the [supported filenames](#optiscaler-supports-these-filenames) (I prefer `dxgi.dll`) and copy it to the games exe folder [1].
+4. Copy the renamed OptiScaler file to your game's executable folder.
+5. If your GPU is not an Nvidia one, check [GPU spoofing options](Spoofing.md).
 
 #### OptiScaler supports these filenames
-* dxgi.dll (with Nvidia GPU spoofing for non-Nvidia cards)
+* dxgi.dll 
 * winmm.dll
 * version.dll
 * wininet.dll
@@ -41,11 +46,11 @@ Alternatively you can create a new folder called `plugins` and put other mods fi
 **Please don't rename the ini file, it should stay as `nvngx.ini`**.
 
 ### Install as `nvngx.dll`
-Step-by-step installation (**Nvidia users, please skip step 4**):
+Step-by-step installation:
 1. Download the latest relase from [releases](https://github.com/cdozdil/OptiScaler/releases).
 2. Extract the contents of the archive next to the game executable file in your games folder. [1]
 3. Run `EnableSignatureOverride.reg` from `DlssOverrides` folder and confirm merge. [2][3]
-4. If your GPU is not an Nvidia one, check [here](#spoofing-nvidia) for spoofing options.
+4. If your GPU is not an Nvidia one, check [GPU spoofing options](Spoofing.md).
 
 *[1] This package contains latest version of `libxess.dll` and if game folder contains any older version of same library it would be overwritten. Consider backing up or renaming existing file.*
 
@@ -59,9 +64,6 @@ Step-by-step installation (**Nvidia users, please skip step 4**):
 
 *If your game is not on Steam, it all boils down to opening regedit inside your game's prefix and importing the file.*
 
-## Spoofing Nvidia 
-Most games have checks for enabling DLSS options. To enable DLSS options in these games there are several methods which explained [here](https://github.com/cdozdil/OptiScaler/blob/master/Spoofing.md)
-
 ## Update OptiScaler version when using DLSS Enabler  
 1. Delete/rename `dlss-enabler-upscaler.dll` in game folder
 2. Copy `nvngx.dll` file from OptiScaler 7zip file to game folder
@@ -73,7 +75,7 @@ Most games have checks for enabling DLSS options. To enable DLSS options in thes
 * If there were a `libxess.dll` file and you have backed it up delete the new file and restore the backed up file. If you have overwrote old file **DO NOT** delete `libxess.dll` file. If there were no `libxess.dll` file it's safe to delete.
 
 ## How it works?
-OptiScaler implements all necessary API methods of DLSS2 & NVAPI to act as a man in the middle. So from games perspective it's using DLSS2 but actually using OptiScaler and calls are interpreted/redirected to XeSS & FSR2 or DLSS with OptiScaler's tweaks and enchancements.
+OptiScaler implements the necessary API methods of DLSS2 & NVAPI to act as a middleware. It interprets calls from the game and redirects them to the chosen upscaling backend, allowing games designed for one technology to use another.
 
 ## Features
 * Supports multiple upscaling backends (XeSS, FSR 2.1.2, FSR 2.2.1, FSR 3.1 and DLSS)
@@ -105,27 +107,24 @@ Please check [this](Issues.md) document for known issues and possible solutions 
 Currently OptiScaler can be used with DirectX 11, DirectX 12 and Vulkan but each API has different sets of upscaler options.
 
 #### For DirectX 12
-* **XeSS 1.x.x** (Default upscaler)
-* **FSR2 2.1.2** 
-* **FSR2 2.2.1**
-* **FSR3 3.1.0 & FSR2 2.3.2**
-* **DLSS**
+- XeSS 1.x.x (Default)
+- FSR2 2.1.2, 2.2.1
+- FSR3 3.1.0 & FSR2 2.3.2
+- DLSS
+
 
 #### For DirectX 11
-* **FSR2 2.2.1** native DirectX11 implementation (Default upscaler)
-* **XeSS 1.x.x** with background DirectX12 processing [*]
-* **FSR2 2.1.2** with background DirectX12 processing [*]
-* **FSR2 2.2.1** with background DirectX12 processing [*]
-* **FSR3 3.1.0 & FSR2 2.3.2** with background DirectX12 processing [*]
-* **DLSS** native DirectX11 implementation
+- FSR2 2.2.1 (Default, native DX11)
+- XeSS 1.x.x, FSR2 2.1.2, 2.2.1, FSR3 3.1.0 & FSR2 2.3.2 (via background DX12 processing) [*]
+- DLSS (native DX11)
 
 [*] This implementations uses a background DirectX12 device to be able to use Dirext12 only upscalers. There is %10-15 performance penalty for this method but allows much more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has it's own problems which some of them avoided by OptiScaler. **These implementations does not support Linux** and will result black screen.
 
 #### For Vulkan
-* **FSR2 2.1.2** (Default upscaler)
-* **FSR2 2.2.1** 
-* **FSR3 3.1.0 & FSR2 2.3.2**
-* **DLSS**
+- FSR2 2.1.2 (Default)
+- FSR2 2.2.1
+- FSR3 3.1.0 & FSR2 2.3.2
+- DLSS
 
 ## Compilation
 
@@ -143,5 +142,5 @@ Currently OptiScaler can be used with DirectX 11, DirectX 12 and Vulkan but each
 * @LukeFZ & @Nukem for their great mods and sharing their knowledge 
 * @FakeMichau for support, testing and feature creep
 * @QM for continous testing efforts and helping me to reach games
-* @Cryio, @krispy, @krisshietala, @Lordubuntu, @scz, @Veeqo for their hard work on compatibility matrix
+* @Cryio, @krispy, @krisshietala, @Lordubuntu, @scz, @Veeqo for their hard work on [compatibility matrix](https://docs.google.com/spreadsheets/d/1qsvM0uRW-RgAYsOVprDWK2sjCqHnd_1teYAx00_TwUY)
 * @RazzerBrazzer and DLSS2FSR community for all their support
