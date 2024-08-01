@@ -26,7 +26,7 @@ Step-by-step installation (**Nvidia users please skip to step 3**):
 5. If your GPU is not an Nvidia one, check [GPU spoofing options](Spoofing.md).
 
 #### OptiScaler supports these filenames
-* dxgi.dll (with Nvidia GPU spoofing for non-Nvidia cards)
+* dxgi.dll 
 * winmm.dll
 * version.dll
 * wininet.dll
