@@ -115,7 +115,7 @@ Currently OptiScaler can be used with DirectX 11, DirectX 12 and Vulkan but each
 
 #### For DirectX 11
 - FSR2 2.2.1 (Default, native DX11)
-- XeSS 1.x.x, FSR2 2.1.2, 2.2.1, FSR3 3.1.0 (via background DX12 processing) [*]
+- XeSS 1.x.x, FSR2 2.1.2, 2.2.1, FSR3 3.1.0 & FSR2 2.3.2 (via background DX12 processing) [*]
 - DLSS (native DX11)
 
 [*] This implementations uses a background DirectX12 device to be able to use Dirext12 only upscalers. There is %10-15 performance penalty for this method but allows much more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has it's own problems which some of them avoided by OptiScaler. **These implementations does not support Linux** and will result black screen.
