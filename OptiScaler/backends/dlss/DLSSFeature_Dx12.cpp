@@ -221,7 +221,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		}
 
 		// imgui
-		if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30 && paramOutput)
+		if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30 && paramOutput != nullptr)
 		{
 			if (Imgui != nullptr && Imgui.get() != nullptr)
 			{

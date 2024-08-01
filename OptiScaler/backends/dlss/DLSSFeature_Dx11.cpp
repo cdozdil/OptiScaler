@@ -201,22 +201,26 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		}
 
 		// imgui
-		if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30 &&
-			InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput) == NVSDK_NGX_Result_Success)
+		if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30 && paramOutput != nullptr)
 		{
 			if (Imgui != nullptr && Imgui.get() != nullptr)
 			{
 				if (Imgui->IsHandleDifferent())
+				{
 					Imgui.reset();
+				}
 				else
 					Imgui->Render(InDeviceContext, paramOutput);
 			}
 			else
 			{
 				if (Imgui == nullptr || Imgui.get() == nullptr)
-					Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+					Imgui = std::make_unique<Imgui_Dx11>(Util::GetProcessWindow(), Device);
 			}
 		}
+
+		// set original output texture back
+		InParameters->Set(NVSDK_NGX_Parameter_Output, paramOutput);
 	}
 	else
 	{
