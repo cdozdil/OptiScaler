@@ -286,13 +286,4 @@ DLSSFeatureDx12::~DLSSFeatureDx12()
 		RCAS.reset();
 }
 
-float DLSSFeatureDx12::GetSharpness(const NVSDK_NGX_Parameter* InParameters)
-{
-	if (Config::Instance()->OverrideSharpness.value_or(false))
-		return Config::Instance()->Sharpness.value_or(0.3f);
 
-	float sharpness = 0.0f;
-	InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &sharpness);
-
-	return sharpness;
-}

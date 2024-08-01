@@ -1193,20 +1193,16 @@ public:
                     }
 
                     // RCAS -----------------
-                    if (Config::Instance()->Api == NVNGX_DX12 ||
-                        (Config::Instance()->Api == NVNGX_DX11 && currentBackend != "dlss"))
+                    if (Config::Instance()->Api == NVNGX_DX12 || Config::Instance()->Api == NVNGX_DX11)
                     {
                         ImGui::SeparatorText("RCAS Settings");
 
-                        bool rcasEnabled = (Config::Instance()->Api == NVNGX_DX11 && currentBackend == "xess") ||
-                            (Config::Instance()->Api == NVNGX_DX12 &&
-                             (currentBackend == "xess" ||
-                             (currentBackend == "dlss" &&
-                             (Config::Instance()->CurrentFeature->Version().major > 2 ||
-                             (Config::Instance()->CurrentFeature->Version().major == 2 && Config::Instance()->CurrentFeature->Version().minor >= 5 && Config::Instance()->CurrentFeature->Version().patch >= 1))
-                             )
-                             )
-                             );
+                        // xess or dlss version >= 2.5.1
+                        auto rcasEnabled = (currentBackend == "xess" || (currentBackend == "dlss" &&
+                                            (Config::Instance()->CurrentFeature->Version().major > 2 ||
+                                            (Config::Instance()->CurrentFeature->Version().major == 2 &&
+                                            Config::Instance()->CurrentFeature->Version().minor >= 5 &&
+                                            Config::Instance()->CurrentFeature->Version().patch >= 1))));
 
                         if (bool rcas = Config::Instance()->RcasEnabled.value_or(rcasEnabled); ImGui::Checkbox("Enable RCAS", &rcas))
                             Config::Instance()->RcasEnabled = rcas;
@@ -1357,8 +1353,7 @@ public:
                     }
 
                     // OUTPUT SCALING -----------------------------
-                    if (Config::Instance()->Api == NVNGX_DX12 ||
-                        (Config::Instance()->Api == NVNGX_DX11 && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "fsr22" && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "dlss"))
+                    if (Config::Instance()->Api == NVNGX_DX12 || Config::Instance()->Api == NVNGX_DX11)
                     {
                         // if motion vectors are not display size
                         ImGui::BeginDisabled((Config::Instance()->DisplayResolution.has_value() && Config::Instance()->DisplayResolution.value()) ||
@@ -1525,7 +1520,7 @@ public:
 
                             if (bool crs = Config::Instance()->RestoreComputeSignature.value_or(false); ImGui::Checkbox("Restore Compute Root Signature", &crs))
                                 Config::Instance()->RestoreComputeSignature = crs;
-                                                        
+
                             if (bool grs = Config::Instance()->RestoreGraphicSignature.value_or(false); ImGui::Checkbox("Restore Graphic Root Signature", &grs))
                                 Config::Instance()->RestoreGraphicSignature = grs;
                         }

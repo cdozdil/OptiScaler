@@ -132,19 +132,6 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
     _contextDesc.device = ffxGetDeviceDX11(Device);
 
-    if (Config::Instance()->ExtendedLimits.value_or(false))
-    {
-        _contextDesc.maxRenderSize.width = RenderWidth() < DisplayWidth() ? DisplayWidth() : RenderWidth();
-        _contextDesc.maxRenderSize.height = RenderHeight() < DisplayHeight() ? DisplayHeight() : RenderHeight();
-    }
-    else
-    {
-        _contextDesc.maxRenderSize.width = DisplayWidth();
-        _contextDesc.maxRenderSize.height = DisplayHeight();
-    }
-
-    _contextDesc.displaySize.width = DisplayWidth();
-    _contextDesc.displaySize.height = DisplayHeight();
     _contextDesc.flags = 0;
 
     unsigned int featureFlags = 0;
@@ -210,6 +197,64 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     else
     {
         LOG_INFO("contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
+    }
+
+    // output scaling
+    if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+    {
+        float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
+
+        if (ssMulti < 0.5f)
+        {
+            ssMulti = 0.5f;
+            Config::Instance()->OutputScalingMultiplier = ssMulti;
+        }
+        else if (ssMulti > 3.0f)
+        {
+            ssMulti = 3.0f;
+            Config::Instance()->OutputScalingMultiplier = ssMulti;
+        }
+
+        _targetWidth = DisplayWidth() * ssMulti;
+        _targetHeight = DisplayHeight() * ssMulti;
+    }
+    else
+    {
+        _targetWidth = DisplayWidth();
+        _targetHeight = DisplayHeight();
+    }
+
+    // extended limits changes how resolution 
+    if (Config::Instance()->ExtendedLimits.value_or(false) && RenderWidth() > DisplayWidth())
+    {
+        _contextDesc.maxRenderSize.width = RenderWidth();
+        _contextDesc.maxRenderSize.height = RenderHeight();
+
+        Config::Instance()->OutputScalingMultiplier = 1.0f;
+
+        // if output scaling active let it to handle downsampling
+        if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+        {
+
+            _contextDesc.displaySize.width = _contextDesc.maxRenderSize.width;
+            _contextDesc.displaySize.height = _contextDesc.maxRenderSize.height;
+
+            // update target res
+            _targetWidth = _contextDesc.maxRenderSize.width;
+            _targetHeight = _contextDesc.maxRenderSize.height;
+        }
+        else
+        {
+            _contextDesc.displaySize.width = DisplayWidth();
+            _contextDesc.displaySize.height = DisplayHeight();
+        }
+    }
+    else
+    {
+        _contextDesc.maxRenderSize.width = TargetWidth() > DisplayWidth() ? TargetWidth() : DisplayWidth();
+        _contextDesc.maxRenderSize.height = TargetHeight() > DisplayHeight() ? TargetHeight() : DisplayHeight();
+        _contextDesc.displaySize.width = TargetWidth();
+        _contextDesc.displaySize.height = TargetHeight();
     }
 
 #if _DEBUG
@@ -357,7 +402,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 
         if (useSS)
         {
-            if (OutputScaler->CreateBufferResource(Device, paramOutput))
+            if (OutputScaler->CreateBufferResource(Device, paramOutput, TargetWidth(), TargetHeight()))
             {
                 params.output = ffxGetResourceDX11(&_context, OutputScaler->Buffer(), (wchar_t*)L"FSR2_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
             }

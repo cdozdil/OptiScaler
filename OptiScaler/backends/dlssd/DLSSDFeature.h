@@ -20,6 +20,7 @@ protected:
 	void ProcessInitParams(NVSDK_NGX_Parameter* InParameters);
 
 	static void Shutdown();
+	float GetSharpness(const NVSDK_NGX_Parameter* InParameters);
 
 public:
 	feature_version Version() final { return feature_version{ _version.major, _version.minor, _version.patch }; }

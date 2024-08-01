@@ -7,7 +7,6 @@
 class DLSSDFeatureDx12 : public DLSSDFeature, public IFeature_Dx12
 {
 private:
-	float GetSharpness(const NVSDK_NGX_Parameter* InParameters);
 
 protected:
 
