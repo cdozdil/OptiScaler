@@ -233,6 +233,15 @@
     <ClInclude Include="rcas\RCAS_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="output_scaling\OS_Dx11.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="output_scaling\OS_Common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bias\Bias_Dx11.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -411,6 +420,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="rcas\RCAS_Dx11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="output_scaling\OS_Dx11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="bias\Bias_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
