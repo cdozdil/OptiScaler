@@ -1,4 +1,4 @@
-![OptiScaler](images/optiscaler.png)
+![opti-white2](https://github.com/user-attachments/assets/4631f239-12fa-4108-a7cc-7809d1f6cb42)
 
 OptiScaler is a middleware that enables the use of various upscaling technologies in games that only support DLSS2. It primarily allows non-Nvidia users to use upscaling in DLSS-only games by interpreting DLSS2 inputs and applying them to XeSS, FSR2, or FSR3. Additionally, it provides extensive customization options for all users, including those with Nvidia GPUs using DLSS.
 
