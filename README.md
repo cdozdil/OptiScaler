@@ -46,7 +46,7 @@ Alternatively you can create a new folder called `plugins` and put other mods fi
 **Please don't rename the ini file, it should stay as `nvngx.ini`**.
 
 ### Install as `nvngx.dll`
-Step-by-step installation (**Nvidia users, please skip step 4**):
+Step-by-step installation:
 1. Download the latest relase from [releases](https://github.com/cdozdil/OptiScaler/releases).
 2. Extract the contents of the archive next to the game executable file in your games folder. [1]
 3. Run `EnableSignatureOverride.reg` from `DlssOverrides` folder and confirm merge. [2][3]
