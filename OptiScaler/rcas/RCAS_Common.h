@@ -143,7 +143,7 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
 }
 )";
 
-static ID3DBlob* CompileShader(const char* shaderCode, const char* entryPoint, const char* target)
+static ID3DBlob* RCAS_CompileShader(const char* shaderCode, const char* entryPoint, const char* target)
 {
     ID3DBlob* shaderBlob = nullptr;
     ID3DBlob* errorBlob = nullptr;

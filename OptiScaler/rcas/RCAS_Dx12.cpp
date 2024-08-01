@@ -384,11 +384,11 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 	else
 	{
 		// Compile shader blobs
-		ID3DBlob* _recEncodeShader = CompileShader(rcasCode.c_str(), "CSMain", "cs_5_0");
+		ID3DBlob* _recEncodeShader = RCAS_CompileShader(rcasCode.c_str(), "CSMain", "cs_5_0");
 
 		if (_recEncodeShader == nullptr)
 		{
-			LOG_ERROR("[{0}] CompileShader error!", _name);
+			LOG_ERROR("[{0}] RCAS_CompileShader error!", _name);
 			return;
 		}
 

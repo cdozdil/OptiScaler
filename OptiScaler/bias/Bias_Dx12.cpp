@@ -341,7 +341,7 @@ Bias_Dx12::Bias_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 	else
 	{
 		// Compile shader blobs
-		ID3DBlob* _recEncodeShader = BiasCompileShader(biasShader.c_str(), "CSMain", "cs_5_0");
+		ID3DBlob* _recEncodeShader = Bias_CompileShader(biasShader.c_str(), "CSMain", "cs_5_0");
 
 		if (_recEncodeShader == nullptr)
 		{

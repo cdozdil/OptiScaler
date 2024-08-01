@@ -11,35 +11,6 @@
 
 #include "../Config.h"
 
-static ID3DBlob* CompileShader(const char* shaderCode, const char* entryPoint, const char* target)
-{
-    ID3DBlob* shaderBlob = nullptr;
-    ID3DBlob* errorBlob = nullptr;
-
-    HRESULT hr = D3DCompile(shaderCode, strlen(shaderCode), nullptr, nullptr, nullptr, entryPoint, target, D3DCOMPILE_OPTIMIZATION_LEVEL3, 0, &shaderBlob, &errorBlob);
-
-    if (FAILED(hr))
-    {
-        LOG_ERROR("error while compiling shader");
-
-        if (errorBlob)
-        {
-            LOG_ERROR("error while compiling shader : {0}", (char*)errorBlob->GetBufferPointer());
-            errorBlob->Release();
-        }
-
-        if (shaderBlob)
-            shaderBlob->Release();
-
-        return nullptr;
-    }
-
-    if (errorBlob)
-        errorBlob->Release();
-
-    return shaderBlob;
-}
-
 static bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootSignature, ID3D12PipelineState** pipelineState, ID3DBlob* shaderBlob)
 {
     D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
@@ -210,8 +181,8 @@ bool OS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     else
     {
         Constants constants{};
-        constants.srcWidth = static_cast<uint32_t>(inDesc.Width);
-        constants.srcHeight = inDesc.Height;
+        constants.srcWidth = Config::Instance()->CurrentFeature->TargetWidth();
+        constants.srcHeight = Config::Instance()->CurrentFeature->TargetHeight();
         constants.destWidth = Config::Instance()->CurrentFeature->DisplayWidth(); // static_cast<uint32_t>(outDesc.Width);
         constants.destHeight = Config::Instance()->CurrentFeature->DisplayHeight(); // outDesc.Height;
 
@@ -243,13 +214,13 @@ bool OS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 
     if (_upsample || Config::Instance()->OutputScalingUseFsr.value_or(true))
     {
-        dispatchWidth = static_cast<UINT>((outDesc.Width + InNumThreadsX - 1) / InNumThreadsX);
-        dispatchHeight = (outDesc.Height + InNumThreadsY - 1) / InNumThreadsY;
+        dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
+        dispatchHeight = (Config::Instance()->CurrentFeature->DisplayHeight() + InNumThreadsY - 1) / InNumThreadsY;
     }
     else
     {
-        dispatchWidth = static_cast<UINT>((inDesc.Width + InNumThreadsX - 1) / InNumThreadsX);
-        dispatchHeight = (inDesc.Height + InNumThreadsY - 1) / InNumThreadsY;
+        dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->TargetWidth() + InNumThreadsX - 1) / InNumThreadsX);
+        dispatchHeight = (Config::Instance()->CurrentFeature->TargetHeight() + InNumThreadsY - 1) / InNumThreadsY;
     }
 
     InCmdList->Dispatch(dispatchWidth, dispatchHeight, 1);
@@ -386,6 +357,7 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
         return;
     }
 
+    // don't wanna compile fsr easu on runtime :)
     if (Config::Instance()->UsePrecompiledShaders.value_or(true) || Config::Instance()->OutputScalingUseFsr.value_or(true))
     {
         D3D12_COMPUTE_PIPELINE_STATE_DESC computePsoDesc = {};
@@ -400,7 +372,7 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
         else
         {
             if (_upsample)
-            computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcus_cso), sizeof(bcus_cso));
+                computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcus_cso), sizeof(bcus_cso));
             else
                 computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcds_cso), sizeof(bcds_cso));
         }
@@ -418,7 +390,7 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
         // Compile shader blobs
         ID3DBlob* _recEncodeShader = nullptr;
 
-        _recEncodeShader = CompileShader(_upsample ? upsampleCode.c_str() : downsampleCode.c_str(), "CSMain", "cs_5_0");
+        _recEncodeShader = OS_CompileShader(_upsample ? upsampleCode.c_str() : downsampleCode.c_str(), "CSMain", "cs_5_0");
 
         if (_recEncodeShader == nullptr)
         {
