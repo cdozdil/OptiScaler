@@ -2,6 +2,8 @@
 #include "IFeature.h"
 #include "../imgui/Imgui_Dx11.h"
 #include "../rcas/RCAS_Dx11.h"
+#include "../output_scaling/OS_Dx11.h"
+#include "../bias/Bias_Dx11.h"
 
 class IFeature_Dx11 : public virtual IFeature
 {
@@ -9,7 +11,9 @@ protected:
 	ID3D11Device* Device = nullptr;
 	ID3D11DeviceContext* DeviceContext = nullptr;
 	inline static std::unique_ptr<Imgui_Dx11> Imgui = nullptr;
+	std::unique_ptr<OS_Dx11> OutputScaler = nullptr;
 	std::unique_ptr<RCAS_Dx11> RCAS = nullptr;
+	std::unique_ptr<Bias_Dx11> Bias = nullptr;
 
 
 public:
