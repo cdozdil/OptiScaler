@@ -11,7 +11,7 @@
 
 #include "../Config.h"
 
-bool OS_Dx11::CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InResource)
+bool OS_Dx11::CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InResource, uint32_t InWidth, uint32_t InHeight)
 {
     if (InDevice == nullptr || InResource == nullptr)
         return false;
@@ -29,7 +29,7 @@ bool OS_Dx11::CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InRes
         D3D11_TEXTURE2D_DESC bufDesc;
         _buffer->GetDesc(&bufDesc);
 
-        if (bufDesc.Width != (UINT64)(texDesc.Width) || bufDesc.Height != (UINT)(texDesc.Height) || bufDesc.Format != texDesc.Format)
+        if (bufDesc.Width != InWidth || bufDesc.Height != InHeight || bufDesc.Format != texDesc.Format)
         {
             _buffer->Release();
             _buffer = nullptr;
@@ -40,6 +40,8 @@ bool OS_Dx11::CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InRes
 
     LOG_DEBUG("[{0}] Start!", _name);
 
+    texDesc.Width = InWidth;
+    texDesc.Height = InHeight;
     texDesc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
 
     result = InDevice->CreateTexture2D(&texDesc, nullptr, &_buffer);
@@ -269,6 +271,12 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
         return;
     }
 
+    // FSR upscaling
+    if (Config::Instance()->OutputScalingUseFsr.value_or(true))
+    {
+        InNumThreadsX = 16;
+        InNumThreadsY = 16;
+    }
     _init = true;
 }
 

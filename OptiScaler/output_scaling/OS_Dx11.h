@@ -30,7 +30,7 @@ private:
 	bool InitializeViews(ID3D11Texture2D* InResource, ID3D11Texture2D* OutResource);
 
 public:
-	bool CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InSource);
+	bool CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InSource, uint32_t InWidth, uint32_t InHeight);
 	bool Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, ID3D11Texture2D* InResource, ID3D11Texture2D* OutResource);
 
 	ID3D11Texture2D* Buffer() { return _buffer; }
