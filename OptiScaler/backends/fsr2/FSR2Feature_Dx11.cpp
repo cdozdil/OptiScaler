@@ -31,8 +31,10 @@ bool FSR2FeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
         if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
             Imgui = std::make_unique<Imgui_Dx11>(Util::GetProcessWindow(), Device);
 
+        OutputScaler = std::make_unique<OS_Dx11>("Output Scaling", InDevice, (TargetWidth() < DisplayWidth()));
         RCAS = std::make_unique<RCAS_Dx11>("RCAS", InDevice);
-        
+        Bias = std::make_unique<Bias_Dx11>("Bias", InDevice);
+
         return true;
     }
 
@@ -261,6 +263,8 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 
     LOG_DEBUG("Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
+    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false) && RenderWidth() != DisplayWidth();
+
     float sharpness = 0.0f;
     if (Config::Instance()->OverrideSharpness.value_or(false))
     {
@@ -350,7 +354,18 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
     if (paramOutput)
     {
         LOG_DEBUG("Output exist..");
-        params.output = ffxGetResourceDX11(&_context, paramOutput, (wchar_t*)L"FSR2_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+
+        if (useSS)
+        {
+            if (OutputScaler->CreateBufferResource(Device, paramOutput))
+            {
+                params.output = ffxGetResourceDX11(&_context, OutputScaler->Buffer(), (wchar_t*)L"FSR2_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+            }
+            else
+                params.output = ffxGetResourceDX11(&_context, paramOutput, (wchar_t*)L"FSR2_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+        }
+        else
+            params.output = ffxGetResourceDX11(&_context, paramOutput, (wchar_t*)L"FSR2_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 
         if (Config::Instance()->RcasEnabled.value_or(false) &&
             (sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
@@ -408,18 +423,29 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
         InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
 
-    if (!Config::Instance()->DisableReactiveMask.value_or(true))
+    if (!Config::Instance()->DisableReactiveMask.value_or(paramReactiveMask == nullptr))
     {
         if (paramReactiveMask)
         {
-            LOG_DEBUG("Bias mask exist..");
-            params.reactive = ffxGetResourceDX11(&_context, paramReactiveMask, (wchar_t*)L"FSR2_Reactive");
-        }
-        else
-        {
-            LOG_WARN("Bias mask not exist and its enabled in config, it may cause problems!!");
-            Config::Instance()->DisableReactiveMask = true;
-            return true;
+            LOG_DEBUG("Input Bias mask exist..");
+            Config::Instance()->DisableReactiveMask = false;
+
+            if (Config::Instance()->FsrUseMaskForTransparency.value_or(true))
+                params.transparencyAndComposition = ffxGetResourceDX11(&_context, paramReactiveMask, (wchar_t*)L"FSR2_Transparency", FFX_RESOURCE_STATE_COMPUTE_READ);
+
+            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.45f) > 0.0f &&
+                Bias->IsInit() && Bias->CreateBufferResource(Device, paramReactiveMask) && Bias->CanRender())
+            {
+                if (Bias->Dispatch(Device, InContext, (ID3D11Texture2D*)paramReactiveMask, Config::Instance()->DlssReactiveMaskBias.value_or(0.45f), Bias->Buffer()))
+                {
+                    params.reactive = ffxGetResourceDX11(&_context, Bias->Buffer(), (wchar_t*)L"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
+                }
+            }
+            else
+            {
+                LOG_DEBUG("Skipping reactive mask, Bias: {0}, Bias Init: {1}, Bias CanRender: {2}",
+                          Config::Instance()->DlssReactiveMaskBias.value_or(0.45f), Bias->IsInit(), Bias->CanRender());
+            }
         }
     }
 
@@ -497,10 +523,34 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
         rcasConstants.RenderHeight = RenderHeight();
         rcasConstants.RenderWidth = RenderWidth();
 
-        if (!RCAS->Dispatch(Device, InContext, (ID3D11Texture2D*)params.output.resource, 
-            (ID3D11Texture2D*)params.motionVectors.resource, rcasConstants, (ID3D11Texture2D*)paramOutput))
+
+        if (useSS)
         {
-            Config::Instance()->RcasEnabled = false;
+            if (!RCAS->Dispatch(Device, InContext, (ID3D11Texture2D*)params.output.resource, (ID3D11Texture2D*)params.motionVectors.resource,
+                rcasConstants, OutputScaler->Buffer()))
+            {
+                Config::Instance()->RcasEnabled = false;
+                return true;
+            }
+        }
+        else
+        {
+            if (!RCAS->Dispatch(Device, InContext, (ID3D11Texture2D*)params.output.resource, (ID3D11Texture2D*)params.motionVectors.resource,
+                rcasConstants, (ID3D11Texture2D*)paramOutput))
+            {
+                Config::Instance()->RcasEnabled = false;
+                return true;
+            }
+        }
+    }
+
+    if (useSS)
+    {
+        LOG_DEBUG("scaling output...");
+        if (!OutputScaler->Dispatch(Device, InContext, OutputScaler->Buffer(), (ID3D11Texture2D*)paramOutput))
+        {
+            Config::Instance()->OutputScalingEnabled = false;
+            Config::Instance()->changeBackend = true;
             return true;
         }
     }
