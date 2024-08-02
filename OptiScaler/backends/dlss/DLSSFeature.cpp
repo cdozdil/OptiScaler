@@ -134,6 +134,8 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
     // Resolution -----------------------------
     if (Config::Instance()->Api != NVNGX_VULKAN && Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
     {
+        LOG_DEBUG("Output Scaling is active");
+
         float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
 
         if (ssMulti < 0.5f)
@@ -158,6 +160,8 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
     if (Config::Instance()->ExtendedLimits.value_or(false) && RenderWidth() > DisplayWidth())
     {
+        LOG_DEBUG("Extended limits is active and render size is bigger than display size");
+
         _targetWidth = RenderWidth();
         _targetHeight = RenderHeight();
 
@@ -174,7 +178,7 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
     InParameters->Set(NVSDK_NGX_Parameter_OutWidth, TargetWidth());
     InParameters->Set(NVSDK_NGX_Parameter_OutHeight, TargetHeight());
 
-    LOG_INFO("Render Size: {}x{}, Target Size: {}x{}", RenderWidth(), RenderHeight(), TargetWidth(), TargetHeight());
+    LOG_INFO("Render Size: {}x{}, Target Size: {}x{}, Display Size: {}x{}", RenderWidth(), RenderHeight(), TargetWidth(), TargetHeight(), DisplayWidth(), DisplayHeight());
 
     unsigned int RenderPresetDLAA = 0;
     unsigned int RenderPresetUltraQuality = 0;

@@ -79,7 +79,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 	float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
 
-	bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false) && RenderWidth() != TargetWidth();
+	bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false) && RenderWidth() != DisplayWidth();
 
 	LOG_DEBUG("Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 

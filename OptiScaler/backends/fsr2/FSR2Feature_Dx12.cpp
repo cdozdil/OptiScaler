@@ -78,7 +78,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
     GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
     LOG_DEBUG("Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
-    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false) && RenderWidth() != TargetWidth();
+    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false) && RenderWidth() != DisplayWidth();
 
     params.commandList = ffxGetCommandListDX12(InCommandList);
 
