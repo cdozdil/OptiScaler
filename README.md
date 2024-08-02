@@ -66,8 +66,9 @@ Step-by-step installation:
 
 ## Update OptiScaler version when using DLSS Enabler  
 1. Delete/rename `dlss-enabler-upscaler.dll` in game folder
-2. Copy `nvngx.dll` file from OptiScaler 7zip file to game folder
+2. Extract `nvngx.dll` file from OptiScaler 7zip file to a temp folder
 3. Rename `nvngx.dll` to `dlss-enabler-upscaler.dll`
+4. Copy `dlss-enabler-upscaler.dll` from temp folder to the game folder
 
 ## Uninstallation
 * Run `DisableSignatureOverride.reg` file 
