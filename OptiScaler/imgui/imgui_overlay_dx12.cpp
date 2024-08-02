@@ -180,6 +180,9 @@ static long _slCounter;
 static long _fsr3ModCounter;
 static long _fsr3NativeCounter;
 
+// this is used to preventing early releasing of swapchain at witcher 3
+static IDXGISwapChain* _slBaseSwapChain = nullptr;
+
 inline static std::mutex _dx12CleanMutex;
 
 enum SwapchainSource
@@ -277,9 +280,16 @@ static bool IsActivePath(SwapchainSource source, bool justQuery = false)
     return result;
 }
 
-static bool IsBeingUsed(IDXGISwapChain1* InSwapchain)
+static bool IsBeingUsed(IDXGISwapChain1* InSwapchain, SwapchainSource InSource)
 {
     HWND hwnd = nullptr;
+
+    if (InSource == SL && _slBaseSwapChain == nullptr)
+    {
+        _slBaseSwapChain = *reinterpret_cast<IDXGISwapChain**>(reinterpret_cast<char*>(InSwapchain) + 16);
+        _slBaseSwapChain->AddRef();
+    }
+
     InSwapchain->GetHwnd(&hwnd);
     return hwnd == ImGuiOverlayBase::Handle();
 }
@@ -443,7 +453,7 @@ static HRESULT WINAPI hkPresent_EB(IDXGISwapChain3* pSwapChain, UINT SyncInterva
     if (IsActivePath(Dx12))
         RenderImGui_DX12(pSwapChain);
 
-    if (IsBeingUsed(pSwapChain))
+    if (IsBeingUsed(pSwapChain, Dx12))
     {
         _nativeCounterEB++;
         _usingNative = true;
@@ -465,7 +475,7 @@ static HRESULT WINAPI hkPresent1_EB(IDXGISwapChain3* pSwapChain, UINT SyncInterv
     if (IsActivePath(Dx12))
         RenderImGui_DX12(pSwapChain);
 
-    if (IsBeingUsed(pSwapChain))
+    if (IsBeingUsed(pSwapChain, Dx12))
     {
         _nativeCounterEB++;
         _usingNative = true;
@@ -492,7 +502,7 @@ static HRESULT WINAPI hkPresent_Dx12(IDXGISwapChain3* pSwapChain, UINT SyncInter
     if ((!_isEarlyBind || _nativeCounterEB == 0) && IsActivePath(Dx12))
         RenderImGui_DX12(pSwapChain);
 
-    if (IsBeingUsed(pSwapChain))
+    if (IsBeingUsed(pSwapChain, Dx12))
     {
         _nativeCounter++;
         _usingNative = true;
@@ -514,9 +524,7 @@ static HRESULT WINAPI hkPresent1_Dx12(IDXGISwapChain3* pSwapChain, UINT SyncInte
     if ((!_isEarlyBind || _nativeCounterEB == 0) && IsActivePath(Dx12))
         RenderImGui_DX12(pSwapChain);
 
-    _usingNative = IsBeingUsed(pSwapChain);
-
-    if (IsBeingUsed(pSwapChain))
+    if (IsBeingUsed(pSwapChain, Dx12))
     {
         _nativeCounter++;
         _usingNative = true;
@@ -563,7 +571,7 @@ static HRESULT WINAPI hkPresent_SL(IDXGISwapChain3* pSwapChain, UINT SyncInterva
     if (IsActivePath(SL))
         RenderImGui_DX12(pSwapChain);
 
-    if (IsBeingUsed(pSwapChain))
+    if (IsBeingUsed(pSwapChain, SL))
     {
         _slCounter++;
         _usingDLSSG = true;
@@ -585,7 +593,7 @@ static HRESULT WINAPI hkPresent1_SL(IDXGISwapChain3* pSwapChain, UINT SyncInterv
     if (IsActivePath(SL))
         RenderImGui_DX12(pSwapChain);
 
-    if (IsBeingUsed(pSwapChain))
+    if (IsBeingUsed(pSwapChain, SL))
     {
         _slCounter++;
         _usingDLSSG = true;
@@ -632,7 +640,7 @@ static HRESULT WINAPI hkPresent_FSR3(IDXGISwapChain3* pSwapChain, UINT SyncInter
     if (IsActivePath(FSR3_Native))
         RenderImGui_DX12(pSwapChain);
 
-    if (IsBeingUsed(pSwapChain))
+    if (IsBeingUsed(pSwapChain, FSR3_Native))
     {
         _fsr3NativeCounter++;
         _usingFSR3_Native = true;
@@ -654,7 +662,7 @@ static HRESULT WINAPI hkPresent1_FSR3(IDXGISwapChain3* pSwapChain, UINT SyncInte
     if (IsActivePath(FSR3_Native))
         RenderImGui_DX12(pSwapChain);
 
-    if (IsBeingUsed(pSwapChain))
+    if (IsBeingUsed(pSwapChain, FSR3_Native))
     {
         _fsr3NativeCounter++;
         _usingFSR3_Native = true;
@@ -701,7 +709,7 @@ static HRESULT WINAPI hkPresent_Mod(IDXGISwapChain3* pSwapChain, UINT SyncInterv
     if (IsActivePath(FSR3_Mod))
         RenderImGui_DX12(pSwapChain);
 
-    if (IsBeingUsed(pSwapChain))
+    if (IsBeingUsed(pSwapChain, FSR3_Mod))
     {
         _fsr3ModCounter++;
         _usingFSR3_Mod = true;
@@ -723,7 +731,7 @@ static HRESULT WINAPI hkPresent1_Mod(IDXGISwapChain3* pSwapChain, UINT SyncInter
     if (IsActivePath(FSR3_Mod))
         RenderImGui_DX12(pSwapChain);
 
-    if (IsBeingUsed(pSwapChain))
+    if (IsBeingUsed(pSwapChain, FSR3_Mod))
     {
         _fsr3ModCounter++;
         _usingFSR3_Mod = true;
@@ -1177,6 +1185,12 @@ static HRESULT WINAPI hkCreateSwapChainForComposition_EB(IDXGIFactory* pFactory,
 
 static HRESULT WINAPI hkCreateSwapChain_SL(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain)
 {
+    if (_slBaseSwapChain != nullptr)
+    {
+        _slBaseSwapChain->Release();
+        _slBaseSwapChain = nullptr;
+    }
+
     CleanupRenderTarget(true);
     auto result = oCreateSwapChain_SL(pFactory, pDevice, pDesc, ppSwapChain);
     return result;
@@ -1193,6 +1207,12 @@ static HRESULT WINAPI hkCreateSwapChainForHwnd_SL(IDXGIFactory* pFactory, IUnkno
 static HRESULT WINAPI hkCreateSwapChainForCoreWindow_SL(IDXGIFactory* pFactory, IUnknown* pDevice, IUnknown* pWindow, const DXGI_SWAP_CHAIN_DESC1* pDesc,
                                                         IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
+    if (_slBaseSwapChain != nullptr)
+    {
+        _slBaseSwapChain->Release();
+        _slBaseSwapChain = nullptr;
+    }
+
     CleanupRenderTarget(true);
     auto result = oCreateSwapChainForCoreWindow_SL(pFactory, pDevice, pWindow, pDesc, pRestrictToOutput, ppSwapChain);
     return result;
@@ -1201,6 +1221,12 @@ static HRESULT WINAPI hkCreateSwapChainForCoreWindow_SL(IDXGIFactory* pFactory, 
 static HRESULT WINAPI hkCreateSwapChainForComposition_SL(IDXGIFactory* pFactory, IUnknown* pDevice, const DXGI_SWAP_CHAIN_DESC1* pDesc,
                                                          IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
+    if (_slBaseSwapChain != nullptr)
+    {
+        _slBaseSwapChain->Release();
+        _slBaseSwapChain = nullptr;
+    }
+
     CleanupRenderTarget(true);
     auto result = oCreateSwapChainForComposition_SL(pFactory, pDevice, pDesc, pRestrictToOutput, ppSwapChain);;
     return result;
