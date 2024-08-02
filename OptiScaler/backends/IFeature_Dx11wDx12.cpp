@@ -984,38 +984,5 @@ IFeature_Dx11wDx12::IFeature_Dx11wDx12(unsigned int InHandleId, NVSDK_NGX_Parame
 
 IFeature_Dx11wDx12::~IFeature_Dx11wDx12()
 {
-    if (Dx12Device && Dx12CommandQueue && Dx12CommandList)
-    {
-        ID3D12Fence* d3d12Fence = nullptr;
-
-        do
-        {
-            if (Dx12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence)) != S_OK)
-                break;
-
-            if (Dx12CommandList->Close() != S_OK)
-                break;
-
-            ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-            Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-            Dx12CommandQueue->Signal(d3d12Fence, 999);
-
-            HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-            if (fenceEvent != NULL && d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
-            {
-                WaitForSingleObject(fenceEvent, INFINITE);
-                CloseHandle(fenceEvent);
-            }
-
-        } while (false);
-
-        if (d3d12Fence != nullptr)
-        {
-            d3d12Fence->Release();
-            d3d12Fence = nullptr;
-        }
-    }
-
     ReleaseSharedResources();
 }
