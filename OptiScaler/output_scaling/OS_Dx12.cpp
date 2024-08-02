@@ -35,12 +35,14 @@ bool OS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
         return false;
 
     D3D12_RESOURCE_DESC texDesc = InSource->GetDesc();
+    auto targetWidth = texDesc.Width > InWidth ? texDesc.Width : InWidth;
+    auto targetHeight = texDesc.Height > InHeight ? texDesc.Height : InHeight;
 
     if (_buffer != nullptr)
     {
         auto bufDesc = _buffer->GetDesc();
 
-        if (bufDesc.Width != (UINT64)(InWidth) || bufDesc.Height != (UINT)(InHeight) || bufDesc.Format != texDesc.Format)
+        if (bufDesc.Width != targetWidth || bufDesc.Height != targetHeight || bufDesc.Format != texDesc.Format)
         {
             _buffer->Release();
             _buffer = nullptr;
@@ -62,8 +64,8 @@ bool OS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
     }
 
     texDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS | D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS;
-    texDesc.Width = InWidth;
-    texDesc.Height = InHeight;
+    texDesc.Width = targetWidth;
+    texDesc.Height = targetHeight;
 
     hr = InDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, InState, nullptr, IID_PPV_ARGS(&_buffer));
 

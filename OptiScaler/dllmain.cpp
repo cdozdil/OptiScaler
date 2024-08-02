@@ -1155,6 +1155,9 @@ static void CheckWorkingMode()
             isNvngxMode = true;
             isWorkingWithEnabler = lCaseFilename == "dlss-enabler-upscaler.dll";
 
+            if (isWorkingWithEnabler)
+                Config::Instance()->LogToNGX = true;
+
             modeFound = true;
             break;
         }
@@ -1427,7 +1430,7 @@ static void CheckWorkingMode()
     } while (false);
 
     // hook dxgi when not working as dxgi.dll
-    if (!Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
+    if (!isWorkingWithEnabler && !Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
     {
         LOG_INFO("DxgiSpoofing is enabled loading dxgi.dll");
         
@@ -1502,7 +1505,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             PrepareLogger();
             spdlog::warn("{0} loaded", VER_PRODUCT_NAME);
             spdlog::warn("---------------------------------");
-            spdlog::warn("OptiScaler is freely downloadable from https://github.com/cdozdil/OptiScaler/releases");
+            spdlog::warn("OptiScaler is freely downloadable from");
+            spdlog::warn("GitHub : https://github.com/cdozdil/OptiScaler/releases"); 
+            spdlog::warn("Nexus  : https://www.nexusmods.com/site/mods/986"); 
             spdlog::warn("If you paid for these files, you've been scammed!");
             spdlog::warn("DO NOT USE IN MULTIPLAYER GAMES");
             spdlog::warn("");

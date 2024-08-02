@@ -230,7 +230,9 @@ static bool IsActivePath(SwapchainSource source, bool justQuery = false)
     {
         case Dx12:
             // native need 2x more frames to be sure because of fg
-            result = (_nativeCounter > 170 || _nativeCounterEB > 170) && !IsActivePath(SL, true) && !IsActivePath(FSR3_Mod, true) && !IsActivePath(FSR3_Native, true) && _usingNative && _cqDx12 != nullptr;
+            result = ((_slCounter == 0 && _fsr3ModCounter == 0 && _fsr3NativeCounter == 0 && (_nativeCounter > 75 || _nativeCounterEB > 75)) ||
+                (_nativeCounter > 170 || _nativeCounterEB > 170)) &&
+                !IsActivePath(SL, true) && !IsActivePath(FSR3_Mod, true) && !IsActivePath(FSR3_Native, true) && _usingNative && _cqDx12 != nullptr;
 
             if (result)
                 g_pd3dCommandQueue = _cqDx12;
@@ -238,7 +240,8 @@ static bool IsActivePath(SwapchainSource source, bool justQuery = false)
             break;
 
         case SL:
-            result = _slCounter > 75 && !IsActivePath(FSR3_Native, true) && _usingDLSSG && _cqDx12 != nullptr;
+            result = ((_fsr3ModCounter == 0 && _fsr3NativeCounter == 0 && _slCounter > 65) || _slCounter > 75) && 
+                !IsActivePath(FSR3_Native, true) && _usingDLSSG && _cqDx12 != nullptr;
 
             if (result)
                 g_pd3dCommandQueue = _cqDx12;
@@ -246,7 +249,8 @@ static bool IsActivePath(SwapchainSource source, bool justQuery = false)
             break;
 
         case FSR3_Mod:
-            result = _fsr3ModCounter > 65 && !IsActivePath(FSR3_Native, true) && _usingFSR3_Mod && _cqDx12 != nullptr;
+            result = ((_fsr3NativeCounter == 0 && _fsr3ModCounter > 30) || _fsr3ModCounter > 65) && 
+                !IsActivePath(FSR3_Native, true) && _usingFSR3_Mod && _cqDx12 != nullptr;
 
             if (result)
                 g_pd3dCommandQueue = _cqDx12;
@@ -2083,7 +2087,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
     {
         // Wait until upscaler feature is ready
         if (Config::Instance()->CurrentFeature != nullptr &&
-            Config::Instance()->CurrentFeature->FrameCount() <= Config::Instance()->MenuInitDelay.value_or(90) + 10)
+            Config::Instance()->CurrentFeature->FrameCount() <= Config::Instance()->MenuInitDelay.value_or(75) + 10)
         {
             if (ImGuiOverlayBase::IsVisible())
             {

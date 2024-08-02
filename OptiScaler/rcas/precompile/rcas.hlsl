@@ -60,7 +60,7 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
         else if (setSharpness < 0.0f)
             setSharpness = 0.0f;
     }
-
+    
     float3 e = Source.Load(int3(DTid.x, DTid.y, 0)).rgb;
   
     // skip sharpening if set value == 0
@@ -85,6 +85,12 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
     float fL = getRCASLuma(f);
     float hL = getRCASLuma(h);
   
+    // denoise
+    float nz = (bL + dL + fL + hL) * 0.25 - eL;
+    float range = max(max(max(bL, dL), max(hL, fL)), eL) - min(min(min(bL, dL), min(eL, fL)), hL);
+    nz = saturate(abs(nz) * rcp(range));
+    nz = -0.5 * nz + 1.0;
+    
     // Min and max of ring.
     float3 minRGB = min(min(b, d), min(f, h));
     float3 maxRGB = max(max(b, d), max(f, h));
@@ -97,7 +103,10 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
     float3 hitMin = minRGB * rcp(4.0 * maxRGB);
     float3 hitMax = (peakC.xxx - maxRGB) * rcp(4.0 * minRGB + peakC.yyy);
     float3 lobeRGB = max(-hitMin, hitMax);
-    float lobe = max(-0.1875, min(max(lobeRGB.r, max(lobeRGB.g, lobeRGB.b)), 0.0)) * setSharpness;
+    float lobe = max(-0.1875, min(max(lobeRGB.r, max(lobeRGB.g, lobeRGB.b)), 0.0)) * setSharpness * nz;
+    
+    // denoise
+    lobe *= nz;
   
     // Resolve, which needs medium precision rcp approximation to avoid visible tonality changes.
     float rcpL = rcp(4.0 * lobe + 1.0);

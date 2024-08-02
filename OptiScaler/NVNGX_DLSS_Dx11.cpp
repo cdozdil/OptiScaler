@@ -603,8 +603,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
         Config::Instance()->DE_Available = (deAvail > 0);
     }
 
-    if (Config::Instance()->OverlayMenu.value_or(true) &&
-        Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(90) &&
+    if (Config::Instance()->OverlayMenu.value_or(true) && Config::Instance()->CurrentFeature != nullptr && 
+        Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(75) &&
         !ImGuiOverlayDx11::IsInitedDx11())
     {
         ImGuiOverlayDx12::ShutdownDx12();

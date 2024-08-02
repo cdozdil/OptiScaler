@@ -117,7 +117,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		ID3D12Resource* paramMotion = nullptr;
 		ID3D12Resource* setBuffer = nullptr;
 
-		bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false) && RenderWidth() != DisplayWidth();
+		bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false) && RenderWidth() != TargetWidth();
 
 		InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput);
 		InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramMotion);

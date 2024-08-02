@@ -386,7 +386,6 @@ private:
             }
         }
 
-
         // END - REINIT MENU
         //if ((msg == WM_KEYDOWN && wParam == Config::Instance()->ResetKey.value_or(VK_END)) || vmInputReset)
         //{
@@ -396,8 +395,7 @@ private:
 
         // INSERT - OPEN MENU
         if (((msg == WM_KEYDOWN && wParam == Config::Instance()->ShortcutKey.value_or(VK_INSERT)) || vmInputMenu) &&
-            Config::Instance()->CurrentFeature != nullptr &&
-            Config::Instance()->CurrentFeature->FrameCount() > (170 + Config::Instance()->MenuInitDelay.value_or(90)))
+            Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > 75)
         {
             _isVisible = !_isVisible;
 

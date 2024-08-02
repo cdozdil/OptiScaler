@@ -23,7 +23,7 @@ enum class NV_INTERFACE : uint32_t
 };
 
 typedef void* (__stdcall* PFN_NvApi_QueryInterface)(NV_INTERFACE InterfaceId);
-typedef NVSDK_NGX_Result(*PFN_NVSDK_NGX_GetFeatureRequirements)(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported);
+typedef NVSDK_NGX_Result(*PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements)(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported);
 typedef NVSDK_NGX_Result(*PFN_NVSDK_NGX_VULKAN_GetFeatureRequirements)(const VkInstance Instance, const VkPhysicalDevice PhysicalDevice,
                                                                        const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported);
 
@@ -31,8 +31,8 @@ using PfnNvAPI_GPU_GetArchInfo = uint32_t(__stdcall*)(void* GPUHandle, NV_GPU_AR
 
 inline static PFN_NvApi_QueryInterface OriginalNvAPI_QueryInterface = nullptr;
 inline static PfnNvAPI_GPU_GetArchInfo OriginalNvAPI_GPU_GetArchInfo = nullptr;
-inline static PFN_NVSDK_NGX_GetFeatureRequirements Original_Dx11_GetFeatureRequirements = nullptr;
-inline static PFN_NVSDK_NGX_GetFeatureRequirements Original_Dx12_GetFeatureRequirements = nullptr;
+inline static PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements Original_D3D11_GetFeatureRequirements = nullptr;
+inline static PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements Original_D3D12_GetFeatureRequirements = nullptr;
 inline static PFN_NVSDK_NGX_VULKAN_GetFeatureRequirements Original_Vulkan_GetFeatureRequirements = nullptr;
 
 inline static uint32_t __stdcall HookedNvAPI_GPU_GetArchInfo(void* GPUHandle, NV_GPU_ARCH_INFO* ArchInfo)
@@ -92,7 +92,7 @@ inline static NVSDK_NGX_Result __stdcall Hooked_Dx12_GetFeatureRequirements(IDXG
 {
     LOG_FUNC();
 
-    auto result = Original_Dx12_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
+    auto result = Original_D3D12_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
 
     if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
     {
@@ -109,7 +109,7 @@ inline static NVSDK_NGX_Result __stdcall Hooked_Dx11_GetFeatureRequirements(IDXG
 {
     LOG_FUNC();
 
-    auto result = Original_Dx11_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
+    auto result = Original_D3D11_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
 
     if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
     {
@@ -162,27 +162,27 @@ inline static void HookNvApi()
 
 inline static void HookNgxApi(HMODULE nvngx)
 {
-    if (Original_Dx11_GetFeatureRequirements != nullptr || Original_Dx12_GetFeatureRequirements != nullptr)
+    if (Original_D3D11_GetFeatureRequirements != nullptr || Original_D3D12_GetFeatureRequirements != nullptr)
         return;
 
     LOG_DEBUG("Trying to hook NgxApi");
 
-    Original_Dx11_GetFeatureRequirements = (PFN_NVSDK_NGX_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_D3D11_GetFeatureRequirements");
-    Original_Dx12_GetFeatureRequirements = (PFN_NVSDK_NGX_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_D3D12_GetFeatureRequirements");
+    Original_D3D11_GetFeatureRequirements = (PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_D3D11_GetFeatureRequirements");
+    Original_D3D12_GetFeatureRequirements = (PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_D3D12_GetFeatureRequirements");
     Original_Vulkan_GetFeatureRequirements = (PFN_NVSDK_NGX_VULKAN_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_VULKAN_GetFeatureRequirements");
 
-    if (Original_Dx11_GetFeatureRequirements != nullptr || Original_Dx12_GetFeatureRequirements != nullptr)
+    if (Original_D3D11_GetFeatureRequirements != nullptr || Original_D3D12_GetFeatureRequirements != nullptr || Original_Vulkan_GetFeatureRequirements != nullptr)
     {
-        LOG_INFO("NVSDK_NGX_D3D1X_GetFeatureRequirements found, hooking!");
+        LOG_INFO("NVSDK_NGX_XXXXXX_GetFeatureRequirements found, hooking!");
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        if (Original_Dx11_GetFeatureRequirements != nullptr)
-            DetourAttach(&(PVOID&)Original_Dx11_GetFeatureRequirements, Hooked_Dx11_GetFeatureRequirements);
+        if (Original_D3D11_GetFeatureRequirements != nullptr)
+            DetourAttach(&(PVOID&)Original_D3D11_GetFeatureRequirements, Hooked_Dx11_GetFeatureRequirements);
 
-        if (Original_Dx12_GetFeatureRequirements != nullptr)
-            DetourAttach(&(PVOID&)Original_Dx12_GetFeatureRequirements, Hooked_Dx12_GetFeatureRequirements);
+        if (Original_D3D12_GetFeatureRequirements != nullptr)
+            DetourAttach(&(PVOID&)Original_D3D12_GetFeatureRequirements, Hooked_Dx12_GetFeatureRequirements);
 
         if (Original_Vulkan_GetFeatureRequirements != nullptr)
             DetourAttach(&(PVOID&)Original_Vulkan_GetFeatureRequirements, Hooked_Vulkan_GetFeatureRequirements);
@@ -193,7 +193,7 @@ inline static void HookNgxApi(HMODULE nvngx)
 
 inline static void UnhookApis()
 {
-    if (OriginalNvAPI_QueryInterface != nullptr || Original_Dx11_GetFeatureRequirements != nullptr || Original_Dx12_GetFeatureRequirements != nullptr)
+    if (OriginalNvAPI_QueryInterface != nullptr || Original_D3D11_GetFeatureRequirements != nullptr || Original_D3D12_GetFeatureRequirements != nullptr)
     {
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
@@ -204,16 +204,16 @@ inline static void UnhookApis()
             OriginalNvAPI_QueryInterface = nullptr;
         }
 
-        if (Original_Dx11_GetFeatureRequirements != nullptr)
+        if (Original_D3D11_GetFeatureRequirements != nullptr)
         {
-            DetourDetach(&(PVOID&)Original_Dx11_GetFeatureRequirements, Hooked_Dx11_GetFeatureRequirements);
-            Original_Dx11_GetFeatureRequirements = nullptr;
+            DetourDetach(&(PVOID&)Original_D3D11_GetFeatureRequirements, Hooked_Dx11_GetFeatureRequirements);
+            Original_D3D11_GetFeatureRequirements = nullptr;
         }
 
-        if (Original_Dx12_GetFeatureRequirements != nullptr)
+        if (Original_D3D12_GetFeatureRequirements != nullptr)
         {
-            DetourDetach(&(PVOID&)Original_Dx12_GetFeatureRequirements, Hooked_Dx12_GetFeatureRequirements);
-            Original_Dx12_GetFeatureRequirements = nullptr;
+            DetourDetach(&(PVOID&)Original_D3D12_GetFeatureRequirements, Hooked_Dx12_GetFeatureRequirements);
+            Original_D3D12_GetFeatureRequirements = nullptr;
         }
 
         if (Original_Vulkan_GetFeatureRequirements != nullptr)

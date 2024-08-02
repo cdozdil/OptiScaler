@@ -79,7 +79,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
 
     GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
-    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false) && RenderWidth() != DisplayWidth();
+    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false) && RenderWidth() != TargetWidth();
 
     LOG_DEBUG("Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
@@ -549,7 +549,7 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         LOG_INFO("contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
     }
 
-    if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+    if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false) && DisplayWidth() != RenderWidth())
     {
         float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
 
@@ -574,7 +574,7 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     }
 
     // extended limits changes how resolution 
-    if (Config::Instance()->ExtendedLimits.value_or(false) && RenderWidth() > DisplayWidth())
+    if (Config::Instance()->ExtendedLimits.value_or(false) && RenderWidth() > DisplayWidth() && DisplayWidth() != RenderWidth())
     {
         _contextDesc.maxRenderSize.width = RenderWidth();
         _contextDesc.maxRenderSize.height = RenderHeight();

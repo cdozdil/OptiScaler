@@ -23,13 +23,15 @@ bool OS_Dx11::CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InRes
 
     D3D11_TEXTURE2D_DESC texDesc;
     originalTexture->GetDesc(&texDesc);
+    auto targetWidth = texDesc.Width > InWidth ? texDesc.Width : InWidth;
+    auto targetHeight = texDesc.Height > InHeight ? texDesc.Height : InHeight;
 
     if (_buffer != nullptr)
     {
         D3D11_TEXTURE2D_DESC bufDesc;
         _buffer->GetDesc(&bufDesc);
 
-        if (bufDesc.Width != InWidth || bufDesc.Height != InHeight || bufDesc.Format != texDesc.Format)
+        if (bufDesc.Width != targetWidth || bufDesc.Height != targetHeight || bufDesc.Format != texDesc.Format)
         {
             _buffer->Release();
             _buffer = nullptr;
@@ -40,8 +42,8 @@ bool OS_Dx11::CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InRes
 
     LOG_DEBUG("[{0}] Start!", _name);
 
-    texDesc.Width = InWidth;
-    texDesc.Height = InHeight;
+    texDesc.Width = targetWidth;
+    texDesc.Height = targetHeight;
     texDesc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
 
     result = InDevice->CreateTexture2D(&texDesc, nullptr, &_buffer);

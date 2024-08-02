@@ -11,13 +11,13 @@ void DLSSFeature::ProcessEvaluateParams(NVSDK_NGX_Parameter* InParameters)
     float floatValue;
 
     // override sharpness
-    if (Config::Instance()->OverrideSharpness.value_or(false) && !(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->RcasEnabled.value_or(false)))
+    if (Config::Instance()->OverrideSharpness.value_or(false) && !(Config::Instance()->Api != NVNGX_VULKAN && Config::Instance()->RcasEnabled.value_or(false)))
     {
         auto sharpness = Config::Instance()->Sharpness.value_or(0.3f);
         InParameters->Set(NVSDK_NGX_Parameter_Sharpness, sharpness);
     }
     // rcas enabled
-    else if (Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->RcasEnabled.value_or(false))
+    else if (Config::Instance()->Api != NVNGX_VULKAN && Config::Instance()->RcasEnabled.value_or(false))
     {
         InParameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
     }
@@ -32,7 +32,7 @@ void DLSSFeature::ProcessEvaluateParams(NVSDK_NGX_Parameter* InParameters)
     unsigned int height;
     GetRenderResolution(InParameters, &width, &height);
 
-    LOG_FUNC_RESULT(0);
+    LOG_INFO("Render Size: {}x{}, Target Size: {}x{}, Display Size: {}x{}", RenderWidth(), RenderHeight(), TargetWidth(), TargetHeight(), DisplayWidth(), DisplayHeight());
 }
 
 void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
@@ -132,7 +132,7 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
     InParameters->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, featureFlags);
 
     // Resolution -----------------------------
-    if (Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+    if (Config::Instance()->Api != NVNGX_VULKAN && Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
     {
         float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
 
@@ -156,7 +156,7 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
         _targetHeight = DisplayHeight();
     }
 
-    if (RenderWidth() > DisplayWidth())
+    if (Config::Instance()->ExtendedLimits.value_or(false) && RenderWidth() > DisplayWidth())
     {
         _targetWidth = RenderWidth();
         _targetHeight = RenderHeight();
@@ -173,6 +173,8 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
     InParameters->Set(NVSDK_NGX_Parameter_Height, RenderHeight());
     InParameters->Set(NVSDK_NGX_Parameter_OutWidth, TargetWidth());
     InParameters->Set(NVSDK_NGX_Parameter_OutHeight, TargetHeight());
+
+    LOG_INFO("Render Size: {}x{}, Target Size: {}x{}", RenderWidth(), RenderHeight(), TargetWidth(), TargetHeight());
 
     unsigned int RenderPresetDLAA = 0;
     unsigned int RenderPresetUltraQuality = 0;
