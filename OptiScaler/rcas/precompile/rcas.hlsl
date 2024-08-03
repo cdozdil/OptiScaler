@@ -26,7 +26,7 @@ RWTexture2D<float3> Dest : register(u0);
 
 float getRCASLuma(float3 rgb)
 {
-    return dot(rgb, float3(0.598, 1.174, 0.228));
+    return dot(rgb, float3(0.5, 1.0, 0.5));
 }
 
 [numthreads(32, 32, 1)]
