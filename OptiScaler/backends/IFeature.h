@@ -39,6 +39,7 @@ protected:
 	void SetHandle(unsigned int InHandleId);
 	bool SetInitParameters(NVSDK_NGX_Parameter* InParameters);
 	void GetRenderResolution(NVSDK_NGX_Parameter* InParameters, unsigned int* OutWidth, unsigned int* OutHeight);
+	float GetSharpness(const NVSDK_NGX_Parameter* InParameters);
 
 	virtual void SetInit(bool InValue) { _isInited = InValue; }
 

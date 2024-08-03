@@ -310,18 +310,10 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 
     bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false) && RenderWidth() != DisplayWidth();
 
-    float sharpness = 0.0f;
     if (Config::Instance()->OverrideSharpness.value_or(false))
-    {
-        sharpness = Config::Instance()->Sharpness.value_or(0.3);
-    }
-    else if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &sharpness) == NVSDK_NGX_Result_Success)
-    {
-        if (sharpness > 1.0f)
-            sharpness = 1.0f;
-
-        _sharpness = sharpness;
-    }
+        _sharpness = Config::Instance()->Sharpness.value_or(0.3);
+    else 
+        _sharpness = GetSharpness(InParameters);
 
     if (Config::Instance()->RcasEnabled.value_or(false))
     {
@@ -330,8 +322,8 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
     }
     else
     {
-        params.enableSharpening = sharpness > 0.0f;
-        params.sharpness = sharpness;
+        params.enableSharpening = _sharpness > 0.0f;
+        params.sharpness = _sharpness;
     }
 
     ID3D11Resource* paramColor;
@@ -413,7 +405,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
             params.output = ffxGetResourceDX11(&_context, paramOutput, (wchar_t*)L"FSR2_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 
         if (Config::Instance()->RcasEnabled.value_or(false) &&
-            (sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
             RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() && RCAS->CreateBufferResource(Device, (ID3D11Texture2D*)params.output.resource))
         {
             params.output = ffxGetResourceDX11(&_context, RCAS->Buffer(), (wchar_t*)L"FSR2_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -554,12 +546,12 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 
     // apply rcas
     if (Config::Instance()->RcasEnabled.value_or(false) &&
-        (sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
         RCAS != nullptr && RCAS.get() != nullptr && RCAS->CanRender())
     {
         RcasConstants rcasConstants{};
 
-        rcasConstants.Sharpness = sharpness;
+        rcasConstants.Sharpness = _sharpness;
         rcasConstants.DisplayWidth = TargetWidth();
         rcasConstants.DisplayHeight = TargetHeight();
         InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);

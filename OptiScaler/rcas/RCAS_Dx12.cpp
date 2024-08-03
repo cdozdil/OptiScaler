@@ -4,6 +4,26 @@
 
 #include "../Config.h"
 
+inline static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
+{
+	switch (format) {
+		case DXGI_FORMAT_R32G32B32A32_TYPELESS:
+			return DXGI_FORMAT_R32G32B32A32_FLOAT;
+		case DXGI_FORMAT_R32G32B32_TYPELESS:
+			return DXGI_FORMAT_R32G32B32_FLOAT;
+		case DXGI_FORMAT_R16G16B16A16_TYPELESS:
+			return DXGI_FORMAT_R16G16B16A16_FLOAT;
+		case DXGI_FORMAT_R10G10B10A2_TYPELESS:
+			return DXGI_FORMAT_R10G10B10A2_UINT;
+		case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+			return DXGI_FORMAT_R8G8B8A8_UNORM;
+		case DXGI_FORMAT_B8G8R8A8_TYPELESS:
+			return DXGI_FORMAT_B8G8R8A8_UNORM;
+		default:
+			return format;
+	}
+}
+
 bool RCAS_Dx12::CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootSignature, ID3D12PipelineState** pipelineState, ID3DBlob* shaderBlob)
 {
 	D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
@@ -148,7 +168,7 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
 	// Create SRV for Input Texture
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = inDesc.Format;
+	srvDesc.Format = TranslateTypelessFormats(inDesc.Format);
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MipLevels = 1;
 
@@ -157,7 +177,7 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
 	// Create SRV for Motion Texture
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc2 = {};
 	srvDesc2.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc2.Format = mvDesc.Format;
+	srvDesc2.Format = TranslateTypelessFormats(mvDesc.Format);
 	srvDesc2.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc2.Texture2D.MipLevels = 1;
 
@@ -165,7 +185,7 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
 
 	// Create UAV for Output Texture
 	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
-	uavDesc.Format = outDesc.Format;
+	uavDesc.Format = TranslateTypelessFormats(outDesc.Format);
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 	uavDesc.Texture2D.MipSlice = 0;
 

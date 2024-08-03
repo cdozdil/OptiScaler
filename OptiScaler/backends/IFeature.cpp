@@ -136,3 +136,20 @@ void IFeature::GetRenderResolution(NVSDK_NGX_Parameter* InParameters, unsigned i
 	//}
 }
 
+float IFeature::GetSharpness(const NVSDK_NGX_Parameter* InParameters)
+{
+	if (Config::Instance()->OverrideSharpness.value_or(false))
+		return Config::Instance()->Sharpness.value_or(0.3f);
+
+	float sharpness = 0.0f;
+	
+	if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &sharpness) == NVSDK_NGX_Result_Success)
+	{
+		if (sharpness < 0.0f)
+			sharpness = 0.0f;
+		else if (sharpness > 1.0f)
+			sharpness = 1.0f;
+	}
+
+	return sharpness;
+}

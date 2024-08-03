@@ -131,7 +131,7 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
     float3 hitMin = minRGB * rcp(4.0 * maxRGB);
     float3 hitMax = (peakC.xxx - maxRGB) * rcp(4.0 * minRGB + peakC.yyy);
     float3 lobeRGB = max(-hitMin, hitMax);
-    float lobe = max(-0.1875, min(max(lobeRGB.r, max(lobeRGB.g, lobeRGB.b)), 0.0)) * setSharpness * nz;
+    float lobe = max(-0.1875, min(max(lobeRGB.r, max(lobeRGB.g, lobeRGB.b)), 0.0)) * setSharpness;
     
     // denoise
     lobe *= nz;

@@ -14,15 +14,14 @@ void DLSSDFeature::ProcessEvaluateParams(NVSDK_NGX_Parameter* InParameters)
     if (Config::Instance()->OverrideSharpness.value_or(false) && !(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->RcasEnabled.value_or(false)))
     {
         auto sharpness = Config::Instance()->Sharpness.value_or(0.3f);
+
+        if (sharpness > 1.0f)
+            sharpness = 1.0f;
+
         InParameters->Set(NVSDK_NGX_Parameter_Sharpness, sharpness);
     }
     // rcas enabled
-    else if (Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->RcasEnabled.value_or(false))
-    {
-        InParameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
-    }
-    // dlss value
-    else if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &floatValue) != NVSDK_NGX_Result_Success)
+    else 
     {
         InParameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
     }

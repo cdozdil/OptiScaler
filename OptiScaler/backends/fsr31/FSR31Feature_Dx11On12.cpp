@@ -55,7 +55,7 @@ bool FSR31FeatureDx11on12::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InC
 
     _baseInit = false;
 
-    return true;
+    return _moduleLoaded;
 }
 
 bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_Parameter* InParameters)
@@ -193,19 +193,10 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffset.y);
 
-    float sharpness = 0.0f;
-
     if (Config::Instance()->OverrideSharpness.value_or(false))
-    {
-        sharpness = Config::Instance()->Sharpness.value_or(0.3);
-    }
-    else if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &sharpness) == NVSDK_NGX_Result_Success)
-    {
-        if (sharpness > 1.0f)
-            sharpness = 1.0f;
-
-        _sharpness = sharpness;
-    }
+        _sharpness = Config::Instance()->Sharpness.value_or(0.3);
+    else
+        _sharpness = GetSharpness(InParameters);
 
     if (Config::Instance()->RcasEnabled.value_or(false))
     {
@@ -214,8 +205,8 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
     }
     else
     {
-        params.enableSharpening = sharpness > 0.0f;
-        params.sharpness = sharpness;
+        params.enableSharpening = _sharpness > 0.0f;
+        params.sharpness = _sharpness;
     }
 
     unsigned int reset;
@@ -296,7 +287,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
 
     // RCAS
     if (Config::Instance()->RcasEnabled.value_or(false) &&
-        (sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
         RCAS->IsInit() && RCAS->CreateBufferResource(Dx12Device, (ID3D12Resource*)params.output.resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
     {
         RCAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -328,31 +319,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
         params.motionVectorScale.x = MVScaleX;
         params.motionVectorScale.y = MVScaleY;
     }
-
-    if (Config::Instance()->OverrideSharpness.value_or(false))
-    {
-        params.enableSharpening = Config::Instance()->Sharpness.value_or(0.3) > 0.0f;
-        params.sharpness = Config::Instance()->Sharpness.value_or(0.3);
-    }
-    else
-    {
-        float shapness = 0.0f;
-        if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &shapness) == NVSDK_NGX_Result_Success)
-        {
-            _sharpness = shapness;
-
-            params.enableSharpening = shapness > 0.0f;
-
-            if (params.enableSharpening)
-            {
-                if (shapness > 1.0f)
-                    params.sharpness = 1.0f;
-                else
-                    params.sharpness = shapness;
-            }
-        }
-    }
-
+        
     if (IsDepthInverted())
     {
         params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.01f);
@@ -375,6 +342,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
         params.frameTimeDelta = (float)GetDeltaTime();
 
     params.preExposure = 1.0f;
+    params.viewSpaceToMetersFactor = 1.0f;
 
     LOG_DEBUG("Dispatch!!");
     auto ffxresult = _dispatch(&_context, &params.header);
@@ -395,7 +363,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
 
     // apply rcas
     if (Config::Instance()->RcasEnabled.value_or(false) &&
-        (sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
         RCAS->CanRender())
     {
         LOG_DEBUG("Apply CAS");
@@ -407,7 +375,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
 
         RcasConstants rcasConstants{};
 
-        rcasConstants.Sharpness = sharpness;
+        rcasConstants.Sharpness = _sharpness;
         rcasConstants.DisplayWidth = TargetWidth();
         rcasConstants.DisplayHeight = TargetHeight();
         InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);

@@ -856,6 +856,8 @@ public:
 
             if (ImGui::Begin(VER_PRODUCT_NAME, NULL, flags))
             {
+                bool rcasEnabled = false;
+
                 if (!_showMipmapCalcWindow && !ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow))
                     ImGui::SetWindowFocus();
 
@@ -1196,7 +1198,7 @@ public:
                         ImGui::SeparatorText("RCAS Settings");
 
                         // xess or dlss version >= 2.5.1
-                        auto rcasEnabled = (currentBackend == "xess" || (currentBackend == "dlss" &&
+                        rcasEnabled = (currentBackend == "xess" || (currentBackend == "dlss" &&
                                             (Config::Instance()->CurrentFeature->Version().major > 2 ||
                                             (Config::Instance()->CurrentFeature->Version().major == 2 &&
                                             Config::Instance()->CurrentFeature->Version().minor >= 5 &&
@@ -1228,7 +1230,7 @@ public:
                         ImGui::BeginDisabled(!Config::Instance()->MotionSharpnessEnabled.value_or(false) || !Config::Instance()->RcasEnabled.value_or(rcasEnabled));
 
                         float motionSharpness = Config::Instance()->MotionSharpness.value_or(0.4f);
-                        ImGui::SliderFloat("MotionSharpness", &motionSharpness, -1.0f, 1.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
+                        ImGui::SliderFloat("MotionSharpness", &motionSharpness, -1.3f, 1.3f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
                         Config::Instance()->MotionSharpness = motionSharpness;
 
                         float motionThreshod = Config::Instance()->MotionThreshold.value_or(0.0f);
@@ -1546,7 +1548,7 @@ public:
                     ImGui::BeginDisabled(!Config::Instance()->OverrideSharpness.value_or(false));
 
                     float sharpness = Config::Instance()->Sharpness.value_or(0.3f);
-                    ImGui::SliderFloat("Sharpness", &sharpness, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
+                    ImGui::SliderFloat("Sharpness", &sharpness, 0.0f, Config::Instance()->RcasEnabled.value_or(rcasEnabled) ? 1.3f : 1.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
                     Config::Instance()->Sharpness = sharpness;
 
                     ImGui::EndDisabled();

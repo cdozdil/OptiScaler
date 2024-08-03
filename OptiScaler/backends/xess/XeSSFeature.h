@@ -72,7 +72,6 @@ protected:
 	int dumpCount = 0;
 
 	bool InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters);
-	float GetSharpness(const NVSDK_NGX_Parameter* InParameters);
 
 	PFN_xessD3D12CreateContext D3D12CreateContext() const { return _xessD3D12CreateContext; }
 	PFN_xessD3D12BuildPipelines D3D12BuildPipelines() const { return _xessD3D12BuildPipelines; }

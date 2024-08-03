@@ -179,18 +179,18 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             if (Sharpness.has_value())
             {
-                if (Sharpness.value() > 1.0f)
-                    Sharpness = 1.0f;
+                if (Sharpness.value() > 1.3f)
+                    Sharpness = 1.3f;
                 else if (Sharpness.value() < 0.0f)
                     Sharpness.reset();
             }
 
             if (MotionSharpness.has_value())
             {
-                if (MotionSharpness.value() > 1.0f)
-                    MotionSharpness = 1.0f;
-                else if (MotionSharpness.value() < -1.0f)
-                    MotionSharpness = 1.0f;
+                if (MotionSharpness.value() > 1.3f)
+                    MotionSharpness = 1.3f;
+                else if (MotionSharpness.value() < -1.3f)
+                    MotionSharpness = -1.3f;
             }
 
             if (MotionThreshold.has_value())

@@ -123,22 +123,15 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 			setBuffer = paramOutput;
 
 		// RCAS sharpness & preperation
-		auto sharpness = GetSharpness(InParameters);
+		_sharpness = GetSharpness(InParameters);
 
 		if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
-			(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+			(_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
 			RCAS->IsInit() && RCAS->CreateBufferResource(Device, setBuffer))
 		{
 			// Disable DLSS sharpness
 			InParameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
 			setBuffer = RCAS->Buffer();
-		}
-
-		// sharpness override
-		else if (Config::Instance()->OverrideSharpness.value_or(false))
-		{
-			sharpness = Config::Instance()->Sharpness.value_or(0.3);
-			InParameters->Set(NVSDK_NGX_Parameter_Sharpness, sharpness);
 		}
 
 		InParameters->Set(NVSDK_NGX_Parameter_Output, setBuffer);
@@ -155,12 +148,12 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 		// Apply CAS
 		if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
-			(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+			(_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
 			RCAS->CanRender())
 		{
 			RcasConstants rcasConstants{};
 
-			rcasConstants.Sharpness = sharpness;
+			rcasConstants.Sharpness = _sharpness;
 			rcasConstants.DisplayWidth = TargetWidth();
 			rcasConstants.DisplayHeight = TargetHeight();
 			InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);

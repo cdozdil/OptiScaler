@@ -4,6 +4,26 @@
 
 #include "../Config.h"
 
+inline static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
+{
+    switch (format) {
+        case DXGI_FORMAT_R32G32B32A32_TYPELESS:
+            return DXGI_FORMAT_R32G32B32A32_FLOAT;
+        case DXGI_FORMAT_R32G32B32_TYPELESS:
+            return DXGI_FORMAT_R32G32B32_FLOAT;
+        case DXGI_FORMAT_R16G16B16A16_TYPELESS:
+            return DXGI_FORMAT_R16G16B16A16_FLOAT;
+        case DXGI_FORMAT_R10G10B10A2_TYPELESS:
+            return DXGI_FORMAT_R10G10B10A2_UINT;
+        case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+            return DXGI_FORMAT_R8G8B8A8_UNORM;
+        case DXGI_FORMAT_B8G8R8A8_TYPELESS:
+            return DXGI_FORMAT_B8G8R8A8_UNORM;
+        default:
+            return format;
+    }
+}
+
 bool RCAS_Dx11::CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InResource)
 {
     if (InDevice == nullptr || InResource == nullptr)
@@ -61,7 +81,7 @@ bool RCAS_Dx11::InitializeViews(ID3D11Texture2D* InResource, ID3D11Texture2D* In
 
         // Create SRV for input texture
         D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-        srvDesc.Format = desc.Format;
+        srvDesc.Format = TranslateTypelessFormats(desc.Format);
         srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
         srvDesc.Texture2D.MipLevels = desc.MipLevels;
 
@@ -84,7 +104,7 @@ bool RCAS_Dx11::InitializeViews(ID3D11Texture2D* InResource, ID3D11Texture2D* In
 
         // Create SRV for motion vectors
         D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-        srvDesc.Format = desc.Format;
+        srvDesc.Format = TranslateTypelessFormats(desc.Format);
         srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
         srvDesc.Texture2D.MipLevels = desc.MipLevels;
 
@@ -108,7 +128,7 @@ bool RCAS_Dx11::InitializeViews(ID3D11Texture2D* InResource, ID3D11Texture2D* In
 
         // Create UAV for output texture
         D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
-        uavDesc.Format = desc.Format;
+        uavDesc.Format = TranslateTypelessFormats(desc.Format);
         uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
 
         auto hr = _device->CreateUnorderedAccessView(OutResource, &uavDesc, &_uavOutput);
