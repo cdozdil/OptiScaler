@@ -102,7 +102,14 @@ OptiScaler implements the necessary API methods of DLSS2 & NVAPI to act as a mid
 Please check [this](Config.md) document for configuration parameters and explanations. *(Will be updated)*
 
 ## Known Issues
-Please check [this](Issues.md) document for known issues and possible solutions for them.
+If you can't open in-game menu:
+1. Please check that you have enabled DLSS from game options
+2. Please try opening menu while you are in-game (while 3D rendering is happening)
+3. There is a 200 frame delay before enabling in-game menu, please wait 10-15 seconds before opening menu.
+4. If you are using RTSS (MSI Afterburner, CapFrameX) please enable this setting of RTSS and try updating RTSS.
+  ![image](https://github.com/cdozdil/OptiScaler/assets/35529761/8afb24ac-662a-40ae-a97c-837369e03fc7)
+
+Please check [this](Issues.md) document for rest of the known issues and possible solutions for them.
 
 ## Which APIs and Upscalers are Supported?
 Currently OptiScaler can be used with DirectX 11, DirectX 12 and Vulkan but each API has different sets of upscaler options.
