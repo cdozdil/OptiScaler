@@ -21,7 +21,7 @@ To overcome DLSS 3.7's signature check requirements, I implemented a method deve
 Step-by-step installation (**Nvidia users please skip to step 3**):
 1. We need an Nvidia signed dll file to bypass signature checks. All games that support DLSS come with `nvngx_dlss.dll`. Most of the time it's in the games exe folder. Some games and engines keep these third party dll's in different folders (like `plugins`). So we need to find the `nvngx_dlss.dll` file and copy it to the games exe folder. If it's already in the games exe folder, make a copy of it.
 2. Rename the copy of `nvngx_dlss.dll` in the games exe folder to `nvngx.dll`.
-3. Rename OptiScaler's `nvngx.dll` to one of the [supported filenames](#optiscaler-supports-these-filenames) (I prefer `dxgi.dll`) and copy it to the games exe folder [1].
+3. Rename OptiScaler's `nvngx.dll` to one of the [supported filenames](#optiscaler-supports-these-filenames) (I prefer `dxgi.dll`) [1].
 4. Copy the renamed OptiScaler file to your game's executable folder.
 5. If your GPU is not an Nvidia one, check [GPU spoofing options](Spoofing.md).
 
@@ -86,8 +86,8 @@ OptiScaler implements the necessary API methods of DLSS2 & NVAPI to act as a mid
 * Supports XeSS v1.3.x's Ultra Performance, NativeAA modes (**Not using XeSS 1.3.x scaling ratios**) 
 * An [in-game menu](https://github.com/cdozdil/OptiScaler/blob/master/Config.md) for tuning and saving settings on the fly (Shortcut key is **INSERT**)
 * Full integration with [DLSS Enabler](https://www.nexusmods.com/site/mods/757) for DLSS-FG support
-* **RCAS** support with **MAS** (Motion Adaptive Sharpening) for all Dx12 & Dx11withDx12 upscalers
-* **Output Scaling** option (0.5x to 3.0x) for backends running on Dx12 & Dx11withDx12
+* **RCAS** support with **MAS** (Motion Adaptive Sharpening) for all Dx12 & Dx11 upscalers
+* **Output Scaling** option (0.5x to 3.0x) for backends running on Dx12 & Dx11
 * Supports DXGI spoofing (when running as `dxgi.dll`) as Nvidia GPUs (with XeSS detection to enable XMX on Intel Arc cards)
 * Supports Vulkan spoofing (needs to be enabled from `nvngi.ini`) as Nvidia GPUs (not working for Doom Eternal)
 * Supports loading specific `nvapi64.dll` file (when running in non-nvngx mode)
