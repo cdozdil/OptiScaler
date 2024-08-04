@@ -24,10 +24,17 @@ static inline FfxApiResourceDescription ffxApiGetImageResourceDescriptionVKLocal
 
     resourceDescription.width = vkResource->Resource.ImageViewInfo.Width;
     resourceDescription.height = vkResource->Resource.ImageViewInfo.Height;
-    resourceDescription.mipCount = vkResource->Resource.ImageViewInfo.SubresourceRange.levelCount;
-    resourceDescription.format = ffxApiGetSurfaceFormatVK(vkResource->Resource.ImageViewInfo.Format);
-    resourceDescription.depth = vkResource->Resource.ImageViewInfo.SubresourceRange.layerCount;
+    resourceDescription.mipCount = 1;
+
+    // For No Man's Sky
+    if (vkResource->Resource.ImageViewInfo.Format == VK_FORMAT_D32_SFLOAT_S8_UINT)
+        resourceDescription.format = FFX_API_SURFACE_FORMAT_R32_FLOAT;
+    else
+        resourceDescription.format = ffxApiGetSurfaceFormatVK(vkResource->Resource.ImageViewInfo.Format);
+
+    resourceDescription.depth = 1;
     resourceDescription.type = FFX_API_RESOURCE_TYPE_TEXTURE2D;
+
 
     return resourceDescription;
 }
