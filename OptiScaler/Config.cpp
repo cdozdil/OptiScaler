@@ -18,6 +18,11 @@ static inline bool isInteger(const std::string& str, int& value) {
     return (iss >> value) && iss.eof();
 }
 
+static inline bool isUInt(const std::string& str, uint32_t& value) {
+    std::istringstream iss(str);
+    return (iss >> value) && iss.eof();
+}
+
 static inline bool isFloat(const std::string& str, float& value) {
     std::istringstream iss(str);
     return (iss >> value) && iss.eof();
@@ -672,6 +677,32 @@ std::optional<int> Config::readInt(std::string section, std::string key)
         int result;
 
         if (value.has_value() && isInteger(value.value(), result))
+            return result;
+
+        return std::nullopt;
+    }
+    catch (const std::bad_optional_access&) // missing or auto value
+    {
+        return std::nullopt;
+    }
+    catch (const std::invalid_argument&) // invalid float string for std::stof
+    {
+        return std::nullopt;
+    }
+    catch (const std::out_of_range&) // out// out of range for 32 bit float
+    {
+        return std::nullopt;
+    }
+}
+
+std::optional<uint32_t> Config::readUInt(std::string section, std::string key)
+{
+    auto value = readString(section, key);
+    try
+    {
+        uint32_t result;
+
+        if (value.has_value() && isUInt(value.value(), result))
             return result;
 
         return std::nullopt;

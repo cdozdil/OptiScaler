@@ -179,12 +179,12 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
     LOG_INFO("Render Size: {}x{}, Target Size: {}x{}, Display Size: {}x{}", RenderWidth(), RenderHeight(), TargetWidth(), TargetHeight(), DisplayWidth(), DisplayHeight());
 
-    unsigned int RenderPresetDLAA = 0;
-    unsigned int RenderPresetUltraQuality = 0;
-    unsigned int RenderPresetQuality = 0;
-    unsigned int RenderPresetBalanced = 0;
-    unsigned int RenderPresetPerformance = 0;
-    unsigned int RenderPresetUltraPerformance = 0;
+    uint32_t RenderPresetDLAA = 0;
+    uint32_t RenderPresetUltraQuality = 0;
+    uint32_t RenderPresetQuality = 0;
+    uint32_t RenderPresetBalanced = 0;
+    uint32_t RenderPresetPerformance = 0;
+    uint32_t RenderPresetUltraPerformance = 0;
 
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, &RenderPresetDLAA) != NVSDK_NGX_Result_Success)
         InParameters->Get("RayReconstruction.Hint.Render.Preset.DLAA", &RenderPresetDLAA);
@@ -253,6 +253,12 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
     LOG_DEBUG("Preset_Performance {}", RenderPresetPerformance);
     InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, RenderPresetUltraPerformance);
     LOG_DEBUG("Preset_UltraPerformance {}", RenderPresetUltraPerformance);
+    InParameters->Set("RayReconstruction.Hint.Render.Preset.DLAA", RenderPresetDLAA);
+    InParameters->Set("RayReconstruction.Hint.Render.Preset.UltraQuality", RenderPresetUltraQuality);
+    InParameters->Set("RayReconstruction.Hint.Render.Preset.Quality", RenderPresetQuality);
+    InParameters->Set("RayReconstruction.Hint.Render.Preset.Balanced", RenderPresetBalanced);
+    InParameters->Set("RayReconstruction.Hint.Render.Preset.Performance", RenderPresetPerformance);
+    InParameters->Set("RayReconstruction.Hint.Render.Preset.UltraPerformance", RenderPresetUltraPerformance);
 
     LOG_FUNC_RESULT(0);
 }

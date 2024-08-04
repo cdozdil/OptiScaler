@@ -170,12 +170,12 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
     InParameters->Set(NVSDK_NGX_Parameter_OutWidth, TargetWidth());
     InParameters->Set(NVSDK_NGX_Parameter_OutHeight, TargetHeight());
 
-    unsigned int RenderPresetDLAA = 0;
-    unsigned int RenderPresetUltraQuality = 0;
-    unsigned int RenderPresetQuality = 0;
-    unsigned int RenderPresetBalanced = 0;
-    unsigned int RenderPresetPerformance = 0;
-    unsigned int RenderPresetUltraPerformance = 0;
+    uint32_t RenderPresetDLAA = 0;
+    uint32_t RenderPresetUltraQuality = 0;
+    uint32_t RenderPresetQuality = 0;
+    uint32_t RenderPresetBalanced = 0;
+    uint32_t RenderPresetPerformance = 0;
+    uint32_t RenderPresetUltraPerformance = 0;
 
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, &RenderPresetDLAA) != NVSDK_NGX_Result_Success)
         InParameters->Get("RayReconstruction.Hint.Render.Preset.DLAA", &RenderPresetDLAA);

@@ -761,7 +761,7 @@ public:
         }
     }
 
-    static void AddRenderPreset(std::string name, std::optional<int>* value)
+    static void AddRenderPreset(std::string name, std::optional<uint32_t>* value)
     {
         const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G" };
         const char* presetsDesc[] = { "Whatever the game uses",

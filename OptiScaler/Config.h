@@ -48,12 +48,12 @@ public:
 	std::optional<std::wstring> DLSSLibrary;
 	std::optional<std::wstring> NVNGX_DLSS_Library;
 	std::optional<bool> RenderPresetOverride;
-	std::optional<int> RenderPresetDLAA;
-	std::optional<int> RenderPresetUltraQuality;
-	std::optional<int> RenderPresetQuality;
-	std::optional<int> RenderPresetBalanced;
-	std::optional<int> RenderPresetPerformance;
-	std::optional<int> RenderPresetUltraPerformance;
+	std::optional<uint32_t> RenderPresetDLAA;
+	std::optional<uint32_t> RenderPresetUltraQuality;
+	std::optional<uint32_t> RenderPresetQuality;
+	std::optional<uint32_t> RenderPresetBalanced;
+	std::optional<uint32_t> RenderPresetPerformance;
+	std::optional<uint32_t> RenderPresetUltraPerformance;
 
 	// CAS
 	std::optional<bool> RcasEnabled;
@@ -222,5 +222,6 @@ private:
 	std::optional<std::string> readString(std::string section, std::string key, bool lowercase = false);
 	std::optional<float> readFloat(std::string section, std::string key);
 	std::optional<int> readInt(std::string section, std::string key);
+	std::optional<uint32_t> readUInt(std::string section, std::string key);
 	std::optional<bool> readBool(std::string section, std::string key);
 };
