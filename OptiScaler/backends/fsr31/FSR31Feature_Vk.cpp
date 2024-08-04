@@ -16,25 +16,25 @@ static inline FfxApiResourceDescription ffxApiGetImageResourceDescriptionVKLocal
         return resourceDescription;
 
     // Set flags properly for resource registration
-    resourceDescription.flags = FFX_API_RESOURCE_USAGE_READ_ONLY;
+    resourceDescription.flags = FFX_API_RESOURCE_FLAGS_NONE;
 
     // Unordered access use
     if (uav)
         resourceDescription.usage = FFX_API_RESOURCE_USAGE_UAV;
+    else
+        resourceDescription.usage = FFX_API_RESOURCE_USAGE_READ_ONLY;
 
+    resourceDescription.type = FFX_API_RESOURCE_TYPE_TEXTURE2D;
     resourceDescription.width = vkResource->Resource.ImageViewInfo.Width;
     resourceDescription.height = vkResource->Resource.ImageViewInfo.Height;
     resourceDescription.mipCount = 1;
+    resourceDescription.depth = 1;
 
     // For No Man's Sky
     if (vkResource->Resource.ImageViewInfo.Format == VK_FORMAT_D32_SFLOAT_S8_UINT)
         resourceDescription.format = FFX_API_SURFACE_FORMAT_R32_FLOAT;
     else
         resourceDescription.format = ffxApiGetSurfaceFormatVK(vkResource->Resource.ImageViewInfo.Format);
-
-    resourceDescription.depth = 1;
-    resourceDescription.type = FFX_API_RESOURCE_TYPE_TEXTURE2D;
-
 
     return resourceDescription;
 }
