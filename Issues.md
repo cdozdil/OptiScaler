@@ -2,6 +2,13 @@
 
 ## In-game Menu
 
+If you can't open in-game menu:
+1. Please check that you have enabled DLSS from game options
+2. Please try opening menu while you are in-game (while 3D rendering is happening)
+3. There is a 200 frame delay before enabling in-game menu, please wait 10-15 seconds before opening menu.
+4. If you are using RTSS (MSI Afterburner, CapFrameX) please enable this setting of RTSS and try updating RTSS.
+  ![image](https://github.com/cdozdil/OptiScaler/assets/35529761/8afb24ac-662a-40ae-a97c-837369e03fc7)
+
 * Some games do not release mouse control, kayboard & gamepad controls should still work in these situations.
 * On some system and game combinations, opening the old in-game menu may cause the game to crash or cause graphical corruption (especially in Unreal Engine 5 games).
 
