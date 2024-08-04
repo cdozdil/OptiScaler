@@ -233,9 +233,7 @@ static bool IsActivePath(SwapchainSource source, bool justQuery = false)
     {
         case Dx12:
             // native need 2x more frames to be sure because of fg
-            result = ((_slCounter == 0 && _fsr3ModCounter == 0 && _fsr3NativeCounter == 0 && (_nativeCounter > 75 || _nativeCounterEB > 75)) ||
-                (_nativeCounter > 170 || _nativeCounterEB > 170)) &&
-                !IsActivePath(SL, true) && !IsActivePath(FSR3_Mod, true) && !IsActivePath(FSR3_Native, true) && _usingNative && _cqDx12 != nullptr;
+            result = (_nativeCounter > 170 || _nativeCounterEB > 170) && !IsActivePath(SL, true) && !IsActivePath(FSR3_Mod, true) && !IsActivePath(FSR3_Native, true) && _usingNative && _cqDx12 != nullptr;
 
             if (result)
                 g_pd3dCommandQueue = _cqDx12;
@@ -243,8 +241,7 @@ static bool IsActivePath(SwapchainSource source, bool justQuery = false)
             break;
 
         case SL:
-            result = ((_fsr3ModCounter == 0 && _fsr3NativeCounter == 0 && _slCounter > 65) || _slCounter > 75) && 
-                !IsActivePath(FSR3_Native, true) && _usingDLSSG && _cqDx12 != nullptr;
+            result = _slCounter > 75 && !IsActivePath(FSR3_Native, true) && _usingDLSSG && _cqDx12 != nullptr;
 
             if (result)
                 g_pd3dCommandQueue = _cqDx12;
@@ -252,8 +249,7 @@ static bool IsActivePath(SwapchainSource source, bool justQuery = false)
             break;
 
         case FSR3_Mod:
-            result = ((_fsr3NativeCounter == 0 && _fsr3ModCounter > 30) || _fsr3ModCounter > 65) && 
-                !IsActivePath(FSR3_Native, true) && _usingFSR3_Mod && _cqDx12 != nullptr;
+            result = _fsr3ModCounter > 65 && !IsActivePath(FSR3_Native, true) && _usingFSR3_Mod && _cqDx12 != nullptr;
 
             if (result)
                 g_pd3dCommandQueue = _cqDx12;
@@ -774,6 +770,12 @@ static HRESULT WINAPI hkResizeBuffers1_Mod(IDXGISwapChain3* pSwapChain, UINT Buf
 static int32_t WINAPI hkffxCreateFrameinterpolationSwapchainForHwndDX12_Mod(HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* desc1,
                                                                             const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* fullscreenDesc, ID3D12CommandQueue* queue, IDXGIFactory* dxgiFactory, IDXGISwapChain4** outGameSwapChain)
 {
+    if (_slBaseSwapChain != nullptr)
+    {
+        _slBaseSwapChain->Release();
+        _slBaseSwapChain = nullptr;
+    }
+
     CleanupRenderTarget(true);
 
     auto result = offxCreateFrameinterpolationSwapchainForHwndDX12_Mod(hWnd, desc1, fullscreenDesc, queue, dxgiFactory, outGameSwapChain);
@@ -851,6 +853,12 @@ static int32_t WINAPI hkffxFsr3ConfigureFrameGeneration_Mod(void* context, FfxFr
 static int32_t WINAPI hkffxCreateFrameinterpolationSwapchainForHwndDX12_FSR3(HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* desc1,
                                                                              const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* fullscreenDesc, ID3D12CommandQueue* queue, IDXGIFactory* dxgiFactory, IDXGISwapChain4** outGameSwapChain)
 {
+    if (_slBaseSwapChain != nullptr)
+    {
+        _slBaseSwapChain->Release();
+        _slBaseSwapChain = nullptr;
+    }
+
     CleanupRenderTarget(true);
 
     auto result = offxCreateFrameinterpolationSwapchainForHwndDX12_FSR3(hWnd, desc1, fullscreenDesc, queue, dxgiFactory, outGameSwapChain);
@@ -1083,6 +1091,12 @@ static void WINAPI hkExecuteCommandLists_SL(ID3D12CommandQueue* pCommandQueue, U
 
 static HRESULT WINAPI hkCreateSwapChain_Dx12(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain)
 {
+    if (_slBaseSwapChain != nullptr)
+    {
+        _slBaseSwapChain->Release();
+        _slBaseSwapChain = nullptr;
+    }
+
     CleanupRenderTarget(true);
     auto result = oCreateSwapChain_Dx12(pFactory, pDevice, pDesc, ppSwapChain);
     return result;
@@ -1091,6 +1105,12 @@ static HRESULT WINAPI hkCreateSwapChain_Dx12(IDXGIFactory* pFactory, IUnknown* p
 static HRESULT WINAPI hkCreateSwapChainForHwnd_Dx12(IDXGIFactory* pFactory, IUnknown* pDevice, HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* pDesc,
                                                     const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
+    if (_slBaseSwapChain != nullptr)
+    {
+        _slBaseSwapChain->Release();
+        _slBaseSwapChain = nullptr;
+    }
+
     CleanupRenderTarget(true);
     auto result = oCreateSwapChainForHwnd_Dx12(pFactory, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     return result;
@@ -1099,6 +1119,12 @@ static HRESULT WINAPI hkCreateSwapChainForHwnd_Dx12(IDXGIFactory* pFactory, IUnk
 static HRESULT WINAPI hkCreateSwapChainForCoreWindow_Dx12(IDXGIFactory* pFactory, IUnknown* pDevice, IUnknown* pWindow, const DXGI_SWAP_CHAIN_DESC1* pDesc,
                                                           IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
+    if (_slBaseSwapChain != nullptr)
+    {
+        _slBaseSwapChain->Release();
+        _slBaseSwapChain = nullptr;
+    }
+
     CleanupRenderTarget(true);
     auto result = oCreateSwapChainForCoreWindow_Dx12(pFactory, pDevice, pWindow, pDesc, pRestrictToOutput, ppSwapChain);
     return result;
@@ -1107,6 +1133,12 @@ static HRESULT WINAPI hkCreateSwapChainForCoreWindow_Dx12(IDXGIFactory* pFactory
 static HRESULT WINAPI hkCreateSwapChainForComposition_Dx12(IDXGIFactory* pFactory, IUnknown* pDevice, const DXGI_SWAP_CHAIN_DESC1* pDesc,
                                                            IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
+    if (_slBaseSwapChain != nullptr)
+    {
+        _slBaseSwapChain->Release();
+        _slBaseSwapChain = nullptr;
+    }
+
     CleanupRenderTarget(true);
     auto result = oCreateSwapChainForComposition_Dx12(pFactory, pDevice, pDesc, pRestrictToOutput, ppSwapChain);
     return result;
@@ -1118,6 +1150,12 @@ static HRESULT WINAPI hkCreateSwapChainForComposition_Dx12(IDXGIFactory* pFactor
 
 static HRESULT WINAPI hkCreateSwapChain_EB(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain)
 {
+    if (_slBaseSwapChain != nullptr)
+    {
+        _slBaseSwapChain->Release();
+        _slBaseSwapChain = nullptr;
+    }
+
     CleanupRenderTarget(true);
 
     auto result = oCreateSwapChain_EB(pFactory, pDevice, pDesc, ppSwapChain);
@@ -1134,6 +1172,12 @@ static HRESULT WINAPI hkCreateSwapChain_EB(IDXGIFactory* pFactory, IUnknown* pDe
 static HRESULT WINAPI hkCreateSwapChainForHwnd_EB(IDXGIFactory* pFactory, IUnknown* pDevice, HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* pDesc,
                                                   const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
+    if (_slBaseSwapChain != nullptr)
+    {
+        _slBaseSwapChain->Release();
+        _slBaseSwapChain = nullptr;
+    }
+
     CleanupRenderTarget(true);
 
     auto result = oCreateSwapChainForHwnd_EB(pFactory, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
@@ -1150,6 +1194,12 @@ static HRESULT WINAPI hkCreateSwapChainForHwnd_EB(IDXGIFactory* pFactory, IUnkno
 static HRESULT WINAPI hkCreateSwapChainForCoreWindow_EB(IDXGIFactory* pFactory, IUnknown* pDevice, IUnknown* pWindow, const DXGI_SWAP_CHAIN_DESC1* pDesc,
                                                         IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
+    if (_slBaseSwapChain != nullptr)
+    {
+        _slBaseSwapChain->Release();
+        _slBaseSwapChain = nullptr;
+    }
+
     CleanupRenderTarget(true);
 
     auto result = oCreateSwapChainForCoreWindow_EB(pFactory, pDevice, pWindow, pDesc, pRestrictToOutput, ppSwapChain);
@@ -1166,6 +1216,12 @@ static HRESULT WINAPI hkCreateSwapChainForCoreWindow_EB(IDXGIFactory* pFactory, 
 static HRESULT WINAPI hkCreateSwapChainForComposition_EB(IDXGIFactory* pFactory, IUnknown* pDevice, const DXGI_SWAP_CHAIN_DESC1* pDesc,
                                                          IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
+    if (_slBaseSwapChain != nullptr)
+    {
+        _slBaseSwapChain->Release();
+        _slBaseSwapChain = nullptr;
+    }
+
     CleanupRenderTarget(true);
 
     auto result = oCreateSwapChainForComposition_EB(pFactory, pDevice, pDesc, pRestrictToOutput, ppSwapChain);
@@ -1199,6 +1255,12 @@ static HRESULT WINAPI hkCreateSwapChain_SL(IDXGIFactory* pFactory, IUnknown* pDe
 static HRESULT WINAPI hkCreateSwapChainForHwnd_SL(IDXGIFactory* pFactory, IUnknown* pDevice, HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* pDesc,
                                                   const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
+    if (_slBaseSwapChain != nullptr)
+    {
+        _slBaseSwapChain->Release();
+        _slBaseSwapChain = nullptr;
+    }
+
     CleanupRenderTarget(true);
     auto result = oCreateSwapChainForHwnd_SL(pFactory, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     return result;
