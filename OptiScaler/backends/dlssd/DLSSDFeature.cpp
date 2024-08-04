@@ -205,22 +205,22 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
         RenderPresetUltraPerformance = Config::Instance()->RenderPresetUltraPerformance.value_or(RenderPresetUltraPerformance);
     }
 
-    if (RenderPresetDLAA < 0 || RenderPresetDLAA > 5)
+    if (RenderPresetDLAA < 0 || RenderPresetDLAA > 7)
         RenderPresetDLAA = 0;
 
-    if (RenderPresetUltraQuality < 0 || RenderPresetUltraQuality > 5)
+    if (RenderPresetUltraQuality < 0 || RenderPresetUltraQuality > 7)
         RenderPresetUltraQuality = 0;
 
-    if (RenderPresetQuality < 0 || RenderPresetQuality > 5)
+    if (RenderPresetQuality < 0 || RenderPresetQuality > 7)
         RenderPresetQuality = 0;
 
-    if (RenderPresetBalanced < 0 || RenderPresetBalanced > 5)
+    if (RenderPresetBalanced < 0 || RenderPresetBalanced > 7)
         RenderPresetBalanced = 0;
 
-    if (RenderPresetPerformance < 0 || RenderPresetPerformance > 5)
+    if (RenderPresetPerformance < 0 || RenderPresetPerformance > 7)
         RenderPresetPerformance = 0;
 
-    if (RenderPresetUltraPerformance < 0 || RenderPresetUltraPerformance > 5)
+    if (RenderPresetUltraPerformance < 0 || RenderPresetUltraPerformance > 7)
         RenderPresetUltraPerformance = 0;
 
     InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, RenderPresetDLAA);

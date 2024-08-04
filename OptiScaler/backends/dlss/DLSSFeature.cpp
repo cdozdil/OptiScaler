@@ -206,6 +206,14 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
     if (Config::Instance()->RenderPresetOverride.value_or(false))
     {
+        LOG_DEBUG("Preset override active, config overrides:");
+        LOG_DEBUG("Preset_DLAA {}", Config::Instance()->RenderPresetDLAA.value_or(RenderPresetDLAA));
+        LOG_DEBUG("Preset_UltraQuality {}", Config::Instance()->RenderPresetUltraQuality.value_or(RenderPresetUltraQuality));
+        LOG_DEBUG("Preset_Quality {}", Config::Instance()->RenderPresetQuality.value_or(RenderPresetQuality));
+        LOG_DEBUG("Preset_Balanced {}", Config::Instance()->RenderPresetBalanced.value_or(RenderPresetBalanced));
+        LOG_DEBUG("Preset_Performance {}", Config::Instance()->RenderPresetPerformance.value_or(RenderPresetPerformance));
+        LOG_DEBUG("Preset_UltraPerformance {}", Config::Instance()->RenderPresetUltraPerformance.value_or(RenderPresetUltraPerformance));
+
         RenderPresetDLAA = Config::Instance()->RenderPresetDLAA.value_or(RenderPresetDLAA);
         RenderPresetUltraQuality = Config::Instance()->RenderPresetUltraQuality.value_or(RenderPresetUltraQuality);
         RenderPresetQuality = Config::Instance()->RenderPresetQuality.value_or(RenderPresetQuality);
@@ -214,36 +222,37 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
         RenderPresetUltraPerformance = Config::Instance()->RenderPresetUltraPerformance.value_or(RenderPresetUltraPerformance);
     }
 
-    if (RenderPresetDLAA < 0 || RenderPresetDLAA > 5)
+    if (RenderPresetDLAA < 0 || RenderPresetDLAA > 7)
         RenderPresetDLAA = 0;
 
-    if (RenderPresetUltraQuality < 0 || RenderPresetUltraQuality > 5)
+    if (RenderPresetUltraQuality < 0 || RenderPresetUltraQuality > 7)
         RenderPresetUltraQuality = 0;
 
-    if (RenderPresetQuality < 0 || RenderPresetQuality > 5)
+    if (RenderPresetQuality < 0 || RenderPresetQuality > 7)
         RenderPresetQuality = 0;
 
-    if (RenderPresetBalanced < 0 || RenderPresetBalanced > 5)
+    if (RenderPresetBalanced < 0 || RenderPresetBalanced > 7)
         RenderPresetBalanced = 0;
 
-    if (RenderPresetPerformance < 0 || RenderPresetPerformance > 5)
+    if (RenderPresetPerformance < 0 || RenderPresetPerformance > 7)
         RenderPresetPerformance = 0;
 
-    if (RenderPresetUltraPerformance < 0 || RenderPresetUltraPerformance > 5)
+    if (RenderPresetUltraPerformance < 0 || RenderPresetUltraPerformance > 7)
         RenderPresetUltraPerformance = 0;
 
+    LOG_DEBUG("Final Presets:");
     InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, RenderPresetDLAA);
+    LOG_DEBUG("Preset_DLAA {}", RenderPresetDLAA);
     InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, RenderPresetUltraQuality);
+    LOG_DEBUG("Preset_UltraQuality {}", RenderPresetUltraQuality);
     InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, RenderPresetQuality);
+    LOG_DEBUG("Preset_Quality {}", RenderPresetQuality);
     InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, RenderPresetBalanced);
+    LOG_DEBUG("Preset_Balanced {}", RenderPresetBalanced);
     InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, RenderPresetPerformance);
+    LOG_DEBUG("Preset_Performance {}", RenderPresetPerformance);
     InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, RenderPresetUltraPerformance);
-    InParameters->Set("RayReconstruction.Hint.Render.Preset.DLAA", RenderPresetDLAA);
-    InParameters->Set("RayReconstruction.Hint.Render.Preset.UltraQuality", RenderPresetUltraQuality);
-    InParameters->Set("RayReconstruction.Hint.Render.Preset.Quality", RenderPresetQuality);
-    InParameters->Set("RayReconstruction.Hint.Render.Preset.Balanced", RenderPresetBalanced);
-    InParameters->Set("RayReconstruction.Hint.Render.Preset.Performance", RenderPresetPerformance);
-    InParameters->Set("RayReconstruction.Hint.Render.Preset.UltraPerformance", RenderPresetUltraPerformance);
+    LOG_DEBUG("Preset_UltraPerformance {}", RenderPresetUltraPerformance);
 
     LOG_FUNC_RESULT(0);
 }
