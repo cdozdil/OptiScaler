@@ -21,7 +21,7 @@ void DLSSFeature::ProcessEvaluateParams(NVSDK_NGX_Parameter* InParameters)
         InParameters->Set(NVSDK_NGX_Parameter_Sharpness, sharpness);
     }
     // rcas enabled
-    else 
+    else
     {
         InParameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
     }
@@ -179,6 +179,7 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
     LOG_INFO("Render Size: {}x{}, Target Size: {}x{}, Display Size: {}x{}", RenderWidth(), RenderHeight(), TargetWidth(), TargetHeight(), DisplayWidth(), DisplayHeight());
 
+    bool signedEnum = false;
     uint32_t RenderPresetDLAA = 0;
     uint32_t RenderPresetUltraQuality = 0;
     uint32_t RenderPresetQuality = 0;
@@ -203,6 +204,43 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, &RenderPresetUltraPerformance) != NVSDK_NGX_Result_Success)
         InParameters->Get("RayReconstruction.Hint.Render.Preset.UltraPerformance", &RenderPresetUltraPerformance);
+
+
+    if (RenderPresetDLAA >= 2147483648)
+    {
+        RenderPresetDLAA -= 2147483648;
+        signedEnum = true;
+    }
+
+    if (RenderPresetUltraQuality >= 2147483648)
+    {
+        RenderPresetUltraQuality -= 2147483648;
+        signedEnum = true;
+    }
+
+    if (RenderPresetQuality >= 2147483648)
+    {
+        RenderPresetQuality -= 2147483648;
+        signedEnum = true;
+    }
+
+    if (RenderPresetBalanced >= 2147483648)
+    {
+        RenderPresetBalanced -= 2147483648;
+        signedEnum = true;
+    }
+
+    if (RenderPresetPerformance >= 2147483648)
+    {
+        RenderPresetPerformance -= 2147483648;
+        signedEnum = true;
+    }
+
+    if (RenderPresetUltraPerformance >= 2147483648)
+    {
+        RenderPresetUltraPerformance -= 2147483648;
+        signedEnum = true;
+    }
 
     if (Config::Instance()->RenderPresetOverride.value_or(false))
     {
@@ -239,6 +277,17 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
     if (RenderPresetUltraPerformance < 0 || RenderPresetUltraPerformance > 7)
         RenderPresetUltraPerformance = 0;
+
+    LOG_DEBUG("Signed Enum: {}", signedEnum);
+    if (signedEnum)
+    {
+        RenderPresetDLAA += 2147483648;
+        RenderPresetUltraQuality += 2147483648;
+        RenderPresetQuality += 2147483648;
+        RenderPresetBalanced += 2147483648;
+        RenderPresetPerformance += 2147483648;
+        RenderPresetUltraPerformance += 2147483648;
+    }
 
     LOG_DEBUG("Final Presets:");
     InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, RenderPresetDLAA);
