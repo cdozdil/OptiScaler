@@ -150,6 +150,7 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallb
     {
         OutHeight -= OutHeight % Config::Instance()->RoundInternalResolution.value();
         OutWidth -= OutWidth % Config::Instance()->RoundInternalResolution.value();
+        scalingRatio = (float)OutWidth / (float)Width;
     }
 
     InParams->Set(NVSDK_NGX_Parameter_Scale, scalingRatio);

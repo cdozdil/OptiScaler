@@ -753,10 +753,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 
     if (Config::Instance()->changeBackend)
     {
-        if (Config::Instance()->newBackend == "")
+        if (Config::Instance()->newBackend == "" || (!Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->newBackend == "dlss"))
             Config::Instance()->newBackend = Config::Instance()->VulkanUpscaler.value_or("fsr21");
 
         changeBackendCounter++;
+        
+        LOG_INFO("changeBackend is true, counter: {0}", changeBackendCounter);
 
         // first release everything
         if (changeBackendCounter == 1)

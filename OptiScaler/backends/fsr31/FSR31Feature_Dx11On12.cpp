@@ -131,7 +131,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
 
         _baseInit = true;
 
-        LOG_DEBUG("calling InitFSR2");
+        LOG_DEBUG("calling InitFSR3");
 
         if (Dx12Device == nullptr)
         {

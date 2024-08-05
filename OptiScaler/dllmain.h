@@ -36,10 +36,6 @@ inline static PFN_EnumAdapters1 ptrEnumAdapters1 = nullptr;
 inline static PFN_EnumAdapterByLuid ptrEnumAdapterByLuid = nullptr;
 inline static PFN_EnumAdapterByGpuPreference ptrEnumAdapterByGpuPreference = nullptr;
 
-//inline static PFN_CREATE_DXGI_FACTORY o_CreateDXGIFactory = nullptr;
-//inline static PFN_CREATE_DXGI_FACTORY o_CreateDXGIFactory1 = nullptr;
-//inline static PFN_CREATE_DXGI_FACTORY_2 o_CreateDXGIFactory2 = nullptr;
-
 void AttachToAdapter(IUnknown* unkAdapter);
 void AttachToFactory(IUnknown* unkFactory);
 
