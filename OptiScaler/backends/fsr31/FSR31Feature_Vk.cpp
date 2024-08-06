@@ -43,29 +43,33 @@ FSR31FeatureVk::FSR31FeatureVk(unsigned int InHandleId, NVSDK_NGX_Parameter* InP
 {
     LOG_DEBUG("Loading amd_fidelityfx_vk.dll methods");
 
-    _configure = (PfnFfxConfigure)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxConfigure");
-    _createContext = (PfnFfxCreateContext)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxCreateContext");
-    _destroyContext = (PfnFfxDestroyContext)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxDestroyContext");
-    _dispatch = (PfnFfxDispatch)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxDispatch");
-    _query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxQuery");
+    auto file = Util::DllPath().parent_path() / "amd_fidelityfx_vk.dll";
+    LOG_INFO("Trying to load {}", file.string());
 
-    _moduleLoaded = _configure != nullptr;
+    auto _dll = LoadLibrary(file.wstring().c_str());
+
+    if (_dll != nullptr)
+    {
+        _configure = (PfnFfxConfigure)GetProcAddress(_dll, "ffxConfigure");
+        _createContext = (PfnFfxCreateContext)GetProcAddress(_dll, "ffxCreateContext");
+        _destroyContext = (PfnFfxDestroyContext)GetProcAddress(_dll, "ffxDestroyContext");
+        _dispatch = (PfnFfxDispatch)GetProcAddress(_dll, "ffxDispatch");
+        _query = (PfnFfxQuery)GetProcAddress(_dll, "ffxQuery");
+
+        _moduleLoaded = _configure != nullptr;
+    }
 
     if (!_moduleLoaded)
     {
-        auto file = Util::DllPath().parent_path() / "amd_fidelityfx_vk.dll";
-        auto _dll = LoadLibrary(file.wstring().c_str());
+        LOG_INFO("Trying to load amd_fidelityfx_vk.dll with detours");
 
-        if (_dll != nullptr)
-        {
-            _configure = (PfnFfxConfigure)GetProcAddress(_dll, "ffxConfigure");
-            _createContext = (PfnFfxCreateContext)GetProcAddress(_dll, "ffxCreateContext");
-            _destroyContext = (PfnFfxDestroyContext)GetProcAddress(_dll, "ffxDestroyContext");
-            _dispatch = (PfnFfxDispatch)GetProcAddress(_dll, "ffxDispatch");
-            _query = (PfnFfxQuery)GetProcAddress(_dll, "ffxQuery");
+        _configure = (PfnFfxConfigure)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxConfigure");
+        _createContext = (PfnFfxCreateContext)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxCreateContext");
+        _destroyContext = (PfnFfxDestroyContext)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxDestroyContext");
+        _dispatch = (PfnFfxDispatch)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxDispatch");
+        _query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxQuery");
 
-            _moduleLoaded = _configure != nullptr;
-        }
+        _moduleLoaded = _configure != nullptr;
     }
 
     if (_moduleLoaded)
