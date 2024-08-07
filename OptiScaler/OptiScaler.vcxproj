@@ -281,6 +281,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="backends\fsr31\FSR31Feature_Dx11On12.cpp" />
     <ClCompile Include="backends\fsr31\FSR31Feature_Dx12.cpp" />
     <ClCompile Include="backends\fsr31\FSR31Feature_Vk.cpp" />
+    <ClCompile Include="backends\IFeature.cpp" />
     <ClCompile Include="backends\IFeature_Dx11.cpp" />
     <ClCompile Include="backends\IFeature_Dx11wDx12.cpp" />
     <ClCompile Include="backends\IFeature_Dx11wDx12.h" />
