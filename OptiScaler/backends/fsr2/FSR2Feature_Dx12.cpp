@@ -58,6 +58,9 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
     }
     else
     {
+        if (_sharpness > 1.0f)
+            _sharpness = 1.0f;
+
         params.enableSharpening = _sharpness > 0.0f;
         params.sharpness = _sharpness;
     }

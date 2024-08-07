@@ -164,6 +164,9 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
     }
     else
     {
+        if (_sharpness > 1.0f)
+            _sharpness = 1.0f;
+
         params.enableSharpening = _sharpness > 0.0f;
         params.sharpness = _sharpness;
     }

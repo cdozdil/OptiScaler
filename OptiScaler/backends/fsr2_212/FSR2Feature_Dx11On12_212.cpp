@@ -165,6 +165,9 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
     }
     else
     {
+        if (_sharpness > 1.0f)
+            _sharpness = 1.0f;
+
         params.enableSharpening = _sharpness > 0.0f;
         params.sharpness = _sharpness;
     }
@@ -278,30 +281,6 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
 
         params.motionVectorScale.x = MVScaleX;
         params.motionVectorScale.y = MVScaleY;
-    }
-
-    if (Config::Instance()->OverrideSharpness.value_or(false))
-    {
-        params.enableSharpening = Config::Instance()->Sharpness.value_or(0.3) > 0.0f;
-        params.sharpness = Config::Instance()->Sharpness.value_or(0.3);
-    }
-    else
-    {
-        float shapness = 0.0f;
-        if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &shapness) == NVSDK_NGX_Result_Success)
-        {
-            _sharpness = shapness;
-
-            params.enableSharpening = shapness > 0.0f;
-
-            if (params.enableSharpening)
-            {
-                if (shapness > 1.0f)
-                    params.sharpness = 1.0f;
-                else
-                    params.sharpness = shapness;
-            }
-        }
     }
 
     if (IsDepthInverted())
