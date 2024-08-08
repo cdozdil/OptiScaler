@@ -1,4 +1,4 @@
-LIBRARY "DXGI"
+LIBRARY "dxgi"
 EXPORTS  
 CreateDXGIFactory = _CreateDXGIFactory 
 CreateDXGIFactory1 = _CreateDXGIFactory1 
