@@ -205,6 +205,16 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="bias\Bias_Dx12.h" />
     <ClInclude Include="bias\Bias_Dx11.h" />
     <ClInclude Include="bias\precompile\Bias_Shader.h" />
+    <ClInclude Include="exports\Dxgi.h" />
+    <ClInclude Include="exports\Exports.h" />
+    <ClInclude Include="exports\Shared.h" />
+    <ClInclude Include="exports\Version.h" />
+    <ClInclude Include="exports\Winhttp.h" />
+    <ClInclude Include="exports\Wininet.h" />
+    <ClInclude Include="exports\Winmm.h" />
+    <ClInclude Include="hooks\LoadLibrary_Hooks.h" />
+    <ClInclude Include="hooks\Vulkan_Hooks.h" />
+    <ClInclude Include="Working_Mode.h" />
     <ClInclude Include="output_scaling\OS_Common.h" />
     <ClInclude Include="output_scaling\OS_Dx12.h" />
     <ClInclude Include="output_scaling\precompile\BCDS_Shader.h" />
@@ -215,9 +225,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx11On12_212.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx12_212.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_Vk_212.h" />
-    <ClInclude Include="backends\IFeatureCreateParams.h" />
-    <ClInclude Include="backends\IFeatureCreateParams_DLSS.h" />
-    <ClInclude Include="backends\IFeatureEvaluateParams.h" />
     <ClInclude Include="cas\include\backends\shared\ffx_shader_blobs.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="backends\fsr2\FSR2Feature.h" />
@@ -231,7 +238,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="backends\IFeature_Vk.h" />
     <ClInclude Include="detours\detours.h" />
     <ClInclude Include="dllmain.h" />
-    <ClInclude Include="backends\IFeatureEvaluateParams_DLSS.h" />
     <ClInclude Include="imgui\imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui\imgui.h" />
     <ClInclude Include="imgui\imgui\imgui_impl_dx11.h" />
@@ -294,6 +300,9 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="backends\fsr2\FSR2Feature_Dx12.cpp" />
     <ClCompile Include="backends\fsr2\FSR2Feature_Vk.cpp" />
     <ClCompile Include="backends\IFeature_Dx12.cpp" />
+    <ClCompile Include="hooks\LoadLibrary_Hooks.cpp" />
+    <ClCompile Include="hooks\Vulkan_Hooks.cpp" />
+    <ClCompile Include="Working_Mode.cpp" />
     <ClCompile Include="imgui\imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui\imgui_demo.cpp" />
     <ClCompile Include="imgui\imgui\imgui_draw.cpp" />
