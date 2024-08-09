@@ -1,4 +1,7 @@
 #pragma once
 
-void AttachLoadLibraryHooks();
-void DetachLoadLibraryHooks();
+namespace Hooks 
+{
+    void AttachLoadLibraryHooks();
+    void DetachLoadLibraryHooks();
+}

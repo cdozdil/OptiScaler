@@ -247,7 +247,7 @@ static VkResult hkvkEnumerateInstanceExtensionProperties(const char* pLayerName,
 
 #pragma endregion
 
-void AttachVulkanDeviceHooks()
+void Hooks::AttachVulkanDeviceHooks()
 {
     if (o_vkGetPhysicalDeviceProperties == nullptr)
     {
@@ -276,7 +276,7 @@ void AttachVulkanDeviceHooks()
     }
 }
 
-void DetachVulkanDeviceHooks()
+void Hooks::DetachVulkanDeviceHooks()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
@@ -302,7 +302,7 @@ void DetachVulkanDeviceHooks()
     DetourTransactionCommit();
 }
 
-void AttachVulkanExtensionHooks()
+void Hooks::AttachVulkanExtensionHooks()
 {
     if (o_vkEnumerateInstanceExtensionProperties == nullptr)
     {
@@ -335,7 +335,7 @@ void AttachVulkanExtensionHooks()
     }
 }
 
-void DetachVulkanExtensionHooks()
+void Hooks::DetachVulkanExtensionHooks()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());

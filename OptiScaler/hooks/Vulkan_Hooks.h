@@ -1,6 +1,9 @@
 #pragma once
 
-void AttachVulkanDeviceHooks();
-void DetachVulkanDeviceHooks();
-void AttachVulkanExtensionHooks();
-void DetachVulkanExtensionHooks();
+namespace Hooks
+{
+    void AttachVulkanDeviceHooks();
+    void DetachVulkanDeviceHooks();
+    void AttachVulkanExtensionHooks();
+    void DetachVulkanExtensionHooks();
+}

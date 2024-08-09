@@ -39,7 +39,7 @@ static std::string nvngxDlssExA("nvngx_dlss");
 static std::wstring nvngxDlssW(L"nvngx_dlss.dll");
 static std::wstring nvngxDlssExW(L"nvngx_dlss");
 
-inline static HMODULE LoadNvApi()
+static HMODULE LoadNvApi()
 {
     HMODULE nvapi = nullptr;
 
@@ -80,7 +80,7 @@ inline static HMODULE LoadNvApi()
     return nullptr;
 }
 
-inline static HMODULE LoadNvgxDlss(std::wstring originalPath)
+static HMODULE LoadNvgxDlss(std::wstring originalPath)
 {
     HMODULE nvngxDlss = nullptr;
 
@@ -627,7 +627,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
 
 #pragma endregion
 
-void AttachLoadLibraryHooks()
+void Hooks::AttachLoadLibraryHooks()
 {
     if (o_LoadLibraryA == nullptr || o_LoadLibraryW == nullptr)
     {
@@ -668,7 +668,7 @@ void AttachLoadLibraryHooks()
     }
 }
 
-void DetachLoadLibraryHooks()
+void Hooks::DetachLoadLibraryHooks()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
