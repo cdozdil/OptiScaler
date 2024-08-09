@@ -1,40 +1,55 @@
 #pragma once
-#include "dllmain.h"
 #include "resource.h"
 
 #include "Logger.h"
 #include "Config.h"
 #include "Working_Mode.h"
 
+#include "hooks/Dxgi_Hooks.h"
 #include "hooks/Vulkan_Hooks.h"
 #include "hooks/LoadLibrary_Hooks.h"
+#include "hooks/NvApi_Hooks.h"
+#include "hooks/Nvngx_Hooks.h"
 
 #include "imgui/imgui_overlay_dx12.h"
 
-//#pragma warning (disable : 4996)
-
-void AttachHooks();
-void DetachHooks();
-
 static void DetachHooks()
 {
-    DetachLoadLibraryHooks();
-    WorkingMode::DetachHooks();
-    DetachVulkanDeviceHooks();
-    DetachVulkanExtensionHooks();
+    Hooks::DetachLoadLibraryHooks();
+    Hooks::DetachNvApiHooks();
+    Hooks::DetachNvngxHooks();
+    Hooks::DetachDxgiHooks();
+    Hooks::DetachVulkanDeviceHooks();
+    Hooks::DetachVulkanExtensionHooks();
 }
 
 static void AttachHooks()
 {
     LOG_FUNC();
 
-    AttachLoadLibraryHooks();
+    // Dll redirect hooks
+    if (!WorkingMode::IsNvngxMode())
+        Hooks::AttachLoadLibraryHooks();
 
+    // Nvapi spoofing fo 16xx
+    if (WorkingMode::IsNvngxAvailable() && !Config::Instance()->OverrideNvapiDll.value_or(false))
+        Hooks::AttachNvApiHooks();
+
+    // Nvngx 16xx spoofing
+    if (WorkingMode::IsNvngxAvailable())
+        Hooks::AttachNvngxHooks();
+
+    // Dxgi spoofing
+    if (!WorkingMode::IsWorkingWithEnabler() && !Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
+        Hooks::AttachDxgiHooks();
+
+    // Vulkan spoofing
     if (Config::Instance()->VulkanSpoofing.value_or(false))
-        AttachVulkanDeviceHooks();
+        Hooks::AttachVulkanDeviceHooks();
 
+    // Vulkan extension spoofing
     if (Config::Instance()->VulkanExtensionSpoofing.value_or(false))
-        AttachVulkanExtensionHooks();
+        Hooks::AttachVulkanExtensionHooks();
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
@@ -68,7 +83,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             spdlog::warn("");
             spdlog::warn("LogLevel: {0}", Config::Instance()->LogLevel.value_or(2));
 
-            // Check for working mode and attach hooks
+            // Check for working mode
             spdlog::info("");
             WorkingMode::Check();
             spdlog::info("");
@@ -87,9 +102,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             break;
 
         case DLL_PROCESS_DETACH:
-#ifdef _DEBUG
-            LOG_TRACE("DLL_PROCESS_DETACH from module: {0:X}", (UINT64)hModule);
-#endif
             spdlog::info("");
             spdlog::info("Unloading OptiScaler");
             CloseLogger();
@@ -98,15 +110,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             break;
 
         case DLL_THREAD_ATTACH:
-#ifdef _DEBUG
-            // LOG_TRACE("DllMain DLL_THREAD_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
-#endif
             break;
 
         case DLL_THREAD_DETACH:
-#ifdef _DEBUG
-            // LOG_TRACE("DLL_THREAD_DETACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
-#endif
             break;
 
         default:
