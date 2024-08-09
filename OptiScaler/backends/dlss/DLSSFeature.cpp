@@ -344,12 +344,6 @@ DLSSFeature::DLSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameter
     if (NVNGXProxy::NVNGXModule() == nullptr)
         NVNGXProxy::InitNVNGX();
 
-    if (NVNGXProxy::NVNGXModule() != nullptr && !Config::Instance()->DE_Available)
-    {
-        HookNvApi();
-        HookNgxApi(NVNGXProxy::NVNGXModule());
-    }
-
     _moduleLoaded = NVNGXProxy::NVNGXModule() != nullptr;
 
     LOG_FUNC_RESULT(_moduleLoaded);
@@ -362,9 +356,6 @@ DLSSFeature::~DLSSFeature()
 void DLSSFeature::Shutdown()
 {
     LOG_FUNC();
-
-    if (NVNGXProxy::NVNGXModule() != nullptr)
-        UnhookApis();
 
     LOG_FUNC_RESULT(0);
 }

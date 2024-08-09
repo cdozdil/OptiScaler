@@ -11,9 +11,10 @@
 #include "backends/fsr31/FSR31Feature_Dx12.h"
 #include "backends/xess/XeSSFeature_Dx12.h"
 
+#include "hooks/Dx12_Hooks.h"
+
 #include "imgui/imgui_overlay_dx12.h"
 
-#include "detours/detours.h"
 #include <ankerl/unordered_dense.h>
 #include <dxgi1_4.h>
 
@@ -22,183 +23,6 @@ static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeatu
 static inline NVSDK_NGX_Parameter* createParams = nullptr;
 static inline int changeBackendCounter = 0;
 static inline int evalCounter = 0;
-static inline std::wstring appDataPath = L".";
-
-#pragma region Hooks
-
-typedef void(__fastcall* PFN_SetComputeRootSignature)(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature);
-typedef void(__fastcall* PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
-
-static inline PFN_SetComputeRootSignature orgSetComputeRootSignature = nullptr;
-static inline PFN_SetComputeRootSignature orgSetGraphicRootSignature = nullptr;
-static inline PFN_CreateSampler orgCreateSampler = nullptr;
-
-static inline ID3D12RootSignature* rootSigCompute = nullptr;
-static inline ID3D12RootSignature* rootSigGraphic = nullptr;
-static inline bool contextRendering = false;
-static inline ULONGLONG computeTime = 0;
-static inline ULONGLONG graphTime = 0;
-static inline ULONGLONG lastEvalTime = 0;
-inline static std::mutex sigatureMutex;
-
-static inline int64_t GetTicks()
-{
-    LARGE_INTEGER ticks;
-
-    if (!QueryPerformanceCounter(&ticks))
-        return 0;
-
-    return ticks.QuadPart;
-}
-
-static void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
-{
-    if (!contextRendering && commandList != nullptr && pRootSignature != nullptr)
-    {
-        sigatureMutex.lock();
-        rootSigCompute = pRootSignature;
-        computeTime = GetTicks();
-        sigatureMutex.unlock();
-    }
-
-    return orgSetComputeRootSignature(commandList, pRootSignature);
-}
-
-static void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
-{
-    if (!contextRendering && commandList != nullptr && pRootSignature != nullptr)
-    {
-        sigatureMutex.lock();
-        rootSigGraphic = pRootSignature;
-        graphTime = GetTicks();
-        sigatureMutex.unlock();
-    }
-
-    return orgSetGraphicRootSignature(commandList, pRootSignature);
-}
-
-static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
-{
-    if (pDesc == nullptr || device == nullptr)
-        return;
-
-    D3D12_SAMPLER_DESC newDesc{};
-
-    newDesc.AddressU = pDesc->AddressU;
-    newDesc.AddressV = pDesc->AddressV;
-    newDesc.AddressW = pDesc->AddressW;
-    newDesc.BorderColor[0] = pDesc->BorderColor[0];
-    newDesc.BorderColor[1] = pDesc->BorderColor[1];
-    newDesc.BorderColor[2] = pDesc->BorderColor[2];
-    newDesc.BorderColor[3] = pDesc->BorderColor[3];
-    newDesc.ComparisonFunc = pDesc->ComparisonFunc;
-
-    if (Config::Instance()->AnisotropyOverride.has_value() &&
-        (pDesc->Filter == D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT ||
-        pDesc->Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT ||
-        pDesc->Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR ||
-        pDesc->Filter == D3D12_FILTER_ANISOTROPIC))
-    {
-        LOG_INFO("Overriding Anisotrpic ({2}) filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
-        newDesc.Filter = D3D12_FILTER_ANISOTROPIC;
-        newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
-    }
-    else
-    {
-        newDesc.Filter = pDesc->Filter;
-        newDesc.MaxAnisotropy = pDesc->MaxAnisotropy;
-    }
-
-    newDesc.MaxLOD = pDesc->MaxLOD;
-    newDesc.MinLOD = pDesc->MinLOD;
-    newDesc.MipLODBias = pDesc->MipLODBias;
-
-    if (newDesc.MipLODBias < 0.0f)
-    {
-        if (Config::Instance()->MipmapBiasOverride.has_value())
-        {
-            LOG_INFO("Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
-            newDesc.MipLODBias = Config::Instance()->MipmapBiasOverride.value();
-        }
-
-        Config::Instance()->lastMipBias = newDesc.MipLODBias;
-    }
-
-    return orgCreateSampler(device, &newDesc, DestDescriptor);
-}
-
-void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
-{
-    if (orgSetComputeRootSignature != nullptr || orgSetGraphicRootSignature != nullptr)
-        return;
-
-    PVOID* pVTable = *(PVOID**)InCmdList;
-
-    orgSetComputeRootSignature = (PFN_SetComputeRootSignature)pVTable[29];
-    orgSetGraphicRootSignature = (PFN_SetComputeRootSignature)pVTable[30];
-
-    if (orgSetComputeRootSignature != nullptr || orgSetGraphicRootSignature != nullptr)
-    {
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-
-        if (orgSetComputeRootSignature != nullptr)
-            DetourAttach(&(PVOID&)orgSetComputeRootSignature, hkSetComputeRootSignature);
-
-        if (orgSetGraphicRootSignature != nullptr)
-            DetourAttach(&(PVOID&)orgSetGraphicRootSignature, hkSetGraphicRootSignature);
-
-        DetourTransactionCommit();
-    }
-}
-
-void HookToDevice(ID3D12Device* InDevice)
-{
-    if (!ImGuiOverlayDx12::IsEarlyBind() && orgCreateSampler != nullptr || InDevice == nullptr)
-        return;
-
-    PVOID* pVTable = *(PVOID**)InDevice;
-
-    orgCreateSampler = (PFN_CreateSampler)pVTable[22];
-
-    if (orgCreateSampler != nullptr)
-    {
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-
-        DetourAttach(&(PVOID&)orgCreateSampler, hkCreateSampler);
-
-        DetourTransactionCommit();
-    }
-}
-
-void UnhookAll()
-{
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-
-    if (orgSetComputeRootSignature != nullptr)
-    {
-        DetourDetach(&(PVOID&)orgSetComputeRootSignature, hkSetComputeRootSignature);
-        orgSetComputeRootSignature = nullptr;
-    }
-
-    if (orgSetGraphicRootSignature != nullptr)
-    {
-        DetourDetach(&(PVOID&)orgSetGraphicRootSignature, hkSetGraphicRootSignature);
-        orgSetGraphicRootSignature = nullptr;
-    }
-
-    if (orgCreateSampler != nullptr)
-    {
-        DetourDetach(&(PVOID&)orgCreateSampler, hkCreateSampler);
-        orgCreateSampler = nullptr;
-    }
-
-    DetourTransactionCommit();
-}
-
-#pragma endregion
 
 #pragma region DLSS Init Calls
 
@@ -237,7 +61,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 
     LOG_INFO("AppId: {0}", InApplicationId);
     LOG_INFO("SDK: {0:x}", (unsigned int)InSDKVersion);
-    appDataPath = InApplicationDataPath;
+    std::wstring appDataPath = InApplicationDataPath;
 
     LOG_INFO("InApplicationDataPath {0}", wstring_to_string(appDataPath));
 
@@ -260,9 +84,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
     }
 
     D3D12Device = InDevice;
-
-    if (!ImGuiOverlayDx12::IsEarlyBind() && D3D12Device != nullptr)
-        HookToDevice(D3D12Device);
 
     Config::Instance()->Api = NVNGX_DX12;
 
@@ -367,8 +188,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
     D3D12Device = nullptr;
 
     Config::Instance()->CurrentFeature = nullptr;
-
-    UnhookAll();
 
     DLSSFeatureDx12::Shutdown(D3D12Device);
 
@@ -700,8 +519,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
             LOG_ERROR("Can't get Dx12Device from InCmdList!");
             return NVSDK_NGX_Result_Fail;
         }
-
-        HookToDevice(D3D12Device);
     }
 
 #pragma endregion
@@ -709,7 +526,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
     if (deviceContext->Init(D3D12Device, InCmdList, InParameters))
     {
         Config::Instance()->CurrentFeature = deviceContext;
-        HookToCommandList(InCmdList);
         evalCounter = 0;
 
         return NVSDK_NGX_Result_Success;
@@ -819,8 +635,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         LOG_DEBUG("Handle: {0}", InFeatureHandle->Id);
     }
 
-    auto evaluateStart = GetTicks();
-
     auto handleId = InFeatureHandle->Id;
     LOG_DEBUG("FeatureId: {0}", handleId);
 
@@ -830,11 +644,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         return NVSDK_NGX_Result_Fail;
     }
 
+    Hooks::ContextEvaluateStart();
+
     if (Config::Instance()->OverlayMenu.value_or(true) &&
         Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(75) &&
         !ImGuiOverlayDx12::IsInitedDx12())
     {
-        contextRendering = true;
+        Hooks::ContextRenderingStart();
 
         auto hwnd = Util::GetProcessWindow();
 
@@ -858,7 +674,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         if (consoleAllocated)
             FreeConsole();
 
-        contextRendering = false;
+        Hooks::ContextRenderingStop();
     }
 
     if (handleId < 1000000)
@@ -885,13 +701,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     // Check window recreation
     if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayDx12::IsInitedDx12())
     {
-        contextRendering = true;
+        Hooks::ContextRenderingStart();
 
         HWND currentHandle = Util::GetProcessWindow();
         if (ImGuiOverlayDx12::Handle() != currentHandle)
             ImGuiOverlayDx12::ReInitDx12(currentHandle);
 
-        contextRendering = false;
+        Hooks::ContextRenderingStop();
     }
 
     if (InCallback)
@@ -997,11 +813,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 Config::Instance()->CurrentFeature = nullptr;
 
-                contextRendering = false;
-                lastEvalTime = evaluateStart;
-
-                rootSigCompute = nullptr;
-                rootSigGraphic = nullptr;
+                Hooks::ContextRenderingStop();
+                Hooks::ContextEvaluateStop(nullptr, false);
             }
             else
             {
@@ -1156,67 +969,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     Config::Instance()->CurrentFeature = deviceContext;
 
-    ID3D12RootSignature* orgComputeRootSig = nullptr;
-    ID3D12RootSignature* orgGraphicRootSig = nullptr;
-
     if (deviceContext->Name() != "DLSSD")
-    {
-        sigatureMutex.lock();
-
-        orgComputeRootSig = rootSigCompute;
-        orgGraphicRootSig = rootSigGraphic;
-
-        LOG_TRACE("orgComputeRootSig: {0:X}, orgGraphicRootSig: {1:X}", (UINT64)orgComputeRootSig, (UINT64)orgGraphicRootSig);
-
-        contextRendering = true;
-
-        sigatureMutex.unlock();
-    }
+        Hooks::ContextRenderingStart();
 
     bool evalResult = deviceContext->Evaluate(InCmdList, InParameters);
 
-    if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
-    {
-        sigatureMutex.lock();
-
-        if (Config::Instance()->RestoreComputeSignature.value_or(false) && computeTime != 0 && computeTime > lastEvalTime && computeTime <= evaluateStart && orgComputeRootSig != nullptr)
-        {
-            LOG_TRACE("restore orgComputeRootSig: {0:X}", (UINT64)orgComputeRootSig);
-            orgSetComputeRootSignature(InCmdList, orgComputeRootSig);
-        }
-        else
-        {
-            if (Config::Instance()->RestoreComputeSignature.value_or(false))
-            {
-                LOG_TRACE("orgComputeRootSig lastEvalTime: {0}", lastEvalTime);
-                LOG_TRACE("orgComputeRootSig computeTime: {0}", computeTime);
-                LOG_TRACE("orgComputeRootSig evaluateStart: {0}", evaluateStart);
-            }
-        }
-
-        if (Config::Instance()->RestoreGraphicSignature.value_or(false) && graphTime != 0 && graphTime > lastEvalTime && graphTime <= evaluateStart && orgGraphicRootSig != nullptr)
-        {
-            LOG_TRACE("restore orgGraphicRootSig: {0:X}", (UINT64)orgGraphicRootSig);
-            orgSetGraphicRootSignature(InCmdList, orgGraphicRootSig);
-        }
-        else
-        {
-            if (Config::Instance()->RestoreGraphicSignature.value_or(false))
-            {
-                LOG_TRACE("orgGraphicRootSig lastEvalTime: {0}", lastEvalTime);
-                LOG_TRACE("orgGraphicRootSig computeTime: {0}", graphTime);
-                LOG_TRACE("orgGraphicRootSig evaluateStart: {0}", evaluateStart);
-            }
-        }
-
-        contextRendering = false;
-        lastEvalTime = evaluateStart;
-
-        rootSigCompute = nullptr;
-        rootSigGraphic = nullptr;
-
-        sigatureMutex.unlock();
-    }
+    if (deviceContext->Name() != "DLSSD")
+        Hooks::ContextEvaluateStop(InCmdList, true);
 
     if (Config::Instance()->OverlayMenu.value_or(true))
         ImGuiOverlayDx12::CaptureQueue(InCmdList);
