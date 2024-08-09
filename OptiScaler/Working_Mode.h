@@ -1,18 +1,18 @@
 #pragma once
 #include "pch.h"
 
-namespace WorkingMode
+class WorkingMode
 {
-    void Check();
-    void DetachHooks();
+public:
+    static void Check();
 
-    std::string DllNameA();
-    std::string DllNameExA();
-    std::wstring DllNameW();
-    std::wstring DllNameExW();
+    static std::string DllNameA();
+    static std::string DllNameExA();
+    static std::wstring DllNameW();
+    static std::wstring DllNameExW();
 
-    bool IsNvngxMode();
-    bool IsWorkingWithEnabler();
-    bool IsNvngxAvailable();
-    bool IsModeFound();
+    static bool IsNvngxMode();
+    static bool IsWorkingWithEnabler();
+    static bool IsNvngxAvailable();
+    static bool IsModeFound();
 };

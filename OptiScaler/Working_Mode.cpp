@@ -6,17 +6,17 @@
 
 typedef const char* (CDECL* PFN_wine_get_version)(void);
 
-inline static std::string _dllNameA;
-inline static std::string _dllNameExA;
-inline static std::wstring _dllNameW;
-inline static std::wstring _dllNameExW;
+static std::string _dllNameA;
+static std::string _dllNameExA;
+static std::wstring _dllNameW;
+static std::wstring _dllNameExW;
 
-inline static bool _isNvngxMode = false;
-inline static bool _isWorkingWithEnabler = false;
-inline static bool _isNvngxAvailable = false;
-inline static bool _isModeFound = false;
+static bool _isNvngxMode = false;
+static bool _isWorkingWithEnabler = false;
+static bool _isNvngxAvailable = false;
+static bool _isModeFound = false;
 
-inline static bool IsRunningOnWine()
+static bool IsRunningOnWine()
 {
     LOG_FUNC();
 
@@ -44,14 +44,16 @@ void WorkingMode::Check()
 {
     LOG_FUNC();
 
-    Config::Instance()->IsRunningOnLinux = IsRunningOnWine();
+    auto config = Config::Instance();
+    
+    config->IsRunningOnLinux = IsRunningOnWine();
 
     std::string filename = Util::DllPath().filename().string();
     std::string lCaseFilename(filename);
     wchar_t sysFolder[MAX_PATH];
     GetSystemDirectory(sysFolder, MAX_PATH);
     std::filesystem::path sysPath(sysFolder);
-    std::filesystem::path pluginPath(Config::Instance()->PluginPath.value_or((Util::DllPath().parent_path() / L"plugins").wstring()));
+    std::filesystem::path pluginPath(config->PluginPath.value_or((Util::DllPath().parent_path() / L"plugins").wstring()));
 
     for (size_t i = 0; i < lCaseFilename.size(); i++)
         lCaseFilename[i] = std::tolower(lCaseFilename[i]);
@@ -73,7 +75,7 @@ void WorkingMode::Check()
             _isWorkingWithEnabler = lCaseFilename == "dlss-enabler-upscaler.dll";
 
             if (_isWorkingWithEnabler)
-                Config::Instance()->LogToNGX = true;
+                config->LogToNGX = true;
 
             _isModeFound = true;
             break;
@@ -333,7 +335,7 @@ void WorkingMode::Check()
                 shared.LoadOriginalLibrary(dll);
                 dxgi.LoadOriginalLibrary(dll);
 
-                Config::Instance()->IsDxgiMode = true;
+                config->IsDxgiMode = true;
                 _isModeFound = true;
             }
             else
@@ -346,39 +348,10 @@ void WorkingMode::Check()
 
     } while (false);
 
-    // hook dxgi when not working as dxgi.dll
-    if (!_isWorkingWithEnabler && !Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
-    {
-        LOG_INFO("DxgiSpoofing is enabled loading dxgi.dll");
-
-        dxgi.CreateDxgiFactory = (PFN_CREATE_DXGI_FACTORY)DetourFindFunction("dxgi.dll", "CreateDXGIFactory");
-        dxgi.CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY)DetourFindFunction("dxgi.dll", "CreateDXGIFactory1");
-        dxgi.CreateDxgiFactory2 = (PFN_CREATE_DXGI_FACTORY_2)DetourFindFunction("dxgi.dll", "CreateDXGIFactory2");
-
-        if (dxgi.CreateDxgiFactory != nullptr || dxgi.CreateDxgiFactory1 != nullptr || dxgi.CreateDxgiFactory2 != nullptr)
-        {
-            LOG_INFO("dxgi.dll found, hooking CreateDxgiFactory methods");
-
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
-
-            if (dxgi.CreateDxgiFactory != nullptr)
-                DetourAttach(&(PVOID&)dxgi.CreateDxgiFactory, _CreateDXGIFactory);
-
-            if (dxgi.CreateDxgiFactory1 != nullptr)
-                DetourAttach(&(PVOID&)dxgi.CreateDxgiFactory1, _CreateDXGIFactory1);
-
-            if (dxgi.CreateDxgiFactory2 != nullptr)
-                DetourAttach(&(PVOID&)dxgi.CreateDxgiFactory2, _CreateDXGIFactory2);
-
-            DetourTransactionCommit();
-        }
-    }
-
     if (_isModeFound)
     {
         // Check if real DLSS available
-        if (Config::Instance()->DLSSEnabled.value_or(true))
+        if (config->DLSSEnabled.value_or(true))
         {
             spdlog::info("");
             NVNGXProxy::InitNVNGX();
@@ -386,26 +359,26 @@ void WorkingMode::Check()
             if (NVNGXProxy::NVNGXModule() == nullptr)
             {
                 LOG_INFO("Can't load nvngx.dll, disabling DLSS");
-                Config::Instance()->DLSSEnabled = false;
+                config->DLSSEnabled = false;
             }
             else
             {
                 LOG_INFO("nvngx.dll loaded, setting DLSS as default upscaler and disabling spoofing options set to auto");
 
-                Config::Instance()->DLSSEnabled = true;
+                config->DLSSEnabled = true;
 
-                if (!Config::Instance()->DxgiSpoofing.has_value())
-                    Config::Instance()->DxgiSpoofing = false;
+                if (!config->DxgiSpoofing.has_value())
+                    config->DxgiSpoofing = false;
 
-                if (!Config::Instance()->VulkanSpoofing.has_value())
-                    Config::Instance()->VulkanSpoofing = false;
+                if (!config->VulkanSpoofing.has_value())
+                    config->VulkanSpoofing = false;
 
-                if (!Config::Instance()->VulkanExtensionSpoofing.has_value())
-                    Config::Instance()->VulkanExtensionSpoofing = false;
+                if (!config->VulkanExtensionSpoofing.has_value())
+                    config->VulkanExtensionSpoofing = false;
 
                 // Disable Overlay Menu because of crashes on Linux with Nvidia GPUs
-                if (Config::Instance()->IsRunningOnLinux && !Config::Instance()->OverlayMenu.has_value())
-                    Config::Instance()->OverlayMenu = false;
+                if (config->IsRunningOnLinux && !config->OverlayMenu.has_value())
+                    config->OverlayMenu = false;
 
                 _isNvngxAvailable = true;
             }
@@ -413,35 +386,6 @@ void WorkingMode::Check()
     }
 
     LOG_ERROR("Unsupported dll name: {0}", filename);
-}
-
-void WorkingMode::DetachHooks()
-{
-    if (!Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
-    {
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-
-        if (dxgi.CreateDxgiFactory != nullptr)
-        {
-            DetourDetach(&(PVOID&)dxgi.CreateDxgiFactory, _CreateDXGIFactory);
-            dxgi.CreateDxgiFactory = nullptr;
-        }
-
-        if (dxgi.CreateDxgiFactory1 != nullptr)
-        {
-            DetourDetach(&(PVOID&)dxgi.CreateDxgiFactory1, _CreateDXGIFactory1);
-            dxgi.CreateDxgiFactory1 = nullptr;
-        }
-
-        if (dxgi.CreateDxgiFactory2 != nullptr)
-        {
-            DetourDetach(&(PVOID&)dxgi.CreateDxgiFactory2, _CreateDXGIFactory2);
-            dxgi.CreateDxgiFactory2 = nullptr;
-        }
-
-        DetourTransactionCommit();
-    }
 }
 
 std::string WorkingMode::DllNameA()
