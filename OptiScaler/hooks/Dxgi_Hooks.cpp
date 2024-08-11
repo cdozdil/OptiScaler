@@ -1,15 +1,23 @@
 #include "Dxgi_Hooks.h"
 
-#include "../pch.h"
 #include "../exports/Dxgi.h"
 #include "../detours/detours.h"
 
-typedef HRESULT(WINAPI* PFN_CREATE_DXGI_FACTORY)(REFIID riid, _COM_Outptr_ void** ppFactory);
-typedef HRESULT(WINAPI* PFN_CREATE_DXGI_FACTORY_2)(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFactory);
+typedef HRESULT(*PFN_CreateSwapChain)(IDXGIFactory*, IUnknown*, DXGI_SWAP_CHAIN_DESC*, IDXGISwapChain**);
+typedef HRESULT(*PFN_CreateSwapChainForHwnd)(IDXGIFactory*, IUnknown*, HWND, const DXGI_SWAP_CHAIN_DESC1*, const DXGI_SWAP_CHAIN_FULLSCREEN_DESC*, IDXGIOutput*, IDXGISwapChain1**);
+typedef HRESULT(*PFN_CreateSwapChainForCoreWindow)(IDXGIFactory*, IUnknown*, IUnknown*, const DXGI_SWAP_CHAIN_DESC1*, IDXGIOutput*, IDXGISwapChain1**);
+typedef HRESULT(*PFN_CreateSwapChainForComposition)(IDXGIFactory*, IUnknown*, const DXGI_SWAP_CHAIN_DESC1*, IDXGIOutput*, IDXGISwapChain1**);
 
 static PFN_CREATE_DXGI_FACTORY o_CreateDxgiFactory = nullptr;
 static PFN_CREATE_DXGI_FACTORY o_CreateDxgiFactory1 = nullptr;
 static PFN_CREATE_DXGI_FACTORY_2 o_CreateDxgiFactory2 = nullptr;
+
+static PFN_CreateSwapChain o_CreateSwapChain = nullptr;
+static PFN_CreateSwapChainForHwnd o_CreateSwapChainForHwnd = nullptr;
+static PFN_CreateSwapChainForComposition o_CreateSwapChainForComposition = nullptr;
+static PFN_CreateSwapChainForCoreWindow o_CreateSwapChainForCoreWindow = nullptr;
+
+static std::function<void> createSwapChainCallback = nullptr;
 
 void Hooks::AttachDxgiHooks()
 {

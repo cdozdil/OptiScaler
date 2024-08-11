@@ -25,8 +25,9 @@
 // Enables logging of DLSS NV Parameters
 //#define DLSS_PARAM_DUMP
 
-inline HMODULE dllModule;
-inline DWORD processId;
+inline static HMODULE dllModule;
+inline static HMODULE nvngxModule;
+inline static DWORD processId;
 
 #define LOG_TRACE(msg, ...) \
     spdlog::trace(__FUNCTION__ " " msg, ##__VA_ARGS__)

@@ -1,7 +1,7 @@
 #pragma once
-#include "../pch.h"
-#include "dxgi1_6.h"
-#include "imgui_overlay_base.h"
+#include "../../pch.h"
+
+#include <dxgi1_6.h>
 
 class WrappedIDXGISwapChain4 : public IDXGISwapChain4
 {
@@ -11,18 +11,20 @@ class WrappedIDXGISwapChain4 : public IDXGISwapChain4
 	IDXGISwapChain3* m_pReal3 = nullptr;
 	IDXGISwapChain4* m_pReal4 = nullptr;
 
-	std::function<HRESULT(IDXGISwapChain3*, UINT, UINT)> RenderTrig = nullptr;
-	std::function<HRESULT(IDXGISwapChain3*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*)> RenderTrig1 = nullptr;
-	std::function<void(bool)> ClearTrig = nullptr;
+	HWND* menuHandle = nullptr;
+
+	std::function<HRESULT(IDXGISwapChain3*, UINT, UINT)>* PresentTrig = nullptr;
+	std::function<HRESULT(IDXGISwapChain3*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*)>* PresentTrig1 = nullptr;
+	std::function<void(bool)>* ClearTrig = nullptr;
 
 	unsigned int m_iRefcount;
 
 public:
-
-	WrappedIDXGISwapChain4(IDXGISwapChain* real, 
-		std::function<HRESULT(IDXGISwapChain3*, UINT , UINT)> renderTrig, 
-		std::function<HRESULT(IDXGISwapChain3*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*)> renderTrig1, 
-		std::function<void(bool)> clearTrig);
+	WrappedIDXGISwapChain4(IDXGISwapChain* InRealSwapChain,
+						   std::function<HRESULT(IDXGISwapChain3*, UINT, UINT)>* InPresentTrig,
+						   std::function<HRESULT(IDXGISwapChain3*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*)>* InPresentTrig1,
+						   std::function<void(bool)>* InClearTrig,
+						   HWND* InMenuHandle);
 
 	virtual ~WrappedIDXGISwapChain4();
 
@@ -36,15 +38,15 @@ public:
 
 	ULONG STDMETHODCALLTYPE Release()
 	{
-		unsigned int ret = InterlockedDecrement(&m_iRefcount);
+		auto ret = InterlockedDecrement(&m_iRefcount);
 
 		if (ret == 0)
 		{
 			HWND hwnd = nullptr;
 			m_pReal1->GetHwnd(&hwnd);
 
-			if (ClearTrig != nullptr && hwnd == ImGuiOverlayBase::Handle())
-				ClearTrig(true);
+			if (*ClearTrig != nullptr && hwnd == *menuHandle)
+				(*ClearTrig)(true);
 
 			delete this;
 		}

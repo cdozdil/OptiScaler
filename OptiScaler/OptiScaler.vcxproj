@@ -82,7 +82,7 @@
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
     <TargetName>dxgi</TargetName>
-    <OutDir>D:\Folders\Games\SteamLibrary\steamapps\common\Horizon Zero Dawn\</OutDir>
+    <OutDir>D:\Folders\Games\Deep Rock Galactic\FSD\Binaries\Win64\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -212,7 +212,12 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="exports\Winhttp.h" />
     <ClInclude Include="exports\Wininet.h" />
     <ClInclude Include="exports\Winmm.h" />
+    <ClInclude Include="hooks\Dx12_Hooks.h" />
+    <ClInclude Include="hooks\Dxgi_Hooks.h" />
+    <ClInclude Include="enums\Enums.h" />
     <ClInclude Include="hooks\LoadLibrary_Hooks.h" />
+    <ClInclude Include="hooks\NvApi_Hooks.h" />
+    <ClInclude Include="hooks\Nvngx_Hooks.h" />
     <ClInclude Include="hooks\Vulkan_Hooks.h" />
     <ClInclude Include="Working_Mode.h" />
     <ClInclude Include="output_scaling\OS_Common.h" />
@@ -237,7 +242,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="backends\IFeature.h" />
     <ClInclude Include="backends\IFeature_Vk.h" />
     <ClInclude Include="detours\detours.h" />
-    <ClInclude Include="dllmain.h" />
     <ClInclude Include="imgui\imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui\imgui.h" />
     <ClInclude Include="imgui\imgui\imgui_impl_dx11.h" />
@@ -256,7 +260,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="imgui\imgui_overlay_dx11.h" />
     <ClInclude Include="imgui\imgui_overlay_dx12.h" />
     <ClInclude Include="imgui\imgui_overlay_vk.h" />
-    <ClInclude Include="imgui\wrapped_swapchain.h" />
+    <ClInclude Include="hooks\proxies\Wrapped_SwapChain.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="NVNGX_Parameter.h" />
     <ClInclude Include="NVNGX_Proxy.h" />
@@ -300,7 +304,12 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="backends\fsr2\FSR2Feature_Dx12.cpp" />
     <ClCompile Include="backends\fsr2\FSR2Feature_Vk.cpp" />
     <ClCompile Include="backends\IFeature_Dx12.cpp" />
+    <ClCompile Include="exports\Dxgi.cpp" />
+    <ClCompile Include="hooks\Dx12_Hooks.cpp" />
+    <ClCompile Include="hooks\Dxgi_Hooks.cpp" />
     <ClCompile Include="hooks\LoadLibrary_Hooks.cpp" />
+    <ClCompile Include="hooks\NvApi_Hooks.cpp" />
+    <ClCompile Include="hooks\Nvngx_Hooks.cpp" />
     <ClCompile Include="hooks\Vulkan_Hooks.cpp" />
     <ClCompile Include="Working_Mode.cpp" />
     <ClCompile Include="imgui\imgui\imgui.cpp" />
@@ -319,7 +328,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="imgui\imgui_overlay_dx11.cpp" />
     <ClCompile Include="imgui\imgui_overlay_dx12.cpp" />
     <ClCompile Include="imgui\imgui_overlay_vk.cpp" />
-    <ClCompile Include="imgui\wrapped_swapchain.cpp" />
+    <ClCompile Include="hooks\proxies\Wrapped_SwapChain.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="NVNGX.cpp" />
     <ClCompile Include="NVNGX_DLSS_Dx11.cpp" />

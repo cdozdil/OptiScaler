@@ -1,17 +1,16 @@
 #include "Dx12_Hooks.h"
 
-#include "../pch.h"
 #include "../Config.h"
 #include "../detours/detours.h"
 
 // Menu Hooks
-typedef void(*PFN_ExecuteCommandLists)(ID3D12CommandQueue*, UINT, ID3D12CommandList* const*);
-typedef ULONG(*PFN_Release)(IUnknown*);
 typedef HRESULT(*PFN_CreateCommandQueue)(ID3D12Device* This, const D3D12_COMMAND_QUEUE_DESC* pDesc, REFIID riid, void** ppCommandQueue);
+typedef void(*PFN_ExecuteCommandLists)(ID3D12CommandQueue*, UINT, ID3D12CommandList* const*);
+typedef ULONG(*PFN_CommandQueueRelease)(IUnknown*);
 
 static PFN_D3D12_CREATE_DEVICE o_D3D12CreateDevice = nullptr;
 static PFN_CreateCommandQueue o_CreateCommandQueue = nullptr;
-static PFN_Release o_CommandQueueRelease = nullptr;
+static PFN_CommandQueueRelease o_CommandQueueRelease = nullptr;
 static PFN_ExecuteCommandLists o_ExecuteCommandLists = nullptr;
 
 // Sampler stuff for MipLodBias and Anisotropic Filtering
@@ -26,12 +25,19 @@ static PFN_SetRootSignature o_SetGraphicRootSignature = nullptr;
 static ID3D12RootSignature* rootSigCompute = nullptr;
 static ID3D12RootSignature* rootSigGraphic = nullptr;
 
-static bool contextRendering = false;
-static ULONGLONG computeTime = 0;
-static ULONGLONG graphTime = 0;
-static ULONGLONG lastEvalTime = 0;
-static uint64_t evaluateStart;
+static uint64_t computeRSTime = 0;
+static uint64_t graphRSTime = 0;
+static uint64_t lastEvalTime = 0;
+static uint64_t evalStartTime = 0;
 static std::mutex sigatureMutex;
+
+static void HookToCommandList(ID3D12GraphicsCommandList* InCmdList);
+static void HookToDevice(ID3D12Device* InDevice);
+
+// Commnad list & queue
+static std::function<ULONG(IUnknown*)> commandQueueReleaseCallback = nullptr;
+static std::function<void(ID3D12CommandQueue*, UINT, ID3D12CommandList* const*)> executeCommandListCallback = nullptr;
+
 
 static int64_t GetTicks()
 {
@@ -43,16 +49,14 @@ static int64_t GetTicks()
     return ticks.QuadPart;
 }
 
-static void HookToCommandList(ID3D12GraphicsCommandList* InCmdList);
-static void HookToDevice(ID3D12Device* InDevice);
-
 static void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
-    if (!contextRendering && commandList != nullptr && pRootSignature != nullptr)
+    if (Config::Instance()->RestoreComputeSignature.value_or(false) &&
+        commandList != nullptr && pRootSignature != nullptr && (lastEvalTime == 0 || lastEvalTime == evalStartTime))
     {
         sigatureMutex.lock();
         rootSigCompute = pRootSignature;
-        computeTime = GetTicks();
+        computeRSTime = GetTicks();
         sigatureMutex.unlock();
     }
 
@@ -61,11 +65,12 @@ static void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID
 
 static void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
-    if (!contextRendering && commandList != nullptr && pRootSignature != nullptr)
+    if (Config::Instance()->RestoreGraphicSignature.value_or(false) &&
+        commandList != nullptr && pRootSignature != nullptr && (lastEvalTime == 0 || lastEvalTime == evalStartTime))
     {
         sigatureMutex.lock();
         rootSigGraphic = pRootSignature;
-        graphTime = GetTicks();
+        graphRSTime = GetTicks();
         sigatureMutex.unlock();
     }
 
@@ -122,7 +127,7 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
     return o_CreateSampler(device, &newDesc, DestDescriptor);
 }
 
-static HRESULT WINAPI hkD3D12CreateDevice(IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
+static HRESULT hkD3D12CreateDevice(IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
 {
     auto result = o_D3D12CreateDevice(pAdapter, MinimumFeatureLevel, riid, ppDevice);
 
@@ -137,50 +142,25 @@ static HRESULT WINAPI hkD3D12CreateDevice(IUnknown* pAdapter, D3D_FEATURE_LEVEL 
     return result;
 }
 
-static void WINAPI hkExecuteCommandLists(ID3D12CommandQueue* pCommandQueue, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists)
+static void hkExecuteCommandLists(ID3D12CommandQueue* pCommandQueue, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists)
 {
-    // TODO: Continue from here to Dx12 Overlay Menu stuff
-    // 
-    //if (_cqDx12 == nullptr && _dlssCommandList != nullptr)
-    //{
-    //    // trying to find command list for dlss, 
-    //    // it should be native dx12 cq
-    //    for (size_t i = 0; i < NumCommandLists; i++)
-    //    {
-    //        if (ppCommandLists[i] == _dlssCommandList)
-    //        {
-    //            LOG_INFO("new _cqDx12: {0:X}", (ULONG64)pCommandQueue);
-    //            _cqDx12 = pCommandQueue;
-    //            break;
-    //        }
-    //    }
-    //}
+    if (executeCommandListCallback != nullptr)
+        executeCommandListCallback(pCommandQueue, NumCommandLists, ppCommandLists);
 
     return o_ExecuteCommandLists(pCommandQueue, NumCommandLists, ppCommandLists);
 }
 
-static ULONG WINAPI hkCommandQueueRelease(IUnknown* This)
+static ULONG hkCommandQueueRelease(IUnknown* This)
 {
     auto result = o_CommandQueueRelease(This);
 
-    // TODO: Continue from here to Dx12 Overlay Menu stuff
-
-    //if (result == 0)
-    //{
-    //    if (This == _cqDx12)
-    //        _cqDx12 = nullptr;
-    //    else if (This == _cqFsr3Mod)
-    //        _cqFsr3Mod = nullptr;
-    //    else if (This == _cqFsr3Native)
-    //        _cqFsr3Native = nullptr;
-    //    else if (This == _cqSL)
-    //        _cqSL = nullptr;
-    //}
+    if (commandQueueReleaseCallback != nullptr)
+        commandQueueReleaseCallback(This);
 
     return result;
 }
 
-static HRESULT WINAPI hkCreateCommandQueue(ID3D12Device* This, const D3D12_COMMAND_QUEUE_DESC* pDesc, REFIID riid, void** ppCommandQueue)
+static HRESULT hkCreateCommandQueue(ID3D12Device* This, const D3D12_COMMAND_QUEUE_DESC* pDesc, REFIID riid, void** ppCommandQueue)
 {
     auto result = o_CreateCommandQueue(This, pDesc, riid, ppCommandQueue);
 
@@ -189,7 +169,7 @@ static HRESULT WINAPI hkCreateCommandQueue(ID3D12Device* This, const D3D12_COMMA
         auto commandQueue = (ID3D12CommandQueue*)*ppCommandQueue;
 
         PVOID* pVTable = *(PVOID**)commandQueue;
-        o_CommandQueueRelease = (PFN_Release)pVTable[2];
+        o_CommandQueueRelease = (PFN_CommandQueueRelease)pVTable[2];
         o_ExecuteCommandLists = (PFN_ExecuteCommandLists)pVTable[10];
 
         if (o_ExecuteCommandLists != nullptr || o_CommandQueueRelease != nullptr)
@@ -326,7 +306,7 @@ void Hooks::DetachDx12Hooks()
 
 void Hooks::ContextEvaluateStart()
 {
-    evaluateStart = GetTicks();
+    evalStartTime = GetTicks();
 }
 
 void Hooks::ContextEvaluateStop(ID3D12GraphicsCommandList* InCmdList, bool InRestore)
@@ -335,38 +315,35 @@ void Hooks::ContextEvaluateStop(ID3D12GraphicsCommandList* InCmdList, bool InRes
     {
         sigatureMutex.lock();
 
-        if (Config::Instance()->RestoreComputeSignature.value_or(false) && computeTime != 0 && computeTime > lastEvalTime && computeTime <= evaluateStart && rootSigCompute != nullptr)
+        if (Config::Instance()->RestoreComputeSignature.value_or(false) && computeRSTime != 0 &&
+            computeRSTime > lastEvalTime && computeRSTime <= evalStartTime && rootSigCompute != nullptr)
         {
             LOG_TRACE("restore orgComputeRootSig: {0:X}", (UINT64)rootSigCompute);
             o_SetComputeRootSignature(InCmdList, rootSigCompute);
         }
-        else
+        else if (Config::Instance()->RestoreComputeSignature.value_or(false))
+
         {
-            if (Config::Instance()->RestoreComputeSignature.value_or(false))
-            {
-                LOG_TRACE("orgComputeRootSig lastEvalTime: {0}", lastEvalTime);
-                LOG_TRACE("orgComputeRootSig computeTime: {0}", computeTime);
-                LOG_TRACE("orgComputeRootSig evaluateStart: {0}", evaluateStart);
-            }
+            LOG_TRACE("orgComputeRootSig lastEvalTime: {0}", lastEvalTime);
+            LOG_TRACE("orgComputeRootSig computeRSTime: {0}", computeRSTime);
+            LOG_TRACE("orgComputeRootSig evalStartTime: {0}", evalStartTime);
         }
 
-        if (Config::Instance()->RestoreGraphicSignature.value_or(false) && graphTime != 0 && graphTime > lastEvalTime && graphTime <= evaluateStart && rootSigGraphic != nullptr)
+        if (Config::Instance()->RestoreGraphicSignature.value_or(false) &&
+            graphRSTime != 0 && graphRSTime > lastEvalTime && graphRSTime <= evalStartTime && rootSigGraphic != nullptr)
         {
             LOG_TRACE("restore orgGraphicRootSig: {0:X}", (UINT64)rootSigGraphic);
             o_SetGraphicRootSignature(InCmdList, rootSigGraphic);
         }
-        else
+        else if (Config::Instance()->RestoreGraphicSignature.value_or(false))
         {
-            if (Config::Instance()->RestoreGraphicSignature.value_or(false))
-            {
-                LOG_TRACE("orgGraphicRootSig lastEvalTime: {0}", lastEvalTime);
-                LOG_TRACE("orgGraphicRootSig computeTime: {0}", graphTime);
-                LOG_TRACE("orgGraphicRootSig evaluateStart: {0}", evaluateStart);
-            }
+
+            LOG_TRACE("orgGraphicRootSig lastEvalTime: {0}", lastEvalTime);
+            LOG_TRACE("orgGraphicRootSig computeRSTime: {0}", graphRSTime);
+            LOG_TRACE("orgGraphicRootSig evalStartTime: {0}", evalStartTime);
         }
 
-        contextRendering = false;
-        lastEvalTime = evaluateStart;
+        lastEvalTime = evalStartTime;
 
         rootSigCompute = nullptr;
         rootSigGraphic = nullptr;
@@ -375,12 +352,17 @@ void Hooks::ContextEvaluateStop(ID3D12GraphicsCommandList* InCmdList, bool InRes
     }
 }
 
-void Hooks::ContextRenderingStart()
+bool Hooks::IsDeviceCaptured()
 {
-    contextRendering = true;
+    return o_D3D12CreateDevice != nullptr;
 }
 
-void Hooks::ContextRenderingStop()
+void Hooks::SetCommandQueueReleaseCallback(std::function<ULONG(IUnknown*)> InCallback)
 {
-    contextRendering = false;
+    commandQueueReleaseCallback = InCallback;
+}
+
+void Hooks::SetExecuteCommandListCallback(std::function<void(ID3D12CommandQueue*, UINT, ID3D12CommandList* const*)> InCallback)
+{
+    executeCommandListCallback = InCallback;
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include "../pch.h"
 
 #include <d3d12.h>
 
@@ -10,6 +11,8 @@ namespace Hooks
     void ContextEvaluateStart();
     void ContextEvaluateStop(ID3D12GraphicsCommandList* InCmdList, bool InRestore);
 
-    void ContextRenderingStart();
-    void ContextRenderingStop();
+    bool IsDeviceCaptured();
+
+    void SetCommandQueueReleaseCallback(std::function<ULONG(IUnknown*)> InCallback);
+    void SetExecuteCommandListCallback(std::function<void(ID3D12CommandQueue*, UINT, ID3D12CommandList* const*)> InCallback);
 }

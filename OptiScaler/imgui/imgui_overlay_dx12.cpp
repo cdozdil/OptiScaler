@@ -17,14 +17,14 @@
 
 #include "../detours/detours.h"
 
-#include "wrapped_swapchain.h"
+//#include "wrapped_swapchain.h"
 
 // Dx12 overlay code adoptes from 
 // https://github.com/bruhmoment21/UniversalHookX
 
 // MipMap hooks
 typedef void(__fastcall* PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
-static inline PFN_CreateSampler orgCreateSampler = nullptr;
+static inline PFN_CreateSampler o_CreateSampler = nullptr;
 
 typedef struct FfxFrameGenerationConfig
 {
@@ -50,7 +50,7 @@ static ID3D12Resource* g_mainRenderTargetResource[NUM_BACK_BUFFERS] = { };
 static D3D12_CPU_DESCRIPTOR_HANDLE g_mainRenderTargetDescriptor[NUM_BACK_BUFFERS] = { };
 
 typedef void(WINAPI* PFN_ExecuteCommandLists)(ID3D12CommandQueue*, UINT, ID3D12CommandList* const*);
-typedef ULONG(WINAPI* PFN_Release)(IUnknown*);
+typedef ULONG(WINAPI* PFN_CommandQueueRelease)(IUnknown*);
 
 typedef void* (WINAPI* PFN_ffxGetDX12SwapchainPtr)(void* ffxSwapChain);
 typedef int32_t(WINAPI* PFN_ffxCreateFrameinterpolationSwapchainForHwndDX12)(HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* desc1,
@@ -69,7 +69,7 @@ static PFN_CreateCommandQueue oCreateCommandQueue = nullptr;
 static PFN_CreateDXGIFactory oCreateDXGIFactory = nullptr;
 static PFN_CreateDXGIFactory1 oCreateDXGIFactory1 = nullptr;
 static PFN_CreateDXGIFactory2 oCreateDXGIFactory2 = nullptr;
-static PFN_Release oCommandQueueRelease = nullptr;
+static PFN_CommandQueueRelease oCommandQueueRelease = nullptr;
 
 // Dx12
 static PFN_Present oPresent_Dx12 = nullptr;
@@ -410,28 +410,28 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
         Config::Instance()->lastMipBias = newDesc.MipLODBias;
     }
 
-    return orgCreateSampler(device, &newDesc, DestDescriptor);
+    return o_CreateSampler(device, &newDesc, DestDescriptor);
 }
 
 
 static void HookToDevice(ID3D12Device* InDevice)
 {
-    if (!ImGuiOverlayDx12::IsEarlyBind() && orgCreateSampler != nullptr || InDevice == nullptr)
+    if (!ImGuiOverlayDx12::IsEarlyBind() && o_CreateSampler != nullptr || InDevice == nullptr)
         return;
 
     // Get the vtable pointer
     PVOID* pVTable = *(PVOID**)InDevice;
 
     // Get the address of the SetComputeRootSignature function from the vtable
-    orgCreateSampler = (PFN_CreateSampler)pVTable[22];
+    o_CreateSampler = (PFN_CreateSampler)pVTable[22];
 
     // Apply the detour
-    if (orgCreateSampler != nullptr)
+    if (o_CreateSampler != nullptr)
     {
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        DetourAttach(&(PVOID&)orgCreateSampler, hkCreateSampler);
+        DetourAttach(&(PVOID&)o_CreateSampler, hkCreateSampler);
 
         DetourTransactionCommit();
     }
@@ -1048,7 +1048,7 @@ static ffxReturnCode_t hkFfxConfigure_FSR3(ffxContext* context, const ffxConfigu
 
 #pragma region Hooks for ExecuteCommandLists 
 
-static void WINAPI hkExecuteCommandLists_Dx12(ID3D12CommandQueue* pCommandQueue, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists)
+static void WINAPI hkExecuteCommandLists(ID3D12CommandQueue* pCommandQueue, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists)
 {
     if (_cqDx12 == nullptr && _dlssCommandList != nullptr)
     {
@@ -1327,7 +1327,7 @@ static HRESULT WINAPI hkCreateCommandQueue(ID3D12Device* This, const D3D12_COMMA
 
         void** pCommandQueueVTable = *reinterpret_cast<void***>(cq);
 
-        oCommandQueueRelease = (PFN_Release)pCommandQueueVTable[2];
+        oCommandQueueRelease = (PFN_CommandQueueRelease)pCommandQueueVTable[2];
         oExecuteCommandLists_Dx12 = (PFN_ExecuteCommandLists)pCommandQueueVTable[10];
 
         if (oExecuteCommandLists_Dx12 != nullptr)
@@ -1337,7 +1337,7 @@ static HRESULT WINAPI hkCreateCommandQueue(ID3D12Device* This, const D3D12_COMMA
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
 
-            DetourAttach(&(PVOID&)oExecuteCommandLists_Dx12, hkExecuteCommandLists_Dx12);
+            DetourAttach(&(PVOID&)oExecuteCommandLists_Dx12, hkExecuteCommandLists);
             DetourAttach(&(PVOID&)oCommandQueueRelease, hkCommandQueueRelease);
 
             DetourTransactionCommit();
@@ -1557,7 +1557,7 @@ static bool CheckDx12(ID3D12Device* InDevice)
                 DetourTransactionBegin();
                 DetourUpdateThread(GetCurrentThread());
 
-                DetourAttach(&(PVOID&)oExecuteCommandLists_Dx12, hkExecuteCommandLists_Dx12);
+                DetourAttach(&(PVOID&)oExecuteCommandLists_Dx12, hkExecuteCommandLists);
 
                 DetourTransactionCommit();
             }
@@ -2550,7 +2550,7 @@ void DeatachAllHooks()
 
     if (oExecuteCommandLists_Dx12 != nullptr)
     {
-        DetourDetach(&(PVOID&)oExecuteCommandLists_Dx12, hkExecuteCommandLists_Dx12);
+        DetourDetach(&(PVOID&)oExecuteCommandLists_Dx12, hkExecuteCommandLists);
         oExecuteCommandLists_Dx12 = nullptr;
     }
 
@@ -2656,10 +2656,10 @@ void DeatachAllHooks()
         offxFsr3ConfigureFrameGeneration_FSR3 = nullptr;
     }
 
-    if (orgCreateSampler != nullptr)
+    if (o_CreateSampler != nullptr)
     {
-        DetourDetach(&(PVOID&)orgCreateSampler, hkCreateSampler);
-        orgCreateSampler = nullptr;
+        DetourDetach(&(PVOID&)o_CreateSampler, hkCreateSampler);
+        o_CreateSampler = nullptr;
     }
 
     DetourTransactionCommit();

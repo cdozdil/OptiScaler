@@ -650,8 +650,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(75) &&
         !ImGuiOverlayDx12::IsInitedDx12())
     {
-        Hooks::ContextRenderingStart();
-
         auto hwnd = Util::GetProcessWindow();
 
         HWND consoleWindow = GetConsoleWindow();
@@ -673,8 +671,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
         if (consoleAllocated)
             FreeConsole();
-
-        Hooks::ContextRenderingStop();
     }
 
     if (handleId < 1000000)
@@ -701,13 +697,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     // Check window recreation
     if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayDx12::IsInitedDx12())
     {
-        Hooks::ContextRenderingStart();
-
         HWND currentHandle = Util::GetProcessWindow();
+
         if (ImGuiOverlayDx12::Handle() != currentHandle)
             ImGuiOverlayDx12::ReInitDx12(currentHandle);
-
-        Hooks::ContextRenderingStop();
     }
 
     if (InCallback)
@@ -813,7 +806,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 Config::Instance()->CurrentFeature = nullptr;
 
-                Hooks::ContextRenderingStop();
                 Hooks::ContextEvaluateStop(nullptr, false);
             }
             else
@@ -969,16 +961,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     Config::Instance()->CurrentFeature = deviceContext;
 
-    if (deviceContext->Name() != "DLSSD")
-        Hooks::ContextRenderingStart();
-
     bool evalResult = deviceContext->Evaluate(InCmdList, InParameters);
-
-    if (deviceContext->Name() != "DLSSD")
-        Hooks::ContextEvaluateStop(InCmdList, true);
 
     if (Config::Instance()->OverlayMenu.value_or(true))
         ImGuiOverlayDx12::CaptureQueue(InCmdList);
+
+    Hooks::ContextEvaluateStop(InCmdList, true);
 
     LOG_TRACE("done: {0:X}", (UINT)evalResult);
 
