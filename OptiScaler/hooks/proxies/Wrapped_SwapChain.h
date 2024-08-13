@@ -11,20 +11,17 @@ class WrappedIDXGISwapChain4 : public IDXGISwapChain4
 	IDXGISwapChain3* m_pReal3 = nullptr;
 	IDXGISwapChain4* m_pReal4 = nullptr;
 
-	HWND* menuHandle = nullptr;
-
-	std::function<HRESULT(IDXGISwapChain3*, UINT, UINT)>* PresentTrig = nullptr;
-	std::function<HRESULT(IDXGISwapChain3*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*)>* PresentTrig1 = nullptr;
-	std::function<void(bool)>* ClearTrig = nullptr;
+	std::function<void(IDXGISwapChain*)> PresentCallback = nullptr;
+	std::function<void(bool)> ClearCallback = nullptr;
+	std::function<void(HWND)> ReleaseCallback = nullptr;
 
 	unsigned int m_iRefcount;
 
 public:
 	WrappedIDXGISwapChain4(IDXGISwapChain* InRealSwapChain,
-						   std::function<HRESULT(IDXGISwapChain3*, UINT, UINT)>* InPresentTrig,
-						   std::function<HRESULT(IDXGISwapChain3*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*)>* InPresentTrig1,
-						   std::function<void(bool)>* InClearTrig,
-						   HWND* InMenuHandle);
+						   std::function<void(IDXGISwapChain*)> InPresentCallback,
+						   std::function<void(bool)> InClearCallback,
+						   std::function<void(HWND)> InReleaseCallback);
 
 	virtual ~WrappedIDXGISwapChain4();
 
@@ -42,11 +39,12 @@ public:
 
 		if (ret == 0)
 		{
-			HWND hwnd = nullptr;
-			m_pReal1->GetHwnd(&hwnd);
-
-			if (*ClearTrig != nullptr && hwnd == *menuHandle)
-				(*ClearTrig)(true);
+			if (m_pReal1 != nullptr)
+			{
+				HWND hwnd = nullptr;
+				m_pReal1->GetHwnd(&hwnd);
+				ReleaseCallback(hwnd);
+			}
 
 			delete this;
 		}

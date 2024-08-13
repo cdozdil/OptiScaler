@@ -52,7 +52,7 @@ static int64_t GetTicks()
 static void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
     if (Config::Instance()->RestoreComputeSignature.value_or(false) &&
-        commandList != nullptr && pRootSignature != nullptr && (lastEvalTime == 0 || lastEvalTime == evalStartTime))
+        commandList != nullptr && pRootSignature != nullptr && (lastEvalTime == 0 || lastEvalTime < evalStartTime))
     {
         sigatureMutex.lock();
         rootSigCompute = pRootSignature;
@@ -66,7 +66,7 @@ static void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID
 static void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
     if (Config::Instance()->RestoreGraphicSignature.value_or(false) &&
-        commandList != nullptr && pRootSignature != nullptr && (lastEvalTime == 0 || lastEvalTime == evalStartTime))
+        commandList != nullptr && pRootSignature != nullptr && (lastEvalTime == 0 || lastEvalTime < evalStartTime))
     {
         sigatureMutex.lock();
         rootSigGraphic = pRootSignature;

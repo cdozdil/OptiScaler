@@ -9,6 +9,7 @@ namespace Hooks
     void AttachDxgiHooks();
     void DetachDxgiHooks();
 
-    void DxgiClean(std::function<void(SwapchainSource, bool)>);
-    void DxgiPresent(std::function<void(SwapchainSource, IDXGISwapChain3*, UINT)>);
+    void SetDxgiClean(std::function<void(SwapchainSource, bool)>);
+    void SetDxgiPresent(std::function<void(SwapchainSource, IDXGISwapChain)>);
+    void SetDxgiRelease(std::function<void(SwapchainSource, HWND)>);
 }
