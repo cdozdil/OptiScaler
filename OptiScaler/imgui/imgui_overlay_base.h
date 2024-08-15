@@ -2,7 +2,9 @@
 
 #include "../pch.h"
 
-#include <dxgi1_4.h>
+#include <d3d12.h>
+#include <dxgi1_6.h>
+
 
 // LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 

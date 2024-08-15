@@ -1462,10 +1462,10 @@ static void CheckWorkingMode()
     {
         AttachHooks();
 
-        if (!isNvngxMode && !Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))
+        if ((!isNvngxMode || isWorkingWithEnabler) && !Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))
         {
             ImGuiOverlayDx12::Dx12Bind();
-            ImGuiOverlayDx12::FSR3Bind();
+            //ImGuiOverlayDx12::FSR3Bind();
         }
 
         return;
