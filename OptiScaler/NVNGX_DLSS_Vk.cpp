@@ -276,7 +276,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequi
         }
     }
 
-    if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+    if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling || FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_FrameGeneration)
     {
         if (NVNGXProxy::NVNGXModule() != nullptr)
         {
@@ -338,14 +338,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequire
         }
     }
 
-    if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+    if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling || FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_FrameGeneration)
     {
         if (OutExtensionProperties == nullptr)
         {
             LOG_INFO("returning no extensions are needed!");
             *OutExtensionCount = 0;
         }
-        
+
         // Only Nvidia hardware should reach here, so in any case returning known extensions for DLSS
         //if (OutExtensionProperties == nullptr)
         //{
@@ -733,7 +733,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     if (Config::Instance()->OverlayMenu.value_or(true) && Config::Instance()->CurrentFeature != nullptr && !ImGuiOverlayVk::IsInitedVk() &&
         Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(75))
     {
-        ImGuiOverlayDx12::ShutdownDx12();
+        if (ImGuiOverlayDx12::IsInitedDx12())
+            ImGuiOverlayDx12::ShutdownDx12();
+
         auto hwnd = Util::GetProcessWindow();
         ImGuiOverlayVk::InitVk(hwnd, vkDevice, vkInstance, vkPD);
     }
@@ -757,7 +759,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
             Config::Instance()->newBackend = Config::Instance()->VulkanUpscaler.value_or("fsr21");
 
         changeBackendCounter++;
-        
+
         LOG_INFO("changeBackend is true, counter: {0}", changeBackendCounter);
 
         // first release everything

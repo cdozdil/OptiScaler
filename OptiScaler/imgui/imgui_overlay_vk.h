@@ -9,6 +9,7 @@ namespace ImGuiOverlayVk
 	HWND Handle();
 
 	void InitVk(HWND InHwnd, VkDevice InDevice, VkInstance InInstance, VkPhysicalDevice InPD);
+	void HookVK();
 	void ShutdownVk();
 	void ReInitVk(HWND InNewHwnd);
 }

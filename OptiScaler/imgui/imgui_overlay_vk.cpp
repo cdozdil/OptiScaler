@@ -30,6 +30,19 @@ struct ImGui_ImplVulkan_InitInfo g_ImVulkan_Info = { };
 struct ImGui_ImplVulkanH_Frame* g_ImVulkan_Frames = NULL;
 static VkSemaphore* g_ImVulkan_Semaphores = NULL;
 
+typedef VkResult(__fastcall* PFN_QueuePresentKHR)(VkQueue, const VkPresentInfoKHR*);
+typedef VkResult(__fastcall* PFN_CreateSwapchainKHR)(VkDevice, const VkSwapchainCreateInfoKHR*, const VkAllocationCallbacks*, VkSwapchainKHR*);
+
+PFN_vkCreateDevice o_vkCreateDevice = nullptr;
+PFN_vkCreateInstance o_vkCreateInstance = nullptr;
+PFN_vkCreateDevice o_SL_vkCreateDevice = nullptr;
+PFN_QueuePresentKHR oQueuePresentKHR = nullptr;
+PFN_CreateSwapchainKHR oCreateSwapchainKHR = nullptr;
+
+static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice);
+static VkResult VKAPI_CALL hkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInfo);
+static VkResult VKAPI_CALL hkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain);
+
 static int createCounter = 0;
 
 static void DestroyVulkanObjects(bool shutdown)
@@ -73,7 +86,12 @@ static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR*
 {
     if (g_bInitialized)
     {
+        if (ImGui::GetIO().BackendRendererUserData != nullptr)
+            ImGui_ImplVulkan_Shutdown();
+
         DestroyVulkanObjects(false);
+
+        g_bInitialized = false;
     }
 
     // Initialize ImGui for IO.
@@ -118,6 +136,7 @@ static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR*
         vkGetPhysicalDeviceQueueFamilyProperties(_PD, &count, NULL);
         VkQueueFamilyProperties queues[8];
         vkGetPhysicalDeviceQueueFamilyProperties(_PD, &count, queues);
+
         for (uint32_t i = 0; i < count; i++)
         {
             if (queues[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
@@ -341,43 +360,65 @@ static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR*
     g_bEnabled = true;
 }
 
-typedef VkResult(__fastcall* PFN_AcquireNextImageKHR)(VkDevice, VkSwapchainKHR, uint64_t, VkSemaphore, VkFence, uint32_t*);
-PFN_AcquireNextImageKHR oAcquireNextImageKHR = nullptr;
-static VkResult VKAPI_CALL hkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore,
-                                                 VkFence fence, uint32_t* pImageIndex)
+static void HookDevice(VkDevice InDevice)
 {
-    return oAcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex);
+    if (oCreateSwapchainKHR != nullptr)
+        return;
+
+    oQueuePresentKHR = (PFN_QueuePresentKHR)(vkGetDeviceProcAddr(InDevice, "vkQueuePresentKHR"));
+    oCreateSwapchainKHR = (PFN_CreateSwapchainKHR)(vkGetDeviceProcAddr(InDevice, "vkCreateSwapchainKHR"));
+
+    if (oCreateSwapchainKHR)
+    {
+        // Hook
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+
+        DetourAttach(&(PVOID&)oQueuePresentKHR, hkQueuePresentKHR);
+        DetourAttach(&(PVOID&)oCreateSwapchainKHR, hkCreateSwapchainKHR);
+
+        DetourTransactionCommit();
+    }
 }
 
-typedef VkResult(__fastcall* PFN_AcquireNextImage2KHR)(VkDevice, const VkAcquireNextImageInfoKHR*, uint32_t*);
-PFN_AcquireNextImage2KHR oAcquireNextImage2KHR = nullptr;
-static VkResult VKAPI_CALL hkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex)
+static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance)
 {
-    return oAcquireNextImage2KHR(device, pAcquireInfo, pImageIndex);
+    auto result = o_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
+
+    if (result == VK_SUCCESS)
+        _instance = *pInstance;
+
+    return result;
 }
 
-typedef VkResult(__fastcall* PFN_QueuePresentKHR)(VkQueue, const VkPresentInfoKHR*);
-PFN_QueuePresentKHR oQueuePresentKHR = nullptr;
+static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo,
+                                 const VkAllocationCallbacks* pAllocator, VkDevice* pDevice)
+{
+    auto result = o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
+
+    if (result == VK_SUCCESS)
+    {
+        _PD = physicalDevice;
+        _device = *pDevice;
+        HookDevice(_device);
+    }
+
+
+    return result;
+}
+
 static VkResult VKAPI_CALL hkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
 {
     if (!g_bInitialized)
     {
-        if (createCounter == 0)
+        if (pPresentInfo->swapchainCount > 0)
         {
-            createCounter++;
-            return VK_ERROR_OUT_OF_DATE_KHR;
+            auto sc = pPresentInfo->pSwapchains[0];
+            CreateVulkanObjects(_device, nullptr, &sc);
         }
         else
         {
-            if (pPresentInfo->swapchainCount > 0)
-            {
-                auto sc = pPresentInfo->pSwapchains[0];
-                CreateVulkanObjects(_device, nullptr, &sc);
-            }
-            else
-            {
-                createCounter = 0;
-            }
+            return oQueuePresentKHR(queue, pPresentInfo);
         }
     }
 
@@ -458,9 +499,6 @@ static VkResult VKAPI_CALL hkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pP
     return oQueuePresentKHR(queue, pPresentInfo);
 }
 
-typedef VkResult(__fastcall* PFN_CreateSwapchainKHR)(VkDevice, const VkSwapchainCreateInfoKHR*, const VkAllocationCallbacks*, VkSwapchainKHR*);
-PFN_CreateSwapchainKHR oCreateSwapchainKHR = nullptr;
-
 static VkResult VKAPI_CALL hkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator,
                                                 VkSwapchainKHR* pSwapchain)
 {
@@ -488,30 +526,39 @@ HWND ImGuiOverlayVk::Handle()
 void ImGuiOverlayVk::InitVk(HWND InHwnd, VkDevice InDevice, VkInstance InInstance, VkPhysicalDevice InPD)
 {
     _hwnd = InHwnd;
-    _device = InDevice;
-    _instance = InInstance;
-    _PD = InPD;
 
-    oAcquireNextImageKHR = (PFN_AcquireNextImageKHR)(vkGetDeviceProcAddr(InDevice, "vkAcquireNextImageKHR"));
-    oAcquireNextImage2KHR = (PFN_AcquireNextImage2KHR)(vkGetDeviceProcAddr(InDevice, "vkAcquireNextImage2KHR"));
-    oQueuePresentKHR = (PFN_QueuePresentKHR)(vkGetDeviceProcAddr(InDevice, "vkQueuePresentKHR"));
-    oCreateSwapchainKHR = (PFN_CreateSwapchainKHR)(vkGetDeviceProcAddr(InDevice, "vkCreateSwapchainKHR"));
+    if (_instance == nullptr)
+        _instance = InInstance;
 
-    if (oAcquireNextImageKHR)
-    {
-        // Hook
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
+    if (_device == nullptr)
+        _device = InDevice;
 
-        DetourAttach(&(PVOID&)oAcquireNextImageKHR, hkAcquireNextImageKHR);
-        DetourAttach(&(PVOID&)oAcquireNextImage2KHR, hkAcquireNextImage2KHR);
-        DetourAttach(&(PVOID&)oQueuePresentKHR, hkQueuePresentKHR);
-        DetourAttach(&(PVOID&)oCreateSwapchainKHR, hkCreateSwapchainKHR);
+    if (_PD == nullptr)
+        _PD = InPD;
 
-        DetourTransactionCommit();
+    HookDevice(InDevice);
 
-        _isInited = true;
-    }
+    _isInited = true;
+}
+
+void ImGuiOverlayVk::HookVK()
+{
+    if (o_vkCreateDevice != nullptr)
+        return;
+
+    o_vkCreateDevice = (PFN_vkCreateDevice)DetourFindFunction("vulkan-1.dll", "vkCreateDevice");
+    o_vkCreateInstance = (PFN_vkCreateInstance)DetourFindFunction("vulkan-1.dll", "vkCreateInstance");
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+
+    if (o_vkCreateDevice != nullptr)
+        DetourAttach(&(PVOID&)o_vkCreateDevice, hkvkCreateDevice);
+
+    if (o_vkCreateInstance != nullptr)
+        DetourAttach(&(PVOID&)o_vkCreateInstance, hkvkCreateInstance);
+
+    DetourTransactionCommit();
 }
 
 void ImGuiOverlayVk::ShutdownVk()
@@ -529,8 +576,6 @@ void ImGuiOverlayVk::ShutdownVk()
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        DetourDetach(&(PVOID&)oAcquireNextImageKHR, hkAcquireNextImageKHR);
-        DetourDetach(&(PVOID&)oAcquireNextImage2KHR, hkAcquireNextImage2KHR);
         DetourDetach(&(PVOID&)oQueuePresentKHR, hkQueuePresentKHR);
         DetourDetach(&(PVOID&)oCreateSwapchainKHR, hkCreateSwapchainKHR);
 

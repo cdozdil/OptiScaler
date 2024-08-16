@@ -7,6 +7,7 @@
 #include "NVNGX_Proxy.h"
 
 #include "imgui/imgui_overlay_dx12.h"
+#include "imgui/imgui_overlay_vk.h"
 
 #include <vulkan/vulkan_core.h>
 
@@ -1465,6 +1466,7 @@ static void CheckWorkingMode()
         if ((!isNvngxMode || isWorkingWithEnabler) && !Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))
         {
             ImGuiOverlayDx12::Dx12Bind();
+            ImGuiOverlayVk::HookVK();
             //ImGuiOverlayDx12::FSR3Bind();
         }
 
