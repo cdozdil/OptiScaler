@@ -69,16 +69,16 @@ inline static NVSDK_NGX_Result __stdcall Hooked_Vulkan_GetFeatureRequirements(co
 }
 
 
-void Hooks::AttachNvngxHooks()
+void Hooks::AttachNVNGXSpoofingHooks()
 {
     if (Original_D3D11_GetFeatureRequirements != nullptr || Original_D3D12_GetFeatureRequirements != nullptr || Original_Vulkan_GetFeatureRequirements != nullptr)
         return;
 
     LOG_DEBUG("Trying to hook NgxApi");
 
-    Original_D3D11_GetFeatureRequirements = (PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements)GetProcAddress(nvngxModule, "NVSDK_NGX_D3D11_GetFeatureRequirements");
-    Original_D3D12_GetFeatureRequirements = (PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements)GetProcAddress(nvngxModule, "NVSDK_NGX_D3D12_GetFeatureRequirements");
-    Original_Vulkan_GetFeatureRequirements = (PFN_NVSDK_NGX_VULKAN_GetFeatureRequirements)GetProcAddress(nvngxModule, "NVSDK_NGX_VULKAN_GetFeatureRequirements");
+    Original_D3D11_GetFeatureRequirements = reinterpret_cast<PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements>(GetProcAddress(nvngxModule, "NVSDK_NGX_D3D11_GetFeatureRequirements"));
+    Original_D3D12_GetFeatureRequirements = reinterpret_cast<PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements>(GetProcAddress(nvngxModule, "NVSDK_NGX_D3D12_GetFeatureRequirements"));
+    Original_Vulkan_GetFeatureRequirements = reinterpret_cast<PFN_NVSDK_NGX_VULKAN_GetFeatureRequirements>(GetProcAddress(nvngxModule, "NVSDK_NGX_VULKAN_GetFeatureRequirements"));
 
     LOG_INFO("NVSDK_NGX_XXXXXX_GetFeatureRequirements found, hooking!");
 
@@ -97,7 +97,7 @@ void Hooks::AttachNvngxHooks()
     DetourTransactionCommit();
 }
 
-void Hooks::DetachNvngxHooks()
+void Hooks::DetachNVNGXSpoofingHooks()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());

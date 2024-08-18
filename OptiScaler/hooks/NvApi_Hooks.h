@@ -2,6 +2,9 @@
 
 namespace Hooks
 {
-    void AttachNvApiHooks();
-    void DetachNvApiHooks();
+    void AttachNVAPISpoofingHooks();
+    void DetachNVAPISpoofingHooks();
+
+    bool IsArchSupportsDLSS();
+    void NvApiCheckDLSSSupport();
 }

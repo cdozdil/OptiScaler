@@ -27,6 +27,8 @@ static PFN_EnumAdapters1 o_EnumAdapters1 = nullptr;
 static PFN_EnumAdapterByLuid o_EnumAdapterByLuid = nullptr;
 static PFN_EnumAdapterByGpuPreference o_EnumAdapterByGpuPreference = nullptr;
 
+static PFN_AttachDxgiSwapchainHooks attachDxgiSwapchainHooksCallback = nullptr;
+
 #pragma region DXGI Adapter methods
 
 static bool SkipSpoofing()
@@ -331,7 +333,13 @@ static void AttachToFactory(IUnknown* unkFactory)
     PVOID* pVTable = *(PVOID**)unkFactory;
 
     IDXGIFactory* factory;
-    if (o_EnumAdapters == nullptr && unkFactory->QueryInterface(__uuidof(IDXGIFactory), (void**)&factory) == S_OK)
+    if (unkFactory->QueryInterface(IID_PPV_ARGS(&factory)) != S_OK)
+        return;
+
+    if (attachDxgiSwapchainHooksCallback != nullptr)
+        attachDxgiSwapchainHooksCallback(factory);
+
+    if (o_EnumAdapters == nullptr)
     {
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
@@ -341,9 +349,9 @@ static void AttachToFactory(IUnknown* unkFactory)
         DetourAttach(&(PVOID&)o_EnumAdapters, hkEnumAdapters);
 
         DetourTransactionCommit();
-
-        factory->Release();
     }
+    
+    factory->Release();
 
     IDXGIFactory1* factory1;
     if (o_EnumAdapters1 == nullptr && unkFactory->QueryInterface(__uuidof(IDXGIFactory1), (void**)&factory1) == S_OK)
@@ -389,6 +397,10 @@ static void AttachToFactory(IUnknown* unkFactory)
 
         factory6->Release();
     }
+}
+
+void SetSwapchainHookMethod(PFN_AttachDxgiSwapchainHooks InCallback)
+{
 }
 
 #pragma endregion 

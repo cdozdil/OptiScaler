@@ -1,9 +1,17 @@
 #pragma once
 
+#include <vulkan/vulkan_core.h>
+
 namespace Hooks
 {
-    void AttachVulkanDeviceHooks();
-    void DetachVulkanDeviceHooks();
-    void AttachVulkanExtensionHooks();
-    void DetachVulkanExtensionHooks();
+    void AttachVulkanHooks();
+    void DetachVulkanHooks();
+    void AttachVulkanDeviceSpoofingHooks();
+    void DetachVulkanDeviceSpoofingHooks();
+    void AttachVulkanExtensionSpoofingHooks();
+    void DetachVulkanExtensionSpoofingHooks();
+
+    VkDevice VulkanDevice();
+    VkInstance VulkanInstance();
+    VkPhysicalDevice VulkanPD();
 }

@@ -1,6 +1,7 @@
 #include "../../pch.h"
 #include "../../Config.h"
 #include "../../Util.h"
+#include "../../detours/detours.h"
 
 #include "DLSSFeature.h"
 

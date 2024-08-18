@@ -1,5 +1,7 @@
 #include "Dxgi_Hooks.h"
 
+#include "../Config.h"
+
 #include "proxies/Wrapped_SwapChain.h"
 
 #include "../exports/Dxgi.h"
@@ -19,32 +21,74 @@ static PFN_CreateSwapChainForHwnd o_CreateSwapChainForHwnd = nullptr;
 static PFN_CreateSwapChainForComposition o_CreateSwapChainForComposition = nullptr;
 static PFN_CreateSwapChainForCoreWindow o_CreateSwapChainForCoreWindow = nullptr;
 
-static std::function<void(SwapchainSource, IDXGISwapChain*)> presentCallback = nullptr;
-static std::function<void(SwapchainSource, bool)> cleanCallback = nullptr;
-static std::function<void(SwapchainSource, HWND)> releaseCallback = nullptr;
+static PFN_PresentCallback presentCallback[2] = { nullptr, nullptr };
+static PFN_CleanCallback cleanCallback[2] = { nullptr, nullptr };
+static PFN_ReleaseCallback releaseCallback[2] = { nullptr, nullptr };
+
+static IUnknown* device = nullptr;
+static IDXGIAdapter* adapters[8] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+
+static void Hooks::EnumarateDxgiAdapters()
+{
+    if (adapters[0] != nullptr)
+        return;
+
+    Config::Instance()->dxgiSkipSpoofing = true;
+
+    IDXGIFactory* dxgiFactory;
+    HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
+    if (FAILED(hr))
+    {
+        LOG_ERROR("CreateDXGIFactory error: {0:X}", (UINT)hr);
+        return;
+    }
+
+    UINT adapterIndex = 0;
+    while (dxgiFactory->EnumAdapters(adapterIndex, &adapters[adapterIndex]) != DXGI_ERROR_NOT_FOUND)
+    {
+        DXGI_ADAPTER_DESC desc;
+        adapters[adapterIndex]->GetDesc(&desc);
+
+        LOG_INFO("Adapter #{0}, Vendor ID:{1:X}, Device ID:{2:X}, DVM: {3}, DSM: {4}, SSM: {5}", adapterIndex, desc.VendorId, desc.DeviceId,
+                 desc.DedicatedVideoMemory / (1024 * 1024), desc.DedicatedSystemMemory / (1024 * 1024), desc.SharedSystemMemory / (1024 * 1024));
+
+        adapterIndex++;
+    }
+
+    Config::Instance()->dxgiSkipSpoofing = false;
+}
 
 static void Preset(IDXGISwapChain* InSwapChain)
 {
-    if (presentCallback != nullptr)
-        presentCallback(Dx12, InSwapChain);
+    for (size_t i = 0; i < 2; i++)
+    {
+        if (presentCallback[i] != nullptr)
+            presentCallback[i](InSwapChain);
+    }
 }
 
 static void Clean(bool InClearQueue)
 {
-    if (cleanCallback != nullptr)
-        cleanCallback(Dx12, InClearQueue);
+    for (size_t i = 0; i < 2; i++)
+    {
+        if (cleanCallback[i] != nullptr)
+            cleanCallback[i](InClearQueue);
+    }
 }
 
 static void Release(HWND InHWND)
 {
-    if (releaseCallback != nullptr)
-        releaseCallback(Dx12, InHWND);
+    for (size_t i = 0; i < 2; i++)
+    {
+        if (releaseCallback[i] != nullptr)
+            releaseCallback[i](InHWND);
+    }
 }
 
 static HRESULT WINAPI hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain)
 {
-    if (cleanCallback != nullptr)
-        cleanCallback(Dx12, true);
+    Clean(true);
+    device = pDevice;
 
     auto result = o_CreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
     if (result == S_OK)
@@ -56,11 +100,10 @@ static HRESULT WINAPI hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevic
     return result;
 }
 
-static HRESULT WINAPI hkCreateSwapChainForHwnd(IDXGIFactory* pFactory, IUnknown* pDevice, HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* pDesc,
-                                               const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
+static HRESULT WINAPI hkCreateSwapChainForHwnd(IDXGIFactory* pFactory, IUnknown* pDevice, HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* pDesc, const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
-    if (cleanCallback != nullptr)
-        cleanCallback(Dx12, true);
+    Clean(true);
+    device = pDevice;
 
     auto result = o_CreateSwapChainForHwnd(pFactory, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     if (result == S_OK)
@@ -72,11 +115,10 @@ static HRESULT WINAPI hkCreateSwapChainForHwnd(IDXGIFactory* pFactory, IUnknown*
     return result;
 }
 
-static HRESULT WINAPI hkCreateSwapChainForCoreWindow(IDXGIFactory* pFactory, IUnknown* pDevice, IUnknown* pWindow, const DXGI_SWAP_CHAIN_DESC1* pDesc,
-                                                     IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
+static HRESULT WINAPI hkCreateSwapChainForCoreWindow(IDXGIFactory* pFactory, IUnknown* pDevice, IUnknown* pWindow, const DXGI_SWAP_CHAIN_DESC1* pDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
-    if (cleanCallback != nullptr)
-        cleanCallback(Dx12, true);
+    Clean(true);
+    device = pDevice;
 
     auto result = o_CreateSwapChainForCoreWindow(pFactory, pDevice, pWindow, pDesc, pRestrictToOutput, ppSwapChain);
 
@@ -89,11 +131,10 @@ static HRESULT WINAPI hkCreateSwapChainForCoreWindow(IDXGIFactory* pFactory, IUn
     return result;
 }
 
-static HRESULT WINAPI hkCreateSwapChainForComposition(IDXGIFactory* pFactory, IUnknown* pDevice, const DXGI_SWAP_CHAIN_DESC1* pDesc,
-                                                      IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
+static HRESULT WINAPI hkCreateSwapChainForComposition(IDXGIFactory* pFactory, IUnknown* pDevice, const DXGI_SWAP_CHAIN_DESC1* pDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
-    if (cleanCallback != nullptr)
-        cleanCallback(Dx12, true);
+    Clean(true);
+    device = pDevice;
 
     auto result = o_CreateSwapChainForComposition(pFactory, pDevice, pDesc, pRestrictToOutput, ppSwapChain);
 
@@ -106,45 +147,16 @@ static HRESULT WINAPI hkCreateSwapChainForComposition(IDXGIFactory* pFactory, IU
     return result;
 }
 
-
-static void AttachSwapchainHooks(IDXGIFactory* InFactory)
-{
-    if (o_CreateSwapChain != nullptr)
-        return;
-
-    PVOID* pVTable = *(PVOID**)InFactory;
-    o_CreateSwapChain = (PFN_CreateSwapChain)pVTable[10];
-    o_CreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pVTable[15];
-    o_CreateSwapChainForCoreWindow = (PFN_CreateSwapChainForCoreWindow)pVTable[16];
-    o_CreateSwapChainForComposition = (PFN_CreateSwapChainForComposition)pVTable[24];
-
-    LOG_INFO("Hooking native DXGIFactory");
-
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-
-    if (o_CreateSwapChain != nullptr)
-        DetourAttach(&(PVOID&)o_CreateSwapChain, hkCreateSwapChain);
-
-    if (o_CreateSwapChain != nullptr)
-        DetourAttach(&(PVOID&)o_CreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
-
-    if (o_CreateSwapChain != nullptr)
-        DetourAttach(&(PVOID&)o_CreateSwapChainForCoreWindow, hkCreateSwapChainForCoreWindow);
-
-    if (o_CreateSwapChain != nullptr)
-        DetourAttach(&(PVOID&)o_CreateSwapChainForComposition, hkCreateSwapChainForComposition);
-
-    DetourTransactionCommit();
-}
-
 HRESULT static CreateDXGIFactory(REFIID riid, _COM_Outptr_ void** ppFactory)
 {
     IDXGIFactory* factory;
     HRESULT result = dxgi.CreateDxgiFactory(riid, (void**)&factory);
 
     if (result == S_OK)
+    {
         AttachToFactory(factory);
+        Hooks::AttachDxgiSwapchainHooks(factory);
+    }
 
     *ppFactory = factory;
 
@@ -157,7 +169,10 @@ HRESULT static CreateDXGIFactory1(REFIID riid, _COM_Outptr_ void** ppFactory)
     HRESULT result = dxgi.CreateDxgiFactory1(riid, (void**)&factory1);
 
     if (result == S_OK)
+    {
         AttachToFactory(factory1);
+        Hooks::AttachDxgiSwapchainHooks(factory1);
+    }
 
     *ppFactory = factory1;
 
@@ -166,13 +181,16 @@ HRESULT static CreateDXGIFactory1(REFIID riid, _COM_Outptr_ void** ppFactory)
 
 HRESULT static CreateDXGIFactory2(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFactory)
 {
-    IDXGIFactory* factory;
-    HRESULT result = dxgi.CreateDxgiFactory2(Flags, riid, (void**)&factory);
+    IDXGIFactory2* factory2;
+    HRESULT result = dxgi.CreateDxgiFactory2(Flags, riid, (void**)&factory2);
 
     if (result == S_OK)
-        AttachToFactory(factory);
+    {
+        AttachToFactory(factory2);
+        Hooks::AttachDxgiSwapchainHooks(factory2);
+    }
 
-    *ppFactory = factory;
+    *ppFactory = factory2;
 
     return result;
 }
@@ -184,9 +202,11 @@ void Hooks::AttachDxgiHooks()
 
     LOG_INFO("DxgiSpoofing is enabled loading dxgi.dll");
 
-    o_CreateDxgiFactory = (PFN_CREATE_DXGI_FACTORY)DetourFindFunction("dxgi.dll", "CreateDXGIFactory");
-    o_CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY)DetourFindFunction("dxgi.dll", "CreateDXGIFactory1");
-    o_CreateDxgiFactory2 = (PFN_CREATE_DXGI_FACTORY_2)DetourFindFunction("dxgi.dll", "CreateDXGIFactory2");
+    Hooks::EnumarateDxgiAdapters();
+
+    o_CreateDxgiFactory = reinterpret_cast<PFN_CREATE_DXGI_FACTORY>(DetourFindFunction("dxgi.dll", "CreateDXGIFactory"));
+    o_CreateDxgiFactory1 = reinterpret_cast<PFN_CREATE_DXGI_FACTORY>(DetourFindFunction("dxgi.dll", "CreateDXGIFactory1"));
+    o_CreateDxgiFactory2 = reinterpret_cast<PFN_CREATE_DXGI_FACTORY_2>(DetourFindFunction("dxgi.dll", "CreateDXGIFactory2"));
 
     LOG_INFO("dxgi.dll found, hooking CreateDxgiFactory methods");
 
@@ -203,6 +223,7 @@ void Hooks::AttachDxgiHooks()
         DetourAttach(&(PVOID&)o_CreateDxgiFactory2, CreateDXGIFactory2);
 
     DetourTransactionCommit();
+
 }
 
 void Hooks::DetachDxgiHooks()
@@ -231,17 +252,67 @@ void Hooks::DetachDxgiHooks()
     DetourTransactionCommit();
 }
 
-void Hooks::SetDxgiClean(std::function<void(SwapchainSource, bool)> InCallback)
+void Hooks::AttachDxgiSwapchainHooks(IDXGIFactory* InFactory)
 {
-    cleanCallback = InCallback;
+    if (o_CreateSwapChain != nullptr)
+        return;
+
+    PVOID* pVTable = *reinterpret_cast<PVOID**>(InFactory);
+    o_CreateSwapChain = reinterpret_cast<PFN_CreateSwapChain>(pVTable[10]);
+    o_CreateSwapChainForHwnd = reinterpret_cast<PFN_CreateSwapChainForHwnd>(pVTable[15]);
+    o_CreateSwapChainForCoreWindow = reinterpret_cast<PFN_CreateSwapChainForCoreWindow>(pVTable[16]);
+    o_CreateSwapChainForComposition = reinterpret_cast<PFN_CreateSwapChainForComposition>(pVTable[24]);
+
+    LOG_INFO("Hooking native DXGIFactory");
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+
+    if (o_CreateSwapChain != nullptr)
+        DetourAttach(&(PVOID&)o_CreateSwapChain, hkCreateSwapChain);
+
+    if (o_CreateSwapChain != nullptr)
+        DetourAttach(&(PVOID&)o_CreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
+
+    if (o_CreateSwapChain != nullptr)
+        DetourAttach(&(PVOID&)o_CreateSwapChainForCoreWindow, hkCreateSwapChainForCoreWindow);
+
+    if (o_CreateSwapChain != nullptr)
+        DetourAttach(&(PVOID&)o_CreateSwapChainForComposition, hkCreateSwapChainForComposition);
+
+    DetourTransactionCommit();
 }
 
-void SetDxgiPresent(std::function<void(SwapchainSource, IDXGISwapChain*)> InCallback)
+void Hooks::SetDxgiClean(PFN_CleanCallback InCallback)
 {
-    presentCallback = InCallback;
+    if(cleanCallback == nullptr)
+        cleanCallback[0] = InCallback;
+    else
+        cleanCallback[1] = InCallback;
 }
 
-void SetDxgiRelease(std::function<void(SwapchainSource, HWND)> InCallback)
+void Hooks::SetDxgiPresent(PFN_PresentCallback InCallback)
 {
-    releaseCallback = InCallback;
+    if (presentCallback == nullptr)
+        presentCallback[0] = InCallback;
+    else
+        presentCallback[1] = InCallback;
+}
+
+void Hooks::SetDxgiRelease(PFN_ReleaseCallback InCallback)
+{
+    if (releaseCallback == nullptr)
+        releaseCallback[0] = InCallback;
+    else
+        releaseCallback[1] = InCallback;
+}
+
+IUnknown* Hooks::DxgiDevice()
+{
+    return device;
+}
+
+IDXGIAdapter* Hooks::GetDXGIAdapter(uint32_t no)
+{
+    return nullptr;
 }

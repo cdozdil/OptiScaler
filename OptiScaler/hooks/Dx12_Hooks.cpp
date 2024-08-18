@@ -3,22 +3,20 @@
 #include "../Config.h"
 #include "../detours/detours.h"
 
-// Menu Hooks
-typedef HRESULT(*PFN_CreateCommandQueue)(ID3D12Device* This, const D3D12_COMMAND_QUEUE_DESC* pDesc, REFIID riid, void** ppCommandQueue);
-typedef void(*PFN_ExecuteCommandLists)(ID3D12CommandQueue*, UINT, ID3D12CommandList* const*);
-typedef ULONG(*PFN_CommandQueueRelease)(IUnknown*);
-
+// Device hook and variable
 static PFN_D3D12_CREATE_DEVICE o_D3D12CreateDevice = nullptr;
-static PFN_CreateCommandQueue o_CreateCommandQueue = nullptr;
-static PFN_CommandQueueRelease o_CommandQueueRelease = nullptr;
-static PFN_ExecuteCommandLists o_ExecuteCommandLists = nullptr;
+ID3D12Device* lastDevice = nullptr;
 
-// Sampler stuff for MipLodBias and Anisotropic Filtering
+// Sampler hook for MipLodBias and Anisotropic Filtering
 typedef void(*PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+
 static PFN_CreateSampler o_CreateSampler = nullptr;
 
-// Root signature stuff
+// Root signature hooks and variables
+typedef HRESULT(*PFN_CreateCommandList)(ID3D12Device* This, UINT nodeMask, D3D12_COMMAND_LIST_TYPE type, ID3D12CommandAllocator* pCommandAllocator, ID3D12PipelineState* pInitialState, REFIID riid, void** ppCommandList);
 typedef void(*PFN_SetRootSignature)(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature);
+
+static PFN_CreateCommandList o_CreateCommandList = nullptr;
 static PFN_SetRootSignature o_SetComputeRootSignature = nullptr;
 static PFN_SetRootSignature o_SetGraphicRootSignature = nullptr;
 
@@ -31,13 +29,8 @@ static uint64_t lastEvalTime = 0;
 static uint64_t evalStartTime = 0;
 static std::mutex sigatureMutex;
 
-static void HookToCommandList(ID3D12GraphicsCommandList* InCmdList);
 static void HookToDevice(ID3D12Device* InDevice);
-
-// Commnad list & queue
-static std::function<ULONG(IUnknown*)> commandQueueReleaseCallback = nullptr;
-static std::function<void(ID3D12CommandQueue*, UINT, ID3D12CommandList* const*)> executeCommandListCallback = nullptr;
-
+static void HookToCommandList(ID3D12CommandList* InCmdList);
 
 static int64_t GetTicks()
 {
@@ -92,21 +85,15 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
     newDesc.BorderColor[2] = pDesc->BorderColor[2];
     newDesc.BorderColor[3] = pDesc->BorderColor[3];
     newDesc.ComparisonFunc = pDesc->ComparisonFunc;
+    newDesc.Filter = pDesc->Filter;
+    newDesc.MaxAnisotropy = pDesc->MaxAnisotropy;
 
     if (Config::Instance()->AnisotropyOverride.has_value() &&
-        (pDesc->Filter == D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT ||
-        pDesc->Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT ||
-        pDesc->Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR ||
-        pDesc->Filter == D3D12_FILTER_ANISOTROPIC))
+        (pDesc->Filter == D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT || pDesc->Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT || pDesc->Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR || pDesc->Filter == D3D12_FILTER_ANISOTROPIC))
     {
         LOG_INFO("Overriding Anisotrpic ({2}) filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
         newDesc.Filter = D3D12_FILTER_ANISOTROPIC;
         newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
-    }
-    else
-    {
-        newDesc.Filter = pDesc->Filter;
-        newDesc.MaxAnisotropy = pDesc->MaxAnisotropy;
     }
 
     newDesc.MaxLOD = pDesc->MaxLOD;
@@ -142,87 +129,61 @@ static HRESULT hkD3D12CreateDevice(IUnknown* pAdapter, D3D_FEATURE_LEVEL Minimum
     return result;
 }
 
-static void hkExecuteCommandLists(ID3D12CommandQueue* pCommandQueue, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists)
+static HRESULT hkCreateCommandList(ID3D12Device* This, UINT nodeMask, D3D12_COMMAND_LIST_TYPE type, ID3D12CommandAllocator* pCommandAllocator, ID3D12PipelineState* pInitialState, REFIID riid, void** ppCommandList)
 {
-    if (executeCommandListCallback != nullptr)
-        executeCommandListCallback(pCommandQueue, NumCommandLists, ppCommandLists);
+    auto result = o_CreateCommandList(This, nodeMask, type, pCommandAllocator, pInitialState, riid, ppCommandList);
 
-    return o_ExecuteCommandLists(pCommandQueue, NumCommandLists, ppCommandLists);
-}
-
-static ULONG hkCommandQueueRelease(IUnknown* This)
-{
-    auto result = o_CommandQueueRelease(This);
-
-    if (commandQueueReleaseCallback != nullptr)
-        commandQueueReleaseCallback(This);
-
-    return result;
-}
-
-static HRESULT hkCreateCommandQueue(ID3D12Device* This, const D3D12_COMMAND_QUEUE_DESC* pDesc, REFIID riid, void** ppCommandQueue)
-{
-    auto result = o_CreateCommandQueue(This, pDesc, riid, ppCommandQueue);
-
-    if (result == S_OK && o_ExecuteCommandLists == nullptr && o_CommandQueueRelease == nullptr && pDesc->Type == D3D12_COMMAND_LIST_TYPE_DIRECT)
+    if (result == S_OK)
     {
-        auto commandQueue = (ID3D12CommandQueue*)*ppCommandQueue;
-
-        PVOID* pVTable = *(PVOID**)commandQueue;
-        o_CommandQueueRelease = (PFN_CommandQueueRelease)pVTable[2];
-        o_ExecuteCommandLists = (PFN_ExecuteCommandLists)pVTable[10];
-
-        if (o_ExecuteCommandLists != nullptr || o_CommandQueueRelease != nullptr)
-        {
-            LOG_INFO("hooking Dx12 CommandQueue");
-
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
-
-            DetourAttach(&(PVOID&)o_ExecuteCommandLists, hkExecuteCommandLists);
-            DetourAttach(&(PVOID&)o_CommandQueueRelease, hkCommandQueueRelease);
-
-            DetourTransactionCommit();
-        }
-
-        commandQueue = nullptr;
+        auto commandList = *reinterpret_cast<ID3D12CommandList**>(ppCommandList);
+        HookToCommandList(commandList);
     }
 
     return result;
 }
 
-static void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
+static void HookToCommandList(ID3D12CommandList* InCmdList)
 {
     if (o_SetComputeRootSignature != nullptr || o_SetGraphicRootSignature != nullptr)
         return;
 
-    PVOID* pVTable = *(PVOID**)InCmdList;
-    o_SetComputeRootSignature = (PFN_SetRootSignature)pVTable[29];
-    o_SetGraphicRootSignature = (PFN_SetRootSignature)pVTable[30];
+    LOG_FUNC();
 
-    if (o_SetComputeRootSignature != nullptr || o_SetGraphicRootSignature != nullptr)
-    {
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
+    ID3D12GraphicsCommandList* graphCommandList = nullptr;
 
-        if (o_SetComputeRootSignature != nullptr)
-            DetourAttach(&(PVOID&)o_SetComputeRootSignature, hkSetComputeRootSignature);
+    if (InCmdList->QueryInterface(IID_PPV_ARGS(&graphCommandList)) != S_OK || graphCommandList == nullptr)
+        return;
 
-        if (o_SetGraphicRootSignature != nullptr)
-            DetourAttach(&(PVOID&)o_SetGraphicRootSignature, hkSetGraphicRootSignature);
+    PVOID* pVTable = *reinterpret_cast<PVOID**>(graphCommandList);
+    o_SetComputeRootSignature = reinterpret_cast<PFN_SetRootSignature>(pVTable[29]);
+    o_SetGraphicRootSignature = reinterpret_cast<PFN_SetRootSignature>(pVTable[30]);
 
-        DetourTransactionCommit();
-    }
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+
+    if (o_SetComputeRootSignature != nullptr)
+        DetourAttach(&(PVOID&)o_SetComputeRootSignature, hkSetComputeRootSignature);
+
+    if (o_SetGraphicRootSignature != nullptr)
+        DetourAttach(&(PVOID&)o_SetGraphicRootSignature, hkSetGraphicRootSignature);
+
+    DetourTransactionCommit();
+
+    graphCommandList->Release();
 }
 
 static void HookToDevice(ID3D12Device* InDevice)
 {
-    if (o_CreateSampler != nullptr || o_CreateCommandQueue != nullptr)
+    lastDevice = InDevice;
+    LOG_DEBUG("new D3D12Device: {0:X}", (UINT64)InDevice);
+
+    if (o_CreateSampler != nullptr || o_CreateCommandList != nullptr)
         return;
 
-    PVOID* pVTable = *(PVOID**)InDevice;
-    o_CreateSampler = (PFN_CreateSampler)pVTable[22];
-    o_CreateCommandQueue = (PFN_CreateCommandQueue)pVTable[8];
+    LOG_FUNC();
+
+    PVOID* pVTable = *reinterpret_cast<PVOID**>(InDevice);
+    o_CreateSampler = reinterpret_cast<PFN_CreateSampler>(pVTable[22]);
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
@@ -230,8 +191,8 @@ static void HookToDevice(ID3D12Device* InDevice)
     if (o_CreateSampler != nullptr)
         DetourAttach(&(PVOID&)o_CreateSampler, hkCreateSampler);
 
-    if (o_CreateCommandQueue != nullptr)
-        DetourAttach(&(PVOID&)o_CreateCommandQueue, hkCreateCommandQueue);
+    if (o_CreateCommandList != nullptr)
+        DetourAttach(&(PVOID&)o_CreateCommandList, hkCreateCommandList);
 
     DetourTransactionCommit();
 }
@@ -241,7 +202,7 @@ void Hooks::AttachDx12Hooks()
     if (o_D3D12CreateDevice != nullptr)
         return;
 
-    o_D3D12CreateDevice = (PFN_D3D12_CREATE_DEVICE)DetourFindFunction("d3d12.dll", "D3D12CreateDevice");
+    o_D3D12CreateDevice = reinterpret_cast<PFN_D3D12_CREATE_DEVICE>(DetourFindFunction("d3d12.dll", "D3D12CreateDevice"));
 
     if (o_D3D12CreateDevice != nullptr)
     {
@@ -283,22 +244,10 @@ void Hooks::DetachDx12Hooks()
         o_CreateSampler = nullptr;
     }
 
-    if (o_CreateCommandQueue != nullptr)
+    if (o_CreateCommandList != nullptr)
     {
-        DetourDetach(&(PVOID&)o_CreateCommandQueue, hkCreateCommandQueue);
-        o_CreateCommandQueue = nullptr;
-    }
-
-    if (o_CommandQueueRelease != nullptr)
-    {
-        DetourDetach(&(PVOID&)o_CommandQueueRelease, hkCommandQueueRelease);
-        o_CommandQueueRelease = nullptr;
-    }
-
-    if (o_SetGraphicRootSignature != nullptr)
-    {
-        DetourDetach(&(PVOID&)o_ExecuteCommandLists, hkExecuteCommandLists);
-        o_ExecuteCommandLists = nullptr;
+        DetourDetach(&(PVOID&)o_CreateCommandList, hkCreateCommandList);
+        o_CreateCommandList = nullptr;
     }
 
     DetourTransactionCommit();
@@ -343,26 +292,18 @@ void Hooks::ContextEvaluateStop(ID3D12GraphicsCommandList* InCmdList, bool InRes
             LOG_TRACE("orgGraphicRootSig evalStartTime: {0}", evalStartTime);
         }
 
-        lastEvalTime = evalStartTime;
-
-        rootSigCompute = nullptr;
-        rootSigGraphic = nullptr;
-
         sigatureMutex.unlock();
     }
+
+    lastEvalTime = evalStartTime;
+
+    rootSigCompute = nullptr;
+    rootSigGraphic = nullptr;
 }
 
-bool Hooks::IsDeviceCaptured()
+ID3D12Device* Hooks::Dx12Device()
 {
-    return o_D3D12CreateDevice != nullptr;
+    return lastDevice;
 }
 
-void Hooks::SetCommandQueueReleaseCallback(std::function<ULONG(IUnknown*)> InCallback)
-{
-    commandQueueReleaseCallback = InCallback;
-}
 
-void Hooks::SetExecuteCommandListCallback(std::function<void(ID3D12CommandQueue*, UINT, ID3D12CommandList* const*)> InCallback)
-{
-    executeCommandListCallback = InCallback;
-}

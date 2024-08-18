@@ -15,4 +15,5 @@ public:
     static bool IsWorkingWithEnabler();
     static bool IsNvngxAvailable();
     static bool IsModeFound();
+    static bool IsRunningOnWine();
 };

@@ -4,10 +4,14 @@
 
 typedef HRESULT(WINAPI* PFN_CREATE_DXGI_FACTORY)(REFIID riid, _COM_Outptr_ void** ppFactory);
 typedef HRESULT(WINAPI* PFN_CREATE_DXGI_FACTORY_2)(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFactory);
+typedef void(*PFN_AttachDxgiSwapchainHooks)(IDXGIFactory* InFactory);
 
+// when not working as dxgi.dll, dxgi_hooks will use these methods for spoofing 
 void AttachToAdapter(IUnknown* unkAdapter);
 void AttachToFactory(IUnknown* unkFactory);
-bool SkipSpoofing();
+
+// when working as dxgi.dll menu needs hooks for swapchains
+void SetSwapchainHookMethod(PFN_AttachDxgiSwapchainHooks InCallback);
 
 inline struct dxgi_dll
 {

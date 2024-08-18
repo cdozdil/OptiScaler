@@ -3,8 +3,6 @@
 #include "../pch.h"
 #include "../Config.h"
 
-#include <vulkan/vulkan_core.h>
-
 #include "../detours/detours.h"
 
 static PFN_vkGetPhysicalDeviceProperties o_vkGetPhysicalDeviceProperties = nullptr;
@@ -18,12 +16,16 @@ static PFN_vkCreateInstance o_vkCreateInstance = nullptr;
 
 typedef struct VkDummyProps
 {
-    VkStructureType    sType;
+    VkStructureType sType;
     void* pNext;
 } VkDummyProps;
 
 static uint32_t vkEnumerateInstanceExtensionPropertiesCount = 0;
 static uint32_t vkEnumerateDeviceExtensionPropertiesCount = 0;
+
+VkInstance _instance = nullptr;
+VkDevice _device = nullptr;
+VkPhysicalDevice _physicalDevice = nullptr;
 
 #pragma region Vulkan Hooks
 
@@ -104,6 +106,9 @@ static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, cons
     auto result = o_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
     Config::Instance()->dxgiSkipSpoofing = false;
 
+    if (result == VK_SUCCESS)
+        _instance = *pInstance;
+
     LOG_DEBUG("o_vkCreateInstance result: {0:X}", (INT)result);
 
     auto head = (VkBaseInStructure*)pCreateInfo;
@@ -121,13 +126,21 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
 {
     LOG_FUNC();
 
+    _physicalDevice = physicalDevice;
+
     if (!Config::Instance()->VulkanExtensionSpoofing.value_or(false))
     {
         LOG_DEBUG("extension spoofing is disabled");
 
+        // Skip spoofing for Intel Arc
         Config::Instance()->dxgiSkipSpoofing = true;
-        return o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
+        auto result = o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
         Config::Instance()->dxgiSkipSpoofing = false;
+
+        if (result == VK_SUCCESS)
+            _device = *pDevice;
+
+        return result;
     }
 
     LOG_DEBUG("layers ({0}):", pCreateInfo->enabledLayerCount);
@@ -171,6 +184,9 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
     Config::Instance()->dxgiSkipSpoofing = true;
     auto result = o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
     Config::Instance()->dxgiSkipSpoofing = false;
+
+    if (result == VK_SUCCESS)
+        _device = *pDevice;
 
     LOG_FUNC_RESULT(result);
 
@@ -247,7 +263,49 @@ static VkResult hkvkEnumerateInstanceExtensionProperties(const char* pLayerName,
 
 #pragma endregion
 
-void Hooks::AttachVulkanDeviceHooks()
+void Hooks::AttachVulkanHooks()
+{
+    if (o_vkCreateDevice == nullptr)
+    {
+        o_vkCreateDevice = reinterpret_cast<PFN_vkCreateDevice>(DetourFindFunction("vulkan-1.dll", "vkCreateDevice"));
+        o_vkCreateInstance = reinterpret_cast<PFN_vkCreateInstance>(DetourFindFunction("vulkan-1.dll", "vkCreateInstance"));
+
+        LOG_INFO("Attaching Vulkan hooks");
+
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+
+        if (o_vkCreateDevice)
+            DetourAttach(&(PVOID&)o_vkCreateDevice, hkvkCreateDevice);
+
+        if (o_vkCreateInstance)
+            DetourAttach(&(PVOID&)o_vkCreateInstance, hkvkCreateInstance);
+
+        DetourTransactionCommit();
+    }
+}
+
+void Hooks::DetachVulkanHooks()
+{
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+
+    if (o_vkCreateDevice)
+    {
+        DetourDetach(&(PVOID&)o_vkCreateDevice, hkvkCreateDevice);
+        o_vkCreateDevice = nullptr;
+    }
+
+    if (o_vkCreateInstance)
+    {
+        DetourDetach(&(PVOID&)o_vkCreateInstance, hkvkCreateInstance);
+        o_vkCreateInstance = nullptr;
+    }
+
+    DetourTransactionCommit();
+}
+
+void Hooks::AttachVulkanDeviceSpoofingHooks()
 {
     if (o_vkGetPhysicalDeviceProperties == nullptr)
     {
@@ -276,7 +334,7 @@ void Hooks::AttachVulkanDeviceHooks()
     }
 }
 
-void Hooks::DetachVulkanDeviceHooks()
+void Hooks::DetachVulkanDeviceSpoofingHooks()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
@@ -302,7 +360,7 @@ void Hooks::DetachVulkanDeviceHooks()
     DetourTransactionCommit();
 }
 
-void Hooks::AttachVulkanExtensionHooks()
+void Hooks::AttachVulkanExtensionSpoofingHooks()
 {
     if (o_vkEnumerateInstanceExtensionProperties == nullptr)
     {
@@ -335,7 +393,7 @@ void Hooks::AttachVulkanExtensionHooks()
     }
 }
 
-void Hooks::DetachVulkanExtensionHooks()
+void Hooks::DetachVulkanExtensionSpoofingHooks()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
@@ -352,17 +410,20 @@ void Hooks::DetachVulkanExtensionHooks()
         o_vkEnumerateDeviceExtensionProperties = nullptr;
     }
 
-    if (o_vkCreateDevice)
-    {
-        DetourDetach(&(PVOID&)o_vkCreateDevice, hkvkCreateDevice);
-        o_vkCreateDevice = nullptr;
-    }
-
-    if (o_vkCreateInstance)
-    {
-        DetourDetach(&(PVOID&)o_vkCreateInstance, hkvkCreateInstance);
-        o_vkCreateInstance = nullptr;
-    }
-
     DetourTransactionCommit();
+}
+
+VkDevice Hooks::VulkanDevice()
+{
+    return _device;
+}
+
+VkInstance Hooks::VulkanInstance()
+{
+    return _instance;
+}
+
+VkPhysicalDevice Hooks::VulkanPD()
+{
+    return _physicalDevice;
 }

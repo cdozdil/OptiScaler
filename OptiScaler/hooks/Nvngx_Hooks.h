@@ -2,6 +2,6 @@
 
 namespace Hooks
 {
-    void AttachNvngxHooks();
-    void DetachNvngxHooks();
+    void AttachNVNGXSpoofingHooks();
+    void DetachNVNGXSpoofingHooks();
 }

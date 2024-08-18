@@ -214,7 +214,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="exports\Winmm.h" />
     <ClInclude Include="hooks\Dx12_Hooks.h" />
     <ClInclude Include="hooks\Dxgi_Hooks.h" />
-    <ClInclude Include="enums\Enums.h" />
     <ClInclude Include="hooks\LoadLibrary_Hooks.h" />
     <ClInclude Include="hooks\NvApi_Hooks.h" />
     <ClInclude Include="hooks\Nvngx_Hooks.h" />

@@ -11,9 +11,9 @@ class WrappedIDXGISwapChain4 : public IDXGISwapChain4
 	IDXGISwapChain3* m_pReal3 = nullptr;
 	IDXGISwapChain4* m_pReal4 = nullptr;
 
-	std::function<void(IDXGISwapChain*)> PresentCallback = nullptr;
+	std::function<void(IDXGISwapChain*)> PFN_PresentCallback = nullptr;
 	std::function<void(bool)> ClearCallback = nullptr;
-	std::function<void(HWND)> ReleaseCallback = nullptr;
+	std::function<void(HWND)> PFN_ReleaseCallback = nullptr;
 
 	unsigned int m_iRefcount;
 
@@ -43,7 +43,7 @@ public:
 			{
 				HWND hwnd = nullptr;
 				m_pReal1->GetHwnd(&hwnd);
-				ReleaseCallback(hwnd);
+				PFN_ReleaseCallback(hwnd);
 			}
 
 			delete this;

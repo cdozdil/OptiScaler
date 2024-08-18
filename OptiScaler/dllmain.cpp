@@ -11,16 +11,14 @@
 #include "hooks/NvApi_Hooks.h"
 #include "hooks/Nvngx_Hooks.h"
 
-#include "imgui/imgui_overlay_dx12.h"
-
 static void DetachHooks()
 {
     Hooks::DetachLoadLibraryHooks();
-    Hooks::DetachNvApiHooks();
-    Hooks::DetachNvngxHooks();
+    Hooks::DetachNVAPISpoofingHooks();
+    Hooks::DetachNVNGXSpoofingHooks();
     Hooks::DetachDxgiHooks();
-    Hooks::DetachVulkanDeviceHooks();
-    Hooks::DetachVulkanExtensionHooks();
+    Hooks::DetachVulkanDeviceSpoofingHooks();
+    Hooks::DetachVulkanExtensionSpoofingHooks();
 }
 
 static void AttachHooks()
@@ -32,12 +30,34 @@ static void AttachHooks()
         Hooks::AttachLoadLibraryHooks();
 
     // Nvapi spoofing fo 16xx
-    if (WorkingMode::IsNvngxAvailable() && !Config::Instance()->OverrideNvapiDll.value_or(false))
-        Hooks::AttachNvApiHooks();
+    if (WorkingMode::IsNvngxAvailable())
+    {
+        if (!Config::Instance()->OverrideNvapiDll.value_or(false))
+            Hooks::AttachNVAPISpoofingHooks();
+        else
+            Hooks::NvApiCheckDLSSSupport();
+    }
 
     // Nvngx 16xx spoofing
     if (WorkingMode::IsNvngxAvailable())
-        Hooks::AttachNvngxHooks();
+        Hooks::AttachNVNGXSpoofingHooks();
+
+    // Check DLSS support
+    if (WorkingMode::IsNvngxAvailable() && Hooks::IsArchSupportsDLSS())
+    {
+        LOG_INFO("DLSS available, setting DLSS as default upscaler and disabling spoofing options set to auto");
+
+        Config::Instance()->DLSSEnabled = true;
+
+        if (!Config::Instance()->DxgiSpoofing.has_value())
+            Config::Instance()->DxgiSpoofing = false;
+
+        if (!Config::Instance()->VulkanSpoofing.has_value())
+            Config::Instance()->VulkanSpoofing = false;
+
+        if (!Config::Instance()->VulkanExtensionSpoofing.has_value())
+            Config::Instance()->VulkanExtensionSpoofing = false;
+    }
 
     // Dxgi spoofing
     if (!WorkingMode::IsWorkingWithEnabler() && !Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
@@ -45,11 +65,11 @@ static void AttachHooks()
 
     // Vulkan spoofing
     if (Config::Instance()->VulkanSpoofing.value_or(false))
-        Hooks::AttachVulkanDeviceHooks();
+        Hooks::AttachVulkanDeviceSpoofingHooks();
 
     // Vulkan extension spoofing
     if (Config::Instance()->VulkanExtensionSpoofing.value_or(false))
-        Hooks::AttachVulkanExtensionHooks();
+        Hooks::AttachVulkanExtensionSpoofingHooks();
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
@@ -89,15 +109,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             spdlog::info("");
 
             if (WorkingMode::IsModeFound())
-            {
                 AttachHooks();
-
-                if (!WorkingMode::IsNvngxMode() && !Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))
-                {
-                    ImGuiOverlayDx12::Dx12Bind();
-                    ImGuiOverlayDx12::FSR3Bind();
-                }
-            }
 
             break;
 

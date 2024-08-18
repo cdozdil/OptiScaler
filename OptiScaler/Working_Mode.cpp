@@ -1,8 +1,9 @@
-#include "Working_Mode.h"
 #include "Config.h"
-#include "Util.h"
-#include "NVNGX_Proxy.h"
 #include "exports/Exports.h"
+#include "hooks/Dxgi_Hooks.h"
+#include "NVNGX_Proxy.h"
+#include "Util.h"
+#include "Working_Mode.h"
 
 typedef const char* (CDECL* PFN_wine_get_version)(void);
 
@@ -15,6 +16,7 @@ static bool _isNvngxMode = false;
 static bool _isWorkingWithEnabler = false;
 static bool _isNvngxAvailable = false;
 static bool _isModeFound = false;
+static bool _isRunningOnWine = false;
 
 static bool IsRunningOnWine()
 {
@@ -46,7 +48,8 @@ void WorkingMode::Check()
 
     auto config = Config::Instance();
     
-    config->IsRunningOnLinux = IsRunningOnWine();
+    _isRunningOnWine = IsRunningOnWine();
+    config->IsRunningOnLinux = _isRunningOnWine;    
 
     std::string filename = Util::DllPath().filename().string();
     std::string lCaseFilename(filename);
@@ -229,7 +232,7 @@ void WorkingMode::Check()
             break;
         }
 
-        // optiscaler.dll
+        // optiscaler.asi
         if (lCaseFilename == "optiscaler.asi")
         {
             LOG_INFO("OptiScaler working as OptiScaler.asi");
@@ -335,6 +338,10 @@ void WorkingMode::Check()
                 shared.LoadOriginalLibrary(dll);
                 dxgi.LoadOriginalLibrary(dll);
 
+                
+                // To hook swaphain creation for menu
+                SetSwapchainHookMethod(Hooks::AttachDxgiSwapchainHooks);
+                
                 config->IsDxgiMode = true;
                 _isModeFound = true;
             }
@@ -350,6 +357,12 @@ void WorkingMode::Check()
 
     if (_isModeFound)
     {
+        // Overlay menu needs early hooking
+        Config::Instance()->OverlayMenu = (!_isNvngxMode || _isWorkingWithEnabler);
+
+        // to update dxgi adapter list
+        Hooks::EnumarateDxgiAdapters();
+
         // Check if real DLSS available
         if (config->DLSSEnabled.value_or(true))
         {
@@ -363,24 +376,11 @@ void WorkingMode::Check()
             }
             else
             {
-                LOG_INFO("nvngx.dll loaded, setting DLSS as default upscaler and disabling spoofing options set to auto");
-
-                config->DLSSEnabled = true;
-
-                if (!config->DxgiSpoofing.has_value())
-                    config->DxgiSpoofing = false;
-
-                if (!config->VulkanSpoofing.has_value())
-                    config->VulkanSpoofing = false;
-
-                if (!config->VulkanExtensionSpoofing.has_value())
-                    config->VulkanExtensionSpoofing = false;
+                _isNvngxAvailable = true;
 
                 // Disable Overlay Menu because of crashes on Linux with Nvidia GPUs
-                if (config->IsRunningOnLinux && !config->OverlayMenu.has_value())
-                    config->OverlayMenu = false;
-
-                _isNvngxAvailable = true;
+                if (_isRunningOnWine && !Config::Instance()->OverlayMenu.has_value())
+                    Config::Instance()->OverlayMenu = false;
             }
         }
     }
@@ -426,4 +426,9 @@ bool WorkingMode::IsNvngxAvailable()
 bool WorkingMode::IsModeFound()
 {
     return _isModeFound;
+}
+
+bool WorkingMode::IsRunningOnWine()
+{
+    return _isRunningOnWine;
 }

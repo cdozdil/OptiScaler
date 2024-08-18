@@ -1,6 +1,7 @@
 #include "NvApi_Hooks.h"
 
 #include "../pch.h"
+#include "../Config.h"
 
 #include "../nvapi/nvapi.h"
 #include "../detours/detours.h"
@@ -11,14 +12,79 @@
 enum class NV_INTERFACE : uint32_t
 {
     GPU_GetArchInfo = 0xD8265D24,
+    EnumPhysicalGPUs = 0xE5AC921F,
     D3D12_SetRawScgPriority = 0x5DB3048A,
 };
 
-typedef void*(*PFN_NvApi_QueryInterface)(NV_INTERFACE InterfaceId);
+typedef void* (*PFN_NvApi_QueryInterface)(NV_INTERFACE InterfaceId);
 typedef uint32_t(*PFN_NvAPI_GPU_GetArchInfo)(void* GPUHandle, NV_GPU_ARCH_INFO* ArchInfo);
+typedef uint32_t(*PFN_NvAPI_EnumPhysicalGPUs)(void* GPUHandle, uint32_t* Count);
 
 static PFN_NvApi_QueryInterface OriginalNvAPI_QueryInterface = nullptr;
 static PFN_NvAPI_GPU_GetArchInfo OriginalNvAPI_GPU_GetArchInfo = nullptr;
+
+bool isArchSupportsDLSS = false;
+
+static void Hooks::NvApiCheckDLSSSupport()
+{
+    if (isArchSupportsDLSS)
+        return;
+
+    wchar_t sysFolder[MAX_PATH];
+    GetSystemDirectory(sysFolder, MAX_PATH);
+    std::filesystem::path sysPath(sysFolder);
+    auto nvapi = sysPath / L"nvapi64.dll";
+
+    auto sysNvApi = LoadLibrary(nvapi.c_str());
+    if (sysNvApi == nullptr)
+    {
+        LOG_ERROR("Can't load nvapi64.dll from system path!");
+        return;
+    }
+
+    auto queryInterface = (PFN_NvApi_QueryInterface)GetProcAddress(sysNvApi, "nvapi_QueryInterface");
+    if(queryInterface == nullptr)
+    {
+        LOG_ERROR("Can't get adderess of nvapi_QueryInterface!");
+        return;
+    }
+
+    auto enumGPUs = (PFN_NvAPI_EnumPhysicalGPUs)queryInterface(NV_INTERFACE::EnumPhysicalGPUs);
+    auto getArch = (PFN_NvAPI_GPU_GetArchInfo)queryInterface(NV_INTERFACE::GPU_GetArchInfo);
+
+    if (enumGPUs == nullptr || getArch == nullptr)
+    {
+        LOG_ERROR("Can't get adderess of EnumPhysicalGPUs ({0:X}) or GPU_GetArchInfo ({1:X})!", (UINT64)enumGPUs, (UINT64)getArch);
+        return;
+    }
+
+    void* nvapiGpuHandles[8];
+    uint32_t gpuCount;
+
+    if (enumGPUs(nvapiGpuHandles, &gpuCount) == NVAPI_OK)
+    {
+        LOG_DEBUG("Found {0} NVIDIA GPUs", gpuCount);
+
+        for (uint32_t i = 0; i < gpuCount; i++)
+        {
+            NV_GPU_ARCH_INFO archInfo{};
+            archInfo.version = NV_GPU_ARCH_INFO_VER;
+
+            auto result = getArch(nvapiGpuHandles[i], &archInfo);
+            if (result == NVAPI_OK)
+            {
+                LOG_INFO("Found GPU {0}, Arch: 0x{1:X}", i, archInfo.architecture);
+
+                if (archInfo.architecture >= NV_GPU_ARCHITECTURE_TU100)
+                    isArchSupportsDLSS = true;
+            }
+            else
+            {
+                LOG_ERROR("GPU_GetArchInfo error: {0:X}", result);
+            }
+        }
+    }
+}
 
 static uint32_t __stdcall HookedNvAPI_GPU_GetArchInfo(void* GPUHandle, NV_GPU_ARCH_INFO* ArchInfo)
 {
@@ -54,7 +120,7 @@ static void* __stdcall HookedNvAPI_QueryInterface(NV_INTERFACE InterfaceId)
     {
         if (InterfaceId == NV_INTERFACE::GPU_GetArchInfo)
         {
-            OriginalNvAPI_GPU_GetArchInfo = static_cast<PFN_NvAPI_GPU_GetArchInfo>(result);
+            OriginalNvAPI_GPU_GetArchInfo = reinterpret_cast<PFN_NvAPI_GPU_GetArchInfo>(result);
             return &HookedNvAPI_GPU_GetArchInfo;
         }
     }
@@ -62,14 +128,16 @@ static void* __stdcall HookedNvAPI_QueryInterface(NV_INTERFACE InterfaceId)
     return result;
 }
 
-void Hooks::AttachNvApiHooks()
+void Hooks::AttachNVAPISpoofingHooks()
 {
+    Hooks::NvApiCheckDLSSSupport();
+
     if (OriginalNvAPI_QueryInterface != nullptr)
         return;
 
     LOG_DEBUG("Trying to hook NvApi");
-    OriginalNvAPI_QueryInterface = (PFN_NvApi_QueryInterface)DetourFindFunction("nvapi64.dll", "nvapi_QueryInterface");
-    LOG_DEBUG("OriginalNvAPI_QueryInterface = {0:X}", (unsigned long long)OriginalNvAPI_QueryInterface);
+    OriginalNvAPI_QueryInterface = reinterpret_cast<PFN_NvApi_QueryInterface>(DetourFindFunction("nvapi64.dll", "nvapi_QueryInterface"));
+    LOG_DEBUG("OriginalNvAPI_QueryInterface = {0:X}", (UINT64)OriginalNvAPI_QueryInterface);
 
     if (OriginalNvAPI_QueryInterface != nullptr)
     {
@@ -82,7 +150,7 @@ void Hooks::AttachNvApiHooks()
     }
 }
 
-void Hooks::DetachNvApiHooks()
+void Hooks::DetachNVAPISpoofingHooks()
 {
     if (OriginalNvAPI_QueryInterface != nullptr)
     {
