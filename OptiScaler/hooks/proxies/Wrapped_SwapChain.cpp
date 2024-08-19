@@ -5,7 +5,7 @@
 
 WrappedIDXGISwapChain4::WrappedIDXGISwapChain4(IDXGISwapChain* InRealSwapChain, std::function<void(IDXGISwapChain*)> InPresentCallback,
 											   std::function<void(bool)> InClearCallback, std::function<void(HWND)> InReleaseCallback) : 
-	m_pReal(InRealSwapChain), PFN_PresentCallback(InPresentCallback),  ClearCallback(InClearCallback), PFN_ReleaseCallback(InReleaseCallback), m_iRefcount(1)
+	m_pReal(InRealSwapChain), PFN_DxgiPresentCallback(InPresentCallback),  ClearCallback(InClearCallback), PFN_DxgiReleaseCallback(InReleaseCallback), m_iRefcount(1)
 {
 	m_pReal->QueryInterface(IID_PPV_ARGS(&m_pReal1));
 	m_pReal->QueryInterface(IID_PPV_ARGS(&m_pReal2));
@@ -170,16 +170,16 @@ HRESULT WrappedIDXGISwapChain4::GetDevice(REFIID riid, void** ppDevice)
 
 HRESULT WrappedIDXGISwapChain4::Present(UINT SyncInterval, UINT Flags)
 {
-	if (!((Flags & DXGI_PRESENT_TEST) || (Flags & DXGI_PRESENT_RESTART)) && PFN_PresentCallback != nullptr && m_pReal3 != nullptr)
-		PFN_PresentCallback(m_pReal);
+	if (!((Flags & DXGI_PRESENT_TEST) || (Flags & DXGI_PRESENT_RESTART)) && PFN_DxgiPresentCallback != nullptr && m_pReal3 != nullptr)
+		PFN_DxgiPresentCallback(m_pReal);
 
 	return m_pReal->Present(SyncInterval, Flags);
 }
 
 HRESULT WrappedIDXGISwapChain4::Present1(UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters)
 {
-	if (!((Flags & DXGI_PRESENT_TEST) || (Flags & DXGI_PRESENT_RESTART)) && PFN_PresentCallback != nullptr && m_pReal3 != nullptr)
-		PFN_PresentCallback(m_pReal1);
+	if (!((Flags & DXGI_PRESENT_TEST) || (Flags & DXGI_PRESENT_RESTART)) && PFN_DxgiPresentCallback != nullptr && m_pReal3 != nullptr)
+		PFN_DxgiPresentCallback(m_pReal1);
 
 	return m_pReal1->Present1(SyncInterval, Flags, pPresentParameters);
 }

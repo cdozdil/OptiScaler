@@ -3,9 +3,9 @@
 
 #include <dxgi1_6.h>
 
-typedef void(*PFN_CleanCallback)(bool);
-typedef void(*PFN_PresentCallback)(IDXGISwapChain*);
-typedef void(*PFN_ReleaseCallback)(HWND);
+typedef void(*PFN_DxgiCleanCallback)(bool);
+typedef void(*PFN_DxgiPresentCallback)(IDXGISwapChain*);
+typedef void(*PFN_DxgiReleaseCallback)(HWND);
 
 namespace Hooks
 {
@@ -13,9 +13,9 @@ namespace Hooks
     void DetachDxgiHooks();
     void AttachDxgiSwapchainHooks(IDXGIFactory* InFactory);
 
-    void SetDxgiClean(PFN_CleanCallback);
-    void SetDxgiPresent(PFN_PresentCallback);
-    void SetDxgiRelease(PFN_ReleaseCallback);
+    void SetDxgiClean(PFN_DxgiCleanCallback);
+    void SetDxgiPresent(PFN_DxgiPresentCallback);
+    void SetDxgiRelease(PFN_DxgiReleaseCallback);
 
     IUnknown* DxgiDevice();
     void EnumarateDxgiAdapters();

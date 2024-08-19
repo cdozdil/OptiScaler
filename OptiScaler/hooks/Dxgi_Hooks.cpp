@@ -21,9 +21,9 @@ static PFN_CreateSwapChainForHwnd o_CreateSwapChainForHwnd = nullptr;
 static PFN_CreateSwapChainForComposition o_CreateSwapChainForComposition = nullptr;
 static PFN_CreateSwapChainForCoreWindow o_CreateSwapChainForCoreWindow = nullptr;
 
-static PFN_PresentCallback presentCallback[2] = { nullptr, nullptr };
-static PFN_CleanCallback cleanCallback[2] = { nullptr, nullptr };
-static PFN_ReleaseCallback releaseCallback[2] = { nullptr, nullptr };
+static PFN_DxgiPresentCallback presentCallback[2] = { nullptr, nullptr };
+static PFN_DxgiCleanCallback cleanCallback[2] = { nullptr, nullptr };
+static PFN_DxgiReleaseCallback releaseCallback[2] = { nullptr, nullptr };
 
 static IUnknown* device = nullptr;
 static IDXGIAdapter* adapters[8] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
@@ -283,7 +283,7 @@ void Hooks::AttachDxgiSwapchainHooks(IDXGIFactory* InFactory)
     DetourTransactionCommit();
 }
 
-void Hooks::SetDxgiClean(PFN_CleanCallback InCallback)
+void Hooks::SetDxgiClean(PFN_DxgiCleanCallback InCallback)
 {
     if(cleanCallback == nullptr)
         cleanCallback[0] = InCallback;
@@ -291,7 +291,7 @@ void Hooks::SetDxgiClean(PFN_CleanCallback InCallback)
         cleanCallback[1] = InCallback;
 }
 
-void Hooks::SetDxgiPresent(PFN_PresentCallback InCallback)
+void Hooks::SetDxgiPresent(PFN_DxgiPresentCallback InCallback)
 {
     if (presentCallback == nullptr)
         presentCallback[0] = InCallback;
@@ -299,7 +299,7 @@ void Hooks::SetDxgiPresent(PFN_PresentCallback InCallback)
         presentCallback[1] = InCallback;
 }
 
-void Hooks::SetDxgiRelease(PFN_ReleaseCallback InCallback)
+void Hooks::SetDxgiRelease(PFN_DxgiReleaseCallback InCallback)
 {
     if (releaseCallback == nullptr)
         releaseCallback[0] = InCallback;
@@ -312,7 +312,10 @@ IUnknown* Hooks::DxgiDevice()
     return device;
 }
 
-IDXGIAdapter* Hooks::GetDXGIAdapter(uint32_t no)
+IDXGIAdapter* Hooks::GetDXGIAdapter(uint32_t index)
 {
+    if (index >= 0 && index < 8)
+        return adapters[index];
+
     return nullptr;
 }

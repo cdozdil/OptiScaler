@@ -5,6 +5,9 @@
 
 #include "../detours/detours.h"
 
+typedef VkResult(*PFN_QueuePresentKHR)(VkQueue, const VkPresentInfoKHR*);
+typedef VkResult(*PFN_CreateSwapchainKHR)(VkDevice, const VkSwapchainCreateInfoKHR*, const VkAllocationCallbacks*, VkSwapchainKHR*);
+
 static PFN_vkGetPhysicalDeviceProperties o_vkGetPhysicalDeviceProperties = nullptr;
 static PFN_vkGetPhysicalDeviceProperties2 o_vkGetPhysicalDeviceProperties2 = nullptr;
 static PFN_vkGetPhysicalDeviceProperties2KHR o_vkGetPhysicalDeviceProperties2KHR = nullptr;
@@ -13,6 +16,9 @@ static PFN_vkEnumerateInstanceExtensionProperties o_vkEnumerateInstanceExtension
 static PFN_vkEnumerateDeviceExtensionProperties o_vkEnumerateDeviceExtensionProperties = nullptr;
 static PFN_vkCreateDevice o_vkCreateDevice = nullptr;
 static PFN_vkCreateInstance o_vkCreateInstance = nullptr;
+
+static PFN_QueuePresentKHR o_QueuePresentKHR = nullptr;
+static PFN_CreateSwapchainKHR o_CreateSwapchainKHR = nullptr;
 
 typedef struct VkDummyProps
 {
@@ -23,9 +29,12 @@ typedef struct VkDummyProps
 static uint32_t vkEnumerateInstanceExtensionPropertiesCount = 0;
 static uint32_t vkEnumerateDeviceExtensionPropertiesCount = 0;
 
-VkInstance _instance = nullptr;
-VkDevice _device = nullptr;
-VkPhysicalDevice _physicalDevice = nullptr;
+static VkInstance _instance = nullptr;
+static VkDevice _device = nullptr;
+static VkPhysicalDevice _physicalDevice = nullptr;
+
+static PFN_VulkanPresentCallback _presentCallback = nullptr;
+static PFN_VulkanCreateSwapchainCallback _createSwapchainCallback = nullptr;
 
 #pragma region Vulkan Hooks
 
@@ -89,6 +98,29 @@ static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhy
     }
 }
 
+static VkResult hkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain)
+{
+    auto result = o_CreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    if (result == VK_SUCCESS && _createSwapchainCallback != nullptr)
+    {
+        _device = device;
+        _createSwapchainCallback(device, pCreateInfo, pSwapchain);
+    }
+
+    return result;
+}
+
+static VkResult hkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
+{
+    if (_presentCallback != nullptr)
+        _presentCallback(pPresentInfo);
+
+    return o_QueuePresentKHR(queue, pPresentInfo);
+}
+
 static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance)
 {
     LOG_DEBUG("for {0}", pCreateInfo->pApplicationInfo->pApplicationName);
@@ -138,7 +170,26 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
         Config::Instance()->dxgiSkipSpoofing = false;
 
         if (result == VK_SUCCESS)
+        {
             _device = *pDevice;
+
+            if (o_QueuePresentKHR == nullptr)
+            {
+                o_QueuePresentKHR = reinterpret_cast<PFN_QueuePresentKHR>(vkGetDeviceProcAddr(_device, "vkQueuePresentKHR"));
+                o_CreateSwapchainKHR = reinterpret_cast<PFN_CreateSwapchainKHR>(vkGetDeviceProcAddr(_device, "vkCreateSwapchainKHR"));
+
+                DetourTransactionBegin();
+                DetourUpdateThread(GetCurrentThread());
+
+                if (o_QueuePresentKHR != nullptr)
+                    DetourAttach(&(PVOID&)o_QueuePresentKHR, hkQueuePresentKHR);
+
+                if (o_CreateSwapchainKHR != nullptr)
+                    DetourAttach(&(PVOID&)o_CreateSwapchainKHR, hkCreateSwapchainKHR);
+
+                DetourTransactionCommit();
+            }
+        }
 
         return result;
     }
@@ -186,7 +237,27 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
     Config::Instance()->dxgiSkipSpoofing = false;
 
     if (result == VK_SUCCESS)
+    {
         _device = *pDevice;
+
+        if (o_QueuePresentKHR == nullptr)
+        {
+            o_QueuePresentKHR = reinterpret_cast<PFN_QueuePresentKHR>(vkGetDeviceProcAddr(_device, "vkQueuePresentKHR"));
+            o_CreateSwapchainKHR = reinterpret_cast<PFN_CreateSwapchainKHR>(vkGetDeviceProcAddr(_device, "vkCreateSwapchainKHR"));
+
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+
+            if (o_QueuePresentKHR != nullptr)
+                DetourAttach(&(PVOID&)o_QueuePresentKHR, hkQueuePresentKHR);
+
+            if (o_CreateSwapchainKHR != nullptr)
+                DetourAttach(&(PVOID&)o_CreateSwapchainKHR, hkCreateSwapchainKHR);
+
+            DetourTransactionCommit();
+        }
+
+    }
 
     LOG_FUNC_RESULT(result);
 
@@ -426,4 +497,14 @@ VkInstance Hooks::VulkanInstance()
 VkPhysicalDevice Hooks::VulkanPD()
 {
     return _physicalDevice;
+}
+
+void Hooks::SetVulkanCreateSwapchain(PFN_VulkanCreateSwapchainCallback InCallback)
+{
+    _createSwapchainCallback = InCallback;
+}
+
+void Hooks::SetVulkanPresent(PFN_VulkanPresentCallback InCallback)
+{
+    _presentCallback = InCallback;
 }
