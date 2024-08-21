@@ -80,7 +80,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(ProjectDir);$(ProjectDir)shaders;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(SolutionDir)external\d3dx;$(SolutionDir)external\detours;$(SolutionDir)external\fsr2;$(SolutionDir)external\nvapi;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)external\fsr2\221\lib;$(SolutionDir)external\fsr2\212\lib;$(SolutionDir)external\vulkan_lib;$(SolutionDir)external\d3dx;$(SolutionDir)external\detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)external\fsr2\fsr2_221\lib;$(SolutionDir)external\fsr2\fsr2_212\lib;$(SolutionDir)external\vulkan_lib;$(SolutionDir)external\d3dx;$(SolutionDir)external\detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
     <TargetName>dxgi</TargetName>
     <OutDir>D:\Folders\Games\Deep Rock Galactic\FSD\Binaries\Win64\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
@@ -88,7 +88,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(ProjectDir);$(ProjectDir)shaders;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(SolutionDir)external\d3dx;$(SolutionDir)external\detours;$(SolutionDir)external\fsr2;$(SolutionDir)external\nvapi;$(IncludePath)</IncludePath>
     <TargetName>nvngx</TargetName>
-    <LibraryPath>$(SolutionDir)external\fsr2\221\lib;$(SolutionDir)external\fsr2\212\lib;$(SolutionDir)external\vulkan_lib;$(SolutionDir)external\d3dx;$(SolutionDir)external\detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)external\fsr2\fsr2_221\lib;$(SolutionDir)external\fsr2\fsr2_212\lib;$(SolutionDir)external\vulkan_lib;$(SolutionDir)external\d3dx;$(SolutionDir)external\detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

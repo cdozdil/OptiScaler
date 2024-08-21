@@ -2,7 +2,7 @@
 #include "../IFeature_Dx12.h"
 #include "FSR2Feature.h"
 
-#include <221/include/dx12/ffx_fsr2_dx12.h>
+#include <fsr2_221/include/dx12/ffx_fsr2_dx12.h>
 
 class FSR2FeatureDx12 : public FSR2Feature, public IFeature_Dx12
 {
