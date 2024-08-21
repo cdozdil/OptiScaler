@@ -157,7 +157,6 @@ public:
 	// plugins
 	std::optional<std::wstring> PluginPath;
 
-
 	// nvngx init parameters
 	unsigned long long NVNGX_ApplicationId = 1337;
 	std::wstring NVNGX_ApplicationDataPath;
@@ -204,6 +203,9 @@ public:
 	// linux check
 	bool IsRunningOnLinux = false;
 	bool IsDxgiMode = false;
+
+	// vulkan menu hack
+	bool RenderMenu = true;
 
 	IFeature* CurrentFeature = nullptr;
 

@@ -29,6 +29,7 @@ static VkRenderPass g_vkRenderPass = VK_NULL_HANDLE;
 struct ImGui_ImplVulkan_InitInfo g_ImVulkan_Info = { };
 struct ImGui_ImplVulkanH_Frame* g_ImVulkan_Frames = NULL;
 static VkSemaphore* g_ImVulkan_Semaphores = NULL;
+static VkSwapchainCreateInfoKHR lastSwapchainInfo = {};
 
 typedef VkResult(__fastcall* PFN_QueuePresentKHR)(VkQueue, const VkPresentInfoKHR*);
 typedef VkResult(__fastcall* PFN_CreateSwapchainKHR)(VkDevice, const VkSwapchainCreateInfoKHR*, const VkAllocationCallbacks*, VkSwapchainKHR*);
@@ -84,8 +85,12 @@ static void DestroyVulkanObjects(bool shutdown)
 
 static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, VkSwapchainKHR* pSwapchain)
 {
+    LOG_FUNC();
+
     if (g_bInitialized)
     {
+        LOG_DEBUG("g_bInitialized, releaseing objects");
+
         if (ImGui::GetIO().BackendRendererUserData != nullptr)
             ImGui_ImplVulkan_Shutdown();
 
@@ -96,7 +101,10 @@ static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR*
 
     // Initialize ImGui for IO.
     if (!ImGuiOverlayBase::IsInited())
+    {
+        LOG_DEBUG("ImGuiOverlayBase::Init");
         ImGuiOverlayBase::Init(_hwnd);
+    }
 
     ImGuiIO& io = ImGui::GetIO();
 
@@ -110,10 +118,6 @@ static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR*
         io.DisplaySize.x = Config::Instance()->CurrentFeature->DisplayWidth();
         io.DisplaySize.y = Config::Instance()->CurrentFeature->DisplayHeight();
     }
-
-    // (Optional)
-    io.LogFilename = 0;
-    io.IniFilename = 0;
 
     // Get swapchain image count.
     uint32_t imageCount;
@@ -358,6 +362,8 @@ static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR*
 
     g_bInitialized = true;
     g_bEnabled = true;
+
+    LOG_FUNC_RESULT(true);
 }
 
 static void HookDevice(VkDevice InDevice)
@@ -365,11 +371,15 @@ static void HookDevice(VkDevice InDevice)
     if (oCreateSwapchainKHR != nullptr)
         return;
 
+    LOG_FUNC();
+
     oQueuePresentKHR = (PFN_QueuePresentKHR)(vkGetDeviceProcAddr(InDevice, "vkQueuePresentKHR"));
     oCreateSwapchainKHR = (PFN_CreateSwapchainKHR)(vkGetDeviceProcAddr(InDevice, "vkCreateSwapchainKHR"));
 
     if (oCreateSwapchainKHR)
     {
+        LOG_DEBUG("Hooking VkDevice");
+
         // Hook
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
@@ -383,100 +393,129 @@ static void HookDevice(VkDevice InDevice)
 
 static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance)
 {
+    LOG_FUNC();
+
     auto result = o_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
 
     if (result == VK_SUCCESS)
+    {
+        LOG_DEBUG("Assigning instance");
         _instance = *pInstance;
+    }
+
+    LOG_FUNC_RESULT(result);
 
     return result;
 }
 
-static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo,
-                                 const VkAllocationCallbacks* pAllocator, VkDevice* pDevice)
+static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice)
 {
+    LOG_FUNC();
+
     auto result = o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
 
     if (result == VK_SUCCESS)
     {
+        LOG_DEBUG("Assigning PD and Device, hooking device");
         _PD = physicalDevice;
         _device = *pDevice;
         HookDevice(_device);
     }
 
+    LOG_FUNC_RESULT(result);
 
     return result;
 }
 
 static VkResult VKAPI_CALL hkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
 {
+    LOG_FUNC();
+    auto e_result = oQueuePresentKHR(queue, pPresentInfo);
+    return e_result;
+
     if (!g_bInitialized)
     {
+        LOG_DEBUG("!g_bInitialized");
+
         if (pPresentInfo->swapchainCount > 0)
         {
+            LOG_DEBUG("CreateVulkanObjects");
             auto sc = pPresentInfo->pSwapchains[0];
-            CreateVulkanObjects(_device, nullptr, &sc);
+
+            if (lastSwapchainInfo.minImageCount > 0)
+                CreateVulkanObjects(_device, &lastSwapchainInfo, &sc);
+            else
+                CreateVulkanObjects(_device, nullptr, &sc);
         }
         else
         {
+            LOG_DEBUG("return oQueuePresentKHR");
             return oQueuePresentKHR(queue, pPresentInfo);
         }
     }
 
     if (!ImGuiOverlayBase::IsInited())
         ImGuiOverlayBase::Init(Util::GetProcessWindow());
-
-    if (ImGuiOverlayBase::IsInited() && ImGuiOverlayBase::IsResetRequested())
+    else if (ImGuiOverlayBase::IsResetRequested())
     {
         LOG_INFO("Reset request detected, shutting down ImGui!");
         ImGuiOverlayVk::ReInitVk(Util::GetProcessWindow());
         return oQueuePresentKHR(queue, pPresentInfo);
     }
 
-    if (!ImGuiOverlayBase::IsInited() || !ImGuiOverlayBase::IsVisible())
+    if (!ImGuiOverlayBase::IsInited() || !ImGuiOverlayBase::IsVisible() || !Config::Instance()->RenderMenu)
         return oQueuePresentKHR(queue, pPresentInfo);
 
-    ImGui_ImplVulkan_NewFrame();
-    ImGui_ImplWin32_NewFrame();
+    LOG_DEBUG("rendering menu, swapchain count: {0}", pPresentInfo->swapchainCount);
 
-    ImGuiOverlayBase::RenderMenu();
+    bool skipMenu = true;
+    VkSemaphore signalSemaphores[8] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 
-    ImGui::Render();
-
-    uint32_t idx = pPresentInfo->pImageIndices[0];
-
-    ImGui_ImplVulkanH_Frame* fd = &g_ImVulkan_Frames[idx];
-
-    vkWaitForFences(g_ImVulkan_Info.Device, 1, &fd->Fence, VK_TRUE, UINT64_MAX);
-    vkResetFences(g_ImVulkan_Info.Device, 1, &fd->Fence);
-
+    for (size_t scIndex = 0; scIndex < pPresentInfo->swapchainCount; scIndex++)
     {
-        vkResetCommandPool(g_ImVulkan_Info.Device, fd->CommandPool, 0);
-        VkCommandBufferBeginInfo info = { };
-        info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        vkBeginCommandBuffer(fd->CommandBuffer, &info);
-    }
-    {
-        VkRenderPassBeginInfo info = { };
-        info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        info.renderPass = g_vkRenderPass;
-        info.framebuffer = fd->Framebuffer;
-        info.renderArea.extent.width = ImGui::GetIO().DisplaySize.x;
-        info.renderArea.extent.height = ImGui::GetIO().DisplaySize.y;
-        vkCmdBeginRenderPass(fd->CommandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
-    }
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplWin32_NewFrame();
 
-    ImGui::Render();
-    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), fd->CommandBuffer);
+        ImGuiOverlayBase::RenderMenu();
 
-    // Submit command buffer
-    vkCmdEndRenderPass(fd->CommandBuffer);
-    vkEndCommandBuffer(fd->CommandBuffer);
+        uint32_t idx = pPresentInfo->pImageIndices[scIndex];
+        ImGui_ImplVulkanH_Frame* fd = &g_ImVulkan_Frames[idx];
 
-    // Submit queue and semaphores
-    uint32_t semaphoreCount = pPresentInfo->waitSemaphoreCount;
-    if (semaphoreCount != 0)
-    {
+        vkWaitForFences(g_ImVulkan_Info.Device, 1, &fd->Fence, VK_TRUE, UINT64_MAX);
+        vkResetFences(g_ImVulkan_Info.Device, 1, &fd->Fence);
+
+        {
+            vkResetCommandPool(g_ImVulkan_Info.Device, fd->CommandPool, 0);
+            VkCommandBufferBeginInfo info = { };
+            info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+            vkBeginCommandBuffer(fd->CommandBuffer, &info);
+        }
+
+        {
+            VkRenderPassBeginInfo info = { };
+            info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            info.renderPass = g_vkRenderPass;
+            info.framebuffer = fd->Framebuffer;
+            info.renderArea.extent.width = ImGui::GetIO().DisplaySize.x;
+            info.renderArea.extent.height = ImGui::GetIO().DisplaySize.y;
+            vkCmdBeginRenderPass(fd->CommandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
+        }
+
+        ImGui::Render();
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), fd->CommandBuffer);
+
+        // Submit command buffer
+        vkCmdEndRenderPass(fd->CommandBuffer);
+        auto ecbResult = vkEndCommandBuffer(fd->CommandBuffer);
+        if (ecbResult != VK_SUCCESS)
+        {
+            LOG_ERROR("vkQueueSubmit error: {0:X}", (UINT)ecbResult);
+            break;
+        }
+
+        // Submit queue and semaphores
+        LOG_DEBUG("waitSemaphoreCount: {0}", pPresentInfo->waitSemaphoreCount);
         VkPipelineStageFlags waitStages[8] = { VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT };
 
         VkSubmitInfo submit_info = { };
@@ -484,30 +523,58 @@ static VkResult VKAPI_CALL hkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pP
         submit_info.commandBufferCount = 1;
         submit_info.pCommandBuffers = &fd->CommandBuffer;
         submit_info.pWaitDstStageMask = waitStages;
-        submit_info.waitSemaphoreCount = semaphoreCount;
+
+        submit_info.waitSemaphoreCount = pPresentInfo->waitSemaphoreCount;
         submit_info.pWaitSemaphores = pPresentInfo->pWaitSemaphores;
         submit_info.signalSemaphoreCount = 1;
         submit_info.pSignalSemaphores = &g_ImVulkan_Semaphores[idx];
 
-        if (vkQueueSubmit(g_ImVulkan_Info.Queue, 1, &submit_info, fd->Fence) == VK_SUCCESS)
+        auto qResult = vkQueueSubmit(g_ImVulkan_Info.Queue, 1, &submit_info, fd->Fence);
+        if (qResult != VK_SUCCESS)
         {
-            pPresentInfo->pWaitSemaphores = &g_ImVulkan_Semaphores[idx];
-            pPresentInfo->waitSemaphoreCount = 1;
+            LOG_ERROR("vkQueueSubmit error: {0:X}", (UINT)qResult);
+            break;
         }
+
+        signalSemaphores[scIndex] = g_ImVulkan_Semaphores[idx];
+        skipMenu = false;
     }
 
-    return oQueuePresentKHR(queue, pPresentInfo);
+    LOG_DEBUG("rendering done {0} errors", skipMenu ? "with" : "without");
+
+    if (!skipMenu)
+    {
+        // already waited original calls semaphores when running commands
+        // set menu draw signal semaphores as wait semaphores for present
+        pPresentInfo->waitSemaphoreCount = pPresentInfo->swapchainCount;
+        pPresentInfo->pWaitSemaphores = signalSemaphores;
+    }
+
+    // original call
+    auto result = oQueuePresentKHR(queue, pPresentInfo);
+    LOG_FUNC_RESULT(result);
+    return result;
 }
 
 static VkResult VKAPI_CALL hkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator,
                                                 VkSwapchainKHR* pSwapchain)
 {
+    LOG_FUNC();
+
     auto result = oCreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    //std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     if (result == VK_SUCCESS && device != NULL && pCreateInfo != NULL && pSwapchain != NULL)
-        CreateVulkanObjects(device, pCreateInfo, pSwapchain);
+    {
+        _device = device;
+        lastSwapchainInfo.imageExtent = pCreateInfo->imageExtent;
+        lastSwapchainInfo.minImageCount = pCreateInfo->minImageCount;
+        lastSwapchainInfo.imageFormat = pCreateInfo->imageFormat;
+        //CreateVulkanObjects(device, pCreateInfo, pSwapchain);
+    }
+
+    LOG_FUNC_RESULT(result);
 
     return result;
 }
@@ -546,8 +613,14 @@ void ImGuiOverlayVk::HookVK()
     if (o_vkCreateDevice != nullptr)
         return;
 
-    o_vkCreateDevice = (PFN_vkCreateDevice)DetourFindFunction("vulkan-1.dll", "vkCreateDevice");
-    o_vkCreateInstance = (PFN_vkCreateInstance)DetourFindFunction("vulkan-1.dll", "vkCreateInstance");
+    //o_vkCreateDevice = (PFN_vkCreateDevice)DetourFindFunction("sl.interposer.dll", "vkCreateDevice");
+    //o_vkCreateInstance = (PFN_vkCreateInstance)DetourFindFunction("sl.interposer.dll", "vkCreateInstance");
+
+    if (o_vkCreateDevice == nullptr)
+    {
+        o_vkCreateDevice = (PFN_vkCreateDevice)DetourFindFunction("vulkan-1.dll", "vkCreateDevice");
+        o_vkCreateInstance = (PFN_vkCreateInstance)DetourFindFunction("vulkan-1.dll", "vkCreateInstance");
+    }
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());

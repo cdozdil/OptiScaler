@@ -720,6 +720,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     if (Config::Instance()->SkipFirstFrames.has_value() && evalCounter < Config::Instance()->SkipFirstFrames.value())
         return NVSDK_NGX_Result_Success;
 
+    Config::Instance()->RenderMenu = false;
+
     // DLSS Enabler check
     int deAvail;
     if (InParameters->Get("DLSSEnabler.Available", &deAvail) == NVSDK_NGX_Result_Success)
@@ -905,6 +907,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
         Config::Instance()->changeBackend = true;
         return NVSDK_NGX_Result_Success;
     }
+
+    Config::Instance()->RenderMenu = true;
 
     if (deviceContext->Evaluate(InCmdBuffer, InParameters))
         return NVSDK_NGX_Result_Success;
