@@ -1,8 +1,8 @@
 #include "Dxgi.h"
 
-#include "../config.h"
+#include <config.h>
 
-#include "../detours/detours.h"
+#include <detours.h>
 
 #include <DbgHelp.h>
 #pragma comment(lib, "Dbghelp.lib")
@@ -328,7 +328,7 @@ static void AttachToAdapter(IUnknown* unkAdapter)
         adapter4->Release();
 }
 
-static void AttachToFactory(IUnknown* unkFactory)
+void AttachToFactory(IUnknown* unkFactory)
 {
     PVOID* pVTable = *(PVOID**)unkFactory;
 

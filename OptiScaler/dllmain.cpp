@@ -17,6 +17,7 @@ static void DetachHooks()
     Hooks::DetachNVAPISpoofingHooks();
     Hooks::DetachNVNGXSpoofingHooks();
     Hooks::DetachDxgiHooks();
+    Hooks::DetachVulkanHooks();
     Hooks::DetachVulkanDeviceSpoofingHooks();
     Hooks::DetachVulkanExtensionSpoofingHooks();
 }

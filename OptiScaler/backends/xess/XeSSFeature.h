@@ -1,9 +1,8 @@
 #pragma once
 #include "../IFeature.h"
 
-#include "xess_d3d12.h"
-#include "xess_debug.h"
-#include <string>
+#include <xess_d3d12.h>
+#include <xess_debug.h>
 
 inline static std::string ResultToString(xess_result_t result)
 {

@@ -1,10 +1,10 @@
 #include "NvApi_Hooks.h"
 
-#include "../pch.h"
-#include "../Config.h"
+#include <pch.h>
+#include <Config.h>
 
-#include "../nvapi/nvapi.h"
-#include "../detours/detours.h"
+#include <nvapi.h>
+#include <detours.h>
 
 // NvAPI_GPU_GetArchInfo hooking based on Nukem's spoofing code here
 // https://github.com/Nukem9/dlssg-to-fsr3/blob/89ddc8c1cce4593fb420e633a06605c3c4b9c3cf/source/wrapper_generic/nvapi.cpp#L50
@@ -25,7 +25,12 @@ static PFN_NvAPI_GPU_GetArchInfo OriginalNvAPI_GPU_GetArchInfo = nullptr;
 
 bool isArchSupportsDLSS = false;
 
-static void Hooks::NvApiCheckDLSSSupport()
+bool Hooks::IsArchSupportsDLSS()
+{
+    return isArchSupportsDLSS;
+}
+
+void Hooks::NvApiCheckDLSSSupport()    
 {
     if (isArchSupportsDLSS)
         return;

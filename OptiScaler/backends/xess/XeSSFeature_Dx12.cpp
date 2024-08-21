@@ -1,7 +1,4 @@
 #pragma once
-#include "../../pch.h"
-#include "../../Config.h"
-
 #include "XeSSFeature_Dx12.h"
 
 bool XeSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters)

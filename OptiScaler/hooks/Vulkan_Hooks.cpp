@@ -1,9 +1,9 @@
 #include "Vulkan_Hooks.h"
 
-#include "../pch.h"
-#include "../Config.h"
+#include <pch.h>
+#include <Config.h>
 
-#include "../detours/detours.h"
+#include <detours.h>
 
 typedef VkResult(*PFN_QueuePresentKHR)(VkQueue, const VkPresentInfoKHR*);
 typedef VkResult(*PFN_CreateSwapchainKHR)(VkDevice, const VkSwapchainCreateInfoKHR*, const VkAllocationCallbacks*, VkSwapchainKHR*);

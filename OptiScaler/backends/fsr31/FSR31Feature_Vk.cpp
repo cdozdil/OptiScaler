@@ -1,11 +1,7 @@
 #pragma once
-#include "../../pch.h"
-#include "../../Config.h"
-#include "../../Util.h"
-
 #include "FSR31Feature_Vk.h"
 
-#include "nvsdk_ngx_vk.h"
+#include <nvsdk_ngx_vk.h>
 
 static inline FfxApiResourceDescription ffxApiGetImageResourceDescriptionVKLocal(NVSDK_NGX_Resource_VK* vkResource, bool uav = false)
 {

@@ -1,10 +1,8 @@
 #include "Nvngx_Hooks.h"
 
-#include "../pch.h"
-#include "../detours/detours.h"
+#include <pch.h>
 
-#include <nvsdk_ngx.h>
-#include <nvsdk_ngx_defs.h>
+#include <detours.h>
 #include <vulkan/vulkan.hpp>
 
 

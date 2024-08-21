@@ -1,7 +1,8 @@
 #pragma once
-#include "../../fsr2/include/ffx_fsr2.h"
-
 #include "../IFeature.h"
+
+#include <221/include/ffx_fsr2.h>
+
 
 inline static std::string ResultToString(FfxErrorCode result)
 {

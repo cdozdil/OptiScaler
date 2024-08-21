@@ -1163,7 +1163,7 @@ static HRESULT WINAPI hkCreateSwapChain_EB(IDXGIFactory* pFactory, IUnknown* pDe
     if (result == S_OK && !_dx12BindingActive)
     {
         LOG_DEBUG("created new WrappedIDXGISwapChain4");
-        *ppSwapChain = new WrappedIDXGISwapChain4((*ppSwapChain), hkPresent_EB, hkPresent1_EB, CleanupRenderTarget);
+        //*ppSwapChain = new WrappedIDXGISwapChain4((*ppSwapChain), hkPresent_EB, hkPresent1_EB, CleanupRenderTarget);
     }
 
     return result;
@@ -1185,7 +1185,7 @@ static HRESULT WINAPI hkCreateSwapChainForHwnd_EB(IDXGIFactory* pFactory, IUnkno
     if (result == S_OK && !_dx12BindingActive)
     {
         LOG_DEBUG("created new WrappedIDXGISwapChain4");
-        *ppSwapChain = new WrappedIDXGISwapChain4((*ppSwapChain), hkPresent_EB, hkPresent1_EB, CleanupRenderTarget);
+        //*ppSwapChain = new WrappedIDXGISwapChain4((*ppSwapChain), hkPresent_EB, hkPresent1_EB, CleanupRenderTarget);
     }
 
     return result;
@@ -1207,7 +1207,7 @@ static HRESULT WINAPI hkCreateSwapChainForCoreWindow_EB(IDXGIFactory* pFactory, 
     if (result == S_OK && !_dx12BindingActive)
     {
         LOG_DEBUG("created new WrappedIDXGISwapChain4");
-        *ppSwapChain = new WrappedIDXGISwapChain4((*ppSwapChain), hkPresent_EB, hkPresent1_EB, CleanupRenderTarget);
+        //*ppSwapChain = new WrappedIDXGISwapChain4((*ppSwapChain), hkPresent_EB, hkPresent1_EB, CleanupRenderTarget);
     }
 
     return result;
@@ -1229,7 +1229,7 @@ static HRESULT WINAPI hkCreateSwapChainForComposition_EB(IDXGIFactory* pFactory,
     if (result == S_OK && !_dx12BindingActive)
     {
         LOG_DEBUG("created new WrappedIDXGISwapChain4");
-        *ppSwapChain = new WrappedIDXGISwapChain4((*ppSwapChain), hkPresent_EB, hkPresent1_EB, CleanupRenderTarget);
+        //*ppSwapChain = new WrappedIDXGISwapChain4((*ppSwapChain), hkPresent_EB, hkPresent1_EB, CleanupRenderTarget);
     }
 
     return result;

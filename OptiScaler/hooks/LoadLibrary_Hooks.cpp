@@ -1,11 +1,11 @@
 #include "LoadLibrary_Hooks.h"
 
-#include "../pch.h"
-#include "../Config.h"
-#include "../Util.h"
-#include "../Working_Mode.h"
+#include <pch.h>
+#include <Config.h>
+#include <Util.h>
+#include <Working_Mode.h>
 
-#include "../detours/detours.h"
+#include <detours.h>
 
 typedef BOOL(WINAPI* PFN_FreeLibrary)(HMODULE lpLibrary);
 typedef HMODULE(WINAPI* PFN_LoadLibraryA)(LPCSTR lpLibFileName);

@@ -1,8 +1,8 @@
 #pragma once
-#include "FSR31Feature.h"
 #include "../IFeature_Vk.h"
+#include "FSR31Feature.h"
 
-#include "vk/ffx_api_vk.h"
+#include <vk/ffx_api_vk.h>
 
 class FSR31FeatureVk : public FSR31Feature, public IFeature_Vk
 {

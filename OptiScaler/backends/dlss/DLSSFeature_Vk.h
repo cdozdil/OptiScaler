@@ -1,8 +1,8 @@
 #pragma once
 #include "../IFeature_Vk.h"
 #include "DLSSFeature.h"
-#include <string>
-#include "nvsdk_ngx_vk.h"
+
+#include <nvsdk_ngx_vk.h>
 
 class DLSSFeatureVk : public DLSSFeature, public IFeature_Vk
 {

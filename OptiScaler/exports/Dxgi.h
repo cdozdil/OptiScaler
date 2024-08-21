@@ -1,5 +1,6 @@
 #pragma once
-#include "../pch.h"
+#include <pch.h>
+
 #include <dxgi1_6.h>
 
 typedef HRESULT(WINAPI* PFN_CREATE_DXGI_FACTORY)(REFIID riid, _COM_Outptr_ void** ppFactory);

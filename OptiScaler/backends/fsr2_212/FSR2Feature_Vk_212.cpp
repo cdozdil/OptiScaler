@@ -1,10 +1,7 @@
 #pragma once
-#include "../../pch.h"
-#include "../../Config.h"
-
 #include "FSR2Feature_Vk_212.h"
 
-#include "nvsdk_ngx_vk.h"
+#include <nvsdk_ngx_vk.h>
 
 bool FSR2FeatureVk212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 {

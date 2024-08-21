@@ -79,16 +79,16 @@
     <LibraryPath>$(XESS_SDK)\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir);$(ProjectDir)shaders;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(SolutionDir)external\d3dx;$(SolutionDir)external\detours;$(SolutionDir)external\fsr2;$(SolutionDir)external\nvapi;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)external\fsr2\221\lib;$(SolutionDir)external\fsr2\212\lib;$(SolutionDir)external\vulkan_lib;$(SolutionDir)external\d3dx;$(SolutionDir)external\detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
     <TargetName>dxgi</TargetName>
     <OutDir>D:\Folders\Games\Deep Rock Galactic\FSD\Binaries\Win64\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(ProjectDir)shaders;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(SolutionDir)external\d3dx;$(SolutionDir)external\detours;$(SolutionDir)external\fsr2;$(SolutionDir)external\nvapi;$(IncludePath)</IncludePath>
     <TargetName>nvngx</TargetName>
-    <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)external\fsr2\221\lib;$(SolutionDir)external\fsr2\212\lib;$(SolutionDir)external\vulkan_lib;$(SolutionDir)external\d3dx;$(SolutionDir)external\detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -183,7 +183,7 @@ copy $(SolutionDir)external\xess\licenses\LICENSE.pdf $(SolutionDir)x64\Release\
 copy $(SolutionDir)external\xess\bin\libxess.dll $(SolutionDir)x64\Release\a\
 copy $(SolutionDir)external\FidelityFX-SDK\PrebuiltSignedDLL\amd_fidelityfx_dx12.dll $(SolutionDir)x64\Release\a\
 copy $(SolutionDir)external\FidelityFX-SDK\LICENSE.txt $(SolutionDir)x64\Release\a\Licenses\FidelityFX_LICENSE.txt
-copy $(ProjectDir)fsr31\amd_fidelityfx_vk.dll $(SolutionDir)x64\Release\a\
+copy $(SolutionDir)external\fsr31\amd_fidelityfx_vk.dll $(SolutionDir)x64\Release\a\
 copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -201,10 +201,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="backends\fsr31\FSR31Feature_Dx11On12.h" />
     <ClInclude Include="backends\fsr31\FSR31Feature_Dx12.h" />
     <ClInclude Include="backends\fsr31\FSR31Feature_Vk.h" />
-    <ClInclude Include="bias\Bias_Common.h" />
-    <ClInclude Include="bias\Bias_Dx12.h" />
-    <ClInclude Include="bias\Bias_Dx11.h" />
-    <ClInclude Include="bias\precompile\Bias_Shader.h" />
     <ClInclude Include="exports\Dxgi.h" />
     <ClInclude Include="exports\Exports.h" />
     <ClInclude Include="exports\Shared.h" />
@@ -218,18 +214,33 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="hooks\NvApi_Hooks.h" />
     <ClInclude Include="hooks\Nvngx_Hooks.h" />
     <ClInclude Include="hooks\Vulkan_Hooks.h" />
+    <ClInclude Include="shaders\bias\Bias_Common.h" />
+    <ClInclude Include="shaders\bias\Bias_Dx11.h" />
+    <ClInclude Include="shaders\bias\Bias_Dx12.h" />
+    <ClInclude Include="shaders\bias\precompile\Bias_Shader.h" />
+    <ClInclude Include="shaders\bias\precompile\Bias_Shader_Dx11.h" />
+    <ClInclude Include="shaders\fsr1\ffx_a.h" />
+    <ClInclude Include="shaders\fsr1\ffx_fsr1.h" />
+    <ClInclude Include="shaders\fsr1\FSR_EASU_Shader.h" />
+    <ClInclude Include="shaders\fsr1\FSR_EASU_Shader_Dx11.h" />
+    <ClInclude Include="shaders\fsr1\FSR_RCAS_Shader.h" />
+    <ClInclude Include="shaders\output_scaling\OS_Common.h" />
+    <ClInclude Include="shaders\output_scaling\OS_Dx11.h" />
+    <ClInclude Include="shaders\output_scaling\OS_Dx12.h" />
+    <ClInclude Include="shaders\output_scaling\precompile\BCDS_Shader.h" />
+    <ClInclude Include="shaders\output_scaling\precompile\BCDS_Shader_Dx11.h" />
+    <ClInclude Include="shaders\output_scaling\precompile\BCUS_Shader.h" />
+    <ClInclude Include="shaders\output_scaling\precompile\BCUS_Shader_Dx11.h" />
+    <ClInclude Include="shaders\rcas\precompile\RCAS_Shader.h" />
+    <ClInclude Include="shaders\rcas\precompile\RCAS_Shader_Dx11.h" />
+    <ClInclude Include="shaders\rcas\RCAS_Common.h" />
+    <ClInclude Include="shaders\rcas\RCAS_Dx11.h" />
+    <ClInclude Include="shaders\rcas\RCAS_Dx12.h" />
     <ClInclude Include="Working_Mode.h" />
-    <ClInclude Include="output_scaling\OS_Common.h" />
-    <ClInclude Include="output_scaling\OS_Dx12.h" />
-    <ClInclude Include="output_scaling\precompile\BCDS_Shader.h" />
-    <ClInclude Include="output_scaling\precompile\BCUS_Shader.h" />
-    <ClInclude Include="bicubicscaling\precompile\FSR_Shader.h" />
-    <ClInclude Include="nvapi\nvapi.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_212.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx11On12_212.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx12_212.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_Vk_212.h" />
-    <ClInclude Include="cas\include\backends\shared\ffx_shader_blobs.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="backends\fsr2\FSR2Feature.h" />
     <ClInclude Include="backends\fsr2\FSR2Feature_Dx11.h" />
@@ -240,7 +251,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="backends\IFeature_Dx12.h" />
     <ClInclude Include="backends\IFeature.h" />
     <ClInclude Include="backends\IFeature_Vk.h" />
-    <ClInclude Include="detours\detours.h" />
     <ClInclude Include="imgui\imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui\imgui.h" />
     <ClInclude Include="imgui\imgui\imgui_impl_dx11.h" />
@@ -263,12 +273,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="Logger.h" />
     <ClInclude Include="NVNGX_Parameter.h" />
     <ClInclude Include="NVNGX_Proxy.h" />
-    <ClInclude Include="output_scaling\OS_Dx11.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="rcas\precompile\RCAS_Shader.h" />
-    <ClInclude Include="rcas\RCAS_Common.h" />
-    <ClInclude Include="rcas\RCAS_Dx11.h" />
-    <ClInclude Include="rcas\RCAS_Dx12.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Util.h" />
     <ClInclude Include="backends\xess\XeSSFeature_Dx11.h" />
@@ -294,8 +299,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="backends\IFeature_Dx11.cpp" />
     <ClCompile Include="backends\IFeature_Dx11wDx12.cpp" />
     <ClCompile Include="backends\IFeature_Dx11wDx12.h" />
-    <ClCompile Include="bias\Bias_Dx12.cpp" />
-    <ClCompile Include="bias\Bias_Dx11.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="backends\fsr2\FSR2Feature.cpp" />
     <ClCompile Include="backends\fsr2\FSR2Feature_Dx11.cpp" />
@@ -310,6 +313,12 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="hooks\NvApi_Hooks.cpp" />
     <ClCompile Include="hooks\Nvngx_Hooks.cpp" />
     <ClCompile Include="hooks\Vulkan_Hooks.cpp" />
+    <ClCompile Include="shaders\bias\Bias_Dx11.cpp" />
+    <ClCompile Include="shaders\bias\Bias_Dx12.cpp" />
+    <ClCompile Include="shaders\output_scaling\OS_Dx11.cpp" />
+    <ClCompile Include="shaders\output_scaling\OS_Dx12.cpp" />
+    <ClCompile Include="shaders\rcas\RCAS_Dx11.cpp" />
+    <ClCompile Include="shaders\rcas\RCAS_Dx12.cpp" />
     <ClCompile Include="Working_Mode.cpp" />
     <ClCompile Include="imgui\imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui\imgui_demo.cpp" />
@@ -339,14 +348,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="backends\xess\XeSSFeature_Dx11.cpp" />
     <ClCompile Include="backends\xess\XeSSFeature_Dx12.cpp" />
     <ClCompile Include="backends\xess\XeSSFeature_Dx12.h" />
-    <ClCompile Include="output_scaling\OS_Dx12.cpp" />
-    <ClCompile Include="output_scaling\OS_Dx11.cpp" />
-    <ClCompile Include="rcas\RCAS_Dx11.cpp" />
-    <ClCompile Include="rcas\RCAS_Dx12.cpp" />
     <ClCompile Include="Util.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="vulkan\vulkan-1.lib" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OptiScaler.rc" />

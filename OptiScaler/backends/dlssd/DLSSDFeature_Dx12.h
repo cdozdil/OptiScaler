@@ -1,8 +1,6 @@
 #pragma once
-#include "DLSSDFeature.h"
 #include "../IFeature_Dx12.h"
-#include "../../rcas/RCAS_Dx12.h"
-#include <string>
+#include "DLSSDFeature.h"
 
 class DLSSDFeatureDx12 : public DLSSDFeature, public IFeature_Dx12
 {

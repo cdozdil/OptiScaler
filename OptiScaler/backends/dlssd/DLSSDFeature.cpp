@@ -1,10 +1,8 @@
-#include "../../pch.h"
-#include "../../Config.h"
-#include "../../Util.h"
-
 #include "DLSSDFeature.h"
 
-#include "../../detours/detours.h"
+#include <Util.h>
+
+#include <detours.h>
 
 void DLSSDFeature::ProcessEvaluateParams(NVSDK_NGX_Parameter* InParameters)
 {

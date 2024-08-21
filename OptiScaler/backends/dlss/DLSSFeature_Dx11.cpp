@@ -1,7 +1,6 @@
 #include "DLSSFeature_Dx11.h"
+
 #include <dxgi.h>
-#include "../../Config.h"
-#include "../../pch.h"
 
 bool DLSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters)
 {

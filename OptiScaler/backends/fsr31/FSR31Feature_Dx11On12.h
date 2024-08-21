@@ -1,8 +1,8 @@
 #pragma once
-#include "FSR31Feature.h"
 #include "../IFeature_Dx11wDx12.h"
+#include "FSR31Feature.h"
 
-#include "dx12/ffx_api_dx12.h"
+#include <dx12/ffx_api_dx12.h>
 
 
 class FSR31FeatureDx11on12 : public FSR31Feature, public IFeature_Dx11wDx12

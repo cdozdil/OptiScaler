@@ -1,5 +1,4 @@
 #include "IFeature_Dx11wDx12.h"
-#include "../Config.h"
 
 #define ASSIGN_DESC(dest, src) dest.Width = src.Width; dest.Height = src.Height; dest.Format = src.Format; dest.BindFlags = src.BindFlags; dest.MiscFlags = src.MiscFlags; 
 
@@ -11,8 +10,6 @@ do {						\
 		(p) = nullptr;		\
 	}						\
 } while((void)0, 0)	
-
-
 
 void IFeature_Dx11wDx12::ResourceBarrier(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
 {

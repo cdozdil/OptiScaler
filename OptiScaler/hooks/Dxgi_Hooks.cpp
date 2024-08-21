@@ -1,11 +1,12 @@
 #include "Dxgi_Hooks.h"
 
-#include "../Config.h"
+#include <Config.h>
+#include <exports/Dxgi.h>
 
 #include "proxies/Wrapped_SwapChain.h"
 
-#include "../exports/Dxgi.h"
-#include "../detours/detours.h"
+#include <detours.h>
+
 
 typedef HRESULT(*PFN_CreateSwapChain)(IDXGIFactory*, IUnknown*, DXGI_SWAP_CHAIN_DESC*, IDXGISwapChain**);
 typedef HRESULT(*PFN_CreateSwapChainForHwnd)(IDXGIFactory*, IUnknown*, HWND, const DXGI_SWAP_CHAIN_DESC1*, const DXGI_SWAP_CHAIN_FULLSCREEN_DESC*, IDXGIOutput*, IDXGISwapChain1**);
@@ -28,7 +29,7 @@ static PFN_DxgiReleaseCallback releaseCallback[2] = { nullptr, nullptr };
 static IUnknown* device = nullptr;
 static IDXGIAdapter* adapters[8] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 
-static void Hooks::EnumarateDxgiAdapters()
+void Hooks::EnumarateDxgiAdapters()
 {
     if (adapters[0] != nullptr)
         return;

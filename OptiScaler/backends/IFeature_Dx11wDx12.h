@@ -1,14 +1,16 @@
 #pragma once
 #include "IFeature_Dx11.h"
-#include "../imgui/Imgui_Dx11.h"
-#include "../rcas/RCAS_Dx12.h"
-#include "../bias/Bias_Dx12.h"
+
+#include <Config.h>
+
+#include <imgui/Imgui_Dx11.h>
+#include <rcas/RCAS_Dx12.h>
+#include <bias/Bias_Dx12.h>
+#include <output_scaling/OS_Dx12.h>
 
 #include <d3d12.h>
 #include <d3d11_4.h>
 #include <dxgi1_6.h>
-
-#include "../output_scaling/OS_Dx12.h"
 
 class IFeature_Dx11wDx12 : public virtual IFeature_Dx11
 {
