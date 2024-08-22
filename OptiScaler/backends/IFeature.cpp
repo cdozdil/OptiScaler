@@ -1,7 +1,7 @@
 #pragma once
 #include "IFeature.h"
 
-#include "../Config.h"
+#include <Config.h>
 
 
 void IFeature::SetHandle(unsigned int InHandleId)

@@ -1,7 +1,7 @@
 #include "Dx12_Hooks.h"
 
-#include "../Config.h"
-#include "../detours/detours.h"
+#include <Config.h>
+#include <detours.h>
 
 // Device hook and variable
 static PFN_D3D12_CREATE_DEVICE o_D3D12CreateDevice = nullptr;

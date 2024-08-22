@@ -1,5 +1,5 @@
 #pragma once
-#include "../IFeature_Dx12.h"
+#include <backends/IFeature_Dx12.h>
 #include "DLSSFeature.h"
 
 class DLSSFeatureDx12 : public DLSSFeature, public IFeature_Dx12

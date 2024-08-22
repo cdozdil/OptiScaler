@@ -1,5 +1,5 @@
 #pragma once
-#include "../IFeature.h"
+#include <backends/IFeature.h>
 
 #include <ffx_api.h>
 #include <ffx_upscale.h>

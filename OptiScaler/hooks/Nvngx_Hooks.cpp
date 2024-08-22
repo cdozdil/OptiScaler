@@ -4,6 +4,9 @@
 
 #include <detours.h>
 #include <vulkan/vulkan.hpp>
+#include <nvsdk_ngx.h>
+#include <nvsdk_ngx_vk.h>
+#include <nvsdk_ngx_defs.h>
 
 
 typedef NVSDK_NGX_Result(*PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements)(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../pch.h"
+#include <pch.h>
 
 #include "OS_Common.h"
 
@@ -15,12 +15,13 @@ private:
     ID3D12RootSignature* _rootSignature = nullptr;
     ID3D12PipelineState* _pipelineState = nullptr;
     ID3D12DescriptorHeap* _srvHeap[3] = { nullptr, nullptr, nullptr };
-    D3D12_CPU_DESCRIPTOR_HANDLE _cpuSrvHandle[2]{ { NULL }, { NULL } };
-    D3D12_CPU_DESCRIPTOR_HANDLE _cpuUavHandle[2]{ { NULL }, { NULL } };
-    D3D12_CPU_DESCRIPTOR_HANDLE _cpuCbvHandle[2]{ { NULL }, { NULL } };
-    D3D12_GPU_DESCRIPTOR_HANDLE _gpuSrvHandle[2]{ { NULL }, { NULL } };
-    D3D12_GPU_DESCRIPTOR_HANDLE _gpuUavHandle[2]{ { NULL }, { NULL } };
-    D3D12_GPU_DESCRIPTOR_HANDLE _gpuCbvHandle[2]{ { NULL }, { NULL } };
+    D3D12_CPU_DESCRIPTOR_HANDLE _cpuSrvHandle[2] = { {}, {} };
+    D3D12_CPU_DESCRIPTOR_HANDLE _cpuUavHandle[2] = { {}, {} };
+    D3D12_CPU_DESCRIPTOR_HANDLE _cpuCbvHandle[2] = { {}, {} };
+    D3D12_GPU_DESCRIPTOR_HANDLE _gpuSrvHandle[2] = { {}, {} };
+    D3D12_GPU_DESCRIPTOR_HANDLE _gpuUavHandle[2] = { {}, {} };
+    D3D12_GPU_DESCRIPTOR_HANDLE _gpuCbvHandle[2] = { {}, {} };
+
     int _counter = 0;
     bool _upsample = false;
 

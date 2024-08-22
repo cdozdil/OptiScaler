@@ -1,9 +1,8 @@
 #pragma once
-
-#include "../pch.h"
-#include "../Config.h"
-#include "../Logger.h"
-#include "../resource.h"
+#include <pch.h>
+#include <Config.h>
+#include <Logger.h>
+#include <resource.h>
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_win32.h"

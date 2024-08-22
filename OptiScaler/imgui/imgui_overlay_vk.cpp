@@ -1,13 +1,13 @@
 #include "imgui_overlay_base.h"
 #include "imgui_overlay_vk.h"
 
-#include "../Util.h"
+#include <Config.h>
+#include <Util.h>
 
 #include "imgui/imgui_impl_vulkan.h"
 #include "imgui/imgui_impl_win32.h"
 
-#include "../detours/detours.h"
-#include "../Config.h"
+#include <detours.h>
 
 // Vulkan overlay code adopted from here:
 // https://gist.github.com/mem99/0ec31ca302927457f86b1d6756aaa8c4
