@@ -19,6 +19,8 @@ bool FSR2FeatureVk212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
+    Config::Instance()->dxgiSkipSpoofing = true;
+
     auto scratchBufferSize = Fsr212::ffxFsr2GetScratchMemorySizeVK212(PhysicalDevice);
     void* scratchBuffer = calloc(scratchBufferSize, 1);
 
@@ -118,6 +120,8 @@ bool FSR2FeatureVk212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
     auto ret = Fsr212::ffxFsr2ContextCreate212(&_context, &_contextDesc);
 
+    Config::Instance()->dxgiSkipSpoofing = false;
+
     if (ret != Fsr212::FFX_OK)
     {
         LOG_ERROR("ffxFsr2ContextCreate error: {0}", ResultToString212(ret));
@@ -143,6 +147,35 @@ bool FSR2FeatureVk212::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevi
     GDPA = InGDPA;
 
     return InitFSR2(InParameters);
+}
+
+void transitionImageToShaderReadOnly(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkAccessFlagBits flag = VK_ACCESS_SHADER_READ_BIT) 
+{
+    VkImageMemoryBarrier barrier = {};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Previous layout is unknown or irrelevant
+    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = image;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+
+    barrier.srcAccessMask = 0; // No previous accesses need to be waited on
+    barrier.dstAccessMask = flag; 
+
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, // Earliest possible stage
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, // Transition to fragment shader stage
+        0, // No special flags
+        0, nullptr, // No memory barriers
+        0, nullptr, // No buffer barriers
+        1, &barrier // One image barrier
+    );
 }
 
 bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* InParameters)
@@ -174,6 +207,10 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     {
         LOG_DEBUG("Color exist..");
 
+        //transitionImageToShaderReadOnly(InCmdBuffer, 
+        //                                ((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Image, 
+        //                                ((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Format);
+
         params.color = Fsr212::ffxGetTextureResourceVK212(&_context, ((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Image,
                                                           ((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.ImageView,
                                                           ((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramColor)->Resource.ImageViewInfo.Height,
@@ -191,6 +228,10 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     if (paramVelocity)
     {
         LOG_DEBUG("MotionVectors exist..");
+
+        //transitionImageToShaderReadOnly(InCmdBuffer,
+        //                                ((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Image,
+        //                                ((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Format);
 
         params.motionVectors = Fsr212::ffxGetTextureResourceVK212(&_context, ((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.Image,
                                                                   ((NVSDK_NGX_Resource_VK*)paramVelocity)->Resource.ImageViewInfo.ImageView,
@@ -210,6 +251,11 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     {
         LOG_DEBUG("Output exist..");
 
+        //transitionImageToShaderReadOnly(InCmdBuffer,
+        //                                ((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Image,
+        //                                ((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Format,
+        //                                VK_ACCESS_SHADER_WRITE_BIT);
+
         params.output = Fsr212::ffxGetTextureResourceVK212(&_context, ((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Image,
                                                            ((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.ImageView,
                                                            ((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Width, ((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Height,
@@ -227,6 +273,10 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     if (paramDepth)
     {
         LOG_DEBUG("Depth exist..");
+
+        //transitionImageToShaderReadOnly(InCmdBuffer, 
+        //                                ((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Image, 
+        //                                ((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Format);
 
         params.depth = Fsr212::ffxGetTextureResourceVK212(&_context, ((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.Image,
                                                           ((NVSDK_NGX_Resource_VK*)paramDepth)->Resource.ImageViewInfo.ImageView,

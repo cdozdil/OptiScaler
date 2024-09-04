@@ -19,6 +19,8 @@ bool FSR2FeatureVk::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
+    Config::Instance()->dxgiSkipSpoofing = true;
+
     auto scratchBufferSize = ffxFsr2GetScratchMemorySizeVK(PhysicalDevice);
     void* scratchBuffer = calloc(scratchBufferSize, 1);
 
@@ -121,6 +123,8 @@ bool FSR2FeatureVk::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     LOG_DEBUG("ffxFsr2ContextCreate!");
 
     auto ret = ffxFsr2ContextCreate(&_context, &_contextDesc);
+
+    Config::Instance()->dxgiSkipSpoofing = false;
 
     if (ret != FFX_OK)
     {

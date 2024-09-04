@@ -94,6 +94,8 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
+    Config::Instance()->dxgiSkipSpoofing = true;
+
     ffxQueryDescGetVersions versionQuery{};
     versionQuery.header.type = FFX_API_QUERY_DESC_TYPE_GET_VERSIONS;
     versionQuery.createDescType = FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE;
@@ -218,6 +220,8 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
 
     LOG_DEBUG("_createContext!");
     auto ret = _createContext(&_context, &_contextDesc.header, NULL);
+
+    Config::Instance()->dxgiSkipSpoofing = false;
 
     if (ret != FFX_API_RETURN_OK)
     {
