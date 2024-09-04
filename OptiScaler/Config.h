@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <SimpleIni.h>
 #include "backends/IFeature.h"
+#include <deque>
 
 typedef enum NVNGX_Api
 {
@@ -77,10 +78,6 @@ public:
 
 	// hooks
 	std::optional<bool> HookOriginalNvngxOnly;
-	std::optional<bool> DisableEarlyHooking;
-	std::optional<bool> HookD3D12;
-	std::optional<bool> HookSLProxy;
-	std::optional<bool> HookFSR3Proxy;
 
 	// Upscale Ratio Override
 	std::optional<bool> UpscaleRatioOverrideEnabled;
@@ -149,7 +146,6 @@ public:
 
 	// spoofing
 	std::optional<bool> DxgiSpoofing;
-	std::optional<bool> DxgiSkipSpoofForUpscalers;
 	std::optional<std::string> DxgiBlacklist;
 	std::optional<bool> VulkanSpoofing;
 	std::optional<bool> VulkanExtensionSpoofing;
@@ -202,12 +198,16 @@ public:
 	// linux check
 	bool IsRunningOnLinux = false;
 	bool IsRunningOnDXVK = false;
-	bool VulkanSkipHooks = false;
 
 	bool IsDxgiMode = false;
 
-	// vulkan menu hack
+	// vulkan stuff
+	bool VulkanSkipHooks = false;
 	bool RenderMenu = true;
+
+	// framegraph
+	std::deque<float> upscaleTimes;
+	std::deque<float> frameTimes;
 
 	IFeature* CurrentFeature = nullptr;
 

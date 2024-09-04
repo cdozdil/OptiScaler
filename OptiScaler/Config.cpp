@@ -167,10 +167,6 @@ bool Config::Reload(std::filesystem::path iniPath)
         // Hooks
         {
             HookOriginalNvngxOnly = readBool("Hooks", "HookOriginalNvngxOnly");
-            DisableEarlyHooking = readBool("Hooks", "DisableEarlyHooking");
-            HookD3D12 = readBool("Hooks", "HookD3D12");
-            HookSLProxy = readBool("Hooks", "HookSLProxy");
-            HookFSR3Proxy = readBool("Hooks", "HookFSR3Proxy");
         }
 
         // RCAS
@@ -309,7 +305,6 @@ bool Config::Reload(std::filesystem::path iniPath)
         // Spoofing
         {
             DxgiSpoofing = readBool("Spoofing", "Dxgi");
-            DxgiSkipSpoofForUpscalers = readBool("Spoofing", "DxgiSkipSpoofForUpscalers");
             DxgiBlacklist = readString("Spoofing", "DxgiBlacklist");
             VulkanSpoofing = readBool("Spoofing", "Vulkan");
             VulkanExtensionSpoofing = readBool("Spoofing", "VulkanExtensionSpoofing");
@@ -512,10 +507,6 @@ bool Config::SaveIni()
     // Hooks
     {
         ini.SetValue("Hooks", "HookOriginalNvngxOnly", GetBoolValue(Instance()->HookOriginalNvngxOnly).c_str());
-        ini.SetValue("Hooks", "DisableEarlyHooking", GetBoolValue(Instance()->DisableEarlyHooking).c_str());
-        ini.SetValue("Hooks", "HookD3D12", GetBoolValue(Instance()->HookD3D12).c_str());
-        ini.SetValue("Hooks", "HookSLProxy", GetBoolValue(Instance()->HookSLProxy).c_str());
-        ini.SetValue("Hooks", "HookFSR3Proxy", GetBoolValue(Instance()->HookFSR3Proxy).c_str());
     }
 
     // CAS
@@ -611,7 +602,6 @@ bool Config::SaveIni()
     // Spoofing
     {
         ini.SetValue("Spoofing", "Dxgi", GetBoolValue(Instance()->DxgiSpoofing).c_str());
-        ini.SetValue("Spoofing", "DxgiSkipSpoofForUpscalers", GetBoolValue(Instance()->DxgiSkipSpoofForUpscalers).c_str());
         ini.SetValue("Spoofing", "DxgiBlacklist", Instance()->DxgiBlacklist.value_or("auto").c_str());
         ini.SetValue("Spoofing", "Vulkan", GetBoolValue(Instance()->VulkanSpoofing).c_str());
         ini.SetValue("Spoofing", "VulkanExtensionSpoofing", GetBoolValue(Instance()->VulkanExtensionSpoofing).c_str());
