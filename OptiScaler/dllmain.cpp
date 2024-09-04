@@ -883,12 +883,16 @@ static VkResult hkvkEnumerateInstanceExtensionProperties(const char* pLayerName,
     auto result = o_vkEnumerateInstanceExtensionProperties(pLayerName, pPropertyCount, pProperties);
 
     if (result != VK_SUCCESS)
+    {
+        LOG_ERROR("o_vkEnumerateInstanceExtensionProperties({0}, {1}) result: {2:X}", pLayerName, count, (UINT)result);
         return result;
+    }
 
     if (pLayerName == nullptr && pProperties == nullptr && count == 0)
     {
         *pPropertyCount += 2;
         vkEnumerateInstanceExtensionPropertiesCount = *pPropertyCount;
+        LOG_TRACE("hkvkEnumerateDeviceExtensionProperties({0}) count: {1}", pLayerName, vkEnumerateDeviceExtensionPropertiesCount);
         return result;
     }
 
