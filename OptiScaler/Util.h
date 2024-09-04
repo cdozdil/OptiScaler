@@ -6,6 +6,8 @@ namespace Util
 	std::filesystem::path ExePath();
 	std::filesystem::path DllPath();
 	std::optional<std::filesystem::path> NvngxPath();
+	double MillisecondsNow();
+
 
 	HWND GetProcessWindow();
 };
