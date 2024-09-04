@@ -1778,7 +1778,7 @@ void ImGuiCommon::RenderMenu()
                 ImGui::PlotLines(ft.c_str(), frameTimeArray.data(), frameTimeArray.size());
 
                 ImGui::TableNextColumn();
-                ImGui::Text("Upscaler");
+                ImGui::Text("Upscaler (CPU time)");
                 auto ups = std::format("{:.2f} ms", Config::Instance()->upscaleTimes.back());
                 std::vector<float> upscaleTimeArray(Config::Instance()->upscaleTimes.begin(), Config::Instance()->upscaleTimes.end());
                 ImGui::PlotLines(ups.c_str(), upscaleTimeArray.data(), upscaleTimeArray.size());

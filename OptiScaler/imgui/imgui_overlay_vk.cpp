@@ -565,7 +565,9 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
     {
         LOG_TRACE("!_vulkanObjectsCreated return o_QueuePresentKHR");
 
+        Config::Instance()->VulkanCreatingSC = true;
         auto r0 = o_QueuePresentKHR(queue, pPresentInfo);
+        Config::Instance()->VulkanCreatingSC = false;
 
         if (r0 != VK_SUCCESS)
             LOG_ERROR("r0 = o_QueuePresentKHR(queue, pPresentInfo): {0:X}", (UINT)r0);
@@ -575,7 +577,9 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
 
     if (!ImGuiOverlayBase::IsInited() || !ImGuiOverlayBase::IsVisible() || _ImVulkan_Info.Device == VK_NULL_HANDLE)
     {
+        Config::Instance()->VulkanCreatingSC = true;
         auto r1 = o_QueuePresentKHR(queue, pPresentInfo);
+        Config::Instance()->VulkanCreatingSC = false;
 
         if (r1 != VK_SUCCESS)
             LOG_ERROR("r1 = o_QueuePresentKHR(queue, pPresentInfo): {0:X}", (UINT)r1);
@@ -680,7 +684,9 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
     }
 
     // original call
+    Config::Instance()->VulkanCreatingSC = true;
     auto result = o_QueuePresentKHR(queue, pPresentInfo);
+    Config::Instance()->VulkanCreatingSC = false;
     LOG_FUNC_RESULT(result);
     _vkPresentMutex.unlock();
     return result;

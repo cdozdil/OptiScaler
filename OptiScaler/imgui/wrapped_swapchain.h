@@ -38,7 +38,12 @@ public:
 		unsigned int ret = InterlockedDecrement(&m_iRefcount);
 
 		if (ret == 0)
+		{
+			if (ClearTrig != nullptr)
+				ClearTrig(true);
+
 			delete this;
+		}
 		
 		return ret;
 	}

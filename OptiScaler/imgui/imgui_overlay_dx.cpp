@@ -382,10 +382,12 @@ static HRESULT WINAPI hkCreateSwapChain_EB(IDXGIFactory* pFactory, IUnknown* pDe
 
     if (pDevice->QueryInterface(IID_PPV_ARGS(&g_pd3dCommandQueue)) == S_OK)
     {
+        g_pd3dCommandQueue->Release();
         LOG_DEBUG("D3D12 Command Queue captured");
     }
     else if (pDevice->QueryInterface(IID_PPV_ARGS(&g_pd3dDevice)) == S_OK)
     {
+        g_pd3dDevice->Release();
         LOG_DEBUG("D3D11 Device captured");
         _dx11Device = true;
     }
@@ -450,10 +452,12 @@ static HRESULT WINAPI hkCreateSwapChainForHwnd_EB(IDXGIFactory* pCommandQueue, I
     if (pDevice->QueryInterface(IID_PPV_ARGS(&g_pd3dCommandQueue)) == S_OK)
     {
         LOG_DEBUG("D3D12 Command Queue captured");
+        g_pd3dCommandQueue->Release();
     }
     else if (pDevice->QueryInterface(IID_PPV_ARGS(&g_pd3dDevice)) == S_OK)
     {
         LOG_DEBUG("D3D11 Device captured");
+        g_pd3dDevice->Release();
         _dx11Device = true;
     }
     else
@@ -817,6 +821,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
     if (!drawMenu)
     {
         ImGuiOverlayBase::HideMenu();
+        pSwapChain->Release();
         return;
     }
 
@@ -1147,8 +1152,6 @@ void ImGuiOverlayDx::HookDx()
 
 void ImGuiOverlayDx::UnHookDx()
 {
-    LOG_INFO("");
-
     if (_isInited && ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
         ImGui_ImplDX12_Shutdown();
 

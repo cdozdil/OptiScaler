@@ -105,7 +105,9 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::QueryInterface(REFIID riid, vo
 		}
 	}
 
-	return E_NOINTERFACE; 
+	auto result = m_pReal->QueryInterface(riid, ppvObject); 
+	LOG_FUNC_RESULT(result);
+	return result;
 }
 
 HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)

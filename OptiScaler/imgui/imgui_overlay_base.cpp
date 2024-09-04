@@ -63,7 +63,6 @@ void ImGuiOverlayBase::RenderMenu()
 
 void ImGuiOverlayBase::Shutdown()
 {
-	LOG_FUNC();
 	ImGuiCommon::Shutdown();
 }
 
