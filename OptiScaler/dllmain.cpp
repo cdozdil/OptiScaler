@@ -1496,15 +1496,14 @@ static void CheckWorkingMode()
 
     if (modeFound)
     {
-        Config::Instance()->OverlayMenu = (!isNvngxMode || isWorkingWithEnabler);
-        
         AttachHooks();
-
-        if ((!isNvngxMode || isWorkingWithEnabler) && !Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))
+        
+        Config::Instance()->OverlayMenu = (!isNvngxMode || isWorkingWithEnabler) && Config::Instance()->OverlayMenu.value_or(true);
+        if (Config::Instance()->OverlayMenu.value())
         {
             if (!Config::Instance()->IsRunningOnLinux && !Config::Instance()->IsRunningOnDXVK)
                 ImGuiOverlayDx::HookDx();
-            
+
             ImGuiOverlayVk::HookVk();
         }
 
@@ -1590,6 +1589,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             spdlog::info("");
             CheckWorkingMode();
             spdlog::info("");
+
+            for (size_t i = 0; i < 300; i++)
+            {
+                Config::Instance()->frameTimes.push_back(0.0);
+                Config::Instance()->upscaleTimes.push_back(0.0);
+            }
 
             break;
 
