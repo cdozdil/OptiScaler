@@ -1018,6 +1018,12 @@ static void DetachHooks()
 
         FreeLibrary(shared.dll);
     }
+
+    if (!isNvngxMode)
+    {
+        ImGuiOverlayDx::UnHookDx();
+        ImGuiOverlayVk::UnHookVk();
+    }
 }
 
 static void AttachHooks()
@@ -1482,13 +1488,16 @@ static void CheckWorkingMode()
 
     if (modeFound)
     {
+        Config::Instance()->OverlayMenu = !isNvngxMode;
+        
         AttachHooks();
 
         if ((!isNvngxMode || isWorkingWithEnabler) && !Config::Instance()->DisableEarlyHooking.value_or(false) && Config::Instance()->OverlayMenu.value_or(true))
         {
-            ImGuiOverlayDx12::Dx12Bind();
-            ImGuiOverlayVk::HookVK();
-            //ImGuiOverlayDx12::FSR3Bind();
+            if (!Config::Instance()->IsRunningOnLinux && !Config::Instance()->IsRunningOnDXVK)
+                ImGuiOverlayDx::HookDx();
+            
+            ImGuiOverlayVk::HookVk();
         }
 
         return;
