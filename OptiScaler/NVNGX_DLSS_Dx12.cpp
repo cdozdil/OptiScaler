@@ -855,7 +855,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     if(!Config::Instance()->DE_Available)
     {
         // DLSS Enabler check
-        int deAvail;
+        int deAvail = 0;
         if (InParameters->Get("DLSSEnabler.Available", &deAvail) == NVSDK_NGX_Result_Success)
         {
             if (Config::Instance()->DE_Available != (deAvail > 0))
