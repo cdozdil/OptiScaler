@@ -3,10 +3,7 @@
 // Used RenderDoc's wrapped object as referance
 // https://github.com/baldurk/renderdoc/blob/v1.x/renderdoc/driver/dxgi/dxgi_wrapped.cpp
 
-WrappedIDXGISwapChain4::WrappedIDXGISwapChain4(IDXGISwapChain* real, 
-	std::function<HRESULT(IDXGISwapChain3*, UINT, UINT)> renderTrig,
-	std::function<HRESULT(IDXGISwapChain3*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*)> renderTrig1, 
-	std::function<void(bool)> clearTrig) : m_pReal(real), RenderTrig(renderTrig), RenderTrig1(renderTrig1), ClearTrig(clearTrig), m_iRefcount(1)
+WrappedIDXGISwapChain4::WrappedIDXGISwapChain4(IDXGISwapChain* real, PFN_Prensent renderTrig, PFN_Clean clearTrig) : m_pReal(real), RenderTrig(renderTrig), ClearTrig(clearTrig), m_iRefcount(1)
 {
 	real->QueryInterface(__uuidof(IDXGISwapChain1), (void**)&m_pReal1);
 	real->QueryInterface(__uuidof(IDXGISwapChain2), (void**)&m_pReal2);
@@ -145,8 +142,8 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 {
 	LOG_FUNC();
 
-	if (ClearTrig != nullptr)
-		ClearTrig(true);
+	//if (ClearTrig != nullptr)
+	//	ClearTrig(true);
 
 	return m_pReal->SetFullscreenState(Fullscreen, pTarget);
 }
@@ -171,16 +168,16 @@ HRESULT WrappedIDXGISwapChain4::GetDevice(REFIID riid, void** ppDevice)
 
 HRESULT WrappedIDXGISwapChain4::Present(UINT SyncInterval, UINT Flags)
 {
-	if (RenderTrig != nullptr && m_pReal3 != nullptr)
-		RenderTrig(m_pReal3, SyncInterval, Flags);
+	if (!((Flags & DXGI_PRESENT_TEST) || (Flags & DXGI_PRESENT_RESTART)) && RenderTrig != nullptr)
+		RenderTrig(m_pReal);
 
 	return m_pReal->Present(SyncInterval, Flags);
 }
 
 HRESULT WrappedIDXGISwapChain4::Present1(UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters)
 {
-	if (RenderTrig1 != nullptr && m_pReal3 != nullptr)
-		RenderTrig1(m_pReal3, SyncInterval, Flags, pPresentParameters);
+	if (!((Flags & DXGI_PRESENT_TEST) || (Flags & DXGI_PRESENT_RESTART)) && RenderTrig != nullptr)
+		RenderTrig(m_pReal);
 
 	return m_pReal1->Present1(SyncInterval, Flags, pPresentParameters);
 }

@@ -13,141 +13,205 @@
 // https://gist.github.com/mem99/0ec31ca302927457f86b1d6756aaa8c4
 // Need to check resize & recreate fixes
 
+typedef struct VkWin32SurfaceCreateInfoKHR {
+    VkStructureType                 sType;
+    const void* pNext;
+    VkFlags                         flags;
+    HINSTANCE                       hinstance;
+    HWND                            hwnd;
+} VkWin32SurfaceCreateInfoKHR;
+
 static bool _isInited = false;
 
+// for menu rendering
 static VkDevice _device = VK_NULL_HANDLE;
 static VkInstance _instance = VK_NULL_HANDLE;
 static VkPhysicalDevice _PD = VK_NULL_HANDLE;
-static HWND _hwnd;
+static HWND _hwnd = nullptr;
 
-static bool g_bInitialized = false;
-static bool g_bEnabled = false;
-inline static std::mutex _vkCleanMutex;
+static bool _vulkanObjectsCreated = false;
+static std::mutex _vkCleanMutex;
+static std::mutex _vkPresentMutex;
 
-// vk hook stuff
-static VkRenderPass g_vkRenderPass = VK_NULL_HANDLE;
-struct ImGui_ImplVulkan_InitInfo g_ImVulkan_Info = { };
-struct ImGui_ImplVulkanH_Frame* g_ImVulkan_Frames = NULL;
-static VkSemaphore* g_ImVulkan_Semaphores = NULL;
-static VkSwapchainCreateInfoKHR lastSwapchainInfo = {};
+// imgui stuff
+struct ImGui_ImplVulkan_InitInfo _ImVulkan_Info = {};
+struct ImGui_ImplVulkanH_Frame* _ImVulkan_Frames = VK_NULL_HANDLE;
+static VkSemaphore* _ImVulkan_Semaphores = VK_NULL_HANDLE;
+static VkRenderPass _vkRenderPass = VK_NULL_HANDLE;
 
-typedef VkResult(__fastcall* PFN_QueuePresentKHR)(VkQueue, const VkPresentInfoKHR*);
-typedef VkResult(__fastcall* PFN_CreateSwapchainKHR)(VkDevice, const VkSwapchainCreateInfoKHR*, const VkAllocationCallbacks*, VkSwapchainKHR*);
+// hooking
+typedef VkResult(*PFN_QueuePresentKHR)(VkQueue, const VkPresentInfoKHR*);
+typedef VkResult(*PFN_CreateSwapchainKHR)(VkDevice, const VkSwapchainCreateInfoKHR*, const VkAllocationCallbacks*, VkSwapchainKHR*);
+typedef VkResult(*PFN_vkCreateWin32SurfaceKHR)(VkInstance, const VkWin32SurfaceCreateInfoKHR*, const VkAllocationCallbacks*, VkSurfaceKHR*);
 
 PFN_vkCreateDevice o_vkCreateDevice = nullptr;
 PFN_vkCreateInstance o_vkCreateInstance = nullptr;
-PFN_vkCreateDevice o_SL_vkCreateDevice = nullptr;
-PFN_QueuePresentKHR oQueuePresentKHR = nullptr;
-PFN_CreateSwapchainKHR oCreateSwapchainKHR = nullptr;
+PFN_vkCreateWin32SurfaceKHR o_vkCreateWin32SurfaceKHR = nullptr;
+PFN_QueuePresentKHR o_QueuePresentKHR = nullptr;
+PFN_CreateSwapchainKHR o_CreateSwapchainKHR = nullptr;
 
 static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice);
-static VkResult VKAPI_CALL hkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInfo);
-static VkResult VKAPI_CALL hkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain);
-
-static int createCounter = 0;
+static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInfo);
+static VkResult hkvkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain);
 
 static void DestroyVulkanObjects(bool shutdown)
 {
-    vkDeviceWaitIdle(_device);
+    if (_ImVulkan_Info.Device == VK_NULL_HANDLE)
+        return;
+
+    LOG_FUNC();
+
+    _vkCleanMutex.lock();
+
+    auto result = vkDeviceWaitIdle(_ImVulkan_Info.Device);
+    if (result != VK_SUCCESS)
+        LOG_WARN("vkDeviceWaitIdle error: {0:X}", (UINT)result);
 
     if (shutdown)
     {
-        if (g_vkRenderPass)
-            vkDestroyRenderPass(g_ImVulkan_Info.Device, g_vkRenderPass, NULL);
+        if (_vkRenderPass)
+            vkDestroyRenderPass(_ImVulkan_Info.Device, _vkRenderPass, VK_NULL_HANDLE);
 
-        if (g_ImVulkan_Info.DescriptorPool)
-            vkDestroyDescriptorPool(g_ImVulkan_Info.Device, g_ImVulkan_Info.DescriptorPool, NULL);
+        if (_ImVulkan_Info.DescriptorPool)
+            vkDestroyDescriptorPool(_ImVulkan_Info.Device, _ImVulkan_Info.DescriptorPool, VK_NULL_HANDLE);
     }
 
-    for (uint32_t i = 0; i < g_ImVulkan_Info.ImageCount; i++)
+    for (uint32_t i = 0; i < _ImVulkan_Info.ImageCount; i++)
     {
-        ImGui_ImplVulkanH_Frame* fd = &g_ImVulkan_Frames[i];
+        ImGui_ImplVulkanH_Frame* fd = &_ImVulkan_Frames[i];
 
-        vkDestroyFence(g_ImVulkan_Info.Device, fd->Fence, NULL);
-        fd->Fence = NULL;
+        if (fd->Fence != VK_NULL_HANDLE)
+        {
+            vkDestroyFence(_ImVulkan_Info.Device, fd->Fence, VK_NULL_HANDLE);
+            fd->Fence = VK_NULL_HANDLE;
+        }
 
-        vkFreeCommandBuffers(g_ImVulkan_Info.Device, fd->CommandPool, 1, &fd->CommandBuffer);
-        fd->CommandBuffer = NULL;
+        if (fd->CommandBuffer != VK_NULL_HANDLE)
+        {
+            vkFreeCommandBuffers(_ImVulkan_Info.Device, fd->CommandPool, 1, &fd->CommandBuffer);
+            fd->CommandBuffer = VK_NULL_HANDLE;
+        }
 
-        vkDestroyCommandPool(g_ImVulkan_Info.Device, fd->CommandPool, NULL);
-        fd->CommandPool = NULL;
+        if (fd->CommandPool != VK_NULL_HANDLE)
+        {
+            vkDestroyCommandPool(_ImVulkan_Info.Device, fd->CommandPool, VK_NULL_HANDLE);
+            fd->CommandPool = VK_NULL_HANDLE;
+        }
 
-        vkDestroyImageView(g_ImVulkan_Info.Device, fd->BackbufferView, NULL);
-        fd->BackbufferView = NULL;
+        if (fd->BackbufferView != VK_NULL_HANDLE)
+        {
+            vkDestroyImageView(_ImVulkan_Info.Device, fd->BackbufferView, VK_NULL_HANDLE);
+            fd->BackbufferView = VK_NULL_HANDLE;
+        }
 
-        vkDestroyFramebuffer(g_ImVulkan_Info.Device, fd->Framebuffer, NULL);
-        fd->Framebuffer = NULL;
+        if (fd->BackbufferView != VK_NULL_HANDLE)
+        {
+            vkDestroyFramebuffer(_ImVulkan_Info.Device, fd->Framebuffer, VK_NULL_HANDLE);
+            fd->Framebuffer = VK_NULL_HANDLE;
+        }
 
-        vkDestroySemaphore(g_ImVulkan_Info.Device, g_ImVulkan_Semaphores[i], NULL);
-        g_ImVulkan_Semaphores[i] = NULL;
+        if (_ImVulkan_Semaphores[i] != VK_NULL_HANDLE)
+        {
+            vkDestroySemaphore(_ImVulkan_Info.Device, _ImVulkan_Semaphores[i], VK_NULL_HANDLE);
+            _ImVulkan_Semaphores[i] = VK_NULL_HANDLE;
+        }
+
+        _ImVulkan_Info = {};
     }
+
+    _vkCleanMutex.unlock();
 }
 
 static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, VkSwapchainKHR* pSwapchain)
 {
     LOG_FUNC();
 
-    if (g_bInitialized)
+    if (device == VK_NULL_HANDLE || pCreateInfo == nullptr || *pSwapchain == VK_NULL_HANDLE)
     {
-        LOG_DEBUG("g_bInitialized, releaseing objects");
+        LOG_WARN("device({0:X}) == VK_NULL_HANDLE || pCreateInfo({1:X}) == nullptr || *pSwapchain({2:X}) == VK_NULL_HANDLE", (UINT64)device, (UINT64)pCreateInfo, (UINT64)*pSwapchain);
+        return;
+    }
+
+    if (_vulkanObjectsCreated)
+    {
+        LOG_DEBUG("_vulkanObjectsCreated, releaseing objects");
 
         if (ImGui::GetIO().BackendRendererUserData != nullptr)
             ImGui_ImplVulkan_Shutdown();
 
         DestroyVulkanObjects(false);
 
-        g_bInitialized = false;
+        _vulkanObjectsCreated = false;
     }
 
-    // Initialize ImGui for IO.
-    if (!ImGuiOverlayBase::IsInited())
+    // Initialize ImGui 
+    if (!ImGuiOverlayBase::IsInited() || ImGuiOverlayBase::Handle() != _hwnd)
     {
+        if (ImGuiOverlayBase::IsInited())
+            ImGuiOverlayBase::Shutdown();
+
         LOG_DEBUG("ImGuiOverlayBase::Init");
         ImGuiOverlayBase::Init(_hwnd);
     }
 
     ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize.x = pCreateInfo->imageExtent.width;
+    io.DisplaySize.y = pCreateInfo->imageExtent.height;
 
-    if (pCreateInfo != nullptr)
-    {
-        io.DisplaySize.x = pCreateInfo->imageExtent.width;
-        io.DisplaySize.y = pCreateInfo->imageExtent.height;
-    }
-    else
-    {
-        io.DisplaySize.x = Config::Instance()->CurrentFeature->DisplayWidth();
-        io.DisplaySize.y = Config::Instance()->CurrentFeature->DisplayHeight();
-    }
+    VkResult result;
 
     // Get swapchain image count.
     uint32_t imageCount;
+    result = vkGetSwapchainImagesKHR(device, *pSwapchain, &imageCount, NULL);
+    if (result != VK_SUCCESS)
+    {
+        LOG_ERROR("vkGetSwapchainImagesKHR error: {0:X}", (UINT)result);
+        return;
+    }
+
     VkImage images[8];
-    vkGetSwapchainImagesKHR(device, *pSwapchain, &imageCount, NULL);
-    vkGetSwapchainImagesKHR(device, *pSwapchain, &imageCount, images);
+    result = vkGetSwapchainImagesKHR(device, *pSwapchain, &imageCount, images);
+    if (result != VK_SUCCESS)
+    {
+        LOG_ERROR("vkGetSwapchainImagesKHR error: {0:X}", (UINT)result);
+        return;
+    }
 
     // Alloc ImGui frame structure/semaphores for every image.
     // For convenience, I am using ImGui_ImplVulkanH_Frame in imgui_impl_vulkan.h
-    if (!g_bInitialized)
+    if (!_vulkanObjectsCreated)
     {
-        g_ImVulkan_Frames = (ImGui_ImplVulkanH_Frame*)IM_ALLOC(sizeof(ImGui_ImplVulkanH_Frame) * imageCount);
-        g_ImVulkan_Semaphores = (VkSemaphore*)IM_ALLOC(sizeof(VkSemaphore) * imageCount);
+        _ImVulkan_Frames = (ImGui_ImplVulkanH_Frame*)IM_ALLOC(sizeof(ImGui_ImplVulkanH_Frame) * imageCount);
+        _ImVulkan_Semaphores = (VkSemaphore*)IM_ALLOC(sizeof(VkSemaphore) * imageCount);
     }
 
     // Select queue family.
     uint32_t queueFamily = 0;
     {
-        uint32_t count;
+        // get count
+        uint32_t count = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(_PD, &count, NULL);
-        VkQueueFamilyProperties queues[8];
-        vkGetPhysicalDeviceQueueFamilyProperties(_PD, &count, queues);
 
-        for (uint32_t i = 0; i < count; i++)
+        // get queues
+        if (count > 0)
         {
-            if (queues[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            VkQueueFamilyProperties queues[8];
+            vkGetPhysicalDeviceQueueFamilyProperties(_PD, &count, queues);
+
+
+            // find graphic queue
+            for (uint32_t i = 0; i < count; i++)
             {
-                queueFamily = i;
-                break;
+                if (queues[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+                {
+                    queueFamily = i;
+                    break;
+                }
             }
+        }
+        else
+        {
+            return;
         }
     }
 
@@ -155,13 +219,8 @@ static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR*
     VkQueue queue;
     vkGetDeviceQueue(device, queueFamily, 0, &queue);
 
-    // Create our vulkan objects.
-    // Some code here is copied from imgui_impl_vulkan.cpp
-
     // Create the render pool
     VkDescriptorPool pool = VK_NULL_HANDLE;
-
-    if (g_bInitialized == false)
     {
         VkDescriptorPoolSize sampler_pool_size = { };
         sampler_pool_size.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -171,19 +230,19 @@ static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR*
         desc_pool_info.maxSets = 1;
         desc_pool_info.poolSizeCount = 1;
         desc_pool_info.pPoolSizes = &sampler_pool_size;
-        vkCreateDescriptorPool(device, &desc_pool_info, NULL, &pool);
+        result = vkCreateDescriptorPool(device, &desc_pool_info, NULL, &pool);
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("vkCreateDescriptorPool error: {0:X}", (UINT)result);
+            return;
+        }
     }
 
     // Create the render pass
-    if (g_bInitialized == false)
     {
         VkAttachmentDescription attachment_desc = { };
 
-        if (pCreateInfo != nullptr)
-            attachment_desc.format = pCreateInfo->imageFormat;
-        else
-            attachment_desc.format = VK_FORMAT_R8G8B8A8_UNORM;
-
+        attachment_desc.format = pCreateInfo->imageFormat;
         attachment_desc.samples = VK_SAMPLE_COUNT_1_BIT;
         attachment_desc.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment_desc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -218,21 +277,21 @@ static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR*
         render_pass_info.dependencyCount = 1;
         render_pass_info.pDependencies = &dependency;
 
-        vkCreateRenderPass(device, &render_pass_info, NULL, &g_vkRenderPass);
+        result = vkCreateRenderPass(device, &render_pass_info, NULL, &_vkRenderPass);
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("vkCreateRenderPass error: {0:X}", (UINT)result);
+            return;
+        }
     }
 
     // Create The Image Views
     {
-
         VkImageViewCreateInfo info = { };
         info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         info.viewType = VK_IMAGE_VIEW_TYPE_2D;
 
-        if (pCreateInfo != nullptr)
-            info.format = pCreateInfo->imageFormat;
-        else
-            info.format = VK_FORMAT_R8G8B8A8_UNORM;
-
+        info.format = pCreateInfo->imageFormat;
         info.components.r = VK_COMPONENT_SWIZZLE_R;
         info.components.g = VK_COMPONENT_SWIZZLE_G;
         info.components.b = VK_COMPONENT_SWIZZLE_B;
@@ -243,11 +302,16 @@ static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR*
 
         for (uint32_t i = 0; i < imageCount; i++)
         {
-            ImGui_ImplVulkanH_Frame* fd = &g_ImVulkan_Frames[i];
+            ImGui_ImplVulkanH_Frame* fd = &_ImVulkan_Frames[i];
             fd->Backbuffer = images[i];
             info.image = fd->Backbuffer;
 
-            vkCreateImageView(device, &info, NULL, &fd->BackbufferView);
+            result = vkCreateImageView(device, &info, NULL, &fd->BackbufferView);
+            if (result != VK_SUCCESS)
+            {
+                LOG_ERROR("vkCreateImageView error: {0:X}", (UINT)result);
+                return;
+            }
         }
     }
 
@@ -256,96 +320,121 @@ static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR*
         VkImageView attachment[1];
         VkFramebufferCreateInfo info = { };
         info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        info.renderPass = g_vkRenderPass;
+        info.renderPass = _vkRenderPass;
         info.attachmentCount = 1;
         info.pAttachments = attachment;
 
-        if (pCreateInfo != nullptr)
-        {
-            info.width = pCreateInfo->imageExtent.width;
-            info.height = pCreateInfo->imageExtent.height;
-        }
-        else
-        {
-            info.width = Config::Instance()->CurrentFeature->DisplayWidth();
-            info.height = Config::Instance()->CurrentFeature->DisplayHeight();
-        }
+        info.width = pCreateInfo->imageExtent.width;
+        info.height = pCreateInfo->imageExtent.height;
 
         info.layers = 1;
 
         for (uint32_t i = 0; i < imageCount; i++)
         {
-            ImGui_ImplVulkanH_Frame* fd = &g_ImVulkan_Frames[i];
+            ImGui_ImplVulkanH_Frame* fd = &_ImVulkan_Frames[i];
             attachment[0] = fd->BackbufferView;
-            vkCreateFramebuffer(device, &info, NULL, &fd->Framebuffer);
+            result = vkCreateFramebuffer(device, &info, NULL, &fd->Framebuffer);
+            if (result != VK_SUCCESS)
+            {
+                LOG_ERROR("vkCreateFramebuffer error: {0:X}", (UINT)result);
+                return;
+            }
         }
     }
 
     // Create command pools, command buffers, fences, and semaphores for every image
     for (uint32_t i = 0; i < imageCount; i++)
     {
-        ImGui_ImplVulkanH_Frame* fd = &g_ImVulkan_Frames[i];
-        VkSemaphore* fsd = &g_ImVulkan_Semaphores[i];
+        ImGui_ImplVulkanH_Frame* fd = &_ImVulkan_Frames[i];
+        VkSemaphore* fsd = &_ImVulkan_Semaphores[i];
         {
             VkCommandPoolCreateInfo info = { };
             info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
             info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
             info.queueFamilyIndex = queueFamily;
-            vkCreateCommandPool(device, &info, NULL, &fd->CommandPool);
+            result = vkCreateCommandPool(device, &info, NULL, &fd->CommandPool);
+            if (result != VK_SUCCESS)
+            {
+                LOG_ERROR("vkCreateCommandPool error: {0:X}", (UINT)result);
+                return;
+            }
         }
+
         {
             VkCommandBufferAllocateInfo info = { };
             info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
             info.commandPool = fd->CommandPool;
             info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
             info.commandBufferCount = 1;
-            vkAllocateCommandBuffers(device, &info, &fd->CommandBuffer);
+            result = vkAllocateCommandBuffers(device, &info, &fd->CommandBuffer);
+            if (result != VK_SUCCESS)
+            {
+                LOG_ERROR("vkAllocateCommandBuffers error: {0:X}", (UINT)result);
+                return;
+            }
         }
+
         {
             VkFenceCreateInfo info = { };
             info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
             info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-            vkCreateFence(device, &info, NULL, &fd->Fence);
+            result = vkCreateFence(device, &info, NULL, &fd->Fence);
+            if (result != VK_SUCCESS)
+            {
+                LOG_ERROR("vkCreateFence error: {0:X}", (UINT)result);
+                return;
+            }
         }
+
         {
             VkSemaphoreCreateInfo info = { };
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-            vkCreateSemaphore(device, &info, NULL, fsd);
+            result = vkCreateSemaphore(device, &info, NULL, fsd);
+            if (result != VK_SUCCESS)
+            {
+                LOG_ERROR("vkCreateSemaphore error: {0:X}", (UINT)result);
+                return;
+            }
         }
     }
 
+
     // Initialize ImGui and upload fonts
-    if (!ImGui::GetIO().BackendRendererUserData)
     {
-        g_ImVulkan_Info.Instance = _instance;
-        g_ImVulkan_Info.PhysicalDevice = _PD;
-        g_ImVulkan_Info.Device = device;
-        g_ImVulkan_Info.QueueFamily = queueFamily;
-        g_ImVulkan_Info.Queue = queue;
-        g_ImVulkan_Info.DescriptorPool = pool;
-        g_ImVulkan_Info.Subpass = 0;
+        _ImVulkan_Info.Instance = _instance;
+        _ImVulkan_Info.PhysicalDevice = _PD;
+        _ImVulkan_Info.Device = device;
+        _ImVulkan_Info.QueueFamily = queueFamily;
+        _ImVulkan_Info.Queue = queue;
+        _ImVulkan_Info.DescriptorPool = pool;
+        _ImVulkan_Info.Subpass = 0;
+        _ImVulkan_Info.MinImageCount = pCreateInfo->minImageCount;
+        _ImVulkan_Info.ImageCount = imageCount;
+        _ImVulkan_Info.Allocator = NULL;
+        _ImVulkan_Info.RenderPass = _vkRenderPass;
 
-        if (pCreateInfo != nullptr)
-            g_ImVulkan_Info.MinImageCount = pCreateInfo->minImageCount;
-        else
-            g_ImVulkan_Info.MinImageCount = imageCount;
-
-        g_ImVulkan_Info.ImageCount = imageCount;
-        g_ImVulkan_Info.Allocator = NULL;
-        g_ImVulkan_Info.RenderPass = g_vkRenderPass;
-
-        ImGui_ImplVulkan_Init(&g_ImVulkan_Info);
+        ImGui_ImplVulkan_Init(&_ImVulkan_Info);
 
         // Upload Fonts
         // Use any command queue
-        VkCommandPool command_pool = g_ImVulkan_Frames[0].CommandPool;
-        VkCommandBuffer command_buffer = g_ImVulkan_Frames[0].CommandBuffer;
-        vkResetCommandPool(device, command_pool, 0);
+        VkCommandPool command_pool = _ImVulkan_Frames[0].CommandPool;
+        VkCommandBuffer command_buffer = _ImVulkan_Frames[0].CommandBuffer;
+        result = vkResetCommandPool(device, command_pool, 0);
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("vkBeginCommandBuffer error: {0:X}", (UINT)result);
+            return;
+        }
 
         VkCommandBufferBeginInfo begin_info = { };
         begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        vkBeginCommandBuffer(command_buffer, &begin_info);
+        result = vkBeginCommandBuffer(command_buffer, &begin_info);
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("vkBeginCommandBuffer error: {0:X}", (UINT)result);
+            return;
+        }
 
         ImGui_ImplVulkan_CreateFontsTexture();
 
@@ -353,30 +442,44 @@ static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR*
         end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         end_info.commandBufferCount = 1;
         end_info.pCommandBuffers = &command_buffer;
-        vkEndCommandBuffer(command_buffer);
 
-        vkQueueSubmit(queue, 1, &end_info, VK_NULL_HANDLE);
+        result = vkEndCommandBuffer(command_buffer);
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("vkEndCommandBuffer error: {0:X}", (UINT)result);
+            return;
+        }
 
-        vkDeviceWaitIdle(device);
+        result = vkQueueSubmit(queue, 1, &end_info, VK_NULL_HANDLE);
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("vkQueueSubmit error: {0:X}", (UINT)result);
+            return;
+        }
+
+        result = vkDeviceWaitIdle(device);
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("vkDeviceWaitIdle error: {0:X}", (UINT)result);
+            return;
+        }
     }
 
-    g_bInitialized = true;
-    g_bEnabled = true;
-
-    LOG_FUNC_RESULT(true);
+    _vulkanObjectsCreated = true;
+    LOG_FUNC_RESULT(_vulkanObjectsCreated);
 }
 
 static void HookDevice(VkDevice InDevice)
 {
-    if (oCreateSwapchainKHR != nullptr)
+    if (o_CreateSwapchainKHR != nullptr || Config::Instance()->VulkanSkipHooks)
         return;
 
     LOG_FUNC();
 
-    oQueuePresentKHR = (PFN_QueuePresentKHR)(vkGetDeviceProcAddr(InDevice, "vkQueuePresentKHR"));
-    oCreateSwapchainKHR = (PFN_CreateSwapchainKHR)(vkGetDeviceProcAddr(InDevice, "vkCreateSwapchainKHR"));
+    o_QueuePresentKHR = (PFN_QueuePresentKHR)(vkGetDeviceProcAddr(InDevice, "vkQueuePresentKHR"));
+    o_CreateSwapchainKHR = (PFN_CreateSwapchainKHR)(vkGetDeviceProcAddr(InDevice, "vkCreateSwapchainKHR"));
 
-    if (oCreateSwapchainKHR)
+    if (o_CreateSwapchainKHR)
     {
         LOG_DEBUG("Hooking VkDevice");
 
@@ -384,11 +487,33 @@ static void HookDevice(VkDevice InDevice)
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        DetourAttach(&(PVOID&)oQueuePresentKHR, hkQueuePresentKHR);
-        DetourAttach(&(PVOID&)oCreateSwapchainKHR, hkCreateSwapchainKHR);
+        DetourAttach(&(PVOID&)o_QueuePresentKHR, hkvkQueuePresentKHR);
+        DetourAttach(&(PVOID&)o_CreateSwapchainKHR, hkvkCreateSwapchainKHR);
 
         DetourTransactionCommit();
     }
+}
+
+static VkResult hkvkCreateWin32SurfaceKHR(VkInstance instance, const VkWin32SurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+    LOG_FUNC();
+
+    auto result = o_vkCreateWin32SurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
+
+    if (result == VK_SUCCESS && !Config::Instance()->VulkanSkipHooks)
+    {
+        DestroyVulkanObjects(false);
+
+        _instance = instance;
+        LOG_DEBUG("_instance captured: {0:X}", (UINT64)_instance);
+        _hwnd = pCreateInfo->hwnd;
+        LOG_DEBUG("_hwnd captured: {0:X}", (UINT64)_hwnd);
+    }
+
+    LOG_FUNC_RESULT(result);
+
+    return result;
+
 }
 
 static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance)
@@ -397,10 +522,12 @@ static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, cons
 
     auto result = o_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
 
-    if (result == VK_SUCCESS)
+    if (result == VK_SUCCESS && !Config::Instance()->VulkanSkipHooks)
     {
-        LOG_DEBUG("Assigning instance");
+        DestroyVulkanObjects(false);
+
         _instance = *pInstance;
+        LOG_DEBUG("_instance captured: {0:X}", (UINT64)_instance);
     }
 
     LOG_FUNC_RESULT(result);
@@ -414,11 +541,14 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, const VkDevice
 
     auto result = o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
 
-    if (result == VK_SUCCESS)
+    if (result == VK_SUCCESS && !Config::Instance()->VulkanSkipHooks)
     {
-        LOG_DEBUG("Assigning PD and Device, hooking device");
+        DestroyVulkanObjects(false);
+
         _PD = physicalDevice;
+        LOG_DEBUG("_PD captured: {0:X}", (UINT64)_PD);
         _device = *pDevice;
+        LOG_DEBUG("_device captured: {0:X}", (UINT64)_device);
         HookDevice(_device);
     }
 
@@ -427,48 +557,37 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, const VkDevice
     return result;
 }
 
-static VkResult VKAPI_CALL hkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
+static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
 {
     LOG_FUNC();
-    auto e_result = oQueuePresentKHR(queue, pPresentInfo);
-    return e_result;
 
-    if (!g_bInitialized)
+    if (!_vulkanObjectsCreated)
     {
-        LOG_DEBUG("!g_bInitialized");
+        LOG_TRACE("!_vulkanObjectsCreated return o_QueuePresentKHR");
 
-        if (pPresentInfo->swapchainCount > 0)
-        {
-            LOG_DEBUG("CreateVulkanObjects");
-            auto sc = pPresentInfo->pSwapchains[0];
+        auto r0 = o_QueuePresentKHR(queue, pPresentInfo);
 
-            if (lastSwapchainInfo.minImageCount > 0)
-                CreateVulkanObjects(_device, &lastSwapchainInfo, &sc);
-            else
-                CreateVulkanObjects(_device, nullptr, &sc);
-        }
-        else
-        {
-            LOG_DEBUG("return oQueuePresentKHR");
-            return oQueuePresentKHR(queue, pPresentInfo);
-        }
+        if (r0 != VK_SUCCESS)
+            LOG_ERROR("r0 = o_QueuePresentKHR(queue, pPresentInfo): {0:X}", (UINT)r0);
+
+        return r0;
     }
 
-    if (!ImGuiOverlayBase::IsInited())
-        ImGuiOverlayBase::Init(Util::GetProcessWindow());
-    else if (ImGuiOverlayBase::IsResetRequested())
+    if (!ImGuiOverlayBase::IsInited() || !ImGuiOverlayBase::IsVisible() || _ImVulkan_Info.Device == VK_NULL_HANDLE)
     {
-        LOG_INFO("Reset request detected, shutting down ImGui!");
-        ImGuiOverlayVk::ReInitVk(Util::GetProcessWindow());
-        return oQueuePresentKHR(queue, pPresentInfo);
+        auto r1 = o_QueuePresentKHR(queue, pPresentInfo);
+
+        if (r1 != VK_SUCCESS)
+            LOG_ERROR("r1 = o_QueuePresentKHR(queue, pPresentInfo): {0:X}", (UINT)r1);
+
+        return r1;
     }
 
-    if (!ImGuiOverlayBase::IsInited() || !ImGuiOverlayBase::IsVisible() || !Config::Instance()->RenderMenu)
-        return oQueuePresentKHR(queue, pPresentInfo);
+    _vkPresentMutex.lock();
 
     LOG_DEBUG("rendering menu, swapchain count: {0}", pPresentInfo->swapchainCount);
 
-    bool skipMenu = true;
+    bool errorWhenRenderingMenu = true;
     VkSemaphore signalSemaphores[8] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 
     for (size_t scIndex = 0; scIndex < pPresentInfo->swapchainCount; scIndex++)
@@ -479,13 +598,13 @@ static VkResult VKAPI_CALL hkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pP
         ImGuiOverlayBase::RenderMenu();
 
         uint32_t idx = pPresentInfo->pImageIndices[scIndex];
-        ImGui_ImplVulkanH_Frame* fd = &g_ImVulkan_Frames[idx];
+        ImGui_ImplVulkanH_Frame* fd = &_ImVulkan_Frames[idx];
 
-        vkWaitForFences(g_ImVulkan_Info.Device, 1, &fd->Fence, VK_TRUE, UINT64_MAX);
-        vkResetFences(g_ImVulkan_Info.Device, 1, &fd->Fence);
+        vkWaitForFences(_ImVulkan_Info.Device, 1, &fd->Fence, VK_TRUE, UINT64_MAX);
+        vkResetFences(_ImVulkan_Info.Device, 1, &fd->Fence);
 
         {
-            vkResetCommandPool(g_ImVulkan_Info.Device, fd->CommandPool, 0);
+            vkResetCommandPool(_ImVulkan_Info.Device, fd->CommandPool, 0);
             VkCommandBufferBeginInfo info = { };
             info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -495,7 +614,7 @@ static VkResult VKAPI_CALL hkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pP
         {
             VkRenderPassBeginInfo info = { };
             info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            info.renderPass = g_vkRenderPass;
+            info.renderPass = _vkRenderPass;
             info.framebuffer = fd->Framebuffer;
             info.renderArea.extent.width = ImGui::GetIO().DisplaySize.x;
             info.renderArea.extent.height = ImGui::GetIO().DisplaySize.y;
@@ -527,100 +646,94 @@ static VkResult VKAPI_CALL hkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pP
         submit_info.waitSemaphoreCount = pPresentInfo->waitSemaphoreCount;
         submit_info.pWaitSemaphores = pPresentInfo->pWaitSemaphores;
         submit_info.signalSemaphoreCount = 1;
-        submit_info.pSignalSemaphores = &g_ImVulkan_Semaphores[idx];
+        submit_info.pSignalSemaphores = &_ImVulkan_Semaphores[idx];
 
-        auto qResult = vkQueueSubmit(g_ImVulkan_Info.Queue, 1, &submit_info, fd->Fence);
+        auto qResult = vkQueueSubmit(_ImVulkan_Info.Queue, 1, &submit_info, fd->Fence);
         if (qResult != VK_SUCCESS)
         {
             LOG_ERROR("vkQueueSubmit error: {0:X}", (UINT)qResult);
             break;
         }
 
-        signalSemaphores[scIndex] = g_ImVulkan_Semaphores[idx];
-        skipMenu = false;
+        signalSemaphores[scIndex] = _ImVulkan_Semaphores[idx];
+        errorWhenRenderingMenu = false;
     }
 
-    LOG_DEBUG("rendering done {0} errors", skipMenu ? "with" : "without");
+    if (!errorWhenRenderingMenu)
+        LOG_DEBUG("rendering done without errors");
+    else
+        LOG_ERROR("rendering done with errors");
 
-    if (!skipMenu)
+    if (!errorWhenRenderingMenu)
     {
         // already waited original calls semaphores when running commands
         // set menu draw signal semaphores as wait semaphores for present
         pPresentInfo->waitSemaphoreCount = pPresentInfo->swapchainCount;
         pPresentInfo->pWaitSemaphores = signalSemaphores;
     }
+    else
+    {
+        // if there are errors when rendering try to recreate swapchain
+        _vkPresentMutex.unlock();
+        LOG_FUNC_RESULT(VK_ERROR_OUT_OF_DATE_KHR);
+        return VK_ERROR_OUT_OF_DATE_KHR;
+    }
 
     // original call
-    auto result = oQueuePresentKHR(queue, pPresentInfo);
+    auto result = o_QueuePresentKHR(queue, pPresentInfo);
     LOG_FUNC_RESULT(result);
+    _vkPresentMutex.unlock();
     return result;
 }
 
-static VkResult VKAPI_CALL hkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator,
-                                                VkSwapchainKHR* pSwapchain)
+static VkResult hkvkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain)
 {
     LOG_FUNC();
 
-    auto result = oCreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain);
+    auto result = o_CreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain);
 
-    //std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-    if (result == VK_SUCCESS && device != NULL && pCreateInfo != NULL && pSwapchain != NULL)
+    if (result == VK_SUCCESS && device != VK_NULL_HANDLE && pCreateInfo != nullptr && *pSwapchain != VK_NULL_HANDLE && !Config::Instance()->VulkanSkipHooks)
     {
+        LOG_DEBUG("if (result == VK_SUCCESS && device != VK_NULL_HANDLE && pCreateInfo != nullptr && pSwapchain != VK_NULL_HANDLE)");
+
         _device = device;
-        lastSwapchainInfo.imageExtent = pCreateInfo->imageExtent;
-        lastSwapchainInfo.minImageCount = pCreateInfo->minImageCount;
-        lastSwapchainInfo.imageFormat = pCreateInfo->imageFormat;
-        //CreateVulkanObjects(device, pCreateInfo, pSwapchain);
+        LOG_DEBUG("_device captured: {0:X}", (UINT64)_device);
+
+        if (ImGuiOverlayBase::Handle() != _hwnd)
+        {
+            LOG_DEBUG("ImGuiOverlayBase::Handle() != _hwnd");
+
+            if (ImGuiOverlayBase::IsInited())
+            {
+                LOG_DEBUG("ImGuiOverlayBase::Shutdown();");
+                ImGuiOverlayBase::Shutdown();
+            }
+
+            LOG_DEBUG("ImGuiOverlayBase::Init({0:X})", (UINT64)_hwnd);
+            ImGuiOverlayBase::Init(_hwnd);
+        }
+
+        CreateVulkanObjects(_device, pCreateInfo, pSwapchain);
+
+        if (_ImVulkan_Info.Device != VK_NULL_HANDLE)
+        {
+            _isInited = true;
+            ImGuiOverlayBase::VulkanReady();
+        }
     }
 
     LOG_FUNC_RESULT(result);
-
     return result;
 }
 
-bool ImGuiOverlayVk::IsInitedVk()
-{
-    ImGuiOverlayBase::VulkanReady();
-    return _isInited;
-}
-
-HWND ImGuiOverlayVk::Handle()
-{
-    return ImGuiOverlayBase::Handle();
-}
-
-void ImGuiOverlayVk::InitVk(HWND InHwnd, VkDevice InDevice, VkInstance InInstance, VkPhysicalDevice InPD)
-{
-    _hwnd = InHwnd;
-
-    if (_instance == nullptr)
-        _instance = InInstance;
-
-    if (_device == nullptr)
-        _device = InDevice;
-
-    if (_PD == nullptr)
-        _PD = InPD;
-
-    HookDevice(InDevice);
-
-    _isInited = true;
-}
-
-void ImGuiOverlayVk::HookVK()
+void ImGuiOverlayVk::HookVk()
 {
     if (o_vkCreateDevice != nullptr)
         return;
 
-    //o_vkCreateDevice = (PFN_vkCreateDevice)DetourFindFunction("sl.interposer.dll", "vkCreateDevice");
-    //o_vkCreateInstance = (PFN_vkCreateInstance)DetourFindFunction("sl.interposer.dll", "vkCreateInstance");
-
-    if (o_vkCreateDevice == nullptr)
-    {
-        o_vkCreateDevice = (PFN_vkCreateDevice)DetourFindFunction("vulkan-1.dll", "vkCreateDevice");
-        o_vkCreateInstance = (PFN_vkCreateInstance)DetourFindFunction("vulkan-1.dll", "vkCreateInstance");
-    }
+    o_vkCreateDevice = (PFN_vkCreateDevice)DetourFindFunction("vulkan-1.dll", "vkCreateDevice");
+    o_vkCreateInstance = (PFN_vkCreateInstance)DetourFindFunction("vulkan-1.dll", "vkCreateInstance");
+    o_vkCreateWin32SurfaceKHR = (PFN_vkCreateWin32SurfaceKHR)DetourFindFunction("vulkan-1.dll", "vkCreateWin32SurfaceKHR");
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
@@ -631,17 +744,20 @@ void ImGuiOverlayVk::HookVK()
     if (o_vkCreateInstance != nullptr)
         DetourAttach(&(PVOID&)o_vkCreateInstance, hkvkCreateInstance);
 
+    if (o_vkCreateWin32SurfaceKHR != nullptr)
+        DetourAttach(&(PVOID&)o_vkCreateWin32SurfaceKHR, hkvkCreateWin32SurfaceKHR);
+
     DetourTransactionCommit();
 }
 
-void ImGuiOverlayVk::ShutdownVk()
+void ImGuiOverlayVk::UnHookVk()
 {
     if (_isInited)
         ImGui_ImplVulkan_Shutdown();
 
     ImGuiOverlayBase::Shutdown();
 
-    if (g_bInitialized)
+    if (_vulkanObjectsCreated)
         DestroyVulkanObjects(true);
 
     if (_isInited)
@@ -649,30 +765,24 @@ void ImGuiOverlayVk::ShutdownVk()
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        DetourDetach(&(PVOID&)oQueuePresentKHR, hkQueuePresentKHR);
-        DetourDetach(&(PVOID&)oCreateSwapchainKHR, hkCreateSwapchainKHR);
+        if (o_QueuePresentKHR != nullptr)
+            DetourDetach(&(PVOID&)o_QueuePresentKHR, hkvkQueuePresentKHR);
+
+        if (o_CreateSwapchainKHR != nullptr)
+            DetourDetach(&(PVOID&)o_CreateSwapchainKHR, hkvkCreateSwapchainKHR);
+
+        if (o_vkCreateDevice != nullptr)
+            DetourDetach(&(PVOID&)o_vkCreateDevice, hkvkCreateDevice);
+        
+        if (o_vkCreateInstance != nullptr)
+            DetourDetach(&(PVOID&)o_vkCreateInstance, hkvkCreateInstance);
+        
+        if (o_vkCreateWin32SurfaceKHR != nullptr)
+            DetourDetach(&(PVOID&)o_vkCreateWin32SurfaceKHR, hkvkCreateWin32SurfaceKHR);
 
         DetourTransactionCommit();
     }
 
     _isInited = false;
-    g_bInitialized = false;
-}
-
-void ImGuiOverlayVk::ReInitVk(HWND InNewHwnd)
-{
-    if (!_isInited || !g_bInitialized)
-        return;
-
-    _vkCleanMutex.lock();
-
-    LOG_DEBUG("hwnd: {0:X}", (UINT64)InNewHwnd);
-
-    ImGui_ImplVulkan_Shutdown();
-    ImGuiOverlayBase::Shutdown();
-    ImGuiOverlayBase::Init(InNewHwnd);
-    g_bInitialized = false;
-    createCounter = 0;
-
-    _vkCleanMutex.unlock();
+    _vulkanObjectsCreated = false;
 }
