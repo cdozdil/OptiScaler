@@ -21,6 +21,7 @@
 
 // CHANGELOG
 // (minor and older changes stripped away, please see git history for details)
+//  2024-07-08: Inputs: Fixed ImGuiMod_Super being mapped to VK_APPS instead of VK_LWIN||VK_RWIN. (#7768)
 //  2023-10-05: Inputs: Added support for extra ImGuiKey values: F13 to F24 function keys, app back/forward keys.
 //  2023-09-25: Inputs: Synthesize key-down event on key-up for VK_SNAPSHOT / ImGuiKey_PrintScreen as Windows doesn't emit it (same behavior as GLFW/SDL).
 //  2023-09-07: Inputs: Added support for keyboard codepage conversion for when application is compiled in MBCS mode and using a non-Unicode window.
@@ -98,6 +99,7 @@ typedef DWORD(WINAPI* PFN_XInputGetState)(DWORD, XINPUT_STATE*);
 #endif
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"                  // warning: unknown option after '#pragma GCC diagnostic' kind
 #pragma GCC diagnostic ignored "-Wcast-function-type"       // warning: cast between incompatible function types (for loader)
 #endif
 
@@ -146,6 +148,7 @@ static void ImGui_ImplWin32_UpdateKeyboardCodePage()
 static bool ImGui_ImplWin32_InitEx(void* hwnd, bool platform_has_own_dc)
 {
     ImGuiIO& io = ImGui::GetIO();
+    IMGUI_CHECKVERSION();
     IM_ASSERT(io.BackendPlatformUserData == nullptr && "Already initialized a platform backend!");
 
     INT64 perf_frequency, perf_counter;
@@ -168,7 +171,8 @@ static bool ImGui_ImplWin32_InitEx(void* hwnd, bool platform_has_own_dc)
     ImGui_ImplWin32_UpdateKeyboardCodePage();
 
     // Set platform dependent data in viewport
-    ImGui::GetMainViewport()->PlatformHandleRaw = (void*)hwnd;
+    ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+    main_viewport->PlatformHandle = main_viewport->PlatformHandleRaw = (void*)bd->hWnd;
     IM_UNUSED(platform_has_own_dc); // Used in 'docking' branch
 
     // Dynamically load XInput library
@@ -291,7 +295,7 @@ static void ImGui_ImplWin32_UpdateKeyModifiers()
     io.AddKeyEvent(ImGuiMod_Ctrl, IsVkDown(VK_CONTROL));
     io.AddKeyEvent(ImGuiMod_Shift, IsVkDown(VK_SHIFT));
     io.AddKeyEvent(ImGuiMod_Alt, IsVkDown(VK_MENU));
-    io.AddKeyEvent(ImGuiMod_Super, IsVkDown(VK_APPS));
+    io.AddKeyEvent(ImGuiMod_Super, IsVkDown(VK_LWIN) || IsVkDown(VK_RWIN));
 }
 
 static void ImGui_ImplWin32_UpdateMouseData()
@@ -581,11 +585,10 @@ static ImGuiMouseSource GetMouseSourceFromMessageExtraInfo()
 IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     // Most backends don't have silent checks like this one, but we need it because WndProc are called early in CreateWindow().
-    if (ImGui::GetCurrentContext() == nullptr)
-        return 0;
-
+    // We silently allow both context or just only backend data to be nullptr.
     ImGui_ImplWin32_Data* bd = ImGui_ImplWin32_GetBackendData();
-    IM_ASSERT(bd != nullptr && "Context or backend not initialized! Did you call ImGui_ImplWin32_Init()?");
+    if (bd == nullptr)
+        return 0;
     ImGuiIO& io = ImGui::GetIO();
 
     switch (msg)
@@ -608,10 +611,10 @@ IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARA
         }
         POINT mouse_pos = { (LONG)GET_X_LPARAM(lParam), (LONG)GET_Y_LPARAM(lParam) };
         if (msg == WM_NCMOUSEMOVE && ::ScreenToClient(hwnd, &mouse_pos) == FALSE) // WM_NCMOUSEMOVE are provided in absolute coordinates.
-            break;
+            return 0;
         io.AddMouseSourceEvent(mouse_source);
         io.AddMousePosEvent((float)mouse_pos.x, (float)mouse_pos.y);
-        break;
+        return 0;
     }
     case WM_MOUSELEAVE:
     case WM_NCMOUSELEAVE:
@@ -624,7 +627,7 @@ IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARA
             bd->MouseTrackedArea = 0;
             io.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
         }
-        break;
+        return 0;
     }
     case WM_LBUTTONDOWN: case WM_LBUTTONDBLCLK:
     case WM_RBUTTONDOWN: case WM_RBUTTONDBLCLK:
