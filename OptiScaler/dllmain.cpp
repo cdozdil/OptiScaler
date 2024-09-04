@@ -845,12 +845,16 @@ static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice physical
     auto result = o_vkEnumerateDeviceExtensionProperties(physicalDevice, pLayerName, pPropertyCount, pProperties);
 
     if (result != VK_SUCCESS)
+    {
+        LOG_ERROR("o_vkEnumerateDeviceExtensionProperties({0}, {1}) result: {2:X}", pLayerName, count, (UINT)result);
         return result;
+    }
 
     if (pLayerName == nullptr && pProperties == nullptr && count == 0)
     {
         *pPropertyCount += 2;
         vkEnumerateDeviceExtensionPropertiesCount = *pPropertyCount;
+        LOG_TRACE("hkvkEnumerateDeviceExtensionProperties({0}) count: {1}", pLayerName, vkEnumerateDeviceExtensionPropertiesCount);
         return result;
     }
 
@@ -1132,11 +1136,11 @@ static bool IsRunningOnWine()
 {
     LOG_FUNC();
 
-    HMODULE ntdll = GetModuleHandle(L"ntdll.dll");
+    HMODULE ntdll = GetModuleHandle(L"dxgi.dll");
 
     if (!ntdll)
     {
-        spdlog::warn("IsRunningOnWine Not running on NT!?!");
+        LOG_WARN("IsRunningOnWine Not running on NT!?!");
         return true;
     }
 
@@ -1148,7 +1152,7 @@ static bool IsRunningOnWine()
         return true;
     }
 
-    spdlog::warn("IsRunningOnWine Wine not detected");
+    LOG_WARN("IsRunningOnWine Wine not detected");
     return false;
 }
 
