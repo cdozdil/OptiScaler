@@ -368,6 +368,12 @@ static HRESULT WINAPI hkCreateSwapChain_EB(IDXGIFactory* pFactory, IUnknown* pDe
 {
     LOG_FUNC();
 
+    if (Config::Instance()->VulkanCreatingSC)
+    {
+        LOG_WARN("Vulkan is creating swapchain!");
+        return oCreateSwapChain_EB(pFactory, pDevice, pDesc, ppSwapChain);
+    }
+
     if (pDevice == nullptr)
     {
         LOG_WARN("pDevice is nullptr!");
@@ -388,8 +394,13 @@ static HRESULT WINAPI hkCreateSwapChain_EB(IDXGIFactory* pFactory, IUnknown* pDe
 
     if (result == S_OK)
     {
+        Config::Instance()->ScreenWidth = pDesc->BufferDesc.Width;
+        Config::Instance()->ScreenHeight = pDesc->BufferDesc.Height;
+
         if (ImGuiOverlayBase::Handle() != pDesc->OutputWindow)
         {
+            LOG_DEBUG("Handle changed");
+
             if (ImGuiOverlayBase::IsInited())
                 ImGuiOverlayBase::Shutdown();
 
@@ -398,12 +409,15 @@ static HRESULT WINAPI hkCreateSwapChain_EB(IDXGIFactory* pFactory, IUnknown* pDe
 
         if (_dx11Device)
         {
+            LOG_DEBUG("_dx11Device");
+            CleanupRenderTargetDx11();
             CreateRenderTargetDx11(*ppSwapChain);
             ImGuiOverlayBase::Dx11Ready();
             _isInited = true;
         }
         else if (g_pd3dCommandQueue != nullptr)
         {
+            LOG_DEBUG("_dx12Device");
             CleanupRenderTargetDx12(true);
             ImGuiOverlayBase::Dx12Ready();
             _isInited = true;
@@ -420,6 +434,12 @@ static HRESULT WINAPI hkCreateSwapChainForHwnd_EB(IDXGIFactory* pCommandQueue, I
                                                   const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
     LOG_FUNC();
+
+    if (Config::Instance()->VulkanCreatingSC)
+    {
+        LOG_WARN("Vulkan is creating swapchain!");
+        return oCreateSwapChainForHwnd_EB(pCommandQueue, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
+    }
 
     if (pDevice == nullptr)
     {
@@ -445,8 +465,12 @@ static HRESULT WINAPI hkCreateSwapChainForHwnd_EB(IDXGIFactory* pCommandQueue, I
 
     if (result == S_OK)
     {
+        Config::Instance()->ScreenWidth = pDesc->Width;
+        Config::Instance()->ScreenHeight = pDesc->Height;
+
         if (ImGuiOverlayBase::Handle() != hWnd)
         {
+            LOG_DEBUG("Handle changed");
             if (ImGuiOverlayBase::IsInited())
                 ImGuiOverlayBase::Shutdown();
 
@@ -455,12 +479,15 @@ static HRESULT WINAPI hkCreateSwapChainForHwnd_EB(IDXGIFactory* pCommandQueue, I
 
         if (_dx11Device)
         {
+            LOG_DEBUG("_dx11Device");
+            CleanupRenderTargetDx11();
             CreateRenderTargetDx11(*ppSwapChain);
             ImGuiOverlayBase::Dx11Ready();
             _isInited = true;
         }
         else if (g_pd3dCommandQueue != nullptr)
         {
+            LOG_DEBUG("_dx12Device");
             CleanupRenderTargetDx12(true);
             ImGuiOverlayBase::Dx12Ready();
             _isInited = true;
@@ -973,7 +1000,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
         }
     }
 
-    pSwapChain->Release(); 
+    pSwapChain->Release();
 }
 
 static void RenderImGui_DX11(IDXGISwapChain* pSwapChain)

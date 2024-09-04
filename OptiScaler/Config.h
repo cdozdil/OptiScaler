@@ -202,12 +202,17 @@ public:
 	bool IsDxgiMode = false;
 
 	// vulkan stuff
+	bool VulkanCreatingSC = false;
 	bool VulkanSkipHooks = false;
 	bool RenderMenu = true;
 
 	// framegraph
 	std::deque<float> upscaleTimes;
 	std::deque<float> frameTimes;
+
+	// swapchain info
+	float ScreenWidth = 800.0;
+	float ScreenHeight = 450.0;
 
 	IFeature* CurrentFeature = nullptr;
 

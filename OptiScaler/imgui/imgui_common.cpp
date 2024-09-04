@@ -769,7 +769,10 @@ void ImGuiCommon::RenderMenu()
         }
         else
         {
-            ImGui::SetNextWindowPos(ImVec2{ 350, 350 }, ImGuiCond_FirstUseEver);
+            auto posX = ((float)Config::Instance()->ScreenWidth - 770.0f) / 2.0f;
+            auto posY = ((float)Config::Instance()->ScreenHeight - 685.0f) / 2.0f;
+
+            ImGui::SetNextWindowPos(ImVec2{ posX, posY }, ImGuiCond_FirstUseEver);
         }
 
         if (ImGui::Begin(VER_PRODUCT_NAME, NULL, flags))
@@ -1755,7 +1758,32 @@ void ImGuiCommon::RenderMenu()
             }
             else
             {
-                ImGui::Text("Please select DLSS as upscaler and enter the game.");
+                ImGui::Spacing();
+                ImGui::Text("Please select DLSS as upscaler from game options and enter the game to enable upscaler setting.");
+            }
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            if (ImGui::BeginTable("plots", 2))
+            {
+                Config::Instance()->frameTimes.pop_front();
+                Config::Instance()->frameTimes.push_back(1000.0 / io.Framerate);
+
+                ImGui::TableNextColumn();
+                ImGui::Text("FrameTime");
+                auto ft = std::format("{:.2f} ms / {:.1f} fps", Config::Instance()->frameTimes.back(), io.Framerate);
+                std::vector<float> frameTimeArray(Config::Instance()->frameTimes.begin(), Config::Instance()->frameTimes.end());
+                ImGui::PlotLines(ft.c_str(), frameTimeArray.data(), frameTimeArray.size());
+
+                ImGui::TableNextColumn();
+                ImGui::Text("Upscaler");
+                auto ups = std::format("{:.2f} ms", Config::Instance()->upscaleTimes.back());
+                std::vector<float> upscaleTimeArray(Config::Instance()->upscaleTimes.begin(), Config::Instance()->upscaleTimes.end());
+                ImGui::PlotLines(ups.c_str(), upscaleTimeArray.data(), upscaleTimeArray.size());
+
+                ImGui::EndTable();
             }
 
             // BOTTOM LINE ---------------
@@ -1771,10 +1799,7 @@ void ImGuiCommon::RenderMenu()
 
                 ImGui::SameLine(0.0f, 4.0f);
 
-                ImGui::Text("%.3f ms/frame (%.1f FPS) %d", 1000.0f / io.Framerate, io.Framerate, Config::Instance()->CurrentFeature->FrameCount());
-
-                Config::Instance()->frameTimes.pop_front();
-                Config::Instance()->frameTimes.push_back(1000.0 / io.Framerate);
+                ImGui::Text("%d", Config::Instance()->CurrentFeature->FrameCount());
 
                 ImGui::SameLine(0.0f, 10.0f);
             }
@@ -1816,23 +1841,6 @@ void ImGuiCommon::RenderMenu()
 
             ImGui::Spacing();
             ImGui::Separator();
-
-            if (ImGui::BeginTable("plots", 2))
-            {
-                ImGui::TableNextColumn();
-                ImGui::Text("FrameTime");
-                auto ft = std::format("{:.2f} ms", Config::Instance()->frameTimes.back());
-                std::vector<float> frameTimeArray(Config::Instance()->frameTimes.begin(), Config::Instance()->frameTimes.end());
-                ImGui::PlotLines(ft.c_str(), frameTimeArray.data(), frameTimeArray.size());
-             
-                ImGui::TableNextColumn();
-                ImGui::Text("Upscaler");
-                auto ups = std::format("{:.2f} ms", Config::Instance()->upscaleTimes.back());
-                std::vector<float> upscaleTimeArray(Config::Instance()->upscaleTimes.begin(), Config::Instance()->upscaleTimes.end());
-                ImGui::PlotLines(ups.c_str(), upscaleTimeArray.data(), upscaleTimeArray.size());
-
-                ImGui::EndTable();
-            }
 
             ImGui::End();
         }

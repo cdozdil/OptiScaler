@@ -690,10 +690,15 @@ static VkResult hkvkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateI
 {
     LOG_FUNC();
 
+    Config::Instance()->VulkanCreatingSC = true;
     auto result = o_CreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain);
+    Config::Instance()->VulkanCreatingSC = false;
 
     if (result == VK_SUCCESS && device != VK_NULL_HANDLE && pCreateInfo != nullptr && *pSwapchain != VK_NULL_HANDLE && !Config::Instance()->VulkanSkipHooks)
     {
+        Config::Instance()->ScreenWidth = pCreateInfo->imageExtent.width;
+        Config::Instance()->ScreenHeight = pCreateInfo->imageExtent.height;
+
         LOG_DEBUG("if (result == VK_SUCCESS && device != VK_NULL_HANDLE && pCreateInfo != nullptr && pSwapchain != VK_NULL_HANDLE)");
 
         _device = device;
