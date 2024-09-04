@@ -547,7 +547,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 
             if (Config::Instance()->VulkanUpscaler.has_value())
             {
-                LOG_INFO("DLSS Enabler does not set any upscaler using ini: {0}", Config::Instance()->Dx12Upscaler.value());
+                LOG_INFO("DLSS Enabler does not set any upscaler using ini: {0}", Config::Instance()->VulkanUpscaler.value());
 
                 if (Config::Instance()->VulkanUpscaler.value() == "fsr21")
                     upscalerChoice = 0;
@@ -925,7 +925,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     deviceContext = VkContexts[handleId].get();
     Config::Instance()->CurrentFeature = deviceContext;
 
-    if (!deviceContext->IsInited() && Config::Instance()->Dx12Upscaler.value_or("fsr21") != "fsr21")
+    if (!deviceContext->IsInited() && Config::Instance()->VulkanUpscaler.value_or("fsr21") != "fsr21")
     {
         Config::Instance()->newBackend = "fsr21";
         Config::Instance()->changeBackend = true;
