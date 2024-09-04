@@ -202,6 +202,9 @@ public:
 
 	// linux check
 	bool IsRunningOnLinux = false;
+	bool IsRunningOnDXVK = false;
+	bool VulkanSkipHooks = false;
+
 	bool IsDxgiMode = false;
 
 	// vulkan menu hack
