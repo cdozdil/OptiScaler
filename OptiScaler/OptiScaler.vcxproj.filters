@@ -146,10 +146,7 @@
     <ClInclude Include="imgui\imgui_overlay_base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="imgui\imgui_overlay_dx12.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imgui_overlay_dx11.h">
+    <ClInclude Include="imgui\imgui_overlay_dx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imgui_overlay_vk.h">
@@ -368,10 +365,7 @@
     <ClCompile Include="imgui\imgui_overlay_base.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="imgui\imgui_overlay_dx12.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui_overlay_dx11.cpp">
+    <ClCompile Include="imgui\imgui_overlay_dx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="imgui\imgui_overlay_vk.cpp">

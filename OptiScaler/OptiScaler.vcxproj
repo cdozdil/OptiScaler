@@ -82,7 +82,7 @@
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
     <TargetName>dlss-enabler-upscaler</TargetName>
-    <OutDir>D:\Folders\Games\SteamLibrary\steamapps\common\No Man%27s Sky\Binaries\</OutDir>
+    <OutDir>D:\Folders\Games\Banishers Ghosts of New Eden\NWD\Binaries\Win64\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -243,8 +243,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="imgui\imgui_dx11.h" />
     <ClInclude Include="imgui\imgui_dx12.h" />
     <ClInclude Include="imgui\imgui_overlay_base.h" />
-    <ClInclude Include="imgui\imgui_overlay_dx11.h" />
-    <ClInclude Include="imgui\imgui_overlay_dx12.h" />
+    <ClInclude Include="imgui\imgui_overlay_dx.h" />
     <ClInclude Include="imgui\imgui_overlay_vk.h" />
     <ClInclude Include="imgui\wrapped_swapchain.h" />
     <ClInclude Include="Logger.h" />
@@ -303,8 +302,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="imgui\imgui_dx11.cpp" />
     <ClCompile Include="imgui\imgui_dx12.cpp" />
     <ClCompile Include="imgui\imgui_overlay_base.cpp" />
-    <ClCompile Include="imgui\imgui_overlay_dx11.cpp" />
-    <ClCompile Include="imgui\imgui_overlay_dx12.cpp" />
+    <ClCompile Include="imgui\imgui_overlay_dx.cpp" />
     <ClCompile Include="imgui\imgui_overlay_vk.cpp" />
     <ClCompile Include="imgui\wrapped_swapchain.cpp" />
     <ClCompile Include="Logger.cpp" />
