@@ -670,16 +670,25 @@ static void hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, Vk
 {
     o_vkGetPhysicalDeviceProperties(physical_device, properties);
 
+    if (!Config::Instance()->dxgiSkipSpoofing)
+    {
     std::strcpy(properties->deviceName, "NVIDIA GeForce RTX 4090");
     properties->vendorID = 0x10de;
     properties->deviceID = 0x2684;
     properties->driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
+}
+    else
+    {
+        LOG_DEBUG("Skipping spoofing");
+    }
 }
 
 static void hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysicalDeviceProperties2* properties2)
 {
     o_vkGetPhysicalDeviceProperties2(phys_dev, properties2);
 
+    if (!Config::Instance()->dxgiSkipSpoofing)
+    {
     std::strcpy(properties2->properties.deviceName, "NVIDIA GeForce RTX 4090");
     properties2->properties.vendorID = 0x10de;
     properties2->properties.deviceID = 0x2684;
@@ -700,11 +709,18 @@ static void hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysic
         next = (VkDummyProps*)next->pNext;
     }
 }
+    else
+    {
+        LOG_DEBUG("Skipping spoofing");
+    }
+}
 
 static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhysicalDeviceProperties2* properties2)
 {
     o_vkGetPhysicalDeviceProperties2KHR(phys_dev, properties2);
 
+    if (!Config::Instance()->dxgiSkipSpoofing)
+    {
     std::strcpy(properties2->properties.deviceName, "NVIDIA GeForce RTX 4090");
     properties2->properties.vendorID = 0x10de;
     properties2->properties.deviceID = 0x2684;
@@ -723,6 +739,11 @@ static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhy
         }
 
         next = (VkDummyProps*)next->pNext;
+    }
+}
+    else
+    {
+        LOG_DEBUG("Skipping spoofing");
     }
 }
 
