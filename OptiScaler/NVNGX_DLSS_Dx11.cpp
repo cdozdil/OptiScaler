@@ -15,9 +15,6 @@
 #include "backends/fsr31/FSR31Feature_Dx11On12.h"
 #include "backends/xess/XeSSFeature_Dx11.h"
 
-#include "imgui/imgui_overlay_dx11.h"
-#include "imgui/imgui_overlay_dx12.h"
-
 #include <ankerl/unordered_dense.h>
 
 inline ID3D11Device* D3D11Device = nullptr;
@@ -179,8 +176,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown()
 
     DLSSFeatureDx11::Shutdown(D3D11Device);
 
-    if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayDx11::IsInitedDx11())
-        ImGuiOverlayDx11::ShutdownDx11();
+    //if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayDx11::IsInitedDx11())
+    //    ImGuiOverlayDx11::ShutdownDx11();
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx11Inited() && NVNGXProxy::D3D11_Shutdown() != nullptr)
     {
@@ -602,39 +599,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 
         Config::Instance()->DE_Available = (deAvail > 0);
     }
-
-    if (Config::Instance()->OverlayMenu.value_or(true) && Config::Instance()->CurrentFeature != nullptr && 
-        Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(75) &&
-        !ImGuiOverlayDx11::IsInitedDx11())
-    {
-        ImGuiOverlayDx12::ShutdownDx12();
-
-        auto hwnd = Util::GetProcessWindow();
-        HWND consoleWindow = GetConsoleWindow();
-        bool consoleAllocated = false;
-
-        if (consoleWindow == NULL)
-        {
-            AllocConsole();
-            consoleWindow = GetConsoleWindow();
-            consoleAllocated = true;
-
-            ShowWindow(consoleWindow, SW_HIDE);
-        }
-
-        SetForegroundWindow(hwnd);
-        SetFocus(hwnd);
-
-        ImGuiOverlayDx11::InitDx11(consoleWindow);
-
-        if (consoleAllocated)
-            FreeConsole();
-    }
-
-    // Check window recreation
-    HWND currentHandle = Util::GetProcessWindow();
-    if (ImGuiOverlayDx11::IsInitedDx11() && ImGuiOverlayDx11::Handle() != currentHandle)
-        ImGuiOverlayDx11::ReInitDx11(currentHandle);
 
     if (InCallback)
         LOG_INFO("callback exist");

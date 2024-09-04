@@ -16,9 +16,6 @@
 #include "NVNGX_Parameter.h"
 #include "NVNGX_Proxy.h"
 
-#include "imgui/imgui_overlay_vk.h"
-#include "imgui/imgui_overlay_dx12.h"
-
 VkInstance vkInstance;
 VkPhysicalDevice vkPD;
 VkDevice vkDevice;
@@ -732,24 +729,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
         Config::Instance()->DE_Available = (deAvail > 0);
     }
 
-    if (Config::Instance()->OverlayMenu.value_or(true) && Config::Instance()->CurrentFeature != nullptr && !ImGuiOverlayVk::IsInitedVk() &&
-        Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(75))
-    {
-        if (ImGuiOverlayDx12::IsInitedDx12())
-            ImGuiOverlayDx12::ShutdownDx12();
-
-        auto hwnd = Util::GetProcessWindow();
-        ImGuiOverlayVk::InitVk(hwnd, vkDevice, vkInstance, vkPD);
-    }
-
-    // Check window recreation
-    if (Config::Instance()->OverlayMenu.value_or(true))
-    {
-        HWND currentHandle = Util::GetProcessWindow();
-        if (ImGuiOverlayVk::IsInitedVk() && ImGuiOverlayVk::Handle() != currentHandle)
-            ImGuiOverlayVk::ReInitVk(currentHandle);
-    }
-
     if (InCallback)
         LOG_WARN("callback exist");
 
@@ -932,10 +911,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
     Config::Instance()->CurrentFeature = nullptr;
 
     DLSSFeatureVk::Shutdown(vkDevice);
-
-    if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayVk::IsInitedVk())
-        ImGuiOverlayVk::ShutdownVk();
-
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsVulkanInited() && NVNGXProxy::VULKAN_Shutdown() != nullptr)
     {

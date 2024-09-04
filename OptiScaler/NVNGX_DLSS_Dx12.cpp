@@ -11,7 +11,7 @@
 #include "backends/fsr31/FSR31Feature_Dx12.h"
 #include "backends/xess/XeSSFeature_Dx12.h"
 
-#include "imgui/imgui_overlay_dx12.h"
+//#include "imgui/imgui_overlay_dx12.h"
 
 #include "detours/detours.h"
 #include <ankerl/unordered_dense.h>
@@ -154,8 +154,8 @@ void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
 
 void HookToDevice(ID3D12Device* InDevice)
 {
-    if (!ImGuiOverlayDx12::IsEarlyBind() && orgCreateSampler != nullptr || InDevice == nullptr)
-        return;
+    //if (!ImGuiOverlayDx12::IsEarlyBind() && orgCreateSampler != nullptr || InDevice == nullptr)
+    //    return;
 
     PVOID* pVTable = *(PVOID**)InDevice;
 
@@ -261,8 +261,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 
     D3D12Device = InDevice;
 
-    if (!ImGuiOverlayDx12::IsEarlyBind() && D3D12Device != nullptr)
-        HookToDevice(D3D12Device);
+    //if (!ImGuiOverlayDx12::IsEarlyBind() && D3D12Device != nullptr)
+    //    HookToDevice(D3D12Device);
 
     Config::Instance()->Api = NVNGX_DX12;
 
@@ -371,9 +371,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
     UnhookAll();
 
     DLSSFeatureDx12::Shutdown(D3D12Device);
-
-    if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayDx12::IsInitedDx12())
-        ImGuiOverlayDx12::ShutdownDx12();
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_Shutdown() != nullptr)
     {
@@ -830,37 +827,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         return NVSDK_NGX_Result_Fail;
     }
 
-    if (Config::Instance()->OverlayMenu.value_or(true) &&
-        Config::Instance()->CurrentFeature != nullptr && Config::Instance()->CurrentFeature->FrameCount() > Config::Instance()->MenuInitDelay.value_or(75) &&
-        !ImGuiOverlayDx12::IsInitedDx12())
-    {
-        contextRendering = true;
-
-        auto hwnd = Util::GetProcessWindow();
-
-        HWND consoleWindow = GetConsoleWindow();
-        bool consoleAllocated = false;
-
-        if (consoleWindow == NULL)
-        {
-            AllocConsole();
-            consoleWindow = GetConsoleWindow();
-            consoleAllocated = true;
-
-            ShowWindow(consoleWindow, SW_HIDE);
-        }
-
-        SetForegroundWindow(hwnd);
-        SetFocus(hwnd);
-
-        ImGuiOverlayDx12::InitDx12(consoleWindow, D3D12Device);
-
-        if (consoleAllocated)
-            FreeConsole();
-
-        contextRendering = false;
-    }
-
     if (handleId < 1000000)
     {
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D12_EvaluateFeature() != nullptr)
@@ -882,22 +848,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     if (Config::Instance()->SkipFirstFrames.has_value() && evalCounter < Config::Instance()->SkipFirstFrames.value())
         return NVSDK_NGX_Result_Success;
 
-    // Check window recreation
-    if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayDx12::IsInitedDx12())
-    {
-        contextRendering = true;
-
-        HWND currentHandle = Util::GetProcessWindow();
-        if (ImGuiOverlayDx12::Handle() != currentHandle)
-            ImGuiOverlayDx12::ReInitDx12(currentHandle);
-
-        contextRendering = false;
-    }
-
     if (InCallback)
         LOG_INFO("callback exist");
 
     // DLSS Enabler
+    if(!Config::Instance()->DE_Available)
     {
         // DLSS Enabler check
         int deAvail;
@@ -1217,9 +1172,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
         sigatureMutex.unlock();
     }
-
-    if (Config::Instance()->OverlayMenu.value_or(true))
-        ImGuiOverlayDx12::CaptureQueue(InCmdList);
 
     LOG_TRACE("done: {0:X}", (UINT)evalResult);
 
