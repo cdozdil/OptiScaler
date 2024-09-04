@@ -1,5 +1,6 @@
 #pragma once
 #include "Config.h"
+#include "Util.h"
 
 #include "NVNGX_Parameter.h"
 #include "NVNGX_Proxy.h"
@@ -832,7 +833,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D12_EvaluateFeature() != nullptr)
         {
             LOG_DEBUG("D3D12_EvaluateFeature for ({0})", handleId);
+            auto start = Util::MillisecondsNow();
             auto result = NVNGXProxy::D3D12_EvaluateFeature()(InCmdList, InFeatureHandle, InParameters, InCallback);
+            Config::Instance()->upscaleTimes.push_back(Util::MillisecondsNow() - start);
+            Config::Instance()->upscaleTimes.pop_front();
             LOG_DEBUG("D3D12_EvaluateFeature result for ({0}): {1:X}", handleId, (UINT)result);
 
             return result;
@@ -852,7 +856,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         LOG_INFO("callback exist");
 
     // DLSS Enabler
-    if(!Config::Instance()->DE_Available)
+    if (!Config::Instance()->DE_Available)
     {
         // DLSS Enabler check
         int deAvail = 0;
@@ -986,7 +990,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             // 2 : FSR2.1
             // 3 : DLSS
             // 4 : FSR3.1
-            int upscalerChoice = 0;
+            int upscalerChoice = -1;
 
             // prepare new upscaler
             if (Config::Instance()->newBackend == "fsr22")
@@ -1030,7 +1034,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 upscalerChoice = 0;
             }
 
-            InParameters->Set("DLSSEnabler.Dx12Backend", upscalerChoice);
+            if (upscalerChoice >= 0)
+                InParameters->Set("DLSSEnabler.Dx12Backend", upscalerChoice);
 
             return NVSDK_NGX_Result_Success;
         }
@@ -1128,7 +1133,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         sigatureMutex.unlock();
     }
 
+    auto start = Util::MillisecondsNow();
     bool evalResult = deviceContext->Evaluate(InCmdList, InParameters);
+    Config::Instance()->upscaleTimes.push_back(Util::MillisecondsNow() - start);
+    Config::Instance()->upscaleTimes.pop_front();
 
     if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
     {

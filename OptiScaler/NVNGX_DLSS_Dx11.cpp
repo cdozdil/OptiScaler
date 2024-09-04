@@ -572,11 +572,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 
     auto handleId = InFeatureHandle->Id;
 
+
     if (handleId < 1000000)
     {
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D11_EvaluateFeature() != nullptr)
         {
+            auto start = Util::MillisecondsNow();
             auto result = NVNGXProxy::D3D11_EvaluateFeature()(InDevCtx, InFeatureHandle, InParameters, InCallback);
+            Config::Instance()->upscaleTimes.push_back(Util::MillisecondsNow() - start);
+            Config::Instance()->upscaleTimes.pop_front();
+
             LOG_INFO("D3D11_EvaluateFeature result for ({0}): {1:X}", handleId, (UINT)result);
             return result;
         }
@@ -778,11 +783,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
         return NVSDK_NGX_Result_Success;
     }
 
+    auto start = Util::MillisecondsNow();
     if (!deviceContext->Evaluate(InDevCtx, InParameters) && !deviceContext->IsInited() && (deviceContext->Name() == "XeSS" || deviceContext->Name() == "DLSS" || deviceContext->Name() == "FSR3 w/Dx12"))
     {
         Config::Instance()->newBackend = "fsr22";
         Config::Instance()->changeBackend = true;
     }
+    Config::Instance()->upscaleTimes.push_back(Util::MillisecondsNow() - start);
+    Config::Instance()->upscaleTimes.pop_front();
 
     return NVSDK_NGX_Result_Success;
 }
