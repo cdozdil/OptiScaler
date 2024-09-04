@@ -1704,10 +1704,22 @@ void _UpdateHMDEmulationStatus()
 
 void AttachToAdapter(IUnknown* unkAdapter)
 {
+    const GUID guid = { 0x907bf281,0xea3c,0x43b4,{0xa8,0xe4,0x9f,0x23,0x11,0x07,0xb4,0xff} };
     PVOID* pVTable = *(PVOID**)unkAdapter;
 
     IDXGIAdapter* adapter = nullptr;
-    if (ptrGetDesc == nullptr && unkAdapter->QueryInterface(__uuidof(IDXGIAdapter), (void**)&adapter) == S_OK)
+    bool adapterOk = unkAdapter->QueryInterface(__uuidof(IDXGIAdapter), (void**)&adapter) == S_OK;
+    
+    void* dxvkAdapter = nullptr;
+    if (adapterOk && !Config::Instance()->IsRunningOnDXVK && adapter->QueryInterface(guid, &dxvkAdapter) == S_OK)
+    {
+        Config::Instance()->IsRunningOnDXVK = dxvkAdapter != nullptr;
+        ((IDXGIAdapter*)dxvkAdapter)->Release();
+    }
+
+    LOG_INFO("IDXGIVkInteropDevice interface {0}", Config::Instance()->IsRunningOnDXVK ? "found" : "not found");
+
+    if (ptrGetDesc == nullptr && adapterOk)
     {
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
