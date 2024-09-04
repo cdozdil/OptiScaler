@@ -199,7 +199,6 @@ public:
 	std::vector<const char*> fsr3xVersionNames;
 	std::vector<uint64_t> fsr3xVersionIds;
 
-
 	// linux check
 	bool IsRunningOnLinux = false;
 	bool IsRunningOnDXVK = false;

@@ -6,7 +6,7 @@
 #include "Util.h"
 #include "NVNGX_Proxy.h"
 
-#include "imgui/imgui_overlay_dx12.h"
+#include "imgui/imgui_overlay_dx.h"
 #include "imgui/imgui_overlay_vk.h"
 
 #include <vulkan/vulkan_core.h>
@@ -672,11 +672,11 @@ static void hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, Vk
 
     if (!Config::Instance()->dxgiSkipSpoofing)
     {
-    std::strcpy(properties->deviceName, "NVIDIA GeForce RTX 4090");
-    properties->vendorID = 0x10de;
-    properties->deviceID = 0x2684;
-    properties->driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
-}
+        std::strcpy(properties->deviceName, "NVIDIA GeForce RTX 4090");
+        properties->vendorID = 0x10de;
+        properties->deviceID = 0x2684;
+        properties->driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
+    }
     else
     {
         LOG_DEBUG("Skipping spoofing");
@@ -689,26 +689,26 @@ static void hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysic
 
     if (!Config::Instance()->dxgiSkipSpoofing)
     {
-    std::strcpy(properties2->properties.deviceName, "NVIDIA GeForce RTX 4090");
-    properties2->properties.vendorID = 0x10de;
-    properties2->properties.deviceID = 0x2684;
-    properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
+        std::strcpy(properties2->properties.deviceName, "NVIDIA GeForce RTX 4090");
+        properties2->properties.vendorID = 0x10de;
+        properties2->properties.deviceID = 0x2684;
+        properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
 
-    auto next = (VkDummyProps*)properties2->pNext;
+        auto next = (VkDummyProps*)properties2->pNext;
 
-    while (next != nullptr)
-    {
-        if (next->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES)
+        while (next != nullptr)
         {
-            auto ddp = (VkPhysicalDeviceDriverProperties*)(void*)next;
-            ddp->driverID = VK_DRIVER_ID_NVIDIA_PROPRIETARY;
-            std::strcpy(ddp->driverName, "NVIDIA");
-            std::strcpy(ddp->driverInfo, "559.0");
-        }
+            if (next->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES)
+            {
+                auto ddp = (VkPhysicalDeviceDriverProperties*)(void*)next;
+                ddp->driverID = VK_DRIVER_ID_NVIDIA_PROPRIETARY;
+                std::strcpy(ddp->driverName, "NVIDIA");
+                std::strcpy(ddp->driverInfo, "559.0");
+            }
 
-        next = (VkDummyProps*)next->pNext;
+            next = (VkDummyProps*)next->pNext;
+        }
     }
-}
     else
     {
         LOG_DEBUG("Skipping spoofing");
@@ -721,26 +721,26 @@ static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhy
 
     if (!Config::Instance()->dxgiSkipSpoofing)
     {
-    std::strcpy(properties2->properties.deviceName, "NVIDIA GeForce RTX 4090");
-    properties2->properties.vendorID = 0x10de;
-    properties2->properties.deviceID = 0x2684;
-    properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
+        std::strcpy(properties2->properties.deviceName, "NVIDIA GeForce RTX 4090");
+        properties2->properties.vendorID = 0x10de;
+        properties2->properties.deviceID = 0x2684;
+        properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
 
-    auto next = (VkDummyProps*)properties2->pNext;
+        auto next = (VkDummyProps*)properties2->pNext;
 
-    while (next != nullptr)
-    {
-        if (next->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES)
+        while (next != nullptr)
         {
-            auto ddp = (VkPhysicalDeviceDriverProperties*)(void*)next;
-            ddp->driverID = VK_DRIVER_ID_NVIDIA_PROPRIETARY;
-            std::strcpy(ddp->driverName, "NVIDIA");
-            std::strcpy(ddp->driverInfo, "559.0");
-        }
+            if (next->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES)
+            {
+                auto ddp = (VkPhysicalDeviceDriverProperties*)(void*)next;
+                ddp->driverID = VK_DRIVER_ID_NVIDIA_PROPRIETARY;
+                std::strcpy(ddp->driverName, "NVIDIA");
+                std::strcpy(ddp->driverInfo, "559.0");
+            }
 
-        next = (VkDummyProps*)next->pNext;
+            next = (VkDummyProps*)next->pNext;
+        }
     }
-}
     else
     {
         LOG_DEBUG("Skipping spoofing");
@@ -1469,7 +1469,7 @@ static void CheckWorkingMode()
     if (!isWorkingWithEnabler && !Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
     {
         LOG_INFO("DxgiSpoofing is enabled loading dxgi.dll");
-        
+
         dxgi.CreateDxgiFactory = (PFN_CREATE_DXGI_FACTORY)DetourFindFunction("dxgi.dll", "CreateDXGIFactory");
         dxgi.CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY)DetourFindFunction("dxgi.dll", "CreateDXGIFactory1");
         dxgi.CreateDxgiFactory2 = (PFN_CREATE_DXGI_FACTORY_2)DetourFindFunction("dxgi.dll", "CreateDXGIFactory2");
@@ -1546,8 +1546,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             spdlog::warn("{0} loaded", VER_PRODUCT_NAME);
             spdlog::warn("---------------------------------");
             spdlog::warn("OptiScaler is freely downloadable from");
-            spdlog::warn("GitHub : https://github.com/cdozdil/OptiScaler/releases"); 
-            spdlog::warn("Nexus  : https://www.nexusmods.com/site/mods/986"); 
+            spdlog::warn("GitHub : https://github.com/cdozdil/OptiScaler/releases");
+            spdlog::warn("Nexus  : https://www.nexusmods.com/site/mods/986");
             spdlog::warn("If you paid for these files, you've been scammed!");
             spdlog::warn("DO NOT USE IN MULTIPLAYER GAMES");
             spdlog::warn("");
@@ -1581,10 +1581,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
                     if (!Config::Instance()->VulkanExtensionSpoofing.has_value())
                         Config::Instance()->VulkanExtensionSpoofing = false;
-
-                    // Disable Overlay Menu because of crashes on Linux with Nvidia GPUs
-                    if (Config::Instance()->IsRunningOnLinux && !Config::Instance()->OverlayMenu.has_value())
-                        Config::Instance()->OverlayMenu = false;
 
                     isNvngxAvailable = true;
                 }
