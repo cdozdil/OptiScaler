@@ -120,8 +120,8 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 
             result = Dx11Device->CreateTexture2D(&desc, nullptr, &OutResource->SharedTexture);
 
-            IDXGIResource1* resource;
 
+            IDXGIResource1* resource;
             result = OutResource->SharedTexture->QueryInterface(IID_PPV_ARGS(&resource));
 
             if (result != S_OK)
@@ -318,6 +318,9 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
 {
     LOG_FUNC();
 
+    Config::Instance()->VulkanSkipHooks = true;
+    Config::Instance()->dxgiSkipSpoofing = true;
+
     HRESULT result;
 
     if (Dx12Device == nullptr)
@@ -328,6 +331,8 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         if (result != S_OK)
         {
             LOG_ERROR("Can't create factory: {0:x}", result);
+            Config::Instance()->VulkanSkipHooks = false;
+            Config::Instance()->dxgiSkipSpoofing = false;
             return result;
         }
 
@@ -337,6 +342,8 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         if (hardwareAdapter == nullptr)
         {
             LOG_ERROR("Can't get hardwareAdapter!");
+            Config::Instance()->VulkanSkipHooks = false;
+            Config::Instance()->dxgiSkipSpoofing = false;
             return E_NOINTERFACE;
         }
 
@@ -345,6 +352,8 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         if (result != S_OK)
         {
             LOG_ERROR("Can't create device: {0:x}", result);
+            Config::Instance()->VulkanSkipHooks = false;
+            Config::Instance()->dxgiSkipSpoofing = false;
             return result;
         }
     }
@@ -361,6 +370,8 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         if (result != S_OK || Dx12CommandQueue == nullptr)
         {
             LOG_DEBUG("CreateCommandQueue result: {0:x}", result);
+            Config::Instance()->VulkanSkipHooks = false;
+            Config::Instance()->dxgiSkipSpoofing = false;
             return E_NOINTERFACE;
         }
     }
@@ -372,6 +383,8 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         if (result != S_OK)
         {
             LOG_ERROR("CreateCommandAllocator error: {0:x}", result);
+            Config::Instance()->VulkanSkipHooks = false;
+            Config::Instance()->dxgiSkipSpoofing = false;
             return E_NOINTERFACE;
         }
     }
@@ -384,10 +397,14 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         if (result != S_OK)
         {
             LOG_ERROR("CreateCommandList error: {0:x}", result);
+            Config::Instance()->VulkanSkipHooks = false;
+            Config::Instance()->dxgiSkipSpoofing = false;
             return E_NOINTERFACE;
         }
     }
 
+    Config::Instance()->VulkanSkipHooks = false;
+    Config::Instance()->dxgiSkipSpoofing = false;
     return S_OK;
 }
 
@@ -517,7 +534,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
                 return false;
         }
         // This is only needed for XeSS
-        else if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "xess") 
+        else if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "xess")
         {
             LOG_WARN("bias mask not exist and it's enabled in config, it may cause problems!!");
             Config::Instance()->DisableReactiveMask = true;
