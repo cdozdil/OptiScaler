@@ -103,10 +103,11 @@ Please check [this](Config.md) document for configuration parameters and explana
 
 ## Known Issues
 If you can't open in-game menu:
-1. Please check that you have enabled DLSS from game options
-2. Please try opening menu while you are in-game (while 3D rendering is happening)
-3. There is a 200 frame delay before enabling in-game menu, please wait 10-15 seconds before opening menu.
-4. If you are using RTSS (MSI Afterburner, CapFrameX) please enable this setting of RTSS and try updating RTSS.
+1. Please make sure that the game's executable folder is correct. Just because it's the launched executable doesn't mean it's the game's executable (e.g. for Unreal Engine games it's `<path-to-game>\Binaries\Win64\`).
+2. Please check that you have enabled DLSS from game options
+3. Please try opening menu while you are in-game (while 3D rendering is happening)
+4. There is a 200 frame delay before enabling in-game menu, please wait 10-15 seconds before opening menu.
+5. If you are using RTSS (MSI Afterburner, CapFrameX) please enable this setting of RTSS and try updating RTSS.
   ![image](https://github.com/cdozdil/OptiScaler/assets/35529761/8afb24ac-662a-40ae-a97c-837369e03fc7)
 
 Please check [this](Issues.md) document for rest of the known issues and possible solutions for them.
