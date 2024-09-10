@@ -422,6 +422,9 @@
     <ClCompile Include="bias\Bias_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="imgui\imgui_common.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="vulkan\vulkan-1.lib" />
