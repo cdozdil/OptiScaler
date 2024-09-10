@@ -500,7 +500,10 @@ static VkResult hkvkCreateWin32SurfaceKHR(VkInstance instance, const VkWin32Surf
 
     auto result = o_vkCreateWin32SurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
 
-    if (result == VK_SUCCESS && !Config::Instance()->VulkanSkipHooks)
+    auto procHwnd = Util::GetProcessWindow();
+    LOG_DEBUG("procHwnd: {0:X}, swapchain hwnd: {1:X}", (UINT64)procHwnd, (UINT64)pCreateInfo->hwnd);
+
+    if (result == VK_SUCCESS && !Config::Instance()->VulkanSkipHooks && procHwnd == pCreateInfo->hwnd)
     {
         DestroyVulkanObjects(false);
 
@@ -561,6 +564,8 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
 {
     LOG_FUNC();
 
+    
+
     if (!_vulkanObjectsCreated)
     {
         LOG_TRACE("!_vulkanObjectsCreated return o_QueuePresentKHR");
@@ -588,6 +593,24 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
     }
 
     _vkPresentMutex.lock();
+
+    if (ImGuiOverlayVk::vkUpscaleTrig && ImGuiOverlayVk::queryPool != VK_NULL_HANDLE)
+    {
+        // Retrieve timestamps
+        uint64_t timestamps[2];
+        vkGetQueryPoolResults(_device, ImGuiOverlayVk::queryPool, 0, 2, sizeof(timestamps), timestamps, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT);
+
+        // Calculate elapsed time in milliseconds
+        double elapsedTimeMs = (timestamps[1] - timestamps[0]) * ImGuiOverlayVk::timeStampPeriod / 1e6;
+
+        if (elapsedTimeMs > 0.0 && elapsedTimeMs < 5000.0)
+        {
+            Config::Instance()->upscaleTimes.push_back(elapsedTimeMs);
+            Config::Instance()->upscaleTimes.pop_front();
+        }
+
+        ImGuiOverlayVk::vkUpscaleTrig = false;
+    }
 
     LOG_DEBUG("rendering menu, swapchain count: {0}", pPresentInfo->swapchainCount);
 
