@@ -3,230 +3,265 @@
 #include "dxgi1_6.h"
 #include "imgui_overlay_base.h"
 
-typedef void(*PFN_Prensent)(IDXGISwapChain*);
-typedef void(*PFN_Clean)(bool);
+typedef void(*PFN_Prensent)(IDXGISwapChain*, IUnknown*, HWND);
+typedef void(*PFN_Clean)(bool, HWND);
 
 class WrappedIDXGISwapChain4 : public IDXGISwapChain4
 {
-	IDXGISwapChain* m_pReal = nullptr;
-	IDXGISwapChain1* m_pReal1 = nullptr;
-	IDXGISwapChain2* m_pReal2 = nullptr;
-	IDXGISwapChain3* m_pReal3 = nullptr;
-	IDXGISwapChain4* m_pReal4 = nullptr;
-
-	PFN_Prensent RenderTrig = nullptr;
-	PFN_Clean ClearTrig = nullptr;
-
-	unsigned int m_iRefcount;
-
 public:
 
-	WrappedIDXGISwapChain4(IDXGISwapChain* real, PFN_Prensent renderTrig, PFN_Clean clearTrig);
+    WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* pDevice, HWND hWnd, PFN_Prensent renderTrig, PFN_Clean clearTrig);
 
-	virtual ~WrappedIDXGISwapChain4();
+    virtual ~WrappedIDXGISwapChain4();
 
-	virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
+    virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 
-	ULONG STDMETHODCALLTYPE AddRef()
-	{
-		InterlockedIncrement(&m_iRefcount);
-		return m_iRefcount;
-	}
+    ULONG STDMETHODCALLTYPE AddRef()
+    {
+        InterlockedIncrement(&m_iRefcount);
+        return m_iRefcount;
+    }
 
-	ULONG STDMETHODCALLTYPE Release()
-	{
-		unsigned int ret = InterlockedDecrement(&m_iRefcount);
+    ULONG STDMETHODCALLTYPE Release()
+    {
+        auto ret = InterlockedDecrement(&m_iRefcount);
+        
+        ULONG relCount = 0;
 
-		if (ret == 0)
-		{
-			if (ClearTrig != nullptr)
-				ClearTrig(true);
+        if (ret == 0)
+        {
+            if (ClearTrig != nullptr)
+                ClearTrig(true, Handle);
 
-			delete this;
-		}
-		
-		return ret;
-	}
+            LOG_INFO("{} released", id);
 
-	//////////////////////////////
-	// implement IDXGIObject
+            if (m_pReal4 != nullptr)
+                relCount = m_pReal4->Release();
 
-	virtual HRESULT STDMETHODCALLTYPE SetPrivateData(REFGUID Name, UINT DataSize, const void* pData)
-	{
-		return m_pReal->SetPrivateData(Name, DataSize, pData);
-	}
+            if (m_pReal3 != nullptr)
+                relCount = m_pReal3->Release();
 
-	virtual HRESULT STDMETHODCALLTYPE SetPrivateDataInterface(REFGUID Name, const IUnknown* pUnknown)
-	{
-		return m_pReal->SetPrivateDataInterface(Name, pUnknown);
-	}
+            if (m_pReal2 != nullptr)
+                relCount = m_pReal2->Release();
 
-	virtual HRESULT STDMETHODCALLTYPE GetPrivateData(REFGUID Name, UINT* pDataSize, void* pData)
-	{
-		return m_pReal->GetPrivateData(Name, pDataSize, pData);
-	}
+            if (m_pReal1 != nullptr)
+                relCount = m_pReal1->Release();
 
-	virtual HRESULT STDMETHODCALLTYPE GetParent(REFIID riid, void** ppParent)
-	{
-		return m_pReal->GetParent(riid, ppParent);
-	}
+            if (m_pReal != nullptr)
+                relCount = m_pReal->Release();
 
-	//////////////////////////////
-	// implement IDXGIDeviceSubObject
+            delete this;
+            //while (relCount > 0)
+            //{
+            //    relCount = m_pReal->Release();
+            //}
+        }
 
-	virtual HRESULT STDMETHODCALLTYPE GetDevice(REFIID riid, void** ppDevice);
+        return ret;
+    }
 
-	//////////////////////////////
-	// implement IDXGISwapChain
+    //////////////////////////////
+    // implement IDXGIObject
 
-	virtual HRESULT STDMETHODCALLTYPE Present(UINT SyncInterval, UINT Flags);
+    virtual HRESULT STDMETHODCALLTYPE SetPrivateData(REFGUID Name, UINT DataSize, const void* pData)
+    {
+        return m_pReal->SetPrivateData(Name, DataSize, pData);
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE GetBuffer(UINT Buffer, REFIID riid, void** ppSurface);
+    virtual HRESULT STDMETHODCALLTYPE SetPrivateDataInterface(REFGUID Name, const IUnknown* pUnknown)
+    {
+        return m_pReal->SetPrivateDataInterface(Name, pUnknown);
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE SetFullscreenState(BOOL Fullscreen, IDXGIOutput* pTarget);
+    virtual HRESULT STDMETHODCALLTYPE GetPrivateData(REFGUID Name, UINT* pDataSize, void* pData)
+    {
+        return m_pReal->GetPrivateData(Name, pDataSize, pData);
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE GetFullscreenState(BOOL* pFullscreen, IDXGIOutput** ppTarget);
+    virtual HRESULT STDMETHODCALLTYPE GetParent(REFIID riid, void** ppParent)
+    {
+        return m_pReal->GetParent(riid, ppParent);
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE GetDesc(DXGI_SWAP_CHAIN_DESC* pDesc)
-	{
-		return m_pReal->GetDesc(pDesc);
-	}
+    //////////////////////////////
+    // implement IDXGIDeviceSubObject
 
-	virtual HRESULT STDMETHODCALLTYPE ResizeBuffers(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags);
+    virtual HRESULT STDMETHODCALLTYPE GetDevice(REFIID riid, void** ppDevice);
 
-	virtual HRESULT STDMETHODCALLTYPE ResizeTarget(const DXGI_MODE_DESC* pNewTargetParameters)
-	{
-		return m_pReal->ResizeTarget(pNewTargetParameters);
-	}
+    //////////////////////////////
+    // implement IDXGISwapChain
 
-	virtual HRESULT STDMETHODCALLTYPE GetContainingOutput(IDXGIOutput** ppOutput);
+    virtual HRESULT STDMETHODCALLTYPE Present(UINT SyncInterval, UINT Flags);
 
-	virtual HRESULT STDMETHODCALLTYPE GetFrameStatistics(DXGI_FRAME_STATISTICS* pStats)
-	{
-		return m_pReal->GetFrameStatistics(pStats);
-	}
+    virtual HRESULT STDMETHODCALLTYPE GetBuffer(UINT Buffer, REFIID riid, void** ppSurface);
 
-	virtual HRESULT STDMETHODCALLTYPE GetLastPresentCount(UINT* pLastPresentCount)
-	{
-		return m_pReal->GetLastPresentCount(pLastPresentCount);
-	}
+    virtual HRESULT STDMETHODCALLTYPE SetFullscreenState(BOOL Fullscreen, IDXGIOutput* pTarget);
 
-	//////////////////////////////
-	// implement IDXGISwapChain1
+    virtual HRESULT STDMETHODCALLTYPE GetFullscreenState(BOOL* pFullscreen, IDXGIOutput** ppTarget);
 
-	virtual HRESULT STDMETHODCALLTYPE GetDesc1(DXGI_SWAP_CHAIN_DESC1* pDesc)
-	{
-		return m_pReal1->GetDesc1(pDesc);
-	}
+    virtual HRESULT STDMETHODCALLTYPE GetDesc(DXGI_SWAP_CHAIN_DESC* pDesc)
+    {
+        return m_pReal->GetDesc(pDesc);
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE GetFullscreenDesc(DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pDesc)
-	{
-		return m_pReal1->GetFullscreenDesc(pDesc);
-	}
+    virtual HRESULT STDMETHODCALLTYPE ResizeBuffers(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags);
 
-	virtual HRESULT STDMETHODCALLTYPE GetHwnd(HWND* pHwnd)
-	{
-		return m_pReal1->GetHwnd(pHwnd);
-	}
+    virtual HRESULT STDMETHODCALLTYPE ResizeTarget(const DXGI_MODE_DESC* pNewTargetParameters)
+    {
+        return m_pReal->ResizeTarget(pNewTargetParameters);
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE GetCoreWindow(REFIID refiid, void** ppUnk)
-	{
-		return m_pReal1->GetCoreWindow(refiid, ppUnk);
-	}
+    virtual HRESULT STDMETHODCALLTYPE GetContainingOutput(IDXGIOutput** ppOutput);
 
-	virtual HRESULT STDMETHODCALLTYPE Present1(UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters);
+    virtual HRESULT STDMETHODCALLTYPE GetFrameStatistics(DXGI_FRAME_STATISTICS* pStats)
+    {
+        return m_pReal->GetFrameStatistics(pStats);
+    }
 
-	virtual BOOL STDMETHODCALLTYPE IsTemporaryMonoSupported(void)
-	{
-		return m_pReal1->IsTemporaryMonoSupported();
-	}
+    virtual HRESULT STDMETHODCALLTYPE GetLastPresentCount(UINT* pLastPresentCount)
+    {
+        return m_pReal->GetLastPresentCount(pLastPresentCount);
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE GetRestrictToOutput(IDXGIOutput** ppRestrictToOutput);
+    //////////////////////////////
+    // implement IDXGISwapChain1
 
-	virtual HRESULT STDMETHODCALLTYPE SetBackgroundColor(const DXGI_RGBA* pColor)
-	{
-		return m_pReal1->SetBackgroundColor(pColor);
-	}
+    virtual HRESULT STDMETHODCALLTYPE GetDesc1(DXGI_SWAP_CHAIN_DESC1* pDesc)
+    {
+        return m_pReal1->GetDesc1(pDesc);
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE GetBackgroundColor(DXGI_RGBA* pColor)
-	{
-		return m_pReal1->GetBackgroundColor(pColor);
-	}
+    virtual HRESULT STDMETHODCALLTYPE GetFullscreenDesc(DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pDesc)
+    {
+        return m_pReal1->GetFullscreenDesc(pDesc);
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE SetRotation(DXGI_MODE_ROTATION Rotation)
-	{
-		return m_pReal1->SetRotation(Rotation);
-	}
+    virtual HRESULT STDMETHODCALLTYPE GetHwnd(HWND* pHwnd)
+    {
+        return m_pReal1->GetHwnd(pHwnd);
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE GetRotation(DXGI_MODE_ROTATION* pRotation)
-	{
-		return m_pReal1->GetRotation(pRotation);
-	}
+    virtual HRESULT STDMETHODCALLTYPE GetCoreWindow(REFIID refiid, void** ppUnk)
+    {
+        return m_pReal1->GetCoreWindow(refiid, ppUnk);
+    }
 
-	//////////////////////////////
-	// implement IDXGISwapChain2
+    virtual HRESULT STDMETHODCALLTYPE Present1(UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters);
 
-	virtual HRESULT STDMETHODCALLTYPE SetSourceSize(UINT Width, UINT Height)
-	{
-		return m_pReal2->SetSourceSize(Width, Height);
-	}
+    virtual BOOL STDMETHODCALLTYPE IsTemporaryMonoSupported(void)
+    {
+        return m_pReal1->IsTemporaryMonoSupported();
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE GetSourceSize(UINT* pWidth, UINT* pHeight)
-	{
-		return m_pReal2->GetSourceSize(pWidth, pHeight);
-	}
+    virtual HRESULT STDMETHODCALLTYPE GetRestrictToOutput(IDXGIOutput** ppRestrictToOutput);
 
-	virtual HRESULT STDMETHODCALLTYPE SetMaximumFrameLatency(UINT MaxLatency)
-	{
-		return m_pReal2->SetMaximumFrameLatency(MaxLatency);
-	}
+    virtual HRESULT STDMETHODCALLTYPE SetBackgroundColor(const DXGI_RGBA* pColor)
+    {
+        return m_pReal1->SetBackgroundColor(pColor);
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE GetMaximumFrameLatency(UINT* pMaxLatency)
-	{
-		return m_pReal2->GetMaximumFrameLatency(pMaxLatency);
-	}
+    virtual HRESULT STDMETHODCALLTYPE GetBackgroundColor(DXGI_RGBA* pColor)
+    {
+        return m_pReal1->GetBackgroundColor(pColor);
+    }
 
-	virtual HANDLE STDMETHODCALLTYPE GetFrameLatencyWaitableObject(void)
-	{
-		return m_pReal2->GetFrameLatencyWaitableObject();
-	}
+    virtual HRESULT STDMETHODCALLTYPE SetRotation(DXGI_MODE_ROTATION Rotation)
+    {
+        return m_pReal1->SetRotation(Rotation);
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE SetMatrixTransform(const DXGI_MATRIX_3X2_F* pMatrix)
-	{
-		return m_pReal2->SetMatrixTransform(pMatrix);
-	}
+    virtual HRESULT STDMETHODCALLTYPE GetRotation(DXGI_MODE_ROTATION* pRotation)
+    {
+        return m_pReal1->GetRotation(pRotation);
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE GetMatrixTransform(DXGI_MATRIX_3X2_F* pMatrix)
-	{
-		return m_pReal2->GetMatrixTransform(pMatrix);
-	}
+    //////////////////////////////
+    // implement IDXGISwapChain2
 
-	//////////////////////////////
-	// implement IDXGISwapChain3
+    virtual HRESULT STDMETHODCALLTYPE SetSourceSize(UINT Width, UINT Height)
+    {
+        return m_pReal2->SetSourceSize(Width, Height);
+    }
 
-	virtual UINT STDMETHODCALLTYPE GetCurrentBackBufferIndex(void)
-	{
-		return m_pReal3->GetCurrentBackBufferIndex();
-	}
+    virtual HRESULT STDMETHODCALLTYPE GetSourceSize(UINT* pWidth, UINT* pHeight)
+    {
+        return m_pReal2->GetSourceSize(pWidth, pHeight);
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE CheckColorSpaceSupport(DXGI_COLOR_SPACE_TYPE ColorSpace, UINT* pColorSpaceSupport)
-	{
-		return m_pReal3->CheckColorSpaceSupport(ColorSpace, pColorSpaceSupport);
-	}
+    virtual HRESULT STDMETHODCALLTYPE SetMaximumFrameLatency(UINT MaxLatency)
+    {
+        return m_pReal2->SetMaximumFrameLatency(MaxLatency);
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE SetColorSpace1(DXGI_COLOR_SPACE_TYPE ColorSpace)
-	{
-		return m_pReal3->SetColorSpace1(ColorSpace);
-	}
+    virtual HRESULT STDMETHODCALLTYPE GetMaximumFrameLatency(UINT* pMaxLatency)
+    {
+        return m_pReal2->GetMaximumFrameLatency(pMaxLatency);
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE ResizeBuffers1(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT Format, UINT SwapChainFlags,
-		_In_reads_(BufferCount) const UINT* pCreationNodeMask, _In_reads_(BufferCount) IUnknown* const* ppPresentQueue);
+    virtual HANDLE STDMETHODCALLTYPE GetFrameLatencyWaitableObject(void)
+    {
+        return m_pReal2->GetFrameLatencyWaitableObject();
+    }
 
-	//////////////////////////////
-	// implement IDXGISwapChain4
+    virtual HRESULT STDMETHODCALLTYPE SetMatrixTransform(const DXGI_MATRIX_3X2_F* pMatrix)
+    {
+        return m_pReal2->SetMatrixTransform(pMatrix);
+    }
 
-	virtual HRESULT STDMETHODCALLTYPE SetHDRMetaData(DXGI_HDR_METADATA_TYPE Type, UINT Size, _In_reads_opt_(Size) void* pMetaData)
-	{
-		return m_pReal4->SetHDRMetaData(Type, Size, pMetaData);
-	}
+    virtual HRESULT STDMETHODCALLTYPE GetMatrixTransform(DXGI_MATRIX_3X2_F* pMatrix)
+    {
+        return m_pReal2->GetMatrixTransform(pMatrix);
+    }
+
+    //////////////////////////////
+    // implement IDXGISwapChain3
+
+    virtual UINT STDMETHODCALLTYPE GetCurrentBackBufferIndex(void)
+    {
+        return m_pReal3->GetCurrentBackBufferIndex();
+    }
+
+    virtual HRESULT STDMETHODCALLTYPE CheckColorSpaceSupport(DXGI_COLOR_SPACE_TYPE ColorSpace, UINT* pColorSpaceSupport)
+    {
+        return m_pReal3->CheckColorSpaceSupport(ColorSpace, pColorSpaceSupport);
+    }
+
+    virtual HRESULT STDMETHODCALLTYPE SetColorSpace1(DXGI_COLOR_SPACE_TYPE ColorSpace)
+    {
+        return m_pReal3->SetColorSpace1(ColorSpace);
+    }
+
+    virtual HRESULT STDMETHODCALLTYPE ResizeBuffers1(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT Format, UINT SwapChainFlags,
+                                                     _In_reads_(BufferCount) const UINT* pCreationNodeMask, _In_reads_(BufferCount) IUnknown* const* ppPresentQueue);
+
+    //////////////////////////////
+    // implement IDXGISwapChain4
+
+    virtual HRESULT STDMETHODCALLTYPE SetHDRMetaData(DXGI_HDR_METADATA_TYPE Type, UINT Size, _In_reads_opt_(Size) void* pMetaData)
+    {
+        return m_pReal4->SetHDRMetaData(Type, Size, pMetaData);
+    }
+
+    virtual void ReUseSwapchain(IUnknown* pDevice, HWND hWnd)
+    {
+        Device = pDevice;
+        Handle = hWnd;
+    }
+
+private:
+    IDXGISwapChain* m_pReal = nullptr;
+    IDXGISwapChain1* m_pReal1 = nullptr;
+    IDXGISwapChain2* m_pReal2 = nullptr;
+    IDXGISwapChain3* m_pReal3 = nullptr;
+    IDXGISwapChain4* m_pReal4 = nullptr;
+
+    PFN_Prensent RenderTrig = nullptr;
+    PFN_Clean ClearTrig = nullptr;
+    HWND Handle = nullptr;
+    IUnknown* Device = nullptr;
+
+    unsigned int m_iRefcount;
+    int id = 0;
+
+
 };

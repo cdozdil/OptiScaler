@@ -3,45 +3,49 @@
 // Used RenderDoc's wrapped object as referance
 // https://github.com/baldurk/renderdoc/blob/v1.x/renderdoc/driver/dxgi/dxgi_wrapped.cpp
 
-WrappedIDXGISwapChain4::WrappedIDXGISwapChain4(IDXGISwapChain* real, PFN_Prensent renderTrig, PFN_Clean clearTrig) : m_pReal(real), RenderTrig(renderTrig), ClearTrig(clearTrig), m_iRefcount(1)
+static int scCount = 0;
+
+WrappedIDXGISwapChain4::WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* pDevice, HWND hWnd, PFN_Prensent renderTrig, PFN_Clean clearTrig) : m_pReal(real), Device(pDevice), Handle(hWnd), RenderTrig(renderTrig), ClearTrig(clearTrig), m_iRefcount(1)
 {
-	real->QueryInterface(__uuidof(IDXGISwapChain1), (void**)&m_pReal1);
-	real->QueryInterface(__uuidof(IDXGISwapChain2), (void**)&m_pReal2);
-	real->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&m_pReal3);
-	real->QueryInterface(__uuidof(IDXGISwapChain4), (void**)&m_pReal4);
+	id = ++scCount;
+	LOG_INFO("{0} created, real: {1:X}", id, (UINT64)real);
+	m_pReal->QueryInterface(__uuidof(IDXGISwapChain1), (void**)&m_pReal1);
+	m_pReal->QueryInterface(__uuidof(IDXGISwapChain2), (void**)&m_pReal2);
+	m_pReal->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&m_pReal3);
+	m_pReal->QueryInterface(__uuidof(IDXGISwapChain4), (void**)&m_pReal4);
 }
 
 WrappedIDXGISwapChain4::~WrappedIDXGISwapChain4()
 {
-	if (m_pReal1 != nullptr)
-	{
-		m_pReal1->Release();
-		m_pReal1 = nullptr;
-	}
-
-	if (m_pReal2 != nullptr)
-	{
-		m_pReal2->Release();
-		m_pReal2 = nullptr;
-	}
-
-	if (m_pReal3 != nullptr)
-	{
-		m_pReal3->Release();
-		m_pReal3 = nullptr;
-	}
-
-	if (m_pReal4 != nullptr)
-	{
-		m_pReal4->Release();
-		m_pReal4 = nullptr;
-	}
-
-	if (m_pReal != nullptr)
-	{
-		m_pReal->Release();
-		m_pReal = nullptr;
-	}
+//	if (m_pReal4 != nullptr)
+//	{
+//		m_pReal4->Release();
+//		m_pReal4 = nullptr;
+//	}
+//
+//	if (m_pReal3 != nullptr)
+//	{
+//		m_pReal3->Release();
+//		m_pReal3 = nullptr;
+//	}
+//
+//	if (m_pReal2 != nullptr)
+//	{
+//		m_pReal2->Release();
+//		m_pReal2 = nullptr;
+//	}
+//
+//	if (m_pReal1 != nullptr)
+//	{
+//		m_pReal1->Release();
+//		m_pReal1 = nullptr;
+//	}
+//
+//	if (m_pReal != nullptr)
+//	{
+//		m_pReal->Release();
+//		m_pReal = nullptr;
+//	}
 }
 
 HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::QueryInterface(REFIID riid, void** ppvObject)
@@ -105,9 +109,7 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::QueryInterface(REFIID riid, vo
 		}
 	}
 
-	auto result = m_pReal->QueryInterface(riid, ppvObject); 
-	LOG_FUNC_RESULT(result);
-	return result;
+	return E_NOINTERFACE;
 }
 
 HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
@@ -115,17 +117,14 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 	LOG_FUNC();
 
 	if (ClearTrig != nullptr)
-		ClearTrig(false);
+		ClearTrig(false, Handle);
 
-	HRESULT ret = m_pReal->ResizeBuffers(BufferCount, Width, Height, NewFormat, SwapChainFlags);
-
-	return ret;
+	return m_pReal->ResizeBuffers(BufferCount, Width, Height, NewFormat, SwapChainFlags);
 }
 
 HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetContainingOutput(IDXGIOutput** ppOutput)
 {
-	HRESULT ret = m_pReal->GetContainingOutput(ppOutput);
-	return ret;
+	return m_pReal->GetContainingOutput(ppOutput);
 }
 
 HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT Format, UINT SwapChainFlags,
@@ -134,58 +133,54 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 	LOG_FUNC();
 
 	if (ClearTrig != nullptr)
-		ClearTrig(false);
+		ClearTrig(false, Handle);
 
-	HRESULT ret = m_pReal3->ResizeBuffers1(BufferCount, Width, Height, Format, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
-	return ret;
+	return m_pReal3->ResizeBuffers1(BufferCount, Width, Height, Format, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
 }
 
 HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput* pTarget)
 {
-	LOG_FUNC();
-
-	//if (ClearTrig != nullptr)
-	//	ClearTrig(true);
-
 	return m_pReal->SetFullscreenState(Fullscreen, pTarget);
 }
 
 HRESULT WrappedIDXGISwapChain4::GetFullscreenState(BOOL* pFullscreen, IDXGIOutput** ppTarget)
 {
-	HRESULT ret = m_pReal->GetFullscreenState(pFullscreen, ppTarget);
-	return ret;
+	return m_pReal->GetFullscreenState(pFullscreen, ppTarget);
 }
 
 HRESULT WrappedIDXGISwapChain4::GetBuffer(UINT Buffer, REFIID riid, void** ppSurface)
 {
-	HRESULT ret = m_pReal->GetBuffer(Buffer, riid, ppSurface);
-	return ret;
+	return m_pReal->GetBuffer(Buffer, riid, ppSurface);
 }
 
 HRESULT WrappedIDXGISwapChain4::GetDevice(REFIID riid, void** ppDevice)
 {
-	HRESULT ret = m_pReal->GetDevice(riid, ppDevice);
-	return ret;
+	return m_pReal->GetDevice(riid, ppDevice);
 }
 
 HRESULT WrappedIDXGISwapChain4::Present(UINT SyncInterval, UINT Flags)
 {
-	if (!((Flags & DXGI_PRESENT_TEST) || (Flags & DXGI_PRESENT_RESTART)) && RenderTrig != nullptr)
-		RenderTrig(m_pReal);
+	if (m_pReal == nullptr)
+		return DXGI_ERROR_DEVICE_REMOVED;
+
+	if (!(Flags & DXGI_PRESENT_TEST) && !(Flags & DXGI_PRESENT_RESTART) && RenderTrig != nullptr)
+		RenderTrig(m_pReal, Device, Handle);
 
 	return m_pReal->Present(SyncInterval, Flags);
 }
 
 HRESULT WrappedIDXGISwapChain4::Present1(UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters)
 {
-	if (!((Flags & DXGI_PRESENT_TEST) || (Flags & DXGI_PRESENT_RESTART)) && RenderTrig != nullptr)
-		RenderTrig(m_pReal);
+	if (m_pReal1 == nullptr)
+		return DXGI_ERROR_DEVICE_REMOVED;
+
+	if (!(Flags & DXGI_PRESENT_TEST) && !(Flags & DXGI_PRESENT_RESTART) && RenderTrig != nullptr)
+		RenderTrig(m_pReal1, Device, Handle);
 
 	return m_pReal1->Present1(SyncInterval, Flags, pPresentParameters);
 }
 
 HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetRestrictToOutput(IDXGIOutput** ppRestrictToOutput)
 {
-	HRESULT ret = m_pReal1->GetRestrictToOutput(ppRestrictToOutput);
-	return ret;
+	return m_pReal1->GetRestrictToOutput(ppRestrictToOutput);
 }
