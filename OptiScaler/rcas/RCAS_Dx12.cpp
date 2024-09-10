@@ -19,6 +19,10 @@ inline static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
 			return DXGI_FORMAT_R8G8B8A8_UNORM;
 		case DXGI_FORMAT_B8G8R8A8_TYPELESS:
 			return DXGI_FORMAT_B8G8R8A8_UNORM;
+		case DXGI_FORMAT_R16G16_TYPELESS:
+			return DXGI_FORMAT_R16G16_FLOAT;
+		case DXGI_FORMAT_R32G32_TYPELESS:
+			return DXGI_FORMAT_R32G32_FLOAT;
 		default:
 			return format;
 	}
@@ -191,6 +195,20 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
 
 	InDevice->CreateUnorderedAccessView(OutResource, nullptr, &uavDesc, _cpuUavHandle[_counter]);
 
+	if (_constantBuffer == nullptr)
+	{
+		D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(sizeof(InternalConstants));
+		auto heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+
+		auto result = InDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&_constantBuffer));
+
+		if (result != S_OK)
+		{
+			LOG_ERROR("[{0}] CreateCommittedResource error {1:x}", _name, (unsigned int)result);
+			return false;
+		}
+	}
+
 	InternalConstants constants{};
 	constants.DisplayHeight = InConstants.DisplayHeight;
 	constants.DisplayWidth = InConstants.DisplayWidth;
@@ -334,17 +352,6 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 	rootSigDesc.NumStaticSamplers = 0;
 	rootSigDesc.pStaticSamplers = nullptr;
 	rootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
-
-	D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(sizeof(InternalConstants));
-	auto heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-
-	auto result = InDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&_constantBuffer));
-
-	if (result != S_OK)
-	{
-		LOG_ERROR("[{0}] CreateCommittedResource error {1:x}", _name, (unsigned int)result);
-		return;
-	}
 
 	ID3DBlob* errorBlob;
 	ID3DBlob* signatureBlob;
