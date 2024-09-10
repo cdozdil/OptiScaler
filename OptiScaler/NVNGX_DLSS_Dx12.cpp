@@ -12,37 +12,37 @@
 #include "backends/fsr31/FSR31Feature_Dx12.h"
 #include "backends/xess/XeSSFeature_Dx12.h"
 
-//#include "imgui/imgui_overlay_dx12.h"
+#include "imgui/imgui_overlay_dx.h"
 
 #include "detours/detours.h"
 #include <ankerl/unordered_dense.h>
 #include <dxgi1_4.h>
 
-inline ID3D12Device* D3D12Device = nullptr;
-static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
-static inline NVSDK_NGX_Parameter* createParams = nullptr;
-static inline int changeBackendCounter = 0;
-static inline int evalCounter = 0;
-static inline std::wstring appDataPath = L".";
+static ID3D12Device* D3D12Device = nullptr;
+static ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
+static NVSDK_NGX_Parameter* createParams = nullptr;
+static int changeBackendCounter = 0;
+static int evalCounter = 0;
+static std::wstring appDataPath = L".";
 
 #pragma region Hooks
 
 typedef void(__fastcall* PFN_SetComputeRootSignature)(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature);
 typedef void(__fastcall* PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 
-static inline PFN_SetComputeRootSignature orgSetComputeRootSignature = nullptr;
-static inline PFN_SetComputeRootSignature orgSetGraphicRootSignature = nullptr;
-static inline PFN_CreateSampler orgCreateSampler = nullptr;
+static PFN_SetComputeRootSignature orgSetComputeRootSignature = nullptr;
+static PFN_SetComputeRootSignature orgSetGraphicRootSignature = nullptr;
+static PFN_CreateSampler orgCreateSampler = nullptr;
 
-static inline ID3D12RootSignature* rootSigCompute = nullptr;
-static inline ID3D12RootSignature* rootSigGraphic = nullptr;
-static inline bool contextRendering = false;
-static inline ULONGLONG computeTime = 0;
-static inline ULONGLONG graphTime = 0;
-static inline ULONGLONG lastEvalTime = 0;
-inline static std::mutex sigatureMutex;
+static ID3D12RootSignature* rootSigCompute = nullptr;
+static ID3D12RootSignature* rootSigGraphic = nullptr;
+static bool contextRendering = false;
+static ULONGLONG computeTime = 0;
+static ULONGLONG graphTime = 0;
+static ULONGLONG lastEvalTime = 0;
+static std::mutex sigatureMutex;
 
-static inline int64_t GetTicks()
+static int64_t GetTicks()
 {
     LARGE_INTEGER ticks;
 
@@ -266,6 +266,19 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
     //    HookToDevice(D3D12Device);
 
     Config::Instance()->Api = NVNGX_DX12;
+
+    // Create query heap for timestamp queries
+    D3D12_QUERY_HEAP_DESC queryHeapDesc = {};
+    queryHeapDesc.Count = 2; // Start and End timestamps
+    queryHeapDesc.NodeMask = 0;
+    queryHeapDesc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+    auto result = InDevice->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&ImGuiOverlayDx::queryHeap));
+
+    // Create a readback buffer to retrieve timestamp data
+    D3D12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(2 * sizeof(UINT64));
+    D3D12_HEAP_PROPERTIES heapProps = {};
+    heapProps.Type = D3D12_HEAP_TYPE_READBACK;
+    result = InDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&ImGuiOverlayDx::readbackBuffer));
 
     return NVSDK_NGX_Result_Success;
 }
@@ -856,11 +869,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         LOG_INFO("callback exist");
 
     // DLSS Enabler
-    if (!Config::Instance()->DE_Available)
     {
         // DLSS Enabler check
         int deAvail = 0;
-        if (InParameters->Get("DLSSEnabler.Available", &deAvail) == NVSDK_NGX_Result_Success)
+        if (!Config::Instance()->DE_Available && InParameters->Get("DLSSEnabler.Available", &deAvail) == NVSDK_NGX_Result_Success)
         {
             if (Config::Instance()->DE_Available != (deAvail > 0))
                 LOG_INFO("DLSSEnabler.Available: {0}", deAvail);
@@ -868,50 +880,54 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             Config::Instance()->DE_Available = (deAvail > 0);
         }
 
-        int limit = 0;
-        if (InParameters->Get("FramerateLimit", &limit) == NVSDK_NGX_Result_Success)
+        if (Config::Instance()->DE_Available)
         {
-            if (Config::Instance()->DE_FramerateLimit.has_value())
+            int limit = 0;
+            if (InParameters->Get("FramerateLimit", &limit) == NVSDK_NGX_Result_Success)
             {
-                if (Config::Instance()->DE_FramerateLimit.value() != limit)
+                if (Config::Instance()->DE_FramerateLimit.has_value())
                 {
-                    LOG_DEBUG("DLSS Enabler FramerateLimit new value: {0}", Config::Instance()->DE_FramerateLimit.value());
-                    InParameters->Set("FramerateLimit", Config::Instance()->DE_FramerateLimit.value());
+                    if (Config::Instance()->DE_FramerateLimit.value() != limit)
+                    {
+                        LOG_DEBUG("DLSS Enabler FramerateLimit new value: {0}", Config::Instance()->DE_FramerateLimit.value());
+                        InParameters->Set("FramerateLimit", Config::Instance()->DE_FramerateLimit.value());
+                    }
+                }
+                else
+                {
+                    LOG_INFO("DLSS Enabler FramerateLimit initial value: {0}", limit);
+                    Config::Instance()->DE_FramerateLimit = limit;
                 }
             }
-            else
+            else if (Config::Instance()->DE_FramerateLimit.has_value())
             {
-                LOG_INFO("DLSS Enabler FramerateLimit initial value: {0}", limit);
-                Config::Instance()->DE_FramerateLimit = limit;
+                InParameters->Set("FramerateLimit", Config::Instance()->DE_FramerateLimit.value());
             }
-        }
-        else if (Config::Instance()->DE_FramerateLimit.has_value())
-        {
-            InParameters->Set("FramerateLimit", Config::Instance()->DE_FramerateLimit.value());
-        }
 
-        int dfgAvail = 0;
-        if (InParameters->Get("DFG.Available", &dfgAvail) == NVSDK_NGX_Result_Success)
-            Config::Instance()->DE_DynamicLimitAvailable = dfgAvail;
+            int dfgAvail = 0;
+            if (!Config::Instance()->DE_DynamicLimitAvailable && InParameters->Get("DFG.Available", &dfgAvail) == NVSDK_NGX_Result_Success)
+                Config::Instance()->DE_DynamicLimitAvailable = dfgAvail;
 
-        int dfgEnabled = 0;
-        if (InParameters->Get("DFG.Enabled", &dfgEnabled) == NVSDK_NGX_Result_Success)
-        {
-            if (Config::Instance()->DE_DynamicLimitEnabled.has_value())
+            int dfgEnabled = 0;
+            if (InParameters->Get("DFG.Enabled", &dfgEnabled) == NVSDK_NGX_Result_Success)
             {
-                if (Config::Instance()->DE_DynamicLimitEnabled.value() != dfgEnabled)
+                if (Config::Instance()->DE_DynamicLimitEnabled.has_value())
                 {
-                    LOG_DEBUG("DLSS Enabler DFG {0}", Config::Instance()->DE_DynamicLimitEnabled.value() == 0 ? "disabled" : "enabled");
-                    InParameters->Set("DFG.Enabled", Config::Instance()->DE_DynamicLimitEnabled.value());
+                    if (Config::Instance()->DE_DynamicLimitEnabled.value() != dfgEnabled)
+                    {
+                        LOG_DEBUG("DLSS Enabler DFG {0}", Config::Instance()->DE_DynamicLimitEnabled.value() == 0 ? "disabled" : "enabled");
+                        InParameters->Set("DFG.Enabled", Config::Instance()->DE_DynamicLimitEnabled.value());
+                    }
                 }
-            }
-            else
-            {
-                LOG_INFO("DLSS Enabler DFG initial value: {0} ({1})", dfgEnabled == 0 ? "disabled" : "enabled", dfgEnabled);
-                Config::Instance()->DE_DynamicLimitEnabled = dfgEnabled;
+                else
+                {
+                    LOG_INFO("DLSS Enabler DFG initial value: {0} ({1})", dfgEnabled == 0 ? "disabled" : "enabled", dfgEnabled);
+                    Config::Instance()->DE_DynamicLimitEnabled = dfgEnabled;
+                }
             }
         }
     }
+
 
     IFeature_Dx12* deviceContext = nullptr;
 
@@ -1133,10 +1149,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         sigatureMutex.unlock();
     }
 
-    auto start = Util::MillisecondsNow();
+    // Record the first timestamp (before FSR2 upscaling)
+    InCmdList->EndQuery(ImGuiOverlayDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
+
+    //auto start = Util::MillisecondsNow();
     bool evalResult = deviceContext->Evaluate(InCmdList, InParameters);
-    Config::Instance()->upscaleTimes.push_back(Util::MillisecondsNow() - start);
-    Config::Instance()->upscaleTimes.pop_front();
+    //Config::Instance()->upscaleTimes.push_back(Util::MillisecondsNow() - start);
+    //Config::Instance()->upscaleTimes.pop_front();
+
+    // Record the second timestamp (after FSR2 upscaling)
+    InCmdList->EndQuery(ImGuiOverlayDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 1);
+
+    // Resolve the queries to the readback buffer
+    InCmdList->ResolveQueryData(ImGuiOverlayDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0, 2, ImGuiOverlayDx::readbackBuffer, 0);
+
+    ImGuiOverlayDx::dx12UpscaleTrig = true;
 
     if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
     {

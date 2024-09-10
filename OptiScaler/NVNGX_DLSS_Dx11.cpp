@@ -17,6 +17,9 @@
 
 #include <ankerl/unordered_dense.h>
 
+#include "imgui/imgui_overlay_dx.h"
+
+
 inline ID3D11Device* D3D11Device = nullptr;
 static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx11>> Dx11Contexts;
 static inline NVSDK_NGX_Parameter* createParams;
@@ -78,6 +81,18 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
         D3D11Device = InDevice;
 
     Config::Instance()->Api = NVNGX_DX11;
+
+    // Create Disjoint Query
+    D3D11_QUERY_DESC disjointQueryDesc = {};
+    disjointQueryDesc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
+    InDevice->CreateQuery(&disjointQueryDesc, &ImGuiOverlayDx::disjointQuery);
+
+    // Create Timestamp Queries
+    D3D11_QUERY_DESC timestampQueryDesc = {};
+    timestampQueryDesc.Query = D3D11_QUERY_TIMESTAMP;
+
+    InDevice->CreateQuery(&timestampQueryDesc, &ImGuiOverlayDx::timestampStartQuery);
+    InDevice->CreateQuery(&timestampQueryDesc, &ImGuiOverlayDx::timestampEndQuery);
 
     return NVSDK_NGX_Result_Success;
 }
@@ -783,14 +798,25 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
         return NVSDK_NGX_Result_Success;
     }
 
-    auto start = Util::MillisecondsNow();
+    // Begin the disjoint query to ensure proper timing
+    InDevCtx->Begin(ImGuiOverlayDx::disjointQuery);
+
+    // Record the timestamp before the FSR2 dispatch
+    InDevCtx->End(ImGuiOverlayDx::timestampStartQuery);
+
     if (!deviceContext->Evaluate(InDevCtx, InParameters) && !deviceContext->IsInited() && (deviceContext->Name() == "XeSS" || deviceContext->Name() == "DLSS" || deviceContext->Name() == "FSR3 w/Dx12"))
     {
         Config::Instance()->newBackend = "fsr22";
         Config::Instance()->changeBackend = true;
     }
-    Config::Instance()->upscaleTimes.push_back(Util::MillisecondsNow() - start);
-    Config::Instance()->upscaleTimes.pop_front();
+
+    // Record the timestamp after the FSR2 dispatch
+    InDevCtx->End(ImGuiOverlayDx::timestampEndQuery);
+
+    // End the disjoint query to close the timing measurement
+    InDevCtx->End(ImGuiOverlayDx::disjointQuery);
+
+    ImGuiOverlayDx::dx11UpscaleTrig = true;
 
     return NVSDK_NGX_Result_Success;
 }
