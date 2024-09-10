@@ -242,7 +242,7 @@ void Imgui_Dx12::CreateRenderTarget(const D3D12_RESOURCE_DESC& InDesc)
 		desc.Height = InDesc.Height;
 		desc.DepthOrArraySize = 1;
 		desc.MipLevels = 1;
-		desc.Format = InDesc.Format;
+		desc.Format = TranslateTypelessFormats(InDesc.Format);
 		desc.SampleDesc.Count = 1;
 		desc.SampleDesc.Quality = 0;
 		desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;

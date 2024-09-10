@@ -32,7 +32,7 @@ void Imgui_Dx11::CreateRenderTarget(ID3D11Resource* out)
 	{
 		D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
 		ZeroMemory(&rtvDesc, sizeof(rtvDesc));
-		rtvDesc.Format = outDesc.Format;
+		rtvDesc.Format = TranslateTypelessFormats(outDesc.Format);
 		rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 		rtvDesc.Texture2D.MipSlice = 0;
 
