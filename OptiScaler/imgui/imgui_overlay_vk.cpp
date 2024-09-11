@@ -59,12 +59,13 @@ static void DestroyVulkanObjects(bool shutdown)
     if (_ImVulkan_Info.Device == VK_NULL_HANDLE)
         return;
 
-    LOG_FUNC();
+    if (!shutdown)
+        LOG_FUNC();
 
     _vkCleanMutex.lock();
 
     auto result = vkDeviceWaitIdle(_ImVulkan_Info.Device);
-    if (result != VK_SUCCESS)
+    if (result != VK_SUCCESS && !shutdown)
         LOG_WARN("vkDeviceWaitIdle error: {0:X}", (UINT)result);
 
     if (shutdown)
@@ -564,7 +565,7 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
 {
     LOG_FUNC();
 
-    
+
 
     if (!_vulkanObjectsCreated)
     {
@@ -807,10 +808,10 @@ void ImGuiOverlayVk::UnHookVk()
 
         if (o_vkCreateDevice != nullptr)
             DetourDetach(&(PVOID&)o_vkCreateDevice, hkvkCreateDevice);
-        
+
         if (o_vkCreateInstance != nullptr)
             DetourDetach(&(PVOID&)o_vkCreateInstance, hkvkCreateInstance);
-        
+
         if (o_vkCreateWin32SurfaceKHR != nullptr)
             DetourDetach(&(PVOID&)o_vkCreateWin32SurfaceKHR, hkvkCreateWin32SurfaceKHR);
 

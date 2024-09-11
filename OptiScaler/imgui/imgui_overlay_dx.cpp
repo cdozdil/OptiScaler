@@ -1278,22 +1278,25 @@ void ImGuiOverlayDx::HookDx()
 
 void ImGuiOverlayDx::UnHookDx()
 {
-    if (_isInited && ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
+    if (!Config::Instance()->IsRunningOnDXVK)
     {
-        if (_dx11Device)
-            ImGui_ImplDX11_Shutdown();
-        else
-            ImGui_ImplDX12_Shutdown();
-    }
+        if (_isInited && ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
+        {
+            if (_dx11Device)
+                ImGui_ImplDX11_Shutdown();
+            else
+                ImGui_ImplDX12_Shutdown();
+        }
 
-    ImGuiOverlayBase::Shutdown();
+        ImGuiOverlayBase::Shutdown();
 
-    if (_isInited)
-    {
-        if (_dx11Device)
-            CleanupRenderTargetDx11();
-        else
-            CleanupRenderTargetDx12(true);
+        if (_isInited)
+        {
+            if (_dx11Device)
+                CleanupRenderTargetDx11();
+            else
+                CleanupRenderTargetDx12(true);
+        }
     }
 
     DeatachAllHooks();
