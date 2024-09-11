@@ -19,7 +19,7 @@ Key aspects of OptiScaler:
 To overcome DLSS 3.7's signature check requirements, I implemented a method developed by **Artur** (creator of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)). Later, this method increased the compatibility of `OverlayMenu`, allowed OptiScaler to **spoof DXGI and Vulkan**, let users override the `nvapi64.dll` and even let users to force Anitsotropic Filtering and Mipmap Lod Bias. In short, this installation method allowed OptiScaler to provide more features to users.
 
 Step-by-step installation (**Nvidia users please skip to step 3**):
-1. We need an Nvidia signed dll file to bypass signature checks. All games that support DLSS come with `nvngx_dlss.dll`. Most of the time it's in the games exe folder. Some games and engines keep these third party dll's in different folders (like `plugins`). So we need to find the `nvngx_dlss.dll` file and copy it to the games exe folder. If it's already in the games exe folder, make a copy of it.
+1. We need an Nvidia signed dll file to bypass signature checks. All games that support DLSS come with `nvngx_dlss.dll`. Most of the time it's in the games exe folder (e.g. for Unreal Engine games it's `<path-to-game>\Binaries\Win64\`). Some games and engines keep these third party dll's in different folders (like `plugins`). So we need to find the `nvngx_dlss.dll` file and copy it to the games exe folder. If it's already in the games exe folder, make a copy of it. 
 2. Rename the copy of `nvngx_dlss.dll` in the games exe folder to `nvngx.dll`.
 3. Rename OptiScaler's `nvngx.dll` to one of the [supported filenames](#optiscaler-supports-these-filenames) (I prefer `dxgi.dll`) [1].
 4. Copy the renamed OptiScaler file to your game's executable folder.
@@ -48,7 +48,7 @@ Alternatively you can create a new folder called `plugins` and put other mods fi
 ### Install as `nvngx.dll`
 Step-by-step installation:
 1. Download the latest relase from [releases](https://github.com/cdozdil/OptiScaler/releases).
-2. Extract the contents of the archive next to the game executable file in your games folder. [1]
+2. Extract the contents of the archive next to the game executable file in your games folder. (e.g. for Unreal Engine games it's `<path-to-game>\Binaries\Win64\`) [1]
 3. Run `EnableSignatureOverride.reg` from `DlssOverrides` folder and confirm merge. [2][3]
 4. If your GPU is not an Nvidia one, check [GPU spoofing options](Spoofing.md).
 
