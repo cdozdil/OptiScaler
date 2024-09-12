@@ -1199,8 +1199,10 @@ void ImGuiCommon::RenderMenu()
 
                             if (Config::Instance()->DE_Generator.value_or("auto") == "auto")
                                 selected = "Auto";
-                            else if (Config::Instance()->DE_Generator.value_or("auto") == "fsr3")
-                                selected = "FSR3";
+                            else if (Config::Instance()->DE_Generator.value_or("auto") == "fsr30")
+                                selected = "FSR3.0";
+                            else if (Config::Instance()->DE_Generator.value_or("auto") == "fsr31")
+                                selected = "FSR3.1";
                             else if (Config::Instance()->DE_Generator.value_or("auto") == "dlssg")
                                 selected = "DLSS-G";
 
@@ -1209,8 +1211,11 @@ void ImGuiCommon::RenderMenu()
                                 if (ImGui::Selectable("Auto", Config::Instance()->DE_Generator.value_or("auto") == "auto"))
                                     Config::Instance()->DE_Generator = "auto";
 
-                                if (ImGui::Selectable("FSR3", Config::Instance()->DE_Generator.value_or("auto") == "fsr3"))
-                                    Config::Instance()->DE_Generator = "fsr3";
+                                if (ImGui::Selectable("FSR3.0", Config::Instance()->DE_Generator.value_or("auto") == "fsr30"))
+                                    Config::Instance()->DE_Generator = "fsr30";
+
+                                if (ImGui::Selectable("FSR3.1", Config::Instance()->DE_Generator.value_or("auto") == "fsr31"))
+                                    Config::Instance()->DE_Generator = "fsr31";
 
                                 if (ImGui::Selectable("DLSS-G", Config::Instance()->DE_Generator.value_or("auto") == "dlssg"))
                                     Config::Instance()->DE_Generator = "dlssg";

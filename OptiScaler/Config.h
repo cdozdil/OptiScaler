@@ -171,7 +171,7 @@ public:
 	std::optional<bool> DE_FramerateLimitVsync;
 	std::optional<int> DE_DynamicLimitAvailable;	// DFG.Available
 	std::optional<int> DE_DynamicLimitEnabled;		// DFG.Enabled
-	std::optional<std::string> DE_Generator;		// auto - fsr3 - dlssg
+	std::optional<std::string> DE_Generator;		// auto - fsr30 - fsr31 - dlssg
 	std::optional<std::string> DE_Reflex;			// on - boost - off
 	std::optional<std::string> DE_ReflexEmu;		// auto - on - off
 
