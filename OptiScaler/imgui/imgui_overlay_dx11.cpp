@@ -1,15 +1,15 @@
 #include "imgui_overlay_base.h"
 #include "imgui_overlay_dx11.h"
 
-#include "../Util.h"
-#include "../pch.h"
+#include <pch.h>
+#include <Util.h>
 
 #include <d3d11.h>
 
-#include "imgui/imgui_impl_dx11.h"
-#include "imgui/imgui_impl_win32.h"
+#include <backends/imgui_impl_dx11.h>
+#include <backends/imgui_impl_win32.h>
 
-#include "../detours/detours.h"
+#include <detours.h>
 
 // Dx12 overlay code adoptes from 
 // https://github.com/bruhmoment21/UniversalHookX

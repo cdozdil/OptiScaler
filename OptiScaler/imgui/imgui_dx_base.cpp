@@ -1,11 +1,12 @@
-#include "../Config.h"
-#include "../Logger.h"
-#include "../resource.h"
-#include "../Util.h"
+#include <Config.h>
+#include <Logger.h>
+#include <resource.h>
+#include <Util.h>
 
 #include "imgui_common.h"
 #include "imgui_dx_base.h"
-#include "imgui/imgui_impl_win32.h"
+
+#include <backends/imgui_impl_win32.h>
 
 void ImguiDxBase::RenderMenu()
 {

@@ -1,6 +1,6 @@
 #pragma once
-
 #include "imgui_dx_base.h"
+
 #include <d3d12.h>
 
 class Imgui_Dx12 : public ImguiDxBase

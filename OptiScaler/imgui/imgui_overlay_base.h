@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../pch.h"
+#include <pch.h>
 
 #include <dxgi1_4.h>
 

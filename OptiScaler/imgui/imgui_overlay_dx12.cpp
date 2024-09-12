@@ -1,9 +1,9 @@
 #include "imgui_overlay_base.h"
 #include "imgui_overlay_dx12.h"
 
-#include "../Util.h"
-#include "../Logger.h"
-#include "../Config.h"
+#include <Util.h>
+#include <Logger.h>
+#include <Config.h>
 
 #include "ffx_api.h"
 #include "ffx_framegeneration.h"
@@ -12,10 +12,10 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
-#include "imgui/imgui_impl_dx12.h"
-#include "imgui/imgui_impl_win32.h"
+#include <backends/imgui_impl_dx12.h>
+#include <backends/imgui_impl_win32.h>
 
-#include "../detours/detours.h"
+#include <detours.h>
 
 //#include "wrapped_swapchain.h"
 
