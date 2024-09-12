@@ -12,8 +12,8 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
-#include <backends/imgui_impl_dx12.h>
-#include <backends/imgui_impl_win32.h>
+#include <imgui/imgui_impl_dx12.h>
+#include <imgui/imgui_impl_win32.h>
 
 #include <detours.h>
 

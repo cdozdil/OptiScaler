@@ -3,7 +3,7 @@
 #include <optional>
 #include <filesystem>
 #include <SimpleIni.h>
-#include "backends/IFeature.h"
+#include <upscalers/IFeature.h>
 
 typedef enum NVNGX_Api
 {

@@ -2,8 +2,8 @@
 
 #include <d3dx12.h>
 
-#include <backends/imgui_impl_dx12.h>
-#include <backends/imgui_impl_win32.h>
+#include <imgui/imgui_impl_dx12.h>
+#include <imgui/imgui_impl_win32.h>
 
 long frameCounter = 0;
 

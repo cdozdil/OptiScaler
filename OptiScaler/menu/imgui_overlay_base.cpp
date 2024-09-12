@@ -5,10 +5,6 @@
 #include <Logger.h>
 #include <resource.h>
 
-#include <imgui.h>
-#include <backends/imgui_impl_win32.h>
-
-
 HWND ImGuiOverlayBase::Handle()
 {
 	return ImGuiCommon::Handle();

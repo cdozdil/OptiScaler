@@ -4,8 +4,8 @@
 #include <Util.h>
 #include <Config.h>
 
-#include <backends/imgui_impl_vulkan.h>
-#include <backends/imgui_impl_win32.h>
+#include <imgui/imgui_impl_vulkan.h>
+#include <imgui/imgui_impl_win32.h>
 
 #include <detours.h>
 

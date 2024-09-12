@@ -6,7 +6,7 @@
 #include "imgui_common.h"
 #include "imgui_dx_base.h"
 
-#include <backends/imgui_impl_win32.h>
+#include <imgui/imgui_impl_win32.h>
 
 void ImguiDxBase::RenderMenu()
 {
