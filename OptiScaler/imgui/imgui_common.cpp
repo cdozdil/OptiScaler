@@ -803,7 +803,7 @@ void ImGuiCommon::RenderMenu()
                     switch (Config::Instance()->Api)
                     {
                         case NVNGX_DX11:
-                            ImGui::Text("DirextX 11 %s- %s (%d.%d.%d)", Config::Instance()->IsRunningOnDXVK ? "(DXVK) " : "", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
+                            ImGui::Text("DirectX 11 %s- %s (%d.%d.%d)", Config::Instance()->IsRunningOnDXVK ? "(DXVK) " : "", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
 
                             if (Config::Instance()->CurrentFeature->Name() != "DLSSD")
                                 AddDx11Backends(&currentBackend, &currentBackendName);
@@ -811,7 +811,7 @@ void ImGuiCommon::RenderMenu()
                             break;
 
                         case NVNGX_DX12:
-                            ImGui::Text("DirextX 12 %s- %s (%d.%d.%d)", Config::Instance()->IsRunningOnDXVK ? "(DXVK)" : "", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
+                            ImGui::Text("DirectX 12 %s- %s (%d.%d.%d)", Config::Instance()->IsRunningOnDXVK ? "(DXVK)" : "", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
 
                             if (Config::Instance()->CurrentFeature->Name() != "DLSSD")
                                 AddDx12Backends(&currentBackend, &currentBackendName);
