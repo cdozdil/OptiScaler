@@ -963,7 +963,7 @@ void ImGuiCommon::RenderMenu()
                         if (_fsr3xIndex < 0)
                             _fsr3xIndex = Config::Instance()->Fsr3xIndex.value_or(0);
 
-                        if (currentBackend == "fsr31" || currentBackend == "fsr31_12")
+                        if (currentBackend == "fsr31" || currentBackend == "fsr31_12" && Config::Instance()->fsr3xVersionNames.size() > 0)
                         {
                             auto currentName = std::format("FSR {}", Config::Instance()->fsr3xVersionNames[_fsr3xIndex]);
                             if (ImGui::BeginCombo("Upscaler", currentName.c_str()))
