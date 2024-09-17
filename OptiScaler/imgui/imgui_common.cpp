@@ -1338,11 +1338,11 @@ void ImGuiCommon::RenderMenu()
                         ImGui::EndDisabled();
                     }
 
-                    // DX12 -----------------------------
-                    if (Config::Instance()->AdvancedSettings.value_or(false) && Config::Instance()->Api == NVNGX_DX12)
+                    // DX11 & DX12 -----------------------------
+                    if (Config::Instance()->AdvancedSettings.value_or(false) && Config::Instance()->Api != NVNGX_VULKAN)
                     {
                         // MIPMAP BIAS & Anisotropy -----------------------------
-                        ImGui::SeparatorText("Mipmap Bias (Dx12)");
+                        ImGui::SeparatorText("Mipmap Bias (DirectX)");
 
                         if (Config::Instance()->MipmapBiasOverride.has_value() && _mipBias == 0.0f)
                             _mipBias = Config::Instance()->MipmapBiasOverride.value();
@@ -1382,7 +1382,7 @@ void ImGuiCommon::RenderMenu()
                         ImGui::Text("Will be applied after RESOLUTION or PRESENT change !!!");
 
                         // MIPMAP BIAS & Anisotropy -----------------------------
-                        ImGui::SeparatorText("Anisotropic Filtering (Dx12)");
+                        ImGui::SeparatorText("Anisotropic Filtering (DirectX)");
 
                         ImGui::PushItemWidth(65.0f * Config::Instance()->MenuScale.value_or(1.0));
 
