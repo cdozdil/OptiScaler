@@ -68,7 +68,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             auto xessLibraryPathA = readString("XeSS", "LibraryPath");
 
-            if(xessLibraryPathA.has_value())
+            if (xessLibraryPathA.has_value())
                 XeSSLibrary = string_to_wstring(xessLibraryPathA.value());
         }
 
@@ -260,7 +260,7 @@ bool Config::Reload(std::filesystem::path iniPath)
         // Hotfixes
         {
             RoundInternalResolution = readInt("Hotfix", "RoundInternalResolution");
-            
+
             MipmapBiasOverride = readFloat("Hotfix", "MipmapBiasOverride");
             if (MipmapBiasOverride.has_value() && (MipmapBiasOverride.value() > 15.0 || MipmapBiasOverride.value() < -15.0))
                 MipmapBiasOverride.reset();
@@ -272,7 +272,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             RestoreComputeSignature = readBool("Hotfix", "RestoreComputeSignature");
             RestoreComputeSignature = readBool("Hotfix", "RestoreComputeSignature");
             SkipFirstFrames = readInt("Hotfix", "SkipFirstFrames");
-            
+
             UsePrecompiledShaders = readBool("Hotfix", "UsePrecompiledShaders");
 
             ColorResourceBarrier = readInt("Hotfix", "ColorResourceBarrier");
@@ -332,7 +332,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             DE_Generator = readString("FrameGeneration", "Generator", true);
 
-            if (DE_Generator.has_value() && DE_Generator.value() != "fsr3" && DE_Generator.value() != "dlssg")
+            if (DE_Generator.has_value() && DE_Generator.value() != "fsr30" && DE_Generator.value() != "fsr31" && DE_Generator.value() != "dlssg")
                 DE_Generator.reset();
 
             buffer = readString("FrameGeneration", "FramerateLimit", true);
@@ -554,7 +554,7 @@ bool Config::SaveIni()
         ini.SetValue("Hotfix", "RestoreComputeSignature", GetBoolValue(Instance()->RestoreComputeSignature).c_str());
         ini.SetValue("Hotfix", "RestoreGraphicSignature", GetBoolValue(Instance()->RestoreGraphicSignature).c_str());
         ini.SetValue("Hotfix", "SkipFirstFrames", GetIntValue(Instance()->SkipFirstFrames).c_str());
-        
+
         ini.SetValue("Hotfix", "UsePrecompiledShaders", GetBoolValue(Instance()->UsePrecompiledShaders).c_str());
 
         ini.SetValue("Hotfix", "ColorResourceBarrier", GetIntValue(Instance()->ColorResourceBarrier).c_str());
