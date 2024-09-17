@@ -821,9 +821,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     if (InFeatureHandle == nullptr)
     {
         LOG_DEBUG("InFeatureHandle is null");
-        return NVSDK_NGX_Result_Fail;
-        // returning success to prevent breaking flow of the app
-        // return NVSDK_NGX_Result_Success;
+        return NVSDK_NGX_Result_FAIL_FeatureNotFound;
     }
     else
     {
@@ -832,26 +830,20 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     auto evaluateStart = GetTicks();
 
-    auto handleId = InFeatureHandle->Id;
-    LOG_DEBUG("FeatureId: {0}", handleId);
-
     if (!InCmdList)
     {
         LOG_ERROR("InCmdList is null!!!");
         return NVSDK_NGX_Result_Fail;
     }
 
+    auto handleId = InFeatureHandle->Id;
     if (handleId < 1000000)
     {
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D12_EvaluateFeature() != nullptr)
         {
             LOG_DEBUG("D3D12_EvaluateFeature for ({0})", handleId);
-            auto start = Util::MillisecondsNow();
             auto result = NVNGXProxy::D3D12_EvaluateFeature()(InCmdList, InFeatureHandle, InParameters, InCallback);
-            Config::Instance()->upscaleTimes.push_back(Util::MillisecondsNow() - start);
-            Config::Instance()->upscaleTimes.pop_front();
             LOG_DEBUG("D3D12_EvaluateFeature result for ({0}): {1:X}", handleId, (UINT)result);
-
             return result;
         }
         else
@@ -1152,10 +1144,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     // Record the first timestamp (before FSR2 upscaling)
     InCmdList->EndQuery(ImGuiOverlayDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
 
-    //auto start = Util::MillisecondsNow();
     bool evalResult = deviceContext->Evaluate(InCmdList, InParameters);
-    //Config::Instance()->upscaleTimes.push_back(Util::MillisecondsNow() - start);
-    //Config::Instance()->upscaleTimes.pop_front();
 
     // Record the second timestamp (after FSR2 upscaling)
     InCmdList->EndQuery(ImGuiOverlayDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 1);

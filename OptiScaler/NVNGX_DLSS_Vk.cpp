@@ -724,9 +724,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     if (InFeatureHandle == nullptr)
     {
         LOG_DEBUG("InFeatureHandle is null");
-        return NVSDK_NGX_Result_Fail;
-        // returning success to prevent breaking flow of the app
-        // return NVSDK_NGX_Result_Success;
+        return NVSDK_NGX_Result_FAIL_FeatureNotFound;
     }
     else
     {
@@ -744,10 +742,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     {
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::VULKAN_EvaluateFeature() != nullptr)
         {
-            auto start = Util::MillisecondsNow();
+            LOG_DEBUG("VULKAN_EvaluateFeature for ({0})", handleId);
             auto result = NVNGXProxy::VULKAN_EvaluateFeature()(InCmdBuffer, InFeatureHandle, InParameters, InCallback);
-            Config::Instance()->upscaleTimes.push_back(Util::MillisecondsNow() - start);
-            Config::Instance()->upscaleTimes.pop_front();
             LOG_INFO("VULKAN_EvaluateFeature result for ({0}): {1:X}", handleId, (UINT)result);
             return result;
         }
@@ -947,7 +943,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 
     Config::Instance()->RenderMenu = true;
 
-    //auto start = Util::MillisecondsNow();
     // Record the first timestamp (before FSR2)
     vkCmdWriteTimestamp(InCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ImGuiOverlayVk::queryPool, 0);
 
@@ -956,9 +951,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     // Record the second timestamp (after FSR2)
     vkCmdWriteTimestamp(InCmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, ImGuiOverlayVk::queryPool, 1);
     ImGuiOverlayVk::vkUpscaleTrig = true;
-
-    //Config::Instance()->upscaleTimes.push_back(Util::MillisecondsNow() - start);
-    //Config::Instance()->upscaleTimes.pop_front();
 
     return upscaleResult ? NVSDK_NGX_Result_Success : NVSDK_NGX_Result_Fail;
 }
