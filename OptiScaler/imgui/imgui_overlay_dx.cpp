@@ -345,6 +345,7 @@ static void Present(IDXGISwapChain* pSwapChain, IUnknown* pDevice, HWND hWnd)
     ID3D11Device* device = nullptr;
     ID3D12Device* device12 = nullptr;
 
+    // try to obtain directx objects and find the path
     if (pDevice->QueryInterface(IID_PPV_ARGS(&device)) == S_OK)
     {
         LOG_DEBUG("_dx11Device");
@@ -361,8 +362,11 @@ static void Present(IDXGISwapChain* pSwapChain, IUnknown* pDevice, HWND hWnd)
         }
     }
 
+    // Upscaler GPU time computation
     if (ImGuiOverlayDx::dx12UpscaleTrig && ImGuiOverlayDx::readbackBuffer != nullptr && ImGuiOverlayDx::queryHeap != nullptr && cq != nullptr)
     {
+        if (ImGuiOverlayBase::IsInited() && ImGuiOverlayBase::IsVisible())
+        {
         UINT64* timestampData;
         ImGuiOverlayDx::readbackBuffer->Map(0, nullptr, reinterpret_cast<void**>(&timestampData));
 
@@ -380,26 +384,31 @@ static void Present(IDXGISwapChain* pSwapChain, IUnknown* pDevice, HWND hWnd)
 
         // Unmap the buffer
         ImGuiOverlayDx::readbackBuffer->Unmap(0, nullptr);
+        }
 
         ImGuiOverlayDx::dx12UpscaleTrig = false;
     }
-    else if (ImGuiOverlayDx::dx11UpscaleTrig && device != nullptr && ImGuiOverlayDx::disjointQuery != nullptr && ImGuiOverlayDx::timestampStartQuery != nullptr && ImGuiOverlayDx::timestampEndQuery != nullptr)
+    else if (ImGuiOverlayDx::dx11UpscaleTrig[ImGuiOverlayDx::currentFrameIndex] && device != nullptr && ImGuiOverlayDx::disjointQueries[0] != nullptr &&
+             ImGuiOverlayDx::startQueries[0] != nullptr && ImGuiOverlayDx::endQueries[0] != nullptr)
     {
         if (g_pd3dDeviceContext == nullptr)
             device->GetImmediateContext(&g_pd3dDeviceContext);
 
-        do
+        if (ImGuiOverlayBase::IsInited() && ImGuiOverlayBase::IsVisible())
         {
-            // Loop until the disjoint query data is ready
-            while (g_pd3dDeviceContext->GetData(ImGuiOverlayDx::disjointQuery, nullptr, 0, 0) == S_FALSE) {
-                std::this_thread::yield();
-            }
-
-            // Get the disjoint query data to ensure timestamps are valid
+            // Retrieve the results from the previous frame
             D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjointData;
-            if (g_pd3dDeviceContext->GetData(ImGuiOverlayDx::disjointQuery, &disjointData, sizeof(disjointData), 0) != S_OK) {
-                LOG_ERROR("Failed to retrieve disjoint query data!");
-                break; // Exit if there is an error
+            if (g_pd3dDeviceContext->GetData(ImGuiOverlayDx::disjointQueries[ImGuiOverlayDx::previousFrameIndex], &disjointData, sizeof(disjointData), 0) == S_OK)
+            {
+                if (!disjointData.Disjoint && disjointData.Frequency > 0)
+                {
+                    UINT64 startTime = 0, endTime = 0;
+                    if (g_pd3dDeviceContext->GetData(ImGuiOverlayDx::startQueries[ImGuiOverlayDx::previousFrameIndex], &startTime, sizeof(UINT64), 0) == S_OK &&
+                        g_pd3dDeviceContext->GetData(ImGuiOverlayDx::endQueries[ImGuiOverlayDx::previousFrameIndex], &endTime, sizeof(UINT64), 0) == S_OK)
+                    {
+                        double elapsedTimeMs = (endTime - startTime) / static_cast<double>(disjointData.Frequency) * 1000.0;
+                        Config::Instance()->upscaleTimes.push_back(elapsedTimeMs);
+                        Config::Instance()->upscaleTimes.pop_front();
             }
 
             if (disjointData.Disjoint) {
@@ -424,11 +433,8 @@ static void Present(IDXGISwapChain* pSwapChain, IUnknown* pDevice, HWND hWnd)
                 std::this_thread::yield();
             }
 
-            // Retrieve the end timestamp
-            UINT64 endTime = 0;
-            if (g_pd3dDeviceContext->GetData(ImGuiOverlayDx::timestampEndQuery, &endTime, sizeof(UINT64), 0) != S_OK) {
-                LOG_ERROR("Failed to retrieve end timestamp!");
-                break;
+        ImGuiOverlayDx::dx11UpscaleTrig[ImGuiOverlayDx::currentFrameIndex] = false;
+        ImGuiOverlayDx::currentFrameIndex = (ImGuiOverlayDx::currentFrameIndex + 1) % ImGuiOverlayDx::QUERY_BUFFER_COUNT;
             }
 
             // Calculate the elapsed time in milliseconds

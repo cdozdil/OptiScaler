@@ -85,14 +85,17 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
     // Create Disjoint Query
     D3D11_QUERY_DESC disjointQueryDesc = {};
     disjointQueryDesc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
-    InDevice->CreateQuery(&disjointQueryDesc, &ImGuiOverlayDx::disjointQuery);
 
     // Create Timestamp Queries
     D3D11_QUERY_DESC timestampQueryDesc = {};
     timestampQueryDesc.Query = D3D11_QUERY_TIMESTAMP;
 
-    InDevice->CreateQuery(&timestampQueryDesc, &ImGuiOverlayDx::timestampStartQuery);
-    InDevice->CreateQuery(&timestampQueryDesc, &ImGuiOverlayDx::timestampEndQuery);
+    for (int i = 0; i < ImGuiOverlayDx::QUERY_BUFFER_COUNT; i++)
+    {
+        InDevice->CreateQuery(&disjointQueryDesc, &ImGuiOverlayDx::disjointQueries[i]);
+        InDevice->CreateQuery(&timestampQueryDesc, &ImGuiOverlayDx::startQueries[i]);
+        InDevice->CreateQuery(&timestampQueryDesc, &ImGuiOverlayDx::endQueries[i]);
+    }
 
     return NVSDK_NGX_Result_Success;
 }
@@ -570,9 +573,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
     if (InFeatureHandle == nullptr)
     {
         LOG_DEBUG("InFeatureHandle is null");
-        return NVSDK_NGX_Result_Fail;
-        // returning success to prevent breaking flow of the app
-        // return NVSDK_NGX_Result_Success;
+        return NVSDK_NGX_Result_FAIL_FeatureNotFound;
     }
     else
     {
@@ -581,22 +582,17 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 
     if (InDevCtx == nullptr)
     {
-        LOG_ERROR("InCmdList is null!!!");
+        LOG_ERROR("InDevCtx is null!!!");
         return NVSDK_NGX_Result_Fail;
     }
 
     auto handleId = InFeatureHandle->Id;
-
-
     if (handleId < 1000000)
     {
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D11_EvaluateFeature() != nullptr)
         {
-            auto start = Util::MillisecondsNow();
+            LOG_DEBUG("D3D11_EvaluateFeature for ({0})", handleId);
             auto result = NVNGXProxy::D3D11_EvaluateFeature()(InDevCtx, InFeatureHandle, InParameters, InCallback);
-            Config::Instance()->upscaleTimes.push_back(Util::MillisecondsNow() - start);
-            Config::Instance()->upscaleTimes.pop_front();
-
             LOG_INFO("D3D11_EvaluateFeature result for ({0}): {1:X}", handleId, (UINT)result);
             return result;
         }
@@ -798,11 +794,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
         return NVSDK_NGX_Result_Success;
     }
 
-    // Begin the disjoint query to ensure proper timing
-    InDevCtx->Begin(ImGuiOverlayDx::disjointQuery);
+    // In the render loop:
+    ImGuiOverlayDx::previousFrameIndex = (ImGuiOverlayDx::currentFrameIndex + ImGuiOverlayDx::QUERY_BUFFER_COUNT - 2) % ImGuiOverlayDx::QUERY_BUFFER_COUNT;
+    int nextFrameIndex = ImGuiOverlayDx::currentFrameIndex;
 
-    // Record the timestamp before the FSR2 dispatch
-    InDevCtx->End(ImGuiOverlayDx::timestampStartQuery);
+    // Record the queries in the current frame
+    InDevCtx->Begin(ImGuiOverlayDx::disjointQueries[nextFrameIndex]);
+    InDevCtx->End(ImGuiOverlayDx::startQueries[nextFrameIndex]);
 
     if (!deviceContext->Evaluate(InDevCtx, InParameters) && !deviceContext->IsInited() && (deviceContext->Name() == "XeSS" || deviceContext->Name() == "DLSS" || deviceContext->Name() == "FSR3 w/Dx12"))
     {
@@ -810,13 +808,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
         Config::Instance()->changeBackend = true;
     }
 
-    // Record the timestamp after the FSR2 dispatch
-    InDevCtx->End(ImGuiOverlayDx::timestampEndQuery);
+    InDevCtx->End(ImGuiOverlayDx::endQueries[nextFrameIndex]);
+    InDevCtx->End(ImGuiOverlayDx::disjointQueries[nextFrameIndex]);
 
-    // End the disjoint query to close the timing measurement
-    InDevCtx->End(ImGuiOverlayDx::disjointQuery);
-
-    ImGuiOverlayDx::dx11UpscaleTrig = true;
+    ImGuiOverlayDx::dx11UpscaleTrig[nextFrameIndex] = true;
 
     return NVSDK_NGX_Result_Success;
 }
