@@ -565,8 +565,6 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
 {
     LOG_FUNC();
 
-
-
     if (!_vulkanObjectsCreated)
     {
         LOG_TRACE("!_vulkanObjectsCreated return o_QueuePresentKHR");
