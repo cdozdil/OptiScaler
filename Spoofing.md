@@ -6,7 +6,7 @@ To bypass these checks modders have developed some tools.
 ### Nvapi
 For spoofing Nvapi calls FakeNvapi can be used. This is needed for enabling DLSS support for some games (like Shadow of the Tomb Raider etc.) 
 
-Also as a **big bonus** with latest releases FakeNvapi added support for AMD's AntiLag 2 & LatencyFlex to reduce input latesncy on games that supports Nvidia's Reflex.
+Also as a **big bonus** with latest releases FakeNvapi added support for AMD's AntiLag 2 & LatencyFlex to reduce input latency on games that supports Nvidia's Reflex.
 ##### Usage 
 Just put `nvapi64.dll` next to OptiScaler and set `OverrideNvapiDll=true` from `nvngx.ini`. This only works when OptiScaler is working as non-nvngx (not as `nvngx.dll`).
 
@@ -29,7 +29,7 @@ Just place dxgi.dll file next to games executable.
 
 ### Vulkan
 OptiScaler have built-in Vulkan spoofing options when working as non-nvngx (not as `nvngx.dll`).  
-Vulkan spoofing by default disabled and should be enabled from `nvngx.ini` 
+Vulkan spoofing by default disabled and should be enabled from `nvngx.ini` when needed.
 ```ini
 ; Enables Nvidia GPU spoofing for Vulkan
 ; true or false - Default (auto) is false
