@@ -3,6 +3,20 @@ Except from first generation of DLSS2 games they all have some kind of NVidia ve
 To bypass these checks modders have developed some tools.
 
 ## Windows
+### Nvapi
+For spoofing Nvapi calls FakeNvapi can be used. This is needed for enabling DLSS support for some games (like Shadow of the Tomb Raider etc.) 
+
+Also as a **big bonus** with latest releases FakeNvapi added support for AMD's AntiLag 2 & LatencyFlex to reduce input latency on games that supports Nvidia's Reflex.
+##### Usage 
+Just put `nvapi64.dll` next to OptiScaler and set `OverrideNvapiDll=true` from `nvngx.ini`. This only works when OptiScaler is working as non-nvngx (not as `nvngx.dll`).
+
+For using without OptiScaler:  
+You need to put `nvapi64.dll` file to your `%WINDIR%\System32` but **be careful!**
+* If you are an Nvidia user **backup your original file** and restore after mod usage is over.
+* Do not use this mod with online games, it might cause anti cheat issues or banning.
+##### Link
+[FakeNvapi](https://github.com/FakeMichau/fakenvapi/releases)   
+
 ### DXGI
 OptiScaler have built-in DXGI spoofing option which is enabled by default when working as non-nvngx (not as `nvngx.dll`).  
 
@@ -15,7 +29,7 @@ Just place dxgi.dll file next to games executable.
 
 ### Vulkan
 OptiScaler have built-in Vulkan spoofing options when working as non-nvngx (not as `nvngx.dll`).  
-Vulkan spoofing by default disabled and should be enabled from `nvngx.ini` 
+Vulkan spoofing by default disabled and should be enabled from `nvngx.ini` when needed.
 ```ini
 ; Enables Nvidia GPU spoofing for Vulkan
 ; true or false - Default (auto) is false
@@ -33,19 +47,6 @@ Compatiblity is a bit hit and miss, works for No Man's Sky (not working with lat
 Just place version.dll file next to games executable.  
 ##### Link 
 [vulkan-spoofer](https://github.com/cdozdil/vulkan-spoofer/releases)   
-
-### NVAPI
-For spoofing NVAPI calls nvapi-dummy can be used. Mod tries to implement most used calls and respond to almost all calls.
-##### Usage 
-Just put `nvapi64.dll` next to OptiScaler and set `OverrideNvapiDll=true` from `nvngx.ini`. This only works when OptiScaler is working as non-nvngx (not as `nvngx.dll`).
-
-For using without OptiScaler:  
-
-You need to put `nvapi64.dll` file to your `%WINDIR%\System32` but **be careful!**
-* If you are an NVidia user **backup your original file** and restore after mod usage is over.
-* Do not use this mod with online games, it might cause anti cheat issues or banning.
-##### Link 
-[nvapi-dummy](https://github.com/FakeMichau/nvapi-dummy/releases)   
 
 ## Linux
 On Linux with you can use Wine & DXVK's embedded spoofing mechanisms. 
