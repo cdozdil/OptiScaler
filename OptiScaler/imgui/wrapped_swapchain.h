@@ -251,5 +251,7 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
     PFN_SC_Clean ClearTrig = nullptr;
     HWND Handle = nullptr;
 
+    std::mutex _mutex;
+
     int id = 0;
 };

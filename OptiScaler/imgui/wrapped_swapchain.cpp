@@ -82,6 +82,12 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::QueryInterface(REFIID riid, vo
             return E_NOINTERFACE;
         }
     }
+    else if (riid == __uuidof(this))
+    {
+        AddRef();
+        *ppvObject = (IUnknown*)this;
+        return S_OK;
+    }
     else if (riid == __uuidof(IUnknown))
     {
         AddRef();
@@ -108,10 +114,18 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 {
     LOG_FUNC();
 
-    if (ClearTrig != nullptr)
-        ClearTrig(false, Handle);
+    _mutex.lock();
 
-    return m_pReal->ResizeBuffers(BufferCount, Width, Height, NewFormat, SwapChainFlags);
+    if (ClearTrig != nullptr)
+        ClearTrig(true, Handle);
+
+    auto result = m_pReal->ResizeBuffers(BufferCount, Width, Height, NewFormat, SwapChainFlags);
+
+    LOG_FUNC_RESULT(result);
+
+    _mutex.unlock();
+
+    return result;
 }
 
 HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetContainingOutput(IDXGIOutput** ppOutput)
@@ -124,10 +138,17 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 {
     LOG_FUNC();
 
-    if (ClearTrig != nullptr)
-        ClearTrig(false, Handle);
+    _mutex.lock();
 
-    return m_pReal3->ResizeBuffers1(BufferCount, Width, Height, Format, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
+    if (ClearTrig != nullptr)
+        ClearTrig(true, Handle);
+
+
+    auto result = m_pReal3->ResizeBuffers1(BufferCount, Width, Height, Format, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
+
+    _mutex.unlock();
+
+    return result;
 }
 
 HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput* pTarget)

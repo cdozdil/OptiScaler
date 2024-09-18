@@ -394,6 +394,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
         LOG_INFO("D3D12_Shutdown result: {0:X}", (UINT)result);
     }
 
+    ImGuiOverlayDx::UnHookDx();
+
     return NVSDK_NGX_Result_Success;
 }
 

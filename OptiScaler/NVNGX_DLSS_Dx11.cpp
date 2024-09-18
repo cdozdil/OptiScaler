@@ -194,15 +194,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown()
 
     DLSSFeatureDx11::Shutdown(D3D11Device);
 
-    //if (Config::Instance()->OverlayMenu.value_or(true) && ImGuiOverlayDx11::IsInitedDx11())
-    //    ImGuiOverlayDx11::ShutdownDx11();
-
     if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx11Inited() && NVNGXProxy::D3D11_Shutdown() != nullptr)
     {
         auto result = NVNGXProxy::D3D11_Shutdown()();
         NVNGXProxy::SetDx11Inited(false);
         LOG_INFO("D3D11_Shutdown result: {0:X}", (UINT)result);
     }
+
+    ImGuiOverlayDx::UnHookDx();
 
     return NVSDK_NGX_Result_Success;
 }

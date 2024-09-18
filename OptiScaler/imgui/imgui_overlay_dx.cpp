@@ -49,6 +49,7 @@ static PFN_D3D12_CREATE_DEVICE o_D3D12CreateDevice = nullptr;
 static PFN_CreateSampler o_CreateSampler = nullptr;
 
 static PFN_D3D11_CREATE_DEVICE o_D3D11CreateDevice = nullptr;
+static PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN o_D3D11CreateDeviceAndSwapChain = nullptr;
 static PFN_CreateSamplerState o_CreateSamplerState = nullptr;
 static PFN_D3D11ON12_CREATE_DEVICE o_D3D11On12CreateDevice = nullptr;
 static ID3D11Device* d3d11Device = nullptr;
@@ -156,8 +157,6 @@ static void CleanupRenderTargetDx12(bool clearQueue)
     if (!_isInited || !_dx12Device)
         return;
 
-    LOG_DEBUG("clearQueue: {0}!", clearQueue);
-
     for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
     {
         if (g_mainRenderTargetResource[i])
@@ -206,15 +205,13 @@ static void CleanupRenderTargetDx12(bool clearQueue)
 
         if (g_pd3dCommandQueue != nullptr)
         {
-            auto count = g_pd3dCommandQueue->Release();
-            LOG_DEBUG("D3D12 Queue refcount: {}", count);
+            g_pd3dCommandQueue->Release();
             g_pd3dCommandQueue = nullptr;
         }
 
         if (g_pd3dDeviceParam != nullptr)
         {
-            auto count = g_pd3dDeviceParam->Release();
-            LOG_DEBUG("D3D12 device refcount: {}", count);
+            g_pd3dDeviceParam->Release();
             g_pd3dDeviceParam = nullptr;
         }
 
@@ -372,7 +369,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         ImGuiOverlayDx::currentFrameIndex = (ImGuiOverlayDx::currentFrameIndex + 1) % ImGuiOverlayDx::QUERY_BUFFER_COUNT;
     }
 
-    // DXVK & process hWnd  check
+    // DXVK & process hWnd check
     if (Config::Instance()->IsRunningOnDXVK || hWnd != Util::GetProcessWindow())
     {
         if (cq != nullptr)
@@ -430,11 +427,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             g_pd3dCommandQueue = cq;
             g_pd3dDeviceParam = device12;
 
-            auto count = g_pd3dCommandQueue->AddRef();
-            LOG_DEBUG("D3D12 Queue refcount: {}", count);
-
-            count = g_pd3dDeviceParam->AddRef();
-            LOG_DEBUG("D3D12 Device refcount: {}", count);
+            g_pd3dCommandQueue->AddRef();
+            g_pd3dDeviceParam->AddRef();
 
             ImGuiOverlayBase::Dx12Ready();
             _isInited = true;
@@ -972,6 +966,64 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
     return result;
 }
 
+static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE DriverType, HMODULE Software, UINT Flags, CONST D3D_FEATURE_LEVEL* pFeatureLevels,
+                                               UINT FeatureLevels, UINT SDKVersion, DXGI_SWAP_CHAIN_DESC* pSwapChainDesc, IDXGISwapChain** ppSwapChain, ID3D11Device** ppDevice, D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext)
+{
+    LOG_FUNC();
+
+    IDXGISwapChain* buffer = nullptr;
+    auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, &buffer, ppDevice, pFeatureLevel, ppImmediateContext);
+
+    if (result == S_OK && *ppDevice != nullptr)
+    {
+        LOG_INFO("Device captured");
+        d3d11Device = *ppDevice;
+
+        HookToDevice(d3d11Device);
+
+        WrappedIDXGISwapChain4* buf = nullptr;
+        if (buffer != nullptr && buffer->QueryInterface(IID_PPV_ARGS(&buf)) != S_OK)
+        {
+            // check for SL proxy
+            IID riid;
+            IDXGISwapChain* real = nullptr;
+            auto iidResult = IIDFromString(L"{ADEC44E2-61F0-45C3-AD9F-1B37379284FF}", &riid);
+
+            if (iidResult == S_OK)
+            {
+                auto qResult = buffer->QueryInterface(riid, (void**)&real);
+
+                if (qResult == S_OK && real != nullptr)
+                {
+                    LOG_INFO("Streamline proxy found");
+                    real->Release();
+                }
+                else
+                {
+                    LOG_DEBUG("Streamline proxy not found");
+                }
+            }
+
+            Config::Instance()->ScreenWidth = pSwapChainDesc->BufferDesc.Width;
+            Config::Instance()->ScreenHeight = pSwapChainDesc->BufferDesc.Height;
+
+            LOG_DEBUG("created new swapchain: {0:X}, hWnd", (UINT64)buffer, (UINT64)pSwapChainDesc->OutputWindow);
+            *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? buffer : real, d3d11Device, pSwapChainDesc->OutputWindow, Present, CleanupRenderTarget);
+            LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)buffer, (UINT64)d3d11Device);
+        }
+
+        if (buf != nullptr)
+            buf->Release();
+    }
+
+    if (buffer != nullptr)
+        buffer->Release();
+
+    LOG_FUNC_RESULT(result);
+
+    return result;
+}
+
 static HRESULT hkD3D12CreateDevice(IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
 {
     LOG_FUNC();
@@ -1380,7 +1432,7 @@ void DeatachAllHooks()
     if (o_D3D11On12CreateDevice != nullptr)
     {
         DetourDetach(&(PVOID&)o_D3D11On12CreateDevice, hkD3D11On12CreateDevice);
-        o_D3D11CreateDevice = nullptr;
+        o_D3D11On12CreateDevice = nullptr;
     }
 
     if (o_D3D12CreateDevice != nullptr)
@@ -1439,8 +1491,9 @@ void ImGuiOverlayDx::HookDx()
     }
 
     o_D3D11CreateDevice = (PFN_D3D11_CREATE_DEVICE)DetourFindFunction("d3d11.dll", "D3D11CreateDevice");
+    o_D3D11CreateDeviceAndSwapChain = (PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN)DetourFindFunction("d3d11.dll", "D3D11CreateDeviceAndSwapChain");
     o_D3D11On12CreateDevice = (PFN_D3D11ON12_CREATE_DEVICE)DetourFindFunction("d3d11.dll", "D3D11On12CreateDevice");
-    if (o_D3D11CreateDevice != nullptr || o_D3D11On12CreateDevice != nullptr)
+    if (o_D3D11CreateDevice != nullptr || o_D3D11On12CreateDevice != nullptr || o_D3D11CreateDeviceAndSwapChain != nullptr)
     {
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
@@ -1450,6 +1503,9 @@ void ImGuiOverlayDx::HookDx()
 
         if (o_D3D11On12CreateDevice != nullptr)
             DetourAttach(&(PVOID&)o_D3D11On12CreateDevice, hkD3D11On12CreateDevice);
+
+        if (o_D3D11CreateDeviceAndSwapChain != nullptr)
+            DetourAttach(&(PVOID&)o_D3D11CreateDeviceAndSwapChain, hkD3D11CreateDeviceAndSwapChain);
 
         DetourTransactionCommit();
     }

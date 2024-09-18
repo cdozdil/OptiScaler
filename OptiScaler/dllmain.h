@@ -1708,6 +1708,8 @@ void AttachToAdapter(IUnknown* unkAdapter)
 
     PVOID* pVTable = *(PVOID**)unkAdapter;
 
+    bool dxvkStatus = Config::Instance()->IsRunningOnDXVK;
+
     IDXGIAdapter* adapter = nullptr;
     bool adapterOk = unkAdapter->QueryInterface(__uuidof(IDXGIAdapter), (void**)&adapter) == S_OK;
     
@@ -1718,7 +1720,8 @@ void AttachToAdapter(IUnknown* unkAdapter)
         ((IDXGIAdapter*)dxvkAdapter)->Release();
     }
 
-    LOG_INFO("IDXGIVkInteropDevice interface {0}", Config::Instance()->IsRunningOnDXVK ? "found" : "not found");
+    if(Config::Instance()->IsRunningOnDXVK != dxvkStatus)
+        LOG_INFO("IDXGIVkInteropDevice interface {0}", Config::Instance()->IsRunningOnDXVK ? "found" : "not found");
 
     if (ptrGetDesc == nullptr && adapterOk)
     {

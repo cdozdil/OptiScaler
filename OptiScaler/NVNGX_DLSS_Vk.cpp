@@ -979,6 +979,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
         LOG_INFO("VULKAN_Shutdown result: {0:X}", (UINT)result);
     }
 
+    ImGuiOverlayVk::UnHookVk();
+
     return NVSDK_NGX_Result_Success;
 }
 

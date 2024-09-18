@@ -21,7 +21,7 @@
 #define VER_MAJOR_VERSION   0
 #define VER_MINOR_VERSION   6
 #define VER_HOTFIX_VERSION  7
-#define VER_BUILD_NUMBER    8
+#define VER_BUILD_NUMBER    9
 
 #define VER_PRE_RELEASE     
 

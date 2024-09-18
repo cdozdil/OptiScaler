@@ -25,7 +25,8 @@
 // Enables logging of DLSS NV Parameters
 //#define DLSS_PARAM_DUMP
 
-inline HMODULE dllModule;
+inline HMODULE dllModule = nullptr;
+inline HMODULE skHandle = nullptr;
 inline DWORD processId;
 
 #define LOG_TRACE(msg, ...) \
