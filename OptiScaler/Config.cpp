@@ -323,6 +323,8 @@ bool Config::Reload(std::filesystem::path iniPath)
             {
                 PluginPath = string_to_wstring(pluginsPathA.value());
             }
+
+            LoadSpecialK = readBool("Plugins", "LoadSpecialK");
         }
 
         // DLSS Enabler
@@ -608,6 +610,7 @@ bool Config::SaveIni()
     // Plugins
     {
         ini.SetValue("Plugins", "Path", Instance()->PluginPath.has_value() ? wstring_to_string(Instance()->PluginPath.value()).c_str() : "auto");
+        ini.SetValue("Plugins", "LoadSpecialK", GetBoolValue(Instance()->LoadSpecialK).c_str());
     }
 
     auto pathWStr = absoluteFileName.wstring();

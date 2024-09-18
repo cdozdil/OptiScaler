@@ -917,6 +917,12 @@ static VkResult hkvkEnumerateInstanceExtensionProperties(const char* pLayerName,
 
 static void DetachHooks()
 {
+    if (!isNvngxMode)
+    {
+        ImGuiOverlayDx::UnHookDx();
+        ImGuiOverlayVk::UnHookVk();
+    }
+
     if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
     {
         DetourTransactionBegin();
@@ -1025,12 +1031,6 @@ static void DetachHooks()
         DetourTransactionCommit();
 
         FreeLibrary(shared.dll);
-    }
-
-    if (!isNvngxMode)
-    {
-        ImGuiOverlayDx::UnHookDx();
-        ImGuiOverlayVk::UnHookVk();
     }
 }
 
@@ -1497,7 +1497,7 @@ static void CheckWorkingMode()
     if (modeFound)
     {
         AttachHooks();
-        
+
         Config::Instance()->OverlayMenu = (!isNvngxMode || isWorkingWithEnabler) && Config::Instance()->OverlayMenu.value_or(true);
         if (Config::Instance()->OverlayMenu.value())
         {
@@ -1515,7 +1515,6 @@ static void CheckWorkingMode()
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
-
     switch (ul_reason_for_call)
     {
         case DLL_PROCESS_ATTACH:
@@ -1525,12 +1524,13 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 return TRUE;
             }
 
-            DisableThreadLibraryCalls(hModule);
-
-            loadCount++;
 
             dllModule = hModule;
             processId = GetCurrentProcessId();
+
+            DisableThreadLibraryCalls(hModule);
+
+            loadCount++;
 
 #ifdef VER_PRE_RELEASE
             // Enable file logging for pre builds
@@ -1599,13 +1599,14 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             break;
 
         case DLL_PROCESS_DETACH:
-#ifdef _DEBUG
-            LOG_TRACE("DLL_PROCESS_DETACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
-#endif
+            DetachHooks();
+
+            if (skHandle != nullptr)
+                FreeLibrary(skHandle);
+
             spdlog::info("");
             spdlog::info("Unloading OptiScaler");
             CloseLogger();
-            DetachHooks();
 
             break;
 

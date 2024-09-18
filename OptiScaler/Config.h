@@ -151,6 +151,7 @@ public:
 
 	// plugins
 	std::optional<std::wstring> PluginPath;
+	std::optional<bool> LoadSpecialK;
 
 	// nvngx init parameters
 	unsigned long long NVNGX_ApplicationId = 1337;

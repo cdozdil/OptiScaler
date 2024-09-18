@@ -2036,6 +2036,9 @@ void ImGuiCommon::Init(HWND InHwnd)
 
     _selectedScale = (int)((Config::Instance()->MenuScale.value_or(1.0f) - 1.0f) / 0.1f);
     _isInited = true;
+
+    if (Config::Instance()->LoadSpecialK.value_or(false))
+        skHandle = LoadLibrary(L"SpecialK64.dll");
 }
 
 void ImGuiCommon::Shutdown()
