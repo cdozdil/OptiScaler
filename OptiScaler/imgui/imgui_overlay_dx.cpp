@@ -94,10 +94,10 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChain);
 static void DeatachAllHooks();
 static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC* pSamplerDesc, ID3D11SamplerState** ppSamplerState);
-static HRESULT detEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter);
-static HRESULT detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter);
-static HRESULT detEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter);
-static HRESULT detEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter);
+static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter);
+static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter);
+static HRESULT hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter);
+static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter);
 
 static int GetCorrectDXGIFormat(int eCurrentFormat)
 {
@@ -156,6 +156,8 @@ static void CleanupRenderTargetDx12(bool clearQueue)
 {
     if (!_isInited || !_dx12Device)
         return;
+
+    LOG_FUNC();
 
     for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
     {
@@ -267,8 +269,7 @@ static void CleanupRenderTargetDx11(bool shutDown)
 
 static void CleanupRenderTarget(bool clearQueue, HWND hWnd)
 {
-    if (hWnd != Util::GetProcessWindow())
-        return;
+    LOG_FUNC();
 
     if (clearQueue)
         currentSCCommandQueue = nullptr;
@@ -279,16 +280,30 @@ static void CleanupRenderTarget(bool clearQueue, HWND hWnd)
         CleanupRenderTargetDx12(clearQueue);
 
     // Releasing RTSS D3D11on12 device
-    if (clearQueue && GetModuleHandle(L"RTSSHooks64.dll") != nullptr && d3d11on12Device != nullptr)
+    if (clearQueue && d3d11on12Device != nullptr && GetModuleHandle(L"RTSSHooks64.dll") != nullptr)
     {
         LOG_DEBUG("Releasing D3d11on12 device");
-        d3d11on12Device->Release();
         d3d11on12Device = nullptr;
     }
 }
 
 static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd)
 {
+    LOG_FUNC();
+
+    HRESULT presentResult;
+
+    if (hWnd != Util::GetProcessWindow())
+    {
+        if (pPresentParameters == nullptr)
+            presentResult = pSwapChain->Present(SyncInterval, Flags);
+        else
+            presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
+
+        LOG_FUNC_RESULT(presentResult);
+        return presentResult;
+    }
+
     ID3D12CommandQueue* cq = nullptr;
     ID3D11Device* device = nullptr;
     ID3D12Device* device12 = nullptr;
@@ -296,20 +311,46 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
     // try to obtain directx objects and find the path
     if (pDevice->QueryInterface(IID_PPV_ARGS(&device)) == S_OK)
     {
-        LOG_DEBUG("_dx11Device");
+        if (!_dx11Device)
+            LOG_DEBUG("D3D11Device captured");
+
         _dx11Device = true;
     }
     else if (pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
-        LOG_DEBUG("dx12 queue");
+        if (!_dx12Device)
+            LOG_DEBUG("D3D12CommandQueue captured");
 
         currentSCCommandQueue = pDevice;
 
         if (cq->GetDevice(IID_PPV_ARGS(&device12)) == S_OK)
         {
-            LOG_DEBUG("_dx12Device");
+            if (!_dx12Device)
+                LOG_DEBUG("D3D12Device captured");
+
             _dx12Device = true;
         }
+    }
+
+    // DXVK check, it's here because of upscaler time calculations
+    if (Config::Instance()->IsRunningOnDXVK)
+    {
+        if (cq != nullptr)
+            cq->Release();
+
+        if (device != nullptr)
+            device->Release();
+
+        if (device12 != nullptr)
+            device12->Release();
+
+        if (pPresentParameters == nullptr)
+            presentResult = pSwapChain->Present(SyncInterval, Flags);
+        else
+            presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
+
+        LOG_FUNC_RESULT(presentResult);
+        return presentResult;
     }
 
     // Upscaler GPU time computation
@@ -369,29 +410,6 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         ImGuiOverlayDx::currentFrameIndex = (ImGuiOverlayDx::currentFrameIndex + 1) % ImGuiOverlayDx::QUERY_BUFFER_COUNT;
     }
 
-    // DXVK & process hWnd check
-    if (Config::Instance()->IsRunningOnDXVK || hWnd != Util::GetProcessWindow())
-    {
-        if (cq != nullptr)
-            cq->Release();
-
-        if (device != nullptr)
-            device->Release();
-
-        if (device12 != nullptr)
-            device12->Release();
-
-        if (pPresentParameters == nullptr)
-        {
-            return pSwapChain->Present(SyncInterval, Flags);
-        }
-        else
-        {
-            auto sc1 = (IDXGISwapChain1*)pSwapChain;
-            return sc1->Present1(SyncInterval, Flags, pPresentParameters);
-        }
-    }
-
     // Process window handle changed, update base
     if (ImGuiOverlayBase::Handle() != hWnd)
     {
@@ -401,6 +419,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             ImGuiOverlayBase::Shutdown();
 
         ImGuiOverlayBase::Init(hWnd);
+
+        _isInited = false;
     }
 
     // Init
@@ -469,16 +489,10 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         RenderImGui_DX12(pSwapChain);
 
     // swapchain present
-    HRESULT presentResult;
     if (pPresentParameters == nullptr)
-    {
         presentResult = pSwapChain->Present(SyncInterval, Flags);
-    }
     else
-    {
-        auto sc1 = (IDXGISwapChain1*)pSwapChain;
-        presentResult = sc1->Present1(SyncInterval, Flags, pPresentParameters);
-    }
+        presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
 
     // dx11 multi thread safety
     if (_dx11Device && dx11MultiThread != nullptr)
@@ -521,11 +535,13 @@ static void CheckAdapter(IUnknown* unkAdapter)
     void* dxvkAdapter = nullptr;
     if (adapterOk && adapter->QueryInterface(guid, &dxvkAdapter) == S_OK)
     {
+
         Config::Instance()->IsRunningOnDXVK = dxvkAdapter != nullptr;
         ((IDXGIAdapter*)dxvkAdapter)->Release();
     }
 
-    adapter->Release();
+    if (adapterOk)
+        adapter->Release();
 }
 
 static void AttachToFactory(IUnknown* unkFactory)
@@ -540,7 +556,7 @@ static void AttachToFactory(IUnknown* unkFactory)
 
         ptrEnumAdapters = (PFN_EnumAdapters2)pVTable[7];
 
-        DetourAttach(&(PVOID&)ptrEnumAdapters, detEnumAdapters);
+        DetourAttach(&(PVOID&)ptrEnumAdapters, hkEnumAdapters);
 
         DetourTransactionCommit();
 
@@ -555,7 +571,7 @@ static void AttachToFactory(IUnknown* unkFactory)
 
         ptrEnumAdapters1 = (PFN_EnumAdapters12)pVTable[12];
 
-        DetourAttach(&(PVOID&)ptrEnumAdapters1, detEnumAdapters1);
+        DetourAttach(&(PVOID&)ptrEnumAdapters1, hkEnumAdapters1);
 
         DetourTransactionCommit();
 
@@ -570,7 +586,7 @@ static void AttachToFactory(IUnknown* unkFactory)
 
         ptrEnumAdapterByLuid = (PFN_EnumAdapterByLuid2)pVTable[26];
 
-        DetourAttach(&(PVOID&)ptrEnumAdapterByLuid, detEnumAdapterByLuid);
+        DetourAttach(&(PVOID&)ptrEnumAdapterByLuid, hkEnumAdapterByLuid);
 
         DetourTransactionCommit();
 
@@ -585,7 +601,7 @@ static void AttachToFactory(IUnknown* unkFactory)
 
         ptrEnumAdapterByGpuPreference = (PFN_EnumAdapterByGpuPreference2)pVTable[29];
 
-        DetourAttach(&(PVOID&)ptrEnumAdapterByGpuPreference, detEnumAdapterByGpuPreference);
+        DetourAttach(&(PVOID&)ptrEnumAdapterByGpuPreference, hkEnumAdapterByGpuPreference);
 
         DetourTransactionCommit();
 
@@ -635,10 +651,15 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
             }
         }
 
-        Config::Instance()->ScreenWidth = pDesc->BufferDesc.Width;
-        Config::Instance()->ScreenHeight = pDesc->BufferDesc.Height;
+        LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Windowed: {4}", pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, pDesc->Windowed);
 
-        LOG_DEBUG("created new swapchain: {0:X}, hWnd", (UINT64)*ppSwapChain, (UINT64)pDesc->OutputWindow);
+        if (Util::GetProcessWindow() == pDesc->OutputWindow)
+        {
+            Config::Instance()->ScreenWidth = pDesc->BufferDesc.Width;
+            Config::Instance()->ScreenHeight = pDesc->BufferDesc.Height;
+        }
+
+        LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDesc->OutputWindow);
         *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? *ppSwapChain : real, pDevice, pDesc->OutputWindow, Present, CleanupRenderTarget);
         LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
     }
@@ -647,7 +668,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 }
 
 static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* pCommandQueue, IUnknown* pDevice, HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* pDesc,
-                                                  const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
+                                        const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
     LOG_FUNC();
 
@@ -690,10 +711,15 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* pCommandQueue, IUnknown* p
             }
         }
 
-        Config::Instance()->ScreenWidth = pDesc->Width;
-        Config::Instance()->ScreenHeight = pDesc->Height;
+        LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Flags: {4:X}", pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, pDesc->Flags);
 
-        LOG_DEBUG("created new swapchain: {0:X}", (UINT64)*ppSwapChain);
+        if (Util::GetProcessWindow() == hWnd)
+        {
+            Config::Instance()->ScreenWidth = pDesc->Width;
+            Config::Instance()->ScreenHeight = pDesc->Height;
+        }
+
+        LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)hWnd);
         *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? *ppSwapChain : real, pDevice, hWnd, Present, CleanupRenderTarget);
         LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
     }
@@ -824,7 +850,7 @@ static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppF
     return result;
 }
 
-static HRESULT detEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter)
+static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter)
 {
     auto result = ptrEnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, ppvAdapter);
 
@@ -834,7 +860,7 @@ static HRESULT detEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, 
     return result;
 }
 
-static HRESULT detEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter)
+static HRESULT hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter)
 {
     auto result = ptrEnumAdapterByLuid(This, AdapterLuid, riid, ppvAdapter);
 
@@ -844,7 +870,7 @@ static HRESULT detEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFII
     return result;
 }
 
-static HRESULT detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter)
+static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter)
 {
     auto result = ptrEnumAdapters1(This, Adapter, ppAdapter);
 
@@ -854,7 +880,7 @@ static HRESULT detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** pp
     return result;
 }
 
-static HRESULT detEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter)
+static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter)
 {
     auto result = ptrEnumAdapters(This, Adapter, ppAdapter);
 
@@ -917,7 +943,7 @@ static void HookToDevice(ID3D11Device* InDevice)
 }
 
 static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATURE_LEVEL* pFeatureLevels, UINT FeatureLevels, IUnknown** ppCommandQueues,
-                                              UINT NumQueues, UINT NodeMask, ID3D11Device** ppDevice, ID3D11DeviceContext** ppImmediateContext, D3D_FEATURE_LEVEL* pChosenFeatureLevel)
+                                       UINT NumQueues, UINT NodeMask, ID3D11Device** ppDevice, ID3D11DeviceContext** ppImmediateContext, D3D_FEATURE_LEVEL* pChosenFeatureLevel)
 {
     LOG_FUNC();
 
@@ -936,8 +962,6 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
     {
         LOG_INFO("Device captured, CommandQueue: {0:X}", (UINT64)*ppCommandQueues);
         d3d11on12Device = *ppDevice;
-        d3d11on12Device->AddRef();
-
         HookToDevice(d3d11on12Device);
     }
 
@@ -947,7 +971,7 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
 }
 
 static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE DriverType, HMODULE Software, UINT Flags, CONST D3D_FEATURE_LEVEL* pFeatureLevels,
-                                          UINT FeatureLevels, UINT SDKVersion, ID3D11Device** ppDevice, D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext)
+                                   UINT FeatureLevels, UINT SDKVersion, ID3D11Device** ppDevice, D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext)
 {
     LOG_FUNC();
 
@@ -1004,10 +1028,23 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
                 }
             }
 
-            Config::Instance()->ScreenWidth = pSwapChainDesc->BufferDesc.Width;
-            Config::Instance()->ScreenHeight = pSwapChainDesc->BufferDesc.Height;
+            if (pSwapChainDesc != nullptr)
+            {
+                LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Windowed: {4}", pSwapChainDesc->BufferDesc.Width, pSwapChainDesc->BufferDesc.Height, (UINT)pSwapChainDesc->BufferDesc.Format, pSwapChainDesc->BufferCount, pSwapChainDesc->Windowed);
 
-            LOG_DEBUG("created new swapchain: {0:X}, hWnd", (UINT64)buffer, (UINT64)pSwapChainDesc->OutputWindow);
+                if (Util::GetProcessWindow() == pSwapChainDesc->OutputWindow)
+                {
+                    Config::Instance()->ScreenWidth = pSwapChainDesc->BufferDesc.Width;
+                    Config::Instance()->ScreenHeight = pSwapChainDesc->BufferDesc.Height;
+                }
+                
+                LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)buffer, (UINT64)pSwapChainDesc->OutputWindow);
+            }
+            else
+            {
+                LOG_DEBUG("created new swapchain: {0:X}", (UINT64)buffer);
+            }
+
             *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? buffer : real, d3d11Device, pSwapChainDesc->OutputWindow, Present, CleanupRenderTarget);
             LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)buffer, (UINT64)d3d11Device);
         }
@@ -1129,7 +1166,7 @@ static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC
     }
 
     newDesc.MipLODBias = pSamplerDesc->MipLODBias;
-    
+
     if (newDesc.MipLODBias < 0.0f)
     {
         if (Config::Instance()->MipmapBiasOverride.has_value())
