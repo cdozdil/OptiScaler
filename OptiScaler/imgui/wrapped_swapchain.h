@@ -28,8 +28,6 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
 
         if (ret == 0)
         {
-            LOG_INFO("{} released", id);
-
             if (ClearTrig != nullptr)
                 ClearTrig(true, Handle);
 
@@ -47,6 +45,8 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
 
             if (m_pReal != nullptr)
                 relCount = m_pReal->Release();
+
+            LOG_INFO("{} released", id);
 
             delete this;
         }
@@ -226,12 +226,12 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
     }
 
     virtual HRESULT STDMETHODCALLTYPE ResizeBuffers1(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT Format, UINT SwapChainFlags,
-                                                     _In_reads_(BufferCount) const UINT* pCreationNodeMask, _In_reads_(BufferCount) IUnknown* const* ppPresentQueue);
+                                                     const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue);
 
     //////////////////////////////
     // implement IDXGISwapChain4
 
-    virtual HRESULT STDMETHODCALLTYPE SetHDRMetaData(DXGI_HDR_METADATA_TYPE Type, UINT Size, _In_reads_opt_(Size) void* pMetaData)
+    virtual HRESULT STDMETHODCALLTYPE SetHDRMetaData(DXGI_HDR_METADATA_TYPE Type, UINT Size, void* pMetaData)
     {
         return m_pReal4->SetHDRMetaData(Type, Size, pMetaData);
     }
@@ -250,8 +250,6 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
     PFN_SC_Present RenderTrig = nullptr;
     PFN_SC_Clean ClearTrig = nullptr;
     HWND Handle = nullptr;
-
-    std::mutex _mutex;
 
     int id = 0;
 };

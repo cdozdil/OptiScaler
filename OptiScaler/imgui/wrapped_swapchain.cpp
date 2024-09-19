@@ -1,8 +1,10 @@
 #include "wrapped_swapchain.h"
 #include <d3d11_4.h>
+#include "../Config.h"
+#include "../Util.h"
 
-//// Used RenderDoc's wrapped object as referance
-//// https://github.com/baldurk/renderdoc/blob/v1.x/renderdoc/driver/dxgi/dxgi_wrapped.cpp
+// Used RenderDoc's wrapped object as referance
+// https://github.com/baldurk/renderdoc/blob/v1.x/renderdoc/driver/dxgi/dxgi_wrapped.cpp
 
 static int scCount = 0;
 
@@ -11,10 +13,10 @@ WrappedIDXGISwapChain4::WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* p
 {
     id = ++scCount;
     LOG_INFO("{0} created, real: {1:X}", id, (UINT64)real);
-    m_pReal->QueryInterface(__uuidof(IDXGISwapChain1), (void**)&m_pReal1);
-    m_pReal->QueryInterface(__uuidof(IDXGISwapChain2), (void**)&m_pReal2);
-    m_pReal->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&m_pReal3);
-    m_pReal->QueryInterface(__uuidof(IDXGISwapChain4), (void**)&m_pReal4);
+    m_pReal->QueryInterface(IID_PPV_ARGS(&m_pReal1));
+    m_pReal->QueryInterface(IID_PPV_ARGS(&m_pReal2));
+    m_pReal->QueryInterface(IID_PPV_ARGS(&m_pReal3));
+    m_pReal->QueryInterface(IID_PPV_ARGS(&m_pReal4));
 }
 
 WrappedIDXGISwapChain4::~WrappedIDXGISwapChain4()
@@ -85,7 +87,7 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::QueryInterface(REFIID riid, vo
     else if (riid == __uuidof(this))
     {
         AddRef();
-        *ppvObject = (IUnknown*)this;
+        *ppvObject = this;
         return S_OK;
     }
     else if (riid == __uuidof(IUnknown))
@@ -114,17 +116,19 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 {
     LOG_FUNC();
 
-    _mutex.lock();
-
     if (ClearTrig != nullptr)
         ClearTrig(true, Handle);
 
+    LOG_DEBUG("BufferCount: {0}, Width: {1}, Height: {2}, NewFormat: {3}, SwapChainFlags: {4:X}", BufferCount, Width, Height, (UINT)NewFormat, SwapChainFlags);
+
     auto result = m_pReal->ResizeBuffers(BufferCount, Width, Height, NewFormat, SwapChainFlags);
+    if (result == S_OK && Util::GetProcessWindow() == Handle)
+    {
+        Config::Instance()->ScreenWidth = Width;
+        Config::Instance()->ScreenHeight = Height;
+    }
 
     LOG_FUNC_RESULT(result);
-
-    _mutex.unlock();
-
     return result;
 }
 
@@ -134,20 +138,23 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetContainingOutput(IDXGIOutpu
 }
 
 HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT Format, UINT SwapChainFlags,
-                                               _In_reads_(BufferCount) const UINT* pCreationNodeMask, _In_reads_(BufferCount) IUnknown* const* ppPresentQueue)
+                                               const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
     LOG_FUNC();
-
-    _mutex.lock();
 
     if (ClearTrig != nullptr)
         ClearTrig(true, Handle);
 
+    LOG_DEBUG("BufferCount: {0}, Width: {1}, Height: {2}, NewFormat: {3}, SwapChainFlags: {4:X}, pCreationNodeMask: {5}", BufferCount, Width, Height, (UINT)Format, SwapChainFlags, *pCreationNodeMask);
 
     auto result = m_pReal3->ResizeBuffers1(BufferCount, Width, Height, Format, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
+    if (result == S_OK && Util::GetProcessWindow() == Handle)
+    {
+        Config::Instance()->ScreenWidth = Width;
+        Config::Instance()->ScreenHeight = Height;
+    }
 
-    _mutex.unlock();
-
+    LOG_FUNC_RESULT(result);
     return result;
 }
 
@@ -176,10 +183,14 @@ HRESULT WrappedIDXGISwapChain4::Present(UINT SyncInterval, UINT Flags)
     if (m_pReal == nullptr)
         return DXGI_ERROR_DEVICE_REMOVED;
 
-    if (!(Flags & DXGI_PRESENT_TEST) && !(Flags & DXGI_PRESENT_RESTART) && RenderTrig != nullptr)
-        return RenderTrig(m_pReal, SyncInterval, Flags, nullptr, Device, Handle);
+    HRESULT result;
 
-    return m_pReal->Present(SyncInterval, Flags);
+    if (!(Flags & DXGI_PRESENT_TEST) && !(Flags & DXGI_PRESENT_RESTART) && RenderTrig != nullptr)
+        result = RenderTrig(m_pReal, SyncInterval, Flags, nullptr, Device, Handle);
+    else
+        result = m_pReal->Present(SyncInterval, Flags);
+
+    return result;
 }
 
 HRESULT WrappedIDXGISwapChain4::Present1(UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters)
@@ -187,10 +198,14 @@ HRESULT WrappedIDXGISwapChain4::Present1(UINT SyncInterval, UINT Flags, const DX
     if (m_pReal1 == nullptr)
         return DXGI_ERROR_DEVICE_REMOVED;
 
-    if (!(Flags & DXGI_PRESENT_TEST) && !(Flags & DXGI_PRESENT_RESTART) && RenderTrig != nullptr)
-        return RenderTrig(m_pReal1, SyncInterval, Flags, pPresentParameters, Device, Handle);
+    HRESULT result;
 
-    return m_pReal1->Present1(SyncInterval, Flags, pPresentParameters);
+    if (!(Flags & DXGI_PRESENT_TEST) && !(Flags & DXGI_PRESENT_RESTART) && RenderTrig != nullptr)
+        result = RenderTrig(m_pReal1, SyncInterval, Flags, pPresentParameters, Device, Handle);
+    else
+        result = m_pReal1->Present1(SyncInterval, Flags, pPresentParameters);
+
+    return result;
 }
 
 HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetRestrictToOutput(IDXGIOutput** ppRestrictToOutput)
