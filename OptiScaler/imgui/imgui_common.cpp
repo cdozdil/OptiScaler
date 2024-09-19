@@ -760,20 +760,28 @@ void ImGuiCommon::RenderMenu()
         auto size = ImVec2{ 0.0f, 0.0f };
         ImGui::SetNextWindowSize(size);
 
+        float posX;
+        float posY;
+
         if (cf != nullptr)
         {
-            auto posX = ((float)Config::Instance()->CurrentFeature->DisplayWidth() - 770.0f) / 2.0f;
-            auto posY = ((float)Config::Instance()->CurrentFeature->DisplayHeight() - 685.0f) / 2.0f;
-
-            ImGui::SetNextWindowPos(ImVec2{ posX, posY }, ImGuiCond_FirstUseEver);
+            posX = ((float)Config::Instance()->CurrentFeature->DisplayWidth() - 770.0f) / 2.0f;
+            posY = ((float)Config::Instance()->CurrentFeature->DisplayHeight() - 685.0f) / 2.0f;
         }
         else
         {
-            auto posX = ((float)Config::Instance()->ScreenWidth - 770.0f) / 2.0f;
-            auto posY = ((float)Config::Instance()->ScreenHeight - 685.0f) / 2.0f;
-
-            ImGui::SetNextWindowPos(ImVec2{ posX, posY }, ImGuiCond_FirstUseEver);
+            posX = ((float)Config::Instance()->ScreenWidth - 770.0f) / 2.0f;
+            posY = ((float)Config::Instance()->ScreenHeight - 685.0f) / 2.0f;
         }
+
+        // don't position menu outside of screen
+        if (posX < 0.0 || posY < 0.0)
+        {
+            posX = 50;
+            posY = 50;
+        }
+
+        ImGui::SetNextWindowPos(ImVec2{ posX, posY }, ImGuiCond_FirstUseEver);
 
         if (ImGui::Begin(VER_PRODUCT_NAME, NULL, flags))
         {
