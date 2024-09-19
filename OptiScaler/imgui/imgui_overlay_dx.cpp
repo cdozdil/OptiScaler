@@ -1039,14 +1039,8 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
                 }
                 
                 LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)buffer, (UINT64)pSwapChainDesc->OutputWindow);
-            }
-            else
-            {
-                LOG_DEBUG("created new swapchain: {0:X}", (UINT64)buffer);
-            }
-
-            *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? buffer : real, d3d11Device, pSwapChainDesc->OutputWindow, Present, CleanupRenderTarget);
-            LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)buffer, (UINT64)d3d11Device);
+                *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? buffer : real, d3d11Device, pSwapChainDesc->OutputWindow, Present, CleanupRenderTarget);
+                LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)buffer, (UINT64)d3d11Device);
         }
 
         if (buf != nullptr)
