@@ -146,8 +146,10 @@ public:
 	// spoofing
 	std::optional<bool> DxgiSpoofing;
 	std::optional<std::string> DxgiBlacklist;
+	std::optional<int> DxgiVRAM;
 	std::optional<bool> VulkanSpoofing;
 	std::optional<bool> VulkanExtensionSpoofing;
+	std::optional<std::wstring> SpoofedGPUName;
 
 	// plugins
 	std::optional<std::wstring> PluginPath;

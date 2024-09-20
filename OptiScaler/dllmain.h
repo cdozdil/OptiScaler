@@ -1395,10 +1395,12 @@ HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
         pDesc->VendorId = 0x10de;
         pDesc->DeviceId = 0x2684;
 
-        std::wstring name(L"NVIDIA GeForce RTX 4090");
-        const wchar_t* szName = name.c_str();
+        const wchar_t* szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090").c_str();
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
         std::memcpy(pDesc->Description, szName, 50);
+
+        if (Config::Instance()->DxgiSpoofing.has_value())
+            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
 
 #ifdef _DEBUG
         LOG_DEBUG("spoofing");
@@ -1420,10 +1422,12 @@ HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
         pDesc->VendorId = 0x10de;
         pDesc->DeviceId = 0x2684;
 
-        std::wstring name(L"NVIDIA GeForce RTX 4090");
-        const wchar_t* szName = name.c_str();
+        const wchar_t* szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090").c_str();
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
         std::memcpy(pDesc->Description, szName, 50);
+
+        if (Config::Instance()->DxgiSpoofing.has_value())
+            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
 
 #ifdef _DEBUG
         LOG_DEBUG("spoofing");
@@ -1445,10 +1449,12 @@ HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
         pDesc->VendorId = 0x10de;
         pDesc->DeviceId = 0x2684;
 
-        std::wstring name(L"NVIDIA GeForce RTX 4090");
-        const wchar_t* szName = name.c_str();
+        const wchar_t* szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090").c_str();
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
         std::memcpy(pDesc->Description, szName, 50);
+
+        if (Config::Instance()->DxgiSpoofing.has_value())
+            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
 
 #ifdef _DEBUG
         LOG_DEBUG("spoofing");
@@ -1470,10 +1476,13 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
         pDesc->VendorId = 0x10de;
         pDesc->DeviceId = 0x2684;
 
-        std::wstring name(L"NVIDIA GeForce RTX 4090");
-        const wchar_t* szName = name.c_str();
+        const wchar_t* szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090").c_str();
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
         std::memcpy(pDesc->Description, szName, 50);
+
+
+        if (Config::Instance()->DxgiSpoofing.has_value())
+            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
 
 #ifdef _DEBUG
         LOG_DEBUG("spoofing");

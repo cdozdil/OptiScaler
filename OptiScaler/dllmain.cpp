@@ -672,7 +672,8 @@ static void hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, Vk
 
     if (!Config::Instance()->dxgiSkipSpoofing)
     {
-        std::strcpy(properties->deviceName, "NVIDIA GeForce RTX 4090");
+        auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090"));
+        std::strcpy(properties->deviceName, deviceName.c_str());
         properties->vendorID = 0x10de;
         properties->deviceID = 0x2684;
         properties->driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
@@ -689,7 +690,8 @@ static void hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysic
 
     if (!Config::Instance()->dxgiSkipSpoofing)
     {
-        std::strcpy(properties2->properties.deviceName, "NVIDIA GeForce RTX 4090");
+        auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090"));
+        std::strcpy(properties2->properties.deviceName, deviceName.c_str());
         properties2->properties.vendorID = 0x10de;
         properties2->properties.deviceID = 0x2684;
         properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
@@ -721,7 +723,8 @@ static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhy
 
     if (!Config::Instance()->dxgiSkipSpoofing)
     {
-        std::strcpy(properties2->properties.deviceName, "NVIDIA GeForce RTX 4090");
+        auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090"));
+        std::strcpy(properties2->properties.deviceName, deviceName.c_str());
         properties2->properties.vendorID = 0x10de;
         properties2->properties.deviceID = 0x2684;
         properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);

@@ -305,8 +305,13 @@ bool Config::Reload(std::filesystem::path iniPath)
         {
             DxgiSpoofing = readBool("Spoofing", "Dxgi");
             DxgiBlacklist = readString("Spoofing", "DxgiBlacklist");
+            DxgiVRAM = readInt("Spoofing", "DxgiVRAM");
             VulkanSpoofing = readBool("Spoofing", "Vulkan");
             VulkanExtensionSpoofing = readBool("Spoofing", "VulkanExtensionSpoofing");
+
+            auto gpuName = readString("Spoofing", "SpoofedGPUName");
+            if (gpuName.has_value())
+                SpoofedGPUName = string_to_wstring(gpuName.value());
         }
 
         // Plugins
@@ -605,6 +610,8 @@ bool Config::SaveIni()
         ini.SetValue("Spoofing", "DxgiBlacklist", Instance()->DxgiBlacklist.value_or("auto").c_str());
         ini.SetValue("Spoofing", "Vulkan", GetBoolValue(Instance()->VulkanSpoofing).c_str());
         ini.SetValue("Spoofing", "VulkanExtensionSpoofing", GetBoolValue(Instance()->VulkanExtensionSpoofing).c_str());
+        ini.SetValue("Spoofing", "DxgiVRAM", GetIntValue(Instance()->DxgiVRAM).c_str());
+        ini.SetValue("Spoofing", "SpoofedGPUName", Instance()->SpoofedGPUName.has_value() ? wstring_to_string(Instance()->SpoofedGPUName.value()).c_str() : "auto");
     }
 
     // Plugins
