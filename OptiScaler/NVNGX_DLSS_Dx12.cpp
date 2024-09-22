@@ -18,6 +18,17 @@
 #include <ankerl/unordered_dense.h>
 #include <dxgi1_4.h>
 
+#include <ffx_api.h>
+#include <ffx_framegeneration.h>
+
+static ffxContext _fgContext = nullptr;
+static PfnFfxCreateContext _createContext = nullptr;
+static PfnFfxDestroyContext _destroyContext = nullptr;
+static PfnFfxConfigure _configure = nullptr;
+static PfnFfxQuery _query = nullptr;
+static PfnFfxDispatch _dispatch = nullptr;
+
+
 static ID3D12Device* D3D12Device = nullptr;
 static ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
 static NVSDK_NGX_Parameter* createParams = nullptr;
@@ -25,6 +36,48 @@ static int changeBackendCounter = 0;
 static int evalCounter = 0;
 static std::wstring appDataPath = L".";
 static inline bool shutdown = false;
+
+static void FfxLogCallback(uint32_t type, const wchar_t* message)
+{
+    std::wstring string(message);
+    LOG_DEBUG("{0}", wstring_to_string(string));
+}
+
+
+static void LoadFSR31Funcs()
+{
+    LOG_DEBUG("Loading amd_fidelityfx_dx12.dll methods");
+
+    auto file = Util::DllPath().parent_path() / "amd_fidelityfx_dx12.dll";
+    LOG_INFO("Trying to load {}", file.string());
+
+    auto _dll = LoadLibrary(file.wstring().c_str());
+    if (_dll != nullptr)
+    {
+        _configure = (PfnFfxConfigure)GetProcAddress(_dll, "ffxConfigure");
+        _createContext = (PfnFfxCreateContext)GetProcAddress(_dll, "ffxCreateContext");
+        _destroyContext = (PfnFfxDestroyContext)GetProcAddress(_dll, "ffxDestroyContext");
+        _dispatch = (PfnFfxDispatch)GetProcAddress(_dll, "ffxDispatch");
+        _query = (PfnFfxQuery)GetProcAddress(_dll, "ffxQuery");
+    }
+
+    if (_configure == nullptr)
+    {
+        LOG_INFO("Trying to load amd_fidelityfx_dx12.dll with detours");
+
+        _configure = (PfnFfxConfigure)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxConfigure");
+        _createContext = (PfnFfxCreateContext)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxCreateContext");
+        _destroyContext = (PfnFfxDestroyContext)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxDestroyContext");
+        _dispatch = (PfnFfxDispatch)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxDispatch");
+        _query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxQuery");
+    }
+
+    if (_configure == nullptr)
+        LOG_INFO("amd_fidelityfx_dx12.dll methods loaded!");
+    else
+        LOG_ERROR("can't load amd_fidelityfx_dx12.dll methods!");
+}
+
 
 #pragma region Hooks
 
@@ -283,6 +336,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
     D3D12_HEAP_PROPERTIES heapProps = {};
     heapProps.Type = D3D12_HEAP_TYPE_READBACK;
     result = InDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&ImGuiOverlayDx::readbackBuffer));
+
+    if (_createContext == nullptr)
+        LoadFSR31Funcs();
 
     return NVSDK_NGX_Result_Success;
 }
@@ -1164,6 +1220,42 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         sigatureMutex.unlock();
     }
 
+    // FG Init    
+    if (_createContext != nullptr && _fgContext == nullptr && ImGuiOverlayDx::currentSwapchain != nullptr && ImGuiOverlayDx::swapchainFormat != DXGI_FORMAT_UNKNOWN)
+    {
+        ffxCreateBackendDX12Desc backendDesc{};
+        backendDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_DX12;
+        backendDesc.device = D3D12Device;
+
+        ffxCreateContextDescFrameGeneration createFg{};
+        createFg.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATION;
+        createFg.displaySize = { deviceContext->DisplayWidth(), deviceContext->DisplayHeight() };
+        createFg.maxRenderSize = { deviceContext->DisplayWidth(), deviceContext->DisplayHeight() };
+        createFg.flags = 0;
+
+        if (deviceContext->InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR)
+            createFg.flags |= FFX_FRAMEGENERATION_ENABLE_HIGH_DYNAMIC_RANGE;
+
+        if (deviceContext->InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
+            createFg.flags |= FFX_FRAMEGENERATION_ENABLE_DEPTH_INVERTED;
+
+        if (deviceContext->InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVJittered)
+            createFg.flags |= FFX_FRAMEGENERATION_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
+
+        if (!(deviceContext->InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes))
+            createFg.flags |= FFX_FRAMEGENERATION_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
+
+        createFg.backBufferFormat = ffxApiGetSurfaceFormatDX12(ImGuiOverlayDx::swapchainFormat);
+
+        if (false)
+            createFg.flags |= FFX_FRAMEGENERATION_ENABLE_ASYNC_WORKLOAD_SUPPORT;
+
+        createFg.header.pNext = &backendDesc.header;
+
+        ffxReturnCode_t retCode = _createContext(&_fgContext, &createFg.header, nullptr);
+        LOG_INFO("_createContext result: {0:X}", retCode);
+    }
+
     // Record the first timestamp (before FSR2 upscaling)
     InCmdList->EndQuery(ImGuiOverlayDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
 
@@ -1223,9 +1315,125 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     LOG_TRACE("done: {0:X}", (UINT)evalResult);
 
     if (evalResult)
+    {
+        if (_fgContext != nullptr && ImGuiOverlayDx::currentSwapchain != nullptr)
+        {
+            // Update frame generation config
+            ID3D12Resource* output;
+            InParameters->Get(NVSDK_NGX_Parameter_Output, &output);
+
+            FfxApiResource hudLessResource = ffxApiGetResourceDX12(output, FFX_API_RESOURCE_STATE_COMPUTE_READ, 0);
+
+            ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
+            
+
+            m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
+            m_FrameGenerationConfig.frameGenerationEnabled = true; // check here
+            m_FrameGenerationConfig.flags = 0;
+            m_FrameGenerationConfig.flags |= FFX_FRAMEGENERATION_FLAG_DRAW_DEBUG_TEAR_LINES; // check here
+            m_FrameGenerationConfig.flags |= FFX_FRAMEGENERATION_FLAG_DRAW_DEBUG_RESET_INDICATORS; // check here
+            m_FrameGenerationConfig.flags |= FFX_FRAMEGENERATION_FLAG_DRAW_DEBUG_VIEW; // check here
+            m_FrameGenerationConfig.HUDLessColor = hudLessResource;
+            m_FrameGenerationConfig.allowAsyncWorkloads = false; //&& m_EnableAsyncCompute; // check here
+            // assume symmetric letterbox
+            m_FrameGenerationConfig.generationRect.left = 0;
+            m_FrameGenerationConfig.generationRect.top = 0;
+            m_FrameGenerationConfig.generationRect.width = deviceContext->DisplayWidth();
+            m_FrameGenerationConfig.generationRect.height = deviceContext->DisplayHeight();
+            // For sample purposes only. Most applications will use one or the other.
+            if (true)
+            {
+                m_FrameGenerationConfig.frameGenerationCallback = [](ffxDispatchDescFrameGeneration* params, void* pUserCtx) -> ffxReturnCode_t
+                    {
+                        return _dispatch(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
+                    };
+
+                m_FrameGenerationConfig.frameGenerationCallbackUserContext = &_fgContext;
+            }
+            else
+            {
+                m_FrameGenerationConfig.frameGenerationCallback = nullptr;
+                m_FrameGenerationConfig.frameGenerationCallbackUserContext = nullptr;
+            }
+
+            m_FrameGenerationConfig.onlyPresentGenerated = true; // check here
+            m_FrameGenerationConfig.frameID = deviceContext->FrameCount();
+            
+            m_FrameGenerationConfig.swapChain = ImGuiOverlayDx::currentSwapchain;
+
+            ffxReturnCode_t retCode = _configure(&_fgContext, &m_FrameGenerationConfig.header);
+            LOG_DEBUG("_configure result: {0:X}", retCode);
+
+            if (retCode == FFX_OK)
+            {
+                ffxCreateBackendDX12Desc backendDesc{};
+                backendDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_DX12;
+                backendDesc.device = D3D12Device;
+                
+                ffxDispatchDescFrameGenerationPrepare dfgPrepare{};                
+                dfgPrepare.header.type = FFX_API_DISPATCH_DESC_TYPE_FRAMEGENERATION_PREPARE;
+                dfgPrepare.header.pNext = &backendDesc.header;
+                
+                InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &dfgPrepare.jitterOffset.x);
+                InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &dfgPrepare.jitterOffset.y);
+
+                dfgPrepare.commandList = InCmdList;
+                dfgPrepare.frameID = deviceContext->FrameCount();
+                
+                ID3D12Resource* paramVelocity;
+                if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
+                    InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
+                
+                dfgPrepare.motionVectors = ffxApiGetResourceDX12(paramVelocity, FFX_API_RESOURCE_STATE_COMPUTE_READ);
+
+                ID3D12Resource* paramDepth;
+                if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
+                    InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
+
+                dfgPrepare.depth = ffxApiGetResourceDX12(paramDepth, FFX_API_RESOURCE_STATE_COMPUTE_READ);
+
+                float MVScaleX = 1.0f;
+                float MVScaleY = 1.0f;
+
+                if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
+                    InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
+                {
+                    dfgPrepare.motionVectorScale.x = MVScaleX;
+                    dfgPrepare.motionVectorScale.y = MVScaleY;
+                }
+                else
+                {
+                    LOG_WARN("Can't get motion vector scales!");
+
+                    dfgPrepare.motionVectorScale.x = MVScaleX;
+                    dfgPrepare.motionVectorScale.y = MVScaleY;
+                }
+
+                if (deviceContext->InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
+                {
+                    dfgPrepare.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.01f);
+                    dfgPrepare.cameraNear = Config::Instance()->FsrCameraFar.value_or(0.99f);
+                }
+                else
+                {
+                    dfgPrepare.cameraFar = Config::Instance()->FsrCameraFar.value_or(0.99f);
+                    dfgPrepare.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.01f);
+                }
+
+                dfgPrepare.cameraFovAngleVertical = 1.0471975511966f;
+                dfgPrepare.viewSpaceToMetersFactor = 1.0;
+
+                retCode = _dispatch(&_fgContext, &dfgPrepare.header);
+            }
+        }
+
+
         return NVSDK_NGX_Result_Success;
+    }
     else
+    {
         return NVSDK_NGX_Result_Fail;
+    }
 }
 
 #pragma endregion

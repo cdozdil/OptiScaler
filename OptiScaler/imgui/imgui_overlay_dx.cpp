@@ -10,7 +10,6 @@
 #include "imgui/imgui_impl_win32.h"
 
 #include "../detours/detours.h"
-#include <dxgi1_6.h>
 #include <d3d11on12.h>
 
 #include "wrapped_swapchain.h"
@@ -300,8 +299,19 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         else
             presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
 
+        ImGuiOverlayDx::currentSwapchain = nullptr;
+        ImGuiOverlayDx::swapchainFormat = DXGI_FORMAT_UNKNOWN;
+
         LOG_FUNC_RESULT(presentResult);
         return presentResult;
+    }
+
+    ImGuiOverlayDx::currentSwapchain = pSwapChain;
+    if (ImGuiOverlayDx::swapchainFormat == DXGI_FORMAT_UNKNOWN)
+    {
+        DXGI_SWAP_CHAIN_DESC desc;
+        if (pSwapChain->GetDesc(&desc) == S_OK)
+            ImGuiOverlayDx::swapchainFormat = desc.BufferDesc.Format;
     }
 
     ID3D12CommandQueue* cq = nullptr;

@@ -593,7 +593,7 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
 
     _vkPresentMutex.lock();
 
-    if (ImGuiOverlayVk::vkUpscaleTrig && ImGuiOverlayVk::queryPool != VK_NULL_HANDLE)
+    if (ImGuiOverlayVk::vkUpscaleTrig && ImGuiOverlayVk::queryPool != VK_NULL_HANDLE)       
     {
         // Retrieve timestamps
         uint64_t timestamps[2];
