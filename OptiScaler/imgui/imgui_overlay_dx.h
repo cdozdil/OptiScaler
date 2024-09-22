@@ -3,6 +3,7 @@
 #include "../pch.h"
 #include <d3d11_4.h>
 #include <d3d12.h>
+#include <dxgi1_6.h>
 
 namespace ImGuiOverlayDx
 {
@@ -20,6 +21,10 @@ namespace ImGuiOverlayDx
 
 	inline int currentFrameIndex = 0;
 	inline int previousFrameIndex = 0;
+	
+
+	inline IDXGISwapChain* currentSwapchain = nullptr;
+	inline DXGI_FORMAT swapchainFormat = DXGI_FORMAT_UNKNOWN;
 
 	void UnHookDx();
 	void HookDx();
