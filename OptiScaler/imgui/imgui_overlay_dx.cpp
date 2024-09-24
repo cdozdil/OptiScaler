@@ -975,6 +975,24 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
 {
     LOG_FUNC();
 
+    static const D3D_FEATURE_LEVEL levels[] = {
+     D3D_FEATURE_LEVEL_11_1,
+    };
+
+    D3D_FEATURE_LEVEL maxLevel = D3D_FEATURE_LEVEL_1_0_CORE;
+
+    for (UINT i = 0; i < FeatureLevels; ++i)
+    {
+        maxLevel = std::max(maxLevel, pFeatureLevels[i]);
+    }
+
+    if (maxLevel == D3D_FEATURE_LEVEL_11_0)
+    {
+        LOG_INFO("Overriding D3D_FEATURE_LEVEL, Game requested D3D_FEATURE_LEVEL_11_0, we need D3D_FEATURE_LEVEL_11_1!");
+        pFeatureLevels = levels;
+        FeatureLevels = ARRAYSIZE(levels);
+    }
+
     auto result = o_D3D11CreateDevice(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
 
     if (result == S_OK && *ppDevice != nullptr)
@@ -994,6 +1012,24 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
                                                UINT FeatureLevels, UINT SDKVersion, DXGI_SWAP_CHAIN_DESC* pSwapChainDesc, IDXGISwapChain** ppSwapChain, ID3D11Device** ppDevice, D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext)
 {
     LOG_FUNC();
+
+    static const D3D_FEATURE_LEVEL levels[] = {
+    D3D_FEATURE_LEVEL_11_1,
+    };
+
+    D3D_FEATURE_LEVEL maxLevel = D3D_FEATURE_LEVEL_1_0_CORE;
+
+    for (UINT i = 0; i < FeatureLevels; ++i)
+    {
+        maxLevel = std::max(maxLevel, pFeatureLevels[i]);
+    }
+
+    if (maxLevel == D3D_FEATURE_LEVEL_11_0)
+    {
+        LOG_INFO("Overriding D3D_FEATURE_LEVEL, Game requested D3D_FEATURE_LEVEL_11_0, we need D3D_FEATURE_LEVEL_11_1!");
+        pFeatureLevels = levels;
+        FeatureLevels = ARRAYSIZE(levels);
+    }
 
     IDXGISwapChain* buffer = nullptr;
     auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, &buffer, ppDevice, pFeatureLevel, ppImmediateContext);
