@@ -197,8 +197,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="backends\dlss\DLSSFeature_Dx11.h" />
     <ClInclude Include="backends\dlss\DLSSFeature_Dx12.h" />
     <ClInclude Include="backends\dlss\DLSSFeature_Vk.h" />
-    <ClInclude Include="backends\fsr304\FSR304Feature.h" />
-    <ClInclude Include="backends\fsr304\FSR304Feature_Dx11.h" />
     <ClInclude Include="backends\fsr31\FSR31Feature.h" />
     <ClInclude Include="backends\fsr31\FSR31Feature_Dx11.h" />
     <ClInclude Include="backends\fsr31\FSR31Feature_Dx11On12.h" />
@@ -275,8 +273,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="backends\fsr2_212\FSR2Feature_Dx11On12_212.cpp" />
     <ClCompile Include="backends\fsr2_212\FSR2Feature_Dx12_212.cpp" />
     <ClCompile Include="backends\fsr2_212\FSR2Feature_Vk_212.cpp" />
-    <ClCompile Include="backends\fsr304\FSR304Feature.cpp" />
-    <ClCompile Include="backends\fsr304\FSR304Feature_Dx11.cpp" />
     <ClCompile Include="backends\fsr31\FSR31Feature.cpp" />
     <ClCompile Include="backends\fsr31\FSR31Feature_Dx11.cpp" />
     <ClCompile Include="backends\fsr31\FSR31Feature_Dx11On12.cpp" />
