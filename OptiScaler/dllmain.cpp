@@ -1310,6 +1310,8 @@ static void CheckWorkingMode()
     {
         AttachHooks();
 
+        Config::Instance()->WorkingAsNvngx = isNvngxMode && !isWorkingWithEnabler;
+
         Config::Instance()->OverlayMenu = (!isNvngxMode || isWorkingWithEnabler) && Config::Instance()->OverlayMenu.value_or(true);
         if (Config::Instance()->OverlayMenu.value())
         {

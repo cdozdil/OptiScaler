@@ -48,6 +48,14 @@ bool Config::Reload(std::filesystem::path iniPath)
             VulkanUpscaler = readString("Upscalers", "VulkanUpscaler", true);
         }
 
+        // Frame Generation
+        {
+            FGEnabled = readBool("FrameGen", "Enabled");
+            FGDebugView = readBool("FrameGen", "DebugView");
+            FGAsync = readBool("FrameGen", "AllowAsync");
+            FGHUDFix = readBool("FrameGen", "HUDFix");
+        }
+
         // FSR
         {
             FsrVerticalFov = readFloat("FSR", "VerticalFov");
@@ -458,6 +466,14 @@ bool Config::SaveIni()
         ini.SetValue("Upscalers", "Dx11Upscaler", Instance()->Dx11Upscaler.value_or("auto").c_str());
         ini.SetValue("Upscalers", "Dx12Upscaler", Instance()->Dx12Upscaler.value_or("auto").c_str());
         ini.SetValue("Upscalers", "VulkanUpscaler", Instance()->VulkanUpscaler.value_or("auto").c_str());
+    }
+
+    // Frame Generation 
+    {
+        ini.SetValue("FrameGen", "Enabled", GetBoolValue(Instance()->FGEnabled).c_str());
+        ini.SetValue("FrameGen", "DebugView", GetBoolValue(Instance()->FGDebugView).c_str());
+        ini.SetValue("FrameGen", "AllowAsync", GetBoolValue(Instance()->FGAsync).c_str());
+        ini.SetValue("FrameGen", "HUDFix", GetBoolValue(Instance()->FGHUDFix).c_str());
     }
 
     // Output Scaling

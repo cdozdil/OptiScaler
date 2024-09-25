@@ -54,6 +54,8 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
     {
         LOG_INFO("featureFlags {0:X}", uintValue);
 
+        _initFlags = uintValue;
+
         isHdr = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_IsHDR);
         mvLowRes = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
         mvJittered = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_MVJittered);

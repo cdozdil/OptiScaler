@@ -5,6 +5,10 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
+#include <ffx_api.h>
+#include <dx12/ffx_api_dx12.h>
+#include <ffx_framegeneration.h>
+
 namespace ImGuiOverlayDx
 {
 	inline ID3D12QueryHeap* queryHeap = nullptr;
@@ -25,6 +29,8 @@ namespace ImGuiOverlayDx
 
 	inline IDXGISwapChain* currentSwapchain = nullptr;
 	inline DXGI_FORMAT swapchainFormat = DXGI_FORMAT_UNKNOWN;
+	inline ffxContext fgSwapChainContext = nullptr;
+
 
 	void UnHookDx();
 	void HookDx();
