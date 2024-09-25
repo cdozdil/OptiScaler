@@ -533,7 +533,6 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
 
     const size_t scratchBufferSize = Fsr31::ffxGetScratchMemorySizeDX11(1);
     void* scratchBuffer = calloc(scratchBufferSize, 1);
-    memset(scratchBuffer, 0, scratchBufferSize);
 
     auto errorCode = Fsr31::ffxGetInterfaceDX11(&_upscalerContextDesc.backendInterfaceUpscaling, Fsr31::ffxGetDeviceDX11_Fsr31(Device), scratchBuffer, scratchBufferSize, 1);
 
