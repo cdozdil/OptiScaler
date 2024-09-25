@@ -1602,7 +1602,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             break;
 
         case DLL_PROCESS_DETACH:
-            DetachHooks();
+            // Unhooking and cleaning stuff causing issues during shutdown. 
+            // Disabled for now to check if it cause any issues
+            //DetachHooks();
 
             if (skHandle != nullptr)
                 FreeLibrary(skHandle);
