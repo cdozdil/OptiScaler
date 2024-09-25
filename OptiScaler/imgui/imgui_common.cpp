@@ -535,6 +535,8 @@ void ImGuiCommon::AddDx11Backends(std::string* code, std::string* name)
         selectedUpscalerName = "FSR 2.2.1 w/Dx12";
     else if (Config::Instance()->newBackend == "fsr21_12" || (Config::Instance()->newBackend == "" && *code == "fsr21_12"))
         selectedUpscalerName = "FSR 2.1.2 w/Dx12";
+    else if (Config::Instance()->newBackend == "fsr31" || (Config::Instance()->newBackend == "" && *code == "fsr31"))
+        selectedUpscalerName = "FSR 3.1.0";
     else if (Config::Instance()->newBackend == "fsr31_12" || (Config::Instance()->newBackend == "" && *code == "fsr31_12"))
         selectedUpscalerName = "FSR 3.1.0 w/Dx12";
     else if (Config::Instance()->newBackend == "fsr304" || (Config::Instance()->newBackend == "" && *code == "fsr304"))
@@ -549,8 +551,8 @@ void ImGuiCommon::AddDx11Backends(std::string* code, std::string* name)
         if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
             Config::Instance()->newBackend = "fsr22";
 
-        if (ImGui::Selectable("FSR 3.0.4", *code == "fsr304"))
-            Config::Instance()->newBackend = "fsr304";
+        if (ImGui::Selectable("FSR 3.1.0", *code == "fsr31"))
+            Config::Instance()->newBackend = "fsr31";
 
         if (ImGui::Selectable("XeSS w/Dx12", *code == "xess"))
             Config::Instance()->newBackend = "xess";
@@ -862,7 +864,7 @@ void ImGuiCommon::RenderMenu()
 
                     // Dx11 with Dx12
                     if (Config::Instance()->AdvancedSettings.value_or(false) && Config::Instance()->Api == NVNGX_DX11 &&
-                        Config::Instance()->Dx11Upscaler.value_or("fsr22") != "fsr22" && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "dlss" && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "fsr304")
+                        Config::Instance()->Dx11Upscaler.value_or("fsr22") != "fsr22" && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "dlss" && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "fsr31")
                     {
                         ImGui::SeparatorText("Dx11 with Dx12 Settings");
 

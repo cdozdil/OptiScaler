@@ -239,10 +239,7 @@
     <ClInclude Include="bias\Bias_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\fsr304\FSR304Feature.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="backends\fsr304\FSR304Feature_Dx11.h">
+    <ClInclude Include="backends\fsr31\FSR31Feature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -431,10 +428,7 @@
     <ClCompile Include="imgui\imgui_common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\fsr304\FSR304Feature.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="backends\fsr304\FSR304Feature_Dx11.cpp">
+    <ClCompile Include="backends\fsr31\FSR31Feature_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
