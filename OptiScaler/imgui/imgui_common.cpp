@@ -880,6 +880,59 @@ void ImGuiCommon::RenderMenu()
 
                     // DYNAMIC PROPERTIES -----------------------------
 
+                    // Frame Generation
+                    if (Config::Instance()->Api == NVNGX_DX12 && !Config::Instance()->WorkingAsNvngx)
+                    {
+                        ImGui::SeparatorText("Frame Generation (Dx12)");
+
+                        bool fgActive = Config::Instance()->FGEnabled.value_or(false);
+                        if (ImGui::Checkbox("Frame Generation", &fgActive))
+                            Config::Instance()->FGEnabled = fgActive;
+
+                        ShowHelpMarker("Enable FSR frame generation");
+
+                        bool fgHudfix = Config::Instance()->FGHUDFix.value_or(false);
+                        if (ImGui::Checkbox("FG HUD Fix", &fgHudfix))
+                        {
+                            Config::Instance()->FGHUDFix = fgHudfix;
+                            Config::Instance()->FGAsync = false;
+
+                            if (Config::Instance()->FGEnabled.value_or(false))
+                            {
+                                Config::Instance()->newBackend = currentBackend;
+                                Config::Instance()->changeBackend = true;
+                            }
+                        }
+                        ShowHelpMarker("Enable HUD stability fix (Disables Async, might cause crashes!)");
+
+                        //ImGui::BeginDisabled(Config::Instance()->FGHUDFix.value_or(false));
+
+                        bool fgAsync = Config::Instance()->FGAsync.value_or(false);
+
+                        if (ImGui::Checkbox("FG Allow Async", &fgAsync))
+                        {
+                            Config::Instance()->FGAsync = fgAsync;
+
+                            if (Config::Instance()->FGEnabled.value_or(false))
+                            {
+                                Config::Instance()->newBackend = currentBackend;
+                                Config::Instance()->changeBackend = true;
+                            }
+                        }
+
+                        //ImGui::EndDisabled();
+                        ShowHelpMarker("Enable Async for better FG performance (Might cause crashes, especially with HUD Fix!)");
+
+                        bool fgDV = Config::Instance()->FGDebugView.value_or(false);
+                        if (ImGui::Checkbox("FG Debug View", &fgDV))
+                            Config::Instance()->FGDebugView = fgDV;
+
+                        ShowHelpMarker("Enable FSR 3.1 frame generation debug view");
+
+                        ImGui::Checkbox("FG Only Generated", &Config::Instance()->FGOnlyGenerated);
+                        ShowHelpMarker("Display only FSR 3.1 generated frames");
+                    }
+
                     // Dx11 with Dx12
                     if (Config::Instance()->AdvancedSettings.value_or(false) && Config::Instance()->Api == NVNGX_DX11 &&
                         Config::Instance()->Dx11Upscaler.value_or("fsr22") != "fsr22" && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "dlss" && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "fsr31")

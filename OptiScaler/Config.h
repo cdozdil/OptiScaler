@@ -158,6 +158,13 @@ public:
 	std::optional<std::wstring> PluginPath;
 	std::optional<bool> LoadSpecialK;
 
+	// fg
+	std::optional<bool> FGEnabled;
+	std::optional<bool> FGDebugView;
+	std::optional<bool> FGAsync;
+	std::optional<bool> FGHUDFix;
+	bool FGOnlyGenerated = false;
+
 	// nvngx init parameters
 	unsigned long long NVNGX_ApplicationId = 1337;
 	std::wstring NVNGX_ApplicationDataPath;
@@ -213,6 +220,7 @@ public:
 	bool IsRunningOnDXVK = false;
 
 	bool IsDxgiMode = false;
+	bool WorkingAsNvngx = false;
 
 	// vulkan stuff
 	bool VulkanCreatingSC = false;

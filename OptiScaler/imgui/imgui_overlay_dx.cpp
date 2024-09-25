@@ -14,6 +14,16 @@
 
 #include "wrapped_swapchain.h"
 
+#include <ankerl/unordered_dense.h>
+
+static ankerl::unordered_dense::map <HWND, IDXGISwapChain*> FGSwapChains;
+static PfnFfxCreateContext _createContext = nullptr;
+static PfnFfxDestroyContext _destroyContext = nullptr;
+static PfnFfxConfigure _configure = nullptr;
+static PfnFfxQuery _query = nullptr;
+static PfnFfxDispatch _dispatch = nullptr;
+static bool skipSCWrapping = false;
+
 // dxgi stuff
 typedef HRESULT(*PFN_CreateDXGIFactory)(REFIID riid, IDXGIFactory** ppFactory);
 typedef HRESULT(*PFN_CreateDXGIFactory1)(REFIID riid, IDXGIFactory1** ppFactory);
@@ -97,6 +107,96 @@ static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAda
 static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter);
 static HRESULT hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter);
 static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter);
+
+static void LoadFSR31Funcs()
+{
+    LOG_DEBUG("Loading amd_fidelityfx_dx12.dll methods");
+
+    auto file = Util::DllPath().parent_path() / "amd_fidelityfx_dx12.dll";
+    LOG_INFO("Trying to load {}", file.string());
+
+    auto _dll = LoadLibrary(file.wstring().c_str());
+    if (_dll != nullptr)
+    {
+        _configure = (PfnFfxConfigure)GetProcAddress(_dll, "ffxConfigure");
+        _createContext = (PfnFfxCreateContext)GetProcAddress(_dll, "ffxCreateContext");
+        _destroyContext = (PfnFfxDestroyContext)GetProcAddress(_dll, "ffxDestroyContext");
+        _dispatch = (PfnFfxDispatch)GetProcAddress(_dll, "ffxDispatch");
+        _query = (PfnFfxQuery)GetProcAddress(_dll, "ffxQuery");
+    }
+
+    if (_configure == nullptr)
+    {
+        LOG_INFO("Trying to load amd_fidelityfx_dx12.dll with detours");
+
+        _configure = (PfnFfxConfigure)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxConfigure");
+        _createContext = (PfnFfxCreateContext)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxCreateContext");
+        _destroyContext = (PfnFfxDestroyContext)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxDestroyContext");
+        _dispatch = (PfnFfxDispatch)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxDispatch");
+        _query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxQuery");
+    }
+
+    if (_configure != nullptr)
+        LOG_INFO("amd_fidelityfx_dx12.dll methods loaded!");
+    else
+        LOG_ERROR("can't load amd_fidelityfx_dx12.dll methods!");
+}
+
+//static IDXGISwapChain1* CreateFGSwapChain(IDXGISwapChain* pSwapChain, IUnknown* pDevice)
+//{
+//
+//    IDXGISwapChain4* dxgiSwapchain = (IDXGISwapChain*)pSwapChain;
+//    dxgiSwapchain->AddRef();
+//
+//    ffxCreateContextDescFrameGenerationSwapChainForHwndDX12 createSwapChainDesc{};
+//
+//    dxgiSwapchain->GetHwnd(&createSwapChainDesc.hwnd);
+//    DXGI_SWAP_CHAIN_DESC1 desc1;
+//    dxgiSwapchain->GetDesc1(&desc1);
+//    createSwapChainDesc.desc = &desc1;
+//    DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullscreenDesc;
+//    dxgiSwapchain->GetFullscreenDesc(&fullscreenDesc);
+//    createSwapChainDesc.fullscreenDesc = &fullscreenDesc;
+//    dxgiSwapchain->GetParent(IID_PPV_ARGS(&createSwapChainDesc.dxgiFactory));
+//    createSwapChainDesc.gameQueue = GetDevice()->GetImpl()->DX12CmdQueue(cauldron::CommandQueue::Graphics);
+//
+//    dxgiSwapchain->Release();
+//    dxgiSwapchain = nullptr;
+//    createSwapChainDesc.swapchain = &dxgiSwapchain;
+//
+//    ffx::ReturnCode retCode = ffx::CreateContext(m_SwapChainContext, nullptr, createSwapChainDesc);
+//    CauldronAssert(ASSERT_CRITICAL, retCode == ffx::ReturnCode::Ok, L"Couldn't create the ffxapi fg swapchain (dx12): %d", (uint32_t)retCode);
+//    createSwapChainDesc.dxgiFactory->Release();
+//
+//    cauldron::GetSwapChain()->GetImpl()->SetDXGISwapChain(dxgiSwapchain);
+//
+//    // In case the app is handling Alt-Enter manually we need to update the window association after creating a different swapchain
+//    IDXGIFactory7* factory = nullptr;
+//    if (SUCCEEDED(dxgiSwapchain->GetParent(IID_PPV_ARGS(&factory))))
+//    {
+//        factory->MakeWindowAssociation(cauldron::GetFramework()->GetImpl()->GetHWND(), DXGI_MWA_NO_WINDOW_CHANGES);
+//        factory->Release();
+//    }
+//
+//    dxgiSwapchain->Release();
+//
+//    // Lets do the same for HDR as well as it will need to be re initialized since swapchain was re created
+//    cauldron::GetSwapChain()->SetHDRMetadataAndColorspace();
+//
+//    ffxCreateContextDescFrameGenerationSwapChainWrapDX12 createSwapChainDesc{};
+//    createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_WRAP_DX12;
+//    createSwapChainDesc.gameQueue = (ID3D12CommandQueue*)pDevice;
+//    createSwapChainDesc.swapchain = (IDXGISwapChain4**)&pSwapChain;
+//
+//    skipSCWrapping = true;
+//    ffxReturnCode_t retCode = _createContext(&m_SwapChainContext, &createSwapChainDesc.header, nullptr);
+//    skipSCWrapping = false;
+//
+//    if (retCode == FFX_API_RETURN_OK)
+//        return *createSwapChainDesc.swapchain;
+//
+//    return (IDXGISwapChain1*)pSwapChain;
+//}
 
 static int GetCorrectDXGIFormat(int eCurrentFormat)
 {
@@ -306,12 +406,15 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         return presentResult;
     }
 
-    ImGuiOverlayDx::currentSwapchain = pSwapChain;
-    if (ImGuiOverlayDx::swapchainFormat == DXGI_FORMAT_UNKNOWN)
+    if (FGSwapChains.contains(hWnd))
     {
-        DXGI_SWAP_CHAIN_DESC desc;
-        if (pSwapChain->GetDesc(&desc) == S_OK)
-            ImGuiOverlayDx::swapchainFormat = desc.BufferDesc.Format;
+        ImGuiOverlayDx::currentSwapchain = FGSwapChains[hWnd];
+        if (ImGuiOverlayDx::swapchainFormat == DXGI_FORMAT_UNKNOWN)
+        {
+            DXGI_SWAP_CHAIN_DESC desc;
+            if (pSwapChain->GetDesc(&desc) == S_OK)
+                ImGuiOverlayDx::swapchainFormat = desc.BufferDesc.Format;
+        }
     }
 
     ID3D12CommandQueue* cq = nullptr;
@@ -372,20 +475,27 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             UINT64* timestampData;
             ImGuiOverlayDx::readbackBuffer->Map(0, nullptr, reinterpret_cast<void**>(&timestampData));
 
-            // Get the GPU timestamp frequency (ticks per second)
-            UINT64 gpuFrequency;
-            cq->GetTimestampFrequency(&gpuFrequency);
+            if (timestampData != nullptr)
+            {
+                // Get the GPU timestamp frequency (ticks per second)
+                UINT64 gpuFrequency;
+                cq->GetTimestampFrequency(&gpuFrequency);
 
-            // Calculate elapsed time in milliseconds
-            UINT64 startTime = timestampData[0];
-            UINT64 endTime = timestampData[1];
-            double elapsedTimeMs = (endTime - startTime) / static_cast<double>(gpuFrequency) * 1000.0;
+                // Calculate elapsed time in milliseconds
+                UINT64 startTime = timestampData[0];
+                UINT64 endTime = timestampData[1];
+                double elapsedTimeMs = (endTime - startTime) / static_cast<double>(gpuFrequency) * 1000.0;
 
-            Config::Instance()->upscaleTimes.push_back(elapsedTimeMs);
-            Config::Instance()->upscaleTimes.pop_front();
+                Config::Instance()->upscaleTimes.push_back(elapsedTimeMs);
+                Config::Instance()->upscaleTimes.pop_front();
+            }
 
             // Unmap the buffer
             ImGuiOverlayDx::readbackBuffer->Unmap(0, nullptr);
+        }
+        else
+        {
+            LOG_WARN("timestampData is null!");
         }
 
         ImGuiOverlayDx::dx12UpscaleTrig = false;
@@ -642,8 +752,43 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
     }
 
-    auto result = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
+    if (pDesc->BufferDesc.Height == 2 && pDesc->BufferDesc.Width == 2)
+    {
+        LOG_WARN("RTSS call!");
+        //return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
+    }
 
+    ID3D12CommandQueue* cq = nullptr;
+    if (!skipSCWrapping && _createContext != nullptr && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+    {
+        cq->Release();
+
+        ffxCreateContextDescFrameGenerationSwapChainNewDX12 createSwapChainDesc{};
+        createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_NEW_DX12;
+
+        createSwapChainDesc.dxgiFactory = pFactory;
+        createSwapChainDesc.gameQueue = (ID3D12CommandQueue*)pDevice;
+        createSwapChainDesc.desc = pDesc;
+        createSwapChainDesc.swapchain = (IDXGISwapChain4**)ppSwapChain;
+
+        Config::Instance()->dxgiSkipSpoofing = true;
+        skipSCWrapping = true;
+        auto result = _createContext(&ImGuiOverlayDx::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
+        skipSCWrapping = false;
+        Config::Instance()->dxgiSkipSpoofing = false;
+
+        if (result == FFX_API_RETURN_OK)
+        {
+            FGSwapChains.insert_or_assign(pDesc->OutputWindow, *ppSwapChain);
+            return S_OK;
+        }
+
+        LOG_ERROR("_createContext error: {}", result);
+
+        return E_INVALIDARG;
+    }
+
+    auto result = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
     if (result == S_OK)
     {
         // check for SL proxy
@@ -682,8 +827,8 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     return result;
 }
 
-static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* pCommandQueue, IUnknown* pDevice, HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* pDesc,
-                                        const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
+static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, HWND hWnd, DXGI_SWAP_CHAIN_DESC1* pDesc,
+                                        DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
     LOG_FUNC();
 
@@ -692,21 +837,54 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* pCommandQueue, IUnknown* p
     if (Config::Instance()->VulkanCreatingSC)
     {
         LOG_WARN("Vulkan is creating swapchain!");
-
-        if (pDesc != nullptr)
-            LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Flags: {4:X}", pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, pDesc->Flags);
-
-        return oCreateSwapChainForHwnd(pCommandQueue, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
+        return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     }
 
     if (pDevice == nullptr)
     {
         LOG_WARN("pDevice is nullptr!");
-        return oCreateSwapChainForHwnd(pCommandQueue, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
+        return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     }
 
-    auto result = oCreateSwapChainForHwnd(pCommandQueue, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
+    if (pDesc->Height == 2 && pDesc->Width == 2)
+    {
+        LOG_WARN("RTSS call!");
+        //return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
+    }
 
+    ID3D12CommandQueue* cq = nullptr;
+    if (!skipSCWrapping && _createContext != nullptr && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+    {
+        cq->Release();
+
+        ffxCreateContextDescFrameGenerationSwapChainForHwndDX12 createSwapChainDesc{};
+        createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_FOR_HWND_DX12;
+
+        createSwapChainDesc.fullscreenDesc = pFullscreenDesc;
+        createSwapChainDesc.hwnd = hWnd;
+        createSwapChainDesc.dxgiFactory = This;
+        createSwapChainDesc.gameQueue = (ID3D12CommandQueue*)pDevice;
+        createSwapChainDesc.desc = pDesc;
+        createSwapChainDesc.swapchain = (IDXGISwapChain4**)ppSwapChain;
+
+        Config::Instance()->dxgiSkipSpoofing = true;
+        skipSCWrapping = true;
+        auto result = _createContext(&ImGuiOverlayDx::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
+        skipSCWrapping = false;
+        Config::Instance()->dxgiSkipSpoofing = false;
+
+        if (result == FFX_API_RETURN_OK)
+        {
+            FGSwapChains.insert_or_assign(hWnd, *ppSwapChain);
+            return S_OK;
+        }
+
+        LOG_ERROR("_createContext error: {}", result);
+
+        return E_INVALIDARG;
+    }
+
+    auto result = oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     if (result == S_OK)
     {
         // check for SL proxy
@@ -1060,51 +1238,32 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
 
         HookToDevice(d3d11Device);
 
-        WrappedIDXGISwapChain4* buf = nullptr;
-        if (buffer != nullptr && buffer->QueryInterface(IID_PPV_ARGS(&buf)) != S_OK)
+        if (pSwapChainDesc != nullptr)
         {
-            // check for SL proxy
-            IID riid;
-            IDXGISwapChain* real = nullptr;
-            auto iidResult = IIDFromString(L"{ADEC44E2-61F0-45C3-AD9F-1B37379284FF}", &riid);
+            LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Windowed: {4}", pSwapChainDesc->BufferDesc.Width, pSwapChainDesc->BufferDesc.Height, (UINT)pSwapChainDesc->BufferDesc.Format, pSwapChainDesc->BufferCount, pSwapChainDesc->Windowed);
 
-            if (iidResult == S_OK)
+            if (Util::GetProcessWindow() == pSwapChainDesc->OutputWindow)
             {
-                auto qResult = buffer->QueryInterface(riid, (void**)&real);
-
-                if (qResult == S_OK && real != nullptr)
-                {
-                    LOG_INFO("Streamline proxy found");
-                    real->Release();
-                }
-                else
-                {
-                    LOG_DEBUG("Streamline proxy not found");
-                }
+                Config::Instance()->ScreenWidth = pSwapChainDesc->BufferDesc.Width;
+                Config::Instance()->ScreenHeight = pSwapChainDesc->BufferDesc.Height;
             }
 
-            if (pSwapChainDesc != nullptr)
+            IDXGIFactory* factory = nullptr;
+            result = CreateDXGIFactory(IID_PPV_ARGS(&factory));
+            if (result == S_OK)
             {
-                LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Windowed: {4}", pSwapChainDesc->BufferDesc.Width, pSwapChainDesc->BufferDesc.Height, (UINT)pSwapChainDesc->BufferDesc.Format, pSwapChainDesc->BufferCount, pSwapChainDesc->Windowed);
+                LOG_DEBUG("creating new swapchain");
+                result = factory->CreateSwapChain(*ppDevice, pSwapChainDesc, ppSwapChain);
 
-                if (Util::GetProcessWindow() == pSwapChainDesc->OutputWindow)
-                {
-                    Config::Instance()->ScreenWidth = pSwapChainDesc->BufferDesc.Width;
-                    Config::Instance()->ScreenHeight = pSwapChainDesc->BufferDesc.Height;
-                }
+                if (result == S_OK)
+                    LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)d3d11Device);
+                else
+                    LOG_DEBUG("factory->CreateSwapChain error: {0:X}", (UINT64)result);
 
-                LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)buffer, (UINT64)pSwapChainDesc->OutputWindow);
-                *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? buffer : real, d3d11Device, pSwapChainDesc->OutputWindow, Present, CleanupRenderTarget);
-                LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)buffer, (UINT64)d3d11Device);
+                factory->Release();
             }
         }
-
-        if (buf != nullptr)
-            buf->Release();
     }
-
-    if (buffer != nullptr)
-        buffer->Release();
 
     LOG_FUNC_RESULT(result);
 
@@ -1617,6 +1776,8 @@ void ImGuiOverlayDx::HookDx()
 
         DetourTransactionCommit();
     }
+
+    LoadFSR31Funcs();
 }
 
 void ImGuiOverlayDx::UnHookDx()
