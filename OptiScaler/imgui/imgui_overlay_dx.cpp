@@ -618,6 +618,10 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     if (Config::Instance()->VulkanCreatingSC)
     {
         LOG_WARN("Vulkan is creating swapchain!");
+
+        if(pDesc != nullptr)
+            LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Windowed: {4}", pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, pDesc->Windowed);
+
         return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
     }
 
@@ -677,6 +681,10 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* pCommandQueue, IUnknown* p
     if (Config::Instance()->VulkanCreatingSC)
     {
         LOG_WARN("Vulkan is creating swapchain!");
+
+        if (pDesc != nullptr)
+            LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Flags: {4:X}", pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, pDesc->Flags);
+
         return oCreateSwapChainForHwnd(pCommandQueue, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     }
 
