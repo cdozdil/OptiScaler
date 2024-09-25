@@ -372,8 +372,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* I
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 {
-    LOG_FUNC();
-
     for (auto const& [key, val] : Dx12Contexts)
         NVSDK_NGX_D3D12_ReleaseFeature(val->Handle());
 
@@ -382,16 +380,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 
     Config::Instance()->CurrentFeature = nullptr;
 
-    UnhookAll();
+    // Unhooking and cleaning stuff causing issues during shutdown. 
+    // Disabled for now to check if it cause any issues
+    //UnhookAll();
 
     DLSSFeatureDx12::Shutdown(D3D12Device);
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_Shutdown() != nullptr)
     {
-        LOG_INFO("D3D12_Shutdown");
         auto result = NVNGXProxy::D3D12_Shutdown()();
         NVNGXProxy::SetDx12Inited(false);
-        LOG_INFO("D3D12_Shutdown result: {0:X}", (UINT)result);
     }
 
     // Unhooking and cleaning stuff causing issues during shutdown. 
@@ -403,14 +401,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown1(ID3D12Device* InDevice)
 {
-    LOG_FUNC();
-
     if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_Shutdown1() != nullptr)
     {
-        LOG_INFO("D3D12_Shutdown1");
         auto result = NVNGXProxy::D3D12_Shutdown1()(InDevice);
         NVNGXProxy::SetDx12Inited(false);
-        LOG_INFO("D3D12_Shutdown1 result: {0:X}", (UINT)result);
     }
 
     return NVSDK_NGX_D3D12_Shutdown();

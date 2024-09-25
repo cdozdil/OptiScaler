@@ -181,8 +181,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_with_ProjectID(const char* I
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown()
 {
-    LOG_FUNC();
-
     for (auto const& [key, val] : Dx11Contexts)
     {
         if (val)
@@ -199,7 +197,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown()
     {
         auto result = NVNGXProxy::D3D11_Shutdown()();
         NVNGXProxy::SetDx11Inited(false);
-        LOG_INFO("D3D11_Shutdown result: {0:X}", (UINT)result);
     }
 
     // Unhooking and cleaning stuff causing issues during shutdown. 
@@ -217,7 +214,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown1(ID3D11Device* InDevice)
     {
         auto result = NVNGXProxy::D3D11_Shutdown1()(InDevice);
         NVNGXProxy::SetDx11Inited(false);
-        LOG_INFO("D3D11_Shutdown1 result: {0:X}", (UINT)result);
     }
 
     return NVSDK_NGX_D3D11_Shutdown();

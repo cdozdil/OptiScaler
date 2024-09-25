@@ -976,7 +976,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
     {
         auto result = NVNGXProxy::VULKAN_Shutdown()();
         NVNGXProxy::SetVulkanInited(false);
-        LOG_INFO("VULKAN_Shutdown result: {0:X}", (UINT)result);
     }
 
     // Unhooking and cleaning stuff causing issues during shutdown. 
@@ -994,7 +993,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown1(VkDevice InDevice)
     {
         auto result = NVNGXProxy::VULKAN_Shutdown1()(InDevice);
         NVNGXProxy::SetVulkanInited(false);
-        LOG_INFO("VULKAN_Shutdown1 result: {0:X}", (UINT)result);
     }
 
     return NVSDK_NGX_VULKAN_Shutdown();
