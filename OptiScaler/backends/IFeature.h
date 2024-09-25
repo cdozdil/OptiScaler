@@ -13,7 +13,6 @@ private:
 
 	NVSDK_NGX_PerfQuality_Value _perfQualityValue;
 
-
 protected:
 	NVSDK_NGX_Handle* _handle = nullptr;
 

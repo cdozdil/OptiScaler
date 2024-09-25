@@ -1269,16 +1269,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         createFg.maxRenderSize = { deviceContext->DisplayWidth(), deviceContext->DisplayHeight() };
         createFg.flags = 0;
 
-        if (deviceContext->InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR)
+        if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR)
             createFg.flags |= FFX_FRAMEGENERATION_ENABLE_HIGH_DYNAMIC_RANGE;
 
-        if (deviceContext->InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
+        if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
             createFg.flags |= FFX_FRAMEGENERATION_ENABLE_DEPTH_INVERTED;
 
-        if (deviceContext->InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVJittered)
+        if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVJittered)
             createFg.flags |= FFX_FRAMEGENERATION_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
 
-        if ((deviceContext->InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0)
+        if ((deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0)
             createFg.flags |= FFX_FRAMEGENERATION_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
 
         if (Config::Instance()->FGAsync.value_or(false)) // && !Config::Instance()->FGHUDFix.value_or(false))
@@ -1520,7 +1520,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     dfgPrepare.motionVectorScale.y = MVScaleY;
                 }
 
-                if (deviceContext->InitFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
+                if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
                 {
                     dfgPrepare.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.01f);
                     dfgPrepare.cameraNear = Config::Instance()->FsrCameraFar.value_or(0.99f);
