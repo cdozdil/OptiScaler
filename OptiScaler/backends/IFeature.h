@@ -25,14 +25,14 @@ protected:
 	bool _accessToReactiveMask = false;
 	bool _hasExposure = false;
 	bool _hasOutput = false;
-	int _initFlags = 0;
-	bool _initFlagsReady = false;
+
 	unsigned int _renderWidth = 0;
 	unsigned int _renderHeight = 0;
 	unsigned int _targetWidth = 0;
 	unsigned int _targetHeight = 0;
 	unsigned int _displayWidth = 0;
 	unsigned int _displayHeight = 0;
+
 	long _frameCount = 0;
 	bool _moduleLoaded = false;
 
@@ -73,7 +73,6 @@ public:
 	bool AccessToReactiveMask() const { return _accessToReactiveMask; }
 	bool HasExposure() const { return _hasExposure; }
 	bool HasOutput() const { return _hasOutput; }
-	int InitFlags() const { return _initFlags; }
 	virtual feature_version Version() = 0;
 	virtual const char* Name() = 0;
 	bool ModuleLoaded() const { return _moduleLoaded; }

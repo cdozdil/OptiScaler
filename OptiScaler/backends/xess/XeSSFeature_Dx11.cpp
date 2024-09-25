@@ -22,9 +22,6 @@ bool XeSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 	Device = InDevice;
 	DeviceContext = InContext;
 
-	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &_initFlags) == NVSDK_NGX_Result_Success)
-		_initFlagsReady = true;
-
 	_baseInit = false;	
 
 	return true;
