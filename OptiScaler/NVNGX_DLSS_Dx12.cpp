@@ -24,6 +24,7 @@ static NVSDK_NGX_Parameter* createParams = nullptr;
 static int changeBackendCounter = 0;
 static int evalCounter = 0;
 static std::wstring appDataPath = L".";
+static inline bool shutdown = false;
 
 #pragma region Hooks
 
@@ -372,6 +373,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* I
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 {
+    shutdown = true;
+
     for (auto const& [key, val] : Dx12Contexts)
         NVSDK_NGX_D3D12_ReleaseFeature(val->Handle());
 
@@ -396,11 +399,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
     // Disabled for now to check if it cause any issues
     //ImGuiOverlayDx::UnHookDx();
 
+    shutdown = false;
+
     return NVSDK_NGX_Result_Success;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown1(ID3D12Device* InDevice)
 {
+    shutdown = true;
+
     if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_Shutdown1() != nullptr)
     {
         auto result = NVNGXProxy::D3D12_Shutdown1()(InDevice);
@@ -740,20 +747,28 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 
     auto handleId = InHandle->Id;
 
-    LOG_INFO("releasing feature with id {0}", handleId);
+    if (!shutdown)
+        LOG_INFO("releasing feature with id {0}", handleId);
 
     if (handleId < 1000000)
     {
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D12_ReleaseFeature() != nullptr)
         {
-            LOG_INFO("calling D3D12_ReleaseFeature for ({0})", handleId);
+            if (!shutdown)
+                LOG_INFO("calling D3D12_ReleaseFeature for ({0})", handleId);
+            
             auto result = NVNGXProxy::D3D12_ReleaseFeature()(InHandle);
-            LOG_INFO("D3D12_ReleaseFeature result for ({0}): {1:X}", handleId, (UINT)result);
+
+            if (!shutdown)
+                LOG_INFO("D3D12_ReleaseFeature result for ({0}): {1:X}", handleId, (UINT)result);
+            
             return result;
         }
         else
         {
-            LOG_INFO("D3D12_ReleaseFeature not available for ({0})", handleId);
+            if (!shutdown)
+                LOG_INFO("D3D12_ReleaseFeature not available for ({0})", handleId);
+            
             return NVSDK_NGX_Result_FAIL_FeatureNotFound;
         }
     }
@@ -772,7 +787,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
     }
     else
     {
-        LOG_ERROR("can't release feature with id {0}!", handleId);
+        if (!shutdown)
+            LOG_ERROR("can't release feature with id {0}!", handleId);
     }
 
     return NVSDK_NGX_Result_Success;

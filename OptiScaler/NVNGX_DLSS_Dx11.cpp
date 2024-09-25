@@ -26,6 +26,7 @@ static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeatu
 static inline NVSDK_NGX_Parameter* createParams;
 static inline int changeBackendCounter = 0;
 static inline int evalCounter = 0;
+static inline bool shutdown = false;
 
 #pragma region NVSDK_NGX_D3D11_Init
 
@@ -181,6 +182,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_with_ProjectID(const char* I
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown()
 {
+    shutdown = true;
+
     for (auto const& [key, val] : Dx11Contexts)
     {
         if (val)
@@ -203,12 +206,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown()
     // Disabled for now to check if it cause any issues
     //ImGuiOverlayDx::UnHookDx();
 
+    shutdown = false;
+
     return NVSDK_NGX_Result_Success;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown1(ID3D11Device* InDevice)
 {
-    LOG_FUNC();
+    shutdown = true;
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx11Inited() && NVNGXProxy::D3D11_Shutdown1() != nullptr)
     {
@@ -508,7 +513,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* 
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D11_ReleaseFeature() != nullptr)
         {
             auto result = NVNGXProxy::D3D11_ReleaseFeature()(InHandle);
-            LOG_INFO("D3D11_ReleaseFeature result for ({0}): {1:X}", handleId, (UINT)result);
+
+            if (!shutdown)
+                LOG_INFO("D3D11_ReleaseFeature result for ({0}): {1:X}", handleId, (UINT)result);
+
             return result;
         }
         else
@@ -517,12 +525,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* 
         }
     }
 
-    LOG_INFO("releasing feature with id {0}", handleId);
+    if (!shutdown)
+        LOG_INFO("releasing feature with id {0}", handleId);
 
     if (auto deviceContext = Dx11Contexts[handleId].get(); deviceContext != nullptr)
     {
-        LOG_TRACE("sleeping for 500ms before reset()!");
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        if (!shutdown)
+        {
+            LOG_TRACE("sleeping for 500ms before reset()!");
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
 
         if (deviceContext == Config::Instance()->CurrentFeature)
         {
@@ -534,7 +546,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* 
         auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
         Dx11Contexts.erase(it);
 
-        if (Config::Instance()->Dx11DelayedInit.value_or(false))
+        if (!shutdown && Config::Instance()->Dx11DelayedInit.value_or(false))
         {
             LOG_TRACE("sleeping for 500ms after reset()!");
             std::this_thread::sleep_for(std::chrono::milliseconds(500));

@@ -28,6 +28,7 @@ static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeatu
 static inline NVSDK_NGX_Parameter* createParams = nullptr;
 static inline int changeBackendCounter = 0;
 static inline int evalCounter = 0;
+static inline bool shutdown = false;
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
@@ -687,7 +688,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::VULKAN_ReleaseFeature() != nullptr)
         {
             auto result = NVNGXProxy::VULKAN_ReleaseFeature()(InHandle);
-            LOG_INFO("VULKAN_ReleaseFeature result for ({0}): {1:X}", handleId, (UINT)result);
+
+            if (!shutdown)
+                LOG_INFO("VULKAN_ReleaseFeature result for ({0}): {1:X}", handleId, (UINT)result);
+
             return result;
         }
         else
@@ -696,7 +700,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
         }
     }
 
-    LOG_INFO("releasing feature with id {0}", handleId);
+    if (!shutdown)
+        LOG_INFO("releasing feature with id {0}", handleId);
 
     if (auto deviceContext = VkContexts[handleId].get(); deviceContext)
     {
@@ -957,7 +962,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
 {
-    LOG_FUNC();
+    shutdown = true;
 
     for (auto const& [key, val] : VkContexts)
         NVSDK_NGX_VULKAN_ReleaseFeature(val->Handle());
@@ -982,12 +987,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
     // Disabled for now to check if it cause any issues
     //ImGuiOverlayVk::UnHookVk();
 
+    shutdown = false;
+
     return NVSDK_NGX_Result_Success;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown1(VkDevice InDevice)
 {
-    LOG_FUNC();
+    shutdown = true;
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsVulkanInited() && NVNGXProxy::VULKAN_Shutdown1() != nullptr)
     {
