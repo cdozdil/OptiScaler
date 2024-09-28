@@ -116,12 +116,17 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 {
     LOG_FUNC();
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
     if (ClearTrig != nullptr)
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(150));
         ClearTrig(true, Handle);
-        std::this_thread::sleep_for(std::chrono::milliseconds(150));
-    }
+
+    if (Config::Instance()->CurrentFeature != nullptr)
+        Config::Instance()->FGChanged = true;
+
+    Config::Instance()->SGChanged = true;
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
     LOG_DEBUG("BufferCount: {0}, Width: {1}, Height: {2}, NewFormat: {3}, SwapChainFlags: {4:X}", BufferCount, Width, Height, (UINT)NewFormat, SwapChainFlags);
 
@@ -146,12 +151,17 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 {
     LOG_FUNC();
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
     if (ClearTrig != nullptr)
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(150));
         ClearTrig(true, Handle);
-        std::this_thread::sleep_for(std::chrono::milliseconds(150));
-    }
+
+    if (Config::Instance()->CurrentFeature != nullptr)
+        Config::Instance()->FGChanged = true;
+
+    Config::Instance()->SGChanged = true;
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
     LOG_DEBUG("BufferCount: {0}, Width: {1}, Height: {2}, NewFormat: {3}, SwapChainFlags: {4:X}, pCreationNodeMask: {5}", BufferCount, Width, Height, (UINT)Format, SwapChainFlags, *pCreationNodeMask);
 
@@ -162,13 +172,25 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
         Config::Instance()->ScreenHeight = Height;
     }
 
+
     LOG_FUNC_RESULT(result);
     return result;
 }
 
 HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput* pTarget)
 {
-    return m_pReal->SetFullscreenState(Fullscreen, pTarget);
+    auto result = m_pReal->SetFullscreenState(Fullscreen, pTarget);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+    if (Config::Instance()->CurrentFeature != nullptr)
+        Config::Instance()->FGChanged = true;
+
+    Config::Instance()->SGChanged = true;
+    
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+    return result;
 }
 
 HRESULT WrappedIDXGISwapChain4::GetFullscreenState(BOOL* pFullscreen, IDXGIOutput** ppTarget)
