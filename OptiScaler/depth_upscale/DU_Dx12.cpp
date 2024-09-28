@@ -144,12 +144,6 @@ bool DU_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
         _cpuUavHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     }
 
-    if (_cpuCbvHandle[_counter].ptr == NULL)
-    {
-        _cpuCbvHandle[_counter] = _cpuUavHandle[_counter];
-        _cpuCbvHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    }
-
     if (_gpuSrvHandle[_counter].ptr == NULL)
         _gpuSrvHandle[_counter] = _srvHeap[_counter]->GetGPUDescriptorHandleForHeapStart();
 
@@ -157,12 +151,6 @@ bool DU_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     {
         _gpuUavHandle[_counter] = _gpuSrvHandle[_counter];
         _gpuUavHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    }
-
-    if (_gpuCbvHandle[_counter].ptr == NULL)
-    {
-        _gpuCbvHandle[_counter] = _gpuUavHandle[_counter];
-        _gpuCbvHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     }
 
     auto inDesc = InResource->GetDesc();
@@ -183,28 +171,6 @@ bool DU_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     uavDesc.Texture2D.MipSlice = 0;
     InDevice->CreateUnorderedAccessView(OutResource, nullptr, &uavDesc, _cpuUavHandle[_counter]);
 
-    // Create CBV for Constants
-    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-
-    DUConstants constants{};
-    constants.sourceResolution.x = Config::Instance()->CurrentFeature->RenderWidth();
-    constants.sourceResolution.y = Config::Instance()->CurrentFeature->RenderHeight();
-    constants.inverseResolution.x = 1.0f / (float)Config::Instance()->CurrentFeature->RenderWidth();
-    constants.inverseResolution.y = 1.0f / (float)Config::Instance()->CurrentFeature->RenderHeight();
-    constants.depthThreshold = 0.05f;
-
-    // Copy the updated constant buffer data to the constant buffer resource
-    UINT8* pCBDataBegin;
-    CD3DX12_RANGE readRange(0, 0); // We do not intend to read from this resource on the CPU
-    _constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pCBDataBegin));
-    memcpy(pCBDataBegin, &constants, sizeof(constants));
-    _constantBuffer->Unmap(0, nullptr);
-
-    cbvDesc.BufferLocation = _constantBuffer->GetGPUVirtualAddress();
-    cbvDesc.SizeInBytes = sizeof(constants);
-
-    InDevice->CreateConstantBufferView(&cbvDesc, _cpuCbvHandle[_counter]);
-
     ID3D12DescriptorHeap* heaps[] = { _srvHeap[_counter] };
     InCmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 
@@ -213,7 +179,6 @@ bool DU_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 
     InCmdList->SetComputeRootDescriptorTable(0, _gpuSrvHandle[_counter]);
     InCmdList->SetComputeRootDescriptorTable(1, _gpuUavHandle[_counter]);
-    InCmdList->SetComputeRootDescriptorTable(2, _gpuCbvHandle[_counter]);
 
     UINT dispatchWidth = 0;
     UINT dispatchHeight = 0;
@@ -238,7 +203,7 @@ DU_Dx12::DU_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), _d
 
     // Describe and create the root signature
     // ---------------------------------------------------
-    D3D12_DESCRIPTOR_RANGE descriptorRange[3];
+    D3D12_DESCRIPTOR_RANGE descriptorRange[2];
 
     // SRV Range (Input Texture)
     descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
@@ -254,16 +219,9 @@ DU_Dx12::DU_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), _d
     descriptorRange[1].RegisterSpace = 0;
     descriptorRange[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-    // CBV Range (Params)
-    descriptorRange[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-    descriptorRange[2].NumDescriptors = 1;
-    descriptorRange[2].BaseShaderRegister = 0; // Assuming b0 register in HLSL for CBV
-    descriptorRange[2].RegisterSpace = 0;
-    descriptorRange[2].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
     // Define the root parameter (descriptor table)
     // ---------------------------------------------------
-    D3D12_ROOT_PARAMETER rootParameters[3];
+    D3D12_ROOT_PARAMETER rootParameters[2];
 
     // Root Parameter for SRV
     rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
@@ -277,16 +235,10 @@ DU_Dx12::DU_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), _d
     rootParameters[1].DescriptorTable.pDescriptorRanges = &descriptorRange[1];		// Point to the UAV range
     rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
-    // Root Parameter for CBV
-    rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[2].DescriptorTable.NumDescriptorRanges = 1;						// One range (CBV)
-    rootParameters[2].DescriptorTable.pDescriptorRanges = &descriptorRange[2];		// Point to the CBV range
-    rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-
     // A root signature is an array of root parameters
     // ---------------------------------------------------
     D3D12_ROOT_SIGNATURE_DESC rootSigDesc;
-    rootSigDesc.NumParameters = 3; // Two root parameters
+    rootSigDesc.NumParameters = 2; // Two root parameters
     rootSigDesc.pParameters = rootParameters;
 
     CD3DX12_STATIC_SAMPLER_DESC samplers[1];

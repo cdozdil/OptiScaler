@@ -887,7 +887,15 @@ void ImGuiCommon::RenderMenu()
 
                         bool fgActive = Config::Instance()->FGEnabled.value_or(false);
                         if (ImGui::Checkbox("Frame Generation", &fgActive))
+                        {
                             Config::Instance()->FGEnabled = fgActive;
+
+                            if (Config::Instance()->FGEnabled.value_or(false))
+                            {
+                                Config::Instance()->FGChanged = true;
+                                LOG_DEBUG_ONLY("Enabled set FGChanged");
+                            }
+                        }
 
                         ShowHelpMarker("Enable FSR frame generation");
 
@@ -895,19 +903,60 @@ void ImGuiCommon::RenderMenu()
                         if (ImGui::Checkbox("FG HUD Fix", &fgHudfix))
                         {
                             Config::Instance()->FGHUDFix = fgHudfix;
-                            Config::Instance()->FGAsync = false;
 
                             if (Config::Instance()->FGEnabled.value_or(false))
                             {
-                                Config::Instance()->newBackend = currentBackend;
-                                Config::Instance()->changeBackend = true;
+                                Config::Instance()->FGChanged = true;
+                                LOG_DEBUG_ONLY("HUDFix set FGChanged");
                             }
+
                         }
-                        ShowHelpMarker("Enable HUD stability fix (Disables Async, might cause crashes!)");
+                        ShowHelpMarker("Enable HUD stability fix (Might cause crashes!)");
 
-                        //ImGui::BeginDisabled(Config::Instance()->FGHUDFix.value_or(false));
+                        ImGui::BeginDisabled(!Config::Instance()->FGHUDFix.value_or(false));
 
-                        bool fgAsync = Config::Instance()->FGAsync.value_or(false);
+                        ImGui::SameLine(0.0f, 16.0f);
+                        int hudFixLimit = Config::Instance()->FGHUDLimit.value_or(0);
+
+                        ImGui::PushItemWidth(85.0);
+                        if (ImGui::InputInt("Limit", &hudFixLimit))
+                        {
+                            if (hudFixLimit < 0)
+                                hudFixLimit = 0;
+                            else if (hudFixLimit > 99)
+                                hudFixLimit = 99;
+
+                            Config::Instance()->FGHUDLimit = hudFixLimit;
+                        }
+                        ImGui::PopItemWidth();
+                        ShowHelpMarker("Delay HUDless capture, high values might cause crash!");
+
+                        //ImGui::PushItemWidth(85.0);
+                        //bool fgSkipInstance = Config::Instance()->FGSkipInstanced.value_or(true);
+                        //if (ImGui::Checkbox("Skip Instanced", &fgSkipInstance))
+                        //{
+                        //    if (fgSkipInstance)
+                        //        Config::Instance()->FGSkipIndexedInstanced = false;
+
+                        //    Config::Instance()->FGSkipInstanced = fgSkipInstance;
+                        //}
+
+                        //ImGui::SameLine(0.0f, 16.0f);
+
+                        //bool fgSkipIndexed = Config::Instance()->FGSkipIndexedInstanced.value_or(false);
+                        //if (ImGui::Checkbox("Skip Indexed", &fgSkipIndexed))
+                        //{
+                        //    if (fgSkipIndexed)
+                        //        Config::Instance()->FGSkipInstanced = false;
+
+                        //    Config::Instance()->FGSkipIndexedInstanced = fgSkipIndexed;
+                        //}
+
+                        //ImGui::PopItemWidth();
+
+                        ImGui::EndDisabled();
+
+                        bool fgAsync = Config::Instance()->FGAsync.value_or(true);
 
                         if (ImGui::Checkbox("FG Allow Async", &fgAsync))
                         {
@@ -915,17 +964,23 @@ void ImGuiCommon::RenderMenu()
 
                             if (Config::Instance()->FGEnabled.value_or(false))
                             {
-                                Config::Instance()->newBackend = currentBackend;
-                                Config::Instance()->changeBackend = true;
+                                Config::Instance()->FGChanged = true;
+                                LOG_DEBUG_ONLY("Async set FGChanged");
                             }
                         }
-
-                        //ImGui::EndDisabled();
                         ShowHelpMarker("Enable Async for better FG performance (Might cause crashes, especially with HUD Fix!)");
 
                         bool fgDV = Config::Instance()->FGDebugView.value_or(false);
                         if (ImGui::Checkbox("FG Debug View", &fgDV))
+                        {
                             Config::Instance()->FGDebugView = fgDV;
+
+                            if (Config::Instance()->FGEnabled.value_or(false))
+                            {
+                                Config::Instance()->FGChanged = true;
+                                LOG_DEBUG_ONLY("DebugView set FGChanged");
+                            }
+                        }
 
                         ShowHelpMarker("Enable FSR 3.1 frame generation debug view");
 

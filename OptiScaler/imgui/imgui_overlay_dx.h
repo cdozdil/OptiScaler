@@ -26,11 +26,18 @@ namespace ImGuiOverlayDx
 	inline int currentFrameIndex = 0;
 	inline int previousFrameIndex = 0;
 	
-
 	inline IDXGISwapChain* currentSwapchain = nullptr;
 	inline DXGI_FORMAT swapchainFormat = DXGI_FORMAT_UNKNOWN;
 	inline ffxContext fgSwapChainContext = nullptr;
-
+	inline ffxContext fgContext = nullptr;
+	inline float jitterX = 0.0;
+	inline float jitterY = 0.0;
+	inline float mvScaleX = 0.0;
+	inline float mvScaleY = 0.0;
+	inline ID3D12Resource* paramVelocity[2] = { nullptr, nullptr };
+	inline ID3D12Resource* paramDepth[2] = { nullptr, nullptr };
+	inline int resourceIndex = 0;
+	inline bool upscaleRan = false;
 
 	void UnHookDx();
 	void HookDx();

@@ -54,6 +54,9 @@ bool Config::Reload(std::filesystem::path iniPath)
             FGDebugView = readBool("FrameGen", "DebugView");
             FGAsync = readBool("FrameGen", "AllowAsync");
             FGHUDFix = readBool("FrameGen", "HUDFix");
+            FGHUDLimit = readInt("FrameGen", "HUDLimit");
+            FGSkipInstanced = readBool("FrameGen", "HUDSkipInstanced");
+            FGSkipIndexedInstanced = readBool("FrameGen", "HUDSkipIndexed");
         }
 
         // FSR
@@ -474,6 +477,9 @@ bool Config::SaveIni()
         ini.SetValue("FrameGen", "DebugView", GetBoolValue(Instance()->FGDebugView).c_str());
         ini.SetValue("FrameGen", "AllowAsync", GetBoolValue(Instance()->FGAsync).c_str());
         ini.SetValue("FrameGen", "HUDFix", GetBoolValue(Instance()->FGHUDFix).c_str());
+        ini.SetValue("FrameGen", "HUDLimit", GetIntValue(Instance()->FGHUDLimit).c_str());
+        ini.SetValue("FrameGen", "HUDSkipInstanced", GetBoolValue(Instance()->FGSkipInstanced).c_str());
+        ini.SetValue("FrameGen", "HUDSkipIndexed", GetBoolValue(Instance()->FGSkipIndexedInstanced).c_str());
     }
 
     // Output Scaling

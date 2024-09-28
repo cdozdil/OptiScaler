@@ -35,6 +35,13 @@ inline DWORD processId;
 #define LOG_DEBUG(msg, ...) \
     spdlog::debug(__FUNCTION__ " " msg, ##__VA_ARGS__)
 
+#ifdef _DEBUG
+#define LOG_DEBUG_ONLY(msg, ...) \
+    spdlog::debug(__FUNCTION__ " " msg, ##__VA_ARGS__) 
+#else
+#define LOG_DEBUG_ONLY(msg, ...) 
+#endif
+
 #define LOG_INFO(msg, ...) \
     spdlog::info(__FUNCTION__ " " msg, ##__VA_ARGS__)
 
@@ -48,7 +55,7 @@ inline DWORD processId;
     spdlog::trace(__FUNCTION__)
 
 #define LOG_FUNC_RESULT(result) \
-    spdlog::trace(__FUNCTION__ " result: {0:X}" , (UINT)result)
+    spdlog::trace(__FUNCTION__ " result: {0:X}" , (UINT64)result)
 
 inline static std::string wstring_to_string(const std::wstring& wide_str) 
 {
