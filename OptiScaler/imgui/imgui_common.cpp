@@ -916,9 +916,10 @@ void ImGuiCommon::RenderMenu()
                         ImGui::BeginDisabled(!Config::Instance()->FGHUDFix.value_or(false));
 
                         ImGui::SameLine(0.0f, 16.0f);
-                        int hudFixLimit = Config::Instance()->FGHUDLimit.value_or(0);
 
                         ImGui::PushItemWidth(85.0);
+
+                        int hudFixLimit = Config::Instance()->FGHUDLimit.value_or(0);
                         if (ImGui::InputInt("Limit", &hudFixLimit))
                         {
                             if (hudFixLimit < 0)
@@ -928,6 +929,13 @@ void ImGuiCommon::RenderMenu()
 
                             Config::Instance()->FGHUDLimit = hudFixLimit;
                         }
+
+                        ImGui::SameLine(0.0f, 16.0f);
+
+                        auto hudDeep = Config::Instance()->FGHUDPrevious.value_or(false);
+                        if (ImGui::Checkbox("Deep", &hudDeep))
+                            Config::Instance()->FGHUDPrevious = hudDeep;
+
                         ImGui::PopItemWidth();
                         ShowHelpMarker("Delay HUDless capture, high values might cause crash!");
 

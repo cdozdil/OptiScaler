@@ -14,26 +14,23 @@ struct alignas(256) DUConstants
 
 inline static std::string shaderCode = R"(
 // Input texture (source depth texture)
-Texture2D<float> SourceDepthTexture : register(t0);
-
-// Sampler for texture sampling (using linear interpolation)
-SamplerState SamplerLinear : register(s0);
+Texture2D<float> SourceTexture : register(t0);
 
 // Output texture (UAV for writing the upscaled depth values)
-RWTexture2D<float> OutputDepthTexture : register(u0);
+RWTexture2D<float> DestinationTexture : register(u0);
 
 // Compute shader thread group size
 [numthreads(16, 16, 1)]
-void CSMain(uint3 threadID : SV_DispatchThreadID)
+void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
-    // Calculate texture coordinates (normalized UV)
-    float2 uv = (threadID.xy * inverseResolution); // Map threadID to UV
+    // The dispatchThreadID.xy are the pixel coordinates
+    uint2 pixelCoord = dispatchThreadID.xy;
 
-    // Read the depth value 
-    float depthCenter = SourceDepthTexture.SampleLevel(SamplerLinear, uv, 0);
+    // Load the pixel value from the source texture
+    float4 srcColor = SourceTexture.Load(int3(pixelCoord, 0));
 
-    // Return 
-    OutputDepthTexture[threadID.xy] = depthCenter;
+    // Write the pixel value to the destination texture
+    DestinationTexture[pixelCoord] = srcColor;
 }
 )";
 
