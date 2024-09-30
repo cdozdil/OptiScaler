@@ -241,15 +241,15 @@ DU_Dx12::DU_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), _d
     rootSigDesc.NumParameters = 2; // Two root parameters
     rootSigDesc.pParameters = rootParameters;
 
-    CD3DX12_STATIC_SAMPLER_DESC samplers[1];
+    //CD3DX12_STATIC_SAMPLER_DESC samplers[1];
 
-    samplers[0].Init(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR);
-    samplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    samplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    samplers[0].ShaderRegister = 0;
+    //samplers[0].Init(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR);
+    //samplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    //samplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    //samplers[0].ShaderRegister = 0;
 
-    rootSigDesc.NumStaticSamplers = 1;
-    rootSigDesc.pStaticSamplers = samplers;
+    rootSigDesc.NumStaticSamplers = 0;
+    rootSigDesc.pStaticSamplers = nullptr;
 
     rootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
 

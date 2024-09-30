@@ -1535,7 +1535,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     dfgPrepare.depth = ffxApiGetResourceDX12(paramDepth, FFX_API_RESOURCE_STATE_COMPUTE_READ);
                     if (paramDepth != nullptr && DepthUpscaler != nullptr)
                     {
-                        if (DepthUpscaler->CreateBufferResource(D3D12Device, paramDepth, deviceContext->DisplayWidth(), deviceContext->DisplayHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && DepthUpscaler->Buffer() != nullptr)
+                        if (DepthUpscaler->CreateBufferResource(D3D12Device, paramDepth, deviceContext->RenderWidth(), deviceContext->RenderHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && DepthUpscaler->Buffer() != nullptr)
                         {
                             if (DepthUpscaler->Dispatch(D3D12Device, InCmdList, paramDepth, DepthUpscaler->Buffer()))
                                 dfgPrepare.depth = ffxApiGetResourceDX12(DepthUpscaler->Buffer(), FFX_API_RESOURCE_STATE_UNORDERED_ACCESS);
