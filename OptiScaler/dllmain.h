@@ -1331,12 +1331,13 @@ struct dxgi_dll
 
 bool SkipSpoofing()
 {
-    auto result = !Config::Instance()->DxgiSpoofing.value_or(true) || Config::Instance()->dxgiSkipSpoofing;
+    auto result = !Config::Instance()->DxgiSpoofing.value_or(true) || Config::Instance()->dxgiSkipSpoofing || !Config::Instance()->IsRunningOnLinux;
 
     if (result)
-        LOG_TRACE("dxgiSkipSpoofing true, skipping spoofing");
+        LOG_TRACE("DxgiSpoofing: {}, dxgiSkipSpoofing: {}, IsRunningOnLinux: {}, skipping spoofing", 
+                  !Config::Instance()->DxgiSpoofing.value_or(true), Config::Instance()->dxgiSkipSpoofing, !Config::Instance()->IsRunningOnLinux);
 
-    if (!result && Config::Instance()->DxgiBlacklist.has_value() && !Config::Instance()->IsRunningOnLinux)
+    if (!result && Config::Instance()->DxgiBlacklist.has_value())
     {
         result = true;
 

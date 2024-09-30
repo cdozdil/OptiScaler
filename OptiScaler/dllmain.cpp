@@ -1143,11 +1143,11 @@ static bool IsRunningOnWine()
 {
     LOG_FUNC();
 
-    HMODULE ntdll = GetModuleHandle(L"dxgi.dll");
+    HMODULE ntdll = GetModuleHandle(L"ntdll.dll");
 
     if (!ntdll)
     {
-        LOG_WARN("IsRunningOnWine Not running on NT!?!");
+        LOG_WARN("Not running on NT!?!");
         return true;
     }
 
@@ -1155,11 +1155,11 @@ static bool IsRunningOnWine()
 
     if (pWineGetVersion)
     {
-        LOG_INFO("IsRunningOnWine Running on Wine {0}!", pWineGetVersion());
+        LOG_INFO("Running on Wine {0}!", pWineGetVersion());
         return true;
     }
 
-    LOG_WARN("IsRunningOnWine Wine not detected");
+    LOG_WARN("Wine not detected");
     return false;
 }
 
