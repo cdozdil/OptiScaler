@@ -131,6 +131,7 @@ public:
 	std::optional<bool> FsrDebugView;
 	std::optional<int> Fsr3xIndex;
 	std::optional<bool> FsrUseMaskForTransparency;
+	std::optional<float> FsrVelocity;
 
 	// dx11wdx12
 	std::optional<int> TextureSyncMethod;

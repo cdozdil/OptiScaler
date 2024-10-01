@@ -54,6 +54,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             FsrHorizontalFov = readFloat("FSR", "HorizontalFov");
             FsrCameraNear = readFloat("FSR", "CameraNear");
             FsrCameraFar = readFloat("FSR", "CameraFar");
+            FsrVelocity = readFloat("FSR", "VelocityFactor");
             FsrDebugView = readBool("FSR", "DebugView");
             Fsr3xIndex = readInt("FSR", "UpscalerIndex");
             FsrUseMaskForTransparency = readBool("FSR", "UseReactiveMaskForTransparency");
@@ -467,6 +468,7 @@ bool Config::SaveIni()
         ini.SetValue("FSR", "HorizontalFov", GetFloatValue(Instance()->FsrHorizontalFov).c_str());
         ini.SetValue("FSR", "CameraNear", GetFloatValue(Instance()->FsrCameraNear).c_str());
         ini.SetValue("FSR", "CameraFar", GetFloatValue(Instance()->FsrCameraFar).c_str());
+        ini.SetValue("FSR", "VelocityFactor", GetFloatValue(Instance()->FsrVelocity).c_str());
         ini.SetValue("FSR", "DebugView", GetBoolValue(Instance()->FsrDebugView).c_str());
         ini.SetValue("FSR", "UpscalerIndex", GetIntValue(Instance()->Fsr3xIndex).c_str());
         ini.SetValue("FSR", "UseReactiveMaskForTransparency", GetBoolValue(Instance()->FsrUseMaskForTransparency).c_str());
