@@ -919,11 +919,11 @@ void ImGuiCommon::RenderMenu()
 
                         ImGui::PushItemWidth(85.0);
 
-                        int hudFixLimit = Config::Instance()->FGHUDLimit.value_or(0);
+                        int hudFixLimit = Config::Instance()->FGHUDLimit.value_or(1);
                         if (ImGui::InputInt("Limit", &hudFixLimit))
                         {
-                            if (hudFixLimit < 0)
-                                hudFixLimit = 0;
+                            if (hudFixLimit < 1)
+                                hudFixLimit = 1;
                             else if (hudFixLimit > 99)
                                 hudFixLimit = 99;
 
