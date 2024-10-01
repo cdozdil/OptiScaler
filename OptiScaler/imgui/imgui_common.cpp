@@ -488,13 +488,16 @@ std::string ImGuiCommon::GetBackendName(std::string* code)
         return "FSR 2.2.1";
 
     if (*code == "fsr31")
-        return "FSR 3.1.0";
+        return "FSR 3.X";
 
     if (*code == "fsr21_12")
         return "FSR 2.1.2 w/Dx12";
 
     if (*code == "fsr22_12")
         return "FSR 2.2.1 w/Dx12";
+
+    if (*code == "fsr31_12")
+        return "FSR 3.X w/Dx12";
 
     if (*code == "xess")
         return "XeSS";
@@ -536,11 +539,11 @@ void ImGuiCommon::AddDx11Backends(std::string* code, std::string* name)
     else if (Config::Instance()->newBackend == "fsr21_12" || (Config::Instance()->newBackend == "" && *code == "fsr21_12"))
         selectedUpscalerName = "FSR 2.1.2 w/Dx12";
     else if (Config::Instance()->newBackend == "fsr31" || (Config::Instance()->newBackend == "" && *code == "fsr31"))
-        selectedUpscalerName = "FSR 3.1.0";
+        selectedUpscalerName = "FSR 3.X";
     else if (Config::Instance()->newBackend == "fsr31_12" || (Config::Instance()->newBackend == "" && *code == "fsr31_12"))
-        selectedUpscalerName = "FSR 3.1.0 w/Dx12";
-    else if (Config::Instance()->newBackend == "fsr304" || (Config::Instance()->newBackend == "" && *code == "fsr304"))
-        selectedUpscalerName = "FSR 3.0.4";
+        selectedUpscalerName = "FSR 3.X w/Dx12";
+    //else if (Config::Instance()->newBackend == "fsr304" || (Config::Instance()->newBackend == "" && *code == "fsr304"))
+    //    selectedUpscalerName = "FSR 3.0.4";
     else if (Config::Instance()->DLSSEnabled.value_or(true) && (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
         selectedUpscalerName = "DLSS";
     else
@@ -551,7 +554,7 @@ void ImGuiCommon::AddDx11Backends(std::string* code, std::string* name)
         if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
             Config::Instance()->newBackend = "fsr22";
 
-        if (ImGui::Selectable("FSR 3.1.0", *code == "fsr31"))
+        if (ImGui::Selectable("FSR 3.X", *code == "fsr31"))
             Config::Instance()->newBackend = "fsr31";
 
         if (ImGui::Selectable("XeSS w/Dx12", *code == "xess"))
@@ -563,7 +566,7 @@ void ImGuiCommon::AddDx11Backends(std::string* code, std::string* name)
         if (ImGui::Selectable("FSR 2.2.1 w/Dx12", *code == "fsr22_12"))
             Config::Instance()->newBackend = "fsr22_12";
 
-        if (ImGui::Selectable("FSR 3.1.0 w/Dx12", *code == "fsr31_12"))
+        if (ImGui::Selectable("FSR 3.X w/Dx12", *code == "fsr31_12"))
             Config::Instance()->newBackend = "fsr31_12";
 
         if (Config::Instance()->DLSSEnabled.value_or(true) && ImGui::Selectable("DLSS", *code == "dlss"))
@@ -582,7 +585,7 @@ void ImGuiCommon::AddDx12Backends(std::string* code, std::string* name)
     else if (Config::Instance()->newBackend == "fsr22" || (Config::Instance()->newBackend == "" && *code == "fsr22"))
         selectedUpscalerName = "FSR 2.2.1";
     else if (Config::Instance()->newBackend == "fsr31" || (Config::Instance()->newBackend == "" && *code == "fsr31"))
-        selectedUpscalerName = "FSR 3.1";
+        selectedUpscalerName = "FSR 3.X";
     else if (Config::Instance()->DLSSEnabled.value_or(true) && (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
         selectedUpscalerName = "DLSS";
     else
@@ -599,7 +602,7 @@ void ImGuiCommon::AddDx12Backends(std::string* code, std::string* name)
         if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
             Config::Instance()->newBackend = "fsr22";
 
-        if (ImGui::Selectable("FSR 3.1.0", *code == "fsr31"))
+        if (ImGui::Selectable("FSR 3.X", *code == "fsr31"))
             Config::Instance()->newBackend = "fsr31";
 
         if (Config::Instance()->DLSSEnabled.value_or(true) && ImGui::Selectable("DLSS", *code == "dlss"))
@@ -616,7 +619,7 @@ void ImGuiCommon::AddVulkanBackends(std::string* code, std::string* name)
     if (Config::Instance()->newBackend == "fsr21" || (Config::Instance()->newBackend == "" && *code == "fsr21"))
         selectedUpscalerName = "FSR 2.1.2";
     else if (Config::Instance()->newBackend == "fsr31" || (Config::Instance()->newBackend == "" && *code == "fsr31"))
-        selectedUpscalerName = "FSR 3.1";
+        selectedUpscalerName = "FSR 3.X";
     else if (Config::Instance()->DLSSEnabled.value_or(true) && (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
         selectedUpscalerName = "DLSS";
     else
@@ -630,7 +633,7 @@ void ImGuiCommon::AddVulkanBackends(std::string* code, std::string* name)
         if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
             Config::Instance()->newBackend = "fsr22";
 
-        if (ImGui::Selectable("FSR 3.1.0", *code == "fsr31"))
+        if (ImGui::Selectable("FSR 3.X", *code == "fsr31"))
             Config::Instance()->newBackend = "fsr31";
 
         if (Config::Instance()->DLSSEnabled.value_or(true) && ImGui::Selectable("DLSS", *code == "dlss"))
@@ -799,19 +802,27 @@ void ImGuiCommon::RenderMenu()
 
             ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0));
 
-            if (cf != nullptr)
-            {
-                if (ImGui::BeginTable("main", 2))
-                {
-                    ImGui::TableNextColumn();
+            std::string selectedUpscalerName = "";
+            std::string currentBackend = "";
+            std::string currentBackendName = "";
 
+            if (cf == nullptr)
+            {
+                ImGui::Spacing();
+                ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0) * 2);
+                ImGui::Text("Please select DLSS as upscaler from game options and\nenter the game to enable upscaler settings.");
+                ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0));
+            }
+
+            if (ImGui::BeginTable("main", 2))
+            {
+                ImGui::TableNextColumn();
+
+                if (cf != nullptr)
+                {
                     // UPSCALERS -----------------------------
                     ImGui::SeparatorText("Upscalers");
                     ShowTooltip("Which copium you choose?");
-
-                    std::string selectedUpscalerName = "";
-                    std::string currentBackend;
-                    std::string currentBackendName;
 
                     GetCurrentBackendInfo(Config::Instance()->Api, &currentBackend, &currentBackendName);
 
@@ -1055,7 +1066,7 @@ void ImGuiCommon::RenderMenu()
 
                         if (currentBackend == "fsr31" || currentBackend == "fsr31_12")
                         {
-                            if (bool dView = Config::Instance()->FsrDebugView.value_or(false); ImGui::Checkbox("FSR 3.1.0 Debug View", &dView))
+                            if (bool dView = Config::Instance()->FsrDebugView.value_or(false); ImGui::Checkbox("FSR 3.X Debug View", &dView))
                                 Config::Instance()->FsrDebugView = dView;
                             ShowHelpMarker("Top left: Dilated Motion Vectors\n"
                                            "Top middle: Protected Areas\n"
@@ -1064,6 +1075,17 @@ void ImGuiCommon::RenderMenu()
                                            "Bottom left: Disocclusion mask\n"
                                            "Bottom middle: Reactiveness\n"
                                            "Bottom right: Detail Protection Takedown");
+
+
+                            if (cf->Version().patch > 0)
+                            {
+                                float velocity = Config::Instance()->FsrVelocity.value_or(0.3);
+                                if (ImGui::SliderFloat("Velocity Factor", &velocity, 0.00f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
+                                    Config::Instance()->FsrVelocity = velocity;
+
+                                ShowHelpMarker("Lower values are more stable with ghosting\n"
+                                               "Higher values are more pixelly but less ghosting.");
+                            }
                         }
 
                         if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.01f, 9.99f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
@@ -1357,83 +1379,89 @@ void ImGuiCommon::RenderMenu()
 
                         ImGui::EndDisabled();
                     }
+                }
 
-                    // DX11 & DX12 -----------------------------
-                    if (Config::Instance()->AdvancedSettings.value_or(false) && Config::Instance()->Api != NVNGX_VULKAN)
+                // DX11 & DX12 -----------------------------
+                if ((cf == nullptr || Config::Instance()->AdvancedSettings.value_or(false)) && Config::Instance()->Api != NVNGX_VULKAN)
+                {
+                    // MIPMAP BIAS & Anisotropy -----------------------------
+                    ImGui::SeparatorText("Mipmap Bias (DirectX)");
+
+                    if (Config::Instance()->MipmapBiasOverride.has_value() && _mipBias == 0.0f)
+                        _mipBias = Config::Instance()->MipmapBiasOverride.value();
+
+                    ImGui::SliderFloat("Mipmap Bias", &_mipBias, -15.0f, 15.0f, "%.6f", ImGuiSliderFlags_NoRoundToFormat);
+                    ShowHelpMarker("Can help with blurry textures in broken games\n"
+                                   "Negative values will make textures sharper\n"
+                                   "Positive values will make textures more blurry\n\n"
+                                   "Has a small performance impact");
+
+
+                    ImGui::BeginDisabled(Config::Instance()->MipmapBiasOverride.has_value() && Config::Instance()->MipmapBiasOverride.value() == _mipBias);
+                    if (ImGui::Button("Set"))
+                        Config::Instance()->MipmapBiasOverride = _mipBias;
+                    ImGui::EndDisabled();
+
+                    ImGui::SameLine(0.0f, 6.0f);
+
+                    ImGui::BeginDisabled(!Config::Instance()->MipmapBiasOverride.has_value());
+                    if (ImGui::Button("Reset"))
                     {
-                        // MIPMAP BIAS & Anisotropy -----------------------------
-                        ImGui::SeparatorText("Mipmap Bias (DirectX)");
+                        Config::Instance()->MipmapBiasOverride.reset();
+                        _mipBias = 0.0f;
+                    }
+                    ImGui::EndDisabled();
 
-                        if (Config::Instance()->MipmapBiasOverride.has_value() && _mipBias == 0.0f)
-                            _mipBias = Config::Instance()->MipmapBiasOverride.value();
-
-                        ImGui::SliderFloat("Mipmap Bias", &_mipBias, -15.0f, 15.0f, "%.6f", ImGuiSliderFlags_NoRoundToFormat);
-                        ShowHelpMarker("Can help with blurry textures in broken games\n"
-                                       "Negative values will make textures sharper\n"
-                                       "Positive values will make textures more blurry\n\n"
-                                       "Has a small performance impact");
-
-
-                        ImGui::BeginDisabled(Config::Instance()->MipmapBiasOverride.has_value() && Config::Instance()->MipmapBiasOverride.value() == _mipBias);
-                        if (ImGui::Button("Set"))
-                            Config::Instance()->MipmapBiasOverride = _mipBias;
-                        ImGui::EndDisabled();
-
-                        ImGui::SameLine(0.0f, 6.0f);
-
-                        ImGui::BeginDisabled(!Config::Instance()->MipmapBiasOverride.has_value());
-                        if (ImGui::Button("Reset"))
-                        {
-                            Config::Instance()->MipmapBiasOverride.reset();
-                            _mipBias = 0.0f;
-                        }
-                        ImGui::EndDisabled();
-
+                    if (cf != nullptr)
+                    {
                         ImGui::SameLine(0.0f, 6.0f);
 
                         if (ImGui::Button("Calculate Mipmap Bias"))
                             _showMipmapCalcWindow = true;
+                    }
 
-                        if (Config::Instance()->MipmapBiasOverride.has_value())
-                            ImGui::Text("Current : %.6f, Target: %.6f", Config::Instance()->lastMipBias, Config::Instance()->MipmapBiasOverride.value());
-                        else
-                            ImGui::Text("Current : %.6f", Config::Instance()->lastMipBias);
+                    if (Config::Instance()->MipmapBiasOverride.has_value())
+                        ImGui::Text("Current : %.6f, Target: %.6f", Config::Instance()->lastMipBias, Config::Instance()->MipmapBiasOverride.value());
+                    else
+                        ImGui::Text("Current : %.6f", Config::Instance()->lastMipBias);
 
-                        ImGui::Text("Will be applied after RESOLUTION or PRESENT change !!!");
+                    ImGui::Text("Will be applied after RESOLUTION or PRESENT change !!!");
 
-                        // MIPMAP BIAS & Anisotropy -----------------------------
-                        ImGui::SeparatorText("Anisotropic Filtering (DirectX)");
+                    // MIPMAP BIAS & Anisotropy -----------------------------
+                    ImGui::SeparatorText("Anisotropic Filtering (DirectX)");
 
-                        ImGui::PushItemWidth(65.0f * Config::Instance()->MenuScale.value_or(1.0));
+                    ImGui::PushItemWidth(65.0f * Config::Instance()->MenuScale.value_or(1.0));
 
-                        auto selectedAF = Config::Instance()->AnisotropyOverride.has_value() ? std::to_string(Config::Instance()->AnisotropyOverride.value()) : "Auto";
-                        if (ImGui::BeginCombo("Force Anisotropic Filtering", selectedAF.c_str()))
-                        {
-                            if (ImGui::Selectable("Auto", !Config::Instance()->AnisotropyOverride.has_value()))
-                                Config::Instance()->AnisotropyOverride.reset();
+                    auto selectedAF = Config::Instance()->AnisotropyOverride.has_value() ? std::to_string(Config::Instance()->AnisotropyOverride.value()) : "Auto";
+                    if (ImGui::BeginCombo("Force Anisotropic Filtering", selectedAF.c_str()))
+                    {
+                        if (ImGui::Selectable("Auto", !Config::Instance()->AnisotropyOverride.has_value()))
+                            Config::Instance()->AnisotropyOverride.reset();
 
-                            if (ImGui::Selectable("1", Config::Instance()->AnisotropyOverride.value_or(0) == 1))
-                                Config::Instance()->AnisotropyOverride = 1;
+                        if (ImGui::Selectable("1", Config::Instance()->AnisotropyOverride.value_or(0) == 1))
+                            Config::Instance()->AnisotropyOverride = 1;
 
-                            if (ImGui::Selectable("2", Config::Instance()->AnisotropyOverride.value_or(0) == 2))
-                                Config::Instance()->AnisotropyOverride = 2;
+                        if (ImGui::Selectable("2", Config::Instance()->AnisotropyOverride.value_or(0) == 2))
+                            Config::Instance()->AnisotropyOverride = 2;
 
-                            if (ImGui::Selectable("4", Config::Instance()->AnisotropyOverride.value_or(0) == 4))
-                                Config::Instance()->AnisotropyOverride = 4;
+                        if (ImGui::Selectable("4", Config::Instance()->AnisotropyOverride.value_or(0) == 4))
+                            Config::Instance()->AnisotropyOverride = 4;
 
-                            if (ImGui::Selectable("8", Config::Instance()->AnisotropyOverride.value_or(0) == 8))
-                                Config::Instance()->AnisotropyOverride = 8;
+                        if (ImGui::Selectable("8", Config::Instance()->AnisotropyOverride.value_or(0) == 8))
+                            Config::Instance()->AnisotropyOverride = 8;
 
-                            if (ImGui::Selectable("16", Config::Instance()->AnisotropyOverride.value_or(0) == 16))
-                                Config::Instance()->AnisotropyOverride = 16;
+                        if (ImGui::Selectable("16", Config::Instance()->AnisotropyOverride.value_or(0) == 16))
+                            Config::Instance()->AnisotropyOverride = 16;
 
-                            ImGui::EndCombo();
-                        }
+                        ImGui::EndCombo();
+                    }
 
-                        ImGui::PopItemWidth();
+                    ImGui::PopItemWidth();
 
-                        ImGui::Text("Will be applied after RESOLUTION or PRESENT change !!!");
+                    ImGui::Text("Will be applied after RESOLUTION or PRESENT change !!!");
 
+                    if (cf != nullptr)
+                    {
                         // Non-DLSS hotfixes -----------------------------
                         if (currentBackend != "dlss")
                         {
@@ -1457,10 +1485,13 @@ void ImGuiCommon::RenderMenu()
                                 Config::Instance()->RestoreGraphicSignature = grs;
                         }
                     }
+                }
 
-                    // NEXT COLUMN -----------------
-                    ImGui::TableNextColumn();
+                // NEXT COLUMN -----------------
+                ImGui::TableNextColumn();
 
+                if (cf != nullptr)
+                {
                     // SHARPNESS -----------------------------
                     ImGui::SeparatorText("Sharpness");
 
@@ -1715,45 +1746,48 @@ void ImGuiCommon::RenderMenu()
                             }
                         }
                     }
+                }
 
-                    // LOGGING -----------------------------
-                    ImGui::SeparatorText("Logging");
+                // LOGGING -----------------------------
+                ImGui::SeparatorText("Logging");
 
-                    if (Config::Instance()->LogToConsole.value_or(false) || Config::Instance()->LogToFile.value_or(false) || Config::Instance()->LogToNGX.value_or(false))
-                        spdlog::default_logger()->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or(2));
-                    else
-                        spdlog::default_logger()->set_level(spdlog::level::off);
+                if (Config::Instance()->LogToConsole.value_or(false) || Config::Instance()->LogToFile.value_or(false) || Config::Instance()->LogToNGX.value_or(false))
+                    spdlog::default_logger()->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or(2));
+                else
+                    spdlog::default_logger()->set_level(spdlog::level::off);
 
-                    if (bool toFile = Config::Instance()->LogToFile.value_or(false); ImGui::Checkbox("To File", &toFile))
+                if (bool toFile = Config::Instance()->LogToFile.value_or(false); ImGui::Checkbox("To File", &toFile))
+                {
+                    Config::Instance()->LogToFile = toFile;
+                    PrepareLogger();
+                }
+
+                ImGui::SameLine(0.0f, 6.0f);
+                if (bool toConsole = Config::Instance()->LogToConsole.value_or(false); ImGui::Checkbox("To Console", &toConsole))
+                {
+                    Config::Instance()->LogToConsole = toConsole;
+                    PrepareLogger();
+                }
+
+                const char* logLevels[] = { "Trace", "Debug", "Information", "Warning", "Error" };
+                const char* selectedLevel = logLevels[Config::Instance()->LogLevel.value_or(2)];
+
+                if (ImGui::BeginCombo("Log Level", selectedLevel))
+                {
+                    for (int n = 0; n < 5; n++)
                     {
-                        Config::Instance()->LogToFile = toFile;
-                        PrepareLogger();
-                    }
-
-                    ImGui::SameLine(0.0f, 6.0f);
-                    if (bool toConsole = Config::Instance()->LogToConsole.value_or(false); ImGui::Checkbox("To Console", &toConsole))
-                    {
-                        Config::Instance()->LogToConsole = toConsole;
-                        PrepareLogger();
-                    }
-
-                    const char* logLevels[] = { "Trace", "Debug", "Information", "Warning", "Error" };
-                    const char* selectedLevel = logLevels[Config::Instance()->LogLevel.value_or(2)];
-
-                    if (ImGui::BeginCombo("Log Level", selectedLevel))
-                    {
-                        for (int n = 0; n < 5; n++)
+                        if (ImGui::Selectable(logLevels[n], (Config::Instance()->LogLevel.value_or(2) == n)))
                         {
-                            if (ImGui::Selectable(logLevels[n], (Config::Instance()->LogLevel.value_or(2) == n)))
-                            {
-                                Config::Instance()->LogLevel = n;
-                                spdlog::default_logger()->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or(2));
-                            }
+                            Config::Instance()->LogLevel = n;
+                            spdlog::default_logger()->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or(2));
                         }
-
-                        ImGui::EndCombo();
                     }
 
+                    ImGui::EndCombo();
+                }
+
+                if (cf != nullptr)
+                {
                     // ADVANCED SETTINGS -----------------------------
                     ImGui::SeparatorText("Advanced Settings");
 
@@ -1771,15 +1805,9 @@ void ImGuiCommon::RenderMenu()
                                        "Using this option changes resolution detection logic\n"
                                        "and might cause issues and crashes!");
                     }
-
-
-                    ImGui::EndTable();
                 }
-            }
-            else
-            {
-                ImGui::Spacing();
-                ImGui::Text("Please select DLSS as upscaler from game options and enter the game to enable upscaler setting.");
+
+                ImGui::EndTable();
             }
 
             ImGui::Spacing();
@@ -1797,11 +1825,14 @@ void ImGuiCommon::RenderMenu()
                 std::vector<float> frameTimeArray(Config::Instance()->frameTimes.begin(), Config::Instance()->frameTimes.end());
                 ImGui::PlotLines(ft.c_str(), frameTimeArray.data(), frameTimeArray.size());
 
-                ImGui::TableNextColumn();
-                ImGui::Text("Upscaler (GPU time)");
-                auto ups = std::format("{:.2f} ms", Config::Instance()->upscaleTimes.back());
-                std::vector<float> upscaleTimeArray(Config::Instance()->upscaleTimes.begin(), Config::Instance()->upscaleTimes.end());
-                ImGui::PlotLines(ups.c_str(), upscaleTimeArray.data(), upscaleTimeArray.size());
+                if (cf != nullptr)
+                {
+                    ImGui::TableNextColumn();
+                    ImGui::Text("Upscaler (GPU time)");
+                    auto ups = std::format("{:.2f} ms", Config::Instance()->upscaleTimes.back());
+                    std::vector<float> upscaleTimeArray(Config::Instance()->upscaleTimes.begin(), Config::Instance()->upscaleTimes.end());
+                    ImGui::PlotLines(ups.c_str(), upscaleTimeArray.data(), upscaleTimeArray.size());
+                }
 
                 ImGui::EndTable();
             }
