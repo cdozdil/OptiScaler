@@ -29,7 +29,7 @@ static PfnFfxDestroyContext _destroyContext = nullptr;
 static PfnFfxConfigure _configure = nullptr;
 static PfnFfxQuery _query = nullptr;
 static PfnFfxDispatch _dispatch = nullptr;
-static UINT64 msNow = 0;
+static UINT64 fgLastFrameTime = 0;
 static DU_Dx12* DepthUpscaler = nullptr;
 static FT_Dx12* FormatTransfer = nullptr;
 static UINT64 fgTarget = 0;
@@ -1581,13 +1581,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     float msDelta = 0.0;
                     auto now = Util::MillisecondsNow();
 
-                    if (msNow != 0)
+                    if (fgLastFrameTime != 0)
                     {
-                        msDelta = now - msNow;
+                        msDelta = now - fgLastFrameTime;
                         LOG_DEBUG("    FG _dispatch msDelta: {0}", msDelta);
                     }
 
-                    msNow = now;
+                    fgLastFrameTime = now;
 
                     dfgPrepare.frameTimeDelta = msDelta;
 
