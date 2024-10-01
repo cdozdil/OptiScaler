@@ -460,11 +460,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
             LOG_INFO("creating new native FSR 3.1.0 feature");
             Dx11Contexts[handleId] = std::make_unique<FSR31FeatureDx11>(handleId, InParameters);
         }
-        else if (Config::Instance()->Dx11Upscaler.value_or(defaultUpscaler) == "fsr304")
-        {
-            LOG_INFO("creating new native FSR 3.1.0 feature");
-            Dx11Contexts[handleId] = std::make_unique<FSR31FeatureDx11>(handleId, InParameters);
-        }
+        //else if (Config::Instance()->Dx11Upscaler.value_or(defaultUpscaler) == "fsr304")
+        //{
+        //    LOG_INFO("creating new native FSR 3.1.0 feature");
+        //    Dx11Contexts[handleId] = std::make_unique<FSR31FeatureDx11>(handleId, InParameters);
+        //}
     }
     else
     {
@@ -747,12 +747,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
                 LOG_INFO("creating new native FSR 3.1.0 feature");
                 Dx11Contexts[handleId] = std::make_unique<FSR31FeatureDx11>(handleId, createParams);
             }
-            else if (Config::Instance()->newBackend == "fsr304")
-            {
-                Config::Instance()->Dx11Upscaler = "fsr31";
-                LOG_INFO("creating new native FSR 3.1.0 feature");
-                Dx11Contexts[handleId] = std::make_unique<FSR31FeatureDx11>(handleId, createParams);
-            }
+            //else if (Config::Instance()->newBackend == "fsr304")
+            //{
+            //    Config::Instance()->Dx11Upscaler = "fsr31";
+            //    LOG_INFO("creating new native FSR 3.1.0 feature");
+            //    Dx11Contexts[handleId] = std::make_unique<FSR31FeatureDx11>(handleId, createParams);
+            //}
 
             if (Config::Instance()->Dx11DelayedInit.value_or(false) &&
                 Config::Instance()->newBackend != "fsr22" && Config::Instance()->newBackend != "dlss" && Config::Instance()->newBackend != "dlssd")

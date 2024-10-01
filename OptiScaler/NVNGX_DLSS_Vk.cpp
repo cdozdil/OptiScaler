@@ -607,7 +607,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 
             if (!VkContexts[handleId]->ModuleLoaded())
             {
-                LOG_ERROR("can't create new FSR 3.1 feature, Fallback to FSR2.1!");
+                LOG_ERROR("can't create new FSR 3.X feature, Fallback to FSR2.1!");
 
                 VkContexts[handleId].reset();
                 auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
@@ -618,7 +618,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
             else
             {
                 Config::Instance()->VulkanUpscaler = "fsr31";
-                LOG_INFO("creating new FSR 3.1 feature");
+                LOG_INFO("creating new FSR 3.X feature");
             }
         }
 
@@ -866,7 +866,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
             else if (Config::Instance()->newBackend == "fsr31")
             {
                 Config::Instance()->VulkanUpscaler = "fsr31";
-                LOG_INFO("creating new FSR 3.1 feature");
+                LOG_INFO("creating new FSR 3.X feature");
                 VkContexts[handleId] = std::make_unique<FSR31FeatureVk>(handleId, createParams);
                 upscalerChoice = 3;
             }

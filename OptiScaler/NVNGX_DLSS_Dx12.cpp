@@ -660,7 +660,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
             if (!Dx12Contexts[handleId]->ModuleLoaded())
             {
-                LOG_ERROR("can't create new FSR 3.1 feature, Fallback to FSR2.1!");
+                LOG_ERROR("can't create new FSR 3.X feature, Fallback to FSR2.1!");
 
                 Dx12Contexts[handleId].reset();
                 auto it = std::find_if(Dx12Contexts.begin(), Dx12Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
@@ -671,7 +671,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
             else
             {
                 Config::Instance()->Dx12Upscaler = "fsr31";
-                LOG_INFO("creating new FSR 3.1 feature");
+                LOG_INFO("creating new FSR 3.X feature");
             }
         }
 
@@ -1044,7 +1044,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             else if (Config::Instance()->newBackend == "fsr31")
             {
                 Config::Instance()->Dx12Upscaler = "fsr31";
-                LOG_INFO("creating new FSR 3.1 feature");
+                LOG_INFO("creating new FSR 3.X feature");
                 Dx12Contexts[handleId] = std::make_unique<FSR31FeatureDx12>(handleId, createParams);
                 upscalerChoice = 4;
             }
