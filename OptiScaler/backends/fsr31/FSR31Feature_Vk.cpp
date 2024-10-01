@@ -476,6 +476,18 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
 
     params.preExposure = 1.0f;    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure);
 
+    if (_velocity != Config::Instance()->FsrVelocity.value_or(0.3f))
+    {
+        _velocity = Config::Instance()->FsrVelocity.value_or(0.3f);
+        ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig{};
+        m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
+        m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FVELOCITYFACTOR;
+        m_upscalerKeyValueConfig.ptr = &_velocity;
+        auto result = _configure(&_context, &m_upscalerKeyValueConfig.header);
+
+        if (result != FFX_API_RETURN_OK)
+            LOG_WARN("Velocity configure result: {}", (UINT)result);
+    }
 
     LOG_DEBUG("Dispatch!!");
     auto result = _dispatch(&_context, &params.header);
