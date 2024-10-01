@@ -16,10 +16,11 @@
 
 #include <ankerl/unordered_dense.h>
 #include "../depth_upscale/DU_Dx12.h"
+#include <shared_mutex>
 
 // FG stuff
 
-struct BackbufferInfo
+typedef struct BackbufferInfo
 {
     // RTV handle for backbuffer
     SIZE_T cpuHandle = NULL;
@@ -34,12 +35,13 @@ struct BackbufferInfo
     ID3D12Resource* hudless = nullptr;
 } backbuffer_info;
 
-struct HeapInfo
+typedef struct HeapInfo
 {
     SIZE_T cpuStart = NULL;
     SIZE_T cpuEnd = NULL;
     SIZE_T gpuStart = NULL;
     SIZE_T gpuEnd = NULL;
+    UINT numDescriptors = 0;
 } heap_info;
 
 // Hooks for FG
@@ -53,6 +55,10 @@ typedef void (*PFN_CopyTextureRegion)(ID3D12GraphicsCommandList* This, D3D12_TEX
 typedef HRESULT(*PFN_CreateDescriptorHeap)(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_DESC* pDescriptorHeapDesc, REFIID riid, void** ppvHeap);
 typedef void(*PFN_CreateShaderResourceView)(ID3D12Device* This, ID3D12Resource* pResource, D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 typedef void(*PFN_SetGraphicsRootDescriptorTable)(ID3D12GraphicsCommandList* This, UINT RootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor);
+typedef void(*PFN_CopyDescriptors)(UINT NumDestDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pDestDescriptorRangeStarts, UINT* pDestDescriptorRangeSizes, UINT NumSrcDescriptorRanges,    
+                                   D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorRangeStarts, UINT* pSrcDescriptorRangeSizes, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType);
+typedef void(*PFN_CopyDescriptorsSimple)(UINT NumDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptorRangeStart, D3D12_CPU_DESCRIPTOR_HANDLE SrcDescriptorRangeStart, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType);
+
 
 static PFN_CreateRenderTargetView o_CreateRenderTargetView = nullptr;
 static PFN_OMSetRenderTargets o_OMSetRenderTargets = nullptr;
@@ -63,6 +69,8 @@ static PFN_CopyTextureRegion o_CopyTextureRegion = nullptr;
 static PFN_CreateDescriptorHeap o_CreateDescriptorHeap = nullptr;
 static PFN_CreateShaderResourceView o_CreateShaderResourceView = nullptr;
 static PFN_SetGraphicsRootDescriptorTable o_SetGraphicsRootDescriptorTable = nullptr;
+static PFN_CopyDescriptors o_CopyDescriptors = nullptr;
+static PFN_CopyDescriptorsSimple o_CopyDescriptorsSimple = nullptr;
 
 // FSR 3.x methods
 static PfnFfxCreateContext _createContext = nullptr;
@@ -84,19 +92,16 @@ static ankerl::unordered_dense::map <ID3D12Resource*, BackbufferInfo> fgBuffers;
 /// <summary>
 /// Captured heap infos
 /// </summary>
-static ankerl::unordered_dense::map <ID3D12DescriptorHeap*, HeapInfo> fgHeaps;
+static std::list<HeapInfo> fgHeaps;
 
 /// <summary>
 /// Captured resources by gpu addresses
 /// </summary>
 static ankerl::unordered_dense::map <ID3D12Resource*, HeapInfo> fgHandleAddressResources;
+static ankerl::unordered_dense::map <SIZE_T, ID3D12Resource*> fgHandleAddressResourcesByGpuHandle;
 
-/// <summary>
-/// Descriptor handle increment size for SRV_UAV_CBV
-/// </summary>
-static UINT descriptorHandleIncrementSize = 0;
-
-static std::mutex heapMutex;
+static std::shared_mutex heapMutex;
+static std::shared_mutex resourceMutex;
 
 /// <summary>
 /// Captured cpu handles
@@ -521,9 +526,9 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
     o_CreateRenderTargetView(This, pResource, pDesc, DestDescriptor);
 
     // Swapchain changed
-    if (Config::Instance()->SGChanged)
+    if (Config::Instance()->SCChanged)
     {
-        LOG_DEBUG_ONLY("     FG SGChanged: true");
+        LOG_DEBUG_ONLY("     FG SCChanged: true");
         fgCaptureRTVs = true;
         fgTargetFrame = frameCounter + 60;
 
@@ -534,33 +539,41 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
         }
 
         fgBuffers.clear();
-        //fgHeaps.clear();
-        //fgHandleAddressResources.clear();
 
         fgCapturedBufferCount = 0;
-        Config::Instance()->SGChanged = false;
+        Config::Instance()->SCChanged = false;
     }
 
     if (pResource == nullptr)
         return;
 
-    // Try to match resource with cpu & gpu handle info
-    for (auto& [key, val] : fgHeaps)
     {
-        if (val.cpuStart <= DestDescriptor.ptr && val.cpuEnd >= DestDescriptor.ptr)
+        std::shared_lock<std::shared_mutex> lock(heapMutex);
+
+        // Try to match resource with cpu & gpu handle info
+        for (auto& val : fgHeaps)
         {
-            auto addr = DestDescriptor.ptr - val.cpuStart;
-            auto index = addr / descriptorHandleIncrementSize;
-            auto gpuAddr = val.gpuStart + (index * descriptorHandleIncrementSize);
+            if (val.cpuStart <= DestDescriptor.ptr && val.cpuEnd >= DestDescriptor.ptr)
+            {
+                auto increment = This->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                auto addr = DestDescriptor.ptr - val.cpuStart;
+                auto index = addr / increment;
+                auto gpuAddr = val.gpuStart + (index * increment);
 
-            heapMutex.lock();
-            HeapInfo info{};
-            info.cpuStart = DestDescriptor.ptr;
-            info.gpuStart = gpuAddr;
-            fgHandleAddressResources.insert_or_assign(pResource, info);
-            heapMutex.unlock();
+                HeapInfo info{};
+                info.cpuStart = DestDescriptor.ptr;
+                info.gpuStart = gpuAddr;
 
-            break;
+                std::unique_lock<std::shared_mutex> lock2(resourceMutex);
+                fgHandleAddressResources.insert_or_assign(pResource, info);
+
+                if (val.gpuStart != 0)
+                    fgHandleAddressResourcesByGpuHandle.insert_or_assign(gpuAddr, pResource);
+                else
+                    LOG_DEBUG_ONLY("Gpu start is 0, CPU ptr : {}", (UINT64)DestDescriptor.ptr);
+
+                break;
+            }
         }
     }
 
@@ -654,6 +667,8 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
                             {
                                 hudless = bufferInfo->hudless;
 
+                                std::shared_lock<std::shared_mutex> lock2(resourceMutex);
+
                                 if (bufferInfo->prevCpuHandle == NULL && fgHandleAddressResources.contains(bufferInfo->prev))
                                     bufferInfo->prevCpuHandle = fgHandleAddressResources[bufferInfo->prev].cpuStart;
                             }
@@ -661,6 +676,8 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
                         else if (g_pd3dDeviceParam != nullptr && CreateBufferResource(g_pd3dDeviceParam, key, D3D12_RESOURCE_STATE_COPY_DEST, &hudless))
                         {
                             bufferInfo->hudless = hudless;
+
+                            std::shared_lock<std::shared_mutex> lock2(resourceMutex);
 
                             if (fgHandleAddressResources.contains(bufferInfo->prev))
                                 bufferInfo->prevCpuHandle = fgHandleAddressResources[bufferInfo->prev].cpuStart;
@@ -868,8 +885,12 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
             auto bufferInfo = &fgBuffers[pDst->pResource];
             bufferInfo->prev = pSrc->pResource;
 
-            if (fgHandleAddressResources.contains(bufferInfo->prev))
-                bufferInfo->prevCpuHandle = fgHandleAddressResources[bufferInfo->prev].cpuStart;
+            {
+                std::shared_lock<std::shared_mutex> lock2(resourceMutex);
+
+                if (fgHandleAddressResources.contains(bufferInfo->prev))
+                    bufferInfo->prevCpuHandle = fgHandleAddressResources[bufferInfo->prev].cpuStart;
+            }
 
             // capture hudless
             if (bufferInfo->hudless != nullptr)
@@ -920,6 +941,8 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
     {
         auto bufferInfo = &fgBuffers[fgCurrentSCBuffer];
         bufferInfo->prev = fgPreviousBuffer;
+
+        std::shared_lock<std::shared_mutex> lock2(resourceMutex);
         bufferInfo->prevCpuHandle = fgHandleAddressResources[fgPreviousBuffer].cpuStart;
     }
 
@@ -956,6 +979,8 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
     {
         auto bufferInfo = &fgBuffers[fgCurrentSCBuffer];
         bufferInfo->prev = fgPreviousBuffer;
+
+        std::shared_lock<std::shared_mutex> lock2(resourceMutex);
         bufferInfo->prevCpuHandle = fgHandleAddressResources[fgPreviousBuffer].cpuStart;
     }
 
@@ -977,17 +1002,17 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
     if (!Config::Instance()->FGHUDPrevious.value_or(false))
         return;
 
-    // assume first one is source
-    if (RootParameterIndex == 0)
     {
-        for (auto& [key, val] : fgHandleAddressResources)
+        std::shared_lock<std::shared_mutex> lock(resourceMutex);
+
+        // assume first one is source
+        if (RootParameterIndex == 0 && fgHandleAddressResourcesByGpuHandle.contains(BaseDescriptor.ptr))
         {
-            // try to match resource with gpu handle
-            if (BaseDescriptor.ptr == val.gpuStart)
-            {
-                fgPreviousBuffer = key;
-                return;
-            }
+            fgPreviousBuffer = fgHandleAddressResourcesByGpuHandle[BaseDescriptor.ptr];
+        }
+        else
+        {
+            LOG_DEBUG_ONLY("Miss: {0:X}", (UINT64)BaseDescriptor.ptr);
         }
     }
 }
@@ -996,39 +1021,35 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
 {
     auto result = o_CreateDescriptorHeap(This, pDescriptorHeapDesc, riid, ppvHeap);
 
-    // Swapchain changed
-    if (Config::Instance()->SGChanged)
-    {
-        LOG_DEBUG_ONLY("     FG SGChanged: true");
-        fgCaptureRTVs = true;
-        fgTargetFrame = frameCounter + 60;
-
-        for (auto const& [key, val] : fgBuffers)
-        {
-            if (val.hudless != nullptr)
-                val.hudless->Release();
-        }
-
-        fgBuffers.clear();
-        //fgHeaps.clear();
-        //fgHandleAddressResources.clear();
-
-        fgCapturedBufferCount = 0;
-        Config::Instance()->SGChanged = false;
-    }
-
-    // try to calculate handle infos for heap
-    if (result == S_OK && pDescriptorHeapDesc->Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV && pDescriptorHeapDesc->Flags & D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE)
+    // try to calculate handle ranges for heap
+    if (result == S_OK && !Config::Instance()->SkipHeapCapture && (pDescriptorHeapDesc->Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || pDescriptorHeapDesc->Type == D3D12_DESCRIPTOR_HEAP_TYPE_RTV))  //&& pDescriptorHeapDesc->Flags & D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE)
     {
         HeapInfo info{};
         auto heap = (ID3D12DescriptorHeap*)(*ppvHeap);
-
-        info.cpuStart = (SIZE_T)(heap->GetCPUDescriptorHandleForHeapStart().ptr);
+        auto increment = This->GetDescriptorHandleIncrementSize(pDescriptorHeapDesc->Type);
+        info.numDescriptors = pDescriptorHeapDesc->NumDescriptors;
         info.gpuStart = (SIZE_T)(heap->GetGPUDescriptorHandleForHeapStart().ptr);
-        info.cpuEnd = info.cpuStart + (descriptorHandleIncrementSize * pDescriptorHeapDesc->NumDescriptors); // most probably will broke some stuff
-        info.gpuEnd = info.gpuStart + (descriptorHandleIncrementSize * pDescriptorHeapDesc->NumDescriptors); // most probably will broke some stuff
+        info.cpuStart = (SIZE_T)(heap->GetCPUDescriptorHandleForHeapStart().ptr);
+        info.cpuEnd = info.cpuStart + (increment * info.numDescriptors);
+        info.gpuEnd = info.gpuStart + (increment * info.numDescriptors);
 
-        fgHeaps.insert_or_assign(heap, info);
+        //if (info.gpuStart != 0)
+        //{
+        LOG_DEBUG_ONLY("Found heap, type: {}, cpu: {}-{}, gpu: {}-{}, desc count: {}", (UINT)pDescriptorHeapDesc->Type, info.cpuStart, info.cpuEnd, info.gpuStart, info.gpuEnd, info.numDescriptors);
+
+        std::unique_lock<std::shared_mutex> lock(heapMutex);
+        fgHeaps.push_back(info);
+        //}
+        //else
+        //{
+        //    auto heap = (ID3D12DescriptorHeap*)(*ppvHeap);
+        //    LOG_DEBUG_ONLY("Skipping, no GPU handle, type: {}, cpu: {}-{}", (UINT)pDescriptorHeapDesc->Type, info.cpuStart, info.cpuEnd);
+        //}
+    }
+    else
+    {
+        auto heap = (ID3D12DescriptorHeap*)(*ppvHeap);
+        LOG_DEBUG_ONLY("Skipping, type: {}, cpuStart: {}, gpu start: {}", (UINT)pDescriptorHeapDesc->Type, (SIZE_T)(heap->GetCPUDescriptorHandleForHeapStart().ptr), (SIZE_T)(heap->GetGPUDescriptorHandleForHeapStart().ptr));
     }
 
     return result;
@@ -1038,51 +1059,63 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
 {
     o_CreateShaderResourceView(This, pResource, pDesc, DestDescriptor);
 
-    if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_SRV_DIMENSION_TEXTURE2D)
+    if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_SRV_DIMENSION_TEXTURE2D) // || pDesc->Shader4ComponentMapping != D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING)
         return;
 
-    if (Config::Instance()->SGChanged)
     {
-        LOG_DEBUG_ONLY("     FG SGChanged: true");
-        fgCaptureRTVs = true;
-        fgTargetFrame = frameCounter + 60;
+        std::shared_lock<std::shared_mutex> lock(heapMutex);
 
-        for (auto const& [key, val] : fgBuffers)
+        // try to find heap of resource
+        for (auto& val : fgHeaps)
         {
-            if (val.hudless != nullptr)
-                val.hudless->Release();
-        }
+            if (val.cpuStart <= DestDescriptor.ptr && val.cpuEnd >= DestDescriptor.ptr)
+            {
+                auto incSize = This->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                auto addr = DestDescriptor.ptr - val.cpuStart;
+                auto index = addr / incSize;
+                auto gpuAddr = val.gpuStart + (index * incSize);
 
-        fgBuffers.clear();
-        //fgHeaps.clear();
-        //fgHandleAddressResources.clear();
+                HeapInfo info{};
+                info.cpuStart = DestDescriptor.ptr;
+                info.gpuStart = gpuAddr;
 
-        fgCapturedBufferCount = 0;
-        Config::Instance()->SGChanged = false;
-    }
+                std::unique_lock<std::shared_mutex> lock(resourceMutex);
+                fgHandleAddressResources.insert_or_assign(pResource, info);
 
-    // try to find heap of resource
-    for (auto& [key, val] : fgHeaps)
-    {
-        if (val.cpuStart <= DestDescriptor.ptr && val.cpuEnd >= DestDescriptor.ptr)
-        {
-            auto addr = DestDescriptor.ptr - val.cpuStart;
-            auto index = addr / descriptorHandleIncrementSize;
-            auto gpuAddr = val.gpuStart + (index * descriptorHandleIncrementSize);
+                if (val.gpuStart != 0)
+                    fgHandleAddressResourcesByGpuHandle.insert_or_assign(gpuAddr, pResource);
+                else
+                    LOG_DEBUG_ONLY("Gpu start is 0, CPU ptr : {}", (UINT64)DestDescriptor.ptr);
 
-            heapMutex.lock();
-            HeapInfo info{};
-            info.cpuStart = DestDescriptor.ptr;
-            info.gpuStart = gpuAddr;
-            fgHandleAddressResources.insert_or_assign(pResource, info);
-            heapMutex.unlock();
-
-            return;
+                return;
+            }
         }
     }
 
-    LOG_DEBUG_ONLY("Not found");
+    LOG_DEBUG_ONLY("Not found, CPU ptr: {}", (UINT64)DestDescriptor.ptr);
 }
+
+static void __stdcall hkCopyDescriptors(UINT NumDestDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pDestDescriptorRangeStarts, UINT* pDestDescriptorRangeSizes, UINT NumSrcDescriptorRanges,
+                              D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorRangeStarts, UINT* pSrcDescriptorRangeSizes, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType)
+{
+    o_CopyDescriptors(NumDestDescriptorRanges, pDestDescriptorRangeStarts, pDestDescriptorRangeSizes, NumSrcDescriptorRanges, pSrcDescriptorRangeStarts, pSrcDescriptorRangeSizes, DescriptorHeapsType);
+
+    if (DescriptorHeapsType == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || DescriptorHeapsType == D3D12_DESCRIPTOR_HEAP_TYPE_RTV)
+    {
+        LOG_DEBUG_ONLY("Found");
+    }
+}
+
+static void __stdcall hkCopyDescriptorsSimple(UINT NumDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptorRangeStart, D3D12_CPU_DESCRIPTOR_HANDLE SrcDescriptorRangeStart, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType)
+{
+    o_CopyDescriptorsSimple(NumDescriptors, DestDescriptorRangeStart, SrcDescriptorRangeStart, DescriptorHeapsType);
+
+    if (DescriptorHeapsType == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || DescriptorHeapsType == D3D12_DESCRIPTOR_HEAP_TYPE_RTV)
+    {
+        LOG_DEBUG_ONLY("Found");
+    }
+}
+
 
 static int GetCorrectDXGIFormat(int eCurrentFormat)
 {
@@ -1664,7 +1697,9 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
         Config::Instance()->dxgiSkipSpoofing = true;
         fgSkipSCWrapping = true;
+        Config::Instance()->SkipHeapCapture = true;
         auto result = _createContext(&ImGuiOverlayDx::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
+        Config::Instance()->SkipHeapCapture = false;
         fgSkipSCWrapping = false;
         Config::Instance()->dxgiSkipSpoofing = false;
 
@@ -1762,7 +1797,9 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
         Config::Instance()->dxgiSkipSpoofing = true;
         fgSkipSCWrapping = true;
+        Config::Instance()->SkipHeapCapture = true;
         auto result = _createContext(&ImGuiOverlayDx::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
+        Config::Instance()->SkipHeapCapture = false;
         fgSkipSCWrapping = false;
         Config::Instance()->dxgiSkipSpoofing = false;
 
@@ -2030,8 +2067,8 @@ static void HookCommandList(ID3D12Device* InDevice)
                 if (o_CopyResource != nullptr)
                     DetourAttach(&(PVOID&)o_CopyResource, hkCopyResource);
 
-                if (o_SetGraphicsRootDescriptorTable != nullptr)
-                    DetourAttach(&(PVOID&)o_SetGraphicsRootDescriptorTable, hkSetGraphicsRootDescriptorTable);
+                //if (o_SetGraphicsRootDescriptorTable != nullptr)
+                //    DetourAttach(&(PVOID&)o_SetGraphicsRootDescriptorTable, hkSetGraphicsRootDescriptorTable);
 
                 DetourTransactionCommit();
             }
@@ -2057,6 +2094,8 @@ static void HookToDevice(ID3D12Device* InDevice)
 
     o_CreateDescriptorHeap = (PFN_CreateDescriptorHeap)pVTable[14];
     o_CreateSampler = (PFN_CreateSampler)pVTable[22];
+    o_CopyDescriptors = (PFN_CopyDescriptors)pVTable[23];
+    o_CopyDescriptorsSimple = (PFN_CopyDescriptorsSimple)pVTable[24];
     o_CreateShaderResourceView = (PFN_CreateShaderResourceView)pVTable[18];
     o_CreateRenderTargetView = (PFN_CreateRenderTargetView)pVTable[20];
 
@@ -2075,15 +2114,19 @@ static void HookToDevice(ID3D12Device* InDevice)
         if (o_CreateRenderTargetView != nullptr)
             DetourAttach(&(PVOID&)o_CreateRenderTargetView, hkCreateRenderTargetView);
 
-        if (o_CreateShaderResourceView != nullptr)
-            DetourAttach(&(PVOID&)o_CreateShaderResourceView, hkCreateShaderResourceView);
+        //if (o_CreateShaderResourceView != nullptr)
+        //    DetourAttach(&(PVOID&)o_CreateShaderResourceView, hkCreateShaderResourceView);
+
+        //if (o_CopyDescriptors != nullptr)
+        //    DetourAttach(&(PVOID&)o_CopyDescriptors, hkCopyDescriptors);
+
+        //if (o_CopyDescriptorsSimple != nullptr)
+        //    DetourAttach(&(PVOID&)o_CopyDescriptorsSimple, hkCopyDescriptorsSimple);
 
         DetourTransactionCommit();
     }
 
     HookCommandList(InDevice);
-
-    descriptorHandleIncrementSize = InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 }
 
 static void HookToDevice(ID3D11Device* InDevice)
@@ -2470,6 +2513,8 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
             desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
             desc.NodeMask = 1;
 
+            Config::Instance()->SkipHeapCapture = true;
+
             result = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dRtvDescHeap));
             if (result != S_OK)
             {
@@ -2497,6 +2542,8 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
             desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
             result = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dSrvDescHeap));
+
+            Config::Instance()->SkipHeapCapture = false;
             if (result != S_OK)
             {
                 LOG_ERROR("CreateDescriptorHeap(g_pd3dSrvDescHeap): {0:X}", (unsigned long)result);

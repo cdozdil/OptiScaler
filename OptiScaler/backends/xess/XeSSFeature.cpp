@@ -221,7 +221,9 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         if (ret == XESS_RESULT_SUCCESS)
         {
             CD3DX12_HEAP_DESC bufferHeapDesc(xessProps.tempBufferHeapSize, D3D12_HEAP_TYPE_DEFAULT);
+            Config::Instance()->SkipHeapCapture = true;
             hr = device->CreateHeap(&bufferHeapDesc, IID_PPV_ARGS(&_localBufferHeap));
+            Config::Instance()->SkipHeapCapture = false;
 
             if (SUCCEEDED(hr))
             {
@@ -229,7 +231,9 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
                     {D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_MEMORY_POOL_UNKNOWN, 0, 0},
                     0, D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES };
 
+                Config::Instance()->SkipHeapCapture = true;
                 hr = device->CreateHeap(&textureHeapDesc, IID_PPV_ARGS(&_localTextureHeap));
+                Config::Instance()->SkipHeapCapture = false;
 
                 if (SUCCEEDED(hr))
                 {
@@ -264,6 +268,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     if (Config::Instance()->BuildPipelines.value_or(true))
     {
         LOG_DEBUG("xessD3D12BuildPipelines!");
+        Config::Instance()->SkipHeapCapture = true;
 
         ID3D12Device1* device1;
         if (FAILED(device->QueryInterface(IID_PPV_ARGS(&device1))))
@@ -300,6 +305,8 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         if (device1 != nullptr)
             device1->Release();
 
+        Config::Instance()->SkipHeapCapture = false;
+
         if (ret != XESS_RESULT_SUCCESS)
         {
             LOG_ERROR("xessD3D12BuildPipelines error: {0}", ResultToString(ret));
@@ -315,7 +322,9 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         LOG_ERROR("xessSelectNetworkModel result: {0}", ResultToString(ret));
     }
 
+    Config::Instance()->SkipHeapCapture = true;
     ret = XeSSProxy::D3D12Init()(_xessContext, &xessParams);
+    Config::Instance()->SkipHeapCapture = false;
 
     Config::Instance()->dxgiSkipSpoofing = false;
 

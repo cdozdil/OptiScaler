@@ -22,7 +22,6 @@
 #include <ffx_framegeneration.h>
 
 #include "depth_upscale/DU_Dx12.h"
-#include "format_transfer/FT_Dx12.h"
 
 static PfnFfxCreateContext _createContext = nullptr;
 static PfnFfxDestroyContext _destroyContext = nullptr;
@@ -31,7 +30,6 @@ static PfnFfxQuery _query = nullptr;
 static PfnFfxDispatch _dispatch = nullptr;
 static UINT64 fgLastFrameTime = 0;
 static DU_Dx12* DepthUpscaler = nullptr;
-static FT_Dx12* FormatTransfer = nullptr;
 static UINT64 fgTarget = 0;
 
 static ID3D12Device* D3D12Device = nullptr;
@@ -1354,7 +1352,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         createFg.header.pNext = &backendDesc.header;
 
         Config::Instance()->dxgiSkipSpoofing = true;
+        Config::Instance()->SkipHeapCapture = true;
         ffxReturnCode_t retCode = _createContext(&ImGuiOverlayDx::fgContext, &createFg.header, nullptr);
+        Config::Instance()->SkipHeapCapture = false;
         Config::Instance()->dxgiSkipSpoofing = false;
         LOG_INFO("    FG _createContext result: {0:X}", retCode);
     }

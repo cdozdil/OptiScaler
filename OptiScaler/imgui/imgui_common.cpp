@@ -911,7 +911,7 @@ void ImGuiCommon::RenderMenu()
                             }
 
                         }
-                        ShowHelpMarker("Enable HUD stability fix (Might cause crashes!)");
+                        ShowHelpMarker("Enable HUD stability fix, might cause crashes!");
 
                         ImGui::BeginDisabled(!Config::Instance()->FGHUDFix.value_or(false));
 
@@ -929,38 +929,16 @@ void ImGuiCommon::RenderMenu()
 
                             Config::Instance()->FGHUDLimit = hudFixLimit;
                         }
-
-                        ImGui::SameLine(0.0f, 16.0f);
-
-                        auto hudDeep = Config::Instance()->FGHUDPrevious.value_or(false);
-                        if (ImGui::Checkbox("Deep", &hudDeep))
-                            Config::Instance()->FGHUDPrevious = hudDeep;
-
-                        ImGui::PopItemWidth();
                         ShowHelpMarker("Delay HUDless capture, high values might cause crash!");
-
-                        //ImGui::PushItemWidth(85.0);
-                        //bool fgSkipInstance = Config::Instance()->FGSkipInstanced.value_or(true);
-                        //if (ImGui::Checkbox("Skip Instanced", &fgSkipInstance))
-                        //{
-                        //    if (fgSkipInstance)
-                        //        Config::Instance()->FGSkipIndexedInstanced = false;
-
-                        //    Config::Instance()->FGSkipInstanced = fgSkipInstance;
-                        //}
-
+                         
                         //ImGui::SameLine(0.0f, 16.0f);
 
-                        //bool fgSkipIndexed = Config::Instance()->FGSkipIndexedInstanced.value_or(false);
-                        //if (ImGui::Checkbox("Skip Indexed", &fgSkipIndexed))
-                        //{
-                        //    if (fgSkipIndexed)
-                        //        Config::Instance()->FGSkipInstanced = false;
+                        //auto hudExtended = Config::Instance()->FGHUDPrevious.value_or(false);
+                        //if (ImGui::Checkbox("Extended", &hudExtended))
+                        //    Config::Instance()->FGHUDPrevious = hudExtended;
+                        //ShowHelpMarker("Extended HUDless checks, might cause crash and slowdowns!");
 
-                        //    Config::Instance()->FGSkipIndexedInstanced = fgSkipIndexed;
-                        //}
-
-                        //ImGui::PopItemWidth();
+                        ImGui::PopItemWidth();
 
                         ImGui::EndDisabled();
 
@@ -976,7 +954,7 @@ void ImGuiCommon::RenderMenu()
                                 LOG_DEBUG_ONLY("Async set FGChanged");
                             }
                         }
-                        ShowHelpMarker("Enable Async for better FG performance (Might cause crashes, especially with HUD Fix!)");
+                        ShowHelpMarker("Enable Async for better FG performance\nMight cause crashes, especially with HUD Fix!");
 
                         bool fgDV = Config::Instance()->FGDebugView.value_or(false);
                         if (ImGui::Checkbox("FG Debug View", &fgDV))

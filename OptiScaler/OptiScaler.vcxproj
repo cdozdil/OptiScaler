@@ -208,8 +208,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="bias\precompile\Bias_Shader.h" />
     <ClInclude Include="depth_upscale\DU_Common.h" />
     <ClInclude Include="depth_upscale\DU_Dx12.h" />
-    <ClInclude Include="format_transfer\FT_Common.h" />
-    <ClInclude Include="format_transfer\FT_Dx12.h" />
     <ClInclude Include="output_scaling\OS_Common.h" />
     <ClInclude Include="output_scaling\OS_Dx12.h" />
     <ClInclude Include="output_scaling\precompile\BCDS_Shader.h" />
@@ -297,7 +295,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="backends\IFeature.cpp" />
     <ClCompile Include="backends\IFeature_Dx12.cpp" />
     <ClCompile Include="depth_upscale\DU_Dx12.cpp" />
-    <ClCompile Include="format_transfer\FT_Dx12.cpp" />
     <ClCompile Include="imgui\imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui\imgui_demo.cpp" />
     <ClCompile Include="imgui\imgui\imgui_draw.cpp" />
