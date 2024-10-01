@@ -2105,8 +2105,8 @@ static void HookToDevice(ID3D12Device* InDevice)
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        if (o_CreateDescriptorHeap != nullptr)
-            DetourAttach(&(PVOID&)o_CreateDescriptorHeap, hkCreateDescriptorHeap);
+        //if (o_CreateDescriptorHeap != nullptr)
+        //    DetourAttach(&(PVOID&)o_CreateDescriptorHeap, hkCreateDescriptorHeap);
 
         if (o_CreateSampler != nullptr)
             DetourAttach(&(PVOID&)o_CreateSampler, hkCreateSampler);
