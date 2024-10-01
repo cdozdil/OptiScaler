@@ -163,8 +163,12 @@ Imgui_Dx12::Imgui_Dx12(HWND handle, ID3D12Device* pDevice) : ImguiDxBase(handle)
 	srvDesc.NumDescriptors = 1;
 	srvDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
+	Config::Instance()->SkipHeapCapture = true;
+
 	if (pDevice->CreateDescriptorHeap(&srvDesc, IID_PPV_ARGS(&_srvDescHeap)) != S_OK)
 		return;
+
+	Config::Instance()->SkipHeapCapture = false;
 
 	Dx12Ready();
 

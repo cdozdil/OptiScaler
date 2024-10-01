@@ -678,7 +678,10 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     backendDesc.header.pNext = &ov.header;
 
     LOG_DEBUG("_createContext!");
+
+    Config::Instance()->SkipHeapCapture = true;
     auto ret = _createContext(&_context, &_contextDesc.header, NULL);
+    Config::Instance()->SkipHeapCapture = false;
 
     if (ret != FFX_API_RETURN_OK)
     {

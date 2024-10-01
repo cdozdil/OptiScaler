@@ -169,7 +169,9 @@ public:
 	std::optional<bool> FGHUDPrevious;
 	bool FGOnlyGenerated = false;
 	bool FGChanged = false;
-	bool SGChanged = false;
+	bool SCChanged = false;
+	bool SkipHeapCapture = false;
+
 
 	// nvngx init parameters
 	unsigned long long NVNGX_ApplicationId = 1337;

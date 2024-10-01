@@ -593,7 +593,9 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
     LOG_DEBUG("ffxFsr2ContextCreate!");
 
+    Config::Instance()->SkipHeapCapture = true;
     auto ret = Fsr212::ffxFsr2ContextCreate212(&_context, &_contextDesc);
+    Config::Instance()->SkipHeapCapture = false;
 
     if (ret != Fsr212::FFX_OK)
     {

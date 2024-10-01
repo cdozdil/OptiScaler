@@ -327,6 +327,8 @@ DU_Dx12::DU_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), _d
     heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
+    Config::Instance()->SkipHeapCapture = true;
+
     auto hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[0]));
 
     if (FAILED(hr))
@@ -344,6 +346,8 @@ DU_Dx12::DU_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), _d
     }
 
     hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[2]));
+
+    Config::Instance()->SkipHeapCapture = false;
 
     if (FAILED(hr))
     {

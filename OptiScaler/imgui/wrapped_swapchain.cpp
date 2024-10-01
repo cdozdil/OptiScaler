@@ -124,7 +124,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     if (Config::Instance()->CurrentFeature != nullptr)
         Config::Instance()->FGChanged = true;
 
-    Config::Instance()->SGChanged = true;
+    Config::Instance()->SCChanged = true;
 
     std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
@@ -159,7 +159,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
     if (Config::Instance()->CurrentFeature != nullptr)
         Config::Instance()->FGChanged = true;
 
-    Config::Instance()->SGChanged = true;
+    Config::Instance()->SCChanged = true;
 
     std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
@@ -186,7 +186,7 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
     if (Config::Instance()->CurrentFeature != nullptr)
         Config::Instance()->FGChanged = true;
 
-    Config::Instance()->SGChanged = true;
+    Config::Instance()->SCChanged = true;
     
     std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
