@@ -1331,15 +1331,15 @@ struct dxgi_dll
 
 bool SkipSpoofing()
 {
-    auto result = !Config::Instance()->DxgiSpoofing.value_or(true) || Config::Instance()->dxgiSkipSpoofing || !Config::Instance()->IsRunningOnLinux;
+    auto skip = !Config::Instance()->DxgiSpoofing.value_or(true) || Config::Instance()->dxgiSkipSpoofing || Config::Instance()->IsRunningOnLinux;
 
-    if (result)
+    if (skip)
         LOG_TRACE("DxgiSpoofing: {}, dxgiSkipSpoofing: {}, IsRunningOnLinux: {}, skipping spoofing", 
                   !Config::Instance()->DxgiSpoofing.value_or(true), Config::Instance()->dxgiSkipSpoofing, !Config::Instance()->IsRunningOnLinux);
 
-    if (!result && Config::Instance()->DxgiBlacklist.has_value())
+    if (!skip && Config::Instance()->DxgiBlacklist.has_value())
     {
-        result = true;
+        skip = true;
 
         // Walk the call stack to find the DLL that is calling the hooked function
         void* callers[100];
@@ -1367,7 +1367,7 @@ bool SkipSpoofing()
                         if (pos != std::string::npos)
                         {
                             LOG_INFO("spoofing for: {0}", sn);
-                            result = false;
+                            skip = false;
                             break;
                         }
                     }
@@ -1379,11 +1379,11 @@ bool SkipSpoofing()
             SymCleanup(process);
         }
 
-        if (result)
+        if (skip)
             LOG_DEBUG("skipping spoofing, blacklisting active");
     }
 
-    return result;
+    return skip;
 }
 
 HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
