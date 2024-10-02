@@ -1011,6 +1011,16 @@ void ImGuiCommon::RenderMenu()
                                 Config::Instance()->newBackend = currentBackend;
                                 Config::Instance()->changeBackend = true;
                             }
+
+                            if (cf->Version().patch > 0)
+                            {
+                                float velocity = Config::Instance()->FsrVelocity.value_or(0.3);
+                                if (ImGui::SliderFloat("Velocity Factor", &velocity, 0.00f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
+                                    Config::Instance()->FsrVelocity = velocity;
+
+                                ShowHelpMarker("Lower values are more stable with ghosting\n"
+                                               "Higher values are more pixelly but less ghosting.");
+                            }
                         }
 
                         bool useVFov = Config::Instance()->FsrVerticalFov.has_value() || !Config::Instance()->FsrHorizontalFov.has_value();
@@ -1075,17 +1085,6 @@ void ImGuiCommon::RenderMenu()
                                            "Bottom left: Disocclusion mask\n"
                                            "Bottom middle: Reactiveness\n"
                                            "Bottom right: Detail Protection Takedown");
-
-
-                            if (cf->Version().patch > 0)
-                            {
-                                float velocity = Config::Instance()->FsrVelocity.value_or(0.3);
-                                if (ImGui::SliderFloat("Velocity Factor", &velocity, 0.00f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
-                                    Config::Instance()->FsrVelocity = velocity;
-
-                                ShowHelpMarker("Lower values are more stable with ghosting\n"
-                                               "Higher values are more pixelly but less ghosting.");
-                            }
                         }
 
                         if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.01f, 9.99f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
