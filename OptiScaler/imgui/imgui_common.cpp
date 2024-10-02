@@ -1014,7 +1014,7 @@ void ImGuiCommon::RenderMenu()
 
                             if (cf->Version().patch > 0)
                             {
-                                float velocity = Config::Instance()->FsrVelocity.value_or(0.3);
+                                float velocity = Config::Instance()->FsrVelocity.value_or(1.0);
                                 if (ImGui::SliderFloat("Velocity Factor", &velocity, 0.00f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
                                     Config::Instance()->FsrVelocity = velocity;
 
