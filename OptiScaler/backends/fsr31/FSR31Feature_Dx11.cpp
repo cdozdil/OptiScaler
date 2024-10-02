@@ -404,9 +404,9 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     params.upscaleSize.width = TargetWidth();
     params.upscaleSize.height = TargetHeight();
 
-    if (_velocity != Config::Instance()->FsrVelocity.value_or(0.3f))
+    if (_velocity != Config::Instance()->FsrVelocity.value_or(1.0f))
     {
-        _velocity = Config::Instance()->FsrVelocity.value_or(0.3f);
+        _velocity = Config::Instance()->FsrVelocity.value_or(1.0f);
         auto result = ffxFsr3SetUpscalerConstant(&_upscalerContext, Fsr31::FfxFsr3UpscalerConfigureKey::FFX_FSR3UPSCALER_CONFIGURE_UPSCALE_KEY_FVELOCITYFACTOR, &_velocity);
 
         if (result != Fsr31::FFX_OK)

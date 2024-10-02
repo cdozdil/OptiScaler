@@ -370,9 +370,9 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     params.preExposure = 1.0f;
     InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure);
 
-    if (_velocity != Config::Instance()->FsrVelocity.value_or(0.3f))
+    if (_velocity != Config::Instance()->FsrVelocity.value_or(1.0f))
     {
-        _velocity = Config::Instance()->FsrVelocity.value_or(0.3f);
+        _velocity = Config::Instance()->FsrVelocity.value_or(1.0f);
         ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig{};
         m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
         m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FVELOCITYFACTOR;
