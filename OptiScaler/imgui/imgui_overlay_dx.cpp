@@ -400,7 +400,7 @@ static void GetHUDless(ID3D12GraphicsCommandList* This, D3D12_RESOURCE_STATES St
         if (Config::Instance()->FGDebugView.value_or(false))
             m_FrameGenerationConfig.flags |= FFX_FRAMEGENERATION_FLAG_DRAW_DEBUG_VIEW; // check here
 
-        m_FrameGenerationConfig.allowAsyncWorkloads = Config::Instance()->FGAsync.value_or(false);
+        m_FrameGenerationConfig.allowAsyncWorkloads = Config::Instance()->FGAsync.value_or(true);
 
         // assume symmetric letterbox
         m_FrameGenerationConfig.generationRect.left = 0;
