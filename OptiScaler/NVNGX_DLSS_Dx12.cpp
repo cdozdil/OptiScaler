@@ -876,23 +876,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
     if (!shutdown)
         LOG_INFO("releasing feature with id {0}", handleId);
 
-    if (ImGuiOverlayDx::fgContext != nullptr)
-    {
-        ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
-        m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
-        m_FrameGenerationConfig.frameGenerationEnabled = false;
-        m_FrameGenerationConfig.swapChain = ImGuiOverlayDx::currentSwapchain;
-        m_FrameGenerationConfig.presentCallback = nullptr;
-        m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
-        Config::Instance()->dxgiSkipSpoofing = true;
-        _configure(&ImGuiOverlayDx::fgContext, &m_FrameGenerationConfig.header);
-
-        _destroyContext(&ImGuiOverlayDx::fgContext, nullptr);
-        Config::Instance()->dxgiSkipSpoofing = false;
-        ImGuiOverlayDx::fgContext = nullptr;
-
-        fgTarget = 0;
-    }
+    Config::Instance()->FGChanged = true;
 
     if (handleId < 1000000)
     {
@@ -900,19 +884,19 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
         {
             if (!shutdown)
                 LOG_INFO("calling D3D12_ReleaseFeature for ({0})", handleId);
-            
+
             auto result = NVNGXProxy::D3D12_ReleaseFeature()(InHandle);
 
             if (!shutdown)
                 LOG_INFO("D3D12_ReleaseFeature result for ({0}): {1:X}", handleId, (UINT)result);
-            
+
             return result;
         }
         else
         {
             if (!shutdown)
                 LOG_INFO("D3D12_ReleaseFeature not available for ({0})", handleId);
-            
+
             return NVSDK_NGX_Result_FAIL_FeatureNotFound;
         }
     }
@@ -1317,8 +1301,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     }
 
     // FG Init || Disable    
-    if (!Config::Instance()->FGChanged && fgTarget < deviceContext->FrameCount() && Config::Instance()->FGEnabled.value_or(false) && 
-        _createContext != nullptr && ImGuiOverlayDx::fgContext == nullptr && ImGuiOverlayDx::currentSwapchain != nullptr && 
+    if (!Config::Instance()->FGChanged && fgTarget < deviceContext->FrameCount() && Config::Instance()->FGEnabled.value_or(false) &&
+        _createContext != nullptr && ImGuiOverlayDx::fgContext == nullptr && ImGuiOverlayDx::currentSwapchain != nullptr &&
         ImGuiOverlayDx::swapchainFormat != DXGI_FORMAT_UNKNOWN)
     {
         fgTarget = 0;
@@ -1345,7 +1329,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         if ((deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0)
             createFg.flags |= FFX_FRAMEGENERATION_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
 
-        if (Config::Instance()->FGAsync.value_or(true))
+        if (Config::Instance()->FGAsync.value_or(false))
             createFg.flags |= FFX_FRAMEGENERATION_ENABLE_ASYNC_WORKLOAD_SUPPORT;
 
         createFg.backBufferFormat = ffxApiGetSurfaceFormatDX12(ImGuiOverlayDx::swapchainFormat);
@@ -1377,14 +1361,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     if (Config::Instance()->FGChanged)
     {
         LOG_DEBUG("    FG disabled for 5 frames");
-        fgTarget = deviceContext->FrameCount() + 5;
+        fgTarget = deviceContext->FrameCount() + 10;
         Config::Instance()->FGChanged = false;
     }
 
     // Record the first timestamp (before FSR2 upscaling)
     InCmdList->EndQuery(ImGuiOverlayDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
 
+    ImGuiOverlayDx::fgSkipHudlessChecks = true;
     bool evalResult = deviceContext->Evaluate(InCmdList, InParameters);
+    ImGuiOverlayDx::fgSkipHudlessChecks = false;
 
     // Record the second timestamp (after FSR2 upscaling)
     InCmdList->EndQuery(ImGuiOverlayDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 1);
@@ -1472,7 +1458,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 if (Config::Instance()->FGDebugView.value_or(false))
                     m_FrameGenerationConfig.flags |= FFX_FRAMEGENERATION_FLAG_DRAW_DEBUG_VIEW;
 
-                m_FrameGenerationConfig.allowAsyncWorkloads = Config::Instance()->FGAsync.value_or(true);
+                m_FrameGenerationConfig.allowAsyncWorkloads = Config::Instance()->FGAsync.value_or(false);
 
                 // assume symmetric letterbox
                 m_FrameGenerationConfig.generationRect.left = 0;
@@ -1482,10 +1468,18 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 m_FrameGenerationConfig.frameGenerationCallback = [](ffxDispatchDescFrameGeneration* params, void* pUserCtx) -> ffxReturnCode_t
                     {
-                        return _dispatch(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
+                        ImGuiOverlayDx::fgSkipHudlessChecks = true;
+                        auto result = _dispatch(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
+                        ImGuiOverlayDx::fgSkipHudlessChecks = false;
+                        
+                        return result;
                     };
 
                 m_FrameGenerationConfig.frameGenerationCallbackUserContext = &ImGuiOverlayDx::fgContext;
+
+                //m_FrameGenerationConfig.frameGenerationCallback = nullptr;
+                //m_FrameGenerationConfig.frameGenerationCallbackUserContext = nullptr;
+
                 m_FrameGenerationConfig.onlyPresentGenerated = Config::Instance()->FGOnlyGenerated; // check here
                 m_FrameGenerationConfig.frameID = deviceContext->FrameCount();
                 m_FrameGenerationConfig.swapChain = ImGuiOverlayDx::currentSwapchain;
@@ -1528,7 +1522,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     ID3D12Resource* paramDepth;
                     if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
                         InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
-                    
+
                     if (Config::Instance()->DepthResourceBarrier.has_value())
                         ResourceBarrier(InCmdList, paramDepth, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
@@ -1591,39 +1585,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                     dfgPrepare.frameTimeDelta = msDelta;
 
-                    //#ifdef _DEBUG
-                    //                    if (msDelta < 110.0 || msDelta > 1000.0)
-                    //                    {
-                    //                        Config::Instance()->dxgiSkipSpoofing = true;
-                    //                        retCode = _dispatch(&ImGuiOverlayDx::fgContext, &dfgPrepare.header);
-                    //                        Config::Instance()->dxgiSkipSpoofing = false;
-                    //                        LOG_DEBUG("    FG _dispatch result: {0}", retCode);
-                    //                    }
-                    //                    else
-                    //                    {
-                    //                        LOG_WARN("    FG delta too big disabling FG: {0}", msDelta);
-                    //
-                    //                        Config::Instance()->FGEnabled = false;
-                    //
-                    //                        ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
-                    //                        m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
-                    //                        m_FrameGenerationConfig.frameGenerationEnabled = false;
-                    //                        m_FrameGenerationConfig.swapChain = ImGuiOverlayDx::currentSwapchain;
-                    //                        m_FrameGenerationConfig.presentCallback = nullptr;
-                    //                        m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
-                    //                        Config::Instance()->dxgiSkipSpoofing = true;
-                    //                        _configure(&ImGuiOverlayDx::fgContext, &m_FrameGenerationConfig.header);
-                    //                        Config::Instance()->dxgiSkipSpoofing = false;
-                    //
-                    //                        _destroyContext(&ImGuiOverlayDx::fgContext, nullptr);
-                    //                        ImGuiOverlayDx::fgContext = nullptr;
-                    //                    }
-                    //#else
                     Config::Instance()->dxgiSkipSpoofing = true;
+                    ImGuiOverlayDx::fgSkipHudlessChecks = true;
                     retCode = _dispatch(&ImGuiOverlayDx::fgContext, &dfgPrepare.header);
+                    ImGuiOverlayDx::fgSkipHudlessChecks = false;
                     Config::Instance()->dxgiSkipSpoofing = false;
                     LOG_DEBUG("    FG _dispatch result: {0}", retCode);
-                    //#endif // _DEBUG
                 }
             }
             else
