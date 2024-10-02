@@ -404,6 +404,15 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     params.upscaleSize.width = TargetWidth();
     params.upscaleSize.height = TargetHeight();
 
+    if (_velocity != Config::Instance()->FsrVelocity.value_or(0.3f))
+    {
+        _velocity = Config::Instance()->FsrVelocity.value_or(0.3f);
+        auto result = ffxFsr3SetUpscalerConstant(&_upscalerContext, Fsr31::FfxFsr3UpscalerConfigureKey::FFX_FSR3UPSCALER_CONFIGURE_UPSCALE_KEY_FVELOCITYFACTOR, &_velocity);
+
+        if (result != Fsr31::FFX_OK)
+            LOG_WARN("Velocity configure result: {}", (UINT)result);
+    }
+
     LOG_DEBUG("Dispatch!!");
     auto result = ffxFsr3ContextDispatchUpscale(&_upscalerContext, &params);
 
@@ -527,7 +536,7 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     Config::Instance()->fsr3xVersionIds.resize(versionCount);
     Config::Instance()->fsr3xVersionNames.resize(versionCount);
     Config::Instance()->fsr3xVersionIds.push_back(1);
-    auto version_number = "3.1.0";
+    auto version_number = "3.1.1";
     Config::Instance()->fsr3xVersionNames.push_back(version_number);
 
 
