@@ -38,6 +38,7 @@ namespace ImGuiOverlayDx
 	inline ID3D12Resource* paramDepth[2] = { nullptr, nullptr };
 	inline int resourceIndex = 0;
 	inline bool upscaleRan = false;
+	inline bool fgSkipHudlessChecks = false;
 
 	void UnHookDx();
 	void HookDx();

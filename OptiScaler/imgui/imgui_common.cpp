@@ -336,13 +336,10 @@ LRESULT __stdcall ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
         {
             _ssRatio = 0;
 
-            if (_lastCursorLimit != nullptr)
-                pfn_ClipCursor(nullptr);
-
-            //if (GetWindowRect(_handle, &_cursorLimit))
-            //	pfn_ClipCursor(&_cursorLimit);
-            //else
-            //	pfn_ClipCursor(nullptr);
+            if (GetWindowRect(_handle, &_cursorLimit))
+            	pfn_ClipCursor(&_cursorLimit);
+            else
+            	pfn_ClipCursor(nullptr);
         }
 
         //RECT windowRect = {};
@@ -942,7 +939,7 @@ void ImGuiCommon::RenderMenu()
 
                         ImGui::EndDisabled();
 
-                        bool fgAsync = Config::Instance()->FGAsync.value_or(true);
+                        bool fgAsync = Config::Instance()->FGAsync.value_or(false);
 
                         if (ImGui::Checkbox("FG Allow Async", &fgAsync))
                         {
