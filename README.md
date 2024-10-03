@@ -80,6 +80,7 @@ OptiScaler implements the necessary API methods of DLSS2 & NVAPI to act as a mid
 
 ## Features
 * Supports multiple upscaling backends (XeSS, FSR 2.1.2, FSR 2.2.1, FSR 3.1 and DLSS)
+* Experimental support for frame generation with version 0.7.0 and above
 * Supports DLSS 3.7 and above (check [installation instructions](#install-as-non-nvngx))
 * Supports DLSS-D (Ray Reconstruction) on Nvidia cards (Supports changing presets and using OptiScaler enchanchements)
 * Ability to modify DLSS/DLSS-D presets on the fly
