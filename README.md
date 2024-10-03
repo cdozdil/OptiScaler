@@ -7,6 +7,7 @@ Key aspects of OptiScaler:
 - Provides tuning options for DLSS users
 - Offers a wide range of tweaks and enhancements (RCAS & MAS, Output Scaling, DLSS Presets, Ratio & DRS Overrides etc.)
 - Allows users to fine-tune their upscaling experience
+- With version 0.7.0 and above experimental framge generation option
 
 ## Official Discord Server: [DLSS2FSR](https://discord.gg/2JDHx6kcXB)
 
