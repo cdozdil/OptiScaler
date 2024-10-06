@@ -25,6 +25,8 @@
 // Enables logging of DLSS NV Parameters
 //#define DLSS_PARAM_DUMP
 
+//#define LOG_ASYNC
+
 inline HMODULE dllModule = nullptr;
 inline HMODULE skHandle = nullptr;
 inline DWORD processId;
@@ -40,6 +42,13 @@ inline DWORD processId;
     spdlog::debug(__FUNCTION__ " " msg, ##__VA_ARGS__) 
 #else
 #define LOG_DEBUG_ONLY(msg, ...) 
+#endif
+
+#ifdef LOG_ASYNC
+#define LOG_DEBUG_ASYNC(msg, ...) \
+    spdlog::debug(__FUNCTION__ " " msg, ##__VA_ARGS__) 
+#else
+#define LOG_DEBUG_ASYNC(msg, ...) 
 #endif
 
 #define LOG_INFO(msg, ...) \

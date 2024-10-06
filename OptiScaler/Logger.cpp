@@ -2,9 +2,11 @@
 #include "Config.h"
 #include <iostream>
 
+#include "spdlog/async.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/sinks/callback_sink.h"
+
 #include "Util.h"
 
 static bool InitializeConsole()
@@ -68,7 +70,12 @@ void PrepareLogger()
 			if (Config::Instance()->OpenConsole.value_or(false))
 				InitializeConsole();
 
+#ifdef LOG_ASYNC
+			// Set the queue size for asynchronous logging
+			spdlog::init_thread_pool(8192, 4);  // 8192 entries and 8 background thread
+#else
 			std::shared_ptr<spdlog::logger> shared_logger = nullptr;
+#endif // LOG_ASYNC
 
 			std::vector<spdlog::sink_ptr> sinks;
 
@@ -86,7 +93,11 @@ void PrepareLogger()
 				auto logFile = Util::DllPath().parent_path() / "OptiScaler.log";
 				auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(Config::Instance()->LogFileName.value_or(logFile.wstring()), true);
 				file_sink->set_level(spdlog::level::level_enum::trace);
+#ifdef LOG_ASYNC
+				file_sink->set_pattern("%H:%M:%S.%f\t%L\t%v");
+#else
 				file_sink->set_pattern("[%H:%M:%S.%f] [%L] %v");
+#endif // LOG_ASYNC
 
 				sinks.push_back(file_sink);
 			}
@@ -108,8 +119,13 @@ void PrepareLogger()
 
 			sinks.push_back(callback_sink);
 
+#ifdef LOG_ASYNC
+			auto shared_logger = std::make_shared<spdlog::async_logger>(
+				"multi_sink_logger", sinks.begin(), sinks.end(), spdlog::thread_pool(), spdlog::async_overflow_policy::block);
+#else
 			spdlog::logger logger("multi_sink", sinks.begin(), sinks.end());
-			shared_logger = std::make_shared<spdlog::logger>(logger);
+			shared_logger = std::make_shared<spdlog::logger>(logger); 
+#endif // LOG_ASYNC
 
 			shared_logger->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or(2));
 

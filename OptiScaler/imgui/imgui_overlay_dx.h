@@ -28,6 +28,7 @@ namespace ImGuiOverlayDx
 	
 	inline IDXGISwapChain* currentSwapchain = nullptr;
 	inline DXGI_FORMAT swapchainFormat = DXGI_FORMAT_UNKNOWN;
+
 	inline ffxContext fgSwapChainContext = nullptr;
 	inline ffxContext fgContext = nullptr;
 	inline float jitterX = 0.0;
@@ -39,6 +40,15 @@ namespace ImGuiOverlayDx
 	inline int resourceIndex = 0;
 	inline bool upscaleRan = false;
 	inline bool fgSkipHudlessChecks = false;
+	inline double fgFrameTime = 0.0;
+	inline ID3D12CommandQueue* fgCommandQueue = nullptr;
+	inline ID3D12CommandQueue* gameCommandQueue = nullptr;
+	inline ID3D12CommandQueue* fgCopyCommandQueue = nullptr;
+	inline ID3D12GraphicsCommandList* fgCopyCommandList[4] = { nullptr, nullptr, nullptr, nullptr };
+	inline ID3D12CommandAllocator* fgCopyCommandAllocators[4] = { };
+	inline ID3D12Fence* fgFence[4] = { nullptr, nullptr, nullptr, nullptr };
+	inline UINT64 fgFenceCounter = 1;
+	inline UINT64 fgHUDlessCaptureCounter = 0;
 
 	void UnHookDx();
 	void HookDx();

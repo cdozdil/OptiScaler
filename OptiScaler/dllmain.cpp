@@ -14,12 +14,18 @@
 
 #pragma warning (disable : 4996)
 
-typedef BOOL(WINAPI* PFN_FreeLibrary)(HMODULE lpLibrary);
-typedef HMODULE(WINAPI* PFN_LoadLibraryA)(LPCSTR lpLibFileName);
-typedef HMODULE(WINAPI* PFN_LoadLibraryW)(LPCWSTR lpLibFileName);
-typedef HMODULE(WINAPI* PFN_LoadLibraryExA)(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
-typedef HMODULE(WINAPI* PFN_LoadLibraryExW)(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
-typedef FARPROC(WINAPI* PFN_GetProcAddress)(HMODULE hModule, LPCSTR lpProcName);
+typedef BOOL(*PFN_FreeLibrary)(HMODULE lpLibrary);
+typedef HMODULE(*PFN_LoadLibraryA)(LPCSTR lpLibFileName);
+typedef HMODULE(*PFN_LoadLibraryW)(LPCWSTR lpLibFileName);
+typedef HMODULE(*PFN_LoadLibraryExA)(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
+typedef HMODULE(*PFN_LoadLibraryExW)(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
+typedef FARPROC(*PFN_GetProcAddress)(HMODULE hModule, LPCSTR lpProcName);
+
+typedef HMODULE(*PFN_GetModuleHandleA)(LPCSTR lpModuleName);
+typedef HMODULE(*PFN_GetModuleHandleW)(LPCWSTR lpModuleName);
+typedef BOOL(*PFN_GetModuleHandleExA)(DWORD dwFlags, LPCSTR lpModuleName, HMODULE* phModule);
+typedef BOOL(*PFN_GetModuleHandleExW)(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE* phModule);
+
 
 typedef const char* (CDECL* PFN_wine_get_version)(void);
 

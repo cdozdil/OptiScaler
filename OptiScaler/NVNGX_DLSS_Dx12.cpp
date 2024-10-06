@@ -29,11 +29,10 @@ static PfnFfxConfigure _configure = nullptr;
 static PfnFfxQuery _query = nullptr;
 static PfnFfxDispatch _dispatch = nullptr;
 static UINT64 fgLastFrameTime = 0;
-static DU_Dx12* DepthUpscaler = nullptr;
 static UINT64 fgTarget = 0;
 
-static ID3D12Device* D3D12Device = nullptr;
 static ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
+static ID3D12Device* D3D12Device = nullptr;
 static NVSDK_NGX_Parameter* createParams = nullptr;
 static int changeBackendCounter = 0;
 static int evalCounter = 0;
@@ -44,6 +43,157 @@ static void FfxFgLogCallback(uint32_t type, const wchar_t* message)
 {
     std::wstring string(message);
     LOG_DEBUG("    FG Log: {0}", wstring_to_string(string));
+}
+
+static void ReleaseFGObjects()
+{
+    for (size_t i = 0; i < 4; i++)
+    {
+        if (ImGuiOverlayDx::fgCopyCommandAllocators[i] != nullptr)
+        {
+            ImGuiOverlayDx::fgCopyCommandAllocators[i]->Release();
+            ImGuiOverlayDx::fgCopyCommandAllocators[i] = nullptr;
+        }
+
+        if (ImGuiOverlayDx::fgCopyCommandList[i] != nullptr)
+        {
+            ImGuiOverlayDx::fgCopyCommandList[i]->Release();
+            ImGuiOverlayDx::fgCopyCommandList[i] = nullptr;
+        }
+
+        if (ImGuiOverlayDx::fgFence[i] != nullptr)
+        {
+            ImGuiOverlayDx::fgFence[i]->Release();
+            ImGuiOverlayDx::fgFence[i] = nullptr;
+        }
+    }
+
+    if (ImGuiOverlayDx::fgCopyCommandQueue != nullptr)
+    {
+        ImGuiOverlayDx::fgCopyCommandQueue->Release();
+        ImGuiOverlayDx::fgCopyCommandQueue = nullptr;
+    }
+}
+
+static void CreateFGObjects()
+{
+    return;
+
+    ImGuiOverlayDx::fgSkipHudlessChecks = true;
+
+    do
+    {
+        HRESULT result;
+
+        for (size_t i = 0; i < 4; i++)
+        {
+            result = D3D12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&ImGuiOverlayDx::fgFence[i]));
+            if (result != S_OK)
+                LOG_ERROR("CreateFence[[{0}]: {1:X}", i, (unsigned long)result);
+
+            ImGuiOverlayDx::fgFence[i]->SetName(L"fgFence");
+
+            result = D3D12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&ImGuiOverlayDx::fgCopyCommandAllocators[i]));
+            if (result != S_OK)
+            {
+                LOG_ERROR("CreateCommandAllocators[{0}]: {1:X}", i, (unsigned long)result);
+                break;
+            }
+            ImGuiOverlayDx::fgCopyCommandAllocators[i]->SetName(L"fgCopyCommandAllocator");
+
+            result = D3D12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, ImGuiOverlayDx::fgCopyCommandAllocators[i], NULL, IID_PPV_ARGS(&ImGuiOverlayDx::fgCopyCommandList[i]));
+            if (result != S_OK)
+            {
+                LOG_ERROR("CreateCommandList: {0:X}", (unsigned long)result);
+                break;
+            }
+            ImGuiOverlayDx::fgCopyCommandList[i]->SetName(L"fgCopyCommandList");
+
+            result = ImGuiOverlayDx::fgCopyCommandList[i]->Close();
+            if (result != S_OK)
+            {
+                LOG_ERROR("ImGuiOverlayDx::fgCopyCommandList->Close: {0:X}", (unsigned long)result);
+                break;
+            }
+        }
+
+        // Create a command queue for copy operations
+        D3D12_COMMAND_QUEUE_DESC copyQueueDesc = {};
+        copyQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+        copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+        copyQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+        copyQueueDesc.NodeMask = 0;
+
+        HRESULT hr = D3D12Device->CreateCommandQueue(&copyQueueDesc, IID_PPV_ARGS(&ImGuiOverlayDx::fgCopyCommandQueue));
+        if (result != S_OK)
+        {
+            LOG_ERROR("CreateCommandQueue: {0:X}", (unsigned long)result);
+            break;
+        }
+        ImGuiOverlayDx::fgCopyCommandQueue->SetName(L"fgCopyCommandQueue");
+    } while (false);
+
+    ImGuiOverlayDx::fgSkipHudlessChecks = false;
+}
+
+static void CreateFGContext(IFeature_Dx12* deviceContext)
+{
+    fgTarget = 0;
+
+    ffxCreateBackendDX12Desc backendDesc{};
+    backendDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_DX12;
+    backendDesc.device = D3D12Device;
+
+    ffxCreateContextDescFrameGeneration createFg{};
+    createFg.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATION;
+    createFg.displaySize = { deviceContext->DisplayWidth(), deviceContext->DisplayHeight() };
+    createFg.maxRenderSize = { deviceContext->DisplayWidth(), deviceContext->DisplayHeight() };
+    createFg.flags = 0;
+
+    if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR)
+        createFg.flags |= FFX_FRAMEGENERATION_ENABLE_HIGH_DYNAMIC_RANGE;
+
+    if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
+        createFg.flags |= FFX_FRAMEGENERATION_ENABLE_DEPTH_INVERTED;
+
+    if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVJittered)
+        createFg.flags |= FFX_FRAMEGENERATION_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
+
+    if ((deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0)
+        createFg.flags |= FFX_FRAMEGENERATION_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
+
+    if (Config::Instance()->FGAsync.value_or(false))
+        createFg.flags |= FFX_FRAMEGENERATION_ENABLE_ASYNC_WORKLOAD_SUPPORT;
+
+    createFg.backBufferFormat = ffxApiGetSurfaceFormatDX12(ImGuiOverlayDx::swapchainFormat);
+    createFg.header.pNext = &backendDesc.header;
+
+    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->SkipHeapCapture = true;
+    ffxReturnCode_t retCode = _createContext(&ImGuiOverlayDx::fgContext, &createFg.header, nullptr);
+    Config::Instance()->SkipHeapCapture = false;
+    Config::Instance()->dxgiSkipSpoofing = false;
+    LOG_INFO("    FG _createContext result: {0:X}", retCode);
+}
+
+
+static void StopAndDestroyFGContext()
+{
+    ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
+    m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
+    m_FrameGenerationConfig.frameGenerationEnabled = false;
+    m_FrameGenerationConfig.swapChain = ImGuiOverlayDx::currentSwapchain;
+    m_FrameGenerationConfig.presentCallback = nullptr;
+    m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
+
+    Config::Instance()->dxgiSkipSpoofing = true;
+    _configure(&ImGuiOverlayDx::fgContext, &m_FrameGenerationConfig.header);
+    _destroyContext(&ImGuiOverlayDx::fgContext, nullptr);
+    Config::Instance()->dxgiSkipSpoofing = false;
+
+    ImGuiOverlayDx::fgContext = nullptr;
+
+    ReleaseFGObjects();
 }
 
 static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState)
@@ -57,7 +207,7 @@ static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Reso
     InCommandList->ResourceBarrier(1, &barrier);
 }
 
-static bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource)
+static bool CreateBufferResource(LPCWSTR Name, ID3D12Device* InDevice, ID3D12Resource* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource)
 {
     if (InDevice == nullptr || InSource == nullptr)
         return false;
@@ -87,7 +237,7 @@ static bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSourc
         return false;
     }
 
-    texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    //texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET; // | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
     hr = InDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, InState, nullptr, IID_PPV_ARGS(OutResource));
 
@@ -97,7 +247,7 @@ static bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSourc
         return false;
     }
 
-    (*OutResource)->SetName(L"Depth_Buffer");
+    (*OutResource)->SetName(Name);
     return true;
 }
 
@@ -377,9 +527,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 
     D3D12Device = InDevice;
 
-    //if (!ImGuiOverlayDx12::IsEarlyBind() && D3D12Device != nullptr)
-    //    HookToDevice(D3D12Device);
-
     Config::Instance()->Api = NVNGX_DX12;
 
     // Create query heap for timestamp queries
@@ -397,9 +544,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 
     if (_createContext == nullptr)
         LoadFSR31Funcs();
-
-    if (DepthUpscaler == nullptr)
-        DepthUpscaler = new DU_Dx12("DepthUpscaler", InDevice);
 
     return NVSDK_NGX_Result_Success;
 }
@@ -1064,6 +1208,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     IFeature_Dx12* deviceContext = nullptr;
 
+    // Change backend
     if (Config::Instance()->changeBackend)
     {
         if (Config::Instance()->newBackend == "" || (!Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->newBackend == "dlss"))
@@ -1078,19 +1223,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         {
             if (ImGuiOverlayDx::fgContext != nullptr)
             {
-                ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
-                m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
-                m_FrameGenerationConfig.frameGenerationEnabled = false;
-                m_FrameGenerationConfig.swapChain = ImGuiOverlayDx::currentSwapchain;
-                m_FrameGenerationConfig.presentCallback = nullptr;
-                m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
-                Config::Instance()->dxgiSkipSpoofing = true;
-                _configure(&ImGuiOverlayDx::fgContext, &m_FrameGenerationConfig.header);
-
-                _destroyContext(&ImGuiOverlayDx::fgContext, nullptr);
-                Config::Instance()->dxgiSkipSpoofing = false;
-                ImGuiOverlayDx::fgContext = nullptr;
-
+                StopAndDestroyFGContext();
                 fgTarget = 0;
             }
 
@@ -1305,57 +1438,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         _createContext != nullptr && ImGuiOverlayDx::fgContext == nullptr && ImGuiOverlayDx::currentSwapchain != nullptr &&
         ImGuiOverlayDx::swapchainFormat != DXGI_FORMAT_UNKNOWN)
     {
-        fgTarget = 0;
-
-        ffxCreateBackendDX12Desc backendDesc{};
-        backendDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_DX12;
-        backendDesc.device = D3D12Device;
-
-        ffxCreateContextDescFrameGeneration createFg{};
-        createFg.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATION;
-        createFg.displaySize = { deviceContext->DisplayWidth(), deviceContext->DisplayHeight() };
-        createFg.maxRenderSize = { deviceContext->DisplayWidth(), deviceContext->DisplayHeight() };
-        createFg.flags = 0;
-
-        if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR)
-            createFg.flags |= FFX_FRAMEGENERATION_ENABLE_HIGH_DYNAMIC_RANGE;
-
-        if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
-            createFg.flags |= FFX_FRAMEGENERATION_ENABLE_DEPTH_INVERTED;
-
-        if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVJittered)
-            createFg.flags |= FFX_FRAMEGENERATION_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
-
-        if ((deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0)
-            createFg.flags |= FFX_FRAMEGENERATION_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
-
-        if (Config::Instance()->FGAsync.value_or(false))
-            createFg.flags |= FFX_FRAMEGENERATION_ENABLE_ASYNC_WORKLOAD_SUPPORT;
-
-        createFg.backBufferFormat = ffxApiGetSurfaceFormatDX12(ImGuiOverlayDx::swapchainFormat);
-        createFg.header.pNext = &backendDesc.header;
-
-        Config::Instance()->dxgiSkipSpoofing = true;
-        Config::Instance()->SkipHeapCapture = true;
-        ffxReturnCode_t retCode = _createContext(&ImGuiOverlayDx::fgContext, &createFg.header, nullptr);
-        Config::Instance()->SkipHeapCapture = false;
-        Config::Instance()->dxgiSkipSpoofing = false;
-        LOG_INFO("    FG _createContext result: {0:X}", retCode);
+        CreateFGContext(deviceContext);
+        CreateFGObjects();
     }
     else if ((!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged) && ImGuiOverlayDx::fgContext != nullptr)
     {
-        ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
-        m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
-        m_FrameGenerationConfig.frameGenerationEnabled = false;
-        m_FrameGenerationConfig.swapChain = ImGuiOverlayDx::currentSwapchain;
-        m_FrameGenerationConfig.presentCallback = nullptr;
-        m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
-        Config::Instance()->dxgiSkipSpoofing = true;
-        _configure(&ImGuiOverlayDx::fgContext, &m_FrameGenerationConfig.header);
-
-        _destroyContext(&ImGuiOverlayDx::fgContext, nullptr);
-        Config::Instance()->dxgiSkipSpoofing = false;
-        ImGuiOverlayDx::fgContext = nullptr;
+        StopAndDestroyFGContext();
     }
 
     if (Config::Instance()->FGChanged)
@@ -1427,6 +1515,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     if (evalResult)
     {
+        ImGuiOverlayDx::upscaleRan = true;
+
         // FG Dispatch || Prepare
         if (Config::Instance()->FGEnabled.value_or(false) && fgTarget < deviceContext->FrameCount() && ImGuiOverlayDx::fgContext != nullptr && ImGuiOverlayDx::currentSwapchain != nullptr)
         {
@@ -1471,7 +1561,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         ImGuiOverlayDx::fgSkipHudlessChecks = true;
                         auto result = _dispatch(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
                         ImGuiOverlayDx::fgSkipHudlessChecks = false;
-                        
+
                         return result;
                     };
 
@@ -1523,23 +1613,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
                         InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
 
-                    if (Config::Instance()->DepthResourceBarrier.has_value())
-                        ResourceBarrier(InCmdList, paramDepth, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
                     dfgPrepare.depth = ffxApiGetResourceDX12(paramDepth, FFX_API_RESOURCE_STATE_COMPUTE_READ);
-                    if (paramDepth != nullptr && DepthUpscaler != nullptr)
-                    {
-                        if (DepthUpscaler->CreateBufferResource(D3D12Device, paramDepth, deviceContext->RenderWidth(), deviceContext->RenderHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && DepthUpscaler->Buffer() != nullptr)
-                        {
-                            if (DepthUpscaler->Dispatch(D3D12Device, InCmdList, paramDepth, DepthUpscaler->Buffer()))
-                                dfgPrepare.depth = ffxApiGetResourceDX12(DepthUpscaler->Buffer(), FFX_API_RESOURCE_STATE_UNORDERED_ACCESS);
-                        }
-                    }
-
-                    if (paramDepth && Config::Instance()->DepthResourceBarrier.has_value())
-                        ResourceBarrier(InCmdList, paramDepth, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value());
-
-                    ImGuiOverlayDx::resourceIndex = (ImGuiOverlayDx::resourceIndex + 1) % 1;
 
                     float MVScaleX = 1.0f;
                     float MVScaleY = 1.0f;
@@ -1600,40 +1674,67 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &ImGuiOverlayDx::jitterX);
                 InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &ImGuiOverlayDx::jitterY);
 
-                ID3D12Resource* paramVelocity;
-                if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
-                    InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
+                ImGuiOverlayDx::fgSkipHudlessChecks = true;
 
-                if (CreateBufferResource(D3D12Device, paramVelocity, D3D12_RESOURCE_STATE_COPY_DEST, &ImGuiOverlayDx::paramVelocity[ImGuiOverlayDx::resourceIndex]))
-                    InCmdList->CopyResource(ImGuiOverlayDx::paramVelocity[ImGuiOverlayDx::resourceIndex], paramVelocity);
-
-                ID3D12Resource* paramDepth;
-                if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
-                    InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
-
-                if (Config::Instance()->DepthResourceBarrier.has_value())
-                    ResourceBarrier(InCmdList, paramDepth, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-                if (paramDepth != nullptr && DepthUpscaler != nullptr)
+                if (false && ImGuiOverlayDx::fgCopyCommandQueue != nullptr && ImGuiOverlayDx::fgCopyCommandList != nullptr)
                 {
-                    if (DepthUpscaler->CreateBufferResource(D3D12Device, paramDepth, deviceContext->DisplayWidth(), deviceContext->DisplayHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && DepthUpscaler->Buffer() != nullptr)
-                    {
-                        if (DepthUpscaler->Dispatch(D3D12Device, InCmdList, paramDepth, DepthUpscaler->Buffer()))
-                            ImGuiOverlayDx::paramDepth[ImGuiOverlayDx::resourceIndex] = DepthUpscaler->Buffer();
-                    }
+                    //auto allocator = ImGuiOverlayDx::fgCopyCommandAllocators[ImGuiOverlayDx::fgFenceCounter % 2];
+                    //auto result = allocator->Reset();
+                    //result = ImGuiOverlayDx::fgCopyCommandList->Reset(allocator, nullptr);
+
+                    //ID3D12Resource* paramVelocity;
+                    //if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
+                    //    InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
+
+                    //if (CreateBufferResource(L"fgVelocity", D3D12Device, paramVelocity, D3D12_RESOURCE_STATE_COPY_DEST, &ImGuiOverlayDx::paramVelocity[ImGuiOverlayDx::resourceIndex]))
+                    //    ImGuiOverlayDx::fgCopyCommandList->CopyResource(ImGuiOverlayDx::paramVelocity[ImGuiOverlayDx::resourceIndex], paramVelocity);
+
+                    //ID3D12Resource* paramDepth;
+                    //if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
+                    //    InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
+
+                    //if (CreateBufferResource(L"fgDepth", D3D12Device, paramDepth, D3D12_RESOURCE_STATE_COPY_DEST, &ImGuiOverlayDx::paramDepth[ImGuiOverlayDx::resourceIndex]))
+                    //    ImGuiOverlayDx::fgCopyCommandList->CopyResource(ImGuiOverlayDx::paramDepth[ImGuiOverlayDx::resourceIndex], paramDepth);
+                }
+                else
+                {
+                    ID3D12Resource* paramVelocity;
+                    if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
+                        InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
+
+                    if (CreateBufferResource(L"fgVelocity", D3D12Device, paramVelocity, D3D12_RESOURCE_STATE_COPY_DEST, &ImGuiOverlayDx::paramVelocity[ImGuiOverlayDx::resourceIndex]))
+                        InCmdList->CopyResource(ImGuiOverlayDx::paramVelocity[ImGuiOverlayDx::resourceIndex], paramVelocity);
+
+                    ID3D12Resource* paramDepth;
+                    if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
+                        InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
+
+                    if (CreateBufferResource(L"fgDepth", D3D12Device, paramDepth, D3D12_RESOURCE_STATE_COPY_DEST, &ImGuiOverlayDx::paramDepth[ImGuiOverlayDx::resourceIndex]))
+                        InCmdList->CopyResource(ImGuiOverlayDx::paramDepth[ImGuiOverlayDx::resourceIndex], paramDepth);
                 }
 
-                if (paramDepth && Config::Instance()->DepthResourceBarrier.has_value())
-                    ResourceBarrier(InCmdList, paramDepth, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value());
+                ImGuiOverlayDx::fgSkipHudlessChecks = false;
 
                 InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &ImGuiOverlayDx::mvScaleX);
                 InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &ImGuiOverlayDx::mvScaleY);
 
+                float msDelta = 0.0;
+                auto now = Util::MillisecondsNow();
+
+                if (fgLastFrameTime != 0)
+                {
+                    msDelta = now - fgLastFrameTime;
+                    LOG_DEBUG("    FG _dispatch msDelta: {0}", msDelta);
+                }
+
+                fgLastFrameTime = now;
+
+                ImGuiOverlayDx::fgFrameTime = msDelta;
+                ImGuiOverlayDx::fgHUDlessCaptureCounter = 0;
+
                 LOG_DEBUG("    FG HUDFix done, frame: {0}", deviceContext->FrameCount());
             }
         }
-
-        ImGuiOverlayDx::upscaleRan = true;
 
         return NVSDK_NGX_Result_Success;
     }
