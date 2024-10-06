@@ -443,12 +443,6 @@
     <ClCompile Include="imgui\imgui_common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="depth_upscale\DU_Dx12.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="format_transfer\FT_Dx12.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="backends\fsr31\FSR31Feature_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
