@@ -11,15 +11,15 @@
 
 namespace ImGuiOverlayDx
 {
-	inline ID3D12QueryHeap* queryHeap = nullptr;
-	inline ID3D12Resource* readbackBuffer = nullptr;
-	inline bool dx12UpscaleTrig = false;
+    inline ID3D12QueryHeap* queryHeap = nullptr;
+    inline ID3D12Resource* readbackBuffer = nullptr;
+    inline bool dx12UpscaleTrig = false;
 
-	inline const int QUERY_BUFFER_COUNT = 3;
-	inline ID3D11Query* disjointQueries[QUERY_BUFFER_COUNT] = { nullptr, nullptr, nullptr };
-	inline ID3D11Query* startQueries[QUERY_BUFFER_COUNT] = { nullptr, nullptr, nullptr };
-	inline ID3D11Query* endQueries[QUERY_BUFFER_COUNT] = { nullptr, nullptr, nullptr };
-	inline bool dx11UpscaleTrig[QUERY_BUFFER_COUNT] = { false, false, false };
+    inline const int QUERY_BUFFER_COUNT = 3;
+    inline ID3D11Query* disjointQueries[QUERY_BUFFER_COUNT] = { nullptr, nullptr, nullptr };
+    inline ID3D11Query* startQueries[QUERY_BUFFER_COUNT] = { nullptr, nullptr, nullptr };
+    inline ID3D11Query* endQueries[QUERY_BUFFER_COUNT] = { nullptr, nullptr, nullptr };
+    inline bool dx11UpscaleTrig[QUERY_BUFFER_COUNT] = { false, false, false };
 
 	inline ID3D12CommandQueue* GameCommandQueue = nullptr;
 
@@ -29,27 +29,28 @@ namespace ImGuiOverlayDx
 	inline IDXGISwapChain* currentSwapchain = nullptr;
 	inline DXGI_FORMAT swapchainFormat = DXGI_FORMAT_UNKNOWN;
 
-	inline ffxContext fgSwapChainContext = nullptr;
-	inline ffxContext fgContext = nullptr;
-	inline float jitterX = 0.0;
-	inline float jitterY = 0.0;
-	inline float mvScaleX = 0.0;
-	inline float mvScaleY = 0.0;
-	inline ID3D12Resource* paramVelocity[2] = { nullptr, nullptr };
-	inline ID3D12Resource* paramDepth[2] = { nullptr, nullptr };
-	inline int resourceIndex = 0;
-	inline bool upscaleRan = false;
-	inline bool fgSkipHudlessChecks = false;
-	inline double fgFrameTime = 0.0;
-	inline ID3D12CommandQueue* fgCommandQueue = nullptr;
-	inline ID3D12CommandQueue* gameCommandQueue = nullptr;
-	inline ID3D12CommandQueue* fgCopyCommandQueue = nullptr;
-	inline ID3D12GraphicsCommandList* fgCopyCommandList[4] = { nullptr, nullptr, nullptr, nullptr };
-	inline ID3D12CommandAllocator* fgCopyCommandAllocators[4] = { };
-	inline ID3D12Fence* fgFence[4] = { nullptr, nullptr, nullptr, nullptr };
-	inline UINT64 fgFenceCounter = 1;
-	inline UINT64 fgHUDlessCaptureCounter = 0;
+    inline ffxContext fgSwapChainContext = nullptr;
+    inline ffxContext fgContext = nullptr;
+    inline float jitterX = 0.0;
+    inline float jitterY = 0.0;
+    inline float mvScaleX = 0.0;
+    inline float mvScaleY = 0.0;
+    inline ID3D12Resource* paramVelocity[2] = { nullptr, nullptr };
+    inline ID3D12Resource* paramDepth[2] = { nullptr, nullptr };
+    inline int resourceIndex = 0;
+    inline bool upscaleRan = false;
+    inline bool fgSkipHudlessChecks = false;
+    inline double fgFrameTime = 0.0;
+    inline ID3D12CommandQueue* fgCommandQueue = nullptr;
+    inline ID3D12CommandQueue* gameCommandQueue = nullptr;
+    inline ID3D12CommandQueue* fgCopyCommandQueue = nullptr;
+    inline ID3D12GraphicsCommandList* fgCopyCommandList = nullptr;
+    inline ID3D12CommandAllocator* fgCopyCommandAllocators[4] = { };
+    //inline ID3D12Fence* fgFence[4] = { nullptr, nullptr, nullptr, nullptr };
+    inline UINT64 fgFenceCounter = 1;
+    inline UINT64 fgHUDlessCaptureCounter = 0;
+    inline UINT64 fgTarget = 20;
 
-	void UnHookDx();
-	void HookDx();
+    void UnHookDx();
+    void HookDx();
 }
