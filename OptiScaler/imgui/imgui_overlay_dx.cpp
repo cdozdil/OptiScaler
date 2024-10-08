@@ -61,6 +61,12 @@ typedef struct HeapInfo
     UINT numDescriptors = 0;
 } heap_info;
 
+typedef struct ResourceHeapInfo
+{
+    SIZE_T cpuStart = NULL;
+    SIZE_T gpuStart = NULL;
+} resource_heap_info;
+
 // Hooks for FG
 typedef void (*PFN_CreateRenderTargetView)(ID3D12Device* This, ID3D12Resource* pResource, const D3D12_RENDER_TARGET_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 typedef void (*PFN_OMSetRenderTargets)(ID3D12GraphicsCommandList* This, UINT NumRenderTargetDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE* pRenderTargetDescriptors,
@@ -123,8 +129,9 @@ static std::list<HeapInfo> fgHeaps;
 /// <summary>
 /// Captured resources by gpu addresses
 /// </summary>
-static ankerl::unordered_dense::map <ID3D12Resource*, HeapInfo> fgHandleAddressResources;
-static ankerl::unordered_dense::map <SIZE_T, ID3D12Resource*> fgHandleAddressResourcesByGpuHandle;
+static ankerl::unordered_dense::map <ID3D12Resource*, ResourceHeapInfo> fgHandlesByResources;
+static ankerl::unordered_dense::map <SIZE_T, ID3D12Resource*> fgResourcesByGpuHandle;
+static ankerl::unordered_dense::map <SIZE_T, ID3D12Resource*> fgResourcesByCpuHandle;
 
 static std::shared_mutex heapMutex;
 static std::shared_mutex resourceMutex;
@@ -271,6 +278,42 @@ static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAda
 static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter);
 static HRESULT hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter);
 static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter);
+
+static SIZE_T GetGPUHandle(ID3D12Device* This, SIZE_T cpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE type)
+{
+    for (auto& val : fgHeaps)
+    {
+        if (val.cpuStart <= cpuHandle && val.cpuEnd >= cpuHandle)
+        {
+            auto incSize = This->GetDescriptorHandleIncrementSize(type);
+            auto addr = cpuHandle - val.cpuStart;
+            auto index = addr / incSize;
+            auto gpuAddr = val.gpuStart + (index * incSize);
+
+            return gpuAddr;
+        }
+    }
+
+    return NULL;
+}
+
+static SIZE_T GetCPUHandle(ID3D12Device* This, SIZE_T gpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE type)
+{
+    for (auto& val : fgHeaps)
+    {
+        if (val.gpuStart <= gpuHandle && val.gpuEnd >= gpuHandle)
+        {
+            auto incSize = This->GetDescriptorHandleIncrementSize(type);
+            auto addr = gpuHandle - val.gpuStart;
+            auto index = addr / incSize;
+            auto cpuAddr = val.cpuStart + (index * incSize);
+
+            return cpuAddr;
+        }
+    }
+
+    return NULL;
+}
 
 static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState)
 {
@@ -679,35 +722,24 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
     if (pResource == nullptr)
         return;
 
-    //{
-    //    std::shared_lock<std::shared_mutex> lock(heapMutex);
+    {
+        std::shared_lock<std::shared_mutex> lock(heapMutex);
 
-    //    // Try to match resource with cpu & gpu handle info
-    //    for (auto& val : fgHeaps)
-    //    {
-    //        if (val.cpuStart <= DestDescriptor.ptr && val.cpuEnd >= DestDescriptor.ptr)
-    //        {
-    //            auto increment = This->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    //            auto addr = DestDescriptor.ptr - val.cpuStart;
-    //            auto index = addr / increment;
-    //            auto gpuAddr = val.gpuStart + (index * increment);
+        auto gpuHandle = GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-    //            HeapInfo info{};
-    //            info.cpuStart = DestDescriptor.ptr;
-    //            info.gpuStart = gpuAddr;
+        // Try to match resource with cpu & gpu handle info
+        if (gpuHandle != NULL)
+        {
+            ResourceHeapInfo info{};
+            info.cpuStart = DestDescriptor.ptr;
+            info.gpuStart = gpuHandle;
 
-    //            std::unique_lock<std::shared_mutex> lock2(resourceMutex);
-    //            fgHandleAddressResources.insert_or_assign(pResource, info);
-
-    //            if (val.gpuStart != 0)
-    //                fgHandleAddressResourcesByGpuHandle.insert_or_assign(gpuAddr, pResource);
-    //            else
-    //                LOG_DEBUG_ONLY("Gpu start is 0, CPU ptr : {}", (UINT64)DestDescriptor.ptr);
-
-    //            break;
-    //        }
-    //    }
-    //}
+            std::unique_lock<std::shared_mutex> lock2(resourceMutex);
+            fgHandlesByResources.insert_or_assign(pResource, info);
+            fgResourcesByCpuHandle.insert_or_assign(DestDescriptor.ptr, pResource);
+            fgResourcesByGpuHandle.insert_or_assign(gpuHandle, pResource);
+        }
+    }
 
     // Try to capture swapchain buffer RTV's once (cause issues otherwise)
     if (!fgCaptureRTVs || frameCounter > fgTargetFrame)
@@ -1237,28 +1269,34 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
         return;
     }
 
-    if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || fgSCBufferCaptured || Config::Instance()->CurrentFeature == nullptr ||
+    if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) ||
+        (fgSCBufferCaptured && ImGuiOverlayDx::fgHUDlessCaptureCounter >= Config::Instance()->FGHUDLimit.value_or(1)) || Config::Instance()->CurrentFeature == nullptr ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() || !ImGuiOverlayDx::upscaleRan || ImGuiOverlayDx::fgContext == nullptr)
     {
         return;
     }
 
-    LOG_DEBUG("CommandList: {0:X}, RootParameterIndex: {1}", (UINT64)This, RootParameterIndex);
-
-    if (!Config::Instance()->FGHUDPrevious.value_or(false))
+    if (!Config::Instance()->FGHUDPrevious.value_or(false) || RootParameterIndex != 0)
         return;
+
+    LOG_DEBUG("CommandList: {0:X}, RootParameterIndex: {1}, BaseDescriptor: {2}", (SIZE_T)This, RootParameterIndex, BaseDescriptor.ptr);
 
     {
         std::shared_lock<std::shared_mutex> lock(resourceMutex);
 
         // assume first one is source
-        if (RootParameterIndex == 0 && fgHandleAddressResourcesByGpuHandle.contains(BaseDescriptor.ptr))
+        if (fgResourcesByGpuHandle.contains(BaseDescriptor.ptr))
         {
-            fgPreviousBuffer = fgHandleAddressResourcesByGpuHandle[BaseDescriptor.ptr];
+            fgPreviousBuffer = fgResourcesByGpuHandle[BaseDescriptor.ptr];
+
+            auto cpuHandle = GetCPUHandle(g_pd3dDeviceParam, BaseDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+            if (cpuHandle != NULL)
+                fgPreviousBufferCpuHandle = cpuHandle;
         }
         else
         {
-            LOG_DEBUG_ASYNC("Miss: {0:X}", (UINT64)BaseDescriptor.ptr);
+            LOG_DEBUG("Miss: {}", BaseDescriptor.ptr);
         }
     }
 }
@@ -1268,7 +1306,7 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
     auto result = o_CreateDescriptorHeap(This, pDescriptorHeapDesc, riid, ppvHeap);
 
     // try to calculate handle ranges for heap
-    if (result == S_OK && !Config::Instance()->SkipHeapCapture && (pDescriptorHeapDesc->Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || pDescriptorHeapDesc->Type == D3D12_DESCRIPTOR_HEAP_TYPE_RTV))  //&& pDescriptorHeapDesc->Flags & D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE)
+    if (result == S_OK) // && !Config::Instance()->SkipHeapCapture) // && (pDescriptorHeapDesc->Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || pDescriptorHeapDesc->Type == D3D12_DESCRIPTOR_HEAP_TYPE_RTV))  //&& pDescriptorHeapDesc->Flags & D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE)
     {
         HeapInfo info{};
         auto heap = (ID3D12DescriptorHeap*)(*ppvHeap);
@@ -1282,7 +1320,6 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
         //if (info.gpuStart != 0)
         //{
         LOG_DEBUG("Found heap, type: {}, cpu: {}-{}, gpu: {}-{}, desc count: {}", (UINT)pDescriptorHeapDesc->Type, info.cpuStart, info.cpuEnd, info.gpuStart, info.gpuEnd, info.numDescriptors);
-
         std::unique_lock<std::shared_mutex> lock(heapMutex);
         fgHeaps.push_back(info);
         //}
@@ -1295,7 +1332,7 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
     else
     {
         auto heap = (ID3D12DescriptorHeap*)(*ppvHeap);
-        LOG_DEBUG("Skipping, type: {}, cpuStart: {}, gpu start: {}", (UINT)pDescriptorHeapDesc->Type, (SIZE_T)(heap->GetCPUDescriptorHandleForHeapStart().ptr), (SIZE_T)(heap->GetGPUDescriptorHandleForHeapStart().ptr));
+        LOG_DEBUG("Skipping, type: {}, cpuStart: {}, gpu start: {}", (UINT)pDescriptorHeapDesc->Type, heap->GetCPUDescriptorHandleForHeapStart().ptr, heap->GetGPUDescriptorHandleForHeapStart().ptr);
     }
 
     return result;
@@ -1311,54 +1348,87 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
     {
         std::shared_lock<std::shared_mutex> lock(heapMutex);
 
-        // try to find heap of resource
-        for (auto& val : fgHeaps)
+        auto gpuHandle = GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+        if (gpuHandle != NULL)
         {
-            if (val.cpuStart <= DestDescriptor.ptr && val.cpuEnd >= DestDescriptor.ptr)
-            {
-                auto incSize = This->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                auto addr = DestDescriptor.ptr - val.cpuStart;
-                auto index = addr / incSize;
-                auto gpuAddr = val.gpuStart + (index * incSize);
+            ResourceHeapInfo info{};
+            info.cpuStart = DestDescriptor.ptr;
+            info.gpuStart = gpuHandle;
 
-                HeapInfo info{};
-                info.cpuStart = DestDescriptor.ptr;
-                info.gpuStart = gpuAddr;
+            LOG_DEBUG("Found pResource: {0:X}, cpu: {1}, gpu: {2}", (SIZE_T)pResource, DestDescriptor.ptr, gpuHandle);
 
-                std::unique_lock<std::shared_mutex> lock(resourceMutex);
-                fgHandleAddressResources.insert_or_assign(pResource, info);
-
-                if (val.gpuStart != 0)
-                    fgHandleAddressResourcesByGpuHandle.insert_or_assign(gpuAddr, pResource);
-                else
-                    LOG_DEBUG_ASYNC("Gpu start is 0, CPU ptr : {}", (UINT64)DestDescriptor.ptr);
-
-                return;
-            }
+            std::unique_lock<std::shared_mutex> lock(resourceMutex);
+            fgHandlesByResources.insert_or_assign(pResource, info);
+            fgResourcesByGpuHandle.insert_or_assign(gpuHandle, pResource);
+            fgResourcesByCpuHandle.insert_or_assign(DestDescriptor.ptr, pResource);
         }
     }
 
-    LOG_DEBUG_ASYNC("Not found, CPU ptr: {}", (UINT64)DestDescriptor.ptr);
+    LOG_DEBUG("Not found, CPU ptr: {}", (UINT64)DestDescriptor.ptr);
 }
 
-static void __stdcall hkCopyDescriptors(ID3D12Device* This, UINT NumDestDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pDestDescriptorRangeStarts, UINT* pDestDescriptorRangeSizes, UINT NumSrcDescriptorRanges,
-                                        D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorRangeStarts, UINT* pSrcDescriptorRangeSizes, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType)
+static void __stdcall hkCopyDescriptors(ID3D12Device* This,
+                                        UINT NumDestDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pDestDescriptorRangeStarts, UINT* pDestDescriptorRangeSizes,
+                                        UINT NumSrcDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorRangeStarts, UINT* pSrcDescriptorRangeSizes,
+                                        D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType)
 {
     o_CopyDescriptors(This, NumDestDescriptorRanges, pDestDescriptorRangeStarts, pDestDescriptorRangeSizes, NumSrcDescriptorRanges, pSrcDescriptorRangeStarts, pSrcDescriptorRangeSizes, DescriptorHeapsType);
 
+    if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) ||
+        (fgSCBufferCaptured && ImGuiOverlayDx::fgHUDlessCaptureCounter >= Config::Instance()->FGHUDLimit.value_or(1)) || Config::Instance()->CurrentFeature == nullptr ||
+        fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() || !ImGuiOverlayDx::upscaleRan || ImGuiOverlayDx::fgContext == nullptr)
+    {
+        return;
+    }
+
     if (DescriptorHeapsType == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || DescriptorHeapsType == D3D12_DESCRIPTOR_HEAP_TYPE_RTV)
     {
-        LOG_DEBUG_ASYNC("Found");
+        LOG_DEBUG("Moved {} descs from {} to {} ", NumDestDescriptorRanges, pSrcDescriptorRangeStarts[0].ptr, pDestDescriptorRangeStarts[0].ptr);
     }
 }
 
-static void __stdcall hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptorRangeStart, D3D12_CPU_DESCRIPTOR_HANDLE SrcDescriptorRangeStart, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType)
+static void __stdcall hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptorRangeStart, 
+                                              D3D12_CPU_DESCRIPTOR_HANDLE SrcDescriptorRangeStart, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType)
 {
     o_CopyDescriptorsSimple(This, NumDescriptors, DestDescriptorRangeStart, SrcDescriptorRangeStart, DescriptorHeapsType);
 
+    if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) ||
+        (fgSCBufferCaptured && ImGuiOverlayDx::fgHUDlessCaptureCounter >= Config::Instance()->FGHUDLimit.value_or(1)) || Config::Instance()->CurrentFeature == nullptr ||
+        fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() || !ImGuiOverlayDx::upscaleRan || ImGuiOverlayDx::fgContext == nullptr)
+    {
+        return;
+    }
+
     if (DescriptorHeapsType == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || DescriptorHeapsType == D3D12_DESCRIPTOR_HEAP_TYPE_RTV)
     {
-        LOG_DEBUG_ASYNC("Found");
+        //LOG_DEBUG("Moved {} descs from {} to {} ", NumDescriptors, SrcDescriptorRangeStart.ptr, DestDescriptorRangeStart.ptr);
+
+        auto size = This->GetDescriptorHandleIncrementSize(DescriptorHeapsType);
+
+        {
+            std::unique_lock<std::shared_mutex> lock(resourceMutex);
+
+            for (size_t i = 0; i < NumDescriptors; i++)
+            {
+                auto handle = SrcDescriptorRangeStart.ptr + i * size;
+                if (fgResourcesByCpuHandle.contains(handle))
+                {
+                    auto buffer = fgResourcesByCpuHandle[handle];
+                    auto destHandle = DestDescriptorRangeStart.ptr + i * size;
+                    fgResourcesByCpuHandle.insert_or_assign(destHandle, buffer);
+                    LOG_DEBUG("Moved Cpu handle from {} to {}", handle, destHandle);
+
+                    auto destGpuHandle = GetGPUHandle(This, destHandle, DescriptorHeapsType);
+
+                    if (destGpuHandle != NULL)
+                    {
+                        fgResourcesByGpuHandle.insert_or_assign(destGpuHandle, buffer);
+                        LOG_DEBUG("Moved Gpu handle to {}", destGpuHandle);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1963,7 +2033,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     }
 
     ID3D12CommandQueue* cq = nullptr;
-    if (!fgSkipSCWrapping && _createContext != nullptr && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && _createContext != nullptr && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
         cq->SetName(L"GameQueue");
         SwapChainInfo scInfo{};
@@ -2069,7 +2139,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     }
 
     ID3D12CommandQueue* cq = nullptr;
-    if (!fgSkipSCWrapping && _createContext != nullptr && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && _createContext != nullptr && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
         SwapChainInfo scInfo{};
         scInfo.gameCommandQueue = cq;
@@ -2339,13 +2409,16 @@ static void HookCommandList(ID3D12Device* InDevice)
             // Get the vtable pointer
             PVOID* pVTable = *(PVOID**)commandList;
 
+            // hudless
             o_OMSetRenderTargets = (PFN_OMSetRenderTargets)pVTable[46];
-            o_Close = (PFN_Close)pVTable[10];
             o_DrawInstanced = (PFN_DrawInstanced)pVTable[12];
             o_DrawIndexedInstanced = (PFN_DrawIndexedInstanced)pVTable[13];
             o_CopyTextureRegion = (PFN_CopyTextureRegion)pVTable[16];
             o_CopyResource = (PFN_CopyResource)pVTable[17];
+
+            // extended hudless
             o_SetGraphicsRootDescriptorTable = (PFN_SetGraphicsRootDescriptorTable)pVTable[31];
+            o_Close = (PFN_Close)pVTable[10];
 
             if (o_OMSetRenderTargets != nullptr || o_DrawIndexedInstanced != nullptr || o_DrawInstanced != nullptr)
             {
@@ -2370,8 +2443,8 @@ static void HookCommandList(ID3D12Device* InDevice)
                 //if (o_Close != nullptr)
                 //    DetourAttach(&(PVOID&)o_Close, hkClose);
 
-                //if (o_SetGraphicsRootDescriptorTable != nullptr)
-                //    DetourAttach(&(PVOID&)o_SetGraphicsRootDescriptorTable, hkSetGraphicsRootDescriptorTable);
+                if (o_SetGraphicsRootDescriptorTable != nullptr)
+                    DetourAttach(&(PVOID&)o_SetGraphicsRootDescriptorTable, hkSetGraphicsRootDescriptorTable);
 
                 DetourTransactionCommit();
             }
@@ -2395,13 +2468,16 @@ static void HookToDevice(ID3D12Device* InDevice)
     // Get the vtable pointer
     PVOID* pVTable = *(PVOID**)InDevice;
 
+    // needed for basic hudless
+    o_CreateSampler = (PFN_CreateSampler)pVTable[22];
+    o_CreateRenderTargetView = (PFN_CreateRenderTargetView)pVTable[20];
+
+    // extended hudless
     o_CreateCommandQueue = (PFN_CreateCommandQueue)pVTable[8];
     o_CreateDescriptorHeap = (PFN_CreateDescriptorHeap)pVTable[14];
-    o_CreateSampler = (PFN_CreateSampler)pVTable[22];
     o_CopyDescriptors = (PFN_CopyDescriptors)pVTable[23];
     o_CopyDescriptorsSimple = (PFN_CopyDescriptorsSimple)pVTable[24];
     o_CreateShaderResourceView = (PFN_CreateShaderResourceView)pVTable[18];
-    o_CreateRenderTargetView = (PFN_CreateRenderTargetView)pVTable[20];
 
 
     // Apply the detour
@@ -2410,31 +2486,35 @@ static void HookToDevice(ID3D12Device* InDevice)
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        //if (o_CreateDescriptorHeap != nullptr)
-        //    DetourAttach(&(PVOID&)o_CreateDescriptorHeap, hkCreateDescriptorHeap);
+        if (o_CreateDescriptorHeap != nullptr)
+            DetourAttach(&(PVOID&)o_CreateDescriptorHeap, hkCreateDescriptorHeap);
 
         if (o_CreateSampler != nullptr)
             DetourAttach(&(PVOID&)o_CreateSampler, hkCreateSampler);
 
-        if (o_CreateRenderTargetView != nullptr)
-            DetourAttach(&(PVOID&)o_CreateRenderTargetView, hkCreateRenderTargetView);
+        if (Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true))
+        {
+            if (o_CreateRenderTargetView != nullptr)
+                DetourAttach(&(PVOID&)o_CreateRenderTargetView, hkCreateRenderTargetView);
 
-        //if (o_CreateCommandQueue != nullptr)
-        //    DetourAttach(&(PVOID&)o_CreateCommandQueue, hkCreateCommandQueue);
+            //if (o_CreateCommandQueue != nullptr)
+            //    DetourAttach(&(PVOID&)o_CreateCommandQueue, hkCreateCommandQueue);
 
-        //if (o_CreateShaderResourceView != nullptr)
-        //    DetourAttach(&(PVOID&)o_CreateShaderResourceView, hkCreateShaderResourceView);
+            if (o_CreateShaderResourceView != nullptr)
+                DetourAttach(&(PVOID&)o_CreateShaderResourceView, hkCreateShaderResourceView);
 
-        //if (o_CopyDescriptors != nullptr)
-        //    DetourAttach(&(PVOID&)o_CopyDescriptors, hkCopyDescriptors);
+            if (o_CopyDescriptors != nullptr)
+                DetourAttach(&(PVOID&)o_CopyDescriptors, hkCopyDescriptors);
 
-        //if (o_CopyDescriptorsSimple != nullptr)
-        //    DetourAttach(&(PVOID&)o_CopyDescriptorsSimple, hkCopyDescriptorsSimple);
+            if (o_CopyDescriptorsSimple != nullptr)
+                DetourAttach(&(PVOID&)o_CopyDescriptorsSimple, hkCopyDescriptorsSimple);
+        }
 
         DetourTransactionCommit();
     }
 
-    HookCommandList(InDevice);
+    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true))
+        HookCommandList(InDevice);
 }
 
 static void HookToDevice(ID3D11Device* InDevice)
@@ -2466,6 +2546,8 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
 {
     LOG_FUNC();
 
+    bool rtss = false;
+
     // Assuming RTSS is creating a D3D11on12 device, not sure why but sometimes RTSS tries to create 
     // it's D3D11on12 device with old CommandQueue which results crash
     // I am changing it's CommandQueue with current swapchain's command queue
@@ -2473,13 +2555,14 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
     {
         LOG_INFO("Replaced RTSS CommandQueue with correct one {0:X} -> {1:X}", (UINT64)*ppCommandQueues, (UINT64)currentSCCommandQueue);
         *ppCommandQueues = currentSCCommandQueue;
+        rtss = true;
     }
 
     auto result = o_D3D11On12CreateDevice(pDevice, Flags, pFeatureLevels, FeatureLevels, ppCommandQueues, NumQueues, NodeMask, ppDevice, ppImmediateContext, pChosenFeatureLevel);
 
-    if (result == S_OK && *ppDevice != nullptr)
+    if (result == S_OK && *ppDevice != nullptr && !rtss)
     {
-        LOG_INFO("Device captured, CommandQueue: {0:X}", (UINT64)*ppCommandQueues);
+        LOG_INFO("Device captured, D3D11Device: {0:X}", (UINT64)*ppDevice);
         d3d11on12Device = *ppDevice;
         HookToDevice(d3d11on12Device);
     }

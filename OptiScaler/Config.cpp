@@ -50,6 +50,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Frame Generation
         {
+            FGUseFGSwapChain = readBool("FrameGen", "UseFGSwapChain");
             FGEnabled = readBool("FrameGen", "Enabled");
             FGDebugView = readBool("FrameGen", "DebugView");
             FGAsync = readBool("FrameGen", "AllowAsync");
@@ -473,6 +474,7 @@ bool Config::SaveIni()
 
     // Frame Generation 
     {
+        ini.SetValue("FrameGen", "UseFGSwapChain", GetBoolValue(Instance()->FGUseFGSwapChain).c_str());
         ini.SetValue("FrameGen", "Enabled", GetBoolValue(Instance()->FGEnabled).c_str());
         ini.SetValue("FrameGen", "DebugView", GetBoolValue(Instance()->FGDebugView).c_str());
         ini.SetValue("FrameGen", "AllowAsync", GetBoolValue(Instance()->FGAsync).c_str());
