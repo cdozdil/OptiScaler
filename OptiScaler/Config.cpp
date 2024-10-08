@@ -276,6 +276,8 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             UsePrecompiledShaders = readBool("Hotfix", "UsePrecompiledShaders");
 
+            UseGenericAppIdWithDlss = readBool("Hotfix", "UseGenericAppIdWithDlss");
+
             ColorResourceBarrier = readInt("Hotfix", "ColorResourceBarrier");
             MVResourceBarrier = readInt("Hotfix", "MotionVectorResourceBarrier");
             DepthResourceBarrier = readInt("Hotfix", "DepthResourceBarrier");
@@ -565,6 +567,8 @@ bool Config::SaveIni()
         ini.SetValue("Hotfix", "SkipFirstFrames", GetIntValue(Instance()->SkipFirstFrames).c_str());
 
         ini.SetValue("Hotfix", "UsePrecompiledShaders", GetBoolValue(Instance()->UsePrecompiledShaders).c_str());
+
+        ini.SetValue("Hotfix", "UseGenericAppIdWithDlss", GetBoolValue(Instance()->UseGenericAppIdWithDlss).c_str());
 
         ini.SetValue("Hotfix", "ColorResourceBarrier", GetIntValue(Instance()->ColorResourceBarrier).c_str());
         ini.SetValue("Hotfix", "MotionVectorResourceBarrier", GetIntValue(Instance()->MVResourceBarrier).c_str());

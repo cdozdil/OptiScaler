@@ -11,6 +11,9 @@
 #include <filesystem>
 #include "detours/detours.h"
 
+inline const char* project_id_override = "24480451-f00d-face-1304-0308dabad187";
+constexpr unsigned long long app_id_override = 0x24480451;
+
 #pragma region spoofing hooks for 16xx
 
 // NvAPI_GPU_GetArchInfo hooking based on Nukem's spoofing code here

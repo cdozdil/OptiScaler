@@ -1744,6 +1744,20 @@ void ImGuiCommon::RenderMenu()
                                 Config::Instance()->changeBackend = true;
                             }
                         }
+
+                        if (Config::Instance()->AdvancedSettings.value_or(false) && currentBackend == "dlss")
+                        {
+                            bool appIdOverride = Config::Instance()->UseGenericAppIdWithDlss.value_or(false);
+
+                            if (ImGui::Checkbox("Use Generic App Id with DLSS", &appIdOverride))
+                            {
+                                Config::Instance()->UseGenericAppIdWithDlss = appIdOverride;
+                            }
+
+                            ShowHelpMarker("Use generic appid with NGX\n"
+                                "Fixes OptiScaler preset override not working with certain games\n"
+                                "Requires a game restart.");
+                        }
                     }
                 }
 
