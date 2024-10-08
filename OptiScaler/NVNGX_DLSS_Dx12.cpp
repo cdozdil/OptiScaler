@@ -209,6 +209,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 {
     LOG_FUNC();
 
+    if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
+        InApplicationId = app_id_override;
+
     Config::Instance()->NVNGX_ApplicationId = InApplicationId;
     Config::Instance()->NVNGX_ApplicationDataPath = std::wstring(InApplicationDataPath);
     Config::Instance()->NVNGX_Version = InSDKVersion;
@@ -291,6 +294,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init(unsigned long long InApplica
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx12Inited())
     {
+        if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
+            InApplicationId = app_id_override;
+
         if (NVNGXProxy::NVNGXModule() == nullptr)
             NVNGXProxy::InitNVNGX();
 
@@ -319,6 +325,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProj
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx12Inited())
     {
+        if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
+            InProjectId = project_id_override;
+
         if (NVNGXProxy::NVNGXModule() == nullptr)
             NVNGXProxy::InitNVNGX();
 

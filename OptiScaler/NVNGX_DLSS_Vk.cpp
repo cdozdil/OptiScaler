@@ -36,6 +36,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext(unsigned long long InAp
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
     {
+        if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
+            InApplicationId = app_id_override;
+
         if (NVNGXProxy::NVNGXModule() == nullptr)
             NVNGXProxy::InitNVNGX();
 
@@ -59,6 +62,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InA
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
     {
+        if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
+            InApplicationId = app_id_override;
+
         if (NVNGXProxy::NVNGXModule() == nullptr)
             NVNGXProxy::InitNVNGX();
 
@@ -206,6 +212,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
     {
+        if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
+            InApplicationId = app_id_override;
+
         if (NVNGXProxy::NVNGXModule() == nullptr)
             NVNGXProxy::InitNVNGX();
 
@@ -230,6 +239,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID(const char* InPro
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
     {
+        if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
+            InProjectId = project_id_override;
+
         if (NVNGXProxy::NVNGXModule() == nullptr)
             NVNGXProxy::InitNVNGX();
 

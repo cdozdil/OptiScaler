@@ -106,6 +106,8 @@ public:
 	
 	std::optional<bool> UsePrecompiledShaders;
 
+	std::optional<bool> UseGenericAppIdWithDlss;
+
 	std::optional<int32_t> ColorResourceBarrier;
 	std::optional<int32_t> MVResourceBarrier;
 	std::optional<int32_t> DepthResourceBarrier;
