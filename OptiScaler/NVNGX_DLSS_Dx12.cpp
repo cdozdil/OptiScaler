@@ -1443,23 +1443,26 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     }
 
     // FG Init || Disable    
-    if (!Config::Instance()->FGChanged && ImGuiOverlayDx::fgTarget < deviceContext->FrameCount() && Config::Instance()->FGEnabled.value_or(false) &&
-        _createContext != nullptr && ImGuiOverlayDx::fgContext == nullptr && ImGuiOverlayDx::currentSwapchain != nullptr &&
-        ImGuiOverlayDx::swapchainFormat != DXGI_FORMAT_UNKNOWN)
+    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true))
     {
-        CreateFGContext(deviceContext);
-        CreateFGObjects();
-    }
-    else if ((!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged) && ImGuiOverlayDx::fgContext != nullptr)
-    {
-        StopAndDestroyFGContext(false);
-    }
+        if (!Config::Instance()->FGChanged && ImGuiOverlayDx::fgTarget < deviceContext->FrameCount() && Config::Instance()->FGEnabled.value_or(false) &&
+            _createContext != nullptr && ImGuiOverlayDx::fgContext == nullptr && ImGuiOverlayDx::currentSwapchain != nullptr &&
+            ImGuiOverlayDx::swapchainFormat != DXGI_FORMAT_UNKNOWN)
+        {
+            CreateFGContext(deviceContext);
+            CreateFGObjects();
+        }
+        else if ((!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged) && ImGuiOverlayDx::fgContext != nullptr)
+        {
+            StopAndDestroyFGContext(false);
+        }
 
-    if (Config::Instance()->FGChanged)
-    {
-        LOG_DEBUG("    FG disabled for 5 frames");
-        ImGuiOverlayDx::fgTarget = deviceContext->FrameCount() + 5;
-        Config::Instance()->FGChanged = false;
+        if (Config::Instance()->FGChanged)
+        {
+            LOG_DEBUG("    FG disabled for 5 frames");
+            ImGuiOverlayDx::fgTarget = deviceContext->FrameCount() + 5;
+            Config::Instance()->FGChanged = false;
+        }
     }
 
     // Record the first timestamp (before FSR2 upscaling)
@@ -1527,7 +1530,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         ImGuiOverlayDx::upscaleRan = true;
 
         // FG Dispatch || Prepare
-        if (Config::Instance()->FGEnabled.value_or(false) && ImGuiOverlayDx::fgTarget < deviceContext->FrameCount() && ImGuiOverlayDx::fgContext != nullptr && ImGuiOverlayDx::currentSwapchain != nullptr)
+        if (Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
+            Config::Instance()->FGEnabled.value_or(false) && ImGuiOverlayDx::fgTarget < deviceContext->FrameCount() && 
+            ImGuiOverlayDx::fgContext != nullptr && ImGuiOverlayDx::currentSwapchain != nullptr)
         {
             if (!Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgTarget + 10 > deviceContext->FrameCount())
             {

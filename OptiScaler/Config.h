@@ -159,6 +159,7 @@ public:
 	std::optional<bool> LoadSpecialK;
 
 	// fg
+	std::optional<bool> FGUseFGSwapChain;
 	std::optional<bool> FGEnabled;
 	std::optional<bool> FGDebugView;
 	std::optional<bool> FGAsync;

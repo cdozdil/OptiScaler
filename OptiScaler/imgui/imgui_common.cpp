@@ -878,7 +878,8 @@ void ImGuiCommon::RenderMenu()
                     // DYNAMIC PROPERTIES -----------------------------
 
                     // Frame Generation
-                    if (Config::Instance()->Api == NVNGX_DX12 && !Config::Instance()->WorkingAsNvngx)
+                    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) && 
+                        Config::Instance()->Api == NVNGX_DX12 && !Config::Instance()->WorkingAsNvngx)
                     {
                         ImGui::SeparatorText("Frame Generation (Dx12)");
 
