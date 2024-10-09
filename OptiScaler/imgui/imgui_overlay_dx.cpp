@@ -573,9 +573,11 @@ static void GetHUDless(ID3D12GraphicsCommandList* This, D3D12_RESOURCE_STATES St
             {
                 HRESULT result;
 
+                // For leftover frames from previous FG context
                 if (!dispatchCalled || Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount())
                     return FFX_API_RETURN_OK;
 
+                // If fg is active but upscaling paused
                 if (lastUpscaledFrame == Config::Instance()->CurrentFeature->FrameCount())
                 {
                     auto allocator = ImGuiOverlayDx::fgCopyCommandAllocators[frameCounter % 4];
@@ -599,7 +601,7 @@ static void GetHUDless(ID3D12GraphicsCommandList* This, D3D12_RESOURCE_STATES St
 
         m_FrameGenerationConfig.frameGenerationCallbackUserContext = &ImGuiOverlayDx::fgContext;
 
-        m_FrameGenerationConfig.onlyPresentGenerated = Config::Instance()->FGOnlyGenerated; // check here
+        m_FrameGenerationConfig.onlyPresentGenerated = Config::Instance()->FGOnlyGenerated;
         m_FrameGenerationConfig.frameID = Config::Instance()->CurrentFeature->FrameCount();
         m_FrameGenerationConfig.swapChain = ImGuiOverlayDx::currentSwapchain;
 
@@ -638,6 +640,7 @@ static void GetHUDless(ID3D12GraphicsCommandList* This, D3D12_RESOURCE_STATES St
             dfgPrepare.jitterOffset.x = ImGuiOverlayDx::jitterX;
             dfgPrepare.jitterOffset.y = ImGuiOverlayDx::jitterY;
 
+            // They will be always copies
             dfgPrepare.motionVectors = ffxApiGetResourceDX12(ImGuiOverlayDx::paramVelocity[resIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
             dfgPrepare.depth = ffxApiGetResourceDX12(ImGuiOverlayDx::paramDepth[resIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
 
@@ -659,8 +662,12 @@ static void GetHUDless(ID3D12GraphicsCommandList* This, D3D12_RESOURCE_STATES St
             dfgPrepare.viewSpaceToMetersFactor = 1.0;
             dfgPrepare.frameTimeDelta = ImGuiOverlayDx::fgFrameTime;
 
+            // If somehow context is destroyed before this point
             if (Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr)
+            {
+                LOG_WARN("    HUDFix !! Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr");
                 return;
+            }
 
             Config::Instance()->dxgiSkipSpoofing = true;
             ImGuiOverlayDx::fgSkipHudlessChecks = true;
@@ -678,12 +685,11 @@ static void GetHUDless(ID3D12GraphicsCommandList* This, D3D12_RESOURCE_STATES St
 static void hkClose(ID3D12GraphicsCommandList* This)
 {
     o_Close(This);
-    LOG_DEBUG_ASYNC("{0:X}", (UINT64)This);
 }
 
 static HRESULT hkCreateCommandQueue(ID3D12Device* This, const D3D12_COMMAND_QUEUE_DESC* pDesc, REFIID riid, void** ppCommandQueue)
 {
-    LOG_DEBUG("");
+    LOG_DEBUG_ONLY("");
 
     auto result = o_CreateCommandQueue(This, pDesc, riid, ppCommandQueue);
 
@@ -692,7 +698,7 @@ static HRESULT hkCreateCommandQueue(ID3D12Device* This, const D3D12_COMMAND_QUEU
 
     if (result == S_OK && pDesc->Type == D3D12_COMMAND_LIST_TYPE_DIRECT && *ppCommandQueue != nullptr)
     {
-        LOG_DEBUG("Queue captured: {0:X}", (UINT64)*ppCommandQueue);
+        LOG_DEBUG_ONLY("Queue captured: {0:X}", (UINT64)*ppCommandQueue);
         fgQueues.push_back((ID3D12CommandQueue*)*ppCommandQueue);
     }
 
@@ -775,21 +781,6 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
                         bBuffer->cpuHandle = DestDescriptor.ptr;
                         break;
                     }
-
-                    // Disabled because some games create more than one RTV for SC buffers
-                    //// if matched
-                    //if (bBuffer->buffer != nullptr && bBuffer->buffer == pResource)
-                    //{
-                    //    // found all swapchain buffers
-                    //    //if (fgCapturedBufferCount == val.swapChainBufferCount)
-                    //    //{
-                    //    //    LOG_DEBUG("    FG all SC buffers captured, stop capturing RTV buffers");
-                    //    //    fgCaptureRTVs = false;
-                    //    //}
-
-                    //    // exit from loop anyway
-                    //    return;
-                    //}
                 }
             }
         }
@@ -800,7 +791,7 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
 static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRenderTargetDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE* pRenderTargetDescriptors,
                                  BOOL RTsSingleHandleToDescriptorRange, D3D12_CPU_DESCRIPTOR_HANDLE* pDepthStencilDescriptor)
 {
-    LOG_DEBUG_ASYNC("{0:X}", (UINT64)This);
+    LOG_DEBUG_ONLY("{0:X}", (UINT64)This);
 
     o_OMSetRenderTargets(This, NumRenderTargetDescriptors, pRenderTargetDescriptors, RTsSingleHandleToDescriptorRange, pDepthStencilDescriptor);
 
@@ -940,8 +931,6 @@ static void hkCopyResource(ID3D12GraphicsCommandList* This, ID3D12Resource* Dest
 
         if (buffer != nullptr)
         {
-            LOG_DEBUG_ASYNC("CommandList: {0:X}", (UINT64)This);
-
             ImGuiOverlayDx::fgHUDlessCaptureCounter++;
             LOG_DEBUG("fgHUDlessCaptureCounter: {}, Limit: {}", ImGuiOverlayDx::fgHUDlessCaptureCounter, Config::Instance()->FGHUDLimit.value_or(1));
             if (ImGuiOverlayDx::fgHUDlessCaptureCounter == Config::Instance()->FGHUDLimit.value_or(1))
@@ -991,8 +980,6 @@ static void hkCopyResource(ID3D12GraphicsCommandList* This, ID3D12Resource* Dest
 
     if (buffer != nullptr)
     {
-        LOG_DEBUG_ASYNC("CommandList: {0:X}", (UINT64)This);
-
         ImGuiOverlayDx::fgHUDlessCaptureCounter++;
         LOG_DEBUG("fgHUDlessCaptureCounter: {}, Limit: {}", ImGuiOverlayDx::fgHUDlessCaptureCounter, Config::Instance()->FGHUDLimit.value_or(1));
         if (ImGuiOverlayDx::fgHUDlessCaptureCounter == Config::Instance()->FGHUDLimit.value_or(1))
@@ -1050,9 +1037,6 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
 
         if (buffer != nullptr)
         {
-
-            LOG_DEBUG_ASYNC("CommandList: {0:X}", (UINT64)This);
-
             ImGuiOverlayDx::fgHUDlessCaptureCounter++;
             LOG_DEBUG("fgHUDlessCaptureCounter: {}, Limit: {}", ImGuiOverlayDx::fgHUDlessCaptureCounter, Config::Instance()->FGHUDLimit.value_or(1));
             if (ImGuiOverlayDx::fgHUDlessCaptureCounter == Config::Instance()->FGHUDLimit.value_or(1))
@@ -1102,8 +1086,6 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
 
     if (buffer != nullptr)
     {
-        LOG_DEBUG_ASYNC("CommandList: {0:X}", (UINT64)This);
-
         ImGuiOverlayDx::fgHUDlessCaptureCounter++;
         LOG_DEBUG("fgHUDlessCaptureCounter: {}, Limit: {}", ImGuiOverlayDx::fgHUDlessCaptureCounter, Config::Instance()->FGHUDLimit.value_or(1));
         if (ImGuiOverlayDx::fgHUDlessCaptureCounter == Config::Instance()->FGHUDLimit.value_or(1))
@@ -1146,7 +1128,6 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
 static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPerInstance, UINT InstanceCount, UINT StartVertexLocation, UINT StartInstanceLocation)
 {
     o_DrawInstanced(This, VertexCountPerInstance, InstanceCount, StartVertexLocation, StartInstanceLocation);
-    LOG_DEBUG_ASYNC("{0:X}", (UINT64)This);
 
     bool capture = false;
     BackbufferInfo* buffer = nullptr;
@@ -1184,7 +1165,9 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
     } while (false);
 
     if (!capture)
+    {
         return;
+    }
 
     // Prev buffer is captured save the info
     if (Config::Instance()->FGHUDPrevious.value_or(false) && (fgPreviousBuffer != nullptr || fgPreviousBufferCpuHandle != NULL))
@@ -1196,7 +1179,7 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
     fgPreviousBuffer = nullptr;
     fgPreviousBufferCpuHandle = NULL;
 
-    LOG_DEBUG_ASYNC("Calling o_DrawInstanced, commandlist {0:X}", (UINT64)This);
+    LOG_DEBUG_ONLY("Calling o_DrawIndexedInstanced, {0:X}, CommandList: {1:X}", (UINT64)fgCurrentSCBuffer, (UINT64)This);
     GetHUDless(This, D3D12_RESOURCE_STATE_RENDER_TARGET);
 }
 
@@ -1204,8 +1187,6 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
 {
     o_DrawIndexedInstanced(This, IndexCountPerInstance, InstanceCount, StartIndexLocation, BaseVertexLocation, StartInstanceLocation);
 
-    LOG_DEBUG_ASYNC("{0:X}", (UINT64)This);
-
     bool capture = false;
     BackbufferInfo* buffer = nullptr;
 
@@ -1242,9 +1223,9 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
     } while (false);
 
     if (!capture)
+    {
         return;
-
-    LOG_DEBUG("Buffer: {0:X}, CommandList: {1:X}", (UINT64)fgCurrentSCBuffer, (UINT64)This);
+    }
 
     // Prev buffer is captured save the info
     if (Config::Instance()->FGHUDPrevious.value_or(false) && (fgPreviousBuffer != nullptr || fgPreviousBufferCpuHandle != NULL))
@@ -1256,7 +1237,7 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
     fgPreviousBuffer = nullptr;
     fgPreviousBufferCpuHandle = NULL;
 
-    LOG_DEBUG_ASYNC("Calling o_DrawIndexedInstanced, commandlist {0:X}", (UINT64)This);
+    LOG_DEBUG_ONLY("Calling o_DrawIndexedInstanced, {0:X}, CommandList: {1:X}", (UINT64)fgCurrentSCBuffer, (UINT64)This);
     GetHUDless(This, D3D12_RESOURCE_STATE_RENDER_TARGET);
 }
 
@@ -1264,40 +1245,70 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
 {
     o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
 
-    if (ImGuiOverlayDx::fgSkipHudlessChecks)
+    if (ImGuiOverlayDx::fgSkipHudlessChecks) // || !Config::Instance()->FGHUDFix.value_or(false))
     {
+        //LOG_DEBUG_ONLY("fgSkipHudlessChecks CommandList: {0:X}, RootParameterIndex: {1}, BaseDescriptor: {2}", (SIZE_T)This, RootParameterIndex, BaseDescriptor.ptr);
         return;
     }
 
-    if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) ||
-        (fgSCBufferCaptured && ImGuiOverlayDx::fgHUDlessCaptureCounter >= Config::Instance()->FGHUDLimit.value_or(1)) || Config::Instance()->CurrentFeature == nullptr ||
-        fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() || !ImGuiOverlayDx::upscaleRan || ImGuiOverlayDx::fgContext == nullptr)
+    if (!Config::Instance()->FGHUDPrevious.value_or(false))
     {
+        //LOG_DEBUG_ONLY("FGHUDPrevious == false fgSkipHudlessChecks CommandList: {0:X}, RootParameterIndex: {1}, BaseDescriptor: {2}", (SIZE_T)This, RootParameterIndex, BaseDescriptor.ptr);
         return;
     }
 
-    if (!Config::Instance()->FGHUDPrevious.value_or(false) || RootParameterIndex != 0)
-        return;
-
-    LOG_DEBUG("CommandList: {0:X}, RootParameterIndex: {1}, BaseDescriptor: {2}", (SIZE_T)This, RootParameterIndex, BaseDescriptor.ptr);
-
     {
-        std::shared_lock<std::shared_mutex> lock(resourceMutex);
+        auto cpuHandle = GetCPUHandle(g_pd3dDeviceParam, BaseDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+        ID3D12Resource* capturedBuffer = nullptr;
 
         // assume first one is source
         if (fgResourcesByGpuHandle.contains(BaseDescriptor.ptr))
-        {
-            fgPreviousBuffer = fgResourcesByGpuHandle[BaseDescriptor.ptr];
+            capturedBuffer = fgResourcesByGpuHandle[BaseDescriptor.ptr];
 
-            auto cpuHandle = GetCPUHandle(g_pd3dDeviceParam, BaseDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        if (capturedBuffer != nullptr)
+        {
+            auto desc = capturedBuffer->GetDesc();
+
+            LOG_DEBUG("RootParameterIndex: {0}, resource: {1:X}, cpuHandle: {2}, gpuHandle: {3}, Res: {4}x{5}, Format: {6}",
+                      RootParameterIndex, (size_t)capturedBuffer, cpuHandle, BaseDescriptor.ptr, desc.Width, desc.Height, (UINT)desc.Format);
 
             if (cpuHandle != NULL)
+            {
                 fgPreviousBufferCpuHandle = cpuHandle;
+
+                std::unique_lock<std::shared_mutex> lock(resourceMutex);
+                fgResourcesByCpuHandle.insert_or_assign(cpuHandle, capturedBuffer);
+            }
+
+            fgPreviousBuffer = capturedBuffer;
+
+            return;
         }
-        else
+        else if (cpuHandle != NULL)
         {
-            LOG_DEBUG("Miss: {}", BaseDescriptor.ptr);
+            fgPreviousBufferCpuHandle = cpuHandle;
+            if (fgResourcesByCpuHandle.contains(cpuHandle))
+            {
+                capturedBuffer = fgResourcesByCpuHandle[cpuHandle];
+
+                if (capturedBuffer != nullptr)
+                {
+                    auto desc = capturedBuffer->GetDesc();
+
+                    LOG_DEBUG("RootParameterIndex: {0}, resource: {1:X}, cpuHandle: {2}, gpuHandle: {3}, Res: {4}x{5}, Format: {6}",
+                              RootParameterIndex, (size_t)fgPreviousBuffer, cpuHandle, BaseDescriptor.ptr, desc.Width, desc.Height, (UINT)desc.Format);
+
+                    std::unique_lock<std::shared_mutex> lock(resourceMutex);
+                    fgResourcesByGpuHandle.insert_or_assign(BaseDescriptor.ptr, capturedBuffer);
+
+                    fgPreviousBuffer = capturedBuffer;
+                    return;
+                }
+            }
         }
+
+        LOG_DEBUG("Miss RootParameterIndex: {1}, CommandList: {0:X}, gpuHandle: {2}, cpuHandle: {3}", (SIZE_T)This, RootParameterIndex, BaseDescriptor.ptr, cpuHandle);
     }
 }
 
@@ -1317,22 +1328,14 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
         info.cpuEnd = info.cpuStart + (increment * info.numDescriptors);
         info.gpuEnd = info.gpuStart + (increment * info.numDescriptors);
 
-        //if (info.gpuStart != 0)
-        //{
-        LOG_DEBUG("Found heap, type: {}, cpu: {}-{}, gpu: {}-{}, desc count: {}", (UINT)pDescriptorHeapDesc->Type, info.cpuStart, info.cpuEnd, info.gpuStart, info.gpuEnd, info.numDescriptors);
+        LOG_DEBUG("Heap type: {}, Cpu: {}-{}, Gpu: {}-{}, Desc count: {}", (UINT)pDescriptorHeapDesc->Type, info.cpuStart, info.cpuEnd, info.gpuStart, info.gpuEnd, info.numDescriptors);
         std::unique_lock<std::shared_mutex> lock(heapMutex);
         fgHeaps.push_back(info);
-        //}
-        //else
-        //{
-        //    auto heap = (ID3D12DescriptorHeap*)(*ppvHeap);
-        //    LOG_DEBUG_ONLY("Skipping, no GPU handle, type: {}, cpu: {}-{}", (UINT)pDescriptorHeapDesc->Type, info.cpuStart, info.cpuEnd);
-        //}
     }
     else
     {
         auto heap = (ID3D12DescriptorHeap*)(*ppvHeap);
-        LOG_DEBUG("Skipping, type: {}, cpuStart: {}, gpu start: {}", (UINT)pDescriptorHeapDesc->Type, heap->GetCPUDescriptorHandleForHeapStart().ptr, heap->GetGPUDescriptorHandleForHeapStart().ptr);
+        LOG_DEBUG_ONLY("Skipping, type: {}, cpuStart: {}, gpu start: {}", (UINT)pDescriptorHeapDesc->Type, heap->GetCPUDescriptorHandleForHeapStart().ptr, heap->GetGPUDescriptorHandleForHeapStart().ptr);
     }
 
     return result;
@@ -1356,22 +1359,23 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
             info.cpuStart = DestDescriptor.ptr;
             info.gpuStart = gpuHandle;
 
-            LOG_DEBUG("Found pResource: {0:X}, cpu: {1}, gpu: {2}", (SIZE_T)pResource, DestDescriptor.ptr, gpuHandle);
+            LOG_DEBUG_ONLY("Found pResource: {0:X}, cpu: {1}, gpu: {2}", (SIZE_T)pResource, DestDescriptor.ptr, gpuHandle);
 
             std::unique_lock<std::shared_mutex> lock(resourceMutex);
             fgHandlesByResources.insert_or_assign(pResource, info);
             fgResourcesByGpuHandle.insert_or_assign(gpuHandle, pResource);
             fgResourcesByCpuHandle.insert_or_assign(DestDescriptor.ptr, pResource);
+            return;
         }
     }
 
-    LOG_DEBUG("Not found, CPU ptr: {}", (UINT64)DestDescriptor.ptr);
+    LOG_DEBUG_ONLY("Not found, CPU ptr: {}", (UINT64)DestDescriptor.ptr);
 }
 
-static void __stdcall hkCopyDescriptors(ID3D12Device* This,
-                                        UINT NumDestDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pDestDescriptorRangeStarts, UINT* pDestDescriptorRangeSizes,
-                                        UINT NumSrcDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorRangeStarts, UINT* pSrcDescriptorRangeSizes,
-                                        D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType)
+static void hkCopyDescriptors(ID3D12Device* This,
+                              UINT NumDestDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pDestDescriptorRangeStarts, UINT* pDestDescriptorRangeSizes,
+                              UINT NumSrcDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorRangeStarts, UINT* pSrcDescriptorRangeSizes,
+                              D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType)
 {
     o_CopyDescriptors(This, NumDestDescriptorRanges, pDestDescriptorRangeStarts, pDestDescriptorRangeSizes, NumSrcDescriptorRanges, pSrcDescriptorRangeStarts, pSrcDescriptorRangeSizes, DescriptorHeapsType);
 
@@ -1384,12 +1388,68 @@ static void __stdcall hkCopyDescriptors(ID3D12Device* This,
 
     if (DescriptorHeapsType == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || DescriptorHeapsType == D3D12_DESCRIPTOR_HEAP_TYPE_RTV)
     {
-        LOG_DEBUG("Moved {} descs from {} to {} ", NumDestDescriptorRanges, pSrcDescriptorRangeStarts[0].ptr, pDestDescriptorRangeStarts[0].ptr);
+        //LOG_DEBUG_ONLY("NumDestDescriptorRanges: {}, NumSrcDescriptorRanges {}", NumDestDescriptorRanges, NumSrcDescriptorRanges);
+
+        auto size = This->GetDescriptorHandleIncrementSize(DescriptorHeapsType);
+
+        {
+            std::unique_lock<std::shared_mutex> lock(resourceMutex);
+
+            UINT destRangeIndex = 0;
+            UINT destIndex = 0;
+
+            for (size_t i = 0; i < NumSrcDescriptorRanges; i++)
+            {
+                UINT copyCount = 1;
+
+                if (pSrcDescriptorRangeSizes != nullptr)
+                    copyCount = pSrcDescriptorRangeSizes[i];
+
+                for (size_t j = 0; j < copyCount; j++)
+                {
+                    auto handle = pSrcDescriptorRangeStarts[i].ptr + j * size;
+
+                    if (fgResourcesByCpuHandle.contains(handle))
+                    {
+                        auto buffer = fgResourcesByCpuHandle[handle];
+                        auto destHandle = pDestDescriptorRangeStarts[destRangeIndex].ptr + destIndex * size;
+                        fgResourcesByCpuHandle.insert_or_assign(destHandle, buffer);
+                        LOG_DEBUG_ONLY("Moved Cpu handle from {} to {}", handle, destHandle);
+
+                        auto destGpuHandle = GetGPUHandle(This, destHandle, DescriptorHeapsType);
+
+                        if (destGpuHandle != NULL)
+                        {
+                            fgResourcesByGpuHandle.insert_or_assign(destGpuHandle, buffer);
+                            LOG_DEBUG_ONLY("Moved Gpu handle to {}", destGpuHandle);
+                        }
+                    }
+
+                    if (pDestDescriptorRangeSizes == nullptr)
+                    {
+                        destIndex = 0;
+                        destRangeIndex++;
+                    }
+                    else
+                    {
+                        if (pDestDescriptorRangeSizes[destRangeIndex] == destIndex)
+                        {
+                            destIndex = 0;
+                            destRangeIndex++;
+                        }
+                        else
+                        {
+                            destIndex++;
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
-static void __stdcall hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptorRangeStart, 
-                                              D3D12_CPU_DESCRIPTOR_HANDLE SrcDescriptorRangeStart, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType)
+static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptorRangeStart,
+                                    D3D12_CPU_DESCRIPTOR_HANDLE SrcDescriptorRangeStart, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType)
 {
     o_CopyDescriptorsSimple(This, NumDescriptors, DestDescriptorRangeStart, SrcDescriptorRangeStart, DescriptorHeapsType);
 
@@ -1417,14 +1477,14 @@ static void __stdcall hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescri
                     auto buffer = fgResourcesByCpuHandle[handle];
                     auto destHandle = DestDescriptorRangeStart.ptr + i * size;
                     fgResourcesByCpuHandle.insert_or_assign(destHandle, buffer);
-                    LOG_DEBUG("Moved Cpu handle from {} to {}", handle, destHandle);
+                    LOG_DEBUG_ONLY("Moved Cpu handle from {} to {}", handle, destHandle);
 
                     auto destGpuHandle = GetGPUHandle(This, destHandle, DescriptorHeapsType);
 
                     if (destGpuHandle != NULL)
                     {
                         fgResourcesByGpuHandle.insert_or_assign(destGpuHandle, buffer);
-                        LOG_DEBUG("Moved Gpu handle to {}", destGpuHandle);
+                        LOG_DEBUG_ONLY("Moved Gpu handle to {}", destGpuHandle);
                     }
                 }
             }

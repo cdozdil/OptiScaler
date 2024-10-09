@@ -50,6 +50,7 @@ namespace ImGuiOverlayDx
     inline UINT64 fgFenceCounter = 1;
     inline UINT64 fgHUDlessCaptureCounter = 0;
     inline UINT64 fgTarget = 20;
+    inline ID3D12Resource* fgUpscaledImage = nullptr;
 
     void UnHookDx();
     void HookDx();
