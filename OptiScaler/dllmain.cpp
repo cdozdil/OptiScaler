@@ -1335,6 +1335,8 @@ static void CheckWorkingMode()
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
+    HMODULE epicOverlayHandle = nullptr;
+
     switch (ul_reason_for_call)
     {
         case DLL_PROCESS_ATTACH:
@@ -1423,6 +1425,21 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 Config::Instance()->upscaleTimes.push_back(0.0);
             }
 
+            //epicOverlayHandle = GetModuleHandle(L"EOSOVH-Win64-Shipping.dll");
+            //if (epicOverlayHandle != nullptr)
+            //    FreeLibrary(epicOverlayHandle);
+
+            //do
+            //{
+            //    epicOverlayHandle = nullptr;
+            //    epicOverlayHandle = GetModuleHandle(L"EOSSDK-Win64-Shipping.dll");
+
+            //    if (epicOverlayHandle != nullptr)
+            //        FreeLibrary(epicOverlayHandle);
+
+            //} while (epicOverlayHandle != nullptr);
+
+
             break;
 
         case DLL_PROCESS_DETACH:
@@ -1430,12 +1447,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             // Disabled for now to check if it cause any issues
             //DetachHooks();
 
-            if (skHandle != nullptr)
-                FreeLibrary(skHandle);
+            //if (skHandle != nullptr)
+            //    FreeLibrary(skHandle);
 
-            spdlog::info("");
-            spdlog::info("Unloading OptiScaler");
-            CloseLogger();
+            //spdlog::info("");
+            //spdlog::info("Unloading OptiScaler");
+            //CloseLogger();
 
             break;
 

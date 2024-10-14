@@ -26,6 +26,7 @@
 //#define DLSS_PARAM_DUMP
 
 //#define LOG_ASYNC
+//#define DETAILED_DEBUG_LOGS
 
 inline HMODULE dllModule = nullptr;
 inline HMODULE skHandle = nullptr;
@@ -37,7 +38,7 @@ inline DWORD processId;
 #define LOG_DEBUG(msg, ...) \
     spdlog::debug(__FUNCTION__ " " msg, ##__VA_ARGS__)
 
-#ifdef _DEBUG
+#ifdef DETAILED_DEBUG_LOGS
 #define LOG_DEBUG_ONLY(msg, ...) \
     spdlog::debug(__FUNCTION__ " " msg, ##__VA_ARGS__) 
 #else

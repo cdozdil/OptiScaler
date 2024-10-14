@@ -74,6 +74,7 @@ void PrepareLogger()
 			// Set the queue size for asynchronous logging
 			spdlog::init_thread_pool(8192, 4);  // 8192 entries and 8 background thread
 #else
+			//spdlog::init_thread_pool(8192, 1);
 			std::shared_ptr<spdlog::logger> shared_logger = nullptr;
 #endif // LOG_ASYNC
 
@@ -123,6 +124,9 @@ void PrepareLogger()
 			auto shared_logger = std::make_shared<spdlog::async_logger>(
 				"multi_sink_logger", sinks.begin(), sinks.end(), spdlog::thread_pool(), spdlog::async_overflow_policy::block);
 #else
+			//auto shared_logger = std::make_shared<spdlog::async_logger>(
+			//	"multi_sink_logger", sinks.begin(), sinks.end(), spdlog::thread_pool(), spdlog::async_overflow_policy::block);
+
 			spdlog::logger logger("multi_sink", sinks.begin(), sinks.end());
 			shared_logger = std::make_shared<spdlog::logger>(logger); 
 #endif // LOG_ASYNC
