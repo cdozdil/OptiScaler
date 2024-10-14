@@ -35,9 +35,10 @@ namespace ImGuiOverlayDx
     inline float jitterY = 0.0;
     inline float mvScaleX = 0.0;
     inline float mvScaleY = 0.0;
-    inline ID3D12Resource* paramVelocity[2] = { nullptr, nullptr };
-    inline ID3D12Resource* paramDepth[2] = { nullptr, nullptr };
-    inline int resourceIndex = 0;
+    inline const int FG_BUFFER_SIZE = 4;
+    inline ID3D12Resource* paramVelocity[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
+    inline ID3D12Resource* paramDepth[FG_BUFFER_SIZE] = { nullptr, nullptr,nullptr, nullptr };
+    inline UINT64 fgHUDlessCaptureCounter[FG_BUFFER_SIZE] = { 0,0,0,0 };
     inline bool upscaleRan = false;
     inline bool fgSkipHudlessChecks = false;
     inline double fgFrameTime = 0.0;
@@ -45,13 +46,13 @@ namespace ImGuiOverlayDx
     inline ID3D12CommandQueue* gameCommandQueue = nullptr;
     inline ID3D12CommandQueue* fgCopyCommandQueue = nullptr;
     inline ID3D12GraphicsCommandList* fgCopyCommandList = nullptr;
-    inline ID3D12CommandAllocator* fgCopyCommandAllocators[4] = { };
-    //inline ID3D12Fence* fgFence[4] = { nullptr, nullptr, nullptr, nullptr };
-    inline UINT64 fgFenceCounter = 1;
-    inline UINT64 fgHUDlessCaptureCounter = 0;
-    inline UINT64 fgTarget = 20;
-    inline ID3D12Resource* fgUpscaledImage = nullptr;
+    inline ID3D12CommandAllocator* fgCopyCommandAllocators[FG_BUFFER_SIZE] = { };
+    inline UINT64 fgTarget = 10;
+    inline ID3D12Resource* fgUpscaledImage[FG_BUFFER_SIZE] = { nullptr, nullptr,nullptr, nullptr };
 
     void UnHookDx();
     void HookDx();
+    UINT ClearFrameResources();
+    UINT GetFrame();
+    void NewFrame();
 }

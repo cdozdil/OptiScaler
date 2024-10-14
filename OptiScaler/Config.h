@@ -167,7 +167,6 @@ public:
 	std::optional<bool> FGSkipInstanced;
 	std::optional<bool> FGSkipIndexedInstanced;
 	std::optional<int> FGHUDLimit;
-	std::optional<bool> FGHUDPrevious;
 	bool FGOnlyGenerated = false;
 	bool FGChanged = false;
 	bool SCChanged = false;
