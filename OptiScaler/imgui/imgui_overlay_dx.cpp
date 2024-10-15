@@ -14,34 +14,21 @@
 
 #include "wrapped_swapchain.h"
 
+#pragma region FG definitions
+
 #include <ankerl/unordered_dense.h>
-#include "../depth_upscale/DU_Dx12.h"
 #include <shared_mutex>
 
-// FG stuff
-//typedef struct BackbufferInfo
-//{
-//    // Swapchain backbuffer
-//    ID3D12Resource* buffer = nullptr;
-//
-//    // Command list
-//    ID3D12GraphicsCommandList* cmdList = nullptr;
-//
-//    // Swapchain backbuffer
-//    ID3D12Resource* copySource = nullptr;
-//
-//    // RTV handle for backbuffer
-//    SIZE_T cpuHandle = NULL;
-//
-//    // Resource copied or used to draw on backbuffer
-//    ID3D12Resource* prev = nullptr;
-//
-//    // Handle of previous resource
-//    SIZE_T prevCpuHandle = NULL;
-//
-//    // Captured hudless resource
-//    ID3D12Resource* hudless = nullptr;
-//} backbuffer_info;
+// #define USE_RESOURCE_DISCARD
+// #define USE_COPY_RESOURCE
+// #define USE_RESOURCE_BARRIRER
+
+enum ResourceType
+{
+    SRV,
+    RTV,
+    UAV
+};
 
 typedef struct SwapChainInfo
 {
@@ -50,13 +37,6 @@ typedef struct SwapChainInfo
     int swapChainBufferCount = 0;
     ID3D12CommandQueue* fgCommandQueue = nullptr;
     ID3D12CommandQueue* gameCommandQueue = nullptr;
-};
-
-enum ResourceType
-{
-    SRV,
-    RTV,
-    UAV
 };
 
 typedef struct ResourceInfo
@@ -129,8 +109,16 @@ typedef struct ResourceHeapInfo
     SIZE_T gpuStart = NULL;
 } resource_heap_info;
 
-// Hooks for FG
+// Device hooks for FG
 typedef void (*PFN_CreateRenderTargetView)(ID3D12Device* This, ID3D12Resource* pResource, const D3D12_RENDER_TARGET_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+typedef void(*PFN_CreateShaderResourceView)(ID3D12Device* This, ID3D12Resource* pResource, D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+typedef void(*PFN_CreateUnorderedAccessView)(ID3D12Device* This, ID3D12Resource* pResource, ID3D12Resource* pCounterResource, D3D12_UNORDERED_ACCESS_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+typedef HRESULT(*PFN_CreateDescriptorHeap)(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_DESC* pDescriptorHeapDesc, REFIID riid, void** ppvHeap);
+typedef void(*PFN_CopyDescriptors)(ID3D12Device* This, UINT NumDestDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pDestDescriptorRangeStarts, UINT* pDestDescriptorRangeSizes, UINT NumSrcDescriptorRanges,
+                                   D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorRangeStarts, UINT* pSrcDescriptorRangeSizes, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType);
+typedef void(*PFN_CopyDescriptorsSimple)(ID3D12Device* This, UINT NumDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptorRangeStart, D3D12_CPU_DESCRIPTOR_HANDLE SrcDescriptorRangeStart, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType);
+
+// Command list hooks for FG
 typedef void (*PFN_OMSetRenderTargets)(ID3D12GraphicsCommandList* This, UINT NumRenderTargetDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE* pRenderTargetDescriptors,
                                        BOOL RTsSingleHandleToDescriptorRange, D3D12_CPU_DESCRIPTOR_HANDLE* pDepthStencilDescriptor);
 typedef void (*PFN_DrawIndexedInstanced)(ID3D12GraphicsCommandList* This, UINT IndexCountPerInstance, UINT InstanceCount, UINT StartIndexLocation, INT BaseVertexLocation, UINT StartInstanceLocation);
@@ -138,35 +126,33 @@ typedef void (*PFN_DrawInstanced)(ID3D12GraphicsCommandList* This, UINT VertexCo
 typedef void (*PFN_CopyResource)(ID3D12GraphicsCommandList* This, ID3D12Resource* pDstResource, ID3D12Resource* pSrcResource);
 typedef void (*PFN_CopyTextureRegion)(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_COPY_LOCATION* pDst, UINT DstX, UINT DstY, UINT DstZ, D3D12_TEXTURE_COPY_LOCATION* pSrc, D3D12_BOX* pSrcBox);
 typedef void (*PFN_Close)(ID3D12GraphicsCommandList* This);
-typedef HRESULT(*PFN_CreateDescriptorHeap)(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_DESC* pDescriptorHeapDesc, REFIID riid, void** ppvHeap);
-typedef void(*PFN_CreateShaderResourceView)(ID3D12Device* This, ID3D12Resource* pResource, D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 typedef void(*PFN_SetGraphicsRootDescriptorTable)(ID3D12GraphicsCommandList* This, UINT RootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor);
 typedef void(*PFN_SetComputeRootDescriptorTable)(ID3D12GraphicsCommandList* This, UINT RootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor);
-typedef void(*PFN_CopyDescriptors)(ID3D12Device* This, UINT NumDestDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pDestDescriptorRangeStarts, UINT* pDestDescriptorRangeSizes, UINT NumSrcDescriptorRanges,
-                                   D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorRangeStarts, UINT* pSrcDescriptorRangeSizes, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType);
-typedef void(*PFN_CopyDescriptorsSimple)(ID3D12Device* This, UINT NumDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptorRangeStart, D3D12_CPU_DESCRIPTOR_HANDLE SrcDescriptorRangeStart, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType);
-typedef HRESULT(*PFN_CreateCommandQueue)(ID3D12Device* This, const D3D12_COMMAND_QUEUE_DESC* pDesc, REFIID riid, void** ppCommandQueue);
-typedef void(*PFN_CreateUnorderedAccessView)(ID3D12Device* This, ID3D12Resource* pResource, ID3D12Resource* pCounterResource, D3D12_UNORDERED_ACCESS_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 typedef void(*PFN_Dispatch)(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ);
 typedef void(*PFN_DiscardResource)(ID3D12GraphicsCommandList* This, ID3D12Resource* pResource, D3D12_DISCARD_REGION* pRegion);
 
+// Original method calls for device
 static PFN_CreateRenderTargetView o_CreateRenderTargetView = nullptr;
-static PFN_OMSetRenderTargets o_OMSetRenderTargets = nullptr;
-static PFN_DrawIndexedInstanced o_DrawIndexedInstanced = nullptr;
-static PFN_DrawInstanced o_DrawInstanced = nullptr;
-static PFN_CopyResource o_CopyResource = nullptr;
-static PFN_CopyTextureRegion o_CopyTextureRegion = nullptr;
-static PFN_CreateDescriptorHeap o_CreateDescriptorHeap = nullptr;
 static PFN_CreateShaderResourceView o_CreateShaderResourceView = nullptr;
-static PFN_SetGraphicsRootDescriptorTable o_SetGraphicsRootDescriptorTable = nullptr;
-static PFN_SetComputeRootDescriptorTable o_SetComputeRootDescriptorTable = nullptr;
+static PFN_CreateUnorderedAccessView o_CreateUnorderedAccessView = nullptr;
+static PFN_CreateDescriptorHeap o_CreateDescriptorHeap = nullptr;
 static PFN_CopyDescriptors o_CopyDescriptors = nullptr;
 static PFN_CopyDescriptorsSimple o_CopyDescriptorsSimple = nullptr;
-static PFN_Close o_Close = nullptr;
-static PFN_CreateCommandQueue o_CreateCommandQueue = nullptr;
-static PFN_CreateUnorderedAccessView o_CreateUnorderedAccessView = nullptr;
+
+// Original method calls for command list
+static PFN_OMSetRenderTargets o_OMSetRenderTargets = nullptr;
+static PFN_DrawInstanced o_DrawInstanced = nullptr;
+static PFN_DrawIndexedInstanced o_DrawIndexedInstanced = nullptr;
+#ifdef USE_COPY_RESOURCE
+static PFN_CopyResource o_CopyResource = nullptr;
+#endif
+static PFN_CopyTextureRegion o_CopyTextureRegion = nullptr;
+static PFN_SetGraphicsRootDescriptorTable o_SetGraphicsRootDescriptorTable = nullptr;
+static PFN_SetComputeRootDescriptorTable o_SetComputeRootDescriptorTable = nullptr;
 static PFN_Dispatch o_Dispatch = nullptr;
+#ifdef USE_RESOURCE_DISCARD
 static PFN_DiscardResource o_DiscardResource = nullptr;
+#endif
 
 // FSR 3.x methods
 static PfnFfxCreateContext _createContext = nullptr;
@@ -186,29 +172,18 @@ static std::vector<ID3D12CommandQueue*> fgQueues;
 // heaps
 static std::vector<HeapInfo> fgHeaps;
 
+#ifdef USE_RESOURCE_DISCARD
 // created resources
 static ankerl::unordered_dense::map <ID3D12Resource*, ResourceHeapInfo> fgHandlesByResources;
-//static ankerl::unordered_dense::map <SIZE_T, ResourceInfo> fgResourcesByGpuHandle;
-//static ankerl::unordered_dense::map <SIZE_T, ResourceInfo> fgResourcesByCpuHandle;
-//
-//// Per frame resources
-//static ankerl::unordered_dense::map <SIZE_T, ResourceInfo> fgFrameResourcesByGpuHandle[ImGuiOverlayDx::FG_BUFFER_SIZE];
-//static ankerl::unordered_dense::map <SIZE_T, ResourceInfo> fgFrameResourcesByCpuHandle[ImGuiOverlayDx::FG_BUFFER_SIZE];
+#endif
 
-// per frame sources to trace
-static ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> fgSources[ImGuiOverlayDx::FG_BUFFER_SIZE];
-
-// shader input & outputs
-static ankerl::unordered_dense::map <ID3D12GraphicsCommandList*, ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo>> fgShaderInputs[ImGuiOverlayDx::FG_BUFFER_SIZE];
-static ankerl::unordered_dense::map <ID3D12GraphicsCommandList*, ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo>> fgShaderOutputs[ImGuiOverlayDx::FG_BUFFER_SIZE];
+// possibleHudless lisy by cmdlist
+static ankerl::unordered_dense::map <ID3D12GraphicsCommandList*, ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo>> fgPossibleHudless[ImGuiOverlayDx::FG_BUFFER_SIZE];
 
 // mutexes
 static std::shared_mutex heapMutex;
 static std::shared_mutex resourceMutex;
-static std::shared_mutex hudlessCheckMutex;
-static std::shared_mutex frameResourceMutex[ImGuiOverlayDx::FG_BUFFER_SIZE];
-static std::shared_mutex sourceMutex[ImGuiOverlayDx::FG_BUFFER_SIZE];
-static std::shared_mutex shaderMutex[ImGuiOverlayDx::FG_BUFFER_SIZE];
+static std::shared_mutex hudlessMutex[ImGuiOverlayDx::FG_BUFFER_SIZE];
 static std::shared_mutex counterMutex[ImGuiOverlayDx::FG_BUFFER_SIZE];
 
 // found hudless info
@@ -225,14 +200,16 @@ static bool fgPresentRunning = false;
 // Used for frametime calculation
 static double fgLastFrameTime = 0.0;
 static double fgLastDeltaTime = 0.0;
+static bool fgDispatchCalled = false;
 
 // Swapchain frame counter
 static UINT64 frameCounter = 0;
 
 // Swapchain frame target while capturing RTVs etc
 static UINT64 fgLastFGFrame = 0;
-
 static bool fgUpscaledFound = false;
+
+#pragma endregion
 
 // dxgi stuff
 typedef HRESULT(*PFN_CreateDXGIFactory)(REFIID riid, IDXGIFactory** ppFactory);
@@ -315,199 +292,6 @@ static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAda
 static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter);
 static HRESULT hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter);
 static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter);
-
-static SIZE_T GetGPUHandle(ID3D12Device* This, SIZE_T cpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE type)
-{
-    // LOG_DEBUG_ONLY("lockheapMutex)");
-    std::shared_lock<std::shared_mutex> lock(heapMutex);
-
-    for (auto& val : fgHeaps)
-    {
-        if (val.cpuStart <= cpuHandle && val.cpuEnd >= cpuHandle && val.gpuStart != 0)
-        {
-            auto incSize = This->GetDescriptorHandleIncrementSize(type);
-            auto addr = cpuHandle - val.cpuStart;
-            auto index = addr / incSize;
-            auto gpuAddr = val.gpuStart + (index * incSize);
-
-            return gpuAddr;
-        }
-    }
-
-    return NULL;
-}
-
-static SIZE_T GetCPUHandle(ID3D12Device* This, SIZE_T gpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE type)
-{
-    // LOG_DEBUG_ONLY("lockheapMutex)");
-    std::shared_lock<std::shared_mutex> lock(heapMutex);
-
-    for (auto& val : fgHeaps)
-    {
-        if (val.gpuStart <= gpuHandle && val.gpuEnd >= gpuHandle && val.cpuStart != 0)
-        {
-            auto incSize = This->GetDescriptorHandleIncrementSize(type);
-            auto addr = gpuHandle - val.gpuStart;
-            auto index = addr / incSize;
-            auto cpuAddr = val.cpuStart + (index * incSize);
-
-            return cpuAddr;
-        }
-    }
-
-    return NULL;
-}
-
-static HeapInfo* GetHeapByCpuHandle(SIZE_T cpuHandle)
-{
-    std::shared_lock<std::shared_mutex> lock(heapMutex);
-
-    for (size_t i = 0; i < fgHeaps.size(); i++)
-    {
-        if (fgHeaps[i].cpuStart <= cpuHandle && fgHeaps[i].cpuEnd >= cpuHandle)
-            return &fgHeaps[i];
-    }
-
-    return nullptr;
-}
-
-static HeapInfo* GetHeapByGpuHandle(SIZE_T gpuHandle)
-{
-    std::shared_lock<std::shared_mutex> lock(heapMutex);
-
-    for (size_t i = 0; i < fgHeaps.size(); i++)
-    {
-        if (fgHeaps[i].gpuStart <= gpuHandle && fgHeaps[i].gpuEnd >= gpuHandle)
-            return &fgHeaps[i];
-    }
-
-    return nullptr;
-}
-
-static bool InUpscaledList(ID3D12Resource* resource)
-{
-
-    auto fIndex = fgFrameIndex;
-
-    if (ImGuiOverlayDx::fgUpscaledImage[fIndex] == resource)
-    {
-        LOG_DEBUG_ONLY(" <-- Found");
-        fgUpscaledFound = true;
-        return true;
-    }
-
-    //for (size_t i = 0; i < ImGuiOverlayDx::FG_BUFFER_SIZE; i++)
-    //{
-    //    if (ImGuiOverlayDx::fgUpscaledImage[i] == resource)
-    //    {
-    //        LOG_DEBUG_ONLY(" <-- Found");
-    //        return true;
-    //    }
-    //}
-
-    return false;
-}
-
-static void FillResourceInfo(ID3D12Resource* resource, ResourceInfo* info)
-{
-    auto desc = resource->GetDesc();
-    info->buffer = resource;
-    info->width = desc.Width;
-    info->height = desc.Height;
-    info->format = desc.Format;
-}
-
-static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState)
-{
-    D3D12_RESOURCE_BARRIER barrier = {};
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Transition.pResource = InResource;
-    barrier.Transition.StateBefore = InBeforeState;
-    barrier.Transition.StateAfter = InAfterState;
-    barrier.Transition.Subresource = 0;
-    InCommandList->ResourceBarrier(1, &barrier);
-}
-
-//static BackbufferInfo* GetEmptyFGBuffer()
-//{
-//    for (size_t j = 0; j < FG_BUFFER_SIZE; j++)
-//    {
-//        if (fgBuffers[j].buffer == nullptr)
-//            return &fgBuffers[j];
-//    }
-//
-//    return nullptr;
-//}
-//
-//static void AddSCBuffers()
-//{
-//    for (auto const& [key, val] : fgSwapChains)
-//    {
-//        for (size_t i = 0; i < val.swapChainBufferCount; i++)
-//        {
-//            ID3D12Resource* scBuffer = nullptr;
-//
-//            if (val.swapChain->GetBuffer(i, IID_PPV_ARGS(&scBuffer)) == S_OK && scBuffer != nullptr)
-//            {
-//                auto newInfo = GetEmptyFGBuffer();
-//
-//                if (newInfo != nullptr)
-//                    newInfo->buffer = scBuffer;
-//            }
-//        }
-//    }
-//}
-//
-//static void ClearFGBuffer()
-//{
-//    for (size_t i = 0; i < FG_BUFFER_SIZE; i++)
-//    {
-//        auto buffer = &fgBuffers[i];
-//
-//        buffer->buffer = nullptr;
-//        buffer->prev = nullptr;
-//        buffer->copySource = nullptr;
-//        buffer->cpuHandle = 0;
-//        buffer->prevCpuHandle = 0;
-//        buffer->cmdList = nullptr;
-//
-//        if (buffer->hudless != nullptr)
-//        {
-//            buffer->hudless->Release();
-//            buffer->hudless = nullptr;
-//        }
-//    }
-//
-//    AddSCBuffers();
-//}
-//
-//static BackbufferInfo* GetFGBuffer(ID3D12Resource* buffer, UINT64 cpuHandle, ID3D12GraphicsCommandList* cmdList = nullptr)
-//{
-//    if (buffer == nullptr && cpuHandle == NULL)
-//        return nullptr;
-//
-//    for (size_t j = 0; j < FG_BUFFER_SIZE; j++)
-//    {
-//        if ((buffer == nullptr || fgBuffers[j].buffer == buffer) && (cpuHandle == NULL || fgBuffers[j].cpuHandle == cpuHandle) && (cmdList == nullptr || fgBuffers[j].cmdList == cmdList))
-//            return &fgBuffers[j];
-//    }
-//
-//    return nullptr;
-//}
-//
-//static BackbufferInfo* GetFGBufferFromPrev(ID3D12Resource* buffer, UINT64 cpuHandle)
-//{
-//    if (buffer == nullptr && cpuHandle == NULL)
-//        return nullptr;
-//
-//    for (size_t j = 0; j < FG_BUFFER_SIZE; j++)
-//    {
-//        if ((buffer == nullptr || fgBuffers[j].prev == buffer) && (cpuHandle == NULL || fgBuffers[j].prevCpuHandle == cpuHandle))
-//            return &fgBuffers[j];
-//    }
-//
-//    return nullptr;
-//}
 
 static void LoadFSR31Funcs()
 {
@@ -598,51 +382,140 @@ static bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSourc
     return true;
 }
 
-//static UINT64 fc = 0;
-//static UINT index = 0;
-//static UINT64 lastUpscaledFrame = 0;
-static bool dispatchCalled = false;
+static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState)
+{
+    D3D12_RESOURCE_BARRIER barrier = {};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Transition.pResource = InResource;
+    barrier.Transition.StateBefore = InBeforeState;
+    barrier.Transition.StateAfter = InAfterState;
+    barrier.Transition.Subresource = 0;
+    InCommandList->ResourceBarrier(1, &barrier);
+}
+
+static SIZE_T GetGPUHandle(ID3D12Device* This, SIZE_T cpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE type)
+{
+    std::shared_lock<std::shared_mutex> lock(heapMutex);
+    for (auto& val : fgHeaps)
+    {
+        if (val.cpuStart <= cpuHandle && val.cpuEnd >= cpuHandle && val.gpuStart != 0)
+        {
+            auto incSize = This->GetDescriptorHandleIncrementSize(type);
+            auto addr = cpuHandle - val.cpuStart;
+            auto index = addr / incSize;
+            auto gpuAddr = val.gpuStart + (index * incSize);
+
+            return gpuAddr;
+        }
+    }
+
+    return NULL;
+}
+
+static SIZE_T GetCPUHandle(ID3D12Device* This, SIZE_T gpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE type)
+{
+    std::shared_lock<std::shared_mutex> lock(heapMutex);
+    for (auto& val : fgHeaps)
+    {
+        if (val.gpuStart <= gpuHandle && val.gpuEnd >= gpuHandle && val.cpuStart != 0)
+        {
+            auto incSize = This->GetDescriptorHandleIncrementSize(type);
+            auto addr = gpuHandle - val.gpuStart;
+            auto index = addr / incSize;
+            auto cpuAddr = val.cpuStart + (index * incSize);
+
+            return cpuAddr;
+        }
+    }
+
+    return NULL;
+}
+
+static HeapInfo* GetHeapByCpuHandle(SIZE_T cpuHandle)
+{
+    std::shared_lock<std::shared_mutex> lock(heapMutex);
+    for (size_t i = 0; i < fgHeaps.size(); i++)
+    {
+        if (fgHeaps[i].cpuStart <= cpuHandle && fgHeaps[i].cpuEnd >= cpuHandle)
+            return &fgHeaps[i];
+    }
+
+    return nullptr;
+}
+
+static HeapInfo* GetHeapByGpuHandle(SIZE_T gpuHandle)
+{
+    std::shared_lock<std::shared_mutex> lock(heapMutex);
+    for (size_t i = 0; i < fgHeaps.size(); i++)
+    {
+        if (fgHeaps[i].gpuStart <= gpuHandle && fgHeaps[i].gpuEnd >= gpuHandle)
+            return &fgHeaps[i];
+    }
+
+    return nullptr;
+}
+
+static bool InUpscaledList(ID3D12Resource* resource)
+{
+    auto fIndex = fgFrameIndex;
+    if (ImGuiOverlayDx::fgUpscaledImage[fIndex] == resource)
+    {
+        LOG_DEBUG_ONLY("Found upscaled image!");
+        fgUpscaledFound = true;
+        return true;
+    }
+
+    return false;
+}
+
+static void FillResourceInfo(ID3D12Resource* resource, ResourceInfo* info)
+{
+    auto desc = resource->GetDesc();
+    info->buffer = resource;
+    info->width = desc.Width;
+    info->height = desc.Height;
+    info->format = desc.Format;
+}
 
 static void GetHudless(ID3D12GraphicsCommandList* This) //, D3D12_RESOURCE_STATES State)
 {
     auto fIndex = fgFrameIndex;
-
     if (This != g_pd3dCommandList && fgCopySource[fIndex] != nullptr && Config::Instance()->CurrentFeature != nullptr &&
-        fgHudlessFrame != Config::Instance()->CurrentFeature->FrameCount() && ImGuiOverlayDx::fgTarget + 10 < Config::Instance()->CurrentFeature->FrameCount())
+        fgHudlessFrame != Config::Instance()->CurrentFeature->FrameCount() && ImGuiOverlayDx::fgTarget + 10 <= Config::Instance()->CurrentFeature->FrameCount())
     {
         LOG_DEBUG("FrameCount: {0}, fgHudlessFrame: {1}, CommandList: {2:X}", Config::Instance()->CurrentFeature->FrameCount(), fgHudlessFrame, (UINT64)This);
+
+        ImGuiOverlayDx::fgSkipHudlessChecks = true;
 
         // hudless captured for this frame
         fgHudlessFrame = Config::Instance()->CurrentFeature->FrameCount();
         auto frame = fgHudlessFrame;
 
-        LOG_DEBUG("    HUDFix running, frame: {0}", frame);
+        LOG_DEBUG("running, frame: {0}", frame);
 
+#ifdef USE_RESOURCE_BARRIRER
         // Not sure about source state, skipping for now
-        //D3D12_RESOURCE_BARRIER barrier = {};
-        //barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        //barrier.Transition.pResource = bufferInfo->copySource;
-        //barrier.Transition.StateBefore = State;
-        //barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
-        //barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-        //This->ResourceBarrier(1, &barrier);
+        D3D12_RESOURCE_BARRIER barrier = {};
+        barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barrier.Transition.pResource = bufferInfo->copySource;
+        barrier.Transition.StateBefore = State;
+        barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
+        barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        This->ResourceBarrier(1, &barrier);
+#endif 
 
         // Take hudless copy
         if (CreateBufferResource(g_pd3dDeviceParam, fgCopySource[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, &fgHudless[fIndex]))
-        {
-            ImGuiOverlayDx::fgSkipHudlessChecks = true;
             This->CopyResource(fgHudless[fIndex], fgCopySource[fIndex]);
-            ImGuiOverlayDx::fgSkipHudlessChecks = false;
-        }
         else
-        {
             return;
-        }
 
+#ifdef USE_RESOURCE_BARRIRER
         // Not sure about source state, skipping for now
-        //barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
-        //barrier.Transition.StateAfter = State;
-        //This->ResourceBarrier(1, &barrier);
+        barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
+        barrier.Transition.StateAfter = State;
+        This->ResourceBarrier(1, &barrier);
+#endif 
 
         // switch dlss targets for next depth and mv 
         ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
@@ -669,31 +542,79 @@ static void GetHudless(ID3D12GraphicsCommandList* This) //, D3D12_RESOURCE_STATE
                 HRESULT result;
                 auto fIndex = fgFrameIndex;
 
+                // check for status
+                if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
+                    Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                {
+                    LOG_WARN("Cancel async dispatch");
+                    fgDispatchCalled = false;
+                    ImGuiOverlayDx::fgSkipHudlessChecks = false;
+                    return FFX_API_RETURN_OK;
+                }
+
                 // For leftover frames from previous FG context
                 // If fg is active but upscaling paused
-                if (!dispatchCalled || Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr ||
-                    fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount())
+                if (!fgDispatchCalled || fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount())
                 {
                     auto allocator = ImGuiOverlayDx::fgCopyCommandAllocators[fIndex];
                     result = allocator->Reset();
                     result = ImGuiOverlayDx::fgCopyCommandList->Reset(allocator, nullptr);
                     LOG_WARN("Callback without hudless!");
+
                 }
 
                 if (Config::Instance()->CurrentFeature != nullptr)
                     fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
 
-                ImGuiOverlayDx::fgSkipHudlessChecks = true;
-                result = _dispatch(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
-                ImGuiOverlayDx::fgSkipHudlessChecks = false;
+                // check for status
+                if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
+                    Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                {
+                    LOG_WARN("Cancel async dispatch");
+                    fgDispatchCalled = false;
+                    ImGuiOverlayDx::fgSkipHudlessChecks = false;
+                    return FFX_API_RETURN_OK;
+                }
+                else
+                {
+                    result = _dispatch(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
+                }
 
-                result = ImGuiOverlayDx::fgCopyCommandList->Close();
-                ID3D12CommandList* cl[] = { ImGuiOverlayDx::fgCopyCommandList };
-                ImGuiOverlayDx::gameCommandQueue->ExecuteCommandLists(1, cl);
+                ID3D12CommandList* cl[1] = { nullptr };
+
+                // check for status
+                if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
+                    Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                {
+                    LOG_WARN("Cancel async dispatch");
+                    fgDispatchCalled = false;
+                    ImGuiOverlayDx::fgSkipHudlessChecks = false;
+                    return FFX_API_RETURN_OK;
+                }
+                else
+                {
+                    result = ImGuiOverlayDx::fgCopyCommandList->Close();
+                    cl[0] = ImGuiOverlayDx::fgCopyCommandList;
+                }
+
+                // check for status
+                if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
+                    Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                {
+                    LOG_WARN("Cancel async dispatch");
+                    fgDispatchCalled = false;
+                    ImGuiOverlayDx::fgSkipHudlessChecks = false;
+                    return FFX_API_RETURN_OK;
+                }
+                else
+                {
+                    ImGuiOverlayDx::gameCommandQueue->ExecuteCommandLists(1, cl);
+                }
 
                 LOG_DEBUG("Callback _dispatch result: {0}", (UINT)result);
 
-                dispatchCalled = false;
+                fgDispatchCalled = false;
+                ImGuiOverlayDx::fgSkipHudlessChecks = false;
 
                 return result;
             };
@@ -711,11 +632,9 @@ static void GetHudless(ID3D12GraphicsCommandList* This) //, D3D12_RESOURCE_STATE
         m_FrameGenerationConfig.header.pNext = &debugDesc.header;
 
         Config::Instance()->dxgiSkipSpoofing = true;
-        ImGuiOverlayDx::fgSkipHudlessChecks = true;
         ffxReturnCode_t retCode = _configure(&ImGuiOverlayDx::fgContext, &m_FrameGenerationConfig.header);
-        ImGuiOverlayDx::fgSkipHudlessChecks = false;
         Config::Instance()->dxgiSkipSpoofing = false;
-        LOG_DEBUG("    HUDFix _configure result: {0:X}, frame: {1}", retCode, frame);
+        LOG_DEBUG("_configure result: {0:X}, frame: {1}", retCode, frame);
 
         if (retCode == FFX_API_RETURN_OK)
         {
@@ -762,58 +681,33 @@ static void GetHudless(ID3D12GraphicsCommandList* This) //, D3D12_RESOURCE_STATE
             // If somehow context is destroyed before this point
             if (Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr)
             {
-                LOG_WARN("    HUDFix !! Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr");
+                LOG_WARN("!! Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr");
                 return;
             }
 
             Config::Instance()->dxgiSkipSpoofing = true;
-            ImGuiOverlayDx::fgSkipHudlessChecks = true;
             retCode = _dispatch(&ImGuiOverlayDx::fgContext, &dfgPrepare.header);
-            dispatchCalled = true;
-            ImGuiOverlayDx::fgSkipHudlessChecks = false;
+            fgDispatchCalled = true;
             Config::Instance()->dxgiSkipSpoofing = false;
-            LOG_DEBUG("    HUDFix _dispatch result: {0}, frame: {1}", retCode, frame);
+            LOG_DEBUG("_dispatch result: {0}, frame: {1}", retCode, frame);
         }
     }
 }
 
-//static void hkClose(ID3D12GraphicsCommandList* This)
-//{
-//    o_Close(This);
-//}
-
-//static HRESULT hkCreateCommandQueue(ID3D12Device* This, const D3D12_COMMAND_QUEUE_DESC* pDesc, REFIID riid, void** ppCommandQueue)
-//{
-//    LOG_DEBUG_ONLY("");
-//
-//    auto result = o_CreateCommandQueue(This, pDesc, riid, ppCommandQueue);
-//
-//    if (ImGuiOverlayDx::fgSkipHudlessChecks || Config::Instance()->CurrentFeature == nullptr || !ImGuiOverlayDx::upscaleRan)
-//        return result;
-//
-//    if (result == S_OK && pDesc->Type == D3D12_COMMAND_LIST_TYPE_DIRECT && *ppCommandQueue != nullptr)
-//    {
-//        LOG_DEBUG_ONLY("Queue captured: {0:X}", (UINT64)*ppCommandQueue);
-//        fgQueues.push_back((ID3D12CommandQueue*)*ppCommandQueue);
-//    }
-//
-//    return result;
-//}
-
 static bool CheckCapture()
 {
-    {
-        auto fIndex = fgFrameIndex;
+    auto fIndex = fgFrameIndex;
 
+    {
         LOG_DEBUG_ONLY("lockcounterMutex[{}])", fIndex);
         std::unique_lock<std::shared_mutex> lock(counterMutex[fIndex]);
         ImGuiOverlayDx::fgHUDlessCaptureCounter[fIndex]++;
-
-        LOG_DEBUG("frameCounter: {}, fgHUDlessCaptureCounter: {}, Limit: {}", frameCounter, ImGuiOverlayDx::fgHUDlessCaptureCounter[fIndex], Config::Instance()->FGHUDLimit.value_or(1));
-
-        if (ImGuiOverlayDx::fgHUDlessCaptureCounter[fIndex] != Config::Instance()->FGHUDLimit.value_or(1))
-            return false;
     }
+
+    LOG_DEBUG("frameCounter: {}, fgHUDlessCaptureCounter: {}, Limit: {}", frameCounter, ImGuiOverlayDx::fgHUDlessCaptureCounter[fIndex], Config::Instance()->FGHUDLimit.value_or(1));
+
+    if (ImGuiOverlayDx::fgHUDlessCaptureCounter[fIndex] != Config::Instance()->FGHUDLimit.value_or(1))
+        return false;
 
     return true;
 }
@@ -822,12 +716,9 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* r
 {
     auto fIndex = fgFrameIndex;
     ImGuiOverlayDx::upscaleRan = false;
-
-    LOG_DEBUG_ONLY(" <--");
-    //std::unique_lock<std::shared_mutex> lock(sourceMutex[fgFrameIndex]);
-    LOG_DEBUG_ONLY("fgCopySource[{}]", fIndex);
     fgCopySource[fIndex] = resource;
     GetHudless(cmdList);
+    fgUpscaledFound = false;
 }
 
 static bool CheckForHudless(ResourceInfo* resource, bool checkFormat = true)
@@ -835,31 +726,32 @@ static bool CheckForHudless(ResourceInfo* resource, bool checkFormat = true)
     if (ImGuiOverlayDx::currentSwapchain == nullptr)
         return false;
 
-    //if (Config::Instance()->SCChanged)
-    //{
-    //    LOG_INFO("Config::Instance()->SCChanged");
-
-    if (ImGuiOverlayDx::currentSwapchain->GetDesc(&fgScDesc) != S_OK)
+    if (Config::Instance()->SCChanged)
     {
-        LOG_WARN("Can't get swapchain desc!");
-        return false;
+        LOG_INFO("Config::Instance()->SCChanged");
+
+        if (ImGuiOverlayDx::currentSwapchain->GetDesc(&fgScDesc) != S_OK)
+        {
+            LOG_WARN("Can't get swapchain desc!");
+            return false;
+        }
+
+        Config::Instance()->SCChanged = false;
     }
 
-    //    Config::Instance()->SCChanged = false;
-    //}
-
-    LOG_DEBUG("Width: {}/{}, Height: {}/{}, Format: {}/{}",
-              resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format);
-
-    if (resource->height != fgScDesc.BufferDesc.Height || resource->width != fgScDesc.BufferDesc.Width ||
-        (!checkFormat && resource->format != fgScDesc.BufferDesc.Format))
+    if (resource->height == fgScDesc.BufferDesc.Height && resource->width == fgScDesc.BufferDesc.Width &&
+        (!checkFormat || resource->format == fgScDesc.BufferDesc.Format))
     {
-        return false;
+        LOG_DEBUG_ONLY("Width: {}/{}, Height: {}/{}, Format: {}/{}, checkFormat: {} -> TRUE",
+                       resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, checkFormat);
+
+        return true;
     }
 
-    return true;
+    return false;
 }
 
+#ifdef USE_RESOURCE_DISCARD
 static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* pResource, D3D12_DISCARD_REGION* pRegion)
 {
     o_DiscardResource(This, pResource, pRegion);
@@ -882,6 +774,7 @@ static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* p
         LOG_DEBUG_ONLY("Erased");
     }
 }
+#endif
 
 #pragma region "Resource inputs"
 
@@ -889,13 +782,11 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
 {
     o_CreateRenderTargetView(This, pResource, pDesc, DestDescriptor);
 
-    auto gpuHandle = GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    LOG_DEBUG_ONLY("pResource: {0:X}, cpu: {1}, gpu: {2}, dimension: {3}", (SIZE_T)pResource, DestDescriptor.ptr, gpuHandle, (UINT)pDesc->ViewDimension);
 
     if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_SRV_DIMENSION_TEXTURE2D)
         return;
 
-    //LOG_DEBUG_ONLY(" <-- {} - {}x{}", DestDescriptor.ptr, desc.Width, desc.Height);
+    auto gpuHandle = GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     ResourceHeapInfo info{};
     info.cpuStart = DestDescriptor.ptr;
@@ -905,28 +796,26 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
     FillResourceInfo(pResource, &resInfo);
     resInfo.type = RTV;
 
-
+#ifdef USE_RESOURCE_DISCARD
     {
-        // LOG_DEBUG_ONLY("lockresourceMutex)");
         std::unique_lock<std::shared_mutex> lock(resourceMutex);
         fgHandlesByResources.insert_or_assign(pResource, info);
-
-        auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
-        if (heap != nullptr)
-            heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
     }
+#endif
+
+    auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
+    if (heap != nullptr)
+        heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
 }
 
 static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pResource, D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
     o_CreateShaderResourceView(This, pResource, pDesc, DestDescriptor);
 
-    auto gpuHandle = GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    LOG_DEBUG_ONLY("pResource: {0:X}, cpu: {1}, gpu: {2}, dimension: {3}", (SIZE_T)pResource, DestDescriptor.ptr, gpuHandle, (UINT)pDesc->ViewDimension);
-
     if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_SRV_DIMENSION_TEXTURE2D)
         return;
 
+    auto gpuHandle = GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     ResourceHeapInfo info{};
     info.cpuStart = DestDescriptor.ptr;
@@ -936,29 +825,27 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
     FillResourceInfo(pResource, &resInfo);
     resInfo.type = SRV;
 
-    //LOG_DEBUG_ONLY("pResource: {0:X}, cpu: {1}, gpu: {2}", (SIZE_T)pResource, DestDescriptor.ptr, gpuHandle);
-
+#ifdef USE_RESOURCE_DISCARD
     {
-        // LOG_DEBUG_ONLY("lockresourceMutex)");
         std::unique_lock<std::shared_mutex> lock(resourceMutex);
         fgHandlesByResources.insert_or_assign(pResource, info);
-
-        auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
-        if (heap != nullptr)
-            heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
     }
+#endif
+
+    auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
+    if (heap != nullptr)
+        heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
 }
 
 static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pResource, ID3D12Resource* pCounterResource, D3D12_UNORDERED_ACCESS_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
     o_CreateUnorderedAccessView(This, pResource, pCounterResource, pDesc, DestDescriptor);
 
-    auto gpuHandle = GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    LOG_DEBUG_ONLY("pResource: {0:X}, cpu: {1}, gpu: {2}, dimension: {3}", (SIZE_T)pResource, DestDescriptor.ptr, gpuHandle, (UINT)pDesc->ViewDimension);
 
     if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_SRV_DIMENSION_TEXTURE2D)
         return;
 
+    auto gpuHandle = GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     ResourceHeapInfo info{};
     info.cpuStart = DestDescriptor.ptr;
@@ -968,23 +855,23 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
     FillResourceInfo(pResource, &resInfo);
     resInfo.type = UAV;
 
-    //LOG_DEBUG_ONLY("pResource: {0:X}, cpu: {1}, gpu: {2}", (SIZE_T)pResource, DestDescriptor.ptr, gpuHandle);
-
+#ifdef USE_RESOURCE_DISCARD
     {
-        // LOG_DEBUG_ONLY("lockresourceMutex)");
         std::unique_lock<std::shared_mutex> lock(resourceMutex);
         fgHandlesByResources.insert_or_assign(pResource, info);
-
-        auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
-        if (heap != nullptr)
-            heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
     }
+#endif
+
+    auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
+    if (heap != nullptr)
+        heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
 }
 
 #pragma endregion
 
 #pragma region "Resource copy"
 
+#ifdef USE_COPY_RESOURCE
 static void hkCopyResource(ID3D12GraphicsCommandList* This, ID3D12Resource* Dest, ID3D12Resource* Source)
 {
     o_CopyResource(This, Dest, Source);
@@ -995,54 +882,28 @@ static void hkCopyResource(ID3D12GraphicsCommandList* This, ID3D12Resource* Dest
         Config::Instance()->CurrentFeature == nullptr || !ImGuiOverlayDx::upscaleRan)
         return;
 
-    {
-        std::shared_lock<std::shared_mutex> lock(sourceMutex[fIndex]);
-        if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-            ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
-            fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
-            return;
-    }
+    if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
+        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
+        return;
 
     LOG_DEBUG_ONLY(" <--");
 
     ResourceInfo resInfo{};
     FillResourceInfo(Dest, &resInfo);
 
-    {
-        // LOG_DEBUG_ONLY("locksourceMutex[{}])", fgFrameIndex);
-        std::shared_lock<std::shared_mutex> lock2(sourceMutex[fIndex]);
-
-        if (!((InUpscaledList(Source) || fgSources[fIndex].contains(Source)) && !CheckForHudless(&resInfo)))
-            return;
-    }
-
-    // If not captured add as source
-    if (!CheckCapture())
-    {
-        ResourceHeapInfo heapInfo{};
-
-        //{
-        //    // LOG_DEBUG_ONLY("lockresourceMutex)");
-        //    std::shared_lock<std::shared_mutex> lock3(resourceMutex);
-        //    if (fgHandlesByResources.contains(Dest))
-        //    {
-        //        auto info = &fgHandlesByResources[Dest];
-        //        heapInfo.cpuStart = info->cpuStart;
-        //        heapInfo.gpuStart = info->gpuStart;
-        //    }
-        //}
-
-        {
-            // LOG_DEBUG_ONLY("locksourceMutex[{}])", fgFrameIndex);
-            std::unique_lock<std::shared_mutex> lock4(sourceMutex[fIndex]);
-            fgSources[fIndex].insert_or_assign(Dest, resInfo);
-        }
-
+    // Copy source is not in sources and dest is not matching for swapchain format
+    if (!InUpscaledList(Source) && !CheckForHudless(&resInfo, false))
         return;
-    }
 
-    CaptureHudless(This, Dest);
+    // not matching to swapchain format or limit is not ok
+    if (CheckForHudless(&resInfo) && CheckCapture())
+    {
+        LOG_DEBUG("Capture");
+        CaptureHudless(This, Dest);
+    }
 }
+#endif
 
 static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_COPY_LOCATION* pDst, UINT DstX, UINT DstY, UINT DstZ, D3D12_TEXTURE_COPY_LOCATION* pSrc, D3D12_BOX* pSrcBox)
 {
@@ -1053,52 +914,26 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
     if (This == g_pd3dCommandList || ImGuiOverlayDx::fgCopyCommandList == This /* || fgPresentRunning */ || ImGuiOverlayDx::fgSkipHudlessChecks || Config::Instance()->CurrentFeature == nullptr || !ImGuiOverlayDx::upscaleRan)
         return;
 
-    {
-        std::shared_lock<std::shared_mutex> lock(sourceMutex[fIndex]);
-        if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-            ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
-            fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
-            return;
-    }
+    if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
+        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
+        return;
 
     LOG_DEBUG_ONLY(" <--");
 
     ResourceInfo resInfo{};
     FillResourceInfo(pDst->pResource, &resInfo);
 
-    {
-        // LOG_DEBUG_ONLY("locksourceMutex[{}])", fgFrameIndex);
-        std::shared_lock<std::shared_mutex> lock(sourceMutex[fIndex]);
-        if (!((InUpscaledList(pSrc->pResource) || fgSources[fIndex].contains(pSrc->pResource)) && !CheckForHudless(&resInfo)))
-            return;
-    }
-
-    // If not captured add as source
-    if (!CheckCapture())
-    {
-        ResourceHeapInfo heapInfo{};
-
-        //{
-        //    // LOG_DEBUG_ONLY("lockresourceMutex)");
-        //    std::shared_lock<std::shared_mutex> lock2(resourceMutex);
-        //    if (fgHandlesByResources.contains(pDst->pResource))
-        //    {
-        //        auto info = &fgHandlesByResources[pDst->pResource];
-        //        heapInfo.cpuStart = info->cpuStart;
-        //        heapInfo.gpuStart = info->gpuStart;
-        //    }
-        //}
-
-        {
-            // LOG_DEBUG_ONLY("locksourceMutex[{}])", fgFrameIndex);
-            std::unique_lock<std::shared_mutex> lock3(sourceMutex[fIndex]);
-            fgSources[fIndex].insert_or_assign(pDst->pResource, resInfo);
-        }
-
+    // Copy source is not in sources and dest is not matching for swapchain format
+    if (!InUpscaledList(pSrc->pResource) && !CheckForHudless(&resInfo, false))
         return;
-    }
 
-    CaptureHudless(This, pDst->pResource);
+    // not matching to swapchain format or limit is not ok
+    if (CheckForHudless(&resInfo) && CheckCapture())
+    {
+        LOG_DEBUG("Capture");
+        CaptureHudless(This, pDst->pResource);
+    }
 }
 
 #pragma endregion
@@ -1124,7 +959,6 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
 
         LOG_DEBUG_ONLY("Heap type: {}, Cpu: {}-{}, Gpu: {}-{}, Desc count: {}", info.type, info.cpuStart, info.cpuEnd, info.gpuStart, info.gpuEnd, info.numDescriptors);
         {
-            // LOG_DEBUG_ONLY("lockheapMutex)");
             std::unique_lock<std::shared_mutex> lock(heapMutex);
             fgHeaps.push_back(info);
         }
@@ -1156,13 +990,10 @@ static void hkCopyDescriptors(ID3D12Device* This,
 
     LOG_DEBUG_ONLY("SrcRanges: {}, DestRanges: {}, Type: {}", NumSrcDescriptorRanges, NumDestDescriptorRanges, (UINT)DescriptorHeapsType);
 
-    {
-        std::shared_lock<std::shared_mutex> lock(sourceMutex[fIndex]);
-        if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-            ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
-            fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
-            return;
-    }
+    if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
+        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
+        return;
 
     auto size = This->GetDescriptorHandleIncrementSize(DescriptorHeapsType);
 
@@ -1222,24 +1053,21 @@ static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D
     if (DescriptorHeapsType != D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV && DescriptorHeapsType != D3D12_DESCRIPTOR_HEAP_TYPE_RTV)
         return;
 
-    {
-        std::shared_lock<std::shared_mutex> lock(sourceMutex[fIndex]);
-        if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-            ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
-            fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
-            return;
-    }
+    if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
+        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
+        return;
 
     auto size = This->GetDescriptorHandleIncrementSize(DescriptorHeapsType);
 
     for (size_t i = 0; i < NumDescriptors; i++)
     {
         auto handle = SrcDescriptorRangeStart.ptr + i * size;
-        
+
         auto heap = GetHeapByCpuHandle(handle);
         if (heap == nullptr)
             continue;
-        
+
         auto buffer = heap->GetByCpuHandle(handle);
         auto destHandle = DestDescriptorRangeStart.ptr + i * size;
         heap->SetByCpuHandle(destHandle, *buffer);
@@ -1261,13 +1089,10 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
     if (This == g_pd3dCommandList || ImGuiOverlayDx::fgCopyCommandList == This /* || fgPresentRunning */ || ImGuiOverlayDx::fgSkipHudlessChecks || Config::Instance()->CurrentFeature == nullptr || !ImGuiOverlayDx::upscaleRan)
         return;
 
-    {
-        std::shared_lock<std::shared_mutex> lock(sourceMutex[fIndex]);
-        if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-            ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
-            fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
-            return;
-    }
+    if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
+        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
+        return;
 
     auto heap = GetHeapByGpuHandle(BaseDescriptor.ptr);
     if (heap == nullptr)
@@ -1280,27 +1105,22 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
         return;
     }
 
-    {
-        // LOG_DEBUG_ONLY("locksourceMutex[{}])", fgFrameIndex);
-        std::shared_lock<std::shared_mutex> lock3(sourceMutex[fIndex]);
-        if ((!InUpscaledList(capturedBuffer->buffer) && !fgSources[fIndex].contains(capturedBuffer->buffer)))
-            return;
-    }
+    if (!InUpscaledList(capturedBuffer->buffer) && !CheckForHudless(capturedBuffer, false))
+        return;
 
     {
-        LOG_DEBUG("{} Found input image! {}", fIndex, (capturedBuffer->buffer == ImGuiOverlayDx::fgUpscaledImage[fIndex]));
+        //LOG_DEBUG("{} Found input image! {}", fIndex, (capturedBuffer->buffer == ImGuiOverlayDx::fgUpscaledImage[fIndex]));
 
-        // LOG_DEBUG_ONLY("lockshaderMutex[{}])", fgFrameIndex);
-        std::unique_lock<std::shared_mutex> lock4(shaderMutex[fIndex]);
-        if (fgShaderInputs[fIndex].contains(This))
+        std::unique_lock<std::shared_mutex> lock4(hudlessMutex[fIndex]);
+        if (fgPossibleHudless[fIndex].contains(This))
         {
-            fgShaderInputs[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
+            fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
             return;
         }
 
         ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
-        fgShaderInputs[fIndex].insert_or_assign(This, newMap);
-        fgShaderInputs[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
+        fgPossibleHudless[fIndex].insert_or_assign(This, newMap);
+        fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
     }
 }
 
@@ -1314,6 +1134,14 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
     o_OMSetRenderTargets(This, NumRenderTargetDescriptors, pRenderTargetDescriptors, RTsSingleHandleToDescriptorRange, pDepthStencilDescriptor);
 
     auto fIndex = fgFrameIndex;
+
+    if (This == g_pd3dCommandList || ImGuiOverlayDx::fgCopyCommandList == This /* || fgPresentRunning */ || ImGuiOverlayDx::fgSkipHudlessChecks || Config::Instance()->CurrentFeature == nullptr || !ImGuiOverlayDx::upscaleRan)
+        return;
+
+    if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
+        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
+        return;
 
     LOG_DEBUG_ONLY(" <-- {0:X}", (size_t)This);
 
@@ -1331,34 +1159,21 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
             continue;
         }
 
-        if (This == g_pd3dCommandList || ImGuiOverlayDx::fgCopyCommandList == This /* || fgPresentRunning */ || ImGuiOverlayDx::fgSkipHudlessChecks || Config::Instance()->CurrentFeature == nullptr || !ImGuiOverlayDx::upscaleRan)
-            return;
-
-        {
-            std::shared_lock<std::shared_mutex> lock(sourceMutex[fIndex]);
-            if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-                ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
-                fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
-            {
-                return;
-            }
-        }
-
         if (!CheckForHudless(resource, false))
             continue;
 
         {
-            std::unique_lock<std::shared_mutex> lock3(shaderMutex[fIndex]);
-            LOG_DEBUG("{} - Found output image!, {}", fIndex, (resource->buffer == ImGuiOverlayDx::fgUpscaledImage[fIndex]));
-            if (fgShaderOutputs[fIndex].contains(This))
+            std::unique_lock<std::shared_mutex> lock3(hudlessMutex[fIndex]);
+            //LOG_DEBUG("{} - Found output image!, {}", fIndex, (resource->buffer == ImGuiOverlayDx::fgUpscaledImage[fIndex]));
+            if (fgPossibleHudless[fIndex].contains(This))
             {
-                fgShaderOutputs[fIndex][This].insert_or_assign(resource->buffer, *resource);
+                fgPossibleHudless[fIndex][This].insert_or_assign(resource->buffer, *resource);
                 return;
             }
 
             ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
-            fgShaderOutputs[fIndex].insert_or_assign(This, newMap);
-            fgShaderOutputs[fIndex][This].insert_or_assign(resource->buffer, *resource);
+            fgPossibleHudless[fIndex].insert_or_assign(This, newMap);
+            fgPossibleHudless[fIndex][This].insert_or_assign(resource->buffer, *resource);
         }
     }
 }
@@ -1378,64 +1193,30 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
     if (This == g_pd3dCommandList || ImGuiOverlayDx::fgCopyCommandList == This /* || fgPresentRunning */ || ImGuiOverlayDx::fgSkipHudlessChecks || Config::Instance()->CurrentFeature == nullptr || !ImGuiOverlayDx::upscaleRan)
         return;
 
-    {
-        std::shared_lock<std::shared_mutex> lock(sourceMutex[fIndex]);
-        if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-            ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
-            fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
-            return;
-    }
+    if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
+        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
+        return;
 
     auto heap = GetHeapByGpuHandle(BaseDescriptor.ptr);
     if (heap == nullptr)
         return;
 
     auto capturedBuffer = heap->GetByGpuHandle(BaseDescriptor.ptr);
-    if (capturedBuffer != nullptr && capturedBuffer->buffer != nullptr)
+    if (capturedBuffer != nullptr && capturedBuffer->buffer != nullptr && (InUpscaledList(capturedBuffer->buffer) || CheckForHudless(capturedBuffer, false)))
     {
-        // LOG_DEBUG_ONLY("locksourceMutex[{}])", fgFrameIndex);
-        std::shared_lock<std::shared_mutex> lock3(sourceMutex[fIndex]);
-
-        // if it's in sources add as source
-        if (InUpscaledList(capturedBuffer->buffer) || fgSources[fIndex].contains(capturedBuffer->buffer) && capturedBuffer->type != UAV)
+        LOG_DEBUG_ONLY("Found image!");
+        std::unique_lock<std::shared_mutex> lock4(hudlessMutex[fIndex]);
+        if (fgPossibleHudless[fIndex].contains(This))
         {
-            lock3.unlock();
-
-            LOG_DEBUG("Found input image!");
-
-            // LOG_DEBUG_ONLY("lockshaderMutex[{}])", fgFrameIndex);
-            std::unique_lock<std::shared_mutex> lock4(shaderMutex[fIndex]);
-            if (fgShaderInputs[fIndex].contains(This))
-            {
-                fgShaderInputs[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
-                return;
-            }
-
-            ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
-            fgShaderInputs[fIndex].insert_or_assign(This, newMap);
-            fgShaderInputs[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
+            fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
             return;
         }
-        // otherwise if it's matching add as output (TODO: need to add type for resources (csv/rtv/uav))
-        else if (CheckForHudless(capturedBuffer) && capturedBuffer->type == UAV)
-        {
-            lock3.unlock();
 
-            LOG_DEBUG("Found output image!, {}", (capturedBuffer->buffer != ImGuiOverlayDx::fgUpscaledImage[fIndex]));
-
-            // LOG_DEBUG_ONLY("lockshaderMutex[{}])", fgFrameIndex);
-            std::unique_lock<std::shared_mutex> lock5(shaderMutex[fIndex]);
-            if (fgShaderOutputs[fIndex].contains(This))
-            {
-                fgShaderOutputs[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
-                return;
-            }
-
-            ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
-            fgShaderOutputs[fIndex].insert_or_assign(This, newMap);
-            fgShaderOutputs[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
-            return;
-        }
+        ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
+        fgPossibleHudless[fIndex].insert_or_assign(This, newMap);
+        fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
+        return;
     }
 
     LOG_DEBUG_ONLY("Miss RootParameterIndex: {1}, CommandList: {0:X}, gpuHandle: {2}", (SIZE_T)This, RootParameterIndex, BaseDescriptor.ptr);
@@ -1455,87 +1236,54 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
     if (This == g_pd3dCommandList || ImGuiOverlayDx::fgCopyCommandList == This /* || fgPresentRunning */ || ImGuiOverlayDx::fgSkipHudlessChecks || Config::Instance()->CurrentFeature == nullptr || !ImGuiOverlayDx::upscaleRan)
         return;
 
-    {
-        std::shared_lock<std::shared_mutex> lock(sourceMutex[fIndex]);
-        if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-            ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
-            fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
-            return;
-    }
+    if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
+        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
+        return;
 
     LOG_DEBUG_ONLY(" <-- {0:X}", (size_t)This);
 
+    // if can't find output skip
     {
-        std::unique_lock<std::shared_mutex> lock(shaderMutex[fIndex]);
-        // if can't find output skip
-        if (fgShaderOutputs[fIndex].size() == 0 || !fgShaderOutputs[fIndex].contains(This))
+        std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
+        if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
         {
-            fgShaderInputs[fIndex][This].clear();
-            fgShaderOutputs[fIndex][This].clear();
-            LOG_DEBUG_ONLY("Early exit 1");
+            fgPossibleHudless[fIndex][This].clear();
+            LOG_DEBUG_ONLY("Early exit");
             return;
         }
+    }
 
-        do
+    do
+    {
+        std::shared_lock<std::shared_mutex> lock2(hudlessMutex[fIndex]);
+        auto& val0 = fgPossibleHudless[fIndex][This];
+
+        // if this command list does not have entries skip
+        if (val0.size() == 0)
+            break;
+
+        for (auto& [key, val] : val0)
         {
-            auto val0 = fgShaderOutputs[fIndex][This];
-
-            // if this command list does not have entries skip
-            if (val0.size() == 0)
-                break;
-
-            // if shader inputs does not have this command list or does not have items
-            // or outputs does not have upscaled image check for outputs in sources
-            if ((!fgShaderInputs[fIndex].contains(This) || fgShaderInputs[fIndex][This].size() == 0) && !val0.contains(ImGuiOverlayDx::fgUpscaledImage[fIndex]))
+            if (CheckForHudless(&val))
             {
-                std::shared_lock<std::shared_mutex> lock(sourceMutex[fIndex]);
-                bool continueCheck = false;
+                LOG_DEBUG_ONLY("Found matching final image");
 
-                // check each resource at outputs
-                for (auto& [key, val] : val0)
+                if (CheckCapture())
                 {
-                    // upscaled image continue checking
-                    if (fgSources->contains(val.buffer) || val.buffer == ImGuiOverlayDx::fgUpscaledImage[fIndex] || CheckForHudless(&val, false))
-                    {
-                        continueCheck = true;
-                        break;
-                    }
-                }
-
-                if (!continueCheck)
-                {
-                    LOG_DEBUG_ONLY("Early exit 2");
+                    LOG_DEBUG("Capture");
+                    CaptureHudless(This, key);
                     break;
                 }
             }
-
-            for (auto& [key, val] : val0)
-            {
-                if (CheckForHudless(&val))
-                {
-                    LOG_DEBUG("Found matching final image");
-
-                    if (CheckCapture())
-                    {
-                        lock.unlock();
-                        CaptureHudless(This, key);
-                        break;
-                    }
-                    else
-                    {
-                        std::unique_lock<std::shared_mutex> lock2(sourceMutex[fIndex]);
-                        fgSources[fIndex].insert_or_assign(key, val);
-                    }
-                }
-            }
-        } while (false);
-
-        {
-            // LOG_DEBUG_ONLY("lockshaderMutex[{}])", fgFrameIndex);
-            fgShaderInputs[fIndex][This].clear();
-            fgShaderOutputs[fIndex][This].clear();
-            LOG_DEBUG_ONLY("Clear");
         }
+
+    } while (false);
+
+    {
+        std::unique_lock<std::shared_mutex> lock3(hudlessMutex[fIndex]);
+        fgPossibleHudless[fIndex][This].clear();
+        LOG_DEBUG_ONLY("Clear");
     }
 }
 
@@ -1548,87 +1296,54 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
     if (This == g_pd3dCommandList || ImGuiOverlayDx::fgCopyCommandList == This /* || fgPresentRunning */ || ImGuiOverlayDx::fgSkipHudlessChecks || Config::Instance()->CurrentFeature == nullptr || !ImGuiOverlayDx::upscaleRan)
         return;
 
-    {
-        std::shared_lock<std::shared_mutex> lock(sourceMutex[fIndex]);
-        if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-            ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
-            fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
-            return;
-    }
+    if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
+        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
+        return;
 
     LOG_DEBUG_ONLY(" <-- {0:X}", (size_t)This);
 
     {
-        std::unique_lock<std::shared_mutex> lock(shaderMutex[fIndex]);
         // if can't find output skip
-        if (fgShaderOutputs[fIndex].size() == 0 || !fgShaderOutputs[fIndex].contains(This))
+        std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
+        if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
         {
-            fgShaderInputs[fIndex][This].clear();
-            fgShaderOutputs[fIndex][This].clear();
-            LOG_DEBUG_ONLY("Early exit 1");
+            fgPossibleHudless[fIndex][This].clear();
+            LOG_DEBUG_ONLY("Early exit");
             return;
         }
+    }
 
-        do
+    do
+    {
+        std::shared_lock<std::shared_mutex> lock2(hudlessMutex[fIndex]);
+        auto val0 = fgPossibleHudless[fIndex][This];
+
+        // if this command list does not have entries skip
+        if (val0.size() == 0)
+            break;
+
+        for (auto& [key, val] : val0)
         {
-            auto val0 = fgShaderOutputs[fIndex][This];
-
-            // if this command list does not have entries skip
-            if (val0.size() == 0)
-                break;
-
-            // if shader inputs does not have this command list or does not have items
-            // or outputs does not have upscaled image check for outputs in sources
-            if ((!fgShaderInputs[fIndex].contains(This) || fgShaderInputs[fIndex][This].size() == 0) && !val0.contains(ImGuiOverlayDx::fgUpscaledImage[fIndex]))
+            if (CheckForHudless(&val))
             {
-                std::shared_lock<std::shared_mutex> lock(sourceMutex[fIndex]);
-                bool continueCheck = false;
+                LOG_DEBUG_ONLY("Found matching final image");
 
-                // check each resource at outputs
-                for (auto& [key, val] : val0)
+                if (CheckCapture())
                 {
-                    // upscaled image continue checking
-                    if (fgSources->contains(val.buffer) || val.buffer == ImGuiOverlayDx::fgUpscaledImage[fIndex] || CheckForHudless(&val, false))
-                    {
-                        continueCheck = true;
-                        break;
-                    }
-                }
-
-                if (!continueCheck)
-                {
-                    LOG_DEBUG_ONLY("Early exit 2");
+                    LOG_DEBUG("Capture");
+                    CaptureHudless(This, key);
                     break;
                 }
             }
-
-            for (auto& [key, val] : val0)
-            {
-                if (CheckForHudless(&val))
-                {
-                    LOG_DEBUG("Found matching final image");
-
-                    if (CheckCapture())
-                    {
-                        lock.unlock();
-                        CaptureHudless(This, key);
-                        break;
-                    }
-                    else
-                    {
-                        std::unique_lock<std::shared_mutex> lock2(sourceMutex[fIndex]);
-                        fgSources[fIndex].insert_or_assign(key, val);
-                    }
-                }
-            }
-        } while (false);
-
-        {
-            // LOG_DEBUG_ONLY("lockshaderMutex[{}])", fgFrameIndex);
-            fgShaderInputs[fIndex][This].clear();
-            fgShaderOutputs[fIndex][This].clear();
-            LOG_DEBUG_ONLY("Clear");
         }
+
+    } while (false);
+
+    {
+        std::unique_lock<std::shared_mutex> lock3(hudlessMutex[fIndex]);
+        fgPossibleHudless[fIndex][This].clear();
+        LOG_DEBUG_ONLY("Clear");
     }
 }
 
@@ -1641,87 +1356,54 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
     if (This == g_pd3dCommandList || ImGuiOverlayDx::fgCopyCommandList == This /* || fgPresentRunning */ || ImGuiOverlayDx::fgSkipHudlessChecks || Config::Instance()->CurrentFeature == nullptr || !ImGuiOverlayDx::upscaleRan)
         return;
 
-    {
-        std::shared_lock<std::shared_mutex> lock(sourceMutex[fIndex]);
-        if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-            ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
-            fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
-            return;
-    }
+    if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
+        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
+        return;
 
     LOG_DEBUG_ONLY(" <-- {0:X}", (size_t)This);
 
     {
-        std::unique_lock<std::shared_mutex> lock(shaderMutex[fIndex]);
+        std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
         // if can't find output skip
-        if (fgShaderOutputs[fIndex].size() == 0 || !fgShaderOutputs[fIndex].contains(This))
+        if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
         {
-            fgShaderInputs[fIndex][This].clear();
-            fgShaderOutputs[fIndex][This].clear();
-            LOG_DEBUG_ONLY("Early exit 1");
+            fgPossibleHudless[fIndex][This].clear();
+            LOG_DEBUG_ONLY("Early exit");
             return;
         }
+    }
 
-        do
+    do
+    {
+        std::shared_lock<std::shared_mutex> lock2(hudlessMutex[fIndex]);
+        auto val0 = fgPossibleHudless[fIndex][This];
+
+        // if this command list does not have entries skip
+        if (val0.size() == 0)
+            break;
+
+        for (auto& [key, val] : val0)
         {
-            auto val0 = fgShaderOutputs[fIndex][This];
-
-            // if this command list does not have entries skip
-            if (val0.size() == 0)
-                break;
-
-            // if shader inputs does not have this command list or does not have items
-            // or outputs does not have upscaled image check for outputs in sources
-            if ((!fgShaderInputs[fIndex].contains(This) || fgShaderInputs[fIndex][This].size() == 0) && !val0.contains(ImGuiOverlayDx::fgUpscaledImage[fIndex]))
+            if (CheckForHudless(&val))
             {
-                std::shared_lock<std::shared_mutex> lock(sourceMutex[fIndex]);
-                bool continueCheck = false;
+                LOG_DEBUG_ONLY("Found matching final image");
 
-                // check each resource at outputs
-                for (auto& [key, val] : val0)
+                if (CheckCapture())
                 {
-                    // upscaled image continue checking
-                    if (fgSources->contains(val.buffer) || val.buffer == ImGuiOverlayDx::fgUpscaledImage[fIndex] || CheckForHudless(&val, false))
-                    {
-                        continueCheck = true;
-                        break;
-                    }
-                }
-
-                if (!continueCheck)
-                {
-                    LOG_DEBUG_ONLY("Early exit 2");
+                    LOG_DEBUG("Capture");
+                    CaptureHudless(This, key);
                     break;
                 }
             }
-
-            for (auto& [key, val] : val0)
-            {
-                if (CheckForHudless(&val))
-                {
-                    LOG_DEBUG("Found matching final image");
-
-                    if (CheckCapture())
-                    {
-                        lock.unlock();
-                        CaptureHudless(This, key);
-                        break;
-                    }
-                    else
-                    {
-                        std::unique_lock<std::shared_mutex> lock2(sourceMutex[fIndex]);
-                        fgSources[fIndex].insert_or_assign(key, val);
-                    }
-                }
-            }
-        } while (false);
-
-        {
-            // LOG_DEBUG_ONLY("lockshaderMutex[{}])", fgFrameIndex);
-            fgShaderInputs[fIndex][This].clear();
-            fgShaderOutputs[fIndex][This].clear();
-            LOG_DEBUG_ONLY("Clear");
         }
+
+    } while (false);
+
+    {
+        std::unique_lock<std::shared_mutex> lock3(hudlessMutex[fIndex]);
+        fgPossibleHudless[fIndex][This].clear();
+        LOG_DEBUG_ONLY("Clear");
     }
 }
 
@@ -1939,6 +1621,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
         ImGuiOverlayDx::currentSwapchain = nullptr;
         ImGuiOverlayDx::swapchainFormat = DXGI_FORMAT_UNKNOWN;
+        ImGuiOverlayDx::fgSkipHudlessChecks = false;
 
         LOG_FUNC_RESULT(presentResult);
 
@@ -2013,6 +1696,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
 
         //fgPresentRunning = false;
+        ImGuiOverlayDx::fgSkipHudlessChecks = false;
 
         //LOG_DEBUG("Return");
 
@@ -2173,6 +1857,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
 
     //fgPresentRunning = false;
+    ImGuiOverlayDx::fgSkipHudlessChecks = false;
 
     if (Config::Instance()->CurrentFeature != nullptr)
         fgPresentedFrame = Config::Instance()->CurrentFeature->FrameCount();
@@ -2714,15 +2399,15 @@ static void HookCommandList(ID3D12Device* InDevice)
             o_Dispatch = (PFN_Dispatch)pVTable[14];
 
             // hudless copy
+#ifdef USE_COPY_RESOURCE
             o_CopyResource = (PFN_CopyResource)pVTable[17];
+#endif
             o_CopyTextureRegion = (PFN_CopyTextureRegion)pVTable[16];
 
+#ifdef USE_RESOURCE_DISCARD
             // release resource
             o_DiscardResource = (PFN_DiscardResource)pVTable[51];
-
-            // not used
-            //o_Close = (PFN_Close)pVTable[10];
-
+#endif
 
             if (o_OMSetRenderTargets != nullptr || o_DrawIndexedInstanced != nullptr || o_DrawInstanced != nullptr)
             {
@@ -2741,12 +2426,10 @@ static void HookCommandList(ID3D12Device* InDevice)
                 if (o_CopyTextureRegion != nullptr)
                     DetourAttach(&(PVOID&)o_CopyTextureRegion, hkCopyTextureRegion);
 
+#ifdef USE_COPY_RESOURCE
                 if (o_CopyResource != nullptr)
                     DetourAttach(&(PVOID&)o_CopyResource, hkCopyResource);
-
-                //if (o_Close != nullptr)
-                //    DetourAttach(&(PVOID&)o_Close, hkClose);
-
+#endif
                 if (o_SetGraphicsRootDescriptorTable != nullptr)
                     DetourAttach(&(PVOID&)o_SetGraphicsRootDescriptorTable, hkSetGraphicsRootDescriptorTable);
 
@@ -2756,9 +2439,10 @@ static void HookCommandList(ID3D12Device* InDevice)
                 if (o_Dispatch != nullptr)
                     DetourAttach(&(PVOID&)o_Dispatch, hkDispatch);
 
+#ifdef USE_RESOURCE_DISCARD
                 if (o_DiscardResource != nullptr)
                     DetourAttach(&(PVOID&)o_DiscardResource, hkDiscardResource);
-
+#endif
                 DetourTransactionCommit();
             }
 
@@ -2784,14 +2468,11 @@ static void HookToDevice(ID3D12Device* InDevice)
     // hudless
     o_CreateSampler = (PFN_CreateSampler)pVTable[22];
     o_CreateRenderTargetView = (PFN_CreateRenderTargetView)pVTable[20];
-    //o_CreateCommandQueue = (PFN_CreateCommandQueue)pVTable[8];
     o_CreateDescriptorHeap = (PFN_CreateDescriptorHeap)pVTable[14];
     o_CopyDescriptors = (PFN_CopyDescriptors)pVTable[23];
     o_CopyDescriptorsSimple = (PFN_CopyDescriptorsSimple)pVTable[24];
     o_CreateShaderResourceView = (PFN_CreateShaderResourceView)pVTable[18];
     o_CreateUnorderedAccessView = (PFN_CreateUnorderedAccessView)pVTable[19];
-
-
 
     // Apply the detour
     if (o_CreateSampler != nullptr || o_CreateRenderTargetView != nullptr)
@@ -2809,9 +2490,6 @@ static void HookToDevice(ID3D12Device* InDevice)
         {
             if (o_CreateRenderTargetView != nullptr)
                 DetourAttach(&(PVOID&)o_CreateRenderTargetView, hkCreateRenderTargetView);
-
-            //if (o_CreateCommandQueue != nullptr)
-            //    DetourAttach(&(PVOID&)o_CreateCommandQueue, hkCreateCommandQueue);
 
             if (o_CreateShaderResourceView != nullptr)
                 DetourAttach(&(PVOID&)o_CreateShaderResourceView, hkCreateShaderResourceView);
@@ -3549,16 +3227,16 @@ void ImGuiOverlayDx::NewFrame()
 
     {
         // LOG_DEBUG_ONLY("locksourceMutex[{}])", newIndex);
-        std::unique_lock<std::shared_mutex> lock(sourceMutex[newIndex]);
-        fgSources[newIndex].clear();
+        //std::unique_lock<std::shared_mutex> lock(sourceMutex[newIndex]);
+        //fgSources[newIndex].clear();
         fgCopySource[newIndex] = nullptr;
     }
 
     {
         // LOG_DEBUG_ONLY("lockshaderMutex[{}])", newIndex);
-        std::unique_lock<std::shared_mutex> lock(shaderMutex[newIndex]);
-        fgShaderInputs[newIndex].clear();
-        fgShaderOutputs[newIndex].clear();
+        std::unique_lock<std::shared_mutex> lock(hudlessMutex[newIndex]);
+        //fgShaderInputs[newIndex].clear();
+        fgPossibleHudless[newIndex].clear();
     }
 
     std::unique_lock<std::shared_mutex> lock(counterMutex[newIndex]);
