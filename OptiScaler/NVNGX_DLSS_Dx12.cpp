@@ -78,8 +78,6 @@ static void CreateFGObjects()
 {
     if (ImGuiOverlayDx::fgCopyCommandQueue != nullptr)
         return;
-    
-    ImGuiOverlayDx::fgSkipHudlessChecks = true;
 
     do
     {
@@ -126,8 +124,6 @@ static void CreateFGObjects()
         }
         ImGuiOverlayDx::fgCopyCommandQueue->SetName(L"fgCopyCommandQueue");
     } while (false);
-
-    ImGuiOverlayDx::fgSkipHudlessChecks = false;
 }
 
 static void CreateFGContext(IFeature_Dx12* deviceContext)
@@ -171,6 +167,8 @@ static void CreateFGContext(IFeature_Dx12* deviceContext)
 
 static void StopAndDestroyFGContext(bool shutDown)
 {
+    ImGuiOverlayDx::fgSkipHudlessChecks = false;
+
     if (ImGuiOverlayDx::fgContext != nullptr)
     {
         ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
@@ -1468,9 +1466,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     // Record the first timestamp (before FSR2 upscaling)
     InCmdList->EndQuery(ImGuiOverlayDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
 
-    ImGuiOverlayDx::fgSkipHudlessChecks = true;
     bool evalResult = deviceContext->Evaluate(InCmdList, InParameters);
-    ImGuiOverlayDx::fgSkipHudlessChecks = false;
 
     // Record the second timestamp (after FSR2 upscaling)
     InCmdList->EndQuery(ImGuiOverlayDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 1);
@@ -1571,17 +1567,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 m_FrameGenerationConfig.frameGenerationCallback = [](ffxDispatchDescFrameGeneration* params, void* pUserCtx) -> ffxReturnCode_t
                     {
-                        ImGuiOverlayDx::fgSkipHudlessChecks = true;
-                        auto result = _dispatch(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
-                        ImGuiOverlayDx::fgSkipHudlessChecks = false;
+                        if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged || Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr)
+                            return FFX_API_RETURN_OK;
 
+                        auto result = _dispatch(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
                         return result;
                     };
 
                 m_FrameGenerationConfig.frameGenerationCallbackUserContext = &ImGuiOverlayDx::fgContext;
 
-                //m_FrameGenerationConfig.frameGenerationCallback = nullptr;
-                //m_FrameGenerationConfig.frameGenerationCallbackUserContext = nullptr;
 
                 m_FrameGenerationConfig.onlyPresentGenerated = Config::Instance()->FGOnlyGenerated; // check here
                 m_FrameGenerationConfig.frameID = deviceContext->FrameCount();
@@ -1673,28 +1667,25 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     dfgPrepare.frameTimeDelta = msDelta;
 
                     Config::Instance()->dxgiSkipSpoofing = true;
-                    ImGuiOverlayDx::fgSkipHudlessChecks = true;
                     retCode = _dispatch(&ImGuiOverlayDx::fgContext, &dfgPrepare.header);
-                    ImGuiOverlayDx::fgSkipHudlessChecks = false;
                     Config::Instance()->dxgiSkipSpoofing = false;
                     LOG_DEBUG("    FG _dispatch result: {0}", retCode);
                 }
             }
             else
             {
-                ImGuiOverlayDx::upscaleRan = true;
-
                 auto frameIndex = ImGuiOverlayDx::ClearFrameResources();
                 ImGuiOverlayDx::NewFrame();
+                ImGuiOverlayDx::fgUpscaledImage[frameIndex] = output;
+                LOG_DEBUG("Set fgUpscaledImage[{}]", frameIndex);
+
+                ImGuiOverlayDx::upscaleRan = true;
 
                 auto allocator = ImGuiOverlayDx::fgCopyCommandAllocators[frameIndex];
                 auto result = allocator->Reset();
                 result = ImGuiOverlayDx::fgCopyCommandList->Reset(allocator, nullptr);
 
-                ImGuiOverlayDx::fgUpscaledImage[frameIndex] = output;
-
                 LOG_DEBUG("    FG HUDFix running, frame: {0}", deviceContext->FrameCount());
-
                 InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &ImGuiOverlayDx::jitterX);
                 InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &ImGuiOverlayDx::jitterY);
 
@@ -1704,9 +1695,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 if (CreateBufferResource(L"fgVelocity", D3D12Device, paramVelocity, D3D12_RESOURCE_STATE_COPY_DEST, &ImGuiOverlayDx::paramVelocity[frameIndex]))
                 {
-                    ImGuiOverlayDx::fgSkipHudlessChecks = true;
                     InCmdList->CopyResource(ImGuiOverlayDx::paramVelocity[frameIndex], paramVelocity);
-                    ImGuiOverlayDx::fgSkipHudlessChecks = false;
                 }
 
                 ID3D12Resource* paramDepth;
@@ -1715,9 +1704,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 if (CreateBufferResource(L"fgDepth", D3D12Device, paramDepth, D3D12_RESOURCE_STATE_COPY_DEST, &ImGuiOverlayDx::paramDepth[frameIndex]))
                 {
-                    ImGuiOverlayDx::fgSkipHudlessChecks = true;
                     InCmdList->CopyResource(ImGuiOverlayDx::paramDepth[frameIndex], paramDepth);
-                    ImGuiOverlayDx::fgSkipHudlessChecks = false;
                 }
 
                 InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &ImGuiOverlayDx::mvScaleX);
