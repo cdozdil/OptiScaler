@@ -12,6 +12,13 @@
 
 #include <vulkan/vulkan_core.h>
 
+// #define HOOK_GET_MODULE
+
+#ifdef HOOK_GET_MODULE
+#define GET_MODULE_NVNGX
+#define GET_MODULE_DLL
+#endif
+
 #pragma warning (disable : 4996)
 
 typedef BOOL(*PFN_FreeLibrary)(HMODULE lpLibrary);
@@ -25,7 +32,6 @@ typedef HMODULE(*PFN_GetModuleHandleA)(LPCSTR lpModuleName);
 typedef HMODULE(*PFN_GetModuleHandleW)(LPCWSTR lpModuleName);
 typedef BOOL(*PFN_GetModuleHandleExA)(DWORD dwFlags, LPCSTR lpModuleName, HMODULE* phModule);
 typedef BOOL(*PFN_GetModuleHandleExW)(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE* phModule);
-
 
 typedef const char* (CDECL* PFN_wine_get_version)(void);
 
@@ -41,6 +47,10 @@ static PFN_LoadLibraryW o_LoadLibraryW = nullptr;
 static PFN_LoadLibraryExA o_LoadLibraryExA = nullptr;
 static PFN_LoadLibraryExW o_LoadLibraryExW = nullptr;
 static PFN_GetProcAddress o_GetProcAddress = nullptr;
+static PFN_GetModuleHandleA o_GetModuleHandleA = nullptr;
+static PFN_GetModuleHandleW o_GetModuleHandleW = nullptr;
+static PFN_GetModuleHandleExA o_GetModuleHandleExA = nullptr;
+static PFN_GetModuleHandleExW o_GetModuleHandleExW = nullptr;
 static PFN_vkGetPhysicalDeviceProperties o_vkGetPhysicalDeviceProperties = nullptr;
 static PFN_vkGetPhysicalDeviceProperties2 o_vkGetPhysicalDeviceProperties2 = nullptr;
 static PFN_vkGetPhysicalDeviceProperties2KHR o_vkGetPhysicalDeviceProperties2KHR = nullptr;
@@ -337,10 +347,257 @@ static HMODULE LoadNvgxDlss(std::wstring originalPath)
 static FARPROC hkGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 {
     if (hModule == dllModule)
-        LOG_INFO("Trying to get process address of {0}", lpProcName);
+        LOG_DEBUG("Trying to get process address of {0}", lpProcName);
 
     return o_GetProcAddress(hModule, lpProcName);
 }
+
+#ifdef HOOK_GET_MODULE
+
+static HMODULE hkGetModuleHandleA(LPCSTR lpModuleName)
+{
+    if (!skipGetModuleHandle && lpModuleName != nullptr)
+    {
+        std::string libName(lpModuleName);
+        std::string lcaseLibName(libName);
+
+        for (size_t i = 0; i < lcaseLibName.size(); i++)
+            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+
+        LOG_DEBUG_ONLY("{}", lcaseLibName);
+
+        int pos = 0;
+
+#ifdef GET_MODULE_NVNGX
+
+        // nvngx dll
+        pos = lcaseLibName.rfind(nvngxA);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxA.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", libName);
+            return dllModule;
+        }
+
+        // nvngx 
+        pos = lcaseLibName.rfind(nvngxExA);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxExA.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", libName);
+            return dllModule;
+        }
+
+#endif
+
+#ifdef GET_MODULE_DLL
+
+        //// Opti dll
+        pos = lcaseLibName.rfind(dllNameA);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", libName);
+            return dllModule;
+        }
+
+        // Opti 
+        pos = lcaseLibName.rfind(dllNameExA);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExA.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", libName);
+            return dllModule;
+        }
+#endif
+    }
+
+    return o_GetModuleHandleA(lpModuleName);
+}
+
+static HMODULE hkGetModuleHandleW(LPCWSTR lpModuleName)
+{
+    if (!skipGetModuleHandle && lpModuleName != nullptr)
+    {
+        std::wstring libName(lpModuleName);
+        std::wstring lcaseLibName(libName);
+
+        for (size_t i = 0; i < lcaseLibName.size(); i++)
+            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+
+        auto lcaseLibNameA = wstring_to_string(lcaseLibName);
+
+        LOG_DEBUG_ONLY("{}", lcaseLibNameA);
+
+        int pos = 0;
+
+#ifdef GET_MODULE_NVNGX
+
+        // nvngx dll
+        pos = lcaseLibName.rfind(nvngxW);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxW.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
+            return dllModule;
+        }
+
+        // nvngx
+        pos = lcaseLibName.rfind(nvngxExW);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxExW.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
+            return dllModule;
+        }
+#endif
+
+#ifdef GET_MODULE_DLL
+
+        //// Opti dll
+        pos = lcaseLibName.rfind(dllNameW);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
+            return dllModule;
+        }
+
+        // Opti 
+        pos = lcaseLibName.rfind(dllNameExW);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExW.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
+            return dllModule;
+        }
+
+#endif
+    }
+
+    return o_GetModuleHandleW(lpModuleName);
+}
+
+static BOOL hkGetModuleHandleExA(DWORD dwFlags, LPCSTR lpModuleName, HMODULE* phModule)
+{
+    if (!skipGetModuleHandle && lpModuleName != nullptr)
+    {
+        std::string libName(lpModuleName);
+        std::string lcaseLibName(libName);
+
+        for (size_t i = 0; i < lcaseLibName.size(); i++)
+            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+
+        LOG_DEBUG_ONLY("{}", lcaseLibName);
+
+        int pos = 0;
+
+#ifdef GET_MODULE_NVNGX
+
+        // nvngx dll
+        pos = lcaseLibName.rfind(nvngxA);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxA.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", libName);
+            *phModule = dllModule;
+            return TRUE;
+        }
+
+        // nvngx
+        pos = lcaseLibName.rfind(nvngxExA);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxExA.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", libName);
+            *phModule = dllModule;
+            return TRUE;
+        }
+
+#endif
+
+#ifdef GET_MODULE_DLL
+
+        //// Opti dll
+        pos = lcaseLibName.rfind(dllNameA);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", libName);
+            *phModule = dllModule;
+            return TRUE;
+        }
+
+        // Opti 
+        pos = lcaseLibName.rfind(dllNameExA);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExA.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", libName);
+            *phModule = dllModule;
+            return TRUE;
+        }
+
+#endif
+
+    }
+
+    return o_GetModuleHandleExA(dwFlags, lpModuleName, phModule);
+}
+
+static BOOL hkGetModuleHandleExW(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE* phModule)
+{
+    if (!skipGetModuleHandle && lpModuleName != nullptr)
+    {
+        std::wstring libName(lpModuleName);
+        std::wstring lcaseLibName(libName);
+
+        for (size_t i = 0; i < lcaseLibName.size(); i++)
+            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+
+        auto lcaseLibNameA = wstring_to_string(lcaseLibName);
+
+        LOG_DEBUG_ONLY("{}", lcaseLibNameA);
+
+        int pos = 0;
+
+#ifdef GET_MODULE_NVNGX
+
+        // nvngx dll
+        pos = lcaseLibName.rfind(nvngxW);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxW.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
+            *phModule = dllModule;
+            return TRUE;
+        }
+
+        // nvngx
+        pos = lcaseLibName.rfind(nvngxExW);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxExW.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
+            *phModule = dllModule;
+            return TRUE;
+        }
+
+#endif
+
+#ifdef GET_MODULE_DLL
+
+        //// Opti dll
+        pos = lcaseLibName.rfind(dllNameW);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
+            *phModule = dllModule;
+            return TRUE;
+        }
+
+        // Opti 
+        pos = lcaseLibName.rfind(dllNameExW);
+        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExW.size()))
+        {
+            LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
+            *phModule = dllModule;
+            return TRUE;
+        }
+
+#endif
+    }
+
+    return o_GetModuleHandleExW(dwFlags, lpModuleName, phModule);
+}
+
+#endif
 
 static BOOL hkFreeLibrary(HMODULE lpLibrary)
 {
@@ -860,12 +1117,20 @@ static void AttachHooks()
     {
         // Detour the functions
         o_FreeLibrary = reinterpret_cast<PFN_FreeLibrary>(DetourFindFunction("kernel32.dll", "FreeLibrary"));
+
         o_LoadLibraryA = reinterpret_cast<PFN_LoadLibraryA>(DetourFindFunction("kernel32.dll", "LoadLibraryA"));
         o_LoadLibraryW = reinterpret_cast<PFN_LoadLibraryW>(DetourFindFunction("kernel32.dll", "LoadLibraryW"));
         o_LoadLibraryExA = reinterpret_cast<PFN_LoadLibraryExA>(DetourFindFunction("kernel32.dll", "LoadLibraryExA"));
         o_LoadLibraryExW = reinterpret_cast<PFN_LoadLibraryExW>(DetourFindFunction("kernel32.dll", "LoadLibraryExW"));
+
+#ifdef HOOK_GET_MODULE
+        o_GetModuleHandleA = reinterpret_cast<PFN_GetModuleHandleA>(DetourFindFunction("kernel32.dll", "GetModuleHandleA"));
+        o_GetModuleHandleW = reinterpret_cast<PFN_GetModuleHandleW>(DetourFindFunction("kernel32.dll", "GetModuleHandleW"));
+        o_GetModuleHandleExA = reinterpret_cast<PFN_GetModuleHandleExA>(DetourFindFunction("kernel32.dll", "GetModuleHandleExA"));
+        o_GetModuleHandleExW = reinterpret_cast<PFN_GetModuleHandleExW>(DetourFindFunction("kernel32.dll", "GetModuleHandleExW"));
+#endif
 #ifdef _DEBUG
-        o_GetProcAddress = reinterpret_cast<PFN_GetProcAddress>(DetourFindFunction("kernel32.dll", "GetProcAddress"));
+        //o_GetProcAddress = reinterpret_cast<PFN_GetProcAddress>(DetourFindFunction("kernel32.dll", "GetProcAddress"));
 #endif // DEBUG
 
         if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
@@ -889,6 +1154,22 @@ static void AttachHooks()
 
             if (o_LoadLibraryExW)
                 DetourAttach(&(PVOID&)o_LoadLibraryExW, hkLoadLibraryExW);
+
+#ifdef  HOOK_GET_MODULE
+
+            if (o_GetModuleHandleA)
+                DetourAttach(&(PVOID&)o_GetModuleHandleA, hkGetModuleHandleA);
+
+            if (o_GetModuleHandleW)
+                DetourAttach(&(PVOID&)o_GetModuleHandleW, hkGetModuleHandleW);
+
+            if (o_GetModuleHandleExA)
+                DetourAttach(&(PVOID&)o_GetModuleHandleExA, hkGetModuleHandleExA);
+
+            if (o_GetModuleHandleExW)
+                DetourAttach(&(PVOID&)o_GetModuleHandleExW, hkGetModuleHandleExW);
+
+#endif //  HOOK_GET_MODULE
 
             if (o_GetProcAddress)
                 DetourAttach(&(PVOID&)o_GetProcAddress, hkGetProcAddress);
@@ -1021,6 +1302,7 @@ static void CheckWorkingMode()
         {
             do
             {
+                skipGetModuleHandle = true;
                 auto pluginFilePath = pluginPath / L"version.dll";
                 dll = LoadLibrary(pluginFilePath.wstring().c_str());
 
@@ -1043,6 +1325,8 @@ static void CheckWorkingMode()
 
                 if (dll != nullptr)
                     LOG_INFO("OptiScaler working as version.dll, system dll loaded");
+
+                skipGetModuleHandle = false;
 
             } while (false);
 
@@ -1071,6 +1355,7 @@ static void CheckWorkingMode()
         {
             do
             {
+                skipGetModuleHandle = true;
                 auto pluginFilePath = pluginPath / L"winmm.dll";
                 dll = LoadLibrary(pluginFilePath.wstring().c_str());
 
@@ -1093,6 +1378,7 @@ static void CheckWorkingMode()
 
                 if (dll != nullptr)
                     LOG_INFO("OptiScaler working as winmm.dll, system dll loaded");
+                skipGetModuleHandle = false;
 
             } while (false);
 
@@ -1120,6 +1406,7 @@ static void CheckWorkingMode()
         {
             do
             {
+                skipGetModuleHandle = true;
                 auto pluginFilePath = pluginPath / L"wininet.dll";
                 dll = LoadLibrary(pluginFilePath.wstring().c_str());
 
@@ -1142,6 +1429,7 @@ static void CheckWorkingMode()
 
                 if (dll != nullptr)
                     LOG_INFO("OptiScaler working as wininet.dll, system dll loaded");
+                skipGetModuleHandle = false;
 
             } while (false);
 
@@ -1186,6 +1474,7 @@ static void CheckWorkingMode()
         {
             do
             {
+                skipGetModuleHandle = true;
                 auto pluginFilePath = pluginPath / L"winhttp.dll";
                 dll = LoadLibrary(pluginFilePath.wstring().c_str());
 
@@ -1208,6 +1497,8 @@ static void CheckWorkingMode()
 
                 if (dll != nullptr)
                     LOG_INFO("OptiScaler working as winhttp.dll, system dll loaded");
+
+                skipGetModuleHandle = false;
 
             } while (false);
 
@@ -1235,6 +1526,7 @@ static void CheckWorkingMode()
         {
             do
             {
+                skipGetModuleHandle = true;
                 auto pluginFilePath = pluginPath / L"dxgi.dll";
                 dll = LoadLibrary(pluginFilePath.wstring().c_str());
 
@@ -1258,6 +1550,7 @@ static void CheckWorkingMode()
                 if (dll != nullptr)
                     LOG_INFO("OptiScaler working as dxgi.dll, system dll loaded");
 
+                skipGetModuleHandle = false;
             } while (false);
 
             if (dll != nullptr)
@@ -1375,13 +1668,17 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             spdlog::warn("LogLevel: {0}", Config::Instance()->LogLevel.value_or(2));
 
             // Check for Wine
+            skipGetModuleHandle = true;
             Config::Instance()->IsRunningOnLinux = IsRunningOnWine();
+            skipGetModuleHandle = false;
 
             // Check if real DLSS available
             if (Config::Instance()->DLSSEnabled.value_or(true))
             {
                 spdlog::info("");
+                skipGetModuleHandle = true;
                 NVNGXProxy::InitNVNGX();
+                skipGetModuleHandle = false;
 
                 if (NVNGXProxy::NVNGXModule() == nullptr)
                 {
@@ -1424,21 +1721,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 Config::Instance()->frameTimes.push_back(0.0);
                 Config::Instance()->upscaleTimes.push_back(0.0);
             }
-
-            //epicOverlayHandle = GetModuleHandle(L"EOSOVH-Win64-Shipping.dll");
-            //if (epicOverlayHandle != nullptr)
-            //    FreeLibrary(epicOverlayHandle);
-
-            //do
-            //{
-            //    epicOverlayHandle = nullptr;
-            //    epicOverlayHandle = GetModuleHandle(L"EOSSDK-Win64-Shipping.dll");
-
-            //    if (epicOverlayHandle != nullptr)
-            //        FreeLibrary(epicOverlayHandle);
-
-            //} while (epicOverlayHandle != nullptr);
-
 
             break;
 
