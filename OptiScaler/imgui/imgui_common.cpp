@@ -925,15 +925,15 @@ void ImGuiCommon::RenderMenu()
 
                             Config::Instance()->FGHUDLimit = hudFixLimit;
                         }
-                        ImGui::PopItemWidth();
                         ShowHelpMarker("Delay HUDless capture, high values might cause crash!");
                          
-                        //ImGui::SameLine(0.0f, 16.0f);
+                        ImGui::SameLine(0.0f, 16.0f);
+                        auto hudExtended = Config::Instance()->FGHUDFixExtended.value_or(false);
+                        if (ImGui::Checkbox("Extended", &hudExtended))
+                            Config::Instance()->FGHUDFixExtended = hudExtended;
+                        ShowHelpMarker("Extended HUDless checks, might cause crash and slowdowns!");
 
-                        //auto hudExtended = Config::Instance()->FGHUDPrevious.value_or(false);
-                        //if (ImGui::Checkbox("Extended", &hudExtended))
-                        //    Config::Instance()->FGHUDPrevious = hudExtended;
-                        //ShowHelpMarker("Extended HUDless checks, might cause crash and slowdowns!");
+                        ImGui::PopItemWidth();
 
                         ImGui::EndDisabled();
 

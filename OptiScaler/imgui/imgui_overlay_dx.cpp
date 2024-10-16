@@ -189,6 +189,7 @@ static std::shared_mutex counterMutex[ImGuiOverlayDx::FG_BUFFER_SIZE];
 // found hudless info
 static ID3D12Resource* fgCopySource[ImGuiOverlayDx::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
 static ID3D12Resource* fgHudless[ImGuiOverlayDx::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
+static ID3D12Resource* fgHudlessBuffer[ImGuiOverlayDx::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
 
 static UINT fgFrameIndex = 0;
 
@@ -477,7 +478,7 @@ static void FillResourceInfo(ID3D12Resource* resource, ResourceInfo* info)
     info->format = desc.Format;
 }
 
-static void GetHudless(ID3D12GraphicsCommandList* This) //, D3D12_RESOURCE_STATES State)
+static void GetHudless(ID3D12GraphicsCommandList* This, bool SkipCopy) //, D3D12_RESOURCE_STATES State)
 {
     auto fIndex = fgFrameIndex;
     if (This != g_pd3dCommandList && fgCopySource[fIndex] != nullptr && Config::Instance()->CurrentFeature != nullptr &&
@@ -504,11 +505,14 @@ static void GetHudless(ID3D12GraphicsCommandList* This) //, D3D12_RESOURCE_STATE
         This->ResourceBarrier(1, &barrier);
 #endif 
 
-        // Take hudless copy
-        if (CreateBufferResource(g_pd3dDeviceParam, fgCopySource[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, &fgHudless[fIndex]))
-            This->CopyResource(fgHudless[fIndex], fgCopySource[fIndex]);
-        else
-            return;
+        if (!SkipCopy)
+        {
+            // Take hudless copy
+            if (CreateBufferResource(g_pd3dDeviceParam, fgCopySource[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, &fgHudless[fIndex]))
+                This->CopyResource(fgHudless[fIndex], fgCopySource[fIndex]);
+            else
+                return;
+        }
 
 #ifdef USE_RESOURCE_BARRIRER
         // Not sure about source state, skipping for now
@@ -561,6 +565,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This) //, D3D12_RESOURCE_STATE
                     result = ImGuiOverlayDx::fgCopyCommandList->Reset(allocator, nullptr);
                     LOG_WARN("Callback without hudless!");
 
+                    params->reset = true;
                 }
 
                 if (Config::Instance()->CurrentFeature != nullptr)
@@ -702,12 +707,12 @@ static bool CheckCapture()
         LOG_DEBUG_ONLY("lockcounterMutex[{}])", fIndex);
         std::unique_lock<std::shared_mutex> lock(counterMutex[fIndex]);
         ImGuiOverlayDx::fgHUDlessCaptureCounter[fIndex]++;
+
+        LOG_DEBUG("frameCounter: {}, fgHUDlessCaptureCounter: {}, Limit: {}", frameCounter, ImGuiOverlayDx::fgHUDlessCaptureCounter[fIndex], Config::Instance()->FGHUDLimit.value_or(1));
+
+        if (ImGuiOverlayDx::fgHUDlessCaptureCounter[fIndex] != Config::Instance()->FGHUDLimit.value_or(1))
+            return false;
     }
-
-    LOG_DEBUG("frameCounter: {}, fgHUDlessCaptureCounter: {}, Limit: {}", frameCounter, ImGuiOverlayDx::fgHUDlessCaptureCounter[fIndex], Config::Instance()->FGHUDLimit.value_or(1));
-
-    if (ImGuiOverlayDx::fgHUDlessCaptureCounter[fIndex] != Config::Instance()->FGHUDLimit.value_or(1))
-        return false;
 
     return true;
 }
@@ -716,9 +721,36 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* r
 {
     auto fIndex = fgFrameIndex;
     ImGuiOverlayDx::upscaleRan = false;
-    fgCopySource[fIndex] = resource;
-    GetHudless(cmdList);
     fgUpscaledFound = false;
+    fgCopySource[fIndex] = resource;
+
+    auto resInfo = resource->GetDesc();
+    if (resInfo.Format != ImGuiOverlayDx::swapchainFormat && Config::Instance()->FGHUDFixExtended.value_or(false) && ImGuiOverlayDx::fgFormatTransfer != nullptr &&
+        (resInfo.Format == DXGI_FORMAT_R16G16B16A16_FLOAT || resInfo.Format == DXGI_FORMAT_R11G11B10_FLOAT || resInfo.Format == DXGI_FORMAT_R32G32B32A32_FLOAT || resInfo.Format == DXGI_FORMAT_R32G32B32_FLOAT) &&
+        (ImGuiOverlayDx::swapchainFormat == DXGI_FORMAT_R8G8B8A8_UNORM || ImGuiOverlayDx::swapchainFormat == DXGI_FORMAT_B8G8R8A8_UNORM || ImGuiOverlayDx::swapchainFormat == DXGI_FORMAT_R10G10B10A2_UNORM))
+    {
+        if (ImGuiOverlayDx::fgFormatTransfer->CreateBufferResource(g_pd3dDeviceParam, resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) &&
+            CreateBufferResource(g_pd3dDeviceParam, resource, D3D12_RESOURCE_STATE_COPY_SOURCE, &fgHudlessBuffer[fIndex]))
+        {
+            ResourceBarrier(cmdList, fgHudlessBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+            cmdList->CopyResource(fgHudlessBuffer[fIndex], resource);
+            ResourceBarrier(cmdList, fgHudlessBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+            ImGuiOverlayDx::fgFormatTransfer->SetBufferState(ImGuiOverlayDx::fgCopyCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            ImGuiOverlayDx::fgFormatTransfer->Dispatch(g_pd3dDeviceParam, ImGuiOverlayDx::fgCopyCommandList, fgHudlessBuffer[fIndex], ImGuiOverlayDx::fgFormatTransfer->Buffer());
+            ImGuiOverlayDx::fgFormatTransfer->SetBufferState(ImGuiOverlayDx::fgCopyCommandList, D3D12_RESOURCE_STATE_COPY_SOURCE);
+
+            LOG_DEBUG_ONLY("Using fgFormatTransfer->Buffer()");
+            fgHudless[fIndex] = ImGuiOverlayDx::fgFormatTransfer->Buffer();
+        }
+    }
+    else
+    {
+        if (CreateBufferResource(g_pd3dDeviceParam, resource, D3D12_RESOURCE_STATE_COPY_DEST, &fgHudless[fIndex]))
+            cmdList->CopyResource(fgHudless[fIndex], resource);
+    }
+
+    GetHudless(cmdList, true);
 }
 
 static bool CheckForHudless(ResourceInfo* resource, bool checkFormat = true)
@@ -739,14 +771,19 @@ static bool CheckForHudless(ResourceInfo* resource, bool checkFormat = true)
         Config::Instance()->SCChanged = false;
     }
 
-    if (resource->height == fgScDesc.BufferDesc.Height && resource->width == fgScDesc.BufferDesc.Width &&
-        (!checkFormat || resource->format == fgScDesc.BufferDesc.Format))
+    if (resource->height == fgScDesc.BufferDesc.Height && resource->width == fgScDesc.BufferDesc.Width && (!checkFormat || resource->format == fgScDesc.BufferDesc.Format ||
+        (Config::Instance()->FGHUDFixExtended.value_or(false) && ImGuiOverlayDx::fgFormatTransfer != nullptr &&
+        (resource->format == DXGI_FORMAT_R16G16B16A16_FLOAT || resource->format == DXGI_FORMAT_R11G11B10_FLOAT || resource->format == DXGI_FORMAT_R32G32B32A32_FLOAT || resource->format == DXGI_FORMAT_R32G32B32_FLOAT) &&
+        (fgScDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R10G10B10A2_UNORM))))
     {
         LOG_DEBUG_ONLY("Width: {}/{}, Height: {}/{}, Format: {}/{}, checkFormat: {} -> TRUE",
                        resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, checkFormat);
 
         return true;
     }
+
+    LOG_DEBUG_ONLY("Width: {}/{}, Height: {}/{}, Format: {}/{}, checkFormat: {} -> FALSE",
+                   resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, checkFormat);
 
     return false;
 }
@@ -911,7 +948,7 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
 
     auto fIndex = fgFrameIndex;
 
-    if (This == g_pd3dCommandList || ImGuiOverlayDx::fgCopyCommandList == This /* || fgPresentRunning */ || ImGuiOverlayDx::fgSkipHudlessChecks || Config::Instance()->CurrentFeature == nullptr || !ImGuiOverlayDx::upscaleRan)
+    if (This == g_pd3dCommandList || ImGuiOverlayDx::fgCopyCommandList == This || ImGuiOverlayDx::fgSkipHudlessChecks || Config::Instance()->CurrentFeature == nullptr || !ImGuiOverlayDx::upscaleRan)
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
@@ -1317,7 +1354,7 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
     do
     {
         std::shared_lock<std::shared_mutex> lock2(hudlessMutex[fIndex]);
-        auto val0 = fgPossibleHudless[fIndex][This];
+        auto& val0 = fgPossibleHudless[fIndex][This];
 
         // if this command list does not have entries skip
         if (val0.size() == 0)
@@ -1377,7 +1414,7 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
     do
     {
         std::shared_lock<std::shared_mutex> lock2(hudlessMutex[fIndex]);
-        auto val0 = fgPossibleHudless[fIndex][This];
+        auto& val0 = fgPossibleHudless[fIndex][This];
 
         // if this command list does not have entries skip
         if (val0.size() == 0)
@@ -3218,29 +3255,19 @@ void ImGuiOverlayDx::NewFrame()
 
     auto newIndex = (fIndex + 2) % FG_BUFFER_SIZE;
 
-    //{
-    //    // LOG_DEBUG_ONLY("lockframeResourceMutex[{}])", newIndex);
-    //    std::unique_lock<std::shared_mutex> lock(frameResourceMutex[newIndex]);
-    //    fgFrameResourcesByCpuHandle[newIndex].clear();
-    //    fgFrameResourcesByGpuHandle[newIndex].clear();
-    //}
-
     {
-        // LOG_DEBUG_ONLY("locksourceMutex[{}])", newIndex);
-        //std::unique_lock<std::shared_mutex> lock(sourceMutex[newIndex]);
-        //fgSources[newIndex].clear();
         fgCopySource[newIndex] = nullptr;
     }
 
     {
-        // LOG_DEBUG_ONLY("lockshaderMutex[{}])", newIndex);
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[newIndex]);
-        //fgShaderInputs[newIndex].clear();
         fgPossibleHudless[newIndex].clear();
     }
 
-    std::unique_lock<std::shared_mutex> lock(counterMutex[newIndex]);
-    ImGuiOverlayDx::fgHUDlessCaptureCounter[newIndex] = 0;
+    {
+        std::unique_lock<std::shared_mutex> lock(counterMutex[newIndex]);
+        ImGuiOverlayDx::fgHUDlessCaptureCounter[newIndex] = 0;
+    }
 }
 
 void ImGuiOverlayDx::UnHookDx()

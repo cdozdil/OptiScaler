@@ -242,15 +242,6 @@
     <ClInclude Include="backends\fsr31\FSR31Feature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="XeSS_Proxy.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="depth_upscale\DU_Common.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="depth_upscale\DU_Dx12.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="format_transfer\FT_Common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -444,6 +435,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="backends\fsr31\FSR31Feature_Dx11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="format_transfer\FT_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="XeSS_Debug.cpp">

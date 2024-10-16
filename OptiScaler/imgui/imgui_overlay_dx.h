@@ -8,6 +8,7 @@
 #include <ffx_api.h>
 #include <dx12/ffx_api_dx12.h>
 #include <ffx_framegeneration.h>
+#include "../format_transfer/FT_Dx12.h"
 
 namespace ImGuiOverlayDx
 {
@@ -48,7 +49,8 @@ namespace ImGuiOverlayDx
     inline ID3D12GraphicsCommandList* fgCopyCommandList = nullptr;
     inline ID3D12CommandAllocator* fgCopyCommandAllocators[FG_BUFFER_SIZE] = { };
     inline UINT64 fgTarget = 10;
-    inline ID3D12Resource* fgUpscaledImage[FG_BUFFER_SIZE] = { nullptr, nullptr,nullptr, nullptr };
+    inline ID3D12Resource* fgUpscaledImage[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
+    inline FT_Dx12* fgFormatTransfer = nullptr;
 
     void UnHookDx();
     void HookDx();
