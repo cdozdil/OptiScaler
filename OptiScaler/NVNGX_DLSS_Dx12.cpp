@@ -72,6 +72,12 @@ static void ReleaseFGObjects()
         ImGuiOverlayDx::fgCopyCommandQueue->Release();
         ImGuiOverlayDx::fgCopyCommandQueue = nullptr;
     }
+
+    if (ImGuiOverlayDx::fgFormatTransfer != nullptr)
+    {
+        delete ImGuiOverlayDx::fgFormatTransfer;
+        ImGuiOverlayDx::fgFormatTransfer = nullptr;
+    }
 }
 
 static void CreateFGObjects()
@@ -112,7 +118,7 @@ static void CreateFGObjects()
         // Create a command queue for copy operations
         D3D12_COMMAND_QUEUE_DESC copyQueueDesc = {};
         copyQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-        copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+        copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
         copyQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
         copyQueueDesc.NodeMask = 0;
 
@@ -123,6 +129,9 @@ static void CreateFGObjects()
             break;
         }
         ImGuiOverlayDx::fgCopyCommandQueue->SetName(L"fgCopyCommandQueue");
+
+        ImGuiOverlayDx::fgFormatTransfer = new FT_Dx12("FormatTransfer", D3D12Device, ImGuiOverlayDx::swapchainFormat);
+
     } while (false);
 }
 
@@ -1575,8 +1584,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     };
 
                 m_FrameGenerationConfig.frameGenerationCallbackUserContext = &ImGuiOverlayDx::fgContext;
-
-
                 m_FrameGenerationConfig.onlyPresentGenerated = Config::Instance()->FGOnlyGenerated; // check here
                 m_FrameGenerationConfig.frameID = deviceContext->FrameCount();
                 m_FrameGenerationConfig.swapChain = ImGuiOverlayDx::currentSwapchain;
@@ -1679,8 +1686,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 ImGuiOverlayDx::fgUpscaledImage[frameIndex] = output;
                 LOG_DEBUG("Set fgUpscaledImage[{}]", frameIndex);
 
-                ImGuiOverlayDx::upscaleRan = true;
-
                 auto allocator = ImGuiOverlayDx::fgCopyCommandAllocators[frameIndex];
                 auto result = allocator->Reset();
                 result = ImGuiOverlayDx::fgCopyCommandList->Reset(allocator, nullptr);
@@ -1694,18 +1699,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
 
                 if (CreateBufferResource(L"fgVelocity", D3D12Device, paramVelocity, D3D12_RESOURCE_STATE_COPY_DEST, &ImGuiOverlayDx::paramVelocity[frameIndex]))
-                {
                     InCmdList->CopyResource(ImGuiOverlayDx::paramVelocity[frameIndex], paramVelocity);
-                }
 
                 ID3D12Resource* paramDepth;
                 if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
                     InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
 
                 if (CreateBufferResource(L"fgDepth", D3D12Device, paramDepth, D3D12_RESOURCE_STATE_COPY_DEST, &ImGuiOverlayDx::paramDepth[frameIndex]))
-                {
                     InCmdList->CopyResource(ImGuiOverlayDx::paramDepth[frameIndex], paramDepth);
-                }
 
                 InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &ImGuiOverlayDx::mvScaleX);
                 InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &ImGuiOverlayDx::mvScaleY);
@@ -1721,6 +1722,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 fgLastFrameTime = now;
                 ImGuiOverlayDx::fgFrameTime = msDelta;
+                ImGuiOverlayDx::upscaleRan = true;
+
 
                 LOG_DEBUG("    FG HUDFix done, frame: {0}", deviceContext->FrameCount());
             }

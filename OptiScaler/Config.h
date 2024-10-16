@@ -164,12 +164,11 @@ public:
 	std::optional<bool> FGDebugView;
 	std::optional<bool> FGAsync;
 	std::optional<bool> FGHUDFix;
-	std::optional<bool> FGSkipInstanced;
-	std::optional<bool> FGSkipIndexedInstanced;
+	std::optional<bool> FGHUDFixExtended;
 	std::optional<int> FGHUDLimit;
 	bool FGOnlyGenerated = false;
 	bool FGChanged = false;
-	bool SCChanged = false;
+	bool SCChanged = true;
 	bool SkipHeapCapture = false;
 
 
