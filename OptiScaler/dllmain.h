@@ -36,6 +36,8 @@ inline static PFN_EnumAdapters1 ptrEnumAdapters1 = nullptr;
 inline static PFN_EnumAdapterByLuid ptrEnumAdapterByLuid = nullptr;
 inline static PFN_EnumAdapterByGpuPreference ptrEnumAdapterByGpuPreference = nullptr;
 
+inline bool skipGetModuleHandle = false;
+
 void AttachToAdapter(IUnknown* unkAdapter);
 void AttachToFactory(IUnknown* unkFactory);
 
@@ -55,11 +57,14 @@ struct shared
     void LoadOriginalLibrary(HMODULE module)
     {
         dll = module;
+
+        skipGetModuleHandle = true;
         DllCanUnloadNow = GetProcAddress(module, "DllCanUnloadNow");
         DllGetClassObject = GetProcAddress(module, "DllGetClassObject");
         DllRegisterServer = GetProcAddress(module, "DllRegisterServer");
         DllUnregisterServer = GetProcAddress(module, "DllUnregisterServer");
         DebugSetMute = GetProcAddress(module, "DebugSetMute");
+        skipGetModuleHandle = false;
     }
 } shared;
 
@@ -364,6 +369,7 @@ struct wininet_dll
     {
         dll = module;
         shared.LoadOriginalLibrary(dll);
+        skipGetModuleHandle = true;
         AppCacheCheckManifest = GetProcAddress(dll, "AppCacheCheckManifest");
         AppCacheCloseHandle = GetProcAddress(dll, "AppCacheCloseHandle");
         AppCacheCreateAndCommitFile = GetProcAddress(dll, "AppCacheCreateAndCommitFile");
@@ -657,6 +663,7 @@ struct wininet_dll
         UrlCacheSetGlobalLimit = GetProcAddress(dll, "UrlCacheSetGlobalLimit");
         UrlCacheUpdateEntryExtraData = GetProcAddress(dll, "UrlCacheUpdateEntryExtraData");
         UrlZonesDetach = GetProcAddress(dll, "UrlZonesDetach");
+        skipGetModuleHandle = false;
     }
 } wininet;
 
@@ -685,6 +692,7 @@ struct version_dll
     {
         dll = module;
         shared.LoadOriginalLibrary(dll);
+        skipGetModuleHandle = true;
         GetFileVersionInfoA = GetProcAddress(dll, "GetFileVersionInfoA");
         GetFileVersionInfoByHandle = GetProcAddress(dll, "GetFileVersionInfoByHandle");
         GetFileVersionInfoExA = GetProcAddress(dll, "GetFileVersionInfoExA");
@@ -702,6 +710,7 @@ struct version_dll
         VerLanguageNameW = GetProcAddress(dll, "VerLanguageNameW");
         VerQueryValueA = GetProcAddress(dll, "VerQueryValueA");
         VerQueryValueW = GetProcAddress(dll, "VerQueryValueW");
+        skipGetModuleHandle = false;
     }
 } version;
 
@@ -905,6 +914,7 @@ struct winmm_dll
     {
         dll = module;
         shared.LoadOriginalLibrary(dll);
+        skipGetModuleHandle = true;
         CloseDriver = GetProcAddress(dll, "CloseDriver");
         DefDriverProc = GetProcAddress(dll, "DefDriverProc");
         DriverCallback = GetProcAddress(dll, "DriverCallback");
@@ -1097,6 +1107,7 @@ struct winmm_dll
         waveOutWrite = GetProcAddress(dll, "waveOutWrite");
         wid32Message = GetProcAddress(dll, "wid32Message");
         wod32Message = GetProcAddress(dll, "wod32Message");
+        skipGetModuleHandle = false;
     }
 } winmm;
 
@@ -1188,6 +1199,7 @@ struct winhttp_dll
     {
         dll = module;
         shared.LoadOriginalLibrary(dll);
+        skipGetModuleHandle = true;
         Private1 = GetProcAddress(dll, "Private1");
         SvchostPushServiceGlobals = GetProcAddress(dll, "SvchostPushServiceGlobals");
         WinHttpAddRequestHeaders = GetProcAddress(dll, "WinHttpAddRequestHeaders");
@@ -1268,6 +1280,7 @@ struct winhttp_dll
         WinHttpWebSocketShutdown = GetProcAddress(dll, "WinHttpWebSocketShutdown");
         WinHttpWriteData = GetProcAddress(dll, "WinHttpWriteData");
         WinHttpWriteProxySettings = GetProcAddress(dll, "WinHttpWriteProxySettings");
+        skipGetModuleHandle = false;
     }
 } winhttp;
 
@@ -1301,6 +1314,7 @@ struct dxgi_dll
     {
         dll = module;
 
+        skipGetModuleHandle = true;
         CreateDxgiFactory = (PFN_CREATE_DXGI_FACTORY)GetProcAddress(module, "CreateDXGIFactory");
         CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY)GetProcAddress(module, "CreateDXGIFactory1");
         CreateDxgiFactory2 = (PFN_CREATE_DXGI_FACTORY_2)GetProcAddress(module, "CreateDXGIFactory2");
@@ -1322,6 +1336,7 @@ struct dxgi_dll
         dxgiPIXGetCaptureState = GetProcAddress(module, "PIXGetCaptureState");
         dxgiSetAppCompatStringPointer = GetProcAddress(module, "SetAppCompatStringPointer");
         dxgiUpdateHMDEmulationStatus = GetProcAddress(module, "UpdateHMDEmulationStatus");
+        skipGetModuleHandle = false;
     }
 } dxgi;
 
