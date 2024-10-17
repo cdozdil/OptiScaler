@@ -1346,7 +1346,7 @@ struct dxgi_dll
 
 bool SkipSpoofing()
 {
-    auto skip = !Config::Instance()->DxgiSpoofing.value_or(true) || Config::Instance()->dxgiSkipSpoofing || Config::Instance()->IsRunningOnLinux;
+    auto skip = !Config::Instance()->DxgiSpoofing.value_or(true) || Config::Instance()->dxgiSkipSpoofing; // || Config::Instance()->IsRunningOnLinux;
 
     if (skip)
         LOG_TRACE("DxgiSpoofing: {}, dxgiSkipSpoofing: {}, skipping spoofing", 
