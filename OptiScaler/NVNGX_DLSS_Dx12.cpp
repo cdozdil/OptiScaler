@@ -23,6 +23,12 @@
 
 #include "depth_upscale/DU_Dx12.h"
 
+#define USE_COPY_QUEUE_FOR_FG
+
+#ifndef USE_COPY_QUEUE_FOR_FG
+#define DONT_USE_DEPTH_MV_COPIES
+#endif
+
 static PfnFfxCreateContext _createContext = nullptr;
 static PfnFfxDestroyContext _destroyContext = nullptr;
 static PfnFfxConfigure _configure = nullptr;
@@ -1456,8 +1462,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             _createContext != nullptr && ImGuiOverlayDx::fgContext == nullptr && ImGuiOverlayDx::currentSwapchain != nullptr &&
             ImGuiOverlayDx::swapchainFormat != DXGI_FORMAT_UNKNOWN)
         {
-            CreateFGContext(deviceContext);
             CreateFGObjects();
+            CreateFGContext(deviceContext);
         }
         else if ((!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged) && ImGuiOverlayDx::fgContext != nullptr)
         {
@@ -1532,14 +1538,22 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     if (evalResult)
     {
-        ID3D12Resource* output;
-        InParameters->Get(NVSDK_NGX_Parameter_Output, &output);
-
         // FG Dispatch || Prepare
         if (Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
             Config::Instance()->FGEnabled.value_or(false) && ImGuiOverlayDx::fgTarget < deviceContext->FrameCount() &&
             ImGuiOverlayDx::fgContext != nullptr && ImGuiOverlayDx::currentSwapchain != nullptr)
         {
+            ID3D12Resource* output;
+            InParameters->Get(NVSDK_NGX_Parameter_Output, &output);
+
+            auto frameIndex = ImGuiOverlayDx::ClearFrameResources();
+            ImGuiOverlayDx::NewFrame();
+            ImGuiOverlayDx::fgUpscaledImage[frameIndex] = output;
+
+            auto allocator = ImGuiOverlayDx::fgCopyCommandAllocators[frameIndex];
+            auto result = allocator->Reset();
+            result = ImGuiOverlayDx::fgCopyCommandList->Reset(allocator, nullptr);
+
             if (!Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgTarget + 10 > deviceContext->FrameCount())
             {
                 LOG_DEBUG("    FG running, frame: {0}", deviceContext->FrameCount());
@@ -1576,11 +1590,71 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 m_FrameGenerationConfig.frameGenerationCallback = [](ffxDispatchDescFrameGeneration* params, void* pUserCtx) -> ffxReturnCode_t
                     {
+#ifdef USE_COPY_QUEUE_FOR_FG
+                        HRESULT result;
+                        auto fIndex = ImGuiOverlayDx::GetFrame();
+
+                        // check for status
+                        if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged || Config::Instance()->CurrentFeature == nullptr || 
+                            ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                        {
+                            LOG_WARN("Cancel async dispatch");
+                            ImGuiOverlayDx::fgSkipHudlessChecks = false;
+                            return FFX_API_RETURN_OK;
+                        }
+
+                        // check for status
+                        if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged || Config::Instance()->CurrentFeature == nullptr ||
+                            ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                        {
+                            LOG_WARN("Cancel async dispatch");
+                            ImGuiOverlayDx::fgSkipHudlessChecks = false;
+                            return FFX_API_RETURN_OK;
+                        }
+                        else
+                        {
+                            result = _dispatch(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
+                        }
+
+                        ID3D12CommandList* cl[1] = { nullptr };
+
+                        // check for status
+                        if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged || Config::Instance()->CurrentFeature == nullptr ||
+                            ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                        {
+                            LOG_WARN("Cancel async dispatch");
+                            ImGuiOverlayDx::fgSkipHudlessChecks = false;
+                            return FFX_API_RETURN_OK;
+                        }
+                        else
+                        {
+                            result = ImGuiOverlayDx::fgCopyCommandList->Close();
+                            cl[0] = ImGuiOverlayDx::fgCopyCommandList;
+                        }
+
+                        // check for status
+                        if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged || Config::Instance()->CurrentFeature == nullptr ||
+                            ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                        {
+                            LOG_WARN("Cancel async dispatch");
+                            ImGuiOverlayDx::fgSkipHudlessChecks = false;
+                            return FFX_API_RETURN_OK;
+                        }
+                        else
+                        {
+                            ImGuiOverlayDx::gameCommandQueue->ExecuteCommandLists(1, cl);
+                        }
+
+                        LOG_DEBUG("Callback _dispatch result: {0}", (UINT)result);
+
+                        return result;
+#else
                         if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged || Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr)
                             return FFX_API_RETURN_OK;
 
                         auto result = _dispatch(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
                         return result;
+#endif
                     };
 
                 m_FrameGenerationConfig.frameGenerationCallbackUserContext = &ImGuiOverlayDx::fgContext;
@@ -1609,7 +1683,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     dfgPrepare.header.type = FFX_API_DISPATCH_DESC_TYPE_FRAMEGENERATION_PREPARE;
                     dfgPrepare.header.pNext = &backendDesc.header;
 
+#ifdef USE_COPY_QUEUE_FOR_FG
+                    dfgPrepare.commandList = ImGuiOverlayDx::fgCopyCommandList;
+#else
                     dfgPrepare.commandList = InCmdList;
+#endif
                     dfgPrepare.frameID = deviceContext->FrameCount();
                     dfgPrepare.flags = m_FrameGenerationConfig.flags;
                     dfgPrepare.renderSize = { deviceContext->RenderWidth(), deviceContext->RenderHeight() };
@@ -1617,6 +1695,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &dfgPrepare.jitterOffset.x);
                     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &dfgPrepare.jitterOffset.y);
 
+#ifndef DONT_USE_DEPTH_MV_COPIES
+                    ID3D12Resource* paramVelocity;
+                    if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
+                        InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
+
+                    if (CreateBufferResource(L"fgVelocity", D3D12Device, paramVelocity, D3D12_RESOURCE_STATE_COPY_DEST, &ImGuiOverlayDx::paramVelocity[frameIndex]))
+                        InCmdList->CopyResource(ImGuiOverlayDx::paramVelocity[frameIndex], paramVelocity);
+
+                    ID3D12Resource* paramDepth;
+                    if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
+                        InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
+
+                    if (CreateBufferResource(L"fgDepth", D3D12Device, paramDepth, D3D12_RESOURCE_STATE_COPY_DEST, &ImGuiOverlayDx::paramDepth[frameIndex]))
+                        InCmdList->CopyResource(ImGuiOverlayDx::paramDepth[frameIndex], paramDepth);
+#else
                     ID3D12Resource* paramVelocity;
                     if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
                         InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
@@ -1628,6 +1721,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
 
                     dfgPrepare.depth = ffxApiGetResourceDX12(paramDepth, FFX_API_RESOURCE_STATE_COMPUTE_READ);
+#endif
+
+                    dfgPrepare.motionVectors = ffxApiGetResourceDX12(ImGuiOverlayDx::paramVelocity[frameIndex], FFX_API_RESOURCE_STATE_COMPUTE_READ);
+                    dfgPrepare.depth = ffxApiGetResourceDX12(ImGuiOverlayDx::paramDepth[frameIndex], FFX_API_RESOURCE_STATE_COMPUTE_READ);
 
                     float MVScaleX = 1.0f;
                     float MVScaleY = 1.0f;
@@ -1681,14 +1778,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             }
             else
             {
-                auto frameIndex = ImGuiOverlayDx::ClearFrameResources();
-                ImGuiOverlayDx::NewFrame();
-                ImGuiOverlayDx::fgUpscaledImage[frameIndex] = output;
                 LOG_DEBUG("Set fgUpscaledImage[{}]", frameIndex);
-
-                auto allocator = ImGuiOverlayDx::fgCopyCommandAllocators[frameIndex];
-                auto result = allocator->Reset();
-                result = ImGuiOverlayDx::fgCopyCommandList->Reset(allocator, nullptr);
 
                 LOG_DEBUG("    FG HUDFix running, frame: {0}", deviceContext->FrameCount());
                 InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &ImGuiOverlayDx::jitterX);
