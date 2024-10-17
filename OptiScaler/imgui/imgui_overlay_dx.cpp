@@ -215,10 +215,10 @@ typedef HRESULT(*PFN_CreateDXGIFactory)(REFIID riid, IDXGIFactory** ppFactory);
 typedef HRESULT(*PFN_CreateDXGIFactory1)(REFIID riid, IDXGIFactory1** ppFactory);
 typedef HRESULT(*PFN_CreateDXGIFactory2)(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory);
 
-typedef HRESULT(WINAPI* PFN_EnumAdapterByGpuPreference2)(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapterByLuid2)(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapters12)(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapters2)(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter);
+typedef HRESULT(*PFN_EnumAdapterByGpuPreference2)(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter);
+typedef HRESULT(*PFN_EnumAdapterByLuid2)(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter);
+typedef HRESULT(*PFN_EnumAdapters12)(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter);
+typedef HRESULT(*PFN_EnumAdapters2)(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter);
 
 static PFN_CreateDXGIFactory o_CreateDXGIFactory = nullptr;
 static PFN_CreateDXGIFactory1 o_CreateDXGIFactory1 = nullptr;
@@ -746,10 +746,10 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* r
     else
     {
         ResourceBarrier(cmdList, resource, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
-        
+
         if (CreateBufferResource(g_pd3dDeviceParam, resource, D3D12_RESOURCE_STATE_COPY_DEST, &fgHudless[fIndex]))
             cmdList->CopyResource(fgHudless[fIndex], resource);
-        
+
         ResourceBarrier(cmdList, resource, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
     }
 
@@ -779,14 +779,14 @@ static bool CheckForHudless(ResourceInfo* resource, bool checkFormat = true)
         (resource->format == DXGI_FORMAT_R16G16B16A16_FLOAT || resource->format == DXGI_FORMAT_R11G11B10_FLOAT || resource->format == DXGI_FORMAT_R32G32B32A32_FLOAT || resource->format == DXGI_FORMAT_R32G32B32_FLOAT) &&
         (fgScDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R10G10B10A2_UNORM))))
     {
-        LOG_DEBUG_ONLY("Width: {}/{}, Height: {}/{}, Format: {}/{}, checkFormat: {} -> TRUE",
-                       resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, checkFormat);
+        LOG_TRACE("Width: {}/{}, Height: {}/{}, Format: {}/{}, checkFormat: {} -> TRUE",
+                  resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, checkFormat);
 
         return true;
     }
 
-    LOG_DEBUG_ONLY("Width: {}/{}, Height: {}/{}, Format: {}/{}, checkFormat: {} -> FALSE",
-                   resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, checkFormat);
+    LOG_TRACE("Width: {}/{}, Height: {}/{}, Format: {}/{}, checkFormat: {} -> FALSE",
+              resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, checkFormat);
 
     return false;
 }
@@ -812,7 +812,7 @@ static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* p
 
         fgHandlesByResources.erase(pResource);
         LOG_DEBUG_ONLY("Erased");
-}
+    }
 }
 #endif
 
@@ -1721,8 +1721,20 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         else
             presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
 
-        //fgPresentRunning = false;
         ImGuiOverlayDx::fgSkipHudlessChecks = false;
+
+        if (Config::Instance()->CurrentFeature != nullptr)
+            fgPresentedFrame = Config::Instance()->CurrentFeature->FrameCount();
+
+        auto now = Util::MillisecondsNow();
+
+        if (fgLastFrameTime != 0)
+        {
+            fgLastDeltaTime = now - fgLastFrameTime;
+            LOG_DEBUG("fgLastDeltaTime: {0:.2f}, frameCounter: {1}", fgLastDeltaTime, frameCounter);
+        }
+
+        fgLastFrameTime = now;
 
         //LOG_DEBUG("Return");
 
@@ -1837,7 +1849,6 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             _isInited = true;
         }
     }
-
 
     // dx11 multi thread safety
     ID3D11Multithread* dx11MultiThread = nullptr;
@@ -2056,6 +2067,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         createSwapChainDesc.gameQueue = (ID3D12CommandQueue*)pDevice;
         createSwapChainDesc.desc = pDesc;
         createSwapChainDesc.swapchain = (IDXGISwapChain4**)ppSwapChain;
+        
 
         fgSkipSCWrapping = true;
         Config::Instance()->dxgiSkipSpoofing = true;
@@ -2187,7 +2199,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
         LOG_ERROR("_createContext error: {}", result);
 
-        return E_INVALIDARG;
+        return result;
     }
 
     auto result = oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
