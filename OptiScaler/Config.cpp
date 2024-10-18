@@ -384,7 +384,7 @@ bool Config::Reload(std::filesystem::path iniPath)
                 DE_ReflexEmu.reset();
         }
 
-        if (OverrideNvapiDll.has_value() && OverrideNvapiDll.value())
+        if (FN_Available)
             return ReloadFakenvapi();
         
         return true;
