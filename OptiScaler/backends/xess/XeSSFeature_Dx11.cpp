@@ -172,7 +172,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		if (!Config::Instance()->DisableReactiveMask.value_or(true))
 			dumpParams.dump_elements_mask |= XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
 
-		StartDump()(_xessContext, &dumpParams);
+		XeSSProxy::StartDump()(_xessContext, &dumpParams);
 		Config::Instance()->xessDebug = false;
 		dumpCount += Config::Instance()->xessDebugFrames;
 	}
@@ -285,7 +285,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 	if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
 		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
 	{
-		xessResult = SetVelocityScale()(_xessContext, MVScaleX, MVScaleY);
+		xessResult = XeSSProxy::SetVelocityScale()(_xessContext, MVScaleX, MVScaleY);
 
 		if (xessResult != XESS_RESULT_SUCCESS)
 		{
@@ -306,7 +306,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 	// Execute xess
 	LOG_DEBUG("Executing!!");
-	xessResult = D3D12Execute()(_xessContext, Dx12CommandList, &params);
+	xessResult = XeSSProxy::D3D12Execute()(_xessContext, Dx12CommandList, &params);
 
 	if (xessResult != XESS_RESULT_SUCCESS)
 	{

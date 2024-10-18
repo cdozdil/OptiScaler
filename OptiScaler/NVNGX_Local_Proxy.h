@@ -6,232 +6,6 @@
 #include "Logger.h"
 #include <vulkan/vulkan.hpp>
 
-#include "nvapi/nvapi.h"
-
-#include <filesystem>
-#include "detours/detours.h"
-
-inline const char* project_id_override = "24480451-f00d-face-1304-0308dabad187";
-constexpr unsigned long long app_id_override = 0x24480451;
-
-#pragma region spoofing hooks for 16xx
-
-// NvAPI_GPU_GetArchInfo hooking based on Nukem's spoofing code here
-// https://github.com/Nukem9/dlssg-to-fsr3/blob/89ddc8c1cce4593fb420e633a06605c3c4b9c3cf/source/wrapper_generic/nvapi.cpp#L50
-
-enum class NV_INTERFACE : uint32_t
-{
-    GPU_GetArchInfo = 0xD8265D24,
-    D3D12_SetRawScgPriority = 0x5DB3048A,
-};
-
-typedef void* (__stdcall* PFN_NvApi_QueryInterface)(NV_INTERFACE InterfaceId);
-typedef NVSDK_NGX_Result(*PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements)(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported);
-typedef NVSDK_NGX_Result(*PFN_NVSDK_NGX_VULKAN_GetFeatureRequirements)(const VkInstance Instance, const VkPhysicalDevice PhysicalDevice,
-                                                                       const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported);
-
-using PfnNvAPI_GPU_GetArchInfo = uint32_t(__stdcall*)(void* GPUHandle, NV_GPU_ARCH_INFO* ArchInfo);
-
-inline static PFN_NvApi_QueryInterface OriginalNvAPI_QueryInterface = nullptr;
-inline static PfnNvAPI_GPU_GetArchInfo OriginalNvAPI_GPU_GetArchInfo = nullptr;
-inline static PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements Original_D3D11_GetFeatureRequirements = nullptr;
-inline static PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements Original_D3D12_GetFeatureRequirements = nullptr;
-inline static PFN_NVSDK_NGX_VULKAN_GetFeatureRequirements Original_Vulkan_GetFeatureRequirements = nullptr;
-
-inline static uint32_t __stdcall HookedNvAPI_GPU_GetArchInfo(void* GPUHandle, NV_GPU_ARCH_INFO* ArchInfo)
-{
-    if (OriginalNvAPI_GPU_GetArchInfo)
-    {
-        const auto status = OriginalNvAPI_GPU_GetArchInfo(GPUHandle, ArchInfo);
-
-        if (status == 0 && ArchInfo)
-        {
-            LOG_DEBUG("From api arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
-
-            // for 16xx cards
-            if (ArchInfo->architecture == NV_GPU_ARCHITECTURE_TU100 && ArchInfo->implementation > NV_GPU_ARCH_IMPLEMENTATION_TU106)
-            {
-                ArchInfo->implementation = NV_GPU_ARCH_IMPLEMENTATION_TU106;
-                ArchInfo->implementation_id = NV_GPU_ARCH_IMPLEMENTATION_TU106;
-
-                LOG_INFO("Spoofed arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
-            }
-            //else if (ArchInfo->architecture < NV_GPU_ARCHITECTURE_TU100 && ArchInfo->architecture >= NV_GPU_ARCHITECTURE_GP100)
-            //{
-            //	LOG_INFO("Spoofing below 16xx arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
-
-            //	ArchInfo->architecture = NV_GPU_ARCHITECTURE_TU100;
-            //	ArchInfo->architecture_id = NV_GPU_ARCHITECTURE_TU100;
-            //	ArchInfo->implementation = NV_GPU_ARCH_IMPLEMENTATION_TU106;
-            //	ArchInfo->implementation_id = NV_GPU_ARCH_IMPLEMENTATION_TU106;
-
-            //	LOG_INFO("Spoofed arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
-            //}
-        }
-
-        return status;
-    }
-
-    return 0xFFFFFFFF;
-}
-
-inline static void* __stdcall HookedNvAPI_QueryInterface(NV_INTERFACE InterfaceId)
-{
-    const auto result = OriginalNvAPI_QueryInterface(InterfaceId);
-
-    if (result)
-    {
-        if (InterfaceId == NV_INTERFACE::GPU_GetArchInfo)
-        {
-            OriginalNvAPI_GPU_GetArchInfo = static_cast<PfnNvAPI_GPU_GetArchInfo>(result);
-            return &HookedNvAPI_GPU_GetArchInfo;
-        }
-    }
-
-    return result;
-}
-
-inline static NVSDK_NGX_Result __stdcall Hooked_Dx12_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
-{
-    LOG_FUNC();
-
-    auto result = Original_D3D12_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
-
-    if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
-    {
-        LOG_INFO("Spoofing support!");
-        OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
-        OutSupported->MinHWArchitecture = 0;
-        strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
-    }
-
-    return result;
-}
-
-inline static NVSDK_NGX_Result __stdcall Hooked_Dx11_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
-{
-    LOG_FUNC();
-
-    auto result = Original_D3D11_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
-
-    if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
-    {
-        LOG_INFO("Spoofing support!");
-        OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
-        OutSupported->MinHWArchitecture = 0;
-        strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
-    }
-
-    return result;
-}
-
-inline static NVSDK_NGX_Result __stdcall Hooked_Vulkan_GetFeatureRequirements(const VkInstance Instance, const VkPhysicalDevice PhysicalDevice,
-                                                                              const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
-{
-    LOG_FUNC();
-
-    auto result = Original_Vulkan_GetFeatureRequirements(Instance, PhysicalDevice, FeatureDiscoveryInfo, OutSupported);
-
-    if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
-    {
-        LOG_INFO("Spoofing support!");
-        OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
-        OutSupported->MinHWArchitecture = 0;
-        strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
-    }
-
-    return result;
-}
-
-inline static void HookNvApi()
-{
-    if (OriginalNvAPI_QueryInterface != nullptr)
-        return;
-
-    LOG_DEBUG("Trying to hook NvApi");
-    OriginalNvAPI_QueryInterface = (PFN_NvApi_QueryInterface)DetourFindFunction("nvapi64.dll", "nvapi_QueryInterface");
-    LOG_DEBUG("OriginalNvAPI_QueryInterface = {0:X}", (unsigned long long)OriginalNvAPI_QueryInterface);
-
-    if (OriginalNvAPI_QueryInterface != nullptr)
-    {
-        LOG_INFO("NvAPI_QueryInterface found, hooking!");
-
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)OriginalNvAPI_QueryInterface, HookedNvAPI_QueryInterface);
-        DetourTransactionCommit();
-    }
-}
-
-inline static void HookNgxApi(HMODULE nvngx)
-{
-    if (Original_D3D11_GetFeatureRequirements != nullptr || Original_D3D12_GetFeatureRequirements != nullptr)
-        return;
-
-    LOG_DEBUG("Trying to hook NgxApi");
-
-    Original_D3D11_GetFeatureRequirements = (PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_D3D11_GetFeatureRequirements");
-    Original_D3D12_GetFeatureRequirements = (PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_D3D12_GetFeatureRequirements");
-    Original_Vulkan_GetFeatureRequirements = (PFN_NVSDK_NGX_VULKAN_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_VULKAN_GetFeatureRequirements");
-
-    if (Original_D3D11_GetFeatureRequirements != nullptr || Original_D3D12_GetFeatureRequirements != nullptr || Original_Vulkan_GetFeatureRequirements != nullptr)
-    {
-        LOG_INFO("NVSDK_NGX_XXXXXX_GetFeatureRequirements found, hooking!");
-
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-
-        if (Original_D3D11_GetFeatureRequirements != nullptr)
-            DetourAttach(&(PVOID&)Original_D3D11_GetFeatureRequirements, Hooked_Dx11_GetFeatureRequirements);
-
-        if (Original_D3D12_GetFeatureRequirements != nullptr)
-            DetourAttach(&(PVOID&)Original_D3D12_GetFeatureRequirements, Hooked_Dx12_GetFeatureRequirements);
-
-        if (Original_Vulkan_GetFeatureRequirements != nullptr)
-            DetourAttach(&(PVOID&)Original_Vulkan_GetFeatureRequirements, Hooked_Vulkan_GetFeatureRequirements);
-
-        DetourTransactionCommit();
-    }
-}
-
-inline static void UnhookApis()
-{
-    if (OriginalNvAPI_QueryInterface != nullptr || Original_D3D11_GetFeatureRequirements != nullptr || Original_D3D12_GetFeatureRequirements != nullptr)
-    {
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-
-        if (OriginalNvAPI_QueryInterface != nullptr)
-        {
-            DetourDetach(&(PVOID&)OriginalNvAPI_QueryInterface, HookedNvAPI_QueryInterface);
-            OriginalNvAPI_QueryInterface = nullptr;
-        }
-
-        if (Original_D3D11_GetFeatureRequirements != nullptr)
-        {
-            DetourDetach(&(PVOID&)Original_D3D11_GetFeatureRequirements, Hooked_Dx11_GetFeatureRequirements);
-            Original_D3D11_GetFeatureRequirements = nullptr;
-        }
-
-        if (Original_D3D12_GetFeatureRequirements != nullptr)
-        {
-            DetourDetach(&(PVOID&)Original_D3D12_GetFeatureRequirements, Hooked_Dx12_GetFeatureRequirements);
-            Original_D3D12_GetFeatureRequirements = nullptr;
-        }
-
-        if (Original_Vulkan_GetFeatureRequirements != nullptr)
-        {
-            DetourDetach(&(PVOID&)Original_Vulkan_GetFeatureRequirements, Hooked_Vulkan_GetFeatureRequirements);
-            Original_Vulkan_GetFeatureRequirements = nullptr;
-        }
-
-        DetourTransactionCommit();
-    }
-}
-
-#pragma endregion
-
-
 typedef NVSDK_NGX_Result(*PFN_CUDA_Init)(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion);
 typedef NVSDK_NGX_Result(*PFN_CUDA_Init_ProjectID)(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo);
 typedef NVSDK_NGX_Result(*PFN_CUDA_Shutdown)(void);
@@ -297,7 +71,7 @@ typedef NVSDK_NGX_Result(*PFN_VULKAN_GetFeatureInstanceExtensionRequirements)(co
 typedef NVSDK_NGX_Result(*PFN_VULKAN_GetFeatureDeviceExtensionRequirements)(VkInstance Instance, VkPhysicalDevice PhysicalDevice, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, uint32_t* OutExtensionCount, VkExtensionProperties** OutExtensionProperties);
 typedef NVSDK_NGX_Result(*PFN_VULKAN_EvaluateFeature)(VkCommandBuffer InCmdList, const NVSDK_NGX_Handle* InFeatureHandle, const NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback);
 
-class NVNGXProxy
+class NVNGXLocalProxy
 {
 private:
     inline static HMODULE _dll = nullptr;
@@ -380,177 +154,62 @@ public:
 
         LOG_FUNC();
 
-        Config::Instance()->upscalerDisableHook = true;
+        _dll = dllModule;
 
-        do
-        {
-            // From DLSS Enabler
-            _dll = LoadLibrary(L"dlss-enabler-ngx.dll");
-            LOG_INFO("trying to load dlss-enabler-ngx.dll");
+        LOG_INFO("getting nvngx method addresses");
 
-            if (_dll)
-            {
-                Config::Instance()->DE_Available = true;
-                LOG_INFO("dlss-enabler-ngx.dll loaded from DLSS Enabler, ptr: {0:X}", (ULONG64)_dll);
-                break;
-            }
+        _D3D11_Init = (PFN_D3D11_Init)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Init");
+        _D3D11_Init_ProjectID = (PFN_D3D11_Init_ProjectID)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Init_ProjectID");
+        _D3D11_Init_Ext = (PFN_D3D11_Init_Ext)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Init_Ext");
+        _D3D11_Shutdown = (PFN_D3D11_Shutdown)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Shutdown");
+        _D3D11_Shutdown1 = (PFN_D3D11_Shutdown1)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Shutdown1");
+        _D3D11_GetParameters = (PFN_D3D11_GetParameters)GetProcAddress(_dll, "NVSDK_NGX_D3D11_GetParameters");
+        _D3D11_AllocateParameters = (PFN_D3D11_AllocateParameters)GetProcAddress(_dll, "NVSDK_NGX_D3D11_AllocateParameters");
+        _D3D11_GetCapabilityParameters = (PFN_D3D11_GetCapabilityParameters)GetProcAddress(_dll, "NVSDK_NGX_D3D11_GetCapabilityParameters");
+        _D3D11_DestroyParameters = (PFN_D3D11_DestroyParameters)GetProcAddress(_dll, "NVSDK_NGX_D3D11_DestroyParameters");
+        _D3D11_GetScratchBufferSize = (PFN_D3D11_GetScratchBufferSize)GetProcAddress(_dll, "NVSDK_NGX_D3D11_GetScratchBufferSize");
+        _D3D11_CreateFeature = (PFN_D3D11_CreateFeature)GetProcAddress(_dll, "NVSDK_NGX_D3D11_CreateFeature");
+        _D3D11_ReleaseFeature = (PFN_D3D11_ReleaseFeature)GetProcAddress(_dll, "NVSDK_NGX_D3D11_ReleaseFeature");
+        _D3D11_GetFeatureRequirements = (PFN_D3D11_GetFeatureRequirements)GetProcAddress(_dll, "NVSDK_NGX_D3D11_GetFeatureRequirements");
+        _D3D11_EvaluateFeature = (PFN_D3D11_EvaluateFeature)GetProcAddress(_dll, "NVSDK_NGX_D3D11_EvaluateFeature");
 
-            // From nvngx.ini path
-            if (Config::Instance()->DLSSLibrary.has_value())
-            {
-                LOG_INFO("trying to load nvngx from ini path!");
+        _D3D12_Init = (PFN_D3D12_Init)GetProcAddress(_dll, "NVSDK_NGX_D3D12_Init");
+        _D3D12_Init_ProjectID = (PFN_D3D12_Init_ProjectID)GetProcAddress(_dll, "NVSDK_NGX_D3D12_Init_ProjectID");
+        _D3D12_Init_Ext = (PFN_D3D12_Init_Ext)GetProcAddress(_dll, "NVSDK_NGX_D3D12_Init_Ext");
+        _D3D12_Shutdown = (PFN_D3D12_Shutdown)GetProcAddress(_dll, "NVSDK_NGX_D3D12_Shutdown");
+        _D3D12_Shutdown1 = (PFN_D3D12_Shutdown1)GetProcAddress(_dll, "NVSDK_NGX_D3D12_Shutdown1");
+        _D3D12_GetParameters = (PFN_D3D12_GetParameters)GetProcAddress(_dll, "NVSDK_NGX_D3D12_GetParameters");
+        _D3D12_AllocateParameters = (PFN_D3D12_AllocateParameters)GetProcAddress(_dll, "NVSDK_NGX_D3D12_AllocateParameters");
+        _D3D12_GetCapabilityParameters = (PFN_D3D12_GetCapabilityParameters)GetProcAddress(_dll, "NVSDK_NGX_D3D12_GetCapabilityParameters");
+        _D3D12_DestroyParameters = (PFN_D3D12_DestroyParameters)GetProcAddress(_dll, "NVSDK_NGX_D3D12_DestroyParameters");
+        _D3D12_GetScratchBufferSize = (PFN_D3D12_GetScratchBufferSize)GetProcAddress(_dll, "NVSDK_NGX_D3D12_GetScratchBufferSize");
+        _D3D12_CreateFeature = (PFN_D3D12_CreateFeature)GetProcAddress(_dll, "NVSDK_NGX_D3D12_CreateFeature");
+        _D3D12_ReleaseFeature = (PFN_D3D12_ReleaseFeature)GetProcAddress(_dll, "NVSDK_NGX_D3D12_ReleaseFeature");
+        _D3D12_GetFeatureRequirements = (PFN_D3D12_GetFeatureRequirements)GetProcAddress(_dll, "NVSDK_NGX_D3D12_GetFeatureRequirements");
+        _D3D12_EvaluateFeature = (PFN_D3D12_EvaluateFeature)GetProcAddress(_dll, "NVSDK_NGX_D3D12_EvaluateFeature");
 
-                std::filesystem::path cfgPath(Config::Instance()->DLSSLibrary.value().c_str());
+        _VULKAN_RequiredExtensions = (PFN_VULKAN_RequiredExtensions)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_RequiredExtensions");
+        _VULKAN_Init = (PFN_VULKAN_Init)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Init");
+        _VULKAN_Init_Ext = (PFN_VULKAN_Init_Ext)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Init_Ext");
+        _VULKAN_Init_Ext2 = (PFN_VULKAN_Init_Ext2)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Init_Ext2");
+        _VULKAN_Init_ProjectID_Ext = (PFN_VULKAN_Init_ProjectID_Ext)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Init_ProjectID_Ext");
+        _VULKAN_Init_ProjectID = (PFN_VULKAN_Init_ProjectID)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Init_ProjectID");
+        _VULKAN_Shutdown = (PFN_VULKAN_Shutdown)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Shutdown");
+        _VULKAN_Shutdown1 = (PFN_VULKAN_Shutdown1)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Shutdown1");
+        _VULKAN_GetParameters = (PFN_VULKAN_GetParameters)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_GetParameters");
+        _VULKAN_AllocateParameters = (PFN_VULKAN_AllocateParameters)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_AllocateParameters");
+        _VULKAN_GetCapabilityParameters = (PFN_VULKAN_GetCapabilityParameters)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_GetCapabilityParameters");
+        _VULKAN_DestroyParameters = (PFN_VULKAN_DestroyParameters)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_DestroyParameters");
+        _VULKAN_GetScratchBufferSize = (PFN_VULKAN_GetScratchBufferSize)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_GetScratchBufferSize");
+        _VULKAN_CreateFeature = (PFN_VULKAN_CreateFeature)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_CreateFeature");
+        _VULKAN_CreateFeature1 = (PFN_VULKAN_CreateFeature1)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_CreateFeature1");
+        _VULKAN_ReleaseFeature = (PFN_VULKAN_ReleaseFeature)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_ReleaseFeature");
+        _VULKAN_GetFeatureRequirements = (PFN_VULKAN_GetFeatureRequirements)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_GetFeatureRequirements");
+        _VULKAN_GetFeatureInstanceExtensionRequirements = (PFN_VULKAN_GetFeatureInstanceExtensionRequirements)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements");
+        _VULKAN_GetFeatureDeviceExtensionRequirements = (PFN_VULKAN_GetFeatureDeviceExtensionRequirements)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements");
+        _VULKAN_EvaluateFeature = (PFN_VULKAN_EvaluateFeature)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_EvaluateFeature");
 
-                if (cfgPath.has_filename())
-                {
-                    _dll = LoadLibraryW(cfgPath.c_str());
-
-                    if (_dll)
-                    {
-                        LOG_INFO("_nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(cfgPath.wstring()), (ULONG64)_dll);
-                        break;
-                    }
-                }
-                else
-                {
-                    auto path = cfgPath / L"_nvngx.dll";
-
-                    LOG_INFO("trying to load _nvngx.dll path: {0}", wstring_to_string(cfgPath.wstring()));
-                    _dll = LoadLibraryW(path.c_str());
-
-                    if (_dll)
-                    {
-                        LOG_INFO("_nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(cfgPath.wstring()), (ULONG64)_dll);
-                        break;
-                    }
-
-                    path = cfgPath / L"nvngx.dll";
-                    LOG_INFO("trying to load nvngx.dll path: {0}", wstring_to_string(cfgPath.wstring()));
-                    _dll = LoadLibraryW(path.c_str());
-
-                    if (_dll)
-                    {
-                        LOG_INFO("nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(cfgPath.wstring()), (ULONG64)_dll);
-                        break;
-                    }
-                }
-            }
-
-            // From registry
-            auto regNGXCorePath = Util::NvngxPath();
-            if (regNGXCorePath.has_value())
-            {
-                auto nvngxPath = regNGXCorePath.value() / L"_nvngx.dll";
-                LOG_INFO("trying to load _nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
-
-                _dll = LoadLibraryW(nvngxPath.wstring().c_str());
-                if (_dll)
-                {
-                    LOG_INFO("_nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(nvngxPath.wstring()), (ULONG64)_dll);
-                    break;
-                }
-
-                nvngxPath = regNGXCorePath.value() / L"nvngx.dll";
-                LOG_INFO("trying to load nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
-
-                _dll = LoadLibraryW(nvngxPath.wstring().c_str());
-                if (_dll)
-                {
-                    LOG_INFO("nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(nvngxPath.wstring()), (ULONG64)_dll);
-                    break;
-                }
-            }
-
-            // From System32
-            wchar_t sysFolder[MAX_PATH];
-            GetSystemDirectory(sysFolder, MAX_PATH);
-            std::filesystem::path sysPath(sysFolder);
-
-            auto nvngxPath = sysPath / L"_nvngx.dll";
-            LOG_INFO("trying to load _nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
-
-            _dll = LoadLibraryW(nvngxPath.wstring().c_str());
-            if (_dll)
-            {
-                LOG_INFO("_nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(nvngxPath.wstring()), (ULONG64)_dll);
-                break;
-            }
-
-            nvngxPath = sysPath / L"nvngx.dll";
-            LOG_INFO("trying to load nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
-
-            _dll = LoadLibraryW(nvngxPath.wstring().c_str());
-            if (_dll)
-                LOG_INFO("nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(nvngxPath.wstring()), (ULONG64)_dll);
-
-        } while (false);
-
-        if (_dll != nullptr)
-        {
-            if (!Config::Instance()->DE_Available)
-            {
-                HookNvApi();
-                HookNgxApi(_dll);
-            }
-
-            LOG_INFO("getting nvngx method addresses");
-
-            _D3D11_Init = (PFN_D3D11_Init)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Init");
-            _D3D11_Init_ProjectID = (PFN_D3D11_Init_ProjectID)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Init_ProjectID");
-            _D3D11_Init_Ext = (PFN_D3D11_Init_Ext)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Init_Ext");
-            _D3D11_Shutdown = (PFN_D3D11_Shutdown)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Shutdown");
-            _D3D11_Shutdown1 = (PFN_D3D11_Shutdown1)GetProcAddress(_dll, "NVSDK_NGX_D3D11_Shutdown1");
-            _D3D11_GetParameters = (PFN_D3D11_GetParameters)GetProcAddress(_dll, "NVSDK_NGX_D3D11_GetParameters");
-            _D3D11_AllocateParameters = (PFN_D3D11_AllocateParameters)GetProcAddress(_dll, "NVSDK_NGX_D3D11_AllocateParameters");
-            _D3D11_GetCapabilityParameters = (PFN_D3D11_GetCapabilityParameters)GetProcAddress(_dll, "NVSDK_NGX_D3D11_GetCapabilityParameters");
-            _D3D11_DestroyParameters = (PFN_D3D11_DestroyParameters)GetProcAddress(_dll, "NVSDK_NGX_D3D11_DestroyParameters");
-            _D3D11_GetScratchBufferSize = (PFN_D3D11_GetScratchBufferSize)GetProcAddress(_dll, "NVSDK_NGX_D3D11_GetScratchBufferSize");
-            _D3D11_CreateFeature = (PFN_D3D11_CreateFeature)GetProcAddress(_dll, "NVSDK_NGX_D3D11_CreateFeature");
-            _D3D11_ReleaseFeature = (PFN_D3D11_ReleaseFeature)GetProcAddress(_dll, "NVSDK_NGX_D3D11_ReleaseFeature");
-            _D3D11_GetFeatureRequirements = (PFN_D3D11_GetFeatureRequirements)GetProcAddress(_dll, "NVSDK_NGX_D3D11_GetFeatureRequirements");
-            _D3D11_EvaluateFeature = (PFN_D3D11_EvaluateFeature)GetProcAddress(_dll, "NVSDK_NGX_D3D11_EvaluateFeature");
-
-            _D3D12_Init = (PFN_D3D12_Init)GetProcAddress(_dll, "NVSDK_NGX_D3D12_Init");
-            _D3D12_Init_ProjectID = (PFN_D3D12_Init_ProjectID)GetProcAddress(_dll, "NVSDK_NGX_D3D12_Init_ProjectID");
-            _D3D12_Init_Ext = (PFN_D3D12_Init_Ext)GetProcAddress(_dll, "NVSDK_NGX_D3D12_Init_Ext");
-            _D3D12_Shutdown = (PFN_D3D12_Shutdown)GetProcAddress(_dll, "NVSDK_NGX_D3D12_Shutdown");
-            _D3D12_Shutdown1 = (PFN_D3D12_Shutdown1)GetProcAddress(_dll, "NVSDK_NGX_D3D12_Shutdown1");
-            _D3D12_GetParameters = (PFN_D3D12_GetParameters)GetProcAddress(_dll, "NVSDK_NGX_D3D12_GetParameters");
-            _D3D12_AllocateParameters = (PFN_D3D12_AllocateParameters)GetProcAddress(_dll, "NVSDK_NGX_D3D12_AllocateParameters");
-            _D3D12_GetCapabilityParameters = (PFN_D3D12_GetCapabilityParameters)GetProcAddress(_dll, "NVSDK_NGX_D3D12_GetCapabilityParameters");
-            _D3D12_DestroyParameters = (PFN_D3D12_DestroyParameters)GetProcAddress(_dll, "NVSDK_NGX_D3D12_DestroyParameters");
-            _D3D12_GetScratchBufferSize = (PFN_D3D12_GetScratchBufferSize)GetProcAddress(_dll, "NVSDK_NGX_D3D12_GetScratchBufferSize");
-            _D3D12_CreateFeature = (PFN_D3D12_CreateFeature)GetProcAddress(_dll, "NVSDK_NGX_D3D12_CreateFeature");
-            _D3D12_ReleaseFeature = (PFN_D3D12_ReleaseFeature)GetProcAddress(_dll, "NVSDK_NGX_D3D12_ReleaseFeature");
-            _D3D12_GetFeatureRequirements = (PFN_D3D12_GetFeatureRequirements)GetProcAddress(_dll, "NVSDK_NGX_D3D12_GetFeatureRequirements");
-            _D3D12_EvaluateFeature = (PFN_D3D12_EvaluateFeature)GetProcAddress(_dll, "NVSDK_NGX_D3D12_EvaluateFeature");
-
-            _VULKAN_RequiredExtensions = (PFN_VULKAN_RequiredExtensions)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_RequiredExtensions");
-            _VULKAN_Init = (PFN_VULKAN_Init)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Init");
-            _VULKAN_Init_Ext = (PFN_VULKAN_Init_Ext)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Init_Ext");
-            _VULKAN_Init_Ext2 = (PFN_VULKAN_Init_Ext2)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Init_Ext2");
-            _VULKAN_Init_ProjectID_Ext = (PFN_VULKAN_Init_ProjectID_Ext)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Init_ProjectID_Ext");
-            _VULKAN_Init_ProjectID = (PFN_VULKAN_Init_ProjectID)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Init_ProjectID");
-            _VULKAN_Shutdown = (PFN_VULKAN_Shutdown)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Shutdown");
-            _VULKAN_Shutdown1 = (PFN_VULKAN_Shutdown1)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Shutdown1");
-            _VULKAN_GetParameters = (PFN_VULKAN_GetParameters)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_GetParameters");
-            _VULKAN_AllocateParameters = (PFN_VULKAN_AllocateParameters)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_AllocateParameters");
-            _VULKAN_GetCapabilityParameters = (PFN_VULKAN_GetCapabilityParameters)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_GetCapabilityParameters");
-            _VULKAN_DestroyParameters = (PFN_VULKAN_DestroyParameters)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_DestroyParameters");
-            _VULKAN_GetScratchBufferSize = (PFN_VULKAN_GetScratchBufferSize)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_GetScratchBufferSize");
-            _VULKAN_CreateFeature = (PFN_VULKAN_CreateFeature)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_CreateFeature");
-            _VULKAN_CreateFeature1 = (PFN_VULKAN_CreateFeature1)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_CreateFeature1");
-            _VULKAN_ReleaseFeature = (PFN_VULKAN_ReleaseFeature)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_ReleaseFeature");
-            _VULKAN_GetFeatureRequirements = (PFN_VULKAN_GetFeatureRequirements)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_GetFeatureRequirements");
-            _VULKAN_GetFeatureInstanceExtensionRequirements = (PFN_VULKAN_GetFeatureInstanceExtensionRequirements)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements");
-            _VULKAN_GetFeatureDeviceExtensionRequirements = (PFN_VULKAN_GetFeatureDeviceExtensionRequirements)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements");
-            _VULKAN_EvaluateFeature = (PFN_VULKAN_EvaluateFeature)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_EvaluateFeature");
-
-            _UpdateFeature = (PFN_UpdateFeature)GetProcAddress(_dll, "NVSDK_NGX_UpdateFeature");
-        }
-
-        Config::Instance()->upscalerDisableHook = false;
+        _UpdateFeature = (PFN_UpdateFeature)GetProcAddress(_dll, "NVSDK_NGX_UpdateFeature");
     }
 
     static void GetFeatureCommonInfo(NVSDK_NGX_FeatureCommonInfo* fcInfo)

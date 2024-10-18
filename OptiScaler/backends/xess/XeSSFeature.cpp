@@ -35,17 +35,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
     Config::Instance()->dxgiSkipSpoofing = true;
 
-    auto ret = GetVersion()(&_xessVersion);
-
-    if (ret == XESS_RESULT_SUCCESS)
-    {
-        LOG_DEBUG("XeSS Version: {0}.{1}.{2}", _xessVersion.major, _xessVersion.minor, _xessVersion.patch);
-        _version = std::format("{0}.{1}.{2}", _xessVersion.major, _xessVersion.minor, _xessVersion.patch);
-    }
-    else
-        LOG_WARN("xessGetVersion error: {0}", ResultToString(ret));
-
-    ret = D3D12CreateContext()(device, &_xessContext);
+    auto ret = XeSSProxy::D3D12CreateContext()(device, &_xessContext);
 
     if (ret != XESS_RESULT_SUCCESS)
     {
@@ -53,10 +43,10 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         return false;
     }
 
-    ret = IsOptimalDriver()(_xessContext);
+    ret = XeSSProxy::IsOptimalDriver()(_xessContext);
     LOG_DEBUG("xessIsOptimalDriver : {0}", ResultToString(ret));
 
-    ret = SetLoggingCallback()(_xessContext, XESS_LOGGING_LEVEL_DEBUG, XeSSLogCallback);
+    ret = XeSSProxy::SetLoggingCallback()(_xessContext, XESS_LOGGING_LEVEL_DEBUG, XeSSLogCallback);
     LOG_DEBUG("xessSetLoggingCallback : {0}", ResultToString(ret));
 
     xess_d3d12_init_params_t xessParams{};
@@ -129,7 +119,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     switch (PerfQualityValue())
     {
         case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-            if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
+            if (Version().major >= 1 && Version().minor >= 3)
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
             else
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
@@ -137,7 +127,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
             break;
 
         case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-            if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
+            if (Version().major >= 1 && Version().minor >= 3)
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
             else
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
@@ -145,7 +135,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
             break;
 
         case NVSDK_NGX_PerfQuality_Value_Balanced:
-            if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
+            if (Version().major >= 1 && Version().minor >= 3)
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
             else
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
@@ -153,7 +143,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
             break;
 
         case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-            if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
+            if (Version().major >= 1 && Version().minor >= 3)
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
             else
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
@@ -161,7 +151,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
             break;
 
         case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-            if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
+            if (Version().major >= 1 && Version().minor >= 3)
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY_PLUS;
             else
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
@@ -169,7 +159,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
             break;
 
         case NVSDK_NGX_PerfQuality_Value_DLAA:
-            if (_xessVersion.major >= 1 && _xessVersion.minor >= 3)
+            if (Version().major >= 1 && Version().minor >= 3)
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_AA;
             else
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
@@ -226,7 +216,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     {
         HRESULT hr;
         xess_properties_t xessProps{};
-        ret = GetProperties()(_xessContext, &xessParams.outputResolution, &xessProps);
+        ret = XeSSProxy::GetProperties()(_xessContext, &xessParams.outputResolution, &xessProps);
 
         if (ret == XESS_RESULT_SUCCESS)
         {
@@ -279,7 +269,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         if (FAILED(device->QueryInterface(IID_PPV_ARGS(&device1))))
         {
             LOG_ERROR("QueryInterface device1 failed!");
-            ret = D3D12BuildPipelines()(_xessContext, NULL, false, xessParams.initFlags);
+            ret = XeSSProxy::D3D12BuildPipelines()(_xessContext, NULL, false, xessParams.initFlags);
         }
         else
         {
@@ -288,16 +278,16 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
             if (FAILED(hr) || !_localPipeline)
             {
                 LOG_ERROR("CreatePipelineLibrary failed {0:x}!", (UINT)hr);
-                ret = D3D12BuildPipelines()(_xessContext, NULL, false, xessParams.initFlags);
+                ret = XeSSProxy::D3D12BuildPipelines()(_xessContext, NULL, false, xessParams.initFlags);
             }
             else
             {
-                ret = D3D12BuildPipelines()(_xessContext, _localPipeline, false, xessParams.initFlags);
+                ret = XeSSProxy::D3D12BuildPipelines()(_xessContext, _localPipeline, false, xessParams.initFlags);
 
                 if (ret != XESS_RESULT_SUCCESS)
                 {
                     LOG_ERROR("xessD3D12BuildPipelines error with _localPipeline: {0}", ResultToString(ret));
-                    ret = D3D12BuildPipelines()(_xessContext, NULL, false, xessParams.initFlags);
+                    ret = XeSSProxy::D3D12BuildPipelines()(_xessContext, NULL, false, xessParams.initFlags);
                 }
                 else
                 {
@@ -321,11 +311,11 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
     if (Config::Instance()->NetworkModel.has_value() && Config::Instance()->NetworkModel.value() >= 0 && Config::Instance()->NetworkModel.value() <= 5)
     {
-        ret = SelectNetworkModel()(_xessContext, (xess_network_model_t)Config::Instance()->NetworkModel.value());
+        ret = XeSSProxy::SelectNetworkModel()(_xessContext, (xess_network_model_t)Config::Instance()->NetworkModel.value());
         LOG_ERROR("xessSelectNetworkModel result: {0}", ResultToString(ret));
     }
 
-    ret = D3D12Init()(_xessContext, &xessParams);
+    ret = XeSSProxy::D3D12Init()(_xessContext, &xessParams);
 
     Config::Instance()->dxgiSkipSpoofing = false;
 
@@ -342,106 +332,14 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 XeSSFeature::XeSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
 {
-    Config::Instance()->dxgiSkipSpoofing = true;
-
-    PRN_xessGetVersion ptrDllGetVersion = nullptr;
-    PRN_xessGetVersion ptrMemoryGetVersion = nullptr;
-
-    xess_version_t memoryVersion{ 0,0,0,0 };
-    xess_version_t dllVersion{ 0,0,0,0 };
-
-    if (Config::Instance()->XeSSLibrary.has_value())
-    {
-        std::filesystem::path cfgPath(Config::Instance()->XeSSLibrary.value().c_str());
-
-        if (cfgPath.has_filename())
-        {
-            LOG_INFO("Trying to load libxess.dll from ini path: {}", cfgPath.string());
-            _libxess = LoadLibrary(cfgPath.c_str());
-        }
-        else
-        {
-            cfgPath = cfgPath / L"libxess.dll";
-            LOG_INFO("Trying to load libxess.dll from ini path: {}", cfgPath.string());
-            _libxess = LoadLibrary(cfgPath.c_str());
-        }
-    }
-
-    if (_libxess == nullptr)
-    {
-        auto path = Util::DllPath().parent_path() / L"libxess.dll";
-        LOG_INFO("Trying to load libxess.dll from OptiScaler path: {}", path.string());
-        _libxess = LoadLibraryW(path.c_str());
-    }
-
-    if (_libxess != nullptr)
-    {
-        ptrDllGetVersion = (PRN_xessGetVersion)GetProcAddress(_libxess, "xessGetVersion");
-
-        // query dll version
-        if (ptrDllGetVersion)
-        {
-            ptrDllGetVersion(&dllVersion);
-            LOG_DEBUG("Loaded libxess.dll v{0}.{1}.{2} file.", dllVersion.major, dllVersion.minor, dllVersion.patch);
-        }
-
-        // we would like to prioritize file pointed at ini, use methods from loaded dll
-        _xessD3D12CreateContext = (PFN_xessD3D12CreateContext)GetProcAddress(_libxess, "xessD3D12CreateContext");
-        _xessD3D12BuildPipelines = (PFN_xessD3D12BuildPipelines)GetProcAddress(_libxess, "xessD3D12BuildPipelines");
-        _xessD3D12Init = (PRN_xessD3D12Init)GetProcAddress(_libxess, "xessD3D12Init");
-        _xessD3D12Execute = (PFN_xessD3D12Execute)GetProcAddress(_libxess, "xessD3D12Execute");
-        _xessSelectNetworkModel = (PFN_xessSelectNetworkModel)GetProcAddress(_libxess, "xessSelectNetworkModel");
-        _xessStartDump = (PFN_xessStartDump)GetProcAddress(_libxess, "xessStartDump");
-        _xessGetVersion = (PRN_xessGetVersion)GetProcAddress(_libxess, "xessGetVersion");
-        _xessIsOptimalDriver = (PFN_xessIsOptimalDriver)GetProcAddress(_libxess, "xessIsOptimalDriver");
-        _xessSetLoggingCallback = (PFN_xessSetLoggingCallback)GetProcAddress(_libxess, "xessSetLoggingCallback");
-        _xessGetProperties = (PFN_xessGetProperties)GetProcAddress(_libxess, "xessGetProperties");
-        _xessDestroyContext = (PFN_xessDestroyContext)GetProcAddress(_libxess, "xessDestroyContext");
-        _xessSetVelocityScale = (PFN_xessSetVelocityScale)GetProcAddress(_libxess, "xessSetVelocityScale");
-
-        _moduleLoaded = _xessD3D12CreateContext && _xessD3D12BuildPipelines && _xessD3D12Init && _xessD3D12Execute && _xessSelectNetworkModel && _xessStartDump &&
-            _xessGetVersion && _xessIsOptimalDriver && _xessSetLoggingCallback && _xessGetProperties && _xessDestroyContext && _xessSetVelocityScale;
-    }
-
-    // if libxess not loaded 
-    if (!_moduleLoaded)
-    {
-        LOG_INFO("Trying to load libxess.dll with Detours");
-        ptrMemoryGetVersion = (PRN_xessGetVersion)DetourFindFunction("libxess.dll", "xessGetVersion");
-        if (ptrMemoryGetVersion)
-        {
-            // get it's version to compare with dll
-            ptrMemoryGetVersion(&memoryVersion);
-            LOG_DEBUG("libxess.dll v{0}.{1}.{2} already loaded.", memoryVersion.major, memoryVersion.minor, memoryVersion.patch);
-
-            _xessD3D12CreateContext = (PFN_xessD3D12CreateContext)DetourFindFunction("libxess.dll", "xessD3D12CreateContext");
-            _xessD3D12BuildPipelines = (PFN_xessD3D12BuildPipelines)DetourFindFunction("libxess.dll", "xessD3D12BuildPipelines");
-            _xessD3D12Init = (PRN_xessD3D12Init)DetourFindFunction("libxess.dll", "xessD3D12Init");
-            _xessGetVersion = (PRN_xessGetVersion)DetourFindFunction("libxess.dll", "xessGetVersion");
-            _xessD3D12Execute = (PFN_xessD3D12Execute)DetourFindFunction("libxess.dll", "xessD3D12Execute");
-            _xessSelectNetworkModel = (PFN_xessSelectNetworkModel)DetourFindFunction("libxess.dll", "xessSelectNetworkModel");
-            _xessStartDump = (PFN_xessStartDump)DetourFindFunction("libxess.dll", "xessStartDump");
-            _xessIsOptimalDriver = (PFN_xessIsOptimalDriver)DetourFindFunction("libxess.dll", "xessIsOptimalDriver");
-            _xessSetLoggingCallback = (PFN_xessSetLoggingCallback)DetourFindFunction("libxess.dll", "xessSetLoggingCallback");
-            _xessGetProperties = (PFN_xessGetProperties)DetourFindFunction("libxess.dll", "xessGetProperties");
-            _xessDestroyContext = (PFN_xessDestroyContext)DetourFindFunction("libxess.dll", "xessDestroyContext");
-            _xessSetVelocityScale = (PFN_xessSetVelocityScale)DetourFindFunction("libxess.dll", "xessSetVelocityScale");
-
-            _moduleLoaded = _xessD3D12CreateContext && _xessD3D12BuildPipelines && _xessD3D12Init && _xessD3D12Execute && _xessSelectNetworkModel && _xessStartDump &&
-                _xessGetVersion && _xessIsOptimalDriver && _xessSetLoggingCallback && _xessGetProperties && _xessDestroyContext && _xessSetVelocityScale;
-        }
-    }
-
-    LOG_FUNC_RESULT(_moduleLoaded);
-
-    Config::Instance()->dxgiSkipSpoofing = false;
+    _moduleLoaded = XeSSProxy::InitXeSS();
 }
 
 XeSSFeature::~XeSSFeature()
 {
     if (_xessContext)
     {
-        DestroyContext()(_xessContext);
+        XeSSProxy::DestroyContext()(_xessContext);
         _xessContext = nullptr;
     }
 
@@ -462,9 +360,6 @@ XeSSFeature::~XeSSFeature()
         _localTextureHeap->Release();
         _localTextureHeap = nullptr;
     }
-
-    if (_moduleLoaded && _libxess != nullptr)
-        FreeLibrary(_libxess);
 }
 
 

@@ -191,7 +191,7 @@ public:
 	float lastMipBias = 0.0f;
 
 	// dlss hook
-	bool dlssDisableHook = false;
+	bool upscalerDisableHook = false;
 
 	// spoofing
 	bool dxgiSkipSpoofing = false;

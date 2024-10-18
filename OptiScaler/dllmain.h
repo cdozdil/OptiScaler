@@ -1279,8 +1279,8 @@ struct dxgi_dll
     PFN_CREATE_DXGI_FACTORY CreateDxgiFactory1;
     PFN_CREATE_DXGI_FACTORY_2 CreateDxgiFactory2;
 
-    FARPROC dxgiDeclareAdapterRemovalSupport;
-    FARPROC dxgiGetDebugInterface;
+    FARPROC dxgiDeclareAdapterRemovalSupport = nullptr;
+    FARPROC dxgiGetDebugInterface = nullptr;
     FARPROC dxgiApplyCompatResolutionQuirking = nullptr;
     FARPROC dxgiCompatString = nullptr;
     FARPROC dxgiCompatValue = nullptr;
@@ -1606,16 +1606,16 @@ HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFacto
     return result;
 }
 
-HRESULT _DXGIDeclareAdapterRemovalSupport()
+void _DXGIDeclareAdapterRemovalSupport()
 {
     LOG_FUNC();
-    return dxgi.dxgiDeclareAdapterRemovalSupport();
+    dxgi.dxgiDeclareAdapterRemovalSupport();
 }
 
-HRESULT _DXGIGetDebugInterface1()
+void _DXGIGetDebugInterface1()
 {
     LOG_FUNC();
-    return dxgi.dxgiGetDebugInterface();
+    dxgi.dxgiGetDebugInterface();
 }
 
 void _ApplyCompatResolutionQuirking()
