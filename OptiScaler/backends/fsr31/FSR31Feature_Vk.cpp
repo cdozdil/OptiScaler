@@ -341,8 +341,8 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     {
         if (!Config::Instance()->DisplayResolution.value_or(false))
             LOG_ERROR("Depth not exist!!");
-        else
-            LOG_INFO("Using high res motion vectors, depth is not needed!!");
+        //else
+        //    LOG_INFO("Using high res motion vectors, depth is not needed!!");
     }
 
     void* paramExp = nullptr;

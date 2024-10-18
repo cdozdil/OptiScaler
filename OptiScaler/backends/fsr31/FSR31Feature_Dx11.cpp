@@ -286,8 +286,8 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     {
         if (!Config::Instance()->DisplayResolution.value_or(false))
             LOG_ERROR("Depth not exist!!");
-        else
-            LOG_INFO("Using high res motion vectors, depth is not needed!!");
+        //else
+        //    LOG_INFO("Using high res motion vectors, depth is not needed!!");
     }
 
     ID3D11Resource* paramExp = nullptr;
