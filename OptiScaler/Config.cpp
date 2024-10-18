@@ -384,6 +384,9 @@ bool Config::Reload(std::filesystem::path iniPath)
                 DE_ReflexEmu.reset();
         }
 
+        if (OverrideNvapiDll.has_value() && OverrideNvapiDll.value())
+            return ReloadFakenvapi();
+        
         return true;
     }
 
@@ -631,6 +634,51 @@ bool Config::SaveIni()
     LOG_INFO("Trying to save ini to: {0}", wstring_to_string(pathWStr));
 
     return ini.SaveFile(absoluteFileName.wstring().c_str()) >= 0;
+}
+
+bool Config::ReloadFakenvapi() {
+    auto FN_iniPath = Util::DllPath().parent_path() / L"fakenvapi.ini";
+    if (NvapiDllPath.has_value())
+        FN_iniPath = std::filesystem::path(NvapiDllPath.value()).parent_path() / L"fakenvapi.ini";
+
+    auto pathWStr = FN_iniPath.wstring();
+
+    LOG_INFO("Trying to load fakenvapi's ini from: {0}", wstring_to_string(pathWStr));
+
+    if (fakenvapiIni.LoadFile(FN_iniPath.c_str()) == SI_OK)
+    {
+        FN_Available        = true;
+
+        FN_EnableLogs       = fakenvapiIni.GetLongValue("fakenvapi", "enable_logs",       true);
+        FN_EnableTraceLogs  = fakenvapiIni.GetLongValue("fakenvapi", "enable_trace_logs", false);
+        FN_ForceLatencyFlex = fakenvapiIni.GetLongValue("fakenvapi", "force_latencyflex", false);
+        FN_LatencyFlexMode  = fakenvapiIni.GetLongValue("fakenvapi", "latencyflex_mode",  0);
+        FN_ForceReflex      = fakenvapiIni.GetLongValue("fakenvapi", "force_reflex",      0);
+
+        return true;
+    }
+
+    FN_Available = false;
+
+    return false;
+}
+
+bool Config::SaveFakenvapiIni() {
+    auto FN_iniPath = Util::DllPath().parent_path() / L"fakenvapi.ini";
+    if (NvapiDllPath.has_value())
+        FN_iniPath = std::filesystem::path(NvapiDllPath.value()).parent_path() / L"fakenvapi.ini";
+
+    auto pathWStr = FN_iniPath.wstring();
+
+    LOG_INFO("Trying to save fakenvapi's ini to: {0}", wstring_to_string(pathWStr));
+
+    fakenvapiIni.SetLongValue("fakenvapi", "enable_logs",       FN_EnableLogs.value_or(true));
+    fakenvapiIni.SetLongValue("fakenvapi", "enable_trace_logs", FN_EnableTraceLogs.value_or(false));
+    fakenvapiIni.SetLongValue("fakenvapi", "force_latencyflex", FN_ForceLatencyFlex.value_or(false));
+    fakenvapiIni.SetLongValue("fakenvapi", "latencyflex_mode",  FN_LatencyFlexMode.value_or(0));
+    fakenvapiIni.SetLongValue("fakenvapi", "force_reflex",      FN_ForceReflex.value_or(0));
+
+    return fakenvapiIni.SaveFile(FN_iniPath.wstring().c_str()) >= 0;
 }
 
 std::optional<std::string> Config::readString(std::string section, std::string key, bool lowercase)
