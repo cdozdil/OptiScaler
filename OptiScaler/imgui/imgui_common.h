@@ -120,6 +120,8 @@ private:
 
     static void AddRenderPreset(std::string name, std::optional<uint32_t>* value);
 
+    static void PopulateCombo(std::string name, std::optional<uint32_t>* value, const char* names[], const char* desc[], int length);
+
 public:
 
     static void Dx11Inited() { _dx11Ready = true; }

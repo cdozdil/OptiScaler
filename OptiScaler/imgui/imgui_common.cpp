@@ -322,6 +322,9 @@ LRESULT __stdcall ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
     {
         _isVisible = !_isVisible;
 
+        if (_isVisible)
+            Config::Instance()->ReloadFakenvapi();
+
         if (!_isVisible)
         {
             if (pfn_ClipCursor_hooked && _lastCursorLimit != nullptr)
@@ -695,33 +698,37 @@ void ImGuiCommon::AddRenderPreset(std::string name, std::optional<uint32_t>* val
         "Unused"
     };
 
+    PopulateCombo(name, value, presets, presetsDesc, 8);
+}
+
+void ImGuiCommon::PopulateCombo(std::string name, std::optional<uint32_t>* value, const char* names[], const char* desc[], int length) {
     int selected = value->value_or(0);
 
     const char* selectedName = "";
 
-    for (int n = 0; n < 8; n++)
+    for (int n = 0; n < length; n++)
     {
         if (n == selected)
         {
-            selectedName = presets[n];
+            selectedName = names[n];
             break;
         }
     }
 
     if (ImGui::BeginCombo(name.c_str(), selectedName))
     {
-        if (ImGui::Selectable(presets[0], !value->has_value()))
+        if (ImGui::Selectable(names[0], !value->has_value()))
             value->reset();
-        ShowTooltip(presetsDesc[0]);
+        ShowTooltip(desc[0]);
 
-        for (int n = 1; n < 8; n++)
+        for (int n = 1; n < length; n++)
         {
-            if (ImGui::Selectable(presets[n], selected == n))
+            if (ImGui::Selectable(names[n], selected == n))
             {
                 if (n != selected)
                     *value = n;
             }
-            ShowTooltip(presetsDesc[n]);
+            ShowTooltip(desc[n]);
         }
 
         ImGui::EndCombo();
@@ -1760,6 +1767,42 @@ void ImGuiCommon::RenderMenu()
                         }
                     }
                 }
+
+                // FAKENVAPI ---------------------------
+                if (Config::Instance()->FN_Available)
+                {
+                    ImGui::SeparatorText("fakenvapi");
+
+                    if (bool logs = Config::Instance()->FN_EnableLogs.value_or(true); ImGui::Checkbox("Enable Logs", &logs))
+                        Config::Instance()->FN_EnableLogs = logs;
+
+                    ImGui::SameLine(0.0f, 6.0f);
+                    if (bool traceLogs = Config::Instance()->FN_EnableTraceLogs.value_or(true); ImGui::Checkbox("Enable Trace Logs", &traceLogs))
+                        Config::Instance()->FN_EnableTraceLogs = traceLogs;
+
+                    if (bool forceLFX = Config::Instance()->FN_ForceLatencyFlex.value_or(true); ImGui::Checkbox("Force LatencyFlex", &forceLFX))
+                        Config::Instance()->FN_ForceLatencyFlex = forceLFX;
+                    ShowHelpMarker("When possible AntiLag 2 is used, this setting let's you force LatencyFlex instead");
+
+                    const char* lfx_modes[] = { "Conservative", "Aggressive", "Reflex ID" };
+                    const char* lfx_modesDesc[] = { "The safest but might not reduce latency well",
+                        "Improves latency but in some cases will lower fps more than expected",
+                        "Best when can be used, some games are not compatible (i.e. cyberpunk) and will fallback to aggressive"
+                    };
+
+                    PopulateCombo("LatencyFlex mode", &Config::Instance()->FN_LatencyFlexMode, lfx_modes, lfx_modesDesc, 3);
+
+                    const char* rfx_modes[] = { "Follow in-game", "Force Disable", "Force Enable" };
+                    const char* rfx_modesDesc[] = { "", "", "" };
+
+                    PopulateCombo("Force Reflex", &Config::Instance()->FN_ForceReflex, rfx_modes, rfx_modesDesc, 3);
+
+                    if (ImGui::Button("Apply##2"))
+                    {
+                        Config::Instance()->SaveFakenvapiIni();
+                    }
+                }
+
 
                 // LOGGING -----------------------------
                 ImGui::SeparatorText("Logging");
