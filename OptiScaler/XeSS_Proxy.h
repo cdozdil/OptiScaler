@@ -282,7 +282,9 @@ public:
     {
         if (_xessVersion.major == 0)
         {
-            _xessGetVersion(&_xessVersion);
+            _xessVersion.major = 1;
+            _xessVersion.minor = 3;
+            _xessVersion.patch = 1;
         }
 
         return _xessVersion;

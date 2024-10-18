@@ -8,8 +8,10 @@
 #include "XeSS_Proxy.h"
 #include "NVNGX_Parameter.h"
 #include "NVNGX_Local_Proxy.h"
+#include "imgui/imgui_overlay_dx.h"
 
 static UINT64 _handleCounter = 13370000;
+static UINT64 _frameCounter = 0;
 static xess_context_handle_t _currentContext = nullptr;
 static std::map<xess_context_handle_t, xess_d3d12_init_params_t> _initParams;
 static std::map<xess_context_handle_t, NVSDK_NGX_Parameter*> _nvParams;
@@ -170,7 +172,7 @@ XESS_API xess_result_t xessD3D12CreateContext(ID3D12Device* pDevice, xess_contex
     Config::Instance()->NVNGX_ProjectId = "OptiScaler";
     Config::Instance()->NVNGX_Engine = NVSDK_NGX_ENGINE_TYPE_CUSTOM;
     Config::Instance()->NVNGX_EngineVersion = VER_PRODUCT_VERSION_STR;
-    auto path = Util::DllPath().wstring();
+    auto path = Util::DllPath().remove_filename().wstring();
     Config::Instance()->NVNGX_ApplicationDataPath = path;
 
     if (!NVNGXLocalProxy::InitDx12(pDevice))
@@ -228,6 +230,28 @@ XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12Gr
 
     auto& params = _nvParams[hContext];
     auto& handle = _contexts[hContext];
+    auto& initParams = _initParams[hContext];
+
+    if ((initParams.initFlags & XESS_INIT_FLAG_USE_NDC_VELOCITY))
+    {
+        float vsx = 0;
+        float vsy = 0;
+
+        if (params->Get(NVSDK_NGX_Parameter_MV_Scale_X, &vsx) == NVSDK_NGX_Result_Success &&
+            params->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &vsy) == NVSDK_NGX_Result_Success)
+        {
+            if (initParams.initFlags & XESS_INIT_FLAG_HIGH_RES_MV)
+            {
+                params->Set(NVSDK_NGX_Parameter_MV_Scale_X, initParams.outputResolution.x * 0.5 * vsx);
+                params->Set(NVSDK_NGX_Parameter_MV_Scale_Y, initParams.outputResolution.y * -0.5 * vsy);
+            }
+            else
+            {
+                params->Set(NVSDK_NGX_Parameter_MV_Scale_X, pExecParams->inputWidth * 0.5 * vsx);
+                params->Set(NVSDK_NGX_Parameter_MV_Scale_Y, pExecParams->inputHeight * -0.5 * vsy);
+            }
+        }
+    }
 
     params->Set(NVSDK_NGX_Parameter_Jitter_Offset_X, pExecParams->jitterOffsetX);
     params->Set(NVSDK_NGX_Parameter_Jitter_Offset_Y, pExecParams->jitterOffsetY);
@@ -235,12 +259,13 @@ XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12Gr
     params->Set(NVSDK_NGX_Parameter_Reset, pExecParams->resetHistory);
     params->Set(NVSDK_NGX_Parameter_Width, pExecParams->inputWidth);
     params->Set(NVSDK_NGX_Parameter_Height, pExecParams->inputHeight);
-    params->Set(NVSDK_NGX_Parameter_Output, pExecParams->pOutputTexture);
     params->Set(NVSDK_NGX_Parameter_Depth, pExecParams->pDepthTexture);
     params->Set(NVSDK_NGX_Parameter_ExposureTexture, pExecParams->pExposureScaleTexture);
     params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, pExecParams->pResponsivePixelMaskTexture);
     params->Set(NVSDK_NGX_Parameter_Color, pExecParams->pColorTexture);
     params->Set(NVSDK_NGX_Parameter_MotionVectors, pExecParams->pVelocityTexture);
+    params->Set(NVSDK_NGX_Parameter_Output, pExecParams->pOutputTexture);
+
 
     if (NVNGXLocalProxy::D3D12_EvaluateFeature()(pCommandList, handle, params, nullptr) == NVSDK_NGX_Result_Success)
         return XESS_RESULT_SUCCESS;
