@@ -322,6 +322,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             LOG_DEBUG("D3D12CommandQueue captured");
 
         currentSCCommandQueue = pDevice;
+        ImGuiOverlayDx::GameCommandQueue = (ID3D12CommandQueue*)pDevice;
 
         if (cq->GetDevice(IID_PPV_ARGS(&device12)) == S_OK)
         {
