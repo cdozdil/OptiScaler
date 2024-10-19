@@ -9,12 +9,19 @@
 #include "NVNGX_Parameter.h"
 #include "imgui/imgui_overlay_dx.h"
 
+typedef struct MotionScale
+{
+    float x;
+    float y;
+} motion_scale;
+
 static UINT64 _handleCounter = 13370000;
 static UINT64 _frameCounter = 0;
 static xess_context_handle_t _currentContext = nullptr;
 static std::map<xess_context_handle_t, xess_d3d12_init_params_t> _initParams;
 static std::map<xess_context_handle_t, NVSDK_NGX_Parameter*> _nvParams;
 static std::map<xess_context_handle_t, NVSDK_NGX_Handle*> _contexts;
+static std::map<xess_context_handle_t, MotionScale> _motionScales;
 static ID3D12Device* _d3d12Device = nullptr;
 
 static bool CreateDLSSContext(xess_context_handle_t handle, ID3D12GraphicsCommandList* commandList, const xess_d3d12_execute_params_t* pExecParams)
@@ -170,14 +177,14 @@ XESS_API xess_result_t xessD3D12CreateContext(ID3D12Device* pDevice, xess_contex
     fcInfo.PathListInfo.Path = paths;
     fcInfo.PathListInfo.Length = 1;
 
-    auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(), 
+    auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
                                                         pDevice, &fcInfo, Config::Instance()->NVNGX_Version);
 
     if (nvResult != NVSDK_NGX_Result_Success)
         return XESS_RESULT_ERROR_UNINITIALIZED;
 
     _d3d12Device = pDevice;
-    *phContext = (xess_context_handle_t)_handleCounter++;
+    *phContext = (xess_context_handle_t)++_handleCounter;
 
     NVSDK_NGX_Parameter* params = nullptr;
 
@@ -213,7 +220,11 @@ XESS_API xess_result_t xessD3D12Init(xess_context_handle_t hContext, const xess_
 
     _initParams[hContext] = ip;
 
-    return XESS_RESULT_SUCCESS;
+    if (!_contexts.contains(hContext))
+        return XESS_RESULT_SUCCESS;
+
+    NVSDK_NGX_D3D12_ReleaseFeature(_contexts[hContext]);
+    _contexts.erase(hContext);
 }
 
 XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12GraphicsCommandList* pCommandList, const xess_d3d12_execute_params_t* pExecParams)
@@ -230,24 +241,19 @@ XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12Gr
     NVSDK_NGX_Handle* handle = _contexts[hContext];
     xess_d3d12_init_params_t* initParams = &_initParams[hContext];
 
-    if ((initParams->initFlags & XESS_INIT_FLAG_USE_NDC_VELOCITY))
+    if (_motionScales.contains(hContext) && (initParams->initFlags & XESS_INIT_FLAG_USE_NDC_VELOCITY))
     {
-        float vsx = 0;
-        float vsy = 0;
+        auto scales = &_motionScales[hContext];
 
-        if (params->Get(NVSDK_NGX_Parameter_MV_Scale_X, &vsx) == NVSDK_NGX_Result_Success &&
-            params->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &vsy) == NVSDK_NGX_Result_Success)
+        if (initParams->initFlags & XESS_INIT_FLAG_HIGH_RES_MV)
         {
-            if (initParams->initFlags & XESS_INIT_FLAG_HIGH_RES_MV)
-            {
-                params->Set(NVSDK_NGX_Parameter_MV_Scale_X, initParams->outputResolution.x * 0.5 * vsx);
-                params->Set(NVSDK_NGX_Parameter_MV_Scale_Y, initParams->outputResolution.y * -0.5 * vsy);
-            }
-            else
-            {
-                params->Set(NVSDK_NGX_Parameter_MV_Scale_X, pExecParams->inputWidth * 0.5 * vsx);
-                params->Set(NVSDK_NGX_Parameter_MV_Scale_Y, pExecParams->inputHeight * -0.5 * vsy);
-            }
+            params->Set(NVSDK_NGX_Parameter_MV_Scale_X, initParams->outputResolution.x * 0.5 * scales->x);
+            params->Set(NVSDK_NGX_Parameter_MV_Scale_Y, initParams->outputResolution.y * -0.5 * scales->y);
+        }
+        else
+        {
+            params->Set(NVSDK_NGX_Parameter_MV_Scale_X, pExecParams->inputWidth * 0.5 * scales->x);
+            params->Set(NVSDK_NGX_Parameter_MV_Scale_Y, pExecParams->inputHeight * -0.5 * scales->y);
         }
     }
 
@@ -325,13 +331,7 @@ XESS_API xess_result_t xessDestroyContext(xess_context_handle_t hContext)
 
 XESS_API xess_result_t xessSetVelocityScale(xess_context_handle_t hContext, float x, float y)
 {
-    if (!_nvParams.contains(hContext))
-        return XESS_RESULT_ERROR_INVALID_CONTEXT;
-
-    auto params = _nvParams[hContext];
-
-    params->Set(NVSDK_NGX_Parameter_MV_Scale_X, x);
-    params->Set(NVSDK_NGX_Parameter_MV_Scale_Y, y);
+    _motionScales[hContext] = { x, y };
 
     return XESS_RESULT_SUCCESS;
 }
@@ -554,16 +554,13 @@ XESS_API xess_result_t xessGetOptimalInputResolution(xess_context_handle_t hCont
 
 XESS_API xess_result_t xessGetVelocityScale(xess_context_handle_t hContext, float* pX, float* pY)
 {
-    if (!_nvParams.contains(hContext))
+    if (!_motionScales.contains(hContext))
         return XESS_RESULT_ERROR_INVALID_CONTEXT;
 
-    auto params = _nvParams[hContext];
+    auto scales = &_motionScales[hContext];
 
-    if (params->Get(NVSDK_NGX_Parameter_MV_Scale_X, pX) == NVSDK_NGX_Result_Success &&
-        params->Get(NVSDK_NGX_Parameter_MV_Scale_Y, pY) == NVSDK_NGX_Result_Success)
-    {
-        return XESS_RESULT_SUCCESS;
-    }
+    *pX = scales->x;
+    *pY = scales->y;
 
     return XESS_RESULT_ERROR_UNKNOWN;
 }
