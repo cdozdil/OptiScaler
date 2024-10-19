@@ -167,13 +167,20 @@ static BOOL hkFreeLibrary(HMODULE lpLibrary)
 
     if (lpLibrary == dllModule)
     {
-        loadCount--;
+        if (loadCount > 0)
+            loadCount--;
+
         LOG_INFO("Call for this module loadCount: {0}", loadCount);
 
         if (loadCount == 0)
-            return o_FreeLibrary(lpLibrary);
+        {
+            auto result = o_FreeLibrary(lpLibrary);
+            LOG_DEBUG("o_FreeLibrary result: {0:X}", result);
+        }
         else
+        {
             return TRUE;
+        }
     }
 
     return o_FreeLibrary(lpLibrary);
