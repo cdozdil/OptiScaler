@@ -206,7 +206,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="bias\Bias_Dx12.h" />
     <ClInclude Include="bias\Bias_Dx11.h" />
     <ClInclude Include="bias\precompile\Bias_Shader.h" />
-    <ClInclude Include="NVNGX_Local_Proxy.h" />
     <ClInclude Include="output_scaling\OS_Common.h" />
     <ClInclude Include="output_scaling\OS_Dx12.h" />
     <ClInclude Include="output_scaling\precompile\BCDS_Shader.h" />

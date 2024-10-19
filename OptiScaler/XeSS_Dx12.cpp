@@ -7,7 +7,6 @@
 #include "xess_d3d12_debug.h"
 #include "XeSS_Proxy.h"
 #include "NVNGX_Parameter.h"
-#include "NVNGX_Local_Proxy.h"
 #include "imgui/imgui_overlay_dx.h"
 
 static UINT64 _handleCounter = 13370000;
@@ -26,34 +25,34 @@ static bool CreateDLSSContext(xess_context_handle_t handle, ID3D12GraphicsComman
         return false;
 
     NVSDK_NGX_Handle* nvHandle = nullptr;
-    auto& params = _nvParams[handle];
-    auto& initParams = _initParams[handle];
+    auto params = _nvParams[handle];
+    auto initParams = &_initParams[handle];
 
     UINT initFlags = 0;
 
-    if ((initParams.initFlags & XESS_INIT_FLAG_LDR_INPUT_COLOR) == 0)
+    if ((initParams->initFlags & XESS_INIT_FLAG_LDR_INPUT_COLOR) == 0)
         initFlags |= NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
 
-    if (initParams.initFlags & XESS_INIT_FLAG_INVERTED_DEPTH)
+    if (initParams->initFlags & XESS_INIT_FLAG_INVERTED_DEPTH)
         initFlags |= NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
 
-    if (initParams.initFlags & XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE)
+    if (initParams->initFlags & XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE)
         initFlags |= NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
 
-    if (initParams.initFlags & XESS_INIT_FLAG_JITTERED_MV)
+    if (initParams->initFlags & XESS_INIT_FLAG_JITTERED_MV)
         initFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
 
-    if ((initParams.initFlags & XESS_INIT_FLAG_HIGH_RES_MV) == 0)
+    if ((initParams->initFlags & XESS_INIT_FLAG_HIGH_RES_MV) == 0)
         initFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
 
     params->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, initFlags);
 
     params->Set(NVSDK_NGX_Parameter_Width, pExecParams->inputWidth);
     params->Set(NVSDK_NGX_Parameter_Height, pExecParams->inputHeight);
-    params->Set(NVSDK_NGX_Parameter_OutWidth, initParams.outputResolution.x);
-    params->Set(NVSDK_NGX_Parameter_OutHeight, initParams.outputResolution.y);
+    params->Set(NVSDK_NGX_Parameter_OutWidth, initParams->outputResolution.x);
+    params->Set(NVSDK_NGX_Parameter_OutHeight, initParams->outputResolution.y);
 
-    switch (initParams.qualitySetting)
+    switch (initParams->qualitySetting)
     {
         case XESS_QUALITY_SETTING_ULTRA_PERFORMANCE:
             params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_UltraPerformance);
@@ -85,9 +84,7 @@ static bool CreateDLSSContext(xess_context_handle_t handle, ID3D12GraphicsComman
             break;
     }
 
-    params->Set(NVSDK_NGX_Parameter_PerfQualityValue, initParams.outputResolution.y);
-
-    if (NVNGXLocalProxy::D3D12_CreateFeature()(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle) != NVSDK_NGX_Result_Success)
+    if (NVSDK_NGX_D3D12_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle) != NVSDK_NGX_Result_Success)
         return false;
 
     _contexts[handle] = nvHandle;
@@ -161,21 +158,22 @@ XESS_API xess_result_t xessD3D12CreateContext(ID3D12Device* pDevice, xess_contex
 {
     LOG_DEBUG("");
 
-    NVNGXLocalProxy::InitNVNGX();
-
     if (pDevice == nullptr)
         return XESS_RESULT_ERROR_DEVICE;
 
-    if (NVNGXLocalProxy::NVNGXModule() == nullptr)
-        return XESS_RESULT_ERROR_CANT_LOAD_LIBRARY;
+    Util::DllPath();
 
-    Config::Instance()->NVNGX_ProjectId = "OptiScaler";
-    Config::Instance()->NVNGX_Engine = NVSDK_NGX_ENGINE_TYPE_CUSTOM;
-    Config::Instance()->NVNGX_EngineVersion = VER_PRODUCT_VERSION_STR;
-    auto path = Util::DllPath().remove_filename().wstring();
-    Config::Instance()->NVNGX_ApplicationDataPath = path;
+    NVSDK_NGX_FeatureCommonInfo fcInfo{};
+    wchar_t const** paths = new const wchar_t* [1];
+    auto dllPath = Util::DllPath().remove_filename().wstring();
+    paths[0] = dllPath.c_str();
+    fcInfo.PathListInfo.Path = paths;
+    fcInfo.PathListInfo.Length = 1;
 
-    if (!NVNGXLocalProxy::InitDx12(pDevice))
+    auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(), 
+                                                        pDevice, &fcInfo, Config::Instance()->NVNGX_Version);
+
+    if (nvResult != NVSDK_NGX_Result_Success)
         return XESS_RESULT_ERROR_UNINITIALIZED;
 
     _d3d12Device = pDevice;
@@ -183,7 +181,7 @@ XESS_API xess_result_t xessD3D12CreateContext(ID3D12Device* pDevice, xess_contex
 
     NVSDK_NGX_Parameter* params = nullptr;
 
-    if (NVNGXLocalProxy::D3D12_GetCapabilityParameters()(&params) != NVSDK_NGX_Result_Success)
+    if (NVSDK_NGX_D3D12_GetCapabilityParameters(&params) != NVSDK_NGX_Result_Success)
         return XESS_RESULT_ERROR_INVALID_ARGUMENT;
 
     _nvParams[*phContext] = params;
@@ -194,7 +192,7 @@ XESS_API xess_result_t xessD3D12CreateContext(ID3D12Device* pDevice, xess_contex
 XESS_API xess_result_t xessD3D12BuildPipelines(xess_context_handle_t hContext, ID3D12PipelineLibrary* pPipelineLibrary, bool blocking, uint32_t initFlags)
 {
     LOG_WARN("");
-    return XESS_RESULT_ERROR_UNSUPPORTED;
+    return XESS_RESULT_SUCCESS;
 }
 
 XESS_API xess_result_t xessD3D12Init(xess_context_handle_t hContext, const xess_d3d12_init_params_t* pInitParams)
@@ -228,11 +226,11 @@ XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12Gr
     if (!_contexts.contains(hContext) && !CreateDLSSContext(hContext, pCommandList, pExecParams))
         return XESS_RESULT_ERROR_UNKNOWN;
 
-    auto& params = _nvParams[hContext];
-    auto& handle = _contexts[hContext];
-    auto& initParams = _initParams[hContext];
+    NVSDK_NGX_Parameter* params = _nvParams[hContext];
+    NVSDK_NGX_Handle* handle = _contexts[hContext];
+    xess_d3d12_init_params_t* initParams = &_initParams[hContext];
 
-    if ((initParams.initFlags & XESS_INIT_FLAG_USE_NDC_VELOCITY))
+    if ((initParams->initFlags & XESS_INIT_FLAG_USE_NDC_VELOCITY))
     {
         float vsx = 0;
         float vsy = 0;
@@ -240,10 +238,10 @@ XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12Gr
         if (params->Get(NVSDK_NGX_Parameter_MV_Scale_X, &vsx) == NVSDK_NGX_Result_Success &&
             params->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &vsy) == NVSDK_NGX_Result_Success)
         {
-            if (initParams.initFlags & XESS_INIT_FLAG_HIGH_RES_MV)
+            if (initParams->initFlags & XESS_INIT_FLAG_HIGH_RES_MV)
             {
-                params->Set(NVSDK_NGX_Parameter_MV_Scale_X, initParams.outputResolution.x * 0.5 * vsx);
-                params->Set(NVSDK_NGX_Parameter_MV_Scale_Y, initParams.outputResolution.y * -0.5 * vsy);
+                params->Set(NVSDK_NGX_Parameter_MV_Scale_X, initParams->outputResolution.x * 0.5 * vsx);
+                params->Set(NVSDK_NGX_Parameter_MV_Scale_Y, initParams->outputResolution.y * -0.5 * vsy);
             }
             else
             {
@@ -266,8 +264,7 @@ XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12Gr
     params->Set(NVSDK_NGX_Parameter_MotionVectors, pExecParams->pVelocityTexture);
     params->Set(NVSDK_NGX_Parameter_Output, pExecParams->pOutputTexture);
 
-
-    if (NVNGXLocalProxy::D3D12_EvaluateFeature()(pCommandList, handle, params, nullptr) == NVSDK_NGX_Result_Success)
+    if (NVSDK_NGX_D3D12_EvaluateFeature(pCommandList, handle, params, nullptr) == NVSDK_NGX_Result_Success)
         return XESS_RESULT_SUCCESS;
 
     return XESS_RESULT_ERROR_UNKNOWN;
@@ -306,8 +303,10 @@ XESS_API xess_result_t xessGetProperties(xess_context_handle_t hContext, const x
     if (!_contexts.contains(hContext))
         return XESS_RESULT_ERROR_INVALID_CONTEXT;
 
+    *pBindingProperties = {};
+
     LOG_WARN("");
-    return XESS_RESULT_ERROR_UNSUPPORTED;
+    return XESS_RESULT_SUCCESS;
 }
 
 XESS_API xess_result_t xessDestroyContext(xess_context_handle_t hContext)
@@ -315,7 +314,7 @@ XESS_API xess_result_t xessDestroyContext(xess_context_handle_t hContext)
     if (!_contexts.contains(hContext))
         return XESS_RESULT_ERROR_INVALID_CONTEXT;
 
-    NVNGXLocalProxy::D3D12_ReleaseFeature()(_contexts[hContext]);
+    NVSDK_NGX_D3D12_ReleaseFeature(_contexts[hContext]);
 
     _contexts.erase(hContext);
     _nvParams.erase(hContext);
@@ -329,7 +328,7 @@ XESS_API xess_result_t xessSetVelocityScale(xess_context_handle_t hContext, floa
     if (!_nvParams.contains(hContext))
         return XESS_RESULT_ERROR_INVALID_CONTEXT;
 
-    auto& params = _nvParams[hContext];
+    auto params = _nvParams[hContext];
 
     params->Set(NVSDK_NGX_Parameter_MV_Scale_X, x);
     params->Set(NVSDK_NGX_Parameter_MV_Scale_Y, y);
@@ -342,18 +341,18 @@ XESS_API xess_result_t xessD3D12GetInitParams(xess_context_handle_t hContext, xe
     if (!_initParams.contains(hContext))
         return XESS_RESULT_ERROR_INVALID_CONTEXT;
 
-    auto& ip = _initParams[hContext];
+    auto ip = &_initParams[hContext];
 
-    pInitParams->bufferHeapOffset = ip.bufferHeapOffset;
-    pInitParams->creationNodeMask = ip.creationNodeMask;
-    pInitParams->initFlags = ip.initFlags;
-    pInitParams->outputResolution = ip.outputResolution;
-    pInitParams->pPipelineLibrary = ip.pPipelineLibrary;
-    pInitParams->pTempBufferHeap = ip.pTempBufferHeap;
-    pInitParams->pTempTextureHeap = ip.pTempTextureHeap;
-    pInitParams->qualitySetting = ip.qualitySetting;
-    pInitParams->textureHeapOffset = ip.textureHeapOffset;
-    pInitParams->visibleNodeMask = ip.visibleNodeMask;
+    pInitParams->bufferHeapOffset = ip->bufferHeapOffset;
+    pInitParams->creationNodeMask = ip->creationNodeMask;
+    pInitParams->initFlags = ip->initFlags;
+    pInitParams->outputResolution = ip->outputResolution;
+    pInitParams->pPipelineLibrary = ip->pPipelineLibrary;
+    pInitParams->pTempBufferHeap = ip->pTempBufferHeap;
+    pInitParams->pTempTextureHeap = ip->pTempTextureHeap;
+    pInitParams->qualitySetting = ip->qualitySetting;
+    pInitParams->textureHeapOffset = ip->textureHeapOffset;
+    pInitParams->visibleNodeMask = ip->visibleNodeMask;
 
     return XESS_RESULT_SUCCESS;
 }
@@ -448,7 +447,7 @@ XESS_API xess_result_t xessGetInputResolution(xess_context_handle_t hContext, co
     pInputResolution->x = OutWidth;
     pInputResolution->y = OutHeight;
 
-    LOG_DEBUG("Display Resolution: {0}x{1} Render Resolution: {2}x{3}", pInputResolution->x, pInputResolution->y, OutWidth, OutHeight);
+    LOG_DEBUG("Display Resolution: {0}x{1} Render Resolution: {2}x{3}, Quality: {4}", pOutputResolution->x, pOutputResolution->y, pInputResolution->x, pInputResolution->y, (UINT)qualitySettings);
 
     return XESS_RESULT_SUCCESS;
 }
@@ -558,7 +557,7 @@ XESS_API xess_result_t xessGetVelocityScale(xess_context_handle_t hContext, floa
     if (!_nvParams.contains(hContext))
         return XESS_RESULT_ERROR_INVALID_CONTEXT;
 
-    auto& params = _nvParams[hContext];
+    auto params = _nvParams[hContext];
 
     if (params->Get(NVSDK_NGX_Parameter_MV_Scale_X, pX) == NVSDK_NGX_Result_Success &&
         params->Get(NVSDK_NGX_Parameter_MV_Scale_Y, pY) == NVSDK_NGX_Result_Success)

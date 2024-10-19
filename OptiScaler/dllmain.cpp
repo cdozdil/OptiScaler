@@ -4,7 +4,6 @@
 
 #include "Logger.h"
 #include "Util.h"
-#include "NVNGX_Local_Proxy.h"
 #include "NVNGX_Proxy.h"
 #include "XeSS_Proxy.h"
 
@@ -1363,9 +1362,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 }
             }
 
-            NVNGXLocalProxy::InitNVNGX();
-            if (NVNGXLocalProxy::NVNGXModule() == nullptr)
-                LOG_WARN("Can't init local NVNGX!");
+            //NVNGXLocalProxy::InitNVNGX();
+            //if (NVNGXLocalProxy::NVNGXModule() == nullptr)
+            //    LOG_WARN("Can't init local NVNGX!");
 
             if (!XeSSProxy::InitXeSS())
                 LOG_WARN("Can't init XeSS!");

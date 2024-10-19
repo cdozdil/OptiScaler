@@ -242,7 +242,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 
     LOG_INFO("AppId: {0}", InApplicationId);
     LOG_INFO("SDK: {0:x}", (unsigned int)InSDKVersion);
-    appDataPath = InApplicationDataPath;
+    appDataPath = std::wstring(InApplicationDataPath);
 
     LOG_INFO("InApplicationDataPath {0}", wstring_to_string(appDataPath));
 

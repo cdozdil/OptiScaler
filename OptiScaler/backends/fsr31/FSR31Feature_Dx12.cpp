@@ -389,7 +389,7 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
 
     if (result != FFX_API_RETURN_OK)
     {
-        LOG_ERROR("ffxFsr2ContextDispatch error: {0}", ResultToString(result));
+        LOG_ERROR("_dispatch error: {0}", ResultToString(result));
         return false;
     }
 
