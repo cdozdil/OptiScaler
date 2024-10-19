@@ -192,6 +192,7 @@ XESS_API xess_result_t xessD3D12CreateContext(ID3D12Device* pDevice, xess_contex
         return XESS_RESULT_ERROR_INVALID_ARGUMENT;
 
     _nvParams[*phContext] = params;
+    _motionScales[*phContext] = { 1.0, 1.0 };
 
     return XESS_RESULT_SUCCESS;
 }
@@ -241,19 +242,27 @@ XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12Gr
     NVSDK_NGX_Handle* handle = _contexts[hContext];
     xess_d3d12_init_params_t* initParams = &_initParams[hContext];
 
-    if (_motionScales.contains(hContext) && (initParams->initFlags & XESS_INIT_FLAG_USE_NDC_VELOCITY))
+    if (_motionScales.contains(hContext))
     {
         auto scales = &_motionScales[hContext];
 
-        if (initParams->initFlags & XESS_INIT_FLAG_HIGH_RES_MV)
+        if ((initParams->initFlags & XESS_INIT_FLAG_USE_NDC_VELOCITY))
         {
-            params->Set(NVSDK_NGX_Parameter_MV_Scale_X, initParams->outputResolution.x * 0.5 * scales->x);
-            params->Set(NVSDK_NGX_Parameter_MV_Scale_Y, initParams->outputResolution.y * -0.5 * scales->y);
+            if (initParams->initFlags & XESS_INIT_FLAG_HIGH_RES_MV)
+            {
+                params->Set(NVSDK_NGX_Parameter_MV_Scale_X, initParams->outputResolution.x * 0.5 * scales->x);
+                params->Set(NVSDK_NGX_Parameter_MV_Scale_Y, initParams->outputResolution.y * -0.5 * scales->y);
+            }
+            else
+            {
+                params->Set(NVSDK_NGX_Parameter_MV_Scale_X, pExecParams->inputWidth * 0.5 * scales->x);
+                params->Set(NVSDK_NGX_Parameter_MV_Scale_Y, pExecParams->inputHeight * -0.5 * scales->y);
+            }
         }
         else
         {
-            params->Set(NVSDK_NGX_Parameter_MV_Scale_X, pExecParams->inputWidth * 0.5 * scales->x);
-            params->Set(NVSDK_NGX_Parameter_MV_Scale_Y, pExecParams->inputHeight * -0.5 * scales->y);
+            params->Set(NVSDK_NGX_Parameter_MV_Scale_X, scales->x);
+            params->Set(NVSDK_NGX_Parameter_MV_Scale_Y, scales->y);
         }
     }
 
