@@ -243,9 +243,10 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     else
     {
         if (!Config::Instance()->DisplayResolution.value_or(false))
+        {
             LOG_ERROR("Depth not exist!!");
-        else
-            LOG_INFO("Using high res motion vectors, depth is not needed!!");
+            return false;
+        }
     }
 
     ID3D12Resource* paramExp = nullptr;
@@ -370,12 +371,25 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     params.preExposure = 1.0f;
     InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure);
 
+    if (_velocity != Config::Instance()->FsrVelocity.value_or(1.0f))
+    {
+        _velocity = Config::Instance()->FsrVelocity.value_or(1.0f);
+        ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig{};
+        m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
+        m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FVELOCITYFACTOR;
+        m_upscalerKeyValueConfig.ptr = &_velocity;
+        auto result = _configure(&_context, &m_upscalerKeyValueConfig.header);
+
+        if (result != FFX_API_RETURN_OK)
+            LOG_WARN("Velocity configure result: {}", (UINT)result);
+    }
+
     LOG_DEBUG("Dispatch!!");
     auto result = _dispatch(&_context, &params.header);
 
     if (result != FFX_API_RETURN_OK)
     {
-        LOG_ERROR("ffxFsr2ContextDispatch error: {0}", ResultToString(result));
+        LOG_ERROR("_dispatch error: {0}", ResultToString(result));
         return false;
     }
 
@@ -530,17 +544,12 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
 
     _contextDesc.fpMessage = FfxLogCallback;
 
-    unsigned int featureFlags;
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);
-
-    _initFlags = featureFlags;
-
-    bool Hdr = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
-    bool EnableSharpening = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
-    bool DepthInverted = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
-    bool JitterMotion = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
-    bool LowRes = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
-    bool AutoExposure = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
+    bool Hdr = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
+    bool EnableSharpening = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
+    bool DepthInverted = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
+    bool JitterMotion = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
+    bool LowRes = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
+    bool AutoExposure = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
 
     _contextDesc.flags = 0;
 

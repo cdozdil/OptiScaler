@@ -1279,8 +1279,8 @@ struct dxgi_dll
     PFN_CREATE_DXGI_FACTORY CreateDxgiFactory1;
     PFN_CREATE_DXGI_FACTORY_2 CreateDxgiFactory2;
 
-    FARPROC dxgiDeclareAdapterRemovalSupport;
-    FARPROC dxgiGetDebugInterface;
+    FARPROC dxgiDeclareAdapterRemovalSupport = nullptr;
+    FARPROC dxgiGetDebugInterface = nullptr;
     FARPROC dxgiApplyCompatResolutionQuirking = nullptr;
     FARPROC dxgiCompatString = nullptr;
     FARPROC dxgiCompatValue = nullptr;
@@ -1331,14 +1331,15 @@ struct dxgi_dll
 
 bool SkipSpoofing()
 {
-    auto result = !Config::Instance()->DxgiSpoofing.value_or(true) || Config::Instance()->dxgiSkipSpoofing;
+    auto skip = !Config::Instance()->DxgiSpoofing.value_or(true) || Config::Instance()->dxgiSkipSpoofing || Config::Instance()->IsRunningOnLinux;
 
-    if (result)
-        LOG_TRACE("dxgiSkipSpoofing true, skipping spoofing");
+    if (skip)
+        LOG_TRACE("DxgiSpoofing: {}, dxgiSkipSpoofing: {}, IsRunningOnLinux: {}, skipping spoofing", 
+                  !Config::Instance()->DxgiSpoofing.value_or(true), Config::Instance()->dxgiSkipSpoofing, !Config::Instance()->IsRunningOnLinux);
 
-    if (!result && Config::Instance()->DxgiBlacklist.has_value() && !Config::Instance()->IsRunningOnLinux)
+    if (!skip && Config::Instance()->DxgiBlacklist.has_value())
     {
-        result = true;
+        skip = true;
 
         // Walk the call stack to find the DLL that is calling the hooked function
         void* callers[100];
@@ -1366,7 +1367,7 @@ bool SkipSpoofing()
                         if (pos != std::string::npos)
                         {
                             LOG_INFO("spoofing for: {0}", sn);
-                            result = false;
+                            skip = false;
                             break;
                         }
                     }
@@ -1378,11 +1379,11 @@ bool SkipSpoofing()
             SymCleanup(process);
         }
 
-        if (result)
+        if (skip)
             LOG_DEBUG("skipping spoofing, blacklisting active");
     }
 
-    return result;
+    return skip;
 }
 
 HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
@@ -1605,16 +1606,16 @@ HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFacto
     return result;
 }
 
-HRESULT _DXGIDeclareAdapterRemovalSupport()
+void _DXGIDeclareAdapterRemovalSupport()
 {
     LOG_FUNC();
-    return dxgi.dxgiDeclareAdapterRemovalSupport();
+    dxgi.dxgiDeclareAdapterRemovalSupport();
 }
 
-HRESULT _DXGIGetDebugInterface1()
+void _DXGIGetDebugInterface1()
 {
     LOG_FUNC();
-    return dxgi.dxgiGetDebugInterface();
+    dxgi.dxgiGetDebugInterface();
 }
 
 void _ApplyCompatResolutionQuirking()

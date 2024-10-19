@@ -16,6 +16,8 @@ namespace ImGuiOverlayDx
 	inline ID3D11Query* endQueries[QUERY_BUFFER_COUNT] = { nullptr, nullptr, nullptr };
 	inline bool dx11UpscaleTrig[QUERY_BUFFER_COUNT] = { false, false, false };
 
+	inline ID3D12CommandQueue* GameCommandQueue = nullptr;
+
 	inline int currentFrameIndex = 0;
 	inline int previousFrameIndex = 0;
 

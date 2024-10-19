@@ -322,6 +322,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             LOG_DEBUG("D3D12CommandQueue captured");
 
         currentSCCommandQueue = pDevice;
+        ImGuiOverlayDx::GameCommandQueue = (ID3D12CommandQueue*)pDevice;
 
         if (cq->GetDevice(IID_PPV_ARGS(&device12)) == S_OK)
         {
@@ -618,6 +619,10 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     if (Config::Instance()->VulkanCreatingSC)
     {
         LOG_WARN("Vulkan is creating swapchain!");
+
+        if(pDesc != nullptr)
+            LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Windowed: {4}", pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, pDesc->Windowed);
+
         return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
     }
 
@@ -677,6 +682,10 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* pCommandQueue, IUnknown* p
     if (Config::Instance()->VulkanCreatingSC)
     {
         LOG_WARN("Vulkan is creating swapchain!");
+
+        if (pDesc != nullptr)
+            LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Flags: {4:X}", pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, pDesc->Flags);
+
         return oCreateSwapChainForHwnd(pCommandQueue, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     }
 
@@ -975,6 +984,24 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
 {
     LOG_FUNC();
 
+    static const D3D_FEATURE_LEVEL levels[] = {
+     D3D_FEATURE_LEVEL_11_1,
+    };
+
+    D3D_FEATURE_LEVEL maxLevel = D3D_FEATURE_LEVEL_1_0_CORE;
+
+    for (UINT i = 0; i < FeatureLevels; ++i)
+    {
+        maxLevel = std::max(maxLevel, pFeatureLevels[i]);
+    }
+
+    if (maxLevel == D3D_FEATURE_LEVEL_11_0)
+    {
+        LOG_INFO("Overriding D3D_FEATURE_LEVEL, Game requested D3D_FEATURE_LEVEL_11_0, we need D3D_FEATURE_LEVEL_11_1!");
+        pFeatureLevels = levels;
+        FeatureLevels = ARRAYSIZE(levels);
+    }
+
     auto result = o_D3D11CreateDevice(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
 
     if (result == S_OK && *ppDevice != nullptr)
@@ -994,6 +1021,24 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
                                                UINT FeatureLevels, UINT SDKVersion, DXGI_SWAP_CHAIN_DESC* pSwapChainDesc, IDXGISwapChain** ppSwapChain, ID3D11Device** ppDevice, D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext)
 {
     LOG_FUNC();
+
+    static const D3D_FEATURE_LEVEL levels[] = {
+    D3D_FEATURE_LEVEL_11_1,
+    };
+
+    D3D_FEATURE_LEVEL maxLevel = D3D_FEATURE_LEVEL_1_0_CORE;
+
+    for (UINT i = 0; i < FeatureLevels; ++i)
+    {
+        maxLevel = std::max(maxLevel, pFeatureLevels[i]);
+    }
+
+    if (maxLevel == D3D_FEATURE_LEVEL_11_0)
+    {
+        LOG_INFO("Overriding D3D_FEATURE_LEVEL, Game requested D3D_FEATURE_LEVEL_11_0, we need D3D_FEATURE_LEVEL_11_1!");
+        pFeatureLevels = levels;
+        FeatureLevels = ARRAYSIZE(levels);
+    }
 
     IDXGISwapChain* buffer = nullptr;
     auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, &buffer, ppDevice, pFeatureLevel, ppImmediateContext);
@@ -1039,14 +1084,9 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
                 }
 
                 LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)buffer, (UINT64)pSwapChainDesc->OutputWindow);
+                *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? buffer : real, d3d11Device, pSwapChainDesc->OutputWindow, Present, CleanupRenderTarget);
+                LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)buffer, (UINT64)d3d11Device);
             }
-            else
-            {
-                LOG_DEBUG("created new swapchain: {0:X}", (UINT64)buffer);
-            }
-
-            *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? buffer : real, d3d11Device, pSwapChainDesc->OutputWindow, Present, CleanupRenderTarget);
-            LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)buffer, (UINT64)d3d11Device);
         }
 
         if (buf != nullptr)

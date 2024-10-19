@@ -8,6 +8,7 @@ extern HMODULE dllModule;
 std::filesystem::path Util::DllPath()
 {
 	static std::filesystem::path dll;
+	
 
 	if (dll.empty())
 	{

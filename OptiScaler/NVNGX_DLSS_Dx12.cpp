@@ -24,6 +24,7 @@ static NVSDK_NGX_Parameter* createParams = nullptr;
 static int changeBackendCounter = 0;
 static int evalCounter = 0;
 static std::wstring appDataPath = L".";
+static inline bool shutdown = false;
 
 #pragma region Hooks
 
@@ -208,6 +209,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 {
     LOG_FUNC();
 
+    if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
+        InApplicationId = app_id_override;
+
     Config::Instance()->NVNGX_ApplicationId = InApplicationId;
     Config::Instance()->NVNGX_ApplicationDataPath = std::wstring(InApplicationDataPath);
     Config::Instance()->NVNGX_Version = InSDKVersion;
@@ -238,7 +242,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 
     LOG_INFO("AppId: {0}", InApplicationId);
     LOG_INFO("SDK: {0:x}", (unsigned int)InSDKVersion);
-    appDataPath = InApplicationDataPath;
+    appDataPath = std::wstring(InApplicationDataPath);
 
     LOG_INFO("InApplicationDataPath {0}", wstring_to_string(appDataPath));
 
@@ -290,6 +294,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init(unsigned long long InApplica
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx12Inited())
     {
+        if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
+            InApplicationId = app_id_override;
+
         if (NVNGXProxy::NVNGXModule() == nullptr)
             NVNGXProxy::InitNVNGX();
 
@@ -318,6 +325,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProj
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx12Inited())
     {
+        if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
+            InProjectId = project_id_override;
+
         if (NVNGXProxy::NVNGXModule() == nullptr)
             NVNGXProxy::InitNVNGX();
 
@@ -372,7 +382,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* I
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 {
-    LOG_FUNC();
+    shutdown = true;
 
     for (auto const& [key, val] : Dx12Contexts)
         NVSDK_NGX_D3D12_ReleaseFeature(val->Handle());
@@ -382,33 +392,35 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 
     Config::Instance()->CurrentFeature = nullptr;
 
-    UnhookAll();
+    // Unhooking and cleaning stuff causing issues during shutdown. 
+    // Disabled for now to check if it cause any issues
+    //UnhookAll();
 
     DLSSFeatureDx12::Shutdown(D3D12Device);
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_Shutdown() != nullptr)
     {
-        LOG_INFO("D3D12_Shutdown");
         auto result = NVNGXProxy::D3D12_Shutdown()();
         NVNGXProxy::SetDx12Inited(false);
-        LOG_INFO("D3D12_Shutdown result: {0:X}", (UINT)result);
     }
 
-    ImGuiOverlayDx::UnHookDx();
+    // Unhooking and cleaning stuff causing issues during shutdown. 
+    // Disabled for now to check if it cause any issues
+    //ImGuiOverlayDx::UnHookDx();
+
+    shutdown = false;
 
     return NVSDK_NGX_Result_Success;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown1(ID3D12Device* InDevice)
 {
-    LOG_FUNC();
+    shutdown = true;
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_Shutdown1() != nullptr)
     {
-        LOG_INFO("D3D12_Shutdown1");
         auto result = NVNGXProxy::D3D12_Shutdown1()(InDevice);
         NVNGXProxy::SetDx12Inited(false);
-        LOG_INFO("D3D12_Shutdown1 result: {0:X}", (UINT)result);
     }
 
     return NVSDK_NGX_D3D12_Shutdown();
@@ -657,7 +669,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
             if (!Dx12Contexts[handleId]->ModuleLoaded())
             {
-                LOG_ERROR("can't create new FSR 3.1 feature, Fallback to FSR2.1!");
+                LOG_ERROR("can't create new FSR 3.X feature, Fallback to FSR2.1!");
 
                 Dx12Contexts[handleId].reset();
                 auto it = std::find_if(Dx12Contexts.begin(), Dx12Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
@@ -668,7 +680,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
             else
             {
                 Config::Instance()->Dx12Upscaler = "fsr31";
-                LOG_INFO("creating new FSR 3.1 feature");
+                LOG_INFO("creating new FSR 3.X feature");
             }
         }
 
@@ -744,20 +756,28 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 
     auto handleId = InHandle->Id;
 
-    LOG_INFO("releasing feature with id {0}", handleId);
+    if (!shutdown)
+        LOG_INFO("releasing feature with id {0}", handleId);
 
     if (handleId < 1000000)
     {
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D12_ReleaseFeature() != nullptr)
         {
-            LOG_INFO("calling D3D12_ReleaseFeature for ({0})", handleId);
+            if (!shutdown)
+                LOG_INFO("calling D3D12_ReleaseFeature for ({0})", handleId);
+            
             auto result = NVNGXProxy::D3D12_ReleaseFeature()(InHandle);
-            LOG_INFO("D3D12_ReleaseFeature result for ({0}): {1:X}", handleId, (UINT)result);
+
+            if (!shutdown)
+                LOG_INFO("D3D12_ReleaseFeature result for ({0}): {1:X}", handleId, (UINT)result);
+            
             return result;
         }
         else
         {
-            LOG_INFO("D3D12_ReleaseFeature not available for ({0})", handleId);
+            if (!shutdown)
+                LOG_INFO("D3D12_ReleaseFeature not available for ({0})", handleId);
+            
             return NVSDK_NGX_Result_FAIL_FeatureNotFound;
         }
     }
@@ -776,7 +796,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
     }
     else
     {
-        LOG_ERROR("can't release feature with id {0}!", handleId);
+        if (!shutdown)
+            LOG_ERROR("can't release feature with id {0}!", handleId);
     }
 
     return NVSDK_NGX_Result_Success;
@@ -1032,7 +1053,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             else if (Config::Instance()->newBackend == "fsr31")
             {
                 Config::Instance()->Dx12Upscaler = "fsr31";
-                LOG_INFO("creating new FSR 3.1 feature");
+                LOG_INFO("creating new FSR 3.X feature");
                 Dx12Contexts[handleId] = std::make_unique<FSR31FeatureDx12>(handleId, createParams);
                 upscalerChoice = 4;
             }

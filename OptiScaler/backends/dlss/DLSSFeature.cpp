@@ -309,6 +309,13 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
     InParameters->Set("RayReconstruction.Hint.Render.Preset.Performance", RenderPresetPerformance);
     InParameters->Set("RayReconstruction.Hint.Render.Preset.UltraPerformance", RenderPresetUltraPerformance);
 
+    UINT perfQ = NVSDK_NGX_PerfQuality_Value_Balanced;
+    if (InParameters->Get(NVSDK_NGX_Parameter_PerfQualityValue, &perfQ) == NVSDK_NGX_Result_Success &&
+        perfQ == NVSDK_NGX_PerfQuality_Value_UltraQuality)
+    {
+        InParameters->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_MaxQuality);
+    }
+
     LOG_FUNC_RESULT(0);
 }
 

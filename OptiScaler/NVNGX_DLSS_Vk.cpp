@@ -28,6 +28,7 @@ static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeatu
 static inline NVSDK_NGX_Parameter* createParams = nullptr;
 static inline int changeBackendCounter = 0;
 static inline int evalCounter = 0;
+static inline bool shutdown = false;
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
@@ -35,6 +36,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext(unsigned long long InAp
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
     {
+        if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
+            InApplicationId = app_id_override;
+
         if (NVNGXProxy::NVNGXModule() == nullptr)
             NVNGXProxy::InitNVNGX();
 
@@ -58,6 +62,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InA
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
     {
+        if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
+            InApplicationId = app_id_override;
+
         if (NVNGXProxy::NVNGXModule() == nullptr)
             NVNGXProxy::InitNVNGX();
 
@@ -205,6 +212,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
     {
+        if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
+            InApplicationId = app_id_override;
+
         if (NVNGXProxy::NVNGXModule() == nullptr)
             NVNGXProxy::InitNVNGX();
 
@@ -229,6 +239,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID(const char* InPro
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
     {
+        if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
+            InProjectId = project_id_override;
+
         if (NVNGXProxy::NVNGXModule() == nullptr)
             NVNGXProxy::InitNVNGX();
 
@@ -606,7 +619,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 
             if (!VkContexts[handleId]->ModuleLoaded())
             {
-                LOG_ERROR("can't create new FSR 3.1 feature, Fallback to FSR2.1!");
+                LOG_ERROR("can't create new FSR 3.X feature, Fallback to FSR2.1!");
 
                 VkContexts[handleId].reset();
                 auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
@@ -617,7 +630,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
             else
             {
                 Config::Instance()->VulkanUpscaler = "fsr31";
-                LOG_INFO("creating new FSR 3.1 feature");
+                LOG_INFO("creating new FSR 3.X feature");
             }
         }
 
@@ -687,7 +700,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::VULKAN_ReleaseFeature() != nullptr)
         {
             auto result = NVNGXProxy::VULKAN_ReleaseFeature()(InHandle);
-            LOG_INFO("VULKAN_ReleaseFeature result for ({0}): {1:X}", handleId, (UINT)result);
+
+            if (!shutdown)
+                LOG_INFO("VULKAN_ReleaseFeature result for ({0}): {1:X}", handleId, (UINT)result);
+
             return result;
         }
         else
@@ -696,7 +712,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
         }
     }
 
-    LOG_INFO("releasing feature with id {0}", handleId);
+    if (!shutdown)
+        LOG_INFO("releasing feature with id {0}", handleId);
 
     if (auto deviceContext = VkContexts[handleId].get(); deviceContext)
     {
@@ -861,7 +878,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
             else if (Config::Instance()->newBackend == "fsr31")
             {
                 Config::Instance()->VulkanUpscaler = "fsr31";
-                LOG_INFO("creating new FSR 3.1 feature");
+                LOG_INFO("creating new FSR 3.X feature");
                 VkContexts[handleId] = std::make_unique<FSR31FeatureVk>(handleId, createParams);
                 upscalerChoice = 3;
             }
@@ -957,7 +974,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
 {
-    LOG_FUNC();
+    shutdown = true;
 
     for (auto const& [key, val] : VkContexts)
         NVSDK_NGX_VULKAN_ReleaseFeature(val->Handle());
@@ -976,23 +993,25 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
     {
         auto result = NVNGXProxy::VULKAN_Shutdown()();
         NVNGXProxy::SetVulkanInited(false);
-        LOG_INFO("VULKAN_Shutdown result: {0:X}", (UINT)result);
     }
 
-    ImGuiOverlayVk::UnHookVk();
+    // Unhooking and cleaning stuff causing issues during shutdown. 
+    // Disabled for now to check if it cause any issues
+    //ImGuiOverlayVk::UnHookVk();
+
+    shutdown = false;
 
     return NVSDK_NGX_Result_Success;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown1(VkDevice InDevice)
 {
-    LOG_FUNC();
+    shutdown = true;
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsVulkanInited() && NVNGXProxy::VULKAN_Shutdown1() != nullptr)
     {
         auto result = NVNGXProxy::VULKAN_Shutdown1()(InDevice);
         NVNGXProxy::SetVulkanInited(false);
-        LOG_INFO("VULKAN_Shutdown1 result: {0:X}", (UINT)result);
     }
 
     return NVSDK_NGX_VULKAN_Shutdown();

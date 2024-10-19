@@ -11,6 +11,9 @@
 #include <filesystem>
 #include "detours/detours.h"
 
+inline const char* project_id_override = "24480451-f00d-face-1304-0308dabad187";
+constexpr unsigned long long app_id_override = 0x24480451;
+
 #pragma region spoofing hooks for 16xx
 
 // NvAPI_GPU_GetArchInfo hooking based on Nukem's spoofing code here
@@ -377,7 +380,7 @@ public:
 
         LOG_FUNC();
 
-        Config::Instance()->dlssDisableHook = true;
+        Config::Instance()->upscalerDisableHook = true;
 
         do
         {
@@ -547,7 +550,7 @@ public:
             _UpdateFeature = (PFN_UpdateFeature)GetProcAddress(_dll, "NVSDK_NGX_UpdateFeature");
         }
 
-        Config::Instance()->dlssDisableHook = false;
+        Config::Instance()->upscalerDisableHook = false;
     }
 
     static void GetFeatureCommonInfo(NVSDK_NGX_FeatureCommonInfo* fcInfo)

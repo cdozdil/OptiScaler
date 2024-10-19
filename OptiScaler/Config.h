@@ -106,6 +106,8 @@ public:
 	
 	std::optional<bool> UsePrecompiledShaders;
 
+	std::optional<bool> UseGenericAppIdWithDlss;
+
 	std::optional<int32_t> ColorResourceBarrier;
 	std::optional<int32_t> MVResourceBarrier;
 	std::optional<int32_t> DepthResourceBarrier;
@@ -131,6 +133,7 @@ public:
 	std::optional<bool> FsrDebugView;
 	std::optional<int> Fsr3xIndex;
 	std::optional<bool> FsrUseMaskForTransparency;
+	std::optional<float> FsrVelocity;
 
 	// dx11wdx12
 	std::optional<int> TextureSyncMethod;
@@ -178,6 +181,14 @@ public:
 	std::optional<std::string> DE_Reflex;			// on - boost - off
 	std::optional<std::string> DE_ReflexEmu;		// auto - on - off
 
+	// fakenvapi
+	bool FN_Available = false;
+	std::optional<bool> FN_EnableLogs;
+	std::optional<bool> FN_EnableTraceLogs;
+	std::optional<bool> FN_ForceLatencyFlex;
+	std::optional<uint32_t> FN_LatencyFlexMode;		// conservative - aggressive - reflex ids
+	std::optional<uint32_t> FN_ForceReflex;			// in-game - force disable - force enable
+
 	// for realtime changes
 	bool changeBackend = false;
 	std::string newBackend = "";
@@ -188,7 +199,7 @@ public:
 	float lastMipBias = 0.0f;
 
 	// dlss hook
-	bool dlssDisableHook = false;
+	bool upscalerDisableHook = false;
 
 	// spoofing
 	bool dxgiSkipSpoofing = false;
@@ -222,12 +233,16 @@ public:
 	bool LoadFromPath(const wchar_t* InPath);
 	bool SaveIni();
 
+	bool ReloadFakenvapi();
+	bool SaveFakenvapiIni();
+
 	static Config* Instance();
 
 private:
 	inline static Config* _config;
 
 	CSimpleIniA ini;
+	CSimpleIniA fakenvapiIni;
 	std::filesystem::path absoluteFileName;
 
 	std::optional<std::string> readString(std::string section, std::string key, bool lowercase = false);

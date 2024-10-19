@@ -5,6 +5,7 @@
 #include "Logger.h"
 #include "Util.h"
 #include "NVNGX_Proxy.h"
+#include "XeSS_Proxy.h"
 
 #include "imgui/imgui_overlay_dx.h"
 #include "imgui/imgui_overlay_vk.h"
@@ -46,25 +47,40 @@ static PFN_vkCreateInstance o_vkCreateInstance = nullptr;
 static uint32_t vkEnumerateInstanceExtensionPropertiesCount = 0;
 static uint32_t vkEnumerateDeviceExtensionPropertiesCount = 0;
 
-static std::string nvngxA("nvngx.dll");
-static std::string nvngxExA("nvngx");
-static std::wstring nvngxW(L"nvngx.dll");
-static std::wstring nvngxExW(L"nvngx");
 
-static std::string nvapiA("nvapi64.dll");
-static std::string nvapiExA("nvapi64");
-static std::wstring nvapiW(L"nvapi64.dll");
-static std::wstring nvapiExW(L"nvapi64");
+inline std::vector<std::string> upscalerNames =
+{
+    "nvngx.dll",
+    "nvngx",
+    "nvngx_dlss.dll",
+    "nvngx_dlss",
+    "libxess.dll",
+    "libxess"
+};
 
-static std::string nvngxDlssA("nvngx_dlss.dll");
-static std::string nvngxDlssExA("nvngx_dlss");
-static std::wstring nvngxDlssW(L"nvngx_dlss.dll");
-static std::wstring nvngxDlssExW(L"nvngx_dlss");
+inline std::vector<std::string> nvapiNames =
+{
+    "nvapi64.dll",
+    "nvapi64",
+};
 
-static std::string dllNameA;
-static std::string dllNameExA;
-static std::wstring dllNameW;
-static std::wstring dllNameExW;
+inline std::vector<std::string> dllNames;
+
+inline std::vector<std::wstring> upscalerNamesW =
+{
+    L"nvngx.dll",
+    L"nvngx",
+    L"nvngx_dlss.dll",
+    L"nvngx_dlss"
+};
+
+inline std::vector<std::wstring> nvapiNamesW =
+{
+    L"nvapi64.dll",
+    L"nvapi64",
+};
+
+inline std::vector<std::wstring> dllNamesW;
 
 static int loadCount = 0;
 static bool dontCount = false;
@@ -75,6 +91,138 @@ static bool isNvngxAvailable = false;
 
 void AttachHooks();
 void DetachHooks();
+HMODULE LoadNvApi();
+HMODULE LoadNvgxDlss(std::wstring originalPath);
+
+inline static bool CheckDllName(std::string* dllName, std::vector<std::string>* namesList)
+{
+    for (size_t i = 0; i < namesList->size(); i++)
+    {
+        auto name = namesList->at(i);
+        auto pos = dllName->rfind(name);
+
+        if (pos != std::string::npos && pos == (dllName->size() - name.size()))
+            return true;
+    }
+
+    return false;
+}
+
+inline static bool CheckDllNameW(std::wstring* dllName, std::vector<std::wstring>* namesList)
+{
+    auto found = false;
+
+    for (size_t i = 0; i < namesList->size(); i++)
+    {
+        auto name = namesList->at(i);
+        auto pos = dllName->rfind(name);
+
+        if (pos != std::string::npos && pos == (dllName->size() - name.size()))
+            return true;
+    }
+
+    return false;
+}
+
+inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
+{
+    // If Opti is not loading as nvngx.dll
+    if (!isWorkingWithEnabler && !Config::Instance()->upscalerDisableHook)
+    {
+        // exe path
+        auto exePath = Util::ExePath().parent_path().wstring();
+
+        for (size_t i = 0; i < exePath.size(); i++)
+            exePath[i] = std::tolower(exePath[i]);
+
+        auto pos = lcaseLibName.rfind(wstring_to_string(exePath));
+
+        if (CheckDllName(&lcaseLibName, &upscalerNames) &&
+            (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos == std::string::npos))
+        {
+            LOG_INFO("nvngx call: {0}, returning this dll!", lcaseLibName);
+
+            if (!dontCount)
+                loadCount++;
+
+            return dllModule;
+        }
+    }
+
+    // NvApi64.dll
+    if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or(false) && CheckDllName(&lcaseLibName, &nvapiNames))
+    {
+        LOG_INFO("{0} call!", lcaseLibName);
+
+        auto nvapi = LoadNvApi();
+
+        if (nvapi != nullptr)
+            return nvapi;
+    }
+
+    if (!isNvngxMode && CheckDllName(&lcaseLibName, &dllNames))
+    {
+        LOG_INFO("{0} call returning this dll!", lcaseLibName);
+
+        if (!dontCount)
+            loadCount++;
+
+        return dllModule;
+    }
+
+    return nullptr;
+}
+
+inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
+{
+    auto lcaseLibNameA = wstring_to_string(lcaseLibName);
+
+    // If Opti is not loading as nvngx.dll
+    if (!isWorkingWithEnabler && !Config::Instance()->upscalerDisableHook)
+    {
+        // exe path
+        auto exePath = Util::ExePath().parent_path().wstring();
+
+        for (size_t i = 0; i < exePath.size(); i++)
+            exePath[i] = std::tolower(exePath[i]);
+
+        auto pos = lcaseLibName.rfind(exePath);
+
+        if (CheckDllNameW(&lcaseLibName, &upscalerNamesW) &&
+            (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos == std::string::npos))
+        {
+            LOG_INFO("nvngx call: {0}, returning this dll!", lcaseLibNameA);
+
+            if (!dontCount)
+                loadCount++;
+
+            return dllModule;
+        }
+    }
+
+    // NvApi64.dll
+    if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or(false) && CheckDllNameW(&lcaseLibName, &nvapiNamesW))
+    {
+        LOG_INFO("{0} call!", lcaseLibNameA);
+
+        auto nvapi = LoadNvApi();
+
+        if (nvapi != nullptr)
+            return nvapi;
+    }
+
+    if (!isNvngxMode && CheckDllNameW(&lcaseLibName, &dllNamesW))
+    {
+        LOG_INFO("{0} call returning this dll!", lcaseLibNameA);
+
+        if (!dontCount)
+            loadCount++;
+
+        return dllModule;
+    }
+
+    return nullptr;
+}
 
 static HMODULE LoadNvApi()
 {
@@ -197,93 +345,24 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
     for (size_t i = 0; i < lcaseLibName.size(); i++)
         lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
-    size_t pos;
-
-#ifdef DEBUG
+#ifdef _DEBUG
     LOG_TRACE("call: {0}", lcaseLibName);
 #endif // DEBUG
 
-    // If Opti is not loading nvngx.dll
-    if (!isWorkingWithEnabler && !Config::Instance()->dlssDisableHook)
-    {
-        // exe path
-        auto exePath = Util::ExePath().parent_path().wstring();
+    auto moduleHandle = LoadLibraryCheck(lcaseLibName);
 
-        for (size_t i = 0; i < exePath.size(); i++)
-            exePath[i] = std::tolower(exePath[i]);
-
-        auto pos2 = lcaseLibName.rfind(wstring_to_string(exePath));
-        pos = lcaseLibName.rfind(nvngxA);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxA.size()) &&
-            (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
-        {
-            LOG_INFO("nvngx call: {0}, returning this dll!", libName);
-
-            if (!dontCount)
-                loadCount++;
-
-            return dllModule;
-        }
-    }
-
-    // NvApi64.dll
-    if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or(false))
-    {
-        pos = lcaseLibName.rfind(nvapiA);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiA.size()))
-        {
-            LOG_INFO("{0} call!", libName);
-
-            auto nvapi = LoadNvApi();
-
-            if (nvapi != nullptr)
-                return nvapi;
-        }
-    }
-
-    // nvngx_dlss.dll
-    if (Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->NVNGX_DLSS_Library.has_value())
-    {
-        pos = lcaseLibName.rfind(nvngxDlssA);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxDlssA.size()))
-        {
-            LOG_INFO("{0} call!", libName);
-
-            auto nvngxDlss = LoadNvgxDlss(string_to_wstring(libName));
-
-            if (nvngxDlss != nullptr)
-                return nvngxDlss;
-        }
-    }
-
-    if (!isNvngxMode)
-    {
-        // Opti dll
-        pos = lcaseLibName.rfind(dllNameA);
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
-        {
-            LOG_INFO("{0} call returning this dll!", libName);
-
-            if (!dontCount)
-                loadCount++;
-
-            return dllModule;
-        }
-    }
+    if (moduleHandle != nullptr)
+        return moduleHandle;
 
     dontCount = true;
     auto result = o_LoadLibraryA(lpLibFileName);
     dontCount = false;
+
     return result;
 }
 
 static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 {
-    LOG_FUNC();
-
     if (lpLibFileName == nullptr)
         return NULL;
 
@@ -293,89 +372,19 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
     for (size_t i = 0; i < lcaseLibName.size(); i++)
         lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
-    auto lcaseLibNameA = wstring_to_string(lcaseLibName);
+#ifdef _DEBUG
+    LOG_TRACE("call: {0}", wstring_to_string(lcaseLibName));
+#endif // DEBUG
 
-#ifdef DEBUG
-    LOG_TRACE("call: {0}", lcaseLibNameA);
-#endif
+    auto moduleHandle = LoadLibraryCheckW(lcaseLibName);
 
-    size_t pos;
-
-    // If Opti is not loading nvngx.dll
-    if (!isWorkingWithEnabler && !Config::Instance()->dlssDisableHook)
-    {
-        // exe path
-        auto exePathW = Util::ExePath().parent_path().wstring();
-
-        for (size_t i = 0; i < exePathW.size(); i++)
-            exePathW[i] = std::tolower(exePathW[i]);
-
-        auto pos2 = lcaseLibName.rfind(exePathW);
-        pos = lcaseLibName.rfind(nvngxW);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxW.size()) &&
-            (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
-        {
-            LOG_INFO("nvngx call: {0}, returning this dll!", lcaseLibNameA);
-
-            if (!dontCount)
-                loadCount++;
-
-            return dllModule;
-        }
-    }
-
-    // NvApi64.dll
-    if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or(false))
-    {
-        pos = lcaseLibName.rfind(nvapiW);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiW.size()))
-        {
-            LOG_INFO("{0} call!", lcaseLibNameA);
-
-            auto nvapi = LoadNvApi();
-
-            if (nvapi != nullptr)
-                return nvapi;
-        }
-    }
-
-    // nvngx_dlss.dll
-    if (Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->NVNGX_DLSS_Library.has_value())
-    {
-        pos = lcaseLibName.rfind(nvngxDlssW);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxDlssW.size()))
-        {
-            LOG_INFO("{0} call!", wstring_to_string(libName));
-
-            auto nvngxDlss = LoadNvgxDlss(libName);
-
-            if (nvngxDlss != nullptr)
-                return nvngxDlss;
-        }
-    }
-
-    if (!isNvngxMode)
-    {
-        // Opti dll
-        pos = lcaseLibName.rfind(dllNameW);
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
-        {
-            LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
-
-            if (!dontCount)
-                loadCount++;
-
-            return dllModule;
-        }
-    }
+    if (moduleHandle != nullptr)
+        return moduleHandle;
 
     dontCount = true;
     auto result = o_LoadLibraryW(lpLibFileName);
-    dontCount = false
-        ;
+    dontCount = false;
+
     return result;
 }
 
@@ -390,131 +399,15 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
     for (size_t i = 0; i < lcaseLibName.size(); i++)
         lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
-#ifdef DEBUG
+#ifdef _DEBUG
     LOG_TRACE("call: {0}", lcaseLibName);
 #endif
 
-    size_t pos;
+    auto moduleHandle = LoadLibraryCheck(lcaseLibName);
 
-    // If Opti is not loading nvngx.dll
-    if (!isWorkingWithEnabler && !Config::Instance()->dlssDisableHook)
-    {
-        // exe path
-        auto exePath = Util::ExePath().parent_path().wstring();
+    if (moduleHandle != nullptr)
+        return moduleHandle;
 
-        for (size_t i = 0; i < exePath.size(); i++)
-            exePath[i] = std::tolower(exePath[i]);
-
-        auto pos2 = lcaseLibName.rfind(wstring_to_string(exePath));
-        pos = lcaseLibName.rfind(nvngxA);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxA.size()) &&
-            (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
-        {
-            LOG_INFO("nvngx call: {0}, returning this dll!", libName);
-
-            if (!dontCount)
-                loadCount++;
-
-            return dllModule;
-        }
-
-        pos = lcaseLibName.rfind(nvngxExA);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxExA.size()) &&
-            (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
-        {
-            LOG_INFO("nvngx call: {0}, returning this dll!", libName);
-
-            if (!dontCount)
-                loadCount++;
-
-            return dllModule;
-        }
-    }
-
-    // NvApi64.dll
-    if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or(false))
-    {
-        pos = lcaseLibName.rfind(nvapiExA);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiExA.size()))
-        {
-            LOG_INFO("{0} call!", libName);
-
-            auto nvapi = LoadNvApi();
-
-            if (nvapi != nullptr)
-                return nvapi;
-        }
-
-        pos = lcaseLibName.rfind(nvapiA);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiA.size()))
-        {
-            LOG_INFO("{0} call!", libName);
-
-            auto nvapi = LoadNvApi();
-
-            if (nvapi != nullptr)
-                return nvapi;
-        }
-    }
-
-    // nvngx_dlss.dll
-    if (Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->NVNGX_DLSS_Library.has_value())
-    {
-        pos = lcaseLibName.rfind(nvngxDlssExA);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxDlssExA.size()))
-        {
-            LOG_INFO("{0} call!", libName);
-
-            auto nvngxDlss = LoadNvgxDlss(string_to_wstring(libName));
-
-            if (nvngxDlss != nullptr)
-                return nvngxDlss;
-        }
-
-        pos = lcaseLibName.rfind(nvngxDlssA);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxDlssA.size()))
-        {
-            LOG_INFO("{0} call!", libName);
-
-            auto nvngxDlss = LoadNvgxDlss(string_to_wstring(libName));
-
-            if (nvngxDlss != nullptr)
-                return nvngxDlss;
-        }
-    }
-
-    if (!isNvngxMode)
-    {
-        // Opti dll
-        pos = lcaseLibName.rfind(dllNameA);
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
-        {
-            LOG_INFO("{0} call, returning this dll!", libName);
-
-            if (!dontCount)
-                loadCount++;
-
-            return dllModule;
-        }
-
-        // Opti dll
-        pos = lcaseLibName.rfind(dllNameExA);
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExA.size()))
-        {
-            LOG_INFO("{0} call, returning this dll!", libName);
-
-            if (!dontCount)
-                loadCount++;
-
-            return dllModule;
-        }
-    }
 
     dontCount = true;
     auto result = o_LoadLibraryExA(lpLibFileName, hFile, dwFlags);
@@ -534,133 +427,14 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
     for (size_t i = 0; i < lcaseLibName.size(); i++)
         lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
-    auto lcaseLibNameA = wstring_to_string(lcaseLibName);
-
-#ifdef DEBUG
-    LOG_TRACE("call: {0}", lcaseLibNameA);
+#ifdef _DEBUG
+    LOG_TRACE("call: {0}", wstring_to_string(lcaseLibName)); 
 #endif
 
-    size_t pos;
+    auto moduleHandle = LoadLibraryCheckW(lcaseLibName);
 
-    // If Opti is not loading nvngx.dll
-    if (!isWorkingWithEnabler && !Config::Instance()->dlssDisableHook)
-    {
-        // exe path
-        auto exePathW = Util::ExePath().parent_path().wstring();
-
-        for (size_t i = 0; i < exePathW.size(); i++)
-            exePathW[i] = std::tolower(exePathW[i]);
-
-        auto pos2 = lcaseLibName.rfind(exePathW);
-        pos = lcaseLibName.rfind(nvngxW);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxW.size()) &&
-            (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
-        {
-            LOG_INFO("nvngx call: {0}, returning this dll!", lcaseLibNameA);
-
-            if (!dontCount)
-                loadCount++;
-
-            return dllModule;
-        }
-
-        pos = lcaseLibName.rfind(nvngxExW);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxExW.size()) &&
-            (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos2 == std::string::npos))
-        {
-            LOG_INFO("nvngx call: {0}, returning this dll!", lcaseLibNameA);
-
-            if (!dontCount)
-                loadCount++;
-
-            return dllModule;
-        }
-    }
-
-    // NvApi64.dll
-    if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or(false))
-    {
-        pos = lcaseLibName.rfind(nvapiExW);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiExW.size()))
-        {
-            LOG_INFO("{0} call!", lcaseLibNameA);
-
-            auto nvapi = LoadNvApi();
-
-            if (nvapi != nullptr)
-                return nvapi;
-        }
-
-        pos = lcaseLibName.rfind(nvapiW);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvapiW.size()))
-        {
-            LOG_INFO("{0} call!", lcaseLibNameA);
-
-            auto nvapi = LoadNvApi();
-
-            if (nvapi != nullptr)
-                return nvapi;
-        }
-    }
-
-    // nvngx_dlss.dll
-    if (Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->NVNGX_DLSS_Library.has_value())
-    {
-        pos = lcaseLibName.rfind(nvngxDlssExW);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxDlssExW.size()))
-        {
-            LOG_INFO("{0} call!", wstring_to_string(libName));
-
-            auto nvngxDlss = LoadNvgxDlss(libName);
-
-            if (nvngxDlss != nullptr)
-                return nvngxDlss;
-        }
-
-        pos = lcaseLibName.rfind(nvngxDlssW);
-
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - nvngxDlssW.size()))
-        {
-            LOG_INFO("{0} call!", wstring_to_string(libName));
-
-            auto nvngxDlss = LoadNvgxDlss(libName);
-
-            if (nvngxDlss != nullptr)
-                return nvngxDlss;
-        }
-    }
-
-    if (!isNvngxMode)
-    {
-        // Opti dll
-        pos = lcaseLibName.rfind(dllNameW);
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
-        {
-            LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
-
-            if (!dontCount)
-                loadCount++;
-
-            return dllModule;
-        }
-
-        // Opti dll
-        pos = lcaseLibName.rfind(dllNameExW);
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExW.size()))
-        {
-            LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
-
-            if (!dontCount)
-                loadCount++;
-
-            return dllModule;
-        }
-    }
+    if (moduleHandle != nullptr)
+        return moduleHandle;
 
     dontCount = true;
     auto result = o_LoadLibraryExW(lpLibFileName, hFile, dwFlags);
@@ -1150,11 +924,11 @@ static bool IsRunningOnWine()
 {
     LOG_FUNC();
 
-    HMODULE ntdll = GetModuleHandle(L"dxgi.dll");
+    HMODULE ntdll = GetModuleHandle(L"ntdll.dll");
 
     if (!ntdll)
     {
-        LOG_WARN("IsRunningOnWine Not running on NT!?!");
+        LOG_WARN("Not running on NT!?!");
         return true;
     }
 
@@ -1162,11 +936,11 @@ static bool IsRunningOnWine()
 
     if (pWineGetVersion)
     {
-        LOG_INFO("IsRunningOnWine Running on Wine {0}!", pWineGetVersion());
+        LOG_INFO("Running on Wine {0}!", pWineGetVersion());
         return true;
     }
 
-    LOG_WARN("IsRunningOnWine Wine not detected");
+    LOG_WARN("Wine not detected");
     return false;
 }
 
@@ -1193,10 +967,10 @@ static void CheckWorkingMode()
         {
             LOG_INFO("OptiScaler working as native upscaler: {0}", filename);
 
-            dllNameA = "OptiScaler_DontLoad.dll";
-            dllNameExA = "OptiScaler_DontLoad";
-            dllNameW = L"OptiScaler_DontLoad.dll";
-            dllNameExW = L"OptiScaler_DontLoad";
+            dllNames.push_back("OptiScaler_DontLoad.dll");
+            dllNames.push_back("OptiScaler_DontLoad");
+            dllNamesW.push_back(L"OptiScaler_DontLoad.dll");
+            dllNamesW.push_back(L"OptiScaler_DontLoad");
 
             isNvngxMode = true;
             isWorkingWithEnabler = lCaseFilename == "dlss-enabler-upscaler.dll";
@@ -1240,10 +1014,10 @@ static void CheckWorkingMode()
 
             if (dll != nullptr)
             {
-                dllNameA = "version.dll";
-                dllNameExA = "version";
-                dllNameW = L"version.dll";
-                dllNameExW = L"version";
+                dllNames.push_back("version.dll");
+                dllNames.push_back("version");
+                dllNamesW.push_back(L"version.dll");
+                dllNamesW.push_back(L"version");
 
                 shared.LoadOriginalLibrary(dll);
                 version.LoadOriginalLibrary(dll);
@@ -1290,10 +1064,10 @@ static void CheckWorkingMode()
 
             if (dll != nullptr)
             {
-                dllNameA = "winmm.dll";
-                dllNameExA = "winmm";
-                dllNameW = L"winmm.dll";
-                dllNameExW = L"winmm";
+                dllNames.push_back("winmm.dll");
+                dllNames.push_back("winmm");
+                dllNamesW.push_back(L"winmm.dll");
+                dllNamesW.push_back(L"winmm");
 
                 shared.LoadOriginalLibrary(dll);
                 winmm.LoadOriginalLibrary(dll);
@@ -1339,10 +1113,10 @@ static void CheckWorkingMode()
 
             if (dll != nullptr)
             {
-                dllNameA = "wininet.dll";
-                dllNameExA = "wininet";
-                dllNameW = L"wininet.dll";
-                dllNameExW = L"wininet";
+                dllNames.push_back("wininet.dll");
+                dllNames.push_back("wininet");
+                dllNamesW.push_back(L"wininet.dll");
+                dllNamesW.push_back(L"wininet");
 
                 shared.LoadOriginalLibrary(dll);
                 wininet.LoadOriginalLibrary(dll);
@@ -1364,10 +1138,10 @@ static void CheckWorkingMode()
             // quick hack for testing
             dll = dllModule;
 
-            dllNameA = "optiscaler.asi";
-            dllNameExA = "optiscaler";
-            dllNameW = L"optiscaler.asi";
-            dllNameExW = L"optiscaler";
+            dllNames.push_back("optiscaler.asi");
+            dllNames.push_back("optiscaler");
+            dllNamesW.push_back(L"optiscaler.asi");
+            dllNamesW.push_back(L"optiscaler");
 
             modeFound = true;
             break;
@@ -1405,10 +1179,10 @@ static void CheckWorkingMode()
 
             if (dll != nullptr)
             {
-                dllNameA = "winhttp.dll";
-                dllNameExA = "winhttp";
-                dllNameW = L"winhttp.dll";
-                dllNameExW = L"winhttp";
+                dllNames.push_back("winhttp.dll");
+                dllNames.push_back("winhttp");
+                dllNamesW.push_back(L"winhttp.dll");
+                dllNamesW.push_back(L"winhttp");
 
                 shared.LoadOriginalLibrary(dll);
                 winhttp.LoadOriginalLibrary(dll);
@@ -1454,10 +1228,10 @@ static void CheckWorkingMode()
 
             if (dll != nullptr)
             {
-                dllNameA = "dxgi.dll";
-                dllNameExA = "dxgi";
-                dllNameW = L"dxgi.dll";
-                dllNameExW = L"dxgi";
+                dllNames.push_back("dxgi.dll");
+                dllNames.push_back("dxgi");
+                dllNamesW.push_back(L"dxgi.dll");
+                dllNamesW.push_back(L"dxgi");
 
                 shared.LoadOriginalLibrary(dll);
                 dxgi.LoadOriginalLibrary(dll);
@@ -1595,6 +1369,13 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 }
             }
 
+            //NVNGXLocalProxy::InitNVNGX();
+            //if (NVNGXLocalProxy::NVNGXModule() == nullptr)
+            //    LOG_WARN("Can't init local NVNGX!");
+
+            if (!XeSSProxy::InitXeSS())
+                LOG_WARN("Can't init XeSS!");
+
             // Check for working mode and attach hooks
             spdlog::info("");
             CheckWorkingMode();
@@ -1609,7 +1390,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             break;
 
         case DLL_PROCESS_DETACH:
-            DetachHooks();
+            // Unhooking and cleaning stuff causing issues during shutdown. 
+            // Disabled for now to check if it cause any issues
+            //DetachHooks();
 
             if (skHandle != nullptr)
                 FreeLibrary(skHandle);

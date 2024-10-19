@@ -39,10 +39,10 @@ private:
     bool _depthInverted = false;
     unsigned int _lastWidth = 0;
     unsigned int _lastHeight = 0;
-    static inline feature_version _version{ 3, 1, 0 };
+    static inline feature_version _version{ 3, 1, 1 };
 
 protected:
-    std::string _name = "FSR 3.1.0";
+    std::string _name = "FSR 3.X";
 
     ffxContext _context = nullptr;
     ffxCreateContextDescUpscale _contextDesc = {};
@@ -59,10 +59,13 @@ protected:
     double GetDeltaTime();
     void SetDepthInverted(bool InValue);
 
-    static inline void parse_version(const char* version_str) {
+    static inline void parse_version(const char* version_str) 
+    {
         if (sscanf_s(version_str, "%u.%u.%u", &_version.major, &_version.minor, &_version.patch) != 3)
             LOG_WARN("can't parse {0}", version_str);
     }
+
+    float _velocity = 0.0f;
 
 public:
     bool IsDepthInverted() const;

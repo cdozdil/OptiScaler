@@ -14,11 +14,7 @@ bool FSR2FeatureDx11on12::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InCo
     Device = InDevice;
     DeviceContext = InContext;
 
-    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &_initFlags) == NVSDK_NGX_Result_Success)
-        _initFlagsReady = true;
-
     _baseInit = false;
-
     return true;
 }
 
@@ -525,22 +521,12 @@ bool FSR2FeatureDx11on12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     _contextDesc.device = ffxGetDeviceDX12(Dx12Device);
     _contextDesc.flags = 0;
 
-    unsigned int featureFlags = 0;
-    if (!_initFlagsReady)
-    {
-        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);
-        _initFlags = featureFlags;
-        _initFlagsReady = true;
-    }
-    else
-        featureFlags = _initFlags;
-
-    bool Hdr = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
-    bool EnableSharpening = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
-    bool DepthInverted = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
-    bool JitterMotion = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
-    bool LowRes = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
-    bool AutoExposure = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
+    bool Hdr = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
+    bool EnableSharpening = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
+    bool DepthInverted = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
+    bool JitterMotion = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
+    bool LowRes = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
+    bool AutoExposure = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
 
     if (Config::Instance()->DepthInverted.value_or(DepthInverted))
     {

@@ -57,7 +57,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		if (!Config::Instance()->DisableReactiveMask.value_or(true))
 			dumpParams.dump_elements_mask |= XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
 
-		StartDump()(_xessContext, &dumpParams);
+		XeSSProxy::StartDump()(_xessContext, &dumpParams);
 		Config::Instance()->xessDebug = false;
 		dumpCount += Config::Instance()->xessDebugFrames;
 	}
@@ -207,9 +207,10 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	else
 	{
 		if (!Config::Instance()->DisplayResolution.value_or(false))
+		{
 			LOG_ERROR("Depth not exist!!");
-		else
-			LOG_INFO("Using high res motion vectors, depth is not needed!!");
+			return false;
+		}
 
 		params.pDepthTexture = nullptr;
 	}
@@ -285,7 +286,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
 		InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
 	{
-		xessResult = SetVelocityScale()(_xessContext, MVScaleX, MVScaleY);
+		xessResult = XeSSProxy::SetVelocityScale()(_xessContext, MVScaleX, MVScaleY);
 
 		if (xessResult != XESS_RESULT_SUCCESS)
 		{
@@ -297,7 +298,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		LOG_WARN("Can't get motion vector scales!");
 
 	LOG_DEBUG("Executing!!");
-	xessResult = D3D12Execute()(_xessContext, InCommandList, &params);
+	xessResult = XeSSProxy::D3D12Execute()(_xessContext, InCommandList, &params);
 
 	if (xessResult != XESS_RESULT_SUCCESS)
 	{

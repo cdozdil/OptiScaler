@@ -113,20 +113,14 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     _query(nullptr, &versionQuery.header);
 
     _contextDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE;
-
     _contextDesc.fpMessage = FfxLogCallback;
 
-    unsigned int featureFlags;
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &featureFlags);
-
-    bool Hdr = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
-    bool EnableSharpening = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
-    bool DepthInverted = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
-    bool JitterMotion = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
-    bool LowRes = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
-    bool AutoExposure = featureFlags & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
-
-    _initFlags = featureFlags;
+    bool Hdr = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
+    bool EnableSharpening = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
+    bool DepthInverted = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
+    bool JitterMotion = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
+    bool LowRes = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
+    bool AutoExposure = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
 
     _contextDesc.flags = 0;
     _contextDesc.flags |= FFX_UPSCALE_ENABLE_DEBUG_CHECKING;
@@ -346,9 +340,10 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     else
     {
         if (!Config::Instance()->DisplayResolution.value_or(false))
+        {
             LOG_ERROR("Depth not exist!!");
-        else
-            LOG_INFO("Using high res motion vectors, depth is not needed!!");
+            return false;
+        }
     }
 
     void* paramExp = nullptr;
@@ -482,6 +477,18 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
 
     params.preExposure = 1.0f;    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure);
 
+    if (_velocity != Config::Instance()->FsrVelocity.value_or(1.0f))
+    {
+        _velocity = Config::Instance()->FsrVelocity.value_or(1.0f);
+        ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig{};
+        m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
+        m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FVELOCITYFACTOR;
+        m_upscalerKeyValueConfig.ptr = &_velocity;
+        auto result = _configure(&_context, &m_upscalerKeyValueConfig.header);
+
+        if (result != FFX_API_RETURN_OK)
+            LOG_WARN("Velocity configure result: {}", (UINT)result);
+    }
 
     LOG_DEBUG("Dispatch!!");
     auto result = _dispatch(&_context, &params.header);

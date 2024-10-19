@@ -612,3 +612,31 @@ WinHttpWebSocketSend = _WinHttpWebSocketSend
 WinHttpWebSocketShutdown = _WinHttpWebSocketShutdown
 WinHttpWriteData = _WinHttpWriteData
 WinHttpWriteProxySettings = _WinHttpWriteProxySettings
+
+LIBRARY "libxess"
+EXPORTS  
+xessD3D12BuildPipelines
+xessD3D12CreateContext
+xessD3D12Execute
+xessD3D12GetInitParams
+xessD3D12GetResourcesToDump
+xessD3D12GetProfilingData
+xessD3D12Init
+xessDestroyContext
+xessForceLegacyScaleFactors
+xessGetExposureMultiplier
+xessGetInputResolution
+xessGetIntelXeFXVersion
+xessGetJitterScale
+xessGetOptimalInputResolution
+xessGetProperties
+xessGetVelocityScale
+xessGetVersion
+xessIsOptimalDriver
+xessSelectNetworkModel
+xessSetExposureMultiplier
+xessSetJitterScale
+xessSetLoggingCallback
+xessSetVelocityScale
+xessSetContextParameterF = xessGetVersion
+xessStartDump

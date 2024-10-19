@@ -7,6 +7,7 @@ Key aspects of OptiScaler:
 - Provides tuning options for DLSS users
 - Offers a wide range of tweaks and enhancements (RCAS & MAS, Output Scaling, DLSS Presets, Ratio & DRS Overrides etc.)
 - Allows users to fine-tune their upscaling experience
+- With version 0.7.0 and above experimental frame generation support 
 
 ## Official Discord Server: [DLSS2FSR](https://discord.gg/2JDHx6kcXB)
 
@@ -15,7 +16,7 @@ Key aspects of OptiScaler:
 ## Installation
 > **Warning**: Do not use this mod with online games. It may trigger anti-cheat software and cause bans!
 
-### Install as `non-nvngx`
+### Install as `non-nvngx` (For enabling all features like Frame Gen)
 To overcome DLSS 3.7's signature check requirements, I implemented a method developed by **Artur** (creator of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)). Later, this method increased the compatibility of `OverlayMenu`, allowed OptiScaler to **spoof DXGI and Vulkan**, let users override the `nvapi64.dll` and even let users to force Anitsotropic Filtering and Mipmap Lod Bias. In short, this installation method allowed OptiScaler to provide more features to users.
 
 Step-by-step installation (**Nvidia users please skip to step 3**):
@@ -45,7 +46,7 @@ Alternatively you can create a new folder called `plugins` and put other mods fi
 
 **Please don't rename the ini file, it should stay as `nvngx.ini`**.
 
-### Install as `nvngx.dll`
+### Install as `nvngx.dll` (Limited features, FG and Overlay Menu will be disabled)
 Step-by-step installation:
 1. Download the latest relase from [releases](https://github.com/cdozdil/OptiScaler/releases).
 2. Extract the contents of the archive next to the game executable file in your games folder. (e.g. for Unreal Engine games it's `<path-to-game>\Binaries\Win64\`) [1]
@@ -80,6 +81,7 @@ OptiScaler implements the necessary API methods of DLSS2 & NVAPI to act as a mid
 
 ## Features
 * Supports multiple upscaling backends (XeSS, FSR 2.1.2, FSR 2.2.1, FSR 3.1 and DLSS)
+* Experimental support for frame generation with version 0.7.0 and above
 * Supports DLSS 3.7 and above (check [installation instructions](#install-as-non-nvngx))
 * Supports DLSS-D (Ray Reconstruction) on Nvidia cards (Supports changing presets and using OptiScaler enchanchements)
 * Ability to modify DLSS/DLSS-D presets on the fly
