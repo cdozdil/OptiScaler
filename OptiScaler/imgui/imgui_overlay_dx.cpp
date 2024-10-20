@@ -480,7 +480,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, bool SkipCopy) //, D3D12
 {
     auto fIndex = fgFrameIndex;
     if (This != g_pd3dCommandList && fgCopySource[fIndex] != nullptr && Config::Instance()->CurrentFeature != nullptr &&
-        fgHudlessFrame != Config::Instance()->CurrentFeature->FrameCount() && ImGuiOverlayDx::fgTarget + 10 <= Config::Instance()->CurrentFeature->FrameCount())
+        fgHudlessFrame != Config::Instance()->CurrentFeature->FrameCount() && ImGuiOverlayDx::fgTarget <= Config::Instance()->CurrentFeature->FrameCount())
     {
         LOG_DEBUG("FrameCount: {0}, fgHudlessFrame: {1}, CommandList: {2:X}", Config::Instance()->CurrentFeature->FrameCount(), fgHudlessFrame, (UINT64)This);
 
@@ -547,7 +547,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, bool SkipCopy) //, D3D12
                 // check for status
                 if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
                     Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || 
-                    ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                    ImGuiOverlayDx::fgCopyCommandQueue == nullptr || !ImGuiOverlayDx::fgIsActive)
                 {
                     LOG_WARN("Cancel async dispatch");
                     fgDispatchCalled = false;
@@ -572,7 +572,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, bool SkipCopy) //, D3D12
                 // check for status
                 if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
                     Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || 
-                    ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                    ImGuiOverlayDx::fgCopyCommandQueue == nullptr || !ImGuiOverlayDx::fgIsActive)
                 {
                     LOG_WARN("Cancel async dispatch");
                     fgDispatchCalled = false;
@@ -589,7 +589,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, bool SkipCopy) //, D3D12
                 // check for status
                 if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
                     Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || 
-                    ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                    ImGuiOverlayDx::fgCopyCommandQueue == nullptr || !ImGuiOverlayDx::fgIsActive)
                 {
                     LOG_WARN("Cancel async dispatch");
                     fgDispatchCalled = false;
@@ -605,7 +605,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, bool SkipCopy) //, D3D12
                 // check for status
                 if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
                     Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || 
-                    ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                    ImGuiOverlayDx::fgCopyCommandQueue == nullptr || !ImGuiOverlayDx::fgIsActive)
                 {
                     LOG_WARN("Cancel async dispatch");
                     fgDispatchCalled = false;
@@ -685,7 +685,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, bool SkipCopy) //, D3D12
             dfgPrepare.frameTimeDelta = ImGuiOverlayDx::fgFrameTime;
 
             // If somehow context is destroyed before this point
-            if (Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr)
+            if (Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || !ImGuiOverlayDx::fgIsActive)
             {
                 LOG_WARN("!! Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr");
                 return;
@@ -717,26 +717,25 @@ static bool CheckCapture()
     return true;
 }
 
-static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* resource, D3D12_RESOURCE_STATES state)
+static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* resource, D3D12_RESOURCE_STATES state)
 {
     auto fIndex = fgFrameIndex;
     ImGuiOverlayDx::upscaleRan = false;
     fgUpscaledFound = false;
-    fgCopySource[fIndex] = resource;
+    fgCopySource[fIndex] = resource->buffer;
 
-    auto resInfo = resource->GetDesc();
-    if (resInfo.Format != ImGuiOverlayDx::swapchainFormat && Config::Instance()->FGHUDFixExtended.value_or(false) && ImGuiOverlayDx::fgFormatTransfer != nullptr &&
-        (resInfo.Format == DXGI_FORMAT_R16G16B16A16_FLOAT || resInfo.Format == DXGI_FORMAT_R11G11B10_FLOAT || resInfo.Format == DXGI_FORMAT_R32G32B32A32_FLOAT || resInfo.Format == DXGI_FORMAT_R32G32B32_FLOAT) &&
+    if (resource->format != ImGuiOverlayDx::swapchainFormat && Config::Instance()->FGHUDFixExtended.value_or(false) && ImGuiOverlayDx::fgFormatTransfer != nullptr &&
+        (resource->format == DXGI_FORMAT_R16G16B16A16_FLOAT || resource->format == DXGI_FORMAT_R11G11B10_FLOAT || resource->format == DXGI_FORMAT_R32G32B32A32_FLOAT || resource->format == DXGI_FORMAT_R32G32B32_FLOAT) &&
         (ImGuiOverlayDx::swapchainFormat == DXGI_FORMAT_R8G8B8A8_UNORM || ImGuiOverlayDx::swapchainFormat == DXGI_FORMAT_B8G8R8A8_UNORM || ImGuiOverlayDx::swapchainFormat == DXGI_FORMAT_R10G10B10A2_UNORM))
     {
-        if (ImGuiOverlayDx::fgFormatTransfer->CreateBufferResource(g_pd3dDeviceParam, resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) &&
-            CreateBufferResource(g_pd3dDeviceParam, resource, D3D12_RESOURCE_STATE_COPY_SOURCE, &fgHudlessBuffer[fIndex]))
+        if (ImGuiOverlayDx::fgFormatTransfer->CreateBufferResource(g_pd3dDeviceParam, resource->buffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) &&
+            CreateBufferResource(g_pd3dDeviceParam, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, &fgHudlessBuffer[fIndex]))
         {
-            ResourceBarrier(cmdList, resource, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
+            ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
             ResourceBarrier(cmdList, fgHudlessBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-            cmdList->CopyResource(fgHudlessBuffer[fIndex], resource);
+            cmdList->CopyResource(fgHudlessBuffer[fIndex], resource->buffer);
             ResourceBarrier(cmdList, fgHudlessBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            ResourceBarrier(cmdList, resource, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
+            ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
 
             ImGuiOverlayDx::fgFormatTransfer->SetBufferState(ImGuiOverlayDx::fgCopyCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             ImGuiOverlayDx::fgFormatTransfer->Dispatch(g_pd3dDeviceParam, ImGuiOverlayDx::fgCopyCommandList, fgHudlessBuffer[fIndex], ImGuiOverlayDx::fgFormatTransfer->Buffer());
@@ -748,12 +747,12 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* r
     }
     else
     {
-        ResourceBarrier(cmdList, resource, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
+        ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
 
-        if (CreateBufferResource(g_pd3dDeviceParam, resource, D3D12_RESOURCE_STATE_COPY_DEST, &fgHudless[fIndex]))
-            cmdList->CopyResource(fgHudless[fIndex], resource);
+        if (CreateBufferResource(g_pd3dDeviceParam, resource->buffer, D3D12_RESOURCE_STATE_COPY_DEST, &fgHudless[fIndex]))
+            cmdList->CopyResource(fgHudless[fIndex], resource->buffer);
 
-        ResourceBarrier(cmdList, resource, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
+        ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
     }
 
     GetHudless(cmdList, true);
@@ -764,9 +763,9 @@ static bool CheckForHudless(ResourceInfo* resource, bool checkFormat = true)
     if (ImGuiOverlayDx::currentSwapchain == nullptr)
         return false;
 
-    if (Config::Instance()->SCChanged)
-    {
-        LOG_INFO("Config::Instance()->SCChanged");
+    //if (Config::Instance()->SCChanged)
+    //{
+    //    LOG_INFO("Config::Instance()->SCChanged");
 
         if (ImGuiOverlayDx::currentSwapchain->GetDesc(&fgScDesc) != S_OK)
         {
@@ -774,8 +773,8 @@ static bool CheckForHudless(ResourceInfo* resource, bool checkFormat = true)
             return false;
         }
 
-        Config::Instance()->SCChanged = false;
-    }
+    //    Config::Instance()->SCChanged = false;
+    //}
 
     if (resource->height == fgScDesc.BufferDesc.Height && resource->width == fgScDesc.BufferDesc.Width && (!checkFormat || resource->format == fgScDesc.BufferDesc.Format ||
         (Config::Instance()->FGHUDFixExtended.value_or(false) && ImGuiOverlayDx::fgFormatTransfer != nullptr &&
@@ -926,7 +925,7 @@ static void hkCopyResource(ID3D12GraphicsCommandList* This, ID3D12Resource* Dest
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        ImGuiOverlayDx::fgTarget > Config::Instance()->CurrentFeature->FrameCount() ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
@@ -954,11 +953,12 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
 
     auto fIndex = fgFrameIndex;
 
-    if (This == g_pd3dCommandList || ImGuiOverlayDx::fgCopyCommandList == This || ImGuiOverlayDx::fgSkipHudlessChecks || Config::Instance()->CurrentFeature == nullptr || !ImGuiOverlayDx::upscaleRan)
+    if (This == g_pd3dCommandList || ImGuiOverlayDx::fgCopyCommandList == This || ImGuiOverlayDx::fgSkipHudlessChecks || 
+        Config::Instance()->CurrentFeature == nullptr || !ImGuiOverlayDx::upscaleRan)
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        ImGuiOverlayDx::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !ImGuiOverlayDx::fgIsActive ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
@@ -975,7 +975,7 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
     if (CheckForHudless(&resInfo) && CheckCapture())
     {
         LOG_DEBUG("Capture");
-        CaptureHudless(This, pDst->pResource, D3D12_RESOURCE_STATE_COPY_DEST);
+        CaptureHudless(This, &resInfo, D3D12_RESOURCE_STATE_COPY_DEST);
     }
 }
 
@@ -1034,7 +1034,7 @@ static void hkCopyDescriptors(ID3D12Device* This,
     LOG_DEBUG_ONLY("SrcRanges: {}, DestRanges: {}, Type: {}", NumSrcDescriptorRanges, NumDestDescriptorRanges, (UINT)DescriptorHeapsType);
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        ImGuiOverlayDx::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !ImGuiOverlayDx::fgIsActive ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
@@ -1097,7 +1097,7 @@ static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        ImGuiOverlayDx::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !ImGuiOverlayDx::fgIsActive ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
@@ -1133,7 +1133,8 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() || fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
+        ImGuiOverlayDx::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !ImGuiOverlayDx::fgIsActive ||
+        fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
     auto heap = GetHeapByGpuHandle(BaseDescriptor.ptr);
@@ -1181,7 +1182,7 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        ImGuiOverlayDx::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !ImGuiOverlayDx::fgIsActive ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
@@ -1238,7 +1239,8 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() || fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
+        ImGuiOverlayDx::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !ImGuiOverlayDx::fgIsActive ||
+        fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
     auto heap = GetHeapByGpuHandle(BaseDescriptor.ptr);
@@ -1281,7 +1283,7 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        ImGuiOverlayDx::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !ImGuiOverlayDx::fgIsActive ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
@@ -1311,7 +1313,7 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
                     if (CheckCapture())
                     {
                         LOG_DEBUG("Capture");
-                        CaptureHudless(This, key, val.state);
+                        CaptureHudless(This, &val, val.state);
                         break;
                     }
                 }
@@ -1334,7 +1336,7 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        ImGuiOverlayDx::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !ImGuiOverlayDx::fgIsActive ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
@@ -1367,7 +1369,7 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
                     if (CheckCapture())
                     {
                         LOG_DEBUG("Capture");
-                        CaptureHudless(This, key, val.state);
+                        CaptureHudless(This, &val, val.state);
                         break;
                     }
                 }
@@ -1390,7 +1392,7 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgContext == nullptr ||
-        ImGuiOverlayDx::fgTarget + 10 > Config::Instance()->CurrentFeature->FrameCount() ||
+        ImGuiOverlayDx::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !ImGuiOverlayDx::fgIsActive ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
@@ -1423,7 +1425,7 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
                     if (CheckCapture())
                     {
                         LOG_DEBUG("Capture");
-                        CaptureHudless(This, key, val.state);
+                        CaptureHudless(This, &val, val.state);
                         break;
                     }
                 }

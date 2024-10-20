@@ -44,6 +44,7 @@ static int evalCounter = 0;
 static std::wstring appDataPath = L".";
 static inline bool shutdown = false;
 
+
 static void FfxFgLogCallback(uint32_t type, const wchar_t* message)
 {
     std::wstring string(message);
@@ -124,9 +125,13 @@ static void CreateFGObjects()
         // Create a command queue for frame generation
         D3D12_COMMAND_QUEUE_DESC copyQueueDesc = {};
         copyQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-        copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
         copyQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
         copyQueueDesc.NodeMask = 0;
+
+        if (Config::Instance()->FGHighPriority.value_or(false))
+            copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
+        else
+            copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 
         HRESULT hr = D3D12Device->CreateCommandQueue(&copyQueueDesc, IID_PPV_ARGS(&ImGuiOverlayDx::fgCopyCommandQueue));
         if (result != S_OK)
@@ -143,6 +148,24 @@ static void CreateFGObjects()
 
 static void CreateFGContext(IFeature_Dx12* deviceContext)
 {
+    if (ImGuiOverlayDx::fgContext != nullptr)
+    {
+        ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
+        m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
+        m_FrameGenerationConfig.frameGenerationEnabled = true;
+        m_FrameGenerationConfig.swapChain = ImGuiOverlayDx::currentSwapchain;
+        //m_FrameGenerationConfig.presentCallback = nullptr;
+        m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
+
+        auto result = _configure(&ImGuiOverlayDx::fgContext, &m_FrameGenerationConfig.header);
+
+        ImGuiOverlayDx::fgIsActive = (result == FFX_API_RETURN_OK);
+
+        LOG_DEBUG("Reactivate");
+
+        return;
+    }
+
     ffxCreateBackendDX12Desc backendDesc{};
     backendDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_DX12;
     backendDesc.device = D3D12Device;
@@ -177,37 +200,48 @@ static void CreateFGContext(IFeature_Dx12* deviceContext)
     Config::Instance()->SkipHeapCapture = false;
     Config::Instance()->dxgiSkipSpoofing = false;
     LOG_INFO("    FG _createContext result: {0:X}", retCode);
+
+    ImGuiOverlayDx::fgIsActive = (retCode == FFX_API_RETURN_OK);
+ 
+    LOG_DEBUG("Create");
 }
 
 
-static void StopAndDestroyFGContext(bool shutDown)
+static void StopAndDestroyFGContext(bool destroy, bool shutDown)
 {
     ImGuiOverlayDx::fgSkipHudlessChecks = false;
+    Config::Instance()->dxgiSkipSpoofing = true;
 
     if (ImGuiOverlayDx::fgContext != nullptr)
     {
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+
         ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
         m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
         m_FrameGenerationConfig.frameGenerationEnabled = false;
         m_FrameGenerationConfig.swapChain = ImGuiOverlayDx::currentSwapchain;
-        m_FrameGenerationConfig.presentCallback = nullptr;
+        //m_FrameGenerationConfig.presentCallback = nullptr;
         m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
 
-        Config::Instance()->dxgiSkipSpoofing = true;
-
         auto result = _configure(&ImGuiOverlayDx::fgContext, &m_FrameGenerationConfig.header);
+
+        ImGuiOverlayDx::fgIsActive = false;
+
         if (!shutDown)
             LOG_INFO("    FG _configure result: {0:X}", result);
+    }
 
-        result = _destroyContext(&ImGuiOverlayDx::fgContext, nullptr);
+    if (destroy && ImGuiOverlayDx::fgContext != nullptr)
+    {
+        auto result = _destroyContext(&ImGuiOverlayDx::fgContext, nullptr);
+        
         if (!shutDown)
             LOG_INFO("    FG _destroyContext result: {0:X}", result);
 
-        Config::Instance()->dxgiSkipSpoofing = false;
-
         ImGuiOverlayDx::fgContext = nullptr;
-
     }
+
+    Config::Instance()->dxgiSkipSpoofing = false;
 
     if (shutDown)
         ReleaseFGObjects();
@@ -686,7 +720,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
     // Disabled for now to check if it cause any issues
     //ImGuiOverlayDx::UnHookDx();
 
-    StopAndDestroyFGContext(true);
+    StopAndDestroyFGContext(true, true);
 
     shutdown = false;
 
@@ -1039,7 +1073,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
     auto handleId = InHandle->Id;
 
     Config::Instance()->FGChanged = true;
-    StopAndDestroyFGContext(false);
+    StopAndDestroyFGContext(true, false);
 
     if (!shutdown)
         LOG_INFO("releasing feature with id {0}", handleId);
@@ -1245,7 +1279,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         {
             if (ImGuiOverlayDx::fgContext != nullptr)
             {
-                StopAndDestroyFGContext(false);
+                StopAndDestroyFGContext(false, false);
             }
 
             if (Dx12Contexts.contains(handleId))
@@ -1459,24 +1493,26 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     if (Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true))
     {
         if (!Config::Instance()->FGChanged && ImGuiOverlayDx::fgTarget < deviceContext->FrameCount() && Config::Instance()->FGEnabled.value_or(false) &&
-            _createContext != nullptr && ImGuiOverlayDx::fgContext == nullptr && ImGuiOverlayDx::currentSwapchain != nullptr &&
+            _createContext != nullptr && !ImGuiOverlayDx::fgIsActive && ImGuiOverlayDx::currentSwapchain != nullptr &&
             ImGuiOverlayDx::swapchainFormat != DXGI_FORMAT_UNKNOWN)
         {
             CreateFGObjects();
             CreateFGContext(deviceContext);
         }
-        else if ((!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged) && ImGuiOverlayDx::fgContext != nullptr)
+        else if ((!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged) && ImGuiOverlayDx::fgIsActive)
         {
-            StopAndDestroyFGContext(false);
+            StopAndDestroyFGContext(Config::Instance()->SCChanged, false);
         }
 
         if (Config::Instance()->FGChanged)
         {
             LOG_DEBUG("    FG disabled for 10 frames");
-            ImGuiOverlayDx::fgTarget = deviceContext->FrameCount() + 10;
+            ImGuiOverlayDx::fgTarget = deviceContext->FrameCount() + 20;
             Config::Instance()->FGChanged = false;
         }
     }
+    
+    Config::Instance()->SCChanged = false;
 
     // Record the first timestamp (before FSR2 upscaling)
     InCmdList->EndQuery(ImGuiOverlayDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
@@ -1539,10 +1575,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     if (evalResult)
     {
         // FG Dispatch || Prepare
-        if (Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
+        if (ImGuiOverlayDx::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
             Config::Instance()->FGEnabled.value_or(false) && ImGuiOverlayDx::fgTarget < deviceContext->FrameCount() &&
             ImGuiOverlayDx::fgContext != nullptr && ImGuiOverlayDx::currentSwapchain != nullptr)
         {
+            float msDelta = 0.0;
+            auto now = Util::MillisecondsNow();
+
+            if (fgLastFrameTime != 0)
+            {
+                msDelta = now - fgLastFrameTime;
+                LOG_DEBUG("    FG msDelta: {0}", msDelta);
+            }
+
+            fgLastFrameTime = now;
+
             ID3D12Resource* output;
             InParameters->Get(NVSDK_NGX_Parameter_Output, &output);
 
@@ -1554,7 +1601,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             auto result = allocator->Reset();
             result = ImGuiOverlayDx::fgCopyCommandList->Reset(allocator, nullptr);
 
-            if (!Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgTarget + 10 > deviceContext->FrameCount())
+            if (!Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgTarget > deviceContext->FrameCount())
             {
                 LOG_DEBUG("    FG running, frame: {0}", deviceContext->FrameCount());
 
@@ -1595,7 +1642,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         auto fIndex = ImGuiOverlayDx::GetFrame();
 
                         // check for status
-                        if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged || Config::Instance()->CurrentFeature == nullptr || 
+                        if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged || Config::Instance()->CurrentFeature == nullptr ||
                             ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
                         {
                             LOG_WARN("Cancel async dispatch");
@@ -1756,18 +1803,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                     dfgPrepare.cameraFovAngleVertical = 1.0471975511966f;
                     dfgPrepare.viewSpaceToMetersFactor = 1.0;
-
-                    float msDelta = 0.0;
-                    auto now = Util::MillisecondsNow();
-
-                    if (fgLastFrameTime != 0)
-                    {
-                        msDelta = now - fgLastFrameTime;
-                        LOG_DEBUG("    FG _dispatch msDelta: {0}", msDelta);
-                    }
-
-                    fgLastFrameTime = now;
-
                     dfgPrepare.frameTimeDelta = msDelta;
 
                     Config::Instance()->dxgiSkipSpoofing = true;
@@ -1801,16 +1836,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &ImGuiOverlayDx::mvScaleX);
                 InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &ImGuiOverlayDx::mvScaleY);
 
-                float msDelta = 0.0;
-                auto now = Util::MillisecondsNow();
-
-                if (fgLastFrameTime != 0)
-                {
-                    msDelta = now - fgLastFrameTime;
-                    LOG_DEBUG("    FG _dispatch msDelta: {0}", msDelta);
-                }
-
-                fgLastFrameTime = now;
                 ImGuiOverlayDx::fgFrameTime = msDelta;
                 ImGuiOverlayDx::upscaleRan = true;
 
