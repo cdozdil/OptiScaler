@@ -10,6 +10,9 @@
 #include "xess_debug.h"
 #include "detours/detours.h"
 
+#pragma comment(lib, "Version.lib")
+
+
 typedef xess_result_t(*PFN_xessD3D12CreateContext)(ID3D12Device* pDevice, xess_context_handle_t* phContext);
 typedef xess_result_t(*PFN_xessD3D12BuildPipelines)(xess_context_handle_t hContext, ID3D12PipelineLibrary* pPipelineLibrary, bool blocking, uint32_t initFlags);
 typedef xess_result_t(*PRN_xessD3D12Init)(xess_context_handle_t hContext, const xess_d3d12_init_params_t* pInitParams);
@@ -38,7 +41,6 @@ typedef xess_result_t(*PFN_xessD3D12GetResourcesToDump)(xess_context_handle_t hC
 typedef xess_result_t(*PFN_xessD3D12GetProfilingData)(xess_context_handle_t hContext, xess_profiling_data_t** pProfilingData);
 
 typedef xess_result_t(*PFN_xessSetContextParameterF)();
-
 
 class XeSSProxy
 {
@@ -74,6 +76,64 @@ private:
 
     inline static PFN_xessSetContextParameterF _xessSetContextParameterF = nullptr;
 
+    inline static void GetDLLVersion(std::wstring dllPath) {
+        // Step 1: Get the size of the version information
+        DWORD handle = 0;
+        DWORD versionSize = GetFileVersionInfoSizeW(dllPath.c_str(), &handle);
+
+        if (versionSize == 0)
+        {
+            LOG_ERROR("Failed to get version info size: {0:X}", GetLastError());
+            return;
+        }
+
+        // Step 2: Allocate buffer and get the version information
+        std::vector<BYTE> versionInfo(versionSize);
+        if (!GetFileVersionInfoW(dllPath.c_str(), handle, versionSize, versionInfo.data()))
+        {
+            LOG_ERROR("Failed to get version info: {0:X}", GetLastError());
+            return;
+        }
+
+        // Step 3: Extract the version information
+        VS_FIXEDFILEINFO* fileInfo = nullptr;
+        UINT size = 0;
+        if (!VerQueryValueW(versionInfo.data(), L"\\", reinterpret_cast<LPVOID*>(&fileInfo), &size)) {
+            LOG_ERROR("Failed to query version value: {0:X}", GetLastError());
+            return;
+        }
+
+        if (fileInfo != nullptr) {
+            // Extract major, minor, build, and revision numbers from version information
+            DWORD fileVersionMS = fileInfo->dwFileVersionMS;
+            DWORD fileVersionLS = fileInfo->dwFileVersionLS;
+
+            _xessVersion.major = (fileVersionMS >> 16) & 0xffff;
+            _xessVersion.minor = (fileVersionMS >> 0) & 0xffff;
+            _xessVersion.patch = (fileVersionLS >> 16) & 0xffff;
+            _xessVersion.reserved = (fileVersionLS >> 0) & 0xffff;
+        }
+        else
+        {
+            LOG_ERROR("No version information found!");
+        }
+    }
+
+    inline static std::filesystem::path DllPath(HMODULE module)
+    {
+        static std::filesystem::path dll;
+
+        if (dll.empty())
+        {
+            wchar_t dllPath[MAX_PATH];
+            GetModuleFileNameW(module, dllPath, MAX_PATH);
+            dll = std::filesystem::path(dllPath);
+        }
+
+        return dll;
+    }
+
+
 public:
     static bool InitXeSS()
     {
@@ -96,12 +156,14 @@ public:
                 if (cfgPath.has_filename())
                 {
                     LOG_INFO("Trying to load libxess.dll from ini path: {}", cfgPath.string());
+                    GetDLLVersion(cfgPath.wstring());
                     _dll = LoadLibrary(cfgPath.c_str());
                 }
                 else
                 {
                     cfgPath = cfgPath / L"libxess.dll";
                     LOG_INFO("Trying to load libxess.dll from ini path: {}", cfgPath.string());
+                    GetDLLVersion(cfgPath.wstring());
                     _dll = LoadLibrary(cfgPath.c_str());
                 }
             }
@@ -138,6 +200,9 @@ public:
                 _xessD3D12GetResourcesToDump = (PFN_xessD3D12GetResourcesToDump)GetProcAddress(_dll, "xessD3D12GetResourcesToDump");
                 _xessD3D12GetProfilingData = (PFN_xessD3D12GetProfilingData)GetProcAddress(_dll, "xessD3D12GetProfilingData");
                 _xessSetContextParameterF = (PFN_xessSetContextParameterF)GetProcAddress(_dll, "xessSetContextParameterF");
+
+                auto path = DllPath(_dll);
+                GetDLLVersion(path.wstring());
             }
             else
             {
@@ -176,6 +241,14 @@ public:
             _xessD3D12GetResourcesToDump = (PFN_xessD3D12GetResourcesToDump)DetourFindFunction("libxess.dll", "xessD3D12GetResourcesToDump");
             _xessD3D12GetProfilingData = (PFN_xessD3D12GetProfilingData)DetourFindFunction("libxess.dll", "xessD3D12GetProfilingData");
             _xessSetContextParameterF = (PFN_xessSetContextParameterF)DetourFindFunction("libxess.dll", "xessSetContextParameterF");
+
+            HMODULE moduleHandle = nullptr;
+            moduleHandle = GetModuleHandle(L"libxess.dll");
+            if (moduleHandle != nullptr)
+            {
+                auto path = DllPath(moduleHandle);
+                GetDLLVersion(path.wstring());
+            }
         }
 
         if (_xessD3D12CreateContext != nullptr)
