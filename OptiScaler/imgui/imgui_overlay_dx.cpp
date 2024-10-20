@@ -546,7 +546,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This, bool SkipCopy) //, D3D12
 
                 // check for status
                 if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
-                    Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                    Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || 
+                    ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
                 {
                     LOG_WARN("Cancel async dispatch");
                     fgDispatchCalled = false;
@@ -554,7 +555,6 @@ static void GetHudless(ID3D12GraphicsCommandList* This, bool SkipCopy) //, D3D12
                     return FFX_API_RETURN_OK;
                 }
 
-                // For leftover frames from previous FG context
                 // If fg is active but upscaling paused
                 if (!fgDispatchCalled || fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount())
                 {
@@ -571,7 +571,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This, bool SkipCopy) //, D3D12
 
                 // check for status
                 if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
-                    Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                    Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || 
+                    ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
                 {
                     LOG_WARN("Cancel async dispatch");
                     fgDispatchCalled = false;
@@ -587,7 +588,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This, bool SkipCopy) //, D3D12
 
                 // check for status
                 if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
-                    Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                    Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || 
+                    ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
                 {
                     LOG_WARN("Cancel async dispatch");
                     fgDispatchCalled = false;
@@ -602,7 +604,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This, bool SkipCopy) //, D3D12
 
                 // check for status
                 if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
-                    Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                    Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || 
+                    ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
                 {
                     LOG_WARN("Cancel async dispatch");
                     fgDispatchCalled = false;
