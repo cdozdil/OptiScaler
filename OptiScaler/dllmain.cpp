@@ -52,10 +52,14 @@ inline std::vector<std::string> upscalerNames =
 {
     "nvngx.dll",
     "nvngx",
-    "nvngx_dlss.dll",
-    "nvngx_dlss",
     "libxess.dll",
     "libxess"
+};
+
+inline std::vector<std::string> nvngxDlss =
+{
+    "nvngx_dlss.dll",
+    "nvngx_dlss",
 };
 
 inline std::vector<std::string> nvapiNames =
@@ -70,8 +74,14 @@ inline std::vector<std::wstring> upscalerNamesW =
 {
     L"nvngx.dll",
     L"nvngx",
+    L"libxess.dll",
+    L"libxess"
+};
+
+inline std::vector<std::wstring> nvngxDlssW =
+{
     L"nvngx_dlss.dll",
-    L"nvngx_dlss"
+    L"nvngx_dlss",
 };
 
 inline std::vector<std::wstring> nvapiNamesW =
@@ -160,6 +170,15 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
             return nvapi;
     }
 
+    // nvngx_dlss
+    if (Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->DLSSLibrary.has_value() && CheckDllName(&lcaseLibName, &nvngxDlss))
+    {
+        auto nvngxDlss = LoadNvgxDlss(string_to_wstring(lcaseLibName));
+
+        if (nvngxDlss != nullptr)
+            return nvngxDlss;
+    }
+
     if (!isNvngxMode && CheckDllName(&lcaseLibName, &dllNames))
     {
         LOG_INFO("{0} call returning this dll!", lcaseLibName);
@@ -198,6 +217,15 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
             return dllModule;
         }
+    }
+
+    // nvngx_dlss
+    if (Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->DLSSLibrary.has_value() && CheckDllNameW(&lcaseLibName, &nvngxDlssW))
+    {
+        auto nvngxDlss = LoadNvgxDlss(lcaseLibName);
+
+        if (nvngxDlss != nullptr)
+            return nvngxDlss;
     }
 
     // NvApi64.dll
