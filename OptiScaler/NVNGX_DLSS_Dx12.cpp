@@ -154,25 +154,25 @@ void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
     }
 }
 
-void HookToDevice(ID3D12Device* InDevice)
-{
-    //if (!ImGuiOverlayDx12::IsEarlyBind() && orgCreateSampler != nullptr || InDevice == nullptr)
-    //    return;
-
-    PVOID* pVTable = *(PVOID**)InDevice;
-
-    orgCreateSampler = (PFN_CreateSampler)pVTable[22];
-
-    if (orgCreateSampler != nullptr)
-    {
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-
-        DetourAttach(&(PVOID&)orgCreateSampler, hkCreateSampler);
-
-        DetourTransactionCommit();
-    }
-}
+//void HookToDevice(ID3D12Device* InDevice)
+//{
+//    //if (!ImGuiOverlayDx12::IsEarlyBind() && orgCreateSampler != nullptr || InDevice == nullptr)
+//    //    return;
+//
+//    PVOID* pVTable = *(PVOID**)InDevice;
+//
+//    orgCreateSampler = (PFN_CreateSampler)pVTable[22];
+//
+//    if (orgCreateSampler != nullptr)
+//    {
+//        DetourTransactionBegin();
+//        DetourUpdateThread(GetCurrentThread());
+//
+//        DetourAttach(&(PVOID&)orgCreateSampler, hkCreateSampler);
+//
+//        DetourTransactionCommit();
+//    }
+//}
 
 void UnhookAll()
 {
@@ -726,7 +726,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
             return NVSDK_NGX_Result_Fail;
         }
 
-        HookToDevice(D3D12Device);
+        //HookToDevice(D3D12Device);
     }
 
 #pragma endregion

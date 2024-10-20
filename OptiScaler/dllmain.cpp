@@ -963,7 +963,7 @@ static void CheckWorkingMode()
 
     do
     {
-        if (lCaseFilename == "nvngx.dll" || lCaseFilename == "_nvngx.dll" || lCaseFilename == "dlss-enabler-upscaler.dll")
+        if (lCaseFilename == "nvngx.dll" || lCaseFilename == "_nvngx.dll" || lCaseFilename == "libxess.dll" || lCaseFilename == "dlss-enabler-upscaler.dll")
         {
             LOG_INFO("OptiScaler working as native upscaler: {0}", filename);
 

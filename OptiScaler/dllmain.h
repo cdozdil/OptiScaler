@@ -1334,8 +1334,8 @@ bool SkipSpoofing()
     auto skip = !Config::Instance()->DxgiSpoofing.value_or(true) || Config::Instance()->dxgiSkipSpoofing || Config::Instance()->IsRunningOnLinux;
 
     if (skip)
-        LOG_TRACE("DxgiSpoofing: {}, dxgiSkipSpoofing: {}, IsRunningOnLinux: {}, skipping spoofing", 
-                  !Config::Instance()->DxgiSpoofing.value_or(true), Config::Instance()->dxgiSkipSpoofing, !Config::Instance()->IsRunningOnLinux);
+        LOG_TRACE("DxgiSpoofing: {}, dxgiSkipSpoofing: {}, skipping spoofing", 
+                  !Config::Instance()->DxgiSpoofing.value_or(true), Config::Instance()->dxgiSkipSpoofing);
 
     if (!skip && Config::Instance()->DxgiBlacklist.has_value())
     {

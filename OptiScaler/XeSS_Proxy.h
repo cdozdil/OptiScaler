@@ -86,83 +86,71 @@ public:
         Config::Instance()->upscalerDisableHook = true;
         Config::Instance()->dxgiSkipSpoofing = true;
 
-        //PRN_xessGetVersion ptrDllGetVersion = nullptr;
-        //PRN_xessGetVersion ptrMemoryGetVersion = nullptr;
+        auto dllPath = Util::DllPath();
+        if (dllPath.filename().wstring() == L"libxess.dll")
+        {
+            if (Config::Instance()->XeSSLibrary.has_value())
+            {
+                std::filesystem::path cfgPath(Config::Instance()->XeSSLibrary.value().c_str());
 
-        //xess_version_t memoryVersion{ 0,0,0,0 };
-        //xess_version_t dllVersion{ 0,0,0,0 };
+                if (cfgPath.has_filename())
+                {
+                    LOG_INFO("Trying to load libxess.dll from ini path: {}", cfgPath.string());
+                    _dll = LoadLibrary(cfgPath.c_str());
+                }
+                else
+                {
+                    cfgPath = cfgPath / L"libxess.dll";
+                    LOG_INFO("Trying to load libxess.dll from ini path: {}", cfgPath.string());
+                    _dll = LoadLibrary(cfgPath.c_str());
+                }
+            }
 
-        //if (Config::Instance()->XeSSLibrary.has_value())
-        //{
-        //    std::filesystem::path cfgPath(Config::Instance()->XeSSLibrary.value().c_str());
+            if (_dll != nullptr)
+            {
+                // we would like to prioritize file pointed at ini, use methods from loaded dll
+                _xessD3D12CreateContext = (PFN_xessD3D12CreateContext)GetProcAddress(_dll, "xessD3D12CreateContext");
+                _xessD3D12BuildPipelines = (PFN_xessD3D12BuildPipelines)GetProcAddress(_dll, "xessD3D12BuildPipelines");
+                _xessD3D12Init = (PRN_xessD3D12Init)GetProcAddress(_dll, "xessD3D12Init");
+                _xessD3D12Execute = (PFN_xessD3D12Execute)GetProcAddress(_dll, "xessD3D12Execute");
+                _xessSelectNetworkModel = (PFN_xessSelectNetworkModel)GetProcAddress(_dll, "xessSelectNetworkModel");
+                _xessStartDump = (PFN_xessStartDump)GetProcAddress(_dll, "xessStartDump");
+                _xessGetVersion = (PRN_xessGetVersion)GetProcAddress(_dll, "xessGetVersion");
+                _xessIsOptimalDriver = (PFN_xessIsOptimalDriver)GetProcAddress(_dll, "xessIsOptimalDriver");
+                _xessSetLoggingCallback = (PFN_xessSetLoggingCallback)GetProcAddress(_dll, "xessSetLoggingCallback");
+                _xessGetProperties = (PFN_xessGetProperties)GetProcAddress(_dll, "xessGetProperties");
+                _xessDestroyContext = (PFN_xessDestroyContext)GetProcAddress(_dll, "xessDestroyContext");
+                _xessSetVelocityScale = (PFN_xessSetVelocityScale)GetProcAddress(_dll, "xessSetVelocityScale");
 
-        //    if (cfgPath.has_filename())
-        //    {
-        //        LOG_INFO("Trying to load libxess.dll from ini path: {}", cfgPath.string());
-        //        _dll = LoadLibrary(cfgPath.c_str());
-        //    }
-        //    else
-        //    {
-        //        cfgPath = cfgPath / L"libxess.dll";
-        //        LOG_INFO("Trying to load libxess.dll from ini path: {}", cfgPath.string());
-        //        _dll = LoadLibrary(cfgPath.c_str());
-        //    }
-        //}
+                _xessD3D12GetInitParams = (PFN_xessD3D12GetInitParams)GetProcAddress(_dll, "xessD3D12GetInitParams");
+                _xessForceLegacyScaleFactors = (PFN_xessForceLegacyScaleFactors)GetProcAddress(_dll, "xessForceLegacyScaleFactors");
+                _xessGetExposureMultiplier = (PFN_xessGetExposureMultiplier)GetProcAddress(_dll, "xessGetExposureMultiplier");
+                _xessGetInputResolution = (PFN_xessGetInputResolution)GetProcAddress(_dll, "xessGetInputResolution");
+                _xessGetIntelXeFXVersion = (PFN_xessGetIntelXeFXVersion)GetProcAddress(_dll, "xessGetIntelXeFXVersion");
+                _xessGetJitterScale = (PFN_xessGetJitterScale)GetProcAddress(_dll, "xessGetJitterScale");
+                _xessGetOptimalInputResolution = (PFN_xessGetOptimalInputResolution)GetProcAddress(_dll, "xessGetOptimalInputResolution");
+                _xessSetExposureMultiplier = (PFN_xessSetExposureMultiplier)GetProcAddress(_dll, "xessSetExposureMultiplier");
+                _xessSetJitterScale = (PFN_xessSetJitterScale)GetProcAddress(_dll, "xessSetJitterScale");
 
-        //if (_dll == nullptr)
-        //{
-        //    auto path = Util::DllPath().parent_path() / L"libxess.dll";
-        //    LOG_INFO("Trying to load libxess.dll from OptiScaler path: {}", path.string());
-        //    _dll = LoadLibraryW(path.c_str());
-        //}
-
-        //if (_dll != nullptr)
-        //{
-        //    ptrDllGetVersion = (PRN_xessGetVersion)GetProcAddress(_dll, "xessGetVersion");
-
-        //    // query dll version
-        //    //if (ptrDllGetVersion)
-        //    //{
-        //    //    ptrDllGetVersion(&_xessVersion);
-        //    //    LOG_DEBUG("Loaded libxess.dll v{0}.{1}.{2} file.", _xessVersion.major, _xessVersion.minor, _xessVersion.patch);
-        //    //}
-
-        //    // we would like to prioritize file pointed at ini, use methods from loaded dll
-        //    _xessD3D12CreateContext = (PFN_xessD3D12CreateContext)GetProcAddress(_dll, "xessD3D12CreateContext");
-        //    _xessD3D12BuildPipelines = (PFN_xessD3D12BuildPipelines)GetProcAddress(_dll, "xessD3D12BuildPipelines");
-        //    _xessD3D12Init = (PRN_xessD3D12Init)GetProcAddress(_dll, "xessD3D12Init");
-        //    _xessD3D12Execute = (PFN_xessD3D12Execute)GetProcAddress(_dll, "xessD3D12Execute");
-        //    _xessSelectNetworkModel = (PFN_xessSelectNetworkModel)GetProcAddress(_dll, "xessSelectNetworkModel");
-        //    _xessStartDump = (PFN_xessStartDump)GetProcAddress(_dll, "xessStartDump");
-        //    _xessGetVersion = (PRN_xessGetVersion)GetProcAddress(_dll, "xessGetVersion");
-        //    _xessIsOptimalDriver = (PFN_xessIsOptimalDriver)GetProcAddress(_dll, "xessIsOptimalDriver");
-        //    _xessSetLoggingCallback = (PFN_xessSetLoggingCallback)GetProcAddress(_dll, "xessSetLoggingCallback");
-        //    _xessGetProperties = (PFN_xessGetProperties)GetProcAddress(_dll, "xessGetProperties");
-        //    _xessDestroyContext = (PFN_xessDestroyContext)GetProcAddress(_dll, "xessDestroyContext");
-        //    _xessSetVelocityScale = (PFN_xessSetVelocityScale)GetProcAddress(_dll, "xessSetVelocityScale");
-
-        //    _xessD3D12GetInitParams = (PFN_xessD3D12GetInitParams)GetProcAddress(_dll, "xessD3D12GetInitParams");
-        //    _xessForceLegacyScaleFactors = (PFN_xessForceLegacyScaleFactors)GetProcAddress(_dll, "xessForceLegacyScaleFactors");
-        //    _xessGetExposureMultiplier = (PFN_xessGetExposureMultiplier)GetProcAddress(_dll, "xessGetExposureMultiplier");
-        //    _xessGetInputResolution = (PFN_xessGetInputResolution)GetProcAddress(_dll, "xessGetInputResolution");
-        //    _xessGetIntelXeFXVersion = (PFN_xessGetIntelXeFXVersion)GetProcAddress(_dll, "xessGetIntelXeFXVersion");
-        //    _xessGetJitterScale = (PFN_xessGetJitterScale)GetProcAddress(_dll, "xessGetJitterScale");
-        //    _xessGetOptimalInputResolution = (PFN_xessGetOptimalInputResolution)GetProcAddress(_dll, "xessGetOptimalInputResolution");
-        //    _xessSetExposureMultiplier = (PFN_xessSetExposureMultiplier)GetProcAddress(_dll, "xessSetExposureMultiplier");
-        //    _xessSetJitterScale = (PFN_xessSetJitterScale)GetProcAddress(_dll, "xessSetJitterScale");
-
-        //}
+                _xessGetOptimalInputResolution = (PFN_xessGetOptimalInputResolution)GetProcAddress(_dll, "xessGetOptimalInputResolution");
+                _xessSetExposureMultiplier = (PFN_xessSetExposureMultiplier)GetProcAddress(_dll, "xessSetExposureMultiplier");
+                _xessSetJitterScale = (PFN_xessSetJitterScale)GetProcAddress(_dll, "xessSetJitterScale");
+                _xessD3D12GetResourcesToDump = (PFN_xessD3D12GetResourcesToDump)GetProcAddress(_dll, "xessD3D12GetResourcesToDump");
+                _xessD3D12GetProfilingData = (PFN_xessD3D12GetProfilingData)GetProcAddress(_dll, "xessD3D12GetProfilingData");
+                _xessSetContextParameterF = (PFN_xessSetContextParameterF)GetProcAddress(_dll, "xessSetContextParameterF");
+            }
+            else
+            {
+                Config::Instance()->dxgiSkipSpoofing = false;
+                Config::Instance()->upscalerDisableHook = false;
+                return false;
+            }
+        }
 
         // if libxess not loaded 
         if (_xessD3D12CreateContext == nullptr)
         {
             LOG_INFO("Trying to load libxess.dll with Detours");
-            //ptrMemoryGetVersion = (PRN_xessGetVersion)DetourFindFunction("libxess.dll", "xessGetVersion");
-            //if (ptrMemoryGetVersion)
-            //{
-                // get it's version to compare with dll
-                //ptrMemoryGetVersion(&_xessVersion);
-                //LOG_DEBUG("libxess.dll v{0}.{1}.{2} already loaded.", _xessVersion.major, _xessVersion.minor, _xessVersion.patch);
 
             _xessD3D12CreateContext = (PFN_xessD3D12CreateContext)DetourFindFunction("libxess.dll", "xessD3D12CreateContext");
             _xessD3D12BuildPipelines = (PFN_xessD3D12BuildPipelines)DetourFindFunction("libxess.dll", "xessD3D12BuildPipelines");
@@ -188,7 +176,6 @@ public:
             _xessD3D12GetResourcesToDump = (PFN_xessD3D12GetResourcesToDump)DetourFindFunction("libxess.dll", "xessD3D12GetResourcesToDump");
             _xessD3D12GetProfilingData = (PFN_xessD3D12GetProfilingData)DetourFindFunction("libxess.dll", "xessD3D12GetProfilingData");
             _xessSetContextParameterF = (PFN_xessSetContextParameterF)DetourFindFunction("libxess.dll", "xessSetContextParameterF");
-            //}
         }
 
         if (_xessD3D12CreateContext != nullptr)
@@ -267,9 +254,8 @@ public:
 
             if (_xessSetContextParameterF != nullptr)
                 DetourAttach(&(PVOID&)_xessSetContextParameterF, xessSetContextParameterF);
-            
-            DetourTransactionCommit();
 
+            DetourTransactionCommit();
         }
 
         Config::Instance()->dxgiSkipSpoofing = false;
@@ -314,6 +300,6 @@ public:
 
     static PFN_xessD3D12GetResourcesToDump xessD3D12GetResourcesToDump() { return _xessD3D12GetResourcesToDump; }
     static PFN_xessD3D12GetProfilingData xessD3D12GetProfilingData() { return _xessD3D12GetProfilingData; }
-    
+
     static PFN_xessSetContextParameterF xessSetContextParameterF() { return _xessSetContextParameterF; }
 };
