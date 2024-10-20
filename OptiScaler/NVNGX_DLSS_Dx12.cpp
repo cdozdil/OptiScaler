@@ -121,7 +121,7 @@ static void CreateFGObjects()
             break;
         }
 
-        // Create a command queue for copy operations
+        // Create a command queue for frame generation
         D3D12_COMMAND_QUEUE_DESC copyQueueDesc = {};
         copyQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
         copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
@@ -1813,7 +1813,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 fgLastFrameTime = now;
                 ImGuiOverlayDx::fgFrameTime = msDelta;
                 ImGuiOverlayDx::upscaleRan = true;
-
 
                 LOG_DEBUG("    FG HUDFix done, frame: {0}", deviceContext->FrameCount());
             }

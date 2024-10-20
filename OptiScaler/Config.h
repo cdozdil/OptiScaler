@@ -161,6 +161,7 @@ public:
 	// fg
 	std::optional<bool> FGUseFGSwapChain;
 	std::optional<bool> FGEnabled;
+	std::optional<bool> FGHighPriority;
 	std::optional<bool> FGDebugView;
 	std::optional<bool> FGAsync;
 	std::optional<bool> FGHUDFix;
