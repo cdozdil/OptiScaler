@@ -315,9 +315,6 @@ XESS_API xess_result_t xessSetLoggingCallback(xess_context_handle_t hContext, xe
 
 XESS_API xess_result_t xessGetProperties(xess_context_handle_t hContext, const xess_2d_t* pOutputResolution, xess_properties_t* pBindingProperties)
 {
-    if (!_contexts.contains(hContext))
-        return XESS_RESULT_ERROR_INVALID_CONTEXT;
-
     *pBindingProperties = {};
 
     LOG_WARN("");
