@@ -51,6 +51,7 @@ namespace ImGuiOverlayDx
     inline UINT64 fgTarget = 10;
     inline ID3D12Resource* fgUpscaledImage[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
     inline FT_Dx12* fgFormatTransfer = nullptr;
+    inline bool fgIsActive = false;
 
     void UnHookDx();
     void HookDx();

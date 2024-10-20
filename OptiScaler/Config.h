@@ -169,7 +169,7 @@ public:
 	std::optional<int> FGHUDLimit;
 	bool FGOnlyGenerated = false;
 	bool FGChanged = false;
-	bool SCChanged = true;
+	bool SCChanged = false;
 	bool SkipHeapCapture = false;
 
 
