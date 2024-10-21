@@ -76,12 +76,13 @@ private:
 
     inline static PFN_xessSetContextParameterF _xessSetContextParameterF = nullptr;
 
-    inline static void GetDLLVersion(std::wstring dllPath) {
+    inline static void GetDLLVersion(std::wstring dllPath) 
+    {
         // Step 1: Get the size of the version information
         DWORD handle = 0;
         DWORD versionSize = GetFileVersionInfoSizeW(dllPath.c_str(), &handle);
 
-        if (versionSize == 0)
+        if (versionSize == 0 || handle == 0)
         {
             LOG_ERROR("Failed to get version info size: {0:X}", GetLastError());
             return;
@@ -343,7 +344,7 @@ public:
 
     static xess_version_t Version()
     {
-        // If version cannot be read, disable 1.3.x stuff
+        // If dll version cant be read disable 1.3.x specific stuff
         if (_xessVersion.major == 0)
         {
             _xessVersion.major = 1;
