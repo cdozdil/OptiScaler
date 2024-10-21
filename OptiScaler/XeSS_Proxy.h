@@ -81,7 +81,7 @@ private:
         DWORD handle = 0;
         DWORD versionSize = GetFileVersionInfoSizeW(dllPath.c_str(), &handle);
 
-        if (versionSize == 0)
+        if (versionSize == 0 || handle == 0)
         {
             LOG_ERROR("Failed to get version info size: {0:X}", GetLastError());
             return;
@@ -201,6 +201,8 @@ public:
                 _xessD3D12GetProfilingData = (PFN_xessD3D12GetProfilingData)GetProcAddress(_dll, "xessD3D12GetProfilingData");
                 _xessSetContextParameterF = (PFN_xessSetContextParameterF)GetProcAddress(_dll, "xessSetContextParameterF");
 
+                // read version from file because 
+                // xessGetVersion cause access violation errors
                 auto path = DllPath(_dll);
                 GetDLLVersion(path.wstring());
             }
@@ -242,6 +244,8 @@ public:
             _xessD3D12GetProfilingData = (PFN_xessD3D12GetProfilingData)DetourFindFunction("libxess.dll", "xessD3D12GetProfilingData");
             _xessSetContextParameterF = (PFN_xessSetContextParameterF)DetourFindFunction("libxess.dll", "xessSetContextParameterF");
 
+            // read version from file because 
+            // xessGetVersion cause access violation errors
             HMODULE moduleHandle = nullptr;
             moduleHandle = GetModuleHandle(L"libxess.dll");
             if (moduleHandle != nullptr)
@@ -339,11 +343,12 @@ public:
 
     static xess_version_t Version()
     {
+        // If version cannot be read, disable 1.3.x stuff
         if (_xessVersion.major == 0)
         {
             _xessVersion.major = 1;
-            _xessVersion.minor = 3;
-            _xessVersion.patch = 1;
+            _xessVersion.minor = 2;
+            _xessVersion.patch = 0;
         }
 
         return _xessVersion;
