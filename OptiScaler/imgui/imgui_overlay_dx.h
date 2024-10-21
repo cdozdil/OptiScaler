@@ -9,6 +9,7 @@
 #include <dx12/ffx_api_dx12.h>
 #include <ffx_framegeneration.h>
 #include "../format_transfer/FT_Dx12.h"
+#include "../backends/IFeature.h"
 
 namespace ImGuiOverlayDx
 {
@@ -58,4 +59,8 @@ namespace ImGuiOverlayDx
     UINT ClearFrameResources();
     UINT GetFrame();
     void NewFrame();
+    void ReleaseFGObjects();
+    void CreateFGObjects(ID3D12Device* InDevice);
+    void CreateFGContext(ID3D12Device* InDevice, IFeature* deviceContext);
+    void StopAndDestroyFGContext(bool destroy, bool shutDown);
 }
