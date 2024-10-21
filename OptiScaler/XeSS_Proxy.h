@@ -82,7 +82,7 @@ private:
         DWORD handle = 0;
         DWORD versionSize = GetFileVersionInfoSizeW(dllPath.c_str(), &handle);
 
-        if (versionSize == 0 || handle == 0)
+        if (versionSize == 0)
         {
             LOG_ERROR("Failed to get version info size: {0:X}", GetLastError());
             return;

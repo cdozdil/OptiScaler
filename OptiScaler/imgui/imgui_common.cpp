@@ -1229,7 +1229,7 @@ void ImGuiCommon::RenderMenu()
                         }
 
                         AddRenderPreset("DLAA Preset", &Config::Instance()->RenderPresetDLAA);
-                        //AddRenderPreset("UltraQ Preset", &Config::Instance()->RenderPresetUltraQuality);
+                        AddRenderPreset("UltraQ Preset", &Config::Instance()->RenderPresetUltraQuality);
                         AddRenderPreset("Quality Preset", &Config::Instance()->RenderPresetQuality);
                         AddRenderPreset("Balanced Preset", &Config::Instance()->RenderPresetBalanced);
                         AddRenderPreset("Perf Preset", &Config::Instance()->RenderPresetPerformance);

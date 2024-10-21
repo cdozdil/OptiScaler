@@ -200,6 +200,7 @@ static bool fgPresentRunning = false;
 static double fgLastFrameTime = 0.0;
 static double fgLastDeltaTime = 0.0;
 static bool fgDispatchCalled = false;
+static bool fgStopAfterNextPresent = false;
 
 // Swapchain frame counter
 static UINT64 frameCounter = 0;
@@ -542,11 +543,12 @@ static void GetHudless(ID3D12GraphicsCommandList* This, bool SkipCopy) //, D3D12
         m_FrameGenerationConfig.frameGenerationCallback = [](ffxDispatchDescFrameGeneration* params, void* pUserCtx) -> ffxReturnCode_t
             {
                 HRESULT result;
+                ffxReturnCode_t dispatchResult;
                 auto fIndex = fgFrameIndex;
 
                 // check for status
                 if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
-                    Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || 
+                    ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr ||
                     ImGuiOverlayDx::fgCopyCommandQueue == nullptr || !ImGuiOverlayDx::fgIsActive)
                 {
                     LOG_WARN("Cancel async dispatch");
@@ -556,73 +558,30 @@ static void GetHudless(ID3D12GraphicsCommandList* This, bool SkipCopy) //, D3D12
                 }
 
                 // If fg is active but upscaling paused
-                if (!fgDispatchCalled || fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount())
+                if (!fgDispatchCalled || Config::Instance()->CurrentFeature == nullptr || fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount())
                 {
+                    LOG_WARN("Callback without hudless!");
+
                     auto allocator = ImGuiOverlayDx::fgCopyCommandAllocators[fIndex];
                     result = allocator->Reset();
                     result = ImGuiOverlayDx::fgCopyCommandList->Reset(allocator, nullptr);
-                    LOG_WARN("Callback without hudless!");
-
-                    params->reset = true;
                 }
 
                 if (Config::Instance()->CurrentFeature != nullptr)
                     fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
 
-                // check for status
-                if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
-                    Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || 
-                    ImGuiOverlayDx::fgCopyCommandQueue == nullptr || !ImGuiOverlayDx::fgIsActive)
-                {
-                    LOG_WARN("Cancel async dispatch");
-                    fgDispatchCalled = false;
-                    ImGuiOverlayDx::fgSkipHudlessChecks = false;
-                    return FFX_API_RETURN_OK;
-                }
-                else
-                {
-                    result = _dispatch(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
-                }
-
+                dispatchResult = _dispatch(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
                 ID3D12CommandList* cl[1] = { nullptr };
+                result = ImGuiOverlayDx::fgCopyCommandList->Close();
+                cl[0] = ImGuiOverlayDx::fgCopyCommandList;
+                ImGuiOverlayDx::gameCommandQueue->ExecuteCommandLists(1, cl);
 
-                // check for status
-                if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
-                    Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || 
-                    ImGuiOverlayDx::fgCopyCommandQueue == nullptr || !ImGuiOverlayDx::fgIsActive)
-                {
-                    LOG_WARN("Cancel async dispatch");
-                    fgDispatchCalled = false;
-                    ImGuiOverlayDx::fgSkipHudlessChecks = false;
-                    return FFX_API_RETURN_OK;
-                }
-                else
-                {
-                    result = ImGuiOverlayDx::fgCopyCommandList->Close();
-                    cl[0] = ImGuiOverlayDx::fgCopyCommandList;
-                }
-
-                // check for status
-                if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
-                    Config::Instance()->CurrentFeature == nullptr || ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || 
-                    ImGuiOverlayDx::fgCopyCommandQueue == nullptr || !ImGuiOverlayDx::fgIsActive)
-                {
-                    LOG_WARN("Cancel async dispatch");
-                    fgDispatchCalled = false;
-                    ImGuiOverlayDx::fgSkipHudlessChecks = false;
-                    return FFX_API_RETURN_OK;
-                }
-                else
-                {
-                    ImGuiOverlayDx::gameCommandQueue->ExecuteCommandLists(1, cl);
-                }
-
-                LOG_DEBUG("Callback _dispatch result: {0}", (UINT)result);
+                LOG_DEBUG("_dispatch result: {0}", (UINT)result);
 
                 fgDispatchCalled = false;
                 ImGuiOverlayDx::fgSkipHudlessChecks = false;
 
-                return result;
+                return dispatchResult;
             };
 
         m_FrameGenerationConfig.frameGenerationCallbackUserContext = &ImGuiOverlayDx::fgContext;
@@ -763,18 +722,23 @@ static bool CheckForHudless(ResourceInfo* resource, bool checkFormat = true)
     if (ImGuiOverlayDx::currentSwapchain == nullptr)
         return false;
 
-    //if (Config::Instance()->SCChanged)
-    //{
-    //    LOG_INFO("Config::Instance()->SCChanged");
+    DXGI_SWAP_CHAIN_DESC scDesc{};
+    if (ImGuiOverlayDx::currentSwapchain->GetDesc(&scDesc) != S_OK)
+    {
+        LOG_WARN("Can't get swapchain desc!");
+        return false;
+    }
 
-        if (ImGuiOverlayDx::currentSwapchain->GetDesc(&fgScDesc) != S_OK)
-        {
-            LOG_WARN("Can't get swapchain desc!");
-            return false;
-        }
+    if (scDesc.BufferDesc.Height != fgScDesc.BufferDesc.Height || scDesc.BufferDesc.Width != fgScDesc.BufferDesc.Width || scDesc.BufferDesc.Format != fgScDesc.BufferDesc.Format)
+    {
 
-    //    Config::Instance()->SCChanged = false;
-    //}
+        delete ImGuiOverlayDx::fgFormatTransfer;
+        ImGuiOverlayDx::fgFormatTransfer = nullptr;
+        ImGuiOverlayDx::fgFormatTransfer = new FT_Dx12("FormatTransfer", g_pd3dDeviceParam, scDesc.BufferDesc.Format);
+
+        ImGuiOverlayDx::swapchainFormat = scDesc.BufferDesc.Format;
+        fgScDesc = scDesc;
+    }
 
     if (resource->height == fgScDesc.BufferDesc.Height && resource->width == fgScDesc.BufferDesc.Width && (!checkFormat || resource->format == fgScDesc.BufferDesc.Format ||
         (Config::Instance()->FGHUDFixExtended.value_or(false) && ImGuiOverlayDx::fgFormatTransfer != nullptr &&
@@ -848,7 +812,7 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
     auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
     if (heap != nullptr)
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
-}
+    }
 
 static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pResource, D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
@@ -953,7 +917,7 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
 
     auto fIndex = fgFrameIndex;
 
-    if (This == g_pd3dCommandList || ImGuiOverlayDx::fgCopyCommandList == This || ImGuiOverlayDx::fgSkipHudlessChecks || 
+    if (This == g_pd3dCommandList || ImGuiOverlayDx::fgCopyCommandList == This || ImGuiOverlayDx::fgSkipHudlessChecks ||
         Config::Instance()->CurrentFeature == nullptr || !ImGuiOverlayDx::upscaleRan)
         return;
 
@@ -1731,6 +1695,12 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         if (Config::Instance()->CurrentFeature != nullptr)
             fgPresentedFrame = Config::Instance()->CurrentFeature->FrameCount();
 
+        if (fgStopAfterNextPresent)
+        {
+            ImGuiOverlayDx::StopAndDestroyFGContext(false, false);
+            fgStopAfterNextPresent = false;
+        }
+
         auto now = Util::MillisecondsNow();
 
         if (fgLastFrameTime != 0)
@@ -1934,6 +1904,12 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
     fgLastFrameTime = now;
 
+    if (fgStopAfterNextPresent)
+    {
+        ImGuiOverlayDx::StopAndDestroyFGContext(false, false);
+        fgStopAfterNextPresent = false;
+    }
+
     return presentResult;
 }
 
@@ -2072,7 +2048,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         createSwapChainDesc.gameQueue = (ID3D12CommandQueue*)pDevice;
         createSwapChainDesc.desc = pDesc;
         createSwapChainDesc.swapchain = (IDXGISwapChain4**)ppSwapChain;
-        
+
 
         fgSkipSCWrapping = true;
         Config::Instance()->dxgiSkipSpoofing = true;
@@ -3301,4 +3277,193 @@ void ImGuiOverlayDx::UnHookDx()
     DeatachAllHooks();
 
     _isInited = false;
+}
+
+void ImGuiOverlayDx::ReleaseFGObjects()
+{
+    for (size_t i = 0; i < 4; i++)
+    {
+        if (ImGuiOverlayDx::fgCopyCommandAllocators[i] != nullptr)
+        {
+            ImGuiOverlayDx::fgCopyCommandAllocators[i]->Release();
+            ImGuiOverlayDx::fgCopyCommandAllocators[i] = nullptr;
+        }
+    }
+
+    if (ImGuiOverlayDx::fgCopyCommandList != nullptr)
+    {
+        ImGuiOverlayDx::fgCopyCommandList->Release();
+        ImGuiOverlayDx::fgCopyCommandList = nullptr;
+    }
+
+    if (ImGuiOverlayDx::fgCopyCommandQueue != nullptr)
+    {
+        ImGuiOverlayDx::fgCopyCommandQueue->Release();
+        ImGuiOverlayDx::fgCopyCommandQueue = nullptr;
+    }
+
+    if (ImGuiOverlayDx::fgFormatTransfer != nullptr)
+    {
+        delete ImGuiOverlayDx::fgFormatTransfer;
+        ImGuiOverlayDx::fgFormatTransfer = nullptr;
+    }
+}
+
+void ImGuiOverlayDx::CreateFGObjects(ID3D12Device* InDevice)
+{
+    if (ImGuiOverlayDx::fgCopyCommandQueue != nullptr)
+        return;
+
+    do
+    {
+        HRESULT result;
+
+        for (size_t i = 0; i < 4; i++)
+        {
+            result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&ImGuiOverlayDx::fgCopyCommandAllocators[i]));
+            if (result != S_OK)
+            {
+                LOG_ERROR("CreateCommandAllocators[{0}]: {1:X}", i, (unsigned long)result);
+                break;
+            }
+            ImGuiOverlayDx::fgCopyCommandAllocators[i]->SetName(L"fgCopyCommandAllocator");
+        }
+
+        result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, ImGuiOverlayDx::fgCopyCommandAllocators[0], NULL, IID_PPV_ARGS(&ImGuiOverlayDx::fgCopyCommandList));
+        if (result != S_OK)
+        {
+            LOG_ERROR("CreateCommandList: {0:X}", (unsigned long)result);
+            break;
+        }
+        ImGuiOverlayDx::fgCopyCommandList->SetName(L"fgCopyCommandList");
+
+        result = ImGuiOverlayDx::fgCopyCommandList->Close();
+        if (result != S_OK)
+        {
+            LOG_ERROR("ImGuiOverlayDx::fgCopyCommandList->Close: {0:X}", (unsigned long)result);
+            break;
+        }
+
+        // Create a command queue for frame generation
+        D3D12_COMMAND_QUEUE_DESC copyQueueDesc = {};
+        copyQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+        copyQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+        copyQueueDesc.NodeMask = 0;
+
+        if (Config::Instance()->FGHighPriority.value_or(false))
+            copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
+        else
+            copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+
+        HRESULT hr = InDevice->CreateCommandQueue(&copyQueueDesc, IID_PPV_ARGS(&ImGuiOverlayDx::fgCopyCommandQueue));
+        if (result != S_OK)
+        {
+            LOG_ERROR("CreateCommandQueue: {0:X}", (unsigned long)result);
+            break;
+        }
+        ImGuiOverlayDx::fgCopyCommandQueue->SetName(L"fgCopyCommandQueue");
+
+        ImGuiOverlayDx::fgFormatTransfer = new FT_Dx12("FormatTransfer", InDevice, ImGuiOverlayDx::swapchainFormat);
+
+    } while (false);
+}
+
+void ImGuiOverlayDx::CreateFGContext(ID3D12Device* InDevice, IFeature* deviceContext)
+{
+    if (ImGuiOverlayDx::fgContext != nullptr)
+    {
+        ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
+        m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
+        m_FrameGenerationConfig.frameGenerationEnabled = true;
+        m_FrameGenerationConfig.swapChain = ImGuiOverlayDx::currentSwapchain;
+        //m_FrameGenerationConfig.presentCallback = nullptr;
+        m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
+
+        auto result = _configure(&ImGuiOverlayDx::fgContext, &m_FrameGenerationConfig.header);
+
+        ImGuiOverlayDx::fgIsActive = (result == FFX_API_RETURN_OK);
+
+        LOG_DEBUG("Reactivate");
+
+        return;
+    }
+
+    ffxCreateBackendDX12Desc backendDesc{};
+    backendDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_DX12;
+    backendDesc.device = InDevice;
+
+    ffxCreateContextDescFrameGeneration createFg{};
+    createFg.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATION;
+    createFg.displaySize = { deviceContext->DisplayWidth(), deviceContext->DisplayHeight() };
+    createFg.maxRenderSize = { deviceContext->DisplayWidth(), deviceContext->DisplayHeight() };
+    createFg.flags = 0;
+
+    if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR)
+        createFg.flags |= FFX_FRAMEGENERATION_ENABLE_HIGH_DYNAMIC_RANGE;
+
+    if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
+        createFg.flags |= FFX_FRAMEGENERATION_ENABLE_DEPTH_INVERTED;
+
+    if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVJittered)
+        createFg.flags |= FFX_FRAMEGENERATION_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
+
+    if ((deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0)
+        createFg.flags |= FFX_FRAMEGENERATION_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
+
+    if (Config::Instance()->FGAsync.value_or(false))
+        createFg.flags |= FFX_FRAMEGENERATION_ENABLE_ASYNC_WORKLOAD_SUPPORT;
+
+    createFg.backBufferFormat = ffxApiGetSurfaceFormatDX12(ImGuiOverlayDx::swapchainFormat);
+    createFg.header.pNext = &backendDesc.header;
+
+    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->SkipHeapCapture = true;
+    ffxReturnCode_t retCode = _createContext(&ImGuiOverlayDx::fgContext, &createFg.header, nullptr);
+    Config::Instance()->SkipHeapCapture = false;
+    Config::Instance()->dxgiSkipSpoofing = false;
+    LOG_INFO("_createContext result: {0:X}", retCode);
+
+    ImGuiOverlayDx::fgIsActive = (retCode == FFX_API_RETURN_OK);
+
+    LOG_DEBUG("Create");
+}
+
+void ImGuiOverlayDx::StopAndDestroyFGContext(bool destroy, bool shutDown)
+{
+    ImGuiOverlayDx::fgSkipHudlessChecks = false;
+    Config::Instance()->dxgiSkipSpoofing = true;
+
+    if (ImGuiOverlayDx::fgContext != nullptr)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+
+        ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
+        m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
+        m_FrameGenerationConfig.frameGenerationEnabled = false;
+        m_FrameGenerationConfig.swapChain = ImGuiOverlayDx::currentSwapchain;
+        m_FrameGenerationConfig.presentCallback = nullptr;
+        m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
+
+        auto result = _configure(&ImGuiOverlayDx::fgContext, &m_FrameGenerationConfig.header);
+
+        ImGuiOverlayDx::fgIsActive = false;
+
+        if (!shutDown)
+            LOG_INFO("    FG _configure result: {0:X}", result);
+    }
+
+    if (destroy && ImGuiOverlayDx::fgContext != nullptr)
+    {
+        auto result = _destroyContext(&ImGuiOverlayDx::fgContext, nullptr);
+
+        if (!shutDown)
+            LOG_INFO("    FG _destroyContext result: {0:X}", result);
+
+        ImGuiOverlayDx::fgContext = nullptr;
+    }
+
+    Config::Instance()->dxgiSkipSpoofing = false;
+
+    if (shutDown)
+        ReleaseFGObjects();
 }

@@ -122,14 +122,15 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
     std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
-    if (ClearTrig != nullptr)
-        ClearTrig(true, Handle);
-
     if (Config::Instance()->CurrentFeature != nullptr)
         Config::Instance()->FGChanged = true;
 
-    if (BufferCount != 0 || desc.BufferDesc.Width != Width || desc.BufferDesc.Height != Height || desc.BufferDesc.Format != NewFormat)
+    // recreate buffers only when needed
+    if (desc.BufferDesc.Width != Width || desc.BufferDesc.Height != Height || desc.BufferDesc.Format != NewFormat)
     {
+        if (ClearTrig != nullptr)
+            ClearTrig(true, Handle);
+
         Config::Instance()->SCChanged = true;
     }
     
@@ -157,16 +158,22 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
                                                const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
     LOG_FUNC();
+    DXGI_SWAP_CHAIN_DESC desc{};
+    GetDesc(&desc);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(150));
-
-    if (ClearTrig != nullptr)
-        ClearTrig(true, Handle);
 
     if (Config::Instance()->CurrentFeature != nullptr)
         Config::Instance()->FGChanged = true;
 
-    Config::Instance()->SCChanged = true;
+    // recreate buffers only when needed
+    if (desc.BufferDesc.Width != Width || desc.BufferDesc.Height != Height || desc.BufferDesc.Format != Format)
+    {
+        if (ClearTrig != nullptr)
+            ClearTrig(true, Handle);
+
+        Config::Instance()->SCChanged = true;
+    }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
