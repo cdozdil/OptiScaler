@@ -142,7 +142,7 @@ public:
         if (_dll != nullptr && _xessD3D12CreateContext != nullptr)
             return true;
 
-        LOG_FUNC();
+        spdlog::info("");
 
         Config::Instance()->upscalerDisableHook = true;
         Config::Instance()->dxgiSkipSpoofing = true;
@@ -339,7 +339,11 @@ public:
         Config::Instance()->dxgiSkipSpoofing = false;
         Config::Instance()->upscalerDisableHook = false;
 
-        return _xessD3D12CreateContext != nullptr;
+        bool loadResult = _xessD3D12CreateContext != nullptr;
+
+        LOG_INFO("LoadResult: {}", loadResult);
+
+        return loadResult;
     }
 
     static xess_version_t Version()

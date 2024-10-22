@@ -1321,21 +1321,21 @@ struct dxgi_dll
 
         dxgiDeclareAdapterRemovalSupport = GetProcAddress(module, "DXGIDeclareAdapterRemovalSupport");
         dxgiGetDebugInterface = GetProcAddress(module, "DXGIGetDebugInterface1");
-        dxgiApplyCompatResolutionQuirking = GetProcAddress(module, "ApplyCompatResolutionQuirking");
-        dxgiCompatString = GetProcAddress(module, "CompatString");
-        dxgiCompatValue = GetProcAddress(module, "CompatValue");
-        dxgiD3D10CreateDevice = GetProcAddress(module, "DXGID3D10CreateDevice");
-        dxgiD3D10CreateLayeredDevice = GetProcAddress(module, "DXGID3D10CreateLayeredDevice");
-        dxgiD3D10GetLayeredDeviceSize = GetProcAddress(module, "DXGID3D10GetLayeredDeviceSize");
-        dxgiD3D10RegisterLayers = GetProcAddress(module, "DXGID3D10RegisterLayers");
-        dxgiD3D10ETWRundown = GetProcAddress(module, "DXGID3D10ETWRundown");
-        dxgiDumpJournal = GetProcAddress(module, "DXGIDumpJournal");
-        dxgiReportAdapterConfiguration = GetProcAddress(module, "DXGIReportAdapterConfiguration");
-        dxgiPIXBeginCapture = GetProcAddress(module, "PIXBeginCapture");
-        dxgiPIXEndCapture = GetProcAddress(module, "PIXEndCapture");
-        dxgiPIXGetCaptureState = GetProcAddress(module, "PIXGetCaptureState");
-        dxgiSetAppCompatStringPointer = GetProcAddress(module, "SetAppCompatStringPointer");
-        dxgiUpdateHMDEmulationStatus = GetProcAddress(module, "UpdateHMDEmulationStatus");
+        //dxgiApplyCompatResolutionQuirking = GetProcAddress(module, "ApplyCompatResolutionQuirking");
+        //dxgiCompatString = GetProcAddress(module, "CompatString");
+        //dxgiCompatValue = GetProcAddress(module, "CompatValue");
+        //dxgiD3D10CreateDevice = GetProcAddress(module, "DXGID3D10CreateDevice");
+        //dxgiD3D10CreateLayeredDevice = GetProcAddress(module, "DXGID3D10CreateLayeredDevice");
+        //dxgiD3D10GetLayeredDeviceSize = GetProcAddress(module, "DXGID3D10GetLayeredDeviceSize");
+        //dxgiD3D10RegisterLayers = GetProcAddress(module, "DXGID3D10RegisterLayers");
+        //dxgiD3D10ETWRundown = GetProcAddress(module, "DXGID3D10ETWRundown");
+        //dxgiDumpJournal = GetProcAddress(module, "DXGIDumpJournal");
+        //dxgiReportAdapterConfiguration = GetProcAddress(module, "DXGIReportAdapterConfiguration");
+        //dxgiPIXBeginCapture = GetProcAddress(module, "PIXBeginCapture");
+        //dxgiPIXEndCapture = GetProcAddress(module, "PIXEndCapture");
+        //dxgiPIXGetCaptureState = GetProcAddress(module, "PIXGetCaptureState");
+        //dxgiSetAppCompatStringPointer = GetProcAddress(module, "SetAppCompatStringPointer");
+        //dxgiUpdateHMDEmulationStatus = GetProcAddress(module, "UpdateHMDEmulationStatus");
         skipGetModuleHandle = false;
     }
 } dxgi;
@@ -1350,7 +1350,7 @@ bool SkipSpoofing()
 
     if (skip)
         LOG_TRACE("DxgiSpoofing: {}, dxgiSkipSpoofing: {}, skipping spoofing", 
-                  !Config::Instance()->DxgiSpoofing.value_or(true), Config::Instance()->dxgiSkipSpoofing);
+                  Config::Instance()->DxgiSpoofing.value_or(true), Config::Instance()->dxgiSkipSpoofing);
 
     if (!skip && Config::Instance()->DxgiBlacklist.has_value())
     {
@@ -1633,95 +1633,95 @@ void _DXGIGetDebugInterface1()
     dxgi.dxgiGetDebugInterface();
 }
 
-void _ApplyCompatResolutionQuirking()
-{
-    LOG_FUNC();
-    dxgi.dxgiApplyCompatResolutionQuirking();
-}
-
-void _CompatString()
-{
-    LOG_FUNC();
-    dxgi.dxgiCompatString();
-}
-
-void _CompatValue()
-{
-    LOG_FUNC();
-    dxgi.dxgiCompatValue();
-}
-
-void _DXGID3D10CreateDevice()
-{
-    LOG_FUNC();
-    dxgi.dxgiD3D10CreateDevice();
-}
-
-void _DXGID3D10CreateLayeredDevice()
-{
-    LOG_FUNC();
-    dxgi.dxgiD3D10CreateLayeredDevice();
-}
-
-void _DXGID3D10GetLayeredDeviceSize()
-{
-    LOG_FUNC();
-    dxgi.dxgiD3D10GetLayeredDeviceSize();
-}
-
-void _DXGID3D10RegisterLayers()
-{
-    LOG_FUNC();
-    dxgi.dxgiD3D10RegisterLayers();
-}
-
-void _DXGID3D10ETWRundown()
-{
-    LOG_FUNC();
-    dxgi.dxgiD3D10ETWRundown();
-}
-
-void _DXGIDumpJournal()
-{
-    LOG_FUNC();
-    dxgi.dxgiDumpJournal();
-}
-
-void _DXGIReportAdapterConfiguration()
-{
-    LOG_FUNC();
-    dxgi.dxgiReportAdapterConfiguration();
-}
-
-void _PIXBeginCapture()
-{
-    LOG_FUNC();
-    dxgi.dxgiPIXBeginCapture();
-}
-
-void _PIXEndCapture()
-{
-    LOG_FUNC();
-    dxgi.dxgiPIXEndCapture();
-}
-
-void _PIXGetCaptureState()
-{
-    LOG_FUNC();
-    dxgi.dxgiPIXGetCaptureState();
-}
-
-void _SetAppCompatStringPointer()
-{
-    LOG_FUNC();
-    dxgi.dxgiSetAppCompatStringPointer();
-}
-
-void _UpdateHMDEmulationStatus()
-{
-    LOG_FUNC();
-    dxgi.dxgiUpdateHMDEmulationStatus();
-}
+//void _ApplyCompatResolutionQuirking()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiApplyCompatResolutionQuirking();
+//}
+//
+//void _CompatString()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiCompatString();
+//}
+//
+//void _CompatValue()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiCompatValue();
+//}
+//
+//void _DXGID3D10CreateDevice()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiD3D10CreateDevice();
+//}
+//
+//void _DXGID3D10CreateLayeredDevice()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiD3D10CreateLayeredDevice();
+//}
+//
+//void _DXGID3D10GetLayeredDeviceSize()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiD3D10GetLayeredDeviceSize();
+//}
+//
+//void _DXGID3D10RegisterLayers()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiD3D10RegisterLayers();
+//}
+//
+//void _DXGID3D10ETWRundown()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiD3D10ETWRundown();
+//}
+//
+//void _DXGIDumpJournal()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiDumpJournal();
+//}
+//
+//void _DXGIReportAdapterConfiguration()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiReportAdapterConfiguration();
+//}
+//
+//void _PIXBeginCapture()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiPIXBeginCapture();
+//}
+//
+//void _PIXEndCapture()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiPIXEndCapture();
+//}
+//
+//void _PIXGetCaptureState()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiPIXGetCaptureState();
+//}
+//
+//void _SetAppCompatStringPointer()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiSetAppCompatStringPointer();
+//}
+//
+//void _UpdateHMDEmulationStatus()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiUpdateHMDEmulationStatus();
+//}
 
 #pragma endregion
 
@@ -1746,7 +1746,7 @@ void AttachToAdapter(IUnknown* unkAdapter)
     }
 
     if(Config::Instance()->IsRunningOnDXVK != dxvkStatus)
-        LOG_INFO("IDXGIVkInteropDevice interface {0}", Config::Instance()->IsRunningOnDXVK ? "found" : "not found");
+        LOG_INFO("IDXGIVkInteropDevice interface (DXVK) {0}", Config::Instance()->IsRunningOnDXVK ? "detected" : "not detected");
 
     if (ptrGetDesc == nullptr && adapterOk)
     {

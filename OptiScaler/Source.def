@@ -3,15 +3,8 @@ EXPORTS
 CreateDXGIFactory = _CreateDXGIFactory @9
 CreateDXGIFactory1 = _CreateDXGIFactory1 @10
 CreateDXGIFactory2 = _CreateDXGIFactory2 @11
-DXGID3D10CreateDevice = _DXGID3D10CreateDevice 
-DXGID3D10CreateLayeredDevice = _DXGID3D10CreateLayeredDevice 
-DXGID3D10GetLayeredDeviceSize = _DXGID3D10GetLayeredDeviceSize 
-DXGID3D10ETWRundown = _DXGID3D10ETWRundown 
-DXGID3D10RegisterLayers = _DXGID3D10RegisterLayers 
-DXGIDumpJournal = _DXGIDumpJournal 
 DXGIDeclareAdapterRemovalSupport = _DXGIDeclareAdapterRemovalSupport @16
 DXGIGetDebugInterface1 = _DXGIGetDebugInterface1 @17
-DXGIReportAdapterConfiguration = _DXGIReportAdapterConfiguration 
 
 LIBRARY "wininet"
 EXPORTS

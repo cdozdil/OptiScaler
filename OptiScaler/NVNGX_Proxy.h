@@ -378,6 +378,7 @@ public:
         if (_dll != nullptr)
             return;
 
+        LOG_INFO("");
         LOG_FUNC();
 
         Config::Instance()->upscalerDisableHook = true;

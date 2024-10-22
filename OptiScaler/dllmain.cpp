@@ -12,10 +12,10 @@
 
 #include <vulkan/vulkan_core.h>
 
-// #define HOOK_GET_MODULE
+#define HOOK_GET_MODULE
 
 #ifdef HOOK_GET_MODULE
-#define GET_MODULE_NVNGX
+//#define GET_MODULE_NVNGX
 #define GET_MODULE_DLL
 #endif
 
@@ -390,21 +390,13 @@ static HMODULE hkGetModuleHandleA(LPCSTR lpModuleName)
 
 #ifdef GET_MODULE_DLL
 
-        //// Opti dll
-        pos = lcaseLibName.rfind(dllNameA);
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
+        // Opti 
+        if (CheckDllName(&lcaseLibName, &dllNames))
         {
             LOG_INFO("{0} call, returning this dll!", libName);
             return dllModule;
         }
 
-        // Opti 
-        pos = lcaseLibName.rfind(dllNameExA);
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExA.size()))
-        {
-            LOG_INFO("{0} call, returning this dll!", libName);
-            return dllModule;
-        }
 #endif
     }
 
@@ -448,17 +440,8 @@ static HMODULE hkGetModuleHandleW(LPCWSTR lpModuleName)
 
 #ifdef GET_MODULE_DLL
 
-        //// Opti dll
-        pos = lcaseLibName.rfind(dllNameW);
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
-        {
-            LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
-            return dllModule;
-        }
-
         // Opti 
-        pos = lcaseLibName.rfind(dllNameExW);
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExW.size()))
+        if (CheckDllNameW(&lcaseLibName, &dllNamesW))
         {
             LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
             return dllModule;
@@ -508,23 +491,14 @@ static BOOL hkGetModuleHandleExA(DWORD dwFlags, LPCSTR lpModuleName, HMODULE* ph
 
 #ifdef GET_MODULE_DLL
 
-        //// Opti dll
-        pos = lcaseLibName.rfind(dllNameA);
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameA.size()))
+        // Opti 
+        if (CheckDllName(&lcaseLibName, &dllNames))
         {
             LOG_INFO("{0} call, returning this dll!", libName);
             *phModule = dllModule;
             return TRUE;
         }
 
-        // Opti 
-        pos = lcaseLibName.rfind(dllNameExA);
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExA.size()))
-        {
-            LOG_INFO("{0} call, returning this dll!", libName);
-            *phModule = dllModule;
-            return TRUE;
-        }
 
 #endif
 
@@ -573,23 +547,14 @@ static BOOL hkGetModuleHandleExW(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE* p
 
 #ifdef GET_MODULE_DLL
 
-        //// Opti dll
-        pos = lcaseLibName.rfind(dllNameW);
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameW.size()))
+        // Opti 
+        if (CheckDllNameW(&lcaseLibName, &dllNamesW))
         {
             LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
             *phModule = dllModule;
             return TRUE;
         }
 
-        // Opti 
-        pos = lcaseLibName.rfind(dllNameExW);
-        if (pos != std::string::npos && pos == (lcaseLibName.size() - dllNameExW.size()))
-        {
-            LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
-            *phModule = dllModule;
-            return TRUE;
-        }
 
 #endif
     }
@@ -1560,7 +1525,6 @@ static void CheckWorkingMode()
                 dllNamesW.push_back(L"dxgi.dll");
                 dllNamesW.push_back(L"dxgi");
 
-                shared.LoadOriginalLibrary(dll);
                 dxgi.LoadOriginalLibrary(dll);
 
                 Config::Instance()->IsDxgiMode = true;
@@ -1667,6 +1631,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             // Check for Wine
             skipGetModuleHandle = true;
+            spdlog::info("");
             Config::Instance()->IsRunningOnLinux = IsRunningOnWine();
             skipGetModuleHandle = false;
 
@@ -1702,12 +1667,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 }
             }
 
-            //NVNGXLocalProxy::InitNVNGX();
-            //if (NVNGXLocalProxy::NVNGXModule() == nullptr)
-            //    LOG_WARN("Can't init local NVNGX!");
-
+            // Init XeSS proxy
             if (!XeSSProxy::InitXeSS())
-                LOG_WARN("Can't init XeSS!");
+                spdlog::warn("Can't init XeSS!");
 
             // Check for working mode and attach hooks
             spdlog::info("");
@@ -1720,6 +1682,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 Config::Instance()->upscaleTimes.push_back(0.0);
             }
 
+            spdlog::info("Init done");
+            spdlog::info("---------------------------------------------");
+            spdlog::info("");
+
             break;
 
         case DLL_PROCESS_DETACH:
@@ -1730,22 +1696,19 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             //if (skHandle != nullptr)
             //    FreeLibrary(skHandle);
 
-            //spdlog::info("");
+            spdlog::info("");
+            spdlog::info("DLL_PROCESS_DETACH");
             //spdlog::info("Unloading OptiScaler");
             //CloseLogger();
 
             break;
 
         case DLL_THREAD_ATTACH:
-#ifdef _DEBUG
-            // LOG_TRACE("DllMain DLL_THREAD_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
-#endif
+            LOG_TRACE("DLL_THREAD_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
             break;
 
         case DLL_THREAD_DETACH:
-#ifdef _DEBUG
-            // LOG_TRACE("DLL_THREAD_DETACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
-#endif
+            LOG_TRACE("DLL_THREAD_DETACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
             break;
 
         default:
