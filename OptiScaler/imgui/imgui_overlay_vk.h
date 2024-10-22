@@ -5,10 +5,7 @@
 
 namespace ImGuiOverlayVk
 {
-	inline VkQueryPool queryPool = VK_NULL_HANDLE;
-	inline double timeStampPeriod = 1.0;
-	inline bool vkUpscaleTrig = false;
-
-	void HookVk();
-	void UnHookVk();
+    void CreateSwapchain(VkDevice device, VkPhysicalDevice pd, VkInstance instance, HWND hwnd, const VkSwapchainCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain);
+    bool QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo);
+    void DestroyVulkanObjects(bool shutdown);
 }

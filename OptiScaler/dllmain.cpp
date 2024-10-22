@@ -7,8 +7,8 @@
 #include "NVNGX_Proxy.h"
 #include "XeSS_Proxy.h"
 
-#include "imgui/imgui_overlay_dx.h"
-#include "imgui/imgui_overlay_vk.h"
+#include "hooks/HooksDx.h"
+#include "hooks/HooksVk.h"
 
 #include <vulkan/vulkan_core.h>
 
@@ -959,8 +959,8 @@ static void DetachHooks()
 {
     if (!isNvngxMode)
     {
-        ImGuiOverlayDx::UnHookDx();
-        ImGuiOverlayVk::UnHookVk();
+        HooksDx::UnHookDx();
+        HooksVk::UnHookVk();
     }
 
     if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
@@ -1578,8 +1578,8 @@ static void CheckWorkingMode()
         Config::Instance()->OverlayMenu = (!isNvngxMode || isWorkingWithEnabler) && Config::Instance()->OverlayMenu.value_or(true);
         if (Config::Instance()->OverlayMenu.value())
         {
-            ImGuiOverlayDx::HookDx();
-            ImGuiOverlayVk::HookVk();
+            HooksDx::HookDx();
+            HooksVk::HookVk();
         }
 
         return;

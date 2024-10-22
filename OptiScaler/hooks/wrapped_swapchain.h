@@ -1,7 +1,6 @@
 //#pragma once
 #include "../pch.h"
 #include "dxgi1_6.h"
-#include "imgui_overlay_base.h"
 
 typedef HRESULT(*PFN_SC_Present)(IDXGISwapChain*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*, IUnknown*, HWND);
 typedef void(*PFN_SC_Clean)(bool, HWND);

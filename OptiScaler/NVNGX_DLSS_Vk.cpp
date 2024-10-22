@@ -13,7 +13,7 @@
 #include "backends/fsr2_212/FSR2Feature_Vk_212.h"
 #include "backends/fsr31/FSR31Feature_Vk.h"
 
-#include "imgui/imgui_overlay_vk.h"
+#include "hooks/HooksVk.h"
 
 #include "NVNGX_Parameter.h"
 #include "NVNGX_Proxy.h"
@@ -164,11 +164,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InA
     queryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
     queryPoolInfo.queryCount = 2; // Start and End timestamps
 
-    vkCreateQueryPool(InDevice, &queryPoolInfo, nullptr, &ImGuiOverlayVk::queryPool);
+    vkCreateQueryPool(InDevice, &queryPoolInfo, nullptr, &HooksVk::queryPool);
 
     VkPhysicalDeviceProperties deviceProperties;
     vkGetPhysicalDeviceProperties(InPD, &deviceProperties);
-    ImGuiOverlayVk::timeStampPeriod = deviceProperties.limits.timestampPeriod;
+    HooksVk::timeStampPeriod = deviceProperties.limits.timestampPeriod;
 
     return NVSDK_NGX_Result_Success;
 }
@@ -961,13 +961,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     Config::Instance()->RenderMenu = true;
 
     // Record the first timestamp (before FSR2)
-    vkCmdWriteTimestamp(InCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ImGuiOverlayVk::queryPool, 0);
+    vkCmdWriteTimestamp(InCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, HooksVk::queryPool, 0);
 
     auto upscaleResult = deviceContext->Evaluate(InCmdBuffer, InParameters);
 
     // Record the second timestamp (after FSR2)
-    vkCmdWriteTimestamp(InCmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, ImGuiOverlayVk::queryPool, 1);
-    ImGuiOverlayVk::vkUpscaleTrig = true;
+    vkCmdWriteTimestamp(InCmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, HooksVk::queryPool, 1);
+    HooksVk::vkUpscaleTrig = true;
 
     return upscaleResult ? NVSDK_NGX_Result_Success : NVSDK_NGX_Result_Fail;
 }

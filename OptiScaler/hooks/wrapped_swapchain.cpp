@@ -1,5 +1,5 @@
 #include "wrapped_swapchain.h"
-#include <d3d11_4.h>
+
 #include "../Config.h"
 #include "../Util.h"
 
