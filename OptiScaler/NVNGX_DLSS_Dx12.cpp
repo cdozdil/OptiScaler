@@ -35,6 +35,7 @@ static PfnFfxConfigure _configure = nullptr;
 static PfnFfxQuery _query = nullptr;
 static PfnFfxDispatch _dispatch = nullptr;
 static UINT64 fgLastFrameTime = 0;
+static UINT64 fgLastFGFrame = 0;
 
 static ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
 static ID3D12Device* D3D12Device = nullptr;
@@ -1315,7 +1316,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             Config::Instance()->FGChanged = false;
         }
     }
-    
+
     Config::Instance()->SCChanged = false;
 
     // Record the first timestamp (before FSR2 upscaling)
@@ -1389,7 +1390,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             if (fgLastFrameTime != 0)
             {
                 msDelta = now - fgLastFrameTime;
-                LOG_DEBUG("    FG msDelta: {0}", msDelta);
+                LOG_DEBUG("FG msDelta: {0}", msDelta);
             }
 
             fgLastFrameTime = now;
@@ -1407,7 +1408,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
             if (!Config::Instance()->FGHUDFix.value_or(false) || ImGuiOverlayDx::fgTarget > deviceContext->FrameCount())
             {
-                LOG_DEBUG("    FG running, frame: {0}", deviceContext->FrameCount());
+                LOG_DEBUG("FG running, frame: {0}", deviceContext->FrameCount());
 
                 // Update frame generation config
                 auto desc = output->GetDesc();
@@ -1416,7 +1417,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 if (desc.Format == ImGuiOverlayDx::swapchainFormat)
                 {
-                    LOG_DEBUG("    FG desc.Format == ImGuiOverlayDx::swapchainFormat, using hudless!");
+                    LOG_DEBUG("FG desc.Format == ImGuiOverlayDx::swapchainFormat, using hudless!");
                     m_FrameGenerationConfig.HUDLessColor = ffxApiGetResourceDX12(output, FFX_API_RESOURCE_STATE_UNORDERED_ACCESS, 0);
                 }
                 else
@@ -1442,61 +1443,37 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 m_FrameGenerationConfig.frameGenerationCallback = [](ffxDispatchDescFrameGeneration* params, void* pUserCtx) -> ffxReturnCode_t
                     {
 #ifdef USE_COPY_QUEUE_FOR_FG
-                        HRESULT result;
                         auto fIndex = ImGuiOverlayDx::GetFrame();
 
                         // check for status
-                        if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged || Config::Instance()->CurrentFeature == nullptr ||
-                            ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                        if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged ||
+                            ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr ||
+                            ImGuiOverlayDx::fgCopyCommandQueue == nullptr || !ImGuiOverlayDx::fgIsActive)
                         {
                             LOG_WARN("Cancel async dispatch");
                             ImGuiOverlayDx::fgSkipHudlessChecks = false;
                             return FFX_API_RETURN_OK;
                         }
 
-                        // check for status
-                        if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged || Config::Instance()->CurrentFeature == nullptr ||
-                            ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
+                        // If fg is active but upscaling paused
+                        if (Config::Instance()->CurrentFeature == nullptr || fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount())
                         {
-                            LOG_WARN("Cancel async dispatch");
-                            ImGuiOverlayDx::fgSkipHudlessChecks = false;
-                            return FFX_API_RETURN_OK;
+                            LOG_WARN("Callback without hudless!");
+
+                            auto allocator = ImGuiOverlayDx::fgCopyCommandAllocators[fIndex];
+                            auto result = allocator->Reset();
+                            result = ImGuiOverlayDx::fgCopyCommandList->Reset(allocator, nullptr);
                         }
-                        else
-                        {
-                            result = _dispatch(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
-                        }
+
+                        if (Config::Instance()->CurrentFeature != nullptr)
+                            fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
+
+                        auto result = _dispatch(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
 
                         ID3D12CommandList* cl[1] = { nullptr };
-
-                        // check for status
-                        if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged || Config::Instance()->CurrentFeature == nullptr ||
-                            ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
-                        {
-                            LOG_WARN("Cancel async dispatch");
-                            ImGuiOverlayDx::fgSkipHudlessChecks = false;
-                            return FFX_API_RETURN_OK;
-                        }
-                        else
-                        {
-                            result = ImGuiOverlayDx::fgCopyCommandList->Close();
-                            cl[0] = ImGuiOverlayDx::fgCopyCommandList;
-                        }
-
-                        // check for status
-                        if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged || Config::Instance()->CurrentFeature == nullptr ||
-                            ImGuiOverlayDx::fgContext == nullptr || ImGuiOverlayDx::fgCopyCommandList == nullptr || ImGuiOverlayDx::fgCopyCommandQueue == nullptr)
-                        {
-                            LOG_WARN("Cancel async dispatch");
-                            ImGuiOverlayDx::fgSkipHudlessChecks = false;
-                            return FFX_API_RETURN_OK;
-                        }
-                        else
-                        {
-                            ImGuiOverlayDx::gameCommandQueue->ExecuteCommandLists(1, cl);
-                        }
-
-                        LOG_DEBUG("Callback _dispatch result: {0}", (UINT)result);
+                        result = ImGuiOverlayDx::fgCopyCommandList->Close();
+                        cl[0] = ImGuiOverlayDx::fgCopyCommandList;
+                        ImGuiOverlayDx::gameCommandQueue->ExecuteCommandLists(1, cl);
 
                         return result;
 #else
@@ -1617,9 +1594,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             }
             else
             {
+                ImGuiOverlayDx::upscaleRan = true;
+
                 LOG_DEBUG("Set fgUpscaledImage[{}]", frameIndex);
 
-                LOG_DEBUG("    FG HUDFix running, frame: {0}", deviceContext->FrameCount());
+                LOG_DEBUG("HUDFix copy buffers running, frame: {0}", deviceContext->FrameCount());
                 InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &ImGuiOverlayDx::jitterX);
                 InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &ImGuiOverlayDx::jitterY);
 
@@ -1641,9 +1620,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &ImGuiOverlayDx::mvScaleY);
 
                 ImGuiOverlayDx::fgFrameTime = msDelta;
-                ImGuiOverlayDx::upscaleRan = true;
 
-                LOG_DEBUG("    FG HUDFix done, frame: {0}", deviceContext->FrameCount());
+                LOG_DEBUG("HUDFix copy buffers done, frame: {0}", deviceContext->FrameCount());
             }
         }
 

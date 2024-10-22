@@ -337,9 +337,9 @@ LRESULT __stdcall ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
             _ssRatio = 0;
 
             if (GetWindowRect(_handle, &_cursorLimit))
-            	pfn_ClipCursor(&_cursorLimit);
+                pfn_ClipCursor(&_cursorLimit);
             else
-            	pfn_ClipCursor(nullptr);
+                pfn_ClipCursor(nullptr);
         }
 
         //RECT windowRect = {};
@@ -878,7 +878,7 @@ void ImGuiCommon::RenderMenu()
                     // DYNAMIC PROPERTIES -----------------------------
 
                     // Frame Generation
-                    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) && 
+                    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
                         Config::Instance()->Api == NVNGX_DX12 && !Config::Instance()->WorkingAsNvngx)
                     {
                         ImGui::SeparatorText("Frame Generation (Dx12)");
@@ -901,13 +901,7 @@ void ImGuiCommon::RenderMenu()
                         if (ImGui::Checkbox("FG HUD Fix", &fgHudfix))
                         {
                             Config::Instance()->FGHUDFix = fgHudfix;
-
-                            if (Config::Instance()->FGEnabled.value_or(false))
-                            {
-                                Config::Instance()->FGChanged = true;
-                                LOG_DEBUG_ONLY("HUDFix set FGChanged");
-                            }
-
+                            Config::Instance()->FGChanged = true;
                         }
                         ShowHelpMarker("Enable HUD stability fix, might cause crashes!");
 
@@ -926,7 +920,7 @@ void ImGuiCommon::RenderMenu()
                             Config::Instance()->FGHUDLimit = hudFixLimit;
                         }
                         ShowHelpMarker("Delay HUDless capture, high values might cause crash!");
-                         
+
                         ImGui::SameLine(0.0f, 16.0f);
                         auto hudExtended = Config::Instance()->FGHUDFixExtended.value_or(false);
                         if (ImGui::Checkbox("Extended", &hudExtended))
@@ -1851,8 +1845,8 @@ void ImGuiCommon::RenderMenu()
                             }
 
                             ShowHelpMarker("Use generic appid with NGX\n"
-                                "Fixes OptiScaler preset override not working with certain games\n"
-                                "Requires a game restart.");
+                                           "Fixes OptiScaler preset override not working with certain games\n"
+                                           "Requires a game restart.");
                         }
                     }
                 }

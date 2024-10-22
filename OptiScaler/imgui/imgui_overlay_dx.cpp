@@ -21,7 +21,7 @@
 
 // #define USE_RESOURCE_DISCARD
 // #define USE_COPY_RESOURCE
-// #define USE_RESOURCE_BARRIRER
+#define USE_RESOURCE_BARRIRER
 
 enum ResourceType
 {
@@ -364,7 +364,7 @@ static bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSourc
 
     if (hr != S_OK)
     {
-        LOG_ERROR("    FG GetHeapProperties result: {0:X}", (UINT64)hr);
+        LOG_ERROR("GetHeapProperties result: {0:X}", (UINT64)hr);
         return false;
     }
 
@@ -374,7 +374,7 @@ static bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSourc
 
     if (hr != S_OK)
     {
-        LOG_ERROR("    FG CreateCommittedResource result: {0:X}", (UINT64)hr);
+        LOG_ERROR("CreateCommittedResource result: {0:X}", (UINT64)hr);
         return false;
     }
 
@@ -477,7 +477,7 @@ static void FillResourceInfo(ID3D12Resource* resource, ResourceInfo* info)
     info->format = desc.Format;
 }
 
-static void GetHudless(ID3D12GraphicsCommandList* This, bool SkipCopy) //, D3D12_RESOURCE_STATES State)
+static void GetHudless(ID3D12GraphicsCommandList* This)
 {
     auto fIndex = fgFrameIndex;
     if (This != g_pd3dCommandList && fgCopySource[fIndex] != nullptr && Config::Instance()->CurrentFeature != nullptr &&
@@ -492,33 +492,6 @@ static void GetHudless(ID3D12GraphicsCommandList* This, bool SkipCopy) //, D3D12
         auto frame = fgHudlessFrame;
 
         LOG_DEBUG("running, frame: {0}", frame);
-
-#ifdef USE_RESOURCE_BARRIRER
-        // Not sure about source state, skipping for now
-        D3D12_RESOURCE_BARRIER barrier = {};
-        barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        barrier.Transition.pResource = bufferInfo->copySource;
-        barrier.Transition.StateBefore = State;
-        barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
-        barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-        This->ResourceBarrier(1, &barrier);
-#endif 
-
-        if (!SkipCopy)
-        {
-            // Take hudless copy
-            if (CreateBufferResource(g_pd3dDeviceParam, fgCopySource[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, &fgHudless[fIndex]))
-                This->CopyResource(fgHudless[fIndex], fgCopySource[fIndex]);
-            else
-                return;
-        }
-
-#ifdef USE_RESOURCE_BARRIRER
-        // Not sure about source state, skipping for now
-        barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
-        barrier.Transition.StateAfter = State;
-        This->ResourceBarrier(1, &barrier);
-#endif 
 
         // switch dlss targets for next depth and mv 
         ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
@@ -560,11 +533,14 @@ static void GetHudless(ID3D12GraphicsCommandList* This, bool SkipCopy) //, D3D12
                 // If fg is active but upscaling paused
                 if (!fgDispatchCalled || Config::Instance()->CurrentFeature == nullptr || fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount())
                 {
-                    LOG_WARN("Callback without hudless!");
+                    LOG_WARN("Callback without hudless! frameID: {}", params->frameID);
 
                     auto allocator = ImGuiOverlayDx::fgCopyCommandAllocators[fIndex];
                     result = allocator->Reset();
                     result = ImGuiOverlayDx::fgCopyCommandList->Reset(allocator, nullptr);
+
+                    params->frameID = fgLastFGFrame;
+                    params->numGeneratedFrames = 0;
                 }
 
                 if (Config::Instance()->CurrentFeature != nullptr)
@@ -683,6 +659,8 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
     fgUpscaledFound = false;
     fgCopySource[fIndex] = resource->buffer;
 
+    LOG_TRACE("Capture resource: {0:X}", (size_t)resource->buffer);
+
     if (resource->format != ImGuiOverlayDx::swapchainFormat && Config::Instance()->FGHUDFixExtended.value_or(false) && ImGuiOverlayDx::fgFormatTransfer != nullptr &&
         (resource->format == DXGI_FORMAT_R16G16B16A16_FLOAT || resource->format == DXGI_FORMAT_R11G11B10_FLOAT || resource->format == DXGI_FORMAT_R32G32B32A32_FLOAT || resource->format == DXGI_FORMAT_R32G32B32_FLOAT) &&
         (ImGuiOverlayDx::swapchainFormat == DXGI_FORMAT_R8G8B8A8_UNORM || ImGuiOverlayDx::swapchainFormat == DXGI_FORMAT_B8G8R8A8_UNORM || ImGuiOverlayDx::swapchainFormat == DXGI_FORMAT_R10G10B10A2_UNORM))
@@ -690,31 +668,45 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
         if (ImGuiOverlayDx::fgFormatTransfer->CreateBufferResource(g_pd3dDeviceParam, resource->buffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) &&
             CreateBufferResource(g_pd3dDeviceParam, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, &fgHudlessBuffer[fIndex]))
         {
+#ifdef USE_RESOURCE_BARRIRER
             ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
             ResourceBarrier(cmdList, fgHudlessBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+#endif
+
             cmdList->CopyResource(fgHudlessBuffer[fIndex], resource->buffer);
+#ifdef USE_RESOURCE_BARRIRER
             ResourceBarrier(cmdList, fgHudlessBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
+#endif
 
             ImGuiOverlayDx::fgFormatTransfer->SetBufferState(ImGuiOverlayDx::fgCopyCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             ImGuiOverlayDx::fgFormatTransfer->Dispatch(g_pd3dDeviceParam, ImGuiOverlayDx::fgCopyCommandList, fgHudlessBuffer[fIndex], ImGuiOverlayDx::fgFormatTransfer->Buffer());
             ImGuiOverlayDx::fgFormatTransfer->SetBufferState(ImGuiOverlayDx::fgCopyCommandList, D3D12_RESOURCE_STATE_COPY_SOURCE);
 
-            LOG_DEBUG_ONLY("Using fgFormatTransfer->Buffer()");
+            LOG_TRACE("Using fgFormatTransfer->Buffer()");
             fgHudless[fIndex] = ImGuiOverlayDx::fgFormatTransfer->Buffer();
+        }
+        else
+        {
+            LOG_WARN("Can't create fgHudlessBuffer or fgFormatTransfer buffer!");
+            return;
         }
     }
     else
     {
+#ifdef USE_RESOURCE_BARRIRER
         ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
+#endif
 
         if (CreateBufferResource(g_pd3dDeviceParam, resource->buffer, D3D12_RESOURCE_STATE_COPY_DEST, &fgHudless[fIndex]))
             cmdList->CopyResource(fgHudless[fIndex], resource->buffer);
 
+#ifdef USE_RESOURCE_BARRIRER
         ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
+#endif
     }
 
-    GetHudless(cmdList, true);
+    GetHudless(cmdList);
 }
 
 static bool CheckForHudless(ResourceInfo* resource, bool checkFormat = true)
@@ -731,7 +723,7 @@ static bool CheckForHudless(ResourceInfo* resource, bool checkFormat = true)
 
     if (scDesc.BufferDesc.Height != fgScDesc.BufferDesc.Height || scDesc.BufferDesc.Width != fgScDesc.BufferDesc.Width || scDesc.BufferDesc.Format != fgScDesc.BufferDesc.Format)
     {
-
+        LOG_DEBUG("Format change, recreate the FormatTransfer");
         delete ImGuiOverlayDx::fgFormatTransfer;
         ImGuiOverlayDx::fgFormatTransfer = nullptr;
         ImGuiOverlayDx::fgFormatTransfer = new FT_Dx12("FormatTransfer", g_pd3dDeviceParam, scDesc.BufferDesc.Format);
@@ -812,7 +804,7 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
     auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
     if (heap != nullptr)
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
-    }
+}
 
 static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pResource, D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
@@ -2702,7 +2694,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
 
     if (result == S_OK && *ppDevice != nullptr)
     {
-        LOG_DEBUG("Device captured");
+        LOG_DEBUG("Device captured: {0:X}", (size_t)*ppDevice);
         g_pd3dDeviceParam = (ID3D12Device*)*ppDevice;
         HookToDevice(g_pd3dDeviceParam);
         _d3d12Captured = true;
@@ -2718,7 +2710,6 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
     if (pDesc == nullptr || device == nullptr)
         return;
 
-
     D3D12_SAMPLER_DESC newDesc{};
 
     newDesc.AddressU = pDesc->AddressU;
@@ -2731,10 +2722,8 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
     newDesc.ComparisonFunc = pDesc->ComparisonFunc;
 
     if (Config::Instance()->AnisotropyOverride.has_value() &&
-        (pDesc->Filter == D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT ||
-        pDesc->Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT ||
-        pDesc->Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR ||
-        pDesc->Filter == D3D12_FILTER_ANISOTROPIC))
+        (pDesc->Filter == D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT || pDesc->Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT ||
+        pDesc->Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR || pDesc->Filter == D3D12_FILTER_ANISOTROPIC))
     {
         LOG_INFO("Overriding Anisotrpic ({2}) filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
         newDesc.Filter = D3D12_FILTER_ANISOTROPIC;
