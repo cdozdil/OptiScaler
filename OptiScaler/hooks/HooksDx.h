@@ -25,13 +25,18 @@ namespace HooksDx
     inline bool dx11UpscaleTrig[QUERY_BUFFER_COUNT] = { false, false, false };
 
     inline ID3D12CommandQueue* GameCommandQueue = nullptr;
+    inline IDXGISwapChain* currentSwapchain = nullptr;
+    inline DXGI_FORMAT swapchainFormat = DXGI_FORMAT_UNKNOWN;
 
     inline int currentFrameIndex = 0;
     inline int previousFrameIndex = 0;
 
-    inline IDXGISwapChain* currentSwapchain = nullptr;
-    inline DXGI_FORMAT swapchainFormat = DXGI_FORMAT_UNKNOWN;
+    void UnHookDx();
+    void HookDx();
+}
 
+namespace FrameGen_Dx12
+{
     inline ffxContext fgSwapChainContext = nullptr;
     inline ffxContext fgContext = nullptr;
     inline float jitterX = 0.0;
@@ -55,8 +60,6 @@ namespace HooksDx
     inline FT_Dx12* fgFormatTransfer = nullptr;
     inline bool fgIsActive = false;
 
-    void UnHookDx();
-    void HookDx();
     UINT ClearFrameResources();
     UINT GetFrame();
     void NewFrame();
