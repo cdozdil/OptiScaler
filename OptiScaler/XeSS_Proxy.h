@@ -139,7 +139,7 @@ public:
     static bool InitXeSS()
     {
         // if dll already loaded
-        if (_dll != nullptr && _xessD3D12CreateContext != nullptr)
+        if (_dll != nullptr || _xessD3D12CreateContext != nullptr)
             return true;
 
         spdlog::info("");

@@ -1,24 +1,9 @@
 #pragma once
-#include "ffx_api.h"
+#include "../../FfxApi_Proxy.h"
 #include "ffx_upscale.h"
 
 #include "../IFeature.h"
 #include "../../detours/detours.h"
-
-inline static std::string ResultToString(ffxReturnCode_t result)
-{
-    switch (result)
-    {
-        case FFX_API_RETURN_OK: return "The oparation was successful.";
-        case FFX_API_RETURN_ERROR: return "An error occurred that is not further specified.";
-        case FFX_API_RETURN_ERROR_UNKNOWN_DESCTYPE: return "The structure type given was not recognized for the function or context with which it was used. This is likely a programming error.";
-        case FFX_API_RETURN_ERROR_RUNTIME_ERROR: return "The underlying runtime (e.g. D3D12, Vulkan) or effect returned an error code.";
-        case FFX_API_RETURN_NO_PROVIDER: return "No provider was found for the given structure type. This is likely a programming error.";
-        case FFX_API_RETURN_ERROR_MEMORY: return "A memory allocation failed.";
-        case FFX_API_RETURN_ERROR_PARAMETER: return "A parameter was invalid, e.g. a null pointer, empty resource or out-of-bounds enum value.";
-        default: return "Unknown";
-    }
-}
 
 inline static void FfxLogCallback(uint32_t type, const wchar_t* message)
 {
@@ -46,12 +31,6 @@ protected:
 
     ffxContext _context = nullptr;
     ffxCreateContextDescUpscale _contextDesc = {};
-
-    PfnFfxCreateContext _createContext = nullptr;
-    PfnFfxDestroyContext _destroyContext = nullptr;
-    PfnFfxConfigure _configure = nullptr;
-    PfnFfxQuery _query = nullptr;
-    PfnFfxDispatch _dispatch = nullptr;
 
     virtual bool InitFSR3(const NVSDK_NGX_Parameter* InParameters) = 0;
 

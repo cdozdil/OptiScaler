@@ -4,12 +4,11 @@
 #include "../format_transfer/FT_Dx12.h"
 #include "../backends/IFeature.h"
 
-
 #include <d3d11_4.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
-#include <ffx_api.h>
+#include "../FfxApi_Proxy.h"
 #include <dx12/ffx_api_dx12.h>
 #include <ffx_framegeneration.h>
 

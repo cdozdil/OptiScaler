@@ -67,6 +67,13 @@ inline DWORD processId;
 #define LOG_FUNC_RESULT(result) \
     spdlog::trace(__FUNCTION__ " result: {0:X}" , (UINT64)result)
 
+typedef struct _feature_version
+{
+    unsigned int major;
+    unsigned int minor;
+    unsigned int patch;
+} feature_version;
+
 inline static std::string wstring_to_string(const std::wstring& wide_str) 
 {
     std::string str(wide_str.length(), 0);

@@ -21,5 +21,9 @@ public:
 	bool Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters) override;
 	bool Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_Parameter* InParameters) override;
 
-	~FSR31FeatureDx11on12();
+	~FSR31FeatureDx11on12()
+	{
+		if (_context != nullptr)
+			FfxApiProxy::D3D12_DestroyContext()(&_context, NULL);
+	}
 };

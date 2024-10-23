@@ -81,8 +81,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)fsr31\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
-    <TargetName>version</TargetName>
-    <OutDir>D:\Folders\Games\No Man%27s Sky\Binaries\</OutDir>
+    <TargetName>dxgi</TargetName>
+    <OutDir>D:\Folders\Games\Deep Rock Galactic\FSD\Binaries\Win64\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -208,6 +208,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="bias\precompile\Bias_Shader.h" />
     <ClInclude Include="format_transfer\FT_Common.h" />
     <ClInclude Include="format_transfer\FT_Dx12.h" />
+    <ClInclude Include="FfxApi_Proxy.h" />
     <ClInclude Include="hooks\HooksDx.h" />
     <ClInclude Include="hooks\HooksVk.h" />
     <ClInclude Include="output_scaling\OS_Common.h" />
