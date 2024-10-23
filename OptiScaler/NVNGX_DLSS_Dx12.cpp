@@ -18,7 +18,7 @@
 #include <ankerl/unordered_dense.h>
 #include <dxgi1_4.h>
 
-#include <ffx_api.h>
+#include "FfxApi_Proxy.h"
 #include <ffx_framegeneration.h>
 
 #include "depth_upscale/DU_Dx12.h"
@@ -29,11 +29,6 @@
 #define DONT_USE_DEPTH_MV_COPIES
 #endif
 
-static PfnFfxCreateContext _createContext = nullptr;
-static PfnFfxDestroyContext _destroyContext = nullptr;
-static PfnFfxConfigure _configure = nullptr;
-static PfnFfxQuery _query = nullptr;
-static PfnFfxDispatch _dispatch = nullptr;
 static UINT64 fgLastFrameTime = 0;
 static UINT64 fgLastFGFrame = 0;
 
@@ -107,50 +102,13 @@ static bool CreateBufferResource(LPCWSTR Name, ID3D12Device* InDevice, ID3D12Res
     return true;
 }
 
-
-static void LoadFSR31Funcs()
-{
-    LOG_DEBUG("Loading amd_fidelityfx_dx12.dll methods");
-
-    auto file = Util::DllPath().parent_path() / "amd_fidelityfx_dx12.dll";
-    LOG_INFO("Trying to load {}", file.string());
-
-    auto _dll = LoadLibrary(file.wstring().c_str());
-    if (_dll != nullptr)
-    {
-        _configure = (PfnFfxConfigure)GetProcAddress(_dll, "ffxConfigure");
-        _createContext = (PfnFfxCreateContext)GetProcAddress(_dll, "ffxCreateContext");
-        _destroyContext = (PfnFfxDestroyContext)GetProcAddress(_dll, "ffxDestroyContext");
-        _dispatch = (PfnFfxDispatch)GetProcAddress(_dll, "ffxDispatch");
-        _query = (PfnFfxQuery)GetProcAddress(_dll, "ffxQuery");
-    }
-
-    if (_configure == nullptr)
-    {
-        LOG_INFO("Trying to load amd_fidelityfx_dx12.dll with detours");
-
-        _configure = (PfnFfxConfigure)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxConfigure");
-        _createContext = (PfnFfxCreateContext)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxCreateContext");
-        _destroyContext = (PfnFfxDestroyContext)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxDestroyContext");
-        _dispatch = (PfnFfxDispatch)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxDispatch");
-        _query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxQuery");
-    }
-
-    if (_configure != nullptr)
-        LOG_INFO("amd_fidelityfx_dx12.dll methods loaded!");
-    else
-        LOG_ERROR("can't load amd_fidelityfx_dx12.dll methods!");
-}
-
-
 #pragma region Hooks
 
-typedef void(__fastcall* PFN_SetComputeRootSignature)(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature);
-typedef void(__fastcall* PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+typedef void(*PFN_SetComputeRootSignature)(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature);
+typedef void(*PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 
 static PFN_SetComputeRootSignature orgSetComputeRootSignature = nullptr;
 static PFN_SetComputeRootSignature orgSetGraphicRootSignature = nullptr;
-static PFN_CreateSampler orgCreateSampler = nullptr;
 
 static ID3D12RootSignature* rootSigCompute = nullptr;
 static ID3D12RootSignature* rootSigGraphic = nullptr;
@@ -196,56 +154,6 @@ static void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID
     return orgSetGraphicRootSignature(commandList, pRootSignature);
 }
 
-static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
-{
-    if (pDesc == nullptr || device == nullptr)
-        return;
-
-    D3D12_SAMPLER_DESC newDesc{};
-
-    newDesc.AddressU = pDesc->AddressU;
-    newDesc.AddressV = pDesc->AddressV;
-    newDesc.AddressW = pDesc->AddressW;
-    newDesc.BorderColor[0] = pDesc->BorderColor[0];
-    newDesc.BorderColor[1] = pDesc->BorderColor[1];
-    newDesc.BorderColor[2] = pDesc->BorderColor[2];
-    newDesc.BorderColor[3] = pDesc->BorderColor[3];
-    newDesc.ComparisonFunc = pDesc->ComparisonFunc;
-
-    if (Config::Instance()->AnisotropyOverride.has_value() &&
-        (pDesc->Filter == D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT ||
-        pDesc->Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT ||
-        pDesc->Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR ||
-        pDesc->Filter == D3D12_FILTER_ANISOTROPIC))
-    {
-        LOG_INFO("Overriding Anisotrpic ({2}) filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
-        newDesc.Filter = D3D12_FILTER_ANISOTROPIC;
-        newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
-    }
-    else
-    {
-        newDesc.Filter = pDesc->Filter;
-        newDesc.MaxAnisotropy = pDesc->MaxAnisotropy;
-    }
-
-    newDesc.MaxLOD = pDesc->MaxLOD;
-    newDesc.MinLOD = pDesc->MinLOD;
-    newDesc.MipLODBias = pDesc->MipLODBias;
-
-    if (newDesc.MipLODBias < 0.0f)
-    {
-        if (Config::Instance()->MipmapBiasOverride.has_value())
-        {
-            LOG_INFO("Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
-            newDesc.MipLODBias = Config::Instance()->MipmapBiasOverride.value();
-        }
-
-        Config::Instance()->lastMipBias = newDesc.MipLODBias;
-    }
-
-    return orgCreateSampler(device, &newDesc, DestDescriptor);
-}
-
 void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
 {
     if (orgSetComputeRootSignature != nullptr || orgSetGraphicRootSignature != nullptr)
@@ -271,26 +179,6 @@ void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
     }
 }
 
-//void HookToDevice(ID3D12Device* InDevice)
-//{
-//    //if (!ImGuiOverlayDx12::IsEarlyBind() && orgCreateSampler != nullptr || InDevice == nullptr)
-//    //    return;
-//
-//    PVOID* pVTable = *(PVOID**)InDevice;
-//
-//    orgCreateSampler = (PFN_CreateSampler)pVTable[22];
-//
-//    if (orgCreateSampler != nullptr)
-//    {
-//        DetourTransactionBegin();
-//        DetourUpdateThread(GetCurrentThread());
-//
-//        DetourAttach(&(PVOID&)orgCreateSampler, hkCreateSampler);
-//
-//        DetourTransactionCommit();
-//    }
-//}
-
 void UnhookAll()
 {
     DetourTransactionBegin();
@@ -306,12 +194,6 @@ void UnhookAll()
     {
         DetourDetach(&(PVOID&)orgSetGraphicRootSignature, hkSetGraphicRootSignature);
         orgSetGraphicRootSignature = nullptr;
-    }
-
-    if (orgCreateSampler != nullptr)
-    {
-        DetourDetach(&(PVOID&)orgCreateSampler, hkCreateSampler);
-        orgCreateSampler = nullptr;
     }
 
     DetourTransactionCommit();
@@ -397,9 +279,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
     D3D12_HEAP_PROPERTIES heapProps = {};
     heapProps.Type = D3D12_HEAP_TYPE_READBACK;
     result = InDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&HooksDx::readbackBuffer));
-
-    if (_createContext == nullptr)
-        LoadFSR31Funcs();
 
     return NVSDK_NGX_Result_Success;
 }
@@ -1298,7 +1177,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     if (Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true))
     {
         if (!Config::Instance()->FGChanged && HooksDx::fgTarget < deviceContext->FrameCount() && Config::Instance()->FGEnabled.value_or(false) &&
-            _createContext != nullptr && !HooksDx::fgIsActive && HooksDx::currentSwapchain != nullptr &&
+            FfxApiProxy::InitFfxDx12() && !HooksDx::fgIsActive && HooksDx::currentSwapchain != nullptr &&
             HooksDx::swapchainFormat != DXGI_FORMAT_UNKNOWN)
         {
             HooksDx::CreateFGObjects(D3D12Device);
@@ -1472,7 +1351,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         if (Config::Instance()->CurrentFeature != nullptr)
                             fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
 
-                        auto result = _dispatch(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
+                        auto result = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
 
                         ID3D12CommandList* cl[1] = { nullptr };
                         result = HooksDx::fgCopyCommandList->Close();
@@ -1501,7 +1380,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 m_FrameGenerationConfig.header.pNext = &debugDesc.header;
 
                 Config::Instance()->dxgiSkipSpoofing = true;
-                ffxReturnCode_t retCode = _configure(&HooksDx::fgContext, &m_FrameGenerationConfig.header);
+                ffxReturnCode_t retCode = FfxApiProxy::D3D12_Configure()(&HooksDx::fgContext, &m_FrameGenerationConfig.header);
                 Config::Instance()->dxgiSkipSpoofing = false;
                 LOG_DEBUG("    FG _configure result: {0:X}", retCode);
 
@@ -1591,7 +1470,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     dfgPrepare.frameTimeDelta = msDelta;
 
                     Config::Instance()->dxgiSkipSpoofing = true;
-                    retCode = _dispatch(&HooksDx::fgContext, &dfgPrepare.header);
+                    retCode = FfxApiProxy::D3D12_Dispatch()(&HooksDx::fgContext, &dfgPrepare.header);
                     Config::Instance()->dxgiSkipSpoofing = false;
                     LOG_DEBUG("    FG _dispatch result: {0}", retCode);
                 }

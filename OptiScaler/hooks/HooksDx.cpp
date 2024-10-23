@@ -149,13 +149,6 @@ static PFN_Dispatch o_Dispatch = nullptr;
 static PFN_DiscardResource o_DiscardResource = nullptr;
 #endif
 
-// FSR 3.x methods
-static PfnFfxCreateContext _createContext = nullptr;
-static PfnFfxDestroyContext _destroyContext = nullptr;
-static PfnFfxConfigure _configure = nullptr;
-static PfnFfxQuery _query = nullptr;
-static PfnFfxDispatch _dispatch = nullptr;
-
 // swapchains variables
 static ankerl::unordered_dense::map <HWND, SwapChainInfo> fgSwapChains;
 static bool fgSkipSCWrapping = false;
@@ -270,45 +263,6 @@ static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAda
 static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter);
 static HRESULT hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter);
 static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter);
-
-static void LoadFSR31Funcs()
-{
-
-    ID3D12Resource* textureResource;
-    ID3D12DescriptorHeap* srvHeap;
-    D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle;
-
-    LOG_DEBUG("Loading amd_fidelityfx_dx12.dll methods");
-
-    auto file = Util::DllPath().parent_path() / "amd_fidelityfx_dx12.dll";
-    LOG_INFO("Trying to load {}", file.string());
-
-    auto _dll = LoadLibrary(file.wstring().c_str());
-    if (_dll != nullptr)
-    {
-        _configure = (PfnFfxConfigure)GetProcAddress(_dll, "ffxConfigure");
-        _createContext = (PfnFfxCreateContext)GetProcAddress(_dll, "ffxCreateContext");
-        _destroyContext = (PfnFfxDestroyContext)GetProcAddress(_dll, "ffxDestroyContext");
-        _dispatch = (PfnFfxDispatch)GetProcAddress(_dll, "ffxDispatch");
-        _query = (PfnFfxQuery)GetProcAddress(_dll, "ffxQuery");
-    }
-
-    if (_configure == nullptr)
-    {
-        LOG_INFO("Trying to load amd_fidelityfx_dx12.dll with detours");
-
-        _configure = (PfnFfxConfigure)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxConfigure");
-        _createContext = (PfnFfxCreateContext)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxCreateContext");
-        _destroyContext = (PfnFfxDestroyContext)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxDestroyContext");
-        _dispatch = (PfnFfxDispatch)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxDispatch");
-        _query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxQuery");
-    }
-
-    if (_configure != nullptr)
-        LOG_INFO("amd_fidelityfx_dx12.dll methods loaded!");
-    else
-        LOG_ERROR("can't load amd_fidelityfx_dx12.dll methods!");
-}
 
 static void FfxFgLogCallback(uint32_t type, const wchar_t* message)
 {
@@ -524,7 +478,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
                 if (Config::Instance()->CurrentFeature != nullptr)
                     fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
 
-                dispatchResult = _dispatch(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
+                dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
                 ID3D12CommandList* cl[1] = { nullptr };
                 result = HooksDx::fgCopyCommandList->Close();
                 cl[0] = HooksDx::fgCopyCommandList;
@@ -551,7 +505,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
         m_FrameGenerationConfig.header.pNext = &debugDesc.header;
 
         Config::Instance()->dxgiSkipSpoofing = true;
-        ffxReturnCode_t retCode = _configure(&HooksDx::fgContext, &m_FrameGenerationConfig.header);
+        ffxReturnCode_t retCode = FfxApiProxy::D3D12_Configure()(&HooksDx::fgContext, &m_FrameGenerationConfig.header);
         Config::Instance()->dxgiSkipSpoofing = false;
         LOG_DEBUG("_configure result: {0:X}, frame: {1}", retCode, frame);
 
@@ -605,7 +559,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
             }
 
             Config::Instance()->dxgiSkipSpoofing = true;
-            retCode = _dispatch(&HooksDx::fgContext, &dfgPrepare.header);
+            retCode = FfxApiProxy::D3D12_Dispatch()(&HooksDx::fgContext, &dfgPrepare.header);
             fgDispatchCalled = true;
             Config::Instance()->dxgiSkipSpoofing = false;
             LOG_DEBUG("_dispatch result: {0}, frame: {1}", retCode, frame);
@@ -1724,7 +1678,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     }
 
     ID3D12CommandQueue* cq = nullptr;
-    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && _createContext != nullptr && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
         cq->SetName(L"GameQueue");
         SwapChainInfo scInfo{};
@@ -1744,7 +1698,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         Config::Instance()->dxgiSkipSpoofing = true;
         Config::Instance()->SkipHeapCapture = true;
 
-        auto result = _createContext(&HooksDx::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
+        auto result = FfxApiProxy::D3D12_CreateContext()(&HooksDx::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
 
         Config::Instance()->SkipHeapCapture = false;
         Config::Instance()->dxgiSkipSpoofing = false;
@@ -1756,10 +1710,12 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
             scInfo.swapChainBufferCount = pDesc->BufferCount;
             scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
             fgSwapChains.insert_or_assign(pDesc->OutputWindow, scInfo);
+
+            LOG_DEBUG("Created FSR-FG swapchain");
             return S_OK;
         }
 
-        LOG_ERROR("_createContext error: {}", result);
+        LOG_ERROR("D3D12_CreateContext error: {}", result);
 
         return E_INVALIDARG;
     }
@@ -1830,7 +1786,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     }
 
     ID3D12CommandQueue* cq = nullptr;
-    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && _createContext != nullptr && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
         SwapChainInfo scInfo{};
         scInfo.gameCommandQueue = cq;
@@ -1854,7 +1810,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         fgSkipSCWrapping = true;
         Config::Instance()->SkipHeapCapture = true;
 
-        auto result = _createContext(&HooksDx::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
+        auto result = FfxApiProxy::D3D12_CreateContext()(&HooksDx::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
 
         Config::Instance()->SkipHeapCapture = false;
         fgSkipSCWrapping = false;
@@ -1866,6 +1822,8 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
             scInfo.swapChainBufferCount = pDesc->BufferCount;
             scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
             fgSwapChains.insert_or_assign(hWnd, scInfo);
+
+            LOG_DEBUG("Created FSR-FG swapchain");
             return S_OK;
         }
 
@@ -2622,8 +2580,6 @@ void HooksDx::HookDx()
 
         DetourTransactionCommit();
     }
-
-    LoadFSR31Funcs();
 }
 
 UINT HooksDx::ClearFrameResources()
@@ -2768,10 +2724,10 @@ void HooksDx::CreateFGContext(ID3D12Device* InDevice, IFeature* deviceContext)
         m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
         m_FrameGenerationConfig.frameGenerationEnabled = true;
         m_FrameGenerationConfig.swapChain = HooksDx::currentSwapchain;
-        //m_FrameGenerationConfig.presentCallback = nullptr;
+        m_FrameGenerationConfig.presentCallback = nullptr;
         m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
 
-        auto result = _configure(&HooksDx::fgContext, &m_FrameGenerationConfig.header);
+        auto result = FfxApiProxy::D3D12_Configure()(&HooksDx::fgContext, &m_FrameGenerationConfig.header);
 
         HooksDx::fgIsActive = (result == FFX_API_RETURN_OK);
 
@@ -2810,7 +2766,7 @@ void HooksDx::CreateFGContext(ID3D12Device* InDevice, IFeature* deviceContext)
 
     Config::Instance()->dxgiSkipSpoofing = true;
     Config::Instance()->SkipHeapCapture = true;
-    ffxReturnCode_t retCode = _createContext(&HooksDx::fgContext, &createFg.header, nullptr);
+    ffxReturnCode_t retCode = FfxApiProxy::D3D12_CreateContext()(&HooksDx::fgContext, &createFg.header, nullptr);
     Config::Instance()->SkipHeapCapture = false;
     Config::Instance()->dxgiSkipSpoofing = false;
     LOG_INFO("_createContext result: {0:X}", retCode);
@@ -2836,7 +2792,7 @@ void HooksDx::StopAndDestroyFGContext(bool destroy, bool shutDown)
         m_FrameGenerationConfig.presentCallback = nullptr;
         m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
 
-        auto result = _configure(&HooksDx::fgContext, &m_FrameGenerationConfig.header);
+        auto result = FfxApiProxy::D3D12_Configure()(&HooksDx::fgContext, &m_FrameGenerationConfig.header);
 
         HooksDx::fgIsActive = false;
 
@@ -2846,7 +2802,7 @@ void HooksDx::StopAndDestroyFGContext(bool destroy, bool shutDown)
 
     if (destroy && HooksDx::fgContext != nullptr)
     {
-        auto result = _destroyContext(&HooksDx::fgContext, nullptr);
+        auto result = FfxApiProxy::D3D12_DestroyContext()(&HooksDx::fgContext, nullptr);
 
         if (!shutDown)
             LOG_INFO("    FG _destroyContext result: {0:X}", result);

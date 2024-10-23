@@ -46,8 +46,6 @@ FSR31Feature::~FSR31Feature()
 	if (!IsInited())
 		return;
 
-	_destroyContext(&_context, NULL);
-
 	SetInit(false);
 }
 

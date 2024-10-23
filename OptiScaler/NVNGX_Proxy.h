@@ -379,7 +379,6 @@ public:
             return;
 
         LOG_INFO("");
-        LOG_FUNC();
 
         Config::Instance()->upscalerDisableHook = true;
 

@@ -6,6 +6,7 @@
 #include "Util.h"
 #include "NVNGX_Proxy.h"
 #include "XeSS_Proxy.h"
+#include "FfxApi_Proxy.h"
 
 #include "hooks/HooksDx.h"
 #include "hooks/HooksVk.h"
@@ -1595,6 +1596,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     switch (ul_reason_for_call)
     {
         case DLL_PROCESS_ATTACH:
+            DisableThreadLibraryCalls(hModule);
+
             if (loadCount > 1)
             {
                 LOG_INFO("DLL_PROCESS_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
@@ -1604,8 +1607,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             dllModule = hModule;
             processId = GetCurrentProcessId();
-
-            DisableThreadLibraryCalls(hModule);
 
             loadCount++;
 
@@ -1671,6 +1672,13 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             if (!XeSSProxy::InitXeSS())
                 spdlog::warn("Can't init XeSS!");
 
+            // Init FfxApi proxy
+            if (!FfxApiProxy::InitFfxDx12())
+                spdlog::warn("Can't init Dx12 FfxApi!");
+
+            if (!FfxApiProxy::InitFfxVk())
+                spdlog::warn("Can't init Vulkan FfxApi!");
+
             // Check for working mode and attach hooks
             spdlog::info("");
             CheckWorkingMode();
@@ -1704,11 +1712,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             break;
 
         case DLL_THREAD_ATTACH:
-            LOG_TRACE("DLL_THREAD_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
+            LOG_DEBUG_ONLY("DLL_THREAD_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
             break;
 
         case DLL_THREAD_DETACH:
-            LOG_TRACE("DLL_THREAD_DETACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
+            LOG_DEBUG_ONLY("DLL_THREAD_DETACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
             break;
 
         default:
