@@ -61,7 +61,7 @@ void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
 
 inline static std::string ftB8G8R8A8Code = R"(
 Texture2D<float4> SourceTexture : register(t0); 
-RWTexture2D<uint> DestinationTexture : register(u0); // R8G8B8A8_UNORM destination texture
+RWTexture2D<uint> DestinationTexture : register(u0); // B8R8G8A8_UNORM destination texture
 
 // Shader to perform the conversion
 [numthreads(512, 1, 1)]

@@ -1,5 +1,9 @@
 #include "FT_Dx12.h"
 
+#include "precompile/R10G10B10A2_Shader.h"
+#include "precompile/R8G8B8A8_Shader.h"
+#include "precompile/B8R8G8A8_Shader.h"
+
 #include "../Config.h"
 
 inline static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
@@ -285,41 +289,76 @@ FT_Dx12::FT_Dx12(std::string InName, ID3D12Device* InDevice, DXGI_FORMAT InForma
     // Compile shader blobs
     ID3DBlob* _recEncodeShader = nullptr;
 
-    if (InFormat == DXGI_FORMAT_R10G10B10A2_UNORM)
+    if (Config::Instance()->UsePrecompiledShaders.value_or(true))
     {
-        _recEncodeShader = FT_CompileShader(ftR10G10B10A2Code.c_str(), "CSMain", "cs_5_0");
-    }
-    else if (InFormat == DXGI_FORMAT_R8G8B8A8_UNORM)
-    {
-        _recEncodeShader = FT_CompileShader(ftR8G8B8A8Code.c_str(), "CSMain", "cs_5_0");
-    }
-    else if (InFormat == DXGI_FORMAT_B8G8R8A8_UNORM)
-    {
-        _recEncodeShader = FT_CompileShader(ftB8G8R8A8Code.c_str(), "CSMain", "cs_5_0");
+        D3D12_COMPUTE_PIPELINE_STATE_DESC computePsoDesc = {};
+        computePsoDesc.pRootSignature = _rootSignature;
+        computePsoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+
+        if (InFormat == DXGI_FORMAT_R10G10B10A2_UNORM)
+        {
+            computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(r10g10b10a2_cso), sizeof(r10g10b10a2_cso));
+        }
+        else if (InFormat == DXGI_FORMAT_R8G8B8A8_UNORM)
+        {
+            computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(r8g8b8a8_cso), sizeof(r8g8b8a8_cso));
+        }
+        else if (InFormat == DXGI_FORMAT_B8G8R8A8_UNORM)
+        {
+            computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(b8r8g8a8_cso), sizeof(b8r8g8a8_cso));
+        }
+        else
+        {
+            LOG_ERROR("[{0}] texture format is not found!", _name);
+            return;
+        }
+
+        auto hr = InDevice->CreateComputePipelineState(&computePsoDesc, __uuidof(ID3D12PipelineState*), (void**)&_pipelineState);
+
+        if (FAILED(hr))
+        {
+            LOG_ERROR("[{0}] CreateComputePipelineState error: {1:X}", _name, hr);
+            return;
+        }
     }
     else
     {
-        LOG_ERROR("[{0}] texture format is not found!", _name);
-        return;
-    }
+        if (InFormat == DXGI_FORMAT_R10G10B10A2_UNORM)
+        {
+            _recEncodeShader = FT_CompileShader(ftR10G10B10A2Code.c_str(), "CSMain", "cs_5_0");
+        }
+        else if (InFormat == DXGI_FORMAT_R8G8B8A8_UNORM)
+        {
+            _recEncodeShader = FT_CompileShader(ftR8G8B8A8Code.c_str(), "CSMain", "cs_5_0");
+        }
+        else if (InFormat == DXGI_FORMAT_B8G8R8A8_UNORM)
+        {
+            _recEncodeShader = FT_CompileShader(ftB8G8R8A8Code.c_str(), "CSMain", "cs_5_0");
+        }
+        else
+        {
+            LOG_ERROR("[{0}] texture format is not found!", _name);
+            return;
+        }
 
-    if (_recEncodeShader == nullptr)
-    {
-        LOG_ERROR("[{0}] CompileShader error!", _name);
-        return;
-    }
+        if (_recEncodeShader == nullptr)
+        {
+            LOG_ERROR("[{0}] CompileShader error!", _name);
+            return;
+        }
 
-    // create pso objects
-    if (!CreateComputeShader(InDevice, _rootSignature, &_pipelineState, _recEncodeShader))
-    {
-        LOG_ERROR("[{0}] CreateComputeShader error!", _name);
-        return;
-    }
+        // create pso objects
+        if (!CreateComputeShader(InDevice, _rootSignature, &_pipelineState, _recEncodeShader))
+        {
+            LOG_ERROR("[{0}] CreateComputeShader error!", _name);
+            return;
+        }
 
-    if (_recEncodeShader != nullptr)
-    {
-        _recEncodeShader->Release();
-        _recEncodeShader = nullptr;
+        if (_recEncodeShader != nullptr)
+        {
+            _recEncodeShader->Release();
+            _recEncodeShader = nullptr;
+        }
     }
 
     D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};

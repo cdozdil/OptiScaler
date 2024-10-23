@@ -21,8 +21,6 @@
 #include "FfxApi_Proxy.h"
 #include <ffx_framegeneration.h>
 
-#include "depth_upscale/DU_Dx12.h"
-
 #define USE_COPY_QUEUE_FOR_FG
 
 #ifndef USE_COPY_QUEUE_FOR_FG
