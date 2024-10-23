@@ -13,7 +13,7 @@
 
 #include <vulkan/vulkan_core.h>
 
-#define HOOK_GET_MODULE
+//#define HOOK_GET_MODULE
 
 #ifdef HOOK_GET_MODULE
 //#define GET_MODULE_NVNGX
