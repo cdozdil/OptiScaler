@@ -1,15 +1,14 @@
 #include "HooksDx.h"
+#include "wrapped_swapchain.h"
 
 #include "../Util.h"
 #include "../Logger.h"
 #include "../Config.h"
 
 #include "../imgui/imgui_overlay_dx.h"
-
 #include "../detours/detours.h"
-#include <d3d11on12.h>
 
-#include "wrapped_swapchain.h"
+#include <d3d11on12.h>
 
 #pragma region FG definitions
 
@@ -261,7 +260,6 @@ static ID3D12GraphicsCommandList* g_pd3dCommandList = nullptr;
 static bool _isInited = false;
 static bool _d3d12Captured = false;
 
-static void DeatachAllHooks();
 static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC* pSamplerDesc, ID3D11SamplerState** ppSamplerState);
 static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter);
@@ -274,6 +272,8 @@ static void FfxFgLogCallback(uint32_t type, const wchar_t* message)
     std::wstring string(message);
     LOG_DEBUG("    FG Log: {0}", wstring_to_string(string));
 }
+
+#pragma region Resource methods
 
 static bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource)
 {
@@ -329,6 +329,10 @@ static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Reso
     barrier.Transition.Subresource = 0;
     InCommandList->ResourceBarrier(1, &barrier);
 }
+
+#pragma endregion
+
+#pragma region Heap helpers
 
 static SIZE_T GetGPUHandle(ID3D12Device* This, SIZE_T cpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE type)
 {
@@ -391,6 +395,10 @@ static HeapInfo* GetHeapByGpuHandle(SIZE_T gpuHandle)
 
     return nullptr;
 }
+
+#pragma endregion
+
+#pragma region Hudless methods
 
 static bool InUpscaledList(ID3D12Resource* resource)
 {
@@ -686,6 +694,10 @@ static bool CheckForHudless(ResourceInfo* resource, bool checkFormat = true)
     return false;
 }
 
+#pragma endregion
+
+#pragma region Resource discard hooks
+
 #ifdef USE_RESOURCE_DISCARD
 static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* pResource, D3D12_DISCARD_REGION* pRegion)
 {
@@ -711,7 +723,9 @@ static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* p
 }
 #endif
 
-#pragma region "Resource inputs"
+#pragma endregion
+
+#pragma region Resource input hooks
 
 static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResource, const D3D12_RENDER_TARGET_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
@@ -804,7 +818,7 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
 
 #pragma endregion
 
-#pragma region "Resource copy"
+#pragma region Resource copy hooks
 
 #ifdef USE_COPY_RESOURCE
 static void hkCopyResource(ID3D12GraphicsCommandList* This, ID3D12Resource* Dest, ID3D12Resource* Source)
@@ -874,7 +888,7 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
 
 #pragma endregion
 
-#pragma region "Heap methods"
+#pragma region Heap hooks
 
 static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_DESC* pDescriptorHeapDesc, REFIID riid, void** ppvHeap)
 {
@@ -1012,7 +1026,7 @@ static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D
 
 #pragma endregion
 
-#pragma region "Shader inputs"
+#pragma region Shader input hooks
 
 static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UINT RootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor)
 {
@@ -1062,7 +1076,7 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
 
 #pragma endregion
 
-#pragma region "Shader outputs"
+#pragma region Shader output hooks
 
 static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRenderTargetDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE* pRenderTargetDescriptors,
                                  BOOL RTsSingleHandleToDescriptorRange, D3D12_CPU_DESCRIPTOR_HANDLE* pDepthStencilDescriptor)
@@ -1118,7 +1132,7 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
 
 #pragma endregion
 
-#pragma region "Compute paramters"
+#pragma region Compute paramter hooks
 
 static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UINT RootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor)
 {
@@ -1163,7 +1177,7 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
 
 #pragma endregion
 
-#pragma region "Shader finalizers"
+#pragma region Shader finalizer hooks
 
 // Capture if render target matches, wait for DrawIndexed
 static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPerInstance, UINT InstanceCount, UINT StartVertexLocation, UINT StartInstanceLocation)
@@ -1332,17 +1346,6 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 }
 
 #pragma endregion
-
-static int GetCorrectDXGIFormat(int eCurrentFormat)
-{
-    switch (eCurrentFormat)
-    {
-        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-            return DXGI_FORMAT_R8G8B8A8_UNORM;
-    }
-
-    return eCurrentFormat;
-}
 
 #pragma region Callbacks for wrapped swapchain
 
@@ -2045,8 +2048,6 @@ static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAda
 
 #pragma region DirectX hooks
 
-
-
 static void HookCommandList(ID3D12Device* InDevice)
 {
     if (o_OMSetRenderTargets != nullptr || o_DrawIndexedInstanced != nullptr)
@@ -2473,61 +2474,7 @@ static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC
 
 #pragma endregion
 
-void DeatachAllHooks()
-{
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-
-    if (o_D3D11CreateDevice != nullptr)
-    {
-        DetourDetach(&(PVOID&)o_D3D11CreateDevice, hkD3D11CreateDevice);
-        o_D3D11CreateDevice = nullptr;
-    }
-
-    if (o_D3D11On12CreateDevice != nullptr)
-    {
-        DetourDetach(&(PVOID&)o_D3D11On12CreateDevice, hkD3D11On12CreateDevice);
-        o_D3D11On12CreateDevice = nullptr;
-    }
-
-    if (o_D3D12CreateDevice != nullptr)
-    {
-        DetourDetach(&(PVOID&)o_D3D12CreateDevice, hkD3D12CreateDevice);
-        o_D3D12CreateDevice = nullptr;
-    }
-
-    if (o_CreateDXGIFactory1 != nullptr)
-    {
-        DetourDetach(&(PVOID&)o_CreateDXGIFactory1, hkCreateDXGIFactory1);
-        o_CreateDXGIFactory1 = nullptr;
-    }
-
-    if (o_CreateDXGIFactory2 != nullptr)
-    {
-        DetourDetach(&(PVOID&)o_CreateDXGIFactory2, hkCreateDXGIFactory2);
-        o_CreateDXGIFactory2 = nullptr;
-    }
-
-    if (oCreateSwapChain != nullptr)
-    {
-        DetourDetach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
-        oCreateSwapChain = nullptr;
-    }
-
-    if (oCreateSwapChainForHwnd != nullptr)
-    {
-        DetourDetach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
-        oCreateSwapChainForHwnd = nullptr;
-    }
-
-    if (o_CreateSampler != nullptr)
-    {
-        DetourDetach(&(PVOID&)o_CreateSampler, hkCreateSampler);
-        o_CreateSampler = nullptr;
-    }
-
-    DetourTransactionCommit();
-}
+#pragma region Public hook methods
 
 void HooksDx::HookDx()
 {
@@ -2589,9 +2536,64 @@ void HooksDx::HookDx()
 
 void HooksDx::UnHookDx()
 {
-    DeatachAllHooks();
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+
+    if (o_D3D11CreateDevice != nullptr)
+    {
+        DetourDetach(&(PVOID&)o_D3D11CreateDevice, hkD3D11CreateDevice);
+        o_D3D11CreateDevice = nullptr;
+    }
+
+    if (o_D3D11On12CreateDevice != nullptr)
+    {
+        DetourDetach(&(PVOID&)o_D3D11On12CreateDevice, hkD3D11On12CreateDevice);
+        o_D3D11On12CreateDevice = nullptr;
+    }
+
+    if (o_D3D12CreateDevice != nullptr)
+    {
+        DetourDetach(&(PVOID&)o_D3D12CreateDevice, hkD3D12CreateDevice);
+        o_D3D12CreateDevice = nullptr;
+    }
+
+    if (o_CreateDXGIFactory1 != nullptr)
+    {
+        DetourDetach(&(PVOID&)o_CreateDXGIFactory1, hkCreateDXGIFactory1);
+        o_CreateDXGIFactory1 = nullptr;
+    }
+
+    if (o_CreateDXGIFactory2 != nullptr)
+    {
+        DetourDetach(&(PVOID&)o_CreateDXGIFactory2, hkCreateDXGIFactory2);
+        o_CreateDXGIFactory2 = nullptr;
+    }
+
+    if (oCreateSwapChain != nullptr)
+    {
+        DetourDetach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
+        oCreateSwapChain = nullptr;
+    }
+
+    if (oCreateSwapChainForHwnd != nullptr)
+    {
+        DetourDetach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
+        oCreateSwapChainForHwnd = nullptr;
+    }
+
+    if (o_CreateSampler != nullptr)
+    {
+        DetourDetach(&(PVOID&)o_CreateSampler, hkCreateSampler);
+        o_CreateSampler = nullptr;
+    }
+
+    DetourTransactionCommit();
     _isInited = false;
 }
+
+#pragma endregion
+
+#pragma region Public Frame Generation methods
 
 UINT FrameGen_Dx12::ClearFrameResources()
 {
@@ -2821,3 +2823,5 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown)
     if (shutDown)
         ReleaseFGObjects();
 }
+
+#pragma endregion
