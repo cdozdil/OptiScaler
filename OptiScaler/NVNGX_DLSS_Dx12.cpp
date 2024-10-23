@@ -854,6 +854,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     auto evaluateStart = GetTicks();
 
+    if (Config::Instance()->setInputApiName.length() == 0)
+        Config::Instance()->currentInputApiName = "DLSS";
+    else
+        Config::Instance()->currentInputApiName = Config::Instance()->setInputApiName;
+
+    Config::Instance()->setInputApiName.clear();
+
     if (!InCmdList)
     {
         LOG_ERROR("InCmdList is null!!!");

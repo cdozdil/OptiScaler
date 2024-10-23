@@ -243,6 +243,9 @@ public:
 	float ScreenWidth = 800.0;
 	float ScreenHeight = 450.0;
 
+	std::string setInputApiName;
+	std::string currentInputApiName;
+
 	IFeature* CurrentFeature = nullptr;
 
 	bool Reload(std::filesystem::path iniPath);
