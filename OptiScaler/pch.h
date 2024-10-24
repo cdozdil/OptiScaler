@@ -74,6 +74,23 @@ typedef struct _feature_version
     unsigned int patch;
 } feature_version;
 
+inline static bool isVersionOrBetter(const feature_version& current, const feature_version& required) {
+    if (current.major > required.major) {
+        return true;
+    }
+    if (current.major == required.major) {
+        if (current.minor > required.minor) {
+            return true;
+        }
+        if (current.minor == required.minor) {
+            if (current.patch >= required.patch) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 inline static std::string wstring_to_string(const std::wstring& wide_str) 
 {
     std::string str(wide_str.length(), 0);

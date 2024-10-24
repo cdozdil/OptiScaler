@@ -1526,9 +1526,39 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         HooksDx::currentFrameIndex = (HooksDx::currentFrameIndex + 1) % HooksDx::QUERY_BUFFER_COUNT;
     }
 
-
     ImGuiOverlayDx::Present(pSwapChain, SyncInterval, Flags, pPresentParameters, pDevice, hWnd);
+    
+    // Inform AntiLag 2 when present of interpolated frames starts
+    if (FrameGen_Dx12::fgIsActive) {
+        // Starting with FSR 3.1.1 we can provide an AntiLag 2 context to FSR FG
+        // and it will call SetFrameGenFrameType for us
+        auto static ffxApiVersion = FfxApiProxy::VersionDx12();
+        constexpr feature_version requiredVersion = { 3, 1, 1 };
+        if (isVersionOrBetter(ffxApiVersion, requiredVersion) && fakenvapi::Fake_GetAntiLagCtx != nullptr) {
+            void* antilag2Context = nullptr;
+            fakenvapi::Fake_GetAntiLagCtx(&antilag2Context);
+            if (antilag2Context != nullptr) {
+                static const GUID IID_IFfxAntiLag2Data = { 0x5083ae5b, 0x8070, 0x4fca, {0x8e, 0xe5, 0x35, 0x82, 0xdd, 0x36, 0x7d, 0x13} };
 
+                struct AntiLag2Data
+                {
+                    void* context;
+                    bool enabled;
+                } data;
+
+                data.context = antilag2Context;
+                data.enabled = true;
+
+                pSwapChain->SetPrivateData(IID_IFfxAntiLag2Data, sizeof(data), &data);
+            }
+        }
+        else if (fakenvapi::Fake_InformPresentFG != nullptr)
+        {
+            // Tell fakenvapi to call SetFrameGenFrameType by itself
+            fakenvapi::Fake_InformPresentFG(frameCounter % 2, 0);
+        }
+    }
+    
     frameCounter++;
 
     // swapchain present

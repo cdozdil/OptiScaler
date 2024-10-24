@@ -1192,6 +1192,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             FrameGen_Dx12::fgTarget = deviceContext->FrameCount() + 20;
             Config::Instance()->FGChanged = false;
         }
+
+        if (fakenvapi::Fake_InformFGState != nullptr)
+            fakenvapi::Fake_InformFGState(FrameGen_Dx12::fgIsActive);
     }
 
     Config::Instance()->SCChanged = false;
