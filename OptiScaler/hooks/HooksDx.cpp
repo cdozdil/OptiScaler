@@ -1703,14 +1703,15 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         LOG_WARN("Vulkan is creating swapchain!");
 
         if (pDesc != nullptr)
-            LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Windowed: {4}", pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, pDesc->Windowed);
+            LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, Windowed: {}, SkipWrapping: {}",
+                      pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, (UINT)pDesc->OutputWindow, pDesc->Windowed, fgSkipSCWrapping);
 
         return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
     }
 
-    if (pDevice == nullptr)
+    if (pDevice == nullptr || pDesc == nullptr)
     {
-        LOG_WARN("pDevice is nullptr!");
+        LOG_WARN("pDevice or pDesc is nullptr!");
         return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
     }
 
@@ -1719,6 +1720,9 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         LOG_WARN("RTSS call!");
         return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
     }
+
+    LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, Windowed: {}, SkipWrapping: {}",
+              pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, (UINT)pDesc->OutputWindow, pDesc->Windowed, fgSkipSCWrapping);
 
     ID3D12CommandQueue* cq = nullptr;
     if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
@@ -1786,18 +1790,15 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
             }
         }
 
-        LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Windowed: {4}", pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, pDesc->Windowed);
-
         if (Util::GetProcessWindow() == pDesc->OutputWindow)
         {
             Config::Instance()->ScreenWidth = pDesc->BufferDesc.Width;
             Config::Instance()->ScreenHeight = pDesc->BufferDesc.Height;
         }
 
-        LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDesc->OutputWindow);
-        // TODO: Bind overlay menu event here
+        LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDesc->OutputWindow);
         *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? *ppSwapChain : real, pDevice, pDesc->OutputWindow, Present, ImGuiOverlayDx::CleanupRenderTarget);
-        LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
+        LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
     }
 
     return result;
@@ -1816,9 +1817,9 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     }
 
-    if (pDevice == nullptr)
+    if (pDevice == nullptr || pDesc == nullptr)
     {
-        LOG_WARN("pDevice is nullptr!");
+        LOG_WARN("pDevice or pDesc is nullptr!");
         return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     }
 
@@ -1827,6 +1828,9 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         LOG_WARN("RTSS call!");
         return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     }
+
+    LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, SkipWrapping: {}",
+              pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, (UINT)hWnd, fgSkipSCWrapping);
 
     ID3D12CommandQueue* cq = nullptr;
     if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
@@ -1870,8 +1874,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
             return S_OK;
         }
 
-        LOG_ERROR("_createContext error: {}", result);
-
+        LOG_ERROR("D3D12_CreateContext error: {}", result);
         return result;
     }
 
@@ -1899,8 +1902,6 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
             }
         }
 
-        LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Flags: {4:X}", pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, pDesc->Flags);
-
         if (Util::GetProcessWindow() == hWnd)
         {
             Config::Instance()->ScreenWidth = pDesc->Width;
@@ -1908,7 +1909,6 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         }
 
         LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)hWnd);
-        // TODO: Bind overlay menu event here
         *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? *ppSwapChain : real, pDevice, hWnd, Present, ImGuiOverlayDx::CleanupRenderTarget);
         LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
     }
