@@ -157,7 +157,7 @@ inline static void HookNvApi()
     if (OriginalNvAPI_QueryInterface != nullptr)
     {
         LOG_INFO("NvAPI_QueryInterface found, hooking!");
-        fakenvapi::Init((fakenvapi::PFN_NvApi_QueryInterface&)OriginalNvAPI_QueryInterface);
+        fakenvapi::Init((fakenvapi::PFN_Fake_QueryInterface&)OriginalNvAPI_QueryInterface);
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
