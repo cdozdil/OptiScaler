@@ -7,6 +7,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "nvapi/nvapi.h"
+#include "fakenvapi.h"
 
 #include <filesystem>
 #include "detours/detours.h"
@@ -77,11 +78,12 @@ inline static uint32_t __stdcall HookedNvAPI_GPU_GetArchInfo(void* GPUHandle, NV
 
 inline static void* __stdcall HookedNvAPI_QueryInterface(NV_INTERFACE InterfaceId)
 {
+    LOG_FUNC();
     const auto result = OriginalNvAPI_QueryInterface(InterfaceId);
 
     if (result)
     {
-        if (InterfaceId == NV_INTERFACE::GPU_GetArchInfo)
+        if (InterfaceId == NV_INTERFACE::GPU_GetArchInfo && !Config::Instance()->DE_Available)
         {
             OriginalNvAPI_GPU_GetArchInfo = static_cast<PfnNvAPI_GPU_GetArchInfo>(result);
             return &HookedNvAPI_GPU_GetArchInfo;
@@ -155,6 +157,7 @@ inline static void HookNvApi()
     if (OriginalNvAPI_QueryInterface != nullptr)
     {
         LOG_INFO("NvAPI_QueryInterface found, hooking!");
+        fakenvapi::Init((fakenvapi::PFN_Fake_QueryInterface&)OriginalNvAPI_QueryInterface);
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
@@ -378,6 +381,8 @@ public:
         if (_dll != nullptr)
             return;
 
+        HookNvApi();
+
         LOG_INFO("");
 
         Config::Instance()->upscalerDisableHook = true;
@@ -490,7 +495,6 @@ public:
         {
             if (!Config::Instance()->DE_Available)
             {
-                HookNvApi();
                 HookNgxApi(_dll);
             }
 

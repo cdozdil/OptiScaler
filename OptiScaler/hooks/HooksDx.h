@@ -9,6 +9,7 @@
 #include <dxgi1_6.h>
 
 #include "../FfxApi_Proxy.h"
+#include "../NVNGX_Proxy.h"
 #include <dx12/ffx_api_dx12.h>
 #include <ffx_framegeneration.h>
 

@@ -82,7 +82,7 @@
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)fsr31\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
     <TargetName>dxgi</TargetName>
-    <OutDir>D:\Folders\Games\SteamLibrary\steamapps\common\DEATH STRANDING DIRECTORS CUT\</OutDir>
+    <OutDir>F:\SteamLibrary\steamapps\common\Cyberpunk 2077\bin\x64\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
@@ -207,6 +207,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="bias\Bias_Dx12.h" />
     <ClInclude Include="bias\Bias_Dx11.h" />
     <ClInclude Include="bias\precompile\Bias_Shader.h" />
+    <ClInclude Include="fakenvapi.h" />
     <ClInclude Include="format_transfer\FT_Common.h" />
     <ClInclude Include="format_transfer\FT_Dx12.h" />
     <ClInclude Include="FfxApi_Proxy.h" />
