@@ -425,7 +425,7 @@ static void FillResourceInfo(ID3D12Resource* resource, ResourceInfo* info)
 static void GetHudless(ID3D12GraphicsCommandList* This)
 {
     auto fIndex = fgFrameIndex;
-    if (This != g_pd3dCommandList && fgCopySource[fIndex] != nullptr && Config::Instance()->CurrentFeature != nullptr &&
+    if (This != g_pd3dCommandList && fgCopySource[fIndex] != nullptr && Config::Instance()->CurrentFeature != nullptr && !Config::Instance()->FGChanged &&
         fgHudlessFrame != Config::Instance()->CurrentFeature->FrameCount() && FrameGen_Dx12::fgTarget <= Config::Instance()->CurrentFeature->FrameCount())
     {
         LOG_DEBUG("FrameCount: {0}, fgHudlessFrame: {1}, CommandList: {2:X}", Config::Instance()->CurrentFeature->FrameCount(), fgHudlessFrame, (UINT64)This);
@@ -501,6 +501,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
 
                 fgDispatchCalled = false;
                 FrameGen_Dx12::fgSkipHudlessChecks = false;
+                //FrameGen_Dx12::upscaleRan = true;
 
                 return dispatchResult;
             };
@@ -832,7 +833,7 @@ static void hkCopyResource(ID3D12GraphicsCommandList* This, ID3D12Resource* Dest
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || HooksDx::fgContext == nullptr ||
-        HooksDx::fgTarget > Config::Instance()->CurrentFeature->FrameCount() ||
+        HooksDx::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || Config::Instance()->FGChanged ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
@@ -865,7 +866,7 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || FrameGen_Dx12::fgContext == nullptr ||
-        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive ||
+        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive || Config::Instance()->FGChanged ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
@@ -941,7 +942,7 @@ static void hkCopyDescriptors(ID3D12Device* This,
     LOG_DEBUG_ONLY("SrcRanges: {}, DestRanges: {}, Type: {}", NumSrcDescriptorRanges, NumDestDescriptorRanges, (UINT)DescriptorHeapsType);
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || FrameGen_Dx12::fgContext == nullptr ||
-        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive ||
+        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive || Config::Instance()->FGChanged ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
@@ -1004,7 +1005,7 @@ static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || FrameGen_Dx12::fgContext == nullptr ||
-        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive ||
+        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive || Config::Instance()->FGChanged ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
@@ -1040,7 +1041,7 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || FrameGen_Dx12::fgContext == nullptr ||
-        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive ||
+        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive || Config::Instance()->FGChanged ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
@@ -1089,7 +1090,7 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || FrameGen_Dx12::fgContext == nullptr ||
-        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive ||
+        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive || Config::Instance()->FGChanged ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
@@ -1146,7 +1147,7 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || FrameGen_Dx12::fgContext == nullptr ||
-        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive ||
+        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive || Config::Instance()->FGChanged ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
@@ -1190,7 +1191,7 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || FrameGen_Dx12::fgContext == nullptr ||
-        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive ||
+        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive || Config::Instance()->FGChanged ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
@@ -1243,7 +1244,7 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || FrameGen_Dx12::fgContext == nullptr ||
-        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive ||
+        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive || Config::Instance()->FGChanged ||
         fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
         return;
 
@@ -1299,8 +1300,8 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
         return;
 
     if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || FrameGen_Dx12::fgContext == nullptr ||
-        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive ||
-        fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr)
+        FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive || Config::Instance()->FGChanged ||
+        fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount() && fgCopySource[fIndex] != nullptr) 
         return;
 
     LOG_DEBUG_ONLY(" <-- {0:X}", (size_t)This);
@@ -1528,6 +1529,9 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
     ImGuiOverlayDx::Present(pSwapChain, SyncInterval, Flags, pPresentParameters, pDevice, hWnd);
     
+    if (fakenvapi::Fake_InformFGState != nullptr)
+        fakenvapi::Fake_InformFGState(FrameGen_Dx12::fgIsActive);
+
     // Inform AntiLag 2 when present of interpolated frames starts
     if (FrameGen_Dx12::fgIsActive) {
         // Starting with FSR 3.1.1 we can provide an AntiLag 2 context to FSR FG
@@ -2780,8 +2784,21 @@ void FrameGen_Dx12::CreateFGContext(ID3D12Device* InDevice, IFeature* deviceCont
 
     ffxCreateContextDescFrameGeneration createFg{};
     createFg.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATION;
-    createFg.displaySize = { deviceContext->DisplayWidth(), deviceContext->DisplayHeight() };
-    createFg.maxRenderSize = { deviceContext->DisplayWidth(), deviceContext->DisplayHeight() };
+
+    // use swapchain buffer info 
+    DXGI_SWAP_CHAIN_DESC desc{};
+    if (HooksDx::currentSwapchain->GetDesc(&desc) == S_OK)
+    {
+        createFg.displaySize = { desc.BufferDesc.Width, desc.BufferDesc.Height };
+        createFg.maxRenderSize = { desc.BufferDesc.Width, desc.BufferDesc.Height };
+    }
+    else
+    {
+        // this might cause issues
+        createFg.displaySize = { deviceContext->DisplayWidth(), deviceContext->DisplayHeight() };
+        createFg.maxRenderSize = { deviceContext->DisplayWidth(), deviceContext->DisplayHeight() };
+    }
+    
     createFg.flags = 0;
 
     if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR)

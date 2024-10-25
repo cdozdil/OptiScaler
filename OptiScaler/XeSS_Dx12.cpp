@@ -279,6 +279,8 @@ XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12Gr
     params->Set(NVSDK_NGX_Parameter_MotionVectors, pExecParams->pVelocityTexture);
     params->Set(NVSDK_NGX_Parameter_Output, pExecParams->pOutputTexture);
 
+    Config::Instance()->setInputApiName = "XeSS";
+
     if (NVSDK_NGX_D3D12_EvaluateFeature(pCommandList, handle, params, nullptr) == NVSDK_NGX_Result_Success)
         return XESS_RESULT_SUCCESS;
 

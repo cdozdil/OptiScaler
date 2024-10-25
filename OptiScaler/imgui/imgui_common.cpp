@@ -841,7 +841,10 @@ void ImGuiCommon::RenderMenu()
                             break;
 
                         case NVNGX_DX12:
-                            ImGui::Text("DirectX 12 %s- %s (%d.%d.%d)", Config::Instance()->IsRunningOnDXVK ? "(DXVK)" : "", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
+                            ImGui::Text("DirectX 12 %s- %s (%d.%d.%d)", Config::Instance()->IsRunningOnDXVK ? "(DXVK) " : "", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
+
+                            ImGui::SameLine(0.0f, 6.0f);
+                            ImGui::Text("Source Api: %s", Config::Instance()->currentInputApiName.c_str());
 
                             if (Config::Instance()->CurrentFeature->Name() != "DLSSD")
                                 AddDx12Backends(&currentBackend, &currentBackendName);
@@ -849,7 +852,7 @@ void ImGuiCommon::RenderMenu()
                             break;
 
                         default:
-                            ImGui::Text("Vulkan %s- %s (%d.%d.%d)", Config::Instance()->IsRunningOnDXVK ? "(DXVK)" : "", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
+                            ImGui::Text("Vulkan %s- %s (%d.%d.%d)", Config::Instance()->IsRunningOnDXVK ? "(DXVK) " : "", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
 
                             if (Config::Instance()->CurrentFeature->Name() != "DLSSD")
                                 AddVulkanBackends(&currentBackend, &currentBackendName);

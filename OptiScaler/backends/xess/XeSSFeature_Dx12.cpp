@@ -306,7 +306,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		return false;
 	}
 
-	// apply rcas
+	// Apply RCAS
 	if (Config::Instance()->RcasEnabled.value_or(true) && 
 		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
 		RCAS->CanRender())

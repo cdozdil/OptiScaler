@@ -854,6 +854,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     auto evaluateStart = GetTicks();
 
+    if (Config::Instance()->setInputApiName.length() == 0)
+        Config::Instance()->currentInputApiName = "DLSS";
+    else
+        Config::Instance()->currentInputApiName = Config::Instance()->setInputApiName;
+
+    Config::Instance()->setInputApiName.clear();
+
     if (!InCmdList)
     {
         LOG_ERROR("InCmdList is null!!!");
@@ -1192,9 +1199,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             FrameGen_Dx12::fgTarget = deviceContext->FrameCount() + 20;
             Config::Instance()->FGChanged = false;
         }
-
-        if (fakenvapi::Fake_InformFGState != nullptr)
-            fakenvapi::Fake_InformFGState(FrameGen_Dx12::fgIsActive);
     }
 
     Config::Instance()->SCChanged = false;
@@ -1202,7 +1206,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     // Record the first timestamp (before FSR2 upscaling)
     InCmdList->EndQuery(HooksDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
 
+    ID3D12Resource* output;
+    InParameters->Get(NVSDK_NGX_Parameter_Output, &output);
+
+    auto frameIndex = FrameGen_Dx12::ClearFrameResources();
+    FrameGen_Dx12::NewFrame();
+    FrameGen_Dx12::fgUpscaledImage[frameIndex] = output;
+
     bool evalResult = deviceContext->Evaluate(InCmdList, InParameters);
+    
+    FrameGen_Dx12::upscaleRan = true;
 
     // Record the second timestamp (after FSR2 upscaling)
     InCmdList->EndQuery(HooksDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 1);
@@ -1275,13 +1288,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
             fgLastFrameTime = now;
 
-            ID3D12Resource* output;
-            InParameters->Get(NVSDK_NGX_Parameter_Output, &output);
-
-            auto frameIndex = FrameGen_Dx12::ClearFrameResources();
-            FrameGen_Dx12::NewFrame();
-            FrameGen_Dx12::fgUpscaledImage[frameIndex] = output;
-
             auto allocator = FrameGen_Dx12::fgCopyCommandAllocators[frameIndex];
             auto result = allocator->Reset();
             result = FrameGen_Dx12::fgCopyCommandList->Reset(allocator, nullptr);
@@ -1352,22 +1358,22 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         if (Config::Instance()->CurrentFeature != nullptr)
                             fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
 
-                        auto result = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
+                        auto dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
 
                         ID3D12CommandList* cl[1] = { nullptr };
-                        result = FrameGen_Dx12::fgCopyCommandList->Close();
+                        auto result = FrameGen_Dx12::fgCopyCommandList->Close();
                         cl[0] = FrameGen_Dx12::fgCopyCommandList;
                         FrameGen_Dx12::gameCommandQueue->ExecuteCommandLists(1, cl);
 
-                        if (result != FFX_API_RETURN_OK)
-                            LOG_ERROR("(FG) D3D12_Dispatch error: {}({})", result, FfxApiProxy::ReturnCodeToString(result));
+                        if (dispatchResult != FFX_API_RETURN_OK || result != S_OK)
+                            LOG_ERROR("(FG) D3D12_Dispatch result: {}({}, Close result: {})", (UINT)dispatchResult, FfxApiProxy::ReturnCodeToString(dispatchResult), (UINT)result);
 
                         return result;
 #else
-                        if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged || Config::Instance()->CurrentFeature == nullptr || HooksDx::fgContext == nullptr)
+                        if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged || Config::Instance()->CurrentFeature == nullptr || FrameGen_Dx12::fgContext == nullptr)
                             return FFX_API_RETURN_OK;
 
-                        auto result = _dispatch(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
+                        auto result = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
                         return result;
 #endif
                     };
@@ -1426,6 +1432,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                     if (CreateBufferResource(L"fgDepth", D3D12Device, paramDepth, D3D12_RESOURCE_STATE_COPY_DEST, &FrameGen_Dx12::paramDepth[frameIndex]))
                         InCmdList->CopyResource(FrameGen_Dx12::paramDepth[frameIndex], paramDepth);
+
+                    dfgPrepare.motionVectors = ffxApiGetResourceDX12(FrameGen_Dx12::paramVelocity[frameIndex], FFX_API_RESOURCE_STATE_COMPUTE_READ);
+                    dfgPrepare.depth = ffxApiGetResourceDX12(FrameGen_Dx12::paramDepth[frameIndex], FFX_API_RESOURCE_STATE_COMPUTE_READ);
+
 #else
                     ID3D12Resource* paramVelocity;
                     if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
@@ -1439,9 +1449,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                     dfgPrepare.depth = ffxApiGetResourceDX12(paramDepth, FFX_API_RESOURCE_STATE_COMPUTE_READ);
 #endif
-
-                    dfgPrepare.motionVectors = ffxApiGetResourceDX12(FrameGen_Dx12::paramVelocity[frameIndex], FFX_API_RESOURCE_STATE_COMPUTE_READ);
-                    dfgPrepare.depth = ffxApiGetResourceDX12(FrameGen_Dx12::paramDepth[frameIndex], FFX_API_RESOURCE_STATE_COMPUTE_READ);
 
                     float MVScaleX = 1.0f;
                     float MVScaleY = 1.0f;
@@ -1487,8 +1494,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             }
             else
             {
-                FrameGen_Dx12::upscaleRan = true;
-
                 LOG_DEBUG("(HudFix) fgUpscaledImage[{}]", frameIndex);
                 LOG_DEBUG("(HudFix) copy buffers running, frame: {0}", deviceContext->FrameCount());
 
