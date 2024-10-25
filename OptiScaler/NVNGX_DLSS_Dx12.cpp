@@ -966,9 +966,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         // first release everything
         if (changeBackendCounter == 1)
         {
-            if (FrameGen_Dx12::fgContext != nullptr)
+            if (FrameGen_Dx12::fgIsActive)
             {
                 FrameGen_Dx12::StopAndDestroyFGContext(false, false);
+                Config::Instance()->FGChanged = true;
             }
 
             if (Dx12Contexts.contains(handleId))
@@ -1161,9 +1162,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     Config::Instance()->CurrentFeature = deviceContext;
 
+    // Root signature restore
     ID3D12RootSignature* orgComputeRootSig = nullptr;
     ID3D12RootSignature* orgGraphicRootSig = nullptr;
-
     if (deviceContext->Name() != "DLSSD")
     {
         sigatureMutex.lock();
@@ -1203,28 +1204,19 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     Config::Instance()->SCChanged = false;
 
-    // Record the first timestamp (before FSR2 upscaling)
+    // Record the first timestamp
     InCmdList->EndQuery(HooksDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
 
-    ID3D12Resource* output;
-    InParameters->Get(NVSDK_NGX_Parameter_Output, &output);
-
-    auto frameIndex = FrameGen_Dx12::ClearFrameResources();
-    FrameGen_Dx12::NewFrame();
-    FrameGen_Dx12::fgUpscaledImage[frameIndex] = output;
-
+    // Run upscaler
     bool evalResult = deviceContext->Evaluate(InCmdList, InParameters);
     
-    FrameGen_Dx12::upscaleRan = true;
-
-    // Record the second timestamp (after FSR2 upscaling)
+    // Record the second timestamp 
     InCmdList->EndQuery(HooksDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 1);
 
     // Resolve the queries to the readback buffer
     InCmdList->ResolveQueryData(HooksDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0, 2, HooksDx::readbackBuffer, 0);
 
-    HooksDx::dx12UpscaleTrig = true;
-
+    // Root signature restore
     if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
     {
         sigatureMutex.lock();
@@ -1270,13 +1262,26 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     LOG_DEBUG("Upscaling done: {0:X}", (UINT)evalResult);
 
+
     if (evalResult)
     {
+        HooksDx::dx12UpscaleTrig = true;
+
         // FG Dispatch || Prepare
         if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
             Config::Instance()->FGEnabled.value_or(false) && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() &&
             FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
         {
+            // Frame gen stuff
+            ID3D12Resource* output;
+            InParameters->Get(NVSDK_NGX_Parameter_Output, &output);
+
+
+            auto frameIndex = FrameGen_Dx12::ClearFrameResources();
+            FrameGen_Dx12::NewFrame();
+            FrameGen_Dx12::fgUpscaledImage[frameIndex] = output;
+            FrameGen_Dx12::upscaleRan = true;
+
             float msDelta = 0.0;
             auto now = Util::MillisecondsNow();
 
@@ -1286,6 +1291,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 LOG_DEBUG("(FG) msDelta: {0}", msDelta);
             }
 
+            FrameGen_Dx12::fgFrameTime = msDelta;
             fgLastFrameTime = now;
 
             auto allocator = FrameGen_Dx12::fgCopyCommandAllocators[frameIndex];
@@ -1516,8 +1522,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &FrameGen_Dx12::mvScaleX);
                 InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &FrameGen_Dx12::mvScaleY);
-
-                FrameGen_Dx12::fgFrameTime = msDelta;
 
                 LOG_DEBUG("(HudFix) copy buffers done, frame: {0}", deviceContext->FrameCount());
             }
