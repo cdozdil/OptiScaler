@@ -1561,9 +1561,12 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         HooksDx::currentFrameIndex = (HooksDx::currentFrameIndex + 1) % HooksDx::QUERY_BUFFER_COUNT;
     }
 
-
     ImGuiOverlayDx::Present(pSwapChain, SyncInterval, Flags, pPresentParameters, pDevice, hWnd);
-
+    
+    if (Config::Instance()->FGUseFGSwapChain.value_or(true)) {
+        fakenvapi::reportFGPresent(pSwapChain, FrameGen_Dx12::fgIsActive, frameCounter % 2);
+    }
+        
     frameCounter++;
 
     // swapchain present
