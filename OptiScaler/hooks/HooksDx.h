@@ -47,7 +47,7 @@ namespace FrameGen_Dx12
     inline const int FG_BUFFER_SIZE = 4;
     inline ID3D12Resource* paramVelocity[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
     inline ID3D12Resource* paramDepth[FG_BUFFER_SIZE] = { nullptr, nullptr,nullptr, nullptr };
-    inline UINT64 fgHUDlessCaptureCounter[FG_BUFFER_SIZE] = { 0,0,0,0 };
+    inline INT64 fgHUDlessCaptureCounter[FG_BUFFER_SIZE] = { 0,0,0,0 };
     inline bool upscaleRan = false;
     inline bool fgSkipHudlessChecks = false;
     inline double fgFrameTime = 0.0;

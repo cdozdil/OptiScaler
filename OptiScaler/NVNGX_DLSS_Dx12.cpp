@@ -24,7 +24,7 @@
 #define USE_COPY_QUEUE_FOR_FG
 
 #ifndef USE_COPY_QUEUE_FOR_FG
-#define DONT_USE_DEPTH_MV_COPIES
+//#define DONT_USE_DEPTH_MV_COPIES
 #endif
 
 static UINT64 fgLastFrameTime = 0;
@@ -1204,12 +1204,59 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     Config::Instance()->SCChanged = false;
 
+    // Frame gen stuff
+    ID3D12Resource* output;
+    InParameters->Get(NVSDK_NGX_Parameter_Output, &output);
+
+    // FG Prepare
+    UINT frameIndex;
+
+    if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
+        Config::Instance()->FGEnabled.value_or(false) && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() &&
+        FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
+    {
+        frameIndex = FrameGen_Dx12::ClearFrameResources();
+        FrameGen_Dx12::NewFrame();
+        FrameGen_Dx12::fgUpscaledImage[frameIndex] = output;
+
+        auto allocator = FrameGen_Dx12::fgCopyCommandAllocators[frameIndex];
+        auto result = allocator->Reset();
+        result = FrameGen_Dx12::fgCopyCommandList->Reset(allocator, nullptr);
+
+        LOG_DEBUG("(FG) fgUpscaledImage[{}]", frameIndex);
+        LOG_DEBUG("(FG) copy buffers running, frame: {0}", deviceContext->FrameCount());
+
+        InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &FrameGen_Dx12::jitterX);
+        InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &FrameGen_Dx12::jitterY);
+
+        ID3D12Resource* paramVelocity;
+        if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
+            InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
+
+        if (CreateBufferResource(L"fgVelocity", D3D12Device, paramVelocity, D3D12_RESOURCE_STATE_COPY_DEST, &FrameGen_Dx12::paramVelocity[frameIndex]))
+            InCmdList->CopyResource(FrameGen_Dx12::paramVelocity[frameIndex], paramVelocity);
+
+        ID3D12Resource* paramDepth;
+        if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
+            InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
+
+        if (CreateBufferResource(L"fgDepth", D3D12Device, paramDepth, D3D12_RESOURCE_STATE_COPY_DEST, &FrameGen_Dx12::paramDepth[frameIndex]))
+            InCmdList->CopyResource(FrameGen_Dx12::paramDepth[frameIndex], paramDepth);
+
+        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &FrameGen_Dx12::mvScaleX);
+        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &FrameGen_Dx12::mvScaleY);
+
+        FrameGen_Dx12::upscaleRan = true;
+
+        LOG_DEBUG("(FG) copy buffers done, frame: {0}", deviceContext->FrameCount());
+    }
+
     // Record the first timestamp
     InCmdList->EndQuery(HooksDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
 
     // Run upscaler
-    bool evalResult = deviceContext->Evaluate(InCmdList, InParameters);
-    
+    auto evalResult = deviceContext->Evaluate(InCmdList, InParameters);
+
     // Record the second timestamp 
     InCmdList->EndQuery(HooksDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 1);
 
@@ -1260,28 +1307,17 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         sigatureMutex.unlock();
     }
 
-    LOG_DEBUG("Upscaling done: {0:X}", (UINT)evalResult);
-
+    LOG_DEBUG("Upscaling done: {}", evalResult);
 
     if (evalResult)
     {
         HooksDx::dx12UpscaleTrig = true;
 
-        // FG Dispatch || Prepare
+        // FG Dispatch
         if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
             Config::Instance()->FGEnabled.value_or(false) && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() &&
             FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
         {
-            // Frame gen stuff
-            ID3D12Resource* output;
-            InParameters->Get(NVSDK_NGX_Parameter_Output, &output);
-
-
-            auto frameIndex = FrameGen_Dx12::ClearFrameResources();
-            FrameGen_Dx12::NewFrame();
-            FrameGen_Dx12::fgUpscaledImage[frameIndex] = output;
-            FrameGen_Dx12::upscaleRan = true;
-
             float msDelta = 0.0;
             auto now = Util::MillisecondsNow();
 
@@ -1293,10 +1329,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
             FrameGen_Dx12::fgFrameTime = msDelta;
             fgLastFrameTime = now;
-
-            auto allocator = FrameGen_Dx12::fgCopyCommandAllocators[frameIndex];
-            auto result = allocator->Reset();
-            result = FrameGen_Dx12::fgCopyCommandList->Reset(allocator, nullptr);
 
             if (!Config::Instance()->FGHUDFix.value_or(false) || FrameGen_Dx12::fgTarget > deviceContext->FrameCount())
             {
@@ -1425,23 +1457,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &dfgPrepare.jitterOffset.y);
 
 #ifndef DONT_USE_DEPTH_MV_COPIES
-                    ID3D12Resource* paramVelocity;
-                    if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
-                        InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
-
-                    if (CreateBufferResource(L"fgVelocity", D3D12Device, paramVelocity, D3D12_RESOURCE_STATE_COPY_DEST, &FrameGen_Dx12::paramVelocity[frameIndex]))
-                        InCmdList->CopyResource(FrameGen_Dx12::paramVelocity[frameIndex], paramVelocity);
-
-                    ID3D12Resource* paramDepth;
-                    if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
-                        InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
-
-                    if (CreateBufferResource(L"fgDepth", D3D12Device, paramDepth, D3D12_RESOURCE_STATE_COPY_DEST, &FrameGen_Dx12::paramDepth[frameIndex]))
-                        InCmdList->CopyResource(FrameGen_Dx12::paramDepth[frameIndex], paramDepth);
-
                     dfgPrepare.motionVectors = ffxApiGetResourceDX12(FrameGen_Dx12::paramVelocity[frameIndex], FFX_API_RESOURCE_STATE_COMPUTE_READ);
                     dfgPrepare.depth = ffxApiGetResourceDX12(FrameGen_Dx12::paramDepth[frameIndex], FFX_API_RESOURCE_STATE_COMPUTE_READ);
-
 #else
                     ID3D12Resource* paramVelocity;
                     if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
@@ -1498,37 +1515,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         LOG_DEBUG("(FG) Dispatch ok.");
                 }
             }
-            else
-            {
-                LOG_DEBUG("(HudFix) fgUpscaledImage[{}]", frameIndex);
-                LOG_DEBUG("(HudFix) copy buffers running, frame: {0}", deviceContext->FrameCount());
-
-                InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &FrameGen_Dx12::jitterX);
-                InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &FrameGen_Dx12::jitterY);
-
-                ID3D12Resource* paramVelocity;
-                if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
-                    InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
-
-                if (CreateBufferResource(L"fgVelocity", D3D12Device, paramVelocity, D3D12_RESOURCE_STATE_COPY_DEST, &FrameGen_Dx12::paramVelocity[frameIndex]))
-                    InCmdList->CopyResource(FrameGen_Dx12::paramVelocity[frameIndex], paramVelocity);
-
-                ID3D12Resource* paramDepth;
-                if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
-                    InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
-
-                if (CreateBufferResource(L"fgDepth", D3D12Device, paramDepth, D3D12_RESOURCE_STATE_COPY_DEST, &FrameGen_Dx12::paramDepth[frameIndex]))
-                    InCmdList->CopyResource(FrameGen_Dx12::paramDepth[frameIndex], paramDepth);
-
-                InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &FrameGen_Dx12::mvScaleX);
-                InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &FrameGen_Dx12::mvScaleY);
-
-                LOG_DEBUG("(HudFix) copy buffers done, frame: {0}", deviceContext->FrameCount());
-            }
-        }
+    }
 
         return NVSDK_NGX_Result_Success;
-    }
+}
 
     return NVSDK_NGX_Result_Fail;
 }

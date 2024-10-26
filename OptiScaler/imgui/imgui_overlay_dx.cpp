@@ -483,6 +483,11 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
     pSwapChain->Release();
 }
 
+ID3D12GraphicsCommandList* ImGuiOverlayDx::MenuCommandList()
+{
+    return g_pd3dCommandList;
+}
+
 void ImGuiOverlayDx::CleanupRenderTarget(bool clearQueue, HWND hWnd)
 {
     LOG_FUNC();
