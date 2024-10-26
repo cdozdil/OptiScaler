@@ -1398,6 +1398,22 @@ void ImGuiCommon::RenderMenu()
                         }
                     }
 
+                    // Reflex ---------------------
+                    if (!Config::Instance()->DE_Available && Config::Instance()->ReflexAvailable)
+                    {
+                        ImGui::SeparatorText("Reflex");
+
+                        // set inital value
+                        if (Config::Instance()->FramerateLimit.has_value() && _limitFps > 200)
+                            _limitFps = Config::Instance()->FramerateLimit.value();
+
+                        ImGui::SliderFloat("FPS Limit", &_limitFps, 0, 200, "%.0f");
+
+                        if (ImGui::Button("Apply Limit")) {
+                            Config::Instance()->FramerateLimit = _limitFps;
+                        }
+                    }
+
                     // OUTPUT SCALING -----------------------------
                     if (Config::Instance()->Api == NVNGX_DX12 || Config::Instance()->Api == NVNGX_DX11)
                     {

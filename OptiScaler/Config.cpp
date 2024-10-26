@@ -59,6 +59,11 @@ bool Config::Reload(std::filesystem::path iniPath)
             FGHUDFixExtended = readBool("FrameGen", "HUDFixExtended");
         }
 
+        // Reflex 
+        {
+            FramerateLimit = readFloat("Reflex", "FramerateLimit");
+        }
+
         // FSR
         {
             FsrVerticalFov = readFloat("FSR", "VerticalFov");
@@ -480,6 +485,11 @@ bool Config::SaveIni()
         ini.SetValue("FrameGen", "HUDFix", GetBoolValue(Instance()->FGHUDFix).c_str());
         ini.SetValue("FrameGen", "HUDLimit", GetIntValue(Instance()->FGHUDLimit).c_str());
         ini.SetValue("FrameGen", "HUDFixExtended", GetBoolValue(Instance()->FGHUDFixExtended).c_str());
+    }
+
+    // Reflex 
+    {
+        ini.SetValue("Reflex", "FramerateLimit", GetFloatValue(Instance()->FramerateLimit).c_str());
     }
 
     // Output Scaling

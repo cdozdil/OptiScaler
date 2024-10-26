@@ -34,6 +34,9 @@ private:
     // dlss enabler
     inline static int _deLimitFps = 500;
 
+    // reflex
+    inline static float _limitFps = 500;
+
     // fsr3x
     inline static int _fsr3xIndex = -1;
 

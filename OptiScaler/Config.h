@@ -204,6 +204,10 @@ public:
 	std::optional<uint32_t> FN_LatencyFlexMode;		// conservative - aggressive - reflex ids
 	std::optional<uint32_t> FN_ForceReflex;			// in-game - force disable - force enable
 
+	// reflex
+	bool ReflexAvailable = false;
+	std::optional<float> FramerateLimit;
+
 	// for realtime changes
 	bool changeBackend = false;
 	std::string newBackend = "";

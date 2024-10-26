@@ -207,7 +207,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="bias\Bias_Dx12.h" />
     <ClInclude Include="bias\Bias_Dx11.h" />
     <ClInclude Include="bias\precompile\Bias_Shader.h" />
-    <ClInclude Include="fakenvapi.h" />
+    <ClInclude Include="nvapi\fakenvapi.h" />
     <ClInclude Include="format_transfer\FT_Common.h" />
     <ClInclude Include="format_transfer\FT_Dx12.h" />
     <ClInclude Include="FfxApi_Proxy.h" />
@@ -216,12 +216,14 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="format_transfer\precompile\R8G8B8A8_Shader.h" />
     <ClInclude Include="hooks\HooksDx.h" />
     <ClInclude Include="hooks\HooksVk.h" />
+    <ClInclude Include="nvapi\NvApiHooks.h" />
+    <ClInclude Include="nvapi\NvApiTypes.h" />
     <ClInclude Include="output_scaling\OS_Common.h" />
     <ClInclude Include="output_scaling\OS_Dx12.h" />
     <ClInclude Include="output_scaling\precompile\BCDS_Shader.h" />
     <ClInclude Include="output_scaling\precompile\BCUS_Shader.h" />
     <ClInclude Include="bicubicscaling\precompile\FSR_Shader.h" />
-    <ClInclude Include="nvapi\nvapi.h" />
+    <ClInclude Include="nvapi\external\nvapi.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_212.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx11On12_212.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx12_212.h" />
@@ -266,6 +268,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="rcas\RCAS_Common.h" />
     <ClInclude Include="rcas\RCAS_Dx11.h" />
     <ClInclude Include="rcas\RCAS_Dx12.h" />
+    <ClInclude Include="nvapi\ReflexHooks.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Util.h" />
     <ClInclude Include="backends\xess\XeSSFeature_Dx11.h" />

@@ -134,7 +134,7 @@
     <ClInclude Include="backends\dlss\DLSSFeature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="nvapi\nvapi.h">
+    <ClInclude Include="nvapi\external\nvapi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="backends\dlss\DLSSFeature_Vk.h">
@@ -269,7 +269,16 @@
     <ClInclude Include="XeSS_Proxy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="fakenvapi.h">
+    <ClInclude Include="nvapi\fakenvapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nvapi\ReflexHooks.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nvapi\NvApiHooks.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nvapi\NvApiTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
