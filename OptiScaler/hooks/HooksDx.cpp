@@ -576,7 +576,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
             retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
             fgDispatchCalled = true;
             Config::Instance()->dxgiSkipSpoofing = false;
-            LOG_DEBUG("_dispatch result: {0}, frame: {1}", retCode, frame);
+            LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}", retCode, frame);
         }
     }
 }
@@ -1562,11 +1562,11 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
     }
 
     ImGuiOverlayDx::Present(pSwapChain, SyncInterval, Flags, pPresentParameters, pDevice, hWnd);
-    
+
     if (Config::Instance()->FGUseFGSwapChain.value_or(true)) {
         fakenvapi::reportFGPresent(pSwapChain, FrameGen_Dx12::fgIsActive, frameCounter % 2);
     }
-        
+
     frameCounter++;
 
     // swapchain present
