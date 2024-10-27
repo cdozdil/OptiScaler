@@ -23,7 +23,9 @@ class ReflexHooks {
 		memcpy(&_lastSleepParams, pSetSleepModeParams, sizeof(NV_SET_SLEEP_MODE_PARAMS));
 		_lastSleepDev = pDev;
 
-		pSetSleepModeParams->minimumIntervalUs = _minimumIntervalUs;
+		if (_minimumIntervalUs != 0)
+			pSetSleepModeParams->minimumIntervalUs = _minimumIntervalUs;
+
 		return o_NvAPI_D3D_SetSleepMode(pDev, pSetSleepModeParams);
 	}
 
