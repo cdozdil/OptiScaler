@@ -177,14 +177,33 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
     }
 
     // NvApi64.dll
-    if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or(false) && CheckDllName(&lcaseLibName, &nvapiNames))
-    {
-        LOG_INFO("{0} call!", lcaseLibName);
+    if (CheckDllName(&lcaseLibName, &nvapiNames)) {
+        if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or(false))
+        {
+            LOG_INFO("{0} call!", lcaseLibName);
 
-        auto nvapi = LoadNvApi();
+            LoadNvApi();
+            auto nvapi = GetModuleHandleA(lcaseLibName.c_str());
 
-        if (nvapi != nullptr)
-            return nvapi;
+            // Nvapihooks intentionally won't load nvapi so have to make sure it's loaded
+            if (nvapi != nullptr) {
+                NvApiHooks::Hook(nvapi);
+                return nvapi;
+            }
+        }
+        else
+        {
+            auto nvapi = GetModuleHandleA(lcaseLibName.c_str());
+
+            // Try to load nvapi only from system32, like the original call would
+            if (nvapi == nullptr)
+                nvapi = o_LoadLibraryExA(lcaseLibName.c_str(), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+
+            if (nvapi != nullptr)
+                NvApiHooks::Hook(nvapi);
+
+            // AMD without nvapi override should fall through
+        }
     }
 
     // nvngx_dlss
@@ -246,14 +265,33 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
     }
 
     // NvApi64.dll
-    if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or(false) && CheckDllNameW(&lcaseLibName, &nvapiNamesW))
-    {
-        LOG_INFO("{0} call!", lcaseLibNameA);
+    if (CheckDllNameW(&lcaseLibName, &nvapiNamesW)) {
+        if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or(false))
+        {
+            LOG_INFO("{0} call!", lcaseLibNameA);
 
-        auto nvapi = LoadNvApi();
+            LoadNvApi();
+            auto nvapi = GetModuleHandleW(lcaseLibName.c_str());
 
-        if (nvapi != nullptr)
-            return nvapi;
+            // Nvapihooks intentionally won't load nvapi so have to make sure it's loaded
+            if (nvapi != nullptr) {
+                NvApiHooks::Hook(nvapi);
+                return nvapi;
+            }
+        }
+        else
+        {
+            auto nvapi = GetModuleHandleW(lcaseLibName.c_str());
+
+            // Try to load nvapi only from system32, like the original call would
+            if (nvapi == nullptr)
+                nvapi = o_LoadLibraryExW(lcaseLibName.c_str(), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+
+            if (nvapi != nullptr)
+                NvApiHooks::Hook(nvapi);
+
+            // AMD without nvapi override should fall through
+        }
     }
 
     if (!isNvngxMode && CheckDllNameW(&lcaseLibName, &dllNamesW))

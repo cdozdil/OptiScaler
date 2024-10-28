@@ -287,8 +287,6 @@ public:
         if (_dll != nullptr)
             return;
 
-        NvApiHooks::Hook();
-
         LOG_INFO("");
 
         Config::Instance()->upscalerDisableHook = true;

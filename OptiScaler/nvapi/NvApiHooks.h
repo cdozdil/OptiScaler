@@ -80,13 +80,21 @@ public:
         return functionPointer;
     }
 
-    inline static void Hook()
+    // Requires HMODULE to make sure nvapi is loaded before calling this function
+    inline static void Hook(HMODULE nvapiModule)
     {
         if (OriginalNvAPI_QueryInterface != nullptr)
             return;
 
+        if (nvapiModule == nullptr) {
+            LOG_ERROR("Hook called with a nullptr nvapi module");
+            return;
+        }
+
         LOG_DEBUG("Trying to hook NvApi");
-        OriginalNvAPI_QueryInterface = (NvApiTypes::PFN_NvApi_QueryInterface)DetourFindFunction("nvapi64.dll", "nvapi_QueryInterface");
+
+        OriginalNvAPI_QueryInterface = (NvApiTypes::PFN_NvApi_QueryInterface)GetProcAddress(nvapiModule, "nvapi_QueryInterface");
+
         LOG_DEBUG("OriginalNvAPI_QueryInterface = {0:X}", (unsigned long long)OriginalNvAPI_QueryInterface);
 
         if (OriginalNvAPI_QueryInterface != nullptr)
