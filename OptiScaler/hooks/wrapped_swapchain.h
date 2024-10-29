@@ -48,9 +48,6 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
             if (m_pReal != nullptr)
                 relCount = m_pReal->Release();
 
-            if (ReleaseTrig != nullptr)
-                ReleaseTrig(Handle);
-
             LOG_INFO("{} released", id);
 
             delete this;
