@@ -1246,8 +1246,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &FrameGen_Dx12::mvScaleX);
         InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &FrameGen_Dx12::mvScaleY);
 
-        FrameGen_Dx12::upscaleRan = true;
-
         LOG_DEBUG("(FG) copy buffers done, frame: {0}", deviceContext->FrameCount());
     }
 
@@ -1312,6 +1310,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     if (evalResult)
     {
         HooksDx::dx12UpscaleTrig = true;
+        FrameGen_Dx12::upscaleRan = true;
 
         // FG Dispatch
         if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
@@ -1357,16 +1356,24 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     m_FrameGenerationConfig.flags |= FFX_FRAMEGENERATION_FLAG_DRAW_DEBUG_VIEW;
 
                 m_FrameGenerationConfig.allowAsyncWorkloads = Config::Instance()->FGAsync.value_or(false);
+                m_FrameGenerationConfig.generationRect.left = Config::Instance()->FGRectLeft.value_or(0);
+                m_FrameGenerationConfig.generationRect.top = Config::Instance()->FGRectTop.value_or(0);
 
-                // assume symmetric letterbox
-                m_FrameGenerationConfig.generationRect.left = 0;
-                m_FrameGenerationConfig.generationRect.top = 0;
-                m_FrameGenerationConfig.generationRect.width = deviceContext->DisplayWidth();
-                m_FrameGenerationConfig.generationRect.height = deviceContext->DisplayHeight();
+                // use swapchain buffer info 
+                DXGI_SWAP_CHAIN_DESC scDesc{};
+                if (HooksDx::currentSwapchain->GetDesc(&scDesc) == S_OK)
+                {
+                    m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(scDesc.BufferDesc.Width);
+                    m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(scDesc.BufferDesc.Height);
+                }
+                else 
+                {
+                    m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(deviceContext->DisplayWidth());
+                    m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(deviceContext->DisplayHeight());
+                }
 
                 m_FrameGenerationConfig.frameGenerationCallback = [](ffxDispatchDescFrameGeneration* params, void* pUserCtx) -> ffxReturnCode_t
                     {
-#ifdef USE_COPY_QUEUE_FOR_FG
                         auto fIndex = FrameGen_Dx12::GetFrame();
 
                         // check for status
@@ -1385,9 +1392,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         {
                             LOG_WARN("(FG) Callback without hudless!");
 
+#ifdef USE_COPY_QUEUE_FOR_FG
                             auto allocator = FrameGen_Dx12::fgCopyCommandAllocators[fIndex];
                             auto result = allocator->Reset();
                             result = FrameGen_Dx12::fgCopyCommandList->Reset(allocator, nullptr);
+#endif
 
                             params->frameID = fgLastFGFrame;
                             params->numGeneratedFrames = 0;
@@ -1398,22 +1407,17 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                         auto dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
 
+#ifdef USE_COPY_QUEUE_FOR_FG
                         ID3D12CommandList* cl[1] = { nullptr };
                         auto result = FrameGen_Dx12::fgCopyCommandList->Close();
                         cl[0] = FrameGen_Dx12::fgCopyCommandList;
                         FrameGen_Dx12::gameCommandQueue->ExecuteCommandLists(1, cl);
+#endif
 
                         if (dispatchResult != FFX_API_RETURN_OK || result != S_OK)
                             LOG_ERROR("(FG) D3D12_Dispatch result: {}({}, Close result: {})", (UINT)dispatchResult, FfxApiProxy::ReturnCodeToString(dispatchResult), (UINT)result);
 
                         return result;
-#else
-                        if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged || Config::Instance()->CurrentFeature == nullptr || FrameGen_Dx12::fgContext == nullptr)
-                            return FFX_API_RETURN_OK;
-
-                        auto result = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
-                        return result;
-#endif
                     };
 
                 m_FrameGenerationConfig.frameGenerationCallbackUserContext = &FrameGen_Dx12::fgContext;
@@ -1515,10 +1519,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         LOG_DEBUG("(FG) Dispatch ok.");
                 }
             }
-    }
+        }
 
         return NVSDK_NGX_Result_Success;
-}
+    }
 
     return NVSDK_NGX_Result_Fail;
 }
