@@ -964,6 +964,46 @@ void ImGuiCommon::RenderMenu()
 
                         ImGui::Checkbox("FG Only Generated", &Config::Instance()->FGOnlyGenerated);
                         ShowHelpMarker("Display only FSR 3.1 generated frames");
+
+                        if (Config::Instance()->AdvancedSettings.value_or(false))
+                        {
+                            ImGui::PushItemWidth(95.0);
+                            int rectLeft = Config::Instance()->FGRectLeft.value_or(0);
+                            if (ImGui::InputInt("Rect Left", &rectLeft))
+                                Config::Instance()->FGRectLeft = rectLeft;
+
+                            ImGui::SameLine(0.0f, 16.0f);
+                            int rectTop = Config::Instance()->FGRectTop.value_or(0);
+                            if (ImGui::InputInt("Rect Top", &rectTop))
+                                Config::Instance()->FGRectTop = rectTop;
+
+                            int rectWidth = Config::Instance()->FGRectWidth.value_or(0);
+                            if (ImGui::InputInt("Rect Width", &rectWidth))
+                                Config::Instance()->FGRectWidth = rectWidth;
+
+                            ImGui::SameLine(0.0f, 16.0f);
+                            int rectHeight = Config::Instance()->FGRectHeight.value_or(0);
+                            if (ImGui::InputInt("Rect Height", &rectHeight))
+                                Config::Instance()->FGRectHeight = rectHeight;
+
+                            ImGui::PopItemWidth();
+                            ShowHelpMarker("Frame generation rectangle, adjust for letterboxed content");
+
+                            ImGui::BeginDisabled(!Config::Instance()->FGRectLeft.has_value() && !Config::Instance()->FGRectTop.has_value() &&
+                                                 !Config::Instance()->FGRectWidth.has_value() && !Config::Instance()->FGRectHeight.has_value());
+
+                            if (ImGui::Button("Reset FG Rect"))
+                            {
+                                Config::Instance()->FGRectLeft.reset();
+                                Config::Instance()->FGRectTop.reset();
+                                Config::Instance()->FGRectWidth.reset();
+                                Config::Instance()->FGRectHeight.reset();
+                            }
+
+                            ShowHelpMarker("Resets frame generation rectangle");
+
+                            ImGui::EndDisabled();
+                        }
                     }
 
                     // Dx11 with Dx12

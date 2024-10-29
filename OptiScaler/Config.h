@@ -167,6 +167,10 @@ public:
 	std::optional<bool> FGHUDFix;
 	std::optional<bool> FGHUDFixExtended;
 	std::optional<int> FGHUDLimit;
+	std::optional<int> FGRectLeft;
+	std::optional<int> FGRectTop;
+	std::optional<int> FGRectWidth;
+	std::optional<int> FGRectHeight;
 	bool FGOnlyGenerated = false;
 	bool FGChanged = false;
 	bool SCChanged = false;
