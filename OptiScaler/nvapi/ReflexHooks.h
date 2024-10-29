@@ -95,12 +95,12 @@ public:
 		Config::Instance()->ReflexAvailable = _markersPresent;
 
 		static float lastFps = 0;
-		float currentFps = Config::Instance()->FramerateLimit.value_or(200);
+		float currentFps = Config::Instance()->FramerateLimit.value_or(0);
 
 		if (fgState)
 			currentFps = currentFps / 2;
 
-		if (Config::Instance()->FramerateLimit.has_value() && (currentFps != lastFps)) {
+		if (currentFps != lastFps) {
 			setFPSLimit(currentFps);
 			lastFps = currentFps;
 		}
@@ -108,11 +108,18 @@ public:
 
 	// 0 - disables the fps cap
 	inline static void setFPSLimit(float fps) {
+		LOG_INFO("Set FPS Limit to: {}", fps);
 		if (fps == 0.0)
 			_minimumIntervalUs = 0;
 		else
 			_minimumIntervalUs = 1'000'000 / fps;
-		if (_lastSleepDev != nullptr)
-			hNvAPI_D3D_SetSleepMode(_lastSleepDev, &_lastSleepParams);
+
+		if (_lastSleepDev != nullptr) {
+			NV_SET_SLEEP_MODE_PARAMS temp{};
+			memcpy(&temp, &_lastSleepParams, sizeof(NV_SET_SLEEP_MODE_PARAMS));
+			temp.minimumIntervalUs = _minimumIntervalUs;
+			o_NvAPI_D3D_SetSleepMode(_lastSleepDev, &temp);
+		}
+			
 	}
 };

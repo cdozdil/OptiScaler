@@ -1404,8 +1404,8 @@ void ImGuiCommon::RenderMenu()
                         ImGui::SeparatorText("Reflex");
 
                         // set inital value
-                        if (Config::Instance()->FramerateLimit.has_value() && _limitFps > 200)
-                            _limitFps = Config::Instance()->FramerateLimit.value();
+                        if (_limitFps == INFINITY)
+                            _limitFps = Config::Instance()->FramerateLimit.value_or(0);
 
                         ImGui::SliderFloat("FPS Limit", &_limitFps, 0, 200, "%.0f");
 
