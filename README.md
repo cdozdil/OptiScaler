@@ -125,6 +125,7 @@ Currently OptiScaler can be used with DirectX 11, DirectX 12 and Vulkan but each
 
 #### For DirectX 11
 - FSR2 2.2.1 (Default, native DX11)
+- FSR3 3.1.1 (unofficial port to native DX11)
 - XeSS 1.x.x, FSR2 2.1.2, 2.2.1, FSR3 3.1.0 & FSR2 2.3.2 (via background DX12 processing) [*]
 - DLSS (native DX11)
 
