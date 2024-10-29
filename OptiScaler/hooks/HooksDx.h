@@ -64,6 +64,7 @@ namespace FrameGen_Dx12
     UINT ClearFrameResources();
     UINT GetFrame();
     void NewFrame();
+    void ReleaseFGSwapchain(HWND hWnd);
     void ReleaseFGObjects();
     void CreateFGObjects(ID3D12Device* InDevice);
     void CreateFGContext(ID3D12Device* InDevice, IFeature* deviceContext);

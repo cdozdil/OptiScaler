@@ -4,10 +4,11 @@
 
 typedef HRESULT(*PFN_SC_Present)(IDXGISwapChain*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*, IUnknown*, HWND);
 typedef void(*PFN_SC_Clean)(bool, HWND);
+typedef void(*PFN_SC_Release)(HWND);
 
 struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapChain4 : public IDXGISwapChain4
 {
-    WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* pDevice, HWND hWnd, PFN_SC_Present renderTrig, PFN_SC_Clean clearTrig);
+    WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* pDevice, HWND hWnd, PFN_SC_Present renderTrig, PFN_SC_Clean clearTrig, PFN_SC_Release releaseTrig);
 
     virtual ~WrappedIDXGISwapChain4();
 
@@ -46,6 +47,9 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
 
             if (m_pReal != nullptr)
                 relCount = m_pReal->Release();
+
+            if (ReleaseTrig != nullptr)
+                ReleaseTrig(Handle);
 
             LOG_INFO("{} released", id);
 
@@ -250,6 +254,7 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
 
     PFN_SC_Present RenderTrig = nullptr;
     PFN_SC_Clean ClearTrig = nullptr;
+    PFN_SC_Release ReleaseTrig = nullptr;
     HWND Handle = nullptr;
 
     int id = 0;
