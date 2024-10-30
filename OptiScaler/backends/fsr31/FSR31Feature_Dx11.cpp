@@ -537,7 +537,7 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     Config::Instance()->fsr3xVersionIds.resize(versionCount);
     Config::Instance()->fsr3xVersionNames.resize(versionCount);
     Config::Instance()->fsr3xVersionIds.push_back(1);
-    auto version_number = "3.1.1";
+    auto version_number = "3.1.2";
     Config::Instance()->fsr3xVersionNames.push_back(version_number);
 
 
