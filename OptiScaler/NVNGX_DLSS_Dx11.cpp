@@ -1,22 +1,21 @@
 #pragma once
-#include "pch.h"
+#include <pch.h>
+#include <Config.h>
+#include <Util.h>
 
-#include "Config.h"
-#include "Util.h"
+#include <NVNGX_Parameter.h>
+#include <NVNGX_Proxy.h>
 
-#include "NVNGX_Parameter.h"
-#include "NVNGX_Proxy.h"
+#include <upscalers/dlss/DLSSFeature_Dx11.h>
+#include <upscalers/dlssd/DLSSDFeature_Dx11.h>
+#include <upscalers/fsr2/FSR2Feature_Dx11.h>
+#include <upscalers/fsr2/FSR2Feature_Dx11On12.h>
+#include <upscalers/fsr2_212/FSR2Feature_Dx11On12_212.h>
+#include <upscalers/fsr31/FSR31Feature_Dx11On12.h>
+#include <upscalers/xess/XeSSFeature_Dx11.h>
 
-#include "backends/dlss/DLSSFeature_Dx11.h"
-#include "backends/dlssd/DLSSDFeature_Dx11.h"
-#include "backends/fsr2/FSR2Feature_Dx11.h"
-#include "backends/fsr2/FSR2Feature_Dx11On12.h"
-#include "backends/fsr2_212/FSR2Feature_Dx11On12_212.h"
-#include "backends/fsr31/FSR31Feature_Dx11On12.h"
-#include "backends/xess/XeSSFeature_Dx11.h"
-
-#include "imgui/imgui_overlay_dx11.h"
-#include "imgui/imgui_overlay_dx12.h"
+#include <menu/imgui_overlay_dx11.h>
+#include <menu/imgui_overlay_dx12.h>
 
 #include <ankerl/unordered_dense.h>
 
