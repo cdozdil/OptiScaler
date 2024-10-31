@@ -16,7 +16,7 @@
 #include <shared_mutex>
 
 // #define USE_RESOURCE_DISCARD
-// #define USE_COPY_RESOURCE
+#define USE_COPY_RESOURCE
 #define USE_RESOURCE_BARRIRER
 //#define WRAP_SWAP_CHAIN
 
@@ -906,16 +906,37 @@ static void hkCopyResource(ID3D12GraphicsCommandList* This, ID3D12Resource* Dest
     if (!IsHudFixActive())
         return;
 
-    LOG_DEBUG_ONLY(" <--");
+    if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
+    {
+        ResourceInfo upscaledInfo{};
+        FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
+        upscaledInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 
-    ResourceInfo resInfo{};
-    FillResourceInfo(Dest, &resInfo);
+        if (CheckForHudless(__FUNCTION__, &upscaledInfo))
+        {
+            LOG_DEBUG("Capture");
+            CaptureHudless(This, &upscaledInfo, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+        }
 
-    // not matching to swapchain format or limit is not ok
-    if (CheckForHudless(__FUNCTION__, &resInfo, !Config::Instance()->FGHUDFixExtended.value_or(false)) && CheckCapture(__FUNCTION__))
+        FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
+    }
+
+    ResourceInfo srcInfo{};
+    FillResourceInfo(Source, &srcInfo);
+
+    ResourceInfo dstInfo{};
+    FillResourceInfo(Dest, &dstInfo);
+
+    if (CheckForHudless(__FUNCTION__, &srcInfo) && CheckCapture(__FUNCTION__))
     {
         LOG_DEBUG("Capture");
-        CaptureHudless(This, Dest);
+        CaptureHudless(This, &srcInfo, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    }
+
+    if (CheckForHudless(__FUNCTION__, &dstInfo) && CheckCapture(__FUNCTION__))
+    {
+        LOG_DEBUG("Capture");
+        CaptureHudless(This, &dstInfo, D3D12_RESOURCE_STATE_COPY_DEST);
     }
 }
 
@@ -931,16 +952,37 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
     if (!IsHudFixActive())
         return;
 
-    LOG_DEBUG_ONLY(" <--");
+    if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
+    {
+        ResourceInfo upscaledInfo{};
+        FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
+        upscaledInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 
-    ResourceInfo resInfo{};
-    FillResourceInfo(pDst->pResource, &resInfo);
+        if (CheckForHudless(__FUNCTION__, &upscaledInfo))
+        {
+            LOG_DEBUG("Capture");
+            CaptureHudless(This, &upscaledInfo, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+        }
 
-    // not matching to swapchain format or limit is not ok
-    if (CheckForHudless(__FUNCTION__, &resInfo, !Config::Instance()->FGHUDFixExtended.value_or(false)) && CheckCapture(__FUNCTION__))
+        FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
+    }
+
+    ResourceInfo srcInfo{};
+    FillResourceInfo(pSrc->pResource, &srcInfo);
+
+    ResourceInfo dstInfo{};
+    FillResourceInfo(pDst->pResource, &dstInfo);
+
+    if (CheckForHudless(__FUNCTION__, &srcInfo) && CheckCapture(__FUNCTION__))
     {
         LOG_DEBUG("Capture");
-        CaptureHudless(This, &resInfo, D3D12_RESOURCE_STATE_COPY_DEST);
+        CaptureHudless(This, &srcInfo, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    }
+
+    if (CheckForHudless(__FUNCTION__, &dstInfo) && CheckCapture(__FUNCTION__))
+    {
+        LOG_DEBUG("Capture");
+        CaptureHudless(This, &dstInfo, D3D12_RESOURCE_STATE_COPY_DEST);
     }
 }
 
@@ -1114,6 +1156,7 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
             {
                 ResourceInfo upscaledInfo{};
                 FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
+                upscaledInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 
                 if (CheckForHudless(__FUNCTION__, &upscaledInfo))
                     fgPossibleHudless[fIndex][This].insert_or_assign(FrameGen_Dx12::fgUpscaledImage[fIndex], upscaledInfo);
@@ -1133,6 +1176,7 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
         {
             ResourceInfo upscaledInfo{};
             FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
+            upscaledInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 
             if (CheckForHudless(__FUNCTION__, &upscaledInfo))
                 fgPossibleHudless[fIndex][This].insert_or_assign(FrameGen_Dx12::fgUpscaledImage[fIndex], upscaledInfo);
@@ -1189,6 +1233,7 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
                 {
                     ResourceInfo upscaledInfo{};
                     FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
+                    upscaledInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 
                     if (CheckForHudless(__FUNCTION__, &upscaledInfo))
                         fgPossibleHudless[fIndex][This].insert_or_assign(FrameGen_Dx12::fgUpscaledImage[fIndex], upscaledInfo);
@@ -1208,6 +1253,7 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
             {
                 ResourceInfo upscaledInfo{};
                 FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
+                upscaledInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 
                 if (CheckForHudless(__FUNCTION__, &upscaledInfo))
                     fgPossibleHudless[fIndex][This].insert_or_assign(FrameGen_Dx12::fgUpscaledImage[fIndex], upscaledInfo);
@@ -1263,6 +1309,7 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
             {
                 ResourceInfo upscaledInfo{};
                 FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
+                upscaledInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 
                 if (CheckForHudless(__FUNCTION__, &upscaledInfo))
                     fgPossibleHudless[fIndex][This].insert_or_assign(FrameGen_Dx12::fgUpscaledImage[fIndex], upscaledInfo);
@@ -1282,6 +1329,7 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
         {
             ResourceInfo upscaledInfo{};
             FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
+            upscaledInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 
             if (CheckForHudless(__FUNCTION__, &upscaledInfo))
                 fgPossibleHudless[fIndex][This].insert_or_assign(FrameGen_Dx12::fgUpscaledImage[fIndex], upscaledInfo);
