@@ -50,12 +50,6 @@ protected:
     ffxContext _context = nullptr;
     ffxCreateContextDescUpscale _contextDesc = {};
 
-    PfnFfxCreateContext _createContext = nullptr;
-    PfnFfxDestroyContext _destroyContext = nullptr;
-    PfnFfxConfigure _configure = nullptr;
-    PfnFfxQuery _query = nullptr;
-    PfnFfxDispatch _dispatch = nullptr;
-
     virtual bool InitFSR3(const NVSDK_NGX_Parameter* InParameters) = 0;
 
     double MillisecondsNow();

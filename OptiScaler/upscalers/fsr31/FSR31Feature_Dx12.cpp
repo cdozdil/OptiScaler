@@ -1,39 +1,14 @@
 #include "FSR31Feature_Dx12.h"
 
-#include <Config.h>
 #include <Util.h>
+#include <Config.h>
+#include <proxies/FfxApi_Proxy.h>
 
 FSR31FeatureDx12::FSR31FeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : FSR31Feature(InHandleId, InParameters), IFeature_Dx12(InHandleId, InParameters), IFeature(InHandleId, InParameters)
 {
     LOG_DEBUG("Loading amd_fidelityfx_dx12.dll methods");
 
-    auto file = Util::DllPath().parent_path() / "amd_fidelityfx_dx12.dll";
-    LOG_INFO("Trying to load {}", file.string());
-
-    auto _dll = LoadLibrary(file.wstring().c_str());
-    if (_dll != nullptr)
-    {
-        _configure = (PfnFfxConfigure)GetProcAddress(_dll, "ffxConfigure");
-        _createContext = (PfnFfxCreateContext)GetProcAddress(_dll, "ffxCreateContext");
-        _destroyContext = (PfnFfxDestroyContext)GetProcAddress(_dll, "ffxDestroyContext");
-        _dispatch = (PfnFfxDispatch)GetProcAddress(_dll, "ffxDispatch");
-        _query = (PfnFfxQuery)GetProcAddress(_dll, "ffxQuery");
-
-        _moduleLoaded = _configure != nullptr;
-    }
-
-    if (!_moduleLoaded)
-    {
-        LOG_INFO("Trying to load amd_fidelityfx_dx12.dll with detours");
-
-        _configure = (PfnFfxConfigure)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxConfigure");
-        _createContext = (PfnFfxCreateContext)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxCreateContext");
-        _destroyContext = (PfnFfxDestroyContext)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxDestroyContext");
-        _dispatch = (PfnFfxDispatch)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxDispatch");
-        _query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxQuery");
-
-        _moduleLoaded = _configure != nullptr;
-    }
+    _moduleLoaded = FfxApiProxy::InitFfxDx12();
 
     if (_moduleLoaded)
         LOG_INFO("amd_fidelityfx_dx12.dll methods loaded!");
@@ -376,7 +351,7 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
         m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
         m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FVELOCITYFACTOR;
         m_upscalerKeyValueConfig.ptr = &_velocity;
-        auto result = _configure(&_context, &m_upscalerKeyValueConfig.header);
+        auto result = FfxApiProxy::D3D12_Configure()(&_context, &m_upscalerKeyValueConfig.header);
 
         if (result != FFX_API_RETURN_OK)
             LOG_WARN("Velocity configure result: {}", (UINT)result);
@@ -384,7 +359,7 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
 
     LOG_DEBUG("Dispatch!!");
 
-    auto result = _dispatch(&_context, &params.header);
+    auto result = FfxApiProxy::D3D12_Dispatch()(&_context, &params.header);
 
     if (result != FFX_API_RETURN_OK)
     {
@@ -503,6 +478,8 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
 
 FSR31FeatureDx12::~FSR31FeatureDx12()
 {
+    if (_context != nullptr)
+        FfxApiProxy::D3D12_DestroyContext()(&_context, nullptr);
 }
 
 bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
@@ -530,14 +507,14 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     uint64_t versionCount = 0;
     versionQuery.outputCount = &versionCount;
     // get number of versions for allocation
-    _query(nullptr, &versionQuery.header);
+    FfxApiProxy::D3D12_Query()(nullptr, &versionQuery.header);
 
     Config::Instance()->fsr3xVersionIds.resize(versionCount);
     Config::Instance()->fsr3xVersionNames.resize(versionCount);
     versionQuery.versionIds = Config::Instance()->fsr3xVersionIds.data();
     versionQuery.versionNames = Config::Instance()->fsr3xVersionNames.data();
     // fill version ids and names arrays.
-    _query(nullptr, &versionQuery.header);
+    FfxApiProxy::D3D12_Query()(nullptr, &versionQuery.header);
 
     _contextDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE;
 
@@ -677,7 +654,7 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     backendDesc.header.pNext = &ov.header;
 
     LOG_DEBUG("_createContext!");
-    auto ret = _createContext(&_context, &_contextDesc.header, NULL);
+    auto ret = FfxApiProxy::D3D12_CreateContext()(&_context, &_contextDesc.header, NULL);
 
     if (ret != FFX_API_RETURN_OK)
     {

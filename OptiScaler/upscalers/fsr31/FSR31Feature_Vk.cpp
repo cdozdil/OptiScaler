@@ -1,7 +1,8 @@
 #include "FSR31Feature_Vk.h"
 
-#include <Config.h>
 #include <Util.h>
+#include <Config.h>
+#include <proxies/FfxApi_Proxy.h>
 
 #include "nvsdk_ngx_vk.h"
 
@@ -41,34 +42,7 @@ FSR31FeatureVk::FSR31FeatureVk(unsigned int InHandleId, NVSDK_NGX_Parameter* InP
 {
     LOG_DEBUG("Loading amd_fidelityfx_vk.dll methods");
 
-    auto file = Util::DllPath().parent_path() / "amd_fidelityfx_vk.dll";
-    LOG_INFO("Trying to load {}", file.string());
-
-    auto _dll = LoadLibrary(file.wstring().c_str());
-
-    if (_dll != nullptr)
-    {
-        _configure = (PfnFfxConfigure)GetProcAddress(_dll, "ffxConfigure");
-        _createContext = (PfnFfxCreateContext)GetProcAddress(_dll, "ffxCreateContext");
-        _destroyContext = (PfnFfxDestroyContext)GetProcAddress(_dll, "ffxDestroyContext");
-        _dispatch = (PfnFfxDispatch)GetProcAddress(_dll, "ffxDispatch");
-        _query = (PfnFfxQuery)GetProcAddress(_dll, "ffxQuery");
-
-        _moduleLoaded = _configure != nullptr;
-    }
-
-    if (!_moduleLoaded)
-    {
-        LOG_INFO("Trying to load amd_fidelityfx_vk.dll with detours");
-
-        _configure = (PfnFfxConfigure)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxConfigure");
-        _createContext = (PfnFfxCreateContext)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxCreateContext");
-        _destroyContext = (PfnFfxDestroyContext)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxDestroyContext");
-        _dispatch = (PfnFfxDispatch)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxDispatch");
-        _query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxQuery");
-
-        _moduleLoaded = _configure != nullptr;
-    }
+    _moduleLoaded = FfxApiProxy::InitFfxVk();
 
     if (_moduleLoaded)
         LOG_INFO("amd_fidelityfx_vk.dll methods loaded!");
@@ -101,14 +75,14 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     uint64_t versionCount = 0;
     versionQuery.outputCount = &versionCount;
     // get number of versions for allocation
-    _query(nullptr, &versionQuery.header);
+    FfxApiProxy::VULKAN_Query()(nullptr, &versionQuery.header);
 
     Config::Instance()->fsr3xVersionIds.resize(versionCount);
     Config::Instance()->fsr3xVersionNames.resize(versionCount);
     versionQuery.versionIds = Config::Instance()->fsr3xVersionIds.data();
     versionQuery.versionNames = Config::Instance()->fsr3xVersionNames.data();
     // fill version ids and names arrays.
-    _query(nullptr, &versionQuery.header);
+    FfxApiProxy::VULKAN_Query()(nullptr, &versionQuery.header);
 
     _contextDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE;
     _contextDesc.fpMessage = FfxLogCallback;
@@ -211,7 +185,7 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     backendDesc.header.pNext = &ov.header;
 
     LOG_DEBUG("_createContext!");
-    auto ret = _createContext(&_context, &_contextDesc.header, NULL);
+    auto ret = FfxApiProxy::VULKAN_CreateContext()(&_context, &_contextDesc.header, NULL);
 
     Config::Instance()->dxgiSkipSpoofing = false;
 
@@ -482,14 +456,14 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
         m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FVELOCITYFACTOR;
         m_upscalerKeyValueConfig.ptr = &_velocity;
-        auto result = _configure(&_context, &m_upscalerKeyValueConfig.header);
+        auto result = FfxApiProxy::VULKAN_Configure()(&_context, &m_upscalerKeyValueConfig.header);
 
         if (result != FFX_API_RETURN_OK)
             LOG_WARN("Velocity configure result: {}", (UINT)result);
     }
 
     LOG_DEBUG("Dispatch!!");
-    auto result = _dispatch(&_context, &params.header);
+    auto result = FfxApiProxy::VULKAN_Dispatch()(&_context, &params.header);
 
     if (result != FFX_API_RETURN_OK)
     {
@@ -500,4 +474,10 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     _frameCount++;
 
     return true;
+}
+
+FSR31FeatureVk::~FSR31FeatureVk()
+{
+    if (_context != nullptr)
+        FfxApiProxy::VULKAN_DestroyContext()(&_context, nullptr);
 }
