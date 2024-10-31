@@ -63,9 +63,9 @@ bool Config::Reload(std::filesystem::path iniPath)
             FGRectHeight = readInt("FrameGen", "RectHeight");
         }
 
-        // Reflex 
+        // Framerate
         {
-            FramerateLimit = readFloat("Reflex", "FramerateLimit");
+            FramerateLimit = readFloat("Framerate", "FramerateLimit");
         }
 
         // FSR
@@ -495,9 +495,9 @@ bool Config::SaveIni()
         ini.SetValue("FrameGen", "RectHeight", GetIntValue(Instance()->FGRectHeight).c_str());
     }
 
-    // Reflex 
+    // Framerate 
     {
-        ini.SetValue("Reflex", "FramerateLimit", GetFloatValue(Instance()->FramerateLimit).c_str());
+        ini.SetValue("Framerate", "FramerateLimit", GetFloatValue(Instance()->FramerateLimit).c_str());
     }
 
     // Output Scaling

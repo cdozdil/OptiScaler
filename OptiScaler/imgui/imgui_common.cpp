@@ -1348,7 +1348,7 @@ void ImGuiCommon::RenderMenu()
                         bool fpsLimitVsync = Config::Instance()->DE_FramerateLimitVsync.value_or(false);
                         if (ImGui::Checkbox("VSync", &fpsLimitVsync))
                             Config::Instance()->DE_FramerateLimitVsync = fpsLimitVsync;
-                        ShowHelpMarker("Limit FPS to your monitor's refresh rate\nNot really vsync");
+                        ShowHelpMarker("Limit FPS to your monitor's refresh rate");
 
                         if (Config::Instance()->DE_DynamicLimitAvailable.has_value() && Config::Instance()->DE_DynamicLimitAvailable.value() > 0)
                         {
@@ -1441,7 +1441,7 @@ void ImGuiCommon::RenderMenu()
                     // Reflex ---------------------
                     if (!Config::Instance()->DE_Available && Config::Instance()->ReflexAvailable)
                     {
-                        ImGui::SeparatorText("Reflex");
+                        ImGui::SeparatorText("Framerate");
 
                         // set inital value
                         if (_limitFps == INFINITY)
@@ -1452,6 +1452,8 @@ void ImGuiCommon::RenderMenu()
                         if (ImGui::Button("Apply Limit")) {
                             Config::Instance()->FramerateLimit = _limitFps;
                         }
+
+                        ShowHelpMarker("Currently uses Reflex to limit FPS\nbe sure the game supports it and you have it enabled\non AMD cards you can use fakenvapi to substitute Reflex");
                     }
 
                     // OUTPUT SCALING -----------------------------
