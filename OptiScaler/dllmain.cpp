@@ -1718,8 +1718,6 @@ static void CheckWorkingMode()
             HookForVulkanExtensionSpoofing();
         }
 
-        AttachHooks();
-
         Config::Instance()->WorkingAsNvngx = isNvngxMode && !isWorkingWithEnabler;
         Config::Instance()->OverlayMenu = (!isNvngxMode || isWorkingWithEnabler) && Config::Instance()->OverlayMenu.value_or(true);
 
@@ -1730,6 +1728,8 @@ static void CheckWorkingMode()
         // vk menu hooks
         if (Config::Instance()->OverlayMenu.value() && vulkanModule != nullptr)
             HooksVk::HookVk();
+
+        AttachHooks();
 
         return;
     }
