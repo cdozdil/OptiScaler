@@ -4,7 +4,7 @@
 
 #include <string>
 
-#include <XeSS_Proxy.h>
+#include <proxies/XeSS_Proxy.h>
 
 inline static std::string ResultToString(xess_result_t result)
 {

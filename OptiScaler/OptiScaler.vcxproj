@@ -257,7 +257,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="menu\wrapped_swapchain.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="NVNGX_Parameter.h" />
-    <ClInclude Include="NVNGX_Proxy.h" />
+    <ClInclude Include="proxies\NVNGX_Proxy.h" />
     <ClInclude Include="shaders\output_scaling\OS_Dx11.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="shaders\rcas\precompile\RCAS_Shader.h" />
@@ -267,7 +267,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="resource.h" />
     <ClInclude Include="Util.h" />
     <ClInclude Include="upscalers\xess\XeSSFeature_Dx11.h" />
-    <ClInclude Include="XeSS_Proxy.h" />
+    <ClInclude Include="proxies\XeSS_Proxy.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="upscalers\dlssd\DLSSDFeature.cpp" />

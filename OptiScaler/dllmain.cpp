@@ -1,14 +1,11 @@
 #pragma once
-#include "resource.h"
 
-#include "Logger.h"
 #include "Util.h"
-
+#include "Logger.h"
+#include "resource.h"
 #include "exports/Exports.h"
-
-#include "NVNGX_Proxy.h"
-#include "XeSS_Proxy.h"
-
+#include "proxies/NVNGX_Proxy.h"
+#include "proxies/XeSS_Proxy.h"
 #include "menu/imgui_overlay_dx.h"
 #include "menu/imgui_overlay_vk.h"
 

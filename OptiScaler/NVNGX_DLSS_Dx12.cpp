@@ -1,7 +1,7 @@
 #include "Util.h"
 #include "Config.h"
-#include "NVNGX_Proxy.h"
 #include "NVNGX_Parameter.h"
+#include "proxies/NVNGX_Proxy.h"
 #include <menu/imgui_overlay_dx.h>
 #include "upscalers/dlss/DLSSFeature_Dx12.h"
 #include "upscalers/dlssd/DLSSDFeature_Dx12.h"

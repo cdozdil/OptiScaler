@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Config.h"
-#include "NVNGX_Proxy.h"
+#include "proxies/NVNGX_Proxy.h"
 
 #pragma region Out of NVNGX Scope
 

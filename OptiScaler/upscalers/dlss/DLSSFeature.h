@@ -4,7 +4,7 @@
 
 #include <upscalers/IFeature.h>
 
-#include <NVNGX_Proxy.h>
+#include <proxies/NVNGX_Proxy.h>
 
 typedef uint32_t(*PFN_NVSDK_NGX_GetSnippetVersion)(void);
 

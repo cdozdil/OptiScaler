@@ -50,7 +50,7 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NVNGX_Proxy.h">
+    <ClInclude Include="proxies\NVNGX_Proxy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ag\pag_common.h">
@@ -59,7 +59,7 @@
     <ClInclude Include="bicubicscaling\precompile\FSR_Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="XeSS_Proxy.h">
+    <ClInclude Include="proxies\XeSS_Proxy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="shaders\bias\Bias_Common.h">
