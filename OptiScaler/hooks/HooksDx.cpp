@@ -1681,6 +1681,9 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         fakenvapi::reportFGPresent(pSwapChain, FrameGen_Dx12::fgIsActive, frameCounter % 2);
     }
 
+    if(frameCounter == 0)
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     frameCounter++;
 
     // swapchain present
@@ -2779,7 +2782,7 @@ void HooksDx::HookDxgi()
     o_CreateDXGIFactory1 = (PFN_CreateDXGIFactory1)DetourFindFunction("dxgi.dll", "CreateDXGIFactory1");
     o_CreateDXGIFactory2 = (PFN_CreateDXGIFactory2)DetourFindFunction("dxgi.dll", "CreateDXGIFactory2");
 
-    if (o_CreateDXGIFactory1 != nullptr)
+    if (o_CreateDXGIFactory != nullptr)
     {
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
