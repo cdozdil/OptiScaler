@@ -6,10 +6,10 @@
 #include "precompile/BCDS_Shader.h"
 #include "precompile/BCUS_Shader.h"
 
-#include "../fsr1/ffx_fsr1.h"
-#include "../fsr1/FSR_EASU_Shader.h"
+#include <shaders/fsr1/ffx_fsr1.h>
+#include <shaders/fsr1/FSR_EASU_Shader.h>
 
-#include "../Config.h"
+#include <Config.h>
 
 inline static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
 {

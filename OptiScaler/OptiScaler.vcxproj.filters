@@ -140,9 +140,6 @@
     <ClInclude Include="backends\dlss\DLSSFeature_Vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="rcas\RCAS_Dx12.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="imgui\imgui_overlay_base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -162,12 +159,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imgui_common.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="rcas\RCAS_Common.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dllmain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="imgui\wrapped_swapchain.h">
@@ -203,46 +194,73 @@
     <ClInclude Include="ag\pag_common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="bias\Bias_Dx12.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="bias\Bias_Common.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="bias\precompile\Bias_Shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="rcas\precompile\RCAS_Shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="output_scaling\precompile\BCDS_Shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="output_scaling\precompile\BCUS_Shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="bicubicscaling\precompile\FSR_Shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="output_scaling\OS_Dx12.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="rcas\RCAS_Dx11.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="output_scaling\OS_Dx11.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="output_scaling\OS_Common.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="bias\Bias_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="backends\fsr31\FSR31Feature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="XeSS_Proxy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\bias\Bias_Common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\bias\Bias_Dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\bias\Bias_Dx11.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\bias\precompile\Bias_Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\output_scaling\OS_Common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\output_scaling\OS_Dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\output_scaling\precompile\BCDS_Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\output_scaling\precompile\BCUS_Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\output_scaling\OS_Dx11.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\rcas\precompile\RCAS_Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\rcas\RCAS_Common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\rcas\RCAS_Dx11.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\rcas\RCAS_Dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="exports\Exports.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="exports\Shared.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="exports\Version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="exports\Winhttp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="exports\Wininet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="exports\Winmm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="exports\Dxgi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -362,9 +380,6 @@
     <ClCompile Include="backends\dlss\DLSSFeature_Vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="rcas\RCAS_Dx12.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="NVNGX.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -413,21 +428,6 @@
     <ClCompile Include="backends\fsr31\FSR31Feature_Vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="bias\Bias_Dx12.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="output_scaling\OS_Dx12.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="rcas\RCAS_Dx11.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="output_scaling\OS_Dx11.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="bias\Bias_Dx11.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="imgui\imgui_common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -438,6 +438,27 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="XeSS_Dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="shaders\bias\Bias_Dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="shaders\bias\Bias_Dx11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="shaders\output_scaling\OS_Dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="shaders\output_scaling\OS_Dx11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="shaders\rcas\RCAS_Dx11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="shaders\rcas\RCAS_Dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="exports\Dxgi.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

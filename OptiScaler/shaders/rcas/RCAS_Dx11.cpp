@@ -1,15 +1,8 @@
-#include "OS_Dx11.h"
+#include "RCAS_Dx11.h"
 
-#define A_CPU
-// FSR compute shader is from : https://github.com/fholger/vrperfkit/
+#include "precompile/RCAS_Shader_Dx11.h"
 
-#include "precompile/BCDS_Shader_Dx11.h"
-#include "precompile/BCUS_Shader_Dx11.h"
-
-#include "../fsr1/ffx_fsr1.h"
-#include "../fsr1/FSR_EASU_Shader_Dx11.h"
-
-#include "../Config.h"
+#include <Config.h>
 
 inline static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
 {
@@ -35,7 +28,7 @@ inline static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
     }
 }
 
-bool OS_Dx11::CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InResource, uint32_t InWidth, uint32_t InHeight)
+bool RCAS_Dx11::CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InResource)
 {
     if (InDevice == nullptr || InResource == nullptr)
         return false;
@@ -47,15 +40,13 @@ bool OS_Dx11::CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InRes
 
     D3D11_TEXTURE2D_DESC texDesc;
     originalTexture->GetDesc(&texDesc);
-    auto targetWidth = texDesc.Width > InWidth ? texDesc.Width : InWidth;
-    auto targetHeight = texDesc.Height > InHeight ? texDesc.Height : InHeight;
 
     if (_buffer != nullptr)
     {
         D3D11_TEXTURE2D_DESC bufDesc;
         _buffer->GetDesc(&bufDesc);
 
-        if (bufDesc.Width != targetWidth || bufDesc.Height != targetHeight || bufDesc.Format != texDesc.Format)
+        if (bufDesc.Width != (UINT64)(texDesc.Width) || bufDesc.Height != (UINT)(texDesc.Height) || bufDesc.Format != texDesc.Format)
         {
             _buffer->Release();
             _buffer = nullptr;
@@ -66,8 +57,6 @@ bool OS_Dx11::CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InRes
 
     LOG_DEBUG("[{0}] Start!", _name);
 
-    texDesc.Width = targetWidth;
-    texDesc.Height = targetHeight;
     texDesc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
 
     result = InDevice->CreateTexture2D(&texDesc, nullptr, &_buffer);
@@ -80,9 +69,9 @@ bool OS_Dx11::CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InRes
     return true;
 }
 
-bool OS_Dx11::InitializeViews(ID3D11Texture2D* InResource, ID3D11Texture2D* OutResource)
+bool RCAS_Dx11::InitializeViews(ID3D11Texture2D* InResource, ID3D11Texture2D* InMotionVectors, ID3D11Texture2D* OutResource)
 {
-    if (!_init || InResource == nullptr || OutResource == nullptr)
+    if (!_init || InResource == nullptr || InMotionVectors == nullptr || OutResource == nullptr)
         return false;
 
     D3D11_TEXTURE2D_DESC desc;
@@ -110,6 +99,30 @@ bool OS_Dx11::InitializeViews(ID3D11Texture2D* InResource, ID3D11Texture2D* OutR
         _currentInResource = InResource;
     }
 
+    if (InMotionVectors != _currentMotionVectors || _srvMotionVectors == nullptr)
+    {
+        if (_srvMotionVectors != nullptr)
+            _srvMotionVectors->Release();
+
+        InMotionVectors->GetDesc(&desc);
+
+        // Create SRV for motion vectors
+        D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+        srvDesc.Format = TranslateTypelessFormats(desc.Format);
+        srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+        srvDesc.Texture2D.MipLevels = desc.MipLevels;
+
+        auto hr = _device->CreateShaderResourceView(InMotionVectors, &srvDesc, &_srvMotionVectors);
+        if (FAILED(hr))
+        {
+            LOG_ERROR("[{0}] _srvMotionVectors CreateShaderResourceView error {1:x}", _name, hr);
+            return false;
+        }
+
+        
+        _currentMotionVectors = InMotionVectors;
+    }
+
     if (OutResource != _currentOutResource || _uavOutput == nullptr)
     {
         if (_uavOutput != nullptr)
@@ -129,90 +142,66 @@ bool OS_Dx11::InitializeViews(ID3D11Texture2D* InResource, ID3D11Texture2D* OutR
             return false;
         }
 
-
+        
         _currentOutResource = OutResource;
     }
 
     return true;
 }
 
-bool OS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, ID3D11Texture2D* InResource, ID3D11Texture2D* OutResource)
+bool RCAS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, ID3D11Texture2D* InResource, ID3D11Texture2D* InMotionVectors, RcasConstants InConstants, ID3D11Texture2D* OutResource)
 {
-    if (!_init || InDevice == nullptr || InContext == nullptr || InResource == nullptr || OutResource == nullptr)
+    if (!_init || InDevice == nullptr || InContext == nullptr || InResource == nullptr || OutResource == nullptr || InMotionVectors == nullptr)
         return false;
 
     LOG_DEBUG("[{0}] Start!", _name);
 
     _device = InDevice;
 
-    if (!InitializeViews(InResource, OutResource))
+    if (!InitializeViews(InResource, InMotionVectors, OutResource))
         return false;
 
-    D3D11_TEXTURE2D_DESC inDesc;
-    InResource->GetDesc(&inDesc);
+    InternalConstants constants{};
+    constants.DisplayHeight = InConstants.DisplayHeight;
+    constants.DisplayWidth = InConstants.DisplayWidth;
+    constants.DynamicSharpenEnabled = Config::Instance()->MotionSharpnessEnabled.value_or(false) ? 1 : 0;
+    constants.MotionSharpness = Config::Instance()->MotionSharpness.value_or(0.4f);
+    constants.MvScaleX = InConstants.MvScaleX;
+    constants.MvScaleY = InConstants.MvScaleY;
+    constants.Sharpness = InConstants.Sharpness;
+    constants.Debug = Config::Instance()->MotionSharpnessDebug.value_or(false) ? 1 : 0;
+    constants.Threshold = Config::Instance()->MotionThreshold.value_or(0.0f);
+    constants.ScaleLimit = Config::Instance()->MotionScaleLimit.value_or(10.0f);
+    constants.DisplaySizeMV = InConstants.DisplaySizeMV ? 1 : 0;
 
-    // fsr upscaling
-    if (Config::Instance()->OutputScalingUseFsr.value_or(true))
-    {
-        UpscaleShaderConstants constants{};
-
-        FsrEasuCon(constants.const0, constants.const1, constants.const2, constants.const3,
-                   Config::Instance()->CurrentFeature->TargetWidth(), Config::Instance()->CurrentFeature->TargetHeight(),
-                   inDesc.Width, inDesc.Height,
-                   Config::Instance()->CurrentFeature->DisplayWidth(), Config::Instance()->CurrentFeature->DisplayHeight());
-
-        // Copy the updated constant buffer data to the constant buffer resource
-        D3D11_MAPPED_SUBRESOURCE mappedResource;
-        auto hr = InContext->Map(_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
-        if (FAILED(hr))
-        {
-            LOG_ERROR("[{0}] Map error {1:x}", _name, hr);
-            return false;
-        }
-
-        memcpy(mappedResource.pData, &constants, sizeof(constants));
-        InContext->Unmap(_constantBuffer, 0);
-    }
+    if (InConstants.RenderWidth == 0 || InConstants.DisplayWidth == 0)
+        constants.MotionTextureScale = 1.0f;
     else
+        constants.MotionTextureScale = (float)InConstants.RenderWidth / (float)InConstants.DisplayWidth;
+
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    auto hr = InContext->Map(_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+    if (FAILED(hr))
     {
-        Constants constants{};
-        constants.srcWidth = Config::Instance()->CurrentFeature->TargetWidth();
-        constants.srcHeight = Config::Instance()->CurrentFeature->TargetHeight();
-        constants.destWidth = Config::Instance()->CurrentFeature->DisplayWidth(); // static_cast<uint32_t>(outDesc.Width);
-        constants.destHeight = Config::Instance()->CurrentFeature->DisplayHeight(); // outDesc.Height;
-
-        D3D11_MAPPED_SUBRESOURCE mappedResource;
-        auto hr = InContext->Map(_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
-        if (FAILED(hr))
-        {
-            LOG_ERROR("[{0}] Map error {1:x}", _name, hr);
-            return false;
-        }
-
-        memcpy(mappedResource.pData, &constants, sizeof(constants));
-        InContext->Unmap(_constantBuffer, 0);
+        LOG_ERROR("[{0}] Map error {1:x}", _name, hr);
+        return false;
     }
 
+    memcpy(mappedResource.pData, &constants, sizeof(constants));
+    InContext->Unmap(_constantBuffer, 0);
 
     // Set the compute shader and resources
     InContext->CSSetShader(_computeShader, nullptr, 0);
     InContext->CSSetConstantBuffers(0, 1, &_constantBuffer);
     InContext->CSSetShaderResources(0, 1, &_srvInput);
+    InContext->CSSetShaderResources(1, 1, &_srvMotionVectors);
     InContext->CSSetUnorderedAccessViews(0, 1, &_uavOutput, nullptr);
 
     UINT dispatchWidth = 0;
     UINT dispatchHeight = 0;
 
-    if (_upsample || Config::Instance()->OutputScalingUseFsr.value_or(true))
-    {
-        dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
-        dispatchHeight = (Config::Instance()->CurrentFeature->DisplayHeight() + InNumThreadsY - 1) / InNumThreadsY;
-    }
-    else
-    {
-        dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->TargetWidth() + InNumThreadsX - 1) / InNumThreadsX);
-        dispatchHeight = (Config::Instance()->CurrentFeature->TargetHeight() + InNumThreadsY - 1) / InNumThreadsY;
-    }
+    dispatchWidth = (InConstants.DisplayWidth + InNumThreadsX - 1) / InNumThreadsX;
+    dispatchHeight = (InConstants.DisplayHeight + InNumThreadsY - 1) / InNumThreadsY;
 
     InContext->Dispatch(dispatchWidth, dispatchHeight, 1);
 
@@ -225,7 +214,7 @@ bool OS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, I
     return true;
 }
 
-OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : _name(InName), _device(InDevice), _upsample(InUpsample)
+RCAS_Dx11::RCAS_Dx11(std::string InName, ID3D11Device* InDevice) : _name(InName), _device(InDevice)
 {
     if (InDevice == nullptr)
     {
@@ -235,23 +224,9 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
 
     LOG_DEBUG("{0} start!", _name);
 
-    if (Config::Instance()->UsePrecompiledShaders.value_or(true) || Config::Instance()->OutputScalingUseFsr.value_or(true))
+    if (Config::Instance()->UsePrecompiledShaders.value_or(true))
     {
-        HRESULT hr;
-
-        // fsr upscaling
-        if (Config::Instance()->OutputScalingUseFsr.value_or(true))
-        {
-            hr = _device->CreateComputeShader(reinterpret_cast<const void*>(fsr_easu_cso), sizeof(fsr_easu_cso), nullptr, &_computeShader);
-        }
-        else
-        {
-            if (_upsample)
-                hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcus_cso), sizeof(bcus_cso), nullptr, &_computeShader);
-            else
-                hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_cso), sizeof(bcds_cso), nullptr, &_computeShader);
-        }
-
+        auto hr = _device->CreateComputeShader(reinterpret_cast<const void*>(rcas_cso), sizeof(rcas_cso), nullptr, &_computeShader);
         if (FAILED(hr))
         {
             LOG_ERROR("[{0}] CreateComputeShader error: {1:X}", _name, hr);
@@ -261,10 +236,10 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
     else
     {
         // Compile shader blobs
-        ID3DBlob* shaderBlob = OS_CompileShader(_upsample ? upsampleCode.c_str() : downsampleCode.c_str(), "CSMain", "cs_5_0");
+        ID3DBlob* shaderBlob = RCAS_CompileShader(rcasCode.c_str(), "CSMain", "cs_5_0");
         if (shaderBlob == nullptr)
         {
-            LOG_ERROR("[{0}] CompileShader error!", _name);
+            LOG_ERROR("[{0}] RCAS_CompileShader error!", _name);
             return;
         }
 
@@ -287,7 +262,7 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
     // CBV
     D3D11_BUFFER_DESC cbDesc = {};
     cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-    cbDesc.ByteWidth = sizeof(Constants);
+    cbDesc.ByteWidth = sizeof(InternalConstants);
     cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     auto result = InDevice->CreateBuffer(&cbDesc, nullptr, &_constantBuffer);
@@ -297,29 +272,26 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
         return;
     }
 
-    // FSR upscaling
-    if (Config::Instance()->OutputScalingUseFsr.value_or(true))
-    {
-        InNumThreadsX = 16;
-        InNumThreadsY = 16;
-    }
     _init = true;
 }
 
-OS_Dx11::~OS_Dx11()
+RCAS_Dx11::~RCAS_Dx11()
 {
     if (!_init)
         return;
 
-    if (_computeShader != nullptr)
+    if(_computeShader != nullptr)
         _computeShader->Release();
 
     if (_constantBuffer != nullptr)
         _constantBuffer->Release();
-
+    
     if (_srvInput != nullptr)
         _srvInput->Release();
-
+    
+    if (_srvMotionVectors != nullptr)
+        _srvMotionVectors->Release();
+    
     if (_uavOutput != nullptr)
         _uavOutput->Release();
 

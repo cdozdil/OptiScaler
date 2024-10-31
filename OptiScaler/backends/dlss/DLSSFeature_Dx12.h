@@ -1,8 +1,7 @@
 #pragma once
 #include "DLSSFeature.h"
-#include "../IFeature_Dx12.h"
-#include "../../rcas/RCAS_Dx12.h"
-#include <string>
+#include <backends/IFeature_Dx12.h>
+#include <shaders/rcas/RCAS_Dx12.h>
 
 class DLSSFeatureDx12 : public DLSSFeature, public IFeature_Dx12
 {

@@ -1,9 +1,11 @@
 #pragma once
-#include "dllmain.h"
 #include "resource.h"
 
 #include "Logger.h"
 #include "Util.h"
+
+#include "exports/Exports.h"
+
 #include "NVNGX_Proxy.h"
 #include "XeSS_Proxy.h"
 

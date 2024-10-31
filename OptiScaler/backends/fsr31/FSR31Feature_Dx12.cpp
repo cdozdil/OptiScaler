@@ -80,7 +80,7 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     if (!OutputScaler->IsInit())
         Config::Instance()->OutputScalingEnabled = false;
 
-    struct ffxDispatchDescUpscale params = { 0 };
+    struct ffxDispatchDescUpscale params = {};
     params.header.type = FFX_API_DISPATCH_DESC_TYPE_UPSCALE;
 
     if (Config::Instance()->FsrDebugView.value_or(false))
@@ -385,6 +385,7 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     }
 
     LOG_DEBUG("Dispatch!!");
+
     auto result = _dispatch(&_context, &params.header);
 
     if (result != FFX_API_RETURN_OK)
