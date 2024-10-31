@@ -7,11 +7,11 @@
 #include <vulkan/vulkan.hpp>
 
 #include "Config.h"
-#include "backends/fsr2/FSR2Feature_Vk.h"
-#include "backends/dlss/DLSSFeature_Vk.h"
-#include "backends/dlssd/DLSSDFeature_Vk.h"
-#include "backends/fsr2_212/FSR2Feature_Vk_212.h"
-#include "backends/fsr31/FSR31Feature_Vk.h"
+#include "upscalers/fsr2/FSR2Feature_Vk.h"
+#include "upscalers/dlss/DLSSFeature_Vk.h"
+#include "upscalers/dlssd/DLSSDFeature_Vk.h"
+#include "upscalers/fsr2_212/FSR2Feature_Vk_212.h"
+#include "upscalers/fsr31/FSR31Feature_Vk.h"
 
 #include "imgui/imgui_overlay_vk.h"
 

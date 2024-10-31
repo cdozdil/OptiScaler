@@ -1,10 +1,9 @@
 #pragma once
-#include "DLSSDFeature.h"
-#include <backends/IFeature_Dx12.h>
+#include "DLSSFeature.h"
+#include <upscalers/IFeature_Dx12.h>
 #include <shaders/rcas/RCAS_Dx12.h>
-#include <string>
 
-class DLSSDFeatureDx12 : public DLSSDFeature, public IFeature_Dx12
+class DLSSFeatureDx12 : public DLSSFeature, public IFeature_Dx12
 {
 private:
 
@@ -17,6 +16,6 @@ public:
 
 	static void Shutdown(ID3D12Device* InDevice);
 
-	DLSSDFeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters);
-	~DLSSDFeatureDx12();
+	DLSSFeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters);
+	~DLSSFeatureDx12();
 };
