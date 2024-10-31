@@ -1,13 +1,12 @@
+#include "Util.h"
 #include "Config.h"
-#include "Util.h"
-
 #include "resource.h"
-#include "Util.h"
-#include "xess_d3d12.h"
-#include "xess_d3d12_debug.h"
 #include "XeSS_Proxy.h"
 #include "NVNGX_Parameter.h"
-#include "imgui/imgui_overlay_dx.h"
+#include "menu/imgui_overlay_dx.h"
+
+#include "xess_d3d12.h"
+#include "xess_d3d12_debug.h"
 
 typedef struct MotionScale
 {

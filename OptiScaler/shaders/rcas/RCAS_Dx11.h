@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pch.h>
+
 #include "RCAS_Common.h"
 
 #include <d3d11.h>

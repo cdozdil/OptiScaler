@@ -9,8 +9,8 @@
 #include "NVNGX_Proxy.h"
 #include "XeSS_Proxy.h"
 
-#include "imgui/imgui_overlay_dx.h"
-#include "imgui/imgui_overlay_vk.h"
+#include "menu/imgui_overlay_dx.h"
+#include "menu/imgui_overlay_vk.h"
 
 #include <vulkan/vulkan_core.h>
 

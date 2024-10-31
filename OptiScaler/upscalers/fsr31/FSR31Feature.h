@@ -1,9 +1,12 @@
 #pragma once
-#include "ffx_api.h"
-#include "ffx_upscale.h"
 
-#include "../IFeature.h"
-#include "../../detours/detours.h"
+#include <pch.h>
+
+#include <upscalers/IFeature.h>
+
+#include <ffx_api.h>
+#include <ffx_upscale.h>
+#include <include/detours/detours.h>
 
 inline static std::string ResultToString(ffxReturnCode_t result)
 {

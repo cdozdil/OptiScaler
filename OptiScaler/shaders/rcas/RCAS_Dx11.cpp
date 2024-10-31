@@ -1,8 +1,7 @@
 #include "RCAS_Dx11.h"
 
-#include "precompile/RCAS_Shader_Dx11.h"
-
 #include <Config.h>
+#include "precompile/RCAS_Shader_Dx11.h"
 
 inline static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
 {

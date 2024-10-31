@@ -1,15 +1,16 @@
 #pragma once
 
 #include "pch.h"
+
 #include "Util.h"
 #include "Config.h"
 #include "Logger.h"
-#include <vulkan/vulkan.hpp>
-
-#include "nvapi/nvapi.h"
 
 #include <filesystem>
-#include "detours/detours.h"
+
+#include <vulkan/vulkan.hpp>
+#include "include/nvapi/nvapi.h"
+#include "include/detours/detours.h"
 
 inline const char* project_id_override = "24480451-f00d-face-1304-0308dabad187";
 constexpr unsigned long long app_id_override = 0x24480451;

@@ -1,7 +1,7 @@
 #pragma once
-#include "../IFeature_Dx11.h"
+
 #include "DLSSFeature.h"
-#include <string>
+#include <upscalers/IFeature_Dx11.h>
 
 class DLSSFeatureDx11 : public DLSSFeature, public IFeature_Dx11
 {

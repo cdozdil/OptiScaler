@@ -1,9 +1,7 @@
-#pragma once
-#include "../../pch.h"
-#include "../../Config.h"
-#include "../../Util.h"
-
 #include "FSR31Feature_Vk.h"
+
+#include <Config.h>
+#include <Util.h>
 
 #include "nvsdk_ngx_vk.h"
 

@@ -1,6 +1,7 @@
 #pragma once
+
 #include "FSR31Feature.h"
-#include "../IFeature_Dx12.h"
+#include <upscalers/IFeature_Dx12.h>
 
 #include "dx12/ffx_api_dx12.h"
 

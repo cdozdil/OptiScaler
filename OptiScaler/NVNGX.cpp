@@ -1,4 +1,3 @@
-#pragma once
 #include "pch.h"
 #include "Config.h"
 #include "NVNGX_Proxy.h"
@@ -87,22 +86,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_UpdateFeature(const NVSDK_NGX_Applicati
 {
 	LOG_DEBUG("FeatureId: {0}", (UINT)FeatureID);
 
-	// To test with puredark mods
-	//if (FeatureID != NVSDK_NGX_Feature_SuperSampling)
-	//{
-	//	if (NVNGXProxy::UpdateFeature() != nullptr)
-	//	{
-	//		auto result = NVNGXProxy::UpdateFeature()(ApplicationId, FeatureID);
-	//		LOG_ERROR("NVNGXProxy result for feature ({0}): {1:X}", (int)FeatureID, (UINT)result);
-	//		return result;
-	//	}
-	//	else
-	//	{
-	//		LOG_ERROR("Can't update this feature ({0})!", (int)FeatureID);
-	//		return NVSDK_NGX_Result_Fail;
-	//	}
-	//}
-
 	if (ApplicationId != nullptr)
 	{
 		if (ApplicationId->IdentifierType == NVSDK_NGX_Application_Identifier_Type_Application_Id)
@@ -129,7 +112,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_UpdateFeature(const NVSDK_NGX_Applicati
 		}
 	}
 
-	// To test with puredark mods
 	LOG_DEBUG("FeatureId finished, returning NVSDK_NGX_Result_Success");
 	return NVSDK_NGX_Result_Success;
 }

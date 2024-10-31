@@ -1,8 +1,8 @@
-#pragma once
-#include "../../pch.h"
-#include "../../Config.h"
+#include <pch.h>
 
 #include "FSR2Feature_Vk_212.h"
+
+#include <Config.h>
 
 #include "nvsdk_ngx_vk.h"
 

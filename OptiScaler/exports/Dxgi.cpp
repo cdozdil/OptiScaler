@@ -1,11 +1,12 @@
+#pragma once
+
 #include "Dxgi.h"
 
 #include <config.h>
 
-#include <detours/detours.h>
-
 #include <DbgHelp.h>
-#pragma comment(lib, "Dbghelp.lib")
+#include <include/detours/detours.h>
+
 
 typedef HRESULT(WINAPI* PFN_GetDesc)(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc);
 typedef HRESULT(WINAPI* PFN_GetDesc1)(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc);

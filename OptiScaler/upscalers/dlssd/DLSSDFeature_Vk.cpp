@@ -1,6 +1,6 @@
-#include "../../pch.h"
-#include "../../Config.h"
-#include "../../Logger.h"
+#include <pch.h>
+#include <Config.h>
+#include <Logger.h>
 
 #include "DLSSDFeature_Vk.h"
 

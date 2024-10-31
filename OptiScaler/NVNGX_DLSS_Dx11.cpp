@@ -1,12 +1,10 @@
-#pragma once
 #include "pch.h"
 
-#include "Config.h"
 #include "Util.h"
-
-#include "NVNGX_Parameter.h"
+#include "Config.h"
 #include "NVNGX_Proxy.h"
-
+#include "NVNGX_Parameter.h"
+#include "menu/imgui_overlay_dx.h"
 #include "upscalers/dlss/DLSSFeature_Dx11.h"
 #include "upscalers/dlssd/DLSSDFeature_Dx11.h"
 #include "upscalers/fsr2/FSR2Feature_Dx11.h"
@@ -17,9 +15,6 @@
 #include "upscalers/xess/XeSSFeature_Dx11.h"
 
 #include <ankerl/unordered_dense.h>
-
-#include "imgui/imgui_overlay_dx.h"
-
 
 inline ID3D11Device* D3D11Device = nullptr;
 static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx11>> Dx11Contexts;

@@ -1,5 +1,7 @@
 #pragma once
+
 #include "pch.h"
+
 #include "Config.h"
 
 #include <ankerl/unordered_dense.h>

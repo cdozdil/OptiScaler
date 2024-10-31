@@ -1,6 +1,10 @@
 #pragma once
+
 #include "pch.h"
+
+#ifdef DLSS_PARAM_DUMP
 #include <ankerl/unordered_dense.h>
+#endif
 
 void PrepareLogger();
 void CloseLogger();

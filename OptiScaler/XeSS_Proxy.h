@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pch.h"
+
 #include "Util.h"
 #include "Config.h"
 #include "Logger.h"
@@ -8,10 +9,7 @@
 #include "xess_d3d12.h"
 #include "xess_d3d12_debug.h"
 #include "xess_debug.h"
-#include "detours/detours.h"
-
-#pragma comment(lib, "Version.lib")
-
+#include "include/detours/detours.h"
 
 typedef xess_result_t(*PFN_xessD3D12CreateContext)(ID3D12Device* pDevice, xess_context_handle_t* phContext);
 typedef xess_result_t(*PFN_xessD3D12BuildPipelines)(xess_context_handle_t hContext, ID3D12PipelineLibrary* pPipelineLibrary, bool blocking, uint32_t initFlags);

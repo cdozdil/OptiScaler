@@ -3,7 +3,7 @@
 #include <pch.h>
 
 #include <d3d12.h>
-#include <d3dx/d3dx12.h>
+#include <include/d3dx/d3dx12.h>
 
 class Bias_Dx12
 {

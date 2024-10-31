@@ -1,4 +1,5 @@
 #pragma once
+
 #include <nvsdk_ngx.h>
 #include <nvsdk_ngx_defs.h>
 

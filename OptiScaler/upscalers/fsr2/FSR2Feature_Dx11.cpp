@@ -1,9 +1,9 @@
-#pragma once
-#include "../../pch.h"
-#include "../../Config.h"
-#include "../../Util.h"
+#include <pch.h>
 
 #include "FSR2Feature_Dx11.h"
+
+#include <Config.h>
+#include <Util.h>
 
 #define ASSIGN_DESC(dest, src) dest.Width = src.Width; dest.Height = src.Height; dest.Format = src.Format; dest.BindFlags = src.BindFlags; 
 

@@ -1,8 +1,7 @@
 #include "RCAS_Dx12.h"
 
-#include "precompile/RCAS_Shader.h"
-
 #include <Config.h>
+#include "precompile/RCAS_Shader.h"
 
 inline static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
 {

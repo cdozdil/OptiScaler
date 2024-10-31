@@ -1,10 +1,14 @@
 #pragma once
+
 #include "pch.h"
+
 #include <optional>
 #include <filesystem>
-#include <SimpleIni.h>
-#include "upscalers/IFeature.h"
 #include <deque>
+
+#include "upscalers/IFeature.h"
+
+#include <SimpleIni.h>
 
 typedef enum NVNGX_Api
 {

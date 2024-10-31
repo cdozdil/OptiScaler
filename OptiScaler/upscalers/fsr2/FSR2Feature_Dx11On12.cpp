@@ -1,8 +1,8 @@
-#pragma once
-#include "../../pch.h"
-#include "../../Config.h"
+#include <pch.h>
 
 #include "FSR2Feature_Dx11On12.h"
+
+#include <Config.h>
 
 bool FSR2FeatureDx11on12::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters)
 {

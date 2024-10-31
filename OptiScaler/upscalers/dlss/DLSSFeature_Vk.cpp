@@ -1,8 +1,7 @@
-#include "../../pch.h"
-#include "../../Config.h"
-#include "../../Logger.h"
-
 #include "DLSSFeature_Vk.h"
+
+#include <Config.h>
+#include <Logger.h>
 
 bool DLSSFeatureVk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Parameter* InParameters)
 {

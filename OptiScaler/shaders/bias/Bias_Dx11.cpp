@@ -1,9 +1,9 @@
 #include "Bias_Dx11.h"
 
+#include <Config.h>
 #include "Bias_Common.h"
 #include "precompile/Bias_Shader_Dx11.h"
 
-#include <Config.h>
 
 inline static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
 {

@@ -80,7 +80,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(ProjectDir);$(IncludePath)</IncludePath>
-    <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)fsr31\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)libs\fsr2;$(ProjectDir)libs\fsr2_212;$(ProjectDir)libs\fsr31;$(ProjectDir)libs\vulkan;$(ProjectDir)libs\d3dx;$(ProjectDir)libs\detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
     <TargetName>dxgi</TargetName>
     <OutDir>D:\Folders\Games\Banishers Ghosts of New Eden\NWD\Binaries\Win64\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
@@ -88,7 +88,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(ProjectDir);$(IncludePath)</IncludePath>
     <TargetName>nvngx</TargetName>
-    <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)fsr31\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)libs\fsr2;$(ProjectDir)libs\fsr2_212;$(ProjectDir)libs\fsr31;$(ProjectDir)libs\vulkan;$(ProjectDir)libs\d3dx;$(ProjectDir)libs\detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -144,7 +144,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>dxgi.lib;d3d11.lib;d3d12.lib;vulkan-1.lib;dxguid.lib;ffx_fsr2_api_x64d.lib;ffx_fsr2_api_dx11_x64d.lib;ffx_fsr2_api_dx12_x64d.lib;ffx_fsr2_api_vk_x64d.lib;ffx_fsr2_212_api_dx12_x64d.lib;ffx_fsr2_212_api_vk_x64d.lib;ffx_fsr2_212_api_x64d.lib;d3dcompiler.lib;d3dx11.lib;ffx_backend_dx11_x64d.lib;ffx_fsr3_x64d.lib;ffx_fsr3upscaler_x64d.lib;ffx_opticalflow_x64d.lib;ffx_frameinterpolation_x64d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Version.lib;Dbghelp.lib;dxgi.lib;d3d11.lib;d3d12.lib;vulkan-1.lib;dxguid.lib;ffx_fsr2_api_x64d.lib;ffx_fsr2_api_dx11_x64d.lib;ffx_fsr2_api_dx12_x64d.lib;ffx_fsr2_api_vk_x64d.lib;ffx_fsr2_212_api_dx12_x64d.lib;ffx_fsr2_212_api_vk_x64d.lib;ffx_fsr2_212_api_x64d.lib;d3dcompiler.lib;d3dx11.lib;ffx_backend_dx11_x64d.lib;ffx_fsr3_x64d.lib;ffx_fsr3upscaler_x64d.lib;ffx_opticalflow_x64d.lib;ffx_frameinterpolation_x64d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>Source.def</ModuleDefinitionFile>
       <DelayLoadDLLs>vulkan-1.dll;d3d11.dll;d3d12.dll;D3DCOMPILER_47.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
     </Link>
@@ -170,7 +170,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>dxgi.lib;d3d11.lib;d3d12.lib;vulkan-1.lib;dxguid.lib;ffx_fsr2_api_x64.lib;ffx_fsr2_api_dx11_x64.lib;ffx_fsr2_api_dx12_x64.lib;ffx_fsr2_api_vk_x64.lib;ffx_fsr2_212_api_dx12_x64.lib;ffx_fsr2_212_api_vk_x64.lib;ffx_fsr2_212_api_x64.lib;d3dcompiler.lib;ffx_backend_dx11_x64.lib;ffx_fsr3_x64.lib;ffx_frameinterpolation_x64.lib;ffx_fsr3upscaler_x64.lib;ffx_opticalflow_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Version.lib;Dbghelp.lib;dxgi.lib;d3d11.lib;d3d12.lib;vulkan-1.lib;dxguid.lib;ffx_fsr2_api_x64.lib;ffx_fsr2_api_dx11_x64.lib;ffx_fsr2_api_dx12_x64.lib;ffx_fsr2_api_vk_x64.lib;ffx_fsr2_212_api_dx12_x64.lib;ffx_fsr2_212_api_vk_x64.lib;ffx_fsr2_212_api_x64.lib;d3dcompiler.lib;ffx_backend_dx11_x64.lib;ffx_fsr3_x64.lib;ffx_frameinterpolation_x64.lib;ffx_fsr3upscaler_x64.lib;ffx_opticalflow_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <ModuleDefinitionFile>Source.def</ModuleDefinitionFile>
       <DelayLoadDLLs>vulkan-1.dll;d3d11.dll;d3d12.dll;D3DCOMPILER_47.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
@@ -220,7 +220,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="shaders\output_scaling\precompile\BCDS_Shader.h" />
     <ClInclude Include="shaders\output_scaling\precompile\BCUS_Shader.h" />
     <ClInclude Include="bicubicscaling\precompile\FSR_Shader.h" />
-    <ClInclude Include="nvapi\nvapi.h" />
+    <ClInclude Include="include\nvapi\nvapi.h" />
     <ClInclude Include="upscalers\fsr2_212\FSR2Feature_212.h" />
     <ClInclude Include="upscalers\fsr2_212\FSR2Feature_Dx11On12_212.h" />
     <ClInclude Include="upscalers\fsr2_212\FSR2Feature_Dx12_212.h" />
@@ -236,25 +236,25 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="upscalers\IFeature_Dx12.h" />
     <ClInclude Include="upscalers\IFeature.h" />
     <ClInclude Include="upscalers\IFeature_Vk.h" />
-    <ClInclude Include="detours\detours.h" />
-    <ClInclude Include="imgui\imgui\imconfig.h" />
-    <ClInclude Include="imgui\imgui\imgui.h" />
-    <ClInclude Include="imgui\imgui\imgui_impl_dx11.h" />
-    <ClInclude Include="imgui\imgui\imgui_impl_dx12.h" />
-    <ClInclude Include="imgui\imgui\imgui_impl_vulkan.h" />
-    <ClInclude Include="imgui\imgui\imgui_impl_win32.h" />
-    <ClInclude Include="imgui\imgui\imgui_internal.h" />
-    <ClInclude Include="imgui\imgui\imstb_rectpack.h" />
-    <ClInclude Include="imgui\imgui\imstb_textedit.h" />
-    <ClInclude Include="imgui\imgui\imstb_truetype.h" />
-    <ClInclude Include="imgui\imgui_dx_base.h" />
-    <ClInclude Include="imgui\imgui_common.h" />
-    <ClInclude Include="imgui\imgui_dx11.h" />
-    <ClInclude Include="imgui\imgui_dx12.h" />
-    <ClInclude Include="imgui\imgui_overlay_base.h" />
-    <ClInclude Include="imgui\imgui_overlay_dx.h" />
-    <ClInclude Include="imgui\imgui_overlay_vk.h" />
-    <ClInclude Include="imgui\wrapped_swapchain.h" />
+    <ClInclude Include="include\detours\detours.h" />
+    <ClInclude Include="include\imgui\imconfig.h" />
+    <ClInclude Include="include\imgui\imgui.h" />
+    <ClInclude Include="include\imgui\imgui_impl_dx11.h" />
+    <ClInclude Include="include\imgui\imgui_impl_dx12.h" />
+    <ClInclude Include="include\imgui\imgui_impl_vulkan.h" />
+    <ClInclude Include="include\imgui\imgui_impl_win32.h" />
+    <ClInclude Include="include\imgui\imgui_internal.h" />
+    <ClInclude Include="include\imgui\imstb_rectpack.h" />
+    <ClInclude Include="include\imgui\imstb_textedit.h" />
+    <ClInclude Include="include\imgui\imstb_truetype.h" />
+    <ClInclude Include="menu\imgui_dx_base.h" />
+    <ClInclude Include="menu\imgui_common.h" />
+    <ClInclude Include="menu\imgui_dx11.h" />
+    <ClInclude Include="menu\imgui_dx12.h" />
+    <ClInclude Include="menu\imgui_overlay_base.h" />
+    <ClInclude Include="menu\imgui_overlay_dx.h" />
+    <ClInclude Include="menu\imgui_overlay_vk.h" />
+    <ClInclude Include="menu\wrapped_swapchain.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="NVNGX_Parameter.h" />
     <ClInclude Include="NVNGX_Proxy.h" />
@@ -301,23 +301,23 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="upscalers\fsr2\FSR2Feature_Vk.cpp" />
     <ClCompile Include="upscalers\IFeature.cpp" />
     <ClCompile Include="upscalers\IFeature_Dx12.cpp" />
-    <ClCompile Include="imgui\imgui\imgui.cpp" />
-    <ClCompile Include="imgui\imgui\imgui_demo.cpp" />
-    <ClCompile Include="imgui\imgui\imgui_draw.cpp" />
-    <ClCompile Include="imgui\imgui\imgui_impl_dx11.cpp" />
-    <ClCompile Include="imgui\imgui\imgui_impl_dx12.cpp" />
-    <ClCompile Include="imgui\imgui\imgui_impl_vulkan.cpp" />
-    <ClCompile Include="imgui\imgui\imgui_impl_win32.cpp" />
-    <ClCompile Include="imgui\imgui\imgui_tables.cpp" />
-    <ClCompile Include="imgui\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="imgui\imgui_common.cpp" />
-    <ClCompile Include="imgui\imgui_dx_base.cpp" />
-    <ClCompile Include="imgui\imgui_dx11.cpp" />
-    <ClCompile Include="imgui\imgui_dx12.cpp" />
-    <ClCompile Include="imgui\imgui_overlay_base.cpp" />
-    <ClCompile Include="imgui\imgui_overlay_dx.cpp" />
-    <ClCompile Include="imgui\imgui_overlay_vk.cpp" />
-    <ClCompile Include="imgui\wrapped_swapchain.cpp" />
+    <ClCompile Include="include\imgui\imgui.cpp" />
+    <ClCompile Include="include\imgui\imgui_demo.cpp" />
+    <ClCompile Include="include\imgui\imgui_draw.cpp" />
+    <ClCompile Include="include\imgui\imgui_impl_dx11.cpp" />
+    <ClCompile Include="include\imgui\imgui_impl_dx12.cpp" />
+    <ClCompile Include="include\imgui\imgui_impl_vulkan.cpp" />
+    <ClCompile Include="include\imgui\imgui_impl_win32.cpp" />
+    <ClCompile Include="include\imgui\imgui_tables.cpp" />
+    <ClCompile Include="include\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="menu\imgui_common.cpp" />
+    <ClCompile Include="menu\imgui_dx_base.cpp" />
+    <ClCompile Include="menu\imgui_dx11.cpp" />
+    <ClCompile Include="menu\imgui_dx12.cpp" />
+    <ClCompile Include="menu\imgui_overlay_base.cpp" />
+    <ClCompile Include="menu\imgui_overlay_dx.cpp" />
+    <ClCompile Include="menu\imgui_overlay_vk.cpp" />
+    <ClCompile Include="menu\wrapped_swapchain.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="NVNGX.cpp" />
     <ClCompile Include="NVNGX_DLSS_Dx11.cpp" />
@@ -338,7 +338,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="XeSS_Dx12.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="vulkan\vulkan-1.lib" />
+    <Library Include="libs\vulkan\vulkan-1.lib" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OptiScaler.rc" />

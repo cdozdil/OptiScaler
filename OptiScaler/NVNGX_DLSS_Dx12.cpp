@@ -1,10 +1,8 @@
-#pragma once
-#include "Config.h"
 #include "Util.h"
-
-#include "NVNGX_Parameter.h"
+#include "Config.h"
 #include "NVNGX_Proxy.h"
-
+#include "NVNGX_Parameter.h"
+#include <menu/imgui_overlay_dx.h>
 #include "upscalers/dlss/DLSSFeature_Dx12.h"
 #include "upscalers/dlssd/DLSSDFeature_Dx12.h"
 #include "upscalers/fsr2/FSR2Feature_Dx12.h"
@@ -12,11 +10,9 @@
 #include "upscalers/fsr31/FSR31Feature_Dx12.h"
 #include "upscalers/xess/XeSSFeature_Dx12.h"
 
-#include "imgui/imgui_overlay_dx.h"
-
-#include "detours/detours.h"
-#include <ankerl/unordered_dense.h>
 #include <dxgi1_4.h>
+#include <include/detours/detours.h>
+#include <ankerl/unordered_dense.h>
 
 static ID3D12Device* D3D12Device = nullptr;
 static ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;

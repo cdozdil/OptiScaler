@@ -3,13 +3,12 @@
 #define A_CPU
 // FSR compute shader is from : https://github.com/fholger/vrperfkit/
 
+#include <Config.h>
 #include "precompile/BCDS_Shader_Dx11.h"
 #include "precompile/BCUS_Shader_Dx11.h"
-
 #include <shaders/fsr1/ffx_fsr1.h>
 #include <shaders/fsr1/FSR_EASU_Shader_Dx11.h>
 
-#include <Config.h>
 
 inline static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
 {

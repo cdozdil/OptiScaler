@@ -1,8 +1,10 @@
 #pragma once
-#include "../IFeature.h"
-#include "../../XeSS_Proxy.h"
+
+#include <upscalers/IFeature.h>
 
 #include <string>
+
+#include <XeSS_Proxy.h>
 
 inline static std::string ResultToString(xess_result_t result)
 {

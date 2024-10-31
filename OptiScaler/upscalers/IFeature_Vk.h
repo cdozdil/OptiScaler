@@ -1,6 +1,8 @@
 #pragma once
-#include <vulkan/vulkan.hpp>
+
 #include "IFeature.h"
+
+#include <vulkan/vulkan.hpp>
 
 class IFeature_Vk : public virtual IFeature
 {

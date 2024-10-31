@@ -1,8 +1,9 @@
 #pragma once
+
 #include "DLSSDFeature.h"
 #include <upscalers/IFeature_Dx12.h>
+
 #include <shaders/rcas/RCAS_Dx12.h>
-#include <string>
 
 class DLSSDFeatureDx12 : public DLSSDFeature, public IFeature_Dx12
 {

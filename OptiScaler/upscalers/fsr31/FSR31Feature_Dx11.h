@@ -1,11 +1,12 @@
 #pragma once
-#include "FSR31Feature.h"
-#include "../IFeature_Dx11.h"
 
-#include "../../fsr31/include/dx11/ffx_dx11.h"
-#include "../../fsr31/include/ffx_fsr3.h"
-#include "../../fsr31/include/ffx_types.h"
-#include "../../fsr31/include/ffx_error.h"
+#include "FSR31Feature.h"
+#include <upscalers/IFeature_Dx11.h>
+
+#include "include/dx11/ffx_dx11.h"
+#include "include/ffx_fsr3.h"
+#include "include/ffx_types.h"
+#include "include/ffx_error.h"
 
 class FSR31FeatureDx11 : public FSR31Feature, public IFeature_Dx11
 {

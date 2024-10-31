@@ -1,7 +1,6 @@
-#pragma once
-#include "../../pch.h"
-#include "../../Config.h"
 #include "FSR31Feature.h"
+
+#include <Config.h>
 
 double FSR31Feature::GetDeltaTime()
 {
