@@ -25,9 +25,9 @@ static ID3D12DescriptorHeap* g_pd3dRtvDescHeap = nullptr;
 static ID3D12DescriptorHeap* g_pd3dSrvDescHeap = nullptr;
 static ID3D12CommandQueue* g_pd3dCommandQueue = nullptr;
 static ID3D12GraphicsCommandList* g_pd3dCommandList = nullptr;
-static ID3D12CommandAllocator* g_commandAllocators[NUM_BACK_BUFFERS] = { };
-static ID3D12Resource* g_mainRenderTargetResource[NUM_BACK_BUFFERS] = { };
-static D3D12_CPU_DESCRIPTOR_HANDLE g_mainRenderTargetDescriptor[NUM_BACK_BUFFERS] = { };
+static ID3D12CommandAllocator* g_commandAllocators[NUM_BACK_BUFFERS] = {};
+static ID3D12Resource* g_mainRenderTargetResource[NUM_BACK_BUFFERS] = {};
+static D3D12_CPU_DESCRIPTOR_HANDLE g_mainRenderTargetDescriptor[NUM_BACK_BUFFERS] = {};
 
 // current command queue for dx12 swapchain
 static IUnknown* currentSCCommandQueue = nullptr;

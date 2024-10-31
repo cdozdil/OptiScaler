@@ -18,6 +18,7 @@
 // #define USE_RESOURCE_DISCARD
 // #define USE_COPY_RESOURCE
 #define USE_RESOURCE_BARRIRER
+//#define WRAP_SWAP_CHAIN
 
 enum ResourceType
 {
@@ -1795,6 +1796,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     ID3D12CommandQueue* cq = nullptr;
     if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
+#ifndef WRAP_SWAP_CHAIN
         cq->SetName(L"GameQueue");
         SwapChainInfo scInfo{};
         scInfo.gameCommandQueue = cq;
@@ -1833,6 +1835,54 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         LOG_ERROR("D3D12_CreateContext error: {}", result);
 
         return E_INVALIDARG;
+#else
+        SwapChainInfo scInfo{};
+        scInfo.gameCommandQueue = cq;
+
+        cq->SetName(L"GameQueueHwnd");
+        cq->Release();
+        fgQueues.push_back((ID3D12CommandQueue*)pDevice);
+
+        Config::Instance()->dxgiSkipSpoofing = true;
+        fgSkipSCWrapping = true;
+        Config::Instance()->SkipHeapCapture = true;
+
+        auto result = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
+
+        if (result == S_OK)
+        {
+            ffxCreateContextDescFrameGenerationSwapChainWrapDX12 createSwapChainDesc{};
+            createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_WRAP_DX12;
+            createSwapChainDesc.gameQueue = (ID3D12CommandQueue*)pDevice;
+            createSwapChainDesc.swapchain = (IDXGISwapChain4**)ppSwapChain;
+
+            auto createResult = FfxApiProxy::D3D12_CreateContext()(&FrameGen_Dx12::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
+
+            Config::Instance()->SkipHeapCapture = false;
+            fgSkipSCWrapping = false;
+            Config::Instance()->dxgiSkipSpoofing = false;
+
+            if (createResult == FFX_API_RETURN_OK)
+            {
+                scInfo.swapChainFormat = pDesc->BufferDesc.Format;
+                scInfo.swapChainBufferCount = pDesc->BufferCount;
+                scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
+                fgSwapChains.insert_or_assign(pDesc->OutputWindow, scInfo);
+
+                LOG_DEBUG("Created FSR-FG swapchain");
+                return S_OK;
+            }
+
+            LOG_ERROR("D3D12_CreateContext error: {}", result);
+            return E_INVALIDARG;
+        }
+
+        Config::Instance()->SkipHeapCapture = false;
+        fgSkipSCWrapping = false;
+        Config::Instance()->dxgiSkipSpoofing = false;
+
+        return result;
+#endif
     }
 
     auto result = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
@@ -1903,6 +1953,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     ID3D12CommandQueue* cq = nullptr;
     if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
+#ifndef WRAP_SWAP_CHAIN
         SwapChainInfo scInfo{};
         scInfo.gameCommandQueue = cq;
 
@@ -1943,7 +1994,55 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         }
 
         LOG_ERROR("D3D12_CreateContext error: {}", result);
+        return E_INVALIDARG;
+#else
+        SwapChainInfo scInfo{};
+        scInfo.gameCommandQueue = cq;
+
+        cq->SetName(L"GameQueueHwnd");
+        cq->Release();
+        fgQueues.push_back((ID3D12CommandQueue*)pDevice);
+
+        Config::Instance()->dxgiSkipSpoofing = true;
+        fgSkipSCWrapping = true;
+        Config::Instance()->SkipHeapCapture = true;
+
+        auto result = oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
+
+        if (result == S_OK)
+        {
+            ffxCreateContextDescFrameGenerationSwapChainWrapDX12 createSwapChainDesc{};
+            createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_WRAP_DX12;
+            createSwapChainDesc.gameQueue = (ID3D12CommandQueue*)pDevice;
+            createSwapChainDesc.swapchain = (IDXGISwapChain4**)ppSwapChain;
+
+            auto createResult = FfxApiProxy::D3D12_CreateContext()(&FrameGen_Dx12::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
+
+            Config::Instance()->SkipHeapCapture = false;
+            fgSkipSCWrapping = false;
+            Config::Instance()->dxgiSkipSpoofing = false;
+
+            if (createResult == FFX_API_RETURN_OK)
+            {
+                scInfo.swapChainFormat = pDesc->Format;
+                scInfo.swapChainBufferCount = pDesc->BufferCount;
+                scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
+                fgSwapChains.insert_or_assign(hWnd, scInfo);
+
+                LOG_DEBUG("Created FSR-FG swapchain");
+                return S_OK;
+            }
+
+            LOG_ERROR("D3D12_CreateContext error: {}", result);
+            return E_INVALIDARG;
+        }
+
+        Config::Instance()->SkipHeapCapture = false;
+        fgSkipSCWrapping = false;
+        Config::Instance()->dxgiSkipSpoofing = false;
+
         return result;
+#endif
     }
 
     auto result = oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
