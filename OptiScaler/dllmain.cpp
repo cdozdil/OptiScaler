@@ -169,6 +169,9 @@ void AttachHooks();
 void DetachHooks();
 HMODULE LoadNvApi();
 HMODULE LoadNvgxDlss(std::wstring originalPath);
+void HookForDxgiSpoofing();
+void HookForVulkanSpoofing();
+void HookForVulkanExtensionSpoofing();
 
 inline static bool CheckDllName(std::string* dllName, std::vector<std::string>* namesList)
 {
@@ -257,10 +260,21 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
             HooksDx::HookDx12();
 
         if (CheckDllName(&lcaseLibName, &dxgiNames))
-            HooksDx::HookDxgi();
+        {
+            HookForDxgiSpoofing();
+
+            if (Config::Instance()->OverlayMenu.value())
+                HooksDx::HookDxgi();
+        }
 
         if (CheckDllName(&lcaseLibName, &vkNames))
-            HooksVk::HookVk();
+        {
+            HookForVulkanSpoofing();
+            HookForVulkanExtensionSpoofing();
+
+            if (Config::Instance()->OverlayMenu.value())
+                HooksVk::HookVk();
+        }
 
         skipLoadChecks = false;
     }
@@ -337,10 +351,21 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
             HooksDx::HookDx12();
 
         if (CheckDllNameW(&lcaseLibName, &dxgiNamesW))
-            HooksDx::HookDxgi();
+        {
+            HookForDxgiSpoofing();
+            
+            if (Config::Instance()->OverlayMenu.value())
+                HooksDx::HookDxgi();
+        }
 
         if (CheckDllNameW(&lcaseLibName, &vkNamesW))
-            HooksVk::HookVk();
+        {
+            HookForVulkanSpoofing();
+            HookForVulkanExtensionSpoofing();
+
+            if (Config::Instance()->OverlayMenu.value())
+                HooksVk::HookVk();
+        }
 
         skipLoadChecks = false;
     }
@@ -786,7 +811,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
         lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
 #ifdef _DEBUG
-    LOG_TRACE("call: {0}", wstring_to_string(lcaseLibName)); 
+    LOG_TRACE("call: {0}", wstring_to_string(lcaseLibName));
 #endif
 
     auto moduleHandle = LoadLibraryCheckW(lcaseLibName);
@@ -1057,6 +1082,100 @@ static VkResult hkvkEnumerateInstanceExtensionProperties(const char* pLayerName,
 
 #pragma endregion
 
+inline static void HookForDxgiSpoofing()
+{
+    // hook dxgi when not working as dxgi.dll
+    if (dxgi.CreateDxgiFactory == nullptr && !isWorkingWithEnabler && !Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
+    {
+        LOG_INFO("DxgiSpoofing is enabled loading dxgi.dll");
+
+        dxgi.CreateDxgiFactory = (PFN_CREATE_DXGI_FACTORY)DetourFindFunction("dxgi.dll", "CreateDXGIFactory");
+        dxgi.CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY)DetourFindFunction("dxgi.dll", "CreateDXGIFactory1");
+        dxgi.CreateDxgiFactory2 = (PFN_CREATE_DXGI_FACTORY_2)DetourFindFunction("dxgi.dll", "CreateDXGIFactory2");
+
+        if (dxgi.CreateDxgiFactory != nullptr || dxgi.CreateDxgiFactory1 != nullptr || dxgi.CreateDxgiFactory2 != nullptr)
+        {
+            LOG_INFO("dxgi.dll found, hooking CreateDxgiFactory methods");
+
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+
+            if (dxgi.CreateDxgiFactory != nullptr)
+                DetourAttach(&(PVOID&)dxgi.CreateDxgiFactory, _CreateDXGIFactory);
+
+            if (dxgi.CreateDxgiFactory1 != nullptr)
+                DetourAttach(&(PVOID&)dxgi.CreateDxgiFactory1, _CreateDXGIFactory1);
+
+            if (dxgi.CreateDxgiFactory2 != nullptr)
+                DetourAttach(&(PVOID&)dxgi.CreateDxgiFactory2, _CreateDXGIFactory2);
+
+            DetourTransactionCommit();
+        }
+    }
+}
+
+inline static void HookForVulkanSpoofing()
+{
+    if (!isNvngxMode && Config::Instance()->VulkanSpoofing.value_or(false) && o_vkGetPhysicalDeviceProperties == nullptr)
+    {
+        o_vkGetPhysicalDeviceProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties"));
+        o_vkGetPhysicalDeviceProperties2 = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties2"));
+        o_vkGetPhysicalDeviceProperties2KHR = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2KHR>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties2KHR"));
+
+        if (o_vkGetPhysicalDeviceProperties != nullptr)
+        {
+            LOG_INFO("Attaching Vulkan device spoofing hooks");
+
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+
+            if (o_vkGetPhysicalDeviceProperties)
+                DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceProperties, hkvkGetPhysicalDeviceProperties);
+
+            if (o_vkGetPhysicalDeviceProperties2)
+                DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceProperties2, hkvkGetPhysicalDeviceProperties2);
+
+            if (o_vkGetPhysicalDeviceProperties2KHR)
+                DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceProperties2KHR, hkvkGetPhysicalDeviceProperties2KHR);
+
+            DetourTransactionCommit();
+        }
+    }
+}
+
+inline static void HookForVulkanExtensionSpoofing()
+{
+    if (!isNvngxMode && Config::Instance()->VulkanExtensionSpoofing.value_or(false) && o_vkEnumerateInstanceExtensionProperties == nullptr)
+    {
+        o_vkCreateDevice = reinterpret_cast<PFN_vkCreateDevice>(DetourFindFunction("vulkan-1.dll", "vkCreateDevice"));
+        o_vkCreateInstance = reinterpret_cast<PFN_vkCreateInstance>(DetourFindFunction("vulkan-1.dll", "vkCreateInstance"));
+        o_vkEnumerateInstanceExtensionProperties = reinterpret_cast<PFN_vkEnumerateInstanceExtensionProperties>(DetourFindFunction("vulkan-1.dll", "vkEnumerateInstanceExtensionProperties"));
+        o_vkEnumerateDeviceExtensionProperties = reinterpret_cast<PFN_vkEnumerateDeviceExtensionProperties>(DetourFindFunction("vulkan-1.dll", "vkEnumerateDeviceExtensionProperties"));
+
+        if (o_vkEnumerateInstanceExtensionProperties != nullptr || o_vkEnumerateDeviceExtensionProperties != nullptr)
+        {
+            LOG_INFO("Attaching Vulkan extensions spoofing hooks");
+
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+
+            if (o_vkEnumerateInstanceExtensionProperties)
+                DetourAttach(&(PVOID&)o_vkEnumerateInstanceExtensionProperties, hkvkEnumerateInstanceExtensionProperties);
+
+            if (o_vkEnumerateDeviceExtensionProperties)
+                DetourAttach(&(PVOID&)o_vkEnumerateDeviceExtensionProperties, hkvkEnumerateDeviceExtensionProperties);
+
+            if (o_vkCreateDevice)
+                DetourAttach(&(PVOID&)o_vkCreateDevice, hkvkCreateDevice);
+
+            if (o_vkCreateInstance)
+                DetourAttach(&(PVOID&)o_vkCreateInstance, hkvkCreateInstance);
+
+            DetourTransactionCommit();
+        }
+    }
+}
+
 static void DetachHooks()
 {
     if (!isNvngxMode)
@@ -1240,62 +1359,6 @@ static void AttachHooks()
 
             if (o_GetProcAddress)
                 DetourAttach(&(PVOID&)o_GetProcAddress, hkGetProcAddress);
-
-            DetourTransactionCommit();
-        }
-    }
-
-    if (!isNvngxMode && Config::Instance()->VulkanSpoofing.value_or(false) && o_vkGetPhysicalDeviceProperties == nullptr)
-    {
-        o_vkGetPhysicalDeviceProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties"));
-        o_vkGetPhysicalDeviceProperties2 = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties2"));
-        o_vkGetPhysicalDeviceProperties2KHR = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2KHR>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties2KHR"));
-
-        if (o_vkGetPhysicalDeviceProperties != nullptr)
-        {
-            LOG_INFO("Attaching Vulkan device spoofing hooks");
-
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
-
-            if (o_vkGetPhysicalDeviceProperties)
-                DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceProperties, hkvkGetPhysicalDeviceProperties);
-
-            if (o_vkGetPhysicalDeviceProperties2)
-                DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceProperties2, hkvkGetPhysicalDeviceProperties2);
-
-            if (o_vkGetPhysicalDeviceProperties2KHR)
-                DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceProperties2KHR, hkvkGetPhysicalDeviceProperties2KHR);
-
-            DetourTransactionCommit();
-        }
-    }
-
-    if (!isNvngxMode && Config::Instance()->VulkanExtensionSpoofing.value_or(false) && o_vkEnumerateInstanceExtensionProperties == nullptr)
-    {
-        o_vkCreateDevice = reinterpret_cast<PFN_vkCreateDevice>(DetourFindFunction("vulkan-1.dll", "vkCreateDevice"));
-        o_vkCreateInstance = reinterpret_cast<PFN_vkCreateInstance>(DetourFindFunction("vulkan-1.dll", "vkCreateInstance"));
-        o_vkEnumerateInstanceExtensionProperties = reinterpret_cast<PFN_vkEnumerateInstanceExtensionProperties>(DetourFindFunction("vulkan-1.dll", "vkEnumerateInstanceExtensionProperties"));
-        o_vkEnumerateDeviceExtensionProperties = reinterpret_cast<PFN_vkEnumerateDeviceExtensionProperties>(DetourFindFunction("vulkan-1.dll", "vkEnumerateDeviceExtensionProperties"));
-
-        if (o_vkEnumerateInstanceExtensionProperties != nullptr || o_vkEnumerateDeviceExtensionProperties != nullptr)
-        {
-            LOG_INFO("Attaching Vulkan extensions spoofing hooks");
-
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
-
-            if (o_vkEnumerateInstanceExtensionProperties)
-                DetourAttach(&(PVOID&)o_vkEnumerateInstanceExtensionProperties, hkvkEnumerateInstanceExtensionProperties);
-
-            if (o_vkEnumerateDeviceExtensionProperties)
-                DetourAttach(&(PVOID&)o_vkEnumerateDeviceExtensionProperties, hkvkEnumerateDeviceExtensionProperties);
-
-            if (o_vkCreateDevice)
-                DetourAttach(&(PVOID&)o_vkCreateDevice, hkvkCreateDevice);
-
-            if (o_vkCreateInstance)
-                DetourAttach(&(PVOID&)o_vkCreateInstance, hkvkCreateInstance);
 
             DetourTransactionCommit();
         }
@@ -1642,55 +1705,31 @@ static void CheckWorkingMode()
 
     } while (false);
 
-    // hook dxgi when not working as dxgi.dll
-    if (!isWorkingWithEnabler && !Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
-    {
-        LOG_INFO("DxgiSpoofing is enabled loading dxgi.dll");
-
-        dxgi.CreateDxgiFactory = (PFN_CREATE_DXGI_FACTORY)DetourFindFunction("dxgi.dll", "CreateDXGIFactory");
-        dxgi.CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY)DetourFindFunction("dxgi.dll", "CreateDXGIFactory1");
-        dxgi.CreateDxgiFactory2 = (PFN_CREATE_DXGI_FACTORY_2)DetourFindFunction("dxgi.dll", "CreateDXGIFactory2");
-
-        if (dxgi.CreateDxgiFactory != nullptr || dxgi.CreateDxgiFactory1 != nullptr || dxgi.CreateDxgiFactory2 != nullptr)
-        {
-            LOG_INFO("dxgi.dll found, hooking CreateDxgiFactory methods");
-
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
-
-            if (dxgi.CreateDxgiFactory != nullptr)
-                DetourAttach(&(PVOID&)dxgi.CreateDxgiFactory, _CreateDXGIFactory);
-
-            if (dxgi.CreateDxgiFactory1 != nullptr)
-                DetourAttach(&(PVOID&)dxgi.CreateDxgiFactory1, _CreateDXGIFactory1);
-
-            if (dxgi.CreateDxgiFactory2 != nullptr)
-                DetourAttach(&(PVOID&)dxgi.CreateDxgiFactory2, _CreateDXGIFactory2);
-
-            DetourTransactionCommit();
-        }
-    }
-
     if (modeFound)
     {
+        auto dxgiModule = GetModuleHandle(L"dxgi.dll");
+        if (dxgiModule != nullptr)
+            HookForDxgiSpoofing();
+
+        auto vulkanModule = GetModuleHandle(L"vulkan-1.dll");
+        if (vulkanModule != nullptr)
+        {
+            HookForVulkanSpoofing();
+            HookForVulkanExtensionSpoofing();
+        }
+
         AttachHooks();
 
         Config::Instance()->WorkingAsNvngx = isNvngxMode && !isWorkingWithEnabler;
-
         Config::Instance()->OverlayMenu = (!isNvngxMode || isWorkingWithEnabler) && Config::Instance()->OverlayMenu.value_or(true);
-        
 
-        if (Config::Instance()->OverlayMenu.value())
-        {
-            skipLoadChecks = true;
+        // dx menu hooks
+        if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr)
             HooksDx::HookDxgi();
-            skipLoadChecks = false;
-        }
 
-        //{
-        //    HooksDx::HookDx();
-        //    HooksVk::HookVk();
-        //}
+        // vk menu hooks
+        if (Config::Instance()->OverlayMenu.value() && vulkanModule != nullptr)
+            HooksVk::HookVk();
 
         return;
     }

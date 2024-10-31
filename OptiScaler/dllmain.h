@@ -1413,7 +1413,7 @@ HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
 
         auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-        std::memcpy(pDesc->Description, szName.c_str(), szName.size());
+        std::wcscpy(pDesc->Description, szName.c_str());
 
         if (Config::Instance()->DxgiSpoofing.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
@@ -1440,7 +1440,7 @@ HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
 
         auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-        std::memcpy(pDesc->Description, szName.c_str(), szName.size());
+        std::wcscpy(pDesc->Description, szName.c_str());
 
         if (Config::Instance()->DxgiSpoofing.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
@@ -1467,7 +1467,7 @@ HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
 
         auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-        std::memcpy(pDesc->Description, szName.c_str(), szName.size());
+        std::wcscpy(pDesc->Description, szName.c_str());
 
         if (Config::Instance()->DxgiSpoofing.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
@@ -1494,7 +1494,7 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
 
         auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-        std::memcpy(pDesc->Description, szName.c_str(), szName.size());
+        std::wcscpy(pDesc->Description, szName.c_str());
 
 
         if (Config::Instance()->DxgiSpoofing.has_value())
