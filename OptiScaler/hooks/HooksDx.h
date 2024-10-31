@@ -33,7 +33,9 @@ namespace HooksDx
     inline int previousFrameIndex = 0;
 
     void UnHookDx();
-    void HookDx();
+    void HookDx11();
+    void HookDx12();
+    void HookDxgi();
 }
 
 namespace FrameGen_Dx12

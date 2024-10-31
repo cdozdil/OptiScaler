@@ -107,10 +107,59 @@ inline std::vector<std::wstring> nvapiNamesW =
     L"nvapi64",
 };
 
+inline std::vector<std::wstring> dx11NamesW =
+{
+    L"d3d11.dll",
+    L"d3d11",
+};
+
+inline std::vector<std::string> dx11Names =
+{
+    "d3d11.dll",
+    "d3d11",
+};
+
+inline std::vector<std::wstring> dx12NamesW =
+{
+    L"d3d12.dll",
+    L"d3d12",
+};
+
+inline std::vector<std::string> dx12Names =
+{
+    "d3d12.dll",
+    "d3d12",
+};
+
+inline std::vector<std::wstring> dxgiNamesW =
+{
+    L"dxgi.dll",
+    L"dxgi",
+};
+
+inline std::vector<std::string> dxgiNames =
+{
+    "dxgi.dll",
+    "dxgi",
+};
+
+inline std::vector<std::wstring> vkNamesW =
+{
+    L"vulkan-1.dll",
+    L"vulkan-1",
+};
+
+inline std::vector<std::string> vkNames =
+{
+    "vulkan-1.dll",
+    "vulkan-1",
+};
+
 inline std::vector<std::wstring> dllNamesW;
 
 static int loadCount = 0;
 static bool dontCount = false;
+static bool skipLoadChecks = false;
 
 static bool isNvngxMode = false;
 static bool isWorkingWithEnabler = false;
@@ -196,6 +245,26 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
             return nvngxDlss;
     }
 
+    // Hooks
+    if (Config::Instance()->OverlayMenu.has_value() && Config::Instance()->OverlayMenu.value())
+    {
+        skipLoadChecks = true;
+
+        if (CheckDllName(&lcaseLibName, &dx11Names))
+            HooksDx::HookDx11();
+
+        if (CheckDllName(&lcaseLibName, &dx12Names))
+            HooksDx::HookDx12();
+
+        if (CheckDllName(&lcaseLibName, &dxgiNames))
+            HooksDx::HookDxgi();
+
+        if (CheckDllName(&lcaseLibName, &vkNames))
+            HooksVk::HookVk();
+
+        skipLoadChecks = false;
+    }
+
     if (!isNvngxMode && CheckDllName(&lcaseLibName, &dllNames))
     {
         LOG_INFO("{0} call returning this dll!", lcaseLibName);
@@ -254,6 +323,26 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
         if (nvapi != nullptr)
             return nvapi;
+    }
+
+    // Hooks
+    if (Config::Instance()->OverlayMenu.has_value() && Config::Instance()->OverlayMenu.value())
+    {
+        skipLoadChecks = true;
+
+        if (CheckDllNameW(&lcaseLibName, &dx11NamesW))
+            HooksDx::HookDx11();
+
+        if (CheckDllNameW(&lcaseLibName, &dx12NamesW))
+            HooksDx::HookDx12();
+
+        if (CheckDllNameW(&lcaseLibName, &dxgiNamesW))
+            HooksDx::HookDxgi();
+
+        if (CheckDllNameW(&lcaseLibName, &vkNamesW))
+            HooksVk::HookVk();
+
+        skipLoadChecks = false;
     }
 
     if (!isNvngxMode && CheckDllNameW(&lcaseLibName, &dllNamesW))
@@ -596,6 +685,9 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
     if (lpLibFileName == nullptr)
         return NULL;
 
+    if (skipLoadChecks)
+        return o_LoadLibraryA(lpLibFileName);;
+
     std::string libName(lpLibFileName);
     std::string lcaseLibName(libName);
 
@@ -622,6 +714,9 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 {
     if (lpLibFileName == nullptr)
         return NULL;
+
+    if (skipLoadChecks)
+        return o_LoadLibraryW(lpLibFileName);;
 
     std::wstring libName(lpLibFileName);
     std::wstring lcaseLibName(libName);
@@ -650,6 +745,9 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
     if (lpLibFileName == nullptr)
         return NULL;
 
+    if (skipLoadChecks)
+        return o_LoadLibraryExA(lpLibFileName, hFile, dwFlags);
+
     std::string libName(lpLibFileName);
     std::string lcaseLibName(libName);
 
@@ -677,6 +775,9 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
 {
     if (lpLibFileName == nullptr)
         return NULL;
+
+    if (skipLoadChecks)
+        return o_LoadLibraryExW(lpLibFileName, hFile, dwFlags);
 
     std::wstring libName(lpLibFileName);
     std::wstring lcaseLibName(libName);
@@ -1577,11 +1678,19 @@ static void CheckWorkingMode()
         Config::Instance()->WorkingAsNvngx = isNvngxMode && !isWorkingWithEnabler;
 
         Config::Instance()->OverlayMenu = (!isNvngxMode || isWorkingWithEnabler) && Config::Instance()->OverlayMenu.value_or(true);
+        
+
         if (Config::Instance()->OverlayMenu.value())
         {
-            HooksDx::HookDx();
-            HooksVk::HookVk();
+            skipLoadChecks = true;
+            HooksDx::HookDxgi();
+            skipLoadChecks = false;
         }
+
+        //{
+        //    HooksDx::HookDx();
+        //    HooksVk::HookVk();
+        //}
 
         return;
     }

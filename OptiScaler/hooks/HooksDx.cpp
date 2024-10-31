@@ -2580,9 +2580,9 @@ static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC
 
 #pragma region Public hook methods
 
-void HooksDx::HookDx()
+void HooksDx::HookDx12()
 {
-    if (_isInited)
+    if (o_D3D12CreateDevice != nullptr)
         return;
 
     o_D3D12CreateDevice = (PFN_D3D12_CREATE_DEVICE)DetourFindFunction("d3d12.dll", "D3D12CreateDevice");
@@ -2595,6 +2595,12 @@ void HooksDx::HookDx()
 
         DetourTransactionCommit();
     }
+}
+
+void HooksDx::HookDx11()
+{
+    if (o_D3D11CreateDevice != nullptr)
+        return;
 
     o_D3D11CreateDevice = (PFN_D3D11_CREATE_DEVICE)DetourFindFunction("d3d11.dll", "D3D11CreateDevice");
     o_D3D11CreateDeviceAndSwapChain = (PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN)DetourFindFunction("d3d11.dll", "D3D11CreateDeviceAndSwapChain");
@@ -2615,6 +2621,12 @@ void HooksDx::HookDx()
 
         DetourTransactionCommit();
     }
+}
+
+void HooksDx::HookDxgi()
+{
+    if (o_CreateDXGIFactory != nullptr)
+        return;
 
     o_CreateDXGIFactory = (PFN_CreateDXGIFactory)DetourFindFunction("dxgi.dll", "CreateDXGIFactory");
     o_CreateDXGIFactory1 = (PFN_CreateDXGIFactory1)DetourFindFunction("dxgi.dll", "CreateDXGIFactory1");
