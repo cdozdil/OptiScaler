@@ -28,7 +28,7 @@
 /// @defgroup ffxFsr3Upscaler FidelityFX FSR3
 namespace Fsr31
 {
-    /// FidelityFX Super Resolution 3 runtime library
+/// FidelityFX Super Resolution 3 runtime library
 /// 
 /// @ingroup SDKComponents
 
@@ -45,7 +45,7 @@ namespace Fsr31
 /// FidelityFX Super Resolution 3 patch version.
 ///
 /// @ingroup ffxFsr3Upscaler
-#define FFX_FSR3UPSCALER_VERSION_PATCH      (1)
+#define FFX_FSR3UPSCALER_VERSION_PATCH      (2)
 
 /// FidelityFX Super Resolution 3 context count
 /// 
