@@ -8,8 +8,8 @@
 
 static int scCount = 0;
 
-WrappedIDXGISwapChain4::WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* pDevice, HWND hWnd, PFN_SC_Present renderTrig, PFN_SC_Clean clearTrig)
-    : m_pReal(real), Device(pDevice), Handle(hWnd), RenderTrig(renderTrig), ClearTrig(clearTrig), m_iRefcount(1)
+WrappedIDXGISwapChain4::WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* pDevice, HWND hWnd, PFN_SC_Present renderTrig, PFN_SC_Clean clearTrig, PFN_SC_Release releaseTrig)
+    : m_pReal(real), Device(pDevice), Handle(hWnd), RenderTrig(renderTrig), ClearTrig(clearTrig), ReleaseTrig(releaseTrig), m_iRefcount(1)
 {
     id = ++scCount;
     LOG_INFO("{0} created, real: {1:X}", id, (UINT64)real);
@@ -21,7 +21,8 @@ WrappedIDXGISwapChain4::WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* p
 
 WrappedIDXGISwapChain4::~WrappedIDXGISwapChain4()
 {
-
+    if (ReleaseTrig != nullptr)
+        ReleaseTrig(Handle);
 }
 
 HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::QueryInterface(REFIID riid, void** ppvObject)
@@ -133,7 +134,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
         Config::Instance()->SCChanged = true;
     }
-    
+
     std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
     LOG_DEBUG("BufferCount: {0}, Width: {1}, Height: {2}, NewFormat: {3}, SwapChainFlags: {4:X}", BufferCount, Width, Height, (UINT)NewFormat, SwapChainFlags);

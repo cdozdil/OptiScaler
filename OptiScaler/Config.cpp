@@ -57,6 +57,10 @@ bool Config::Reload(std::filesystem::path iniPath)
             FGHUDFix = readBool("FrameGen", "HUDFix");
             FGHUDLimit = readInt("FrameGen", "HUDLimit");
             FGHUDFixExtended = readBool("FrameGen", "HUDFixExtended");
+            FGRectLeft = readInt("FrameGen", "RectLeft");
+            FGRectTop = readInt("FrameGen", "RectTop");
+            FGRectWidth = readInt("FrameGen", "RectWidth");
+            FGRectHeight = readInt("FrameGen", "RectHeight");
         }
 
         // Reflex 
@@ -485,6 +489,10 @@ bool Config::SaveIni()
         ini.SetValue("FrameGen", "HUDFix", GetBoolValue(Instance()->FGHUDFix).c_str());
         ini.SetValue("FrameGen", "HUDLimit", GetIntValue(Instance()->FGHUDLimit).c_str());
         ini.SetValue("FrameGen", "HUDFixExtended", GetBoolValue(Instance()->FGHUDFixExtended).c_str());
+        ini.SetValue("FrameGen", "RectLeft", GetIntValue(Instance()->FGRectLeft).c_str());
+        ini.SetValue("FrameGen", "RectTop", GetIntValue(Instance()->FGRectTop).c_str());
+        ini.SetValue("FrameGen", "RectWidth", GetIntValue(Instance()->FGRectWidth).c_str());
+        ini.SetValue("FrameGen", "RectHeight", GetIntValue(Instance()->FGRectHeight).c_str());
     }
 
     // Reflex 

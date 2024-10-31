@@ -34,7 +34,9 @@ namespace HooksDx
     inline int previousFrameIndex = 0;
 
     void UnHookDx();
-    void HookDx();
+    void HookDx11();
+    void HookDx12();
+    void HookDxgi();
 }
 
 namespace FrameGen_Dx12
@@ -48,7 +50,7 @@ namespace FrameGen_Dx12
     inline const int FG_BUFFER_SIZE = 4;
     inline ID3D12Resource* paramVelocity[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
     inline ID3D12Resource* paramDepth[FG_BUFFER_SIZE] = { nullptr, nullptr,nullptr, nullptr };
-    inline UINT64 fgHUDlessCaptureCounter[FG_BUFFER_SIZE] = { 0,0,0,0 };
+    inline INT64 fgHUDlessCaptureCounter[FG_BUFFER_SIZE] = { 0,0,0,0 };
     inline bool upscaleRan = false;
     inline bool fgSkipHudlessChecks = false;
     inline double fgFrameTime = 0.0;
@@ -65,6 +67,7 @@ namespace FrameGen_Dx12
     UINT ClearFrameResources();
     UINT GetFrame();
     void NewFrame();
+    void ReleaseFGSwapchain(HWND hWnd);
     void ReleaseFGObjects();
     void CreateFGObjects(ID3D12Device* InDevice);
     void CreateFGContext(ID3D12Device* InDevice, IFeature* deviceContext);
