@@ -2755,9 +2755,13 @@ void HooksDx::HookDx12()
     if (o_D3D12CreateDevice != nullptr)
         return;
 
+    LOG_DEBUG("");
+
     o_D3D12CreateDevice = (PFN_D3D12_CREATE_DEVICE)DetourFindFunction("d3d12.dll", "D3D12CreateDevice");
     if (o_D3D12CreateDevice != nullptr)
     {
+        LOG_DEBUG("Hooking D3D12CreateDevice method");
+
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
@@ -2772,11 +2776,15 @@ void HooksDx::HookDx11()
     if (o_D3D11CreateDevice != nullptr)
         return;
 
+    LOG_DEBUG("");
+
     o_D3D11CreateDevice = (PFN_D3D11_CREATE_DEVICE)DetourFindFunction("d3d11.dll", "D3D11CreateDevice");
     o_D3D11CreateDeviceAndSwapChain = (PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN)DetourFindFunction("d3d11.dll", "D3D11CreateDeviceAndSwapChain");
     o_D3D11On12CreateDevice = (PFN_D3D11ON12_CREATE_DEVICE)DetourFindFunction("d3d11.dll", "D3D11On12CreateDevice");
     if (o_D3D11CreateDevice != nullptr || o_D3D11On12CreateDevice != nullptr || o_D3D11CreateDeviceAndSwapChain != nullptr)
     {
+        LOG_DEBUG("Hooking D3D11CreateDevice methods");
+
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
@@ -2798,12 +2806,16 @@ void HooksDx::HookDxgi()
     if (o_CreateDXGIFactory != nullptr)
         return;
 
+    LOG_DEBUG("");
+
     o_CreateDXGIFactory = (PFN_CreateDXGIFactory)DetourFindFunction("dxgi.dll", "CreateDXGIFactory");
     o_CreateDXGIFactory1 = (PFN_CreateDXGIFactory1)DetourFindFunction("dxgi.dll", "CreateDXGIFactory1");
     o_CreateDXGIFactory2 = (PFN_CreateDXGIFactory2)DetourFindFunction("dxgi.dll", "CreateDXGIFactory2");
 
     if (o_CreateDXGIFactory != nullptr)
     {
+        LOG_DEBUG("Hooking CreateDXGIFactory methods");
+
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
