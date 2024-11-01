@@ -770,7 +770,7 @@ static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* p
 
         fgHandlesByResources.erase(pResource);
         LOG_DEBUG_ONLY("Erased");
-}
+    }
 }
 #endif
 
@@ -997,7 +997,7 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
     auto result = o_CreateDescriptorHeap(This, pDescriptorHeapDesc, riid, ppvHeap);
 
     // try to calculate handle ranges for heap
-    if (result == S_OK && (pDescriptorHeapDesc->Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || pDescriptorHeapDesc->Type == D3D12_DESCRIPTOR_HEAP_TYPE_RTV)) 
+    if (result == S_OK && (pDescriptorHeapDesc->Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || pDescriptorHeapDesc->Type == D3D12_DESCRIPTOR_HEAP_TYPE_RTV))
     {
         auto heap = (ID3D12DescriptorHeap*)(*ppvHeap);
         auto increment = This->GetDescriptorHandleIncrementSize(pDescriptorHeapDesc->Type);
@@ -1061,7 +1061,7 @@ static void hkCopyDescriptors(ID3D12Device* This,
             auto destHandle = pDestDescriptorRangeStarts[destRangeIndex].ptr + destIndex * size;
             heap->SetByCpuHandle(destHandle, *buffer);
 
-            LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}", 
+            LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}",
                            handle, destHandle, GetGPUHandle(This, handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), GetGPUHandle(This, destHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), (UINT)DescriptorHeapsType);
         }
 
@@ -1109,7 +1109,7 @@ static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D
         auto destHandle = DestDescriptorRangeStart.ptr + i * size;
         heap->SetByCpuHandle(destHandle, *buffer);
 
-        LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}", 
+        LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}",
                        handle, destHandle, GetGPUHandle(This, handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), GetGPUHandle(This, destHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), (UINT)DescriptorHeapsType);
     }
 }
@@ -1240,9 +1240,9 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
 
                     FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
                 }
-                
+
                 fgPossibleHudless[fIndex][This].insert_or_assign(resource->buffer, *resource);
-     
+
                 return;
             }
 
@@ -1681,7 +1681,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         fakenvapi::reportFGPresent(pSwapChain, FrameGen_Dx12::fgIsActive, frameCounter % 2);
     }
 
-    if(frameCounter == 0)
+    if (frameCounter == 0)
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     frameCounter++;
@@ -1844,6 +1844,12 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, Windowed: {}, SkipWrapping: {}",
               pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, (UINT)pDesc->OutputWindow, pDesc->Windowed, fgSkipSCWrapping);
 
+    if (fgSwapChains.contains(pDesc->OutputWindow))
+    {
+        LOG_WARN("This hWnd is already active: {:X}", (size_t)pDesc->OutputWindow);
+        return E_ACCESSDENIED;
+    }
+
     ID3D12CommandQueue* cq = nullptr;
     if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
@@ -1998,6 +2004,12 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     }
 
+    if (fgSwapChains.contains(hWnd))
+    {
+        LOG_WARN("This hWnd is already active: {:X}", (size_t)hWnd);
+        return E_ACCESSDENIED;
+    }
+
     LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, SkipWrapping: {}",
               pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, (UINT)hWnd, fgSkipSCWrapping);
 
@@ -2038,6 +2050,10 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
             scInfo.swapChainFormat = pDesc->Format;
             scInfo.swapChainBufferCount = pDesc->BufferCount;
             scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
+
+            // Hack for FSR swapchain
+            // It have 1 extra ref
+            scInfo.swapChain->Release();
             fgSwapChains.insert_or_assign(hWnd, scInfo);
 
             LOG_DEBUG("Created FSR-FG swapchain");
@@ -2902,15 +2918,23 @@ void FrameGen_Dx12::NewFrame()
 
 void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 {
+    ImGuiOverlayDx::CleanupRenderTarget(true, hWnd);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
+
     if (FrameGen_Dx12::fgSwapChainContext != nullptr)
     {
         auto result = FfxApiProxy::D3D12_DestroyContext()(&FrameGen_Dx12::fgSwapChainContext, nullptr);
         LOG_INFO("Dostroy Ffx Swapchain Result: {}({})", result, FfxApiProxy::ReturnCodeToString(result));
         FrameGen_Dx12::fgSwapChainContext = nullptr;
         fgSwapChains.erase(hWnd);
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    }
 
-        if (FrameGen_Dx12::fgContext != nullptr)
-            FrameGen_Dx12::StopAndDestroyFGContext(true, false);
+    if (FrameGen_Dx12::fgContext != nullptr)
+    {
+        FrameGen_Dx12::StopAndDestroyFGContext(true, false);
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
 }
 
@@ -3098,7 +3122,7 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown)
         FrameGen_Dx12::fgIsActive = false;
 
         if (!shutDown)
-            LOG_INFO("    FG _configure result: {0:X}", result);
+            LOG_INFO("D3D12_Configure result: {0:X}", result);
     }
 
     if (destroy && FrameGen_Dx12::fgContext != nullptr)
@@ -3106,7 +3130,7 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown)
         auto result = FfxApiProxy::D3D12_DestroyContext()(&FrameGen_Dx12::fgContext, nullptr);
 
         if (!shutDown)
-            LOG_INFO("    FG _destroyContext result: {0:X}", result);
+            LOG_INFO("D3D12_DestroyContext result: {0:X}", result);
 
         FrameGen_Dx12::fgContext = nullptr;
     }
