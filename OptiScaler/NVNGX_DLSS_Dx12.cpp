@@ -1379,6 +1379,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(deviceContext->DisplayHeight());
                 }
 
+                m_FrameGenerationConfig.frameGenerationCallbackUserContext = &FrameGen_Dx12::fgContext;
                 m_FrameGenerationConfig.frameGenerationCallback = [](ffxDispatchDescFrameGeneration* params, void* pUserCtx) -> ffxReturnCode_t
                     {
                         auto fIndex = FrameGen_Dx12::GetFrame();
@@ -1427,16 +1428,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         return result;
                     };
 
-                m_FrameGenerationConfig.frameGenerationCallbackUserContext = &FrameGen_Dx12::fgContext;
                 m_FrameGenerationConfig.onlyPresentGenerated = Config::Instance()->FGOnlyGenerated; // check here
                 m_FrameGenerationConfig.frameID = deviceContext->FrameCount();
                 m_FrameGenerationConfig.swapChain = HooksDx::currentSwapchain;
 
-                ffxConfigureDescGlobalDebug1 debugDesc;
-                debugDesc.header.type = FFX_API_CONFIGURE_DESC_TYPE_GLOBALDEBUG1;
-                debugDesc.debugLevel = FFX_API_CONFIGURE_GLOBALDEBUG_LEVEL_VERBOSE;
-                debugDesc.fpMessage = FfxFgLogCallback;
-                m_FrameGenerationConfig.header.pNext = &debugDesc.header;
+                // Was crashing with 3.1.2, disabled
+                //ffxConfigureDescGlobalDebug1 debugDesc;
+                //debugDesc.header.type = FFX_API_CONFIGURE_DESC_TYPE_GLOBALDEBUG1;
+                //debugDesc.debugLevel = FFX_API_CONFIGURE_GLOBALDEBUG_LEVEL_VERBOSE;
+                //debugDesc.fpMessage = FfxFgLogCallback;
+                //m_FrameGenerationConfig.header.pNext = &debugDesc.header;
 
                 Config::Instance()->dxgiSkipSpoofing = true;
                 ffxReturnCode_t retCode = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgContext, &m_FrameGenerationConfig.header);

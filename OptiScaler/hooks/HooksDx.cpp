@@ -539,11 +539,12 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
         m_FrameGenerationConfig.frameID = Config::Instance()->CurrentFeature->FrameCount();
         m_FrameGenerationConfig.swapChain = HooksDx::currentSwapchain;
 
-        ffxConfigureDescGlobalDebug1 debugDesc;
-        debugDesc.header.type = FFX_API_CONFIGURE_DESC_TYPE_GLOBALDEBUG1;
-        debugDesc.debugLevel = FFX_API_CONFIGURE_GLOBALDEBUG_LEVEL_VERBOSE;
-        debugDesc.fpMessage = FfxFgLogCallback;
-        m_FrameGenerationConfig.header.pNext = &debugDesc.header;
+        // Was crashing with 3.1.2, disabled
+        //ffxConfigureDescGlobalDebug1 debugDesc;
+        //debugDesc.header.type = FFX_API_CONFIGURE_DESC_TYPE_GLOBALDEBUG1;
+        //debugDesc.debugLevel = FFX_API_CONFIGURE_GLOBALDEBUG_LEVEL_VERBOSE;
+        //debugDesc.fpMessage = FfxFgLogCallback;
+        //m_FrameGenerationConfig.header.pNext = &debugDesc.header;
 
         Config::Instance()->dxgiSkipSpoofing = true;
         ffxReturnCode_t retCode = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgContext, &m_FrameGenerationConfig.header);
@@ -3110,7 +3111,7 @@ void FrameGen_Dx12::CreateFGContext(ID3D12Device* InDevice, IFeature* deviceCont
     ffxReturnCode_t retCode = FfxApiProxy::D3D12_CreateContext()(&FrameGen_Dx12::fgContext, &createFg.header, nullptr);
     Config::Instance()->SkipHeapCapture = false;
     Config::Instance()->dxgiSkipSpoofing = false;
-    LOG_INFO("_createContext result: {0:X}", retCode);
+    LOG_INFO("D3D12_CreateContext result: {0:X}", retCode);
 
     FrameGen_Dx12::fgIsActive = (retCode == FFX_API_RETURN_OK);
 
