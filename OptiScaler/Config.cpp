@@ -277,7 +277,8 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Hooks
         {
-            HookOriginalNvngxOnly = readBool("Hooks", "HookOriginalNvngxOnly");
+            if (!HookOriginalNvngxOnly.has_value())
+                HookOriginalNvngxOnly = readBool("Hooks", "HookOriginalNvngxOnly");
         }
 
         // RCAS
