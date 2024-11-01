@@ -890,12 +890,10 @@ void ImGuiCommon::RenderMenu()
                         if (ImGui::Checkbox("Frame Generation", &fgActive))
                         {
                             Config::Instance()->FGEnabled = fgActive;
+                            LOG_DEBUG("Enabled set FGEnabled: {}", fgActive);
 
                             if (Config::Instance()->FGEnabled.value_or(false))
-                            {
                                 Config::Instance()->FGChanged = true;
-                                LOG_DEBUG_ONLY("Enabled set FGChanged");
-                            }
                         }
 
                         ShowHelpMarker("Enable FSR frame generation");
@@ -904,6 +902,7 @@ void ImGuiCommon::RenderMenu()
                         if (ImGui::Checkbox("FG HUD Fix", &fgHudfix))
                         {
                             Config::Instance()->FGHUDFix = fgHudfix;
+                            LOG_DEBUG("Enabled set FGHUDFix: {}", fgHudfix);
                             Config::Instance()->FGChanged = true;
                         }
                         ShowHelpMarker("Enable HUD stability fix, might cause crashes!");
@@ -921,13 +920,17 @@ void ImGuiCommon::RenderMenu()
                                 hudFixLimit = 99;
 
                             Config::Instance()->FGHUDLimit = hudFixLimit;
+                            LOG_DEBUG("Enabled set FGHUDLimit: {}", hudFixLimit);
                         }
                         ShowHelpMarker("Delay HUDless capture, high values might cause crash!");
 
                         ImGui::SameLine(0.0f, 16.0f);
                         auto hudExtended = Config::Instance()->FGHUDFixExtended.value_or(false);
                         if (ImGui::Checkbox("Extended", &hudExtended))
+                        {
+                            LOG_DEBUG("Enabled set FGHUDFixExtended: {}", hudExtended);
                             Config::Instance()->FGHUDFixExtended = hudExtended;
+                        }
                         ShowHelpMarker("Extended HUDless checks, might cause crash and slowdowns!");
 
                         ImGui::PopItemWidth();
