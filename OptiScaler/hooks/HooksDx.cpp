@@ -15,8 +15,8 @@
 #include <ankerl/unordered_dense.h>
 #include <shared_mutex>
 
-// #define USE_RESOURCE_DISCARD
-#define USE_COPY_RESOURCE
+//#define USE_RESOURCE_DISCARD
+//#define USE_COPY_RESOURCE
 #define USE_RESOURCE_BARRIRER
 //#define WRAP_SWAP_CHAIN
 
@@ -515,6 +515,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
 
                     params->frameID = fgLastFGFrame;
                     params->numGeneratedFrames = 0;
+                    params->reset = true;
                 }
 
                 if (Config::Instance()->CurrentFeature != nullptr)
@@ -728,7 +729,9 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
         return false;
 
     // resource and target formats are supported by converter
-    if ((resource->format == DXGI_FORMAT_R8G8B8A8_TYPELESS || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || resource->format == DXGI_FORMAT_R16G16B16A16_FLOAT || resource->format == DXGI_FORMAT_R11G11B10_FLOAT || resource->format == DXGI_FORMAT_R32G32B32A32_FLOAT || resource->format == DXGI_FORMAT_R32G32B32_FLOAT) &&
+    if ((resource->format == DXGI_FORMAT_R8G8B8A8_TYPELESS || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM || resource->format == DXGI_FORMAT_R16G16B16A16_FLOAT || 
+        resource->format == DXGI_FORMAT_R11G11B10_FLOAT || resource->format == DXGI_FORMAT_R32G32B32A32_FLOAT || resource->format == DXGI_FORMAT_R32G32B32_FLOAT || resource->format == DXGI_FORMAT_R10G10B10A2_UNORM || 
+        resource->format == DXGI_FORMAT_R10G10B10A2_TYPELESS) &&
         (fgScDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R10G10B10A2_UNORM))
     {
         if (callerName.length() > 0)
@@ -1681,7 +1684,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         fakenvapi::reportFGPresent(pSwapChain, FrameGen_Dx12::fgIsActive, frameCounter % 2);
     }
 
-    if (frameCounter == 0)
+    // death stranding fix???
+    if (frameCounter < 5)
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     frameCounter++;
