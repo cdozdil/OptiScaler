@@ -27,6 +27,13 @@ enum ResourceType
     UAV
 };
 
+enum ShaderType
+{
+    None,
+    Graphic,
+    Compute
+};
+
 typedef struct SwapChainInfo
 {
     IDXGISwapChain* swapChain = nullptr;
@@ -172,6 +179,7 @@ static ankerl::unordered_dense::map <ID3D12Resource*, ResourceHeapInfo> fgHandle
 
 // possibleHudless lisy by cmdlist
 static ankerl::unordered_dense::map <ID3D12GraphicsCommandList*, ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo>> fgPossibleHudless[FrameGen_Dx12::FG_BUFFER_SIZE];
+static ShaderType fgSourceType = None;
 
 // mutexes
 static std::shared_mutex heapMutex;
@@ -730,8 +738,8 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
         return false;
 
     // resource and target formats are supported by converter
-    if ((resource->format == DXGI_FORMAT_R8G8B8A8_TYPELESS || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM || resource->format == DXGI_FORMAT_R16G16B16A16_FLOAT || 
-        resource->format == DXGI_FORMAT_R11G11B10_FLOAT || resource->format == DXGI_FORMAT_R32G32B32A32_FLOAT || resource->format == DXGI_FORMAT_R32G32B32_FLOAT || resource->format == DXGI_FORMAT_R10G10B10A2_UNORM || 
+    if ((resource->format == DXGI_FORMAT_R8G8B8A8_TYPELESS || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM || resource->format == DXGI_FORMAT_R16G16B16A16_FLOAT ||
+        resource->format == DXGI_FORMAT_R11G11B10_FLOAT || resource->format == DXGI_FORMAT_R32G32B32A32_FLOAT || resource->format == DXGI_FORMAT_R32G32B32_FLOAT || resource->format == DXGI_FORMAT_R10G10B10A2_UNORM ||
         resource->format == DXGI_FORMAT_R10G10B10A2_TYPELESS) &&
         (fgScDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R10G10B10A2_UNORM))
     {
@@ -1154,6 +1162,10 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
 
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
+
+        if (fgSourceType == Compute)
+            return;
+
         if (fgPossibleHudless[fIndex].contains(This))
         {
             if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
@@ -1189,6 +1201,7 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
         }
 
         fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
+        fgSourceType = Graphic;
     }
 }
 
@@ -1211,6 +1224,9 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
 
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
+
+        if (fgSourceType == Compute)
+            return;
 
         for (size_t i = 0; i < NumRenderTargetDescriptors; i++)
         {
@@ -1266,6 +1282,7 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
             }
 
             fgPossibleHudless[fIndex][This].insert_or_assign(resource->buffer, *resource);
+            fgSourceType = Graphic;
         }
     }
 }
@@ -1297,7 +1314,7 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
         return;
     }
 
-    if (!InUpscaledList(capturedBuffer->buffer) && !CheckForHudless(__FUNCTION__, capturedBuffer))
+    if (!CheckForHudless(__FUNCTION__, capturedBuffer))
         return;
 
     if (capturedBuffer->type == UAV)
@@ -1307,6 +1324,10 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
 
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
+
+        if (fgSourceType == Graphic)
+            return;
+
         if (fgPossibleHudless[fIndex].contains(This))
         {
             if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
@@ -1342,6 +1363,7 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
         }
 
         fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
+        fgSourceType = Compute;
     }
 }
 
@@ -1364,17 +1386,21 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
 
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
+
+        if (fgSourceType != Graphic)
+            return;
+
         // if can't find output skip
         if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
         {
-            fgPossibleHudless[fIndex][This].clear();
+            LOG_DEBUG_ONLY("Early exit");
             return;
         }
 
+        auto& val0 = fgPossibleHudless[fIndex][This];
+
         do
         {
-            auto& val0 = fgPossibleHudless[fIndex][This];
-
             // if this command list does not have entries skip
             if (val0.size() == 0)
                 break;
@@ -1391,8 +1417,10 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
 
         } while (false);
 
-        fgPossibleHudless[fIndex][This].clear();
+        val0.clear();
         LOG_DEBUG_ONLY("Clear");
+
+        fgSourceType = None;
     }
 }
 
@@ -1408,22 +1436,23 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
     if (!IsHudFixActive())
         return;
 
-    LOG_DEBUG_ONLY(" <-- {0:X}", (size_t)This);
-
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
+
+        if (fgSourceType != Graphic)
+            return;
+
         // if can't find output skip
         if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
         {
-            fgPossibleHudless[fIndex][This].clear();
             LOG_DEBUG_ONLY("Early exit");
             return;
         }
 
+        auto& val0 = fgPossibleHudless[fIndex][This];
+
         do
         {
-            auto& val0 = fgPossibleHudless[fIndex][This];
-
             // if this command list does not have entries skip
             if (val0.size() == 0)
                 break;
@@ -1442,8 +1471,10 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
 
         } while (false);
 
-        fgPossibleHudless[fIndex][This].clear();
+        val0.clear();
         LOG_DEBUG_ONLY("Clear");
+        
+        fgSourceType = None;
     }
 }
 
@@ -1459,22 +1490,23 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
     if (!IsHudFixActive())
         return;
 
-    LOG_DEBUG_ONLY(" <-- {0:X}", (size_t)This);
-
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
+
+        if (fgSourceType != Compute)
+            return;
+
         // if can't find output skip
         if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
         {
-            fgPossibleHudless[fIndex][This].clear();
             LOG_DEBUG_ONLY("Early exit");
             return;
         }
 
+        auto& val0 = fgPossibleHudless[fIndex][This];
+
         do
         {
-            auto& val0 = fgPossibleHudless[fIndex][This];
-
             // if this command list does not have entries skip
             if (val0.size() == 0)
                 break;
@@ -1493,8 +1525,10 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 
         } while (false);
 
-        fgPossibleHudless[fIndex][This].clear();
+        val0.clear();
         LOG_DEBUG_ONLY("Clear");
+
+        fgSourceType = None;
     }
 }
 
