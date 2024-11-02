@@ -94,6 +94,7 @@ static bool CreateDLSSContext(xess_context_handle_t handle, ID3D12GraphicsComman
         return false;
 
     _contexts[handle] = nvHandle;
+    return true;
 }
 
 static std::optional<float> GetQualityOverrideRatio(const xess_quality_settings_t input)
@@ -225,6 +226,7 @@ XESS_API xess_result_t xessD3D12Init(xess_context_handle_t hContext, const xess_
 
     NVSDK_NGX_D3D12_ReleaseFeature(_contexts[hContext]);
     _contexts.erase(hContext);
+    return XESS_RESULT_SUCCESS;
 }
 
 XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12GraphicsCommandList* pCommandList, const xess_d3d12_execute_params_t* pExecParams)
