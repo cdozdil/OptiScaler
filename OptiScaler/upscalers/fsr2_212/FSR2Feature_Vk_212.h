@@ -1,10 +1,10 @@
 #pragma once
 
-#include "include/ffx_fsr2.h"
-#include "include/vk/ffx_fsr2_vk.h"
-
 #include "FSR2Feature_212.h"
 #include <upscalers/IFeature_Vk.h>
+
+#include <include/fsr2_212/ffx_fsr2.h>
+#include <include/fsr2_212/vk/ffx_fsr2_vk.h>
 
 class FSR2FeatureVk212 : public FSR2Feature212, public IFeature_Vk
 {

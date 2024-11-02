@@ -1,7 +1,8 @@
 #pragma once
 
-#include "include/ffx_fsr2.h"
 #include <upscalers/IFeature.h>
+
+#include <include/fsr2_212/ffx_fsr2.h>
 
 inline static std::string ResultToString212(Fsr212::FfxErrorCode result)
 {

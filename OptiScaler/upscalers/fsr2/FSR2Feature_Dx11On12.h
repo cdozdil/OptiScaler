@@ -3,8 +3,8 @@
 #include "FSR2Feature.h"
 #include <upscalers/IFeature_Dx11wDx12.h>
 
-#include "include/ffx_fsr2.h"
-#include "include/dx12/ffx_fsr2_dx12.h"
+#include <include/fsr2/ffx_fsr2.h>
+#include <include/fsr2/dx12/ffx_fsr2_dx12.h>
 
 class FSR2FeatureDx11on12 : public FSR2Feature, public IFeature_Dx11wDx12
 {

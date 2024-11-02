@@ -2,7 +2,7 @@
 
 #include <upscalers/IFeature.h>
 
-#include "include/ffx_fsr2.h"
+#include <include/fsr2/ffx_fsr2.h>
 
 inline static std::string ResultToString(FfxErrorCode result)
 {

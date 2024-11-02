@@ -3,8 +3,8 @@
 #include "FSR2Feature.h"
 #include <upscalers/IFeature_Vk.h>
 
-#include "include/ffx_fsr2.h"
-#include "include/vk/ffx_fsr2_vk.h"
+#include <include/fsr2/ffx_fsr2.h>
+#include <include/fsr2/vk/ffx_fsr2_vk.h>
 
 
 class FSR2FeatureVk : public FSR2Feature, public IFeature_Vk
