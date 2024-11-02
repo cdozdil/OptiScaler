@@ -661,6 +661,7 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
 #endif
 
             cmdList->CopyResource(fgHudlessBuffer[fIndex], resource->buffer);
+
 #ifdef USE_RESOURCE_BARRIRER
             ResourceBarrier(cmdList, fgHudlessBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
@@ -668,7 +669,7 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
 
             FrameGen_Dx12::fgFormatTransfer->SetBufferState(FrameGen_Dx12::fgCopyCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             FrameGen_Dx12::fgFormatTransfer->Dispatch(g_pd3dDeviceParam, FrameGen_Dx12::fgCopyCommandList, fgHudlessBuffer[fIndex], FrameGen_Dx12::fgFormatTransfer->Buffer());
-            FrameGen_Dx12::fgFormatTransfer->SetBufferState(FrameGen_Dx12::fgCopyCommandList, D3D12_RESOURCE_STATE_COPY_SOURCE);
+            FrameGen_Dx12::fgFormatTransfer->SetBufferState(FrameGen_Dx12::fgCopyCommandList, D3D12_RESOURCE_STATE_COPY_DEST);
 
             LOG_TRACE("Using fgFormatTransfer->Buffer()");
             fgHudless[fIndex] = FrameGen_Dx12::fgFormatTransfer->Buffer();
