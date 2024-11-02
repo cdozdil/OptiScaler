@@ -1173,7 +1173,7 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
         if (fgSourceType == Compute)
             return;
 
-        if (fgPossibleHudless[fIndex].contains(This))
+        if (!fgPossibleHudless[fIndex].contains(This))
         {
             ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
             fgPossibleHudless[fIndex].insert_or_assign(This, newMap);
@@ -1315,20 +1315,11 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
         if (fgSourceType == Graphic)
             return;
 
-        if (fgPossibleHudless[fIndex].contains(This))
+        if (!fgPossibleHudless[fIndex].contains(This))
         {
-            if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
-            {
-                ResourceInfo upscaledInfo{};
-                FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
-                upscaledInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-
-                if (CheckForHudless(__FUNCTION__, &upscaledInfo))
-                    fgPossibleHudless[fIndex][This].insert_or_assign(FrameGen_Dx12::fgUpscaledImage[fIndex], upscaledInfo);
-
-        // if current resource is same as upscaled skip adding upscaled one
-        if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr && capturedBuffer->buffer == FrameGen_Dx12::fgUpscaledImage[fIndex])
-            FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
+            ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
+            fgPossibleHudless[fIndex].insert_or_assign(This, newMap);
+        }
 
         if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
         {
@@ -1453,7 +1444,7 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
 
         val0.clear();
         LOG_DEBUG_ONLY("Clear");
-        
+
         fgSourceType = None;
     }
 }
@@ -2429,7 +2420,7 @@ static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, D
         CheckAdapter(*ppvAdapter);
 
     return result;
-}
+        }
 
 static HRESULT hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter)
 {
@@ -2449,7 +2440,7 @@ static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppA
         CheckAdapter(*ppAdapter);
 
     return result;
-}
+        }
 
 static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter)
 {
