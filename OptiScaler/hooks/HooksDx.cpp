@@ -223,6 +223,9 @@ typedef HRESULT(*PFN_CreateSwapChainForHwnd)(IDXGIFactory*, IUnknown*, HWND, con
 static PFN_CreateDXGIFactory o_CreateDXGIFactory = nullptr;
 static PFN_CreateDXGIFactory1 o_CreateDXGIFactory1 = nullptr;
 static PFN_CreateDXGIFactory2 o_CreateDXGIFactory2 = nullptr;
+static PFN_CreateDXGIFactory o_SL_CreateDXGIFactory = nullptr;
+static PFN_CreateDXGIFactory1 o_SL_CreateDXGIFactory1 = nullptr;
+static PFN_CreateDXGIFactory2 o_SL_CreateDXGIFactory2 = nullptr;
 
 inline static PFN_EnumAdapters2 ptrEnumAdapters = nullptr;
 inline static PFN_EnumAdapters12 ptrEnumAdapters1 = nullptr;
@@ -527,7 +530,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
                 cl[0] = FrameGen_Dx12::fgCopyCommandList;
                 FrameGen_Dx12::gameCommandQueue->ExecuteCommandLists(1, cl);
 
-                LOG_DEBUG("_dispatch result: {0}", (UINT)result);
+                LOG_DEBUG("D3D12_Dispatch result: {0}", (UINT)result);
 
                 fgDispatchCalled = false;
                 FrameGen_Dx12::fgSkipHudlessChecks = false;
@@ -703,7 +706,10 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
     if ((scDesc.BufferDesc.Height != fgScDesc.BufferDesc.Height || scDesc.BufferDesc.Width != fgScDesc.BufferDesc.Width || scDesc.BufferDesc.Format != fgScDesc.BufferDesc.Format))
     {
         LOG_DEBUG("Format change, recreate the FormatTransfer");
-        delete FrameGen_Dx12::fgFormatTransfer;
+
+        if (FrameGen_Dx12::fgFormatTransfer != nullptr)
+            delete FrameGen_Dx12::fgFormatTransfer;
+
         FrameGen_Dx12::fgFormatTransfer = nullptr;
         FrameGen_Dx12::fgFormatTransfer = new FT_Dx12("FormatTransfer", g_pd3dDeviceParam, scDesc.BufferDesc.Format);
 
@@ -730,8 +736,8 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
         return false;
 
     // resource and target formats are supported by converter
-    if ((resource->format == DXGI_FORMAT_R8G8B8A8_TYPELESS || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM || resource->format == DXGI_FORMAT_R16G16B16A16_FLOAT || 
-        resource->format == DXGI_FORMAT_R11G11B10_FLOAT || resource->format == DXGI_FORMAT_R32G32B32A32_FLOAT || resource->format == DXGI_FORMAT_R32G32B32_FLOAT || resource->format == DXGI_FORMAT_R10G10B10A2_UNORM || 
+    if ((resource->format == DXGI_FORMAT_R8G8B8A8_TYPELESS || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM || resource->format == DXGI_FORMAT_R16G16B16A16_FLOAT ||
+        resource->format == DXGI_FORMAT_R11G11B10_FLOAT || resource->format == DXGI_FORMAT_R32G32B32A32_FLOAT || resource->format == DXGI_FORMAT_R32G32B32_FLOAT || resource->format == DXGI_FORMAT_R10G10B10A2_UNORM ||
         resource->format == DXGI_FORMAT_R10G10B10A2_TYPELESS) &&
         (fgScDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R10G10B10A2_UNORM))
     {
@@ -1147,34 +1153,22 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
         return;
     }
 
-    if (!InUpscaledList(capturedBuffer->buffer) && !CheckForHudless(__FUNCTION__, capturedBuffer))
+    if (!CheckForHudless(__FUNCTION__, capturedBuffer))
         return;
 
     capturedBuffer->state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
-        if (fgPossibleHudless[fIndex].contains(This))
+        if (!fgPossibleHudless[fIndex].contains(This))
         {
-            if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
-            {
-                ResourceInfo upscaledInfo{};
-                FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
-                upscaledInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-
-                if (CheckForHudless(__FUNCTION__, &upscaledInfo))
-                    fgPossibleHudless[fIndex][This].insert_or_assign(FrameGen_Dx12::fgUpscaledImage[fIndex], upscaledInfo);
-
-                FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
-            }
-
-            fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
-
-            return;
+            ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
+            fgPossibleHudless[fIndex].insert_or_assign(This, newMap);
         }
 
-        ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
-        fgPossibleHudless[fIndex].insert_or_assign(This, newMap);
+        // if current resource is same as upscaled skip adding upscaled one
+        if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr && capturedBuffer->buffer == FrameGen_Dx12::fgUpscaledImage[fIndex])
+            FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
 
         if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
         {
@@ -1231,27 +1225,16 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
 
             resource->state = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
-            if (fgPossibleHudless[fIndex].contains(This))
+            // check for command list
+            if (!fgPossibleHudless[fIndex].contains(This))
             {
-                if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
-                {
-                    ResourceInfo upscaledInfo{};
-                    FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
-                    upscaledInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-
-                    if (CheckForHudless(__FUNCTION__, &upscaledInfo))
-                        fgPossibleHudless[fIndex][This].insert_or_assign(FrameGen_Dx12::fgUpscaledImage[fIndex], upscaledInfo);
-
-                    FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
-                }
-
-                fgPossibleHudless[fIndex][This].insert_or_assign(resource->buffer, *resource);
-
-                return;
+                ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
+                fgPossibleHudless[fIndex].insert_or_assign(This, newMap);
             }
 
-            ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
-            fgPossibleHudless[fIndex].insert_or_assign(This, newMap);
+            // if current resource is same as upscaled skip adding upscaled one
+            if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr && resource->buffer == FrameGen_Dx12::fgUpscaledImage[fIndex])
+                FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
 
             if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
             {
@@ -1259,12 +1242,15 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
                 FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
                 upscaledInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 
+                // check if upscaled is fitting
                 if (CheckForHudless(__FUNCTION__, &upscaledInfo))
                     fgPossibleHudless[fIndex][This].insert_or_assign(FrameGen_Dx12::fgUpscaledImage[fIndex], upscaledInfo);
 
+                // clear for not duplicating
                 FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
             }
 
+            // add found resource
             fgPossibleHudless[fIndex][This].insert_or_assign(resource->buffer, *resource);
         }
     }
@@ -1297,7 +1283,7 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
         return;
     }
 
-    if (!InUpscaledList(capturedBuffer->buffer) && !CheckForHudless(__FUNCTION__, capturedBuffer))
+    if (!CheckForHudless(__FUNCTION__, capturedBuffer))
         return;
 
     if (capturedBuffer->type == UAV)
@@ -1307,27 +1293,15 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
 
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
-        if (fgPossibleHudless[fIndex].contains(This))
+        if (!fgPossibleHudless[fIndex].contains(This))
         {
-            if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
-            {
-                ResourceInfo upscaledInfo{};
-                FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
-                upscaledInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-
-                if (CheckForHudless(__FUNCTION__, &upscaledInfo))
-                    fgPossibleHudless[fIndex][This].insert_or_assign(FrameGen_Dx12::fgUpscaledImage[fIndex], upscaledInfo);
-
-                FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
-            }
-
-            fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
-
-            return;
+            ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
+            fgPossibleHudless[fIndex].insert_or_assign(This, newMap);
         }
 
-        ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
-        fgPossibleHudless[fIndex].insert_or_assign(This, newMap);
+        // if current resource is same as upscaled skip adding upscaled one
+        if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr && capturedBuffer->buffer == FrameGen_Dx12::fgUpscaledImage[fIndex])
+            FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
 
         if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
         {
@@ -1888,6 +1862,10 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
             scInfo.swapChainFormat = pDesc->BufferDesc.Format;
             scInfo.swapChainBufferCount = pDesc->BufferCount;
             scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
+
+            // Hack for FSR swapchain
+            // It have 1 extra ref
+            scInfo.swapChain->Release();
             fgSwapChains.insert_or_assign(pDesc->OutputWindow, scInfo);
 
             LOG_DEBUG("Created FSR-FG swapchain");
@@ -2157,7 +2135,8 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
 static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
-    auto result = o_CreateDXGIFactory(riid, ppFactory);
+    HRESULT result = E_FAIL;
+    result = o_CreateDXGIFactory(riid, ppFactory);
 
     if (result == S_OK)
         AttachToFactory(*ppFactory);
@@ -2232,6 +2211,130 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 }
 
 static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
+{
+    auto result = o_CreateDXGIFactory2(Flags, riid, ppFactory);
+
+    if (result == S_OK)
+        AttachToFactory(*ppFactory);
+
+    if (result == S_OK && oCreateSwapChainForHwnd == nullptr)
+    {
+        IDXGIFactory2* factory2 = nullptr;
+
+        if ((*ppFactory)->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
+        {
+            void** pFactoryVTable = *reinterpret_cast<void***>(factory2);
+
+            bool skip = false;
+
+            if (oCreateSwapChain == nullptr)
+                oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
+            else
+                skip = true;
+
+            oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
+
+            if (oCreateSwapChainForHwnd != nullptr)
+            {
+                LOG_INFO("Hooking native DXGIFactory");
+
+                DetourTransactionBegin();
+                DetourUpdateThread(GetCurrentThread());
+
+                if (!skip)
+                    DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
+
+                DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
+
+                DetourTransactionCommit();
+            }
+
+            factory2->Release();
+            factory2 = nullptr;
+        }
+    }
+
+    return result;
+}
+
+static HRESULT hkSLCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
+{
+    HRESULT result = E_FAIL;
+    result = o_CreateDXGIFactory(riid, ppFactory);
+
+    if (result == S_OK)
+        AttachToFactory(*ppFactory);
+
+    if (result == S_OK && oCreateSwapChain == nullptr)
+    {
+        void** pFactoryVTable = *reinterpret_cast<void***>(*ppFactory);
+
+        oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
+
+        if (oCreateSwapChain != nullptr)
+        {
+            LOG_INFO("Hooking native DXGIFactory");
+
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+
+            DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
+
+            DetourTransactionCommit();
+        }
+    }
+
+    return result;
+}
+
+static HRESULT hkSLCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
+{
+    auto result = o_CreateDXGIFactory1(riid, ppFactory);
+
+    if (result == S_OK)
+        AttachToFactory(*ppFactory);
+
+    if (result == S_OK && oCreateSwapChainForHwnd == nullptr)
+    {
+        IDXGIFactory2* factory2 = nullptr;
+
+        if ((*ppFactory)->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
+        {
+            void** pFactoryVTable = *reinterpret_cast<void***>(factory2);
+
+            bool skip = false;
+
+            if (oCreateSwapChain == nullptr)
+                oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
+            else
+                skip = true;
+
+            oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
+
+            if (oCreateSwapChainForHwnd != nullptr)
+            {
+                LOG_INFO("Hooking native DXGIFactory");
+
+                DetourTransactionBegin();
+                DetourUpdateThread(GetCurrentThread());
+
+                if (!skip)
+                    DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
+
+                DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
+
+                DetourTransactionCommit();
+            }
+
+            factory2->Release();
+            factory2 = nullptr;
+        }
+    }
+
+    return result;
+}
+
+static HRESULT hkSLCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
 {
     auto result = o_CreateDXGIFactory2(Flags, riid, ppFactory);
 
@@ -2828,6 +2931,37 @@ void HooksDx::HookDxgi()
 
         if (o_CreateDXGIFactory2 != nullptr)
             DetourAttach(&(PVOID&)o_CreateDXGIFactory2, hkCreateDXGIFactory2);
+
+        DetourTransactionCommit();
+    }
+}
+
+void HooksDx::HookSLDxgi()
+{
+    if (o_SL_CreateDXGIFactory != nullptr)
+        return;
+
+    LOG_DEBUG("");
+
+    o_SL_CreateDXGIFactory = (PFN_CreateDXGIFactory)DetourFindFunction("sl.interposer.dll", "CreateDXGIFactory");
+    o_SL_CreateDXGIFactory1 = (PFN_CreateDXGIFactory1)DetourFindFunction("sl.interposer.dll", "CreateDXGIFactory1");
+    o_SL_CreateDXGIFactory2 = (PFN_CreateDXGIFactory2)DetourFindFunction("sl.interposer.dll", "CreateDXGIFactory2");
+
+    if (o_CreateDXGIFactory != nullptr)
+    {
+        LOG_DEBUG("Hooking SL CreateDXGIFactory methods");
+
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+
+        if (o_SL_CreateDXGIFactory != nullptr)
+            DetourAttach(&(PVOID&)o_SL_CreateDXGIFactory, hkSLCreateDXGIFactory);
+
+        if (o_SL_CreateDXGIFactory1 != nullptr)
+            DetourAttach(&(PVOID&)o_SL_CreateDXGIFactory1, hkSLCreateDXGIFactory1);
+
+        if (o_SL_CreateDXGIFactory2 != nullptr)
+            DetourAttach(&(PVOID&)o_SL_CreateDXGIFactory2, hkSLCreateDXGIFactory2);
 
         DetourTransactionCommit();
     }

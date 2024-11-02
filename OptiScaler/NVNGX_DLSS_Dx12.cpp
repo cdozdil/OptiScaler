@@ -1373,7 +1373,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(scDesc.BufferDesc.Width);
                     m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(scDesc.BufferDesc.Height);
                 }
-                else 
+                else
                 {
                     m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(deviceContext->DisplayWidth());
                     m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(deviceContext->DisplayHeight());
@@ -1415,21 +1415,30 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                         auto dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
 
-#ifdef USE_COPY_QUEUE_FOR_FG
-                        ID3D12CommandList* cl[1] = { nullptr };
-                        auto result = FrameGen_Dx12::fgCopyCommandList->Close();
-                        cl[0] = FrameGen_Dx12::fgCopyCommandList;
-                        FrameGen_Dx12::gameCommandQueue->ExecuteCommandLists(1, cl);
-#endif
+                        LOG_DEBUG("(FG) D3D12_Dispatch result: {}", (UINT)dispatchResult);
 
-                        if (dispatchResult != FFX_API_RETURN_OK || result != S_OK)
-                            LOG_ERROR("(FG) D3D12_Dispatch result: {}({}, Close result: {})", (UINT)dispatchResult, FfxApiProxy::ReturnCodeToString(dispatchResult), (UINT)result);
+                        if (dispatchResult == FFX_API_RETURN_OK)
+                        {
+#ifdef USE_COPY_QUEUE_FOR_FG
+                            ID3D12CommandList* cl[1] = { nullptr };
+                            auto result = FrameGen_Dx12::fgCopyCommandList->Close();
+                            cl[0] = FrameGen_Dx12::fgCopyCommandList;
+                            FrameGen_Dx12::gameCommandQueue->ExecuteCommandLists(1, cl);
+
+                            if (result != S_OK)
+                            {
+                                LOG_ERROR("(FG) Close result: {}", (UINT)result);
+                            }
+
+#endif
 
 #ifdef DONT_USE_DEPTH_MV_COPIES
-                        ResourceBarrier(InCmdList, paramVelocity, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
-                        ResourceBarrier(InCmdList, paramDepth, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+                            ResourceBarrier(InCmdList, paramVelocity, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+                            ResourceBarrier(InCmdList, paramDepth, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
 #endif
-                        return result;
+                        }
+
+                        return dispatchResult;
                     };
 
                 m_FrameGenerationConfig.onlyPresentGenerated = Config::Instance()->FGOnlyGenerated; // check here

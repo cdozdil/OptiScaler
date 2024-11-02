@@ -36,6 +36,7 @@ namespace HooksDx
     void HookDx11();
     void HookDx12();
     void HookDxgi();
+    void HookSLDxgi();
 }
 
 namespace FrameGen_Dx12

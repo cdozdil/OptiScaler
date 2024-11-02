@@ -155,6 +155,18 @@ inline std::vector<std::string> vkNames =
     "vulkan-1",
 };
 
+inline std::vector<std::wstring> slIntNamesW =
+{
+    L"sl.interposer.dll",
+    L"sl.interposer",
+};
+
+inline std::vector<std::string> slIntNames =
+{
+    "sl.interposer.dll",
+    "sl.interposer",
+};
+
 inline std::vector<std::wstring> dllNamesW;
 
 static int loadCount = 0;
@@ -265,6 +277,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
             HooksDx::HookDxgi();
     }
 
+    if (CheckDllName(&lcaseLibName, &slIntNames) && Config::Instance()->OverlayMenu.value_or(true))
+        HooksDx::HookSLDxgi();
+
     if (CheckDllName(&lcaseLibName, &vkNames))
     {
         HookForVulkanSpoofing();
@@ -344,6 +359,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
     if (CheckDllNameW(&lcaseLibName, &dx12NamesW) && Config::Instance()->OverlayMenu.value_or(true))
         HooksDx::HookDx12();
+
+    if (CheckDllNameW(&lcaseLibName, &slIntNamesW) && Config::Instance()->OverlayMenu.value_or(true))
+        HooksDx::HookSLDxgi();
 
     if (CheckDllNameW(&lcaseLibName, &dxgiNamesW))
     {
@@ -697,7 +715,7 @@ static BOOL hkFreeLibrary(HMODULE lpLibrary)
     }
 
     return o_FreeLibrary(lpLibrary);
-    }
+}
 
 static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 {
@@ -1702,7 +1720,7 @@ static void CheckWorkingMode()
     if (modeFound)
     {
         HMODULE dxgiModule = nullptr;
-        dxgiModule = GetModuleHandle(L"dxgi.dll");        
+        dxgiModule = GetModuleHandle(L"dxgi.dll");
         if (dxgiModule != nullptr)
         {
             LOG_DEBUG("dxgi.dll already in memory");
@@ -1725,12 +1743,26 @@ static void CheckWorkingMode()
         HMODULE d3d11Module = nullptr;
         d3d11Module = GetModuleHandle(L"d3d11.dll");
         if (Config::Instance()->OverlayMenu.value() && d3d11Module != nullptr)
+        {
+            LOG_DEBUG("d3d11.dll already in memory");
             HooksDx::HookDx11();
+        }
 
         HMODULE d3d12Module = nullptr;
         d3d12Module = GetModuleHandle(L"d3d12.dll");
         if (Config::Instance()->OverlayMenu.value() && d3d12Module != nullptr)
+        {
+            LOG_DEBUG("d3d12.dll already in memory");
             HooksDx::HookDx12();
+        }
+
+        HMODULE slInterposerModule = nullptr;
+        slInterposerModule = GetModuleHandle(L"sl.interposer.dll");
+        if (Config::Instance()->OverlayMenu.value() && slInterposerModule != nullptr)
+        {
+            LOG_DEBUG("sl.interposer.dll already in memory");
+            HooksDx::HookSLDxgi();
+        }
 
         if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr)
             HooksDx::HookDxgi();
