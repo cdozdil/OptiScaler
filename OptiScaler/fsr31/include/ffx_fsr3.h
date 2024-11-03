@@ -46,7 +46,7 @@ namespace Fsr31
 /// FidelityFX Super Resolution 0 patch version.
 ///
 /// @ingroup FSR3
-#define FFX_FSR3_VERSION_PATCH      (1)
+#define FFX_FSR3_VERSION_PATCH      (2)
 
 /// FidelityFX Super Resolution 3 context count
 ///
