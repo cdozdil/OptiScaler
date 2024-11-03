@@ -412,19 +412,6 @@ static HeapInfo* GetHeapByGpuHandle(SIZE_T gpuHandle)
 
 #pragma region Hudless methods
 
-static bool InUpscaledList(ID3D12Resource* resource)
-{
-    auto fIndex = fgFrameIndex;
-    if (FrameGen_Dx12::fgUpscaledImage[fIndex] == resource)
-    {
-        LOG_DEBUG_ONLY("Found upscaled image!");
-        fgUpscaledFound = true;
-        return true;
-    }
-
-    return false;
-}
-
 static void FillResourceInfo(ID3D12Resource* resource, ResourceInfo* info)
 {
     auto desc = resource->GetDesc();
@@ -2157,8 +2144,11 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
 static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
-    HRESULT result = E_FAIL;
-    result = o_CreateDXGIFactory(riid, ppFactory);
+#ifndef ENABLE_DEBUG_LAYER
+    auto result = o_CreateDXGIFactory(riid, ppFactory);
+#else
+    auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
+#endif
 
     if (result == S_OK)
         AttachToFactory(*ppFactory);
@@ -2187,7 +2177,11 @@ static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 
 static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 {
+#ifndef ENABLE_DEBUG_LAYER
     auto result = o_CreateDXGIFactory1(riid, ppFactory);
+#else
+    auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
+#endif
 
     if (result == S_OK)
         AttachToFactory(*ppFactory);
@@ -2234,7 +2228,11 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 
 static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
 {
+#ifndef ENABLE_DEBUG_LAYER
     auto result = o_CreateDXGIFactory2(Flags, riid, ppFactory);
+#else
+    auto result = o_CreateDXGIFactory2(Flags | DXGI_CREATE_FACTORY_DEBUG, riid, ppFactory);
+#endif
 
     if (result == S_OK)
         AttachToFactory(*ppFactory);
@@ -2281,8 +2279,11 @@ static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppF
 
 static HRESULT hkSLCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
-    HRESULT result = E_FAIL;
-    result = o_CreateDXGIFactory(riid, ppFactory);
+#ifndef ENABLE_DEBUG_LAYER
+    auto result = o_CreateDXGIFactory(riid, ppFactory);
+#else
+    auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
+#endif
 
     if (result == S_OK)
         AttachToFactory(*ppFactory);
@@ -2311,7 +2312,11 @@ static HRESULT hkSLCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 
 static HRESULT hkSLCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 {
+#ifndef ENABLE_DEBUG_LAYER
     auto result = o_CreateDXGIFactory1(riid, ppFactory);
+#else
+    auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
+#endif
 
     if (result == S_OK)
         AttachToFactory(*ppFactory);
@@ -2358,7 +2363,11 @@ static HRESULT hkSLCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 
 static HRESULT hkSLCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
 {
+#ifndef ENABLE_DEBUG_LAYER
     auto result = o_CreateDXGIFactory2(Flags, riid, ppFactory);
+#else
+    auto result = o_CreateDXGIFactory2(Flags | DXGI_CREATE_FACTORY_DEBUG, riid, ppFactory);
+#endif
 
     if (result == S_OK)
         AttachToFactory(*ppFactory);
@@ -2416,7 +2425,7 @@ static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, D
         CheckAdapter(*ppvAdapter);
 
     return result;
-        }
+}
 
 static HRESULT hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter)
 {
@@ -2436,7 +2445,7 @@ static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppA
         CheckAdapter(*ppAdapter);
 
     return result;
-        }
+}
 
 static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter)
 {
@@ -2754,12 +2763,35 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
     return result;
 }
 
+#ifdef ENABLE_DEBUG_LAYER
+static ID3D12Debug3* debugController = nullptr;
+static ID3D12InfoQueue* infoQueue = nullptr;
+static ID3D12InfoQueue1* infoQueue1 = nullptr;
+
+static void CALLBACK D3D12DebugCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_MESSAGE_SEVERITY Severity, D3D12_MESSAGE_ID ID, LPCSTR pDescription, void* pContext)
+{
+    LOG_DEBUG("Category: {}, Severity: {}, ID: {}, Message: {}", (UINT)Category, (UINT)Severity, (UINT)ID, pDescription);
+}
+#endif
+
 static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
 {
     LOG_FUNC();
 
-    HRESULT result = E_INVALIDARG;
-    result = o_D3D12CreateDevice(pAdapter, MinimumFeatureLevel, riid, ppDevice);
+#ifdef ENABLE_DEBUG_LAYER
+    LOG_WARN("Debug layers active!");
+    if (debugController == nullptr && D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)) == S_OK)
+    {
+        debugController->EnableDebugLayer();
+
+#ifdef ENABLE_GPU_VALIDATION
+        LOG_WARN("GPU Based Validation active!");
+        debugController->SetEnableGPUBasedValidation(TRUE);
+#endif
+    }
+#endif
+
+    auto result = o_D3D12CreateDevice(pAdapter, MinimumFeatureLevel, riid, ppDevice);
 
     if (result == S_OK && *ppDevice != nullptr)
     {
@@ -2767,6 +2799,34 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         g_pd3dDeviceParam = (ID3D12Device*)*ppDevice;
         HookToDevice(g_pd3dDeviceParam);
         _d3d12Captured = true;
+
+#ifdef ENABLE_DEBUG_LAYER
+        if (infoQueue != nullptr)
+            infoQueue->Release();
+
+        if (infoQueue1 != nullptr)
+            infoQueue1->Release();
+
+        if (g_pd3dDeviceParam->QueryInterface(IID_PPV_ARGS(&infoQueue)) == S_OK)
+        {
+            LOG_DEBUG("infoQueue accuired");
+
+            infoQueue->ClearRetrievalFilter();
+            infoQueue->SetMuteDebugOutput(false);
+
+            HRESULT res;
+
+            //res = infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+            //res = infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+            //res = infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
+
+            if (infoQueue->QueryInterface(IID_PPV_ARGS(&infoQueue1)) == S_OK)
+            {
+                LOG_DEBUG("infoQueue1 accuired, registering MessageCallback");
+                res = infoQueue1->RegisterMessageCallback(D3D12DebugCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, NULL, NULL);
+            }
+        }
+#endif
     }
 
     LOG_FUNC_RESULT(result);
@@ -2965,6 +3025,8 @@ void HooksDx::HookDxgi()
 
 void HooksDx::HookSLDxgi()
 {
+    return;
+
     if (o_SL_CreateDXGIFactory != nullptr)
         return;
 
@@ -2991,7 +3053,7 @@ void HooksDx::HookSLDxgi()
         if (o_SL_CreateDXGIFactory2 != nullptr)
             DetourAttach(&(PVOID&)o_SL_CreateDXGIFactory2, hkSLCreateDXGIFactory2);
 
-        if (o_SL_slInit!= nullptr)
+        if (o_SL_slInit != nullptr)
             DetourAttach(&(PVOID&)o_SL_slInit, hkSLslInit);
 
         DetourTransactionCommit();

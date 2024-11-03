@@ -8,6 +8,13 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
+//#define ENABLE_DEBUG_LAYER
+//#define ENABLE_GPU_VALIDATION
+
+#ifdef ENABLE_DEBUG_LAYER
+#include <d3d12sdklayers.h>
+#endif
+
 #include "../FfxApi_Proxy.h"
 #include "../NVNGX_Proxy.h"
 #include <dx12/ffx_api_dx12.h>
