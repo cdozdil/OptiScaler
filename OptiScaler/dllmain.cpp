@@ -155,18 +155,6 @@ inline std::vector<std::string> vkNames =
     "vulkan-1",
 };
 
-inline std::vector<std::wstring> slIntNamesW =
-{
-    L"sl.interposer.dll",
-    L"sl.interposer",
-};
-
-inline std::vector<std::string> slIntNames =
-{
-    "sl.interposer.dll",
-    "sl.interposer",
-};
-
 inline std::vector<std::wstring> dllNamesW;
 
 static int loadCount = 0;
@@ -277,9 +265,6 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
             HooksDx::HookDxgi();
     }
 
-    if (CheckDllName(&lcaseLibName, &slIntNames) && Config::Instance()->OverlayMenu.value_or(true))
-        HooksDx::HookSLDxgi();
-
     if (CheckDllName(&lcaseLibName, &vkNames))
     {
         HookForVulkanSpoofing();
@@ -359,9 +344,6 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
     if (CheckDllNameW(&lcaseLibName, &dx12NamesW) && Config::Instance()->OverlayMenu.value_or(true))
         HooksDx::HookDx12();
-
-    if (CheckDllNameW(&lcaseLibName, &slIntNamesW) && Config::Instance()->OverlayMenu.value_or(true))
-        HooksDx::HookSLDxgi();
 
     if (CheckDllNameW(&lcaseLibName, &dxgiNamesW))
     {
@@ -1754,14 +1736,6 @@ static void CheckWorkingMode()
         {
             LOG_DEBUG("d3d12.dll already in memory");
             HooksDx::HookDx12();
-        }
-
-        HMODULE slInterposerModule = nullptr;
-        slInterposerModule = GetModuleHandle(L"sl.interposer.dll");
-        if (Config::Instance()->OverlayMenu.value() && slInterposerModule != nullptr)
-        {
-            LOG_DEBUG("sl.interposer.dll already in memory");
-            HooksDx::HookSLDxgi();
         }
 
         if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr)

@@ -34,7 +34,6 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
         {
             ID3D12Device* ddd;
             ((ID3D12CommandQueue*)Device)->GetDevice(IID_PPV_ARGS(&ddd));
-            auto reason0 = ddd->GetDeviceRemovedReason();
 
             if (ClearTrig != nullptr)
                 ClearTrig(true, Handle);
@@ -55,13 +54,9 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
                 relCount = m_pReal->Release();
 
 
-            auto reason1 = ddd->GetDeviceRemovedReason();
-
             LOG_INFO("{} released", id);
 
             delete this;
-
-            auto reason2 = ddd->GetDeviceRemovedReason();
         }
 
         return ret;

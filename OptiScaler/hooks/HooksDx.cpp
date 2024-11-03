@@ -1979,7 +1979,6 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 {
     LOG_FUNC();
 
-    auto reason = g_pd3dDeviceParam->GetDeviceRemovedReason();
     *ppSwapChain = nullptr;
 
     if (Config::Instance()->VulkanCreatingSC)
@@ -2003,9 +2002,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     if (fgSwapChains.contains(hWnd))
     {
         LOG_WARN("This hWnd is already active: {:X}", (size_t)hWnd);
-        auto reason = g_pd3dDeviceParam->GetDeviceRemovedReason();
         FrameGen_Dx12::ReleaseFGSwapchain(hWnd);
-        //return E_ACCESSDENIED;
     }
 
     LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, SkipWrapping: {}",
@@ -2035,7 +2032,6 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         fgSkipSCWrapping = true;
         Config::Instance()->SkipHeapCapture = true;
 
-        auto reason = g_pd3dDeviceParam->GetDeviceRemovedReason();
         auto result = FfxApiProxy::D3D12_CreateContext()(&FrameGen_Dx12::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
 
         Config::Instance()->SkipHeapCapture = false;
@@ -2275,146 +2271,6 @@ static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppF
     }
 
     return result;
-}
-
-static HRESULT hkSLCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
-{
-#ifndef ENABLE_DEBUG_LAYER
-    auto result = o_CreateDXGIFactory(riid, ppFactory);
-#else
-    auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
-#endif
-
-    if (result == S_OK)
-        AttachToFactory(*ppFactory);
-
-    if (result == S_OK && oCreateSwapChain == nullptr)
-    {
-        void** pFactoryVTable = *reinterpret_cast<void***>(*ppFactory);
-
-        oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
-
-        if (oCreateSwapChain != nullptr)
-        {
-            LOG_INFO("Hooking native DXGIFactory");
-
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
-
-            DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
-
-            DetourTransactionCommit();
-        }
-    }
-
-    return result;
-}
-
-static HRESULT hkSLCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
-{
-#ifndef ENABLE_DEBUG_LAYER
-    auto result = o_CreateDXGIFactory1(riid, ppFactory);
-#else
-    auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
-#endif
-
-    if (result == S_OK)
-        AttachToFactory(*ppFactory);
-
-    if (result == S_OK && oCreateSwapChainForHwnd == nullptr)
-    {
-        IDXGIFactory2* factory2 = nullptr;
-
-        if ((*ppFactory)->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
-        {
-            void** pFactoryVTable = *reinterpret_cast<void***>(factory2);
-
-            bool skip = false;
-
-            if (oCreateSwapChain == nullptr)
-                oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
-            else
-                skip = true;
-
-            oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
-
-            if (oCreateSwapChainForHwnd != nullptr)
-            {
-                LOG_INFO("Hooking native DXGIFactory");
-
-                DetourTransactionBegin();
-                DetourUpdateThread(GetCurrentThread());
-
-                if (!skip)
-                    DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
-
-                DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
-
-                DetourTransactionCommit();
-            }
-
-            factory2->Release();
-            factory2 = nullptr;
-        }
-    }
-
-    return result;
-}
-
-static HRESULT hkSLCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
-{
-#ifndef ENABLE_DEBUG_LAYER
-    auto result = o_CreateDXGIFactory2(Flags, riid, ppFactory);
-#else
-    auto result = o_CreateDXGIFactory2(Flags | DXGI_CREATE_FACTORY_DEBUG, riid, ppFactory);
-#endif
-
-    if (result == S_OK)
-        AttachToFactory(*ppFactory);
-
-    if (result == S_OK && oCreateSwapChainForHwnd == nullptr)
-    {
-        IDXGIFactory2* factory2 = nullptr;
-
-        if ((*ppFactory)->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
-        {
-            void** pFactoryVTable = *reinterpret_cast<void***>(factory2);
-
-            bool skip = false;
-
-            if (oCreateSwapChain == nullptr)
-                oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
-            else
-                skip = true;
-
-            oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
-
-            if (oCreateSwapChainForHwnd != nullptr)
-            {
-                LOG_INFO("Hooking native DXGIFactory");
-
-                DetourTransactionBegin();
-                DetourUpdateThread(GetCurrentThread());
-
-                if (!skip)
-                    DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
-
-                DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
-
-                DetourTransactionCommit();
-            }
-
-            factory2->Release();
-            factory2 = nullptr;
-        }
-    }
-
-    return result;
-}
-
-static UINT hkSLslInit(const void* pref, uint64_t sdkVersion)
-{
-    return 0;
 }
 
 static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter)
@@ -3023,43 +2879,6 @@ void HooksDx::HookDxgi()
     }
 }
 
-void HooksDx::HookSLDxgi()
-{
-    return;
-
-    if (o_SL_CreateDXGIFactory != nullptr)
-        return;
-
-    LOG_DEBUG("");
-
-    o_SL_CreateDXGIFactory = (PFN_CreateDXGIFactory)DetourFindFunction("sl.interposer.dll", "CreateDXGIFactory");
-    o_SL_CreateDXGIFactory1 = (PFN_CreateDXGIFactory1)DetourFindFunction("sl.interposer.dll", "CreateDXGIFactory1");
-    o_SL_CreateDXGIFactory2 = (PFN_CreateDXGIFactory2)DetourFindFunction("sl.interposer.dll", "CreateDXGIFactory2");
-    o_SL_slInit = (PFN_slInit)DetourFindFunction("sl.interposer.dll", "slInit");
-
-    if (o_SL_CreateDXGIFactory != nullptr)
-    {
-        LOG_DEBUG("Hooking SL CreateDXGIFactory methods");
-
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-
-        if (o_SL_CreateDXGIFactory != nullptr)
-            DetourAttach(&(PVOID&)o_SL_CreateDXGIFactory, hkSLCreateDXGIFactory);
-
-        if (o_SL_CreateDXGIFactory1 != nullptr)
-            DetourAttach(&(PVOID&)o_SL_CreateDXGIFactory1, hkSLCreateDXGIFactory1);
-
-        if (o_SL_CreateDXGIFactory2 != nullptr)
-            DetourAttach(&(PVOID&)o_SL_CreateDXGIFactory2, hkSLCreateDXGIFactory2);
-
-        if (o_SL_slInit != nullptr)
-            DetourAttach(&(PVOID&)o_SL_slInit, hkSLslInit);
-
-        DetourTransactionCommit();
-    }
-}
-
 void HooksDx::UnHookDx()
 {
     DetourTransactionBegin();
@@ -3162,17 +2981,13 @@ void FrameGen_Dx12::NewFrame()
 
 void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 {
-    auto reason0 = g_pd3dDeviceParam->GetDeviceRemovedReason();
-
     ImGuiOverlayDx::CleanupRenderTarget(true, hWnd);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
     if (FrameGen_Dx12::fgSwapChainContext != nullptr)
     {
-        auto reason1 = g_pd3dDeviceParam->GetDeviceRemovedReason();
         auto result = FfxApiProxy::D3D12_DestroyContext()(&FrameGen_Dx12::fgSwapChainContext, nullptr);
-        auto reason2 = g_pd3dDeviceParam->GetDeviceRemovedReason();
         LOG_INFO("Destroy Ffx Swapchain Result: {}({})", result, FfxApiProxy::ReturnCodeToString(result));
         FrameGen_Dx12::fgSwapChainContext = nullptr;
         fgSwapChains.erase(hWnd);
