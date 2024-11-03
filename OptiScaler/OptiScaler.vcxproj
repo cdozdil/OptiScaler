@@ -82,7 +82,7 @@
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)fsr31\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(LibraryPath)</LibraryPath>
     <TargetName>dxgi</TargetName>
-    <OutDir>D:\Folders\Games\SteamLibrary\steamapps\common\The Last of Us Part I\</OutDir>
+    <OutDir>D:\Games\Steam\steamapps\common\DEAD RISING DELUXE REMASTER\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
@@ -350,7 +350,6 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ResourceCompile Include="OptiScaler.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Banishers Ghosts of New Eden\NWD\Binaries\Win64\amd_fidelityfx_dx12.dll" />
     <None Include="Source.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

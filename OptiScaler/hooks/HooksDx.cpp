@@ -122,6 +122,7 @@ typedef void(*PFN_CreateUnorderedAccessView)(ID3D12Device* This, ID3D12Resource*
 typedef HRESULT(*PFN_CreateDescriptorHeap)(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_DESC* pDescriptorHeapDesc, REFIID riid, void** ppvHeap);
 typedef void(*PFN_CopyDescriptors)(ID3D12Device* This, UINT NumDestDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pDestDescriptorRangeStarts, UINT* pDestDescriptorRangeSizes, UINT NumSrcDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorRangeStarts, UINT* pSrcDescriptorRangeSizes, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType);
 typedef void(*PFN_CopyDescriptorsSimple)(ID3D12Device* This, UINT NumDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptorRangeStart, D3D12_CPU_DESCRIPTOR_HANDLE SrcDescriptorRangeStart, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType);
+typedef UINT(*PFN_slInit)(const void* pref, uint64_t sdkVersion);
 
 // Command list hooks for FG
 typedef void(*PFN_OMSetRenderTargets)(ID3D12GraphicsCommandList* This, UINT NumRenderTargetDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE* pRenderTargetDescriptors, BOOL RTsSingleHandleToDescriptorRange, D3D12_CPU_DESCRIPTOR_HANDLE* pDepthStencilDescriptor);
@@ -166,9 +167,6 @@ static ankerl::unordered_dense::map <HWND, SwapChainInfo> fgSwapChains;
 static bool fgSkipSCWrapping = false;
 static DXGI_SWAP_CHAIN_DESC fgScDesc{};
 
-// queues
-static std::vector<ID3D12CommandQueue*> fgQueues;
-
 // heaps
 static std::vector<HeapInfo> fgHeaps;
 
@@ -184,6 +182,7 @@ static ShaderType fgSourceType = None;
 // mutexes
 static std::shared_mutex heapMutex;
 static std::shared_mutex resourceMutex;
+static std::shared_mutex ffxMutex;
 static std::shared_mutex hudlessMutex[FrameGen_Dx12::FG_BUFFER_SIZE];
 static std::shared_mutex counterMutex[FrameGen_Dx12::FG_BUFFER_SIZE];
 
@@ -234,6 +233,7 @@ static PFN_CreateDXGIFactory2 o_CreateDXGIFactory2 = nullptr;
 static PFN_CreateDXGIFactory o_SL_CreateDXGIFactory = nullptr;
 static PFN_CreateDXGIFactory1 o_SL_CreateDXGIFactory1 = nullptr;
 static PFN_CreateDXGIFactory2 o_SL_CreateDXGIFactory2 = nullptr;
+static PFN_slInit o_SL_slInit = nullptr;
 
 inline static PFN_EnumAdapters2 ptrEnumAdapters = nullptr;
 inline static PFN_EnumAdapters12 ptrEnumAdapters1 = nullptr;
@@ -531,6 +531,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
 
                 if (Config::Instance()->CurrentFeature != nullptr)
                     fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
+
+                std::unique_lock<std::shared_mutex> lock(ffxMutex);
 
                 dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
                 ID3D12CommandList* cl[1] = { nullptr };
@@ -1516,23 +1518,18 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
     if (hWnd != Util::GetProcessWindow())
     {
-        //fgPresentRunning = true;
+        std::unique_lock<std::shared_mutex> lock(ffxMutex);
 
         if (pPresentParameters == nullptr)
             presentResult = pSwapChain->Present(SyncInterval, Flags);
         else
             presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
 
-        //fgPresentRunning = false;
-
         HooksDx::currentSwapchain = nullptr;
         HooksDx::swapchainFormat = DXGI_FORMAT_UNKNOWN;
         FrameGen_Dx12::fgSkipHudlessChecks = false;
 
         LOG_FUNC_RESULT(presentResult);
-
-        //LOG_DEBUG("Return");
-
         return presentResult;
     }
 
@@ -1593,7 +1590,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         if (device12 != nullptr)
             device12->Release();
 
-        //fgPresentRunning = true;
+        std::unique_lock<std::shared_mutex> lock(ffxMutex);
 
         if (pPresentParameters == nullptr)
             presentResult = pSwapChain->Present(SyncInterval, Flags);
@@ -1620,8 +1617,6 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         }
 
         fgLastFrameTime = now;
-
-        //LOG_DEBUG("Return");
 
         return presentResult;
     }
@@ -1696,6 +1691,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
     frameCounter++;
 
+    std::unique_lock<std::shared_mutex> lock(ffxMutex);
+
     // swapchain present
     if (pPresentParameters == nullptr)
         presentResult = pSwapChain->Present(SyncInterval, Flags);
@@ -1748,7 +1745,6 @@ static void CheckAdapter(IUnknown* unkAdapter)
     void* dxvkAdapter = nullptr;
     if (adapterOk && adapter->QueryInterface(guid, &dxvkAdapter) == S_OK)
     {
-
         Config::Instance()->IsRunningOnDXVK = dxvkAdapter != nullptr;
         ((IDXGIAdapter*)dxvkAdapter)->Release();
     }
@@ -1822,6 +1818,8 @@ static void AttachToFactory(IUnknown* unkFactory)
     }
 }
 
+static int fgSCCount = 0;
+
 static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain)
 {
     LOG_FUNC();
@@ -1861,14 +1859,15 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     }
 
     ID3D12CommandQueue* cq = nullptr;
-    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+    if (Config::Instance()->FGUseFGSwapChain.value_or(true) /*&& fgSCCount > 0*/ && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
-#ifndef WRAP_SWAP_CHAIN
         cq->SetName(L"GameQueue");
-        SwapChainInfo scInfo{};
-        scInfo.gameCommandQueue = cq;
         cq->Release();
 
+        SwapChainInfo scInfo{};
+        scInfo.gameCommandQueue = (ID3D12CommandQueue*)pDevice;
+
+#ifndef WRAP_SWAP_CHAIN
         ffxCreateContextDescFrameGenerationSwapChainNewDX12 createSwapChainDesc{};
         createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_NEW_DX12;
 
@@ -1907,13 +1906,6 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
         return E_INVALIDARG;
 #else
-        SwapChainInfo scInfo{};
-        scInfo.gameCommandQueue = cq;
-
-        cq->SetName(L"GameQueueHwnd");
-        cq->Release();
-        fgQueues.push_back((ID3D12CommandQueue*)pDevice);
-
         Config::Instance()->dxgiSkipSpoofing = true;
         fgSkipSCWrapping = true;
         Config::Instance()->SkipHeapCapture = true;
@@ -1988,6 +1980,8 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDesc->OutputWindow);
         *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? *ppSwapChain : real, pDevice, pDesc->OutputWindow, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
         LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
+
+        fgSCCount++;
     }
 
     return result;
@@ -1998,6 +1992,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 {
     LOG_FUNC();
 
+    auto reason = g_pd3dDeviceParam->GetDeviceRemovedReason();
     *ppSwapChain = nullptr;
 
     if (Config::Instance()->VulkanCreatingSC)
@@ -2021,24 +2016,24 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     if (fgSwapChains.contains(hWnd))
     {
         LOG_WARN("This hWnd is already active: {:X}", (size_t)hWnd);
-        return E_ACCESSDENIED;
+        auto reason = g_pd3dDeviceParam->GetDeviceRemovedReason();
+        FrameGen_Dx12::ReleaseFGSwapchain(hWnd);
+        //return E_ACCESSDENIED;
     }
 
     LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, SkipWrapping: {}",
               pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, (UINT)hWnd, fgSkipSCWrapping);
 
     ID3D12CommandQueue* cq = nullptr;
-    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+    if (Config::Instance()->FGUseFGSwapChain.value_or(true) /*&& fgSCCount > 0*/ && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
-#ifndef WRAP_SWAP_CHAIN
-        SwapChainInfo scInfo{};
-        scInfo.gameCommandQueue = cq;
-
         cq->SetName(L"GameQueueHwnd");
         cq->Release();
 
-        fgQueues.push_back((ID3D12CommandQueue*)pDevice);
+        SwapChainInfo scInfo{};
+        scInfo.gameCommandQueue = (ID3D12CommandQueue*)pDevice;
 
+#ifndef WRAP_SWAP_CHAIN
         ffxCreateContextDescFrameGenerationSwapChainForHwndDX12 createSwapChainDesc{};
         createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_FOR_HWND_DX12;
 
@@ -2053,6 +2048,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         fgSkipSCWrapping = true;
         Config::Instance()->SkipHeapCapture = true;
 
+        auto reason = g_pd3dDeviceParam->GetDeviceRemovedReason();
         auto result = FfxApiProxy::D3D12_CreateContext()(&FrameGen_Dx12::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
 
         Config::Instance()->SkipHeapCapture = false;
@@ -2077,13 +2073,6 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         LOG_ERROR("D3D12_CreateContext error: {}", result);
         return E_INVALIDARG;
 #else
-        SwapChainInfo scInfo{};
-        scInfo.gameCommandQueue = cq;
-
-        cq->SetName(L"GameQueueHwnd");
-        cq->Release();
-        fgQueues.push_back((ID3D12CommandQueue*)pDevice);
-
         Config::Instance()->dxgiSkipSpoofing = true;
         fgSkipSCWrapping = true;
         Config::Instance()->SkipHeapCapture = true;
@@ -2159,6 +2148,8 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)hWnd);
         *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? *ppSwapChain : real, pDevice, hWnd, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
         LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
+
+        fgSCCount++;
     }
 
     return result;
@@ -2410,6 +2401,11 @@ static HRESULT hkSLCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** p
     }
 
     return result;
+}
+
+static UINT hkSLslInit(const void* pref, uint64_t sdkVersion)
+{
+    return 0;
 }
 
 static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter)
@@ -2977,8 +2973,9 @@ void HooksDx::HookSLDxgi()
     o_SL_CreateDXGIFactory = (PFN_CreateDXGIFactory)DetourFindFunction("sl.interposer.dll", "CreateDXGIFactory");
     o_SL_CreateDXGIFactory1 = (PFN_CreateDXGIFactory1)DetourFindFunction("sl.interposer.dll", "CreateDXGIFactory1");
     o_SL_CreateDXGIFactory2 = (PFN_CreateDXGIFactory2)DetourFindFunction("sl.interposer.dll", "CreateDXGIFactory2");
+    o_SL_slInit = (PFN_slInit)DetourFindFunction("sl.interposer.dll", "slInit");
 
-    if (o_CreateDXGIFactory != nullptr)
+    if (o_SL_CreateDXGIFactory != nullptr)
     {
         LOG_DEBUG("Hooking SL CreateDXGIFactory methods");
 
@@ -2993,6 +2990,9 @@ void HooksDx::HookSLDxgi()
 
         if (o_SL_CreateDXGIFactory2 != nullptr)
             DetourAttach(&(PVOID&)o_SL_CreateDXGIFactory2, hkSLCreateDXGIFactory2);
+
+        if (o_SL_slInit!= nullptr)
+            DetourAttach(&(PVOID&)o_SL_slInit, hkSLslInit);
 
         DetourTransactionCommit();
     }
@@ -3100,14 +3100,18 @@ void FrameGen_Dx12::NewFrame()
 
 void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 {
+    auto reason0 = g_pd3dDeviceParam->GetDeviceRemovedReason();
+
     ImGuiOverlayDx::CleanupRenderTarget(true, hWnd);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
     if (FrameGen_Dx12::fgSwapChainContext != nullptr)
     {
+        auto reason1 = g_pd3dDeviceParam->GetDeviceRemovedReason();
         auto result = FfxApiProxy::D3D12_DestroyContext()(&FrameGen_Dx12::fgSwapChainContext, nullptr);
-        LOG_INFO("Dostroy Ffx Swapchain Result: {}({})", result, FfxApiProxy::ReturnCodeToString(result));
+        auto reason2 = g_pd3dDeviceParam->GetDeviceRemovedReason();
+        LOG_INFO("Destroy Ffx Swapchain Result: {}({})", result, FfxApiProxy::ReturnCodeToString(result));
         FrameGen_Dx12::fgSwapChainContext = nullptr;
         fgSwapChains.erase(hWnd);
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
