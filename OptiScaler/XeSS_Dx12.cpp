@@ -614,20 +614,12 @@ XESS_API xess_result_t xessSetExposureMultiplier(xess_context_handle_t hContext,
 XESS_API xess_result_t xessD3D12GetResourcesToDump(xess_context_handle_t hContext, xess_resources_to_dump_t** pResourcesToDump)
 {
     LOG_DEBUG("");
-
-    if (!_nvParams.contains(hContext))
-        return XESS_RESULT_ERROR_INVALID_CONTEXT;
-
     return XESS_RESULT_SUCCESS;
 }
 
 XESS_API xess_result_t xessD3D12GetProfilingData(xess_context_handle_t hContext, xess_profiling_data_t** pProfilingData)
 {
     LOG_DEBUG("");
-
-    if (!_nvParams.contains(hContext))
-        return XESS_RESULT_ERROR_INVALID_CONTEXT;
-
     return XESS_RESULT_SUCCESS;
 }
 
