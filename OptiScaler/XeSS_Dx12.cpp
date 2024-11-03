@@ -95,7 +95,7 @@ static bool CreateDLSSContext(xess_context_handle_t handle, ID3D12GraphicsComman
         return false;
 
     _contexts[handle] = nvHandle;
-    
+
     return true;
 }
 
@@ -294,7 +294,7 @@ XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12Gr
 XESS_API xess_result_t xessGetVersion(xess_version_t* pVersion)
 {
     LOG_DEBUG("");
-    
+
     pVersion->major = XeSSProxy::Version().major;
     pVersion->minor = XeSSProxy::Version().minor;
     pVersion->patch = XeSSProxy::Version().patch;
@@ -326,7 +326,7 @@ XESS_API xess_result_t xessGetProperties(xess_context_handle_t hContext, const x
 XESS_API xess_result_t xessDestroyContext(xess_context_handle_t hContext)
 {
     LOG_DEBUG("");
-    
+
     if (!_contexts.contains(hContext))
         return XESS_RESULT_ERROR_INVALID_CONTEXT;
 
@@ -342,7 +342,7 @@ XESS_API xess_result_t xessDestroyContext(xess_context_handle_t hContext)
 XESS_API xess_result_t xessSetVelocityScale(xess_context_handle_t hContext, float x, float y)
 {
     LOG_DEBUG("");
-    
+
     _motionScales[hContext] = { x, y };
 
     return XESS_RESULT_SUCCESS;
@@ -351,7 +351,7 @@ XESS_API xess_result_t xessSetVelocityScale(xess_context_handle_t hContext, floa
 XESS_API xess_result_t xessD3D12GetInitParams(xess_context_handle_t hContext, xess_d3d12_init_params_t* pInitParams)
 {
     LOG_DEBUG("");
-    
+
     if (!_initParams.contains(hContext))
         return XESS_RESULT_ERROR_INVALID_CONTEXT;
 
@@ -374,14 +374,14 @@ XESS_API xess_result_t xessD3D12GetInitParams(xess_context_handle_t hContext, xe
 XESS_API xess_result_t xessForceLegacyScaleFactors(xess_context_handle_t hContext, bool force)
 {
     LOG_DEBUG("");
-    
+
     return XESS_RESULT_SUCCESS;
 }
 
 XESS_API xess_result_t xessGetExposureMultiplier(xess_context_handle_t hContext, float* pScale)
 {
     LOG_DEBUG("");
-    
+
     if (!_nvParams.contains(hContext))
         return XESS_RESULT_ERROR_INVALID_CONTEXT;
 
@@ -394,7 +394,7 @@ XESS_API xess_result_t xessGetExposureMultiplier(xess_context_handle_t hContext,
 XESS_API xess_result_t xessGetInputResolution(xess_context_handle_t hContext, const xess_2d_t* pOutputResolution, xess_quality_settings_t qualitySettings, xess_2d_t* pInputResolution)
 {
     LOG_DEBUG("");
-    
+
     unsigned int OutWidth;
     unsigned int OutHeight;
     float scalingRatio = 0.0f;
@@ -475,7 +475,7 @@ XESS_API xess_result_t xessGetInputResolution(xess_context_handle_t hContext, co
 XESS_API xess_result_t xessGetIntelXeFXVersion(xess_context_handle_t hContext, xess_version_t* pVersion)
 {
     LOG_DEBUG("");
-    
+
     pVersion->major = XeSSProxy::Version().major;
     pVersion->minor = XeSSProxy::Version().minor;
     pVersion->patch = XeSSProxy::Version().patch;
@@ -487,7 +487,7 @@ XESS_API xess_result_t xessGetIntelXeFXVersion(xess_context_handle_t hContext, x
 XESS_API xess_result_t xessGetJitterScale(xess_context_handle_t hContext, float* pX, float* pY)
 {
     LOG_DEBUG("");
-    
+
     *pX = 1.0f;
     *pY = 1.0f;
 
@@ -498,7 +498,7 @@ XESS_API xess_result_t xessGetOptimalInputResolution(xess_context_handle_t hCont
                                                      xess_2d_t* pInputResolutionOptimal, xess_2d_t* pInputResolutionMin, xess_2d_t* pInputResolutionMax)
 {
     LOG_DEBUG("");
-    
+
     unsigned int OutWidth;
     unsigned int OutHeight;
     float scalingRatio = 0.0f;
@@ -581,7 +581,7 @@ XESS_API xess_result_t xessGetOptimalInputResolution(xess_context_handle_t hCont
 XESS_API xess_result_t xessGetVelocityScale(xess_context_handle_t hContext, float* pX, float* pY)
 {
     LOG_DEBUG("");
-    
+
     if (!_motionScales.contains(hContext))
         return XESS_RESULT_ERROR_INVALID_CONTEXT;
 
@@ -602,7 +602,7 @@ XESS_API xess_result_t xessSetJitterScale(xess_context_handle_t hContext, float 
 XESS_API xess_result_t xessSetExposureMultiplier(xess_context_handle_t hContext, float scale)
 {
     LOG_DEBUG("");
-    
+
     if (!_nvParams.contains(hContext))
         return XESS_RESULT_ERROR_INVALID_CONTEXT;
 
@@ -614,20 +614,12 @@ XESS_API xess_result_t xessSetExposureMultiplier(xess_context_handle_t hContext,
 XESS_API xess_result_t xessD3D12GetResourcesToDump(xess_context_handle_t hContext, xess_resources_to_dump_t** pResourcesToDump)
 {
     LOG_DEBUG("");
-    
-    if (!_nvParams.contains(hContext))
-        return XESS_RESULT_ERROR_INVALID_CONTEXT;
-
     return XESS_RESULT_SUCCESS;
 }
 
 XESS_API xess_result_t xessD3D12GetProfilingData(xess_context_handle_t hContext, xess_profiling_data_t** pProfilingData)
 {
     LOG_DEBUG("");
-    
-    if (!_nvParams.contains(hContext))
-        return XESS_RESULT_ERROR_INVALID_CONTEXT;
-
     return XESS_RESULT_SUCCESS;
 }
 
