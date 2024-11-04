@@ -3093,11 +3093,29 @@ void FrameGen_Dx12::ReleaseFGObjects()
 {
     for (size_t i = 0; i < 4; i++)
     {
-        if (FrameGen_Dx12::fgCopyCommandAllocators[i] != nullptr)
+        if (FrameGen_Dx12::fgCommandAllocators[i] != nullptr)
         {
-            FrameGen_Dx12::fgCopyCommandAllocators[i]->Release();
-            FrameGen_Dx12::fgCopyCommandAllocators[i] = nullptr;
+            FrameGen_Dx12::fgCommandAllocators[i]->Release();
+            FrameGen_Dx12::fgCommandAllocators[i] = nullptr;
         }
+    }
+
+    if (FrameGen_Dx12::fgCommandList != nullptr)
+    {
+        FrameGen_Dx12::fgCommandList->Release();
+        FrameGen_Dx12::fgCommandList = nullptr;
+    }
+
+    if (FrameGen_Dx12::fgCommandQueue != nullptr)
+        {
+        FrameGen_Dx12::fgCommandQueue->Release();
+        FrameGen_Dx12::fgCommandQueue = nullptr;
+        }
+
+    if (FrameGen_Dx12::fgCopyCommandAllocator != nullptr)
+    {
+        FrameGen_Dx12::fgCopyCommandAllocator->Release();
+        FrameGen_Dx12::fgCopyCommandAllocator = nullptr;
     }
 
     if (FrameGen_Dx12::fgCopyCommandList != nullptr)
@@ -3121,7 +3139,7 @@ void FrameGen_Dx12::ReleaseFGObjects()
 
 void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
 {
-    if (FrameGen_Dx12::fgCopyCommandQueue != nullptr)
+    if (FrameGen_Dx12::fgCommandQueue != nullptr)
         return;
 
     do
@@ -3136,10 +3154,27 @@ void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
                 LOG_ERROR("CreateCommandAllocators[{0}]: {1:X}", i, (unsigned long)result);
                 break;
             }
-            FrameGen_Dx12::fgCopyCommandAllocators[i]->SetName(L"fgCopyCommandAllocator");
+            FrameGen_Dx12::fgCommandAllocators[i]->SetName(L"fgCommandAllocator");
         }
 
-        result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, FrameGen_Dx12::fgCopyCommandAllocators[0], NULL, IID_PPV_ARGS(&FrameGen_Dx12::fgCopyCommandList));
+        result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&FrameGen_Dx12::fgCopyCommandAllocator));
+
+        result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, FrameGen_Dx12::fgCommandAllocators[0], NULL, IID_PPV_ARGS(&FrameGen_Dx12::fgCommandList));
+        if (result != S_OK)
+        {
+            LOG_ERROR("CreateCommandList: {0:X}", (unsigned long)result);
+            break;
+        }
+        FrameGen_Dx12::fgCommandList->SetName(L"fgCommandList");
+
+        result = FrameGen_Dx12::fgCommandList->Close();
+        if (result != S_OK)
+        {
+            LOG_ERROR("HooksDx::fgCommandList->Close: {0:X}", (unsigned long)result);
+            break;
+        }
+
+        result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, FrameGen_Dx12::fgCopyCommandAllocator, NULL, IID_PPV_ARGS(&FrameGen_Dx12::fgCopyCommandList));
         if (result != S_OK)
         {
             LOG_ERROR("CreateCommandList: {0:X}", (unsigned long)result);
@@ -3165,10 +3200,19 @@ void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
         else
             copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 
-        HRESULT hr = InDevice->CreateCommandQueue(&copyQueueDesc, IID_PPV_ARGS(&FrameGen_Dx12::fgCopyCommandQueue));
+        HRESULT hr = InDevice->CreateCommandQueue(&copyQueueDesc, IID_PPV_ARGS(&FrameGen_Dx12::fgCommandQueue));
         if (result != S_OK)
         {
-            LOG_ERROR("CreateCommandQueue: {0:X}", (unsigned long)result);
+            LOG_ERROR("CreateCommandQueue fgCommandQueue: {0:X}", (unsigned long)result);
+            break;
+        }
+        FrameGen_Dx12::fgCommandQueue->SetName(L"fgCommandQueue");
+
+        copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
+        hr = InDevice->CreateCommandQueue(&copyQueueDesc, IID_PPV_ARGS(&FrameGen_Dx12::fgCopyCommandQueue));
+        if (result != S_OK)
+        {
+            LOG_ERROR("CreateCommandQueue fgCopyCommandQueue: {0:X}", (unsigned long)result);
             break;
         }
         FrameGen_Dx12::fgCopyCommandQueue->SetName(L"fgCopyCommandQueue");

@@ -62,11 +62,17 @@ namespace FrameGen_Dx12
     inline bool upscaleRan = false;
     inline bool fgSkipHudlessChecks = false;
     inline double fgFrameTime = 0.0;
-    inline ID3D12CommandQueue* fgCommandQueue = nullptr;
+    inline ID3D12CommandQueue* fgFSRCommandQueue = nullptr;
     inline ID3D12CommandQueue* gameCommandQueue = nullptr;
+
+    inline ID3D12CommandQueue* fgCommandQueue = nullptr;
+    inline ID3D12GraphicsCommandList* fgCommandList = nullptr;
+    inline ID3D12CommandAllocator* fgCommandAllocators[FG_BUFFER_SIZE] = { };
+
     inline ID3D12CommandQueue* fgCopyCommandQueue = nullptr;
     inline ID3D12GraphicsCommandList* fgCopyCommandList = nullptr;
-    inline ID3D12CommandAllocator* fgCopyCommandAllocators[FG_BUFFER_SIZE] = { };
+    inline ID3D12CommandAllocator* fgCopyCommandAllocator = nullptr;
+
     inline UINT64 fgTarget = 10;
     inline ID3D12Resource* fgUpscaledImage[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
     inline FT_Dx12* fgFormatTransfer = nullptr;
