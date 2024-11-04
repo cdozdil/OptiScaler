@@ -27,7 +27,9 @@
 //#define DONT_USE_DEPTH_MV_COPIES
 #endif
 
+#ifndef USE_MUTEX_FOR_FFX
 static UINT64 fgLastFrameTime = 0;
+#endif
 static UINT64 fgLastFGFrame = 0;
 
 static ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
@@ -37,7 +39,6 @@ static int changeBackendCounter = 0;
 static int evalCounter = 0;
 static std::wstring appDataPath = L".";
 static inline bool shutdown = false;
-
 
 static void FfxFgLogCallback(uint32_t type, const wchar_t* message)
 {
@@ -1326,6 +1327,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         {
             FrameGen_Dx12::upscaleRan = true;
 
+#ifndef USE_MUTEX_FOR_FFX
             float msDelta = 0.0;
             auto now = Util::MillisecondsNow();
 
@@ -1337,6 +1339,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
             FrameGen_Dx12::fgFrameTime = msDelta;
             fgLastFrameTime = now;
+#endif
 
             if (!Config::Instance()->FGHUDFix.value_or(false) || FrameGen_Dx12::fgTarget > deviceContext->FrameCount())
             {
@@ -1391,7 +1394,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                             FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCopyCommandList == nullptr ||
                             FrameGen_Dx12::fgCopyCommandQueue == nullptr)
                         {
-                            LOG_WARN("(FG) Cancel async dispatch");
+                            LOG_WARN("(FG) Cancel async dispatch fIndex: {}", fIndex);
                             FrameGen_Dx12::fgSkipHudlessChecks = false;
                             return FFX_API_RETURN_OK;
                         }
@@ -1400,7 +1403,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         if (Config::Instance()->CurrentFeature == nullptr || !FrameGen_Dx12::fgIsActive ||
                             fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount())
                         {
-                            LOG_WARN("(FG) Callback without hudless!");
+                            LOG_WARN("(FG) Callback without hudless! fIndex:{}", fIndex);
 
 #ifdef USE_COPY_QUEUE_FOR_FG
                             auto allocator = FrameGen_Dx12::fgCopyCommandAllocators[fIndex];
@@ -1416,9 +1419,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                             fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
 
                         auto dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
-
-                        LOG_DEBUG("(FG) D3D12_Dispatch result: {}", (UINT)dispatchResult);
-
+                        LOG_DEBUG("(FG) D3D12_Dispatch result: {}, fIndex: {}", (UINT)dispatchResult, fIndex);
                         if (dispatchResult == FFX_API_RETURN_OK)
                         {
 #ifdef USE_COPY_QUEUE_FOR_FG
@@ -1535,7 +1536,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                     dfgPrepare.cameraFovAngleVertical = 1.0471975511966f;
                     dfgPrepare.viewSpaceToMetersFactor = 1.0;
+
+#ifndef USE_MUTEX_FOR_FFX
                     dfgPrepare.frameTimeDelta = msDelta;
+#else
+                    dfgPrepare.frameTimeDelta = FrameGen_Dx12::fgFrameTime;
+#endif
 
 #ifdef USE_MUTEX_FOR_FFX
                     FrameGen_Dx12::ffxMutex.lock();
@@ -1543,6 +1549,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     Config::Instance()->dxgiSkipSpoofing = true;
                     retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
                     Config::Instance()->dxgiSkipSpoofing = false;
+
 #ifdef USE_MUTEX_FOR_FFX
                     FrameGen_Dx12::ffxMutex.unlock();
 #endif

@@ -520,6 +520,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
                     fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
 
                 dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
+
                 ID3D12CommandList* cl[1] = { nullptr };
                 result = FrameGen_Dx12::fgCopyCommandList->Close();
                 cl[0] = FrameGen_Dx12::fgCopyCommandList;
@@ -1507,6 +1508,19 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 {
     FrameGen_Dx12::ffxMutex.lock();
+
+    float msDelta = 0.0;
+    auto now = Util::MillisecondsNow();
+
+    if (fgLastFrameTime != 0)
+    {
+        msDelta = now - fgLastFrameTime;
+        LOG_DEBUG("(FG) msDelta: {0}", msDelta);
+    }
+
+    FrameGen_Dx12::fgFrameTime = msDelta;
+    fgLastFrameTime = now;
+
     LOG_DEBUG("");
     auto result = o_FGSCPresent(This, SyncInterval, Flags);
     FrameGen_Dx12::ffxMutex.unlock();
@@ -1605,6 +1619,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             fgStopAfterNextPresent = false;
         }
 
+#ifndef USE_MUTEX_FOR_FFX
         auto now = Util::MillisecondsNow();
 
         if (fgLastFrameTime != 0)
@@ -1614,7 +1629,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         }
 
         fgLastFrameTime = now;
-
+#endif
         return presentResult;
     }
 
@@ -1709,6 +1724,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
     if (device12 != nullptr)
         device12->Release();
 
+#ifndef USE_MUTEX_FOR_FFX    
     auto now = Util::MillisecondsNow();
 
     if (fgLastFrameTime != 0)
@@ -1718,6 +1734,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
     }
 
     fgLastFrameTime = now;
+#endif
 
     return presentResult;
 }
