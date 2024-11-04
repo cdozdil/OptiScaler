@@ -598,12 +598,15 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
             }
 
 
+#ifdef USE_MUTEX_FOR_FFX
             FrameGen_Dx12::ffxMutex.lock();
+#endif
             Config::Instance()->dxgiSkipSpoofing = true;
             retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
             Config::Instance()->dxgiSkipSpoofing = false;
+#ifdef USE_MUTEX_FOR_FFX            
             FrameGen_Dx12::ffxMutex.unlock();
-            
+#endif
             fgDispatchCalled = true;
             LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}", retCode, frame);
         }
@@ -703,7 +706,7 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
         return false;
     }
 
-    if ((scDesc.BufferDesc.Height != fgScDesc.BufferDesc.Height || scDesc.BufferDesc.Width != fgScDesc.BufferDesc.Width || scDesc.BufferDesc.Format != fgScDesc.BufferDesc.Format))
+    if (scDesc.BufferDesc.Format != FrameGen_Dx12::fgFormatTransfer->Format())
     {
         LOG_DEBUG("Format change, recreate the FormatTransfer");
 
@@ -712,8 +715,10 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
 
         FrameGen_Dx12::fgFormatTransfer = nullptr;
         FrameGen_Dx12::fgFormatTransfer = new FT_Dx12("FormatTransfer", g_pd3dDeviceParam, scDesc.BufferDesc.Format);
+    }
 
-        HooksDx::swapchainFormat = scDesc.BufferDesc.Format;
+    if ((scDesc.BufferDesc.Height != fgScDesc.BufferDesc.Height || scDesc.BufferDesc.Width != fgScDesc.BufferDesc.Width || scDesc.BufferDesc.Format != fgScDesc.BufferDesc.Format))
+    {
         fgScDesc = scDesc;
     }
 
@@ -1498,6 +1503,7 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 
 #pragma region Callbacks for wrapped swapchain
 
+#ifdef USE_MUTEX_FOR_FFX
 static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 {
     FrameGen_Dx12::ffxMutex.lock();
@@ -1506,6 +1512,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     FrameGen_Dx12::ffxMutex.unlock();
     return result;
 }
+#endif
 
 static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd)
 {
@@ -1522,7 +1529,6 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
 
         HooksDx::currentSwapchain = nullptr;
-        HooksDx::swapchainFormat = DXGI_FORMAT_UNKNOWN;
         FrameGen_Dx12::fgSkipHudlessChecks = false;
 
         LOG_FUNC_RESULT(presentResult);
@@ -1533,9 +1539,6 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
     {
         auto swInfo = &fgSwapChains[hWnd];
         HooksDx::currentSwapchain = swInfo->swapChain;
-
-        if (HooksDx::swapchainFormat == DXGI_FORMAT_UNKNOWN)
-            HooksDx::swapchainFormat = swInfo->swapChainFormat;
 
         swInfo->fgCommandQueue = (ID3D12CommandQueue*)pDevice;
         FrameGen_Dx12::gameCommandQueue = swInfo->gameCommandQueue;
@@ -1881,6 +1884,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
         if (result == FFX_API_RETURN_OK)
         {
+#ifdef USE_MUTEX_FOR_FFX
             // Hooking FG Swapchain present
             // for using ffxMutex during calls
             if (o_FGSCPresent == nullptr && *ppSwapChain != nullptr)
@@ -1901,7 +1905,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
                     DetourTransactionCommit();
                 }
             }
-
+#endif
             scInfo.swapChainFormat = pDesc->BufferDesc.Format;
             scInfo.swapChainBufferCount = pDesc->BufferCount;
             scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
@@ -2066,6 +2070,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
         if (result == FFX_API_RETURN_OK)
         {
+#ifdef USE_MUTEX_FOR_FFX
             // Hooking FG Swapchain present
             // for using ffxMutex during calls
             if (o_FGSCPresent == nullptr && *ppSwapChain != nullptr)
@@ -2086,6 +2091,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
                     DetourTransactionCommit();
                 }
             }
+#endif
 
             scInfo.swapChainFormat = pDesc->Format;
             scInfo.swapChainBufferCount = pDesc->BufferCount;
@@ -2718,12 +2724,11 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
             infoQueue->SetMuteDebugOutput(false);
 
             HRESULT res;
-
             //res = infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
             //res = infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
             //res = infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
 
-            if (infoQueue->QueryInterface(IID_PPV_ARGS(&infoQueue1)) == S_OK)
+            if (infoQueue->QueryInterface(IID_PPV_ARGS(&infoQueue1)) == S_OK && infoQueue1 != nullptr)
             {
                 LOG_DEBUG("infoQueue1 accuired, registering MessageCallback");
                 res = infoQueue1->RegisterMessageCallback(D3D12DebugCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, NULL, NULL);
@@ -2926,6 +2931,18 @@ void HooksDx::HookDxgi()
     }
 }
 
+DXGI_FORMAT HooksDx::CurrentSwapchainFormat()
+{
+    if (HooksDx::currentSwapchain == nullptr)
+        return DXGI_FORMAT_UNKNOWN;
+
+    DXGI_SWAP_CHAIN_DESC scDesc{};
+    if (HooksDx::currentSwapchain->GetDesc(&scDesc) != S_OK)
+        return DXGI_FORMAT_UNKNOWN;
+
+    return scDesc.BufferDesc.Format;
+}
+
 void HooksDx::UnHookDx()
 {
     DetourTransactionBegin();
@@ -3034,10 +3051,13 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 
     if (FrameGen_Dx12::fgSwapChainContext != nullptr)
     {
-
+#ifdef USE_MUTEX_FOR_FFX
         FrameGen_Dx12::ffxMutex.lock();
+#endif
         auto result = FfxApiProxy::D3D12_DestroyContext()(&FrameGen_Dx12::fgSwapChainContext, nullptr);
+#ifdef USE_MUTEX_FOR_FFX
         FrameGen_Dx12::ffxMutex.unlock();
+#endif
         LOG_INFO("Destroy Ffx Swapchain Result: {}({})", result, FfxApiProxy::ReturnCodeToString(result));
         FrameGen_Dx12::fgSwapChainContext = nullptr;
         fgSwapChains.erase(hWnd);
@@ -3136,7 +3156,7 @@ void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
         }
         FrameGen_Dx12::fgCopyCommandQueue->SetName(L"fgCopyCommandQueue");
 
-        FrameGen_Dx12::fgFormatTransfer = new FT_Dx12("FormatTransfer", InDevice, HooksDx::swapchainFormat);
+        FrameGen_Dx12::fgFormatTransfer = new FT_Dx12("FormatTransfer", InDevice, HooksDx::CurrentSwapchainFormat());
 
     } while (false);
 }
@@ -3199,7 +3219,8 @@ void FrameGen_Dx12::CreateFGContext(ID3D12Device* InDevice, IFeature* deviceCont
     if (Config::Instance()->FGAsync.value_or(false))
         createFg.flags |= FFX_FRAMEGENERATION_ENABLE_ASYNC_WORKLOAD_SUPPORT;
 
-    createFg.backBufferFormat = ffxApiGetSurfaceFormatDX12(HooksDx::swapchainFormat);
+
+    createFg.backBufferFormat = ffxApiGetSurfaceFormatDX12(HooksDx::CurrentSwapchainFormat());
     createFg.header.pNext = &backendDesc.header;
 
     Config::Instance()->dxgiSkipSpoofing = true;

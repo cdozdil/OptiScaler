@@ -8,10 +8,12 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
-#define ENABLE_DEBUG_LAYER
-//#define ENABLE_GPU_VALIDATION
+#define USE_MUTEX_FOR_FFX
+//#define ENABLE_DEBUG_LAYER
 
 #ifdef ENABLE_DEBUG_LAYER
+//#define ENABLE_GPU_VALIDATION
+
 #include <d3d12sdklayers.h>
 #endif
 
@@ -34,7 +36,6 @@ namespace HooksDx
 
     inline ID3D12CommandQueue* GameCommandQueue = nullptr;
     inline IDXGISwapChain* currentSwapchain = nullptr;
-    inline DXGI_FORMAT swapchainFormat = DXGI_FORMAT_UNKNOWN;
 
     inline int currentFrameIndex = 0;
     inline int previousFrameIndex = 0;
@@ -43,6 +44,7 @@ namespace HooksDx
     void HookDx11();
     void HookDx12();
     void HookDxgi();
+    DXGI_FORMAT CurrentSwapchainFormat();
 }
 
 namespace FrameGen_Dx12
@@ -70,9 +72,11 @@ namespace FrameGen_Dx12
     inline FT_Dx12* fgFormatTransfer = nullptr;
     inline bool fgIsActive = false;
 
+#ifdef USE_MUTEX_FOR_FFX
     // According to https://gpuopen.com/manuals/fidelityfx_sdk/fidelityfx_sdk-page_techniques_super-resolution-interpolation/#id11 
     // will use this mutex to prevent race condutions
     inline std::mutex ffxMutex;
+#endif
 
     UINT ClearFrameResources();
     UINT GetFrame();

@@ -1184,10 +1184,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     {
         if (!Config::Instance()->FGChanged && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() && Config::Instance()->FGEnabled.value_or(false) &&
             FfxApiProxy::InitFfxDx12() && !FrameGen_Dx12::fgIsActive && HooksDx::currentSwapchain != nullptr &&
-            HooksDx::swapchainFormat != DXGI_FORMAT_UNKNOWN)
+            HooksDx::CurrentSwapchainFormat() != DXGI_FORMAT_UNKNOWN)
         {
             FrameGen_Dx12::CreateFGObjects(D3D12Device);
             FrameGen_Dx12::CreateFGContext(D3D12Device, deviceContext);
+            FrameGen_Dx12::fgTarget = deviceContext->FrameCount() + 3;
         }
         else if ((!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged) && FrameGen_Dx12::fgIsActive)
         {
@@ -1212,7 +1213,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     UINT frameIndex;
 
     if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
-        Config::Instance()->FGEnabled.value_or(false) && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() &&
+        Config::Instance()->FGEnabled.value_or(false) && FrameGen_Dx12::fgTarget <= deviceContext->FrameCount() &&
         FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
     {
         frameIndex = FrameGen_Dx12::ClearFrameResources();
@@ -1317,13 +1318,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     if (evalResult)
     {
         HooksDx::dx12UpscaleTrig = true;
-        FrameGen_Dx12::upscaleRan = true;
 
         // FG Dispatch
         if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
             Config::Instance()->FGEnabled.value_or(false) && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() &&
             FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
         {
+            FrameGen_Dx12::upscaleRan = true;
+
             float msDelta = 0.0;
             auto now = Util::MillisecondsNow();
 
@@ -1345,7 +1347,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
 
-                if (desc.Format == HooksDx::swapchainFormat)
+                if (desc.Format == HooksDx::CurrentSwapchainFormat())
                 {
                     LOG_DEBUG("(FG) desc.Format == HooksDx::swapchainFormat, using for hudless!");
                     m_FrameGenerationConfig.HUDLessColor = ffxApiGetResourceDX12(output, FFX_API_RESOURCE_STATE_UNORDERED_ACCESS, 0);
@@ -1412,7 +1414,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                         if (Config::Instance()->CurrentFeature != nullptr)
                             fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
-                        
+
                         auto dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
 
                         LOG_DEBUG("(FG) D3D12_Dispatch result: {}", (UINT)dispatchResult);
@@ -1535,11 +1537,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     dfgPrepare.viewSpaceToMetersFactor = 1.0;
                     dfgPrepare.frameTimeDelta = msDelta;
 
+#ifdef USE_MUTEX_FOR_FFX
                     FrameGen_Dx12::ffxMutex.lock();
+#endif
                     Config::Instance()->dxgiSkipSpoofing = true;
                     retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
                     Config::Instance()->dxgiSkipSpoofing = false;
+#ifdef USE_MUTEX_FOR_FFX
                     FrameGen_Dx12::ffxMutex.unlock();
+#endif
 
                     if (retCode != FFX_API_RETURN_OK)
                         LOG_ERROR("(FG) D3D12_Dispatch result: {}({})", retCode, FfxApiProxy::ReturnCodeToString(retCode));
