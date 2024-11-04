@@ -122,7 +122,8 @@ typedef void(*PFN_CreateUnorderedAccessView)(ID3D12Device* This, ID3D12Resource*
 typedef HRESULT(*PFN_CreateDescriptorHeap)(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_DESC* pDescriptorHeapDesc, REFIID riid, void** ppvHeap);
 typedef void(*PFN_CopyDescriptors)(ID3D12Device* This, UINT NumDestDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pDestDescriptorRangeStarts, UINT* pDestDescriptorRangeSizes, UINT NumSrcDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorRangeStarts, UINT* pSrcDescriptorRangeSizes, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType);
 typedef void(*PFN_CopyDescriptorsSimple)(ID3D12Device* This, UINT NumDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptorRangeStart, D3D12_CPU_DESCRIPTOR_HANDLE SrcDescriptorRangeStart, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType);
-typedef UINT(*PFN_slInit)(const void* pref, uint64_t sdkVersion);
+
+typedef HRESULT(*PFN_Present)(void* This, UINT SyncInterval, UINT Flags);
 
 // Command list hooks for FG
 typedef void(*PFN_OMSetRenderTargets)(ID3D12GraphicsCommandList* This, UINT NumRenderTargetDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE* pRenderTargetDescriptors, BOOL RTsSingleHandleToDescriptorRange, D3D12_CPU_DESCRIPTOR_HANDLE* pDepthStencilDescriptor);
@@ -146,6 +147,7 @@ static PFN_CreateUnorderedAccessView o_CreateUnorderedAccessView = nullptr;
 static PFN_CreateDescriptorHeap o_CreateDescriptorHeap = nullptr;
 static PFN_CopyDescriptors o_CopyDescriptors = nullptr;
 static PFN_CopyDescriptorsSimple o_CopyDescriptorsSimple = nullptr;
+static PFN_Present o_FGSCPresent = nullptr;
 
 // Original method calls for command list
 static PFN_OMSetRenderTargets o_OMSetRenderTargets = nullptr;
@@ -182,7 +184,6 @@ static ShaderType fgSourceType = None;
 // mutexes
 static std::shared_mutex heapMutex;
 static std::shared_mutex resourceMutex;
-static std::shared_mutex ffxMutex;
 static std::shared_mutex hudlessMutex[FrameGen_Dx12::FG_BUFFER_SIZE];
 static std::shared_mutex counterMutex[FrameGen_Dx12::FG_BUFFER_SIZE];
 
@@ -233,7 +234,6 @@ static PFN_CreateDXGIFactory2 o_CreateDXGIFactory2 = nullptr;
 static PFN_CreateDXGIFactory o_SL_CreateDXGIFactory = nullptr;
 static PFN_CreateDXGIFactory1 o_SL_CreateDXGIFactory1 = nullptr;
 static PFN_CreateDXGIFactory2 o_SL_CreateDXGIFactory2 = nullptr;
-static PFN_slInit o_SL_slInit = nullptr;
 
 inline static PFN_EnumAdapters2 ptrEnumAdapters = nullptr;
 inline static PFN_EnumAdapters12 ptrEnumAdapters1 = nullptr;
@@ -519,8 +519,6 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
                 if (Config::Instance()->CurrentFeature != nullptr)
                     fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
 
-                std::unique_lock<std::shared_mutex> lock(ffxMutex);
-
                 dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
                 ID3D12CommandList* cl[1] = { nullptr };
                 result = FrameGen_Dx12::fgCopyCommandList->Close();
@@ -599,10 +597,14 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
                 return;
             }
 
+
+            FrameGen_Dx12::ffxMutex.lock();
             Config::Instance()->dxgiSkipSpoofing = true;
             retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
-            fgDispatchCalled = true;
             Config::Instance()->dxgiSkipSpoofing = false;
+            FrameGen_Dx12::ffxMutex.unlock();
+            
+            fgDispatchCalled = true;
             LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}", retCode, frame);
         }
     }
@@ -1496,17 +1498,24 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 
 #pragma region Callbacks for wrapped swapchain
 
+static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
+{
+    FrameGen_Dx12::ffxMutex.lock();
+    LOG_DEBUG("");
+    auto result = o_FGSCPresent(This, SyncInterval, Flags);
+    FrameGen_Dx12::ffxMutex.unlock();
+    return result;
+}
+
 static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd)
 {
     LOG_DEBUG("");
 
     HRESULT presentResult;
     auto fIndex = fgFrameIndex;
-
+    
     if (hWnd != Util::GetProcessWindow())
     {
-        std::unique_lock<std::shared_mutex> lock(ffxMutex);
-
         if (pPresentParameters == nullptr)
             presentResult = pSwapChain->Present(SyncInterval, Flags);
         else
@@ -1576,8 +1585,6 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
         if (device12 != nullptr)
             device12->Release();
-
-        std::unique_lock<std::shared_mutex> lock(ffxMutex);
 
         if (pPresentParameters == nullptr)
             presentResult = pSwapChain->Present(SyncInterval, Flags);
@@ -1677,8 +1684,6 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     frameCounter++;
-
-    std::unique_lock<std::shared_mutex> lock(ffxMutex);
 
     // swapchain present
     if (pPresentParameters == nullptr)
@@ -1876,6 +1881,27 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
         if (result == FFX_API_RETURN_OK)
         {
+            // Hooking FG Swapchain present
+            // for using ffxMutex during calls
+            if (o_FGSCPresent == nullptr && *ppSwapChain != nullptr)
+            {
+                void** pFactoryVTable = *reinterpret_cast<void***>(*ppSwapChain);
+
+                o_FGSCPresent = (PFN_Present)pFactoryVTable[8];
+
+                if (o_FGSCPresent != nullptr)
+                {
+                    LOG_INFO("Hooking native FG SwapChain present");
+
+                    DetourTransactionBegin();
+                    DetourUpdateThread(GetCurrentThread());
+
+                    DetourAttach(&(PVOID&)o_FGSCPresent, hkFGPresent);
+
+                    DetourTransactionCommit();
+                }
+            }
+
             scInfo.swapChainFormat = pDesc->BufferDesc.Format;
             scInfo.swapChainBufferCount = pDesc->BufferCount;
             scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
@@ -2040,6 +2066,27 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
         if (result == FFX_API_RETURN_OK)
         {
+            // Hooking FG Swapchain present
+            // for using ffxMutex during calls
+            if (o_FGSCPresent == nullptr && *ppSwapChain != nullptr)
+            {
+                void** pFactoryVTable = *reinterpret_cast<void***>(*ppSwapChain);
+
+                o_FGSCPresent = (PFN_Present)pFactoryVTable[8];
+
+                if (o_FGSCPresent != nullptr)
+                {
+                    LOG_INFO("Hooking native FG SwapChain present");
+
+                    DetourTransactionBegin();
+                    DetourUpdateThread(GetCurrentThread());
+
+                    DetourAttach(&(PVOID&)o_FGSCPresent, hkFGPresent);
+
+                    DetourTransactionCommit();
+                }
+            }
+
             scInfo.swapChainFormat = pDesc->Format;
             scInfo.swapChainBufferCount = pDesc->BufferCount;
             scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
@@ -2987,7 +3034,10 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 
     if (FrameGen_Dx12::fgSwapChainContext != nullptr)
     {
+
+        FrameGen_Dx12::ffxMutex.lock();
         auto result = FfxApiProxy::D3D12_DestroyContext()(&FrameGen_Dx12::fgSwapChainContext, nullptr);
+        FrameGen_Dx12::ffxMutex.unlock();
         LOG_INFO("Destroy Ffx Swapchain Result: {}({})", result, FfxApiProxy::ReturnCodeToString(result));
         FrameGen_Dx12::fgSwapChainContext = nullptr;
         fgSwapChains.erase(hWnd);

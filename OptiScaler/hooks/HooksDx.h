@@ -8,7 +8,7 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
-//#define ENABLE_DEBUG_LAYER
+#define ENABLE_DEBUG_LAYER
 //#define ENABLE_GPU_VALIDATION
 
 #ifdef ENABLE_DEBUG_LAYER
@@ -43,7 +43,6 @@ namespace HooksDx
     void HookDx11();
     void HookDx12();
     void HookDxgi();
-    void HookSLDxgi();
 }
 
 namespace FrameGen_Dx12
@@ -70,6 +69,10 @@ namespace FrameGen_Dx12
     inline ID3D12Resource* fgUpscaledImage[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
     inline FT_Dx12* fgFormatTransfer = nullptr;
     inline bool fgIsActive = false;
+
+    // According to https://gpuopen.com/manuals/fidelityfx_sdk/fidelityfx_sdk-page_techniques_super-resolution-interpolation/#id11 
+    // will use this mutex to prevent race condutions
+    inline std::mutex ffxMutex;
 
     UINT ClearFrameResources();
     UINT GetFrame();

@@ -1412,7 +1412,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                         if (Config::Instance()->CurrentFeature != nullptr)
                             fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
-
+                        
                         auto dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
 
                         LOG_DEBUG("(FG) D3D12_Dispatch result: {}", (UINT)dispatchResult);
@@ -1535,9 +1535,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     dfgPrepare.viewSpaceToMetersFactor = 1.0;
                     dfgPrepare.frameTimeDelta = msDelta;
 
+                    FrameGen_Dx12::ffxMutex.lock();
                     Config::Instance()->dxgiSkipSpoofing = true;
                     retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
                     Config::Instance()->dxgiSkipSpoofing = false;
+                    FrameGen_Dx12::ffxMutex.unlock();
 
                     if (retCode != FFX_API_RETURN_OK)
                         LOG_ERROR("(FG) D3D12_Dispatch result: {}({})", retCode, FfxApiProxy::ReturnCodeToString(retCode));
