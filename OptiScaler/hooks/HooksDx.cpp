@@ -15,6 +15,7 @@
 #include <ankerl/unordered_dense.h>
 #include <shared_mutex>
 
+#define DO_NOT_WAIT_DISPATCH
 //#define USE_RESOURCE_DISCARD
 //#define USE_COPY_RESOURCE
 #define USE_RESOURCE_BARRIRER
@@ -129,13 +130,15 @@ typedef HRESULT(*PFN_Present)(void* This, UINT SyncInterval, UINT Flags);
 typedef void(*PFN_OMSetRenderTargets)(ID3D12GraphicsCommandList* This, UINT NumRenderTargetDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE* pRenderTargetDescriptors, BOOL RTsSingleHandleToDescriptorRange, D3D12_CPU_DESCRIPTOR_HANDLE* pDepthStencilDescriptor);
 typedef void(*PFN_SetGraphicsRootDescriptorTable)(ID3D12GraphicsCommandList* This, UINT RootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor);
 typedef void(*PFN_SetComputeRootDescriptorTable)(ID3D12GraphicsCommandList* This, UINT RootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor);
+#ifndef DO_NOT_WAIT_DISPATCH
 typedef void(*PFN_DrawIndexedInstanced)(ID3D12GraphicsCommandList* This, UINT IndexCountPerInstance, UINT InstanceCount, UINT StartIndexLocation, INT BaseVertexLocation, UINT StartInstanceLocation);
 typedef void(*PFN_DrawInstanced)(ID3D12GraphicsCommandList* This, UINT VertexCountPerInstance, UINT InstanceCount, UINT StartVertexLocation, UINT StartInstanceLocation);
+typedef void(*PFN_Dispatch)(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ);
+#endif
 #ifdef USE_COPY_RESOURCE
 typedef void(*PFN_CopyResource)(ID3D12GraphicsCommandList* This, ID3D12Resource* pDstResource, ID3D12Resource* pSrcResource);
-#endif
 typedef void(*PFN_CopyTextureRegion)(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_COPY_LOCATION* pDst, UINT DstX, UINT DstY, UINT DstZ, D3D12_TEXTURE_COPY_LOCATION* pSrc, D3D12_BOX* pSrcBox);
-typedef void(*PFN_Dispatch)(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ);
+#endif
 #ifdef USE_RESOURCE_DISCARD
 typedef void(*PFN_DiscardResource)(ID3D12GraphicsCommandList* This, ID3D12Resource* pResource, D3D12_DISCARD_REGION* pRegion);
 #endif
@@ -150,16 +153,18 @@ static PFN_CopyDescriptorsSimple o_CopyDescriptorsSimple = nullptr;
 static PFN_Present o_FGSCPresent = nullptr;
 
 // Original method calls for command list
-static PFN_OMSetRenderTargets o_OMSetRenderTargets = nullptr;
+#ifndef DO_NOT_WAIT_DISPATCH
+static PFN_Dispatch o_Dispatch = nullptr;
 static PFN_DrawInstanced o_DrawInstanced = nullptr;
 static PFN_DrawIndexedInstanced o_DrawIndexedInstanced = nullptr;
+#endif
 #ifdef USE_COPY_RESOURCE
 static PFN_CopyResource o_CopyResource = nullptr;
-#endif
 static PFN_CopyTextureRegion o_CopyTextureRegion = nullptr;
+#endif
+static PFN_OMSetRenderTargets o_OMSetRenderTargets = nullptr;
 static PFN_SetGraphicsRootDescriptorTable o_SetGraphicsRootDescriptorTable = nullptr;
 static PFN_SetComputeRootDescriptorTable o_SetComputeRootDescriptorTable = nullptr;
-static PFN_Dispatch o_Dispatch = nullptr;
 #ifdef USE_RESOURCE_DISCARD
 static PFN_DiscardResource o_DiscardResource = nullptr;
 #endif
@@ -493,7 +498,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
 
                 // check for status
                 if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
-                    FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCopyCommandList == nullptr || FrameGen_Dx12::fgCopyCommandQueue == nullptr)
+                    FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCommandList == nullptr || FrameGen_Dx12::fgCommandQueue == nullptr)
                 {
                     LOG_WARN("Cancel async dispatch");
                     fgDispatchCalled = false;
@@ -507,9 +512,9 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
                 {
                     LOG_WARN("Callback without hudless! frameID: {}", params->frameID);
 
-                    auto allocator = FrameGen_Dx12::fgCopyCommandAllocators[fIndex];
+                    auto allocator = FrameGen_Dx12::fgCommandAllocators[fIndex];
                     result = allocator->Reset();
-                    result = FrameGen_Dx12::fgCopyCommandList->Reset(allocator, nullptr);
+                    result = FrameGen_Dx12::fgCommandList->Reset(allocator, nullptr);
 
                     params->frameID = fgLastFGFrame;
                     params->numGeneratedFrames = 0;
@@ -522,8 +527,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
                 dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
 
                 ID3D12CommandList* cl[1] = { nullptr };
-                result = FrameGen_Dx12::fgCopyCommandList->Close();
-                cl[0] = FrameGen_Dx12::fgCopyCommandList;
+                result = FrameGen_Dx12::fgCommandList->Close();
+                cl[0] = FrameGen_Dx12::fgCommandList;
                 FrameGen_Dx12::gameCommandQueue->ExecuteCommandLists(1, cl);
 
                 LOG_DEBUG("D3D12_Dispatch result: {0}", (UINT)result);
@@ -560,7 +565,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
             dfgPrepare.header.type = FFX_API_DISPATCH_DESC_TYPE_FRAMEGENERATION_PREPARE;
             dfgPrepare.header.pNext = &backendDesc.header;
 
-            dfgPrepare.commandList = FrameGen_Dx12::fgCopyCommandList; // This;
+            dfgPrepare.commandList = FrameGen_Dx12::fgCommandList; // This;
 
             dfgPrepare.frameID = frame;
             dfgPrepare.flags = m_FrameGenerationConfig.flags;
@@ -665,9 +670,9 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
             ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
 #endif
 
-            FrameGen_Dx12::fgFormatTransfer->SetBufferState(FrameGen_Dx12::fgCopyCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            FrameGen_Dx12::fgFormatTransfer->Dispatch(g_pd3dDeviceParam, FrameGen_Dx12::fgCopyCommandList, fgHudlessBuffer[fIndex], FrameGen_Dx12::fgFormatTransfer->Buffer());
-            FrameGen_Dx12::fgFormatTransfer->SetBufferState(FrameGen_Dx12::fgCopyCommandList, D3D12_RESOURCE_STATE_COPY_DEST);
+            FrameGen_Dx12::fgFormatTransfer->SetBufferState(FrameGen_Dx12::fgCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            FrameGen_Dx12::fgFormatTransfer->Dispatch(g_pd3dDeviceParam, FrameGen_Dx12::fgCommandList, fgHudlessBuffer[fIndex], FrameGen_Dx12::fgFormatTransfer->Buffer());
+            FrameGen_Dx12::fgFormatTransfer->SetBufferState(FrameGen_Dx12::fgCommandList, D3D12_RESOURCE_STATE_COPY_DEST);
 
             LOG_TRACE("Using fgFormatTransfer->Buffer()");
             fgHudless[fIndex] = FrameGen_Dx12::fgFormatTransfer->Buffer();
@@ -739,7 +744,13 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
 
     // extended not active or no converter
     if ((!Config::Instance()->FGHUDFixExtended.value_or(false) || FrameGen_Dx12::fgFormatTransfer == nullptr))
+    {
+        if (callerName.length() > 0)
+            LOG_TRACE("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
+                      callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
+
         return false;
+    }
 
     // resource and target formats are supported by converter
     if ((resource->format == DXGI_FORMAT_R8G8B8A8_TYPELESS || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM || resource->format == DXGI_FORMAT_R16G16B16A16_FLOAT ||
@@ -916,7 +927,7 @@ static void hkCopyResource(ID3D12GraphicsCommandList* This, ID3D12Resource* Dest
 
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCopyCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
         return;
 
     if (!IsHudFixActive())
@@ -962,7 +973,7 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
 
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCopyCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
         return;
 
     if (!IsHudFixActive())
@@ -1142,7 +1153,7 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
 
     LOG_DEBUG_ONLY(" <-- {0:X}", (size_t)This);
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCopyCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
         return;
 
     if (!IsHudFixActive())
@@ -1152,6 +1163,7 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
     if (heap == nullptr)
         return;
 
+
     auto capturedBuffer = heap->GetByGpuHandle(BaseDescriptor.ptr);
     if (capturedBuffer == nullptr || capturedBuffer->buffer == nullptr)
     {
@@ -1159,17 +1171,39 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
         return;
     }
 
+#ifndef DO_NOT_WAIT_DISPATCH
     if (!CheckForHudless(__FUNCTION__, capturedBuffer))
         return;
+
+    LOG_TRACE("CommandList: {:X}", (size_t)This);
+#endif
 
     capturedBuffer->state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
 
-        if (fgSourceType == Compute)
-            return;
+#ifdef DO_NOT_WAIT_DISPATCH
+        if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
+        {
+            ResourceInfo upscaledInfo{};
+            FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
+            upscaledInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+            FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
 
+            if (CheckForHudless(__FUNCTION__, &upscaledInfo) && CheckCapture(__FUNCTION__))
+            {
+                CaptureHudless(This, &upscaledInfo, upscaledInfo.state);
+                return;
+            }
+        }
+
+        if (CheckForHudless(__FUNCTION__, capturedBuffer) && CheckCapture(__FUNCTION__))
+        {
+            CaptureHudless(This, capturedBuffer, capturedBuffer->state);
+            return;
+        }
+#else
         if (!fgPossibleHudless[fIndex].contains(This))
         {
             ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
@@ -1193,7 +1227,7 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
         }
 
         fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
-        fgSourceType = Graphic;
+#endif
     }
 }
 
@@ -1208,7 +1242,7 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
 
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCopyCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
         return;
 
     if (!IsHudFixActive())
@@ -1216,9 +1250,6 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
 
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
-
-        if (fgSourceType == Compute)
-            return;
 
         for (size_t i = 0; i < NumRenderTargetDescriptors; i++)
         {
@@ -1234,11 +1265,38 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
                 continue;
             }
 
+#ifndef DO_NOT_WAIT_DISPATCH
             if (!CheckForHudless(__FUNCTION__, resource))
                 continue;
 
+            LOG_TRACE("CommandList: {:X}", (size_t)This);
+#endif
+
             resource->state = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
+#ifdef DO_NOT_WAIT_DISPATCH
+            if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
+            {
+                ResourceInfo upscaledInfo{};
+                FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
+                upscaledInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+
+                // clear for not duplicating
+                FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
+
+                if (CheckForHudless(__FUNCTION__, &upscaledInfo) && CheckCapture(__FUNCTION__))
+                {
+                    CaptureHudless(This, &upscaledInfo, upscaledInfo.state);
+                    return;
+                }
+            }
+
+            if (CheckForHudless(__FUNCTION__, resource) && CheckCapture(__FUNCTION__))
+            {
+                CaptureHudless(This, resource, resource->state);
+                return;
+            }
+#else
             // check for command list
             if (!fgPossibleHudless[fIndex].contains(This))
             {
@@ -1267,6 +1325,7 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
             // add found resource
             fgPossibleHudless[fIndex][This].insert_or_assign(resource->buffer, *resource);
             fgSourceType = Graphic;
+#endif
         }
     }
 }
@@ -1281,7 +1340,7 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
 
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCopyCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
         return;
 
     if (!IsHudFixActive())
@@ -1298,8 +1357,12 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
         return;
     }
 
+#ifndef DO_NOT_WAIT_DISPATCH
     if (!CheckForHudless(__FUNCTION__, capturedBuffer))
         return;
+
+    LOG_TRACE("CommandList: {:X}", (size_t)This);
+#endif
 
     if (capturedBuffer->type == UAV)
         capturedBuffer->state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
@@ -1309,9 +1372,27 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
 
-        if (fgSourceType == Graphic)
-            return;
+#ifdef DO_NOT_WAIT_DISPATCH
+        if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
+        {
+            ResourceInfo upscaledInfo{};
+            FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
+            upscaledInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+            FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
 
+            if (CheckForHudless(__FUNCTION__, &upscaledInfo) && CheckCapture(__FUNCTION__))
+            {
+                CaptureHudless(This, &upscaledInfo, upscaledInfo.state);
+                return;
+            }
+        }
+
+        if (CheckForHudless(__FUNCTION__, capturedBuffer) && CheckCapture(__FUNCTION__))
+        {
+            CaptureHudless(This, capturedBuffer, capturedBuffer->state);
+            return;
+        }
+#else
         if (!fgPossibleHudless[fIndex].contains(This))
         {
             ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
@@ -1332,12 +1413,15 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
 
         fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
         fgSourceType = Compute;
+#endif
     }
 }
 
 #pragma endregion
 
 #pragma region Shader finalizer hooks
+
+#ifndef DO_NOT_WAIT_DISPATCH
 
 // Capture if render target matches, wait for DrawIndexed
 static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPerInstance, UINT InstanceCount, UINT StartVertexLocation, UINT StartInstanceLocation)
@@ -1346,8 +1430,10 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
 
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCopyCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
         return;
+
+    LOG_TRACE("CommandList: {:X}", (size_t)This);
 
     if (!IsHudFixActive())
         return;
@@ -1355,8 +1441,8 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
 
-        if (fgSourceType != Graphic)
-            return;
+        //if (fgSourceType != Graphic)
+        //    return;
 
         // if can't find output skip
         if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
@@ -1398,8 +1484,10 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
 
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCopyCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
         return;
+
+    LOG_TRACE("CommandList: {:X}", (size_t)This);
 
     if (!IsHudFixActive())
         return;
@@ -1407,8 +1495,8 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
 
-        if (fgSourceType != Graphic)
-            return;
+        //if (fgSourceType != Graphic)
+        //    return;
 
         // if can't find output skip
         if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
@@ -1452,8 +1540,10 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCopyCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
         return;
+
+    LOG_TRACE("CommandList: {:X}", (size_t)This);
 
     if (!IsHudFixActive())
         return;
@@ -1461,8 +1551,9 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
 
-        if (fgSourceType != Compute)
-            return;
+        //if (fgSourceType != Compute)
+        //    return;
+
 
         // if can't find output skip
         if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
@@ -1500,6 +1591,8 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
     }
 }
 
+#endif
+
 #pragma endregion
 
 #pragma region Callbacks for wrapped swapchain
@@ -1507,6 +1600,8 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 #ifdef USE_MUTEX_FOR_FFX
 static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 {
+    FrameGen_Dx12::upscaleRan = false;
+
     FrameGen_Dx12::ffxMutex.lock();
 
     float msDelta = 0.0;
@@ -1521,6 +1616,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     FrameGen_Dx12::fgFrameTime = msDelta;
     fgLastFrameTime = now;
 
+
     LOG_DEBUG("");
     auto result = o_FGSCPresent(This, SyncInterval, Flags);
     FrameGen_Dx12::ffxMutex.unlock();
@@ -1534,7 +1630,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
     HRESULT presentResult;
     auto fIndex = fgFrameIndex;
-    
+
     if (hWnd != Util::GetProcessWindow())
     {
         if (pPresentParameters == nullptr)
@@ -1578,8 +1674,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         if (!_dx12Device)
             LOG_DEBUG("D3D12CommandQueue captured");
 
-        FrameGen_Dx12::fgCommandQueue = (ID3D12CommandQueue*)pDevice;
-        FrameGen_Dx12::fgCommandQueue->SetName(L"fgSwapChainQueue");
+        FrameGen_Dx12::fgFSRCommandQueue = (ID3D12CommandQueue*)pDevice;
+        FrameGen_Dx12::fgFSRCommandQueue->SetName(L"fgFSRSwapChainQueue");
         HooksDx::GameCommandQueue = (ID3D12CommandQueue*)pDevice;
 
         if (cq->GetDevice(IID_PPV_ARGS(&device12)) == S_OK)
@@ -2389,7 +2485,7 @@ static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAda
 
 static void HookCommandList(ID3D12Device* InDevice)
 {
-    if (o_OMSetRenderTargets != nullptr || o_DrawIndexedInstanced != nullptr)
+    if (o_OMSetRenderTargets != nullptr)
         return;
 
     ID3D12GraphicsCommandList* commandList = nullptr;
@@ -2405,37 +2501,34 @@ static void HookCommandList(ID3D12Device* InDevice)
             // hudless shader
             o_OMSetRenderTargets = (PFN_OMSetRenderTargets)pVTable[46];
             o_SetGraphicsRootDescriptorTable = (PFN_SetGraphicsRootDescriptorTable)pVTable[32];
+
+#ifndef DO_NOT_WAIT_DISPATCH
             o_DrawInstanced = (PFN_DrawInstanced)pVTable[12];
             o_DrawIndexedInstanced = (PFN_DrawIndexedInstanced)pVTable[13];
+            o_Dispatch = (PFN_Dispatch)pVTable[14];
+#endif
 
             // hudless compute
             o_SetComputeRootDescriptorTable = (PFN_SetComputeRootDescriptorTable)pVTable[31];
-            o_Dispatch = (PFN_Dispatch)pVTable[14];
 
             // hudless copy
 #ifdef USE_COPY_RESOURCE
             o_CopyResource = (PFN_CopyResource)pVTable[17];
-#endif
             o_CopyTextureRegion = (PFN_CopyTextureRegion)pVTable[16];
+#endif
 
 #ifdef USE_RESOURCE_DISCARD
             // release resource
             o_DiscardResource = (PFN_DiscardResource)pVTable[51];
 #endif
 
-            if (o_OMSetRenderTargets != nullptr || o_DrawIndexedInstanced != nullptr || o_DrawInstanced != nullptr)
+            if (o_OMSetRenderTargets != nullptr)
             {
                 DetourTransactionBegin();
                 DetourUpdateThread(GetCurrentThread());
 
                 if (o_OMSetRenderTargets != nullptr)
                     DetourAttach(&(PVOID&)o_OMSetRenderTargets, hkOMSetRenderTargets);
-
-                if (o_DrawIndexedInstanced != nullptr)
-                    DetourAttach(&(PVOID&)o_DrawIndexedInstanced, hkDrawIndexedInstanced);
-
-                if (o_DrawInstanced != nullptr)
-                    DetourAttach(&(PVOID&)o_DrawInstanced, hkDrawInstanced);
 
 #ifdef USE_COPY_RESOURCE
                 if (o_CopyTextureRegion != nullptr)
@@ -2444,14 +2537,26 @@ static void HookCommandList(ID3D12Device* InDevice)
                 if (o_CopyResource != nullptr)
                     DetourAttach(&(PVOID&)o_CopyResource, hkCopyResource);
 #endif
+
+
                 if (o_SetGraphicsRootDescriptorTable != nullptr)
                     DetourAttach(&(PVOID&)o_SetGraphicsRootDescriptorTable, hkSetGraphicsRootDescriptorTable);
 
                 if (o_SetComputeRootDescriptorTable != nullptr)
                     DetourAttach(&(PVOID&)o_SetComputeRootDescriptorTable, hkSetComputeRootDescriptorTable);
 
+#ifndef DO_NOT_WAIT_DISPATCH
+
+                if (o_DrawIndexedInstanced != nullptr)
+                    DetourAttach(&(PVOID&)o_DrawIndexedInstanced, hkDrawIndexedInstanced);
+
+                if (o_DrawInstanced != nullptr)
+                    DetourAttach(&(PVOID&)o_DrawInstanced, hkDrawInstanced);
+
                 if (o_Dispatch != nullptr)
                     DetourAttach(&(PVOID&)o_Dispatch, hkDispatch);
+
+#endif
 
 #ifdef USE_RESOURCE_DISCARD
                 if (o_DiscardResource != nullptr)
@@ -3107,10 +3212,10 @@ void FrameGen_Dx12::ReleaseFGObjects()
     }
 
     if (FrameGen_Dx12::fgCommandQueue != nullptr)
-        {
+    {
         FrameGen_Dx12::fgCommandQueue->Release();
         FrameGen_Dx12::fgCommandQueue = nullptr;
-        }
+    }
 
     if (FrameGen_Dx12::fgCopyCommandAllocator != nullptr)
     {
@@ -3148,7 +3253,7 @@ void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
 
         for (size_t i = 0; i < 4; i++)
         {
-            result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&FrameGen_Dx12::fgCopyCommandAllocators[i]));
+            result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&FrameGen_Dx12::fgCommandAllocators[i]));
             if (result != S_OK)
             {
                 LOG_ERROR("CreateCommandAllocators[{0}]: {1:X}", i, (unsigned long)result);

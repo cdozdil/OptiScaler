@@ -1481,7 +1481,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     dfgPrepare.header.pNext = &backendDesc.header;
 
 #ifdef USE_COPY_QUEUE_FOR_FG
-                    dfgPrepare.commandList = FrameGen_Dx12::fgCopyCommandList;
+                    dfgPrepare.commandList = FrameGen_Dx12::fgCommandList;
 #else
                     dfgPrepare.commandList = InCmdList;
 #endif
