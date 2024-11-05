@@ -12,6 +12,10 @@
 // Will use mutex to prevent race condutions
 #define USE_MUTEX_FOR_FFX
 
+#ifdef USE_MUTEX_FOR_FFX
+#define USE_PRESENT_FOR_FT
+#endif
+
 // Enable D3D12 Debug Layers
 //#define ENABLE_DEBUG_LAYER
 

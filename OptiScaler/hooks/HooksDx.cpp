@@ -1507,26 +1507,33 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 #ifdef USE_MUTEX_FOR_FFX
 static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 {
-    FrameGen_Dx12::upscaleRan = false;
+    // Skip calculations etc
+    if (Flags & DXGI_PRESENT_TEST)
+        return o_FGSCPresent(This, SyncInterval, Flags);
 
     FrameGen_Dx12::ffxMutex.lock();
 
+    auto result = o_FGSCPresent(This, SyncInterval, Flags);
+
+#ifdef USE_PRESENT_FOR_FT
     float msDelta = 0.0;
     auto now = Util::MillisecondsNow();
 
     if (fgLastFrameTime != 0)
     {
         msDelta = now - fgLastFrameTime;
-        LOG_DEBUG("(FG) msDelta: {0}", msDelta);
+        LOG_DEBUG("Frametime: {0}", msDelta);
     }
 
-    FrameGen_Dx12::fgFrameTime = msDelta;
     fgLastFrameTime = now;
+    FrameGen_Dx12::fgFrameTime = msDelta;
+#else
+     LOG_DEBUG("");
+#endif
 
-
-    LOG_DEBUG("");
-    auto result = o_FGSCPresent(This, SyncInterval, Flags);
+    FrameGen_Dx12::upscaleRan = false;
     FrameGen_Dx12::ffxMutex.unlock();
+
     return result;
 }
 #endif
@@ -1560,9 +1567,6 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         swInfo->fgCommandQueue = (ID3D12CommandQueue*)pDevice;
         FrameGen_Dx12::gameCommandQueue = swInfo->gameCommandQueue;
     }
-
-    //if (Config::Instance()->CurrentFeature != nullptr)
-    //    LOG_DEBUG("FrameCount: {}, fgHudlessFrame: {}", Config::Instance()->CurrentFeature->FrameCount(), fgHudlessFrame);
 
     ID3D12CommandQueue* cq = nullptr;
     ID3D11Device* device = nullptr;
@@ -1622,17 +1626,6 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             fgStopAfterNextPresent = false;
         }
 
-#ifndef USE_MUTEX_FOR_FFX
-        auto now = Util::MillisecondsNow();
-
-        if (fgLastFrameTime != 0)
-        {
-            fgLastDeltaTime = now - fgLastFrameTime;
-            LOG_DEBUG("fgLastDeltaTime: {0:.2f}, frameCounter: {1}", fgLastDeltaTime, frameCounter);
-        }
-
-        fgLastFrameTime = now;
-#endif
         return presentResult;
     }
 
@@ -1726,18 +1719,6 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
     if (device12 != nullptr)
         device12->Release();
-
-#ifndef USE_MUTEX_FOR_FFX    
-    auto now = Util::MillisecondsNow();
-
-    if (fgLastFrameTime != 0)
-    {
-        fgLastDeltaTime = now - fgLastFrameTime;
-        LOG_DEBUG("fgLastDeltaTime: {0:.2f}, frameCounter: {1}", fgLastDeltaTime, frameCounter);
-    }
-
-    fgLastFrameTime = now;
-#endif
 
     return presentResult;
 }

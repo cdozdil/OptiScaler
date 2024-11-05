@@ -26,14 +26,12 @@
 //#define USE_COPY_QUEUE_FOR_FG
 
 // Use a dedicated Queue + CommandList for FG
-#define USE_QUEUE_FOR_FG
+//#define USE_QUEUE_FOR_FG
 
-#ifndef USE_QUEUE_FOR_FG
 // Do not make copies of Depth + Velocity for FG
 //#define DONT_USE_DEPTH_MV_COPIES
-#endif
 
-#ifndef USE_MUTEX_FOR_FFX
+#ifndef USE_PRESENT_FOR_FT
 static UINT64 fgLastFrameTime = 0;
 #endif
 static UINT64 fgLastFGFrame = 0;
@@ -1343,7 +1341,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         {
             FrameGen_Dx12::upscaleRan = true;
 
-#ifndef USE_MUTEX_FOR_FFX
+#ifndef USE_PRESENT_FOR_FT
             float msDelta = 0.0;
             auto now = Util::MillisecondsNow();
 
@@ -1353,8 +1351,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 LOG_DEBUG("(FG) msDelta: {0}", msDelta);
             }
 
-            FrameGen_Dx12::fgFrameTime = msDelta;
             fgLastFrameTime = now;
+            FrameGen_Dx12::fgFrameTime = msDelta;
 #endif
 
             if (Config::Instance()->FGHUDFix.value_or(false))
@@ -1549,12 +1547,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                     dfgPrepare.cameraFovAngleVertical = 1.0471975511966f;
                     dfgPrepare.viewSpaceToMetersFactor = 1.0;
-
-#ifndef USE_MUTEX_FOR_FFX
-                    dfgPrepare.frameTimeDelta = msDelta;
-#else
                     dfgPrepare.frameTimeDelta = FrameGen_Dx12::fgFrameTime;
-#endif
 
 #ifdef USE_MUTEX_FOR_FFX
                     FrameGen_Dx12::ffxMutex.lock();

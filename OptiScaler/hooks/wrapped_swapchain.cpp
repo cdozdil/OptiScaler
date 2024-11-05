@@ -233,7 +233,7 @@ HRESULT WrappedIDXGISwapChain4::Present(UINT SyncInterval, UINT Flags)
 
     HRESULT result;
 
-    if (!(Flags & DXGI_PRESENT_TEST) && !(Flags & DXGI_PRESENT_RESTART) && RenderTrig != nullptr)
+    if (!(Flags & DXGI_PRESENT_TEST) && RenderTrig != nullptr)
         result = RenderTrig(m_pReal, SyncInterval, Flags, nullptr, Device, Handle);
     else
         result = m_pReal->Present(SyncInterval, Flags);
@@ -248,7 +248,7 @@ HRESULT WrappedIDXGISwapChain4::Present1(UINT SyncInterval, UINT Flags, const DX
 
     HRESULT result;
 
-    if (!(Flags & DXGI_PRESENT_TEST) && !(Flags & DXGI_PRESENT_RESTART) && RenderTrig != nullptr)
+    if (!(Flags & DXGI_PRESENT_TEST) && RenderTrig != nullptr)
         result = RenderTrig(m_pReal1, SyncInterval, Flags, pPresentParameters, Device, Handle);
     else
         result = m_pReal1->Present1(SyncInterval, Flags, pPresentParameters);
