@@ -450,9 +450,9 @@ static bool IsHudFixActive()
 static void GetHudless(ID3D12GraphicsCommandList* This)
 {
     auto fIndex = fgFrameIndex;
-    if (This != ImGuiOverlayDx::MenuCommandList() && fgHudless[fIndex] != nullptr && Config::Instance()->CurrentFeature != nullptr && !Config::Instance()->FGChanged &&
+    if (This != ImGuiOverlayDx::MenuCommandList() && Config::Instance()->CurrentFeature != nullptr && !Config::Instance()->FGChanged &&
         fgHudlessFrame != Config::Instance()->CurrentFeature->FrameCount() && FrameGen_Dx12::fgTarget <= Config::Instance()->CurrentFeature->FrameCount() &&
-        FrameGen_Dx12::fgContext != nullptr && FrameGen_Dx12::fgIsActive)
+        FrameGen_Dx12::fgContext != nullptr && FrameGen_Dx12::fgIsActive && HooksDx::currentSwapchain != nullptr)
     {
         LOG_DEBUG("FrameCount: {0}, fgHudlessFrame: {1}, CommandList: {2:X}", Config::Instance()->CurrentFeature->FrameCount(), fgHudlessFrame, (UINT64)This);
 
@@ -468,7 +468,11 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
         ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
         m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
 
-        m_FrameGenerationConfig.HUDLessColor = ffxApiGetResourceDX12(fgHudless[fIndex], FFX_API_RESOURCE_STATE_COPY_DEST, 0);
+        if (fgHudless[fIndex] != nullptr)
+            m_FrameGenerationConfig.HUDLessColor = ffxApiGetResourceDX12(fgHudless[fIndex], FFX_API_RESOURCE_STATE_COPY_DEST, 0);
+        else
+            m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
+
         m_FrameGenerationConfig.frameGenerationEnabled = true;
         m_FrameGenerationConfig.flags = 0;
 
@@ -800,7 +804,7 @@ static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* p
 
         fgHandlesByResources.erase(pResource);
         LOG_DEBUG_ONLY("Erased");
-}
+    }
 }
 #endif
 
@@ -1167,7 +1171,7 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
 
         fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
 #endif
-}
+    }
 }
 
 #pragma endregion
@@ -1255,7 +1259,7 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
             // add found resource
             fgPossibleHudless[fIndex][This].insert_or_assign(resource->buffer, *resource);
 #endif
-            }
+        }
     }
 }
 
@@ -1489,7 +1493,7 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
                 }
             }
 
-    } while (false);
+        } while (false);
 
         val0.clear();
         LOG_DEBUG_ONLY("Clear");
@@ -1507,12 +1511,21 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 #ifdef USE_MUTEX_FOR_FFX
 static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 {
+    auto fIndex = fgFrameIndex;
+
     // Skip calculations etc
     if (Flags & DXGI_PRESENT_TEST)
         return o_FGSCPresent(This, SyncInterval, Flags);
 
+    // If dispatch still not called
+    if (!fgDispatchCalled && Config::Instance()->FGHUDFix.value_or(false) && Config::Instance()->CurrentFeature != nullptr &&
+        !Config::Instance()->FGChanged && FrameGen_Dx12::fgContext != nullptr && FrameGen_Dx12::fgIsActive)
+    {
+        LOG_WARN("Can't capture hudless, calling HudFix dispatch!");
+        fgHudless[fIndex] = nullptr;
+        GetHudless(nullptr);
+    }
     FrameGen_Dx12::ffxMutex.lock();
-
     auto result = o_FGSCPresent(This, SyncInterval, Flags);
 
 #ifdef USE_PRESENT_FOR_FT
@@ -1528,7 +1541,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     fgLastFrameTime = now;
     FrameGen_Dx12::fgFrameTime = msDelta;
 #else
-     LOG_DEBUG("");
+    LOG_DEBUG("");
 #endif
 
     FrameGen_Dx12::upscaleRan = false;
@@ -1956,7 +1969,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
             LOG_ERROR("D3D12_CreateContext error: {}", result);
             return E_INVALIDARG;
-                }
+        }
 
         Config::Instance()->SkipHeapCapture = false;
         fgSkipSCWrapping = false;
@@ -1964,7 +1977,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
         return result;
 #endif
-            }
+    }
 
     auto result = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
     if (result == S_OK)
@@ -2003,7 +2016,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     }
 
     return result;
-        }
+}
 
 static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, HWND hWnd, DXGI_SWAP_CHAIN_DESC1* pDesc,
                                         DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
@@ -2142,7 +2155,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
             LOG_ERROR("D3D12_CreateContext error: {}", result);
             return E_INVALIDARG;
-                }
+        }
 
         Config::Instance()->SkipHeapCapture = false;
         fgSkipSCWrapping = false;
@@ -2150,7 +2163,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
         return result;
 #endif
-            }
+    }
 
     auto result = oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     if (result == S_OK)
@@ -2187,10 +2200,10 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
 
         fgSCCount++;
-        }
+    }
 
     return result;
-    }
+}
 
 static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
