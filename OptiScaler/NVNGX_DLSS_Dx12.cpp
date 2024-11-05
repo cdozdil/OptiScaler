@@ -1217,9 +1217,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         Config::Instance()->FGEnabled.value_or(false) && FrameGen_Dx12::fgTarget <= deviceContext->FrameCount() &&
         FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
     {
-        frameIndex = FrameGen_Dx12::ClearFrameResources();
-        FrameGen_Dx12::NewFrame();
-        FrameGen_Dx12::fgUpscaledImage[frameIndex] = output;
+        frameIndex = FrameGen_Dx12::NewFrame();
 
         auto allocator = FrameGen_Dx12::fgCommandAllocators[frameIndex];
         auto result = allocator->Reset();
@@ -1359,7 +1357,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             fgLastFrameTime = now;
 #endif
 
-            if (!Config::Instance()->FGHUDFix.value_or(false) || FrameGen_Dx12::fgTarget > deviceContext->FrameCount())
+            if (Config::Instance()->FGHUDFix.value_or(false))
+            {
+                FrameGen_Dx12::CheckUpscaledFrame(InCmdList, output);
+            }
+            else
             {
                 LOG_DEBUG("(FG) running, frame: {0}", deviceContext->FrameCount());
 
@@ -1465,13 +1467,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 m_FrameGenerationConfig.onlyPresentGenerated = Config::Instance()->FGOnlyGenerated; // check here
                 m_FrameGenerationConfig.frameID = deviceContext->FrameCount();
                 m_FrameGenerationConfig.swapChain = HooksDx::currentSwapchain;
-
-                // Was crashing with 3.1.2, disabled
-                //ffxConfigureDescGlobalDebug1 debugDesc;
-                //debugDesc.header.type = FFX_API_CONFIGURE_DESC_TYPE_GLOBALDEBUG1;
-                //debugDesc.debugLevel = FFX_API_CONFIGURE_GLOBALDEBUG_LEVEL_VERBOSE;
-                //debugDesc.fpMessage = FfxFgLogCallback;
-                //m_FrameGenerationConfig.header.pNext = &debugDesc.header;
 
                 Config::Instance()->dxgiSkipSpoofing = true;
                 ffxReturnCode_t retCode = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgContext, &m_FrameGenerationConfig.header);

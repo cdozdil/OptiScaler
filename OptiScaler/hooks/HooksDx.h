@@ -79,7 +79,6 @@ namespace FrameGen_Dx12
     inline ID3D12CommandAllocator* fgCopyCommandAllocator = nullptr;
 
     inline UINT64 fgTarget = 10;
-    inline ID3D12Resource* fgUpscaledImage[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
     inline FT_Dx12* fgFormatTransfer = nullptr;
     inline bool fgIsActive = false;
 
@@ -87,12 +86,12 @@ namespace FrameGen_Dx12
     inline std::mutex ffxMutex;
 #endif
 
-    UINT ClearFrameResources();
+    UINT NewFrame();
     UINT GetFrame();
-    void NewFrame();
     void ReleaseFGSwapchain(HWND hWnd);
     void ReleaseFGObjects();
     void CreateFGObjects(ID3D12Device* InDevice);
     void CreateFGContext(ID3D12Device* InDevice, IFeature* deviceContext);
     void StopAndDestroyFGContext(bool destroy, bool shutDown);
+    void CheckUpscaledFrame(ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InUpscaled);
 }
