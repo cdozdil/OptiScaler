@@ -19,14 +19,14 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
     ULONG STDMETHODCALLTYPE AddRef()
     {
         InterlockedIncrement(&m_iRefcount);
-        LOG_DEBUG("Count: {}", m_iRefcount);
+        LOG_DEBUG_ONLY("Count: {}", m_iRefcount);
         return m_iRefcount;
     }
 
     ULONG STDMETHODCALLTYPE Release()
     {
         auto ret = InterlockedDecrement(&m_iRefcount);
-        LOG_DEBUG("Count: {}", ret);
+        LOG_DEBUG_ONLY("Count: {}", ret);
 
         ULONG relCount = 0;
 
