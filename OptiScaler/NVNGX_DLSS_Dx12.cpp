@@ -1217,9 +1217,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     {
         frameIndex = FrameGen_Dx12::NewFrame();
 
+        bool allocatorReset = false;
+
+#ifdef USE_QUEUE_FOR_FG
         auto allocator = FrameGen_Dx12::fgCommandAllocators[frameIndex];
         auto result = allocator->Reset();
         result = FrameGen_Dx12::fgCommandList->Reset(allocator, nullptr);
+        allocatorReset = true;
+#endif
+
+        if (!allocatorReset && Config::Instance()->FGHUDFix.value_or(false))
+        {
+            auto allocator = FrameGen_Dx12::fgCommandAllocators[frameIndex];
+            auto result = allocator->Reset();
+            result = FrameGen_Dx12::fgCommandList->Reset(allocator, nullptr);
+        }
 
         ID3D12GraphicsCommandList* commandList = nullptr;
 
