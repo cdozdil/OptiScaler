@@ -16,7 +16,7 @@
 #include <shared_mutex>
 
 // Do not wait for Dispatch/DrawInstanced to capture hudless resource
-#define DO_NOT_WAIT_DISPATCH
+//#define DO_NOT_WAIT_DISPATCH
 
 // Clear heap info when ResourceDiscard is called
 //#define USE_RESOURCE_DISCARD
@@ -732,8 +732,8 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
     if (resource->height != fgScDesc.BufferDesc.Height || resource->width != fgScDesc.BufferDesc.Width)
     {
         if (callerName.length() > 0)
-            LOG_TRACE("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
-                      callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
+            LOG_DEBUG_ONLY("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
+                           callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
 
         return false;
     }
@@ -773,8 +773,8 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
     }
 
     if (callerName.length() > 0)
-        LOG_TRACE("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
-                  callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
+        LOG_DEBUG_ONLY("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
+                       callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
 
     return false;
 }
@@ -1118,18 +1118,20 @@ static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D
 
 static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UINT RootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor)
 {
-    o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
-
     auto fIndex = fgFrameIndex;
 
     if (BaseDescriptor.ptr == 0 || !IsHudFixActive())
+    {
+        o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
+    }
 
     LOG_DEBUG_ONLY("");
 
     if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
     {
         LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == ImGuiOverlayDx::MenuCommandList(), FrameGen_Dx12::fgCommandList == This);
+        o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
     }
 
@@ -1137,6 +1139,7 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
     if (heap == nullptr)
     {
         LOG_DEBUG_ONLY("No heap!");
+        o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
     }
 
@@ -1144,13 +1147,17 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
     if (capturedBuffer == nullptr || capturedBuffer->buffer == nullptr)
     {
         LOG_DEBUG_ONLY("Miss RootParameterIndex: {1}, CommandList: {0:X}, gpuHandle: {2}", (SIZE_T)This, RootParameterIndex, BaseDescriptor.ptr);
+        o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
+        return;
+    }
+
+    if (!CheckForHudless(__FUNCTION__, capturedBuffer))
+    {
+        o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
     }
 
 #ifndef DO_NOT_WAIT_DISPATCH
-    if (!CheckForHudless(__FUNCTION__, capturedBuffer))
-        return;
-
     LOG_TRACE("CommandList: {:X}", (size_t)This);
 #endif
 
@@ -1159,10 +1166,14 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
 
-#ifdef DO_NOT_WAIT_DISPATCH
-        if (CheckForHudless(__FUNCTION__, capturedBuffer) && CheckCapture(__FUNCTION__))
+        if (CheckCapture(__FUNCTION__))
+        {
             CaptureHudless(This, capturedBuffer, capturedBuffer->state);
-#else
+            o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
+            return;
+        }
+
+#ifndef DO_NOT_WAIT_DISPATCH
         if (!fgPossibleHudless[fIndex].contains(This))
         {
             ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
@@ -1172,6 +1183,8 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
         fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
 #endif
     }
+
+    o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
 }
 
 #pragma endregion
@@ -1181,18 +1194,20 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
 static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRenderTargetDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE* pRenderTargetDescriptors,
                                  BOOL RTsSingleHandleToDescriptorRange, D3D12_CPU_DESCRIPTOR_HANDLE* pDepthStencilDescriptor)
 {
-    o_OMSetRenderTargets(This, NumRenderTargetDescriptors, pRenderTargetDescriptors, RTsSingleHandleToDescriptorRange, pDepthStencilDescriptor);
-
     auto fIndex = fgFrameIndex;
 
     if (NumRenderTargetDescriptors == 0 || pRenderTargetDescriptors == nullptr || !IsHudFixActive())
+    {
+        o_OMSetRenderTargets(This, NumRenderTargetDescriptors, pRenderTargetDescriptors, RTsSingleHandleToDescriptorRange, pDepthStencilDescriptor);
         return;
+    }
 
     LOG_DEBUG_ONLY("NumRenderTargetDescriptors: {}", NumRenderTargetDescriptors);
 
     if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
     {
         LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == ImGuiOverlayDx::MenuCommandList(), FrameGen_Dx12::fgCommandList == This);
+        o_OMSetRenderTargets(This, NumRenderTargetDescriptors, pRenderTargetDescriptors, RTsSingleHandleToDescriptorRange, pDepthStencilDescriptor);
         return;
     }
 
@@ -1234,21 +1249,21 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
                 continue;
             }
 
-#ifndef DO_NOT_WAIT_DISPATCH
             if (!CheckForHudless(__FUNCTION__, resource))
                 continue;
 
+#ifndef DO_NOT_WAIT_DISPATCH
             LOG_TRACE("CommandList: {:X}", (size_t)This);
 #endif
             resource->state = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
-#ifdef DO_NOT_WAIT_DISPATCH
-            if (CheckForHudless(__FUNCTION__, resource) && CheckCapture(__FUNCTION__))
+            if (CheckCapture(__FUNCTION__))
             {
                 CaptureHudless(This, resource, resource->state);
-                return;
+                break;
             }
-#else
+
+#ifndef DO_NOT_WAIT_DISPATCH
             // check for command list
             if (!fgPossibleHudless[fIndex].contains(This))
             {
@@ -1261,6 +1276,8 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
 #endif
         }
     }
+
+    o_OMSetRenderTargets(This, NumRenderTargetDescriptors, pRenderTargetDescriptors, RTsSingleHandleToDescriptorRange, pDepthStencilDescriptor);
 }
 
 #pragma endregion
@@ -1269,18 +1286,20 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
 
 static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UINT RootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor)
 {
-    o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
-
     auto fIndex = fgFrameIndex;
 
     if (BaseDescriptor.ptr == 0 || !IsHudFixActive())
+    {
+        o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
+    }
 
     LOG_DEBUG_ONLY("");
 
     if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
     {
         LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == ImGuiOverlayDx::MenuCommandList(), FrameGen_Dx12::fgCommandList == This);
+        o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
     }
 
@@ -1288,6 +1307,7 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
     if (heap == nullptr)
     {
         LOG_DEBUG_ONLY("No heap!");
+        o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
     }
 
@@ -1295,13 +1315,17 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
     if (capturedBuffer == nullptr || capturedBuffer->buffer == nullptr)
     {
         LOG_DEBUG_ONLY("Miss RootParameterIndex: {1}, CommandList: {0:X}, gpuHandle: {2}", (SIZE_T)This, RootParameterIndex, BaseDescriptor.ptr);
+        o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
+        return;
+    }
+
+    if (!CheckForHudless(__FUNCTION__, capturedBuffer))
+    {
+        o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
     }
 
 #ifndef DO_NOT_WAIT_DISPATCH
-    if (!CheckForHudless(__FUNCTION__, capturedBuffer))
-        return;
-
     LOG_TRACE("CommandList: {:X}", (size_t)This);
 #endif
 
@@ -1313,10 +1337,14 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
 
-#ifdef DO_NOT_WAIT_DISPATCH
         if (CheckForHudless(__FUNCTION__, capturedBuffer) && CheckCapture(__FUNCTION__))
+        {
             CaptureHudless(This, capturedBuffer, capturedBuffer->state);
-#else
+            o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
+            return;
+        }
+
+#ifndef DO_NOT_WAIT_DISPATCH
         if (!fgPossibleHudless[fIndex].contains(This))
         {
             ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
@@ -1326,6 +1354,8 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
         fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
 #endif
     }
+
+    o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
 }
 
 #pragma endregion
@@ -1344,7 +1374,7 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
     if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
         return;
 
-    LOG_TRACE("CommandList: {:X}", (size_t)This);
+    LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
 
     if (!IsHudFixActive())
         return;
@@ -1374,7 +1404,6 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
             {
                 if (CheckCapture(__FUNCTION__))
                 {
-                    LOG_DEBUG("Capture");
                     CaptureHudless(This, &val, val.state);
                     break;
                 }
@@ -1384,8 +1413,6 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
 
         val0.clear();
         LOG_DEBUG_ONLY("Clear");
-
-        fgSourceType = None;
     }
 }
 
@@ -1398,7 +1425,7 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
     if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
         return;
 
-    LOG_TRACE("CommandList: {:X}", (size_t)This);
+    LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
 
     if (!IsHudFixActive())
         return;
@@ -1430,7 +1457,6 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
 
                 if (CheckCapture(__FUNCTION__))
                 {
-                    LOG_DEBUG("Capture");
                     CaptureHudless(This, &val, val.state);
                     break;
                 }
@@ -1440,8 +1466,6 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
 
         val0.clear();
         LOG_DEBUG_ONLY("Clear");
-
-        fgSourceType = None;
     }
 }
 
@@ -1454,7 +1478,7 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
     if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
         return;
 
-    LOG_TRACE("CommandList: {:X}", (size_t)This);
+    LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
 
     if (!IsHudFixActive())
         return;
@@ -1487,7 +1511,6 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 
                 if (CheckCapture(__FUNCTION__))
                 {
-                    LOG_DEBUG("Capture");
                     CaptureHudless(This, &val, val.state);
                     break;
                 }
@@ -1497,8 +1520,6 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 
         val0.clear();
         LOG_DEBUG_ONLY("Clear");
-
-        fgSourceType = None;
     }
 }
 
