@@ -1158,7 +1158,7 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
     }
 
 #ifndef DO_NOT_WAIT_DISPATCH
-    LOG_TRACE("CommandList: {:X}", (size_t)This);
+    LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
 #endif
 
     capturedBuffer->state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
@@ -1253,7 +1253,7 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
                 continue;
 
 #ifndef DO_NOT_WAIT_DISPATCH
-            LOG_TRACE("CommandList: {:X}", (size_t)This);
+            LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
 #endif
             resource->state = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
@@ -1326,7 +1326,7 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
     }
 
 #ifndef DO_NOT_WAIT_DISPATCH
-    LOG_TRACE("CommandList: {:X}", (size_t)This);
+    LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
 #endif
 
     if (capturedBuffer->type == UAV)
