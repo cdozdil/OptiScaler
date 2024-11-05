@@ -40,6 +40,8 @@ public:
     DXGI_FORMAT Format() const { return format; }
 
     FT_Dx12(std::string InName, ID3D12Device* InDevice, DXGI_FORMAT InFormat);
+    
+    bool IsFormatCompatible(DXGI_FORMAT InFormat);
 
     ~FT_Dx12();
 };
