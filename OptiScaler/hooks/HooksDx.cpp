@@ -1519,7 +1519,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
     // If dispatch still not called
     if (!fgDispatchCalled && Config::Instance()->FGHUDFix.value_or(false) && Config::Instance()->CurrentFeature != nullptr &&
-        !Config::Instance()->FGChanged && FrameGen_Dx12::fgContext != nullptr && FrameGen_Dx12::fgIsActive)
+        !Config::Instance()->FGChanged && FrameGen_Dx12::fgContext != nullptr && FrameGen_Dx12::fgIsActive && CheckCapture(__FUNCTION__))
     {
         LOG_WARN("Can't capture hudless, calling HudFix dispatch!");
         fgHudless[fIndex] = nullptr;
