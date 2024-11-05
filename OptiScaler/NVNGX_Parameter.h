@@ -4,7 +4,20 @@
 
 #include <ankerl/unordered_dense.h>
 
+// Use real NVNGX params encapsulated in custom one
+// Which is not working correctly
 //#define ENABLE_ENCAPSULATED_PARAMS
+
+// Log NVParam Set/Get operations
+//#define LOG_PARAMS_VALUES
+
+#ifdef LOG_PARAMS_VALUES
+#define LOG_PARAM(msg, ...) \
+    spdlog::trace(__FUNCTION__ " " msg, ##__VA_ARGS__) 
+#else
+#define LOG_PARAM(msg, ...) 
+#endif
+
 
 inline static std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_Value input)
 {
@@ -547,34 +560,34 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
     NVSDK_NGX_Parameter* OriginalParam = nullptr;
 #endif // ENABLE_ENCAPSULATED_PARAMS
 
-    void Set(const char* key, unsigned long long value) override { LOG_DEBUG_ONLY("ulong('{0}', {1})", key, value); setT(key, value); }
-    void Set(const char* key, float value) override { LOG_DEBUG_ONLY("float('{0}', {1})", key, value); setT(key, value); }
-    void Set(const char* key, double value) override { LOG_DEBUG_ONLY("double('{0}', {1})", key, value); setT(key, value); }
-    void Set(const char* key, unsigned int value) override { LOG_DEBUG_ONLY("uint('{0}', {1})", key, value); setT(key, value); }
-    void Set(const char* key, int value) override { LOG_DEBUG_ONLY("int('{0}', {1})", key, value); setT(key, value); }
-    void Set(const char* key, void* value) override { LOG_DEBUG_ONLY("void('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
-    void Set(const char* key, ID3D11Resource* value) override { LOG_DEBUG_ONLY("d3d11('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
-    void Set(const char* key, ID3D12Resource* value) override { LOG_DEBUG_ONLY("d3d12('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
+    void Set(const char* key, unsigned long long value) override { LOG_PARAM("ulong('{0}', {1})", key, value); setT(key, value); }
+    void Set(const char* key, float value) override { LOG_PARAM("float('{0}', {1})", key, value); setT(key, value); }
+    void Set(const char* key, double value) override { LOG_PARAM("double('{0}', {1})", key, value); setT(key, value); }
+    void Set(const char* key, unsigned int value) override { LOG_PARAM("uint('{0}', {1})", key, value); setT(key, value); }
+    void Set(const char* key, int value) override { LOG_PARAM("int('{0}', {1})", key, value); setT(key, value); }
+    void Set(const char* key, void* value) override { LOG_PARAM("void('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
+    void Set(const char* key, ID3D11Resource* value) override { LOG_PARAM("d3d11('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
+    void Set(const char* key, ID3D12Resource* value) override { LOG_PARAM("d3d12('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
 
     NVSDK_NGX_Result Get(const char* key, unsigned long long* value) const override
     {
         auto result = getT(key, value);
         if (result == NVSDK_NGX_Result_Success)
         {
-            LOG_DEBUG_ONLY("ulong('{0}', {1})", key, *value);
+            LOG_PARAM("ulong('{0}', {1})", key, *value);
             return NVSDK_NGX_Result_Success;
         }
 
 #ifdef ENABLE_ENCAPSULATED_PARAMS
         if (OriginalParam != nullptr)
         {
-            LOG_DEBUG_ONLY("calling original ulong('{0}')", key);
+            LOG_PARAM("calling original ulong('{0}')", key);
             result = OriginalParam->Get(key, value);
-            LOG_DEBUG_ONLY("calling original ulong('{0}') result: {1:X}", key, (UINT)result);
+            LOG_PARAM("calling original ulong('{0}') result: {1:X}", key, (UINT)result);
 
             if (result == NVSDK_NGX_Result_Success)
             {
-                LOG_DEBUG_ONLY("from original ulong('{0}', {1})", key, *value);
+                LOG_PARAM("from original ulong('{0}', {1})", key, *value);
                 return result;
             }
     }
@@ -588,20 +601,20 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
         auto result = getT(key, value);
         if (result == NVSDK_NGX_Result_Success)
         {
-            LOG_DEBUG_ONLY("float('{0}', {1})", key, *value);
+            LOG_PARAM("float('{0}', {1})", key, *value);
             return NVSDK_NGX_Result_Success;
         }
 
 #ifdef ENABLE_ENCAPSULATED_PARAMS
         if (OriginalParam != nullptr)
         {
-            LOG_DEBUG_ONLY("calling original float('{0}')", key);
+            LOG_PARAM("calling original float('{0}')", key);
             result = OriginalParam->Get(key, value);
-            LOG_DEBUG_ONLY("calling original float('{0}') result: {1:X}", key, (UINT)result);
+            LOG_PARAM("calling original float('{0}') result: {1:X}", key, (UINT)result);
 
             if (result == NVSDK_NGX_Result_Success)
             {
-                LOG_DEBUG_ONLY("from original float('{0}', {1})", key, *value);
+                LOG_PARAM("from original float('{0}', {1})", key, *value);
                 return result;
             }
     }
@@ -615,20 +628,20 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
         auto result = getT(key, value);
         if (result == NVSDK_NGX_Result_Success)
         {
-            LOG_DEBUG_ONLY("double('{0}', {1})", key, *value);
+            LOG_PARAM("double('{0}', {1})", key, *value);
             return NVSDK_NGX_Result_Success;
         }
 
 #ifdef ENABLE_ENCAPSULATED_PARAMS
         if (OriginalParam != nullptr)
         {
-            LOG_DEBUG_ONLY("calling original double('{0}')", key);
+            LOG_PARAM("calling original double('{0}')", key);
             result = OriginalParam->Get(key, value);
-            LOG_DEBUG_ONLY("calling original double('{0}') result: {1:X}", key, (UINT)result);
+            LOG_PARAM("calling original double('{0}') result: {1:X}", key, (UINT)result);
 
             if (result == NVSDK_NGX_Result_Success)
             {
-                LOG_DEBUG_ONLY("from original double('{0}', {1})", key, *value);
+                LOG_PARAM("from original double('{0}', {1})", key, *value);
                 return result;
             }
     }
@@ -642,20 +655,20 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
         auto result = getT(key, value);
         if (result == NVSDK_NGX_Result_Success)
         {
-            LOG_DEBUG_ONLY("uint('{0}', {1})", key, *value);
+            LOG_PARAM("uint('{0}', {1})", key, *value);
             return NVSDK_NGX_Result_Success;
         }
 
 #ifdef ENABLE_ENCAPSULATED_PARAMS
         if (OriginalParam != nullptr)
         {
-            LOG_DEBUG_ONLY("calling original uint('{0}')", key);
+            LOG_PARAM("calling original uint('{0}')", key);
             result = OriginalParam->Get(key, value);
-            LOG_DEBUG_ONLY("calling original uint('{0}') result: {1:X}", key, (UINT)result);
+            LOG_PARAM("calling original uint('{0}') result: {1:X}", key, (UINT)result);
 
             if (result == NVSDK_NGX_Result_Success)
             {
-                LOG_DEBUG_ONLY("from original uint('{0}', {1})", key, *value);
+                LOG_PARAM("from original uint('{0}', {1})", key, *value);
                 return result;
             }
     }
@@ -668,20 +681,20 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
     {
         auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success)
         {
-            LOG_DEBUG_ONLY("int('{0}', {1})", key, *value);
+            LOG_PARAM("int('{0}', {1})", key, *value);
             return NVSDK_NGX_Result_Success;
         }
 
 #ifdef ENABLE_ENCAPSULATED_PARAMS
         if (OriginalParam != nullptr)
         {
-            LOG_DEBUG_ONLY("calling original int('{0}')", key);
+            LOG_PARAM("calling original int('{0}')", key);
             result = OriginalParam->Get(key, value);
-            LOG_DEBUG_ONLY("calling original int('{0}') result: {1:X}", key, (UINT)result);
+            LOG_PARAM("calling original int('{0}') result: {1:X}", key, (UINT)result);
 
             if (result == NVSDK_NGX_Result_Success)
             {
-                LOG_DEBUG_ONLY("from original int('{0}', {1})", key, *value);
+                LOG_PARAM("from original int('{0}', {1})", key, *value);
                 return result;
             }
     }
@@ -695,20 +708,20 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
         auto result = getT(key, value);
         if (result == NVSDK_NGX_Result_Success)
         {
-            LOG_DEBUG_ONLY("void('{0}')", key);
+            LOG_PARAM("void('{0}')", key);
             return NVSDK_NGX_Result_Success;
         }
 
 #ifdef ENABLE_ENCAPSULATED_PARAMS
         if (OriginalParam != nullptr)
         {
-            LOG_DEBUG_ONLY("calling original void('{0}')", key);
+            LOG_PARAM("calling original void('{0}')", key);
             result = OriginalParam->Get(key, value);
-            LOG_DEBUG_ONLY("calling original void('{0}') result: {1:X}", key, (UINT)result);
+            LOG_PARAM("calling original void('{0}') result: {1:X}", key, (UINT)result);
 
             if (result == NVSDK_NGX_Result_Success)
             {
-                LOG_DEBUG_ONLY("from original void('{0}')", key);
+                LOG_PARAM("from original void('{0}')", key);
                 return result;
             }
     }
@@ -722,20 +735,20 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
         auto result = getT(key, value);
         if (result == NVSDK_NGX_Result_Success)
         {
-            LOG_DEBUG_ONLY("d3d11('{0}')", key);
+            LOG_PARAM("d3d11('{0}')", key);
             return NVSDK_NGX_Result_Success;
         }
 
 #ifdef ENABLE_ENCAPSULATED_PARAMS
         if (OriginalParam != nullptr)
         {
-            LOG_DEBUG_ONLY("calling original d3d11('{0}')", key);
+            LOG_PARAM("calling original d3d11('{0}')", key);
             result = OriginalParam->Get(key, value);
-            LOG_DEBUG_ONLY("calling original d3d11('{0}') result: {1:X}", key, (UINT)result);
+            LOG_PARAM("calling original d3d11('{0}') result: {1:X}", key, (UINT)result);
 
             if (result == NVSDK_NGX_Result_Success)
             {
-                LOG_DEBUG_ONLY("from original d3d11('{0}')", key);
+                LOG_PARAM("from original d3d11('{0}')", key);
                 return result;
             }
     }
@@ -749,20 +762,20 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
         auto result = getT(key, value);
         if (result == NVSDK_NGX_Result_Success)
         {
-            LOG_DEBUG_ONLY("d3d12('{0}')", key);
+            LOG_PARAM("d3d12('{0}')", key);
             return NVSDK_NGX_Result_Success;
         }
 
 #ifdef ENABLE_ENCAPSULATED_PARAMS
         if (OriginalParam != nullptr)
         {
-            LOG_DEBUG_ONLY("calling original d3d12('{0}')", key);
+            LOG_PARAM("calling original d3d12('{0}')", key);
             result = OriginalParam->Get(key, value);
-            LOG_DEBUG_ONLY("calling original d3d12('{0}') result: {1:X}", key, (UINT)result);
+            LOG_PARAM("calling original d3d12('{0}') result: {1:X}", key, (UINT)result);
 
             if (result == NVSDK_NGX_Result_Success)
             {
-                LOG_DEBUG_ONLY("from original d3d12('{0}')", key);
+                LOG_PARAM("from original d3d12('{0}')", key);
                 return result;
             }
     }

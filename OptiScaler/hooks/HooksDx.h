@@ -8,10 +8,15 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
+// According to https://gpuopen.com/manuals/fidelityfx_sdk/fidelityfx_sdk-page_techniques_super-resolution-interpolation/#id11 
+// Will use mutex to prevent race condutions
 #define USE_MUTEX_FOR_FFX
+
+// Enable D3D12 Debug Layers
 //#define ENABLE_DEBUG_LAYER
 
 #ifdef ENABLE_DEBUG_LAYER
+// Enable GPUValidation
 //#define ENABLE_GPU_VALIDATION
 
 #include <d3d12sdklayers.h>
@@ -79,8 +84,6 @@ namespace FrameGen_Dx12
     inline bool fgIsActive = false;
 
 #ifdef USE_MUTEX_FOR_FFX
-    // According to https://gpuopen.com/manuals/fidelityfx_sdk/fidelityfx_sdk-page_techniques_super-resolution-interpolation/#id11 
-    // will use this mutex to prevent race condutions
     inline std::mutex ffxMutex;
 #endif
 

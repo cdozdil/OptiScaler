@@ -13,10 +13,15 @@
 
 #include <vulkan/vulkan_core.h>
 
+// Enables hooking of GetModuleHandle
+// which might create issues, not tested very well
 //#define HOOK_GET_MODULE
 
 #ifdef HOOK_GET_MODULE
+// Handle nvngx.dll calls on GetModule handle
 //#define GET_MODULE_NVNGX
+
+// Handle Opti dll calls on GetModule handle
 #define GET_MODULE_DLL
 #endif
 

@@ -15,10 +15,21 @@
 #include <ankerl/unordered_dense.h>
 #include <shared_mutex>
 
+// Do not wait for Dispatch/DrawInstanced to capture hudless resource
 #define DO_NOT_WAIT_DISPATCH
+
+// Clear heap info when ResourceDiscard is called
 //#define USE_RESOURCE_DISCARD
+
+// Use CopyResource & CopyTextureRegion to capture hudless
+// It's a unstable
 //#define USE_COPY_RESOURCE
+
+// Use resource barriers before and after capture operation
 #define USE_RESOURCE_BARRIRER
+
+// Use FRAMEGENERATIONSWAPCHAIN_WRAP instead of 
+// FRAMEGENERATIONSWAPCHAIN_NEW & FRAMEGENERATIONSWAPCHAIN_FOR_HWND
 //#define WRAP_SWAP_CHAIN
 
 enum ResourceType
