@@ -381,8 +381,6 @@ public:
         if (_dll != nullptr)
             return;
 
-        HookNvApi();
-
         LOG_INFO("");
 
         Config::Instance()->upscalerDisableHook = true;
@@ -495,6 +493,7 @@ public:
         {
             if (!Config::Instance()->DE_Available)
             {
+                HookNvApi();
                 HookNgxApi(_dll);
             }
 
