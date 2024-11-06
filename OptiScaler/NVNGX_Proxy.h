@@ -159,10 +159,13 @@ inline static void HookNvApi()
         LOG_INFO("NvAPI_QueryInterface found, hooking!");
         fakenvapi::Init((fakenvapi::PFN_Fake_QueryInterface&)OriginalNvAPI_QueryInterface);
 
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)OriginalNvAPI_QueryInterface, HookedNvAPI_QueryInterface);
-        DetourTransactionCommit();
+        if (!Config::Instance()->DE_Available)
+        {
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+            DetourAttach(&(PVOID&)OriginalNvAPI_QueryInterface, HookedNvAPI_QueryInterface);
+            DetourTransactionCommit();
+        }
     }
 }
 
@@ -491,11 +494,10 @@ public:
 
         if (_dll != nullptr)
         {
+            HookNvApi();
+            
             if (!Config::Instance()->DE_Available)
-            {
-                HookNvApi();
                 HookNgxApi(_dll);
-            }
 
             LOG_INFO("getting nvngx method addresses");
 
