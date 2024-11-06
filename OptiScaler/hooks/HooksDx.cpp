@@ -451,7 +451,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
 {
     auto fIndex = fgFrameIndex;
     if (This != ImGuiOverlayDx::MenuCommandList() && Config::Instance()->CurrentFeature != nullptr && !Config::Instance()->FGChanged &&
-        fgHudlessFrame != Config::Instance()->CurrentFeature->FrameCount() && FrameGen_Dx12::fgTarget <= Config::Instance()->CurrentFeature->FrameCount() &&
+        fgHudlessFrame != Config::Instance()->CurrentFeature->FrameCount() && FrameGen_Dx12::fgTarget < Config::Instance()->CurrentFeature->FrameCount() &&
         FrameGen_Dx12::fgContext != nullptr && FrameGen_Dx12::fgIsActive && HooksDx::currentSwapchain != nullptr)
     {
         LOG_DEBUG("FrameCount: {0}, fgHudlessFrame: {1}, CommandList: {2:X}", Config::Instance()->CurrentFeature->FrameCount(), fgHudlessFrame, (UINT64)This);
@@ -620,7 +620,10 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
     }
     else
     {
-        LOG_ERROR("This should not happen!!");
+        LOG_ERROR("This should not happen!\nThis != ImGuiOverlayDx::MenuCommandList(): {} && Config::Instance()->CurrentFeature != nullptr: {} && !Config::Instance()->FGChanged: {} && fgHudlessFrame: {} != Config::Instance()->CurrentFeature->FrameCount(): {}, FrameGen_Dx12::fgTarget: {} < Config::Instance()->CurrentFeature->FrameCount(): {} && FrameGen_Dx12::fgContext != nullptr : {} && FrameGen_Dx12::fgIsActive: {} && HooksDx::currentSwapchain != nullptr: {}", 
+                  This != ImGuiOverlayDx::MenuCommandList(), Config::Instance()->CurrentFeature != nullptr, !Config::Instance()->FGChanged,
+                  fgHudlessFrame, Config::Instance()->CurrentFeature->FrameCount(), FrameGen_Dx12::fgTarget, Config::Instance()->CurrentFeature->FrameCount(),
+                  FrameGen_Dx12::fgContext != nullptr, FrameGen_Dx12::fgIsActive, HooksDx::currentSwapchain != nullptr);
     }
 }
 
@@ -632,7 +635,7 @@ static bool CheckCapture(std::string callerName)
         std::unique_lock<std::shared_mutex> lock(counterMutex[fIndex]);
         FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex]++;
 
-        LOG_DEBUG("{} -> frameCounter: {}, fgHUDlessCaptureCounter: {}, Limit: {}", callerName, frameCounter, FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex], Config::Instance()->FGHUDLimit.value_or(1));
+        LOG_DEBUG("{} -> frameCounter: {}, fgHUDlessCaptureCounter: {}, Limit: {}", callerName, Config::Instance()->CurrentFeature->FrameCount(), FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex], Config::Instance()->FGHUDLimit.value_or(1));
 
         if (FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] != Config::Instance()->FGHUDLimit.value_or(1))
             return false;
@@ -1542,13 +1545,14 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     if (!fgDispatchCalled && Config::Instance()->FGHUDFix.value_or(false) && FrameGen_Dx12::fgIsActive && 
         Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
         Config::Instance()->FGEnabled.value_or(false) && Config::Instance()->CurrentFeature != nullptr &&
-        FrameGen_Dx12::fgTarget < Config::Instance()->CurrentFeature->FrameCount() &&
+        FrameGen_Dx12::fgTarget < Config::Instance()->CurrentFeature->FrameCount() && !Config::Instance()->FGChanged &&
         FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr && CheckCapture(__FUNCTION__))
     {
         LOG_WARN("Can't capture hudless, calling HudFix dispatch!");
         fgHudless[fIndex] = nullptr;
         GetHudless(nullptr);
     }
+
     FrameGen_Dx12::ffxMutex.lock();
     auto result = o_FGSCPresent(This, SyncInterval, Flags);
 
