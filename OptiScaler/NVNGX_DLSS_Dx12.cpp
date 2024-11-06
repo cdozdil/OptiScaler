@@ -25,7 +25,8 @@
 // Looks like it is causing issues so disabled 
 //#define USE_COPY_QUEUE_FOR_FG
 
-// Use a dedicated Queue + CommandList for FG
+// Use a dedicated Queue + CommandList for FG without hudfix
+// Looks like causing stutter/sync issues
 //#define USE_QUEUE_FOR_FG
 
 // Do not make copies of Depth + Velocity for FG
