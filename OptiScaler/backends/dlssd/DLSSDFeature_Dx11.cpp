@@ -102,6 +102,26 @@ bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_
 
 	if (NVNGXProxy::D3D11_EvaluateFeature() != nullptr)
 	{
+		ID3D11ShaderResourceView* restoreSRVs[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
+													  nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
+
+		ID3D11SamplerState* restoreSamplerStates[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
+														 nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
+
+		ID3D11Buffer* restoreCBVs[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
+										  nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
+
+		ID3D11UnorderedAccessView* restoreUAVs[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
+													   nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
+		// backup compute shader resources
+		for (size_t i = 0; i < 16; i++)
+		{
+			InDeviceContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
+			InDeviceContext->CSGetSamplers(i, 1, &restoreSamplerStates[i]);
+			InDeviceContext->CSGetConstantBuffers(i, 1, &restoreCBVs[i]);
+			InDeviceContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
+		}
+
 		ProcessEvaluateParams(InParameters);
 
 		ID3D11Resource* paramOutput = nullptr;
@@ -218,6 +238,15 @@ bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_
 
 		// set original output texture back
 		InParameters->Set(NVSDK_NGX_Parameter_Output, paramOutput);
+
+		// restore compute shader resources
+		for (size_t i = 0; i < 16; i++)
+		{
+			InDeviceContext->CSSetShaderResources(i, 1, &restoreSRVs[i]);
+			InDeviceContext->CSSetSamplers(i, 1, &restoreSamplerStates[i]);
+			InDeviceContext->CSSetConstantBuffers(i, 1, &restoreCBVs[i]);
+			InDeviceContext->CSSetUnorderedAccessViews(i, 1, &restoreUAVs[i], 0);
+		}
 	}
 	else
 	{
