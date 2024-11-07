@@ -61,11 +61,12 @@ private:
 #pragma region "Hooks & WndProc"
 
     // for hooking
-    typedef BOOL(WINAPI* PFN_SetCursorPos)(int x, int y);
-    typedef BOOL(WINAPI* PFN_ClipCursor)(const RECT* lpRect);
-    typedef UINT(WINAPI* PFN_SendInput)(UINT cInputs, LPINPUT pInputs, int cbSize);
-    typedef void(WINAPI* PFN_mouse_event)(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo);
-    typedef LRESULT(WINAPI* PFN_SendMessageW)(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
+    typedef BOOL(*PFN_SetCursorPos)(int x, int y);
+    typedef BOOL(*PFN_ClipCursor)(const RECT* lpRect);
+    typedef UINT(*PFN_SendInput)(UINT cInputs, LPINPUT pInputs, int cbSize);
+    typedef void(*PFN_mouse_event)(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo);
+    typedef BOOL(*PFN_GetCursorPos)(LPPOINT lpPoint);
+    typedef LRESULT(*PFN_SendMessageW)(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
     inline static PFN_SetCursorPos pfn_SetPhysicalCursorPos = nullptr;
     inline static PFN_SetCursorPos pfn_SetCursorPos = nullptr;
@@ -73,6 +74,7 @@ private:
     inline static PFN_mouse_event pfn_mouse_event = nullptr;
     inline static PFN_SendInput pfn_SendInput = nullptr;
     inline static PFN_SendMessageW pfn_SendMessageW = nullptr;
+    inline static PFN_GetCursorPos pfn_GetCursorPos = nullptr;
 
     inline static bool pfn_SetPhysicalCursorPos_hooked = false;
     inline static bool pfn_SetCursorPos_hooked = false;
@@ -81,23 +83,19 @@ private:
     inline static bool pfn_SendInput_hooked = false;
     inline static bool pfn_SendMessageW_hooked = false;
 
-    inline static RECT _cursorLimit{};
-    inline static LPRECT _lastCursorLimit = nullptr;
+    inline static RECT _cursorLimit = {};
+    inline static POINT _lastPoint = {};
 
-    static LRESULT WINAPI hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
+    static LRESULT hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
-    static BOOL WINAPI hkSetPhysicalCursorPos(int x, int y);
-
-    static BOOL WINAPI hkSetCursorPos(int x, int y);
-
-    static BOOL WINAPI hkClipCursor(RECT* lpRect);
-
-    static void WINAPI hkmouse_event(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo);
-
-    static UINT WINAPI hkSendInput(UINT cInputs, LPINPUT pInputs, int cbSize);
+    static BOOL hkSetPhysicalCursorPos(int x, int y);
+    static BOOL hkSetCursorPos(int x, int y);
+    static BOOL hkClipCursor(RECT* lpRect);
+    static void hkmouse_event(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo);
+    static UINT hkSendInput(UINT cInputs, LPINPUT pInputs, int cbSize);
+    static BOOL hkGetPhysicalCursorPos(LPPOINT lpPoint);
 
     static void AttachHooks();
-
     static void DetachHooks();
 
     inline static ImGuiKey ImGui_ImplWin32_VirtualKeyToImGuiKey(WPARAM wParam);

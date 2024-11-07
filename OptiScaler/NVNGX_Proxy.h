@@ -397,8 +397,6 @@ public:
 
         if (_dll != nullptr)
         {
-            HookNvApi();
-            
             if (!Config::Instance()->DE_Available)
                 HookNgxApi(_dll);
 
@@ -930,6 +928,4 @@ public:
 
         return _UpdateFeature;
     }
-
-
 };
