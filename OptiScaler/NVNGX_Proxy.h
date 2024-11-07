@@ -6,8 +6,7 @@
 #include "Logger.h"
 #include <vulkan/vulkan.hpp>
 
-#include "nvapi/nvapi.h"
-#include "fakenvapi.h"
+#include "nvapi/NvApiHooks.h"
 
 #include <filesystem>
 #include "detours/detours.h"
@@ -17,37 +16,127 @@ constexpr unsigned long long app_id_override = 0x24480451;
 
 #pragma region spoofing hooks for 16xx
 
-// NvAPI_GPU_GetArchInfo hooking based on Nukem's spoofing code here
-// https://github.com/Nukem9/dlssg-to-fsr3/blob/89ddc8c1cce4593fb420e633a06605c3c4b9c3cf/source/wrapper_generic/nvapi.cpp#L50
-
-enum class NV_INTERFACE : uint32_t
-{
-    GPU_GetArchInfo = 0xD8265D24,
-    D3D12_SetRawScgPriority = 0x5DB3048A,
-};
-
-typedef void* (*PFN_NvApi_QueryInterface)(NV_INTERFACE InterfaceId);
 typedef NVSDK_NGX_Result(*PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements)(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported);
 typedef NVSDK_NGX_Result(*PFN_NVSDK_NGX_VULKAN_GetFeatureRequirements)(const VkInstance Instance, const VkPhysicalDevice PhysicalDevice,
                                                                        const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported);
 
-typedef uint32_t(*PfnNvAPI_GPU_GetArchInfo)(void* GPUHandle, NV_GPU_ARCH_INFO* ArchInfo);
-
-inline static PFN_NvApi_QueryInterface OriginalNvAPI_QueryInterface = nullptr;
-inline static PfnNvAPI_GPU_GetArchInfo OriginalNvAPI_GPU_GetArchInfo = nullptr;
 inline static PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements Original_D3D11_GetFeatureRequirements = nullptr;
 inline static PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements Original_D3D12_GetFeatureRequirements = nullptr;
 inline static PFN_NVSDK_NGX_VULKAN_GetFeatureRequirements Original_Vulkan_GetFeatureRequirements = nullptr;
 
-uint32_t HookedNvAPI_GPU_GetArchInfo(void* GPUHandle, NV_GPU_ARCH_INFO* ArchInfo);
-void* HookedNvAPI_QueryInterface(NV_INTERFACE InterfaceId);
-NVSDK_NGX_Result Hooked_Dx12_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported);
-NVSDK_NGX_Result Hooked_Dx11_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported);
-NVSDK_NGX_Result __stdcall Hooked_Vulkan_GetFeatureRequirements(const VkInstance Instance, const VkPhysicalDevice PhysicalDevice,
-                                                                const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported);
-void HookNvApi();
-void HookNgxApi(HMODULE nvngx);
-void UnhookApis();
+inline static NVSDK_NGX_Result __stdcall Hooked_Dx12_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
+{
+    LOG_FUNC();
+
+    auto result = Original_D3D12_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
+
+    if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+    {
+        LOG_INFO("Spoofing support!");
+        OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
+        OutSupported->MinHWArchitecture = 0;
+        strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
+    }
+
+    return result;
+}
+
+inline static NVSDK_NGX_Result __stdcall Hooked_Dx11_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
+{
+    LOG_FUNC();
+
+    auto result = Original_D3D11_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
+
+    if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+    {
+        LOG_INFO("Spoofing support!");
+        OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
+        OutSupported->MinHWArchitecture = 0;
+        strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
+    }
+
+    return result;
+}
+
+inline static NVSDK_NGX_Result __stdcall Hooked_Vulkan_GetFeatureRequirements(const VkInstance Instance, const VkPhysicalDevice PhysicalDevice,
+                                                                              const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
+{
+    LOG_FUNC();
+
+    auto result = Original_Vulkan_GetFeatureRequirements(Instance, PhysicalDevice, FeatureDiscoveryInfo, OutSupported);
+
+    if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+    {
+        LOG_INFO("Spoofing support!");
+        OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
+        OutSupported->MinHWArchitecture = 0;
+        strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
+    }
+
+    return result;
+}
+
+inline static void HookNgxApi(HMODULE nvngx)
+{
+    if (Original_D3D11_GetFeatureRequirements != nullptr || Original_D3D12_GetFeatureRequirements != nullptr)
+        return;
+
+    LOG_DEBUG("Trying to hook NgxApi");
+
+    Original_D3D11_GetFeatureRequirements = (PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_D3D11_GetFeatureRequirements");
+    Original_D3D12_GetFeatureRequirements = (PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_D3D12_GetFeatureRequirements");
+    Original_Vulkan_GetFeatureRequirements = (PFN_NVSDK_NGX_VULKAN_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_VULKAN_GetFeatureRequirements");
+
+    if (Original_D3D11_GetFeatureRequirements != nullptr || Original_D3D12_GetFeatureRequirements != nullptr || Original_Vulkan_GetFeatureRequirements != nullptr)
+    {
+        LOG_INFO("NVSDK_NGX_XXXXXX_GetFeatureRequirements found, hooking!");
+
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+
+        if (Original_D3D11_GetFeatureRequirements != nullptr)
+            DetourAttach(&(PVOID&)Original_D3D11_GetFeatureRequirements, Hooked_Dx11_GetFeatureRequirements);
+
+        if (Original_D3D12_GetFeatureRequirements != nullptr)
+            DetourAttach(&(PVOID&)Original_D3D12_GetFeatureRequirements, Hooked_Dx12_GetFeatureRequirements);
+
+        if (Original_Vulkan_GetFeatureRequirements != nullptr)
+            DetourAttach(&(PVOID&)Original_Vulkan_GetFeatureRequirements, Hooked_Vulkan_GetFeatureRequirements);
+
+        DetourTransactionCommit();
+    }
+}
+
+inline static void UnhookApis()
+{
+    NvApiHooks::Unhook();
+
+    if (Original_D3D11_GetFeatureRequirements != nullptr || Original_D3D12_GetFeatureRequirements != nullptr)
+    {
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+
+        if (Original_D3D11_GetFeatureRequirements != nullptr)
+        {
+            DetourDetach(&(PVOID&)Original_D3D11_GetFeatureRequirements, Hooked_Dx11_GetFeatureRequirements);
+            Original_D3D11_GetFeatureRequirements = nullptr;
+        }
+
+        if (Original_D3D12_GetFeatureRequirements != nullptr)
+        {
+            DetourDetach(&(PVOID&)Original_D3D12_GetFeatureRequirements, Hooked_Dx12_GetFeatureRequirements);
+            Original_D3D12_GetFeatureRequirements = nullptr;
+        }
+
+        if (Original_Vulkan_GetFeatureRequirements != nullptr)
+        {
+            DetourDetach(&(PVOID&)Original_Vulkan_GetFeatureRequirements, Hooked_Vulkan_GetFeatureRequirements);
+            Original_Vulkan_GetFeatureRequirements = nullptr;
+        }
+
+        DetourTransactionCommit();
+    }
+}
 
 #pragma endregion
 
@@ -308,8 +397,6 @@ public:
 
         if (_dll != nullptr)
         {
-            HookNvApi();
-
             if (!Config::Instance()->DE_Available)
                 HookNgxApi(_dll);
 
@@ -367,11 +454,6 @@ public:
             _VULKAN_EvaluateFeature = (PFN_VULKAN_EvaluateFeature)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_EvaluateFeature");
 
             _UpdateFeature = (PFN_UpdateFeature)GetProcAddress(_dll, "NVSDK_NGX_UpdateFeature");
-        }
-        else
-        {
-            if (Config::Instance()->OverrideNvapiDll.value_or(false))
-                HookNvApi();
         }
 
         Config::Instance()->upscalerDisableHook = false;
@@ -847,200 +929,3 @@ public:
         return _UpdateFeature;
     }
 };
-
-
-inline static uint32_t HookedNvAPI_GPU_GetArchInfo(void* GPUHandle, NV_GPU_ARCH_INFO* ArchInfo)
-{
-    if (OriginalNvAPI_GPU_GetArchInfo)
-    {
-        const auto status = OriginalNvAPI_GPU_GetArchInfo(GPUHandle, ArchInfo);
-
-        if (status == 0 && ArchInfo)
-        {
-            LOG_DEBUG("From api arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
-
-            // for 16xx cards
-            if (ArchInfo->architecture == NV_GPU_ARCHITECTURE_TU100 && ArchInfo->implementation > NV_GPU_ARCH_IMPLEMENTATION_TU106)
-            {
-                ArchInfo->implementation = NV_GPU_ARCH_IMPLEMENTATION_TU106;
-                ArchInfo->implementation_id = NV_GPU_ARCH_IMPLEMENTATION_TU106;
-
-                LOG_INFO("Spoofed arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
-            }
-            //else if (ArchInfo->architecture < NV_GPU_ARCHITECTURE_TU100 && ArchInfo->architecture >= NV_GPU_ARCHITECTURE_GP100)
-            //{
-            //	LOG_INFO("Spoofing below 16xx arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
-
-            //	ArchInfo->architecture = NV_GPU_ARCHITECTURE_TU100;
-            //	ArchInfo->architecture_id = NV_GPU_ARCHITECTURE_TU100;
-            //	ArchInfo->implementation = NV_GPU_ARCH_IMPLEMENTATION_TU106;
-            //	ArchInfo->implementation_id = NV_GPU_ARCH_IMPLEMENTATION_TU106;
-
-            //	LOG_INFO("Spoofed arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
-            //}
-        }
-
-        return status;
-    }
-
-    return 0xFFFFFFFF;
-}
-
-inline static void* HookedNvAPI_QueryInterface(NV_INTERFACE InterfaceId)
-{
-    LOG_FUNC();
-    const auto result = OriginalNvAPI_QueryInterface(InterfaceId);
-
-    if (result)
-    {
-        if (InterfaceId == NV_INTERFACE::GPU_GetArchInfo && !Config::Instance()->DE_Available)
-        {
-            OriginalNvAPI_GPU_GetArchInfo = static_cast<PfnNvAPI_GPU_GetArchInfo>(result);
-            return &HookedNvAPI_GPU_GetArchInfo;
-        }
-    }
-
-    return result;
-}
-
-inline static NVSDK_NGX_Result Hooked_Dx12_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
-{
-    LOG_FUNC();
-
-    auto result = Original_D3D12_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
-
-    if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
-    {
-        LOG_INFO("Spoofing support!");
-        OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
-        OutSupported->MinHWArchitecture = 0;
-        strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
-    }
-
-    return result;
-}
-
-inline static NVSDK_NGX_Result Hooked_Dx11_GetFeatureRequirements(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
-{
-    LOG_FUNC();
-
-    auto result = Original_D3D11_GetFeatureRequirements(Adapter, FeatureDiscoveryInfo, OutSupported);
-
-    if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
-    {
-        LOG_INFO("Spoofing support!");
-        OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
-        OutSupported->MinHWArchitecture = 0;
-        strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
-    }
-
-    return result;
-}
-
-inline static NVSDK_NGX_Result __stdcall Hooked_Vulkan_GetFeatureRequirements(const VkInstance Instance, const VkPhysicalDevice PhysicalDevice,
-                                                                              const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported)
-{
-    LOG_FUNC();
-
-    auto result = Original_Vulkan_GetFeatureRequirements(Instance, PhysicalDevice, FeatureDiscoveryInfo, OutSupported);
-
-    if (result == NVSDK_NGX_Result_Success && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
-    {
-        LOG_INFO("Spoofing support!");
-        OutSupported->FeatureSupported = NVSDK_NGX_FeatureSupportResult_Supported;
-        OutSupported->MinHWArchitecture = 0;
-        strcpy_s(OutSupported->MinOSVersion, "10.0.10240.16384");
-    }
-
-    return result;
-}
-
-inline static void HookNvApi()
-{
-    if (OriginalNvAPI_QueryInterface != nullptr)
-        return;
-
-    LOG_DEBUG("Trying to hook NvApi");
-    OriginalNvAPI_QueryInterface = (PFN_NvApi_QueryInterface)DetourFindFunction("nvapi64.dll", "nvapi_QueryInterface");
-    LOG_DEBUG("OriginalNvAPI_QueryInterface = {0:X}", (unsigned long long)OriginalNvAPI_QueryInterface);
-
-    if (OriginalNvAPI_QueryInterface != nullptr)
-    {
-        LOG_INFO("NvAPI_QueryInterface found, hooking!");
-        fakenvapi::Init((fakenvapi::PFN_Fake_QueryInterface&)OriginalNvAPI_QueryInterface);
-
-        if (!Config::Instance()->DE_Available && NVNGXProxy::NVNGXModule() != nullptr)
-        {
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
-            DetourAttach(&(PVOID&)OriginalNvAPI_QueryInterface, HookedNvAPI_QueryInterface);
-            DetourTransactionCommit();
-        }
-    }
-}
-
-inline static void HookNgxApi(HMODULE nvngx)
-{
-    if (Original_D3D11_GetFeatureRequirements != nullptr || Original_D3D12_GetFeatureRequirements != nullptr)
-        return;
-
-    LOG_DEBUG("Trying to hook NgxApi");
-
-    Original_D3D11_GetFeatureRequirements = (PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_D3D11_GetFeatureRequirements");
-    Original_D3D12_GetFeatureRequirements = (PFN_NVSDK_NGX_D3D1X_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_D3D12_GetFeatureRequirements");
-    Original_Vulkan_GetFeatureRequirements = (PFN_NVSDK_NGX_VULKAN_GetFeatureRequirements)GetProcAddress(nvngx, "NVSDK_NGX_VULKAN_GetFeatureRequirements");
-
-    if (Original_D3D11_GetFeatureRequirements != nullptr || Original_D3D12_GetFeatureRequirements != nullptr || Original_Vulkan_GetFeatureRequirements != nullptr)
-    {
-        LOG_INFO("NVSDK_NGX_XXXXXX_GetFeatureRequirements found, hooking!");
-
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-
-        if (Original_D3D11_GetFeatureRequirements != nullptr)
-            DetourAttach(&(PVOID&)Original_D3D11_GetFeatureRequirements, Hooked_Dx11_GetFeatureRequirements);
-
-        if (Original_D3D12_GetFeatureRequirements != nullptr)
-            DetourAttach(&(PVOID&)Original_D3D12_GetFeatureRequirements, Hooked_Dx12_GetFeatureRequirements);
-
-        if (Original_Vulkan_GetFeatureRequirements != nullptr)
-            DetourAttach(&(PVOID&)Original_Vulkan_GetFeatureRequirements, Hooked_Vulkan_GetFeatureRequirements);
-
-        DetourTransactionCommit();
-    }
-}
-
-inline static void UnhookApis()
-{
-    if (OriginalNvAPI_QueryInterface != nullptr || Original_D3D11_GetFeatureRequirements != nullptr || Original_D3D12_GetFeatureRequirements != nullptr)
-    {
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-
-        if (OriginalNvAPI_QueryInterface != nullptr)
-        {
-            DetourDetach(&(PVOID&)OriginalNvAPI_QueryInterface, HookedNvAPI_QueryInterface);
-            OriginalNvAPI_QueryInterface = nullptr;
-        }
-
-        if (Original_D3D11_GetFeatureRequirements != nullptr)
-        {
-            DetourDetach(&(PVOID&)Original_D3D11_GetFeatureRequirements, Hooked_Dx11_GetFeatureRequirements);
-            Original_D3D11_GetFeatureRequirements = nullptr;
-        }
-
-        if (Original_D3D12_GetFeatureRequirements != nullptr)
-        {
-            DetourDetach(&(PVOID&)Original_D3D12_GetFeatureRequirements, Hooked_Dx12_GetFeatureRequirements);
-            Original_D3D12_GetFeatureRequirements = nullptr;
-        }
-
-        if (Original_Vulkan_GetFeatureRequirements != nullptr)
-        {
-            DetourDetach(&(PVOID&)Original_Vulkan_GetFeatureRequirements, Hooked_Vulkan_GetFeatureRequirements);
-            Original_Vulkan_GetFeatureRequirements = nullptr;
-        }
-
-        DetourTransactionCommit();
-    }
-}

@@ -27,7 +27,8 @@
 #endif
 
 #include "../FfxApi_Proxy.h"
-#include "../NVNGX_Proxy.h"
+#include "../nvapi/fakenvapi.h"
+#include "../nvapi/ReflexHooks.h"
 #include <dx12/ffx_api_dx12.h>
 #include <ffx_framegeneration.h>
 
