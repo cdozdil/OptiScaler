@@ -514,10 +514,17 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
     for (size_t i = 0; i < 16; i++)
     {
-        DeviceContext->CSSetShaderResources(i, 1, &restoreSRVs[i]);
-        DeviceContext->CSSetSamplers(i, 1, &restoreSamplerStates[i]);
-        DeviceContext->CSSetConstantBuffers(i, 1, &restoreCBVs[i]);
-        DeviceContext->CSSetUnorderedAccessViews(i, 1, &restoreUAVs[i], 0);
+        if (restoreSRVs[i] != nullptr)
+            DeviceContext->CSSetShaderResources(i, 1, &restoreSRVs[i]);
+        
+        if (restoreSamplerStates[i] != nullptr)
+            DeviceContext->CSSetSamplers(i, 1, &restoreSamplerStates[i]);
+        
+        if (restoreCBVs[i] != nullptr)
+            DeviceContext->CSSetConstantBuffers(i, 1, &restoreCBVs[i]);
+        
+        if (restoreUAVs[i] != nullptr)
+            DeviceContext->CSSetUnorderedAccessViews(i, 1, &restoreUAVs[i], 0);
     }
 
     _frameCount++;

@@ -632,10 +632,17 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 
     for (size_t i = 0; i < 16; i++)
     {
-        InContext->CSSetShaderResources(i, 1, &restoreSRVs[i]);
-        InContext->CSSetSamplers(i, 1, &restoreSamplerStates[i]);
-        InContext->CSSetConstantBuffers(i, 1, &restoreCBVs[i]);
-        InContext->CSSetUnorderedAccessViews(i, 1, &restoreUAVs[i], 0);
+        if (restoreSRVs[i] != nullptr)
+            InContext->CSSetShaderResources(i, 1, &restoreSRVs[i]);
+        
+        if (restoreSamplerStates[i] != nullptr)
+            InContext->CSSetSamplers(i, 1, &restoreSamplerStates[i]);
+        
+        if (restoreCBVs[i] != nullptr)
+            InContext->CSSetConstantBuffers(i, 1, &restoreCBVs[i]);
+        
+        if (restoreUAVs[i] != nullptr)
+            InContext->CSSetUnorderedAccessViews(i, 1, &restoreUAVs[i], 0);
     }
 
     _frameCount++;
