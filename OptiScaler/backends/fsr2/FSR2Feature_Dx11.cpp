@@ -295,16 +295,28 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 
     // backup compute shader resources
     for (size_t i = 0; i < 128; i++)
+    {
+        restoreSRVs[i] = nullptr;
         InContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
+    }
 
     for (size_t i = 0; i < 16; i++)
+    {
+        restoreSamplerStates[i] = nullptr;
         InContext->CSGetSamplers(i, 1, &restoreSamplerStates[i]);
+    }
 
     for (size_t i = 0; i < 15; i++)
+    {
+        restoreCBVs[i] = nullptr;
         InContext->CSGetConstantBuffers(i, 1, &restoreCBVs[i]);
+    }
 
     for (size_t i = 0; i < 8; i++)
+    {
+        restoreUAVs[i] = nullptr;
         InContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
+    }
 
     FfxFsr2DispatchDescription params{};
     params.commandList = InContext;

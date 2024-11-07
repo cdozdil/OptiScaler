@@ -109,16 +109,28 @@ bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_
 
         // backup compute shader resources
         for (size_t i = 0; i < 128; i++)
+        {
+            restoreSRVs[i] = nullptr;
             InDeviceContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
+        }
 
         for (size_t i = 0; i < 16; i++)
+        {
+            restoreSamplerStates[i] = nullptr;
             InDeviceContext->CSGetSamplers(i, 1, &restoreSamplerStates[i]);
+        }
 
         for (size_t i = 0; i < 15; i++)
+        {
+            restoreCBVs[i] = nullptr;
             InDeviceContext->CSGetConstantBuffers(i, 1, &restoreCBVs[i]);
+        }
 
         for (size_t i = 0; i < 8; i++)
+        {
+            restoreUAVs[i] = nullptr;
             InDeviceContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
+        }
 
         ProcessEvaluateParams(InParameters);
 
