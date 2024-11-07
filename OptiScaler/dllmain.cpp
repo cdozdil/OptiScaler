@@ -6,7 +6,7 @@
 #include "exports/Exports.h"
 #include "proxies/NVNGX_Proxy.h"
 #include "proxies/XeSS_Proxy.h"
-#include <proxies/FfxApi_Proxy.h>
+#include "upscalers/AvailableUpscalers.h"
 #include "menu/imgui_overlay_dx.h"
 #include "menu/imgui_overlay_vk.h"
 
@@ -972,34 +972,6 @@ static bool IsRunningOnWine()
     return false;
 }
 
-static AvailableUpscalers CheckAvailableUpscalers() {
-    LOG_FUNC();
-
-    AvailableUpscalers upscalers{};
-
-    // statically linked upscalers are always available
-    upscalers.Set(Upscaler::FSR_21);
-    upscalers.Set(Upscaler::FSR_22);
-    upscalers.Set(Upscaler::FFX_SDK_DX11);
-
-    if (NVNGXProxy::NVNGXModule() != nullptr)
-        upscalers.Set(Upscaler::DLSS);
-
-    if (GetModuleHandle(L"libxess.dll") != nullptr)
-        upscalers.Set(Upscaler::XESS);
-
-    FfxApiProxy::InitFfxDx12();
-    FfxApiProxy::InitFfxVk();
-
-    if (GetModuleHandle(L"amd_fidelityfx_dx12.dll") != nullptr)
-        upscalers.Set(Upscaler::FFX_SDK_DX12);
-
-    if (GetModuleHandle(L"amd_fidelityfx_vk.dll") != nullptr)
-        upscalers.Set(Upscaler::FFX_SDK_VK);
-
-    return upscalers;
-}
-
 static void CheckWorkingMode()
 {
     LOG_FUNC();
@@ -1425,7 +1397,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             if (!XeSSProxy::InitXeSS())
                 LOG_WARN("Can't init XeSS!");
 
-            Config::Instance()->availableUpscalers = CheckAvailableUpscalers();
+            Config::Instance()->availableUpscalers = getAvailableUpscalers();
 
             // Check for working mode and attach hooks
             spdlog::info("");

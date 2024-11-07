@@ -9,6 +9,7 @@
 #include <filesystem>
 
 #include <vulkan/vulkan.hpp>
+#include <dxgi.h>
 #include "include/nvapi/nvapi.h"
 #include "include/detours/detours.h"
 

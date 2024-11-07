@@ -1,4 +1,5 @@
 #include "imgui_common.h"
+#include "upscalers/AvailableUpscalers.h"
 
 void ImGuiCommon::ShowTooltip(const char* tip) {
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -322,8 +323,10 @@ LRESULT __stdcall ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
     {
         _isVisible = !_isVisible;
 
-        if (_isVisible)
+        if (_isVisible) {
             Config::Instance()->ReloadFakenvapi();
+            Config::Instance()->availableUpscalers = getAvailableUpscalers();
+        }
 
         if (!_isVisible)
         {

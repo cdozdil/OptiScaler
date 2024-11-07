@@ -263,6 +263,12 @@
     <ClInclude Include="upscalers\xess\XeSSFeature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="proxies\FfxApi_Proxy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="upscalers\AvailableUpscalers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -461,9 +467,6 @@
     <ClCompile Include="upscalers\xess\XeSSFeature_Dx12.h">
       <Filter>Header Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="libs\vulkan\vulkan-1.lib" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OptiScaler.rc" />
