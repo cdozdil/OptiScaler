@@ -288,25 +288,23 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
     if (!RCAS->IsInit())
         Config::Instance()->RcasEnabled = false;
 
-    ID3D11ShaderResourceView* restoreSRVs[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
-                                                  nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
+    ID3D11ShaderResourceView* restoreSRVs[128] = {};
+    ID3D11SamplerState* restoreSamplerStates[16] = {};
+    ID3D11Buffer* restoreCBVs[15] = {};
+    ID3D11UnorderedAccessView* restoreUAVs[8] = {};
 
-    ID3D11SamplerState* restoreSamplerStates[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
-                                                     nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
-
-    ID3D11Buffer* restoreCBVs[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
-                                      nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
-
-    ID3D11UnorderedAccessView* restoreUAVs[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
-                                                   nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
+    // backup compute shader resources
+    for (size_t i = 0; i < 128; i++)
+        InContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
 
     for (size_t i = 0; i < 16; i++)
-    {
-        InContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
         InContext->CSGetSamplers(i, 1, &restoreSamplerStates[i]);
+
+    for (size_t i = 0; i < 15; i++)
         InContext->CSGetConstantBuffers(i, 1, &restoreCBVs[i]);
+
+    for (size_t i = 0; i < 8; i++)
         InContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
-    }
 
     FfxFsr2DispatchDescription params{};
     params.commandList = InContext;
@@ -630,19 +628,29 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
         }
     }
 
-    for (size_t i = 0; i < 16; i++)
+    // restore compute shader resources
+    for (size_t i = 0; i < 128; i++)
     {
         if (restoreSRVs[i] != nullptr)
-            InContext->CSSetShaderResources(i, 1, &restoreSRVs[i]);
-        
+            InContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
+    }
+
+    for (size_t i = 0; i < 16; i++)
+    {
         if (restoreSamplerStates[i] != nullptr)
-            InContext->CSSetSamplers(i, 1, &restoreSamplerStates[i]);
-        
+            InContext->CSGetSamplers(i, 1, &restoreSamplerStates[i]);
+    }
+
+    for (size_t i = 0; i < 15; i++)
+    {
         if (restoreCBVs[i] != nullptr)
-            InContext->CSSetConstantBuffers(i, 1, &restoreCBVs[i]);
-        
+            InContext->CSGetConstantBuffers(i, 1, &restoreCBVs[i]);
+    }
+
+    for (size_t i = 0; i < 8; i++)
+    {
         if (restoreUAVs[i] != nullptr)
-            InContext->CSSetUnorderedAccessViews(i, 1, &restoreUAVs[i], 0);
+            InContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
     }
 
     _frameCount++;

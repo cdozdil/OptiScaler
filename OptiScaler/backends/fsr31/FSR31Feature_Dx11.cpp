@@ -142,25 +142,23 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     if (!OutputScaler->IsInit())
         Config::Instance()->OutputScalingEnabled = false;
 
-    ID3D11ShaderResourceView* restoreSRVs[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
-                                                  nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
+    ID3D11ShaderResourceView* restoreSRVs[128] = {};
+    ID3D11SamplerState* restoreSamplerStates[16] = {};
+    ID3D11Buffer* restoreCBVs[15] = {};
+    ID3D11UnorderedAccessView* restoreUAVs[8] = {};
 
-    ID3D11SamplerState* restoreSamplerStates[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
-                                                     nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
-
-    ID3D11Buffer* restoreCBVs[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
-                                      nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
-
-    ID3D11UnorderedAccessView* restoreUAVs[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
-                                                   nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
+    // backup compute shader resources
+    for (size_t i = 0; i < 128; i++)
+        DeviceContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
 
     for (size_t i = 0; i < 16; i++)
-    {
-        DeviceContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
         DeviceContext->CSGetSamplers(i, 1, &restoreSamplerStates[i]);
+
+    for (size_t i = 0; i < 15; i++)
         DeviceContext->CSGetConstantBuffers(i, 1, &restoreCBVs[i]);
+
+    for (size_t i = 0; i < 8; i++)
         DeviceContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
-    }
 
     Fsr31::FfxFsr3DispatchUpscaleDescription params{};
 
@@ -512,19 +510,29 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         }
     }
 
-    for (size_t i = 0; i < 16; i++)
+    // restore compute shader resources
+    for (size_t i = 0; i < 128; i++)
     {
         if (restoreSRVs[i] != nullptr)
-            DeviceContext->CSSetShaderResources(i, 1, &restoreSRVs[i]);
-        
+            DeviceContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
+    }
+
+    for (size_t i = 0; i < 16; i++)
+    {
         if (restoreSamplerStates[i] != nullptr)
-            DeviceContext->CSSetSamplers(i, 1, &restoreSamplerStates[i]);
-        
+            DeviceContext->CSGetSamplers(i, 1, &restoreSamplerStates[i]);
+    }
+
+    for (size_t i = 0; i < 15; i++)
+    {
         if (restoreCBVs[i] != nullptr)
-            DeviceContext->CSSetConstantBuffers(i, 1, &restoreCBVs[i]);
-        
+            DeviceContext->CSGetConstantBuffers(i, 1, &restoreCBVs[i]);
+    }
+
+    for (size_t i = 0; i < 8; i++)
+    {
         if (restoreUAVs[i] != nullptr)
-            DeviceContext->CSSetUnorderedAccessViews(i, 1, &restoreUAVs[i], 0);
+            DeviceContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
     }
 
     _frameCount++;

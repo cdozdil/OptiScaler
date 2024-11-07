@@ -5,265 +5,272 @@
 
 bool DLSSDFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters)
 {
-	if (NVNGXProxy::NVNGXModule() == nullptr)
-	{
-		LOG_ERROR("nvngx.dll not loaded!");
+    if (NVNGXProxy::NVNGXModule() == nullptr)
+    {
+        LOG_ERROR("nvngx.dll not loaded!");
 
-		SetInit(false);
-		return false;
-	}
+        SetInit(false);
+        return false;
+    }
 
-	NVSDK_NGX_Result nvResult;
-	bool initResult = false;
+    NVSDK_NGX_Result nvResult;
+    bool initResult = false;
 
-	Device = InDevice;
-	DeviceContext = InContext;
+    Device = InDevice;
+    DeviceContext = InContext;
 
-	do
-	{
-		if (!_dlssdInited)
-		{
-			_dlssdInited = NVNGXProxy::InitDx11(InDevice);
+    do
+    {
+        if (!_dlssdInited)
+        {
+            _dlssdInited = NVNGXProxy::InitDx11(InDevice);
 
-			if (!_dlssdInited)
-				return false;
+            if (!_dlssdInited)
+                return false;
 
-			_moduleLoaded = (NVNGXProxy::D3D11_Init_ProjectID() != nullptr || NVNGXProxy::D3D11_Init_Ext() != nullptr) &&
-				(NVNGXProxy::D3D11_Shutdown() != nullptr || NVNGXProxy::D3D11_Shutdown1() != nullptr) &&
-				(NVNGXProxy::D3D11_GetParameters() != nullptr || NVNGXProxy::D3D11_AllocateParameters() != nullptr) && NVNGXProxy::D3D11_DestroyParameters() != nullptr &&
-				NVNGXProxy::D3D11_CreateFeature() != nullptr && NVNGXProxy::D3D11_ReleaseFeature() != nullptr && NVNGXProxy::D3D11_EvaluateFeature() != nullptr;
+            _moduleLoaded = (NVNGXProxy::D3D11_Init_ProjectID() != nullptr || NVNGXProxy::D3D11_Init_Ext() != nullptr) &&
+                (NVNGXProxy::D3D11_Shutdown() != nullptr || NVNGXProxy::D3D11_Shutdown1() != nullptr) &&
+                (NVNGXProxy::D3D11_GetParameters() != nullptr || NVNGXProxy::D3D11_AllocateParameters() != nullptr) && NVNGXProxy::D3D11_DestroyParameters() != nullptr &&
+                NVNGXProxy::D3D11_CreateFeature() != nullptr && NVNGXProxy::D3D11_ReleaseFeature() != nullptr && NVNGXProxy::D3D11_EvaluateFeature() != nullptr;
 
-			//delay between init and create feature
-			std::this_thread::sleep_for(std::chrono::milliseconds(500));
-		}
+            //delay between init and create feature
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
 
-		LOG_INFO("Creating DLSSD feature");
+        LOG_INFO("Creating DLSSD feature");
 
-		if (NVNGXProxy::D3D11_CreateFeature() != nullptr)
-		{
-			ProcessInitParams(InParameters);
+        if (NVNGXProxy::D3D11_CreateFeature() != nullptr)
+        {
+            ProcessInitParams(InParameters);
 
-			_p_dlssdHandle = &_dlssdHandle;
-			nvResult = NVNGXProxy::D3D11_CreateFeature()(InContext, NVSDK_NGX_Feature_RayReconstruction, InParameters, &_p_dlssdHandle);
+            _p_dlssdHandle = &_dlssdHandle;
+            nvResult = NVNGXProxy::D3D11_CreateFeature()(InContext, NVSDK_NGX_Feature_RayReconstruction, InParameters, &_p_dlssdHandle);
 
-			if (nvResult != NVSDK_NGX_Result_Success)
-			{
-				LOG_ERROR("_CreateFeature result: {0:X}", (unsigned int)nvResult);
-				break;
-			}
-			else
-			{
-				LOG_INFO("_CreateFeature result: NVSDK_NGX_Result_Success, HandleId: {0}", _p_dlssdHandle->Id);
-			}
-		}
-		else
-		{
-			LOG_ERROR("_CreateFeature is nullptr");
-			break;
-		}
+            if (nvResult != NVSDK_NGX_Result_Success)
+            {
+                LOG_ERROR("_CreateFeature result: {0:X}", (unsigned int)nvResult);
+                break;
+            }
+            else
+            {
+                LOG_INFO("_CreateFeature result: NVSDK_NGX_Result_Success, HandleId: {0}", _p_dlssdHandle->Id);
+            }
+        }
+        else
+        {
+            LOG_ERROR("_CreateFeature is nullptr");
+            break;
+        }
 
-		ReadVersion();
+        ReadVersion();
 
-		initResult = true;
+        initResult = true;
 
-	} while (false);
+    } while (false);
 
-	if (initResult)
-	{
-		if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
-			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), InDevice);
+    if (initResult)
+    {
+        if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
+            Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), InDevice);
 
-		OutputScaler = std::make_unique<OS_Dx11>("Output Scaling", InDevice, (TargetWidth() < DisplayWidth()));
-		RCAS = std::make_unique<RCAS_Dx11>("RCAS", InDevice);
-	}
+        OutputScaler = std::make_unique<OS_Dx11>("Output Scaling", InDevice, (TargetWidth() < DisplayWidth()));
+        RCAS = std::make_unique<RCAS_Dx11>("RCAS", InDevice);
+    }
 
-	SetInit(initResult);
+    SetInit(initResult);
 
-	return initResult;
+    return initResult;
 }
 
 bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_Parameter* InParameters)
 {
-	if (!_moduleLoaded)
-	{
-		LOG_ERROR("nvngx.dll or _nvngx.dll is not loaded!");
-		return false;
-	}
+    if (!_moduleLoaded)
+    {
+        LOG_ERROR("nvngx.dll or _nvngx.dll is not loaded!");
+        return false;
+    }
 
-	NVSDK_NGX_Result nvResult;
+    NVSDK_NGX_Result nvResult;
 
-	bool rcasEnabled = true;
+    bool rcasEnabled = true;
 
-	if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) && (RCAS == nullptr || RCAS.get() == nullptr || !RCAS->IsInit()))
-		Config::Instance()->RcasEnabled = false;
+    if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) && (RCAS == nullptr || RCAS.get() == nullptr || !RCAS->IsInit()))
+        Config::Instance()->RcasEnabled = false;
 
-	if (!OutputScaler->IsInit())
-		Config::Instance()->OutputScalingEnabled = false;
+    if (!OutputScaler->IsInit())
+        Config::Instance()->OutputScalingEnabled = false;
 
-	if (NVNGXProxy::D3D11_EvaluateFeature() != nullptr)
-	{
-		ID3D11ShaderResourceView* restoreSRVs[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
-													  nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
+    if (NVNGXProxy::D3D11_EvaluateFeature() != nullptr)
+    {
+        ID3D11ShaderResourceView* restoreSRVs[128] = {};
+        ID3D11SamplerState* restoreSamplerStates[16] = {};
+        ID3D11Buffer* restoreCBVs[15] = {};
+        ID3D11UnorderedAccessView* restoreUAVs[8] = {};
 
-		ID3D11SamplerState* restoreSamplerStates[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
-														 nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
+        // backup compute shader resources
+        for (size_t i = 0; i < 128; i++)
+            InDeviceContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
 
-		ID3D11Buffer* restoreCBVs[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
-										  nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
+        for (size_t i = 0; i < 16; i++)
+            InDeviceContext->CSGetSamplers(i, 1, &restoreSamplerStates[i]);
 
-		ID3D11UnorderedAccessView* restoreUAVs[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
-													   nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
-		// backup compute shader resources
-		for (size_t i = 0; i < 16; i++)
-		{
-			InDeviceContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
-			InDeviceContext->CSGetSamplers(i, 1, &restoreSamplerStates[i]);
-			InDeviceContext->CSGetConstantBuffers(i, 1, &restoreCBVs[i]);
-			InDeviceContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
-		}
+        for (size_t i = 0; i < 15; i++)
+            InDeviceContext->CSGetConstantBuffers(i, 1, &restoreCBVs[i]);
 
-		ProcessEvaluateParams(InParameters);
+        for (size_t i = 0; i < 8; i++)
+            InDeviceContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
 
-		ID3D11Resource* paramOutput = nullptr;
-		ID3D11Resource* paramMotion = nullptr;
-		ID3D11Resource* setBuffer = nullptr;
+        ProcessEvaluateParams(InParameters);
 
-		bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
+        ID3D11Resource* paramOutput = nullptr;
+        ID3D11Resource* paramMotion = nullptr;
+        ID3D11Resource* setBuffer = nullptr;
 
-		InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput);
-		InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramMotion);
+        bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
 
-		// supersampling
-		if (useSS)
-		{
-			if (OutputScaler->CreateBufferResource(Device, paramOutput, TargetWidth(), TargetHeight()))
-			{
-				setBuffer = OutputScaler->Buffer();
-			}
-			else
-				setBuffer = paramOutput;
-		}
-		else
-			setBuffer = paramOutput;
+        InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput);
+        InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramMotion);
 
-		// RCAS sharpness & preperation
-		_sharpness = GetSharpness(InParameters);
+        // supersampling
+        if (useSS)
+        {
+            if (OutputScaler->CreateBufferResource(Device, paramOutput, TargetWidth(), TargetHeight()))
+            {
+                setBuffer = OutputScaler->Buffer();
+            }
+            else
+                setBuffer = paramOutput;
+        }
+        else
+            setBuffer = paramOutput;
 
-		if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
-			(_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
-			RCAS->IsInit() && RCAS->CreateBufferResource(Device, setBuffer))
-		{
-			// Disable DLSS sharpness
-			InParameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
-			setBuffer = RCAS->Buffer();
-		}
+        // RCAS sharpness & preperation
+        _sharpness = GetSharpness(InParameters);
 
-		InParameters->Set(NVSDK_NGX_Parameter_Output, setBuffer);
+        if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
+            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+            RCAS->IsInit() && RCAS->CreateBufferResource(Device, setBuffer))
+        {
+            // Disable DLSS sharpness
+            InParameters->Set(NVSDK_NGX_Parameter_Sharpness, 0.0f);
+            setBuffer = RCAS->Buffer();
+        }
 
-		nvResult = NVNGXProxy::D3D11_EvaluateFeature()(InDeviceContext, _p_dlssdHandle, InParameters, NULL);
+        InParameters->Set(NVSDK_NGX_Parameter_Output, setBuffer);
 
-		if (nvResult != NVSDK_NGX_Result_Success)
-		{
-			LOG_ERROR("_EvaluateFeature result: {0:X}", (unsigned int)nvResult);
-			return false;
-		}
+        nvResult = NVNGXProxy::D3D11_EvaluateFeature()(InDeviceContext, _p_dlssdHandle, InParameters, NULL);
 
-		LOG_TRACE("_EvaluateFeature ok!");
+        if (nvResult != NVSDK_NGX_Result_Success)
+        {
+            LOG_ERROR("_EvaluateFeature result: {0:X}", (unsigned int)nvResult);
+            return false;
+        }
 
-		// Apply CAS
-		if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
-			(_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
-			RCAS->CanRender())
-		{
-			RcasConstants rcasConstants{};
+        LOG_TRACE("_EvaluateFeature ok!");
 
-			rcasConstants.Sharpness = _sharpness;
-			rcasConstants.DisplayWidth = TargetWidth();
-			rcasConstants.DisplayHeight = TargetHeight();
-			InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
-			InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
-			rcasConstants.DisplaySizeMV = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
-			rcasConstants.RenderHeight = RenderHeight();
-			rcasConstants.RenderWidth = RenderWidth();
+        // Apply CAS
+        if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
+            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+            RCAS->CanRender())
+        {
+            RcasConstants rcasConstants{};
 
-			if (useSS)
-			{
-				if (!RCAS->Dispatch(Device, InDeviceContext, (ID3D11Texture2D*)setBuffer, (ID3D11Texture2D*)paramMotion, rcasConstants, OutputScaler->Buffer()))
-				{
-					Config::Instance()->RcasEnabled = false;
-					return true;
-				}
-			}
-			else
-			{
-				if (!RCAS->Dispatch(Device, InDeviceContext, (ID3D11Texture2D*)setBuffer, (ID3D11Texture2D*)paramMotion, rcasConstants, (ID3D11Texture2D*)paramOutput))
-				{
-					Config::Instance()->RcasEnabled = false;
-					return true;
-				}
-			}
-		}
+            rcasConstants.Sharpness = _sharpness;
+            rcasConstants.DisplayWidth = TargetWidth();
+            rcasConstants.DisplayHeight = TargetHeight();
+            InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
+            InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
+            rcasConstants.DisplaySizeMV = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
+            rcasConstants.RenderHeight = RenderHeight();
+            rcasConstants.RenderWidth = RenderWidth();
 
-		// Downsampling
-		if (useSS)
-		{
-			LOG_DEBUG("downscaling output...");
+            if (useSS)
+            {
+                if (!RCAS->Dispatch(Device, InDeviceContext, (ID3D11Texture2D*)setBuffer, (ID3D11Texture2D*)paramMotion, rcasConstants, OutputScaler->Buffer()))
+                {
+                    Config::Instance()->RcasEnabled = false;
+                    return true;
+                }
+            }
+            else
+            {
+                if (!RCAS->Dispatch(Device, InDeviceContext, (ID3D11Texture2D*)setBuffer, (ID3D11Texture2D*)paramMotion, rcasConstants, (ID3D11Texture2D*)paramOutput))
+                {
+                    Config::Instance()->RcasEnabled = false;
+                    return true;
+                }
+            }
+        }
 
-			if (!OutputScaler->Dispatch(Device, InDeviceContext, OutputScaler->Buffer(), (ID3D11Texture2D*)paramOutput))
-			{
-				Config::Instance()->OutputScalingEnabled = false;
-				Config::Instance()->changeBackend = true;
-				return true;
-			}
-		}
+        // Downsampling
+        if (useSS)
+        {
+            LOG_DEBUG("downscaling output...");
 
-		// imgui
-		if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30 && paramOutput != nullptr)
-		{
-			if (Imgui != nullptr && Imgui.get() != nullptr)
-			{
-				if (Imgui->IsHandleDifferent())
-				{
-					Imgui.reset();
-				}
-				else
-					Imgui->Render(InDeviceContext, paramOutput);
-			}
-			else
-			{
-				if (Imgui == nullptr || Imgui.get() == nullptr)
-					Imgui = std::make_unique<Imgui_Dx11>(Util::GetProcessWindow(), Device);
-			}
-		}
+            if (!OutputScaler->Dispatch(Device, InDeviceContext, OutputScaler->Buffer(), (ID3D11Texture2D*)paramOutput))
+            {
+                Config::Instance()->OutputScalingEnabled = false;
+                Config::Instance()->changeBackend = true;
+                return true;
+            }
+        }
 
-		// set original output texture back
-		InParameters->Set(NVSDK_NGX_Parameter_Output, paramOutput);
+        // imgui
+        if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30 && paramOutput != nullptr)
+        {
+            if (Imgui != nullptr && Imgui.get() != nullptr)
+            {
+                if (Imgui->IsHandleDifferent())
+                {
+                    Imgui.reset();
+                }
+                else
+                    Imgui->Render(InDeviceContext, paramOutput);
+            }
+            else
+            {
+                if (Imgui == nullptr || Imgui.get() == nullptr)
+                    Imgui = std::make_unique<Imgui_Dx11>(Util::GetProcessWindow(), Device);
+            }
+        }
 
-		// restore compute shader resources
-		for (size_t i = 0; i < 16; i++)
-		{
-			if (restoreSRVs[i] != nullptr)
-				InDeviceContext->CSSetShaderResources(i, 1, &restoreSRVs[i]);
-			
-			if (restoreSamplerStates[i] != nullptr)
-				InDeviceContext->CSSetSamplers(i, 1, &restoreSamplerStates[i]);
-			
-			if (restoreCBVs[i] != nullptr)
-				InDeviceContext->CSSetConstantBuffers(i, 1, &restoreCBVs[i]);
-			
-			if (restoreUAVs[i] != nullptr)
-				InDeviceContext->CSSetUnorderedAccessViews(i, 1, &restoreUAVs[i], 0);
-		}
-	}
-	else
-	{
-		LOG_ERROR("_EvaluateFeature is nullptr");
-		return false;
-	}
+        // set original output texture back
+        InParameters->Set(NVSDK_NGX_Parameter_Output, paramOutput);
 
-	_frameCount++;
+        // restore compute shader resources
+        for (size_t i = 0; i < 128; i++)
+        {
+            if (restoreSRVs[i] != nullptr)
+                InDeviceContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
+        }
 
-	return true;
+        for (size_t i = 0; i < 16; i++)
+        {
+            if (restoreSamplerStates[i] != nullptr)
+                InDeviceContext->CSGetSamplers(i, 1, &restoreSamplerStates[i]);
+        }
+
+        for (size_t i = 0; i < 15; i++)
+        {
+            if (restoreCBVs[i] != nullptr)
+                InDeviceContext->CSGetConstantBuffers(i, 1, &restoreCBVs[i]);
+        }
+
+        for (size_t i = 0; i < 8; i++)
+        {
+            if (restoreUAVs[i] != nullptr)
+                InDeviceContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
+        }
+    }
+    else
+    {
+        LOG_ERROR("_EvaluateFeature is nullptr");
+        return false;
+    }
+
+    _frameCount++;
+
+    return true;
 }
 
 void DLSSDFeatureDx11::Shutdown(ID3D11Device* InDevice)
@@ -272,17 +279,17 @@ void DLSSDFeatureDx11::Shutdown(ID3D11Device* InDevice)
 
 DLSSDFeatureDx11::DLSSDFeatureDx11(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), DLSSDFeature(InHandleId, InParameters)
 {
-	if (NVNGXProxy::NVNGXModule() == nullptr)
-	{
-		LOG_INFO("nvngx.dll not loaded, now loading");
-		NVNGXProxy::InitNVNGX();
-	}
+    if (NVNGXProxy::NVNGXModule() == nullptr)
+    {
+        LOG_INFO("nvngx.dll not loaded, now loading");
+        NVNGXProxy::InitNVNGX();
+    }
 
-	LOG_INFO("binding complete!");
+    LOG_INFO("binding complete!");
 }
 
 DLSSDFeatureDx11::~DLSSDFeatureDx11()
 {
-	if (NVNGXProxy::D3D11_ReleaseFeature() != nullptr && _p_dlssdHandle != nullptr)
-		NVNGXProxy::D3D11_ReleaseFeature()(_p_dlssdHandle);
+    if (NVNGXProxy::D3D11_ReleaseFeature() != nullptr && _p_dlssdHandle != nullptr)
+        NVNGXProxy::D3D11_ReleaseFeature()(_p_dlssdHandle);
 }
