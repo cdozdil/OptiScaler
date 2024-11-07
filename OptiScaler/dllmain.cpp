@@ -1747,7 +1747,7 @@ static void CheckWorkingMode()
             HooksDx::HookDxgi();
 
         // vk menu hooks
-        if (Config::Instance()->OverlayMenu.value() && vulkanModule != nullptr)
+        if (Config::Instance()->OverlayMenu.value() && (vulkanModule != nullptr || Config::Instance()->IsRunningOnLinux))
             HooksVk::HookVk();
 
 
