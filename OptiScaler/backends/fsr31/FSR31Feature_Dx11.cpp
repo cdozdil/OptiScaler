@@ -101,7 +101,8 @@ bool FSR31FeatureDx11::CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_R
         OutTextureRes->usingOriginal = false;
         ASSIGN_DESC(OutTextureRes->Desc, desc);
 
-        desc.BindFlags = bindFlags;
+        if (bindFlags != 9999)
+            desc.BindFlags = bindFlags;
 
         result = Device->CreateTexture2D(&desc, nullptr, &OutTextureRes->Texture);
 
@@ -140,6 +141,26 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
     if (!OutputScaler->IsInit())
         Config::Instance()->OutputScalingEnabled = false;
+
+    ID3D11ShaderResourceView* restoreSRVs[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
+                                                  nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
+
+    ID3D11SamplerState* restoreSamplerStates[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
+                                                     nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
+
+    ID3D11Buffer* restoreCBVs[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
+                                      nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
+
+    ID3D11UnorderedAccessView* restoreUAVs[16] = { nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr,
+                                                   nullptr, nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
+
+    for (size_t i = 0; i < 16; i++)
+    {
+        DeviceContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
+        DeviceContext->CSGetSamplers(i, 1, &restoreSamplerStates[i]);
+        DeviceContext->CSGetConstantBuffers(i, 1, &restoreCBVs[i]);
+        DeviceContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
+    }
 
     Fsr31::FfxFsr3DispatchUpscaleDescription params{};
 
@@ -489,6 +510,14 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
             if (Imgui == nullptr || Imgui.get() == nullptr)
                 Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
         }
+    }
+
+    for (size_t i = 0; i < 16; i++)
+    {
+        DeviceContext->CSSetShaderResources(i, 1, &restoreSRVs[i]);
+        DeviceContext->CSSetSamplers(i, 1, &restoreSamplerStates[i]);
+        DeviceContext->CSSetConstantBuffers(i, 1, &restoreCBVs[i]);
+        DeviceContext->CSSetUnorderedAccessViews(i, 1, &restoreUAVs[i], 0);
     }
 
     _frameCount++;
