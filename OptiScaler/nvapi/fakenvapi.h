@@ -1,7 +1,6 @@
 #pragma once
 
-#include "NVNGX_Proxy.h"
-#include "FfxApi_Proxy.h"
+#include "../FfxApi_Proxy.h"
 #include <dxgi.h>
 
 enum class FN_INTERFACE : uint32_t

@@ -89,6 +89,11 @@ bool Config::Reload(std::filesystem::path iniPath)
                 FGRectHeight = readInt("FrameGen", "RectHeight");
         }
 
+        // Framerate
+        {
+            FramerateLimit = readFloat("Framerate", "FramerateLimit");
+        }
+
         // FSR
         {
             if (!FsrVerticalFov.has_value())
@@ -691,6 +696,11 @@ bool Config::SaveIni()
         ini.SetValue("FrameGen", "RectTop", GetIntValue(Instance()->FGRectTop).c_str());
         ini.SetValue("FrameGen", "RectWidth", GetIntValue(Instance()->FGRectWidth).c_str());
         ini.SetValue("FrameGen", "RectHeight", GetIntValue(Instance()->FGRectHeight).c_str());
+    }
+
+    // Framerate 
+    {
+        ini.SetValue("Framerate", "FramerateLimit", GetFloatValue(Instance()->FramerateLimit).c_str());
     }
 
     // Output Scaling

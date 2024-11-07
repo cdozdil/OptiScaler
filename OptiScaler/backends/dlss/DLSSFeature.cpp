@@ -353,7 +353,6 @@ DLSSFeature::DLSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameter
 
     if (NVNGXProxy::NVNGXModule() != nullptr && !Config::Instance()->DE_Available)
     {
-        HookNvApi();
         HookNgxApi(NVNGXProxy::NVNGXModule());
     }
 
