@@ -31,7 +31,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext(unsigned long long InAp
 {
     LOG_FUNC();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && !NVNGXProxy::IsVulkanInited())
     {
         if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
             InApplicationId = app_id_override;
@@ -57,7 +57,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InA
 {
     LOG_FUNC();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && !NVNGXProxy::IsVulkanInited())
     {
         if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
             InApplicationId = app_id_override;
@@ -174,7 +174,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char* I
 {
     LOG_FUNC();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && !NVNGXProxy::IsVulkanInited())
     {
         if (NVNGXProxy::NVNGXModule() == nullptr)
             NVNGXProxy::InitNVNGX();
@@ -207,7 +207,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
 {
     LOG_FUNC();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && !NVNGXProxy::IsVulkanInited())
     {
         if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
             InApplicationId = app_id_override;
@@ -234,7 +234,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID(const char* InPro
 {
     LOG_FUNC();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsVulkanInited())
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && !NVNGXProxy::IsVulkanInited())
     {
         if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
             InProjectId = project_id_override;
@@ -260,7 +260,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetParameters(NVSDK_NGX_Paramete
 {
     LOG_FUNC();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_GetParameters() != nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_GetParameters() != nullptr)
     {
         LOG_INFO("calling NVNGXProxy::VULKAN_GetParameters");
         auto result = NVNGXProxy::VULKAN_GetParameters()(OutParameters);
@@ -281,7 +281,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequi
 {
     LOG_DEBUG("FeatureID: {0}", (UINT)FeatureDiscoveryInfo->FeatureID);
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_GetFeatureInstanceExtensionRequirements() != nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_GetFeatureInstanceExtensionRequirements() != nullptr)
     {
         LOG_INFO("calling NVNGXProxy::VULKAN_GetFeatureInstanceExtensionRequirements");
         auto result = NVNGXProxy::VULKAN_GetFeatureInstanceExtensionRequirements()(FeatureDiscoveryInfo, OutExtensionCount, OutExtensionProperties);
@@ -343,7 +343,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequire
 {
     LOG_DEBUG("FeatureID: {0}", (UINT)FeatureDiscoveryInfo->FeatureID);
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_GetFeatureDeviceExtensionRequirements() != nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_GetFeatureDeviceExtensionRequirements() != nullptr)
     {
         LOG_INFO("calling NVNGXProxy::VULKAN_GetFeatureDeviceExtensionRequirements");
         auto result = NVNGXProxy::VULKAN_GetFeatureDeviceExtensionRequirements()(Instance, PhysicalDevice, FeatureDiscoveryInfo, OutExtensionCount, OutExtensionProperties);
@@ -409,7 +409,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_AllocateParameters(NVSDK_NGX_Par
 {
     LOG_FUNC();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_AllocateParameters() != nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_AllocateParameters() != nullptr)
     {
         LOG_INFO("calling NVNGXProxy::VULKAN_AllocateParameters");
         auto result = NVNGXProxy::VULKAN_AllocateParameters()(OutParameters);
@@ -443,10 +443,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureRequirements(VkInstanc
         return NVSDK_NGX_Result_Success;
     }
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() == nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::NVNGXModule() == nullptr)
         NVNGXProxy::InitNVNGX();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D12_GetFeatureRequirements() != nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::D3D12_GetFeatureRequirements() != nullptr)
     {
         LOG_DEBUG("calling NVNGXProxy::VULKAN_GetFeatureRequirements");
         auto result = NVNGXProxy::VULKAN_GetFeatureRequirements()(VulkanInstance, PhysicalDevice, FeatureDiscoveryInfo, OutSupported);
@@ -470,7 +470,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetCapabilityParameters(NVSDK_NG
 {
     LOG_FUNC();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::IsVulkanInited() && NVNGXProxy::VULKAN_GetCapabilityParameters() != nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::IsVulkanInited() && NVNGXProxy::VULKAN_GetCapabilityParameters() != nullptr)
     {
         LOG_INFO("calling NVNGXProxy::VULKAN_GetCapabilityParameters");
         auto result = NVNGXProxy::VULKAN_GetCapabilityParameters()(OutParameters);
@@ -507,7 +507,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_DestroyParameters(NVSDK_NGX_Para
     if (InParameters == nullptr)
         return NVSDK_NGX_Result_Fail;
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_DestroyParameters() != nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::VULKAN_DestroyParameters() != nullptr)
     {
         LOG_INFO("calling NVNGXProxy::VULKAN_DestroyParameters");
         auto result = NVNGXProxy::VULKAN_DestroyParameters()(InParameters);
@@ -534,7 +534,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 {
     if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
     {
-        if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::InitVulkan(vkInstance, vkPD, vkDevice, vkGIPA, vkGDPA) && NVNGXProxy::VULKAN_CreateFeature1() != nullptr)
+        if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::InitVulkan(vkInstance, vkPD, vkDevice, vkGIPA, vkGDPA) && NVNGXProxy::VULKAN_CreateFeature1() != nullptr)
         {
             auto result = NVNGXProxy::VULKAN_CreateFeature1()(InDevice, InCmdList, InFeatureID, InParameters, OutHandle);
             LOG_INFO("VULKAN_CreateFeature1 result for ({0}): {1:X}", (int)InFeatureID, (UINT)result);
@@ -576,7 +576,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
                     upscalerChoice = 0;
                 else if (Config::Instance()->VulkanUpscaler.value() == "fsr22")
                     upscalerChoice = 1;
-                else if (Config::Instance()->VulkanUpscaler.value() == "dlss" && Config::Instance()->DLSSEnabled.value_or(true))
+                else if (Config::Instance()->VulkanUpscaler.value() == "dlss" && Config::Instance()->availableUpscalers.Get(Upscaler::DLSS))
                     upscalerChoice = 2;
                 else if (Config::Instance()->VulkanUpscaler.value() == "fsr31")
                     upscalerChoice = 3;
@@ -675,7 +675,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature(VkCommandBuffer In
 
     if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
     {
-        if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::InitVulkan(vkInstance, vkPD, vkDevice, vkGIPA, vkGDPA) && NVNGXProxy::VULKAN_CreateFeature() != nullptr)
+        if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::InitVulkan(vkInstance, vkPD, vkDevice, vkGIPA, vkGDPA) && NVNGXProxy::VULKAN_CreateFeature() != nullptr)
         {
             auto result = NVNGXProxy::VULKAN_CreateFeature()(InCmdBuffer, InFeatureID, InParameters, OutHandle);
             LOG_INFO("VULKAN_CreateFeature result for ({0}): {1:X}", (int)InFeatureID, (UINT)result);
@@ -694,7 +694,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
     auto handleId = InHandle->Id;
     if (handleId < 1000000)
     {
-        if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::VULKAN_ReleaseFeature() != nullptr)
+        if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::VULKAN_ReleaseFeature() != nullptr)
         {
             auto result = NVNGXProxy::VULKAN_ReleaseFeature()(InHandle);
 
@@ -754,7 +754,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     auto handleId = InFeatureHandle->Id;
     if (handleId < 1000000)
     {
-        if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::VULKAN_EvaluateFeature() != nullptr)
+        if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::VULKAN_EvaluateFeature() != nullptr)
         {
             LOG_DEBUG("VULKAN_EvaluateFeature for ({0})", handleId);
             auto result = NVNGXProxy::VULKAN_EvaluateFeature()(InCmdBuffer, InFeatureHandle, InParameters, InCallback);
@@ -790,7 +790,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 
     if (Config::Instance()->changeBackend)
     {
-        if (Config::Instance()->newBackend == "" || (!Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->newBackend == "dlss"))
+        if (Config::Instance()->newBackend == "" || (!Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && Config::Instance()->newBackend == "dlss"))
             Config::Instance()->newBackend = Config::Instance()->VulkanUpscaler.value_or("fsr21");
 
         changeBackendCounter++;
@@ -986,7 +986,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
 
     DLSSFeatureVk::Shutdown(vkDevice);
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsVulkanInited() && NVNGXProxy::VULKAN_Shutdown() != nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::IsVulkanInited() && NVNGXProxy::VULKAN_Shutdown() != nullptr)
     {
         auto result = NVNGXProxy::VULKAN_Shutdown()();
         NVNGXProxy::SetVulkanInited(false);
@@ -1005,7 +1005,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown1(VkDevice InDevice)
 {
     shutdown = true;
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsVulkanInited() && NVNGXProxy::VULKAN_Shutdown1() != nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::IsVulkanInited() && NVNGXProxy::VULKAN_Shutdown1() != nullptr)
     {
         auto result = NVNGXProxy::VULKAN_Shutdown1()(InDevice);
         NVNGXProxy::SetVulkanInited(false);

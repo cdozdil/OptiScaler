@@ -1,7 +1,7 @@
 #include "imgui_common.h"
 
 void ImGuiCommon::ShowTooltip(const char* tip) {
-    if (ImGui::IsItemHovered())
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
     {
         ImGui::BeginTooltip();
         ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0)); // Scale the tooltip text
@@ -531,6 +531,15 @@ void ImGuiCommon::GetCurrentBackendInfo(const NVNGX_Api api, std::string* code, 
     *name = GetBackendName(code);
 }
 
+#define UPSCALER_ENTRY(label, code_str, enum_val, tooltip_msg) \
+    available = Config::Instance()->availableUpscalers.Get(Upscaler::enum_val); \
+    ImGui::BeginDisabled(!available); \
+    if (ImGui::Selectable(label, *code == code_str)) \
+        Config::Instance()->newBackend = code_str; \
+    ImGui::EndDisabled(); \
+    if (!available) \
+        ShowTooltip(tooltip_msg);
+
 void ImGuiCommon::AddDx11Backends(std::string* code, std::string* name)
 {
     std::string selectedUpscalerName = "";
@@ -545,35 +554,22 @@ void ImGuiCommon::AddDx11Backends(std::string* code, std::string* name)
         selectedUpscalerName = "FSR 3.X";
     else if (Config::Instance()->newBackend == "fsr31_12" || (Config::Instance()->newBackend == "" && *code == "fsr31_12"))
         selectedUpscalerName = "FSR 3.X w/Dx12";
-    //else if (Config::Instance()->newBackend == "fsr304" || (Config::Instance()->newBackend == "" && *code == "fsr304"))
-    //    selectedUpscalerName = "FSR 3.0.4";
-    else if (Config::Instance()->DLSSEnabled.value_or(true) && (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
+    else if (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss"))
         selectedUpscalerName = "DLSS";
     else
         selectedUpscalerName = "XeSS w/Dx12";
 
     if (ImGui::BeginCombo("Select", selectedUpscalerName.c_str()))
     {
-        if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
-            Config::Instance()->newBackend = "fsr22";
+        bool available = false;
 
-        if (ImGui::Selectable("FSR 3.X", *code == "fsr31"))
-            Config::Instance()->newBackend = "fsr31";
-
-        if (ImGui::Selectable("XeSS w/Dx12", *code == "xess"))
-            Config::Instance()->newBackend = "xess";
-
-        if (ImGui::Selectable("FSR 2.1.2 w/Dx12", *code == "fsr21_12"))
-            Config::Instance()->newBackend = "fsr21_12";
-
-        if (ImGui::Selectable("FSR 2.2.1 w/Dx12", *code == "fsr22_12"))
-            Config::Instance()->newBackend = "fsr22_12";
-
-        if (ImGui::Selectable("FSR 3.X w/Dx12", *code == "fsr31_12"))
-            Config::Instance()->newBackend = "fsr31_12";
-
-        if (Config::Instance()->DLSSEnabled.value_or(true) && ImGui::Selectable("DLSS", *code == "dlss"))
-            Config::Instance()->newBackend = "dlss";
+        UPSCALER_ENTRY("FSR 2.2.1",        "fsr22",    FSR_22,       "How?");
+        UPSCALER_ENTRY("FSR 3.X",          "fsr31",    FFX_SDK_DX11, "How?");
+        UPSCALER_ENTRY("XeSS w/Dx12",      "xess",     XESS,         "Make sure you have libxess.dll");
+        UPSCALER_ENTRY("FSR 2.1.2 w/Dx12", "fsr21_12", FSR_21,       "How?");
+        UPSCALER_ENTRY("FSR 2.2.1 w/Dx12", "fsr22_12", FSR_22,       "How?");
+        UPSCALER_ENTRY("FSR 3.X w/Dx12",   "fsr31_12", FFX_SDK_DX12, "Make sure you have amd_fidelityfx_dx12.dll");
+        UPSCALER_ENTRY("DLSS",             "dlss",     DLSS,         "Buy Nvidia or something");
 
         ImGui::EndCombo();
     }
@@ -589,27 +585,20 @@ void ImGuiCommon::AddDx12Backends(std::string* code, std::string* name)
         selectedUpscalerName = "FSR 2.2.1";
     else if (Config::Instance()->newBackend == "fsr31" || (Config::Instance()->newBackend == "" && *code == "fsr31"))
         selectedUpscalerName = "FSR 3.X";
-    else if (Config::Instance()->DLSSEnabled.value_or(true) && (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
+    else if (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss"))
         selectedUpscalerName = "DLSS";
     else
         selectedUpscalerName = "XeSS";
 
     if (ImGui::BeginCombo("Select", selectedUpscalerName.c_str()))
     {
-        if (ImGui::Selectable("XeSS", *code == "xess"))
-            Config::Instance()->newBackend = "xess";
+        bool available = false;
 
-        if (ImGui::Selectable("FSR 2.1.2", *code == "fsr21"))
-            Config::Instance()->newBackend = "fsr21";
-
-        if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
-            Config::Instance()->newBackend = "fsr22";
-
-        if (ImGui::Selectable("FSR 3.X", *code == "fsr31"))
-            Config::Instance()->newBackend = "fsr31";
-
-        if (Config::Instance()->DLSSEnabled.value_or(true) && ImGui::Selectable("DLSS", *code == "dlss"))
-            Config::Instance()->newBackend = "dlss";
+        UPSCALER_ENTRY("XeSS",      "xess",  XESS,         "Make sure you have libxess.dll");
+        UPSCALER_ENTRY("FSR 2.1.2", "fsr21", FSR_21,       "How?");
+        UPSCALER_ENTRY("FSR 2.2.1", "fsr22", FSR_22,       "How?");
+        UPSCALER_ENTRY("FSR 3.X",   "fsr31", FFX_SDK_DX12, "Make sure you have amd_fidelityfx_dx12.dll");
+        UPSCALER_ENTRY("DLSS",      "dlss",  DLSS,         "Buy Nvidia or something");
 
         ImGui::EndCombo();
     }
@@ -623,24 +612,19 @@ void ImGuiCommon::AddVulkanBackends(std::string* code, std::string* name)
         selectedUpscalerName = "FSR 2.1.2";
     else if (Config::Instance()->newBackend == "fsr31" || (Config::Instance()->newBackend == "" && *code == "fsr31"))
         selectedUpscalerName = "FSR 3.X";
-    else if (Config::Instance()->DLSSEnabled.value_or(true) && (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss")))
+    else if (Config::Instance()->newBackend == "dlss" || (Config::Instance()->newBackend == "" && *code == "dlss"))
         selectedUpscalerName = "DLSS";
     else
         selectedUpscalerName = "FSR 2.2.1";
 
     if (ImGui::BeginCombo("Select", selectedUpscalerName.c_str()))
     {
-        if (ImGui::Selectable("FSR 2.1.2", *code == "fsr21"))
-            Config::Instance()->newBackend = "fsr21";
+        bool available = false;
 
-        if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
-            Config::Instance()->newBackend = "fsr22";
-
-        if (ImGui::Selectable("FSR 3.X", *code == "fsr31"))
-            Config::Instance()->newBackend = "fsr31";
-
-        if (Config::Instance()->DLSSEnabled.value_or(true) && ImGui::Selectable("DLSS", *code == "dlss"))
-            Config::Instance()->newBackend = "dlss";
+        UPSCALER_ENTRY("FSR 2.1.2", "fsr21", FSR_21,     "How?");
+        UPSCALER_ENTRY("FSR 2.2.1", "fsr22", FSR_22,     "How?");
+        UPSCALER_ENTRY("FSR 3.X",   "fsr31", FFX_SDK_VK, "Make sure you have amd_fidelityfx_vk.dll");
+        UPSCALER_ENTRY("DLSS",      "dlss",  DLSS,       "Buy Nvidia or something");
 
         ImGui::EndCombo();
     }
@@ -1117,7 +1101,7 @@ void ImGuiCommon::RenderMenu()
                     }
 
                     // DLSS -----------------
-                    if ((Config::Instance()->DLSSEnabled.value_or(true) && currentBackend == "dlss" && Config::Instance()->CurrentFeature->Version().major > 2) ||
+                    if ((Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && currentBackend == "dlss" && Config::Instance()->CurrentFeature->Version().major > 2) ||
                         Config::Instance()->CurrentFeature->Name() == "DLSSD")
                     {
                         ImGui::SeparatorText("DLSS Settings");

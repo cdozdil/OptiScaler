@@ -577,7 +577,7 @@ public:
 
     static bool IsNVNGXInited()
     {
-        return _dll != nullptr && (_dx11Inited || _dx12Inited || _vulkanInited) && Config::Instance()->DLSSEnabled.value_or(true);
+        return _dll != nullptr && (_dx11Inited || _dx12Inited || _vulkanInited) && Config::Instance()->availableUpscalers.Get(Upscaler::DLSS);
     }
 
     // DirectX11

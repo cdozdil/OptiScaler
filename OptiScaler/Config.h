@@ -18,6 +18,27 @@ typedef enum NVNGX_Api
 	NVNGX_VULKAN,
 } NVNGX_Api;
 
+enum Upscaler {
+	DLSS,
+	XESS,
+	FSR_21,
+	FSR_22,
+	FFX_SDK_DX11,
+	FFX_SDK_DX12,
+	FFX_SDK_VK
+};
+
+class AvailableUpscalers {
+	uint32_t upscalersFlags;
+
+public:
+	AvailableUpscalers() : upscalersFlags(0) { }
+
+	void Set(Upscaler flag) { upscalersFlags |= (1 << flag); }
+	void Clear(Upscaler flag) { upscalersFlags &= ~(1 << flag); }
+	bool Get(Upscaler flag) const { return (upscalersFlags >> flag) & 1; }
+};
+
 class Config
 {
 public:
@@ -196,6 +217,9 @@ public:
 	// for realtime changes
 	bool changeBackend = false;
 	std::string newBackend = "";
+
+	// available upscalers
+	AvailableUpscalers availableUpscalers {};
 
 	// XeSS debug stuff
 	bool xessDebug = false;

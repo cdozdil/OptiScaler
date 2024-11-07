@@ -216,7 +216,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
     if (InFeatureInfo != nullptr && InSDKVersion > 0x0000013)
         Config::Instance()->NVNGX_Logger = InFeatureInfo->LoggingInfo;
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx12Inited())
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && !NVNGXProxy::IsDx12Inited())
     {
         if (NVNGXProxy::NVNGXModule() == nullptr)
             NVNGXProxy::InitNVNGX();
@@ -288,7 +288,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init(unsigned long long InApplica
 {
     LOG_FUNC();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx12Inited())
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && !NVNGXProxy::IsDx12Inited())
     {
         if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
             InApplicationId = app_id_override;
@@ -319,7 +319,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProj
 {
     LOG_FUNC();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx12Inited())
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && !NVNGXProxy::IsDx12Inited())
     {
         if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
             InProjectId = project_id_override;
@@ -394,7 +394,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 
     DLSSFeatureDx12::Shutdown(D3D12Device);
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_Shutdown() != nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_Shutdown() != nullptr)
     {
         auto result = NVNGXProxy::D3D12_Shutdown()();
         NVNGXProxy::SetDx12Inited(false);
@@ -413,7 +413,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown1(ID3D12Device* InDevice)
 {
     shutdown = true;
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_Shutdown1() != nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_Shutdown1() != nullptr)
     {
         auto result = NVNGXProxy::D3D12_Shutdown1()(InDevice);
         NVNGXProxy::SetDx12Inited(false);
@@ -430,7 +430,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetParameters(NVSDK_NGX_Parameter
 {
     LOG_FUNC();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D12_GetParameters() != nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D12_GetParameters() != nullptr)
     {
         LOG_INFO("calling NVNGXProxy::D3D12_GetParameters");
         auto result = NVNGXProxy::D3D12_GetParameters()(OutParameters);
@@ -451,7 +451,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetCapabilityParameters(NVSDK_NGX
 {
     LOG_FUNC();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_GetCapabilityParameters() != nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_GetCapabilityParameters() != nullptr)
     {
         LOG_INFO("calling NVNGXProxy::D3D12_GetCapabilityParameters");
         auto result = NVNGXProxy::D3D12_GetCapabilityParameters()(OutParameters);
@@ -473,7 +473,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_AllocateParameters(NVSDK_NGX_Para
 {
     LOG_FUNC();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D12_AllocateParameters() != nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D12_AllocateParameters() != nullptr)
     {
         LOG_INFO("calling NVNGXProxy::D3D12_AllocateParameters");
         auto result = NVNGXProxy::D3D12_AllocateParameters()(OutParameters);
@@ -509,7 +509,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_DestroyParameters(NVSDK_NGX_Param
     if (InParameters == nullptr)
         return NVSDK_NGX_Result_Fail;
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D12_DestroyParameters() != nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D12_DestroyParameters() != nullptr)
     {
         LOG_INFO("calling NVNGXProxy::D3D12_DestroyParameters");
         auto result = NVNGXProxy::D3D12_DestroyParameters()(InParameters);
@@ -531,7 +531,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
     if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
     {
-        if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::InitDx12(D3D12Device) && NVNGXProxy::D3D12_CreateFeature() != nullptr)
+        if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::InitDx12(D3D12Device) && NVNGXProxy::D3D12_CreateFeature() != nullptr)
         {
             LOG_INFO("calling D3D12_CreateFeature for ({0})", (int)InFeatureID);
             auto result = NVNGXProxy::D3D12_CreateFeature()(InCmdList, InFeatureID, InParameters, OutHandle);
@@ -604,7 +604,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
                     upscalerChoice = 1;
                 else if (Config::Instance()->Dx12Upscaler.value() == "fsr21")
                     upscalerChoice = 2;
-                else if (Config::Instance()->Dx12Upscaler.value() == "dlss" && Config::Instance()->DLSSEnabled.value_or(true))
+                else if (Config::Instance()->Dx12Upscaler.value() == "dlss" && Config::Instance()->availableUpscalers.Get(Upscaler::DLSS))
                     upscalerChoice = 3;
                 else if (Config::Instance()->Dx12Upscaler.value() == "fsr31")
                     upscalerChoice = 4;
@@ -757,7 +757,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 
     if (handleId < 1000000)
     {
-        if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D12_ReleaseFeature() != nullptr)
+        if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::D3D12_ReleaseFeature() != nullptr)
         {
             if (!shutdown)
                 LOG_INFO("calling D3D12_ReleaseFeature for ({0})", handleId);
@@ -816,10 +816,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetFeatureRequirements(IDXGIAdapt
         return NVSDK_NGX_Result_Success;
     }
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() == nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::NVNGXModule() == nullptr)
         NVNGXProxy::InitNVNGX();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D12_GetFeatureRequirements() != nullptr)
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::D3D12_GetFeatureRequirements() != nullptr)
     {
         LOG_DEBUG("D3D12_GetFeatureRequirements for ({0})", (int)FeatureDiscoveryInfo->FeatureID);
         auto result = NVNGXProxy::D3D12_GetFeatureRequirements()(Adapter, FeatureDiscoveryInfo, OutSupported);
@@ -858,7 +858,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     auto handleId = InFeatureHandle->Id;
     if (handleId < 1000000)
     {
-        if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D12_EvaluateFeature() != nullptr)
+        if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && NVNGXProxy::D3D12_EvaluateFeature() != nullptr)
         {
             LOG_DEBUG("D3D12_EvaluateFeature for ({0})", handleId);
             auto result = NVNGXProxy::D3D12_EvaluateFeature()(InCmdList, InFeatureHandle, InParameters, InCallback);
@@ -944,7 +944,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     if (Config::Instance()->changeBackend)
     {
-        if (Config::Instance()->newBackend == "" || (!Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->newBackend == "dlss"))
+        if (Config::Instance()->newBackend == "" || (!Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && Config::Instance()->newBackend == "dlss"))
             Config::Instance()->newBackend = Config::Instance()->Dx12Upscaler.value_or("xess");
 
         changeBackendCounter++;

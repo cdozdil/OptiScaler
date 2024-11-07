@@ -6,6 +6,7 @@
 #include "exports/Exports.h"
 #include "proxies/NVNGX_Proxy.h"
 #include "proxies/XeSS_Proxy.h"
+#include <proxies/FfxApi_Proxy.h>
 #include "menu/imgui_overlay_dx.h"
 #include "menu/imgui_overlay_vk.h"
 
@@ -170,7 +171,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
     }
 
     // nvngx_dlss
-    if (Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->DLSSLibrary.has_value() && CheckDllName(&lcaseLibName, &nvngxDlss))
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && Config::Instance()->DLSSLibrary.has_value() && CheckDllName(&lcaseLibName, &nvngxDlss))
     {
         auto nvngxDlss = LoadNvgxDlss(string_to_wstring(lcaseLibName));
 
@@ -219,7 +220,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
     }
 
     // nvngx_dlss
-    if (Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->DLSSLibrary.has_value() && CheckDllNameW(&lcaseLibName, &nvngxDlssW))
+    if (Config::Instance()->availableUpscalers.Get(Upscaler::DLSS) && Config::Instance()->DLSSLibrary.has_value() && CheckDllNameW(&lcaseLibName, &nvngxDlssW))
     {
         auto nvngxDlss = LoadNvgxDlss(lcaseLibName);
 
@@ -971,6 +972,34 @@ static bool IsRunningOnWine()
     return false;
 }
 
+static AvailableUpscalers CheckAvailableUpscalers() {
+    LOG_FUNC();
+
+    AvailableUpscalers upscalers{};
+
+    // statically linked upscalers are always available
+    upscalers.Set(Upscaler::FSR_21);
+    upscalers.Set(Upscaler::FSR_22);
+    upscalers.Set(Upscaler::FFX_SDK_DX11);
+
+    if (NVNGXProxy::NVNGXModule() != nullptr)
+        upscalers.Set(Upscaler::DLSS);
+
+    if (GetModuleHandle(L"libxess.dll") != nullptr)
+        upscalers.Set(Upscaler::XESS);
+
+    FfxApiProxy::InitFfxDx12();
+    FfxApiProxy::InitFfxVk();
+
+    if (GetModuleHandle(L"amd_fidelityfx_dx12.dll") != nullptr)
+        upscalers.Set(Upscaler::FFX_SDK_DX12);
+
+    if (GetModuleHandle(L"amd_fidelityfx_vk.dll") != nullptr)
+        upscalers.Set(Upscaler::FFX_SDK_VK);
+
+    return upscalers;
+}
+
 static void CheckWorkingMode()
 {
     LOG_FUNC();
@@ -1375,13 +1404,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 if (NVNGXProxy::NVNGXModule() == nullptr)
                 {
                     spdlog::info("Can't load nvngx.dll, disabling DLSS");
-                    Config::Instance()->DLSSEnabled = false;
                 }
                 else
                 {
                     spdlog::info("nvngx.dll loaded, setting DLSS as default upscaler and disabling spoofing options set to auto");
-
-                    Config::Instance()->DLSSEnabled = true;
 
                     if (!Config::Instance()->DxgiSpoofing.has_value())
                         Config::Instance()->DxgiSpoofing = false;
@@ -1396,12 +1422,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 }
             }
 
-            //NVNGXLocalProxy::InitNVNGX();
-            //if (NVNGXLocalProxy::NVNGXModule() == nullptr)
-            //    LOG_WARN("Can't init local NVNGX!");
-
             if (!XeSSProxy::InitXeSS())
                 LOG_WARN("Can't init XeSS!");
+
+            Config::Instance()->availableUpscalers = CheckAvailableUpscalers();
 
             // Check for working mode and attach hooks
             spdlog::info("");
