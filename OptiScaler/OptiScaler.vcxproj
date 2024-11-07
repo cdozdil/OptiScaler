@@ -192,6 +192,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
   <ItemGroup>
     <ClInclude Include="ag\pag_common.h" />
     <ClInclude Include="proxies\FfxApi_Proxy.h" />
+    <ClInclude Include="upscalers\AvailableUpscalers.h" />
     <ClInclude Include="upscalers\dlssd\DLSSDFeature.h" />
     <ClInclude Include="upscalers\dlssd\DLSSDFeature_Dx11.h" />
     <ClInclude Include="upscalers\dlssd\DLSSDFeature_Dx12.h" />
