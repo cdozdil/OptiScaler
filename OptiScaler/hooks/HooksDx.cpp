@@ -2588,6 +2588,10 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
 {
     LOG_FUNC();
 
+#ifdef ENABLE_DEBUG_LAYER
+    Flags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+
     bool rtss = false;
 
     // Assuming RTSS is creating a D3D11on12 device, not sure why but sometimes RTSS tries to create 
@@ -2600,7 +2604,9 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
         rtss = true;
     }
 
+    Config::Instance()->dxgiSkipSpoofing = true;
     auto result = o_D3D11On12CreateDevice(pDevice, Flags, pFeatureLevels, FeatureLevels, ppCommandQueues, NumQueues, NodeMask, ppDevice, ppImmediateContext, pChosenFeatureLevel);
+    Config::Instance()->dxgiSkipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr && !rtss && !_d3d12Captured)
     {
@@ -2618,6 +2624,10 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
                                    UINT FeatureLevels, UINT SDKVersion, ID3D11Device** ppDevice, D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext)
 {
     LOG_FUNC();
+
+#ifdef ENABLE_DEBUG_LAYER
+    Flags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
 
     static const D3D_FEATURE_LEVEL levels[] = {
      D3D_FEATURE_LEVEL_11_1,
@@ -2637,7 +2647,9 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
         FeatureLevels = ARRAYSIZE(levels);
     }
 
-    auto result = o_D3D11CreateDevice(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
+    Config::Instance()->dxgiSkipSpoofing = true;
+    auto result = o_D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
+    Config::Instance()->dxgiSkipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr && !_d3d12Captured)
     {
@@ -2656,6 +2668,10 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
                                                UINT FeatureLevels, UINT SDKVersion, DXGI_SWAP_CHAIN_DESC* pSwapChainDesc, IDXGISwapChain** ppSwapChain, ID3D11Device** ppDevice, D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext)
 {
     LOG_FUNC();
+
+#ifdef ENABLE_DEBUG_LAYER
+    Flags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
 
     static const D3D_FEATURE_LEVEL levels[] = {
     D3D_FEATURE_LEVEL_11_1,
@@ -2678,11 +2694,16 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
     if (pSwapChainDesc != nullptr && pSwapChainDesc->BufferDesc.Height == 2 && pSwapChainDesc->BufferDesc.Width == 2)
     {
         LOG_WARN("RTSS call!");
-        return o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
+        Config::Instance()->dxgiSkipSpoofing = true;
+        auto result = o_D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
+        Config::Instance()->dxgiSkipSpoofing = false;
+        return result;
     }
 
     IDXGISwapChain* buffer = nullptr;
-    auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, &buffer, ppDevice, pFeatureLevel, ppImmediateContext);
+    Config::Instance()->dxgiSkipSpoofing = true;
+    auto result = o_D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, &buffer, ppDevice, pFeatureLevel, ppImmediateContext);
+    Config::Instance()->dxgiSkipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr && !_d3d12Captured)
     {
@@ -2751,7 +2772,9 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     }
 #endif
 
+    Config::Instance()->dxgiSkipSpoofing = true;
     auto result = o_D3D12CreateDevice(pAdapter, MinimumFeatureLevel, riid, ppDevice);
+    Config::Instance()->dxgiSkipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr)
     {
