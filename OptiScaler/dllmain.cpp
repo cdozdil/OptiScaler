@@ -1089,7 +1089,7 @@ inline static void HookForDxgiSpoofing()
         LOG_INFO("DxgiSpoofing is enabled loading dxgi.dll");
 
         dxgi.CreateDxgiFactory = (PFN_CREATE_DXGI_FACTORY)DetourFindFunction("dxgi.dll", "CreateDXGIFactory");
-        dxgi.CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY)DetourFindFunction("dxgi.dll", "CreateDXGIFactory1");
+        dxgi.CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY_1)DetourFindFunction("dxgi.dll", "CreateDXGIFactory1");
         dxgi.CreateDxgiFactory2 = (PFN_CREATE_DXGI_FACTORY_2)DetourFindFunction("dxgi.dll", "CreateDXGIFactory2");
 
         if (dxgi.CreateDxgiFactory != nullptr || dxgi.CreateDxgiFactory1 != nullptr || dxgi.CreateDxgiFactory2 != nullptr)
