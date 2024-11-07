@@ -25,7 +25,11 @@
 // Enables logging of DLSS NV Parameters
 //#define DLSS_PARAM_DUMP
 
+// Enables async spdlog
+// Have issues when closing
 //#define LOG_ASYNC
+
+// Enables LOG_DEBUG_ONLY logs
 //#define DETAILED_DEBUG_LOGS
 
 inline HMODULE dllModule = nullptr;

@@ -146,6 +146,8 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
         Config::Instance()->ScreenHeight = Height;
     }
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
     LOG_FUNC_RESULT(result);
     return result;
 }
@@ -197,12 +199,12 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 
     LOG_DEBUG("Fullscreen: {}", Fullscreen);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(150));
-
     if (Config::Instance()->CurrentFeature != nullptr)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
         Config::Instance()->FGChanged = true;
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    }
 
     LOG_DEBUG("result: {0:X}", (UINT)result);
 
@@ -231,7 +233,7 @@ HRESULT WrappedIDXGISwapChain4::Present(UINT SyncInterval, UINT Flags)
 
     HRESULT result;
 
-    if (!(Flags & DXGI_PRESENT_TEST) && !(Flags & DXGI_PRESENT_RESTART) && RenderTrig != nullptr)
+    if (!(Flags & DXGI_PRESENT_TEST) && RenderTrig != nullptr)
         result = RenderTrig(m_pReal, SyncInterval, Flags, nullptr, Device, Handle);
     else
         result = m_pReal->Present(SyncInterval, Flags);
@@ -246,7 +248,7 @@ HRESULT WrappedIDXGISwapChain4::Present1(UINT SyncInterval, UINT Flags, const DX
 
     HRESULT result;
 
-    if (!(Flags & DXGI_PRESENT_TEST) && !(Flags & DXGI_PRESENT_RESTART) && RenderTrig != nullptr)
+    if (!(Flags & DXGI_PRESENT_TEST) && RenderTrig != nullptr)
         result = RenderTrig(m_pReal1, SyncInterval, Flags, pPresentParameters, Device, Handle);
     else
         result = m_pReal1->Present1(SyncInterval, Flags, pPresentParameters);

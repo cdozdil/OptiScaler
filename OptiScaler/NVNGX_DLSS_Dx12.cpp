@@ -21,13 +21,20 @@
 #include "FfxApi_Proxy.h"
 #include <ffx_framegeneration.h>
 
-#define USE_COPY_QUEUE_FOR_FG
+// Use a dedicated Queue + CommandList for copying Depth + Velocity
+// Looks like it is causing issues so disabled 
+//#define USE_COPY_QUEUE_FOR_FG
 
-#ifndef USE_COPY_QUEUE_FOR_FG
+// Use a dedicated Queue + CommandList for FG without hudfix
+// Looks like causing stutter/sync issues
+//#define USE_QUEUE_FOR_FG
+
+// Do not make copies of Depth + Velocity for FG
 //#define DONT_USE_DEPTH_MV_COPIES
-#endif
 
+#ifndef USE_PRESENT_FOR_FT
 static UINT64 fgLastFrameTime = 0;
+#endif
 static UINT64 fgLastFGFrame = 0;
 
 static ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
@@ -37,13 +44,6 @@ static int changeBackendCounter = 0;
 static int evalCounter = 0;
 static std::wstring appDataPath = L".";
 static inline bool shutdown = false;
-
-
-static void FfxFgLogCallback(uint32_t type, const wchar_t* message)
-{
-    std::wstring string(message);
-    LOG_DEBUG("    FG Log: {0}", wstring_to_string(string));
-}
 
 static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState)
 {
@@ -1184,10 +1184,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     {
         if (!Config::Instance()->FGChanged && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() && Config::Instance()->FGEnabled.value_or(false) &&
             FfxApiProxy::InitFfxDx12() && !FrameGen_Dx12::fgIsActive && HooksDx::currentSwapchain != nullptr &&
-            HooksDx::swapchainFormat != DXGI_FORMAT_UNKNOWN)
+            HooksDx::CurrentSwapchainFormat() != DXGI_FORMAT_UNKNOWN)
         {
             FrameGen_Dx12::CreateFGObjects(D3D12Device);
             FrameGen_Dx12::CreateFGContext(D3D12Device, deviceContext);
+            FrameGen_Dx12::fgTarget = deviceContext->FrameCount() + 3;
         }
         else if ((!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged) && FrameGen_Dx12::fgIsActive)
         {
@@ -1212,19 +1213,39 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     UINT frameIndex;
 
     if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
-        Config::Instance()->FGEnabled.value_or(false) && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() &&
+        Config::Instance()->FGEnabled.value_or(false) && FrameGen_Dx12::fgTarget <= deviceContext->FrameCount() &&
         FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
     {
-        frameIndex = FrameGen_Dx12::ClearFrameResources();
-        FrameGen_Dx12::NewFrame();
-        FrameGen_Dx12::fgUpscaledImage[frameIndex] = output;
+        frameIndex = FrameGen_Dx12::NewFrame();
 
-        auto allocator = FrameGen_Dx12::fgCopyCommandAllocators[frameIndex];
+        bool allocatorReset = false;
+
+#ifdef USE_QUEUE_FOR_FG
+        auto allocator = FrameGen_Dx12::fgCommandAllocators[frameIndex];
         auto result = allocator->Reset();
-        result = FrameGen_Dx12::fgCopyCommandList->Reset(allocator, nullptr);
+        result = FrameGen_Dx12::fgCommandList->Reset(allocator, nullptr);
+        allocatorReset = true;
+#endif
 
-        LOG_DEBUG("(FG) fgUpscaledImage[{}]", frameIndex);
-        LOG_DEBUG("(FG) copy buffers running, frame: {0}", deviceContext->FrameCount());
+        if (!allocatorReset && Config::Instance()->FGHUDFix.value_or(false))
+        {
+            auto allocator = FrameGen_Dx12::fgCommandAllocators[frameIndex];
+            auto result = allocator->Reset();
+            result = FrameGen_Dx12::fgCommandList->Reset(allocator, nullptr);
+        }
+
+        ID3D12GraphicsCommandList* commandList = nullptr;
+
+#ifdef USE_COPY_QUEUE_FOR_FG
+        FrameGen_Dx12::fgCopyCommandAllocator->Reset();
+        FrameGen_Dx12::fgCopyCommandList->Reset(FrameGen_Dx12::fgCopyCommandAllocator, nullptr);
+    
+        commandList = FrameGen_Dx12::fgCopyCommandList;
+#else
+        commandList = InCmdList;
+#endif
+
+        LOG_DEBUG("(FG) copy buffers for fgUpscaledImage[{}], frame: {}", frameIndex, deviceContext->FrameCount());
 
         InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &FrameGen_Dx12::jitterX);
         InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &FrameGen_Dx12::jitterY);
@@ -1233,15 +1254,30 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
             InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
 
+        ResourceBarrier(commandList, paramVelocity, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE), D3D12_RESOURCE_STATE_COPY_SOURCE);
+
         if (CreateBufferResource(L"fgVelocity", D3D12Device, paramVelocity, D3D12_RESOURCE_STATE_COPY_DEST, &FrameGen_Dx12::paramVelocity[frameIndex]))
-            InCmdList->CopyResource(FrameGen_Dx12::paramVelocity[frameIndex], paramVelocity);
+            commandList->CopyResource(FrameGen_Dx12::paramVelocity[frameIndex], paramVelocity);
+
+        ResourceBarrier(commandList, paramVelocity, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
 
         ID3D12Resource* paramDepth;
         if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
             InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
 
+        ResourceBarrier(commandList, paramDepth, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE), D3D12_RESOURCE_STATE_COPY_SOURCE);
+
         if (CreateBufferResource(L"fgDepth", D3D12Device, paramDepth, D3D12_RESOURCE_STATE_COPY_DEST, &FrameGen_Dx12::paramDepth[frameIndex]))
-            InCmdList->CopyResource(FrameGen_Dx12::paramDepth[frameIndex], paramDepth);
+            commandList->CopyResource(FrameGen_Dx12::paramDepth[frameIndex], paramDepth);
+
+        ResourceBarrier(commandList, paramDepth, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+
+#ifdef USE_COPY_QUEUE_FOR_FG
+        ID3D12CommandList* cl[1] = { nullptr };
+        result = FrameGen_Dx12::fgCopyCommandList->Close();
+        cl[0] = FrameGen_Dx12::fgCopyCommandList;
+        FrameGen_Dx12::fgCopyCommandQueue->ExecuteCommandLists(1, cl);
+#endif
 
         InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &FrameGen_Dx12::mvScaleX);
         InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &FrameGen_Dx12::mvScaleY);
@@ -1310,13 +1346,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     if (evalResult)
     {
         HooksDx::dx12UpscaleTrig = true;
-        FrameGen_Dx12::upscaleRan = true;
 
         // FG Dispatch
         if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
             Config::Instance()->FGEnabled.value_or(false) && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() &&
             FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
         {
+            FrameGen_Dx12::upscaleRan = true;
+
+#ifndef USE_PRESENT_FOR_FT
             float msDelta = 0.0;
             auto now = Util::MillisecondsNow();
 
@@ -1326,10 +1364,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 LOG_DEBUG("(FG) msDelta: {0}", msDelta);
             }
 
-            FrameGen_Dx12::fgFrameTime = msDelta;
             fgLastFrameTime = now;
+            FrameGen_Dx12::fgFrameTime = msDelta;
+#endif
 
-            if (!Config::Instance()->FGHUDFix.value_or(false) || FrameGen_Dx12::fgTarget > deviceContext->FrameCount())
+            if (Config::Instance()->FGHUDFix.value_or(false))
+            {
+                FrameGen_Dx12::CheckUpscaledFrame(InCmdList, output);
+            }
+            else
             {
                 LOG_DEBUG("(FG) running, frame: {0}", deviceContext->FrameCount());
 
@@ -1338,7 +1381,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
 
-                if (desc.Format == HooksDx::swapchainFormat)
+                if (desc.Format == HooksDx::CurrentSwapchainFormat())
                 {
                     LOG_DEBUG("(FG) desc.Format == HooksDx::swapchainFormat, using for hudless!");
                     m_FrameGenerationConfig.HUDLessColor = ffxApiGetResourceDX12(output, FFX_API_RESOURCE_STATE_UNORDERED_ACCESS, 0);
@@ -1366,22 +1409,23 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(scDesc.BufferDesc.Width);
                     m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(scDesc.BufferDesc.Height);
                 }
-                else 
+                else
                 {
                     m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(deviceContext->DisplayWidth());
                     m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(deviceContext->DisplayHeight());
                 }
 
+                m_FrameGenerationConfig.frameGenerationCallbackUserContext = &FrameGen_Dx12::fgContext;
                 m_FrameGenerationConfig.frameGenerationCallback = [](ffxDispatchDescFrameGeneration* params, void* pUserCtx) -> ffxReturnCode_t
                     {
                         auto fIndex = FrameGen_Dx12::GetFrame();
 
                         // check for status
                         if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged ||
-                            FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCopyCommandList == nullptr ||
-                            FrameGen_Dx12::fgCopyCommandQueue == nullptr)
+                            FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCommandList == nullptr ||
+                            FrameGen_Dx12::fgCommandQueue == nullptr)
                         {
-                            LOG_WARN("(FG) Cancel async dispatch");
+                            LOG_WARN("(FG) Cancel async dispatch fIndex: {}", fIndex);
                             FrameGen_Dx12::fgSkipHudlessChecks = false;
                             return FFX_API_RETURN_OK;
                         }
@@ -1390,12 +1434,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         if (Config::Instance()->CurrentFeature == nullptr || !FrameGen_Dx12::fgIsActive ||
                             fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount())
                         {
-                            LOG_WARN("(FG) Callback without hudless!");
+                            LOG_WARN("(FG) Callback without hudless! fIndex:{}", fIndex);
 
-#ifdef USE_COPY_QUEUE_FOR_FG
-                            auto allocator = FrameGen_Dx12::fgCopyCommandAllocators[fIndex];
+#ifdef USE_QUEUE_FOR_FG
+                            auto allocator = FrameGen_Dx12::fgCommandAllocators[fIndex];
                             auto result = allocator->Reset();
-                            result = FrameGen_Dx12::fgCopyCommandList->Reset(allocator, nullptr);
+                            result = FrameGen_Dx12::fgCommandList->Reset(allocator, nullptr);
 #endif
 
                             params->frameID = fgLastFGFrame;
@@ -1406,30 +1450,34 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                             fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
 
                         auto dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
+                        LOG_DEBUG("(FG) D3D12_Dispatch result: {}, fIndex: {}", (UINT)dispatchResult, fIndex);
+                        if (dispatchResult == FFX_API_RETURN_OK)
+                        {
+#ifdef USE_QUEUE_FOR_FG
+                            ID3D12CommandList* cl[1] = { nullptr };
+                            auto result = FrameGen_Dx12::fgCommandList->Close();
+                            cl[0] = FrameGen_Dx12::fgCommandList;
+                            FrameGen_Dx12::fgCommandQueue->ExecuteCommandLists(1, cl);
 
-#ifdef USE_COPY_QUEUE_FOR_FG
-                        ID3D12CommandList* cl[1] = { nullptr };
-                        auto result = FrameGen_Dx12::fgCopyCommandList->Close();
-                        cl[0] = FrameGen_Dx12::fgCopyCommandList;
-                        FrameGen_Dx12::gameCommandQueue->ExecuteCommandLists(1, cl);
+                            if (result != S_OK)
+                            {
+                                LOG_ERROR("(FG) Close result: {}", (UINT)result);
+                            }
+
 #endif
 
-                        if (dispatchResult != FFX_API_RETURN_OK || result != S_OK)
-                            LOG_ERROR("(FG) D3D12_Dispatch result: {}({}, Close result: {})", (UINT)dispatchResult, FfxApiProxy::ReturnCodeToString(dispatchResult), (UINT)result);
+#ifdef DONT_USE_DEPTH_MV_COPIES
+                            ResourceBarrier(InCmdList, paramVelocity, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+                            ResourceBarrier(InCmdList, paramDepth, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+#endif
+                        }
 
-                        return result;
+                        return dispatchResult;
                     };
 
-                m_FrameGenerationConfig.frameGenerationCallbackUserContext = &FrameGen_Dx12::fgContext;
                 m_FrameGenerationConfig.onlyPresentGenerated = Config::Instance()->FGOnlyGenerated; // check here
                 m_FrameGenerationConfig.frameID = deviceContext->FrameCount();
                 m_FrameGenerationConfig.swapChain = HooksDx::currentSwapchain;
-
-                ffxConfigureDescGlobalDebug1 debugDesc;
-                debugDesc.header.type = FFX_API_CONFIGURE_DESC_TYPE_GLOBALDEBUG1;
-                debugDesc.debugLevel = FFX_API_CONFIGURE_GLOBALDEBUG_LEVEL_VERBOSE;
-                debugDesc.fpMessage = FfxFgLogCallback;
-                m_FrameGenerationConfig.header.pNext = &debugDesc.header;
 
                 Config::Instance()->dxgiSkipSpoofing = true;
                 ffxReturnCode_t retCode = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgContext, &m_FrameGenerationConfig.header);
@@ -1448,8 +1496,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     dfgPrepare.header.type = FFX_API_DISPATCH_DESC_TYPE_FRAMEGENERATION_PREPARE;
                     dfgPrepare.header.pNext = &backendDesc.header;
 
-#ifdef USE_COPY_QUEUE_FOR_FG
-                    dfgPrepare.commandList = FrameGen_Dx12::fgCopyCommandList;
+#ifdef USE_QUEUE_FOR_FG
+                    dfgPrepare.commandList = FrameGen_Dx12::fgCommandList;
 #else
                     dfgPrepare.commandList = InCmdList;
 #endif
@@ -1461,12 +1509,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &dfgPrepare.jitterOffset.y);
 
 #ifndef DONT_USE_DEPTH_MV_COPIES
-                    dfgPrepare.motionVectors = ffxApiGetResourceDX12(FrameGen_Dx12::paramVelocity[frameIndex], FFX_API_RESOURCE_STATE_COMPUTE_READ);
-                    dfgPrepare.depth = ffxApiGetResourceDX12(FrameGen_Dx12::paramDepth[frameIndex], FFX_API_RESOURCE_STATE_COMPUTE_READ);
+                    dfgPrepare.motionVectors = ffxApiGetResourceDX12(FrameGen_Dx12::paramVelocity[frameIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
+                    dfgPrepare.depth = ffxApiGetResourceDX12(FrameGen_Dx12::paramDepth[frameIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
 #else
                     ID3D12Resource* paramVelocity;
                     if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
                         InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
+
+                    ResourceBarrier(InCmdList, paramVelocity, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE), D3D12_RESOURCE_STATE_COPY_SOURCE);
 
                     dfgPrepare.motionVectors = ffxApiGetResourceDX12(paramVelocity, FFX_API_RESOURCE_STATE_COMPUTE_READ);
 
@@ -1474,7 +1524,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
                         InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
 
+                    ResourceBarrier(InCmdList, paramDepth, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE), D3D12_RESOURCE_STATE_COPY_SOURCE);
+
                     dfgPrepare.depth = ffxApiGetResourceDX12(paramDepth, FFX_API_RESOURCE_STATE_COMPUTE_READ);
+
 #endif
 
                     float MVScaleX = 1.0f;
@@ -1507,11 +1560,18 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                     dfgPrepare.cameraFovAngleVertical = 1.0471975511966f;
                     dfgPrepare.viewSpaceToMetersFactor = 1.0;
-                    dfgPrepare.frameTimeDelta = msDelta;
+                    dfgPrepare.frameTimeDelta = FrameGen_Dx12::fgFrameTime;
 
+#ifdef USE_MUTEX_FOR_FFX
+                    FrameGen_Dx12::ffxMutex.lock();
+#endif
                     Config::Instance()->dxgiSkipSpoofing = true;
                     retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
                     Config::Instance()->dxgiSkipSpoofing = false;
+
+#ifdef USE_MUTEX_FOR_FFX
+                    FrameGen_Dx12::ffxMutex.unlock();
+#endif
 
                     if (retCode != FFX_API_RETURN_OK)
                         LOG_ERROR("(FG) D3D12_Dispatch result: {}({})", retCode, FfxApiProxy::ReturnCodeToString(retCode));

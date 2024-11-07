@@ -397,10 +397,10 @@ public:
 
         if (_dll != nullptr)
         {
+            HookNvApi();
+            
             if (!Config::Instance()->DE_Available)
-            {
                 HookNgxApi(_dll);
-            }
 
             LOG_INFO("getting nvngx method addresses");
 

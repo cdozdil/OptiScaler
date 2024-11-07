@@ -76,7 +76,8 @@ bool FSR2FeatureDx11::CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_RE
         OutTextureRes->usingOriginal = false;
         ASSIGN_DESC(OutTextureRes->Desc, desc);
 
-        desc.BindFlags = bindFlags;
+        if (bindFlags != 9999)
+            desc.BindFlags = bindFlags;
 
         result = Device->CreateTexture2D(&desc, nullptr, &OutTextureRes->Texture);
 
@@ -287,8 +288,37 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
     if (!RCAS->IsInit())
         Config::Instance()->RcasEnabled = false;
 
-    FfxFsr2DispatchDescription params{};
+    ID3D11ShaderResourceView* restoreSRVs[128] = {};
+    ID3D11SamplerState* restoreSamplerStates[16] = {};
+    ID3D11Buffer* restoreCBVs[15] = {};
+    ID3D11UnorderedAccessView* restoreUAVs[8] = {};
 
+    // backup compute shader resources
+    for (size_t i = 0; i < 128; i++)
+    {
+        restoreSRVs[i] = nullptr;
+        InContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
+    }
+
+    for (size_t i = 0; i < 16; i++)
+    {
+        restoreSamplerStates[i] = nullptr;
+        InContext->CSGetSamplers(i, 1, &restoreSamplerStates[i]);
+    }
+
+    for (size_t i = 0; i < 15; i++)
+    {
+        restoreCBVs[i] = nullptr;
+        InContext->CSGetConstantBuffers(i, 1, &restoreCBVs[i]);
+    }
+
+    for (size_t i = 0; i < 8; i++)
+    {
+        restoreUAVs[i] = nullptr;
+        InContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
+    }
+
+    FfxFsr2DispatchDescription params{};
     params.commandList = InContext;
 
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
@@ -306,7 +336,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 
     if (Config::Instance()->OverrideSharpness.value_or(false))
         _sharpness = Config::Instance()->Sharpness.value_or(0.3);
-    else 
+    else
         _sharpness = GetSharpness(InParameters);
 
     if (Config::Instance()->RcasEnabled.value_or(false))
@@ -380,10 +410,12 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
         LOG_ERROR("MotionVectors not exist!!");
         return false;
     }
+    auto outIndex = _frameCount % 2;
 
     ID3D11Resource* paramOutput;
     if (InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput) != NVSDK_NGX_Result_Success)
         InParameters->Get(NVSDK_NGX_Parameter_Output, (void**)&paramOutput);
+
 
     if (paramOutput)
     {
@@ -606,6 +638,31 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
             if (Imgui == nullptr || Imgui.get() == nullptr)
                 Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
         }
+    }
+
+    // restore compute shader resources
+    for (size_t i = 0; i < 128; i++)
+    {
+        if (restoreSRVs[i] != nullptr)
+            InContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
+    }
+
+    for (size_t i = 0; i < 16; i++)
+    {
+        if (restoreSamplerStates[i] != nullptr)
+            InContext->CSGetSamplers(i, 1, &restoreSamplerStates[i]);
+    }
+
+    for (size_t i = 0; i < 15; i++)
+    {
+        if (restoreCBVs[i] != nullptr)
+            InContext->CSGetConstantBuffers(i, 1, &restoreCBVs[i]);
+    }
+
+    for (size_t i = 0; i < 8; i++)
+    {
+        if (restoreUAVs[i] != nullptr)
+            InContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
     }
 
     _frameCount++;

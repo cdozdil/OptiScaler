@@ -11,20 +11,21 @@
 
 #pragma region DXGI definitions
 
-typedef HRESULT(WINAPI* PFN_CREATE_DXGI_FACTORY)(REFIID riid, _COM_Outptr_ void** ppFactory);
-typedef HRESULT(WINAPI* PFN_CREATE_DXGI_FACTORY_2)(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFactory);
-typedef HRESULT(WINAPI* PFN_DECLARE_ADAPTER_REMOVAL_SUPPORT)();
-typedef HRESULT(WINAPI* PFN_GET_DEBUG_INTERFACE)(UINT Flags, REFIID riid, void** ppDebug);
+typedef HRESULT(*PFN_CREATE_DXGI_FACTORY)(REFIID riid, IDXGIFactory** ppFactory);
+typedef HRESULT(*PFN_CREATE_DXGI_FACTORY_1)(REFIID riid, IDXGIFactory1** ppFactory);
+typedef HRESULT(*PFN_CREATE_DXGI_FACTORY_2)(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory);
+typedef HRESULT(*PFN_DECLARE_ADAPTER_REMOVAL_SUPPORT)();
+typedef HRESULT(*PFN_GET_DEBUG_INTERFACE)(UINT Flags, REFIID riid, void** ppDebug);
 
-typedef HRESULT(WINAPI* PFN_GetDesc)(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc);
-typedef HRESULT(WINAPI* PFN_GetDesc1)(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc);
-typedef HRESULT(WINAPI* PFN_GetDesc2)(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc);
-typedef HRESULT(WINAPI* PFN_GetDesc3)(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc);
+typedef HRESULT(*PFN_GetDesc)(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc);
+typedef HRESULT(*PFN_GetDesc1)(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc);
+typedef HRESULT(*PFN_GetDesc2)(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc);
+typedef HRESULT(*PFN_GetDesc3)(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc);
 
-typedef HRESULT(WINAPI* PFN_EnumAdapterByGpuPreference)(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, void** ppvAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapterByLuid)(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, void** ppvAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapters1)(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1** ppAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapters)(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** ppAdapter);
+typedef HRESULT(*PFN_EnumAdapterByGpuPreference)(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IDXGIAdapter** ppvAdapter);
+typedef HRESULT(*PFN_EnumAdapterByLuid)(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IDXGIAdapter** ppvAdapter);
+typedef HRESULT(*PFN_EnumAdapters1)(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1** ppAdapter);
+typedef HRESULT(*PFN_EnumAdapters)(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** ppAdapter);
 
 inline static PFN_GetDesc ptrGetDesc = nullptr;
 inline static PFN_GetDesc1 ptrGetDesc1 = nullptr;
@@ -1289,7 +1290,7 @@ struct dxgi_dll
     HMODULE dll = nullptr;
 
     PFN_CREATE_DXGI_FACTORY CreateDxgiFactory;
-    PFN_CREATE_DXGI_FACTORY CreateDxgiFactory1;
+    PFN_CREATE_DXGI_FACTORY_1 CreateDxgiFactory1;
     PFN_CREATE_DXGI_FACTORY_2 CreateDxgiFactory2;
 
     FARPROC dxgiDeclareAdapterRemovalSupport = nullptr;
@@ -1316,7 +1317,7 @@ struct dxgi_dll
 
         skipGetModuleHandle = true;
         CreateDxgiFactory = (PFN_CREATE_DXGI_FACTORY)GetProcAddress(module, "CreateDXGIFactory");
-        CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY)GetProcAddress(module, "CreateDXGIFactory1");
+        CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY_1)GetProcAddress(module, "CreateDXGIFactory1");
         CreateDxgiFactory2 = (PFN_CREATE_DXGI_FACTORY_2)GetProcAddress(module, "CreateDXGIFactory2");
 
         dxgiDeclareAdapterRemovalSupport = GetProcAddress(module, "DXGIDeclareAdapterRemovalSupport");
@@ -1413,7 +1414,7 @@ HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
 
         auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-        std::memcpy(pDesc->Description, szName.c_str(), szName.size());
+        std::wcscpy(pDesc->Description, szName.c_str());
 
         if (Config::Instance()->DxgiSpoofing.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
@@ -1440,7 +1441,7 @@ HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
 
         auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-        std::memcpy(pDesc->Description, szName.c_str(), szName.size());
+        std::wcscpy(pDesc->Description, szName.c_str());
 
         if (Config::Instance()->DxgiSpoofing.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
@@ -1467,7 +1468,7 @@ HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
 
         auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-        std::memcpy(pDesc->Description, szName.c_str(), szName.size());
+        std::wcscpy(pDesc->Description, szName.c_str());
 
         if (Config::Instance()->DxgiSpoofing.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
@@ -1494,7 +1495,7 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
 
         auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-        std::memcpy(pDesc->Description, szName.c_str(), szName.size());
+        std::wcscpy(pDesc->Description, szName.c_str());
 
 
         if (Config::Instance()->DxgiSpoofing.has_value())
@@ -1514,34 +1515,26 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
 
 #pragma region DXGI Factory methods
 
-HRESULT WINAPI detEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, void** ppvAdapter)
+HRESULT WINAPI detEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IDXGIAdapter** ppvAdapter)
 {
     AttachToFactory(This);
 
-    IDXGIAdapter* adapter = nullptr;
-    auto result = ptrEnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, (void**)&adapter);
+    auto result = ptrEnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, ppvAdapter);
 
     if (result == S_OK)
-    {
-        AttachToAdapter(adapter);
-        *ppvAdapter = adapter;
-    }
+        AttachToAdapter(*ppvAdapter);
 
     return result;
 }
 
-HRESULT WINAPI detEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, void** ppvAdapter)
+HRESULT WINAPI detEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IDXGIAdapter** ppvAdapter)
 {
     AttachToFactory(This);
 
-    IDXGIAdapter* adapter = nullptr;
-    auto result = ptrEnumAdapterByLuid(This, AdapterLuid, riid, (void**)&adapter);
+    auto result = ptrEnumAdapterByLuid(This, AdapterLuid, riid, ppvAdapter);
 
     if (result == S_OK)
-    {
-        AttachToAdapter(adapter);
-        *ppvAdapter = adapter;
-    }
+        AttachToAdapter(*ppvAdapter);
 
     return result;
 }
@@ -1550,14 +1543,10 @@ HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1
 {
     AttachToFactory(This);
 
-    IDXGIAdapter1* adapter = nullptr;
-    auto result = ptrEnumAdapters1(This, Adapter, &adapter);
+    auto result = ptrEnumAdapters1(This, Adapter, ppAdapter);
 
     if (result == S_OK)
-    {
-        AttachToAdapter(adapter);
-        *ppAdapter = adapter;
-    }
+        AttachToAdapter(*ppAdapter);
 
     return result;
 }
@@ -1566,14 +1555,10 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
 {
     AttachToFactory(This);
 
-    IDXGIAdapter* adapter = nullptr;
-    auto result = ptrEnumAdapters(This, Adapter, &adapter);
+    auto result = ptrEnumAdapters(This, Adapter, ppAdapter);
 
     if (result == S_OK)
-    {
-        AttachToAdapter(adapter);
-        *ppAdapter = adapter;
-    }
+        AttachToAdapter(*ppAdapter);
 
     return result;
 }
@@ -1582,41 +1567,33 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
 
 #pragma region DXGI methods
 
-HRESULT _CreateDXGIFactory(REFIID riid, _COM_Outptr_ void** ppFactory)
+HRESULT _CreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
-    IDXGIFactory* factory;
-    HRESULT result = dxgi.CreateDxgiFactory(riid, (void**)&factory);
+    HRESULT result = dxgi.CreateDxgiFactory(riid, ppFactory);
 
     if (result == S_OK)
-        AttachToFactory(factory);
-
-    *ppFactory = factory;
+        AttachToFactory(*ppFactory);
 
     return result;
 }
 
-HRESULT _CreateDXGIFactory1(REFIID riid, _COM_Outptr_ void** ppFactory)
+HRESULT _CreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 {
-    IDXGIFactory1* factory1;
-    HRESULT result = dxgi.CreateDxgiFactory1(riid, (void**)&factory1);
+    HRESULT result = dxgi.CreateDxgiFactory1(riid, ppFactory);
 
     if (result == S_OK)
-        AttachToFactory(factory1);
-
-    *ppFactory = factory1;
+        AttachToFactory(*ppFactory);
 
     return result;
 }
 
-HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFactory)
+HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
 {
     IDXGIFactory* factory;
-    HRESULT result = dxgi.CreateDxgiFactory2(Flags, riid, (void**)&factory);
+    HRESULT result = dxgi.CreateDxgiFactory2(Flags, riid, ppFactory);
 
     if (result == S_OK)
-        AttachToFactory(factory);
-
-    *ppFactory = factory;
+        AttachToFactory(*ppFactory);
 
     return result;
 }

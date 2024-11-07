@@ -15,9 +15,21 @@
 #include <ankerl/unordered_dense.h>
 #include <shared_mutex>
 
-// #define USE_RESOURCE_DISCARD
-// #define USE_COPY_RESOURCE
+// Do not wait for Dispatch/DrawInstanced to capture hudless resource
+//#define DO_NOT_WAIT_DISPATCH
+
+// Clear heap info when ResourceDiscard is called
+//#define USE_RESOURCE_DISCARD
+
+// Use CopyResource & CopyTextureRegion to capture hudless
+// It's a unstable
+//#define USE_COPY_RESOURCE
+
+// Use resource barriers before and after capture operation
 #define USE_RESOURCE_BARRIRER
+
+// Use FRAMEGENERATIONSWAPCHAIN_WRAP instead of 
+// FRAMEGENERATIONSWAPCHAIN_NEW & FRAMEGENERATIONSWAPCHAIN_FOR_HWND
 //#define WRAP_SWAP_CHAIN
 
 enum ResourceType
@@ -116,17 +128,21 @@ typedef HRESULT(*PFN_CreateDescriptorHeap)(ID3D12Device* This, D3D12_DESCRIPTOR_
 typedef void(*PFN_CopyDescriptors)(ID3D12Device* This, UINT NumDestDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pDestDescriptorRangeStarts, UINT* pDestDescriptorRangeSizes, UINT NumSrcDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorRangeStarts, UINT* pSrcDescriptorRangeSizes, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType);
 typedef void(*PFN_CopyDescriptorsSimple)(ID3D12Device* This, UINT NumDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptorRangeStart, D3D12_CPU_DESCRIPTOR_HANDLE SrcDescriptorRangeStart, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType);
 
+typedef HRESULT(*PFN_Present)(void* This, UINT SyncInterval, UINT Flags);
+
 // Command list hooks for FG
 typedef void(*PFN_OMSetRenderTargets)(ID3D12GraphicsCommandList* This, UINT NumRenderTargetDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE* pRenderTargetDescriptors, BOOL RTsSingleHandleToDescriptorRange, D3D12_CPU_DESCRIPTOR_HANDLE* pDepthStencilDescriptor);
 typedef void(*PFN_SetGraphicsRootDescriptorTable)(ID3D12GraphicsCommandList* This, UINT RootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor);
 typedef void(*PFN_SetComputeRootDescriptorTable)(ID3D12GraphicsCommandList* This, UINT RootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor);
+#ifndef DO_NOT_WAIT_DISPATCH
 typedef void(*PFN_DrawIndexedInstanced)(ID3D12GraphicsCommandList* This, UINT IndexCountPerInstance, UINT InstanceCount, UINT StartIndexLocation, INT BaseVertexLocation, UINT StartInstanceLocation);
 typedef void(*PFN_DrawInstanced)(ID3D12GraphicsCommandList* This, UINT VertexCountPerInstance, UINT InstanceCount, UINT StartVertexLocation, UINT StartInstanceLocation);
+typedef void(*PFN_Dispatch)(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ);
+#endif
 #ifdef USE_COPY_RESOURCE
 typedef void(*PFN_CopyResource)(ID3D12GraphicsCommandList* This, ID3D12Resource* pDstResource, ID3D12Resource* pSrcResource);
-#endif
 typedef void(*PFN_CopyTextureRegion)(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_COPY_LOCATION* pDst, UINT DstX, UINT DstY, UINT DstZ, D3D12_TEXTURE_COPY_LOCATION* pSrc, D3D12_BOX* pSrcBox);
-typedef void(*PFN_Dispatch)(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ);
+#endif
 #ifdef USE_RESOURCE_DISCARD
 typedef void(*PFN_DiscardResource)(ID3D12GraphicsCommandList* This, ID3D12Resource* pResource, D3D12_DISCARD_REGION* pRegion);
 #endif
@@ -138,18 +154,21 @@ static PFN_CreateUnorderedAccessView o_CreateUnorderedAccessView = nullptr;
 static PFN_CreateDescriptorHeap o_CreateDescriptorHeap = nullptr;
 static PFN_CopyDescriptors o_CopyDescriptors = nullptr;
 static PFN_CopyDescriptorsSimple o_CopyDescriptorsSimple = nullptr;
+static PFN_Present o_FGSCPresent = nullptr;
 
 // Original method calls for command list
-static PFN_OMSetRenderTargets o_OMSetRenderTargets = nullptr;
+#ifndef DO_NOT_WAIT_DISPATCH
+static PFN_Dispatch o_Dispatch = nullptr;
 static PFN_DrawInstanced o_DrawInstanced = nullptr;
 static PFN_DrawIndexedInstanced o_DrawIndexedInstanced = nullptr;
+#endif
 #ifdef USE_COPY_RESOURCE
 static PFN_CopyResource o_CopyResource = nullptr;
-#endif
 static PFN_CopyTextureRegion o_CopyTextureRegion = nullptr;
+#endif
+static PFN_OMSetRenderTargets o_OMSetRenderTargets = nullptr;
 static PFN_SetGraphicsRootDescriptorTable o_SetGraphicsRootDescriptorTable = nullptr;
 static PFN_SetComputeRootDescriptorTable o_SetComputeRootDescriptorTable = nullptr;
-static PFN_Dispatch o_Dispatch = nullptr;
 #ifdef USE_RESOURCE_DISCARD
 static PFN_DiscardResource o_DiscardResource = nullptr;
 #endif
@@ -158,9 +177,6 @@ static PFN_DiscardResource o_DiscardResource = nullptr;
 static ankerl::unordered_dense::map <HWND, SwapChainInfo> fgSwapChains;
 static bool fgSkipSCWrapping = false;
 static DXGI_SWAP_CHAIN_DESC fgScDesc{};
-
-// queues
-static std::vector<ID3D12CommandQueue*> fgQueues;
 
 // heaps
 static std::vector<HeapInfo> fgHeaps;
@@ -171,7 +187,9 @@ static ankerl::unordered_dense::map <ID3D12Resource*, ResourceHeapInfo> fgHandle
 #endif
 
 // possibleHudless lisy by cmdlist
+#ifndef DO_NOT_WAIT_DISPATCH
 static ankerl::unordered_dense::map <ID3D12GraphicsCommandList*, ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo>> fgPossibleHudless[FrameGen_Dx12::FG_BUFFER_SIZE];
+#endif
 
 // mutexes
 static std::shared_mutex heapMutex;
@@ -180,7 +198,6 @@ static std::shared_mutex hudlessMutex[FrameGen_Dx12::FG_BUFFER_SIZE];
 static std::shared_mutex counterMutex[FrameGen_Dx12::FG_BUFFER_SIZE];
 
 // found hudless info
-static ID3D12Resource* fgCopySource[FrameGen_Dx12::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
 static ID3D12Resource* fgHudless[FrameGen_Dx12::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
 static ID3D12Resource* fgHudlessBuffer[FrameGen_Dx12::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
 
@@ -223,6 +240,9 @@ typedef HRESULT(*PFN_CreateSwapChainForHwnd)(IDXGIFactory*, IUnknown*, HWND, con
 static PFN_CreateDXGIFactory o_CreateDXGIFactory = nullptr;
 static PFN_CreateDXGIFactory1 o_CreateDXGIFactory1 = nullptr;
 static PFN_CreateDXGIFactory2 o_CreateDXGIFactory2 = nullptr;
+static PFN_CreateDXGIFactory o_SL_CreateDXGIFactory = nullptr;
+static PFN_CreateDXGIFactory1 o_SL_CreateDXGIFactory1 = nullptr;
+static PFN_CreateDXGIFactory2 o_SL_CreateDXGIFactory2 = nullptr;
 
 inline static PFN_EnumAdapters2 ptrEnumAdapters = nullptr;
 inline static PFN_EnumAdapters12 ptrEnumAdapters1 = nullptr;
@@ -401,19 +421,6 @@ static HeapInfo* GetHeapByGpuHandle(SIZE_T gpuHandle)
 
 #pragma region Hudless methods
 
-static bool InUpscaledList(ID3D12Resource* resource)
-{
-    auto fIndex = fgFrameIndex;
-    if (FrameGen_Dx12::fgUpscaledImage[fIndex] == resource)
-    {
-        LOG_DEBUG_ONLY("Found upscaled image!");
-        fgUpscaledFound = true;
-        return true;
-    }
-
-    return false;
-}
-
 static void FillResourceInfo(ID3D12Resource* resource, ResourceInfo* info)
 {
     auto desc = resource->GetDesc();
@@ -443,9 +450,9 @@ static bool IsHudFixActive()
 static void GetHudless(ID3D12GraphicsCommandList* This)
 {
     auto fIndex = fgFrameIndex;
-    if (This != ImGuiOverlayDx::MenuCommandList() && fgHudless[fIndex] != nullptr && Config::Instance()->CurrentFeature != nullptr && !Config::Instance()->FGChanged &&
-        fgHudlessFrame != Config::Instance()->CurrentFeature->FrameCount() && FrameGen_Dx12::fgTarget <= Config::Instance()->CurrentFeature->FrameCount() &&
-        FrameGen_Dx12::fgContext != nullptr && FrameGen_Dx12::fgIsActive)
+    if (This != ImGuiOverlayDx::MenuCommandList() && Config::Instance()->CurrentFeature != nullptr && !Config::Instance()->FGChanged &&
+        fgHudlessFrame != Config::Instance()->CurrentFeature->FrameCount() && FrameGen_Dx12::fgTarget < Config::Instance()->CurrentFeature->FrameCount() &&
+        FrameGen_Dx12::fgContext != nullptr && FrameGen_Dx12::fgIsActive && HooksDx::currentSwapchain != nullptr)
     {
         LOG_DEBUG("FrameCount: {0}, fgHudlessFrame: {1}, CommandList: {2:X}", Config::Instance()->CurrentFeature->FrameCount(), fgHudlessFrame, (UINT64)This);
 
@@ -461,7 +468,11 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
         ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
         m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
 
-        m_FrameGenerationConfig.HUDLessColor = ffxApiGetResourceDX12(fgHudless[fIndex], FFX_API_RESOURCE_STATE_COPY_DEST, 0);
+        if (fgHudless[fIndex] != nullptr)
+            m_FrameGenerationConfig.HUDLessColor = ffxApiGetResourceDX12(fgHudless[fIndex], FFX_API_RESOURCE_STATE_COPY_DEST, 0);
+        else
+            m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
+
         m_FrameGenerationConfig.frameGenerationEnabled = true;
         m_FrameGenerationConfig.flags = 0;
 
@@ -495,7 +506,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
 
                 // check for status
                 if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
-                    FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCopyCommandList == nullptr || FrameGen_Dx12::fgCopyCommandQueue == nullptr)
+                    FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCommandList == nullptr || FrameGen_Dx12::fgCommandQueue == nullptr)
                 {
                     LOG_WARN("Cancel async dispatch");
                     fgDispatchCalled = false;
@@ -509,24 +520,26 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
                 {
                     LOG_WARN("Callback without hudless! frameID: {}", params->frameID);
 
-                    auto allocator = FrameGen_Dx12::fgCopyCommandAllocators[fIndex];
+                    auto allocator = FrameGen_Dx12::fgCommandAllocators[fIndex];
                     result = allocator->Reset();
-                    result = FrameGen_Dx12::fgCopyCommandList->Reset(allocator, nullptr);
+                    result = FrameGen_Dx12::fgCommandList->Reset(allocator, nullptr);
 
                     params->frameID = fgLastFGFrame;
                     params->numGeneratedFrames = 0;
+                    params->reset = true;
                 }
 
                 if (Config::Instance()->CurrentFeature != nullptr)
                     fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
 
                 dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
+
                 ID3D12CommandList* cl[1] = { nullptr };
-                result = FrameGen_Dx12::fgCopyCommandList->Close();
-                cl[0] = FrameGen_Dx12::fgCopyCommandList;
+                result = FrameGen_Dx12::fgCommandList->Close();
+                cl[0] = FrameGen_Dx12::fgCommandList;
                 FrameGen_Dx12::gameCommandQueue->ExecuteCommandLists(1, cl);
 
-                LOG_DEBUG("_dispatch result: {0}", (UINT)result);
+                LOG_DEBUG("D3D12_Dispatch result: {0}", (UINT)result);
 
                 fgDispatchCalled = false;
                 FrameGen_Dx12::fgSkipHudlessChecks = false;
@@ -537,12 +550,6 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
         m_FrameGenerationConfig.onlyPresentGenerated = Config::Instance()->FGOnlyGenerated;
         m_FrameGenerationConfig.frameID = Config::Instance()->CurrentFeature->FrameCount();
         m_FrameGenerationConfig.swapChain = HooksDx::currentSwapchain;
-
-        ffxConfigureDescGlobalDebug1 debugDesc;
-        debugDesc.header.type = FFX_API_CONFIGURE_DESC_TYPE_GLOBALDEBUG1;
-        debugDesc.debugLevel = FFX_API_CONFIGURE_GLOBALDEBUG_LEVEL_VERBOSE;
-        debugDesc.fpMessage = FfxFgLogCallback;
-        m_FrameGenerationConfig.header.pNext = &debugDesc.header;
 
         Config::Instance()->dxgiSkipSpoofing = true;
         ffxReturnCode_t retCode = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgContext, &m_FrameGenerationConfig.header);
@@ -559,7 +566,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
             dfgPrepare.header.type = FFX_API_DISPATCH_DESC_TYPE_FRAMEGENERATION_PREPARE;
             dfgPrepare.header.pNext = &backendDesc.header;
 
-            dfgPrepare.commandList = FrameGen_Dx12::fgCopyCommandList; // This;
+            dfgPrepare.commandList = FrameGen_Dx12::fgCommandList; // This;
 
             dfgPrepare.frameID = frame;
             dfgPrepare.flags = m_FrameGenerationConfig.flags;
@@ -597,16 +604,26 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
                 return;
             }
 
+
+#ifdef USE_MUTEX_FOR_FFX
+            FrameGen_Dx12::ffxMutex.lock();
+#endif
             Config::Instance()->dxgiSkipSpoofing = true;
             retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
-            fgDispatchCalled = true;
             Config::Instance()->dxgiSkipSpoofing = false;
+#ifdef USE_MUTEX_FOR_FFX            
+            FrameGen_Dx12::ffxMutex.unlock();
+#endif
+            fgDispatchCalled = true;
             LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}", retCode, frame);
         }
     }
     else
     {
-        LOG_ERROR("This should not happen!!");
+        LOG_ERROR("This should not happen!\nThis != ImGuiOverlayDx::MenuCommandList(): {} && Config::Instance()->CurrentFeature != nullptr: {} && !Config::Instance()->FGChanged: {} && fgHudlessFrame: {} != Config::Instance()->CurrentFeature->FrameCount(): {}, FrameGen_Dx12::fgTarget: {} < Config::Instance()->CurrentFeature->FrameCount(): {} && FrameGen_Dx12::fgContext != nullptr : {} && FrameGen_Dx12::fgIsActive: {} && HooksDx::currentSwapchain != nullptr: {}", 
+                  This != ImGuiOverlayDx::MenuCommandList(), Config::Instance()->CurrentFeature != nullptr, !Config::Instance()->FGChanged,
+                  fgHudlessFrame, Config::Instance()->CurrentFeature->FrameCount(), FrameGen_Dx12::fgTarget, Config::Instance()->CurrentFeature->FrameCount(),
+                  FrameGen_Dx12::fgContext != nullptr, FrameGen_Dx12::fgIsActive, HooksDx::currentSwapchain != nullptr);
     }
 }
 
@@ -618,7 +635,7 @@ static bool CheckCapture(std::string callerName)
         std::unique_lock<std::shared_mutex> lock(counterMutex[fIndex]);
         FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex]++;
 
-        LOG_DEBUG("{} -> frameCounter: {}, fgHUDlessCaptureCounter: {}, Limit: {}", callerName, frameCounter, FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex], Config::Instance()->FGHUDLimit.value_or(1));
+        LOG_DEBUG("{} -> frameCounter: {}, fgHUDlessCaptureCounter: {}, Limit: {}", callerName, Config::Instance()->CurrentFeature->FrameCount(), FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex], Config::Instance()->FGHUDLimit.value_or(1));
 
         if (FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] != Config::Instance()->FGHUDLimit.value_or(1))
             return false;
@@ -635,7 +652,6 @@ static bool CheckCapture(std::string callerName)
 static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* resource, D3D12_RESOURCE_STATES state)
 {
     auto fIndex = fgFrameIndex;
-    fgCopySource[fIndex] = resource->buffer;
 
     LOG_TRACE("Capture resource: {0:X}", (size_t)resource->buffer);
 
@@ -651,14 +667,15 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
 #endif
 
             cmdList->CopyResource(fgHudlessBuffer[fIndex], resource->buffer);
+
 #ifdef USE_RESOURCE_BARRIRER
             ResourceBarrier(cmdList, fgHudlessBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
 #endif
 
-            FrameGen_Dx12::fgFormatTransfer->SetBufferState(FrameGen_Dx12::fgCopyCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            FrameGen_Dx12::fgFormatTransfer->Dispatch(g_pd3dDeviceParam, FrameGen_Dx12::fgCopyCommandList, fgHudlessBuffer[fIndex], FrameGen_Dx12::fgFormatTransfer->Buffer());
-            FrameGen_Dx12::fgFormatTransfer->SetBufferState(FrameGen_Dx12::fgCopyCommandList, D3D12_RESOURCE_STATE_COPY_SOURCE);
+            FrameGen_Dx12::fgFormatTransfer->SetBufferState(FrameGen_Dx12::fgCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            FrameGen_Dx12::fgFormatTransfer->Dispatch(g_pd3dDeviceParam, FrameGen_Dx12::fgCommandList, fgHudlessBuffer[fIndex], FrameGen_Dx12::fgFormatTransfer->Buffer());
+            FrameGen_Dx12::fgFormatTransfer->SetBufferState(FrameGen_Dx12::fgCommandList, D3D12_RESOURCE_STATE_COPY_DEST);
 
             LOG_TRACE("Using fgFormatTransfer->Buffer()");
             fgHudless[fIndex] = FrameGen_Dx12::fgFormatTransfer->Buffer();
@@ -698,26 +715,37 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
         return false;
     }
 
-    if ((scDesc.BufferDesc.Height != fgScDesc.BufferDesc.Height || scDesc.BufferDesc.Width != fgScDesc.BufferDesc.Width || scDesc.BufferDesc.Format != fgScDesc.BufferDesc.Format))
+    if (!FrameGen_Dx12::fgFormatTransfer->IsFormatCompatible(scDesc.BufferDesc.Format))
     {
         LOG_DEBUG("Format change, recreate the FormatTransfer");
-        delete FrameGen_Dx12::fgFormatTransfer;
+
+        if (FrameGen_Dx12::fgFormatTransfer != nullptr)
+            delete FrameGen_Dx12::fgFormatTransfer;
+
         FrameGen_Dx12::fgFormatTransfer = nullptr;
         FrameGen_Dx12::fgFormatTransfer = new FT_Dx12("FormatTransfer", g_pd3dDeviceParam, scDesc.BufferDesc.Format);
+    }
 
-        HooksDx::swapchainFormat = scDesc.BufferDesc.Format;
+    if ((scDesc.BufferDesc.Height != fgScDesc.BufferDesc.Height || scDesc.BufferDesc.Width != fgScDesc.BufferDesc.Width || scDesc.BufferDesc.Format != fgScDesc.BufferDesc.Format))
+    {
         fgScDesc = scDesc;
     }
 
     // dimensions not match
     if (resource->height != fgScDesc.BufferDesc.Height || resource->width != fgScDesc.BufferDesc.Width)
+    {
+        if (callerName.length() > 0)
+            LOG_DEBUG_ONLY("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
+                           callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
+
         return false;
+    }
 
     // all metch
     if (resource->format == fgScDesc.BufferDesc.Format)
     {
         if (callerName.length() > 0)
-            LOG_TRACE("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> TRUE",
+            LOG_DEBUG("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> TRUE",
                       callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
 
         return true;
@@ -725,22 +753,31 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
 
     // extended not active or no converter
     if ((!Config::Instance()->FGHUDFixExtended.value_or(false) || FrameGen_Dx12::fgFormatTransfer == nullptr))
-        return false;
-
-    // resource and target formats are supported by converter
-    if ((resource->format == DXGI_FORMAT_R8G8B8A8_TYPELESS || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || resource->format == DXGI_FORMAT_R16G16B16A16_FLOAT || resource->format == DXGI_FORMAT_R11G11B10_FLOAT || resource->format == DXGI_FORMAT_R32G32B32A32_FLOAT || resource->format == DXGI_FORMAT_R32G32B32_FLOAT) &&
-        (fgScDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R10G10B10A2_UNORM))
     {
         if (callerName.length() > 0)
-            LOG_TRACE("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> TRUE",
+            LOG_DEBUG("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
+                      callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
+
+        return false;
+    }
+
+    // resource and target formats are supported by converter
+    if ((resource->format == DXGI_FORMAT_R8G8B8A8_TYPELESS || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM || resource->format == DXGI_FORMAT_R16G16B16A16_FLOAT ||
+        resource->format == DXGI_FORMAT_R11G11B10_FLOAT || resource->format == DXGI_FORMAT_R32G32B32A32_FLOAT || resource->format == DXGI_FORMAT_R32G32B32_FLOAT || resource->format == DXGI_FORMAT_R10G10B10A2_UNORM ||
+        resource->format == DXGI_FORMAT_R10G10B10A2_TYPELESS) &&
+        (fgScDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_TYPELESS || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB ||
+        fgScDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R10G10B10A2_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R10G10B10A2_TYPELESS))
+    {
+        if (callerName.length() > 0)
+            LOG_DEBUG("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> TRUE",
                       callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
 
         return true;
     }
 
     if (callerName.length() > 0)
-        LOG_TRACE("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
-                  callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
+        LOG_DEBUG_ONLY("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
+                       callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
 
     return false;
 }
@@ -770,7 +807,7 @@ static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* p
 
         fgHandlesByResources.erase(pResource);
         LOG_DEBUG_ONLY("Erased");
-}
+    }
 }
 #endif
 
@@ -900,23 +937,26 @@ static void hkCopyResource(ID3D12GraphicsCommandList* This, ID3D12Resource* Dest
 
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCopyCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
         return;
 
     if (!IsHudFixActive())
         return;
 
-    LOG_DEBUG_ONLY(" <--");
+    ResourceInfo srcInfo{};
+    FillResourceInfo(Source, &srcInfo);
 
-    ResourceInfo resInfo{};
-    FillResourceInfo(Dest, &resInfo);
-
-    // not matching to swapchain format or limit is not ok
-    if (CheckForHudless(__FUNCTION__, &resInfo, !Config::Instance()->FGHUDFixExtended.value_or(false)) && CheckCapture(__FUNCTION__))
+    if (CheckForHudless(__FUNCTION__, &srcInfo) && CheckCapture(__FUNCTION__))
     {
-        LOG_DEBUG("Capture");
-        CaptureHudless(This, Dest);
+        CaptureHudless(This, &srcInfo, D3D12_RESOURCE_STATE_COPY_SOURCE);
+        return;
     }
+
+    ResourceInfo dstInfo{};
+    FillResourceInfo(Dest, &dstInfo);
+
+    if (CheckForHudless(__FUNCTION__, &dstInfo) && CheckCapture(__FUNCTION__))
+        CaptureHudless(This, &dstInfo, D3D12_RESOURCE_STATE_COPY_DEST);
 }
 
 static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_COPY_LOCATION* pDst, UINT DstX, UINT DstY, UINT DstZ, D3D12_TEXTURE_COPY_LOCATION* pSrc, D3D12_BOX* pSrcBox)
@@ -925,23 +965,26 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
 
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCopyCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
         return;
 
     if (!IsHudFixActive())
         return;
 
-    LOG_DEBUG_ONLY(" <--");
+    ResourceInfo srcInfo{};
+    FillResourceInfo(pSrc->pResource, &srcInfo);
 
-    ResourceInfo resInfo{};
-    FillResourceInfo(pDst->pResource, &resInfo);
-
-    // not matching to swapchain format or limit is not ok
-    if (CheckForHudless(__FUNCTION__, &resInfo, !Config::Instance()->FGHUDFixExtended.value_or(false)) && CheckCapture(__FUNCTION__))
+    if (CheckForHudless(__FUNCTION__, &srcInfo) && CheckCapture(__FUNCTION__))
     {
-        LOG_DEBUG("Capture");
-        CaptureHudless(This, &resInfo, D3D12_RESOURCE_STATE_COPY_DEST);
+        CaptureHudless(This, &srcInfo, D3D12_RESOURCE_STATE_COPY_SOURCE);
+        return;
     }
+
+    ResourceInfo dstInfo{};
+    FillResourceInfo(pDst->pResource, &dstInfo);
+
+    if (CheckForHudless(__FUNCTION__, &dstInfo) && CheckCapture(__FUNCTION__))
+        CaptureHudless(This, &dstInfo, D3D12_RESOURCE_STATE_COPY_DEST);
 }
 
 #endif
@@ -955,7 +998,7 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
     auto result = o_CreateDescriptorHeap(This, pDescriptorHeapDesc, riid, ppvHeap);
 
     // try to calculate handle ranges for heap
-    if (result == S_OK && (pDescriptorHeapDesc->Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || pDescriptorHeapDesc->Type == D3D12_DESCRIPTOR_HEAP_TYPE_RTV)) 
+    if (result == S_OK && (pDescriptorHeapDesc->Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || pDescriptorHeapDesc->Type == D3D12_DESCRIPTOR_HEAP_TYPE_RTV))
     {
         auto heap = (ID3D12DescriptorHeap*)(*ppvHeap);
         auto increment = This->GetDescriptorHandleIncrementSize(pDescriptorHeapDesc->Type);
@@ -1019,7 +1062,7 @@ static void hkCopyDescriptors(ID3D12Device* This,
             auto destHandle = pDestDescriptorRangeStarts[destRangeIndex].ptr + destIndex * size;
             heap->SetByCpuHandle(destHandle, *buffer);
 
-            LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}", 
+            LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}",
                            handle, destHandle, GetGPUHandle(This, handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), GetGPUHandle(This, destHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), (UINT)DescriptorHeapsType);
         }
 
@@ -1067,7 +1110,7 @@ static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D
         auto destHandle = DestDescriptorRangeStart.ptr + i * size;
         heap->SetByCpuHandle(destHandle, *buffer);
 
-        LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}", 
+        LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}",
                        handle, destHandle, GetGPUHandle(This, handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), GetGPUHandle(This, destHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), (UINT)DescriptorHeapsType);
     }
 }
@@ -1078,70 +1121,73 @@ static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D
 
 static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UINT RootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor)
 {
-    o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
-
     auto fIndex = fgFrameIndex;
 
-    LOG_DEBUG_ONLY(" <-- {0:X}", (size_t)This);
-
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCopyCommandList == This)
+    if (BaseDescriptor.ptr == 0 || !IsHudFixActive())
+    {
+        o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
+    }
 
-    if (!IsHudFixActive())
+    LOG_DEBUG_ONLY("");
+
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
+    {
+        LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == ImGuiOverlayDx::MenuCommandList(), FrameGen_Dx12::fgCommandList == This);
+        o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
+    }
 
     auto heap = GetHeapByGpuHandle(BaseDescriptor.ptr);
     if (heap == nullptr)
+    {
+        LOG_DEBUG_ONLY("No heap!");
+        o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
+    }
 
     auto capturedBuffer = heap->GetByGpuHandle(BaseDescriptor.ptr);
     if (capturedBuffer == nullptr || capturedBuffer->buffer == nullptr)
     {
         LOG_DEBUG_ONLY("Miss RootParameterIndex: {1}, CommandList: {0:X}, gpuHandle: {2}", (SIZE_T)This, RootParameterIndex, BaseDescriptor.ptr);
+        o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
     }
 
-    if (!InUpscaledList(capturedBuffer->buffer) && !CheckForHudless(__FUNCTION__, capturedBuffer))
+    if (!CheckForHudless(__FUNCTION__, capturedBuffer))
+    {
+        o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
+    }
+
+#ifndef DO_NOT_WAIT_DISPATCH
+    LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
+#endif
 
     capturedBuffer->state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
-        if (fgPossibleHudless[fIndex].contains(This))
+
+        if (CheckCapture(__FUNCTION__))
         {
-            if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
-            {
-                ResourceInfo upscaledInfo{};
-                FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
-
-                if (CheckForHudless(__FUNCTION__, &upscaledInfo))
-                    fgPossibleHudless[fIndex][This].insert_or_assign(FrameGen_Dx12::fgUpscaledImage[fIndex], upscaledInfo);
-
-                FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
-            }
-
-            fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
-
+            CaptureHudless(This, capturedBuffer, capturedBuffer->state);
+            o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
             return;
         }
 
-        ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
-        fgPossibleHudless[fIndex].insert_or_assign(This, newMap);
-
-        if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
+#ifndef DO_NOT_WAIT_DISPATCH
+        if (!fgPossibleHudless[fIndex].contains(This))
         {
-            ResourceInfo upscaledInfo{};
-            FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
-
-            if (CheckForHudless(__FUNCTION__, &upscaledInfo))
-                fgPossibleHudless[fIndex][This].insert_or_assign(FrameGen_Dx12::fgUpscaledImage[fIndex], upscaledInfo);
-
-            FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
+            ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
+            fgPossibleHudless[fIndex].insert_or_assign(This, newMap);
         }
 
         fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
+#endif
     }
+
+    o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
 }
 
 #pragma endregion
@@ -1151,25 +1197,53 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
 static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRenderTargetDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE* pRenderTargetDescriptors,
                                  BOOL RTsSingleHandleToDescriptorRange, D3D12_CPU_DESCRIPTOR_HANDLE* pDepthStencilDescriptor)
 {
-    o_OMSetRenderTargets(This, NumRenderTargetDescriptors, pRenderTargetDescriptors, RTsSingleHandleToDescriptorRange, pDepthStencilDescriptor);
-
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCopyCommandList == This)
+    if (NumRenderTargetDescriptors == 0 || pRenderTargetDescriptors == nullptr || !IsHudFixActive())
+    {
+        o_OMSetRenderTargets(This, NumRenderTargetDescriptors, pRenderTargetDescriptors, RTsSingleHandleToDescriptorRange, pDepthStencilDescriptor);
         return;
+    }
 
-    if (!IsHudFixActive())
+    LOG_DEBUG_ONLY("NumRenderTargetDescriptors: {}", NumRenderTargetDescriptors);
+
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
+    {
+        LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == ImGuiOverlayDx::MenuCommandList(), FrameGen_Dx12::fgCommandList == This);
+        o_OMSetRenderTargets(This, NumRenderTargetDescriptors, pRenderTargetDescriptors, RTsSingleHandleToDescriptorRange, pDepthStencilDescriptor);
         return;
+    }
 
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
 
         for (size_t i = 0; i < NumRenderTargetDescriptors; i++)
         {
-            auto handle = pRenderTargetDescriptors[i];
-            auto heap = GetHeapByCpuHandle(handle.ptr);
-            if (heap == nullptr)
-                continue;
+            HeapInfo* heap = nullptr;
+            D3D12_CPU_DESCRIPTOR_HANDLE handle{};
+
+            if (RTsSingleHandleToDescriptorRange)
+            {
+                heap = GetHeapByCpuHandle(pRenderTargetDescriptors[0].ptr);
+                if (heap == nullptr)
+                {
+                    LOG_DEBUG_ONLY("No heap!");
+                    continue;
+                }
+
+                handle.ptr = pRenderTargetDescriptors[0].ptr + (i * heap->increment);
+            }
+            else
+            {
+                handle = pRenderTargetDescriptors[i];
+
+                heap = GetHeapByCpuHandle(handle.ptr);
+                if (heap == nullptr)
+                {
+                    LOG_DEBUG_ONLY("No heap!");
+                    continue;
+                }
+            }
 
             auto resource = heap->GetByCpuHandle(handle.ptr);
             if (resource == nullptr || resource->buffer == nullptr)
@@ -1181,43 +1255,32 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
             if (!CheckForHudless(__FUNCTION__, resource))
                 continue;
 
+#ifndef DO_NOT_WAIT_DISPATCH
+            LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
+#endif
             resource->state = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
-            if (fgPossibleHudless[fIndex].contains(This))
+            if (CheckCapture(__FUNCTION__))
             {
-                if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
-                {
-                    ResourceInfo upscaledInfo{};
-                    FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
-
-                    if (CheckForHudless(__FUNCTION__, &upscaledInfo))
-                        fgPossibleHudless[fIndex][This].insert_or_assign(FrameGen_Dx12::fgUpscaledImage[fIndex], upscaledInfo);
-
-                    FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
-                }
-                
-                fgPossibleHudless[fIndex][This].insert_or_assign(resource->buffer, *resource);
-     
-                return;
+                CaptureHudless(This, resource, resource->state);
+                break;
             }
 
-            ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
-            fgPossibleHudless[fIndex].insert_or_assign(This, newMap);
-
-            if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
+#ifndef DO_NOT_WAIT_DISPATCH
+            // check for command list
+            if (!fgPossibleHudless[fIndex].contains(This))
             {
-                ResourceInfo upscaledInfo{};
-                FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
-
-                if (CheckForHudless(__FUNCTION__, &upscaledInfo))
-                    fgPossibleHudless[fIndex][This].insert_or_assign(FrameGen_Dx12::fgUpscaledImage[fIndex], upscaledInfo);
-
-                FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
+                ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
+                fgPossibleHudless[fIndex].insert_or_assign(This, newMap);
             }
 
+            // add found resource
             fgPossibleHudless[fIndex][This].insert_or_assign(resource->buffer, *resource);
+#endif
         }
     }
+
+    o_OMSetRenderTargets(This, NumRenderTargetDescriptors, pRenderTargetDescriptors, RTsSingleHandleToDescriptorRange, pDepthStencilDescriptor);
 }
 
 #pragma endregion
@@ -1226,29 +1289,48 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
 
 static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UINT RootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor)
 {
-    o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
-
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCopyCommandList == This)
+    if (BaseDescriptor.ptr == 0 || !IsHudFixActive())
+    {
+        o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
+    }
 
-    if (!IsHudFixActive())
+    LOG_DEBUG_ONLY("");
+
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
+    {
+        LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == ImGuiOverlayDx::MenuCommandList(), FrameGen_Dx12::fgCommandList == This);
+        o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
+    }
 
     auto heap = GetHeapByGpuHandle(BaseDescriptor.ptr);
     if (heap == nullptr)
+    {
+        LOG_DEBUG_ONLY("No heap!");
+        o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
+    }
 
     auto capturedBuffer = heap->GetByGpuHandle(BaseDescriptor.ptr);
     if (capturedBuffer == nullptr || capturedBuffer->buffer == nullptr)
     {
         LOG_DEBUG_ONLY("Miss RootParameterIndex: {1}, CommandList: {0:X}, gpuHandle: {2}", (SIZE_T)This, RootParameterIndex, BaseDescriptor.ptr);
+        o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
     }
 
-    if (!InUpscaledList(capturedBuffer->buffer) && !CheckForHudless(__FUNCTION__, capturedBuffer))
+    if (!CheckForHudless(__FUNCTION__, capturedBuffer))
+    {
+        o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
+    }
+
+#ifndef DO_NOT_WAIT_DISPATCH
+    LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
+#endif
 
     if (capturedBuffer->type == UAV)
         capturedBuffer->state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
@@ -1257,45 +1339,33 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
 
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
-        if (fgPossibleHudless[fIndex].contains(This))
+
+        if (CheckForHudless(__FUNCTION__, capturedBuffer) && CheckCapture(__FUNCTION__))
         {
-            if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
-            {
-                ResourceInfo upscaledInfo{};
-                FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
-
-                if (CheckForHudless(__FUNCTION__, &upscaledInfo))
-                    fgPossibleHudless[fIndex][This].insert_or_assign(FrameGen_Dx12::fgUpscaledImage[fIndex], upscaledInfo);
-
-                FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
-            }
-
-            fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
-
+            CaptureHudless(This, capturedBuffer, capturedBuffer->state);
+            o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
             return;
         }
 
-        ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
-        fgPossibleHudless[fIndex].insert_or_assign(This, newMap);
-
-        if (FrameGen_Dx12::fgUpscaledImage[fIndex] != nullptr)
+#ifndef DO_NOT_WAIT_DISPATCH
+        if (!fgPossibleHudless[fIndex].contains(This))
         {
-            ResourceInfo upscaledInfo{};
-            FillResourceInfo(FrameGen_Dx12::fgUpscaledImage[fIndex], &upscaledInfo);
-
-            if (CheckForHudless(__FUNCTION__, &upscaledInfo))
-                fgPossibleHudless[fIndex][This].insert_or_assign(FrameGen_Dx12::fgUpscaledImage[fIndex], upscaledInfo);
-
-            FrameGen_Dx12::fgUpscaledImage[fIndex] = nullptr;
+            ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo> newMap;
+            fgPossibleHudless[fIndex].insert_or_assign(This, newMap);
         }
 
         fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
+#endif
     }
+
+    o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
 }
 
 #pragma endregion
 
 #pragma region Shader finalizer hooks
+
+#ifndef DO_NOT_WAIT_DISPATCH
 
 // Capture if render target matches, wait for DrawIndexed
 static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPerInstance, UINT InstanceCount, UINT StartVertexLocation, UINT StartInstanceLocation)
@@ -1304,25 +1374,31 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
 
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCopyCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
         return;
+
+    LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
 
     if (!IsHudFixActive())
         return;
 
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
+
+        //if (fgSourceType != Graphic)
+        //    return;
+
         // if can't find output skip
         if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
         {
-            fgPossibleHudless[fIndex][This].clear();
+            LOG_DEBUG_ONLY("Early exit");
             return;
         }
 
+        auto& val0 = fgPossibleHudless[fIndex][This];
+
         do
         {
-            auto& val0 = fgPossibleHudless[fIndex][This];
-
             // if this command list does not have entries skip
             if (val0.size() == 0)
                 break;
@@ -1331,7 +1407,6 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
             {
                 if (CheckCapture(__FUNCTION__))
                 {
-                    LOG_DEBUG("Capture");
                     CaptureHudless(This, &val, val.state);
                     break;
                 }
@@ -1339,7 +1414,7 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
 
         } while (false);
 
-        fgPossibleHudless[fIndex][This].clear();
+        val0.clear();
         LOG_DEBUG_ONLY("Clear");
     }
 }
@@ -1350,28 +1425,31 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
 
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCopyCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
         return;
+
+    LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
 
     if (!IsHudFixActive())
         return;
 
-    LOG_DEBUG_ONLY(" <-- {0:X}", (size_t)This);
-
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
+
+        //if (fgSourceType != Graphic)
+        //    return;
+
         // if can't find output skip
         if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
         {
-            fgPossibleHudless[fIndex][This].clear();
             LOG_DEBUG_ONLY("Early exit");
             return;
         }
 
+        auto& val0 = fgPossibleHudless[fIndex][This];
+
         do
         {
-            auto& val0 = fgPossibleHudless[fIndex][This];
-
             // if this command list does not have entries skip
             if (val0.size() == 0)
                 break;
@@ -1382,7 +1460,6 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
 
                 if (CheckCapture(__FUNCTION__))
                 {
-                    LOG_DEBUG("Capture");
                     CaptureHudless(This, &val, val.state);
                     break;
                 }
@@ -1390,7 +1467,7 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
 
         } while (false);
 
-        fgPossibleHudless[fIndex][This].clear();
+        val0.clear();
         LOG_DEBUG_ONLY("Clear");
     }
 }
@@ -1401,28 +1478,32 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCopyCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
         return;
+
+    LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
 
     if (!IsHudFixActive())
         return;
 
-    LOG_DEBUG_ONLY(" <-- {0:X}", (size_t)This);
-
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
+
+        //if (fgSourceType != Compute)
+        //    return;
+
+
         // if can't find output skip
         if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
         {
-            fgPossibleHudless[fIndex][This].clear();
             LOG_DEBUG_ONLY("Early exit");
             return;
         }
 
+        auto& val0 = fgPossibleHudless[fIndex][This];
+
         do
         {
-            auto& val0 = fgPossibleHudless[fIndex][This];
-
             // if this command list does not have entries skip
             if (val0.size() == 0)
                 break;
@@ -1433,7 +1514,6 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 
                 if (CheckCapture(__FUNCTION__))
                 {
-                    LOG_DEBUG("Capture");
                     CaptureHudless(This, &val, val.state);
                     break;
                 }
@@ -1441,14 +1521,63 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 
         } while (false);
 
-        fgPossibleHudless[fIndex][This].clear();
+        val0.clear();
         LOG_DEBUG_ONLY("Clear");
     }
 }
 
+#endif
+
 #pragma endregion
 
 #pragma region Callbacks for wrapped swapchain
+
+#ifdef USE_MUTEX_FOR_FFX
+static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
+{
+    auto fIndex = fgFrameIndex;
+
+    // Skip calculations etc
+    if (Flags & DXGI_PRESENT_TEST)
+        return o_FGSCPresent(This, SyncInterval, Flags);
+
+    // If dispatch still not called
+    if (!fgDispatchCalled && Config::Instance()->FGHUDFix.value_or(false) && FrameGen_Dx12::fgIsActive && 
+        Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
+        Config::Instance()->FGEnabled.value_or(false) && Config::Instance()->CurrentFeature != nullptr &&
+        FrameGen_Dx12::fgTarget < Config::Instance()->CurrentFeature->FrameCount() && !Config::Instance()->FGChanged &&
+        FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr && CheckCapture(__FUNCTION__))
+    {
+        LOG_WARN("Can't capture hudless, calling HudFix dispatch!");
+        fgHudless[fIndex] = nullptr;
+        GetHudless(nullptr);
+    }
+
+    FrameGen_Dx12::ffxMutex.lock();
+    auto result = o_FGSCPresent(This, SyncInterval, Flags);
+
+#ifdef USE_PRESENT_FOR_FT
+    float msDelta = 0.0;
+    auto now = Util::MillisecondsNow();
+
+    if (fgLastFrameTime != 0)
+    {
+        msDelta = now - fgLastFrameTime;
+        LOG_DEBUG("Frametime: {0}", msDelta);
+    }
+
+    fgLastFrameTime = now;
+    FrameGen_Dx12::fgFrameTime = msDelta;
+#else
+    LOG_DEBUG("");
+#endif
+
+    FrameGen_Dx12::upscaleRan = false;
+    FrameGen_Dx12::ffxMutex.unlock();
+
+    return result;
+}
+#endif
 
 static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd)
 {
@@ -1459,23 +1588,15 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
     if (hWnd != Util::GetProcessWindow())
     {
-        //fgPresentRunning = true;
-
         if (pPresentParameters == nullptr)
             presentResult = pSwapChain->Present(SyncInterval, Flags);
         else
             presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
 
-        //fgPresentRunning = false;
-
         HooksDx::currentSwapchain = nullptr;
-        HooksDx::swapchainFormat = DXGI_FORMAT_UNKNOWN;
         FrameGen_Dx12::fgSkipHudlessChecks = false;
 
         LOG_FUNC_RESULT(presentResult);
-
-        //LOG_DEBUG("Return");
-
         return presentResult;
     }
 
@@ -1484,15 +1605,9 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         auto swInfo = &fgSwapChains[hWnd];
         HooksDx::currentSwapchain = swInfo->swapChain;
 
-        if (HooksDx::swapchainFormat == DXGI_FORMAT_UNKNOWN)
-            HooksDx::swapchainFormat = swInfo->swapChainFormat;
-
         swInfo->fgCommandQueue = (ID3D12CommandQueue*)pDevice;
         FrameGen_Dx12::gameCommandQueue = swInfo->gameCommandQueue;
     }
-
-    //if (Config::Instance()->CurrentFeature != nullptr)
-    //    LOG_DEBUG("FrameCount: {}, fgHudlessFrame: {}", Config::Instance()->CurrentFeature->FrameCount(), fgHudlessFrame);
 
     ID3D12CommandQueue* cq = nullptr;
     ID3D11Device* device = nullptr;
@@ -1511,8 +1626,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         if (!_dx12Device)
             LOG_DEBUG("D3D12CommandQueue captured");
 
-        FrameGen_Dx12::fgCommandQueue = (ID3D12CommandQueue*)pDevice;
-        FrameGen_Dx12::fgCommandQueue->SetName(L"fgSwapChainQueue");
+        FrameGen_Dx12::fgFSRCommandQueue = (ID3D12CommandQueue*)pDevice;
+        FrameGen_Dx12::fgFSRCommandQueue->SetName(L"fgFSRSwapChainQueue");
         HooksDx::GameCommandQueue = (ID3D12CommandQueue*)pDevice;
 
         if (cq->GetDevice(IID_PPV_ARGS(&device12)) == S_OK)
@@ -1536,8 +1651,6 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         if (device12 != nullptr)
             device12->Release();
 
-        //fgPresentRunning = true;
-
         if (pPresentParameters == nullptr)
             presentResult = pSwapChain->Present(SyncInterval, Flags);
         else
@@ -1553,18 +1666,6 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             FrameGen_Dx12::StopAndDestroyFGContext(false, false);
             fgStopAfterNextPresent = false;
         }
-
-        auto now = Util::MillisecondsNow();
-
-        if (fgLastFrameTime != 0)
-        {
-            fgLastDeltaTime = now - fgLastFrameTime;
-            LOG_DEBUG("fgLastDeltaTime: {0:.2f}, frameCounter: {1}", fgLastDeltaTime, frameCounter);
-        }
-
-        fgLastFrameTime = now;
-
-        //LOG_DEBUG("Return");
 
         return presentResult;
     }
@@ -1633,6 +1734,10 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         fakenvapi::reportFGPresent(pSwapChain, FrameGen_Dx12::fgIsActive, frameCounter % 2);
     }
 
+    // death stranding fix???
+    if (frameCounter < 5)
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     frameCounter++;
 
     // swapchain present
@@ -1658,16 +1763,6 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
     if (device12 != nullptr)
         device12->Release();
 
-    auto now = Util::MillisecondsNow();
-
-    if (fgLastFrameTime != 0)
-    {
-        fgLastDeltaTime = now - fgLastFrameTime;
-        LOG_DEBUG("fgLastDeltaTime: {0:.2f}, frameCounter: {1}", fgLastDeltaTime, frameCounter);
-    }
-
-    fgLastFrameTime = now;
-
     return presentResult;
 }
 
@@ -1689,7 +1784,6 @@ static void CheckAdapter(IUnknown* unkAdapter)
     void* dxvkAdapter = nullptr;
     if (adapterOk && adapter->QueryInterface(guid, &dxvkAdapter) == S_OK)
     {
-
         Config::Instance()->IsRunningOnDXVK = dxvkAdapter != nullptr;
         ((IDXGIAdapter*)dxvkAdapter)->Release();
     }
@@ -1763,6 +1857,8 @@ static void AttachToFactory(IUnknown* unkFactory)
     }
 }
 
+static int fgSCCount = 0;
+
 static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain)
 {
     LOG_FUNC();
@@ -1795,15 +1891,22 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, Windowed: {}, SkipWrapping: {}",
               pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, (UINT)pDesc->OutputWindow, pDesc->Windowed, fgSkipSCWrapping);
 
-    ID3D12CommandQueue* cq = nullptr;
-    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+    if (fgSwapChains.contains(pDesc->OutputWindow))
     {
-#ifndef WRAP_SWAP_CHAIN
+        LOG_WARN("This hWnd is already active: {:X}", (size_t)pDesc->OutputWindow);
+        return E_ACCESSDENIED;
+    }
+
+    ID3D12CommandQueue* cq = nullptr;
+    if (Config::Instance()->FGUseFGSwapChain.value_or(true) /*&& fgSCCount > 0*/ && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+    {
         cq->SetName(L"GameQueue");
-        SwapChainInfo scInfo{};
-        scInfo.gameCommandQueue = cq;
         cq->Release();
 
+        SwapChainInfo scInfo{};
+        scInfo.gameCommandQueue = (ID3D12CommandQueue*)pDevice;
+
+#ifndef WRAP_SWAP_CHAIN
         ffxCreateContextDescFrameGenerationSwapChainNewDX12 createSwapChainDesc{};
         createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_NEW_DX12;
 
@@ -1825,9 +1928,35 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
         if (result == FFX_API_RETURN_OK)
         {
+#ifdef USE_MUTEX_FOR_FFX
+            // Hooking FG Swapchain present
+            // for using ffxMutex during calls
+            if (o_FGSCPresent == nullptr && *ppSwapChain != nullptr)
+            {
+                void** pFactoryVTable = *reinterpret_cast<void***>(*ppSwapChain);
+
+                o_FGSCPresent = (PFN_Present)pFactoryVTable[8];
+
+                if (o_FGSCPresent != nullptr)
+                {
+                    LOG_INFO("Hooking native FG SwapChain present");
+
+                    DetourTransactionBegin();
+                    DetourUpdateThread(GetCurrentThread());
+
+                    DetourAttach(&(PVOID&)o_FGSCPresent, hkFGPresent);
+
+                    DetourTransactionCommit();
+                }
+            }
+#endif
             scInfo.swapChainFormat = pDesc->BufferDesc.Format;
             scInfo.swapChainBufferCount = pDesc->BufferCount;
             scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
+
+            // Hack for FSR swapchain
+            // It have 1 extra ref
+            scInfo.swapChain->Release();
             fgSwapChains.insert_or_assign(pDesc->OutputWindow, scInfo);
 
             LOG_DEBUG("Created FSR-FG swapchain");
@@ -1838,13 +1967,6 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
         return E_INVALIDARG;
 #else
-        SwapChainInfo scInfo{};
-        scInfo.gameCommandQueue = cq;
-
-        cq->SetName(L"GameQueueHwnd");
-        cq->Release();
-        fgQueues.push_back((ID3D12CommandQueue*)pDevice);
-
         Config::Instance()->dxgiSkipSpoofing = true;
         fgSkipSCWrapping = true;
         Config::Instance()->SkipHeapCapture = true;
@@ -1919,6 +2041,8 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDesc->OutputWindow);
         *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? *ppSwapChain : real, pDevice, pDesc->OutputWindow, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
         LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
+
+        fgSCCount++;
     }
 
     return result;
@@ -1949,21 +2073,25 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     }
 
+    if (fgSwapChains.contains(hWnd))
+    {
+        LOG_WARN("This hWnd is already active: {:X}", (size_t)hWnd);
+        FrameGen_Dx12::ReleaseFGSwapchain(hWnd);
+    }
+
     LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, SkipWrapping: {}",
               pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, (UINT)hWnd, fgSkipSCWrapping);
 
     ID3D12CommandQueue* cq = nullptr;
-    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+    if (Config::Instance()->FGUseFGSwapChain.value_or(true) /*&& fgSCCount > 0*/ && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
-#ifndef WRAP_SWAP_CHAIN
-        SwapChainInfo scInfo{};
-        scInfo.gameCommandQueue = cq;
-
         cq->SetName(L"GameQueueHwnd");
         cq->Release();
 
-        fgQueues.push_back((ID3D12CommandQueue*)pDevice);
+        SwapChainInfo scInfo{};
+        scInfo.gameCommandQueue = (ID3D12CommandQueue*)pDevice;
 
+#ifndef WRAP_SWAP_CHAIN
         ffxCreateContextDescFrameGenerationSwapChainForHwndDX12 createSwapChainDesc{};
         createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_FOR_HWND_DX12;
 
@@ -1986,9 +2114,36 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
         if (result == FFX_API_RETURN_OK)
         {
+#ifdef USE_MUTEX_FOR_FFX
+            // Hooking FG Swapchain present
+            // for using ffxMutex during calls
+            if (o_FGSCPresent == nullptr && *ppSwapChain != nullptr)
+            {
+                void** pFactoryVTable = *reinterpret_cast<void***>(*ppSwapChain);
+
+                o_FGSCPresent = (PFN_Present)pFactoryVTable[8];
+
+                if (o_FGSCPresent != nullptr)
+                {
+                    LOG_INFO("Hooking native FG SwapChain present");
+
+                    DetourTransactionBegin();
+                    DetourUpdateThread(GetCurrentThread());
+
+                    DetourAttach(&(PVOID&)o_FGSCPresent, hkFGPresent);
+
+                    DetourTransactionCommit();
+                }
+            }
+#endif
+
             scInfo.swapChainFormat = pDesc->Format;
             scInfo.swapChainBufferCount = pDesc->BufferCount;
             scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
+
+            // Hack for FSR swapchain
+            // It have 1 extra ref
+            scInfo.swapChain->Release();
             fgSwapChains.insert_or_assign(hWnd, scInfo);
 
             LOG_DEBUG("Created FSR-FG swapchain");
@@ -1998,13 +2153,6 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         LOG_ERROR("D3D12_CreateContext error: {}", result);
         return E_INVALIDARG;
 #else
-        SwapChainInfo scInfo{};
-        scInfo.gameCommandQueue = cq;
-
-        cq->SetName(L"GameQueueHwnd");
-        cq->Release();
-        fgQueues.push_back((ID3D12CommandQueue*)pDevice);
-
         Config::Instance()->dxgiSkipSpoofing = true;
         fgSkipSCWrapping = true;
         Config::Instance()->SkipHeapCapture = true;
@@ -2080,6 +2228,8 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)hWnd);
         *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? *ppSwapChain : real, pDevice, hWnd, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
         LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
+
+        fgSCCount++;
     }
 
     return result;
@@ -2087,7 +2237,11 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
 static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
+#ifndef ENABLE_DEBUG_LAYER
     auto result = o_CreateDXGIFactory(riid, ppFactory);
+#else
+    auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
+#endif
 
     if (result == S_OK)
         AttachToFactory(*ppFactory);
@@ -2116,7 +2270,11 @@ static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 
 static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 {
+#ifndef ENABLE_DEBUG_LAYER
     auto result = o_CreateDXGIFactory1(riid, ppFactory);
+#else
+    auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
+#endif
 
     if (result == S_OK)
         AttachToFactory(*ppFactory);
@@ -2163,7 +2321,11 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 
 static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
 {
+#ifndef ENABLE_DEBUG_LAYER
     auto result = o_CreateDXGIFactory2(Flags, riid, ppFactory);
+#else
+    auto result = o_CreateDXGIFactory2(Flags | DXGI_CREATE_FACTORY_DEBUG, riid, ppFactory);
+#endif
 
     if (result == S_OK)
         AttachToFactory(*ppFactory);
@@ -2254,7 +2416,7 @@ static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAda
 
 static void HookCommandList(ID3D12Device* InDevice)
 {
-    if (o_OMSetRenderTargets != nullptr || o_DrawIndexedInstanced != nullptr)
+    if (o_OMSetRenderTargets != nullptr)
         return;
 
     ID3D12GraphicsCommandList* commandList = nullptr;
@@ -2270,37 +2432,34 @@ static void HookCommandList(ID3D12Device* InDevice)
             // hudless shader
             o_OMSetRenderTargets = (PFN_OMSetRenderTargets)pVTable[46];
             o_SetGraphicsRootDescriptorTable = (PFN_SetGraphicsRootDescriptorTable)pVTable[32];
+
+#ifndef DO_NOT_WAIT_DISPATCH
             o_DrawInstanced = (PFN_DrawInstanced)pVTable[12];
             o_DrawIndexedInstanced = (PFN_DrawIndexedInstanced)pVTable[13];
+            o_Dispatch = (PFN_Dispatch)pVTable[14];
+#endif
 
             // hudless compute
             o_SetComputeRootDescriptorTable = (PFN_SetComputeRootDescriptorTable)pVTable[31];
-            o_Dispatch = (PFN_Dispatch)pVTable[14];
 
             // hudless copy
 #ifdef USE_COPY_RESOURCE
             o_CopyResource = (PFN_CopyResource)pVTable[17];
-#endif
             o_CopyTextureRegion = (PFN_CopyTextureRegion)pVTable[16];
+#endif
 
 #ifdef USE_RESOURCE_DISCARD
             // release resource
             o_DiscardResource = (PFN_DiscardResource)pVTable[51];
 #endif
 
-            if (o_OMSetRenderTargets != nullptr || o_DrawIndexedInstanced != nullptr || o_DrawInstanced != nullptr)
+            if (o_OMSetRenderTargets != nullptr)
             {
                 DetourTransactionBegin();
                 DetourUpdateThread(GetCurrentThread());
 
                 if (o_OMSetRenderTargets != nullptr)
                     DetourAttach(&(PVOID&)o_OMSetRenderTargets, hkOMSetRenderTargets);
-
-                if (o_DrawIndexedInstanced != nullptr)
-                    DetourAttach(&(PVOID&)o_DrawIndexedInstanced, hkDrawIndexedInstanced);
-
-                if (o_DrawInstanced != nullptr)
-                    DetourAttach(&(PVOID&)o_DrawInstanced, hkDrawInstanced);
 
 #ifdef USE_COPY_RESOURCE
                 if (o_CopyTextureRegion != nullptr)
@@ -2309,14 +2468,26 @@ static void HookCommandList(ID3D12Device* InDevice)
                 if (o_CopyResource != nullptr)
                     DetourAttach(&(PVOID&)o_CopyResource, hkCopyResource);
 #endif
+
+
                 if (o_SetGraphicsRootDescriptorTable != nullptr)
                     DetourAttach(&(PVOID&)o_SetGraphicsRootDescriptorTable, hkSetGraphicsRootDescriptorTable);
 
                 if (o_SetComputeRootDescriptorTable != nullptr)
                     DetourAttach(&(PVOID&)o_SetComputeRootDescriptorTable, hkSetComputeRootDescriptorTable);
 
+#ifndef DO_NOT_WAIT_DISPATCH
+
+                if (o_DrawIndexedInstanced != nullptr)
+                    DetourAttach(&(PVOID&)o_DrawIndexedInstanced, hkDrawIndexedInstanced);
+
+                if (o_DrawInstanced != nullptr)
+                    DetourAttach(&(PVOID&)o_DrawInstanced, hkDrawInstanced);
+
                 if (o_Dispatch != nullptr)
                     DetourAttach(&(PVOID&)o_Dispatch, hkDispatch);
+
+#endif
 
 #ifdef USE_RESOURCE_DISCARD
                 if (o_DiscardResource != nullptr)
@@ -2419,6 +2590,10 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
 {
     LOG_FUNC();
 
+#ifdef ENABLE_DEBUG_LAYER
+    Flags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+
     bool rtss = false;
 
     // Assuming RTSS is creating a D3D11on12 device, not sure why but sometimes RTSS tries to create 
@@ -2431,7 +2606,9 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
         rtss = true;
     }
 
+    Config::Instance()->dxgiSkipSpoofing = true;
     auto result = o_D3D11On12CreateDevice(pDevice, Flags, pFeatureLevels, FeatureLevels, ppCommandQueues, NumQueues, NodeMask, ppDevice, ppImmediateContext, pChosenFeatureLevel);
+    Config::Instance()->dxgiSkipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr && !rtss && !_d3d12Captured)
     {
@@ -2449,6 +2626,10 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
                                    UINT FeatureLevels, UINT SDKVersion, ID3D11Device** ppDevice, D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext)
 {
     LOG_FUNC();
+
+#ifdef ENABLE_DEBUG_LAYER
+    Flags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
 
     static const D3D_FEATURE_LEVEL levels[] = {
      D3D_FEATURE_LEVEL_11_1,
@@ -2468,7 +2649,9 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
         FeatureLevels = ARRAYSIZE(levels);
     }
 
-    auto result = o_D3D11CreateDevice(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
+    Config::Instance()->dxgiSkipSpoofing = true;
+    auto result = o_D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
+    Config::Instance()->dxgiSkipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr && !_d3d12Captured)
     {
@@ -2487,6 +2670,10 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
                                                UINT FeatureLevels, UINT SDKVersion, DXGI_SWAP_CHAIN_DESC* pSwapChainDesc, IDXGISwapChain** ppSwapChain, ID3D11Device** ppDevice, D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext)
 {
     LOG_FUNC();
+
+#ifdef ENABLE_DEBUG_LAYER
+    Flags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
 
     static const D3D_FEATURE_LEVEL levels[] = {
     D3D_FEATURE_LEVEL_11_1,
@@ -2509,11 +2696,16 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
     if (pSwapChainDesc != nullptr && pSwapChainDesc->BufferDesc.Height == 2 && pSwapChainDesc->BufferDesc.Width == 2)
     {
         LOG_WARN("RTSS call!");
-        return o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
+        Config::Instance()->dxgiSkipSpoofing = true;
+        auto result = o_D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
+        Config::Instance()->dxgiSkipSpoofing = false;
+        return result;
     }
 
     IDXGISwapChain* buffer = nullptr;
-    auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, &buffer, ppDevice, pFeatureLevel, ppImmediateContext);
+    Config::Instance()->dxgiSkipSpoofing = true;
+    auto result = o_D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, &buffer, ppDevice, pFeatureLevel, ppImmediateContext);
+    Config::Instance()->dxgiSkipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr && !_d3d12Captured)
     {
@@ -2554,12 +2746,37 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
     return result;
 }
 
+#ifdef ENABLE_DEBUG_LAYER
+static ID3D12Debug3* debugController = nullptr;
+static ID3D12InfoQueue* infoQueue = nullptr;
+static ID3D12InfoQueue1* infoQueue1 = nullptr;
+
+static void CALLBACK D3D12DebugCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_MESSAGE_SEVERITY Severity, D3D12_MESSAGE_ID ID, LPCSTR pDescription, void* pContext)
+{
+    LOG_DEBUG("Category: {}, Severity: {}, ID: {}, Message: {}", (UINT)Category, (UINT)Severity, (UINT)ID, pDescription);
+}
+#endif
+
 static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
 {
     LOG_FUNC();
 
-    HRESULT result = E_INVALIDARG;
-    result = o_D3D12CreateDevice(pAdapter, MinimumFeatureLevel, riid, ppDevice);
+#ifdef ENABLE_DEBUG_LAYER
+    LOG_WARN("Debug layers active!");
+    if (debugController == nullptr && D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)) == S_OK)
+    {
+        debugController->EnableDebugLayer();
+
+#ifdef ENABLE_GPU_VALIDATION
+        LOG_WARN("GPU Based Validation active!");
+        debugController->SetEnableGPUBasedValidation(TRUE);
+#endif
+    }
+#endif
+
+    Config::Instance()->dxgiSkipSpoofing = true;
+    auto result = o_D3D12CreateDevice(pAdapter, MinimumFeatureLevel, riid, ppDevice);
+    Config::Instance()->dxgiSkipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr)
     {
@@ -2567,6 +2784,33 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         g_pd3dDeviceParam = (ID3D12Device*)*ppDevice;
         HookToDevice(g_pd3dDeviceParam);
         _d3d12Captured = true;
+
+#ifdef ENABLE_DEBUG_LAYER
+        if (infoQueue != nullptr)
+            infoQueue->Release();
+
+        if (infoQueue1 != nullptr)
+            infoQueue1->Release();
+
+        if (g_pd3dDeviceParam->QueryInterface(IID_PPV_ARGS(&infoQueue)) == S_OK)
+        {
+            LOG_DEBUG("infoQueue accuired");
+
+            infoQueue->ClearRetrievalFilter();
+            infoQueue->SetMuteDebugOutput(false);
+
+            HRESULT res;
+            //res = infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+            //res = infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+            //res = infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
+
+            if (infoQueue->QueryInterface(IID_PPV_ARGS(&infoQueue1)) == S_OK && infoQueue1 != nullptr)
+            {
+                LOG_DEBUG("infoQueue1 accuired, registering MessageCallback");
+                res = infoQueue1->RegisterMessageCallback(D3D12DebugCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, NULL, NULL);
+            }
+        }
+#endif
     }
 
     LOG_FUNC_RESULT(result);
@@ -2686,9 +2930,13 @@ void HooksDx::HookDx12()
     if (o_D3D12CreateDevice != nullptr)
         return;
 
+    LOG_DEBUG("");
+
     o_D3D12CreateDevice = (PFN_D3D12_CREATE_DEVICE)DetourFindFunction("d3d12.dll", "D3D12CreateDevice");
     if (o_D3D12CreateDevice != nullptr)
     {
+        LOG_DEBUG("Hooking D3D12CreateDevice method");
+
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
@@ -2703,11 +2951,15 @@ void HooksDx::HookDx11()
     if (o_D3D11CreateDevice != nullptr)
         return;
 
+    LOG_DEBUG("");
+
     o_D3D11CreateDevice = (PFN_D3D11_CREATE_DEVICE)DetourFindFunction("d3d11.dll", "D3D11CreateDevice");
     o_D3D11CreateDeviceAndSwapChain = (PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN)DetourFindFunction("d3d11.dll", "D3D11CreateDeviceAndSwapChain");
     o_D3D11On12CreateDevice = (PFN_D3D11ON12_CREATE_DEVICE)DetourFindFunction("d3d11.dll", "D3D11On12CreateDevice");
     if (o_D3D11CreateDevice != nullptr || o_D3D11On12CreateDevice != nullptr || o_D3D11CreateDeviceAndSwapChain != nullptr)
     {
+        LOG_DEBUG("Hooking D3D11CreateDevice methods");
+
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
@@ -2729,12 +2981,16 @@ void HooksDx::HookDxgi()
     if (o_CreateDXGIFactory != nullptr)
         return;
 
+    LOG_DEBUG("");
+
     o_CreateDXGIFactory = (PFN_CreateDXGIFactory)DetourFindFunction("dxgi.dll", "CreateDXGIFactory");
     o_CreateDXGIFactory1 = (PFN_CreateDXGIFactory1)DetourFindFunction("dxgi.dll", "CreateDXGIFactory1");
     o_CreateDXGIFactory2 = (PFN_CreateDXGIFactory2)DetourFindFunction("dxgi.dll", "CreateDXGIFactory2");
 
-    if (o_CreateDXGIFactory1 != nullptr)
+    if (o_CreateDXGIFactory != nullptr)
     {
+        LOG_DEBUG("Hooking CreateDXGIFactory methods");
+
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
@@ -2749,6 +3005,18 @@ void HooksDx::HookDxgi()
 
         DetourTransactionCommit();
     }
+}
+
+DXGI_FORMAT HooksDx::CurrentSwapchainFormat()
+{
+    if (HooksDx::currentSwapchain == nullptr)
+        return DXGI_FORMAT_UNKNOWN;
+
+    DXGI_SWAP_CHAIN_DESC scDesc{};
+    if (HooksDx::currentSwapchain->GetDesc(&scDesc) != S_OK)
+        return DXGI_FORMAT_UNKNOWN;
+
+    return scDesc.BufferDesc.Format;
 }
 
 void HooksDx::UnHookDx()
@@ -2812,37 +3080,18 @@ void HooksDx::UnHookDx()
 
 #pragma region Public Frame Generation methods
 
-UINT FrameGen_Dx12::ClearFrameResources()
-{
-    LOG_DEBUG_ONLY(" <-- {}", fgFrameIndex);
-
-    fgFrameIndex = (fgFrameIndex + 1) % FG_BUFFER_SIZE;
-
-    LOG_DEBUG_ONLY(" <-- {}", fgFrameIndex);
-    fgUpscaledFound = false;
-
-    return fgFrameIndex;
-}
-
-UINT FrameGen_Dx12::GetFrame()
-{
-    return fgFrameIndex;
-}
-
-void FrameGen_Dx12::NewFrame()
+static void ClearNextFrame()
 {
     auto fIndex = fgFrameIndex;
-    auto newIndex = (fIndex + 2) % FG_BUFFER_SIZE;
+    auto newIndex = (fIndex + 2) % FrameGen_Dx12::FG_BUFFER_SIZE;
 
-    {
-        fgCopySource[newIndex] = nullptr;
-    }
-
+#ifndef DO_NOT_WAIT_DISPATCH
     if (fgPossibleHudless[newIndex].size() != 0)
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[newIndex]);
         fgPossibleHudless[newIndex].clear();
     }
+#endif
 
     if (FrameGen_Dx12::fgHUDlessCaptureCounter[newIndex] != 0)
     {
@@ -2853,16 +3102,45 @@ void FrameGen_Dx12::NewFrame()
 
 void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 {
+    ImGuiOverlayDx::CleanupRenderTarget(true, hWnd);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
+
     if (FrameGen_Dx12::fgSwapChainContext != nullptr)
     {
+#ifdef USE_MUTEX_FOR_FFX
+        FrameGen_Dx12::ffxMutex.lock();
+#endif
         auto result = FfxApiProxy::D3D12_DestroyContext()(&FrameGen_Dx12::fgSwapChainContext, nullptr);
-        LOG_INFO("Dostroy Ffx Swapchain Result: {}({})", result, FfxApiProxy::ReturnCodeToString(result));
+#ifdef USE_MUTEX_FOR_FFX
+        FrameGen_Dx12::ffxMutex.unlock();
+#endif
+        LOG_INFO("Destroy Ffx Swapchain Result: {}({})", result, FfxApiProxy::ReturnCodeToString(result));
         FrameGen_Dx12::fgSwapChainContext = nullptr;
         fgSwapChains.erase(hWnd);
-
-        if (FrameGen_Dx12::fgContext != nullptr)
-            FrameGen_Dx12::StopAndDestroyFGContext(true, false);
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
+
+    if (FrameGen_Dx12::fgContext != nullptr)
+    {
+        FrameGen_Dx12::StopAndDestroyFGContext(true, false);
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    }
+}
+
+UINT FrameGen_Dx12::NewFrame()
+{
+    fgFrameIndex = (fgFrameIndex + 1) % FG_BUFFER_SIZE;
+    fgUpscaledFound = false;
+
+    ClearNextFrame();
+
+    return fgFrameIndex;
+}
+
+UINT FrameGen_Dx12::GetFrame()
+{
+    return fgFrameIndex;
 }
 
 
@@ -2870,11 +3148,29 @@ void FrameGen_Dx12::ReleaseFGObjects()
 {
     for (size_t i = 0; i < 4; i++)
     {
-        if (FrameGen_Dx12::fgCopyCommandAllocators[i] != nullptr)
+        if (FrameGen_Dx12::fgCommandAllocators[i] != nullptr)
         {
-            FrameGen_Dx12::fgCopyCommandAllocators[i]->Release();
-            FrameGen_Dx12::fgCopyCommandAllocators[i] = nullptr;
+            FrameGen_Dx12::fgCommandAllocators[i]->Release();
+            FrameGen_Dx12::fgCommandAllocators[i] = nullptr;
         }
+    }
+
+    if (FrameGen_Dx12::fgCommandList != nullptr)
+    {
+        FrameGen_Dx12::fgCommandList->Release();
+        FrameGen_Dx12::fgCommandList = nullptr;
+    }
+
+    if (FrameGen_Dx12::fgCommandQueue != nullptr)
+    {
+        FrameGen_Dx12::fgCommandQueue->Release();
+        FrameGen_Dx12::fgCommandQueue = nullptr;
+    }
+
+    if (FrameGen_Dx12::fgCopyCommandAllocator != nullptr)
+    {
+        FrameGen_Dx12::fgCopyCommandAllocator->Release();
+        FrameGen_Dx12::fgCopyCommandAllocator = nullptr;
     }
 
     if (FrameGen_Dx12::fgCopyCommandList != nullptr)
@@ -2898,7 +3194,7 @@ void FrameGen_Dx12::ReleaseFGObjects()
 
 void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
 {
-    if (FrameGen_Dx12::fgCopyCommandQueue != nullptr)
+    if (FrameGen_Dx12::fgCommandQueue != nullptr)
         return;
 
     do
@@ -2907,16 +3203,33 @@ void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
 
         for (size_t i = 0; i < 4; i++)
         {
-            result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&FrameGen_Dx12::fgCopyCommandAllocators[i]));
+            result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&FrameGen_Dx12::fgCommandAllocators[i]));
             if (result != S_OK)
             {
                 LOG_ERROR("CreateCommandAllocators[{0}]: {1:X}", i, (unsigned long)result);
                 break;
             }
-            FrameGen_Dx12::fgCopyCommandAllocators[i]->SetName(L"fgCopyCommandAllocator");
+            FrameGen_Dx12::fgCommandAllocators[i]->SetName(L"fgCommandAllocator");
         }
 
-        result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, FrameGen_Dx12::fgCopyCommandAllocators[0], NULL, IID_PPV_ARGS(&FrameGen_Dx12::fgCopyCommandList));
+        result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&FrameGen_Dx12::fgCopyCommandAllocator));
+
+        result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, FrameGen_Dx12::fgCommandAllocators[0], NULL, IID_PPV_ARGS(&FrameGen_Dx12::fgCommandList));
+        if (result != S_OK)
+        {
+            LOG_ERROR("CreateCommandList: {0:X}", (unsigned long)result);
+            break;
+        }
+        FrameGen_Dx12::fgCommandList->SetName(L"fgCommandList");
+
+        result = FrameGen_Dx12::fgCommandList->Close();
+        if (result != S_OK)
+        {
+            LOG_ERROR("HooksDx::fgCommandList->Close: {0:X}", (unsigned long)result);
+            break;
+        }
+
+        result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, FrameGen_Dx12::fgCopyCommandAllocator, NULL, IID_PPV_ARGS(&FrameGen_Dx12::fgCopyCommandList));
         if (result != S_OK)
         {
             LOG_ERROR("CreateCommandList: {0:X}", (unsigned long)result);
@@ -2942,15 +3255,24 @@ void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
         else
             copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 
-        HRESULT hr = InDevice->CreateCommandQueue(&copyQueueDesc, IID_PPV_ARGS(&FrameGen_Dx12::fgCopyCommandQueue));
+        HRESULT hr = InDevice->CreateCommandQueue(&copyQueueDesc, IID_PPV_ARGS(&FrameGen_Dx12::fgCommandQueue));
         if (result != S_OK)
         {
-            LOG_ERROR("CreateCommandQueue: {0:X}", (unsigned long)result);
+            LOG_ERROR("CreateCommandQueue fgCommandQueue: {0:X}", (unsigned long)result);
+            break;
+        }
+        FrameGen_Dx12::fgCommandQueue->SetName(L"fgCommandQueue");
+
+        copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
+        hr = InDevice->CreateCommandQueue(&copyQueueDesc, IID_PPV_ARGS(&FrameGen_Dx12::fgCopyCommandQueue));
+        if (result != S_OK)
+        {
+            LOG_ERROR("CreateCommandQueue fgCopyCommandQueue: {0:X}", (unsigned long)result);
             break;
         }
         FrameGen_Dx12::fgCopyCommandQueue->SetName(L"fgCopyCommandQueue");
 
-        FrameGen_Dx12::fgFormatTransfer = new FT_Dx12("FormatTransfer", InDevice, HooksDx::swapchainFormat);
+        FrameGen_Dx12::fgFormatTransfer = new FT_Dx12("FormatTransfer", InDevice, HooksDx::CurrentSwapchainFormat());
 
     } while (false);
 }
@@ -3013,7 +3335,8 @@ void FrameGen_Dx12::CreateFGContext(ID3D12Device* InDevice, IFeature* deviceCont
     if (Config::Instance()->FGAsync.value_or(false))
         createFg.flags |= FFX_FRAMEGENERATION_ENABLE_ASYNC_WORKLOAD_SUPPORT;
 
-    createFg.backBufferFormat = ffxApiGetSurfaceFormatDX12(HooksDx::swapchainFormat);
+
+    createFg.backBufferFormat = ffxApiGetSurfaceFormatDX12(HooksDx::CurrentSwapchainFormat());
     createFg.header.pNext = &backendDesc.header;
 
     Config::Instance()->dxgiSkipSpoofing = true;
@@ -3021,7 +3344,7 @@ void FrameGen_Dx12::CreateFGContext(ID3D12Device* InDevice, IFeature* deviceCont
     ffxReturnCode_t retCode = FfxApiProxy::D3D12_CreateContext()(&FrameGen_Dx12::fgContext, &createFg.header, nullptr);
     Config::Instance()->SkipHeapCapture = false;
     Config::Instance()->dxgiSkipSpoofing = false;
-    LOG_INFO("_createContext result: {0:X}", retCode);
+    LOG_INFO("D3D12_CreateContext result: {0:X}", retCode);
 
     FrameGen_Dx12::fgIsActive = (retCode == FFX_API_RETURN_OK);
 
@@ -3049,7 +3372,7 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown)
         FrameGen_Dx12::fgIsActive = false;
 
         if (!shutDown)
-            LOG_INFO("    FG _configure result: {0:X}", result);
+            LOG_INFO("D3D12_Configure result: {0:X}", result);
     }
 
     if (destroy && FrameGen_Dx12::fgContext != nullptr)
@@ -3057,7 +3380,7 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown)
         auto result = FfxApiProxy::D3D12_DestroyContext()(&FrameGen_Dx12::fgContext, nullptr);
 
         if (!shutDown)
-            LOG_INFO("    FG _destroyContext result: {0:X}", result);
+            LOG_INFO("D3D12_DestroyContext result: {0:X}", result);
 
         FrameGen_Dx12::fgContext = nullptr;
     }
@@ -3066,6 +3389,16 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown)
 
     if (shutDown || destroy)
         ReleaseFGObjects();
+}
+
+void FrameGen_Dx12::CheckUpscaledFrame(ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InUpscaled)
+{
+    ResourceInfo upscaledInfo{};
+    FillResourceInfo(InUpscaled, &upscaledInfo);
+    upscaledInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+
+    if (CheckForHudless(__FUNCTION__, &upscaledInfo) && CheckCapture(__FUNCTION__))
+        CaptureHudless(InCmdList, &upscaledInfo, upscaledInfo.state);
 }
 
 #pragma endregion

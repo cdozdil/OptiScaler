@@ -155,11 +155,11 @@ static void CleanupRenderTargetDx12(bool clearQueue)
             g_pd3dCommandQueue = nullptr;
         }
 
-        if (g_pd3dDeviceParam != nullptr)
-        {
-            g_pd3dDeviceParam->Release();
-            g_pd3dDeviceParam = nullptr;
-        }
+        //if (g_pd3dDeviceParam != nullptr)
+        //{
+        //    g_pd3dDeviceParam->Release();
+        //    g_pd3dDeviceParam = nullptr;
+        //}
 
         _dx12Device = false;
         _isInited = false;

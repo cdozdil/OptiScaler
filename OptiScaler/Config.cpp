@@ -43,24 +43,50 @@ bool Config::Reload(std::filesystem::path iniPath)
     {
         // Upscalers
         {
-            Dx11Upscaler = readString("Upscalers", "Dx11Upscaler", true);
-            Dx12Upscaler = readString("Upscalers", "Dx12Upscaler", true);
-            VulkanUpscaler = readString("Upscalers", "VulkanUpscaler", true);
+            if (!Dx11Upscaler.has_value())
+                Dx11Upscaler = readString("Upscalers", "Dx11Upscaler", true);
+
+            if (!Dx12Upscaler.has_value())
+                Dx12Upscaler = readString("Upscalers", "Dx12Upscaler", true);
+
+            if (!VulkanUpscaler.has_value())
+                VulkanUpscaler = readString("Upscalers", "VulkanUpscaler", true);
         }
 
         // Frame Generation
         {
-            FGUseFGSwapChain = readBool("FrameGen", "UseFGSwapChain");
-            FGEnabled = readBool("FrameGen", "Enabled");
-            FGDebugView = readBool("FrameGen", "DebugView");
-            FGAsync = readBool("FrameGen", "AllowAsync");
-            FGHUDFix = readBool("FrameGen", "HUDFix");
-            FGHUDLimit = readInt("FrameGen", "HUDLimit");
-            FGHUDFixExtended = readBool("FrameGen", "HUDFixExtended");
-            FGRectLeft = readInt("FrameGen", "RectLeft");
-            FGRectTop = readInt("FrameGen", "RectTop");
-            FGRectWidth = readInt("FrameGen", "RectWidth");
-            FGRectHeight = readInt("FrameGen", "RectHeight");
+            if (!FGUseFGSwapChain.has_value())
+                FGUseFGSwapChain = readBool("FrameGen", "UseFGSwapChain");
+
+            if (!FGEnabled.has_value())
+                FGEnabled = readBool("FrameGen", "Enabled");
+
+            if (!FGDebugView.has_value())
+                FGDebugView = readBool("FrameGen", "DebugView");
+
+            if (!FGAsync.has_value())
+                FGAsync = readBool("FrameGen", "AllowAsync");
+
+            if (!FGHUDFix.has_value())
+                FGHUDFix = readBool("FrameGen", "HUDFix");
+
+            if (!FGHUDLimit.has_value())
+                FGHUDLimit = readInt("FrameGen", "HUDLimit");
+
+            if (!FGHUDFixExtended.has_value())
+                FGHUDFixExtended = readBool("FrameGen", "HUDFixExtended");
+
+            if (!FGRectLeft.has_value())
+                FGRectLeft = readInt("FrameGen", "RectLeft");
+
+            if (!FGRectTop.has_value())
+                FGRectTop = readInt("FrameGen", "RectTop");
+
+            if (!FGRectWidth.has_value())
+                FGRectWidth = readInt("FrameGen", "RectWidth");
+
+            if (!FGRectHeight.has_value())
+                FGRectHeight = readInt("FrameGen", "RectHeight");
         }
 
         // Framerate
@@ -70,27 +96,52 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // FSR
         {
-            FsrVerticalFov = readFloat("FSR", "VerticalFov");
-            FsrHorizontalFov = readFloat("FSR", "HorizontalFov");
-            FsrCameraNear = readFloat("FSR", "CameraNear");
-            FsrCameraFar = readFloat("FSR", "CameraFar");
-            FsrVelocity = readFloat("FSR", "VelocityFactor");
-            FsrDebugView = readBool("FSR", "DebugView");
-            Fsr3xIndex = readInt("FSR", "UpscalerIndex");
-            FsrUseMaskForTransparency = readBool("FSR", "UseReactiveMaskForTransparency");
-            DlssReactiveMaskBias = readFloat("FSR", "DlssReactiveMaskBias");
+            if (!FsrVerticalFov.has_value())
+                FsrVerticalFov = readFloat("FSR", "VerticalFov");
+
+            if (!FsrHorizontalFov.has_value())
+                FsrHorizontalFov = readFloat("FSR", "HorizontalFov");
+
+            if (!FsrCameraNear.has_value())
+                FsrCameraNear = readFloat("FSR", "CameraNear");
+
+            if (!FsrCameraFar.has_value())
+                FsrCameraFar = readFloat("FSR", "CameraFar");
+
+            if (!FsrVelocity.has_value())
+                FsrVelocity = readFloat("FSR", "VelocityFactor");
+
+            if (!FsrDebugView.has_value())
+                FsrDebugView = readBool("FSR", "DebugView");
+
+            if (!Fsr3xIndex.has_value())
+                Fsr3xIndex = readInt("FSR", "UpscalerIndex");
+
+            if (!FsrUseMaskForTransparency.has_value())
+                FsrUseMaskForTransparency = readBool("FSR", "UseReactiveMaskForTransparency");
+
+            if (!DlssReactiveMaskBias.has_value())
+                DlssReactiveMaskBias = readFloat("FSR", "DlssReactiveMaskBias");
         }
 
         // XeSS
         {
-            BuildPipelines = readBool("XeSS", "BuildPipelines");
-            NetworkModel = readInt("XeSS", "NetworkModel");
-            CreateHeaps = readBool("XeSS", "CreateHeaps");
+            if (!BuildPipelines.has_value())
+                BuildPipelines = readBool("XeSS", "BuildPipelines");
 
-            auto xessLibraryPathA = readString("XeSS", "LibraryPath");
+            if (!NetworkModel.has_value())
+                NetworkModel = readInt("XeSS", "NetworkModel");
 
-            if (xessLibraryPathA.has_value())
-                XeSSLibrary = string_to_wstring(xessLibraryPathA.value());
+            if (!CreateHeaps.has_value())
+                CreateHeaps = readBool("XeSS", "CreateHeaps");
+
+            if (!XeSSLibrary.has_value())
+            {
+                auto xessLibraryPathA = readString("XeSS", "LibraryPath");
+
+                if (xessLibraryPathA.has_value())
+                    XeSSLibrary = string_to_wstring(xessLibraryPathA.value());
+            }
         }
 
         // DLSS
@@ -99,21 +150,41 @@ bool Config::Reload(std::filesystem::path iniPath)
             if (!DLSSEnabled.has_value())
                 DLSSEnabled = readBool("DLSS", "Enabled");
 
-            auto dlssLibraryPathA = readString("DLSS", "LibraryPath");
-            if (dlssLibraryPathA.has_value())
-                DLSSLibrary = string_to_wstring(dlssLibraryPathA.value());
+            if (!DLSSLibrary.has_value())
+            {
+                auto dlssLibraryPathA = readString("DLSS", "LibraryPath");
+                if (dlssLibraryPathA.has_value())
+                    DLSSLibrary = string_to_wstring(dlssLibraryPathA.value());
+            }
 
-            dlssLibraryPathA = readString("DLSS", "NVNGX_DLSS_Path");
-            if (dlssLibraryPathA.has_value())
-                NVNGX_DLSS_Library = string_to_wstring(dlssLibraryPathA.value());
+            if (!NVNGX_DLSS_Library.has_value())
+            {
+                auto dlssLibraryPathA = readString("DLSS", "NVNGX_DLSS_Path");
+                if (dlssLibraryPathA.has_value())
+                    NVNGX_DLSS_Library = string_to_wstring(dlssLibraryPathA.value());
+            }
 
-            RenderPresetOverride = readBool("DLSS", "RenderPresetOverride");
-            RenderPresetDLAA = readInt("DLSS", "RenderPresetDLAA");
-            RenderPresetUltraQuality = readInt("DLSS", "RenderPresetUltraQuality");
-            RenderPresetQuality = readInt("DLSS", "RenderPresetQuality");
-            RenderPresetBalanced = readInt("DLSS", "RenderPresetBalanced");
-            RenderPresetPerformance = readInt("DLSS", "RenderPresetPerformance");
-            RenderPresetUltraPerformance = readInt("DLSS", "RenderPresetUltraPerformance");
+            if (!RenderPresetOverride.has_value())
+                RenderPresetOverride = readBool("DLSS", "RenderPresetOverride");
+
+            if (!RenderPresetDLAA.has_value())
+                RenderPresetDLAA = readInt("DLSS", "RenderPresetDLAA");
+
+            if (!RenderPresetUltraQuality.has_value())
+                RenderPresetUltraQuality = readInt("DLSS", "RenderPresetUltraQuality");
+
+            if (!RenderPresetQuality.has_value())
+                RenderPresetQuality = readInt("DLSS", "RenderPresetQuality");
+
+            if (!RenderPresetBalanced.has_value())
+                RenderPresetBalanced = readInt("DLSS", "RenderPresetBalanced");
+
+            if (!RenderPresetPerformance.has_value())
+                RenderPresetPerformance = readInt("DLSS", "RenderPresetPerformance");
+
+            if (!RenderPresetUltraPerformance.has_value())
+                RenderPresetUltraPerformance = readInt("DLSS", "RenderPresetUltraPerformance");
+
 
             if (RenderPresetDLAA.has_value() && (RenderPresetDLAA.value() < 0 || RenderPresetDLAA.value() > 7))
                 RenderPresetDLAA.reset();
@@ -137,19 +208,34 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Logging
         {
-            LogLevel = readInt("Log", "LogLevel");
-            LogToConsole = readBool("Log", "LogToConsole");
-            LogToFile = readBool("Log", "LogToFile");
-            LogToNGX = readBool("Log", "LogToNGX");
-            OpenConsole = readBool("Log", "OpenConsole");
-            DebugWait = readBool("Log", "DebugWait");
+            if (!LogLevel.has_value())
+                LogLevel = readInt("Log", "LogLevel");
 
-            auto logFileA = readString("Log", "LogFile");
+            if (!LogToConsole.has_value())
+                LogToConsole = readBool("Log", "LogToConsole");
 
-            if (logFileA.has_value())
-                LogFileName = string_to_wstring(logFileA.value());
+            if (!LogToFile.has_value())
+                LogToFile = readBool("Log", "LogToFile");
 
-            LogSingleFile = readBool("Log", "SingleFile");
+            if (!LogToNGX.has_value())
+                LogToNGX = readBool("Log", "LogToNGX");
+
+            if (!OpenConsole.has_value())
+                OpenConsole = readBool("Log", "OpenConsole");
+
+            if (!DebugWait.has_value())
+                DebugWait = readBool("Log", "DebugWait");
+
+            if (!LogSingleFile.has_value())
+                LogSingleFile = readBool("Log", "SingleFile");
+
+            if (!LogFileName.has_value())
+            {
+                auto logFileA = readString("Log", "LogFile");
+
+                if (logFileA.has_value())
+                    LogFileName = string_to_wstring(logFileA.value());
+            }
 
             if (!LogFileName.has_value())
             {
@@ -168,36 +254,58 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Sharpness
         {
-            OverrideSharpness = readBool("Sharpness", "OverrideSharpness");
-            Sharpness = readFloat("Sharpness", "Sharpness");
+            if (!OverrideSharpness.has_value())
+                OverrideSharpness = readBool("Sharpness", "OverrideSharpness");
+
+            if (!Sharpness.has_value())
+                Sharpness = readFloat("Sharpness", "Sharpness");
         }
 
         // Menu
         {
-            MenuScale = readFloat("Menu", "Scale");
+            if (!MenuScale.has_value())
+                MenuScale = readFloat("Menu", "Scale");
 
             // Don't enable again if set false because of Linux issue
             if (!OverlayMenu.has_value())
                 OverlayMenu = readBool("Menu", "OverlayMenu");
 
-            ShortcutKey = readInt("Menu", "ShortcutKey");
-            AdvancedSettings = readBool("Menu", "AdvancedSettings");
-            ExtendedLimits = readBool("Menu", "ExtendedLimits");
+            if (!ShortcutKey.has_value())
+                ShortcutKey = readInt("Menu", "ShortcutKey");
+
+            if (!AdvancedSettings.has_value())
+                AdvancedSettings = readBool("Menu", "AdvancedSettings");
+
+            if (!ExtendedLimits.has_value())
+                ExtendedLimits = readBool("Menu", "ExtendedLimits");
         }
 
         // Hooks
         {
-            HookOriginalNvngxOnly = readBool("Hooks", "HookOriginalNvngxOnly");
+            if (!HookOriginalNvngxOnly.has_value())
+                HookOriginalNvngxOnly = readBool("Hooks", "HookOriginalNvngxOnly");
         }
 
         // RCAS
         {
-            RcasEnabled = readBool("CAS", "Enabled");
-            MotionSharpnessEnabled = readBool("CAS", "MotionSharpnessEnabled");
-            MotionSharpness = readFloat("CAS", "MotionSharpness");
-            MotionSharpnessDebug = readBool("CAS", "MotionSharpnessDebug");
-            MotionThreshold = readFloat("CAS", "MotionThreshold");
-            MotionScaleLimit = readFloat("CAS", "MotionScaleLimit");
+            if (!RcasEnabled.has_value())
+                RcasEnabled = readBool("CAS", "Enabled");
+
+            if (!MotionSharpnessEnabled.has_value())
+                MotionSharpnessEnabled = readBool("CAS", "MotionSharpnessEnabled");
+
+            if (!MotionSharpness.has_value())
+                MotionSharpness = readFloat("CAS", "MotionSharpness");
+
+            if (!MotionSharpnessDebug.has_value())
+                MotionSharpnessDebug = readBool("CAS", "MotionSharpnessDebug");
+
+            if (!MotionThreshold.has_value())
+                MotionThreshold = readFloat("CAS", "MotionThreshold");
+
+            if (!MotionScaleLimit.has_value())
+                MotionScaleLimit = readFloat("CAS", "MotionScaleLimit");
+
 
             if (Sharpness.has_value())
             {
@@ -234,9 +342,14 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Output Scaling
         {
-            OutputScalingEnabled = readBool("OutputScaling", "Enabled");
-            OutputScalingMultiplier = readFloat("OutputScaling", "Multiplier");
-            OutputScalingUseFsr = readBool("OutputScaling", "UseFsr");
+            if (!OutputScalingEnabled.has_value())
+                OutputScalingEnabled = readBool("OutputScaling", "Enabled");
+
+            if (!OutputScalingMultiplier.has_value())
+                OutputScalingMultiplier = readFloat("OutputScaling", "Multiplier");
+
+            if (!OutputScalingUseFsr.has_value())
+                OutputScalingUseFsr = readBool("OutputScaling", "UseFsr");
 
             if (OutputScalingMultiplier.has_value() && OutputScalingMultiplier.value() < 0.5f)
                 OutputScalingMultiplier = 0.5f;
@@ -246,113 +359,194 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Init Flags
         {
-            AutoExposure = readBool("InitFlags", "AutoExposure");
-            HDR = readBool("InitFlags", "HDR");
-            DepthInverted = readBool("InitFlags", "DepthInverted");
-            JitterCancellation = readBool("InitFlags", "JitterCancellation");
-            DisplayResolution = readBool("InitFlags", "DisplayResolution");
-            DisableReactiveMask = readBool("InitFlags", "DisableReactiveMask");
+            if (!AutoExposure.has_value())
+                AutoExposure = readBool("InitFlags", "AutoExposure");
+
+            if (!HDR.has_value())
+                HDR = readBool("InitFlags", "HDR");
+
+            if (!DepthInverted.has_value())
+                DepthInverted = readBool("InitFlags", "DepthInverted");
+
+            if (!JitterCancellation.has_value())
+                JitterCancellation = readBool("InitFlags", "JitterCancellation");
+
+            if (!DisplayResolution.has_value())
+                DisplayResolution = readBool("InitFlags", "DisplayResolution");
+
+            if (!DisableReactiveMask.has_value())
+                DisableReactiveMask = readBool("InitFlags", "DisableReactiveMask");
         }
 
 
         // DRS
         {
-            DrsMinOverrideEnabled = readBool("DRS", "DrsMinOverrideEnabled");
-            DrsMaxOverrideEnabled = readBool("DRS", "DrsMaxOverrideEnabled");
+            if (!DrsMinOverrideEnabled.has_value())
+                DrsMinOverrideEnabled = readBool("DRS", "DrsMinOverrideEnabled");
+
+            if (!DrsMaxOverrideEnabled.has_value())
+                DrsMaxOverrideEnabled = readBool("DRS", "DrsMaxOverrideEnabled");
         }
 
         //Upscale Ratio Override
         {
-            UpscaleRatioOverrideEnabled = readBool("UpscaleRatio", "UpscaleRatioOverrideEnabled");
-            UpscaleRatioOverrideValue = readFloat("UpscaleRatio", "UpscaleRatioOverrideValue");
+            if (!UpscaleRatioOverrideEnabled.has_value())
+                UpscaleRatioOverrideEnabled = readBool("UpscaleRatio", "UpscaleRatioOverrideEnabled");
+
+            if (!UpscaleRatioOverrideValue.has_value())
+                UpscaleRatioOverrideValue = readFloat("UpscaleRatio", "UpscaleRatioOverrideValue");
         }
 
         // Quality Overrides
         {
-            QualityRatioOverrideEnabled = readBool("QualityOverrides", "QualityRatioOverrideEnabled");
-            QualityRatio_DLAA = readFloat("QualityOverrides", "QualityRatioDLAA");
-            QualityRatio_UltraQuality = readFloat("QualityOverrides", "QualityRatioUltraQuality");
-            QualityRatio_Quality = readFloat("QualityOverrides", "QualityRatioQuality");
-            QualityRatio_Balanced = readFloat("QualityOverrides", "QualityRatioBalanced");
-            QualityRatio_Performance = readFloat("QualityOverrides", "QualityRatioPerformance");
-            QualityRatio_UltraPerformance = readFloat("QualityOverrides", "QualityRatioUltraPerformance");
+            if (!QualityRatioOverrideEnabled.has_value())
+                QualityRatioOverrideEnabled = readBool("QualityOverrides", "QualityRatioOverrideEnabled");
+
+            if (!QualityRatio_DLAA.has_value())
+                QualityRatio_DLAA = readFloat("QualityOverrides", "QualityRatioDLAA");
+
+            if (!QualityRatio_UltraQuality.has_value())
+                QualityRatio_UltraQuality = readFloat("QualityOverrides", "QualityRatioUltraQuality");
+
+            if (!QualityRatio_Quality.has_value())
+                QualityRatio_Quality = readFloat("QualityOverrides", "QualityRatioQuality");
+
+            if (!QualityRatio_Balanced.has_value())
+                QualityRatio_Balanced = readFloat("QualityOverrides", "QualityRatioBalanced");
+
+            if (!QualityRatio_Performance.has_value())
+                QualityRatio_Performance = readFloat("QualityOverrides", "QualityRatioPerformance");
+
+            if (!QualityRatio_UltraPerformance.has_value())
+                QualityRatio_UltraPerformance = readFloat("QualityOverrides", "QualityRatioUltraPerformance");
         }
 
         // Hotfixes
         {
-            RoundInternalResolution = readInt("Hotfix", "RoundInternalResolution");
+            if (!RoundInternalResolution.has_value())
+                RoundInternalResolution = readInt("Hotfix", "RoundInternalResolution");
 
-            MipmapBiasOverride = readFloat("Hotfix", "MipmapBiasOverride");
+            if (!MipmapBiasOverride.has_value())
+                MipmapBiasOverride = readFloat("Hotfix", "MipmapBiasOverride");
+
             if (MipmapBiasOverride.has_value() && (MipmapBiasOverride.value() > 15.0 || MipmapBiasOverride.value() < -15.0))
                 MipmapBiasOverride.reset();
 
-            AnisotropyOverride = readInt("Hotfix", "AnisotropyOverride");
+            if (!AnisotropyOverride.has_value())
+                AnisotropyOverride = readInt("Hotfix", "AnisotropyOverride");
+
             if (AnisotropyOverride.has_value() && (AnisotropyOverride.value() > 16 || AnisotropyOverride.value() < 1))
                 AnisotropyOverride.reset();
 
-            RestoreComputeSignature = readBool("Hotfix", "RestoreComputeSignature");
-            RestoreComputeSignature = readBool("Hotfix", "RestoreComputeSignature");
-            SkipFirstFrames = readInt("Hotfix", "SkipFirstFrames");
+            if (!RestoreComputeSignature.has_value())
+                RestoreComputeSignature = readBool("Hotfix", "RestoreComputeSignature");
 
-            UsePrecompiledShaders = readBool("Hotfix", "UsePrecompiledShaders");
+            if (!RestoreComputeSignature.has_value())
+                RestoreComputeSignature = readBool("Hotfix", "RestoreComputeSignature");
 
-            UseGenericAppIdWithDlss = readBool("Hotfix", "UseGenericAppIdWithDlss");
+            if (!SkipFirstFrames.has_value())
+                SkipFirstFrames = readInt("Hotfix", "SkipFirstFrames");
 
-            ColorResourceBarrier = readInt("Hotfix", "ColorResourceBarrier");
-            MVResourceBarrier = readInt("Hotfix", "MotionVectorResourceBarrier");
-            DepthResourceBarrier = readInt("Hotfix", "DepthResourceBarrier");
-            MaskResourceBarrier = readInt("Hotfix", "ColorMaskResourceBarrier");
-            ExposureResourceBarrier = readInt("Hotfix", "ExposureResourceBarrier");
-            OutputResourceBarrier = readInt("Hotfix", "OutputResourceBarrier");
+            if (!UsePrecompiledShaders.has_value())
+                UsePrecompiledShaders = readBool("Hotfix", "UsePrecompiledShaders");
+
+            if (!UseGenericAppIdWithDlss.has_value())
+                UseGenericAppIdWithDlss = readBool("Hotfix", "UseGenericAppIdWithDlss");
+
+            if (!ColorResourceBarrier.has_value())
+                ColorResourceBarrier = readInt("Hotfix", "ColorResourceBarrier");
+
+            if (!MVResourceBarrier.has_value())
+                MVResourceBarrier = readInt("Hotfix", "MotionVectorResourceBarrier");
+
+            if (!DepthResourceBarrier.has_value())
+                DepthResourceBarrier = readInt("Hotfix", "DepthResourceBarrier");
+
+            if (!MaskResourceBarrier.has_value())
+                MaskResourceBarrier = readInt("Hotfix", "ColorMaskResourceBarrier");
+
+            if (!ExposureResourceBarrier.has_value())
+                ExposureResourceBarrier = readInt("Hotfix", "ExposureResourceBarrier");
+
+            if (!OutputResourceBarrier.has_value())
+                OutputResourceBarrier = readInt("Hotfix", "OutputResourceBarrier");
         }
 
         // Dx11 with Dx12
         {
-            TextureSyncMethod = readInt("Dx11withDx12", "TextureSyncMethod");
-            CopyBackSyncMethod = readInt("Dx11withDx12", "CopyBackSyncMethod");
-            Dx11DelayedInit = readInt("Dx11withDx12", "UseDelayedInit");
-            SyncAfterDx12 = readInt("Dx11withDx12", "SyncAfterDx12");
+            if (!TextureSyncMethod.has_value())
+                TextureSyncMethod = readInt("Dx11withDx12", "TextureSyncMethod");
+
+            if (!CopyBackSyncMethod.has_value())
+                CopyBackSyncMethod = readInt("Dx11withDx12", "CopyBackSyncMethod");
+
+            if (!Dx11DelayedInit.has_value())
+                Dx11DelayedInit = readInt("Dx11withDx12", "UseDelayedInit");
+
+            if (!SyncAfterDx12.has_value())
+                SyncAfterDx12 = readInt("Dx11withDx12", "SyncAfterDx12");
         }
 
         // NvApi
         {
-            OverrideNvapiDll = readBool("NvApi", "OverrideNvapiDll");
+            if (!OverrideNvapiDll.has_value())
+                OverrideNvapiDll = readBool("NvApi", "OverrideNvapiDll");
 
-            auto nvapiPathA = readString("NvApi", "NvapiDllPath", true);
+            if (!NvapiDllPath.has_value())
+            {
+                auto nvapiPathA = readString("NvApi", "NvapiDllPath", true);
 
-            if (nvapiPathA.has_value())
-                NvapiDllPath = string_to_wstring(nvapiPathA.value());
+                if (nvapiPathA.has_value())
+                    NvapiDllPath = string_to_wstring(nvapiPathA.value());
+            }
         }
 
         // Spoofing
         {
-            DxgiSpoofing = readBool("Spoofing", "Dxgi");
-            DxgiBlacklist = readString("Spoofing", "DxgiBlacklist");
-            DxgiVRAM = readInt("Spoofing", "DxgiVRAM");
-            VulkanSpoofing = readBool("Spoofing", "Vulkan");
-            VulkanExtensionSpoofing = readBool("Spoofing", "VulkanExtensionSpoofing");
+            if (!DxgiSpoofing.has_value())
+                DxgiSpoofing = readBool("Spoofing", "Dxgi");
 
-            auto gpuName = readString("Spoofing", "SpoofedGPUName");
-            if (gpuName.has_value())
-                SpoofedGPUName = string_to_wstring(gpuName.value());
+            if (!DxgiBlacklist.has_value())
+                DxgiBlacklist = readString("Spoofing", "DxgiBlacklist");
+
+            if (!DxgiVRAM.has_value())
+                DxgiVRAM = readInt("Spoofing", "DxgiVRAM");
+
+            if (!VulkanSpoofing.has_value())
+                VulkanSpoofing = readBool("Spoofing", "Vulkan");
+
+            if (!VulkanExtensionSpoofing.has_value())
+                VulkanExtensionSpoofing = readBool("Spoofing", "VulkanExtensionSpoofing");
+
+
+            if (!SpoofedGPUName.has_value())
+            {
+                auto gpuName = readString("Spoofing", "SpoofedGPUName");
+                if (gpuName.has_value())
+                    SpoofedGPUName = string_to_wstring(gpuName.value());
+            }
         }
 
         // Plugins
         {
 
-            auto pluginsPathA = readString("Plugins", "Path", true);
-
-            if (!pluginsPathA.has_value())
+            if (!PluginPath.has_value())
             {
-                auto pluginFolder = (Util::DllPath().parent_path() / "plugins");
-                PluginPath = pluginFolder.wstring();
-            }
-            else
-            {
-                PluginPath = string_to_wstring(pluginsPathA.value());
+                auto pluginsPathA = readString("Plugins", "Path", true);
+
+                if (!pluginsPathA.has_value())
+                {
+                    auto pluginFolder = (Util::DllPath().parent_path() / "plugins");
+                    PluginPath = pluginFolder.wstring();
+                }
+                else
+                {
+                    PluginPath = string_to_wstring(pluginsPathA.value());
+                }
             }
 
-            LoadSpecialK = readBool("Plugins", "LoadSpecialK");
+            if (!LoadSpecialK.has_value())
+                LoadSpecialK = readBool("Plugins", "LoadSpecialK");
         }
 
         // DLSS Enabler
@@ -360,45 +554,54 @@ bool Config::Reload(std::filesystem::path iniPath)
             std::optional<std::string> buffer;
             int value = 0;
 
-            DE_Generator = readString("FrameGeneration", "Generator", true);
+            if (!DE_Generator.has_value())
+                DE_Generator = readString("FrameGeneration", "Generator", true);
 
             if (DE_Generator.has_value() && DE_Generator.value() != "fsr30" && DE_Generator.value() != "fsr31" && DE_Generator.value() != "dlssg")
                 DE_Generator.reset();
 
-            buffer = readString("FrameGeneration", "FramerateLimit", true);
-            if (buffer.has_value())
+            if (!DE_FramerateLimit.has_value() || !DE_FramerateLimitVsync.has_value())
             {
-                if (buffer.value() == "vsync")
+                buffer = readString("FrameGeneration", "FramerateLimit", true);
+                if (buffer.has_value())
                 {
-                    DE_FramerateLimit = 0;
-                    DE_FramerateLimitVsync = true;
-                }
-                else if (isInteger(buffer.value(), value))
-                {
-                    DE_FramerateLimit = value;
-                    DE_FramerateLimitVsync = false;
-                }
-                else
-                {
-                    DE_FramerateLimit = 0;
-                    DE_FramerateLimitVsync = false;
+                    if (buffer.value() == "vsync")
+                    {
+                        DE_FramerateLimit = 0;
+                        DE_FramerateLimitVsync = true;
+                    }
+                    else if (isInteger(buffer.value(), value))
+                    {
+                        DE_FramerateLimit = value;
+                        DE_FramerateLimitVsync = false;
+                    }
+                    else
+                    {
+                        DE_FramerateLimit = 0;
+                        DE_FramerateLimitVsync = false;
+                    }
                 }
             }
 
-            buffer.reset();
-            buffer = readString("FrameGeneration", "FrameGenerationMode", true);
-            if (buffer.has_value() && buffer.value() == "dynamic")
+            if (!DE_DynamicLimitAvailable.has_value() || !DE_DynamicLimitEnabled.has_value())
             {
-                DE_DynamicLimitAvailable = 1;
-                DE_DynamicLimitEnabled = 1;
+                buffer.reset();
+                buffer = readString("FrameGeneration", "FrameGenerationMode", true);
+                if (buffer.has_value() && buffer.value() == "dynamic")
+                {
+                    DE_DynamicLimitAvailable = 1;
+                    DE_DynamicLimitEnabled = 1;
+                }
             }
 
-            DE_Reflex = readString("FrameGeneration", "Reflex", true);
+            if (!DE_Reflex.has_value())
+                DE_Reflex = readString("FrameGeneration", "Reflex", true);
 
             if (DE_Reflex.has_value() && DE_Reflex.value() != "off" && DE_Reflex.value() != "boost" && DE_Reflex.value() != "on")
                 DE_Reflex.reset();
 
-            DE_ReflexEmu = readString("FrameGeneration", "ReflexEmulation", true);
+            if (!DE_ReflexEmu.has_value())
+                DE_ReflexEmu = readString("FrameGeneration", "ReflexEmulation", true);
 
             if (DE_ReflexEmu.has_value() && DE_ReflexEmu.value() != "off" && DE_ReflexEmu.value() != "on")
                 DE_ReflexEmu.reset();
@@ -406,7 +609,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         if (FN_Available)
             return ReloadFakenvapi();
-        
+
         return true;
     }
 
@@ -687,13 +890,13 @@ bool Config::ReloadFakenvapi() {
 
     if (fakenvapiIni.LoadFile(FN_iniPath.c_str()) == SI_OK)
     {
-        FN_Available        = true;
+        FN_Available = true;
 
-        FN_EnableLogs       = fakenvapiIni.GetLongValue("fakenvapi", "enable_logs",       true);
-        FN_EnableTraceLogs  = fakenvapiIni.GetLongValue("fakenvapi", "enable_trace_logs", false);
+        FN_EnableLogs = fakenvapiIni.GetLongValue("fakenvapi", "enable_logs", true);
+        FN_EnableTraceLogs = fakenvapiIni.GetLongValue("fakenvapi", "enable_trace_logs", false);
         FN_ForceLatencyFlex = fakenvapiIni.GetLongValue("fakenvapi", "force_latencyflex", false);
-        FN_LatencyFlexMode  = fakenvapiIni.GetLongValue("fakenvapi", "latencyflex_mode",  0);
-        FN_ForceReflex      = fakenvapiIni.GetLongValue("fakenvapi", "force_reflex",      0);
+        FN_LatencyFlexMode = fakenvapiIni.GetLongValue("fakenvapi", "latencyflex_mode", 0);
+        FN_ForceReflex = fakenvapiIni.GetLongValue("fakenvapi", "force_reflex", 0);
 
         return true;
     }
@@ -712,11 +915,11 @@ bool Config::SaveFakenvapiIni() {
 
     LOG_INFO("Trying to save fakenvapi's ini to: {0}", wstring_to_string(pathWStr));
 
-    fakenvapiIni.SetLongValue("fakenvapi", "enable_logs",       FN_EnableLogs.value_or(true));
+    fakenvapiIni.SetLongValue("fakenvapi", "enable_logs", FN_EnableLogs.value_or(true));
     fakenvapiIni.SetLongValue("fakenvapi", "enable_trace_logs", FN_EnableTraceLogs.value_or(false));
     fakenvapiIni.SetLongValue("fakenvapi", "force_latencyflex", FN_ForceLatencyFlex.value_or(false));
-    fakenvapiIni.SetLongValue("fakenvapi", "latencyflex_mode",  FN_LatencyFlexMode.value_or(0));
-    fakenvapiIni.SetLongValue("fakenvapi", "force_reflex",      FN_ForceReflex.value_or(0));
+    fakenvapiIni.SetLongValue("fakenvapi", "latencyflex_mode", FN_LatencyFlexMode.value_or(0));
+    fakenvapiIni.SetLongValue("fakenvapi", "force_reflex", FN_ForceReflex.value_or(0));
 
     return fakenvapiIni.SaveFile(FN_iniPath.wstring().c_str()) >= 0;
 }

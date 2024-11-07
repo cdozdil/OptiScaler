@@ -1,6 +1,8 @@
 //#pragma once
 #include "../pch.h"
+
 #include "dxgi1_6.h"
+#include "d3d12.h"
 
 typedef HRESULT(*PFN_SC_Present)(IDXGISwapChain*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*, IUnknown*, HWND);
 typedef void(*PFN_SC_Clean)(bool, HWND);
@@ -17,19 +19,22 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
     ULONG STDMETHODCALLTYPE AddRef()
     {
         InterlockedIncrement(&m_iRefcount);
-        LOG_TRACE("Count: {}", m_iRefcount);
+        LOG_DEBUG_ONLY("Count: {}", m_iRefcount);
         return m_iRefcount;
     }
 
     ULONG STDMETHODCALLTYPE Release()
     {
         auto ret = InterlockedDecrement(&m_iRefcount);
-        LOG_TRACE("Count: {}", ret);
+        LOG_DEBUG_ONLY("Count: {}", ret);
 
         ULONG relCount = 0;
 
         if (ret == 0)
         {
+            ID3D12Device* ddd;
+            ((ID3D12CommandQueue*)Device)->GetDevice(IID_PPV_ARGS(&ddd));
+
             if (ClearTrig != nullptr)
                 ClearTrig(true, Handle);
 
@@ -47,6 +52,7 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
 
             if (m_pReal != nullptr)
                 relCount = m_pReal->Release();
+
 
             LOG_INFO("{} released", id);
 

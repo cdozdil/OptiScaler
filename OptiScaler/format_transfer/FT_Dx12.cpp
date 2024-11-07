@@ -295,7 +295,7 @@ FT_Dx12::FT_Dx12(std::string InName, ID3D12Device* InDevice, DXGI_FORMAT InForma
         computePsoDesc.pRootSignature = _rootSignature;
         computePsoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
-        if (InFormat == DXGI_FORMAT_R10G10B10A2_UNORM)
+        if (InFormat == DXGI_FORMAT_R10G10B10A2_UNORM || InFormat == DXGI_FORMAT_R10G10B10A2_TYPELESS)
         {
             computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(r10g10b10a2_cso), sizeof(r10g10b10a2_cso));
         }
@@ -391,6 +391,24 @@ FT_Dx12::FT_Dx12(std::string InName, ID3D12Device* InDevice, DXGI_FORMAT InForma
     }
 
     _init = _srvHeap[2] != nullptr;
+}
+
+bool FT_Dx12::IsFormatCompatible(DXGI_FORMAT InFormat)
+{
+    if (format == DXGI_FORMAT_R10G10B10A2_UNORM || format == DXGI_FORMAT_R10G10B10A2_TYPELESS)
+    {
+        return InFormat == DXGI_FORMAT_R10G10B10A2_UNORM || InFormat == DXGI_FORMAT_R10G10B10A2_TYPELESS;
+    }
+    else if (format == DXGI_FORMAT_R8G8B8A8_UNORM || format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || format == DXGI_FORMAT_R8G8B8A8_TYPELESS)
+    {
+        return InFormat == DXGI_FORMAT_R8G8B8A8_UNORM || InFormat == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || InFormat == DXGI_FORMAT_R8G8B8A8_TYPELESS;
+    }
+    else if (format == DXGI_FORMAT_B8G8R8A8_UNORM)
+    {
+        return InFormat == DXGI_FORMAT_B8G8R8A8_UNORM;
+    }
+
+    return false;
 }
 
 FT_Dx12::~FT_Dx12()

@@ -8,6 +8,24 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
+// According to https://gpuopen.com/manuals/fidelityfx_sdk/fidelityfx_sdk-page_techniques_super-resolution-interpolation/#id11 
+// Will use mutex to prevent race condutions
+#define USE_MUTEX_FOR_FFX
+
+#ifdef USE_MUTEX_FOR_FFX
+#define USE_PRESENT_FOR_FT
+#endif
+
+// Enable D3D12 Debug Layers
+//#define ENABLE_DEBUG_LAYER
+
+#ifdef ENABLE_DEBUG_LAYER
+// Enable GPUValidation
+//#define ENABLE_GPU_VALIDATION
+
+#include <d3d12sdklayers.h>
+#endif
+
 #include "../FfxApi_Proxy.h"
 #include "../nvapi/fakenvapi.h"
 #include "../nvapi/ReflexHooks.h"
@@ -28,7 +46,6 @@ namespace HooksDx
 
     inline ID3D12CommandQueue* GameCommandQueue = nullptr;
     inline IDXGISwapChain* currentSwapchain = nullptr;
-    inline DXGI_FORMAT swapchainFormat = DXGI_FORMAT_UNKNOWN;
 
     inline int currentFrameIndex = 0;
     inline int previousFrameIndex = 0;
@@ -37,6 +54,7 @@ namespace HooksDx
     void HookDx11();
     void HookDx12();
     void HookDxgi();
+    DXGI_FORMAT CurrentSwapchainFormat();
 }
 
 namespace FrameGen_Dx12
@@ -54,22 +72,31 @@ namespace FrameGen_Dx12
     inline bool upscaleRan = false;
     inline bool fgSkipHudlessChecks = false;
     inline double fgFrameTime = 0.0;
-    inline ID3D12CommandQueue* fgCommandQueue = nullptr;
+    inline ID3D12CommandQueue* fgFSRCommandQueue = nullptr;
     inline ID3D12CommandQueue* gameCommandQueue = nullptr;
+
+    inline ID3D12CommandQueue* fgCommandQueue = nullptr;
+    inline ID3D12GraphicsCommandList* fgCommandList = nullptr;
+    inline ID3D12CommandAllocator* fgCommandAllocators[FG_BUFFER_SIZE] = { };
+
     inline ID3D12CommandQueue* fgCopyCommandQueue = nullptr;
     inline ID3D12GraphicsCommandList* fgCopyCommandList = nullptr;
-    inline ID3D12CommandAllocator* fgCopyCommandAllocators[FG_BUFFER_SIZE] = { };
+    inline ID3D12CommandAllocator* fgCopyCommandAllocator = nullptr;
+
     inline UINT64 fgTarget = 10;
-    inline ID3D12Resource* fgUpscaledImage[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
     inline FT_Dx12* fgFormatTransfer = nullptr;
     inline bool fgIsActive = false;
 
-    UINT ClearFrameResources();
+#ifdef USE_MUTEX_FOR_FFX
+    inline std::mutex ffxMutex;
+#endif
+
+    UINT NewFrame();
     UINT GetFrame();
-    void NewFrame();
     void ReleaseFGSwapchain(HWND hWnd);
     void ReleaseFGObjects();
     void CreateFGObjects(ID3D12Device* InDevice);
     void CreateFGContext(ID3D12Device* InDevice, IFeature* deviceContext);
     void StopAndDestroyFGContext(bool destroy, bool shutDown);
+    void CheckUpscaledFrame(ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InUpscaled);
 }
