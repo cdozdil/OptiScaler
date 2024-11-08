@@ -74,7 +74,7 @@ static VkResult hkvkCreateWin32SurfaceKHR(VkInstance instance, const VkWin32Surf
     auto procHwnd = Util::GetProcessWindow();
     LOG_DEBUG("procHwnd: {0:X}, swapchain hwnd: {1:X}", (UINT64)procHwnd, (UINT64)pCreateInfo->hwnd);
 
-    if (result == VK_SUCCESS && !Config::Instance()->VulkanSkipHooks && procHwnd == pCreateInfo->hwnd)
+    if (result == VK_SUCCESS && !Config::Instance()->VulkanSkipHooks) // && procHwnd == pCreateInfo->hwnd) // On linux sometimes procHwnd != pCreateInfo->hwnd
     {
         ImGuiOverlayVk::DestroyVulkanObjects(false);
 

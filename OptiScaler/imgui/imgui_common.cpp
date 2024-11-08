@@ -17,7 +17,7 @@ void ImGuiCommon::ShowHelpMarker(const char* tip)
     ShowTooltip(tip);
 }
 
-LRESULT __stdcall ImGuiCommon::hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+LRESULT ImGuiCommon::hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
     if (_isVisible && Msg == 0x0020)
         return TRUE;
@@ -25,7 +25,7 @@ LRESULT __stdcall ImGuiCommon::hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam
         return pfn_SendMessageW(hWnd, Msg, wParam, lParam);
 }
 
-BOOL __stdcall ImGuiCommon::hkSetPhysicalCursorPos(int x, int y)
+BOOL ImGuiCommon::hkSetPhysicalCursorPos(int x, int y)
 {
     if (_isVisible)
         return TRUE;
@@ -33,7 +33,19 @@ BOOL __stdcall ImGuiCommon::hkSetPhysicalCursorPos(int x, int y)
         return pfn_SetPhysicalCursorPos(x, y);
 }
 
-BOOL __stdcall ImGuiCommon::hkSetCursorPos(int x, int y)
+BOOL ImGuiCommon::hkGetPhysicalCursorPos(LPPOINT lpPoint)
+{
+    if (_isVisible)
+    {
+        lpPoint->x = _lastPoint.x;
+        lpPoint->y = _lastPoint.y;
+        return TRUE;
+    }
+    else
+        return pfn_GetCursorPos(lpPoint);
+}
+
+BOOL ImGuiCommon::hkSetCursorPos(int x, int y)
 {
     if (_isVisible)
         return TRUE;
@@ -41,18 +53,17 @@ BOOL __stdcall ImGuiCommon::hkSetCursorPos(int x, int y)
         return pfn_SetCursorPos(x, y);
 }
 
-BOOL __stdcall ImGuiCommon::hkClipCursor(RECT* lpRect)
+BOOL ImGuiCommon::hkClipCursor(RECT* lpRect)
 {
     if (_isVisible)
         return TRUE;
     else
     {
-        _lastCursorLimit = lpRect;
         return pfn_ClipCursor(lpRect);
     }
 }
 
-void __stdcall ImGuiCommon::hkmouse_event(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo)
+void ImGuiCommon::hkmouse_event(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo)
 {
     if (_isVisible)
         return;
@@ -60,7 +71,7 @@ void __stdcall ImGuiCommon::hkmouse_event(DWORD dwFlags, DWORD dx, DWORD dy, DWO
         pfn_mouse_event(dwFlags, dx, dy, dwData, dwExtraInfo);
 }
 
-UINT __stdcall ImGuiCommon::hkSendInput(UINT cInputs, LPINPUT pInputs, int cbSize)
+UINT ImGuiCommon::hkSendInput(UINT cInputs, LPINPUT pInputs, int cbSize)
 {
     if (_isVisible)
         return TRUE;
@@ -267,7 +278,7 @@ ImGuiKey ImGuiCommon::ImGui_ImplWin32_VirtualKeyToImGuiKey(WPARAM wParam)
 
 //Win32 message handler
 
-LRESULT __stdcall ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
@@ -277,8 +288,8 @@ LRESULT __stdcall ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
         {
             LOG_INFO("No active features, closing ImGui");
 
-            if (pfn_ClipCursor_hooked && _lastCursorLimit != nullptr)
-                pfn_ClipCursor(_lastCursorLimit);
+            if (pfn_ClipCursor_hooked)
+                pfn_ClipCursor(&_cursorLimit);
 
             _isVisible = false;
             _showMipmapCalcWindow = false;
@@ -306,16 +317,8 @@ LRESULT __stdcall ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
         if (rawData.header.dwType == RIM_TYPEKEYBOARD && rawData.data.keyboard.VKey != 0)
         {
             vmInputMenu = rawData.data.keyboard.VKey == Config::Instance()->ShortcutKey.value_or(VK_INSERT);
-            //vmInputReset = rawData.data.keyboard.VKey == Config::Instance()->ResetKey.value_or(VK_END);
         }
     }
-
-    // END - REINIT MENU
-    //if ((msg == WM_KEYDOWN && wParam == Config::Instance()->ResetKey.value_or(VK_END)) || vmInputReset)
-    //{
-    //    _isResetRequested = true;
-    //    return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
-    //}
 
     // INSERT - OPEN MENU
     if (((msg == WM_KEYDOWN && wParam == Config::Instance()->ShortcutKey.value_or(VK_INSERT)) || vmInputMenu))
@@ -325,35 +328,25 @@ LRESULT __stdcall ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
         if (_isVisible)
             Config::Instance()->ReloadFakenvapi();
 
-        if (!_isVisible)
+        if (_isVisible)
         {
-            if (pfn_ClipCursor_hooked && _lastCursorLimit != nullptr)
-                pfn_ClipCursor(_lastCursorLimit);
+            if (pfn_ClipCursor_hooked)
+            {
+                _ssRatio = 0;
+
+                if(GetClipCursor(&_cursorLimit))
+                    pfn_ClipCursor(nullptr);
+
+                GetCursorPos(&_lastPoint);
+            }
+        }
+        else
+        {
+            if (pfn_ClipCursor_hooked)
+                pfn_ClipCursor(&_cursorLimit);
 
             _showMipmapCalcWindow = false;
         }
-        else if (pfn_ClipCursor_hooked)
-        {
-            _ssRatio = 0;
-
-            if (GetWindowRect(_handle, &_cursorLimit))
-                pfn_ClipCursor(&_cursorLimit);
-            else
-                pfn_ClipCursor(nullptr);
-        }
-
-        //RECT windowRect = {};
-
-        //if (GetWindowRect(_handle, &windowRect))
-        //{
-        //    auto x = windowRect.left + (windowRect.right - windowRect.left) / 2;
-        //    auto y = windowRect.top + (windowRect.bottom - windowRect.top) / 2;
-
-        //    if (pfn_SetCursorPos != nullptr)
-        //        pfn_SetCursorPos(x, y);
-        //    else
-        //        SetCursorPos(x, y);
-        //}
 
         io.MouseDrawCursor = _isVisible;
         io.WantCaptureKeyboard = _isVisible;
@@ -1390,7 +1383,7 @@ void ImGuiCommon::RenderMenu()
                         bool fpsLimitVsync = Config::Instance()->DE_FramerateLimitVsync.value_or(false);
                         if (ImGui::Checkbox("VSync", &fpsLimitVsync))
                             Config::Instance()->DE_FramerateLimitVsync = fpsLimitVsync;
-                        ShowHelpMarker("Limit FPS to your monitor's refresh rate\nNot really vsync");
+                        ShowHelpMarker("Limit FPS to your monitor's refresh rate");
 
                         if (Config::Instance()->DE_DynamicLimitAvailable.has_value() && Config::Instance()->DE_DynamicLimitAvailable.value() > 0)
                         {
@@ -1478,6 +1471,24 @@ void ImGuiCommon::RenderMenu()
                             }
                             ShowHelpMarker("Doesn't reduce the input latency\nbut may stabilize the frame rate");
                         }
+                    }
+
+                    // Reflex ---------------------
+                    if (!Config::Instance()->DE_Available && Config::Instance()->ReflexAvailable)
+                    {
+                        ImGui::SeparatorText("Framerate");
+
+                        // set inital value
+                        if (_limitFps == INFINITY)
+                            _limitFps = Config::Instance()->FramerateLimit.value_or(0);
+
+                        ImGui::SliderFloat("FPS Limit", &_limitFps, 0, 200, "%.0f");
+
+                        if (ImGui::Button("Apply Limit")) {
+                            Config::Instance()->FramerateLimit = _limitFps;
+                        }
+
+                        ShowHelpMarker("Currently uses Reflex to limit FPS\nbe sure the game supports it and you have it enabled\non AMD cards you can use fakenvapi to substitute Reflex");
                     }
 
                     // OUTPUT SCALING -----------------------------
@@ -2269,7 +2280,7 @@ void ImGuiCommon::Init(HWND InHwnd)
     _isVisible = false;
     _isResetRequested = false;
 
-    LOG_DEBUG("Handle: {0:X}", (ULONG64)_handle);
+    LOG_DEBUG("Handle: {0:X}", (size_t)_handle);
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -2346,8 +2357,8 @@ void ImGuiCommon::HideMenu()
 
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
-    if (pfn_ClipCursor_hooked && _lastCursorLimit != nullptr)
-        pfn_ClipCursor(_lastCursorLimit);
+    if (pfn_ClipCursor_hooked)
+        pfn_ClipCursor(&_cursorLimit);
 
     _showMipmapCalcWindow = false;
 
