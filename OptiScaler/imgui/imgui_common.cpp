@@ -968,8 +968,47 @@ void ImGuiCommon::RenderMenu()
                         ImGui::Checkbox("FG Only Generated", &Config::Instance()->FGOnlyGenerated);
                         ShowHelpMarker("Display only FSR 3.1 generated frames");
 
+                        ImGui::BeginDisabled(Config::Instance()->FGResetCapturedResources);
+                        ImGui::PushItemWidth(95.0);
+                        if (ImGui::Checkbox("FG Create List", &Config::Instance()->FGCaptureResources))
+                        {
+                            if (!Config::Instance()->FGCaptureResources)
+                                Config::Instance()->FGHUDLimit = 1;
+                            else
+                                Config::Instance()->FGOnlyUseCapturedResources = false;
+                        }
+
+                        ImGui::SameLine(0.0f, 16.0f);
+                        if (ImGui::Checkbox("FG Use List", &Config::Instance()->FGOnlyUseCapturedResources))
+                        {
+                            if (Config::Instance()->FGCaptureResources)
+                            {
+                                Config::Instance()->FGCaptureResources = false;
+                                Config::Instance()->FGHUDLimit = 1;
+                            }
+                        }
+
+                        ImGui::PopItemWidth();
+                        ImGui::EndDisabled();
+
+                        ImGui::Text("Captured images: %d", Config::Instance()->FGCapturedResourceCount);
+
+                        ImGui::SameLine(0.0f, 16.0f);
+
+                        ImGui::BeginDisabled(Config::Instance()->FGResetCapturedResources);
+
+                        if (ImGui::Button("FG Reset List"))
+                        {
+                            Config::Instance()->FGResetCapturedResources = true;
+                            Config::Instance()->FGOnlyUseCapturedResources = false;
+                            Config::Instance()->FGOnlyUseCapturedResources = false;
+                        }
+
+                        ImGui::EndDisabled();
+
                         if (Config::Instance()->AdvancedSettings.value_or(false))
                         {
+
                             ImGui::PushItemWidth(95.0);
                             int rectLeft = Config::Instance()->FGRectLeft.value_or(0);
                             if (ImGui::InputInt("Rect Left", &rectLeft))

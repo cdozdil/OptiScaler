@@ -14,6 +14,7 @@
 
 #include <ankerl/unordered_dense.h>
 #include <shared_mutex>
+#include <set>
 
 // Do not wait for Dispatch/DrawInstanced to capture hudless resource
 //#define DO_NOT_WAIT_DISPATCH
@@ -186,6 +187,8 @@ static std::vector<HeapInfo> fgHeaps;
 static ankerl::unordered_dense::map <ID3D12Resource*, ResourceHeapInfo> fgHandlesByResources;
 #endif
 
+static std::set<ID3D12Resource*> fgCaptureList;
+
 // possibleHudless lisy by cmdlist
 #ifndef DO_NOT_WAIT_DISPATCH
 static ankerl::unordered_dense::map <ID3D12GraphicsCommandList*, ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo>> fgPossibleHudless[FrameGen_Dx12::FG_BUFFER_SIZE];
@@ -193,6 +196,7 @@ static ankerl::unordered_dense::map <ID3D12GraphicsCommandList*, ankerl::unorder
 
 // mutexes
 static std::shared_mutex heapMutex;
+static std::shared_mutex captureMutex;
 static std::shared_mutex resourceMutex;
 static std::shared_mutex hudlessMutex[FrameGen_Dx12::FG_BUFFER_SIZE];
 static std::shared_mutex counterMutex[FrameGen_Dx12::FG_BUFFER_SIZE];
@@ -620,7 +624,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
     }
     else
     {
-        LOG_ERROR("This should not happen!\nThis != ImGuiOverlayDx::MenuCommandList(): {} && Config::Instance()->CurrentFeature != nullptr: {} && !Config::Instance()->FGChanged: {} && fgHudlessFrame: {} != Config::Instance()->CurrentFeature->FrameCount(): {}, FrameGen_Dx12::fgTarget: {} < Config::Instance()->CurrentFeature->FrameCount(): {} && FrameGen_Dx12::fgContext != nullptr : {} && FrameGen_Dx12::fgIsActive: {} && HooksDx::currentSwapchain != nullptr: {}", 
+        LOG_ERROR("This should not happen!\nThis != ImGuiOverlayDx::MenuCommandList(): {} && Config::Instance()->CurrentFeature != nullptr: {} && !Config::Instance()->FGChanged: {} && fgHudlessFrame: {} != Config::Instance()->CurrentFeature->FrameCount(): {}, FrameGen_Dx12::fgTarget: {} < Config::Instance()->CurrentFeature->FrameCount(): {} && FrameGen_Dx12::fgContext != nullptr : {} && FrameGen_Dx12::fgIsActive: {} && HooksDx::currentSwapchain != nullptr: {}",
                   This != ImGuiOverlayDx::MenuCommandList(), Config::Instance()->CurrentFeature != nullptr, !Config::Instance()->FGChanged,
                   fgHudlessFrame, Config::Instance()->CurrentFeature->FrameCount(), FrameGen_Dx12::fgTarget, Config::Instance()->CurrentFeature->FrameCount(),
                   FrameGen_Dx12::fgContext != nullptr, FrameGen_Dx12::fgIsActive, HooksDx::currentSwapchain != nullptr);
@@ -700,6 +704,14 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
 #endif
     }
 
+    if (Config::Instance()->FGCaptureResources)
+    {
+        captureMutex.lock();
+        fgCaptureList.insert(resource->buffer);
+        Config::Instance()->FGCapturedResourceCount = fgCaptureList.size();
+        captureMutex.unlock();
+    }
+
     GetHudless(cmdList);
 }
 
@@ -707,6 +719,12 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
 {
     if (HooksDx::currentSwapchain == nullptr)
         return false;
+
+    if (Config::Instance()->FGOnlyUseCapturedResources)
+    {
+        auto result = fgCaptureList.find(resource->buffer) != fgCaptureList.end();
+        return result;
+    }
 
     DXGI_SWAP_CHAIN_DESC scDesc{};
     if (HooksDx::currentSwapchain->GetDesc(&scDesc) != S_OK)
@@ -1537,12 +1555,21 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 {
     auto fIndex = fgFrameIndex;
 
+    if (Config::Instance()->FGResetCapturedResources)
+    {
+        captureMutex.lock();
+        fgCaptureList.clear();
+        Config::Instance()->FGCapturedResourceCount = 0;
+        Config::Instance()->FGResetCapturedResources = false;
+        captureMutex.unlock();
+    }
+
     // Skip calculations etc
     if (Flags & DXGI_PRESENT_TEST)
         return o_FGSCPresent(This, SyncInterval, Flags);
 
     // If dispatch still not called
-    if (!fgDispatchCalled && Config::Instance()->FGHUDFix.value_or(false) && FrameGen_Dx12::fgIsActive && 
+    if (!fgDispatchCalled && Config::Instance()->FGHUDFix.value_or(false) && FrameGen_Dx12::fgIsActive &&
         Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
         Config::Instance()->FGEnabled.value_or(false) && Config::Instance()->CurrentFeature != nullptr &&
         FrameGen_Dx12::fgTarget < Config::Instance()->CurrentFeature->FrameCount() && !Config::Instance()->FGChanged &&
@@ -2044,7 +2071,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     }
 
     return result;
-}
+    }
 
 static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, HWND hWnd, DXGI_SWAP_CHAIN_DESC1* pDesc,
                                         DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
@@ -2231,7 +2258,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     }
 
     return result;
-}
+    }
 
 static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
@@ -2662,7 +2689,7 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
     LOG_FUNC_RESULT(result);
 
     return result;
-}
+    }
 
 static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE DriverType, HMODULE Software, UINT Flags, CONST D3D_FEATURE_LEVEL* pFeatureLevels,
                                                UINT FeatureLevels, UINT SDKVersion, DXGI_SWAP_CHAIN_DESC* pSwapChainDesc, IDXGISwapChain** ppSwapChain, ID3D11Device** ppDevice, D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext)
@@ -2742,7 +2769,7 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
     LOG_FUNC_RESULT(result);
 
     return result;
-}
+    }
 
 #ifdef ENABLE_DEBUG_LAYER
 static ID3D12Debug3* debugController = nullptr;
@@ -2814,7 +2841,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     LOG_FUNC_RESULT(result);
 
     return result;
-}
+    }
 
 static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {

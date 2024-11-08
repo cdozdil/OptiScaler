@@ -176,6 +176,10 @@ public:
 	bool SCChanged = false;
 	bool SkipHeapCapture = false;
 
+	bool FGCaptureResources = false;
+	int FGCapturedResourceCount = false;
+	bool FGResetCapturedResources = false;
+	bool FGOnlyUseCapturedResources = false;
 
 	// nvngx init parameters
 	unsigned long long NVNGX_ApplicationId = 1337;

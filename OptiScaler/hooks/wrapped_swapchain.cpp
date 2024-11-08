@@ -121,6 +121,13 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     DXGI_SWAP_CHAIN_DESC desc{};
     GetDesc(&desc);
 
+    if (Config::Instance()->FGEnabled.value_or(false))
+    {
+        Config::Instance()->FGResetCapturedResources = true;
+        Config::Instance()->FGOnlyUseCapturedResources = false;
+        Config::Instance()->FGOnlyUseCapturedResources = false;
+    }
+
     std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
     if (Config::Instance()->CurrentFeature != nullptr)
@@ -163,6 +170,13 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
     LOG_FUNC();
     DXGI_SWAP_CHAIN_DESC desc{};
     GetDesc(&desc);
+
+    if (Config::Instance()->FGEnabled.value_or(false))
+    {
+        Config::Instance()->FGResetCapturedResources = true;
+        Config::Instance()->FGOnlyUseCapturedResources = false;
+        Config::Instance()->FGOnlyUseCapturedResources = false;
+    }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
