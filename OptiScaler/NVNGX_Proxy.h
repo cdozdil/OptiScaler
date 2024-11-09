@@ -280,6 +280,12 @@ private:
 
     inline static PFN_UpdateFeature _UpdateFeature = nullptr;
 
+    inline static void LogCallback(const char* message, NVSDK_NGX_Logging_Level loggingLevel, NVSDK_NGX_Feature sourceComponent)
+    {
+        std::string logMessage(message);
+        LOG_DEBUG("NVSDK Feature {}: {}", (UINT)sourceComponent, logMessage);
+    }
+
 public:
     static void InitNVNGX()
     {
@@ -473,6 +479,11 @@ public:
 
         fcInfo->PathListInfo.Path = paths;
         fcInfo->PathListInfo.Length = static_cast<unsigned int>(Config::Instance()->NVNGX_FeatureInfo_Paths.size());
+
+        // Config logging
+        fcInfo->LoggingInfo.MinimumLoggingLevel = Config::Instance()->LogLevel < 2 ? NVSDK_NGX_LOGGING_LEVEL_VERBOSE : NVSDK_NGX_LOGGING_LEVEL_ON;
+        fcInfo->LoggingInfo.LoggingCallback = LogCallback;
+        fcInfo->LoggingInfo.DisableOtherLoggingSinks = true;
     }
 
     static HMODULE NVNGXModule()
