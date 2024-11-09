@@ -216,7 +216,9 @@ public:
 	bool IsRunningOnLinux = false;
 	bool IsRunningOnDXVK = false;
 
+	// modes
 	bool IsDxgiMode = false;
+	bool WorkingAsNvngx = false;
 
 	// vulkan stuff
 	bool VulkanCreatingSC = false;
