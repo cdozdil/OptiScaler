@@ -661,24 +661,27 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 
                 auto dc = Dx11Contexts[handleId].get();
 
-                if (Config::Instance()->newBackend != "dlssd" && Config::Instance()->newBackend != "dlss")
-                    createParams = GetNGXParameters("OptiDx11");
-                else
-                    createParams = InParameters;
+                if (dc != nullptr)
+                {
+                    if (Config::Instance()->newBackend != "dlssd" && Config::Instance()->newBackend != "dlss")
+                        createParams = GetNGXParameters("OptiDx11");
+                    else
+                        createParams = InParameters;
 
-                createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
-                createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
-                createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
-                createParams->Set(NVSDK_NGX_Parameter_OutWidth, dc->DisplayWidth());
-                createParams->Set(NVSDK_NGX_Parameter_OutHeight, dc->DisplayHeight());
-                createParams->Set(NVSDK_NGX_Parameter_PerfQualityValue, dc->PerfQualityValue());
+                    createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
+                    createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
+                    createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
+                    createParams->Set(NVSDK_NGX_Parameter_OutWidth, dc->DisplayWidth());
+                    createParams->Set(NVSDK_NGX_Parameter_OutHeight, dc->DisplayHeight());
+                    createParams->Set(NVSDK_NGX_Parameter_PerfQualityValue, dc->PerfQualityValue());
 
-                LOG_TRACE("sleeping before reset of current feature for 1000ms");
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                    LOG_TRACE("sleeping before reset of current feature for 1000ms");
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-                Dx11Contexts[handleId].reset();
-                auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
-                Dx11Contexts.erase(it);
+                    Dx11Contexts[handleId].reset();
+                    auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+                    Dx11Contexts.erase(it);
+                }
 
                 Config::Instance()->CurrentFeature = nullptr;
             }
