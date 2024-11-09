@@ -1,5 +1,6 @@
 #include "LoadLibrary.h"
 
+#include "Dxgi.h"
 #include <Util.h>
 #include <Config.h>
 #include "Vulkan.h"
@@ -40,6 +41,80 @@ static std::vector<std::wstring> vkNamesW = { L"vulkan-1.dll", L"vulkan-1", };
 static bool dontCount = false;
 static bool skipLoadChecks = false;
 static UINT loadCount = 0;
+
+static HMODULE LoadNvApi()
+{
+    HMODULE nvapi = nullptr;
+
+    if (Config::Instance()->NvapiDllPath.has_value())
+    {
+        nvapi = o_LoadLibraryW(Config::Instance()->NvapiDllPath->c_str());
+
+        if (nvapi != nullptr)
+        {
+            LOG_INFO("nvapi64.dll loaded from {0}", wstring_to_string(Config::Instance()->NvapiDllPath.value()));
+            return nvapi;
+        }
+    }
+
+    if (nvapi == nullptr)
+    {
+        auto localPath = Util::DllPath().parent_path() / L"nvapi64.dll";
+        nvapi = o_LoadLibraryW(localPath.wstring().c_str());
+
+        if (nvapi != nullptr)
+        {
+            LOG_INFO("nvapi64.dll loaded from {0}", wstring_to_string(localPath.wstring()));
+            return nvapi;
+        }
+    }
+
+    if (nvapi == nullptr)
+    {
+        nvapi = o_LoadLibraryW(L"nvapi64.dll");
+
+        if (nvapi != nullptr)
+        {
+            LOG_WARN("nvapi64.dll loaded from system!");
+            return nvapi;
+        }
+    }
+
+    return nullptr;
+}
+
+static HMODULE LoadNvgxDlss(std::wstring originalPath)
+{
+    HMODULE nvngxDlss = nullptr;
+
+    if (Config::Instance()->NVNGX_DLSS_Library.has_value())
+    {
+        nvngxDlss = o_LoadLibraryW(Config::Instance()->NVNGX_DLSS_Library.value().c_str());
+
+        if (nvngxDlss != nullptr)
+        {
+            LOG_INFO("nvngx_dlss.dll loaded from {0}", wstring_to_string(Config::Instance()->NVNGX_DLSS_Library.value()));
+            return nvngxDlss;
+        }
+        else
+        {
+            LOG_WARN("nvngx_dlss.dll can't found at {0}", wstring_to_string(Config::Instance()->NVNGX_DLSS_Library.value()));
+        }
+    }
+
+    if (nvngxDlss == nullptr)
+    {
+        nvngxDlss = o_LoadLibraryW(originalPath.c_str());
+
+        if (nvngxDlss != nullptr)
+        {
+            LOG_INFO("nvngx_dlss.dll loaded from {0}", wstring_to_string(originalPath));
+            return nvngxDlss;
+        }
+    }
+
+    return nullptr;
+}
 
 inline static bool CheckDllName(std::string* dllName, std::vector<std::string>* namesList)
 {
@@ -145,12 +220,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
         HooksDx::HookDx12();
 
     if (CheckDllName(&lcaseLibName, &dxgiNames))
-    {
-        HookForDxgiSpoofing();
-
-        if (Config::Instance()->OverlayMenu.value_or(true))
-            HooksDx::HookDxgi();
-    }
+        DxgiHooks::Hook();
 
     if (CheckDllName(&lcaseLibName, &vkNames))
     {
@@ -250,12 +320,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
         HooksDx::HookDx12();
 
     if (CheckDllNameW(&lcaseLibName, &dxgiNamesW))
-    {
-        HookForDxgiSpoofing();
-
-        if (Config::Instance()->OverlayMenu.value_or(true))
-            HooksDx::HookDxgi();
-    }
+        DxgiHooks::Hook();
 
     if (CheckDllNameW(&lcaseLibName, &vkNamesW))
     {
@@ -274,80 +339,6 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
             loadCount++;
 
         return dllModule;
-    }
-
-    return nullptr;
-}
-
-static HMODULE LoadNvApi()
-{
-    HMODULE nvapi = nullptr;
-
-    if (Config::Instance()->NvapiDllPath.has_value())
-    {
-        nvapi = o_LoadLibraryW(Config::Instance()->NvapiDllPath->c_str());
-
-        if (nvapi != nullptr)
-        {
-            LOG_INFO("nvapi64.dll loaded from {0}", wstring_to_string(Config::Instance()->NvapiDllPath.value()));
-            return nvapi;
-        }
-    }
-
-    if (nvapi == nullptr)
-    {
-        auto localPath = Util::DllPath().parent_path() / L"nvapi64.dll";
-        nvapi = o_LoadLibraryW(localPath.wstring().c_str());
-
-        if (nvapi != nullptr)
-        {
-            LOG_INFO("nvapi64.dll loaded from {0}", wstring_to_string(localPath.wstring()));
-            return nvapi;
-        }
-    }
-
-    if (nvapi == nullptr)
-    {
-        nvapi = o_LoadLibraryW(L"nvapi64.dll");
-
-        if (nvapi != nullptr)
-        {
-            LOG_WARN("nvapi64.dll loaded from system!");
-            return nvapi;
-        }
-    }
-
-    return nullptr;
-}
-
-static HMODULE LoadNvgxDlss(std::wstring originalPath)
-{
-    HMODULE nvngxDlss = nullptr;
-
-    if (Config::Instance()->NVNGX_DLSS_Library.has_value())
-    {
-        nvngxDlss = o_LoadLibraryW(Config::Instance()->NVNGX_DLSS_Library.value().c_str());
-
-        if (nvngxDlss != nullptr)
-        {
-            LOG_INFO("nvngx_dlss.dll loaded from {0}", wstring_to_string(Config::Instance()->NVNGX_DLSS_Library.value()));
-            return nvngxDlss;
-        }
-        else
-        {
-            LOG_WARN("nvngx_dlss.dll can't found at {0}", wstring_to_string(Config::Instance()->NVNGX_DLSS_Library.value()));
-        }
-    }
-
-    if (nvngxDlss == nullptr)
-    {
-        nvngxDlss = o_LoadLibraryW(originalPath.c_str());
-
-        if (nvngxDlss != nullptr)
-        {
-            LOG_INFO("nvngx_dlss.dll loaded from {0}", wstring_to_string(originalPath));
-            return nvngxDlss;
-        }
     }
 
     return nullptr;
@@ -557,7 +548,7 @@ void LoadLibraryHooks::Hook()
     if (dxgiModule != nullptr)
     {
         LOG_DEBUG("dxgi.dll already in memory");
-        HookForDxgiSpoofing();
+        DxgiHooks::Hook();
     }
 
     HMODULE vulkanModule = nullptr;
@@ -593,9 +584,6 @@ void LoadLibraryHooks::Hook()
         LOG_DEBUG("d3d12.dll already in memory");
         HooksDx::HookDx12();
     }
-
-    if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr)
-        HooksDx::HookDxgi();
 }
 
 void LoadLibraryHooks::Unhook()

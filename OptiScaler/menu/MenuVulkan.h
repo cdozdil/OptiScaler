@@ -17,4 +17,7 @@ public:
     static void CreateDevice(VkPhysicalDevice physicalDevice, VkDevice* pDevice);
     static VkResult QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo);
     static void CreateSwapchain(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, VkSwapchainKHR* pSwapchain);
+    static void PrepareTimeObjects(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice);
+    static void BeforeUpscale(VkCommandBuffer InCmdBuffer);
+    static void AfterUpscale(VkCommandBuffer InCmdBuffer);
 };

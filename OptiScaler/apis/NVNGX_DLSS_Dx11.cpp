@@ -1,18 +1,18 @@
-#include "pch.h"
+#include <pch.h>
 
-#include "Util.h"
-#include "Config.h"
+#include <Util.h>
+#include <Config.h>
+#include <menu/MenuDx.h>
 #include "NVNGX_Parameter.h"
-#include "proxies/NVNGX_Proxy.h"
-#include "menu/imgui_overlay_dx.h"
-#include "upscalers/dlss/DLSSFeature_Dx11.h"
-#include "upscalers/dlssd/DLSSDFeature_Dx11.h"
-#include "upscalers/fsr2/FSR2Feature_Dx11.h"
-#include "upscalers/fsr2/FSR2Feature_Dx11On12.h"
-#include "upscalers/fsr2_212/FSR2Feature_Dx11On12_212.h"
-#include "upscalers/fsr31/FSR31Feature_Dx11.h"
-#include "upscalers/fsr31/FSR31Feature_Dx11On12.h"
-#include "upscalers/xess/XeSSFeature_Dx11.h"
+#include <proxies/NVNGX_Proxy.h>
+#include <upscalers/dlss/DLSSFeature_Dx11.h>
+#include <upscalers/dlssd/DLSSDFeature_Dx11.h>
+#include <upscalers/fsr2/FSR2Feature_Dx11.h>
+#include <upscalers/fsr2/FSR2Feature_Dx11On12.h>
+#include <upscalers/fsr2_212/FSR2Feature_Dx11On12_212.h>
+#include <upscalers/fsr31/FSR31Feature_Dx11.h>
+#include <upscalers/fsr31/FSR31Feature_Dx11On12.h>
+#include <upscalers/xess/XeSSFeature_Dx11.h>
 
 #include <ankerl/unordered_dense.h>
 
@@ -90,11 +90,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
     D3D11_QUERY_DESC timestampQueryDesc = {};
     timestampQueryDesc.Query = D3D11_QUERY_TIMESTAMP;
 
-    for (int i = 0; i < ImGuiOverlayDx::QUERY_BUFFER_COUNT; i++)
+    for (int i = 0; i < MenuDx::QUERY_BUFFER_COUNT; i++)
     {
-        InDevice->CreateQuery(&disjointQueryDesc, &ImGuiOverlayDx::disjointQueries[i]);
-        InDevice->CreateQuery(&timestampQueryDesc, &ImGuiOverlayDx::startQueries[i]);
-        InDevice->CreateQuery(&timestampQueryDesc, &ImGuiOverlayDx::endQueries[i]);
+        InDevice->CreateQuery(&disjointQueryDesc, &MenuDx::disjointQueries[i]);
+        InDevice->CreateQuery(&timestampQueryDesc, &MenuDx::startQueries[i]);
+        InDevice->CreateQuery(&timestampQueryDesc, &MenuDx::endQueries[i]);
     }
 
     return NVSDK_NGX_Result_Success;
@@ -208,7 +208,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown()
 
     // Unhooking and cleaning stuff causing issues during shutdown. 
     // Disabled for now to check if it cause any issues
-    //ImGuiOverlayDx::UnHookDx();
+    //MenuDx::UnHookDx();
 
     shutdown = false;
 
@@ -831,12 +831,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
     }
 
     // In the render loop:
-    ImGuiOverlayDx::previousFrameIndex = (ImGuiOverlayDx::currentFrameIndex + ImGuiOverlayDx::QUERY_BUFFER_COUNT - 2) % ImGuiOverlayDx::QUERY_BUFFER_COUNT;
-    int nextFrameIndex = ImGuiOverlayDx::currentFrameIndex;
+    MenuDx::previousFrameIndex = (MenuDx::currentFrameIndex + MenuDx::QUERY_BUFFER_COUNT - 2) % MenuDx::QUERY_BUFFER_COUNT;
+    int nextFrameIndex = MenuDx::currentFrameIndex;
 
     // Record the queries in the current frame
-    InDevCtx->Begin(ImGuiOverlayDx::disjointQueries[nextFrameIndex]);
-    InDevCtx->End(ImGuiOverlayDx::startQueries[nextFrameIndex]);
+    InDevCtx->Begin(MenuDx::disjointQueries[nextFrameIndex]);
+    InDevCtx->End(MenuDx::startQueries[nextFrameIndex]);
 
     if (!deviceContext->Evaluate(InDevCtx, InParameters) && !deviceContext->IsInited() && (deviceContext->Name() == "XeSS" || deviceContext->Name() == "DLSS" || deviceContext->Name() == "FSR3 w/Dx12"))
     {
@@ -844,10 +844,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
         Config::Instance()->changeBackend = true;
     }
 
-    InDevCtx->End(ImGuiOverlayDx::endQueries[nextFrameIndex]);
-    InDevCtx->End(ImGuiOverlayDx::disjointQueries[nextFrameIndex]);
+    InDevCtx->End(MenuDx::endQueries[nextFrameIndex]);
+    InDevCtx->End(MenuDx::disjointQueries[nextFrameIndex]);
 
-    ImGuiOverlayDx::dx11UpscaleTrig[nextFrameIndex] = true;
+    MenuDx::dx11UpscaleTrig[nextFrameIndex] = true;
 
     return NVSDK_NGX_Result_Success;
 }

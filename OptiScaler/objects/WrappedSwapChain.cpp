@@ -1,4 +1,4 @@
-#include "wrapped_swapchain.h"
+#include "WrappedSwapChain.h"
 
 #include <Util.h>
 #include <Config.h>
@@ -8,7 +8,7 @@
 
 static int scCount = 0;
 
-WrappedIDXGISwapChain4::WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* pDevice, HWND hWnd, PFN_SC_Present renderTrig, PFN_SC_Clean clearTrig)
+WrappedSwapChain::WrappedSwapChain(IDXGISwapChain* real, IUnknown* pDevice, HWND hWnd, PFN_SC_Present renderTrig, PFN_SC_Clean clearTrig)
     : m_pReal(real), Device(pDevice), Handle(hWnd), RenderTrig(renderTrig), ClearTrig(clearTrig), m_iRefcount(1)
 {
     id = ++scCount;
@@ -19,12 +19,12 @@ WrappedIDXGISwapChain4::WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* p
     m_pReal->QueryInterface(IID_PPV_ARGS(&m_pReal4));
 }
 
-WrappedIDXGISwapChain4::~WrappedIDXGISwapChain4()
+WrappedSwapChain::~WrappedSwapChain()
 {
 
 }
 
-HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::QueryInterface(REFIID riid, void** ppvObject)
+HRESULT STDMETHODCALLTYPE WrappedSwapChain::QueryInterface(REFIID riid, void** ppvObject)
 {
     if (riid == __uuidof(IDXGISwapChain))
     {
@@ -112,7 +112,7 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::QueryInterface(REFIID riid, vo
     return E_NOINTERFACE;
 }
 
-HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
+HRESULT WrappedSwapChain::ResizeBuffers(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
     LOG_FUNC();
 
@@ -136,12 +136,12 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     return result;
 }
 
-HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetContainingOutput(IDXGIOutput** ppOutput)
+HRESULT STDMETHODCALLTYPE WrappedSwapChain::GetContainingOutput(IDXGIOutput** ppOutput)
 {
     return m_pReal->GetContainingOutput(ppOutput);
 }
 
-HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT Format, UINT SwapChainFlags,
+HRESULT WrappedSwapChain::ResizeBuffers1(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT Format, UINT SwapChainFlags,
                                                const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
     LOG_FUNC();
@@ -166,27 +166,27 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
     return result;
 }
 
-HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput* pTarget)
+HRESULT WrappedSwapChain::SetFullscreenState(BOOL Fullscreen, IDXGIOutput* pTarget)
 {
     return m_pReal->SetFullscreenState(Fullscreen, pTarget);
 }
 
-HRESULT WrappedIDXGISwapChain4::GetFullscreenState(BOOL* pFullscreen, IDXGIOutput** ppTarget)
+HRESULT WrappedSwapChain::GetFullscreenState(BOOL* pFullscreen, IDXGIOutput** ppTarget)
 {
     return m_pReal->GetFullscreenState(pFullscreen, ppTarget);
 }
 
-HRESULT WrappedIDXGISwapChain4::GetBuffer(UINT Buffer, REFIID riid, void** ppSurface)
+HRESULT WrappedSwapChain::GetBuffer(UINT Buffer, REFIID riid, void** ppSurface)
 {
     return m_pReal->GetBuffer(Buffer, riid, ppSurface);
 }
 
-HRESULT WrappedIDXGISwapChain4::GetDevice(REFIID riid, void** ppDevice)
+HRESULT WrappedSwapChain::GetDevice(REFIID riid, void** ppDevice)
 {
     return m_pReal->GetDevice(riid, ppDevice);
 }
 
-HRESULT WrappedIDXGISwapChain4::Present(UINT SyncInterval, UINT Flags)
+HRESULT WrappedSwapChain::Present(UINT SyncInterval, UINT Flags)
 {
     if (m_pReal == nullptr)
         return DXGI_ERROR_DEVICE_REMOVED;
@@ -201,7 +201,7 @@ HRESULT WrappedIDXGISwapChain4::Present(UINT SyncInterval, UINT Flags)
     return result;
 }
 
-HRESULT WrappedIDXGISwapChain4::Present1(UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters)
+HRESULT WrappedSwapChain::Present1(UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters)
 {
     if (m_pReal1 == nullptr)
         return DXGI_ERROR_DEVICE_REMOVED;
@@ -216,7 +216,7 @@ HRESULT WrappedIDXGISwapChain4::Present1(UINT SyncInterval, UINT Flags, const DX
     return result;
 }
 
-HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetRestrictToOutput(IDXGIOutput** ppRestrictToOutput)
+HRESULT STDMETHODCALLTYPE WrappedSwapChain::GetRestrictToOutput(IDXGIOutput** ppRestrictToOutput)
 {
     return m_pReal1->GetRestrictToOutput(ppRestrictToOutput);
 }

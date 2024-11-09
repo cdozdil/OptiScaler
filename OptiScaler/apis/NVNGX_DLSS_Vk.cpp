@@ -50,6 +50,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext(unsigned long long InAp
         }
     }
 
+    MenuVulkan::PrepareTimeObjects(InInstance, InPD, InDevice);
+
     return NVSDK_NGX_VULKAN_Init_Ext2(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, vkGetInstanceProcAddr, vkGetDeviceProcAddr, InSDKVersion, InFeatureInfo);
 }
 
@@ -156,16 +158,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InA
 
     Config::Instance()->Api = NVNGX_VULKAN;
 
-    VkQueryPoolCreateInfo queryPoolInfo = {};
-    queryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
-    queryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
-    queryPoolInfo.queryCount = 2; // Start and End timestamps
-
-    vkCreateQueryPool(InDevice, &queryPoolInfo, nullptr, &ImGuiOverlayVk::queryPool);
-
-    VkPhysicalDeviceProperties deviceProperties;
-    vkGetPhysicalDeviceProperties(InPD, &deviceProperties);
-    ImGuiOverlayVk::timeStampPeriod = deviceProperties.limits.timestampPeriod;
 
     return NVSDK_NGX_Result_Success;
 }
@@ -957,14 +949,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 
     Config::Instance()->RenderMenu = true;
 
-    // Record the first timestamp (before FSR2)
-    vkCmdWriteTimestamp(InCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ImGuiOverlayVk::queryPool, 0);
-
+    MenuVulkan::BeforeUpscale(InCmdBuffer);
     auto upscaleResult = deviceContext->Evaluate(InCmdBuffer, InParameters);
-
-    // Record the second timestamp (after FSR2)
-    vkCmdWriteTimestamp(InCmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, ImGuiOverlayVk::queryPool, 1);
-    ImGuiOverlayVk::vkUpscaleTrig = true;
+    MenuVulkan::AfterUpscale(InCmdBuffer);
 
     return upscaleResult ? NVSDK_NGX_Result_Success : NVSDK_NGX_Result_Fail;
 }

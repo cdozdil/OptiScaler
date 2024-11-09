@@ -191,9 +191,11 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="ag\pag_common.h" />
-    <ClInclude Include="hooks\Hooks.h" />
+    <ClInclude Include="hooks\Dxgi.h" />
     <ClInclude Include="hooks\LoadLibrary.h" />
     <ClInclude Include="hooks\Vulkan.h" />
+    <ClInclude Include="menu\MenuDx11.h" />
+    <ClInclude Include="menu\MenuDx12.h" />
     <ClInclude Include="nvapi\fakenvapi.h" />
     <ClInclude Include="nvapi\NvApiHooks.h" />
     <ClInclude Include="nvapi\NvApiTypes.h" />
@@ -260,9 +262,8 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="menu\OldMenuDx11.h" />
     <ClInclude Include="menu\OldMenuDx12.h" />
     <ClInclude Include="menu\MenuBase.h" />
-    <ClInclude Include="menu\MenuDx.h" />
     <ClInclude Include="menu\MenuVulkan.h" />
-    <ClInclude Include="menu\wrapped_swapchain.h" />
+    <ClInclude Include="objects\WrappedSwapChain.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="apis\NVNGX_Parameter.h" />
     <ClInclude Include="proxies\NVNGX_Proxy.h" />
@@ -279,9 +280,11 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="WorkingMode.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="hooks\Hooks.cpp" />
+    <ClCompile Include="hooks\Dxgi.cpp" />
     <ClCompile Include="hooks\LoadLibrary.cpp" />
     <ClCompile Include="hooks\Vulkan.cpp" />
+    <ClCompile Include="menu\MenuDx11.cpp" />
+    <ClCompile Include="menu\MenuDx12.cpp" />
     <ClCompile Include="upscalers\dlssd\DLSSDFeature.cpp" />
     <ClCompile Include="upscalers\dlssd\DLSSDFeature_Dx11.cpp" />
     <ClCompile Include="upscalers\dlssd\DLSSDFeature_Dx12.cpp" />
@@ -327,9 +330,8 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="menu\OldMenuDx11.cpp" />
     <ClCompile Include="menu\OldMenuDx12.cpp" />
     <ClCompile Include="menu\MenuBase.cpp" />
-    <ClCompile Include="menu\MenuDx.cpp" />
     <ClCompile Include="menu\MenuVulkan.cpp" />
-    <ClCompile Include="menu\wrapped_swapchain.cpp" />
+    <ClCompile Include="objects\WrappedSwapChain.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="apis\NVNGX.cpp" />
     <ClCompile Include="apis\NVNGX_DLSS_Dx11.cpp" />

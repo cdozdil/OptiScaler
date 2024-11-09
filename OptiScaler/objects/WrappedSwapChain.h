@@ -2,18 +2,16 @@
 
 #include <pch.h>
 
-#include "MenuBase.h"
-
 #include <dxgi1_6.h>
 
 typedef HRESULT(*PFN_SC_Present)(IDXGISwapChain*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*, IUnknown*, HWND);
 typedef void(*PFN_SC_Clean)(bool, HWND);
 
-struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapChain4 : public IDXGISwapChain4
+struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedSwapChain : public IDXGISwapChain4
 {
-    WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* pDevice, HWND hWnd, PFN_SC_Present renderTrig, PFN_SC_Clean clearTrig);
+    WrappedSwapChain(IDXGISwapChain* real, IUnknown* pDevice, HWND hWnd, PFN_SC_Present renderTrig, PFN_SC_Clean clearTrig);
 
-    virtual ~WrappedIDXGISwapChain4();
+    virtual ~WrappedSwapChain();
 
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 

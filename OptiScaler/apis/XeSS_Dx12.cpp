@@ -6,7 +6,6 @@
 #include "NVNGX_Parameter.h"
 #include "xess_d3d12_debug.h"
 #include "proxies/XeSS_Proxy.h"
-#include "menu/imgui_overlay_dx.h"
 
 typedef struct MotionScale
 {

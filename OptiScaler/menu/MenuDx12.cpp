@@ -3,7 +3,6 @@
 #include <Util.h>
 #include <Logger.h>
 #include <Config.h>
-#include "wrapped_swapchain.h"
 #include "MenuBase.h"
 
 #include <dxgi1_6.h>
@@ -16,12 +15,12 @@
 // dxgi stuff
 typedef HRESULT(*PFN_CreateDXGIFactory)(REFIID riid, IDXGIFactory** ppFactory);
 typedef HRESULT(*PFN_CreateDXGIFactory1)(REFIID riid, IDXGIFactory1** ppFactory);
-typedef HRESULT(*PFN_CreateDXGIFactory2)(UINT Flags, REFIID riid, _COM_Outptr_ IDXGIFactory2** ppFactory);
+typedef HRESULT(*PFN_CreateDXGIFactory2)(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory);
 
-typedef HRESULT(WINAPI* PFN_EnumAdapterByGpuPreference2)(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapterByLuid2)(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapters12)(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapters2)(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter);
+typedef HRESULT(*PFN_EnumAdapterByGpuPreference2)(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter);
+typedef HRESULT(*PFN_EnumAdapterByLuid2)(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter);
+typedef HRESULT(*PFN_EnumAdapters12)(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter);
+typedef HRESULT(*PFN_EnumAdapters2)(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter);
 
 static PFN_CreateDXGIFactory o_CreateDXGIFactory = nullptr;
 static PFN_CreateDXGIFactory1 o_CreateDXGIFactory1 = nullptr;
@@ -31,18 +30,16 @@ inline static PFN_EnumAdapters2 ptrEnumAdapters = nullptr;
 inline static PFN_EnumAdapters12 ptrEnumAdapters1 = nullptr;
 inline static PFN_EnumAdapterByLuid2 ptrEnumAdapterByLuid = nullptr;
 inline static PFN_EnumAdapterByGpuPreference2 ptrEnumAdapterByGpuPreference = nullptr;
-inline static PFN_Present o_Present = nullptr;
-inline static PFN_Present1 o_Present1 = nullptr;
 
 static PFN_CreateSwapChain oCreateSwapChain = nullptr;
 static PFN_CreateSwapChainForHwnd oCreateSwapChainForHwnd = nullptr;
 
-// MipMap hooks
 
 // DirectX
 typedef void(*PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 typedef HRESULT(*PFN_CreateSamplerState)(ID3D11Device* This, const D3D11_SAMPLER_DESC* pSamplerDesc, ID3D11SamplerState** ppSamplerState);
 
+// MipMap hooks
 static PFN_D3D12_CREATE_DEVICE o_D3D12CreateDevice = nullptr;
 static PFN_CreateSampler o_CreateSampler = nullptr;
 
@@ -85,7 +82,6 @@ static bool _showRenderImGuiDebugOnce = true;
 // mutexes
 static std::mutex _dx11CleanMutex;
 static std::mutex _dx12CleanMutex;
-
 
 static void RenderImGui_DX11(IDXGISwapChain* pSwapChain);
 static void RenderImGui_DX12(IDXGISwapChain* pSwapChain);
@@ -608,294 +604,7 @@ static void AttachToFactory(IUnknown* unkFactory)
     }
 }
 
-static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain)
-{
-    LOG_FUNC();
 
-    *ppSwapChain = nullptr;
-
-    if (Config::Instance()->VulkanCreatingSC)
-    {
-        LOG_WARN("Vulkan is creating swapchain!");
-
-        if(pDesc != nullptr)
-            LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Windowed: {4}", pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, pDesc->Windowed);
-
-        return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
-    }
-
-    if (pDevice == nullptr)
-    {
-        LOG_WARN("pDevice is nullptr!");
-        return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
-    }
-
-    auto result = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
-
-    if (result == S_OK)
-    {
-        // check for SL proxy
-        IID riid;
-        IDXGISwapChain* real = nullptr;
-        auto iidResult = IIDFromString(L"{ADEC44E2-61F0-45C3-AD9F-1B37379284FF}", &riid);
-
-        if (iidResult == S_OK)
-        {
-            auto qResult = (*ppSwapChain)->QueryInterface(riid, (void**)&real);
-
-            if (qResult == S_OK && real != nullptr)
-            {
-                LOG_INFO("Streamline proxy found");
-                real->Release();
-            }
-            else
-            {
-                LOG_DEBUG("Streamline proxy not found");
-            }
-        }
-
-        LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Windowed: {4}", pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, pDesc->Windowed);
-
-        if (Util::GetProcessWindow() == pDesc->OutputWindow)
-        {
-            Config::Instance()->ScreenWidth = pDesc->BufferDesc.Width;
-            Config::Instance()->ScreenHeight = pDesc->BufferDesc.Height;
-        }
-
-        LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDesc->OutputWindow);
-        *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? *ppSwapChain : real, pDevice, pDesc->OutputWindow, Present, CleanupRenderTarget);
-        LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
-    }
-
-    return result;
-}
-
-static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* pCommandQueue, IUnknown* pDevice, HWND hWnd, const DXGI_SWAP_CHAIN_DESC1* pDesc,
-                                        const DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
-{
-    LOG_FUNC();
-
-    *ppSwapChain = nullptr;
-
-    if (Config::Instance()->VulkanCreatingSC)
-    {
-        LOG_WARN("Vulkan is creating swapchain!");
-
-        if (pDesc != nullptr)
-            LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Flags: {4:X}", pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, pDesc->Flags);
-
-        return oCreateSwapChainForHwnd(pCommandQueue, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
-    }
-
-    if (pDevice == nullptr)
-    {
-        LOG_WARN("pDevice is nullptr!");
-        return oCreateSwapChainForHwnd(pCommandQueue, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
-    }
-
-    auto result = oCreateSwapChainForHwnd(pCommandQueue, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
-
-    if (result == S_OK)
-    {
-        // check for SL proxy
-        IID riid;
-        IDXGISwapChain1* real = nullptr;
-        auto iidResult = IIDFromString(L"{ADEC44E2-61F0-45C3-AD9F-1B37379284FF}", &riid);
-
-        if (iidResult == S_OK)
-        {
-            IUnknown* real = nullptr;
-            auto qResult = (*ppSwapChain)->QueryInterface(riid, (void**)&real);
-
-            if (qResult == S_OK && real != nullptr)
-            {
-                LOG_INFO("Streamline proxy found");
-                real->Release();
-            }
-            else
-            {
-                LOG_DEBUG("Streamline proxy not found");
-            }
-        }
-
-        LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Flags: {4:X}", pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, pDesc->Flags);
-
-        if (Util::GetProcessWindow() == hWnd)
-        {
-            Config::Instance()->ScreenWidth = pDesc->Width;
-            Config::Instance()->ScreenHeight = pDesc->Height;
-        }
-
-        LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)hWnd);
-        *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? *ppSwapChain : real, pDevice, hWnd, Present, CleanupRenderTarget);
-        LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
-    }
-
-    return result;
-}
-
-static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
-{
-    auto result = o_CreateDXGIFactory(riid, ppFactory);
-
-    if (result == S_OK)
-        AttachToFactory(*ppFactory);
-
-    if (result == S_OK && oCreateSwapChain == nullptr)
-    {
-        void** pFactoryVTable = *reinterpret_cast<void***>(*ppFactory);
-
-        oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
-
-        if (oCreateSwapChain != nullptr)
-        {
-            LOG_INFO("Hooking native DXGIFactory");
-
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
-
-            DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
-
-            DetourTransactionCommit();
-        }
-    }
-
-    return result;
-}
-
-static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
-{
-    auto result = o_CreateDXGIFactory1(riid, ppFactory);
-
-    if (result == S_OK)
-        AttachToFactory(*ppFactory);
-
-    if (result == S_OK && oCreateSwapChainForHwnd == nullptr)
-    {
-        IDXGIFactory2* factory2 = nullptr;
-
-        if ((*ppFactory)->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
-        {
-            void** pFactoryVTable = *reinterpret_cast<void***>(factory2);
-
-            bool skip = false;
-
-            if (oCreateSwapChain == nullptr)
-                oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
-            else
-                skip = true;
-
-            oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
-
-            if (oCreateSwapChainForHwnd != nullptr)
-            {
-                LOG_INFO("Hooking native DXGIFactory");
-
-                DetourTransactionBegin();
-                DetourUpdateThread(GetCurrentThread());
-
-                if (!skip)
-                    DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
-
-                DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
-
-                DetourTransactionCommit();
-            }
-
-            factory2->Release();
-            factory2 = nullptr;
-        }
-    }
-
-    return result;
-}
-
-static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
-{
-    auto result = o_CreateDXGIFactory2(Flags, riid, ppFactory);
-
-    if (result == S_OK)
-        AttachToFactory(*ppFactory);
-
-    if (result == S_OK && oCreateSwapChainForHwnd == nullptr)
-    {
-        IDXGIFactory2* factory2 = nullptr;
-
-        if ((*ppFactory)->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
-        {
-            void** pFactoryVTable = *reinterpret_cast<void***>(factory2);
-
-            bool skip = false;
-
-            if (oCreateSwapChain == nullptr)
-                oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
-            else
-                skip = true;
-
-            oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
-
-            if (oCreateSwapChainForHwnd != nullptr)
-            {
-                LOG_INFO("Hooking native DXGIFactory");
-
-                DetourTransactionBegin();
-                DetourUpdateThread(GetCurrentThread());
-
-                if (!skip)
-                    DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
-
-                DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
-
-                DetourTransactionCommit();
-            }
-
-            factory2->Release();
-            factory2 = nullptr;
-        }
-    }
-
-    return result;
-}
-
-static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter)
-{
-    auto result = ptrEnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, ppvAdapter);
-
-    if (result == S_OK)
-        CheckAdapter(*ppvAdapter);
-
-    return result;
-}
-
-static HRESULT hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter)
-{
-    auto result = ptrEnumAdapterByLuid(This, AdapterLuid, riid, ppvAdapter);
-
-    if (result == S_OK)
-        CheckAdapter(*ppvAdapter);
-
-    return result;
-}
-
-static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter)
-{
-    auto result = ptrEnumAdapters1(This, Adapter, ppAdapter);
-
-    if (result == S_OK)
-        CheckAdapter(*ppAdapter);
-
-    return result;
-}
-
-static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter)
-{
-    auto result = ptrEnumAdapters(This, Adapter, ppAdapter);
-
-    if (result == S_OK)
-        CheckAdapter(*ppAdapter);
-
-    return result;
-}
 
 #pragma endregion
 
@@ -1048,7 +757,7 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
 
         HookToDevice(d3d11Device);
 
-        WrappedIDXGISwapChain4* buf = nullptr;
+        WrappedSwapChain* buf = nullptr;
         if (buffer != nullptr && buffer->QueryInterface(IID_PPV_ARGS(&buf)) != S_OK)
         {
             // check for SL proxy
@@ -1082,8 +791,8 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
                 }
 
                 LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)buffer, (UINT64)pSwapChainDesc->OutputWindow);
-                *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? buffer : real, d3d11Device, pSwapChainDesc->OutputWindow, Present, CleanupRenderTarget);
-                LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)buffer, (UINT64)d3d11Device);
+                *ppSwapChain = new WrappedSwapChain(real == nullptr ? buffer : real, d3d11Device, pSwapChainDesc->OutputWindow, Present, CleanupRenderTarget);
+                LOG_DEBUG("created new WrappedSwapChain: {0:X}, pDevice: {1:X}", (UINT64)buffer, (UINT64)d3d11Device);
             }
         }
 

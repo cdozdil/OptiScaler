@@ -499,14 +499,14 @@ VkResult MenuVulkan::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
 
     _vkPresentMutex.lock();
 
-    if (MenuVulkan::vkUpscaleTrig && MenuVulkan::queryPool != VK_NULL_HANDLE)
+    if (vkUpscaleTrig && queryPool != VK_NULL_HANDLE)
     {
         // Retrieve timestamps
         uint64_t timestamps[2];
-        vkGetQueryPoolResults(_device, MenuVulkan::queryPool, 0, 2, sizeof(timestamps), timestamps, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT);
+        vkGetQueryPoolResults(_device, queryPool, 0, 2, sizeof(timestamps), timestamps, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT);
 
         // Calculate elapsed time in milliseconds
-        double elapsedTimeMs = (timestamps[1] - timestamps[0]) * MenuVulkan::timeStampPeriod / 1e6;
+        double elapsedTimeMs = (timestamps[1] - timestamps[0]) * timeStampPeriod / 1e6;
 
         if (elapsedTimeMs > 0.0 && elapsedTimeMs < 5000.0)
         {
@@ -514,7 +514,7 @@ VkResult MenuVulkan::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
             Config::Instance()->upscaleTimes.pop_front();
         }
 
-        MenuVulkan::vkUpscaleTrig = false;
+        vkUpscaleTrig = false;
     }
 
     LOG_DEBUG("rendering menu, swapchain count: {0}", pPresentInfo->swapchainCount);
@@ -647,4 +647,29 @@ void MenuVulkan::CreateSwapchain(VkDevice device, const VkSwapchainCreateInfoKHR
         _isInited = true;
         MenuBase::VulkanReady();
     }
+}
+
+void MenuVulkan::PrepareTimeObjects(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice)
+{
+    VkQueryPoolCreateInfo queryPoolInfo = {};
+    queryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+    queryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
+    queryPoolInfo.queryCount = 2; // Start and End timestamps
+
+    vkCreateQueryPool(InDevice, &queryPoolInfo, nullptr, &queryPool);
+
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(InPD, &deviceProperties);
+    timeStampPeriod = deviceProperties.limits.timestampPeriod;
+}
+
+void MenuVulkan::BeforeUpscale(VkCommandBuffer InCmdBuffer)
+{
+    vkCmdWriteTimestamp(InCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, queryPool, 0);
+}
+
+void MenuVulkan::AfterUpscale(VkCommandBuffer InCmdBuffer)
+{
+    vkCmdWriteTimestamp(InCmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, queryPool, 1);
+    vkUpscaleTrig = true;
 }

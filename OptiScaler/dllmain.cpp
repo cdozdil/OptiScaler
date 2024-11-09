@@ -4,107 +4,27 @@
 #include "Logger.h"
 #include "resource.h"
 #include "WorkingMode.h"
+#include "hooks/LoadLibrary.h"
 #include "proxies/NVNGX_Proxy.h"
 #include "proxies/FfxApi_Proxy.h"
 #include "proxies/XeSS_Proxy.h"
-
-void AttachHooks();
-void DetachHooks();
-HMODULE LoadNvApi();
-HMODULE LoadNvgxDlss(std::wstring originalPath);
-
-static HMODULE LoadNvApi()
-{
-    HMODULE nvapi = nullptr;
-
-    if (Config::Instance()->NvapiDllPath.has_value())
-    {
-        nvapi = o_LoadLibraryW(Config::Instance()->NvapiDllPath->c_str());
-
-        if (nvapi != nullptr)
-        {
-            LOG_INFO("nvapi64.dll loaded from {0}", wstring_to_string(Config::Instance()->NvapiDllPath.value()));
-            return nvapi;
-        }
-    }
-
-    if (nvapi == nullptr)
-    {
-        auto localPath = Util::DllPath().parent_path() / L"nvapi64.dll";
-        nvapi = o_LoadLibraryW(localPath.wstring().c_str());
-
-        if (nvapi != nullptr)
-        {
-            LOG_INFO("nvapi64.dll loaded from {0}", wstring_to_string(localPath.wstring()));
-            return nvapi;
-        }
-    }
-
-    if (nvapi == nullptr)
-    {
-        nvapi = o_LoadLibraryW(L"nvapi64.dll");
-
-        if (nvapi != nullptr)
-        {
-            LOG_WARN("nvapi64.dll loaded from system!");
-            return nvapi;
-        }
-    }
-
-    return nullptr;
-}
-
-static HMODULE LoadNvgxDlss(std::wstring originalPath)
-{
-    HMODULE nvngxDlss = nullptr;
-
-    if (Config::Instance()->NVNGX_DLSS_Library.has_value())
-    {
-        nvngxDlss = o_LoadLibraryW(Config::Instance()->NVNGX_DLSS_Library.value().c_str());
-
-        if (nvngxDlss != nullptr)
-        {
-            LOG_INFO("nvngx_dlss.dll loaded from {0}", wstring_to_string(Config::Instance()->NVNGX_DLSS_Library.value()));
-            return nvngxDlss;
-        }
-        else
-        {
-            LOG_WARN("nvngx_dlss.dll can't found at {0}", wstring_to_string(Config::Instance()->NVNGX_DLSS_Library.value()));
-        }
-    }
-
-    if (nvngxDlss == nullptr)
-    {
-        nvngxDlss = o_LoadLibraryW(originalPath.c_str());
-
-        if (nvngxDlss != nullptr)
-        {
-            LOG_INFO("nvngx_dlss.dll loaded from {0}", wstring_to_string(originalPath));
-            return nvngxDlss;
-        }
-    }
-
-    return nullptr;
-}
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
     switch (ul_reason_for_call)
     {
         case DLL_PROCESS_ATTACH:
-            if (loadCount > 1)
+            if (LoadLibraryHooks::LoadCount() > 1)
             {
-                LOG_INFO("DLL_PROCESS_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
+                LOG_INFO("DLL_PROCESS_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, LoadLibraryHooks::LoadCount());
                 return TRUE;
             }
 
-
             dllModule = hModule;
             processId = GetCurrentProcessId();
-
             DisableThreadLibraryCalls(hModule);
 
-            loadCount++;
+            LoadLibraryHooks::AddLoad();
 
 #ifdef VER_PRE_RELEASE
             // Enable file logging for pre builds
@@ -128,33 +48,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             // Check if real DLSS available
             if (Config::Instance()->DLSSEnabled.value_or(true))
-            {
-                spdlog::info("");
                 NVNGXProxy::InitNVNGX();
-
-                if (NVNGXProxy::NVNGXModule() == nullptr)
-                {
-                    spdlog::info("Can't load nvngx.dll, disabling DLSS");
-                    Config::Instance()->DLSSEnabled = false;
-                }
-                else
-                {
-                    spdlog::info("nvngx.dll loaded, setting DLSS as default upscaler and disabling spoofing options set to auto");
-
-                    Config::Instance()->DLSSEnabled = true;
-
-                    if (!Config::Instance()->DxgiSpoofing.has_value())
-                        Config::Instance()->DxgiSpoofing = false;
-
-                    if (!Config::Instance()->VulkanSpoofing.has_value())
-                        Config::Instance()->VulkanSpoofing = false;
-
-                    if (!Config::Instance()->VulkanExtensionSpoofing.has_value())
-                        Config::Instance()->VulkanExtensionSpoofing = false;
-
-                    isNvngxAvailable = true;
-                }
-            }
 
             // Init XeSS proxy
             if (!XeSSProxy::InitXeSS())
@@ -172,7 +66,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             spdlog::info("");
 
             if (WorkingMode::Check())
-                AttachHooks();
+                LoadLibraryHooks::Hook();
 
             spdlog::info("");
 
@@ -187,7 +81,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         case DLL_PROCESS_DETACH:
             // Unhooking and cleaning stuff causing issues during shutdown. 
             // Disabled for now to check if it cause any issues
-            //DetachHooks();
+            //LoadLibraryHooks::Unhook();
 
             if (skHandle != nullptr)
                 FreeLibrary(skHandle);

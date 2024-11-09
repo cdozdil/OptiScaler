@@ -7,16 +7,15 @@
 #include <DbgHelp.h>
 #include <include/detours/detours.h>
 
+typedef HRESULT(*PFN_GetDesc)(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc);
+typedef HRESULT(*PFN_GetDesc1)(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc);
+typedef HRESULT(*PFN_GetDesc2)(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc);
+typedef HRESULT(*PFN_GetDesc3)(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc);
 
-typedef HRESULT(WINAPI* PFN_GetDesc)(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc);
-typedef HRESULT(WINAPI* PFN_GetDesc1)(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc);
-typedef HRESULT(WINAPI* PFN_GetDesc2)(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc);
-typedef HRESULT(WINAPI* PFN_GetDesc3)(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc);
-
-typedef HRESULT(WINAPI* PFN_EnumAdapterByGpuPreference)(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, void** ppvAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapterByLuid)(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, void** ppvAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapters1)(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1** ppAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapters)(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** ppAdapter);
+typedef HRESULT(*PFN_EnumAdapterByGpuPreference)(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IDXGIAdapter** ppvAdapter);
+typedef HRESULT(*PFN_EnumAdapterByLuid)(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IDXGIAdapter** ppvAdapter);
+typedef HRESULT(*PFN_EnumAdapters1)(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1** ppAdapter);
+typedef HRESULT(*PFN_EnumAdapters)(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** ppAdapter);
 
 static PFN_GetDesc o_GetDesc = nullptr;
 static PFN_GetDesc1 o_GetDesc1 = nullptr;
@@ -33,9 +32,35 @@ void AttachToFactory(IUnknown* unkFactory);
 
 #pragma region DXGI Adapter methods
 
+static void CheckAdapter(IUnknown* unkAdapter)
+{
+    if (Config::Instance()->IsRunningOnDXVK)
+        return;
+
+    //DXVK VkInterface GUID
+    const GUID guid = { 0x907bf281,0xea3c,0x43b4,{0xa8,0xe4,0x9f,0x23,0x11,0x07,0xb4,0xff} };
+
+    IDXGIAdapter* adapter = nullptr;
+    bool adapterOk = unkAdapter->QueryInterface(IID_PPV_ARGS(&adapter)) == S_OK;
+
+    void* dxvkAdapter = nullptr;
+    if (adapterOk && adapter->QueryInterface(guid, &dxvkAdapter) == S_OK)
+    {
+
+        Config::Instance()->IsRunningOnDXVK = dxvkAdapter != nullptr;
+        ((IDXGIAdapter*)dxvkAdapter)->Release();
+    }
+
+    if (adapterOk)
+        adapter->Release();
+
+    if (Config::Instance()->IsRunningOnDXVK)
+        LOG_INFO("DXVK adapter detected");
+}
+
 bool SkipSpoofing()
 {
-    auto skip = !Config::Instance()->DxgiSpoofing.value_or(true) || Config::Instance()->dxgiSkipSpoofing || Config::Instance()->IsRunningOnLinux;
+    auto skip = !Config::Instance()->DxgiSpoofing.value_or(true) || Config::Instance()->dxgiSkipSpoofing;
 
     if (skip)
         LOG_TRACE("DxgiSpoofing: {}, dxgiSkipSpoofing: {}, skipping spoofing",
@@ -202,33 +227,31 @@ static HRESULT hkGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
 
 #pragma region DXGI Factory methods
 
-static HRESULT WINAPI hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, void** ppvAdapter)
+static HRESULT WINAPI hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IDXGIAdapter** ppvAdapter)
 {
     AttachToFactory(This);
 
-    IDXGIAdapter* adapter = nullptr;
-    auto result = o_EnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, (void**)&adapter);
+    auto result = o_EnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, ppvAdapter);
 
     if (result == S_OK)
     {
-        AttachToAdapter(adapter);
-        *ppvAdapter = adapter;
+        CheckAdapter(*ppvAdapter);
+        AttachToAdapter(*ppvAdapter);
     }
 
     return result;
 }
 
-static HRESULT WINAPI hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, void** ppvAdapter)
+static HRESULT WINAPI hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IDXGIAdapter** ppvAdapter)
 {
     AttachToFactory(This);
 
-    IDXGIAdapter* adapter = nullptr;
-    auto result = o_EnumAdapterByLuid(This, AdapterLuid, riid, (void**)&adapter);
+    auto result = o_EnumAdapterByLuid(This, AdapterLuid, riid, ppvAdapter);
 
     if (result == S_OK)
     {
-        AttachToAdapter(adapter);
-        *ppvAdapter = adapter;
+        CheckAdapter(*ppvAdapter);
+        AttachToAdapter(*ppvAdapter);
     }
 
     return result;
@@ -238,13 +261,12 @@ static HRESULT WINAPI hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAd
 {
     AttachToFactory(This);
 
-    IDXGIAdapter1* adapter = nullptr;
-    auto result = o_EnumAdapters1(This, Adapter, &adapter);
+    auto result = o_EnumAdapters1(This, Adapter, ppAdapter);
 
     if (result == S_OK)
     {
-        AttachToAdapter(adapter);
-        *ppAdapter = adapter;
+        CheckAdapter(*ppAdapter);
+        AttachToAdapter(*ppAdapter);
     }
 
     return result;
@@ -254,13 +276,12 @@ static HRESULT WINAPI hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdap
 {
     AttachToFactory(This);
 
-    IDXGIAdapter* adapter = nullptr;
-    auto result = o_EnumAdapters(This, Adapter, &adapter);
+    auto result = o_EnumAdapters(This, Adapter, ppAdapter);
 
     if (result == S_OK)
     {
-        AttachToAdapter(adapter);
-        *ppAdapter = adapter;
+        CheckAdapter(*ppAdapter);
+        AttachToAdapter(*ppAdapter);
     }
 
     return result;
@@ -358,7 +379,7 @@ static void AttachToFactory(IUnknown* unkFactory)
 
         DetourTransactionCommit();
     }
-    
+
     factory->Release();
 
     IDXGIFactory1* factory1;
@@ -411,41 +432,32 @@ static void AttachToFactory(IUnknown* unkFactory)
 
 #pragma region DXGI methods
 
-HRESULT _CreateDXGIFactory(REFIID riid, _COM_Outptr_ void** ppFactory)
+HRESULT _CreateDXGIFactory(REFIID riid, _COM_Outptr_ IDXGIFactory** ppFactory)
 {
-    IDXGIFactory* factory;
-    HRESULT result = dxgi.CreateDxgiFactory(riid, (void**)&factory);
+    HRESULT result = dxgi.CreateDxgiFactory(riid, ppFactory);
 
     if (result == S_OK)
-        AttachToFactory(factory);
-
-    *ppFactory = factory;
+        AttachToFactory(*ppFactory);
 
     return result;
 }
 
-HRESULT _CreateDXGIFactory1(REFIID riid, _COM_Outptr_ void** ppFactory)
+HRESULT _CreateDXGIFactory1(REFIID riid, _COM_Outptr_ IDXGIFactory1** ppFactory)
 {
-    IDXGIFactory1* factory1;
-    HRESULT result = dxgi.CreateDxgiFactory1(riid, (void**)&factory1);
+    HRESULT result = dxgi.CreateDxgiFactory1(riid, ppFactory);
 
     if (result == S_OK)
-        AttachToFactory(factory1);
-
-    *ppFactory = factory1;
+        AttachToFactory(*ppFactory);
 
     return result;
 }
 
-HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFactory)
+HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, _COM_Outptr_ IDXGIFactory2** ppFactory)
 {
-    IDXGIFactory* factory;
-    HRESULT result = dxgi.CreateDxgiFactory2(Flags, riid, (void**)&factory);
+    HRESULT result = dxgi.CreateDxgiFactory2(Flags, riid, ppFactory);
 
     if (result == S_OK)
-        AttachToFactory(factory);
-
-    *ppFactory = factory;
+        AttachToFactory(*ppFactory);
 
     return result;
 }
@@ -552,6 +564,5 @@ void _UpdateHMDEmulationStatus()
     dxgi.UpdateHMDEmulationStatus();
 }
 
-#pragma endregion
 
 

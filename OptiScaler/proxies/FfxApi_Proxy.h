@@ -1,20 +1,14 @@
 #pragma once
 
-#include "pch.h"
+#include <pch.h>
 
-#include "Util.h"
-#include "Config.h"
-#include "Logger.h"
+#include <Util.h>
+#include <Config.h>
+#include <Logger.h>
 
 #include "ffx_api.h"
-#include <include/detours/detours.h>
 
-typedef struct _feature_version
-{
-    unsigned int major;
-    unsigned int minor;
-    unsigned int patch;
-} feature_version;
+#include <include/detours/detours.h>
 
 class FfxApiProxy
 {

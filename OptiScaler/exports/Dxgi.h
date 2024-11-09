@@ -4,15 +4,16 @@
 
 #include <dxgi1_6.h>
 
-typedef HRESULT(WINAPI* PFN_CREATE_DXGI_FACTORY)(REFIID riid, _COM_Outptr_ void** ppFactory);
-typedef HRESULT(WINAPI* PFN_CREATE_DXGI_FACTORY_2)(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFactory);
+typedef HRESULT(*PFN_CREATE_DXGI_FACTORY)(REFIID riid, IDXGIFactory** ppFactory);
+typedef HRESULT(*PFN_CREATE_DXGI_FACTORY_1)(REFIID riid, IDXGIFactory1** ppFactory);
+typedef HRESULT(*PFN_CREATE_DXGI_FACTORY_2)(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory);
 
 inline struct dxgi_dll
 {
     HMODULE dll = nullptr;
 
     PFN_CREATE_DXGI_FACTORY CreateDxgiFactory;
-    PFN_CREATE_DXGI_FACTORY CreateDxgiFactory1;
+    PFN_CREATE_DXGI_FACTORY_1 CreateDxgiFactory1;
     PFN_CREATE_DXGI_FACTORY_2 CreateDxgiFactory2;
 
     FARPROC DeclareAdapterRemovalSupport;
@@ -38,7 +39,7 @@ inline struct dxgi_dll
         dll = module;
 
         CreateDxgiFactory = (PFN_CREATE_DXGI_FACTORY)GetProcAddress(module, "CreateDXGIFactory");
-        CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY)GetProcAddress(module, "CreateDXGIFactory1");
+        CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY_1)GetProcAddress(module, "CreateDXGIFactory1");
         CreateDxgiFactory2 = (PFN_CREATE_DXGI_FACTORY_2)GetProcAddress(module, "CreateDXGIFactory2");
 
         DeclareAdapterRemovalSupport = GetProcAddress(module, "DXGIDeclareAdapterRemovalSupport");
@@ -61,9 +62,9 @@ inline struct dxgi_dll
     }
 } dxgi;
 
-HRESULT _CreateDXGIFactory(REFIID riid, _COM_Outptr_ void** ppFactory);
-HRESULT _CreateDXGIFactory1(REFIID riid, _COM_Outptr_ void** ppFactory);
-HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFactory);
+HRESULT _CreateDXGIFactory(REFIID riid,  IDXGIFactory** ppFactory);
+HRESULT _CreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory);
+HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory);
 
 void _DXGIDeclareAdapterRemovalSupport();
 void _DXGIGetDebugInterface1();
