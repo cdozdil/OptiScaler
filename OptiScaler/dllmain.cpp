@@ -1761,6 +1761,14 @@ static void CheckWorkingMode()
             HookForVulkanExtensionSpoofing();
         }
 
+        HMODULE nvapi64 = nullptr;
+        vulkanModule = GetModuleHandle(L"nvapi64.dll");
+        if (vulkanModule != nullptr)
+        {
+            LOG_DEBUG("nvapi64.dll already in memory");
+            NvApiHooks::Hook(nvapi64);
+        }
+
         Config::Instance()->WorkingAsNvngx = isNvngxMode && !isWorkingWithEnabler;
         Config::Instance()->OverlayMenu = (!isNvngxMode || isWorkingWithEnabler) && Config::Instance()->OverlayMenu.value_or(true);
 
