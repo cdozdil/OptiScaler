@@ -1,4 +1,4 @@
-#include "Imgui_Dx12.h"
+#include "OldMenuDx12.h"
 
 #include <include/d3dx/d3dx12.h>
 #include <include/imgui/imgui_impl_dx12.h>
@@ -6,7 +6,7 @@
 
 long frameCounter = 0;
 
-bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outTexture)
+bool OldMenuDx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outTexture)
 {
 	if (Config::Instance()->OverlayMenu.value_or(true))
 		return false;
@@ -61,7 +61,7 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 		ImGui_ImplWin32_NewFrame();
 
 		// Render
-		ImguiDxBase::RenderMenu();
+		OldMenuBase::RenderMenu();
 		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
 
 		outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
@@ -108,7 +108,7 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 	ImGui_ImplWin32_NewFrame();
 
 	// Render to buffer
-	ImguiDxBase::RenderMenu();
+	OldMenuBase::RenderMenu();
 
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
 
@@ -133,7 +133,7 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 	return true;
 }
 
-Imgui_Dx12::Imgui_Dx12(HWND handle, ID3D12Device* pDevice) : ImguiDxBase(handle), _device(pDevice)
+OldMenuDx12::OldMenuDx12(HWND handle, ID3D12Device* pDevice) : OldMenuBase(handle), _device(pDevice)
 {
 	if (Config::Instance()->OverlayMenu.value_or(true))
 		return;
@@ -170,7 +170,7 @@ Imgui_Dx12::Imgui_Dx12(HWND handle, ID3D12Device* pDevice) : ImguiDxBase(handle)
 	_srvDescHeap->SetName(L"Imgui_Dx12_srvDescHeap");
 }
 
-Imgui_Dx12::~Imgui_Dx12()
+OldMenuDx12::~OldMenuDx12()
 {
 	if (!_dx12Init)
 		return;
@@ -216,7 +216,7 @@ Imgui_Dx12::~Imgui_Dx12()
 	}
 }
 
-void Imgui_Dx12::CreateRenderTarget(const D3D12_RESOURCE_DESC& InDesc)
+void OldMenuDx12::CreateRenderTarget(const D3D12_RESOURCE_DESC& InDesc)
 {
 	if (_renderTargetResource[0] != nullptr)
 	{

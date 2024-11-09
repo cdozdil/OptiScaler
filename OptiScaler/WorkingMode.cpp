@@ -341,7 +341,10 @@ bool WorkingMode::Check()
     } while (false);
 
     if (modeFound)
+    {
+        Config::Instance()->OverlayMenu = (!isNvngxMode || isWorkingWithEnabler) && Config::Instance()->OverlayMenu.value_or(true);
         return true;
+    }
 
     LOG_ERROR("Unsupported dll name: {0}", filename);
     return false;

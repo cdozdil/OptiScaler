@@ -7,61 +7,6 @@
 #include "proxies/NVNGX_Proxy.h"
 #include "proxies/FfxApi_Proxy.h"
 #include "proxies/XeSS_Proxy.h"
-#include "menu/imgui_overlay_dx.h"
-#include "menu/imgui_overlay_vk.h"
-
-#pragma warning (disable : 4996)
-
-inline std::vector<std::string> upscalerNames =
-{
-    "nvngx.dll",
-    "nvngx",
-    "libxess.dll",
-    "libxess"
-};
-
-inline std::vector<std::string> nvngxDlss =
-{
-    "nvngx_dlss.dll",
-    "nvngx_dlss",
-};
-
-inline std::vector<std::string> nvapiNames =
-{
-    "nvapi64.dll",
-    "nvapi64",
-};
-
-inline std::vector<std::string> dllNames;
-
-inline std::vector<std::wstring> upscalerNamesW =
-{
-    L"nvngx.dll",
-    L"nvngx",
-    L"libxess.dll",
-    L"libxess"
-};
-
-inline std::vector<std::wstring> nvngxDlssW =
-{
-    L"nvngx_dlss.dll",
-    L"nvngx_dlss",
-};
-
-inline std::vector<std::wstring> nvapiNamesW =
-{
-    L"nvapi64.dll",
-    L"nvapi64",
-};
-
-inline std::vector<std::wstring> dllNamesW;
-
-static int loadCount = 0;
-static bool dontCount = false;
-
-static bool isNvngxMode = false;
-static bool isWorkingWithEnabler = false;
-static bool isNvngxAvailable = false;
 
 void AttachHooks();
 void DetachHooks();
@@ -259,55 +204,6 @@ static void DetachHooks()
 
         //FreeLibrary(shared.dll);
     }
-}
-
-static void AttachHooks()
-{
-    LOG_FUNC();
-
-    if (o_LoadLibraryA == nullptr || o_LoadLibraryW == nullptr)
-    {
-        // Detour the functions
-        o_FreeLibrary = reinterpret_cast<PFN_FreeLibrary>(DetourFindFunction("kernel32.dll", "FreeLibrary"));
-        o_LoadLibraryA = reinterpret_cast<PFN_LoadLibraryA>(DetourFindFunction("kernel32.dll", "LoadLibraryA"));
-        o_LoadLibraryW = reinterpret_cast<PFN_LoadLibraryW>(DetourFindFunction("kernel32.dll", "LoadLibraryW"));
-        o_LoadLibraryExA = reinterpret_cast<PFN_LoadLibraryExA>(DetourFindFunction("kernel32.dll", "LoadLibraryExA"));
-        o_LoadLibraryExW = reinterpret_cast<PFN_LoadLibraryExW>(DetourFindFunction("kernel32.dll", "LoadLibraryExW"));
-#ifdef _DEBUG
-        o_GetProcAddress = reinterpret_cast<PFN_GetProcAddress>(DetourFindFunction("kernel32.dll", "GetProcAddress"));
-#endif // DEBUG
-
-        if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
-        {
-            LOG_INFO("Attaching LoadLibrary hooks");
-
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
-
-            if (o_FreeLibrary)
-                DetourAttach(&(PVOID&)o_FreeLibrary, hkFreeLibrary);
-
-            if (o_LoadLibraryA)
-                DetourAttach(&(PVOID&)o_LoadLibraryA, hkLoadLibraryA);
-
-            if (o_LoadLibraryW)
-                DetourAttach(&(PVOID&)o_LoadLibraryW, hkLoadLibraryW);
-
-            if (o_LoadLibraryExA)
-                DetourAttach(&(PVOID&)o_LoadLibraryExA, hkLoadLibraryExA);
-
-            if (o_LoadLibraryExW)
-                DetourAttach(&(PVOID&)o_LoadLibraryExW, hkLoadLibraryExW);
-
-            if (o_GetProcAddress)
-                DetourAttach(&(PVOID&)o_GetProcAddress, hkGetProcAddress);
-
-            DetourTransactionCommit();
-        }
-    }
-
-
-
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)

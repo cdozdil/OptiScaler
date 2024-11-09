@@ -5,9 +5,6 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
-
-// LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
 typedef HRESULT(__fastcall* PFN_Present)(IDXGISwapChain*, UINT, UINT);
 typedef HRESULT(__fastcall* PFN_Present1)(IDXGISwapChain1*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*);
 typedef HRESULT(__fastcall* PFN_ResizeBuffers)(IDXGISwapChain*, UINT, UINT, UINT, DXGI_FORMAT, UINT);
@@ -17,7 +14,7 @@ typedef HRESULT(__fastcall* PFN_CreateSwapChainForHwnd)(IDXGIFactory*, IUnknown*
 typedef HRESULT(__fastcall* PFN_CreateSwapChainForCoreWindow)(IDXGIFactory*, IUnknown*, IUnknown*, const DXGI_SWAP_CHAIN_DESC1*, IDXGIOutput*, IDXGISwapChain1**);
 typedef HRESULT(__fastcall* PFN_CreateSwapChainForComposition)(IDXGIFactory*, IUnknown*, const DXGI_SWAP_CHAIN_DESC1*, IDXGIOutput*, IDXGISwapChain1**);
 
-class ImGuiOverlayBase
+class MenuBase
 {
 public:
 	static HWND Handle();

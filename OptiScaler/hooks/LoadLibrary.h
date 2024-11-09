@@ -5,6 +5,8 @@ class LoadLibraryHooks
 {
 private:
 public:
-    void Hook();
-    void Unhook();
+    static void Hook();
+    static void Unhook();
+    static void AddLoad();
+    static UINT LoadCount();
 };

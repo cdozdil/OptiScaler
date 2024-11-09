@@ -1,10 +1,10 @@
-#include "imgui_overlay_dx.h"
+#include "MenuDx.h"
 
 #include <Util.h>
 #include <Logger.h>
 #include <Config.h>
 #include "wrapped_swapchain.h"
-#include "imgui_overlay_base.h"
+#include "MenuBase.h"
 
 #include <dxgi1_6.h>
 #include <d3d11on12.h>
@@ -12,9 +12,6 @@
 #include <include/imgui/imgui_impl_dx12.h>
 #include <include/imgui/imgui_impl_win32.h>
 #include <include/detours/detours.h>
-
-
-
 
 // dxgi stuff
 typedef HRESULT(*PFN_CreateDXGIFactory)(REFIID riid, IDXGIFactory** ppFactory);
@@ -171,7 +168,7 @@ static void CleanupRenderTargetDx12(bool clearQueue)
 
     if (clearQueue)
     {
-        if (ImGuiOverlayBase::IsInited() && g_pd3dDeviceParam != nullptr && g_pd3dSrvDescHeap != nullptr && ImGui::GetIO().BackendRendererUserData)
+        if (MenuBase::IsInited() && g_pd3dDeviceParam != nullptr && g_pd3dSrvDescHeap != nullptr && ImGui::GetIO().BackendRendererUserData)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
             ImGui_ImplDX12_Shutdown();
@@ -323,7 +320,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             LOG_DEBUG("D3D12CommandQueue captured");
 
         currentSCCommandQueue = pDevice;
-        ImGuiOverlayDx::GameCommandQueue = (ID3D12CommandQueue*)pDevice;
+        MenuDx::GameCommandQueue = (ID3D12CommandQueue*)pDevice;
 
         if (cq->GetDevice(IID_PPV_ARGS(&device12)) == S_OK)
         {
@@ -356,12 +353,12 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
     }
 
     // Upscaler GPU time computation
-    if (ImGuiOverlayDx::dx12UpscaleTrig && ImGuiOverlayDx::readbackBuffer != nullptr && ImGuiOverlayDx::queryHeap != nullptr && cq != nullptr)
+    if (MenuDx::dx12UpscaleTrig && MenuDx::readbackBuffer != nullptr && MenuDx::queryHeap != nullptr && cq != nullptr)
     {
-        if (ImGuiOverlayBase::IsInited() && ImGuiOverlayBase::IsVisible())
+        if (MenuBase::IsInited() && MenuBase::IsVisible())
         {
             UINT64* timestampData;
-            ImGuiOverlayDx::readbackBuffer->Map(0, nullptr, reinterpret_cast<void**>(&timestampData));
+            MenuDx::readbackBuffer->Map(0, nullptr, reinterpret_cast<void**>(&timestampData));
 
             // Get the GPU timestamp frequency (ticks per second)
             UINT64 gpuFrequency;
@@ -376,28 +373,28 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             Config::Instance()->upscaleTimes.pop_front();
 
             // Unmap the buffer
-            ImGuiOverlayDx::readbackBuffer->Unmap(0, nullptr);
+            MenuDx::readbackBuffer->Unmap(0, nullptr);
         }
 
-        ImGuiOverlayDx::dx12UpscaleTrig = false;
+        MenuDx::dx12UpscaleTrig = false;
     }
-    else if (ImGuiOverlayDx::dx11UpscaleTrig[ImGuiOverlayDx::currentFrameIndex] && device != nullptr && ImGuiOverlayDx::disjointQueries[0] != nullptr &&
-             ImGuiOverlayDx::startQueries[0] != nullptr && ImGuiOverlayDx::endQueries[0] != nullptr)
+    else if (MenuDx::dx11UpscaleTrig[MenuDx::currentFrameIndex] && device != nullptr && MenuDx::disjointQueries[0] != nullptr &&
+             MenuDx::startQueries[0] != nullptr && MenuDx::endQueries[0] != nullptr)
     {
         if (g_pd3dDeviceContext == nullptr)
             device->GetImmediateContext(&g_pd3dDeviceContext);
 
-        if (ImGuiOverlayBase::IsInited() && ImGuiOverlayBase::IsVisible())
+        if (MenuBase::IsInited() && MenuBase::IsVisible())
         {
             // Retrieve the results from the previous frame
             D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjointData;
-            if (g_pd3dDeviceContext->GetData(ImGuiOverlayDx::disjointQueries[ImGuiOverlayDx::previousFrameIndex], &disjointData, sizeof(disjointData), 0) == S_OK)
+            if (g_pd3dDeviceContext->GetData(MenuDx::disjointQueries[MenuDx::previousFrameIndex], &disjointData, sizeof(disjointData), 0) == S_OK)
             {
                 if (!disjointData.Disjoint && disjointData.Frequency > 0)
                 {
                     UINT64 startTime = 0, endTime = 0;
-                    if (g_pd3dDeviceContext->GetData(ImGuiOverlayDx::startQueries[ImGuiOverlayDx::previousFrameIndex], &startTime, sizeof(UINT64), 0) == S_OK &&
-                        g_pd3dDeviceContext->GetData(ImGuiOverlayDx::endQueries[ImGuiOverlayDx::previousFrameIndex], &endTime, sizeof(UINT64), 0) == S_OK)
+                    if (g_pd3dDeviceContext->GetData(MenuDx::startQueries[MenuDx::previousFrameIndex], &startTime, sizeof(UINT64), 0) == S_OK &&
+                        g_pd3dDeviceContext->GetData(MenuDx::endQueries[MenuDx::previousFrameIndex], &endTime, sizeof(UINT64), 0) == S_OK)
                     {
                         double elapsedTimeMs = (endTime - startTime) / static_cast<double>(disjointData.Frequency) * 1000.0;
                         Config::Instance()->upscaleTimes.push_back(elapsedTimeMs);
@@ -408,19 +405,19 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         }
 
 
-        ImGuiOverlayDx::dx11UpscaleTrig[ImGuiOverlayDx::currentFrameIndex] = false;
-        ImGuiOverlayDx::currentFrameIndex = (ImGuiOverlayDx::currentFrameIndex + 1) % ImGuiOverlayDx::QUERY_BUFFER_COUNT;
+        MenuDx::dx11UpscaleTrig[MenuDx::currentFrameIndex] = false;
+        MenuDx::currentFrameIndex = (MenuDx::currentFrameIndex + 1) % MenuDx::QUERY_BUFFER_COUNT;
     }
 
     // Process window handle changed, update base
-    if (ImGuiOverlayBase::Handle() != hWnd)
+    if (MenuBase::Handle() != hWnd)
     {
         LOG_DEBUG("Handle changed");
 
-        if (ImGuiOverlayBase::IsInited())
-            ImGuiOverlayBase::Shutdown();
+        if (MenuBase::IsInited())
+            MenuBase::Shutdown();
 
-        ImGuiOverlayBase::Init(hWnd);
+        MenuBase::Init(hWnd);
 
         _isInited = false;
     }
@@ -436,7 +433,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             g_pd3dDevice->AddRef();
 
             CreateRenderTargetDx11(pSwapChain);
-            ImGuiOverlayBase::Dx11Ready();
+            MenuBase::Dx11Ready();
             _isInited = true;
         }
         else if (_dx12Device && (g_pd3dDeviceParam != nullptr || device12 != nullptr))
@@ -452,7 +449,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             g_pd3dCommandQueue->AddRef();
             g_pd3dDeviceParam->AddRef();
 
-            ImGuiOverlayBase::Dx12Ready();
+            MenuBase::Dx12Ready();
             _isInited = true;
         }
     }
@@ -1230,11 +1227,11 @@ static void RenderImGui_DX11(IDXGISwapChain* pSwapChain)
 
     do
     {
-        if (!ImGuiOverlayBase::IsInited())
+        if (!MenuBase::IsInited())
             break;
 
         // Draw only when menu activated
-        if (!ImGuiOverlayBase::IsVisible())
+        if (!MenuBase::IsVisible())
             break;
 
         if (!_dx11Device || g_pd3dDevice == nullptr)
@@ -1246,7 +1243,7 @@ static void RenderImGui_DX11(IDXGISwapChain* pSwapChain)
 
     if (!drawMenu)
     {
-        ImGuiOverlayBase::HideMenu();
+        MenuBase::HideMenu();
         return;
     }
 
@@ -1271,7 +1268,7 @@ static void RenderImGui_DX11(IDXGISwapChain* pSwapChain)
             ImGui_ImplDX11_NewFrame();
             ImGui_ImplWin32_NewFrame();
 
-            ImGuiOverlayBase::RenderMenu();
+            MenuBase::RenderMenu();
 
             ImGui::Render();
 
@@ -1291,11 +1288,11 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
         if (pSwapChainPlain->QueryInterface(IID_PPV_ARGS(&pSwapChain)) != S_OK || pSwapChain == nullptr)
             return;
 
-        if (!ImGuiOverlayBase::IsInited())
+        if (!MenuBase::IsInited())
             break;
 
         // Draw only when menu activated
-        if (!ImGuiOverlayBase::IsVisible())
+        if (!MenuBase::IsVisible())
             break;
 
         if (!_dx12Device || g_pd3dCommandQueue == nullptr || g_pd3dDeviceParam == nullptr)
@@ -1307,7 +1304,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
 
     if (!drawMenu)
     {
-        ImGuiOverlayBase::HideMenu();
+        MenuBase::HideMenu();
         auto releaseResult = pSwapChain->Release();
         return;
     }
@@ -1335,7 +1332,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
             if (result != S_OK)
             {
                 LOG_ERROR("CreateDescriptorHeap(g_pd3dRtvDescHeap): {0:X}", (unsigned long)result);
-                ImGuiOverlayBase::HideMenu();
+                MenuBase::HideMenu();
                 CleanupRenderTargetDx12(true);
                 pSwapChain->Release();
                 return;
@@ -1361,7 +1358,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
             if (result != S_OK)
             {
                 LOG_ERROR("CreateDescriptorHeap(g_pd3dSrvDescHeap): {0:X}", (unsigned long)result);
-                ImGuiOverlayBase::HideMenu();
+                MenuBase::HideMenu();
                 CleanupRenderTargetDx12(true);
                 pSwapChain->Release();
                 return;
@@ -1375,7 +1372,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
             if (result != S_OK)
             {
                 LOG_ERROR("CreateCommandAllocator[{0}]: {1:X}", i, (unsigned long)result);
-                ImGuiOverlayBase::HideMenu();
+                MenuBase::HideMenu();
                 CleanupRenderTargetDx12(true);
                 pSwapChain->Release();
                 return;
@@ -1386,7 +1383,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
         if (result != S_OK)
         {
             LOG_ERROR("CreateCommandList: {0:X}", (unsigned long)result);
-            ImGuiOverlayBase::HideMenu();
+            MenuBase::HideMenu();
             CleanupRenderTargetDx12(true);
             pSwapChain->Release();
             return;
@@ -1396,7 +1393,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
         if (result != S_OK)
         {
             LOG_ERROR("g_pd3dCommandList->Close: {0:X}", (unsigned long)result);
-            ImGuiOverlayBase::HideMenu();
+            MenuBase::HideMenu();
             CleanupRenderTargetDx12(false);
             pSwapChain->Release();
             return;
@@ -1427,7 +1424,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
             ImGui_ImplDX12_NewFrame();
             ImGui_ImplWin32_NewFrame();
 
-            ImGuiOverlayBase::RenderMenu();
+            MenuBase::RenderMenu();
 
             ImGui::Render();
 
@@ -1488,7 +1485,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
             if (_showRenderImGuiDebugOnce)
                 LOG_INFO("!(ImGui::GetCurrentContext() && g_pd3dCommandQueue && g_mainRenderTargetResource[0])");
 
-            ImGuiOverlayBase::HideMenu();
+            MenuBase::HideMenu();
             _showRenderImGuiDebugOnce = false;
         }
     }
@@ -1552,7 +1549,7 @@ void DeatachAllHooks()
     DetourTransactionCommit();
 }
 
-void ImGuiOverlayDx::HookDx()
+void MenuDx::HookDx()
 {
     if (_isInited)
         return;
@@ -1610,11 +1607,11 @@ void ImGuiOverlayDx::HookDx()
     }
 }
 
-void ImGuiOverlayDx::UnHookDx()
+void MenuDx::UnHookDx()
 {
     if (!Config::Instance()->IsRunningOnDXVK)
     {
-        if (_isInited && ImGuiOverlayBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
+        if (_isInited && MenuBase::IsInited() && ImGui::GetIO().BackendRendererUserData)
         {
             if (_dx11Device)
                 ImGui_ImplDX11_Shutdown();
@@ -1622,7 +1619,7 @@ void ImGuiOverlayDx::UnHookDx()
                 ImGui_ImplDX12_Shutdown();
         }
 
-        ImGuiOverlayBase::Shutdown();
+        MenuBase::Shutdown();
 
         if (_isInited)
         {

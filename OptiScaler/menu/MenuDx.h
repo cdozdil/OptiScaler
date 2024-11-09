@@ -5,7 +5,7 @@
 #include <d3d12.h>
 #include <d3d11_4.h>
 
-namespace ImGuiOverlayDx
+namespace MenuDx
 {
 	inline ID3D12QueryHeap* queryHeap = nullptr;
 	inline ID3D12Resource* readbackBuffer = nullptr;

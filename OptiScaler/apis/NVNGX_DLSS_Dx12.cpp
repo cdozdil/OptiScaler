@@ -2,7 +2,7 @@
 #include "Config.h"
 #include "NVNGX_Parameter.h"
 #include "proxies/NVNGX_Proxy.h"
-#include <menu/imgui_overlay_dx.h>
+#include <menu/MenuDx.h>
 #include "upscalers/dlss/DLSSFeature_Dx12.h"
 #include "upscalers/dlssd/DLSSDFeature_Dx12.h"
 #include "upscalers/fsr2/FSR2Feature_Dx12.h"
@@ -272,13 +272,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
     queryHeapDesc.Count = 2; // Start and End timestamps
     queryHeapDesc.NodeMask = 0;
     queryHeapDesc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
-    auto result = InDevice->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&ImGuiOverlayDx::queryHeap));
+    auto result = InDevice->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&MenuDx::queryHeap));
 
     // Create a readback buffer to retrieve timestamp data
     D3D12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(2 * sizeof(UINT64));
     D3D12_HEAP_PROPERTIES heapProps = {};
     heapProps.Type = D3D12_HEAP_TYPE_READBACK;
-    result = InDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&ImGuiOverlayDx::readbackBuffer));
+    result = InDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&MenuDx::readbackBuffer));
 
     return NVSDK_NGX_Result_Success;
 }
@@ -402,7 +402,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 
     // Unhooking and cleaning stuff causing issues during shutdown. 
     // Disabled for now to check if it cause any issues
-    //ImGuiOverlayDx::UnHookDx();
+    //MenuDx::UnHookDx();
 
     shutdown = false;
 
@@ -1161,17 +1161,17 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     }
 
     // Record the first timestamp (before FSR2 upscaling)
-    InCmdList->EndQuery(ImGuiOverlayDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
+    InCmdList->EndQuery(MenuDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
 
     bool evalResult = deviceContext->Evaluate(InCmdList, InParameters);
 
     // Record the second timestamp (after FSR2 upscaling)
-    InCmdList->EndQuery(ImGuiOverlayDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 1);
+    InCmdList->EndQuery(MenuDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 1);
 
     // Resolve the queries to the readback buffer
-    InCmdList->ResolveQueryData(ImGuiOverlayDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0, 2, ImGuiOverlayDx::readbackBuffer, 0);
+    InCmdList->ResolveQueryData(MenuDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0, 2, MenuDx::readbackBuffer, 0);
 
-    ImGuiOverlayDx::dx12UpscaleTrig = true;
+    MenuDx::dx12UpscaleTrig = true;
 
     if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
     {

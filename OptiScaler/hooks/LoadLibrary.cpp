@@ -4,6 +4,7 @@
 #include <Config.h>
 #include "Vulkan.h"
 #include <WorkingMode.h>
+#include <nvapi/NvApiHooks.h>
 
 #include <include/detours/detours.h>
 
@@ -21,93 +22,20 @@ static PFN_LoadLibraryExA o_LoadLibraryExA = nullptr;
 static PFN_LoadLibraryExW o_LoadLibraryExW = nullptr;
 static PFN_GetProcAddress o_GetProcAddress = nullptr;
 
-static std::vector<std::string> upscalerNames =
-{
-    "nvngx.dll",
-    "nvngx",
-    "libxess.dll",
-    "libxess"
-};
-
-static std::vector<std::string> nvngxDlss =
-{
-    "nvngx_dlss.dll",
-    "nvngx_dlss",
-};
-
-static std::vector<std::string> nvapiNames =
-{
-    "nvapi64.dll",
-    "nvapi64",
-};
-
-static std::vector<std::wstring> upscalerNamesW =
-{
-    L"nvngx.dll",
-    L"nvngx",
-    L"libxess.dll",
-    L"libxess"
-};
-
-static std::vector<std::wstring> nvngxDlssW =
-{
-    L"nvngx_dlss.dll",
-    L"nvngx_dlss",
-};
-
-static std::vector<std::wstring> nvapiNamesW =
-{
-    L"nvapi64.dll",
-    L"nvapi64",
-};
-
-static std::vector<std::wstring> dx11NamesW =
-{
-    L"d3d11.dll",
-    L"d3d11",
-};
-
-static std::vector<std::string> dx11Names =
-{
-    "d3d11.dll",
-    "d3d11",
-};
-
-static std::vector<std::wstring> dx12NamesW =
-{
-    L"d3d12.dll",
-    L"d3d12",
-};
-
-static std::vector<std::string> dx12Names =
-{
-    "d3d12.dll",
-    "d3d12",
-};
-
-inline std::vector<std::wstring> dxgiNamesW =
-{
-    L"dxgi.dll",
-    L"dxgi",
-};
-
-static std::vector<std::string> dxgiNames =
-{
-    "dxgi.dll",
-    "dxgi",
-};
-
-static std::vector<std::wstring> vkNamesW =
-{
-    L"vulkan-1.dll",
-    L"vulkan-1",
-};
-
-static std::vector<std::string> vkNames =
-{
-    "vulkan-1.dll",
-    "vulkan-1",
-};
+static std::vector<std::string> upscalerNames = { "nvngx.dll", "nvngx", "libxess.dll", "libxess" };
+static std::vector<std::wstring> upscalerNamesW = { L"nvngx.dll", L"nvngx", L"libxess.dll", L"libxess" };
+static std::vector<std::string> nvngxDlss = { "nvngx_dlss.dll", "nvngx_dlss", };
+static std::vector<std::wstring> nvngxDlssW = { L"nvngx_dlss.dll", L"nvngx_dlss", };
+static std::vector<std::string> nvapiNames = { "nvapi64.dll", "nvapi64", };
+static std::vector<std::wstring> nvapiNamesW = { L"nvapi64.dll", L"nvapi64", };
+static std::vector<std::string> dx11Names = { "d3d11.dll", "d3d11", };
+static std::vector<std::wstring> dx11NamesW = { L"d3d11.dll", L"d3d11", };
+static std::vector<std::string> dx12Names = { "d3d12.dll", "d3d12", };
+static std::vector<std::wstring> dx12NamesW = { L"d3d12.dll", L"d3d12", };
+static std::vector<std::string> dxgiNames = { "dxgi.dll", "dxgi", };
+static std::vector<std::wstring> dxgiNamesW = { L"dxgi.dll", L"dxgi", };
+static std::vector<std::string> vkNames = { "vulkan-1.dll", "vulkan-1", };
+static std::vector<std::wstring> vkNamesW = { L"vulkan-1.dll", L"vulkan-1", };
 
 static bool dontCount = false;
 static bool skipLoadChecks = false;
@@ -228,14 +156,12 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
     {
         VulkanHooks::Hook();
         VulkanHooks::HookExtension();
-
-        if (Config::Instance()->OverlayMenu.value_or(true))
-            HooksVk::HookVk();
     }
 
     skipLoadChecks = false;
 
-    if (!WorkingMode::IsNvngxMode() && CheckDllName(&lcaseLibName, &WorkingMode::DllNames()))
+    auto names = WorkingMode::DllNames();
+    if (!WorkingMode::IsNvngxMode() && CheckDllName(&lcaseLibName, &names))
     {
         LOG_INFO("{0} call returning this dll!", lcaseLibName);
 
@@ -335,14 +261,12 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
     {
         VulkanHooks::Hook();
         VulkanHooks::HookExtension();
-
-        if (Config::Instance()->OverlayMenu.value_or(true))
-            HooksVk::HookVk();
     }
 
     skipLoadChecks = false;
 
-    if (!WorkingMode::IsNvngxMode() && CheckDllNameW(&lcaseLibName, &WorkingMode::DllNamesW()))
+    auto names = WorkingMode::DllNamesW();
+    if (!WorkingMode::IsNvngxMode() && CheckDllNameW(&lcaseLibName, &names))
     {
         LOG_INFO("{0} call returning this dll!", lcaseLibNameA);
 
@@ -588,47 +512,146 @@ void LoadLibraryHooks::Hook()
 {
     LOG_FUNC();
 
-    if (o_LoadLibraryA == nullptr || o_LoadLibraryW == nullptr)
-    {
-        // Detour the functions
-        o_FreeLibrary = reinterpret_cast<PFN_FreeLibrary>(DetourFindFunction("kernel32.dll", "FreeLibrary"));
+    // Detour the functions
+    o_FreeLibrary = reinterpret_cast<PFN_FreeLibrary>(DetourFindFunction("kernel32.dll", "FreeLibrary"));
 
-        o_LoadLibraryA = reinterpret_cast<PFN_LoadLibraryA>(DetourFindFunction("kernel32.dll", "LoadLibraryA"));
-        o_LoadLibraryW = reinterpret_cast<PFN_LoadLibraryW>(DetourFindFunction("kernel32.dll", "LoadLibraryW"));
-        o_LoadLibraryExA = reinterpret_cast<PFN_LoadLibraryExA>(DetourFindFunction("kernel32.dll", "LoadLibraryExA"));
-        o_LoadLibraryExW = reinterpret_cast<PFN_LoadLibraryExW>(DetourFindFunction("kernel32.dll", "LoadLibraryExW"));
+    o_LoadLibraryA = reinterpret_cast<PFN_LoadLibraryA>(DetourFindFunction("kernel32.dll", "LoadLibraryA"));
+    o_LoadLibraryW = reinterpret_cast<PFN_LoadLibraryW>(DetourFindFunction("kernel32.dll", "LoadLibraryW"));
+    o_LoadLibraryExA = reinterpret_cast<PFN_LoadLibraryExA>(DetourFindFunction("kernel32.dll", "LoadLibraryExA"));
+    o_LoadLibraryExW = reinterpret_cast<PFN_LoadLibraryExW>(DetourFindFunction("kernel32.dll", "LoadLibraryExW"));
 
 #ifdef _DEBUG
-        //o_GetProcAddress = reinterpret_cast<PFN_GetProcAddress>(DetourFindFunction("kernel32.dll", "GetProcAddress"));
+    //o_GetProcAddress = reinterpret_cast<PFN_GetProcAddress>(DetourFindFunction("kernel32.dll", "GetProcAddress"));
 #endif // DEBUG
 
-        if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
-        {
-            LOG_INFO("Attaching LoadLibrary hooks");
+    if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
+    {
+        LOG_INFO("Attaching LoadLibrary hooks");
 
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
 
-            if (o_FreeLibrary)
-                DetourAttach(&(PVOID&)o_FreeLibrary, hkFreeLibrary);
+        if (o_FreeLibrary)
+            DetourAttach(&(PVOID&)o_FreeLibrary, hkFreeLibrary);
 
-            if (o_LoadLibraryA)
-                DetourAttach(&(PVOID&)o_LoadLibraryA, hkLoadLibraryA);
+        if (o_LoadLibraryA)
+            DetourAttach(&(PVOID&)o_LoadLibraryA, hkLoadLibraryA);
 
-            if (o_LoadLibraryW)
-                DetourAttach(&(PVOID&)o_LoadLibraryW, hkLoadLibraryW);
+        if (o_LoadLibraryW)
+            DetourAttach(&(PVOID&)o_LoadLibraryW, hkLoadLibraryW);
 
-            if (o_LoadLibraryExA)
-                DetourAttach(&(PVOID&)o_LoadLibraryExA, hkLoadLibraryExA);
+        if (o_LoadLibraryExA)
+            DetourAttach(&(PVOID&)o_LoadLibraryExA, hkLoadLibraryExA);
 
-            if (o_LoadLibraryExW)
-                DetourAttach(&(PVOID&)o_LoadLibraryExW, hkLoadLibraryExW);
+        if (o_LoadLibraryExW)
+            DetourAttach(&(PVOID&)o_LoadLibraryExW, hkLoadLibraryExW);
 
-            if (o_GetProcAddress)
-                DetourAttach(&(PVOID&)o_GetProcAddress, hkGetProcAddress);
+        if (o_GetProcAddress)
+            DetourAttach(&(PVOID&)o_GetProcAddress, hkGetProcAddress);
 
-            DetourTransactionCommit();
-        }
+        DetourTransactionCommit();
     }
+
+    HMODULE dxgiModule = nullptr;
+    dxgiModule = GetModuleHandle(L"dxgi.dll");
+    if (dxgiModule != nullptr)
+    {
+        LOG_DEBUG("dxgi.dll already in memory");
+        HookForDxgiSpoofing();
+    }
+
+    HMODULE vulkanModule = nullptr;
+    vulkanModule = GetModuleHandle(L"vulkan-1.dll");
+    if (vulkanModule != nullptr)
+    {
+        LOG_DEBUG("vulkan-1.dll already in memory");
+        VulkanHooks::Hook();
+        VulkanHooks::HookExtension();
+    }
+
+    HMODULE nvapi64 = nullptr;
+    nvapi64 = GetModuleHandle(L"nvapi64.dll");
+    if (nvapi64 != nullptr)
+    {
+        LOG_DEBUG("nvapi64.dll already in memory");
+        NvApiHooks::Hook(nvapi64);
+    }
+
+    // dx menu hooks
+    HMODULE d3d11Module = nullptr;
+    d3d11Module = GetModuleHandle(L"d3d11.dll");
+    if (Config::Instance()->OverlayMenu.value() && d3d11Module != nullptr)
+    {
+        LOG_DEBUG("d3d11.dll already in memory");
+        HooksDx::HookDx11();
+    }
+
+    HMODULE d3d12Module = nullptr;
+    d3d12Module = GetModuleHandle(L"d3d12.dll");
+    if (Config::Instance()->OverlayMenu.value() && d3d12Module != nullptr)
+    {
+        LOG_DEBUG("d3d12.dll already in memory");
+        HooksDx::HookDx12();
+    }
+
+    if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr)
+        HooksDx::HookDxgi();
 }
- 
+
+void LoadLibraryHooks::Unhook()
+{
+    VulkanHooks::UnhookExtension();
+    VulkanHooks::Unhook();
+
+    DetourTransactionBegin();
+
+    DetourUpdateThread(GetCurrentThread());
+
+    if (o_FreeLibrary)
+    {
+        DetourDetach(&(PVOID&)o_FreeLibrary, hkFreeLibrary);
+        o_FreeLibrary = nullptr;
+    }
+
+    if (o_LoadLibraryA)
+    {
+        DetourDetach(&(PVOID&)o_LoadLibraryA, hkLoadLibraryA);
+        o_LoadLibraryA = nullptr;
+    }
+
+    if (o_LoadLibraryW)
+    {
+        DetourDetach(&(PVOID&)o_LoadLibraryW, hkLoadLibraryW);
+        o_LoadLibraryW = nullptr;
+    }
+
+    if (o_LoadLibraryExA)
+    {
+        DetourDetach(&(PVOID&)o_LoadLibraryExA, hkLoadLibraryExA);
+        o_LoadLibraryExA = nullptr;
+    }
+
+    if (o_LoadLibraryExW)
+    {
+        DetourDetach(&(PVOID&)o_LoadLibraryExW, hkLoadLibraryExW);
+        o_LoadLibraryExW = nullptr;
+    }
+
+    if (o_GetProcAddress)
+    {
+        DetourDetach(&(PVOID&)o_GetProcAddress, hkGetProcAddress);
+        o_GetProcAddress = nullptr;
+    }
+
+    DetourTransactionCommit();
+}
+
+void LoadLibraryHooks::AddLoad()
+{
+    loadCount++;
+}
+
+UINT LoadLibraryHooks::LoadCount()
+{
+    return loadCount;
+}

@@ -1,7 +1,9 @@
 #include "Vulkan.h"
 
+#include <Util.h>
 #include <Config.h>
 #include <WorkingMode.h>
+#include <menu/MenuVulkan.h>
 #include <include/detours/detours.h>
 
 #include <vulkan/vulkan_core.h>
@@ -12,6 +14,18 @@ typedef struct VkDummyProps
     void* pNext;
 } VkDummyProps;
 
+typedef struct VkWin32SurfaceCreateInfoKHR {
+    VkStructureType                 sType;
+    const void* pNext;
+    VkFlags                         flags;
+    HINSTANCE                       hinstance;
+    HWND                            hwnd;
+} VkWin32SurfaceCreateInfoKHR;
+
+typedef VkResult(*PFN_QueuePresentKHR)(VkQueue, const VkPresentInfoKHR*);
+typedef VkResult(*PFN_CreateSwapchainKHR)(VkDevice, const VkSwapchainCreateInfoKHR*, const VkAllocationCallbacks*, VkSwapchainKHR*);
+typedef VkResult(*PFN_vkCreateWin32SurfaceKHR)(VkInstance, const VkWin32SurfaceCreateInfoKHR*, const VkAllocationCallbacks*, VkSurfaceKHR*);
+
 static PFN_vkGetPhysicalDeviceProperties o_vkGetPhysicalDeviceProperties = nullptr;
 static PFN_vkGetPhysicalDeviceProperties2 o_vkGetPhysicalDeviceProperties2 = nullptr;
 static PFN_vkGetPhysicalDeviceProperties2KHR o_vkGetPhysicalDeviceProperties2KHR = nullptr;
@@ -21,8 +35,105 @@ static PFN_vkEnumerateDeviceExtensionProperties o_vkEnumerateDeviceExtensionProp
 static PFN_vkCreateDevice o_vkCreateDevice = nullptr;
 static PFN_vkCreateInstance o_vkCreateInstance = nullptr;
 
+static PFN_QueuePresentKHR o_QueuePresentKHR = nullptr;
+static PFN_CreateSwapchainKHR o_CreateSwapchainKHR = nullptr;
+static PFN_vkCreateWin32SurfaceKHR o_vkCreateWin32SurfaceKHR = nullptr;
+
 static uint32_t vkEnumerateInstanceExtensionPropertiesCount = 0;
 static uint32_t vkEnumerateDeviceExtensionPropertiesCount = 0;
+
+static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
+{
+    LOG_FUNC();
+
+    if (Config::Instance()->OverlayMenu.value_or(true))
+    {
+        auto menuResult = MenuVulkan::QueuePresent(queue, pPresentInfo);
+
+        if (menuResult == VK_INCOMPLETE)
+        {
+            Config::Instance()->VulkanCreatingSC = true;
+            auto r0 = o_QueuePresentKHR(queue, pPresentInfo);
+            Config::Instance()->VulkanCreatingSC = false;
+
+            if (r0 != VK_SUCCESS)
+                LOG_ERROR("o_QueuePresentKHR(queue, pPresentInfo): {0:X}", (UINT)r0);
+
+            return r0;
+        }
+
+        if (menuResult != VK_SUCCESS)
+            return menuResult;
+    }
+
+    // original call
+    Config::Instance()->VulkanCreatingSC = true;
+    auto result = o_QueuePresentKHR(queue, pPresentInfo);
+    Config::Instance()->VulkanCreatingSC = false;
+
+    LOG_FUNC_RESULT(result);
+
+    return result;
+}
+
+static VkResult hkvkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain)
+{
+    LOG_FUNC();
+
+    Config::Instance()->VulkanCreatingSC = true;
+    auto result = o_CreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain);
+    Config::Instance()->VulkanCreatingSC = false;
+
+    if (Config::Instance()->OverlayMenu.value_or(true) && result == VK_SUCCESS &&
+        device != VK_NULL_HANDLE && pCreateInfo != nullptr && *pSwapchain != VK_NULL_HANDLE && !Config::Instance()->VulkanSkipHooks)
+    {
+        MenuVulkan::CreateSwapchain(device, pCreateInfo, pSwapchain);
+    }
+
+    LOG_FUNC_RESULT(result);
+    return result;
+}
+
+static void HookDevice(VkDevice InDevice)
+{
+    if (o_CreateSwapchainKHR != nullptr || Config::Instance()->VulkanSkipHooks)
+        return;
+
+    LOG_FUNC();
+
+    o_QueuePresentKHR = (PFN_QueuePresentKHR)(vkGetDeviceProcAddr(InDevice, "vkQueuePresentKHR"));
+    o_CreateSwapchainKHR = (PFN_CreateSwapchainKHR)(vkGetDeviceProcAddr(InDevice, "vkCreateSwapchainKHR"));
+
+    if (o_CreateSwapchainKHR)
+    {
+        LOG_DEBUG("Hooking VkDevice");
+
+        // Hook
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+
+        DetourAttach(&(PVOID&)o_QueuePresentKHR, hkvkQueuePresentKHR);
+        DetourAttach(&(PVOID&)o_CreateSwapchainKHR, hkvkCreateSwapchainKHR);
+
+        DetourTransactionCommit();
+    }
+}
+
+static VkResult hkvkCreateWin32SurfaceKHR(VkInstance instance, const VkWin32SurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+    LOG_FUNC();
+
+    auto result = o_vkCreateWin32SurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
+
+    if (Config::Instance()->OverlayMenu.value_or(true) && result == VK_SUCCESS && !Config::Instance()->VulkanSkipHooks)
+    {
+        MenuVulkan::CreateSurface(instance, pCreateInfo->hwnd);
+    }
+
+    LOG_FUNC_RESULT(result);
+
+    return result;
+}
 
 static void hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, VkPhysicalDeviceProperties* properties)
 {
@@ -127,12 +238,18 @@ static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, cons
 
     LOG_DEBUG("o_vkCreateInstance result: {0:X}", (INT)result);
 
-    auto head = (VkBaseInStructure*)pCreateInfo;
-
-    while (head->pNext != nullptr)
+    if (result == VK_SUCCESS)
     {
-        head = (VkBaseInStructure*)head->pNext;
-        LOG_DEBUG("o_vkCreateInstance type: {0:X}", (UINT)head->sType);
+        auto head = (VkBaseInStructure*)pCreateInfo;
+
+        while (head->pNext != nullptr)
+        {
+            head = (VkBaseInStructure*)head->pNext;
+            LOG_DEBUG("o_vkCreateInstance type: {0:X}", (UINT)head->sType);
+        }
+
+        if (Config::Instance()->OverlayMenu.value_or(true))
+            MenuVulkan::CreateInstance(pInstance);
     }
 
     return result;
@@ -192,6 +309,11 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
     Config::Instance()->dxgiSkipSpoofing = true;
     auto result = o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
     Config::Instance()->dxgiSkipSpoofing = false;
+
+    if (result == VK_SUCCESS && !Config::Instance()->VulkanSkipHooks)
+    {
+        HookDevice(*pDevice);
+    }
 
     LOG_FUNC_RESULT(result);
 

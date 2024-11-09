@@ -1,13 +1,12 @@
-#include "imgui_overlay_vk.h"
+#include "MenuVulkan.h"
 
 #include <Util.h>
 #include <Config.h>
-#include "imgui_overlay_base.h"
+#include "MenuBase.h"
 
 #include <include/detours/detours.h>
 #include <include/imgui/imgui_impl_vulkan.h>
 #include <include/imgui/imgui_impl_win32.h>
-
 
 // Vulkan overlay code adopted from here:
 // https://gist.github.com/mem99/0ec31ca302927457f86b1d6756aaa8c4
@@ -38,21 +37,6 @@ struct ImGui_ImplVulkan_InitInfo _ImVulkan_Info = {};
 struct ImGui_ImplVulkanH_Frame* _ImVulkan_Frames = VK_NULL_HANDLE;
 static VkSemaphore* _ImVulkan_Semaphores = VK_NULL_HANDLE;
 static VkRenderPass _vkRenderPass = VK_NULL_HANDLE;
-
-// hooking
-typedef VkResult(*PFN_QueuePresentKHR)(VkQueue, const VkPresentInfoKHR*);
-typedef VkResult(*PFN_CreateSwapchainKHR)(VkDevice, const VkSwapchainCreateInfoKHR*, const VkAllocationCallbacks*, VkSwapchainKHR*);
-typedef VkResult(*PFN_vkCreateWin32SurfaceKHR)(VkInstance, const VkWin32SurfaceCreateInfoKHR*, const VkAllocationCallbacks*, VkSurfaceKHR*);
-
-PFN_vkCreateDevice o_vkCreateDevice = nullptr;
-PFN_vkCreateInstance o_vkCreateInstance = nullptr;
-PFN_vkCreateWin32SurfaceKHR o_vkCreateWin32SurfaceKHR = nullptr;
-PFN_QueuePresentKHR o_QueuePresentKHR = nullptr;
-PFN_CreateSwapchainKHR o_CreateSwapchainKHR = nullptr;
-
-static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice);
-static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInfo);
-static VkResult hkvkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain);
 
 static void DestroyVulkanObjects(bool shutdown)
 {
@@ -146,13 +130,13 @@ static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR*
     }
 
     // Initialize ImGui 
-    if (!ImGuiOverlayBase::IsInited() || ImGuiOverlayBase::Handle() != _hwnd)
+    if (!MenuBase::IsInited() || MenuBase::Handle() != _hwnd)
     {
-        if (ImGuiOverlayBase::IsInited())
-            ImGuiOverlayBase::Shutdown();
+        if (MenuBase::IsInited())
+            MenuBase::Shutdown();
 
-        LOG_DEBUG("ImGuiOverlayBase::Init");
-        ImGuiOverlayBase::Init(_hwnd);
+        LOG_DEBUG("MenuBase::Init");
+        MenuBase::Init(_hwnd);
     }
 
     ImGuiIO& io = ImGui::GetIO();
@@ -470,137 +454,59 @@ static void CreateVulkanObjects(VkDevice device, const VkSwapchainCreateInfoKHR*
     LOG_FUNC_RESULT(_vulkanObjectsCreated);
 }
 
-static void HookDevice(VkDevice InDevice)
+void MenuVulkan::CreateSurface(VkInstance instance, HWND hwnd)
 {
-    if (o_CreateSwapchainKHR != nullptr || Config::Instance()->VulkanSkipHooks)
-        return;
+    DestroyVulkanObjects(false);
 
-    LOG_FUNC();
-
-    o_QueuePresentKHR = (PFN_QueuePresentKHR)(vkGetDeviceProcAddr(InDevice, "vkQueuePresentKHR"));
-    o_CreateSwapchainKHR = (PFN_CreateSwapchainKHR)(vkGetDeviceProcAddr(InDevice, "vkCreateSwapchainKHR"));
-
-    if (o_CreateSwapchainKHR)
-    {
-        LOG_DEBUG("Hooking VkDevice");
-
-        // Hook
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-
-        DetourAttach(&(PVOID&)o_QueuePresentKHR, hkvkQueuePresentKHR);
-        DetourAttach(&(PVOID&)o_CreateSwapchainKHR, hkvkCreateSwapchainKHR);
-
-        DetourTransactionCommit();
-    }
+    _instance = instance;
+    LOG_DEBUG("_instance captured: {0:X}", (UINT64)_instance);
+    _hwnd = hwnd;
+    LOG_DEBUG("_hwnd captured: {0:X}", (UINT64)_hwnd);
 }
 
-static VkResult hkvkCreateWin32SurfaceKHR(VkInstance instance, const VkWin32SurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+void MenuVulkan::CreateInstance(VkInstance* pInstance)
 {
-    LOG_FUNC();
+    DestroyVulkanObjects(false);
 
-    auto result = o_vkCreateWin32SurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
-
-    auto procHwnd = Util::GetProcessWindow();
-    LOG_DEBUG("procHwnd: {0:X}, swapchain hwnd: {1:X}", (UINT64)procHwnd, (UINT64)pCreateInfo->hwnd);
-
-    if (result == VK_SUCCESS && !Config::Instance()->VulkanSkipHooks && procHwnd == pCreateInfo->hwnd)
-    {
-        DestroyVulkanObjects(false);
-
-        _instance = instance;
-        LOG_DEBUG("_instance captured: {0:X}", (UINT64)_instance);
-        _hwnd = pCreateInfo->hwnd;
-        LOG_DEBUG("_hwnd captured: {0:X}", (UINT64)_hwnd);
-    }
-
-    LOG_FUNC_RESULT(result);
-
-    return result;
-
+    _instance = *pInstance;
+    LOG_DEBUG("_instance captured: {0:X}", (UINT64)_instance);
 }
 
-static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance)
+void MenuVulkan::CreateDevice(VkPhysicalDevice physicalDevice, VkDevice* pDevice)
 {
-    LOG_FUNC();
+    DestroyVulkanObjects(false);
 
-    auto result = o_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
-
-    if (result == VK_SUCCESS && !Config::Instance()->VulkanSkipHooks)
-    {
-        DestroyVulkanObjects(false);
-
-        _instance = *pInstance;
-        LOG_DEBUG("_instance captured: {0:X}", (UINT64)_instance);
-    }
-
-    LOG_FUNC_RESULT(result);
-
-    return result;
+    _PD = physicalDevice;
+    LOG_DEBUG("_PD captured: {0:X}", (UINT64)_PD);
+    _device = *pDevice;
+    LOG_DEBUG("_device captured: {0:X}", (UINT64)_device);
 }
 
-static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice)
-{
-    LOG_FUNC();
-
-    auto result = o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
-
-    if (result == VK_SUCCESS && !Config::Instance()->VulkanSkipHooks)
-    {
-        DestroyVulkanObjects(false);
-
-        _PD = physicalDevice;
-        LOG_DEBUG("_PD captured: {0:X}", (UINT64)_PD);
-        _device = *pDevice;
-        LOG_DEBUG("_device captured: {0:X}", (UINT64)_device);
-        HookDevice(_device);
-    }
-
-    LOG_FUNC_RESULT(result);
-
-    return result;
-}
-
-static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
+VkResult MenuVulkan::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
 {
     LOG_FUNC();
 
     if (!_vulkanObjectsCreated)
     {
         LOG_TRACE("!_vulkanObjectsCreated return o_QueuePresentKHR");
-
-        Config::Instance()->VulkanCreatingSC = true;
-        auto r0 = o_QueuePresentKHR(queue, pPresentInfo);
-        Config::Instance()->VulkanCreatingSC = false;
-
-        if (r0 != VK_SUCCESS)
-            LOG_ERROR("r0 = o_QueuePresentKHR(queue, pPresentInfo): {0:X}", (UINT)r0);
-
-        return r0;
+        return VK_INCOMPLETE;
     }
 
-    if (!ImGuiOverlayBase::IsInited() || !ImGuiOverlayBase::IsVisible() || _ImVulkan_Info.Device == VK_NULL_HANDLE)
+    if (!MenuBase::IsInited() || !MenuBase::IsVisible() || _ImVulkan_Info.Device == VK_NULL_HANDLE)
     {
-        Config::Instance()->VulkanCreatingSC = true;
-        auto r1 = o_QueuePresentKHR(queue, pPresentInfo);
-        Config::Instance()->VulkanCreatingSC = false;
-
-        if (r1 != VK_SUCCESS)
-            LOG_ERROR("r1 = o_QueuePresentKHR(queue, pPresentInfo): {0:X}", (UINT)r1);
-
-        return r1;
+        return VK_INCOMPLETE;
     }
 
     _vkPresentMutex.lock();
 
-    if (ImGuiOverlayVk::vkUpscaleTrig && ImGuiOverlayVk::queryPool != VK_NULL_HANDLE)
+    if (MenuVulkan::vkUpscaleTrig && MenuVulkan::queryPool != VK_NULL_HANDLE)
     {
         // Retrieve timestamps
         uint64_t timestamps[2];
-        vkGetQueryPoolResults(_device, ImGuiOverlayVk::queryPool, 0, 2, sizeof(timestamps), timestamps, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT);
+        vkGetQueryPoolResults(_device, MenuVulkan::queryPool, 0, 2, sizeof(timestamps), timestamps, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT);
 
         // Calculate elapsed time in milliseconds
-        double elapsedTimeMs = (timestamps[1] - timestamps[0]) * ImGuiOverlayVk::timeStampPeriod / 1e6;
+        double elapsedTimeMs = (timestamps[1] - timestamps[0]) * MenuVulkan::timeStampPeriod / 1e6;
 
         if (elapsedTimeMs > 0.0 && elapsedTimeMs < 5000.0)
         {
@@ -608,7 +514,7 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
             Config::Instance()->upscaleTimes.pop_front();
         }
 
-        ImGuiOverlayVk::vkUpscaleTrig = false;
+        MenuVulkan::vkUpscaleTrig = false;
     }
 
     LOG_DEBUG("rendering menu, swapchain count: {0}", pPresentInfo->swapchainCount);
@@ -621,7 +527,7 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplWin32_NewFrame();
 
-        ImGuiOverlayBase::RenderMenu();
+        MenuBase::RenderMenu();
 
         uint32_t idx = pPresentInfo->pImageIndices[scIndex];
         ImGui_ImplVulkanH_Frame* fd = &_ImVulkan_Frames[idx];
@@ -705,117 +611,40 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
         return VK_ERROR_OUT_OF_DATE_KHR;
     }
 
-    // original call
-    Config::Instance()->VulkanCreatingSC = true;
-    auto result = o_QueuePresentKHR(queue, pPresentInfo);
-    Config::Instance()->VulkanCreatingSC = false;
-    LOG_FUNC_RESULT(result);
     _vkPresentMutex.unlock();
-    return result;
+
+    return VK_SUCCESS;
 }
 
-static VkResult hkvkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain)
+void MenuVulkan::CreateSwapchain(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, VkSwapchainKHR* pSwapchain)
 {
-    LOG_FUNC();
+    Config::Instance()->ScreenWidth = pCreateInfo->imageExtent.width;
+    Config::Instance()->ScreenHeight = pCreateInfo->imageExtent.height;
 
-    Config::Instance()->VulkanCreatingSC = true;
-    auto result = o_CreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain);
-    Config::Instance()->VulkanCreatingSC = false;
+    LOG_DEBUG("if (result == VK_SUCCESS && device != VK_NULL_HANDLE && pCreateInfo != nullptr && pSwapchain != VK_NULL_HANDLE)");
 
-    if (result == VK_SUCCESS && device != VK_NULL_HANDLE && pCreateInfo != nullptr && *pSwapchain != VK_NULL_HANDLE && !Config::Instance()->VulkanSkipHooks)
+    _device = device;
+    LOG_DEBUG("_device captured: {0:X}", (UINT64)_device);
+
+    if (MenuBase::Handle() != _hwnd)
     {
-        Config::Instance()->ScreenWidth = pCreateInfo->imageExtent.width;
-        Config::Instance()->ScreenHeight = pCreateInfo->imageExtent.height;
+        LOG_DEBUG("MenuBase::Handle() != _hwnd");
 
-        LOG_DEBUG("if (result == VK_SUCCESS && device != VK_NULL_HANDLE && pCreateInfo != nullptr && pSwapchain != VK_NULL_HANDLE)");
-
-        _device = device;
-        LOG_DEBUG("_device captured: {0:X}", (UINT64)_device);
-
-        if (ImGuiOverlayBase::Handle() != _hwnd)
+        if (MenuBase::IsInited())
         {
-            LOG_DEBUG("ImGuiOverlayBase::Handle() != _hwnd");
-
-            if (ImGuiOverlayBase::IsInited())
-            {
-                LOG_DEBUG("ImGuiOverlayBase::Shutdown();");
-                ImGuiOverlayBase::Shutdown();
-            }
-
-            LOG_DEBUG("ImGuiOverlayBase::Init({0:X})", (UINT64)_hwnd);
-            ImGuiOverlayBase::Init(_hwnd);
+            LOG_DEBUG("MenuBase::Shutdown();");
+            MenuBase::Shutdown();
         }
 
-        CreateVulkanObjects(_device, pCreateInfo, pSwapchain);
-
-        if (_ImVulkan_Info.Device != VK_NULL_HANDLE)
-        {
-            _isInited = true;
-            ImGuiOverlayBase::VulkanReady();
-        }
+        LOG_DEBUG("MenuBase::Init({0:X})", (UINT64)_hwnd);
+        MenuBase::Init(_hwnd);
     }
 
-    LOG_FUNC_RESULT(result);
-    return result;
-}
+    CreateVulkanObjects(_device, pCreateInfo, pSwapchain);
 
-void ImGuiOverlayVk::HookVk()
-{
-    if (o_vkCreateDevice != nullptr)
-        return;
-
-    o_vkCreateDevice = (PFN_vkCreateDevice)DetourFindFunction("vulkan-1.dll", "vkCreateDevice");
-    o_vkCreateInstance = (PFN_vkCreateInstance)DetourFindFunction("vulkan-1.dll", "vkCreateInstance");
-    o_vkCreateWin32SurfaceKHR = (PFN_vkCreateWin32SurfaceKHR)DetourFindFunction("vulkan-1.dll", "vkCreateWin32SurfaceKHR");
-
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-
-    if (o_vkCreateDevice != nullptr)
-        DetourAttach(&(PVOID&)o_vkCreateDevice, hkvkCreateDevice);
-
-    if (o_vkCreateInstance != nullptr)
-        DetourAttach(&(PVOID&)o_vkCreateInstance, hkvkCreateInstance);
-
-    if (o_vkCreateWin32SurfaceKHR != nullptr)
-        DetourAttach(&(PVOID&)o_vkCreateWin32SurfaceKHR, hkvkCreateWin32SurfaceKHR);
-
-    DetourTransactionCommit();
-}
-
-void ImGuiOverlayVk::UnHookVk()
-{
-    if (_isInited)
-        ImGui_ImplVulkan_Shutdown();
-
-    ImGuiOverlayBase::Shutdown();
-
-    if (_vulkanObjectsCreated)
-        DestroyVulkanObjects(true);
-
-    if (_isInited)
+    if (_ImVulkan_Info.Device != VK_NULL_HANDLE)
     {
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-
-        if (o_QueuePresentKHR != nullptr)
-            DetourDetach(&(PVOID&)o_QueuePresentKHR, hkvkQueuePresentKHR);
-
-        if (o_CreateSwapchainKHR != nullptr)
-            DetourDetach(&(PVOID&)o_CreateSwapchainKHR, hkvkCreateSwapchainKHR);
-
-        if (o_vkCreateDevice != nullptr)
-            DetourDetach(&(PVOID&)o_vkCreateDevice, hkvkCreateDevice);
-
-        if (o_vkCreateInstance != nullptr)
-            DetourDetach(&(PVOID&)o_vkCreateInstance, hkvkCreateInstance);
-
-        if (o_vkCreateWin32SurfaceKHR != nullptr)
-            DetourDetach(&(PVOID&)o_vkCreateWin32SurfaceKHR, hkvkCreateWin32SurfaceKHR);
-
-        DetourTransactionCommit();
+        _isInited = true;
+        MenuBase::VulkanReady();
     }
-
-    _isInited = false;
-    _vulkanObjectsCreated = false;
 }

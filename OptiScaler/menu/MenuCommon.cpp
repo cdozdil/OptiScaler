@@ -1,6 +1,6 @@
-#include "imgui_common.h"
+#include "MenuCommon.h"
 
-void ImGuiCommon::ShowTooltip(const char* tip) {
+void MenuCommon::ShowTooltip(const char* tip) {
     if (ImGui::IsItemHovered())
     {
         ImGui::BeginTooltip();
@@ -10,14 +10,14 @@ void ImGuiCommon::ShowTooltip(const char* tip) {
     }
 }
 
-void ImGuiCommon::ShowHelpMarker(const char* tip)
+void MenuCommon::ShowHelpMarker(const char* tip)
 {
     ImGui::SameLine();
     ImGui::TextDisabled("(?)");
     ShowTooltip(tip);
 }
 
-LRESULT __stdcall ImGuiCommon::hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+LRESULT __stdcall MenuCommon::hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
     if (_isVisible && Msg == 0x0020)
         return TRUE;
@@ -25,7 +25,7 @@ LRESULT __stdcall ImGuiCommon::hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam
         return pfn_SendMessageW(hWnd, Msg, wParam, lParam);
 }
 
-BOOL __stdcall ImGuiCommon::hkSetPhysicalCursorPos(int x, int y)
+BOOL __stdcall MenuCommon::hkSetPhysicalCursorPos(int x, int y)
 {
     if (_isVisible)
         return TRUE;
@@ -33,7 +33,7 @@ BOOL __stdcall ImGuiCommon::hkSetPhysicalCursorPos(int x, int y)
         return pfn_SetPhysicalCursorPos(x, y);
 }
 
-BOOL __stdcall ImGuiCommon::hkSetCursorPos(int x, int y)
+BOOL __stdcall MenuCommon::hkSetCursorPos(int x, int y)
 {
     if (_isVisible)
         return TRUE;
@@ -41,7 +41,7 @@ BOOL __stdcall ImGuiCommon::hkSetCursorPos(int x, int y)
         return pfn_SetCursorPos(x, y);
 }
 
-BOOL __stdcall ImGuiCommon::hkClipCursor(RECT* lpRect)
+BOOL __stdcall MenuCommon::hkClipCursor(RECT* lpRect)
 {
     if (_isVisible)
         return TRUE;
@@ -52,7 +52,7 @@ BOOL __stdcall ImGuiCommon::hkClipCursor(RECT* lpRect)
     }
 }
 
-void __stdcall ImGuiCommon::hkmouse_event(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo)
+void __stdcall MenuCommon::hkmouse_event(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo)
 {
     if (_isVisible)
         return;
@@ -60,7 +60,7 @@ void __stdcall ImGuiCommon::hkmouse_event(DWORD dwFlags, DWORD dx, DWORD dy, DWO
         pfn_mouse_event(dwFlags, dx, dy, dwData, dwExtraInfo);
 }
 
-UINT __stdcall ImGuiCommon::hkSendInput(UINT cInputs, LPINPUT pInputs, int cbSize)
+UINT __stdcall MenuCommon::hkSendInput(UINT cInputs, LPINPUT pInputs, int cbSize)
 {
     if (_isVisible)
         return TRUE;
@@ -68,7 +68,7 @@ UINT __stdcall ImGuiCommon::hkSendInput(UINT cInputs, LPINPUT pInputs, int cbSiz
         return pfn_SendInput(cInputs, pInputs, cbSize);
 }
 
-void ImGuiCommon::AttachHooks()
+void MenuCommon::AttachHooks()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
@@ -102,7 +102,7 @@ void ImGuiCommon::AttachHooks()
     DetourTransactionCommit();
 }
 
-void ImGuiCommon::DetachHooks()
+void MenuCommon::DetachHooks()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
@@ -140,7 +140,7 @@ void ImGuiCommon::DetachHooks()
     DetourTransactionCommit();
 }
 
-ImGuiKey ImGuiCommon::ImGui_ImplWin32_VirtualKeyToImGuiKey(WPARAM wParam)
+ImGuiKey MenuCommon::ImGui_ImplWin32_VirtualKeyToImGuiKey(WPARAM wParam)
 {
     switch (wParam)
     {
@@ -267,7 +267,7 @@ ImGuiKey ImGuiCommon::ImGui_ImplWin32_VirtualKeyToImGuiKey(WPARAM wParam)
 
 //Win32 message handler
 
-LRESULT __stdcall ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT __stdcall MenuCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
@@ -482,7 +482,7 @@ LRESULT __stdcall ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
     return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
 }
 
-std::string ImGuiCommon::GetBackendName(std::string* code)
+std::string MenuCommon::GetBackendName(std::string* code)
 {
     if (*code == "fsr21")
         return "FSR 2.1.2";
@@ -511,7 +511,7 @@ std::string ImGuiCommon::GetBackendName(std::string* code)
     return "????";
 }
 
-std::string ImGuiCommon::GetBackendCode(const NVNGX_Api api)
+std::string MenuCommon::GetBackendCode(const NVNGX_Api api)
 {
     std::string code;
 
@@ -525,13 +525,13 @@ std::string ImGuiCommon::GetBackendCode(const NVNGX_Api api)
     return code;
 }
 
-void ImGuiCommon::GetCurrentBackendInfo(const NVNGX_Api api, std::string* code, std::string* name)
+void MenuCommon::GetCurrentBackendInfo(const NVNGX_Api api, std::string* code, std::string* name)
 {
     *code = GetBackendCode(api);
     *name = GetBackendName(code);
 }
 
-void ImGuiCommon::AddDx11Backends(std::string* code, std::string* name)
+void MenuCommon::AddDx11Backends(std::string* code, std::string* name)
 {
     std::string selectedUpscalerName = "";
 
@@ -579,7 +579,7 @@ void ImGuiCommon::AddDx11Backends(std::string* code, std::string* name)
     }
 }
 
-void ImGuiCommon::AddDx12Backends(std::string* code, std::string* name)
+void MenuCommon::AddDx12Backends(std::string* code, std::string* name)
 {
     std::string selectedUpscalerName = "";
 
@@ -615,7 +615,7 @@ void ImGuiCommon::AddDx12Backends(std::string* code, std::string* name)
     }
 }
 
-void ImGuiCommon::AddVulkanBackends(std::string* code, std::string* name)
+void MenuCommon::AddVulkanBackends(std::string* code, std::string* name)
 {
     std::string selectedUpscalerName = "";
 
@@ -646,7 +646,7 @@ void ImGuiCommon::AddVulkanBackends(std::string* code, std::string* name)
     }
 }
 
-void ImGuiCommon::AddResourceBarrier(std::string name, std::optional<int>* value)
+void MenuCommon::AddResourceBarrier(std::string name, std::optional<int>* value)
 {
     const char* states[] = { "AUTO", "COMMON", "VERTEX_AND_CONSTANT_BUFFER", "INDEX_BUFFER", "RENDER_TARGET", "UNORDERED_ACCESS", "DEPTH_WRITE",
         "DEPTH_READ", "NON_PIXEL_SHADER_RESOURCE", "PIXEL_SHADER_RESOURCE", "STREAM_OUT", "INDIRECT_ARGUMENT", "COPY_DEST", "COPY_SOURCE",
@@ -685,7 +685,7 @@ void ImGuiCommon::AddResourceBarrier(std::string name, std::optional<int>* value
     }
 }
 
-void ImGuiCommon::AddRenderPreset(std::string name, std::optional<uint32_t>* value)
+void MenuCommon::AddRenderPreset(std::string name, std::optional<uint32_t>* value)
 {
     const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G" };
     const char* presetsDesc[] = { "Whatever the game uses",
@@ -701,7 +701,7 @@ void ImGuiCommon::AddRenderPreset(std::string name, std::optional<uint32_t>* val
     PopulateCombo(name, value, presets, presetsDesc, 8);
 }
 
-void ImGuiCommon::PopulateCombo(std::string name, std::optional<uint32_t>* value, const char* names[], const char* desc[], int length) {
+void MenuCommon::PopulateCombo(std::string name, std::optional<uint32_t>* value, const char* names[], const char* desc[], int length) {
     int selected = value->value_or(0);
 
     const char* selectedName = "";
@@ -735,7 +735,7 @@ void ImGuiCommon::PopulateCombo(std::string name, std::optional<uint32_t>* value
     }
 }
 
-void ImGuiCommon::RenderMenu()
+void MenuCommon::RenderMenu()
 {
     if (!_isInited || !_isVisible)
         return;
@@ -2095,7 +2095,7 @@ void ImGuiCommon::RenderMenu()
     }
 }
 
-void ImGuiCommon::Init(HWND InHwnd)
+void MenuCommon::Init(HWND InHwnd)
 {
     _handle = InHwnd;
     _isVisible = false;
@@ -2146,9 +2146,9 @@ void ImGuiCommon::Init(HWND InHwnd)
     }
 }
 
-void ImGuiCommon::Shutdown()
+void MenuCommon::Shutdown()
 {
-    if (!ImGuiCommon::_isInited)
+    if (!MenuCommon::_isInited)
         return;
 
 
@@ -2169,7 +2169,7 @@ void ImGuiCommon::Shutdown()
     _isResetRequested = false;
 }
 
-void ImGuiCommon::HideMenu()
+void MenuCommon::HideMenu()
 {
     if (!_isVisible)
         return;
