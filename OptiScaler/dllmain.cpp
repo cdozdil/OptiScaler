@@ -1762,8 +1762,8 @@ static void CheckWorkingMode()
         }
 
         HMODULE nvapi64 = nullptr;
-        vulkanModule = GetModuleHandle(L"nvapi64.dll");
-        if (vulkanModule != nullptr)
+        nvapi64 = GetModuleHandle(L"nvapi64.dll");
+        if (nvapi64 != nullptr)
         {
             LOG_DEBUG("nvapi64.dll already in memory");
             NvApiHooks::Hook(nvapi64);

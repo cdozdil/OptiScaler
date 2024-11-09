@@ -17,8 +17,9 @@ class ReflexHooks {
 	inline static decltype(&NvAPI_D3D12_SetAsyncFrameMarker) o_NvAPI_D3D12_SetAsyncFrameMarker = nullptr;
 
 	inline static NvAPI_Status hNvAPI_D3D_SetSleepMode(IUnknown* pDev, NV_SET_SLEEP_MODE_PARAMS* pSetSleepModeParams) {
+#ifdef _DEBUG
 		LOG_FUNC();
-
+#endif
 		// Store for later so we can adjust the fps whenever we want
 		memcpy(&_lastSleepParams, pSetSleepModeParams, sizeof(NV_SET_SLEEP_MODE_PARAMS));
 		_lastSleepDev = pDev;
@@ -30,29 +31,43 @@ class ReflexHooks {
 	}
 
 	inline static NvAPI_Status hNvAPI_D3D_Sleep(IUnknown* pDev) {
+#ifdef _DEBUG		
 		LOG_FUNC();
+#endif
+
 		return o_NvAPI_D3D_Sleep(pDev);
 	}
 
 	inline static NvAPI_Status hNvAPI_D3D_GetLatency(IUnknown* pDev, NV_LATENCY_RESULT_PARAMS* pGetLatencyParams) {
+#ifdef _DEBUG
 		LOG_FUNC();
+#endif
+
 		return o_NvAPI_D3D_GetLatency(pDev, pGetLatencyParams);
 	}
 
 	inline static NvAPI_Status hNvAPI_D3D_SetLatencyMarker(IUnknown* pDev, NV_LATENCY_MARKER_PARAMS* pSetLatencyMarkerParams) {
+#ifdef _DEBUG
 		LOG_FUNC();
+#endif
+
 		_markersPresent = true;
 		return o_NvAPI_D3D_SetLatencyMarker(pDev, pSetLatencyMarkerParams);
 	}
 
 	inline static NvAPI_Status hNvAPI_D3D12_SetAsyncFrameMarker(ID3D12CommandQueue* pCommandQueue, NV_ASYNC_FRAME_MARKER_PARAMS* pSetAsyncFrameMarkerParams) {
+#ifdef _DEBUG
 		LOG_FUNC();
+#endif
+
 		return o_NvAPI_D3D12_SetAsyncFrameMarker(pCommandQueue, pSetAsyncFrameMarkerParams);
 	}
 
 public:
 	inline static void* hookReflex(NvApiTypes::PFN_NvApi_QueryInterface &queryInterface, NvApiTypes::NV_INTERFACE InterfaceId) {
+#ifdef _DEBUG
 		LOG_FUNC();
+#endif
 
 		if (o_NvAPI_D3D_SetSleepMode == nullptr || o_NvAPI_D3D_Sleep == nullptr || o_NvAPI_D3D_GetLatency == nullptr || o_NvAPI_D3D_SetLatencyMarker == nullptr || o_NvAPI_D3D12_SetAsyncFrameMarker == nullptr) {
 			o_NvAPI_D3D_SetSleepMode = static_cast<decltype(&NvAPI_D3D_SetSleepMode)>(queryInterface(NvApiTypes::NV_INTERFACE::D3D_SetSleepMode));

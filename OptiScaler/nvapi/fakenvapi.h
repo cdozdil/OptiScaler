@@ -33,14 +33,21 @@ public:
 
     inline static const GUID IID_IFfxAntiLag2Data = { 0x5083ae5b, 0x8070, 0x4fca, {0x8e, 0xe5, 0x35, 0x82, 0xdd, 0x36, 0x7d, 0x13} };
 
-    inline static void Init(PFN_Fake_QueryInterface &queryInterface) {
+    inline static void Init(PFN_Fake_QueryInterface& queryInterface) {
         if (_inited) return;
 
-        LOG_INFO("Getting fakenvapi-specific functions");
+        LOG_INFO("Trying to get fakenvapi-specific functions");
 
         Fake_InformFGState = static_cast<PFN_Fake_InformFGState>(queryInterface(FN_INTERFACE::Fake_InformFGState));
         Fake_InformPresentFG = static_cast<PFN_Fake_InformPresentFG>(queryInterface(FN_INTERFACE::Fake_InformPresentFG));
         Fake_GetAntiLagCtx = static_cast<PFN_Fake_GetAntiLagCtx>(queryInterface(FN_INTERFACE::Fake_GetAntiLagCtx));
+
+        if (Fake_InformFGState == nullptr)
+            LOG_INFO("Couldn't get InformFGState");
+        if (Fake_InformPresentFG == nullptr)
+            LOG_INFO("Couldn't get InformPresentFG");
+        if (Fake_GetAntiLagCtx == nullptr)
+            LOG_INFO("Couldn't get GetAntiLagCtx");
 
         _inited = true;
     }
