@@ -1972,6 +1972,8 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         return E_ACCESSDENIED;
     }
 
+    // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
+    // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
     if (Config::Instance()->forceHdr.value_or(false))
     {
         LOG_INFO("Force HDR on");
@@ -2146,6 +2148,8 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         *ppSwapChain = lastWrapped;
         LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
 
+        // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
+        // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
         if (Config::Instance()->forceHdr.value_or(false))
         {
             if (!fgSkipSCWrapping)
