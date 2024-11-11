@@ -255,6 +255,11 @@ public:
 	float ScreenWidth = 800.0;
 	float ScreenHeight = 450.0;
 
+	// hdr
+	std::optional<bool> forceHdr;
+	std::optional<bool> useHDR10;
+	std::vector<void*> scBuffers;
+
 	std::string setInputApiName;
 	std::string currentInputApiName;
 

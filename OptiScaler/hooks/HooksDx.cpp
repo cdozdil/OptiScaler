@@ -121,7 +121,7 @@ typedef struct ResourceHeapInfo
 } resource_heap_info;
 
 // Device hooks for FG
-typedef void(*PFN_CreateRenderTargetView)(ID3D12Device* This, ID3D12Resource* pResource, const D3D12_RENDER_TARGET_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+typedef void(*PFN_CreateRenderTargetView)(ID3D12Device* This, ID3D12Resource* pResource, D3D12_RENDER_TARGET_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 typedef void(*PFN_CreateShaderResourceView)(ID3D12Device* This, ID3D12Resource* pResource, D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 typedef void(*PFN_CreateUnorderedAccessView)(ID3D12Device* This, ID3D12Resource* pResource, ID3D12Resource* pCounterResource, D3D12_UNORDERED_ACCESS_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 
@@ -224,6 +224,8 @@ static UINT64 frameCounter = 0;
 // Swapchain frame target while capturing RTVs etc
 static UINT64 fgLastFGFrame = 0;
 static bool fgUpscaledFound = false;
+
+static WrappedIDXGISwapChain4* lastWrapped;
 
 #pragma endregion
 
@@ -833,10 +835,25 @@ static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* p
 
 #pragma region Resource input hooks
 
-static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResource, const D3D12_RENDER_TARGET_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
+static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResource, D3D12_RENDER_TARGET_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
-    o_CreateRenderTargetView(This, pResource, pDesc, DestDescriptor);
+    if (pResource != nullptr && pDesc != nullptr && Config::Instance()->forceHdr.value_or(false))
+    {
+        for (size_t i = 0; i < Config::Instance()->scBuffers.size(); i++)
+        {
+            if (Config::Instance()->scBuffers[i] == pResource)
+            {
+                if (Config::Instance()->useHDR10.value_or(false))
+                    pDesc->Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+                else
+                    pDesc->Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
+                break;
+            }
+        }
+    }
+
+    o_CreateRenderTargetView(This, pResource, pDesc, DestDescriptor);
 
     if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_RTV_DIMENSION_TEXTURE2D)
         return;
@@ -872,6 +889,22 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
 
 static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pResource, D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
+    if (pResource != nullptr && pDesc != nullptr && Config::Instance()->forceHdr.value_or(false))
+    {
+        for (size_t i = 0; i < Config::Instance()->scBuffers.size(); i++)
+        {
+            if (Config::Instance()->scBuffers[i] == pResource)
+            {
+                if (Config::Instance()->useHDR10.value_or(false))
+                    pDesc->Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+                else
+                    pDesc->Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+
+                break;
+            }
+        }
+    }
+
     o_CreateShaderResourceView(This, pResource, pDesc, DestDescriptor);
 
     if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_SRV_DIMENSION_TEXTURE2D)
@@ -908,8 +941,23 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
 
 static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pResource, ID3D12Resource* pCounterResource, D3D12_UNORDERED_ACCESS_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
-    o_CreateUnorderedAccessView(This, pResource, pCounterResource, pDesc, DestDescriptor);
+    if (pResource != nullptr && pDesc != nullptr && Config::Instance()->forceHdr.value_or(false))
+    {
+        for (size_t i = 0; i < Config::Instance()->scBuffers.size(); i++)
+        {
+            if (Config::Instance()->scBuffers[i] == pResource)
+            {
+                if (Config::Instance()->useHDR10.value_or(false))
+                    pDesc->Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+                else
+                    pDesc->Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
+                break;
+            }
+        }
+    }
+
+    o_CreateUnorderedAccessView(This, pResource, pCounterResource, pDesc, DestDescriptor);
 
     if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_UAV_DIMENSION_TEXTURE2D)
         return;
@@ -1924,6 +1972,28 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         return E_ACCESSDENIED;
     }
 
+    if (Config::Instance()->forceHdr.value_or(false))
+    {
+        LOG_INFO("Force HDR on");
+
+        if (Config::Instance()->useHDR10.value_or(false))
+        {
+            LOG_INFO("Using HDR10");
+            pDesc->BufferDesc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+        }
+        else
+        {
+            LOG_INFO("Not using HDR10");
+            pDesc->BufferDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+        }
+
+        if (pDesc->BufferCount < 2)
+            pDesc->BufferCount = 2;
+
+        pDesc->SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        pDesc->Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+    }
+
     ID3D12CommandQueue* cq = nullptr;
     if (Config::Instance()->FGUseFGSwapChain.value_or(true) /*&& fgSCCount > 0*/ && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
@@ -1933,15 +2003,12 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         SwapChainInfo scInfo{};
         scInfo.gameCommandQueue = (ID3D12CommandQueue*)pDevice;
 
-#ifndef WRAP_SWAP_CHAIN
         ffxCreateContextDescFrameGenerationSwapChainNewDX12 createSwapChainDesc{};
         createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_NEW_DX12;
-
         createSwapChainDesc.dxgiFactory = pFactory;
         createSwapChainDesc.gameQueue = (ID3D12CommandQueue*)pDevice;
         createSwapChainDesc.desc = pDesc;
         createSwapChainDesc.swapchain = (IDXGISwapChain4**)ppSwapChain;
-
 
         fgSkipSCWrapping = true;
         Config::Instance()->dxgiSkipSpoofing = true;
@@ -1981,6 +2048,56 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
             scInfo.swapChainBufferCount = pDesc->BufferCount;
             scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
 
+            Config::Instance()->scBuffers.clear();
+            for (size_t i = 0; i < 3; i++)
+            {
+                IUnknown* buffer;
+                scInfo.swapChain->GetBuffer(i, IID_PPV_ARGS(&buffer));
+            }
+
+            if (Config::Instance()->forceHdr.value_or(false))
+            {
+                IDXGISwapChain3* sc3 = nullptr;
+
+                do
+                {
+                    if (scInfo.swapChain->QueryInterface(IID_PPV_ARGS(&sc3)) == S_OK)
+                    {
+                        DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
+
+                        if (Config::Instance()->useHDR10.value_or(false))
+                            hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+
+                        UINT css = 0;
+
+                        auto result = sc3->CheckColorSpaceSupport(hdrCS, &css);
+
+                        if (result != S_OK)
+                        {
+                            LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
+                            break;
+                        }
+
+                        if (DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT & css)
+                        {
+                            result = sc3->SetColorSpace1(hdrCS);
+
+                            if (result != S_OK)
+                            {
+                                LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
+                                break;
+                            }
+                        }
+
+                        LOG_INFO("HDR format and color space are set");
+                    }
+
+                } while (false);
+
+                if (sc3 != nullptr)
+                    sc3->Release();
+            }
+
             // Hack for FSR swapchain
             // It have 1 extra ref
             scInfo.swapChain->Release();
@@ -1993,47 +2110,6 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         LOG_ERROR("D3D12_CreateContext error: {}", result);
 
         return E_INVALIDARG;
-#else
-        Config::Instance()->dxgiSkipSpoofing = true;
-        fgSkipSCWrapping = true;
-        Config::Instance()->SkipHeapCapture = true;
-
-        auto result = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
-
-        if (result == S_OK)
-        {
-            ffxCreateContextDescFrameGenerationSwapChainWrapDX12 createSwapChainDesc{};
-            createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_WRAP_DX12;
-            createSwapChainDesc.gameQueue = (ID3D12CommandQueue*)pDevice;
-            createSwapChainDesc.swapchain = (IDXGISwapChain4**)ppSwapChain;
-
-            auto createResult = FfxApiProxy::D3D12_CreateContext()(&FrameGen_Dx12::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
-
-            Config::Instance()->SkipHeapCapture = false;
-            fgSkipSCWrapping = false;
-            Config::Instance()->dxgiSkipSpoofing = false;
-
-            if (createResult == FFX_API_RETURN_OK)
-            {
-                scInfo.swapChainFormat = pDesc->BufferDesc.Format;
-                scInfo.swapChainBufferCount = pDesc->BufferCount;
-                scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
-                fgSwapChains.insert_or_assign(pDesc->OutputWindow, scInfo);
-
-                LOG_DEBUG("Created FSR-FG swapchain");
-                return S_OK;
-            }
-
-            LOG_ERROR("D3D12_CreateContext error: {}", result);
-            return E_INVALIDARG;
-        }
-
-        Config::Instance()->SkipHeapCapture = false;
-        fgSkipSCWrapping = false;
-        Config::Instance()->dxgiSkipSpoofing = false;
-
-        return result;
-#endif
     }
 
     auto result = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
@@ -2066,14 +2142,70 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         }
 
         LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDesc->OutputWindow);
-        *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? *ppSwapChain : real, pDevice, pDesc->OutputWindow, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
+        lastWrapped = new WrappedIDXGISwapChain4(real == nullptr ? *ppSwapChain : real, pDevice, pDesc->OutputWindow, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
+        *ppSwapChain = lastWrapped;
         LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
+
+        if (Config::Instance()->forceHdr.value_or(false))
+        {
+            if (!fgSkipSCWrapping)
+            {
+                Config::Instance()->scBuffers.clear();
+                for (size_t i = 0; i < pDesc->BufferCount; i++)
+                {
+                    IUnknown* buffer;
+                    if ((*ppSwapChain)->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
+                    {
+                        Config::Instance()->scBuffers.push_back(buffer);
+                    }
+                }
+            }
+
+            IDXGISwapChain3* sc3 = nullptr;
+            do
+            {
+                if ((*ppSwapChain)->QueryInterface(IID_PPV_ARGS(&sc3)) == S_OK)
+                {
+                    DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
+
+                    if (Config::Instance()->useHDR10.value_or(false))
+                        hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+
+                    UINT css = 0;
+
+                    auto result = sc3->CheckColorSpaceSupport(hdrCS, &css);
+
+                    if (result != S_OK)
+                    {
+                        LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
+                        break;
+                    }
+
+                    if (DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT & css)
+                    {
+                        result = sc3->SetColorSpace1(hdrCS);
+
+                        if (result != S_OK)
+                        {
+                            LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
+                            break;
+                        }
+                    }
+
+                    LOG_INFO("HDR format and color space are set");
+                }
+
+            } while (false);
+
+            if (sc3 != nullptr)
+                sc3->Release();
+        }
 
         fgSCCount++;
     }
 
     return result;
-    }
+}
 
 static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, HWND hWnd, DXGI_SWAP_CHAIN_DESC1* pDesc,
                                         DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
@@ -2109,6 +2241,28 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, SkipWrapping: {}",
               pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, (UINT)hWnd, fgSkipSCWrapping);
 
+    if (Config::Instance()->forceHdr.value_or(false))
+    {
+        LOG_INFO("Force HDR on");
+
+        if (Config::Instance()->useHDR10.value_or(false))
+        {
+            LOG_INFO("Using HDR10");
+            pDesc->Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+        }
+        else
+        {
+            LOG_INFO("Not using HDR10");
+            pDesc->Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+        }
+
+        if (pDesc->BufferCount < 2)
+            pDesc->BufferCount = 2;
+
+        pDesc->SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        pDesc->Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+    }
+
     ID3D12CommandQueue* cq = nullptr;
     if (Config::Instance()->FGUseFGSwapChain.value_or(true) /*&& fgSCCount > 0*/ && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
@@ -2118,7 +2272,6 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         SwapChainInfo scInfo{};
         scInfo.gameCommandQueue = (ID3D12CommandQueue*)pDevice;
 
-#ifndef WRAP_SWAP_CHAIN
         ffxCreateContextDescFrameGenerationSwapChainForHwndDX12 createSwapChainDesc{};
         createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_FOR_HWND_DX12;
 
@@ -2129,15 +2282,15 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         createSwapChainDesc.desc = pDesc;
         createSwapChainDesc.swapchain = (IDXGISwapChain4**)ppSwapChain;
 
-        Config::Instance()->dxgiSkipSpoofing = true;
         fgSkipSCWrapping = true;
+        Config::Instance()->dxgiSkipSpoofing = true;
         Config::Instance()->SkipHeapCapture = true;
 
         auto result = FfxApiProxy::D3D12_CreateContext()(&FrameGen_Dx12::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
 
         Config::Instance()->SkipHeapCapture = false;
-        fgSkipSCWrapping = false;
         Config::Instance()->dxgiSkipSpoofing = false;
+        fgSkipSCWrapping = false;
 
         if (result == FFX_API_RETURN_OK)
         {
@@ -2168,6 +2321,59 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
             scInfo.swapChainBufferCount = pDesc->BufferCount;
             scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
 
+            Config::Instance()->scBuffers.clear();
+            for (size_t i = 0; i < 3; i++)
+            {
+                IUnknown* buffer;
+                if (scInfo.swapChain->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
+                {
+                    Config::Instance()->scBuffers.push_back(buffer);
+                }
+            }
+
+            if (Config::Instance()->forceHdr.value_or(false))
+            {
+                IDXGISwapChain3* sc3 = nullptr;
+
+                do
+                {
+                    if (scInfo.swapChain->QueryInterface(IID_PPV_ARGS(&sc3)) == S_OK)
+                    {
+                        DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
+
+                        if (Config::Instance()->useHDR10.value_or(false))
+                            hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+
+                        UINT css = 0;
+
+                        auto result = sc3->CheckColorSpaceSupport(hdrCS, &css);
+
+                        if (result != S_OK)
+                        {
+                            LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
+                            break;
+                        }
+
+                        if (DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT & css)
+                        {
+                            result = sc3->SetColorSpace1(hdrCS);
+
+                            if (result != S_OK)
+                            {
+                                LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
+                                break;
+                            }
+                        }
+
+                        LOG_INFO("HDR format and color space are set");
+                    }
+
+                } while (false);
+
+                if (sc3 != nullptr)
+                    sc3->Release();
+            }
+
             // Hack for FSR swapchain
             // It have 1 extra ref
             scInfo.swapChain->Release();
@@ -2179,47 +2385,6 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
         LOG_ERROR("D3D12_CreateContext error: {}", result);
         return E_INVALIDARG;
-#else
-        Config::Instance()->dxgiSkipSpoofing = true;
-        fgSkipSCWrapping = true;
-        Config::Instance()->SkipHeapCapture = true;
-
-        auto result = oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
-
-        if (result == S_OK)
-        {
-            ffxCreateContextDescFrameGenerationSwapChainWrapDX12 createSwapChainDesc{};
-            createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_WRAP_DX12;
-            createSwapChainDesc.gameQueue = (ID3D12CommandQueue*)pDevice;
-            createSwapChainDesc.swapchain = (IDXGISwapChain4**)ppSwapChain;
-
-            auto createResult = FfxApiProxy::D3D12_CreateContext()(&FrameGen_Dx12::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
-
-            Config::Instance()->SkipHeapCapture = false;
-            fgSkipSCWrapping = false;
-            Config::Instance()->dxgiSkipSpoofing = false;
-
-            if (createResult == FFX_API_RETURN_OK)
-            {
-                scInfo.swapChainFormat = pDesc->Format;
-                scInfo.swapChainBufferCount = pDesc->BufferCount;
-                scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
-                fgSwapChains.insert_or_assign(hWnd, scInfo);
-
-                LOG_DEBUG("Created FSR-FG swapchain");
-                return S_OK;
-            }
-
-            LOG_ERROR("D3D12_CreateContext error: {}", result);
-            return E_INVALIDARG;
-        }
-
-        Config::Instance()->SkipHeapCapture = false;
-        fgSkipSCWrapping = false;
-        Config::Instance()->dxgiSkipSpoofing = false;
-
-        return result;
-#endif
     }
 
     auto result = oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
@@ -2253,14 +2418,70 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         }
 
         LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)hWnd);
-        *ppSwapChain = new WrappedIDXGISwapChain4(real == nullptr ? *ppSwapChain : real, pDevice, hWnd, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
+        lastWrapped = new WrappedIDXGISwapChain4(real == nullptr ? *ppSwapChain : real, pDevice, hWnd, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
+        *ppSwapChain = lastWrapped;
         LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
+
+        if (Config::Instance()->forceHdr.value_or(false))
+        {
+            if (!fgSkipSCWrapping)
+            {
+                Config::Instance()->scBuffers.clear();
+                for (size_t i = 0; i < pDesc->BufferCount; i++)
+                {
+                    IUnknown* buffer;
+                    if ((*ppSwapChain)->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
+                    {
+                        Config::Instance()->scBuffers.push_back(buffer);
+                    }
+                }
+            }
+
+            IDXGISwapChain3* sc3 = nullptr;
+            do
+            {
+                if ((*ppSwapChain)->QueryInterface(IID_PPV_ARGS(&sc3)) == S_OK)
+                {
+                    DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
+
+                    if (Config::Instance()->useHDR10.value_or(false))
+                        hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+
+                    UINT css = 0;
+
+                    auto result = sc3->CheckColorSpaceSupport(hdrCS, &css);
+
+                    if (result != S_OK)
+                    {
+                        LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
+                        break;
+                    }
+
+                    if (DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT & css)
+                    {
+                        result = sc3->SetColorSpace1(hdrCS);
+
+                        if (result != S_OK)
+                        {
+                            LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
+                            break;
+                        }
+                    }
+
+                    LOG_INFO("HDR format and color space are set");
+                }
+
+            } while (false);
+
+            if (sc3 != nullptr)
+                sc3->Release();
+        }
 
         fgSCCount++;
     }
 
     return result;
-    }
+}
 
 static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
@@ -2691,7 +2912,7 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
     LOG_FUNC_RESULT(result);
 
     return result;
-    }
+}
 
 static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE DriverType, HMODULE Software, UINT Flags, CONST D3D_FEATURE_LEVEL* pFeatureLevels,
                                                UINT FeatureLevels, UINT SDKVersion, DXGI_SWAP_CHAIN_DESC* pSwapChainDesc, IDXGISwapChain** ppSwapChain, ID3D11Device** ppDevice, D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext)
@@ -2771,7 +2992,7 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
     LOG_FUNC_RESULT(result);
 
     return result;
-    }
+}
 
 #ifdef ENABLE_DEBUG_LAYER
 static ID3D12Debug3* debugController = nullptr;
@@ -2843,7 +3064,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     LOG_FUNC_RESULT(result);
 
     return result;
-    }
+}
 
 static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {

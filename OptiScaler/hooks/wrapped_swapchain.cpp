@@ -146,6 +146,50 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
     LOG_DEBUG("BufferCount: {0}, Width: {1}, Height: {2}, NewFormat: {3}, SwapChainFlags: {4:X}", BufferCount, Width, Height, (UINT)NewFormat, SwapChainFlags);
 
+    if (Config::Instance()->forceHdr.value_or(false))
+    {
+        LOG_INFO("Force HDR on");
+
+        do
+        {
+            if (m_pReal3 == nullptr)
+                break;
+
+            NewFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+            DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
+
+            if (Config::Instance()->useHDR10.value_or(false))
+            {
+                NewFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
+                hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+            }
+
+            UINT css = 0;
+
+            result = m_pReal3->CheckColorSpaceSupport(hdrCS, &css);
+
+            if (result != S_OK)
+            {
+                LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
+                break;
+            }
+
+            if (DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT & css)
+            {
+                result = m_pReal3->SetColorSpace1(hdrCS);
+                
+                if (result != S_OK)
+                {
+                    LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
+                    break;
+                }
+            }
+
+            LOG_INFO("HDR format and color space are set");
+
+        } while (false);
+    }
+
     result = m_pReal->ResizeBuffers(BufferCount, Width, Height, NewFormat, SwapChainFlags);
     if (result == S_OK && Util::GetProcessWindow() == Handle)
     {
@@ -168,6 +212,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
                                                const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
     LOG_FUNC();
+    HRESULT result;
     DXGI_SWAP_CHAIN_DESC desc{};
     GetDesc(&desc);
 
@@ -196,7 +241,51 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 
     LOG_DEBUG("BufferCount: {0}, Width: {1}, Height: {2}, NewFormat: {3}, SwapChainFlags: {4:X}, pCreationNodeMask: {5}", BufferCount, Width, Height, (UINT)Format, SwapChainFlags, *pCreationNodeMask);
 
-    auto result = m_pReal3->ResizeBuffers1(BufferCount, Width, Height, Format, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
+    if (Config::Instance()->forceHdr.value_or(false))
+    {
+        LOG_INFO("Force HDR on");
+
+        do
+        {
+            if (m_pReal3 == nullptr)
+                break;
+
+            Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+            DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
+
+            if (Config::Instance()->useHDR10.value_or(false))
+            {
+                Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+                hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+            }
+
+            UINT css = 0;
+
+            auto result = m_pReal3->CheckColorSpaceSupport(hdrCS, &css);
+
+            if (result != S_OK)
+            {
+                LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
+                break;
+            }
+
+            if (DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT & css)
+            {
+                result = m_pReal3->SetColorSpace1(hdrCS);
+
+                if (result != S_OK)
+                {
+                    LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
+                    break;
+                }
+            }
+
+            LOG_INFO("HDR format and color space are set");
+
+        } while (false);
+    }
+
+    result = m_pReal3->ResizeBuffers1(BufferCount, Width, Height, Format, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
     if (result == S_OK && Util::GetProcessWindow() == Handle)
     {
         Config::Instance()->ScreenWidth = Width;

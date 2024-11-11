@@ -607,6 +607,15 @@ bool Config::Reload(std::filesystem::path iniPath)
                 DE_ReflexEmu.reset();
         }
 
+        // HDR
+        {
+            if (!forceHdr.has_value())
+                forceHdr = readBool("HDR", "ForceHDR");
+
+            if (!useHDR10.has_value())
+                useHDR10 = readBool("HDR", "UseHDR10");
+        }
+
         if (FN_Available)
             return ReloadFakenvapi();
 
