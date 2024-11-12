@@ -82,10 +82,12 @@ inline std::vector<std::string> dx11Names = { "d3d11.dll", "d3d11", };
 inline std::vector<std::wstring> dx11NamesW = { L"d3d11.dll", L"d3d11", };
 inline std::vector<std::string> dx12Names = { "d3d12.dll", "d3d12", };
 inline std::vector<std::wstring> dx12NamesW = { L"d3d12.dll", L"d3d12", };
-inline std::vector<std::string> dxgiNames = { "dxgi.dll", "dxgi", }; 
+inline std::vector<std::string> dxgiNames = { "dxgi.dll", "dxgi", };
 inline std::vector<std::wstring> dxgiNamesW = { L"dxgi.dll", L"dxgi", };
 inline std::vector<std::string> vkNames = { "vulkan-1.dll", "vulkan-1", };
 inline std::vector<std::wstring> vkNamesW = { L"vulkan-1.dll", L"vulkan-1", };
+inline std::vector<std::string> epicNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping" };
+inline std::vector<std::wstring> epicNamesW = { L"eosovh-win32-shipping.dll", L"eosovh-win32-shipping", L"eosovh-win64-shipping.dll", L"eosovh-win64-shipping" };
 
 static int loadCount = 0;
 static bool dontCount = false;
@@ -135,6 +137,8 @@ inline static bool CheckDllNameW(std::wstring* dllName, std::vector<std::wstring
 
 inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
 {
+    LOG_TRACE("{}", lcaseLibName);
+
     // If Opti is not loading as nvngx.dll
     if (!isWorkingWithEnabler && !Config::Instance()->upscalerDisableHook)
     {
@@ -197,33 +201,51 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
             return nvngxDlss;
     }
 
+    if (Config::Instance()->FGUseFGSwapChain.value_or(true))
+    {
+        if (CheckDllName(&lcaseLibName, &epicNames))
+        {
+            LOG_DEBUG("Trying to load EOS dll: {}", lcaseLibName);
+            return (HMODULE)1;
+        }
+    }
+
     // Hooks
-    skipLoadChecks = true;
 
     if (CheckDllName(&lcaseLibName, &dx11Names) && Config::Instance()->OverlayMenu.value_or(true))
+    {
+        skipLoadChecks = true;
         HooksDx::HookDx11();
+        skipLoadChecks = false;
+    }
 
     if (CheckDllName(&lcaseLibName, &dx12Names) && Config::Instance()->OverlayMenu.value_or(true))
+    {
+        skipLoadChecks = true;
         HooksDx::HookDx12();
-
+        skipLoadChecks = false;
+    }
+    
     if (CheckDllName(&lcaseLibName, &dxgiNames))
     {
+        skipLoadChecks = true;
         HookForDxgiSpoofing();
 
         if (Config::Instance()->OverlayMenu.value_or(true))
             HooksDx::HookDxgi();
+        skipLoadChecks = false;
     }
 
     if (CheckDllName(&lcaseLibName, &vkNames))
     {
+        skipLoadChecks = true;
         HookForVulkanSpoofing();
         HookForVulkanExtensionSpoofing();
 
         if (Config::Instance()->OverlayMenu.value_or(true))
             HooksVk::HookVk();
+        skipLoadChecks = false;
     }
-
-    skipLoadChecks = false;
 
     if (!isNvngxMode && CheckDllName(&lcaseLibName, &dllNames))
     {
@@ -241,6 +263,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
 inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 {
     auto lcaseLibNameA = wstring_to_string(lcaseLibName);
+    LOG_TRACE("{}", lcaseLibNameA);
 
     // If Opti is not loading as nvngx.dll
     if (!isWorkingWithEnabler && !Config::Instance()->upscalerDisableHook)
@@ -304,33 +327,50 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
         }
     }
 
-    // Hooks
-    skipLoadChecks = true;
+    if (Config::Instance()->FGUseFGSwapChain.value_or(true))
+    {
+        if (CheckDllNameW(&lcaseLibName, &epicNamesW))
+        {
+            LOG_DEBUG("Trying to load EOS dll: {}", lcaseLibNameA);
+            return (HMODULE)1;
+        }
+    }
 
+    // Hooks
     if (CheckDllNameW(&lcaseLibName, &dx11NamesW) && Config::Instance()->OverlayMenu.value_or(true))
+    {
+        skipLoadChecks = true;
         HooksDx::HookDx11();
+        skipLoadChecks = false;
+    }
 
     if (CheckDllNameW(&lcaseLibName, &dx12NamesW) && Config::Instance()->OverlayMenu.value_or(true))
+    {
+        skipLoadChecks = true;
         HooksDx::HookDx12();
+        skipLoadChecks = false;
+    }
 
     if (CheckDllNameW(&lcaseLibName, &dxgiNamesW))
     {
+        skipLoadChecks = true;
         HookForDxgiSpoofing();
 
         if (Config::Instance()->OverlayMenu.value_or(true))
             HooksDx::HookDxgi();
+        skipLoadChecks = false;
     }
 
     if (CheckDllNameW(&lcaseLibName, &vkNamesW))
     {
+        skipLoadChecks = true;
         HookForVulkanSpoofing();
         HookForVulkanExtensionSpoofing();
 
         if (Config::Instance()->OverlayMenu.value_or(true))
             HooksVk::HookVk();
+        skipLoadChecks = false;
     }
-
-    skipLoadChecks = false;
 
     if (!isNvngxMode && CheckDllNameW(&lcaseLibName, &dllNamesW))
     {
@@ -618,7 +658,7 @@ static BOOL hkGetModuleHandleExW(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE* p
             LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
             *phModule = dllModule;
             return TRUE;
-    }
+        }
 
 #endif
 
@@ -634,7 +674,7 @@ static BOOL hkGetModuleHandleExW(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE* p
 
 
 #endif
-}
+    }
 
     return o_GetModuleHandleExW(dwFlags, lpModuleName, phModule);
 }
@@ -687,6 +727,13 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
 
     auto moduleHandle = LoadLibraryCheck(lcaseLibName);
 
+    // skip loading of dll
+    if (moduleHandle == (HMODULE)1)
+    {
+        SetLastError(ERROR_ACCESS_DENIED);
+        return NULL;
+    }
+
     if (moduleHandle != nullptr)
         return moduleHandle;
 
@@ -716,6 +763,13 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
 #endif // DEBUG
 
     auto moduleHandle = LoadLibraryCheckW(lcaseLibName);
+
+    // skip loading of dll
+    if (moduleHandle == (HMODULE)1)
+    {
+        SetLastError(ERROR_ACCESS_DENIED);
+        return NULL;
+    }
 
     if (moduleHandle != nullptr)
         return moduleHandle;
@@ -747,9 +801,15 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
 
     auto moduleHandle = LoadLibraryCheck(lcaseLibName);
 
+    // skip loading of dll
+    if (moduleHandle == (HMODULE)1)
+    {
+        SetLastError(ERROR_ACCESS_DENIED);
+        return NULL;
+    }
+
     if (moduleHandle != nullptr)
         return moduleHandle;
-
 
     dontCount = true;
     auto result = o_LoadLibraryExA(lpLibFileName, hFile, dwFlags);
@@ -777,6 +837,13 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
 #endif
 
     auto moduleHandle = LoadLibraryCheckW(lcaseLibName);
+
+    // skip loading of dll
+    if (moduleHandle == (HMODULE)1)
+    {
+        SetLastError(ERROR_ACCESS_DENIED);
+        return NULL;
+    }
 
     if (moduleHandle != nullptr)
         return moduleHandle;
@@ -1255,7 +1322,7 @@ static void DetachHooks()
 
         FreeLibrary(shared.dll);
     }
-    }
+}
 
 static void AttachHooks()
 {
@@ -1323,8 +1390,8 @@ static void AttachHooks()
                 DetourAttach(&(PVOID&)o_GetProcAddress, hkGetProcAddress);
 
             DetourTransactionCommit();
+        }
     }
-}
 }
 
 static bool IsRunningOnWine()
@@ -1715,35 +1782,55 @@ static void CheckWorkingMode()
         }
 
         if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr)
-                HooksDx::HookDxgi();
+            HooksDx::HookDxgi();
 
-            if ((!Config::Instance()->FGUseFGSwapChain.value_or(true) || !Config::Instance()->OverlayMenu.value_or(true)) && 
-                skHandle == nullptr && Config::Instance()->LoadSpecialK.value_or(false))
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(250));
-                auto skFile = Util::DllPath().parent_path() / L"SpecialK64.dll";
+        if ((!Config::Instance()->FGUseFGSwapChain.value_or(true) || !Config::Instance()->OverlayMenu.value_or(true)) &&
+            skHandle == nullptr && Config::Instance()->LoadSpecialK.value_or(false))
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+            auto skFile = Util::DllPath().parent_path() / L"SpecialK64.dll";
+            SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
+            skHandle = LoadLibrary(skFile.c_str());
+            LOG_INFO("Loading SpecialK64.dll, result: {0:X}", (UINT64)skHandle);
+        }
+
+        if (reshadeHandle == nullptr && Config::Instance()->LoadReShade.value_or(false))
+        {
+            auto rsFile = Util::DllPath().parent_path() / L"ReShade64.dll";
+            SetEnvironmentVariableW(L"RESHADE_DISABLE_LOADING_CHECK", L"1");
+
+            if (skHandle != nullptr)
                 SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
-                skHandle = LoadLibrary(skFile.c_str());
-                LOG_INFO("Loading SpecialK64.dll, result: {0:X}", (UINT64)skHandle);
-            }
 
-            if (reshadeHandle == nullptr && Config::Instance()->LoadReShade.value_or(false))
-            {
-                auto rsFile = Util::DllPath().parent_path() / L"ReShade64.dll";
-                SetEnvironmentVariableW(L"RESHADE_DISABLE_LOADING_CHECK", L"1");
-
-                if (skHandle != nullptr)
-                    SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
-
-                reshadeHandle = LoadLibrary(rsFile.c_str());
-                LOG_INFO("Loading ReShade64.dll, result: {0:X}", (size_t)reshadeHandle);
-            }
+            reshadeHandle = LoadLibrary(rsFile.c_str());
+            LOG_INFO("Loading ReShade64.dll, result: {0:X}", (size_t)reshadeHandle);
+        }
 
         // vk menu hooks
         if (Config::Instance()->OverlayMenu.value() && (vulkanModule != nullptr || Config::Instance()->IsRunningOnLinux))
             HooksVk::HookVk();
 
         AttachHooks();
+
+        // if in memory try to unload epic overlay
+        if (Config::Instance()->FGUseFGSwapChain.value_or(true))
+        {
+            for (size_t i = 0; i < epicNamesW.size(); i++)
+            {
+                HMODULE epic = nullptr;
+
+                do
+                {
+                    epic = GetModuleHandle(epicNamesW[i].c_str());
+
+                    BOOL result = TRUE;
+
+                    if (epic != nullptr)
+                        result = FreeLibrary(epic);
+
+                } while (epic != nullptr);
+            }
+        }
 
         return;
     }
@@ -1770,9 +1857,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             DisableThreadLibraryCalls(hModule);
 
             if (Config::Instance()->FGUseFGSwapChain.value_or(true))
-            {
                 SetEnvironmentVariable(L"SteamNoOverlayUIDrawing", L"1");
-            }
 
             loadCount++;
 

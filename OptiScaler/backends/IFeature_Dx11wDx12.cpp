@@ -32,7 +32,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 
     auto result = InResource->QueryInterface(IID_PPV_ARGS(&originalTexture));
 
-    if (result != S_OK)
+    if (result != S_OK || originalTexture == nullptr)
         return false;
 
     originalTexture->GetDesc(&desc);
@@ -153,7 +153,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 
             result = originalTexture->QueryInterface(IID_PPV_ARGS(&resource));
 
-            if (result != S_OK)
+            if (result != S_OK || resource == nullptr)
             {
                 LOG_ERROR("QueryInterface(resource) error: {0:x}", result);
                 return false;

@@ -115,7 +115,7 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::QueryInterface(REFIID riid, vo
 
 HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
-    LOG_FUNC();
+    LOG_DEBUG("");
 
     HRESULT result;
     DXGI_SWAP_CHAIN_DESC desc{};
@@ -133,14 +133,10 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     if (Config::Instance()->CurrentFeature != nullptr)
         Config::Instance()->FGChanged = true;
 
-    // recreate buffers only when needed
-    if (desc.BufferDesc.Width != Width || desc.BufferDesc.Height != Height || desc.BufferDesc.Format != NewFormat)
-    {
-        if (ClearTrig != nullptr)
-            ClearTrig(true, Handle);
+    if (ClearTrig != nullptr)
+        ClearTrig(true, Handle);
 
-        Config::Instance()->SCChanged = true;
-    }
+    Config::Instance()->SCChanged = true;
 
     std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
@@ -156,7 +152,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
-        // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
+    // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
     if (Config::Instance()->forceHdr.value_or(false))
     {
         LOG_INFO("Force HDR on");
@@ -206,7 +202,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     if (bc == 0 && m_pReal1 != nullptr)
     {
         DXGI_SWAP_CHAIN_DESC1 desc{};
-        
+
         if (m_pReal1->GetDesc1(&desc) == S_OK)
             bc = desc.BufferCount;
     }
@@ -214,10 +210,16 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     for (size_t i = 0; i < bc; i++)
     {
         IUnknown* buffer;
-        GetBuffer(i, IID_PPV_ARGS(&buffer));
+
+        if (GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
+        {
+            Config::Instance()->scBuffers.push_back(buffer);
+            buffer->Release();
+        }
     }
 
-    LOG_FUNC_RESULT(result);
+    LOG_DEBUG("result: {0:X}", (UINT)result);
+
     return result;
 }
 
@@ -229,7 +231,8 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetContainingOutput(IDXGIOutpu
 HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT Format, UINT SwapChainFlags,
                                                const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
-    LOG_FUNC();
+    LOG_DEBUG("");
+
     HRESULT result;
     DXGI_SWAP_CHAIN_DESC desc{};
     GetDesc(&desc);
@@ -246,14 +249,10 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
     if (Config::Instance()->CurrentFeature != nullptr)
         Config::Instance()->FGChanged = true;
 
-    // recreate buffers only when needed
-    if (desc.BufferDesc.Width != Width || desc.BufferDesc.Height != Height || desc.BufferDesc.Format != Format)
-    {
-        if (ClearTrig != nullptr)
-            ClearTrig(true, Handle);
+    if (ClearTrig != nullptr)
+        ClearTrig(true, Handle);
 
-        Config::Instance()->SCChanged = true;
-    }
+    Config::Instance()->SCChanged = true;
 
     std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
@@ -264,52 +263,50 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
     {
         Config::Instance()->ScreenWidth = Width;
         Config::Instance()->ScreenHeight = Height;
-    }
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
-    // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
-    // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
-    if (Config::Instance()->forceHdr.value_or(false))
-    {
-        LOG_INFO("Force HDR on");
-
-        do
+        // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
+        // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
+        if (Config::Instance()->forceHdr.value_or(false))
         {
-            if (m_pReal3 == nullptr)
-                break;
+            LOG_INFO("Force HDR on");
 
-            Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-            DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
-
-            if (Config::Instance()->useHDR10.value_or(false))
+            do
             {
-                Format = DXGI_FORMAT_R10G10B10A2_UNORM;
-                hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
-            }
+                Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+                DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
 
-            UINT css = 0;
+                if (Config::Instance()->useHDR10.value_or(false))
+                {
+                    Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+                    hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+                }
 
-            auto result = m_pReal3->CheckColorSpaceSupport(hdrCS, &css);
+                UINT css = 0;
 
-            if (result != S_OK)
-            {
-                LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
-                break;
-            }
-
-            if (DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT & css)
-            {
-                result = m_pReal3->SetColorSpace1(hdrCS);
+                auto result = m_pReal3->CheckColorSpaceSupport(hdrCS, &css);
 
                 if (result != S_OK)
                 {
-                    LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
+                    LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
                     break;
                 }
-            }
 
-            LOG_INFO("HDR format and color space are set");
+                if (DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT & css)
+                {
+                    result = m_pReal3->SetColorSpace1(hdrCS);
 
-        } while (false);
+                    if (result != S_OK)
+                    {
+                        LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
+                        break;
+                    }
+                }
+
+                LOG_INFO("HDR format and color space are set");
+
+            } while (false);
+        }
     }
 
     Config::Instance()->scBuffers.clear();
@@ -325,10 +322,16 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
     for (size_t i = 0; i < bc; i++)
     {
         IUnknown* buffer;
-        GetBuffer(i, IID_PPV_ARGS(&buffer));
+
+        if (GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
+        {
+            Config::Instance()->scBuffers.push_back(buffer);
+            buffer->Release();
+        }
     }
 
-    LOG_FUNC_RESULT(result);
+    LOG_DEBUG("result: {0:X}", (UINT)result);
+
     return result;
 }
 
@@ -338,11 +341,45 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 
     LOG_DEBUG("Fullscreen: {}", Fullscreen);
 
-    if (Config::Instance()->CurrentFeature != nullptr)
+    if (Config::Instance()->FGEnabled.value_or(false))
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+        Config::Instance()->FGResetCapturedResources = true;
+        Config::Instance()->FGOnlyUseCapturedResources = false;
+        Config::Instance()->FGOnlyUseCapturedResources = false;
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+    if (Config::Instance()->CurrentFeature != nullptr)
         Config::Instance()->FGChanged = true;
-        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+    if (ClearTrig != nullptr)
+        ClearTrig(true, Handle);
+
+    Config::Instance()->SCChanged = true;
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+    Config::Instance()->scBuffers.clear();
+
+    UINT bc = 0;
+    if (m_pReal1 != nullptr)
+    {
+        DXGI_SWAP_CHAIN_DESC1 desc{};
+
+        if (m_pReal1->GetDesc1(&desc) == S_OK)
+            bc = desc.BufferCount;
+    }
+
+    for (size_t i = 0; i < bc; i++)
+    {
+        IUnknown* buffer;
+
+        if (GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
+        {
+            Config::Instance()->scBuffers.push_back(buffer);
+            buffer->Release();
+        }
     }
 
     LOG_DEBUG("result: {0:X}", (UINT)result);
@@ -372,7 +409,7 @@ HRESULT WrappedIDXGISwapChain4::Present(UINT SyncInterval, UINT Flags)
 
     HRESULT result;
 
-    if (!(Flags & DXGI_PRESENT_TEST) && RenderTrig != nullptr)
+    if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART) && RenderTrig != nullptr)
         result = RenderTrig(m_pReal, SyncInterval, Flags, nullptr, Device, Handle);
     else
         result = m_pReal->Present(SyncInterval, Flags);
@@ -387,7 +424,7 @@ HRESULT WrappedIDXGISwapChain4::Present1(UINT SyncInterval, UINT Flags, const DX
 
     HRESULT result;
 
-    if (!(Flags & DXGI_PRESENT_TEST) && RenderTrig != nullptr)
+    if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART) && RenderTrig != nullptr)
         result = RenderTrig(m_pReal1, SyncInterval, Flags, pPresentParameters, Device, Handle);
     else
         result = m_pReal1->Present1(SyncInterval, Flags, pPresentParameters);

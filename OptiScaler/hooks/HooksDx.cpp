@@ -1606,8 +1606,12 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 {
     auto fIndex = fgFrameIndex;
 
+    LOG_DEBUG("{}", fIndex);
+
     if (Config::Instance()->FGResetCapturedResources)
     {
+        LOG_DEBUG("FGResetCapturedResources");
+
         captureMutex.lock();
         fgCaptureList.clear();
         Config::Instance()->FGCapturedResourceCount = 0;
@@ -1616,8 +1620,11 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     }
 
     // Skip calculations etc
-    if (Flags & DXGI_PRESENT_TEST)
+    if (Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART)
+    {
+        LOG_DEBUG("TEST or RESTART, skip");
         return o_FGSCPresent(This, SyncInterval, Flags);
+    }
 
     // If dispatch still not called
     if (!fgDispatchCalled && Config::Instance()->FGHUDFix.value_or(false) && FrameGen_Dx12::fgIsActive &&
@@ -1627,11 +1634,13 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr && CheckCapture(__FUNCTION__))
     {
         LOG_WARN("Can't capture hudless, calling HudFix dispatch!");
+
         fgHudless[fIndex] = nullptr;
         GetHudless(nullptr);
     }
 
     FrameGen_Dx12::ffxMutex.lock();
+
     auto result = o_FGSCPresent(This, SyncInterval, Flags);
 
 #ifdef USE_PRESENT_FOR_FT
@@ -2063,7 +2072,11 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
             for (size_t i = 0; i < 3; i++)
             {
                 IUnknown* buffer;
-                scInfo.swapChain->GetBuffer(i, IID_PPV_ARGS(&buffer));
+                if (scInfo.swapChain->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
+                {
+                    Config::Instance()->scBuffers.push_back(buffer);
+                    buffer->Release();
+                }
             }
 
             if (Config::Instance()->forceHdr.value_or(false))
@@ -2170,6 +2183,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
                     if ((*ppSwapChain)->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
                     {
                         Config::Instance()->scBuffers.push_back(buffer);
+                        buffer->Release();
                     }
                 }
             }
@@ -2344,9 +2358,10 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
             for (size_t i = 0; i < 3; i++)
             {
                 IUnknown* buffer;
-                if (scInfo.swapChain->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
+                if ((*ppSwapChain)->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
                 {
                     Config::Instance()->scBuffers.push_back(buffer);
+                    buffer->Release();
                 }
             }
 
@@ -2452,6 +2467,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
                     if ((*ppSwapChain)->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
                     {
                         Config::Instance()->scBuffers.push_back(buffer);
+                        buffer->Release();
                     }
                 }
             }

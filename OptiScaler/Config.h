@@ -259,7 +259,7 @@ public:
 	// hdr
 	std::optional<bool> forceHdr;
 	std::optional<bool> useHDR10;
-	std::vector<void*> scBuffers;
+	std::vector<IUnknown*> scBuffers;
 
 	std::string setInputApiName;
 	std::string currentInputApiName;
