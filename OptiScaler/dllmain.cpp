@@ -70,97 +70,22 @@ static uint32_t vkEnumerateInstanceExtensionPropertiesCount = 0;
 static uint32_t vkEnumerateDeviceExtensionPropertiesCount = 0;
 
 
-inline std::vector<std::string> upscalerNames =
-{
-    "nvngx.dll",
-    "nvngx",
-    "libxess.dll",
-    "libxess"
-};
-
-inline std::vector<std::string> nvngxDlss =
-{
-    "nvngx_dlss.dll",
-    "nvngx_dlss",
-};
-
-inline std::vector<std::string> nvapiNames =
-{
-    "nvapi64.dll",
-    "nvapi64",
-};
-
 inline std::vector<std::string> dllNames;
-
-inline std::vector<std::wstring> upscalerNamesW =
-{
-    L"nvngx.dll",
-    L"nvngx",
-    L"libxess.dll",
-    L"libxess"
-};
-
-inline std::vector<std::wstring> nvngxDlssW =
-{
-    L"nvngx_dlss.dll",
-    L"nvngx_dlss",
-};
-
-inline std::vector<std::wstring> nvapiNamesW =
-{
-    L"nvapi64.dll",
-    L"nvapi64",
-};
-
-inline std::vector<std::wstring> dx11NamesW =
-{
-    L"d3d11.dll",
-    L"d3d11",
-};
-
-inline std::vector<std::string> dx11Names =
-{
-    "d3d11.dll",
-    "d3d11",
-};
-
-inline std::vector<std::wstring> dx12NamesW =
-{
-    L"d3d12.dll",
-    L"d3d12",
-};
-
-inline std::vector<std::string> dx12Names =
-{
-    "d3d12.dll",
-    "d3d12",
-};
-
-inline std::vector<std::wstring> dxgiNamesW =
-{
-    L"dxgi.dll",
-    L"dxgi",
-};
-
-inline std::vector<std::string> dxgiNames =
-{
-    "dxgi.dll",
-    "dxgi",
-};
-
-inline std::vector<std::wstring> vkNamesW =
-{
-    L"vulkan-1.dll",
-    L"vulkan-1",
-};
-
-inline std::vector<std::string> vkNames =
-{
-    "vulkan-1.dll",
-    "vulkan-1",
-};
-
 inline std::vector<std::wstring> dllNamesW;
+inline std::vector<std::string> upscalerNames = { "nvngx.dll", "nvngx", "libxess.dll", "libxess" };
+inline std::vector<std::wstring> upscalerNamesW = { L"nvngx.dll", L"nvngx", L"libxess.dll", L"libxess" };
+inline std::vector<std::string> nvngxDlss = { "nvngx_dlss.dll", "nvngx_dlss", };
+inline std::vector<std::wstring> nvngxDlssW = { L"nvngx_dlss.dll", L"nvngx_dlss", };
+inline std::vector<std::string> nvapiNames = { "nvapi64.dll", "nvapi64", };
+inline std::vector<std::wstring> nvapiNamesW = { L"nvapi64.dll", L"nvapi64", };
+inline std::vector<std::string> dx11Names = { "d3d11.dll", "d3d11", };
+inline std::vector<std::wstring> dx11NamesW = { L"d3d11.dll", L"d3d11", };
+inline std::vector<std::string> dx12Names = { "d3d12.dll", "d3d12", };
+inline std::vector<std::wstring> dx12NamesW = { L"d3d12.dll", L"d3d12", };
+inline std::vector<std::string> dxgiNames = { "dxgi.dll", "dxgi", }; 
+inline std::vector<std::wstring> dxgiNamesW = { L"dxgi.dll", L"dxgi", };
+inline std::vector<std::string> vkNames = { "vulkan-1.dll", "vulkan-1", };
+inline std::vector<std::wstring> vkNamesW = { L"vulkan-1.dll", L"vulkan-1", };
 
 static int loadCount = 0;
 static bool dontCount = false;
@@ -693,7 +618,7 @@ static BOOL hkGetModuleHandleExW(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE* p
             LOG_INFO("{0} call, returning this dll!", lcaseLibNameA);
             *phModule = dllModule;
             return TRUE;
-        }
+    }
 
 #endif
 
@@ -709,7 +634,7 @@ static BOOL hkGetModuleHandleExW(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE* p
 
 
 #endif
-    }
+}
 
     return o_GetModuleHandleExW(dwFlags, lpModuleName, phModule);
 }
@@ -1330,7 +1255,7 @@ static void DetachHooks()
 
         FreeLibrary(shared.dll);
     }
-}
+    }
 
 static void AttachHooks()
 {
@@ -1398,8 +1323,8 @@ static void AttachHooks()
                 DetourAttach(&(PVOID&)o_GetProcAddress, hkGetProcAddress);
 
             DetourTransactionCommit();
-        }
     }
+}
 }
 
 static bool IsRunningOnWine()
@@ -1790,34 +1715,35 @@ static void CheckWorkingMode()
         }
 
         if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr)
-            HooksDx::HookDxgi();
+                HooksDx::HookDxgi();
+
+            if ((!Config::Instance()->FGUseFGSwapChain.value_or(true) || !Config::Instance()->OverlayMenu.value_or(true)) && 
+                skHandle == nullptr && Config::Instance()->LoadSpecialK.value_or(false))
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(250));
+                auto skFile = Util::DllPath().parent_path() / L"SpecialK64.dll";
+                SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
+                skHandle = LoadLibrary(skFile.c_str());
+                LOG_INFO("Loading SpecialK64.dll, result: {0:X}", (UINT64)skHandle);
+            }
+
+            if (reshadeHandle == nullptr && Config::Instance()->LoadReShade.value_or(false))
+            {
+                auto rsFile = Util::DllPath().parent_path() / L"ReShade64.dll";
+                SetEnvironmentVariableW(L"RESHADE_DISABLE_LOADING_CHECK", L"1");
+
+                if (skHandle != nullptr)
+                    SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
+
+                reshadeHandle = LoadLibrary(rsFile.c_str());
+                LOG_INFO("Loading ReShade64.dll, result: {0:X}", (size_t)reshadeHandle);
+            }
 
         // vk menu hooks
         if (Config::Instance()->OverlayMenu.value() && (vulkanModule != nullptr || Config::Instance()->IsRunningOnLinux))
             HooksVk::HookVk();
 
         AttachHooks();
-
-        if ((!Config::Instance()->FGUseFGSwapChain.value_or(true) || !Config::Instance()->OverlayMenu.value_or(true)) &&
-            skHandle == nullptr && Config::Instance()->LoadSpecialK.value_or(false))
-        {
-            auto skFile = Util::DllPath().parent_path() / L"SpecialK64.dll";
-            SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
-            skHandle = LoadLibrary(skFile.c_str());
-            LOG_INFO("Loading SpecialK64.dll, result: {0:X}", (UINT64)skHandle);
-        }
-
-        if (reshadeHandle == nullptr && Config::Instance()->LoadReShade.value_or(false))
-        {
-            auto rsFile = Util::DllPath().parent_path() / L"ReShade64.dll";
-            SetEnvironmentVariableW(L"RESHADE_DISABLE_LOADING_CHECK", L"1");
-
-            if (skHandle != nullptr)
-                SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
-
-            reshadeHandle = LoadLibrary(rsFile.c_str());
-            LOG_INFO("Loading ReShade64.dll, result: {0:X}", (size_t)reshadeHandle);
-        }
 
         return;
     }
