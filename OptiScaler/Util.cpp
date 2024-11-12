@@ -91,7 +91,6 @@ static BOOL CALLBACK EnumWindowsCallback(HWND handle, LPARAM lParam) {
 		return GetWindow(handle, GW_OWNER) == nullptr && IsWindowVisible(handle) && handle != GetConsoleWindow();
 		};
 
-
 	DWORD pID = 0;
 	GetWindowThreadProcessId(handle, &pID);
 

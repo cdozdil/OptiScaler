@@ -547,6 +547,9 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             if (!LoadSpecialK.has_value())
                 LoadSpecialK = readBool("Plugins", "LoadSpecialK");
+            
+            if (!LoadReShade.has_value())
+                LoadReShade = readBool("Plugins", "LoadReShade");
         }
 
         // DLSS Enabler

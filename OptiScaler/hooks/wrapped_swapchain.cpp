@@ -146,8 +146,17 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
     LOG_DEBUG("BufferCount: {0}, Width: {1}, Height: {2}, NewFormat: {3}, SwapChainFlags: {4:X}", BufferCount, Width, Height, (UINT)NewFormat, SwapChainFlags);
 
+    result = m_pReal->ResizeBuffers(BufferCount, Width, Height, NewFormat, SwapChainFlags);
+    if (result == S_OK && Util::GetProcessWindow() == Handle)
+    {
+        Config::Instance()->ScreenWidth = Width;
+        Config::Instance()->ScreenHeight = Height;
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
-    // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
+        // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
     if (Config::Instance()->forceHdr.value_or(false))
     {
         LOG_INFO("Force HDR on");
@@ -179,7 +188,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
             if (DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT & css)
             {
                 result = m_pReal3->SetColorSpace1(hdrCS);
-                
+
                 if (result != S_OK)
                 {
                     LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
@@ -192,14 +201,21 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
         } while (false);
     }
 
-    result = m_pReal->ResizeBuffers(BufferCount, Width, Height, NewFormat, SwapChainFlags);
-    if (result == S_OK && Util::GetProcessWindow() == Handle)
+    Config::Instance()->scBuffers.clear();
+    UINT bc = BufferCount;
+    if (bc == 0 && m_pReal1 != nullptr)
     {
-        Config::Instance()->ScreenWidth = Width;
-        Config::Instance()->ScreenHeight = Height;
+        DXGI_SWAP_CHAIN_DESC1 desc{};
+        
+        if (m_pReal1->GetDesc1(&desc) == S_OK)
+            bc = desc.BufferCount;
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    for (size_t i = 0; i < bc; i++)
+    {
+        IUnknown* buffer;
+        GetBuffer(i, IID_PPV_ARGS(&buffer));
+    }
 
     LOG_FUNC_RESULT(result);
     return result;
@@ -242,6 +258,13 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
     std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
     LOG_DEBUG("BufferCount: {0}, Width: {1}, Height: {2}, NewFormat: {3}, SwapChainFlags: {4:X}, pCreationNodeMask: {5}", BufferCount, Width, Height, (UINT)Format, SwapChainFlags, *pCreationNodeMask);
+
+    result = m_pReal3->ResizeBuffers1(BufferCount, Width, Height, Format, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
+    if (result == S_OK && Util::GetProcessWindow() == Handle)
+    {
+        Config::Instance()->ScreenWidth = Width;
+        Config::Instance()->ScreenHeight = Height;
+    }
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
     // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
@@ -289,11 +312,20 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
         } while (false);
     }
 
-    result = m_pReal3->ResizeBuffers1(BufferCount, Width, Height, Format, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
-    if (result == S_OK && Util::GetProcessWindow() == Handle)
+    Config::Instance()->scBuffers.clear();
+    UINT bc = BufferCount;
+    if (bc == 0 && m_pReal1 != nullptr)
     {
-        Config::Instance()->ScreenWidth = Width;
-        Config::Instance()->ScreenHeight = Height;
+        DXGI_SWAP_CHAIN_DESC1 desc{};
+
+        if (m_pReal1->GetDesc1(&desc) == S_OK)
+            bc = desc.BufferCount;
+    }
+
+    for (size_t i = 0; i < bc; i++)
+    {
+        IUnknown* buffer;
+        GetBuffer(i, IID_PPV_ARGS(&buffer));
     }
 
     LOG_FUNC_RESULT(result);

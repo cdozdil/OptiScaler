@@ -1084,8 +1084,11 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
     }
     else
     {
-        auto heap = (ID3D12DescriptorHeap*)(*ppvHeap);
-        LOG_TRACE("Skipping, Heap type: {}, Cpu: {}, Gpu: {}", (UINT)pDescriptorHeapDesc->Type, heap->GetCPUDescriptorHandleForHeapStart().ptr, heap->GetGPUDescriptorHandleForHeapStart().ptr);
+        if (*ppvHeap != nullptr)
+        {
+            auto heap = (ID3D12DescriptorHeap*)(*ppvHeap);
+            LOG_TRACE("Skipping, Heap type: {}, Cpu: {}, Gpu: {}", (UINT)pDescriptorHeapDesc->Type, heap->GetCPUDescriptorHandleForHeapStart().ptr, heap->GetGPUDescriptorHandleForHeapStart().ptr);
+        }
     }
 
     return result;
@@ -1959,9 +1962,15 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
     if (pDesc->BufferDesc.Height == 2 && pDesc->BufferDesc.Width == 2)
     {
-        LOG_WARN("RTSS call!");
+        LOG_WARN("2x2 call!");
         return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
     }
+
+    //if (pDesc->BufferDesc.Height == 600 && pDesc->BufferDesc.Width == 800)
+    //{
+    //    LOG_WARN("800x600 call!");
+    //    return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
+    //}
 
     LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, Windowed: {}, SkipWrapping: {}",
               pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, (UINT)pDesc->OutputWindow, pDesc->Windowed, fgSkipSCWrapping);
@@ -1969,12 +1978,12 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     if (fgSwapChains.contains(pDesc->OutputWindow))
     {
         LOG_WARN("This hWnd is already active: {:X}", (size_t)pDesc->OutputWindow);
-        return E_ACCESSDENIED;
+        FrameGen_Dx12::ReleaseFGSwapchain(pDesc->OutputWindow);
     }
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
     // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
-    if (Config::Instance()->forceHdr.value_or(false))
+    if (Config::Instance()->forceHdr.value_or(false) && !fgSkipSCWrapping)
     {
         LOG_INFO("Force HDR on");
 
@@ -2232,9 +2241,18 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
     if (pDesc->Height == 2 && pDesc->Width == 2)
     {
-        LOG_WARN("RTSS call!");
+        LOG_WARN("2x2 call!");
         return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     }
+
+    //if (pDesc->Height == 600 && pDesc->Width == 800)
+    //{
+    //    LOG_WARN("800x600 call!");
+    //    return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
+    //}
+
+    LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, SkipWrapping: {}",
+              pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, (UINT)hWnd, fgSkipSCWrapping);
 
     if (fgSwapChains.contains(hWnd))
     {
@@ -2242,10 +2260,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         FrameGen_Dx12::ReleaseFGSwapchain(hWnd);
     }
 
-    LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, SkipWrapping: {}",
-              pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, (UINT)hWnd, fgSkipSCWrapping);
-
-    if (Config::Instance()->forceHdr.value_or(false))
+    if (Config::Instance()->forceHdr.value_or(false) && !fgSkipSCWrapping)
     {
         LOG_INFO("Force HDR on");
 
@@ -2949,14 +2964,14 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
     {
         LOG_WARN("RTSS call!");
         Config::Instance()->dxgiSkipSpoofing = true;
-        auto result = o_D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
+        auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
         Config::Instance()->dxgiSkipSpoofing = false;
         return result;
     }
 
     IDXGISwapChain* buffer = nullptr;
     Config::Instance()->dxgiSkipSpoofing = true;
-    auto result = o_D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, &buffer, ppDevice, pFeatureLevel, ppImmediateContext);
+    auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, &buffer, ppDevice, pFeatureLevel, ppImmediateContext);
     Config::Instance()->dxgiSkipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr && !_d3d12Captured)

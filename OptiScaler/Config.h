@@ -157,6 +157,7 @@ public:
 	// plugins
 	std::optional<std::wstring> PluginPath;
 	std::optional<bool> LoadSpecialK;
+	std::optional<bool> LoadReShade;
 
 	// fg
 	std::optional<bool> FGUseFGSwapChain;

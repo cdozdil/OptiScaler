@@ -1796,9 +1796,28 @@ static void CheckWorkingMode()
         if (Config::Instance()->OverlayMenu.value() && (vulkanModule != nullptr || Config::Instance()->IsRunningOnLinux))
             HooksVk::HookVk();
 
-
-
         AttachHooks();
+
+        if ((!Config::Instance()->FGUseFGSwapChain.value_or(true) || !Config::Instance()->OverlayMenu.value_or(true)) &&
+            skHandle == nullptr && Config::Instance()->LoadSpecialK.value_or(false))
+        {
+            auto skFile = Util::DllPath().parent_path() / L"SpecialK64.dll";
+            SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
+            skHandle = LoadLibrary(skFile.c_str());
+            LOG_INFO("Loading SpecialK64.dll, result: {0:X}", (UINT64)skHandle);
+        }
+
+        if (reshadeHandle == nullptr && Config::Instance()->LoadReShade.value_or(false))
+        {
+            auto rsFile = Util::DllPath().parent_path() / L"ReShade64.dll";
+            SetEnvironmentVariableW(L"RESHADE_DISABLE_LOADING_CHECK", L"1");
+
+            if (skHandle != nullptr)
+                SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
+
+            reshadeHandle = LoadLibrary(rsFile.c_str());
+            LOG_INFO("Loading ReShade64.dll, result: {0:X}", (size_t)reshadeHandle);
+        }
 
         return;
     }
@@ -1813,17 +1832,21 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     switch (ul_reason_for_call)
     {
         case DLL_PROCESS_ATTACH:
-            DisableThreadLibraryCalls(hModule);
-
             if (loadCount > 1)
             {
                 LOG_INFO("DLL_PROCESS_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
                 return TRUE;
             }
 
-
             dllModule = hModule;
             processId = GetCurrentProcessId();
+
+            DisableThreadLibraryCalls(hModule);
+
+            if (Config::Instance()->FGUseFGSwapChain.value_or(true))
+            {
+                SetEnvironmentVariable(L"SteamNoOverlayUIDrawing", L"1");
+            }
 
             loadCount++;
 

@@ -34,6 +34,7 @@
 
 inline HMODULE dllModule = nullptr;
 inline HMODULE skHandle = nullptr;
+inline HMODULE reshadeHandle = nullptr;
 inline DWORD processId;
 
 #define LOG_TRACE(msg, ...) \
