@@ -61,7 +61,7 @@ static bool _dx12Device = false;
 // for dx11
 static ID3D11Device* g_pd3dDevice = nullptr;
 static ID3D11DeviceContext* g_pd3dDeviceContext = nullptr;
-static ID3D11RenderTargetView* g_pd3dRenderTarget = nullptr;
+static ID3D11RenderTargetView* _renderTarget = nullptr;
 
 // for dx12
 static ID3D12Device* g_pd3dDeviceParam = nullptr;
@@ -80,7 +80,7 @@ static bool _isInited = false;
 static bool _showRenderImGuiDebugOnce = true;
 
 // mutexes
-static std::mutex _dx11CleanMutex;
+static std::mutex _cleanMutex;
 static std::mutex _dx12CleanMutex;
 
 static void RenderImGui_DX11(IDXGISwapChain* pSwapChain);
@@ -230,7 +230,7 @@ static void CreateRenderTargetDx11(IDXGISwapChain* pSwapChain)
         desc.Format = static_cast<DXGI_FORMAT>(GetCorrectDXGIFormat(sd.BufferDesc.Format));
         desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 
-        g_pd3dDevice->CreateRenderTargetView(pBackBuffer, &desc, &g_pd3dRenderTarget);
+        g_pd3dDevice->CreateRenderTargetView(pBackBuffer, &desc, &_renderTarget);
         pBackBuffer->Release();
     }
 }
@@ -243,10 +243,10 @@ static void CleanupRenderTargetDx11(bool shutDown)
     if (!shutDown)
         LOG_FUNC();
 
-    if (g_pd3dRenderTarget != nullptr)
+    if (_renderTarget != nullptr)
     {
-        g_pd3dRenderTarget->Release();
-        g_pd3dRenderTarget = nullptr;
+        _renderTarget->Release();
+        _renderTarget = nullptr;
     }
 
     if (g_pd3dDevice != nullptr)
@@ -969,10 +969,10 @@ static void RenderImGui_DX11(IDXGISwapChain* pSwapChain)
 
     if (_isInited)
     {
-        if (!g_pd3dRenderTarget)
+        if (!_renderTarget)
             CreateRenderTargetDx11(pSwapChain);
 
-        if (ImGui::GetCurrentContext() && g_pd3dRenderTarget)
+        if (ImGui::GetCurrentContext() && _renderTarget)
         {
             ImGui_ImplDX11_NewFrame();
             ImGui_ImplWin32_NewFrame();
@@ -981,7 +981,7 @@ static void RenderImGui_DX11(IDXGISwapChain* pSwapChain)
 
             ImGui::Render();
 
-            g_pd3dDeviceContext->OMSetRenderTargets(1, &g_pd3dRenderTarget, NULL);
+            g_pd3dDeviceContext->OMSetRenderTargets(1, &_renderTarget, NULL);
             ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
         }
     }

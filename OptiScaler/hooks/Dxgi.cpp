@@ -111,35 +111,10 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
         MenuDx::dx12UpscaleTrig = false;
     }
-    else if (MenuDx::dx11UpscaleTrig[MenuDx::currentFrameIndex] && device != nullptr && MenuDx::disjointQueries[0] != nullptr &&
-             MenuDx::startQueries[0] != nullptr && MenuDx::endQueries[0] != nullptr)
+    else if (MenuDx11::dx11UpscaleTrig[MenuDx::currentFrameIndex] && device != nullptr && MenuDx::disjointQueries[0] != nullptr &&
+             MenuDx11::startQueries[0] != nullptr && MenuDx::endQueries[0] != nullptr)
     {
-        if (g_pd3dDeviceContext == nullptr)
-            device->GetImmediateContext(&g_pd3dDeviceContext);
 
-        if (MenuBase::IsInited() && MenuBase::IsVisible())
-        {
-            // Retrieve the results from the previous frame
-            D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjointData;
-            if (g_pd3dDeviceContext->GetData(MenuDx::disjointQueries[MenuDx::previousFrameIndex], &disjointData, sizeof(disjointData), 0) == S_OK)
-            {
-                if (!disjointData.Disjoint && disjointData.Frequency > 0)
-                {
-                    UINT64 startTime = 0, endTime = 0;
-                    if (g_pd3dDeviceContext->GetData(MenuDx::startQueries[MenuDx::previousFrameIndex], &startTime, sizeof(UINT64), 0) == S_OK &&
-                        g_pd3dDeviceContext->GetData(MenuDx::endQueries[MenuDx::previousFrameIndex], &endTime, sizeof(UINT64), 0) == S_OK)
-                    {
-                        double elapsedTimeMs = (endTime - startTime) / static_cast<double>(disjointData.Frequency) * 1000.0;
-                        Config::Instance()->upscaleTimes.push_back(elapsedTimeMs);
-                        Config::Instance()->upscaleTimes.pop_front();
-                    }
-                }
-            }
-        }
-
-
-        MenuDx::dx11UpscaleTrig[MenuDx::currentFrameIndex] = false;
-        MenuDx::currentFrameIndex = (MenuDx::currentFrameIndex + 1) % MenuDx::QUERY_BUFFER_COUNT;
     }
 
     // DXVK check, it's here because of upscaler time calculations
