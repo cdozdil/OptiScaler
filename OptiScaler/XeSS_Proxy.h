@@ -171,11 +171,14 @@ public:
             GetDLLVersion(libXessPath.wstring());
             _dll = LoadLibrary(libXessPath.c_str());
 
-            Config::Instance()->dxgiSkipSpoofing = false;
-            Config::Instance()->upscalerDisableHook = false;
+            if (_dll == nullptr)
+            {
+                Config::Instance()->dxgiSkipSpoofing = false;
+                Config::Instance()->upscalerDisableHook = false;
 
-            LOG_ERROR("OptiScaler working as libxess.dll but could not load original dll!");
-            return false;
+                LOG_ERROR("OptiScaler working as libxess.dll but could not load original dll!");
+                return false;
+            }
         }
 
         if (_dll == nullptr)
