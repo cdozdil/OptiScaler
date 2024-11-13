@@ -926,6 +926,14 @@ void ImGuiCommon::RenderMenu()
                         }
                         ShowHelpMarker("Extended HUDless checks, might cause crash and slowdowns!");
 
+                        if (Config::Instance()->AdvancedSettings.value_or(false))
+                        {
+                            if (ImGui::Checkbox("FG Use Threading For Heap Tracking", &Config::Instance()->UseThreadingForHeaps))
+                                LOG_DEBUG("Enabled set UseThreadingForHeaps: {}", Config::Instance()->UseThreadingForHeaps);
+
+                            ShowHelpMarker("Use threading while tracking descriptor heap copy operations.\nMight cause locks or crashes!");
+                        }
+
                         ImGui::PopItemWidth();
 
                         ImGui::EndDisabled();

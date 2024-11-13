@@ -176,6 +176,7 @@ public:
 	bool FGChanged = false;
 	bool SCChanged = false;
 	bool SkipHeapCapture = false;
+	bool UseThreadingForHeaps = false;
 
 	bool FGCaptureResources = false;
 	int FGCapturedResourceCount = false;
