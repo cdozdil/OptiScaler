@@ -2,7 +2,7 @@
 
 #include <Util.h>
 #include <Config.h>
-#include <menu/MenuDx.h>
+#include <menu/MenuDx11.h>
 #include "NVNGX_Parameter.h"
 #include <proxies/NVNGX_Proxy.h>
 #include <upscalers/dlss/DLSSFeature_Dx11.h>
@@ -82,20 +82,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
 
     Config::Instance()->Api = NVNGX_DX11;
 
-    // Create Disjoint Query
-    D3D11_QUERY_DESC disjointQueryDesc = {};
-    disjointQueryDesc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
-
-    // Create Timestamp Queries
-    D3D11_QUERY_DESC timestampQueryDesc = {};
-    timestampQueryDesc.Query = D3D11_QUERY_TIMESTAMP;
-
-    for (int i = 0; i < MenuDx::QUERY_BUFFER_COUNT; i++)
-    {
-        InDevice->CreateQuery(&disjointQueryDesc, &MenuDx::disjointQueries[i]);
-        InDevice->CreateQuery(&timestampQueryDesc, &MenuDx::startQueries[i]);
-        InDevice->CreateQuery(&timestampQueryDesc, &MenuDx::endQueries[i]);
-    }
+    MenuDx11::PrepareTimeObjects(InDevice);
 
     return NVSDK_NGX_Result_Success;
 }
@@ -751,12 +738,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
                 LOG_INFO("creating new native FSR 3.1.0 feature");
                 Dx11Contexts[handleId] = std::make_unique<FSR31FeatureDx11>(handleId, createParams);
             }
-            //else if (Config::Instance()->newBackend == "fsr304")
-            //{
-            //    Config::Instance()->Dx11Upscaler = "fsr31";
-            //    LOG_INFO("creating new native FSR 3.1.0 feature");
-            //    Dx11Contexts[handleId] = std::make_unique<FSR31FeatureDx11>(handleId, createParams);
-            //}
 
             if (Config::Instance()->Dx11DelayedInit.value_or(false) &&
                 Config::Instance()->newBackend != "fsr22" && Config::Instance()->newBackend != "dlss" && Config::Instance()->newBackend != "dlssd")
@@ -830,13 +811,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
         return NVSDK_NGX_Result_Success;
     }
 
-    // In the render loop:
-    MenuDx::previousFrameIndex = (MenuDx::currentFrameIndex + MenuDx::QUERY_BUFFER_COUNT - 2) % MenuDx::QUERY_BUFFER_COUNT;
-    int nextFrameIndex = MenuDx::currentFrameIndex;
-
-    // Record the queries in the current frame
-    InDevCtx->Begin(MenuDx::disjointQueries[nextFrameIndex]);
-    InDevCtx->End(MenuDx::startQueries[nextFrameIndex]);
+    MenuDx11::BeforeUpscale(InDevCtx);
 
     if (!deviceContext->Evaluate(InDevCtx, InParameters) && !deviceContext->IsInited() && (deviceContext->Name() == "XeSS" || deviceContext->Name() == "DLSS" || deviceContext->Name() == "FSR3 w/Dx12"))
     {
@@ -844,10 +819,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
         Config::Instance()->changeBackend = true;
     }
 
-    InDevCtx->End(MenuDx::endQueries[nextFrameIndex]);
-    InDevCtx->End(MenuDx::disjointQueries[nextFrameIndex]);
-
-    MenuDx::dx11UpscaleTrig[nextFrameIndex] = true;
+    MenuDx11::AfterUpscale(InDevCtx);
 
     return NVSDK_NGX_Result_Success;
 }
