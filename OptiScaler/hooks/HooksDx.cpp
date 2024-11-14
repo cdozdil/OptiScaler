@@ -16,9 +16,6 @@
 #include <shared_mutex>
 #include <set>
 
-// Do not wait for Dispatch/DrawInstanced to capture hudless resource
-//#define DO_NOT_WAIT_DISPATCH
-
 // Clear heap info when ResourceDiscard is called
 //#define USE_RESOURCE_DISCARD
 
@@ -134,15 +131,15 @@ typedef HRESULT(*PFN_Present)(void* This, UINT SyncInterval, UINT Flags);
 typedef void(*PFN_OMSetRenderTargets)(ID3D12GraphicsCommandList* This, UINT NumRenderTargetDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE* pRenderTargetDescriptors, BOOL RTsSingleHandleToDescriptorRange, D3D12_CPU_DESCRIPTOR_HANDLE* pDepthStencilDescriptor);
 typedef void(*PFN_SetGraphicsRootDescriptorTable)(ID3D12GraphicsCommandList* This, UINT RootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor);
 typedef void(*PFN_SetComputeRootDescriptorTable)(ID3D12GraphicsCommandList* This, UINT RootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor);
-#ifndef DO_NOT_WAIT_DISPATCH
 typedef void(*PFN_DrawIndexedInstanced)(ID3D12GraphicsCommandList* This, UINT IndexCountPerInstance, UINT InstanceCount, UINT StartIndexLocation, INT BaseVertexLocation, UINT StartInstanceLocation);
 typedef void(*PFN_DrawInstanced)(ID3D12GraphicsCommandList* This, UINT VertexCountPerInstance, UINT InstanceCount, UINT StartVertexLocation, UINT StartInstanceLocation);
 typedef void(*PFN_Dispatch)(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ);
-#endif
+
 #ifdef USE_COPY_RESOURCE
 typedef void(*PFN_CopyResource)(ID3D12GraphicsCommandList* This, ID3D12Resource* pDstResource, ID3D12Resource* pSrcResource);
 typedef void(*PFN_CopyTextureRegion)(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_COPY_LOCATION* pDst, UINT DstX, UINT DstY, UINT DstZ, D3D12_TEXTURE_COPY_LOCATION* pSrc, D3D12_BOX* pSrcBox);
 #endif
+
 #ifdef USE_RESOURCE_DISCARD
 typedef void(*PFN_DiscardResource)(ID3D12GraphicsCommandList* This, ID3D12Resource* pResource, D3D12_DISCARD_REGION* pRegion);
 #endif
@@ -157,18 +154,19 @@ static PFN_CopyDescriptorsSimple o_CopyDescriptorsSimple = nullptr;
 static PFN_Present o_FGSCPresent = nullptr;
 
 // Original method calls for command list
-#ifndef DO_NOT_WAIT_DISPATCH
 static PFN_Dispatch o_Dispatch = nullptr;
 static PFN_DrawInstanced o_DrawInstanced = nullptr;
 static PFN_DrawIndexedInstanced o_DrawIndexedInstanced = nullptr;
-#endif
+
+static PFN_OMSetRenderTargets o_OMSetRenderTargets = nullptr;
+static PFN_SetGraphicsRootDescriptorTable o_SetGraphicsRootDescriptorTable = nullptr;
+static PFN_SetComputeRootDescriptorTable o_SetComputeRootDescriptorTable = nullptr;
+
 #ifdef USE_COPY_RESOURCE
 static PFN_CopyResource o_CopyResource = nullptr;
 static PFN_CopyTextureRegion o_CopyTextureRegion = nullptr;
 #endif
-static PFN_OMSetRenderTargets o_OMSetRenderTargets = nullptr;
-static PFN_SetGraphicsRootDescriptorTable o_SetGraphicsRootDescriptorTable = nullptr;
-static PFN_SetComputeRootDescriptorTable o_SetComputeRootDescriptorTable = nullptr;
+
 #ifdef USE_RESOURCE_DISCARD
 static PFN_DiscardResource o_DiscardResource = nullptr;
 #endif
@@ -189,9 +187,7 @@ static ankerl::unordered_dense::map <ID3D12Resource*, ResourceHeapInfo> fgHandle
 static std::set<ID3D12Resource*> fgCaptureList;
 
 // possibleHudless lisy by cmdlist
-#ifndef DO_NOT_WAIT_DISPATCH
 static ankerl::unordered_dense::map <ID3D12GraphicsCommandList*, ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo>> fgPossibleHudless[FrameGen_Dx12::FG_BUFFER_SIZE];
-#endif
 
 // mutexes
 static std::shared_mutex heapMutex;
@@ -1209,16 +1205,16 @@ static void hkCopyDescriptors(ID3D12Device* This,
                 {
                     destIndex = 0;
                     destRangeIndex++;
-            }
+                }
                 else
                 {
                     destIndex++;
                 }
+            }
         }
     }
-}
 
-    }
+}
 
 static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptorRangeStart,
                                     D3D12_CPU_DESCRIPTOR_HANDLE SrcDescriptorRangeStart, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType)
@@ -1322,21 +1318,18 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
         return;
     }
 
-#ifndef DO_NOT_WAIT_DISPATCH
     LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
-#endif
 
     capturedBuffer->state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
     do
     {
-        if (CheckCapture(__FUNCTION__))
+        if (Config::Instance()->FGImmediateCapture && CheckCapture(__FUNCTION__))
         {
             CaptureHudless(This, capturedBuffer, capturedBuffer->state);
             break;
         }
 
-#ifndef DO_NOT_WAIT_DISPATCH
         {
             std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
 
@@ -1348,7 +1341,6 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
 
             fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
         }
-#endif
     } while (false);
 
     o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
@@ -1417,18 +1409,15 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
             if (!CheckForHudless(__FUNCTION__, resource))
                 continue;
 
-#ifndef DO_NOT_WAIT_DISPATCH
             LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
-#endif
             resource->state = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
-            if (CheckCapture(__FUNCTION__))
+            if (Config::Instance()->FGImmediateCapture && CheckCapture(__FUNCTION__))
             {
                 CaptureHudless(This, resource, resource->state);
                 break;
             }
 
-#ifndef DO_NOT_WAIT_DISPATCH
             {
                 std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
 
@@ -1442,7 +1431,6 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
                 // add found resource
                 fgPossibleHudless[fIndex][This].insert_or_assign(resource->buffer, *resource);
             }
-#endif
         }
     }
 
@@ -1494,9 +1482,7 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
         return;
     }
 
-#ifndef DO_NOT_WAIT_DISPATCH
     LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
-#endif
 
     if (capturedBuffer->type == UAV)
         capturedBuffer->state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
@@ -1505,13 +1491,12 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
 
     do
     {
-        if (CheckForHudless(__FUNCTION__, capturedBuffer) && CheckCapture(__FUNCTION__))
+        if (Config::Instance()->FGImmediateCapture && CheckForHudless(__FUNCTION__, capturedBuffer) && CheckCapture(__FUNCTION__))
         {
             CaptureHudless(This, capturedBuffer, capturedBuffer->state);
             break;
         }
 
-#ifndef DO_NOT_WAIT_DISPATCH
         {
             std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
 
@@ -1523,7 +1508,6 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
 
             fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
         }
-#endif
     } while (false);
 
     o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
@@ -1532,8 +1516,6 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
 #pragma endregion
 
 #pragma region Shader finalizer hooks
-
-#ifndef DO_NOT_WAIT_DISPATCH
 
 // Capture if render target matches, wait for DrawIndexed
 static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPerInstance, UINT InstanceCount, UINT StartVertexLocation, UINT StartInstanceLocation)
@@ -1684,8 +1666,6 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
     }
 }
 
-#endif
-
 #pragma endregion
 
 #pragma region Callbacks for wrapped swapchain
@@ -1706,7 +1686,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         Config::Instance()->FGCapturedResourceCount = 0;
         Config::Instance()->FGResetCapturedResources = false;
         captureMutex.unlock();
-}
+    }
 
     // Skip calculations etc
     if (Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART)
@@ -1752,7 +1732,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     FrameGen_Dx12::ffxMutex.unlock();
 
     return result;
-    }
+}
 #endif
 
 static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd)
@@ -2593,19 +2573,19 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
                     }
 
                     LOG_INFO("HDR format and color space are set");
-            }
+                }
 
-        } while (false);
+            } while (false);
 
             if (sc3 != nullptr)
                 sc3->Release();
-    }
+        }
 
         fgSCCount++;
-}
+    }
 
     return result;
-    }
+}
 
 static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
@@ -2805,11 +2785,9 @@ static void HookCommandList(ID3D12Device* InDevice)
             o_OMSetRenderTargets = (PFN_OMSetRenderTargets)pVTable[46];
             o_SetGraphicsRootDescriptorTable = (PFN_SetGraphicsRootDescriptorTable)pVTable[32];
 
-#ifndef DO_NOT_WAIT_DISPATCH
             o_DrawInstanced = (PFN_DrawInstanced)pVTable[12];
             o_DrawIndexedInstanced = (PFN_DrawIndexedInstanced)pVTable[13];
             o_Dispatch = (PFN_Dispatch)pVTable[14];
-#endif
 
             // hudless compute
             o_SetComputeRootDescriptorTable = (PFN_SetComputeRootDescriptorTable)pVTable[31];
@@ -2848,8 +2826,6 @@ static void HookCommandList(ID3D12Device* InDevice)
                 if (o_SetComputeRootDescriptorTable != nullptr)
                     DetourAttach(&(PVOID&)o_SetComputeRootDescriptorTable, hkSetComputeRootDescriptorTable);
 
-#ifndef DO_NOT_WAIT_DISPATCH
-
                 if (o_DrawIndexedInstanced != nullptr)
                     DetourAttach(&(PVOID&)o_DrawIndexedInstanced, hkDrawIndexedInstanced);
 
@@ -2858,8 +2834,6 @@ static void HookCommandList(ID3D12Device* InDevice)
 
                 if (o_Dispatch != nullptr)
                     DetourAttach(&(PVOID&)o_Dispatch, hkDispatch);
-
-#endif
 
 #ifdef USE_RESOURCE_DISCARD
                 if (o_DiscardResource != nullptr)
@@ -2875,7 +2849,7 @@ static void HookCommandList(ID3D12Device* InDevice)
         commandAllocator->Reset();
         commandAllocator->Release();
     }
-    }
+}
 
 static void HookToDevice(ID3D12Device* InDevice)
 {
@@ -3005,7 +2979,7 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
 
     static const D3D_FEATURE_LEVEL levels[] = {
      D3D_FEATURE_LEVEL_11_1,
-    };
+};
 
     D3D_FEATURE_LEVEL maxLevel = D3D_FEATURE_LEVEL_1_0_CORE;
 
@@ -3036,7 +3010,7 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
     LOG_FUNC_RESULT(result);
 
     return result;
-    }
+}
 
 static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE DriverType, HMODULE Software, UINT Flags, CONST D3D_FEATURE_LEVEL* pFeatureLevels,
                                                UINT FeatureLevels, UINT SDKVersion, DXGI_SWAP_CHAIN_DESC* pSwapChainDesc, IDXGISwapChain** ppSwapChain, ID3D11Device** ppDevice, D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext)
@@ -3049,7 +3023,7 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
 
     static const D3D_FEATURE_LEVEL levels[] = {
     D3D_FEATURE_LEVEL_11_1,
-    };
+};
 
     D3D_FEATURE_LEVEL maxLevel = D3D_FEATURE_LEVEL_1_0_CORE;
 
@@ -3457,13 +3431,11 @@ static void ClearNextFrame()
     auto fIndex = fgFrameIndex;
     auto newIndex = (fIndex + 2) % FrameGen_Dx12::FG_BUFFER_SIZE;
 
-#ifndef DO_NOT_WAIT_DISPATCH
     if (fgPossibleHudless[newIndex].size() != 0)
     {
         std::unique_lock<std::shared_mutex> lock(hudlessMutex[newIndex]);
         fgPossibleHudless[newIndex].clear();
     }
-#endif
 
     if (FrameGen_Dx12::fgHUDlessCaptureCounter[newIndex] != 0)
     {

@@ -928,6 +928,11 @@ void ImGuiCommon::RenderMenu()
 
                         if (Config::Instance()->AdvancedSettings.value_or(false))
                         {
+                            if (ImGui::Checkbox("FG Immediate Capture", &Config::Instance()->FGImmediateCapture))
+                                LOG_DEBUG("Enabled set FGImmediateCapture: {}", Config::Instance()->FGImmediateCapture);
+
+                            ShowHelpMarker("Immediately capture of resources, before shader executions.\nIncrease hudless capture chances but might cause capturing of\nunnecessary resources.");
+
                             if (ImGui::Checkbox("FG Use Threading For Heap Tracking", &Config::Instance()->UseThreadingForHeaps))
                                 LOG_DEBUG("Enabled set UseThreadingForHeaps: {}", Config::Instance()->UseThreadingForHeaps);
 
