@@ -3,6 +3,8 @@
 #include "Util.h"
 #include "Config.h"
 
+#include <shlobj.h>
+
 extern HMODULE dllModule;
 
 std::filesystem::path Util::DllPath()
@@ -20,6 +22,21 @@ std::filesystem::path Util::DllPath()
 	}
 
 	return dll;
+}
+
+std::optional<std::filesystem::path> Util::FontPath()
+{
+	std::optional<std::filesystem::path> result;
+
+	if (!Config::Instance()->IsRunningOnLinux)
+	{
+		wchar_t fontPath[MAX_PATH];
+
+		if (SHGetFolderPath(NULL, CSIDL_FONTS, NULL, 0, fontPath) == S_OK)
+			result = std::filesystem::path(fontPath);
+	}
+
+	return result;
 }
 
 std::optional<std::filesystem::path> Util::NvngxPath()

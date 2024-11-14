@@ -334,7 +334,7 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             {
                 _ssRatio = 0;
 
-                if(GetClipCursor(&_cursorLimit))
+                if (GetClipCursor(&_cursorLimit))
                     pfn_ClipCursor(nullptr);
 
                 GetCursorPos(&_lastPoint);
@@ -757,6 +757,7 @@ void ImGuiCommon::RenderMenu()
             style.GrabRounding = 0.0f;
             style.TabRounding = 0.0f;
             style.ScaleAllSizes(Config::Instance()->MenuScale.value_or(1.0));
+            style.MouseCursorScale = 1.0f;
             CopyMemory(style.Colors, styleold.Colors, sizeof(style.Colors)); // Restore colors		
         }
 
@@ -797,7 +798,30 @@ void ImGuiCommon::RenderMenu()
             if (!_showMipmapCalcWindow && !ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow))
                 ImGui::SetWindowFocus();
 
-            ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0));
+            if (!Config::Instance()->MenuScale.has_value())
+            {
+                // 900p is minimum for 1.0 menu ratio
+                Config::Instance()->MenuScale = (float)((int)((float)Config::Instance()->ScreenHeight / 90.0f)) / 10.0f;
+
+                if (Config::Instance()->MenuScale.value() > 1.0f)
+                    Config::Instance()->MenuScale.value() = 1.0f;
+
+                _selectedScale = (int)((Config::Instance()->MenuScale.value() - 0.5f) / 0.1f);
+
+                ImGuiStyle& style = ImGui::GetStyle();
+                style.ScaleAllSizes(Config::Instance()->MenuScale.value());
+
+                if (Config::Instance()->MenuScale.value() < 1.0f)
+                    style.MouseCursorScale = 1.0f;
+            }
+
+            if (Config::Instance()->MenuScale.value() < 0.5f)
+                Config::Instance()->MenuScale = 0.5f;
+
+            if (Config::Instance()->MenuScale.value() > 2.0f)
+                Config::Instance()->MenuScale = 2.0f;
+
+            ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
 
             std::string selectedUpscalerName = "";
             std::string currentBackend = "";
@@ -806,9 +830,9 @@ void ImGuiCommon::RenderMenu()
             if (cf == nullptr)
             {
                 ImGui::Spacing();
-                ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0) * 2);
+                ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value() * 2);
                 ImGui::Text("Please select DLSS as upscaler from game options and\nenter the game to enable upscaler settings.");
-                ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0));
+                ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
             }
 
             if (ImGui::BeginTable("main", 2))
@@ -925,8 +949,9 @@ void ImGuiCommon::RenderMenu()
                         }
                         ShowHelpMarker("Enables capturing of resources before shader execution.\nIncrease hudless capture chances but might cause capturing of unnecessary resources.");
 
+                        ImGui::SameLine(0.0f, 16.0f);
                         auto hudExtended = Config::Instance()->FGHUDFixExtended.value_or(false);
-                        if (ImGui::Checkbox("FG Extended Capture", &hudExtended))
+                        if (ImGui::Checkbox("FG Extended", &hudExtended))
                         {
                             LOG_DEBUG("Enabled set FGHUDFixExtended: {}", hudExtended);
                             Config::Instance()->FGHUDFixExtended = hudExtended;
@@ -970,9 +995,9 @@ void ImGuiCommon::RenderMenu()
                                 LOG_DEBUG_ONLY("DebugView set FGChanged");
                             }
                         }
-
                         ShowHelpMarker("Enable FSR 3.1 frame generation debug view");
 
+                        ImGui::SameLine(0.0f, 16.0f);
                         ImGui::Checkbox("FG Only Generated", &Config::Instance()->FGOnlyGenerated);
                         ShowHelpMarker("Display only FSR 3.1 generated frames");
 
@@ -996,16 +1021,14 @@ void ImGuiCommon::RenderMenu()
                             }
                         }
 
-                        ImGui::PopItemWidth();
-                        ImGui::EndDisabled();
+                        ImGui::SameLine(0.0f, 8.0f);
+                        ImGui::Text("(%d)", Config::Instance()->FGCapturedResourceCount);
 
-                        ImGui::Text("Captured images: %d", Config::Instance()->FGCapturedResourceCount);
+                        ImGui::PopItemWidth();
 
                         ImGui::SameLine(0.0f, 16.0f);
 
-                        ImGui::BeginDisabled(Config::Instance()->FGResetCapturedResources);
-
-                        if (ImGui::Button("FG Reset List"))
+                        if (ImGui::Button("Reset List"))
                         {
                             Config::Instance()->FGResetCapturedResources = true;
                             Config::Instance()->FGOnlyUseCapturedResources = false;
@@ -1630,7 +1653,7 @@ void ImGuiCommon::RenderMenu()
                     // MIPMAP BIAS & Anisotropy -----------------------------
                     ImGui::SeparatorText("Anisotropic Filtering (DirectX)");
 
-                    ImGui::PushItemWidth(65.0f * Config::Instance()->MenuScale.value_or(1.0));
+                    ImGui::PushItemWidth(65.0f * Config::Instance()->MenuScale.value());
 
                     auto selectedAF = Config::Instance()->AnisotropyOverride.has_value() ? std::to_string(Config::Instance()->AnisotropyOverride.value()) : "Auto";
                     if (ImGui::BeginCombo("Force Anisotropic Filtering", selectedAF.c_str()))
@@ -2105,19 +2128,26 @@ void ImGuiCommon::RenderMenu()
                 ImGui::SameLine(0.0f, 10.0f);
             }
 
-            ImGui::PushItemWidth(45.0f * Config::Instance()->MenuScale.value_or(1.0));
+            ImGui::PushItemWidth(45.0f * Config::Instance()->MenuScale.value());
 
-            const char* uiScales[] = { "1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "2.0" };
+            const char* uiScales[] = { "0.5", "0.6", "0.7", "0.8", "0.9", "1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "2.0" };
             const char* selectedScaleName = uiScales[_selectedScale];
 
             if (ImGui::BeginCombo("UI Scale", selectedScaleName))
             {
-                for (int n = 0; n < 11; n++)
+                for (int n = 0; n < 16; n++)
                 {
                     if (ImGui::Selectable(uiScales[n], (_selectedScale == n)))
                     {
                         _selectedScale = n;
-                        Config::Instance()->MenuScale = 1.0f + ((float)n / 10.0f);
+                        Config::Instance()->MenuScale = 0.5f + (float)n / 10.0f;
+
+                        ImGuiStyle& style = ImGui::GetStyle();
+                        style.ScaleAllSizes(Config::Instance()->MenuScale.value());
+
+                        if (Config::Instance()->MenuScale.value() < 1.0f)
+                            style.MouseCursorScale = 1.0f;
+
                         _imguiSizeUpdate = true;
                     }
                 }
@@ -2324,13 +2354,6 @@ void ImGuiCommon::Init(HWND InHwnd)
     if (!pfn_SetCursorPos_hooked)
         AttachHooks();
 
-    if (Config::Instance()->MenuScale.value_or(1.0f) < 1.0f)
-        Config::Instance()->MenuScale = 1.0f;
-
-    if (Config::Instance()->MenuScale.value_or(1.0f) > 2.0f)
-        Config::Instance()->MenuScale = 2.0f;
-
-    _selectedScale = (int)((Config::Instance()->MenuScale.value_or(1.0f) - 1.0f) / 0.1f);
     _isInited = true;
 }
 

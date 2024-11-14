@@ -469,7 +469,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
         ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
         m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
 
-        if (fgHudless[fIndex] != nullptr)
+        if (This != nullptr && fgHudless[fIndex] != nullptr)
             m_FrameGenerationConfig.HUDLessColor = ffxApiGetResourceDX12(fgHudless[fIndex], FFX_API_RESOURCE_STATE_COPY_DEST, 0);
         else
             m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
@@ -1704,7 +1704,6 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     {
         LOG_WARN("Can't capture hudless, calling HudFix dispatch!");
 
-        fgHudless[fIndex] = nullptr;
         GetHudless(nullptr);
     }
 
