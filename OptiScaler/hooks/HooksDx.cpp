@@ -1324,7 +1324,7 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
 
     do
     {
-        if (Config::Instance()->FGImmediateCapture && CheckCapture(__FUNCTION__))
+        if (Config::Instance()->FGImmediateCapture.value_or(false) && CheckCapture(__FUNCTION__))
         {
             CaptureHudless(This, capturedBuffer, capturedBuffer->state);
             break;
@@ -1412,7 +1412,7 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
             LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
             resource->state = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
-            if (Config::Instance()->FGImmediateCapture && CheckCapture(__FUNCTION__))
+            if (Config::Instance()->FGImmediateCapture.value_or(false) && CheckCapture(__FUNCTION__))
             {
                 CaptureHudless(This, resource, resource->state);
                 break;
@@ -1491,7 +1491,7 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
 
     do
     {
-        if (Config::Instance()->FGImmediateCapture && CheckForHudless(__FUNCTION__, capturedBuffer) && CheckCapture(__FUNCTION__))
+        if (Config::Instance()->FGImmediateCapture.value_or(false) && CheckForHudless(__FUNCTION__, capturedBuffer) && CheckCapture(__FUNCTION__))
         {
             CaptureHudless(This, capturedBuffer, capturedBuffer->state);
             break;

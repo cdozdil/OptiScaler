@@ -917,22 +917,24 @@ void ImGuiCommon::RenderMenu()
                         }
                         ShowHelpMarker("Delay HUDless capture, high values might cause crash!");
 
-                        ImGui::SameLine(0.0f, 16.0f);
+                        auto immediate = Config::Instance()->FGImmediateCapture.value_or(false);
+                        if (ImGui::Checkbox("FG Immediate Capture", &immediate))
+                        {
+                            LOG_DEBUG("Enabled set FGImmediateCapture: {}", immediate);
+                            Config::Instance()->FGImmediateCapture = immediate;
+                        }
+                        ShowHelpMarker("Enables capturing of resources before shader execution.\nIncrease hudless capture chances but might cause capturing of unnecessary resources.");
+
                         auto hudExtended = Config::Instance()->FGHUDFixExtended.value_or(false);
-                        if (ImGui::Checkbox("Extended", &hudExtended))
+                        if (ImGui::Checkbox("FG Extended Capture", &hudExtended))
                         {
                             LOG_DEBUG("Enabled set FGHUDFixExtended: {}", hudExtended);
                             Config::Instance()->FGHUDFixExtended = hudExtended;
                         }
-                        ShowHelpMarker("Extended HUDless checks, might cause crash and slowdowns!");
+                        ShowHelpMarker("Extended format checks for possible hudless\nMight cause crash and slowdowns!");
 
                         if (Config::Instance()->AdvancedSettings.value_or(false))
                         {
-                            if (ImGui::Checkbox("FG Immediate Capture", &Config::Instance()->FGImmediateCapture))
-                                LOG_DEBUG("Enabled set FGImmediateCapture: {}", Config::Instance()->FGImmediateCapture);
-
-                            ShowHelpMarker("Immediately capture of resources, before shader executions.\nIncrease hudless capture chances but might cause capturing of\nunnecessary resources.");
-
                             if (ImGui::Checkbox("FG Use Threading For Heap Tracking", &Config::Instance()->UseThreadingForHeaps))
                                 LOG_DEBUG("Enabled set UseThreadingForHeaps: {}", Config::Instance()->UseThreadingForHeaps);
 

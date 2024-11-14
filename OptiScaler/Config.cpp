@@ -76,6 +76,9 @@ bool Config::Reload(std::filesystem::path iniPath)
             if (!FGHUDFixExtended.has_value())
                 FGHUDFixExtended = readBool("FrameGen", "HUDFixExtended");
 
+            if (!FGImmediateCapture.has_value())
+                FGImmediateCapture = readBool("FrameGen", "HUDFixImmadiate");
+
             if (!FGRectLeft.has_value())
                 FGRectLeft = readInt("FrameGen", "RectLeft");
 
@@ -704,6 +707,7 @@ bool Config::SaveIni()
         ini.SetValue("FrameGen", "HUDFix", GetBoolValue(Instance()->FGHUDFix).c_str());
         ini.SetValue("FrameGen", "HUDLimit", GetIntValue(Instance()->FGHUDLimit).c_str());
         ini.SetValue("FrameGen", "HUDFixExtended", GetBoolValue(Instance()->FGHUDFixExtended).c_str());
+        ini.SetValue("FrameGen", "HUDFixImmadiate", GetBoolValue(Instance()->FGImmediateCapture).c_str());
         ini.SetValue("FrameGen", "RectLeft", GetIntValue(Instance()->FGRectLeft).c_str());
         ini.SetValue("FrameGen", "RectTop", GetIntValue(Instance()->FGRectTop).c_str());
         ini.SetValue("FrameGen", "RectWidth", GetIntValue(Instance()->FGRectWidth).c_str());
