@@ -29,6 +29,8 @@
 // Uses std::thread when processing descriptor heap operations
 //#define USE_THREAD_FOR_COPY_DESCS
 
+#define CHECK_FOR_SL_PROXY_OBJECTS
+
 enum ResourceType
 {
     SRV,
@@ -223,7 +225,7 @@ static bool fgUpscaledFound = false;
 
 static WrappedIDXGISwapChain4* lastWrapped;
 static ID3D12CommandQueue* fgCommandQueueSL = nullptr;
-static ID3D12GraphicsCommandList* fgCommandListSL = nullptr;
+static ID3D12GraphicsCommandList* fgCommandListSL[FrameGen_Dx12::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
 static ID3D12CommandQueue* fgCopyCommandQueueSL = nullptr;
 static ID3D12GraphicsCommandList* fgCopyCommandListSL = nullptr;
 
@@ -303,6 +305,7 @@ static void FfxFgLogCallback(uint32_t type, const wchar_t* message)
 
 static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject)
 {
+#ifdef CHECK_FOR_SL_PROXY_OBJECTS
     if (streamlineRiid.Data1 == 0)
     {
         auto iidResult = IIDFromString(L"{ADEC44E2-61F0-45C3-AD9F-1B37379284FF}", &streamlineRiid);
@@ -319,6 +322,7 @@ static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnk
         (*ppRealObject)->Release();
         return true;
     }
+#endif
 
     return false;
 }
@@ -477,6 +481,17 @@ static bool IsHudFixActive()
     return true;
 }
 
+static bool IsFGCommandList(IUnknown* cmdList)
+{
+    for (size_t i = 0; i < FrameGen_Dx12::FG_BUFFER_SIZE; i++)
+    {
+        if (FrameGen_Dx12::fgCommandList[i] == cmdList)
+            return true;
+    }
+
+    return false;
+}
+
 static void GetHudless(ID3D12GraphicsCommandList* This)
 {
     auto fIndex = fgFrameIndex;
@@ -532,11 +547,11 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
             {
                 HRESULT result;
                 ffxReturnCode_t dispatchResult;
-                auto fIndex = fgFrameIndex;
+                auto fIndex = params->frameID % FrameGen_Dx12::FG_BUFFER_SIZE;
 
                 // check for status
                 if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
-                    FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCommandList == nullptr || FrameGen_Dx12::fgCommandQueue == nullptr)
+                    FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCommandList[fIndex] == nullptr || FrameGen_Dx12::fgCommandQueue == nullptr)
                 {
                     LOG_WARN("Cancel async dispatch");
                     fgDispatchCalled = false;
@@ -552,7 +567,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
 
                     auto allocator = FrameGen_Dx12::fgCommandAllocators[fIndex];
                     result = allocator->Reset();
-                    result = FrameGen_Dx12::fgCommandList->Reset(allocator, nullptr);
+                    result = FrameGen_Dx12::fgCommandList[fIndex]->Reset(allocator, nullptr);
 
                     params->frameID = fgLastFGFrame;
                     params->numGeneratedFrames = 0;
@@ -565,8 +580,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
                 dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
 
                 ID3D12CommandList* cl[1] = { nullptr };
-                result = FrameGen_Dx12::fgCommandList->Close();
-                cl[0] = FrameGen_Dx12::fgCommandList;
+                result = FrameGen_Dx12::fgCommandList[fIndex]->Close();
+                cl[0] = FrameGen_Dx12::fgCommandList[fIndex];
                 FrameGen_Dx12::gameCommandQueue->ExecuteCommandLists(1, cl);
 
                 LOG_DEBUG("D3D12_Dispatch result: {0}", (UINT)result);
@@ -596,7 +611,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
             dfgPrepare.header.type = FFX_API_DISPATCH_DESC_TYPE_FRAMEGENERATION_PREPARE;
             dfgPrepare.header.pNext = &backendDesc.header;
 
-            dfgPrepare.commandList = FrameGen_Dx12::fgCommandList; // This;
+            dfgPrepare.commandList = FrameGen_Dx12::fgCommandList[fIndex]; // This;
 
             dfgPrepare.frameID = frame;
             dfgPrepare.flags = m_FrameGenerationConfig.flags;
@@ -703,9 +718,9 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
             ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
 #endif
 
-            FrameGen_Dx12::fgFormatTransfer->SetBufferState(FrameGen_Dx12::fgCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            FrameGen_Dx12::fgFormatTransfer->Dispatch(g_pd3dDeviceParam, FrameGen_Dx12::fgCommandList, fgHudlessBuffer[fIndex], FrameGen_Dx12::fgFormatTransfer->Buffer());
-            FrameGen_Dx12::fgFormatTransfer->SetBufferState(FrameGen_Dx12::fgCommandList, D3D12_RESOURCE_STATE_COPY_DEST);
+            FrameGen_Dx12::fgFormatTransfer->SetBufferState(FrameGen_Dx12::fgCommandList[fIndex], D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            FrameGen_Dx12::fgFormatTransfer->Dispatch(g_pd3dDeviceParam, FrameGen_Dx12::fgCommandList[fIndex], fgHudlessBuffer[fIndex], FrameGen_Dx12::fgFormatTransfer->Buffer());
+            FrameGen_Dx12::fgFormatTransfer->SetBufferState(FrameGen_Dx12::fgCommandList[fIndex], D3D12_RESOURCE_STATE_COPY_DEST);
 
             LOG_TRACE("Using fgFormatTransfer->Buffer()");
             fgHudless[fIndex] = FrameGen_Dx12::fgFormatTransfer->Buffer();
@@ -1040,7 +1055,7 @@ static void hkCopyResource(ID3D12GraphicsCommandList* This, ID3D12Resource* Dest
 
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList[fIndex] == This)
         return;
 
     if (!IsHudFixActive())
@@ -1068,7 +1083,7 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
 
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList[fIndex] == This)
         return;
 
     if (!IsHudFixActive())
@@ -1329,9 +1344,9 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
 
     LOG_DEBUG_ONLY("");
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || IsFGCommandList(This))
     {
-        LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == ImGuiOverlayDx::MenuCommandList(), FrameGen_Dx12::fgCommandList == This);
+        LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == ImGuiOverlayDx::MenuCommandList(), IsFGCommandList(This));
         o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
     }
@@ -1403,9 +1418,9 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
 
     LOG_DEBUG_ONLY("NumRenderTargetDescriptors: {}", NumRenderTargetDescriptors);
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || IsFGCommandList(This))
     {
-        LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == ImGuiOverlayDx::MenuCommandList(), FrameGen_Dx12::fgCommandList == This);
+        LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == ImGuiOverlayDx::MenuCommandList(), IsFGCommandList(This));
         o_OMSetRenderTargets(This, NumRenderTargetDescriptors, pRenderTargetDescriptors, RTsSingleHandleToDescriptorRange, pDepthStencilDescriptor);
         return;
     }
@@ -1493,9 +1508,9 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
 
     LOG_DEBUG_ONLY("");
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || IsFGCommandList(This))
     {
-        LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == ImGuiOverlayDx::MenuCommandList(), FrameGen_Dx12::fgCommandList == This);
+        LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == ImGuiOverlayDx::MenuCommandList(), IsFGCommandList(This));
         o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
     }
@@ -1564,7 +1579,7 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
 
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || IsFGCommandList(This))
         return;
 
     LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
@@ -1612,7 +1627,7 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
 
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || IsFGCommandList(This))
         return;
 
     LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
@@ -1662,7 +1677,7 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 
     auto fIndex = fgFrameIndex;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList == This)
+    if (This == ImGuiOverlayDx::MenuCommandList() || IsFGCommandList(This))
         return;
 
     LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
@@ -1776,7 +1791,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
 static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd)
 {
-    LOG_DEBUG("");
+    LOG_DEBUG("{}", frameCounter);
 
     HRESULT presentResult;
     auto fIndex = fgFrameIndex;
@@ -1821,17 +1836,9 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         if (!_dx12Device)
             LOG_DEBUG("D3D12CommandQueue captured");
 
-        if (CheckForRealObject(__FUNCTION__, cq, (IUnknown**)FrameGen_Dx12::fgFSRCommandQueue))
-        {
-            FrameGen_Dx12::fgFSRCommandQueue->SetName(L"fgFSRSwapChainQueue");
-            HooksDx::GameCommandQueue = FrameGen_Dx12::fgFSRCommandQueue;
-        }
-        else
-        {
-            FrameGen_Dx12::fgFSRCommandQueue = cq;
-            FrameGen_Dx12::fgFSRCommandQueue->SetName(L"fgFSRSwapChainQueue");
-            HooksDx::GameCommandQueue = cq;
-        }
+        FrameGen_Dx12::fgFSRCommandQueue = (ID3D12CommandQueue*)pDevice;
+        FrameGen_Dx12::fgFSRCommandQueue->SetName(L"fgFSRSwapChainQueue");
+        HooksDx::GameCommandQueue = FrameGen_Dx12::fgFSRCommandQueue;
 
         if (HooksDx::GameCommandQueue->GetDevice(IID_PPV_ARGS(&device12)) == S_OK)
         {
@@ -1840,37 +1847,6 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
             _dx12Device = true;
         }
-    }
-
-    // DXVK check, it's here because of upscaler time calculations
-    if (Config::Instance()->IsRunningOnDXVK)
-    {
-        if (cq != nullptr)
-            cq->Release();
-
-        if (device != nullptr)
-            device->Release();
-
-        if (device12 != nullptr)
-            device12->Release();
-
-        if (pPresentParameters == nullptr)
-            presentResult = pSwapChain->Present(SyncInterval, Flags);
-        else
-            presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
-
-        FrameGen_Dx12::fgSkipHudlessChecks = false;
-
-        if (Config::Instance()->CurrentFeature != nullptr)
-            fgPresentedFrame = Config::Instance()->CurrentFeature->FrameCount();
-
-        if (fgStopAfterNextPresent)
-        {
-            FrameGen_Dx12::StopAndDestroyFGContext(false, false);
-            fgStopAfterNextPresent = false;
-        }
-
-        return presentResult;
     }
 
     // Upscaler GPU time computation
@@ -1931,9 +1907,41 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         HooksDx::currentFrameIndex = (HooksDx::currentFrameIndex + 1) % HooksDx::QUERY_BUFFER_COUNT;
     }
 
+    // DXVK check, it's here because of upscaler time calculations
+    if (Config::Instance()->IsRunningOnDXVK)
+    {
+        if (cq != nullptr)
+            cq->Release();
+
+        if (device != nullptr)
+            device->Release();
+
+        if (device12 != nullptr)
+            device12->Release();
+
+        if (pPresentParameters == nullptr)
+            presentResult = pSwapChain->Present(SyncInterval, Flags);
+        else
+            presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
+
+        FrameGen_Dx12::fgSkipHudlessChecks = false;
+
+        if (Config::Instance()->CurrentFeature != nullptr)
+            fgPresentedFrame = Config::Instance()->CurrentFeature->FrameCount();
+
+        if (fgStopAfterNextPresent)
+        {
+            FrameGen_Dx12::StopAndDestroyFGContext(false, false);
+            fgStopAfterNextPresent = false;
+        }
+
+        return presentResult;
+    }
+
     ImGuiOverlayDx::Present(pSwapChain, SyncInterval, Flags, pPresentParameters, pDevice, hWnd);
 
-    if (Config::Instance()->FGUseFGSwapChain.value_or(true)) {
+    if (Config::Instance()->FGUseFGSwapChain.value_or(true)) 
+    {
         fakenvapi::reportFGPresent(pSwapChain, FrameGen_Dx12::fgIsActive, frameCounter % 2);
     }
 
@@ -1965,6 +1973,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
     if (device12 != nullptr)
         device12->Release();
+
+    LOG_DEBUG("{}, Present result: {:X}", frameCounter, (UINT)presentResult);
 
     return presentResult;
 }
@@ -2257,8 +2267,13 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     if (result == S_OK)
     {
         // check for SL proxy
-        IDXGISwapChain* real = nullptr;
-        CheckForRealObject(__FUNCTION__, *ppSwapChain, (IUnknown**)&real);
+        IDXGISwapChain* realSC = nullptr;
+        if (!CheckForRealObject(__FUNCTION__, *ppSwapChain, (IUnknown**)&realSC))
+            realSC = *ppSwapChain;
+
+        IUnknown* readDevice = nullptr;
+        if (!CheckForRealObject(__FUNCTION__, pDevice, (IUnknown**)&readDevice))
+            readDevice = pDevice;
 
         if (Util::GetProcessWindow() == pDesc->OutputWindow)
         {
@@ -2267,7 +2282,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         }
 
         LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDesc->OutputWindow);
-        lastWrapped = new WrappedIDXGISwapChain4(real == nullptr ? *ppSwapChain : real, pDevice, pDesc->OutputWindow, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
+        lastWrapped = new WrappedIDXGISwapChain4(realSC, readDevice, pDesc->OutputWindow, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
         *ppSwapChain = lastWrapped;
         LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
 
@@ -2527,8 +2542,13 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     if (result == S_OK)
     {
         // check for SL proxy
-        IDXGISwapChain1* real = nullptr;
-        CheckForRealObject(__FUNCTION__, *ppSwapChain, (IUnknown**)&real);
+        IDXGISwapChain1* realSC = nullptr;
+        if (!CheckForRealObject(__FUNCTION__, *ppSwapChain, (IUnknown**)&realSC))
+            realSC = *ppSwapChain;
+
+        IUnknown* readDevice = nullptr;
+        if (!CheckForRealObject(__FUNCTION__, pDevice, (IUnknown**)&readDevice))
+            readDevice = pDevice;
 
         if (Util::GetProcessWindow() == hWnd)
         {
@@ -2537,7 +2557,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         }
 
         LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)hWnd);
-        lastWrapped = new WrappedIDXGISwapChain4(real == nullptr ? *ppSwapChain : real, pDevice, hWnd, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
+        lastWrapped = new WrappedIDXGISwapChain4(realSC, readDevice, hWnd, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
         *ppSwapChain = lastWrapped;
         LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
 
@@ -2864,15 +2884,15 @@ static void HookCommandList(ID3D12Device* InDevice)
                     DetourAttach(&(PVOID&)o_DiscardResource, hkDiscardResource);
 #endif
                 DetourTransactionCommit();
-        }
+            }
 
             commandList->Close();
             commandList->Release();
-    }
+        }
 
         commandAllocator->Reset();
         commandAllocator->Release();
-}
+    }
 }
 
 static void HookToDevice(ID3D12Device* InDevice)
@@ -3145,7 +3165,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         LOG_WARN("GPU Based Validation active!");
         debugController->SetEnableGPUBasedValidation(TRUE);
 #endif
-    }
+}
 #endif
 
     Config::Instance()->dxgiSkipSpoofing = true;
@@ -3182,7 +3202,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
             {
                 LOG_DEBUG("infoQueue1 accuired, registering MessageCallback");
                 res = infoQueue1->RegisterMessageCallback(D3D12DebugCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, NULL, NULL);
-            }
+    }
 }
 #endif
         }
@@ -3525,18 +3545,19 @@ void FrameGen_Dx12::ReleaseFGObjects()
             FrameGen_Dx12::fgCommandAllocators[i]->Release();
             FrameGen_Dx12::fgCommandAllocators[i] = nullptr;
         }
-    }
 
-    if (fgCommandListSL != nullptr)
-    {
-        fgCommandListSL->Release();
-        fgCommandListSL = nullptr;
-        FrameGen_Dx12::fgCommandList = nullptr;
-    }
-    else if (FrameGen_Dx12::fgCommandList != nullptr)
-    {
-        FrameGen_Dx12::fgCommandList->Release();
-        FrameGen_Dx12::fgCommandList = nullptr;
+        if (fgCommandListSL[i] != nullptr)
+        {
+            fgCommandListSL[i]->Release();
+            fgCommandListSL[i] = nullptr;
+            FrameGen_Dx12::fgCommandList[i] = nullptr;
+        }
+        else if (FrameGen_Dx12::fgCommandList[i] != nullptr)
+        {
+            FrameGen_Dx12::fgCommandList[i]->Release();
+            FrameGen_Dx12::fgCommandList[i] = nullptr;
+        }
+
     }
 
     if (fgCommandQueueSL != nullptr)
@@ -3599,6 +3620,8 @@ void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
         IID riid;
         auto iidResult = IIDFromString(L"{ADEC44E2-61F0-45C3-AD9F-1B37379284FF}", &riid);
 
+        ID3D12GraphicsCommandList* realCL = nullptr;
+
         for (size_t i = 0; i < 4; i++)
         {
             result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&FrameGen_Dx12::fgCommandAllocators[i]));
@@ -3608,33 +3631,33 @@ void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
                 break;
             }
             FrameGen_Dx12::fgCommandAllocators[i]->SetName(L"fgCommandAllocator");
+
+
+            result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, FrameGen_Dx12::fgCommandAllocators[i], NULL, IID_PPV_ARGS(&FrameGen_Dx12::fgCommandList[i]));
+            if (result != S_OK)
+            {
+                LOG_ERROR("CreateCommandList: {0:X}", (unsigned long)result);
+                break;
+            }
+
+            // check for SL proxy
+            if (CheckForRealObject(__FUNCTION__, FrameGen_Dx12::fgCommandList[i], (IUnknown**)&realCL))
+            {
+                fgCommandListSL[i] = FrameGen_Dx12::fgCommandList[i];
+                FrameGen_Dx12::fgCommandList[i] = realCL;
+            }
+
+            FrameGen_Dx12::fgCommandList[i]->SetName(L"fgCommandList");
+
+            result = FrameGen_Dx12::fgCommandList[i]->Close();
+            if (result != S_OK)
+            {
+                LOG_ERROR("HooksDx::fgCommandList->Close: {0:X}", (unsigned long)result);
+                break;
+            }
         }
 
         result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&FrameGen_Dx12::fgCopyCommandAllocator));
-
-        result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, FrameGen_Dx12::fgCommandAllocators[0], NULL, IID_PPV_ARGS(&FrameGen_Dx12::fgCommandList));
-        if (result != S_OK)
-        {
-            LOG_ERROR("CreateCommandList: {0:X}", (unsigned long)result);
-            break;
-        }
-
-        // check for SL proxy
-        ID3D12GraphicsCommandList* realCL = nullptr;
-        if (CheckForRealObject(__FUNCTION__, FrameGen_Dx12::fgCommandList, (IUnknown**)&realCL))
-        {
-            fgCommandListSL = FrameGen_Dx12::fgCommandList;
-            FrameGen_Dx12::fgCommandList = realCL;
-        }
-
-        FrameGen_Dx12::fgCommandList->SetName(L"fgCommandList");
-
-        result = FrameGen_Dx12::fgCommandList->Close();
-        if (result != S_OK)
-        {
-            LOG_ERROR("HooksDx::fgCommandList->Close: {0:X}", (unsigned long)result);
-            break;
-        }
 
         result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, FrameGen_Dx12::fgCopyCommandAllocator, NULL, IID_PPV_ARGS(&FrameGen_Dx12::fgCopyCommandList));
         if (result != S_OK)

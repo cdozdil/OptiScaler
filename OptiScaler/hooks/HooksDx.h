@@ -67,7 +67,7 @@ namespace FrameGen_Dx12
     inline float mvScaleY = 0.0;
     inline const int FG_BUFFER_SIZE = 4;
     inline ID3D12Resource* paramVelocity[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
-    inline ID3D12Resource* paramDepth[FG_BUFFER_SIZE] = { nullptr, nullptr,nullptr, nullptr };
+    inline ID3D12Resource* paramDepth[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
     inline INT64 fgHUDlessCaptureCounter[FG_BUFFER_SIZE] = { 0,0,0,0 };
     inline bool upscaleRan = false;
     inline bool fgSkipHudlessChecks = false;
@@ -76,7 +76,7 @@ namespace FrameGen_Dx12
     inline ID3D12CommandQueue* gameCommandQueue = nullptr;
 
     inline ID3D12CommandQueue* fgCommandQueue = nullptr;
-    inline ID3D12GraphicsCommandList* fgCommandList = nullptr;
+    inline ID3D12GraphicsCommandList* fgCommandList[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
     inline ID3D12CommandAllocator* fgCommandAllocators[FG_BUFFER_SIZE] = { };
 
     inline ID3D12CommandQueue* fgCopyCommandQueue = nullptr;
