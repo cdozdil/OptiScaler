@@ -43,6 +43,30 @@ static bool _showRenderImGuiDebugOnce = true;
 static std::mutex _dx11CleanMutex;
 static std::mutex _dx12CleanMutex;
 
+static IID streamlineRiid{};
+
+static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject)
+{
+    if (streamlineRiid.Data1 == 0)
+    {
+        auto iidResult = IIDFromString(L"{ADEC44E2-61F0-45C3-AD9F-1B37379284FF}", &streamlineRiid);
+
+        if (iidResult != S_OK)
+            return false;
+    }
+
+    auto qResult = pObject->QueryInterface(streamlineRiid, (void**)ppRealObject);
+
+    if (qResult == S_OK && *ppRealObject != nullptr)
+    {
+        LOG_INFO("{} Streamline proxy found!", functionName);
+        (*ppRealObject)->Release();
+        return true;
+    }
+
+    return false;
+}
+
 static int GetCorrectDXGIFormat(int eCurrentFormat)
 {
     switch (eCurrentFormat)
@@ -521,9 +545,10 @@ void ImGuiOverlayDx::Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT
         if (!_dx12Device)
             LOG_DEBUG("D3D12CommandQueue captured");
 
-        currentSCCommandQueue = pDevice;
+        if (!CheckForRealObject(__FUNCTION__, pDevice, &currentSCCommandQueue))
+            currentSCCommandQueue = pDevice;
 
-        if (cq->GetDevice(IID_PPV_ARGS(&device12)) == S_OK)
+        if (((ID3D12CommandQueue*)currentSCCommandQueue)->GetDevice(IID_PPV_ARGS(&device12)) == S_OK)
         {
             if (!_dx12Device)
                 LOG_DEBUG("D3D12Device captured");

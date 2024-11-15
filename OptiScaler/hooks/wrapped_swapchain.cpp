@@ -143,7 +143,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     LOG_DEBUG("BufferCount: {0}, Width: {1}, Height: {2}, NewFormat: {3}, SwapChainFlags: {4:X}", BufferCount, Width, Height, (UINT)NewFormat, SwapChainFlags);
 
     result = m_pReal->ResizeBuffers(BufferCount, Width, Height, NewFormat, SwapChainFlags);
-    if (result == S_OK && Util::GetProcessWindow() == Handle)
+    if (result == S_OK && Config::Instance()->CurrentFeature == nullptr)
     {
         Config::Instance()->ScreenWidth = Width;
         Config::Instance()->ScreenHeight = Height;
@@ -259,54 +259,55 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
     LOG_DEBUG("BufferCount: {0}, Width: {1}, Height: {2}, NewFormat: {3}, SwapChainFlags: {4:X}, pCreationNodeMask: {5}", BufferCount, Width, Height, (UINT)Format, SwapChainFlags, *pCreationNodeMask);
 
     result = m_pReal3->ResizeBuffers1(BufferCount, Width, Height, Format, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
-    if (result == S_OK && Util::GetProcessWindow() == Handle)
+    if (result == S_OK && Config::Instance()->CurrentFeature == nullptr)
     {
         Config::Instance()->ScreenWidth = Width;
         Config::Instance()->ScreenHeight = Height;
-        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    }
 
-        // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
-        // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
-        if (Config::Instance()->forceHdr.value_or(false))
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+    // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
+    // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
+    if (Config::Instance()->forceHdr.value_or(false))
+    {
+        LOG_INFO("Force HDR on");
+
+        do
         {
-            LOG_INFO("Force HDR on");
+            Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+            DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
 
-            do
+            if (Config::Instance()->useHDR10.value_or(false))
             {
-                Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-                DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
+                Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+                hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+            }
 
-                if (Config::Instance()->useHDR10.value_or(false))
-                {
-                    Format = DXGI_FORMAT_R10G10B10A2_UNORM;
-                    hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
-                }
+            UINT css = 0;
 
-                UINT css = 0;
+            auto result = m_pReal3->CheckColorSpaceSupport(hdrCS, &css);
 
-                auto result = m_pReal3->CheckColorSpaceSupport(hdrCS, &css);
+            if (result != S_OK)
+            {
+                LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
+                break;
+            }
+
+            if (DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT & css)
+            {
+                result = m_pReal3->SetColorSpace1(hdrCS);
 
                 if (result != S_OK)
                 {
-                    LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
+                    LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
                     break;
                 }
+            }
 
-                if (DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT & css)
-                {
-                    result = m_pReal3->SetColorSpace1(hdrCS);
+            LOG_INFO("HDR format and color space are set");
 
-                    if (result != S_OK)
-                    {
-                        LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
-                        break;
-                    }
-                }
-
-                LOG_INFO("HDR format and color space are set");
-
-            } while (false);
-        }
+        } while (false);
     }
 
     Config::Instance()->scBuffers.clear();

@@ -52,6 +52,7 @@ typedef struct ResourceInfo
     UINT height = 0;
     DXGI_FORMAT format;
     D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON;
+    D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
     ResourceType type = SRV;
 } resource_info;
 
@@ -221,6 +222,12 @@ static UINT64 fgLastFGFrame = 0;
 static bool fgUpscaledFound = false;
 
 static WrappedIDXGISwapChain4* lastWrapped;
+static ID3D12CommandQueue* fgCommandQueueSL = nullptr;
+static ID3D12GraphicsCommandList* fgCommandListSL = nullptr;
+static ID3D12CommandQueue* fgCopyCommandQueueSL = nullptr;
+static ID3D12GraphicsCommandList* fgCopyCommandListSL = nullptr;
+
+static IID streamlineRiid{};
 
 #pragma endregion
 
@@ -236,7 +243,6 @@ typedef HRESULT(*PFN_EnumAdapters2)(IDXGIFactory* This, UINT Adapter, IUnknown**
 
 typedef HRESULT(*PFN_CreateSwapChain)(IDXGIFactory*, IUnknown*, DXGI_SWAP_CHAIN_DESC*, IDXGISwapChain**);
 typedef HRESULT(*PFN_CreateSwapChainForHwnd)(IDXGIFactory*, IUnknown*, HWND, const DXGI_SWAP_CHAIN_DESC1*, const DXGI_SWAP_CHAIN_FULLSCREEN_DESC*, IDXGIOutput*, IDXGISwapChain1**);
-
 
 static PFN_CreateDXGIFactory o_CreateDXGIFactory = nullptr;
 static PFN_CreateDXGIFactory1 o_CreateDXGIFactory1 = nullptr;
@@ -293,6 +299,28 @@ static void FfxFgLogCallback(uint32_t type, const wchar_t* message)
 {
     std::wstring string(message);
     LOG_DEBUG("    FG Log: {0}", wstring_to_string(string));
+}
+
+static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject)
+{
+    if (streamlineRiid.Data1 == 0)
+    {
+        auto iidResult = IIDFromString(L"{ADEC44E2-61F0-45C3-AD9F-1B37379284FF}", &streamlineRiid);
+
+        if (iidResult != S_OK)
+            return false;
+    }
+
+    auto qResult = pObject->QueryInterface(streamlineRiid, (void**)ppRealObject);
+
+    if (qResult == S_OK && *ppRealObject != nullptr)
+    {
+        LOG_INFO("{} Streamline proxy found!", functionName);
+        (*ppRealObject)->Release();
+        return true;
+    }
+
+    return false;
 }
 
 #pragma region Resource methods
@@ -429,6 +457,7 @@ static void FillResourceInfo(ID3D12Resource* resource, ResourceInfo* info)
     info->width = desc.Width;
     info->height = desc.Height;
     info->format = desc.Format;
+    info->flags = desc.Flags;
 }
 
 static bool IsHudFixActive()
@@ -756,7 +785,18 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
         return false;
     }
 
-    // all metch
+    if ((resource->flags & D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE) ||
+        (resource->flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) ||
+        (resource->flags & D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY) ||
+        (resource->flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE) ||
+        (resource->flags & D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY) ||
+        (resource->flags & D3D12_RESOURCE_FLAG_VIDEO_ENCODE_REFERENCE_ONLY))
+    {
+        LOG_DEBUG("Skip by flag: {:X}", (UINT)resource->flags);
+        return false;
+    }
+
+    // all match
     if (resource->format == fgScDesc.BufferDesc.Format)
     {
         if (callerName.length() > 0)
@@ -1781,11 +1821,19 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         if (!_dx12Device)
             LOG_DEBUG("D3D12CommandQueue captured");
 
-        FrameGen_Dx12::fgFSRCommandQueue = (ID3D12CommandQueue*)pDevice;
-        FrameGen_Dx12::fgFSRCommandQueue->SetName(L"fgFSRSwapChainQueue");
-        HooksDx::GameCommandQueue = (ID3D12CommandQueue*)pDevice;
+        if (CheckForRealObject(__FUNCTION__, cq, (IUnknown**)FrameGen_Dx12::fgFSRCommandQueue))
+        {
+            FrameGen_Dx12::fgFSRCommandQueue->SetName(L"fgFSRSwapChainQueue");
+            HooksDx::GameCommandQueue = FrameGen_Dx12::fgFSRCommandQueue;
+        }
+        else
+        {
+            FrameGen_Dx12::fgFSRCommandQueue = cq;
+            FrameGen_Dx12::fgFSRCommandQueue->SetName(L"fgFSRSwapChainQueue");
+            HooksDx::GameCommandQueue = cq;
+        }
 
-        if (cq->GetDevice(IID_PPV_ARGS(&device12)) == S_OK)
+        if (HooksDx::GameCommandQueue->GetDevice(IID_PPV_ARGS(&device12)) == S_OK)
         {
             if (!_dx12Device)
                 LOG_DEBUG("D3D12Device captured");
@@ -2089,12 +2137,13 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         cq->Release();
 
         SwapChainInfo scInfo{};
-        scInfo.gameCommandQueue = (ID3D12CommandQueue*)pDevice;
+        if (!CheckForRealObject(__FUNCTION__, pDevice, (IUnknown**)&scInfo.gameCommandQueue))
+            scInfo.gameCommandQueue = (ID3D12CommandQueue*)pDevice;
 
         ffxCreateContextDescFrameGenerationSwapChainNewDX12 createSwapChainDesc{};
         createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_NEW_DX12;
         createSwapChainDesc.dxgiFactory = pFactory;
-        createSwapChainDesc.gameQueue = (ID3D12CommandQueue*)pDevice;
+        createSwapChainDesc.gameQueue = scInfo.gameCommandQueue;
         createSwapChainDesc.desc = pDesc;
         createSwapChainDesc.swapchain = (IDXGISwapChain4**)ppSwapChain;
 
@@ -2208,24 +2257,8 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     if (result == S_OK)
     {
         // check for SL proxy
-        IID riid;
         IDXGISwapChain* real = nullptr;
-        auto iidResult = IIDFromString(L"{ADEC44E2-61F0-45C3-AD9F-1B37379284FF}", &riid);
-
-        if (iidResult == S_OK)
-        {
-            auto qResult = (*ppSwapChain)->QueryInterface(riid, (void**)&real);
-
-            if (qResult == S_OK && real != nullptr)
-            {
-                LOG_INFO("Streamline proxy found");
-                real->Release();
-            }
-            else
-            {
-                LOG_DEBUG("Streamline proxy not found");
-            }
-        }
+        CheckForRealObject(__FUNCTION__, *ppSwapChain, (IUnknown**)&real);
 
         if (Util::GetProcessWindow() == pDesc->OutputWindow)
         {
@@ -2371,7 +2404,8 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         cq->Release();
 
         SwapChainInfo scInfo{};
-        scInfo.gameCommandQueue = (ID3D12CommandQueue*)pDevice;
+        if (!CheckForRealObject(__FUNCTION__, pDevice, (IUnknown**)&scInfo.gameCommandQueue))
+            scInfo.gameCommandQueue = (ID3D12CommandQueue*)pDevice;
 
         ffxCreateContextDescFrameGenerationSwapChainForHwndDX12 createSwapChainDesc{};
         createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_FOR_HWND_DX12;
@@ -2379,7 +2413,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         createSwapChainDesc.fullscreenDesc = pFullscreenDesc;
         createSwapChainDesc.hwnd = hWnd;
         createSwapChainDesc.dxgiFactory = This;
-        createSwapChainDesc.gameQueue = (ID3D12CommandQueue*)pDevice;
+        createSwapChainDesc.gameQueue = scInfo.gameCommandQueue;
         createSwapChainDesc.desc = pDesc;
         createSwapChainDesc.swapchain = (IDXGISwapChain4**)ppSwapChain;
 
@@ -2493,25 +2527,8 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     if (result == S_OK)
     {
         // check for SL proxy
-        IID riid;
         IDXGISwapChain1* real = nullptr;
-        auto iidResult = IIDFromString(L"{ADEC44E2-61F0-45C3-AD9F-1B37379284FF}", &riid);
-
-        if (iidResult == S_OK)
-        {
-            IUnknown* real = nullptr;
-            auto qResult = (*ppSwapChain)->QueryInterface(riid, (void**)&real);
-
-            if (qResult == S_OK && real != nullptr)
-            {
-                LOG_INFO("Streamline proxy found");
-                real->Release();
-            }
-            else
-            {
-                LOG_DEBUG("Streamline proxy not found");
-            }
-        }
+        CheckForRealObject(__FUNCTION__, *ppSwapChain, (IUnknown**)&real);
 
         if (Util::GetProcessWindow() == hWnd)
         {
@@ -2594,12 +2611,18 @@ static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
     auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
 #endif
 
-    if (result == S_OK)
-        AttachToFactory(*ppFactory);
+    if (result != S_OK)
+        return result;
 
-    if (result == S_OK && oCreateSwapChain == nullptr)
+    IDXGIFactory* real = nullptr;
+    if (!CheckForRealObject(__FUNCTION__, *ppFactory, (IUnknown**)&real))
+        real = *ppFactory;
+
+    AttachToFactory(real);
+
+    if (oCreateSwapChain == nullptr)
     {
-        void** pFactoryVTable = *reinterpret_cast<void***>(*ppFactory);
+        void** pFactoryVTable = *reinterpret_cast<void***>(real);
 
         oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
 
@@ -2627,43 +2650,43 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
     auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
 #endif
 
-    if (result == S_OK)
-        AttachToFactory(*ppFactory);
+    if (result != S_OK)
+        return result;
 
-    if (result == S_OK && oCreateSwapChainForHwnd == nullptr)
+    IDXGIFactory1* real = nullptr;
+    if (!CheckForRealObject(__FUNCTION__, *ppFactory, (IUnknown**)&real))
+        real = *ppFactory;
+
+    AttachToFactory(real);
+
+    if (oCreateSwapChainForHwnd == nullptr)
     {
         IDXGIFactory2* factory2 = nullptr;
 
-        if ((*ppFactory)->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
+        void** pFactoryVTable = *reinterpret_cast<void***>(real);
+
+        bool skip = false;
+
+        if (oCreateSwapChain == nullptr)
+            oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
+        else
+            skip = true;
+
+        oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
+
+        if (oCreateSwapChainForHwnd != nullptr)
         {
-            void** pFactoryVTable = *reinterpret_cast<void***>(factory2);
+            LOG_INFO("Hooking native DXGIFactory");
 
-            bool skip = false;
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
 
-            if (oCreateSwapChain == nullptr)
-                oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
-            else
-                skip = true;
+            if (!skip)
+                DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
 
-            oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
+            DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
 
-            if (oCreateSwapChainForHwnd != nullptr)
-            {
-                LOG_INFO("Hooking native DXGIFactory");
-
-                DetourTransactionBegin();
-                DetourUpdateThread(GetCurrentThread());
-
-                if (!skip)
-                    DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
-
-                DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
-
-                DetourTransactionCommit();
-            }
-
-            factory2->Release();
-            factory2 = nullptr;
+            DetourTransactionCommit();
         }
     }
 
@@ -2678,43 +2701,41 @@ static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppF
     auto result = o_CreateDXGIFactory2(Flags | DXGI_CREATE_FACTORY_DEBUG, riid, ppFactory);
 #endif
 
-    if (result == S_OK)
-        AttachToFactory(*ppFactory);
+    if (result != S_OK)
+        return result;
 
-    if (result == S_OK && oCreateSwapChainForHwnd == nullptr)
+    IDXGIFactory2* real = nullptr;
+    if (!CheckForRealObject(__FUNCTION__, *ppFactory, (IUnknown**)&real))
+        real = *ppFactory;
+
+    AttachToFactory(real);
+
+    if (oCreateSwapChainForHwnd == nullptr)
     {
-        IDXGIFactory2* factory2 = nullptr;
+        void** pFactoryVTable = *reinterpret_cast<void***>(real);
 
-        if ((*ppFactory)->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
+        bool skip = false;
+
+        if (oCreateSwapChain == nullptr)
+            oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
+        else
+            skip = true;
+
+        oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
+
+        if (oCreateSwapChainForHwnd != nullptr)
         {
-            void** pFactoryVTable = *reinterpret_cast<void***>(factory2);
+            LOG_INFO("Hooking native DXGIFactory");
 
-            bool skip = false;
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
 
-            if (oCreateSwapChain == nullptr)
-                oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
-            else
-                skip = true;
+            if (!skip)
+                DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
 
-            oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
+            DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
 
-            if (oCreateSwapChainForHwnd != nullptr)
-            {
-                LOG_INFO("Hooking native DXGIFactory");
-
-                DetourTransactionBegin();
-                DetourUpdateThread(GetCurrentThread());
-
-                if (!skip)
-                    DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
-
-                DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
-
-                DetourTransactionCommit();
-            }
-
-            factory2->Release();
-            factory2 = nullptr;
+            DetourTransactionCommit();
         }
     }
 
@@ -2780,6 +2801,10 @@ static void HookCommandList(ID3D12Device* InDevice)
             // Get the vtable pointer
             PVOID* pVTable = *(PVOID**)commandList;
 
+            ID3D12GraphicsCommandList* realCL = nullptr;
+            if (CheckForRealObject(__FUNCTION__, commandList, (IUnknown**)&realCL))
+                pVTable = *(PVOID**)realCL;
+
             // hudless shader
             o_OMSetRenderTargets = (PFN_OMSetRenderTargets)pVTable[46];
             o_SetGraphicsRootDescriptorTable = (PFN_SetGraphicsRootDescriptorTable)pVTable[32];
@@ -2839,15 +2864,15 @@ static void HookCommandList(ID3D12Device* InDevice)
                     DetourAttach(&(PVOID&)o_DiscardResource, hkDiscardResource);
 #endif
                 DetourTransactionCommit();
-            }
+        }
 
             commandList->Close();
             commandList->Release();
-        }
+    }
 
         commandAllocator->Reset();
         commandAllocator->Release();
-    }
+}
 }
 
 static void HookToDevice(ID3D12Device* InDevice)
@@ -2859,6 +2884,10 @@ static void HookToDevice(ID3D12Device* InDevice)
 
     // Get the vtable pointer
     PVOID* pVTable = *(PVOID**)InDevice;
+
+    ID3D12Device* realDevice = nullptr;
+    if (CheckForRealObject(__FUNCTION__, InDevice, (IUnknown**)&realDevice))
+        PVOID* pVTable = *(PVOID**)realDevice;
 
     // hudless
     o_CreateSampler = (PFN_CreateSampler)pVTable[22];
@@ -2978,7 +3007,7 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
 
     static const D3D_FEATURE_LEVEL levels[] = {
      D3D_FEATURE_LEVEL_11_1,
-};
+    };
 
     D3D_FEATURE_LEVEL maxLevel = D3D_FEATURE_LEVEL_1_0_CORE;
 
@@ -3022,7 +3051,7 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
 
     static const D3D_FEATURE_LEVEL levels[] = {
     D3D_FEATURE_LEVEL_11_1,
-};
+    };
 
     D3D_FEATURE_LEVEL maxLevel = D3D_FEATURE_LEVEL_1_0_CORE;
 
@@ -3154,9 +3183,9 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
                 LOG_DEBUG("infoQueue1 accuired, registering MessageCallback");
                 res = infoQueue1->RegisterMessageCallback(D3D12DebugCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, NULL, NULL);
             }
-        }
+}
 #endif
-    }
+        }
 
     LOG_FUNC_RESULT(result);
 
@@ -3498,13 +3527,25 @@ void FrameGen_Dx12::ReleaseFGObjects()
         }
     }
 
-    if (FrameGen_Dx12::fgCommandList != nullptr)
+    if (fgCommandListSL != nullptr)
+    {
+        fgCommandListSL->Release();
+        fgCommandListSL = nullptr;
+        FrameGen_Dx12::fgCommandList = nullptr;
+    }
+    else if (FrameGen_Dx12::fgCommandList != nullptr)
     {
         FrameGen_Dx12::fgCommandList->Release();
         FrameGen_Dx12::fgCommandList = nullptr;
     }
 
-    if (FrameGen_Dx12::fgCommandQueue != nullptr)
+    if (fgCommandQueueSL != nullptr)
+    {
+        fgCommandQueueSL->Release();
+        fgCommandQueueSL = nullptr;
+        FrameGen_Dx12::fgCommandQueue = nullptr;
+    }
+    else if (FrameGen_Dx12::fgCommandQueue != nullptr)
     {
         FrameGen_Dx12::fgCommandQueue->Release();
         FrameGen_Dx12::fgCommandQueue = nullptr;
@@ -3516,13 +3557,25 @@ void FrameGen_Dx12::ReleaseFGObjects()
         FrameGen_Dx12::fgCopyCommandAllocator = nullptr;
     }
 
-    if (FrameGen_Dx12::fgCopyCommandList != nullptr)
+    if (fgCopyCommandListSL != nullptr)
+    {
+        fgCopyCommandListSL->Release();
+        fgCopyCommandListSL = nullptr;
+        FrameGen_Dx12::fgCopyCommandList = nullptr;
+    }
+    else if (FrameGen_Dx12::fgCopyCommandList != nullptr)
     {
         FrameGen_Dx12::fgCopyCommandList->Release();
         FrameGen_Dx12::fgCopyCommandList = nullptr;
     }
 
-    if (FrameGen_Dx12::fgCopyCommandQueue != nullptr)
+    if (fgCopyCommandQueueSL != nullptr)
+    {
+        fgCopyCommandQueueSL->Release();
+        fgCopyCommandQueueSL = nullptr;
+        FrameGen_Dx12::fgCopyCommandQueue = nullptr;
+    }
+    else if (FrameGen_Dx12::fgCopyCommandQueue != nullptr)
     {
         FrameGen_Dx12::fgCopyCommandQueue->Release();
         FrameGen_Dx12::fgCopyCommandQueue = nullptr;
@@ -3543,6 +3596,8 @@ void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
     do
     {
         HRESULT result;
+        IID riid;
+        auto iidResult = IIDFromString(L"{ADEC44E2-61F0-45C3-AD9F-1B37379284FF}", &riid);
 
         for (size_t i = 0; i < 4; i++)
         {
@@ -3563,6 +3618,15 @@ void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
             LOG_ERROR("CreateCommandList: {0:X}", (unsigned long)result);
             break;
         }
+
+        // check for SL proxy
+        ID3D12GraphicsCommandList* realCL = nullptr;
+        if (CheckForRealObject(__FUNCTION__, FrameGen_Dx12::fgCommandList, (IUnknown**)&realCL))
+        {
+            fgCommandListSL = FrameGen_Dx12::fgCommandList;
+            FrameGen_Dx12::fgCommandList = realCL;
+        }
+
         FrameGen_Dx12::fgCommandList->SetName(L"fgCommandList");
 
         result = FrameGen_Dx12::fgCommandList->Close();
@@ -3577,6 +3641,12 @@ void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
         {
             LOG_ERROR("CreateCommandList: {0:X}", (unsigned long)result);
             break;
+        }
+
+        if (CheckForRealObject(__FUNCTION__, FrameGen_Dx12::fgCopyCommandList, (IUnknown**)&realCL))
+        {
+            fgCopyCommandListSL = FrameGen_Dx12::fgCopyCommandList;
+            FrameGen_Dx12::fgCopyCommandList = realCL;
         }
         FrameGen_Dx12::fgCopyCommandList->SetName(L"fgCopyCommandList");
 
@@ -3604,6 +3674,15 @@ void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
             LOG_ERROR("CreateCommandQueue fgCommandQueue: {0:X}", (unsigned long)result);
             break;
         }
+
+        // check for SL proxy
+        ID3D12CommandQueue* realCQ = nullptr;
+        if (CheckForRealObject(__FUNCTION__, FrameGen_Dx12::fgCommandQueue, (IUnknown**)&realCQ))
+        {
+            fgCommandQueueSL = FrameGen_Dx12::fgCommandQueue;
+            FrameGen_Dx12::fgCommandQueue = realCQ;
+        }
+
         FrameGen_Dx12::fgCommandQueue->SetName(L"fgCommandQueue");
 
         copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
@@ -3612,6 +3691,12 @@ void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
         {
             LOG_ERROR("CreateCommandQueue fgCopyCommandQueue: {0:X}", (unsigned long)result);
             break;
+        }
+
+        if (CheckForRealObject(__FUNCTION__, FrameGen_Dx12::fgCopyCommandQueue, (IUnknown**)&realCQ))
+        {
+            fgCommandQueueSL = FrameGen_Dx12::fgCopyCommandQueue;
+            FrameGen_Dx12::fgCopyCommandQueue = realCQ;
         }
         FrameGen_Dx12::fgCopyCommandQueue->SetName(L"fgCopyCommandQueue");
 
@@ -3642,7 +3727,12 @@ void FrameGen_Dx12::CreateFGContext(ID3D12Device* InDevice, IFeature* deviceCont
 
     ffxCreateBackendDX12Desc backendDesc{};
     backendDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_DX12;
-    backendDesc.device = InDevice;
+
+    ID3D12Device* device;
+    if (!CheckForRealObject(__FUNCTION__, InDevice, (IUnknown**)&device))
+        device = InDevice;
+
+    backendDesc.device = device;
 
     ffxCreateContextDescFrameGeneration createFg{};
     createFg.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATION;
