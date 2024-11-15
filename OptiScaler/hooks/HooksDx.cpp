@@ -52,7 +52,7 @@ typedef struct ResourceInfo
     ID3D12Resource* buffer = nullptr;
     UINT64 width = 0;
     UINT height = 0;
-    DXGI_FORMAT format;
+    DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN;
     D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON;
     D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
     ResourceType type = SRV;
@@ -67,49 +67,51 @@ typedef struct HeapInfo
     UINT numDescriptors = 0;
     UINT increment = 0;
     UINT type = 0;
-    std::shared_ptr<ResourceInfo[]> info;
+    std::vector<ResourceInfo> info;
 
     HeapInfo(SIZE_T cpuStart, SIZE_T cpuEnd, SIZE_T gpuStart, SIZE_T gpuEnd, UINT numResources, UINT increment, UINT type)
-        : cpuStart(cpuStart), cpuEnd(cpuEnd), gpuStart(gpuStart), gpuEnd(gpuEnd), numDescriptors(numResources), increment(increment), info(new ResourceInfo[numResources]), type(type) {}
+        : cpuStart(cpuStart), cpuEnd(cpuEnd), gpuStart(gpuStart), gpuEnd(gpuEnd), numDescriptors(numResources), increment(increment), info(numResources), type(type) {}
 
-    ResourceInfo* GetByCpuHandle(SIZE_T cpuHandle) const
+    ResourceInfo* GetByCpuHandle(SIZE_T cpuHandle)
     {
         if (cpuStart > cpuHandle || cpuEnd < cpuHandle)
             return nullptr;
 
         auto index = (cpuHandle - cpuStart) / increment;
 
-        return &info[index];
+        return (index < info.size()) ? &info[index] : nullptr;
     }
 
-    ResourceInfo* GetByGpuHandle(SIZE_T gpuHandle) const
+    ResourceInfo* GetByGpuHandle(SIZE_T gpuHandle)
     {
         if (gpuStart > gpuHandle || gpuEnd < gpuHandle)
             return nullptr;
 
         auto index = (gpuHandle - gpuStart) / increment;
 
-        return &info[index];
+        return (index < info.size()) ? &info[index] : nullptr;
     }
 
-    void SetByCpuHandle(SIZE_T cpuHandle, ResourceInfo setInfo) const
+    void SetByCpuHandle(SIZE_T cpuHandle, ResourceInfo setInfo)
     {
         if (cpuStart > cpuHandle || cpuEnd < cpuHandle)
             return;
 
         auto index = (cpuHandle - cpuStart) / increment;
 
-        info[index] = setInfo;
+        if (index < info.size())
+            info[index] = setInfo;
     }
 
-    void SetByGpuHandle(SIZE_T gpuHandle, ResourceInfo setInfo) const
+    void SetByGpuHandle(SIZE_T gpuHandle, ResourceInfo setInfo)
     {
         if (gpuStart > gpuHandle || gpuEnd < gpuHandle)
             return;
 
         auto index = (gpuHandle - gpuStart) / increment;
 
-        info[index] = setInfo;
+        if (index < info.size())
+            info[index] = setInfo;
     }
 } heap_info;
 
@@ -649,7 +651,6 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
                 return;
             }
 
-
 #ifdef USE_MUTEX_FOR_FFX
             FrameGen_Dx12::ffxMutex.lock();
 #endif
@@ -734,6 +735,7 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
     else
     {
 #ifdef USE_RESOURCE_BARRIRER
+        resource->buffer->SetName(L"Hudless");
         ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
 #endif
 
@@ -782,7 +784,9 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
             delete FrameGen_Dx12::fgFormatTransfer;
 
         FrameGen_Dx12::fgFormatTransfer = nullptr;
+        Config::Instance()->SkipHeapCapture = true;
         FrameGen_Dx12::fgFormatTransfer = new FT_Dx12("FormatTransfer", g_pd3dDeviceParam, scDesc.BufferDesc.Format);
+        Config::Instance()->SkipHeapCapture = false;
     }
 
     if ((scDesc.BufferDesc.Height != fgScDesc.BufferDesc.Height || scDesc.BufferDesc.Width != fgScDesc.BufferDesc.Width || scDesc.BufferDesc.Format != fgScDesc.BufferDesc.Format))
@@ -1115,6 +1119,9 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
 {
     auto result = o_CreateDescriptorHeap(This, pDescriptorHeapDesc, riid, ppvHeap);
 
+    if (Config::Instance()->SkipHeapCapture)
+        return result;
+
     // try to calculate handle ranges for heap
     if (result == S_OK && (pDescriptorHeapDesc->Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || pDescriptorHeapDesc->Type == D3D12_DESCRIPTOR_HEAP_TYPE_RTV))
     {
@@ -1375,7 +1382,7 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
 
     LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
 
-    capturedBuffer->state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+    capturedBuffer->state = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
 
     do
     {
@@ -1588,35 +1595,43 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
         return;
 
     {
-        std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
+        ankerl::unordered_dense::map<ID3D12Resource*, ResourceInfo> val0;
 
-        // if can't find output skip
-        if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
         {
-            LOG_DEBUG_ONLY("Early exit");
-            return;
-        }
+            std::shared_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
 
-        auto& val0 = fgPossibleHudless[fIndex][This];
-
-        do
-        {
-            // if this command list does not have entries skip
-            if (val0.size() == 0)
-                break;
-
-            for (auto& [key, val] : val0)
+            // if can't find output skip
+            if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
             {
-                if (CheckCapture(__FUNCTION__))
-                {
-                    CaptureHudless(This, &val, val.state);
-                    break;
-                }
+                LOG_DEBUG_ONLY("Early exit");
+                return;
             }
 
-        } while (false);
+            val0 = fgPossibleHudless[fIndex][This];
 
-        val0.clear();
+            do
+            {
+                // if this command list does not have entries skip
+                if (val0.size() == 0)
+                    break;
+
+                for (auto& [key, val] : val0)
+                {
+                    if (CheckCapture(__FUNCTION__))
+                    {
+                        CaptureHudless(This, &val, val.state);
+                        break;
+                    }
+                }
+
+            } while (false);
+        }
+
+        {
+            std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
+            val0.clear();
+        }
+
         LOG_DEBUG_ONLY("Clear");
     }
 }
@@ -1636,37 +1651,45 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
         return;
 
     {
-        std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
+        ankerl::unordered_dense::map<ID3D12Resource*, ResourceInfo> val0;
 
-        // if can't find output skip
-        if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
         {
-            LOG_DEBUG_ONLY("Early exit");
-            return;
-        }
+            std::shared_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
 
-        auto& val0 = fgPossibleHudless[fIndex][This];
-
-        do
-        {
-            // if this command list does not have entries skip
-            if (val0.size() == 0)
-                break;
-
-            for (auto& [key, val] : val0)
+            // if can't find output skip
+            if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
             {
-                LOG_DEBUG_ONLY("Found matching final image");
-
-                if (CheckCapture(__FUNCTION__))
-                {
-                    CaptureHudless(This, &val, val.state);
-                    break;
-                }
+                LOG_DEBUG_ONLY("Early exit");
+                return;
             }
 
-        } while (false);
+            val0 = fgPossibleHudless[fIndex][This];
 
-        val0.clear();
+            do
+            {
+                // if this command list does not have entries skip
+                if (val0.size() == 0)
+                    break;
+
+                for (auto& [key, val] : val0)
+                {
+                    LOG_DEBUG_ONLY("Found matching final image");
+
+                    if (CheckCapture(__FUNCTION__))
+                    {
+                        CaptureHudless(This, &val, val.state);
+                        break;
+                    }
+                }
+
+            } while (false);
+        }
+
+        {
+            std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
+            val0.clear();
+        }
+
         LOG_DEBUG_ONLY("Clear");
     }
 }
@@ -1686,37 +1709,45 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
         return;
 
     {
-        std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
+        ankerl::unordered_dense::map<ID3D12Resource*, ResourceInfo> val0;
 
-        // if can't find output skip
-        if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
         {
-            LOG_DEBUG_ONLY("Early exit");
-            return;
-        }
+            std::shared_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
 
-        auto& val0 = fgPossibleHudless[fIndex][This];
-
-        do
-        {
-            // if this command list does not have entries skip
-            if (val0.size() == 0)
-                break;
-
-            for (auto& [key, val] : val0)
+            // if can't find output skip
+            if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
             {
-                LOG_DEBUG_ONLY("Found matching final image");
-
-                if (CheckCapture(__FUNCTION__))
-                {
-                    CaptureHudless(This, &val, val.state);
-                    break;
-                }
+                LOG_DEBUG_ONLY("Early exit");
+                return;
             }
 
-        } while (false);
+            val0 = fgPossibleHudless[fIndex][This];
 
-        val0.clear();
+            do
+            {
+                // if this command list does not have entries skip
+                if (val0.size() == 0)
+                    break;
+
+                for (auto& [key, val] : val0)
+                {
+                    LOG_DEBUG_ONLY("Found matching final image");
+
+                    if (CheckCapture(__FUNCTION__))
+                    {
+                        CaptureHudless(This, &val, val.state);
+                        break;
+                    }
+                }
+
+            } while (false);
+        }
+
+        {
+            std::unique_lock<std::shared_mutex> lock(hudlessMutex[fIndex]);
+            val0.clear();
+        }
+
         LOG_DEBUG_ONLY("Clear");
     }
 }
@@ -1940,7 +1971,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
     ImGuiOverlayDx::Present(pSwapChain, SyncInterval, Flags, pPresentParameters, pDevice, hWnd);
 
-    if (Config::Instance()->FGUseFGSwapChain.value_or(true)) 
+    if (Config::Instance()->FGUseFGSwapChain.value_or(true))
     {
         fakenvapi::reportFGPresent(pSwapChain, FrameGen_Dx12::fgIsActive, frameCounter % 2);
     }
@@ -3202,15 +3233,15 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
             {
                 LOG_DEBUG("infoQueue1 accuired, registering MessageCallback");
                 res = infoQueue1->RegisterMessageCallback(D3D12DebugCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, NULL, NULL);
-    }
-}
-#endif
+            }
         }
+#endif
+    }
 
     LOG_FUNC_RESULT(result);
 
     return result;
-    }
+}
 
 static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
@@ -3723,7 +3754,9 @@ void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
         }
         FrameGen_Dx12::fgCopyCommandQueue->SetName(L"fgCopyCommandQueue");
 
+        Config::Instance()->SkipHeapCapture = true;
         FrameGen_Dx12::fgFormatTransfer = new FT_Dx12("FormatTransfer", InDevice, HooksDx::CurrentSwapchainFormat());
+        Config::Instance()->SkipHeapCapture = false;
 
     } while (false);
 }
