@@ -810,8 +810,8 @@ void ImGuiCommon::RenderMenu()
             if (cf == nullptr)
             {
                 ImGui::Spacing();
-                ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value() * 2);
-                ImGui::Text("Please select DLSS as upscaler from game options and\nenter the game to enable upscaler settings.");
+                ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value() * 3);
+                ImGui::Text("Please select DLSS or XeSS as upscaler\nfrom game options and enter the game\nto enable upscaler settings.");
                 ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
             }
 
@@ -2364,10 +2364,10 @@ void ImGuiCommon::Init(HWND InHwnd)
     {
         io.Fonts->AddFontDefault();
         ImFontConfig fontConfig;
-        fontConfig.OversampleH = 2; // Horizontal oversampling
-        fontConfig.OversampleV = 1; // Vertical oversampling
+        fontConfig.OversampleH = 3; // Horizontal oversampling
+        fontConfig.OversampleV = 3; // Vertical oversampling
 
-        _optiFont = io.Fonts->AddFontFromMemoryTTF((void*)hack_font, 309408, 14.0f, &fontConfig);
+        _optiFont = io.Fonts->AddFontFromMemoryTTF((void*)hack_font, sizeof(hack_font), 14.0f, &fontConfig);
     }
 
     io.FontDefault = _optiFont;
