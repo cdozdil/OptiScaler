@@ -206,6 +206,7 @@ static ID3D12Resource* fgHudless[FrameGen_Dx12::FG_BUFFER_SIZE] = { nullptr, nul
 static ID3D12Resource* fgHudlessBuffer[FrameGen_Dx12::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
 
 static UINT fgFrameIndex = 0;
+static UINT fgCallbackFrameIndex = 0;
 
 // Last captured upscaled hudless frame number
 static UINT64 fgHudlessFrame = 0;
@@ -302,7 +303,7 @@ static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, D
 static void FfxFgLogCallback(uint32_t type, const wchar_t* message)
 {
     std::wstring string(message);
-    LOG_DEBUG("    FG Log: {0}", wstring_to_string(string));
+    LOG_DEBUG("{}", wstring_to_string(string));
 }
 
 static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject)
@@ -497,12 +498,14 @@ static bool IsFGCommandList(IUnknown* cmdList)
 static void GetHudless(ID3D12GraphicsCommandList* This)
 {
     auto fIndex = fgFrameIndex;
+
     if (This != ImGuiOverlayDx::MenuCommandList() && Config::Instance()->CurrentFeature != nullptr && !Config::Instance()->FGChanged &&
         fgHudlessFrame != Config::Instance()->CurrentFeature->FrameCount() && FrameGen_Dx12::fgTarget < Config::Instance()->CurrentFeature->FrameCount() &&
         FrameGen_Dx12::fgContext != nullptr && FrameGen_Dx12::fgIsActive && HooksDx::currentSwapchain != nullptr)
     {
         LOG_DEBUG("FrameCount: {0}, fgHudlessFrame: {1}, CommandList: {2:X}", Config::Instance()->CurrentFeature->FrameCount(), fgHudlessFrame, (UINT64)This);
 
+        fgCallbackFrameIndex = fIndex;
         FrameGen_Dx12::fgSkipHudlessChecks = true;
 
         // hudless captured for this frame
@@ -549,7 +552,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
             {
                 HRESULT result;
                 ffxReturnCode_t dispatchResult;
-                auto fIndex = params->frameID % FrameGen_Dx12::FG_BUFFER_SIZE;
+                auto fIndex = fgCallbackFrameIndex;
 
                 // check for status
                 if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||

@@ -36,6 +36,7 @@
 static UINT64 fgLastFrameTime = 0;
 #endif
 static UINT64 fgLastFGFrame = 0;
+static UINT fgCallbackFrameIndex = 0;
 
 static ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
 static ID3D12Device* D3D12Device = nullptr;
@@ -1353,6 +1354,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
         {
             FrameGen_Dx12::upscaleRan = true;
+            fgCallbackFrameIndex = frameIndex;
 
 #ifndef USE_PRESENT_FOR_FT
             float msDelta = 0.0;
@@ -1418,12 +1420,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 m_FrameGenerationConfig.frameGenerationCallbackUserContext = &FrameGen_Dx12::fgContext;
                 m_FrameGenerationConfig.frameGenerationCallback = [](ffxDispatchDescFrameGeneration* params, void* pUserCtx) -> ffxReturnCode_t
                     {
-                        auto fIndex = params->frameID % FrameGen_Dx12::FG_BUFFER_SIZE;
+                        auto fIndex = fgCallbackFrameIndex;
 
                         // check for status
                         if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged ||
-                            FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCommandList[fIndex] == nullptr ||
-                            FrameGen_Dx12::fgCommandQueue == nullptr)
+                            FrameGen_Dx12::fgContext == nullptr 
+#ifdef USE_QUEUE_FOR_FG
+                            || FrameGen_Dx12::fgCommandList[fIndex] == nullptr || FrameGen_Dx12::fgCommandQueue == nullptr
+#endif
+                            )
                         {
                             LOG_WARN("(FG) Cancel async dispatch fIndex: {}", fIndex);
                             FrameGen_Dx12::fgSkipHudlessChecks = false;
@@ -1434,7 +1439,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         if (Config::Instance()->CurrentFeature == nullptr || !FrameGen_Dx12::fgIsActive ||
                             fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount())
                         {
-                            LOG_WARN("(FG) Callback without hudless! fIndex:{}", fIndex);
+                            LOG_WARN("(FG) Callback without active FG! fIndex:{}", fIndex);
 
 #ifdef USE_QUEUE_FOR_FG
                             auto allocator = FrameGen_Dx12::fgCommandAllocators[fIndex];
