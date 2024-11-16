@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../pch.h"
+#include "../Util.h"
 #include "../Config.h"
 #include "../resource.h"
 #include "../Logger.h"
@@ -53,6 +54,9 @@ private:
     inline static bool _dx11Ready = false;
     inline static bool _dx12Ready = false;
     inline static bool _vulkanReady = false;
+
+    // font
+    inline static ImFont* _optiFont = nullptr;
 
     inline static void ShowTooltip(const char* tip);
 

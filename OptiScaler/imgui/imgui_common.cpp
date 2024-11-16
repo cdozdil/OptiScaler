@@ -1,5 +1,7 @@
 #include "imgui_common.h"
 
+#include "../font/Hack.h"
+
 void ImGuiCommon::ShowTooltip(const char* tip) {
     if (ImGui::IsItemHovered())
     {
@@ -736,6 +738,7 @@ void ImGuiCommon::RenderMenu()
         ImGuiWindowFlags flags = 0;
         flags |= ImGuiWindowFlags_NoSavedSettings;
         flags |= ImGuiWindowFlags_NoCollapse;
+        flags |= ImGuiWindowFlags_AlwaysAutoResize;
 
         if (_imguiSizeUpdate)
         {
@@ -767,29 +770,6 @@ void ImGuiCommon::RenderMenu()
 
         auto size = ImVec2{ 0.0f, 0.0f };
         ImGui::SetNextWindowSize(size);
-
-        float posX;
-        float posY;
-
-        if (cf != nullptr)
-        {
-            posX = ((float)Config::Instance()->CurrentFeature->DisplayWidth() - 770.0f) / 2.0f;
-            posY = ((float)Config::Instance()->CurrentFeature->DisplayHeight() - 685.0f) / 2.0f;
-        }
-        else
-        {
-            posX = ((float)Config::Instance()->ScreenWidth - 770.0f) / 2.0f;
-            posY = ((float)Config::Instance()->ScreenHeight - 685.0f) / 2.0f;
-        }
-
-        // don't position menu outside of screen
-        if (posX < 0.0 || posY < 0.0)
-        {
-            posX = 50;
-            posY = 50;
-        }
-
-        ImGui::SetNextWindowPos(ImVec2{ posX, posY }, ImGuiCond_FirstUseEver);
 
         if (ImGui::Begin(VER_PRODUCT_NAME, NULL, flags))
         {
@@ -835,7 +815,7 @@ void ImGuiCommon::RenderMenu()
                 ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
             }
 
-            if (ImGui::BeginTable("main", 2))
+            if (ImGui::BeginTable("main", 2, ImGuiTableFlags_SizingStretchSame))
             {
                 ImGui::TableNextColumn();
 
@@ -1800,7 +1780,7 @@ void ImGuiCommon::RenderMenu()
 
                     // DRS -----------------------------
                     ImGui::SeparatorText("DRS (Dynamic Resolution Scaling)");
-                    if (ImGui::BeginTable("drs", 2))
+                    if (ImGui::BeginTable("drs", 2, ImGuiTableFlags_SizingStretchSame))
                     {
                         ImGui::TableNextColumn();
                         if (bool drsMin = Config::Instance()->DrsMinOverrideEnabled.value_or(false); ImGui::Checkbox("Override Minimum", &drsMin))
@@ -1817,7 +1797,7 @@ void ImGuiCommon::RenderMenu()
 
                     // INIT -----------------------------
                     ImGui::SeparatorText("Init Flags");
-                    if (ImGui::BeginTable("init", 2))
+                    if (ImGui::BeginTable("init", 2, ImGuiTableFlags_SizingStretchSame))
                     {
                         ImGui::TableNextColumn();
                         if (bool autoExposure = Config::Instance()->AutoExposure.value_or(false); ImGui::Checkbox("Auto Exposure", &autoExposure))
@@ -2087,22 +2067,23 @@ void ImGuiCommon::RenderMenu()
             ImGui::Separator();
             ImGui::Spacing();
 
-            if (ImGui::BeginTable("plots", 2))
-            {
-                Config::Instance()->frameTimes.pop_front();
-                Config::Instance()->frameTimes.push_back(1000.0 / io.Framerate);
+            Config::Instance()->frameTimes.pop_front();
+            Config::Instance()->frameTimes.push_back(1000.0 / io.Framerate);
 
+            if (ImGui::BeginTable("plots", 2, ImGuiTableFlags_SizingStretchSame))
+            {
                 ImGui::TableNextColumn();
                 ImGui::Text("FrameTime");
                 auto ft = std::format("{:.2f} ms / {:.1f} fps", Config::Instance()->frameTimes.back(), io.Framerate);
                 std::vector<float> frameTimeArray(Config::Instance()->frameTimes.begin(), Config::Instance()->frameTimes.end());
                 ImGui::PlotLines(ft.c_str(), frameTimeArray.data(), frameTimeArray.size());
 
+
                 if (cf != nullptr)
                 {
                     ImGui::TableNextColumn();
-                    ImGui::Text("Upscaler (GPU time)");
-                    auto ups = std::format("{:.2f} ms", Config::Instance()->upscaleTimes.back());
+                    ImGui::Text("Upscaler");
+                    auto ups = std::format("{:.4f} ms", Config::Instance()->upscaleTimes.back());
                     std::vector<float> upscaleTimeArray(Config::Instance()->upscaleTimes.begin(), Config::Instance()->upscaleTimes.end());
                     ImGui::PlotLines(ups.c_str(), upscaleTimeArray.data(), upscaleTimeArray.size());
                 }
@@ -2128,7 +2109,7 @@ void ImGuiCommon::RenderMenu()
                 ImGui::SameLine(0.0f, 10.0f);
             }
 
-            ImGui::PushItemWidth(45.0f * Config::Instance()->MenuScale.value());
+            ImGui::PushItemWidth(55.0f * Config::Instance()->MenuScale.value());
 
             const char* uiScales[] = { "0.5", "0.6", "0.7", "0.8", "0.9", "1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "2.0" };
             const char* selectedScaleName = uiScales[_selectedScale];
@@ -2157,6 +2138,7 @@ void ImGuiCommon::RenderMenu()
 
             ImGui::PopItemWidth();
 
+
             ImGui::SameLine(0.0f, 15.0f);
 
             if (ImGui::Button("Save INI"))
@@ -2173,8 +2155,40 @@ void ImGuiCommon::RenderMenu()
             ImGui::Spacing();
             ImGui::Separator();
 
+            auto winSize = ImGui::GetWindowSize();
+            auto winPos = ImGui::GetWindowPos();
+
+            if (winPos.x == 60.0 && winSize.x > 100)
+            {
+                float posX;
+                float posY;
+
+                if (cf != nullptr)
+                {
+                    posX = ((float)Config::Instance()->CurrentFeature->DisplayWidth() - winSize.x) / 2.0f;
+                    posY = ((float)Config::Instance()->CurrentFeature->DisplayHeight() - winSize.y) / 2.0f;
+                }
+                else
+                {
+                    posX = ((float)Config::Instance()->ScreenWidth - winSize.x) / 2.0f;
+                    posY = ((float)Config::Instance()->ScreenHeight - winSize.x) / 2.0f;
+                }
+
+                // don't position menu outside of screen
+                if (posX < 0.0 || posY < 0.0)
+                {
+                    posX = 50;
+                    posY = 50;
+                }
+
+                ImGui::SetWindowPos(ImVec2{ posX, posY });
+            }
+
+
             ImGui::End();
         }
+
+        //ImGui::ShowMetricsWindow();
 
         if (_showMipmapCalcWindow && cf != nullptr)
         {
@@ -2345,6 +2359,18 @@ void ImGuiCommon::Init(HWND InHwnd)
 
     bool initResult = ImGui_ImplWin32_Init(InHwnd);
     LOG_DEBUG("ImGui_ImplWin32_Init result: {0}", initResult);
+
+    if (_optiFont == nullptr)
+    {
+        io.Fonts->AddFontDefault();
+        ImFontConfig fontConfig;
+        fontConfig.OversampleH = 2; // Horizontal oversampling
+        fontConfig.OversampleV = 1; // Vertical oversampling
+
+        _optiFont = io.Fonts->AddFontFromMemoryTTF((void*)hack_font, 309408, 14.0f, &fontConfig);
+    }
+
+    io.FontDefault = _optiFont;
 
     if (_oWndProc == nullptr)
         _oWndProc = (WNDPROC)SetWindowLongPtr(InHwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
