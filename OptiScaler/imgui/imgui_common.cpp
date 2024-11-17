@@ -1,6 +1,6 @@
 #include "imgui_common.h"
 
-#include "../font/Hack.h"
+#include "../font/Hack_Compressed.h"
 
 void ImGuiCommon::ShowTooltip(const char* tip) {
     if (ImGui::IsItemHovered())
@@ -2367,7 +2367,7 @@ void ImGuiCommon::Init(HWND InHwnd)
         fontConfig.OversampleH = 3; // Horizontal oversampling
         fontConfig.OversampleV = 3; // Vertical oversampling
 
-        _optiFont = io.Fonts->AddFontFromMemoryTTF((void*)hack_font, sizeof(hack_font), 14.0f, &fontConfig);
+        _optiFont = io.Fonts->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85, 14.0f, &fontConfig);
     }
 
     io.FontDefault = _optiFont;
