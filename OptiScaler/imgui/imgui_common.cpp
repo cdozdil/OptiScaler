@@ -815,8 +815,10 @@ void ImGuiCommon::RenderMenu()
             if (cf == nullptr)
             {
                 ImGui::Spacing();
+                ImGui::PushFont(_scaledOptiFont);
                 ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value() * 3);
                 ImGui::Text("Please select DLSS or XeSS as upscaler\nfrom game options and enter the game\nto enable upscaler settings.");
+                ImGui::PopFont();
                 ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
             }
 
