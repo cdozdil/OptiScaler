@@ -868,7 +868,7 @@ static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* p
 {
     o_DiscardResource(This, pResource, pRegion);
 
-    if (This != g_pd3dCommandList && pRegion == nullptr)
+    if (IsFGCommandList(This) && pRegion == nullptr)
     {
         std::unique_lock<std::shared_mutex> lock(resourceMutex);
 
@@ -935,7 +935,7 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
 
 #ifdef DETAILED_DEBUG_LOGS
 
-    if (CheckForHudless("", &resInfo, false))
+    if (CheckForHudless("", &resInfo))
         LOG_TRACE("<------ pResource: {0:X}, CpuHandle: {1}, GpuHandle: {2}", (UINT64)pResource, DestDescriptor.ptr, GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_RTV));
 
 #endif //  _DEBUG
@@ -988,7 +988,7 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
 
 #ifdef DETAILED_DEBUG_LOGS
 
-    if (CheckForHudless("", &resInfo, false))
+    if (CheckForHudless("", &resInfo))
         LOG_TRACE("<------ pResource: {0:X}, CpuHandle: {1}, GpuHandle: {2}", (UINT64)pResource, DestDescriptor.ptr, GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
 
 #endif //  _DEBUG
@@ -1040,7 +1040,7 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
 
 #ifdef DETAILED_DEBUG_LOGS
 
-    if (CheckForHudless("", &resInfo, false))
+    if (CheckForHudless("", &resInfo))
         LOG_TRACE("<------ pResource: {0:X}, CpuHandle: {1}, GpuHandle: {2}", (UINT64)pResource, DestDescriptor.ptr, GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
 
 #endif //  _DEBUG
