@@ -779,7 +779,7 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
         return false;
     }
 
-    if (!FrameGen_Dx12::fgFormatTransfer->IsFormatCompatible(scDesc.BufferDesc.Format))
+    if (FrameGen_Dx12::fgFormatTransfer == nullptr || !FrameGen_Dx12::fgFormatTransfer->IsFormatCompatible(scDesc.BufferDesc.Format))
     {
         LOG_DEBUG("Format change, recreate the FormatTransfer");
 
