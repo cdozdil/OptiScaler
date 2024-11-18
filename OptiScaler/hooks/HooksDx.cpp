@@ -332,7 +332,7 @@ static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnk
 
 #pragma region Resource methods
 
-static bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource)
+static bool CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource)
 {
     if (InDevice == nullptr || InSource == nullptr)
         return false;
@@ -343,7 +343,7 @@ static bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSourc
     {
         auto bufDesc = (*OutResource)->GetDesc();
 
-        if (bufDesc.Width != (UINT64)(texDesc.Width) || bufDesc.Height != (UINT)(texDesc.Height) || bufDesc.Format != texDesc.Format)
+        if (bufDesc.Width != (UINT64)(InSource->width) || bufDesc.Height != (UINT)(InSource->height) || bufDesc.Format != InSource->format)
         {
             (*OutResource)->Release();
             (*OutResource) = nullptr;
@@ -354,7 +354,7 @@ static bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSourc
 
     D3D12_HEAP_PROPERTIES heapProperties;
     D3D12_HEAP_FLAGS heapFlags;
-    HRESULT hr = InSource->GetHeapProperties(&heapProperties, &heapFlags);
+    HRESULT hr = InSource->buffer->GetHeapProperties(&heapProperties, &heapFlags);
 
     if (hr != S_OK)
     {
@@ -362,6 +362,7 @@ static bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSourc
         return false;
     }
 
+    D3D12_RESOURCE_DESC texDesc = InSource->buffer->GetDesc(); 
     texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
     hr = InDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, InState, nullptr, IID_PPV_ARGS(OutResource));
@@ -708,7 +709,7 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
     if (resource->format != fgScDesc.BufferDesc.Format)
     {
         if (FrameGen_Dx12::fgFormatTransfer != nullptr && FrameGen_Dx12::fgFormatTransfer->CreateBufferResource(g_pd3dDeviceParam, resource->buffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) &&
-            CreateBufferResource(g_pd3dDeviceParam, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, &fgHudlessBuffer[fIndex]))
+            CreateBufferResource(g_pd3dDeviceParam, resource, D3D12_RESOURCE_STATE_COPY_SOURCE, &fgHudlessBuffer[fIndex]))
         {
 #ifdef USE_RESOURCE_BARRIRER
             ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
@@ -738,11 +739,10 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
     else
     {
 #ifdef USE_RESOURCE_BARRIRER
-        resource->buffer->SetName(L"Hudless");
         ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
 #endif
 
-        if (CreateBufferResource(g_pd3dDeviceParam, resource->buffer, D3D12_RESOURCE_STATE_COPY_DEST, &fgHudless[fIndex]))
+        if (CreateBufferResource(g_pd3dDeviceParam, resource, D3D12_RESOURCE_STATE_COPY_DEST, &fgHudless[fIndex]))
             cmdList->CopyResource(fgHudless[fIndex], resource->buffer);
 
 #ifdef USE_RESOURCE_BARRIRER
