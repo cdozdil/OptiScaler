@@ -913,8 +913,8 @@ void ImGuiCommon::RenderMenu()
                         {
                             if (hudFixLimit < 1)
                                 hudFixLimit = 1;
-                            else if (hudFixLimit > 99)
-                                hudFixLimit = 99;
+                            else if (hudFixLimit > 999)
+                                hudFixLimit = 999;
 
                             Config::Instance()->FGHUDLimit = hudFixLimit;
                             LOG_DEBUG("Enabled set FGHUDLimit: {}", hudFixLimit);
