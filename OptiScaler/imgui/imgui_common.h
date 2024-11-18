@@ -57,6 +57,7 @@ private:
 
     // font
     inline static ImFont* _optiFont = nullptr;
+    inline static ImFont* _scaledOptiFont = nullptr;
 
     inline static void ShowTooltip(const char* tip);
 
