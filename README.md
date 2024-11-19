@@ -154,3 +154,6 @@ Currently OptiScaler can be used with DirectX 11, DirectX 12 and Vulkan but each
 * @QM for continous testing efforts and helping me to reach games
 * @Cryio, @krispy, @krisshietala, @Lordubuntu, @scz, @Veeqo for their hard work on [compatibility matrix](https://docs.google.com/spreadsheets/d/1qsvM0uRW-RgAYsOVprDWK2sjCqHnd_1teYAx00_TwUY)
 * @RazzerBrazzer and DLSS2FSR community for all their support
+
+## Credit
+This project uses [FreeType](https://gitlab.freedesktop.org/freetype/freetype) licensed under the [FTL](https://gitlab.freedesktop.org/freetype/freetype/-/blob/master/docs/FTL.TXT)
