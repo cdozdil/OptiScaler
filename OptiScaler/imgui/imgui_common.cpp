@@ -766,6 +766,11 @@ void ImGuiCommon::RenderMenu()
 
         ImGui::NewFrame();
 
+        if (Config::Instance()->MenuScale.value_or(1.0) <= 1.0)
+            ImGui::PushFont(_optiFont);
+        else
+            ImGui::PushFont(_scaledOptiFont);
+
         auto cf = Config::Instance()->CurrentFeature;
 
         auto size = ImVec2{ 0.0f, 0.0f };
@@ -810,8 +815,10 @@ void ImGuiCommon::RenderMenu()
             if (cf == nullptr)
             {
                 ImGui::Spacing();
+                ImGui::PushFont(_scaledOptiFont);
                 ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value() * 3);
                 ImGui::Text("Please select DLSS or XeSS as upscaler\nfrom game options and enter the game\nto enable upscaler settings.");
+                ImGui::PopFont();
                 ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
             }
 
@@ -2330,6 +2337,7 @@ void ImGuiCommon::RenderMenu()
                 ImGui::End();
             }
         }
+        ImGui::PopFont();
     }
 }
 
@@ -2362,12 +2370,24 @@ void ImGuiCommon::Init(HWND InHwnd)
 
     if (_optiFont == nullptr)
     {
-        io.Fonts->AddFontDefault();
         ImFontConfig fontConfig;
-        fontConfig.OversampleH = 3; // Horizontal oversampling
-        fontConfig.OversampleV = 3; // Vertical oversampling
-
+        //fontConfig.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_Bold;
+        fontConfig.RasterizerDensity = 1.0;
         _optiFont = io.Fonts->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85, 14.0f, &fontConfig);
+
+        ImFontConfig scaledFontConfig;
+        //scaledFontConfig.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_ForceAutoHint;
+        scaledFontConfig.RasterizerDensity = 2.0;
+        _scaledOptiFont = io.Fonts->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85, 14.0f, &scaledFontConfig);
+
+        if (!_scaledOptiFont || !_optiFont)
+        {
+            LOG_ERROR("Failed to load font");
+            return;
+        }
+
+        io.Fonts->SetTexID(nullptr);
+        io.Fonts->Build();
     }
 
     io.FontDefault = _optiFont;
