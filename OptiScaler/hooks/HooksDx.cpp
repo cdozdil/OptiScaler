@@ -337,8 +337,6 @@ static bool CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InSource,
     if (InDevice == nullptr || InSource == nullptr)
         return false;
 
-    D3D12_RESOURCE_DESC texDesc = InSource->GetDesc();
-
     if (*OutResource != nullptr)
     {
         auto bufDesc = (*OutResource)->GetDesc();
