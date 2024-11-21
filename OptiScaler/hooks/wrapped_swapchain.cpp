@@ -118,7 +118,8 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 {
     LOG_DEBUG("");
 
-    FrameGen_Dx12::ffxMutex.lock();
+    std::lock_guard<std::mutex> lock(_localMutex);
+    std::unique_lock<std::shared_mutex> lock2(FrameGen_Dx12::ffxMutex);
 
     HRESULT result;
     DXGI_SWAP_CHAIN_DESC desc{};
@@ -131,8 +132,6 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
         Config::Instance()->FGOnlyUseCapturedResources = false;
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(150));
-
     if (Config::Instance()->CurrentFeature != nullptr)
         Config::Instance()->FGChanged = true;
 
@@ -140,8 +139,6 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
         ClearTrig(true, Handle);
 
     Config::Instance()->SCChanged = true;
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
     LOG_DEBUG("BufferCount: {0}, Width: {1}, Height: {2}, NewFormat: {3}, SwapChainFlags: {4:X}", BufferCount, Width, Height, (UINT)NewFormat, SwapChainFlags);
 
@@ -151,9 +148,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
         Config::Instance()->ScreenWidth = Width;
         Config::Instance()->ScreenHeight = Height;
     }
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(150));
-
+    
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
     // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
     if (Config::Instance()->forceHdr.value_or(false))
@@ -223,8 +218,6 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
     LOG_DEBUG("result: {0:X}", (UINT)result);
 
-    FrameGen_Dx12::ffxMutex.unlock();
-
     return result;
 }
 
@@ -236,7 +229,8 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetContainingOutput(IDXGIOutpu
 HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT Format, UINT SwapChainFlags,
                                                const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
-    FrameGen_Dx12::ffxMutex.lock();
+    std::lock_guard<std::mutex> lock(_localMutex);
+    std::unique_lock<std::shared_mutex> lock2(FrameGen_Dx12::ffxMutex);
 
     LOG_DEBUG("");
 
@@ -251,8 +245,6 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
         Config::Instance()->FGOnlyUseCapturedResources = false;
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(150));
-
     if (Config::Instance()->CurrentFeature != nullptr)
         Config::Instance()->FGChanged = true;
 
@@ -260,8 +252,6 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
         ClearTrig(true, Handle);
 
     Config::Instance()->SCChanged = true;
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
     LOG_DEBUG("BufferCount: {0}, Width: {1}, Height: {2}, NewFormat: {3}, SwapChainFlags: {4:X}, pCreationNodeMask: {5}", BufferCount, Width, Height, (UINT)Format, SwapChainFlags, *pCreationNodeMask);
 
@@ -271,8 +261,6 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
         Config::Instance()->ScreenWidth = Width;
         Config::Instance()->ScreenHeight = Height;
     }
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
     // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
@@ -340,14 +328,13 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 
     LOG_DEBUG("result: {0:X}", (UINT)result);
 
-    FrameGen_Dx12::ffxMutex.unlock();
-
     return result;
 }
 
 HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput* pTarget)
 {
-    FrameGen_Dx12::ffxMutex.lock();
+    std::lock_guard<std::mutex> lock(_localMutex);
+    std::unique_lock<std::shared_mutex> lock2(FrameGen_Dx12::ffxMutex);
 
     auto result = m_pReal->SetFullscreenState(Fullscreen, pTarget);
 
@@ -360,8 +347,6 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
         Config::Instance()->FGOnlyUseCapturedResources = false;
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(150));
-
     if (Config::Instance()->CurrentFeature != nullptr)
         Config::Instance()->FGChanged = true;
 
@@ -369,9 +354,6 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
         ClearTrig(true, Handle);
 
     Config::Instance()->SCChanged = true;
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(150));
-
     Config::Instance()->scBuffers.clear();
 
     UINT bc = 0;
@@ -396,8 +378,6 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 
     LOG_DEBUG("result: {0:X}", (UINT)result);
 
-    FrameGen_Dx12::ffxMutex.unlock();
-
     return result;
 }
 
@@ -421,6 +401,8 @@ HRESULT WrappedIDXGISwapChain4::Present(UINT SyncInterval, UINT Flags)
     if (m_pReal == nullptr)
         return DXGI_ERROR_DEVICE_REMOVED;
 
+    std::lock_guard<std::mutex> lock(_localMutex);
+
     HRESULT result;
 
     if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART) && RenderTrig != nullptr)
@@ -435,6 +417,8 @@ HRESULT WrappedIDXGISwapChain4::Present1(UINT SyncInterval, UINT Flags, const DX
 {
     if (m_pReal1 == nullptr)
         return DXGI_ERROR_DEVICE_REMOVED;
+
+    std::lock_guard<std::mutex> lock(_localMutex);
 
     HRESULT result;
 

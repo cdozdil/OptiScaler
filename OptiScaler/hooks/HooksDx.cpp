@@ -13,7 +13,6 @@
 #pragma region FG definitions
 
 #include <ankerl/unordered_dense.h>
-#include <shared_mutex>
 #include <set>
 
 // Clear heap info when ResourceDiscard is called
@@ -360,7 +359,7 @@ static bool CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InSource,
         return false;
     }
 
-    D3D12_RESOURCE_DESC texDesc = InSource->buffer->GetDesc(); 
+    D3D12_RESOURCE_DESC texDesc = InSource->buffer->GetDesc();
     texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
     hr = InDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, InState, nullptr, IID_PPV_ARGS(OutResource));
@@ -554,8 +553,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
                 auto fIndex = fgCallbackFrameIndex;
 
                 // check for status
-                if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || 
-                    FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCommandList[fIndex] == nullptr || 
+                if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) ||
+                    FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCommandList[fIndex] == nullptr ||
                     FrameGen_Dx12::fgCommandQueue == nullptr || Config::Instance()->SCChanged)
                 {
                     LOG_WARN("Cancel async dispatch");
@@ -566,7 +565,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
 
                 // If fg is active but upscaling paused
                 if (!fgDispatchCalled || Config::Instance()->CurrentFeature == nullptr || Config::Instance()->FGChanged ||
-                    fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive || 
+                    fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive ||
                     Config::Instance()->CurrentFeature->FrameCount() == 0)
                 {
                     LOG_WARN("Callback without hudless! frameID: {}", params->frameID);
@@ -656,13 +655,15 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
             }
 
 #ifdef USE_MUTEX_FOR_FFX
-            FrameGen_Dx12::ffxMutex.lock();
+            {
+                std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
 #endif
-            Config::Instance()->dxgiSkipSpoofing = true;
-            retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
-            Config::Instance()->dxgiSkipSpoofing = false;
+                Config::Instance()->dxgiSkipSpoofing = true;
+                retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
+                Config::Instance()->dxgiSkipSpoofing = false;
+
 #ifdef USE_MUTEX_FOR_FFX            
-            FrameGen_Dx12::ffxMutex.unlock();
+            }
 #endif
             fgDispatchCalled = true;
             LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}", retCode, frame);
@@ -1256,7 +1257,7 @@ static void hkCopyDescriptors(ID3D12Device* This,
                     continue;
 
                 auto buffer = srcHeap->GetByCpuHandle(srcHandle);
-                
+
                 // destination
                 auto destHandle = destRangeStarts[destRangeIndex].ptr + destIndex * size;
                 auto dstHeap = GetHeapByCpuHandle(destHandle);
@@ -1784,6 +1785,8 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 #ifdef USE_MUTEX_FOR_FFX
 static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 {
+    std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
+
     auto fIndex = fgFrameIndex;
 
     LOG_DEBUG("{}", fIndex);
@@ -1814,11 +1817,8 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr && CheckCapture(__FUNCTION__))
     {
         LOG_WARN("Can't capture hudless, calling HudFix dispatch!");
-
         GetHudless(nullptr);
     }
-
-    FrameGen_Dx12::ffxMutex.lock();
 
     auto result = o_FGSCPresent(This, SyncInterval, Flags);
 
@@ -1839,7 +1839,6 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 #endif
 
     FrameGen_Dx12::upscaleRan = false;
-    FrameGen_Dx12::ffxMutex.unlock();
 
     return result;
 }
@@ -2002,8 +2001,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
     }
 
     // death stranding fix???
-    if (frameCounter < 5)
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    //if (frameCounter < 5)
+    //    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     frameCounter++;
 
@@ -3221,7 +3220,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         LOG_WARN("GPU Based Validation active!");
         debugController->SetEnableGPUBasedValidation(TRUE);
 #endif
-}
+    }
 #endif
 
     Config::Instance()->dxgiSkipSpoofing = true;
@@ -3550,29 +3549,35 @@ static void ClearNextFrame()
 
 void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 {
+#ifdef USE_MUTEX_FOR_FFX
+    std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
+#endif
+
     ImGuiOverlayDx::CleanupRenderTarget(true, hWnd);
 
+#ifndef USE_MUTEX_FOR_FFX
     std::this_thread::sleep_for(std::chrono::milliseconds(250));
+#endif
 
     if (FrameGen_Dx12::fgSwapChainContext != nullptr)
     {
-#ifdef USE_MUTEX_FOR_FFX
-        FrameGen_Dx12::ffxMutex.lock();
-#endif
         auto result = FfxApiProxy::D3D12_DestroyContext()(&FrameGen_Dx12::fgSwapChainContext, nullptr);
-#ifdef USE_MUTEX_FOR_FFX
-        FrameGen_Dx12::ffxMutex.unlock();
-#endif
         LOG_INFO("Destroy Ffx Swapchain Result: {}({})", result, FfxApiProxy::ReturnCodeToString(result));
+
         FrameGen_Dx12::fgSwapChainContext = nullptr;
         fgSwapChains.erase(hWnd);
+#ifndef USE_MUTEX_FOR_FFX
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
+#endif
     }
 
     if (FrameGen_Dx12::fgContext != nullptr)
     {
         FrameGen_Dx12::StopAndDestroyFGContext(true, false);
+
+#ifndef USE_MUTEX_FOR_FFX
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
+#endif
     }
 }
 

@@ -1240,7 +1240,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 #ifdef USE_COPY_QUEUE_FOR_FG
         FrameGen_Dx12::fgCopyCommandAllocator->Reset();
         FrameGen_Dx12::fgCopyCommandList->Reset(FrameGen_Dx12::fgCopyCommandAllocator, nullptr);
-    
+
         commandList = FrameGen_Dx12::fgCopyCommandList;
 #else
         commandList = InCmdList;
@@ -1423,7 +1423,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         auto fIndex = fgCallbackFrameIndex;
 
                         // check for status
-                        if (!Config::Instance()->FGEnabled.value_or(false) || 
+                        if (!Config::Instance()->FGEnabled.value_or(false) ||
                             FrameGen_Dx12::fgContext == nullptr || Config::Instance()->SCChanged
 #ifdef USE_QUEUE_FOR_FG
                             || FrameGen_Dx12::fgCommandList[fIndex] == nullptr || FrameGen_Dx12::fgCommandQueue == nullptr
@@ -1437,7 +1437,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                         // If fg is active but upscaling paused
                         if (Config::Instance()->CurrentFeature == nullptr || !FrameGen_Dx12::fgIsActive ||
-                            Config::Instance()->FGChanged || fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount() || 
+                            Config::Instance()->FGChanged || fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount() ||
                             Config::Instance()->CurrentFeature->FrameCount() == 0)
                         {
                             LOG_WARN("(FG) Callback without active FG! fIndex:{}", fIndex);
@@ -1457,6 +1457,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                         auto dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
                         LOG_DEBUG("(FG) D3D12_Dispatch result: {}, fIndex: {}", (UINT)dispatchResult, fIndex);
+
                         if (dispatchResult == FFX_API_RETURN_OK)
                         {
 #ifdef USE_QUEUE_FOR_FG
@@ -1569,14 +1570,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     dfgPrepare.frameTimeDelta = FrameGen_Dx12::fgFrameTime;
 
 #ifdef USE_MUTEX_FOR_FFX
-                    FrameGen_Dx12::ffxMutex.lock();
+                    {
+                        std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
 #endif
-                    Config::Instance()->dxgiSkipSpoofing = true;
-                    retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
-                    Config::Instance()->dxgiSkipSpoofing = false;
+                        Config::Instance()->dxgiSkipSpoofing = true;
+                        retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
+                        Config::Instance()->dxgiSkipSpoofing = false;
 
 #ifdef USE_MUTEX_FOR_FFX
-                    FrameGen_Dx12::ffxMutex.unlock();
+                    }
 #endif
 
                     if (retCode != FFX_API_RETURN_OK)
@@ -1584,14 +1586,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     else
                         LOG_DEBUG("(FG) Dispatch ok.");
                 }
+                    }
             }
-        }
 
         return NVSDK_NGX_Result_Success;
-    }
+        }
 
     return NVSDK_NGX_Result_Fail;
-}
+    }
 
 #pragma endregion
 

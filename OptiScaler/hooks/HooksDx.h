@@ -7,6 +7,7 @@
 #include <d3d11_4.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
+#include <shared_mutex>
 
 // According to https://gpuopen.com/manuals/fidelityfx_sdk/fidelityfx_sdk-page_techniques_super-resolution-interpolation/#id11 
 // Will use mutex to prevent race condutions
@@ -31,6 +32,7 @@
 #include "../nvapi/ReflexHooks.h"
 #include <dx12/ffx_api_dx12.h>
 #include <ffx_framegeneration.h>
+
 
 namespace HooksDx
 {
@@ -88,7 +90,7 @@ namespace FrameGen_Dx12
     inline bool fgIsActive = false;
 
 #ifdef USE_MUTEX_FOR_FFX
-    inline std::mutex ffxMutex;
+    inline std::shared_mutex ffxMutex;
 #endif
 
     UINT NewFrame();
