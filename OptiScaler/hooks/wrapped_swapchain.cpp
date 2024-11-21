@@ -2,6 +2,7 @@
 
 #include "../Config.h"
 #include "../Util.h"
+#include "HooksDx.h"
 
 // Used RenderDoc's wrapped object as referance
 // https://github.com/baldurk/renderdoc/blob/v1.x/renderdoc/driver/dxgi/dxgi_wrapped.cpp
@@ -117,6 +118,8 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 {
     LOG_DEBUG("");
 
+    FrameGen_Dx12::ffxMutex.lock();
+
     HRESULT result;
     DXGI_SWAP_CHAIN_DESC desc{};
     GetDesc(&desc);
@@ -220,6 +223,8 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
     LOG_DEBUG("result: {0:X}", (UINT)result);
 
+    FrameGen_Dx12::ffxMutex.unlock();
+
     return result;
 }
 
@@ -231,6 +236,8 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetContainingOutput(IDXGIOutpu
 HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT Format, UINT SwapChainFlags,
                                                const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
+    FrameGen_Dx12::ffxMutex.lock();
+
     LOG_DEBUG("");
 
     HRESULT result;
@@ -333,11 +340,15 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 
     LOG_DEBUG("result: {0:X}", (UINT)result);
 
+    FrameGen_Dx12::ffxMutex.unlock();
+
     return result;
 }
 
 HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput* pTarget)
 {
+    FrameGen_Dx12::ffxMutex.lock();
+
     auto result = m_pReal->SetFullscreenState(Fullscreen, pTarget);
 
     LOG_DEBUG("Fullscreen: {}", Fullscreen);
@@ -384,6 +395,8 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
     }
 
     LOG_DEBUG("result: {0:X}", (UINT)result);
+
+    FrameGen_Dx12::ffxMutex.unlock();
 
     return result;
 }

@@ -1423,8 +1423,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         auto fIndex = fgCallbackFrameIndex;
 
                         // check for status
-                        if (!Config::Instance()->FGEnabled.value_or(false) || Config::Instance()->FGChanged ||
-                            FrameGen_Dx12::fgContext == nullptr 
+                        if (!Config::Instance()->FGEnabled.value_or(false) || 
+                            FrameGen_Dx12::fgContext == nullptr || Config::Instance()->SCChanged
 #ifdef USE_QUEUE_FOR_FG
                             || FrameGen_Dx12::fgCommandList[fIndex] == nullptr || FrameGen_Dx12::fgCommandQueue == nullptr
 #endif
@@ -1437,7 +1437,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                         // If fg is active but upscaling paused
                         if (Config::Instance()->CurrentFeature == nullptr || !FrameGen_Dx12::fgIsActive ||
-                            fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount())
+                            Config::Instance()->FGChanged || fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount() || 
+                            Config::Instance()->CurrentFeature->FrameCount() == 0)
                         {
                             LOG_WARN("(FG) Callback without active FG! fIndex:{}", fIndex);
 

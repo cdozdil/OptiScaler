@@ -554,8 +554,9 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
                 auto fIndex = fgCallbackFrameIndex;
 
                 // check for status
-                if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || Config::Instance()->FGChanged ||
-                    FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCommandList[fIndex] == nullptr || FrameGen_Dx12::fgCommandQueue == nullptr)
+                if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) || 
+                    FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCommandList[fIndex] == nullptr || 
+                    FrameGen_Dx12::fgCommandQueue == nullptr || Config::Instance()->SCChanged)
                 {
                     LOG_WARN("Cancel async dispatch");
                     fgDispatchCalled = false;
@@ -564,8 +565,9 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
                 }
 
                 // If fg is active but upscaling paused
-                if (!fgDispatchCalled || Config::Instance()->CurrentFeature == nullptr ||
-                    fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive)
+                if (!fgDispatchCalled || Config::Instance()->CurrentFeature == nullptr || Config::Instance()->FGChanged ||
+                    fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive || 
+                    Config::Instance()->CurrentFeature->FrameCount() == 0)
                 {
                     LOG_WARN("Callback without hudless! frameID: {}", params->frameID);
 
