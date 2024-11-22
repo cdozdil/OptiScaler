@@ -123,7 +123,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
     HRESULT result;
     DXGI_SWAP_CHAIN_DESC desc{};
-    GetDesc(&desc);
+    m_pReal->GetDesc(&desc);
 
     if (Config::Instance()->FGEnabled.value_or(false))
     {
@@ -148,7 +148,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
         Config::Instance()->ScreenWidth = Width;
         Config::Instance()->ScreenHeight = Height;
     }
-    
+
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
     // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
     if (Config::Instance()->forceHdr.value_or(false))
@@ -209,7 +209,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     {
         IUnknown* buffer;
 
-        if (GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
+        if (m_pReal->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
         {
             Config::Instance()->scBuffers.push_back(buffer);
             buffer->Release();
@@ -223,6 +223,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
 HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetContainingOutput(IDXGIOutput** ppOutput)
 {
+    std::lock_guard<std::mutex> lock(_localMutex);
     return m_pReal->GetContainingOutput(ppOutput);
 }
 
@@ -236,7 +237,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 
     HRESULT result;
     DXGI_SWAP_CHAIN_DESC desc{};
-    GetDesc(&desc);
+    m_pReal->GetDesc(&desc);
 
     if (Config::Instance()->FGEnabled.value_or(false))
     {
@@ -319,7 +320,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
     {
         IUnknown* buffer;
 
-        if (GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
+        if (m_pReal->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
         {
             Config::Instance()->scBuffers.push_back(buffer);
             buffer->Release();
@@ -369,7 +370,7 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
     {
         IUnknown* buffer;
 
-        if (GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
+        if (m_pReal->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
         {
             Config::Instance()->scBuffers.push_back(buffer);
             buffer->Release();
@@ -383,11 +384,13 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 
 HRESULT WrappedIDXGISwapChain4::GetFullscreenState(BOOL* pFullscreen, IDXGIOutput** ppTarget)
 {
+    std::lock_guard<std::mutex> lock(_localMutex);
     return m_pReal->GetFullscreenState(pFullscreen, ppTarget);
 }
 
 HRESULT WrappedIDXGISwapChain4::GetBuffer(UINT Buffer, REFIID riid, void** ppSurface)
 {
+    std::lock_guard<std::mutex> lock(_localMutex);
     return m_pReal->GetBuffer(Buffer, riid, ppSurface);
 }
 

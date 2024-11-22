@@ -18,9 +18,12 @@
 #endif
 
 // Enable D3D12 Debug Layers
-//#define ENABLE_DEBUG_LAYER
+#define ENABLE_DEBUG_LAYER_DX12
 
-#ifdef ENABLE_DEBUG_LAYER
+// Enable D3D11 Debug Layers
+//#define ENABLE_DEBUG_LAYER_DX11
+
+#ifdef ENABLE_DEBUG_LAYER_DX12
 // Enable GPUValidation
 //#define ENABLE_GPU_VALIDATION
 

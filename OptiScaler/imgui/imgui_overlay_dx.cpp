@@ -140,7 +140,7 @@ static void CleanupRenderTargetDx12(bool clearQueue)
     {
         if (ImGuiOverlayBase::IsInited() && g_pd3dDeviceParam != nullptr && g_pd3dSrvDescHeap != nullptr && ImGui::GetIO().BackendRendererUserData)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            //std::this_thread::sleep_for(std::chrono::milliseconds(500));
             ImGui_ImplDX12_Shutdown();
         }
 

@@ -115,7 +115,8 @@ static bool contextRendering = false;
 static ULONGLONG computeTime = 0;
 static ULONGLONG graphTime = 0;
 static ULONGLONG lastEvalTime = 0;
-static std::mutex sigatureMutex;
+static std::mutex computeSigatureMutex;
+static std::mutex graphSigatureMutex;
 
 static int64_t GetTicks()
 {
@@ -129,12 +130,12 @@ static int64_t GetTicks()
 
 static void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
-    if (!contextRendering && commandList != nullptr && pRootSignature != nullptr)
+    if (Config::Instance()->RestoreComputeSignature.value_or(false) && !contextRendering && commandList != nullptr && pRootSignature != nullptr)
     {
-        sigatureMutex.lock();
+        std::lock_guard<std::mutex> lock(computeSigatureMutex);
+
         rootSigCompute = pRootSignature;
         computeTime = GetTicks();
-        sigatureMutex.unlock();
     }
 
     return orgSetComputeRootSignature(commandList, pRootSignature);
@@ -142,18 +143,18 @@ static void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID
 
 static void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
-    if (!contextRendering && commandList != nullptr && pRootSignature != nullptr)
+    if (Config::Instance()->RestoreGraphicSignature.value_or(false) && !contextRendering && commandList != nullptr && pRootSignature != nullptr)
     {
-        sigatureMutex.lock();
+        std::lock_guard<std::mutex> lock(graphSigatureMutex);
+
         rootSigGraphic = pRootSignature;
         graphTime = GetTicks();
-        sigatureMutex.unlock();
     }
 
     return orgSetGraphicRootSignature(commandList, pRootSignature);
 }
 
-void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
+static void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
 {
     if (orgSetComputeRootSignature != nullptr || orgSetGraphicRootSignature != nullptr)
         return;
@@ -178,7 +179,7 @@ void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
     }
 }
 
-void UnhookAll()
+static void UnhookAll()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
@@ -266,18 +267,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 
     Config::Instance()->Api = NVNGX_DX12;
 
-    // Create query heap for timestamp queries
-    D3D12_QUERY_HEAP_DESC queryHeapDesc = {};
-    queryHeapDesc.Count = 2; // Start and End timestamps
-    queryHeapDesc.NodeMask = 0;
-    queryHeapDesc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
-    auto result = InDevice->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&HooksDx::queryHeap));
+    if (!Config::Instance()->WorkingAsNvngx)
+    {
+        // Create query heap for timestamp queries
+        D3D12_QUERY_HEAP_DESC queryHeapDesc = {};
+        queryHeapDesc.Count = 2; // Start and End timestamps
+        queryHeapDesc.NodeMask = 0;
+        queryHeapDesc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+        auto result = InDevice->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&HooksDx::queryHeap));
 
-    // Create a readback buffer to retrieve timestamp data
-    D3D12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(2 * sizeof(UINT64));
-    D3D12_HEAP_PROPERTIES heapProps = {};
-    heapProps.Type = D3D12_HEAP_TYPE_READBACK;
-    result = InDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&HooksDx::readbackBuffer));
+        // Create a readback buffer to retrieve timestamp data
+        D3D12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(2 * sizeof(UINT64));
+        D3D12_HEAP_PROPERTIES heapProps = {};
+        heapProps.Type = D3D12_HEAP_TYPE_READBACK;
+        result = InDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&HooksDx::readbackBuffer));
+    }
 
     return NVSDK_NGX_Result_Success;
 }
@@ -1166,18 +1170,23 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     // Root signature restore
     ID3D12RootSignature* orgComputeRootSig = nullptr;
     ID3D12RootSignature* orgGraphicRootSig = nullptr;
-    if (deviceContext->Name() != "DLSSD")
+    if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
     {
-        sigatureMutex.lock();
+        if (Config::Instance()->RestoreComputeSignature.value_or(false))
+        {
+            std::lock_guard<std::mutex> lock(computeSigatureMutex);
+            orgComputeRootSig = rootSigCompute;
+        }
 
-        orgComputeRootSig = rootSigCompute;
-        orgGraphicRootSig = rootSigGraphic;
+        if (Config::Instance()->RestoreGraphicSignature.value_or(false))
+        {
+            std::lock_guard<std::mutex> lock(graphSigatureMutex);
+            orgGraphicRootSig = rootSigGraphic;
+        }
 
         LOG_TRACE("orgComputeRootSig: {0:X}, orgGraphicRootSig: {1:X}", (UINT64)orgComputeRootSig, (UINT64)orgGraphicRootSig);
 
         contextRendering = true;
-
-        sigatureMutex.unlock();
     }
 
     // FG Init || Disable    
@@ -1284,27 +1293,30 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &FrameGen_Dx12::mvScaleY);
 
         LOG_DEBUG("(FG) copy buffers done, frame: {0}", deviceContext->FrameCount());
-    }
+        }
 
     // Record the first timestamp
-    InCmdList->EndQuery(HooksDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
+    if (!Config::Instance()->WorkingAsNvngx)
+        InCmdList->EndQuery(HooksDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
 
     // Run upscaler
     auto evalResult = deviceContext->Evaluate(InCmdList, InParameters);
 
     // Record the second timestamp 
-    InCmdList->EndQuery(HooksDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 1);
+    if (!Config::Instance()->WorkingAsNvngx)
+    {
+        InCmdList->EndQuery(HooksDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 1);
 
-    // Resolve the queries to the readback buffer
-    InCmdList->ResolveQueryData(HooksDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0, 2, HooksDx::readbackBuffer, 0);
+        // Resolve the queries to the readback buffer
+        InCmdList->ResolveQueryData(HooksDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0, 2, HooksDx::readbackBuffer, 0);
+    }
 
     // Root signature restore
     if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
     {
-        sigatureMutex.lock();
-
         if (Config::Instance()->RestoreComputeSignature.value_or(false) && computeTime != 0 && computeTime > lastEvalTime && computeTime <= evaluateStart && orgComputeRootSig != nullptr)
         {
+            std::lock_guard<std::mutex> lock(computeSigatureMutex);
             LOG_TRACE("restore orgComputeRootSig: {0:X}", (UINT64)orgComputeRootSig);
             orgSetComputeRootSignature(InCmdList, orgComputeRootSig);
         }
@@ -1320,6 +1332,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
         if (Config::Instance()->RestoreGraphicSignature.value_or(false) && graphTime != 0 && graphTime > lastEvalTime && graphTime <= evaluateStart && orgGraphicRootSig != nullptr)
         {
+            std::lock_guard<std::mutex> lock(graphSigatureMutex);
             LOG_TRACE("restore orgGraphicRootSig: {0:X}", (UINT64)orgGraphicRootSig);
             orgSetGraphicRootSignature(InCmdList, orgGraphicRootSig);
         }
@@ -1338,8 +1351,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
         rootSigCompute = nullptr;
         rootSigGraphic = nullptr;
-
-        sigatureMutex.unlock();
     }
 
     LOG_DEBUG("Upscaling done: {}", evalResult);
@@ -1364,7 +1375,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             {
                 msDelta = now - fgLastFrameTime;
                 LOG_DEBUG("(FG) msDelta: {0}", msDelta);
-            }
+    }
 
             fgLastFrameTime = now;
             FrameGen_Dx12::fgFrameTime = msDelta;
@@ -1444,13 +1455,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 #ifdef USE_QUEUE_FOR_FG
                             auto allocator = FrameGen_Dx12::fgCommandAllocators[fIndex];
-                            auto result = allocator->Reset();
-                            result = FrameGen_Dx12::fgCommandList[fIndex]->Reset(allocator, nullptr);
+                                auto result = allocator->Reset();
+                                result = FrameGen_Dx12::fgCommandList[fIndex]->Reset(allocator, nullptr);
 #endif
 
-                            params->frameID = fgLastFGFrame;
+                                params->frameID = fgLastFGFrame;
                             params->numGeneratedFrames = 0;
-                        }
+                    }
 
                         if (Config::Instance()->CurrentFeature != nullptr)
                             fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
@@ -1477,18 +1488,18 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                             ResourceBarrier(InCmdList, paramVelocity, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
                             ResourceBarrier(InCmdList, paramDepth, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
 #endif
-                        }
+                            }
 
                         return dispatchResult;
-                    };
+            };
 
                 m_FrameGenerationConfig.onlyPresentGenerated = Config::Instance()->FGOnlyGenerated; // check here
                 m_FrameGenerationConfig.frameID = deviceContext->FrameCount();
                 m_FrameGenerationConfig.swapChain = HooksDx::currentSwapchain;
 
-                Config::Instance()->dxgiSkipSpoofing = true;
+                //Config::Instance()->dxgiSkipSpoofing = true;
                 ffxReturnCode_t retCode = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgContext, &m_FrameGenerationConfig.header);
-                Config::Instance()->dxgiSkipSpoofing = false;
+                //Config::Instance()->dxgiSkipSpoofing = false;
 
                 if (retCode != FFX_API_RETURN_OK)
                     LOG_ERROR("(FG) D3D12_Configure error: {}({})", retCode, FfxApiProxy::ReturnCodeToString(retCode));
@@ -1573,9 +1584,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     {
                         std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
 #endif
-                        Config::Instance()->dxgiSkipSpoofing = true;
+                        //Config::Instance()->dxgiSkipSpoofing = true;
                         retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
-                        Config::Instance()->dxgiSkipSpoofing = false;
+                        //Config::Instance()->dxgiSkipSpoofing = false;
 
 #ifdef USE_MUTEX_FOR_FFX
                     }
@@ -1586,8 +1597,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     else
                         LOG_DEBUG("(FG) Dispatch ok.");
                 }
-                    }
-            }
+    }
+}
 
         return NVSDK_NGX_Result_Success;
         }

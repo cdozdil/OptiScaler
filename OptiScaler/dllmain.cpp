@@ -225,7 +225,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
         HooksDx::HookDx12();
         skipLoadChecks = false;
     }
-    
+
     if (CheckDllName(&lcaseLibName, &dxgiNames))
     {
         skipLoadChecks = true;
@@ -697,6 +697,7 @@ static BOOL hkFreeLibrary(HMODULE lpLibrary)
         {
             auto result = o_FreeLibrary(lpLibrary);
             LOG_DEBUG("o_FreeLibrary result: {0:X}", result);
+            return result;
         }
         else
         {
@@ -1736,99 +1737,102 @@ static void CheckWorkingMode()
 
     if (modeFound)
     {
-        HMODULE dxgiModule = nullptr;
-        dxgiModule = GetModuleHandle(L"dxgi.dll");
-        if (dxgiModule != nullptr)
-        {
-            LOG_DEBUG("dxgi.dll already in memory");
-            HookForDxgiSpoofing();
-        }
-
-        HMODULE vulkanModule = nullptr;
-        vulkanModule = GetModuleHandle(L"vulkan-1.dll");
-        if (vulkanModule != nullptr)
-        {
-            LOG_DEBUG("vulkan-1.dll already in memory");
-            HookForVulkanSpoofing();
-            HookForVulkanExtensionSpoofing();
-        }
-
-        HMODULE nvapi64 = nullptr;
-        nvapi64 = GetModuleHandle(L"nvapi64.dll");
-        if (nvapi64 != nullptr)
-        {
-            LOG_DEBUG("nvapi64.dll already in memory");
-            NvApiHooks::Hook(nvapi64);
-        }
-
         Config::Instance()->WorkingAsNvngx = isNvngxMode && !isWorkingWithEnabler;
         Config::Instance()->OverlayMenu = (!isNvngxMode || isWorkingWithEnabler) && Config::Instance()->OverlayMenu.value_or(true);
 
-        // dx menu hooks
-        HMODULE d3d11Module = nullptr;
-        d3d11Module = GetModuleHandle(L"d3d11.dll");
-        if (Config::Instance()->OverlayMenu.value() && d3d11Module != nullptr)
+        if (!isNvngxMode)
         {
-            LOG_DEBUG("d3d11.dll already in memory");
-            HooksDx::HookDx11();
-        }
-
-        HMODULE d3d12Module = nullptr;
-        d3d12Module = GetModuleHandle(L"d3d12.dll");
-        if (Config::Instance()->OverlayMenu.value() && d3d12Module != nullptr)
-        {
-            LOG_DEBUG("d3d12.dll already in memory");
-            HooksDx::HookDx12();
-        }
-
-        if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr)
-            HooksDx::HookDxgi();
-
-        if ((!Config::Instance()->FGUseFGSwapChain.value_or(true) || !Config::Instance()->OverlayMenu.value_or(true)) &&
-            skHandle == nullptr && Config::Instance()->LoadSpecialK.value_or(false))
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(250));
-            auto skFile = Util::DllPath().parent_path() / L"SpecialK64.dll";
-            SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
-            skHandle = LoadLibrary(skFile.c_str());
-            LOG_INFO("Loading SpecialK64.dll, result: {0:X}", (UINT64)skHandle);
-        }
-
-        if (reshadeHandle == nullptr && Config::Instance()->LoadReShade.value_or(false))
-        {
-            auto rsFile = Util::DllPath().parent_path() / L"ReShade64.dll";
-            SetEnvironmentVariableW(L"RESHADE_DISABLE_LOADING_CHECK", L"1");
-
-            if (skHandle != nullptr)
-                SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
-
-            reshadeHandle = LoadLibrary(rsFile.c_str());
-            LOG_INFO("Loading ReShade64.dll, result: {0:X}", (size_t)reshadeHandle);
-        }
-
-        // vk menu hooks
-        if (Config::Instance()->OverlayMenu.value() && (vulkanModule != nullptr || Config::Instance()->IsRunningOnLinux))
-            HooksVk::HookVk();
-
-        AttachHooks();
-
-        // if in memory try to unload epic overlay
-        if (Config::Instance()->FGUseFGSwapChain.value_or(true))
-        {
-            for (size_t i = 0; i < epicNamesW.size(); i++)
+            HMODULE dxgiModule = nullptr;
+            dxgiModule = GetModuleHandle(L"dxgi.dll");
+            if (dxgiModule != nullptr)
             {
-                HMODULE epic = nullptr;
+                LOG_DEBUG("dxgi.dll already in memory");
+                HookForDxgiSpoofing();
+            }
 
-                do
+            HMODULE vulkanModule = nullptr;
+            vulkanModule = GetModuleHandle(L"vulkan-1.dll");
+            if (vulkanModule != nullptr)
+            {
+                LOG_DEBUG("vulkan-1.dll already in memory");
+                HookForVulkanSpoofing();
+                HookForVulkanExtensionSpoofing();
+            }
+
+            HMODULE nvapi64 = nullptr;
+            nvapi64 = GetModuleHandle(L"nvapi64.dll");
+            if (nvapi64 != nullptr)
+            {
+                LOG_DEBUG("nvapi64.dll already in memory");
+                NvApiHooks::Hook(nvapi64);
+            }
+
+            // dx menu hooks
+            HMODULE d3d11Module = nullptr;
+            d3d11Module = GetModuleHandle(L"d3d11.dll");
+            if (Config::Instance()->OverlayMenu.value() && d3d11Module != nullptr)
+            {
+                LOG_DEBUG("d3d11.dll already in memory");
+                HooksDx::HookDx11();
+            }
+
+            HMODULE d3d12Module = nullptr;
+            d3d12Module = GetModuleHandle(L"d3d12.dll");
+            if (Config::Instance()->OverlayMenu.value() && d3d12Module != nullptr)
+            {
+                LOG_DEBUG("d3d12.dll already in memory");
+                HooksDx::HookDx12();
+            }
+
+            if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr)
+                HooksDx::HookDxgi();
+
+            if ((!Config::Instance()->FGUseFGSwapChain.value_or(true) || !Config::Instance()->OverlayMenu.value_or(true)) &&
+                skHandle == nullptr && Config::Instance()->LoadSpecialK.value_or(false))
+            {
+                //std::this_thread::sleep_for(std::chrono::milliseconds(250));
+                auto skFile = Util::DllPath().parent_path() / L"SpecialK64.dll";
+                SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
+                skHandle = LoadLibrary(skFile.c_str());
+                LOG_INFO("Loading SpecialK64.dll, result: {0:X}", (UINT64)skHandle);
+            }
+
+            if (reshadeHandle == nullptr && Config::Instance()->LoadReShade.value_or(false))
+            {
+                auto rsFile = Util::DllPath().parent_path() / L"ReShade64.dll";
+                SetEnvironmentVariableW(L"RESHADE_DISABLE_LOADING_CHECK", L"1");
+
+                if (skHandle != nullptr)
+                    SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
+
+                reshadeHandle = LoadLibrary(rsFile.c_str());
+                LOG_INFO("Loading ReShade64.dll, result: {0:X}", (size_t)reshadeHandle);
+            }
+
+            // vk menu hooks
+            if (Config::Instance()->OverlayMenu.value() && (vulkanModule != nullptr || Config::Instance()->IsRunningOnLinux))
+                HooksVk::HookVk();
+
+            AttachHooks();
+
+            // if in memory try to unload epic overlay
+            if (Config::Instance()->FGUseFGSwapChain.value_or(true))
+            {
+                for (size_t i = 0; i < epicNamesW.size(); i++)
                 {
-                    epic = GetModuleHandle(epicNamesW[i].c_str());
+                    HMODULE epic = nullptr;
 
-                    BOOL result = TRUE;
+                    do
+                    {
+                        epic = GetModuleHandle(epicNamesW[i].c_str());
 
-                    if (epic != nullptr)
-                        result = FreeLibrary(epic);
+                        BOOL result = TRUE;
 
-                } while (epic != nullptr);
+                        if (epic != nullptr)
+                            result = FreeLibrary(epic);
+
+                    } while (epic != nullptr);
+                }
             }
         }
 
