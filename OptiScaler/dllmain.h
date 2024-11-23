@@ -1417,7 +1417,7 @@ HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
         std::wcscpy(pDesc->Description, szName.c_str());
 
         if (Config::Instance()->DxgiSpoofing.has_value())
-            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
+            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.value() * 1024 * 1024 * 1024;
 
 #ifdef _DEBUG
         LOG_DEBUG("spoofing");
@@ -1444,7 +1444,7 @@ HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
         std::wcscpy(pDesc->Description, szName.c_str());
 
         if (Config::Instance()->DxgiSpoofing.has_value())
-            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
+            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.value() * 1024 * 1024 * 1024;
 
 #ifdef _DEBUG
         LOG_DEBUG("spoofing");
@@ -1471,7 +1471,7 @@ HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
         std::wcscpy(pDesc->Description, szName.c_str());
 
         if (Config::Instance()->DxgiSpoofing.has_value())
-            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
+            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.value() * 1024 * 1024 * 1024;
 
 #ifdef _DEBUG
         LOG_DEBUG("spoofing");
@@ -1497,9 +1497,8 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
         std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
         std::wcscpy(pDesc->Description, szName.c_str());
 
-
         if (Config::Instance()->DxgiSpoofing.has_value())
-            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
+            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.value() * 1024 * 1024 * 1024;
 
 #ifdef _DEBUG
         LOG_DEBUG("spoofing");
