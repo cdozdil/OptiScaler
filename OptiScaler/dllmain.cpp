@@ -211,12 +211,13 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
     }
 
     // Hooks
-
     if (CheckDllName(&lcaseLibName, &dx11Names) && Config::Instance()->OverlayMenu.value_or(true))
     {
         skipLoadChecks = true;
         HooksDx::HookDx11();
         skipLoadChecks = false;
+
+        return GetModuleHandleA(lcaseLibName.c_str());
     }
 
     if (CheckDllName(&lcaseLibName, &dx12Names) && Config::Instance()->OverlayMenu.value_or(true))
@@ -224,16 +225,8 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
         skipLoadChecks = true;
         HooksDx::HookDx12();
         skipLoadChecks = false;
-    }
 
-    if (CheckDllName(&lcaseLibName, &dxgiNames))
-    {
-        skipLoadChecks = true;
-        HookForDxgiSpoofing();
-
-        if (Config::Instance()->OverlayMenu.value_or(true))
-            HooksDx::HookDxgi();
-        skipLoadChecks = false;
+        return GetModuleHandleA(lcaseLibName.c_str());
     }
 
     if (CheckDllName(&lcaseLibName, &vkNames))
@@ -244,6 +237,20 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
 
         if (Config::Instance()->OverlayMenu.value_or(true))
             HooksVk::HookVk();
+
+        skipLoadChecks = false;
+
+        return GetModuleHandleA(lcaseLibName.c_str());
+    }
+
+    if (CheckDllName(&lcaseLibName, &dxgiNames))
+    {
+        skipLoadChecks = true;
+        HookForDxgiSpoofing();
+
+        if (Config::Instance()->OverlayMenu.value_or(true))
+            HooksDx::HookDxgi();
+
         skipLoadChecks = false;
     }
 
@@ -342,22 +349,14 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
         skipLoadChecks = true;
         HooksDx::HookDx11();
         skipLoadChecks = false;
+
+        return GetModuleHandle(lcaseLibName.c_str());
     }
 
     if (CheckDllNameW(&lcaseLibName, &dx12NamesW) && Config::Instance()->OverlayMenu.value_or(true))
     {
         skipLoadChecks = true;
         HooksDx::HookDx12();
-        skipLoadChecks = false;
-    }
-
-    if (CheckDllNameW(&lcaseLibName, &dxgiNamesW))
-    {
-        skipLoadChecks = true;
-        HookForDxgiSpoofing();
-
-        if (Config::Instance()->OverlayMenu.value_or(true))
-            HooksDx::HookDxgi();
         skipLoadChecks = false;
     }
 
@@ -369,6 +368,18 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
         if (Config::Instance()->OverlayMenu.value_or(true))
             HooksVk::HookVk();
+        skipLoadChecks = false;
+
+        return GetModuleHandle(lcaseLibName.c_str());
+    }
+
+    if (CheckDllNameW(&lcaseLibName, &dxgiNamesW))
+    {
+        skipLoadChecks = true;
+        HookForDxgiSpoofing();
+
+        if (Config::Instance()->OverlayMenu.value_or(true))
+            HooksDx::HookDxgi();
         skipLoadChecks = false;
     }
 
@@ -946,7 +957,8 @@ static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhy
 
 static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance)
 {
-    LOG_DEBUG("for {0}", pCreateInfo->pApplicationInfo->pApplicationName);
+    if (pCreateInfo->pApplicationInfo->pApplicationName != nullptr)
+        LOG_DEBUG("for {0}", pCreateInfo->pApplicationInfo->pApplicationName);
 
     LOG_DEBUG("extensions ({0}):", pCreateInfo->enabledExtensionCount);
     for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
@@ -1923,6 +1935,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 }
             }
 
+            // Check for working mode and attach hooks
+            spdlog::info("");
+            CheckWorkingMode();
+            spdlog::info("");
+
             // Init XeSS proxy
             if (!XeSSProxy::InitXeSS())
                 spdlog::warn("Can't init XeSS!");
@@ -1933,11 +1950,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             if (!FfxApiProxy::InitFfxVk())
                 spdlog::warn("Can't init Vulkan FfxApi!");
-
-            // Check for working mode and attach hooks
-            spdlog::info("");
-            CheckWorkingMode();
-            spdlog::info("");
 
             for (size_t i = 0; i < 300; i++)
             {
