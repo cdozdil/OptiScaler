@@ -76,11 +76,21 @@ private:
 
     inline static PFN_xessSetContextParameterF _xessSetContextParameterF = nullptr;
 
+    inline static PFN_xessVKGetRequiredInstanceExtensions _xessVKGetRequiredInstanceExtensions = nullptr;
+    inline static PFN_xessVKGetRequiredDeviceExtensions _xessVKGetRequiredDeviceExtensions = nullptr;
+    inline static PFN_xessVKGetRequiredDeviceFeatures _xessVKGetRequiredDeviceFeatures = nullptr;
+    inline static PFN_xessVKCreateContext _xessVKCreateContext = nullptr;
+    inline static PFN_xessVKBuildPipelines _xessVKBuildPipelines = nullptr;
+    inline static PFN_xessVKInit _xessVKInit = nullptr;
+    inline static PFN_xessVKGetInitParams _xessVKGetInitParams = nullptr;
+    inline static PFN_xessVKExecute _xessVKExecute = nullptr;
+    inline static PFN_xessVKGetResourcesToDump _xessVKGetResourcesToDump = nullptr;
+
     inline static void GetDLLVersion(std::wstring dllPath)
     {
         // Step 1: Get the size of the version information
         DWORD handle = 0;
-        DWORD versionSize = GetFileVersionInfoSizeW(dllPath.c_str(), &handle);
+        DWORD versionSize = GetFileVersionInfoSize(dllPath.c_str(), &handle);
 
         if (versionSize == 0)
         {
@@ -90,7 +100,7 @@ private:
 
         // Step 2: Allocate buffer and get the version information
         std::vector<BYTE> versionInfo(versionSize);
-        if (!GetFileVersionInfoW(dllPath.c_str(), handle, versionSize, versionInfo.data()))
+        if (!GetFileVersionInfo(dllPath.c_str(), handle, versionSize, versionInfo.data()))
         {
             LOG_ERROR("Failed to get version info: {0:X}", GetLastError());
             return;
@@ -99,7 +109,7 @@ private:
         // Step 3: Extract the version information
         VS_FIXEDFILEINFO* fileInfo = nullptr;
         UINT size = 0;
-        if (!VerQueryValueW(versionInfo.data(), L"\\", reinterpret_cast<LPVOID*>(&fileInfo), &size)) {
+        if (!VerQueryValue(versionInfo.data(), L"\\", reinterpret_cast<LPVOID*>(&fileInfo), &size)) {
             LOG_ERROR("Failed to query version value: {0:X}", GetLastError());
             return;
         }
@@ -158,7 +168,6 @@ public:
             if (!cfgPath.has_filename())
                 cfgPath = cfgPath / L"libxess.dll";
 
-            GetDLLVersion(cfgPath.wstring());
             _dll = LoadLibrary(cfgPath.c_str());
         }
 
@@ -167,8 +176,6 @@ public:
         {
             std::filesystem::path libXessPath = dllPath.parent_path() / L"libxess-original.dll";
             LOG_INFO("Trying to load libxess.dll from dll path: {}", libXessPath.string());
-
-            GetDLLVersion(libXessPath.wstring());
             _dll = LoadLibrary(libXessPath.c_str());
 
             if (_dll == nullptr)
@@ -185,8 +192,6 @@ public:
         {
             std::filesystem::path libXessPath = dllPath.parent_path() / L"libxess.dll";
             LOG_INFO("Trying to load libxess.dll from dll path: {}", libXessPath.string());
-
-            GetDLLVersion(libXessPath.wstring());
             _dll = LoadLibrary(libXessPath.c_str());
         }
 
