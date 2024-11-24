@@ -13,13 +13,13 @@
 #include "backends/xess/XeSSFeature_Dx12.h"
 
 #include "hooks/HooksDx.h"
-
-#include "detours/detours.h"
-#include <ankerl/unordered_dense.h>
-#include <dxgi1_4.h>
-
 #include "FfxApi_Proxy.h"
+
+#include <dxgi1_4.h>
+#include <shared_mutex>
+#include "detours/detours.h"
 #include <ffx_framegeneration.h>
+#include <ankerl/unordered_dense.h>
 
 // Use a dedicated Queue + CommandList for copying Depth + Velocity
 // Looks like it is causing issues so disabled 
@@ -39,6 +39,8 @@ static UINT64 fgLastFGFrame = 0;
 static UINT fgCallbackFrameIndex = 0;
 
 static ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
+static ankerl::unordered_dense::map <ID3D12GraphicsCommandList*, ID3D12RootSignature*> computeSignatures;
+static ankerl::unordered_dense::map <ID3D12GraphicsCommandList*, ID3D12RootSignature*> graphicSignatures;
 static ID3D12Device* D3D12Device = nullptr;
 static NVSDK_NGX_Parameter* createParams = nullptr;
 static int changeBackendCounter = 0;
@@ -109,14 +111,11 @@ typedef void(*PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC*
 static PFN_SetComputeRootSignature orgSetComputeRootSignature = nullptr;
 static PFN_SetComputeRootSignature orgSetGraphicRootSignature = nullptr;
 
-static ID3D12RootSignature* rootSigCompute = nullptr;
-static ID3D12RootSignature* rootSigGraphic = nullptr;
 static bool contextRendering = false;
-static ULONGLONG computeTime = 0;
-static ULONGLONG graphTime = 0;
-static ULONGLONG lastEvalTime = 0;
-static std::mutex computeSigatureMutex;
-static std::mutex graphSigatureMutex;
+static std::shared_mutex computeSigatureMutex;
+static std::shared_mutex graphSigatureMutex;
+
+static IID streamlineRiid{};
 
 static int64_t GetTicks()
 {
@@ -130,28 +129,24 @@ static int64_t GetTicks()
 
 static void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
-    if (Config::Instance()->RestoreComputeSignature.value_or(false) && !contextRendering && commandList != nullptr && pRootSignature != nullptr)
+    if (!contextRendering && commandList != nullptr && pRootSignature != nullptr)
     {
-        std::lock_guard<std::mutex> lock(computeSigatureMutex);
-
-        rootSigCompute = pRootSignature;
-        computeTime = GetTicks();
+        std::unique_lock<std::shared_mutex> lock(computeSigatureMutex);
+        computeSignatures.insert_or_assign(commandList, pRootSignature);
     }
 
-    return orgSetComputeRootSignature(commandList, pRootSignature);
+    orgSetComputeRootSignature(commandList, pRootSignature);
 }
 
 static void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
-    if (Config::Instance()->RestoreGraphicSignature.value_or(false) && !contextRendering && commandList != nullptr && pRootSignature != nullptr)
+    if (!contextRendering && commandList != nullptr && pRootSignature != nullptr)
     {
-        std::lock_guard<std::mutex> lock(graphSigatureMutex);
-
-        rootSigGraphic = pRootSignature;
-        graphTime = GetTicks();
+        std::unique_lock<std::shared_mutex> lock(graphSigatureMutex);
+        graphicSignatures.insert_or_assign(commandList, pRootSignature);
     }
 
-    return orgSetGraphicRootSignature(commandList, pRootSignature);
+    orgSetGraphicRootSignature(commandList, pRootSignature);
 }
 
 static void HookToCommandList(ID3D12GraphicsCommandList* InCmdList)
@@ -281,6 +276,28 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
         D3D12_HEAP_PROPERTIES heapProps = {};
         heapProps.Type = D3D12_HEAP_TYPE_READBACK;
         result = InDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&HooksDx::readbackBuffer));
+    }
+
+    // early hooking for signatures
+    if (orgSetComputeRootSignature == nullptr &&
+        (Config::Instance()->RestoreComputeSignature.value_or(true) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
+    {
+        ID3D12CommandAllocator* alloc = nullptr;
+        ID3D12GraphicsCommandList* gcl = nullptr;
+
+        auto result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&alloc));
+        if (result == S_OK)
+        {
+
+            result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, alloc, NULL, IID_PPV_ARGS(&gcl));
+            if (result == S_OK)
+            {
+                HookToCommandList(gcl);
+                gcl->Release();
+            }
+
+            alloc->Release();
+        }
     }
 
     return NVSDK_NGX_Result_Success;
@@ -534,6 +551,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 {
     LOG_FUNC();
 
+    if (InCmdList != nullptr)
+        HookToCommandList(InCmdList);
+
     if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
     {
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::InitDx12(D3D12Device) && NVNGXProxy::D3D12_CreateFeature() != nullptr)
@@ -579,6 +599,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
         InParameters->Get("DLSSEnabler.Logging", &nvsdkLogging);
         Config::Instance()->LogToNGX = nvsdkLogging > 0;
     }
+
+    // Root signature restore
+    if (Config::Instance()->RestoreComputeSignature.value_or(true) || Config::Instance()->RestoreGraphicSignature.value_or(false))
+        contextRendering = true;
 
     if (InFeatureID == NVSDK_NGX_Feature_SuperSampling)
     {
@@ -726,8 +750,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
             LOG_ERROR("Can't get Dx12Device from InCmdList!");
             return NVSDK_NGX_Result_Fail;
         }
-
-        //HookToDevice(D3D12Device);
     }
 
 #pragma endregion
@@ -735,17 +757,43 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
     if (deviceContext->Init(D3D12Device, InCmdList, InParameters))
     {
         Config::Instance()->CurrentFeature = deviceContext;
-        HookToCommandList(InCmdList);
         evalCounter = 0;
 
         FrameGen_Dx12::fgTarget = 10;
-
-        return NVSDK_NGX_Result_Success;
+    }
+    else
+    {
+        LOG_ERROR("CreateFeature failed, returning to FSR 2.1.2 upscaler");
+        Config::Instance()->newBackend = "fsr21";
+        Config::Instance()->changeBackend = true;
     }
 
-    LOG_ERROR("CreateFeature failed, returning to FSR 2.1.2 upscaler");
-    Config::Instance()->newBackend = "fsr21";
-    Config::Instance()->changeBackend = true;
+    if (Config::Instance()->RestoreComputeSignature.value_or(true) || Config::Instance()->RestoreGraphicSignature.value_or(false))
+    {
+        if (Config::Instance()->RestoreComputeSignature.value_or(true) && computeSignatures.contains(InCmdList))
+        {
+            auto signature = computeSignatures[InCmdList];
+            LOG_TRACE("restore ComputeRootSig: {0:X}", (UINT64)signature);
+            orgSetComputeRootSignature(InCmdList, signature);
+        }
+        else if (Config::Instance()->RestoreComputeSignature.value_or(true))
+        {
+            LOG_TRACE("can't restore ComputeRootSig");
+        }
+
+        if (Config::Instance()->RestoreGraphicSignature.value_or(false) && graphicSignatures.contains(InCmdList))
+        {
+            auto signature = graphicSignatures[InCmdList];
+            LOG_TRACE("restore GraphicRootSig: {0:X}", (UINT64)signature);
+            orgSetGraphicRootSignature(InCmdList, signature);
+        }
+        else if (Config::Instance()->RestoreGraphicSignature.value_or(false))
+        {
+            LOG_TRACE("can't restore GraphicRootSig");
+        }
+
+        contextRendering = false;
+    }
 
     return NVSDK_NGX_Result_Success;
 }
@@ -856,8 +904,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     {
         LOG_DEBUG("Handle: {0}", InFeatureHandle->Id);
     }
-
-    auto evaluateStart = GetTicks();
 
     if (Config::Instance()->setInputApiName.length() == 0)
         Config::Instance()->currentInputApiName = "DLSS";
@@ -1007,10 +1053,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 Config::Instance()->CurrentFeature = nullptr;
 
                 contextRendering = false;
-                lastEvalTime = evaluateStart;
-
-                rootSigCompute = nullptr;
-                rootSigGraphic = nullptr;
             }
             else
             {
@@ -1168,26 +1210,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     Config::Instance()->CurrentFeature = deviceContext;
 
     // Root signature restore
-    ID3D12RootSignature* orgComputeRootSig = nullptr;
-    ID3D12RootSignature* orgGraphicRootSig = nullptr;
-    if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
-    {
-        if (Config::Instance()->RestoreComputeSignature.value_or(false))
-        {
-            std::lock_guard<std::mutex> lock(computeSigatureMutex);
-            orgComputeRootSig = rootSigCompute;
-        }
-
-        if (Config::Instance()->RestoreGraphicSignature.value_or(false))
-        {
-            std::lock_guard<std::mutex> lock(graphSigatureMutex);
-            orgGraphicRootSig = rootSigGraphic;
-        }
-
-        LOG_TRACE("orgComputeRootSig: {0:X}, orgGraphicRootSig: {1:X}", (UINT64)orgComputeRootSig, (UINT64)orgGraphicRootSig);
-
+    if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(true) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
         contextRendering = true;
-    }
 
     // FG Init || Disable    
     if (Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true))
@@ -1293,7 +1317,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &FrameGen_Dx12::mvScaleY);
 
         LOG_DEBUG("(FG) copy buffers done, frame: {0}", deviceContext->FrameCount());
-        }
+    }
 
     // Record the first timestamp
     if (!Config::Instance()->WorkingAsNvngx)
@@ -1311,49 +1335,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         InCmdList->ResolveQueryData(HooksDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0, 2, HooksDx::readbackBuffer, 0);
     }
 
-    // Root signature restore
-    if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
-    {
-        if (Config::Instance()->RestoreComputeSignature.value_or(false) && computeTime != 0 && computeTime > lastEvalTime && computeTime <= evaluateStart && orgComputeRootSig != nullptr)
-        {
-            std::lock_guard<std::mutex> lock(computeSigatureMutex);
-            LOG_TRACE("restore orgComputeRootSig: {0:X}", (UINT64)orgComputeRootSig);
-            orgSetComputeRootSignature(InCmdList, orgComputeRootSig);
-        }
-        else
-        {
-            if (Config::Instance()->RestoreComputeSignature.value_or(false))
-            {
-                LOG_TRACE("orgComputeRootSig lastEvalTime: {0}", lastEvalTime);
-                LOG_TRACE("orgComputeRootSig computeTime: {0}", computeTime);
-                LOG_TRACE("orgComputeRootSig evaluateStart: {0}", evaluateStart);
-            }
-        }
-
-        if (Config::Instance()->RestoreGraphicSignature.value_or(false) && graphTime != 0 && graphTime > lastEvalTime && graphTime <= evaluateStart && orgGraphicRootSig != nullptr)
-        {
-            std::lock_guard<std::mutex> lock(graphSigatureMutex);
-            LOG_TRACE("restore orgGraphicRootSig: {0:X}", (UINT64)orgGraphicRootSig);
-            orgSetGraphicRootSignature(InCmdList, orgGraphicRootSig);
-        }
-        else
-        {
-            if (Config::Instance()->RestoreGraphicSignature.value_or(false))
-            {
-                LOG_TRACE("orgGraphicRootSig lastEvalTime: {0}", lastEvalTime);
-                LOG_TRACE("orgGraphicRootSig computeTime: {0}", graphTime);
-                LOG_TRACE("orgGraphicRootSig evaluateStart: {0}", evaluateStart);
-            }
-        }
-
-        contextRendering = false;
-        lastEvalTime = evaluateStart;
-
-        rootSigCompute = nullptr;
-        rootSigGraphic = nullptr;
-    }
-
-    LOG_DEBUG("Upscaling done: {}", evalResult);
+    NVSDK_NGX_Result methodResult = NVSDK_NGX_Result_Fail;
 
     if (evalResult)
     {
@@ -1375,7 +1357,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             {
                 msDelta = now - fgLastFrameTime;
                 LOG_DEBUG("(FG) msDelta: {0}", msDelta);
-    }
+            }
 
             fgLastFrameTime = now;
             FrameGen_Dx12::fgFrameTime = msDelta;
@@ -1455,13 +1437,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 #ifdef USE_QUEUE_FOR_FG
                             auto allocator = FrameGen_Dx12::fgCommandAllocators[fIndex];
-                                auto result = allocator->Reset();
-                                result = FrameGen_Dx12::fgCommandList[fIndex]->Reset(allocator, nullptr);
+                            auto result = allocator->Reset();
+                            result = FrameGen_Dx12::fgCommandList[fIndex]->Reset(allocator, nullptr);
 #endif
 
-                                params->frameID = fgLastFGFrame;
+                            params->frameID = fgLastFGFrame;
                             params->numGeneratedFrames = 0;
-                    }
+                        }
 
                         if (Config::Instance()->CurrentFeature != nullptr)
                             fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
@@ -1488,10 +1470,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                             ResourceBarrier(InCmdList, paramVelocity, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
                             ResourceBarrier(InCmdList, paramDepth, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
 #endif
-                            }
+                        }
 
                         return dispatchResult;
-            };
+                    };
 
                 m_FrameGenerationConfig.onlyPresentGenerated = Config::Instance()->FGOnlyGenerated; // check here
                 m_FrameGenerationConfig.frameID = deviceContext->FrameCount();
@@ -1597,14 +1579,44 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     else
                         LOG_DEBUG("(FG) Dispatch ok.");
                 }
-    }
-}
-
-        return NVSDK_NGX_Result_Success;
+            }
         }
 
-    return NVSDK_NGX_Result_Fail;
+        methodResult = NVSDK_NGX_Result_Success;
     }
+
+    // Root signature restore
+    if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(true) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
+    {
+        if (Config::Instance()->RestoreComputeSignature.value_or(true) && computeSignatures[InCmdList])
+        {
+            auto signature = computeSignatures[InCmdList];
+            LOG_TRACE("restore orgComputeRootSig: {0:X}", (UINT64)signature);
+            orgSetComputeRootSignature(InCmdList, signature);
+        }
+        else if (Config::Instance()->RestoreComputeSignature.value_or(true))
+        {
+            LOG_WARN("Can't restore ComputeRootSig!");
+        }
+
+        if (Config::Instance()->RestoreGraphicSignature.value_or(false) && /*graphTime != 0 && graphTime > lastEvalTime && graphTime <= evaluateStart &&*/ graphicSignatures[InCmdList])
+        {
+            auto signature = graphicSignatures[InCmdList];
+            LOG_TRACE("restore orgGraphicRootSig: {0:X}", (UINT64)signature);
+            orgSetGraphicRootSignature(InCmdList, signature);
+        }
+        else if (Config::Instance()->RestoreGraphicSignature.value_or(false))
+        {
+            LOG_WARN("Can't restore GraphicRootSig!");
+        }
+
+        contextRendering = false;
+    }
+
+    LOG_DEBUG("Upscaling done: {}", evalResult);
+
+    return methodResult;
+}
 
 #pragma endregion
 

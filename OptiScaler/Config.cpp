@@ -444,8 +444,8 @@ bool Config::Reload(std::filesystem::path iniPath)
             if (!RestoreComputeSignature.has_value())
                 RestoreComputeSignature = readBool("Hotfix", "RestoreComputeSignature");
 
-            if (!RestoreComputeSignature.has_value())
-                RestoreComputeSignature = readBool("Hotfix", "RestoreComputeSignature");
+            if (!RestoreGraphicSignature.has_value())
+                RestoreGraphicSignature = readBool("Hotfix", "RestoreGraphicSignature");
 
             if (!SkipFirstFrames.has_value())
                 SkipFirstFrames = readInt("Hotfix", "SkipFirstFrames");
