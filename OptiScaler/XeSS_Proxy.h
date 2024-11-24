@@ -76,16 +76,6 @@ private:
 
     inline static PFN_xessSetContextParameterF _xessSetContextParameterF = nullptr;
 
-    inline static PFN_xessVKGetRequiredInstanceExtensions _xessVKGetRequiredInstanceExtensions = nullptr;
-    inline static PFN_xessVKGetRequiredDeviceExtensions _xessVKGetRequiredDeviceExtensions = nullptr;
-    inline static PFN_xessVKGetRequiredDeviceFeatures _xessVKGetRequiredDeviceFeatures = nullptr;
-    inline static PFN_xessVKCreateContext _xessVKCreateContext = nullptr;
-    inline static PFN_xessVKBuildPipelines _xessVKBuildPipelines = nullptr;
-    inline static PFN_xessVKInit _xessVKInit = nullptr;
-    inline static PFN_xessVKGetInitParams _xessVKGetInitParams = nullptr;
-    inline static PFN_xessVKExecute _xessVKExecute = nullptr;
-    inline static PFN_xessVKGetResourcesToDump _xessVKGetResourcesToDump = nullptr;
-
     inline static void GetDLLVersion(std::wstring dllPath)
     {
         // Step 1: Get the size of the version information
