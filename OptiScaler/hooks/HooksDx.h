@@ -18,7 +18,7 @@
 #endif
 
 // Enable D3D12 Debug Layers
-#define ENABLE_DEBUG_LAYER_DX12
+//#define ENABLE_DEBUG_LAYER_DX12
 
 // Enable D3D11 Debug Layers
 //#define ENABLE_DEBUG_LAYER_DX11

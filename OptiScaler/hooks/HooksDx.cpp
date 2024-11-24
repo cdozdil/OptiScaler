@@ -3098,9 +3098,9 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
         FeatureLevels = ARRAYSIZE(levels);
     }
 
-    //Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->dxgiSkipSpoofing = true;
     auto result = o_D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
-    //Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->dxgiSkipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr && !_d3d12Captured)
     {
@@ -3144,17 +3144,17 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
 
     if (pSwapChainDesc != nullptr && pSwapChainDesc->BufferDesc.Height == 2 && pSwapChainDesc->BufferDesc.Width == 2)
     {
-        LOG_WARN("RTSS call!");
-        //Config::Instance()->dxgiSkipSpoofing = true;
+        LOG_WARN("Overlay call!");
+        Config::Instance()->dxgiSkipSpoofing = true;
         auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
-        //Config::Instance()->dxgiSkipSpoofing = false;
+        Config::Instance()->dxgiSkipSpoofing = false;
         return result;
     }
 
     IDXGISwapChain* buffer = nullptr;
-    //Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->dxgiSkipSpoofing = true;
     auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, &buffer, ppDevice, pFeatureLevel, ppImmediateContext);
-    //Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->dxgiSkipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr && !_d3d12Captured)
     {
@@ -3223,9 +3223,9 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     }
 #endif
 
-    //Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->dxgiSkipSpoofing = true;
     auto result = o_D3D12CreateDevice(pAdapter, MinimumFeatureLevel, riid, ppDevice);
-    //Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->dxgiSkipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr)
     {
