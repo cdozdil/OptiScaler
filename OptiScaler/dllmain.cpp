@@ -86,8 +86,10 @@ inline std::vector<std::string> dxgiNames = { "dxgi.dll", "dxgi", };
 inline std::vector<std::wstring> dxgiNamesW = { L"dxgi.dll", L"dxgi", };
 inline std::vector<std::string> vkNames = { "vulkan-1.dll", "vulkan-1", };
 inline std::vector<std::wstring> vkNamesW = { L"vulkan-1.dll", L"vulkan-1", };
-inline std::vector<std::string> epicNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping" };
-inline std::vector<std::wstring> epicNamesW = { L"eosovh-win32-shipping.dll", L"eosovh-win32-shipping", L"eosovh-win64-shipping.dll", L"eosovh-win64-shipping" };
+inline std::vector<std::string> overlayNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping", 
+                                                 "gameoverlayrenderer64", "gameoverlayrenderer64.dll", "gameoverlayrenderer", "gameoverlayrenderer.dll"};
+inline std::vector<std::wstring> overlayNamesW = { L"eosovh-win32-shipping.dll", L"eosovh-win32-shipping", L"eosovh-win64-shipping.dll", L"eosovh-win64-shipping", 
+                                                   L"gameoverlayrenderer64", L"gameoverlayrenderer64.dll", L"gameoverlayrenderer", L"gameoverlayrenderer.dll" };
 
 static int loadCount = 0;
 static bool dontCount = false;
@@ -203,9 +205,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
 
     if (Config::Instance()->FGUseFGSwapChain.value_or(true))
     {
-        if (CheckDllName(&lcaseLibName, &epicNames))
+        if (CheckDllName(&lcaseLibName, &overlayNames))
         {
-            LOG_DEBUG("Trying to load EOS dll: {}", lcaseLibName);
+            LOG_DEBUG("Trying to load overlay dll: {}", lcaseLibName);
             return (HMODULE)1;
         }
     }
@@ -213,34 +215,49 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
     // Hooks
     if (CheckDllName(&lcaseLibName, &dx11Names) && Config::Instance()->OverlayMenu.value_or(true))
     {
-        skipLoadChecks = true;
-        HooksDx::HookDx11();
-        skipLoadChecks = false;
+        auto module = o_LoadLibraryA(lcaseLibName.c_str());
 
-        return GetModuleHandleA(lcaseLibName.c_str());
+        if (module != nullptr)
+        {
+            skipLoadChecks = true;
+            HooksDx::HookDx11();
+            skipLoadChecks = false;
+
+            return module;
+        }
     }
 
     if (CheckDllName(&lcaseLibName, &dx12Names) && Config::Instance()->OverlayMenu.value_or(true))
     {
-        skipLoadChecks = true;
-        HooksDx::HookDx12();
-        skipLoadChecks = false;
+        auto module = o_LoadLibraryA(lcaseLibName.c_str());
 
-        return GetModuleHandleA(lcaseLibName.c_str());
+        if (module != nullptr)
+        {
+            skipLoadChecks = true;
+            HooksDx::HookDx12();
+            skipLoadChecks = false;
+
+            return module;
+        }
     }
 
     if (CheckDllName(&lcaseLibName, &vkNames))
     {
-        skipLoadChecks = true;
-        HookForVulkanSpoofing();
-        HookForVulkanExtensionSpoofing();
+        auto module = o_LoadLibraryA(lcaseLibName.c_str());
 
-        if (Config::Instance()->OverlayMenu.value_or(true))
-            HooksVk::HookVk();
+        if (module != nullptr)
+        {
+            skipLoadChecks = true;
+            HookForVulkanSpoofing();
+            HookForVulkanExtensionSpoofing();
 
-        skipLoadChecks = false;
+            if (Config::Instance()->OverlayMenu.value_or(true))
+                HooksVk::HookVk();
 
-        return GetModuleHandleA(lcaseLibName.c_str());
+            skipLoadChecks = false;
+
+            return module;
+        }
     }
 
     if (CheckDllName(&lcaseLibName, &dxgiNames))
@@ -336,9 +353,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
     if (Config::Instance()->FGUseFGSwapChain.value_or(true))
     {
-        if (CheckDllNameW(&lcaseLibName, &epicNamesW))
+        if (CheckDllNameW(&lcaseLibName, &overlayNamesW))
         {
-            LOG_DEBUG("Trying to load EOS dll: {}", lcaseLibNameA);
+            LOG_DEBUG("Trying to load overlay dll: {}", lcaseLibNameA);
             return (HMODULE)1;
         }
     }
@@ -346,31 +363,48 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
     // Hooks
     if (CheckDllNameW(&lcaseLibName, &dx11NamesW) && Config::Instance()->OverlayMenu.value_or(true))
     {
-        skipLoadChecks = true;
-        HooksDx::HookDx11();
-        skipLoadChecks = false;
+        auto module = o_LoadLibraryW(lcaseLibName.c_str());
 
-        return GetModuleHandle(lcaseLibName.c_str());
+        if (module != nullptr)
+        {
+            skipLoadChecks = true;
+            HooksDx::HookDx11();
+            skipLoadChecks = false;
+
+            return module;
+        }
     }
 
     if (CheckDllNameW(&lcaseLibName, &dx12NamesW) && Config::Instance()->OverlayMenu.value_or(true))
     {
-        skipLoadChecks = true;
-        HooksDx::HookDx12();
-        skipLoadChecks = false;
+        auto module = o_LoadLibraryW(lcaseLibName.c_str());
+
+        if (module != nullptr)
+        {
+            skipLoadChecks = true;
+            HooksDx::HookDx12();
+            skipLoadChecks = false;
+
+            return module;
+        }
     }
 
     if (CheckDllNameW(&lcaseLibName, &vkNamesW))
     {
-        skipLoadChecks = true;
-        HookForVulkanSpoofing();
-        HookForVulkanExtensionSpoofing();
+        auto module = o_LoadLibraryW(lcaseLibName.c_str());
 
-        if (Config::Instance()->OverlayMenu.value_or(true))
-            HooksVk::HookVk();
-        skipLoadChecks = false;
+        if (module != nullptr)
+        {
+            skipLoadChecks = true;
+            HookForVulkanSpoofing();
+            HookForVulkanExtensionSpoofing();
 
-        return GetModuleHandle(lcaseLibName.c_str());
+            if (Config::Instance()->OverlayMenu.value_or(true))
+                HooksVk::HookVk();
+            skipLoadChecks = false;
+
+            return module;
+        }
     }
 
     if (CheckDllNameW(&lcaseLibName, &dxgiNamesW))
@@ -1830,13 +1864,13 @@ static void CheckWorkingMode()
             // if in memory try to unload epic overlay
             if (Config::Instance()->FGUseFGSwapChain.value_or(true))
             {
-                for (size_t i = 0; i < epicNamesW.size(); i++)
+                for (size_t i = 0; i < overlayNamesW.size(); i++)
                 {
                     HMODULE epic = nullptr;
 
                     do
                     {
-                        epic = GetModuleHandle(epicNamesW[i].c_str());
+                        epic = GetModuleHandle(overlayNamesW[i].c_str());
 
                         BOOL result = TRUE;
 
