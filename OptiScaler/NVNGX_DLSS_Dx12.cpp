@@ -1566,9 +1566,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     {
                         std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
 #endif
-                        //Config::Instance()->dxgiSkipSpoofing = true;
-                        retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
-                        //Config::Instance()->dxgiSkipSpoofing = false;
+
+                    retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
 
 #ifdef USE_MUTEX_FOR_FFX
                     }

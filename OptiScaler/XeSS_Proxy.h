@@ -359,6 +359,7 @@ public:
 
         return _xessVersion;
     }
+
     static PFN_xessD3D12CreateContext D3D12CreateContext() { return _xessD3D12CreateContext; }
     static PFN_xessD3D12BuildPipelines D3D12BuildPipelines() { return _xessD3D12BuildPipelines; }
     static PRN_xessD3D12Init D3D12Init() { return _xessD3D12Init; }
@@ -384,6 +385,5 @@ public:
 
     static PFN_xessD3D12GetResourcesToDump xessD3D12GetResourcesToDump() { return _xessD3D12GetResourcesToDump; }
     static PFN_xessD3D12GetProfilingData xessD3D12GetProfilingData() { return _xessD3D12GetProfilingData; }
-
     static PFN_xessSetContextParameterF xessSetContextParameterF() { return _xessSetContextParameterF; }
 };

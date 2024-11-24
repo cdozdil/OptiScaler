@@ -658,9 +658,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
             {
                 std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
 #endif
-                //Config::Instance()->dxgiSkipSpoofing = true;
+
                 retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
-                //Config::Instance()->dxgiSkipSpoofing = false;
 
 #ifdef USE_MUTEX_FOR_FFX            
             }
@@ -753,10 +752,9 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
 
     if (Config::Instance()->FGCaptureResources)
     {
-        captureMutex.lock();
+        std::unique_lock<std::shared_mutex> lock(captureMutex);
         fgCaptureList.insert(resource->buffer);
         Config::Instance()->FGCapturedResourceCount = fgCaptureList.size();
-        captureMutex.unlock();
     }
 
     GetHudless(cmdList);
@@ -1785,21 +1783,17 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 #ifdef USE_MUTEX_FOR_FFX
 static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 {
-    std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
-
     auto fIndex = fgFrameIndex;
 
-    LOG_DEBUG("{}", fIndex);
+    LOG_DEBUG("fc: {}, fi: {}", frameCounter, fIndex);
 
     if (Config::Instance()->FGResetCapturedResources)
     {
         LOG_DEBUG("FGResetCapturedResources");
-
-        captureMutex.lock();
+        std::unique_lock<std::shared_mutex> lock(captureMutex);
         fgCaptureList.clear();
         Config::Instance()->FGCapturedResourceCount = 0;
         Config::Instance()->FGResetCapturedResources = false;
-        captureMutex.unlock();
     }
 
     // Skip calculations etc
@@ -1808,6 +1802,9 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         LOG_DEBUG("TEST or RESTART, skip");
         return o_FGSCPresent(This, SyncInterval, Flags);
     }
+
+    LOG_DEBUG("Waiting mutex");
+    std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
 
     // If dispatch still not called
     if (!fgDispatchCalled && Config::Instance()->FGHUDFix.value_or(false) && FrameGen_Dx12::fgIsActive &&
@@ -1821,6 +1818,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     }
 
     auto result = o_FGSCPresent(This, SyncInterval, Flags);
+    LOG_DEBUG("Result: {:X}", result);
 
 #ifdef USE_PRESENT_FOR_FT
     float msDelta = 0.0;
