@@ -195,6 +195,7 @@ static ankerl::unordered_dense::map <ID3D12GraphicsCommandList*, ankerl::unorder
 
 // mutexes
 static std::shared_mutex heapMutex;
+static std::shared_mutex presentMutex;
 static std::shared_mutex captureMutex;
 static std::shared_mutex resourceMutex;
 static std::shared_mutex hudlessMutex[FrameGen_Dx12::FG_BUFFER_SIZE];
@@ -1785,6 +1786,9 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 {
     LOG_TRACE("Waiting mutex");
+    std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
+    std::shared_lock<std::shared_mutex> lockPresent(presentMutex);
+
     auto fIndex = fgFrameIndex;
 
     LOG_DEBUG("fc: {}, fi: {}", frameCounter, fIndex);
@@ -1805,9 +1809,6 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         return o_FGSCPresent(This, SyncInterval, Flags);
     }
 
-    LOG_DEBUG("Waiting mutex");
-    std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
-
     // If dispatch still not called
     if (!fgDispatchCalled && Config::Instance()->FGHUDFix.value_or(false) && FrameGen_Dx12::fgIsActive &&
         Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
@@ -1818,6 +1819,8 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         LOG_WARN("Can't capture hudless, calling HudFix dispatch!");
         GetHudless(nullptr);
     }
+
+    lockPresent.unlock();
 
     auto result = o_FGSCPresent(This, SyncInterval, Flags);
     LOG_DEBUG("Result: {:X}", result);
@@ -1846,6 +1849,8 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
 static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd)
 {
+    std::unique_lock<std::shared_mutex> lock(presentMutex);
+
     LOG_DEBUG("{}", frameCounter);
 
     HRESULT presentResult;
@@ -3576,15 +3581,6 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 
         FrameGen_Dx12::fgSwapChainContext = nullptr;
         fgSwapChains.erase(hWnd);
-#ifndef USE_MUTEX_FOR_FFX
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
-#endif
-    }
-
-    if (FrameGen_Dx12::fgContext != nullptr)
-    {
-        FrameGen_Dx12::StopAndDestroyFGContext(true, false);
-
 #ifndef USE_MUTEX_FOR_FFX
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
 #endif

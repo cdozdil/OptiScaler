@@ -102,6 +102,6 @@ namespace FrameGen_Dx12
     void ReleaseFGObjects();
     void CreateFGObjects(ID3D12Device* InDevice);
     void CreateFGContext(ID3D12Device* InDevice, IFeature* deviceContext);
-    void StopAndDestroyFGContext(bool destroy, bool shutDown);
+    void StopAndDestroyFGContext(bool destroy, bool shutDown, bool useMutex = true);
     void CheckUpscaledFrame(ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InUpscaled);
 }
