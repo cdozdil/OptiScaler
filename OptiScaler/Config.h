@@ -266,6 +266,8 @@ public:
 	std::string setInputApiName;
 	std::string currentInputApiName;
 
+	bool IsShuttingDown = false;
+
 	IFeature* CurrentFeature = nullptr;
 
 	bool Reload(std::filesystem::path iniPath);

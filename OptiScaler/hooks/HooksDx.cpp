@@ -3873,7 +3873,7 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown)
     FrameGen_Dx12::fgSkipHudlessChecks = false;
     //Config::Instance()->dxgiSkipSpoofing = true;
 
-    if (FrameGen_Dx12::fgContext != nullptr)
+    if (!(shutDown || Config::Instance()->IsShuttingDown) && FrameGen_Dx12::fgContext != nullptr)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
@@ -3888,7 +3888,7 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown)
 
         FrameGen_Dx12::fgIsActive = false;
 
-        if (!shutDown)
+        if (!(shutDown || Config::Instance()->IsShuttingDown))
             LOG_INFO("D3D12_Configure result: {0:X}", result);
     }
 
@@ -3896,7 +3896,7 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown)
     {
         auto result = FfxApiProxy::D3D12_DestroyContext()(&FrameGen_Dx12::fgContext, nullptr);
 
-        if (!shutDown)
+        if (!(shutDown || Config::Instance()->IsShuttingDown))
             LOG_INFO("D3D12_DestroyContext result: {0:X}", result);
 
         FrameGen_Dx12::fgContext = nullptr;
@@ -3904,7 +3904,7 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown)
 
     //Config::Instance()->dxgiSkipSpoofing = false;
 
-    if (shutDown || destroy)
+    if ((shutDown || Config::Instance()->IsShuttingDown) || destroy)
         ReleaseFGObjects();
 }
 

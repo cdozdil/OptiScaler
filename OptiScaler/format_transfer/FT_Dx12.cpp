@@ -413,7 +413,7 @@ bool FT_Dx12::IsFormatCompatible(DXGI_FORMAT InFormat)
 
 FT_Dx12::~FT_Dx12()
 {
-    if (!_init)
+    if (!_init || Config::Instance()->IsShuttingDown)
         return;
 
     ID3D12Fence* d3d12Fence = nullptr;

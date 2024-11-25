@@ -479,7 +479,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 RCAS_Dx12::~RCAS_Dx12()
 {
-	if (!_init)
+	if (!_init || Config::Instance()->IsShuttingDown)
 		return;
 
 	ID3D12Fence* d3d12Fence = nullptr;

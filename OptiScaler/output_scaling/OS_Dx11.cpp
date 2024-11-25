@@ -308,7 +308,7 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
 
 OS_Dx11::~OS_Dx11()
 {
-    if (!_init)
+    if (!_init || Config::Instance()->IsShuttingDown)
         return;
 
     if (_computeShader != nullptr)

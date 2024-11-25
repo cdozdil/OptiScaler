@@ -279,10 +279,23 @@ ImGuiKey ImGuiCommon::ImGui_ImplWin32_VirtualKeyToImGuiKey(WPARAM wParam)
 }
 
 //Win32 message handler
-
 LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    LOG_DEBUG("{}", msg);
+
+
+    if (!Config::Instance()->IsShuttingDown && 
+        (msg == WM_QUIT || msg == WM_CLOSE || msg == WM_DESTROY || /* classic messages but they are a bit late to capture */
+        (msg == WM_SYSCOMMAND && wParam == SC_CLOSE /* window close*/)))
+    {
+        Config::Instance()->IsShuttingDown = true;
+        return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
+    }
+
+    if (Config::Instance()->IsShuttingDown)
+        return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
 
     if (_isResetRequested || (!_dx11Ready && !_dx12Ready && !_vulkanReady))
     {

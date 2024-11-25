@@ -483,7 +483,7 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
 
 OS_Dx12::~OS_Dx12()
 {
-    if (!_init)
+    if (!_init || Config::Instance()->IsShuttingDown)
         return;
 
     ID3D12Fence* d3d12Fence = nullptr;
