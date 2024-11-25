@@ -3553,6 +3553,15 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 
     ImGuiOverlayDx::CleanupRenderTarget(true, hWnd);
 
+    if (FrameGen_Dx12::fgContext != nullptr)
+    {
+        FrameGen_Dx12::StopAndDestroyFGContext(true, false, false);
+
+#ifndef USE_MUTEX_FOR_FFX
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+#endif
+    }
+
 #ifndef USE_MUTEX_FOR_FFX
     std::this_thread::sleep_for(std::chrono::milliseconds(250));
 #endif
@@ -3868,14 +3877,18 @@ void FrameGen_Dx12::CreateFGContext(ID3D12Device* InDevice, IFeature* deviceCont
     LOG_DEBUG("Create");
 }
 
-void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown)
+void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool useMutex)
 {
     FrameGen_Dx12::fgSkipHudlessChecks = false;
+
+    if (useMutex)
+        FrameGen_Dx12::ffxMutex.lock();
+
     //Config::Instance()->dxgiSkipSpoofing = true;
 
     if (!(shutDown || Config::Instance()->IsShuttingDown) && FrameGen_Dx12::fgContext != nullptr)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        //std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
         ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
         m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
@@ -3906,6 +3919,9 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown)
 
     if ((shutDown || Config::Instance()->IsShuttingDown) || destroy)
         ReleaseFGObjects();
+
+    if (useMutex)
+        FrameGen_Dx12::ffxMutex.unlock();
 }
 
 void FrameGen_Dx12::CheckUpscaledFrame(ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InUpscaled)
