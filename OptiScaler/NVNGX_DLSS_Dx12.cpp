@@ -1564,6 +1564,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 #ifdef USE_MUTEX_FOR_FFX
                     {
+                        LOG_TRACE("Waiting mutex");
                         std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
 #endif
 

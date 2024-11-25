@@ -656,6 +656,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
 
 #ifdef USE_MUTEX_FOR_FFX
             {
+                LOG_TRACE("Waiting mutex");
                 std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
 #endif
 
@@ -1783,6 +1784,7 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 #ifdef USE_MUTEX_FOR_FFX
 static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 {
+    LOG_TRACE("Waiting mutex");
     auto fIndex = fgFrameIndex;
 
     LOG_DEBUG("fc: {}, fi: {}", frameCounter, fIndex);
@@ -3548,6 +3550,7 @@ static void ClearNextFrame()
 void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 {
 #ifdef USE_MUTEX_FOR_FFX
+    LOG_TRACE("Waiting mutex");
     std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
 #endif
 

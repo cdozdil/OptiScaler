@@ -119,6 +119,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     LOG_DEBUG("");
 
     std::lock_guard<std::mutex> lock(_localMutex);
+    LOG_TRACE("Waiting mutex");
     std::unique_lock<std::shared_mutex> lock2(FrameGen_Dx12::ffxMutex);
 
     HRESULT result;
@@ -217,7 +218,6 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     }
 
     LOG_DEBUG("result: {0:X}", (UINT)result);
-
     return result;
 }
 
@@ -231,6 +231,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
                                                const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
     std::lock_guard<std::mutex> lock(_localMutex);
+    LOG_TRACE("Waiting mutex");
     std::unique_lock<std::shared_mutex> lock2(FrameGen_Dx12::ffxMutex);
 
     LOG_DEBUG("");
@@ -335,6 +336,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput* pTarget)
 {
     std::lock_guard<std::mutex> lock(_localMutex);
+    LOG_TRACE("Waiting mutex");
     std::unique_lock<std::shared_mutex> lock2(FrameGen_Dx12::ffxMutex);
 
     auto result = m_pReal->SetFullscreenState(Fullscreen, pTarget);
