@@ -2,6 +2,7 @@
 #include "pch.h"
 #include "Config.h"
 #include "Util.h"
+#include "nvapi/fakenvapi.h"
 
 static inline int64_t GetTicks()
 {
@@ -622,7 +623,7 @@ bool Config::Reload(std::filesystem::path iniPath)
                 useHDR10 = readBool("HDR", "UseHDR10");
         }
 
-        if (FN_Available)
+        if (fakenvapi::isUsingFakenvapi())
             return ReloadFakenvapi();
 
         return true;
@@ -906,8 +907,6 @@ bool Config::ReloadFakenvapi() {
 
     if (fakenvapiIni.LoadFile(FN_iniPath.c_str()) == SI_OK)
     {
-        FN_Available = true;
-
         FN_EnableLogs = fakenvapiIni.GetLongValue("fakenvapi", "enable_logs", true);
         FN_EnableTraceLogs = fakenvapiIni.GetLongValue("fakenvapi", "enable_trace_logs", false);
         FN_ForceLatencyFlex = fakenvapiIni.GetLongValue("fakenvapi", "force_latencyflex", false);
@@ -916,8 +915,6 @@ bool Config::ReloadFakenvapi() {
 
         return true;
     }
-
-    FN_Available = false;
 
     return false;
 }

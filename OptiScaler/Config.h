@@ -208,7 +208,6 @@ public:
 	std::optional<std::string> DE_ReflexEmu;		// auto - on - off
 
 	// fakenvapi
-	bool FN_Available = false;
 	std::optional<bool> FN_EnableLogs;
 	std::optional<bool> FN_EnableTraceLogs;
 	std::optional<bool> FN_ForceLatencyFlex;

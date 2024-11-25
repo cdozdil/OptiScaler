@@ -87,4 +87,9 @@ public:
             pSwapChain->SetPrivateData(IID_IFfxAntiLag2Data, 0, nullptr);
         }
     }
+
+    // won't work with older fakenvapi builds
+    inline static bool isUsingFakenvapi() {
+        return Fake_InformFGState != nullptr || Fake_InformPresentFG != nullptr || Fake_GetAntiLagCtx != nullptr; 
+    }
 };

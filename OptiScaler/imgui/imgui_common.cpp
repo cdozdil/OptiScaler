@@ -1,6 +1,7 @@
 #include "imgui_common.h"
 
 #include "../font/Hack_Compressed.h"
+#include "../nvapi/fakenvapi.h"
 
 void ImGuiCommon::ShowTooltip(const char* tip) {
     if (ImGui::IsItemHovered())
@@ -1985,7 +1986,7 @@ void ImGuiCommon::RenderMenu()
                 }
 
                 // FAKENVAPI ---------------------------
-                if (Config::Instance()->FN_Available)
+                if (fakenvapi::isUsingFakenvapi())
                 {
                     ImGui::SeparatorText("fakenvapi");
 
@@ -1993,10 +1994,10 @@ void ImGuiCommon::RenderMenu()
                         Config::Instance()->FN_EnableLogs = logs;
 
                     ImGui::SameLine(0.0f, 6.0f);
-                    if (bool traceLogs = Config::Instance()->FN_EnableTraceLogs.value_or(true); ImGui::Checkbox("Enable Trace Logs", &traceLogs))
+                    if (bool traceLogs = Config::Instance()->FN_EnableTraceLogs.value_or(false); ImGui::Checkbox("Enable Trace Logs", &traceLogs))
                         Config::Instance()->FN_EnableTraceLogs = traceLogs;
 
-                    if (bool forceLFX = Config::Instance()->FN_ForceLatencyFlex.value_or(true); ImGui::Checkbox("Force LatencyFlex", &forceLFX))
+                    if (bool forceLFX = Config::Instance()->FN_ForceLatencyFlex.value_or(false); ImGui::Checkbox("Force LatencyFlex", &forceLFX))
                         Config::Instance()->FN_ForceLatencyFlex = forceLFX;
                     ShowHelpMarker("When possible AntiLag 2 is used, this setting let's you force LatencyFlex instead");
 
