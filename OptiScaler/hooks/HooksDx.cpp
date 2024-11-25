@@ -1785,13 +1785,20 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 #ifdef USE_MUTEX_FOR_FFX
 static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 {
-    LOG_TRACE("Waiting mutex");
-    std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
-    std::shared_lock<std::shared_mutex> lockPresent(presentMutex);
+    // Disabled, was causing freezes at games launch
+    //LOG_TRACE("Waiting mutex");
+    //std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
+    //std::shared_lock<std::shared_mutex> lockPresent(presentMutex);
+
+    if (Config::Instance()->IsShuttingDown)
+        return o_FGSCPresent(This, SyncInterval, Flags);
 
     auto fIndex = fgFrameIndex;
 
     LOG_DEBUG("fc: {}, fi: {}", frameCounter, fIndex);
+
+    if(HooksDx::currentSwapchain == nullptr)
+        return S_OK;
 
     if (Config::Instance()->FGResetCapturedResources)
     {
@@ -1820,7 +1827,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         GetHudless(nullptr);
     }
 
-    lockPresent.unlock();
+    //lockPresent.unlock();
 
     auto result = o_FGSCPresent(This, SyncInterval, Flags);
     LOG_DEBUG("Result: {:X}", result);
@@ -1849,11 +1856,23 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
 static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd)
 {
-    std::unique_lock<std::shared_mutex> lock(presentMutex);
+    // Probably not needed anymore
+    //std::unique_lock<std::shared_mutex> lock(presentMutex);
+
+    HRESULT presentResult;
+
+    if (Config::Instance()->IsShuttingDown)
+    {
+        if (pPresentParameters == nullptr)
+            presentResult = pSwapChain->Present(SyncInterval, Flags);
+        else
+            presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
+
+        return presentResult;
+    }
 
     LOG_DEBUG("{}", frameCounter);
 
-    HRESULT presentResult;
     auto fIndex = fgFrameIndex;
 
     if (hWnd != Util::GetProcessWindow())
@@ -2155,9 +2174,9 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
     }
 
-    if (pDesc->BufferDesc.Height == 2 && pDesc->BufferDesc.Width == 2)
+    if (pDesc->BufferDesc.Height < 100 || pDesc->BufferDesc.Width < 100)
     {
-        LOG_WARN("2x2 call!");
+        LOG_WARN("Overlay call!");
         return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
     }
 
@@ -2313,6 +2332,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
             // It have 1 extra ref
             scInfo.swapChain->Release();
             fgSwapChains.insert_or_assign(pDesc->OutputWindow, scInfo);
+            HooksDx::currentSwapchain = scInfo.swapChain;
 
             LOG_DEBUG("Created FSR-FG swapchain");
             return S_OK;
@@ -2344,6 +2364,10 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDesc->OutputWindow);
         lastWrapped = new WrappedIDXGISwapChain4(realSC, readDevice, pDesc->OutputWindow, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
         *ppSwapChain = lastWrapped;
+
+        if(!fgSkipSCWrapping)
+            HooksDx::currentSwapchain = lastWrapped;
+
         LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
 
         // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
@@ -2429,9 +2453,9 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     }
 
-    if (pDesc->Height == 2 && pDesc->Width == 2)
+    if (pDesc->Height < 100 || pDesc->Width < 100)
     {
-        LOG_WARN("2x2 call!");
+        LOG_WARN("Overlay call!");
         return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     }
 
@@ -2589,6 +2613,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
             // It have 1 extra ref
             scInfo.swapChain->Release();
             fgSwapChains.insert_or_assign(hWnd, scInfo);
+            HooksDx::currentSwapchain = scInfo.swapChain;
 
             LOG_DEBUG("Created FSR-FG swapchain");
             return S_OK;
@@ -2620,6 +2645,9 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         lastWrapped = new WrappedIDXGISwapChain4(realSC, readDevice, hWnd, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
         *ppSwapChain = lastWrapped;
         LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
+
+        if (!fgSkipSCWrapping)
+            HooksDx::currentSwapchain = lastWrapped;
 
         if (Config::Instance()->forceHdr.value_or(false))
         {
@@ -3563,7 +3591,7 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 
     if (FrameGen_Dx12::fgContext != nullptr)
     {
-        FrameGen_Dx12::StopAndDestroyFGContext(true, false, false);
+        FrameGen_Dx12::StopAndDestroyFGContext(true, true, false);
 
 #ifndef USE_MUTEX_FOR_FFX
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
@@ -3581,6 +3609,8 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 
         FrameGen_Dx12::fgSwapChainContext = nullptr;
         fgSwapChains.erase(hWnd);
+        HooksDx::currentSwapchain = nullptr;
+
 #ifndef USE_MUTEX_FOR_FFX
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
 #endif
@@ -3883,12 +3913,8 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
     if (useMutex)
         FrameGen_Dx12::ffxMutex.lock();
 
-    //Config::Instance()->dxgiSkipSpoofing = true;
-
     if (!(shutDown || Config::Instance()->IsShuttingDown) && FrameGen_Dx12::fgContext != nullptr)
     {
-        //std::this_thread::sleep_for(std::chrono::milliseconds(250));
-
         ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
         m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
         m_FrameGenerationConfig.frameGenerationEnabled = false;
@@ -3896,7 +3922,8 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
         m_FrameGenerationConfig.presentCallback = nullptr;
         m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
 
-        auto result = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgContext, &m_FrameGenerationConfig.header);
+        ffxReturnCode_t result;
+        result = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgContext, &m_FrameGenerationConfig.header);
 
         FrameGen_Dx12::fgIsActive = false;
 
@@ -3913,8 +3940,6 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
 
         FrameGen_Dx12::fgContext = nullptr;
     }
-
-    //Config::Instance()->dxgiSkipSpoofing = false;
 
     if ((shutDown || Config::Instance()->IsShuttingDown) || destroy)
         ReleaseFGObjects();

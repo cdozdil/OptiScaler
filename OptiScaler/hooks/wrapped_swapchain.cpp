@@ -22,8 +22,6 @@ WrappedIDXGISwapChain4::WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* p
 
 WrappedIDXGISwapChain4::~WrappedIDXGISwapChain4()
 {
-    if (ReleaseTrig != nullptr)
-        ReleaseTrig(Handle);
 }
 
 HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::QueryInterface(REFIID riid, void** ppvObject)

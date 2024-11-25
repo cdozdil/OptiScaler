@@ -32,8 +32,8 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
 
         if (ret == 0)
         {
-            ID3D12Device* ddd;
-            ((ID3D12CommandQueue*)Device)->GetDevice(IID_PPV_ARGS(&ddd));
+            if (ReleaseTrig != nullptr)
+                ReleaseTrig(Handle);
 
             if (ClearTrig != nullptr)
                 ClearTrig(true, Handle);

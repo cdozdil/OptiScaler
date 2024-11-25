@@ -740,9 +740,8 @@ static BOOL hkFreeLibrary(HMODULE lpLibrary)
 
         if (loadCount == 0)
         {
-            auto result = o_FreeLibrary(lpLibrary);
-            LOG_DEBUG("o_FreeLibrary result: {0:X}", result);
-            return result;
+            Config::Instance()->IsShuttingDown = true;
+            return o_FreeLibrary(lpLibrary);
         }
         else
         {
