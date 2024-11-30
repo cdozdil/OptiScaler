@@ -14,6 +14,7 @@
 
 #include <ankerl/unordered_dense.h>
 #include <set>
+#include <future>
 
 // Clear heap info when ResourceDiscard is called
 //#define USE_RESOURCE_DISCARD
@@ -1179,7 +1180,7 @@ static void hkCopyDescriptors(ID3D12Device* This,
 
     if (Config::Instance()->UseThreadingForHeaps)
     {
-        std::thread([=]()
+        auto asyncTask = std::async(std::launch::async, [=]()
                     {
                         auto size = This->GetDescriptorHandleIncrementSize(DescriptorHeapsType);
 
@@ -1232,7 +1233,7 @@ static void hkCopyDescriptors(ID3D12Device* This,
                             }
                         }
 
-                    }).detach();
+                                    });
     }
     else
     {
@@ -1305,7 +1306,7 @@ static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D
 
     if (Config::Instance()->UseThreadingForHeaps)
     {
-        std::thread([=]()
+        auto asyncTask = std::async(std::launch::async, [=]()
                     {
                         auto size = This->GetDescriptorHandleIncrementSize(DescriptorHeapsType);
 
@@ -1331,7 +1332,7 @@ static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D
                                            handle, destHandle, GetGPUHandle(This, handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), GetGPUHandle(This, destHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), (UINT)DescriptorHeapsType);
                         }
 
-                    }).detach();
+                                    });
     }
     else
     {
