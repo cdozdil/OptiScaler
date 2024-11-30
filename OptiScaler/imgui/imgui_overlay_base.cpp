@@ -39,10 +39,6 @@ bool ImGuiOverlayBase::IsVisible()
 	return ImGuiCommon::IsVisible();
 }
 
-bool ImGuiOverlayBase::IsResetRequested()
-{
-	return ImGuiCommon::IsResetRequested();
-}
 
 void ImGuiOverlayBase::Init(HWND InHandle)
 {
