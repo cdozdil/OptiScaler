@@ -205,7 +205,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
 
     if (Config::Instance()->FGUseFGSwapChain.value_or(true))
     {
-        if (CheckDllName(&lcaseLibName, &overlayNames))
+        if (Config::Instance()->FGDisableOverlays.value_or(true) && CheckDllName(&lcaseLibName, &overlayNames))
         {
             LOG_DEBUG("Trying to load overlay dll: {}", lcaseLibName);
             return (HMODULE)1;
@@ -353,7 +353,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
     if (Config::Instance()->FGUseFGSwapChain.value_or(true))
     {
-        if (CheckDllNameW(&lcaseLibName, &overlayNamesW))
+        if (Config::Instance()->FGDisableOverlays.value_or(true) && CheckDllNameW(&lcaseLibName, &overlayNamesW))
         {
             LOG_DEBUG("Trying to load overlay dll: {}", lcaseLibNameA);
             return (HMODULE)1;

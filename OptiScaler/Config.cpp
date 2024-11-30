@@ -91,6 +91,9 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             if (!FGRectHeight.has_value())
                 FGRectHeight = readInt("FrameGen", "RectHeight");
+
+            if (!FGDisableOverlays.has_value())
+                FGDisableOverlays = readBool("FrameGen", "DisableOverlays");
         }
 
         // Framerate
@@ -713,6 +716,7 @@ bool Config::SaveIni()
         ini.SetValue("FrameGen", "RectTop", GetIntValue(Instance()->FGRectTop).c_str());
         ini.SetValue("FrameGen", "RectWidth", GetIntValue(Instance()->FGRectWidth).c_str());
         ini.SetValue("FrameGen", "RectHeight", GetIntValue(Instance()->FGRectHeight).c_str());
+        ini.SetValue("FrameGen", "DisableOverlays", GetBoolValue(Instance()->FGDisableOverlays).c_str());
     }
 
     // Framerate 

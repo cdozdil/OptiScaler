@@ -173,6 +173,7 @@ public:
 	std::optional<int> FGRectTop;
 	std::optional<int> FGRectWidth;
 	std::optional<int> FGRectHeight;
+	std::optional<bool> FGDisableOverlays;
 	bool FGOnlyGenerated = false;
 	bool FGChanged = false;
 	bool SCChanged = false;
