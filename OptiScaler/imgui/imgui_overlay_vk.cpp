@@ -112,6 +112,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
         }
         else
         {
+            LOG_WARN("PD Queue property count is 0!");
             return;
         }
     }
@@ -314,7 +315,11 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
         _ImVulkan_Info.Allocator = NULL;
         _ImVulkan_Info.RenderPass = _vkRenderPass;
 
-        ImGui_ImplVulkan_Init(&_ImVulkan_Info);
+        bool initResult = ImGui_ImplVulkan_Init(&_ImVulkan_Info);
+        LOG_DEBUG("ImGui_ImplVulkan_Init result: {}", initResult);
+
+        if (!initResult)
+            return;
 
         // Upload Fonts
         // Use any command queue
@@ -337,7 +342,8 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
             return;
         }
 
-        ImGui_ImplVulkan_CreateFontsTexture();
+        initResult = ImGui_ImplVulkan_CreateFontsTexture();
+        LOG_DEBUG("ImGui_ImplVulkan_CreateFontsTexture result: {}", initResult);
 
         VkSubmitInfo end_info = { };
         end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -432,9 +438,9 @@ void ImGuiOverlayVk::DestroyVulkanObjects(bool shutdown)
             vkDestroySemaphore(_ImVulkan_Info.Device, _ImVulkan_Semaphores[i], VK_NULL_HANDLE);
             _ImVulkan_Semaphores[i] = VK_NULL_HANDLE;
         }
-
-        _ImVulkan_Info = {};
     }
+
+    _ImVulkan_Info = {};
 
     _vkCleanMutex.unlock();
 }
@@ -444,17 +450,12 @@ bool ImGuiOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
     LOG_FUNC();
 
     if (!_vulkanObjectsCreated)
-    {
-        LOG_TRACE("!_vulkanObjectsCreated return o_QueuePresentKHR");
         return true;
-    }
 
     if (!ImGuiOverlayBase::IsInited() || !ImGuiOverlayBase::IsVisible() || _ImVulkan_Info.Device == VK_NULL_HANDLE)
-    {
         return true;
-    }
 
-    _vkPresentMutex.lock();
+    std::lock_guard<std::mutex> lock(_vkPresentMutex);
 
     LOG_DEBUG("rendering menu, swapchain count: {0}", pPresentInfo->swapchainCount);
 
@@ -550,8 +551,6 @@ bool ImGuiOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
         return false;
     }
 
-    _vkPresentMutex.unlock();
-
     return true;
 }
 
@@ -579,5 +578,6 @@ void ImGuiOverlayVk::CreateSwapchain(VkDevice device, VkPhysicalDevice pd, VkIns
     {
         _isInited = true;
         ImGuiOverlayBase::VulkanReady();
+        LOG_DEBUG("Vulkan ready");
     }
 }
