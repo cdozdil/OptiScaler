@@ -284,12 +284,13 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
-    LOG_DEBUG("{}", msg);
+    //LOG_TRACE("msg: {:X}, wParam: {:X}, lParam: {:X}", msg, wParam, lParam);
 
     if (!Config::Instance()->IsShuttingDown && 
         (msg == WM_QUIT || msg == WM_CLOSE || msg == WM_DESTROY || /* classic messages but they are a bit late to capture */
         (msg == WM_SYSCOMMAND && wParam == SC_CLOSE /* window close*/)))
     {
+        LOG_WARN("IsShuttingDown = true");
         Config::Instance()->IsShuttingDown = true;
         return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
     }
@@ -297,7 +298,7 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     if (Config::Instance()->IsShuttingDown)
         return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
 
-    if (_isResetRequested || (!_dx11Ready && !_dx12Ready && !_vulkanReady))
+    if (!_dx11Ready && !_dx12Ready && !_vulkanReady)
     {
         if (_isVisible)
         {
@@ -318,25 +319,25 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     }
 
     bool rawRead = false;
-    bool vmInputMenu = false;
-    bool vmInputReset = false;
-    auto rawCode = GET_RAWINPUT_CODE_WPARAM(wParam);
-    RAWINPUT rawData;
-    UINT rawDataSize = sizeof(rawData);
+    bool inputMenu = false;
     ImGuiKey imguiKey;
 
-    if (msg == WM_INPUT &&
-        GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, &rawData, &rawDataSize, sizeof(rawData.data)) != (UINT)-1)
+    RAWINPUT rawData{};
+    UINT rawDataSize = sizeof(rawData);
+    if (msg == WM_INPUT && GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, &rawData, &rawDataSize, sizeof(rawData.data)) != (UINT)-1)
     {
+        auto rawCode = GET_RAWINPUT_CODE_WPARAM(wParam);
         rawRead = true;
         if (rawData.header.dwType == RIM_TYPEKEYBOARD && rawData.data.keyboard.VKey != 0)
-        {
-            vmInputMenu = rawData.data.keyboard.VKey == Config::Instance()->ShortcutKey.value_or(VK_INSERT);
-        }
+            inputMenu = rawData.data.keyboard.VKey == Config::Instance()->ShortcutKey.value_or(VK_INSERT);
     }
-
+    else 
+    {
+        inputMenu = msg == WM_KEYDOWN && wParam == Config::Instance()->ShortcutKey.value_or(VK_INSERT);
+    }
+    
     // INSERT - OPEN MENU
-    if (((msg == WM_KEYDOWN && wParam == Config::Instance()->ShortcutKey.value_or(VK_INSERT)) || vmInputMenu))
+    if (inputMenu)
     {
         _isVisible = !_isVisible;
 
@@ -1701,7 +1702,7 @@ void ImGuiCommon::RenderMenu()
                             // HOTFIXES -----------------------------
                             ImGui::SeparatorText("Root Signatures (Dx12)");
 
-                            if (bool crs = Config::Instance()->RestoreComputeSignature.value_or(false); ImGui::Checkbox("Restore Compute Root Signature", &crs))
+                            if (bool crs = Config::Instance()->RestoreComputeSignature.value_or(true); ImGui::Checkbox("Restore Compute Root Signature", &crs))
                                 Config::Instance()->RestoreComputeSignature = crs;
 
                             if (bool grs = Config::Instance()->RestoreGraphicSignature.value_or(false); ImGui::Checkbox("Restore Graphic Root Signature", &grs))
@@ -2358,7 +2359,6 @@ void ImGuiCommon::Init(HWND InHwnd)
 {
     _handle = InHwnd;
     _isVisible = false;
-    _isResetRequested = false;
 
     LOG_DEBUG("Handle: {0:X}", (size_t)_handle);
 
@@ -2436,7 +2436,6 @@ void ImGuiCommon::Shutdown()
 
     _isInited = false;
     _isVisible = false;
-    _isResetRequested = false;
 }
 
 void ImGuiCommon::HideMenu()
