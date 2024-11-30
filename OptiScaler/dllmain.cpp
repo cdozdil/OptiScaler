@@ -1990,6 +1990,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 Config::Instance()->upscaleTimes.push_back(0.0);
             }
 
+            spdlog::info("");
             spdlog::info("Init done");
             spdlog::info("---------------------------------------------");
             spdlog::info("");
@@ -2001,13 +2002,16 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             // Disabled for now to check if it cause any issues
             //DetachHooks();
 
-            //if (skHandle != nullptr)
-            //    FreeLibrary(skHandle);
+            if (skHandle != nullptr)
+                FreeLibrary(skHandle);
+
+            if (reshadeHandle != nullptr)
+                FreeLibrary(reshadeHandle);
 
             spdlog::info("");
             spdlog::info("DLL_PROCESS_DETACH");
-            //spdlog::info("Unloading OptiScaler");
-            //CloseLogger();
+            spdlog::info("Unloading OptiScaler");
+            CloseLogger();
 
             break;
 
