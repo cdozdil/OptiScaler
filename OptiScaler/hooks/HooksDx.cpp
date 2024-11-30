@@ -1181,57 +1181,57 @@ static void hkCopyDescriptors(ID3D12Device* This,
     if (Config::Instance()->UseThreadingForHeaps)
     {
         auto asyncTask = std::async(std::launch::async, [=]()
-                    {
-                        auto size = This->GetDescriptorHandleIncrementSize(DescriptorHeapsType);
+                                    {
+                                        auto size = This->GetDescriptorHandleIncrementSize(DescriptorHeapsType);
 
-                        size_t destRangeIndex = 0;
-                        size_t destIndex = 0;
+                                        size_t destRangeIndex = 0;
+                                        size_t destIndex = 0;
 
-                        for (size_t i = 0; i < NumSrcDescriptorRanges; i++)
-                        {
-                            UINT copyCount = 1;
+                                        for (size_t i = 0; i < NumSrcDescriptorRanges; i++)
+                                        {
+                                            UINT copyCount = 1;
 
-                            if (srcRangeSizes != nullptr)
-                                copyCount = srcRangeSizes[i];
+                                            if (srcRangeSizes != nullptr)
+                                                copyCount = srcRangeSizes[i];
 
-                            for (size_t j = 0; j < copyCount; j++)
-                            {
-                                // source
-                                auto srcHandle = srcRangeStarts[i].ptr + j * size;
-                                auto srcHeap = GetHeapByCpuHandle(srcHandle);
-                                if (srcHeap == nullptr)
-                                    continue;
+                                            for (size_t j = 0; j < copyCount; j++)
+                                            {
+                                                // source
+                                                auto srcHandle = srcRangeStarts[i].ptr + j * size;
+                                                auto srcHeap = GetHeapByCpuHandle(srcHandle);
+                                                if (srcHeap == nullptr)
+                                                    continue;
 
-                                auto buffer = srcHeap->GetByCpuHandle(srcHandle);
+                                                auto buffer = srcHeap->GetByCpuHandle(srcHandle);
 
-                                // destination
-                                auto destHandle = destRangeStarts[destRangeIndex].ptr + destIndex * size;
-                                auto dstHeap = GetHeapByCpuHandle(destHandle);
-                                if (dstHeap == nullptr)
-                                    continue;
+                                                // destination
+                                                auto destHandle = destRangeStarts[destRangeIndex].ptr + destIndex * size;
+                                                auto dstHeap = GetHeapByCpuHandle(destHandle);
+                                                if (dstHeap == nullptr)
+                                                    continue;
 
-                                LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}",
-                                               handle, destHandle, GetGPUHandle(This, handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), GetGPUHandle(This, destHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), (UINT)DescriptorHeapsType);
-                            }
+                                                LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}",
+                                                               handle, destHandle, GetGPUHandle(This, handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), GetGPUHandle(This, destHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), (UINT)DescriptorHeapsType);
+                                            }
 
-                            if (destRangeSizes == nullptr)
-                            {
-                                destIndex = 0;
-                                destRangeIndex++;
-                            }
-                            else
-                            {
-                                if (destRangeSizes[destRangeIndex] == destIndex)
-                                {
-                                    destIndex = 0;
-                                    destRangeIndex++;
-                                }
-                                else
-                                {
-                                    destIndex++;
-                                }
-                            }
-                        }
+                                            if (destRangeSizes == nullptr)
+                                            {
+                                                destIndex = 0;
+                                                destRangeIndex++;
+                                            }
+                                            else
+                                            {
+                                                if (destRangeSizes[destRangeIndex] == destIndex)
+                                                {
+                                                    destIndex = 0;
+                                                    destRangeIndex++;
+                                                }
+                                                else
+                                                {
+                                                    destIndex++;
+                                                }
+                                            }
+                                        }
 
                                     });
     }
@@ -1307,30 +1307,30 @@ static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D
     if (Config::Instance()->UseThreadingForHeaps)
     {
         auto asyncTask = std::async(std::launch::async, [=]()
-                    {
-                        auto size = This->GetDescriptorHandleIncrementSize(DescriptorHeapsType);
+                                    {
+                                        auto size = This->GetDescriptorHandleIncrementSize(DescriptorHeapsType);
 
-                        for (size_t i = 0; i < NumDescriptors; i++)
-                        {
-                            // source
-                            auto srcHandle = SrcDescriptorRangeStart.ptr + i * size;
-                            auto srcHeap = GetHeapByCpuHandle(srcHandle);
-                            if (srcHeap == nullptr)
-                                continue;
+                                        for (size_t i = 0; i < NumDescriptors; i++)
+                                        {
+                                            // source
+                                            auto srcHandle = SrcDescriptorRangeStart.ptr + i * size;
+                                            auto srcHeap = GetHeapByCpuHandle(srcHandle);
+                                            if (srcHeap == nullptr)
+                                                continue;
 
-                            auto buffer = srcHeap->GetByCpuHandle(srcHandle);
+                                            auto buffer = srcHeap->GetByCpuHandle(srcHandle);
 
-                            // destination
-                            auto destHandle = DestDescriptorRangeStart.ptr + i * size;
-                            auto dstHeap = GetHeapByCpuHandle(destHandle);
-                            if (dstHeap == nullptr)
-                                continue;
+                                            // destination
+                                            auto destHandle = DestDescriptorRangeStart.ptr + i * size;
+                                            auto dstHeap = GetHeapByCpuHandle(destHandle);
+                                            if (dstHeap == nullptr)
+                                                continue;
 
-                            dstHeap->SetByCpuHandle(destHandle, *buffer);
+                                            dstHeap->SetByCpuHandle(destHandle, *buffer);
 
-                            LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}",
-                                           handle, destHandle, GetGPUHandle(This, handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), GetGPUHandle(This, destHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), (UINT)DescriptorHeapsType);
-                        }
+                                            LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}",
+                                                           handle, destHandle, GetGPUHandle(This, handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), GetGPUHandle(This, destHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), (UINT)DescriptorHeapsType);
+                                        }
 
                                     });
     }
@@ -1798,7 +1798,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
     LOG_DEBUG("fc: {}, fi: {}", frameCounter, fIndex);
 
-    if(HooksDx::currentSwapchain == nullptr)
+    if (HooksDx::currentSwapchain == nullptr)
         return S_OK;
 
     if (Config::Instance()->FGResetCapturedResources)
@@ -1883,7 +1883,6 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         else
             presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
 
-        HooksDx::currentSwapchain = nullptr;
         FrameGen_Dx12::fgSkipHudlessChecks = false;
 
         LOG_FUNC_RESULT(presentResult);
@@ -2366,7 +2365,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         lastWrapped = new WrappedIDXGISwapChain4(realSC, readDevice, pDesc->OutputWindow, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
         *ppSwapChain = lastWrapped;
 
-        if(!fgSkipSCWrapping)
+        if (!fgSkipSCWrapping)
             HooksDx::currentSwapchain = lastWrapped;
 
         LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
@@ -3610,7 +3609,6 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 
         FrameGen_Dx12::fgSwapChainContext = nullptr;
         fgSwapChains.erase(hWnd);
-        HooksDx::currentSwapchain = nullptr;
 
 #ifndef USE_MUTEX_FOR_FFX
         std::this_thread::sleep_for(std::chrono::milliseconds(250));

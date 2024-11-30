@@ -739,14 +739,9 @@ static BOOL hkFreeLibrary(HMODULE lpLibrary)
         LOG_INFO("Call for this module loadCount: {0}", loadCount);
 
         if (loadCount == 0)
-        {
-            Config::Instance()->IsShuttingDown = true;
             return o_FreeLibrary(lpLibrary);
-        }
         else
-        {
             return TRUE;
-        }
     }
 
     return o_FreeLibrary(lpLibrary);
@@ -1859,26 +1854,6 @@ static void CheckWorkingMode()
                 HooksVk::HookVk();
 
             AttachHooks();
-
-            // if in memory try to unload epic overlay
-            if (Config::Instance()->FGUseFGSwapChain.value_or(true))
-            {
-                for (size_t i = 0; i < overlayNamesW.size(); i++)
-                {
-                    HMODULE epic = nullptr;
-
-                    do
-                    {
-                        epic = GetModuleHandle(overlayNamesW[i].c_str());
-
-                        BOOL result = TRUE;
-
-                        if (epic != nullptr)
-                            result = FreeLibrary(epic);
-
-                    } while (epic != nullptr);
-                }
-            }
         }
 
         return;
@@ -1889,8 +1864,6 @@ static void CheckWorkingMode()
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
-    HMODULE epicOverlayHandle = nullptr;
-
     switch (ul_reason_for_call)
     {
         case DLL_PROCESS_ATTACH:
