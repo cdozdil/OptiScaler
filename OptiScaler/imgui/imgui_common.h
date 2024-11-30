@@ -21,7 +21,7 @@ private:
     inline static WNDPROC _oWndProc = nullptr;
     inline static bool _isVisible = false;
     inline static bool _isInited = false;
-    inline static bool _isResetRequested = false;
+    //inline static bool _isResetRequested = false;
 
     // mipmap calculations
     inline static bool _showMipmapCalcWindow = false;
@@ -135,7 +135,6 @@ public:
     static void VulkanInited() { _vulkanReady = true; }
     static bool IsInited() { return _isInited; }
     static bool IsVisible() { return _isVisible; }
-    static bool IsResetRequested() { return _isResetRequested; }
     static HWND Handle() { return _handle; }
 
     static void RenderMenu();
