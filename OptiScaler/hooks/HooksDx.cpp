@@ -56,6 +56,7 @@ typedef struct ResourceInfo
     D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON;
     D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
     ResourceType type = SRV;
+    double lastUsedFrame = 0;
 } resource_info;
 
 typedef struct HeapInfo
@@ -100,7 +101,10 @@ typedef struct HeapInfo
         auto index = (cpuHandle - cpuStart) / increment;
 
         if (index < info.size())
+        {
+            setInfo.lastUsedFrame = Util::MillisecondsNow();
             info[index] = setInfo;
+    }
     }
 
     void SetByGpuHandle(SIZE_T gpuHandle, ResourceInfo setInfo)
@@ -111,7 +115,10 @@ typedef struct HeapInfo
         auto index = (gpuHandle - gpuStart) / increment;
 
         if (index < info.size())
+        {
+            setInfo.lastUsedFrame = Util::MillisecondsNow();
             info[index] = setInfo;
+    }
     }
 } heap_info;
 
@@ -774,6 +781,17 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
         return result;
     }
 
+    auto currentMs = Util::MillisecondsNow();
+
+    if (!Config::Instance()->FGAlwaysTrackHeaps.value_or(false) &&
+        resource->lastUsedFrame != 0 && (currentMs - resource->lastUsedFrame) > 400)
+    {
+        LOG_WARN("Resource {:X}, last used frame ({}) is too small ({}) from current one ({}) skipping resource!",
+                 (size_t)resource->buffer, currentMs - resource->lastUsedFrame, resource->lastUsedFrame, currentMs);
+        resource->lastUsedFrame = currentMs; // use it next time if timing is ok
+        return false;
+    }
+
     DXGI_SWAP_CHAIN_DESC scDesc{};
     if (HooksDx::currentSwapchain->GetDesc(&scDesc) != S_OK)
     {
@@ -827,6 +845,8 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
             LOG_DEBUG("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> TRUE",
                       callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
 
+        resource->lastUsedFrame = currentMs;
+
         return true;
     }
 
@@ -850,6 +870,8 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
         if (callerName.length() > 0)
             LOG_DEBUG("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> TRUE",
                       callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
+
+        resource->lastUsedFrame = currentMs;
 
         return true;
     }
@@ -1169,7 +1191,7 @@ static void hkCopyDescriptors(ID3D12Device* This,
     if (DescriptorHeapsType != D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV && DescriptorHeapsType != D3D12_DESCRIPTOR_HEAP_TYPE_RTV)
         return;
 
-    if (!IsHudFixActive())
+    if (Config::Instance()->FGAlwaysTrackHeaps.value_or(false) && !IsHudFixActive())
         return;
 
     // make copies, just in case
@@ -1301,7 +1323,7 @@ static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D
     if (DescriptorHeapsType != D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV && DescriptorHeapsType != D3D12_DESCRIPTOR_HEAP_TYPE_RTV)
         return;
 
-    if (!IsHudFixActive())
+    if (Config::Instance()->FGAlwaysTrackHeaps.value_or(false) && !IsHudFixActive())
         return;
 
     if (Config::Instance()->UseThreadingForHeaps)

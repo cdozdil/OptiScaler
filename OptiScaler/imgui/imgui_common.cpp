@@ -961,10 +961,19 @@ void ImGuiCommon::RenderMenu()
 
                         if (Config::Instance()->AdvancedSettings.value_or(false))
                         {
-                            if (ImGui::Checkbox("FG Use Threading For Heap Tracking", &Config::Instance()->UseThreadingForHeaps))
+                            auto ath = Config::Instance()->FGAlwaysTrackHeaps.value_or(false);
+                            if (ImGui::Checkbox("Always Track Heaps", &ath))
+                            {
+                                Config::Instance()->FGAlwaysTrackHeaps = ath;
+                                LOG_DEBUG("Enabled set FGAlwaysTrackHeaps: {}", ath);
+                            }
+                            ShowHelpMarker("Always track resources, might cause performace issues\nbut also might fix HudFix related crashes!");
+
+                            ImGui::SameLine(0.0f, 16.0f);
+                            if (ImGui::Checkbox("Async Heap Tracking", &Config::Instance()->UseThreadingForHeaps))
                                 LOG_DEBUG("Enabled set UseThreadingForHeaps: {}", Config::Instance()->UseThreadingForHeaps);
 
-                            ShowHelpMarker("Use threading while tracking descriptor heap copy operations.\nMight cause locks or crashes!");
+                            ShowHelpMarker("Use async while tracking descriptor heap copy operations.\nMight cause locks or crashes!");
                         }
 
                         ImGui::PopItemWidth();

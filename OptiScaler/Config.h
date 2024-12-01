@@ -174,6 +174,7 @@ public:
 	std::optional<int> FGRectWidth;
 	std::optional<int> FGRectHeight;
 	std::optional<bool> FGDisableOverlays;
+	std::optional<bool> FGAlwaysTrackHeaps;
 	bool FGOnlyGenerated = false;
 	bool FGChanged = false;
 	bool SCChanged = false;
