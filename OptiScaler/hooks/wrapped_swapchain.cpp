@@ -128,11 +128,10 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     {
         Config::Instance()->FGResetCapturedResources = true;
         Config::Instance()->FGOnlyUseCapturedResources = false;
-        Config::Instance()->FGOnlyUseCapturedResources = false;
-    }
 
-    if (Config::Instance()->CurrentFeature != nullptr)
-        Config::Instance()->FGChanged = true;
+        if (Config::Instance()->CurrentFeature != nullptr)
+            Config::Instance()->FGChanged = true;
+    }
 
     if (ClearTrig != nullptr)
         ClearTrig(true, Handle);
@@ -242,11 +241,10 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
     {
         Config::Instance()->FGResetCapturedResources = true;
         Config::Instance()->FGOnlyUseCapturedResources = false;
-        Config::Instance()->FGOnlyUseCapturedResources = false;
-    }
 
-    if (Config::Instance()->CurrentFeature != nullptr)
-        Config::Instance()->FGChanged = true;
+        if (Config::Instance()->CurrentFeature != nullptr)
+            Config::Instance()->FGChanged = true;
+    }
 
     if (ClearTrig != nullptr)
         ClearTrig(true, Handle);
@@ -333,51 +331,58 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 
 HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput* pTarget)
 {
-    std::lock_guard<std::mutex> lock(_localMutex);
-    LOG_TRACE("Waiting mutex");
-    std::unique_lock<std::shared_mutex> lock2(FrameGen_Dx12::ffxMutex);
+    HRESULT result = S_OK;
 
-    auto result = m_pReal->SetFullscreenState(Fullscreen, pTarget);
+    BOOL state;
+    if (m_pReal->GetFullscreenState(&state, &pTarget) == S_OK && Fullscreen == state)
+        return result;
 
-    LOG_DEBUG("Fullscreen: {}", Fullscreen);
-
-    if (Config::Instance()->FGEnabled.value_or(false))
     {
-        Config::Instance()->FGResetCapturedResources = true;
-        Config::Instance()->FGOnlyUseCapturedResources = false;
-        Config::Instance()->FGOnlyUseCapturedResources = false;
-    }
+        std::lock_guard<std::mutex> lock(_localMutex);
+        LOG_TRACE("Waiting mutex");
+        std::unique_lock<std::shared_mutex> lock2(FrameGen_Dx12::ffxMutex);
 
-    if (Config::Instance()->CurrentFeature != nullptr)
-        Config::Instance()->FGChanged = true;
+        result = m_pReal->SetFullscreenState(Fullscreen, pTarget);
 
-    if (ClearTrig != nullptr)
-        ClearTrig(true, Handle);
+        LOG_DEBUG("Fullscreen: {}", Fullscreen);
 
-    Config::Instance()->SCChanged = true;
-    Config::Instance()->scBuffers.clear();
-
-    UINT bc = 0;
-    if (m_pReal1 != nullptr)
-    {
-        DXGI_SWAP_CHAIN_DESC1 desc{};
-
-        if (m_pReal1->GetDesc1(&desc) == S_OK)
-            bc = desc.BufferCount;
-    }
-
-    for (size_t i = 0; i < bc; i++)
-    {
-        IUnknown* buffer;
-
-        if (m_pReal->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
+        if (Config::Instance()->FGEnabled.value_or(false))
         {
-            Config::Instance()->scBuffers.push_back(buffer);
-            buffer->Release();
-        }
-    }
+            Config::Instance()->FGResetCapturedResources = true;
+            Config::Instance()->FGOnlyUseCapturedResources = false;
 
-    LOG_DEBUG("result: {0:X}", (UINT)result);
+            if (Config::Instance()->CurrentFeature != nullptr)
+                Config::Instance()->FGChanged = true;
+        }
+
+        if (ClearTrig != nullptr)
+            ClearTrig(true, Handle);
+
+        Config::Instance()->SCChanged = true;
+        Config::Instance()->scBuffers.clear();
+
+        UINT bc = 0;
+        if (m_pReal1 != nullptr)
+        {
+            DXGI_SWAP_CHAIN_DESC1 desc{};
+
+            if (m_pReal1->GetDesc1(&desc) == S_OK)
+                bc = desc.BufferCount;
+        }
+
+        for (size_t i = 0; i < bc; i++)
+        {
+            IUnknown* buffer;
+
+            if (m_pReal->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
+            {
+                Config::Instance()->scBuffers.push_back(buffer);
+                buffer->Release();
+            }
+        }
+
+        LOG_DEBUG("result: {0:X}", (UINT)result);
+    }
 
     return result;
 }
