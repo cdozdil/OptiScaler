@@ -422,7 +422,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
         return;
     }
 
-    if (_isInited)
+    if (_isInited && currentSCCommandQueue != nullptr)
     {
         // Generate render targets
         if (!g_mainRenderTargetResource[0])
