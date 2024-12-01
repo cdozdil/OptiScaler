@@ -104,7 +104,7 @@ typedef struct HeapInfo
         {
             setInfo.lastUsedFrame = Util::MillisecondsNow();
             info[index] = setInfo;
-    }
+        }
     }
 
     void SetByGpuHandle(SIZE_T gpuHandle, ResourceInfo setInfo)
@@ -118,7 +118,7 @@ typedef struct HeapInfo
         {
             setInfo.lastUsedFrame = Util::MillisecondsNow();
             info[index] = setInfo;
-    }
+        }
     }
 } heap_info;
 
@@ -748,16 +748,23 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
     }
     else
     {
+        if (CreateBufferResource(g_pd3dDeviceParam, resource, D3D12_RESOURCE_STATE_COPY_DEST, &fgHudless[fIndex]))
+        {
 #ifdef USE_RESOURCE_BARRIRER
-        ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
+            ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
 #endif
 
-        if (CreateBufferResource(g_pd3dDeviceParam, resource, D3D12_RESOURCE_STATE_COPY_DEST, &fgHudless[fIndex]))
             cmdList->CopyResource(fgHudless[fIndex], resource->buffer);
 
 #ifdef USE_RESOURCE_BARRIRER
-        ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
+            ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
 #endif
+        }
+        else
+        {
+            LOG_WARN("Can't create fgHudless buffer!");
+            return;
+        }
     }
 
     if (Config::Instance()->FGCaptureResources)
@@ -954,7 +961,7 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
     {
         std::unique_lock<std::shared_mutex> lock(resourceMutex);
         fgHandlesByResources.insert_or_assign(pResource, info);
-    }
+}
 #endif
 
 #ifdef DETAILED_DEBUG_LOGS
@@ -1007,7 +1014,7 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
     {
         std::unique_lock<std::shared_mutex> lock(resourceMutex);
         fgHandlesByResources.insert_or_assign(pResource, info);
-    }
+}
 #endif
 
 #ifdef DETAILED_DEBUG_LOGS
@@ -1059,7 +1066,7 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
     {
         std::unique_lock<std::shared_mutex> lock(resourceMutex);
         fgHandlesByResources.insert_or_assign(pResource, info);
-    }
+}
 #endif
 
 #ifdef DETAILED_DEBUG_LOGS
@@ -3275,7 +3282,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         LOG_WARN("GPU Based Validation active!");
         debugController->SetEnableGPUBasedValidation(TRUE);
 #endif
-    }
+}
 #endif
 
     Config::Instance()->dxgiSkipSpoofing = true;
@@ -3313,9 +3320,9 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
                 LOG_DEBUG("infoQueue1 accuired, registering MessageCallback");
                 res = infoQueue1->RegisterMessageCallback(D3D12DebugCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, NULL, NULL);
             }
-        }
-#endif
     }
+#endif
+}
 
     LOG_FUNC_RESULT(result);
 
