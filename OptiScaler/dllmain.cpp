@@ -1878,7 +1878,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             DisableThreadLibraryCalls(hModule);
 
-            if (Config::Instance()->FGUseFGSwapChain.value_or(true))
+            if (Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->FGDisableOverlays.value_or(true))
                 SetEnvironmentVariable(L"SteamNoOverlayUIDrawing", L"1");
 
             loadCount++;
