@@ -1665,9 +1665,9 @@ void ImGuiCommon::RenderMenu()
                         if (ImGui::Checkbox("MB Override All Textures", &mbAll))
                             Config::Instance()->MipmapBiasOverrideAll = mbAll;
 
-                        ShowHelpMarker("Apply override value as scale multiplier\n"
-                                       "When using scale mode please use positive\n"
-                                       "override values to increase sharpness!");
+                        ShowHelpMarker("Override all textures mipmap values\n"
+                                       "Normally OptiScaler only overrides\n"
+                                       "below zero mipmap values!");
                     }
                     ImGui::EndDisabled();
 
@@ -1690,6 +1690,8 @@ void ImGuiCommon::RenderMenu()
                         {
                             Config::Instance()->MipmapBiasOverride.reset();
                             _mipBias = 0.0f;
+                            Config::Instance()->lastMipBias = 100.0f;
+                            Config::Instance()->lastMipBiasMax = -100.0f;
                         }
                     }
                     ImGui::EndDisabled();
