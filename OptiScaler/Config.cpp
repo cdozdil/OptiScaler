@@ -442,6 +442,15 @@ bool Config::Reload(std::filesystem::path iniPath)
             if (MipmapBiasOverride.has_value() && (MipmapBiasOverride.value() > 15.0 || MipmapBiasOverride.value() < -15.0))
                 MipmapBiasOverride.reset();
 
+            if (!MipmapBiasFixedOverride.has_value())
+                MipmapBiasFixedOverride = readBool("Hotfix", "MipmapBiasFixedOverride");
+
+            if (!MipmapBiasScaleOverride.has_value())
+                MipmapBiasScaleOverride = readBool("Hotfix", "MipmapBiasScaleOverride");
+
+            if (!MipmapBiasOverrideAll.has_value())
+                MipmapBiasOverrideAll = readBool("Hotfix", "MipmapBiasOverrideAll");
+
             if (!AnisotropyOverride.has_value())
                 AnisotropyOverride = readInt("Hotfix", "AnisotropyOverride");
 
@@ -830,6 +839,10 @@ bool Config::SaveIni()
     // Hotfixes
     {
         ini.SetValue("Hotfix", "MipmapBiasOverride", GetFloatValue(Instance()->MipmapBiasOverride).c_str());
+        ini.SetValue("Hotfix", "MipmapBiasOverrideAll", GetBoolValue(Instance()->MipmapBiasOverrideAll).c_str());
+        ini.SetValue("Hotfix", "MipmapBiasFixedOverride", GetBoolValue(Instance()->MipmapBiasFixedOverride).c_str());
+        ini.SetValue("Hotfix", "MipmapBiasScaleOverride", GetBoolValue(Instance()->MipmapBiasScaleOverride).c_str());
+
         ini.SetValue("Hotfix", "AnisotropyOverride", GetIntValue(Instance()->AnisotropyOverride).c_str());
         ini.SetValue("Hotfix", "RoundInternalResolution", GetIntValue(Instance()->RoundInternalResolution).c_str());
 

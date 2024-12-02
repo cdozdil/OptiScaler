@@ -97,6 +97,9 @@ public:
 
 	//Hotfixes
 	std::optional<float> MipmapBiasOverride;
+	std::optional<bool> MipmapBiasFixedOverride;
+	std::optional<bool> MipmapBiasScaleOverride;
+	std::optional<bool> MipmapBiasOverrideAll;
 	std::optional<int> AnisotropyOverride;
 	std::optional<int> RoundInternalResolution;
 
@@ -227,7 +230,8 @@ public:
 	// XeSS debug stuff
 	bool xessDebug = false;
 	int xessDebugFrames = 5;
-	float lastMipBias = 0.0f;
+	float lastMipBias = 100.0f;
+	float lastMipBiasMax = -100.0f;
 
 	// dlss hook
 	bool upscalerDisableHook = false;

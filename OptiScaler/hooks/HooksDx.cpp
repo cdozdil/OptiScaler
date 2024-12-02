@@ -961,7 +961,7 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
     {
         std::unique_lock<std::shared_mutex> lock(resourceMutex);
         fgHandlesByResources.insert_or_assign(pResource, info);
-}
+    }
 #endif
 
 #ifdef DETAILED_DEBUG_LOGS
@@ -1014,7 +1014,7 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
     {
         std::unique_lock<std::shared_mutex> lock(resourceMutex);
         fgHandlesByResources.insert_or_assign(pResource, info);
-}
+    }
 #endif
 
 #ifdef DETAILED_DEBUG_LOGS
@@ -1066,7 +1066,7 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
     {
         std::unique_lock<std::shared_mutex> lock(resourceMutex);
         fgHandlesByResources.insert_or_assign(pResource, info);
-}
+    }
 #endif
 
 #ifdef DETAILED_DEBUG_LOGS
@@ -3282,7 +3282,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         LOG_WARN("GPU Based Validation active!");
         debugController->SetEnableGPUBasedValidation(TRUE);
 #endif
-}
+    }
 #endif
 
     Config::Instance()->dxgiSkipSpoofing = true;
@@ -3320,9 +3320,9 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
                 LOG_DEBUG("infoQueue1 accuired, registering MessageCallback");
                 res = infoQueue1->RegisterMessageCallback(D3D12DebugCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, NULL, NULL);
             }
-    }
+        }
 #endif
-}
+    }
 
     LOG_FUNC_RESULT(result);
 
@@ -3349,7 +3349,7 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
         (pDesc->Filter == D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT || pDesc->Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT ||
         pDesc->Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR || pDesc->Filter == D3D12_FILTER_ANISOTROPIC))
     {
-        LOG_INFO("Overriding Anisotrpic ({2}) filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
+        LOG_DEBUG("Overriding Anisotrpic ({2}) filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
         newDesc.Filter = D3D12_FILTER_ANISOTROPIC;
         newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
     }
@@ -3363,15 +3363,25 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
     newDesc.MinLOD = pDesc->MinLOD;
     newDesc.MipLODBias = pDesc->MipLODBias;
 
-    if (newDesc.MipLODBias < 0.0f)
+    if (newDesc.MipLODBias < 0.0f || Config::Instance()->MipmapBiasOverrideAll.value_or(false))
     {
         if (Config::Instance()->MipmapBiasOverride.has_value())
         {
-            LOG_INFO("Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
-            newDesc.MipLODBias = Config::Instance()->MipmapBiasOverride.value();
+            LOG_DEBUG("Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
+
+            if (Config::Instance()->MipmapBiasFixedOverride.value_or(false))
+                newDesc.MipLODBias = Config::Instance()->MipmapBiasOverride.value();
+            else if (Config::Instance()->MipmapBiasScaleOverride.value_or(false))
+                newDesc.MipLODBias = newDesc.MipLODBias * Config::Instance()->MipmapBiasOverride.value();
+            else
+                newDesc.MipLODBias = newDesc.MipLODBias + Config::Instance()->MipmapBiasOverride.value();
         }
 
-        Config::Instance()->lastMipBias = newDesc.MipLODBias;
+        if (Config::Instance()->lastMipBiasMax < newDesc.MipLODBias)
+            Config::Instance()->lastMipBiasMax = newDesc.MipLODBias;
+
+        if (Config::Instance()->lastMipBias > newDesc.MipLODBias)
+            Config::Instance()->lastMipBias = newDesc.MipLODBias;
     }
 
     return o_CreateSampler(device, &newDesc, DestDescriptor);
@@ -3406,7 +3416,7 @@ static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC
         pSamplerDesc->Filter == D3D11_FILTER_MIN_MAG_MIP_LINEAR ||
         pSamplerDesc->Filter == D3D11_FILTER_ANISOTROPIC))
     {
-        LOG_INFO("Overriding Anisotrpic ({2}) filtering {0} -> {1}", pSamplerDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pSamplerDesc->Filter);
+        LOG_DEBUG("Overriding Anisotrpic ({2}) filtering {0} -> {1}", pSamplerDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pSamplerDesc->Filter);
         newDesc.Filter = D3D11_FILTER_ANISOTROPIC;
         newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
     }
@@ -3418,15 +3428,25 @@ static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC
 
     newDesc.MipLODBias = pSamplerDesc->MipLODBias;
 
-    if (newDesc.MipLODBias < 0.0f)
+    if (newDesc.MipLODBias < 0.0f || Config::Instance()->MipmapBiasOverrideAll.value_or(false))
     {
         if (Config::Instance()->MipmapBiasOverride.has_value())
         {
-            LOG_INFO("Overriding mipmap bias {0} -> {1}", pSamplerDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
-            newDesc.MipLODBias = Config::Instance()->MipmapBiasOverride.value();
+            LOG_DEBUG("Overriding mipmap bias {0} -> {1}", pSamplerDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
+
+            if (Config::Instance()->MipmapBiasFixedOverride.value_or(false))
+                newDesc.MipLODBias = Config::Instance()->MipmapBiasOverride.value();
+            else if (Config::Instance()->MipmapBiasScaleOverride.value_or(false))
+                newDesc.MipLODBias = newDesc.MipLODBias * Config::Instance()->MipmapBiasOverride.value();
+            else
+                newDesc.MipLODBias = newDesc.MipLODBias + Config::Instance()->MipmapBiasOverride.value();
         }
 
-        Config::Instance()->lastMipBias = newDesc.MipLODBias;
+        if (Config::Instance()->lastMipBiasMax < newDesc.MipLODBias)
+            Config::Instance()->lastMipBiasMax = newDesc.MipLODBias;
+
+        if (Config::Instance()->lastMipBias > newDesc.MipLODBias)
+            Config::Instance()->lastMipBias = newDesc.MipLODBias;
     }
 
     return o_CreateSamplerState(This, &newDesc, ppSamplerState);

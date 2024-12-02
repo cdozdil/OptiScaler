@@ -145,6 +145,8 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     {
         Config::Instance()->ScreenWidth = Width;
         Config::Instance()->ScreenHeight = Height;
+        Config::Instance()->lastMipBias = 100.0f;
+        Config::Instance()->lastMipBiasMax = -100.0f;
     }
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
@@ -258,6 +260,8 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
     {
         Config::Instance()->ScreenWidth = Width;
         Config::Instance()->ScreenHeight = Height;
+        Config::Instance()->lastMipBias = 100.0f;
+        Config::Instance()->lastMipBiasMax = -100.0f;
     }
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade

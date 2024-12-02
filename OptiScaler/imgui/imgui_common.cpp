@@ -286,7 +286,7 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
     //LOG_TRACE("msg: {:X}, wParam: {:X}, lParam: {:X}", msg, wParam, lParam);
 
-    if (!Config::Instance()->IsShuttingDown && 
+    if (!Config::Instance()->IsShuttingDown &&
         (msg == WM_QUIT || msg == WM_CLOSE || msg == WM_DESTROY || /* classic messages but they are a bit late to capture */
         (msg == WM_SYSCOMMAND && wParam == SC_CLOSE /* window close*/)))
     {
@@ -331,11 +331,11 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         if (rawData.header.dwType == RIM_TYPEKEYBOARD && rawData.data.keyboard.VKey != 0)
             inputMenu = rawData.data.keyboard.VKey == Config::Instance()->ShortcutKey.value_or(VK_INSERT);
     }
-    else 
+    else
     {
         inputMenu = msg == WM_KEYDOWN && wParam == Config::Instance()->ShortcutKey.value_or(VK_INSERT);
     }
-    
+
     // INSERT - OPEN MENU
     if (inputMenu)
     {
@@ -1629,19 +1629,68 @@ void ImGuiCommon::RenderMenu()
                                    "Positive values will make textures more blurry\n\n"
                                    "Has a small performance impact");
 
+                    ImGui::BeginDisabled(!Config::Instance()->MipmapBiasOverride.has_value());
+                    {
+                        ImGui::BeginDisabled(Config::Instance()->MipmapBiasScaleOverride.has_value() && Config::Instance()->MipmapBiasScaleOverride.value());
+                        {
+                            bool mbFixed = Config::Instance()->MipmapBiasFixedOverride.value_or(false);
+                            if (ImGui::Checkbox("MB Fixed Override", &mbFixed))
+                            {
+                                Config::Instance()->MipmapBiasScaleOverride.reset();
+                                Config::Instance()->MipmapBiasFixedOverride = mbFixed;
+                            }
+
+                            ShowHelpMarker("Apply same override value to all textures");
+                        }
+                        ImGui::EndDisabled();
+
+                        ImGui::SameLine(0.0f, 6.0f);
+
+                        ImGui::BeginDisabled(Config::Instance()->MipmapBiasFixedOverride.has_value() && Config::Instance()->MipmapBiasFixedOverride.value());
+                        {
+                            bool mbScale = Config::Instance()->MipmapBiasScaleOverride.value_or(false);
+                            if (ImGui::Checkbox("MB Scale Override", &mbScale))
+                            {
+                                Config::Instance()->MipmapBiasFixedOverride.reset();
+                                Config::Instance()->MipmapBiasScaleOverride = mbScale;
+                            }
+
+                            ShowHelpMarker("Apply override value as scale multiplier\n"
+                                           "When using scale mode please use positive\n"
+                                           "override values to increase sharpness!");
+                        }
+                        ImGui::EndDisabled();
+
+                        bool mbAll = Config::Instance()->MipmapBiasOverrideAll.value_or(false);
+                        if (ImGui::Checkbox("MB Override All Textures", &mbAll))
+                            Config::Instance()->MipmapBiasOverrideAll = mbAll;
+
+                        ShowHelpMarker("Apply override value as scale multiplier\n"
+                                       "When using scale mode please use positive\n"
+                                       "override values to increase sharpness!");
+                    }
+                    ImGui::EndDisabled();
 
                     ImGui::BeginDisabled(Config::Instance()->MipmapBiasOverride.has_value() && Config::Instance()->MipmapBiasOverride.value() == _mipBias);
-                    if (ImGui::Button("Set"))
-                        Config::Instance()->MipmapBiasOverride = _mipBias;
+                    {
+                        if (ImGui::Button("Set"))
+                        {
+                            Config::Instance()->MipmapBiasOverride = _mipBias;
+                            Config::Instance()->lastMipBias = 100.0f;
+                            Config::Instance()->lastMipBiasMax = -100.0f;
+                        }
+                    }
                     ImGui::EndDisabled();
 
                     ImGui::SameLine(0.0f, 6.0f);
 
                     ImGui::BeginDisabled(!Config::Instance()->MipmapBiasOverride.has_value());
-                    if (ImGui::Button("Reset"))
                     {
-                        Config::Instance()->MipmapBiasOverride.reset();
-                        _mipBias = 0.0f;
+                        if (ImGui::Button("Reset"))
+                        {
+                            Config::Instance()->MipmapBiasOverride.reset();
+                            _mipBias = 0.0f;
+                        }
                     }
                     ImGui::EndDisabled();
 
@@ -1654,13 +1703,31 @@ void ImGuiCommon::RenderMenu()
                     }
 
                     if (Config::Instance()->MipmapBiasOverride.has_value())
-                        ImGui::Text("Current : %.6f, Target: %.6f", Config::Instance()->lastMipBias, Config::Instance()->MipmapBiasOverride.value());
+                    {
+                        if (Config::Instance()->MipmapBiasFixedOverride.value_or(false))
+                        {
+                            ImGui::Text("Current : %.3f / %.3f, Target: %.3f",
+                                        Config::Instance()->lastMipBias, Config::Instance()->lastMipBiasMax, Config::Instance()->MipmapBiasOverride.value());
+                        }
+                        else if (Config::Instance()->MipmapBiasScaleOverride.value_or(false))
+                        {
+                            ImGui::Text("Current : %.3f / %.3f, Target: Base * %.3f",
+                                        Config::Instance()->lastMipBias, Config::Instance()->lastMipBiasMax, Config::Instance()->MipmapBiasOverride.value());
+                        }
+                        else
+                        {
+                            ImGui::Text("Current : %.3f / %.3f, Target: Base + %.3f",
+                                        Config::Instance()->lastMipBias, Config::Instance()->lastMipBiasMax, Config::Instance()->MipmapBiasOverride.value());
+                        }
+                    }
                     else
-                        ImGui::Text("Current : %.6f", Config::Instance()->lastMipBias);
+                    {
+                        ImGui::Text("Current : %.3f / %.3f", Config::Instance()->lastMipBias, Config::Instance()->lastMipBiasMax);
+                    }
 
                     ImGui::Text("Will be applied after RESOLUTION or PRESENT change !!!");
 
-                    // MIPMAP BIAS & Anisotropy -----------------------------
+                    // Anisotropy Override -----------------------------
                     ImGui::SeparatorText("Anisotropic Filtering (DirectX)");
 
                     ImGui::PushItemWidth(65.0f * Config::Instance()->MenuScale.value());
