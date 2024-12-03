@@ -238,7 +238,7 @@ bool OS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     UINT dispatchWidth = 0;
     UINT dispatchHeight = 0;
 
-    if (_upsample || Config::Instance()->OutputScalingUseFsr.value_or(true))
+    if (true || _upsample || Config::Instance()->OutputScalingUseFsr.value_or(true))
     {
         dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
         dispatchHeight = (Config::Instance()->CurrentFeature->DisplayHeight() + InNumThreadsY - 1) / InNumThreadsY;

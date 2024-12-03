@@ -10,56 +10,81 @@ struct alignas(256) Constants
     int32_t destHeight;
 };
 
-
 inline static std::string downsampleCode = R"(
-cbuffer Params : register(b0)
-{
-	int _SrcWidth;
-	int _SrcHeight;
-	int _DstWidth;
-	int _DstHeight;
+cbuffer Params : register(b0) {
+    int _SrcWidth;    // Source texture width
+    int _SrcHeight;   // Source texture height
+    int _DstWidth;    // Destination texture width
+    int _DstHeight;   // Destination texture height
 };
 
-Texture2D<float4> InputTexture : register(t0);
-RWTexture2D<float4> OutputTexture : register(u0);
+// Texture resources.
+Texture2D<float4> InputTexture : register(t0);  // Input texture (source image)
+RWTexture2D<float4> OutputTexture : register(u0);  // Output texture (downsampled image)
 
-float bicubic_weight(float x)
+// Lanczos kernel function.
+float lanczosKernel(float x, float radius, float pi)
 {
-	float a = -0.75f;
-	float absX = abs(x);
+    if (x == 0.0) return 1.0;
+    if (x > radius) return 0.0;
 
-	if (absX <= 1.0f)
-		return (a + 2.0f) * absX * absX * absX - (a + 3.0f) * absX * absX + 1.0f;
-	else if (absX < 2.0f)
-		return a * absX * absX * absX - 5.0f * a * absX * absX + 8.0f * a * absX - 4.0f * a;
-	else
-		return 0.0f;
+    x *= pi;
+    return (sin(x) / x) * (sin(x / radius) / (x / radius));
 }
 
 [numthreads(32, 32, 1)]
-void CSMain(uint3 DTid : SV_DispatchThreadID)
+void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
-	if (DTid.x >= _DstWidth || DTid.y >= _DstHeight)
-		return;
+    // Coordinates of the pixel in the target (downsampled) texture.
+    uint2 targetCoords = dispatchThreadID.xy;
 
-	float2 uv = float2(DTid.x / (_DstWidth - 1.0f), DTid.y / (_DstHeight - 1.0f));
-	float2 pixel = uv * float2(_SrcWidth, _SrcHeight);
-	float2 texel = floor(pixel);
-	float2 t = pixel - texel;
-	t = t * t * (3.0f - 2.0f * t);
+    // Ensure we are within the target texture bounds.
+    if (targetCoords.x >= _DstWidth || targetCoords.y >= _DstHeight)
+        return;
 
-	float4 result = float4(0.0f, 0.0f, 0.0f, 0.0f);
-	for (int y = -1; y <= 2; y++)
-	{
-		for (int x = -1; x <= 2; x++)
-		{
-			float4 color = InputTexture.Load(int3(texel.x + x, texel.y + y, 0));
-			float weight = bicubic_weight(x - t.x) * bicubic_weight(y - t.y);
-			result += color * weight;
-		}
-	}
+    // Calculate scaling factor and source position.
+    float2 scale = float2(_SrcWidth, _SrcHeight) / float2(_DstWidth, _DstHeight);
+    float2 sourcePos = float2(targetCoords) * scale;
 
-	OutputTexture[DTid.xy] = result;
+    // Lanczos kernel properties.
+    const float lanczosRadius = 3.0; // Typical radius (adjustable for quality/performance)
+    const float pi = 3.14159265359;
+
+    // Accumulators for color and weight.
+    float4 color = 0.0;
+    float totalWeight = 0.0;
+
+    // Loop through the kernel window.
+    for (int y = -int(lanczosRadius); y <= int(lanczosRadius); y++)
+    {
+        for (int x = -int(lanczosRadius); x <= int(lanczosRadius); x++)
+        {
+            // Offset in source texture space.
+            float2 offset = float2(x, y);
+            float2 samplePos = sourcePos + offset;
+
+            // Ensure we sample within bounds.
+            samplePos = clamp(samplePos, float2(0, 0), float2(_SrcWidth - 1, _SrcHeight - 1));
+
+            // Fetch the texel.
+            float4 sampleColor = InputTexture.Load(int3(samplePos, 0));
+
+            // Calculate Lanczos weight.
+            float2 dist = abs(samplePos - sourcePos);
+            float2 lanczosWeight = lanczosKernel(dist.x, lanczosRadius, pi) *
+                                   lanczosKernel(dist.y, lanczosRadius, pi);
+
+            // Accumulate weighted color.
+            color += sampleColor * lanczosWeight.x * lanczosWeight.y;
+            totalWeight += lanczosWeight.x * lanczosWeight.y;
+        }
+    }
+
+    // Normalize the color by the total weight to avoid darkening/brightening.
+    color /= totalWeight;
+
+    // Write the result to the output texture.
+    OutputTexture[dispatchThreadID.xy] = color;
 }
 )";
 
