@@ -506,7 +506,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
 {
     auto fIndex = fgFrameIndex;
 
-    if (This != ImGuiOverlayDx::MenuCommandList() && Config::Instance()->CurrentFeature != nullptr && !Config::Instance()->FGChanged &&
+    if ((This == nullptr || This != ImGuiOverlayDx::MenuCommandList()) && Config::Instance()->CurrentFeature != nullptr && !Config::Instance()->FGChanged &&
         fgHudlessFrame != Config::Instance()->CurrentFeature->FrameCount() && FrameGen_Dx12::fgTarget < Config::Instance()->CurrentFeature->FrameCount() &&
         FrameGen_Dx12::fgContext != nullptr && FrameGen_Dx12::fgIsActive && HooksDx::currentSwapchain != nullptr)
     {
