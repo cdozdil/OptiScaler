@@ -34,7 +34,7 @@ void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
     float2 sourcePos = float2(targetCoords) * scale;
 
     // Lanczos kernel properties.
-    const float lanczosRadius = 3.0; // Typical radius (adjustable for quality/performance)
+    const float lanczosRadius = 2.0; // Typical radius (adjustable for quality/performance)
     const float pi = 3.14159265359;
 
     // Accumulators for color and weight.
