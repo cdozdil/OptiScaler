@@ -47,7 +47,7 @@ private:
     inline static bool _ssUseFsr = false;
 
     // ui scale
-    inline static int _selectedScale = 0;
+    inline static int _selectedScale = 5;
     inline static bool _imguiSizeUpdate = true;
 
     // overlay states
