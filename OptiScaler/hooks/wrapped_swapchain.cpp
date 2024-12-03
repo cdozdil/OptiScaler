@@ -335,11 +335,22 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 
 HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput* pTarget)
 {
+    LOG_DEBUG("Fullscreen: {}, pTarget: {:X}", Fullscreen, (size_t)pTarget);
     HRESULT result = S_OK;
+
+    if (!Fullscreen && pTarget != nullptr)
+    {
+        result = m_pReal->SetFullscreenState(Fullscreen, pTarget);
+        LOG_DEBUG("result: {:X}", result);
+        return result;
+    }
 
     BOOL state;
     if (m_pReal->GetFullscreenState(&state, &pTarget) == S_OK && Fullscreen == state)
+    {
+        LOG_DEBUG("result: {:X}", result);
         return result;
+    }
 
     {
         std::lock_guard<std::mutex> lock(_localMutex);
@@ -347,8 +358,6 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
         std::unique_lock<std::shared_mutex> lock2(FrameGen_Dx12::ffxMutex);
 
         result = m_pReal->SetFullscreenState(Fullscreen, pTarget);
-
-        LOG_DEBUG("Fullscreen: {}", Fullscreen);
 
         if (Config::Instance()->FGEnabled.value_or(false))
         {
