@@ -22,8 +22,8 @@ cbuffer Params : register(b0)
     int _DstHeight;
 };
 
-#define TILE_DIM_X 32
-#define TILE_DIM_Y 32
+#define TILE_DIM_X 16
+#define TILE_DIM_Y 16
 
 #define GROUP_COUNT (TILE_DIM_X * TILE_DIM_Y)
 

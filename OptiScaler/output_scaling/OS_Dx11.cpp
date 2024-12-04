@@ -203,16 +203,16 @@ bool OS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, I
     UINT dispatchWidth = 0;
     UINT dispatchHeight = 0;
 
-    if (_upsample || Config::Instance()->OutputScalingUseFsr.value_or(true))
-    {
+    //if (_upsample || Config::Instance()->OutputScalingUseFsr.value_or(true))
+    //{
         dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
         dispatchHeight = (Config::Instance()->CurrentFeature->DisplayHeight() + InNumThreadsY - 1) / InNumThreadsY;
-    }
-    else
-    {
-        dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->TargetWidth() + InNumThreadsX - 1) / InNumThreadsX);
-        dispatchHeight = (Config::Instance()->CurrentFeature->TargetHeight() + InNumThreadsY - 1) / InNumThreadsY;
-    }
+    //}
+    //else
+    //{
+    //    dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->TargetWidth() + InNumThreadsX - 1) / InNumThreadsX);
+    //    dispatchHeight = (Config::Instance()->CurrentFeature->TargetHeight() + InNumThreadsY - 1) / InNumThreadsY;
+    //}
 
     InContext->Dispatch(dispatchWidth, dispatchHeight, 1);
 
@@ -247,9 +247,9 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
         else
         {
             if (_upsample)
-                hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcus_cso), sizeof(bcus_cso), nullptr, &_computeShader);
+                hr = _device->CreateComputeShader(reinterpret_cast<const void*>(BCUS_cso), sizeof(BCUS_cso), nullptr, &_computeShader);
             else
-                hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_cso), sizeof(bcds_cso), nullptr, &_computeShader);
+                hr = _device->CreateComputeShader(reinterpret_cast<const void*>(BCDS_cso), sizeof(BCDS_cso), nullptr, &_computeShader);
         }
 
         if (FAILED(hr))

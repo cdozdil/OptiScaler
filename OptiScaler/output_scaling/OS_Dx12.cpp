@@ -209,8 +209,8 @@ bool OS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
         Constants constants{};
         constants.srcWidth = Config::Instance()->CurrentFeature->TargetWidth();
         constants.srcHeight = Config::Instance()->CurrentFeature->TargetHeight();
-        constants.destWidth = Config::Instance()->CurrentFeature->DisplayWidth(); // static_cast<uint32_t>(outDesc.Width);
-        constants.destHeight = Config::Instance()->CurrentFeature->DisplayHeight(); // outDesc.Height;
+        constants.destWidth = Config::Instance()->CurrentFeature->DisplayWidth(); 
+        constants.destHeight = Config::Instance()->CurrentFeature->DisplayHeight();
 
         // Copy the updated constant buffer data to the constant buffer resource
         UINT8* pCBDataBegin;
@@ -238,16 +238,16 @@ bool OS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     UINT dispatchWidth = 0;
     UINT dispatchHeight = 0;
 
-    if (true || _upsample || Config::Instance()->OutputScalingUseFsr.value_or(true))
-    {
+    //if (true || _upsample || Config::Instance()->OutputScalingUseFsr.value_or(true))
+    //{
         dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
         dispatchHeight = (Config::Instance()->CurrentFeature->DisplayHeight() + InNumThreadsY - 1) / InNumThreadsY;
-    }
-    else
-    {
-        dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->TargetWidth() + InNumThreadsX - 1) / InNumThreadsX);
-        dispatchHeight = (Config::Instance()->CurrentFeature->TargetHeight() + InNumThreadsY - 1) / InNumThreadsY;
-    }
+    //}
+    //else
+    //{
+    //    dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->TargetWidth() + InNumThreadsX - 1) / InNumThreadsX);
+    //    dispatchHeight = (Config::Instance()->CurrentFeature->TargetHeight() + InNumThreadsY - 1) / InNumThreadsY;
+    //}
 
     InCmdList->Dispatch(dispatchWidth, dispatchHeight, 1);
 
@@ -398,9 +398,9 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
         else
         {
             if (_upsample)
-                computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcus_cso), sizeof(bcus_cso));
+                computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(BCUS_cso), sizeof(BCUS_cso));
             else
-                computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcds_cso), sizeof(bcds_cso));
+                computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(BCDS_cso), sizeof(BCDS_cso));
         }
 
         auto hr = InDevice->CreateComputePipelineState(&computePsoDesc, __uuidof(ID3D12PipelineState*), (void**)&_pipelineState);
