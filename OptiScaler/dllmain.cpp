@@ -1079,6 +1079,10 @@ static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice physical
     LOG_FUNC();
 
     auto count = *pPropertyCount;
+    
+    if (pProperties == nullptr)
+        count = 0;
+
     auto result = o_vkEnumerateDeviceExtensionProperties(physicalDevice, pLayerName, pPropertyCount, pProperties);
 
     if (result != VK_SUCCESS)
@@ -1105,6 +1109,12 @@ static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice physical
 
         VkExtensionProperties ivh{ VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME, VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION };
         memcpy(&pProperties[*pPropertyCount - 2], &ivh, sizeof(VkExtensionProperties));
+
+        LOG_DEBUG("Extensions returned:");
+        for (size_t i = 0; i < *pPropertyCount; i++)
+        {
+            LOG_DEBUG("  {}", pProperties[i].extensionName);
+        }
     }
 
     LOG_FUNC_RESULT(result);
@@ -1117,6 +1127,10 @@ static VkResult hkvkEnumerateInstanceExtensionProperties(const char* pLayerName,
     LOG_FUNC();
 
     auto count = *pPropertyCount;
+
+    if (pProperties == nullptr)
+        count = 0;
+
     auto result = o_vkEnumerateInstanceExtensionProperties(pLayerName, pPropertyCount, pProperties);
 
     if (result != VK_SUCCESS)
@@ -1127,22 +1141,34 @@ static VkResult hkvkEnumerateInstanceExtensionProperties(const char* pLayerName,
 
     if (pLayerName == nullptr && pProperties == nullptr && count == 0)
     {
-        *pPropertyCount += 2;
-        vkEnumerateInstanceExtensionPropertiesCount = *pPropertyCount;
-        LOG_TRACE("hkvkEnumerateDeviceExtensionProperties({0}) count: {1}", pLayerName, vkEnumerateDeviceExtensionPropertiesCount);
+        //*pPropertyCount += 2;
+        //vkEnumerateInstanceExtensionPropertiesCount = *pPropertyCount;
+        //LOG_TRACE("hkvkEnumerateDeviceExtensionProperties({0}) count: {1}", pLayerName, vkEnumerateDeviceExtensionPropertiesCount);
         return result;
     }
 
-    if (pLayerName == nullptr && pProperties != nullptr && *pPropertyCount > 0)
+    //if (pLayerName == nullptr && pProperties != nullptr && *pPropertyCount > 0)
+    //{
+    //    if (vkEnumerateInstanceExtensionPropertiesCount == count)
+    //        *pPropertyCount = count;
+
+    //    VkExtensionProperties bi{ VK_NVX_BINARY_IMPORT_EXTENSION_NAME, VK_NVX_BINARY_IMPORT_SPEC_VERSION };
+    //    memcpy(&pProperties[*pPropertyCount - 1], &bi, sizeof(VkExtensionProperties));
+
+    //    VkExtensionProperties ivh{ VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME, VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION };
+    //    memcpy(&pProperties[*pPropertyCount - 2], &ivh, sizeof(VkExtensionProperties));
+
+    //    LOG_DEBUG("Extensions returned:");
+    //    for (size_t i = 0; i < *pPropertyCount; i++)
+    //    {
+    //        LOG_DEBUG("  {}", pProperties[i].extensionName);
+    //    }
+    //}
+
+    LOG_DEBUG("Extensions returned:");
+    for (size_t i = 0; i < *pPropertyCount; i++)
     {
-        if (vkEnumerateInstanceExtensionPropertiesCount == count)
-            *pPropertyCount = count;
-
-        VkExtensionProperties bi{ VK_NVX_BINARY_IMPORT_EXTENSION_NAME, VK_NVX_BINARY_IMPORT_SPEC_VERSION };
-        memcpy(&pProperties[*pPropertyCount - 1], &bi, sizeof(VkExtensionProperties));
-
-        VkExtensionProperties ivh{ VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME, VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION };
-        memcpy(&pProperties[*pPropertyCount - 2], &ivh, sizeof(VkExtensionProperties));
+        LOG_DEBUG("  {}", pProperties[i].extensionName);
     }
 
     LOG_FUNC_RESULT(result);
