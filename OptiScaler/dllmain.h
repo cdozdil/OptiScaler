@@ -1350,17 +1350,56 @@ bool SkipSpoofing()
     auto skip = !Config::Instance()->DxgiSpoofing.value_or(true) || Config::Instance()->dxgiSkipSpoofing; // || Config::Instance()->IsRunningOnLinux;
 
     if (skip)
-        LOG_TRACE("DxgiSpoofing: {}, dxgiSkipSpoofing: {}, skipping spoofing", 
+        LOG_TRACE("DxgiSpoofing: {}, dxgiSkipSpoofing: {}, skipping spoofing",
                   Config::Instance()->DxgiSpoofing.value_or(true), Config::Instance()->dxgiSkipSpoofing);
 
-    if (!skip && Config::Instance()->DxgiBlacklist.has_value())
+    HANDLE process = GetCurrentProcess();
+
+    if (!skip && Config::Instance()->DxgiBlacklist.has_value() && process != nullptr)
     {
         skip = true;
+
+        /*
+        * File based spoofing
+        SymInitialize(process, NULL, TRUE);
+
+        // Capture stack trace
+        const int maxFrames = 64;
+        void* stack[maxFrames];
+        USHORT frames = CaptureStackBackTrace(0, maxFrames, stack, NULL);
+
+        for (USHORT i = 0; i < frames; ++i)
+        {
+            DWORD64 address = (DWORD64)(stack[i]);
+            DWORD64 moduleBase = SymGetModuleBase64(process, address);
+
+            if (moduleBase)
+            {
+                char moduleName[MAX_PATH];
+                if (GetModuleFileNameA((HINSTANCE)moduleBase, moduleName, MAX_PATH))
+                {
+                    std::string module(moduleName);
+                    LOG_TRACE("ModuleName: {}", module);
+
+                    auto pos = module.rfind("\\sl.");
+
+                    if (pos != std::string::npos)
+                    {
+                        LOG_INFO("spoofing for: {0}", module);
+                        skip = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        SymCleanup(process);
+        */
 
         // Walk the call stack to find the DLL that is calling the hooked function
         void* callers[100];
         unsigned short frames = CaptureStackBackTrace(0, 100, callers, NULL);
-        HANDLE process = GetCurrentProcess();
+        //HANDLE process = GetCurrentProcess();
 
         if (SymInitialize(process, NULL, TRUE))
         {
@@ -1713,7 +1752,7 @@ void AttachToAdapter(IUnknown* unkAdapter)
 
     IDXGIAdapter* adapter = nullptr;
     bool adapterOk = unkAdapter->QueryInterface(__uuidof(IDXGIAdapter), (void**)&adapter) == S_OK;
-    
+
     void* dxvkAdapter = nullptr;
     if (adapterOk && !Config::Instance()->IsRunningOnDXVK && adapter->QueryInterface(guid, &dxvkAdapter) == S_OK)
     {
@@ -1721,7 +1760,7 @@ void AttachToAdapter(IUnknown* unkAdapter)
         ((IDXGIAdapter*)dxvkAdapter)->Release();
     }
 
-    if(Config::Instance()->IsRunningOnDXVK != dxvkStatus)
+    if (Config::Instance()->IsRunningOnDXVK != dxvkStatus)
         LOG_INFO("IDXGIVkInteropDevice interface (DXVK) {0}", Config::Instance()->IsRunningOnDXVK ? "detected" : "not detected");
 
     if (ptrGetDesc == nullptr && adapterOk)
