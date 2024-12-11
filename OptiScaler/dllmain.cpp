@@ -959,7 +959,7 @@ static void hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, Vk
 {
     o_vkGetPhysicalDeviceProperties(physical_device, properties);
 
-    if (!Config::Instance()->dxgiSkipSpoofing)
+    if (!Config::Instance()->skipSpoofing)
     {
         auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090"));
         std::strcpy(properties->deviceName, deviceName.c_str());
@@ -977,7 +977,7 @@ static void hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysic
 {
     o_vkGetPhysicalDeviceProperties2(phys_dev, properties2);
 
-    if (!Config::Instance()->dxgiSkipSpoofing)
+    if (!Config::Instance()->skipSpoofing)
     {
         auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090"));
         std::strcpy(properties2->properties.deviceName, deviceName.c_str());
@@ -1010,7 +1010,7 @@ static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhy
 {
     o_vkGetPhysicalDeviceProperties2KHR(phys_dev, properties2);
 
-    if (!Config::Instance()->dxgiSkipSpoofing)
+    if (!Config::Instance()->skipSpoofing)
     {
         auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090"));
         std::strcpy(properties2->properties.deviceName, deviceName.c_str());
@@ -1053,9 +1053,9 @@ static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, cons
         LOG_DEBUG("  {0}", pCreateInfo->ppEnabledLayerNames[i]);
 
     // Skip spoofing for Intel Arc
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
     auto result = o_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     LOG_DEBUG("o_vkCreateInstance result: {0:X}", (INT)result);
 
@@ -1078,9 +1078,9 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
     {
         LOG_DEBUG("extension spoofing is disabled");
 
-        Config::Instance()->dxgiSkipSpoofing = true;
+        Config::Instance()->skipSpoofing = true;
         return o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
-        Config::Instance()->dxgiSkipSpoofing = false;
+        Config::Instance()->skipSpoofing = false;
     }
 
     LOG_DEBUG("layers ({0}):", pCreateInfo->enabledLayerCount);
@@ -1123,9 +1123,9 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
         LOG_DEBUG("  {0}", pCreateInfo->ppEnabledExtensionNames[i]);
 
     // Skip spoofing for Intel Arc
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
     auto result = o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     LOG_FUNC_RESULT(result);
 
