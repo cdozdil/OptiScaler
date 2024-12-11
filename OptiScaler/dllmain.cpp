@@ -1110,7 +1110,7 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
         }
     }
 
-    if (!bVK_KHR_get_memory_requirements2)
+    if (FfxApiProxy::VULKAN_CreateContext() != nullptr)
         newExtensionList.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
 
     pCreateInfo->enabledExtensionCount = static_cast<uint32_t>(newExtensionList.size());
