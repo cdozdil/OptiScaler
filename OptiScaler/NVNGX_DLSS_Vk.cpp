@@ -299,22 +299,19 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequi
         }
     }
 
-    if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling && OutExtensionCount != nullptr) // || FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_FrameGeneration)
+    if ((FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling || FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_FrameGeneration) && OutExtensionCount != nullptr)
     {
-        if ((FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling || FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_FrameGeneration) && OutExtensionCount != nullptr)
+        if (OutExtensionProperties == nullptr)
         {
-            if (OutExtensionProperties == nullptr)
+            if (Config::Instance()->VulkanExtensionSpoofing.value_or(false))
             {
-                if (Config::Instance()->VulkanExtensionSpoofing.value_or(false))
-                {
-                    LOG_INFO("returning 3 extensions are needed");
-                    *OutExtensionCount = 3;
-                }
-                else
-                {
-                    LOG_INFO("returning no extensions are needed");
-                    *OutExtensionCount = 0;
-                }
+                LOG_INFO("returning 3 extensions are needed");
+                *OutExtensionCount = 3;
+            }
+            else
+            {
+                LOG_INFO("returning no extensions are needed");
+                *OutExtensionCount = 0;
             }
         }
         else if (*OutExtensionCount == 3 && Config::Instance()->VulkanExtensionSpoofing.value_or(false))
