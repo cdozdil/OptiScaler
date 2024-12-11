@@ -510,7 +510,7 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
 
     const size_t scratchBufferSize = Fsr212::ffxFsr2GetScratchMemorySizeDX12_212();
     void* scratchBuffer = calloc(scratchBufferSize, 1);
@@ -658,7 +658,7 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     LOG_TRACE("sleeping after ffxFsr2ContextCreate creation for 500ms");
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     SetInit(true);
 

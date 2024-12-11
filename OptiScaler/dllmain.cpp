@@ -90,14 +90,13 @@ inline std::vector<std::wstring> dxgiNamesW = { L"dxgi.dll", L"dxgi", };
 inline std::vector<std::string> vkNames = { "vulkan-1.dll", "vulkan-1", };
 inline std::vector<std::wstring> vkNamesW = { L"vulkan-1.dll", L"vulkan-1", };
 inline std::vector<std::string> overlayNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping", 
-                                                 "gameoverlayrenderer64", "gameoverlayrenderer64.dll", "gameoverlayrenderer", "gameoverlayrenderer.dll"};
+                                                 "gameoverlayrenderer64", "gameoverlayrenderer64.dll", "gameoverlayrenderer", "gameoverlayrenderer.dll" };
 inline std::vector<std::wstring> overlayNamesW = { L"eosovh-win32-shipping.dll", L"eosovh-win32-shipping", L"eosovh-win64-shipping.dll", L"eosovh-win64-shipping", 
                                                    L"gameoverlayrenderer64", L"gameoverlayrenderer64.dll", L"gameoverlayrenderer", L"gameoverlayrenderer.dll" };
 
 static int loadCount = 0;
 static bool dontCount = false;
-static bool skipLoadChecks = false;
-
+static bool skipDllLoadChecks = false;
 static bool isNvngxMode = false;
 static bool isWorkingWithEnabler = false;
 static bool isNvngxAvailable = false;

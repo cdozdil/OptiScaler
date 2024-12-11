@@ -33,7 +33,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         return false;
     }
 
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
 
     auto ret = XeSSProxy::D3D12CreateContext()(device, &_xessContext);
 
@@ -326,7 +326,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     ret = XeSSProxy::D3D12Init()(_xessContext, &xessParams);
     Config::Instance()->SkipHeapCapture = false;
 
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     if (ret != XESS_RESULT_SUCCESS)
     {
