@@ -89,9 +89,9 @@ inline std::vector<std::string> dxgiNames = { "dxgi.dll", "dxgi", };
 inline std::vector<std::wstring> dxgiNamesW = { L"dxgi.dll", L"dxgi", };
 inline std::vector<std::string> vkNames = { "vulkan-1.dll", "vulkan-1", };
 inline std::vector<std::wstring> vkNamesW = { L"vulkan-1.dll", L"vulkan-1", };
-inline std::vector<std::string> overlayNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping", 
+inline std::vector<std::string> overlayNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping",
                                                  "gameoverlayrenderer64", "gameoverlayrenderer64.dll", "gameoverlayrenderer", "gameoverlayrenderer.dll" };
-inline std::vector<std::wstring> overlayNamesW = { L"eosovh-win32-shipping.dll", L"eosovh-win32-shipping", L"eosovh-win64-shipping.dll", L"eosovh-win64-shipping", 
+inline std::vector<std::wstring> overlayNamesW = { L"eosovh-win32-shipping.dll", L"eosovh-win32-shipping", L"eosovh-win64-shipping.dll", L"eosovh-win64-shipping",
                                                    L"gameoverlayrenderer64", L"gameoverlayrenderer64.dll", L"gameoverlayrenderer", L"gameoverlayrenderer.dll" };
 
 static int loadCount = 0;
@@ -965,7 +965,7 @@ static void hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, Vk
         std::strcpy(properties->deviceName, deviceName.c_str());
         properties->vendorID = 0x10de;
         properties->deviceID = 0x2684;
-        properties->driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
+        properties->driverVersion = VK_MAKE_API_VERSION(999, 99, 0, 0);
     }
     else
     {
@@ -983,7 +983,7 @@ static void hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysic
         std::strcpy(properties2->properties.deviceName, deviceName.c_str());
         properties2->properties.vendorID = 0x10de;
         properties2->properties.deviceID = 0x2684;
-        properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
+        properties2->properties.driverVersion = VK_MAKE_API_VERSION(999, 99, 0, 0);
 
         auto next = (VkDummyProps*)properties2->pNext;
 
@@ -994,7 +994,7 @@ static void hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysic
                 auto ddp = (VkPhysicalDeviceDriverProperties*)(void*)next;
                 ddp->driverID = VK_DRIVER_ID_NVIDIA_PROPRIETARY;
                 std::strcpy(ddp->driverName, "NVIDIA");
-                std::strcpy(ddp->driverInfo, "559.0");
+                std::strcpy(ddp->driverInfo, "999.99");
             }
 
             next = (VkDummyProps*)next->pNext;
@@ -1016,7 +1016,7 @@ static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhy
         std::strcpy(properties2->properties.deviceName, deviceName.c_str());
         properties2->properties.vendorID = 0x10de;
         properties2->properties.deviceID = 0x2684;
-        properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
+        properties2->properties.driverVersion = VK_MAKE_API_VERSION(999, 99, 0, 0);
 
         auto next = (VkDummyProps*)properties2->pNext;
 
@@ -1027,7 +1027,7 @@ static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhy
                 auto ddp = (VkPhysicalDeviceDriverProperties*)(void*)next;
                 ddp->driverID = VK_DRIVER_ID_NVIDIA_PROPRIETARY;
                 std::strcpy(ddp->driverName, "NVIDIA");
-                std::strcpy(ddp->driverInfo, "559.0");
+                std::strcpy(ddp->driverInfo, "999.99");
             }
 
             next = (VkDummyProps*)next->pNext;
@@ -1104,9 +1104,6 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
         {
             LOG_DEBUG("adding {0}", pCreateInfo->ppEnabledExtensionNames[i]);
             newExtensionList.push_back(pCreateInfo->ppEnabledExtensionNames[i]);
-
-            if (std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME) == 0)
-                bVK_KHR_get_memory_requirements2 = true;
         }
     }
 
@@ -1137,7 +1134,7 @@ static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice physical
     LOG_FUNC();
 
     auto count = *pPropertyCount;
-    
+
     if (pProperties == nullptr)
         count = 0;
 
