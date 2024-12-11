@@ -541,6 +541,8 @@ bool Config::Reload(std::filesystem::path iniPath)
             if (!VulkanExtensionSpoofing.has_value())
                 VulkanExtensionSpoofing = readBool("Spoofing", "VulkanExtensionSpoofing");
 
+            if (!VulkanVRAM.has_value())
+                VulkanVRAM = readInt("Spoofing", "VulkanVRAM");
 
             if (!SpoofedGPUName.has_value())
             {
@@ -905,6 +907,7 @@ bool Config::SaveIni()
         ini.SetValue("Spoofing", "DxgiBlacklist", Instance()->DxgiBlacklist.value_or("auto").c_str());
         ini.SetValue("Spoofing", "Vulkan", GetBoolValue(Instance()->VulkanSpoofing).c_str());
         ini.SetValue("Spoofing", "VulkanExtensionSpoofing", GetBoolValue(Instance()->VulkanExtensionSpoofing).c_str());
+        ini.SetValue("Spoofing", "VulkanVRAM", GetIntValue(Instance()->VulkanVRAM).c_str());
         ini.SetValue("Spoofing", "DxgiVRAM", GetIntValue(Instance()->DxgiVRAM).c_str());
         ini.SetValue("Spoofing", "SpoofedGPUName", Instance()->SpoofedGPUName.has_value() ? wstring_to_string(Instance()->SpoofedGPUName.value()).c_str() : "auto");
     }

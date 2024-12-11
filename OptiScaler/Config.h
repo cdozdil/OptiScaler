@@ -157,6 +157,7 @@ public:
 	std::optional<bool> VulkanSpoofing;
 	std::optional<bool> VulkanExtensionSpoofing;
 	std::optional<std::wstring> SpoofedGPUName;
+	std::optional<int> VulkanVRAM;
 
 	// plugins
 	std::optional<std::wstring> PluginPath;

@@ -57,14 +57,17 @@ static PFN_GetModuleHandleA o_GetModuleHandleA = nullptr;
 static PFN_GetModuleHandleW o_GetModuleHandleW = nullptr;
 static PFN_GetModuleHandleExA o_GetModuleHandleExA = nullptr;
 static PFN_GetModuleHandleExW o_GetModuleHandleExW = nullptr;
+
+static PFN_vkCreateDevice o_vkCreateDevice = nullptr;
+static PFN_vkCreateInstance o_vkCreateInstance = nullptr;
 static PFN_vkGetPhysicalDeviceProperties o_vkGetPhysicalDeviceProperties = nullptr;
 static PFN_vkGetPhysicalDeviceProperties2 o_vkGetPhysicalDeviceProperties2 = nullptr;
 static PFN_vkGetPhysicalDeviceProperties2KHR o_vkGetPhysicalDeviceProperties2KHR = nullptr;
-
-static PFN_vkEnumerateInstanceExtensionProperties o_vkEnumerateInstanceExtensionProperties = nullptr;
+static PFN_vkGetPhysicalDeviceMemoryProperties o_vkGetPhysicalDeviceMemoryProperties = nullptr;
+static PFN_vkGetPhysicalDeviceMemoryProperties2 o_vkGetPhysicalDeviceMemoryProperties2 = nullptr;
+static PFN_vkGetPhysicalDeviceMemoryProperties2KHR o_vkGetPhysicalDeviceMemoryProperties2KHR = nullptr;
 static PFN_vkEnumerateDeviceExtensionProperties o_vkEnumerateDeviceExtensionProperties = nullptr;
-static PFN_vkCreateDevice o_vkCreateDevice = nullptr;
-static PFN_vkCreateInstance o_vkCreateInstance = nullptr;
+static PFN_vkEnumerateInstanceExtensionProperties o_vkEnumerateInstanceExtensionProperties = nullptr;
 
 static uint32_t vkEnumerateInstanceExtensionPropertiesCount = 0;
 static uint32_t vkEnumerateDeviceExtensionPropertiesCount = 0;
@@ -106,6 +109,7 @@ HMODULE LoadNvgxDlss(std::wstring originalPath);
 void HookForDxgiSpoofing();
 void HookForVulkanSpoofing();
 void HookForVulkanExtensionSpoofing();
+void HookForVulkanVRAMSpoofing();
 
 inline static bool CheckDllName(std::string* dllName, std::vector<std::string>* namesList)
 {
@@ -250,6 +254,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
             skipLoadChecks = true;
             HookForVulkanSpoofing();
             HookForVulkanExtensionSpoofing();
+            HookForVulkanVRAMSpoofing();
 
             if (Config::Instance()->OverlayMenu.value_or(true))
                 HooksVk::HookVk();
@@ -398,6 +403,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
             skipLoadChecks = true;
             HookForVulkanSpoofing();
             HookForVulkanExtensionSpoofing();
+            HookForVulkanVRAMSpoofing();
 
             if (Config::Instance()->OverlayMenu.value_or(true))
                 HooksVk::HookVk();
@@ -899,6 +905,57 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
 
 #pragma region Vulkan Hooks
 
+static void hkvkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties* pMemoryProperties)
+{
+    o_vkGetPhysicalDeviceMemoryProperties(physicalDevice, pMemoryProperties);
+
+    if (pMemoryProperties == nullptr)
+        return;
+
+    for (size_t i = 0; i < pMemoryProperties->memoryHeapCount; i++)
+    {
+        if (pMemoryProperties->memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+        {
+            uint64_t newMemSize = (uint64_t)Config::Instance()->VulkanVRAM.value() * 1024 * 1024 * 1024;
+            pMemoryProperties->memoryHeaps[i].size = newMemSize;
+        }
+    }
+}
+
+static void hkvkGetPhysicalDeviceMemoryProperties2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties2* pMemoryProperties)
+{
+    o_vkGetPhysicalDeviceMemoryProperties2(physicalDevice, pMemoryProperties);
+
+    if (pMemoryProperties == nullptr || pMemoryProperties->sType != VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2)
+        return;
+
+    for (size_t i = 0; i < pMemoryProperties->memoryProperties.memoryHeapCount; i++)
+    {
+        if (pMemoryProperties->memoryProperties.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+        {
+            uint64_t newMemSize = (uint64_t)Config::Instance()->VulkanVRAM.value() * 1024 * 1024 * 1024;
+            pMemoryProperties->memoryProperties.memoryHeaps[i].size = newMemSize;
+        }
+    }
+}
+
+static void hkvkGetPhysicalDeviceMemoryProperties2KHR(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties2* pMemoryProperties)
+{
+    o_vkGetPhysicalDeviceMemoryProperties2(physicalDevice, pMemoryProperties);
+
+    if (pMemoryProperties == nullptr || pMemoryProperties->sType != VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2_KHR)
+        return;
+
+    for (size_t i = 0; i < pMemoryProperties->memoryProperties.memoryHeapCount; i++)
+    {
+        if (pMemoryProperties->memoryProperties.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+        {
+            uint64_t newMemSize = (uint64_t)Config::Instance()->VulkanVRAM.value() * 1024 * 1024 * 1024;
+            pMemoryProperties->memoryProperties.memoryHeaps[i].size = newMemSize;
+        }
+    }
+}
+
 static void hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, VkPhysicalDeviceProperties* properties)
 {
     o_vkGetPhysicalDeviceProperties(physical_device, properties);
@@ -1143,7 +1200,7 @@ static VkResult hkvkEnumerateInstanceExtensionProperties(const char* pLayerName,
     {
         //*pPropertyCount += 2;
         //vkEnumerateInstanceExtensionPropertiesCount = *pPropertyCount;
-        //LOG_TRACE("hkvkEnumerateDeviceExtensionProperties({0}) count: {1}", pLayerName, vkEnumerateDeviceExtensionPropertiesCount);
+        LOG_TRACE("hkvkEnumerateDeviceExtensionProperties({0}) count: {1}", pLayerName, vkEnumerateDeviceExtensionPropertiesCount);
         return result;
     }
 
@@ -1266,6 +1323,35 @@ inline static void HookForVulkanExtensionSpoofing()
 
             if (o_vkCreateInstance)
                 DetourAttach(&(PVOID&)o_vkCreateInstance, hkvkCreateInstance);
+
+            DetourTransactionCommit();
+        }
+    }
+}
+
+inline static void HookForVulkanVRAMSpoofing()
+{
+    if (!isNvngxMode && Config::Instance()->VulkanVRAM.has_value() && o_vkGetPhysicalDeviceMemoryProperties == nullptr)
+    {
+        o_vkGetPhysicalDeviceMemoryProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceMemoryProperties>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceMemoryProperties"));
+        o_vkGetPhysicalDeviceMemoryProperties2 = reinterpret_cast<PFN_vkGetPhysicalDeviceMemoryProperties2>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceMemoryProperties2"));
+        o_vkGetPhysicalDeviceMemoryProperties2KHR = reinterpret_cast<PFN_vkGetPhysicalDeviceMemoryProperties2KHR>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceMemoryProperties2KHR"));
+
+        if (o_vkGetPhysicalDeviceMemoryProperties != nullptr || o_vkGetPhysicalDeviceMemoryProperties2 != nullptr || o_vkGetPhysicalDeviceMemoryProperties2KHR != nullptr)
+        {
+            LOG_INFO("Attaching Vulkan VRAM spoofing hooks");
+
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+
+            if (o_vkGetPhysicalDeviceMemoryProperties)
+                DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceMemoryProperties, hkvkGetPhysicalDeviceMemoryProperties);
+
+            if (o_vkGetPhysicalDeviceMemoryProperties2)
+                DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceMemoryProperties2, hkvkGetPhysicalDeviceMemoryProperties2);
+
+            if (o_vkGetPhysicalDeviceMemoryProperties2KHR)
+                DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceMemoryProperties2KHR, hkvkGetPhysicalDeviceMemoryProperties2KHR);
 
             DetourTransactionCommit();
         }
@@ -1823,6 +1909,7 @@ static void CheckWorkingMode()
                 LOG_DEBUG("vulkan-1.dll already in memory");
                 HookForVulkanSpoofing();
                 HookForVulkanExtensionSpoofing();
+                HookForVulkanVRAMSpoofing();
             }
 
             HMODULE nvapi64 = nullptr;
