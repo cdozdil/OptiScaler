@@ -3,7 +3,11 @@
 #define A_CPU
 // FSR compute shader is from : https://github.com/fholger/vrperfkit/
 
-#include "precompile/BCDS_Shader_Dx11.h"
+#include "precompile/BCDS_lanczos_Shader_Dx11.h"
+#include "precompile/BCDS_catmull_Shader_Dx11.h"
+#include "precompile/BCDS_bicubic_Shader_Dx11.h"
+#include "precompile/BCDS_magc_Shader_Dx11.h"
+
 #include "precompile/BCUS_Shader_Dx11.h"
 
 #include "../fsr1/ffx_fsr1.h"
@@ -246,10 +250,37 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
         }
         else
         {
+
             if (_upsample)
+            {
                 hr = _device->CreateComputeShader(reinterpret_cast<const void*>(BCUS_cso), sizeof(BCUS_cso), nullptr, &_computeShader);
+            }
             else
-                hr = _device->CreateComputeShader(reinterpret_cast<const void*>(BCDS_cso), sizeof(BCDS_cso), nullptr, &_computeShader);
+            {
+                switch (Config::Instance()->OutputScalingDownscaler.value_or(0))
+                {
+                    case 0:
+                        hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_bicubic_cso), sizeof(bcds_bicubic_cso), nullptr, &_computeShader);
+                        break;
+
+                    case 1:
+                        hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_lanczos_cso), sizeof(bcds_lanczos_cso), nullptr, &_computeShader);
+                        break;
+
+                    case 2:
+                        hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_catmull_cso), sizeof(bcds_catmull_cso), nullptr, &_computeShader);
+                        break;
+
+                    case 3:
+                        hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_magc_cso), sizeof(bcds_magc_cso), nullptr, &_computeShader);
+                        break;
+
+                    default:
+                        hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_bicubic_cso), sizeof(bcds_bicubic_cso), nullptr, &_computeShader);
+                        break;
+
+                }
+            }
         }
 
         if (FAILED(hr))
@@ -260,8 +291,40 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
     }
     else
     {
+        ID3DBlob* shaderBlob = nullptr;
+
         // Compile shader blobs
-        ID3DBlob* shaderBlob = OS_CompileShader(_upsample ? upsampleCode.c_str() : downsampleCode.c_str(), "CSMain", "cs_5_0");
+        if (_upsample)
+        {
+            shaderBlob = OS_CompileShader( upsampleCode.c_str(), "CSMain", "cs_5_0");
+        }
+        else
+        {
+            switch (Config::Instance()->OutputScalingDownscaler.value_or(0))
+            {
+                case 0:
+                    shaderBlob = OS_CompileShader(downsampleCodeBC.c_str(), "CSMain", "cs_5_0");
+                    break;
+
+                case 1:
+                    shaderBlob = OS_CompileShader(downsampleCodeLanczos.c_str(), "CSMain", "cs_5_0");
+                    break;
+
+                case 2:
+                    shaderBlob = OS_CompileShader(downsampleCodeCatmull.c_str(), "CSMain", "cs_5_0");
+                    break;
+
+                case 3:
+                    shaderBlob = OS_CompileShader(downsampleCodeMAGIC.c_str(), "CSMain", "cs_5_0");
+                    break;
+
+                default:
+                    shaderBlob = OS_CompileShader(downsampleCodeBC.c_str(), "CSMain", "cs_5_0");
+                    break;
+
+            }
+        }
+
         if (shaderBlob == nullptr)
         {
             LOG_ERROR("[{0}] CompileShader error!", _name);

@@ -365,6 +365,10 @@ bool Config::Reload(std::filesystem::path iniPath)
                 OutputScalingMultiplier = 0.5f;
             else if (OutputScalingMultiplier.has_value() && OutputScalingMultiplier.value() > 3.0f)
                 OutputScalingMultiplier = 3.0f;
+
+            if (!OutputScalingDownscaler.has_value())
+                OutputScalingDownscaler = readInt("OutputScaling", "Downscaler");
+
         }
 
         // Init Flags
@@ -742,6 +746,7 @@ bool Config::SaveIni()
         ini.SetValue("OutputScaling", "Enabled", GetBoolValue(Instance()->OutputScalingEnabled).c_str());
         ini.SetValue("OutputScaling", "Multiplier", GetFloatValue(Instance()->OutputScalingMultiplier).c_str());
         ini.SetValue("OutputScaling", "UseFsr", GetBoolValue(Instance()->OutputScalingUseFsr).c_str());
+        ini.SetValue("OutputScaling", "Downscaler", GetBoolValue(Instance()->OutputScalingDownscaler).c_str());
     }
 
     // FSR

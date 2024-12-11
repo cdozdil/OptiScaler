@@ -127,6 +127,7 @@ public:
 	std::optional<bool> OutputScalingEnabled;
 	std::optional<float> OutputScalingMultiplier;
 	std::optional<bool> OutputScalingUseFsr;
+	std::optional<uint32_t> OutputScalingDownscaler;
 
 	// fsr
 	std::optional<float> FsrVerticalFov;

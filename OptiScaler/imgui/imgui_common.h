@@ -45,6 +45,7 @@ private:
     inline static float _ssRatio = 0.0f;
     inline static bool _ssEnabled = false;
     inline static bool _ssUseFsr = false;
+    inline static uint32_t _ssDownsampler = 0;
 
     // ui scale
     inline static int _selectedScale = 5;
@@ -126,7 +127,7 @@ private:
 
     static void AddRenderPreset(std::string name, std::optional<uint32_t>* value);
 
-    static void PopulateCombo(std::string name, std::optional<uint32_t>* value, const char* names[], const char* desc[], int length);
+    static void PopulateCombo(std::string name, std::optional<uint32_t>* value, const char* names[], const std::string desc[], int length);
 
 public:
 

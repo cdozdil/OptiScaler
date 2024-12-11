@@ -694,7 +694,7 @@ void ImGuiCommon::AddResourceBarrier(std::string name, std::optional<int>* value
 void ImGuiCommon::AddRenderPreset(std::string name, std::optional<uint32_t>* value)
 {
     const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G" };
-    const char* presetsDesc[] = { "Whatever the game uses",
+    const std::string presetsDesc[] = { "Whatever the game uses",
         "Intended for Performance/Balanced/Quality modes.\nAn older variant best suited to combat ghosting for elements with missing inputs, such as motion vectors.",
         "Intended for Ultra Performance mode.\nSimilar to Preset A but for Ultra Performance mode.",
         "Intended for Performance/Balanced/Quality modes.\nGenerally favors current frame information;\nwell suited for fast-paced game content.",
@@ -707,7 +707,7 @@ void ImGuiCommon::AddRenderPreset(std::string name, std::optional<uint32_t>* val
     PopulateCombo(name, value, presets, presetsDesc, 8);
 }
 
-void ImGuiCommon::PopulateCombo(std::string name, std::optional<uint32_t>* value, const char* names[], const char* desc[], int length) {
+void ImGuiCommon::PopulateCombo(std::string name, std::optional<uint32_t>* value, const char* names[], const std::string desc[], int length) {
     int selected = value->value_or(0);
 
     const char* selectedName = "";
@@ -725,7 +725,9 @@ void ImGuiCommon::PopulateCombo(std::string name, std::optional<uint32_t>* value
     {
         if (ImGui::Selectable(names[0], !value->has_value()))
             value->reset();
-        ShowTooltip(desc[0]);
+
+        if (desc[0].length() > 0)
+            ShowTooltip(desc[0].c_str());
 
         for (int n = 1; n < length; n++)
         {
@@ -734,7 +736,9 @@ void ImGuiCommon::PopulateCombo(std::string name, std::optional<uint32_t>* value
                 if (n != selected)
                     *value = n;
             }
-            ShowTooltip(desc[n]);
+
+            if (desc[n].length() > 0)
+                ShowTooltip(desc[n].c_str());
         }
 
         ImGui::EndCombo();
@@ -1555,9 +1559,8 @@ void ImGuiCommon::RenderMenu()
                             _ssRatio = Config::Instance()->OutputScalingMultiplier.value_or(defaultRatio);
                             _ssEnabled = Config::Instance()->OutputScalingEnabled.value_or(false);
                             _ssUseFsr = Config::Instance()->OutputScalingUseFsr.value_or(true);
+                            _ssDownsampler = Config::Instance()->OutputScalingDownscaler.value_or(0);
                         }
-
-
 
                         ImGui::BeginDisabled((currentBackend == "xess" || currentBackend == "dlss") &&
                                              Config::Instance()->CurrentFeature->RenderWidth() > Config::Instance()->CurrentFeature->DisplayWidth());
@@ -1573,15 +1576,29 @@ void ImGuiCommon::RenderMenu()
                         ImGui::SameLine(0.0f, 6.0f);
 
                         ImGui::BeginDisabled(!_ssEnabled);
-                        ImGui::Checkbox("Use FSR 1", &_ssUseFsr);
-                        ImGui::EndDisabled();
-                        ShowHelpMarker("Use FSR 1's upscaling pass instead of bicubic");
+                        {
+                            ImGui::Checkbox("Use FSR 1", &_ssUseFsr);
+                            ShowHelpMarker("Use FSR 1 for scaling");
 
-                        ImGui::SameLine(0.0f, 6.0f);
+                            ImGui::SameLine(0.0f, 6.0f);
+
+                            ImGui::BeginDisabled(_ssUseFsr || _ssRatio < 1.0f);
+                            {
+                                const char* ds_modes[] = { "Bicubic", "Lanczos", "Catmull-Rom", "MAGC" };
+                                const std::string ds_modesDesc[] = { "", "", "", "" };
+
+                                ImGui::PushItemWidth(75.0f * Config::Instance()->MenuScale.value());
+                                PopulateCombo("Downscaler", &Config::Instance()->OutputScalingDownscaler, ds_modes, ds_modesDesc, 4);
+                                ImGui::PopItemWidth();
+                            }
+                            ImGui::EndDisabled();
+                        }
+                        ImGui::EndDisabled();
 
                         bool applyEnabled = _ssEnabled != Config::Instance()->OutputScalingEnabled.value_or(false) ||
                             _ssRatio != Config::Instance()->OutputScalingMultiplier.value_or(defaultRatio) ||
-                            _ssUseFsr != Config::Instance()->OutputScalingUseFsr.value_or(true);
+                            _ssUseFsr != Config::Instance()->OutputScalingUseFsr.value_or(true) ||
+                            (_ssRatio > 1.0f && _ssDownsampler != Config::Instance()->OutputScalingDownscaler.value_or(0));
 
                         ImGui::BeginDisabled(!applyEnabled);
                         if (ImGui::Button("Apply Change"))
@@ -1589,6 +1606,7 @@ void ImGuiCommon::RenderMenu()
                             Config::Instance()->OutputScalingEnabled = _ssEnabled;
                             Config::Instance()->OutputScalingMultiplier = _ssRatio;
                             Config::Instance()->OutputScalingUseFsr = _ssUseFsr;
+                            _ssDownsampler = Config::Instance()->OutputScalingDownscaler.value_or(0);
 
                             if (Config::Instance()->CurrentFeature->Name() == "DLSSD")
                                 Config::Instance()->newBackend = "dlssd";
@@ -2081,7 +2099,7 @@ void ImGuiCommon::RenderMenu()
                     ShowHelpMarker("When possible AntiLag 2 is used, this setting let's you force LatencyFlex instead");
 
                     const char* lfx_modes[] = { "Conservative", "Aggressive", "Reflex ID" };
-                    const char* lfx_modesDesc[] = { "The safest but might not reduce latency well",
+                    const std::string lfx_modesDesc[] = { "The safest but might not reduce latency well",
                         "Improves latency but in some cases will lower fps more than expected",
                         "Best when can be used, some games are not compatible (i.e. cyberpunk) and will fallback to aggressive"
                     };
@@ -2089,7 +2107,7 @@ void ImGuiCommon::RenderMenu()
                     PopulateCombo("LatencyFlex mode", &Config::Instance()->FN_LatencyFlexMode, lfx_modes, lfx_modesDesc, 3);
 
                     const char* rfx_modes[] = { "Follow in-game", "Force Disable", "Force Enable" };
-                    const char* rfx_modesDesc[] = { "", "", "" };
+                    const std::string rfx_modesDesc[] = { "", "", "" };
 
                     PopulateCombo("Force Reflex", &Config::Instance()->FN_ForceReflex, rfx_modes, rfx_modesDesc, 3);
 

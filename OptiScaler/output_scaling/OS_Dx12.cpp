@@ -3,7 +3,11 @@
 #define A_CPU
 // FSR compute shader is from : https://github.com/fholger/vrperfkit/
 
-#include "precompile/BCDS_Shader.h"
+#include "precompile/BCDS_lanczos_Shader.h"
+#include "precompile/BCDS_catmull_Shader.h"
+#include "precompile/BCDS_bicubic_Shader.h"
+#include "precompile/BCDS_magc_Shader.h"
+
 #include "precompile/BCUS_Shader.h"
 
 #include "../fsr1/ffx_fsr1.h"
@@ -397,10 +401,36 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
         }
         else
         {
-            if (_upsample)
+            if (_upsample) 
+            {
                 computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(BCUS_cso), sizeof(BCUS_cso));
+            }
             else
-                computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(BCDS_cso), sizeof(BCDS_cso));
+            {
+                switch (Config::Instance()->OutputScalingDownscaler.value_or(0))
+                {
+                    case 0: 
+                        computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcds_bicubic_cso), sizeof(bcds_bicubic_cso));
+                        break;
+
+                    case 1: 
+                        computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcds_lanczos_cso), sizeof(bcds_lanczos_cso));
+                        break;
+
+                    case 2: 
+                        computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcds_catmull_cso), sizeof(bcds_catmull_cso));
+                        break;
+
+                    case 3: 
+                        computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcds_magc_cso), sizeof(bcds_magc_cso));
+                        break;
+
+                    default:
+                        computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcds_bicubic_cso), sizeof(bcds_bicubic_cso));
+                        break;
+                
+                }
+            }
         }
 
         auto hr = InDevice->CreateComputePipelineState(&computePsoDesc, __uuidof(ID3D12PipelineState*), (void**)&_pipelineState);
@@ -416,7 +446,36 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
         // Compile shader blobs
         ID3DBlob* _recEncodeShader = nullptr;
 
-        _recEncodeShader = OS_CompileShader(_upsample ? upsampleCode.c_str() : downsampleCode.c_str(), "CSMain", "cs_5_0");
+        if (_upsample)
+        {
+            _recEncodeShader = OS_CompileShader(upsampleCode.c_str(), "CSMain", "cs_5_0");
+        }
+        else
+        {
+            switch (Config::Instance()->OutputScalingDownscaler.value_or(0))
+            {
+                case 0:
+                    _recEncodeShader = OS_CompileShader(downsampleCodeBC.c_str(), "CSMain", "cs_5_0");
+                    break;
+
+                case 1:
+                    _recEncodeShader = OS_CompileShader(downsampleCodeLanczos.c_str(), "CSMain", "cs_5_0");
+                    break;
+
+                case 2:
+                    _recEncodeShader = OS_CompileShader(downsampleCodeCatmull.c_str(), "CSMain", "cs_5_0");
+                    break;
+
+                case 3:
+                    _recEncodeShader = OS_CompileShader(downsampleCodeMAGIC.c_str(), "CSMain", "cs_5_0");
+                    break;
+
+                default:
+                    _recEncodeShader = OS_CompileShader(downsampleCodeBC.c_str(), "CSMain", "cs_5_0");
+                    break;
+
+            }
+        }
 
         if (_recEncodeShader == nullptr)
         {
