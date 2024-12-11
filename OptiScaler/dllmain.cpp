@@ -222,9 +222,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
 
         if (module != nullptr)
         {
-            skipLoadChecks = true;
+            skipDllLoadChecks = true;
             HooksDx::HookDx11();
-            skipLoadChecks = false;
+            skipDllLoadChecks = false;
 
             return module;
         }
@@ -236,9 +236,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
 
         if (module != nullptr)
         {
-            skipLoadChecks = true;
+            skipDllLoadChecks = true;
             HooksDx::HookDx12();
-            skipLoadChecks = false;
+            skipDllLoadChecks = false;
 
             return module;
         }
@@ -250,7 +250,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
 
         if (module != nullptr)
         {
-            skipLoadChecks = true;
+            skipDllLoadChecks = true;
             HookForVulkanSpoofing();
             HookForVulkanExtensionSpoofing();
             HookForVulkanVRAMSpoofing();
@@ -258,7 +258,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
             if (Config::Instance()->OverlayMenu.value_or(true))
                 HooksVk::HookVk();
 
-            skipLoadChecks = false;
+            skipDllLoadChecks = false;
 
             return module;
         }
@@ -266,13 +266,13 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
 
     if (CheckDllName(&lcaseLibName, &dxgiNames))
     {
-        skipLoadChecks = true;
+        skipDllLoadChecks = true;
         HookForDxgiSpoofing();
 
         if (Config::Instance()->OverlayMenu.value_or(true))
             HooksDx::HookDxgi();
 
-        skipLoadChecks = false;
+        skipDllLoadChecks = false;
     }
 
     if (!isNvngxMode && CheckDllName(&lcaseLibName, &dllNames))
@@ -371,9 +371,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
         if (module != nullptr)
         {
-            skipLoadChecks = true;
+            skipDllLoadChecks = true;
             HooksDx::HookDx11();
-            skipLoadChecks = false;
+            skipDllLoadChecks = false;
 
             return module;
         }
@@ -385,9 +385,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
         if (module != nullptr)
         {
-            skipLoadChecks = true;
+            skipDllLoadChecks = true;
             HooksDx::HookDx12();
-            skipLoadChecks = false;
+            skipDllLoadChecks = false;
 
             return module;
         }
@@ -399,14 +399,14 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
         if (module != nullptr)
         {
-            skipLoadChecks = true;
+            skipDllLoadChecks = true;
             HookForVulkanSpoofing();
             HookForVulkanExtensionSpoofing();
             HookForVulkanVRAMSpoofing();
 
             if (Config::Instance()->OverlayMenu.value_or(true))
                 HooksVk::HookVk();
-            skipLoadChecks = false;
+            skipDllLoadChecks = false;
 
             return module;
         }
@@ -414,12 +414,12 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
     if (CheckDllNameW(&lcaseLibName, &dxgiNamesW))
     {
-        skipLoadChecks = true;
+        skipDllLoadChecks = true;
         HookForDxgiSpoofing();
 
         if (Config::Instance()->OverlayMenu.value_or(true))
             HooksDx::HookDxgi();
-        skipLoadChecks = false;
+        skipDllLoadChecks = false;
     }
 
     if (!isNvngxMode && CheckDllNameW(&lcaseLibName, &dllNamesW))
@@ -757,7 +757,7 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (skipLoadChecks)
+    if (skipDllLoadChecks)
         return o_LoadLibraryA(lpLibFileName);;
 
     std::string libName(lpLibFileName);
@@ -794,7 +794,7 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (skipLoadChecks)
+    if (skipDllLoadChecks)
         return o_LoadLibraryW(lpLibFileName);;
 
     std::wstring libName(lpLibFileName);
@@ -831,7 +831,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (skipLoadChecks)
+    if (skipDllLoadChecks)
         return o_LoadLibraryExA(lpLibFileName, hFile, dwFlags);
 
     std::string libName(lpLibFileName);
@@ -868,7 +868,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (skipLoadChecks)
+    if (skipDllLoadChecks)
         return o_LoadLibraryExW(lpLibFileName, hFile, dwFlags);
 
     std::wstring libName(lpLibFileName);
@@ -2059,6 +2059,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             spdlog::info("");
 
             // Init XeSS proxy
+            skipDllLoadChecks = true;
             if (!XeSSProxy::InitXeSS())
                 spdlog::warn("Can't init XeSS!");
 
@@ -2068,6 +2069,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             if (!FfxApiProxy::InitFfxVk())
                 spdlog::warn("Can't init Vulkan FfxApi!");
+            skipDllLoadChecks = false;
 
             for (size_t i = 0; i < 300; i++)
             {
