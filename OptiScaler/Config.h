@@ -239,7 +239,7 @@ public:
 	bool upscalerDisableHook = false;
 
 	// spoofing
-	bool dxgiSkipSpoofing = false;
+	bool skipSpoofing = false;
 
 	// fsr3.x
 	std::vector<const char*> fsr3xVersionNames;
