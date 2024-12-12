@@ -215,9 +215,6 @@
     <ClInclude Include="rcas\precompile\RCAS_Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="output_scaling\precompile\BCDS_Shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="output_scaling\precompile\BCUS_Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -282,6 +279,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="nvapi\NvApiTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="output_scaling\precompile\BCUS_Shader_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
