@@ -31,6 +31,15 @@
 
 #define CHECK_FOR_SL_PROXY_OBJECTS
 
+typedef struct FfxSwapchainFramePacingTuning
+{
+    float    safetyMarginInMs = 1.0; // in Millisecond
+    float    varianceFactor = 0.2; // valid range [0.0,1.0]
+    bool     allowHybridSpin = true; //Allows pacing spinlock to sleep.
+    uint32_t hybridSpinTime = 2;  //How long to spin when hybridSpin is enabled. Measured in timer resolution units. Not recommended to go below 2. Will result in frequent overshoots.
+    bool     allowWaitForSingleObjectOnFence = true; //Allows to call WaitForSingleObject() instead of spinning for fence value.
+} FfxSwapchainFramePacingTuning;
+
 enum ResourceType
 {
     SRV,
@@ -793,7 +802,7 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
     if (!Config::Instance()->FGAlwaysTrackHeaps.value_or(false) &&
         resource->lastUsedFrame != 0 && (currentMs - resource->lastUsedFrame) > 400)
     {
-        LOG_WARN("Resource {:X}, last used frame ({}) is too small ({}) from current one ({}) skipping resource!",
+        LOG_DEBUG("Resource {:X}, last used frame ({}) is too small ({}) from current one ({}) skipping resource!",
                  (size_t)resource->buffer, currentMs - resource->lastUsedFrame, resource->lastUsedFrame, currentMs);
         resource->lastUsedFrame = currentMs; // use it next time if timing is ok
         return false;
@@ -1815,7 +1824,7 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 #ifdef USE_MUTEX_FOR_FFX
 static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 {
-    // Disabled, was causing freezes at games launch
+    // Disabled, was causing freezes at games launch & state changes
     //LOG_TRACE("Waiting mutex");
     //std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
     //std::shared_lock<std::shared_mutex> lockPresent(presentMutex);
@@ -1898,6 +1907,11 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         else
             presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
 
+        if (presentResult == S_OK)
+            LOG_DEBUG("1 {}", (UINT)presentResult);
+        else
+            LOG_ERROR("1 {:X}", (UINT)presentResult);
+
         return presentResult;
     }
 
@@ -1914,7 +1928,11 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
         FrameGen_Dx12::fgSkipHudlessChecks = false;
 
-        LOG_FUNC_RESULT(presentResult);
+        if (presentResult == S_OK)
+            LOG_DEBUG("2 {}", (UINT)presentResult);
+        else
+            LOG_ERROR("2 {:X}", (UINT)presentResult);
+
         return presentResult;
     }
 
@@ -2032,6 +2050,11 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         else
             presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
 
+        if (presentResult == S_OK)
+            LOG_DEBUG("3 {}", (UINT)presentResult);
+        else
+            LOG_ERROR("3 {:X}", (UINT)presentResult);
+
         FrameGen_Dx12::fgSkipHudlessChecks = false;
 
         if (Config::Instance()->CurrentFeature != nullptr)
@@ -2082,7 +2105,10 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
     if (device12 != nullptr)
         device12->Release();
 
-    LOG_DEBUG("{}, Present result: {:X}", frameCounter, (UINT)presentResult);
+    if (presentResult == S_OK)
+        LOG_DEBUG("4 {}, Present result: {:X}", frameCounter, (UINT)presentResult);
+    else
+        LOG_ERROR("4 {:X}", (UINT)presentResult);
 
     return presentResult;
 }
@@ -2265,6 +2291,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         createSwapChainDesc.desc = pDesc;
         createSwapChainDesc.swapchain = (IDXGISwapChain4**)ppSwapChain;
 
+
         fgSkipSCWrapping = true;
         //Config::Instance()->skipSpoofing = true;
         Config::Instance()->SkipHeapCapture = true;
@@ -2299,6 +2326,20 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
                 }
             }
 #endif
+            if (Config::Instance()->FGHybridSpin.value_or(true))
+            {
+                FfxSwapchainFramePacingTuning fpt{};
+                fpt.allowHybridSpin = true;
+
+                ffxConfigureDescFrameGenerationSwapChainKeyValueDX12 cfgDesc{};
+                cfgDesc.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_KEYVALUE_DX12;
+                cfgDesc.key = 2;
+                cfgDesc.ptr = &fpt;
+
+                result = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgSwapChainContext, &cfgDesc.header);
+                LOG_DEBUG("HybridSpin D3D12_Configure result: {}", FfxApiProxy::ReturnCodeToString(result));
+            }
+
             scInfo.swapChainFormat = pDesc->BufferDesc.Format;
             scInfo.swapChainBufferCount = pDesc->BufferCount;
             scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
@@ -2579,6 +2620,20 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
                 }
             }
 #endif
+
+            if (Config::Instance()->FGHybridSpin.value_or(true))
+            {
+                FfxSwapchainFramePacingTuning fpt{};
+                fpt.allowHybridSpin = true;
+
+                ffxConfigureDescFrameGenerationSwapChainKeyValueDX12 cfgDesc{};
+                cfgDesc.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_KEYVALUE_DX12;
+                cfgDesc.key = 2;
+                cfgDesc.ptr = &fpt;
+
+                result = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgSwapChainContext, &cfgDesc.header);
+                LOG_DEBUG("HybridSpin D3D12_Configure result: {}", FfxApiProxy::ReturnCodeToString(result));
+            }
 
             scInfo.swapChainFormat = pDesc->Format;
             scInfo.swapChainBufferCount = pDesc->BufferCount;
@@ -3319,7 +3374,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
             {
                 LOG_DEBUG("infoQueue1 accuired, registering MessageCallback");
                 res = infoQueue1->RegisterMessageCallback(D3D12DebugCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, NULL, NULL);
-            }
+    }
         }
 #endif
     }
@@ -3645,7 +3700,7 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 #ifndef USE_MUTEX_FOR_FFX
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
 #endif
-    }
+}
 
 #ifndef USE_MUTEX_FOR_FFX
     std::this_thread::sleep_for(std::chrono::milliseconds(250));

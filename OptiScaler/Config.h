@@ -180,6 +180,7 @@ public:
 	std::optional<int> FGRectHeight;
 	std::optional<bool> FGDisableOverlays;
 	std::optional<bool> FGAlwaysTrackHeaps;
+	std::optional<bool> FGHybridSpin;
 	bool FGOnlyGenerated = false;
 	bool FGChanged = false;
 	bool SCChanged = false;

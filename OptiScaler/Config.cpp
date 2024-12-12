@@ -97,6 +97,9 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             if (!FGAlwaysTrackHeaps.has_value())
                 FGAlwaysTrackHeaps = readBool("FrameGen", "AlwaysTrackHeaps");
+
+            if (!FGHybridSpin.has_value())
+                FGHybridSpin = readBool("FrameGen", "HybridSpin");
         }
 
         // Framerate
@@ -736,6 +739,7 @@ bool Config::SaveIni()
         ini.SetValue("FrameGen", "RectHeight", GetIntValue(Instance()->FGRectHeight).c_str());
         ini.SetValue("FrameGen", "DisableOverlays", GetBoolValue(Instance()->FGDisableOverlays).c_str());
         ini.SetValue("FrameGen", "AlwaysTrackHeaps", GetBoolValue(Instance()->FGAlwaysTrackHeaps).c_str());
+        ini.SetValue("FrameGen", "HybridSpin", GetBoolValue(Instance()->FGHybridSpin).c_str());
     }
 
     // Framerate 
