@@ -76,64 +76,86 @@ private:
 
     inline static PFN_xessSetContextParameterF _xessSetContextParameterF = nullptr;
 
-    inline static void GetDLLVersion(std::wstring dllPath)
+    inline static std::string LogLastError() 
     {
-        // Step 1: Get the size of the version information
-        DWORD handle = 0;
-        DWORD versionSize = GetFileVersionInfoSize(dllPath.c_str(), &handle);
+        DWORD errorCode = GetLastError();
+        LPWSTR errorBuffer = nullptr;
+        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                      NULL, errorCode, 0, (LPWSTR)&errorBuffer, 0, NULL);
 
-        if (versionSize == 0)
+        std::string result;
+
+        if (errorBuffer)
         {
-            LOG_ERROR("Failed to get version info size: {0:X}", GetLastError());
-            return;
-        }
-
-        // Step 2: Allocate buffer and get the version information
-        std::vector<BYTE> versionInfo(versionSize);
-        if (!GetFileVersionInfo(dllPath.c_str(), handle, versionSize, versionInfo.data()))
-        {
-            LOG_ERROR("Failed to get version info: {0:X}", GetLastError());
-            return;
-        }
-
-        // Step 3: Extract the version information
-        VS_FIXEDFILEINFO* fileInfo = nullptr;
-        UINT size = 0;
-        if (!VerQueryValue(versionInfo.data(), L"\\", reinterpret_cast<LPVOID*>(&fileInfo), &size)) {
-            LOG_ERROR("Failed to query version value: {0:X}", GetLastError());
-            return;
-        }
-
-        if (fileInfo != nullptr) {
-            // Extract major, minor, build, and revision numbers from version information
-            DWORD fileVersionMS = fileInfo->dwFileVersionMS;
-            DWORD fileVersionLS = fileInfo->dwFileVersionLS;
-
-            _xessVersion.major = (fileVersionMS >> 16) & 0xffff;
-            _xessVersion.minor = (fileVersionMS >> 0) & 0xffff;
-            _xessVersion.patch = (fileVersionLS >> 16) & 0xffff;
-            _xessVersion.reserved = (fileVersionLS >> 0) & 0xffff;
+            std::wstring errMsg(errorBuffer);
+            result = std::format("{} ({})", errorCode, wstring_to_string(errMsg).erase(wstring_to_string(errMsg).find_last_not_of("\t\n\v\f\r ") + 1));
+            LocalFree(errorBuffer);
         }
         else
         {
-            LOG_ERROR("No version information found!");
+            result = std::format("Unknown error ({}).", errorCode);
         }
+
+        return result;
     }
 
-    inline static std::filesystem::path DllPath(HMODULE module)
+    inline static bool GetVersionInfoFromModule(HMODULE hModule) 
     {
-        static std::filesystem::path dll;
-
-        if (dll.empty())
+        if (hModule == nullptr)
         {
-            wchar_t dllPath[MAX_PATH];
-            GetModuleFileNameW(module, dllPath, MAX_PATH);
-            dll = std::filesystem::path(dllPath);
+            LOG_ERROR("Handle is null!");
+            return false;
         }
 
-        return dll;
-    }
+        // Find the version resource
+        HRSRC hResInfo = FindResource(hModule, MAKEINTRESOURCE(VS_VERSION_INFO), RT_VERSION);
+        if (!hResInfo)
+        {
+            LOG_ERROR("FindResource failed. Error: {}", LogLastError());
+            return false;
+        }
 
+        // Load the resource
+        HGLOBAL hResData = LoadResource(hModule, hResInfo);
+        if (!hResData)
+        {
+            LOG_ERROR("LoadResource failed. Error: {}", LogLastError());
+            return false;
+        }
+
+        // Lock the resource to access raw data
+        LPVOID pResData = LockResource(hResData);
+        if (!pResData)
+        {
+            LOG_ERROR("LockResource failed. Error: {}", LogLastError());
+            return false;
+        }
+
+        // Cast the resource data to a VS_FIXEDFILEINFO structure
+        VS_FIXEDFILEINFO* fileInfo = nullptr;
+        UINT size = 0;
+
+        if (VerQueryValue(pResData, L"\\StringFileInfo\\040904b0\\FileVersion", reinterpret_cast<LPVOID*>(&fileInfo), &size) == 0)
+        {
+            LOG_ERROR("VerQueryValue failed. Error: {}", LogLastError());
+            return false;
+        }
+
+        if (fileInfo != nullptr) 
+        {
+            _xessVersion.major = HIWORD(fileInfo->dwFileVersionMS);
+            _xessVersion.minor = LOWORD(fileInfo->dwFileVersionMS);
+            _xessVersion.patch = HIWORD(fileInfo->dwFileVersionLS);
+            _xessVersion.reserved = LOWORD(fileInfo->dwFileVersionLS);
+        }
+        else 
+        {
+            LOG_ERROR("Failed to parse version information.");
+            return false;
+        }
+
+        return true;
+    }
 
 public:
     static bool InitXeSS()
@@ -145,7 +167,7 @@ public:
         spdlog::info("");
 
         Config::Instance()->upscalerDisableHook = true;
-        Config::Instance()->dxgiSkipSpoofing = true;
+        Config::Instance()->skipSpoofing = true;
 
         auto dllPath = Util::DllPath();
 
@@ -170,7 +192,7 @@ public:
 
             if (_dll == nullptr)
             {
-                Config::Instance()->dxgiSkipSpoofing = false;
+                Config::Instance()->skipSpoofing = false;
                 Config::Instance()->upscalerDisableHook = false;
 
                 LOG_ERROR("OptiScaler working as libxess.dll but could not load original dll!");
@@ -249,7 +271,7 @@ public:
             _xessSetContextParameterF = (PFN_xessSetContextParameterF)DetourFindFunction("libxess.dll", "xessSetContextParameterF");
         }
 
-        Config::Instance()->dxgiSkipSpoofing = false;
+        Config::Instance()->skipSpoofing = false;
         Config::Instance()->upscalerDisableHook = false;
 
         if (_xessD3D12CreateContext != nullptr)
@@ -260,9 +282,15 @@ public:
             moduleHandle = GetModuleHandle(L"libxess.dll");
             if (moduleHandle != nullptr)
             {
-                auto path = DllPath(moduleHandle);
-                GetDLLVersion(path.wstring());
+                if (!GetVersionInfoFromModule(moduleHandle))
+                    _xessGetVersion(&_xessVersion);
             }
+            else
+            {
+                _xessGetVersion(&_xessVersion);
+            }
+
+            LOG_INFO("Version: {}.{}.{}", _xessVersion.major, _xessVersion.minor, _xessVersion.patch);
 
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());

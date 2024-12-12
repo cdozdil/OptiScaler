@@ -157,6 +157,7 @@ public:
 	std::optional<bool> VulkanSpoofing;
 	std::optional<bool> VulkanExtensionSpoofing;
 	std::optional<std::wstring> SpoofedGPUName;
+	std::optional<int> VulkanVRAM;
 
 	// plugins
 	std::optional<std::wstring> PluginPath;
@@ -238,8 +239,8 @@ public:
 	bool upscalerDisableHook = false;
 
 	// spoofing
-	bool dxgiSkipSpoofing = false;
-
+	bool skipSpoofing = false;
+	
 	// fsr3.x
 	std::vector<const char*> fsr3xVersionNames;
 	std::vector<uint64_t> fsr3xVersionIds;

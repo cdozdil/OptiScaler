@@ -117,7 +117,7 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
 
     const size_t scratchBufferSize = ffxFsr2GetScratchMemorySizeDX11();
     void* scratchBuffer = calloc(scratchBufferSize, 1);
@@ -267,7 +267,7 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     SetInit(true);
 

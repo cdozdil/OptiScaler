@@ -490,7 +490,7 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
 
     ffxQueryDescGetVersions versionQuery{};
     versionQuery.header.type = FFX_API_QUERY_DESC_TYPE_GET_VERSIONS;
@@ -661,7 +661,7 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     _name = std::format("FSR {}", version);
     parse_version(version);
 
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     SetInit(true);
 

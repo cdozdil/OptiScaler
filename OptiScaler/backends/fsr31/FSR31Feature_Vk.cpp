@@ -65,7 +65,7 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
 
     ffxQueryDescGetVersions versionQuery{};
     versionQuery.header.type = FFX_API_QUERY_DESC_TYPE_GET_VERSIONS;
@@ -186,7 +186,7 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     LOG_DEBUG("_createContext!");
     auto ret = FfxApiProxy::VULKAN_CreateContext()(&_context, &_contextDesc.header, NULL);
 
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     if (ret != FFX_API_RETURN_OK)
     {

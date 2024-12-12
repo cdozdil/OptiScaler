@@ -57,14 +57,17 @@ static PFN_GetModuleHandleA o_GetModuleHandleA = nullptr;
 static PFN_GetModuleHandleW o_GetModuleHandleW = nullptr;
 static PFN_GetModuleHandleExA o_GetModuleHandleExA = nullptr;
 static PFN_GetModuleHandleExW o_GetModuleHandleExW = nullptr;
+
+static PFN_vkCreateDevice o_vkCreateDevice = nullptr;
+static PFN_vkCreateInstance o_vkCreateInstance = nullptr;
 static PFN_vkGetPhysicalDeviceProperties o_vkGetPhysicalDeviceProperties = nullptr;
 static PFN_vkGetPhysicalDeviceProperties2 o_vkGetPhysicalDeviceProperties2 = nullptr;
 static PFN_vkGetPhysicalDeviceProperties2KHR o_vkGetPhysicalDeviceProperties2KHR = nullptr;
-
-static PFN_vkEnumerateInstanceExtensionProperties o_vkEnumerateInstanceExtensionProperties = nullptr;
+static PFN_vkGetPhysicalDeviceMemoryProperties o_vkGetPhysicalDeviceMemoryProperties = nullptr;
+static PFN_vkGetPhysicalDeviceMemoryProperties2 o_vkGetPhysicalDeviceMemoryProperties2 = nullptr;
+static PFN_vkGetPhysicalDeviceMemoryProperties2KHR o_vkGetPhysicalDeviceMemoryProperties2KHR = nullptr;
 static PFN_vkEnumerateDeviceExtensionProperties o_vkEnumerateDeviceExtensionProperties = nullptr;
-static PFN_vkCreateDevice o_vkCreateDevice = nullptr;
-static PFN_vkCreateInstance o_vkCreateInstance = nullptr;
+static PFN_vkEnumerateInstanceExtensionProperties o_vkEnumerateInstanceExtensionProperties = nullptr;
 
 static uint32_t vkEnumerateInstanceExtensionPropertiesCount = 0;
 static uint32_t vkEnumerateDeviceExtensionPropertiesCount = 0;
@@ -86,15 +89,14 @@ inline std::vector<std::string> dxgiNames = { "dxgi.dll", "dxgi", };
 inline std::vector<std::wstring> dxgiNamesW = { L"dxgi.dll", L"dxgi", };
 inline std::vector<std::string> vkNames = { "vulkan-1.dll", "vulkan-1", };
 inline std::vector<std::wstring> vkNamesW = { L"vulkan-1.dll", L"vulkan-1", };
-inline std::vector<std::string> overlayNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping", 
-                                                 "gameoverlayrenderer64", "gameoverlayrenderer64.dll", "gameoverlayrenderer", "gameoverlayrenderer.dll"};
-inline std::vector<std::wstring> overlayNamesW = { L"eosovh-win32-shipping.dll", L"eosovh-win32-shipping", L"eosovh-win64-shipping.dll", L"eosovh-win64-shipping", 
+inline std::vector<std::string> overlayNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping",
+                                                 "gameoverlayrenderer64", "gameoverlayrenderer64.dll", "gameoverlayrenderer", "gameoverlayrenderer.dll" };
+inline std::vector<std::wstring> overlayNamesW = { L"eosovh-win32-shipping.dll", L"eosovh-win32-shipping", L"eosovh-win64-shipping.dll", L"eosovh-win64-shipping",
                                                    L"gameoverlayrenderer64", L"gameoverlayrenderer64.dll", L"gameoverlayrenderer", L"gameoverlayrenderer.dll" };
 
 static int loadCount = 0;
 static bool dontCount = false;
-static bool skipLoadChecks = false;
-
+static bool skipDllLoadChecks = false;
 static bool isNvngxMode = false;
 static bool isWorkingWithEnabler = false;
 static bool isNvngxAvailable = false;
@@ -106,6 +108,7 @@ HMODULE LoadNvgxDlss(std::wstring originalPath);
 void HookForDxgiSpoofing();
 void HookForVulkanSpoofing();
 void HookForVulkanExtensionSpoofing();
+void HookForVulkanVRAMSpoofing();
 
 inline static bool CheckDllName(std::string* dllName, std::vector<std::string>* namesList)
 {
@@ -219,9 +222,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
 
         if (module != nullptr)
         {
-            skipLoadChecks = true;
+            skipDllLoadChecks = true;
             HooksDx::HookDx11();
-            skipLoadChecks = false;
+            skipDllLoadChecks = false;
 
             return module;
         }
@@ -233,9 +236,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
 
         if (module != nullptr)
         {
-            skipLoadChecks = true;
+            skipDllLoadChecks = true;
             HooksDx::HookDx12();
-            skipLoadChecks = false;
+            skipDllLoadChecks = false;
 
             return module;
         }
@@ -247,14 +250,15 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
 
         if (module != nullptr)
         {
-            skipLoadChecks = true;
+            skipDllLoadChecks = true;
             HookForVulkanSpoofing();
             HookForVulkanExtensionSpoofing();
+            HookForVulkanVRAMSpoofing();
 
             if (Config::Instance()->OverlayMenu.value_or(true))
                 HooksVk::HookVk();
 
-            skipLoadChecks = false;
+            skipDllLoadChecks = false;
 
             return module;
         }
@@ -262,13 +266,13 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
 
     if (CheckDllName(&lcaseLibName, &dxgiNames))
     {
-        skipLoadChecks = true;
+        skipDllLoadChecks = true;
         HookForDxgiSpoofing();
 
         if (Config::Instance()->OverlayMenu.value_or(true))
             HooksDx::HookDxgi();
 
-        skipLoadChecks = false;
+        skipDllLoadChecks = false;
     }
 
     if (!isNvngxMode && CheckDllName(&lcaseLibName, &dllNames))
@@ -367,9 +371,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
         if (module != nullptr)
         {
-            skipLoadChecks = true;
+            skipDllLoadChecks = true;
             HooksDx::HookDx11();
-            skipLoadChecks = false;
+            skipDllLoadChecks = false;
 
             return module;
         }
@@ -381,9 +385,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
         if (module != nullptr)
         {
-            skipLoadChecks = true;
+            skipDllLoadChecks = true;
             HooksDx::HookDx12();
-            skipLoadChecks = false;
+            skipDllLoadChecks = false;
 
             return module;
         }
@@ -395,13 +399,14 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
         if (module != nullptr)
         {
-            skipLoadChecks = true;
+            skipDllLoadChecks = true;
             HookForVulkanSpoofing();
             HookForVulkanExtensionSpoofing();
+            HookForVulkanVRAMSpoofing();
 
             if (Config::Instance()->OverlayMenu.value_or(true))
                 HooksVk::HookVk();
-            skipLoadChecks = false;
+            skipDllLoadChecks = false;
 
             return module;
         }
@@ -409,12 +414,12 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
     if (CheckDllNameW(&lcaseLibName, &dxgiNamesW))
     {
-        skipLoadChecks = true;
+        skipDllLoadChecks = true;
         HookForDxgiSpoofing();
 
         if (Config::Instance()->OverlayMenu.value_or(true))
             HooksDx::HookDxgi();
-        skipLoadChecks = false;
+        skipDllLoadChecks = false;
     }
 
     if (!isNvngxMode && CheckDllNameW(&lcaseLibName, &dllNamesW))
@@ -752,7 +757,7 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (skipLoadChecks)
+    if (skipDllLoadChecks)
         return o_LoadLibraryA(lpLibFileName);;
 
     std::string libName(lpLibFileName);
@@ -789,7 +794,7 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (skipLoadChecks)
+    if (skipDllLoadChecks)
         return o_LoadLibraryW(lpLibFileName);;
 
     std::wstring libName(lpLibFileName);
@@ -826,7 +831,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (skipLoadChecks)
+    if (skipDllLoadChecks)
         return o_LoadLibraryExA(lpLibFileName, hFile, dwFlags);
 
     std::string libName(lpLibFileName);
@@ -863,7 +868,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (skipLoadChecks)
+    if (skipDllLoadChecks)
         return o_LoadLibraryExW(lpLibFileName, hFile, dwFlags);
 
     std::wstring libName(lpLibFileName);
@@ -899,17 +904,68 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
 
 #pragma region Vulkan Hooks
 
+static void hkvkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties* pMemoryProperties)
+{
+    o_vkGetPhysicalDeviceMemoryProperties(physicalDevice, pMemoryProperties);
+
+    if (pMemoryProperties == nullptr)
+        return;
+
+    for (size_t i = 0; i < pMemoryProperties->memoryHeapCount; i++)
+    {
+        if (pMemoryProperties->memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+        {
+            uint64_t newMemSize = (uint64_t)Config::Instance()->VulkanVRAM.value() * 1024 * 1024 * 1024;
+            pMemoryProperties->memoryHeaps[i].size = newMemSize;
+        }
+    }
+}
+
+static void hkvkGetPhysicalDeviceMemoryProperties2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties2* pMemoryProperties)
+{
+    o_vkGetPhysicalDeviceMemoryProperties2(physicalDevice, pMemoryProperties);
+
+    if (pMemoryProperties == nullptr || pMemoryProperties->sType != VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2)
+        return;
+
+    for (size_t i = 0; i < pMemoryProperties->memoryProperties.memoryHeapCount; i++)
+    {
+        if (pMemoryProperties->memoryProperties.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+        {
+            uint64_t newMemSize = (uint64_t)Config::Instance()->VulkanVRAM.value() * 1024 * 1024 * 1024;
+            pMemoryProperties->memoryProperties.memoryHeaps[i].size = newMemSize;
+        }
+    }
+}
+
+static void hkvkGetPhysicalDeviceMemoryProperties2KHR(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties2* pMemoryProperties)
+{
+    o_vkGetPhysicalDeviceMemoryProperties2(physicalDevice, pMemoryProperties);
+
+    if (pMemoryProperties == nullptr || pMemoryProperties->sType != VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2_KHR)
+        return;
+
+    for (size_t i = 0; i < pMemoryProperties->memoryProperties.memoryHeapCount; i++)
+    {
+        if (pMemoryProperties->memoryProperties.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+        {
+            uint64_t newMemSize = (uint64_t)Config::Instance()->VulkanVRAM.value() * 1024 * 1024 * 1024;
+            pMemoryProperties->memoryProperties.memoryHeaps[i].size = newMemSize;
+        }
+    }
+}
+
 static void hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, VkPhysicalDeviceProperties* properties)
 {
     o_vkGetPhysicalDeviceProperties(physical_device, properties);
 
-    if (!Config::Instance()->dxgiSkipSpoofing)
+    if (!Config::Instance()->skipSpoofing)
     {
         auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090"));
         std::strcpy(properties->deviceName, deviceName.c_str());
         properties->vendorID = 0x10de;
         properties->deviceID = 0x2684;
-        properties->driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
+        properties->driverVersion = VK_MAKE_API_VERSION(999, 99, 0, 0);
     }
     else
     {
@@ -921,13 +977,13 @@ static void hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysic
 {
     o_vkGetPhysicalDeviceProperties2(phys_dev, properties2);
 
-    if (!Config::Instance()->dxgiSkipSpoofing)
+    if (!Config::Instance()->skipSpoofing)
     {
         auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090"));
         std::strcpy(properties2->properties.deviceName, deviceName.c_str());
         properties2->properties.vendorID = 0x10de;
         properties2->properties.deviceID = 0x2684;
-        properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
+        properties2->properties.driverVersion = VK_MAKE_API_VERSION(999, 99, 0, 0);
 
         auto next = (VkDummyProps*)properties2->pNext;
 
@@ -938,7 +994,7 @@ static void hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysic
                 auto ddp = (VkPhysicalDeviceDriverProperties*)(void*)next;
                 ddp->driverID = VK_DRIVER_ID_NVIDIA_PROPRIETARY;
                 std::strcpy(ddp->driverName, "NVIDIA");
-                std::strcpy(ddp->driverInfo, "559.0");
+                std::strcpy(ddp->driverInfo, "999.99");
             }
 
             next = (VkDummyProps*)next->pNext;
@@ -954,13 +1010,13 @@ static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhy
 {
     o_vkGetPhysicalDeviceProperties2KHR(phys_dev, properties2);
 
-    if (!Config::Instance()->dxgiSkipSpoofing)
+    if (!Config::Instance()->skipSpoofing)
     {
         auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090"));
         std::strcpy(properties2->properties.deviceName, deviceName.c_str());
         properties2->properties.vendorID = 0x10de;
         properties2->properties.deviceID = 0x2684;
-        properties2->properties.driverVersion = VK_MAKE_API_VERSION(559, 0, 0, 0);
+        properties2->properties.driverVersion = VK_MAKE_API_VERSION(999, 99, 0, 0);
 
         auto next = (VkDummyProps*)properties2->pNext;
 
@@ -971,7 +1027,7 @@ static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhy
                 auto ddp = (VkPhysicalDeviceDriverProperties*)(void*)next;
                 ddp->driverID = VK_DRIVER_ID_NVIDIA_PROPRIETARY;
                 std::strcpy(ddp->driverName, "NVIDIA");
-                std::strcpy(ddp->driverInfo, "559.0");
+                std::strcpy(ddp->driverInfo, "999.99");
             }
 
             next = (VkDummyProps*)next->pNext;
@@ -997,9 +1053,9 @@ static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, cons
         LOG_DEBUG("  {0}", pCreateInfo->ppEnabledLayerNames[i]);
 
     // Skip spoofing for Intel Arc
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
     auto result = o_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     LOG_DEBUG("o_vkCreateInstance result: {0:X}", (INT)result);
 
@@ -1022,9 +1078,9 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
     {
         LOG_DEBUG("extension spoofing is disabled");
 
-        Config::Instance()->dxgiSkipSpoofing = true;
+        Config::Instance()->skipSpoofing = true;
         return o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
-        Config::Instance()->dxgiSkipSpoofing = false;
+        Config::Instance()->skipSpoofing = false;
     }
 
     LOG_DEBUG("layers ({0}):", pCreateInfo->enabledLayerCount);
@@ -1038,7 +1094,9 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
     LOG_DEBUG("checking extensions and removing VK_NVX_BINARY_IMPORT & VK_NVX_IMAGE_VIEW_HANDLE from list");
     for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
     {
-        if (std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_BINARY_IMPORT_EXTENSION_NAME) == 0 || std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME) == 0)
+        if (std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_BINARY_IMPORT_EXTENSION_NAME) == 0 ||
+            std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME) == 0 ||
+            std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME) == 0)
         {
             LOG_DEBUG("removing {0}", pCreateInfo->ppEnabledExtensionNames[i]);
         }
@@ -1046,13 +1104,10 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
         {
             LOG_DEBUG("adding {0}", pCreateInfo->ppEnabledExtensionNames[i]);
             newExtensionList.push_back(pCreateInfo->ppEnabledExtensionNames[i]);
-
-            if (std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME) == 0)
-                bVK_KHR_get_memory_requirements2 = true;
         }
     }
 
-    if (!bVK_KHR_get_memory_requirements2)
+    if (FfxApiProxy::VULKAN_CreateContext() != nullptr)
         newExtensionList.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
 
     pCreateInfo->enabledExtensionCount = static_cast<uint32_t>(newExtensionList.size());
@@ -1065,9 +1120,9 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
         LOG_DEBUG("  {0}", pCreateInfo->ppEnabledExtensionNames[i]);
 
     // Skip spoofing for Intel Arc
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
     auto result = o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     LOG_FUNC_RESULT(result);
 
@@ -1079,7 +1134,7 @@ static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice physical
     LOG_FUNC();
 
     auto count = *pPropertyCount;
-    
+
     if (pProperties == nullptr)
         count = 0;
 
@@ -1093,7 +1148,7 @@ static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice physical
 
     if (pLayerName == nullptr && pProperties == nullptr && count == 0)
     {
-        *pPropertyCount += 2;
+        *pPropertyCount += 3;
         vkEnumerateDeviceExtensionPropertiesCount = *pPropertyCount;
         LOG_TRACE("hkvkEnumerateDeviceExtensionProperties({0}) count: {1}", pLayerName, vkEnumerateDeviceExtensionPropertiesCount);
         return result;
@@ -1109,6 +1164,9 @@ static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice physical
 
         VkExtensionProperties ivh{ VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME, VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION };
         memcpy(&pProperties[*pPropertyCount - 2], &ivh, sizeof(VkExtensionProperties));
+
+        VkExtensionProperties mpva{ VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME, VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_SPEC_VERSION };
+        memcpy(&pProperties[*pPropertyCount - 3], &mpva, sizeof(VkExtensionProperties));
 
         LOG_DEBUG("Extensions returned:");
         for (size_t i = 0; i < *pPropertyCount; i++)
@@ -1143,7 +1201,7 @@ static VkResult hkvkEnumerateInstanceExtensionProperties(const char* pLayerName,
     {
         //*pPropertyCount += 2;
         //vkEnumerateInstanceExtensionPropertiesCount = *pPropertyCount;
-        //LOG_TRACE("hkvkEnumerateDeviceExtensionProperties({0}) count: {1}", pLayerName, vkEnumerateDeviceExtensionPropertiesCount);
+        LOG_TRACE("hkvkEnumerateDeviceExtensionProperties({0}) count: {1}", pLayerName, vkEnumerateDeviceExtensionPropertiesCount);
         return result;
     }
 
@@ -1266,6 +1324,35 @@ inline static void HookForVulkanExtensionSpoofing()
 
             if (o_vkCreateInstance)
                 DetourAttach(&(PVOID&)o_vkCreateInstance, hkvkCreateInstance);
+
+            DetourTransactionCommit();
+        }
+    }
+}
+
+inline static void HookForVulkanVRAMSpoofing()
+{
+    if (!isNvngxMode && Config::Instance()->VulkanVRAM.has_value() && o_vkGetPhysicalDeviceMemoryProperties == nullptr)
+    {
+        o_vkGetPhysicalDeviceMemoryProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceMemoryProperties>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceMemoryProperties"));
+        o_vkGetPhysicalDeviceMemoryProperties2 = reinterpret_cast<PFN_vkGetPhysicalDeviceMemoryProperties2>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceMemoryProperties2"));
+        o_vkGetPhysicalDeviceMemoryProperties2KHR = reinterpret_cast<PFN_vkGetPhysicalDeviceMemoryProperties2KHR>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceMemoryProperties2KHR"));
+
+        if (o_vkGetPhysicalDeviceMemoryProperties != nullptr || o_vkGetPhysicalDeviceMemoryProperties2 != nullptr || o_vkGetPhysicalDeviceMemoryProperties2KHR != nullptr)
+        {
+            LOG_INFO("Attaching Vulkan VRAM spoofing hooks");
+
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+
+            if (o_vkGetPhysicalDeviceMemoryProperties)
+                DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceMemoryProperties, hkvkGetPhysicalDeviceMemoryProperties);
+
+            if (o_vkGetPhysicalDeviceMemoryProperties2)
+                DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceMemoryProperties2, hkvkGetPhysicalDeviceMemoryProperties2);
+
+            if (o_vkGetPhysicalDeviceMemoryProperties2KHR)
+                DetourAttach(&(PVOID&)o_vkGetPhysicalDeviceMemoryProperties2KHR, hkvkGetPhysicalDeviceMemoryProperties2KHR);
 
             DetourTransactionCommit();
         }
@@ -1823,6 +1910,7 @@ static void CheckWorkingMode()
                 LOG_DEBUG("vulkan-1.dll already in memory");
                 HookForVulkanSpoofing();
                 HookForVulkanExtensionSpoofing();
+                HookForVulkanVRAMSpoofing();
             }
 
             HMODULE nvapi64 = nullptr;
@@ -1973,6 +2061,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             spdlog::info("");
 
             // Init XeSS proxy
+            skipDllLoadChecks = true;
             if (!XeSSProxy::InitXeSS())
                 spdlog::warn("Can't init XeSS!");
 
@@ -1982,6 +2071,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             if (!FfxApiProxy::InitFfxVk())
                 spdlog::warn("Can't init Vulkan FfxApi!");
+            skipDllLoadChecks = false;
 
             for (size_t i = 0; i < 300; i++)
             {

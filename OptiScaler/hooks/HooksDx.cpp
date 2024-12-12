@@ -610,9 +610,9 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
         m_FrameGenerationConfig.frameID = Config::Instance()->CurrentFeature->FrameCount();
         m_FrameGenerationConfig.swapChain = HooksDx::currentSwapchain;
 
-        //Config::Instance()->dxgiSkipSpoofing = true;
+        //Config::Instance()->skipSpoofing = true;
         ffxReturnCode_t retCode = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgContext, &m_FrameGenerationConfig.header);
-        //Config::Instance()->dxgiSkipSpoofing = false;
+        //Config::Instance()->skipSpoofing = false;
         LOG_DEBUG("D3D12_Configure result: {0:X}, frame: {1}", retCode, frame);
 
         if (retCode == FFX_API_RETURN_OK)
@@ -2266,13 +2266,13 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         createSwapChainDesc.swapchain = (IDXGISwapChain4**)ppSwapChain;
 
         fgSkipSCWrapping = true;
-        //Config::Instance()->dxgiSkipSpoofing = true;
+        //Config::Instance()->skipSpoofing = true;
         Config::Instance()->SkipHeapCapture = true;
 
         auto result = FfxApiProxy::D3D12_CreateContext()(&FrameGen_Dx12::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
 
         Config::Instance()->SkipHeapCapture = false;
-        //Config::Instance()->dxgiSkipSpoofing = false;
+        //Config::Instance()->skipSpoofing = false;
         fgSkipSCWrapping = false;
 
         if (result == FFX_API_RETURN_OK)
@@ -2546,13 +2546,13 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         createSwapChainDesc.swapchain = (IDXGISwapChain4**)ppSwapChain;
 
         fgSkipSCWrapping = true;
-        //Config::Instance()->dxgiSkipSpoofing = true;
+        //Config::Instance()->skipSpoofing = true;
         Config::Instance()->SkipHeapCapture = true;
 
         auto result = FfxApiProxy::D3D12_CreateContext()(&FrameGen_Dx12::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
 
         Config::Instance()->SkipHeapCapture = false;
-        //Config::Instance()->dxgiSkipSpoofing = false;
+        //Config::Instance()->skipSpoofing = false;
         fgSkipSCWrapping = false;
 
         if (result == FFX_API_RETURN_OK)
@@ -3117,9 +3117,9 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
         rtss = true;
     }
 
-    //Config::Instance()->dxgiSkipSpoofing = true;
+    //Config::Instance()->skipSpoofing = true;
     auto result = o_D3D11On12CreateDevice(pDevice, Flags, pFeatureLevels, FeatureLevels, ppCommandQueues, NumQueues, NodeMask, ppDevice, ppImmediateContext, pChosenFeatureLevel);
-    //Config::Instance()->dxgiSkipSpoofing = false;
+    //Config::Instance()->skipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr && !rtss && !_d3d12Captured)
     {
@@ -3160,9 +3160,9 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
         FeatureLevels = ARRAYSIZE(levels);
     }
 
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
     auto result = o_D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr && !_d3d12Captured)
     {
@@ -3207,16 +3207,16 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
     if (pSwapChainDesc != nullptr && pSwapChainDesc->BufferDesc.Height == 2 && pSwapChainDesc->BufferDesc.Width == 2)
     {
         LOG_WARN("Overlay call!");
-        Config::Instance()->dxgiSkipSpoofing = true;
+        Config::Instance()->skipSpoofing = true;
         auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
-        Config::Instance()->dxgiSkipSpoofing = false;
+        Config::Instance()->skipSpoofing = false;
         return result;
     }
 
     IDXGISwapChain* buffer = nullptr;
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
     auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, &buffer, ppDevice, pFeatureLevel, ppImmediateContext);
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr && !_d3d12Captured)
     {
@@ -3285,9 +3285,9 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     }
 #endif
 
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
     auto result = o_D3D12CreateDevice(pAdapter, MinimumFeatureLevel, riid, ppDevice);
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr)
     {
@@ -3942,11 +3942,11 @@ void FrameGen_Dx12::CreateFGContext(ID3D12Device* InDevice, IFeature* deviceCont
     createFg.backBufferFormat = ffxApiGetSurfaceFormatDX12(HooksDx::CurrentSwapchainFormat());
     createFg.header.pNext = &backendDesc.header;
 
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
     Config::Instance()->SkipHeapCapture = true;
     ffxReturnCode_t retCode = FfxApiProxy::D3D12_CreateContext()(&FrameGen_Dx12::fgContext, &createFg.header, nullptr);
     Config::Instance()->SkipHeapCapture = false;
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
     LOG_INFO("D3D12_CreateContext result: {0:X}", retCode);
 
     FrameGen_Dx12::fgIsActive = (retCode == FFX_API_RETURN_OK);

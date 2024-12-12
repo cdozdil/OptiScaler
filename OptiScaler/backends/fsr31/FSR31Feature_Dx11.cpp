@@ -589,7 +589,7 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         LOG_INFO("If FSR3.1 doesn't work, try enabling the OptiScaler Direct3D hooks by setting OverlayMenu=true.");
     }
 
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
     uint64_t versionCount = 0;
     Config::Instance()->fsr3xVersionIds.resize(versionCount);
     Config::Instance()->fsr3xVersionNames.resize(versionCount);
@@ -753,7 +753,7 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     _name = std::format("FSR {}", version);
     parse_version(version);
 
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     SetInit(true);
 
