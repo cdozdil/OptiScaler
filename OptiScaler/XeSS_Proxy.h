@@ -99,63 +99,67 @@ private:
         return result;
     }
 
-    inline static bool GetVersionInfoFromModule(HMODULE hModule) 
+    inline static bool GetDLLVersion(std::wstring dllPath)
     {
-        if (hModule == nullptr)
+        // Step 1: Get the size of the version information
+        DWORD handle = 0;
+        DWORD versionSize = GetFileVersionInfoSize(dllPath.c_str(), &handle);
+
+        if (versionSize == 0)
         {
-            LOG_ERROR("Handle is null!");
+            LOG_ERROR("Failed to get version info size: {}", LogLastError());
             return false;
         }
 
-        // Find the version resource
-        HRSRC hResInfo = FindResource(hModule, MAKEINTRESOURCE(VS_VERSION_INFO), RT_VERSION);
-        if (!hResInfo)
+        // Step 2: Allocate buffer and get the version information
+        std::vector<BYTE> versionInfo(versionSize);
+        if (!GetFileVersionInfo(dllPath.c_str(), handle, versionSize, versionInfo.data()))
         {
-            LOG_ERROR("FindResource failed. Error: {}", LogLastError());
+            LOG_ERROR("Failed to get version info: {}", LogLastError());
             return false;
         }
 
-        // Load the resource
-        HGLOBAL hResData = LoadResource(hModule, hResInfo);
-        if (!hResData)
-        {
-            LOG_ERROR("LoadResource failed. Error: {}", LogLastError());
-            return false;
-        }
-
-        // Lock the resource to access raw data
-        LPVOID pResData = LockResource(hResData);
-        if (!pResData)
-        {
-            LOG_ERROR("LockResource failed. Error: {}", LogLastError());
-            return false;
-        }
-
-        // Cast the resource data to a VS_FIXEDFILEINFO structure
+        // Step 3: Extract the version information
         VS_FIXEDFILEINFO* fileInfo = nullptr;
         UINT size = 0;
-
-        if (VerQueryValue(pResData, L"\\StringFileInfo\\040904b0\\FileVersion", reinterpret_cast<LPVOID*>(&fileInfo), &size) == 0)
-        {
-            LOG_ERROR("VerQueryValue failed. Error: {}", LogLastError());
+        if (!VerQueryValue(versionInfo.data(), L"\\", reinterpret_cast<LPVOID*>(&fileInfo), &size)) {
+            LOG_ERROR("Failed to query version value: {}", LogLastError());
             return false;
         }
 
-        if (fileInfo != nullptr) 
-        {
-            _xessVersion.major = HIWORD(fileInfo->dwFileVersionMS);
-            _xessVersion.minor = LOWORD(fileInfo->dwFileVersionMS);
-            _xessVersion.patch = HIWORD(fileInfo->dwFileVersionLS);
-            _xessVersion.reserved = LOWORD(fileInfo->dwFileVersionLS);
+        if (fileInfo != nullptr) {
+            // Extract major, minor, build, and revision numbers from version information
+            DWORD fileVersionMS = fileInfo->dwFileVersionMS;
+            DWORD fileVersionLS = fileInfo->dwFileVersionLS;
+
+            _xessVersion.major = (fileVersionMS >> 16) & 0xffff;
+            _xessVersion.minor = (fileVersionMS >> 0) & 0xffff;
+            _xessVersion.patch = (fileVersionLS >> 16) & 0xffff;
+            _xessVersion.reserved = (fileVersionLS >> 0) & 0xffff;
         }
-        else 
+        else
         {
-            LOG_ERROR("Failed to parse version information.");
+            LOG_ERROR("No version information found!");
             return false;
         }
 
         return true;
     }
+
+    inline static std::filesystem::path DllPath(HMODULE module)
+    {
+        static std::filesystem::path dll;
+
+        if (dll.empty())
+        {
+            wchar_t dllPath[MAX_PATH];
+            GetModuleFileNameW(module, dllPath, MAX_PATH);
+            dll = std::filesystem::path(dllPath);
+        }
+
+        return dll;
+    }
+
 
 public:
     static bool InitXeSS()
@@ -282,7 +286,8 @@ public:
             moduleHandle = GetModuleHandle(L"libxess.dll");
             if (moduleHandle != nullptr)
             {
-                if (!GetVersionInfoFromModule(moduleHandle))
+                auto path = DllPath(moduleHandle);
+                if(!GetDLLVersion(path.wstring()))
                     _xessGetVersion(&_xessVersion);
             }
             else
