@@ -5,6 +5,8 @@
 #include "Config.h"
 #include "Logger.h"
 
+#include "FfxApi_Dx12.h"
+
 #include "ffx_api.h"
 
 #include "detours/detours.h"
@@ -72,7 +74,29 @@ public:
             _D3D12_Query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxQuery");
         }
 
-        //Config::Instance()->dxgiSkipSpoofing = false;
+        if (_D3D12_CreateContext != nullptr)
+        {
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+
+            if (_D3D12_Configure != nullptr)
+                DetourAttach(&(PVOID&)_D3D12_Configure, ffxConfigure_Dx12);
+
+            if (_D3D12_CreateContext != nullptr)
+                DetourAttach(&(PVOID&)_D3D12_CreateContext, ffxCreateContext_Dx12);
+
+            if (_D3D12_DestroyContext != nullptr)
+                DetourAttach(&(PVOID&)_D3D12_DestroyContext, ffxDestroyContext_Dx12);
+
+            if (_D3D12_Dispatch != nullptr)
+                DetourAttach(&(PVOID&)_D3D12_Dispatch, ffxDispatch_Dx12);
+
+            if (_D3D12_Query != nullptr)
+                DetourAttach(&(PVOID&)_D3D12_Query, ffxQuery_Dx12);
+
+            DetourTransactionCommit();
+        }
+
         Config::Instance()->upscalerDisableHook = false;
 
         bool loadResult = _D3D12_CreateContext != nullptr;
