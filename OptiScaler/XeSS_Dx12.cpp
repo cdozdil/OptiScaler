@@ -2,12 +2,10 @@
 #include "Util.h"
 
 #include "resource.h"
-#include "Util.h"
 #include "xess_d3d12.h"
 #include "xess_d3d12_debug.h"
 #include "XeSS_Proxy.h"
 #include "NVNGX_Parameter.h"
-#include "imgui/imgui_overlay_dx.h"
 
 typedef struct MotionScale
 {
@@ -169,8 +167,6 @@ XESS_API xess_result_t xessD3D12CreateContext(ID3D12Device* pDevice, xess_contex
 
     if (pDevice == nullptr)
         return XESS_RESULT_ERROR_DEVICE;
-
-    Util::DllPath();
 
     NVSDK_NGX_FeatureCommonInfo fcInfo{};
     wchar_t const** paths = new const wchar_t* [1];
