@@ -1822,7 +1822,7 @@ void ImGuiCommon::RenderMenu()
                             // HOTFIXES -----------------------------
                             ImGui::SeparatorText("Root Signatures (Dx12)");
 
-                            if (bool crs = Config::Instance()->RestoreComputeSignature.value_or(true); ImGui::Checkbox("Restore Compute Root Signature", &crs))
+                            if (bool crs = Config::Instance()->RestoreComputeSignature.value_or(false); ImGui::Checkbox("Restore Compute Root Signature", &crs))
                                 Config::Instance()->RestoreComputeSignature = crs;
 
                             if (bool grs = Config::Instance()->RestoreGraphicSignature.value_or(false); ImGui::Checkbox("Restore Graphic Root Signature", &grs))

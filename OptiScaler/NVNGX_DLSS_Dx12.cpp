@@ -129,7 +129,7 @@ static int64_t GetTicks()
 
 static void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
-    if (Config::Instance()->RestoreComputeSignature.value_or(true) && !contextRendering && commandList != nullptr && pRootSignature != nullptr)
+    if (Config::Instance()->RestoreComputeSignature.value_or(false) && !contextRendering && commandList != nullptr && pRootSignature != nullptr)
     {
         std::unique_lock<std::shared_mutex> lock(computeSigatureMutex);
         computeSignatures.insert_or_assign(commandList, pRootSignature);
@@ -600,7 +600,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
     }
 
     // Root signature restore
-    if (Config::Instance()->RestoreComputeSignature.value_or(true) || Config::Instance()->RestoreGraphicSignature.value_or(false))
+    if (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false))
         contextRendering = true;
 
     if (InFeatureID == NVSDK_NGX_Feature_SuperSampling)
@@ -767,15 +767,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
         Config::Instance()->changeBackend = true;
     }
 
-    if (Config::Instance()->RestoreComputeSignature.value_or(true) || Config::Instance()->RestoreGraphicSignature.value_or(false))
+    if (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false))
     {
-        if (Config::Instance()->RestoreComputeSignature.value_or(true) && computeSignatures.contains(InCmdList))
+        if (Config::Instance()->RestoreComputeSignature.value_or(false) && computeSignatures.contains(InCmdList))
         {
             auto signature = computeSignatures[InCmdList];
             LOG_TRACE("restore ComputeRootSig: {0:X}", (UINT64)signature);
             orgSetComputeRootSignature(InCmdList, signature);
         }
-        else if (Config::Instance()->RestoreComputeSignature.value_or(true))
+        else if (Config::Instance()->RestoreComputeSignature.value_or(false))
         {
             LOG_TRACE("can't restore ComputeRootSig");
         }
@@ -1209,7 +1209,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     Config::Instance()->CurrentFeature = deviceContext;
 
     // Root signature restore
-    if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(true) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
+    if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
         contextRendering = true;
 
     // FG Init || Disable    
@@ -1585,15 +1585,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     }
 
     // Root signature restore
-    if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(true) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
+    if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
     {
-        if (Config::Instance()->RestoreComputeSignature.value_or(true) && computeSignatures[InCmdList])
+        if (Config::Instance()->RestoreComputeSignature.value_or(false) && computeSignatures[InCmdList])
         {
             auto signature = computeSignatures[InCmdList];
             LOG_TRACE("restore orgComputeRootSig: {0:X}", (UINT64)signature);
             orgSetComputeRootSignature(InCmdList, signature);
         }
-        else if (Config::Instance()->RestoreComputeSignature.value_or(true))
+        else if (Config::Instance()->RestoreComputeSignature.value_or(false))
         {
             LOG_WARN("Can't restore ComputeRootSig!");
         }
