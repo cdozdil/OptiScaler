@@ -970,6 +970,43 @@ bool Config::SaveFakenvapiIni() {
     return fakenvapiIni.SaveFile(FN_iniPath.wstring().c_str()) >= 0;
 }
 
+void Config::CheckUpscalerFiles()
+{
+    nvngxExist = std::filesystem::exists(Util::ExePath().parent_path() / L"nvngx.dll");
+
+    if (!nvngxExist)
+    {
+        nvngxExist = GetModuleHandle(L"nvngx.dll") != nullptr;
+
+        if(nvngxExist)
+            LOG_INFO("nvngx.dll found in memory");
+        else
+            LOG_WARN("nvngx.dll not found!");
+
+    }
+    else
+    {
+        LOG_INFO("nvngx.dll found in game folder");
+    }
+
+    libxessExist = std::filesystem::exists(Util::ExePath().parent_path() / L"libxess.dll");
+
+    if (!libxessExist)
+    {
+        libxessExist = GetModuleHandle(L"libxess.dll") != nullptr;
+
+        if (libxessExist)
+            LOG_INFO("libxess.dll found in memory");
+        else
+            LOG_WARN("libxess.dll not found!");
+
+    }
+    else
+    {
+        LOG_INFO("libxess.dll found in game folder");
+    }
+}
+
 std::optional<std::string> Config::readString(std::string section, std::string key, bool lowercase)
 {
     std::string value = ini.GetValue(section.c_str(), key.c_str(), "auto");

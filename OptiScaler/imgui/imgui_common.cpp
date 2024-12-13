@@ -342,10 +342,9 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         _isVisible = !_isVisible;
 
         if (_isVisible)
+        {
             Config::Instance()->ReloadFakenvapi();
 
-        if (_isVisible)
-        {
             if (pfn_ClipCursor_hooked)
             {
                 _ssRatio = 0;
@@ -835,9 +834,34 @@ void ImGuiCommon::RenderMenu()
                 ImGui::Spacing();
                 ImGui::PushFont(_scaledOptiFont);
                 ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value() * 3);
-                ImGui::Text("Please select DLSS or XeSS as upscaler\nfrom game options and enter the game\nto enable upscaler settings.");
-                ImGui::PopFont();
-                ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
+
+                if (Config::Instance()->nvngxExist || Config::Instance()->libxessExist)
+                {
+                    ImGui::Spacing();
+                    ImGui::Text("Please select %s%s%s as upscaler\nfrom game options and enter the game\nto enable upscaler settings.\n",
+                                Config::Instance()->nvngxExist ? "DLSS" : "",
+                                Config::Instance()->nvngxExist && Config::Instance()->libxessExist ? " or " : "",
+                                Config::Instance()->libxessExist ? "XeSS" : "");
+
+
+                    ImGui::PopFont();
+                    ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
+
+                    ImGui::Spacing();
+                    ImGui::Text("nvngx.dll: %sExist", Config::Instance()->nvngxExist ? "" : "Not ");
+                    ImGui::Text("libxess.dll: %sExist", Config::Instance()->libxessExist ? "" : "Not ");
+                    ImGui::Spacing();
+                }
+                else
+                {
+                    ImGui::Spacing();
+                    ImGui::Text("Can't find nvngx.dll and libxess.dll\nUpscaling support will NOT work.");
+                    ImGui::Spacing();
+
+                    ImGui::PopFont();
+                    ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
+                }
+
             }
 
             if (ImGui::BeginTable("main", 2, ImGuiTableFlags_SizingStretchSame))
@@ -2447,6 +2471,7 @@ void ImGuiCommon::RenderMenu()
                 ImGui::End();
             }
         }
+
         ImGui::PopFont();
     }
 }

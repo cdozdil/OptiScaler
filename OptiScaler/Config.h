@@ -276,6 +276,9 @@ public:
 
 	bool IsShuttingDown = false;
 
+	bool nvngxExist = false;
+	bool libxessExist = false;
+
 	IFeature* CurrentFeature = nullptr;
 
 	bool Reload(std::filesystem::path iniPath);
@@ -284,6 +287,8 @@ public:
 
 	bool ReloadFakenvapi();
 	bool SaveFakenvapiIni();
+
+	void CheckUpscalerFiles();
 
 	static Config* Instance();
 

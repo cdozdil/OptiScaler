@@ -90,9 +90,11 @@ inline std::vector<std::wstring> dxgiNamesW = { L"dxgi.dll", L"dxgi", };
 inline std::vector<std::string> vkNames = { "vulkan-1.dll", "vulkan-1", };
 inline std::vector<std::wstring> vkNamesW = { L"vulkan-1.dll", L"vulkan-1", };
 inline std::vector<std::string> overlayNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping",
-                                                 "gameoverlayrenderer64", "gameoverlayrenderer64.dll", "gameoverlayrenderer", "gameoverlayrenderer.dll" };
+                                                 "gameoverlayrenderer64", "gameoverlayrenderer64.dll", "gameoverlayrenderer", "gameoverlayrenderer.dll",
+                                                 "socialclubd3d12renderer", "socialclubd3d12renderer.dll" };
 inline std::vector<std::wstring> overlayNamesW = { L"eosovh-win32-shipping.dll", L"eosovh-win32-shipping", L"eosovh-win64-shipping.dll", L"eosovh-win64-shipping",
-                                                   L"gameoverlayrenderer64", L"gameoverlayrenderer64.dll", L"gameoverlayrenderer", L"gameoverlayrenderer.dll" };
+                                                   L"gameoverlayrenderer64", L"gameoverlayrenderer64.dll", L"gameoverlayrenderer", L"gameoverlayrenderer.dll",
+                                                   L"socialclubd3d12renderer", L"socialclubd3d12renderer.dll" };
 
 static int loadCount = 0;
 static bool dontCount = false;
@@ -1892,6 +1894,7 @@ static void CheckWorkingMode()
     {
         Config::Instance()->WorkingAsNvngx = isNvngxMode && !isWorkingWithEnabler;
         Config::Instance()->OverlayMenu = (!isNvngxMode || isWorkingWithEnabler) && Config::Instance()->OverlayMenu.value_or(true);
+        Config::Instance()->CheckUpscalerFiles();
 
         if (!isNvngxMode)
         {
@@ -1944,7 +1947,6 @@ static void CheckWorkingMode()
             if ((!Config::Instance()->FGUseFGSwapChain.value_or(true) || !Config::Instance()->OverlayMenu.value_or(true)) &&
                 skHandle == nullptr && Config::Instance()->LoadSpecialK.value_or(false))
             {
-                //std::this_thread::sleep_for(std::chrono::milliseconds(250));
                 auto skFile = Util::DllPath().parent_path() / L"SpecialK64.dll";
                 SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
                 skHandle = LoadLibrary(skFile.c_str());
