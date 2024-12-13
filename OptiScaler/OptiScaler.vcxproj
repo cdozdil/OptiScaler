@@ -82,7 +82,7 @@
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(SolutionDir)external\freetype;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)fsr31\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(SolutionDir)external\freetype;$(LibraryPath)</LibraryPath>
     <TargetName>dxgi</TargetName>
-    <OutDir>D:\Folders\Games\Deep Rock Galactic\FSD\Binaries\Win64\</OutDir>
+    <OutDir>F:\source\optiscaler\external\FidelityFX-SDK\bin\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
@@ -213,6 +213,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClInclude Include="bias\Bias_Dx12.h" />
     <ClInclude Include="bias\Bias_Dx11.h" />
     <ClInclude Include="bias\precompile\Bias_Shader.h" />
+    <ClInclude Include="FfxApi_Dx12.h" />
     <ClInclude Include="nvapi\fakenvapi.h" />
     <ClInclude Include="format_transfer\FT_Common.h" />
     <ClInclude Include="format_transfer\FT_Dx12.h" />
@@ -312,6 +313,7 @@ copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\</Command>
     <ClCompile Include="backends\fsr2\FSR2Feature_Vk.cpp" />
     <ClCompile Include="backends\IFeature.cpp" />
     <ClCompile Include="backends\IFeature_Dx12.cpp" />
+    <ClCompile Include="FfxApi_Dx12.cpp" />
     <ClCompile Include="format_transfer\FT_Dx12.cpp" />
     <ClCompile Include="hooks\HooksDx.cpp" />
     <ClCompile Include="hooks\HooksVk.cpp" />
