@@ -6,7 +6,7 @@
 #include "FfxApi_Proxy.h"
 #include "NVNGX_Parameter.h"
 
-static UINT64 _handleCounter = 0x73310000;
+static UINT64 _handleCounter = 0x13370000;
 
 static ffxContext _currentContext = nullptr;
 static std::map<ffxContext, ffxCreateContextDescUpscale> _initParams;
@@ -17,7 +17,7 @@ static bool _nvnxgInited = false;
 
 static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* pExecParams)
 {
-    LOG_DEBUG("");
+    LOG_DEBUG("context: {:X}", (size_t)handle);
 
     if (!_nvParams.contains(handle))
         return false;
@@ -66,10 +66,15 @@ static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* p
     else
         params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_DLAA);
 
-    if (NVSDK_NGX_D3D12_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle) != NVSDK_NGX_Result_Success)
+    auto nvngxResult = NVSDK_NGX_D3D12_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle);
+    if (nvngxResult != NVSDK_NGX_Result_Success)
+    {
+        LOG_ERROR("NVSDK_NGX_D3D12_CreateFeature error: {:X}", (UINT)nvngxResult);
         return false;
+    }
 
     _contexts[handle] = nvHandle;
+    LOG_INFO("context created: {:X}", (size_t)handle);
 
     return true;
 }
@@ -209,7 +214,9 @@ ffxReturnCode_t ffxDestroyContext_Dx12(ffxContext* context, const ffxAllocationC
 
     LOG_DEBUG("context: {:X}", (size_t)*context);
 
-    if (!_contexts.contains(*context) && *context != _currentContext)
+    auto contextId = (size_t)*context;
+
+    if (!_contexts.contains(*context) && *context != _currentContext && contextId < 0x13370000 && contextId > 0x13379999)
     {
         LOG_INFO("Not upscaler context: {:X}", (size_t)*context);
         return FfxApiProxy::D3D12_DestroyContext()(context, memCb);
@@ -344,6 +351,8 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
     params->Set(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, 1.0);
     params->Set(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, dispatchDesc->preExposure);
     params->Set(NVSDK_NGX_Parameter_Reset, dispatchDesc->reset ? 1 : 0);
+    params->Set(NVSDK_NGX_Parameter_Width, dispatchDesc->renderSize.width);
+    params->Set(NVSDK_NGX_Parameter_Height, dispatchDesc->renderSize.height);
     params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, dispatchDesc->renderSize.width);
     params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, dispatchDesc->renderSize.height);
     params->Set(NVSDK_NGX_Parameter_Depth, dispatchDesc->depth.resource);
