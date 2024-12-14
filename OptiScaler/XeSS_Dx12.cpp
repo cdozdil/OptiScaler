@@ -270,6 +270,8 @@ XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12Gr
     params->Set(NVSDK_NGX_Parameter_Jitter_Offset_Y, pExecParams->jitterOffsetY);
     params->Set(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, pExecParams->exposureScale);
     params->Set(NVSDK_NGX_Parameter_Reset, pExecParams->resetHistory);
+    params->Set(NVSDK_NGX_Parameter_Width, pExecParams->inputWidth);
+    params->Set(NVSDK_NGX_Parameter_Height, pExecParams->inputHeight);
     params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, pExecParams->inputWidth);
     params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, pExecParams->inputHeight);
     params->Set(NVSDK_NGX_Parameter_Depth, pExecParams->pDepthTexture);
