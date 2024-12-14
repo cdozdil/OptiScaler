@@ -160,7 +160,7 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
 
     if (!upscaleContext || _d3d12Device == nullptr)
     {
-        LOG_INFO("Desc type: {}", desc->type);
+        LOG_INFO("desc type: {:X}", desc->type);
         return FfxApiProxy::D3D12_CreateContext()(context, desc, memCb);
     }
 
@@ -268,7 +268,6 @@ ffxReturnCode_t ffxQuery_Dx12(ffxContext* context, ffxQueryDescHeader* desc)
 
     if (desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETJITTEROFFSET || desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETJITTERPHASECOUNT)
     {
-        LOG_INFO("Not in _contexts, desc type: {}", desc->type);
         return FfxApiProxy::D3D12_Query()(nullptr, desc);
     }
 
@@ -284,12 +283,13 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
 
     if (context == nullptr || (!_contexts.contains(*context) && *context != _currentContext))
     {
-        LOG_INFO("Not in _contexts, desc type: {}", desc->type);
+        LOG_INFO("Not in _contexts, desc type: {:X}", desc->type);
         return FfxApiProxy::D3D12_Dispatch()(context, desc);
     }
 
     ffxApiHeader* header = desc;
     ffxDispatchDescUpscale* dispatchDesc = nullptr;
+    bool rmDesc = false;
 
     do
     {
@@ -299,18 +299,23 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
         }
         else if (header->type == FFX_API_DISPATCH_DESC_TYPE_UPSCALE_GENERATEREACTIVEMASK)
         {
-            LOG_DEBUG("FFX_API_DISPATCH_DESC_TYPE_UPSCALE_GENERATEREACTIVEMASK!");
-            return FfxApiProxy::D3D12_Dispatch()(context, desc);
+            rmDesc = true;
         }
 
         header = header->pNext;
 
     } while (header != nullptr);
 
-    if (dispatchDesc == nullptr)
+    if (dispatchDesc == nullptr )
     {
-        LOG_INFO("dispatchDesc == nullptr, desc type: {}", desc->type);
-        return FfxApiProxy::D3D12_Dispatch()(context, desc);
+        if (!rmDesc)
+        {
+            LOG_INFO("dispatchDesc == nullptr, desc type: {:X}", desc->type);
+            return FfxApiProxy::D3D12_Dispatch()(context, desc);
+        }
+
+        // Reactive mask
+        return FFX_API_RETURN_OK;
     }
 
     if (dispatchDesc->commandList == nullptr)
