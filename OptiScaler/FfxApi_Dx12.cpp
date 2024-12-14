@@ -13,6 +13,7 @@ static std::map<ffxContext, ffxCreateContextDescUpscale> _initParams;
 static std::map<ffxContext, NVSDK_NGX_Parameter*> _nvParams;
 static std::map<ffxContext, NVSDK_NGX_Handle*> _contexts;
 static ID3D12Device* _d3d12Device = nullptr;
+static bool _nvnxgInited = false;
 
 static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* pExecParams)
 {
@@ -171,11 +172,17 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
     fcInfo.PathListInfo.Path = paths;
     fcInfo.PathListInfo.Length = 1;
 
+    if (!_nvnxgInited)
+    {
+
     auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
                                                         _d3d12Device, &fcInfo, Config::Instance()->NVNGX_Version);
 
     if (nvResult != NVSDK_NGX_Result_Success)
         return FFX_API_RETURN_ERROR_RUNTIME_ERROR;
+
+        _nvnxgInited = true;
+    }
 
     _currentContext = (ffxContext)++_handleCounter;
     *context = _currentContext;
