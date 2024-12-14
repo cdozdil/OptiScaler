@@ -6,7 +6,7 @@
 #include "FfxApi_Proxy.h"
 #include "NVNGX_Parameter.h"
 
-static UINT64 _handleCounter = 73310000;
+static UINT64 _handleCounter = 0x73310000;
 
 static ffxContext _currentContext = nullptr;
 static std::map<ffxContext, ffxCreateContextDescUpscale> _initParams;
@@ -133,10 +133,10 @@ static std::optional<float> GetQualityOverrideRatioFfx(const FfxApiUpscaleQualit
 
 ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescHeader* desc, const ffxAllocationCallbacks* memCb)
 {
-    LOG_DEBUG("");
-
     if (desc == nullptr)
         return FFX_API_RETURN_ERROR_PARAMETER;
+
+    LOG_DEBUG("type: {:X}", desc->type);
 
     bool upscaleContext = false;
     ffxApiHeader* header = desc;
@@ -160,10 +160,7 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
     } while (header != nullptr);
 
     if (!upscaleContext || _d3d12Device == nullptr)
-    {
-        LOG_INFO("desc type: {:X}", desc->type);
         return FfxApiProxy::D3D12_CreateContext()(context, desc, memCb);
-    }
 
     NVSDK_NGX_FeatureCommonInfo fcInfo{};
     wchar_t const** paths = new const wchar_t* [1];
@@ -175,11 +172,11 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
     if (!_nvnxgInited)
     {
 
-    auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
-                                                        _d3d12Device, &fcInfo, Config::Instance()->NVNGX_Version);
+        auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
+                                                            _d3d12Device, &fcInfo, Config::Instance()->NVNGX_Version);
 
-    if (nvResult != NVSDK_NGX_Result_Success)
-        return FFX_API_RETURN_ERROR_RUNTIME_ERROR;
+        if (nvResult != NVSDK_NGX_Result_Success)
+            return FFX_API_RETURN_ERROR_RUNTIME_ERROR;
 
         _nvnxgInited = true;
     }
@@ -200,12 +197,17 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
     ccd.maxUpscaleSize = createDesc->maxUpscaleSize;
     _initParams[*context] = ccd;
 
+    LOG_INFO("context created: {:X}", (size_t)_currentContext);
+
     return FFX_API_RETURN_OK;
 }
 
 ffxReturnCode_t ffxDestroyContext_Dx12(ffxContext* context, const ffxAllocationCallbacks* memCb)
 {
-    LOG_DEBUG("");
+    if (context == nullptr)
+        return FFX_API_RETURN_ERROR_PARAMETER;
+
+    LOG_DEBUG("context: {:X}", (size_t)*context);
 
     if (!_contexts.contains(*context) && *context != _currentContext)
     {
@@ -227,10 +229,10 @@ ffxReturnCode_t ffxDestroyContext_Dx12(ffxContext* context, const ffxAllocationC
 
 ffxReturnCode_t ffxConfigure_Dx12(ffxContext* context, const ffxConfigureDescHeader* desc)
 {
-    LOG_DEBUG("");
-
     if (desc == nullptr)
         return FFX_API_RETURN_ERROR_PARAMETER;
+
+    LOG_DEBUG("type: {:X}", desc->type);
 
     if (desc->type == FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE)
         return FFX_API_RETURN_OK;
@@ -240,10 +242,10 @@ ffxReturnCode_t ffxConfigure_Dx12(ffxContext* context, const ffxConfigureDescHea
 
 ffxReturnCode_t ffxQuery_Dx12(ffxContext* context, ffxQueryDescHeader* desc)
 {
-    LOG_DEBUG("");
-
     if (desc == nullptr)
         return FFX_API_RETURN_ERROR_PARAMETER;
+
+    LOG_DEBUG("type: {:X}", desc->type);
 
     if (desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETRENDERRESOLUTIONFROMQUALITYMODE)
     {
@@ -283,10 +285,10 @@ ffxReturnCode_t ffxQuery_Dx12(ffxContext* context, ffxQueryDescHeader* desc)
 
 ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* desc)
 {
-    LOG_DEBUG("");
-
     if (desc == nullptr)
         return FFX_API_RETURN_ERROR_PARAMETER;
+
+    LOG_DEBUG("type: {:X}", desc->type);
 
     if (context == nullptr || (!_contexts.contains(*context) && *context != _currentContext))
     {
@@ -313,7 +315,7 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
 
     } while (header != nullptr);
 
-    if (dispatchDesc == nullptr )
+    if (dispatchDesc == nullptr)
     {
         if (!rmDesc)
         {
