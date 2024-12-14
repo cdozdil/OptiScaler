@@ -13,7 +13,7 @@ typedef struct MotionScale
     float y;
 } motion_scale;
 
-static UINT64 _handleCounter = 13370000;
+static UINT64 _handleCounter = 0x13370000;
 static UINT64 _frameCounter = 0;
 static xess_context_handle_t _currentContext = nullptr;
 static std::map<xess_context_handle_t, xess_d3d12_init_params_t> _initParams;
@@ -270,8 +270,8 @@ XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12Gr
     params->Set(NVSDK_NGX_Parameter_Jitter_Offset_Y, pExecParams->jitterOffsetY);
     params->Set(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, pExecParams->exposureScale);
     params->Set(NVSDK_NGX_Parameter_Reset, pExecParams->resetHistory);
-    params->Set(NVSDK_NGX_Parameter_Width, pExecParams->inputWidth);
-    params->Set(NVSDK_NGX_Parameter_Height, pExecParams->inputHeight);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, pExecParams->inputWidth);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, pExecParams->inputHeight);
     params->Set(NVSDK_NGX_Parameter_Depth, pExecParams->pDepthTexture);
     params->Set(NVSDK_NGX_Parameter_ExposureTexture, pExecParams->pExposureScaleTexture);
     params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, pExecParams->pResponsivePixelMaskTexture);
