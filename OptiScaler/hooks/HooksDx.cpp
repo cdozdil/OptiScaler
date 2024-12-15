@@ -4074,7 +4074,7 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
 
 #ifdef USE_MUTEX_FOR_FFX
     if (useMutex)
-        FrameGen_Dx12::fiffxMutex.lock();
+        FrameGen_Dx12::ffxMutex.lock();
 #endif
 
     if (!(shutDown || Config::Instance()->IsShuttingDown) && FrameGen_Dx12::fgContext != nullptr)
