@@ -8,7 +8,6 @@
 
 static UINT64 _handleCounter = 0x13370000;
 
-static ffxContext _currentContext = nullptr;
 static std::map<ffxContext, ffxCreateContextDescUpscale> _initParams;
 static std::map<ffxContext, NVSDK_NGX_Parameter*> _nvParams;
 static std::map<ffxContext, NVSDK_NGX_Handle*> _contexts;
@@ -194,15 +193,14 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
         _nvnxgInited = true;
     }
 
-    _currentContext = (ffxContext)++_handleCounter;
-    *context = _currentContext;
+    *context = (ffxContext)++_handleCounter;
 
     NVSDK_NGX_Parameter* params = nullptr;
 
     if (NVSDK_NGX_D3D12_GetCapabilityParameters(&params) != NVSDK_NGX_Result_Success)
         return FFX_API_RETURN_ERROR_RUNTIME_ERROR;
 
-    _nvParams[_currentContext] = params;
+    _nvParams[*context] = params;
 
     ffxCreateContextDescUpscale ccd{};
     ccd.flags = createDesc->flags;
@@ -210,7 +208,7 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
     ccd.maxUpscaleSize = createDesc->maxUpscaleSize;
     _initParams[*context] = ccd;
 
-    LOG_INFO("context created: {:X}", (size_t)_currentContext);
+    LOG_INFO("context created: {:X}", (size_t)*context);
 
     return FFX_API_RETURN_OK;
 }
@@ -263,13 +261,13 @@ ffxReturnCode_t ffxQuery_Dx12(ffxContext* context, ffxQueryDescHeader* desc)
     if (desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETRENDERRESOLUTIONFROMQUALITYMODE)
     {
         auto ratioDesc = (ffxQueryDescUpscaleGetRenderResolutionFromQualityMode*)desc;
-        auto ratio = GetQualityOverrideRatioFfx(ratioDesc->qualityMode);
+        auto ratio = GetQualityOverrideRatioFfx(ratioDesc->qualityMode).value_or(qualityRatios[ratioDesc->qualityMode]);
 
         if (ratioDesc->pOutRenderHeight != nullptr)
-            *ratioDesc->pOutRenderHeight = (uint32_t)(ratioDesc->displayHeight / ratio.value_or(qualityRatios[ratioDesc->qualityMode]));
+            *ratioDesc->pOutRenderHeight = (uint32_t)(ratioDesc->displayHeight / ratio);
 
         if (ratioDesc->pOutRenderWidth != nullptr)
-            *ratioDesc->pOutRenderWidth = (uint32_t)(ratioDesc->displayWidth / ratio.value_or(qualityRatios[ratioDesc->qualityMode]));
+            *ratioDesc->pOutRenderWidth = (uint32_t)(ratioDesc->displayWidth / ratio);
 
         if (ratioDesc->pOutRenderWidth != nullptr && ratioDesc->pOutRenderHeight != nullptr)
             LOG_DEBUG("Quality mode: {}, Render resolution: {}x{}", ratioDesc->qualityMode, *ratioDesc->pOutRenderWidth, *ratioDesc->pOutRenderHeight);
@@ -390,6 +388,7 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
     params->Set("FSR.viewSpaceToMetersFactor", dispatchDesc->viewSpaceToMetersFactor);
     params->Set("FSR.transparencyAndComposition", dispatchDesc->transparencyAndComposition.resource);
     params->Set("FSR.reactive", dispatchDesc->reactive.resource);
+    params->Set(NVSDK_NGX_Parameter_Sharpness, dispatchDesc->sharpness);
 
     LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDesc->renderSize.width, dispatchDesc->renderSize.height);
 

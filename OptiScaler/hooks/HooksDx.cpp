@@ -33,10 +33,10 @@
 
 typedef struct FfxSwapchainFramePacingTuning
 {
-    float    safetyMarginInMs = 3.0; // in Millisecond
-    float    varianceFactor = 0.3; // valid range [0.0,1.0]
+    float    safetyMarginInMs = 0.0001; // in Millisecond
+    float    varianceFactor = 0.1; // valid range [0.0,1.0]
     bool     allowHybridSpin = true; //Allows pacing spinlock to sleep.
-    uint32_t hybridSpinTime = 4;  //How long to spin when hybridSpin is enabled. Measured in timer resolution units. Not recommended to go below 2. Will result in frequent overshoots.
+    uint32_t hybridSpinTime = 2;  //How long to spin when hybridSpin is enabled. Measured in timer resolution units. Not recommended to go below 2. Will result in frequent overshoots.
     bool     allowWaitForSingleObjectOnFence = false; //Allows to call WaitForSingleObject() instead of spinning for fence value.
 } FfxSwapchainFramePacingTuning;
 
@@ -2292,12 +2292,6 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
     }
 
-    //if (pDesc->BufferDesc.Height == 600 && pDesc->BufferDesc.Width == 800)
-    //{
-    //    LOG_WARN("800x600 call!");
-    //    return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
-    //}
-
     LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, Windowed: {}, SkipWrapping: {}",
               pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, (UINT)pDesc->OutputWindow, pDesc->Windowed, fgSkipSCWrapping);
 
@@ -2332,7 +2326,6 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     }
 
     ID3D12CommandQueue* cq = nullptr;
-    // PerfReg??
     if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
         cq->SetName(L"GameQueue");
@@ -2587,12 +2580,6 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
     }
 
-    //if (pDesc->Height == 600 && pDesc->Width == 800)
-    //{
-    //    LOG_WARN("800x600 call!");
-    //    return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
-    //}
-
     LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, SkipWrapping: {}",
               pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, (UINT)hWnd, fgSkipSCWrapping);
 
@@ -2625,7 +2612,6 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     }
 
     ID3D12CommandQueue* cq = nullptr;
-    // PerfReg??
     if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
         cq->SetName(L"GameQueueHwnd");
@@ -3155,8 +3141,8 @@ static void HookToDevice(ID3D12Device* InDevice)
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        //if (o_CreateDescriptorHeap != nullptr)
-        //    DetourAttach(&(PVOID&)o_CreateDescriptorHeap, hkCreateDescriptorHeap);
+        if (o_CreateDescriptorHeap != nullptr)
+            DetourAttach(&(PVOID&)o_CreateDescriptorHeap, hkCreateDescriptorHeap);
 
         if (o_CreateSampler != nullptr)
             DetourAttach(&(PVOID&)o_CreateSampler, hkCreateSampler);

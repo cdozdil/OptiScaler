@@ -7,6 +7,7 @@
 #include "NVNGX_Proxy.h"
 #include "XeSS_Proxy.h"
 #include "FfxApi_Proxy.h"
+#include "FSR2_Dx12.h"
 
 #include "hooks/HooksDx.h"
 #include "hooks/HooksVk.h"
@@ -95,6 +96,12 @@ inline std::vector<std::string> overlayNames = { "eosovh-win32-shipping.dll", "e
 inline std::vector<std::wstring> overlayNamesW = { L"eosovh-win32-shipping.dll", L"eosovh-win32-shipping", L"eosovh-win64-shipping.dll", L"eosovh-win64-shipping",
                                                    L"gameoverlayrenderer64", L"gameoverlayrenderer64.dll", L"gameoverlayrenderer", L"gameoverlayrenderer.dll", };
                                                   // L"socialclubd3d12renderer", L"socialclubd3d12renderer.dll" }; // games are not working without this dll
+
+inline std::vector<std::string> fsr2Names = { "ffx_fsr2_api_dx12_x64.dll", "ffx_fsr2_api_dx12_x64" };
+inline std::vector<std::string> fsr2Dx12Names = { "ffx_fsr2_api_x64.dll", "ffx_fsr2_api_x64" };
+inline std::vector<std::wstring> fsr2NamesW = { L"ffx_fsr2_api_dx12_x64.dll", L"ffx_fsr2_api_dx12_x64" };
+inline std::vector<std::wstring> fsr2Dx12NamesW = { L"ffx_fsr2_api_x64.dll", L"ffx_fsr2_api_x64" };
+
 
 static int loadCount = 0;
 static bool dontCount = false;
@@ -277,6 +284,32 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
         skipDllLoadChecks = false;
     }
 
+    if (CheckDllName(&lcaseLibName, &fsr2Names))
+    {
+        skipDllLoadChecks = true;
+
+        auto module = o_LoadLibraryA(lcaseLibName.c_str());
+
+        HookFSR2Inputs(module);
+
+        skipDllLoadChecks = false;
+
+        return module;
+    }
+
+    if (CheckDllName(&lcaseLibName, &fsr2Dx12Names))
+    {
+        skipDllLoadChecks = true;
+
+        auto module = o_LoadLibraryA(lcaseLibName.c_str());
+
+        HookFSR2Dx12Inputs(module);
+
+        skipDllLoadChecks = false;
+
+        return module;
+    }
+
     if (!isNvngxMode && CheckDllName(&lcaseLibName, &dllNames))
     {
         LOG_INFO("{0} call returning this dll!", lcaseLibName);
@@ -422,6 +455,32 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
         if (Config::Instance()->OverlayMenu.value_or(true))
             HooksDx::HookDxgi();
         skipDllLoadChecks = false;
+    }
+
+    if (CheckDllNameW(&lcaseLibName, &fsr2NamesW))
+    {
+        skipDllLoadChecks = true;
+
+        auto module = o_LoadLibraryW(lcaseLibName.c_str());
+
+        HookFSR2Inputs(module);
+
+        skipDllLoadChecks = false;
+
+        return module;
+    }
+
+    if (CheckDllNameW(&lcaseLibName, &fsr2Dx12NamesW))
+    {
+        skipDllLoadChecks = true;
+
+        auto module = o_LoadLibraryW(lcaseLibName.c_str());
+
+        HookFSR2Dx12Inputs(module);
+
+        skipDllLoadChecks = false;
+
+        return module;
     }
 
     if (!isNvngxMode && CheckDllNameW(&lcaseLibName, &dllNamesW))
@@ -2064,6 +2123,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             // Init XeSS proxy
             skipDllLoadChecks = true;
+
             if (!XeSSProxy::InitXeSS())
                 spdlog::warn("Can't init XeSS!");
 
@@ -2073,6 +2133,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             if (!FfxApiProxy::InitFfxVk())
                 spdlog::warn("Can't init Vulkan FfxApi!");
+
+            spdlog::info("");
+            HookFSR2ExeInputs();
+
             skipDllLoadChecks = false;
 
             for (size_t i = 0; i < 300; i++)
