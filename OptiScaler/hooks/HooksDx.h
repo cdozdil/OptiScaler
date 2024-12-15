@@ -11,7 +11,7 @@
 
 // According to https://gpuopen.com/manuals/fidelityfx_sdk/fidelityfx_sdk-page_techniques_super-resolution-interpolation/#id11 
 // Will use mutex to prevent race condutions
-#define USE_MUTEX_FOR_FFX
+// #define USE_MUTEX_FOR_FFX
 
 #ifdef USE_MUTEX_FOR_FFX
 #define USE_PRESENT_FOR_FT

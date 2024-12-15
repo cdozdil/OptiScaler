@@ -14,6 +14,7 @@ static std::map<ffxContext, NVSDK_NGX_Parameter*> _nvParams;
 static std::map<ffxContext, NVSDK_NGX_Handle*> _contexts;
 static ID3D12Device* _d3d12Device = nullptr;
 static bool _nvnxgInited = false;
+static float qualityRatios[] = { 1.0, 1.5, 1.7, 2.0, 3.0 };
 
 static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* pExecParams)
 {
@@ -53,6 +54,8 @@ static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* p
 
     auto ratio = (float)initParams->maxUpscaleSize.width / (float)pExecParams->renderSize.width;
 
+    LOG_INFO("renderWidth: {}, maxWidth: {}, ratio: {}", pExecParams->renderSize.width, initParams->maxUpscaleSize.width, ratio);
+
     if (ratio <= 3.0)
         params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_UltraPerformance);
     else if (ratio <= 2.0)
@@ -79,7 +82,7 @@ static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* p
     return true;
 }
 
-static std::optional<float> GetQualityOverrideRatioFfx(const FfxApiUpscaleQualityMode input)
+static std::optional<float> GetQualityOverrideRatioFfx(const uint32_t input)
 {
     std::optional<float> output;
 
@@ -132,6 +135,11 @@ static std::optional<float> GetQualityOverrideRatioFfx(const FfxApiUpscaleQualit
             LOG_WARN("Unknown quality: {0}", (int)input);
             break;
     }
+
+    if (output.has_value())
+        LOG_DEBUG("ratio: {}", output.value());
+    else
+        LOG_DEBUG("ratio: no value");
 
     return output;
 }
@@ -216,20 +224,18 @@ ffxReturnCode_t ffxDestroyContext_Dx12(ffxContext* context, const ffxAllocationC
 
     auto contextId = (size_t)*context;
 
-    if (!_contexts.contains(*context) && *context != _currentContext && contextId < 0x13370000 && contextId > 0x13379999)
+    if (!_initParams.contains(*context))
     {
         LOG_INFO("Not upscaler context: {:X}", (size_t)*context);
         return FfxApiProxy::D3D12_DestroyContext()(context, memCb);
     }
 
     if (_contexts.contains(*context))
-    {
         NVSDK_NGX_D3D12_ReleaseFeature(_contexts[*context]);
 
-        _contexts.erase(*context);
-        _nvParams.erase(*context);
-        _initParams.erase(*context);
-    }
+    _contexts.erase(*context);
+    _nvParams.erase(*context);
+    _initParams.erase(*context);
 
     return FFX_API_RETURN_OK;
 }
@@ -257,15 +263,28 @@ ffxReturnCode_t ffxQuery_Dx12(ffxContext* context, ffxQueryDescHeader* desc)
     if (desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETRENDERRESOLUTIONFROMQUALITYMODE)
     {
         auto ratioDesc = (ffxQueryDescUpscaleGetRenderResolutionFromQualityMode*)desc;
-        auto ratio = GetQualityOverrideRatioFfx((FfxApiUpscaleQualityMode)ratioDesc->qualityMode);
-        *ratioDesc->pOutRenderHeight = (uint32_t)(ratioDesc->displayHeight / ratio.value_or(1.7));
-        *ratioDesc->pOutRenderHeight = (uint32_t)(ratioDesc->displayWidth / ratio.value_or(1.7));
+        auto ratio = GetQualityOverrideRatioFfx(ratioDesc->qualityMode);
+
+        if (ratioDesc->pOutRenderHeight != nullptr)
+            *ratioDesc->pOutRenderHeight = (uint32_t)(ratioDesc->displayHeight / ratio.value_or(qualityRatios[ratioDesc->qualityMode]));
+
+        if (ratioDesc->pOutRenderWidth != nullptr)
+            *ratioDesc->pOutRenderWidth = (uint32_t)(ratioDesc->displayWidth / ratio.value_or(qualityRatios[ratioDesc->qualityMode]));
+
+        if (ratioDesc->pOutRenderWidth != nullptr && ratioDesc->pOutRenderHeight != nullptr)
+            LOG_DEBUG("Quality mode: {}, Render resolution: {}x{}", ratioDesc->qualityMode, *ratioDesc->pOutRenderWidth, *ratioDesc->pOutRenderHeight);
+        else
+            LOG_WARN("Quality mode: {}, pOutRenderWidth or pOutRenderHeight is null!", ratioDesc->qualityMode);
+
         return FFX_API_RETURN_OK;
     }
     else if (desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETUPSCALERATIOFROMQUALITYMODE)
     {
         auto scaleDesc = (ffxQueryDescUpscaleGetUpscaleRatioFromQualityMode*)desc;
-        *scaleDesc->pOutUpscaleRatio = GetQualityOverrideRatioFfx((FfxApiUpscaleQualityMode)scaleDesc->qualityMode).value_or(1.7);
+        *scaleDesc->pOutUpscaleRatio = GetQualityOverrideRatioFfx((FfxApiUpscaleQualityMode)scaleDesc->qualityMode).value_or(qualityRatios[scaleDesc->qualityMode]);
+
+        LOG_DEBUG("Quality mode: {}, Upscale ratio: {}", scaleDesc->qualityMode, *scaleDesc->pOutUpscaleRatio);
+
         return FFX_API_RETURN_OK;
     }
     else if (desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GPU_MEMORY_USAGE)
@@ -279,11 +298,13 @@ ffxReturnCode_t ffxQuery_Dx12(ffxContext* context, ffxQueryDescHeader* desc)
 
         memoryDesc->gpuMemoryUsageUpscaler->totalUsageInBytes = memValue;
         memoryDesc->gpuMemoryUsageUpscaler->aliasableUsageInBytes = memValue / 20;
+
         return FFX_API_RETURN_OK;
     }
 
     if (desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETJITTEROFFSET || desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETJITTERPHASECOUNT)
     {
+        LOG_TRACE("Jitter queries");
         return FfxApiProxy::D3D12_Query()(nullptr, desc);
     }
 
@@ -292,12 +313,12 @@ ffxReturnCode_t ffxQuery_Dx12(ffxContext* context, ffxQueryDescHeader* desc)
 
 ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* desc)
 {
-    if (desc == nullptr)
+    if (desc == nullptr || context == nullptr)
         return FFX_API_RETURN_ERROR_PARAMETER;
 
-    LOG_DEBUG("type: {:X}", desc->type);
+    LOG_DEBUG("context: {:X}, type: {:X}", (size_t)*context, desc->type);
 
-    if (context == nullptr || (!_contexts.contains(*context) && *context != _currentContext))
+    if (context == nullptr || !_initParams.contains(*context))
     {
         LOG_INFO("Not in _contexts, desc type: {:X}", desc->type);
         return FfxApiProxy::D3D12_Dispatch()(context, desc);
@@ -338,7 +359,8 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
         return FFX_API_RETURN_ERROR_PARAMETER;
 
     // If not in contexts list create and add context
-    if ((!_contexts.contains(*context) && *context == _currentContext) && !CreateDLSSContext(*context, dispatchDesc))
+    auto contextId = (size_t)*context;
+    if (!_contexts.contains(*context) && _initParams.contains(*context) && !CreateDLSSContext(*context, dispatchDesc))
         return FFX_API_RETURN_ERROR_RUNTIME_ERROR;
 
     NVSDK_NGX_Parameter* params = _nvParams[*context];
@@ -361,11 +383,23 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
     params->Set(NVSDK_NGX_Parameter_Color, dispatchDesc->color.resource);
     params->Set(NVSDK_NGX_Parameter_MotionVectors, dispatchDesc->motionVectors.resource);
     params->Set(NVSDK_NGX_Parameter_Output, dispatchDesc->output.resource);
+    params->Set("FSR.cameraNear", dispatchDesc->cameraNear);
+    params->Set("FSR.cameraFar", dispatchDesc->cameraFar);
+    params->Set("FSR.cameraFovAngleVertical", dispatchDesc->cameraFovAngleVertical);
+    params->Set("FSR.frameTimeDelta", dispatchDesc->frameTimeDelta);
+    params->Set("FSR.viewSpaceToMetersFactor", dispatchDesc->viewSpaceToMetersFactor);
+    params->Set("FSR.transparencyAndComposition", dispatchDesc->transparencyAndComposition.resource);
+    params->Set("FSR.reactive", dispatchDesc->reactive.resource);
+
+    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDesc->renderSize.width, dispatchDesc->renderSize.height);
 
     Config::Instance()->setInputApiName = "FFX-DX12";
 
-    if (NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDesc->commandList, handle, params, nullptr) == NVSDK_NGX_Result_Success)
+    auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDesc->commandList, handle, params, nullptr);
+
+    if (evalResult == NVSDK_NGX_Result_Success)
         return FFX_API_RETURN_OK;
 
+    LOG_ERROR("evalResult: {:X}", (UINT)evalResult);
     return FFX_API_RETURN_ERROR_RUNTIME_ERROR;
 }

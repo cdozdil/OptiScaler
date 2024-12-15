@@ -117,8 +117,11 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     LOG_DEBUG("");
 
     std::lock_guard<std::mutex> lock(_localMutex);
+
+#ifdef USE_MUTEX_FOR_FFX
     LOG_TRACE("Waiting mutex");
     std::unique_lock<std::shared_mutex> lock2(FrameGen_Dx12::ffxMutex);
+#endif
 
     HRESULT result;
     DXGI_SWAP_CHAIN_DESC desc{};
@@ -222,18 +225,21 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
 HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetContainingOutput(IDXGIOutput** ppOutput)
 {
-    std::lock_guard<std::mutex> lock(_localMutex);
+    //std::lock_guard<std::mutex> lock(_localMutex);
     return m_pReal->GetContainingOutput(ppOutput);
 }
 
 HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT Format, UINT SwapChainFlags,
                                                const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue)
 {
+    LOG_DEBUG("");
+
     std::lock_guard<std::mutex> lock(_localMutex);
+
+#ifdef USE_MUTEX_FOR_FFX
     LOG_TRACE("Waiting mutex");
     std::unique_lock<std::shared_mutex> lock2(FrameGen_Dx12::ffxMutex);
-
-    LOG_DEBUG("");
+#endif
 
     HRESULT result;
     DXGI_SWAP_CHAIN_DESC desc{};
@@ -363,8 +369,11 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 
     {
         std::lock_guard<std::mutex> lock(_localMutex);
+
+#ifdef USE_MUTEX_FOR_FFX
         LOG_TRACE("Waiting mutex");
         std::unique_lock<std::shared_mutex> lock2(FrameGen_Dx12::ffxMutex);
+#endif
 
         result = m_pReal->SetFullscreenState(Fullscreen, pTarget);
 
@@ -414,13 +423,13 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 
 HRESULT WrappedIDXGISwapChain4::GetFullscreenState(BOOL* pFullscreen, IDXGIOutput** ppTarget)
 {
-    std::lock_guard<std::mutex> lock(_localMutex);
+    //std::lock_guard<std::mutex> lock(_localMutex);
     return m_pReal->GetFullscreenState(pFullscreen, ppTarget);
 }
 
 HRESULT WrappedIDXGISwapChain4::GetBuffer(UINT Buffer, REFIID riid, void** ppSurface)
 {
-    std::lock_guard<std::mutex> lock(_localMutex);
+    //std::lock_guard<std::mutex> lock(_localMutex);
     return m_pReal->GetBuffer(Buffer, riid, ppSurface);
 }
 

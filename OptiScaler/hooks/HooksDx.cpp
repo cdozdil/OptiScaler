@@ -33,11 +33,11 @@
 
 typedef struct FfxSwapchainFramePacingTuning
 {
-    float    safetyMarginInMs = 1.0; // in Millisecond
-    float    varianceFactor = 0.2; // valid range [0.0,1.0]
+    float    safetyMarginInMs = 3.0; // in Millisecond
+    float    varianceFactor = 0.3; // valid range [0.0,1.0]
     bool     allowHybridSpin = true; //Allows pacing spinlock to sleep.
-    uint32_t hybridSpinTime = 2;  //How long to spin when hybridSpin is enabled. Measured in timer resolution units. Not recommended to go below 2. Will result in frequent overshoots.
-    bool     allowWaitForSingleObjectOnFence = true; //Allows to call WaitForSingleObject() instead of spinning for fence value.
+    uint32_t hybridSpinTime = 4;  //How long to spin when hybridSpin is enabled. Measured in timer resolution units. Not recommended to go below 2. Will result in frequent overshoots.
+    bool     allowWaitForSingleObjectOnFence = false; //Allows to call WaitForSingleObject() instead of spinning for fence value.
 } FfxSwapchainFramePacingTuning;
 
 enum ResourceType
@@ -68,6 +68,62 @@ typedef struct ResourceInfo
     double lastUsedFrame = 0;
 } resource_info;
 
+typedef struct HeapInfo
+{
+    SIZE_T cpuStart = NULL;
+    SIZE_T cpuEnd = NULL;
+    SIZE_T gpuStart = NULL;
+    SIZE_T gpuEnd = NULL;
+    UINT numDescriptors = 0;
+    UINT increment = 0;
+    UINT type = 0;
+    std::shared_ptr<ResourceInfo[]> info;
+
+    HeapInfo(SIZE_T cpuStart, SIZE_T cpuEnd, SIZE_T gpuStart, SIZE_T gpuEnd, UINT numResources, UINT increment, UINT type)
+        : cpuStart(cpuStart), cpuEnd(cpuEnd), gpuStart(gpuStart), gpuEnd(gpuEnd), numDescriptors(numResources), increment(increment), info(new ResourceInfo[numResources]), type(type) {}
+
+    ResourceInfo* GetByCpuHandle(SIZE_T cpuHandle) const
+    {
+        if (cpuStart > cpuHandle || cpuEnd < cpuHandle)
+            return nullptr;
+
+        auto index = (cpuHandle - cpuStart) / increment;
+
+        return &info[index];
+    }
+
+    ResourceInfo* GetByGpuHandle(SIZE_T gpuHandle) const
+    {
+        if (gpuStart > gpuHandle || gpuEnd < gpuHandle)
+            return nullptr;
+
+        auto index = (gpuHandle - gpuStart) / increment;
+
+        return &info[index];
+    }
+
+    void SetByCpuHandle(SIZE_T cpuHandle, ResourceInfo setInfo) const
+    {
+        if (cpuStart > cpuHandle || cpuEnd < cpuHandle)
+            return;
+
+        auto index = (cpuHandle - cpuStart) / increment;
+
+        info[index] = setInfo;
+    }
+
+    void SetByGpuHandle(SIZE_T gpuHandle, ResourceInfo setInfo) const
+    {
+        if (gpuStart > gpuHandle || gpuEnd < gpuHandle)
+            return;
+
+        auto index = (gpuHandle - gpuStart) / increment;
+
+        info[index] = setInfo;
+    }
+} heap_info;
+
+/*
 typedef struct HeapInfo
 {
     SIZE_T cpuStart = NULL;
@@ -130,6 +186,7 @@ typedef struct HeapInfo
         }
     }
 } heap_info;
+*/
 
 typedef struct ResourceHeapInfo
 {
@@ -1207,7 +1264,7 @@ static void hkCopyDescriptors(ID3D12Device* This,
     if (DescriptorHeapsType != D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV && DescriptorHeapsType != D3D12_DESCRIPTOR_HEAP_TYPE_RTV)
         return;
 
-    if (Config::Instance()->FGAlwaysTrackHeaps.value_or(false) && !IsHudFixActive())
+    if (!Config::Instance()->FGAlwaysTrackHeaps.value_or(false) && !IsHudFixActive())
         return;
 
     // make copies, just in case
@@ -1339,7 +1396,7 @@ static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D
     if (DescriptorHeapsType != D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV && DescriptorHeapsType != D3D12_DESCRIPTOR_HEAP_TYPE_RTV)
         return;
 
-    if (Config::Instance()->FGAlwaysTrackHeaps.value_or(false) && !IsHudFixActive())
+    if (!Config::Instance()->FGAlwaysTrackHeaps.value_or(false) && !IsHudFixActive())
         return;
 
     if (Config::Instance()->UseThreadingForHeaps)
@@ -1649,15 +1706,15 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
 {
     o_DrawInstanced(This, VertexCountPerInstance, InstanceCount, StartVertexLocation, StartInstanceLocation);
 
+    if (!IsHudFixActive())
+        return;
+
     auto fIndex = fgFrameIndex;
 
     if (This == ImGuiOverlayDx::MenuCommandList() || IsFGCommandList(This))
         return;
 
     LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
-
-    if (!IsHudFixActive())
-        return;
 
     {
         ankerl::unordered_dense::map<ID3D12Resource*, ResourceInfo> val0;
@@ -1705,15 +1762,15 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
 {
     o_DrawIndexedInstanced(This, IndexCountPerInstance, InstanceCount, StartIndexLocation, BaseVertexLocation, StartInstanceLocation);
 
+    if (!IsHudFixActive())
+        return;
+
     auto fIndex = fgFrameIndex;
 
     if (This == ImGuiOverlayDx::MenuCommandList() || IsFGCommandList(This))
         return;
 
     LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
-
-    if (!IsHudFixActive())
-        return;
 
     {
         ankerl::unordered_dense::map<ID3D12Resource*, ResourceInfo> val0;
@@ -1763,15 +1820,15 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 {
     o_Dispatch(This, ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ);
 
+    if (!IsHudFixActive())
+        return;
+
     auto fIndex = fgFrameIndex;
 
     if (This == ImGuiOverlayDx::MenuCommandList() || IsFGCommandList(This))
         return;
 
     LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
-
-    if (!IsHudFixActive())
-        return;
 
     {
         ankerl::unordered_dense::map<ID3D12Resource*, ResourceInfo> val0;
@@ -2275,6 +2332,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     }
 
     ID3D12CommandQueue* cq = nullptr;
+    // PerfReg??
     if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
         cq->SetName(L"GameQueue");
@@ -2567,7 +2625,8 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     }
 
     ID3D12CommandQueue* cq = nullptr;
-    if (Config::Instance()->FGUseFGSwapChain.value_or(true) /*&& fgSCCount > 0*/ && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+    // PerfReg??
+    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
         cq->SetName(L"GameQueueHwnd");
         cq->Release();
@@ -3096,8 +3155,8 @@ static void HookToDevice(ID3D12Device* InDevice)
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        if (o_CreateDescriptorHeap != nullptr)
-            DetourAttach(&(PVOID&)o_CreateDescriptorHeap, hkCreateDescriptorHeap);
+        //if (o_CreateDescriptorHeap != nullptr)
+        //    DetourAttach(&(PVOID&)o_CreateDescriptorHeap, hkCreateDescriptorHeap);
 
         if (o_CreateSampler != nullptr)
             DetourAttach(&(PVOID&)o_CreateSampler, hkCreateSampler);
@@ -4013,8 +4072,10 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
 {
     FrameGen_Dx12::fgSkipHudlessChecks = false;
 
+#ifdef USE_MUTEX_FOR_FFX
     if (useMutex)
-        FrameGen_Dx12::ffxMutex.lock();
+        FrameGen_Dx12::fiffxMutex.lock();
+#endif
 
     if (!(shutDown || Config::Instance()->IsShuttingDown) && FrameGen_Dx12::fgContext != nullptr)
     {
@@ -4047,8 +4108,10 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
     if ((shutDown || Config::Instance()->IsShuttingDown) || destroy)
         ReleaseFGObjects();
 
+#ifdef USE_MUTEX_FOR_FFX
     if (useMutex)
         FrameGen_Dx12::ffxMutex.unlock();
+#endif
 }
 
 void FrameGen_Dx12::CheckUpscaledFrame(ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InUpscaled)

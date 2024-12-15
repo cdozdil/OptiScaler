@@ -46,7 +46,8 @@ static NVSDK_NGX_Parameter* createParams = nullptr;
 static int changeBackendCounter = 0;
 static int evalCounter = 0;
 static std::wstring appDataPath = L".";
-static inline bool shutdown = false;
+static bool shutdown = false;
+static bool inited = false;
 
 static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState)
 {
@@ -203,6 +204,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 {
     LOG_FUNC();
 
+    if (inited)
+    {
+        LOG_WARN("NVNGX already inited");
+        return NVSDK_NGX_Result_Success;
+    }
+
     if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
         InApplicationId = app_id_override;
 
@@ -307,6 +314,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init(unsigned long long InApplica
 {
     LOG_FUNC();
 
+    if (inited)
+    {
+        LOG_WARN("NVNGX already inited");
+        return NVSDK_NGX_Result_Success;
+    }
+
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx12Inited())
     {
         if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
@@ -337,6 +350,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProj
                                                               const char* InEngineVersion, const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
     LOG_FUNC();
+
+    if (inited)
+    {
+        LOG_WARN("NVNGX already inited");
+        return NVSDK_NGX_Result_Success;
+    }
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx12Inited())
     {
@@ -378,6 +397,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* I
 {
     LOG_FUNC();
 
+    if (inited)
+    {
+        LOG_WARN("NVNGX already inited");
+        return NVSDK_NGX_Result_Success;
+    }
+
     auto result = NVSDK_NGX_D3D12_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, InFeatureInfo);
 
     LOG_INFO("InProjectId: {0}", InProjectId);
@@ -398,6 +423,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* I
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 {
     shutdown = true;
+    inited = false;
 
     for (auto const& [key, val] : Dx12Contexts)
         NVSDK_NGX_D3D12_ReleaseFeature(val->Handle());
@@ -433,6 +459,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown1(ID3D12Device* InDevice)
 {
     shutdown = true;
+    inited = false;
 
     if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_Shutdown1() != nullptr)
     {
