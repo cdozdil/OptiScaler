@@ -16,6 +16,13 @@ typedef struct FfxResourceBase
     uint32_t dummy;
 } FfxResourceBase;
 
+// Tiny Tina's Wonderland
+typedef struct FfxResourceTiny
+{
+    void* resource;
+    uint32_t data[4];
+} FfxResourceTiny;
+
 typedef struct FfxResource20
 {
     void* resource;
@@ -54,6 +61,30 @@ typedef struct FfxFsr20DispatchDescription
     float cameraFovAngleVertical;
 } FfxFsr20DispatchDescription;
 
+// Tiny Tina's Wonderland
+typedef struct FfxFsr2TinyDispatchDescription
+{
+    Fsr212::FfxCommandList commandList;
+    FfxResourceTiny color;
+    FfxResourceTiny depth;
+    FfxResourceTiny motionVectors;
+    FfxResourceTiny exposure;
+    FfxResourceTiny reactive;
+    FfxResourceTiny transparencyAndComposition;
+    FfxResourceTiny output;
+    Fsr212::FfxFloatCoords2D jitterOffset;
+    Fsr212::FfxFloatCoords2D motionVectorScale;
+    Fsr212::FfxDimensions2D renderSize;
+    bool enableSharpening;
+    float sharpness;
+    float frameTimeDelta;
+    float preExposure;
+    bool reset;
+    float cameraNear;
+    float cameraFar;
+    float cameraFovAngleVertical;
+} FfxFsr2TinyDispatchDescription;
+
 // FSR2
 typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextCreate)(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2ContextDescription* contextDescription);
 typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextDispatch)(Fsr212::FfxFsr2Context* context, const FfxFsr2DispatchDescriptionBase* dispatchDescription);
@@ -62,7 +93,9 @@ typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextDestroy)(Fsr212::FfxFsr2Context*
 typedef float(*PFN_ffxFsr2GetUpscaleRatioFromQualityMode)(Fsr212::FfxFsr2QualityMode qualityMode);
 typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2GetRenderResolutionFromQualityMode)(uint32_t* renderWidth, uint32_t* renderHeight, uint32_t displayWidth, uint32_t displayHeight, Fsr212::FfxFsr2QualityMode qualityMode);
 typedef bool(*PFN_ffxFsr2ResourceIsNull_Dx12)(FfxResourceBase resource);
-typedef Fsr212::FfxResource(*PFN_ffxGetResourceFromDX12Resource_Dx12)(ID3D12Resource* resource);
+
+// Tiny Tina's Wonderland
+typedef FfxResourceTiny(*PFN_ffxGetResourceFromDX12Resource_Dx12)(ID3D12Resource* resource);
 
 // Dx12
 typedef size_t(*PFN_ffxFsr2GetScratchMemorySizeDX12)();
@@ -152,6 +185,66 @@ static bool CreateDLSSContext(Fsr212::FfxFsr2Context* handle, const Fsr212::FfxF
 }
 
 static bool CreateDLSSContext20(Fsr212::FfxFsr2Context* handle, const FfxFsr20DispatchDescription* pExecParams)
+{
+    LOG_DEBUG("");
+
+    if (!_nvParams.contains(handle))
+        return false;
+
+    NVSDK_NGX_Handle* nvHandle = nullptr;
+    auto params = _nvParams[handle];
+    auto initParams = &_initParams[handle];
+    auto commandList = (ID3D12GraphicsCommandList*)pExecParams->commandList;
+
+    UINT initFlags = 0;
+
+    if (initParams->flags & Fsr212::FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE)
+        initFlags |= NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
+
+    if (initParams->flags & Fsr212::FFX_FSR2_ENABLE_DEPTH_INVERTED)
+        initFlags |= NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
+
+    if (initParams->flags & Fsr212::FFX_FSR2_ENABLE_AUTO_EXPOSURE)
+        initFlags |= NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
+
+    if (initParams->flags & Fsr212::FFX_FSR2_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION)
+        initFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
+
+    if ((initParams->flags & Fsr212::FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS) == 0)
+        initFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
+
+    params->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, initFlags);
+
+    params->Set(NVSDK_NGX_Parameter_Width, pExecParams->renderSize.width);
+    params->Set(NVSDK_NGX_Parameter_Height, pExecParams->renderSize.height);
+    params->Set(NVSDK_NGX_Parameter_OutWidth, initParams->displaySize.width);
+    params->Set(NVSDK_NGX_Parameter_OutHeight, initParams->displaySize.height);
+
+    auto ratio = (float)initParams->displaySize.width / (float)pExecParams->renderSize.width;
+
+    if (ratio <= 3.0)
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_UltraPerformance);
+    else if (ratio <= 2.0)
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_MaxPerf);
+    else if (ratio <= 1.7)
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_Balanced);
+    else if (ratio <= 1.5)
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_MaxQuality);
+    else if (ratio <= 1.3)
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_UltraQuality);
+    else
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_DLAA);
+
+    if (NVSDK_NGX_D3D12_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle) != NVSDK_NGX_Result_Success)
+        return false;
+
+    _contexts[handle] = nvHandle;
+
+    return true;
+}
+
+// Tiny Tina's Wonderland
+static bool CreateDLSSContextTiny(Fsr212::FfxFsr2Context* handle, const FfxFsr2TinyDispatchDescription* pExecParams)
 {
     LOG_DEBUG("");
 
@@ -415,9 +508,64 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context*
     return Fsr212::FFX_ERROR_BACKEND_API_ERROR;
 }
 
+// Tiny Tina's Wonderland
+static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const FfxFsr2TinyDispatchDescription* dispatchDescription)
+{
+    if (dispatchDescription == nullptr || context == nullptr || dispatchDescription->commandList == nullptr)
+        return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
+
+    // If not in contexts list create and add context
+    if (!_contexts.contains(context) && _initParams.contains(context) && !CreateDLSSContextTiny(context, dispatchDescription))
+        return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
+
+    NVSDK_NGX_Parameter* params = _nvParams[context];
+    NVSDK_NGX_Handle* handle = _contexts[context];
+
+    params->Set(NVSDK_NGX_Parameter_Jitter_Offset_X, dispatchDescription->jitterOffset.x);
+    params->Set(NVSDK_NGX_Parameter_Jitter_Offset_Y, dispatchDescription->jitterOffset.y);
+    params->Set(NVSDK_NGX_Parameter_MV_Scale_X, dispatchDescription->motionVectorScale.x);
+    params->Set(NVSDK_NGX_Parameter_MV_Scale_Y, dispatchDescription->motionVectorScale.y);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, 1.0);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, dispatchDescription->preExposure);
+    params->Set(NVSDK_NGX_Parameter_Reset, dispatchDescription->reset ? 1 : 0);
+    params->Set(NVSDK_NGX_Parameter_Width, dispatchDescription->renderSize.width);
+    params->Set(NVSDK_NGX_Parameter_Height, dispatchDescription->renderSize.height);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, dispatchDescription->renderSize.width);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, dispatchDescription->renderSize.height);
+    params->Set(NVSDK_NGX_Parameter_Depth, dispatchDescription->depth.resource);
+    params->Set(NVSDK_NGX_Parameter_ExposureTexture, dispatchDescription->exposure.resource);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, dispatchDescription->reactive.resource);
+    params->Set(NVSDK_NGX_Parameter_Color, dispatchDescription->color.resource);
+    params->Set(NVSDK_NGX_Parameter_MotionVectors, dispatchDescription->motionVectors.resource);
+    params->Set(NVSDK_NGX_Parameter_Output, dispatchDescription->output.resource);
+    params->Set("FSR.cameraNear", dispatchDescription->cameraNear);
+    params->Set("FSR.cameraFar", dispatchDescription->cameraFar);
+    params->Set("FSR.cameraFovAngleVertical", dispatchDescription->cameraFovAngleVertical);
+    params->Set("FSR.frameTimeDelta", dispatchDescription->frameTimeDelta);
+    params->Set("FSR.transparencyAndComposition", dispatchDescription->transparencyAndComposition.resource);
+    params->Set("FSR.reactive", dispatchDescription->reactive.resource);
+    params->Set(NVSDK_NGX_Parameter_Sharpness, dispatchDescription->sharpness);
+
+    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width, dispatchDescription->renderSize.height);
+
+    Config::Instance()->setInputApiName = "FSR2-DX12";
+
+    auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDescription->commandList, handle, params, nullptr);
+
+    if (evalResult == NVSDK_NGX_Result_Success)
+        return Fsr212::FFX_OK;
+
+    LOG_ERROR("evalResult: {:X}", (UINT)evalResult);
+    return Fsr212::FFX_ERROR_BACKEND_API_ERROR;
+}
+
 // Tramboline method
 static Fsr212::FfxErrorCode ffxFsr2ContextDispatchBase_Dx12(Fsr212::FfxFsr2Context* context, FfxFsr2DispatchDescriptionBase* dispatchDescription)
 {
+    // Tiny Tina's Wonderland
+    if(o_ffxGetResourceFromDX12Resource_Dx12 != nullptr)
+        return ffxFsr2TinyContextDispatch_Dx12(context, (FfxFsr2TinyDispatchDescription*)dispatchDescription);
+
     if (_version20.has_value())
     {
         if (_version20.value())
@@ -526,11 +674,15 @@ static FfxResourceBase hk_ffxGetResourceBaseDX12(Fsr212::FfxFsr2Context* context
     return result;
 }
 
-static FfxResourceBase hk_ffxGetResourceFromDX12Resource_Dx12(ID3D12Resource* resDx12)
+// Tiny Tina's Wonderland
+static FfxResourceTiny hk_ffxGetResourceFromDX12Resource_Dx12(ID3D12Resource* resDx12)
 {
-    FfxResourceBase result{};
+    FfxResourceTiny result{};
     result.resource = resDx12;
-    result.dummy = 0x1ee7; // For FSR2.0 detection
+    result.data[0] = 0x1111; 
+    result.data[1] = 0x2222; 
+    result.data[2] = 0x3333; 
+    result.data[3] = 0x4444; 
 
     return result;
 }
