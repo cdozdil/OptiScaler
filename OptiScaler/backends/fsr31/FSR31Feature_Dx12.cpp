@@ -332,18 +332,18 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
 
     LOG_DEBUG("Sharpness: {0}", params.sharpness);
 
-    if (InParameters->Get("FSR.cameraNear", &params.cameraNear) != NVSDK_NGX_Result_Success ||
+    if (true || InParameters->Get("FSR.cameraNear", &params.cameraNear) != NVSDK_NGX_Result_Success ||
         InParameters->Get("FSR.cameraFar", &params.cameraFar) != NVSDK_NGX_Result_Success)
     {
         if (IsDepthInverted())
         {
-            params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.01f);
-            params.cameraNear = Config::Instance()->FsrCameraFar.value_or(0.99f);
+            params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.0001f);
+            params.cameraNear = Config::Instance()->FsrCameraFar.value_or(FLT_MAX);
         }
         else
         {
-            params.cameraFar = Config::Instance()->FsrCameraFar.value_or(0.99f);
-            params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.01f);
+            params.cameraFar = Config::Instance()->FsrCameraFar.value_or(FLT_MAX);
+            params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.0001f);
         }
     }
 
