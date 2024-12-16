@@ -62,6 +62,7 @@ typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextDestroy)(Fsr212::FfxFsr2Context*
 typedef float(*PFN_ffxFsr2GetUpscaleRatioFromQualityMode)(Fsr212::FfxFsr2QualityMode qualityMode);
 typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2GetRenderResolutionFromQualityMode)(uint32_t* renderWidth, uint32_t* renderHeight, uint32_t displayWidth, uint32_t displayHeight, Fsr212::FfxFsr2QualityMode qualityMode);
 typedef bool(*PFN_ffxFsr2ResourceIsNull_Dx12)(FfxResourceBase resource);
+typedef Fsr212::FfxResource(*PFN_ffxGetResourceFromDX12Resource_Dx12)(ID3D12Resource* resource);
 
 // Dx12
 typedef size_t(*PFN_ffxFsr2GetScratchMemorySizeDX12)();
@@ -80,6 +81,7 @@ static PFN_ffxFsr2GetInterfaceDX12 o_ffxFsr2GetInterfaceDX12 = nullptr;
 static PFN_ffxGetResourceDX12 o_ffxGetResourceDX12 = nullptr;
 static PFN_ffxGetDX12ResourcePtr o_ffxGetDX12ResourcePtr = nullptr;
 static PFN_ffxFsr2ResourceIsNull_Dx12 o_ffxFsr2ResourceIsNull_Dx12 = nullptr;
+static PFN_ffxGetResourceFromDX12Resource_Dx12 o_ffxGetResourceFromDX12Resource_Dx12 = nullptr;
 
 static std::optional<bool> _version20;
 
@@ -452,7 +454,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDestroy_Dx12(Fsr212::FfxFsr2Context* c
     if (!_initParams.contains(context))
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
-    auto cdResult = ffxFsr2ContextDestroy_Dx12(context);
+    auto cdResult = o_ffxFsr2ContextDestroy_Dx12(context);
     LOG_INFO("result: {:X}", (UINT)cdResult);
 
     if (_contexts.contains(context))
@@ -524,6 +526,15 @@ static FfxResourceBase hk_ffxGetResourceBaseDX12(Fsr212::FfxFsr2Context* context
     return result;
 }
 
+static FfxResourceBase hk_ffxGetResourceFromDX12Resource_Dx12(ID3D12Resource* resDx12)
+{
+    FfxResourceBase result{};
+    result.resource = resDx12;
+    result.dummy = 0x1ee7; // For FSR2.0 detection
+
+    return result;
+}
+
 static ID3D12Resource* hk_ffxGetDX12ResourcePtr(Fsr212::FfxFsr2Context* context, uint32_t resId)
 {
     LOG_ERROR("resId: {}", resId);
@@ -536,47 +547,65 @@ void HookFSR2ExeInputs()
 
     auto exeName = wstring_to_string(Util::ExePath().filename());
 
+    //ffxFsr2GetScratchMemorySizeDX12
     o_ffxFsr2GetScratchMemorySizeDX12 = (PFN_ffxFsr2GetScratchMemorySizeDX12)DetourFindFunction(exeName.c_str(), "ffxFsr2GetScratchMemorySizeDX12");
     if (o_ffxFsr2GetScratchMemorySizeDX12 == nullptr)
         o_ffxFsr2GetScratchMemorySizeDX12 = (PFN_ffxFsr2GetScratchMemorySizeDX12)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetScratchMemorySizeDX12@@YA_KXZ");
+    if (o_ffxFsr2GetScratchMemorySizeDX12 == nullptr)
+        o_ffxFsr2GetScratchMemorySizeDX12 = (PFN_ffxFsr2GetScratchMemorySizeDX12)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetScratchMemorySizeDX12@@YA_KXZ");
 
+    //ffxFsr2GetInterfaceDX12
     o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "ffxFsr2GetInterfaceDX12");
     if (o_ffxFsr2GetInterfaceDX12 == nullptr)
         o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetInterfaceDX12@@YAHPEAUFfxFsr2Interface@@PEAUID3D12Device@@PEAX_K@Z");
 
+    //ffxGetResourceDX12
     o_ffxGetResourceDX12 = (PFN_ffxGetResourceDX12)DetourFindFunction(exeName.c_str(), "ffxGetResourceDX12");
     if (o_ffxGetResourceDX12 == nullptr)
         o_ffxGetResourceDX12 = (PFN_ffxGetResourceDX12)DetourFindFunction(exeName.c_str(), "?ffxGetResourceDX12@@YA?AUFfxResource@@PEAUFfxFsr2Context@@PEAUID3D12Resource@@PEA_WW4FfxResourceStates@@I@Z");
 
+    //ffxGetDX12ResourcePtr
     o_ffxGetDX12ResourcePtr = (PFN_ffxGetDX12ResourcePtr)DetourFindFunction(exeName.c_str(), "ffxGetDX12ResourcePtr");
 
+    //ffxFsr2ContextCreate
     o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextCreate");
     if (o_ffxFsr2ContextCreate_Dx12 == nullptr)
         o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextCreate@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2ContextDescription@@@Z");
 
+    //ffxFsr2ContextDispatch
     o_ffxFsr2ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextDispatch");
     if (o_ffxFsr2ContextDispatch_Dx12 == nullptr)
         o_ffxFsr2ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextDispatch@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2DispatchDescription@@@Z");
+    if (o_ffxFsr2ContextDispatch_Dx12 == nullptr)
+        o_ffxFsr2ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextDispatch@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2DispatchParams@@@Z");
 
+    //ffxFsr2ContextGenerateReactiveMask
     o_ffxFsr2ContextGenerateReactiveMask_Dx12 = (PFN_ffxFsr2ContextGenerateReactiveMask)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextGenerateReactiveMask");
     if (o_ffxFsr2ContextGenerateReactiveMask_Dx12 == nullptr)
         o_ffxFsr2ContextGenerateReactiveMask_Dx12 = (PFN_ffxFsr2ContextGenerateReactiveMask)DetourFindFunction(exeName.c_str(), "?ffxFsr2GenerateReactiveMask@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2GenerateReactiveDescription@@@Z");
 
+    //ffxFsr2ContextDestroy
     o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextDestroy");
     if (o_ffxFsr2ContextDestroy_Dx12 == nullptr)
         o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextDestroy@@YAHPEAUFfxFsr2Context@@@Z");
 
+    //ffxFsr2GetUpscaleRatioFromQualityMode
     o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr2GetUpscaleRatioFromQualityMode)DetourFindFunction(exeName.c_str(), "ffxFsr2GetUpscaleRatioFromQualityMode");
     if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 == nullptr)
         o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr2GetUpscaleRatioFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetUpscaleRatioFromQualityMode@@YAMW4FfxFsr2QualityMode@@@Z");
 
+    //ffxFsr2GetRenderResolutionFromQualityMode
     o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "ffxFsr2GetRenderResolutionFromQualityMode");
     if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
         o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAI0IIW4FfxFsr2QualityMode@@@Z");
+    if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
+        o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAH0HHW4FfxFsr2QualityMode@@@Z");
 
+    //ffxFsr2ResourceIsNull
     o_ffxFsr2ResourceIsNull_Dx12 = (PFN_ffxFsr2ResourceIsNull_Dx12)DetourFindFunction(exeName.c_str(), "ffxFsr2ResourceIsNull");
-    //if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
-    //    o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAI0IIW4FfxFsr2QualityMode@@@Z");
+
+    //ffxGetResourceFromDX12Resource_Dx12
+    o_ffxGetResourceFromDX12Resource_Dx12 = (PFN_ffxGetResourceFromDX12Resource_Dx12)DetourFindFunction(exeName.c_str(), "?ffxGetResourceFromDX12Resource@@YA?AUFfxResource@@PEAUID3D12Resource@@@Z");
 
     if (o_ffxFsr2GetInterfaceDX12 != nullptr || o_ffxFsr2ContextCreate_Dx12 != nullptr)
     {
@@ -618,8 +647,23 @@ void HookFSR2ExeInputs()
         if (o_ffxFsr2ResourceIsNull_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2ResourceIsNull_Dx12, ffxFsr2ResourceIsNull_Dx12);
 
+        if (o_ffxGetResourceFromDX12Resource_Dx12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxGetResourceFromDX12Resource_Dx12, hk_ffxGetResourceFromDX12Resource_Dx12);
+
         DetourTransactionCommit();
     }
+
+    LOG_DEBUG("ffxFsr2GetScratchMemorySizeDX12: {:X}", (size_t)o_ffxFsr2GetScratchMemorySizeDX12);
+    LOG_DEBUG("ffxFsr2GetInterfaceDX12: {:X}", (size_t)o_ffxFsr2GetInterfaceDX12);
+    LOG_DEBUG("ffxGetResourceDX12: {:X}", (size_t)o_ffxGetResourceDX12);
+    LOG_DEBUG("ffxGetDX12ResourcePtr: {:X}", (size_t)o_ffxGetDX12ResourcePtr);
+    LOG_DEBUG("ffxFsr2ContextCreate_Dx12: {:X}", (size_t)o_ffxFsr2ContextCreate_Dx12);
+    LOG_DEBUG("ffxFsr2ContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr2ContextDispatch_Dx12);
+    LOG_DEBUG("ffxFsr2ContextGenerateReactiveMask_Dx12: {:X}", (size_t)o_ffxFsr2ContextGenerateReactiveMask_Dx12);
+    LOG_DEBUG("ffxFsr2ContextDestroy_Dx12: {:X}", (size_t)o_ffxFsr2ContextDestroy_Dx12);
+    LOG_DEBUG("ffxFsr2GetUpscaleRatioFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
+    LOG_DEBUG("ffxFsr2GetRenderResolutionFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
+    LOG_DEBUG("ffxFsr2ResourceIsNull_Dx12: {:X}", (size_t)o_ffxFsr2ResourceIsNull_Dx12);
 }
 
 void HookFSR2Dx12Inputs(HMODULE module)
@@ -662,6 +706,12 @@ void HookFSR2Dx12Inputs(HMODULE module)
 
         DetourTransactionCommit();
     }
+
+    LOG_DEBUG("ffxFsr2GetScratchMemorySizeDX12: {:X}", (size_t)o_ffxFsr2GetScratchMemorySizeDX12);
+    LOG_DEBUG("ffxFsr2GetInterfaceDX12: {:X}", (size_t)o_ffxFsr2GetInterfaceDX12);
+    LOG_DEBUG("ffxGetResourceDX12: {:X}", (size_t)o_ffxGetResourceDX12);
+    LOG_DEBUG("ffxGetDX12ResourcePtr: {:X}", (size_t)o_ffxGetDX12ResourcePtr);
+    LOG_DEBUG("ffxFsr2ResourceIsNull_Dx12: {:X}", (size_t)o_ffxFsr2ResourceIsNull_Dx12);
 }
 
 void HookFSR2Inputs(HMODULE module)
@@ -708,4 +758,12 @@ void HookFSR2Inputs(HMODULE module)
 
         DetourTransactionCommit();
     }
+
+    LOG_DEBUG("ffxGetDX12ResourcePtr: {:X}", (size_t)o_ffxGetDX12ResourcePtr);
+    LOG_DEBUG("ffxFsr2ContextCreate_Dx12: {:X}", (size_t)o_ffxFsr2ContextCreate_Dx12);
+    LOG_DEBUG("ffxFsr2ContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr2ContextDispatch_Dx12);
+    LOG_DEBUG("ffxFsr2ContextGenerateReactiveMask_Dx12: {:X}", (size_t)o_ffxFsr2ContextGenerateReactiveMask_Dx12);
+    LOG_DEBUG("ffxFsr2ContextDestroy_Dx12: {:X}", (size_t)o_ffxFsr2ContextDestroy_Dx12);
+    LOG_DEBUG("ffxFsr2GetUpscaleRatioFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
+    LOG_DEBUG("ffxFsr2GetRenderResolutionFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
 }
