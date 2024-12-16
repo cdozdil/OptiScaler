@@ -24,6 +24,7 @@
 
 // Include the interface for the backend of the FSR3 API.
 #include "ffx_interface.h"
+#include "ffx_fsr3upscaler_resources.h"
 
 namespace Fsr3
 {

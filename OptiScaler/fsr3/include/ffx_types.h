@@ -269,6 +269,8 @@ namespace Fsr3
             FFX_RESOURCE_USAGE_DEPTHTARGET = (1 << 2),        ///< Indicates a resource will be used as depth target.
             FFX_RESOURCE_USAGE_INDIRECT = (1 << 3),           ///< Indicates a resource will be used as indirect argument buffer
             FFX_RESOURCE_USAGE_ARRAYVIEW = (1 << 4),          ///< Indicates a resource that will generate array views. Works on 2D and cubemap textures
+            FFX_RESOURCE_USAGE_STENCILTARGET = (1 << 5),          ///< Indicates a resource will be used as stencil target.
+            FFX_RESOURCE_USAGE_DCC_RENDERTARGET = (1 << 15),      ///< Indicates a resource that should specify optimal render target memory access flags (for console use)
         } FfxResourceUsage;
 
         /// An enumeration of resource states.

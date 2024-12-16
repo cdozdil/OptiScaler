@@ -10,41 +10,53 @@
 #include "fsr2_212/include/ffx_fsr2.h"
 #include "fsr2_212/include/dx12/ffx_fsr2_dx12.h"
 
-typedef struct FfxResource20 {
-    void* resource;                               ///< pointer to the resource.
-    Fsr212::FfxResourceDescription          description;
-    Fsr212::FfxResourceStates               state;
-    bool                            isDepth;
-    uint64_t                        descriptorData;
-} FfxResource;
+typedef struct FfxResourceBase
+{
+    void* resource;
+    uint32_t dummy;
+} FfxResourceBase;
 
-typedef struct FfxFsr20DispatchDescription {
+typedef struct FfxResource20
+{
+    void* resource;
+    Fsr212::FfxResourceDescription description;
+    Fsr212::FfxResourceStates state;
+    bool isDepth;
+    uint64_t descriptorData;
+} FfxResource20;
 
-    Fsr212::FfxCommandList              commandList;                        ///< The <c><i>FfxCommandList</i></c> to record FSR2 rendering commands into.
-    FfxResource20                 color;                              ///< A <c><i>FfxResource</i></c> containing the color buffer for the current frame (at render resolution).
-    FfxResource20                 depth;                              ///< A <c><i>FfxResource</i></c> containing 32bit depth values for the current frame (at render resolution).
-    FfxResource20                 motionVectors;                      ///< A <c><i>FfxResource</i></c> containing 2-dimensional motion vectors (at render resolution if <c><i>FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS</i></c> is not set).
-    FfxResource20                 exposure;                           ///< A optional <c><i>FfxResource</i></c> containing a 1x1 exposure value.
-    FfxResource20                 reactive;                           ///< A optional <c><i>FfxResource</i></c> containing alpha value of reactive objects in the scene.
-    FfxResource20                 transparencyAndComposition;         ///< A optional <c><i>FfxResource</i></c> containing alpha value of special objects in the scene.
-    FfxResource20                 output;                             ///< A <c><i>FfxResource</i></c> containing the output color buffer for the current frame (at presentation resolution).
-    Fsr212::FfxFloatCoords2D            jitterOffset;                       ///< The subpixel jitter offset applied to the camera.
-    Fsr212::FfxFloatCoords2D            motionVectorScale;                  ///< The scale factor to apply to motion vectors.
-    Fsr212::FfxDimensions2D             renderSize;                         ///< The resolution that was used for rendering the input resources.
-    bool                        enableSharpening;                   ///< Enable an additional sharpening pass.
-    float                       sharpness;                          ///< The sharpness value between 0 and 1, where 0 is no additional sharpness and 1 is maximum additional sharpness.
-    float                       frameTimeDelta;                     ///< The time elapsed since the last frame (expressed in milliseconds).
-    float                       preExposure;                        ///< The exposure value if not using <c><i>FFX_FSR2_ENABLE_AUTO_EXPOSURE</i></c>.
-    bool                        reset;                              ///< A boolean value which when set to true, indicates the camera has moved discontinuously.
-    float                       cameraNear;                         ///< The distance to the near plane of the camera.
-    float                       cameraFar;                          ///< The distance to the far plane of the camera. This is used only used in case of non infinite depth.
-    float                       cameraFovAngleVertical;             ///< The camera angle field of view in the vertical direction (expressed in radians).
-} FfxFsr2DispatchDescription;
+typedef struct FfxFsr2DispatchDescriptionBase
+{
+    Fsr212::FfxCommandList commandList;
+
+} FfxFsr2DispatchDescriptionBase;
+
+typedef struct FfxFsr20DispatchDescription
+{
+    Fsr212::FfxCommandList commandList;
+    FfxResource20 color;
+    FfxResource20 depth;
+    FfxResource20 motionVectors;
+    FfxResource20 exposure;
+    FfxResource20 reactive;
+    FfxResource20 transparencyAndComposition;
+    FfxResource20 output;
+    Fsr212::FfxFloatCoords2D jitterOffset;
+    Fsr212::FfxFloatCoords2D motionVectorScale;
+    Fsr212::FfxDimensions2D renderSize;
+    bool enableSharpening;
+    float sharpness;
+    float frameTimeDelta;
+    float preExposure;
+    bool reset;
+    float cameraNear;
+    float cameraFar;
+    float cameraFovAngleVertical;
+} FfxFsr20DispatchDescription;
 
 // FSR2
 typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextCreate)(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2ContextDescription* contextDescription);
-typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextDispatch)(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2DispatchDescription* dispatchDescription);
-typedef Fsr212::FfxErrorCode(*PFN_ffxFsr20ContextDispatch)(Fsr212::FfxFsr2Context* context, const FfxFsr20DispatchDescription* dispatchDescription);
+typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextDispatch)(Fsr212::FfxFsr2Context* context, const FfxFsr2DispatchDescriptionBase* dispatchDescription);
 typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextGenerateReactiveMask)(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2GenerateReactiveDescription* params);
 typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextDestroy)(Fsr212::FfxFsr2Context* context);
 typedef float(*PFN_ffxFsr2GetUpscaleRatioFromQualityMode)(Fsr212::FfxFsr2QualityMode qualityMode);
@@ -53,8 +65,7 @@ typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2GetRenderResolutionFromQualityMode)(uin
 // Dx12
 typedef size_t(*PFN_ffxFsr2GetScratchMemorySizeDX12)();
 typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2GetInterfaceDX12)(Fsr212::FfxFsr2Interface212* fsr2Interface, ID3D12Device* device, void* scratchBuffer, size_t scratchBufferSize);
-typedef FfxResource20(*PFN_ffxGetResource20DX12)(Fsr212::FfxFsr2Context* context, ID3D12Resource* resDx12, const wchar_t* name, Fsr212::FfxResourceStates state, UINT shaderComponentMapping);
-typedef Fsr212::FfxResource(*PFN_ffxGetResourceDX12)(Fsr212::FfxFsr2Context* context, ID3D12Resource* resDx12, const wchar_t* name, Fsr212::FfxResourceStates state, UINT shaderComponentMapping);
+typedef FfxResourceBase(*PFN_ffxGetResourceDX12)(Fsr212::FfxFsr2Context* context, ID3D12Resource* resDx12, const wchar_t* name, Fsr212::FfxResourceStates state, UINT shaderComponentMapping);
 typedef ID3D12Resource* (*PFN_ffxGetDX12ResourcePtr)(Fsr212::FfxFsr2Context* context, uint32_t resId);
 
 static PFN_ffxFsr2ContextCreate o_ffxFsr2ContextCreate_Dx12 = nullptr;
@@ -69,6 +80,7 @@ static PFN_ffxGetResourceDX12 o_ffxGetResourceDX12 = nullptr;
 static PFN_ffxGetDX12ResourcePtr o_ffxGetDX12ResourcePtr = nullptr;
 
 static uint32_t _handleCounter = 0;
+static std::optional<bool> _version20;
 
 static std::map<uint32_t, Fsr212::FfxFsr2ContextDescription> _initParams;
 static std::map<uint32_t, NVSDK_NGX_Parameter*> _nvParams;
@@ -407,6 +419,30 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context*
     return Fsr212::FFX_ERROR_BACKEND_API_ERROR;
 }
 
+// Tramboline method
+static Fsr212::FfxErrorCode ffxFsr2ContextDispatchBase_Dx12(Fsr212::FfxFsr2Context* context, FfxFsr2DispatchDescriptionBase* dispatchDescription)
+{
+    if (_version20.has_value())
+    {
+        if (_version20.value())
+            return ffxFsr20ContextDispatch_Dx12(context, (FfxFsr20DispatchDescription*)dispatchDescription);
+        else
+            return ffxFsr2ContextDispatch_Dx12(context, (Fsr212::FfxFsr2DispatchDescription*)dispatchDescription);
+    }
+    else
+    {
+        auto fsr2xDesc = reinterpret_cast<FfxFsr20DispatchDescription*>(dispatchDescription);
+
+        // Check for FSR2.0
+        if ((uint32_t)fsr2xDesc->depth.description.type == 0x1ee7)
+            _version20 = true;
+        else
+            _version20 = false;
+
+        return ffxFsr2ContextDispatchBase_Dx12(context, dispatchDescription);
+    }
+}
+
 static Fsr212::FfxErrorCode ffxFsr2ContextGenerateReactiveMask_Dx12(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2GenerateReactiveDescription* params)
 {
     LOG_WARN("");
@@ -476,29 +512,13 @@ static Fsr212::FfxErrorCode hk_ffxFsr2GetInterfaceDX12(Fsr212::FfxFsr2Interface2
     return Fsr212::FFX_OK;
 }
 
-static FfxResource20 hk_ffxGetResource20DX12(Fsr212::FfxFsr2Context* context, ID3D12Resource* resDx12, const wchar_t* name = nullptr,
+static FfxResourceBase hk_ffxGetResourceBaseDX12(Fsr212::FfxFsr2Context* context, ID3D12Resource* resDx12, const wchar_t* name = nullptr,
                                                  Fsr212::FfxResourceStates state = Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ,
                                                  UINT shaderComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING)
 {
-    FfxResource20 result{};
+    FfxResourceBase result{};
     result.resource = resDx12;
-    result.state = state;
-
-    return result;
-}
-
-static Fsr212::FfxResource hk_ffxGetResourceDX12(Fsr212::FfxFsr2Context* context, ID3D12Resource* resDx12, const wchar_t* name = nullptr,
-                                                 Fsr212::FfxResourceStates state = Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ,
-                                                 UINT shaderComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING)
-{
-    std::wstring bufferName(name);
-
-    LOG_DEBUG("name: {}", wstring_to_string(bufferName));
-
-    Fsr212::FfxResource result{};
-    std::wcscpy(result.name, bufferName.c_str());
-    result.resource = resDx12;
-    result.state = state;
+    result.dummy = 0x1ee7; // For FSR2.0 detection
 
     return result;
 }
@@ -567,7 +587,7 @@ void HookFSR2ExeInputs()
             DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
 
         if (o_ffxGetResourceDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxGetResourceDX12, hk_ffxGetResourceDX12);
+            DetourAttach(&(PVOID&)o_ffxGetResourceDX12, hk_ffxGetResourceBaseDX12);
 
         if (o_ffxGetDX12ResourcePtr != nullptr)
             DetourAttach(&(PVOID&)o_ffxGetDX12ResourcePtr, hk_ffxGetDX12ResourcePtr);
@@ -576,7 +596,7 @@ void HookFSR2ExeInputs()
             DetourAttach(&(PVOID&)o_ffxFsr2ContextCreate_Dx12, ffxFsr2ContextCreate_Dx12);
 
         if (o_ffxFsr2ContextDispatch_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatch_Dx12);
+            DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatchBase_Dx12);
 
         if (o_ffxFsr2ContextGenerateReactiveMask_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2ContextGenerateReactiveMask_Dx12, ffxFsr2ContextGenerateReactiveMask_Dx12);
@@ -620,7 +640,7 @@ void HookFSR2Dx12Inputs(HMODULE module)
             DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
 
         if (o_ffxGetResourceDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxGetResourceDX12, hk_ffxGetResourceDX12);
+            DetourAttach(&(PVOID&)o_ffxGetResourceDX12, hk_ffxGetResourceBaseDX12);
 
         if (o_ffxGetDX12ResourcePtr != nullptr)
             DetourAttach(&(PVOID&)o_ffxGetDX12ResourcePtr, hk_ffxGetDX12ResourcePtr);
@@ -654,7 +674,7 @@ void HookFSR2Inputs(HMODULE module)
             DetourAttach(&(PVOID&)o_ffxFsr2ContextCreate_Dx12, ffxFsr2ContextCreate_Dx12);
 
         if (o_ffxFsr2ContextDispatch_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatch_Dx12);
+            DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatchBase_Dx12);
 
         if (o_ffxFsr2ContextGenerateReactiveMask_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2ContextGenerateReactiveMask_Dx12, ffxFsr2ContextGenerateReactiveMask_Dx12);
