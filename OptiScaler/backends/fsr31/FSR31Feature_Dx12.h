@@ -19,7 +19,7 @@ public:
 
 	~FSR31FeatureDx12()
 	{
-		if(_context != nullptr)
+		if(!Config::Instance()->IsShuttingDown && _context != nullptr)
 			FfxApiProxy::D3D12_DestroyContext()(&_context, NULL);
 	}
 };
