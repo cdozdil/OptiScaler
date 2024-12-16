@@ -1328,10 +1328,10 @@ void ImGuiCommon::RenderMenu()
                         float cameraNear;
                         float cameraFar;
 
-                        cameraNear = Config::Instance()->FsrCameraNear.value_or(0.0001f);
+                        cameraNear = Config::Instance()->FsrCameraNear.value_or(10.0f);
                         //cameraFar = Config::Instance()->FsrCameraFar.value_or(0.9999f);
 
-                        if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.0001f, 1000.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
+                        if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.01f, 1000.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
                             Config::Instance()->FsrCameraNear = cameraNear;
                         ShowHelpMarker("Might help achieve better image quality\n"
                                        "And potentially less ghosting");

@@ -235,45 +235,46 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
     if (InParameters->Get("FSR.transparencyAndComposition", &paramTransparency) == NVSDK_NGX_Result_Success)
         InParameters->Get("FSR.transparencyAndComposition", (void**)&paramTransparency);
 
-    if (paramTransparency != nullptr)
-    {
-        LOG_DEBUG("Using FSR transparency mask..");
-        params.transparencyAndComposition = Fsr212::ffxGetResourceDX12_212(&_context, paramTransparency, (wchar_t*)L"FSR2_Transparency", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
-    }
-
     ID3D12Resource* paramReactiveMask = nullptr;
     if (InParameters->Get("FSR.reactive", &paramReactiveMask) == NVSDK_NGX_Result_Success)
         InParameters->Get("FSR.reactive", (void**)&paramReactiveMask);
 
-    if (paramReactiveMask != nullptr)
-    {
-        LOG_DEBUG("Using FSR reactive mask..");
-        params.reactive = Fsr212::ffxGetResourceDX12_212(&_context, paramReactiveMask, (wchar_t*)L"FSR2_Reactive", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
-    }
-    else
-    {
-        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
-            InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
+    ID3D12Resource* paramReactiveMask2 = nullptr;
+    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask2) != NVSDK_NGX_Result_Success)
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask2);
 
-        if (!Config::Instance()->DisableReactiveMask.value_or(paramReactiveMask == nullptr))
+    if (!Config::Instance()->DisableReactiveMask.value_or(paramReactiveMask == nullptr && paramReactiveMask2 == nullptr))
+    {
+        if (paramTransparency != nullptr)
         {
-            if (paramReactiveMask)
+            LOG_DEBUG("Using FSR transparency mask..");
+            params.transparencyAndComposition = Fsr212::ffxGetResourceDX12_212(&_context, paramTransparency, (wchar_t*)L"FSR2_Transparency", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
+        }
+
+        if (paramReactiveMask != nullptr)
+        {
+            LOG_DEBUG("Using FSR reactive mask..");
+            params.reactive = Fsr212::ffxGetResourceDX12_212(&_context, paramReactiveMask, (wchar_t*)L"FSR2_Reactive", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
+        }
+        else
+        {
+            if (paramReactiveMask2 != nullptr)
             {
                 LOG_DEBUG("Bias mask exist..");
                 Config::Instance()->DisableReactiveMask = false;
 
                 if (Config::Instance()->MaskResourceBarrier.has_value())
-                    ResourceBarrier(InCommandList, paramReactiveMask, (D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                    ResourceBarrier(InCommandList, paramReactiveMask2, (D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
                 if (paramTransparency == nullptr && Config::Instance()->FsrUseMaskForTransparency.value_or(true))
-                    params.transparencyAndComposition = Fsr212::ffxGetResourceDX12_212(&_context, paramReactiveMask, (wchar_t*)L"FSR2_Transparency", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
+                    params.transparencyAndComposition = Fsr212::ffxGetResourceDX12_212(&_context, paramReactiveMask2, (wchar_t*)L"FSR2_Transparency", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
 
                 if (Config::Instance()->DlssReactiveMaskBias.value_or(0.45f) > 0.0f &&
-                    Bias->IsInit() && Bias->CreateBufferResource(Device, paramReactiveMask, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
+                    Bias->IsInit() && Bias->CreateBufferResource(Device, paramReactiveMask2, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
                 {
                     Bias->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-                    if (Bias->Dispatch(Device, InCommandList, paramReactiveMask, Config::Instance()->DlssReactiveMaskBias.value_or(0.45f), Bias->Buffer()))
+                    if (Bias->Dispatch(Device, InCommandList, paramReactiveMask2, Config::Instance()->DlssReactiveMaskBias.value_or(0.45f), Bias->Buffer()))
                     {
                         Bias->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                         params.reactive = Fsr212::ffxGetResourceDX12_212(&_context, Bias->Buffer(), (wchar_t*)L"FSR2_Reactive", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
@@ -320,13 +321,13 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
     {
         if (IsDepthInverted())
         {
-            params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.0001f);
+            params.cameraFar = Config::Instance()->FsrCameraNear.value_or(10.0f);
             params.cameraNear = Config::Instance()->FsrCameraFar.value_or(FLT_MAX);
         }
         else
         {
             params.cameraFar = Config::Instance()->FsrCameraFar.value_or(FLT_MAX);
-            params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.0001f);
+            params.cameraNear = Config::Instance()->FsrCameraNear.value_or(10.0f);
         }
     }
 
@@ -595,7 +596,7 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         _contextDesc.maxRenderSize.height = RenderHeight();
 
         Config::Instance()->OutputScalingMultiplier = 1.0f;
-        
+
         // if output scaling active let it to handle downsampling
         if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
         {
