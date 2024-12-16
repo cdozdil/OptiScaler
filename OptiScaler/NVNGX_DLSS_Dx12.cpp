@@ -1575,13 +1575,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                     if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
                     {
-                        dfgPrepare.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.01f);
-                        dfgPrepare.cameraNear = Config::Instance()->FsrCameraFar.value_or(0.99f);
+                        dfgPrepare.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.0001f);
+                        dfgPrepare.cameraNear = Config::Instance()->FsrCameraFar.value_or(FLT_MAX);
                     }
                     else
                     {
-                        dfgPrepare.cameraFar = Config::Instance()->FsrCameraFar.value_or(0.99f);
-                        dfgPrepare.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.01f);
+                        dfgPrepare.cameraFar = Config::Instance()->FsrCameraFar.value_or(FLT_MAX);
+                        dfgPrepare.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.0001f);
                     }
 
                     dfgPrepare.cameraFovAngleVertical = 1.0471975511966f;
