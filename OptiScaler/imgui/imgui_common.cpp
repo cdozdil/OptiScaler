@@ -1312,12 +1312,6 @@ void ImGuiCommon::RenderMenu()
                         ImGui::EndDisabled();
                         ShowHelpMarker("Might help achieve better image quality");
 
-                        float cameraNear;
-                        float cameraFar;
-
-                        cameraNear = Config::Instance()->FsrCameraNear.value_or(0.01f);
-                        cameraFar = Config::Instance()->FsrCameraFar.value_or(0.99f);
-
                         if (currentBackend == "fsr31" || currentBackend == "fsr31_12")
                         {
                             if (bool dView = Config::Instance()->FsrDebugView.value_or(false); ImGui::Checkbox("FSR 3.X Debug View", &dView))
@@ -1331,15 +1325,21 @@ void ImGuiCommon::RenderMenu()
                                            "Bottom right: Detail Protection Takedown");
                         }
 
-                        if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.01f, 9.99f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
+                        float cameraNear;
+                        float cameraFar;
+
+                        cameraNear = Config::Instance()->FsrCameraNear.value_or(0.0001f);
+                        //cameraFar = Config::Instance()->FsrCameraFar.value_or(0.9999f);
+
+                        if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.0001f, 1000.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
                             Config::Instance()->FsrCameraNear = cameraNear;
                         ShowHelpMarker("Might help achieve better image quality\n"
                                        "And potentially less ghosting");
 
-                        if (ImGui::SliderFloat("Camera Far", &cameraFar, 0.01f, 9.99f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
-                            Config::Instance()->FsrCameraFar = cameraFar;
-                        ShowHelpMarker("Might help achieve better image quality\n"
-                                       "And potentially less ghosting");
+                        //if (ImGui::SliderFloat("Camera Far", &cameraFar, 0.0001f, FLT_MAX, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
+                        //    Config::Instance()->FsrCameraFar = cameraFar;
+                        //ShowHelpMarker("Might help achieve better image quality\n"
+                        //               "And potentially less ghosting");
 
                         if (Config::Instance()->CurrentFeature->AccessToReactiveMask())
                         {
