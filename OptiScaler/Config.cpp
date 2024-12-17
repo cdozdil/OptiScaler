@@ -575,7 +575,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             if (!LoadSpecialK.has_value())
                 LoadSpecialK = readBool("Plugins", "LoadSpecialK");
-            
+
             if (!LoadReShade.has_value())
                 LoadReShade = readBool("Plugins", "LoadReShade");
         }
@@ -972,13 +972,14 @@ bool Config::SaveFakenvapiIni() {
 
 void Config::CheckUpscalerFiles()
 {
-    nvngxExist = std::filesystem::exists(Util::ExePath().parent_path() / L"nvngx.dll");
+    if (!nvngxExist)
+        nvngxExist = std::filesystem::exists(Util::ExePath().parent_path() / L"nvngx.dll");
 
     if (!nvngxExist)
     {
         nvngxExist = GetModuleHandle(L"nvngx.dll") != nullptr;
 
-        if(nvngxExist)
+        if (nvngxExist)
             LOG_INFO("nvngx.dll found in memory");
         else
             LOG_WARN("nvngx.dll not found!");
@@ -990,7 +991,6 @@ void Config::CheckUpscalerFiles()
     }
 
     libxessExist = std::filesystem::exists(Util::ExePath().parent_path() / L"libxess.dll");
-
     if (!libxessExist)
     {
         libxessExist = GetModuleHandle(L"libxess.dll") != nullptr;
