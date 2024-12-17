@@ -2172,6 +2172,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                         Config::Instance()->VulkanExtensionSpoofing = false;
 
                     isNvngxAvailable = true;
+                    Config::Instance()->nvngxExist = true;
                 }
             }
 
