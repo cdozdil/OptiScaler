@@ -505,8 +505,8 @@ XESS_API xess_result_t xessGetOptimalInputResolution(xess_context_handle_t hCont
 
     if (QualityRatio.has_value())
     {
-        OutHeight = (unsigned int)((float)pOutputResolution->x / QualityRatio.value());
-        OutWidth = (unsigned int)((float)pOutputResolution->y / QualityRatio.value());
+        OutHeight = (unsigned int)((float)pOutputResolution->y / QualityRatio.value());
+        OutWidth = (unsigned int)((float)pOutputResolution->x / QualityRatio.value());
         scalingRatio = 1.0f / QualityRatio.value();
     }
     else
