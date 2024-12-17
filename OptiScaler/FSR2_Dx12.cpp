@@ -102,6 +102,7 @@ typedef size_t(*PFN_ffxFsr2GetScratchMemorySizeDX12)();
 typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2GetInterfaceDX12)(Fsr212::FfxFsr2Interface212* fsr2Interface, ID3D12Device* device, void* scratchBuffer, size_t scratchBufferSize);
 typedef FfxResourceBase(*PFN_ffxGetResourceDX12)(Fsr212::FfxFsr2Context* context, ID3D12Resource* resDx12, const wchar_t* name, Fsr212::FfxResourceStates state, UINT shaderComponentMapping);
 typedef ID3D12Resource* (*PFN_ffxGetDX12ResourcePtr)(Fsr212::FfxFsr2Context* context, uint32_t resId);
+typedef Fsr212::FfxDevice(*PFN_ffxGetDeviceDX12)(ID3D12Device* device);
 
 static PFN_ffxFsr2ContextCreate o_ffxFsr2ContextCreate_Dx12 = nullptr;
 static PFN_ffxFsr2ContextDispatch o_ffxFsr2ContextDispatch_Dx12 = nullptr;
@@ -115,6 +116,7 @@ static PFN_ffxGetResourceDX12 o_ffxGetResourceDX12 = nullptr;
 static PFN_ffxGetDX12ResourcePtr o_ffxGetDX12ResourcePtr = nullptr;
 static PFN_ffxFsr2ResourceIsNull_Dx12 o_ffxFsr2ResourceIsNull_Dx12 = nullptr;
 static PFN_ffxGetResourceFromDX12Resource_Dx12 o_ffxGetResourceFromDX12Resource_Dx12 = nullptr;
+static PFN_ffxGetDeviceDX12 o_ffxGetDeviceDX12 = nullptr;
 
 static std::optional<bool> _version20;
 
@@ -693,6 +695,12 @@ static ID3D12Resource* hk_ffxGetDX12ResourcePtr(Fsr212::FfxFsr2Context* context,
     return nullptr;
 }
 
+static Fsr212::FfxDevice hk_ffxGetDeviceDX12(ID3D12Device* device)
+{
+    _d3d12Device = device;
+    return o_ffxGetDeviceDX12(device);
+}
+
 void HookFSR2ExeInputs()
 {
     LOG_INFO("Trying to hook FSR2 methods");
@@ -759,6 +767,11 @@ void HookFSR2ExeInputs()
     //ffxGetResourceFromDX12Resource_Dx12
     o_ffxGetResourceFromDX12Resource_Dx12 = (PFN_ffxGetResourceFromDX12Resource_Dx12)DetourFindFunction(exeName.c_str(), "?ffxGetResourceFromDX12Resource@@YA?AUFfxResource@@PEAUID3D12Resource@@@Z");
 
+    //ffxFsr2GetUpscaleRatioFromQualityMode
+    o_ffxGetDeviceDX12 = (PFN_ffxGetDeviceDX12)DetourFindFunction(exeName.c_str(), "ffxGetDeviceDX12");
+    if (o_ffxGetDeviceDX12 == nullptr)
+        o_ffxGetDeviceDX12 = (PFN_ffxGetDeviceDX12)DetourFindFunction(exeName.c_str(), "??ffxGetDeviceDX12@@YAPEAXPEAUID3D12Device@@@Z");
+
     if (o_ffxFsr2GetInterfaceDX12 != nullptr || o_ffxFsr2ContextCreate_Dx12 != nullptr)
     {
         LOG_INFO("FSR2 methods found, now hooking");
@@ -802,6 +815,9 @@ void HookFSR2ExeInputs()
         if (o_ffxGetResourceFromDX12Resource_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxGetResourceFromDX12Resource_Dx12, hk_ffxGetResourceFromDX12Resource_Dx12);
 
+        if (o_ffxGetDeviceDX12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxGetDeviceDX12, o_ffxGetDeviceDX12);
+
         DetourTransactionCommit();
     }
 
@@ -809,6 +825,7 @@ void HookFSR2ExeInputs()
     LOG_DEBUG("ffxFsr2GetInterfaceDX12: {:X}", (size_t)o_ffxFsr2GetInterfaceDX12);
     LOG_DEBUG("ffxGetResourceDX12: {:X}", (size_t)o_ffxGetResourceDX12);
     LOG_DEBUG("ffxGetDX12ResourcePtr: {:X}", (size_t)o_ffxGetDX12ResourcePtr);
+    LOG_DEBUG("ffxGetDeviceDX12: {:X}", (size_t)o_ffxGetDeviceDX12);
     LOG_DEBUG("ffxFsr2ContextCreate_Dx12: {:X}", (size_t)o_ffxFsr2ContextCreate_Dx12);
     LOG_DEBUG("ffxFsr2ContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr2ContextDispatch_Dx12);
     LOG_DEBUG("ffxFsr2ContextGenerateReactiveMask_Dx12: {:X}", (size_t)o_ffxFsr2ContextGenerateReactiveMask_Dx12);
@@ -832,6 +849,7 @@ void HookFSR2Dx12Inputs(HMODULE module)
         o_ffxGetResourceDX12 = (PFN_ffxGetResourceDX12)GetProcAddress(module, "ffxGetResourceDX12");
         o_ffxGetDX12ResourcePtr = (PFN_ffxGetDX12ResourcePtr)GetProcAddress(module, "ffxGetDX12ResourcePtr");
         o_ffxFsr2ResourceIsNull_Dx12 = (PFN_ffxFsr2ResourceIsNull_Dx12)GetProcAddress(module, "ffxFsr2ResourceIsNull");
+        o_ffxGetDeviceDX12 = (PFN_ffxGetDeviceDX12)GetProcAddress(module, "ffxGetDeviceDX12");
     }
 
     if (o_ffxFsr2GetScratchMemorySizeDX12 != nullptr)
@@ -856,6 +874,9 @@ void HookFSR2Dx12Inputs(HMODULE module)
         if (o_ffxFsr2ResourceIsNull_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2ResourceIsNull_Dx12, ffxFsr2ResourceIsNull_Dx12);
 
+        if (o_ffxGetDeviceDX12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxGetDeviceDX12, hk_ffxGetDeviceDX12);
+
         DetourTransactionCommit();
     }
 
@@ -864,6 +885,7 @@ void HookFSR2Dx12Inputs(HMODULE module)
     LOG_DEBUG("ffxGetResourceDX12: {:X}", (size_t)o_ffxGetResourceDX12);
     LOG_DEBUG("ffxGetDX12ResourcePtr: {:X}", (size_t)o_ffxGetDX12ResourcePtr);
     LOG_DEBUG("ffxFsr2ResourceIsNull_Dx12: {:X}", (size_t)o_ffxFsr2ResourceIsNull_Dx12);
+    LOG_DEBUG("ffxGetDeviceDX12: {:X}", (size_t)o_ffxGetDeviceDX12);
 }
 
 void HookFSR2Inputs(HMODULE module)
