@@ -420,30 +420,30 @@ Bias_Dx12::~Bias_Dx12()
 	if (!_init || Config::Instance()->IsShuttingDown)
 		return;
 
-	ID3D12Fence* d3d12Fence = nullptr;
+	//ID3D12Fence* d3d12Fence = nullptr;
 
-	do
-	{
-		if (_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence)) != S_OK)
-			break;
+	//do
+	//{
+	//	if (_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence)) != S_OK)
+	//		break;
 
-		d3d12Fence->Signal(999);
+	//	d3d12Fence->Signal(999);
 
-		HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	//	HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
-		if (fenceEvent != NULL && d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
-		{
-			WaitForSingleObject(fenceEvent, INFINITE);
-			CloseHandle(fenceEvent);
-		}
+	//	if (fenceEvent != NULL && d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
+	//	{
+	//		WaitForSingleObject(fenceEvent, INFINITE);
+	//		CloseHandle(fenceEvent);
+	//	}
 
-	} while (false);
+	//} while (false);
 
-	if (d3d12Fence != nullptr)
-	{
-		d3d12Fence->Release();
-		d3d12Fence = nullptr;
-	}
+	//if (d3d12Fence != nullptr)
+	//{
+	//	d3d12Fence->Release();
+	//	d3d12Fence = nullptr;
+	//}
 
 	if (_rootSignature != nullptr)
 	{

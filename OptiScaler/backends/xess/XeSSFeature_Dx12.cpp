@@ -415,6 +415,4 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 XeSSFeatureDx12::~XeSSFeatureDx12()
 {
-	if (RCAS != nullptr && RCAS.get() != nullptr)
-		RCAS.reset();
 }
