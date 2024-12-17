@@ -187,21 +187,21 @@ public:
         }
 
         // working as libxess and original dll is not loaded
-        if (_dll == nullptr && dllPath.filename().wstring() == L"libxess.dll")
-        {
-            std::filesystem::path libXessPath = dllPath.parent_path() / L"libxess-original.dll";
-            LOG_INFO("Trying to load libxess.dll from dll path: {}", libXessPath.string());
-            _dll = LoadLibrary(libXessPath.c_str());
+        //if (_dll == nullptr && dllPath.filename().wstring() == L"libxess.dll")
+        //{
+        //    std::filesystem::path libXessPath = dllPath.parent_path() / L"libxess-original.dll";
+        //    LOG_INFO("Trying to load libxess.dll from dll path: {}", libXessPath.string());
+        //    _dll = LoadLibrary(libXessPath.c_str());
 
-            if (_dll == nullptr)
-            {
-                Config::Instance()->skipSpoofing = false;
-                Config::Instance()->upscalerDisableHook = false;
+        //    if (_dll == nullptr)
+        //    {
+        //        Config::Instance()->skipSpoofing = false;
+        //        Config::Instance()->upscalerDisableHook = false;
 
-                LOG_ERROR("OptiScaler working as libxess.dll but could not load original dll!");
-                return false;
-            }
-        }
+        //        LOG_ERROR("OptiScaler working as libxess.dll but could not load original dll!");
+        //        return false;
+        //    }
+        //}
 
         if (_dll == nullptr)
         {

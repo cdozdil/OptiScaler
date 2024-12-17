@@ -77,8 +77,8 @@ static uint32_t vkEnumerateDeviceExtensionPropertiesCount = 0;
 
 inline std::vector<std::string> dllNames;
 inline std::vector<std::wstring> dllNamesW;
-inline std::vector<std::string> upscalerNames = { "nvngx.dll", "nvngx", "libxess.dll", "libxess" };
-inline std::vector<std::wstring> upscalerNamesW = { L"nvngx.dll", L"nvngx", L"libxess.dll", L"libxess" };
+inline std::vector<std::string> upscalerNames = { "nvngx.dll", "nvngx" }; //, "libxess.dll", "libxess" };
+inline std::vector<std::wstring> upscalerNamesW = { L"nvngx.dll", L"nvngx" }; // , L"libxess.dll", L"libxess" };
 inline std::vector<std::string> nvngxDlss = { "nvngx_dlss.dll", "nvngx_dlss", };
 inline std::vector<std::wstring> nvngxDlssW = { L"nvngx_dlss.dll", L"nvngx_dlss", };
 inline std::vector<std::string> nvapiNames = { "nvapi64.dll", "nvapi64", };
