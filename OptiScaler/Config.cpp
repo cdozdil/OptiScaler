@@ -68,6 +68,9 @@ bool Config::Reload(std::filesystem::path iniPath)
             if (!FGAsync.has_value())
                 FGAsync = readBool("FrameGen", "AllowAsync");
 
+            if (!FGHighPriority.has_value())
+                FGHighPriority = readBool("FrameGen", "HighPriority");
+
             if (!FGHUDFix.has_value())
                 FGHUDFix = readBool("FrameGen", "HUDFix");
 
@@ -729,6 +732,7 @@ bool Config::SaveIni()
         ini.SetValue("FrameGen", "Enabled", GetBoolValue(Instance()->FGEnabled).c_str());
         ini.SetValue("FrameGen", "DebugView", GetBoolValue(Instance()->FGDebugView).c_str());
         ini.SetValue("FrameGen", "AllowAsync", GetBoolValue(Instance()->FGAsync).c_str());
+        ini.SetValue("FrameGen", "HighPriority", GetBoolValue(Instance()->FGHighPriority).c_str());
         ini.SetValue("FrameGen", "HUDFix", GetBoolValue(Instance()->FGHUDFix).c_str());
         ini.SetValue("FrameGen", "HUDLimit", GetIntValue(Instance()->FGHUDLimit).c_str());
         ini.SetValue("FrameGen", "HUDFixExtended", GetBoolValue(Instance()->FGHUDFixExtended).c_str());
