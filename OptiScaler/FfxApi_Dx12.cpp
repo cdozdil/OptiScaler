@@ -6,8 +6,6 @@
 #include "FfxApi_Proxy.h"
 #include "NVNGX_Parameter.h"
 
-static UINT64 _handleCounter = 0x13370000;
-
 static std::map<ffxContext, ffxCreateContextDescUpscale> _initParams;
 static std::map<ffxContext, NVSDK_NGX_Parameter*> _nvParams;
 static std::map<ffxContext, NVSDK_NGX_Handle*> _contexts;
@@ -154,6 +152,14 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
     ffxApiHeader* header = desc;
     ffxCreateContextDescUpscale* createDesc = nullptr;
 
+    auto ffxApiResult = FfxApiProxy::D3D12_CreateContext()(context, desc, memCb);
+
+    if (ffxApiResult != FFX_API_RETURN_OK)
+    {
+        LOG_ERROR("D3D12_CreateContext error: {:X} ({})", (UINT)ffxApiResult, FfxApiProxy::ReturnCodeToString(ffxApiResult));
+        return ffxApiResult;
+    }
+
     do
     {
         if (header->type == FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE)
@@ -170,9 +176,6 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
         header = header->pNext;
 
     } while (header != nullptr);
-
-    if (!upscaleContext || _d3d12Device == nullptr)
-        return FfxApiProxy::D3D12_CreateContext()(context, desc, memCb);
 
     NVSDK_NGX_FeatureCommonInfo fcInfo{};
     wchar_t const** paths = new const wchar_t* [1];
@@ -193,7 +196,6 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
         _nvnxgInited = true;
     }
 
-    *context = (ffxContext)++_handleCounter;
 
     NVSDK_NGX_Parameter* params = nullptr;
 
@@ -329,13 +331,7 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
     do
     {
         if (header->type == FFX_API_DISPATCH_DESC_TYPE_UPSCALE)
-        {
             dispatchDesc = (ffxDispatchDescUpscale*)header;
-        }
-        else if (header->type == FFX_API_DISPATCH_DESC_TYPE_UPSCALE_GENERATEREACTIVEMASK)
-        {
-            rmDesc = true;
-        }
 
         header = header->pNext;
 
@@ -343,14 +339,8 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
 
     if (dispatchDesc == nullptr)
     {
-        if (!rmDesc)
-        {
-            LOG_INFO("dispatchDesc == nullptr, desc type: {:X}", desc->type);
-            return FfxApiProxy::D3D12_Dispatch()(context, desc);
-        }
-
-        // Reactive mask
-        return FFX_API_RETURN_OK;
+        LOG_INFO("dispatchDesc == nullptr, desc type: {:X}", desc->type);
+        return FfxApiProxy::D3D12_Dispatch()(context, desc);
     }
 
     if (dispatchDesc->commandList == nullptr)

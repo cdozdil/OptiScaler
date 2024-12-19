@@ -308,9 +308,11 @@ static ID3D12GraphicsCommandList* fgCopyCommandListSL = nullptr;
 
 static IID streamlineRiid{};
 
-#pragma endregion
+static uint32_t fgNotAcceptedResourceFlags = D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE | D3D12_RESOURCE_FLAG_VIDEO_ENCODE_REFERENCE_ONLY;
 
-// dxgi stuff
+#pragma endregion                            
+
+// dxgi stuff                                
 typedef HRESULT(*PFN_CreateDXGIFactory)(REFIID riid, IDXGIFactory** ppFactory);
 typedef HRESULT(*PFN_CreateDXGIFactory1)(REFIID riid, IDXGIFactory1** ppFactory);
 typedef HRESULT(*PFN_CreateDXGIFactory2)(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory);
@@ -860,7 +862,7 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
         resource->lastUsedFrame != 0 && (currentMs - resource->lastUsedFrame) > 400)
     {
         LOG_DEBUG("Resource {:X}, last used frame ({}) is too small ({}) from current one ({}) skipping resource!",
-                 (size_t)resource->buffer, currentMs - resource->lastUsedFrame, resource->lastUsedFrame, currentMs);
+                  (size_t)resource->buffer, currentMs - resource->lastUsedFrame, resource->lastUsedFrame, currentMs);
         resource->lastUsedFrame = currentMs; // use it next time if timing is ok
         return false;
     }
@@ -900,12 +902,8 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
         return false;
     }
 
-    if ((resource->flags & D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE) ||
-        (resource->flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) ||
-        (resource->flags & D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY) ||
-        (resource->flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE) ||
-        (resource->flags & D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY) ||
-        (resource->flags & D3D12_RESOURCE_FLAG_VIDEO_ENCODE_REFERENCE_ONLY))
+    // check for resource flags
+    if ((resource->flags & fgNotAcceptedResourceFlags) > 0)
     {
         LOG_DEBUG("Skip by flag: {:X}", (UINT)resource->flags);
         return false;
@@ -3419,7 +3417,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
             {
                 LOG_DEBUG("infoQueue1 accuired, registering MessageCallback");
                 res = infoQueue1->RegisterMessageCallback(D3D12DebugCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, NULL, NULL);
-    }
+            }
         }
 #endif
     }
@@ -3745,7 +3743,7 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 #ifndef USE_MUTEX_FOR_FFX
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
 #endif
-}
+    }
 
 #ifndef USE_MUTEX_FOR_FFX
     std::this_thread::sleep_for(std::chrono::milliseconds(250));
