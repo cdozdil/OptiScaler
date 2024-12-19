@@ -118,7 +118,7 @@ goto check_nvngx_dlss
 REM Copy nvngx_dlss.dll file
 echo.
 echo Copying "nvngx_dlss.dll" to game folder...
-copy /y "%dlssFile%" .\nvngx_dlss_copy.dll
+copy /y "%dlssFile%" .\nvngx_dlss_copy.dll 
 if errorlevel 1 (
     echo.
     echo ERROR: Failed to copy "nvngx_dlss.dll".
@@ -146,12 +146,12 @@ if errorlevel 1 (
 )
 
 cls
-echo OptiScaler setup completed successfully...
+echo  OptiScaler setup completed successfully...
 echo.
-echo  ___                 
-echo (_         '       | 
-echo /__  /)   /  () (/ . 
-echo         _/      /    
+echo   ___                 
+echo  (_         '        
+echo  /__  /)   /  () (/  
+echo          _/      /    
 echo.
 
 :end
