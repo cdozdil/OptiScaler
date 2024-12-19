@@ -142,7 +142,12 @@ if errorlevel 1 (
 )
 
 echo.
-echo OptiScaler setup completed successfully!
+echo OptiScaler setup completed successfully...
+echo.
+echo  ___                 
+echo (_         '       | 
+echo /__  /)   /  () (/ . 
+echo         _/      /    
 echo.
 
 :end
