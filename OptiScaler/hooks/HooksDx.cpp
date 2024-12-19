@@ -626,7 +626,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
         m_FrameGenerationConfig.frameGenerationCallback = [](ffxDispatchDescFrameGeneration* params, void* pUserCtx) -> ffxReturnCode_t
             {
                 HRESULT result;
-                ffxReturnCode_t dispatchResult;
+                ffxReturnCode_t dispatchResult = FFX_API_RETURN_OK;
                 auto fIndex = fgCallbackFrameIndex;
 
                 // check for status
@@ -661,12 +661,20 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
 
                 dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
 
-                ID3D12CommandList* cl[1] = { nullptr };
-                result = FrameGen_Dx12::fgCommandList[fIndex]->Close();
-                cl[0] = FrameGen_Dx12::fgCommandList[fIndex];
-                FrameGen_Dx12::gameCommandQueue->ExecuteCommandLists(1, cl);
+                LOG_DEBUG("D3D12_Dispatch result: {}", (UINT)dispatchResult);
 
-                LOG_DEBUG("D3D12_Dispatch result: {0}", (UINT)result);
+                if (dispatchResult == FFX_API_RETURN_OK)
+                {
+                    result = FrameGen_Dx12::fgCommandList[fIndex]->Close();
+                    LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
+
+                    if (result == S_OK)
+                    {
+                        ID3D12CommandList* cl[1] = { nullptr };
+                        cl[0] = FrameGen_Dx12::fgCommandList[fIndex];
+                        FrameGen_Dx12::gameCommandQueue->ExecuteCommandLists(1, cl);
+                    }
+                }
 
                 fgDispatchCalled = false;
                 FrameGen_Dx12::fgSkipHudlessChecks = false;
