@@ -104,6 +104,7 @@ if "%gpuChoice%"=="2" (
         goto checkFile
     )
     
+    echo.
     echo Invalid choice. Please enter 1 or 2.
     echo.
     goto queryGPU
@@ -119,6 +120,7 @@ echo.
 echo Copying "nvngx_dlss.dll" to game folder...
 copy /y "%dlssFile%" .\nvngx_dlss_copy.dll
 if errorlevel 1 (
+    echo.
     echo ERROR: Failed to copy "nvngx_dlss.dll".
     goto end
 )
@@ -129,6 +131,7 @@ echo.
 echo Renaming OptiScaler file to %selectedFilename%...
 rename %optiScalerFile% %selectedFilename%
 if errorlevel 1 (
+    echo.
     echo ERROR: Failed to rename OptiScaler file to %selectedFilename%.
     goto end
 )
@@ -137,11 +140,12 @@ REM Rename nvngx_dlss.dll file
 echo Renaming "nvngx_dlss_copy.dll" file to "nvngx.dll"...
 rename nvngx_dlss_copy.dll nvngx.dll
 if errorlevel 1 (
+    echo.
     echo ERROR: Failed to rename "nvngx_dlss.dll" to "nvngx.dll".
     goto end
 )
 
-echo.
+cls
 echo OptiScaler setup completed successfully...
 echo.
 echo  ___                 
