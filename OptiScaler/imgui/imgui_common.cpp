@@ -341,6 +341,8 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         _isVisible = !_isVisible;
 
+        LOG_DEBUG("Menu key pressed, {0}", _isVisible ? "opening ImGui" : "closing ImGui");
+
         if (_isVisible)
         {
             Config::Instance()->ReloadFakenvapi();
@@ -366,8 +368,6 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         io.MouseDrawCursor = _isVisible;
         io.WantCaptureKeyboard = _isVisible;
         io.WantCaptureMouse = _isVisible;
-
-        LOG_TRACE("Menu key pressed, {0}", _isVisible ? "opening ImGui" : "closing ImGui");
 
         return TRUE;
     }
