@@ -145,6 +145,9 @@ if errorlevel 1 (
     goto end
 )
 
+goto create_uninstaller
+:create_uninstaller_return
+
 cls
 echo  OptiScaler setup completed successfully...
 echo.
@@ -156,6 +159,7 @@ echo.
 
 :end
 pause
+del %0
 exit /b
 
 REM check for nvngx_dlss.dll
@@ -198,3 +202,45 @@ goto end
 cd %gamePath%
 echo File found at %dlssFile%
 goto resume_nvngx_dlss
+
+:create_uninstaller
+copy /y NUL "Remove OptiScaler.bat"
+
+(
+echo @echo off
+echo cls
+echo echo  ::::::::  :::::::::  ::::::::::: :::::::::::  ::::::::   ::::::::      :::     :::        :::::::::: :::::::::  
+echo echo :+:    :+: :+:    :+:     :+:         :+:     :+:    :+: :+:    :+:   :+: :+:   :+:        :+:        :+:    :+: 
+echo echo +:+    +:+ +:+    +:+     +:+         +:+     +:+        +:+         +:+   +:+  +:+        +:+        +:+    +:+ 
+echo echo +#+    +:+ +#++:++#+      +#+         +#+     +#++:++#++ +#+        +#++:++#++: +#+        +#++:++#   +#++:++#:  
+echo echo +#+    +#+ +#+            +#+         +#+            +#+ +#+        +#+     +#+ +#+        +#+        +#+    +#+ 
+echo echo #+#    #+# #+#            #+#         #+#     #+#    #+# #+#    #+# #+#     #+# #+#        #+#        #+#    #+# 
+echo echo  ########  ###            ###     ###########  ########   ########  ###     ### ########## ########## ###    ### 
+echo echo.
+echo echo Coping is strong with this one...
+echo echo.
+echo.
+echo set /p removeChoice="Do you want to remove OptiScaler? [y/n]: "
+echo.
+echo if "%%removeChoice%%"=="y" ^(
+echo 	del nvngx.dll
+echo 	del %selectedFilename%
+echo 	echo.
+echo 	echo OptiScaler removed!
+echo ^) else ^(
+echo 	echo.
+echo 	echo Operation cancelled.
+echo ^)
+echo.
+echo pause
+echo if "%%removeChoice%%"=="y" ^(
+echo 	del "Remove OptiScaler.bat"
+echo ^)
+) >> "Remove OptiScaler.bat"
+
+echo.
+echo Uninstaller created.
+
+goto create_uninstaller_return
+
+
