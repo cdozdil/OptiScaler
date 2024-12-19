@@ -177,6 +177,9 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
 
     } while (header != nullptr);
 
+    if (!upscaleContext)
+        return ffxApiResult;
+
     NVSDK_NGX_FeatureCommonInfo fcInfo{};
     wchar_t const** paths = new const wchar_t* [1];
     auto dllPath = Util::DllPath().remove_filename().wstring();
