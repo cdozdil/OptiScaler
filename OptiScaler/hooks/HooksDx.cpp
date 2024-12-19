@@ -845,6 +845,54 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
     GetHudless(cmdList);
 }
 
+/*
+    if ((resource->format == DXGI_FORMAT_R8G8B8A8_TYPELESS || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM || resource->format == DXGI_FORMAT_R16G16B16A16_FLOAT ||
+        resource->format == DXGI_FORMAT_R11G11B10_FLOAT || resource->format == DXGI_FORMAT_R32G32B32A32_FLOAT || resource->format == DXGI_FORMAT_R32G32B32_FLOAT || resource->format == DXGI_FORMAT_R10G10B10A2_UNORM ||
+        resource->format == DXGI_FORMAT_R10G10B10A2_TYPELESS) &&
+*/
+
+static int GetFormatPrecisionGroup(DXGI_FORMAT format)
+{
+    switch (format)
+    {
+        case DXGI_FORMAT_R32G32B32A32_TYPELESS:
+        case DXGI_FORMAT_R32G32B32A32_FLOAT:
+        case DXGI_FORMAT_R32G32B32_FLOAT:
+            return 0;
+
+        case DXGI_FORMAT_R16G16B16A16_TYPELESS:
+        case DXGI_FORMAT_R16G16B16A16_FLOAT:
+            return 1;
+
+        case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+        case DXGI_FORMAT_R8G8B8A8_UNORM:
+        case DXGI_FORMAT_B8G8R8A8_TYPELESS:
+        case DXGI_FORMAT_B8G8R8A8_UNORM:
+            return 2;
+
+        case DXGI_FORMAT_R8G8B8A8_SNORM:
+            return 3;
+
+        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+        case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+            return 4;
+
+        case DXGI_FORMAT_R11G11B10_FLOAT:
+            return 5;
+
+        case DXGI_FORMAT_R10G10B10A2_TYPELESS:
+        case DXGI_FORMAT_R10G10B10A2_UNORM:
+            return 6;
+
+        case DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
+            return 7;
+
+            // we don't accept the following formats
+        default:
+            return -1;
+    }
+}
+
 static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
 {
     if (HooksDx::currentSwapchain == nullptr)
@@ -909,8 +957,9 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
         return false;
     }
 
-    // all match
-    if (resource->format == fgScDesc.BufferDesc.Format)
+    // format match
+    if ((resource->format == fgScDesc.BufferDesc.Format) || 
+        (FfxApiProxy::VersionDx12().minor >= 1 && FfxApiProxy::VersionDx12().patch >= 3 && GetFormatPrecisionGroup(resource->format) == GetFormatPrecisionGroup(fgScDesc.BufferDesc.Format)))
     {
         if (callerName.length() > 0)
             LOG_DEBUG("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> TRUE",
