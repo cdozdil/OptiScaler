@@ -660,7 +660,6 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
                     fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
 
                 dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
-
                 LOG_DEBUG("D3D12_Dispatch result: {}", (UINT)dispatchResult);
 
                 if (dispatchResult == FFX_API_RETURN_OK)
@@ -853,12 +852,6 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
     GetHudless(cmdList);
 }
 
-/*
-    if ((resource->format == DXGI_FORMAT_R8G8B8A8_TYPELESS || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM || resource->format == DXGI_FORMAT_R16G16B16A16_FLOAT ||
-        resource->format == DXGI_FORMAT_R11G11B10_FLOAT || resource->format == DXGI_FORMAT_R32G32B32A32_FLOAT || resource->format == DXGI_FORMAT_R32G32B32_FLOAT || resource->format == DXGI_FORMAT_R10G10B10A2_UNORM ||
-        resource->format == DXGI_FORMAT_R10G10B10A2_TYPELESS) &&
-*/
-
 static int GetFormatPrecisionGroup(DXGI_FORMAT format)
 {
     switch (format)
@@ -989,11 +982,20 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
     }
 
     // resource and target formats are supported by converter
-    if ((resource->format == DXGI_FORMAT_R8G8B8A8_TYPELESS || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM || resource->format == DXGI_FORMAT_R16G16B16A16_FLOAT ||
-        resource->format == DXGI_FORMAT_R11G11B10_FLOAT || resource->format == DXGI_FORMAT_R32G32B32A32_FLOAT || resource->format == DXGI_FORMAT_R32G32B32_FLOAT || resource->format == DXGI_FORMAT_R10G10B10A2_UNORM ||
-        resource->format == DXGI_FORMAT_R10G10B10A2_TYPELESS) &&
-        (fgScDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_TYPELESS || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB ||
-        fgScDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R10G10B10A2_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R10G10B10A2_TYPELESS))
+    if ((resource->format == DXGI_FORMAT_R10G10B10A2_UNORM || resource->format == DXGI_FORMAT_R10G10B10A2_TYPELESS ||
+        resource->format == DXGI_FORMAT_R16G16B16A16_FLOAT || resource->format == DXGI_FORMAT_R16G16B16A16_TYPELESS ||
+        resource->format == DXGI_FORMAT_R11G11B10_FLOAT ||
+        resource->format == DXGI_FORMAT_R32G32B32A32_FLOAT || resource->format == DXGI_FORMAT_R32G32B32A32_TYPELESS ||
+        resource->format == DXGI_FORMAT_R32G32B32_FLOAT || resource->format == DXGI_FORMAT_R32G32B32_TYPELESS ||
+        resource->format == DXGI_FORMAT_R8G8B8A8_TYPELESS || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM || resource->format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB ||
+        resource->format == DXGI_FORMAT_B8G8R8A8_TYPELESS || resource->format == DXGI_FORMAT_B8G8R8A8_UNORM || resource->format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB) &&
+        (fgScDesc.BufferDesc.Format == DXGI_FORMAT_R10G10B10A2_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R10G10B10A2_TYPELESS ||
+        fgScDesc.BufferDesc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R16G16B16A16_TYPELESS ||
+        fgScDesc.BufferDesc.Format == DXGI_FORMAT_R11G11B10_FLOAT ||
+        fgScDesc.BufferDesc.Format == DXGI_FORMAT_R32G32B32A32_FLOAT || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R32G32B32A32_TYPELESS ||
+        fgScDesc.BufferDesc.Format == DXGI_FORMAT_R32G32B32_FLOAT || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R32G32B32_TYPELESS ||
+        fgScDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_TYPELESS || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB ||
+        fgScDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8A8_TYPELESS || fgScDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || fgScDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB))
     {
         if (callerName.length() > 0)
             LOG_DEBUG("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> TRUE",
@@ -3986,7 +3988,7 @@ void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
         copyQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
         copyQueueDesc.NodeMask = 0;
 
-        if (Config::Instance()->FGHighPriority.value_or(false))
+        if (Config::Instance()->FGHighPriority.value_or(true))
             copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
         else
             copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
