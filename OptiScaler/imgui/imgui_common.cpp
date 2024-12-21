@@ -829,7 +829,7 @@ void ImGuiCommon::RenderMenu()
             std::string currentBackend = "";
             std::string currentBackendName = "";
 
-            if (cf == nullptr)
+            if (cf == nullptr || !cf->IsInited())
             {
                 ImGui::Spacing();
                 ImGui::PushFont(_scaledOptiFont);
@@ -2331,7 +2331,7 @@ void ImGuiCommon::RenderMenu()
 
         //ImGui::ShowMetricsWindow();
 
-        if (_showMipmapCalcWindow && cf != nullptr)
+        if (_showMipmapCalcWindow && cf != nullptr && cf->IsInited())
         {
             auto posX = (Config::Instance()->CurrentFeature->DisplayWidth() - 450.0f) / 2.0f;
             auto posY = (Config::Instance()->CurrentFeature->DisplayHeight() - 200.0f) / 2.0f;
