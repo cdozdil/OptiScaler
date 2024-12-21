@@ -1585,7 +1585,52 @@ HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1
 {
     AttachToFactory(This);
 
-    auto result = ptrEnumAdapters1(This, Adapter, ppAdapter);
+    HRESULT result = S_OK;
+
+    if (Config::Instance()->PreferDedicatedGpu.value_or(true))
+    {
+        if (Adapter != 0)
+        {
+            LOG_DEBUG("{}, returning not found", Adapter);
+            return DXGI_ERROR_NOT_FOUND;
+        }
+
+        IDXGIFactory6* factory6 = nullptr;
+
+        if (This->QueryInterface(IID_PPV_ARGS(&factory6)) == S_OK && factory6 != nullptr)
+        {
+            LOG_DEBUG("Trying to select high performance adapter ({})", Adapter);
+
+            result = factory6->EnumAdapterByGpuPreference(Adapter, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(ppAdapter));
+
+            if (result != S_OK)
+            {
+                LOG_ERROR("Can't get high performance adapter: {:X}, fallback to standard method", Adapter);
+                result = ptrEnumAdapters1(This, Adapter, ppAdapter);
+            }
+
+            if (result == S_OK)
+            {
+                DXGI_ADAPTER_DESC desc;
+                if ((*ppAdapter)->GetDesc(&desc) == S_OK)
+                {
+                    std::wstring name(desc.Description);
+                    LOG_DEBUG("High performance adapter ({}) will be used", wstring_to_string(name));
+                }
+                else
+                {
+                    LOG_DEBUG("High performance adapter (Can't get description!) will be used");
+                }
+
+            }
+
+            factory6->Release();
+        }
+    }
+    else
+    {
+        result = ptrEnumAdapters1(This, Adapter, ppAdapter);
+    }
 
     if (result == S_OK)
         AttachToAdapter(*ppAdapter);
@@ -1597,7 +1642,52 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
 {
     AttachToFactory(This);
 
-    auto result = ptrEnumAdapters(This, Adapter, ppAdapter);
+    HRESULT result = S_OK;
+
+    if (Config::Instance()->PreferDedicatedGpu.value_or(true))
+    {
+        if (Adapter > 0)
+        {
+            LOG_DEBUG("{}, returning not found", Adapter);
+            return DXGI_ERROR_NOT_FOUND;
+        }
+
+        IDXGIFactory6* factory6 = nullptr;
+
+        if (This->QueryInterface(IID_PPV_ARGS(&factory6)) == S_OK && factory6 != nullptr)
+        {
+            LOG_DEBUG("Trying to select high performance adapter ({})", Adapter);
+
+            result = factory6->EnumAdapterByGpuPreference(Adapter, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(ppAdapter));
+
+            if (result != S_OK)
+            {
+                LOG_ERROR("Can't get high performance adapter: {:X}, fallback to standard method", Adapter);
+                result = ptrEnumAdapters(This, Adapter, ppAdapter);
+            }
+
+            if (result == S_OK)
+            {
+                DXGI_ADAPTER_DESC desc;
+                if ((*ppAdapter)->GetDesc(&desc) == S_OK)
+                {
+                    std::wstring name(desc.Description);
+                    LOG_DEBUG("High performance adapter ({}) will be used", wstring_to_string(name));
+                }
+                else
+                {
+                    LOG_DEBUG("High performance adapter (Can't get description!) will be used");
+                }
+
+            }
+
+            factory6->Release();
+        }
+    }
+    else
+    {
+        result = ptrEnumAdapters(This, Adapter, ppAdapter);
+    }
 
     if (result == S_OK)
         AttachToAdapter(*ppAdapter);
