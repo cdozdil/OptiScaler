@@ -1935,7 +1935,7 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 
 #pragma region Callbacks for wrapped swapchain
 
-#ifdef USE_MUTEX_FOR_FFX
+//#ifdef USE_MUTEX_FOR_FFX
 static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 {
     // Disabled, was causing freezes at games launch & state changes
@@ -2005,7 +2005,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
     return result;
 }
-#endif
+//#endif
 
 static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd)
 {
@@ -2412,7 +2412,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
         if (result == FFX_API_RETURN_OK)
         {
-#ifdef USE_MUTEX_FOR_FFX
+//#ifdef USE_MUTEX_FOR_FFX
             // Hooking FG Swapchain present
             // for using ffxMutex during calls
             if (o_FGSCPresent == nullptr && *ppSwapChain != nullptr)
@@ -2423,7 +2423,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
                 if (o_FGSCPresent != nullptr)
                 {
-                    LOG_INFO("Hooking native FG SwapChain present");
+                    LOG_INFO("Hooking FSR FG SwapChain present");
 
                     DetourTransactionBegin();
                     DetourUpdateThread(GetCurrentThread());
@@ -2433,7 +2433,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
                     DetourTransactionCommit();
                 }
             }
-#endif
+//#endif
             if (Config::Instance()->FGHybridSpin.value_or(false))
             {
                 FfxSwapchainFramePacingTuning fpt{};
@@ -2700,7 +2700,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
         if (result == FFX_API_RETURN_OK)
         {
-#ifdef USE_MUTEX_FOR_FFX
+//#ifdef USE_MUTEX_FOR_FFX
             // Hooking FG Swapchain present
             // for using ffxMutex during calls
             if (o_FGSCPresent == nullptr && *ppSwapChain != nullptr)
@@ -2711,7 +2711,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
                 if (o_FGSCPresent != nullptr)
                 {
-                    LOG_INFO("Hooking native FG SwapChain present");
+                    LOG_INFO("Hooking FSR FG SwapChain present");
 
                     DetourTransactionBegin();
                     DetourUpdateThread(GetCurrentThread());
@@ -2721,7 +2721,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
                     DetourTransactionCommit();
                 }
             }
-#endif
+//#endif
 
             if (Config::Instance()->FGHybridSpin.value_or(false))
             {
