@@ -110,6 +110,7 @@ public:
 	std::optional<bool> UsePrecompiledShaders;
 
 	std::optional<bool> UseGenericAppIdWithDlss;
+	std::optional<bool> PreferDedicatedGpu;
 
 	std::optional<int32_t> ColorResourceBarrier;
 	std::optional<int32_t> MVResourceBarrier;

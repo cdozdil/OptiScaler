@@ -473,6 +473,9 @@ bool Config::Reload(std::filesystem::path iniPath)
             if (!RestoreGraphicSignature.has_value())
                 RestoreGraphicSignature = readBool("Hotfix", "RestoreGraphicSignature");
 
+            if (!PreferDedicatedGpu.has_value())
+                PreferDedicatedGpu = readBool("Hotfix", "PreferDedicatedGpu");
+
             if (!SkipFirstFrames.has_value())
                 SkipFirstFrames = readInt("Hotfix", "SkipFirstFrames");
 
@@ -866,6 +869,7 @@ bool Config::SaveIni()
         ini.SetValue("Hotfix", "SkipFirstFrames", GetIntValue(Instance()->SkipFirstFrames).c_str());
 
         ini.SetValue("Hotfix", "UsePrecompiledShaders", GetBoolValue(Instance()->UsePrecompiledShaders).c_str());
+        ini.SetValue("Hotfix", "PreferDedicatedGpu", GetBoolValue(Instance()->PreferDedicatedGpu).c_str());
 
         ini.SetValue("Hotfix", "UseGenericAppIdWithDlss", GetBoolValue(Instance()->UseGenericAppIdWithDlss).c_str());
 
