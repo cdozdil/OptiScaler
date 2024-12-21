@@ -111,6 +111,7 @@ public:
 
 	std::optional<bool> UseGenericAppIdWithDlss;
 	std::optional<bool> PreferDedicatedGpu;
+	std::optional<bool> PreferFirstDedicatedGpu;
 
 	std::optional<int32_t> ColorResourceBarrier;
 	std::optional<int32_t> MVResourceBarrier;

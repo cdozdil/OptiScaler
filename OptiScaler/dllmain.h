@@ -1587,16 +1587,15 @@ HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1
 
     HRESULT result = S_OK;
 
-    if (Config::Instance()->PreferDedicatedGpu.value_or(true))
+    if (Config::Instance()->PreferDedicatedGpu.value_or(false))
     {
-        if (Adapter != 0)
+        if (Config::Instance()->PreferFirstDedicatedGpu.value_or(false) && Adapter > 0)
         {
             LOG_DEBUG("{}, returning not found", Adapter);
             return DXGI_ERROR_NOT_FOUND;
         }
 
         IDXGIFactory6* factory6 = nullptr;
-
         if (This->QueryInterface(IID_PPV_ARGS(&factory6)) == S_OK && factory6 != nullptr)
         {
             LOG_DEBUG("Trying to select high performance adapter ({})", Adapter);
@@ -1644,16 +1643,15 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
 
     HRESULT result = S_OK;
 
-    if (Config::Instance()->PreferDedicatedGpu.value_or(true))
+    if (Config::Instance()->PreferDedicatedGpu.value_or(false))
     {
-        if (Adapter > 0)
+        if (Config::Instance()->PreferFirstDedicatedGpu.value_or(false) && Adapter > 0)
         {
             LOG_DEBUG("{}, returning not found", Adapter);
             return DXGI_ERROR_NOT_FOUND;
         }
 
         IDXGIFactory6* factory6 = nullptr;
-
         if (This->QueryInterface(IID_PPV_ARGS(&factory6)) == S_OK && factory6 != nullptr)
         {
             LOG_DEBUG("Trying to select high performance adapter ({})", Adapter);
@@ -1672,13 +1670,12 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
                 if ((*ppAdapter)->GetDesc(&desc) == S_OK)
                 {
                     std::wstring name(desc.Description);
-                    LOG_DEBUG("High performance adapter ({}) will be used", wstring_to_string(name));
+                    LOG_DEBUG("Adapter ({}) will be used", wstring_to_string(name));
                 }
                 else
                 {
-                    LOG_DEBUG("High performance adapter (Can't get description!) will be used");
+                    LOG_ERROR("Can't get adapter description!");
                 }
-
             }
 
             factory6->Release();
