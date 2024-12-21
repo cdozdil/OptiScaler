@@ -94,6 +94,8 @@ public:
             if (_D3D12_Query != nullptr)
                 DetourAttach(&(PVOID&)_D3D12_Query, ffxQuery_Dx12);
 
+            Config::Instance()->fsrHooks = true;
+
             DetourTransactionCommit();
         }
 

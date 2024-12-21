@@ -443,6 +443,8 @@ void HookFSR3ExeInputs()
         if (o_ffxFsr3UpscalerResourceIsNull != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr3UpscalerResourceIsNull, ffxFsr3UpscalerResourceIsNull);
 
+        Config::Instance()->fsrHooks = true;
+
         DetourTransactionCommit();
     }
 
@@ -489,6 +491,8 @@ void HookFSR3Dx12Inputs(HMODULE module)
 
         if (o_ffxGetFSR3ResourceDX12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxGetFSR3ResourceDX12, hk_ffxFsr3GetResourceDX12);
+
+        Config::Instance()->fsrHooks = true;
 
         DetourTransactionCommit();
     }
@@ -550,6 +554,8 @@ void HookFSR3Inputs(HMODULE module)
 
         if (o_ffxFsr3UpscalerResourceIsNull != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr3UpscalerResourceIsNull, ffxFsr3UpscalerResourceIsNull);
+
+        Config::Instance()->fsrHooks = true;
 
         DetourTransactionCommit();
     }

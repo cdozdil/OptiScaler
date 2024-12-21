@@ -838,9 +838,11 @@ void ImGuiCommon::RenderMenu()
                 if (Config::Instance()->nvngxExist || Config::Instance()->libxessExist)
                 {
                     ImGui::Spacing();
-                    ImGui::Text("Please select %s%s%s as upscaler\nfrom game options and enter the game\nto enable upscaler settings.\n",
-                                Config::Instance()->nvngxExist ? "DLSS" : "",
-                                Config::Instance()->nvngxExist && Config::Instance()->libxessExist ? " or " : "",
+                    ImGui::Text("Please select %s%s%s%s%s as upscaler\nfrom game options and enter the game\nto enable upscaler settings.\n",
+                                Config::Instance()->fsrHooks ? "FSR" : "",
+                                Config::Instance()->fsrHooks && (Config::Instance()->nvngxExist || Config::Instance()->IsRunningOnNvidia) ? " or " : "",
+                                (Config::Instance()->nvngxExist || Config::Instance()->IsRunningOnNvidia) ? "DLSS" : "",
+                                ((Config::Instance()->nvngxExist || Config::Instance()->IsRunningOnNvidia) || Config::Instance()->fsrHooks) && Config::Instance()->libxessExist ? " or " : "",
                                 Config::Instance()->libxessExist ? "XeSS" : "");
 
 

@@ -818,6 +818,8 @@ void HookFSR2ExeInputs()
         if (o_ffxGetDeviceDX12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxGetDeviceDX12, o_ffxGetDeviceDX12);
 
+        Config::Instance()->fsrHooks = true;
+
         DetourTransactionCommit();
     }
 
@@ -877,6 +879,8 @@ void HookFSR2Dx12Inputs(HMODULE module)
         if (o_ffxGetDeviceDX12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxGetDeviceDX12, hk_ffxGetDeviceDX12);
 
+        Config::Instance()->fsrHooks = true;
+
         DetourTransactionCommit();
     }
 
@@ -929,6 +933,8 @@ void HookFSR2Inputs(HMODULE module)
 
         if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12, ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
+
+        Config::Instance()->fsrHooks = true;
 
         DetourTransactionCommit();
     }
