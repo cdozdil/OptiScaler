@@ -3331,6 +3331,8 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
 
     LOG_FUNC_RESULT(result);
 
+    Config::Instance()->lastCreatedD3D11Device = *ppDevice;
+
     return result;
 }
 
@@ -3411,6 +3413,8 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
 
     LOG_FUNC_RESULT(result);
 
+    Config::Instance()->lastCreatedD3D11Device = *ppDevice;
+
     return result;
 }
 
@@ -3480,6 +3484,8 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         }
 #endif
     }
+
+    Config::Instance()->lastCreatedD3D12Device = (ID3D12Device*)*ppDevice;
 
     LOG_FUNC_RESULT(result);
 

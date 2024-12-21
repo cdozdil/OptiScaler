@@ -285,6 +285,9 @@ public:
 
 	IFeature* CurrentFeature = nullptr;
 
+    ID3D12Device* lastCreatedD3D12Device = nullptr;
+    ID3D11Device* lastCreatedD3D11Device = nullptr;
+
 	bool Reload(std::filesystem::path iniPath);
 	bool LoadFromPath(const wchar_t* InPath);
 	bool SaveIni();
