@@ -1611,6 +1611,7 @@ HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1
             if (result == S_OK)
             {
                 DXGI_ADAPTER_DESC desc;
+                Config::Instance()->skipSpoofing = true;
                 if ((*ppAdapter)->GetDesc(&desc) == S_OK)
                 {
                     std::wstring name(desc.Description);
@@ -1620,7 +1621,7 @@ HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1
                 {
                     LOG_DEBUG("High performance adapter (Can't get description!) will be used");
                 }
-
+                Config::Instance()->skipSpoofing = false;
             }
 
             factory6->Release();
@@ -1667,6 +1668,7 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
             if (result == S_OK)
             {
                 DXGI_ADAPTER_DESC desc;
+                Config::Instance()->skipSpoofing = true;
                 if ((*ppAdapter)->GetDesc(&desc) == S_OK)
                 {
                     std::wstring name(desc.Description);
@@ -1676,6 +1678,7 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
                 {
                     LOG_ERROR("Can't get adapter description!");
                 }
+                Config::Instance()->skipSpoofing = false;
             }
 
             factory6->Release();
