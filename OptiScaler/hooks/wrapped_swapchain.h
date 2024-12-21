@@ -1,8 +1,11 @@
-//#pragma once
+#pragma once
+
 #include "../pch.h"
 
 #include "dxgi1_6.h"
 #include "d3d12.h"
+
+//#define USE_LOCAL_MUTEX
 
 typedef HRESULT(*PFN_SC_Present)(IDXGISwapChain*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*, IUnknown*, HWND);
 typedef void(*PFN_SC_Clean)(bool, HWND);
@@ -260,7 +263,9 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
     PFN_SC_Release ReleaseTrig = nullptr;
     HWND Handle = nullptr;
 
+#ifdef USE_LOCAL_MUTEX
     std::mutex _localMutex;
+#endif 
 
     int id = 0;
 };

@@ -116,7 +116,9 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 {
     LOG_DEBUG("");
 
+#ifdef USE_LOCAL_MUTEX
     std::lock_guard<std::mutex> lock(_localMutex);
+#endif
 
 #ifdef USE_MUTEX_FOR_FFX
     LOG_TRACE("Waiting mutex");
@@ -225,7 +227,6 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
 HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetContainingOutput(IDXGIOutput** ppOutput)
 {
-    //std::lock_guard<std::mutex> lock(_localMutex);
     return m_pReal->GetContainingOutput(ppOutput);
 }
 
@@ -234,7 +235,9 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 {
     LOG_DEBUG("");
 
+#ifdef USE_LOCAL_MUTEX
     std::lock_guard<std::mutex> lock(_localMutex);
+#endif
 
 #ifdef USE_MUTEX_FOR_FFX
     LOG_TRACE("Waiting mutex");
@@ -368,7 +371,9 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
     //}
 
     {
+#ifdef USE_LOCAL_MUTEX
         std::lock_guard<std::mutex> lock(_localMutex);
+#endif
 
 #ifdef USE_MUTEX_FOR_FFX
         LOG_TRACE("Waiting mutex");
@@ -423,13 +428,11 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 
 HRESULT WrappedIDXGISwapChain4::GetFullscreenState(BOOL* pFullscreen, IDXGIOutput** ppTarget)
 {
-    //std::lock_guard<std::mutex> lock(_localMutex);
     return m_pReal->GetFullscreenState(pFullscreen, ppTarget);
 }
 
 HRESULT WrappedIDXGISwapChain4::GetBuffer(UINT Buffer, REFIID riid, void** ppSurface)
 {
-    //std::lock_guard<std::mutex> lock(_localMutex);
     return m_pReal->GetBuffer(Buffer, riid, ppSurface);
 }
 
@@ -443,7 +446,9 @@ HRESULT WrappedIDXGISwapChain4::Present(UINT SyncInterval, UINT Flags)
     if (m_pReal == nullptr)
         return DXGI_ERROR_DEVICE_REMOVED;
 
+#ifdef USE_LOCAL_MUTEX
     std::lock_guard<std::mutex> lock(_localMutex);
+#endif
 
     HRESULT result;
 
@@ -460,7 +465,9 @@ HRESULT WrappedIDXGISwapChain4::Present1(UINT SyncInterval, UINT Flags, const DX
     if (m_pReal1 == nullptr)
         return DXGI_ERROR_DEVICE_REMOVED;
 
+#ifdef USE_LOCAL_MUTEX
     std::lock_guard<std::mutex> lock(_localMutex);
+#endif
 
     HRESULT result;
 
