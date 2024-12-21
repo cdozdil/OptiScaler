@@ -249,6 +249,7 @@ public:
 	// linux check
 	bool IsRunningOnLinux = false;
 	bool IsRunningOnDXVK = false;
+	bool IsRunningOnNvidia = false;
 
 	bool IsDxgiMode = false;
 	bool WorkingAsNvngx = false;
@@ -278,6 +279,7 @@ public:
 
 	bool nvngxExist = false;
 	bool libxessExist = false;
+	bool fsrHooks = false;
 
 	IFeature* CurrentFeature = nullptr;
 
