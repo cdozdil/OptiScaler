@@ -1269,6 +1269,36 @@ void ImGuiCommon::RenderMenu()
                             }
                         }
 
+                        if (currentBackend == "fsr31" || currentBackend == "fsr31_12")
+                        {
+                            if (bool dView = Config::Instance()->FsrDebugView.value_or(false); ImGui::Checkbox("FSR 3.X Debug View", &dView))
+                                Config::Instance()->FsrDebugView = dView;
+                            ShowHelpMarker("Top left: Dilated Motion Vectors\n"
+                                           "Top middle: Protected Areas\n"
+                                           "Top right: Dilated Depth\n"
+                                           "Middle: Upscaled frame\n"
+                                           "Bottom left: Disocclusion mask\n"
+                                           "Bottom middle: Reactiveness\n"
+                                           "Bottom right: Detail Protection Takedown");
+                        }
+
+                        if (Config::Instance()->CurrentFeature->AccessToReactiveMask())
+                        {
+                            ImGui::BeginDisabled(Config::Instance()->DisableReactiveMask.value_or(false));
+
+                            auto useAsTransparency = Config::Instance()->FsrUseMaskForTransparency.value_or(true);
+                            if (ImGui::Checkbox("Use Reactive Mask as Transparency Mask", &useAsTransparency))
+                                Config::Instance()->FsrUseMaskForTransparency = useAsTransparency;
+
+                            ImGui::EndDisabled();
+                        }
+                    }
+
+                    if (Config::Instance()->FGUseFGSwapChain.value_or(true) || currentBackend.rfind("fsr", 0) == 0)
+                    {
+                        ImGui::SeparatorText("FSR Common Settings");
+                        ShowHelpMarker("Affects both FSR-FG & Upscalers");
+
                         bool useVFov = Config::Instance()->FsrVerticalFov.has_value() || !Config::Instance()->FsrHorizontalFov.has_value();
 
                         float vfov;
@@ -1298,61 +1328,36 @@ void ImGuiCommon::RenderMenu()
                             useVFov = false;
                         }
 
-                        ImGui::BeginDisabled(!useVFov);
-
-                        if (ImGui::SliderFloat("Vert. FOV", &vfov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
-                            Config::Instance()->FsrVerticalFov = vfov;
-
-                        ImGui::EndDisabled();
-                        ShowHelpMarker("Might help achieve better image quality");
-
-                        ImGui::BeginDisabled(useVFov);
-
-                        if (ImGui::SliderFloat("Horz. FOV", &hfov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
-                            Config::Instance()->FsrHorizontalFov = hfov;
-
-                        ImGui::EndDisabled();
-                        ShowHelpMarker("Might help achieve better image quality");
-
-                        if (currentBackend == "fsr31" || currentBackend == "fsr31_12")
+                        if (useVFov)
                         {
-                            if (bool dView = Config::Instance()->FsrDebugView.value_or(false); ImGui::Checkbox("FSR 3.X Debug View", &dView))
-                                Config::Instance()->FsrDebugView = dView;
-                            ShowHelpMarker("Top left: Dilated Motion Vectors\n"
-                                           "Top middle: Protected Areas\n"
-                                           "Top right: Dilated Depth\n"
-                                           "Middle: Upscaled frame\n"
-                                           "Bottom left: Disocclusion mask\n"
-                                           "Bottom middle: Reactiveness\n"
-                                           "Bottom right: Detail Protection Takedown");
+                            if (ImGui::SliderFloat("Vert. FOV", &vfov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
+                                Config::Instance()->FsrVerticalFov = vfov;
+
+                            ShowHelpMarker("Might help achieve better image quality");
+                        }
+                        else
+                        {
+                            if (ImGui::SliderFloat("Horz. FOV", &hfov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
+                                Config::Instance()->FsrHorizontalFov = hfov;
+
+                            ShowHelpMarker("Might help achieve better image quality");
                         }
 
                         float cameraNear;
                         float cameraFar;
 
                         cameraNear = Config::Instance()->FsrCameraNear.value_or(10.0f);
-                        //cameraFar = Config::Instance()->FsrCameraFar.value_or(0.9999f);
+                        cameraFar = Config::Instance()->FsrCameraFar.value_or(500000.0f);
 
-                        if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.01f, 1000.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
+                        if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.1f, 500000.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
                             Config::Instance()->FsrCameraNear = cameraNear;
                         ShowHelpMarker("Might help achieve better image quality\n"
                                        "And potentially less ghosting");
 
-                        //if (ImGui::SliderFloat("Camera Far", &cameraFar, 0.0001f, FLT_MAX, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
-                        //    Config::Instance()->FsrCameraFar = cameraFar;
-                        //ShowHelpMarker("Might help achieve better image quality\n"
-                        //               "And potentially less ghosting");
-
-                        if (Config::Instance()->CurrentFeature->AccessToReactiveMask())
-                        {
-                            ImGui::BeginDisabled(Config::Instance()->DisableReactiveMask.value_or(false));
-
-                            auto useAsTransparency = Config::Instance()->FsrUseMaskForTransparency.value_or(true);
-                            if (ImGui::Checkbox("Use Reactive Mask as Transparency Mask", &useAsTransparency))
-                                Config::Instance()->FsrUseMaskForTransparency = useAsTransparency;
-
-                            ImGui::EndDisabled();
-                        }
+                        if (ImGui::SliderFloat("Camera Far", &cameraFar, 0.1f, 500000.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat & ImGuiSliderFlags_Logarithmic))
+                            Config::Instance()->FsrCameraFar = cameraFar;
+                        ShowHelpMarker("Might help achieve better image quality\n"
+                                       "And potentially less ghosting");
                     }
 
                     // DLSS -----------------
