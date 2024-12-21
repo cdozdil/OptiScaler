@@ -2172,7 +2172,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                         Config::Instance()->VulkanExtensionSpoofing = false;
 
                     isNvngxAvailable = true;
-                    Config::Instance()->nvngxExist = true;
+                    Config::Instance()->IsRunningOnNvidia = true;
                 }
             }
 
@@ -2180,6 +2180,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             spdlog::info("");
             CheckWorkingMode();
             spdlog::info("");
+
+            if (!Config::Instance()->nvngxExist && !Config::Instance()->DxgiSpoofing.has_value())
+            {
+                LOG_WARN("No nvngx.dll found disabling spoofing!");
+                Config::Instance()->DxgiSpoofing = false;
+            }
 
             // Init XeSS proxy
             skipDllLoadChecks = true;
