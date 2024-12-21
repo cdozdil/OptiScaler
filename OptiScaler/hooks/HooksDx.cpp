@@ -715,21 +715,11 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
 
             dfgPrepare.motionVectorScale.x = FrameGen_Dx12::mvScaleX;
             dfgPrepare.motionVectorScale.y = FrameGen_Dx12::mvScaleY;
-
-            if (Config::Instance()->CurrentFeature->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
-            {
-                dfgPrepare.cameraFar = Config::Instance()->FsrCameraNear.value_or(10.0f);
-                dfgPrepare.cameraNear = Config::Instance()->FsrCameraFar.value_or(FLT_MAX);
-            }
-            else
-            {
-                dfgPrepare.cameraFar = Config::Instance()->FsrCameraFar.value_or(FLT_MAX);
-                dfgPrepare.cameraNear = Config::Instance()->FsrCameraNear.value_or(10.0f);
-            }
-
-            dfgPrepare.cameraFovAngleVertical = 1.0471975511966f;
-            dfgPrepare.viewSpaceToMetersFactor = 1.0;
-            dfgPrepare.frameTimeDelta = FrameGen_Dx12::fgFrameTime;
+            dfgPrepare.cameraFar = FrameGen_Dx12::cameraFar;
+            dfgPrepare.cameraNear = FrameGen_Dx12::cameraNear;
+            dfgPrepare.cameraFovAngleVertical = FrameGen_Dx12::cameraVFov;
+            dfgPrepare.viewSpaceToMetersFactor = FrameGen_Dx12::meterFactor;
+            dfgPrepare.frameTimeDelta = FrameGen_Dx12::ftDelta;
 
             // If somehow context is destroyed before this point
             if (Config::Instance()->CurrentFeature == nullptr || FrameGen_Dx12::fgContext == nullptr || !FrameGen_Dx12::fgIsActive)

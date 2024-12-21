@@ -70,6 +70,12 @@ namespace FrameGen_Dx12
     inline float jitterY = 0.0;
     inline float mvScaleX = 0.0;
     inline float mvScaleY = 0.0;
+    inline float cameraNear = 0.0;
+    inline float cameraFar = 0.0;
+    inline float cameraVFov = 0.0;
+    inline float meterFactor = 0.0;
+    inline float ftDelta = 0.0;
+
     inline const int FG_BUFFER_SIZE = 4;
     inline ID3D12Resource* paramVelocity[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
     inline ID3D12Resource* paramDepth[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
