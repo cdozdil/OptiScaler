@@ -161,12 +161,13 @@ static std::optional<float> GetQualityOverrideRatioFfx(const Fsr3::FfxFsr3Upscal
     return output;
 }
 
-// FS2 Upscaler
-static Fsr3::FfxErrorCode ffxFsr3ContextCreate_Dx12(Fsr3::FfxFsr3UpscalerContext* pContext, const Fsr3::FfxFsr3UpscalerContextDescription* pContextDescription)
+// FSR3 Upscaler
+static Fsr3::FfxErrorCode ffxFsr3ContextCreate_Dx12(Fsr3::FfxFsr3UpscalerContext* pContext, Fsr3::FfxFsr3UpscalerContextDescription* pContextDescription)
 {
     if (pContext == nullptr || pContextDescription->backendInterface.device == nullptr)
         return Fsr3::FFX_ERROR_INVALID_ARGUMENT;
 
+    // Added for FMF2, but not helped
     if (((IUnknown*)pContextDescription->backendInterface.device)->QueryInterface(IID_PPV_ARGS(&_d3d12Device)) != S_OK)
     {
         LOG_WARN("Not D3D12Device: {:X}", (size_t)pContextDescription->backendInterface.device);
@@ -174,7 +175,7 @@ static Fsr3::FfxErrorCode ffxFsr3ContextCreate_Dx12(Fsr3::FfxFsr3UpscalerContext
         if (Config::Instance()->lastCreatedD3D12Device != nullptr)
         {
             LOG_WARN("using last created D3D12 device!");
-            _d3d12Device = Config::Instance()->lastCreatedD3D12Device;
+            pContextDescription->backendInterface.device = Config::Instance()->lastCreatedD3D12Device;
         }
         else
         {
