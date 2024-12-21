@@ -707,6 +707,13 @@ void HookFSR2ExeInputs()
 
     auto exeName = wstring_to_string(Util::ExePath().filename());
 
+    o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextCreate");
+    if (o_ffxFsr2ContextCreate_Dx12 == nullptr)
+        o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextCreate@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2ContextDescription@@@Z");
+
+    if (o_ffxFsr2ContextCreate_Dx12 == nullptr)
+        return;
+
     //ffxFsr2GetScratchMemorySizeDX12
     o_ffxFsr2GetScratchMemorySizeDX12 = (PFN_ffxFsr2GetScratchMemorySizeDX12)DetourFindFunction(exeName.c_str(), "ffxFsr2GetScratchMemorySizeDX12");
     if (o_ffxFsr2GetScratchMemorySizeDX12 == nullptr)
@@ -728,10 +735,6 @@ void HookFSR2ExeInputs()
     o_ffxGetDX12ResourcePtr = (PFN_ffxGetDX12ResourcePtr)DetourFindFunction(exeName.c_str(), "ffxGetDX12ResourcePtr");
 
     //ffxFsr2ContextCreate
-    o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextCreate");
-    if (o_ffxFsr2ContextCreate_Dx12 == nullptr)
-        o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextCreate@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2ContextDescription@@@Z");
-
     //ffxFsr2ContextDispatch
     o_ffxFsr2ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextDispatch");
     if (o_ffxFsr2ContextDispatch_Dx12 == nullptr)

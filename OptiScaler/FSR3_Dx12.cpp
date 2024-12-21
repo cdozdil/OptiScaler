@@ -167,6 +167,25 @@ static Fsr3::FfxErrorCode ffxFsr3ContextCreate_Dx12(Fsr3::FfxFsr3UpscalerContext
     if (pContext == nullptr || pContextDescription->backendInterface.device == nullptr)
         return Fsr3::FFX_ERROR_INVALID_ARGUMENT;
 
+    if (((IUnknown*)pContextDescription->backendInterface.device)->QueryInterface(IID_PPV_ARGS(&_d3d12Device)) != S_OK)
+    {
+        LOG_WARN("Not D3D12Device: {:X}", (size_t)pContextDescription->backendInterface.device);
+
+        if (Config::Instance()->lastCreatedD3D12Device != nullptr)
+        {
+            LOG_WARN("using last created D3D12 device!");
+            _d3d12Device = Config::Instance()->lastCreatedD3D12Device;
+        }
+        else
+        {
+            return Fsr3::FFX_ERROR_INVALID_ARGUMENT;
+        }
+    }
+    else
+    {
+        _d3d12Device->Release();
+    }
+
     if (_d3d12Device == nullptr)
         _d3d12Device = (ID3D12Device*)pContextDescription->backendInterface.device;
 
@@ -218,7 +237,7 @@ static Fsr3::FfxErrorCode ffxFsr3ContextCreate_Dx12(Fsr3::FfxFsr3UpscalerContext
 
 static Fsr3::FfxErrorCode ffxFsr3ContextDispatch_Dx12(Fsr3::FfxFsr3UpscalerContext* pContext, Fsr3::FfxFsr3UpscalerDispatchDescription* pDispatchDescription)
 {
-    if (pDispatchDescription == nullptr || pContext == nullptr || pDispatchDescription->commandList == nullptr)
+    if (pDispatchDescription == nullptr || pContext == nullptr || pDispatchDescription->commandList == nullptr || _d3d12Device == nullptr)
         return Fsr3::FFX_ERROR_INVALID_ARGUMENT;
 
     // If not in contexts list create and add context
@@ -385,13 +404,20 @@ void HookFSR3ExeInputs()
 {
     LOG_INFO("Trying to hook FSR3 methods");
 
+    if (o_ffxFsr3UpscalerContextCreate_Dx12 != nullptr)
+        return;
+
     auto exeName = wstring_to_string(Util::ExePath().filename());
+
+    o_ffxFsr3UpscalerContextCreate_Dx12 = (PFN_ffxFsr3UpscalerContextCreate)DetourFindFunction(exeName.c_str(), "ffxFsr3UpscalerContextCreate");
+
+    if (o_ffxFsr3UpscalerContextCreate_Dx12 == nullptr)
+        return;
 
     o_ffxFSR3GetScratchMemorySizeDX12 = (PFN_ffxFSR3GetScratchMemorySizeDX12)DetourFindFunction(exeName.c_str(), "ffxGetScratchMemorySizeDX12");
     o_ffxFSR3GetInterfaceDX12 = (PFN_ffxFSR3GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "ffxGetInterfaceDX12");
     o_ffxGetFSR3ResourceDX12 = (PFN_ffxFSR3GetResourceDX12)DetourFindFunction(exeName.c_str(), "ffxGetResourceDX12");
 
-    o_ffxFsr3UpscalerContextCreate_Dx12 = (PFN_ffxFsr3UpscalerContextCreate)DetourFindFunction(exeName.c_str(), "ffxFsr3UpscalerContextCreate");
     o_ffxFsr3UpscalerContextDispatch_Dx12 = (PFN_ffxFsr3UpscalerContextDispatch)DetourFindFunction(exeName.c_str(), "ffxFsr3UpscalerContextDispatch");
     o_ffxFsr3UpscalerContextGenerateReactiveMask_Dx12 = (PFN_ffxFsr3UpscalerContextGenerateReactiveMask)DetourFindFunction(exeName.c_str(), "ffxFsr3UpscalerContextGenerateReactiveMask");
     o_ffxFsr3UpscalerContextDestroy_Dx12 = (PFN_ffxFsr3UpscalerContextDestroy)DetourFindFunction(exeName.c_str(), "ffxFsr3UpscalerContextDestroy");
