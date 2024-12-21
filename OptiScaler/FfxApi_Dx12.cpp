@@ -290,26 +290,26 @@ ffxReturnCode_t ffxQuery_Dx12(ffxContext* context, ffxQueryDescHeader* desc)
 
         return FFX_API_RETURN_OK;
     }
-    else if (desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GPU_MEMORY_USAGE)
-    {
-        auto memoryDesc = (ffxQueryDescUpscaleGetGPUMemoryUsage*)desc;
-        NVSDK_NGX_Parameter* params = _nvParams[context];
-        UINT memValue = 1920 * 1080 * 31;
+    //else if (desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GPU_MEMORY_USAGE)
+    //{
+    //    auto memoryDesc = (ffxQueryDescUpscaleGetGPUMemoryUsage*)desc;
+    //    NVSDK_NGX_Parameter* params = _nvParams[context];
+    //    UINT memValue = 1920 * 1080 * 31;
 
-        if (params != nullptr)
-            params->Get(NVSDK_NGX_Parameter_SizeInBytes, &memValue);
+    //    if (params != nullptr)
+    //        params->Get(NVSDK_NGX_Parameter_SizeInBytes, &memValue);
 
-        memoryDesc->gpuMemoryUsageUpscaler->totalUsageInBytes = memValue;
-        memoryDesc->gpuMemoryUsageUpscaler->aliasableUsageInBytes = memValue / 20;
+    //    memoryDesc->gpuMemoryUsageUpscaler->totalUsageInBytes = memValue;
+    //    memoryDesc->gpuMemoryUsageUpscaler->aliasableUsageInBytes = memValue / 20;
 
-        return FFX_API_RETURN_OK;
-    }
+    //    return FFX_API_RETURN_OK;
+    //}
 
-    if (desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETJITTEROFFSET || desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETJITTERPHASECOUNT)
-    {
-        LOG_TRACE("Jitter queries");
-        return FfxApiProxy::D3D12_Query()(nullptr, desc);
-    }
+    //if (desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETJITTEROFFSET || desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETJITTERPHASECOUNT)
+    //{
+    //    LOG_TRACE("Jitter queries");
+    //    return FfxApiProxy::D3D12_Query()(nullptr, desc);
+    //}
 
     return FfxApiProxy::D3D12_Query()(context, desc);
 }
