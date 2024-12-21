@@ -91,16 +91,25 @@ if "isNvidia"=="true" (
 )
 
 if "%gpuChoice%"=="2" (
+    REM Nvidia
     echo Nvidia GPU selected. Skipping "nvngx_dlss.dll" handling step.
     goto completeSetup
 ) else if "%gpuChoice%"=="1" (
+    REM AMD/Intel
     echo AMD/Intel GPU selected. Proceeding with "nvngx_dlss.dll" handling.
+    goto checkFile
 ) else (
     if "%gpuChoice%"=="" (
         if "isNvidia"=="true" (
+            REM Nvidia
+            echo Nvidia GPU selected. Skipping "nvngx_dlss.dll" handling step.
+            set gpuChoice=2
             goto completeSetup
         )
         
+        REM AMD/Intel
+        echo AMD/Intel GPU selected. Proceeding with "nvngx_dlss.dll" handling.
+        set gpuChoice=1
         goto checkFile
     )
     
@@ -136,13 +145,15 @@ if errorlevel 1 (
     goto end
 )
 
-REM Rename nvngx_dlss.dll file
-echo Renaming "nvngx_dlss_copy.dll" file to "nvngx.dll"...
-rename nvngx_dlss_copy.dll nvngx.dll
-if errorlevel 1 (
-    echo.
-    echo ERROR: Failed to rename "nvngx_dlss.dll" to "nvngx.dll".
-    goto end
+REM Rename nvngx_dlss.dll file if AMD/Intel is selected
+if "%gpuChoice%"=="1" (
+    echo Renaming "nvngx_dlss_copy.dll" file to "nvngx.dll"...
+    rename nvngx_dlss_copy.dll nvngx.dll
+    if errorlevel 1 (
+        echo.
+        echo ERROR: Failed to rename "nvngx_dlss.dll" to "nvngx.dll".
+        goto end
+    )
 )
 
 goto create_uninstaller
@@ -159,6 +170,7 @@ echo.
 
 :end
 pause
+REM Remove "OptiScaler Setup.bat"
 del %0
 exit /b
 
@@ -227,19 +239,22 @@ echo 	del nvngx.dll
 echo 	del %selectedFilename%
 echo 	echo.
 echo 	echo OptiScaler removed!
+echo 	echo.
 echo ^) else ^(
 echo 	echo.
 echo 	echo Operation cancelled.
+echo 	echo.
 echo ^)
 echo.
 echo pause
 echo if "%%removeChoice%%"=="y" ^(
-echo 	del "Remove OptiScaler.bat"
+echo 	del %%0
 echo ^)
 ) >> "Remove OptiScaler.bat"
 
 echo.
 echo Uninstaller created.
+echo.
 
 goto create_uninstaller_return
 
