@@ -585,7 +585,7 @@ static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Conte
 static Fsr212::FfxErrorCode ffxFsr2ContextDispatchBase_Dx12(Fsr212::FfxFsr2Context* context, FfxFsr2DispatchDescriptionBase* dispatchDescription)
 {
     // Tiny Tina's Wonderland
-    if(o_ffxGetResourceFromDX12Resource_Dx12 != nullptr)
+    if (o_ffxGetResourceFromDX12Resource_Dx12 != nullptr)
         return ffxFsr2TinyContextDispatch_Dx12(context, (FfxFsr2TinyDispatchDescription*)dispatchDescription);
 
     if (_version20.has_value())
@@ -681,7 +681,10 @@ static Fsr212::FfxErrorCode hk_ffxFsr2GetInterfaceDX12(Fsr212::FfxFsr2Interface2
                                                        void* scratchBuffer, size_t scratchBufferSize)
 {
     LOG_DEBUG("");
-    _d3d12Device = device;
+    
+    if (device != nullptr)
+        _d3d12Device = device;
+    
     return o_ffxFsr2GetInterfaceDX12(fsr2Interface, device, scratchBuffer, scratchBufferSize);
 }
 
@@ -701,10 +704,10 @@ static FfxResourceTiny hk_ffxGetResourceFromDX12Resource_Dx12(ID3D12Resource* re
 {
     FfxResourceTiny result{};
     result.resource = resDx12;
-    result.data[0] = 0x1111; 
-    result.data[1] = 0x2222; 
-    result.data[2] = 0x3333; 
-    result.data[3] = 0x4444; 
+    result.data[0] = 0x1111;
+    result.data[1] = 0x2222;
+    result.data[2] = 0x3333;
+    result.data[3] = 0x4444;
 
     return result;
 }
