@@ -325,7 +325,17 @@ void DLSSFeature::ReadVersion()
 
     PFN_NVSDK_NGX_GetSnippetVersion _GetSnippetVersion = nullptr;
 
-    _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction("nvngx_dlss.dll", "NVSDK_NGX_GetSnippetVersion");
+    if (!Config::Instance()->NVNGX_DLSS_Library.has_value())
+    {
+        _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction("nvngx_dlss.dll", "NVSDK_NGX_GetSnippetVersion");
+    }
+    else
+    {
+        std::filesystem::path dlssPath(Config::Instance()->NVNGX_DLSS_Library.value());
+        
+        if (dlssPath.has_filename())
+            _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction(dlssPath.filename().string().c_str(), "NVSDK_NGX_GetSnippetVersion");
+    }
 
     if (_GetSnippetVersion != nullptr)
     {
