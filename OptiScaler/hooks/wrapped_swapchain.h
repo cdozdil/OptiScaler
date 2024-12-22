@@ -5,7 +5,7 @@
 #include "dxgi1_6.h"
 #include "d3d12.h"
 
-//#define USE_LOCAL_MUTEX
+#define USE_LOCAL_MUTEX
 
 typedef HRESULT(*PFN_SC_Present)(IDXGISwapChain*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*, IUnknown*, HWND);
 typedef void(*PFN_SC_Clean)(bool, HWND);

@@ -902,6 +902,7 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
     {
         LOG_DEBUG("Resource {:X}, last used frame ({}) is too small ({}) from current one ({}) skipping resource!",
                   (size_t)resource->buffer, currentMs - resource->lastUsedFrame, resource->lastUsedFrame, currentMs);
+
         resource->lastUsedFrame = currentMs; // use it next time if timing is ok
         return false;
     }
