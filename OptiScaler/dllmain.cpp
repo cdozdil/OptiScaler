@@ -2201,8 +2201,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 spdlog::warn("Can't init Vulkan FfxApi!");
 
             spdlog::info("");
-            HookFSR2ExeInputs();
-
             handle = GetModuleHandle(fsr2NamesW[0].c_str());
             if (handle != nullptr)
                 HookFSR2Inputs(handle);
@@ -2211,9 +2209,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             if (handle != nullptr)
                 HookFSR2Dx12Inputs(handle);
 
-            spdlog::info("");
-            HookFSR3ExeInputs();
+            HookFSR2ExeInputs();
 
+            spdlog::info("");
             handle = GetModuleHandle(fsr3NamesW[0].c_str());
             if (handle != nullptr)
                 HookFSR3Inputs(handle);
@@ -2221,6 +2219,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             handle = GetModuleHandle(fsr3Dx12NamesW[0].c_str());
             if (handle != nullptr)
                 HookFSR3Dx12Inputs(handle);
+
+            HookFSR3ExeInputs();
 
             skipDllLoadChecks = false;
 
