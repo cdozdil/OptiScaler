@@ -597,6 +597,12 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDispatchBase_Dx12(Fsr212::FfxFsr2Conte
     }
     else
     {
+        if (o_ffxGetResourceDX12 == nullptr)
+        {
+            _version20 = false;
+            return ffxFsr2ContextDispatchBase_Dx12(context, dispatchDescription);
+        }
+
         auto fsr2xDesc = reinterpret_cast<FfxFsr20DispatchDescription*>(dispatchDescription);
 
         // Check for FSR2.0
