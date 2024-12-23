@@ -70,6 +70,22 @@ if "%filenameChoice%"=="" (
     goto selectFilename
 )
 
+if exist %selectedFilename% (
+        echo.
+    echo WARNING: %selectedFilename% already exists in the current folder.
+    echo.
+    set /p overwriteChoice="Do you want to overwrite %selectedFilename%? [y/n]: "
+    set overwriteChoice=!overwriteChoice: =!
+    
+    echo.
+    if "!overwriteChoice!"=="y" (
+        goto queryGPU
+    )
+
+    goto selectFilename
+)
+
+:queryGPU
 if exist %windir%\system32\nvapi64.dll (
     echo.
     echo Nvidia driver files detected.
@@ -79,7 +95,6 @@ if exist %windir%\system32\nvapi64.dll (
 )
 
 REM Query user for GPU type
-:queryGPU
 echo.
 echo Are you using an Nvidia GPU or AMD/Intel GPU?
 echo [1] AMD/Intel
@@ -137,6 +152,11 @@ if errorlevel 1 (
 :completeSetup
 REM Rename OptiScaler file
 echo.
+if "!overwriteChoice!"=="y" (
+    echo Removing previous %selectedFilename%...
+    del /F %selectedFilename% 
+)
+
 echo Renaming OptiScaler file to %selectedFilename%...
 rename %optiScalerFile% %selectedFilename%
 if errorlevel 1 (
@@ -172,6 +192,12 @@ echo.
 pause
 REM Remove "OptiScaler Setup.bat"
 del %0
+
+REM Remove leftover "nvngx_dlss_copy.dll"
+if exist "nvngx_dlss_copy.dll" (
+    del /y "nvngx_dlss_copy.dll"
+)
+
 exit /b
 
 REM check for nvngx_dlss.dll
