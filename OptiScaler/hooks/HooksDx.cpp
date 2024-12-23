@@ -2425,6 +2425,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
                 }
             }
 //#endif
+
             if (Config::Instance()->FGHybridSpin.value_or(false))
             {
                 FfxSwapchainFramePacingTuning fpt{};

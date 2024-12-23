@@ -8,7 +8,6 @@
 #include <DbgHelp.h>
 #pragma comment(lib, "Dbghelp.lib")
 
-
 #pragma region DXGI definitions
 
 typedef HRESULT(*PFN_CREATE_DXGI_FACTORY)(REFIID riid, IDXGIFactory** ppFactory);
@@ -38,6 +37,7 @@ inline static PFN_EnumAdapterByLuid ptrEnumAdapterByLuid = nullptr;
 inline static PFN_EnumAdapterByGpuPreference ptrEnumAdapterByGpuPreference = nullptr;
 
 inline bool skipGetModuleHandle = false;
+inline bool skipHighPerfCheck = false;
 
 void AttachToAdapter(IUnknown* unkAdapter);
 void AttachToFactory(IUnknown* unkFactory);
@@ -1587,7 +1587,7 @@ HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1
 
     HRESULT result = S_OK;
 
-    if (Config::Instance()->PreferDedicatedGpu.value_or(false))
+    if (!skipHighPerfCheck && Config::Instance()->PreferDedicatedGpu.value_or(false))
     {
         if (Config::Instance()->PreferFirstDedicatedGpu.value_or(false) && Adapter > 0)
         {
@@ -1600,7 +1600,9 @@ HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1
         {
             LOG_DEBUG("Trying to select high performance adapter ({})", Adapter);
 
-            result = factory6->EnumAdapterByGpuPreference(Adapter, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(ppAdapter));
+            skipHighPerfCheck = true;
+            result = ptrEnumAdapterByGpuPreference(factory6, Adapter, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter), (IDXGIAdapter**)ppAdapter);
+            skipHighPerfCheck = false;
 
             if (result != S_OK)
             {
@@ -1644,7 +1646,7 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
 
     HRESULT result = S_OK;
 
-    if (Config::Instance()->PreferDedicatedGpu.value_or(false))
+    if (!skipHighPerfCheck && Config::Instance()->PreferDedicatedGpu.value_or(false))
     {
         if (Config::Instance()->PreferFirstDedicatedGpu.value_or(false) && Adapter > 0)
         {
@@ -1657,7 +1659,9 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
         {
             LOG_DEBUG("Trying to select high performance adapter ({})", Adapter);
 
-            result = factory6->EnumAdapterByGpuPreference(Adapter, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(ppAdapter));
+            skipHighPerfCheck = true;
+            result = ptrEnumAdapterByGpuPreference(factory6, Adapter, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter), ppAdapter);
+            skipHighPerfCheck = false;
 
             if (result != S_OK)
             {
