@@ -434,14 +434,14 @@ void HookFSR3ExeInputs()
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        if (o_ffxFSR3GetScratchMemorySizeDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFSR3GetScratchMemorySizeDX12, hk_ffxFsr3GetScratchMemorySizeDX12);
+        //if (o_ffxFSR3GetScratchMemorySizeDX12 != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxFSR3GetScratchMemorySizeDX12, hk_ffxFsr3GetScratchMemorySizeDX12);
 
-        if (o_ffxFSR3GetInterfaceDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFSR3GetInterfaceDX12, hk_ffxFsr3GetInterfaceDX12);
+        //if (o_ffxFSR3GetInterfaceDX12 != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxFSR3GetInterfaceDX12, hk_ffxFsr3GetInterfaceDX12);
 
-        if (o_ffxGetFSR3ResourceDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxGetFSR3ResourceDX12, hk_ffxFsr3GetResourceDX12);
+        //if (o_ffxGetFSR3ResourceDX12 != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxGetFSR3ResourceDX12, hk_ffxFsr3GetResourceDX12);
 
         if (o_ffxFsr3UpscalerContextCreate_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextCreate_Dx12, ffxFsr3ContextCreate_Dx12);
@@ -449,11 +449,8 @@ void HookFSR3ExeInputs()
         if (o_ffxFsr3UpscalerContextDispatch_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextDispatch_Dx12, ffxFsr3ContextDispatch_Dx12);
 
-        if (o_ffxFsr3UpscalerContextDispatch_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextDispatch_Dx12, ffxFsr3ContextDispatch_Dx12);
-
-        if (o_ffxFsr3UpscalerContextGenerateReactiveMask_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextGenerateReactiveMask_Dx12, ffxFsr3ContextGenerateReactiveMask_Dx12);
+        //if (o_ffxFsr3UpscalerContextGenerateReactiveMask_Dx12 != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextGenerateReactiveMask_Dx12, ffxFsr3ContextGenerateReactiveMask_Dx12);
 
         if (o_ffxFsr3UpscalerContextDestroy_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextDestroy_Dx12, ffxFsr3ContextDestroy_Dx12);
@@ -464,11 +461,11 @@ void HookFSR3ExeInputs()
         if (o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12, ffxFsr3GetRenderResolutionFromQualityMode_Dx12);
 
-        if (o_ffxFsr3UpscalerGetSharedResourceDescriptions != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr3UpscalerGetSharedResourceDescriptions, ffxFsr3UpscalerGetSharedResourceDescriptions);
+        //if (o_ffxFsr3UpscalerGetSharedResourceDescriptions != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxFsr3UpscalerGetSharedResourceDescriptions, ffxFsr3UpscalerGetSharedResourceDescriptions);
 
-        if (o_ffxFsr3UpscalerResourceIsNull != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr3UpscalerResourceIsNull, ffxFsr3UpscalerResourceIsNull);
+        //if (o_ffxFsr3UpscalerResourceIsNull != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxFsr3UpscalerResourceIsNull, ffxFsr3UpscalerResourceIsNull);
 
         Config::Instance()->fsrHooks = true;
 
@@ -480,7 +477,6 @@ void HookFSR3ExeInputs()
     LOG_DEBUG("ffxGetFSR3ResourceDX12: {:X}", (size_t)o_ffxGetFSR3ResourceDX12);
     LOG_DEBUG("ffxFsr3UpscalerContextCreate_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerContextCreate_Dx12);
     LOG_DEBUG("ffxFsr3UpscalerContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerContextDispatch_Dx12);
-    LOG_DEBUG("ffxFsr3UpscalerContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerContextDispatch_Dx12);
     LOG_DEBUG("ffxFsr3UpscalerContextGenerateReactiveMask_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerContextGenerateReactiveMask_Dx12);
     LOG_DEBUG("ffxFsr3UpscalerContextDestroy_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerContextDestroy_Dx12);
     LOG_DEBUG("ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12);
@@ -491,6 +487,8 @@ void HookFSR3ExeInputs()
 
 void HookFSR3Dx12Inputs(HMODULE module)
 {
+    return;
+
     LOG_INFO("Trying to hook FSR3 methods");
 
     if (o_ffxFSR3GetInterfaceDX12 != nullptr)
@@ -561,11 +559,8 @@ void HookFSR3Inputs(HMODULE module)
         if (o_ffxFsr3UpscalerContextDispatch_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextDispatch_Dx12, ffxFsr3ContextDispatch_Dx12);
 
-        if (o_ffxFsr3UpscalerContextDispatch_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextDispatch_Dx12, ffxFsr3ContextDispatch_Dx12);
-
-        if (o_ffxFsr3UpscalerContextGenerateReactiveMask_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextGenerateReactiveMask_Dx12, ffxFsr3ContextGenerateReactiveMask_Dx12);
+        //if (o_ffxFsr3UpscalerContextGenerateReactiveMask_Dx12 != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextGenerateReactiveMask_Dx12, ffxFsr3ContextGenerateReactiveMask_Dx12);
 
         if (o_ffxFsr3UpscalerContextDestroy_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextDestroy_Dx12, ffxFsr3ContextDestroy_Dx12);
@@ -576,11 +571,11 @@ void HookFSR3Inputs(HMODULE module)
         if (o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12, ffxFsr3GetRenderResolutionFromQualityMode_Dx12);
 
-        if (o_ffxFsr3UpscalerGetSharedResourceDescriptions != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr3UpscalerGetSharedResourceDescriptions, ffxFsr3UpscalerGetSharedResourceDescriptions);
+        //if (o_ffxFsr3UpscalerGetSharedResourceDescriptions != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxFsr3UpscalerGetSharedResourceDescriptions, ffxFsr3UpscalerGetSharedResourceDescriptions);
 
-        if (o_ffxFsr3UpscalerResourceIsNull != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr3UpscalerResourceIsNull, ffxFsr3UpscalerResourceIsNull);
+        //if (o_ffxFsr3UpscalerResourceIsNull != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxFsr3UpscalerResourceIsNull, ffxFsr3UpscalerResourceIsNull);
 
         Config::Instance()->fsrHooks = true;
 
