@@ -952,7 +952,7 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
     }
 
     // format match
-    if ((resource->format == fgScDesc.BufferDesc.Format) || 
+    if ((resource->format == fgScDesc.BufferDesc.Format) ||
         (FfxApiProxy::VersionDx12().minor >= 1 && FfxApiProxy::VersionDx12().patch >= 3 && GetFormatPrecisionGroup(resource->format) == GetFormatPrecisionGroup(fgScDesc.BufferDesc.Format)))
     {
         if (callerName.length() > 0)
@@ -2405,9 +2405,9 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
         if (result == FFX_API_RETURN_OK)
         {
-//#ifdef USE_MUTEX_FOR_FFX
-            // Hooking FG Swapchain present
-            // for using ffxMutex during calls
+            //#ifdef USE_MUTEX_FOR_FFX
+                        // Hooking FG Swapchain present
+                        // for using ffxMutex during calls
             if (o_FGSCPresent == nullptr && *ppSwapChain != nullptr)
             {
                 void** pFactoryVTable = *reinterpret_cast<void***>(*ppSwapChain);
@@ -2426,7 +2426,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
                     DetourTransactionCommit();
                 }
             }
-//#endif
+            //#endif
 
             if (Config::Instance()->FGHybridSpin.value_or(false))
             {
@@ -2694,9 +2694,9 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
         if (result == FFX_API_RETURN_OK)
         {
-//#ifdef USE_MUTEX_FOR_FFX
-            // Hooking FG Swapchain present
-            // for using ffxMutex during calls
+            //#ifdef USE_MUTEX_FOR_FFX
+                        // Hooking FG Swapchain present
+                        // for using ffxMutex during calls
             if (o_FGSCPresent == nullptr && *ppSwapChain != nullptr)
             {
                 void** pFactoryVTable = *reinterpret_cast<void***>(*ppSwapChain);
@@ -2715,7 +2715,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
                     DetourTransactionCommit();
                 }
             }
-//#endif
+            //#endif
 
             if (Config::Instance()->FGHybridSpin.value_or(false))
             {
@@ -3370,9 +3370,11 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
     {
         LOG_INFO("Device captured, D3D11Device: {0:X}", (UINT64)*ppDevice);
         d3d11on12Device = *ppDevice;
-        Config::Instance()->d3d11Devices.push_back(*ppDevice);
         HookToDevice(d3d11on12Device);
     }
+
+    if (*ppDevice != nullptr)
+        Config::Instance()->d3d11Devices.push_back(*ppDevice);
 
     LOG_FUNC_RESULT(result);
 
@@ -3406,9 +3408,10 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
         FeatureLevels = ARRAYSIZE(levels);
     }
 
-    Config::Instance()->skipSpoofing = true;
-    auto result = o_D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
-    Config::Instance()->skipSpoofing = false;
+    //Config::Instance()->skipSpoofing = true;
+    auto result = o_D3D11CreateDevice(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
+    //auto result = o_D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
+    //Config::Instance()->skipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr && !_d3d12Captured)
     {
@@ -3420,7 +3423,8 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
 
     LOG_FUNC_RESULT(result);
 
-    Config::Instance()->d3d11Devices.push_back(*ppDevice);
+    if (*ppDevice != nullptr)
+        Config::Instance()->d3d11Devices.push_back(*ppDevice);
 
     return result;
 }
@@ -3455,55 +3459,54 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
     if (pSwapChainDesc != nullptr && pSwapChainDesc->BufferDesc.Height == 2 && pSwapChainDesc->BufferDesc.Width == 2)
     {
         LOG_WARN("Overlay call!");
-        Config::Instance()->skipSpoofing = true;
+        //Config::Instance()->skipSpoofing = true;
         auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
-        Config::Instance()->skipSpoofing = false;
+        //Config::Instance()->skipSpoofing = false;
         return result;
     }
 
     IDXGISwapChain* buffer = nullptr;
-    Config::Instance()->skipSpoofing = true;
-    auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, &buffer, ppDevice, pFeatureLevel, ppImmediateContext);
-    Config::Instance()->skipSpoofing = false;
+    //Config::Instance()->skipSpoofing = true;
+    auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
+    //Config::Instance()->skipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr && !_d3d12Captured)
     {
         LOG_INFO("Device captured");
         d3d11Device = *ppDevice;
-
         HookToDevice(d3d11Device);
 
-        if (pSwapChainDesc != nullptr)
-        {
-            LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Windowed: {4}", pSwapChainDesc->BufferDesc.Width, pSwapChainDesc->BufferDesc.Height, (UINT)pSwapChainDesc->BufferDesc.Format, pSwapChainDesc->BufferCount, pSwapChainDesc->Windowed);
+        //if (pSwapChainDesc != nullptr)
+        //{
+        //    LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Windowed: {4}", pSwapChainDesc->BufferDesc.Width, pSwapChainDesc->BufferDesc.Height, (UINT)pSwapChainDesc->BufferDesc.Format, pSwapChainDesc->BufferCount, pSwapChainDesc->Windowed);
 
-            if (Util::GetProcessWindow() == pSwapChainDesc->OutputWindow)
-            {
-                Config::Instance()->ScreenWidth = pSwapChainDesc->BufferDesc.Width;
-                Config::Instance()->ScreenHeight = pSwapChainDesc->BufferDesc.Height;
-            }
+        //    if (Util::GetProcessWindow() == pSwapChainDesc->OutputWindow)
+        //    {
+        //        Config::Instance()->ScreenWidth = pSwapChainDesc->BufferDesc.Width;
+        //        Config::Instance()->ScreenHeight = pSwapChainDesc->BufferDesc.Height;
+        //    }
 
-            IDXGIFactory* factory = nullptr;
-            result = CreateDXGIFactory(IID_PPV_ARGS(&factory));
-            if (result == S_OK)
-            {
-                LOG_DEBUG("creating new swapchain");
-                result = factory->CreateSwapChain(*ppDevice, pSwapChainDesc, ppSwapChain);
+        //    IDXGIFactory* factory = nullptr;
+        //    result = CreateDXGIFactory(IID_PPV_ARGS(&factory));
+        //    if (result == S_OK)
+        //    {
+        //        LOG_DEBUG("creating new swapchain");
+        //        result = factory->CreateSwapChain(*ppDevice, pSwapChainDesc, ppSwapChain);
 
-                if (result == S_OK)
-                    LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)d3d11Device);
-                else
-                    LOG_DEBUG("factory->CreateSwapChain error: {0:X}", (UINT64)result);
+        //        if (result == S_OK)
+        //            LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)d3d11Device);
+        //        else
+        //            LOG_DEBUG("factory->CreateSwapChain error: {0:X}", (UINT64)result);
 
-                factory->Release();
-            }
-        }
+        //        factory->Release();
+        //    }
+        //}
     }
 
+    if (*ppDevice != nullptr)
+        Config::Instance()->d3d11Devices.push_back(*ppDevice);
+
     LOG_FUNC_RESULT(result);
-
-    Config::Instance()->d3d11Devices.push_back(*ppDevice);
-
     return result;
 }
 
@@ -3532,12 +3535,12 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         LOG_WARN("GPU Based Validation active!");
         debugController->SetEnableGPUBasedValidation(TRUE);
 #endif
-    }
+}
 #endif
 
-    Config::Instance()->skipSpoofing = true;
+    //Config::Instance()->skipSpoofing = true;
     auto result = o_D3D12CreateDevice(pAdapter, MinimumFeatureLevel, riid, ppDevice);
-    Config::Instance()->skipSpoofing = false;
+    //Config::Instance()->skipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr)
     {
@@ -3545,6 +3548,8 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         g_pd3dDeviceParam = (ID3D12Device*)*ppDevice;
         HookToDevice(g_pd3dDeviceParam);
         _d3d12Captured = true;
+
+        Config::Instance()->d3d12Devices.push_back((ID3D12Device*)*ppDevice);
 
 #ifdef ENABLE_DEBUG_LAYER_DX12
         if (infoQueue != nullptr)
@@ -3569,12 +3574,10 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
             {
                 LOG_DEBUG("infoQueue1 accuired, registering MessageCallback");
                 res = infoQueue1->RegisterMessageCallback(D3D12DebugCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, NULL, NULL);
-            }
-        }
+    }
+    }
 #endif
     }
-
-    Config::Instance()->d3d12Devices.push_back((ID3D12Device*)*ppDevice);
 
     LOG_FUNC_RESULT(result);
 
@@ -3897,7 +3900,7 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 #ifndef USE_MUTEX_FOR_FFX
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
 #endif
-    }
+}
 
 #ifndef USE_MUTEX_FOR_FFX
     std::this_thread::sleep_for(std::chrono::milliseconds(250));

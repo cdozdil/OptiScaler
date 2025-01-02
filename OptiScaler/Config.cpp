@@ -564,6 +564,24 @@ bool Config::Reload(std::filesystem::path iniPath)
             }
         }
 
+        // Inputs
+        {
+            if (!DlssInputs.has_value())
+                DlssInputs = readBool("Inputs", "Dlss");
+
+            if (!XeSSInputs.has_value())
+                XeSSInputs = readBool("Inputs", "XeSS");
+
+            if (!Fsr2Inputs.has_value())
+                Fsr2Inputs = readBool("Inputs", "Fsr2");
+
+            if (!Fsr3Inputs.has_value())
+                Fsr3Inputs = readBool("Inputs", "Fsr3");
+
+            if (!FfxInputs.has_value())
+                FfxInputs = readBool("Inputs", "Ffx");
+        }
+
         // Plugins
         {
 
@@ -932,6 +950,15 @@ bool Config::SaveIni()
     {
         ini.SetValue("Plugins", "Path", Instance()->PluginPath.has_value() ? wstring_to_string(Instance()->PluginPath.value()).c_str() : "auto");
         ini.SetValue("Plugins", "LoadSpecialK", GetBoolValue(Instance()->LoadSpecialK).c_str());
+    }
+
+    // inputs
+    {
+        ini.SetValue("Inputs", "Dlss", GetBoolValue(Instance()->DlssInputs).c_str());
+        ini.SetValue("Inputs", "XeSS", GetBoolValue(Instance()->XeSSInputs).c_str());
+        ini.SetValue("Inputs", "Fsr2", GetBoolValue(Instance()->Fsr2Inputs).c_str());
+        ini.SetValue("Inputs", "Fsr3", GetBoolValue(Instance()->Fsr3Inputs).c_str());
+        ini.SetValue("Inputs", "Ffx", GetBoolValue(Instance()->FfxInputs).c_str());
     }
 
     auto pathWStr = absoluteFileName.wstring();

@@ -74,7 +74,7 @@ public:
             _D3D12_Query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxQuery");
         }
 
-        if (_D3D12_CreateContext != nullptr)
+        if (Config::Instance()->FfxInputs.value_or(true) && _D3D12_CreateContext != nullptr)
         {
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());

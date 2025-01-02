@@ -296,82 +296,85 @@ public:
 
             LOG_INFO("Version: {}.{}.{}", _xessVersion.major, _xessVersion.minor, _xessVersion.patch);
 
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
+            if (Config::Instance()->XeSSInputs.value_or(true))
+            {
+                DetourTransactionBegin();
+                DetourUpdateThread(GetCurrentThread());
 
-            if (_xessD3D12CreateContext != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12CreateContext, xessD3D12CreateContext);
+                if (_xessD3D12CreateContext != nullptr)
+                    DetourAttach(&(PVOID&)_xessD3D12CreateContext, xessD3D12CreateContext);
 
-            if (_xessD3D12BuildPipelines != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12BuildPipelines, xessD3D12BuildPipelines);
+                if (_xessD3D12BuildPipelines != nullptr)
+                    DetourAttach(&(PVOID&)_xessD3D12BuildPipelines, xessD3D12BuildPipelines);
 
-            if (_xessD3D12Init != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12Init, xessD3D12Init);
+                if (_xessD3D12Init != nullptr)
+                    DetourAttach(&(PVOID&)_xessD3D12Init, xessD3D12Init);
 
-            if (_xessGetVersion != nullptr)
-                DetourAttach(&(PVOID&)_xessGetVersion, xessGetVersion);
+                if (_xessGetVersion != nullptr)
+                    DetourAttach(&(PVOID&)_xessGetVersion, xessGetVersion);
 
-            if (_xessD3D12Execute != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12Execute, xessD3D12Execute);
+                if (_xessD3D12Execute != nullptr)
+                    DetourAttach(&(PVOID&)_xessD3D12Execute, xessD3D12Execute);
 
-            if (_xessSelectNetworkModel != nullptr)
-                DetourAttach(&(PVOID&)_xessSelectNetworkModel, xessSelectNetworkModel);
+                if (_xessSelectNetworkModel != nullptr)
+                    DetourAttach(&(PVOID&)_xessSelectNetworkModel, xessSelectNetworkModel);
 
-            if (_xessStartDump != nullptr)
-                DetourAttach(&(PVOID&)_xessStartDump, xessStartDump);
+                if (_xessStartDump != nullptr)
+                    DetourAttach(&(PVOID&)_xessStartDump, xessStartDump);
 
-            if (_xessIsOptimalDriver != nullptr)
-                DetourAttach(&(PVOID&)_xessIsOptimalDriver, xessIsOptimalDriver);
+                if (_xessIsOptimalDriver != nullptr)
+                    DetourAttach(&(PVOID&)_xessIsOptimalDriver, xessIsOptimalDriver);
 
-            if (_xessSetLoggingCallback != nullptr)
-                DetourAttach(&(PVOID&)_xessSetLoggingCallback, xessSetLoggingCallback);
+                if (_xessSetLoggingCallback != nullptr)
+                    DetourAttach(&(PVOID&)_xessSetLoggingCallback, xessSetLoggingCallback);
 
-            if (_xessGetProperties != nullptr)
-                DetourAttach(&(PVOID&)_xessGetProperties, xessGetProperties);
+                if (_xessGetProperties != nullptr)
+                    DetourAttach(&(PVOID&)_xessGetProperties, xessGetProperties);
 
-            if (_xessDestroyContext != nullptr)
-                DetourAttach(&(PVOID&)_xessDestroyContext, xessDestroyContext);
+                if (_xessDestroyContext != nullptr)
+                    DetourAttach(&(PVOID&)_xessDestroyContext, xessDestroyContext);
 
-            if (_xessSetVelocityScale != nullptr)
-                DetourAttach(&(PVOID&)_xessSetVelocityScale, xessSetVelocityScale);
+                if (_xessSetVelocityScale != nullptr)
+                    DetourAttach(&(PVOID&)_xessSetVelocityScale, xessSetVelocityScale);
 
-            if (_xessD3D12GetInitParams != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12GetInitParams, xessD3D12GetInitParams);
+                if (_xessD3D12GetInitParams != nullptr)
+                    DetourAttach(&(PVOID&)_xessD3D12GetInitParams, xessD3D12GetInitParams);
 
-            if (_xessForceLegacyScaleFactors != nullptr)
-                DetourAttach(&(PVOID&)_xessForceLegacyScaleFactors, xessForceLegacyScaleFactors);
+                if (_xessForceLegacyScaleFactors != nullptr)
+                    DetourAttach(&(PVOID&)_xessForceLegacyScaleFactors, xessForceLegacyScaleFactors);
 
-            if (_xessGetExposureMultiplier != nullptr)
-                DetourAttach(&(PVOID&)_xessGetExposureMultiplier, xessGetExposureMultiplier);
+                if (_xessGetExposureMultiplier != nullptr)
+                    DetourAttach(&(PVOID&)_xessGetExposureMultiplier, xessGetExposureMultiplier);
 
-            if (_xessGetInputResolution != nullptr)
-                DetourAttach(&(PVOID&)_xessGetInputResolution, xessGetInputResolution);
+                if (_xessGetInputResolution != nullptr)
+                    DetourAttach(&(PVOID&)_xessGetInputResolution, xessGetInputResolution);
 
-            if (_xessGetIntelXeFXVersion != nullptr)
-                DetourAttach(&(PVOID&)_xessGetIntelXeFXVersion, xessGetIntelXeFXVersion);
+                if (_xessGetIntelXeFXVersion != nullptr)
+                    DetourAttach(&(PVOID&)_xessGetIntelXeFXVersion, xessGetIntelXeFXVersion);
 
-            if (_xessGetJitterScale != nullptr)
-                DetourAttach(&(PVOID&)_xessGetJitterScale, xessGetJitterScale);
+                if (_xessGetJitterScale != nullptr)
+                    DetourAttach(&(PVOID&)_xessGetJitterScale, xessGetJitterScale);
 
-            if (_xessGetOptimalInputResolution != nullptr)
-                DetourAttach(&(PVOID&)_xessGetOptimalInputResolution, xessGetOptimalInputResolution);
+                if (_xessGetOptimalInputResolution != nullptr)
+                    DetourAttach(&(PVOID&)_xessGetOptimalInputResolution, xessGetOptimalInputResolution);
 
-            if (_xessSetExposureMultiplier != nullptr)
-                DetourAttach(&(PVOID&)_xessSetExposureMultiplier, xessSetExposureMultiplier);
+                if (_xessSetExposureMultiplier != nullptr)
+                    DetourAttach(&(PVOID&)_xessSetExposureMultiplier, xessSetExposureMultiplier);
 
-            if (_xessSetJitterScale != nullptr)
-                DetourAttach(&(PVOID&)_xessSetJitterScale, xessSetJitterScale);
+                if (_xessSetJitterScale != nullptr)
+                    DetourAttach(&(PVOID&)_xessSetJitterScale, xessSetJitterScale);
 
-            if (_xessD3D12GetResourcesToDump != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12GetResourcesToDump, xessD3D12GetResourcesToDump);
+                if (_xessD3D12GetResourcesToDump != nullptr)
+                    DetourAttach(&(PVOID&)_xessD3D12GetResourcesToDump, xessD3D12GetResourcesToDump);
 
-            if (_xessD3D12GetProfilingData != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12GetProfilingData, xessD3D12GetProfilingData);
+                if (_xessD3D12GetProfilingData != nullptr)
+                    DetourAttach(&(PVOID&)_xessD3D12GetProfilingData, xessD3D12GetProfilingData);
 
-            if (_xessSetContextParameterF != nullptr)
-                DetourAttach(&(PVOID&)_xessSetContextParameterF, xessSetContextParameterF);
+                if (_xessSetContextParameterF != nullptr)
+                    DetourAttach(&(PVOID&)_xessSetContextParameterF, xessSetContextParameterF);
 
-            DetourTransactionCommit();
+                DetourTransactionCommit();
+            }
         }
 
         bool loadResult = _xessD3D12CreateContext != nullptr;
