@@ -1614,7 +1614,7 @@ HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1
             {
                 DXGI_ADAPTER_DESC desc;
                 Config::Instance()->skipSpoofing = true;
-                if ((*ppAdapter)->GetDesc(&desc) == S_OK)
+                if (ptrGetDesc(*ppAdapter, &desc) == S_OK)
                 {
                     std::wstring name(desc.Description);
                     LOG_DEBUG("High performance adapter ({}) will be used", wstring_to_string(name));
@@ -1673,7 +1673,7 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
             {
                 DXGI_ADAPTER_DESC desc;
                 Config::Instance()->skipSpoofing = true;
-                if ((*ppAdapter)->GetDesc(&desc) == S_OK)
+                if (ptrGetDesc(*ppAdapter, &desc) == S_OK)
                 {
                     std::wstring name(desc.Description);
                     LOG_DEBUG("Adapter ({}) will be used", wstring_to_string(name));

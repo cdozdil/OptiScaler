@@ -362,29 +362,6 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
     if (contextDescription == nullptr || contextDescription->device == nullptr)
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
-    // Added for FMF2, but not helped
-    if (((IUnknown*)contextDescription->device)->QueryInterface(IID_PPV_ARGS(&_d3d12Device)) != S_OK)
-    {
-        LOG_WARN("Not D3D12Device: {:X}", (size_t)contextDescription->device);
-
-        if (Config::Instance()->lastCreatedD3D12Device != nullptr)
-        {
-            LOG_WARN("using last created D3D12 device!");
-            contextDescription->device = Config::Instance()->lastCreatedD3D12Device;
-        }
-        else
-        {
-            return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
-        }
-    }
-    else
-    {
-        _d3d12Device->Release();
-    }
-
-    if (_d3d12Device == nullptr)
-        _d3d12Device = (ID3D12Device*)contextDescription->device;
-
     auto ccResult = o_ffxFsr2ContextCreate_Dx12(context, contextDescription);
 
     if (ccResult != Fsr212::FFX_OK)
@@ -392,6 +369,26 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
         LOG_ERROR("ccResult: {:X}", (UINT)ccResult);
         return ccResult;
     }
+
+    // check for d3d12 device
+    // to prevent crashes when game is using custom interface and
+    // contextDescription->device is not a d3d12 device
+    if (_d3d12Device == nullptr)
+    {
+        auto bDevice = (ID3D12Device*)contextDescription->device;
+
+        for (size_t i = 0; i < Config::Instance()->d3d12Devices.size(); i++)
+        {
+            if (Config::Instance()->d3d12Devices[i] == bDevice)
+            {
+                _d3d12Device = bDevice;
+                break;
+            }
+        }
+    }
+
+    if (_d3d12Device == nullptr)
+        return ccResult; // _d3d12Device = Config::Instance()->d3d12Devices[Config::Instance()->d3d12Devices.size() - 1];
 
     NVSDK_NGX_FeatureCommonInfo fcInfo{};
     wchar_t const** paths = new const wchar_t* [1];
@@ -584,6 +581,9 @@ static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Conte
 // Tramboline method
 static Fsr212::FfxErrorCode ffxFsr2ContextDispatchBase_Dx12(Fsr212::FfxFsr2Context* context, FfxFsr2DispatchDescriptionBase* dispatchDescription)
 {
+    if (_d3d12Device == nullptr)
+        return o_ffxFsr2ContextDispatch_Dx12(context, dispatchDescription);
+
     // Tiny Tina's Wonderland
     if (o_ffxGetResourceFromDX12Resource_Dx12 != nullptr)
         return ffxFsr2TinyContextDispatch_Dx12(context, (FfxFsr2TinyDispatchDescription*)dispatchDescription);
@@ -627,11 +627,11 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDestroy_Dx12(Fsr212::FfxFsr2Context* c
     if (context == nullptr)
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
-    if (!_initParams.contains(context))
-        return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
-
     auto cdResult = o_ffxFsr2ContextDestroy_Dx12(context);
     LOG_INFO("result: {:X}", (UINT)cdResult);
+
+    if (!_initParams.contains(context) || _d3d12Device == nullptr)
+        return cdResult;
 
     if (_contexts.contains(context))
         NVSDK_NGX_D3D12_ReleaseFeature(_contexts[context]);
@@ -811,11 +811,11 @@ void HookFSR2ExeInputs()
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        //if (o_ffxFsr2GetScratchMemorySizeDX12 != nullptr)
-        //    DetourAttach(&(PVOID&)o_ffxFsr2GetScratchMemorySizeDX12, hk_ffxFsr2GetScratchMemorySizeDX12);
+        if (o_ffxFsr2GetScratchMemorySizeDX12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2GetScratchMemorySizeDX12, hk_ffxFsr2GetScratchMemorySizeDX12);
 
-        //if (o_ffxFsr2GetInterfaceDX12 != nullptr)
-        //    DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
+        if (o_ffxFsr2GetInterfaceDX12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
 
         if (o_ffxGetResourceDX12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxGetResourceDX12, hk_ffxGetResourceBaseDX12);
@@ -829,8 +829,8 @@ void HookFSR2ExeInputs()
         if (o_ffxFsr2ContextDispatch_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatchBase_Dx12);
 
-        //if (o_ffxFsr2ContextGenerateReactiveMask_Dx12 != nullptr)
-        //    DetourAttach(&(PVOID&)o_ffxFsr2ContextGenerateReactiveMask_Dx12, ffxFsr2ContextGenerateReactiveMask_Dx12);
+        if (o_ffxFsr2ContextGenerateReactiveMask_Dx12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2ContextGenerateReactiveMask_Dx12, ffxFsr2ContextGenerateReactiveMask_Dx12);
 
         if (o_ffxFsr2ContextDestroy_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2ContextDestroy_Dx12, ffxFsr2ContextDestroy_Dx12);
@@ -893,11 +893,11 @@ void HookFSR2Dx12Inputs(HMODULE module)
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        //if (o_ffxFsr2GetScratchMemorySizeDX12 != nullptr)
-        //    DetourAttach(&(PVOID&)o_ffxFsr2GetScratchMemorySizeDX12, hk_ffxFsr2GetScratchMemorySizeDX12);
+        if (o_ffxFsr2GetScratchMemorySizeDX12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2GetScratchMemorySizeDX12, hk_ffxFsr2GetScratchMemorySizeDX12);
 
-        //if (o_ffxFsr2GetInterfaceDX12 != nullptr)
-        //    DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
+        if (o_ffxFsr2GetInterfaceDX12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
 
         if (o_ffxGetResourceDX12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxGetResourceDX12, hk_ffxGetResourceBaseDX12);
@@ -954,8 +954,8 @@ void HookFSR2Inputs(HMODULE module)
         if (o_ffxFsr2ContextDispatch_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatchBase_Dx12);
 
-        //if (o_ffxFsr2ContextGenerateReactiveMask_Dx12 != nullptr)
-        //    DetourAttach(&(PVOID&)o_ffxFsr2ContextGenerateReactiveMask_Dx12, ffxFsr2ContextGenerateReactiveMask_Dx12);
+        if (o_ffxFsr2ContextGenerateReactiveMask_Dx12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2ContextGenerateReactiveMask_Dx12, ffxFsr2ContextGenerateReactiveMask_Dx12);
 
         if (o_ffxFsr2ContextDestroy_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2ContextDestroy_Dx12, ffxFsr2ContextDestroy_Dx12);

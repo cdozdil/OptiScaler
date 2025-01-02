@@ -340,6 +340,8 @@ inline static PFN_EnumAdapterByGpuPreference2 ptrEnumAdapterByGpuPreference = nu
 static PFN_CreateSwapChain oCreateSwapChain = nullptr;
 static PFN_CreateSwapChainForHwnd oCreateSwapChainForHwnd = nullptr;
 
+inline bool skipHighPerfCheck = false;
+
 // DirectX
 typedef void(*PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 typedef HRESULT(*PFN_CreateSamplerState)(ID3D11Device* This, const D3D11_SAMPLER_DESC* pSamplerDesc, ID3D11SamplerState** ppSamplerState);
@@ -3050,7 +3052,54 @@ static HRESULT hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID
 
 static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter)
 {
-    auto result = ptrEnumAdapters1(This, Adapter, ppAdapter);
+    HRESULT result = S_OK;
+
+    if (!skipHighPerfCheck && Config::Instance()->PreferDedicatedGpu.value_or(false))
+    {
+        if (Config::Instance()->PreferFirstDedicatedGpu.value_or(false) && Adapter > 0)
+        {
+            LOG_DEBUG("{}, returning not found", Adapter);
+            return DXGI_ERROR_NOT_FOUND;
+        }
+
+        IDXGIFactory6* factory6 = nullptr;
+        if (This->QueryInterface(IID_PPV_ARGS(&factory6)) == S_OK && factory6 != nullptr)
+        {
+            LOG_DEBUG("Trying to select high performance adapter ({})", Adapter);
+
+            skipHighPerfCheck = true;
+            result = ptrEnumAdapterByGpuPreference(factory6, Adapter, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter), ppAdapter);
+            skipHighPerfCheck = false;
+
+            if (result != S_OK)
+            {
+                LOG_ERROR("Can't get high performance adapter: {:X}, fallback to standard method", Adapter);
+                result = ptrEnumAdapters1(This, Adapter, ppAdapter);
+            }
+
+            if (result == S_OK)
+            {
+                DXGI_ADAPTER_DESC desc;
+                Config::Instance()->skipSpoofing = true;
+                if ((*(IDXGIAdapter**)ppAdapter)->GetDesc(&desc) == S_OK)
+                {
+                    std::wstring name(desc.Description);
+                    LOG_DEBUG("Adapter ({}) will be used", wstring_to_string(name));
+                }
+                else
+                {
+                    LOG_ERROR("Can't get adapter description!");
+                }
+                Config::Instance()->skipSpoofing = false;
+            }
+
+            factory6->Release();
+        }
+    }
+    else
+    {
+        result = ptrEnumAdapters(This, Adapter, ppAdapter);
+    }
 
     if (result == S_OK)
         CheckAdapter(*ppAdapter);
@@ -3060,7 +3109,54 @@ static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppA
 
 static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter)
 {
-    auto result = ptrEnumAdapters(This, Adapter, ppAdapter);
+    HRESULT result = S_OK;
+
+    if (!skipHighPerfCheck && Config::Instance()->PreferDedicatedGpu.value_or(false))
+    {
+        if (Config::Instance()->PreferFirstDedicatedGpu.value_or(false) && Adapter > 0)
+        {
+            LOG_DEBUG("{}, returning not found", Adapter);
+            return DXGI_ERROR_NOT_FOUND;
+        }
+
+        IDXGIFactory6* factory6 = nullptr;
+        if (This->QueryInterface(IID_PPV_ARGS(&factory6)) == S_OK && factory6 != nullptr)
+        {
+            LOG_DEBUG("Trying to select high performance adapter ({})", Adapter);
+
+            skipHighPerfCheck = true;
+            result = ptrEnumAdapterByGpuPreference(factory6, Adapter, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter), ppAdapter);
+            skipHighPerfCheck = false;
+
+            if (result != S_OK)
+            {
+                LOG_ERROR("Can't get high performance adapter: {:X}, fallback to standard method", Adapter);
+                result = ptrEnumAdapters(This, Adapter, ppAdapter);
+            }
+
+            if (result == S_OK)
+            {
+                DXGI_ADAPTER_DESC desc;
+                Config::Instance()->skipSpoofing = true;
+                if ((*(IDXGIAdapter**)ppAdapter)->GetDesc(&desc) == S_OK)
+                {
+                    std::wstring name(desc.Description);
+                    LOG_DEBUG("Adapter ({}) will be used", wstring_to_string(name));
+                }
+                else
+                {
+                    LOG_ERROR("Can't get adapter description!");
+                }
+                Config::Instance()->skipSpoofing = false;
+            }
+
+            factory6->Release();
+        }
+    }
+    else
+    {
+        result = ptrEnumAdapters(This, Adapter, ppAdapter);
+    }
 
     if (result == S_OK)
         CheckAdapter(*ppAdapter);
@@ -3274,6 +3370,7 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
     {
         LOG_INFO("Device captured, D3D11Device: {0:X}", (UINT64)*ppDevice);
         d3d11on12Device = *ppDevice;
+        Config::Instance()->d3d11Devices.push_back(*ppDevice);
         HookToDevice(d3d11on12Device);
     }
 
@@ -3323,7 +3420,7 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
 
     LOG_FUNC_RESULT(result);
 
-    Config::Instance()->lastCreatedD3D11Device = *ppDevice;
+    Config::Instance()->d3d11Devices.push_back(*ppDevice);
 
     return result;
 }
@@ -3405,7 +3502,7 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
 
     LOG_FUNC_RESULT(result);
 
-    Config::Instance()->lastCreatedD3D11Device = *ppDevice;
+    Config::Instance()->d3d11Devices.push_back(*ppDevice);
 
     return result;
 }
@@ -3477,7 +3574,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
 #endif
     }
 
-    Config::Instance()->lastCreatedD3D12Device = (ID3D12Device*)*ppDevice;
+    Config::Instance()->d3d12Devices.push_back((ID3D12Device*)*ppDevice);
 
     LOG_FUNC_RESULT(result);
 

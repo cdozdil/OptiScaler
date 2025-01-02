@@ -285,8 +285,8 @@ public:
 
 	IFeature* CurrentFeature = nullptr;
 
-    ID3D12Device* lastCreatedD3D12Device = nullptr;
-    ID3D11Device* lastCreatedD3D11Device = nullptr;
+    std::vector<ID3D12Device*> d3d12Devices;
+    std::vector<ID3D11Device*> d3d11Devices;
 
 	bool Reload(std::filesystem::path iniPath);
 	bool LoadFromPath(const wchar_t* InPath);

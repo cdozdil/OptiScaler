@@ -437,6 +437,7 @@ namespace Fsr3
         /// bump to ensure full functionality across effects and backends.
         ///
         /// @ingroup FfxInterface
+
         typedef struct FfxInterface {
 
             FfxGetSDKVersionFunc            fpGetSDKVersion;           ///< A callback function to query the SDK version.
@@ -461,6 +462,7 @@ namespace Fsr3
             FfxDevice                       device;                    ///< A backend specific device
 
         } FfxInterface;
+        
 
 #if defined(__cplusplus)
     }
