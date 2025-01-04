@@ -10,11 +10,11 @@
 #include "fsr2_212/include/ffx_fsr2.h"
 #include "fsr2_212/include/dx12/ffx_fsr2_dx12.h"
 
-//typedef struct FfxResourceBase
-//{
-//    void* resource;
-//    uint32_t dummy;
-//} FfxResourceBase;
+typedef struct FfxResourceBase
+{
+    void* resource;
+    uint32_t dummy;
+} FfxResourceBase;
 
 // Tiny Tina's Wonderland
 typedef struct FfxResourceTiny
@@ -86,13 +86,15 @@ typedef struct FfxFsr2TinyDispatchDescription
 } FfxFsr2TinyDispatchDescription;
 
 // FSR2
-typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextCreate)(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2ContextDescription* contextDescription);
-typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextDispatch)(Fsr212::FfxFsr2Context* context, const FfxFsr2DispatchDescriptionBase* dispatchDescription);
-typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextGenerateReactiveMask)(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2GenerateReactiveDescription* params);
-typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextDestroy)(Fsr212::FfxFsr2Context* context);
+typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextCreate)(void* context, const void* contextDescription);
+typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextDispatch)(void* context, const void* dispatchDescription);
+typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextGenerateReactiveMask)(void* context, const void* params);
+typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextDestroy)(void* context);
 typedef float(*PFN_ffxFsr2GetUpscaleRatioFromQualityMode)(Fsr212::FfxFsr2QualityMode qualityMode);
 typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2GetRenderResolutionFromQualityMode)(uint32_t* renderWidth, uint32_t* renderHeight, uint32_t displayWidth, uint32_t displayHeight, Fsr212::FfxFsr2QualityMode qualityMode);
 typedef bool(*PFN_ffxFsr2ResourceIsNull_Dx12)(Fsr212::FfxResource resource);
+typedef bool(*PFN_ffxFsr20ResourceIsNull_Dx12)(FfxResource20 resource);
+typedef bool(*PFN_ffxFsr2TinyResourceIsNull_Dx12)(FfxResourceTiny resource);
 
 // Tiny Tina's Wonderland
 typedef FfxResourceTiny(*PFN_ffxGetResourceFromDX12Resource_Dx12)(ID3D12Resource* resource);
@@ -100,12 +102,16 @@ typedef FfxResourceTiny(*PFN_ffxGetResourceFromDX12Resource_Dx12)(ID3D12Resource
 // Dx12
 typedef size_t(*PFN_ffxFsr2GetScratchMemorySizeDX12)();
 typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2GetInterfaceDX12)(Fsr212::FfxFsr2Interface212* fsr2Interface, ID3D12Device* device, void* scratchBuffer, size_t scratchBufferSize);
-typedef Fsr212::FfxResource(*PFN_ffxGetResourceDX12)(Fsr212::FfxFsr2Context* context, ID3D12Resource* resDx12, const wchar_t* name, Fsr212::FfxResourceStates state, UINT shaderComponentMapping);
 typedef ID3D12Resource* (*PFN_ffxGetDX12ResourcePtr)(Fsr212::FfxFsr2Context* context, uint32_t resId);
 typedef Fsr212::FfxDevice(*PFN_ffxGetDeviceDX12)(ID3D12Device* device);
 
+typedef Fsr212::FfxResource(*PFN_ffxGetResourceDX12)(Fsr212::FfxFsr2Context* context, ID3D12Resource* resDx12, const wchar_t* name, Fsr212::FfxResourceStates state, UINT shaderComponentMapping);
+typedef FfxResource20(*PFN_ffxGetResource20DX12)(Fsr212::FfxFsr2Context* context, ID3D12Resource* resDx12, const wchar_t* name, Fsr212::FfxResourceStates state, UINT shaderComponentMapping);
+
 static PFN_ffxFsr2ContextCreate o_ffxFsr2ContextCreate_Dx12 = nullptr;
 static PFN_ffxFsr2ContextDispatch o_ffxFsr2ContextDispatch_Dx12 = nullptr;
+static PFN_ffxFsr2ContextDispatch o_ffxFsr20ContextDispatch_Dx12 = nullptr;
+static PFN_ffxFsr2ContextDispatch o_ffxFsr2TinyContextDispatch_Dx12 = nullptr;
 static PFN_ffxFsr2ContextGenerateReactiveMask o_ffxFsr2ContextGenerateReactiveMask_Dx12 = nullptr;
 static PFN_ffxFsr2ContextDestroy o_ffxFsr2ContextDestroy_Dx12 = nullptr;
 static PFN_ffxFsr2GetUpscaleRatioFromQualityMode o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = nullptr;
@@ -113,10 +119,15 @@ static PFN_ffxFsr2GetRenderResolutionFromQualityMode o_ffxFsr2GetRenderResolutio
 static PFN_ffxFsr2GetScratchMemorySizeDX12 o_ffxFsr2GetScratchMemorySizeDX12 = nullptr;
 static PFN_ffxFsr2GetInterfaceDX12 o_ffxFsr2GetInterfaceDX12 = nullptr;
 static PFN_ffxGetResourceDX12 o_ffxGetResourceDX12 = nullptr;
+static PFN_ffxGetResource20DX12 o_ffxGetResource20DX12 = nullptr;
+
 static PFN_ffxGetDX12ResourcePtr o_ffxGetDX12ResourcePtr = nullptr;
-static PFN_ffxFsr2ResourceIsNull_Dx12 o_ffxFsr2ResourceIsNull_Dx12 = nullptr;
 static PFN_ffxGetResourceFromDX12Resource_Dx12 o_ffxGetResourceFromDX12Resource_Dx12 = nullptr;
 static PFN_ffxGetDeviceDX12 o_ffxGetDeviceDX12 = nullptr;
+
+static PFN_ffxFsr2ResourceIsNull_Dx12 o_ffxFsr2ResourceIsNull_Dx12 = nullptr;
+static PFN_ffxFsr20ResourceIsNull_Dx12 o_ffxFsr20ResourceIsNull_Dx12 = nullptr;
+static PFN_ffxFsr2TinyResourceIsNull_Dx12 o_ffxFsr2TinyResourceIsNull_Dx12 = nullptr;
 
 static std::optional<bool> _version20;
 
@@ -429,6 +440,10 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
 
 static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2DispatchDescription* dispatchDescription)
 {
+    // Skip OptiScaler stuff
+    if (!Config::Instance()->Fsr2Inputs.value_or(true))
+        return o_ffxFsr2ContextDispatch_Dx12(context, dispatchDescription);
+
     if (dispatchDescription == nullptr || context == nullptr || dispatchDescription->commandList == nullptr)
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
@@ -452,7 +467,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Dx12(Fsr212::FfxFsr2Context* 
     params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, dispatchDescription->renderSize.height);
     params->Set(NVSDK_NGX_Parameter_Depth, dispatchDescription->depth.resource);
     params->Set(NVSDK_NGX_Parameter_ExposureTexture, dispatchDescription->exposure.resource);
-    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, dispatchDescription->reactive.resource);
+    //params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, dispatchDescription->reactive.resource);
     params->Set(NVSDK_NGX_Parameter_Color, dispatchDescription->color.resource);
     params->Set(NVSDK_NGX_Parameter_MotionVectors, dispatchDescription->motionVectors.resource);
     params->Set(NVSDK_NGX_Parameter_Output, dispatchDescription->output.resource);
@@ -466,7 +481,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Dx12(Fsr212::FfxFsr2Context* 
 
     LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width, dispatchDescription->renderSize.height);
 
-    Config::Instance()->setInputApiName = "FSR2-DX12";
+    Config::Instance()->setInputApiName = "FSR2.X-DX12";
 
     auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDescription->commandList, handle, params, nullptr);
 
@@ -479,6 +494,10 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Dx12(Fsr212::FfxFsr2Context* 
 
 static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const FfxFsr20DispatchDescription* dispatchDescription)
 {
+    // Skip OptiScaler stuff
+    if (!Config::Instance()->Fsr2Inputs.value_or(true))
+        return o_ffxFsr20ContextDispatch_Dx12(context, dispatchDescription);
+
     if (dispatchDescription == nullptr || context == nullptr || dispatchDescription->commandList == nullptr)
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
@@ -502,7 +521,7 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context*
     params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, dispatchDescription->renderSize.height);
     params->Set(NVSDK_NGX_Parameter_Depth, dispatchDescription->depth.resource);
     params->Set(NVSDK_NGX_Parameter_ExposureTexture, dispatchDescription->exposure.resource);
-    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, dispatchDescription->reactive.resource);
+    //params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, dispatchDescription->reactive.resource);
     params->Set(NVSDK_NGX_Parameter_Color, dispatchDescription->color.resource);
     params->Set(NVSDK_NGX_Parameter_MotionVectors, dispatchDescription->motionVectors.resource);
     params->Set(NVSDK_NGX_Parameter_Output, dispatchDescription->output.resource);
@@ -516,7 +535,7 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context*
 
     LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width, dispatchDescription->renderSize.height);
 
-    Config::Instance()->setInputApiName = "FSR2-DX12";
+    Config::Instance()->setInputApiName = "FSR2.0-DX12";
 
     auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDescription->commandList, handle, params, nullptr);
 
@@ -530,6 +549,10 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context*
 // Tiny Tina's Wonderland
 static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const FfxFsr2TinyDispatchDescription* dispatchDescription)
 {
+    // Skip OptiScaler stuff
+    if (!Config::Instance()->Fsr2Inputs.value_or(true))
+        return o_ffxFsr2TinyContextDispatch_Dx12(context, dispatchDescription);
+
     if (dispatchDescription == nullptr || context == nullptr || dispatchDescription->commandList == nullptr)
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
@@ -553,7 +576,7 @@ static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Conte
     params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, dispatchDescription->renderSize.height);
     params->Set(NVSDK_NGX_Parameter_Depth, dispatchDescription->depth.resource);
     params->Set(NVSDK_NGX_Parameter_ExposureTexture, dispatchDescription->exposure.resource);
-    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, dispatchDescription->reactive.resource);
+    //params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, dispatchDescription->reactive.resource);
     params->Set(NVSDK_NGX_Parameter_Color, dispatchDescription->color.resource);
     params->Set(NVSDK_NGX_Parameter_MotionVectors, dispatchDescription->motionVectors.resource);
     params->Set(NVSDK_NGX_Parameter_Output, dispatchDescription->output.resource);
@@ -567,7 +590,7 @@ static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Conte
 
     LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width, dispatchDescription->renderSize.height);
 
-    Config::Instance()->setInputApiName = "FSR2-DX12";
+    Config::Instance()->setInputApiName = "FSR2.TT-DX12";
 
     auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDescription->commandList, handle, params, nullptr);
 
@@ -579,45 +602,45 @@ static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Conte
 }
 
 // Tramboline method
-static Fsr212::FfxErrorCode ffxFsr2ContextDispatchBase_Dx12(Fsr212::FfxFsr2Context* context, FfxFsr2DispatchDescriptionBase* dispatchDescription)
-{
-    // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr2Inputs.value_or(true))
-        return o_ffxFsr2ContextDispatch_Dx12(context, dispatchDescription);
-
-    if (_d3d12Device == nullptr)
-        return o_ffxFsr2ContextDispatch_Dx12(context, dispatchDescription);
-
-    // Tiny Tina's Wonderland
-    if (o_ffxGetResourceFromDX12Resource_Dx12 != nullptr)
-        return ffxFsr2TinyContextDispatch_Dx12(context, (FfxFsr2TinyDispatchDescription*)dispatchDescription);
-
-    if (_version20.has_value())
-    {
-        if (_version20.value())
-            return ffxFsr20ContextDispatch_Dx12(context, (FfxFsr20DispatchDescription*)dispatchDescription);
-        else
-            return ffxFsr2ContextDispatch_Dx12(context, (Fsr212::FfxFsr2DispatchDescription*)dispatchDescription);
-    }
-    else
-    {
-        if (o_ffxGetResourceDX12 == nullptr)
-        {
-            _version20 = false;
-            return ffxFsr2ContextDispatchBase_Dx12(context, dispatchDescription);
-        }
-
-        auto fsr2xDesc = reinterpret_cast<FfxFsr20DispatchDescription*>(dispatchDescription);
-
-        // Check for FSR2.0
-        if ((uint32_t)fsr2xDesc->depth.description.type == 0x1ee7)
-            _version20 = true;
-        else
-            _version20 = false;
-
-        return ffxFsr2ContextDispatchBase_Dx12(context, dispatchDescription);
-    }
-}
+//static Fsr212::FfxErrorCode ffxFsr2ContextDispatchBase_Dx12(Fsr212::FfxFsr2Context* context, void* dispatchDescription)
+//{
+//    // Skip OptiScaler stuff
+//    if (!Config::Instance()->Fsr2Inputs.value_or(true))
+//        return o_ffxFsr2ContextDispatch_Dx12(context, dispatchDescription);
+//
+//    if (_d3d12Device == nullptr)
+//        return o_ffxFsr2ContextDispatch_Dx12(context, dispatchDescription);
+//
+//    // Tiny Tina's Wonderland
+//    if (o_ffxGetResourceFromDX12Resource_Dx12 != nullptr)
+//        return ffxFsr2TinyContextDispatch_Dx12(context, (FfxFsr2TinyDispatchDescription*)dispatchDescription);
+//
+//    if (_version20.has_value())
+//    {
+//        if (_version20.value())
+//            return ffxFsr20ContextDispatch_Dx12(context, (FfxFsr20DispatchDescription*)dispatchDescription);
+//        else
+//            return ffxFsr2ContextDispatch_Dx12(context, (Fsr212::FfxFsr2DispatchDescription*)dispatchDescription);
+//    }
+//    else
+//    {
+//        if (o_ffxGetResourceDX12 == nullptr)
+//        {
+//            _version20 = false;
+//            return ffxFsr2ContextDispatchBase_Dx12(context, dispatchDescription);
+//        }
+//
+//        auto fsr2xDesc = reinterpret_cast<FfxFsr20DispatchDescription*>(dispatchDescription);
+//
+//        // Check for FSR2.0
+//        if ((uint32_t)fsr2xDesc->motionVectors.description.type == 0x1ee7)
+//            _version20 = true;
+//        else
+//            _version20 = false;
+//
+//        return ffxFsr2ContextDispatchBase_Dx12(context, dispatchDescription);
+//    }
+//}
 
 static Fsr212::FfxErrorCode ffxFsr2ContextGenerateReactiveMask_Dx12(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2GenerateReactiveDescription* params)
 {
@@ -695,14 +718,14 @@ static Fsr212::FfxErrorCode hk_ffxFsr2GetInterfaceDX12(Fsr212::FfxFsr2Interface2
                                                        void* scratchBuffer, size_t scratchBufferSize)
 {
     LOG_DEBUG("");
-    
+
     if (device != nullptr)
         _d3d12Device = device;
-    
+
     return o_ffxFsr2GetInterfaceDX12(fsr2Interface, device, scratchBuffer, scratchBufferSize);
 }
 
-static Fsr212::FfxResource hk_ffxGetResourceBaseDX12(Fsr212::FfxFsr2Context* context, ID3D12Resource* resDx12, const wchar_t* name = nullptr,
+static Fsr212::FfxResource hk_ffxGetResourceDX12(Fsr212::FfxFsr2Context* context, ID3D12Resource* resDx12, const wchar_t* name = nullptr,
                                                  Fsr212::FfxResourceStates state = Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ,
                                                  UINT shaderComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING)
 {
@@ -710,11 +733,25 @@ static Fsr212::FfxResource hk_ffxGetResourceBaseDX12(Fsr212::FfxFsr2Context* con
     if (!Config::Instance()->Fsr2Inputs.value_or(true))
         return o_ffxGetResourceDX12(context, resDx12, name, state, shaderComponentMapping);
 
-    Fsr212::FfxResource result{};
-    result.resource = resDx12;
-    result.name[0] = 0x1ee71ee71ee71ee7; // For FSR2.0 detection
+    Fsr212::FfxResource resource{};
+    resource.resource = resDx12;
 
-    return result;
+    return resource;
+}
+
+// FSR2.0
+static FfxResource20 hk_ffxGetResource20DX12(Fsr212::FfxFsr2Context* context, ID3D12Resource* resDx12, const wchar_t* name = nullptr,
+                                             Fsr212::FfxResourceStates state = Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ,
+                                             UINT shaderComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING)
+{
+    // Skip OptiScaler stuff
+    if (!Config::Instance()->Fsr2Inputs.value_or(true))
+        return o_ffxGetResource20DX12(context, resDx12, name, state, shaderComponentMapping);
+
+    FfxResource20 resource{};
+    resource.resource = resDx12;
+
+    return resource;
 }
 
 // Tiny Tina's Wonderland
@@ -755,38 +792,25 @@ void HookFSR2ExeInputs()
     if (o_ffxFsr2ContextCreate_Dx12 == nullptr)
         return;
 
-    //ffxFsr2GetScratchMemorySizeDX12
-    //o_ffxFsr2GetScratchMemorySizeDX12 = (PFN_ffxFsr2GetScratchMemorySizeDX12)DetourFindFunction(exeName.c_str(), "ffxFsr2GetScratchMemorySizeDX12");
-    //if (o_ffxFsr2GetScratchMemorySizeDX12 == nullptr)
-    //    o_ffxFsr2GetScratchMemorySizeDX12 = (PFN_ffxFsr2GetScratchMemorySizeDX12)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetScratchMemorySizeDX12@@YA_KXZ");
-    //if (o_ffxFsr2GetScratchMemorySizeDX12 == nullptr)
-    //    o_ffxFsr2GetScratchMemorySizeDX12 = (PFN_ffxFsr2GetScratchMemorySizeDX12)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetScratchMemorySizeDX12@@YA_KXZ");
-
-    //ffxFsr2GetInterfaceDX12
-    //o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "ffxFsr2GetInterfaceDX12");
-    //if (o_ffxFsr2GetInterfaceDX12 == nullptr)
-    //    o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetInterfaceDX12@@YAHPEAUFfxFsr2Interface@@PEAUID3D12Device@@PEAX_K@Z");
-
     //ffxGetResourceDX12
     o_ffxGetResourceDX12 = (PFN_ffxGetResourceDX12)DetourFindFunction(exeName.c_str(), "ffxGetResourceDX12");
-    if (o_ffxGetResourceDX12 == nullptr)
-        o_ffxGetResourceDX12 = (PFN_ffxGetResourceDX12)DetourFindFunction(exeName.c_str(), "?ffxGetResourceDX12@@YA?AUFfxResource@@PEAUFfxFsr2Context@@PEAUID3D12Resource@@PEA_WW4FfxResourceStates@@I@Z");
 
-    //ffxGetDX12ResourcePtr
-    o_ffxGetDX12ResourcePtr = (PFN_ffxGetDX12ResourcePtr)DetourFindFunction(exeName.c_str(), "ffxGetDX12ResourcePtr");
+    //ffxGetResourceDX12 FSR2.0
+    o_ffxGetResource20DX12 = (PFN_ffxGetResource20DX12)DetourFindFunction(exeName.c_str(), "?ffxGetResourceDX12@@YA?AUFfxResource@@PEAUFfxFsr2Context@@PEAUID3D12Resource@@PEA_WW4FfxResourceStates@@I@Z");
 
-    //ffxFsr2ContextCreate
     //ffxFsr2ContextDispatch
     o_ffxFsr2ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextDispatch");
-    if (o_ffxFsr2ContextDispatch_Dx12 == nullptr)
-        o_ffxFsr2ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextDispatch@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2DispatchDescription@@@Z");
-    if (o_ffxFsr2ContextDispatch_Dx12 == nullptr)
-        o_ffxFsr2ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextDispatch@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2DispatchParams@@@Z");
+
+    //ffxFsr2ContextDispatch FSR2.0
+    o_ffxFsr20ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextDispatch@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2DispatchDescription@@@Z");
+
+    //ffxFsr2ContextDispatch Tiny Tina
+    o_ffxFsr2TinyContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextDispatch@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2DispatchParams@@@Z");
 
     //ffxFsr2ContextGenerateReactiveMask
-    o_ffxFsr2ContextGenerateReactiveMask_Dx12 = (PFN_ffxFsr2ContextGenerateReactiveMask)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextGenerateReactiveMask");
-    if (o_ffxFsr2ContextGenerateReactiveMask_Dx12 == nullptr)
-        o_ffxFsr2ContextGenerateReactiveMask_Dx12 = (PFN_ffxFsr2ContextGenerateReactiveMask)DetourFindFunction(exeName.c_str(), "?ffxFsr2GenerateReactiveMask@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2GenerateReactiveDescription@@@Z");
+    //o_ffxFsr2ContextGenerateReactiveMask_Dx12 = (PFN_ffxFsr2ContextGenerateReactiveMask)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextGenerateReactiveMask");
+    //if (o_ffxFsr2ContextGenerateReactiveMask_Dx12 == nullptr)
+    //    o_ffxFsr2ContextGenerateReactiveMask_Dx12 = (PFN_ffxFsr2ContextGenerateReactiveMask)DetourFindFunction(exeName.c_str(), "?ffxFsr2GenerateReactiveMask@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2GenerateReactiveDescription@@@Z");
 
     //ffxFsr2ContextDestroy
     o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextDestroy");
@@ -806,43 +830,46 @@ void HookFSR2ExeInputs()
         o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAH0HHW4FfxFsr2QualityMode@@@Z");
 
     //ffxFsr2ResourceIsNull
-    o_ffxFsr2ResourceIsNull_Dx12 = (PFN_ffxFsr2ResourceIsNull_Dx12)DetourFindFunction(exeName.c_str(), "ffxFsr2ResourceIsNull");
+    //o_ffxFsr2ResourceIsNull_Dx12 = (PFN_ffxFsr2ResourceIsNull_Dx12)DetourFindFunction(exeName.c_str(), "ffxFsr2ResourceIsNull");
 
-    //ffxGetResourceFromDX12Resource_Dx12
+    //ffxGetResourceFromDX12Resource_Dx12 - Tiny Tina
     o_ffxGetResourceFromDX12Resource_Dx12 = (PFN_ffxGetResourceFromDX12Resource_Dx12)DetourFindFunction(exeName.c_str(), "?ffxGetResourceFromDX12Resource@@YA?AUFfxResource@@PEAUID3D12Resource@@@Z");
 
-    //ffxFsr2GetUpscaleRatioFromQualityMode
-    o_ffxGetDeviceDX12 = (PFN_ffxGetDeviceDX12)DetourFindFunction(exeName.c_str(), "ffxGetDeviceDX12");
-    if (o_ffxGetDeviceDX12 == nullptr)
-        o_ffxGetDeviceDX12 = (PFN_ffxGetDeviceDX12)DetourFindFunction(exeName.c_str(), "??ffxGetDeviceDX12@@YAPEAXPEAUID3D12Device@@@Z");
+    //ffxGetDeviceDX12
+    //o_ffxGetDeviceDX12 = (PFN_ffxGetDeviceDX12)DetourFindFunction(exeName.c_str(), "ffxGetDeviceDX12");
+    //if (o_ffxGetDeviceDX12 == nullptr)
+    //    o_ffxGetDeviceDX12 = (PFN_ffxGetDeviceDX12)DetourFindFunction(exeName.c_str(), "??ffxGetDeviceDX12@@YAPEAXPEAUID3D12Device@@@Z");
 
-    if (o_ffxFsr2GetInterfaceDX12 != nullptr || o_ffxFsr2ContextCreate_Dx12 != nullptr)
+    if (o_ffxGetResourceDX12 != nullptr || o_ffxGetResource20DX12 != nullptr || o_ffxGetResourceFromDX12Resource_Dx12 != nullptr || o_ffxFsr2ContextCreate_Dx12 != nullptr)
     {
         LOG_INFO("FSR2 methods found, now hooking");
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        if (o_ffxFsr2GetScratchMemorySizeDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2GetScratchMemorySizeDX12, hk_ffxFsr2GetScratchMemorySizeDX12);
-
-        if (o_ffxFsr2GetInterfaceDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
-
         if (o_ffxGetResourceDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxGetResourceDX12, hk_ffxGetResourceBaseDX12);
+            DetourAttach(&(PVOID&)o_ffxGetResourceDX12, hk_ffxGetResourceDX12);
 
-        //if (o_ffxGetDX12ResourcePtr != nullptr)
-        //    DetourAttach(&(PVOID&)o_ffxGetDX12ResourcePtr, hk_ffxGetDX12ResourcePtr);
+        if (o_ffxGetResource20DX12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxGetResource20DX12, hk_ffxGetResource20DX12);
+
+        if (o_ffxGetResourceFromDX12Resource_Dx12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxGetResourceFromDX12Resource_Dx12, hk_ffxGetResourceFromDX12Resource_Dx12);
 
         if (o_ffxFsr2ContextCreate_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2ContextCreate_Dx12, ffxFsr2ContextCreate_Dx12);
 
         if (o_ffxFsr2ContextDispatch_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatchBase_Dx12);
+            DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatch_Dx12);
 
-        if (o_ffxFsr2ContextGenerateReactiveMask_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2ContextGenerateReactiveMask_Dx12, ffxFsr2ContextGenerateReactiveMask_Dx12);
+        if (o_ffxFsr20ContextDispatch_Dx12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr20ContextDispatch_Dx12, ffxFsr20ContextDispatch_Dx12);
+
+        if (o_ffxFsr2TinyContextDispatch_Dx12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2TinyContextDispatch_Dx12, ffxFsr2TinyContextDispatch_Dx12);
+
+        //if (o_ffxFsr2ContextGenerateReactiveMask_Dx12 != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxFsr2ContextGenerateReactiveMask_Dx12, ffxFsr2ContextGenerateReactiveMask_Dx12);
 
         if (o_ffxFsr2ContextDestroy_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2ContextDestroy_Dx12, ffxFsr2ContextDestroy_Dx12);
@@ -853,14 +880,8 @@ void HookFSR2ExeInputs()
         if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12, ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
 
-        if (o_ffxFsr2ResourceIsNull_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2ResourceIsNull_Dx12, ffxFsr2ResourceIsNull_Dx12);
-
-        if (o_ffxGetResourceFromDX12Resource_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxGetResourceFromDX12Resource_Dx12, hk_ffxGetResourceFromDX12Resource_Dx12);
-
-        //if (o_ffxGetDeviceDX12 != nullptr)
-        //    DetourAttach(&(PVOID&)o_ffxGetDeviceDX12, o_ffxGetDeviceDX12);
+        //if (o_ffxFsr2ResourceIsNull_Dx12 != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxFsr2ResourceIsNull_Dx12, ffxFsr2ResourceIsNull_Dx12);
 
         Config::Instance()->fsrHooks = true;
 
@@ -890,12 +911,12 @@ void HookFSR2Dx12Inputs(HMODULE module)
 
     if (module != nullptr)
     {
-        o_ffxFsr2GetScratchMemorySizeDX12 = (PFN_ffxFsr2GetScratchMemorySizeDX12)GetProcAddress(module, "ffxFsr2GetScratchMemorySizeDX12");
-        o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)GetProcAddress(module, "ffxFsr2GetInterfaceDX12");
+        //o_ffxFsr2GetScratchMemorySizeDX12 = (PFN_ffxFsr2GetScratchMemorySizeDX12)GetProcAddress(module, "ffxFsr2GetScratchMemorySizeDX12");
+        //o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)GetProcAddress(module, "ffxFsr2GetInterfaceDX12");
         o_ffxGetResourceDX12 = (PFN_ffxGetResourceDX12)GetProcAddress(module, "ffxGetResourceDX12");
-        o_ffxGetDX12ResourcePtr = (PFN_ffxGetDX12ResourcePtr)GetProcAddress(module, "ffxGetDX12ResourcePtr");
-        o_ffxFsr2ResourceIsNull_Dx12 = (PFN_ffxFsr2ResourceIsNull_Dx12)GetProcAddress(module, "ffxFsr2ResourceIsNull");
-        o_ffxGetDeviceDX12 = (PFN_ffxGetDeviceDX12)GetProcAddress(module, "ffxGetDeviceDX12");
+        //o_ffxGetDX12ResourcePtr = (PFN_ffxGetDX12ResourcePtr)GetProcAddress(module, "ffxGetDX12ResourcePtr");
+        //o_ffxFsr2ResourceIsNull_Dx12 = (PFN_ffxFsr2ResourceIsNull_Dx12)GetProcAddress(module, "ffxFsr2ResourceIsNull");
+        //o_ffxGetDeviceDX12 = (PFN_ffxGetDeviceDX12)GetProcAddress(module, "ffxGetDeviceDX12");
     }
 
     if (o_ffxFsr2GetScratchMemorySizeDX12 != nullptr)
@@ -905,20 +926,20 @@ void HookFSR2Dx12Inputs(HMODULE module)
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        if (o_ffxFsr2GetScratchMemorySizeDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2GetScratchMemorySizeDX12, hk_ffxFsr2GetScratchMemorySizeDX12);
+        //if (o_ffxFsr2GetScratchMemorySizeDX12 != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxFsr2GetScratchMemorySizeDX12, hk_ffxFsr2GetScratchMemorySizeDX12);
 
-        if (o_ffxFsr2GetInterfaceDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
+        //if (o_ffxFsr2GetInterfaceDX12 != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
 
         if (o_ffxGetResourceDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxGetResourceDX12, hk_ffxGetResourceBaseDX12);
+            DetourAttach(&(PVOID&)o_ffxGetResourceDX12, hk_ffxGetResourceDX12);
 
-        if (o_ffxGetDX12ResourcePtr != nullptr)
-            DetourAttach(&(PVOID&)o_ffxGetDX12ResourcePtr, hk_ffxGetDX12ResourcePtr);
+        //if (o_ffxGetDX12ResourcePtr != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxGetDX12ResourcePtr, hk_ffxGetDX12ResourcePtr);
 
-        if (o_ffxFsr2ResourceIsNull_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2ResourceIsNull_Dx12, ffxFsr2ResourceIsNull_Dx12);
+        //if (o_ffxFsr2ResourceIsNull_Dx12 != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxFsr2ResourceIsNull_Dx12, ffxFsr2ResourceIsNull_Dx12);
 
         //if (o_ffxGetDeviceDX12 != nullptr)
         //    DetourAttach(&(PVOID&)o_ffxGetDeviceDX12, hk_ffxGetDeviceDX12);
@@ -947,7 +968,7 @@ void HookFSR2Inputs(HMODULE module)
     {
         o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)GetProcAddress(module, "ffxFsr2ContextCreate");
         o_ffxFsr2ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)GetProcAddress(module, "ffxFsr2ContextDispatch");
-        o_ffxFsr2ContextGenerateReactiveMask_Dx12 = (PFN_ffxFsr2ContextGenerateReactiveMask)GetProcAddress(module, "ffxFsr2ContextGenerateReactiveMask");
+        //o_ffxFsr2ContextGenerateReactiveMask_Dx12 = (PFN_ffxFsr2ContextGenerateReactiveMask)GetProcAddress(module, "ffxFsr2ContextGenerateReactiveMask");
         o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy)GetProcAddress(module, "ffxFsr2ContextDestroy");
         o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr2GetUpscaleRatioFromQualityMode)GetProcAddress(module, "ffxFsr2GetUpscaleRatioFromQualityMode");
         o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)GetProcAddress(module, "ffxFsr2GetRenderResolutionFromQualityMode");
@@ -964,10 +985,10 @@ void HookFSR2Inputs(HMODULE module)
             DetourAttach(&(PVOID&)o_ffxFsr2ContextCreate_Dx12, ffxFsr2ContextCreate_Dx12);
 
         if (o_ffxFsr2ContextDispatch_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatchBase_Dx12);
+            DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatch_Dx12);
 
-        if (o_ffxFsr2ContextGenerateReactiveMask_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2ContextGenerateReactiveMask_Dx12, ffxFsr2ContextGenerateReactiveMask_Dx12);
+        //if (o_ffxFsr2ContextGenerateReactiveMask_Dx12 != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxFsr2ContextGenerateReactiveMask_Dx12, ffxFsr2ContextGenerateReactiveMask_Dx12);
 
         if (o_ffxFsr2ContextDestroy_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2ContextDestroy_Dx12, ffxFsr2ContextDestroy_Dx12);
