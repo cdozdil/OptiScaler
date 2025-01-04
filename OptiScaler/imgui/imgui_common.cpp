@@ -1368,6 +1368,11 @@ void ImGuiCommon::RenderMenu()
                             Config::Instance()->FsrCameraNear.reset();
                             Config::Instance()->FsrCameraFar.reset();
                         }
+
+                        ImGui::SameLine(0.0f, 6.0f);
+                        ImGui::Text("Near: %.1f Far: %.1f", 
+                                    Config::Instance()->LastFsrCameraNear < 500000.0f ? Config::Instance()->LastFsrCameraNear : 500000.0f, 
+                                    Config::Instance()->LastFsrCameraFar < 500000.0f ? Config::Instance()->LastFsrCameraFar : 500000.0f);
                     }
 
                     // DLSS -----------------
