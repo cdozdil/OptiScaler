@@ -1299,6 +1299,10 @@ void ImGuiCommon::RenderMenu()
                         ImGui::SeparatorText("FSR Common Settings");
                         ShowHelpMarker("Affects both FSR-FG & Upscalers");
 
+                        bool useFsrVales = Config::Instance()->FsrUseFsrInputValues.value_or(true);
+                        if (ImGui::Checkbox("Use FSR Input Values", &useFsrVales))
+                            Config::Instance()->FsrUseFsrInputValues = useFsrVales;
+
                         bool useVFov = Config::Instance()->FsrVerticalFov.has_value() || !Config::Instance()->FsrHorizontalFov.has_value();
 
                         float vfov;
@@ -1347,17 +1351,23 @@ void ImGuiCommon::RenderMenu()
                         float cameraFar;
 
                         cameraNear = Config::Instance()->FsrCameraNear.value_or(10.0f);
-                        cameraFar = Config::Instance()->FsrCameraFar.value_or(500000.0f);
+                        cameraFar = Config::Instance()->FsrCameraFar.value_or(100000.0f);
 
                         if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.1f, 500000.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
                             Config::Instance()->FsrCameraNear = cameraNear;
                         ShowHelpMarker("Might help achieve better image quality\n"
                                        "And potentially less ghosting");
 
-                        if (ImGui::SliderFloat("Camera Far", &cameraFar, 0.1f, 500000.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat & ImGuiSliderFlags_Logarithmic))
+                        if (ImGui::SliderFloat("Camera Far", &cameraFar, 0.1f, 500000.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
                             Config::Instance()->FsrCameraFar = cameraFar;
                         ShowHelpMarker("Might help achieve better image quality\n"
                                        "And potentially less ghosting");
+
+                        if (ImGui::Button("Reset Camera Values"))
+                        {
+                            Config::Instance()->FsrCameraNear.reset();
+                            Config::Instance()->FsrCameraFar.reset();
+                        }
                     }
 
                     // DLSS -----------------
@@ -2205,6 +2215,19 @@ void ImGuiCommon::RenderMenu()
                         ShowHelpMarker("Extended sliders limit for quality presets\n\n"
                                        "Using this option changes resolution detection logic\n"
                                        "and might cause issues and crashes!");
+
+                        bool fsr2Inputs = Config::Instance()->Fsr2Inputs.value_or(true);
+                        bool fsr3Inputs = Config::Instance()->Fsr3Inputs.value_or(true);
+                        bool ffxInputs = Config::Instance()->FfxInputs.value_or(true);
+
+                        if (ImGui::Checkbox("Use FSR2 Inputs", &fsr2Inputs))
+                            Config::Instance()->Fsr2Inputs = fsr2Inputs;
+
+                        if (ImGui::Checkbox("Use FSR3 Inputs", &fsr3Inputs))
+                            Config::Instance()->Fsr3Inputs = fsr3Inputs;
+
+                        if (ImGui::Checkbox("Use FSR3.1 Inputs", &ffxInputs))
+                            Config::Instance()->FfxInputs = ffxInputs;
                     }
                 }
 

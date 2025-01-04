@@ -110,7 +110,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             FramerateLimit = readFloat("Framerate", "FramerateLimit");
         }
 
-        // FSR
+        // FSR Common
         {
             if (!FsrVerticalFov.has_value())
                 FsrVerticalFov = readFloat("FSR", "VerticalFov");
@@ -124,6 +124,12 @@ bool Config::Reload(std::filesystem::path iniPath)
             if (!FsrCameraFar.has_value())
                 FsrCameraFar = readFloat("FSR", "CameraFar");
 
+            if (!FsrUseFsrInputValues.has_value())
+                FsrUseFsrInputValues = readBool("FSR", "UseFsrInputValues");
+        }
+
+        // FSR
+        {
             if (!FsrVelocity.has_value())
                 FsrVelocity = readFloat("FSR", "VelocityFactor");
 
@@ -783,12 +789,17 @@ bool Config::SaveIni()
         ini.SetValue("OutputScaling", "Downscaler", GetBoolValue(Instance()->OutputScalingDownscaler).c_str());
     }
 
-    // FSR
+    // FSR common
     {
         ini.SetValue("FSR", "VerticalFov", GetFloatValue(Instance()->FsrVerticalFov).c_str());
         ini.SetValue("FSR", "HorizontalFov", GetFloatValue(Instance()->FsrHorizontalFov).c_str());
         ini.SetValue("FSR", "CameraNear", GetFloatValue(Instance()->FsrCameraNear).c_str());
         ini.SetValue("FSR", "CameraFar", GetFloatValue(Instance()->FsrCameraFar).c_str());
+        ini.SetValue("FSR", "UseFsrInputValues", GetBoolValue(Instance()->FsrUseFsrInputValues).c_str());
+    }
+
+    // FSR 
+    {
         ini.SetValue("FSR", "VelocityFactor", GetFloatValue(Instance()->FsrVelocity).c_str());
         ini.SetValue("FSR", "DebugView", GetBoolValue(Instance()->FsrDebugView).c_str());
         ini.SetValue("FSR", "UpscalerIndex", GetIntValue(Instance()->Fsr3xIndex).c_str());

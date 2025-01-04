@@ -132,14 +132,17 @@ public:
 	std::optional<uint32_t> OutputScalingDownscaler;
 
 	// fsr
-	std::optional<float> FsrVerticalFov;
-	std::optional<float> FsrHorizontalFov;
-	std::optional<float> FsrCameraNear;
-	std::optional<float> FsrCameraFar;
 	std::optional<bool> FsrDebugView;
 	std::optional<int> Fsr3xIndex;
 	std::optional<bool> FsrUseMaskForTransparency;
 	std::optional<float> FsrVelocity;
+
+	// fsr common
+	std::optional<float> FsrVerticalFov;
+	std::optional<float> FsrHorizontalFov;
+	std::optional<float> FsrCameraNear;
+	std::optional<float> FsrCameraFar;
+	std::optional<bool> FsrUseFsrInputValues;
 
 	// dx11wdx12
 	std::optional<int> TextureSyncMethod;
