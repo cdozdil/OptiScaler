@@ -161,7 +161,7 @@ static std::optional<float> GetQualityOverrideRatioFfx(const Fsr3::FfxFsr3Upscal
     return output;
 }
 
-typedef struct dummyDevice 
+typedef struct dummyDevice
 {
     char dummy[256];
 };
@@ -240,7 +240,11 @@ static Fsr3::FfxErrorCode ffxFsr3ContextCreate_Dx12(Fsr3::FfxFsr3UpscalerContext
 
 static Fsr3::FfxErrorCode ffxFsr3ContextDispatch_Dx12(Fsr3::FfxFsr3UpscalerContext* pContext, Fsr3::FfxFsr3UpscalerDispatchDescription* pDispatchDescription)
 {
-    if(_d3d12Device == nullptr)
+    // Skip OptiScaler stuff
+    if (!Config::Instance()->Fsr3Inputs.value_or(true))
+        return o_ffxFsr3UpscalerContextDispatch_Dx12(pContext, pDispatchDescription);
+
+    if (_d3d12Device == nullptr)
         return o_ffxFsr3UpscalerContextDispatch_Dx12(pContext, pDispatchDescription);
 
     if (pDispatchDescription == nullptr || pContext == nullptr || pDispatchDescription->commandList == nullptr)
@@ -353,6 +357,10 @@ static Fsr3::FfxErrorCode ffxFsr3UpscalerGetSharedResourceDescriptions(Fsr3::Ffx
 {
     LOG_DEBUG("");
 
+    // Skip OptiScaler stuff
+    if (!Config::Instance()->Fsr3Inputs.value_or(true))
+        return o_ffxFsr3UpscalerGetSharedResourceDescriptions(pContext, SharedResources);
+
     if (_d3d12Device == nullptr)
         return o_ffxFsr3UpscalerGetSharedResourceDescriptions(pContext, SharedResources);
 
@@ -375,6 +383,11 @@ static Fsr3::FfxErrorCode ffxFsr3UpscalerGetSharedResourceDescriptions(Fsr3::Ffx
 
 static bool ffxFsr3UpscalerResourceIsNull(Fsr3::FfxResource resource)
 {
+
+    // Skip OptiScaler stuff
+    if (!Config::Instance()->Fsr3Inputs.value_or(true))
+        return o_ffxFsr3UpscalerResourceIsNull(resource);
+
     return resource.resource == nullptr;
 }
 
@@ -442,14 +455,14 @@ void HookFSR3ExeInputs()
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        if (o_ffxFSR3GetScratchMemorySizeDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFSR3GetScratchMemorySizeDX12, hk_ffxFsr3GetScratchMemorySizeDX12);
+        //if (o_ffxFSR3GetScratchMemorySizeDX12 != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxFSR3GetScratchMemorySizeDX12, hk_ffxFsr3GetScratchMemorySizeDX12);
 
-        if (o_ffxFSR3GetInterfaceDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFSR3GetInterfaceDX12, hk_ffxFsr3GetInterfaceDX12);
+        //if (o_ffxFSR3GetInterfaceDX12 != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxFSR3GetInterfaceDX12, hk_ffxFsr3GetInterfaceDX12);
 
-        if (o_ffxGetFSR3ResourceDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxGetFSR3ResourceDX12, hk_ffxFsr3GetResourceDX12);
+        //if (o_ffxGetFSR3ResourceDX12 != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxGetFSR3ResourceDX12, hk_ffxFsr3GetResourceDX12);
 
         if (o_ffxFsr3UpscalerContextCreate_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextCreate_Dx12, ffxFsr3ContextCreate_Dx12);
@@ -497,7 +510,7 @@ void HookFSR3Dx12Inputs(HMODULE module)
 {
     return;
 
-    LOG_INFO("Trying to hook FSR3 methods");
+    LOG_INFO("Trying to hook FSR3 Dx12 methods");
 
     if (o_ffxFSR3GetInterfaceDX12 != nullptr)
         return;

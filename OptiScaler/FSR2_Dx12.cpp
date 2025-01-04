@@ -581,6 +581,10 @@ static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Conte
 // Tramboline method
 static Fsr212::FfxErrorCode ffxFsr2ContextDispatchBase_Dx12(Fsr212::FfxFsr2Context* context, FfxFsr2DispatchDescriptionBase* dispatchDescription)
 {
+    // Skip OptiScaler stuff
+    if (!Config::Instance()->Fsr2Inputs.value_or(true))
+        return o_ffxFsr2ContextDispatch_Dx12(context, dispatchDescription);
+
     if (_d3d12Device == nullptr)
         return o_ffxFsr2ContextDispatch_Dx12(context, dispatchDescription);
 
@@ -673,6 +677,10 @@ static Fsr212::FfxErrorCode ffxFsr2GetRenderResolutionFromQualityMode_Dx12(uint3
 
 static bool ffxFsr2ResourceIsNull_Dx12(FfxResourceBase resource)
 {
+    // Skip OptiScaler stuff
+    if (!Config::Instance()->Fsr2Inputs.value_or(true))
+        return o_ffxFsr2ResourceIsNull_Dx12(resource);
+
     return resource.resource == nullptr;
 }
 
@@ -698,6 +706,10 @@ static FfxResourceBase hk_ffxGetResourceBaseDX12(Fsr212::FfxFsr2Context* context
                                                  Fsr212::FfxResourceStates state = Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ,
                                                  UINT shaderComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING)
 {
+    // Skip OptiScaler stuff
+    if (!Config::Instance()->Fsr2Inputs.value_or(true))
+        return o_ffxGetResourceDX12(context, resDx12, name, state, shaderComponentMapping);
+
     FfxResourceBase result{};
     result.resource = resDx12;
     result.dummy = 0x1ee7; // For FSR2.0 detection
@@ -820,8 +832,8 @@ void HookFSR2ExeInputs()
         if (o_ffxGetResourceDX12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxGetResourceDX12, hk_ffxGetResourceBaseDX12);
 
-        if (o_ffxGetDX12ResourcePtr != nullptr)
-            DetourAttach(&(PVOID&)o_ffxGetDX12ResourcePtr, hk_ffxGetDX12ResourcePtr);
+        //if (o_ffxGetDX12ResourcePtr != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxGetDX12ResourcePtr, hk_ffxGetDX12ResourcePtr);
 
         if (o_ffxFsr2ContextCreate_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2ContextCreate_Dx12, ffxFsr2ContextCreate_Dx12);

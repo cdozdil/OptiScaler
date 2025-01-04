@@ -148,10 +148,6 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
 
     LOG_DEBUG("type: {:X}", desc->type);
 
-    bool upscaleContext = false;
-    ffxApiHeader* header = desc;
-    ffxCreateContextDescUpscale* createDesc = nullptr;
-
     auto ffxApiResult = FfxApiProxy::D3D12_CreateContext()(context, desc, memCb);
 
     if (ffxApiResult != FFX_API_RETURN_OK)
@@ -159,6 +155,10 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
         LOG_ERROR("D3D12_CreateContext error: {:X} ({})", (UINT)ffxApiResult, FfxApiProxy::ReturnCodeToString(ffxApiResult));
         return ffxApiResult;
     }
+
+    bool upscaleContext = false;
+    ffxApiHeader* header = desc;
+    ffxCreateContextDescUpscale* createDesc = nullptr;
 
     do
     {
@@ -290,32 +290,16 @@ ffxReturnCode_t ffxQuery_Dx12(ffxContext* context, ffxQueryDescHeader* desc)
 
         return FFX_API_RETURN_OK;
     }
-    //else if (desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GPU_MEMORY_USAGE)
-    //{
-    //    auto memoryDesc = (ffxQueryDescUpscaleGetGPUMemoryUsage*)desc;
-    //    NVSDK_NGX_Parameter* params = _nvParams[context];
-    //    UINT memValue = 1920 * 1080 * 31;
-
-    //    if (params != nullptr)
-    //        params->Get(NVSDK_NGX_Parameter_SizeInBytes, &memValue);
-
-    //    memoryDesc->gpuMemoryUsageUpscaler->totalUsageInBytes = memValue;
-    //    memoryDesc->gpuMemoryUsageUpscaler->aliasableUsageInBytes = memValue / 20;
-
-    //    return FFX_API_RETURN_OK;
-    //}
-
-    //if (desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETJITTEROFFSET || desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETJITTERPHASECOUNT)
-    //{
-    //    LOG_TRACE("Jitter queries");
-    //    return FfxApiProxy::D3D12_Query()(nullptr, desc);
-    //}
-
+    
     return FfxApiProxy::D3D12_Query()(context, desc);
 }
 
 ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* desc)
 {
+    // Skip OptiScaler stuff
+    if (!Config::Instance()->FfxInputs.value_or(true))
+        return FfxApiProxy::D3D12_Dispatch()(context, desc);
+
     if (desc == nullptr || context == nullptr)
         return FFX_API_RETURN_ERROR_PARAMETER;
 

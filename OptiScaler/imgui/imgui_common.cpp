@@ -2216,17 +2216,21 @@ void ImGuiCommon::RenderMenu()
                                        "Using this option changes resolution detection logic\n"
                                        "and might cause issues and crashes!");
 
+                        ImGui::SeparatorText("Input APIs");
+                        ShowHelpMarker("Input changes when OptiFG is active\n"
+                                       "might cause screen flicker and other issues");
+
                         bool fsr2Inputs = Config::Instance()->Fsr2Inputs.value_or(true);
                         bool fsr3Inputs = Config::Instance()->Fsr3Inputs.value_or(true);
                         bool ffxInputs = Config::Instance()->FfxInputs.value_or(true);
 
-                        if (ImGui::Checkbox("Use FSR2 Inputs", &fsr2Inputs))
+                        if (ImGui::Checkbox("Use Fsr2 Inputs", &fsr2Inputs))
                             Config::Instance()->Fsr2Inputs = fsr2Inputs;
 
-                        if (ImGui::Checkbox("Use FSR3 Inputs", &fsr3Inputs))
+                        if (ImGui::Checkbox("Use Fsr3 Inputs", &fsr3Inputs))
                             Config::Instance()->Fsr3Inputs = fsr3Inputs;
 
-                        if (ImGui::Checkbox("Use FSR3.1 Inputs", &ffxInputs))
+                        if (ImGui::Checkbox("Use Ffx Inputs", &ffxInputs))
                             Config::Instance()->FfxInputs = ffxInputs;
                     }
                 }
