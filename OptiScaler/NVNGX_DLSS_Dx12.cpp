@@ -1269,6 +1269,52 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     ID3D12Resource* output;
     InParameters->Get(NVSDK_NGX_Parameter_Output, &output);
 
+    float cameraNear = 0.0f;
+    float cameraFar = 0.0f;
+    float cameraVFov = 0.0f;
+    double ftDelta = 0.0f;
+    float meterFactor = 0.0f;
+
+    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.cameraNear", &cameraNear) != NVSDK_NGX_Result_Success)
+    {
+        if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
+            cameraFar = Config::Instance()->FsrCameraNear.value_or(10.0f);
+        else
+            cameraNear = Config::Instance()->FsrCameraNear.value_or(10.0f);
+    }
+
+    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.cameraFar", &cameraFar) != NVSDK_NGX_Result_Success)
+    {
+        if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
+            cameraNear = Config::Instance()->FsrCameraFar.value_or(100000.0f);
+        else
+            cameraFar = Config::Instance()->FsrCameraFar.value_or(100000.0f);
+    }
+
+    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.cameraFovAngleVertical", &cameraVFov) != NVSDK_NGX_Result_Success)
+    {
+        if (Config::Instance()->FsrVerticalFov.has_value())
+            cameraVFov = Config::Instance()->FsrVerticalFov.value() * 0.0174532925199433f;
+        else if (Config::Instance()->FsrHorizontalFov.value_or(0.0f) > 0.0f)
+            cameraVFov = 2.0f * atan((tan(Config::Instance()->FsrHorizontalFov.value() * 0.0174532925199433f) * 0.5f) / (float)deviceContext->TargetHeight() * (float)deviceContext->TargetWidth());
+        else
+            cameraVFov = 1.0471975511966f;
+    }
+
+    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.frameTimeDelta", &ftDelta) != NVSDK_NGX_Result_Success)
+    {
+        if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &ftDelta) != NVSDK_NGX_Result_Success || ftDelta < 1.0f)
+            ftDelta = FrameGen_Dx12::fgFrameTime;
+    }
+
+    LOG_DEBUG("FrameTimeDeltaInMsec: {0}", FrameGen_Dx12::ftDelta);
+
+    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.viewSpaceToMetersFactor", &FrameGen_Dx12::meterFactor) != NVSDK_NGX_Result_Success)
+        FrameGen_Dx12::meterFactor = 0.0f;
+
+    Config::Instance()->LastFsrCameraFar = cameraFar;
+    Config::Instance()->LastFsrCameraNear = cameraNear;
+
     // FG Prepare
     UINT frameIndex;
 
@@ -1342,42 +1388,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &FrameGen_Dx12::mvScaleX);
         InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &FrameGen_Dx12::mvScaleY);
 
-        if (Config::Instance()->FsrCameraNear.has_value() || (Config::Instance()->FsrUseFsrInputValues.value_or(true) && InParameters->Get("FSR.cameraNear", &FrameGen_Dx12::cameraNear) != NVSDK_NGX_Result_Success))
-        {
-            if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
-                FrameGen_Dx12::cameraFar = Config::Instance()->FsrCameraNear.value_or(10.0f);
-            else
-                FrameGen_Dx12::cameraNear = Config::Instance()->FsrCameraNear.value_or(10.0f);
-        }
-
-        if (Config::Instance()->FsrCameraFar.has_value() || (Config::Instance()->FsrUseFsrInputValues.value_or(true) && InParameters->Get("FSR.cameraFar", &FrameGen_Dx12::cameraFar) != NVSDK_NGX_Result_Success))
-        {
-            if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
-                FrameGen_Dx12::cameraNear = Config::Instance()->FsrCameraFar.value_or(100000.0f);
-            else
-                FrameGen_Dx12::cameraFar = Config::Instance()->FsrCameraFar.value_or(100000.0f);
-        }
-
-        if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.cameraFovAngleVertical", &FrameGen_Dx12::cameraVFov) != NVSDK_NGX_Result_Success)
-        {
-            if (Config::Instance()->FsrVerticalFov.has_value())
-                FrameGen_Dx12::cameraVFov = Config::Instance()->FsrVerticalFov.value() * 0.0174532925199433f;
-            else if (Config::Instance()->FsrHorizontalFov.value_or(0.0f) > 0.0f)
-                FrameGen_Dx12::cameraVFov = 2.0f * atan((tan(Config::Instance()->FsrHorizontalFov.value() * 0.0174532925199433f) * 0.5f) / (float)deviceContext->TargetHeight() * (float)deviceContext->TargetWidth());
-            else
-                FrameGen_Dx12::cameraVFov = 1.0471975511966f;
-        }
-
-        if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.frameTimeDelta", &FrameGen_Dx12::ftDelta) != NVSDK_NGX_Result_Success)
-        {
-            if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &FrameGen_Dx12::ftDelta) != NVSDK_NGX_Result_Success || FrameGen_Dx12::ftDelta < 1.0f)
-                FrameGen_Dx12::ftDelta = FrameGen_Dx12::fgFrameTime;
-        }
-
-        LOG_DEBUG("FrameTimeDeltaInMsec: {0}", FrameGen_Dx12::ftDelta);
-
-        if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.viewSpaceToMetersFactor", &FrameGen_Dx12::meterFactor) != NVSDK_NGX_Result_Success)
-            FrameGen_Dx12::meterFactor = 0.0f;
+        FrameGen_Dx12::cameraFar = cameraFar;
+        FrameGen_Dx12::cameraNear = cameraNear;
+        FrameGen_Dx12::cameraVFov = cameraVFov;
+        FrameGen_Dx12::ftDelta = ftDelta;
+        FrameGen_Dx12::meterFactor = meterFactor;
 
         LOG_DEBUG("(FG) copy buffers done, frame: {0}", deviceContext->FrameCount());
     }
@@ -1536,7 +1551,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         }
 
                         return dispatchResult;
-                    };
+                        };
 
                 m_FrameGenerationConfig.onlyPresentGenerated = Config::Instance()->FGOnlyGenerated; // check here
                 m_FrameGenerationConfig.frameID = deviceContext->FrameCount();
@@ -1610,42 +1625,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         dfgPrepare.motionVectorScale.y = MVScaleY;
                     }
 
-                    if (Config::Instance()->FsrCameraNear.has_value() || (Config::Instance()->FsrUseFsrInputValues.value_or(true) && InParameters->Get("FSR.cameraNear", &dfgPrepare.cameraNear) != NVSDK_NGX_Result_Success))
-                    {
-                        if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
-                            dfgPrepare.cameraFar = Config::Instance()->FsrCameraNear.value_or(10.0f);
-                        else
-                            dfgPrepare.cameraNear = Config::Instance()->FsrCameraNear.value_or(10.0f);
-                    }
-
-                    if (Config::Instance()->FsrCameraFar.has_value() || (Config::Instance()->FsrUseFsrInputValues.value_or(true) && InParameters->Get("FSR.cameraNear", &dfgPrepare.cameraNear) != NVSDK_NGX_Result_Success))
-                    {
-                        if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
-                            dfgPrepare.cameraNear = Config::Instance()->FsrCameraFar.value_or(100000.0f);
-                        else
-                            dfgPrepare.cameraFar = Config::Instance()->FsrCameraFar.value_or(100000.0f);
-                    }
-
-                    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.cameraFovAngleVertical", &dfgPrepare.cameraFovAngleVertical) != NVSDK_NGX_Result_Success)
-                    {
-                        if (Config::Instance()->FsrVerticalFov.has_value())
-                            dfgPrepare.cameraFovAngleVertical = Config::Instance()->FsrVerticalFov.value() * 0.0174532925199433f;
-                        else if (Config::Instance()->FsrHorizontalFov.value_or(0.0f) > 0.0f)
-                            dfgPrepare.cameraFovAngleVertical = 2.0f * atan((tan(Config::Instance()->FsrHorizontalFov.value() * 0.0174532925199433f) * 0.5f) / (float)deviceContext->TargetHeight() * (float)deviceContext->TargetWidth());
-                        else
-                            dfgPrepare.cameraFovAngleVertical = 1.0471975511966f;
-                    }
-
-                    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.frameTimeDelta", &dfgPrepare.frameTimeDelta) != NVSDK_NGX_Result_Success)
-                    {
-                        if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &dfgPrepare.frameTimeDelta) != NVSDK_NGX_Result_Success || dfgPrepare.frameTimeDelta < 1.0f)
-                            dfgPrepare.frameTimeDelta = FrameGen_Dx12::fgFrameTime;
-                    }
-
-                    LOG_DEBUG("FrameTimeDeltaInMsec: {0}", dfgPrepare.frameTimeDelta);
-
-                    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.viewSpaceToMetersFactor", &dfgPrepare.viewSpaceToMetersFactor) != NVSDK_NGX_Result_Success)
-                        dfgPrepare.viewSpaceToMetersFactor = 0.0f;
+                    dfgPrepare.cameraFar = cameraFar;
+                    dfgPrepare.cameraNear = cameraNear;
+                    dfgPrepare.cameraFovAngleVertical = cameraVFov;
+                    dfgPrepare.frameTimeDelta = ftDelta;
+                    dfgPrepare.viewSpaceToMetersFactor = meterFactor;
 
 #ifdef USE_MUTEX_FOR_FFX
                     {
@@ -1653,7 +1637,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
 #endif
 
-                    retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
+                        retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
 
 #ifdef USE_MUTEX_FOR_FFX
                     }
@@ -1664,11 +1648,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     else
                         LOG_DEBUG("(FG) Dispatch ok.");
                 }
+                    }
             }
-        }
 
         methodResult = NVSDK_NGX_Result_Success;
-    }
+        }
 
     // Root signature restore
     if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
@@ -1701,7 +1685,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     LOG_DEBUG("Upscaling done: {}", evalResult);
 
     return methodResult;
-}
+    }
 
 #pragma endregion
 
