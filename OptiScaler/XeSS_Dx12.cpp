@@ -222,6 +222,8 @@ XESS_API xess_result_t xessD3D12Init(xess_context_handle_t hContext, const xess_
     if (!_contexts.contains(hContext))
         return XESS_RESULT_SUCCESS;
 
+    // Looks like XeSS is not re-creating context for changes 
+    // So release old context to create new one
     NVSDK_NGX_D3D12_ReleaseFeature(_contexts[hContext]);
     _contexts.erase(hContext);
 
@@ -242,6 +244,7 @@ XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12Gr
     NVSDK_NGX_Handle* handle = _contexts[hContext];
     xess_d3d12_init_params_t* initParams = &_initParams[hContext];
 
+    // Convert XeSS motions scales to DLSS ones
     if (_motionScales.contains(hContext))
     {
         auto scales = &_motionScales[hContext];
