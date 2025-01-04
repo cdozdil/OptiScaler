@@ -143,6 +143,8 @@ public:
 	std::optional<float> FsrCameraNear;
 	std::optional<float> FsrCameraFar;
 	std::optional<bool> FsrUseFsrInputValues;
+	float LastFsrCameraNear = 0.0f;
+	float LastFsrCameraFar = 0.0f;
 
 	// dx11wdx12
 	std::optional<int> TextureSyncMethod;
