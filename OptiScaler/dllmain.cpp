@@ -93,10 +93,10 @@ inline std::vector<std::string> vkNames = { "vulkan-1.dll", "vulkan-1", };
 inline std::vector<std::wstring> vkNamesW = { L"vulkan-1.dll", L"vulkan-1", };
 inline std::vector<std::string> overlayNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping",
                                                  "gameoverlayrenderer64", "gameoverlayrenderer64.dll", "gameoverlayrenderer", "gameoverlayrenderer.dll", };
-                                                 // "socialclubd3d12renderer", "socialclubd3d12renderer.dll" }; // games are not working without this dll
+// "socialclubd3d12renderer", "socialclubd3d12renderer.dll" }; // games are not working without this dll
 inline std::vector<std::wstring> overlayNamesW = { L"eosovh-win32-shipping.dll", L"eosovh-win32-shipping", L"eosovh-win64-shipping.dll", L"eosovh-win64-shipping",
                                                    L"gameoverlayrenderer64", L"gameoverlayrenderer64.dll", L"gameoverlayrenderer", L"gameoverlayrenderer.dll", };
-                                                  // L"socialclubd3d12renderer", L"socialclubd3d12renderer.dll" }; // games are not working without this dll
+// L"socialclubd3d12renderer", L"socialclubd3d12renderer.dll" }; // games are not working without this dll
 
 inline std::vector<std::string> fsr2Dx12Names = { "ffx_fsr2_api_dx12_x64.dll", "ffx_fsr2_api_dx12_x64" };
 inline std::vector<std::string> fsr2Names = { "ffx_fsr2_api_x64.dll", "ffx_fsr2_api_x64" };
@@ -289,7 +289,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
         skipDllLoadChecks = false;
     }
 
-    if (Config::Instance()->Fsr2Inputs.value_or(true) && CheckDllName(&lcaseLibName, &fsr2Names))
+    if (/*Config::Instance()->Fsr2Inputs.value_or(true) && */CheckDllName(&lcaseLibName, &fsr2Names))
     {
         skipDllLoadChecks = true;
 
@@ -302,7 +302,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
         return module;
     }
 
-    if (Config::Instance()->Fsr2Inputs.value_or(true) && CheckDllName(&lcaseLibName, &fsr2Dx12Names))
+    if (/*Config::Instance()->Fsr2Inputs.value_or(true) && */CheckDllName(&lcaseLibName, &fsr2Dx12Names))
     {
         skipDllLoadChecks = true;
 
@@ -315,7 +315,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
         return module;
     }
 
-    if (Config::Instance()->Fsr3Inputs.value_or(true) && CheckDllName(&lcaseLibName, &fsr3Names))
+    if (/*Config::Instance()->Fsr3Inputs.value_or(true) && */CheckDllName(&lcaseLibName, &fsr3Names))
     {
         skipDllLoadChecks = true;
 
@@ -328,7 +328,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
         return module;
     }
 
-    if (Config::Instance()->Fsr3Inputs.value_or(true) && CheckDllName(&lcaseLibName, &fsr3Dx12Names))
+    if (/*Config::Instance()->Fsr3Inputs.value_or(true) && */CheckDllName(&lcaseLibName, &fsr3Dx12Names))
     {
         skipDllLoadChecks = true;
 
@@ -488,7 +488,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
         skipDllLoadChecks = false;
     }
 
-    if (Config::Instance()->Fsr2Inputs.value_or(true) && CheckDllNameW(&lcaseLibName, &fsr2NamesW))
+    if (/*Config::Instance()->Fsr2Inputs.value_or(true) && */CheckDllNameW(&lcaseLibName, &fsr2NamesW))
     {
         skipDllLoadChecks = true;
 
@@ -501,7 +501,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
         return module;
     }
 
-    if (Config::Instance()->Fsr2Inputs.value_or(true) && CheckDllNameW(&lcaseLibName, &fsr2Dx12NamesW))
+    if (/*Config::Instance()->Fsr2Inputs.value_or(true) && */CheckDllNameW(&lcaseLibName, &fsr2Dx12NamesW))
     {
         skipDllLoadChecks = true;
 
@@ -514,7 +514,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
         return module;
     }
 
-    if (Config::Instance()->Fsr3Inputs.value_or(true) && CheckDllNameW(&lcaseLibName, &fsr3NamesW))
+    if (/*Config::Instance()->Fsr3Inputs.value_or(true) && */CheckDllNameW(&lcaseLibName, &fsr3NamesW))
     {
         skipDllLoadChecks = true;
 
@@ -527,7 +527,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
         return module;
     }
 
-    if (Config::Instance()->Fsr3Inputs.value_or(true) && CheckDllNameW(&lcaseLibName, &fsr3Dx12NamesW))
+    if (/*Config::Instance()->Fsr3Inputs.value_or(true) && */CheckDllNameW(&lcaseLibName, &fsr3Dx12NamesW))
     {
         skipDllLoadChecks = true;
 
@@ -2200,33 +2200,27 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             if (!FfxApiProxy::InitFfxVk())
                 spdlog::warn("Can't init Vulkan FfxApi!");
 
-            if (Config::Instance()->Fsr2Inputs.value_or(true))
-            {
-                spdlog::info("");
-                handle = GetModuleHandle(fsr2NamesW[0].c_str());
-                if (handle != nullptr)
-                    HookFSR2Inputs(handle);
+            spdlog::info("");
+            handle = GetModuleHandle(fsr2NamesW[0].c_str());
+            if (handle != nullptr)
+                HookFSR2Inputs(handle);
 
-                handle = GetModuleHandle(fsr2Dx12NamesW[0].c_str());
-                if (handle != nullptr)
-                    HookFSR2Dx12Inputs(handle);
+            handle = GetModuleHandle(fsr2Dx12NamesW[0].c_str());
+            if (handle != nullptr)
+                HookFSR2Dx12Inputs(handle);
 
-                HookFSR2ExeInputs();
-            }
+            HookFSR2ExeInputs();
 
-            if (Config::Instance()->Fsr3Inputs.value_or(true))
-            {
-                spdlog::info("");
-                handle = GetModuleHandle(fsr3NamesW[0].c_str());
-                if (handle != nullptr)
-                    HookFSR3Inputs(handle);
+            spdlog::info("");
+            handle = GetModuleHandle(fsr3NamesW[0].c_str());
+            if (handle != nullptr)
+                HookFSR3Inputs(handle);
 
-                handle = GetModuleHandle(fsr3Dx12NamesW[0].c_str());
-                if (handle != nullptr)
-                    HookFSR3Dx12Inputs(handle);
+            handle = GetModuleHandle(fsr3Dx12NamesW[0].c_str());
+            if (handle != nullptr)
+                HookFSR3Dx12Inputs(handle);
 
-                HookFSR3ExeInputs();
-            }
+            HookFSR3ExeInputs();
 
             skipDllLoadChecks = false;
 
