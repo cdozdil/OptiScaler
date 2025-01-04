@@ -316,22 +316,23 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
 
     LOG_DEBUG("Sharpness: {0}", params.sharpness);
 
-    if (InParameters->Get("FSR.cameraNear", &params.cameraNear) != NVSDK_NGX_Result_Success ||
-        InParameters->Get("FSR.cameraFar", &params.cameraFar) != NVSDK_NGX_Result_Success)
+    if (Config::Instance()->FsrCameraNear.has_value() || (Config::Instance()->FsrUseFsrInputValues.value_or(true) && InParameters->Get("FSR.cameraNear", &params.cameraNear) != NVSDK_NGX_Result_Success))
     {
         if (IsDepthInverted())
-        {
             params.cameraFar = Config::Instance()->FsrCameraNear.value_or(10.0f);
-            params.cameraNear = Config::Instance()->FsrCameraFar.value_or(500000.0f);
-        }
         else
-        {
-            params.cameraFar = Config::Instance()->FsrCameraFar.value_or(500000.0f);
             params.cameraNear = Config::Instance()->FsrCameraNear.value_or(10.0f);
-        }
     }
 
-    if (InParameters->Get("FSR.cameraFovAngleVertical", &params.cameraFovAngleVertical) != NVSDK_NGX_Result_Success)
+    if (Config::Instance()->FsrCameraFar.has_value() || (Config::Instance()->FsrUseFsrInputValues.value_or(true) && InParameters->Get("FSR.cameraFar", &params.cameraFar) != NVSDK_NGX_Result_Success))
+    {
+        if (IsDepthInverted())
+            params.cameraNear = Config::Instance()->FsrCameraFar.value_or(100000.0f);
+        else
+            params.cameraFar = Config::Instance()->FsrCameraFar.value_or(100000.0f);
+    }
+
+    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.cameraFovAngleVertical", &params.cameraFovAngleVertical) != NVSDK_NGX_Result_Success)
     {
         if (Config::Instance()->FsrVerticalFov.has_value())
             params.cameraFovAngleVertical = Config::Instance()->FsrVerticalFov.value() * 0.0174532925199433f;
@@ -341,7 +342,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
             params.cameraFovAngleVertical = 1.0471975511966f;
     }
 
-    if (InParameters->Get("FSR.frameTimeDelta", &params.frameTimeDelta) != NVSDK_NGX_Result_Success)
+    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.frameTimeDelta", &params.frameTimeDelta) != NVSDK_NGX_Result_Success)
     {
         if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) != NVSDK_NGX_Result_Success || params.frameTimeDelta < 1.0f)
             params.frameTimeDelta = (float)GetDeltaTime();
