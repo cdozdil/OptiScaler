@@ -2029,6 +2029,18 @@ static void CheckWorkingMode()
 
             AttachHooks();
         }
+        else if (isWorkingWithEnabler)
+        {
+            HMODULE dxgiModule = nullptr;
+            dxgiModule = GetModuleHandle(L"dxgi.dll");
+            if (dxgiModule != nullptr)
+                HooksDx::HookDxgi();
+            
+            HMODULE vulkanModule = nullptr;
+            vulkanModule = GetModuleHandle(L"vulkan-1.dll");
+            if (Config::Instance()->OverlayMenu.value() && (vulkanModule != nullptr || Config::Instance()->IsRunningOnLinux))
+                HooksVk::HookVk();
+        }
 
         return;
     }
