@@ -354,7 +354,7 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
     params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, dispatchDesc->renderSize.height);
     params->Set(NVSDK_NGX_Parameter_Depth, dispatchDesc->depth.resource);
     params->Set(NVSDK_NGX_Parameter_ExposureTexture, dispatchDesc->exposure.resource);
-    //params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, dispatchDesc->reactive.resource);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, dispatchDesc->reactive.resource);
     params->Set(NVSDK_NGX_Parameter_Color, dispatchDesc->color.resource);
     params->Set(NVSDK_NGX_Parameter_MotionVectors, dispatchDesc->motionVectors.resource);
     params->Set(NVSDK_NGX_Parameter_Output, dispatchDesc->output.resource);
