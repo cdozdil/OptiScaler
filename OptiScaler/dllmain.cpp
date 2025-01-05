@@ -259,9 +259,13 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
         if (module != nullptr)
         {
             skipDllLoadChecks = true;
-            HookForVulkanSpoofing();
-            HookForVulkanExtensionSpoofing();
-            HookForVulkanVRAMSpoofing();
+
+            if (!isWorkingWithEnabler)
+            {
+                HookForVulkanSpoofing();
+                HookForVulkanExtensionSpoofing();
+                HookForVulkanVRAMSpoofing();
+            }
 
             if (Config::Instance()->OverlayMenu.value_or(true))
                 HooksVk::HookVk();
@@ -275,7 +279,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
     if (CheckDllName(&lcaseLibName, &dxgiNames))
     {
         skipDllLoadChecks = true;
-        HookForDxgiSpoofing();
+        
+        if (!isWorkingWithEnabler)
+            HookForDxgiSpoofing();
 
         if (Config::Instance()->OverlayMenu.value_or(true))
             HooksDx::HookDxgi();
@@ -283,12 +289,11 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
         skipDllLoadChecks = false;
     }
 
-    if (/*Config::Instance()->Fsr2Inputs.value_or(true) && */CheckDllName(&lcaseLibName, &fsr2Names))
+    if (CheckDllName(&lcaseLibName, &fsr2Names))
     {
         skipDllLoadChecks = true;
 
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
-
         HookFSR2Inputs(module);
 
         skipDllLoadChecks = false;
@@ -296,12 +301,11 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
         return module;
     }
 
-    if (/*Config::Instance()->Fsr3Inputs.value_or(true) && */CheckDllName(&lcaseLibName, &fsr3Names))
+    if (CheckDllName(&lcaseLibName, &fsr3Names))
     {
         skipDllLoadChecks = true;
 
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
-
         HookFSR3Inputs(module);
 
         skipDllLoadChecks = false;
@@ -434,12 +438,17 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
         if (module != nullptr)
         {
             skipDllLoadChecks = true;
-            HookForVulkanSpoofing();
-            HookForVulkanExtensionSpoofing();
-            HookForVulkanVRAMSpoofing();
+
+            if (!isWorkingWithEnabler)
+            {
+                HookForVulkanSpoofing();
+                HookForVulkanExtensionSpoofing();
+                HookForVulkanVRAMSpoofing();
+            }
 
             if (Config::Instance()->OverlayMenu.value_or(true))
                 HooksVk::HookVk();
+
             skipDllLoadChecks = false;
 
             return module;
@@ -449,19 +458,21 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
     if (CheckDllNameW(&lcaseLibName, &dxgiNamesW))
     {
         skipDllLoadChecks = true;
-        HookForDxgiSpoofing();
+
+        if (!isWorkingWithEnabler)
+            HookForDxgiSpoofing();
 
         if (Config::Instance()->OverlayMenu.value_or(true))
             HooksDx::HookDxgi();
+
         skipDllLoadChecks = false;
     }
 
-    if (/*Config::Instance()->Fsr2Inputs.value_or(true) && */CheckDllNameW(&lcaseLibName, &fsr2NamesW))
+    if (CheckDllNameW(&lcaseLibName, &fsr2NamesW))
     {
         skipDllLoadChecks = true;
 
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
-
         HookFSR2Inputs(module);
 
         skipDllLoadChecks = false;
@@ -469,12 +480,11 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
         return module;
     }
 
-    if (/*Config::Instance()->Fsr3Inputs.value_or(true) && */CheckDllNameW(&lcaseLibName, &fsr3NamesW))
+    if (CheckDllNameW(&lcaseLibName, &fsr3NamesW))
     {
         skipDllLoadChecks = true;
 
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
-
         HookFSR3Inputs(module);
 
         skipDllLoadChecks = false;
@@ -1954,14 +1964,16 @@ static void CheckWorkingMode()
         Config::Instance()->OverlayMenu = (!isNvngxMode || isWorkingWithEnabler) && Config::Instance()->OverlayMenu.value_or(true);
         Config::Instance()->CheckUpscalerFiles();
 
-        if (!isNvngxMode)
+        if (!isNvngxMode || isWorkingWithEnabler)
         {
             HMODULE dxgiModule = nullptr;
             dxgiModule = GetModuleHandle(L"dxgi.dll");
             if (dxgiModule != nullptr)
             {
                 LOG_DEBUG("dxgi.dll already in memory");
-                HookForDxgiSpoofing();
+
+                if (!isWorkingWithEnabler)
+                    HookForDxgiSpoofing();
             }
 
             HMODULE vulkanModule = nullptr;
@@ -1969,9 +1981,13 @@ static void CheckWorkingMode()
             if (vulkanModule != nullptr)
             {
                 LOG_DEBUG("vulkan-1.dll already in memory");
-                HookForVulkanSpoofing();
-                HookForVulkanExtensionSpoofing();
-                HookForVulkanVRAMSpoofing();
+
+                if (!isWorkingWithEnabler)
+                {
+                    HookForVulkanSpoofing();
+                    HookForVulkanExtensionSpoofing();
+                    HookForVulkanVRAMSpoofing();
+                }
             }
 
             HMODULE nvapi64 = nullptr;
@@ -1979,7 +1995,9 @@ static void CheckWorkingMode()
             if (nvapi64 != nullptr)
             {
                 LOG_DEBUG("nvapi64.dll already in memory");
-                NvApiHooks::Hook(nvapi64);
+                
+                if (!isWorkingWithEnabler)
+                    NvApiHooks::Hook(nvapi64);
             }
 
             // dx menu hooks
@@ -2002,7 +2020,7 @@ static void CheckWorkingMode()
             if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr)
                 HooksDx::HookDxgi();
 
-            if ((!Config::Instance()->FGUseFGSwapChain.value_or(true) || !Config::Instance()->OverlayMenu.value_or(true)) &&
+            if (!isWorkingWithEnabler && (!Config::Instance()->FGUseFGSwapChain.value_or(true) || !Config::Instance()->OverlayMenu.value_or(true)) &&
                 skHandle == nullptr && Config::Instance()->LoadSpecialK.value_or(false))
             {
                 auto skFile = Util::DllPath().parent_path() / L"SpecialK64.dll";
@@ -2011,7 +2029,7 @@ static void CheckWorkingMode()
                 LOG_INFO("Loading SpecialK64.dll, result: {0:X}", (UINT64)skHandle);
             }
 
-            if (reshadeHandle == nullptr && Config::Instance()->LoadReShade.value_or(false))
+            if (!isWorkingWithEnabler && reshadeHandle == nullptr && Config::Instance()->LoadReShade.value_or(false))
             {
                 auto rsFile = Util::DllPath().parent_path() / L"ReShade64.dll";
                 SetEnvironmentVariableW(L"RESHADE_DISABLE_LOADING_CHECK", L"1");
@@ -2028,18 +2046,6 @@ static void CheckWorkingMode()
                 HooksVk::HookVk();
 
             AttachHooks();
-        }
-        else if (isWorkingWithEnabler)
-        {
-            HMODULE dxgiModule = nullptr;
-            dxgiModule = GetModuleHandle(L"dxgi.dll");
-            if (dxgiModule != nullptr)
-                HooksDx::HookDxgi();
-            
-            HMODULE vulkanModule = nullptr;
-            vulkanModule = GetModuleHandle(L"vulkan-1.dll");
-            if (Config::Instance()->OverlayMenu.value() && (vulkanModule != nullptr || Config::Instance()->IsRunningOnLinux))
-                HooksVk::HookVk();
         }
 
         return;
