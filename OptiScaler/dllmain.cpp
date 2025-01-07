@@ -283,7 +283,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
         if (!isWorkingWithEnabler)
             HookForDxgiSpoofing();
 
-        if (Config::Instance()->OverlayMenu.value_or(true))
+        if (Config::Instance()->OverlayMenu.value_or(true)/* && !Config::Instance()->IsRunningOnLinux*/)
             HooksDx::HookDxgi();
 
         skipDllLoadChecks = false;
@@ -462,7 +462,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
         if (!isWorkingWithEnabler)
             HookForDxgiSpoofing();
 
-        if (Config::Instance()->OverlayMenu.value_or(true))
+        if (Config::Instance()->OverlayMenu.value_or(true)/* && !Config::Instance()->IsRunningOnLinux*/)
             HooksDx::HookDxgi();
 
         skipDllLoadChecks = false;
@@ -2017,7 +2017,7 @@ static void CheckWorkingMode()
                 HooksDx::HookDx12();
             }
 
-            if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr)
+            if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr/* && !Config::Instance()->IsRunningOnLinux*/)
                 HooksDx::HookDxgi();
 
             if (!isWorkingWithEnabler && (!Config::Instance()->FGUseFGSwapChain.value_or(true) || !Config::Instance()->OverlayMenu.value_or(true)) &&
@@ -2101,6 +2101,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             skipGetModuleHandle = true;
             spdlog::info("");
             Config::Instance()->IsRunningOnLinux = IsRunningOnWine();
+            Config::Instance()->IsRunningOnDXVK = Config::Instance()->IsRunningOnLinux;
             skipGetModuleHandle = false;
 
             // Check if real DLSS available
