@@ -1561,7 +1561,9 @@ HRESULT WINAPI detEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, 
 {
     AttachToFactory(This);
 
+    Config::Instance()->skipDxgiLoadChecks = true;
     auto result = ptrEnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, ppvAdapter);
+    Config::Instance()->skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         AttachToAdapter(*ppvAdapter);
@@ -1573,7 +1575,9 @@ HRESULT WINAPI detEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFII
 {
     AttachToFactory(This);
 
+    Config::Instance()->skipDxgiLoadChecks = true;
     auto result = ptrEnumAdapterByLuid(This, AdapterLuid, riid, ppvAdapter);
+    Config::Instance()->skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         AttachToAdapter(*ppvAdapter);
@@ -1583,6 +1587,8 @@ HRESULT WINAPI detEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFII
 
 HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1** ppAdapter)
 {
+    LOG_TRACE("dllmain"); 
+    
     AttachToFactory(This);
 
     HRESULT result = S_OK;
@@ -1601,7 +1607,9 @@ HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1
             LOG_DEBUG("Trying to select high performance adapter ({})", Adapter);
 
             skipHighPerfCheck = true;
+            Config::Instance()->skipDxgiLoadChecks = true;
             result = ptrEnumAdapterByGpuPreference(factory6, Adapter, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter), (IDXGIAdapter**)ppAdapter);
+            Config::Instance()->skipDxgiLoadChecks = false;
             skipHighPerfCheck = false;
 
             if (result != S_OK)
@@ -1631,7 +1639,9 @@ HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1
     }
     else
     {
+        Config::Instance()->skipDxgiLoadChecks = true;
         result = ptrEnumAdapters1(This, Adapter, ppAdapter);
+        Config::Instance()->skipDxgiLoadChecks = false;
     }
 
     if (result == S_OK)
@@ -1660,7 +1670,9 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
             LOG_DEBUG("Trying to select high performance adapter ({})", Adapter);
 
             skipHighPerfCheck = true;
+            Config::Instance()->skipDxgiLoadChecks = true;
             result = ptrEnumAdapterByGpuPreference(factory6, Adapter, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter), ppAdapter);
+            Config::Instance()->skipDxgiLoadChecks = false;
             skipHighPerfCheck = false;
 
             if (result != S_OK)
@@ -1690,7 +1702,9 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
     }
     else
     {
+        Config::Instance()->skipDxgiLoadChecks = true;
         result = ptrEnumAdapters(This, Adapter, ppAdapter);
+        Config::Instance()->skipDxgiLoadChecks = false;
     }
 
     if (result == S_OK)
@@ -1705,7 +1719,9 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
 
 HRESULT _CreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
+    Config::Instance()->skipDxgiLoadChecks = true;
     HRESULT result = dxgi.CreateDxgiFactory(riid, ppFactory);
+    Config::Instance()->skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         AttachToFactory(*ppFactory);
@@ -1715,7 +1731,9 @@ HRESULT _CreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 
 HRESULT _CreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 {
+    Config::Instance()->skipDxgiLoadChecks = true;
     HRESULT result = dxgi.CreateDxgiFactory1(riid, ppFactory);
+    Config::Instance()->skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         AttachToFactory(*ppFactory);
@@ -1725,8 +1743,9 @@ HRESULT _CreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 
 HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
 {
-    IDXGIFactory* factory;
+    Config::Instance()->skipDxgiLoadChecks = true;
     HRESULT result = dxgi.CreateDxgiFactory2(Flags, riid, ppFactory);
+    Config::Instance()->skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         AttachToFactory(*ppFactory);
