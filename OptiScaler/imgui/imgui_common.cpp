@@ -1350,7 +1350,7 @@ void ImGuiCommon::RenderMenu()
                         float cameraNear;
                         float cameraFar;
 
-                        cameraNear = Config::Instance()->FsrCameraNear.value_or(10.0f);
+                        cameraNear = Config::Instance()->FsrCameraNear.value_or(0.1f);
                         cameraFar = Config::Instance()->FsrCameraFar.value_or(100000.0f);
 
                         if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.1f, 500000.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))

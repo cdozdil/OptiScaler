@@ -1278,9 +1278,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.cameraNear", &cameraNear) != NVSDK_NGX_Result_Success)
     {
         if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
-            cameraFar = Config::Instance()->FsrCameraNear.value_or(10.0f);
+            cameraFar = Config::Instance()->FsrCameraNear.value_or(0.1f);
         else
-            cameraNear = Config::Instance()->FsrCameraNear.value_or(10.0f);
+            cameraNear = Config::Instance()->FsrCameraNear.value_or(0.1f);
     }
 
     if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.cameraFar", &cameraFar) != NVSDK_NGX_Result_Success)
