@@ -821,7 +821,7 @@ void ImGuiCommon::RenderMenu()
             if (Config::Instance()->MenuScale.value() > 2.0f)
                 Config::Instance()->MenuScale = 2.0f;
 
-            _selectedScale = (int)((Config::Instance()->MenuScale.value() - 0.5f) / 0.1f);
+            _selectedScale = ((int)(Config::Instance()->MenuScale.value() * 10.0f)) - 5;
 
             ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
 
