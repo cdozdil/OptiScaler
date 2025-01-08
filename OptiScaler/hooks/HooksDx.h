@@ -75,6 +75,7 @@ namespace FrameGen_Dx12
     inline float cameraVFov = 0.0;
     inline float meterFactor = 0.0;
     inline float ftDelta = 0.0;
+    inline UINT reset = 0;
 
     inline const int FG_BUFFER_SIZE = 4;
     inline ID3D12Resource* paramVelocity[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };

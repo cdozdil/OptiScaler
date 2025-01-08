@@ -631,6 +631,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This)
                 ffxReturnCode_t dispatchResult = FFX_API_RETURN_OK;
                 auto fIndex = fgCallbackFrameIndex;
 
+                params->reset = (FrameGen_Dx12::reset != 0);
+
                 // check for status
                 if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) ||
                     FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCommandList[fIndex] == nullptr ||

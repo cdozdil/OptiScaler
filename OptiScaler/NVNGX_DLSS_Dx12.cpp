@@ -1315,6 +1315,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     Config::Instance()->LastFsrCameraFar = cameraFar;
     Config::Instance()->LastFsrCameraNear = cameraNear;
 
+    if(InParameters->Get(NVSDK_NGX_Parameter_Reset, &FrameGen_Dx12::reset) != NVSDK_NGX_Result_Success)
+        FrameGen_Dx12::reset = 0;
+
     // FG Prepare
     UINT frameIndex;
 
@@ -1492,6 +1495,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 m_FrameGenerationConfig.frameGenerationCallback = [](ffxDispatchDescFrameGeneration* params, void* pUserCtx) -> ffxReturnCode_t
                     {
                         auto fIndex = fgCallbackFrameIndex;
+
+                        params->reset = (FrameGen_Dx12::reset != 0);
 
                         // check for status
                         if (!Config::Instance()->FGEnabled.value_or(false) ||
