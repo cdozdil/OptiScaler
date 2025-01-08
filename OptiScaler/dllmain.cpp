@@ -288,7 +288,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
     if (!Config::Instance()->skipDxgiLoadChecks && CheckDllName(&lcaseLibName, &dxgiNames))
     {
         Config::Instance()->skipDllLoadChecks = true;
-        
+
         if (!isWorkingWithEnabler)
             HookForDxgiSpoofing();
 
@@ -1994,9 +1994,9 @@ static void CheckWorkingMode()
             if (nvapi64 != nullptr)
             {
                 LOG_DEBUG("nvapi64.dll already in memory");
-                
-                if (!isWorkingWithEnabler)
-                    NvApiHooks::Hook(nvapi64);
+
+                //if (!isWorkingWithEnabler)
+                NvApiHooks::Hook(nvapi64);
             }
 
             // dx menu hooks
