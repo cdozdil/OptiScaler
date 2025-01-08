@@ -12,6 +12,8 @@ echo.
 echo Coping is strong with this one...
 echo.
 
+del "!! EXTRACT ALL FILES TO GAME FOLDER !!" 2>nul
+
 setlocal enabledelayedexpansion
 
 if not exist nvngx.dll (
@@ -263,6 +265,10 @@ echo.
 echo if "%%removeChoice%%"=="y" ^(
 echo 	del nvngx.dll
 echo 	del %selectedFilename%
+echo    del DlssOverrides\*
+echo    rd DlssOverrides
+echo    del Licenses\*
+echo    rd Licenses
 echo 	echo.
 echo 	echo OptiScaler removed!
 echo 	echo.
