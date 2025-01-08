@@ -104,7 +104,6 @@ inline std::vector<std::wstring> fsr3NamesW = { L"ffx_fsr3upscaler_x64.dll", L"f
 
 static int loadCount = 0;
 static bool dontCount = false;
-static bool skipDllLoadChecks = false;
 static bool isNvngxMode = false;
 static bool isWorkingWithEnabler = false;
 static bool isNvngxAvailable = false;
@@ -175,6 +174,16 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
         }
     }
 
+    if (!isNvngxMode && (!Config::Instance()->IsDxgiMode || !Config::Instance()->skipDxgiLoadChecks) && CheckDllName(&lcaseLibName, &dllNames))
+    {
+        LOG_INFO("{0} call returning this dll!", lcaseLibName);
+
+        if (!dontCount)
+            loadCount++;
+
+        return dllModule;
+    }
+
     // NvApi64.dll
     if (CheckDllName(&lcaseLibName, &nvapiNames)) {
         if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or(false))
@@ -230,9 +239,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
 
         if (module != nullptr)
         {
-            skipDllLoadChecks = true;
+            Config::Instance()->skipDllLoadChecks = true;
             HooksDx::HookDx11();
-            skipDllLoadChecks = false;
+            Config::Instance()->skipDllLoadChecks = false;
 
             return module;
         }
@@ -244,9 +253,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
 
         if (module != nullptr)
         {
-            skipDllLoadChecks = true;
+            Config::Instance()->skipDllLoadChecks = true;
             HooksDx::HookDx12();
-            skipDllLoadChecks = false;
+            Config::Instance()->skipDllLoadChecks = false;
 
             return module;
         }
@@ -258,7 +267,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
 
         if (module != nullptr)
         {
-            skipDllLoadChecks = true;
+            Config::Instance()->skipDllLoadChecks = true;
 
             if (!isWorkingWithEnabler)
             {
@@ -270,57 +279,47 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName)
             if (Config::Instance()->OverlayMenu.value_or(true))
                 HooksVk::HookVk();
 
-            skipDllLoadChecks = false;
+            Config::Instance()->skipDllLoadChecks = false;
 
             return module;
         }
     }
 
-    if (CheckDllName(&lcaseLibName, &dxgiNames))
+    if (!Config::Instance()->skipDxgiLoadChecks && CheckDllName(&lcaseLibName, &dxgiNames))
     {
-        skipDllLoadChecks = true;
+        Config::Instance()->skipDllLoadChecks = true;
         
         if (!isWorkingWithEnabler)
             HookForDxgiSpoofing();
 
-        if (Config::Instance()->OverlayMenu.value_or(true))
+        if (Config::Instance()->OverlayMenu.value_or(true)/* && !Config::Instance()->IsRunningOnLinux*/)
             HooksDx::HookDxgi();
 
-        skipDllLoadChecks = false;
+        Config::Instance()->skipDllLoadChecks = false;
     }
 
     if (CheckDllName(&lcaseLibName, &fsr2Names))
     {
-        skipDllLoadChecks = true;
+        Config::Instance()->skipDllLoadChecks = true;
 
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
         HookFSR2Inputs(module);
 
-        skipDllLoadChecks = false;
+        Config::Instance()->skipDllLoadChecks = false;
 
         return module;
     }
 
     if (CheckDllName(&lcaseLibName, &fsr3Names))
     {
-        skipDllLoadChecks = true;
+        Config::Instance()->skipDllLoadChecks = true;
 
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
         HookFSR3Inputs(module);
 
-        skipDllLoadChecks = false;
+        Config::Instance()->skipDllLoadChecks = false;
 
         return module;
-    }
-
-    if (!isNvngxMode && CheckDllName(&lcaseLibName, &dllNames))
-    {
-        LOG_INFO("{0} call returning this dll!", lcaseLibName);
-
-        if (!dontCount)
-            loadCount++;
-
-        return dllModule;
     }
 
     return nullptr;
@@ -352,6 +351,16 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
             return dllModule;
         }
+    }
+
+    if (!isNvngxMode && (!Config::Instance()->IsDxgiMode || !Config::Instance()->skipDxgiLoadChecks) && CheckDllNameW(&lcaseLibName, &dllNamesW))
+    {
+        LOG_INFO("{0} call returning this dll!", lcaseLibNameA);
+
+        if (!dontCount)
+            loadCount++;
+
+        return dllModule;
     }
 
     // nvngx_dlss
@@ -409,9 +418,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
         if (module != nullptr)
         {
-            skipDllLoadChecks = true;
+            Config::Instance()->skipDllLoadChecks = true;
             HooksDx::HookDx11();
-            skipDllLoadChecks = false;
+            Config::Instance()->skipDllLoadChecks = false;
 
             return module;
         }
@@ -423,9 +432,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
         if (module != nullptr)
         {
-            skipDllLoadChecks = true;
+            Config::Instance()->skipDllLoadChecks = true;
             HooksDx::HookDx12();
-            skipDllLoadChecks = false;
+            Config::Instance()->skipDllLoadChecks = false;
 
             return module;
         }
@@ -437,7 +446,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
 
         if (module != nullptr)
         {
-            skipDllLoadChecks = true;
+            Config::Instance()->skipDllLoadChecks = true;
 
             if (!isWorkingWithEnabler)
             {
@@ -449,57 +458,47 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName)
             if (Config::Instance()->OverlayMenu.value_or(true))
                 HooksVk::HookVk();
 
-            skipDllLoadChecks = false;
+            Config::Instance()->skipDllLoadChecks = false;
 
             return module;
         }
     }
 
-    if (CheckDllNameW(&lcaseLibName, &dxgiNamesW))
+    if (!Config::Instance()->skipDxgiLoadChecks && CheckDllNameW(&lcaseLibName, &dxgiNamesW))
     {
-        skipDllLoadChecks = true;
+        Config::Instance()->skipDllLoadChecks = true;
 
         if (!isWorkingWithEnabler)
             HookForDxgiSpoofing();
 
-        if (Config::Instance()->OverlayMenu.value_or(true))
+        if (Config::Instance()->OverlayMenu.value_or(true)/* && !Config::Instance()->IsRunningOnLinux*/)
             HooksDx::HookDxgi();
 
-        skipDllLoadChecks = false;
+        Config::Instance()->skipDllLoadChecks = false;
     }
 
     if (CheckDllNameW(&lcaseLibName, &fsr2NamesW))
     {
-        skipDllLoadChecks = true;
+        Config::Instance()->skipDllLoadChecks = true;
 
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
         HookFSR2Inputs(module);
 
-        skipDllLoadChecks = false;
+        Config::Instance()->skipDllLoadChecks = false;
 
         return module;
     }
 
     if (CheckDllNameW(&lcaseLibName, &fsr3NamesW))
     {
-        skipDllLoadChecks = true;
+        Config::Instance()->skipDllLoadChecks = true;
 
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
         HookFSR3Inputs(module);
 
-        skipDllLoadChecks = false;
+        Config::Instance()->skipDllLoadChecks = false;
 
         return module;
-    }
-
-    if (!isNvngxMode && CheckDllNameW(&lcaseLibName, &dllNamesW))
-    {
-        LOG_INFO("{0} call returning this dll!", lcaseLibNameA);
-
-        if (!dontCount)
-            loadCount++;
-
-        return dllModule;
     }
 
     return nullptr;
@@ -827,7 +826,7 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (skipDllLoadChecks)
+    if (Config::Instance()->skipDllLoadChecks)
         return o_LoadLibraryA(lpLibFileName);;
 
     std::string libName(lpLibFileName);
@@ -864,7 +863,7 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (skipDllLoadChecks)
+    if (Config::Instance()->skipDllLoadChecks)
         return o_LoadLibraryW(lpLibFileName);;
 
     std::wstring libName(lpLibFileName);
@@ -901,7 +900,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (skipDllLoadChecks)
+    if (Config::Instance()->skipDllLoadChecks)
         return o_LoadLibraryExA(lpLibFileName, hFile, dwFlags);
 
     std::string libName(lpLibFileName);
@@ -938,7 +937,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (skipDllLoadChecks)
+    if (Config::Instance()->skipDllLoadChecks)
         return o_LoadLibraryExW(lpLibFileName, hFile, dwFlags);
 
     std::wstring libName(lpLibFileName);
@@ -2017,7 +2016,7 @@ static void CheckWorkingMode()
                 HooksDx::HookDx12();
             }
 
-            if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr)
+            if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr/* && !Config::Instance()->IsRunningOnLinux*/)
                 HooksDx::HookDxgi();
 
             if (!isWorkingWithEnabler && (!Config::Instance()->FGUseFGSwapChain.value_or(true) || !Config::Instance()->OverlayMenu.value_or(true)) &&
@@ -2101,6 +2100,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             skipGetModuleHandle = true;
             spdlog::info("");
             Config::Instance()->IsRunningOnLinux = IsRunningOnWine();
+            Config::Instance()->IsRunningOnDXVK = Config::Instance()->IsRunningOnLinux;
             skipGetModuleHandle = false;
 
             // Check if real DLSS available
@@ -2148,7 +2148,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             }
 
             // Init XeSS proxy
-            skipDllLoadChecks = true;
+            Config::Instance()->skipDllLoadChecks = true;
 
             if (!XeSSProxy::InitXeSS())
                 spdlog::warn("Can't init XeSS!");
@@ -2174,7 +2174,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             HookFSR3ExeInputs();
 
-            skipDllLoadChecks = false;
+            Config::Instance()->skipDllLoadChecks = false;
 
             for (size_t i = 0; i < 300; i++)
             {

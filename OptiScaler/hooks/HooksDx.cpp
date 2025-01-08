@@ -332,15 +332,15 @@ static PFN_CreateDXGIFactory o_SL_CreateDXGIFactory = nullptr;
 static PFN_CreateDXGIFactory1 o_SL_CreateDXGIFactory1 = nullptr;
 static PFN_CreateDXGIFactory2 o_SL_CreateDXGIFactory2 = nullptr;
 
-inline static PFN_EnumAdapters2 ptrEnumAdapters = nullptr;
-inline static PFN_EnumAdapters12 ptrEnumAdapters1 = nullptr;
-inline static PFN_EnumAdapterByLuid2 ptrEnumAdapterByLuid = nullptr;
-inline static PFN_EnumAdapterByGpuPreference2 ptrEnumAdapterByGpuPreference = nullptr;
+static PFN_EnumAdapters2 ptrEnumAdapters = nullptr;
+static PFN_EnumAdapters12 ptrEnumAdapters1 = nullptr;
+static PFN_EnumAdapterByLuid2 ptrEnumAdapterByLuid = nullptr;
+static PFN_EnumAdapterByGpuPreference2 ptrEnumAdapterByGpuPreference = nullptr;
 
 static PFN_CreateSwapChain oCreateSwapChain = nullptr;
 static PFN_CreateSwapChainForHwnd oCreateSwapChainForHwnd = nullptr;
 
-inline bool skipHighPerfCheck = false;
+static bool skipHighPerfCheck = false;
 
 // DirectX
 typedef void(*PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
@@ -2255,12 +2255,15 @@ static void AttachToFactory(IUnknown* unkFactory)
     IDXGIFactory* factory;
     if (ptrEnumAdapters == nullptr && unkFactory->QueryInterface(IID_PPV_ARGS(&factory)) == S_OK)
     {
+        LOG_DEBUG("Hooking EnumAdapters");
+
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
         ptrEnumAdapters = (PFN_EnumAdapters2)pVTable[7];
 
-        DetourAttach(&(PVOID&)ptrEnumAdapters, hkEnumAdapters);
+        if (ptrEnumAdapters != nullptr)
+            DetourAttach(&(PVOID&)ptrEnumAdapters, hkEnumAdapters);
 
         DetourTransactionCommit();
 
@@ -2270,12 +2273,15 @@ static void AttachToFactory(IUnknown* unkFactory)
     IDXGIFactory1* factory1;
     if (ptrEnumAdapters1 == nullptr && unkFactory->QueryInterface(IID_PPV_ARGS(&factory1)) == S_OK)
     {
+        LOG_DEBUG("Hooking EnumAdapters1");
+
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
         ptrEnumAdapters1 = (PFN_EnumAdapters12)pVTable[12];
 
-        DetourAttach(&(PVOID&)ptrEnumAdapters1, hkEnumAdapters1);
+        if (ptrEnumAdapters1 != nullptr)
+            DetourAttach(&(PVOID&)ptrEnumAdapters1, hkEnumAdapters1);
 
         DetourTransactionCommit();
 
@@ -2285,12 +2291,15 @@ static void AttachToFactory(IUnknown* unkFactory)
     IDXGIFactory4* factory4;
     if (ptrEnumAdapterByLuid == nullptr && unkFactory->QueryInterface(IID_PPV_ARGS(&factory4)) == S_OK)
     {
+        LOG_DEBUG("Hooking EnumAdapterByLuid");
+
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
         ptrEnumAdapterByLuid = (PFN_EnumAdapterByLuid2)pVTable[26];
 
-        DetourAttach(&(PVOID&)ptrEnumAdapterByLuid, hkEnumAdapterByLuid);
+        if (ptrEnumAdapterByLuid != nullptr)
+            DetourAttach(&(PVOID&)ptrEnumAdapterByLuid, hkEnumAdapterByLuid);
 
         DetourTransactionCommit();
 
@@ -2300,12 +2309,15 @@ static void AttachToFactory(IUnknown* unkFactory)
     IDXGIFactory6* factory6;
     if (ptrEnumAdapterByGpuPreference == nullptr && unkFactory->QueryInterface(IID_PPV_ARGS(&factory6)) == S_OK)
     {
+        LOG_DEBUG("Hooking EnumAdapterByGpuPreference");
+        
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
         ptrEnumAdapterByGpuPreference = (PFN_EnumAdapterByGpuPreference2)pVTable[29];
 
-        DetourAttach(&(PVOID&)ptrEnumAdapterByGpuPreference, hkEnumAdapterByGpuPreference);
+        if (ptrEnumAdapterByGpuPreference != nullptr)
+            DetourAttach(&(PVOID&)ptrEnumAdapterByGpuPreference, hkEnumAdapterByGpuPreference);
 
         DetourTransactionCommit();
 
@@ -2329,19 +2341,28 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
             LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, Windowed: {}, SkipWrapping: {}",
                       pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, (UINT)pDesc->OutputWindow, pDesc->Windowed, fgSkipSCWrapping);
 
-        return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
+        Config::Instance()->skipDxgiLoadChecks = true;
+        auto res = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
+        Config::Instance()->skipDxgiLoadChecks = false;
+        return res;
     }
 
     if (pDevice == nullptr || pDesc == nullptr)
     {
         LOG_WARN("pDevice or pDesc is nullptr!");
-        return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
+        Config::Instance()->skipDxgiLoadChecks = true;
+        auto res = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
+        Config::Instance()->skipDxgiLoadChecks = false;
+        return res;
     }
 
     if (pDesc->BufferDesc.Height < 100 || pDesc->BufferDesc.Width < 100)
     {
         LOG_WARN("Overlay call!");
-        return oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
+        Config::Instance()->skipDxgiLoadChecks = true;
+        auto res = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
+        Config::Instance()->skipDxgiLoadChecks = false;
+        return res;
     }
 
     LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, Windowed: {}, SkipWrapping: {}",
@@ -2398,9 +2419,11 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         fgSkipSCWrapping = true;
         //Config::Instance()->skipSpoofing = true;
         Config::Instance()->SkipHeapCapture = true;
+        Config::Instance()->skipDxgiLoadChecks = true;
 
         auto result = FfxApiProxy::D3D12_CreateContext()(&FrameGen_Dx12::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
 
+        Config::Instance()->skipDxgiLoadChecks = false;
         Config::Instance()->SkipHeapCapture = false;
         //Config::Instance()->skipSpoofing = false;
         fgSkipSCWrapping = false;
@@ -2517,7 +2540,10 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         return E_INVALIDARG;
     }
 
+    Config::Instance()->skipDxgiLoadChecks = true;
     auto result = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
+    Config::Instance()->skipDxgiLoadChecks = false;
+
     if (result == S_OK)
     {
         // check for SL proxy
@@ -2618,19 +2644,25 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     if (Config::Instance()->VulkanCreatingSC)
     {
         LOG_WARN("Vulkan is creating swapchain!");
+        Config::Instance()->skipDxgiLoadChecks = true;
         return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
+        Config::Instance()->skipDxgiLoadChecks = false;
     }
 
     if (pDevice == nullptr || pDesc == nullptr)
     {
         LOG_WARN("pDevice or pDesc is nullptr!");
+        Config::Instance()->skipDxgiLoadChecks = true;
         return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
+        Config::Instance()->skipDxgiLoadChecks = false;
     }
 
     if (pDesc->Height < 100 || pDesc->Width < 100)
     {
         LOG_WARN("Overlay call!");
+        Config::Instance()->skipDxgiLoadChecks = true;
         return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
+        Config::Instance()->skipDxgiLoadChecks = false;
     }
 
     LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, SkipWrapping: {}",
@@ -2687,9 +2719,11 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         fgSkipSCWrapping = true;
         //Config::Instance()->skipSpoofing = true;
         Config::Instance()->SkipHeapCapture = true;
+        Config::Instance()->skipDxgiLoadChecks = true;
 
         auto result = FfxApiProxy::D3D12_CreateContext()(&FrameGen_Dx12::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
 
+        Config::Instance()->skipDxgiLoadChecks = false;
         Config::Instance()->SkipHeapCapture = false;
         //Config::Instance()->skipSpoofing = false;
         fgSkipSCWrapping = false;
@@ -2697,8 +2731,8 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         if (result == FFX_API_RETURN_OK)
         {
             //#ifdef USE_MUTEX_FOR_FFX
-                        // Hooking FG Swapchain present
-                        // for using ffxMutex during calls
+            // Hooking FG Swapchain present
+            // for using ffxMutex during calls
             if (o_FGSCPresent == nullptr && *ppSwapChain != nullptr)
             {
                 void** pFactoryVTable = *reinterpret_cast<void***>(*ppSwapChain);
@@ -2805,7 +2839,10 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         return E_INVALIDARG;
     }
 
+    Config::Instance()->skipDxgiLoadChecks = true;
     auto result = oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
+    Config::Instance()->skipDxgiLoadChecks = false;
+
     if (result == S_OK)
     {
         // check for SL proxy
@@ -2896,7 +2933,9 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
 #ifndef ENABLE_DEBUG_LAYER_DX12
+    Config::Instance()->skipDxgiLoadChecks = true;
     auto result = o_CreateDXGIFactory(riid, ppFactory);
+    Config::Instance()->skipDxgiLoadChecks = false;
 #else
     auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
 #endif
@@ -2935,7 +2974,9 @@ static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 {
 #ifndef ENABLE_DEBUG_LAYER_DX12
+    Config::Instance()->skipDxgiLoadChecks = true;
     auto result = o_CreateDXGIFactory1(riid, ppFactory);
+    Config::Instance()->skipDxgiLoadChecks = false;
 #else
     auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
 #endif
@@ -2951,8 +2992,6 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 
     if (oCreateSwapChainForHwnd == nullptr)
     {
-        IDXGIFactory2* factory2 = nullptr;
-
         void** pFactoryVTable = *reinterpret_cast<void***>(real);
 
         bool skip = false;
@@ -2966,7 +3005,7 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 
         if (oCreateSwapChainForHwnd != nullptr)
         {
-            LOG_INFO("Hooking native DXGIFactory");
+            LOG_INFO("Hooking native DXGIFactory1");
 
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
@@ -2986,7 +3025,9 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
 {
 #ifndef ENABLE_DEBUG_LAYER_DX12
+    Config::Instance()->skipDxgiLoadChecks = true;
     auto result = o_CreateDXGIFactory2(Flags, riid, ppFactory);
+    Config::Instance()->skipDxgiLoadChecks = false;
 #else
     auto result = o_CreateDXGIFactory2(Flags | DXGI_CREATE_FACTORY_DEBUG, riid, ppFactory);
 #endif
@@ -3015,7 +3056,7 @@ static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppF
 
         if (oCreateSwapChainForHwnd != nullptr)
         {
-            LOG_INFO("Hooking native DXGIFactory");
+            LOG_INFO("Hooking native DXGIFactory2");
 
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
@@ -3034,7 +3075,11 @@ static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppF
 
 static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter)
 {
+    LOG_FUNC();
+
+    Config::Instance()->skipDxgiLoadChecks = true;
     auto result = ptrEnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, ppvAdapter);
+    Config::Instance()->skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         CheckAdapter(*ppvAdapter);
@@ -3044,7 +3089,11 @@ static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, D
 
 static HRESULT hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter)
 {
+    LOG_FUNC();
+
+    Config::Instance()->skipDxgiLoadChecks = true;
     auto result = ptrEnumAdapterByLuid(This, AdapterLuid, riid, ppvAdapter);
+    Config::Instance()->skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         CheckAdapter(*ppvAdapter);
@@ -3054,54 +3103,11 @@ static HRESULT hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID
 
 static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter)
 {
-    HRESULT result = S_OK;
+    LOG_TRACE("HooksDx");
 
-    if (!skipHighPerfCheck && Config::Instance()->PreferDedicatedGpu.value_or(false))
-    {
-        if (Config::Instance()->PreferFirstDedicatedGpu.value_or(false) && Adapter > 0)
-        {
-            LOG_DEBUG("{}, returning not found", Adapter);
-            return DXGI_ERROR_NOT_FOUND;
-        }
-
-        IDXGIFactory6* factory6 = nullptr;
-        if (This->QueryInterface(IID_PPV_ARGS(&factory6)) == S_OK && factory6 != nullptr)
-        {
-            LOG_DEBUG("Trying to select high performance adapter ({})", Adapter);
-
-            skipHighPerfCheck = true;
-            result = ptrEnumAdapterByGpuPreference(factory6, Adapter, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter), ppAdapter);
-            skipHighPerfCheck = false;
-
-            if (result != S_OK)
-            {
-                LOG_ERROR("Can't get high performance adapter: {:X}, fallback to standard method", Adapter);
-                result = ptrEnumAdapters1(This, Adapter, ppAdapter);
-            }
-
-            if (result == S_OK)
-            {
-                DXGI_ADAPTER_DESC desc;
-                Config::Instance()->skipSpoofing = true;
-                if ((*(IDXGIAdapter**)ppAdapter)->GetDesc(&desc) == S_OK)
-                {
-                    std::wstring name(desc.Description);
-                    LOG_DEBUG("Adapter ({}) will be used", wstring_to_string(name));
-                }
-                else
-                {
-                    LOG_ERROR("Can't get adapter description!");
-                }
-                Config::Instance()->skipSpoofing = false;
-            }
-
-            factory6->Release();
-        }
-    }
-    else
-    {
-        result = ptrEnumAdapters(This, Adapter, ppAdapter);
-    }
+    Config::Instance()->skipDxgiLoadChecks = true;
+    HRESULT result = ptrEnumAdapters1(This, Adapter, ppAdapter);
+    Config::Instance()->skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         CheckAdapter(*ppAdapter);
@@ -3111,54 +3117,11 @@ static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppA
 
 static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter)
 {
-    HRESULT result = S_OK;
+    LOG_FUNC();
 
-    if (!skipHighPerfCheck && Config::Instance()->PreferDedicatedGpu.value_or(false))
-    {
-        if (Config::Instance()->PreferFirstDedicatedGpu.value_or(false) && Adapter > 0)
-        {
-            LOG_DEBUG("{}, returning not found", Adapter);
-            return DXGI_ERROR_NOT_FOUND;
-        }
-
-        IDXGIFactory6* factory6 = nullptr;
-        if (This->QueryInterface(IID_PPV_ARGS(&factory6)) == S_OK && factory6 != nullptr)
-        {
-            LOG_DEBUG("Trying to select high performance adapter ({})", Adapter);
-
-            skipHighPerfCheck = true;
-            result = ptrEnumAdapterByGpuPreference(factory6, Adapter, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter), ppAdapter);
-            skipHighPerfCheck = false;
-
-            if (result != S_OK)
-            {
-                LOG_ERROR("Can't get high performance adapter: {:X}, fallback to standard method", Adapter);
-                result = ptrEnumAdapters(This, Adapter, ppAdapter);
-            }
-
-            if (result == S_OK)
-            {
-                DXGI_ADAPTER_DESC desc;
-                Config::Instance()->skipSpoofing = true;
-                if ((*(IDXGIAdapter**)ppAdapter)->GetDesc(&desc) == S_OK)
-                {
-                    std::wstring name(desc.Description);
-                    LOG_DEBUG("Adapter ({}) will be used", wstring_to_string(name));
-                }
-                else
-                {
-                    LOG_ERROR("Can't get adapter description!");
-                }
-                Config::Instance()->skipSpoofing = false;
-            }
-
-            factory6->Release();
-        }
-    }
-    else
-    {
-        result = ptrEnumAdapters(This, Adapter, ppAdapter);
-    }
+    Config::Instance()->skipDxgiLoadChecks = true;
+    HRESULT result = ptrEnumAdapters(This, Adapter, ppAdapter);
+    Config::Instance()->skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         CheckAdapter(*ppAdapter);
@@ -3364,9 +3327,7 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
         rtss = true;
     }
 
-    //Config::Instance()->skipSpoofing = true;
     auto result = o_D3D11On12CreateDevice(pDevice, Flags, pFeatureLevels, FeatureLevels, ppCommandQueues, NumQueues, NodeMask, ppDevice, ppImmediateContext, pChosenFeatureLevel);
-    //Config::Instance()->skipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr && !rtss && !_d3d12Captured)
     {
@@ -3467,7 +3428,6 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
         return result;
     }
 
-    IDXGISwapChain* buffer = nullptr;
     //Config::Instance()->skipSpoofing = true;
     auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
     //Config::Instance()->skipSpoofing = false;
@@ -3477,32 +3437,6 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
         LOG_INFO("Device captured");
         d3d11Device = *ppDevice;
         HookToDevice(d3d11Device);
-
-        //if (pSwapChainDesc != nullptr)
-        //{
-        //    LOG_DEBUG("Width: {0}, Height: {1}, Format: {2:X}, Count: {3}, Windowed: {4}", pSwapChainDesc->BufferDesc.Width, pSwapChainDesc->BufferDesc.Height, (UINT)pSwapChainDesc->BufferDesc.Format, pSwapChainDesc->BufferCount, pSwapChainDesc->Windowed);
-
-        //    if (Util::GetProcessWindow() == pSwapChainDesc->OutputWindow)
-        //    {
-        //        Config::Instance()->ScreenWidth = pSwapChainDesc->BufferDesc.Width;
-        //        Config::Instance()->ScreenHeight = pSwapChainDesc->BufferDesc.Height;
-        //    }
-
-        //    IDXGIFactory* factory = nullptr;
-        //    result = CreateDXGIFactory(IID_PPV_ARGS(&factory));
-        //    if (result == S_OK)
-        //    {
-        //        LOG_DEBUG("creating new swapchain");
-        //        result = factory->CreateSwapChain(*ppDevice, pSwapChainDesc, ppSwapChain);
-
-        //        if (result == S_OK)
-        //            LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)d3d11Device);
-        //        else
-        //            LOG_DEBUG("factory->CreateSwapChain error: {0:X}", (UINT64)result);
-
-        //        factory->Release();
-        //    }
-        //}
     }
 
     if (*ppDevice != nullptr)
@@ -3537,7 +3471,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         LOG_WARN("GPU Based Validation active!");
         debugController->SetEnableGPUBasedValidation(TRUE);
 #endif
-}
+    }
 #endif
 
     //Config::Instance()->skipSpoofing = true;
@@ -3576,8 +3510,8 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
             {
                 LOG_DEBUG("infoQueue1 accuired, registering MessageCallback");
                 res = infoQueue1->RegisterMessageCallback(D3D12DebugCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, NULL, NULL);
-    }
-    }
+            }
+        }
 #endif
     }
 
@@ -3902,7 +3836,7 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 #ifndef USE_MUTEX_FOR_FFX
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
 #endif
-}
+    }
 
 #ifndef USE_MUTEX_FOR_FFX
     std::this_thread::sleep_for(std::chrono::milliseconds(250));

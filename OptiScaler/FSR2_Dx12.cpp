@@ -687,6 +687,8 @@ void HookFSR2ExeInputs()
 
     LOG_DEBUG("ffxFsr2ContextCreate_Dx12: {:X}", (size_t)o_ffxFsr2ContextCreate_Dx12);
     LOG_DEBUG("ffxFsr2ContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr2ContextDispatch_Dx12);
+    LOG_DEBUG("ffxFsr20ContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr20ContextDispatch_Dx12);
+    LOG_DEBUG("ffxFsr2TinyContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr2TinyContextDispatch_Dx12);
     LOG_DEBUG("ffxFsr2ContextDestroy_Dx12: {:X}", (size_t)o_ffxFsr2ContextDestroy_Dx12);
     LOG_DEBUG("ffxFsr2GetUpscaleRatioFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
     LOG_DEBUG("ffxFsr2GetRenderResolutionFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12);

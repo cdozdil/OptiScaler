@@ -255,7 +255,10 @@ public:
 
 	// spoofing
 	bool skipSpoofing = false;
-	
+	bool skipDllLoadChecks = false;
+	// for DXVK, it calls DXGI which cause softlock
+	bool skipDxgiLoadChecks = false;
+
 	// fsr3.x
 	std::vector<const char*> fsr3xVersionNames;
 	std::vector<uint64_t> fsr3xVersionIds;
