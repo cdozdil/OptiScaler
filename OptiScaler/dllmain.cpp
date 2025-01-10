@@ -2178,8 +2178,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             for (size_t i = 0; i < 300; i++)
             {
-                Config::Instance()->frameTimes.push_back(0.0);
-                Config::Instance()->upscaleTimes.push_back(0.0);
+                Config::Instance()->frameTimes.push_back(0.0f);
+                Config::Instance()->upscaleTimes.push_back(0.0f);
             }
 
             spdlog::info("");

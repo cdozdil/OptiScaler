@@ -17,8 +17,8 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 
 	frameCounter++;
 
-	if (!IsVisible())
-		return true;
+	//if (!IsVisible())
+	//	return true;
 
 	auto outDesc = outTexture->GetDesc();
 

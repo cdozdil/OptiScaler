@@ -3,6 +3,8 @@
 #include "../font/Hack_Compressed.h"
 #include "../nvapi/fakenvapi.h"
 
+static ImVec2 overlayPosition(-1000.0f, -1000.0f);
+
 void ImGuiCommon::ShowTooltip(const char* tip) {
     if (ImGui::IsItemHovered())
     {
@@ -320,6 +322,8 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
     bool rawRead = false;
     bool inputMenu = false;
+    bool inputFps = false;
+    bool inputFpsCycle = false;
     ImGuiKey imguiKey;
 
     RAWINPUT rawData{};
@@ -329,12 +333,24 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         auto rawCode = GET_RAWINPUT_CODE_WPARAM(wParam);
         rawRead = true;
         if (rawData.header.dwType == RIM_TYPEKEYBOARD && rawData.data.keyboard.VKey != 0)
+        {
             inputMenu = rawData.data.keyboard.VKey == Config::Instance()->ShortcutKey.value_or(VK_INSERT);
+            inputFps = rawData.data.keyboard.VKey == Config::Instance()->FpsShortcutKey.value_or(VK_PRIOR);
+            inputFpsCycle = rawData.data.keyboard.VKey == Config::Instance()->FpsCycleShortcutKey.value_or(VK_NEXT);
+        }
     }
     else
     {
         inputMenu = msg == WM_KEYDOWN && wParam == Config::Instance()->ShortcutKey.value_or(VK_INSERT);
+        inputFps = msg == WM_KEYDOWN && wParam == Config::Instance()->FpsShortcutKey.value_or(VK_PRIOR);
+        inputFpsCycle = msg == WM_KEYDOWN && wParam == Config::Instance()->FpsCycleShortcutKey.value_or(VK_NEXT);
     }
+
+    if (inputFps)
+        Config::Instance()->ShowFps = !Config::Instance()->ShowFps.value_or(false);
+
+    if (inputFpsCycle && Config::Instance()->ShowFps.value_or(false))
+        Config::Instance()->FpsOverlayType = (Config::Instance()->FpsOverlayType.value_or(0) + 1) % 5;
 
     // INSERT - OPEN MENU
     if (inputMenu)
@@ -744,12 +760,151 @@ void ImGuiCommon::PopulateCombo(std::string name, std::optional<uint32_t>* value
     }
 }
 
-void ImGuiCommon::RenderMenu()
+bool ImGuiCommon::RenderMenu()
 {
-    if (!_isInited || !_isVisible)
-        return;
+    if (!_isInited)
+        return false;
 
     ImGuiIO const& io = ImGui::GetIO(); (void)io;
+
+    if (!Config::Instance()->MenuScale.has_value())
+    {
+        // 900p is minimum for 1.0 menu ratio
+        Config::Instance()->MenuScale = (float)((int)((float)io.DisplaySize.y / 90.0f)) / 10.0f;
+
+        if (Config::Instance()->MenuScale.value() > 1.0f)
+            Config::Instance()->MenuScale.value() = 1.0f;
+
+        ImGuiStyle& style = ImGui::GetStyle();
+        style.ScaleAllSizes(Config::Instance()->MenuScale.value());
+
+        if (Config::Instance()->MenuScale.value() < 1.0f)
+            style.MouseCursorScale = 1.0f;
+    }
+
+    if (Config::Instance()->MenuScale.value() < 0.5f)
+        Config::Instance()->MenuScale = 0.5f;
+
+    if (Config::Instance()->MenuScale.value() > 2.0f)
+        Config::Instance()->MenuScale = 2.0f;
+
+    if (Config::Instance()->ShowFps.value_or(false))
+    {
+        ImGui::NewFrame();
+
+        if (Config::Instance()->FpsOverlayType.value_or(0) == 0)
+            ImGui::PushFont(_scaledOptiFont);
+        else
+            ImGui::PushFont(_optiFont);
+
+        Config::Instance()->frameTimes.pop_front();
+        Config::Instance()->frameTimes.push_back(1000.0 / io.Framerate);
+
+        std::vector<float> frameTimeArray(Config::Instance()->frameTimes.begin(), Config::Instance()->frameTimes.end());
+        std::vector<float> upscalerFrameTimeArray(Config::Instance()->upscaleTimes.begin(), Config::Instance()->upscaleTimes.end());
+        float averageFrameTime = 0.0f;
+        float averageUpscalerFT = 0.0f;
+
+        for (size_t i = 0; i < frameTimeArray.size(); i++)
+        {
+            averageFrameTime += frameTimeArray[i];
+            averageUpscalerFT += upscalerFrameTimeArray[i];
+        }
+        averageFrameTime /= frameTimeArray.size();
+        averageUpscalerFT /= frameTimeArray.size();
+
+        // Set overlay position
+        ImGui::SetNextWindowPos(overlayPosition, ImGuiCond_Always);
+
+        // Set overlay window properties
+        ImGui::SetNextWindowBgAlpha(0.3f); // Transparent background
+        ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(0, 0, 0, 0));              // Transparent border
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0, 0, 0, 0));             // Transparent frame background
+        ImGui::PushStyleColor(ImGuiCol_PlotLines, IM_COL32(0, 255, 0, 255));        // Set plot line color (green in this case)
+
+        auto size = ImVec2{ 0.0f, 0.0f };
+        ImGui::SetNextWindowSize(size);
+
+        if (ImGui::Begin("Performance Overlay", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav))
+        {
+            ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
+
+            if (Config::Instance()->FpsOverlayType.value_or(0) == 0)
+                ImGui::Text("%.1f fps %.2f ms", io.Framerate, 1000.0f / io.Framerate);
+            else
+                ImGui::Text("FPS: %.1f, Avg: %.1f", io.Framerate, 1000.0f / averageFrameTime);
+
+
+            if (Config::Instance()->FpsOverlayType.value_or(0) > 0)
+            {
+                ImGui::Spacing();
+                ImGui::Text("Frame Time: %.2f ms, Avg: %.2f ms", Config::Instance()->frameTimes.back(), averageFrameTime);
+            }
+
+            if (Config::Instance()->FpsOverlayType.value_or(0) > 1)
+            {
+                // Graph of frame times
+                ImGui::PlotLines(
+                    "##FrameTimeGraph",                  // Graph label (hidden by "##")
+                    frameTimeArray.data(),                  // Data source
+                    static_cast<int>(frameTimeArray.size()),// Data count
+                    0,                                  // Offset (usually 0 unless circular buffer)
+                    nullptr,                            // Overlay text
+                    *std::min_element(frameTimeArray.begin(), frameTimeArray.end()) * 0.9f, // Maximum scale
+                    *std::max_element(frameTimeArray.begin(), frameTimeArray.end()) * 1.1f, // Maximum scale
+                    ImVec2(Config::Instance()->MenuScale.value() * 300, Config::Instance()->MenuScale.value() * 40));                   // Graph size (width, height)
+            }
+
+            if (Config::Instance()->FpsOverlayType.value_or(0) > 2)
+            {
+                ImGui::Spacing();
+                ImGui::Text("Upscaler Time: %.2f ms, Avg: %.2f ms", Config::Instance()->upscaleTimes.back(), averageUpscalerFT);
+            }
+
+            if (Config::Instance()->FpsOverlayType.value_or(0) > 3)
+            {
+                ImGui::Spacing();
+                // Graph of upscaler frame times
+
+                auto uftMin = *std::min_element(upscalerFrameTimeArray.begin(), upscalerFrameTimeArray.end());
+                auto uftMax = *std::max_element(upscalerFrameTimeArray.begin(), upscalerFrameTimeArray.end());
+
+                ImGui::PlotLines(
+                    "##UpscalerFrameTimeGraph",                  // Graph label (hidden by "##")
+                    upscalerFrameTimeArray.data(),                  // Data source
+                    static_cast<int>(upscalerFrameTimeArray.size()),// Data count
+                    0,                                  // Offset (usually 0 unless circular buffer)
+                    nullptr,                            // Overlay text
+                    uftMin * 0.9f, // Minimum scale
+                    uftMax * 1.1f, // Maximum scale
+                    ImVec2(Config::Instance()->MenuScale.value() * 300, Config::Instance()->MenuScale.value() * 40)); // Graph size (width, height)
+            }
+
+            ImGui::PopStyleColor(3); // Restore the style
+        }
+
+        ImGui::PopFont();
+
+        auto winSize = ImGui::GetWindowSize();
+
+        ImGui::End();
+
+        if (Config::Instance()->FpsOverlayPos.value_or(0) == 0 || Config::Instance()->FpsOverlayPos.value_or(0) == 2)
+            overlayPosition.x = 0;
+        else
+            overlayPosition.x = io.DisplaySize.x - winSize.x;
+
+        if (Config::Instance()->FpsOverlayPos.value_or(0) < 2)
+            overlayPosition.y = 0;
+        else
+            overlayPosition.y = io.DisplaySize.y - winSize.y;
+
+        if (!_isVisible)
+            return true;
+    }
+
+    if (!_isVisible)
+        return false;
 
     {
         ImGuiWindowFlags flags = 0;
@@ -781,7 +936,8 @@ void ImGuiCommon::RenderMenu()
             CopyMemory(style.Colors, styleold.Colors, sizeof(style.Colors)); // Restore colors		
         }
 
-        ImGui::NewFrame();
+        if (!Config::Instance()->ShowFps.value_or(false))
+            ImGui::NewFrame();
 
         if (Config::Instance()->MenuScale.value_or(1.0) <= 1.0)
             ImGui::PushFont(_optiFont);
@@ -799,27 +955,6 @@ void ImGuiCommon::RenderMenu()
 
             if (!_showMipmapCalcWindow && !ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow))
                 ImGui::SetWindowFocus();
-
-            if (!Config::Instance()->MenuScale.has_value())
-            {
-                // 900p is minimum for 1.0 menu ratio
-                Config::Instance()->MenuScale = (float)((int)((float)Config::Instance()->ScreenHeight / 90.0f)) / 10.0f;
-
-                if (Config::Instance()->MenuScale.value() > 1.0f)
-                    Config::Instance()->MenuScale.value() = 1.0f;
-
-                ImGuiStyle& style = ImGui::GetStyle();
-                style.ScaleAllSizes(Config::Instance()->MenuScale.value());
-
-                if (Config::Instance()->MenuScale.value() < 1.0f)
-                    style.MouseCursorScale = 1.0f;
-            }
-
-            if (Config::Instance()->MenuScale.value() < 0.5f)
-                Config::Instance()->MenuScale = 0.5f;
-
-            if (Config::Instance()->MenuScale.value() > 2.0f)
-                Config::Instance()->MenuScale = 2.0f;
 
             _selectedScale = ((int)(Config::Instance()->MenuScale.value() * 10.0f)) - 5;
 
@@ -850,14 +985,15 @@ void ImGuiCommon::RenderMenu()
                     ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
 
                     ImGui::Spacing();
-                    ImGui::Text("nvngx.dll: %sExist", Config::Instance()->nvngxExist ? "" : "Not ");
+                    ImGui::Text("nvngx.dll: %sExist", Config::Instance()->nvngxExist || Config::Instance()->IsRunningOnNvidia ? "" : "Not ");
                     ImGui::Text("libxess.dll: %sExist", Config::Instance()->libxessExist ? "" : "Not ");
+                    ImGui::Text("fsr: %sExist", Config::Instance()->fsrHooks ? "" : "Not ");
                     ImGui::Spacing();
                 }
                 else
                 {
                     ImGui::Spacing();
-                    ImGui::Text("Can't find nvngx.dll and libxess.dll\nUpscaling support will NOT work.");
+                    ImGui::Text("Can't find nvngx.dll and libxess.dll and FSR inputs\nUpscaling support will NOT work.");
                     ImGui::Spacing();
 
                     ImGui::PopFont();
@@ -1370,8 +1506,8 @@ void ImGuiCommon::RenderMenu()
                         }
 
                         ImGui::SameLine(0.0f, 6.0f);
-                        ImGui::Text("Near: %.1f Far: %.1f", 
-                                    Config::Instance()->LastFsrCameraNear < 500000.0f ? Config::Instance()->LastFsrCameraNear : 500000.0f, 
+                        ImGui::Text("Near: %.1f Far: %.1f",
+                                    Config::Instance()->LastFsrCameraNear < 500000.0f ? Config::Instance()->LastFsrCameraNear : 500000.0f,
                                     Config::Instance()->LastFsrCameraFar < 500000.0f ? Config::Instance()->LastFsrCameraFar : 500000.0f);
                     }
 
@@ -2202,6 +2338,41 @@ void ImGuiCommon::RenderMenu()
                     ImGui::EndCombo();
                 }
 
+                // LOGGING -----------------------------
+                ImGui::SeparatorText("FPS Overlay");
+
+                bool fpsEnabled = Config::Instance()->ShowFps.value_or(false);
+                if (ImGui::Checkbox("FPS Overlay Enabled", &fpsEnabled))
+                    Config::Instance()->ShowFps = fpsEnabled;
+
+                const char* fpsPosition[] = { "Top Left", "Top Right", "Bottom Left", "Bottom Right" };
+                const char* selectedPosition = fpsPosition[Config::Instance()->FpsOverlayPos.value_or(0)];
+
+                if (ImGui::BeginCombo("Overlay Position", selectedPosition))
+                {
+                    for (int n = 0; n < 4; n++)
+                    {
+                        if (ImGui::Selectable(fpsPosition[n], (Config::Instance()->FpsOverlayPos.value_or(0) == n)))
+                            Config::Instance()->FpsOverlayPos = n;
+                    }
+
+                    ImGui::EndCombo();
+                }
+
+                const char* fpsType[] = { "Simple", "Detailed", "Detailed + Graph", "Full", "Full + Graph" };
+                const char* selectedType = fpsType[Config::Instance()->FpsOverlayType.value_or(0)];
+
+                if (ImGui::BeginCombo("Overlay Type", selectedType))
+                {
+                    for (int n = 0; n < 5; n++)
+                    {
+                        if (ImGui::Selectable(fpsType[n], (Config::Instance()->FpsOverlayType.value_or(0) == n)))
+                            Config::Instance()->FpsOverlayType = n;
+                    }
+
+                    ImGui::EndCombo();
+                }
+
                 if (cf != nullptr)
                 {
                     // ADVANCED SETTINGS -----------------------------
@@ -2513,6 +2684,8 @@ void ImGuiCommon::RenderMenu()
 
         ImGui::PopFont();
     }
+
+    return true;
 }
 
 void ImGuiCommon::Init(HWND InHwnd)

@@ -2100,9 +2100,13 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             UINT64 startTime = timestampData[0];
             UINT64 endTime = timestampData[1];
             double elapsedTimeMs = (endTime - startTime) / static_cast<double>(gpuFrequency) * 1000.0;
-
-            Config::Instance()->upscaleTimes.push_back(elapsedTimeMs);
-            Config::Instance()->upscaleTimes.pop_front();
+            
+            // filter out posibly wrong measured high values
+            if (elapsedTimeMs < 100.0)
+            {
+                Config::Instance()->upscaleTimes.push_back(elapsedTimeMs);
+                Config::Instance()->upscaleTimes.pop_front();
+            }
         }
         else
         {
@@ -2131,8 +2135,13 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
                     g_pd3dDeviceContext->GetData(HooksDx::endQueries[HooksDx::previousFrameIndex], &endTime, sizeof(UINT64), 0) == S_OK)
                 {
                     double elapsedTimeMs = (endTime - startTime) / static_cast<double>(disjointData.Frequency) * 1000.0;
-                    Config::Instance()->upscaleTimes.push_back(elapsedTimeMs);
-                    Config::Instance()->upscaleTimes.pop_front();
+
+                    // filter out posibly wrong measured high values
+                    if (elapsedTimeMs < 100.0)
+                    {
+                        Config::Instance()->upscaleTimes.push_back(elapsedTimeMs);
+                        Config::Instance()->upscaleTimes.pop_front();
+                    }
                 }
             }
         }
@@ -3515,7 +3524,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
 #endif
     }
 
-    LOG_FUNC_RESULT(result);
+    LOG_DEBUG("result: {:X}", (UINT)result);
 
     return result;
 }

@@ -300,6 +300,40 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             if (!ExtendedLimits.has_value())
                 ExtendedLimits = readBool("Menu", "ExtendedLimits");
+
+            if (!ShowFps.has_value())
+                ShowFps = readBool("Menu", "ShowFps");
+
+            if (!FpsOverlayPos.has_value())
+                FpsOverlayPos = readInt("Menu", "FpsOverlayPos");
+
+            if (FpsOverlayPos.has_value())
+            {
+                if (Config::Instance()->FpsOverlayPos.value_or(0) < 0)
+                    Config::Instance()->FpsOverlayPos = 0;
+
+                if (Config::Instance()->FpsOverlayPos.value_or(0) > 3)
+                    Config::Instance()->FpsOverlayPos = 3;
+            }
+
+            if (!FpsOverlayType.has_value())
+                FpsOverlayType = readInt("Menu", "FpsOverlayType");
+
+            if (FpsOverlayType.has_value())
+            {
+                if (Config::Instance()->FpsOverlayType.value_or(0) < 0)
+                    Config::Instance()->FpsOverlayType = 0;
+
+                if (Config::Instance()->FpsOverlayType.value_or(0) > 4)
+                    Config::Instance()->FpsOverlayType = 4;
+            }
+
+            if (!FpsShortcutKey.has_value())
+                FpsShortcutKey = readInt("Menu", "FpsShortcutKey");
+
+            if (!FpsCycleShortcutKey.has_value())
+                FpsCycleShortcutKey = readInt("Menu", "FpsCycleShortcutKey");
+
         }
 
         // Hooks
@@ -842,6 +876,9 @@ bool Config::SaveIni()
         ini.SetValue("Menu", "ShortcutKey", GetIntValue(Instance()->ShortcutKey).c_str());
         ini.SetValue("Menu", "AdvancedSettings", GetBoolValue(Instance()->AdvancedSettings).c_str());
         ini.SetValue("Menu", "ExtendedLimits", GetBoolValue(Instance()->ExtendedLimits).c_str());
+        ini.SetValue("Menu", "ShowFps", GetBoolValue(Instance()->ShowFps).c_str());
+        ini.SetValue("Menu", "FpsOverlayPos", GetIntValue(Instance()->FpsOverlayPos).c_str());
+        ini.SetValue("Menu", "FpsOverlayType", GetIntValue(Instance()->FpsOverlayType).c_str());
     }
 
     // Hooks

@@ -74,6 +74,11 @@ public:
 	std::optional<int> ShortcutKey;
 	std::optional<bool> AdvancedSettings;
 	std::optional<bool> ExtendedLimits;
+    std::optional<bool> ShowFps;
+    std::optional<int> FpsOverlayPos; // 0 Top Left, 1 Top Right, 2 Bottom Left, 3 Bottom Right
+    std::optional<int> FpsOverlayType; // 0 Only FPS, 1 +Frame Time, 2 +Upscaler Time, 3 +Frame Time Graph, 4 +Upscaler Time Graph
+	std::optional<int> FpsShortcutKey;
+	std::optional<int> FpsCycleShortcutKey;
 
 	// hooks
 	std::optional<bool> HookOriginalNvngxOnly;

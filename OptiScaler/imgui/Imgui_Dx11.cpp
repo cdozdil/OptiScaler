@@ -76,10 +76,10 @@ bool Imgui_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTextur
 
 	frameCounter++;
 
-	if (!IsVisible())
-		return true;
+	//if (!IsVisible())
+	//	return true;
 
-	LOG_FUNC();
+	//LOG_FUNC();
 
 	CreateRenderTarget(outTexture);
 

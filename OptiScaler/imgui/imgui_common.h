@@ -138,7 +138,7 @@ public:
     static bool IsVisible() { return _isVisible; }
     static HWND Handle() { return _handle; }
 
-    static void RenderMenu();
+    static bool RenderMenu();
     static void Init(HWND InHwnd);
     static void Shutdown();
     static void HideMenu();

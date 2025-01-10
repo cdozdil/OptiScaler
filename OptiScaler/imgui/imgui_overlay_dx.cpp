@@ -243,8 +243,8 @@ static void RenderImGui_DX11(IDXGISwapChain* pSwapChain)
             break;
 
         // Draw only when menu activated
-        if (!ImGuiOverlayBase::IsVisible())
-            break;
+        //if (!ImGuiOverlayBase::IsVisible())
+        //    break;
 
         if (!_dx11Device || g_pd3dDevice == nullptr)
             break;
@@ -280,12 +280,13 @@ static void RenderImGui_DX11(IDXGISwapChain* pSwapChain)
             ImGui_ImplDX11_NewFrame();
             ImGui_ImplWin32_NewFrame();
 
-            ImGuiOverlayBase::RenderMenu();
+            if (ImGuiOverlayBase::RenderMenu())
+            {
+                ImGui::Render();
 
-            ImGui::Render();
-
-            g_pd3dDeviceContext->OMSetRenderTargets(1, &g_pd3dRenderTarget, NULL);
-            ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+                g_pd3dDeviceContext->OMSetRenderTargets(1, &g_pd3dRenderTarget, NULL);
+                ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+            }
         }
     }
 }
@@ -304,8 +305,8 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
             break;
 
         // Draw only when menu activated
-        if (!ImGuiOverlayBase::IsVisible())
-            break;
+        //if (!ImGuiOverlayBase::IsVisible())
+        //    break;
 
         if (!_dx12Device || currentSCCommandQueue == nullptr || g_pd3dDeviceParam == nullptr)
             break;
@@ -440,59 +441,60 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
             ImGui_ImplDX12_NewFrame();
             ImGui_ImplWin32_NewFrame();
 
-            ImGuiOverlayBase::RenderMenu();
-
-            ImGui::Render();
-
-            UINT backBufferIdx = pSwapChain->GetCurrentBackBufferIndex();
-            ID3D12CommandAllocator* commandAllocator = g_commandAllocators[backBufferIdx];
-
-            auto result = commandAllocator->Reset();
-            if (result != S_OK)
+            if (ImGuiOverlayBase::RenderMenu())
             {
-                LOG_ERROR("commandAllocator->Reset: {0:X}", (unsigned long)result);
-                CleanupRenderTargetDx12(false);
-                pSwapChain->Release();
-                return;
+                ImGui::Render();
+
+                UINT backBufferIdx = pSwapChain->GetCurrentBackBufferIndex();
+                ID3D12CommandAllocator* commandAllocator = g_commandAllocators[backBufferIdx];
+
+                auto result = commandAllocator->Reset();
+                if (result != S_OK)
+                {
+                    LOG_ERROR("commandAllocator->Reset: {0:X}", (unsigned long)result);
+                    CleanupRenderTargetDx12(false);
+                    pSwapChain->Release();
+                    return;
+                }
+
+                D3D12_RESOURCE_BARRIER barrier = { };
+                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+                barrier.Transition.pResource = g_mainRenderTargetResource[backBufferIdx];
+                barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+                barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+                barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+
+                result = g_pd3dCommandList->Reset(commandAllocator, nullptr);
+                if (result != S_OK)
+                {
+                    LOG_ERROR("g_pd3dCommandList->Reset: {0:X}", (unsigned long)result);
+                    pSwapChain->Release();
+                    return;
+                }
+
+                g_pd3dCommandList->ResourceBarrier(1, &barrier);
+                g_pd3dCommandList->OMSetRenderTargets(1, &g_mainRenderTargetDescriptor[backBufferIdx], FALSE, NULL);
+                g_pd3dCommandList->SetDescriptorHeaps(1, &g_pd3dSrvDescHeap);
+
+                ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), g_pd3dCommandList);
+
+                barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+                barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+                g_pd3dCommandList->ResourceBarrier(1, &barrier);
+
+                result = g_pd3dCommandList->Close();
+                if (result != S_OK)
+                {
+                    LOG_ERROR("g_pd3dCommandList->Close: {0:X}", (unsigned long)result);
+                    CleanupRenderTargetDx12(true);
+                    pSwapChain->Release();
+                    return;
+                }
+
+                ID3D12CommandList* ppCommandLists[] = { g_pd3dCommandList };
+                ((ID3D12CommandQueue*)currentSCCommandQueue)->ExecuteCommandLists(1, ppCommandLists);
             }
-
-            D3D12_RESOURCE_BARRIER barrier = { };
-            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-            barrier.Transition.pResource = g_mainRenderTargetResource[backBufferIdx];
-            barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-
-            result = g_pd3dCommandList->Reset(commandAllocator, nullptr);
-            if (result != S_OK)
-            {
-                LOG_ERROR("g_pd3dCommandList->Reset: {0:X}", (unsigned long)result);
-                pSwapChain->Release();
-                return;
-            }
-
-            g_pd3dCommandList->ResourceBarrier(1, &barrier);
-            g_pd3dCommandList->OMSetRenderTargets(1, &g_mainRenderTargetDescriptor[backBufferIdx], FALSE, NULL);
-            g_pd3dCommandList->SetDescriptorHeaps(1, &g_pd3dSrvDescHeap);
-
-            ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), g_pd3dCommandList);
-
-            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-            g_pd3dCommandList->ResourceBarrier(1, &barrier);
-
-            result = g_pd3dCommandList->Close();
-            if (result != S_OK)
-            {
-                LOG_ERROR("g_pd3dCommandList->Close: {0:X}", (unsigned long)result);
-                CleanupRenderTargetDx12(true);
-                pSwapChain->Release();
-                return;
-            }
-
-            ID3D12CommandList* ppCommandLists[] = { g_pd3dCommandList };
-            ((ID3D12CommandQueue*)currentSCCommandQueue)->ExecuteCommandLists(1, ppCommandLists);
         }
         else
         {
