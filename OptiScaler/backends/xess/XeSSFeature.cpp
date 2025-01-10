@@ -212,7 +212,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     xessParams.outputResolution.y = TargetHeight();
 
     // create heaps to prevent create heap errors of xess
-    if (Config::Instance()->CreateHeaps.value_or(true))
+    if (Config::Instance()->CreateHeaps.value_or(false))
     {
         HRESULT hr;
         xess_properties_t xessProps{};
