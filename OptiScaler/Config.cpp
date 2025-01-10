@@ -309,11 +309,11 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             if (FpsOverlayPos.has_value())
             {
-                if (Config::Instance()->FpsOverlayPos.value_or(0) < 0)
-                    Config::Instance()->FpsOverlayPos = 0;
+                if (FpsOverlayPos.value_or(0) < 0)
+                    FpsOverlayPos = 0;
 
-                if (Config::Instance()->FpsOverlayPos.value_or(0) > 3)
-                    Config::Instance()->FpsOverlayPos = 3;
+                if (FpsOverlayPos.value_or(0) > 3)
+                    FpsOverlayPos = 3;
             }
 
             if (!FpsOverlayType.has_value())
@@ -321,11 +321,11 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             if (FpsOverlayType.has_value())
             {
-                if (Config::Instance()->FpsOverlayType.value_or(0) < 0)
-                    Config::Instance()->FpsOverlayType = 0;
+                if (FpsOverlayType.value_or(0) < 0)
+                    FpsOverlayType = 0;
 
-                if (Config::Instance()->FpsOverlayType.value_or(0) > 4)
-                    Config::Instance()->FpsOverlayType = 4;
+                if (FpsOverlayType.value_or(0) > 4)
+                    FpsOverlayType = 4;
             }
 
             if (!FpsShortcutKey.has_value())
