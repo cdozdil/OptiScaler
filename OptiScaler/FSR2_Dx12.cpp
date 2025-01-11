@@ -361,7 +361,10 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
     }
 
     if (_d3d12Device == nullptr)
+    {
+        LOG_WARN("D3D12 device not found!");
         return ccResult;
+    }
 
     NVSDK_NGX_FeatureCommonInfo fcInfo{};
     wchar_t const** paths = new const wchar_t* [1];
