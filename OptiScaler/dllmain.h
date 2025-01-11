@@ -1446,7 +1446,7 @@ HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
     auto result = ptrGetDesc3(This, pDesc);
     if (result == S_OK)
     {
-        if (!Config::Instance()->adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
+        if (pDesc->VendorId != 0x1414 && !Config::Instance()->adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
         {
             std::wstring szName(pDesc->Description);
             std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
@@ -1482,7 +1482,7 @@ HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
     auto result = ptrGetDesc2(This, pDesc);
     if (result == S_OK)
     {
-        if (!Config::Instance()->adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
+        if (pDesc->VendorId != 0x1414 && !Config::Instance()->adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
         {
             std::wstring szName(pDesc->Description);
             std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
@@ -1518,7 +1518,7 @@ HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
     auto result = ptrGetDesc1(This, pDesc);
     if (result == S_OK)
     {
-        if (!Config::Instance()->adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
+        if (pDesc->VendorId != 0x1414 && !Config::Instance()->adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
         {
             std::wstring szName(pDesc->Description);
             std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
@@ -1554,7 +1554,7 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
     auto result = ptrGetDesc(This, pDesc);
     if (result == S_OK)
     {
-        if (!Config::Instance()->adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
+        if (pDesc->VendorId != 0x1414 && !Config::Instance()->adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
         {
             std::wstring szName(pDesc->Description);
             std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
