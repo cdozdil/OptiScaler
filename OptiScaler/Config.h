@@ -79,6 +79,7 @@ public:
     std::optional<int> FpsOverlayType; // 0 Only FPS, 1 +Frame Time, 2 +Upscaler Time, 3 +Frame Time Graph, 4 +Upscaler Time Graph
 	std::optional<int> FpsShortcutKey;
 	std::optional<int> FpsCycleShortcutKey;
+    std::optional<bool> FpsOverlayHorizontal;
 
 	// hooks
 	std::optional<bool> HookOriginalNvngxOnly;

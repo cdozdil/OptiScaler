@@ -817,7 +817,7 @@ bool ImGuiCommon::RenderMenu()
         ImGui::SetNextWindowPos(overlayPosition, ImGuiCond_Always);
 
         // Set overlay window properties
-        ImGui::SetNextWindowBgAlpha(0.3f); // Transparent background
+        ImGui::SetNextWindowBgAlpha(0.4f); // Transparent background
         ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(0, 0, 0, 0));              // Transparent border
         ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0, 0, 0, 0));             // Transparent frame background
         ImGui::PushStyleColor(ImGuiCol_PlotLines, IM_COL32(0, 255, 0, 255));        // Set plot line color (green in this case)
@@ -830,19 +830,36 @@ bool ImGuiCommon::RenderMenu()
             ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
 
             if (Config::Instance()->FpsOverlayType.value_or(0) == 0)
-                ImGui::Text("%.1f fps %.2f ms", io.Framerate, 1000.0f / io.Framerate);
+                ImGui::Text("%5.1f fps %5.2f ms", io.Framerate, 1000.0f / io.Framerate);
             else
-                ImGui::Text("FPS: %.1f, Avg: %.1f", io.Framerate, 1000.0f / averageFrameTime);
-
+                ImGui::Text("Fps: %5.1f, Avg: %5.1f", io.Framerate, 1000.0f / averageFrameTime);
 
             if (Config::Instance()->FpsOverlayType.value_or(0) > 0)
             {
-                ImGui::Spacing();
-                ImGui::Text("Frame Time: %.2f ms, Avg: %.2f ms", Config::Instance()->frameTimes.back(), averageFrameTime);
+                if (Config::Instance()->FpsOverlayHorizontal.value_or(false))
+                {
+                    ImGui::SameLine(0.0f, 8.0f);
+                    ImGui::Text(" | ");
+                    ImGui::SameLine(0.0f, 8.0f);
+                }
+                else
+                {
+                    ImGui::Spacing();
+                }
+
+                ImGui::Text("Frame Time: %5.2f ms, Avg: %5.2f ms", Config::Instance()->frameTimes.back(), averageFrameTime);
             }
 
             if (Config::Instance()->FpsOverlayType.value_or(0) > 1)
             {
+                ImVec2 plotSize(Config::Instance()->MenuScale.value() * 300, Config::Instance()->MenuScale.value() * 30);
+
+                if (Config::Instance()->FpsOverlayHorizontal.value_or(false))
+                {
+                    ImGui::SameLine(0.0f, 8.0f);
+                    plotSize.y = Config::Instance()->MenuScale.value() * 16;
+                }
+
                 // Graph of frame times
                 ImGui::PlotLines(
                     "##FrameTimeGraph",                  // Graph label (hidden by "##")
@@ -852,22 +869,34 @@ bool ImGuiCommon::RenderMenu()
                     nullptr,                            // Overlay text
                     *std::min_element(frameTimeArray.begin(), frameTimeArray.end()) * 0.9f, // Maximum scale
                     *std::max_element(frameTimeArray.begin(), frameTimeArray.end()) * 1.1f, // Maximum scale
-                    ImVec2(Config::Instance()->MenuScale.value() * 300, Config::Instance()->MenuScale.value() * 40));                   // Graph size (width, height)
+                    plotSize);                   // Graph size (width, height)
             }
 
             if (Config::Instance()->FpsOverlayType.value_or(0) > 2)
             {
-                ImGui::Spacing();
-                ImGui::Text("Upscaler Time: %.2f ms, Avg: %.2f ms", Config::Instance()->upscaleTimes.back(), averageUpscalerFT);
+                if (Config::Instance()->FpsOverlayHorizontal.value_or(false))
+                {
+                    ImGui::SameLine(0.0f, 8.0f);
+                    ImGui::Text(" | ");
+                    ImGui::SameLine(0.0f, 8.0f);
+                }
+                else
+                {
+                    ImGui::Spacing();
+                }
+
+                ImGui::Text("Upscaler Time: %5.2f ms, Avg: %5.2f ms", Config::Instance()->upscaleTimes.back(), averageUpscalerFT);
             }
 
             if (Config::Instance()->FpsOverlayType.value_or(0) > 3)
             {
-                ImGui::Spacing();
-                // Graph of upscaler frame times
+                ImVec2 plotSize(Config::Instance()->MenuScale.value() * 300, Config::Instance()->MenuScale.value() * 30);
 
-                auto uftMin = *std::min_element(upscalerFrameTimeArray.begin(), upscalerFrameTimeArray.end());
-                auto uftMax = *std::max_element(upscalerFrameTimeArray.begin(), upscalerFrameTimeArray.end());
+                if (Config::Instance()->FpsOverlayHorizontal.value_or(false))
+                {
+                    ImGui::SameLine(0.0f, 8.0f);
+                    plotSize.y = Config::Instance()->MenuScale.value() * 16;
+                }
 
                 ImGui::PlotLines(
                     "##UpscalerFrameTimeGraph",                  // Graph label (hidden by "##")
@@ -875,9 +904,9 @@ bool ImGuiCommon::RenderMenu()
                     static_cast<int>(upscalerFrameTimeArray.size()),// Data count
                     0,                                  // Offset (usually 0 unless circular buffer)
                     nullptr,                            // Overlay text
-                    uftMin * 0.9f, // Minimum scale
-                    uftMax * 1.1f, // Maximum scale
-                    ImVec2(Config::Instance()->MenuScale.value() * 300, Config::Instance()->MenuScale.value() * 40)); // Graph size (width, height)
+                    *std::min_element(upscalerFrameTimeArray.begin(), upscalerFrameTimeArray.end()) * 0.9f, // Minimum scale
+                    *std::max_element(upscalerFrameTimeArray.begin(), upscalerFrameTimeArray.end()) * 1.1f, // Maximum scale
+                    plotSize); // Graph size (width, height)
             }
 
             ImGui::PopStyleColor(3); // Restore the style
@@ -2345,6 +2374,12 @@ bool ImGuiCommon::RenderMenu()
                 if (ImGui::Checkbox("FPS Overlay Enabled", &fpsEnabled))
                     Config::Instance()->ShowFps = fpsEnabled;
 
+                ImGui::SameLine(0.0f, 6.0f);
+
+                bool fpsHorizontal = Config::Instance()->FpsOverlayHorizontal.value_or(false);
+                if (ImGui::Checkbox("Horizontal", &fpsHorizontal))
+                    Config::Instance()->FpsOverlayHorizontal = fpsHorizontal;
+
                 const char* fpsPosition[] = { "Top Left", "Top Right", "Bottom Left", "Bottom Right" };
                 const char* selectedPosition = fpsPosition[Config::Instance()->FpsOverlayPos.value_or(0)];
 
@@ -2425,7 +2460,7 @@ bool ImGuiCommon::RenderMenu()
             {
                 ImGui::TableNextColumn();
                 ImGui::Text("FrameTime");
-                auto ft = std::format("{:.2f} ms / {:.1f} fps", Config::Instance()->frameTimes.back(), io.Framerate);
+                auto ft = std::format("{:5.2f} ms / {:5.1f} fps", Config::Instance()->frameTimes.back(), io.Framerate);
                 std::vector<float> frameTimeArray(Config::Instance()->frameTimes.begin(), Config::Instance()->frameTimes.end());
                 ImGui::PlotLines(ft.c_str(), frameTimeArray.data(), frameTimeArray.size());
 
@@ -2434,7 +2469,7 @@ bool ImGuiCommon::RenderMenu()
                 {
                     ImGui::TableNextColumn();
                     ImGui::Text("Upscaler");
-                    auto ups = std::format("{:.4f} ms", Config::Instance()->upscaleTimes.back());
+                    auto ups = std::format("{:7.4f} ms", Config::Instance()->upscaleTimes.back());
                     std::vector<float> upscaleTimeArray(Config::Instance()->upscaleTimes.begin(), Config::Instance()->upscaleTimes.end());
                     ImGui::PlotLines(ups.c_str(), upscaleTimeArray.data(), upscaleTimeArray.size());
                 }

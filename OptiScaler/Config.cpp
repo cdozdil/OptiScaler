@@ -334,6 +334,8 @@ bool Config::Reload(std::filesystem::path iniPath)
             if (!FpsCycleShortcutKey.has_value())
                 FpsCycleShortcutKey = readInt("Menu", "FpsCycleShortcutKey");
 
+            if (!FpsOverlayHorizontal.has_value())
+                FpsOverlayHorizontal = readBool("Menu", "FpsOverlayHorizontal");
         }
 
         // Hooks
@@ -879,6 +881,7 @@ bool Config::SaveIni()
         ini.SetValue("Menu", "ShowFps", GetBoolValue(Instance()->ShowFps).c_str());
         ini.SetValue("Menu", "FpsOverlayPos", GetIntValue(Instance()->FpsOverlayPos).c_str());
         ini.SetValue("Menu", "FpsOverlayType", GetIntValue(Instance()->FpsOverlayType).c_str());
+        ini.SetValue("Menu", "FpsOverlayHorizontal", GetBoolValue(Instance()->FpsOverlayHorizontal).c_str());
     }
 
     // Hooks
