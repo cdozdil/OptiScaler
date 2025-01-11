@@ -6,6 +6,7 @@
 static ImVec2 overlayPosition(-1000.0f, -1000.0f);
 static bool hdrTonemapApplied = false;
 static ImVec4 SdrColors[ImGuiCol_COUNT];
+static bool receivingWmInputs = false;
 
 void ImGuiCommon::ShowTooltip(const char* tip) {
     if (ImGui::IsItemHovered())
@@ -327,25 +328,28 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     bool inputFps = false;
     bool inputFpsCycle = false;
     ImGuiKey imguiKey;
-
     RAWINPUT rawData{};
     UINT rawDataSize = sizeof(rawData);
+
     if (msg == WM_INPUT && GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, &rawData, &rawDataSize, sizeof(rawData.data)) != (UINT)-1)
     {
         auto rawCode = GET_RAWINPUT_CODE_WPARAM(wParam);
         rawRead = true;
-        if (rawData.header.dwType == RIM_TYPEKEYBOARD && rawData.data.keyboard.VKey != 0)
+        receivingWmInputs = true;
+        bool isKeyUp = (rawData.data.keyboard.Flags & RI_KEY_BREAK) != 0;
+        if (isKeyUp && rawData.header.dwType == RIM_TYPEKEYBOARD && rawData.data.keyboard.VKey != 0)
         {
             inputMenu = rawData.data.keyboard.VKey == Config::Instance()->ShortcutKey.value_or(VK_INSERT);
             inputFps = rawData.data.keyboard.VKey == Config::Instance()->FpsShortcutKey.value_or(VK_PRIOR);
             inputFpsCycle = rawData.data.keyboard.VKey == Config::Instance()->FpsCycleShortcutKey.value_or(VK_NEXT);
         }
     }
-    else
+    
+    if (!receivingWmInputs)
     {
-        inputMenu = msg == WM_KEYDOWN && wParam == Config::Instance()->ShortcutKey.value_or(VK_INSERT);
-        inputFps = msg == WM_KEYDOWN && wParam == Config::Instance()->FpsShortcutKey.value_or(VK_PRIOR);
-        inputFpsCycle = msg == WM_KEYDOWN && wParam == Config::Instance()->FpsCycleShortcutKey.value_or(VK_NEXT);
+        inputMenu = msg == WM_KEYUP && wParam == Config::Instance()->ShortcutKey.value_or(VK_INSERT);
+        inputFps = msg == WM_KEYUP && wParam == Config::Instance()->FpsShortcutKey.value_or(VK_PRIOR);
+        inputFpsCycle = msg == WM_KEYUP && wParam == Config::Instance()->FpsCycleShortcutKey.value_or(VK_NEXT);
     }
 
     if (inputFps)
@@ -391,7 +395,7 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     }
 
     // SHIFT + DEL - Debug dump
-    if (msg == WM_KEYDOWN && wParam == VK_DELETE && (GetKeyState(VK_SHIFT) & 0x8000))
+    if (msg == WM_KEYUP && wParam == VK_DELETE && (GetKeyState(VK_SHIFT) & 0x8000))
     {
         Config::Instance()->xessDebug = true;
         return TRUE;
@@ -2469,7 +2473,7 @@ bool ImGuiCommon::RenderMenu()
 
                     ImGui::EndCombo();
                 }
-                
+
                 float fpsAlpha = Config::Instance()->FpsOverlayAlpha.value_or(0.4f);
                 if (ImGui::SliderFloat("Background Alpha", &fpsAlpha, 0.0f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
                     Config::Instance()->FpsOverlayAlpha = fpsAlpha;

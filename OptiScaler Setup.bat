@@ -73,7 +73,7 @@ if "%filenameChoice%"=="" (
 )
 
 if exist %selectedFilename% (
-        echo.
+    echo.
     echo WARNING: %selectedFilename% already exists in the current folder.
     echo.
     set /p overwriteChoice="Do you want to overwrite %selectedFilename%? [y/n]: "
