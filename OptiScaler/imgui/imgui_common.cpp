@@ -779,6 +779,7 @@ bool ImGuiCommon::RenderMenu()
 
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
+    // If game is using HDR, apply tone mapping to the ImGui style
     if (Config::Instance()->isHdrActive)
     {
         if (!hdrTonemapApplied)
@@ -807,6 +808,7 @@ bool ImGuiCommon::RenderMenu()
         }
     }
 
+    // Calculate menu scale according to display resolution
     if (!Config::Instance()->MenuScale.has_value())
     {
         // 900p is minimum for 1.0 menu ratio
@@ -828,6 +830,7 @@ bool ImGuiCommon::RenderMenu()
     if (Config::Instance()->MenuScale.value() > 2.0f)
         Config::Instance()->MenuScale = 2.0f;
 
+    // If Fps overlay is visible
     if (Config::Instance()->ShowFps.value_or(false))
     {
         ImGui::NewFrame();
@@ -857,10 +860,16 @@ bool ImGuiCommon::RenderMenu()
         ImGui::SetNextWindowPos(overlayPosition, ImGuiCond_Always);
 
         // Set overlay window properties
-        ImGui::SetNextWindowBgAlpha(0.4f); // Transparent background
+        ImGui::SetNextWindowBgAlpha(Config::Instance()->FpsOverlayAlpha.value_or(0.4f)); // Transparent background
         ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(0, 0, 0, 0));              // Transparent border
         ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0, 0, 0, 0));             // Transparent frame background
-        ImGui::PushStyleColor(ImGuiCol_PlotLines, IM_COL32(0, 255, 0, 255));        // Set plot line color (green in this case)
+
+        //toneMapColor
+        ImVec4 green(0.0f, 1.0f, 0.0f, 1.0f);
+        if (Config::Instance()->isHdrActive)
+            ImGui::PushStyleColor(ImGuiCol_PlotLines, toneMapColor(green));        // Set plot line color (green in this case)
+        else
+            ImGui::PushStyleColor(ImGuiCol_PlotLines, green);        // Set plot line color (green in this case)
 
         auto size = ImVec2{ 0.0f, 0.0f };
         ImGui::SetNextWindowSize(size);
@@ -2420,7 +2429,7 @@ bool ImGuiCommon::RenderMenu()
                     ImGui::EndCombo();
                 }
 
-                // LOGGING -----------------------------
+                // FPS OVERLAY -----------------------------
                 ImGui::SeparatorText("FPS Overlay");
 
                 bool fpsEnabled = Config::Instance()->ShowFps.value_or(false);
@@ -2460,6 +2469,10 @@ bool ImGuiCommon::RenderMenu()
 
                     ImGui::EndCombo();
                 }
+                
+                float fpsAlpha = Config::Instance()->FpsOverlayAlpha.value_or(0.4f);
+                if (ImGui::SliderFloat("Background Alpha", &fpsAlpha, 0.0f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
+                    Config::Instance()->FpsOverlayAlpha = fpsAlpha;
 
                 if (cf != nullptr)
                 {

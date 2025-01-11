@@ -288,6 +288,15 @@ bool Config::Reload(std::filesystem::path iniPath)
             if (!MenuScale.has_value())
                 MenuScale = readFloat("Menu", "Scale");
 
+            if (MenuScale.has_value())
+            {
+                if (MenuScale.value() < 0.5f)
+                    MenuScale = 0.5f;
+
+                if (MenuScale.value() > 2.0f)
+                    MenuScale = 2.0f;
+            }
+
             // Don't enable again if set false because of Linux issue
             if (!OverlayMenu.has_value())
                 OverlayMenu = readBool("Menu", "OverlayMenu");
@@ -336,6 +345,19 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             if (!FpsOverlayHorizontal.has_value())
                 FpsOverlayHorizontal = readBool("Menu", "FpsOverlayHorizontal");
+
+            if (!FpsOverlayAlpha.has_value())
+                MenuScale = readFloat("Menu", "FpsOverlayAlpha");
+
+            if (FpsOverlayAlpha.has_value())
+            {
+                if (FpsOverlayAlpha.value() < 0.0f)
+                    FpsOverlayAlpha = 0.0f;
+
+                if (FpsOverlayAlpha.value() > 1.0f)
+                    FpsOverlayAlpha = 1.0f;
+            }
+
         }
 
         // Hooks
@@ -882,6 +904,7 @@ bool Config::SaveIni()
         ini.SetValue("Menu", "FpsOverlayPos", GetIntValue(Instance()->FpsOverlayPos).c_str());
         ini.SetValue("Menu", "FpsOverlayType", GetIntValue(Instance()->FpsOverlayType).c_str());
         ini.SetValue("Menu", "FpsOverlayHorizontal", GetBoolValue(Instance()->FpsOverlayHorizontal).c_str());
+        ini.SetValue("Menu", "FpsOverlayAlpha", GetFloatValue(Instance()->FpsOverlayAlpha).c_str());
     }
 
     // Hooks

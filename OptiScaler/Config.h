@@ -5,6 +5,7 @@
 #include <SimpleIni.h>
 #include "backends/IFeature.h"
 #include <deque>
+#include <map>
 
 typedef enum NVNGX_Api
 {
@@ -80,6 +81,7 @@ public:
 	std::optional<int> FpsShortcutKey;
 	std::optional<int> FpsCycleShortcutKey;
     std::optional<bool> FpsOverlayHorizontal;
+	std::optional<float> FpsOverlayAlpha;
 
 	// hooks
 	std::optional<bool> HookOriginalNvngxOnly;
@@ -294,6 +296,7 @@ public:
 	std::optional<bool> forceHdr;
 	std::optional<bool> useHDR10;
 	std::vector<IUnknown*> scBuffers;
+	bool isHdrActive = false;
 
 	std::string setInputApiName;
 	std::string currentInputApiName;
@@ -304,12 +307,11 @@ public:
 	bool libxessExist = false;
 	bool fsrHooks = false;
 
-	bool isHdrActive = false;
-
 	IFeature* CurrentFeature = nullptr;
 
     std::vector<ID3D12Device*> d3d12Devices;
     std::vector<ID3D11Device*> d3d11Devices;
+    std::map<UINT64, std::string> adapterDescs;
 
 	bool Reload(std::filesystem::path iniPath);
 	bool LoadFromPath(const wchar_t* InPath);
