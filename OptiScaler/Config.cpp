@@ -347,7 +347,7 @@ bool Config::Reload(std::filesystem::path iniPath)
                 FpsOverlayHorizontal = readBool("Menu", "FpsOverlayHorizontal");
 
             if (!FpsOverlayAlpha.has_value())
-                MenuScale = readFloat("Menu", "FpsOverlayAlpha");
+                FpsOverlayAlpha = readFloat("Menu", "FpsOverlayAlpha");
 
             if (FpsOverlayAlpha.has_value())
             {
