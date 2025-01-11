@@ -304,6 +304,8 @@ public:
 	bool libxessExist = false;
 	bool fsrHooks = false;
 
+	bool isHdrActive = false;
+
 	IFeature* CurrentFeature = nullptr;
 
     std::vector<ID3D12Device*> d3d12Devices;

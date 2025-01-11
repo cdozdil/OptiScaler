@@ -4,6 +4,8 @@
 #include "../nvapi/fakenvapi.h"
 
 static ImVec2 overlayPosition(-1000.0f, -1000.0f);
+static bool hdrTonemapApplied = false;
+static ImVec4 SdrColors[ImGuiCol_COUNT];
 
 void ImGuiCommon::ShowTooltip(const char* tip) {
     if (ImGui::IsItemHovered())
@@ -760,12 +762,50 @@ void ImGuiCommon::PopulateCombo(std::string name, std::optional<uint32_t>* value
     }
 }
 
+static ImVec4 toneMapColor(const ImVec4& color)
+{
+    // Apply tone mapping (e.g., Reinhard tone mapping)
+    float luminance = 0.2126f * color.x + 0.7152f * color.y + 0.0722f * color.z;
+    float mappedLuminance = luminance / (1.0f + luminance);
+    float scale = mappedLuminance / luminance;
+
+    return ImVec4(color.x * scale, color.y * scale, color.z * scale, color.w);
+}
+
 bool ImGuiCommon::RenderMenu()
 {
     if (!_isInited)
         return false;
 
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    if (Config::Instance()->isHdrActive)
+    {
+        if (!hdrTonemapApplied)
+        {
+            ImGuiStyle& style = ImGui::GetStyle();
+
+            CopyMemory(SdrColors, style.Colors, sizeof(style.Colors));
+
+            // Apply tone mapping to the ImGui style
+            for (int i = 0; i < ImGuiCol_COUNT; ++i)
+            {
+                ImVec4 color = style.Colors[i];
+                style.Colors[i] = toneMapColor(color);
+            }
+
+            hdrTonemapApplied = true;
+        }
+    }
+    else
+    {
+        if (hdrTonemapApplied)
+        {
+            ImGuiStyle& style = ImGui::GetStyle();
+            CopyMemory(style.Colors, SdrColors, sizeof(style.Colors));
+            hdrTonemapApplied = false;
+        }
+    }
 
     if (!Config::Instance()->MenuScale.has_value())
     {
