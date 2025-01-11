@@ -89,7 +89,7 @@ public:
             }
         }
 
-        LOG_DEBUG("counter: {} functionPointer: {:X}", qiCounter, (size_t)functionPointer);
+        //LOG_DEBUG("counter: {} functionPointer: {:X}", qiCounter, (size_t)functionPointer);
 
         return functionPointer;
     }
