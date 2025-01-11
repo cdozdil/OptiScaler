@@ -388,7 +388,7 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         return TRUE;
     }
 
-    // SHUFT + DEL - Debug dump
+    // SHIFT + DEL - Debug dump
     if (msg == WM_KEYDOWN && wParam == VK_DELETE && (GetKeyState(VK_SHIFT) & 0x8000))
     {
         Config::Instance()->xessDebug = true;
@@ -765,7 +765,7 @@ bool ImGuiCommon::RenderMenu()
     if (!_isInited)
         return false;
 
-    ImGuiIO const& io = ImGui::GetIO(); (void)io;
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
 
     if (!Config::Instance()->MenuScale.has_value())
     {
@@ -929,13 +929,26 @@ bool ImGuiCommon::RenderMenu()
             overlayPosition.y = io.DisplaySize.y - winSize.y;
 
         if (!_isVisible)
+        {
+            if ((io.ConfigFlags & ImGuiConfigFlags_NavNoCaptureKeyboard) == 0)
+                io.ConfigFlags = ImGuiConfigFlags_NavNoCaptureKeyboard | ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
+
             return true;
+        }
     }
 
     if (!_isVisible)
+    {
+        if ((io.ConfigFlags & ImGuiConfigFlags_NavNoCaptureKeyboard) == 0)
+            io.ConfigFlags = ImGuiConfigFlags_NavNoCaptureKeyboard | ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
+
         return false;
+    }
 
     {
+        if ((io.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard) == 0)
+            io.ConfigFlags = ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
+
         ImGuiWindowFlags flags = 0;
         flags |= ImGuiWindowFlags_NoSavedSettings;
         flags |= ImGuiWindowFlags_NoCollapse;
@@ -2736,8 +2749,7 @@ void ImGuiCommon::Init(HWND InHwnd)
     ImGui::StyleColorsDark();
 
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+    io.ConfigFlags = ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
 
     io.MouseDrawCursor = _isVisible;
     io.WantCaptureKeyboard = _isVisible;
