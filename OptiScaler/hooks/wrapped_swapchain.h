@@ -13,10 +13,10 @@ typedef void(*PFN_SC_Clean)(bool, HWND);
 typedef void(*PFN_SC_Release)(HWND);
 
 
-class DebugMutex {
+class OwnedMutex {
 private:
     std::mutex mtx;
-    uint32_t owner; // don't use 0
+    uint32_t owner{}; // don't use 0
 
 public:
     void lock(uint32_t _owner) {
@@ -24,23 +24,31 @@ public:
         owner = _owner;
     }
 
-    void unlock() {
-        mtx.unlock();
-        owner = 0;
-    }
-
-    bool isLocked() {
-        if (mtx.try_lock()) {
+    // Only unlocks if owner matches
+    void unlockThis(uint32_t _owner) {
+        if (owner == _owner) {
             mtx.unlock();
-            return false;
-        }
-        else {
-            return true;
+            owner = 0;
         }
     }
 
     uint32_t getOwner() {
         return owner;
+    }
+};
+
+class OwnedLockGuard {
+private:
+    OwnedMutex& _mutex;
+    uint32_t _owner_id;
+
+public:
+    OwnedLockGuard(OwnedMutex &mutex, uint32_t owner_id) : _mutex(mutex),  _owner_id(owner_id) {
+        _mutex.lock(_owner_id);
+    }
+
+    ~OwnedLockGuard() {
+        _mutex.unlockThis(_owner_id);
     }
 };
 
@@ -300,7 +308,7 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
     HWND Handle = nullptr;
 
 #ifdef USE_LOCAL_MUTEX
-    DebugMutex _localMutex;
+    OwnedMutex _localMutex;
 #endif 
 
     int id = 0;
