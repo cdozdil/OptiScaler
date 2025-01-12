@@ -75,76 +75,6 @@ private:
 
     inline static PFN_xessSetContextParameterF _xessSetContextParameterF = nullptr;
 
-    inline static std::string LogLastError() 
-    {
-        DWORD errorCode = GetLastError();
-        LPWSTR errorBuffer = nullptr;
-        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                      NULL, errorCode, 0, (LPWSTR)&errorBuffer, 0, NULL);
-
-        std::string result;
-
-        if (errorBuffer)
-        {
-            std::wstring errMsg(errorBuffer);
-            result = std::format("{} ({})", errorCode, wstring_to_string(errMsg).erase(wstring_to_string(errMsg).find_last_not_of("\t\n\v\f\r ") + 1));
-            LocalFree(errorBuffer);
-        }
-        else
-        {
-            result = std::format("Unknown error ({}).", errorCode);
-        }
-
-        return result;
-    }
-
-    inline static bool GetDLLVersion(std::wstring dllPath)
-    {
-        // Step 1: Get the size of the version information
-        DWORD handle = 0;
-        DWORD versionSize = GetFileVersionInfoSize(dllPath.c_str(), &handle);
-
-        if (versionSize == 0)
-        {
-            LOG_ERROR("Failed to get version info size: {}", LogLastError());
-            return false;
-        }
-
-        // Step 2: Allocate buffer and get the version information
-        std::vector<BYTE> versionInfo(versionSize);
-        if (!GetFileVersionInfo(dllPath.c_str(), handle, versionSize, versionInfo.data()))
-        {
-            LOG_ERROR("Failed to get version info: {}", LogLastError());
-            return false;
-        }
-
-        // Step 3: Extract the version information
-        VS_FIXEDFILEINFO* fileInfo = nullptr;
-        UINT size = 0;
-        if (!VerQueryValue(versionInfo.data(), L"\\", reinterpret_cast<LPVOID*>(&fileInfo), &size)) {
-            LOG_ERROR("Failed to query version value: {}", LogLastError());
-            return false;
-        }
-
-        if (fileInfo != nullptr) {
-            // Extract major, minor, build, and revision numbers from version information
-            DWORD fileVersionMS = fileInfo->dwFileVersionMS;
-            DWORD fileVersionLS = fileInfo->dwFileVersionLS;
-
-            _xessVersion.major = (fileVersionMS >> 16) & 0xffff;
-            _xessVersion.minor = (fileVersionMS >> 0) & 0xffff;
-            _xessVersion.patch = (fileVersionLS >> 16) & 0xffff;
-            _xessVersion.reserved = (fileVersionLS >> 0) & 0xffff;
-        }
-        else
-        {
-            LOG_ERROR("No version information found!");
-            return false;
-        }
-
-        return true;
-    }
-
     inline static std::filesystem::path DllPath(HMODULE module)
     {
         static std::filesystem::path dll;
@@ -286,7 +216,7 @@ public:
             if (moduleHandle != nullptr)
             {
                 auto path = DllPath(moduleHandle);
-                if(!GetDLLVersion(path.wstring()))
+                if (!Util::GetDLLVersion(path.wstring(), &_xessVersion))
                     _xessGetVersion(&_xessVersion);
             }
             else

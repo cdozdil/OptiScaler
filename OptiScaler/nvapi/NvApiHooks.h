@@ -23,25 +23,26 @@ public:
             {
                 LOG_DEBUG("From api arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
 
-                // for 16xx cards
+                // for DLSSG on pre-20xx cards
+                if (Config::Instance()->DLSSGMod.value_or(false) && ArchInfo->architecture >= NV_GPU_ARCHITECTURE_GM200 && ArchInfo->architecture < NV_GPU_ARCHITECTURE_AD100) { // only GTX9xx+ supports latest reflex
+                    if (ArchInfo->architecture == NV_GPU_ARCHITECTURE_TU100 && ArchInfo->implementation > NV_GPU_ARCH_IMPLEMENTATION_TU106) {
+                        ArchInfo->implementation = NV_GPU_ARCH_IMPLEMENTATION_TU106; // let nukem's mod change the arch for those cards, breaks dlss otherwise for some reason
+                    }
+                    else {
+                        ArchInfo->architecture = NV_GPU_ARCHITECTURE_AD100;
+                        ArchInfo->implementation = NV_GPU_ARCH_IMPLEMENTATION_AD102;
+                    }
+
+                    LOG_INFO("Spoofed arch for dlssg: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
+                }
+
+                // for DLSS on 16xx cards
                 if (ArchInfo->architecture == NV_GPU_ARCHITECTURE_TU100 && ArchInfo->implementation > NV_GPU_ARCH_IMPLEMENTATION_TU106)
                 {
                     ArchInfo->implementation = NV_GPU_ARCH_IMPLEMENTATION_TU106;
-                    ArchInfo->implementation_id = NV_GPU_ARCH_IMPLEMENTATION_TU106;
 
                     LOG_INFO("Spoofed arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
                 }
-                //else if (ArchInfo->architecture < NV_GPU_ARCHITECTURE_TU100 && ArchInfo->architecture >= NV_GPU_ARCHITECTURE_GP100)
-                //{
-                //	LOG_INFO("Spoofing below 16xx arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
-
-                //	ArchInfo->architecture = NV_GPU_ARCHITECTURE_TU100;
-                //	ArchInfo->architecture_id = NV_GPU_ARCHITECTURE_TU100;
-                //	ArchInfo->implementation = NV_GPU_ARCH_IMPLEMENTATION_TU106;
-                //	ArchInfo->implementation_id = NV_GPU_ARCH_IMPLEMENTATION_TU106;
-
-                //	LOG_INFO("Spoofed arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
-                //}
             }
 
             return status;
@@ -65,10 +66,11 @@ public:
             case NvApiTypes::NV_INTERFACE::D3D_SetLatencyMarker:
             case NvApiTypes::NV_INTERFACE::D3D12_SetAsyncFrameMarker:
                 //LOG_DEBUG("counter: {}, hookReflex()", qiCounter);
-                return ReflexHooks::hookReflex(OriginalNvAPI_QueryInterface, InterfaceId);
+                ReflexHooks::hookReflex(OriginalNvAPI_QueryInterface);
+                return ReflexHooks::getHookedReflex(InterfaceId);
 
             default:
-                ReflexHooks::hookReflex(OriginalNvAPI_QueryInterface, InterfaceId);
+                ReflexHooks::hookReflex(OriginalNvAPI_QueryInterface);
         }
 
         const auto functionPointer = OriginalNvAPI_QueryInterface(InterfaceId);

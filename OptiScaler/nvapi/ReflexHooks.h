@@ -60,16 +60,45 @@ class ReflexHooks {
 		LOG_FUNC();
 #endif
 
+		if (pSetAsyncFrameMarkerParams->markerType == OUT_OF_BAND_PRESENT_START) {
+			constexpr size_t history_size = 12;
+			static size_t counter = 0;
+			static NvU64 previous_frame_ids[history_size] = {};
+
+			previous_frame_ids[counter % history_size] = pSetAsyncFrameMarkerParams->frameID;
+			counter++;
+
+			int repeat_count = 0;
+
+			for (size_t i = 1; i < history_size; i++) {
+				// won't catch repeat frame ids across array wrap around
+				if (previous_frame_ids[i] == previous_frame_ids[i - 1]) {
+					repeat_count++;
+				}
+			}
+
+			if (dlssgDetected && repeat_count == 0) {
+				dlssgDetected = false;
+				LOG_DEBUG("DLSS FG no longer detected");
+			}
+			else if (!dlssgDetected && repeat_count >= history_size / 2 - 1) {
+				dlssgDetected = true;
+				LOG_DEBUG("DLSS FG detected");
+			}
+		}
+
 		return o_NvAPI_D3D12_SetAsyncFrameMarker(pCommandQueue, pSetAsyncFrameMarkerParams);
 	}
 
 public:
-	inline static void* hookReflex(NvApiTypes::PFN_NvApi_QueryInterface &queryInterface, NvApiTypes::NV_INTERFACE InterfaceId) {
+	inline static bool dlssgDetected = false;
+
+	inline static void hookReflex(NvApiTypes::PFN_NvApi_QueryInterface &queryInterface) {
 #ifdef _DEBUG
 		LOG_FUNC();
 #endif
 
-		if (o_NvAPI_D3D_SetSleepMode == nullptr || o_NvAPI_D3D_Sleep == nullptr || o_NvAPI_D3D_GetLatency == nullptr || o_NvAPI_D3D_SetLatencyMarker == nullptr || o_NvAPI_D3D12_SetAsyncFrameMarker == nullptr) {
+		if (!_inited) {
 			o_NvAPI_D3D_SetSleepMode = static_cast<decltype(&NvAPI_D3D_SetSleepMode)>(queryInterface(NvApiTypes::NV_INTERFACE::D3D_SetSleepMode));
 			o_NvAPI_D3D_Sleep = static_cast<decltype(&NvAPI_D3D_Sleep)>(queryInterface(NvApiTypes::NV_INTERFACE::D3D_Sleep));
 			o_NvAPI_D3D_GetLatency = static_cast<decltype(&NvAPI_D3D_GetLatency)>(queryInterface(NvApiTypes::NV_INTERFACE::D3D_GetLatency));
@@ -77,6 +106,10 @@ public:
 			o_NvAPI_D3D12_SetAsyncFrameMarker = static_cast<decltype(&NvAPI_D3D12_SetAsyncFrameMarker)>(queryInterface(NvApiTypes::NV_INTERFACE::D3D12_SetAsyncFrameMarker));
 		}
 
+		_inited = o_NvAPI_D3D_SetSleepMode != nullptr && o_NvAPI_D3D_Sleep != nullptr && o_NvAPI_D3D_GetLatency != nullptr && o_NvAPI_D3D_SetLatencyMarker != nullptr && o_NvAPI_D3D12_SetAsyncFrameMarker != nullptr;
+	}
+
+	inline static void* getHookedReflex(NvApiTypes::NV_INTERFACE InterfaceId) {
 		switch (InterfaceId) {
 		case NvApiTypes::NV_INTERFACE::D3D_SetSleepMode:
 			if (o_NvAPI_D3D_SetSleepMode != nullptr)
@@ -112,7 +145,7 @@ public:
 		static float lastFps = 0;
 		float currentFps = Config::Instance()->FramerateLimit.value_or(0);
 
-		if (fgState)
+		if (fgState || dlssgDetected)
 			currentFps = currentFps / 2;
 
 		if (currentFps != lastFps) {

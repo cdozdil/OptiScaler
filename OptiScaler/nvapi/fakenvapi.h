@@ -54,7 +54,7 @@ public:
 
     // Inform AntiLag 2 when present of interpolated frames starts
     inline static void reportFGPresent(IDXGISwapChain* pSwapChain, bool fg_state, bool frame_interpolated) {
-        if (Fake_InformFGState == nullptr || Fake_InformPresentFG == nullptr || Fake_GetAntiLagCtx == nullptr) return;
+        if (Fake_InformFGState == nullptr || Fake_InformPresentFG == nullptr) return;
 
         // Lets fakenvapi log and reset correctly
         Fake_InformFGState(fg_state);
@@ -64,9 +64,11 @@ public:
             // and it will call SetFrameGenFrameType for us
             auto static ffxApiVersion = FfxApiProxy::VersionDx12();
             constexpr feature_version requiredVersion = { 3, 1, 1 };
-            if (isVersionOrBetter(ffxApiVersion, requiredVersion)) {
+            //constexpr feature_version requiredVersion = { 4, 0, 0 };
+            if (isVersionOrBetter(ffxApiVersion, requiredVersion) && Fake_GetAntiLagCtx != nullptr) {
                 void* antilag2Context = nullptr;
                 Fake_GetAntiLagCtx(&antilag2Context);
+                LOG_TRACE("Fake_GetAntiLagCtx: {}", antilag2Context != nullptr);
 
                 if (antilag2Context != nullptr) {
                     antilag2_data.context = antilag2Context;
@@ -79,6 +81,7 @@ public:
             {
                 // Tell fakenvapi to call SetFrameGenFrameType by itself
                 // Reflex frame id might get used in the future
+                LOG_TRACE("Fake_InformPresentFG: {}", frame_interpolated);
                 Fake_InformPresentFG(frame_interpolated, 0);
             }
         }

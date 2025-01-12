@@ -227,6 +227,13 @@ bool Config::Reload(std::filesystem::path iniPath)
                 RenderPresetUltraPerformance.reset();
         }
 
+        // DLSSG
+        {
+            SpoofHAGS = readBool("DLSSG", "SpoofHAGS");
+            DLSSGMod = readBool("DLSSG", "DLSSGMod");
+            if (DLSSGMod.value_or(false))
+                FGUseFGSwapChain = false;
+        }
 
         // Logging
         {
@@ -816,7 +823,11 @@ bool Config::SaveIni()
 
     // Frame Generation 
     {
-        ini.SetValue("FrameGen", "UseFGSwapChain", GetBoolValue(Instance()->FGUseFGSwapChain).c_str());
+        if (Instance()->DLSSGMod.value_or(false))
+            ini.SetValue("FrameGen", "UseFGSwapChain", "auto");
+        else
+            ini.SetValue("FrameGen", "UseFGSwapChain", GetBoolValue(Instance()->FGUseFGSwapChain).c_str());
+
         ini.SetValue("FrameGen", "Enabled", GetBoolValue(Instance()->FGEnabled).c_str());
         ini.SetValue("FrameGen", "DebugView", GetBoolValue(Instance()->FGDebugView).c_str());
         ini.SetValue("FrameGen", "AllowAsync", GetBoolValue(Instance()->FGAsync).c_str());
@@ -885,6 +896,12 @@ bool Config::SaveIni()
         ini.SetValue("DLSS", "RenderPresetBalanced", GetIntValue(Instance()->RenderPresetBalanced).c_str());
         ini.SetValue("DLSS", "RenderPresetPerformance", GetIntValue(Instance()->RenderPresetPerformance).c_str());
         ini.SetValue("DLSS", "RenderPresetUltraPerformance", GetIntValue(Instance()->RenderPresetUltraPerformance).c_str());
+    }
+
+    // DLSSG
+    {
+        ini.SetValue("DLSSG", "SpoofHAGS", GetBoolValue(Instance()->SpoofHAGS).c_str());
+        ini.SetValue("DLSSG", "DLSSGMod", GetBoolValue(Instance()->DLSSGMod).c_str());
     }
 
     // Sharpness
@@ -1089,8 +1106,14 @@ void Config::CheckUpscalerFiles()
         nvngxExist = std::filesystem::exists(Util::ExePath().parent_path() / L"nvngx.dll");
 
     if (!nvngxExist)
+        nvngxExist = std::filesystem::exists(Util::ExePath().parent_path() / L"_nvngx.dll");
+
+    if (!nvngxExist)
     {
         nvngxExist = GetModuleHandle(L"nvngx.dll") != nullptr;
+
+        if (!nvngxExist)
+            nvngxExist = GetModuleHandle(L"_nvngx.dll") != nullptr;
 
         if (nvngxExist)
             LOG_INFO("nvngx.dll found in memory");

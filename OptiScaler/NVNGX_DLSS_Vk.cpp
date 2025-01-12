@@ -17,6 +17,7 @@
 
 #include "NVNGX_Parameter.h"
 #include "NVNGX_Proxy.h"
+#include "DLSSG_Mod.h"
 
 VkInstance vkInstance;
 VkPhysicalDevice vkPD;
@@ -53,6 +54,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext(unsigned long long InAp
         }
     }
 
+    DLSSGMod::InitDLSSGMod_Vulkan();
+    DLSSGMod::VULKAN_Init_Ext(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, InSDKVersion, InFeatureInfo);
+
     return NVSDK_NGX_VULKAN_Init_Ext2(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, vkGetInstanceProcAddr, vkGetDeviceProcAddr, InSDKVersion, InFeatureInfo);
 }
 
@@ -78,6 +82,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InA
                 NVNGXProxy::SetVulkanInited(true);
         }
     }
+
+    DLSSGMod::InitDLSSGMod_Vulkan();
+    DLSSGMod::VULKAN_Init_Ext2(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InSDKVersion, InFeatureInfo);
 
     Config::Instance()->NVNGX_ApplicationId = InApplicationId;
     Config::Instance()->NVNGX_ApplicationDataPath = std::wstring(InApplicationDataPath);
@@ -229,8 +236,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
         }
     }
 
-    return NVSDK_NGX_VULKAN_Init_Ext2(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InSDKVersion, InFeatureInfo);
+    DLSSGMod::InitDLSSGMod_Vulkan();
+    DLSSGMod::VULKAN_Init(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InFeatureInfo, InSDKVersion);
 
+    return NVSDK_NGX_VULKAN_Init_Ext2(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InSDKVersion, InFeatureInfo);
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
@@ -423,7 +432,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureRequirements(VkInstanc
 {
     LOG_DEBUG("for FeatureID: {0}", (int)FeatureDiscoveryInfo->FeatureID);
 
-    if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+    DLSSGMod::InitDLSSGMod_Vulkan();
+
+    if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling || (DLSSGMod::isVulkanAvailable() && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_FrameGeneration))
     {
         if (OutSupported == nullptr)
             OutSupported = new NVSDK_NGX_FeatureRequirement();
@@ -490,6 +501,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_PopulateParameters_Impl(NVSDK_NG
 
     InitNGXParameters(InParameters);
 
+    DLSSGMod::VULKAN_PopulateParameters_Impl(InParameters);
+
     return NVSDK_NGX_Result_Success;
 }
 
@@ -517,6 +530,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_DestroyParameters(NVSDK_NGX_Para
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetScratchBufferSize(NVSDK_NGX_Feature InFeatureId, const NVSDK_NGX_Parameter* InParameters, size_t* OutSizeInBytes)
 {
+    if (DLSSGMod::isVulkanAvailable() && InFeatureId == NVSDK_NGX_Feature_FrameGeneration) {
+        return DLSSGMod::VULKAN_GetScratchBufferSize(InFeatureId, InParameters, OutSizeInBytes);
+    }
+
     LOG_WARN("-> 52428800");
 
     *OutSizeInBytes = 52428800;
@@ -525,7 +542,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetScratchBufferSize(NVSDK_NGX_F
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice, VkCommandBuffer InCmdList, NVSDK_NGX_Feature InFeatureID, NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Handle** OutHandle)
 {
-    if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
+    if (DLSSGMod::isVulkanAvailable() && InFeatureID == NVSDK_NGX_Feature_FrameGeneration)
+    {
+        auto result = DLSSGMod::VULKAN_CreateFeature1(InDevice, InCmdList, InFeatureID, InParameters, OutHandle);
+        LOG_INFO("Creating new modded DLSSG feature with HandleId: {0}", (*OutHandle)->Id);
+        return result;
+    }
+    else if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
     {
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::InitVulkan(vkInstance, vkPD, vkDevice, vkGIPA, vkGDPA) && NVNGXProxy::VULKAN_CreateFeature1() != nullptr)
         {
@@ -666,7 +689,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature(VkCommandBuffer In
 {
     LOG_FUNC();
 
-    if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
+    if (DLSSGMod::isVulkanAvailable() && InFeatureID == NVSDK_NGX_Feature_FrameGeneration)
+    {
+        auto result = DLSSGMod::VULKAN_CreateFeature(InCmdBuffer, InFeatureID, InParameters, OutHandle);
+        LOG_INFO("Creating new modded DLSSG feature with HandleId: {0}", (*OutHandle)->Id);
+        return result;
+    }
+    else if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
     {
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::InitVulkan(vkInstance, vkPD, vkDevice, vkGIPA, vkGDPA) && NVNGXProxy::VULKAN_CreateFeature() != nullptr)
         {
@@ -701,6 +730,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
             return NVSDK_NGX_Result_FAIL_FeatureNotFound;
         }
     }
+    else if (handleId >= DLSSG_MOD_ID_OFFSET)
+    {
+        LOG_INFO("VULKAN_ReleaseFeature modded DLSSG with HandleId: {0}", handleId);
+        return DLSSGMod::VULKAN_ReleaseFeature(InHandle);
+    }
 
     if (!shutdown)
         LOG_INFO("releasing feature with id {0}", handleId);
@@ -726,7 +760,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
     return NVSDK_NGX_Result_Success;
 }
 
-NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Handle* InFeatureHandle, NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer InCmdList, const NVSDK_NGX_Handle* InFeatureHandle, NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
 {
     if (InFeatureHandle == nullptr)
     {
@@ -738,9 +772,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
         LOG_DEBUG("Handle: {0}", InFeatureHandle->Id);
     }
 
-    if (InCmdBuffer == nullptr)
+    if (InCmdList == nullptr)
     {
-        LOG_ERROR("InCmdBuffer is null!!!");
+        LOG_ERROR("InCmdList is null!!!");
         return NVSDK_NGX_Result_Fail;
     }
 
@@ -750,7 +784,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::VULKAN_EvaluateFeature() != nullptr)
         {
             LOG_DEBUG("VULKAN_EvaluateFeature for ({0})", handleId);
-            auto result = NVNGXProxy::VULKAN_EvaluateFeature()(InCmdBuffer, InFeatureHandle, InParameters, InCallback);
+            auto result = NVNGXProxy::VULKAN_EvaluateFeature()(InCmdList, InFeatureHandle, InParameters, InCallback);
             LOG_INFO("VULKAN_EvaluateFeature result for ({0}): {1:X}", handleId, (UINT)result);
             return result;
         }
@@ -758,6 +792,46 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
         {
             return NVSDK_NGX_Result_FAIL_FeatureNotFound;
         }
+    }
+    else if (handleId >= DLSSG_MOD_ID_OFFSET)
+    {
+        // Workaround mostly for final fantasy xvi, keeping it from DX12
+        uint32_t depthInverted = 0;
+        float cameraNear = 0;
+        float cameraFar = 0;
+        InParameters->Get("DLSSG.DepthInverted", &depthInverted);
+        InParameters->Get("DLSSG.CameraNear", &cameraNear);
+        InParameters->Get("DLSSG.CameraFar", &cameraFar);
+
+        if (cameraNear == 0) {
+            if (depthInverted)
+                cameraNear = 100000.0f;
+            else
+                cameraNear = 10.0f;
+
+            InParameters->Set("DLSSG.CameraNear", cameraNear);
+        }
+
+        if (cameraFar == 0) {
+            if (depthInverted)
+                cameraFar = 10.0f;
+            else
+                cameraFar = 100000.0f;
+
+            InParameters->Set("DLSSG.CameraFar", cameraFar);
+        }
+        else if (cameraFar == INFINITY) {
+            cameraFar = 10000;
+            InParameters->Set("DLSSG.CameraFar", cameraFar);
+        }
+
+        // Workaround for a bug in Nukem's mod, keeping it from DX12
+        if (uint32_t LowresMvec = 0; InParameters->Get("DLSSG.run_lowres_mvec_pass", &LowresMvec) == NVSDK_NGX_Result_Success && LowresMvec == 1) {
+            InParameters->Set("DLSSG.MVecsSubrectWidth", 0U);
+            InParameters->Set("DLSSG.MVecsSubrectHeight", 0U);
+        }
+
+        return DLSSGMod::VULKAN_EvaluateFeature(InCmdList, InFeatureHandle, InParameters, InCallback);
     }
 
     evalCounter++;
@@ -894,7 +968,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
         if (changeBackendCounter == 3)
         {
             // next frame create context
-            auto initResult = VkContexts[handleId]->Init(vkInstance, vkPD, vkDevice, InCmdBuffer, vkGIPA, vkGDPA, createParams);
+            auto initResult = VkContexts[handleId]->Init(vkInstance, vkPD, vkDevice, InCmdList, vkGIPA, vkGDPA, createParams);
 
             changeBackendCounter = 0;
 
@@ -951,12 +1025,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     Config::Instance()->RenderMenu = true;
 
     // Record the first timestamp (before FSR2)
-    vkCmdWriteTimestamp(InCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, HooksVk::queryPool, 0);
+    vkCmdWriteTimestamp(InCmdList, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, HooksVk::queryPool, 0);
 
-    auto upscaleResult = deviceContext->Evaluate(InCmdBuffer, InParameters);
+    auto upscaleResult = deviceContext->Evaluate(InCmdList, InParameters);
 
     // Record the second timestamp (after FSR2)
-    vkCmdWriteTimestamp(InCmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, HooksVk::queryPool, 1);
+    vkCmdWriteTimestamp(InCmdList, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, HooksVk::queryPool, 1);
     HooksVk::vkUpscaleTrig = true;
 
     return upscaleResult ? NVSDK_NGX_Result_Success : NVSDK_NGX_Result_Fail;
@@ -989,6 +1063,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
     // Disabled for now to check if it cause any issues
     //ImGuiOverlayVk::UnHookVk();
 
+    DLSSGMod::VULKAN_Shutdown();
+
     shutdown = false;
 
     return NVSDK_NGX_Result_Success;
@@ -1003,6 +1079,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown1(VkDevice InDevice)
         auto result = NVNGXProxy::VULKAN_Shutdown1()(InDevice);
         NVNGXProxy::SetVulkanInited(false);
     }
+
+    DLSSGMod::VULKAN_Shutdown1(InDevice);
+
+    shutdown = false;
 
     return NVSDK_NGX_VULKAN_Shutdown();
 }

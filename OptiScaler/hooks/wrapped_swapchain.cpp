@@ -117,7 +117,11 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     LOG_DEBUG("");
 
 #ifdef USE_LOCAL_MUTEX
-    std::lock_guard<std::mutex> lock(_localMutex);
+    if (_localMutex.isLocked()) {
+        LOG_TRACE("Mutex already locked");
+    }
+    if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or(false))) // dlssg calls this from present it seems
+        _localMutex.lock(1);
 #endif
 
 #ifdef USE_MUTEX_FOR_FFX
@@ -221,6 +225,8 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
         }
     }
 
+    if(_localMutex.getOwner() == 1)
+        _localMutex.unlock();
     LOG_DEBUG("result: {0:X}", (UINT)result);
     return result;
 }
@@ -236,7 +242,11 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
     LOG_DEBUG("");
 
 #ifdef USE_LOCAL_MUTEX
-    std::lock_guard<std::mutex> lock(_localMutex);
+    if (_localMutex.isLocked()) {
+        LOG_TRACE("Mutex already locked");
+    }
+    if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or(false))) // dlssg calls this from present it seems
+        _localMutex.lock(2);
 #endif
 
 #ifdef USE_MUTEX_FOR_FFX
@@ -337,6 +347,9 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
         }
     }
 
+    if (_localMutex.getOwner() == 2)
+        _localMutex.unlock();
+
     LOG_DEBUG("result: {0:X}", (UINT)result);
 
     return result;
@@ -372,7 +385,11 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 
     {
 #ifdef USE_LOCAL_MUTEX
-        std::lock_guard<std::mutex> lock(_localMutex);
+        if (_localMutex.isLocked()) {
+            LOG_TRACE("Mutex already locked");
+        }
+        if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or(false))) // dlssg calls this from present it seems
+            _localMutex.lock(3);
 #endif
 
 #ifdef USE_MUTEX_FOR_FFX
@@ -422,7 +439,8 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
             }
         }
     }
-
+    if (_localMutex.getOwner() == 3)
+        _localMutex.unlock();
     return result;
 }
 
@@ -447,7 +465,7 @@ HRESULT WrappedIDXGISwapChain4::Present(UINT SyncInterval, UINT Flags)
         return DXGI_ERROR_DEVICE_REMOVED;
 
 #ifdef USE_LOCAL_MUTEX
-    std::lock_guard<std::mutex> lock(_localMutex);
+    _localMutex.lock(4);
 #endif
 
     HRESULT result;
@@ -457,6 +475,7 @@ HRESULT WrappedIDXGISwapChain4::Present(UINT SyncInterval, UINT Flags)
     else
         result = m_pReal->Present(SyncInterval, Flags);
 
+    _localMutex.unlock();
     return result;
 }
 
@@ -466,7 +485,7 @@ HRESULT WrappedIDXGISwapChain4::Present1(UINT SyncInterval, UINT Flags, const DX
         return DXGI_ERROR_DEVICE_REMOVED;
 
 #ifdef USE_LOCAL_MUTEX
-    std::lock_guard<std::mutex> lock(_localMutex);
+    _localMutex.lock(5);
 #endif
 
     HRESULT result;
@@ -476,6 +495,7 @@ HRESULT WrappedIDXGISwapChain4::Present1(UINT SyncInterval, UINT Flags, const DX
     else
         result = m_pReal1->Present1(SyncInterval, Flags, pPresentParameters);
 
+    _localMutex.unlock();
     return result;
 }
 

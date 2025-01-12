@@ -12,6 +12,38 @@ typedef HRESULT(*PFN_SC_Present)(IDXGISwapChain*, UINT, UINT, const DXGI_PRESENT
 typedef void(*PFN_SC_Clean)(bool, HWND);
 typedef void(*PFN_SC_Release)(HWND);
 
+
+class DebugMutex {
+private:
+    std::mutex mtx;
+    uint32_t owner; // don't use 0
+
+public:
+    void lock(uint32_t _owner) {
+        mtx.lock();
+        owner = _owner;
+    }
+
+    void unlock() {
+        mtx.unlock();
+        owner = 0;
+    }
+
+    bool isLocked() {
+        if (mtx.try_lock()) {
+            mtx.unlock();
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
+    uint32_t getOwner() {
+        return owner;
+    }
+};
+
 struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapChain4 : public IDXGISwapChain4
 {
     WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* pDevice, HWND hWnd, PFN_SC_Present renderTrig, PFN_SC_Clean clearTrig, PFN_SC_Release releaseTrig);
@@ -268,7 +300,7 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
     HWND Handle = nullptr;
 
 #ifdef USE_LOCAL_MUTEX
-    std::mutex _localMutex;
+    DebugMutex _localMutex;
 #endif 
 
     int id = 0;

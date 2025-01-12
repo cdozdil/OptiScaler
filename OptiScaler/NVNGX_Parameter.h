@@ -1,6 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "Config.h"
+#include "DLSSG_Mod.h"
 
 #include <ankerl/unordered_dense.h>
 
@@ -456,6 +457,15 @@ inline static void InitNGXParameters(NVSDK_NGX_Parameter* InParams)
     InParams->Set(NVSDK_NGX_Parameter_VisibilityNodeMask, 1);
     InParams->Set(NVSDK_NGX_Parameter_DLSS_Enable_Output_Subrects, 1);
     InParams->Set(NVSDK_NGX_Parameter_RTXValue, 0);
+
+    // not ideal as it doesn't take different APIs into account
+    if (DLSSGMod::isLoaded()) {
+        InParams->Set("FrameGeneration.Available", 1);
+        InParams->Set("FrameInterpolation.Available", 1);
+        InParams->Set(NVSDK_NGX_Parameter_FrameInterpolation_NeedsUpdatedDriver, 0);
+        InParams->Set(NVSDK_NGX_Parameter_FrameInterpolation_FeatureInitResult, 1);
+        InParams->Set(NVSDK_NGX_Parameter_FrameInterpolation_MinDriverVersionMajor, 0);
+    }
 }
 
 struct Parameter

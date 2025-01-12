@@ -215,6 +215,8 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!"</C
     <ClInclude Include="bias\Bias_Dx12.h" />
     <ClInclude Include="bias\Bias_Dx11.h" />
     <ClInclude Include="bias\precompile\Bias_Shader.h" />
+    <ClInclude Include="DLSSG_Mod.h" />
+    <ClInclude Include="Gdi32_Proxy.h" />
     <ClInclude Include="FfxApi_Dx12.h" />
     <ClInclude Include="FSR2_Dx12.h" />
     <ClInclude Include="FSR3_Dx12.h" />
@@ -282,6 +284,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!"</C
     <ClInclude Include="rcas\RCAS_Dx12.h" />
     <ClInclude Include="nvapi\ReflexHooks.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Streamline_Proxy.h" />
     <ClInclude Include="Util.h" />
     <ClInclude Include="backends\xess\XeSSFeature_Dx11.h" />
     <ClInclude Include="XeSS_Proxy.h" />

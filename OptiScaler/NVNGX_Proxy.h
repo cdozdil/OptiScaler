@@ -182,6 +182,7 @@ typedef NVSDK_NGX_Result(*PFN_D3D12_CreateFeature)(ID3D12GraphicsCommandList* In
 typedef NVSDK_NGX_Result(*PFN_D3D12_ReleaseFeature)(NVSDK_NGX_Handle* InHandle);
 typedef NVSDK_NGX_Result(*PFN_D3D12_GetFeatureRequirements)(IDXGIAdapter* Adapter, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, NVSDK_NGX_FeatureRequirement* OutSupported);
 typedef NVSDK_NGX_Result(*PFN_D3D12_EvaluateFeature)(ID3D12GraphicsCommandList* InCmdList, const NVSDK_NGX_Handle* InFeatureHandle, const NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback);
+typedef NVSDK_NGX_Result(*PFN_D3D12_PopulateParameters_Impl)(NVSDK_NGX_Parameter* InParameters);
 
 typedef NVSDK_NGX_Result(*PFN_UpdateFeature)(const NVSDK_NGX_Application_Identifier* ApplicationId, const NVSDK_NGX_Feature FeatureID);
 
@@ -205,6 +206,7 @@ typedef NVSDK_NGX_Result(*PFN_VULKAN_GetFeatureRequirements)(const VkInstance In
 typedef NVSDK_NGX_Result(*PFN_VULKAN_GetFeatureInstanceExtensionRequirements)(const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, uint32_t* OutExtensionCount, VkExtensionProperties** OutExtensionProperties);
 typedef NVSDK_NGX_Result(*PFN_VULKAN_GetFeatureDeviceExtensionRequirements)(VkInstance Instance, VkPhysicalDevice PhysicalDevice, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, uint32_t* OutExtensionCount, VkExtensionProperties** OutExtensionProperties);
 typedef NVSDK_NGX_Result(*PFN_VULKAN_EvaluateFeature)(VkCommandBuffer InCmdList, const NVSDK_NGX_Handle* InFeatureHandle, const NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback);
+typedef NVSDK_NGX_Result(*PFN_VULKAN_PopulateParameters_Impl)(NVSDK_NGX_Parameter* InParameters);
 
 class NVNGXProxy
 {
