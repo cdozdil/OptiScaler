@@ -823,11 +823,7 @@ bool Config::SaveIni()
 
     // Frame Generation 
     {
-        if (Instance()->DLSSGMod.value_or(false))
-            ini.SetValue("FrameGen", "UseFGSwapChain", "auto");
-        else
-            ini.SetValue("FrameGen", "UseFGSwapChain", GetBoolValue(Instance()->FGUseFGSwapChain).c_str());
-
+        ini.SetValue("FrameGen", "UseFGSwapChain", GetBoolValue(Instance()->FGUseFGSwapChain).c_str());
         ini.SetValue("FrameGen", "Enabled", GetBoolValue(Instance()->FGEnabled).c_str());
         ini.SetValue("FrameGen", "DebugView", GetBoolValue(Instance()->FGDebugView).c_str());
         ini.SetValue("FrameGen", "AllowAsync", GetBoolValue(Instance()->FGAsync).c_str());

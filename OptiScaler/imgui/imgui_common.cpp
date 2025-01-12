@@ -1604,12 +1604,12 @@ bool ImGuiCommon::RenderMenu()
                         if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.1f, 500000.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
                             Config::Instance()->FsrCameraNear = cameraNear;
                         ShowHelpMarker("Might help achieve better image quality\n"
-                            "And potentially less ghosting");
+                                       "And potentially less ghosting");
 
                         if (ImGui::SliderFloat("Camera Far", &cameraFar, 0.1f, 500000.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
                             Config::Instance()->FsrCameraFar = cameraFar;
                         ShowHelpMarker("Might help achieve better image quality\n"
-                            "And potentially less ghosting");
+                                       "And potentially less ghosting");
 
                         if (ImGui::Button("Reset Camera Values"))
                         {
@@ -1619,8 +1619,8 @@ bool ImGuiCommon::RenderMenu()
 
                         ImGui::SameLine(0.0f, 6.0f);
                         ImGui::Text("Near: %.1f Far: %.1f",
-                            Config::Instance()->LastFsrCameraNear < 500000.0f ? Config::Instance()->LastFsrCameraNear : 500000.0f,
-                            Config::Instance()->LastFsrCameraFar < 500000.0f ? Config::Instance()->LastFsrCameraFar : 500000.0f);
+                                    Config::Instance()->LastFsrCameraNear < 500000.0f ? Config::Instance()->LastFsrCameraNear : 500000.0f,
+                                    Config::Instance()->LastFsrCameraFar < 500000.0f ? Config::Instance()->LastFsrCameraFar : 500000.0f);
                     }
 
                     // DLSS -----------------
@@ -1632,7 +1632,7 @@ bool ImGuiCommon::RenderMenu()
                         if (bool pOverride = Config::Instance()->RenderPresetOverride.value_or(false); ImGui::Checkbox("Render Presets Override", &pOverride))
                             Config::Instance()->RenderPresetOverride = pOverride;
                         ShowHelpMarker("Each render preset has it strengths and weaknesses\n"
-                            "Override to potentially improve image quality");
+                                       "Override to potentially improve image quality");
 
                         ImGui::SameLine(0.0f, 6.0f);
 
@@ -1660,11 +1660,8 @@ bool ImGuiCommon::RenderMenu()
                         ImGui::SeparatorText("RCAS Settings");
 
                         // xess or dlss version >= 2.5.1
-                        rcasEnabled = (currentBackend == "xess" || (currentBackend == "dlss" &&
-                            (Config::Instance()->CurrentFeature->Version().major > 2 ||
-                                (Config::Instance()->CurrentFeature->Version().major == 2 &&
-                                    Config::Instance()->CurrentFeature->Version().minor >= 5 &&
-                                    Config::Instance()->CurrentFeature->Version().patch >= 1))));
+                        constexpr feature_version requiredDlssVersion = { 2, 5, 1 };
+                        rcasEnabled = (currentBackend == "xess" || (currentBackend == "dlss" && isVersionOrBetter(Config::Instance()->CurrentFeature->Version(), requiredDlssVersion)));
 
                         if (bool rcas = Config::Instance()->RcasEnabled.value_or(rcasEnabled); ImGui::Checkbox("Enable RCAS", &rcas))
                             Config::Instance()->RcasEnabled = rcas;

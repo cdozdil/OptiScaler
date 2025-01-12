@@ -61,14 +61,13 @@ static void streamlineLogCallback(sl::LogType type, const char* msg) {
 
 static int hkslInit(sl::Preferences* pref, uint64_t sdkVersion) {
     LOG_FUNC();
-    // o_logCallback = pref->logMessageCallback; // cyberpunk might be getting itself here
+    // o_logCallback = pref->logMessageCallback; // causes a loop in cyberpunk on linux
     pref->logLevel = sl::LogLevel::eCount;
     pref->logMessageCallback = &streamlineLogCallback;
     return o_slInit(pref, sdkVersion);
 }
 
 static int hkslSetTag(uint64_t viewport, sl::ResourceTag* tags, uint32_t numTags, uint64_t cmdBuffer) {
-    LOG_FUNC();
     for (auto i = 0; i < numTags; i++) {
         if (Config::Instance()->gameQuirk == Cyberpunk && tags[i].type == 2 && tags[i].resource->state == (D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)) {
             tags[i].resource->state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
@@ -124,7 +123,6 @@ static void hookStreamline(HMODULE slInterposer) {
 
             if (sl_version.major >= 2) {
                 DetourAttach(&(PVOID&)o_slSetTag, hkslSetTag);
-                // TODO: fix some weird logging loop in cyberpunk
                 DetourAttach(&(PVOID&)o_slInit, hkslInit);
             }
 
