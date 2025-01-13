@@ -882,6 +882,35 @@ bool ImGuiCommon::RenderMenu()
         {
             ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
 
+            std::string api;
+
+            if (Config::Instance()->IsRunningOnDXVK || Config::Instance()->IsRunningOnLinux)
+            {
+                api = "VLK";
+
+            }
+            else
+            {
+                switch (Config::Instance()->SwapChainApi)
+                {
+                    case NVNGX_VULKAN:
+                        api = "VLK";
+                        break;
+
+                    case NVNGX_DX11:
+                        api = "DX11";
+                        break;
+
+                    case NVNGX_DX12:
+                        api = "DX12";
+                        break;
+
+                    default:
+                        api = "???";
+                        break;
+                }
+            }
+
             if (Config::Instance()->FpsOverlayType.value_or(0) == 0)
                 ImGui::Text("%5.1f fps %5.2f ms", io.Framerate, 1000.0f / io.Framerate);
             else

@@ -154,6 +154,8 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
         HooksVk::vkUpscaleTrig = false;
     }
 
+    Config::Instance()->SwapChainApi = NVNGX_VULKAN;
+
     // render menu if needed
     if(!ImGuiOverlayVk::QueuePresent(queue, pPresentInfo))
         return VK_ERROR_OUT_OF_DATE_KHR;

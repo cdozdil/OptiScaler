@@ -2065,6 +2065,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             LOG_DEBUG("D3D11Device captured");
 
         _dx11Device = true;
+        Config::Instance()->SwapChainApi = NVNGX_DX11;
     }
     else if (pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
@@ -2074,6 +2075,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         FrameGen_Dx12::fgFSRCommandQueue = (ID3D12CommandQueue*)pDevice;
         FrameGen_Dx12::fgFSRCommandQueue->SetName(L"fgFSRSwapChainQueue");
         HooksDx::GameCommandQueue = FrameGen_Dx12::fgFSRCommandQueue;
+        Config::Instance()->SwapChainApi = NVNGX_DX12;
 
         if (HooksDx::GameCommandQueue->GetDevice(IID_PPV_ARGS(&device12)) == S_OK)
         {

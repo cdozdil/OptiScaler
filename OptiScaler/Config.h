@@ -219,6 +219,7 @@ public:
 	std::string NVNGX_EngineVersion;
 	
 	NVNGX_Api Api = NVNGX_NOT_SELECTED;
+	NVNGX_Api SwapChainApi = NVNGX_NOT_SELECTED;
 	
 	// dlss enabler
 	bool DE_Available = false;
