@@ -912,9 +912,9 @@ bool ImGuiCommon::RenderMenu()
             }
 
             if (Config::Instance()->FpsOverlayType.value_or(0) == 0)
-                ImGui::Text("%5.1f fps %5.2f ms", io.Framerate, 1000.0f / io.Framerate);
+                ImGui::Text("%s %5.1f fps %5.2f ms", api.c_str(), io.Framerate, 1000.0f / io.Framerate);
             else
-                ImGui::Text("Fps: %5.1f, Avg: %5.1f", io.Framerate, 1000.0f / averageFrameTime);
+                ImGui::Text("%s Fps: %5.1f, Avg: %5.1f", api.c_str(), io.Framerate, 1000.0f / averageFrameTime);
 
             if (Config::Instance()->FpsOverlayType.value_or(0) > 0)
             {
