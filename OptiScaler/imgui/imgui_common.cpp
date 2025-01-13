@@ -896,7 +896,7 @@ bool ImGuiCommon::RenderMenu()
 
             if (Config::Instance()->IsRunningOnDXVK || Config::Instance()->IsRunningOnLinux)
             {
-                api = "VLK";
+                api = "VKD3D";
 
             }
             else
@@ -908,11 +908,11 @@ bool ImGuiCommon::RenderMenu()
                         break;
 
                     case NVNGX_DX11:
-                        api = "DX11";
+                        api = "D3D11";
                         break;
 
                     case NVNGX_DX12:
-                        api = "DX12";
+                        api = "D3D12";
                         break;
 
                     default:
