@@ -7,6 +7,9 @@ static ImVec2 overlayPosition(-1000.0f, -1000.0f);
 static bool hdrTonemapApplied = false;
 static ImVec4 SdrColors[ImGuiCol_COUNT];
 static bool receivingWmInputs = false;
+static bool inputMenu = false;
+static bool inputFps = false;
+static bool inputFpsCycle = false;
 
 void ImGuiCommon::ShowTooltip(const char* tip) {
     if (ImGui::IsItemHovered())
@@ -324,9 +327,6 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     }
 
     bool rawRead = false;
-    bool inputMenu = false;
-    bool inputFps = false;
-    bool inputFpsCycle = false;
     ImGuiKey imguiKey;
     RAWINPUT rawData{};
     UINT rawDataSize = sizeof(rawData);
@@ -339,60 +339,25 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         bool isKeyUp = (rawData.data.keyboard.Flags & RI_KEY_BREAK) != 0;
         if (isKeyUp && rawData.header.dwType == RIM_TYPEKEYBOARD && rawData.data.keyboard.VKey != 0)
         {
-            inputMenu = rawData.data.keyboard.VKey == Config::Instance()->ShortcutKey.value_or(VK_INSERT);
-            inputFps = rawData.data.keyboard.VKey == Config::Instance()->FpsShortcutKey.value_or(VK_PRIOR);
-            inputFpsCycle = rawData.data.keyboard.VKey == Config::Instance()->FpsCycleShortcutKey.value_or(VK_NEXT);
+            if (!inputMenu)
+                inputMenu = rawData.data.keyboard.VKey == Config::Instance()->ShortcutKey.value_or(VK_INSERT);
+
+            if (!inputFps)
+                inputFps = rawData.data.keyboard.VKey == Config::Instance()->FpsShortcutKey.value_or(VK_PRIOR);
+
+            if (!inputFpsCycle)
+                inputFpsCycle = rawData.data.keyboard.VKey == Config::Instance()->FpsCycleShortcutKey.value_or(VK_NEXT);
         }
     }
-    
-    if (!receivingWmInputs)
-    {
+
+    if (!inputMenu)
         inputMenu = msg == WM_KEYUP && wParam == Config::Instance()->ShortcutKey.value_or(VK_INSERT);
+    
+    if (!inputFps)
         inputFps = msg == WM_KEYUP && wParam == Config::Instance()->FpsShortcutKey.value_or(VK_PRIOR);
+    
+    if (!inputFpsCycle)
         inputFpsCycle = msg == WM_KEYUP && wParam == Config::Instance()->FpsCycleShortcutKey.value_or(VK_NEXT);
-    }
-
-    if (inputFps)
-        Config::Instance()->ShowFps = !Config::Instance()->ShowFps.value_or(false);
-
-    if (inputFpsCycle && Config::Instance()->ShowFps.value_or(false))
-        Config::Instance()->FpsOverlayType = (Config::Instance()->FpsOverlayType.value_or(0) + 1) % 5;
-
-    // INSERT - OPEN MENU
-    if (inputMenu)
-    {
-        _isVisible = !_isVisible;
-
-        LOG_DEBUG("Menu key pressed, {0}", _isVisible ? "opening ImGui" : "closing ImGui");
-
-        if (_isVisible)
-        {
-            Config::Instance()->ReloadFakenvapi();
-
-            if (pfn_ClipCursor_hooked)
-            {
-                _ssRatio = 0;
-
-                if (GetClipCursor(&_cursorLimit))
-                    pfn_ClipCursor(nullptr);
-
-                GetCursorPos(&_lastPoint);
-            }
-        }
-        else
-        {
-            if (pfn_ClipCursor_hooked)
-                pfn_ClipCursor(&_cursorLimit);
-
-            _showMipmapCalcWindow = false;
-        }
-
-        io.MouseDrawCursor = _isVisible;
-        io.WantCaptureKeyboard = _isVisible;
-        io.WantCaptureMouse = _isVisible;
-
-        return TRUE;
-    }
 
     // SHIFT + DEL - Debug dump
     if (msg == WM_KEYUP && wParam == VK_DELETE && (GetKeyState(VK_SHIFT) & 0x8000))
@@ -782,6 +747,50 @@ bool ImGuiCommon::RenderMenu()
         return false;
 
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    if (inputFps)
+        Config::Instance()->ShowFps = !Config::Instance()->ShowFps.value_or(false);
+
+    if (inputFpsCycle && Config::Instance()->ShowFps.value_or(false))
+        Config::Instance()->FpsOverlayType = (Config::Instance()->FpsOverlayType.value_or(0) + 1) % 5;
+
+    // INSERT - OPEN MENU
+    if (inputMenu)
+    {
+        _isVisible = !_isVisible;
+
+        LOG_DEBUG("Menu key pressed, {0}", _isVisible ? "opening ImGui" : "closing ImGui");
+
+        if (_isVisible)
+        {
+            Config::Instance()->ReloadFakenvapi();
+
+            if (pfn_ClipCursor_hooked)
+            {
+                _ssRatio = 0;
+
+                if (GetClipCursor(&_cursorLimit))
+                    pfn_ClipCursor(nullptr);
+
+                GetCursorPos(&_lastPoint);
+            }
+        }
+        else
+        {
+            if (pfn_ClipCursor_hooked)
+                pfn_ClipCursor(&_cursorLimit);
+
+            _showMipmapCalcWindow = false;
+        }
+
+        io.MouseDrawCursor = _isVisible;
+        io.WantCaptureKeyboard = _isVisible;
+        io.WantCaptureMouse = _isVisible;
+    }
+
+    inputFps = false;
+    inputMenu = false;
+    inputFpsCycle = false;
 
     // If game is using HDR, apply tone mapping to the ImGui style
     if (Config::Instance()->isHdrActive)
