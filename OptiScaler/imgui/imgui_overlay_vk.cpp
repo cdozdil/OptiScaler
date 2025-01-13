@@ -455,21 +455,21 @@ bool ImGuiOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
     if (!ImGuiOverlayBase::IsInited() || _ImVulkan_Info.Device == VK_NULL_HANDLE)
         return true;
 
-    std::lock_guard<std::mutex> lock(_vkPresentMutex);
+    if (pPresentInfo->swapchainCount == 0)
+        return false;
 
-    LOG_DEBUG("rendering menu, swapchain count: {0}", pPresentInfo->swapchainCount);
-
-    bool errorWhenRenderingMenu = true;
     VkSemaphore signalSemaphores[8] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 
-    for (size_t scIndex = 0; scIndex < pPresentInfo->swapchainCount; scIndex++)
+    std::lock_guard<std::mutex> lock(_vkPresentMutex);
+    LOG_DEBUG("rendering menu, swapchain count: {0}", pPresentInfo->swapchainCount);
+
     {
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplWin32_NewFrame();
 
         if (ImGuiOverlayBase::RenderMenu())
         {
-            uint32_t idx = pPresentInfo->pImageIndices[scIndex];
+            uint32_t idx = pPresentInfo->pImageIndices[0];
             ImGui_ImplVulkanH_Frame* fd = &_ImVulkan_Frames[idx];
 
             vkWaitForFences(_ImVulkan_Info.Device, 1, &fd->Fence, VK_TRUE, UINT64_MAX);
@@ -502,7 +502,7 @@ bool ImGuiOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
             if (ecbResult != VK_SUCCESS)
             {
                 LOG_ERROR("vkQueueSubmit error: {0:X}", (UINT)ecbResult);
-                break;
+                return false;
             }
 
             // Submit queue and semaphores
@@ -524,33 +524,33 @@ bool ImGuiOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
             if (qResult != VK_SUCCESS)
             {
                 LOG_ERROR("vkQueueSubmit error: {0:X}", (UINT)qResult);
-                break;
+                return false;
             }
 
-            signalSemaphores[scIndex] = _ImVulkan_Semaphores[idx];
-            errorWhenRenderingMenu = false;
+            signalSemaphores[0] = _ImVulkan_Semaphores[idx];
+
+            pPresentInfo->waitSemaphoreCount = pPresentInfo->swapchainCount;
+            pPresentInfo->pWaitSemaphores = signalSemaphores;
         }
     }
 
-    if (!errorWhenRenderingMenu)
-        LOG_DEBUG("rendering done without errors");
-    else
-        LOG_ERROR("rendering done with errors");
+    //if (!errorWhenRenderingMenu)
+    //    LOG_DEBUG("rendering done without errors");
+    //else
+    //    LOG_ERROR("rendering done with errors");
 
-    if (!errorWhenRenderingMenu)
-    {
+    //if (!errorWhenRenderingMenu)
+    //{
         // already waited original calls semaphores when running commands
         // set menu draw signal semaphores as wait semaphores for present
-        pPresentInfo->waitSemaphoreCount = pPresentInfo->swapchainCount;
-        pPresentInfo->pWaitSemaphores = signalSemaphores;
-    }
-    else
-    {
-        // if there are errors when rendering try to recreate swapchain
-        _vkPresentMutex.unlock();
-        LOG_FUNC_RESULT(VK_ERROR_OUT_OF_DATE_KHR);
-        return false;
-    }
+    //}
+    //else
+    //{
+    //    // if there are errors when rendering try to recreate swapchain
+    //    //_vkPresentMutex.unlock();
+    //    LOG_FUNC_RESULT(VK_ERROR_OUT_OF_DATE_KHR);
+    //    return false;
+    //}
 
     return true;
 }
