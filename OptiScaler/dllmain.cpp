@@ -306,7 +306,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
         if (!isWorkingWithEnabler)
             HookForDxgiSpoofing();
 
-        if (Config::Instance()->OverlayMenu.value_or(true)/* && !Config::Instance()->IsRunningOnLinux*/)
+        if (Config::Instance()->OverlayMenu.value_or(true))
             HooksDx::HookDxgi();
 
         Config::Instance()->skipDllLoadChecks = false;

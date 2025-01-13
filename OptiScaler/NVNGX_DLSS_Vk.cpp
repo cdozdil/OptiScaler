@@ -807,14 +807,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
             if (depthInverted)
                 cameraNear = 100000.0f;
             else
-                cameraNear = 10.0f;
+                cameraNear = 0.1f;
 
             InParameters->Set("DLSSG.CameraNear", cameraNear);
         }
 
         if (cameraFar == 0) {
             if (depthInverted)
-                cameraFar = 10.0f;
+                cameraFar = 0.1f;
             else
                 cameraFar = 100000.0f;
 
