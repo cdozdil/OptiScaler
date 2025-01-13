@@ -227,6 +227,13 @@ bool Config::Reload(std::filesystem::path iniPath)
                 RenderPresetUltraPerformance.reset();
         }
 
+        // DLSSG
+        {
+            SpoofHAGS = readBool("DLSSG", "SpoofHAGS");
+            DLSSGMod = readBool("DLSSG", "DLSSGMod");
+            if (DLSSGMod.value_or(false))
+                FGUseFGSwapChain = false;
+        }
 
         // Logging
         {
@@ -887,6 +894,12 @@ bool Config::SaveIni()
         ini.SetValue("DLSS", "RenderPresetUltraPerformance", GetIntValue(Instance()->RenderPresetUltraPerformance).c_str());
     }
 
+    // DLSSG
+    {
+        ini.SetValue("DLSSG", "SpoofHAGS", GetBoolValue(Instance()->SpoofHAGS).c_str());
+        ini.SetValue("DLSSG", "DLSSGMod", GetBoolValue(Instance()->DLSSGMod).c_str());
+    }
+
     // Sharpness
     {
         ini.SetValue("Sharpness", "OverrideSharpness", GetBoolValue(Instance()->OverrideSharpness).c_str());
@@ -1089,8 +1102,14 @@ void Config::CheckUpscalerFiles()
         nvngxExist = std::filesystem::exists(Util::ExePath().parent_path() / L"nvngx.dll");
 
     if (!nvngxExist)
+        nvngxExist = std::filesystem::exists(Util::ExePath().parent_path() / L"_nvngx.dll");
+
+    if (!nvngxExist)
     {
         nvngxExist = GetModuleHandle(L"nvngx.dll") != nullptr;
+
+        if (!nvngxExist)
+            nvngxExist = GetModuleHandle(L"_nvngx.dll") != nullptr;
 
         if (nvngxExist)
             LOG_INFO("nvngx.dll found in memory");

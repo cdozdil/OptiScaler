@@ -117,7 +117,10 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     LOG_DEBUG("");
 
 #ifdef USE_LOCAL_MUTEX
-    std::lock_guard<std::mutex> lock(_localMutex);
+    // dlssg calls this from present it seems
+    // don't try to get a mutex when present owns it while dlssg mod is enabled
+    if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or(false)))
+        OwnedLockGuard lock(_localMutex, 1);
 #endif
 
 #ifdef USE_MUTEX_FOR_FFX
@@ -236,7 +239,10 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
     LOG_DEBUG("");
 
 #ifdef USE_LOCAL_MUTEX
-    std::lock_guard<std::mutex> lock(_localMutex);
+    // dlssg calls this from present it seems
+    // don't try to get a mutex when present owns it while dlssg mod is enabled
+    if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or(false)))
+        OwnedLockGuard lock(_localMutex, 2);
 #endif
 
 #ifdef USE_MUTEX_FOR_FFX
@@ -372,7 +378,10 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 
     {
 #ifdef USE_LOCAL_MUTEX
-        std::lock_guard<std::mutex> lock(_localMutex);
+        // dlssg calls this from present it seems
+        // don't try to get a mutex when present owns it while dlssg mod is enabled
+        if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or(false)))
+            OwnedLockGuard lock(_localMutex, 3);
 #endif
 
 #ifdef USE_MUTEX_FOR_FFX
@@ -447,7 +456,7 @@ HRESULT WrappedIDXGISwapChain4::Present(UINT SyncInterval, UINT Flags)
         return DXGI_ERROR_DEVICE_REMOVED;
 
 #ifdef USE_LOCAL_MUTEX
-    std::lock_guard<std::mutex> lock(_localMutex);
+    OwnedLockGuard lock(_localMutex, 4);
 #endif
 
     HRESULT result;
@@ -466,7 +475,7 @@ HRESULT WrappedIDXGISwapChain4::Present1(UINT SyncInterval, UINT Flags, const DX
         return DXGI_ERROR_DEVICE_REMOVED;
 
 #ifdef USE_LOCAL_MUTEX
-    std::lock_guard<std::mutex> lock(_localMutex);
+    OwnedLockGuard lock(_localMutex, 5);
 #endif
 
     HRESULT result;

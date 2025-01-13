@@ -15,6 +15,12 @@ typedef enum NVNGX_Api
 	NVNGX_VULKAN,
 } NVNGX_Api;
 
+typedef enum GameQuirk 
+{
+	Other,
+	Cyberpunk
+} GameQuirk;
+
 class Config
 {
 public:
@@ -56,6 +62,11 @@ public:
 	std::optional<uint32_t> RenderPresetBalanced;
 	std::optional<uint32_t> RenderPresetPerformance;
 	std::optional<uint32_t> RenderPresetUltraPerformance;
+
+	// DLSSG
+	std::optional<bool> SpoofHAGS;
+	std::optional<bool> DLSSGMod;
+	GameQuirk gameQuirk = Other;
 
 	// CAS
 	std::optional<bool> RcasEnabled;

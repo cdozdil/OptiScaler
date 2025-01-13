@@ -2086,6 +2086,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         }
     }
 
+    ReflexHooks::update(FrameGen_Dx12::fgIsActive);
+
     // Upscaler GPU time computation
     if (HooksDx::dx12UpscaleTrig && HooksDx::readbackBuffer != nullptr && HooksDx::queryHeap != nullptr && cq != nullptr)
     {
@@ -2212,8 +2214,6 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
     if (Config::Instance()->CurrentFeature != nullptr)
         fgPresentedFrame = Config::Instance()->CurrentFeature->FrameCount();
-
-    ReflexHooks::update(FrameGen_Dx12::fgIsActive);
 
     // release used objects
     if (cq != nullptr)
