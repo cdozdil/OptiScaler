@@ -198,8 +198,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
         {
             LOG_INFO("{0} call!", lcaseLibName);
 
-            LoadNvApi();
-            auto nvapi = GetModuleHandleA(lcaseLibName.c_str());
+            auto nvapi = LoadNvApi();
 
             // Nvapihooks intentionally won't load nvapi so have to make sure it's loaded
             if (nvapi != nullptr) {
@@ -420,8 +419,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
         {
             LOG_INFO("{0} call!", lcaseLibNameA);
 
-            LoadNvApi();
-            auto nvapi = GetModuleHandleW(lcaseLibName.c_str());
+            auto nvapi = LoadNvApi();
 
             // Nvapihooks intentionally won't load nvapi so have to make sure it's loaded
             if (nvapi != nullptr) {
