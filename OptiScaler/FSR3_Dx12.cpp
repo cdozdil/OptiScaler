@@ -30,8 +30,6 @@ static PFN_ffxFSR3GetInterfaceDX12 o_ffxFSR3GetInterfaceDX12 = nullptr;
 static std::map<Fsr3::FfxFsr3UpscalerContext*, Fsr3::FfxFsr3UpscalerContextDescription> _initParams;
 static std::map<Fsr3::FfxFsr3UpscalerContext*, NVSDK_NGX_Parameter*> _nvParams;
 static std::map<Fsr3::FfxFsr3UpscalerContext*, NVSDK_NGX_Handle*> _contexts;
-static std::map<void*, ID3D12Device*> _devices;
-static std::map<void*, ID3D12GraphicsCommandList*> _commandLists;
 static ID3D12Device* _d3d12Device = nullptr;
 static bool _nvnxgInited = false;
 static float qualityRatios[] = { 1.0, 1.5, 1.7, 2.0, 3.0 };
@@ -174,19 +172,28 @@ static Fsr3::FfxErrorCode ffxFsr3ContextCreate_Dx12(Fsr3::FfxFsr3UpscalerContext
 
     // check for d3d12 device
     // to prevent crashes when game is using custom interface and
-    // contextDescription->device is not a d3d12 device
-    // FMF2
     if (_d3d12Device == nullptr)
     {
-        if (_devices.contains(pContextDescription->backendInterface.device))
-            _d3d12Device = _devices[pContextDescription->backendInterface.device];
+        auto bDevice = (ID3D12Device*)pContextDescription->backendInterface.device;
 
-        if (_d3d12Device == nullptr)
-            _d3d12Device = Config::Instance()->d3d12Devices[Config::Instance()->d3d12Devices.size() - 1];
+        for (size_t i = 0; i < Config::Instance()->d3d12Devices.size(); i++)
+        {
+            if (Config::Instance()->d3d12Devices[i] == bDevice)
+            {
+                _d3d12Device = bDevice;
+                break;
+            }
+        }
     }
 
+    // if still no device use latest created one
+    // Might fixed TLOU but FMF2 still crashes
+    if (_d3d12Device == nullptr)
+        _d3d12Device = Config::Instance()->d3d12Devices[Config::Instance()->d3d12Devices.size() - 1];
+
     if (_d3d12Device == nullptr)
     {
+        LOG_WARN("D3D12 device not found!");
         return ccResult;
     }
 
@@ -414,16 +421,16 @@ void HookFSR3Inputs(HMODULE module)
     {
         if (o_ffxFSR3GetInterfaceDX12 == nullptr)
             o_ffxFsr3UpscalerContextCreate_Dx12 = (PFN_ffxFsr3UpscalerContextCreate)GetProcAddress(module, "ffxFsr3UpscalerContextCreate");
-        
+
         if (o_ffxFsr3UpscalerContextDispatch_Dx12 == nullptr)
             o_ffxFsr3UpscalerContextDispatch_Dx12 = (PFN_ffxFsr3UpscalerContextDispatch)GetProcAddress(module, "ffxFsr3UpscalerContextDispatch");
-        
+
         if (o_ffxFsr3UpscalerContextDestroy_Dx12 == nullptr)
             o_ffxFsr3UpscalerContextDestroy_Dx12 = (PFN_ffxFsr3UpscalerContextDestroy)GetProcAddress(module, "ffxFsr3UpscalerContextDestroy");
-        
+
         if (o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12 == nullptr)
             o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode)GetProcAddress(module, "ffxFsr3UpscalerGetUpscaleRatioFromQualityMode");
-        
+
         if (o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 == nullptr)
             o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr3UpscalerGetRenderResolutionFromQualityMode)GetProcAddress(module, "ffxFsr3UpscalerGetRenderResolutionFromQualityMode");
     }

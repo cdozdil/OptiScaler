@@ -102,6 +102,8 @@ inline std::vector<std::wstring> overlayNamesW = { L"eosovh-win32-shipping.dll",
 
 inline std::vector<std::string> fsr2Names = { "ffx_fsr2_api_x64.dll", "ffx_fsr2_api_x64" };
 inline std::vector<std::wstring> fsr2NamesW = { L"ffx_fsr2_api_x64.dll", L"ffx_fsr2_api_x64" };
+inline std::vector<std::string> fsr2BENames = { "ffx_fsr2_api_dx12_x64.dll", "ffx_fsr2_api_dx12_x64" };
+inline std::vector<std::wstring> fsr2BENamesW = { L"ffx_fsr2_api_dx12_x64.dll", L"ffx_fsr2_api_dx12_x64" };
 
 inline std::vector<std::string> fsr3Names = { "ffx_fsr3upscaler_x64.dll", "ffx_fsr3upscaler_x64" };
 inline std::vector<std::wstring> fsr3NamesW = { L"ffx_fsr3upscaler_x64.dll", L"ffx_fsr3upscaler_x64" };
@@ -326,6 +328,18 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
         return module;
     }
 
+    if (CheckDllName(&lcaseLibName, &fsr2BENames))
+    {
+        Config::Instance()->skipDllLoadChecks = true;
+
+        auto module = o_LoadLibraryA(lcaseLibName.c_str());
+        HookFSR2Dx12Inputs(module);
+
+        Config::Instance()->skipDllLoadChecks = false;
+
+        return module;
+    }
+
     if (CheckDllName(&lcaseLibName, &fsr3Names))
     {
         Config::Instance()->skipDllLoadChecks = true;
@@ -521,6 +535,18 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
         HookFSR2Inputs(module);
+
+        Config::Instance()->skipDllLoadChecks = false;
+
+        return module;
+    }
+
+    if (CheckDllNameW(&lcaseLibName, &fsr2BENamesW))
+    {
+        Config::Instance()->skipDllLoadChecks = true;
+
+        auto module = o_LoadLibraryW(lcaseLibName.c_str());
+        HookFSR2Dx12Inputs(module);
 
         Config::Instance()->skipDllLoadChecks = false;
 
@@ -2234,6 +2260,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             handle = GetModuleHandle(fsr2NamesW[0].c_str());
             if (handle != nullptr)
                 HookFSR2Inputs(handle);
+
+            handle = GetModuleHandle(fsr2BENamesW[0].c_str());
+            if (handle != nullptr)
+                HookFSR2Dx12Inputs(handle);
 
             HookFSR2ExeInputs();
 

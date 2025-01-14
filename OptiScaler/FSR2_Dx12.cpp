@@ -83,6 +83,9 @@ typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2GetRenderResolutionFromQualityMode)(uin
 // Tiny Tina's Wonderland
 typedef FfxResourceTiny(*PFN_ffxGetResourceFromDX12Resource_Dx12)(ID3D12Resource* resource);
 
+// DX12
+typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2GetInterfaceDX12)(Fsr212::FfxFsr2Interface212* fsr2Interface, ID3D12Device* device, void* scratchBuffer, size_t scratchBufferSize);
+
 static PFN_ffxFsr2ContextCreate o_ffxFsr2ContextCreate_Dx12 = nullptr;
 static PFN_ffxFsr2ContextDispatch o_ffxFsr2ContextDispatch_Dx12 = nullptr;
 static PFN_ffxFsr2ContextDispatch o_ffxFsr20ContextDispatch_Dx12 = nullptr;
@@ -91,6 +94,7 @@ static PFN_ffxFsr2ContextDestroy o_ffxFsr2ContextDestroy_Dx12 = nullptr;
 static PFN_ffxFsr2GetUpscaleRatioFromQualityMode o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = nullptr;
 static PFN_ffxFsr2GetRenderResolutionFromQualityMode o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = nullptr;
 static PFN_ffxGetResourceFromDX12Resource_Dx12 o_ffxGetResourceFromDX12Resource_Dx12 = nullptr;
+static PFN_ffxFsr2GetInterfaceDX12 o_ffxFsr2GetInterfaceDX12 = nullptr;
 
 static std::map<Fsr212::FfxFsr2Context*, Fsr212::FfxFsr2ContextDescription> _initParams;
 static std::map<Fsr212::FfxFsr2Context*, NVSDK_NGX_Parameter*> _nvParams;
@@ -344,8 +348,6 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
 
     // check for d3d12 device
     // to prevent crashes when game is using custom interface and
-    // contextDescription->device is not a d3d12 device
-    // FMF2
     if (_d3d12Device == nullptr)
     {
         auto bDevice = (ID3D12Device*)contextDescription->device;
@@ -359,6 +361,11 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
             }
         }
     }
+
+    // if still no device use latest created one
+    // Might fixed TLOU but FMF2 still crashes
+    if (_d3d12Device == nullptr)
+        _d3d12Device = Config::Instance()->d3d12Devices[Config::Instance()->d3d12Devices.size() - 1];
 
     if (_d3d12Device == nullptr)
     {
@@ -616,6 +623,14 @@ static Fsr212::FfxErrorCode ffxFsr2GetRenderResolutionFromQualityMode_Dx12(uint3
     return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 }
 
+static Fsr212::FfxErrorCode hk_ffxFsr2GetInterfaceDX12(Fsr212::FfxFsr2Interface212* fsr2Interface, ID3D12Device* device,
+                                                       void* scratchBuffer, size_t scratchBufferSize)
+{
+    LOG_DEBUG("");
+    _d3d12Device = device;
+    return o_ffxFsr2GetInterfaceDX12(fsr2Interface, device, scratchBuffer, scratchBufferSize);
+}
+
 void HookFSR2ExeInputs()
 {
     LOG_INFO("Trying to hook FSR2 methods");
@@ -655,6 +670,11 @@ void HookFSR2ExeInputs()
     if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
         o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAH0HHW4FfxFsr2QualityMode@@@Z");
 
+    //ffxFsr2GetInterfaceDX12
+    o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "ffxFsr2GetInterfaceDX12");
+    if (o_ffxFsr2GetInterfaceDX12 == nullptr)
+        o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetInterfaceDX12@@YAHPEAUFfxFsr2Interface@@PEAUID3D12Device@@PEAX_K@Z");
+
     if (o_ffxFsr2ContextCreate_Dx12 != nullptr)
     {
         LOG_INFO("FSR2 methods found, now hooking");
@@ -683,6 +703,9 @@ void HookFSR2ExeInputs()
         if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12, ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
 
+        if (o_ffxFsr2GetInterfaceDX12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
+
         Config::Instance()->fsrHooks = true;
 
         DetourTransactionCommit();
@@ -695,6 +718,7 @@ void HookFSR2ExeInputs()
     LOG_DEBUG("ffxFsr2ContextDestroy_Dx12: {:X}", (size_t)o_ffxFsr2ContextDestroy_Dx12);
     LOG_DEBUG("ffxFsr2GetUpscaleRatioFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
     LOG_DEBUG("ffxFsr2GetRenderResolutionFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
+    LOG_DEBUG("ffxFsr2GetInterfaceDX12: {:X}", (size_t)o_ffxFsr2GetInterfaceDX12);
 }
 
 void HookFSR2Inputs(HMODULE module)
@@ -745,4 +769,32 @@ void HookFSR2Inputs(HMODULE module)
     LOG_DEBUG("ffxFsr2ContextDestroy_Dx12: {:X}", (size_t)o_ffxFsr2ContextDestroy_Dx12);
     LOG_DEBUG("ffxFsr2GetUpscaleRatioFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
     LOG_DEBUG("ffxFsr2GetRenderResolutionFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
+}
+
+void HookFSR2Dx12Inputs(HMODULE module)
+{
+    LOG_INFO("Trying to hook FSR2 methods");
+
+    if (o_ffxFsr2GetInterfaceDX12 != nullptr)
+        return;
+
+    if (module != nullptr)
+    {
+        o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)GetProcAddress(module, "ffxFsr2GetInterfaceDX12");
+    }
+
+    if (o_ffxFsr2GetInterfaceDX12 != nullptr)
+    {
+        LOG_INFO("FSR2 methods found, now hooking");
+
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+
+        if (o_ffxFsr2GetInterfaceDX12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
+
+        DetourTransactionCommit();
+    }
+
+    LOG_DEBUG("ffxFsr2GetInterfaceDX12: {:X}", (size_t)o_ffxFsr2GetInterfaceDX12);
 }
