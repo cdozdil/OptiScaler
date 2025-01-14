@@ -1,7 +1,4 @@
 #pragma once
-
-#include <pch.h>
-
 #include <filesystem>
 
 namespace Util

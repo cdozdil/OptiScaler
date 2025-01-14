@@ -1,13 +1,11 @@
 #include "Logger.h"
-
-#include <iostream>
-
 #include "Config.h"
-#include "Util.h"
+#include <iostream>
 
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/sinks/callback_sink.h"
+#include "Util.h"
 
 static bool InitializeConsole()
 {

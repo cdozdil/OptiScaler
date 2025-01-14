@@ -1,14 +1,10 @@
 #pragma once
-
 #include "pch.h"
-
 #include <optional>
 #include <filesystem>
-#include <deque>
-
-#include "upscalers/IFeature.h"
-
 #include <SimpleIni.h>
+#include "backends/IFeature.h"
+#include <deque>
 
 typedef enum NVNGX_Api
 {
@@ -193,10 +189,6 @@ public:
 	std::optional<uint32_t> FN_LatencyFlexMode;		// conservative - aggressive - reflex ids
 	std::optional<uint32_t> FN_ForceReflex;			// in-game - force disable - force enable
 
-	// framerate
-	bool ReflexAvailable = false;
-	std::optional<float> FramerateLimit;
-
 	// for realtime changes
 	bool changeBackend = false;
 	std::string newBackend = "";
@@ -220,9 +212,7 @@ public:
 	bool IsRunningOnLinux = false;
 	bool IsRunningOnDXVK = false;
 
-	// modes
 	bool IsDxgiMode = false;
-	bool WorkingAsNvngx = false;
 
 	// vulkan stuff
 	bool VulkanCreatingSC = false;

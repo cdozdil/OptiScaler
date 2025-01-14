@@ -1,5 +1,6 @@
+#pragma once
+#include "pch.h"
 #include "Util.h"
-
 #include "Config.h"
 
 extern HMODULE dllModule;

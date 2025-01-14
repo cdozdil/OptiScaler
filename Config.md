@@ -34,7 +34,7 @@ For selecting upscalers from in-game menus `Upscalers` section could be used.
 
 ![upscalers](images/Upscalers.png)
 
-### Output Scaling
+### Pseudo SuperSampling
 With OptiScaler 0.4 there are new options for pseudo-supersampling under `[Upscalers]`
 
 ```ini
@@ -59,14 +59,6 @@ Because of the higher resolution of the upscaled target, there will be a perform
 It can be changed from the in-game menu with real-time results.
 
 ![pss config](images/pss_config.png)
-
-#### Unreal Engine
-Unreal Engine games you might need to do following changes in `Engine.ini`
-```ini
-[SystemSettings]
-r.NGX.DLSS.DilateMotionVectors=0
-```
-`Engine.ini` is usually located at `%LOCALAPPDATA%\***GAMENAME***\Saved\Config\WindowsNoEditor\Engine.ini`
 
 ### Dx11withDx12 Sync Settings
 For DirectX11 with `fsr21_12`, `fsr22_12` and `xess` upscaler options, OptiScaler uses a DirectX12 background device to be able to use these DirectX12 only upscalers. This is a very niche feature and can cause issues with unstable GPU drivers (especially on Intel). To mitigate and prevent crashes or graphical issues, this option could be used.

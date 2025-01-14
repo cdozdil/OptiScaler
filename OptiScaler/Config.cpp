@@ -1,3 +1,5 @@
+#pragma once
+#include "pch.h"
 #include "Config.h"
 #include "Util.h"
 
