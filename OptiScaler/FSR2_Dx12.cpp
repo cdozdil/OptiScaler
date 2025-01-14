@@ -931,6 +931,13 @@ void HookFSR2ExeInputs()
         std::string_view dispatchPattern("40 55 53 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 80 B9 ? ? ? ? 00 48 8B DA 48 8B 02 48 8B F9");
         o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPattern, 0);
 
+        // Alone in the Dark
+        if (o_ffxFsr2ContextDispatch_Pattern_Dx12 == nullptr)
+        {
+            std::string_view dispatchPatternAITD("40 55 57 41 56 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 80 B9 ? ? ? ? ? 4C 8B F2 48 8B 02 48 8B F9");
+            o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPatternAITD, 0);
+        }
+
         // Hooking works but AW2 uses a custom implementation like FMF2 which does not pass correct D3D12Device or CommandList
         //if (o_ffxFsr2ContextDispatch_Pattern_Dx12 == nullptr)
         //{
