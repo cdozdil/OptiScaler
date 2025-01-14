@@ -24,8 +24,8 @@ private:
     int _counter = 0;
     bool _upsample = false;
 
-    uint32_t InNumThreadsX = 32;
-    uint32_t InNumThreadsY = 32;
+    uint32_t InNumThreadsX = 16;
+    uint32_t InNumThreadsY = 16;
 
     ID3D12Device* _device = nullptr;
     ID3D12Resource* _buffer = nullptr;

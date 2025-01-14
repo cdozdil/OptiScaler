@@ -3,7 +3,11 @@
 #define A_CPU
 // FSR compute shader is from : https://github.com/fholger/vrperfkit/
 
-#include "precompile/BCDS_Shader.h"
+#include "precompile/BCDS_lanczos_Shader.h"
+#include "precompile/BCDS_catmull_Shader.h"
+#include "precompile/BCDS_bicubic_Shader.h"
+#include "precompile/BCDS_magc_Shader.h"
+
 #include "precompile/BCUS_Shader.h"
 
 #include "../fsr1/ffx_fsr1.h"
@@ -209,8 +213,8 @@ bool OS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
         Constants constants{};
         constants.srcWidth = Config::Instance()->CurrentFeature->TargetWidth();
         constants.srcHeight = Config::Instance()->CurrentFeature->TargetHeight();
-        constants.destWidth = Config::Instance()->CurrentFeature->DisplayWidth(); // static_cast<uint32_t>(outDesc.Width);
-        constants.destHeight = Config::Instance()->CurrentFeature->DisplayHeight(); // outDesc.Height;
+        constants.destWidth = Config::Instance()->CurrentFeature->DisplayWidth(); 
+        constants.destHeight = Config::Instance()->CurrentFeature->DisplayHeight();
 
         // Copy the updated constant buffer data to the constant buffer resource
         UINT8* pCBDataBegin;
@@ -238,16 +242,16 @@ bool OS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     UINT dispatchWidth = 0;
     UINT dispatchHeight = 0;
 
-    if (_upsample || Config::Instance()->OutputScalingUseFsr.value_or(true))
-    {
+    //if (true || _upsample || Config::Instance()->OutputScalingUseFsr.value_or(true))
+    //{
         dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
         dispatchHeight = (Config::Instance()->CurrentFeature->DisplayHeight() + InNumThreadsY - 1) / InNumThreadsY;
-    }
-    else
-    {
-        dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->TargetWidth() + InNumThreadsX - 1) / InNumThreadsX);
-        dispatchHeight = (Config::Instance()->CurrentFeature->TargetHeight() + InNumThreadsY - 1) / InNumThreadsY;
-    }
+    //}
+    //else
+    //{
+    //    dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->TargetWidth() + InNumThreadsX - 1) / InNumThreadsX);
+    //    dispatchHeight = (Config::Instance()->CurrentFeature->TargetHeight() + InNumThreadsY - 1) / InNumThreadsY;
+    //}
 
     InCmdList->Dispatch(dispatchWidth, dispatchHeight, 1);
 
@@ -397,10 +401,36 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
         }
         else
         {
-            if (_upsample)
-                computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcus_cso), sizeof(bcus_cso));
+            if (_upsample) 
+            {
+                computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(BCUS_cso), sizeof(BCUS_cso));
+            }
             else
-                computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcds_cso), sizeof(bcds_cso));
+            {
+                switch (Config::Instance()->OutputScalingDownscaler.value_or(0))
+                {
+                    case 0: 
+                        computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcds_bicubic_cso), sizeof(bcds_bicubic_cso));
+                        break;
+
+                    case 1: 
+                        computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcds_lanczos_cso), sizeof(bcds_lanczos_cso));
+                        break;
+
+                    case 2: 
+                        computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcds_catmull_cso), sizeof(bcds_catmull_cso));
+                        break;
+
+                    case 3: 
+                        computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcds_magc_cso), sizeof(bcds_magc_cso));
+                        break;
+
+                    default:
+                        computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcds_bicubic_cso), sizeof(bcds_bicubic_cso));
+                        break;
+                
+                }
+            }
         }
 
         auto hr = InDevice->CreateComputePipelineState(&computePsoDesc, __uuidof(ID3D12PipelineState*), (void**)&_pipelineState);
@@ -416,7 +446,36 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
         // Compile shader blobs
         ID3DBlob* _recEncodeShader = nullptr;
 
-        _recEncodeShader = OS_CompileShader(_upsample ? upsampleCode.c_str() : downsampleCode.c_str(), "CSMain", "cs_5_0");
+        if (_upsample)
+        {
+            _recEncodeShader = OS_CompileShader(upsampleCode.c_str(), "CSMain", "cs_5_0");
+        }
+        else
+        {
+            switch (Config::Instance()->OutputScalingDownscaler.value_or(0))
+            {
+                case 0:
+                    _recEncodeShader = OS_CompileShader(downsampleCodeBC.c_str(), "CSMain", "cs_5_0");
+                    break;
+
+                case 1:
+                    _recEncodeShader = OS_CompileShader(downsampleCodeLanczos.c_str(), "CSMain", "cs_5_0");
+                    break;
+
+                case 2:
+                    _recEncodeShader = OS_CompileShader(downsampleCodeCatmull.c_str(), "CSMain", "cs_5_0");
+                    break;
+
+                case 3:
+                    _recEncodeShader = OS_CompileShader(downsampleCodeMAGIC.c_str(), "CSMain", "cs_5_0");
+                    break;
+
+                default:
+                    _recEncodeShader = OS_CompileShader(downsampleCodeBC.c_str(), "CSMain", "cs_5_0");
+                    break;
+
+            }
+        }
 
         if (_recEncodeShader == nullptr)
         {
@@ -443,6 +502,8 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
     heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
+    Config::Instance()->SkipHeapCapture = true;
+
     auto hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[0]));
 
     if (FAILED(hr))
@@ -460,6 +521,8 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
     }
 
     hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[2]));
+
+    Config::Instance()->SkipHeapCapture = false;
 
     if (FAILED(hr))
     {
@@ -479,33 +542,33 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
 
 OS_Dx12::~OS_Dx12()
 {
-    if (!_init)
+    if (!_init || Config::Instance()->IsShuttingDown)
         return;
 
-    ID3D12Fence* d3d12Fence = nullptr;
+    //ID3D12Fence* d3d12Fence = nullptr;
 
-    do
-    {
-        if (_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence)) != S_OK)
-            break;
+    //do
+    //{
+    //    if (_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence)) != S_OK)
+    //        break;
 
-        d3d12Fence->Signal(999);
+    //    d3d12Fence->Signal(999);
 
-        HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    //    HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
-        if (fenceEvent != NULL && d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
-        {
-            WaitForSingleObject(fenceEvent, INFINITE);
-            CloseHandle(fenceEvent);
-        }
+    //    if (fenceEvent != NULL && d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
+    //    {
+    //        WaitForSingleObject(fenceEvent, INFINITE);
+    //        CloseHandle(fenceEvent);
+    //    }
 
-    } while (false);
+    //} while (false);
 
-    if (d3d12Fence != nullptr)
-    {
-        d3d12Fence->Release();
-        d3d12Fence = nullptr;
-    }
+    //if (d3d12Fence != nullptr)
+    //{
+    //    d3d12Fence->Release();
+    //    d3d12Fence = nullptr;
+    //}
 
     if (_pipelineState != nullptr)
     {

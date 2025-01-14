@@ -5,6 +5,7 @@
 #include <SimpleIni.h>
 #include "backends/IFeature.h"
 #include <deque>
+#include <map>
 
 typedef enum NVNGX_Api
 {
@@ -13,6 +14,12 @@ typedef enum NVNGX_Api
 	NVNGX_DX12,
 	NVNGX_VULKAN,
 } NVNGX_Api;
+
+typedef enum GameQuirk 
+{
+	Other,
+	Cyberpunk
+} GameQuirk;
 
 class Config
 {
@@ -56,6 +63,11 @@ public:
 	std::optional<uint32_t> RenderPresetPerformance;
 	std::optional<uint32_t> RenderPresetUltraPerformance;
 
+	// DLSSG
+	std::optional<bool> SpoofHAGS;
+	std::optional<bool> DLSSGMod;
+	GameQuirk gameQuirk = Other;
+
 	// CAS
 	std::optional<bool> RcasEnabled;
 	std::optional<bool> MotionSharpnessEnabled;
@@ -74,6 +86,13 @@ public:
 	std::optional<int> ShortcutKey;
 	std::optional<bool> AdvancedSettings;
 	std::optional<bool> ExtendedLimits;
+    std::optional<bool> ShowFps;
+    std::optional<int> FpsOverlayPos; // 0 Top Left, 1 Top Right, 2 Bottom Left, 3 Bottom Right
+    std::optional<int> FpsOverlayType; // 0 Only FPS, 1 +Frame Time, 2 +Upscaler Time, 3 +Frame Time Graph, 4 +Upscaler Time Graph
+	std::optional<int> FpsShortcutKey;
+	std::optional<int> FpsCycleShortcutKey;
+    std::optional<bool> FpsOverlayHorizontal;
+	std::optional<float> FpsOverlayAlpha;
 
 	// hooks
 	std::optional<bool> HookOriginalNvngxOnly;
@@ -97,6 +116,9 @@ public:
 
 	//Hotfixes
 	std::optional<float> MipmapBiasOverride;
+	std::optional<bool> MipmapBiasFixedOverride;
+	std::optional<bool> MipmapBiasScaleOverride;
+	std::optional<bool> MipmapBiasOverrideAll;
 	std::optional<int> AnisotropyOverride;
 	std::optional<int> RoundInternalResolution;
 
@@ -107,6 +129,8 @@ public:
 	std::optional<bool> UsePrecompiledShaders;
 
 	std::optional<bool> UseGenericAppIdWithDlss;
+	std::optional<bool> PreferDedicatedGpu;
+	std::optional<bool> PreferFirstDedicatedGpu;
 
 	std::optional<int32_t> ColorResourceBarrier;
 	std::optional<int32_t> MVResourceBarrier;
@@ -124,16 +148,22 @@ public:
 	std::optional<bool> OutputScalingEnabled;
 	std::optional<float> OutputScalingMultiplier;
 	std::optional<bool> OutputScalingUseFsr;
+	std::optional<uint32_t> OutputScalingDownscaler;
 
 	// fsr
-	std::optional<float> FsrVerticalFov;
-	std::optional<float> FsrHorizontalFov;
-	std::optional<float> FsrCameraNear;
-	std::optional<float> FsrCameraFar;
 	std::optional<bool> FsrDebugView;
 	std::optional<int> Fsr3xIndex;
 	std::optional<bool> FsrUseMaskForTransparency;
 	std::optional<float> FsrVelocity;
+
+	// fsr common
+	std::optional<float> FsrVerticalFov;
+	std::optional<float> FsrHorizontalFov;
+	std::optional<float> FsrCameraNear;
+	std::optional<float> FsrCameraFar;
+	std::optional<bool> FsrUseFsrInputValues;
+	float LastFsrCameraNear = 0.0f;
+	float LastFsrCameraFar = 0.0f;
 
 	// dx11wdx12
 	std::optional<int> TextureSyncMethod;
@@ -153,10 +183,40 @@ public:
 	std::optional<bool> VulkanSpoofing;
 	std::optional<bool> VulkanExtensionSpoofing;
 	std::optional<std::wstring> SpoofedGPUName;
+	std::optional<int> VulkanVRAM;
 
 	// plugins
 	std::optional<std::wstring> PluginPath;
 	std::optional<bool> LoadSpecialK;
+	std::optional<bool> LoadReShade;
+
+	// fg
+	std::optional<bool> FGUseFGSwapChain;
+	std::optional<bool> FGEnabled;
+	std::optional<bool> FGHighPriority;
+	std::optional<bool> FGDebugView;
+	std::optional<bool> FGAsync;
+	std::optional<bool> FGHUDFix;
+	std::optional<bool> FGHUDFixExtended;
+	std::optional<bool> FGImmediateCapture;
+	std::optional<int> FGHUDLimit;
+	std::optional<int> FGRectLeft;
+	std::optional<int> FGRectTop;
+	std::optional<int> FGRectWidth;
+	std::optional<int> FGRectHeight;
+	std::optional<bool> FGDisableOverlays;
+	std::optional<bool> FGAlwaysTrackHeaps;
+	std::optional<bool> FGHybridSpin;
+	bool FGOnlyGenerated = false;
+	bool FGChanged = false;
+	bool SCChanged = false;
+	bool SkipHeapCapture = false;
+	bool UseThreadingForHeaps = false;
+
+	bool FGCaptureResources = false;
+	int FGCapturedResourceCount = false;
+	bool FGResetCapturedResources = false;
+	bool FGOnlyUseCapturedResources = false;
 
 	// nvngx init parameters
 	unsigned long long NVNGX_ApplicationId = 1337;
@@ -170,6 +230,7 @@ public:
 	std::string NVNGX_EngineVersion;
 	
 	NVNGX_Api Api = NVNGX_NOT_SELECTED;
+	NVNGX_Api SwapChainApi = NVNGX_NOT_SELECTED;
 	
 	// dlss enabler
 	bool DE_Available = false;
@@ -182,12 +243,22 @@ public:
 	std::optional<std::string> DE_ReflexEmu;		// auto - on - off
 
 	// fakenvapi
-	bool FN_Available = false;
 	std::optional<bool> FN_EnableLogs;
 	std::optional<bool> FN_EnableTraceLogs;
 	std::optional<bool> FN_ForceLatencyFlex;
 	std::optional<uint32_t> FN_LatencyFlexMode;		// conservative - aggressive - reflex ids
 	std::optional<uint32_t> FN_ForceReflex;			// in-game - force disable - force enable
+
+	// inputs
+	std::optional<bool> DlssInputs;
+	std::optional<bool> XeSSInputs;
+	std::optional<bool> Fsr2Inputs;
+	std::optional<bool> Fsr3Inputs;
+	std::optional<bool> FfxInputs;
+
+	// framerate
+	bool ReflexAvailable = false;
+	std::optional<float> FramerateLimit;
 
 	// for realtime changes
 	bool changeBackend = false;
@@ -196,13 +267,17 @@ public:
 	// XeSS debug stuff
 	bool xessDebug = false;
 	int xessDebugFrames = 5;
-	float lastMipBias = 0.0f;
+	float lastMipBias = 100.0f;
+	float lastMipBiasMax = -100.0f;
 
 	// dlss hook
 	bool upscalerDisableHook = false;
 
 	// spoofing
-	bool dxgiSkipSpoofing = false;
+	bool skipSpoofing = false;
+	bool skipDllLoadChecks = false;
+	// for DXVK, it calls DXGI which cause softlock
+	bool skipDxgiLoadChecks = false;
 
 	// fsr3.x
 	std::vector<const char*> fsr3xVersionNames;
@@ -211,8 +286,10 @@ public:
 	// linux check
 	bool IsRunningOnLinux = false;
 	bool IsRunningOnDXVK = false;
+	bool IsRunningOnNvidia = false;
 
 	bool IsDxgiMode = false;
+	bool WorkingAsNvngx = false;
 
 	// vulkan stuff
 	bool VulkanCreatingSC = false;
@@ -227,7 +304,26 @@ public:
 	float ScreenWidth = 800.0;
 	float ScreenHeight = 450.0;
 
+	// hdr
+	std::optional<bool> forceHdr;
+	std::optional<bool> useHDR10;
+	std::vector<IUnknown*> scBuffers;
+	bool isHdrActive = false;
+
+	std::string setInputApiName;
+	std::string currentInputApiName;
+
+	bool IsShuttingDown = false;
+
+	bool nvngxExist = false;
+	bool libxessExist = false;
+	bool fsrHooks = false;
+
 	IFeature* CurrentFeature = nullptr;
+
+    std::vector<ID3D12Device*> d3d12Devices;
+    std::vector<ID3D11Device*> d3d11Devices;
+    std::map<UINT64, std::string> adapterDescs;
 
 	bool Reload(std::filesystem::path iniPath);
 	bool LoadFromPath(const wchar_t* InPath);
@@ -235,6 +331,8 @@ public:
 
 	bool ReloadFakenvapi();
 	bool SaveFakenvapiIni();
+
+	void CheckUpscalerFiles();
 
 	static Config* Instance();
 

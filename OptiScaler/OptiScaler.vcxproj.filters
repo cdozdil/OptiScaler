@@ -134,7 +134,7 @@
     <ClInclude Include="backends\dlss\DLSSFeature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="nvapi\nvapi.h">
+    <ClInclude Include="nvapi\external\nvapi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="backends\dlss\DLSSFeature_Vk.h">
@@ -164,13 +164,13 @@
     <ClInclude Include="imgui\imgui_common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="imgui\imgui\misc\freetype\imgui_freetype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="rcas\RCAS_Common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="dllmain.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\wrapped_swapchain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="NVNGX_Proxy.h">
@@ -215,9 +215,6 @@
     <ClInclude Include="rcas\precompile\RCAS_Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="output_scaling\precompile\BCDS_Shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="output_scaling\precompile\BCUS_Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -242,7 +239,67 @@
     <ClInclude Include="backends\fsr31\FSR31Feature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="format_transfer\FT_Common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="format_transfer\FT_Dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FfxApi_Proxy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="format_transfer\precompile\B8R8G8A8_Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="format_transfer\precompile\R10G10B10A2_Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="format_transfer\precompile\R8G8B8A8_Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hooks\HooksDx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hooks\HooksVk.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hooks\wrapped_swapchain.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="XeSS_Proxy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nvapi\fakenvapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nvapi\ReflexHooks.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nvapi\NvApiHooks.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nvapi\NvApiTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DLSSG_Mod.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Gdi32_Proxy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Streamline_Proxy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="output_scaling\precompile\BCDS_Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FfxApi_Dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FSR2_Dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FSR3_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -386,9 +443,6 @@
     <ClCompile Include="imgui\imgui_dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="imgui\wrapped_swapchain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="backends\dlssd\DLSSDFeature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -434,10 +488,34 @@
     <ClCompile Include="backends\fsr31\FSR31Feature_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="format_transfer\FT_Dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="XeSS_Debug.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="XeSS_Dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hooks\HooksDx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hooks\HooksVk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hooks\wrapped_swapchain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\imgui\misc\freetype\imgui_freetype.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FfxApi_Dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FSR2_Dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FSR3_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

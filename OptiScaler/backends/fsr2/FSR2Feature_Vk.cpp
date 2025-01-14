@@ -19,7 +19,7 @@ bool FSR2FeatureVk::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
 
     auto scratchBufferSize = ffxFsr2GetScratchMemorySizeVK(PhysicalDevice);
     void* scratchBuffer = calloc(scratchBufferSize, 1);
@@ -119,7 +119,7 @@ bool FSR2FeatureVk::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
     auto ret = ffxFsr2ContextCreate(&_context, &_contextDesc);
 
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     if (ret != FFX_OK)
     {
@@ -355,13 +355,13 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* I
 
     if (IsDepthInverted())
     {
-        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.01f);
-        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(0.99f);
+        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.1f);
+        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(100000.0f);
     }
     else
     {
-        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(0.99f);
-        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.01f);
+        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(100000.0f);
+        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.1f);
     }
 
     if (Config::Instance()->FsrVerticalFov.has_value())

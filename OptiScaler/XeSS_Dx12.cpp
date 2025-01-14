@@ -2,12 +2,10 @@
 #include "Util.h"
 
 #include "resource.h"
-#include "Util.h"
 #include "xess_d3d12.h"
 #include "xess_d3d12_debug.h"
 #include "XeSS_Proxy.h"
 #include "NVNGX_Parameter.h"
-#include "imgui/imgui_overlay_dx.h"
 
 typedef struct MotionScale
 {
@@ -15,7 +13,7 @@ typedef struct MotionScale
     float y;
 } motion_scale;
 
-static UINT64 _handleCounter = 13370000;
+static UINT64 _handleCounter = 0x13370000;
 static UINT64 _frameCounter = 0;
 static xess_context_handle_t _currentContext = nullptr;
 static std::map<xess_context_handle_t, xess_d3d12_init_params_t> _initParams;
@@ -95,6 +93,8 @@ static bool CreateDLSSContext(xess_context_handle_t handle, ID3D12GraphicsComman
         return false;
 
     _contexts[handle] = nvHandle;
+
+    return true;
 }
 
 static std::optional<float> GetQualityOverrideRatio(const xess_quality_settings_t input)
@@ -168,8 +168,6 @@ XESS_API xess_result_t xessD3D12CreateContext(ID3D12Device* pDevice, xess_contex
     if (pDevice == nullptr)
         return XESS_RESULT_ERROR_DEVICE;
 
-    Util::DllPath();
-
     NVSDK_NGX_FeatureCommonInfo fcInfo{};
     wchar_t const** paths = new const wchar_t* [1];
     auto dllPath = Util::DllPath().remove_filename().wstring();
@@ -224,8 +222,12 @@ XESS_API xess_result_t xessD3D12Init(xess_context_handle_t hContext, const xess_
     if (!_contexts.contains(hContext))
         return XESS_RESULT_SUCCESS;
 
+    // Looks like XeSS is not re-creating context for changes 
+    // So release old context to create new one
     NVSDK_NGX_D3D12_ReleaseFeature(_contexts[hContext]);
     _contexts.erase(hContext);
+
+    return XESS_RESULT_SUCCESS;
 }
 
 XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12GraphicsCommandList* pCommandList, const xess_d3d12_execute_params_t* pExecParams)
@@ -242,6 +244,7 @@ XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12Gr
     NVSDK_NGX_Handle* handle = _contexts[hContext];
     xess_d3d12_init_params_t* initParams = &_initParams[hContext];
 
+    // Convert XeSS motions scales to DLSS ones
     if (_motionScales.contains(hContext))
     {
         auto scales = &_motionScales[hContext];
@@ -272,12 +275,16 @@ XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12Gr
     params->Set(NVSDK_NGX_Parameter_Reset, pExecParams->resetHistory);
     params->Set(NVSDK_NGX_Parameter_Width, pExecParams->inputWidth);
     params->Set(NVSDK_NGX_Parameter_Height, pExecParams->inputHeight);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, pExecParams->inputWidth);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, pExecParams->inputHeight);
     params->Set(NVSDK_NGX_Parameter_Depth, pExecParams->pDepthTexture);
     params->Set(NVSDK_NGX_Parameter_ExposureTexture, pExecParams->pExposureScaleTexture);
     params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, pExecParams->pResponsivePixelMaskTexture);
     params->Set(NVSDK_NGX_Parameter_Color, pExecParams->pColorTexture);
     params->Set(NVSDK_NGX_Parameter_MotionVectors, pExecParams->pVelocityTexture);
     params->Set(NVSDK_NGX_Parameter_Output, pExecParams->pOutputTexture);
+
+    Config::Instance()->setInputApiName = "XeSS";
 
     if (NVSDK_NGX_D3D12_EvaluateFeature(pCommandList, handle, params, nullptr) == NVSDK_NGX_Result_Success)
         return XESS_RESULT_SUCCESS;
@@ -287,6 +294,8 @@ XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12Gr
 
 XESS_API xess_result_t xessGetVersion(xess_version_t* pVersion)
 {
+    LOG_DEBUG("");
+
     pVersion->major = XeSSProxy::Version().major;
     pVersion->minor = XeSSProxy::Version().minor;
     pVersion->patch = XeSSProxy::Version().patch;
@@ -297,19 +306,13 @@ XESS_API xess_result_t xessGetVersion(xess_version_t* pVersion)
 
 XESS_API xess_result_t xessIsOptimalDriver(xess_context_handle_t hContext)
 {
-    if (!_contexts.contains(hContext))
-        return XESS_RESULT_ERROR_INVALID_CONTEXT;
-
     LOG_DEBUG("");
     return XESS_RESULT_SUCCESS;
 }
 
 XESS_API xess_result_t xessSetLoggingCallback(xess_context_handle_t hContext, xess_logging_level_t loggingLevel, xess_app_log_callback_t loggingCallback)
 {
-    if (!_contexts.contains(hContext))
-        return XESS_RESULT_ERROR_INVALID_CONTEXT;
-
-    LOG_INFO("");
+    LOG_DEBUG("");
     return XESS_RESULT_SUCCESS;
 }
 
@@ -323,6 +326,8 @@ XESS_API xess_result_t xessGetProperties(xess_context_handle_t hContext, const x
 
 XESS_API xess_result_t xessDestroyContext(xess_context_handle_t hContext)
 {
+    LOG_DEBUG("");
+
     if (!_contexts.contains(hContext))
         return XESS_RESULT_ERROR_INVALID_CONTEXT;
 
@@ -337,6 +342,8 @@ XESS_API xess_result_t xessDestroyContext(xess_context_handle_t hContext)
 
 XESS_API xess_result_t xessSetVelocityScale(xess_context_handle_t hContext, float x, float y)
 {
+    LOG_DEBUG("");
+
     _motionScales[hContext] = { x, y };
 
     return XESS_RESULT_SUCCESS;
@@ -344,6 +351,8 @@ XESS_API xess_result_t xessSetVelocityScale(xess_context_handle_t hContext, floa
 
 XESS_API xess_result_t xessD3D12GetInitParams(xess_context_handle_t hContext, xess_d3d12_init_params_t* pInitParams)
 {
+    LOG_DEBUG("");
+
     if (!_initParams.contains(hContext))
         return XESS_RESULT_ERROR_INVALID_CONTEXT;
 
@@ -365,11 +374,15 @@ XESS_API xess_result_t xessD3D12GetInitParams(xess_context_handle_t hContext, xe
 
 XESS_API xess_result_t xessForceLegacyScaleFactors(xess_context_handle_t hContext, bool force)
 {
+    LOG_DEBUG("");
+
     return XESS_RESULT_SUCCESS;
 }
 
 XESS_API xess_result_t xessGetExposureMultiplier(xess_context_handle_t hContext, float* pScale)
 {
+    LOG_DEBUG("");
+
     if (!_nvParams.contains(hContext))
         return XESS_RESULT_ERROR_INVALID_CONTEXT;
 
@@ -381,6 +394,8 @@ XESS_API xess_result_t xessGetExposureMultiplier(xess_context_handle_t hContext,
 
 XESS_API xess_result_t xessGetInputResolution(xess_context_handle_t hContext, const xess_2d_t* pOutputResolution, xess_quality_settings_t qualitySettings, xess_2d_t* pInputResolution)
 {
+    LOG_DEBUG("");
+
     unsigned int OutWidth;
     unsigned int OutHeight;
     float scalingRatio = 0.0f;
@@ -389,8 +404,8 @@ XESS_API xess_result_t xessGetInputResolution(xess_context_handle_t hContext, co
 
     if (QualityRatio.has_value())
     {
-        OutHeight = (unsigned int)((float)pOutputResolution->x / QualityRatio.value());
-        OutWidth = (unsigned int)((float)pOutputResolution->y / QualityRatio.value());
+        OutHeight = (unsigned int)((float)pOutputResolution->y / QualityRatio.value());
+        OutWidth = (unsigned int)((float)pOutputResolution->x / QualityRatio.value());
         scalingRatio = 1.0f / QualityRatio.value();
     }
     else
@@ -460,6 +475,8 @@ XESS_API xess_result_t xessGetInputResolution(xess_context_handle_t hContext, co
 
 XESS_API xess_result_t xessGetIntelXeFXVersion(xess_context_handle_t hContext, xess_version_t* pVersion)
 {
+    LOG_DEBUG("");
+
     pVersion->major = XeSSProxy::Version().major;
     pVersion->minor = XeSSProxy::Version().minor;
     pVersion->patch = XeSSProxy::Version().patch;
@@ -470,6 +487,8 @@ XESS_API xess_result_t xessGetIntelXeFXVersion(xess_context_handle_t hContext, x
 
 XESS_API xess_result_t xessGetJitterScale(xess_context_handle_t hContext, float* pX, float* pY)
 {
+    LOG_DEBUG("");
+
     *pX = 1.0f;
     *pY = 1.0f;
 
@@ -479,6 +498,8 @@ XESS_API xess_result_t xessGetJitterScale(xess_context_handle_t hContext, float*
 XESS_API xess_result_t xessGetOptimalInputResolution(xess_context_handle_t hContext, const xess_2d_t* pOutputResolution, xess_quality_settings_t qualitySettings,
                                                      xess_2d_t* pInputResolutionOptimal, xess_2d_t* pInputResolutionMin, xess_2d_t* pInputResolutionMax)
 {
+    LOG_DEBUG("");
+
     unsigned int OutWidth;
     unsigned int OutHeight;
     float scalingRatio = 0.0f;
@@ -487,8 +508,8 @@ XESS_API xess_result_t xessGetOptimalInputResolution(xess_context_handle_t hCont
 
     if (QualityRatio.has_value())
     {
-        OutHeight = (unsigned int)((float)pOutputResolution->x / QualityRatio.value());
-        OutWidth = (unsigned int)((float)pOutputResolution->y / QualityRatio.value());
+        OutHeight = (unsigned int)((float)pOutputResolution->y / QualityRatio.value());
+        OutWidth = (unsigned int)((float)pOutputResolution->x / QualityRatio.value());
         scalingRatio = 1.0f / QualityRatio.value();
     }
     else
@@ -560,6 +581,8 @@ XESS_API xess_result_t xessGetOptimalInputResolution(xess_context_handle_t hCont
 
 XESS_API xess_result_t xessGetVelocityScale(xess_context_handle_t hContext, float* pX, float* pY)
 {
+    LOG_DEBUG("");
+
     if (!_motionScales.contains(hContext))
         return XESS_RESULT_ERROR_INVALID_CONTEXT;
 
@@ -579,6 +602,8 @@ XESS_API xess_result_t xessSetJitterScale(xess_context_handle_t hContext, float 
 
 XESS_API xess_result_t xessSetExposureMultiplier(xess_context_handle_t hContext, float scale)
 {
+    LOG_DEBUG("");
+
     if (!_nvParams.contains(hContext))
         return XESS_RESULT_ERROR_INVALID_CONTEXT;
 
@@ -589,21 +614,30 @@ XESS_API xess_result_t xessSetExposureMultiplier(xess_context_handle_t hContext,
 
 XESS_API xess_result_t xessD3D12GetResourcesToDump(xess_context_handle_t hContext, xess_resources_to_dump_t** pResourcesToDump)
 {
-    if (!_nvParams.contains(hContext))
-        return XESS_RESULT_ERROR_INVALID_CONTEXT;
-
+    LOG_DEBUG("");
     return XESS_RESULT_SUCCESS;
 }
 
 XESS_API xess_result_t xessD3D12GetProfilingData(xess_context_handle_t hContext, xess_profiling_data_t** pProfilingData)
 {
-    if (!_nvParams.contains(hContext))
-        return XESS_RESULT_ERROR_INVALID_CONTEXT;
-
+    LOG_DEBUG("");
     return XESS_RESULT_SUCCESS;
 }
 
 XESS_API xess_result_t xessSetContextParameterF()
 {
+    LOG_DEBUG("");
+    return XESS_RESULT_SUCCESS;
+}
+
+XESS_API xess_result_t xessAILGetDecision()
+{
+    LOG_DEBUG("");
+    return XESS_RESULT_SUCCESS;
+}
+
+XESS_API xess_result_t xessAILGetVersion()
+{
+    LOG_DEBUG("");
     return XESS_RESULT_SUCCESS;
 }

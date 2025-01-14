@@ -230,38 +230,60 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
     else
         LOG_DEBUG("AutoExposure enabled!");
 
+    ID3D12Resource* paramTransparency = nullptr;
+    if (InParameters->Get("FSR.transparencyAndComposition", &paramTransparency) == NVSDK_NGX_Result_Success)
+        InParameters->Get("FSR.transparencyAndComposition", (void**)&paramTransparency);
+
     ID3D12Resource* paramReactiveMask = nullptr;
-    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
+    if (InParameters->Get("FSR.reactive", &paramReactiveMask) == NVSDK_NGX_Result_Success)
+        InParameters->Get("FSR.reactive", (void**)&paramReactiveMask);
 
-    if (!Config::Instance()->DisableReactiveMask.value_or(paramReactiveMask == nullptr))
+    ID3D12Resource* paramReactiveMask2 = nullptr;
+    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask2) != NVSDK_NGX_Result_Success)
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask2);
+
+    if (!Config::Instance()->DisableReactiveMask.value_or(paramReactiveMask == nullptr && paramReactiveMask2 == nullptr))
     {
-        if (paramReactiveMask)
+        if (paramTransparency != nullptr)
         {
-            LOG_DEBUG("Input Bias mask exist..");
-            Config::Instance()->DisableReactiveMask = false;
+            LOG_DEBUG("Using FSR transparency mask..");
+            params.transparencyAndComposition = ffxGetResourceDX12(&_context, paramTransparency, (wchar_t*)L"FSR2_Transparency", FFX_RESOURCE_STATE_COMPUTE_READ);
+        }
 
-            if (Config::Instance()->MaskResourceBarrier.has_value())
-                ResourceBarrier(InCommandList, paramReactiveMask, (D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-            if (Config::Instance()->FsrUseMaskForTransparency.value_or(true))
-                params.transparencyAndComposition = ffxGetResourceDX12(&_context, paramReactiveMask, (wchar_t*)L"FSR2_Transparency", FFX_RESOURCE_STATE_COMPUTE_READ);
-
-            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.45f) > 0.0f &&
-                Bias->IsInit() && Bias->CreateBufferResource(Device, paramReactiveMask, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
+        if (paramReactiveMask != nullptr)
+        {
+            LOG_DEBUG("Using FSR reactive mask..");
+            params.reactive = ffxGetResourceDX12(&_context, paramReactiveMask, (wchar_t*)L"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
+        }
+        else
+        {
+            if (paramReactiveMask2 != nullptr)
             {
-                Bias->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                LOG_DEBUG("Input Bias mask exist..");
+                Config::Instance()->DisableReactiveMask = false;
 
-                if (Bias->Dispatch(Device, InCommandList, paramReactiveMask, Config::Instance()->DlssReactiveMaskBias.value_or(0.45f), Bias->Buffer()))
+                if (Config::Instance()->MaskResourceBarrier.has_value())
+                    ResourceBarrier(InCommandList, paramReactiveMask2, (D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+                if (paramTransparency == nullptr && Config::Instance()->FsrUseMaskForTransparency.value_or(true))
+                    params.transparencyAndComposition = ffxGetResourceDX12(&_context, paramReactiveMask2, (wchar_t*)L"FSR2_Transparency", FFX_RESOURCE_STATE_COMPUTE_READ);
+
+                if (Config::Instance()->DlssReactiveMaskBias.value_or(0.45f) > 0.0f &&
+                    Bias->IsInit() && Bias->CreateBufferResource(Device, paramReactiveMask2, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
                 {
-                    Bias->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-                    params.reactive = ffxGetResourceDX12(&_context, Bias->Buffer(), (wchar_t*)L"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
+                    Bias->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+                    if (Bias->Dispatch(Device, InCommandList, paramReactiveMask2, Config::Instance()->DlssReactiveMaskBias.value_or(0.45f), Bias->Buffer()))
+                    {
+                        Bias->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                        params.reactive = ffxGetResourceDX12(&_context, Bias->Buffer(), (wchar_t*)L"FSR2_Reactive", FFX_RESOURCE_STATE_COMPUTE_READ);
+                    }
                 }
-            }
-            else
-            {
-                LOG_DEBUG("Skipping reactive mask, Bias: {0}, Bias Init: {1}, Bias CanRender: {2}",
-                          Config::Instance()->DlssReactiveMaskBias.value_or(0.45f), Bias->IsInit(), Bias->CanRender());
+                else
+                {
+                    LOG_DEBUG("Skipping reactive mask, Bias: {0}, Bias Init: {1}, Bias CanRender: {2}",
+                              Config::Instance()->DlssReactiveMaskBias.value_or(0.45f), Bias->IsInit(), Bias->CanRender());
+                }
             }
         }
     }
@@ -291,30 +313,40 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
         params.motionVectorScale.y = MVScaleY;
     }
 
-    if (IsDepthInverted())
+    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.cameraNear", &params.cameraNear) != NVSDK_NGX_Result_Success)
     {
-        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.01f);
-        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(0.99f);
-    }
-    else
-    {
-        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(0.99f);
-        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.01f);
+        if (IsDepthInverted())
+            params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.1f);
+        else
+            params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.1f);
     }
 
-    if (Config::Instance()->FsrVerticalFov.has_value())
-        params.cameraFovAngleVertical = Config::Instance()->FsrVerticalFov.value() * 0.0174532925199433f;
-    else if (Config::Instance()->FsrHorizontalFov.value_or(0.0f) > 0.0f)
-        params.cameraFovAngleVertical = 2.0f * atan((tan(Config::Instance()->FsrHorizontalFov.value() * 0.0174532925199433f) * 0.5f) / (float)TargetHeight() * (float)TargetWidth());
-    else
-        params.cameraFovAngleVertical = 1.0471975511966f;
+    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.cameraFar", &params.cameraFar) != NVSDK_NGX_Result_Success)
+    {
+        if (IsDepthInverted())
+            params.cameraNear = Config::Instance()->FsrCameraFar.value_or(100000.0f);
+        else
+            params.cameraFar = Config::Instance()->FsrCameraFar.value_or(100000.0f);
+    }
 
-    if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) != NVSDK_NGX_Result_Success || params.frameTimeDelta < 1.0f)
-        params.frameTimeDelta = (float)GetDeltaTime();
+    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.cameraFovAngleVertical", &params.cameraFovAngleVertical) != NVSDK_NGX_Result_Success)
+    {
+        if (Config::Instance()->FsrVerticalFov.has_value())
+            params.cameraFovAngleVertical = Config::Instance()->FsrVerticalFov.value() * 0.0174532925199433f;
+        else if (Config::Instance()->FsrHorizontalFov.value_or(0.0f) > 0.0f)
+            params.cameraFovAngleVertical = 2.0f * atan((tan(Config::Instance()->FsrHorizontalFov.value() * 0.0174532925199433f) * 0.5f) / (float)TargetHeight() * (float)TargetWidth());
+        else
+            params.cameraFovAngleVertical = 1.0471975511966f;
+    }
+
+    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.frameTimeDelta", &params.frameTimeDelta) != NVSDK_NGX_Result_Success)
+    {
+        if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) != NVSDK_NGX_Result_Success || params.frameTimeDelta < 1.0f)
+            params.frameTimeDelta = (float)GetDeltaTime();
+    }
 
     params.preExposure = 1.0f;
     InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure);
-
 
     LOG_DEBUG("Dispatch!!");
     auto result = ffxFsr2ContextDispatch(&_context, &params);
@@ -451,7 +483,7 @@ bool FSR2FeatureDx12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
 
     const size_t scratchBufferSize = ffxFsr2GetScratchMemorySizeDX12();
     void* scratchBuffer = calloc(scratchBufferSize, 1);
@@ -592,7 +624,9 @@ bool FSR2FeatureDx12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
     LOG_DEBUG("ffxFsr2ContextCreate!");
 
+    Config::Instance()->SkipHeapCapture = true;
     auto ret = ffxFsr2ContextCreate(&_context, &_contextDesc);
+    Config::Instance()->SkipHeapCapture = false;
 
     if (ret != FFX_OK)
     {
@@ -600,7 +634,7 @@ bool FSR2FeatureDx12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     SetInit(true);
 

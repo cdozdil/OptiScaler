@@ -19,15 +19,10 @@ IFeature_Dx12::IFeature_Dx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InPar
 
 void IFeature_Dx12::Shutdown()
 {
-	if (Imgui != nullptr && Imgui.get() != nullptr)
-		Imgui.reset();
 }
 
 IFeature_Dx12::~IFeature_Dx12()
 {
-	if (OutputScaler != nullptr && OutputScaler.get() != nullptr)
-		OutputScaler.reset();
-
 	if (Device)
 	{
 		ID3D12Fence* d3d12Fence = nullptr;
@@ -54,5 +49,22 @@ IFeature_Dx12::~IFeature_Dx12()
 			d3d12Fence->Release();
 			d3d12Fence = nullptr;
 		}
+	}
+
+	if (!Config::Instance()->IsShuttingDown)
+	{
+		LOG_DEBUG("");
+
+		if (Imgui != nullptr && Imgui.get() != nullptr)
+			Imgui.reset();
+
+		if (OutputScaler != nullptr && OutputScaler.get() != nullptr)
+			OutputScaler.reset();
+
+		if (RCAS != nullptr && RCAS.get() != nullptr)
+			RCAS.reset();
+
+		if (Bias != nullptr && Bias.get() != nullptr)
+			Bias.reset();
 	}
 }

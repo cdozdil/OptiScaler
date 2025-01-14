@@ -277,7 +277,7 @@ RCAS_Dx11::RCAS_Dx11(std::string InName, ID3D11Device* InDevice) : _name(InName)
 
 RCAS_Dx11::~RCAS_Dx11()
 {
-    if (!_init)
+    if (!_init || Config::Instance()->IsShuttingDown)
         return;
 
     if(_computeShader != nullptr)

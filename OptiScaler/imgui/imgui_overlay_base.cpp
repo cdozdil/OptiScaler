@@ -39,10 +39,6 @@ bool ImGuiOverlayBase::IsVisible()
 	return ImGuiCommon::IsVisible();
 }
 
-bool ImGuiOverlayBase::IsResetRequested()
-{
-	return ImGuiCommon::IsResetRequested();
-}
 
 void ImGuiOverlayBase::Init(HWND InHandle)
 {
@@ -53,12 +49,12 @@ void ImGuiOverlayBase::Init(HWND InHandle)
 	ImGuiCommon::Init(InHandle);
 }
 
-void ImGuiOverlayBase::RenderMenu()
+bool ImGuiOverlayBase::RenderMenu()
 {
 	if (!Config::Instance()->OverlayMenu.value_or(true))
-		return;
+		return false;
 
-	ImGuiCommon::RenderMenu();
+	return ImGuiCommon::RenderMenu();
 }
 
 void ImGuiOverlayBase::Shutdown()

@@ -7,59 +7,64 @@
 #include "imgui_dx_base.h"
 #include "imgui/imgui_impl_win32.h"
 
-void ImguiDxBase::RenderMenu()
+bool ImguiDxBase::RenderMenu()
 {
-	if (Config::Instance()->OverlayMenu.value_or(true))
-		return;
+    if (Config::Instance()->OverlayMenu.value_or(true))
+        return false;
 
-	ImGuiCommon::RenderMenu();
-	ImGui::Render();
+    if (ImGuiCommon::RenderMenu())
+    {
+        ImGui::Render();
+        return true;
+    }
+
+    return false;
 }
 
 bool ImguiDxBase::IsHandleDifferent()
 {
-	if (Config::Instance()->OverlayMenu.value_or(true))
-		return false;
+    if (Config::Instance()->OverlayMenu.value_or(true))
+        return false;
 
-	HWND frontWindow = Util::GetProcessWindow();
+    HWND frontWindow = Util::GetProcessWindow();
 
-	if (frontWindow == _handle)
-		return false;
+    if (frontWindow == _handle)
+        return false;
 
-	_handle = frontWindow;
+    _handle = frontWindow;
 
-	return true;
+    return true;
 }
 
 void ImguiDxBase::Dx11Ready()
 {
-	ImGuiCommon::Dx11Inited();
+    ImGuiCommon::Dx11Inited();
 }
 
 void ImguiDxBase::Dx12Ready()
 {
-	ImGuiCommon::Dx12Inited();
+    ImGuiCommon::Dx12Inited();
 }
 
 ImguiDxBase::ImguiDxBase(HWND handle) : _handle(handle)
 {
-	if (Config::Instance()->OverlayMenu.value_or(true))
-		return;
+    if (Config::Instance()->OverlayMenu.value_or(true))
+        return;
 
-	ImGuiCommon::Init(handle);
+    ImGuiCommon::Init(handle);
 
-	_baseInit = ImGuiCommon::IsInited();
+    _baseInit = ImGuiCommon::IsInited();
 }
 
 ImguiDxBase::~ImguiDxBase()
 {
-	if (!_baseInit)
-		return;
+    if (!_baseInit)
+        return;
 
-	ImGuiCommon::Shutdown();
+    ImGuiCommon::Shutdown();
 }
 
 bool ImguiDxBase::IsVisible() const
 {
-	return ImGuiCommon::IsVisible();
+    return ImGuiCommon::IsVisible();
 }

@@ -8,23 +8,23 @@
 #include <DbgHelp.h>
 #pragma comment(lib, "Dbghelp.lib")
 
-
 #pragma region DXGI definitions
 
-typedef HRESULT(WINAPI* PFN_CREATE_DXGI_FACTORY)(REFIID riid, _COM_Outptr_ void** ppFactory);
-typedef HRESULT(WINAPI* PFN_CREATE_DXGI_FACTORY_2)(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFactory);
-typedef HRESULT(WINAPI* PFN_DECLARE_ADAPTER_REMOVAL_SUPPORT)();
-typedef HRESULT(WINAPI* PFN_GET_DEBUG_INTERFACE)(UINT Flags, REFIID riid, void** ppDebug);
+typedef HRESULT(*PFN_CREATE_DXGI_FACTORY)(REFIID riid, IDXGIFactory** ppFactory);
+typedef HRESULT(*PFN_CREATE_DXGI_FACTORY_1)(REFIID riid, IDXGIFactory1** ppFactory);
+typedef HRESULT(*PFN_CREATE_DXGI_FACTORY_2)(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory);
+typedef HRESULT(*PFN_DECLARE_ADAPTER_REMOVAL_SUPPORT)();
+typedef HRESULT(*PFN_GET_DEBUG_INTERFACE)(UINT Flags, REFIID riid, void** ppDebug);
 
-typedef HRESULT(WINAPI* PFN_GetDesc)(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc);
-typedef HRESULT(WINAPI* PFN_GetDesc1)(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc);
-typedef HRESULT(WINAPI* PFN_GetDesc2)(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc);
-typedef HRESULT(WINAPI* PFN_GetDesc3)(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc);
+typedef HRESULT(*PFN_GetDesc)(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc);
+typedef HRESULT(*PFN_GetDesc1)(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc);
+typedef HRESULT(*PFN_GetDesc2)(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc);
+typedef HRESULT(*PFN_GetDesc3)(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc);
 
-typedef HRESULT(WINAPI* PFN_EnumAdapterByGpuPreference)(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, void** ppvAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapterByLuid)(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, void** ppvAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapters1)(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1** ppAdapter);
-typedef HRESULT(WINAPI* PFN_EnumAdapters)(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** ppAdapter);
+typedef HRESULT(*PFN_EnumAdapterByGpuPreference)(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IDXGIAdapter** ppvAdapter);
+typedef HRESULT(*PFN_EnumAdapterByLuid)(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IDXGIAdapter** ppvAdapter);
+typedef HRESULT(*PFN_EnumAdapters1)(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1** ppAdapter);
+typedef HRESULT(*PFN_EnumAdapters)(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** ppAdapter);
 
 inline static PFN_GetDesc ptrGetDesc = nullptr;
 inline static PFN_GetDesc1 ptrGetDesc1 = nullptr;
@@ -35,6 +35,9 @@ inline static PFN_EnumAdapters ptrEnumAdapters = nullptr;
 inline static PFN_EnumAdapters1 ptrEnumAdapters1 = nullptr;
 inline static PFN_EnumAdapterByLuid ptrEnumAdapterByLuid = nullptr;
 inline static PFN_EnumAdapterByGpuPreference ptrEnumAdapterByGpuPreference = nullptr;
+
+inline bool skipGetModuleHandle = false;
+inline bool skipHighPerfCheck = false;
 
 void AttachToAdapter(IUnknown* unkAdapter);
 void AttachToFactory(IUnknown* unkFactory);
@@ -55,11 +58,14 @@ struct shared
     void LoadOriginalLibrary(HMODULE module)
     {
         dll = module;
+
+        skipGetModuleHandle = true;
         DllCanUnloadNow = GetProcAddress(module, "DllCanUnloadNow");
         DllGetClassObject = GetProcAddress(module, "DllGetClassObject");
         DllRegisterServer = GetProcAddress(module, "DllRegisterServer");
         DllUnregisterServer = GetProcAddress(module, "DllUnregisterServer");
         DebugSetMute = GetProcAddress(module, "DebugSetMute");
+        skipGetModuleHandle = false;
     }
 } shared;
 
@@ -364,6 +370,7 @@ struct wininet_dll
     {
         dll = module;
         shared.LoadOriginalLibrary(dll);
+        skipGetModuleHandle = true;
         AppCacheCheckManifest = GetProcAddress(dll, "AppCacheCheckManifest");
         AppCacheCloseHandle = GetProcAddress(dll, "AppCacheCloseHandle");
         AppCacheCreateAndCommitFile = GetProcAddress(dll, "AppCacheCreateAndCommitFile");
@@ -657,6 +664,7 @@ struct wininet_dll
         UrlCacheSetGlobalLimit = GetProcAddress(dll, "UrlCacheSetGlobalLimit");
         UrlCacheUpdateEntryExtraData = GetProcAddress(dll, "UrlCacheUpdateEntryExtraData");
         UrlZonesDetach = GetProcAddress(dll, "UrlZonesDetach");
+        skipGetModuleHandle = false;
     }
 } wininet;
 
@@ -685,6 +693,7 @@ struct version_dll
     {
         dll = module;
         shared.LoadOriginalLibrary(dll);
+        skipGetModuleHandle = true;
         GetFileVersionInfoA = GetProcAddress(dll, "GetFileVersionInfoA");
         GetFileVersionInfoByHandle = GetProcAddress(dll, "GetFileVersionInfoByHandle");
         GetFileVersionInfoExA = GetProcAddress(dll, "GetFileVersionInfoExA");
@@ -702,6 +711,7 @@ struct version_dll
         VerLanguageNameW = GetProcAddress(dll, "VerLanguageNameW");
         VerQueryValueA = GetProcAddress(dll, "VerQueryValueA");
         VerQueryValueW = GetProcAddress(dll, "VerQueryValueW");
+        skipGetModuleHandle = false;
     }
 } version;
 
@@ -905,6 +915,7 @@ struct winmm_dll
     {
         dll = module;
         shared.LoadOriginalLibrary(dll);
+        skipGetModuleHandle = true;
         CloseDriver = GetProcAddress(dll, "CloseDriver");
         DefDriverProc = GetProcAddress(dll, "DefDriverProc");
         DriverCallback = GetProcAddress(dll, "DriverCallback");
@@ -1097,6 +1108,7 @@ struct winmm_dll
         waveOutWrite = GetProcAddress(dll, "waveOutWrite");
         wid32Message = GetProcAddress(dll, "wid32Message");
         wod32Message = GetProcAddress(dll, "wod32Message");
+        skipGetModuleHandle = false;
     }
 } winmm;
 
@@ -1188,6 +1200,7 @@ struct winhttp_dll
     {
         dll = module;
         shared.LoadOriginalLibrary(dll);
+        skipGetModuleHandle = true;
         Private1 = GetProcAddress(dll, "Private1");
         SvchostPushServiceGlobals = GetProcAddress(dll, "SvchostPushServiceGlobals");
         WinHttpAddRequestHeaders = GetProcAddress(dll, "WinHttpAddRequestHeaders");
@@ -1268,6 +1281,7 @@ struct winhttp_dll
         WinHttpWebSocketShutdown = GetProcAddress(dll, "WinHttpWebSocketShutdown");
         WinHttpWriteData = GetProcAddress(dll, "WinHttpWriteData");
         WinHttpWriteProxySettings = GetProcAddress(dll, "WinHttpWriteProxySettings");
+        skipGetModuleHandle = false;
     }
 } winhttp;
 
@@ -1276,7 +1290,7 @@ struct dxgi_dll
     HMODULE dll = nullptr;
 
     PFN_CREATE_DXGI_FACTORY CreateDxgiFactory;
-    PFN_CREATE_DXGI_FACTORY CreateDxgiFactory1;
+    PFN_CREATE_DXGI_FACTORY_1 CreateDxgiFactory1;
     PFN_CREATE_DXGI_FACTORY_2 CreateDxgiFactory2;
 
     FARPROC dxgiDeclareAdapterRemovalSupport = nullptr;
@@ -1301,27 +1315,29 @@ struct dxgi_dll
     {
         dll = module;
 
+        skipGetModuleHandle = true;
         CreateDxgiFactory = (PFN_CREATE_DXGI_FACTORY)GetProcAddress(module, "CreateDXGIFactory");
-        CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY)GetProcAddress(module, "CreateDXGIFactory1");
+        CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY_1)GetProcAddress(module, "CreateDXGIFactory1");
         CreateDxgiFactory2 = (PFN_CREATE_DXGI_FACTORY_2)GetProcAddress(module, "CreateDXGIFactory2");
 
         dxgiDeclareAdapterRemovalSupport = GetProcAddress(module, "DXGIDeclareAdapterRemovalSupport");
         dxgiGetDebugInterface = GetProcAddress(module, "DXGIGetDebugInterface1");
-        dxgiApplyCompatResolutionQuirking = GetProcAddress(module, "ApplyCompatResolutionQuirking");
-        dxgiCompatString = GetProcAddress(module, "CompatString");
-        dxgiCompatValue = GetProcAddress(module, "CompatValue");
-        dxgiD3D10CreateDevice = GetProcAddress(module, "DXGID3D10CreateDevice");
-        dxgiD3D10CreateLayeredDevice = GetProcAddress(module, "DXGID3D10CreateLayeredDevice");
-        dxgiD3D10GetLayeredDeviceSize = GetProcAddress(module, "DXGID3D10GetLayeredDeviceSize");
-        dxgiD3D10RegisterLayers = GetProcAddress(module, "DXGID3D10RegisterLayers");
-        dxgiD3D10ETWRundown = GetProcAddress(module, "DXGID3D10ETWRundown");
-        dxgiDumpJournal = GetProcAddress(module, "DXGIDumpJournal");
-        dxgiReportAdapterConfiguration = GetProcAddress(module, "DXGIReportAdapterConfiguration");
-        dxgiPIXBeginCapture = GetProcAddress(module, "PIXBeginCapture");
-        dxgiPIXEndCapture = GetProcAddress(module, "PIXEndCapture");
-        dxgiPIXGetCaptureState = GetProcAddress(module, "PIXGetCaptureState");
-        dxgiSetAppCompatStringPointer = GetProcAddress(module, "SetAppCompatStringPointer");
-        dxgiUpdateHMDEmulationStatus = GetProcAddress(module, "UpdateHMDEmulationStatus");
+        //dxgiApplyCompatResolutionQuirking = GetProcAddress(module, "ApplyCompatResolutionQuirking");
+        //dxgiCompatString = GetProcAddress(module, "CompatString");
+        //dxgiCompatValue = GetProcAddress(module, "CompatValue");
+        //dxgiD3D10CreateDevice = GetProcAddress(module, "DXGID3D10CreateDevice");
+        //dxgiD3D10CreateLayeredDevice = GetProcAddress(module, "DXGID3D10CreateLayeredDevice");
+        //dxgiD3D10GetLayeredDeviceSize = GetProcAddress(module, "DXGID3D10GetLayeredDeviceSize");
+        //dxgiD3D10RegisterLayers = GetProcAddress(module, "DXGID3D10RegisterLayers");
+        //dxgiD3D10ETWRundown = GetProcAddress(module, "DXGID3D10ETWRundown");
+        //dxgiDumpJournal = GetProcAddress(module, "DXGIDumpJournal");
+        //dxgiReportAdapterConfiguration = GetProcAddress(module, "DXGIReportAdapterConfiguration");
+        //dxgiPIXBeginCapture = GetProcAddress(module, "PIXBeginCapture");
+        //dxgiPIXEndCapture = GetProcAddress(module, "PIXEndCapture");
+        //dxgiPIXGetCaptureState = GetProcAddress(module, "PIXGetCaptureState");
+        //dxgiSetAppCompatStringPointer = GetProcAddress(module, "SetAppCompatStringPointer");
+        //dxgiUpdateHMDEmulationStatus = GetProcAddress(module, "UpdateHMDEmulationStatus");
+        skipGetModuleHandle = false;
     }
 } dxgi;
 
@@ -1331,20 +1347,59 @@ struct dxgi_dll
 
 bool SkipSpoofing()
 {
-    auto skip = !Config::Instance()->DxgiSpoofing.value_or(true) || Config::Instance()->dxgiSkipSpoofing || Config::Instance()->IsRunningOnLinux;
+    auto skip = !Config::Instance()->DxgiSpoofing.value_or(true) || Config::Instance()->skipSpoofing; // || Config::Instance()->IsRunningOnLinux;
 
     if (skip)
-        LOG_TRACE("DxgiSpoofing: {}, dxgiSkipSpoofing: {}, skipping spoofing", 
-                  !Config::Instance()->DxgiSpoofing.value_or(true), Config::Instance()->dxgiSkipSpoofing);
+        LOG_TRACE("DxgiSpoofing: {}, skipSpoofing: {}, skipping spoofing",
+                  Config::Instance()->DxgiSpoofing.value_or(true), Config::Instance()->skipSpoofing);
 
-    if (!skip && Config::Instance()->DxgiBlacklist.has_value())
+    HANDLE process = GetCurrentProcess();
+
+    if (!skip && Config::Instance()->DxgiBlacklist.has_value() && process != nullptr)
     {
         skip = true;
+
+        /*
+        * File based spoofing
+        SymInitialize(process, NULL, TRUE);
+
+        // Capture stack trace
+        const int maxFrames = 64;
+        void* stack[maxFrames];
+        USHORT frames = CaptureStackBackTrace(0, maxFrames, stack, NULL);
+
+        for (USHORT i = 0; i < frames; ++i)
+        {
+            DWORD64 address = (DWORD64)(stack[i]);
+            DWORD64 moduleBase = SymGetModuleBase64(process, address);
+
+            if (moduleBase)
+            {
+                char moduleName[MAX_PATH];
+                if (GetModuleFileNameA((HINSTANCE)moduleBase, moduleName, MAX_PATH))
+                {
+                    std::string module(moduleName);
+                    LOG_TRACE("ModuleName: {}", module);
+
+                    auto pos = module.rfind("\\sl.");
+
+                    if (pos != std::string::npos)
+                    {
+                        LOG_INFO("spoofing for: {0}", module);
+                        skip = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        SymCleanup(process);
+        */
 
         // Walk the call stack to find the DLL that is calling the hooked function
         void* callers[100];
         unsigned short frames = CaptureStackBackTrace(0, 100, callers, NULL);
-        HANDLE process = GetCurrentProcess();
+        //HANDLE process = GetCurrentProcess();
 
         if (SymInitialize(process, NULL, TRUE))
         {
@@ -1389,23 +1444,32 @@ bool SkipSpoofing()
 HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
 {
     auto result = ptrGetDesc3(This, pDesc);
-    auto skip = SkipSpoofing();
-
-    if (result == S_OK && !skip && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+    if (result == S_OK)
     {
-        pDesc->VendorId = 0x10de;
-        pDesc->DeviceId = 0x2684;
+        if (pDesc->VendorId != 0x1414 && !Config::Instance()->adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
+        {
+            std::wstring szName(pDesc->Description);
+            std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
+            LOG_INFO("{}", descStr);
+            Config::Instance()->adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
+        }
 
-        auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
-        std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-        std::wcscpy(pDesc->Description, szName.c_str());
+        if (Config::Instance()->DxgiVRAM.has_value())
+            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiVRAM.value() * 1024 * 1024 * 1024;
 
-        if (Config::Instance()->DxgiSpoofing.has_value())
-            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
+        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+        {
+            pDesc->VendorId = 0x10de;
+            pDesc->DeviceId = 0x2684;
+
+            auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
+            std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
+            std::wcscpy(pDesc->Description, szName.c_str());
 
 #ifdef _DEBUG
-        LOG_DEBUG("spoofing");
-#endif
+            LOG_DEBUG("spoofing");
+#endif 
+        }
     }
 
     AttachToAdapter(This);
@@ -1416,23 +1480,32 @@ HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
 HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
 {
     auto result = ptrGetDesc2(This, pDesc);
-    auto skip = SkipSpoofing();
-
-    if (result == S_OK && !skip && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+    if (result == S_OK)
     {
-        pDesc->VendorId = 0x10de;
-        pDesc->DeviceId = 0x2684;
+        if (pDesc->VendorId != 0x1414 && !Config::Instance()->adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
+        {
+            std::wstring szName(pDesc->Description);
+            std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
+            LOG_INFO("{}", descStr);
+            Config::Instance()->adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
+        }
 
-        auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
-        std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-        std::wcscpy(pDesc->Description, szName.c_str());
+        if (Config::Instance()->DxgiVRAM.has_value())
+            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiVRAM.value() * 1024 * 1024 * 1024;
 
-        if (Config::Instance()->DxgiSpoofing.has_value())
-            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
+        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+        {
+            pDesc->VendorId = 0x10de;
+            pDesc->DeviceId = 0x2684;
+
+            auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
+            std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
+            std::wcscpy(pDesc->Description, szName.c_str());
 
 #ifdef _DEBUG
-        LOG_DEBUG("spoofing");
-#endif
+            LOG_DEBUG("spoofing");
+#endif 
+        }
     }
 
     AttachToAdapter(This);
@@ -1443,23 +1516,32 @@ HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
 HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
 {
     auto result = ptrGetDesc1(This, pDesc);
-    auto skip = SkipSpoofing();
-
-    if (result == S_OK && !skip && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+    if (result == S_OK)
     {
-        pDesc->VendorId = 0x10de;
-        pDesc->DeviceId = 0x2684;
+        if (pDesc->VendorId != 0x1414 && !Config::Instance()->adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
+        {
+            std::wstring szName(pDesc->Description);
+            std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
+            LOG_INFO("{}", descStr);
+            Config::Instance()->adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
+        }
 
-        auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
-        std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-        std::wcscpy(pDesc->Description, szName.c_str());
+        if (Config::Instance()->DxgiVRAM.has_value())
+            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiVRAM.value() * 1024 * 1024 * 1024;
 
-        if (Config::Instance()->DxgiSpoofing.has_value())
-            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
+        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+        {
+            pDesc->VendorId = 0x10de;
+            pDesc->DeviceId = 0x2684;
+
+            auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
+            std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
+            std::wcscpy(pDesc->Description, szName.c_str());
 
 #ifdef _DEBUG
-        LOG_DEBUG("spoofing");
+            LOG_DEBUG("spoofing");
 #endif
+        }
     }
 
     AttachToAdapter(This);
@@ -1470,23 +1552,32 @@ HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
 HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
 {
     auto result = ptrGetDesc(This, pDesc);
-    auto skip = SkipSpoofing();
-
-    if (result == S_OK && !skip && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+    if (result == S_OK)
     {
-        pDesc->VendorId = 0x10de;
-        pDesc->DeviceId = 0x2684;
+        if (pDesc->VendorId != 0x1414 && !Config::Instance()->adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
+        {
+            std::wstring szName(pDesc->Description);
+            std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
+            LOG_INFO("{}", descStr);
+            Config::Instance()->adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
+        }
 
-        auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
-        std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
-        std::wcscpy(pDesc->Description, szName.c_str());
+        if (Config::Instance()->DxgiVRAM.has_value())
+            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiVRAM.value() * 1024 * 1024 * 1024;
 
-        if (Config::Instance()->DxgiSpoofing.has_value())
-            pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiSpoofing.has_value() * 1024 * 1024 * 1024;
+        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+        {
+            pDesc->VendorId = 0x10de;
+            pDesc->DeviceId = 0x2684;
+
+            auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
+            std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
+            std::wcscpy(pDesc->Description, szName.c_str());
 
 #ifdef _DEBUG
-        LOG_DEBUG("spoofing");
+            LOG_DEBUG("spoofing");
 #endif
+        }
     }
 
     AttachToAdapter(This);
@@ -1498,50 +1589,95 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
 
 #pragma region DXGI Factory methods
 
-HRESULT WINAPI detEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, void** ppvAdapter)
+HRESULT WINAPI detEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IDXGIAdapter** ppvAdapter)
 {
     AttachToFactory(This);
 
-    IDXGIAdapter* adapter = nullptr;
-    auto result = ptrEnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, (void**)&adapter);
+    Config::Instance()->skipDxgiLoadChecks = true;
+    auto result = ptrEnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, ppvAdapter);
+    Config::Instance()->skipDxgiLoadChecks = false;
 
     if (result == S_OK)
-    {
-        AttachToAdapter(adapter);
-        *ppvAdapter = adapter;
-    }
+        AttachToAdapter(*ppvAdapter);
 
     return result;
 }
 
-HRESULT WINAPI detEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, void** ppvAdapter)
+HRESULT WINAPI detEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IDXGIAdapter** ppvAdapter)
 {
     AttachToFactory(This);
 
-    IDXGIAdapter* adapter = nullptr;
-    auto result = ptrEnumAdapterByLuid(This, AdapterLuid, riid, (void**)&adapter);
+    Config::Instance()->skipDxgiLoadChecks = true;
+    auto result = ptrEnumAdapterByLuid(This, AdapterLuid, riid, ppvAdapter);
+    Config::Instance()->skipDxgiLoadChecks = false;
 
     if (result == S_OK)
-    {
-        AttachToAdapter(adapter);
-        *ppvAdapter = adapter;
-    }
+        AttachToAdapter(*ppvAdapter);
 
     return result;
 }
 
 HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1** ppAdapter)
 {
+    LOG_TRACE("dllmain"); 
+    
     AttachToFactory(This);
 
-    IDXGIAdapter1* adapter = nullptr;
-    auto result = ptrEnumAdapters1(This, Adapter, &adapter);
+    HRESULT result = S_OK;
+
+    if (!skipHighPerfCheck && Config::Instance()->PreferDedicatedGpu.value_or(false))
+    {
+        if (Config::Instance()->PreferFirstDedicatedGpu.value_or(false) && Adapter > 0)
+        {
+            LOG_DEBUG("{}, returning not found", Adapter);
+            return DXGI_ERROR_NOT_FOUND;
+        }
+
+        IDXGIFactory6* factory6 = nullptr;
+        if (This->QueryInterface(IID_PPV_ARGS(&factory6)) == S_OK && factory6 != nullptr)
+        {
+            LOG_DEBUG("Trying to select high performance adapter ({})", Adapter);
+
+            skipHighPerfCheck = true;
+            Config::Instance()->skipDxgiLoadChecks = true;
+            result = ptrEnumAdapterByGpuPreference(factory6, Adapter, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter), (IDXGIAdapter**)ppAdapter);
+            Config::Instance()->skipDxgiLoadChecks = false;
+            skipHighPerfCheck = false;
+
+            if (result != S_OK)
+            {
+                LOG_ERROR("Can't get high performance adapter: {:X}, fallback to standard method", Adapter);
+                result = ptrEnumAdapters1(This, Adapter, ppAdapter);
+            }
+
+            if (result == S_OK)
+            {
+                DXGI_ADAPTER_DESC desc;
+                Config::Instance()->skipSpoofing = true;
+                if ((*ppAdapter)->GetDesc(&desc) == S_OK)
+                {
+                    std::wstring name(desc.Description);
+                    LOG_DEBUG("High performance adapter ({}) will be used", wstring_to_string(name));
+                }
+                else
+                {
+                    LOG_DEBUG("High performance adapter (Can't get description!) will be used");
+                }
+                Config::Instance()->skipSpoofing = false;
+            }
+
+            factory6->Release();
+        }
+    }
+    else
+    {
+        Config::Instance()->skipDxgiLoadChecks = true;
+        result = ptrEnumAdapters1(This, Adapter, ppAdapter);
+        Config::Instance()->skipDxgiLoadChecks = false;
+    }
 
     if (result == S_OK)
-    {
-        AttachToAdapter(adapter);
-        *ppAdapter = adapter;
-    }
+        AttachToAdapter(*ppAdapter);
 
     return result;
 }
@@ -1550,14 +1686,61 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
 {
     AttachToFactory(This);
 
-    IDXGIAdapter* adapter = nullptr;
-    auto result = ptrEnumAdapters(This, Adapter, &adapter);
+    HRESULT result = S_OK;
+
+    if (!skipHighPerfCheck && Config::Instance()->PreferDedicatedGpu.value_or(false))
+    {
+        if (Config::Instance()->PreferFirstDedicatedGpu.value_or(false) && Adapter > 0)
+        {
+            LOG_DEBUG("{}, returning not found", Adapter);
+            return DXGI_ERROR_NOT_FOUND;
+        }
+
+        IDXGIFactory6* factory6 = nullptr;
+        if (This->QueryInterface(IID_PPV_ARGS(&factory6)) == S_OK && factory6 != nullptr)
+        {
+            LOG_DEBUG("Trying to select high performance adapter ({})", Adapter);
+
+            skipHighPerfCheck = true;
+            Config::Instance()->skipDxgiLoadChecks = true;
+            result = ptrEnumAdapterByGpuPreference(factory6, Adapter, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter), ppAdapter);
+            Config::Instance()->skipDxgiLoadChecks = false;
+            skipHighPerfCheck = false;
+
+            if (result != S_OK)
+            {
+                LOG_ERROR("Can't get high performance adapter: {:X}, fallback to standard method", Adapter);
+                result = ptrEnumAdapters(This, Adapter, ppAdapter);
+            }
+
+            if (result == S_OK)
+            {
+                DXGI_ADAPTER_DESC desc;
+                Config::Instance()->skipSpoofing = true;
+                if ((*ppAdapter)->GetDesc(&desc) == S_OK)
+                {
+                    std::wstring name(desc.Description);
+                    LOG_DEBUG("Adapter ({}) will be used", wstring_to_string(name));
+                }
+                else
+                {
+                    LOG_ERROR("Can't get adapter description!");
+                }
+                Config::Instance()->skipSpoofing = false;
+            }
+
+            factory6->Release();
+        }
+    }
+    else
+    {
+        Config::Instance()->skipDxgiLoadChecks = true;
+        result = ptrEnumAdapters(This, Adapter, ppAdapter);
+        Config::Instance()->skipDxgiLoadChecks = false;
+    }
 
     if (result == S_OK)
-    {
-        AttachToAdapter(adapter);
-        *ppAdapter = adapter;
-    }
+        AttachToAdapter(*ppAdapter);
 
     return result;
 }
@@ -1566,41 +1749,38 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
 
 #pragma region DXGI methods
 
-HRESULT _CreateDXGIFactory(REFIID riid, _COM_Outptr_ void** ppFactory)
+HRESULT _CreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
-    IDXGIFactory* factory;
-    HRESULT result = dxgi.CreateDxgiFactory(riid, (void**)&factory);
+    Config::Instance()->skipDxgiLoadChecks = true;
+    HRESULT result = dxgi.CreateDxgiFactory(riid, ppFactory);
+    Config::Instance()->skipDxgiLoadChecks = false;
 
     if (result == S_OK)
-        AttachToFactory(factory);
-
-    *ppFactory = factory;
+        AttachToFactory(*ppFactory);
 
     return result;
 }
 
-HRESULT _CreateDXGIFactory1(REFIID riid, _COM_Outptr_ void** ppFactory)
+HRESULT _CreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 {
-    IDXGIFactory1* factory1;
-    HRESULT result = dxgi.CreateDxgiFactory1(riid, (void**)&factory1);
+    Config::Instance()->skipDxgiLoadChecks = true;
+    HRESULT result = dxgi.CreateDxgiFactory1(riid, ppFactory);
+    Config::Instance()->skipDxgiLoadChecks = false;
 
     if (result == S_OK)
-        AttachToFactory(factory1);
-
-    *ppFactory = factory1;
+        AttachToFactory(*ppFactory);
 
     return result;
 }
 
-HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, _COM_Outptr_ void** ppFactory)
+HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
 {
-    IDXGIFactory* factory;
-    HRESULT result = dxgi.CreateDxgiFactory2(Flags, riid, (void**)&factory);
+    Config::Instance()->skipDxgiLoadChecks = true;
+    HRESULT result = dxgi.CreateDxgiFactory2(Flags, riid, ppFactory);
+    Config::Instance()->skipDxgiLoadChecks = false;
 
     if (result == S_OK)
-        AttachToFactory(factory);
-
-    *ppFactory = factory;
+        AttachToFactory(*ppFactory);
 
     return result;
 }
@@ -1617,95 +1797,95 @@ void _DXGIGetDebugInterface1()
     dxgi.dxgiGetDebugInterface();
 }
 
-void _ApplyCompatResolutionQuirking()
-{
-    LOG_FUNC();
-    dxgi.dxgiApplyCompatResolutionQuirking();
-}
-
-void _CompatString()
-{
-    LOG_FUNC();
-    dxgi.dxgiCompatString();
-}
-
-void _CompatValue()
-{
-    LOG_FUNC();
-    dxgi.dxgiCompatValue();
-}
-
-void _DXGID3D10CreateDevice()
-{
-    LOG_FUNC();
-    dxgi.dxgiD3D10CreateDevice();
-}
-
-void _DXGID3D10CreateLayeredDevice()
-{
-    LOG_FUNC();
-    dxgi.dxgiD3D10CreateLayeredDevice();
-}
-
-void _DXGID3D10GetLayeredDeviceSize()
-{
-    LOG_FUNC();
-    dxgi.dxgiD3D10GetLayeredDeviceSize();
-}
-
-void _DXGID3D10RegisterLayers()
-{
-    LOG_FUNC();
-    dxgi.dxgiD3D10RegisterLayers();
-}
-
-void _DXGID3D10ETWRundown()
-{
-    LOG_FUNC();
-    dxgi.dxgiD3D10ETWRundown();
-}
-
-void _DXGIDumpJournal()
-{
-    LOG_FUNC();
-    dxgi.dxgiDumpJournal();
-}
-
-void _DXGIReportAdapterConfiguration()
-{
-    LOG_FUNC();
-    dxgi.dxgiReportAdapterConfiguration();
-}
-
-void _PIXBeginCapture()
-{
-    LOG_FUNC();
-    dxgi.dxgiPIXBeginCapture();
-}
-
-void _PIXEndCapture()
-{
-    LOG_FUNC();
-    dxgi.dxgiPIXEndCapture();
-}
-
-void _PIXGetCaptureState()
-{
-    LOG_FUNC();
-    dxgi.dxgiPIXGetCaptureState();
-}
-
-void _SetAppCompatStringPointer()
-{
-    LOG_FUNC();
-    dxgi.dxgiSetAppCompatStringPointer();
-}
-
-void _UpdateHMDEmulationStatus()
-{
-    LOG_FUNC();
-    dxgi.dxgiUpdateHMDEmulationStatus();
-}
+//void _ApplyCompatResolutionQuirking()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiApplyCompatResolutionQuirking();
+//}
+//
+//void _CompatString()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiCompatString();
+//}
+//
+//void _CompatValue()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiCompatValue();
+//}
+//
+//void _DXGID3D10CreateDevice()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiD3D10CreateDevice();
+//}
+//
+//void _DXGID3D10CreateLayeredDevice()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiD3D10CreateLayeredDevice();
+//}
+//
+//void _DXGID3D10GetLayeredDeviceSize()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiD3D10GetLayeredDeviceSize();
+//}
+//
+//void _DXGID3D10RegisterLayers()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiD3D10RegisterLayers();
+//}
+//
+//void _DXGID3D10ETWRundown()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiD3D10ETWRundown();
+//}
+//
+//void _DXGIDumpJournal()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiDumpJournal();
+//}
+//
+//void _DXGIReportAdapterConfiguration()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiReportAdapterConfiguration();
+//}
+//
+//void _PIXBeginCapture()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiPIXBeginCapture();
+//}
+//
+//void _PIXEndCapture()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiPIXEndCapture();
+//}
+//
+//void _PIXGetCaptureState()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiPIXGetCaptureState();
+//}
+//
+//void _SetAppCompatStringPointer()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiSetAppCompatStringPointer();
+//}
+//
+//void _UpdateHMDEmulationStatus()
+//{
+//    LOG_FUNC();
+//    dxgi.dxgiUpdateHMDEmulationStatus();
+//}
 
 #pragma endregion
 
@@ -1721,7 +1901,7 @@ void AttachToAdapter(IUnknown* unkAdapter)
 
     IDXGIAdapter* adapter = nullptr;
     bool adapterOk = unkAdapter->QueryInterface(__uuidof(IDXGIAdapter), (void**)&adapter) == S_OK;
-    
+
     void* dxvkAdapter = nullptr;
     if (adapterOk && !Config::Instance()->IsRunningOnDXVK && adapter->QueryInterface(guid, &dxvkAdapter) == S_OK)
     {
@@ -1729,8 +1909,8 @@ void AttachToAdapter(IUnknown* unkAdapter)
         ((IDXGIAdapter*)dxvkAdapter)->Release();
     }
 
-    if(Config::Instance()->IsRunningOnDXVK != dxvkStatus)
-        LOG_INFO("IDXGIVkInteropDevice interface {0}", Config::Instance()->IsRunningOnDXVK ? "found" : "not found");
+    if (Config::Instance()->IsRunningOnDXVK != dxvkStatus)
+        LOG_INFO("IDXGIVkInteropDevice interface (DXVK) {0}", Config::Instance()->IsRunningOnDXVK ? "detected" : "not detected");
 
     if (ptrGetDesc == nullptr && adapterOk)
     {

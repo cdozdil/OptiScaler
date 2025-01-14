@@ -41,41 +41,12 @@ static inline FfxApiResourceDescription ffxApiGetImageResourceDescriptionVKLocal
 
 FSR31FeatureVk::FSR31FeatureVk(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : FSR31Feature(InHandleId, InParameters), IFeature_Vk(InHandleId, InParameters), IFeature(InHandleId, InParameters)
 {
-    LOG_DEBUG("Loading amd_fidelityfx_vk.dll methods");
-
-    auto file = Util::DllPath().parent_path() / "amd_fidelityfx_vk.dll";
-    LOG_INFO("Trying to load {}", file.string());
-
-    auto _dll = LoadLibrary(file.wstring().c_str());
-
-    if (_dll != nullptr)
-    {
-        _configure = (PfnFfxConfigure)GetProcAddress(_dll, "ffxConfigure");
-        _createContext = (PfnFfxCreateContext)GetProcAddress(_dll, "ffxCreateContext");
-        _destroyContext = (PfnFfxDestroyContext)GetProcAddress(_dll, "ffxDestroyContext");
-        _dispatch = (PfnFfxDispatch)GetProcAddress(_dll, "ffxDispatch");
-        _query = (PfnFfxQuery)GetProcAddress(_dll, "ffxQuery");
-
-        _moduleLoaded = _configure != nullptr;
-    }
-
-    if (!_moduleLoaded)
-    {
-        LOG_INFO("Trying to load amd_fidelityfx_vk.dll with detours");
-
-        _configure = (PfnFfxConfigure)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxConfigure");
-        _createContext = (PfnFfxCreateContext)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxCreateContext");
-        _destroyContext = (PfnFfxDestroyContext)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxDestroyContext");
-        _dispatch = (PfnFfxDispatch)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxDispatch");
-        _query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxQuery");
-
-        _moduleLoaded = _configure != nullptr;
-    }
+    _moduleLoaded = FfxApiProxy::InitFfxVk();
 
     if (_moduleLoaded)
         LOG_INFO("amd_fidelityfx_vk.dll methods loaded!");
     else
-        LOG_ERROR("can't load amd_fidelityfx_vk.dll methods!");
+        LOG_ERROR("Can't load amd_fidelityfx_vk.dll methods!");
 }
 
 bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
@@ -94,7 +65,7 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
 
     ffxQueryDescGetVersions versionQuery{};
     versionQuery.header.type = FFX_API_QUERY_DESC_TYPE_GET_VERSIONS;
@@ -103,14 +74,14 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     uint64_t versionCount = 0;
     versionQuery.outputCount = &versionCount;
     // get number of versions for allocation
-    _query(nullptr, &versionQuery.header);
+    FfxApiProxy::VULKAN_Query()(nullptr, &versionQuery.header);
 
     Config::Instance()->fsr3xVersionIds.resize(versionCount);
     Config::Instance()->fsr3xVersionNames.resize(versionCount);
     versionQuery.versionIds = Config::Instance()->fsr3xVersionIds.data();
     versionQuery.versionNames = Config::Instance()->fsr3xVersionNames.data();
     // fill version ids and names arrays.
-    _query(nullptr, &versionQuery.header);
+    FfxApiProxy::VULKAN_Query()(nullptr, &versionQuery.header);
 
     _contextDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE;
     _contextDesc.fpMessage = FfxLogCallback;
@@ -213,13 +184,13 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     backendDesc.header.pNext = &ov.header;
 
     LOG_DEBUG("_createContext!");
-    auto ret = _createContext(&_context, &_contextDesc.header, NULL);
+    auto ret = FfxApiProxy::VULKAN_CreateContext()(&_context, &_contextDesc.header, NULL);
 
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     if (ret != FFX_API_RETURN_OK)
     {
-        LOG_ERROR("_createContext error: {0}", ResultToString(ret));
+        LOG_ERROR("_createContext error: {0}", FfxApiProxy::ReturnCodeToString(ret));
         return false;
     }
 
@@ -456,13 +427,13 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
 
     if (IsDepthInverted())
     {
-        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.01f);
-        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(0.99f);
+        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.1f);
+        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(100000.0f);
     }
     else
     {
-        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(0.99f);
-        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.01f);
+        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(100000.0f);
+        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.1f);
     }
 
     if (Config::Instance()->FsrVerticalFov.has_value())
@@ -484,18 +455,18 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
         m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FVELOCITYFACTOR;
         m_upscalerKeyValueConfig.ptr = &_velocity;
-        auto result = _configure(&_context, &m_upscalerKeyValueConfig.header);
+        auto result = FfxApiProxy::VULKAN_Configure()(&_context, &m_upscalerKeyValueConfig.header);
 
         if (result != FFX_API_RETURN_OK)
             LOG_WARN("Velocity configure result: {}", (UINT)result);
     }
 
     LOG_DEBUG("Dispatch!!");
-    auto result = _dispatch(&_context, &params.header);
+    auto result = FfxApiProxy::VULKAN_Dispatch()(&_context, &params.header);
 
     if (result != FFX_API_RETURN_OK)
     {
-        LOG_ERROR("ffxFsr2ContextDispatch error: {0}", ResultToString(result));
+        LOG_ERROR("ffxFsr2ContextDispatch error: {0}", FfxApiProxy::ReturnCodeToString(result));
         return false;
     }
 

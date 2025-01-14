@@ -32,7 +32,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 
     auto result = InResource->QueryInterface(IID_PPV_ARGS(&originalTexture));
 
-    if (result != S_OK)
+    if (result != S_OK || originalTexture == nullptr)
         return false;
 
     originalTexture->GetDesc(&desc);
@@ -153,7 +153,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 
             result = originalTexture->QueryInterface(IID_PPV_ARGS(&resource));
 
-            if (result != S_OK)
+            if (result != S_OK || resource == nullptr)
             {
                 LOG_ERROR("QueryInterface(resource) error: {0:x}", result);
                 return false;
@@ -319,7 +319,7 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
     LOG_FUNC();
 
     Config::Instance()->VulkanSkipHooks = true;
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
 
     HRESULT result;
 
@@ -332,7 +332,7 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         {
             LOG_ERROR("Can't create factory: {0:x}", result);
             Config::Instance()->VulkanSkipHooks = false;
-            Config::Instance()->dxgiSkipSpoofing = false;
+            Config::Instance()->skipSpoofing = false;
             return result;
         }
 
@@ -343,7 +343,7 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         {
             LOG_ERROR("Can't get hardwareAdapter!");
             Config::Instance()->VulkanSkipHooks = false;
-            Config::Instance()->dxgiSkipSpoofing = false;
+            Config::Instance()->skipSpoofing = false;
             return E_NOINTERFACE;
         }
 
@@ -353,7 +353,7 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         {
             LOG_ERROR("Can't create device: {0:x}", result);
             Config::Instance()->VulkanSkipHooks = false;
-            Config::Instance()->dxgiSkipSpoofing = false;
+            Config::Instance()->skipSpoofing = false;
             return result;
         }
     }
@@ -371,7 +371,7 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         {
             LOG_DEBUG("CreateCommandQueue result: {0:x}", result);
             Config::Instance()->VulkanSkipHooks = false;
-            Config::Instance()->dxgiSkipSpoofing = false;
+            Config::Instance()->skipSpoofing = false;
             return E_NOINTERFACE;
         }
     }
@@ -384,7 +384,7 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         {
             LOG_ERROR("CreateCommandAllocator error: {0:x}", result);
             Config::Instance()->VulkanSkipHooks = false;
-            Config::Instance()->dxgiSkipSpoofing = false;
+            Config::Instance()->skipSpoofing = false;
             return E_NOINTERFACE;
         }
     }
@@ -398,13 +398,13 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         {
             LOG_ERROR("CreateCommandList error: {0:x}", result);
             Config::Instance()->VulkanSkipHooks = false;
-            Config::Instance()->dxgiSkipSpoofing = false;
+            Config::Instance()->skipSpoofing = false;
             return E_NOINTERFACE;
         }
     }
 
     Config::Instance()->VulkanSkipHooks = false;
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
     return S_OK;
 }
 

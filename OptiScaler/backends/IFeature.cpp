@@ -80,6 +80,8 @@ void IFeature::GetRenderResolution(NVSDK_NGX_Parameter* InParameters, unsigned i
 	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, OutWidth) != NVSDK_NGX_Result_Success ||
 		InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, OutHeight) != NVSDK_NGX_Result_Success)
 	{
+		LOG_WARN("No subrect dimension info!");
+
 		unsigned int width;
 		unsigned int height;
 		unsigned int outWidth;

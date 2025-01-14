@@ -25,8 +25,16 @@
 // Enables logging of DLSS NV Parameters
 //#define DLSS_PARAM_DUMP
 
+// Enables async spdlog
+// Have issues when closing
+//#define LOG_ASYNC
+
+// Enables LOG_DEBUG_ONLY logs
+//#define DETAILED_DEBUG_LOGS
+
 inline HMODULE dllModule = nullptr;
 inline HMODULE skHandle = nullptr;
+inline HMODULE reshadeHandle = nullptr;
 inline DWORD processId;
 
 #define LOG_TRACE(msg, ...) \
@@ -34,6 +42,20 @@ inline DWORD processId;
 
 #define LOG_DEBUG(msg, ...) \
     spdlog::debug(__FUNCTION__ " " msg, ##__VA_ARGS__)
+
+#ifdef DETAILED_DEBUG_LOGS
+#define LOG_DEBUG_ONLY(msg, ...) \
+    spdlog::debug(__FUNCTION__ " " msg, ##__VA_ARGS__) 
+#else
+#define LOG_DEBUG_ONLY(msg, ...) 
+#endif
+
+#ifdef LOG_ASYNC
+#define LOG_DEBUG_ASYNC(msg, ...) \
+    spdlog::debug(__FUNCTION__ " " msg, ##__VA_ARGS__) 
+#else
+#define LOG_DEBUG_ASYNC(msg, ...) 
+#endif
 
 #define LOG_INFO(msg, ...) \
     spdlog::info(__FUNCTION__ " " msg, ##__VA_ARGS__)
@@ -48,7 +70,31 @@ inline DWORD processId;
     spdlog::trace(__FUNCTION__)
 
 #define LOG_FUNC_RESULT(result) \
-    spdlog::trace(__FUNCTION__ " result: {0:X}" , (UINT)result)
+    spdlog::trace(__FUNCTION__ " result: {0:X}" , (UINT64)result)
+
+typedef struct _feature_version
+{
+    unsigned int major;
+    unsigned int minor;
+    unsigned int patch;
+} feature_version;
+
+inline static bool isVersionOrBetter(const feature_version& current, const feature_version& required) {
+    if (current.major > required.major) {
+        return true;
+    }
+    if (current.major == required.major) {
+        if (current.minor > required.minor) {
+            return true;
+        }
+        if (current.minor == required.minor) {
+            if (current.patch >= required.patch) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
 inline static std::string wstring_to_string(const std::wstring& wide_str) 
 {

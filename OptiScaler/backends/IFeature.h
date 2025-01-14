@@ -1,4 +1,5 @@
 #pragma once
+#include "../pch.h"
 #include <nvsdk_ngx.h>
 #include <nvsdk_ngx_defs.h>
 
@@ -12,7 +13,6 @@ private:
 	int _featureFlags = 0;
 
 	NVSDK_NGX_PerfQuality_Value _perfQualityValue;
-
 
 protected:
 	NVSDK_NGX_Handle* _handle = nullptr;
@@ -44,13 +44,6 @@ protected:
 	virtual void SetInit(bool InValue) { _isInited = InValue; }
 
 public:
-	typedef struct _feature_version
-	{
-		unsigned int major;
-		unsigned int minor;
-		unsigned int patch;
-	} feature_version;
-
 	NVSDK_NGX_Handle* Handle() const { return _handle; };
 	static unsigned int GetNextHandleId() { return handleCounter++; }
 

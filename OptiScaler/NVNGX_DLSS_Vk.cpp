@@ -13,10 +13,11 @@
 #include "backends/fsr2_212/FSR2Feature_Vk_212.h"
 #include "backends/fsr31/FSR31Feature_Vk.h"
 
-#include "imgui/imgui_overlay_vk.h"
+#include "hooks/HooksVk.h"
 
 #include "NVNGX_Parameter.h"
 #include "NVNGX_Proxy.h"
+#include "DLSSG_Mod.h"
 
 VkInstance vkInstance;
 VkPhysicalDevice vkPD;
@@ -53,6 +54,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext(unsigned long long InAp
         }
     }
 
+    DLSSGMod::InitDLSSGMod_Vulkan();
+    DLSSGMod::VULKAN_Init_Ext(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, InSDKVersion, InFeatureInfo);
+
     return NVSDK_NGX_VULKAN_Init_Ext2(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, vkGetInstanceProcAddr, vkGetDeviceProcAddr, InSDKVersion, InFeatureInfo);
 }
 
@@ -78,6 +82,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InA
                 NVNGXProxy::SetVulkanInited(true);
         }
     }
+
+    DLSSGMod::InitDLSSGMod_Vulkan();
+    DLSSGMod::VULKAN_Init_Ext2(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InSDKVersion, InFeatureInfo);
 
     Config::Instance()->NVNGX_ApplicationId = InApplicationId;
     Config::Instance()->NVNGX_ApplicationDataPath = std::wstring(InApplicationDataPath);
@@ -164,11 +171,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InA
     queryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
     queryPoolInfo.queryCount = 2; // Start and End timestamps
 
-    vkCreateQueryPool(InDevice, &queryPoolInfo, nullptr, &ImGuiOverlayVk::queryPool);
+    vkCreateQueryPool(InDevice, &queryPoolInfo, nullptr, &HooksVk::queryPool);
 
     VkPhysicalDeviceProperties deviceProperties;
     vkGetPhysicalDeviceProperties(InPD, &deviceProperties);
-    ImGuiOverlayVk::timeStampPeriod = deviceProperties.limits.timestampPeriod;
+    HooksVk::timeStampPeriod = deviceProperties.limits.timestampPeriod;
 
     return NVSDK_NGX_Result_Success;
 }
@@ -229,8 +236,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init(unsigned long long InApplic
         }
     }
 
-    return NVSDK_NGX_VULKAN_Init_Ext2(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InSDKVersion, InFeatureInfo);
+    DLSSGMod::InitDLSSGMod_Vulkan();
+    DLSSGMod::VULKAN_Init(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InFeatureInfo, InSDKVersion);
 
+    return NVSDK_NGX_VULKAN_Init_Ext2(InApplicationId, InApplicationDataPath, InInstance, InPD, InDevice, InGIPA, InGDPA, InSDKVersion, InFeatureInfo);
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
@@ -299,42 +308,37 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequi
         }
     }
 
-    if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling || FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_FrameGeneration)
+    if ((FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling || FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_FrameGeneration) && OutExtensionCount != nullptr)
     {
-        if (NVNGXProxy::NVNGXModule() != nullptr)
+        if (OutExtensionProperties == nullptr)
         {
-            LOG_INFO("returning no extensions are needed");
-            *OutExtensionCount = 0;
+            if (Config::Instance()->VulkanExtensionSpoofing.value_or(false))
+            {
+                LOG_INFO("returning 3 extensions are needed");
+                *OutExtensionCount = 3;
+            }
+            else
+            {
+                LOG_INFO("returning no extensions are needed");
+                *OutExtensionCount = 0;
+            }
         }
+        else if (*OutExtensionCount == 3 && Config::Instance()->VulkanExtensionSpoofing.value_or(false))
+        {
+            LOG_INFO("returning extension infos");
 
-        // Only Nvidia hardware should reach here, so in any case returning known extensions for DLSS
-        //if (OutExtensionProperties == nullptr)
-        //{
+            std::memset((*OutExtensionProperties)[0].extensionName, 0, sizeof(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME));
+            std::strcpy((*OutExtensionProperties)[0].extensionName, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+            (*OutExtensionProperties)[0].specVersion = VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_SPEC_VERSION;
 
-        //    if (NVNGXProxy::NVNGXModule() != nullptr)
-        //    {
-        //        LOG_INFO("returning 3 extensions are needed");
-        //        *OutExtensionCount = 3;
-        //    }
-        //    else
-        //    {
-        //        LOG_INFO("returning no extensions are needed");
-        //        *OutExtensionCount = 0;
-        //    }
-        //}
-        //else if (*OutExtensionCount == 3)
-        //{
-        //    LOG_INFO("returning extension infos");
+            std::memset((*OutExtensionProperties)[1].extensionName, 0, sizeof(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME));
+            std::strcpy((*OutExtensionProperties)[1].extensionName, VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
+            (*OutExtensionProperties)[1].specVersion = VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_SPEC_VERSION;
 
-        //    strncpy_s(OutExtensionProperties[0]->extensionName, (VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME + '\0'), 39);
-        //    OutExtensionProperties[0]->specVersion = VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_SPEC_VERSION;
-
-        //    strncpy_s(OutExtensionProperties[1]->extensionName, (VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME + '\0'), 36);
-        //    OutExtensionProperties[1]->specVersion = VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_SPEC_VERSION;
-
-        //    strncpy_s(OutExtensionProperties[2]->extensionName, (VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME + '\0'), 39);
-        //    OutExtensionProperties[2]->specVersion = VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_SPEC_VERSION;
-        //}
+            std::memset((*OutExtensionProperties)[2].extensionName, 0, sizeof(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME));
+            std::strcpy((*OutExtensionProperties)[2].extensionName, VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
+            (*OutExtensionProperties)[2].specVersion = VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_SPEC_VERSION;
+        }
 
         return NVSDK_NGX_Result_Success;
     }
@@ -361,46 +365,41 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequire
         }
     }
 
-    if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling || FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_FrameGeneration)
+    if ((FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling || FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_FrameGeneration) && OutExtensionCount != nullptr)
     {
         if (OutExtensionProperties == nullptr)
         {
-            LOG_INFO("returning no extensions are needed!");
-            *OutExtensionCount = 0;
+            if (Config::Instance()->VulkanExtensionSpoofing.value_or(false))
+            {
+                LOG_INFO("returning 4 extensions are needed!");
+                *OutExtensionCount = 4;
+            }
+            else
+            {
+                LOG_INFO("returning no extensions are needed!");
+                *OutExtensionCount = 0;
+            }
         }
+        else if (*OutExtensionCount == 4 && Config::Instance()->VulkanExtensionSpoofing.value_or(false))
+        {
+            LOG_INFO("returning extension infos");
 
-        // Only Nvidia hardware should reach here, so in any case returning known extensions for DLSS
-        //if (OutExtensionProperties == nullptr)
-        //{
+            std::memset((*OutExtensionProperties)[0].extensionName, 0, sizeof(VK_NVX_BINARY_IMPORT_EXTENSION_NAME));
+            std::strcpy((*OutExtensionProperties)[0].extensionName, VK_NVX_BINARY_IMPORT_EXTENSION_NAME);
+            (*OutExtensionProperties)[0].specVersion = VK_NVX_BINARY_IMPORT_SPEC_VERSION;
 
-        //    if (NVNGXProxy::NVNGXModule() != nullptr)
-        //    {
+            std::memset((*OutExtensionProperties)[1].extensionName, 0, sizeof(VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME));
+            std::strcpy((*OutExtensionProperties)[1].extensionName, VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME);
+            (*OutExtensionProperties)[1].specVersion = VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION;
 
-        //        LOG_INFO("returning 4 extensions are needed!");
-        //        *OutExtensionCount = 4;
-        //    }
-        //    else
-        //    {
-        //        LOG_INFO("returning no extensions are needed!");
-        //        *OutExtensionCount = 0;
-        //    }
-        //}
-        //else if (*OutExtensionCount == 4)
-        //{
-        //    LOG_INFO("returning extension infos");
+            std::memset((*OutExtensionProperties)[2].extensionName, 0, sizeof(VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME));
+            std::strcpy((*OutExtensionProperties)[2].extensionName, VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+            (*OutExtensionProperties)[2].specVersion = VK_EXT_BUFFER_DEVICE_ADDRESS_SPEC_VERSION;
 
-        //    strncpy_s(OutExtensionProperties[0]->extensionName, (VK_NVX_BINARY_IMPORT_EXTENSION_NAME + '\0'), 21);
-        //    OutExtensionProperties[0]->specVersion = VK_NVX_BINARY_IMPORT_SPEC_VERSION;
-
-        //    strncpy_s(OutExtensionProperties[1]->extensionName, (VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME + '\0'), 25);
-        //    OutExtensionProperties[1]->specVersion = VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION;
-
-        //    strncpy_s(OutExtensionProperties[2]->extensionName, (VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME + '\0'), 29);
-        //    OutExtensionProperties[2]->specVersion = VK_EXT_BUFFER_DEVICE_ADDRESS_SPEC_VERSION;
-
-        //    strncpy_s(OutExtensionProperties[3]->extensionName, (VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME + '\0'), 23);
-        //    OutExtensionProperties[3]->specVersion = VK_KHR_PUSH_DESCRIPTOR_SPEC_VERSION;
-        //}
+            std::memset((*OutExtensionProperties)[3].extensionName, 0, sizeof(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME));
+            std::strcpy((*OutExtensionProperties)[3].extensionName, VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
+            (*OutExtensionProperties)[3].specVersion = VK_KHR_PUSH_DESCRIPTOR_SPEC_VERSION;
+        }
 
         return NVSDK_NGX_Result_Success;
     }
@@ -433,7 +432,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureRequirements(VkInstanc
 {
     LOG_DEBUG("for FeatureID: {0}", (int)FeatureDiscoveryInfo->FeatureID);
 
-    if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling)
+    DLSSGMod::InitDLSSGMod_Vulkan();
+
+    if (FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling || (DLSSGMod::isVulkanAvailable() && FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_FrameGeneration))
     {
         if (OutSupported == nullptr)
             OutSupported = new NVSDK_NGX_FeatureRequirement();
@@ -500,6 +501,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_PopulateParameters_Impl(NVSDK_NG
 
     InitNGXParameters(InParameters);
 
+    DLSSGMod::VULKAN_PopulateParameters_Impl(InParameters);
+
     return NVSDK_NGX_Result_Success;
 }
 
@@ -527,6 +530,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_DestroyParameters(NVSDK_NGX_Para
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetScratchBufferSize(NVSDK_NGX_Feature InFeatureId, const NVSDK_NGX_Parameter* InParameters, size_t* OutSizeInBytes)
 {
+    if (DLSSGMod::isVulkanAvailable() && InFeatureId == NVSDK_NGX_Feature_FrameGeneration) {
+        return DLSSGMod::VULKAN_GetScratchBufferSize(InFeatureId, InParameters, OutSizeInBytes);
+    }
+
     LOG_WARN("-> 52428800");
 
     *OutSizeInBytes = 52428800;
@@ -535,7 +542,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetScratchBufferSize(NVSDK_NGX_F
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice, VkCommandBuffer InCmdList, NVSDK_NGX_Feature InFeatureID, NVSDK_NGX_Parameter* InParameters, NVSDK_NGX_Handle** OutHandle)
 {
-    if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
+    if (DLSSGMod::isVulkanAvailable() && InFeatureID == NVSDK_NGX_Feature_FrameGeneration)
+    {
+        auto result = DLSSGMod::VULKAN_CreateFeature1(InDevice, InCmdList, InFeatureID, InParameters, OutHandle);
+        LOG_INFO("Creating new modded DLSSG feature with HandleId: {0}", (*OutHandle)->Id);
+        return result;
+    }
+    else if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
     {
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::InitVulkan(vkInstance, vkPD, vkDevice, vkGIPA, vkGDPA) && NVNGXProxy::VULKAN_CreateFeature1() != nullptr)
         {
@@ -676,7 +689,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature(VkCommandBuffer In
 {
     LOG_FUNC();
 
-    if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
+    if (DLSSGMod::isVulkanAvailable() && InFeatureID == NVSDK_NGX_Feature_FrameGeneration)
+    {
+        auto result = DLSSGMod::VULKAN_CreateFeature(InCmdBuffer, InFeatureID, InParameters, OutHandle);
+        LOG_INFO("Creating new modded DLSSG feature with HandleId: {0}", (*OutHandle)->Id);
+        return result;
+    }
+    else if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
     {
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::InitVulkan(vkInstance, vkPD, vkDevice, vkGIPA, vkGDPA) && NVNGXProxy::VULKAN_CreateFeature() != nullptr)
         {
@@ -711,6 +730,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
             return NVSDK_NGX_Result_FAIL_FeatureNotFound;
         }
     }
+    else if (handleId >= DLSSG_MOD_ID_OFFSET)
+    {
+        LOG_INFO("VULKAN_ReleaseFeature modded DLSSG with HandleId: {0}", handleId);
+        return DLSSGMod::VULKAN_ReleaseFeature(InHandle);
+    }
 
     if (!shutdown)
         LOG_INFO("releasing feature with id {0}", handleId);
@@ -736,7 +760,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
     return NVSDK_NGX_Result_Success;
 }
 
-NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer InCmdBuffer, const NVSDK_NGX_Handle* InFeatureHandle, NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
+NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer InCmdList, const NVSDK_NGX_Handle* InFeatureHandle, NVSDK_NGX_Parameter* InParameters, PFN_NVSDK_NGX_ProgressCallback InCallback)
 {
     if (InFeatureHandle == nullptr)
     {
@@ -748,9 +772,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
         LOG_DEBUG("Handle: {0}", InFeatureHandle->Id);
     }
 
-    if (InCmdBuffer == nullptr)
+    if (InCmdList == nullptr)
     {
-        LOG_ERROR("InCmdBuffer is null!!!");
+        LOG_ERROR("InCmdList is null!!!");
         return NVSDK_NGX_Result_Fail;
     }
 
@@ -760,7 +784,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
         if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::VULKAN_EvaluateFeature() != nullptr)
         {
             LOG_DEBUG("VULKAN_EvaluateFeature for ({0})", handleId);
-            auto result = NVNGXProxy::VULKAN_EvaluateFeature()(InCmdBuffer, InFeatureHandle, InParameters, InCallback);
+            auto result = NVNGXProxy::VULKAN_EvaluateFeature()(InCmdList, InFeatureHandle, InParameters, InCallback);
             LOG_INFO("VULKAN_EvaluateFeature result for ({0}): {1:X}", handleId, (UINT)result);
             return result;
         }
@@ -768,6 +792,46 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
         {
             return NVSDK_NGX_Result_FAIL_FeatureNotFound;
         }
+    }
+    else if (handleId >= DLSSG_MOD_ID_OFFSET)
+    {
+        // Workaround mostly for final fantasy xvi, keeping it from DX12
+        uint32_t depthInverted = 0;
+        float cameraNear = 0;
+        float cameraFar = 0;
+        InParameters->Get("DLSSG.DepthInverted", &depthInverted);
+        InParameters->Get("DLSSG.CameraNear", &cameraNear);
+        InParameters->Get("DLSSG.CameraFar", &cameraFar);
+
+        if (cameraNear == 0) {
+            if (depthInverted)
+                cameraNear = 100000.0f;
+            else
+                cameraNear = 0.1f;
+
+            InParameters->Set("DLSSG.CameraNear", cameraNear);
+        }
+
+        if (cameraFar == 0) {
+            if (depthInverted)
+                cameraFar = 0.1f;
+            else
+                cameraFar = 100000.0f;
+
+            InParameters->Set("DLSSG.CameraFar", cameraFar);
+        }
+        else if (cameraFar == INFINITY) {
+            cameraFar = 10000;
+            InParameters->Set("DLSSG.CameraFar", cameraFar);
+        }
+
+        // Workaround for a bug in Nukem's mod, keeping it from DX12
+        if (uint32_t LowresMvec = 0; InParameters->Get("DLSSG.run_lowres_mvec_pass", &LowresMvec) == NVSDK_NGX_Result_Success && LowresMvec == 1) {
+            InParameters->Set("DLSSG.MVecsSubrectWidth", 0U);
+            InParameters->Set("DLSSG.MVecsSubrectHeight", 0U);
+        }
+
+        return DLSSGMod::VULKAN_EvaluateFeature(InCmdList, InFeatureHandle, InParameters, InCallback);
     }
 
     evalCounter++;
@@ -904,7 +968,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
         if (changeBackendCounter == 3)
         {
             // next frame create context
-            auto initResult = VkContexts[handleId]->Init(vkInstance, vkPD, vkDevice, InCmdBuffer, vkGIPA, vkGDPA, createParams);
+            auto initResult = VkContexts[handleId]->Init(vkInstance, vkPD, vkDevice, InCmdList, vkGIPA, vkGDPA, createParams);
 
             changeBackendCounter = 0;
 
@@ -961,13 +1025,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     Config::Instance()->RenderMenu = true;
 
     // Record the first timestamp (before FSR2)
-    vkCmdWriteTimestamp(InCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ImGuiOverlayVk::queryPool, 0);
+    vkCmdWriteTimestamp(InCmdList, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, HooksVk::queryPool, 0);
 
-    auto upscaleResult = deviceContext->Evaluate(InCmdBuffer, InParameters);
+    auto upscaleResult = deviceContext->Evaluate(InCmdList, InParameters);
 
     // Record the second timestamp (after FSR2)
-    vkCmdWriteTimestamp(InCmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, ImGuiOverlayVk::queryPool, 1);
-    ImGuiOverlayVk::vkUpscaleTrig = true;
+    vkCmdWriteTimestamp(InCmdList, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, HooksVk::queryPool, 1);
+    HooksVk::vkUpscaleTrig = true;
 
     return upscaleResult ? NVSDK_NGX_Result_Success : NVSDK_NGX_Result_Fail;
 }
@@ -999,6 +1063,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
     // Disabled for now to check if it cause any issues
     //ImGuiOverlayVk::UnHookVk();
 
+    DLSSGMod::VULKAN_Shutdown();
+
     shutdown = false;
 
     return NVSDK_NGX_Result_Success;
@@ -1013,6 +1079,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown1(VkDevice InDevice)
         auto result = NVNGXProxy::VULKAN_Shutdown1()(InDevice);
         NVNGXProxy::SetVulkanInited(false);
     }
+
+    DLSSGMod::VULKAN_Shutdown1(InDevice);
+
+    shutdown = false;
 
     return NVSDK_NGX_VULKAN_Shutdown();
 }

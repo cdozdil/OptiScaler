@@ -281,13 +281,13 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
 
     if (IsDepthInverted())
     {
-        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.01f);
-        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(0.99f);
+        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.1f);
+        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(100000.0f);
     }
     else
     {
-        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(0.99f);
-        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.01f);
+        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(100000.0f);
+        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.1f);
     }
 
     if (Config::Instance()->FsrVerticalFov.has_value())
@@ -510,7 +510,7 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
 
     const size_t scratchBufferSize = Fsr212::ffxFsr2GetScratchMemorySizeDX12_212();
     void* scratchBuffer = calloc(scratchBufferSize, 1);
@@ -645,7 +645,9 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
     LOG_DEBUG("ffxFsr2ContextCreate!");
 
+    Config::Instance()->SkipHeapCapture = true;
     auto ret = Fsr212::ffxFsr2ContextCreate212(&_context, &_contextDesc);
+    Config::Instance()->SkipHeapCapture = false;
 
     if (ret != Fsr212::FFX_OK)
     {
@@ -656,7 +658,7 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     LOG_TRACE("sleeping after ffxFsr2ContextCreate creation for 500ms");
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     SetInit(true);
 

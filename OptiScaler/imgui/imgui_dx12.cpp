@@ -9,259 +9,264 @@ long frameCounter = 0;
 
 bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outTexture)
 {
-	if (Config::Instance()->OverlayMenu.value_or(true))
-		return false;
+    if (Config::Instance()->OverlayMenu.value_or(true))
+        return false;
 
-	if (pCmdList == nullptr || outTexture == nullptr)
-		return false;
+    if (pCmdList == nullptr || outTexture == nullptr)
+        return false;
 
-	frameCounter++;
+    frameCounter++;
 
-	if (!IsVisible())
-		return true;
+    //if (!IsVisible())
+    //	return true;
 
-	auto outDesc = outTexture->GetDesc();
+    auto outDesc = outTexture->GetDesc();
 
-	CreateRenderTarget(outDesc);
+    CreateRenderTarget(outDesc);
 
-	if (!_dx12Init && ImGui::GetIO().BackendRendererUserData == nullptr)
-	{
-		_dx12Init = ImGui_ImplDX12_Init(_device, 2, outDesc.Format, _srvDescHeap,
-			_srvDescHeap->GetCPUDescriptorHandleForHeapStart(), _srvDescHeap->GetGPUDescriptorHandleForHeapStart());
-	}
+    if (!_dx12Init && ImGui::GetIO().BackendRendererUserData == nullptr)
+    {
+        _dx12Init = ImGui_ImplDX12_Init(_device, 2, outDesc.Format, _srvDescHeap,
+                                        _srvDescHeap->GetCPUDescriptorHandleForHeapStart(), _srvDescHeap->GetGPUDescriptorHandleForHeapStart());
+    }
 
-	if (!_dx12Init)
-		return false;
+    if (!_dx12Init)
+        return false;
 
-	frameCounter++;
+    frameCounter++;
 
-	auto backbuf = frameCounter % 2;
+    auto backbuf = frameCounter % 2;
 
-	D3D12_RENDER_TARGET_VIEW_DESC rtDesc = { };
-	rtDesc.Format = outDesc.Format;
-	rtDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+    D3D12_RENDER_TARGET_VIEW_DESC rtDesc = { };
+    rtDesc.Format = outDesc.Format;
+    rtDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
-	if ((outDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) > 0)
-	{
-		D3D12_RESOURCE_BARRIER outBarrier = { };
-		outBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		outBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		outBarrier.Transition.pResource = outTexture;
-		outBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-		outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-		outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		pCmdList->ResourceBarrier(1, &outBarrier);
+    if ((outDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) > 0)
+    {
+        D3D12_RESOURCE_BARRIER outBarrier = { };
+        outBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        outBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+        outBarrier.Transition.pResource = outTexture;
+        outBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+        outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        pCmdList->ResourceBarrier(1, &outBarrier);
 
-		// Create RTV for out
-		pCmdList->SetDescriptorHeaps(1, &_srvDescHeap);
+        // Create RTV for out
+        pCmdList->SetDescriptorHeaps(1, &_srvDescHeap);
 
-		_device->CreateRenderTargetView(outTexture, &rtDesc, _renderTargetDescriptor[backbuf]);
-		pCmdList->OMSetRenderTargets(1, &_renderTargetDescriptor[backbuf], FALSE, NULL);
+        _device->CreateRenderTargetView(outTexture, &rtDesc, _renderTargetDescriptor[backbuf]);
+        pCmdList->OMSetRenderTargets(1, &_renderTargetDescriptor[backbuf], FALSE, NULL);
 
-		ImGui_ImplDX12_NewFrame();
-		ImGui_ImplWin32_NewFrame();
+        ImGui_ImplDX12_NewFrame();
+        ImGui_ImplWin32_NewFrame();
 
-		// Render
-		ImguiDxBase::RenderMenu();
-		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
+        // Render
+        ImguiDxBase::RenderMenu();
+        ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
 
-		outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-		pCmdList->ResourceBarrier(1, &outBarrier);
+        outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+        pCmdList->ResourceBarrier(1, &outBarrier);
 
-		return true;
-	}
+        return true;
+    }
 
-	D3D12_RESOURCE_BARRIER outBarrier = { };
-	outBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	outBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	outBarrier.Transition.pResource = outTexture;
-	outBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-	outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
+    D3D12_RESOURCE_BARRIER outBarrier = { };
+    outBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    outBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    outBarrier.Transition.pResource = outTexture;
+    outBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+    outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
 
-	D3D12_RESOURCE_BARRIER bufferBarrier = { };
-	bufferBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	bufferBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	bufferBarrier.Transition.pResource = _renderTargetResource[backbuf];
-	bufferBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+    D3D12_RESOURCE_BARRIER bufferBarrier = { };
+    bufferBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    bufferBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    bufferBarrier.Transition.pResource = _renderTargetResource[backbuf];
+    bufferBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+    bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
 
-	D3D12_RESOURCE_BARRIER barriers[] = { bufferBarrier, outBarrier };
-	pCmdList->ResourceBarrier(2, barriers);
+    D3D12_RESOURCE_BARRIER barriers[] = { bufferBarrier, outBarrier };
+    pCmdList->ResourceBarrier(2, barriers);
 
-	// Copy out to buffer
-	pCmdList->CopyResource(_renderTargetResource[backbuf], outTexture);
+    // Copy out to buffer
+    pCmdList->CopyResource(_renderTargetResource[backbuf], outTexture);
 
-	// Set as render target
-	bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-	bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	pCmdList->ResourceBarrier(1, &bufferBarrier);
+    // Set as render target
+    bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+    bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+    pCmdList->ResourceBarrier(1, &bufferBarrier);
 
-	// Create RTV for buffer
-	pCmdList->SetDescriptorHeaps(1, &_srvDescHeap);
+    // Create RTV for buffer
+    pCmdList->SetDescriptorHeaps(1, &_srvDescHeap);
 
-	_device->CreateRenderTargetView(_renderTargetResource[backbuf], &rtDesc, _renderTargetDescriptor[backbuf]);
-	pCmdList->OMSetRenderTargets(1, &_renderTargetDescriptor[backbuf], FALSE, nullptr);
+    _device->CreateRenderTargetView(_renderTargetResource[backbuf], &rtDesc, _renderTargetDescriptor[backbuf]);
+    pCmdList->OMSetRenderTargets(1, &_renderTargetDescriptor[backbuf], FALSE, nullptr);
 
-	ImGui_ImplDX12_NewFrame();
-	ImGui_ImplWin32_NewFrame();
+    ImGui_ImplDX12_NewFrame();
+    ImGui_ImplWin32_NewFrame();
 
-	// Render to buffer
-	ImguiDxBase::RenderMenu();
+    // Render to buffer
+    if (ImguiDxBase::RenderMenu())
+    {
+        ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
 
-	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
+        outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
+        outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
 
-	outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
-	outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+        bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
+        pCmdList->ResourceBarrier(2, barriers);
 
-	bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
-	pCmdList->ResourceBarrier(2, barriers);
+        // Copy back buffer to out
+        pCmdList->CopyResource(outTexture, _renderTargetResource[backbuf]);
 
-	// Copy back buffer to out
-	pCmdList->CopyResource(outTexture, _renderTargetResource[backbuf]);
+        // fix states
+        bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
+        bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
-	// fix states
-	bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
-	bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+        outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+        pCmdList->ResourceBarrier(2, barriers);
+    }
 
-	outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-	outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-	pCmdList->ResourceBarrier(2, barriers);
-
-	return true;
+    return true;
 }
 
 Imgui_Dx12::Imgui_Dx12(HWND handle, ID3D12Device* pDevice) : ImguiDxBase(handle), _device(pDevice)
 {
-	if (Config::Instance()->OverlayMenu.value_or(true))
-		return;
+    if (Config::Instance()->OverlayMenu.value_or(true))
+        return;
 
-	D3D12_DESCRIPTOR_HEAP_DESC rtvDesc = { };
-	rtvDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	rtvDesc.NumDescriptors = 2;
-	rtvDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	rtvDesc.NodeMask = 1;
+    D3D12_DESCRIPTOR_HEAP_DESC rtvDesc = { };
+    rtvDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+    rtvDesc.NumDescriptors = 2;
+    rtvDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    rtvDesc.NodeMask = 1;
 
-	if (pDevice->CreateDescriptorHeap(&rtvDesc, IID_PPV_ARGS(&_rtvDescHeap)) != S_OK)
-		return;
+    if (pDevice->CreateDescriptorHeap(&rtvDesc, IID_PPV_ARGS(&_rtvDescHeap)) != S_OK)
+        return;
 
-	_rtvDescHeap->SetName(L"Imgui_Dx12_rtvHeap");
+    _rtvDescHeap->SetName(L"Imgui_Dx12_rtvHeap");
 
-	SIZE_T rtvDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = _rtvDescHeap->GetCPUDescriptorHandleForHeapStart();
+    SIZE_T rtvDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = _rtvDescHeap->GetCPUDescriptorHandleForHeapStart();
 
-	for (UINT i = 0; i < 2; ++i) {
-		_renderTargetDescriptor[i] = rtvHandle;
-		rtvHandle.ptr += rtvDescriptorSize;
-	}
+    for (UINT i = 0; i < 2; ++i) {
+        _renderTargetDescriptor[i] = rtvHandle;
+        rtvHandle.ptr += rtvDescriptorSize;
+    }
 
-	D3D12_DESCRIPTOR_HEAP_DESC srvDesc = { };
-	srvDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	srvDesc.NumDescriptors = 1;
-	srvDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+    D3D12_DESCRIPTOR_HEAP_DESC srvDesc = { };
+    srvDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    srvDesc.NumDescriptors = 1;
+    srvDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
-	if (pDevice->CreateDescriptorHeap(&srvDesc, IID_PPV_ARGS(&_srvDescHeap)) != S_OK)
-		return;
+    Config::Instance()->SkipHeapCapture = true;
 
-	Dx12Ready();
+    if (pDevice->CreateDescriptorHeap(&srvDesc, IID_PPV_ARGS(&_srvDescHeap)) != S_OK)
+        return;
 
-	_srvDescHeap->SetName(L"Imgui_Dx12_srvDescHeap");
+    Config::Instance()->SkipHeapCapture = false;
+
+    Dx12Ready();
+
+    _srvDescHeap->SetName(L"Imgui_Dx12_srvDescHeap");
 }
 
 Imgui_Dx12::~Imgui_Dx12()
 {
-	if (!_dx12Init)
-		return;
+    if (!_dx12Init)
+        return;
 
-	ID3D12Fence* d3d12Fence;
-	_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
-	d3d12Fence->Signal(999);
+    ID3D12Fence* d3d12Fence;
+    _device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
+    d3d12Fence->Signal(999);
 
-	auto fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    auto fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
-	if (d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
-	{
-		WaitForSingleObject(fenceEvent, INFINITE);
-		CloseHandle(fenceEvent);
-	}
+    if (d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
+    {
+        WaitForSingleObject(fenceEvent, INFINITE);
+        CloseHandle(fenceEvent);
+    }
 
-	d3d12Fence->Release();
+    d3d12Fence->Release();
 
-	ImGui_ImplDX12_Shutdown();
+    ImGui_ImplDX12_Shutdown();
 
-	if (_rtvDescHeap)
-	{
-		_rtvDescHeap->Release();
-		_rtvDescHeap = nullptr;
-	}
+    if (_rtvDescHeap)
+    {
+        _rtvDescHeap->Release();
+        _rtvDescHeap = nullptr;
+    }
 
-	if (_srvDescHeap)
-	{
-		_srvDescHeap->Release();
-		_srvDescHeap = nullptr;
-	}
+    if (_srvDescHeap)
+    {
+        _srvDescHeap->Release();
+        _srvDescHeap = nullptr;
+    }
 
-	if (_renderTargetResource[0])
-	{
-		_renderTargetResource[0]->Release();
-		_renderTargetResource[0] = nullptr;
-	}
+    if (_renderTargetResource[0])
+    {
+        _renderTargetResource[0]->Release();
+        _renderTargetResource[0] = nullptr;
+    }
 
-	if (_renderTargetResource[1])
-	{
-		_renderTargetResource[1]->Release();
-		_renderTargetResource[1] = nullptr;
-	}
+    if (_renderTargetResource[1])
+    {
+        _renderTargetResource[1]->Release();
+        _renderTargetResource[1] = nullptr;
+    }
 }
 
 void Imgui_Dx12::CreateRenderTarget(const D3D12_RESOURCE_DESC& InDesc)
 {
-	if (_renderTargetResource[0] != nullptr)
-	{
-		auto rtDesc = _renderTargetResource[0]->GetDesc();
+    if (_renderTargetResource[0] != nullptr)
+    {
+        auto rtDesc = _renderTargetResource[0]->GetDesc();
 
-		if (InDesc.Width != rtDesc.Width || InDesc.Height != rtDesc.Height || InDesc.Format != rtDesc.Format)
-		{
-			_renderTargetResource[0]->Release();
-			_renderTargetResource[0] = nullptr;
-			_renderTargetResource[1]->Release();
-			_renderTargetResource[1] = nullptr;
-		}
-		else
-			return;
-	}
+        if (InDesc.Width != rtDesc.Width || InDesc.Height != rtDesc.Height || InDesc.Format != rtDesc.Format)
+        {
+            _renderTargetResource[0]->Release();
+            _renderTargetResource[0] = nullptr;
+            _renderTargetResource[1]->Release();
+            _renderTargetResource[1] = nullptr;
+        }
+        else
+            return;
+    }
 
-	for (UINT i = 0; i < 2; ++i) 
-	{
-		D3D12_RESOURCE_DESC desc = {};
-		desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-		desc.Width = InDesc.Width;
-		desc.Height = InDesc.Height;
-		desc.DepthOrArraySize = 1;
-		desc.MipLevels = 1;
-		desc.Format = TranslateTypelessFormats(InDesc.Format);
-		desc.SampleDesc.Count = 1;
-		desc.SampleDesc.Quality = 0;
-		desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-		desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+    for (UINT i = 0; i < 2; ++i)
+    {
+        D3D12_RESOURCE_DESC desc = {};
+        desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+        desc.Width = InDesc.Width;
+        desc.Height = InDesc.Height;
+        desc.DepthOrArraySize = 1;
+        desc.MipLevels = 1;
+        desc.Format = TranslateTypelessFormats(InDesc.Format);
+        desc.SampleDesc.Count = 1;
+        desc.SampleDesc.Quality = 0;
+        desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+        desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
-		D3D12_HEAP_PROPERTIES heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+        D3D12_HEAP_PROPERTIES heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 
-		ID3D12Resource* renderTarget;
-		auto result = _device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_RENDER_TARGET, nullptr, IID_PPV_ARGS(&renderTarget));
+        ID3D12Resource* renderTarget;
+        auto result = _device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_RENDER_TARGET, nullptr, IID_PPV_ARGS(&renderTarget));
 
-		if (result == S_OK) {
-			renderTarget->SetName(L"Imgui_Dx12_renderTarget");
+        if (result == S_OK) {
+            renderTarget->SetName(L"Imgui_Dx12_renderTarget");
 
-			D3D12_RENDER_TARGET_VIEW_DESC rtDesc = { };
-			rtDesc.Format = InDesc.Format;
-			rtDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+            D3D12_RENDER_TARGET_VIEW_DESC rtDesc = { };
+            rtDesc.Format = InDesc.Format;
+            rtDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
-			_device->CreateRenderTargetView(renderTarget, &rtDesc, _renderTargetDescriptor[i]);
-			_renderTargetResource[i] = renderTarget;
-		}
-	}
+            _device->CreateRenderTargetView(renderTarget, &rtDesc, _renderTargetDescriptor[i]);
+            _renderTargetResource[i] = renderTarget;
+        }
+    }
 }

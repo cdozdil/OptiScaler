@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../pch.h"
+#include "../Util.h"
 #include "../Config.h"
 #include "../resource.h"
 #include "../Logger.h"
@@ -20,7 +21,7 @@ private:
     inline static WNDPROC _oWndProc = nullptr;
     inline static bool _isVisible = false;
     inline static bool _isInited = false;
-    inline static bool _isResetRequested = false;
+    //inline static bool _isResetRequested = false;
 
     // mipmap calculations
     inline static bool _showMipmapCalcWindow = false;
@@ -34,6 +35,9 @@ private:
     // dlss enabler
     inline static int _deLimitFps = 500;
 
+    // reflex
+    inline static float _limitFps = INFINITY;
+
     // fsr3x
     inline static int _fsr3xIndex = -1;
 
@@ -41,15 +45,20 @@ private:
     inline static float _ssRatio = 0.0f;
     inline static bool _ssEnabled = false;
     inline static bool _ssUseFsr = false;
+    inline static uint32_t _ssDownsampler = 0;
 
     // ui scale
-    inline static int _selectedScale = 0;
+    inline static int _selectedScale = 5;
     inline static bool _imguiSizeUpdate = true;
 
     // overlay states
     inline static bool _dx11Ready = false;
     inline static bool _dx12Ready = false;
     inline static bool _vulkanReady = false;
+
+    // font
+    inline static ImFont* _optiFont = nullptr;
+    inline static ImFont* _scaledOptiFont = nullptr;
 
     inline static void ShowTooltip(const char* tip);
 
@@ -58,11 +67,12 @@ private:
 #pragma region "Hooks & WndProc"
 
     // for hooking
-    typedef BOOL(WINAPI* PFN_SetCursorPos)(int x, int y);
-    typedef BOOL(WINAPI* PFN_ClipCursor)(const RECT* lpRect);
-    typedef UINT(WINAPI* PFN_SendInput)(UINT cInputs, LPINPUT pInputs, int cbSize);
-    typedef void(WINAPI* PFN_mouse_event)(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo);
-    typedef LRESULT(WINAPI* PFN_SendMessageW)(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
+    typedef BOOL(*PFN_SetCursorPos)(int x, int y);
+    typedef BOOL(*PFN_ClipCursor)(const RECT* lpRect);
+    typedef UINT(*PFN_SendInput)(UINT cInputs, LPINPUT pInputs, int cbSize);
+    typedef void(*PFN_mouse_event)(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo);
+    typedef BOOL(*PFN_GetCursorPos)(LPPOINT lpPoint);
+    typedef LRESULT(*PFN_SendMessageW)(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
     inline static PFN_SetCursorPos pfn_SetPhysicalCursorPos = nullptr;
     inline static PFN_SetCursorPos pfn_SetCursorPos = nullptr;
@@ -70,6 +80,7 @@ private:
     inline static PFN_mouse_event pfn_mouse_event = nullptr;
     inline static PFN_SendInput pfn_SendInput = nullptr;
     inline static PFN_SendMessageW pfn_SendMessageW = nullptr;
+    inline static PFN_GetCursorPos pfn_GetCursorPos = nullptr;
 
     inline static bool pfn_SetPhysicalCursorPos_hooked = false;
     inline static bool pfn_SetCursorPos_hooked = false;
@@ -78,23 +89,19 @@ private:
     inline static bool pfn_SendInput_hooked = false;
     inline static bool pfn_SendMessageW_hooked = false;
 
-    inline static RECT _cursorLimit{};
-    inline static LPRECT _lastCursorLimit = nullptr;
+    inline static RECT _cursorLimit = {};
+    inline static POINT _lastPoint = {};
 
-    static LRESULT WINAPI hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
+    static LRESULT hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
-    static BOOL WINAPI hkSetPhysicalCursorPos(int x, int y);
-
-    static BOOL WINAPI hkSetCursorPos(int x, int y);
-
-    static BOOL WINAPI hkClipCursor(RECT* lpRect);
-
-    static void WINAPI hkmouse_event(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo);
-
-    static UINT WINAPI hkSendInput(UINT cInputs, LPINPUT pInputs, int cbSize);
+    static BOOL hkSetPhysicalCursorPos(int x, int y);
+    static BOOL hkSetCursorPos(int x, int y);
+    static BOOL hkClipCursor(RECT* lpRect);
+    static void hkmouse_event(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo);
+    static UINT hkSendInput(UINT cInputs, LPINPUT pInputs, int cbSize);
+    static BOOL hkGetPhysicalCursorPos(LPPOINT lpPoint);
 
     static void AttachHooks();
-
     static void DetachHooks();
 
     inline static ImGuiKey ImGui_ImplWin32_VirtualKeyToImGuiKey(WPARAM wParam);
@@ -120,7 +127,7 @@ private:
 
     static void AddRenderPreset(std::string name, std::optional<uint32_t>* value);
 
-    static void PopulateCombo(std::string name, std::optional<uint32_t>* value, const char* names[], const char* desc[], int length);
+    static void PopulateCombo(std::string name, std::optional<uint32_t>* value, const char* names[], const std::string desc[], int length);
 
 public:
 
@@ -129,10 +136,9 @@ public:
     static void VulkanInited() { _vulkanReady = true; }
     static bool IsInited() { return _isInited; }
     static bool IsVisible() { return _isVisible; }
-    static bool IsResetRequested() { return _isResetRequested; }
     static HWND Handle() { return _handle; }
 
-    static void RenderMenu();
+    static bool RenderMenu();
     static void Init(HWND InHwnd);
     static void Shutdown();
     static void HideMenu();

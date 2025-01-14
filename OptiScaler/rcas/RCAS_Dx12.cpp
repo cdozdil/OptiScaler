@@ -438,6 +438,8 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
+	Config::Instance()->SkipHeapCapture = true;
+
 	auto hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[0]));
 
 	if (FAILED(hr))
@@ -464,6 +466,8 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[3]));
 
+	Config::Instance()->SkipHeapCapture = false;
+
 	if (FAILED(hr))
 	{
 		LOG_ERROR("[{0}] CreateDescriptorHeap[3] error {1:x}", _name, (unsigned int)hr);
@@ -475,33 +479,33 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 RCAS_Dx12::~RCAS_Dx12()
 {
-	if (!_init)
+	if (!_init || Config::Instance()->IsShuttingDown)
 		return;
 
-	ID3D12Fence* d3d12Fence = nullptr;
+	//ID3D12Fence* d3d12Fence = nullptr;
 
-	do
-	{
-		if (_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence)) != S_OK)
-			break;
+	//do
+	//{
+	//	if (_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence)) != S_OK)
+	//		break;
 
-		d3d12Fence->Signal(999);
+	//	d3d12Fence->Signal(999);
 
-		HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	//	HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
-		if (fenceEvent != NULL && d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
-		{
-			WaitForSingleObject(fenceEvent, INFINITE);
-			CloseHandle(fenceEvent);
-		}
+	//	if (fenceEvent != NULL && d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
+	//	{
+	//		WaitForSingleObject(fenceEvent, INFINITE);
+	//		CloseHandle(fenceEvent);
+	//	}
 
-	} while (false);
+	//} while (false);
 
-	if (d3d12Fence != nullptr)
-	{
-		d3d12Fence->Release();
-		d3d12Fence = nullptr;
-	}
+	//if (d3d12Fence != nullptr)
+	//{
+	//	d3d12Fence->Release();
+	//	d3d12Fence = nullptr;
+	//}
 
 	if (_rootSignature != nullptr)
 	{

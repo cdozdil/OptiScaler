@@ -76,7 +76,8 @@ bool FSR2FeatureDx11::CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_RE
         OutTextureRes->usingOriginal = false;
         ASSIGN_DESC(OutTextureRes->Desc, desc);
 
-        desc.BindFlags = bindFlags;
+        if (bindFlags != 9999)
+            desc.BindFlags = bindFlags;
 
         result = Device->CreateTexture2D(&desc, nullptr, &OutTextureRes->Texture);
 
@@ -116,7 +117,7 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
-    Config::Instance()->dxgiSkipSpoofing = true;
+    Config::Instance()->skipSpoofing = true;
 
     const size_t scratchBufferSize = ffxFsr2GetScratchMemorySizeDX11();
     void* scratchBuffer = calloc(scratchBufferSize, 1);
@@ -266,7 +267,7 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
-    Config::Instance()->dxgiSkipSpoofing = false;
+    Config::Instance()->skipSpoofing = false;
 
     SetInit(true);
 
@@ -287,8 +288,37 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
     if (!RCAS->IsInit())
         Config::Instance()->RcasEnabled = false;
 
-    FfxFsr2DispatchDescription params{};
+    ID3D11ShaderResourceView* restoreSRVs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = {};
+    ID3D11SamplerState* restoreSamplerStates[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] = {};
+    ID3D11Buffer* restoreCBVs[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] = {};
+    ID3D11UnorderedAccessView* restoreUAVs[D3D11_1_UAV_SLOT_COUNT] = {};
 
+    // backup compute shader resources
+    for (size_t i = 0; i < D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT; i++)
+    {
+        restoreSRVs[i] = nullptr;
+        InContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
+    }
+
+    for (size_t i = 0; i < D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; i++)
+    {
+        restoreSamplerStates[i] = nullptr;
+        InContext->CSGetSamplers(i, 1, &restoreSamplerStates[i]);
+    }
+
+    for (size_t i = 0; i < D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; i++)
+    {
+        restoreCBVs[i] = nullptr;
+        InContext->CSGetConstantBuffers(i, 1, &restoreCBVs[i]);
+    }
+
+    for (size_t i = 0; i < D3D11_1_UAV_SLOT_COUNT; i++)
+    {
+        restoreUAVs[i] = nullptr;
+        InContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
+    }
+
+    FfxFsr2DispatchDescription params{};
     params.commandList = InContext;
 
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
@@ -306,7 +336,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 
     if (Config::Instance()->OverrideSharpness.value_or(false))
         _sharpness = Config::Instance()->Sharpness.value_or(0.3);
-    else 
+    else
         _sharpness = GetSharpness(InParameters);
 
     if (Config::Instance()->RcasEnabled.value_or(false))
@@ -380,10 +410,12 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
         LOG_ERROR("MotionVectors not exist!!");
         return false;
     }
+    auto outIndex = _frameCount % 2;
 
     ID3D11Resource* paramOutput;
     if (InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput) != NVSDK_NGX_Result_Success)
         InParameters->Get(NVSDK_NGX_Parameter_Output, (void**)&paramOutput);
+
 
     if (paramOutput)
     {
@@ -510,13 +542,13 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 
     if (IsDepthInverted())
     {
-        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.01f);
-        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(0.99f);
+        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.1f);
+        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(100000.0f);
     }
     else
     {
-        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(0.99f);
-        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.01f);
+        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(100000.0f);
+        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.1f);
     }
 
     if (Config::Instance()->FsrVerticalFov.has_value())
@@ -606,6 +638,31 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
             if (Imgui == nullptr || Imgui.get() == nullptr)
                 Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
         }
+    }
+
+    // restore compute shader resources
+    for (size_t i = 0; i < D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT; i++)
+    {
+        if (restoreSRVs[i] != nullptr)
+            InContext->CSSetShaderResources(i, 1, &restoreSRVs[i]);
+    }
+
+    for (size_t i = 0; i < D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; i++)
+    {
+        if (restoreSamplerStates[i] != nullptr)
+            InContext->CSSetSamplers(i, 1, &restoreSamplerStates[i]);
+    }
+
+    for (size_t i = 0; i < D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; i++)
+    {
+        if (restoreCBVs[i] != nullptr)
+            InContext->CSSetConstantBuffers(i, 1, &restoreCBVs[i]);
+    }
+
+    for (size_t i = 0; i < D3D11_1_UAV_SLOT_COUNT; i++)
+    {
+        if (restoreUAVs[i] != nullptr)
+            InContext->CSSetUnorderedAccessViews(i, 1, &restoreUAVs[i], 0);
     }
 
     _frameCount++;

@@ -18,7 +18,7 @@
 
 #include <ankerl/unordered_dense.h>
 
-#include "imgui/imgui_overlay_dx.h"
+#include "hooks/HooksDx.h"
 
 
 inline ID3D11Device* D3D11Device = nullptr;
@@ -95,11 +95,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
     D3D11_QUERY_DESC timestampQueryDesc = {};
     timestampQueryDesc.Query = D3D11_QUERY_TIMESTAMP;
 
-    for (int i = 0; i < ImGuiOverlayDx::QUERY_BUFFER_COUNT; i++)
+    for (int i = 0; i < HooksDx::QUERY_BUFFER_COUNT; i++)
     {
-        InDevice->CreateQuery(&disjointQueryDesc, &ImGuiOverlayDx::disjointQueries[i]);
-        InDevice->CreateQuery(&timestampQueryDesc, &ImGuiOverlayDx::startQueries[i]);
-        InDevice->CreateQuery(&timestampQueryDesc, &ImGuiOverlayDx::endQueries[i]);
+        InDevice->CreateQuery(&disjointQueryDesc, &HooksDx::disjointQueries[i]);
+        InDevice->CreateQuery(&timestampQueryDesc, &HooksDx::startQueries[i]);
+        InDevice->CreateQuery(&timestampQueryDesc, &HooksDx::endQueries[i]);
     }
 
     return NVSDK_NGX_Result_Success;
@@ -213,7 +213,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown()
 
     // Unhooking and cleaning stuff causing issues during shutdown. 
     // Disabled for now to check if it cause any issues
-    //ImGuiOverlayDx::UnHookDx();
+    //HooksDx::UnHookDx();
 
     shutdown = false;
 
@@ -836,12 +836,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
     }
 
     // In the render loop:
-    ImGuiOverlayDx::previousFrameIndex = (ImGuiOverlayDx::currentFrameIndex + ImGuiOverlayDx::QUERY_BUFFER_COUNT - 2) % ImGuiOverlayDx::QUERY_BUFFER_COUNT;
-    int nextFrameIndex = ImGuiOverlayDx::currentFrameIndex;
+    HooksDx::previousFrameIndex = (HooksDx::currentFrameIndex + HooksDx::QUERY_BUFFER_COUNT - 2) % HooksDx::QUERY_BUFFER_COUNT;
+    int nextFrameIndex = HooksDx::currentFrameIndex;
 
     // Record the queries in the current frame
-    InDevCtx->Begin(ImGuiOverlayDx::disjointQueries[nextFrameIndex]);
-    InDevCtx->End(ImGuiOverlayDx::startQueries[nextFrameIndex]);
+    InDevCtx->Begin(HooksDx::disjointQueries[nextFrameIndex]);
+    InDevCtx->End(HooksDx::startQueries[nextFrameIndex]);
 
     if (!deviceContext->Evaluate(InDevCtx, InParameters) && !deviceContext->IsInited() && (deviceContext->Name() == "XeSS" || deviceContext->Name() == "DLSS" || deviceContext->Name() == "FSR3 w/Dx12"))
     {
@@ -849,10 +849,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
         Config::Instance()->changeBackend = true;
     }
 
-    InDevCtx->End(ImGuiOverlayDx::endQueries[nextFrameIndex]);
-    InDevCtx->End(ImGuiOverlayDx::disjointQueries[nextFrameIndex]);
+    InDevCtx->End(HooksDx::endQueries[nextFrameIndex]);
+    InDevCtx->End(HooksDx::disjointQueries[nextFrameIndex]);
 
-    ImGuiOverlayDx::dx11UpscaleTrig[nextFrameIndex] = true;
+    HooksDx::dx11UpscaleTrig[nextFrameIndex] = true;
 
     return NVSDK_NGX_Result_Success;
 }

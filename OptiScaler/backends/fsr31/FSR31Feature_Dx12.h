@@ -17,5 +17,9 @@ public:
 	bool Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters) override;
 	bool Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters) override;
 
-	~FSR31FeatureDx12();
+	~FSR31FeatureDx12()
+	{
+		if(!Config::Instance()->IsShuttingDown && _context != nullptr)
+			FfxApiProxy::D3D12_DestroyContext()(&_context, NULL);
+	}
 };

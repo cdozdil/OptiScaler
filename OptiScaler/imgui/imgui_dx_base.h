@@ -14,7 +14,7 @@ private:
 
 protected:
 	long frameCounter = 0;
-	void RenderMenu();
+	bool RenderMenu();
 
 	static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
 	{
