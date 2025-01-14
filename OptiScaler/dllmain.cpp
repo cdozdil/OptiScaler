@@ -2074,16 +2074,16 @@ static void CheckWorkingMode()
                 NvApiHooks::Hook(nvapi64);
             }
 
-        hookGdi32();
+            hookGdi32();
 
-        // hook streamline right away if it's already loaded
-        HMODULE slModule = nullptr;
-        slModule = GetModuleHandle(L"sl.interposer.dll");
-        if (slModule != nullptr) 
-        {
-            LOG_DEBUG("sl.interposer.dll already in memory");
-            hookStreamline(slModule);
-        }
+            // hook streamline right away if it's already loaded
+            HMODULE slModule = nullptr;
+            slModule = GetModuleHandle(L"sl.interposer.dll");
+            if (slModule != nullptr)
+            {
+                LOG_DEBUG("sl.interposer.dll already in memory");
+                hookStreamline(slModule);
+            }
 
             // dx menu hooks
             HMODULE d3d11Module = nullptr;
@@ -2209,6 +2209,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 {
                     spdlog::info("Can't load nvngx.dll, disabling DLSS");
                     Config::Instance()->DLSSEnabled = false;
+
+                    if (!Config::Instance()->OverrideNvapiDll.has_value())
+                    {
+                        spdlog::info("No nvngx.dll, enabling OverrideNvapiDll");
+                        Config::Instance()->OverrideNvapiDll = true;
+                    }
                 }
                 else
                 {
@@ -2227,7 +2233,18 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
                     isNvngxAvailable = true;
                     Config::Instance()->IsRunningOnNvidia = true;
+
+                    if (!Config::Instance()->OverrideNvapiDll.has_value())
+                    {
+                        spdlog::info("nvngx.dll is found, disabling OverrideNvapiDll");
+                        Config::Instance()->OverrideNvapiDll = false;
+                    }
                 }
+            }
+            else if (!Config::Instance()->OverrideNvapiDll.has_value()) // Not sure about this
+            {
+                spdlog::info("DLSS is disabled, enabling OverrideNvapiDll");
+                Config::Instance()->OverrideNvapiDll = true;
             }
 
             // Check for working mode and attach hooks
