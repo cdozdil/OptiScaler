@@ -1387,7 +1387,10 @@ bool ImGuiCommon::RenderMenu()
                 // DLSSG Mod
                 if (Config::Instance()->DLSSGMod.value_or(false) && Config::Instance()->Api != NVNGX_DX11 && !Config::Instance()->WorkingAsNvngx) {
                     ImGui::SeparatorText("Frame Generation (DLSSG)");
-                    ImGui::Text("Please select DLSS Frame Generation in the game options\nYou might need to select DLSS first");
+                    
+                    if (!ReflexHooks::dlssgDetected)
+                        ImGui::Text("Please select DLSS Frame Generation in the game options\nYou might need to select DLSS first");
+
                     if (Config::Instance()->Api == NVNGX_DX12) {
                         ImGui::Text("Current state:");
                         ImGui::SameLine();
