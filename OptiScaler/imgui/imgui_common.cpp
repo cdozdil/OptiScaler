@@ -353,10 +353,10 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
     if (!inputMenu)
         inputMenu = msg == WM_KEYUP && wParam == Config::Instance()->ShortcutKey.value_or(VK_INSERT);
-    
+
     if (!inputFps)
         inputFps = msg == WM_KEYUP && wParam == Config::Instance()->FpsShortcutKey.value_or(VK_PRIOR);
-    
+
     if (!inputFpsCycle)
         inputFpsCycle = msg == WM_KEYUP && wParam == Config::Instance()->FpsCycleShortcutKey.value_or(VK_NEXT);
 
@@ -749,49 +749,51 @@ bool ImGuiCommon::RenderMenu()
 
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
-    if (inputFps)
-        Config::Instance()->ShowFps = !Config::Instance()->ShowFps.value_or(false);
-
-    if (inputFpsCycle && Config::Instance()->ShowFps.value_or(false))
-        Config::Instance()->FpsOverlayType = (Config::Instance()->FpsOverlayType.value_or(0) + 1) % 5;
-
-    // INSERT - OPEN MENU
-    if (inputMenu)
+    // Handle Inputs
     {
-        _isVisible = !_isVisible;
+        if (inputFps)
+            Config::Instance()->ShowFps = !Config::Instance()->ShowFps.value_or(false);
 
-        LOG_DEBUG("Menu key pressed, {0}", _isVisible ? "opening ImGui" : "closing ImGui");
+        if (inputFpsCycle && Config::Instance()->ShowFps.value_or(false))
+            Config::Instance()->FpsOverlayType = (Config::Instance()->FpsOverlayType.value_or(0) + 1) % 5;
 
-        if (_isVisible)
+        if (inputMenu)
         {
-            Config::Instance()->ReloadFakenvapi();
+            _isVisible = !_isVisible;
 
-            if (pfn_ClipCursor_hooked)
+            LOG_DEBUG("Menu key pressed, {0}", _isVisible ? "opening ImGui" : "closing ImGui");
+
+            if (_isVisible)
             {
-                _ssRatio = 0;
+                Config::Instance()->ReloadFakenvapi();
 
-                if (GetClipCursor(&_cursorLimit))
-                    pfn_ClipCursor(nullptr);
+                if (pfn_ClipCursor_hooked)
+                {
+                    _ssRatio = 0;
 
-                GetCursorPos(&_lastPoint);
+                    if (GetClipCursor(&_cursorLimit))
+                        pfn_ClipCursor(nullptr);
+
+                    GetCursorPos(&_lastPoint);
+                }
             }
-        }
-        else
-        {
-            if (pfn_ClipCursor_hooked)
-                pfn_ClipCursor(&_cursorLimit);
+            else
+            {
+                if (pfn_ClipCursor_hooked)
+                    pfn_ClipCursor(&_cursorLimit);
 
-            _showMipmapCalcWindow = false;
+                _showMipmapCalcWindow = false;
+            }
+
+            io.MouseDrawCursor = _isVisible;
+            io.WantCaptureKeyboard = _isVisible;
+            io.WantCaptureMouse = _isVisible;
         }
 
-        io.MouseDrawCursor = _isVisible;
-        io.WantCaptureKeyboard = _isVisible;
-        io.WantCaptureMouse = _isVisible;
+        inputFps = false;
+        inputMenu = false;
+        inputFpsCycle = false;
     }
-
-    inputFps = false;
-    inputMenu = false;
-    inputFpsCycle = false;
 
     // If game is using HDR, apply tone mapping to the ImGui style
     if (Config::Instance()->isHdrActive)
@@ -823,33 +825,35 @@ bool ImGuiCommon::RenderMenu()
     }
 
     // Calculate menu scale according to display resolution
-    if (!Config::Instance()->MenuScale.has_value())
     {
-        // 900p is minimum for 1.0 menu ratio
-        Config::Instance()->MenuScale = (float)((int)((float)io.DisplaySize.y / 90.0f)) / 10.0f;
+        if (!Config::Instance()->MenuScale.has_value())
+        {
+            // 900p is minimum for 1.0 menu ratio
+            Config::Instance()->MenuScale = (float)((int)((float)io.DisplaySize.y / 90.0f)) / 10.0f;
 
-        if (Config::Instance()->MenuScale.value() > 1.0f)
-            Config::Instance()->MenuScale.value() = 1.0f;
+            if (Config::Instance()->MenuScale.value() > 1.0f)
+                Config::Instance()->MenuScale.value() = 1.0f;
 
-        ImGuiStyle& style = ImGui::GetStyle();
-        style.ScaleAllSizes(Config::Instance()->MenuScale.value());
+            ImGuiStyle& style = ImGui::GetStyle();
+            style.ScaleAllSizes(Config::Instance()->MenuScale.value());
 
-        if (Config::Instance()->MenuScale.value() < 1.0f)
-            style.MouseCursorScale = 1.0f;
+            if (Config::Instance()->MenuScale.value() < 1.0f)
+                style.MouseCursorScale = 1.0f;
+        }
+
+        if (Config::Instance()->MenuScale.value() < 0.5f)
+            Config::Instance()->MenuScale = 0.5f;
+
+        if (Config::Instance()->MenuScale.value() > 2.0f)
+            Config::Instance()->MenuScale = 2.0f;
     }
-
-    if (Config::Instance()->MenuScale.value() < 0.5f)
-        Config::Instance()->MenuScale = 0.5f;
-
-    if (Config::Instance()->MenuScale.value() > 2.0f)
-        Config::Instance()->MenuScale = 2.0f;
 
     // If Fps overlay is visible
     if (Config::Instance()->ShowFps.value_or(false))
     {
         ImGui::NewFrame();
 
-        if (Config::Instance()->FpsOverlayType.value_or(0) == 0)
+        if (Config::Instance()->MenuScale.value_or(1.0f) > 1.0f)
             ImGui::PushFont(_scaledOptiFont);
         else
             ImGui::PushFont(_optiFont);
@@ -875,15 +879,14 @@ bool ImGuiCommon::RenderMenu()
 
         // Set overlay window properties
         ImGui::SetNextWindowBgAlpha(Config::Instance()->FpsOverlayAlpha.value_or(0.4f)); // Transparent background
-        ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(0, 0, 0, 0));              // Transparent border
-        ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0, 0, 0, 0));             // Transparent frame background
+        ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(0, 0, 0, 0)); // Transparent border
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0, 0, 0, 0)); // Transparent frame background
 
-        //toneMapColor
         ImVec4 green(0.0f, 1.0f, 0.0f, 1.0f);
         if (Config::Instance()->isHdrActive)
-            ImGui::PushStyleColor(ImGuiCol_PlotLines, toneMapColor(green));        // Set plot line color (green in this case)
+            ImGui::PushStyleColor(ImGuiCol_PlotLines, toneMapColor(green)); // Tone Map plot line color
         else
-            ImGui::PushStyleColor(ImGuiCol_PlotLines, green);        // Set plot line color (green in this case)
+            ImGui::PushStyleColor(ImGuiCol_PlotLines, green);
 
         auto size = ImVec2{ 0.0f, 0.0f };
         ImGui::SetNextWindowSize(size);
@@ -893,11 +896,9 @@ bool ImGuiCommon::RenderMenu()
             ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
 
             std::string api;
-
             if (Config::Instance()->IsRunningOnDXVK || Config::Instance()->IsRunningOnLinux)
             {
                 api = "VKD3D";
-
             }
             else
             {
@@ -953,15 +954,8 @@ bool ImGuiCommon::RenderMenu()
                 }
 
                 // Graph of frame times
-                ImGui::PlotLines(
-                    "##FrameTimeGraph",                  // Graph label (hidden by "##")
-                    frameTimeArray.data(),                  // Data source
-                    static_cast<int>(frameTimeArray.size()),// Data count
-                    0,                                  // Offset (usually 0 unless circular buffer)
-                    nullptr,                            // Overlay text
-                    *std::min_element(frameTimeArray.begin(), frameTimeArray.end()) * 0.9f, // Maximum scale
-                    *std::max_element(frameTimeArray.begin(), frameTimeArray.end()) * 1.1f, // Maximum scale
-                    plotSize);                   // Graph size (width, height)
+                ImGui::PlotLines("##FrameTimeGraph", frameTimeArray.data(), static_cast<int>(frameTimeArray.size()), 0, nullptr, 
+                                 *std::min_element(frameTimeArray.begin(), frameTimeArray.end()) * 0.9f, *std::max_element(frameTimeArray.begin(), frameTimeArray.end()) * 1.1f, plotSize);
             }
 
             if (Config::Instance()->FpsOverlayType.value_or(0) > 2)
@@ -990,15 +984,9 @@ bool ImGuiCommon::RenderMenu()
                     plotSize.y = Config::Instance()->MenuScale.value() * 16;
                 }
 
-                ImGui::PlotLines(
-                    "##UpscalerFrameTimeGraph",                  // Graph label (hidden by "##")
-                    upscalerFrameTimeArray.data(),                  // Data source
-                    static_cast<int>(upscalerFrameTimeArray.size()),// Data count
-                    0,                                  // Offset (usually 0 unless circular buffer)
-                    nullptr,                            // Overlay text
-                    *std::min_element(upscalerFrameTimeArray.begin(), upscalerFrameTimeArray.end()) * 0.9f, // Minimum scale
-                    *std::max_element(upscalerFrameTimeArray.begin(), upscalerFrameTimeArray.end()) * 1.1f, // Maximum scale
-                    plotSize); // Graph size (width, height)
+                // Graph of upscaler times
+                ImGui::PlotLines("##UpscalerFrameTimeGraph", upscalerFrameTimeArray.data(), static_cast<int>(upscalerFrameTimeArray.size()), 0, nullptr,
+                                 *std::min_element(upscalerFrameTimeArray.begin(), upscalerFrameTimeArray.end()) * 0.9f, *std::max_element(upscalerFrameTimeArray.begin(), upscalerFrameTimeArray.end()) * 1.1f, plotSize);
             }
 
             ImGui::PopStyleColor(3); // Restore the style
@@ -1006,22 +994,24 @@ bool ImGuiCommon::RenderMenu()
 
         ImGui::PopFont();
 
+        // Get size for postioning
         auto winSize = ImGui::GetWindowSize();
 
         ImGui::End();
 
-        if (Config::Instance()->FpsOverlayPos.value_or(0) == 0 || Config::Instance()->FpsOverlayPos.value_or(0) == 2)
+        if (Config::Instance()->FpsOverlayPos.value_or(0) == 0 || Config::Instance()->FpsOverlayPos.value_or(0) == 2) // Top left / Bottom left
             overlayPosition.x = 0;
         else
             overlayPosition.x = io.DisplaySize.x - winSize.x;
 
-        if (Config::Instance()->FpsOverlayPos.value_or(0) < 2)
+        if (Config::Instance()->FpsOverlayPos.value_or(0) < 2) // Top Left / Top Right
             overlayPosition.y = 0;
         else
             overlayPosition.y = io.DisplaySize.y - winSize.y;
 
         if (!_isVisible)
         {
+            // Disable gamepad & kayboard capturing
             if ((io.ConfigFlags & ImGuiConfigFlags_NavNoCaptureKeyboard) == 0)
                 io.ConfigFlags = ImGuiConfigFlags_NavNoCaptureKeyboard | ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
 
@@ -1031,6 +1021,7 @@ bool ImGuiCommon::RenderMenu()
 
     if (!_isVisible)
     {
+        // Disable gamepad & kayboard capturing
         if ((io.ConfigFlags & ImGuiConfigFlags_NavNoCaptureKeyboard) == 0)
             io.ConfigFlags = ImGuiConfigFlags_NavNoCaptureKeyboard | ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
 
@@ -1038,6 +1029,7 @@ bool ImGuiCommon::RenderMenu()
     }
 
     {
+        // Enable gamepad & kayboard capturing if menu is visible
         if ((io.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard) == 0)
             io.ConfigFlags = ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
 
@@ -1046,6 +1038,7 @@ bool ImGuiCommon::RenderMenu()
         flags |= ImGuiWindowFlags_NoCollapse;
         flags |= ImGuiWindowFlags_AlwaysAutoResize;
 
+        // if UI scale is changed rescale the style
         if (_imguiSizeUpdate)
         {
             _imguiSizeUpdate = false;
@@ -1083,6 +1076,7 @@ bool ImGuiCommon::RenderMenu()
         auto size = ImVec2{ 0.0f, 0.0f };
         ImGui::SetNextWindowSize(size);
 
+        // Main menu window
         if (ImGui::Begin(VER_PRODUCT_NAME, NULL, flags))
         {
             bool rcasEnabled = false;
@@ -1150,30 +1144,30 @@ bool ImGuiCommon::RenderMenu()
 
                     switch (Config::Instance()->Api)
                     {
-                    case NVNGX_DX11:
-                        ImGui::Text("DirectX 11 %s- %s (%d.%d.%d)", Config::Instance()->IsRunningOnDXVK ? "(DXVK) " : "", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
+                        case NVNGX_DX11:
+                            ImGui::Text("DirectX 11 %s- %s (%d.%d.%d)", Config::Instance()->IsRunningOnDXVK ? "(DXVK) " : "", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
 
-                        if (Config::Instance()->CurrentFeature->Name() != "DLSSD")
-                            AddDx11Backends(&currentBackend, &currentBackendName);
+                            if (Config::Instance()->CurrentFeature->Name() != "DLSSD")
+                                AddDx11Backends(&currentBackend, &currentBackendName);
 
-                        break;
+                            break;
 
-                    case NVNGX_DX12:
-                        ImGui::Text("DirectX 12 %s- %s (%d.%d.%d)", Config::Instance()->IsRunningOnDXVK ? "(DXVK) " : "", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
+                        case NVNGX_DX12:
+                            ImGui::Text("DirectX 12 %s- %s (%d.%d.%d)", Config::Instance()->IsRunningOnDXVK ? "(DXVK) " : "", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
 
-                        ImGui::SameLine(0.0f, 6.0f);
-                        ImGui::Text("Source Api: %s", Config::Instance()->currentInputApiName.c_str());
+                            ImGui::SameLine(0.0f, 6.0f);
+                            ImGui::Text("Source Api: %s", Config::Instance()->currentInputApiName.c_str());
 
-                        if (Config::Instance()->CurrentFeature->Name() != "DLSSD")
-                            AddDx12Backends(&currentBackend, &currentBackendName);
+                            if (Config::Instance()->CurrentFeature->Name() != "DLSSD")
+                                AddDx12Backends(&currentBackend, &currentBackendName);
 
-                        break;
+                            break;
 
-                    default:
-                        ImGui::Text("Vulkan %s- %s (%d.%d.%d)", Config::Instance()->IsRunningOnDXVK ? "(DXVK) " : "", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
+                        default:
+                            ImGui::Text("Vulkan %s- %s (%d.%d.%d)", Config::Instance()->IsRunningOnDXVK ? "(DXVK) " : "", Config::Instance()->CurrentFeature->Name(), Config::Instance()->CurrentFeature->Version().major, Config::Instance()->CurrentFeature->Version().minor, Config::Instance()->CurrentFeature->Version().patch);
 
-                        if (Config::Instance()->CurrentFeature->Name() != "DLSSD")
-                            AddVulkanBackends(&currentBackend, &currentBackendName);
+                            if (Config::Instance()->CurrentFeature->Name() != "DLSSD")
+                                AddVulkanBackends(&currentBackend, &currentBackendName);
                     }
 
                     if (Config::Instance()->CurrentFeature->Name() != "DLSSD")
@@ -2698,8 +2692,7 @@ bool ImGuiCommon::RenderMenu()
             ImGui::End();
         }
 
-        //ImGui::ShowMetricsWindow();
-
+        // Mipmap calculation window
         if (_showMipmapCalcWindow && currentFeature != nullptr && currentFeature->IsInited())
         {
             auto posX = (Config::Instance()->CurrentFeature->DisplayWidth() - 450.0f) / 2.0f;
