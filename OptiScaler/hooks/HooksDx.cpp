@@ -3347,7 +3347,7 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
         HookToDevice(d3d11on12Device);
     }
 
-    if (*ppDevice != nullptr)
+    if (result == S_OK && *ppDevice != nullptr)
         Config::Instance()->d3d11Devices.push_back(*ppDevice);
 
     LOG_FUNC_RESULT(result);
@@ -3397,7 +3397,7 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
 
     LOG_FUNC_RESULT(result);
 
-    if (*ppDevice != nullptr)
+    if (result == S_OK && ppDevice != nullptr && *ppDevice != nullptr)
         Config::Instance()->d3d11Devices.push_back(*ppDevice);
 
     return result;
@@ -3450,7 +3450,7 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
         HookToDevice(d3d11Device);
     }
 
-    if (*ppDevice != nullptr)
+    if (result == S_OK && ppDevice != nullptr && *ppDevice != nullptr)
         Config::Instance()->d3d11Devices.push_back(*ppDevice);
 
     LOG_FUNC_RESULT(result);
@@ -3489,7 +3489,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     auto result = o_D3D12CreateDevice(pAdapter, MinimumFeatureLevel, riid, ppDevice);
     //Config::Instance()->skipSpoofing = false;
 
-    if (result == S_OK && *ppDevice != nullptr)
+    if (result == S_OK && ppDevice != nullptr && *ppDevice != nullptr)
     {
         LOG_DEBUG("Device captured: {0:X}", (size_t)*ppDevice);
         g_pd3dDeviceParam = (ID3D12Device*)*ppDevice;
