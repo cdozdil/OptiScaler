@@ -904,9 +904,9 @@ void HookFSR2ExeInputs()
         o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAH0HHW4FfxFsr2QualityMode@@@Z");
 
     //ffxFsr2GetInterfaceDX12
-    o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "ffxFsr2GetInterfaceDX12");
-    if (o_ffxFsr2GetInterfaceDX12 == nullptr)
-        o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetInterfaceDX12@@YAHPEAUFfxFsr2Interface@@PEAUID3D12Device@@PEAX_K@Z");
+    //o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "ffxFsr2GetInterfaceDX12");
+    //if (o_ffxFsr2GetInterfaceDX12 == nullptr)
+    //    o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetInterfaceDX12@@YAHPEAUFfxFsr2Interface@@PEAUID3D12Device@@PEAX_K@Z");
 
     // Pattern matching
     {
@@ -1001,8 +1001,8 @@ void HookFSR2ExeInputs()
     if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 != nullptr)
         DetourAttach(&(PVOID&)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12, ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
 
-    if (o_ffxFsr2GetInterfaceDX12 != nullptr)
-        DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
+    //if (o_ffxFsr2GetInterfaceDX12 != nullptr)
+    //    DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
 
     Config::Instance()->fsrHooks = true;
 
@@ -1019,7 +1019,7 @@ void HookFSR2ExeInputs()
     LOG_DEBUG("ffxFsr2ContextDestroy_Pattern_Dx12: {:X}", (size_t)o_ffxFsr2ContextDestroy_Pattern_Dx12);
     LOG_DEBUG("ffxFsr2GetUpscaleRatioFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
     LOG_DEBUG("ffxFsr2GetRenderResolutionFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
-    LOG_DEBUG("ffxFsr2GetInterfaceDX12: {:X}", (size_t)o_ffxFsr2GetInterfaceDX12);
+    //LOG_DEBUG("ffxFsr2GetInterfaceDX12: {:X}", (size_t)o_ffxFsr2GetInterfaceDX12);
 }
 
 void HookFSR2Inputs(HMODULE module)
@@ -1074,6 +1074,8 @@ void HookFSR2Inputs(HMODULE module)
 
 void HookFSR2Dx12Inputs(HMODULE module)
 {
+    return;
+
     LOG_INFO("Trying to hook FSR2 methods");
 
     if (o_ffxFsr2GetInterfaceDX12 != nullptr)
@@ -1091,8 +1093,8 @@ void HookFSR2Dx12Inputs(HMODULE module)
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        if (o_ffxFsr2GetInterfaceDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
+        //if (o_ffxFsr2GetInterfaceDX12 != nullptr)
+        //    DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
 
         DetourTransactionCommit();
     }
