@@ -82,7 +82,7 @@
     <IncludePath>$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(SolutionDir)external\freetype;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)fsr31\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(SolutionDir)external\freetype;$(LibraryPath)</LibraryPath>
     <TargetName>dxgi</TargetName>
-    <OutDir>E:\Games\Deep Rock Galactic\FSD\Binaries\Win64\</OutDir>
+    <OutDir>D:\Games\Steam\steamapps\common\Warhammer 40,000 DARKTIDE\binaries\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
@@ -284,6 +284,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!"</C
     <ClInclude Include="rcas\RCAS_Dx12.h" />
     <ClInclude Include="nvapi\ReflexHooks.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="scanner\scanner.h" />
     <ClInclude Include="Streamline_Proxy.h" />
     <ClInclude Include="Util.h" />
     <ClInclude Include="backends\xess\XeSSFeature_Dx11.h" />
@@ -359,6 +360,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!"</C
     <ClCompile Include="output_scaling\OS_Dx11.cpp" />
     <ClCompile Include="rcas\RCAS_Dx11.cpp" />
     <ClCompile Include="rcas\RCAS_Dx12.cpp" />
+    <ClCompile Include="scanner\scanner.cpp" />
     <ClCompile Include="Util.cpp" />
     <ClCompile Include="XeSS_Debug.cpp" />
     <ClCompile Include="XeSS_Dx12.cpp" />

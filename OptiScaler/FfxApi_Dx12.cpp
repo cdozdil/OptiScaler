@@ -225,8 +225,6 @@ ffxReturnCode_t ffxDestroyContext_Dx12(ffxContext* context, const ffxAllocationC
 
     LOG_DEBUG("context: {:X}", (size_t)*context);
 
-    auto contextId = (size_t)*context;
-
     if (!_initParams.contains(*context))
     {
         LOG_INFO("Not upscaler context: {:X}", (size_t)*context);
