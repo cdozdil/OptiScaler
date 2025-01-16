@@ -656,10 +656,10 @@ static HMODULE LoadNvgxDlss(std::wstring originalPath)
 
 static FARPROC hkGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 {
-    if (hModule == dllModule)
+    if (hModule == dllModule && lpProcName != nullptr)
         LOG_DEBUG("Trying to get process address of {0}", lpProcName);
 
-    if (hModule == GetModuleHandle(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0 && Config::Instance()->IsRunningOnLinux)
+    if (Config::Instance()->IsRunningOnLinux && lpProcName != nullptr && hModule == GetModuleHandle(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
         return (FARPROC)&customD3DKMTEnumAdapters2;
 
     return o_GetProcAddress(hModule, lpProcName);
