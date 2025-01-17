@@ -160,7 +160,7 @@ public:
 		if (fps == 0.0)
 			_minimumIntervalUs = 0;
 		else
-			_minimumIntervalUs = 1'000'000 / fps;
+			_minimumIntervalUs = static_cast<uint32_t>(std::round(1'000'000 / fps));
 
 		if (_lastSleepDev != nullptr) {
 			NV_SET_SLEEP_MODE_PARAMS temp{};
