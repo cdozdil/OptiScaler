@@ -1371,6 +1371,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         {
             LOG_DEBUG("(FG) Frame generation disabled for 20 frames");
             FrameGen_Dx12::fgTarget = deviceContext->FrameCount() + 20;
+            FrameGen_Dx12::ResetIndexes();
             Config::Instance()->FGChanged = false;
         }
     }
