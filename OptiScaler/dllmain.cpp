@@ -193,7 +193,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
     // NvApi64.dll
     if (CheckDllName(&lcaseLibName, &nvapiNames)) {
-        if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or(false))
+        if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or_default())
         {
             LOG_INFO("{0} call!", lcaseLibName);
 
@@ -414,7 +414,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
     // NvApi64.dll
     if (CheckDllNameW(&lcaseLibName, &nvapiNamesW)) {
-        if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or(false))
+        if (!isWorkingWithEnabler && Config::Instance()->OverrideNvapiDll.value_or_default())
         {
             LOG_INFO("{0} call!", lcaseLibNameA);
 
@@ -2171,11 +2171,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 #ifdef VER_PRE_RELEASE
             // Enable file logging for pre builds
-            Config::Instance()->LogToFile = true;
+            Config::Instance()->LogToFile.set_volatile_value(true);
 
             // Set log level to debug
             if (Config::Instance()->LogLevel.value_or_default() > 1)
-                Config::Instance()->LogLevel = 1;
+                Config::Instance()->LogLevel.set_volatile_value(1);
 #endif
 
             PrepareLogger();
@@ -2207,43 +2207,26 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 if (NVNGXProxy::NVNGXModule() == nullptr)
                 {
                     spdlog::info("Can't load nvngx.dll, disabling DLSS");
-                    Config::Instance()->DLSSEnabled = false;
-
-                    if (!Config::Instance()->OverrideNvapiDll.has_value())
-                    {
-                        spdlog::info("No nvngx.dll, enabling OverrideNvapiDll");
-                        Config::Instance()->OverrideNvapiDll = true;
-                    }
+                    Config::Instance()->DLSSEnabled.set_volatile_value(false);
                 }
                 else
                 {
                     spdlog::info("nvngx.dll loaded, setting DLSS as default upscaler and disabling spoofing options set to auto");
 
-                    Config::Instance()->DLSSEnabled = true;
+                    Config::Instance()->DLSSEnabled.set_volatile_value(true);
 
                     if (!Config::Instance()->DxgiSpoofing.has_value())
                         Config::Instance()->DxgiSpoofing = false;
 
-                    if (!Config::Instance()->VulkanSpoofing.has_value())
-                        Config::Instance()->VulkanSpoofing = false;
-
-                    if (!Config::Instance()->VulkanExtensionSpoofing.has_value())
-                        Config::Instance()->VulkanExtensionSpoofing = false;
-
                     isNvngxAvailable = true;
                     State::Instance().isRunningOnNvidia = true;
-
-                    if (!Config::Instance()->OverrideNvapiDll.has_value())
-                    {
-                        spdlog::info("nvngx.dll is found, disabling OverrideNvapiDll");
-                        Config::Instance()->OverrideNvapiDll = false;
-                    }
                 }
             }
-            else if (!Config::Instance()->OverrideNvapiDll.has_value()) // Not sure about this
+            
+            if (!Config::Instance()->OverrideNvapiDll.has_value())
             {
-                spdlog::info("DLSS is disabled, enabling OverrideNvapiDll");
-                Config::Instance()->OverrideNvapiDll = true;
+                spdlog::info("OverrideNvapiDll not set, setting it to: {}", !State::Instance().isRunningOnNvidia ? "true" : "false");
+                Config::Instance()->OverrideNvapiDll.set_volatile_value(!State::Instance().isRunningOnNvidia);
             }
 
             // Check for working mode and attach hooks

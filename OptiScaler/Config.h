@@ -31,8 +31,10 @@ public:
 	
 	// Use this when first setting a CustomOptional
 	constexpr void set_from_config(const std::optional<T>& opt) {
-		if(!this->has_value())
+		if (!this->has_value()) {
 			_configIni = opt;
+			std::optional<T>::operator=(opt);
+		}
 	}
 
 	constexpr CustomOptional& operator=(const T& value) {
@@ -256,7 +258,7 @@ public:
 	CustomOptional<bool> DontUseNTShared{ false };
 
 	// NVAPI Override
-	std::optional<bool> OverrideNvapiDll; // TODO: make it CustomOptional
+	CustomOptional<bool> OverrideNvapiDll{ false };
 	std::optional<std::wstring> NvapiDllPath; // TODO: ini desc is wrong
 
 	// Spoofing
