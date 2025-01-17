@@ -289,7 +289,7 @@ FT_Dx12::FT_Dx12(std::string InName, ID3D12Device* InDevice, DXGI_FORMAT InForma
     // Compile shader blobs
     ID3DBlob* _recEncodeShader = nullptr;
 
-    if (Config::Instance()->UsePrecompiledShaders.value_or(true))
+    if (Config::Instance()->UsePrecompiledShaders.value_or_default())
     {
         D3D12_COMPUTE_PIPELINE_STATE_DESC computePsoDesc = {};
         computePsoDesc.pRootSignature = _rootSignature;

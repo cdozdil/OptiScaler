@@ -226,7 +226,7 @@ public:
 
             LOG_INFO("Version: {}.{}.{}", _xessVersion.major, _xessVersion.minor, _xessVersion.patch);
 
-            if (Config::Instance()->XeSSInputs.value_or(true))
+            if (Config::Instance()->XeSSInputs.value_or_default())
             {
                 DetourTransactionBegin();
                 DetourUpdateThread(GetCurrentThread());

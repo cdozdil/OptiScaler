@@ -148,7 +148,7 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         LOG_INFO("contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
     }
 
-    if (Config::Instance()->ExtendedLimits.value_or(false))
+    if (Config::Instance()->ExtendedLimits.value_or_default())
     {
         _contextDesc.maxRenderSize.width = RenderWidth() < DisplayWidth() ? DisplayWidth() : RenderWidth();
         _contextDesc.maxRenderSize.height = RenderHeight() < DisplayHeight() ? DisplayHeight() : RenderHeight();
@@ -229,7 +229,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     struct ffxDispatchDescUpscale params = { 0 };
     params.header.type = FFX_API_DISPATCH_DESC_TYPE_UPSCALE;
 
-    if (Config::Instance()->FsrDebugView.value_or(false))
+    if (Config::Instance()->FsrDebugView.value_or_default())
         params.flags = FFX_UPSCALE_FLAG_DRAW_DEBUG_VIEW;
 
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
@@ -344,7 +344,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
         InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
 
-    if (paramReactiveMask && Config::Instance()->FsrUseMaskForTransparency.value_or(true))
+    if (paramReactiveMask && Config::Instance()->FsrUseMaskForTransparency.value_or_default())
     {
         params.transparencyAndComposition = ffxApiGetResourceVK(((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Image,
                                                                 ffxApiGetImageResourceDescriptionVKLocal((NVSDK_NGX_Resource_VK*)paramReactiveMask),
@@ -400,7 +400,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         params.motionVectorScale.y = MVScaleY;
     }
 
-    if (Config::Instance()->OverrideSharpness.value_or(false))
+    if (Config::Instance()->OverrideSharpness.value_or_default())
     {
         params.enableSharpening = Config::Instance()->Sharpness.value_or_default() > 0.0f;
         params.sharpness = Config::Instance()->Sharpness.value_or_default();

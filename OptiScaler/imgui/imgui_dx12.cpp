@@ -9,7 +9,7 @@ long frameCounter = 0;
 
 bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outTexture)
 {
-    if (Config::Instance()->OverlayMenu.value_or(true))
+    if (Config::Instance()->OverlayMenu.value_or_default())
         return false;
 
     if (pCmdList == nullptr || outTexture == nullptr)
@@ -137,7 +137,7 @@ bool Imgui_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* out
 
 Imgui_Dx12::Imgui_Dx12(HWND handle, ID3D12Device* pDevice) : ImguiDxBase(handle), _device(pDevice)
 {
-    if (Config::Instance()->OverlayMenu.value_or(true))
+    if (Config::Instance()->OverlayMenu.value_or_default())
         return;
 
     D3D12_DESCRIPTOR_HEAP_DESC rtvDesc = { };

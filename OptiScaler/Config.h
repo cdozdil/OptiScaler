@@ -213,7 +213,7 @@ public:
 	CustomOptional<bool> PreferFirstDedicatedGpu{ false };
 
 	std::optional<int32_t> ColorResourceBarrier; // disabled by default
-	std::optional<int32_t> MVResourceBarrier; // disabled by default, TODO: add info about setting it to 8 in UE
+	std::optional<int32_t> MVResourceBarrier; // disabled by default
 	std::optional<int32_t> DepthResourceBarrier; // disabled by default
 	std::optional<int32_t> ExposureResourceBarrier; // disabled by default
 	std::optional<int32_t> MaskResourceBarrier; // disabled by default

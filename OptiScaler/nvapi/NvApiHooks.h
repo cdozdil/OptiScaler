@@ -24,7 +24,7 @@ public:
                 LOG_DEBUG("From api arch: {0:X} impl: {1:X} rev: {2:X}!", ArchInfo->architecture, ArchInfo->implementation, ArchInfo->revision);
 
                 // for DLSSG on pre-20xx cards
-                if (Config::Instance()->DLSSGMod.value_or(false) && ArchInfo->architecture >= NV_GPU_ARCHITECTURE_GM200 && ArchInfo->architecture < NV_GPU_ARCHITECTURE_AD100) { // only GTX9xx+ supports latest reflex
+                if (Config::Instance()->DLSSGMod.value_or_default() && ArchInfo->architecture >= NV_GPU_ARCHITECTURE_GM200 && ArchInfo->architecture < NV_GPU_ARCHITECTURE_AD100) { // only GTX9xx+ supports latest reflex
                     if (ArchInfo->architecture == NV_GPU_ARCHITECTURE_TU100 && ArchInfo->implementation > NV_GPU_ARCH_IMPLEMENTATION_TU106) {
                         ArchInfo->implementation = NV_GPU_ARCH_IMPLEMENTATION_TU106; // let nukem's mod change the arch for those cards, breaks dlss otherwise for some reason
                     }

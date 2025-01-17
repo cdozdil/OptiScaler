@@ -49,7 +49,7 @@ static bool InitializeConsole()
 	// Make C++ standard streams point to console as well.
 	std::ios::sync_with_stdio();
 
-	if (Config::Instance()->DebugWait.value_or(false))
+	if (Config::Instance()->DebugWait.value_or_default())
 	{
 		std::cout << "Press ENTER to continue..." << std::endl;
 		std::cin.get();
@@ -65,9 +65,9 @@ void PrepareLogger()
 		if (spdlog::default_logger() != nullptr)
 			spdlog::default_logger().reset();
 
-		if (Config::Instance()->LogToConsole.value_or(false) || Config::Instance()->LogToFile.value_or(false) || Config::Instance()->LogToNGX.value_or(false))
+		if (Config::Instance()->LogToConsole.value_or_default() || Config::Instance()->LogToFile.value_or_default() || Config::Instance()->LogToNGX.value_or_default())
 		{
-			if (Config::Instance()->OpenConsole.value_or(false))
+			if (Config::Instance()->OpenConsole.value_or_default())
 				InitializeConsole();
 
 #ifdef LOG_ASYNC
@@ -80,7 +80,7 @@ void PrepareLogger()
 
 			std::vector<spdlog::sink_ptr> sinks;
 
-			if (Config::Instance()->LogToConsole.value_or(false))
+			if (Config::Instance()->LogToConsole.value_or_default())
 			{
 				auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 				console_sink->set_level(spdlog::level::level_enum::info);
@@ -89,7 +89,7 @@ void PrepareLogger()
 				sinks.push_back(console_sink);
 			}
 
-			if (Config::Instance()->LogToFile.value_or(false))
+			if (Config::Instance()->LogToFile.value_or_default())
 			{
 				auto logFile = Util::DllPath().parent_path() / "OptiScaler.log";
 				auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(Config::Instance()->LogFileName.value_or(logFile.wstring()), true);
@@ -105,7 +105,7 @@ void PrepareLogger()
 
 			auto callback_sink = std::make_shared<spdlog::sinks::callback_sink_mt>([](const spdlog::details::log_msg& msg)
 				{
-					if (Config::Instance()->LogToNGX.value_or(false) &&
+					if (Config::Instance()->LogToNGX.value_or_default() &&
 						State::Instance().NVNGX_Logger.LoggingCallback != nullptr &&
 						State::Instance().NVNGX_Logger.MinimumLoggingLevel != NVSDK_NGX_LOGGING_LEVEL_OFF &&
 						(State::Instance().NVNGX_Logger.MinimumLoggingLevel == NVSDK_NGX_LOGGING_LEVEL_VERBOSE || msg.level >= spdlog::level::info))

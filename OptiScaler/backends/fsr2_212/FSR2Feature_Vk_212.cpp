@@ -34,7 +34,7 @@ bool FSR2FeatureVk212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
     _contextDesc.device = Fsr212::ffxGetDeviceVK212(Device);
 
-    if (Config::Instance()->ExtendedLimits.value_or(false))
+    if (Config::Instance()->ExtendedLimits.value_or_default())
     {
         _contextDesc.maxRenderSize.width = RenderWidth() < DisplayWidth() ? DisplayWidth() : RenderWidth();
         _contextDesc.maxRenderSize.height = RenderHeight() < DisplayHeight() ? DisplayHeight() : RenderHeight();
@@ -314,7 +314,7 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
         InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
 
-    if (paramReactiveMask && Config::Instance()->FsrUseMaskForTransparency.value_or(true))
+    if (paramReactiveMask && Config::Instance()->FsrUseMaskForTransparency.value_or_default())
     {
         params.transparencyAndComposition = Fsr212::ffxGetTextureResourceVK212(&_context, ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Image,
                                                                                ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.ImageView,
@@ -370,7 +370,7 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
         params.motionVectorScale.y = MVScaleY;
     }
 
-    if (Config::Instance()->OverrideSharpness.value_or(false))
+    if (Config::Instance()->OverrideSharpness.value_or_default())
     {
         params.enableSharpening = Config::Instance()->Sharpness.value_or_default() > 0.0f;
         params.sharpness = Config::Instance()->Sharpness.value_or_default();

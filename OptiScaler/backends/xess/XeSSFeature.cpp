@@ -108,7 +108,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         LOG_DEBUG("xessParams.initFlags (LowResMV) {0:b}", xessParams.initFlags);
     }
 
-    if (!Config::Instance()->DisableReactiveMask.value_or(true))
+    if (!Config::Instance()->DisableReactiveMask.value_or_default())
     {
         Config::Instance()->DisableReactiveMask = false;
         xessParams.initFlags |= XESS_INIT_FLAG_RESPONSIVE_PIXEL_MASK;
@@ -170,7 +170,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
             break;
     }
 
-    if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+    if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false))
     {
         float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or_default();
 
@@ -194,7 +194,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         _targetHeight = DisplayHeight();
     }
 
-    if (Config::Instance()->ExtendedLimits.value_or(false) && RenderWidth() > DisplayWidth())
+    if (Config::Instance()->ExtendedLimits.value_or_default() && RenderWidth() > DisplayWidth())
     {
         _targetWidth = RenderWidth();
         _targetHeight = RenderHeight();
@@ -264,7 +264,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     }
 
     // try to build pipelines with local pipeline object
-    if (Config::Instance()->BuildPipelines.value_or(true))
+    if (Config::Instance()->BuildPipelines.value_or_default())
     {
         LOG_DEBUG("xessD3D12BuildPipelines!");
         State::Instance().skipHeapCapture = true;

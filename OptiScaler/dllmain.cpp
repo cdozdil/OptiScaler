@@ -169,8 +169,8 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
         auto pos = lcaseLibName.rfind(wstring_to_string(exePath));
 
-        if (Config::Instance()->DlssInputs.value_or(true) && CheckDllName(&lcaseLibName, &nvngxNames) &&
-            (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos == std::string::npos))
+        if (Config::Instance()->DlssInputs.value_or_default() && CheckDllName(&lcaseLibName, &nvngxNames) &&
+            (!Config::Instance()->HookOriginalNvngxOnly.value_or_default() || pos == std::string::npos))
         {
             LOG_INFO("nvngx call: {0}, returning this dll!", lcaseLibName);
 
@@ -221,7 +221,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
     }
 
     // sl.interposer.dll
-    if (Config::Instance()->DLSSGMod.value_or(false) && CheckDllName(&lcaseLibName, &streamlineNames))
+    if (Config::Instance()->DLSSGMod.value_or_default() && CheckDllName(&lcaseLibName, &streamlineNames))
     {
         auto streamlineModule = o_LoadLibraryA(lpLibFullPath);
 
@@ -231,7 +231,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
     }
 
     // nvngx_dlss
-    if (Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->DLSSLibrary.has_value() && CheckDllName(&lcaseLibName, &nvngxDlss))
+    if (Config::Instance()->DLSSEnabled.value_or_default() && Config::Instance()->DLSSLibrary.has_value() && CheckDllName(&lcaseLibName, &nvngxDlss))
     {
         auto nvngxDlss = LoadNvgxDlss(string_to_wstring(lcaseLibName));
 
@@ -239,9 +239,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
             return nvngxDlss;
     }
 
-    if (Config::Instance()->FGUseFGSwapChain.value_or(true))
+    if (Config::Instance()->FGUseFGSwapChain.value_or_default())
     {
-        if (Config::Instance()->FGDisableOverlays.value_or(true) && CheckDllName(&lcaseLibName, &overlayNames))
+        if (Config::Instance()->FGDisableOverlays.value_or_default() && CheckDllName(&lcaseLibName, &overlayNames))
         {
             LOG_DEBUG("Trying to load overlay dll: {}", lcaseLibName);
             return (HMODULE)1;
@@ -249,7 +249,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
     }
 
     // Hooks
-    if (CheckDllName(&lcaseLibName, &dx11Names) && Config::Instance()->OverlayMenu.value_or(true))
+    if (CheckDllName(&lcaseLibName, &dx11Names) && Config::Instance()->OverlayMenu.value_or_default())
     {
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
 
@@ -263,7 +263,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
         }
     }
 
-    if (CheckDllName(&lcaseLibName, &dx12Names) && Config::Instance()->OverlayMenu.value_or(true))
+    if (CheckDllName(&lcaseLibName, &dx12Names) && Config::Instance()->OverlayMenu.value_or_default())
     {
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
 
@@ -292,7 +292,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
                 HookForVulkanVRAMSpoofing();
             }
 
-            if (Config::Instance()->OverlayMenu.value_or(true))
+            if (Config::Instance()->OverlayMenu.value_or_default())
                 HooksVk::HookVk();
 
             State::Instance().skipDllLoadChecks = false;
@@ -308,7 +308,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
         if (!isWorkingWithEnabler)
             HookForDxgiSpoofing();
 
-        if (Config::Instance()->OverlayMenu.value_or(true))
+        if (Config::Instance()->OverlayMenu.value_or_default())
             HooksDx::HookDxgi();
 
         State::Instance().skipDllLoadChecks = false;
@@ -381,8 +381,8 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
         auto pos = lcaseLibName.rfind(exePath);
 
-        if (Config::Instance()->DlssInputs.value_or(true) && CheckDllNameW(&lcaseLibName, &nvngxnamesW) &&
-            (!Config::Instance()->HookOriginalNvngxOnly.value_or(false) || pos == std::string::npos))
+        if (Config::Instance()->DlssInputs.value_or_default() && CheckDllNameW(&lcaseLibName, &nvngxnamesW) &&
+            (!Config::Instance()->HookOriginalNvngxOnly.value_or_default() || pos == std::string::npos))
         {
             LOG_INFO("nvngx call: {0}, returning this dll!", lcaseLibNameA);
 
@@ -404,7 +404,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
     }
 
     // nvngx_dlss
-    if (Config::Instance()->DLSSEnabled.value_or(true) && Config::Instance()->DLSSLibrary.has_value() && CheckDllNameW(&lcaseLibName, &nvngxDlssW))
+    if (Config::Instance()->DLSSEnabled.value_or_default() && Config::Instance()->DLSSLibrary.has_value() && CheckDllNameW(&lcaseLibName, &nvngxDlssW))
     {
         auto nvngxDlss = LoadNvgxDlss(lcaseLibName);
 
@@ -442,7 +442,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
     }
 
     // sl.interposer.dll
-    if (Config::Instance()->DLSSGMod.value_or(false) && CheckDllNameW(&lcaseLibName, &streamlineNamesW))
+    if (Config::Instance()->DLSSGMod.value_or_default() && CheckDllNameW(&lcaseLibName, &streamlineNamesW))
     {
         auto streamlineModule = o_LoadLibraryW(lpLibFullPath);
 
@@ -451,9 +451,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
         return streamlineModule;
     }
 
-    if (Config::Instance()->FGUseFGSwapChain.value_or(true))
+    if (Config::Instance()->FGUseFGSwapChain.value_or_default())
     {
-        if (Config::Instance()->FGDisableOverlays.value_or(true) && CheckDllNameW(&lcaseLibName, &overlayNamesW))
+        if (Config::Instance()->FGDisableOverlays.value_or_default() && CheckDllNameW(&lcaseLibName, &overlayNamesW))
         {
             LOG_DEBUG("Trying to load overlay dll: {}", lcaseLibNameA);
             return (HMODULE)1;
@@ -461,7 +461,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
     }
 
     // Hooks
-    if (CheckDllNameW(&lcaseLibName, &dx11NamesW) && Config::Instance()->OverlayMenu.value_or(true))
+    if (CheckDllNameW(&lcaseLibName, &dx11NamesW) && Config::Instance()->OverlayMenu.value_or_default())
     {
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
 
@@ -475,7 +475,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
         }
     }
 
-    if (CheckDllNameW(&lcaseLibName, &dx12NamesW) && Config::Instance()->OverlayMenu.value_or(true))
+    if (CheckDllNameW(&lcaseLibName, &dx12NamesW) && Config::Instance()->OverlayMenu.value_or_default())
     {
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
 
@@ -504,7 +504,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
                 HookForVulkanVRAMSpoofing();
             }
 
-            if (Config::Instance()->OverlayMenu.value_or(true))
+            if (Config::Instance()->OverlayMenu.value_or_default())
                 HooksVk::HookVk();
 
             State::Instance().skipDllLoadChecks = false;
@@ -520,7 +520,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
         if (!isWorkingWithEnabler)
             HookForDxgiSpoofing();
 
-        if (Config::Instance()->OverlayMenu.value_or(true)/* && !State::Instance().isRunningOnLinux*/)
+        if (Config::Instance()->OverlayMenu.value_or_default()/* && !State::Instance().isRunningOnLinux*/)
             HooksDx::HookDxgi();
 
         State::Instance().skipDllLoadChecks = false;
@@ -1219,7 +1219,7 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
 {
     LOG_FUNC();
 
-    if (!Config::Instance()->VulkanExtensionSpoofing.value_or(false))
+    if (!Config::Instance()->VulkanExtensionSpoofing.value_or_default())
     {
         LOG_DEBUG("extension spoofing is disabled");
 
@@ -1415,7 +1415,7 @@ inline static void HookForDxgiSpoofing()
 
 inline static void HookForVulkanSpoofing()
 {
-    if (!isNvngxMode && Config::Instance()->VulkanSpoofing.value_or(false) && o_vkGetPhysicalDeviceProperties == nullptr)
+    if (!isNvngxMode && Config::Instance()->VulkanSpoofing.value_or_default() && o_vkGetPhysicalDeviceProperties == nullptr)
     {
         o_vkGetPhysicalDeviceProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties"));
         o_vkGetPhysicalDeviceProperties2 = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties2"));
@@ -1444,7 +1444,7 @@ inline static void HookForVulkanSpoofing()
 
 inline static void HookForVulkanExtensionSpoofing()
 {
-    if (!isNvngxMode && Config::Instance()->VulkanExtensionSpoofing.value_or(false) && o_vkEnumerateInstanceExtensionProperties == nullptr)
+    if (!isNvngxMode && Config::Instance()->VulkanExtensionSpoofing.value_or_default() && o_vkEnumerateInstanceExtensionProperties == nullptr)
     {
         o_vkCreateDevice = reinterpret_cast<PFN_vkCreateDevice>(DetourFindFunction("vulkan-1.dll", "vkCreateDevice"));
         o_vkCreateInstance = reinterpret_cast<PFN_vkCreateInstance>(DetourFindFunction("vulkan-1.dll", "vkCreateInstance"));
@@ -2034,7 +2034,7 @@ static void CheckWorkingMode()
     if (modeFound)
     {
         State::Instance().isWorkingAsNvngx = isNvngxMode && !isWorkingWithEnabler;
-        Config::Instance()->OverlayMenu = (!isNvngxMode || isWorkingWithEnabler) && Config::Instance()->OverlayMenu.value_or(true);
+        Config::Instance()->OverlayMenu = (!isNvngxMode || isWorkingWithEnabler) && Config::Instance()->OverlayMenu.value_or_default();
         Config::Instance()->CheckUpscalerFiles();
 
         if (!isNvngxMode || isWorkingWithEnabler)
@@ -2104,8 +2104,8 @@ static void CheckWorkingMode()
             if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr/* && !State::Instance().isRunningOnLinux*/)
                 HooksDx::HookDxgi();
 
-            if (!isWorkingWithEnabler && (!Config::Instance()->FGUseFGSwapChain.value_or(true) || !Config::Instance()->OverlayMenu.value_or(true)) &&
-                skHandle == nullptr && Config::Instance()->LoadSpecialK.value_or(false))
+            if (!isWorkingWithEnabler && (!Config::Instance()->FGUseFGSwapChain.value_or_default() || !Config::Instance()->OverlayMenu.value_or_default()) &&
+                skHandle == nullptr && Config::Instance()->LoadSpecialK.value_or_default())
             {
                 auto skFile = Util::DllPath().parent_path() / L"SpecialK64.dll";
                 SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
@@ -2113,7 +2113,7 @@ static void CheckWorkingMode()
                 LOG_INFO("Loading SpecialK64.dll, result: {0:X}", (UINT64)skHandle);
             }
 
-            if (!isWorkingWithEnabler && reshadeHandle == nullptr && Config::Instance()->LoadReShade.value_or(false))
+            if (!isWorkingWithEnabler && reshadeHandle == nullptr && Config::Instance()->LoadReShade.value_or_default())
             {
                 auto rsFile = Util::DllPath().parent_path() / L"ReShade64.dll";
                 SetEnvironmentVariableW(L"RESHADE_DISABLE_LOADING_CHECK", L"1");
@@ -2164,7 +2164,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             DisableThreadLibraryCalls(hModule);
 
-            if (Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->FGDisableOverlays.value_or(true))
+            if (Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->FGDisableOverlays.value_or_default())
                 SetEnvironmentVariable(L"SteamNoOverlayUIDrawing", L"1");
 
             loadCount++;
@@ -2197,7 +2197,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             skipGetModuleHandle = false;
 
             // Check if real DLSS available
-            if (Config::Instance()->DLSSEnabled.value_or(true))
+            if (Config::Instance()->DLSSEnabled.value_or_default())
             {
                 spdlog::info("");
                 skipGetModuleHandle = true;

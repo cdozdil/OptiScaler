@@ -68,7 +68,7 @@ void Imgui_Dx11::CreateRenderTarget(ID3D11Resource* out)
 
 bool Imgui_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTexture)
 {
-	if (Config::Instance()->OverlayMenu.value_or(true))
+	if (Config::Instance()->OverlayMenu.value_or_default())
 		return false;
 
 	if (pCmdList == nullptr || outTexture == nullptr)

@@ -188,7 +188,7 @@ Bias_Dx11::Bias_Dx11(std::string InName, ID3D11Device* InDevice) : _name(InName)
 
     LOG_DEBUG("{0} start!", _name);
 
-    if (Config::Instance()->UsePrecompiledShaders.value_or(true) || Config::Instance()->OutputScalingUseFsr.value_or(true))
+    if (Config::Instance()->UsePrecompiledShaders.value_or_default() || Config::Instance()->OutputScalingUseFsr.value_or_default())
     {
         HRESULT hr;
         hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bias_cso), sizeof(bias_cso), nullptr, &_computeShader);

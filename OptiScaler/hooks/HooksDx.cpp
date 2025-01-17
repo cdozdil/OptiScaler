@@ -572,7 +572,7 @@ static void FillResourceInfo(ID3D12Resource* resource, ResourceInfo* info)
 
 static bool IsHudFixActive()
 {
-    if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false))
+    if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default())
         return false;
 
     if (FrameGen_Dx12::fgSkipHudlessChecks || !FrameGen_Dx12::upscaleRan)
@@ -627,10 +627,10 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
         m_FrameGenerationConfig.frameGenerationEnabled = true;
         m_FrameGenerationConfig.flags = 0;
 
-        if (Config::Instance()->FGDebugView.value_or(false))
+        if (Config::Instance()->FGDebugView.value_or_default())
             m_FrameGenerationConfig.flags |= FFX_FRAMEGENERATION_FLAG_DRAW_DEBUG_VIEW;
 
-        m_FrameGenerationConfig.allowAsyncWorkloads = Config::Instance()->FGAsync.value_or(false);
+        m_FrameGenerationConfig.allowAsyncWorkloads = Config::Instance()->FGAsync.value_or_default();
 
         m_FrameGenerationConfig.generationRect.left = Config::Instance()->FGRectLeft.value_or(0);
         m_FrameGenerationConfig.generationRect.top = Config::Instance()->FGRectTop.value_or(0);
@@ -663,7 +663,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                 params->reset = (FrameGen_Dx12::reset != 0);
 
                 // check for status
-                if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) ||
+                if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default() ||
                     FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCommandList[fIndex] == nullptr ||
                     FrameGen_Dx12::fgCommandQueue == nullptr || State::Instance().SCchanged)
                 {
@@ -933,7 +933,7 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
 
     auto currentMs = Util::MillisecondsNow();
 
-    if (!Config::Instance()->FGAlwaysTrackHeaps.value_or(false) &&
+    if (!Config::Instance()->FGAlwaysTrackHeaps.value_or_default() &&
         resource->lastUsedFrame != 0 && (currentMs - resource->lastUsedFrame) > 400)
     {
         LOG_DEBUG("Resource {:X}, last used frame ({}) is too small ({}) from current one ({}) skipping resource!",
@@ -973,7 +973,7 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
     {
         if (callerName.length() > 0)
             LOG_DEBUG_ONLY("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
-                           callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
+                           callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
 
         return false;
     }
@@ -991,7 +991,7 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
     {
         if (callerName.length() > 0)
             LOG_DEBUG("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> TRUE",
-                      callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
+                      callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
 
         resource->lastUsedFrame = currentMs;
 
@@ -999,11 +999,11 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
     }
 
     // extended not active or no converter
-    if ((!Config::Instance()->FGHUDFixExtended.value_or(false) || FrameGen_Dx12::fgFormatTransfer == nullptr))
+    if ((!Config::Instance()->FGHUDFixExtended.value_or_default() || FrameGen_Dx12::fgFormatTransfer == nullptr))
     {
         if (callerName.length() > 0)
             LOG_DEBUG("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
-                      callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
+                      callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
 
         return false;
     }
@@ -1026,7 +1026,7 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
     {
         if (callerName.length() > 0)
             LOG_DEBUG("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> TRUE",
-                      callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
+                      callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
 
         resource->lastUsedFrame = currentMs;
 
@@ -1035,7 +1035,7 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
 
     if (callerName.length() > 0)
         LOG_DEBUG_ONLY("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
-                       callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or(false));
+                       callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
 
     return false;
 }
@@ -1076,13 +1076,13 @@ static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* p
 static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResource, D3D12_RENDER_TARGET_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
     // force hdr for swapchain buffer
-    if (pResource != nullptr && pDesc != nullptr && Config::Instance()->ForceHDR.value_or(false))
+    if (pResource != nullptr && pDesc != nullptr && Config::Instance()->ForceHDR.value_or_default())
     {
         for (size_t i = 0; i < State::Instance().SCbuffers.size(); i++)
         {
             if (State::Instance().SCbuffers[i] == pResource)
             {
-                if (Config::Instance()->UseHDR10.value_or(false))
+                if (Config::Instance()->UseHDR10.value_or_default())
                     pDesc->Format = DXGI_FORMAT_R10G10B10A2_UNORM;
                 else
                     pDesc->Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
@@ -1129,13 +1129,13 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
 static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pResource, D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
     // force hdr for swapchain buffer
-    if (pResource != nullptr && pDesc != nullptr && Config::Instance()->ForceHDR.value_or(false))
+    if (pResource != nullptr && pDesc != nullptr && Config::Instance()->ForceHDR.value_or_default())
     {
         for (size_t i = 0; i < State::Instance().SCbuffers.size(); i++)
         {
             if (State::Instance().SCbuffers[i] == pResource)
             {
-                if (Config::Instance()->UseHDR10.value_or(false))
+                if (Config::Instance()->UseHDR10.value_or_default())
                     pDesc->Format = DXGI_FORMAT_R10G10B10A2_UNORM;
                 else
                     pDesc->Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
@@ -1181,13 +1181,13 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
 
 static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pResource, ID3D12Resource* pCounterResource, D3D12_UNORDERED_ACCESS_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
-    if (pResource != nullptr && pDesc != nullptr && Config::Instance()->ForceHDR.value_or(false))
+    if (pResource != nullptr && pDesc != nullptr && Config::Instance()->ForceHDR.value_or_default())
     {
         for (size_t i = 0; i < State::Instance().SCbuffers.size(); i++)
         {
             if (State::Instance().SCbuffers[i] == pResource)
             {
-                if (Config::Instance()->UseHDR10.value_or(false))
+                if (Config::Instance()->UseHDR10.value_or_default())
                     pDesc->Format = DXGI_FORMAT_R10G10B10A2_UNORM;
                 else
                     pDesc->Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
@@ -1348,7 +1348,7 @@ static void hkCopyDescriptors(ID3D12Device* This,
     if (DescriptorHeapsType != D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV && DescriptorHeapsType != D3D12_DESCRIPTOR_HEAP_TYPE_RTV)
         return;
 
-    if (!Config::Instance()->FGAlwaysTrackHeaps.value_or(false) && !IsHudFixActive())
+    if (!Config::Instance()->FGAlwaysTrackHeaps.value_or_default() && !IsHudFixActive())
         return;
 
     // make copies, just in case
@@ -1480,7 +1480,7 @@ static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D
     if (DescriptorHeapsType != D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV && DescriptorHeapsType != D3D12_DESCRIPTOR_HEAP_TYPE_RTV)
         return;
 
-    if (!Config::Instance()->FGAlwaysTrackHeaps.value_or(false) && !IsHudFixActive())
+    if (!Config::Instance()->FGAlwaysTrackHeaps.value_or_default() && !IsHudFixActive())
         return;
 
     if (State::Instance().useThreadingForHeaps)
@@ -1592,7 +1592,7 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
 
     do
     {
-        if (Config::Instance()->FGImmediateCapture.value_or(false) && CheckCapture(__FUNCTION__))
+        if (Config::Instance()->FGImmediateCapture.value_or_default() && CheckCapture(__FUNCTION__))
         {
             CaptureHudless(This, capturedBuffer, capturedBuffer->state);
             break;
@@ -1680,7 +1680,7 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
             LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
             resource->state = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
-            if (Config::Instance()->FGImmediateCapture.value_or(false) && CheckCapture(__FUNCTION__))
+            if (Config::Instance()->FGImmediateCapture.value_or_default() && CheckCapture(__FUNCTION__))
             {
                 CaptureHudless(This, resource, resource->state);
                 break;
@@ -1759,7 +1759,7 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
 
     do
     {
-        if (Config::Instance()->FGImmediateCapture.value_or(false) && CheckForHudless(__FUNCTION__, capturedBuffer) && CheckCapture(__FUNCTION__))
+        if (Config::Instance()->FGImmediateCapture.value_or_default() && CheckForHudless(__FUNCTION__, capturedBuffer) && CheckCapture(__FUNCTION__))
         {
             CaptureHudless(This, capturedBuffer, capturedBuffer->state);
             break;
@@ -1998,9 +1998,9 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     }
 
     // If dispatch still not called
-    if (!fgDispatchCalled && Config::Instance()->FGHUDFix.value_or(false) && FrameGen_Dx12::fgIsActive &&
-        Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
-        Config::Instance()->FGEnabled.value_or(false) && State::Instance().currentFeature != nullptr &&
+    if (!fgDispatchCalled && Config::Instance()->FGHUDFix.value_or_default() && FrameGen_Dx12::fgIsActive &&
+        Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
+        Config::Instance()->FGEnabled.value_or_default() && State::Instance().currentFeature != nullptr &&
         FrameGen_Dx12::fgTarget < State::Instance().currentFeature->FrameCount() && !State::Instance().FGchanged &&
         FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr && 
         FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] >= 0) // If not captured
@@ -2226,7 +2226,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
     ImGuiOverlayDx::Present(pSwapChain, SyncInterval, Flags, pPresentParameters, pDevice, hWnd);
 
-    if (Config::Instance()->FGUseFGSwapChain.value_or(true))
+    if (Config::Instance()->FGUseFGSwapChain.value_or_default())
     {
         fakenvapi::reportFGPresent(pSwapChain, FrameGen_Dx12::fgIsActive, frameCounter % 2);
     }
@@ -2420,11 +2420,11 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
     // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
-    if (Config::Instance()->ForceHDR.value_or(false) && !fgSkipSCWrapping)
+    if (Config::Instance()->ForceHDR.value_or_default() && !fgSkipSCWrapping)
     {
         LOG_INFO("Force HDR on");
 
-        if (Config::Instance()->UseHDR10.value_or(false))
+        if (Config::Instance()->UseHDR10.value_or_default())
         {
             LOG_INFO("Using HDR10");
             pDesc->BufferDesc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
@@ -2443,7 +2443,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     }
 
     ID3D12CommandQueue* cq = nullptr;
-    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+    if (Config::Instance()->FGUseFGSwapChain.value_or_default() && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
         cq->SetName(L"GameQueue");
         cq->Release();
@@ -2497,7 +2497,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
             }
             //#endif
 
-            if (Config::Instance()->FGHybridSpin.value_or(false))
+            if (Config::Instance()->FGHybridSpin.value_or_default())
             {
                 FfxSwapchainFramePacingTuning fpt{};
                 fpt.allowHybridSpin = true;
@@ -2526,7 +2526,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
                 }
             }
 
-            if (Config::Instance()->ForceHDR.value_or(false))
+            if (Config::Instance()->ForceHDR.value_or_default())
             {
                 IDXGISwapChain3* sc3 = nullptr;
 
@@ -2536,7 +2536,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
                     {
                         DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
 
-                        if (Config::Instance()->UseHDR10.value_or(false))
+                        if (Config::Instance()->UseHDR10.value_or_default())
                             hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
 
                         UINT css = 0;
@@ -2616,7 +2616,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
         // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
         // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
-        if (Config::Instance()->ForceHDR.value_or(false))
+        if (Config::Instance()->ForceHDR.value_or_default())
         {
             if (!fgSkipSCWrapping)
             {
@@ -2639,7 +2639,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
                 {
                     DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
 
-                    if (Config::Instance()->UseHDR10.value_or(false))
+                    if (Config::Instance()->UseHDR10.value_or_default())
                         hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
 
                     UINT css = 0;
@@ -2718,11 +2718,11 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         FrameGen_Dx12::ReleaseFGSwapchain(hWnd);
     }
 
-    if (Config::Instance()->ForceHDR.value_or(false) && !fgSkipSCWrapping)
+    if (Config::Instance()->ForceHDR.value_or_default() && !fgSkipSCWrapping)
     {
         LOG_INFO("Force HDR on");
 
-        if (Config::Instance()->UseHDR10.value_or(false))
+        if (Config::Instance()->UseHDR10.value_or_default())
         {
             LOG_INFO("Using HDR10");
             pDesc->Format = DXGI_FORMAT_R10G10B10A2_UNORM;
@@ -2741,7 +2741,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     }
 
     ID3D12CommandQueue* cq = nullptr;
-    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+    if (Config::Instance()->FGUseFGSwapChain.value_or_default() && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
         cq->SetName(L"GameQueueHwnd");
         cq->Release();
@@ -2797,7 +2797,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
             }
             //#endif
 
-            if (Config::Instance()->FGHybridSpin.value_or(false))
+            if (Config::Instance()->FGHybridSpin.value_or_default())
             {
                 FfxSwapchainFramePacingTuning fpt{};
                 fpt.allowHybridSpin = true;
@@ -2826,7 +2826,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
                 }
             }
 
-            if (Config::Instance()->ForceHDR.value_or(false))
+            if (Config::Instance()->ForceHDR.value_or_default())
             {
                 IDXGISwapChain3* sc3 = nullptr;
 
@@ -2836,7 +2836,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
                     {
                         DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
 
-                        if (Config::Instance()->UseHDR10.value_or(false))
+                        if (Config::Instance()->UseHDR10.value_or_default())
                             hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
 
                         UINT css = 0;
@@ -2912,7 +2912,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         if (!fgSkipSCWrapping)
             HooksDx::currentSwapchain = lastWrapped;
 
-        if (Config::Instance()->ForceHDR.value_or(false))
+        if (Config::Instance()->ForceHDR.value_or_default())
         {
             if (!fgSkipSCWrapping)
             {
@@ -2935,7 +2935,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
                 {
                     DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
 
-                    if (Config::Instance()->UseHDR10.value_or(false))
+                    if (Config::Instance()->UseHDR10.value_or_default())
                         hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
 
                     UINT css = 0;
@@ -3301,7 +3301,7 @@ static void HookToDevice(ID3D12Device* InDevice)
         if (o_CreateSampler != nullptr)
             DetourAttach(&(PVOID&)o_CreateSampler, hkCreateSampler);
 
-        if (Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true))
+        if (Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default())
         {
             if (o_CreateRenderTargetView != nullptr)
                 DetourAttach(&(PVOID&)o_CreateRenderTargetView, hkCreateRenderTargetView);
@@ -3322,7 +3322,7 @@ static void HookToDevice(ID3D12Device* InDevice)
         DetourTransactionCommit();
     }
 
-    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true))
+    if (Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default())
         HookCommandList(InDevice);
 }
 
@@ -3598,15 +3598,15 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
     newDesc.MinLOD = pDesc->MinLOD;
     newDesc.MipLODBias = pDesc->MipLODBias;
 
-    if (newDesc.MipLODBias < 0.0f || Config::Instance()->MipmapBiasOverrideAll.value_or(false))
+    if (newDesc.MipLODBias < 0.0f || Config::Instance()->MipmapBiasOverrideAll.value_or_default())
     {
         if (Config::Instance()->MipmapBiasOverride.has_value())
         {
             LOG_DEBUG("Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
 
-            if (Config::Instance()->MipmapBiasFixedOverride.value_or(false))
+            if (Config::Instance()->MipmapBiasFixedOverride.value_or_default())
                 newDesc.MipLODBias = Config::Instance()->MipmapBiasOverride.value();
-            else if (Config::Instance()->MipmapBiasScaleOverride.value_or(false))
+            else if (Config::Instance()->MipmapBiasScaleOverride.value_or_default())
                 newDesc.MipLODBias = newDesc.MipLODBias * Config::Instance()->MipmapBiasOverride.value();
             else
                 newDesc.MipLODBias = newDesc.MipLODBias + Config::Instance()->MipmapBiasOverride.value();
@@ -3663,15 +3663,15 @@ static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC
 
     newDesc.MipLODBias = pSamplerDesc->MipLODBias;
 
-    if (newDesc.MipLODBias < 0.0f || Config::Instance()->MipmapBiasOverrideAll.value_or(false))
+    if (newDesc.MipLODBias < 0.0f || Config::Instance()->MipmapBiasOverrideAll.value_or_default())
     {
         if (Config::Instance()->MipmapBiasOverride.has_value())
         {
             LOG_DEBUG("Overriding mipmap bias {0} -> {1}", pSamplerDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
 
-            if (Config::Instance()->MipmapBiasFixedOverride.value_or(false))
+            if (Config::Instance()->MipmapBiasFixedOverride.value_or_default())
                 newDesc.MipLODBias = Config::Instance()->MipmapBiasOverride.value();
-            else if (Config::Instance()->MipmapBiasScaleOverride.value_or(false))
+            else if (Config::Instance()->MipmapBiasScaleOverride.value_or_default())
                 newDesc.MipLODBias = newDesc.MipLODBias * Config::Instance()->MipmapBiasOverride.value();
             else
                 newDesc.MipLODBias = newDesc.MipLODBias + Config::Instance()->MipmapBiasOverride.value();
@@ -4098,7 +4098,7 @@ void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
         copyQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
         copyQueueDesc.NodeMask = 0;
 
-        if (Config::Instance()->FGHighPriority.value_or(true))
+        if (Config::Instance()->FGHighPriority.value_or_default())
             copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
         else
             copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
@@ -4202,7 +4202,7 @@ void FrameGen_Dx12::CreateFGContext(ID3D12Device* InDevice, IFeature* deviceCont
     if ((deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0)
         createFg.flags |= FFX_FRAMEGENERATION_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
 
-    if (Config::Instance()->FGAsync.value_or(false))
+    if (Config::Instance()->FGAsync.value_or_default())
         createFg.flags |= FFX_FRAMEGENERATION_ENABLE_ASYNC_WORKLOAD_SUPPORT;
 
 

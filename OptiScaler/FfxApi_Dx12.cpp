@@ -83,9 +83,9 @@ static std::optional<float> GetQualityOverrideRatioFfx(const uint32_t input)
 {
     std::optional<float> output;
 
-    auto sliderLimit = Config::Instance()->ExtendedLimits.value_or(false) ? 0.1f : 1.0f;
+    auto sliderLimit = Config::Instance()->ExtendedLimits.value_or_default() ? 0.1f : 1.0f;
 
-    if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false) &&
+    if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or_default() &&
         Config::Instance()->UpscaleRatioOverrideValue.value_or_default() >= sliderLimit)
     {
         output = Config::Instance()->UpscaleRatioOverrideValue.value_or_default();
@@ -93,7 +93,7 @@ static std::optional<float> GetQualityOverrideRatioFfx(const uint32_t input)
         return  output;
     }
 
-    if (!Config::Instance()->QualityRatioOverrideEnabled.value_or(false))
+    if (!Config::Instance()->QualityRatioOverrideEnabled.value_or_default())
         return output; // override not enabled
 
     switch (input)
@@ -295,7 +295,7 @@ ffxReturnCode_t ffxQuery_Dx12(ffxContext* context, ffxQueryDescHeader* desc)
 ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* desc)
 {
     // Skip OptiScaler stuff
-    if (!Config::Instance()->FfxInputs.value_or(true))
+    if (!Config::Instance()->FfxInputs.value_or_default())
         return FfxApiProxy::D3D12_Dispatch()(context, desc);
 
     if (desc == nullptr || context == nullptr)

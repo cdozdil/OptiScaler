@@ -130,7 +130,7 @@ static int64_t GetTicks()
 
 static void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
-    if (Config::Instance()->RestoreComputeSignature.value_or(false) && !contextRendering && commandList != nullptr && pRootSignature != nullptr)
+    if (Config::Instance()->RestoreComputeSignature.value_or_default() && !contextRendering && commandList != nullptr && pRootSignature != nullptr)
     {
         std::unique_lock<std::shared_mutex> lock(computeSigatureMutex);
         computeSignatures.insert_or_assign(commandList, pRootSignature);
@@ -141,7 +141,7 @@ static void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID
 
 static void hkSetGraphicRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
-    if (Config::Instance()->RestoreGraphicSignature.value_or(false) && !contextRendering && commandList != nullptr && pRootSignature != nullptr)
+    if (Config::Instance()->RestoreGraphicSignature.value_or_default() && !contextRendering && commandList != nullptr && pRootSignature != nullptr)
     {
         std::unique_lock<std::shared_mutex> lock(graphSigatureMutex);
         graphicSignatures.insert_or_assign(commandList, pRootSignature);
@@ -210,7 +210,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
         return NVSDK_NGX_Result_Success;
     }
 
-    if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
+    if (Config::Instance()->UseGenericAppIdWithDlss.value_or_default())
         InApplicationId = app_id_override;
 
     State::Instance().NVNGX_ApplicationId = InApplicationId;
@@ -221,7 +221,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
     if (InFeatureInfo != nullptr && InSDKVersion > 0x0000013)
         State::Instance().NVNGX_Logger = InFeatureInfo->LoggingInfo;
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx12Inited())
+    if (Config::Instance()->DLSSEnabled.value_or_default() && !NVNGXProxy::IsDx12Inited())
     {
         if (NVNGXProxy::NVNGXModule() == nullptr)
             NVNGXProxy::InitNVNGX();
@@ -323,9 +323,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init(unsigned long long InApplica
         return NVSDK_NGX_Result_Success;
     }
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx12Inited())
+    if (Config::Instance()->DLSSEnabled.value_or_default() && !NVNGXProxy::IsDx12Inited())
     {
-        if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
+        if (Config::Instance()->UseGenericAppIdWithDlss.value_or_default())
             InApplicationId = app_id_override;
 
         if (NVNGXProxy::NVNGXModule() == nullptr)
@@ -363,9 +363,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProj
         return NVSDK_NGX_Result_Success;
     }
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && !NVNGXProxy::IsDx12Inited())
+    if (Config::Instance()->DLSSEnabled.value_or_default() && !NVNGXProxy::IsDx12Inited())
     {
-        if (Config::Instance()->UseGenericAppIdWithDlss.value_or(false))
+        if (Config::Instance()->UseGenericAppIdWithDlss.value_or_default())
             InProjectId = project_id_override;
 
         if (NVNGXProxy::NVNGXModule() == nullptr)
@@ -447,7 +447,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
 
     DLSSFeatureDx12::Shutdown(D3D12Device);
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_Shutdown() != nullptr)
+    if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_Shutdown() != nullptr)
     {
         auto result = NVNGXProxy::D3D12_Shutdown()();
         NVNGXProxy::SetDx12Inited(false);
@@ -473,7 +473,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown1(ID3D12Device* InDevice)
 
     DLSSGMod::D3D12_Shutdown1(InDevice);
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_Shutdown1() != nullptr)
+    if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_Shutdown1() != nullptr)
     {
         auto result = NVNGXProxy::D3D12_Shutdown1()(InDevice);
         NVNGXProxy::SetDx12Inited(false);
@@ -490,7 +490,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetParameters(NVSDK_NGX_Parameter
 {
     LOG_FUNC();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D12_GetParameters() != nullptr)
+    if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D12_GetParameters() != nullptr)
     {
         LOG_INFO("calling NVNGXProxy::D3D12_GetParameters");
         auto result = NVNGXProxy::D3D12_GetParameters()(OutParameters);
@@ -511,7 +511,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetCapabilityParameters(NVSDK_NGX
 {
     LOG_FUNC();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_GetCapabilityParameters() != nullptr)
+    if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_GetCapabilityParameters() != nullptr)
     {
         LOG_INFO("calling NVNGXProxy::D3D12_GetCapabilityParameters");
         auto result = NVNGXProxy::D3D12_GetCapabilityParameters()(OutParameters);
@@ -533,7 +533,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_AllocateParameters(NVSDK_NGX_Para
 {
     LOG_FUNC();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D12_AllocateParameters() != nullptr)
+    if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D12_AllocateParameters() != nullptr)
     {
         LOG_INFO("calling NVNGXProxy::D3D12_AllocateParameters");
         auto result = NVNGXProxy::D3D12_AllocateParameters()(OutParameters);
@@ -571,7 +571,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_DestroyParameters(NVSDK_NGX_Param
     if (InParameters == nullptr)
         return NVSDK_NGX_Result_Fail;
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D12_DestroyParameters() != nullptr)
+    if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D12_DestroyParameters() != nullptr)
     {
         LOG_INFO("calling NVNGXProxy::D3D12_DestroyParameters");
         auto result = NVNGXProxy::D3D12_DestroyParameters()(InParameters);
@@ -602,7 +602,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
     }
     else if (InFeatureID != NVSDK_NGX_Feature_SuperSampling && InFeatureID != NVSDK_NGX_Feature_RayReconstruction)
     {
-        if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::InitDx12(D3D12Device) && NVNGXProxy::D3D12_CreateFeature() != nullptr)
+        if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::InitDx12(D3D12Device) && NVNGXProxy::D3D12_CreateFeature() != nullptr)
         {
             LOG_INFO("calling D3D12_CreateFeature for ({0})", (int)InFeatureID);
             auto result = NVNGXProxy::D3D12_CreateFeature()(InCmdList, InFeatureID, InParameters, OutHandle);
@@ -646,7 +646,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
     }
 
     // Root signature restore
-    if (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false))
+    if (Config::Instance()->RestoreComputeSignature.value_or_default() || Config::Instance()->RestoreGraphicSignature.value_or_default())
         contextRendering = true;
 
     if (InFeatureID == NVSDK_NGX_Feature_SuperSampling)
@@ -678,7 +678,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
                     upscalerChoice = 1;
                 else if (Config::Instance()->Dx12Upscaler.value() == "fsr21")
                     upscalerChoice = 2;
-                else if (Config::Instance()->Dx12Upscaler.value() == "dlss" && Config::Instance()->DLSSEnabled.value_or(true))
+                else if (Config::Instance()->Dx12Upscaler.value() == "dlss" && Config::Instance()->DLSSEnabled.value_or_default())
                     upscalerChoice = 3;
                 else if (Config::Instance()->Dx12Upscaler.value() == "fsr31")
                     upscalerChoice = 4;
@@ -813,26 +813,26 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
         State::Instance().changeBackend = true;
     }
 
-    if (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false))
+    if (Config::Instance()->RestoreComputeSignature.value_or_default() || Config::Instance()->RestoreGraphicSignature.value_or_default())
     {
-        if (Config::Instance()->RestoreComputeSignature.value_or(false) && computeSignatures.contains(InCmdList))
+        if (Config::Instance()->RestoreComputeSignature.value_or_default() && computeSignatures.contains(InCmdList))
         {
             auto signature = computeSignatures[InCmdList];
             LOG_TRACE("restore ComputeRootSig: {0:X}", (UINT64)signature);
             orgSetComputeRootSignature(InCmdList, signature);
         }
-        else if (Config::Instance()->RestoreComputeSignature.value_or(false))
+        else if (Config::Instance()->RestoreComputeSignature.value_or_default())
         {
             LOG_TRACE("can't restore ComputeRootSig");
         }
 
-        if (Config::Instance()->RestoreGraphicSignature.value_or(false) && graphicSignatures.contains(InCmdList))
+        if (Config::Instance()->RestoreGraphicSignature.value_or_default() && graphicSignatures.contains(InCmdList))
         {
             auto signature = graphicSignatures[InCmdList];
             LOG_TRACE("restore GraphicRootSig: {0:X}", (UINT64)signature);
             orgSetGraphicRootSignature(InCmdList, signature);
         }
-        else if (Config::Instance()->RestoreGraphicSignature.value_or(false))
+        else if (Config::Instance()->RestoreGraphicSignature.value_or_default())
         {
             LOG_TRACE("can't restore GraphicRootSig");
         }
@@ -860,7 +860,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 
     if (handleId < 1000000)
     {
-        if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D12_ReleaseFeature() != nullptr)
+        if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::D3D12_ReleaseFeature() != nullptr)
         {
             if (!shutdown)
                 LOG_INFO("calling D3D12_ReleaseFeature for ({0})", handleId);
@@ -926,10 +926,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetFeatureRequirements(IDXGIAdapt
         return NVSDK_NGX_Result_Success;
     }
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::NVNGXModule() == nullptr)
+    if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::NVNGXModule() == nullptr)
         NVNGXProxy::InitNVNGX();
 
-    if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D12_GetFeatureRequirements() != nullptr)
+    if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::D3D12_GetFeatureRequirements() != nullptr)
     {
         LOG_DEBUG("D3D12_GetFeatureRequirements for ({0})", (int)FeatureDiscoveryInfo->FeatureID);
         auto result = NVNGXProxy::D3D12_GetFeatureRequirements()(Adapter, FeatureDiscoveryInfo, OutSupported);
@@ -976,7 +976,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     if (handleId < 1000000)
     {
-        if (Config::Instance()->DLSSEnabled.value_or(true) && NVNGXProxy::D3D12_EvaluateFeature() != nullptr)
+        if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::D3D12_EvaluateFeature() != nullptr)
         {
             LOG_DEBUG("D3D12_EvaluateFeature for ({0})", handleId);
             auto result = NVNGXProxy::D3D12_EvaluateFeature()(InCmdList, InFeatureHandle, InParameters, InCallback);
@@ -1144,7 +1144,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     // Change backend
     if (State::Instance().changeBackend)
     {
-        if (State::Instance().newBackend == "" || (!Config::Instance()->DLSSEnabled.value_or(true) && State::Instance().newBackend == "dlss"))
+        if (State::Instance().newBackend == "" || (!Config::Instance()->DLSSEnabled.value_or_default() && State::Instance().newBackend == "dlss"))
             State::Instance().newBackend = Config::Instance()->Dx12Upscaler.value_or("xess");
 
         changeBackendCounter++;
@@ -1347,13 +1347,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     State::Instance().currentFeature = deviceContext;
 
     // Root signature restore
-    if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
+    if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or_default() || Config::Instance()->RestoreGraphicSignature.value_or_default()))
         contextRendering = true;
 
     // FG Init || Disable    
-    if (Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true))
+    if (Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default())
     {
-        if (!State::Instance().FGchanged && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() && Config::Instance()->FGEnabled.value_or(false) &&
+        if (!State::Instance().FGchanged && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() && Config::Instance()->FGEnabled.value_or_default() &&
             FfxApiProxy::InitFfxDx12() && !FrameGen_Dx12::fgIsActive && HooksDx::currentSwapchain != nullptr &&
             HooksDx::CurrentSwapchainFormat() != DXGI_FORMAT_UNKNOWN)
         {
@@ -1361,7 +1361,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             FrameGen_Dx12::CreateFGContext(D3D12Device, deviceContext);
             FrameGen_Dx12::fgTarget = deviceContext->FrameCount() + 3;
         }
-        else if ((!Config::Instance()->FGEnabled.value_or(false) || State::Instance().FGchanged) && FrameGen_Dx12::fgIsActive)
+        else if ((!Config::Instance()->FGEnabled.value_or_default() || State::Instance().FGchanged) && FrameGen_Dx12::fgIsActive)
         {
             FrameGen_Dx12::StopAndDestroyFGContext(State::Instance().SCchanged, false);
         }
@@ -1387,7 +1387,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     double ftDelta = 0.0f;
     float meterFactor = 0.0f;
 
-    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.cameraNear", &cameraNear) != NVSDK_NGX_Result_Success)
+    if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() || InParameters->Get("FSR.cameraNear", &cameraNear) != NVSDK_NGX_Result_Success)
     {
         if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
             cameraFar = Config::Instance()->FsrCameraNear.value_or_default();
@@ -1395,7 +1395,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             cameraNear = Config::Instance()->FsrCameraNear.value_or_default();
     }
 
-    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.cameraFar", &cameraFar) != NVSDK_NGX_Result_Success)
+    if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() || InParameters->Get("FSR.cameraFar", &cameraFar) != NVSDK_NGX_Result_Success)
     {
         if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted)
             cameraNear = Config::Instance()->FsrCameraFar.value_or_default();
@@ -1403,7 +1403,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             cameraFar = Config::Instance()->FsrCameraFar.value_or_default();
     }
 
-    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.cameraFovAngleVertical", &cameraVFov) != NVSDK_NGX_Result_Success)
+    if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() || InParameters->Get("FSR.cameraFovAngleVertical", &cameraVFov) != NVSDK_NGX_Result_Success)
     {
         if (Config::Instance()->FsrVerticalFov.has_value())
             cameraVFov = Config::Instance()->FsrVerticalFov.value() * 0.0174532925199433f;
@@ -1413,7 +1413,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             cameraVFov = 1.0471975511966f;
     }
 
-    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.frameTimeDelta", &ftDelta) != NVSDK_NGX_Result_Success)
+    if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() || InParameters->Get("FSR.frameTimeDelta", &ftDelta) != NVSDK_NGX_Result_Success)
     {
         if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &ftDelta) != NVSDK_NGX_Result_Success || ftDelta < 1.0f)
             ftDelta = FrameGen_Dx12::fgFrameTime;
@@ -1421,7 +1421,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     LOG_DEBUG("FrameTimeDeltaInMsec: {0}", FrameGen_Dx12::ftDelta);
 
-    if (!Config::Instance()->FsrUseFsrInputValues.value_or(true) || InParameters->Get("FSR.viewSpaceToMetersFactor", &FrameGen_Dx12::meterFactor) != NVSDK_NGX_Result_Success)
+    if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() || InParameters->Get("FSR.viewSpaceToMetersFactor", &FrameGen_Dx12::meterFactor) != NVSDK_NGX_Result_Success)
         FrameGen_Dx12::meterFactor = 0.0f;
 
     State::Instance().lastFsrCameraFar = cameraFar;
@@ -1433,8 +1433,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     // FG Prepare
     UINT frameIndex;
 
-    if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
-        Config::Instance()->FGEnabled.value_or(false) && FrameGen_Dx12::fgTarget <= deviceContext->FrameCount() &&
+    if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
+        Config::Instance()->FGEnabled.value_or_default() && FrameGen_Dx12::fgTarget <= deviceContext->FrameCount() &&
         FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
     {
         frameIndex = FrameGen_Dx12::NewFrame();
@@ -1448,7 +1448,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         allocatorReset = true;
 #endif
 
-        if (!allocatorReset && Config::Instance()->FGHUDFix.value_or(false))
+        if (!allocatorReset && Config::Instance()->FGHUDFix.value_or_default())
         {
             auto allocator = FrameGen_Dx12::fgCommandAllocators[frameIndex];
             auto result = allocator->Reset();
@@ -1535,8 +1535,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         HooksDx::dx12UpscaleTrig = true;
 
         // FG Dispatch
-        if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
-            Config::Instance()->FGEnabled.value_or(false) && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() &&
+        if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
+            Config::Instance()->FGEnabled.value_or_default() && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() &&
             FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
         {
             FrameGen_Dx12::upscaleRan = true;
@@ -1556,7 +1556,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             FrameGen_Dx12::fgFrameTime = msDelta;
 #endif
 
-            if (Config::Instance()->FGHUDFix.value_or(false))
+            if (Config::Instance()->FGHUDFix.value_or_default())
             {
                 FrameGen_Dx12::CheckUpscaledFrame(InCmdList, output);
             }
@@ -1583,10 +1583,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 m_FrameGenerationConfig.frameGenerationEnabled = true;
                 m_FrameGenerationConfig.flags = 0;
 
-                if (Config::Instance()->FGDebugView.value_or(false))
+                if (Config::Instance()->FGDebugView.value_or_default())
                     m_FrameGenerationConfig.flags |= FFX_FRAMEGENERATION_FLAG_DRAW_DEBUG_VIEW;
 
-                m_FrameGenerationConfig.allowAsyncWorkloads = Config::Instance()->FGAsync.value_or(false);
+                m_FrameGenerationConfig.allowAsyncWorkloads = Config::Instance()->FGAsync.value_or_default();
                 m_FrameGenerationConfig.generationRect.left = Config::Instance()->FGRectLeft.value_or(0);
                 m_FrameGenerationConfig.generationRect.top = Config::Instance()->FGRectTop.value_or(0);
 
@@ -1611,7 +1611,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         params->reset = (FrameGen_Dx12::reset != 0);
 
                         // check for status
-                        if (!Config::Instance()->FGEnabled.value_or(false) ||
+                        if (!Config::Instance()->FGEnabled.value_or_default() ||
                             FrameGen_Dx12::fgContext == nullptr || State::Instance().SCchanged
 #ifdef USE_QUEUE_FOR_FG
                             || FrameGen_Dx12::fgCommandList[fIndex] == nullptr || FrameGen_Dx12::fgCommandQueue == nullptr
@@ -1772,26 +1772,26 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         }
 
     // Root signature restore
-    if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or(false) || Config::Instance()->RestoreGraphicSignature.value_or(false)))
+    if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or_default() || Config::Instance()->RestoreGraphicSignature.value_or_default()))
     {
-        if (Config::Instance()->RestoreComputeSignature.value_or(false) && computeSignatures[InCmdList])
+        if (Config::Instance()->RestoreComputeSignature.value_or_default() && computeSignatures[InCmdList])
         {
             auto signature = computeSignatures[InCmdList];
             LOG_TRACE("restore orgComputeRootSig: {0:X}", (UINT64)signature);
             orgSetComputeRootSignature(InCmdList, signature);
         }
-        else if (Config::Instance()->RestoreComputeSignature.value_or(false))
+        else if (Config::Instance()->RestoreComputeSignature.value_or_default())
         {
             LOG_WARN("Can't restore ComputeRootSig!");
         }
 
-        if (Config::Instance()->RestoreGraphicSignature.value_or(false) && /*graphTime != 0 && graphTime > lastEvalTime && graphTime <= evaluateStart &&*/ graphicSignatures[InCmdList])
+        if (Config::Instance()->RestoreGraphicSignature.value_or_default() && /*graphTime != 0 && graphTime > lastEvalTime && graphTime <= evaluateStart &&*/ graphicSignatures[InCmdList])
         {
             auto signature = graphicSignatures[InCmdList];
             LOG_TRACE("restore orgGraphicRootSig: {0:X}", (UINT64)signature);
             orgSetGraphicRootSignature(InCmdList, signature);
         }
-        else if (Config::Instance()->RestoreGraphicSignature.value_or(false))
+        else if (Config::Instance()->RestoreGraphicSignature.value_or_default())
         {
             LOG_WARN("Can't restore GraphicRootSig!");
         }

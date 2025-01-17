@@ -42,7 +42,7 @@ bool IFeature::SetInitParameters(NVSDK_NGX_Parameter* InParameters)
 
 		// When using extended limits render res might be bigger than display res
 		// it might create rendering issues but extending limits is an advanced option after all
-		if (!Config::Instance()->ExtendedLimits.value_or(false))
+		if (!Config::Instance()->ExtendedLimits.value_or_default())
 		{
 			_displayWidth = width > outWidth ? width : outWidth;
 			_displayHeight = height > outHeight ? height : outHeight;
@@ -139,7 +139,7 @@ void IFeature::GetRenderResolution(NVSDK_NGX_Parameter* InParameters, unsigned i
 
 float IFeature::GetSharpness(const NVSDK_NGX_Parameter* InParameters)
 {
-	if (Config::Instance()->OverrideSharpness.value_or(false))
+	if (Config::Instance()->OverrideSharpness.value_or_default())
 		return Config::Instance()->Sharpness.value_or_default();
 
 	float sharpness = 0.0f;

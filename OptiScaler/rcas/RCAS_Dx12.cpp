@@ -212,12 +212,12 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
 	InternalConstants constants{};
 	constants.DisplayHeight = InConstants.DisplayHeight;
 	constants.DisplayWidth = InConstants.DisplayWidth;
-	constants.DynamicSharpenEnabled = Config::Instance()->MotionSharpnessEnabled.value_or(false) ? 1 : 0;
+	constants.DynamicSharpenEnabled = Config::Instance()->MotionSharpnessEnabled.value_or_default() ? 1 : 0;
 	constants.MotionSharpness = Config::Instance()->MotionSharpness.value_or_default();
 	constants.MvScaleX = InConstants.MvScaleX;
 	constants.MvScaleY = InConstants.MvScaleY;
 	constants.Sharpness = InConstants.Sharpness;
-	constants.Debug = Config::Instance()->MotionSharpnessDebug.value_or(false) ? 1 : 0;
+	constants.Debug = Config::Instance()->MotionSharpnessDebug.value_or_default() ? 1 : 0;
 	constants.Threshold = Config::Instance()->MotionThreshold.value_or_default();
 	constants.ScaleLimit = Config::Instance()->MotionScaleLimit.value_or_default();
 	constants.DisplaySizeMV = InConstants.DisplaySizeMV ? 1 : 0;
@@ -394,7 +394,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 		return;
 	}
 
-	if (Config::Instance()->UsePrecompiledShaders.value_or(true))
+	if (Config::Instance()->UsePrecompiledShaders.value_or_default())
 	{
 		D3D12_COMPUTE_PIPELINE_STATE_DESC computePsoDesc = {};
 		computePsoDesc.pRootSignature = _rootSignature;

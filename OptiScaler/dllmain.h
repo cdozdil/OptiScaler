@@ -1625,9 +1625,9 @@ HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1
 
     HRESULT result = S_OK;
 
-    if (!skipHighPerfCheck && Config::Instance()->PreferDedicatedGpu.value_or(false))
+    if (!skipHighPerfCheck && Config::Instance()->PreferDedicatedGpu.value_or_default())
     {
-        if (Config::Instance()->PreferFirstDedicatedGpu.value_or(false) && Adapter > 0)
+        if (Config::Instance()->PreferFirstDedicatedGpu.value_or_default() && Adapter > 0)
         {
             LOG_DEBUG("{}, returning not found", Adapter);
             return DXGI_ERROR_NOT_FOUND;
@@ -1688,9 +1688,9 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
 
     HRESULT result = S_OK;
 
-    if (!skipHighPerfCheck && Config::Instance()->PreferDedicatedGpu.value_or(false))
+    if (!skipHighPerfCheck && Config::Instance()->PreferDedicatedGpu.value_or_default())
     {
-        if (Config::Instance()->PreferFirstDedicatedGpu.value_or(false) && Adapter > 0)
+        if (Config::Instance()->PreferFirstDedicatedGpu.value_or_default() && Adapter > 0)
         {
             LOG_DEBUG("{}, returning not found", Adapter);
             return DXGI_ERROR_NOT_FOUND;

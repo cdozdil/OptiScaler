@@ -9,7 +9,7 @@
 
 bool ImguiDxBase::RenderMenu()
 {
-    if (Config::Instance()->OverlayMenu.value_or(true))
+    if (Config::Instance()->OverlayMenu.value_or_default())
         return false;
 
     if (ImGuiCommon::RenderMenu())
@@ -23,7 +23,7 @@ bool ImguiDxBase::RenderMenu()
 
 bool ImguiDxBase::IsHandleDifferent()
 {
-    if (Config::Instance()->OverlayMenu.value_or(true))
+    if (Config::Instance()->OverlayMenu.value_or_default())
         return false;
 
     HWND frontWindow = Util::GetProcessWindow();
@@ -48,7 +48,7 @@ void ImguiDxBase::Dx12Ready()
 
 ImguiDxBase::ImguiDxBase(HWND handle) : _handle(handle)
 {
-    if (Config::Instance()->OverlayMenu.value_or(true))
+    if (Config::Instance()->OverlayMenu.value_or_default())
         return;
 
     ImGuiCommon::Init(handle);

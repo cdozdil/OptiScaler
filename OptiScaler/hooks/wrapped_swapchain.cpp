@@ -119,7 +119,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 #ifdef USE_LOCAL_MUTEX
     // dlssg calls this from present it seems
     // don't try to get a mutex when present owns it while dlssg mod is enabled
-    if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or(false)))
+    if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or_default()))
         OwnedLockGuard lock(_localMutex, 1);
 #endif
 
@@ -132,7 +132,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     DXGI_SWAP_CHAIN_DESC desc{};
     m_pReal->GetDesc(&desc);
 
-    if (Config::Instance()->FGEnabled.value_or(false))
+    if (Config::Instance()->FGEnabled.value_or_default())
     {
         State::Instance().FGresetCapturedResources = true;
         State::Instance().FGonlyUseCapturedResources = false;
@@ -159,7 +159,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
     // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
-    if (Config::Instance()->ForceHDR.value_or(false))
+    if (Config::Instance()->ForceHDR.value_or_default())
     {
         LOG_INFO("Force HDR on");
 
@@ -171,7 +171,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
             NewFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
             DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
 
-            if (Config::Instance()->UseHDR10.value_or(false))
+            if (Config::Instance()->UseHDR10.value_or_default())
             {
                 NewFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
                 hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
@@ -241,7 +241,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 #ifdef USE_LOCAL_MUTEX
     // dlssg calls this from present it seems
     // don't try to get a mutex when present owns it while dlssg mod is enabled
-    if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or(false)))
+    if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or_default()))
         OwnedLockGuard lock(_localMutex, 2);
 #endif
 
@@ -254,7 +254,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
     DXGI_SWAP_CHAIN_DESC desc{};
     m_pReal->GetDesc(&desc);
 
-    if (Config::Instance()->FGEnabled.value_or(false))
+    if (Config::Instance()->FGEnabled.value_or_default())
     {
         State::Instance().FGresetCapturedResources = true;
         State::Instance().FGonlyUseCapturedResources = false;
@@ -281,7 +281,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
     // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
-    if (Config::Instance()->ForceHDR.value_or(false))
+    if (Config::Instance()->ForceHDR.value_or_default())
     {
         LOG_INFO("Force HDR on");
 
@@ -290,7 +290,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
             Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
             DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
 
-            if (Config::Instance()->UseHDR10.value_or(false))
+            if (Config::Instance()->UseHDR10.value_or_default())
             {
                 Format = DXGI_FORMAT_R10G10B10A2_UNORM;
                 hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
@@ -380,7 +380,7 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 #ifdef USE_LOCAL_MUTEX
         // dlssg calls this from present it seems
         // don't try to get a mutex when present owns it while dlssg mod is enabled
-        if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or(false)))
+        if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or_default()))
             OwnedLockGuard lock(_localMutex, 3);
 #endif
 
@@ -396,7 +396,7 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
         else
             LOG_DEBUG("result: {:X}", result);
 
-        if (Config::Instance()->FGEnabled.value_or(false))
+        if (Config::Instance()->FGEnabled.value_or_default())
         {
             State::Instance().FGresetCapturedResources = true;
             State::Instance().FGonlyUseCapturedResources = false;

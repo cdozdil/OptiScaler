@@ -97,9 +97,9 @@ static std::optional<float> GetQualityOverrideRatioFfx(const Fsr3::FfxFsr3Upscal
 {
     std::optional<float> output;
 
-    auto sliderLimit = Config::Instance()->ExtendedLimits.value_or(false) ? 0.1f : 1.0f;
+    auto sliderLimit = Config::Instance()->ExtendedLimits.value_or_default() ? 0.1f : 1.0f;
 
-    if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false) &&
+    if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or_default() &&
         Config::Instance()->UpscaleRatioOverrideValue.value_or_default() >= sliderLimit)
     {
         output = Config::Instance()->UpscaleRatioOverrideValue.value_or_default();
@@ -107,7 +107,7 @@ static std::optional<float> GetQualityOverrideRatioFfx(const Fsr3::FfxFsr3Upscal
         return  output;
     }
 
-    if (!Config::Instance()->QualityRatioOverrideEnabled.value_or(false))
+    if (!Config::Instance()->QualityRatioOverrideEnabled.value_or_default())
         return output; // override not enabled
 
     switch (input)
@@ -238,7 +238,7 @@ static Fsr3::FfxErrorCode ffxFsr3ContextCreate_Dx12(Fsr3::FfxFsr3UpscalerContext
 static Fsr3::FfxErrorCode ffxFsr3ContextDispatch_Dx12(Fsr3::FfxFsr3UpscalerContext* pContext, Fsr3::FfxFsr3UpscalerDispatchDescription* pDispatchDescription)
 {
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr3Inputs.value_or(true))
+    if (!Config::Instance()->Fsr3Inputs.value_or_default())
         return o_ffxFsr3UpscalerContextDispatch_Dx12(pContext, pDispatchDescription);
 
     if (_d3d12Device == nullptr)

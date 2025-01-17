@@ -101,10 +101,10 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
             return false;
         }
 
-        if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
+        if (!Config::Instance()->OverlayMenu.value_or_default() && (Imgui == nullptr || Imgui.get() == nullptr))
             Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
 
-        if (Config::Instance()->Dx11DelayedInit.value_or(false))
+        if (Config::Instance()->Dx11DelayedInit.value_or_default())
         {
             LOG_TRACE("sleeping after FSRContext creation for 1500ms");
             std::this_thread::sleep_for(std::chrono::milliseconds(1500));
@@ -147,12 +147,12 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffset.y);
 
-    if (Config::Instance()->OverrideSharpness.value_or(false))
+    if (Config::Instance()->OverrideSharpness.value_or_default())
         _sharpness = Config::Instance()->Sharpness.value_or_default();
     else
         _sharpness = GetSharpness(InParameters);
 
-    if (Config::Instance()->RcasEnabled.value_or(false))
+    if (Config::Instance()->RcasEnabled.value_or_default())
     {
         params.enableSharpening = false;
         params.sharpness = 0.0f;
@@ -172,7 +172,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
 
     GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
-    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
+    bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false);
 
     LOG_DEBUG("Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
@@ -212,7 +212,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
 
     if (dx11Reactive.Dx12Resource != nullptr)
     {
-        if (Config::Instance()->FsrUseMaskForTransparency.value_or(true))
+        if (Config::Instance()->FsrUseMaskForTransparency.value_or_default())
             params.transparencyAndComposition = ffxGetResourceDX12(&_context, dx11Reactive.Dx12Resource, (wchar_t*)L"FSR2_Transparency", FFX_RESOURCE_STATE_COMPUTE_READ);
 
         if (Bias->IsInit() && Bias->CreateBufferResource(Dx12Device, dx11Reactive.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
@@ -247,8 +247,8 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
     }
 
     // RCAS
-    if (Config::Instance()->RcasEnabled.value_or(false) &&
-        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
+    if (Config::Instance()->RcasEnabled.value_or_default() &&
+        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or_default() && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
         RCAS->IsInit() && RCAS->CreateBufferResource(Dx12Device, (ID3D12Resource*)params.output.resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
     {
         RCAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -315,8 +315,8 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
     }
 
     // apply rcas
-    if (Config::Instance()->RcasEnabled.value_or(false) &&
-        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
+    if (Config::Instance()->RcasEnabled.value_or_default() &&
+        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or_default() && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
         RCAS->CanRender())
     {
         LOG_DEBUG("Apply CAS");
@@ -393,7 +393,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
         }
     }
 
-    if (!Config::Instance()->SyncAfterDx12.value_or(true))
+    if (!Config::Instance()->SyncAfterDx12.value_or_default())
     {
         if (!CopyBackOutput())
         {
@@ -410,7 +410,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
         }
 
         // imgui
-        if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30)
+        if (!Config::Instance()->OverlayMenu.value_or_default() && _frameCount > 30)
         {
             if (Imgui != nullptr && Imgui.get() != nullptr)
             {
@@ -438,7 +438,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
     ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
     Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
-    if (Config::Instance()->SyncAfterDx12.value_or(true))
+    if (Config::Instance()->SyncAfterDx12.value_or_default())
     {
         if (!CopyBackOutput())
         {
@@ -455,7 +455,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
         }
 
         // imgui
-        if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30)
+        if (!Config::Instance()->OverlayMenu.value_or_default() && _frameCount > 30)
         {
             if (Imgui != nullptr && Imgui.get() != nullptr)
             {
@@ -581,7 +581,7 @@ bool FSR2FeatureDx11on12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     }
 
     // output scaling
-    if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+    if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false))
     {
         float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or_default();
 
@@ -606,7 +606,7 @@ bool FSR2FeatureDx11on12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     }
 
     // extended limits changes how resolution 
-    if (Config::Instance()->ExtendedLimits.value_or(false) && RenderWidth() > DisplayWidth())
+    if (Config::Instance()->ExtendedLimits.value_or_default() && RenderWidth() > DisplayWidth())
     {
         _contextDesc.maxRenderSize.width = RenderWidth();
         _contextDesc.maxRenderSize.height = RenderHeight();
@@ -614,7 +614,7 @@ bool FSR2FeatureDx11on12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         Config::Instance()->OutputScalingMultiplier = 1.0f;
         
         // if output scaling active let it to handle downsampling
-        if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+        if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false))
         {
             _contextDesc.displaySize.width = _contextDesc.maxRenderSize.width;
             _contextDesc.displaySize.height = _contextDesc.maxRenderSize.height;

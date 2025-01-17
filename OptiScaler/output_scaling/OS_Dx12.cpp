@@ -189,7 +189,7 @@ bool OS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
 
     // fsr upscaling
-    if (Config::Instance()->OutputScalingUseFsr.value_or(true))
+    if (Config::Instance()->OutputScalingUseFsr.value_or_default())
     {
         UpscaleShaderConstants constants{};
 
@@ -242,7 +242,7 @@ bool OS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     UINT dispatchWidth = 0;
     UINT dispatchHeight = 0;
 
-    //if (true || _upsample || Config::Instance()->OutputScalingUseFsr.value_or(true))
+    //if (true || _upsample || Config::Instance()->OutputScalingUseFsr.value_or_default())
     //{
         dispatchWidth = static_cast<UINT>((State::Instance().currentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
         dispatchHeight = (State::Instance().currentFeature->DisplayHeight() + InNumThreadsY - 1) / InNumThreadsY;
@@ -324,7 +324,7 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
     CD3DX12_STATIC_SAMPLER_DESC samplers[1];
 
     // fsr upscaling
-    if (Config::Instance()->OutputScalingUseFsr.value_or(true))
+    if (Config::Instance()->OutputScalingUseFsr.value_or_default())
     {
         samplers[0].Init(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR);
         samplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
@@ -388,14 +388,14 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
     }
 
     // don't wanna compile fsr easu on runtime :)
-    if (Config::Instance()->UsePrecompiledShaders.value_or(true) || Config::Instance()->OutputScalingUseFsr.value_or(true))
+    if (Config::Instance()->UsePrecompiledShaders.value_or_default() || Config::Instance()->OutputScalingUseFsr.value_or_default())
     {
         D3D12_COMPUTE_PIPELINE_STATE_DESC computePsoDesc = {};
         computePsoDesc.pRootSignature = _rootSignature;
         computePsoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
         // fsr upscaling
-        if (Config::Instance()->OutputScalingUseFsr.value_or(true))
+        if (Config::Instance()->OutputScalingUseFsr.value_or_default())
         {
             computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(fsr_easu_cso), sizeof(fsr_easu_cso));
         }
@@ -531,7 +531,7 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
     }
 
     // FSR upscaling
-    if (Config::Instance()->OutputScalingUseFsr.value_or(true))
+    if (Config::Instance()->OutputScalingUseFsr.value_or_default())
     {
         InNumThreadsX = 16;
         InNumThreadsY = 16;

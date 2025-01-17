@@ -14,7 +14,7 @@ bool XeSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 
 	if (InitXeSS(InDevice, InParameters))
 	{
-		if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
+		if (!Config::Instance()->OverlayMenu.value_or_default() && (Imgui == nullptr || Imgui.get() == nullptr))
 			Imgui = std::make_unique<Imgui_Dx12>(Util::GetProcessWindow(), InDevice);
 
 		OutputScaler = std::make_unique<OS_Dx12>("Output Scaling", InDevice, (TargetWidth() < DisplayWidth()));
@@ -53,7 +53,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		dumpParams.path = ".";
 		dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH | XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS | XESS_DUMP_HISTORY;
 
-		if (!Config::Instance()->DisableReactiveMask.value_or(true))
+		if (!Config::Instance()->DisableReactiveMask.value_or_default())
 			dumpParams.dump_elements_mask |= XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
 
 		XeSSProxy::StartDump()(_xessContext, &dumpParams);
@@ -78,7 +78,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 	float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or_default();
 
-	bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
+	bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false);
 
 	LOG_DEBUG("Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
@@ -179,7 +179,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 			params.pOutputTexture = paramOutput;
 
 		if (Config::Instance()->RcasEnabled.value_or(true) && 
-			(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
+			(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or_default() && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
 			RCAS->IsInit() && RCAS->CreateBufferResource(Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
 			RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -241,7 +241,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
 		InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
 
-	if (!Config::Instance()->DisableReactiveMask.value_or(true))
+	if (!Config::Instance()->DisableReactiveMask.value_or_default())
 	{
 		if (paramReactiveMask)
 		{
@@ -314,7 +314,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 	// Apply RCAS
 	if (Config::Instance()->RcasEnabled.value_or(true) && 
-		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
+		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or_default() && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
 		RCAS->CanRender())
 	{
 		if (params.pOutputTexture != RCAS->Buffer())
@@ -365,7 +365,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	}
 
 	// imgui
-	if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30)
+	if (!Config::Instance()->OverlayMenu.value_or_default() && _frameCount > 30)
 	{
 		if (Imgui != nullptr && Imgui.get() != nullptr)
 		{

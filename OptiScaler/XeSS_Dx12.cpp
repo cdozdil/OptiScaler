@@ -101,9 +101,9 @@ static std::optional<float> GetQualityOverrideRatio(const xess_quality_settings_
 {
     std::optional<float> output;
 
-    auto sliderLimit = Config::Instance()->ExtendedLimits.value_or(false) ? 0.1f : 1.0f;
+    auto sliderLimit = Config::Instance()->ExtendedLimits.value_or_default() ? 0.1f : 1.0f;
 
-    if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false) &&
+    if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or_default() &&
         Config::Instance()->UpscaleRatioOverrideValue.value_or_default() >= sliderLimit)
     {
         output = Config::Instance()->UpscaleRatioOverrideValue.value_or_default();
@@ -111,7 +111,7 @@ static std::optional<float> GetQualityOverrideRatio(const xess_quality_settings_
         return  output;
     }
 
-    if (!Config::Instance()->QualityRatioOverrideEnabled.value_or(false))
+    if (!Config::Instance()->QualityRatioOverrideEnabled.value_or_default())
         return output; // override not enabled
 
     switch (input)

@@ -113,13 +113,13 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 			return false;
 		}
 
-		if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
+		if (!Config::Instance()->OverlayMenu.value_or_default() && (Imgui == nullptr || Imgui.get() == nullptr))
 		{
 			LOG_DEBUG("Create Imgui!");
 			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
 		}
 
-		if (Config::Instance()->Dx11DelayedInit.value_or(false))
+		if (Config::Instance()->Dx11DelayedInit.value_or_default())
 		{
 			LOG_TRACE("sleeping after XeSSContext creation for 1500ms");
 			std::this_thread::sleep_for(std::chrono::milliseconds(1500));
@@ -168,7 +168,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		dumpParams.path = ".";
 		dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH | XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS | XESS_DUMP_HISTORY | XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
 
-		if (!Config::Instance()->DisableReactiveMask.value_or(true))
+		if (!Config::Instance()->DisableReactiveMask.value_or_default())
 			dumpParams.dump_elements_mask |= XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
 
 		XeSSProxy::StartDump()(_xessContext, &dumpParams);
@@ -192,7 +192,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 	auto sharpness = GetSharpness(InParameters);
 
-	bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
+	bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false);
 
 	LOG_DEBUG("Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
@@ -248,7 +248,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 	// RCAS
 	if (Config::Instance()->RcasEnabled.value_or(true) &&
-		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
+		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or_default() && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
 		RCAS->IsInit() && RCAS->CreateBufferResource(Dx12Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 	{
 		RCAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -330,7 +330,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 	// apply rcas
 	if (Config::Instance()->RcasEnabled.value_or(true) && 
-		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
+		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or_default() && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
 		RCAS->CanRender())
 	{
 		LOG_DEBUG("Apply RCAS");
@@ -405,7 +405,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		}
 	}
 
-	if (!Config::Instance()->SyncAfterDx12.value_or(true))
+	if (!Config::Instance()->SyncAfterDx12.value_or_default())
 	{
 		if (!CopyBackOutput())
 		{
@@ -422,7 +422,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		}
 
 		// imgui
-		if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30)
+		if (!Config::Instance()->OverlayMenu.value_or_default() && _frameCount > 30)
 		{
 			if (Imgui != nullptr && Imgui.get() != nullptr)
 			{
@@ -450,7 +450,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 	ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
 	Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
-	if (Config::Instance()->SyncAfterDx12.value_or(true))
+	if (Config::Instance()->SyncAfterDx12.value_or_default())
 	{
 		if (!CopyBackOutput())
 		{
@@ -467,7 +467,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		}
 
 		// imgui
-		if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30)
+		if (!Config::Instance()->OverlayMenu.value_or_default() && _frameCount > 30)
 		{
 			if (Imgui != nullptr && Imgui.get() != nullptr)
 			{

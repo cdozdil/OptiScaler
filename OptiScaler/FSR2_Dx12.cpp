@@ -293,9 +293,9 @@ static std::optional<float> GetQualityOverrideRatioFfx(const Fsr212::FfxFsr2Qual
 {
     std::optional<float> output;
 
-    auto sliderLimit = Config::Instance()->ExtendedLimits.value_or(false) ? 0.1f : 1.0f;
+    auto sliderLimit = Config::Instance()->ExtendedLimits.value_or_default() ? 0.1f : 1.0f;
 
-    if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false) &&
+    if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or_default() &&
         Config::Instance()->UpscaleRatioOverrideValue.value_or_default() >= sliderLimit)
     {
         output = Config::Instance()->UpscaleRatioOverrideValue.value_or_default();
@@ -303,7 +303,7 @@ static std::optional<float> GetQualityOverrideRatioFfx(const Fsr212::FfxFsr2Qual
         return  output;
     }
 
-    if (!Config::Instance()->QualityRatioOverrideEnabled.value_or(false))
+    if (!Config::Instance()->QualityRatioOverrideEnabled.value_or_default())
         return output; // override not enabled
 
     switch (input)
@@ -504,7 +504,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Pattern_Dx12(Fsr212::FfxFsr2Con
 static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2DispatchDescription* dispatchDescription)
 {
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr2Inputs.value_or(true))
+    if (!Config::Instance()->Fsr2Inputs.value_or_default())
     {
         _skipDispatch = true;
         auto result = o_ffxFsr2ContextDispatch_Dx12(context, dispatchDescription);
@@ -563,7 +563,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Dx12(Fsr212::FfxFsr2Context* 
 static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2DispatchDescription* dispatchDescription)
 {
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr2Inputs.value_or(true) || _skipDispatch)
+    if (!Config::Instance()->Fsr2Inputs.value_or_default() || _skipDispatch)
         return o_ffxFsr2ContextDispatch_Pattern_Dx12(context, dispatchDescription);
 
     if (dispatchDescription == nullptr || context == nullptr || dispatchDescription->commandList == nullptr)
@@ -618,7 +618,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2C
 static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const FfxFsr20DispatchDescription* dispatchDescription)
 {
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr2Inputs.value_or(true))
+    if (!Config::Instance()->Fsr2Inputs.value_or_default())
     {
         _skipDispatch = true;
         auto result = o_ffxFsr20ContextDispatch_Dx12(context, dispatchDescription);
@@ -678,7 +678,7 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context*
 static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2Context* context, const FfxFsr20DispatchDescription* dispatchDescription)
 {
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr2Inputs.value_or(true) || _skipDispatch)
+    if (!Config::Instance()->Fsr2Inputs.value_or_default() || _skipDispatch)
         return o_ffxFsr20ContextDispatch_Pattern_Dx12(context, dispatchDescription);
 
     if (dispatchDescription == nullptr || context == nullptr || dispatchDescription->commandList == nullptr)
@@ -733,7 +733,7 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2
 static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const FfxFsr2TinyDispatchDescription* dispatchDescription)
 {
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr2Inputs.value_or(true))
+    if (!Config::Instance()->Fsr2Inputs.value_or_default())
         return o_ffxFsr2TinyContextDispatch_Dx12(context, dispatchDescription);
 
     if (dispatchDescription == nullptr || context == nullptr || dispatchDescription->commandList == nullptr)
