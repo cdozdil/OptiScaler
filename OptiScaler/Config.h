@@ -220,9 +220,9 @@ public:
 	std::optional<int32_t> OutputResourceBarrier; // disabled by default
 
 	// Upscalers
-	CustomOptional<std::string> Dx11Upscaler{ "fsr22" }; // TODO: maybe use fsr3.1 instead?
+	CustomOptional<std::string> Dx11Upscaler{ "fsr22" };
 	CustomOptional<std::string> Dx12Upscaler{ "xess" };
-	CustomOptional<std::string> VulkanUpscaler{ "fsr21" }; // TODO: maybe use fsr3.1 instead?
+	CustomOptional<std::string> VulkanUpscaler{ "fsr21" };
 
 	// Output Scaling
 	CustomOptional<bool> OutputScalingEnabled{ false };
@@ -259,7 +259,7 @@ public:
 
 	// NVAPI Override
 	CustomOptional<bool> OverrideNvapiDll{ false };
-	std::optional<std::wstring> NvapiDllPath; // TODO: ini desc is wrong
+	std::optional<std::wstring> NvapiDllPath;
 
 	// Spoofing
 	std::optional<bool> DxgiSpoofing; // it's not always true by default
@@ -271,7 +271,7 @@ public:
 	std::optional<int> VulkanVRAM; // disabled by default
 
 	// Plugins
-	CustomOptional<std::wstring> PluginPath{ L"plugins" }; // TODO change logic
+	CustomOptional<std::wstring> PluginPath{ L"plugins" };
 	CustomOptional<bool> LoadSpecialK{ false };
 	CustomOptional<bool> LoadReShade{ false };
 
