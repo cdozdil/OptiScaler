@@ -86,7 +86,7 @@ static int customD3DKMTEnumAdapters2(const D3DKMT_ENUMADAPTERS2* data) {
         LOG_INFO("Streamline detected");
 
         static D3DKMT_ADAPTERINFO* adapters = []() -> D3DKMT_ADAPTERINFO* {
-            D3DKMT_ADAPTERINFO pAdapters[8]{};
+            static D3DKMT_ADAPTERINFO pAdapters[8]{};
             HRESULT hr = S_OK;
 
             IDXGIFactory* pFactory = nullptr;

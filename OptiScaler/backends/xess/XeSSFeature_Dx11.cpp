@@ -159,12 +159,12 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		Dx11DeviceContext = dc;
 	}
 
-	if (Config::Instance()->xessDebug)
+	if (State::Instance().xessDebug)
 	{
 		LOG_ERROR("xessDebug");
 
 		xess_dump_parameters_t dumpParams{};
-		dumpParams.frame_count = Config::Instance()->xessDebugFrames;
+		dumpParams.frame_count = State::Instance().xessDebugFrames;
 		dumpParams.frame_idx = dumpCount;
 		dumpParams.path = ".";
 		dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH | XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS | XESS_DUMP_HISTORY | XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
@@ -173,8 +173,8 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 			dumpParams.dump_elements_mask |= XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
 
 		XeSSProxy::StartDump()(_xessContext, &dumpParams);
-		Config::Instance()->xessDebug = false;
-		dumpCount += Config::Instance()->xessDebugFrames;
+		State::Instance().xessDebug = false;
+		dumpCount += State::Instance().xessDebugFrames;
 	}
 
 	// creatimg params for XeSS
@@ -214,7 +214,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		LOG_DEBUG("ProcessDx11Textures complete!");
 
 	// AutoExposure or ReactiveMask is nullptr
-	if (Config::Instance()->changeBackend)
+	if (State::Instance().changeBackend)
 	{
 		Dx12CommandList->Close();
 		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -249,7 +249,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 	// RCAS
 	if (Config::Instance()->RcasEnabled.value_or(true) &&
-		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
 		RCAS->IsInit() && RCAS->CreateBufferResource(Dx12Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 	{
 		RCAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -264,12 +264,12 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 	if (dx11Reactive.Dx12Resource != nullptr)
 	{
-		if (Config::Instance()->DlssReactiveMaskBias.value_or(0.0f) > 0.0f && 
+		if (Config::Instance()->DlssReactiveMaskBias.value_or_default() > 0.0f && 
 			Bias->IsInit() && Bias->CreateBufferResource(Dx12Device, dx11Reactive.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
 		{
 			Bias->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-			if (Bias->Dispatch(Dx12Device, Dx12CommandList, dx11Reactive.Dx12Resource, Config::Instance()->DlssReactiveMaskBias.value_or(0.0f), Bias->Buffer()))
+			if (Bias->Dispatch(Dx12Device, Dx12CommandList, dx11Reactive.Dx12Resource, Config::Instance()->DlssReactiveMaskBias.value_or_default(), Bias->Buffer()))
 			{
 				Bias->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 				params.pResponsivePixelMaskTexture = Bias->Buffer();
@@ -331,7 +331,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 	// apply rcas
 	if (Config::Instance()->RcasEnabled.value_or(true) && 
-		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+		(sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
 		RCAS->CanRender())
 	{
 		LOG_DEBUG("Apply RCAS");
@@ -393,7 +393,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		if (!OutputScaler->Dispatch(Dx12Device, Dx12CommandList, OutputScaler->Buffer(), dx11Out.Dx12Resource))
 		{
 			Config::Instance()->OutputScalingEnabled = false;
-			Config::Instance()->changeBackend = true;
+			State::Instance().changeBackend = true;
 
 			Dx12CommandList->Close();
 			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };

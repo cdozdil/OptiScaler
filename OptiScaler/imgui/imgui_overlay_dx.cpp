@@ -341,7 +341,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
             desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
             desc.NodeMask = 1;
 
-            Config::Instance()->SkipHeapCapture = true;
+            State::Instance().skipHeapCapture = true;
 
             result = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dRtvDescHeap));
             if (result != S_OK)
@@ -371,7 +371,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
 
             result = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dSrvDescHeap));
 
-            Config::Instance()->SkipHeapCapture = false;
+            State::Instance().skipHeapCapture = false;
             if (result != S_OK)
             {
                 LOG_ERROR("CreateDescriptorHeap(g_pd3dSrvDescHeap): {0:X}", (unsigned long)result);

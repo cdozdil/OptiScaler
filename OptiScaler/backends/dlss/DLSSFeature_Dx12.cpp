@@ -140,7 +140,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		_sharpness = GetSharpness(InParameters);
 
 		if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
-			(_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+			(_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
 			RCAS->IsInit() && RCAS->CreateBufferResource(Device, setBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 		{
 			// Disable DLSS sharpness
@@ -162,7 +162,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 		// Apply CAS
 		if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
-			(_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+			(_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
 			RCAS->CanRender())
 		{
 			if (setBuffer != RCAS->Buffer())
@@ -208,7 +208,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 			if (!OutputScaler->Dispatch(Device, InCommandList, OutputScaler->Buffer(), paramOutput))
 			{
 				Config::Instance()->OutputScalingEnabled = false;
-				Config::Instance()->changeBackend = true;
+				State::Instance().changeBackend = true;
 				return true;
 			}
 		}

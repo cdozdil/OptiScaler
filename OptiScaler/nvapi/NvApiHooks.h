@@ -82,7 +82,7 @@ public:
                 case NvApiTypes::NV_INTERFACE::GPU_GetArchInfo:
                     //LOG_DEBUG("GPU_GetArchInfo");
 
-                    if (!Config::Instance()->DE_Available) {
+                    if (!State::Instance().enablerAvailable) {
                         OriginalNvAPI_GPU_GetArchInfo = static_cast<NvApiTypes::PfnNvAPI_GPU_GetArchInfo>(functionPointer);
                         return &HookedNvAPI_GPU_GetArchInfo;
                     }

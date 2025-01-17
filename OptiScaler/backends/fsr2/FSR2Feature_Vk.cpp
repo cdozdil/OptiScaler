@@ -19,7 +19,7 @@ bool FSR2FeatureVk::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
-    Config::Instance()->skipSpoofing = true;
+    State::Instance().skipSpoofing = true;
 
     auto scratchBufferSize = ffxFsr2GetScratchMemorySizeVK(PhysicalDevice);
     void* scratchBuffer = calloc(scratchBufferSize, 1);
@@ -119,7 +119,7 @@ bool FSR2FeatureVk::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
     auto ret = ffxFsr2ContextCreate(&_context, &_contextDesc);
 
-    Config::Instance()->skipSpoofing = false;
+    State::Instance().skipSpoofing = false;
 
     if (ret != FFX_OK)
     {
@@ -262,7 +262,7 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* I
         {
             LOG_DEBUG("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
             Config::Instance()->AutoExposure = true;
-            Config::Instance()->changeBackend = true;
+            State::Instance().changeBackend = true;
             return true;
         }
     }
@@ -287,7 +287,7 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* I
         {
             LOG_DEBUG("Bias mask exist..");
 
-            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.0f) > 0.0f)
+            if (Config::Instance()->DlssReactiveMaskBias.value_or_default() > 0.0f)
             {
                 params.reactive = ffxGetTextureResourceVK(&_context, ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Image,
                                                           ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.ImageView,
@@ -299,7 +299,7 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* I
         {
             LOG_DEBUG("Bias mask not exist and its enabled in config, it may cause problems!!");
             Config::Instance()->DisableReactiveMask = true;
-            Config::Instance()->changeBackend = true;
+            State::Instance().changeBackend = true;
             return true;
         }
     }
@@ -331,8 +331,8 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* I
 
     if (Config::Instance()->OverrideSharpness.value_or(false))
     {
-        params.enableSharpening = Config::Instance()->Sharpness.value_or(0.3) > 0.0f;
-        params.sharpness = Config::Instance()->Sharpness.value_or(0.3);
+        params.enableSharpening = Config::Instance()->Sharpness.value_or_default() > 0.0f;
+        params.sharpness = Config::Instance()->Sharpness.value_or_default();
     }
     else
     {
@@ -355,13 +355,13 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* I
 
     if (IsDepthInverted())
     {
-        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.1f);
-        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(100000.0f);
+        params.cameraFar = Config::Instance()->FsrCameraNear.value_or_default();
+        params.cameraNear = Config::Instance()->FsrCameraFar.value_or_default();
     }
     else
     {
-        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(100000.0f);
-        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.1f);
+        params.cameraFar = Config::Instance()->FsrCameraFar.value_or_default();
+        params.cameraNear = Config::Instance()->FsrCameraNear.value_or_default();
     }
 
     if (Config::Instance()->FsrVerticalFov.has_value())

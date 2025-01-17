@@ -68,8 +68,8 @@ static int hkslInit(sl::Preferences* pref, uint64_t sdkVersion) {
 }
 
 static int hkslSetTag(uint64_t viewport, sl::ResourceTag* tags, uint32_t numTags, uint64_t cmdBuffer) {
-    for (auto i = 0; i < numTags; i++) {
-        if (Config::Instance()->gameQuirk == Cyberpunk && tags[i].type == 2 && tags[i].resource->state == (D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)) {
+    for (uint32_t i = 0; i < numTags; i++) {
+        if (State::Instance().gameQuirk == Cyberpunk && tags[i].type == 2 && tags[i].resource->state == (D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)) {
             tags[i].resource->state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
             LOG_TRACE("Changing hudless resource state");
         }

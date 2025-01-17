@@ -134,32 +134,32 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
     if (Config::Instance()->FGEnabled.value_or(false))
     {
-        Config::Instance()->FGResetCapturedResources = true;
-        Config::Instance()->FGOnlyUseCapturedResources = false;
+        State::Instance().FGresetCapturedResources = true;
+        State::Instance().FGonlyUseCapturedResources = false;
 
-        if (Config::Instance()->CurrentFeature != nullptr)
-            Config::Instance()->FGChanged = true;
+        if (State::Instance().currentFeature != nullptr)
+            State::Instance().FGchanged = true;
     }
 
     if (ClearTrig != nullptr)
         ClearTrig(true, Handle);
 
-    Config::Instance()->SCChanged = true;
+    State::Instance().SCchanged = true;
 
     LOG_DEBUG("BufferCount: {0}, Width: {1}, Height: {2}, NewFormat: {3}, SwapChainFlags: {4:X}", BufferCount, Width, Height, (UINT)NewFormat, SwapChainFlags);
 
     result = m_pReal->ResizeBuffers(BufferCount, Width, Height, NewFormat, SwapChainFlags);
-    if (result == S_OK && Config::Instance()->CurrentFeature == nullptr)
+    if (result == S_OK && State::Instance().currentFeature == nullptr)
     {
-        Config::Instance()->ScreenWidth = Width;
-        Config::Instance()->ScreenHeight = Height;
-        Config::Instance()->lastMipBias = 100.0f;
-        Config::Instance()->lastMipBiasMax = -100.0f;
+        State::Instance().screenWidth = Width;
+        State::Instance().screenHeight = Height;
+        State::Instance().lastMipBias = 100.0f;
+        State::Instance().lastMipBiasMax = -100.0f;
     }
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
     // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
-    if (Config::Instance()->forceHdr.value_or(false))
+    if (Config::Instance()->ForceHDR.value_or(false))
     {
         LOG_INFO("Force HDR on");
 
@@ -171,7 +171,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
             NewFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
             DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
 
-            if (Config::Instance()->useHDR10.value_or(false))
+            if (Config::Instance()->UseHDR10.value_or(false))
             {
                 NewFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
                 hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
@@ -203,7 +203,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
         } while (false);
     }
 
-    Config::Instance()->scBuffers.clear();
+    State::Instance().SCbuffers.clear();
     UINT bc = BufferCount;
     if (bc == 0 && m_pReal1 != nullptr)
     {
@@ -219,7 +219,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
         if (m_pReal->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
         {
-            Config::Instance()->scBuffers.push_back(buffer);
+            State::Instance().SCbuffers.push_back(buffer);
             buffer->Release();
         }
     }
@@ -256,32 +256,32 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 
     if (Config::Instance()->FGEnabled.value_or(false))
     {
-        Config::Instance()->FGResetCapturedResources = true;
-        Config::Instance()->FGOnlyUseCapturedResources = false;
+        State::Instance().FGresetCapturedResources = true;
+        State::Instance().FGonlyUseCapturedResources = false;
 
-        if (Config::Instance()->CurrentFeature != nullptr)
-            Config::Instance()->FGChanged = true;
+        if (State::Instance().currentFeature != nullptr)
+            State::Instance().FGchanged = true;
     }
 
     if (ClearTrig != nullptr)
         ClearTrig(true, Handle);
 
-    Config::Instance()->SCChanged = true;
+    State::Instance().SCchanged = true;
 
     LOG_DEBUG("BufferCount: {0}, Width: {1}, Height: {2}, NewFormat: {3}, SwapChainFlags: {4:X}, pCreationNodeMask: {5}", BufferCount, Width, Height, (UINT)Format, SwapChainFlags, *pCreationNodeMask);
 
     result = m_pReal3->ResizeBuffers1(BufferCount, Width, Height, Format, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
-    if (result == S_OK && Config::Instance()->CurrentFeature == nullptr)
+    if (result == S_OK && State::Instance().currentFeature == nullptr)
     {
-        Config::Instance()->ScreenWidth = Width;
-        Config::Instance()->ScreenHeight = Height;
-        Config::Instance()->lastMipBias = 100.0f;
-        Config::Instance()->lastMipBiasMax = -100.0f;
+        State::Instance().screenWidth = Width;
+        State::Instance().screenHeight = Height;
+        State::Instance().lastMipBias = 100.0f;
+        State::Instance().lastMipBiasMax = -100.0f;
     }
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
     // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
-    if (Config::Instance()->forceHdr.value_or(false))
+    if (Config::Instance()->ForceHDR.value_or(false))
     {
         LOG_INFO("Force HDR on");
 
@@ -290,7 +290,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
             Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
             DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
 
-            if (Config::Instance()->useHDR10.value_or(false))
+            if (Config::Instance()->UseHDR10.value_or(false))
             {
                 Format = DXGI_FORMAT_R10G10B10A2_UNORM;
                 hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
@@ -322,7 +322,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
         } while (false);
     }
 
-    Config::Instance()->scBuffers.clear();
+    State::Instance().SCbuffers.clear();
     UINT bc = BufferCount;
     if (bc == 0 && m_pReal1 != nullptr)
     {
@@ -338,7 +338,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 
         if (m_pReal->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
         {
-            Config::Instance()->scBuffers.push_back(buffer);
+            State::Instance().SCbuffers.push_back(buffer);
             buffer->Release();
         }
     }
@@ -398,18 +398,18 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 
         if (Config::Instance()->FGEnabled.value_or(false))
         {
-            Config::Instance()->FGResetCapturedResources = true;
-            Config::Instance()->FGOnlyUseCapturedResources = false;
+            State::Instance().FGresetCapturedResources = true;
+            State::Instance().FGonlyUseCapturedResources = false;
 
-            if (Config::Instance()->CurrentFeature != nullptr)
-                Config::Instance()->FGChanged = true;
+            if (State::Instance().currentFeature != nullptr)
+                State::Instance().FGchanged = true;
         }
 
         if (ClearTrig != nullptr)
             ClearTrig(true, Handle);
 
-        Config::Instance()->SCChanged = true;
-        Config::Instance()->scBuffers.clear();
+        State::Instance().SCchanged = true;
+        State::Instance().SCbuffers.clear();
 
         UINT bc = 0;
         if (m_pReal1 != nullptr)
@@ -426,7 +426,7 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 
             if (m_pReal->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
             {
-                Config::Instance()->scBuffers.push_back(buffer);
+                State::Instance().SCbuffers.push_back(buffer);
                 buffer->Release();
             }
         }

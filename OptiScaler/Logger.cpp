@@ -106,12 +106,12 @@ void PrepareLogger()
 			auto callback_sink = std::make_shared<spdlog::sinks::callback_sink_mt>([](const spdlog::details::log_msg& msg)
 				{
 					if (Config::Instance()->LogToNGX.value_or(false) &&
-						Config::Instance()->NVNGX_Logger.LoggingCallback != nullptr &&
-						Config::Instance()->NVNGX_Logger.MinimumLoggingLevel != NVSDK_NGX_LOGGING_LEVEL_OFF &&
-						(Config::Instance()->NVNGX_Logger.MinimumLoggingLevel == NVSDK_NGX_LOGGING_LEVEL_VERBOSE || msg.level >= spdlog::level::info))
+						State::Instance().NVNGX_Logger.LoggingCallback != nullptr &&
+						State::Instance().NVNGX_Logger.MinimumLoggingLevel != NVSDK_NGX_LOGGING_LEVEL_OFF &&
+						(State::Instance().NVNGX_Logger.MinimumLoggingLevel == NVSDK_NGX_LOGGING_LEVEL_VERBOSE || msg.level >= spdlog::level::info))
 					{
 						auto message = (char*)msg.payload.data();
-						Config::Instance()->NVNGX_Logger.LoggingCallback(message, NVSDK_NGX_LOGGING_LEVEL_ON, NVSDK_NGX_Feature_SuperSampling);
+						State::Instance().NVNGX_Logger.LoggingCallback(message, NVSDK_NGX_LOGGING_LEVEL_ON, NVSDK_NGX_Feature_SuperSampling);
 					}
 				});
 
@@ -131,7 +131,7 @@ void PrepareLogger()
 			shared_logger = std::make_shared<spdlog::logger>(logger); 
 #endif // LOG_ASYNC
 
-			shared_logger->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or(2));
+			shared_logger->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or_default());
 
 			shared_logger->flush_on(spdlog::level::trace);
 

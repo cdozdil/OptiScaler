@@ -194,9 +194,9 @@ bool OS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
         UpscaleShaderConstants constants{};
 
         FsrEasuCon(constants.const0, constants.const1, constants.const2, constants.const3,
-                   Config::Instance()->CurrentFeature->TargetWidth(), Config::Instance()->CurrentFeature->TargetHeight(),
+                   State::Instance().currentFeature->TargetWidth(), State::Instance().currentFeature->TargetHeight(),
                    inDesc.Width, inDesc.Height,
-                   Config::Instance()->CurrentFeature->DisplayWidth(), Config::Instance()->CurrentFeature->DisplayHeight());
+                   State::Instance().currentFeature->DisplayWidth(), State::Instance().currentFeature->DisplayHeight());
 
         // Copy the updated constant buffer data to the constant buffer resource
         UINT8* pCBDataBegin;
@@ -211,10 +211,10 @@ bool OS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     else
     {
         Constants constants{};
-        constants.srcWidth = Config::Instance()->CurrentFeature->TargetWidth();
-        constants.srcHeight = Config::Instance()->CurrentFeature->TargetHeight();
-        constants.destWidth = Config::Instance()->CurrentFeature->DisplayWidth(); 
-        constants.destHeight = Config::Instance()->CurrentFeature->DisplayHeight();
+        constants.srcWidth = State::Instance().currentFeature->TargetWidth();
+        constants.srcHeight = State::Instance().currentFeature->TargetHeight();
+        constants.destWidth = State::Instance().currentFeature->DisplayWidth(); 
+        constants.destHeight = State::Instance().currentFeature->DisplayHeight();
 
         // Copy the updated constant buffer data to the constant buffer resource
         UINT8* pCBDataBegin;
@@ -244,13 +244,13 @@ bool OS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 
     //if (true || _upsample || Config::Instance()->OutputScalingUseFsr.value_or(true))
     //{
-        dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
-        dispatchHeight = (Config::Instance()->CurrentFeature->DisplayHeight() + InNumThreadsY - 1) / InNumThreadsY;
+        dispatchWidth = static_cast<UINT>((State::Instance().currentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
+        dispatchHeight = (State::Instance().currentFeature->DisplayHeight() + InNumThreadsY - 1) / InNumThreadsY;
     //}
     //else
     //{
-    //    dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->TargetWidth() + InNumThreadsX - 1) / InNumThreadsX);
-    //    dispatchHeight = (Config::Instance()->CurrentFeature->TargetHeight() + InNumThreadsY - 1) / InNumThreadsY;
+    //    dispatchWidth = static_cast<UINT>((State::Instance().currentFeature->TargetWidth() + InNumThreadsX - 1) / InNumThreadsX);
+    //    dispatchHeight = (State::Instance().currentFeature->TargetHeight() + InNumThreadsY - 1) / InNumThreadsY;
     //}
 
     InCmdList->Dispatch(dispatchWidth, dispatchHeight, 1);
@@ -407,7 +407,7 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
             }
             else
             {
-                switch (Config::Instance()->OutputScalingDownscaler.value_or(0))
+                switch (Config::Instance()->OutputScalingDownscaler.value_or_default())
                 {
                     case 0: 
                         computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(bcds_bicubic_cso), sizeof(bcds_bicubic_cso));
@@ -452,7 +452,7 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
         }
         else
         {
-            switch (Config::Instance()->OutputScalingDownscaler.value_or(0))
+            switch (Config::Instance()->OutputScalingDownscaler.value_or_default())
             {
                 case 0:
                     _recEncodeShader = OS_CompileShader(downsampleCodeBC.c_str(), "CSMain", "cs_5_0");
@@ -502,7 +502,7 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
     heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
-    Config::Instance()->SkipHeapCapture = true;
+    State::Instance().skipHeapCapture = true;
 
     auto hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[0]));
 
@@ -522,7 +522,7 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
 
     hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[2]));
 
-    Config::Instance()->SkipHeapCapture = false;
+    State::Instance().skipHeapCapture = false;
 
     if (FAILED(hr))
     {
@@ -542,7 +542,7 @@ OS_Dx12::OS_Dx12(std::string InName, ID3D12Device* InDevice, bool InUpsample) : 
 
 OS_Dx12::~OS_Dx12()
 {
-    if (!_init || Config::Instance()->IsShuttingDown)
+    if (!_init || State::Instance().isShuttingDown)
         return;
 
     //ID3D12Fence* d3d12Fence = nullptr;

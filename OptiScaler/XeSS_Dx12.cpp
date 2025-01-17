@@ -104,9 +104,9 @@ static std::optional<float> GetQualityOverrideRatio(const xess_quality_settings_
     auto sliderLimit = Config::Instance()->ExtendedLimits.value_or(false) ? 0.1f : 1.0f;
 
     if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false) &&
-        Config::Instance()->UpscaleRatioOverrideValue.value_or(1.3f) >= sliderLimit)
+        Config::Instance()->UpscaleRatioOverrideValue.value_or_default() >= sliderLimit)
     {
-        output = Config::Instance()->UpscaleRatioOverrideValue.value_or(1.3f);
+        output = Config::Instance()->UpscaleRatioOverrideValue.value_or_default();
 
         return  output;
     }
@@ -117,39 +117,39 @@ static std::optional<float> GetQualityOverrideRatio(const xess_quality_settings_
     switch (input)
     {
         case XESS_QUALITY_SETTING_ULTRA_PERFORMANCE:
-            if (Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0);
+            if (Config::Instance()->QualityRatio_UltraPerformance.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_UltraPerformance.value_or_default();
 
             break;
 
         case XESS_QUALITY_SETTING_PERFORMANCE:
-            if (Config::Instance()->QualityRatio_Performance.value_or(2.0) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Performance.value_or(2.0);
+            if (Config::Instance()->QualityRatio_Performance.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_Performance.value_or_default();
 
             break;
 
         case XESS_QUALITY_SETTING_BALANCED:
-            if (Config::Instance()->QualityRatio_Balanced.value_or(1.7) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Balanced.value_or(1.7);
+            if (Config::Instance()->QualityRatio_Balanced.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_Balanced.value_or_default();
 
             break;
 
         case XESS_QUALITY_SETTING_QUALITY:
-            if (Config::Instance()->QualityRatio_Quality.value_or(1.5) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Quality.value_or(1.5);
+            if (Config::Instance()->QualityRatio_Quality.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_Quality.value_or_default();
 
             break;
 
         case XESS_QUALITY_SETTING_ULTRA_QUALITY:
         case XESS_QUALITY_SETTING_ULTRA_QUALITY_PLUS:
-            if (Config::Instance()->QualityRatio_UltraQuality.value_or(1.3) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_UltraQuality.value_or(1.3);
+            if (Config::Instance()->QualityRatio_UltraQuality.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_UltraQuality.value_or_default();
 
             break;
 
         case XESS_QUALITY_SETTING_AA:
-            if (Config::Instance()->QualityRatio_DLAA.value_or(1.0) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_DLAA.value_or(1.0);
+            if (Config::Instance()->QualityRatio_DLAA.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_DLAA.value_or_default();
 
             break;
 
@@ -176,7 +176,7 @@ XESS_API xess_result_t xessD3D12CreateContext(ID3D12Device* pDevice, xess_contex
     fcInfo.PathListInfo.Length = 1;
 
     auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
-                                                        pDevice, &fcInfo, Config::Instance()->NVNGX_Version);
+                                                        pDevice, &fcInfo, State::Instance().NVNGX_Version);
 
     if (nvResult != NVSDK_NGX_Result_Success)
         return XESS_RESULT_ERROR_UNINITIALIZED;
@@ -284,7 +284,7 @@ XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12Gr
     params->Set(NVSDK_NGX_Parameter_MotionVectors, pExecParams->pVelocityTexture);
     params->Set(NVSDK_NGX_Parameter_Output, pExecParams->pOutputTexture);
 
-    Config::Instance()->setInputApiName = "XeSS";
+    State::Instance().setInputApiName = "XeSS";
 
     if (NVSDK_NGX_D3D12_EvaluateFeature(pCommandList, handle, params, nullptr) == NVSDK_NGX_Result_Success)
         return XESS_RESULT_SUCCESS;

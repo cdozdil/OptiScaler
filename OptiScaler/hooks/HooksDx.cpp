@@ -578,10 +578,10 @@ static bool IsHudFixActive()
     if (FrameGen_Dx12::fgSkipHudlessChecks || !FrameGen_Dx12::upscaleRan)
         return false;
 
-    if (FrameGen_Dx12::fgContext == nullptr || Config::Instance()->CurrentFeature == nullptr || !FrameGen_Dx12::fgIsActive || Config::Instance()->FGChanged)
+    if (FrameGen_Dx12::fgContext == nullptr || State::Instance().currentFeature == nullptr || !FrameGen_Dx12::fgIsActive || State::Instance().FGchanged)
         return false;
 
-    if (FrameGen_Dx12::fgTarget > Config::Instance()->CurrentFeature->FrameCount() || fgHudlessFrame == Config::Instance()->CurrentFeature->FrameCount())
+    if (FrameGen_Dx12::fgTarget > State::Instance().currentFeature->FrameCount() || fgHudlessFrame == State::Instance().currentFeature->FrameCount())
         return false;
 
     return true;
@@ -600,17 +600,17 @@ static bool IsFGCommandList(IUnknown* cmdList)
 
 static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
 {
-    if ((This == nullptr || This != ImGuiOverlayDx::MenuCommandList()) && Config::Instance()->CurrentFeature != nullptr && !Config::Instance()->FGChanged &&
-        fgHudlessFrame != Config::Instance()->CurrentFeature->FrameCount() && FrameGen_Dx12::fgTarget < Config::Instance()->CurrentFeature->FrameCount() &&
+    if ((This == nullptr || This != ImGuiOverlayDx::MenuCommandList()) && State::Instance().currentFeature != nullptr && !State::Instance().FGchanged &&
+        fgHudlessFrame != State::Instance().currentFeature->FrameCount() && FrameGen_Dx12::fgTarget < State::Instance().currentFeature->FrameCount() &&
         FrameGen_Dx12::fgContext != nullptr && FrameGen_Dx12::fgIsActive && HooksDx::currentSwapchain != nullptr)
     {
-        LOG_DEBUG("FrameCount: {0}, fgHudlessFrame: {1}, CommandList: {2:X}", Config::Instance()->CurrentFeature->FrameCount(), fgHudlessFrame, (UINT64)This);
+        LOG_DEBUG("FrameCount: {0}, fgHudlessFrame: {1}, CommandList: {2:X}", State::Instance().currentFeature->FrameCount(), fgHudlessFrame, (UINT64)This);
 
         fgCallbackFrameIndex = fIndex;
         FrameGen_Dx12::fgSkipHudlessChecks = true;
 
         // hudless captured for this frame
-        fgHudlessFrame = Config::Instance()->CurrentFeature->FrameCount();
+        fgHudlessFrame = State::Instance().currentFeature->FrameCount();
         auto frame = fgHudlessFrame;
 
         LOG_DEBUG("running, frame: {0}", frame);
@@ -644,8 +644,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
         }
         else
         {
-            m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(Config::Instance()->CurrentFeature->DisplayWidth());
-            m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(Config::Instance()->CurrentFeature->DisplayHeight());
+            m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(State::Instance().currentFeature->DisplayWidth());
+            m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(State::Instance().currentFeature->DisplayHeight());
         }
 
         m_FrameGenerationConfig.frameGenerationCallbackUserContext = &FrameGen_Dx12::fgContext;
@@ -665,7 +665,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                 // check for status
                 if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) ||
                     FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCommandList[fIndex] == nullptr ||
-                    FrameGen_Dx12::fgCommandQueue == nullptr || Config::Instance()->SCChanged)
+                    FrameGen_Dx12::fgCommandQueue == nullptr || State::Instance().SCchanged)
                 {
                     LOG_WARN("Cancel async dispatch");
                     fgDispatchCalled = false;
@@ -674,9 +674,9 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                 }
 
                 // If fg is active but upscaling paused
-                if (!fgDispatchCalled || Config::Instance()->CurrentFeature == nullptr || Config::Instance()->FGChanged ||
-                    fgLastFGFrame == Config::Instance()->CurrentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive ||
-                    Config::Instance()->CurrentFeature->FrameCount() == 0)
+                if (!fgDispatchCalled || State::Instance().currentFeature == nullptr || State::Instance().FGchanged ||
+                    fgLastFGFrame == State::Instance().currentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive ||
+                    State::Instance().currentFeature->FrameCount() == 0)
                 {
                     LOG_WARN("Callback without hudless! frameID: {}", params->frameID);
 
@@ -690,8 +690,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                     //params->reset = true;
                 }
 
-                if (Config::Instance()->CurrentFeature != nullptr)
-                    fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
+                if (State::Instance().currentFeature != nullptr)
+                    fgLastFGFrame = State::Instance().currentFeature->FrameCount();
 
                 dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
                 LOG_DEBUG("D3D12_Dispatch result: {}", (UINT)dispatchResult);
@@ -716,13 +716,13 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                 return dispatchResult;
             };
 
-        m_FrameGenerationConfig.onlyPresentGenerated = Config::Instance()->FGOnlyGenerated;
-        m_FrameGenerationConfig.frameID = Config::Instance()->CurrentFeature->FrameCount();
+        m_FrameGenerationConfig.onlyPresentGenerated = State::Instance().FGonlyGenerated;
+        m_FrameGenerationConfig.frameID = State::Instance().currentFeature->FrameCount();
         m_FrameGenerationConfig.swapChain = HooksDx::currentSwapchain;
 
-        //Config::Instance()->skipSpoofing = true;
+        //State::Instance().skipSpoofing = true;
         ffxReturnCode_t retCode = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgContext, &m_FrameGenerationConfig.header);
-        //Config::Instance()->skipSpoofing = false;
+        //State::Instance().skipSpoofing = false;
         LOG_DEBUG("D3D12_Configure result: {0:X}, frame: {1}", retCode, frame);
 
         if (retCode == FFX_API_RETURN_OK)
@@ -740,7 +740,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
             dfgPrepare.frameID = frame;
             dfgPrepare.flags = m_FrameGenerationConfig.flags;
 
-            dfgPrepare.renderSize = { Config::Instance()->CurrentFeature->RenderWidth(), Config::Instance()->CurrentFeature->RenderHeight() };
+            dfgPrepare.renderSize = { State::Instance().currentFeature->RenderWidth(), State::Instance().currentFeature->RenderHeight() };
 
             dfgPrepare.jitterOffset.x = FrameGen_Dx12::jitterX;
             dfgPrepare.jitterOffset.y = FrameGen_Dx12::jitterY;
@@ -757,9 +757,9 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
             dfgPrepare.frameTimeDelta = FrameGen_Dx12::ftDelta;
 
             // If somehow context is destroyed before this point
-            if (Config::Instance()->CurrentFeature == nullptr || FrameGen_Dx12::fgContext == nullptr || !FrameGen_Dx12::fgIsActive)
+            if (State::Instance().currentFeature == nullptr || FrameGen_Dx12::fgContext == nullptr || !FrameGen_Dx12::fgIsActive)
             {
-                LOG_WARN("!! Config::Instance()->CurrentFeature == nullptr || HooksDx::fgContext == nullptr");
+                LOG_WARN("!! State::Instance().currentFeature == nullptr || HooksDx::fgContext == nullptr");
                 return;
             }
 
@@ -781,9 +781,9 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
     }
     else
     {
-        LOG_ERROR("This should not happen!\nThis != ImGuiOverlayDx::MenuCommandList(): {} && Config::Instance()->CurrentFeature != nullptr: {} && !Config::Instance()->FGChanged: {} && fgHudlessFrame: {} != Config::Instance()->CurrentFeature->FrameCount(): {}, FrameGen_Dx12::fgTarget: {} < Config::Instance()->CurrentFeature->FrameCount(): {} && FrameGen_Dx12::fgContext != nullptr : {} && FrameGen_Dx12::fgIsActive: {} && HooksDx::currentSwapchain != nullptr: {}",
-                  This != ImGuiOverlayDx::MenuCommandList(), Config::Instance()->CurrentFeature != nullptr, !Config::Instance()->FGChanged,
-                  fgHudlessFrame, Config::Instance()->CurrentFeature->FrameCount(), FrameGen_Dx12::fgTarget, Config::Instance()->CurrentFeature->FrameCount(),
+        LOG_ERROR("This should not happen!\nThis != ImGuiOverlayDx::MenuCommandList(): {} && State::Instance().currentFeature != nullptr: {} && !State::Instance().FGchanged: {} && fgHudlessFrame: {} != State::Instance().currentFeature->FrameCount(): {}, FrameGen_Dx12::fgTarget: {} < State::Instance().currentFeature->FrameCount(): {} && FrameGen_Dx12::fgContext != nullptr : {} && FrameGen_Dx12::fgIsActive: {} && HooksDx::currentSwapchain != nullptr: {}",
+                  This != ImGuiOverlayDx::MenuCommandList(), State::Instance().currentFeature != nullptr, !State::Instance().FGchanged,
+                  fgHudlessFrame, State::Instance().currentFeature->FrameCount(), FrameGen_Dx12::fgTarget, State::Instance().currentFeature->FrameCount(),
                   FrameGen_Dx12::fgContext != nullptr, FrameGen_Dx12::fgIsActive, HooksDx::currentSwapchain != nullptr);
     }
 }
@@ -796,9 +796,9 @@ static bool CheckCapture(std::string callerName)
         std::unique_lock<std::shared_mutex> lock(counterMutex[fIndex]);
         FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex]++;
 
-        LOG_DEBUG("{} -> frameCounter: {}, fgHUDlessCaptureCounter: {}, Limit: {}", callerName, Config::Instance()->CurrentFeature->FrameCount(), FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex], Config::Instance()->FGHUDLimit.value_or(1));
+        LOG_DEBUG("{} -> frameCounter: {}, fgHUDlessCaptureCounter: {}, Limit: {}", callerName, State::Instance().currentFeature->FrameCount(), FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex], Config::Instance()->FGHUDLimit.value_or_default());
 
-        if (FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] != Config::Instance()->FGHUDLimit.value_or(1))
+        if (FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] != Config::Instance()->FGHUDLimit.value_or_default())
             return false;
 
         FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] = -999999999;
@@ -868,11 +868,11 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
         }
     }
 
-    if (Config::Instance()->FGCaptureResources)
+    if (State::Instance().FGcaptureResources)
     {
         std::unique_lock<std::shared_mutex> lock(captureMutex);
         fgCaptureList.insert(resource->buffer);
-        Config::Instance()->FGCapturedResourceCount = fgCaptureList.size();
+        State::Instance().FGcapturedResourceCount = fgCaptureList.size();
     }
 
     GetHudless(cmdList, fIndex);
@@ -925,7 +925,7 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
     if (HooksDx::currentSwapchain == nullptr)
         return false;
 
-    if (Config::Instance()->FGOnlyUseCapturedResources)
+    if (State::Instance().FGonlyUseCapturedResources)
     {
         auto result = fgCaptureList.find(resource->buffer) != fgCaptureList.end();
         return result;
@@ -958,9 +958,9 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
             delete FrameGen_Dx12::fgFormatTransfer;
 
         FrameGen_Dx12::fgFormatTransfer = nullptr;
-        Config::Instance()->SkipHeapCapture = true;
+        State::Instance().skipHeapCapture = true;
         FrameGen_Dx12::fgFormatTransfer = new FT_Dx12("FormatTransfer", g_pd3dDeviceParam, scDesc.BufferDesc.Format);
-        Config::Instance()->SkipHeapCapture = false;
+        State::Instance().skipHeapCapture = false;
     }
 
     if ((scDesc.BufferDesc.Height != fgScDesc.BufferDesc.Height || scDesc.BufferDesc.Width != fgScDesc.BufferDesc.Width || scDesc.BufferDesc.Format != fgScDesc.BufferDesc.Format))
@@ -1076,13 +1076,13 @@ static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* p
 static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResource, D3D12_RENDER_TARGET_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
     // force hdr for swapchain buffer
-    if (pResource != nullptr && pDesc != nullptr && Config::Instance()->forceHdr.value_or(false))
+    if (pResource != nullptr && pDesc != nullptr && Config::Instance()->ForceHDR.value_or(false))
     {
-        for (size_t i = 0; i < Config::Instance()->scBuffers.size(); i++)
+        for (size_t i = 0; i < State::Instance().SCbuffers.size(); i++)
         {
-            if (Config::Instance()->scBuffers[i] == pResource)
+            if (State::Instance().SCbuffers[i] == pResource)
             {
-                if (Config::Instance()->useHDR10.value_or(false))
+                if (Config::Instance()->UseHDR10.value_or(false))
                     pDesc->Format = DXGI_FORMAT_R10G10B10A2_UNORM;
                 else
                     pDesc->Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
@@ -1129,13 +1129,13 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
 static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pResource, D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
     // force hdr for swapchain buffer
-    if (pResource != nullptr && pDesc != nullptr && Config::Instance()->forceHdr.value_or(false))
+    if (pResource != nullptr && pDesc != nullptr && Config::Instance()->ForceHDR.value_or(false))
     {
-        for (size_t i = 0; i < Config::Instance()->scBuffers.size(); i++)
+        for (size_t i = 0; i < State::Instance().SCbuffers.size(); i++)
         {
-            if (Config::Instance()->scBuffers[i] == pResource)
+            if (State::Instance().SCbuffers[i] == pResource)
             {
-                if (Config::Instance()->useHDR10.value_or(false))
+                if (Config::Instance()->UseHDR10.value_or(false))
                     pDesc->Format = DXGI_FORMAT_R10G10B10A2_UNORM;
                 else
                     pDesc->Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
@@ -1181,13 +1181,13 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
 
 static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pResource, ID3D12Resource* pCounterResource, D3D12_UNORDERED_ACCESS_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
-    if (pResource != nullptr && pDesc != nullptr && Config::Instance()->forceHdr.value_or(false))
+    if (pResource != nullptr && pDesc != nullptr && Config::Instance()->ForceHDR.value_or(false))
     {
-        for (size_t i = 0; i < Config::Instance()->scBuffers.size(); i++)
+        for (size_t i = 0; i < State::Instance().SCbuffers.size(); i++)
         {
-            if (Config::Instance()->scBuffers[i] == pResource)
+            if (State::Instance().SCbuffers[i] == pResource)
             {
-                if (Config::Instance()->useHDR10.value_or(false))
+                if (Config::Instance()->UseHDR10.value_or(false))
                     pDesc->Format = DXGI_FORMAT_R10G10B10A2_UNORM;
                 else
                     pDesc->Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
@@ -1303,7 +1303,7 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
 {
     auto result = o_CreateDescriptorHeap(This, pDescriptorHeapDesc, riid, ppvHeap);
 
-    if (Config::Instance()->SkipHeapCapture)
+    if (State::Instance().skipHeapCapture)
         return result;
 
     // try to calculate handle ranges for heap
@@ -1357,7 +1357,7 @@ static void hkCopyDescriptors(ID3D12Device* This,
     D3D12_CPU_DESCRIPTOR_HANDLE* srcRangeStarts = pSrcDescriptorRangeStarts;
     UINT* srcRangeSizes = pSrcDescriptorRangeSizes;
 
-    if (Config::Instance()->UseThreadingForHeaps)
+    if (State::Instance().useThreadingForHeaps)
     {
         auto asyncTask = std::async(std::launch::async, [=]()
                                     {
@@ -1483,7 +1483,7 @@ static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D
     if (!Config::Instance()->FGAlwaysTrackHeaps.value_or(false) && !IsHudFixActive())
         return;
 
-    if (Config::Instance()->UseThreadingForHeaps)
+    if (State::Instance().useThreadingForHeaps)
     {
         auto asyncTask = std::async(std::launch::async, [=]()
                                     {
@@ -1970,7 +1970,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     //std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
     //std::shared_lock<std::shared_mutex> lockPresent(presentMutex);
 
-    if (Config::Instance()->IsShuttingDown)
+    if (State::Instance().isShuttingDown)
         return o_FGSCPresent(This, SyncInterval, Flags);
 
     // Using index for frame to be generated
@@ -1981,13 +1981,13 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     if (HooksDx::currentSwapchain == nullptr)
         return S_OK;
 
-    if (Config::Instance()->FGResetCapturedResources)
+    if (State::Instance().FGresetCapturedResources)
     {
         LOG_DEBUG("FGResetCapturedResources");
         std::unique_lock<std::shared_mutex> lock(captureMutex);
         fgCaptureList.clear();
-        Config::Instance()->FGCapturedResourceCount = 0;
-        Config::Instance()->FGResetCapturedResources = false;
+        State::Instance().FGcapturedResourceCount = 0;
+        State::Instance().FGresetCapturedResources = false;
     }
 
     // Skip calculations etc
@@ -2000,8 +2000,8 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     // If dispatch still not called
     if (!fgDispatchCalled && Config::Instance()->FGHUDFix.value_or(false) && FrameGen_Dx12::fgIsActive &&
         Config::Instance()->FGUseFGSwapChain.value_or(true) && Config::Instance()->OverlayMenu.value_or(true) &&
-        Config::Instance()->FGEnabled.value_or(false) && Config::Instance()->CurrentFeature != nullptr &&
-        FrameGen_Dx12::fgTarget < Config::Instance()->CurrentFeature->FrameCount() && !Config::Instance()->FGChanged &&
+        Config::Instance()->FGEnabled.value_or(false) && State::Instance().currentFeature != nullptr &&
+        FrameGen_Dx12::fgTarget < State::Instance().currentFeature->FrameCount() && !State::Instance().FGchanged &&
         FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr && 
         FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] >= 0) // If not captured
     {
@@ -2044,7 +2044,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
     HRESULT presentResult;
 
-    if (Config::Instance()->IsShuttingDown)
+    if (State::Instance().isShuttingDown)
     {
         if (pPresentParameters == nullptr)
             presentResult = pSwapChain->Present(SyncInterval, Flags);
@@ -2098,7 +2098,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             LOG_DEBUG("D3D11Device captured");
 
         _dx11Device = true;
-        Config::Instance()->SwapChainApi = NVNGX_DX11;
+        State::Instance().swapchainApi = DX11;
     }
     else if (pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
@@ -2108,7 +2108,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         FrameGen_Dx12::fgFSRCommandQueue = (ID3D12CommandQueue*)pDevice;
         FrameGen_Dx12::fgFSRCommandQueue->SetName(L"fgFSRSwapChainQueue");
         HooksDx::GameCommandQueue = FrameGen_Dx12::fgFSRCommandQueue;
-        Config::Instance()->SwapChainApi = NVNGX_DX12;
+        State::Instance().swapchainApi = DX12;
 
         if (HooksDx::GameCommandQueue->GetDevice(IID_PPV_ARGS(&device12)) == S_OK)
         {
@@ -2141,8 +2141,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             // filter out posibly wrong measured high values
             if (elapsedTimeMs < 100.0)
             {
-                Config::Instance()->upscaleTimes.push_back(elapsedTimeMs);
-                Config::Instance()->upscaleTimes.pop_front();
+                State::Instance().upscaleTimes.push_back(elapsedTimeMs);
+                State::Instance().upscaleTimes.pop_front();
             }
         }
         else
@@ -2176,8 +2176,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
                     // filter out posibly wrong measured high values
                     if (elapsedTimeMs < 100.0)
                     {
-                        Config::Instance()->upscaleTimes.push_back(elapsedTimeMs);
-                        Config::Instance()->upscaleTimes.pop_front();
+                        State::Instance().upscaleTimes.push_back(elapsedTimeMs);
+                        State::Instance().upscaleTimes.pop_front();
                     }
                 }
             }
@@ -2189,7 +2189,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
     }
 
     // DXVK check, it's here because of upscaler time calculations
-    if (Config::Instance()->IsRunningOnDXVK)
+    if (State::Instance().isRunningOnDXVK)
     {
         if (cq != nullptr)
             cq->Release();
@@ -2212,8 +2212,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
         FrameGen_Dx12::fgSkipHudlessChecks = false;
 
-        if (Config::Instance()->CurrentFeature != nullptr)
-            fgPresentedFrame = Config::Instance()->CurrentFeature->FrameCount();
+        if (State::Instance().currentFeature != nullptr)
+            fgPresentedFrame = State::Instance().currentFeature->FrameCount();
 
         if (fgStopAfterNextPresent)
         {
@@ -2245,8 +2245,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
     FrameGen_Dx12::fgSkipHudlessChecks = false;
 
-    if (Config::Instance()->CurrentFeature != nullptr)
-        fgPresentedFrame = Config::Instance()->CurrentFeature->FrameCount();
+    if (State::Instance().currentFeature != nullptr)
+        fgPresentedFrame = State::Instance().currentFeature->FrameCount();
 
     // release used objects
     if (cq != nullptr)
@@ -2272,7 +2272,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
 static void CheckAdapter(IUnknown* unkAdapter)
 {
-    if (Config::Instance()->IsRunningOnDXVK)
+    if (State::Instance().isRunningOnDXVK)
         return;
 
     //DXVK VkInterface GUID
@@ -2284,7 +2284,7 @@ static void CheckAdapter(IUnknown* unkAdapter)
     void* dxvkAdapter = nullptr;
     if (adapterOk && adapter->QueryInterface(guid, &dxvkAdapter) == S_OK)
     {
-        Config::Instance()->IsRunningOnDXVK = dxvkAdapter != nullptr;
+        State::Instance().isRunningOnDXVK = dxvkAdapter != nullptr;
         ((IDXGIAdapter*)dxvkAdapter)->Release();
     }
 
@@ -2377,7 +2377,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
     *ppSwapChain = nullptr;
 
-    if (Config::Instance()->VulkanCreatingSC)
+    if (State::Instance().vulkanCreatingSC)
     {
         LOG_WARN("Vulkan is creating swapchain!");
 
@@ -2385,27 +2385,27 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
             LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, Windowed: {}, SkipWrapping: {}",
                       pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, (UINT)pDesc->OutputWindow, pDesc->Windowed, fgSkipSCWrapping);
 
-        Config::Instance()->skipDxgiLoadChecks = true;
+        State::Instance().skipDxgiLoadChecks = true;
         auto res = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
-        Config::Instance()->skipDxgiLoadChecks = false;
+        State::Instance().skipDxgiLoadChecks = false;
         return res;
     }
 
     if (pDevice == nullptr || pDesc == nullptr)
     {
         LOG_WARN("pDevice or pDesc is nullptr!");
-        Config::Instance()->skipDxgiLoadChecks = true;
+        State::Instance().skipDxgiLoadChecks = true;
         auto res = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
-        Config::Instance()->skipDxgiLoadChecks = false;
+        State::Instance().skipDxgiLoadChecks = false;
         return res;
     }
 
     if (pDesc->BufferDesc.Height < 100 || pDesc->BufferDesc.Width < 100)
     {
         LOG_WARN("Overlay call!");
-        Config::Instance()->skipDxgiLoadChecks = true;
+        State::Instance().skipDxgiLoadChecks = true;
         auto res = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
-        Config::Instance()->skipDxgiLoadChecks = false;
+        State::Instance().skipDxgiLoadChecks = false;
         return res;
     }
 
@@ -2420,11 +2420,11 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
     // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
-    if (Config::Instance()->forceHdr.value_or(false) && !fgSkipSCWrapping)
+    if (Config::Instance()->ForceHDR.value_or(false) && !fgSkipSCWrapping)
     {
         LOG_INFO("Force HDR on");
 
-        if (Config::Instance()->useHDR10.value_or(false))
+        if (Config::Instance()->UseHDR10.value_or(false))
         {
             LOG_INFO("Using HDR10");
             pDesc->BufferDesc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
@@ -2461,15 +2461,15 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
 
         fgSkipSCWrapping = true;
-        //Config::Instance()->skipSpoofing = true;
-        Config::Instance()->SkipHeapCapture = true;
-        Config::Instance()->skipDxgiLoadChecks = true;
+        //State::Instance().skipSpoofing = true;
+        State::Instance().skipHeapCapture = true;
+        State::Instance().skipDxgiLoadChecks = true;
 
         auto result = FfxApiProxy::D3D12_CreateContext()(&FrameGen_Dx12::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
 
-        Config::Instance()->skipDxgiLoadChecks = false;
-        Config::Instance()->SkipHeapCapture = false;
-        //Config::Instance()->skipSpoofing = false;
+        State::Instance().skipDxgiLoadChecks = false;
+        State::Instance().skipHeapCapture = false;
+        //State::Instance().skipSpoofing = false;
         fgSkipSCWrapping = false;
 
         if (result == FFX_API_RETURN_OK)
@@ -2515,18 +2515,18 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
             scInfo.swapChainBufferCount = pDesc->BufferCount;
             scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
 
-            Config::Instance()->scBuffers.clear();
+            State::Instance().SCbuffers.clear();
             for (size_t i = 0; i < 3; i++)
             {
                 IUnknown* buffer;
                 if (scInfo.swapChain->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
                 {
-                    Config::Instance()->scBuffers.push_back(buffer);
+                    State::Instance().SCbuffers.push_back(buffer);
                     buffer->Release();
                 }
             }
 
-            if (Config::Instance()->forceHdr.value_or(false))
+            if (Config::Instance()->ForceHDR.value_or(false))
             {
                 IDXGISwapChain3* sc3 = nullptr;
 
@@ -2536,7 +2536,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
                     {
                         DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
 
-                        if (Config::Instance()->useHDR10.value_or(false))
+                        if (Config::Instance()->UseHDR10.value_or(false))
                             hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
 
                         UINT css = 0;
@@ -2584,9 +2584,9 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         return E_INVALIDARG;
     }
 
-    Config::Instance()->skipDxgiLoadChecks = true;
+    State::Instance().skipDxgiLoadChecks = true;
     auto result = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
-    Config::Instance()->skipDxgiLoadChecks = false;
+    State::Instance().skipDxgiLoadChecks = false;
 
     if (result == S_OK)
     {
@@ -2601,8 +2601,8 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
         if (Util::GetProcessWindow() == pDesc->OutputWindow)
         {
-            Config::Instance()->ScreenWidth = pDesc->BufferDesc.Width;
-            Config::Instance()->ScreenHeight = pDesc->BufferDesc.Height;
+            State::Instance().screenWidth = pDesc->BufferDesc.Width;
+            State::Instance().screenHeight = pDesc->BufferDesc.Height;
         }
 
         LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDesc->OutputWindow);
@@ -2616,17 +2616,17 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
         // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
         // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
-        if (Config::Instance()->forceHdr.value_or(false))
+        if (Config::Instance()->ForceHDR.value_or(false))
         {
             if (!fgSkipSCWrapping)
             {
-                Config::Instance()->scBuffers.clear();
+                State::Instance().SCbuffers.clear();
                 for (size_t i = 0; i < pDesc->BufferCount; i++)
                 {
                     IUnknown* buffer;
                     if ((*ppSwapChain)->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
                     {
-                        Config::Instance()->scBuffers.push_back(buffer);
+                        State::Instance().SCbuffers.push_back(buffer);
                         buffer->Release();
                     }
                 }
@@ -2639,7 +2639,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
                 {
                     DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
 
-                    if (Config::Instance()->useHDR10.value_or(false))
+                    if (Config::Instance()->UseHDR10.value_or(false))
                         hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
 
                     UINT css = 0;
@@ -2685,28 +2685,28 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
     *ppSwapChain = nullptr;
 
-    if (Config::Instance()->VulkanCreatingSC)
+    if (State::Instance().vulkanCreatingSC)
     {
         LOG_WARN("Vulkan is creating swapchain!");
-        Config::Instance()->skipDxgiLoadChecks = true;
+        State::Instance().skipDxgiLoadChecks = true;
         return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
-        Config::Instance()->skipDxgiLoadChecks = false;
+        State::Instance().skipDxgiLoadChecks = false;
     }
 
     if (pDevice == nullptr || pDesc == nullptr)
     {
         LOG_WARN("pDevice or pDesc is nullptr!");
-        Config::Instance()->skipDxgiLoadChecks = true;
+        State::Instance().skipDxgiLoadChecks = true;
         return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
-        Config::Instance()->skipDxgiLoadChecks = false;
+        State::Instance().skipDxgiLoadChecks = false;
     }
 
     if (pDesc->Height < 100 || pDesc->Width < 100)
     {
         LOG_WARN("Overlay call!");
-        Config::Instance()->skipDxgiLoadChecks = true;
+        State::Instance().skipDxgiLoadChecks = true;
         return oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
-        Config::Instance()->skipDxgiLoadChecks = false;
+        State::Instance().skipDxgiLoadChecks = false;
     }
 
     LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, SkipWrapping: {}",
@@ -2718,11 +2718,11 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         FrameGen_Dx12::ReleaseFGSwapchain(hWnd);
     }
 
-    if (Config::Instance()->forceHdr.value_or(false) && !fgSkipSCWrapping)
+    if (Config::Instance()->ForceHDR.value_or(false) && !fgSkipSCWrapping)
     {
         LOG_INFO("Force HDR on");
 
-        if (Config::Instance()->useHDR10.value_or(false))
+        if (Config::Instance()->UseHDR10.value_or(false))
         {
             LOG_INFO("Using HDR10");
             pDesc->Format = DXGI_FORMAT_R10G10B10A2_UNORM;
@@ -2761,15 +2761,15 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         createSwapChainDesc.swapchain = (IDXGISwapChain4**)ppSwapChain;
 
         fgSkipSCWrapping = true;
-        //Config::Instance()->skipSpoofing = true;
-        Config::Instance()->SkipHeapCapture = true;
-        Config::Instance()->skipDxgiLoadChecks = true;
+        //State::Instance().skipSpoofing = true;
+        State::Instance().skipHeapCapture = true;
+        State::Instance().skipDxgiLoadChecks = true;
 
         auto result = FfxApiProxy::D3D12_CreateContext()(&FrameGen_Dx12::fgSwapChainContext, &createSwapChainDesc.header, nullptr);
 
-        Config::Instance()->skipDxgiLoadChecks = false;
-        Config::Instance()->SkipHeapCapture = false;
-        //Config::Instance()->skipSpoofing = false;
+        State::Instance().skipDxgiLoadChecks = false;
+        State::Instance().skipHeapCapture = false;
+        //State::Instance().skipSpoofing = false;
         fgSkipSCWrapping = false;
 
         if (result == FFX_API_RETURN_OK)
@@ -2815,18 +2815,18 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
             scInfo.swapChainBufferCount = pDesc->BufferCount;
             scInfo.swapChain = (IDXGISwapChain4*)*ppSwapChain;
 
-            Config::Instance()->scBuffers.clear();
+            State::Instance().SCbuffers.clear();
             for (size_t i = 0; i < 3; i++)
             {
                 IUnknown* buffer;
                 if ((*ppSwapChain)->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
                 {
-                    Config::Instance()->scBuffers.push_back(buffer);
+                    State::Instance().SCbuffers.push_back(buffer);
                     buffer->Release();
                 }
             }
 
-            if (Config::Instance()->forceHdr.value_or(false))
+            if (Config::Instance()->ForceHDR.value_or(false))
             {
                 IDXGISwapChain3* sc3 = nullptr;
 
@@ -2836,7 +2836,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
                     {
                         DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
 
-                        if (Config::Instance()->useHDR10.value_or(false))
+                        if (Config::Instance()->UseHDR10.value_or(false))
                             hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
 
                         UINT css = 0;
@@ -2883,9 +2883,9 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         return E_INVALIDARG;
     }
 
-    Config::Instance()->skipDxgiLoadChecks = true;
+    State::Instance().skipDxgiLoadChecks = true;
     auto result = oCreateSwapChainForHwnd(This, pDevice, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
-    Config::Instance()->skipDxgiLoadChecks = false;
+    State::Instance().skipDxgiLoadChecks = false;
 
     if (result == S_OK)
     {
@@ -2900,8 +2900,8 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
         if (Util::GetProcessWindow() == hWnd)
         {
-            Config::Instance()->ScreenWidth = pDesc->Width;
-            Config::Instance()->ScreenHeight = pDesc->Height;
+            State::Instance().screenWidth = pDesc->Width;
+            State::Instance().screenHeight = pDesc->Height;
         }
 
         LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)hWnd);
@@ -2912,17 +2912,17 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         if (!fgSkipSCWrapping)
             HooksDx::currentSwapchain = lastWrapped;
 
-        if (Config::Instance()->forceHdr.value_or(false))
+        if (Config::Instance()->ForceHDR.value_or(false))
         {
             if (!fgSkipSCWrapping)
             {
-                Config::Instance()->scBuffers.clear();
+                State::Instance().SCbuffers.clear();
                 for (size_t i = 0; i < pDesc->BufferCount; i++)
                 {
                     IUnknown* buffer;
                     if ((*ppSwapChain)->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
                     {
-                        Config::Instance()->scBuffers.push_back(buffer);
+                        State::Instance().SCbuffers.push_back(buffer);
                         buffer->Release();
                     }
                 }
@@ -2935,7 +2935,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
                 {
                     DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
 
-                    if (Config::Instance()->useHDR10.value_or(false))
+                    if (Config::Instance()->UseHDR10.value_or(false))
                         hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
 
                     UINT css = 0;
@@ -2977,9 +2977,9 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
 #ifndef ENABLE_DEBUG_LAYER_DX12
-    Config::Instance()->skipDxgiLoadChecks = true;
+    State::Instance().skipDxgiLoadChecks = true;
     auto result = o_CreateDXGIFactory(riid, ppFactory);
-    Config::Instance()->skipDxgiLoadChecks = false;
+    State::Instance().skipDxgiLoadChecks = false;
 #else
     auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
 #endif
@@ -3018,9 +3018,9 @@ static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 {
 #ifndef ENABLE_DEBUG_LAYER_DX12
-    Config::Instance()->skipDxgiLoadChecks = true;
+    State::Instance().skipDxgiLoadChecks = true;
     auto result = o_CreateDXGIFactory1(riid, ppFactory);
-    Config::Instance()->skipDxgiLoadChecks = false;
+    State::Instance().skipDxgiLoadChecks = false;
 #else
     auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
 #endif
@@ -3069,9 +3069,9 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
 {
 #ifndef ENABLE_DEBUG_LAYER_DX12
-    Config::Instance()->skipDxgiLoadChecks = true;
+    State::Instance().skipDxgiLoadChecks = true;
     auto result = o_CreateDXGIFactory2(Flags, riid, ppFactory);
-    Config::Instance()->skipDxgiLoadChecks = false;
+    State::Instance().skipDxgiLoadChecks = false;
 #else
     auto result = o_CreateDXGIFactory2(Flags | DXGI_CREATE_FACTORY_DEBUG, riid, ppFactory);
 #endif
@@ -3121,9 +3121,9 @@ static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, D
 {
     LOG_FUNC();
 
-    Config::Instance()->skipDxgiLoadChecks = true;
+    State::Instance().skipDxgiLoadChecks = true;
     auto result = ptrEnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, ppvAdapter);
-    Config::Instance()->skipDxgiLoadChecks = false;
+    State::Instance().skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         CheckAdapter(*ppvAdapter);
@@ -3135,9 +3135,9 @@ static HRESULT hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID
 {
     LOG_FUNC();
 
-    Config::Instance()->skipDxgiLoadChecks = true;
+    State::Instance().skipDxgiLoadChecks = true;
     auto result = ptrEnumAdapterByLuid(This, AdapterLuid, riid, ppvAdapter);
-    Config::Instance()->skipDxgiLoadChecks = false;
+    State::Instance().skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         CheckAdapter(*ppvAdapter);
@@ -3149,9 +3149,9 @@ static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppA
 {
     LOG_TRACE("HooksDx");
 
-    Config::Instance()->skipDxgiLoadChecks = true;
+    State::Instance().skipDxgiLoadChecks = true;
     HRESULT result = ptrEnumAdapters1(This, Adapter, ppAdapter);
-    Config::Instance()->skipDxgiLoadChecks = false;
+    State::Instance().skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         CheckAdapter(*ppAdapter);
@@ -3163,9 +3163,9 @@ static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAda
 {
     LOG_FUNC();
 
-    Config::Instance()->skipDxgiLoadChecks = true;
+    State::Instance().skipDxgiLoadChecks = true;
     HRESULT result = ptrEnumAdapters(This, Adapter, ppAdapter);
-    Config::Instance()->skipDxgiLoadChecks = false;
+    State::Instance().skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         CheckAdapter(*ppAdapter);
@@ -3381,7 +3381,7 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
     }
 
     if (result == S_OK && *ppDevice != nullptr)
-        Config::Instance()->d3d11Devices.push_back(*ppDevice);
+        State::Instance().d3d11Devices.push_back(*ppDevice);
 
     LOG_FUNC_RESULT(result);
 
@@ -3415,10 +3415,10 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
         FeatureLevels = ARRAYSIZE(levels);
     }
 
-    //Config::Instance()->skipSpoofing = true;
+    //State::Instance().skipSpoofing = true;
     auto result = o_D3D11CreateDevice(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
     //auto result = o_D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
-    //Config::Instance()->skipSpoofing = false;
+    //State::Instance().skipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr && !_d3d12Captured)
     {
@@ -3431,7 +3431,7 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
     LOG_FUNC_RESULT(result);
 
     if (result == S_OK && ppDevice != nullptr && *ppDevice != nullptr)
-        Config::Instance()->d3d11Devices.push_back(*ppDevice);
+        State::Instance().d3d11Devices.push_back(*ppDevice);
 
     return result;
 }
@@ -3466,15 +3466,15 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
     if (pSwapChainDesc != nullptr && pSwapChainDesc->BufferDesc.Height == 2 && pSwapChainDesc->BufferDesc.Width == 2)
     {
         LOG_WARN("Overlay call!");
-        //Config::Instance()->skipSpoofing = true;
+        //State::Instance().skipSpoofing = true;
         auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
-        //Config::Instance()->skipSpoofing = false;
+        //State::Instance().skipSpoofing = false;
         return result;
     }
 
-    //Config::Instance()->skipSpoofing = true;
+    //State::Instance().skipSpoofing = true;
     auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
-    //Config::Instance()->skipSpoofing = false;
+    //State::Instance().skipSpoofing = false;
 
     if (result == S_OK && *ppDevice != nullptr && !_d3d12Captured)
     {
@@ -3484,7 +3484,7 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
     }
 
     if (result == S_OK && ppDevice != nullptr && *ppDevice != nullptr)
-        Config::Instance()->d3d11Devices.push_back(*ppDevice);
+        State::Instance().d3d11Devices.push_back(*ppDevice);
 
     LOG_FUNC_RESULT(result);
     return result;
@@ -3518,9 +3518,9 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
 }
 #endif
 
-    //Config::Instance()->skipSpoofing = true;
+    //State::Instance().skipSpoofing = true;
     auto result = o_D3D12CreateDevice(pAdapter, MinimumFeatureLevel, riid, ppDevice);
-    //Config::Instance()->skipSpoofing = false;
+    //State::Instance().skipSpoofing = false;
 
     if (result == S_OK && ppDevice != nullptr && *ppDevice != nullptr)
     {
@@ -3529,7 +3529,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         HookToDevice(g_pd3dDeviceParam);
         _d3d12Captured = true;
 
-        Config::Instance()->d3d12Devices.push_back((ID3D12Device*)*ppDevice);
+        State::Instance().d3d12Devices.push_back((ID3D12Device*)*ppDevice);
 
 #ifdef ENABLE_DEBUG_LAYER_DX12
         if (infoQueue != nullptr)
@@ -3612,11 +3612,11 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
                 newDesc.MipLODBias = newDesc.MipLODBias + Config::Instance()->MipmapBiasOverride.value();
         }
 
-        if (Config::Instance()->lastMipBiasMax < newDesc.MipLODBias)
-            Config::Instance()->lastMipBiasMax = newDesc.MipLODBias;
+        if (State::Instance().lastMipBiasMax < newDesc.MipLODBias)
+            State::Instance().lastMipBiasMax = newDesc.MipLODBias;
 
-        if (Config::Instance()->lastMipBias > newDesc.MipLODBias)
-            Config::Instance()->lastMipBias = newDesc.MipLODBias;
+        if (State::Instance().lastMipBias > newDesc.MipLODBias)
+            State::Instance().lastMipBias = newDesc.MipLODBias;
     }
 
     return o_CreateSampler(device, &newDesc, DestDescriptor);
@@ -3677,11 +3677,11 @@ static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC
                 newDesc.MipLODBias = newDesc.MipLODBias + Config::Instance()->MipmapBiasOverride.value();
         }
 
-        if (Config::Instance()->lastMipBiasMax < newDesc.MipLODBias)
-            Config::Instance()->lastMipBiasMax = newDesc.MipLODBias;
+        if (State::Instance().lastMipBiasMax < newDesc.MipLODBias)
+            State::Instance().lastMipBiasMax = newDesc.MipLODBias;
 
-        if (Config::Instance()->lastMipBias > newDesc.MipLODBias)
-            Config::Instance()->lastMipBias = newDesc.MipLODBias;
+        if (State::Instance().lastMipBias > newDesc.MipLODBias)
+            State::Instance().lastMipBias = newDesc.MipLODBias;
     }
 
     return o_CreateSamplerState(This, &newDesc, ppSamplerState);
@@ -4135,9 +4135,9 @@ void FrameGen_Dx12::CreateFGObjects(ID3D12Device* InDevice)
         }
         FrameGen_Dx12::fgCopyCommandQueue->SetName(L"fgCopyCommandQueue");
 
-        Config::Instance()->SkipHeapCapture = true;
+        State::Instance().skipHeapCapture = true;
         FrameGen_Dx12::fgFormatTransfer = new FT_Dx12("FormatTransfer", InDevice, HooksDx::CurrentSwapchainFormat());
-        Config::Instance()->SkipHeapCapture = false;
+        State::Instance().skipHeapCapture = false;
 
     } while (false);
 }
@@ -4209,11 +4209,11 @@ void FrameGen_Dx12::CreateFGContext(ID3D12Device* InDevice, IFeature* deviceCont
     createFg.backBufferFormat = ffxApiGetSurfaceFormatDX12(HooksDx::CurrentSwapchainFormat());
     createFg.header.pNext = &backendDesc.header;
 
-    Config::Instance()->skipSpoofing = true;
-    Config::Instance()->SkipHeapCapture = true;
+    State::Instance().skipSpoofing = true;
+    State::Instance().skipHeapCapture = true;
     ffxReturnCode_t retCode = FfxApiProxy::D3D12_CreateContext()(&FrameGen_Dx12::fgContext, &createFg.header, nullptr);
-    Config::Instance()->SkipHeapCapture = false;
-    Config::Instance()->skipSpoofing = false;
+    State::Instance().skipHeapCapture = false;
+    State::Instance().skipSpoofing = false;
     LOG_INFO("D3D12_CreateContext result: {0:X}", retCode);
 
     FrameGen_Dx12::fgIsActive = (retCode == FFX_API_RETURN_OK);
@@ -4231,7 +4231,7 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
         FrameGen_Dx12::ffxMutex.lock();
 #endif
 
-    if (!(shutDown || Config::Instance()->IsShuttingDown) && FrameGen_Dx12::fgContext != nullptr)
+    if (!(shutDown || State::Instance().isShuttingDown) && FrameGen_Dx12::fgContext != nullptr)
     {
         ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
         m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
@@ -4245,7 +4245,7 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
 
         FrameGen_Dx12::fgIsActive = false;
 
-        if (!(shutDown || Config::Instance()->IsShuttingDown))
+        if (!(shutDown || State::Instance().isShuttingDown))
             LOG_INFO("D3D12_Configure result: {0:X}", result);
     }
 
@@ -4253,13 +4253,13 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
     {
         auto result = FfxApiProxy::D3D12_DestroyContext()(&FrameGen_Dx12::fgContext, nullptr);
 
-        if (!(shutDown || Config::Instance()->IsShuttingDown))
+        if (!(shutDown || State::Instance().isShuttingDown))
             LOG_INFO("D3D12_DestroyContext result: {0:X}", result);
 
         FrameGen_Dx12::fgContext = nullptr;
     }
 
-    if ((shutDown || Config::Instance()->IsShuttingDown) || destroy)
+    if ((shutDown || State::Instance().isShuttingDown) || destroy)
         ReleaseFGObjects();
 
 #ifdef USE_MUTEX_FOR_FFX

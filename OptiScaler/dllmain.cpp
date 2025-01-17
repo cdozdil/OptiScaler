@@ -160,7 +160,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
     LOG_TRACE("{}", lcaseLibName);
 
     // If Opti is not loading as nvngx.dll
-    if (!isWorkingWithEnabler && !Config::Instance()->upscalerDisableHook)
+    if (!isWorkingWithEnabler && !State::Instance().upscalerDisableHook)
     {
         // exe path
         auto exePath = Util::ExePath().parent_path().wstring();
@@ -182,7 +182,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
         }
     }
 
-    if (!isNvngxMode && (!Config::Instance()->IsDxgiMode || !Config::Instance()->skipDxgiLoadChecks) && CheckDllName(&lcaseLibName, &dllNames))
+    if (!isNvngxMode && (!State::Instance().isDxgiMode || !State::Instance().skipDxgiLoadChecks) && CheckDllName(&lcaseLibName, &dllNames))
     {
         LOG_INFO("{0} call returning this dll!", lcaseLibName);
 
@@ -256,9 +256,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
         if (module != nullptr)
         {
-            Config::Instance()->skipDllLoadChecks = true;
+            State::Instance().skipDllLoadChecks = true;
             HooksDx::HookDx11();
-            Config::Instance()->skipDllLoadChecks = false;
+            State::Instance().skipDllLoadChecks = false;
 
             return module;
         }
@@ -270,9 +270,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
         if (module != nullptr)
         {
-            Config::Instance()->skipDllLoadChecks = true;
+            State::Instance().skipDllLoadChecks = true;
             HooksDx::HookDx12();
-            Config::Instance()->skipDllLoadChecks = false;
+            State::Instance().skipDllLoadChecks = false;
 
             return module;
         }
@@ -284,7 +284,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
         if (module != nullptr)
         {
-            Config::Instance()->skipDllLoadChecks = true;
+            State::Instance().skipDllLoadChecks = true;
 
             if (!isWorkingWithEnabler)
             {
@@ -296,15 +296,15 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
             if (Config::Instance()->OverlayMenu.value_or(true))
                 HooksVk::HookVk();
 
-            Config::Instance()->skipDllLoadChecks = false;
+            State::Instance().skipDllLoadChecks = false;
 
             return module;
         }
     }
 
-    if (!Config::Instance()->skipDxgiLoadChecks && CheckDllName(&lcaseLibName, &dxgiNames))
+    if (!State::Instance().skipDxgiLoadChecks && CheckDllName(&lcaseLibName, &dxgiNames))
     {
-        Config::Instance()->skipDllLoadChecks = true;
+        State::Instance().skipDllLoadChecks = true;
 
         if (!isWorkingWithEnabler)
             HookForDxgiSpoofing();
@@ -312,53 +312,53 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
         if (Config::Instance()->OverlayMenu.value_or(true))
             HooksDx::HookDxgi();
 
-        Config::Instance()->skipDllLoadChecks = false;
+        State::Instance().skipDllLoadChecks = false;
     }
 
     if (CheckDllName(&lcaseLibName, &fsr2Names))
     {
-        Config::Instance()->skipDllLoadChecks = true;
+        State::Instance().skipDllLoadChecks = true;
 
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
         HookFSR2Inputs(module);
 
-        Config::Instance()->skipDllLoadChecks = false;
+        State::Instance().skipDllLoadChecks = false;
 
         return module;
     }
 
     if (CheckDllName(&lcaseLibName, &fsr2BENames))
     {
-        Config::Instance()->skipDllLoadChecks = true;
+        State::Instance().skipDllLoadChecks = true;
 
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
         HookFSR2Dx12Inputs(module);
 
-        Config::Instance()->skipDllLoadChecks = false;
+        State::Instance().skipDllLoadChecks = false;
 
         return module;
     }
 
     if (CheckDllName(&lcaseLibName, &fsr3Names))
     {
-        Config::Instance()->skipDllLoadChecks = true;
+        State::Instance().skipDllLoadChecks = true;
 
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
         HookFSR3Inputs(module);
 
-        Config::Instance()->skipDllLoadChecks = false;
+        State::Instance().skipDllLoadChecks = false;
 
         return module;
     }
 
     if (CheckDllName(&lcaseLibName, &fsr3BENames))
     {
-        Config::Instance()->skipDllLoadChecks = true;
+        State::Instance().skipDllLoadChecks = true;
 
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
         HookFSR3Dx12Inputs(module);
 
-        Config::Instance()->skipDllLoadChecks = false;
+        State::Instance().skipDllLoadChecks = false;
 
         return module;
     }
@@ -372,7 +372,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
     LOG_TRACE("{}", lcaseLibNameA);
 
     // If Opti is not loading as nvngx.dll
-    if (!isWorkingWithEnabler && !Config::Instance()->upscalerDisableHook)
+    if (!isWorkingWithEnabler && !State::Instance().upscalerDisableHook)
     {
         // exe path
         auto exePath = Util::ExePath().parent_path().wstring();
@@ -394,7 +394,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
         }
     }
 
-    if (!isNvngxMode && (!Config::Instance()->IsDxgiMode || !Config::Instance()->skipDxgiLoadChecks) && CheckDllNameW(&lcaseLibName, &dllNamesW))
+    if (!isNvngxMode && (!State::Instance().isDxgiMode || !State::Instance().skipDxgiLoadChecks) && CheckDllNameW(&lcaseLibName, &dllNamesW))
     {
         LOG_INFO("{0} call returning this dll!", lcaseLibNameA);
 
@@ -468,9 +468,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
         if (module != nullptr)
         {
-            Config::Instance()->skipDllLoadChecks = true;
+            State::Instance().skipDllLoadChecks = true;
             HooksDx::HookDx11();
-            Config::Instance()->skipDllLoadChecks = false;
+            State::Instance().skipDllLoadChecks = false;
 
             return module;
         }
@@ -482,9 +482,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
         if (module != nullptr)
         {
-            Config::Instance()->skipDllLoadChecks = true;
+            State::Instance().skipDllLoadChecks = true;
             HooksDx::HookDx12();
-            Config::Instance()->skipDllLoadChecks = false;
+            State::Instance().skipDllLoadChecks = false;
 
             return module;
         }
@@ -496,7 +496,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
         if (module != nullptr)
         {
-            Config::Instance()->skipDllLoadChecks = true;
+            State::Instance().skipDllLoadChecks = true;
 
             if (!isWorkingWithEnabler)
             {
@@ -508,69 +508,69 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
             if (Config::Instance()->OverlayMenu.value_or(true))
                 HooksVk::HookVk();
 
-            Config::Instance()->skipDllLoadChecks = false;
+            State::Instance().skipDllLoadChecks = false;
 
             return module;
         }
     }
 
-    if (!Config::Instance()->skipDxgiLoadChecks && CheckDllNameW(&lcaseLibName, &dxgiNamesW))
+    if (!State::Instance().skipDxgiLoadChecks && CheckDllNameW(&lcaseLibName, &dxgiNamesW))
     {
-        Config::Instance()->skipDllLoadChecks = true;
+        State::Instance().skipDllLoadChecks = true;
 
         if (!isWorkingWithEnabler)
             HookForDxgiSpoofing();
 
-        if (Config::Instance()->OverlayMenu.value_or(true)/* && !Config::Instance()->IsRunningOnLinux*/)
+        if (Config::Instance()->OverlayMenu.value_or(true)/* && !State::Instance().isRunningOnLinux*/)
             HooksDx::HookDxgi();
 
-        Config::Instance()->skipDllLoadChecks = false;
+        State::Instance().skipDllLoadChecks = false;
     }
 
     if (CheckDllNameW(&lcaseLibName, &fsr2NamesW))
     {
-        Config::Instance()->skipDllLoadChecks = true;
+        State::Instance().skipDllLoadChecks = true;
 
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
         HookFSR2Inputs(module);
 
-        Config::Instance()->skipDllLoadChecks = false;
+        State::Instance().skipDllLoadChecks = false;
 
         return module;
     }
 
     if (CheckDllNameW(&lcaseLibName, &fsr2BENamesW))
     {
-        Config::Instance()->skipDllLoadChecks = true;
+        State::Instance().skipDllLoadChecks = true;
 
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
         HookFSR2Dx12Inputs(module);
 
-        Config::Instance()->skipDllLoadChecks = false;
+        State::Instance().skipDllLoadChecks = false;
 
         return module;
     }
 
     if (CheckDllNameW(&lcaseLibName, &fsr3NamesW))
     {
-        Config::Instance()->skipDllLoadChecks = true;
+        State::Instance().skipDllLoadChecks = true;
 
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
         HookFSR3Inputs(module);
 
-        Config::Instance()->skipDllLoadChecks = false;
+        State::Instance().skipDllLoadChecks = false;
 
         return module;
     }
 
     if (CheckDllNameW(&lcaseLibName, &fsr3BENamesW))
     {
-        Config::Instance()->skipDllLoadChecks = true;
+        State::Instance().skipDllLoadChecks = true;
 
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
         HookFSR3Dx12Inputs(module);
 
-        Config::Instance()->skipDllLoadChecks = false;
+        State::Instance().skipDllLoadChecks = false;
 
         return module;
     }
@@ -659,7 +659,7 @@ static FARPROC hkGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
     if (hModule == dllModule && lpProcName != nullptr)
         LOG_DEBUG("Trying to get process address of {0}", lpProcName);
 
-    if (Config::Instance()->IsRunningOnLinux && lpProcName != nullptr && hModule == GetModuleHandle(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
+    if (State::Instance().isRunningOnLinux && lpProcName != nullptr && hModule == GetModuleHandle(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
         return (FARPROC)&customD3DKMTEnumAdapters2;
 
     return o_GetProcAddress(hModule, lpProcName);
@@ -903,7 +903,7 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (Config::Instance()->skipDllLoadChecks)
+    if (State::Instance().skipDllLoadChecks)
         return o_LoadLibraryA(lpLibFileName);;
 
     std::string libName(lpLibFileName);
@@ -940,7 +940,7 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (Config::Instance()->skipDllLoadChecks)
+    if (State::Instance().skipDllLoadChecks)
         return o_LoadLibraryW(lpLibFileName);;
 
     std::wstring libName(lpLibFileName);
@@ -977,7 +977,7 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (Config::Instance()->skipDllLoadChecks)
+    if (State::Instance().skipDllLoadChecks)
         return o_LoadLibraryExA(lpLibFileName, hFile, dwFlags);
 
     std::string libName(lpLibFileName);
@@ -1014,7 +1014,7 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (Config::Instance()->skipDllLoadChecks)
+    if (State::Instance().skipDllLoadChecks)
         return o_LoadLibraryExW(lpLibFileName, hFile, dwFlags);
 
     std::wstring libName(lpLibFileName);
@@ -1105,7 +1105,7 @@ static void hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, Vk
 {
     o_vkGetPhysicalDeviceProperties(physical_device, properties);
 
-    if (!Config::Instance()->skipSpoofing)
+    if (!State::Instance().skipSpoofing)
     {
         auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090"));
         std::strcpy(properties->deviceName, deviceName.c_str());
@@ -1123,7 +1123,7 @@ static void hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysic
 {
     o_vkGetPhysicalDeviceProperties2(phys_dev, properties2);
 
-    if (!Config::Instance()->skipSpoofing)
+    if (!State::Instance().skipSpoofing)
     {
         auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090"));
         std::strcpy(properties2->properties.deviceName, deviceName.c_str());
@@ -1156,7 +1156,7 @@ static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhy
 {
     o_vkGetPhysicalDeviceProperties2KHR(phys_dev, properties2);
 
-    if (!Config::Instance()->skipSpoofing)
+    if (!State::Instance().skipSpoofing)
     {
         auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090"));
         std::strcpy(properties2->properties.deviceName, deviceName.c_str());
@@ -1199,9 +1199,9 @@ static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, cons
         LOG_DEBUG("  {0}", pCreateInfo->ppEnabledLayerNames[i]);
 
     // Skip spoofing for Intel Arc
-    Config::Instance()->skipSpoofing = true;
+    State::Instance().skipSpoofing = true;
     auto result = o_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
-    Config::Instance()->skipSpoofing = false;
+    State::Instance().skipSpoofing = false;
 
     LOG_DEBUG("o_vkCreateInstance result: {0:X}", (INT)result);
 
@@ -1224,9 +1224,9 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
     {
         LOG_DEBUG("extension spoofing is disabled");
 
-        Config::Instance()->skipSpoofing = true;
+        State::Instance().skipSpoofing = true;
         return o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
-        Config::Instance()->skipSpoofing = false;
+        State::Instance().skipSpoofing = false;
     }
 
     LOG_DEBUG("layers ({0}):", pCreateInfo->enabledLayerCount);
@@ -1266,9 +1266,9 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
         LOG_DEBUG("  {0}", pCreateInfo->ppEnabledExtensionNames[i]);
 
     // Skip spoofing for Intel Arc
-    Config::Instance()->skipSpoofing = true;
+    State::Instance().skipSpoofing = true;
     auto result = o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
-    Config::Instance()->skipSpoofing = false;
+    State::Instance().skipSpoofing = false;
 
     LOG_FUNC_RESULT(result);
 
@@ -1385,7 +1385,7 @@ static VkResult hkvkEnumerateInstanceExtensionProperties(const char* pLayerName,
 inline static void HookForDxgiSpoofing()
 {
     // hook dxgi when not working as dxgi.dll
-    if (dxgi.CreateDxgiFactory == nullptr && !isWorkingWithEnabler && !Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
+    if (dxgi.CreateDxgiFactory == nullptr && !isWorkingWithEnabler && !State::Instance().isDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
     {
         LOG_INFO("DxgiSpoofing is enabled loading dxgi.dll");
 
@@ -1597,7 +1597,7 @@ static void DetachHooks()
             o_vkCreateInstance = nullptr;
         }
 
-        if (!Config::Instance()->IsDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
+        if (!State::Instance().isDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
         {
             if (dxgi.CreateDxgiFactory != nullptr)
             {
@@ -2019,7 +2019,7 @@ static void CheckWorkingMode()
 
                 dxgi.LoadOriginalLibrary(dll);
 
-                Config::Instance()->IsDxgiMode = true;
+                State::Instance().isDxgiMode = true;
                 modeFound = true;
             }
             else
@@ -2034,7 +2034,7 @@ static void CheckWorkingMode()
 
     if (modeFound)
     {
-        Config::Instance()->WorkingAsNvngx = isNvngxMode && !isWorkingWithEnabler;
+        State::Instance().isWorkingAsNvngx = isNvngxMode && !isWorkingWithEnabler;
         Config::Instance()->OverlayMenu = (!isNvngxMode || isWorkingWithEnabler) && Config::Instance()->OverlayMenu.value_or(true);
         Config::Instance()->CheckUpscalerFiles();
 
@@ -2102,7 +2102,7 @@ static void CheckWorkingMode()
                 HooksDx::HookDx12();
             }
 
-            if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr/* && !Config::Instance()->IsRunningOnLinux*/)
+            if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr/* && !State::Instance().isRunningOnLinux*/)
                 HooksDx::HookDxgi();
 
             if (!isWorkingWithEnabler && (!Config::Instance()->FGUseFGSwapChain.value_or(true) || !Config::Instance()->OverlayMenu.value_or(true)) &&
@@ -2127,7 +2127,7 @@ static void CheckWorkingMode()
             }
 
             // vk menu hooks
-            if (Config::Instance()->OverlayMenu.value() && (vulkanModule != nullptr || Config::Instance()->IsRunningOnLinux))
+            if (Config::Instance()->OverlayMenu.value() && (vulkanModule != nullptr || State::Instance().isRunningOnLinux))
                 HooksVk::HookVk();
 
             AttachHooks();
@@ -2142,7 +2142,7 @@ static void CheckWorkingMode()
 static void CheckQuirks() {
     auto exePathFilename = Util::ExePath().filename();
     if (exePathFilename == "Cyberpunk2077.exe") {
-        Config::Instance()->gameQuirk = Cyberpunk;
+        State::Instance().gameQuirk = Cyberpunk;
         LOG_INFO("Enabling a quirk for Cyberpunk");
     }
 }
@@ -2175,7 +2175,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             Config::Instance()->LogToFile = true;
 
             // Set log level to debug
-            if (Config::Instance()->LogLevel.value_or(2) > 1)
+            if (Config::Instance()->LogLevel.value_or_default() > 1)
                 Config::Instance()->LogLevel = 1;
 #endif
 
@@ -2188,13 +2188,13 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             spdlog::warn("If you paid for these files, you've been scammed!");
             spdlog::warn("DO NOT USE IN MULTIPLAYER GAMES");
             spdlog::warn("");
-            spdlog::warn("LogLevel: {0}", Config::Instance()->LogLevel.value_or(2));
+            spdlog::warn("LogLevel: {0}", Config::Instance()->LogLevel.value_or_default());
 
             // Check for Wine
             skipGetModuleHandle = true;
             spdlog::info("");
-            Config::Instance()->IsRunningOnLinux = IsRunningOnWine();
-            Config::Instance()->IsRunningOnDXVK = Config::Instance()->IsRunningOnLinux;
+            State::Instance().isRunningOnLinux = IsRunningOnWine();
+            State::Instance().isRunningOnDXVK = State::Instance().isRunningOnLinux;
             skipGetModuleHandle = false;
 
             // Check if real DLSS available
@@ -2232,7 +2232,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                         Config::Instance()->VulkanExtensionSpoofing = false;
 
                     isNvngxAvailable = true;
-                    Config::Instance()->IsRunningOnNvidia = true;
+                    State::Instance().isRunningOnNvidia = true;
 
                     if (!Config::Instance()->OverrideNvapiDll.has_value())
                     {
@@ -2252,14 +2252,14 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             CheckWorkingMode();
             spdlog::info("");
 
-            if (!Config::Instance()->nvngxExist && !Config::Instance()->DxgiSpoofing.has_value())
+            if (!State::Instance().nvngxExists && !Config::Instance()->DxgiSpoofing.has_value())
             {
                 LOG_WARN("No nvngx.dll found disabling spoofing!");
                 Config::Instance()->DxgiSpoofing = false;
             }
 
             // Init XeSS proxy
-            Config::Instance()->skipDllLoadChecks = true;
+            State::Instance().skipDllLoadChecks = true;
 
             if (!XeSSProxy::InitXeSS())
                 spdlog::warn("Can't init XeSS!");
@@ -2295,12 +2295,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             HookFSR3ExeInputs();
 
-            Config::Instance()->skipDllLoadChecks = false;
+            State::Instance().skipDllLoadChecks = false;
 
             for (size_t i = 0; i < 300; i++)
             {
-                Config::Instance()->frameTimes.push_back(0.0f);
-                Config::Instance()->upscaleTimes.push_back(0.0f);
+                State::Instance().frameTimes.push_back(0.0f);
+                State::Instance().upscaleTimes.push_back(0.0f);
             }
 
             spdlog::info("");

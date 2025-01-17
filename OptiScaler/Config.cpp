@@ -29,9 +29,9 @@ static inline bool isFloat(const std::string& str, float& value) {
     return (iss >> value) && iss.eof();
 }
 
-Config::Config(std::wstring fileName)
+Config::Config()
 {
-    absoluteFileName = Util::DllPath().parent_path() / fileName;;
+    absoluteFileName = Util::DllPath().parent_path() / fileName;
     Reload(absoluteFileName);
 }
 
@@ -738,11 +738,11 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // HDR
         {
-            if (!forceHdr.has_value())
-                forceHdr = readBool("HDR", "ForceHDR");
+            if (!ForceHDR.has_value())
+                ForceHDR = readBool("HDR", "ForceHDR");
 
-            if (!useHDR10.has_value())
-                useHDR10 = readBool("HDR", "UseHDR10");
+            if (!UseHDR10.has_value())
+                UseHDR10 = readBool("HDR", "UseHDR10");
         }
 
         if (fakenvapi::isUsingFakenvapi())
@@ -757,7 +757,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 bool Config::LoadFromPath(const wchar_t* InPath)
 {
     std::filesystem::path iniPath(InPath);
-    auto newPath = iniPath / L"nvngx.ini";
+    auto newPath = iniPath / fileName;
 
     if (Reload(newPath))
     {
@@ -795,7 +795,7 @@ std::string GetFloatValue(std::optional<float> value)
 bool Config::SaveIni()
 {
     // DLSS Enabler
-    if (DE_Available)
+    if (State::Instance().enablerAvailable)
     {
         ini.SetValue("FrameGeneration", "Generator", Instance()->DE_Generator.value_or("auto").c_str());
         ini.SetValue("FrameGeneration", "Reflex", Instance()->DE_Reflex.value_or("on").c_str());
@@ -816,9 +816,9 @@ bool Config::SaveIni()
 
     // Upscalers 
     {
-        ini.SetValue("Upscalers", "Dx11Upscaler", Instance()->Dx11Upscaler.value_or("auto").c_str());
-        ini.SetValue("Upscalers", "Dx12Upscaler", Instance()->Dx12Upscaler.value_or("auto").c_str());
-        ini.SetValue("Upscalers", "VulkanUpscaler", Instance()->VulkanUpscaler.value_or("auto").c_str());
+        ini.SetValue("Upscalers", "Dx11Upscaler", Instance()->Dx11Upscaler.value_for_config_or("auto").c_str());
+        ini.SetValue("Upscalers", "Dx12Upscaler", Instance()->Dx12Upscaler.value_for_config_or("auto").c_str());
+        ini.SetValue("Upscalers", "VulkanUpscaler", Instance()->VulkanUpscaler.value_for_config_or("auto").c_str());
     }
 
     // Frame Generation 
@@ -856,7 +856,7 @@ bool Config::SaveIni()
 
     // FSR common
     {
-        ini.SetValue("FSR", "VerticalFov", GetFloatValue(Instance()->FsrVerticalFov).c_str());
+        ini.SetValue("FSR", "VerticalFov", GetFloatValue(Instance()->FsrVerticalFov.value_for_config()).c_str());
         ini.SetValue("FSR", "HorizontalFov", GetFloatValue(Instance()->FsrHorizontalFov).c_str());
         ini.SetValue("FSR", "CameraNear", GetFloatValue(Instance()->FsrCameraNear).c_str());
         ini.SetValue("FSR", "CameraFar", GetFloatValue(Instance()->FsrCameraFar).c_str());
@@ -903,21 +903,21 @@ bool Config::SaveIni()
     // Sharpness
     {
         ini.SetValue("Sharpness", "OverrideSharpness", GetBoolValue(Instance()->OverrideSharpness).c_str());
-        ini.SetValue("Sharpness", "Sharpness", GetFloatValue(Instance()->Sharpness).c_str());
+        ini.SetValue("Sharpness", "Sharpness", GetFloatValue(Instance()->Sharpness.value_for_config()).c_str());
     }
 
     // Menu
     {
-        ini.SetValue("Menu", "Scale", GetFloatValue(Instance()->MenuScale).c_str());
-        ini.SetValue("Menu", "OverlayMenu", GetBoolValue(Instance()->OverlayMenu).c_str());
-        ini.SetValue("Menu", "ShortcutKey", GetIntValue(Instance()->ShortcutKey).c_str());
-        ini.SetValue("Menu", "AdvancedSettings", GetBoolValue(Instance()->AdvancedSettings).c_str());
-        ini.SetValue("Menu", "ExtendedLimits", GetBoolValue(Instance()->ExtendedLimits).c_str());
-        ini.SetValue("Menu", "ShowFps", GetBoolValue(Instance()->ShowFps).c_str());
-        ini.SetValue("Menu", "FpsOverlayPos", GetIntValue(Instance()->FpsOverlayPos).c_str());
-        ini.SetValue("Menu", "FpsOverlayType", GetIntValue(Instance()->FpsOverlayType).c_str());
-        ini.SetValue("Menu", "FpsOverlayHorizontal", GetBoolValue(Instance()->FpsOverlayHorizontal).c_str());
-        ini.SetValue("Menu", "FpsOverlayAlpha", GetFloatValue(Instance()->FpsOverlayAlpha).c_str());
+        ini.SetValue("Menu", "Scale", GetFloatValue(Instance()->MenuScale.value_for_config()).c_str());
+        ini.SetValue("Menu", "OverlayMenu", GetBoolValue(Instance()->OverlayMenu.value_for_config()).c_str());
+        ini.SetValue("Menu", "ShortcutKey", GetIntValue(Instance()->ShortcutKey.value_for_config()).c_str());
+        ini.SetValue("Menu", "AdvancedSettings", GetBoolValue(Instance()->AdvancedSettings.value_for_config()).c_str());
+        ini.SetValue("Menu", "ExtendedLimits", GetBoolValue(Instance()->ExtendedLimits.value_for_config()).c_str());
+        ini.SetValue("Menu", "ShowFps", GetBoolValue(Instance()->ShowFps.value_for_config()).c_str());
+        ini.SetValue("Menu", "FpsOverlayPos", GetIntValue(Instance()->FpsOverlayPos.value_for_config()).c_str());
+        ini.SetValue("Menu", "FpsOverlayType", GetIntValue(Instance()->FpsOverlayType.value_for_config()).c_str());
+        ini.SetValue("Menu", "FpsOverlayHorizontal", GetBoolValue(Instance()->FpsOverlayHorizontal.value_for_config()).c_str());
+        ini.SetValue("Menu", "FpsOverlayAlpha", GetFloatValue(Instance()->FpsOverlayAlpha.value_for_config()).c_str());
     }
 
     // Hooks
@@ -930,9 +930,9 @@ bool Config::SaveIni()
         ini.SetValue("CAS", "Enabled", GetBoolValue(Instance()->RcasEnabled).c_str());
         ini.SetValue("CAS", "MotionSharpnessEnabled", GetBoolValue(Instance()->MotionSharpnessEnabled).c_str());
         ini.SetValue("CAS", "MotionSharpnessDebug", GetBoolValue(Instance()->MotionSharpnessDebug).c_str());
-        ini.SetValue("CAS", "MotionSharpness", GetFloatValue(Instance()->MotionSharpness).c_str());
-        ini.SetValue("CAS", "MotionThreshold", GetFloatValue(Instance()->MotionThreshold).c_str());
-        ini.SetValue("CAS", "MotionScaleLimit", GetFloatValue(Instance()->MotionScaleLimit).c_str());
+        ini.SetValue("CAS", "MotionSharpness", GetFloatValue(Instance()->MotionSharpness.value_for_config()).c_str());
+        ini.SetValue("CAS", "MotionThreshold", GetFloatValue(Instance()->MotionThreshold.value_for_config()).c_str());
+        ini.SetValue("CAS", "MotionScaleLimit", GetFloatValue(Instance()->MotionScaleLimit.value_for_config()).c_str());
     }
 
     // InitFlags
@@ -948,7 +948,7 @@ bool Config::SaveIni()
     // Upscale Ratio Override
     {
         ini.SetValue("UpscaleRatio", "UpscaleRatioOverrideEnabled", GetBoolValue(Instance()->UpscaleRatioOverrideEnabled).c_str());
-        ini.SetValue("UpscaleRatio", "UpscaleRatioOverrideValue", GetFloatValue(Instance()->UpscaleRatioOverrideValue).c_str());
+        ini.SetValue("UpscaleRatio", "UpscaleRatioOverrideValue", GetFloatValue(Instance()->UpscaleRatioOverrideValue.value_for_config()).c_str());
     }
 
     // Quality Overrides
@@ -1001,13 +1001,13 @@ bool Config::SaveIni()
 
     // Logging
     {
-        ini.SetValue("Log", "LogLevel", GetIntValue(Instance()->LogLevel).c_str());
-        ini.SetValue("Log", "LogToConsole", GetBoolValue(Instance()->LogToConsole).c_str());
-        ini.SetValue("Log", "LogToFile", GetBoolValue(Instance()->LogToFile).c_str());
-        ini.SetValue("Log", "LogToNGX", GetBoolValue(Instance()->LogToNGX).c_str());
-        ini.SetValue("Log", "OpenConsole", GetBoolValue(Instance()->OpenConsole).c_str());
+        ini.SetValue("Log", "LogLevel", GetIntValue(Instance()->LogLevel.value_for_config()).c_str());
+        ini.SetValue("Log", "LogToConsole", GetBoolValue(Instance()->LogToConsole.value_for_config()).c_str());
+        ini.SetValue("Log", "LogToFile", GetBoolValue(Instance()->LogToFile.value_for_config()).c_str());
+        ini.SetValue("Log", "LogToNGX", GetBoolValue(Instance()->LogToNGX.value_for_config()).c_str());
+        ini.SetValue("Log", "OpenConsole", GetBoolValue(Instance()->OpenConsole.value_for_config()).c_str());
         ini.SetValue("Log", "LogFile", Instance()->LogFileName.has_value() ? wstring_to_string(Instance()->LogFileName.value()).c_str() : "auto");
-        ini.SetValue("Log", "SingleFile", GetBoolValue(Instance()->LogSingleFile).c_str());
+        ini.SetValue("Log", "SingleFile", GetBoolValue(Instance()->LogSingleFile.value_for_config()).c_str());
     }
 
     // NvApi
@@ -1098,20 +1098,20 @@ bool Config::SaveFakenvapiIni() {
 
 void Config::CheckUpscalerFiles()
 {
-    if (!nvngxExist)
-        nvngxExist = std::filesystem::exists(Util::ExePath().parent_path() / L"nvngx.dll");
+    if (!State::Instance().nvngxExists)
+        State::Instance().nvngxExists = std::filesystem::exists(Util::ExePath().parent_path() / L"nvngx.dll");
 
-    if (!nvngxExist)
-        nvngxExist = std::filesystem::exists(Util::ExePath().parent_path() / L"_nvngx.dll");
+    if (!State::Instance().nvngxExists)
+        State::Instance().nvngxExists = std::filesystem::exists(Util::ExePath().parent_path() / L"_nvngx.dll");
 
-    if (!nvngxExist)
+    if (!State::Instance().nvngxExists)
     {
-        nvngxExist = GetModuleHandle(L"nvngx.dll") != nullptr;
+        State::Instance().nvngxExists = GetModuleHandle(L"nvngx.dll") != nullptr;
 
-        if (!nvngxExist)
-            nvngxExist = GetModuleHandle(L"_nvngx.dll") != nullptr;
+        if (!State::Instance().nvngxExists)
+            State::Instance().nvngxExists = GetModuleHandle(L"_nvngx.dll") != nullptr;
 
-        if (nvngxExist)
+        if (State::Instance().nvngxExists)
             LOG_INFO("nvngx.dll found in memory");
         else
             LOG_WARN("nvngx.dll not found!");
@@ -1122,12 +1122,12 @@ void Config::CheckUpscalerFiles()
         LOG_INFO("nvngx.dll found in game folder");
     }
 
-    libxessExist = std::filesystem::exists(Util::ExePath().parent_path() / L"libxess.dll");
-    if (!libxessExist)
+    State::Instance().libxessExists = std::filesystem::exists(Util::ExePath().parent_path() / L"libxess.dll");
+    if (!State::Instance().libxessExists)
     {
-        libxessExist = GetModuleHandle(L"libxess.dll") != nullptr;
+        State::Instance().libxessExists = GetModuleHandle(L"libxess.dll") != nullptr;
 
-        if (libxessExist)
+        if (State::Instance().libxessExists)
             LOG_INFO("libxess.dll found in memory");
         else
             LOG_WARN("libxess.dll not found!");
@@ -1249,7 +1249,7 @@ std::optional<bool> Config::readBool(std::string section, std::string key)
 Config* Config::Instance()
 {
     if (!_config)
-        _config = new Config(L"nvngx.ini");
+        _config = new Config();
 
     return _config;
 }

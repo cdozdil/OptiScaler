@@ -243,7 +243,7 @@ Bias_Dx11::Bias_Dx11(std::string InName, ID3D11Device* InDevice) : _name(InName)
 
 Bias_Dx11::~Bias_Dx11()
 {
-    if (!_init || Config::Instance()->IsShuttingDown)
+    if (!_init || State::Instance().isShuttingDown)
         return;
 
     if (_computeShader != nullptr)

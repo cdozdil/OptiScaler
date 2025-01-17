@@ -51,7 +51,7 @@ IFeature_Dx12::~IFeature_Dx12()
 		}
 	}
 
-	if (!Config::Instance()->IsShuttingDown)
+	if (!State::Instance().isShuttingDown)
 	{
 		LOG_DEBUG("");
 

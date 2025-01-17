@@ -86,9 +86,9 @@ static std::optional<float> GetQualityOverrideRatioFfx(const uint32_t input)
     auto sliderLimit = Config::Instance()->ExtendedLimits.value_or(false) ? 0.1f : 1.0f;
 
     if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false) &&
-        Config::Instance()->UpscaleRatioOverrideValue.value_or(1.3f) >= sliderLimit)
+        Config::Instance()->UpscaleRatioOverrideValue.value_or_default() >= sliderLimit)
     {
-        output = Config::Instance()->UpscaleRatioOverrideValue.value_or(1.3f);
+        output = Config::Instance()->UpscaleRatioOverrideValue.value_or_default();
 
         return  output;
     }
@@ -99,32 +99,32 @@ static std::optional<float> GetQualityOverrideRatioFfx(const uint32_t input)
     switch (input)
     {
         case FFX_UPSCALE_QUALITY_MODE_ULTRA_PERFORMANCE:
-            if (Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0);
+            if (Config::Instance()->QualityRatio_UltraPerformance.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_UltraPerformance.value_or_default();
 
             break;
 
         case FFX_UPSCALE_QUALITY_MODE_PERFORMANCE:
-            if (Config::Instance()->QualityRatio_Performance.value_or(2.0) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Performance.value_or(2.0);
+            if (Config::Instance()->QualityRatio_Performance.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_Performance.value_or_default();
 
             break;
 
         case FFX_UPSCALE_QUALITY_MODE_BALANCED:
-            if (Config::Instance()->QualityRatio_Balanced.value_or(1.7) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Balanced.value_or(1.7);
+            if (Config::Instance()->QualityRatio_Balanced.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_Balanced.value_or_default();
 
             break;
 
         case FFX_UPSCALE_QUALITY_MODE_QUALITY:
-            if (Config::Instance()->QualityRatio_Quality.value_or(1.5) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Quality.value_or(1.5);
+            if (Config::Instance()->QualityRatio_Quality.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_Quality.value_or_default();
 
             break;
 
         case FFX_UPSCALE_QUALITY_MODE_NATIVEAA:
-            if (Config::Instance()->QualityRatio_DLAA.value_or(1.0) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_DLAA.value_or(1.0);
+            if (Config::Instance()->QualityRatio_DLAA.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_DLAA.value_or_default();
 
             break;
 
@@ -191,7 +191,7 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
     {
 
         auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
-                                                            _d3d12Device, &fcInfo, Config::Instance()->NVNGX_Version);
+                                                            _d3d12Device, &fcInfo, State::Instance().NVNGX_Version);
 
         if (nvResult != NVSDK_NGX_Result_Success)
             return FFX_API_RETURN_ERROR_RUNTIME_ERROR;
@@ -367,7 +367,7 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
 
     LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDesc->renderSize.width, dispatchDesc->renderSize.height);
 
-    Config::Instance()->setInputApiName = "FFX-DX12";
+    State::Instance().setInputApiName = "FFX-DX12";
 
     auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDesc->commandList, handle, params, nullptr);
 

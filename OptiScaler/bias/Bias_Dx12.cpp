@@ -392,7 +392,7 @@ Bias_Dx12::Bias_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
-	Config::Instance()->SkipHeapCapture = true;
+	State::Instance().skipHeapCapture = true;
 
 	auto hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[0]));
 
@@ -404,7 +404,7 @@ Bias_Dx12::Bias_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[1]));
 
-	Config::Instance()->SkipHeapCapture = false;
+	State::Instance().skipHeapCapture = false;
 
 	if (FAILED(hr))
 	{
@@ -417,7 +417,7 @@ Bias_Dx12::Bias_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 Bias_Dx12::~Bias_Dx12()
 {
-	if (!_init || Config::Instance()->IsShuttingDown)
+	if (!_init || State::Instance().isShuttingDown)
 		return;
 
 	//ID3D12Fence* d3d12Fence = nullptr;

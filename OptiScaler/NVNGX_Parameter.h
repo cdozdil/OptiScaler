@@ -27,9 +27,9 @@ inline static std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQ
     auto sliderLimit = Config::Instance()->ExtendedLimits.value_or(false) ? 0.1f : 1.0f;
 
     if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false) &&
-        Config::Instance()->UpscaleRatioOverrideValue.value_or(1.3f) >= sliderLimit)
+        Config::Instance()->UpscaleRatioOverrideValue.value_or_default() >= sliderLimit)
     {
-        output = Config::Instance()->UpscaleRatioOverrideValue.value_or(1.3f);
+        output = Config::Instance()->UpscaleRatioOverrideValue.value_or_default();
 
         return  output;
     }
@@ -40,38 +40,38 @@ inline static std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQ
     switch (input)
     {
         case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-            if (Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0);
+            if (Config::Instance()->QualityRatio_UltraPerformance.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_UltraPerformance.value_or_default();
 
             break;
 
         case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-            if (Config::Instance()->QualityRatio_Performance.value_or(2.0) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Performance.value_or(2.0);
+            if (Config::Instance()->QualityRatio_Performance.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_Performance.value_or_default();
 
             break;
 
         case NVSDK_NGX_PerfQuality_Value_Balanced:
-            if (Config::Instance()->QualityRatio_Balanced.value_or(1.7) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Balanced.value_or(1.7);
+            if (Config::Instance()->QualityRatio_Balanced.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_Balanced.value_or_default();
 
             break;
 
         case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-            if (Config::Instance()->QualityRatio_Quality.value_or(1.5) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Quality.value_or(1.5);
+            if (Config::Instance()->QualityRatio_Quality.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_Quality.value_or_default();
 
             break;
 
         case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-            if (Config::Instance()->QualityRatio_UltraQuality.value_or(1.3) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_UltraQuality.value_or(1.3);
+            if (Config::Instance()->QualityRatio_UltraQuality.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_UltraQuality.value_or_default();
 
             break;
 
         case NVSDK_NGX_PerfQuality_Value_DLAA:
-            if (Config::Instance()->QualityRatio_DLAA.value_or(1.0) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_DLAA.value_or(1.0);
+            if (Config::Instance()->QualityRatio_DLAA.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_DLAA.value_or_default();
 
             break;
 
@@ -401,7 +401,7 @@ inline static void InitNGXParameters(NVSDK_NGX_Parameter* InParams)
 {
     InParams->Set(NVSDK_NGX_Parameter_SuperSampling_Available, 1);
 
-    if (Config::Instance()->NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL)
+    if (State::Instance().NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL)
     {
         InParams->Set(NVSDK_NGX_Parameter_SuperSampling_MinDriverVersionMajor, 10);
         InParams->Set(NVSDK_NGX_Parameter_SuperSampling_MinDriverVersionMinor, 10);

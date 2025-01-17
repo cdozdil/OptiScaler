@@ -11,9 +11,9 @@ void DLSSFeature::ProcessEvaluateParams(NVSDK_NGX_Parameter* InParameters)
     float floatValue;
 
     // override sharpness
-    if (Config::Instance()->OverrideSharpness.value_or(false) && !(Config::Instance()->Api != NVNGX_VULKAN && Config::Instance()->RcasEnabled.value_or(false)))
+    if (Config::Instance()->OverrideSharpness.value_or(false) && !(State::Instance().api != Vulkan && Config::Instance()->RcasEnabled.value_or(false)))
     {
-        auto sharpness = Config::Instance()->Sharpness.value_or(0.3f);
+        auto sharpness = Config::Instance()->Sharpness.value_or_default();
 
         if (sharpness > 1.0f)
             sharpness = 1.0f;
@@ -118,7 +118,7 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
         LOG_INFO("featureFlags (LowResMV) {0:b}", featureFlags);
     }
 
-    if (Config::Instance()->OverrideSharpness.value_or(sharpening) && !(Config::Instance()->Api == NVNGX_DX12 && Config::Instance()->RcasEnabled.value_or(false)))
+    if (Config::Instance()->OverrideSharpness.value_or(sharpening) && !(State::Instance().api == DX12 && Config::Instance()->RcasEnabled.value_or(false)))
     {
         featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
         LOG_INFO("featureFlags (Sharpening) {0:b}", featureFlags);
@@ -131,11 +131,11 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
     InParameters->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, featureFlags);
 
     // Resolution -----------------------------
-    if (Config::Instance()->Api != NVNGX_VULKAN && Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+    if (State::Instance().api != Vulkan && Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
     {
         LOG_DEBUG("Output Scaling is active");
 
-        float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
+        float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or_default();
 
         if (ssMulti < 0.5f)
         {
@@ -361,7 +361,7 @@ DLSSFeature::DLSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameter
     if (NVNGXProxy::NVNGXModule() == nullptr)
         NVNGXProxy::InitNVNGX();
 
-    if (NVNGXProxy::NVNGXModule() != nullptr && !Config::Instance()->DE_Available)
+    if (NVNGXProxy::NVNGXModule() != nullptr && !State::Instance().enablerAvailable)
     {
         HookNgxApi(NVNGXProxy::NVNGXModule());
     }
@@ -388,7 +388,7 @@ void DLSSFeature::Shutdown()
 float DLSSFeature::GetSharpness(const NVSDK_NGX_Parameter* InParameters)
 {
     if (Config::Instance()->OverrideSharpness.value_or(false))
-        return Config::Instance()->Sharpness.value_or(0.3f);
+        return Config::Instance()->Sharpness.value_or_default();
 
     float sharpness = 0.0f;
     InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &sharpness);
