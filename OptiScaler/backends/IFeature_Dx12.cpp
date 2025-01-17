@@ -1,4 +1,3 @@
-#pragma once
 #include "IFeature_Dx12.h"
 #include "../pch.h"
 

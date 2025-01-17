@@ -1,4 +1,3 @@
-#pragma once
 #include "Config.h"
 #include "Util.h"
 

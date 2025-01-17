@@ -1,4 +1,3 @@
-#pragma once
 #include "dllmain.h"
 #include "resource.h"
 

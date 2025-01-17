@@ -1,4 +1,3 @@
-#pragma once
 #include "XeSSFeature.h"
 
 #include "../../pch.h"

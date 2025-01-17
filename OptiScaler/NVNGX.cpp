@@ -1,4 +1,3 @@
-#pragma once
 #include "pch.h"
 #include "Config.h"
 #include "NVNGX_Proxy.h"

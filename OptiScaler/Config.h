@@ -4,8 +4,6 @@
 #include <optional>
 #include <filesystem>
 #include <SimpleIni.h>
-#include "backends/IFeature.h"
-#include <deque>
 #include <map>
 
 template <class T>
@@ -21,7 +19,7 @@ public:
 
 	// Prevents a change from being saved to ini
 	constexpr void set_volatile_value(const T& value) {
-		if (!_volatile) { // make sure the previosly set value is saved
+		if (!_volatile) { // make sure the previously set value is saved
 			if (this->has_value())
 				_configIni = this->value();
 			else
@@ -33,7 +31,8 @@ public:
 	
 	// TODO: use this
 	constexpr void set_from_config(const std::optional<T>& opt) {
-		_configIni = opt;
+		if(!this->has_value())
+			_configIni = opt;
 	}
 
 	constexpr CustomOptional& operator=(const T& value) {
