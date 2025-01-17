@@ -1106,7 +1106,7 @@ static void hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, Vk
 
     if (!State::Instance().skipSpoofing)
     {
-        auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090"));
+        auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or_default());
         std::strcpy(properties->deviceName, deviceName.c_str());
         properties->vendorID = 0x10de;
         properties->deviceID = 0x2684;
@@ -1124,7 +1124,7 @@ static void hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysic
 
     if (!State::Instance().skipSpoofing)
     {
-        auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090"));
+        auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or_default());
         std::strcpy(properties2->properties.deviceName, deviceName.c_str());
         properties2->properties.vendorID = 0x10de;
         properties2->properties.deviceID = 0x2684;
@@ -1157,7 +1157,7 @@ static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhy
 
     if (!State::Instance().skipSpoofing)
     {
-        auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090"));
+        auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or_default());
         std::strcpy(properties2->properties.deviceName, deviceName.c_str());
         properties2->properties.vendorID = 0x10de;
         properties2->properties.deviceID = 0x2684;
@@ -1725,7 +1725,7 @@ static void CheckWorkingMode()
     wchar_t sysFolder[MAX_PATH];
     GetSystemDirectory(sysFolder, MAX_PATH);
     std::filesystem::path sysPath(sysFolder);
-    std::filesystem::path pluginPath(Config::Instance()->PluginPath.value_or((Util::DllPath().parent_path() / L"plugins").wstring()));
+    std::filesystem::path pluginPath(Config::Instance()->PluginPath.value_or_default());
 
     for (size_t i = 0; i < lCaseFilename.size(); i++)
         lCaseFilename[i] = std::tolower(lCaseFilename[i]);

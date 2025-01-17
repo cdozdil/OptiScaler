@@ -857,7 +857,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     if (State::Instance().changeBackend)
     {
         if (State::Instance().newBackend == "" || (!Config::Instance()->DLSSEnabled.value_or_default() && State::Instance().newBackend == "dlss"))
-            State::Instance().newBackend = Config::Instance()->VulkanUpscaler.value_or("fsr21");
+            State::Instance().newBackend = Config::Instance()->VulkanUpscaler.value_or_default();
 
         changeBackendCounter++;
 
@@ -1014,7 +1014,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     deviceContext = VkContexts[handleId].get();
     State::Instance().currentFeature = deviceContext;
 
-    if (!deviceContext->IsInited() && Config::Instance()->VulkanUpscaler.value_or("fsr21") != "fsr21")
+    if (!deviceContext->IsInited() && Config::Instance()->VulkanUpscaler.value_or_default() != "fsr21")
     {
         State::Instance().newBackend = "fsr21";
         State::Instance().changeBackend = true;

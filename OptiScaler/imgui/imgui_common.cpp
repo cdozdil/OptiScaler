@@ -509,11 +509,11 @@ std::string ImGuiCommon::GetBackendCode(const API api)
     std::string code;
 
     if (api == DX11)
-        code = Config::Instance()->Dx11Upscaler.value_or("fsr22");
+        code = Config::Instance()->Dx11Upscaler.value_or_default();
     else if (api == DX12)
-        code = Config::Instance()->Dx12Upscaler.value_or("xess");
+        code = Config::Instance()->Dx12Upscaler.value_or_default();
     else
-        code = Config::Instance()->VulkanUpscaler.value_or("fsr21");
+        code = Config::Instance()->VulkanUpscaler.value_or_default();
 
     return code;
 }
@@ -1404,7 +1404,7 @@ bool ImGuiCommon::RenderMenu()
                 if (currentFeature != nullptr) {
                     // Dx11 with Dx12
                     if (Config::Instance()->AdvancedSettings.value_or_default() && State::Instance().api == DX11 &&
-                        Config::Instance()->Dx11Upscaler.value_or("fsr22") != "fsr22" && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "dlss" && Config::Instance()->Dx11Upscaler.value_or("fsr22") != "fsr31")
+                        Config::Instance()->Dx11Upscaler.value_or_default() != "fsr22" && Config::Instance()->Dx11Upscaler.value_or_default() != "dlss" && Config::Instance()->Dx11Upscaler.value_or_default() != "fsr31")
                     {
                         ImGui::SeparatorText("Dx11 with Dx12 Settings");
 

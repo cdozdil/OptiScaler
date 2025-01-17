@@ -534,7 +534,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
                 return false;
         }
         // This is only needed for XeSS
-        else if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "xess")
+        else if (Config::Instance()->Dx11Upscaler.value_or_default() == "xess")
         {
             LOG_WARN("bias mask not exist and it's enabled in config, it may cause problems!!");
             Config::Instance()->DisableReactiveMask = true;

@@ -1462,7 +1462,7 @@ HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
             pDesc->VendorId = 0x10de;
             pDesc->DeviceId = 0x2684;
 
-            auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
+            auto szName = Config::Instance()->SpoofedGPUName.value_or_default();
             std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
             std::wcscpy(pDesc->Description, szName.c_str());
 
@@ -1498,7 +1498,7 @@ HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
             pDesc->VendorId = 0x10de;
             pDesc->DeviceId = 0x2684;
 
-            auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
+            auto szName = Config::Instance()->SpoofedGPUName.value_or_default();
             std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
             std::wcscpy(pDesc->Description, szName.c_str());
 
@@ -1534,7 +1534,7 @@ HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
             pDesc->VendorId = 0x10de;
             pDesc->DeviceId = 0x2684;
 
-            auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
+            auto szName = Config::Instance()->SpoofedGPUName.value_or_default();
             std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
             std::wcscpy(pDesc->Description, szName.c_str());
 
@@ -1570,7 +1570,7 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
             pDesc->VendorId = 0x10de;
             pDesc->DeviceId = 0x2684;
 
-            auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
+            auto szName = Config::Instance()->SpoofedGPUName.value_or_default();
             std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
             std::wcscpy(pDesc->Description, szName.c_str());
 

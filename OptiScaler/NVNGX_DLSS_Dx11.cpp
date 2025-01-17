@@ -652,7 +652,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
     if (State::Instance().changeBackend)
     {
         if (State::Instance().newBackend == "" || (!Config::Instance()->DLSSEnabled.value_or_default() && State::Instance().newBackend == "dlss"))
-            State::Instance().newBackend = Config::Instance()->Dx11Upscaler.value_or("fsr22");
+            State::Instance().newBackend = Config::Instance()->Dx11Upscaler.value_or_default();
 
         changeBackendCounter++;
 

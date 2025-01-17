@@ -1145,7 +1145,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     if (State::Instance().changeBackend)
     {
         if (State::Instance().newBackend == "" || (!Config::Instance()->DLSSEnabled.value_or_default() && State::Instance().newBackend == "dlss"))
-            State::Instance().newBackend = Config::Instance()->Dx12Upscaler.value_or("xess");
+            State::Instance().newBackend = Config::Instance()->Dx12Upscaler.value_or_default();
 
         changeBackendCounter++;
 
@@ -1336,7 +1336,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         return NVSDK_NGX_Result_Success;
     }
 
-    if (!deviceContext->IsInited() && Config::Instance()->Dx12Upscaler.value_or("xess") != "fsr21")
+    if (!deviceContext->IsInited() && Config::Instance()->Dx12Upscaler.value_or_default() != "fsr21")
     {
         LOG_WARN("InCmdList {0} is not inited, falling back to FSR 2.1.2", deviceContext->Name());
         State::Instance().newBackend = "fsr21";
