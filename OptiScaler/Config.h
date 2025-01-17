@@ -29,7 +29,7 @@ public:
 		std::optional<T>::operator=(value);
 	}
 	
-	// TODO: use this
+	// Use this when first setting a CustomOptional
 	constexpr void set_from_config(const std::optional<T>& opt) {
 		if(!this->has_value())
 			_configIni = opt;
@@ -256,7 +256,7 @@ public:
 	CustomOptional<bool> DontUseNTShared{ false };
 
 	// NVAPI Override
-	std::optional<bool> OverrideNvapiDll;
+	std::optional<bool> OverrideNvapiDll; // TODO: make it CustomOptional
 	std::optional<std::wstring> NvapiDllPath; // TODO: ini desc is wrong
 
 	// Spoofing
@@ -342,6 +342,7 @@ private:
 	bool Reload(std::filesystem::path iniPath);
 
 	std::optional<std::string> readString(std::string section, std::string key, bool lowercase = false);
+	std::optional<std::wstring> readWString(std::string section, std::string key, bool lowercase = false);
 	std::optional<float> readFloat(std::string section, std::string key);
 	std::optional<int> readInt(std::string section, std::string key);
 	std::optional<uint32_t> readUInt(std::string section, std::string key);
