@@ -1462,7 +1462,7 @@ bool ImGuiCommon::RenderMenu()
                     // UPSCALER SPECIFIC -----------------------------
 
                     // XeSS -----------------------------
-                    if (currentBackend == "xess" && Config::Instance()->CurrentFeature->Name() != "DLSSD")
+                    if (Config::Instance()->AdvancedSettings.value_or(false) && currentBackend == "xess" && Config::Instance()->CurrentFeature->Name() != "DLSSD")
                     {
                         ImGui::SeparatorText("XeSS Settings");
 
