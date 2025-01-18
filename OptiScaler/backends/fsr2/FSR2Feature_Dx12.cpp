@@ -345,8 +345,8 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
             params.frameTimeDelta = (float)GetDeltaTime();
     }
 
-    params.preExposure = 1.0f;
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure);
+    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure) != NVSDK_NGX_Result_Success)
+        params.preExposure = 1.0f;
 
     LOG_DEBUG("Dispatch!!");
     auto result = ffxFsr2ContextDispatch(&_context, &params);
