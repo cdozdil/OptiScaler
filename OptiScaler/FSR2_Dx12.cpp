@@ -917,6 +917,7 @@ void HookFSR2ExeInputs()
 
     // Pattern matching
     {
+        LOG_DEBUG("Checking createPattern");
         std::wstring_view exeNameV(exeNameW.c_str());
 
         // Create
@@ -934,11 +935,13 @@ void HookFSR2ExeInputs()
         // DRG
         // Not receiving calls
         // Assumed FSR2.0
+        LOG_DEBUG("Checking dispatchPattern20");
         std::string_view dispatchPattern20("40 55 56 41 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 80 B9 ? ? ? ? 00 4C 8B FA 48 8B 02 48 8B F1");
         o_ffxFsr20ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPattern20, 0);
 
         // Lies of P
         // Dispatch 2.X
+        LOG_DEBUG("Checking dispatchPattern");
         std::string_view dispatchPattern("40 55 53 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 80 B9 ? ? ? ? 00 48 8B DA 48 8B 02 48 8B F9");
         o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPattern, 0);
 
@@ -946,6 +949,7 @@ void HookFSR2ExeInputs()
         // Deliver Us Mars
         if (o_ffxFsr2ContextDispatch_Pattern_Dx12 == nullptr)
         {
+            LOG_DEBUG("Checking dispatchPatternAITD");
             std::string_view dispatchPatternAITD("40 55 57 41 56 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 80 B9 ? ? ? ? ? 4C 8B F2 48 8B 02 48 8B F9");
             o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPatternAITD, 0);
         }
@@ -966,6 +970,7 @@ void HookFSR2ExeInputs()
         //}
 
         // Destroy
+        LOG_DEBUG("Checking destroyPattern");
         std::string_view destroyPattern("40 53 48 83 EC 20 48 8B D9 48 85 C9 75 0B B8 00 00 00 80 48 83 C4 20 5B C3");
         o_ffxFsr2ContextDestroy_Pattern_Dx12 = (PFN_ffxFsr2ContextDestroy)scanner::GetAddress(exeNameV, destroyPattern, 0);
     }
