@@ -36,7 +36,6 @@
 #include <dx12/ffx_api_dx12.h>
 #include <ffx_framegeneration.h>
 
-
 namespace HooksDx
 {
     inline ID3D12QueryHeap* queryHeap = nullptr;
