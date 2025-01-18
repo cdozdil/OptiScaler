@@ -263,12 +263,12 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 	if (dx11Reactive.Dx12Resource != nullptr)
 	{
-		if (Config::Instance()->DlssReactiveMaskBias.value_or_default() > 0.0f && 
+		if (Config::Instance()->DlssReactiveMaskBias.value_or(0.0f) > 0.0f && 
 			Bias->IsInit() && Bias->CreateBufferResource(Dx12Device, dx11Reactive.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
 		{
 			Bias->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-			if (Bias->Dispatch(Dx12Device, Dx12CommandList, dx11Reactive.Dx12Resource, Config::Instance()->DlssReactiveMaskBias.value_or_default(), Bias->Buffer()))
+			if (Bias->Dispatch(Dx12Device, Dx12CommandList, dx11Reactive.Dx12Resource, Config::Instance()->DlssReactiveMaskBias.value_or(0.0f), Bias->Buffer()))
 			{
 				Bias->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 				params.pResponsivePixelMaskTexture = Bias->Buffer();

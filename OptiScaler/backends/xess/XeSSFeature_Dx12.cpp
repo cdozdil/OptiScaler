@@ -251,12 +251,12 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 			if (Config::Instance()->MaskResourceBarrier.has_value())
 				ResourceBarrier(InCommandList, params.pResponsivePixelMaskTexture, (D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-			if (Config::Instance()->DlssReactiveMaskBias.value_or_default() > 0.0f &&
+			if (Config::Instance()->DlssReactiveMaskBias.value_or(0.0f) > 0.0f &&
 				Bias->IsInit() && Bias->CreateBufferResource(Device, paramReactiveMask, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
 			{
 				Bias->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-				if (Bias->Dispatch(Device, InCommandList, paramReactiveMask, Config::Instance()->DlssReactiveMaskBias.value_or_default(), Bias->Buffer()))
+				if (Bias->Dispatch(Device, InCommandList, paramReactiveMask, Config::Instance()->DlssReactiveMaskBias.value_or(0.0f), Bias->Buffer()))
 				{
 					Bias->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 					params.pResponsivePixelMaskTexture = Bias->Buffer();
