@@ -887,6 +887,11 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
 
 static int GetFormatPrecisionGroup(DXGI_FORMAT format)
 {
+    // Version 1.1.2 check
+    auto version = FfxApiProxy::VersionDx12();
+    if (version.major == 1 && version.minor <= 1 && version.patch <= 2)
+        return (int)format;
+
     switch (format)
     {
         case DXGI_FORMAT_R32G32B32A32_TYPELESS:
