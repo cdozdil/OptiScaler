@@ -84,6 +84,7 @@ namespace FrameGen_Dx12
     inline bool upscaleRan = false;
     inline bool fgSkipHudlessChecks = false;
     inline double fgFrameTime = 0.0;
+    inline std::deque<float> fgFrameTimes;
     inline ID3D12CommandQueue* fgFSRCommandQueue = nullptr;
     inline ID3D12CommandQueue* gameCommandQueue = nullptr;
 
@@ -112,4 +113,6 @@ namespace FrameGen_Dx12
     void CreateFGContext(ID3D12Device* InDevice, IFeature* deviceContext);
     void StopAndDestroyFGContext(bool destroy, bool shutDown, bool useMutex = true);
     void CheckUpscaledFrame(ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InUpscaled);
+    void AddFrameTime(float ft);
+    float GetFrameTime();
 }

@@ -4278,4 +4278,37 @@ void FrameGen_Dx12::CheckUpscaledFrame(ID3D12GraphicsCommandList* InCmdList, ID3
         CaptureHudless(InCmdList, &upscaledInfo, upscaledInfo.state);
 }
 
+void FrameGen_Dx12::AddFrameTime(float ft)
+{
+    if (fgFrameTimes.size() == 10)
+    {
+        fgFrameTimes.pop_front();
+    }
+
+    fgFrameTimes.push_back(ft);
+}
+
+float FrameGen_Dx12::GetFrameTime()
+{
+    float ft = 0.0f;
+    float ft2 = 0.0f;
+    int cnt = 0;
+
+    for (size_t i = 0; i < fgFrameTimes.size(); i++)
+    {
+        if (fgFrameTimes[i] > 0.2f && fgFrameTimes[i] < 100.0f)
+        {
+            ft += fgFrameTimes[i];
+            cnt++;
+        }
+
+        ft2 += fgFrameTimes[i] / (float)fgFrameTimes.size();
+    }
+
+    if (cnt != 0)
+        return ft / (float)cnt;
+
+    return ft2;
+}
+
 #pragma endregion
