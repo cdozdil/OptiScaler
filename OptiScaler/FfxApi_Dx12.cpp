@@ -190,7 +190,7 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
     if (!_nvnxgInited)
     {
 
-        auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
+        auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", Config::Instance()->NVNGX_Engine, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
                                                             _d3d12Device, &fcInfo, Config::Instance()->NVNGX_Version);
 
         if (nvResult != NVSDK_NGX_Result_Success)
