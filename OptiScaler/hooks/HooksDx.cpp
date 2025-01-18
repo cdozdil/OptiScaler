@@ -280,7 +280,7 @@ static ID3D12Resource* fgHudless[FrameGen_Dx12::FG_BUFFER_SIZE] = { nullptr, nul
 static ID3D12Resource* fgHudlessBuffer[FrameGen_Dx12::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
 
 static int fgActiveFrameIndex = -1;
-static int fgHudlessFrameIndex = -1;
+//static int fgHudlessFrameIndex = -1;
 static int fgCallbackFrameIndex = -1;
 
 // Last captured upscaled hudless frame number
@@ -387,7 +387,9 @@ static void FfxFgLogCallback(uint32_t type, const wchar_t* message)
 
 static int GetFrameIndex(bool active)
 {
-    if (active)
+    //if (active)
+    //{
+    if (fgActiveFrameIndex < 0)
     {
         if (fgActiveFrameIndex< 0)
         {
@@ -396,17 +398,18 @@ static int GetFrameIndex(bool active)
         }
 
         return fgActiveFrameIndex;
-    }
-    else
-    {
+    //}
+    //else
+    //{
 
-        if (fgHudlessFrameIndex < 0)
-        {
-            LOG_ERROR("fgHudlessFrameIndex < 0!");
-            return 0;
-        }
+    //    if (fgHudlessFrameIndex < 0)
+    //    {
+    //        LOG_ERROR("fgHudlessFrameIndex < 0!");
+    //        return 0;
+    //    }
 
-        return fgHudlessFrameIndex;
+    //    return fgHudlessFrameIndex;
+    //}
     }
 }
 
@@ -604,7 +607,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
         fgHudlessFrame != Config::Instance()->CurrentFeature->FrameCount() && FrameGen_Dx12::fgTarget < Config::Instance()->CurrentFeature->FrameCount() &&
         FrameGen_Dx12::fgContext != nullptr && FrameGen_Dx12::fgIsActive && HooksDx::currentSwapchain != nullptr)
     {
-        LOG_DEBUG("FrameCount: {0}, fgHudlessFrame: {1}, CommandList: {2:X}", Config::Instance()->CurrentFeature->FrameCount(), fgHudlessFrame, (UINT64)This);
+        LOG_DEBUG("FrameCount: {0}, fgHudlessFrame: {1}, CommandList: {2:X}, fIndex: {3}", Config::Instance()->CurrentFeature->FrameCount(), fgHudlessFrame, (UINT64)This, fIndex);
 
         fgCallbackFrameIndex = fIndex;
         FrameGen_Dx12::fgSkipHudlessChecks = true;
@@ -613,7 +616,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
         fgHudlessFrame = Config::Instance()->CurrentFeature->FrameCount();
         auto frame = fgHudlessFrame;
 
-        LOG_DEBUG("running, frame: {0}", frame);
+        LOG_DEBUG("running, frame: {}, fIndex: {}", frame, fIndex);
 
         // switch dlss targets for next depth and mv 
         ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
@@ -653,17 +656,20 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
             {
                 HRESULT result;
                 ffxReturnCode_t dispatchResult = FFX_API_RETURN_OK;
-                int fIndex;
+                int fIndex = -1;
 
-                if (fgCallbackFrameIndex < 0)
-                    fIndex = fgHudlessFrameIndex;
-                else
-                    fIndex = fgCallbackFrameIndex;
-
-                params->reset = (FrameGen_Dx12::reset != 0);
+                // Get frame index from frame id
+                for (size_t i = 0; i < FrameGen_Dx12::FG_BUFFER_SIZE; i++)
+                {
+                    if (FrameGen_Dx12::fgHudlessFrameIndexes[i] == params->frameID)
+                    {
+                        fIndex = i;
+                        break;
+                    }
+                }
 
                 // check for status
-                if (!Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) ||
+                if (fIndex < 0 || !Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) ||
                     FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCommandList[fIndex] == nullptr ||
                     FrameGen_Dx12::fgCommandQueue == nullptr || Config::Instance()->SCChanged)
                 {
@@ -685,28 +691,35 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                     result = FrameGen_Dx12::fgCommandList[fIndex]->Reset(allocator, nullptr);
                     //fgHudlessFrameIndex = (fgHudlessFrameIndex + 1) % FrameGen_Dx12::FG_BUFFER_SIZE;
 
-                    //params->frameID = fgLastFGFrame;
-                    //params->numGeneratedFrames = 0;
-                    //params->reset = true;
+                    params->frameID = fgLastFGFrame;
+                    params->numGeneratedFrames = 0;
+                    params->reset = true;
                 }
+
+                params->reset = (FrameGen_Dx12::reset != 0);
 
                 if (Config::Instance()->CurrentFeature != nullptr)
                     fgLastFGFrame = Config::Instance()->CurrentFeature->FrameCount();
 
                 dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
-                LOG_DEBUG("D3D12_Dispatch result: {}", (UINT)dispatchResult);
+                LOG_DEBUG("D3D12_Dispatch result: {}, fIndex: {}", (UINT)dispatchResult, fIndex);
 
                 if (dispatchResult == FFX_API_RETURN_OK)
                 {
                     result = FrameGen_Dx12::fgCommandList[fIndex]->Close();
                     LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
 
+                    // if there is command list error return ERROR
                     if (result == S_OK)
                     {
                         ID3D12CommandList* cl[1] = { nullptr };
                         cl[0] = FrameGen_Dx12::fgCommandList[fIndex];
                         FrameGen_Dx12::gameCommandQueue->ExecuteCommandLists(1, cl);
                     }
+                    else
+                    {
+                        dispatchResult = FFX_API_RETURN_ERROR;
+                }
                 }
 
                 fgDispatchCalled = false;
@@ -723,7 +736,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
         //Config::Instance()->skipSpoofing = true;
         ffxReturnCode_t retCode = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgContext, &m_FrameGenerationConfig.header);
         //Config::Instance()->skipSpoofing = false;
-        LOG_DEBUG("D3D12_Configure result: {0:X}, frame: {1}", retCode, frame);
+        LOG_DEBUG("D3D12_Configure result: {0:X}, frame: {1}, fIndex: {2}", retCode, frame, fIndex);
 
         if (retCode == FFX_API_RETURN_OK)
         {
@@ -754,7 +767,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
             dfgPrepare.cameraNear = FrameGen_Dx12::cameraNear;
             dfgPrepare.cameraFovAngleVertical = FrameGen_Dx12::cameraVFov;
             dfgPrepare.viewSpaceToMetersFactor = FrameGen_Dx12::meterFactor;
-            dfgPrepare.frameTimeDelta = FrameGen_Dx12::ftDelta;
+            dfgPrepare.frameTimeDelta = FrameGen_Dx12::ftDelta; // Push this one real quick
+            LOG_DEBUG("frameTimeDelta: {}", FrameGen_Dx12::ftDelta);
 
             // If somehow context is destroyed before this point
             if (Config::Instance()->CurrentFeature == nullptr || FrameGen_Dx12::fgContext == nullptr || !FrameGen_Dx12::fgIsActive)
@@ -768,7 +782,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                 LOG_TRACE("Waiting mutex");
                 std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
 #endif
-
+                FrameGen_Dx12::fgHudlessFrameIndexes[fIndex] = frame;
                 retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
 
 #ifdef USE_MUTEX_FOR_FFX            
@@ -776,7 +790,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
 #endif
             fgDispatchCalled = true;
 
-            LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}", retCode, frame);
+            LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}", retCode, frame, fIndex);
         }
     }
     else
@@ -3937,7 +3951,7 @@ UINT FrameGen_Dx12::GetFrame()
 void FrameGen_Dx12::ResetIndexes()
 {
     fgActiveFrameIndex = -1;
-    fgHudlessFrameIndex = -1;
+    //fgHudlessFrameIndex = -1;
 
     for (size_t i = 0; i < FG_BUFFER_SIZE; i++)
     {
