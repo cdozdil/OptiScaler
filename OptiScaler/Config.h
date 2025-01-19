@@ -253,6 +253,7 @@ public:
 	std::optional<bool> DlssInputs;
 	std::optional<bool> XeSSInputs;
 	std::optional<bool> Fsr2Inputs;
+	std::optional<bool> Fsr2Pattern;
 	std::optional<bool> Fsr3Inputs;
 	std::optional<bool> FfxInputs;
 
