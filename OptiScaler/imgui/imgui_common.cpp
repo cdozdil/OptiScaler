@@ -962,7 +962,7 @@ bool ImGuiCommon::RenderMenu()
                 }
 
                 // Graph of frame times
-                ImGui::PlotLines("##FrameTimeGraph", frameTimeArray.data(), static_cast<int>(frameTimeArray.size()), 0, nullptr, 
+                ImGui::PlotLines("##FrameTimeGraph", frameTimeArray.data(), static_cast<int>(frameTimeArray.size()), 0, nullptr,
                                  *std::min_element(frameTimeArray.begin(), frameTimeArray.end()) * 0.9f, *std::max_element(frameTimeArray.begin(), frameTimeArray.end()) * 1.1f, plotSize);
             }
 
@@ -1395,7 +1395,7 @@ bool ImGuiCommon::RenderMenu()
                 // DLSSG Mod
                 if (Config::Instance()->DLSSGMod.value_or(false) && Config::Instance()->Api != NVNGX_DX11 && !Config::Instance()->WorkingAsNvngx) {
                     ImGui::SeparatorText("Frame Generation (DLSSG)");
-                    
+
                     if (!ReflexHooks::dlssgDetected)
                         ImGui::Text("Please select DLSS Frame Generation in the game options\nYou might need to select DLSS first");
 
@@ -1727,7 +1727,7 @@ bool ImGuiCommon::RenderMenu()
                         ShowHelpMarker("Areas that are more red will have more sharpness applied\n"
                                        "Green areas will get reduced sharpness");
 
-                    	float motionSharpness = Config::Instance()->MotionSharpness.value_or(0.4f);
+                        float motionSharpness = Config::Instance()->MotionSharpness.value_or(0.4f);
                         ImGui::SliderFloat("MotionSharpness", &motionSharpness, -1.3f, 1.3f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
                         Config::Instance()->MotionSharpness = motionSharpness;
 
@@ -2552,7 +2552,7 @@ bool ImGuiCommon::RenderMenu()
                                        "and might cause issues and crashes!");
 
                         SeparatorWithHelpMarker("Input APIs", "Input changes when OptiFG is active\n"
-                                                              "might cause screen flicker and other issues");
+                                                "might cause screen flicker and other issues");
 
                         bool fsr2Inputs = Config::Instance()->Fsr2Inputs.value_or(true);
                         bool fsr3Inputs = Config::Instance()->Fsr3Inputs.value_or(true);
@@ -2566,6 +2566,16 @@ bool ImGuiCommon::RenderMenu()
 
                         if (ImGui::Checkbox("Use Ffx Inputs", &ffxInputs))
                             Config::Instance()->FfxInputs = ffxInputs;
+
+
+                        SeparatorWithHelpMarker("Enable DLSSG", "These settings will be active on next boot!");
+                        auto dlssgEnabled = Config::Instance()->DLSSGMod.value_or(false);
+                        if (ImGui::Checkbox("DLSSG Enabled", &dlssgEnabled))
+                            Config::Instance()->DLSSGMod = dlssgEnabled;
+
+                        auto hagsSpoofing = Config::Instance()->SpoofHAGS.value_or(dlssgEnabled);
+                        if (ImGui::Checkbox("HAGS Spoofing Enabled", &hagsSpoofing))
+                            Config::Instance()->SpoofHAGS = hagsSpoofing;
                     }
                 }
 
