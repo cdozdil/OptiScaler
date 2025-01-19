@@ -16,6 +16,9 @@
 #include <set>
 #include <future>
 
+// Close FG CommandList after dispatch or after callback
+#define CLOSE_FG_COMMANDLIST_AFTER_CALLBACK
+
 // Clear heap info when ResourceDiscard is called
 //#define USE_RESOURCE_DISCARD
 
@@ -653,15 +656,42 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                 ffxReturnCode_t dispatchResult = FFX_API_RETURN_OK;
                 int fIndex = -1;
 
+                LOG_DEBUG("frameID: {}, commandList: {:X}", params->frameID, (size_t)params->commandList);
+
                 // Get frame index from frame id
                 for (size_t i = 0; i < FrameGen_Dx12::FG_BUFFER_SIZE; i++)
                 {
+                    // If skipped last interpolated continue with new one
+                    // trying to mimic pre66 behavior
+                    //if (FrameGen_Dx12::fgHudlessFrameIndexes[i] >= params->frameID)
+                    //    fIndex = i;
+
                     if (FrameGen_Dx12::fgHudlessFrameIndexes[i] == params->frameID)
                     {
                         fIndex = i;
                         break;
                     }
                 }
+
+#ifdef CLOSE_FG_COMMANDLIST_AFTER_CALLBACK
+                if (dispatchResult == FFX_API_RETURN_OK)
+                {
+                    result = FrameGen_Dx12::fgCommandList[fIndex]->Close();
+                    LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
+
+                    // if there is command list error return ERROR
+                    if (result == S_OK)
+                    {
+                        ID3D12CommandList* cl[1] = { nullptr };
+                        cl[0] = FrameGen_Dx12::fgCommandList[fIndex];
+                        FrameGen_Dx12::gameCommandQueue->ExecuteCommandLists(1, cl);
+                    }
+                    else
+                    {
+                        dispatchResult = FFX_API_RETURN_ERROR;
+                    }
+                }
+#endif // CLOSE_FG_COMMANDLIST_AFTER_CALLBACK
 
                 // check for status
                 if (fIndex < 0 || !Config::Instance()->FGEnabled.value_or(false) || !Config::Instance()->FGHUDFix.value_or(false) ||
@@ -697,24 +727,6 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
 
                 dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
                 LOG_DEBUG("D3D12_Dispatch result: {}, fIndex: {}", (UINT)dispatchResult, fIndex);
-
-                if (dispatchResult == FFX_API_RETURN_OK)
-                {
-                    result = FrameGen_Dx12::fgCommandList[fIndex]->Close();
-                    LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
-
-                    // if there is command list error return ERROR
-                    if (result == S_OK)
-                    {
-                        ID3D12CommandList* cl[1] = { nullptr };
-                        cl[0] = FrameGen_Dx12::fgCommandList[fIndex];
-                        FrameGen_Dx12::gameCommandQueue->ExecuteCommandLists(1, cl);
-                    }
-                    else
-                    {
-                        dispatchResult = FFX_API_RETURN_ERROR;
-                    }
-                }
 
                 fgDispatchCalled = false;
                 FrameGen_Dx12::fgSkipHudlessChecks = false;
@@ -760,8 +772,9 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
             dfgPrepare.cameraNear = FrameGen_Dx12::cameraNear;
             dfgPrepare.cameraFovAngleVertical = FrameGen_Dx12::cameraVFov;
             dfgPrepare.viewSpaceToMetersFactor = FrameGen_Dx12::meterFactor;
-            dfgPrepare.frameTimeDelta = FrameGen_Dx12::ftDelta; // Push this one real quick
-            LOG_DEBUG("frameTimeDelta: {}", FrameGen_Dx12::ftDelta);
+            auto ft = FrameGen_Dx12::GetFrameTime();
+            dfgPrepare.frameTimeDelta = ft;
+            LOG_DEBUG("frameTimeDelta: {}", ft);
 
             // If somehow context is destroyed before this point
             if (Config::Instance()->CurrentFeature == nullptr || FrameGen_Dx12::fgContext == nullptr || !FrameGen_Dx12::fgIsActive)
@@ -781,9 +794,27 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
 #ifdef USE_MUTEX_FOR_FFX            
             }
 #endif
+
+#ifndef  CLOSE_FG_COMMANDLIST_AFTER_CALLBACK
+            if (retCode == FFX_API_RETURN_OK)
+            {
+                auto result = FrameGen_Dx12::fgCommandList[fIndex]->Close();
+                LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
+
+                // if there is command list error return ERROR
+                if (result == S_OK)
+                {
+                    ID3D12CommandList* cl[1] = { nullptr };
+                    cl[0] = FrameGen_Dx12::fgCommandList[fIndex];
+                    FrameGen_Dx12::gameCommandQueue->ExecuteCommandLists(1, cl);
+                }
+            }
+#endif // ! CLOSE_FG_COMMANDLIST_AFTER_CALLBACK
+
+
             fgDispatchCalled = true;
 
-            LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}", retCode, frame, fIndex);
+            LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}, commandList: {3:X}", retCode, frame, fIndex, (size_t)dfgPrepare.commandList);
         }
     }
     else
@@ -4297,35 +4328,29 @@ void FrameGen_Dx12::CheckUpscaledFrame(ID3D12GraphicsCommandList* InCmdList, ID3
 
 void FrameGen_Dx12::AddFrameTime(float ft)
 {
-    if (fgFrameTimes.size() == 10)
-    {
+    if (ft < 0.2f || ft > 100.0f)
+        return;
+
+    if (fgFrameTimes.size() == FG_BUFFER_SIZE)
         fgFrameTimes.pop_front();
-    }
 
     fgFrameTimes.push_back(ft);
+
+    if (fgFrameTimes.size() == FG_BUFFER_SIZE)
+        LOG_DEBUG("{}, {}, {}, {}", fgFrameTimes[0], fgFrameTimes[1], fgFrameTimes[2], fgFrameTimes[3]);
 }
 
 float FrameGen_Dx12::GetFrameTime()
 {
-    float ft = 0.0f;
-    float ft2 = 0.0f;
-    int cnt = 0;
+    float result = 0.0f;
+    float size = (float)fgFrameTimes.size();
 
     for (size_t i = 0; i < fgFrameTimes.size(); i++)
     {
-        if (fgFrameTimes[i] > 0.2f && fgFrameTimes[i] < 100.0f)
-        {
-            ft += fgFrameTimes[i];
-            cnt++;
-        }
-
-        ft2 += fgFrameTimes[i] / (float)fgFrameTimes.size();
+        result += (fgFrameTimes[i] / size);
     }
 
-    if (cnt != 0)
-        return ft / (float)cnt;
-
-    return ft2;
+    return result;
 }
 
 #pragma endregion
