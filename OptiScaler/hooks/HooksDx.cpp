@@ -916,7 +916,6 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
     GetHudless(cmdList, fIndex);
 }
 
-static int GetFormatPrecisionGroup(DXGI_FORMAT format)
 {
     // Version 1.1.2 check
     auto version = FfxApiProxy::VersionDx12();
@@ -1029,8 +1028,7 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
     }
 
     // format match
-    if ((resource->format == fgScDesc.BufferDesc.Format) ||
-        (FfxApiProxy::VersionDx12().minor >= 1 && FfxApiProxy::VersionDx12().patch >= 3 && GetFormatPrecisionGroup(resource->format) == GetFormatPrecisionGroup(fgScDesc.BufferDesc.Format)))
+    if (resource->format == fgScDesc.BufferDesc.Format)
     {
         if (callerName.length() > 0)
             LOG_DEBUG("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> TRUE",
