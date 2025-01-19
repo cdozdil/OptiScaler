@@ -2571,7 +2571,14 @@ bool ImGuiCommon::RenderMenu()
                         SeparatorWithHelpMarker("Enable DLSSG", "These settings will be active on next boot!");
                         auto dlssgEnabled = Config::Instance()->DLSSGMod.value_or(false);
                         if (ImGui::Checkbox("DLSSG Enabled", &dlssgEnabled))
+                        {
                             Config::Instance()->DLSSGMod = dlssgEnabled;
+
+                            if (dlssgEnabled)
+                                Config::Instance()->FGUseFGSwapChain = false;
+                            else
+                                Config::Instance()->FGUseFGSwapChain.reset();
+                        }
 
                         auto hagsSpoofing = Config::Instance()->SpoofHAGS.value_or(dlssgEnabled);
                         if (ImGui::Checkbox("HAGS Spoofing Enabled", &hagsSpoofing))
