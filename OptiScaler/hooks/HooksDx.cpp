@@ -916,52 +916,6 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
     GetHudless(cmdList, fIndex);
 }
 
-{
-    // Version 1.1.2 check
-    auto version = FfxApiProxy::VersionDx12();
-    if (version.major == 1 && version.minor <= 1 && version.patch <= 2)
-        return (int)format;
-
-    switch (format)
-    {
-        case DXGI_FORMAT_R32G32B32A32_TYPELESS:
-        case DXGI_FORMAT_R32G32B32A32_FLOAT:
-        case DXGI_FORMAT_R32G32B32_FLOAT:
-            return 0;
-
-        case DXGI_FORMAT_R16G16B16A16_TYPELESS:
-        case DXGI_FORMAT_R16G16B16A16_FLOAT:
-            return 1;
-
-        case DXGI_FORMAT_R8G8B8A8_TYPELESS:
-        case DXGI_FORMAT_R8G8B8A8_UNORM:
-        case DXGI_FORMAT_B8G8R8A8_TYPELESS:
-        case DXGI_FORMAT_B8G8R8A8_UNORM:
-            return 2;
-
-        case DXGI_FORMAT_R8G8B8A8_SNORM:
-            return 3;
-
-        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-        case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-            return 4;
-
-        case DXGI_FORMAT_R11G11B10_FLOAT:
-            return 5;
-
-        case DXGI_FORMAT_R10G10B10A2_TYPELESS:
-        case DXGI_FORMAT_R10G10B10A2_UNORM:
-            return 6;
-
-        case DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
-            return 7;
-
-            // we don't accept the following formats
-        default:
-            return -1;
-    }
-}
-
 static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
 {
     if (HooksDx::currentSwapchain == nullptr)
@@ -2056,7 +2010,8 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     {
         // Fixes RDR2, need to check other games
         // But at first place I have added this because of FFX documents
-        std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
+        // Still not sure :/
+        //std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
 
         result = o_FGSCPresent(This, SyncInterval, Flags);
         LOG_DEBUG("Result: {:X}", result);
