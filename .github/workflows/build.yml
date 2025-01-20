@@ -75,7 +75,7 @@ jobs:
         Write-Output "Extracted Version: $version"
         
         # Optionally set the version as an output
-        echo "::set-output name=version::$version"
+        echo "version=$version" >> $GITHUB_OUTPUT
         
       continue-on-error: false
       
