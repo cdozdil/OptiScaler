@@ -69,7 +69,7 @@ jobs:
         $buildVersion = Get-Version-Component 'VER_BUILD_NUMBER' '#define VER_BUILD_NUMBER\s+'
         
         # Merge into a single version string
-        $version = "$majorVersion.$minorVersion.$hotfixVersion-pre$buildVersion"
+        $version = "v$majorVersion.$minorVersion.$hotfixVersion-pre$buildVersion"
         
         # Output the version
         Write-Output "Extracted Version: $version"
