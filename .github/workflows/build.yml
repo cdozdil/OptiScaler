@@ -39,6 +39,24 @@ jobs:
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
 
+    - name: Extract Version
+      id: get_version
+      working-directory: ${{ github.workspace }}
+      shell: powershell
+      run: |
+        # Example: Extract version from AssemblyInfo.cs or other file
+        $majorVersionLine = Get-Content .\OptiScaler\resource.h | Select-String 'VER_MAJOR_VERSION'
+        $majorVersion = $majorVersionLine -replace '#define VER_MAJOR_VERSION   ', ''
+        $minorVersionLine = Get-Content .\OptiScaler\resource.h | Select-String 'VER_MINOR_VERSION'
+        $minorVersion = $minorVersionLine -replace '#define VER_MINOR_VERSION   ', ''
+        $hotfixVersionLine = Get-Content .\OptiScaler\resource.h | Select-String 'VER_HOTFIX_VERSION'
+        $hotfixVersion = $hotfixVersionLine -replace '#define VER_HOTFIX_VERSION  ', ''
+        $buildVersionLine = Get-Content .\OptiScaler\resource.h | Select-String 'VER_BUILD_NUMBER'
+        $buildVersion = $buildVersionLine -replace '#define VER_BUILD_NUMBER    ', ''
+        $version = "$majorVersion.$minorVersion.$hotfixVersion-pre$buildVersion"
+        echo "::set-output name=version::$version"
+      continue-on-error: false
+      
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
@@ -46,11 +64,13 @@ jobs:
       run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
       
     - name: Compress the artifact 
-      run: 7z a ${{ github.workspace }}\OptiScaler.7z ${{ github.workspace }}\x64\Release\a\*.*
-
+      run: |
+        $zipName = "OptiScaler_${{ steps.get_version.outputs.version }}.7z"
+        7z a ${{ github.workspace }}\$zipName ${{ github.workspace }}\x64\Release\a\*.*
+        
     - uses: actions/upload-artifact@v4
       with:
-        name: OptiScaler
-        path: ${{ github.workspace }}\OptiScaler.7z
+        name: OptiScaler_${{ steps.get_version.outputs.version }}
+        path: ${{ github.workspace }}\OptiScaler_${{ steps.get_version.outputs.version }}.7z
         compression-level: 0
         if-no-files-found: error
