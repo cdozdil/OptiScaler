@@ -663,14 +663,14 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                 {
                     // If skipped last interpolated continue with new one
                     // trying to mimic pre66 behavior
-                    //if (FrameGen_Dx12::fgHudlessFrameIndexes[i] >= params->frameID)
-                    //    fIndex = i;
-
-                    if (FrameGen_Dx12::fgHudlessFrameIndexes[i] == params->frameID)
-                    {
+                    if (FrameGen_Dx12::fgHudlessFrameIndexes[i] >= params->frameID)
                         fIndex = i;
-                        break;
-                    }
+
+                    //if (FrameGen_Dx12::fgHudlessFrameIndexes[i] == params->frameID)
+                    //{
+                    //    fIndex = i;
+                    //    break;
+                    //}
                 }
 
 #ifdef CLOSE_FG_COMMANDLIST_AFTER_CALLBACK
