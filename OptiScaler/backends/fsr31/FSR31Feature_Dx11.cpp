@@ -430,13 +430,13 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
     LOG_DEBUG("FrameTimeDeltaInMsec: {0}", params.frameTimeDelta);
 
-    params.preExposure = 1.0f;
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure);
+    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure) != NVSDK_NGX_Result_Success)
+        params.preExposure = 1.0f;
 
     params.upscaleSize.width = TargetWidth();
     params.upscaleSize.height = TargetHeight();
 
-    if (_velocity != Config::Instance()->FsrVelocity.value_or_default())
+    if (Version().major >= 1 && Version().minor >= 1 && Version().patch >= 1 && _velocity != Config::Instance()->FsrVelocity.value_or_default())
     {
         _velocity = Config::Instance()->FsrVelocity.value_or_default();
         auto result = ffxFsr3SetUpscalerConstant(&_upscalerContext, Fsr31::FfxFsr3UpscalerConfigureKey::FFX_FSR3UPSCALER_CONFIGURE_UPSCALE_KEY_FVELOCITYFACTOR, &_velocity);

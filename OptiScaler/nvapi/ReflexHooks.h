@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../detours/detours.h"
+#include "fakenvapi.h"
 #include "NvApiTypes.h"
 
 class ReflexHooks {
@@ -145,7 +146,7 @@ public:
 		static float lastFps = 0;
 		float currentFps = Config::Instance()->FramerateLimit.value_or_default();
 
-		if (fgState || dlssgDetected)
+		if (fgState || (dlssgDetected && fakenvapi::isUsingFakenvapi()))
 			currentFps = currentFps / 2;
 
 		if (currentFps != lastFps) {

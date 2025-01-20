@@ -175,7 +175,7 @@ XESS_API xess_result_t xessD3D12CreateContext(ID3D12Device* pDevice, xess_contex
     fcInfo.PathListInfo.Path = paths;
     fcInfo.PathListInfo.Length = 1;
 
-    auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
+    auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", State::Instance().NVNGX_Engine, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
                                                         pDevice, &fcInfo, State::Instance().NVNGX_Version);
 
     if (nvResult != NVSDK_NGX_Result_Success)

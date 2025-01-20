@@ -445,9 +445,10 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) != NVSDK_NGX_Result_Success || params.frameTimeDelta < 1.0f)
         params.frameTimeDelta = (float)GetDeltaTime();
 
-    params.preExposure = 1.0f;    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure);
+    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure) != NVSDK_NGX_Result_Success)
+        params.preExposure = 1.0f;
 
-    if (_velocity != Config::Instance()->FsrVelocity.value_or_default())
+    if (Version().major >= 1 && Version().minor >= 1 && Version().patch >= 1 && _velocity != Config::Instance()->FsrVelocity.value_or_default())
     {
         _velocity = Config::Instance()->FsrVelocity.value_or_default();
         ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig{};

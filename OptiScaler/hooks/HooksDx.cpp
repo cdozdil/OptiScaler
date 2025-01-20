@@ -280,8 +280,7 @@ static ID3D12Resource* fgHudless[FrameGen_Dx12::FG_BUFFER_SIZE] = { nullptr, nul
 static ID3D12Resource* fgHudlessBuffer[FrameGen_Dx12::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
 
 static int fgActiveFrameIndex = -1;
-static int fgHudlessFrameIndex = -1;
-static int fgCallbackFrameIndex = -1;
+//static int fgHudlessFrameIndex = -1;
 
 // Last captured upscaled hudless frame number
 static UINT64 fgHudlessFrame = 0;
@@ -387,27 +386,27 @@ static void FfxFgLogCallback(uint32_t type, const wchar_t* message)
 
 static int GetFrameIndex(bool active)
 {
-    if (active)
+    //if (active)
+    //{
+    if (fgActiveFrameIndex < 0)
     {
-        if (fgActiveFrameIndex< 0)
-        {
-            LOG_ERROR("fgActiveFrameIndex < 0!");
-            return 0;
-        }
-
-        return fgActiveFrameIndex;
+        LOG_ERROR("fgActiveFrameIndex < 0!");
+        return 0;
     }
-    else
-    {
 
-        if (fgHudlessFrameIndex < 0)
-        {
-            LOG_ERROR("fgHudlessFrameIndex < 0!");
-            return 0;
-        }
+    return fgActiveFrameIndex;
+    //}
+    //else
+    //{
 
-        return fgHudlessFrameIndex;
-    }
+    //    if (fgHudlessFrameIndex < 0)
+    //    {
+    //        LOG_ERROR("fgHudlessFrameIndex < 0!");
+    //        return 0;
+    //    }
+
+    //    return fgHudlessFrameIndex;
+    //}
 }
 
 static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject)
@@ -604,16 +603,15 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
         fgHudlessFrame != State::Instance().currentFeature->FrameCount() && FrameGen_Dx12::fgTarget < State::Instance().currentFeature->FrameCount() &&
         FrameGen_Dx12::fgContext != nullptr && FrameGen_Dx12::fgIsActive && HooksDx::currentSwapchain != nullptr)
     {
-        LOG_DEBUG("FrameCount: {0}, fgHudlessFrame: {1}, CommandList: {2:X}", State::Instance().currentFeature->FrameCount(), fgHudlessFrame, (UINT64)This);
+        LOG_DEBUG("FrameCount: {0}, fgHudlessFrame: {1}, CommandList: {2:X}, fIndex: {3}", State::Instance().currentFeature->FrameCount(), fgHudlessFrame, (UINT64)This, fIndex);
 
-        fgCallbackFrameIndex = fIndex;
         FrameGen_Dx12::fgSkipHudlessChecks = true;
 
         // hudless captured for this frame
         fgHudlessFrame = State::Instance().currentFeature->FrameCount();
         auto frame = fgHudlessFrame;
 
-        LOG_DEBUG("running, frame: {0}", frame);
+        LOG_DEBUG("running, frame: {}, fIndex: {}", frame, fIndex);
 
         // switch dlss targets for next depth and mv 
         ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
@@ -653,17 +651,20 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
             {
                 HRESULT result;
                 ffxReturnCode_t dispatchResult = FFX_API_RETURN_OK;
-                int fIndex;
+                int fIndex = -1;
 
-                if (fgCallbackFrameIndex < 0)
-                    fIndex = fgHudlessFrameIndex;
-                else
-                    fIndex = fgCallbackFrameIndex;
-
-                params->reset = (FrameGen_Dx12::reset != 0);
+                // Get frame index from frame id
+                for (size_t i = 0; i < FrameGen_Dx12::FG_BUFFER_SIZE; i++)
+                {
+                    if (FrameGen_Dx12::fgHudlessFrameIndexes[i] == params->frameID)
+                    {
+                        fIndex = i;
+                        break;
+                    }
+                }
 
                 // check for status
-                if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default() ||
+                if (fIndex < 0 || !Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default() ||
                     FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCommandList[fIndex] == nullptr ||
                     FrameGen_Dx12::fgCommandQueue == nullptr || State::Instance().SCchanged)
                 {
@@ -683,35 +684,40 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                     auto allocator = FrameGen_Dx12::fgCommandAllocators[fIndex];
                     result = allocator->Reset();
                     result = FrameGen_Dx12::fgCommandList[fIndex]->Reset(allocator, nullptr);
-                    //fgHudlessFrameIndex = (fgHudlessFrameIndex + 1) % FrameGen_Dx12::FG_BUFFER_SIZE;
 
-                    //params->frameID = fgLastFGFrame;
-                    //params->numGeneratedFrames = 0;
-                    //params->reset = true;
+                    params->frameID = fgLastFGFrame;
+                    params->numGeneratedFrames = 0;
+                    params->reset = true;
                 }
 
+                params->reset = (FrameGen_Dx12::reset != 0);
+    
                 if (State::Instance().currentFeature != nullptr)
                     fgLastFGFrame = State::Instance().currentFeature->FrameCount();
 
                 dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
-                LOG_DEBUG("D3D12_Dispatch result: {}", (UINT)dispatchResult);
+                LOG_DEBUG("D3D12_Dispatch result: {}, fIndex: {}", (UINT)dispatchResult, fIndex);
 
                 if (dispatchResult == FFX_API_RETURN_OK)
                 {
                     result = FrameGen_Dx12::fgCommandList[fIndex]->Close();
                     LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
 
+                    // if there is command list error return ERROR
                     if (result == S_OK)
                     {
                         ID3D12CommandList* cl[1] = { nullptr };
                         cl[0] = FrameGen_Dx12::fgCommandList[fIndex];
                         FrameGen_Dx12::gameCommandQueue->ExecuteCommandLists(1, cl);
                     }
+                    else
+                    {
+                        dispatchResult = FFX_API_RETURN_ERROR;
+                    }
                 }
 
                 fgDispatchCalled = false;
                 FrameGen_Dx12::fgSkipHudlessChecks = false;
-                fgCallbackFrameIndex = -1;
 
                 return dispatchResult;
             };
@@ -723,7 +729,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
         //State::Instance().skipSpoofing = true;
         ffxReturnCode_t retCode = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgContext, &m_FrameGenerationConfig.header);
         //State::Instance().skipSpoofing = false;
-        LOG_DEBUG("D3D12_Configure result: {0:X}, frame: {1}", retCode, frame);
+        LOG_DEBUG("D3D12_Configure result: {0:X}, frame: {1}, fIndex: {2}", retCode, frame, fIndex);
 
         if (retCode == FFX_API_RETURN_OK)
         {
@@ -754,7 +760,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
             dfgPrepare.cameraNear = FrameGen_Dx12::cameraNear;
             dfgPrepare.cameraFovAngleVertical = FrameGen_Dx12::cameraVFov;
             dfgPrepare.viewSpaceToMetersFactor = FrameGen_Dx12::meterFactor;
-            dfgPrepare.frameTimeDelta = FrameGen_Dx12::ftDelta;
+            dfgPrepare.frameTimeDelta = FrameGen_Dx12::ftDelta; // Push this one real quick
+            LOG_DEBUG("frameTimeDelta: {}", FrameGen_Dx12::ftDelta);
 
             // If somehow context is destroyed before this point
             if (State::Instance().currentFeature == nullptr || FrameGen_Dx12::fgContext == nullptr || !FrameGen_Dx12::fgIsActive)
@@ -768,7 +775,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                 LOG_TRACE("Waiting mutex");
                 std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
 #endif
-
+                FrameGen_Dx12::fgHudlessFrameIndexes[fIndex] = frame;
                 retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
 
 #ifdef USE_MUTEX_FOR_FFX            
@@ -776,7 +783,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
 #endif
             fgDispatchCalled = true;
 
-            LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}", retCode, frame);
+            LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}", retCode, frame, fIndex);
         }
     }
     else
@@ -880,6 +887,11 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
 
 static int GetFormatPrecisionGroup(DXGI_FORMAT format)
 {
+    // Version 1.1.2 check
+    auto version = FfxApiProxy::VersionDx12();
+    if (version.major == 1 && version.minor <= 1 && version.patch <= 2)
+        return (int)format;
+
     switch (format)
     {
         case DXGI_FORMAT_R32G32B32A32_TYPELESS:
@@ -1124,7 +1136,7 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
     auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
     if (heap != nullptr)
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
-    }
+}
 
 static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pResource, D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
@@ -1177,7 +1189,7 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
     auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
     if (heap != nullptr)
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
-    }
+}
 
 static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pResource, ID3D12Resource* pCounterResource, D3D12_UNORDERED_ACCESS_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
@@ -1230,7 +1242,7 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
     auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
     if (heap != nullptr)
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
-    }
+}
 
 #pragma endregion
 
@@ -1962,12 +1974,11 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
 
 #pragma region Callbacks for wrapped swapchain
 
-//#ifdef USE_MUTEX_FOR_FFX
 static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 {
     // Disabled, was causing freezes at games launch & state changes
+    // std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
     //LOG_TRACE("Waiting mutex");
-    //std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
     //std::shared_lock<std::shared_mutex> lockPresent(presentMutex);
 
     if (State::Instance().isShuttingDown)
@@ -2002,40 +2013,46 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
         Config::Instance()->FGEnabled.value_or_default() && State::Instance().currentFeature != nullptr &&
         FrameGen_Dx12::fgTarget < State::Instance().currentFeature->FrameCount() && !State::Instance().FGchanged &&
-        FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr && 
+        FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr &&
         FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] >= 0) // If not captured
     {
+        if (FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] >= 0)
+            FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] = -99999999;
+
         LOG_WARN("Can't capture hudless, calling HudFix dispatch!");
         GetHudless(nullptr, fIndex);
     }
 
-    //lockPresent.unlock();
-    fgHudlessFrameIndex = (fgHudlessFrameIndex + 1) % FrameGen_Dx12::FG_BUFFER_SIZE;
+    HRESULT result;
+    {
+        // Fixes RDR2, need to check other games
+        // But at first place I have added this because of FFX documents
+        std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
 
-    auto result = o_FGSCPresent(This, SyncInterval, Flags);
-    LOG_DEBUG("Result: {:X}", result);
+        result = o_FGSCPresent(This, SyncInterval, Flags);
+        LOG_DEBUG("Result: {:X}", result);
 
 #ifdef USE_PRESENT_FOR_FT
-    float msDelta = 0.0;
-    auto now = Util::MillisecondsNow();
+        float msDelta = 0.0;
+        auto now = Util::MillisecondsNow();
 
-    if (fgLastFrameTime != 0)
-    {
-        msDelta = now - fgLastFrameTime;
-        LOG_DEBUG("Frametime: {0}", msDelta);
-    }
+        if (fgLastFrameTime != 0)
+        {
+            msDelta = now - fgLastFrameTime;
+            FrameGen_Dx12::AddFrameTime(msDelta);
+            LOG_DEBUG("Frametime: {0}", msDelta);
+        }
 
-    fgLastFrameTime = now;
-    FrameGen_Dx12::fgFrameTime = msDelta;
+        fgLastFrameTime = now;
 #else
-    LOG_DEBUG("");
+        LOG_DEBUG("");
 #endif
 
-    FrameGen_Dx12::upscaleRan = false;
+        FrameGen_Dx12::upscaleRan = false;
+    }
 
     return result;
-    }
-//#endif
+}
 
 static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd)
 {
@@ -3515,7 +3532,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         LOG_WARN("GPU Based Validation active!");
         debugController->SetEnableGPUBasedValidation(TRUE);
 #endif
-}
+    }
 #endif
 
     //State::Instance().skipSpoofing = true;
@@ -3555,7 +3572,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
                 LOG_DEBUG("infoQueue1 accuired, registering MessageCallback");
                 res = infoQueue1->RegisterMessageCallback(D3D12DebugCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, NULL, NULL);
             }
-    }
+        }
 #endif
     }
 
@@ -3905,7 +3922,7 @@ UINT FrameGen_Dx12::NewFrame()
     if (fgActiveFrameIndex == -1)
     {
         fgActiveFrameIndex = 0;
-        fgHudlessFrameIndex = 0;
+        //fgHudlessFrameIndex = 0;
     }
     else
     {
@@ -3922,7 +3939,7 @@ UINT FrameGen_Dx12::NewFrame()
         //}
     }
 
-    LOG_DEBUG("fgActiveFrameIndex: {}, fgHudlessFrameIndex: {}", fgActiveFrameIndex, fgHudlessFrameIndex);
+    LOG_DEBUG("fgActiveFrameIndex: {}", fgActiveFrameIndex);
     fgUpscaledFound = false;
     ClearNextFrame();
 
@@ -3937,12 +3954,12 @@ UINT FrameGen_Dx12::GetFrame()
 void FrameGen_Dx12::ResetIndexes()
 {
     fgActiveFrameIndex = -1;
-    fgHudlessFrameIndex = -1;
+    //fgHudlessFrameIndex = -1;
 
     for (size_t i = 0; i < FG_BUFFER_SIZE; i++)
     {
         fgHUDlessCaptureCounter[i] = 0;
-    
+
         if (fgPossibleHudless[i].size() != 0)
             fgPossibleHudless[i].clear();
     }
@@ -4276,6 +4293,39 @@ void FrameGen_Dx12::CheckUpscaledFrame(ID3D12GraphicsCommandList* InCmdList, ID3
 
     if (CheckForHudless(__FUNCTION__, &upscaledInfo) && CheckCapture(__FUNCTION__))
         CaptureHudless(InCmdList, &upscaledInfo, upscaledInfo.state);
+}
+
+void FrameGen_Dx12::AddFrameTime(float ft)
+{
+    if (fgFrameTimes.size() == 10)
+    {
+        fgFrameTimes.pop_front();
+    }
+
+    fgFrameTimes.push_back(ft);
+}
+
+float FrameGen_Dx12::GetFrameTime()
+{
+    float ft = 0.0f;
+    float ft2 = 0.0f;
+    int cnt = 0;
+
+    for (size_t i = 0; i < fgFrameTimes.size(); i++)
+    {
+        if (fgFrameTimes[i] > 0.2f && fgFrameTimes[i] < 100.0f)
+        {
+            ft += fgFrameTimes[i];
+            cnt++;
+        }
+
+        ft2 += fgFrameTimes[i] / (float)fgFrameTimes.size();
+    }
+
+    if (cnt != 0)
+        return ft / (float)cnt;
+
+    return ft2;
 }
 
 #pragma endregion
