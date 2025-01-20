@@ -36,27 +36,46 @@ jobs:
       with:
         submodules: 'true'
         
-    - name: Add MSBuild to PATH
-      uses: microsoft/setup-msbuild@v2
-
     - name: Extract Version
       id: get_version
       working-directory: ${{ github.workspace }}
       shell: powershell
       run: |
-        # Example: Extract version from AssemblyInfo.cs or other file
-        $majorVersionLine = Get-Content .\OptiScaler\resource.h | Select-String 'VER_MAJOR_VERSION'
-        $majorVersion = $majorVersionLine -replace '#define VER_MAJOR_VERSION   ', ''
-        $minorVersionLine = Get-Content .\OptiScaler\resource.h | Select-String 'VER_MINOR_VERSION'
-        $minorVersion = $minorVersionLine -replace '#define VER_MINOR_VERSION   ', ''
-        $hotfixVersionLine = Get-Content .\OptiScaler\resource.h | Select-String 'VER_HOTFIX_VERSION'
-        $hotfixVersion = $hotfixVersionLine -replace '#define VER_HOTFIX_VERSION  ', ''
-        $buildVersionLine = Get-Content .\OptiScaler\resource.h | Select-String 'VER_BUILD_NUMBER'
-        $buildVersion = $buildVersionLine -replace '#define VER_BUILD_NUMBER    ', ''
-        $version = "$majorVersion.$minorVersion.$hotfixVersion-pre$buildVersion"
+        # Helper function to extract a version component
+        function Get-Version-Component {
+            param (
+                [string]$pattern,
+                [string]$replacement
+            )
+            $line = Get-Content $resourceFile | Select-String $pattern
+            if ($line) {
+                return ($line -replace $replacement).Trim()
+            } else {
+                Write-Error "Pattern not found: $pattern"
+                exit 1
+            }
+        }
+        
+        # Extract version components
+        $majorVersion = Get-Version-Component 'VER_MAJOR_VERSION' '#define VER_MAJOR_VERSION\s+'
+        $minorVersion = Get-Version-Component 'VER_MINOR_VERSION' '#define VER_MINOR_VERSION\s+'
+        $hotfixVersion = Get-Version-Component 'VER_HOTFIX_VERSION' '#define VER_HOTFIX_VERSION\s+'
+        $buildVersion = Get-Version-Component 'VER_BUILD_NUMBER' '#define VER_BUILD_NUMBER\s+'
+        
+        # Merge into a single version string
+        $version = "$majorVersion.$minorVersion.$hotfixVersion.$buildVersion"
+        
+        # Output the version
+        Write-Output "Extracted Version: $version"
+        
+        # Optionally set the version as an output
         echo "::set-output name=version::$version"
+        
       continue-on-error: false
       
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v2
+
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
