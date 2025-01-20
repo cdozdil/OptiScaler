@@ -370,7 +370,8 @@ bool Config::Reload(std::filesystem::path iniPath)
         {
         	DlssInputs.set_from_config(readBool("Inputs", "Dlss"));
 	        XeSSInputs.set_from_config(readBool("Inputs", "XeSS"));
-	        Fsr2Inputs.set_from_config(readBool("Inputs", "Fsr2"));
+            Fsr2Inputs.set_from_config(readBool("Inputs", "Fsr2"));
+            Fsr2Pattern.set_from_config(readBool("Inputs", "Fsr2Pattern"));
 	        Fsr3Inputs.set_from_config(readBool("Inputs", "Fsr3"));
 	        FfxInputs.set_from_config(readBool("Inputs", "Ffx"));
         }
@@ -756,6 +757,7 @@ bool Config::SaveIni()
         ini.SetValue("Inputs", "Dlss", GetBoolValue(Instance()->DlssInputs.value_for_config()).c_str());
         ini.SetValue("Inputs", "XeSS", GetBoolValue(Instance()->XeSSInputs.value_for_config()).c_str());
         ini.SetValue("Inputs", "Fsr2", GetBoolValue(Instance()->Fsr2Inputs.value_for_config()).c_str());
+        //ini.SetValue("Inputs", "Fsr2Pattern", GetBoolValue(Instance()->Fsr2Pattern.value_for_config()).c_str());
         ini.SetValue("Inputs", "Fsr3", GetBoolValue(Instance()->Fsr3Inputs.value_for_config()).c_str());
         ini.SetValue("Inputs", "Ffx", GetBoolValue(Instance()->FfxInputs.value_for_config()).c_str());
     }

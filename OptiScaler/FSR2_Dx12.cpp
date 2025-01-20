@@ -916,7 +916,7 @@ void HookFSR2ExeInputs()
     //    o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetInterfaceDX12@@YAHPEAUFfxFsr2Interface@@PEAUID3D12Device@@PEAX_K@Z");
 
     // Pattern matching
-    if(Config::Instance()->Fsr2Pattern.value_or(false))
+    if(Config::Instance()->Fsr2Pattern.value_or_default())
     {
         LOG_DEBUG("Checking createPattern");
         std::wstring_view exeNameV(exeNameW.c_str());
