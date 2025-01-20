@@ -83,19 +83,24 @@ jobs:
         Write-Output "Generated Filename: $outputFileName"
         
         # Write outputs to GITHUB_OUTPUT
-        "version=$version" >> "$GITHUB_OUTPUT"
-        "filename=$outputFileName" >> "$GITHUB_OUTPUT"
+        "version=$version" >> $GITHUB_OUTPUT
+        "filename=$outputFileName" >> $GITHUB_OUTPUT
         
       continue-on-error: false
       
+    - name: Debug Outputs
+      run: |
+        echo "Version: ${{ steps.get_version.outputs.version }}"
+        echo "Filename: ${{ steps.get_version.outputs.filename }}"
+        
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
 
-    - name: Build
-      working-directory: ${{env.GITHUB_WORKSPACE}}
+    #- name: Build
+    #  working-directory: ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
-      run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}} /verbosity:minimal
+    #  run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}} /verbosity:minimal
       
     - name: Compress the artifact 
       run: |
