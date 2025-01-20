@@ -181,5 +181,5 @@ jobs:
         upload_url: ${{ steps.check_release.outputs.release_exists == 'true' && steps.check_release.outputs.release_id || steps.create_release.outputs.release_id }}
         asset_path: ${{ github.workspace }}\${{ steps.get_version.outputs.filename }}.7z
         asset_name: ${{ steps.get_version.outputs.filename }}.7z
-        content_type: application/x-7z-compressed
+        asset_content_type: application/x-7z-compressed
 
