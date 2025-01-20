@@ -41,41 +41,57 @@ jobs:
       working-directory: ${{ github.workspace }}
       shell: powershell
       run: |
+        # Ensure the file exists before proceeding
         $resourceFile = ".\OptiScaler\resource.h"
         if (-Not (Test-Path $resourceFile)) {
             Write-Error "File not found: $resourceFile"
             exit 1
         }
         
-        # Helper function to extract a version component
+        # Helper function to extract the first matching line for a version component
         function Get-Version-Component {
             param (
                 [string]$pattern,
                 [string]$replacement
             )
-            $line = Get-Content $resourceFile | Select-String $pattern | Select-Object -First 1
+            # Use Select-String and take only the first match
+            $line = Get-Content $resourceFile | Select-String -Pattern $pattern | Select-Object -First 1
             if ($line) {
-                return ($line -replace $replacement).Trim()
+                return ($line.Line -replace $replacement).Trim()
             } else {
                 Write-Error "Pattern not found: $pattern"
                 exit 1
             }
         }
         
-        # Extract version components
+        # Extract version components (only the first match for each pattern)
         $majorVersion = Get-Version-Component 'VER_MAJOR_VERSION' '#define VER_MAJOR_VERSION\s+'
         $minorVersion = Get-Version-Component 'VER_MINOR_VERSION' '#define VER_MINOR_VERSION\s+'
         $hotfixVersion = Get-Version-Component 'VER_HOTFIX_VERSION' '#define VER_HOTFIX_VERSION\s+'
         $buildVersion = Get-Version-Component 'VER_BUILD_NUMBER' '#define VER_BUILD_NUMBER\s+'
         
         # Merge into a single version string
-        $version = "v$majorVersion.$minorVersion.$hotfixVersion-pre$buildVersion"
+        $version = "$majorVersion.$minorVersion.$hotfixVersion-pre$buildVersion"
         
-        # Output the version
-        Write-Output "Extracted Version: $version"
+        # Get the current date in a specific format (e.g., YYYYMMDD)
+        $date = Get-Date -Format "yyyyMMdd"
         
-        # Optionally set the version as an output
-        echo "version=$version" >> $GITHUB_OUTPUT
+        # Construct the output filename with version and date
+        $outputFileName = "OptiScaler_${version}_${date}"
+        
+        # Output the generated filename
+        Write-Output "Generated Filename: $outputFileName"
+        
+        # Write the outputs to the GITHUB_OUTPUT file
+        $githubOutputPath = $env:GITHUB_OUTPUT
+        if (-Not $githubOutputPath) {
+            Write-Error "GITHUB_OUTPUT environment variable is not set."
+            exit 1
+        }
+        
+        # Write outputs to GITHUB_OUTPUT
+        "version=$version" >> $githubOutputPath
+        "filename=$outputFileName" >> $githubOutputPath
         
       continue-on-error: false
       
@@ -90,12 +106,12 @@ jobs:
       
     - name: Compress the artifact 
       run: |
-        $zipName = "OptiScaler_${{ steps.get_version.outputs.version }}.7z"
+        $zipName = "${{ steps.versioning.outputs.filename }}.7z"
         7z a ${{ github.workspace }}\$zipName ${{ github.workspace }}\x64\Release\a\*.*
         
     - uses: actions/upload-artifact@v4
       with:
-        name: OptiScaler_${{ steps.get_version.outputs.version }}
-        path: ${{ github.workspace }}\OptiScaler_${{ steps.get_version.outputs.version }}.7z
+        name: ${{ steps.versioning.outputs.filename }}
+        path: ${{ github.workspace }}\${{ steps.versioning.outputs.filename }}.7z
         compression-level: 0
         if-no-files-found: error
