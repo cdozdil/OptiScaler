@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../State.h"
 #include "../detours/detours.h"
 #include "fakenvapi.h"
 #include "NvApiTypes.h"
@@ -147,7 +148,7 @@ public:
 	inline static void update(bool fgState) {
 		// Not a perfect check, doesn't confirm that Reflex is actually currently enabled
 		// This is intentional as fakenvapi might override what the game sends
-		Config::Instance()->ReflexAvailable = _markersPresent && _inited;
+		State::Instance().reflexAvailable = _markersPresent && _inited;
 
 		static float lastFps = 0;
 		float currentFps = Config::Instance()->FramerateLimit.value_or_default();
