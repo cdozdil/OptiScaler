@@ -53,7 +53,7 @@ jobs:
                 [string]$pattern,
                 [string]$replacement
             )
-            $line = Get-Content $resourceFile | Select-String $pattern
+            $line = Get-Content $resourceFile | Select-String $pattern | Select-Object -First 1
             if ($line) {
                 return ($line -replace $replacement).Trim()
             } else {
@@ -69,7 +69,7 @@ jobs:
         $buildVersion = Get-Version-Component 'VER_BUILD_NUMBER' '#define VER_BUILD_NUMBER\s+'
         
         # Merge into a single version string
-        $version = "$majorVersion.$minorVersion.$hotfixVersion.$buildVersion"
+        $version = "$majorVersion.$minorVersion.$hotfixVersion-pre$buildVersion"
         
         # Output the version
         Write-Output "Extracted Version: $version"
