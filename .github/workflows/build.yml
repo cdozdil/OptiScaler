@@ -71,7 +71,7 @@ jobs:
         $buildVersion = Get-Version-Component 'VER_BUILD_NUMBER' '#define VER_BUILD_NUMBER\s+'
         
         # Merge into a single version string
-        $version = "$majorVersion.$minorVersion.$hotfixVersion-pre$buildVersion"
+        $version = "v$majorVersion.$minorVersion.$hotfixVersion-pre$buildVersion"
         
         # Get the current date in a specific format (e.g., YYYYMMDD)
         $date = Get-Date -Format "yyyyMMdd"
@@ -82,16 +82,9 @@ jobs:
         # Output the generated filename
         Write-Output "Generated Filename: $outputFileName"
         
-        # Write the outputs to the GITHUB_OUTPUT file
-        $githubOutputPath = $env:GITHUB_OUTPUT
-        if (-Not $githubOutputPath) {
-            Write-Error "GITHUB_OUTPUT environment variable is not set."
-            exit 1
-        }
-        
         # Write outputs to GITHUB_OUTPUT
-        "version=$version" >> $githubOutputPath
-        "filename=$outputFileName" >> $githubOutputPath
+        "version=$version" >> $GITHUB_OUTPUT
+        "filename=$outputFileName" >> $GITHUB_OUTPUT
         
       continue-on-error: false
       
@@ -106,12 +99,12 @@ jobs:
       
     - name: Compress the artifact 
       run: |
-        $zipName = "${{ steps.versioning.outputs.filename }}.7z"
+        $zipName = "${{ steps.get_version.outputs.filename }}.7z"
         7z a ${{ github.workspace }}\$zipName ${{ github.workspace }}\x64\Release\a\*.*
         
     - uses: actions/upload-artifact@v4
       with:
-        name: ${{ steps.versioning.outputs.filename }}
-        path: ${{ github.workspace }}\${{ steps.versioning.outputs.filename }}.7z
+        name: ${{ steps.get_version.outputs.filename }}
+        path: ${{ github.workspace }}\${{ steps.get_version.outputs.filename }}.7z
         compression-level: 0
         if-no-files-found: error
