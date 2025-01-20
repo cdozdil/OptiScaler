@@ -42,7 +42,7 @@ static VkResult hkvkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateI
 
 static void HookDevice(VkDevice InDevice)
 {
-    if (o_CreateSwapchainKHR != nullptr || Config::Instance()->VulkanSkipHooks)
+    if (o_CreateSwapchainKHR != nullptr || State::Instance().vulkanSkipHooks)
         return;
 
     LOG_FUNC();
@@ -74,7 +74,7 @@ static VkResult hkvkCreateWin32SurfaceKHR(VkInstance instance, const VkWin32Surf
     auto procHwnd = Util::GetProcessWindow();
     LOG_DEBUG("procHwnd: {0:X}, swapchain hwnd: {1:X}", (UINT64)procHwnd, (UINT64)pCreateInfo->hwnd);
 
-    if (result == VK_SUCCESS && !Config::Instance()->VulkanSkipHooks) // && procHwnd == pCreateInfo->hwnd) // On linux sometimes procHwnd != pCreateInfo->hwnd
+    if (result == VK_SUCCESS && !State::Instance().vulkanSkipHooks) // && procHwnd == pCreateInfo->hwnd) // On linux sometimes procHwnd != pCreateInfo->hwnd
     {
         ImGuiOverlayVk::DestroyVulkanObjects(false);
 
@@ -96,7 +96,7 @@ static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, cons
 
     auto result = o_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
 
-    if (result == VK_SUCCESS && !Config::Instance()->VulkanSkipHooks)
+    if (result == VK_SUCCESS && !State::Instance().vulkanSkipHooks)
     {
         ImGuiOverlayVk::DestroyVulkanObjects(false);
 
@@ -115,7 +115,7 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, const VkDevice
 
     auto result = o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
 
-    if (result == VK_SUCCESS && !Config::Instance()->VulkanSkipHooks)
+    if (result == VK_SUCCESS && !State::Instance().vulkanSkipHooks)
     {
         ImGuiOverlayVk::DestroyVulkanObjects(false);
 
@@ -147,23 +147,23 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
 
         if (elapsedTimeMs > 0.0 && elapsedTimeMs < 5000.0)
         {
-            Config::Instance()->upscaleTimes.push_back(elapsedTimeMs);
-            Config::Instance()->upscaleTimes.pop_front();
+            State::Instance().upscaleTimes.push_back(elapsedTimeMs);
+            State::Instance().upscaleTimes.pop_front();
         }
 
         HooksVk::vkUpscaleTrig = false;
     }
 
-    Config::Instance()->SwapChainApi = NVNGX_VULKAN;
+    State::Instance().swapchainApi = Vulkan;
 
     // render menu if needed
     if(!ImGuiOverlayVk::QueuePresent(queue, pPresentInfo))
         return VK_ERROR_OUT_OF_DATE_KHR;
     
     // original call
-    Config::Instance()->VulkanCreatingSC = true;
+    State::Instance().vulkanCreatingSC = true;
     auto result = o_QueuePresentKHR(queue, pPresentInfo);
-    Config::Instance()->VulkanCreatingSC = false;
+    State::Instance().vulkanCreatingSC = false;
 
     LOG_FUNC_RESULT(result);
     return result;
@@ -173,14 +173,14 @@ static VkResult hkvkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateI
 {
     LOG_FUNC();
 
-    Config::Instance()->VulkanCreatingSC = true;
+    State::Instance().vulkanCreatingSC = true;
     auto result = o_CreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain);
-    Config::Instance()->VulkanCreatingSC = false;
+    State::Instance().vulkanCreatingSC = false;
 
-    if (result == VK_SUCCESS && device != VK_NULL_HANDLE && pCreateInfo != nullptr && *pSwapchain != VK_NULL_HANDLE && !Config::Instance()->VulkanSkipHooks)
+    if (result == VK_SUCCESS && device != VK_NULL_HANDLE && pCreateInfo != nullptr && *pSwapchain != VK_NULL_HANDLE && !State::Instance().vulkanSkipHooks)
     {
-        Config::Instance()->ScreenWidth = pCreateInfo->imageExtent.width;
-        Config::Instance()->ScreenHeight = pCreateInfo->imageExtent.height;
+        State::Instance().screenWidth = pCreateInfo->imageExtent.width;
+        State::Instance().screenHeight = pCreateInfo->imageExtent.height;
 
         LOG_DEBUG("if (result == VK_SUCCESS && device != VK_NULL_HANDLE && pCreateInfo != nullptr && pSwapchain != VK_NULL_HANDLE)");
 

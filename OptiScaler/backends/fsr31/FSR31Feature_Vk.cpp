@@ -1,4 +1,3 @@
-#pragma once
 #include "../../pch.h"
 #include "../../Config.h"
 #include "../../Util.h"
@@ -65,7 +64,7 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
-    Config::Instance()->skipSpoofing = true;
+    State::Instance().skipSpoofing = true;
 
     ffxQueryDescGetVersions versionQuery{};
     versionQuery.header.type = FFX_API_QUERY_DESC_TYPE_GET_VERSIONS;
@@ -76,10 +75,10 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     // get number of versions for allocation
     FfxApiProxy::VULKAN_Query()(nullptr, &versionQuery.header);
 
-    Config::Instance()->fsr3xVersionIds.resize(versionCount);
-    Config::Instance()->fsr3xVersionNames.resize(versionCount);
-    versionQuery.versionIds = Config::Instance()->fsr3xVersionIds.data();
-    versionQuery.versionNames = Config::Instance()->fsr3xVersionNames.data();
+    State::Instance().fsr3xVersionIds.resize(versionCount);
+    State::Instance().fsr3xVersionNames.resize(versionCount);
+    versionQuery.versionIds = State::Instance().fsr3xVersionIds.data();
+    versionQuery.versionNames = State::Instance().fsr3xVersionNames.data();
     // fill version ids and names arrays.
     FfxApiProxy::VULKAN_Query()(nullptr, &versionQuery.header);
 
@@ -149,7 +148,7 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         LOG_INFO("contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
     }
 
-    if (Config::Instance()->ExtendedLimits.value_or(false))
+    if (Config::Instance()->ExtendedLimits.value_or_default())
     {
         _contextDesc.maxRenderSize.width = RenderWidth() < DisplayWidth() ? DisplayWidth() : RenderWidth();
         _contextDesc.maxRenderSize.height = RenderHeight() < DisplayHeight() ? DisplayHeight() : RenderHeight();
@@ -175,18 +174,18 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
 
     _contextDesc.header.pNext = &backendDesc.header;
 
-    if (Config::Instance()->Fsr3xIndex.value_or(0) < 0 || Config::Instance()->Fsr3xIndex.value_or(0) >= Config::Instance()->fsr3xVersionIds.size())
+    if (Config::Instance()->Fsr3xIndex.value_or_default() < 0 || Config::Instance()->Fsr3xIndex.value_or_default() >= State::Instance().fsr3xVersionIds.size())
         Config::Instance()->Fsr3xIndex = 0;
 
     ffxOverrideVersion ov = { 0 };
     ov.header.type = FFX_API_DESC_TYPE_OVERRIDE_VERSION;
-    ov.versionId = Config::Instance()->fsr3xVersionIds[Config::Instance()->Fsr3xIndex.value_or(0)];
+    ov.versionId = State::Instance().fsr3xVersionIds[Config::Instance()->Fsr3xIndex.value_or_default()];
     backendDesc.header.pNext = &ov.header;
 
     LOG_DEBUG("_createContext!");
     auto ret = FfxApiProxy::VULKAN_CreateContext()(&_context, &_contextDesc.header, NULL);
 
-    Config::Instance()->skipSpoofing = false;
+    State::Instance().skipSpoofing = false;
 
     if (ret != FFX_API_RETURN_OK)
     {
@@ -194,7 +193,7 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         return false;
     }
 
-    auto version = Config::Instance()->fsr3xVersionNames[Config::Instance()->Fsr3xIndex.value_or(0)];
+    auto version = State::Instance().fsr3xVersionNames[Config::Instance()->Fsr3xIndex.value_or_default()];
     _name = std::format("FSR {}", version);
     parse_version(version);
 
@@ -230,7 +229,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     struct ffxDispatchDescUpscale params = { 0 };
     params.header.type = FFX_API_DISPATCH_DESC_TYPE_UPSCALE;
 
-    if (Config::Instance()->FsrDebugView.value_or(false))
+    if (Config::Instance()->FsrDebugView.value_or_default())
         params.flags = FFX_UPSCALE_FLAG_DRAW_DEBUG_VIEW;
 
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
@@ -334,7 +333,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         {
             LOG_DEBUG("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
             Config::Instance()->AutoExposure = true;
-            Config::Instance()->changeBackend = true;
+            State::Instance().changeBackend = true;
             return true;
         }
     }
@@ -345,7 +344,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
         InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
 
-    if (paramReactiveMask && Config::Instance()->FsrUseMaskForTransparency.value_or(true))
+    if (paramReactiveMask && Config::Instance()->FsrUseMaskForTransparency.value_or_default())
     {
         params.transparencyAndComposition = ffxApiGetResourceVK(((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Image,
                                                                 ffxApiGetImageResourceDescriptionVKLocal((NVSDK_NGX_Resource_VK*)paramReactiveMask),
@@ -360,7 +359,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         {
             LOG_DEBUG("Bias mask exist..");
 
-            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.0f) > 0.0f)
+            if (Config::Instance()->DlssReactiveMaskBias.value_or_default() > 0.0f)
             {
                 params.reactive = ffxApiGetResourceVK(((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Image,
                                                       ffxApiGetImageResourceDescriptionVKLocal((NVSDK_NGX_Resource_VK*)paramReactiveMask),
@@ -371,7 +370,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         {
             LOG_DEBUG("Bias mask not exist and its enabled in config, it may cause problems!!");
             Config::Instance()->DisableReactiveMask = true;
-            Config::Instance()->changeBackend = true;
+            State::Instance().changeBackend = true;
             return true;
         }
     }
@@ -401,10 +400,10 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         params.motionVectorScale.y = MVScaleY;
     }
 
-    if (Config::Instance()->OverrideSharpness.value_or(false))
+    if (Config::Instance()->OverrideSharpness.value_or_default())
     {
-        params.enableSharpening = Config::Instance()->Sharpness.value_or(0.3) > 0.0f;
-        params.sharpness = Config::Instance()->Sharpness.value_or(0.3);
+        params.enableSharpening = Config::Instance()->Sharpness.value_or_default() > 0.0f;
+        params.sharpness = Config::Instance()->Sharpness.value_or_default();
     }
     else
     {
@@ -427,13 +426,13 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
 
     if (IsDepthInverted())
     {
-        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.1f);
-        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(100000.0f);
+        params.cameraFar = Config::Instance()->FsrCameraNear.value_or_default();
+        params.cameraNear = Config::Instance()->FsrCameraFar.value_or_default();
     }
     else
     {
-        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(100000.0f);
-        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.1f);
+        params.cameraFar = Config::Instance()->FsrCameraFar.value_or_default();
+        params.cameraNear = Config::Instance()->FsrCameraNear.value_or_default();
     }
 
     if (Config::Instance()->FsrVerticalFov.has_value())
@@ -449,9 +448,9 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure) != NVSDK_NGX_Result_Success)
         params.preExposure = 1.0f;
 
-    if (Version().major >= 1 && Version().minor >= 1 && Version().patch >= 1 && _velocity != Config::Instance()->FsrVelocity.value_or(1.0f))
+    if (Version().major >= 1 && Version().minor >= 1 && Version().patch >= 1 && _velocity != Config::Instance()->FsrVelocity.value_or_default())
     {
-        _velocity = Config::Instance()->FsrVelocity.value_or(1.0f);
+        _velocity = Config::Instance()->FsrVelocity.value_or_default();
         ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig{};
         m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
         m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FVELOCITYFACTOR;

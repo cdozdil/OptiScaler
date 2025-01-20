@@ -141,10 +141,10 @@ public:
 	inline static void update(bool fgState) {
 		// Not a perfect check, doesn't confirm that Reflex is actually currently enabled
 		// This is intentional as fakenvapi might override what the game sends
-		Config::Instance()->ReflexAvailable = _markersPresent;
+		State::Instance().reflexAvailable = _markersPresent;
 
 		static float lastFps = 0;
-		float currentFps = Config::Instance()->FramerateLimit.value_or(0);
+		float currentFps = Config::Instance()->FramerateLimit.value_or_default();
 
 		if (fgState || (dlssgDetected && fakenvapi::isUsingFakenvapi()))
 			currentFps = currentFps / 2;
@@ -161,7 +161,7 @@ public:
 		if (fps == 0.0)
 			_minimumIntervalUs = 0;
 		else
-			_minimumIntervalUs = 1'000'000 / fps;
+			_minimumIntervalUs = static_cast<uint32_t>(std::round(1'000'000 / fps));
 
 		if (_lastSleepDev != nullptr) {
 			NV_SET_SLEEP_MODE_PARAMS temp{};

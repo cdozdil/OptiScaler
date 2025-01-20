@@ -184,8 +184,8 @@ bool FT_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     UINT dispatchWidth = 0;
     UINT dispatchHeight = 0;
 
-    dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
-    dispatchHeight = (Config::Instance()->CurrentFeature->DisplayHeight() + InNumThreadsY - 1) / InNumThreadsY;
+    dispatchWidth = static_cast<UINT>((State::Instance().currentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
+    dispatchHeight = (State::Instance().currentFeature->DisplayHeight() + InNumThreadsY - 1) / InNumThreadsY;
 
     InCmdList->Dispatch(dispatchWidth, dispatchHeight, 1);
 
@@ -289,7 +289,7 @@ FT_Dx12::FT_Dx12(std::string InName, ID3D12Device* InDevice, DXGI_FORMAT InForma
     // Compile shader blobs
     ID3DBlob* _recEncodeShader = nullptr;
 
-    if (Config::Instance()->UsePrecompiledShaders.value_or(true))
+    if (Config::Instance()->UsePrecompiledShaders.value_or_default())
     {
         D3D12_COMPUTE_PIPELINE_STATE_DESC computePsoDesc = {};
         computePsoDesc.pRootSignature = _rootSignature;
@@ -417,7 +417,7 @@ bool FT_Dx12::IsFormatCompatible(DXGI_FORMAT InFormat)
 
 FT_Dx12::~FT_Dx12()
 {
-    if (!_init || Config::Instance()->IsShuttingDown)
+    if (!_init || State::Instance().isShuttingDown)
         return;
 
     ID3D12Fence* d3d12Fence = nullptr;

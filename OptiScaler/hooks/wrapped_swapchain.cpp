@@ -119,7 +119,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 #ifdef USE_LOCAL_MUTEX
     // dlssg calls this from present it seems
     // don't try to get a mutex when present owns it while dlssg mod is enabled
-    if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or(false)))
+    if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or_default()))
         OwnedLockGuard lock(_localMutex, 1);
 #endif
 
@@ -132,34 +132,34 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     DXGI_SWAP_CHAIN_DESC desc{};
     m_pReal->GetDesc(&desc);
 
-    if (Config::Instance()->FGEnabled.value_or(false))
+    if (Config::Instance()->FGEnabled.value_or_default())
     {
-        Config::Instance()->FGResetCapturedResources = true;
-        Config::Instance()->FGOnlyUseCapturedResources = false;
+        State::Instance().FGresetCapturedResources = true;
+        State::Instance().FGonlyUseCapturedResources = false;
 
-        if (Config::Instance()->CurrentFeature != nullptr)
-            Config::Instance()->FGChanged = true;
+        if (State::Instance().currentFeature != nullptr)
+            State::Instance().FGchanged = true;
     }
 
     if (ClearTrig != nullptr)
         ClearTrig(true, Handle);
 
-    Config::Instance()->SCChanged = true;
+    State::Instance().SCchanged = true;
 
     LOG_DEBUG("BufferCount: {0}, Width: {1}, Height: {2}, NewFormat: {3}, SwapChainFlags: {4:X}", BufferCount, Width, Height, (UINT)NewFormat, SwapChainFlags);
 
     result = m_pReal->ResizeBuffers(BufferCount, Width, Height, NewFormat, SwapChainFlags);
-    if (result == S_OK && Config::Instance()->CurrentFeature == nullptr)
+    if (result == S_OK && State::Instance().currentFeature == nullptr)
     {
-        Config::Instance()->ScreenWidth = Width;
-        Config::Instance()->ScreenHeight = Height;
-        Config::Instance()->lastMipBias = 100.0f;
-        Config::Instance()->lastMipBiasMax = -100.0f;
+        State::Instance().screenWidth = Width;
+        State::Instance().screenHeight = Height;
+        State::Instance().lastMipBias = 100.0f;
+        State::Instance().lastMipBiasMax = -100.0f;
     }
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
     // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
-    if (Config::Instance()->forceHdr.value_or(false))
+    if (Config::Instance()->ForceHDR.value_or_default())
     {
         LOG_INFO("Force HDR on");
 
@@ -171,7 +171,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
             NewFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
             DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
 
-            if (Config::Instance()->useHDR10.value_or(false))
+            if (Config::Instance()->UseHDR10.value_or_default())
             {
                 NewFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
                 hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
@@ -203,7 +203,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
         } while (false);
     }
 
-    Config::Instance()->scBuffers.clear();
+    State::Instance().SCbuffers.clear();
     UINT bc = BufferCount;
     if (bc == 0 && m_pReal1 != nullptr)
     {
@@ -219,7 +219,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
         if (m_pReal->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
         {
-            Config::Instance()->scBuffers.push_back(buffer);
+            State::Instance().SCbuffers.push_back(buffer);
             buffer->Release();
         }
     }
@@ -241,7 +241,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 #ifdef USE_LOCAL_MUTEX
     // dlssg calls this from present it seems
     // don't try to get a mutex when present owns it while dlssg mod is enabled
-    if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or(false)))
+    if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or_default()))
         OwnedLockGuard lock(_localMutex, 2);
 #endif
 
@@ -254,34 +254,34 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
     DXGI_SWAP_CHAIN_DESC desc{};
     m_pReal->GetDesc(&desc);
 
-    if (Config::Instance()->FGEnabled.value_or(false))
+    if (Config::Instance()->FGEnabled.value_or_default())
     {
-        Config::Instance()->FGResetCapturedResources = true;
-        Config::Instance()->FGOnlyUseCapturedResources = false;
+        State::Instance().FGresetCapturedResources = true;
+        State::Instance().FGonlyUseCapturedResources = false;
 
-        if (Config::Instance()->CurrentFeature != nullptr)
-            Config::Instance()->FGChanged = true;
+        if (State::Instance().currentFeature != nullptr)
+            State::Instance().FGchanged = true;
     }
 
     if (ClearTrig != nullptr)
         ClearTrig(true, Handle);
 
-    Config::Instance()->SCChanged = true;
+    State::Instance().SCchanged = true;
 
     LOG_DEBUG("BufferCount: {0}, Width: {1}, Height: {2}, NewFormat: {3}, SwapChainFlags: {4:X}, pCreationNodeMask: {5}", BufferCount, Width, Height, (UINT)Format, SwapChainFlags, *pCreationNodeMask);
 
     result = m_pReal3->ResizeBuffers1(BufferCount, Width, Height, Format, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
-    if (result == S_OK && Config::Instance()->CurrentFeature == nullptr)
+    if (result == S_OK && State::Instance().currentFeature == nullptr)
     {
-        Config::Instance()->ScreenWidth = Width;
-        Config::Instance()->ScreenHeight = Height;
-        Config::Instance()->lastMipBias = 100.0f;
-        Config::Instance()->lastMipBiasMax = -100.0f;
+        State::Instance().screenWidth = Width;
+        State::Instance().screenHeight = Height;
+        State::Instance().lastMipBias = 100.0f;
+        State::Instance().lastMipBiasMax = -100.0f;
     }
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
     // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
-    if (Config::Instance()->forceHdr.value_or(false))
+    if (Config::Instance()->ForceHDR.value_or_default())
     {
         LOG_INFO("Force HDR on");
 
@@ -290,7 +290,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
             Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
             DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
 
-            if (Config::Instance()->useHDR10.value_or(false))
+            if (Config::Instance()->UseHDR10.value_or_default())
             {
                 Format = DXGI_FORMAT_R10G10B10A2_UNORM;
                 hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
@@ -322,7 +322,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
         } while (false);
     }
 
-    Config::Instance()->scBuffers.clear();
+    State::Instance().SCbuffers.clear();
     UINT bc = BufferCount;
     if (bc == 0 && m_pReal1 != nullptr)
     {
@@ -338,7 +338,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 
         if (m_pReal->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
         {
-            Config::Instance()->scBuffers.push_back(buffer);
+            State::Instance().SCbuffers.push_back(buffer);
             buffer->Release();
         }
     }
@@ -380,7 +380,7 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 #ifdef USE_LOCAL_MUTEX
         // dlssg calls this from present it seems
         // don't try to get a mutex when present owns it while dlssg mod is enabled
-        if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or(false)))
+        if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or_default()))
             OwnedLockGuard lock(_localMutex, 3);
 #endif
 
@@ -396,20 +396,20 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
         else
             LOG_DEBUG("result: {:X}", result);
 
-        if (Config::Instance()->FGEnabled.value_or(false))
+        if (Config::Instance()->FGEnabled.value_or_default())
         {
-            Config::Instance()->FGResetCapturedResources = true;
-            Config::Instance()->FGOnlyUseCapturedResources = false;
+            State::Instance().FGresetCapturedResources = true;
+            State::Instance().FGonlyUseCapturedResources = false;
 
-            if (Config::Instance()->CurrentFeature != nullptr)
-                Config::Instance()->FGChanged = true;
+            if (State::Instance().currentFeature != nullptr)
+                State::Instance().FGchanged = true;
         }
 
         if (ClearTrig != nullptr)
             ClearTrig(true, Handle);
 
-        Config::Instance()->SCChanged = true;
-        Config::Instance()->scBuffers.clear();
+        State::Instance().SCchanged = true;
+        State::Instance().SCbuffers.clear();
 
         UINT bc = 0;
         if (m_pReal1 != nullptr)
@@ -426,7 +426,7 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 
             if (m_pReal->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
             {
-                Config::Instance()->scBuffers.push_back(buffer);
+                State::Instance().SCbuffers.push_back(buffer);
                 buffer->Release();
             }
         }

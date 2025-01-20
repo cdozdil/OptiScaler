@@ -293,42 +293,42 @@ static std::optional<float> GetQualityOverrideRatioFfx(const Fsr212::FfxFsr2Qual
 {
     std::optional<float> output;
 
-    auto sliderLimit = Config::Instance()->ExtendedLimits.value_or(false) ? 0.1f : 1.0f;
+    auto sliderLimit = Config::Instance()->ExtendedLimits.value_or_default() ? 0.1f : 1.0f;
 
-    if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or(false) &&
-        Config::Instance()->UpscaleRatioOverrideValue.value_or(1.3f) >= sliderLimit)
+    if (Config::Instance()->UpscaleRatioOverrideEnabled.value_or_default() &&
+        Config::Instance()->UpscaleRatioOverrideValue.value_or_default() >= sliderLimit)
     {
-        output = Config::Instance()->UpscaleRatioOverrideValue.value_or(1.3f);
+        output = Config::Instance()->UpscaleRatioOverrideValue.value_or_default();
 
         return  output;
     }
 
-    if (!Config::Instance()->QualityRatioOverrideEnabled.value_or(false))
+    if (!Config::Instance()->QualityRatioOverrideEnabled.value_or_default())
         return output; // override not enabled
 
     switch (input)
     {
         case Fsr212::FFX_FSR2_QUALITY_MODE_ULTRA_PERFORMANCE:
-            if (Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0);
+            if (Config::Instance()->QualityRatio_UltraPerformance.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_UltraPerformance.value_or_default();
 
             break;
 
         case Fsr212::FFX_FSR2_QUALITY_MODE_PERFORMANCE:
-            if (Config::Instance()->QualityRatio_Performance.value_or(2.0) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Performance.value_or(2.0);
+            if (Config::Instance()->QualityRatio_Performance.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_Performance.value_or_default();
 
             break;
 
         case Fsr212::FFX_FSR2_QUALITY_MODE_BALANCED:
-            if (Config::Instance()->QualityRatio_Balanced.value_or(1.7) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Balanced.value_or(1.7);
+            if (Config::Instance()->QualityRatio_Balanced.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_Balanced.value_or_default();
 
             break;
 
         case Fsr212::FFX_FSR2_QUALITY_MODE_QUALITY:
-            if (Config::Instance()->QualityRatio_Quality.value_or(1.5) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Quality.value_or(1.5);
+            if (Config::Instance()->QualityRatio_Quality.value_or_default() >= sliderLimit)
+                output = Config::Instance()->QualityRatio_Quality.value_or_default();
 
             break;
 
@@ -362,9 +362,9 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
     {
         auto bDevice = (ID3D12Device*)contextDescription->device;
 
-        for (size_t i = 0; i < Config::Instance()->d3d12Devices.size(); i++)
+        for (size_t i = 0; i < State::Instance().d3d12Devices.size(); i++)
         {
-            if (Config::Instance()->d3d12Devices[i] == bDevice)
+            if (State::Instance().d3d12Devices[i] == bDevice)
             {
                 _d3d12Device = bDevice;
                 break;
@@ -375,7 +375,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
     // if still no device use latest created one
     // Might fixed TLOU but FMF2 still crashes
     if (_d3d12Device == nullptr)
-        _d3d12Device = Config::Instance()->d3d12Devices[Config::Instance()->d3d12Devices.size() - 1];
+        _d3d12Device = State::Instance().d3d12Devices[State::Instance().d3d12Devices.size() - 1];
 
     if (_d3d12Device == nullptr)
     {
@@ -393,8 +393,8 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
     if (!_nvnxgInited)
     {
 
-        auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", Config::Instance()->NVNGX_Engine, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
-                                                            _d3d12Device, &fcInfo, Config::Instance()->NVNGX_Version);
+        auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", State::Instance().NVNGX_Engine, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
+                                                            _d3d12Device, &fcInfo, State::Instance().NVNGX_Version);
 
         if (nvResult != NVSDK_NGX_Result_Success)
             return Fsr212::FFX_ERROR_BACKEND_API_ERROR;
@@ -442,9 +442,9 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Pattern_Dx12(Fsr212::FfxFsr2Con
     {
         auto bDevice = (ID3D12Device*)contextDescription->device;
 
-        for (size_t i = 0; i < Config::Instance()->d3d12Devices.size(); i++)
+        for (size_t i = 0; i < State::Instance().d3d12Devices.size(); i++)
         {
-            if (Config::Instance()->d3d12Devices[i] == bDevice)
+            if (State::Instance().d3d12Devices[i] == bDevice)
             {
                 _d3d12Device = bDevice;
                 break;
@@ -455,7 +455,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Pattern_Dx12(Fsr212::FfxFsr2Con
     // if still no device use latest created one
     // Might fixed TLOU but FMF2 still crashes
     if (_d3d12Device == nullptr)
-        _d3d12Device = Config::Instance()->d3d12Devices[Config::Instance()->d3d12Devices.size() - 1];
+        _d3d12Device = State::Instance().d3d12Devices[State::Instance().d3d12Devices.size() - 1];
 
     if (_d3d12Device == nullptr)
     {
@@ -473,8 +473,8 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Pattern_Dx12(Fsr212::FfxFsr2Con
     if (!_nvnxgInited)
     {
 
-        auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", Config::Instance()->NVNGX_Engine, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
-                                                            _d3d12Device, &fcInfo, Config::Instance()->NVNGX_Version);
+        auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", State::Instance().NVNGX_Engine, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
+                                                            _d3d12Device, &fcInfo, State::Instance().NVNGX_Version);
 
         if (nvResult != NVSDK_NGX_Result_Success)
             return Fsr212::FFX_ERROR_BACKEND_API_ERROR;
@@ -504,7 +504,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Pattern_Dx12(Fsr212::FfxFsr2Con
 static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2DispatchDescription* dispatchDescription)
 {
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr2Inputs.value_or(true))
+    if (!Config::Instance()->Fsr2Inputs.value_or_default())
     {
         _skipDispatch = true;
         auto result = o_ffxFsr2ContextDispatch_Dx12(context, dispatchDescription);
@@ -549,7 +549,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Dx12(Fsr212::FfxFsr2Context* 
 
     LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width, dispatchDescription->renderSize.height);
 
-    Config::Instance()->setInputApiName = "FSR2.X-DX12";
+    State::Instance().setInputApiName = "FSR2.X-DX12";
 
     auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDescription->commandList, handle, params, nullptr);
 
@@ -563,7 +563,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Dx12(Fsr212::FfxFsr2Context* 
 static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2DispatchDescription* dispatchDescription)
 {
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr2Inputs.value_or(true) || _skipDispatch)
+    if (!Config::Instance()->Fsr2Inputs.value_or_default() || _skipDispatch)
         return o_ffxFsr2ContextDispatch_Pattern_Dx12(context, dispatchDescription);
 
     if (dispatchDescription == nullptr || context == nullptr || dispatchDescription->commandList == nullptr)
@@ -603,7 +603,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2C
 
     LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width, dispatchDescription->renderSize.height);
 
-    Config::Instance()->setInputApiName = "FSR2.X-DX12";
+    State::Instance().setInputApiName = "FSR2.X-DX12";
 
     auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDescription->commandList, handle, params, nullptr);
 
@@ -618,7 +618,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2C
 static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const FfxFsr20DispatchDescription* dispatchDescription)
 {
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr2Inputs.value_or(true))
+    if (!Config::Instance()->Fsr2Inputs.value_or_default())
     {
         _skipDispatch = true;
         auto result = o_ffxFsr20ContextDispatch_Dx12(context, dispatchDescription);
@@ -663,7 +663,7 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context*
 
     LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width, dispatchDescription->renderSize.height);
 
-    Config::Instance()->setInputApiName = "FSR2.0-DX12";
+    State::Instance().setInputApiName = "FSR2.0-DX12";
 
     auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDescription->commandList, handle, params, nullptr);
 
@@ -678,7 +678,7 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context*
 static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2Context* context, const FfxFsr20DispatchDescription* dispatchDescription)
 {
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr2Inputs.value_or(true) || _skipDispatch)
+    if (!Config::Instance()->Fsr2Inputs.value_or_default() || _skipDispatch)
         return o_ffxFsr20ContextDispatch_Pattern_Dx12(context, dispatchDescription);
 
     if (dispatchDescription == nullptr || context == nullptr || dispatchDescription->commandList == nullptr)
@@ -718,7 +718,7 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2
 
     LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width, dispatchDescription->renderSize.height);
 
-    Config::Instance()->setInputApiName = "FSR2.0-DX12";
+    State::Instance().setInputApiName = "FSR2.0-DX12";
 
     auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDescription->commandList, handle, params, nullptr);
 
@@ -733,7 +733,7 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2
 static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const FfxFsr2TinyDispatchDescription* dispatchDescription)
 {
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr2Inputs.value_or(true))
+    if (!Config::Instance()->Fsr2Inputs.value_or_default())
         return o_ffxFsr2TinyContextDispatch_Dx12(context, dispatchDescription);
 
     if (dispatchDescription == nullptr || context == nullptr || dispatchDescription->commandList == nullptr)
@@ -773,7 +773,7 @@ static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Conte
 
     LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width, dispatchDescription->renderSize.height);
 
-    Config::Instance()->setInputApiName = "FSR2.TT-DX12";
+    State::Instance().setInputApiName = "FSR2.TT-DX12";
 
     auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDescription->commandList, handle, params, nullptr);
 
@@ -916,7 +916,7 @@ void HookFSR2ExeInputs()
     //    o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetInterfaceDX12@@YAHPEAUFfxFsr2Interface@@PEAUID3D12Device@@PEAX_K@Z");
 
     // Pattern matching
-    if(Config::Instance()->Fsr2Pattern.value_or(false))
+    if(Config::Instance()->Fsr2Pattern.value_or_default())
     {
         LOG_DEBUG("Checking createPattern");
         std::wstring_view exeNameV(exeNameW.c_str());
@@ -1017,7 +1017,7 @@ void HookFSR2ExeInputs()
     //if (o_ffxFsr2GetInterfaceDX12 != nullptr)
     //    DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
 
-    Config::Instance()->fsrHooks = true;
+    State::Instance().fsrHooks = true;
 
     DetourTransactionCommit();
 
@@ -1081,7 +1081,7 @@ void HookFSR2Inputs(HMODULE module)
     if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 != nullptr)
         DetourAttach(&(PVOID&)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12, ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
 
-    Config::Instance()->fsrHooks = true;
+    State::Instance().fsrHooks = true;
 
     DetourTransactionCommit();
 

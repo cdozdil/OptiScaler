@@ -1,4 +1,3 @@
-#pragma once
 #include "XeSSFeature.h"
 
 #include "../../pch.h"
@@ -33,7 +32,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         return false;
     }
 
-    Config::Instance()->skipSpoofing = true;
+    State::Instance().skipSpoofing = true;
 
     auto ret = XeSSProxy::D3D12CreateContext()(device, &_xessContext);
 
@@ -109,7 +108,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         LOG_DEBUG("xessParams.initFlags (LowResMV) {0:b}", xessParams.initFlags);
     }
 
-    if (!Config::Instance()->DisableReactiveMask.value_or(true))
+    if (!Config::Instance()->DisableReactiveMask.value_or_default())
     {
         Config::Instance()->DisableReactiveMask = false;
         xessParams.initFlags |= XESS_INIT_FLAG_RESPONSIVE_PIXEL_MASK;
@@ -171,9 +170,9 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
             break;
     }
 
-    if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+    if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false))
     {
-        float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
+        float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or_default();
 
         if (ssMulti < 0.5f)
         {
@@ -195,7 +194,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         _targetHeight = DisplayHeight();
     }
 
-    if (Config::Instance()->ExtendedLimits.value_or(false) && RenderWidth() > DisplayWidth())
+    if (Config::Instance()->ExtendedLimits.value_or_default() && RenderWidth() > DisplayWidth())
     {
         _targetWidth = RenderWidth();
         _targetHeight = RenderHeight();
@@ -221,9 +220,9 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         if (ret == XESS_RESULT_SUCCESS)
         {
             CD3DX12_HEAP_DESC bufferHeapDesc(xessProps.tempBufferHeapSize, D3D12_HEAP_TYPE_DEFAULT);
-            Config::Instance()->SkipHeapCapture = true;
+            State::Instance().skipHeapCapture = true;
             hr = device->CreateHeap(&bufferHeapDesc, IID_PPV_ARGS(&_localBufferHeap));
-            Config::Instance()->SkipHeapCapture = false;
+            State::Instance().skipHeapCapture = false;
 
             if (SUCCEEDED(hr))
             {
@@ -231,9 +230,9 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
                     {D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_MEMORY_POOL_UNKNOWN, 0, 0},
                     0, D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES };
 
-                Config::Instance()->SkipHeapCapture = true;
+                State::Instance().skipHeapCapture = true;
                 hr = device->CreateHeap(&textureHeapDesc, IID_PPV_ARGS(&_localTextureHeap));
-                Config::Instance()->SkipHeapCapture = false;
+                State::Instance().skipHeapCapture = false;
 
                 if (SUCCEEDED(hr))
                 {
@@ -265,10 +264,10 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     }
 
     // try to build pipelines with local pipeline object
-    if (Config::Instance()->BuildPipelines.value_or(true))
+    if (Config::Instance()->BuildPipelines.value_or_default())
     {
         LOG_DEBUG("xessD3D12BuildPipelines!");
-        Config::Instance()->SkipHeapCapture = true;
+        State::Instance().skipHeapCapture = true;
 
         ID3D12Device1* device1;
         if (FAILED(device->QueryInterface(IID_PPV_ARGS(&device1))))
@@ -305,7 +304,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         if (device1 != nullptr)
             device1->Release();
 
-        Config::Instance()->SkipHeapCapture = false;
+        State::Instance().skipHeapCapture = false;
 
         if (ret != XESS_RESULT_SUCCESS)
         {
@@ -322,11 +321,11 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         LOG_ERROR("xessSelectNetworkModel result: {0}", ResultToString(ret));
     }
 
-    Config::Instance()->SkipHeapCapture = true;
+    State::Instance().skipHeapCapture = true;
     ret = XeSSProxy::D3D12Init()(_xessContext, &xessParams);
-    Config::Instance()->SkipHeapCapture = false;
+    State::Instance().skipHeapCapture = false;
 
-    Config::Instance()->skipSpoofing = false;
+    State::Instance().skipSpoofing = false;
 
     if (ret != XESS_RESULT_SUCCESS)
     {

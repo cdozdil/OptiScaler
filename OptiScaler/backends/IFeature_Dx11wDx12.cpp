@@ -318,8 +318,8 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
 {
     LOG_FUNC();
 
-    Config::Instance()->VulkanSkipHooks = true;
-    Config::Instance()->skipSpoofing = true;
+    State::Instance().vulkanSkipHooks = true;
+    State::Instance().skipSpoofing = true;
 
     HRESULT result;
 
@@ -331,8 +331,8 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         if (result != S_OK)
         {
             LOG_ERROR("Can't create factory: {0:x}", result);
-            Config::Instance()->VulkanSkipHooks = false;
-            Config::Instance()->skipSpoofing = false;
+            State::Instance().vulkanSkipHooks = false;
+            State::Instance().skipSpoofing = false;
             return result;
         }
 
@@ -342,8 +342,8 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         if (hardwareAdapter == nullptr)
         {
             LOG_ERROR("Can't get hardwareAdapter!");
-            Config::Instance()->VulkanSkipHooks = false;
-            Config::Instance()->skipSpoofing = false;
+            State::Instance().vulkanSkipHooks = false;
+            State::Instance().skipSpoofing = false;
             return E_NOINTERFACE;
         }
 
@@ -352,8 +352,8 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         if (result != S_OK)
         {
             LOG_ERROR("Can't create device: {0:x}", result);
-            Config::Instance()->VulkanSkipHooks = false;
-            Config::Instance()->skipSpoofing = false;
+            State::Instance().vulkanSkipHooks = false;
+            State::Instance().skipSpoofing = false;
             return result;
         }
     }
@@ -370,8 +370,8 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         if (result != S_OK || Dx12CommandQueue == nullptr)
         {
             LOG_DEBUG("CreateCommandQueue result: {0:x}", result);
-            Config::Instance()->VulkanSkipHooks = false;
-            Config::Instance()->skipSpoofing = false;
+            State::Instance().vulkanSkipHooks = false;
+            State::Instance().skipSpoofing = false;
             return E_NOINTERFACE;
         }
     }
@@ -383,8 +383,8 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         if (result != S_OK)
         {
             LOG_ERROR("CreateCommandAllocator error: {0:x}", result);
-            Config::Instance()->VulkanSkipHooks = false;
-            Config::Instance()->skipSpoofing = false;
+            State::Instance().vulkanSkipHooks = false;
+            State::Instance().skipSpoofing = false;
             return E_NOINTERFACE;
         }
     }
@@ -397,14 +397,14 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         if (result != S_OK)
         {
             LOG_ERROR("CreateCommandList error: {0:x}", result);
-            Config::Instance()->VulkanSkipHooks = false;
-            Config::Instance()->skipSpoofing = false;
+            State::Instance().vulkanSkipHooks = false;
+            State::Instance().skipSpoofing = false;
             return E_NOINTERFACE;
         }
     }
 
-    Config::Instance()->VulkanSkipHooks = false;
-    Config::Instance()->skipSpoofing = false;
+    State::Instance().vulkanSkipHooks = false;
+    State::Instance().skipSpoofing = false;
     return S_OK;
 }
 
@@ -413,7 +413,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
     HRESULT result;
 
     // Query only
-    if (Config::Instance()->TextureSyncMethod.value_or(1) == 5 || _frameCount < 200)
+    if (Config::Instance()->TextureSyncMethod.value_or_default() == 5 || _frameCount < 200)
     {
         if (queryTextureCopy == nullptr)
         {
@@ -443,7 +443,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
     if (paramColor)
     {
         LOG_DEBUG("Color exist..");
-        if (CopyTextureFrom11To12(paramColor, &dx11Color, true, Config::Instance()->DontUseNTShared.value_or(false)) == NULL)
+        if (CopyTextureFrom11To12(paramColor, &dx11Color, true, Config::Instance()->DontUseNTShared.value_or_default()) == NULL)
             return false;
     }
     else
@@ -459,7 +459,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
     if (paramMv)
     {
         LOG_DEBUG("MotionVectors exist..");
-        if (CopyTextureFrom11To12(paramMv, &dx11Mv, true, Config::Instance()->DontUseNTShared.value_or(false)) == false)
+        if (CopyTextureFrom11To12(paramMv, &dx11Mv, true, Config::Instance()->DontUseNTShared.value_or_default()) == false)
             return false;
     }
     else
@@ -506,14 +506,14 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         {
             LOG_DEBUG("ExposureTexture exist..");
 
-            if (CopyTextureFrom11To12(paramExposure, &dx11Exp, true, Config::Instance()->DontUseNTShared.value_or(false)) == false)
+            if (CopyTextureFrom11To12(paramExposure, &dx11Exp, true, Config::Instance()->DontUseNTShared.value_or_default()) == false)
                 return false;
         }
         else
         {
             LOG_WARN("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
             Config::Instance()->AutoExposure = true;
-            Config::Instance()->changeBackend = true;
+            State::Instance().changeBackend = true;
         }
     }
     else
@@ -530,15 +530,15 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
             Config::Instance()->DisableReactiveMask = false;
             LOG_DEBUG("Input Bias mask exist..");
 
-            if (CopyTextureFrom11To12(paramReactiveMask, &dx11Reactive, true, Config::Instance()->DontUseNTShared.value_or(false)) == false)
+            if (CopyTextureFrom11To12(paramReactiveMask, &dx11Reactive, true, Config::Instance()->DontUseNTShared.value_or_default()) == false)
                 return false;
         }
         // This is only needed for XeSS
-        else if (Config::Instance()->Dx11Upscaler.value_or("fsr22") == "xess")
+        else if (Config::Instance()->Dx11Upscaler.value_or_default() == "xess")
         {
             LOG_WARN("bias mask not exist and it's enabled in config, it may cause problems!!");
             Config::Instance()->DisableReactiveMask = true;
-            Config::Instance()->changeBackend = true;
+            State::Instance().changeBackend = true;
         }
     }
     else
@@ -547,7 +547,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 #pragma endregion
 
     // query sync
-    if (Config::Instance()->TextureSyncMethod.value_or(1) == 5 || _frameCount < 200)
+    if (Config::Instance()->TextureSyncMethod.value_or_default() == 5 || _frameCount < 200)
     {
         LOG_DEBUG("Queries!");
         DeviceContext->End(queryTextureCopy);
@@ -590,7 +590,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         }
 
         // Fence
-        if (Config::Instance()->TextureSyncMethod.value_or(1) > 0)
+        if (Config::Instance()->TextureSyncMethod.value_or_default() > 0)
         {
             LOG_DEBUG("Dx11 Signal & Dx12 Wait!");
 
@@ -604,14 +604,14 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         }
 
         // Flush
-        if (Config::Instance()->TextureSyncMethod.value_or(1) > 2)
+        if (Config::Instance()->TextureSyncMethod.value_or_default() > 2)
         {
             LOG_DEBUG("Dx11DeviceContext->Flush()!");
             Dx11DeviceContext->Flush();
         }
 
         // Gpu Sync
-        if (Config::Instance()->TextureSyncMethod.value_or(1) == 1 || Config::Instance()->TextureSyncMethod.value_or(1) == 3)
+        if (Config::Instance()->TextureSyncMethod.value_or_default() == 1 || Config::Instance()->TextureSyncMethod.value_or_default() == 3)
         {
             result = Dx12CommandQueue->Wait(dx12FenceTextureCopy, 10);
 
@@ -622,7 +622,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
             }
         }
         // Event Sync
-        else if (Config::Instance()->TextureSyncMethod.value_or(1) != 0)
+        else if (Config::Instance()->TextureSyncMethod.value_or_default() != 0)
         {
             // wait for end of operation
             if (dx12FenceTextureCopy->GetCompletedValue() < 10)
@@ -756,14 +756,14 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
     HRESULT result;
 
     // No sync
-    if (Config::Instance()->CopyBackSyncMethod.value_or(5) == 0 && _frameCount >= 200)
+    if (Config::Instance()->CopyBackSyncMethod.value_or_default() == 0 && _frameCount >= 200)
     {
         Dx11DeviceContext->CopyResource(paramOutput[_frameCount % 2], dx11Out.SharedTexture);
         return true;
     }
 
     //Fence ones
-    if (Config::Instance()->CopyBackSyncMethod.value_or(5) != 5 && _frameCount >= 200)
+    if (Config::Instance()->CopyBackSyncMethod.value_or_default() != 5 && _frameCount >= 200)
     {
         if (dx12FenceCopySync == nullptr)
         {
@@ -797,7 +797,7 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
 
         Dx12CommandQueue->Signal(dx12FenceCopySync, 20);
 
-        if (Config::Instance()->CopyBackSyncMethod.value_or(5) == 1 || Config::Instance()->CopyBackSyncMethod.value_or(5) == 3)
+        if (Config::Instance()->CopyBackSyncMethod.value_or_default() == 1 || Config::Instance()->CopyBackSyncMethod.value_or_default() == 3)
         {
             // wait for fsr on dx12
             Dx11DeviceContext->Wait(dx11FenceCopySync, 20);
@@ -867,10 +867,10 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
         }
 
         // fence + flush
-        if (Config::Instance()->CopyBackSyncMethod.value_or(5) > 2)
+        if (Config::Instance()->CopyBackSyncMethod.value_or_default() > 2)
             Dx11DeviceContext->Flush();
 
-        if (Config::Instance()->CopyBackSyncMethod.value_or(5) == 1 || Config::Instance()->CopyBackSyncMethod.value_or(5) == 3)
+        if (Config::Instance()->CopyBackSyncMethod.value_or_default() == 1 || Config::Instance()->CopyBackSyncMethod.value_or_default() == 3)
         {
             result = Dx12CommandQueue->Wait(dx12FenceCopyOutput, 30);
 

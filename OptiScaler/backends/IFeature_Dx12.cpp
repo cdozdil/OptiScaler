@@ -1,4 +1,3 @@
-#pragma once
 #include "IFeature_Dx12.h"
 #include "../pch.h"
 
@@ -51,7 +50,7 @@ IFeature_Dx12::~IFeature_Dx12()
 		}
 	}
 
-	if (!Config::Instance()->IsShuttingDown)
+	if (!State::Instance().isShuttingDown)
 	{
 		LOG_DEBUG("");
 

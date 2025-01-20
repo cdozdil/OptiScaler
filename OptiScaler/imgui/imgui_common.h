@@ -115,9 +115,9 @@ private:
 
     static std::string GetBackendName(std::string* code);
 
-    static std::string GetBackendCode(const NVNGX_Api api);
+    static std::string GetBackendCode(const API api);
 
-    static void GetCurrentBackendInfo(const NVNGX_Api api, std::string* code, std::string* name);
+    static void GetCurrentBackendInfo(const API api, std::string* code, std::string* name);
 
     static void AddDx11Backends(std::string* code, std::string* name);
 

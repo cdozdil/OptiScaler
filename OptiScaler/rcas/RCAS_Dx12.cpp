@@ -212,14 +212,14 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
 	InternalConstants constants{};
 	constants.DisplayHeight = InConstants.DisplayHeight;
 	constants.DisplayWidth = InConstants.DisplayWidth;
-	constants.DynamicSharpenEnabled = Config::Instance()->MotionSharpnessEnabled.value_or(false) ? 1 : 0;
-	constants.MotionSharpness = Config::Instance()->MotionSharpness.value_or(0.4f);
+	constants.DynamicSharpenEnabled = Config::Instance()->MotionSharpnessEnabled.value_or_default() ? 1 : 0;
+	constants.MotionSharpness = Config::Instance()->MotionSharpness.value_or_default();
 	constants.MvScaleX = InConstants.MvScaleX;
 	constants.MvScaleY = InConstants.MvScaleY;
 	constants.Sharpness = InConstants.Sharpness;
-	constants.Debug = Config::Instance()->MotionSharpnessDebug.value_or(false) ? 1 : 0;
-	constants.Threshold = Config::Instance()->MotionThreshold.value_or(0.0f);
-	constants.ScaleLimit = Config::Instance()->MotionScaleLimit.value_or(10.0f);
+	constants.Debug = Config::Instance()->MotionSharpnessDebug.value_or_default() ? 1 : 0;
+	constants.Threshold = Config::Instance()->MotionThreshold.value_or_default();
+	constants.ScaleLimit = Config::Instance()->MotionScaleLimit.value_or_default();
 	constants.DisplaySizeMV = InConstants.DisplaySizeMV ? 1 : 0;
 
 	if (InConstants.RenderWidth == 0 || InConstants.DisplayWidth == 0)
@@ -394,7 +394,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 		return;
 	}
 
-	if (Config::Instance()->UsePrecompiledShaders.value_or(true))
+	if (Config::Instance()->UsePrecompiledShaders.value_or_default())
 	{
 		D3D12_COMPUTE_PIPELINE_STATE_DESC computePsoDesc = {};
 		computePsoDesc.pRootSignature = _rootSignature;
@@ -438,7 +438,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
-	Config::Instance()->SkipHeapCapture = true;
+	State::Instance().skipHeapCapture = true;
 
 	auto hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[0]));
 
@@ -466,7 +466,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 	hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[3]));
 
-	Config::Instance()->SkipHeapCapture = false;
+	State::Instance().skipHeapCapture = false;
 
 	if (FAILED(hr))
 	{
@@ -479,7 +479,7 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
 
 RCAS_Dx12::~RCAS_Dx12()
 {
-	if (!_init || Config::Instance()->IsShuttingDown)
+	if (!_init || State::Instance().isShuttingDown)
 		return;
 
 	//ID3D12Fence* d3d12Fence = nullptr;

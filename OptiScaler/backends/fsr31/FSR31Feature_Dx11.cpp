@@ -1,4 +1,3 @@
-#pragma once
 #include "../../pch.h"
 #include "../../Config.h"
 #include "../../Util.h"
@@ -34,7 +33,7 @@ bool FSR31FeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
 
     if (InitFSR3(InParameters))
     {
-        if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
+        if (!Config::Instance()->OverlayMenu.value_or_default() && (Imgui == nullptr || Imgui.get() == nullptr))
             Imgui = std::make_unique<Imgui_Dx11>(Util::GetProcessWindow(), Device);
 
         OutputScaler = std::make_unique<OS_Dx11>("Output Scaling", InDevice, (TargetWidth() < DisplayWidth()));
@@ -174,19 +173,19 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
     Fsr31::FfxFsr3DispatchUpscaleDescription params{};
 
-    if (Config::Instance()->FsrDebugView.value_or(false))
+    if (Config::Instance()->FsrDebugView.value_or_default())
         params.flags = Fsr31::FFX_FSR3_UPSCALER_FLAG_DRAW_DEBUG_VIEW;
 
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffset.y);
 
 
-    if (Config::Instance()->OverrideSharpness.value_or(false))
-        _sharpness = Config::Instance()->Sharpness.value_or(0.3);
+    if (Config::Instance()->OverrideSharpness.value_or_default())
+        _sharpness = Config::Instance()->Sharpness.value_or_default();
     else
         _sharpness = GetSharpness(InParameters);
 
-    if (Config::Instance()->RcasEnabled.value_or(false))
+    if (Config::Instance()->RcasEnabled.value_or_default())
     {
         params.enableSharpening = false;
         params.sharpness = 0.0f;
@@ -208,7 +207,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
     GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
-    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
+    bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false);
 
     LOG_DEBUG("Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
@@ -259,7 +258,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
             {
                 LOG_WARN("MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
                 Config::Instance()->DisplayResolution = false;
-                Config::Instance()->changeBackend = true;
+                State::Instance().changeBackend = true;
                 return true;
             }
 
@@ -292,8 +291,8 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         else
             params.upscaleOutput = ffxGetResource(paramOutput, L"FSR3_Output", Fsr31::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 
-        if (Config::Instance()->RcasEnabled.value_or(false) &&
-            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+        if (Config::Instance()->RcasEnabled.value_or_default() &&
+            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or_default() && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
             RCAS->IsInit() && RCAS->CreateBufferResource(Device, (ID3D11Texture2D*)params.upscaleOutput.resource))
         {
             params.upscaleOutput = ffxGetResource(RCAS->Buffer(), L"FSR3_Output", Fsr31::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -338,7 +337,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         {
             LOG_DEBUG("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
             Config::Instance()->AutoExposure = true;
-            Config::Instance()->changeBackend = true;
+            State::Instance().changeBackend = true;
             return true;
         }
     }
@@ -359,13 +358,13 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
             LOG_DEBUG("Input Bias mask exist..");
             Config::Instance()->DisableReactiveMask = false;
 
-            if (Config::Instance()->FsrUseMaskForTransparency.value_or(true))
+            if (Config::Instance()->FsrUseMaskForTransparency.value_or_default())
                 params.transparencyAndComposition = ffxGetResource(paramReactiveMask, L"FSR3_TransparencyAndCompositionMap", Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
 
-            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.45f) > 0.0f &&
+            if (Config::Instance()->DlssReactiveMaskBias.value_or_default() > 0.0f &&
                 Bias->IsInit() && Bias->CreateBufferResource(Device, paramReactiveMask) && Bias->CanRender())
             {
-                if (Bias->Dispatch(Device, DeviceContext, (ID3D11Texture2D*)paramReactiveMask, Config::Instance()->DlssReactiveMaskBias.value_or(0.45f), Bias->Buffer()))
+                if (Bias->Dispatch(Device, DeviceContext, (ID3D11Texture2D*)paramReactiveMask, Config::Instance()->DlssReactiveMaskBias.value_or_default(), Bias->Buffer()))
                 {
                     params.reactive = ffxGetResource(Bias->Buffer(), L"FSR3_InputReactiveMap", Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
                 }
@@ -373,7 +372,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
             else
             {
                 LOG_DEBUG("Skipping reactive mask, Bias: {0}, Bias Init: {1}, Bias CanRender: {2}",
-                          Config::Instance()->DlssReactiveMaskBias.value_or(0.45f), Bias->IsInit(), Bias->CanRender());
+                          Config::Instance()->DlssReactiveMaskBias.value_or_default(), Bias->IsInit(), Bias->CanRender());
             }
         }
     }
@@ -407,13 +406,13 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
     if (IsDepthInverted())
     {
-        params.cameraFar = Config::Instance()->FsrCameraNear.value_or(0.1f);
-        params.cameraNear = Config::Instance()->FsrCameraFar.value_or(100000.0f);
+        params.cameraFar = Config::Instance()->FsrCameraNear.value_or_default();
+        params.cameraNear = Config::Instance()->FsrCameraFar.value_or_default();
     }
     else
     {
-        params.cameraFar = Config::Instance()->FsrCameraFar.value_or(100000.0f);
-        params.cameraNear = Config::Instance()->FsrCameraNear.value_or(0.1f);
+        params.cameraFar = Config::Instance()->FsrCameraFar.value_or_default();
+        params.cameraNear = Config::Instance()->FsrCameraNear.value_or_default();
     }
 
     if (Config::Instance()->FsrVerticalFov.has_value())
@@ -437,9 +436,9 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     params.upscaleSize.width = TargetWidth();
     params.upscaleSize.height = TargetHeight();
 
-    if (Version().major >= 1 && Version().minor >= 1 && Version().patch >= 1 && _velocity != Config::Instance()->FsrVelocity.value_or(1.0f))
+    if (Version().major >= 1 && Version().minor >= 1 && Version().patch >= 1 && _velocity != Config::Instance()->FsrVelocity.value_or_default())
     {
-        _velocity = Config::Instance()->FsrVelocity.value_or(1.0f);
+        _velocity = Config::Instance()->FsrVelocity.value_or_default();
         auto result = ffxFsr3SetUpscalerConstant(&_upscalerContext, Fsr31::FfxFsr3UpscalerConfigureKey::FFX_FSR3UPSCALER_CONFIGURE_UPSCALE_KEY_FVELOCITYFACTOR, &_velocity);
 
         if (result != Fsr31::FFX_OK)
@@ -456,8 +455,8 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     }
 
     // apply rcas
-    if (Config::Instance()->RcasEnabled.value_or(false) &&
-        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+    if (Config::Instance()->RcasEnabled.value_or_default() &&
+        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or_default() && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
         RCAS != nullptr && RCAS.get() != nullptr && RCAS->CanRender())
     {
         RcasConstants rcasConstants{};
@@ -498,13 +497,13 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         if (!OutputScaler->Dispatch(Device, DeviceContext, OutputScaler->Buffer(), (ID3D11Texture2D*)paramOutput))
         {
             Config::Instance()->OutputScalingEnabled = false;
-            Config::Instance()->changeBackend = true;
+            State::Instance().changeBackend = true;
             return true;
         }
     }
 
     // imgui
-    if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30)
+    if (!Config::Instance()->OverlayMenu.value_or_default() && _frameCount > 30)
     {
         if (Imgui != nullptr && Imgui.get() != nullptr)
         {
@@ -589,13 +588,13 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         LOG_INFO("If FSR3.1 doesn't work, try enabling the OptiScaler Direct3D hooks by setting OverlayMenu=true.");
     }
 
-    Config::Instance()->skipSpoofing = true;
+    State::Instance().skipSpoofing = true;
     uint64_t versionCount = 0;
-    Config::Instance()->fsr3xVersionIds.resize(versionCount);
-    Config::Instance()->fsr3xVersionNames.resize(versionCount);
-    Config::Instance()->fsr3xVersionIds.push_back(1);
+    State::Instance().fsr3xVersionIds.resize(versionCount);
+    State::Instance().fsr3xVersionNames.resize(versionCount);
+    State::Instance().fsr3xVersionIds.push_back(1);
     auto version_number = "3.1.2";
-    Config::Instance()->fsr3xVersionNames.push_back(version_number);
+    State::Instance().fsr3xVersionNames.push_back(version_number);
 
 
     const size_t scratchBufferSize = Fsr31::ffxGetScratchMemorySizeDX11(1);
@@ -679,9 +678,9 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         LOG_INFO("contextDesc.initFlags (LowResMV) {0:b}", _upscalerContextDesc.flags);
     }
 
-    if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+    if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false))
     {
-        float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
+        float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or_default();
 
         if (ssMulti < 0.5f)
         {
@@ -704,7 +703,7 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     }
 
     // extended limits changes how resolution 
-    if (Config::Instance()->ExtendedLimits.value_or(false) && RenderWidth() > DisplayWidth())
+    if (Config::Instance()->ExtendedLimits.value_or_default() && RenderWidth() > DisplayWidth())
     {
         _upscalerContextDesc.maxRenderSize.width = RenderWidth();
         _upscalerContextDesc.maxRenderSize.height = RenderHeight();
@@ -712,7 +711,7 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         Config::Instance()->OutputScalingMultiplier = 1.0f;
 
         // if output scaling active let it to handle downsampling
-        if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
+        if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false))
         {
             _upscalerContextDesc.maxUpscaleSize.width = _upscalerContextDesc.maxRenderSize.width;
             _upscalerContextDesc.maxUpscaleSize.height = _upscalerContextDesc.maxRenderSize.height;
@@ -735,7 +734,7 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         _upscalerContextDesc.maxUpscaleSize.height = TargetHeight();
     }
 
-    if (Config::Instance()->Fsr3xIndex.value_or(0) < 0 || Config::Instance()->Fsr3xIndex.value_or(0) >= Config::Instance()->fsr3xVersionIds.size())
+    if (Config::Instance()->Fsr3xIndex.value_or_default() < 0 || Config::Instance()->Fsr3xIndex.value_or_default() >= State::Instance().fsr3xVersionIds.size())
         Config::Instance()->Fsr3xIndex = 0;
 
     LOG_DEBUG("_createContext!");
@@ -749,11 +748,11 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
 
     LOG_INFO("_createContext success!");
 
-    auto version = Config::Instance()->fsr3xVersionNames[Config::Instance()->Fsr3xIndex.value_or(0)];
+    auto version = State::Instance().fsr3xVersionNames[Config::Instance()->Fsr3xIndex.value_or_default()];
     _name = std::format("FSR {}", version);
     parse_version(version);
 
-    Config::Instance()->skipSpoofing = false;
+    State::Instance().skipSpoofing = false;
 
     SetInit(true);
 

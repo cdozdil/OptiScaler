@@ -42,7 +42,7 @@ bool ImGuiOverlayBase::IsVisible()
 
 void ImGuiOverlayBase::Init(HWND InHandle)
 {
-	if (!Config::Instance()->OverlayMenu.value_or(true))
+	if (!Config::Instance()->OverlayMenu.value_or_default())
 		return;
 
 	LOG_FUNC();
@@ -51,7 +51,7 @@ void ImGuiOverlayBase::Init(HWND InHandle)
 
 bool ImGuiOverlayBase::RenderMenu()
 {
-	if (!Config::Instance()->OverlayMenu.value_or(true))
+	if (!Config::Instance()->OverlayMenu.value_or_default())
 		return false;
 
 	return ImGuiCommon::RenderMenu();
