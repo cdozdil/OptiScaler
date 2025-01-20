@@ -83,8 +83,8 @@ jobs:
         Write-Output "Generated Filename: $outputFileName"
         
         # Write outputs to GITHUB_OUTPUT
-        "version=$version" >> $GITHUB_OUTPUT
-        "filename=$outputFileName" >> $GITHUB_OUTPUT
+        "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        "filename=$outputFileName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
         
       continue-on-error: false
       
