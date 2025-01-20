@@ -83,8 +83,8 @@ jobs:
         Write-Output "Generated Filename: $outputFileName"
         
         # Write outputs to GITHUB_OUTPUT
-        "version=$version" >> $GITHUB_OUTPUT
-        "filename=$outputFileName" >> $GITHUB_OUTPUT
+        "version=$version" >> "$GITHUB_OUTPUT"
+        "filename=$outputFileName" >> "$GITHUB_OUTPUT"
         
       continue-on-error: false
       
@@ -101,6 +101,8 @@ jobs:
       run: |
         $zipName = "${{ steps.get_version.outputs.filename }}.7z"
         7z a ${{ github.workspace }}\$zipName ${{ github.workspace }}\x64\Release\a\*.*
+
+      continue-on-error: false
         
     - uses: actions/upload-artifact@v4
       with:
