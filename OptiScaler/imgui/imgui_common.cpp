@@ -1396,13 +1396,18 @@ bool ImGuiCommon::RenderMenu()
                 if (Config::Instance()->DLSSGMod.value_or_default() && State::Instance().api != DX11 && !State::Instance().isWorkingAsNvngx) {
                     ImGui::SeparatorText("Frame Generation (DLSSG)");
 
-                    if (!ReflexHooks::dlssgDetected)
+                    if (!ReflexHooks::isReflexHooked()) {
+                        ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Reflex not hooked");
+                        ImGui::Text("If you are using an AMD/Intel GPU then make sure you have fakenvapi");
+                    }
+                    else if (!ReflexHooks::isDlssgDetected()) {
                         ImGui::Text("Please select DLSS Frame Generation in the game options\nYou might need to select DLSS first");
+                    }
 
                     if (State::Instance().api == DX12) {
-                        ImGui::Text("Current state:");
+                        ImGui::Text("Current DLSSG state:");
                         ImGui::SameLine();
-                        if (ReflexHooks::dlssgDetected)
+                        if (ReflexHooks::isDlssgDetected())
                             ImGui::TextColored(ImVec4(0.f, 1.f, 0.25f, 1.f), "ON");
                         else
                             ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "OFF");
