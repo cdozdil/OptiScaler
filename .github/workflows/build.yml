@@ -115,6 +115,7 @@ jobs:
         path: ${{ github.workspace }}\${{ steps.get_version.outputs.filename }}.7z
         compression-level: 0
         if-no-files-found: error
+        
     - name: Check Existing Release
       id: check_release
       uses: actions/github-script@v6
@@ -129,6 +130,7 @@ jobs:
             });
             core.setOutput("release_exists", true);
             core.setOutput("release_id", release.data.id);
+            core.setOutput("upload_url", release.data.upload_url);
           } catch (error) {
             if (error.status === 404) {
               core.setOutput("release_exists", false);
@@ -153,6 +155,7 @@ jobs:
             prerelease: true,
           });
           core.setOutput("release_id", release.data.id);
+          core.setOutput("upload_url", release.data.upload_url);
 
     - name: Remove Previous Artifacts
       if: steps.check_release.outputs.release_exists == 'true'
@@ -177,8 +180,10 @@ jobs:
 
     - name: Upload Artifact to Release
       uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ steps.check_release.outputs.release_exists == 'true' && steps.check_release.outputs.release_id || steps.create_release.outputs.release_id }}
+        upload_url: ${{ steps.check_release.outputs.release_exists == 'true' && steps.check_release.outputs.upload_url || steps.create_release.outputs.upload_url }}
         asset_path: ${{ github.workspace }}\${{ steps.get_version.outputs.filename }}.7z
         asset_name: ${{ steps.get_version.outputs.filename }}.7z
         asset_content_type: application/x-7z-compressed
