@@ -297,7 +297,7 @@ public:
 
         LOG_INFO("");
 
-        Config::Instance()->upscalerDisableHook = true;
+        State::Instance().upscalerDisableHook = true;
 
         do
         {
@@ -307,7 +307,7 @@ public:
 
             if (_dll)
             {
-                Config::Instance()->DE_Available = true;
+                State::Instance().enablerAvailable = true;
                 LOG_INFO("dlss-enabler-ngx.dll loaded from DLSS Enabler, ptr: {0:X}", (ULONG64)_dll);
                 break;
             }
@@ -405,7 +405,7 @@ public:
 
         if (_dll != nullptr)
         {
-            if (!Config::Instance()->DE_Available)
+            if (!State::Instance().enablerAvailable)
                 HookNgxApi(_dll);
 
             LOG_INFO("getting nvngx method addresses");
@@ -464,23 +464,23 @@ public:
             _UpdateFeature = (PFN_UpdateFeature)GetProcAddress(_dll, "NVSDK_NGX_UpdateFeature");
         }
 
-        Config::Instance()->upscalerDisableHook = false;
+        State::Instance().upscalerDisableHook = false;
     }
 
     static void GetFeatureCommonInfo(NVSDK_NGX_FeatureCommonInfo* fcInfo)
     {
         // Allocate memory for the array of const wchar_t*
-        wchar_t const** paths = new const wchar_t* [Config::Instance()->NVNGX_FeatureInfo_Paths.size()];
+        wchar_t const** paths = new const wchar_t* [State::Instance().NVNGX_FeatureInfo_Paths.size()];
 
         // Copy the strings from the vector to the array
-        for (size_t i = 0; i < Config::Instance()->NVNGX_FeatureInfo_Paths.size(); ++i)
+        for (size_t i = 0; i < State::Instance().NVNGX_FeatureInfo_Paths.size(); ++i)
         {
-            paths[i] = Config::Instance()->NVNGX_FeatureInfo_Paths[i].c_str();
-            LOG_DEBUG("paths[{0}]: {1}", i, wstring_to_string(Config::Instance()->NVNGX_FeatureInfo_Paths[i]));
+            paths[i] = State::Instance().NVNGX_FeatureInfo_Paths[i].c_str();
+            LOG_DEBUG("paths[{0}]: {1}", i, wstring_to_string(State::Instance().NVNGX_FeatureInfo_Paths[i]));
         }
 
         fcInfo->PathListInfo.Path = paths;
-        fcInfo->PathListInfo.Length = static_cast<unsigned int>(Config::Instance()->NVNGX_FeatureInfo_Paths.size());
+        fcInfo->PathListInfo.Length = static_cast<unsigned int>(State::Instance().NVNGX_FeatureInfo_Paths.size());
 
         // Config logging
         fcInfo->LoggingInfo.MinimumLoggingLevel = Config::Instance()->LogLevel < 2 ? NVSDK_NGX_LOGGING_LEVEL_VERBOSE : NVSDK_NGX_LOGGING_LEVEL_ON;
@@ -495,7 +495,7 @@ public:
 
     static bool IsNVNGXInited()
     {
-        return _dll != nullptr && (_dx11Inited || _dx12Inited || _vulkanInited) && Config::Instance()->DLSSEnabled.value_or(true);
+        return _dll != nullptr && (_dx11Inited || _dx12Inited || _vulkanInited) && Config::Instance()->DLSSEnabled.value_or_default();
     }
 
     // DirectX11
@@ -513,17 +513,17 @@ public:
         GetFeatureCommonInfo(&fcInfo);
         NVSDK_NGX_Result nvResult = NVSDK_NGX_Result_Fail;
 
-        if (Config::Instance()->NVNGX_ProjectId != "" && _D3D11_Init_ProjectID != nullptr)
+        if (State::Instance().NVNGX_ProjectId != "" && _D3D11_Init_ProjectID != nullptr)
         {
             LOG_DEBUG("_D3D11_Init_ProjectID!");
 
-            nvResult = _D3D11_Init_ProjectID(Config::Instance()->NVNGX_ProjectId.c_str(), Config::Instance()->NVNGX_Engine, Config::Instance()->NVNGX_EngineVersion.c_str(),
-                                             Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InDevice, Config::Instance()->NVNGX_Version, &fcInfo);
+            nvResult = _D3D11_Init_ProjectID(State::Instance().NVNGX_ProjectId.c_str(), State::Instance().NVNGX_Engine, State::Instance().NVNGX_EngineVersion.c_str(),
+                                             State::Instance().NVNGX_ApplicationDataPath.c_str(), InDevice, State::Instance().NVNGX_Version, &fcInfo);
         }
         else if (_D3D11_Init_Ext != nullptr)
         {
             LOG_DEBUG("_D3D11_Init_Ext!");
-            nvResult = _D3D11_Init_Ext(Config::Instance()->NVNGX_ApplicationId, Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InDevice, Config::Instance()->NVNGX_Version, &fcInfo);
+            nvResult = _D3D11_Init_Ext(State::Instance().NVNGX_ApplicationId, State::Instance().NVNGX_ApplicationDataPath.c_str(), InDevice, State::Instance().NVNGX_Version, &fcInfo);
         }
 
         LOG_DEBUG("result: {0:X}", (UINT)nvResult);
@@ -649,17 +649,17 @@ public:
         GetFeatureCommonInfo(&fcInfo);
         NVSDK_NGX_Result nvResult = NVSDK_NGX_Result_Fail;
 
-        if (Config::Instance()->NVNGX_ProjectId != "" && _D3D12_Init_ProjectID != nullptr)
+        if (State::Instance().NVNGX_ProjectId != "" && _D3D12_Init_ProjectID != nullptr)
         {
             LOG_INFO("_D3D12_Init_ProjectID!");
 
-            nvResult = _D3D12_Init_ProjectID(Config::Instance()->NVNGX_ProjectId.c_str(), Config::Instance()->NVNGX_Engine, Config::Instance()->NVNGX_EngineVersion.c_str(),
-                                             Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InDevice, Config::Instance()->NVNGX_Version, &fcInfo);
+            nvResult = _D3D12_Init_ProjectID(State::Instance().NVNGX_ProjectId.c_str(), State::Instance().NVNGX_Engine, State::Instance().NVNGX_EngineVersion.c_str(),
+                                             State::Instance().NVNGX_ApplicationDataPath.c_str(), InDevice, State::Instance().NVNGX_Version, &fcInfo);
         }
         else if (_D3D12_Init_Ext != nullptr)
         {
             LOG_INFO("_D3D12_Init_Ext!");
-            nvResult = _D3D12_Init_Ext(Config::Instance()->NVNGX_ApplicationId, Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InDevice, Config::Instance()->NVNGX_Version, &fcInfo);
+            nvResult = _D3D12_Init_Ext(State::Instance().NVNGX_ApplicationId, State::Instance().NVNGX_ApplicationDataPath.c_str(), InDevice, State::Instance().NVNGX_Version, &fcInfo);
         }
 
         LOG_INFO("result: {0:X}", (UINT)nvResult);
@@ -785,16 +785,16 @@ public:
         GetFeatureCommonInfo(&fcInfo);
         NVSDK_NGX_Result nvResult = NVSDK_NGX_Result_Fail;
 
-        if (Config::Instance()->NVNGX_ProjectId != "" && _VULKAN_Init_ProjectID != nullptr)
+        if (State::Instance().NVNGX_ProjectId != "" && _VULKAN_Init_ProjectID != nullptr)
         {
             LOG_DEBUG("_VULKAN_Init_ProjectID!");
-            nvResult = _VULKAN_Init_ProjectID(Config::Instance()->NVNGX_ProjectId.c_str(), Config::Instance()->NVNGX_Engine, Config::Instance()->NVNGX_EngineVersion.c_str(),
-                                              Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InInstance, InPD, InDevice, InGIPA, InGDPA, Config::Instance()->NVNGX_Version, &fcInfo);
+            nvResult = _VULKAN_Init_ProjectID(State::Instance().NVNGX_ProjectId.c_str(), State::Instance().NVNGX_Engine, State::Instance().NVNGX_EngineVersion.c_str(),
+                                              State::Instance().NVNGX_ApplicationDataPath.c_str(), InInstance, InPD, InDevice, InGIPA, InGDPA, State::Instance().NVNGX_Version, &fcInfo);
         }
         else if (_VULKAN_Init_Ext != nullptr)
         {
             LOG_DEBUG("_VULKAN_Init_Ext!");
-            nvResult = _VULKAN_Init_Ext(Config::Instance()->NVNGX_ApplicationId, Config::Instance()->NVNGX_ApplicationDataPath.c_str(), InInstance, InPD, InDevice, Config::Instance()->NVNGX_Version, &fcInfo);
+            nvResult = _VULKAN_Init_Ext(State::Instance().NVNGX_ApplicationId, State::Instance().NVNGX_ApplicationDataPath.c_str(), InInstance, InPD, InDevice, State::Instance().NVNGX_Version, &fcInfo);
         }
 
         LOG_DEBUG("result: {0:X}", (UINT)nvResult);

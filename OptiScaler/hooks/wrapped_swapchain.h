@@ -274,7 +274,7 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
 
     virtual HRESULT STDMETHODCALLTYPE SetColorSpace1(DXGI_COLOR_SPACE_TYPE ColorSpace)
     {
-        Config::Instance()->isHdrActive = ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 || ColorSpace == DXGI_COLOR_SPACE_YCBCR_FULL_GHLG_TOPLEFT_P2020 ||
+        State::Instance().isHdrActive = ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 || ColorSpace == DXGI_COLOR_SPACE_YCBCR_FULL_GHLG_TOPLEFT_P2020 ||
                                           ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P2020 || ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
                                                 
         return m_pReal3->SetColorSpace1(ColorSpace);

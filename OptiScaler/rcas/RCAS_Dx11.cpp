@@ -164,14 +164,14 @@ bool RCAS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext,
     InternalConstants constants{};
     constants.DisplayHeight = InConstants.DisplayHeight;
     constants.DisplayWidth = InConstants.DisplayWidth;
-    constants.DynamicSharpenEnabled = Config::Instance()->MotionSharpnessEnabled.value_or(false) ? 1 : 0;
-    constants.MotionSharpness = Config::Instance()->MotionSharpness.value_or(0.4f);
+    constants.DynamicSharpenEnabled = Config::Instance()->MotionSharpnessEnabled.value_or_default() ? 1 : 0;
+    constants.MotionSharpness = Config::Instance()->MotionSharpness.value_or_default();
     constants.MvScaleX = InConstants.MvScaleX;
     constants.MvScaleY = InConstants.MvScaleY;
     constants.Sharpness = InConstants.Sharpness;
-    constants.Debug = Config::Instance()->MotionSharpnessDebug.value_or(false) ? 1 : 0;
-    constants.Threshold = Config::Instance()->MotionThreshold.value_or(0.0f);
-    constants.ScaleLimit = Config::Instance()->MotionScaleLimit.value_or(10.0f);
+    constants.Debug = Config::Instance()->MotionSharpnessDebug.value_or_default() ? 1 : 0;
+    constants.Threshold = Config::Instance()->MotionThreshold.value_or_default();
+    constants.ScaleLimit = Config::Instance()->MotionScaleLimit.value_or_default();
     constants.DisplaySizeMV = InConstants.DisplaySizeMV ? 1 : 0;
 
     if (InConstants.RenderWidth == 0 || InConstants.DisplayWidth == 0)
@@ -224,7 +224,7 @@ RCAS_Dx11::RCAS_Dx11(std::string InName, ID3D11Device* InDevice) : _name(InName)
 
     LOG_DEBUG("{0} start!", _name);
 
-    if (Config::Instance()->UsePrecompiledShaders.value_or(true))
+    if (Config::Instance()->UsePrecompiledShaders.value_or_default())
     {
         auto hr = _device->CreateComputeShader(reinterpret_cast<const void*>(rcas_cso), sizeof(rcas_cso), nullptr, &_computeShader);
         if (FAILED(hr))
@@ -277,7 +277,7 @@ RCAS_Dx11::RCAS_Dx11(std::string InName, ID3D11Device* InDevice) : _name(InName)
 
 RCAS_Dx11::~RCAS_Dx11()
 {
-    if (!_init || Config::Instance()->IsShuttingDown)
+    if (!_init || State::Instance().isShuttingDown)
         return;
 
     if(_computeShader != nullptr)

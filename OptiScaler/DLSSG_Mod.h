@@ -41,7 +41,7 @@ public:
         if (dx12_inited)
             return;
 
-        if (Config::Instance()->DLSSGMod.value_or(false) && !Config::Instance()->DE_Available) {
+        if (Config::Instance()->DLSSGMod.value_or_default() && !State::Instance().enablerAvailable) {
             if (_dll == nullptr)
                 _dll = LoadLibraryW(L"dlssg_to_fsr3_amd_is_better.dll");
 
@@ -72,7 +72,7 @@ public:
         if (vulkan_inited)
             return;
 
-        if (Config::Instance()->DLSSGMod.value_or(false) && !Config::Instance()->DE_Available) {
+        if (Config::Instance()->DLSSGMod.value_or_default() && !State::Instance().enablerAvailable) {
             if (_dll == nullptr)
                 _dll = LoadLibraryW(L"dlssg_to_fsr3_amd_is_better.dll");
 

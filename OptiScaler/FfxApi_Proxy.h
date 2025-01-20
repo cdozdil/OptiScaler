@@ -45,7 +45,7 @@ public:
 
         spdlog::info("");
 
-        Config::Instance()->upscalerDisableHook = true;
+        State::Instance().upscalerDisableHook = true;
         //Config::Instance()->dxgiSkipSpoofing = true;
 
         LOG_DEBUG("Loading amd_fidelityfx_dx12.dll methods");
@@ -74,7 +74,7 @@ public:
             _D3D12_Query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxQuery");
         }
 
-        if (/*Config::Instance()->FfxInputs.value_or(true) && */_D3D12_CreateContext != nullptr)
+        if (/*Config::Instance()->FfxInputs.value_or_default() && */_D3D12_CreateContext != nullptr)
         {
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
@@ -94,12 +94,12 @@ public:
             if (_D3D12_Query != nullptr)
                 DetourAttach(&(PVOID&)_D3D12_Query, ffxQuery_Dx12);
 
-            Config::Instance()->fsrHooks = true;
+            State::Instance().fsrHooks = true;
 
             DetourTransactionCommit();
         }
 
-        Config::Instance()->upscalerDisableHook = false;
+        State::Instance().upscalerDisableHook = false;
 
         bool loadResult = _D3D12_CreateContext != nullptr;
 
@@ -170,7 +170,7 @@ public:
 
         spdlog::info("");
 
-        Config::Instance()->upscalerDisableHook = true;
+        State::Instance().upscalerDisableHook = true;
         //Config::Instance()->dxgiSkipSpoofing = true;
 
         LOG_DEBUG("Loading amd_fidelityfx_vk.dll methods");
@@ -200,7 +200,7 @@ public:
         }
 
         //Config::Instance()->dxgiSkipSpoofing = false;
-        Config::Instance()->upscalerDisableHook = false;
+        State::Instance().upscalerDisableHook = false;
 
         bool loadResult = _VULKAN_CreateContext != nullptr;
 

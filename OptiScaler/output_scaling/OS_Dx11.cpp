@@ -156,14 +156,14 @@ bool OS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, I
     InResource->GetDesc(&inDesc);
 
     // fsr upscaling
-    if (Config::Instance()->OutputScalingUseFsr.value_or(true))
+    if (Config::Instance()->OutputScalingUseFsr.value_or_default())
     {
         UpscaleShaderConstants constants{};
 
         FsrEasuCon(constants.const0, constants.const1, constants.const2, constants.const3,
-                   Config::Instance()->CurrentFeature->TargetWidth(), Config::Instance()->CurrentFeature->TargetHeight(),
+                   State::Instance().currentFeature->TargetWidth(), State::Instance().currentFeature->TargetHeight(),
                    inDesc.Width, inDesc.Height,
-                   Config::Instance()->CurrentFeature->DisplayWidth(), Config::Instance()->CurrentFeature->DisplayHeight());
+                   State::Instance().currentFeature->DisplayWidth(), State::Instance().currentFeature->DisplayHeight());
 
         // Copy the updated constant buffer data to the constant buffer resource
         D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -180,10 +180,10 @@ bool OS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, I
     else
     {
         Constants constants{};
-        constants.srcWidth = Config::Instance()->CurrentFeature->TargetWidth();
-        constants.srcHeight = Config::Instance()->CurrentFeature->TargetHeight();
-        constants.destWidth = Config::Instance()->CurrentFeature->DisplayWidth(); // static_cast<uint32_t>(outDesc.Width);
-        constants.destHeight = Config::Instance()->CurrentFeature->DisplayHeight(); // outDesc.Height;
+        constants.srcWidth = State::Instance().currentFeature->TargetWidth();
+        constants.srcHeight = State::Instance().currentFeature->TargetHeight();
+        constants.destWidth = State::Instance().currentFeature->DisplayWidth(); // static_cast<uint32_t>(outDesc.Width);
+        constants.destHeight = State::Instance().currentFeature->DisplayHeight(); // outDesc.Height;
 
         D3D11_MAPPED_SUBRESOURCE mappedResource;
         auto hr = InContext->Map(_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
@@ -207,15 +207,15 @@ bool OS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, I
     UINT dispatchWidth = 0;
     UINT dispatchHeight = 0;
 
-    //if (_upsample || Config::Instance()->OutputScalingUseFsr.value_or(true))
+    //if (_upsample || Config::Instance()->OutputScalingUseFsr.value_or_default())
     //{
-        dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
-        dispatchHeight = (Config::Instance()->CurrentFeature->DisplayHeight() + InNumThreadsY - 1) / InNumThreadsY;
+        dispatchWidth = static_cast<UINT>((State::Instance().currentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
+        dispatchHeight = (State::Instance().currentFeature->DisplayHeight() + InNumThreadsY - 1) / InNumThreadsY;
     //}
     //else
     //{
-    //    dispatchWidth = static_cast<UINT>((Config::Instance()->CurrentFeature->TargetWidth() + InNumThreadsX - 1) / InNumThreadsX);
-    //    dispatchHeight = (Config::Instance()->CurrentFeature->TargetHeight() + InNumThreadsY - 1) / InNumThreadsY;
+    //    dispatchWidth = static_cast<UINT>((State::Instance().currentFeature->TargetWidth() + InNumThreadsX - 1) / InNumThreadsX);
+    //    dispatchHeight = (State::Instance().currentFeature->TargetHeight() + InNumThreadsY - 1) / InNumThreadsY;
     //}
 
     InContext->Dispatch(dispatchWidth, dispatchHeight, 1);
@@ -239,12 +239,12 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
 
     LOG_DEBUG("{0} start!", _name);
 
-    if (Config::Instance()->UsePrecompiledShaders.value_or(true) || Config::Instance()->OutputScalingUseFsr.value_or(true))
+    if (Config::Instance()->UsePrecompiledShaders.value_or_default() || Config::Instance()->OutputScalingUseFsr.value_or_default())
     {
         HRESULT hr;
 
         // fsr upscaling
-        if (Config::Instance()->OutputScalingUseFsr.value_or(true))
+        if (Config::Instance()->OutputScalingUseFsr.value_or_default())
         {
             hr = _device->CreateComputeShader(reinterpret_cast<const void*>(fsr_easu_cso), sizeof(fsr_easu_cso), nullptr, &_computeShader);
         }
@@ -257,7 +257,7 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
             }
             else
             {
-                switch (Config::Instance()->OutputScalingDownscaler.value_or(0))
+                switch (Config::Instance()->OutputScalingDownscaler.value_or_default())
                 {
                     case 0:
                         hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_bicubic_cso), sizeof(bcds_bicubic_cso), nullptr, &_computeShader);
@@ -300,7 +300,7 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
         }
         else
         {
-            switch (Config::Instance()->OutputScalingDownscaler.value_or(0))
+            switch (Config::Instance()->OutputScalingDownscaler.value_or_default())
             {
                 case 0:
                     shaderBlob = OS_CompileShader(downsampleCodeBC.c_str(), "CSMain", "cs_5_0");
@@ -361,7 +361,7 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
     }
 
     // FSR upscaling
-    if (Config::Instance()->OutputScalingUseFsr.value_or(true))
+    if (Config::Instance()->OutputScalingUseFsr.value_or_default())
     {
         InNumThreadsX = 16;
         InNumThreadsY = 16;
@@ -371,7 +371,7 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
 
 OS_Dx11::~OS_Dx11()
 {
-    if (!_init || Config::Instance()->IsShuttingDown)
+    if (!_init || State::Instance().isShuttingDown)
         return;
 
     if (_computeShader != nullptr)

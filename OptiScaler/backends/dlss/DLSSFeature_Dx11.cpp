@@ -66,7 +66,7 @@ bool DLSSFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContex
 
     if (initResult)
     {
-        if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
+        if (!Config::Instance()->OverlayMenu.value_or_default() && (Imgui == nullptr || Imgui.get() == nullptr))
             Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), InDevice);
 
         OutputScaler = std::make_unique<OS_Dx11>("Output Scaling", InDevice, (TargetWidth() < DisplayWidth()));
@@ -135,7 +135,7 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
         ID3D11Resource* paramMotion = nullptr;
         ID3D11Resource* setBuffer = nullptr;
 
-        bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
+        bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false);
 
         InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput);
         InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramMotion);
@@ -157,7 +157,7 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
         _sharpness = GetSharpness(InParameters);
 
         if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
-            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or_default() && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
             RCAS->IsInit() && RCAS->CreateBufferResource(Device, setBuffer))
         {
             // Disable DLSS sharpness
@@ -179,7 +179,7 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
         // Apply CAS
         if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
-            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or_default() && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
             RCAS->CanRender())
         {
             RcasConstants rcasConstants{};
@@ -219,13 +219,13 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
             if (!OutputScaler->Dispatch(Device, InDeviceContext, OutputScaler->Buffer(), (ID3D11Texture2D*)paramOutput))
             {
                 Config::Instance()->OutputScalingEnabled = false;
-                Config::Instance()->changeBackend = true;
+                State::Instance().changeBackend = true;
                 return true;
             }
         }
 
         // imgui
-        if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30 && paramOutput != nullptr)
+        if (!Config::Instance()->OverlayMenu.value_or_default() && _frameCount > 30 && paramOutput != nullptr)
         {
             if (Imgui != nullptr && Imgui.get() != nullptr)
             {

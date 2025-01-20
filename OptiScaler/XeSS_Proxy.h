@@ -99,8 +99,8 @@ public:
 
         spdlog::info("");
 
-        Config::Instance()->upscalerDisableHook = true;
-        Config::Instance()->skipSpoofing = true;
+        State::Instance().upscalerDisableHook = true;
+        State::Instance().skipSpoofing = true;
 
         auto dllPath = Util::DllPath();
 
@@ -125,8 +125,8 @@ public:
 
         //    if (_dll == nullptr)
         //    {
-        //        Config::Instance()->skipSpoofing = false;
-        //        Config::Instance()->upscalerDisableHook = false;
+        //        State::Instance().skipSpoofing = false;
+        //        State::Instance().upscalerDisableHook = false;
 
         //        LOG_ERROR("OptiScaler working as libxess.dll but could not load original dll!");
         //        return false;
@@ -204,8 +204,8 @@ public:
             _xessSetContextParameterF = (PFN_xessSetContextParameterF)DetourFindFunction("libxess.dll", "xessSetContextParameterF");
         }
 
-        Config::Instance()->skipSpoofing = false;
-        Config::Instance()->upscalerDisableHook = false;
+        State::Instance().skipSpoofing = false;
+        State::Instance().upscalerDisableHook = false;
 
         if (_xessD3D12CreateContext != nullptr)
         {
@@ -226,7 +226,7 @@ public:
 
             LOG_INFO("Version: {}.{}.{}", _xessVersion.major, _xessVersion.minor, _xessVersion.patch);
 
-            if (Config::Instance()->XeSSInputs.value_or(true))
+            if (Config::Instance()->XeSSInputs.value_or_default())
             {
                 DetourTransactionBegin();
                 DetourUpdateThread(GetCurrentThread());

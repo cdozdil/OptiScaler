@@ -1347,11 +1347,11 @@ struct dxgi_dll
 
 bool SkipSpoofing()
 {
-    auto skip = !Config::Instance()->DxgiSpoofing.value_or(true) || Config::Instance()->skipSpoofing; // || Config::Instance()->IsRunningOnLinux;
+    auto skip = !Config::Instance()->DxgiSpoofing.value_or(true) || State::Instance().skipSpoofing; // || State::Instance().isRunningOnLinux;
 
     if (skip)
         LOG_TRACE("DxgiSpoofing: {}, skipSpoofing: {}, skipping spoofing",
-                  Config::Instance()->DxgiSpoofing.value_or(true), Config::Instance()->skipSpoofing);
+                  Config::Instance()->DxgiSpoofing.value_or(true), State::Instance().skipSpoofing);
 
     HANDLE process = GetCurrentProcess();
 
@@ -1446,12 +1446,12 @@ HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
     auto result = ptrGetDesc3(This, pDesc);
     if (result == S_OK)
     {
-        if (pDesc->VendorId != 0x1414 && !Config::Instance()->adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
+        if (pDesc->VendorId != 0x1414 && !State::Instance().adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
         {
             std::wstring szName(pDesc->Description);
             std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
             LOG_INFO("{}", descStr);
-            Config::Instance()->adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
+            State::Instance().adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
         }
 
         if (Config::Instance()->DxgiVRAM.has_value())
@@ -1462,7 +1462,7 @@ HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
             pDesc->VendorId = 0x10de;
             pDesc->DeviceId = 0x2684;
 
-            auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
+            auto szName = Config::Instance()->SpoofedGPUName.value_or_default();
             std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
             std::wcscpy(pDesc->Description, szName.c_str());
 
@@ -1482,12 +1482,12 @@ HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
     auto result = ptrGetDesc2(This, pDesc);
     if (result == S_OK)
     {
-        if (pDesc->VendorId != 0x1414 && !Config::Instance()->adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
+        if (pDesc->VendorId != 0x1414 && !State::Instance().adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
         {
             std::wstring szName(pDesc->Description);
             std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
             LOG_INFO("{}", descStr);
-            Config::Instance()->adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
+            State::Instance().adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
         }
 
         if (Config::Instance()->DxgiVRAM.has_value())
@@ -1498,7 +1498,7 @@ HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
             pDesc->VendorId = 0x10de;
             pDesc->DeviceId = 0x2684;
 
-            auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
+            auto szName = Config::Instance()->SpoofedGPUName.value_or_default();
             std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
             std::wcscpy(pDesc->Description, szName.c_str());
 
@@ -1518,12 +1518,12 @@ HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
     auto result = ptrGetDesc1(This, pDesc);
     if (result == S_OK)
     {
-        if (pDesc->VendorId != 0x1414 && !Config::Instance()->adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
+        if (pDesc->VendorId != 0x1414 && !State::Instance().adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
         {
             std::wstring szName(pDesc->Description);
             std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
             LOG_INFO("{}", descStr);
-            Config::Instance()->adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
+            State::Instance().adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
         }
 
         if (Config::Instance()->DxgiVRAM.has_value())
@@ -1534,7 +1534,7 @@ HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
             pDesc->VendorId = 0x10de;
             pDesc->DeviceId = 0x2684;
 
-            auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
+            auto szName = Config::Instance()->SpoofedGPUName.value_or_default();
             std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
             std::wcscpy(pDesc->Description, szName.c_str());
 
@@ -1554,12 +1554,12 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
     auto result = ptrGetDesc(This, pDesc);
     if (result == S_OK)
     {
-        if (pDesc->VendorId != 0x1414 && !Config::Instance()->adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
+        if (pDesc->VendorId != 0x1414 && !State::Instance().adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
         {
             std::wstring szName(pDesc->Description);
             std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
             LOG_INFO("{}", descStr);
-            Config::Instance()->adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
+            State::Instance().adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
         }
 
         if (Config::Instance()->DxgiVRAM.has_value())
@@ -1570,7 +1570,7 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
             pDesc->VendorId = 0x10de;
             pDesc->DeviceId = 0x2684;
 
-            auto szName = Config::Instance()->SpoofedGPUName.value_or(L"NVIDIA GeForce RTX 4090");
+            auto szName = Config::Instance()->SpoofedGPUName.value_or_default();
             std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
             std::wcscpy(pDesc->Description, szName.c_str());
 
@@ -1593,9 +1593,9 @@ HRESULT WINAPI detEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, 
 {
     AttachToFactory(This);
 
-    Config::Instance()->skipDxgiLoadChecks = true;
+    State::Instance().skipDxgiLoadChecks = true;
     auto result = ptrEnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, ppvAdapter);
-    Config::Instance()->skipDxgiLoadChecks = false;
+    State::Instance().skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         AttachToAdapter(*ppvAdapter);
@@ -1607,9 +1607,9 @@ HRESULT WINAPI detEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFII
 {
     AttachToFactory(This);
 
-    Config::Instance()->skipDxgiLoadChecks = true;
+    State::Instance().skipDxgiLoadChecks = true;
     auto result = ptrEnumAdapterByLuid(This, AdapterLuid, riid, ppvAdapter);
-    Config::Instance()->skipDxgiLoadChecks = false;
+    State::Instance().skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         AttachToAdapter(*ppvAdapter);
@@ -1625,9 +1625,9 @@ HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1
 
     HRESULT result = S_OK;
 
-    if (!skipHighPerfCheck && Config::Instance()->PreferDedicatedGpu.value_or(false))
+    if (!skipHighPerfCheck && Config::Instance()->PreferDedicatedGpu.value_or_default())
     {
-        if (Config::Instance()->PreferFirstDedicatedGpu.value_or(false) && Adapter > 0)
+        if (Config::Instance()->PreferFirstDedicatedGpu.value_or_default() && Adapter > 0)
         {
             LOG_DEBUG("{}, returning not found", Adapter);
             return DXGI_ERROR_NOT_FOUND;
@@ -1639,9 +1639,9 @@ HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1
             LOG_DEBUG("Trying to select high performance adapter ({})", Adapter);
 
             skipHighPerfCheck = true;
-            Config::Instance()->skipDxgiLoadChecks = true;
+            State::Instance().skipDxgiLoadChecks = true;
             result = ptrEnumAdapterByGpuPreference(factory6, Adapter, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter), (IDXGIAdapter**)ppAdapter);
-            Config::Instance()->skipDxgiLoadChecks = false;
+            State::Instance().skipDxgiLoadChecks = false;
             skipHighPerfCheck = false;
 
             if (result != S_OK)
@@ -1653,7 +1653,7 @@ HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1
             if (result == S_OK)
             {
                 DXGI_ADAPTER_DESC desc;
-                Config::Instance()->skipSpoofing = true;
+                State::Instance().skipSpoofing = true;
                 if ((*ppAdapter)->GetDesc(&desc) == S_OK)
                 {
                     std::wstring name(desc.Description);
@@ -1663,7 +1663,7 @@ HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1
                 {
                     LOG_DEBUG("High performance adapter (Can't get description!) will be used");
                 }
-                Config::Instance()->skipSpoofing = false;
+                State::Instance().skipSpoofing = false;
             }
 
             factory6->Release();
@@ -1671,9 +1671,9 @@ HRESULT WINAPI detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1
     }
     else
     {
-        Config::Instance()->skipDxgiLoadChecks = true;
+        State::Instance().skipDxgiLoadChecks = true;
         result = ptrEnumAdapters1(This, Adapter, ppAdapter);
-        Config::Instance()->skipDxgiLoadChecks = false;
+        State::Instance().skipDxgiLoadChecks = false;
     }
 
     if (result == S_OK)
@@ -1688,9 +1688,9 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
 
     HRESULT result = S_OK;
 
-    if (!skipHighPerfCheck && Config::Instance()->PreferDedicatedGpu.value_or(false))
+    if (!skipHighPerfCheck && Config::Instance()->PreferDedicatedGpu.value_or_default())
     {
-        if (Config::Instance()->PreferFirstDedicatedGpu.value_or(false) && Adapter > 0)
+        if (Config::Instance()->PreferFirstDedicatedGpu.value_or_default() && Adapter > 0)
         {
             LOG_DEBUG("{}, returning not found", Adapter);
             return DXGI_ERROR_NOT_FOUND;
@@ -1702,9 +1702,9 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
             LOG_DEBUG("Trying to select high performance adapter ({})", Adapter);
 
             skipHighPerfCheck = true;
-            Config::Instance()->skipDxgiLoadChecks = true;
+            State::Instance().skipDxgiLoadChecks = true;
             result = ptrEnumAdapterByGpuPreference(factory6, Adapter, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter), ppAdapter);
-            Config::Instance()->skipDxgiLoadChecks = false;
+            State::Instance().skipDxgiLoadChecks = false;
             skipHighPerfCheck = false;
 
             if (result != S_OK)
@@ -1716,7 +1716,7 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
             if (result == S_OK)
             {
                 DXGI_ADAPTER_DESC desc;
-                Config::Instance()->skipSpoofing = true;
+                State::Instance().skipSpoofing = true;
                 if ((*ppAdapter)->GetDesc(&desc) == S_OK)
                 {
                     std::wstring name(desc.Description);
@@ -1726,7 +1726,7 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
                 {
                     LOG_ERROR("Can't get adapter description!");
                 }
-                Config::Instance()->skipSpoofing = false;
+                State::Instance().skipSpoofing = false;
             }
 
             factory6->Release();
@@ -1734,9 +1734,9 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
     }
     else
     {
-        Config::Instance()->skipDxgiLoadChecks = true;
+        State::Instance().skipDxgiLoadChecks = true;
         result = ptrEnumAdapters(This, Adapter, ppAdapter);
-        Config::Instance()->skipDxgiLoadChecks = false;
+        State::Instance().skipDxgiLoadChecks = false;
     }
 
     if (result == S_OK)
@@ -1751,9 +1751,9 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
 
 HRESULT _CreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
-    Config::Instance()->skipDxgiLoadChecks = true;
+    State::Instance().skipDxgiLoadChecks = true;
     HRESULT result = dxgi.CreateDxgiFactory(riid, ppFactory);
-    Config::Instance()->skipDxgiLoadChecks = false;
+    State::Instance().skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         AttachToFactory(*ppFactory);
@@ -1763,9 +1763,9 @@ HRESULT _CreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 
 HRESULT _CreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 {
-    Config::Instance()->skipDxgiLoadChecks = true;
+    State::Instance().skipDxgiLoadChecks = true;
     HRESULT result = dxgi.CreateDxgiFactory1(riid, ppFactory);
-    Config::Instance()->skipDxgiLoadChecks = false;
+    State::Instance().skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         AttachToFactory(*ppFactory);
@@ -1775,9 +1775,9 @@ HRESULT _CreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 
 HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
 {
-    Config::Instance()->skipDxgiLoadChecks = true;
+    State::Instance().skipDxgiLoadChecks = true;
     HRESULT result = dxgi.CreateDxgiFactory2(Flags, riid, ppFactory);
-    Config::Instance()->skipDxgiLoadChecks = false;
+    State::Instance().skipDxgiLoadChecks = false;
 
     if (result == S_OK)
         AttachToFactory(*ppFactory);
@@ -1897,20 +1897,20 @@ void AttachToAdapter(IUnknown* unkAdapter)
 
     PVOID* pVTable = *(PVOID**)unkAdapter;
 
-    bool dxvkStatus = Config::Instance()->IsRunningOnDXVK;
+    bool dxvkStatus = State::Instance().isRunningOnDXVK;
 
     IDXGIAdapter* adapter = nullptr;
     bool adapterOk = unkAdapter->QueryInterface(__uuidof(IDXGIAdapter), (void**)&adapter) == S_OK;
 
     void* dxvkAdapter = nullptr;
-    if (adapterOk && !Config::Instance()->IsRunningOnDXVK && adapter->QueryInterface(guid, &dxvkAdapter) == S_OK)
+    if (adapterOk && !State::Instance().isRunningOnDXVK && adapter->QueryInterface(guid, &dxvkAdapter) == S_OK)
     {
-        Config::Instance()->IsRunningOnDXVK = dxvkAdapter != nullptr;
+        State::Instance().isRunningOnDXVK = dxvkAdapter != nullptr;
         ((IDXGIAdapter*)dxvkAdapter)->Release();
     }
 
-    if (Config::Instance()->IsRunningOnDXVK != dxvkStatus)
-        LOG_INFO("IDXGIVkInteropDevice interface (DXVK) {0}", Config::Instance()->IsRunningOnDXVK ? "detected" : "not detected");
+    if (State::Instance().isRunningOnDXVK != dxvkStatus)
+        LOG_INFO("IDXGIVkInteropDevice interface (DXVK) {0}", State::Instance().isRunningOnDXVK ? "detected" : "not detected");
 
     if (ptrGetDesc == nullptr && adapterOk)
     {

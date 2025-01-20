@@ -25,7 +25,7 @@ env:
   BUILD_CONFIGURATION: Release
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -115,3 +115,71 @@ jobs:
         path: ${{ github.workspace }}\${{ steps.get_version.outputs.filename }}.7z
         compression-level: 0
         if-no-files-found: error
+    - name: Check Existing Release
+      id: check_release
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const releaseTag = "nightly";
+          try {
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: releaseTag,
+            });
+            core.setOutput("release_exists", true);
+            core.setOutput("release_id", release.data.id);
+          } catch (error) {
+            if (error.status === 404) {
+              core.setOutput("release_exists", false);
+            } else {
+              throw error;
+            }
+          }
+
+    - name: Create Nightly Release (if not exists)
+      id: create_release
+      if: steps.check_release.outputs.release_exists == 'false'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const release = await github.rest.repos.createRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag_name: "nightly",
+            name: "Nightly Builds",
+            body: "This is an automated nightly build release.",
+            draft: false,
+            prerelease: true,
+          });
+          core.setOutput("release_id", release.data.id);
+
+    - name: Remove Previous Artifacts
+      if: steps.check_release.outputs.release_exists == 'true'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const releaseId = ${{ steps.check_release.outputs.release_id }};
+          const assets = await github.rest.repos.listReleaseAssets({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: releaseId,
+          });
+
+          for (const asset of assets.data) {
+            await github.rest.repos.deleteReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              asset_id: asset.id,
+            });
+            console.log(`Deleted asset: ${asset.name}`);
+          }
+
+    - name: Upload Artifact to Release
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ steps.check_release.outputs.release_exists == 'true' && steps.check_release.outputs.release_id || steps.create_release.outputs.release_id }}
+        asset_path: ${{ github.workspace }}\${{ steps.get_version.outputs.filename }}.7z
+        asset_name: ${{ steps.get_version.outputs.filename }}.7z
+        content_type: application/x-7z-compressed
+

@@ -1,4 +1,3 @@
-#pragma once
 #include "pch.h"
 #include "Config.h"
 #include "NVNGX_Proxy.h"
@@ -18,7 +17,7 @@
 //NVSDK_NGX_API uint32_t NVSDK_NGX_GetApplicationId()
 //{
 //	LOG_FUNC();
-//	return Config::Instance()->NVNGX_ApplicationId;
+//	return State::Instance().NVNGX_ApplicationId;
 //}
 //
 //NVSDK_NGX_API uint32_t NVSDK_NGX_GetDriverVersion()
@@ -107,21 +106,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_UpdateFeature(const NVSDK_NGX_Applicati
 	{
 		if (ApplicationId->IdentifierType == NVSDK_NGX_Application_Identifier_Type_Application_Id)
 		{
-			auto appId = Config::Instance()->UseGenericAppIdWithDlss.value_or(false) ? app_id_override : ApplicationId->v.ApplicationId;
+			auto appId = Config::Instance()->UseGenericAppIdWithDlss.value_or_default() ? app_id_override : ApplicationId->v.ApplicationId;
 			LOG_INFO("Update ApplicationId: {0:X}", appId);
-			Config::Instance()->NVNGX_ApplicationId = appId;
+			State::Instance().NVNGX_ApplicationId = appId;
 		}
 		else if (ApplicationId->IdentifierType == NVSDK_NGX_Application_Identifier_Type_Project_Id)
 		{
-			auto projectId = Config::Instance()->UseGenericAppIdWithDlss.value_or(false) ? project_id_override :
+			auto projectId = Config::Instance()->UseGenericAppIdWithDlss.value_or_default() ? project_id_override :
 				std::string(ApplicationId->v.ProjectDesc.ProjectId);
-			Config::Instance()->NVNGX_ProjectId = projectId;
-			Config::Instance()->NVNGX_Engine = ApplicationId->v.ProjectDesc.EngineType;
-			Config::Instance()->NVNGX_EngineVersion = std::string(ApplicationId->v.ProjectDesc.EngineVersion);
+			State::Instance().NVNGX_ProjectId = projectId;
+			State::Instance().NVNGX_Engine = ApplicationId->v.ProjectDesc.EngineType;
+			State::Instance().NVNGX_EngineVersion = std::string(ApplicationId->v.ProjectDesc.EngineVersion);
 
 			LOG_INFO("Update InProjectId: {0}", projectId);
-			LOG_INFO("Update InEngineType: {0}", (int)Config::Instance()->NVNGX_Engine);
-			LOG_INFO("Update InEngineVersion: {0}", Config::Instance()->NVNGX_EngineVersion);
+			LOG_INFO("Update InEngineType: {0}", (int)State::Instance().NVNGX_Engine);
+			LOG_INFO("Update InEngineVersion: {0}", State::Instance().NVNGX_EngineVersion);
 		}
 		else
 		{
