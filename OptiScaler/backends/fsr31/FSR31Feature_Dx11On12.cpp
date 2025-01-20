@@ -320,7 +320,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
     params.viewSpaceToMetersFactor = 1.0f;
 
     // Version 1.1.1 check
-    if (Version().major >= 1 && Version().minor >= 1 && Version().patch >= 1 && _velocity != Config::Instance()->FsrVelocity.value_or_default())
+    if (isVersionOrBetter(Version(), { 1, 1, 1 }) && _velocity != Config::Instance()->FsrVelocity.value_or_default())
     {
         _velocity = Config::Instance()->FsrVelocity.value_or_default();
         ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig{};

@@ -67,7 +67,7 @@ bool DLSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
 
 	} while (false);
 
-	bool rcasEnabled = (Version().major > 2 || (Version().major == 2 && Version().minor >= 5 && Version().patch >= 1));
+	bool rcasEnabled = isVersionOrBetter(Version(), { 2, 5, 1 });
 
 	if (initResult)
 	{
@@ -99,7 +99,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		return false;
 	}
 
-	bool rcasEnabled = (Version().major > 2 || (Version().major == 2 && Version().minor >= 5 && Version().patch >= 1));
+	bool rcasEnabled = isVersionOrBetter(Version(), { 2, 5, 1 });
 
 	if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) && (RCAS == nullptr || RCAS.get() == nullptr || !RCAS->IsInit()))
 		Config::Instance()->RcasEnabled = false;
