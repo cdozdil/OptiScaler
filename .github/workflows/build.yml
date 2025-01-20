@@ -41,6 +41,12 @@ jobs:
       working-directory: ${{ github.workspace }}
       shell: powershell
       run: |
+        $resourceFile = ".\OptiScaler\resource.h"
+        if (-Not (Test-Path $resourceFile)) {
+            Write-Error "File not found: $resourceFile"
+            exit 1
+        }
+        
         # Helper function to extract a version component
         function Get-Version-Component {
             param (
