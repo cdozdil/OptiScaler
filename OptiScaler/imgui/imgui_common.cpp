@@ -1,4 +1,5 @@
 #include "imgui_common.h"
+#include "imgui/imgui_internal.h"
 
 #include "../font/Hack_Compressed.h"
 #include "../nvapi/fakenvapi.h"
@@ -13,7 +14,7 @@ static bool inputFps = false;
 static bool inputFpsCycle = false;
 
 void ImGuiCommon::ShowTooltip(const char* tip) {
-    if (ImGui::IsItemHovered())
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
     {
         ImGui::BeginTooltip();
         ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or_default()); // Scale the tooltip text
@@ -27,6 +28,13 @@ void ImGuiCommon::ShowHelpMarker(const char* tip)
     ImGui::SameLine();
     ImGui::TextDisabled("(?)");
     ShowTooltip(tip);
+}
+
+void ImGuiCommon::SeparatorWithHelpMarker(const char* label, const char* tip)
+{
+    auto marker = "(?) ";
+    ImGui::SeparatorTextEx(0, label, ImGui::FindRenderedTextEnd(label), ImGui::CalcTextSize(marker, ImGui::FindRenderedTextEnd(marker)).x);
+    ShowHelpMarker(tip);
 }
 
 LRESULT ImGuiCommon::hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
@@ -954,7 +962,7 @@ bool ImGuiCommon::RenderMenu()
                 }
 
                 // Graph of frame times
-                ImGui::PlotLines("##FrameTimeGraph", frameTimeArray.data(), static_cast<int>(frameTimeArray.size()), 0, nullptr, 
+                ImGui::PlotLines("##FrameTimeGraph", frameTimeArray.data(), static_cast<int>(frameTimeArray.size()), 0, nullptr,
                                  *std::min_element(frameTimeArray.begin(), frameTimeArray.end()) * 0.9f, *std::max_element(frameTimeArray.begin(), frameTimeArray.end()) * 1.1f, plotSize);
             }
 
@@ -1387,7 +1395,7 @@ bool ImGuiCommon::RenderMenu()
                 // DLSSG Mod
                 if (Config::Instance()->DLSSGMod.value_or_default() && State::Instance().api != DX11 && !State::Instance().isWorkingAsNvngx) {
                     ImGui::SeparatorText("Frame Generation (DLSSG)");
-                    
+
                     if (!ReflexHooks::dlssgDetected)
                         ImGui::Text("Please select DLSS Frame Generation in the game options\nYou might need to select DLSS first");
 
@@ -1579,8 +1587,7 @@ bool ImGuiCommon::RenderMenu()
 
                     if (Config::Instance()->FGUseFGSwapChain.value_or_default() || currentBackend.rfind("fsr", 0) == 0)
                     {
-                        ImGui::SeparatorText("FSR Common Settings");
-                        ShowHelpMarker("Affects both FSR-FG & Upscalers");
+                        SeparatorWithHelpMarker("FSR Common Settings", "Affects both FSR-FG & Upscalers");
 
                         bool useFsrVales = Config::Instance()->FsrUseFsrInputValues.value_or_default();
                         if (ImGui::Checkbox("Use FSR Input Values", &useFsrVales))
@@ -1709,19 +1716,16 @@ bool ImGuiCommon::RenderMenu()
 
                         if (bool overrideMotionSharpness = Config::Instance()->MotionSharpnessEnabled.value_or_default(); ImGui::Checkbox("Motion Adaptive Sharpness", &overrideMotionSharpness))
                             Config::Instance()->MotionSharpnessEnabled = overrideMotionSharpness;
-                        ImGui::EndDisabled();
                         ShowHelpMarker("Applies more sharpness to things in motion");
 
-                        ImGui::BeginDisabled(!Config::Instance()->MotionSharpnessEnabled.value_or_default() || !Config::Instance()->RcasEnabled.value_or(rcasEnabled));
+                        ImGui::BeginDisabled(!Config::Instance()->MotionSharpnessEnabled.value_or_default());
 
                         ImGui::SameLine(0.0f, 6.0f);
 
                         if (bool overrideMSDebug = Config::Instance()->MotionSharpnessDebug.value_or_default(); ImGui::Checkbox("MAS Debug", &overrideMSDebug))
                             Config::Instance()->MotionSharpnessDebug = overrideMSDebug;
-                        ImGui::EndDisabled();
                         ShowHelpMarker("Areas that are more red will have more sharpness applied\n"
                                        "Green areas will get reduced sharpness");
-                        ImGui::BeginDisabled(!Config::Instance()->MotionSharpnessEnabled.value_or_default() || !Config::Instance()->RcasEnabled.value_or(rcasEnabled));
 
                         float motionSharpness = Config::Instance()->MotionSharpness.value_or_default();
                         ImGui::SliderFloat("MotionSharpness", &motionSharpness, -1.3f, 1.3f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
@@ -1735,6 +1739,7 @@ bool ImGuiCommon::RenderMenu()
                         ImGui::SliderFloat("MotionRange", &motionScale, 0.01f, 100.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
                         Config::Instance()->MotionScaleLimit = motionScale;
 
+                        ImGui::EndDisabled();
                         ImGui::EndDisabled();
                     }
 
@@ -1855,9 +1860,9 @@ bool ImGuiCommon::RenderMenu()
                 // Reflex ---------------------
                 if (!State::Instance().enablerAvailable && State::Instance().reflexAvailable)
                 {
-                    ImGui::SeparatorText("Framerate");
+                    SeparatorWithHelpMarker("Framerate", "Currently uses Reflex to limit FPS\nbe sure the game supports it and you have it enabled\non AMD cards you can use fakenvapi to substitute Reflex");
 
-                    // set inital value
+                    // set initial value
                     if (_limitFps == INFINITY)
                         _limitFps = Config::Instance()->FramerateLimit.value_or_default();
 
@@ -1866,8 +1871,6 @@ bool ImGuiCommon::RenderMenu()
                     if (ImGui::Button("Apply Limit")) {
                         Config::Instance()->FramerateLimit = _limitFps;
                     }
-
-                    ShowHelpMarker("Currently uses Reflex to limit FPS\nbe sure the game supports it and you have it enabled\non AMD cards you can use fakenvapi to substitute Reflex");
                 }
 
                 if (currentFeature != nullptr) {
@@ -2548,9 +2551,8 @@ bool ImGuiCommon::RenderMenu()
                                        "Using this option changes resolution detection logic\n"
                                        "and might cause issues and crashes!");
 
-                        ImGui::SeparatorText("Input APIs");
-                        ShowHelpMarker("Input changes when OptiFG is active\n"
-                                       "might cause screen flicker and other issues");
+                        SeparatorWithHelpMarker("Input APIs", "Input changes when OptiFG is active\n"
+                                                "might cause screen flicker and other issues");
 
                         bool fsr2Inputs = Config::Instance()->Fsr2Inputs.value_or_default();
                         bool fsr3Inputs = Config::Instance()->Fsr3Inputs.value_or_default();
@@ -2564,6 +2566,23 @@ bool ImGuiCommon::RenderMenu()
 
                         if (ImGui::Checkbox("Use Ffx Inputs", &ffxInputs))
                             Config::Instance()->FfxInputs = ffxInputs;
+
+
+                        SeparatorWithHelpMarker("Enable DLSSG", "These settings will be active on next boot!");
+                        auto dlssgEnabled = Config::Instance()->DLSSGMod.value_or(false);
+                        if (ImGui::Checkbox("DLSSG Enabled", &dlssgEnabled))
+                        {
+                            Config::Instance()->DLSSGMod = dlssgEnabled;
+
+                            if (dlssgEnabled)
+                                Config::Instance()->FGUseFGSwapChain = false;
+                            else
+                                Config::Instance()->FGUseFGSwapChain.reset();
+                        }
+
+                        auto hagsSpoofing = Config::Instance()->SpoofHAGS.value_or(dlssgEnabled);
+                        if (ImGui::Checkbox("HAGS Spoofing Enabled", &hagsSpoofing))
+                            Config::Instance()->SpoofHAGS = hagsSpoofing;
                     }
                 }
 

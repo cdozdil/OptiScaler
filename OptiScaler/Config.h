@@ -313,6 +313,7 @@ public:
 	CustomOptional<bool> DlssInputs{ true };
 	CustomOptional<bool> XeSSInputs{ true };
 	CustomOptional<bool> Fsr2Inputs{ true };
+	std::optional<bool> Fsr2Pattern; // TODO: use CustomOptional
 	CustomOptional<bool> Fsr3Inputs{ true };
 	CustomOptional<bool> FfxInputs{ true };
 

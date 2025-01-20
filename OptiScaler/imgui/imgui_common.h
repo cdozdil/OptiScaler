@@ -64,6 +64,8 @@ private:
 
     inline static void ShowHelpMarker(const char* tip);
 
+    inline static void SeparatorWithHelpMarker(const char* label, const char* tip);
+
 #pragma region "Hooks & WndProc"
 
     // for hooking
