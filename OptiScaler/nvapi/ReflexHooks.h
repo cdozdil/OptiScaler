@@ -10,6 +10,7 @@ class ReflexHooks {
 	inline static NV_SET_SLEEP_MODE_PARAMS _lastSleepParams{};
 	inline static IUnknown* _lastSleepDev = nullptr;
 	inline static bool _markersPresent = false;
+	inline static uint64_t _lastAsyncCallFrameId = 0;
 
 	inline static decltype(&NvAPI_D3D_SetSleepMode) o_NvAPI_D3D_SetSleepMode = nullptr;
 	inline static decltype(&NvAPI_D3D_Sleep) o_NvAPI_D3D_Sleep = nullptr;
@@ -51,8 +52,12 @@ class ReflexHooks {
 #ifdef _DEBUG
 		LOG_FUNC();
 #endif
-
 		_markersPresent = true;
+
+		// Some games just stop sending any async markers when DLSSG is disabled, so a reset is needed
+		if (_lastAsyncCallFrameId + 10 < pSetLatencyMarkerParams->frameID)
+			dlssgDetected = false;
+
 		return o_NvAPI_D3D_SetLatencyMarker(pDev, pSetLatencyMarkerParams);
 	}
 
@@ -60,6 +65,8 @@ class ReflexHooks {
 #ifdef _DEBUG
 		LOG_FUNC();
 #endif
+
+		_lastAsyncCallFrameId = pSetAsyncFrameMarkerParams->frameID;
 
 		if (pSetAsyncFrameMarkerParams->markerType == OUT_OF_BAND_PRESENT_START) {
 			constexpr size_t history_size = 12;
@@ -78,14 +85,10 @@ class ReflexHooks {
 				}
 			}
 
-			if (dlssgDetected && repeat_count == 0) {
+			if (dlssgDetected && repeat_count == 0)
 				dlssgDetected = false;
-				LOG_DEBUG("DLSS FG no longer detected");
-			}
-			else if (!dlssgDetected && repeat_count >= history_size / 2 - 1) {
+			else if (!dlssgDetected && repeat_count >= history_size / 2 - 1)
 				dlssgDetected = true;
-				LOG_DEBUG("DLSS FG detected");
-			}
 		}
 
 		return o_NvAPI_D3D12_SetAsyncFrameMarker(pCommandQueue, pSetAsyncFrameMarkerParams);
@@ -105,9 +108,12 @@ public:
 			o_NvAPI_D3D_GetLatency = static_cast<decltype(&NvAPI_D3D_GetLatency)>(queryInterface(NvApiTypes::NV_INTERFACE::D3D_GetLatency));
 			o_NvAPI_D3D_SetLatencyMarker = static_cast<decltype(&NvAPI_D3D_SetLatencyMarker)>(queryInterface(NvApiTypes::NV_INTERFACE::D3D_SetLatencyMarker));
 			o_NvAPI_D3D12_SetAsyncFrameMarker = static_cast<decltype(&NvAPI_D3D12_SetAsyncFrameMarker)>(queryInterface(NvApiTypes::NV_INTERFACE::D3D12_SetAsyncFrameMarker));
-		}
 
-		_inited = o_NvAPI_D3D_SetSleepMode != nullptr && o_NvAPI_D3D_Sleep != nullptr && o_NvAPI_D3D_GetLatency != nullptr && o_NvAPI_D3D_SetLatencyMarker != nullptr && o_NvAPI_D3D12_SetAsyncFrameMarker != nullptr;
+			_inited = o_NvAPI_D3D_SetSleepMode != nullptr && o_NvAPI_D3D_Sleep != nullptr && o_NvAPI_D3D_GetLatency != nullptr && o_NvAPI_D3D_SetLatencyMarker != nullptr && o_NvAPI_D3D12_SetAsyncFrameMarker != nullptr;
+
+			if (_inited)
+				LOG_DEBUG("Inited Reflex hooks");
+		}
 	}
 
 	inline static void* getHookedReflex(NvApiTypes::NV_INTERFACE InterfaceId) {
@@ -141,10 +147,22 @@ public:
 	inline static void update(bool fgState) {
 		// Not a perfect check, doesn't confirm that Reflex is actually currently enabled
 		// This is intentional as fakenvapi might override what the game sends
-		Config::Instance()->ReflexAvailable = _markersPresent;
+		Config::Instance()->ReflexAvailable = _markersPresent && _inited;
 
 		static float lastFps = 0;
 		float currentFps = Config::Instance()->FramerateLimit.value_or(0);
+
+		static bool lastDlssgDetectedState = false;
+		if (lastDlssgDetectedState != dlssgDetected)
+		{
+			lastDlssgDetectedState = dlssgDetected;
+			setFPSLimit(currentFps);
+
+			if (dlssgDetected)
+				LOG_DEBUG("DLSS FG detected");
+			else
+				LOG_DEBUG("DLSS FG no longer detected");
+		}
 
 		if (fgState || (dlssgDetected && fakenvapi::isUsingFakenvapi()))
 			currentFps = currentFps / 2;
