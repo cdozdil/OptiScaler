@@ -137,11 +137,14 @@ jobs:
         Write-Output "Fetching commits from the last 24 hours..."
 
         $location = Get-Location
-        Write-Output "$location"
+        Write-Output "Folder: $location`n"
+
+        $datetime = Get-Date
+        Write-Output "Datetime: $datetime`n"
         
         # Get commit messages excluding .yml file commits
         $commits = git log --since="1 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit --grep=".yml" --invert-grep
-        Write-Output "$commits"
+        Write-Output "Commits: $commits`n"
         
         # If no commits are found, cancel the workflow
         if ([string]::IsNullOrEmpty($commits)) {
