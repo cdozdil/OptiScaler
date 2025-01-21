@@ -142,20 +142,28 @@ jobs:
         $datetime = Get-Date
         Write-Output "Datetime: $datetime`n"
 
+        $gitVersion = git --version
+        Write-Output "Git Version: $gitVersion`n"
+        
         #--grep=".yml" --invert-grep
         
         # Get commit messages excluding .yml file commits
         $commits = git log --since="1 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit 
-        Write-Output "Commits: $commits`n"
         
+        $commits = $commits -split "`n"
+
         # If no commits are found, cancel the workflow
-        if ([string]::IsNullOrEmpty($commits)) {
+        if (-not $commits) {          
           Write-Output "No relevant commits in the last 24 hours. Cancelling workflow."
           exit 0
         }
         
+        # Join commits into a newline-separated string
+        $formattedCommits = $commits -join "`n"        
+        Write-Output "Commits: $formattedCommits`n"
+
         # Generate release notes
-        $releaseNotes = "### Changes in the Last 24 Hours`n`n$commits"
+        $releaseNotes = "### Changes in the Last 24 Hours`n`n$formattedCommits"
         
         Write-Output "$releaseNotes"
 
