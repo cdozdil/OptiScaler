@@ -30,8 +30,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-      with:
-        submodules: 'true'
         
     - name: Extract Version
       id: get_version
@@ -156,9 +154,6 @@ jobs:
       run: |
         $commits = "${{ steps.commit_messages.outputs.commits }}"
         $releaseNotes = "### Changes in the Last 24 Hours`n`n$commits"
-    
-        # Output the release notes to the console
-        Write-Output $releaseNotes
     
         # Write the release notes to GITHUB_OUTPUT for subsequent steps
         "release_notes=$releaseNotes" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
