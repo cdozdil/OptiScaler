@@ -132,6 +132,8 @@ jobs:
     - name: Get Commit Messages From Last Day
       id: commit_messages
       working-directory: ${{ github.workspace }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       shell: powershell
       run: |
         Write-Output "Fetching commits from the last 24 hours..."
@@ -144,11 +146,11 @@ jobs:
 
         $gitVersion = git --version
         Write-Output "Git Version: $gitVersion`n"
-        
-        #--grep=".yml" --invert-grep
+
+        git log --since="1 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit --grep=".yml" --invert-grep
         
         # Get commit messages excluding .yml file commits
-        $commits = git log --since="1 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit 
+        $commits = git log --since="1 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit --grep=".yml" --invert-grep
         
         $commits = $commits -split "`n"
 
