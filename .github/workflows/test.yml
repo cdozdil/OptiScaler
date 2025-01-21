@@ -134,26 +134,27 @@ jobs:
       shell: powershell
       run: |
         Write-Output "Fetching commits from the last 24 hours..."
-        
-        # Get commit messages from the past 24 hours
+            
+        # Get commit messages excluding .yml file commits
         $commits = git log --since="1 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit --grep=".yml" --invert-grep
-    
+        
         # Split output into lines if necessary
         $commits = $commits -split "`n"
-    
+        
         # If no commits are found, cancel the workflow
         if (-not $commits) {
-          Write-Output "No commits in the last 24 hours. Cancelling workflow."
+          Write-Output "No relevant commits in the last 24 hours. Cancelling workflow."
           exit 0
         }
-    
+        
         # Join commits into a newline-separated string
         $formattedCommits = $commits -join "`n"
-    
+        
         # Generate release notes
         $releaseNotes = "### Changes in the Last 24 Hours`n`n$formattedCommits"
-    
-        $releaseNotes = "### Changes in the Last 24 Hours`n`n$commits"
+        
+        Write-Output "$releaseNotes"
+
         Add-Content -Path $env:GITHUB_OUTPUT -Value "release_notes<<EOF"
         Add-Content -Path $env:GITHUB_OUTPUT -Value $releaseNotes
         Add-Content -Path $env:GITHUB_OUTPUT -Value "EOF"        
