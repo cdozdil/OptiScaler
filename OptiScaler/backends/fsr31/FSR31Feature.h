@@ -1,9 +1,9 @@
 #pragma once
-#include "../../FfxApi_Proxy.h"
+
 #include "ffx_upscale.h"
 
 #include "../IFeature.h"
-#include "../../detours/detours.h"
+//#include "../../detours/detours.h"
 
 inline static void FfxLogCallback(uint32_t type, const wchar_t* message)
 {
