@@ -138,11 +138,20 @@ jobs:
         # Get commit messages from the past 24 hours
         $commits = git log --since="1 day ago" --pretty=format:"%h %s (%an)"
     
+        # Split output into lines if necessary
+        $commits = $commits -split "`n"
+    
         # If no commits are found, cancel the workflow
-        if ([string]::IsNullOrEmpty($commits)) {
+        if (-not $commits) {
           Write-Output "No commits in the last 24 hours. Cancelling workflow."
           exit 0
         }
+    
+        # Join commits into a newline-separated string
+        $formattedCommits = $commits -join "`n"
+    
+        # Generate release notes
+        $releaseNotes = "### Changes in the Last 24 Hours`n`n$formattedCommits"
     
         $releaseNotes = "### Changes in the Last 24 Hours`n`n$commits"
         Add-Content -Path $env:GITHUB_OUTPUT -Value "release_notes<<EOF"
