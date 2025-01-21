@@ -147,19 +147,13 @@ jobs:
         # Write the commits to the output
         $output = "commits=$commits"
         $output | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-      
-    - name: Generate Release Notes
-      id: release_notes
-      shell: powershell
-      run: |
-        $commits = "${{ steps.commit_messages.outputs.commits }}"
-        $releaseNotes = "### Changes in the Last 24 Hours`n`n$commits"
-    
-        # Write the release notes to GITHUB_OUTPUT for subsequent steps
+
+        $releaseNotes = "### Changes in the Last 24 Hours`n`n$output"
         "release_notes=$releaseNotes" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
         
     - name: Debug Outputs
       run: |
-        echo "Release notes: ${{ steps.release_notes.outputs.release_notes }}"
+        echo "Commits: ${{ steps.commit_messages.outputs.commits }}"
+        echo "Release notes: ${{ steps.commit_messages.outputs.release_notes }}"
         
 
