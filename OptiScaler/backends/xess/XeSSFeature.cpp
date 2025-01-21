@@ -110,7 +110,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
     if (!Config::Instance()->DisableReactiveMask.value_or_default())
     {
-        Config::Instance()->DisableReactiveMask = false;
+        Config::Instance()->DisableReactiveMask.set_volatile_value(false);
         xessParams.initFlags |= XESS_INIT_FLAG_RESPONSIVE_PIXEL_MASK;
         LOG_DEBUG("xessParams.initFlags (ReactiveMaskActive) {0:b}", xessParams.initFlags);
     }
@@ -177,12 +177,12 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         if (ssMulti < 0.5f)
         {
             ssMulti = 0.5f;
-            Config::Instance()->OutputScalingMultiplier = ssMulti;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(ssMulti);
         }
         else if (ssMulti > 3.0f)
         {
             ssMulti = 3.0f;
-            Config::Instance()->OutputScalingMultiplier = ssMulti;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(ssMulti);
         }
 
         _targetWidth = DisplayWidth() * ssMulti;
@@ -202,8 +202,8 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         // enable output scaling to restore image
         if (!Config::Instance()->DisplayResolution.value_or(false))
         {
-            Config::Instance()->OutputScalingMultiplier = 1.0f;
-            Config::Instance()->OutputScalingEnabled = true;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(1.0f);
+            Config::Instance()->OutputScalingEnabled.set_volatile_value(true);
         }
     }
 
@@ -236,7 +236,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
                 if (SUCCEEDED(hr))
                 {
-                    Config::Instance()->CreateHeaps = true;
+                    Config::Instance()->CreateHeaps.set_volatile_value(true);
 
                     LOG_DEBUG("using _localBufferHeap & _localTextureHeap!");
 

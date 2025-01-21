@@ -89,7 +89,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
             if (!paramReactiveMask)
             {
                 LOG_WARN("Bias mask not exist, enabling DisableReactiveMask!!");
-                Config::Instance()->DisableReactiveMask = true;
+                Config::Instance()->DisableReactiveMask.set_volatile_value(true);
             }
         }
 
@@ -133,10 +133,10 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
         return false;
 
     if (!RCAS->IsInit())
-        Config::Instance()->RcasEnabled = false;
+        Config::Instance()->RcasEnabled.set_volatile_value(false);
 
     if (!OutputScaler->IsInit())
-        Config::Instance()->OutputScalingEnabled = false;
+        Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
 
     ID3D11DeviceContext4* dc;
     auto result = InDeviceContext->QueryInterface(IID_PPV_ARGS(&dc));
@@ -378,7 +378,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
             if (!RCAS->Dispatch(Dx12Device, Dx12CommandList, (ID3D12Resource*)params.output.resource,
                 (ID3D12Resource*)params.motionVectors.resource, rcasConstants, OutputScaler->Buffer()))
             {
-                Config::Instance()->RcasEnabled = false;
+                Config::Instance()->RcasEnabled.set_volatile_value(false);
 
                 Dx12CommandList->Close();
                 ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -395,7 +395,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
             if (!RCAS->Dispatch(Dx12Device, Dx12CommandList, (ID3D12Resource*)params.output.resource, (
                 ID3D12Resource*)params.motionVectors.resource, rcasConstants, dx11Out.Dx12Resource))
             {
-                Config::Instance()->RcasEnabled = false;
+                Config::Instance()->RcasEnabled.set_volatile_value(false);
 
                 Dx12CommandList->Close();
                 ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -416,7 +416,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
 
         if (!OutputScaler->Dispatch(Dx12Device, Dx12CommandList, OutputScaler->Buffer(), dx11Out.Dx12Resource))
         {
-            Config::Instance()->OutputScalingEnabled = false;
+            Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
             State::Instance().changeBackend = true;
 
             Dx12CommandList->Close();
@@ -632,12 +632,12 @@ bool FSR31FeatureDx11on12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         if (ssMulti < 0.5f)
         {
             ssMulti = 0.5f;
-            Config::Instance()->OutputScalingMultiplier = ssMulti;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(ssMulti);
         }
         else if (ssMulti > 3.0f)
         {
             ssMulti = 3.0f;
-            Config::Instance()->OutputScalingMultiplier = ssMulti;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(ssMulti);
         }
 
         _targetWidth = DisplayWidth() * ssMulti;
@@ -655,7 +655,7 @@ bool FSR31FeatureDx11on12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         _contextDesc.maxRenderSize.width = RenderWidth();
         _contextDesc.maxRenderSize.height = RenderHeight();
 
-        Config::Instance()->OutputScalingMultiplier = 1.0f;
+        Config::Instance()->OutputScalingMultiplier.set_volatile_value(1.0f);
 
         // if output scaling active let it to handle downsampling
         if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false))
@@ -688,7 +688,7 @@ bool FSR31FeatureDx11on12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     _contextDesc.header.pNext = &backendDesc.header;
 
     if (Config::Instance()->Fsr3xIndex.value_or_default() < 0 || Config::Instance()->Fsr3xIndex.value_or_default() >= State::Instance().fsr3xVersionIds.size())
-        Config::Instance()->Fsr3xIndex = 0;
+        Config::Instance()->Fsr3xIndex.set_volatile_value(0);
 
     ffxOverrideVersion ov = { 0 };
     ov.header.type = FFX_API_DESC_TYPE_OVERRIDE_VERSION;

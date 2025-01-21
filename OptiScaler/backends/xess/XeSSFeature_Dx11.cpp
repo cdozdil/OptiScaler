@@ -87,7 +87,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 			if (!paramReactiveMask)
 			{
 				LOG_WARN("Bias mask not exist, enabling DisableReactiveMask!!");
-				Config::Instance()->DisableReactiveMask = true;
+				Config::Instance()->DisableReactiveMask.set_volatile_value(true);
 			}
 		}
 
@@ -137,10 +137,10 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 	}
 
 	if (!RCAS->IsInit())
-		Config::Instance()->RcasEnabled = false;
+		Config::Instance()->RcasEnabled.set_volatile_value(false);
 
 	if (!OutputScaler->IsInit())
-		Config::Instance()->OutputScalingEnabled = false;
+		Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
 
 	ID3D11DeviceContext4* dc;
 	auto result = InDeviceContext->QueryInterface(IID_PPV_ARGS(&dc));
@@ -354,7 +354,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		{
 			if (!RCAS->Dispatch(Dx12Device, Dx12CommandList, params.pOutputTexture, params.pVelocityTexture, rcasConstants, OutputScaler->Buffer()))
 			{
-				Config::Instance()->RcasEnabled = false;
+				Config::Instance()->RcasEnabled.set_volatile_value(false);
 
 				Dx12CommandList->Close();
 				ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -370,7 +370,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		{
 			if (!RCAS->Dispatch(Dx12Device, Dx12CommandList, params.pOutputTexture, params.pVelocityTexture, rcasConstants, dx11Out.Dx12Resource))
 			{
-				Config::Instance()->RcasEnabled = false;
+				Config::Instance()->RcasEnabled.set_volatile_value(false);
 
 				Dx12CommandList->Close();
 				ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -391,7 +391,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 		if (!OutputScaler->Dispatch(Dx12Device, Dx12CommandList, OutputScaler->Buffer(), dx11Out.Dx12Resource))
 		{
-			Config::Instance()->OutputScalingEnabled = false;
+			Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
 			State::Instance().changeBackend = true;
 
 			Dx12CommandList->Close();

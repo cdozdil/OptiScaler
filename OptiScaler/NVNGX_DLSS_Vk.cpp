@@ -620,7 +620,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
             }
             else
             {
-                Config::Instance()->VulkanUpscaler = "dlss";
+                Config::Instance()->VulkanUpscaler.set_volatile_value("dlss");
                 LOG_INFO("creating new DLSS feature");
             }
         }
@@ -641,20 +641,20 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
             }
             else
             {
-                Config::Instance()->VulkanUpscaler = "fsr31";
+                Config::Instance()->VulkanUpscaler.set_volatile_value("fsr31");
                 LOG_INFO("creating new FSR 3.X feature");
             }
         }
 
         if (upscalerChoice == 0)
         {
-            Config::Instance()->VulkanUpscaler = "fsr21";
+            Config::Instance()->VulkanUpscaler.set_volatile_value("fsr21");
             LOG_INFO("creating new FSR 2.1.2 feature");
             VkContexts[handleId] = std::make_unique<FSR2FeatureVk212>(handleId, InParameters);
         }
         else if (upscalerChoice == 1)
         {
-            Config::Instance()->VulkanUpscaler = "fsr22";
+            Config::Instance()->VulkanUpscaler.set_volatile_value("fsr22");
             LOG_INFO("creating new FSR 2.2.1 feature");
             VkContexts[handleId] = std::make_unique<FSR2FeatureVk>(handleId, InParameters);
         }
@@ -926,21 +926,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
             // prepare new upscaler
             if (State::Instance().newBackend == "fsr22")
             {
-                Config::Instance()->VulkanUpscaler = "fsr22";
+                Config::Instance()->VulkanUpscaler.set_volatile_value("fsr22");
                 LOG_INFO("creating new FSR 2.2.1 feature");
                 VkContexts[handleId] = std::make_unique<FSR2FeatureVk>(handleId, createParams);
                 upscalerChoice = 1;
             }
             else if (State::Instance().newBackend == "dlss")
             {
-                Config::Instance()->VulkanUpscaler = "dlss";
+                Config::Instance()->VulkanUpscaler.set_volatile_value("dlss");
                 LOG_INFO("creating new DLSS feature");
                 VkContexts[handleId] = std::make_unique<DLSSFeatureVk>(handleId, createParams);
                 upscalerChoice = 2;
             }
             else if (State::Instance().newBackend == "fsr31")
             {
-                Config::Instance()->VulkanUpscaler = "fsr31";
+                Config::Instance()->VulkanUpscaler.set_volatile_value("fsr31");
                 LOG_INFO("creating new FSR 3.X feature");
                 VkContexts[handleId] = std::make_unique<FSR31FeatureVk>(handleId, createParams);
                 upscalerChoice = 3;
@@ -952,7 +952,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
             }
             else
             {
-                Config::Instance()->VulkanUpscaler = "fsr21";
+                Config::Instance()->VulkanUpscaler.set_volatile_value("fsr21");
                 LOG_INFO("creating new FSR 2.1.2 feature");
                 VkContexts[handleId] = std::make_unique<FSR2FeatureVk212>(handleId, createParams);
                 upscalerChoice = 0;

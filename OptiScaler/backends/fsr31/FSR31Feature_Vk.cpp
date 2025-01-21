@@ -175,7 +175,7 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     _contextDesc.header.pNext = &backendDesc.header;
 
     if (Config::Instance()->Fsr3xIndex.value_or_default() < 0 || Config::Instance()->Fsr3xIndex.value_or_default() >= State::Instance().fsr3xVersionIds.size())
-        Config::Instance()->Fsr3xIndex = 0;
+        Config::Instance()->Fsr3xIndex.set_volatile_value(0);
 
     ffxOverrideVersion ov = { 0 };
     ov.header.type = FFX_API_DESC_TYPE_OVERRIDE_VERSION;
@@ -369,7 +369,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         else
         {
             LOG_DEBUG("Bias mask not exist and its enabled in config, it may cause problems!!");
-            Config::Instance()->DisableReactiveMask = true;
+            Config::Instance()->DisableReactiveMask.set_volatile_value(true);
             State::Instance().changeBackend = true;
             return true;
         }

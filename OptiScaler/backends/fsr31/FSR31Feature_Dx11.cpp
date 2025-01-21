@@ -136,10 +136,10 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         return false;
 
     if (!RCAS->IsInit())
-        Config::Instance()->RcasEnabled = false;
+        Config::Instance()->RcasEnabled.set_volatile_value(false);
 
     if (!OutputScaler->IsInit())
-        Config::Instance()->OutputScalingEnabled = false;
+        Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
 
     ID3D11ShaderResourceView* restoreSRVs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = {};
     ID3D11SamplerState* restoreSamplerStates[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] = {};
@@ -356,7 +356,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         if (paramReactiveMask)
         {
             LOG_DEBUG("Input Bias mask exist..");
-            Config::Instance()->DisableReactiveMask = false;
+            Config::Instance()->DisableReactiveMask.set_volatile_value(false);
 
             if (Config::Instance()->FsrUseMaskForTransparency.value_or_default())
                 params.transparencyAndComposition = ffxGetResource(paramReactiveMask, L"FSR3_TransparencyAndCompositionMap", Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
@@ -476,7 +476,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
             if (!RCAS->Dispatch(Device, DeviceContext, (ID3D11Texture2D*)params.upscaleOutput.resource, (ID3D11Texture2D*)params.motionVectors.resource,
                 rcasConstants, OutputScaler->Buffer()))
             {
-                Config::Instance()->RcasEnabled = false;
+                Config::Instance()->RcasEnabled.set_volatile_value(false);
                 return true;
             }
         }
@@ -485,7 +485,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
             if (!RCAS->Dispatch(Device, DeviceContext, (ID3D11Texture2D*)params.upscaleOutput.resource, (ID3D11Texture2D*)params.motionVectors.resource,
                 rcasConstants, (ID3D11Texture2D*)paramOutput))
             {
-                Config::Instance()->RcasEnabled = false;
+                Config::Instance()->RcasEnabled.set_volatile_value(false);
                 return true;
             }
         }
@@ -496,7 +496,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         LOG_DEBUG("scaling output...");
         if (!OutputScaler->Dispatch(Device, DeviceContext, OutputScaler->Buffer(), (ID3D11Texture2D*)paramOutput))
         {
-            Config::Instance()->OutputScalingEnabled = false;
+            Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
             State::Instance().changeBackend = true;
             return true;
         }
@@ -685,12 +685,12 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         if (ssMulti < 0.5f)
         {
             ssMulti = 0.5f;
-            Config::Instance()->OutputScalingMultiplier = ssMulti;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(ssMulti);
         }
         else if (ssMulti > 3.0f)
         {
             ssMulti = 3.0f;
-            Config::Instance()->OutputScalingMultiplier = ssMulti;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(ssMulti);
         }
 
         _targetWidth = DisplayWidth() * ssMulti;
@@ -708,7 +708,7 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         _upscalerContextDesc.maxRenderSize.width = RenderWidth();
         _upscalerContextDesc.maxRenderSize.height = RenderHeight();
 
-        Config::Instance()->OutputScalingMultiplier = 1.0f;
+        Config::Instance()->OutputScalingMultiplier.set_volatile_value(1.0f);
 
         // if output scaling active let it to handle downsampling
         if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false))
@@ -735,7 +735,7 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     }
 
     if (Config::Instance()->Fsr3xIndex.value_or_default() < 0 || Config::Instance()->Fsr3xIndex.value_or_default() >= State::Instance().fsr3xVersionIds.size())
-        Config::Instance()->Fsr3xIndex = 0;
+        Config::Instance()->Fsr3xIndex.set_volatile_value(0);
 
     LOG_DEBUG("_createContext!");
     auto ret = ffxFsr3ContextCreate(&_upscalerContext, &_upscalerContextDesc);

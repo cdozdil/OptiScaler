@@ -134,12 +134,12 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
         if (ssMulti < 0.5f)
         {
             ssMulti = 0.5f;
-            Config::Instance()->OutputScalingMultiplier = ssMulti;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(ssMulti);
         }
         else if (ssMulti > 3.0f)
         {
             ssMulti = 3.0f;
-            Config::Instance()->OutputScalingMultiplier = ssMulti;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(ssMulti);
         }
 
         _targetWidth = DisplayWidth() * ssMulti;
@@ -160,8 +160,8 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
         // enable output scaling to restore image
         if (!Config::Instance()->DisplayResolution.value_or(false))
         {
-            Config::Instance()->OutputScalingMultiplier = 1.0f;
-            Config::Instance()->OutputScalingEnabled = true;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(1.0f);
+            Config::Instance()->OutputScalingEnabled.set_volatile_value(true);
         }
     }
 

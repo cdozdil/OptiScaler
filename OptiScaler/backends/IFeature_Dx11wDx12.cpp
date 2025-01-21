@@ -527,7 +527,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
     {
         if (paramReactiveMask)
         {
-            Config::Instance()->DisableReactiveMask = false;
+            Config::Instance()->DisableReactiveMask.set_volatile_value(false);
             LOG_DEBUG("Input Bias mask exist..");
 
             if (CopyTextureFrom11To12(paramReactiveMask, &dx11Reactive, true, Config::Instance()->DontUseNTShared.value_or_default()) == false)
@@ -537,7 +537,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         else if (Config::Instance()->Dx11Upscaler.value_or_default() == "xess")
         {
             LOG_WARN("bias mask not exist and it's enabled in config, it may cause problems!!");
-            Config::Instance()->DisableReactiveMask = true;
+            Config::Instance()->DisableReactiveMask.set_volatile_value(true);
             State::Instance().changeBackend = true;
         }
     }

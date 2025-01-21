@@ -38,10 +38,10 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	}
 
 	if (!RCAS->IsInit())
-		Config::Instance()->RcasEnabled = false;
+		Config::Instance()->RcasEnabled.set_volatile_value(false);
 
 	if (!OutputScaler->IsInit())
-		Config::Instance()->OutputScalingEnabled = false;
+		Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
 
 	if (State::Instance().xessDebug)
 	{
@@ -246,7 +246,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		if (paramReactiveMask)
 		{
 			LOG_DEBUG("Input Bias mask exist..");
-			Config::Instance()->DisableReactiveMask = false;
+			Config::Instance()->DisableReactiveMask.set_volatile_value(false);
 
 			if (Config::Instance()->MaskResourceBarrier.has_value())
 				ResourceBarrier(InCommandList, params.pResponsivePixelMaskTexture, (D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -266,7 +266,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		else
 		{
 			LOG_WARN("Bias mask not exist and its enabled in config, it may cause problems!!");
-			Config::Instance()->DisableReactiveMask = true;
+			Config::Instance()->DisableReactiveMask.set_volatile_value(true);
 			State::Instance().changeBackend = true;
 			return true;
 		}
@@ -337,7 +337,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		{
 			if (!RCAS->Dispatch(Device, InCommandList, params.pOutputTexture, params.pVelocityTexture, rcasConstants, OutputScaler->Buffer()))
 			{
-				Config::Instance()->RcasEnabled = false;
+				Config::Instance()->RcasEnabled.set_volatile_value(false);
 				return true;
 			}
 		}
@@ -345,7 +345,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		{
 			if (!RCAS->Dispatch(Device, InCommandList, params.pOutputTexture, params.pVelocityTexture, rcasConstants, paramOutput))
 			{
-				Config::Instance()->RcasEnabled = false;
+				Config::Instance()->RcasEnabled.set_volatile_value(false);
 				return true;
 			}
 		}
@@ -358,7 +358,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 		if (!OutputScaler->Dispatch(Device, InCommandList, OutputScaler->Buffer(), paramOutput))
 		{
-			Config::Instance()->OutputScalingEnabled = false;
+			Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
 			State::Instance().changeBackend = true;
 			return true;
 		}

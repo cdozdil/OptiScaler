@@ -46,7 +46,7 @@ public:
         spdlog::info("");
 
         State::Instance().upscalerDisableHook = true;
-        //Config::Instance()->dxgiSkipSpoofing = true;
+        //State::Instance().skipSpoofing = true;
 
         LOG_DEBUG("Loading amd_fidelityfx_dx12.dll methods");
 
@@ -171,7 +171,7 @@ public:
         spdlog::info("");
 
         State::Instance().upscalerDisableHook = true;
-        //Config::Instance()->dxgiSkipSpoofing = true;
+        //State::Instance().skipSpoofing = true;
 
         LOG_DEBUG("Loading amd_fidelityfx_vk.dll methods");
 
@@ -199,7 +199,7 @@ public:
             _VULKAN_Query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxQuery");
         }
 
-        //Config::Instance()->dxgiSkipSpoofing = false;
+        //State::Instance().skipSpoofing = false;
         State::Instance().upscalerDisableHook = false;
 
         bool loadResult = _VULKAN_CreateContext != nullptr;
