@@ -62,9 +62,8 @@ public:
 	}
 
 	// Needed for string literals for some reason
-	constexpr CustomOptional& operator=(const char* value) {
+	constexpr CustomOptional& operator=(const char* value) requires std::same_as<T, std::string> {
 		_volatile = false;
-		// TODO: check if T is string
 		std::optional<T>::operator=(T(value));
 		return *this;
 	}
