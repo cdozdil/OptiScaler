@@ -141,9 +141,11 @@ jobs:
 
         $datetime = Get-Date
         Write-Output "Datetime: $datetime`n"
+
+        #--grep=".yml" --invert-grep
         
         # Get commit messages excluding .yml file commits
-        $commits = git log --since="1 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit --grep=".yml" --invert-grep
+        $commits = git log --since="1 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit 
         Write-Output "Commits: $commits`n"
         
         # If no commits are found, cancel the workflow
