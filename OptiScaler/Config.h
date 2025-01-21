@@ -6,7 +6,7 @@
 #include <SimpleIni.h>
 #include <map>
 
-template <class T>
+template <class T, bool HasDefaultValue = true>
 class CustomOptional : public std::optional<T> {
 private:
 	T _defaultValue;
@@ -14,8 +14,11 @@ private:
 	bool _volatile;
 
 public:
-	CustomOptional(const T& defaultValue = T{}) : std::optional<T>(), _defaultValue(defaultValue), _configIni(std::nullopt), _volatile(false) {}
-	CustomOptional(T&& defaultValue = T{}) : std::optional<T>(), _defaultValue(std::move(defaultValue)), _configIni(std::nullopt), _volatile(false) {}
+	CustomOptional(T defaultValue = T{}) requires (HasDefaultValue)
+		: std::optional<T>(), _defaultValue(std::move(defaultValue)), _configIni(std::nullopt), _volatile(false) {}
+
+	CustomOptional() requires (!HasDefaultValue)
+		: std::optional<T>(), _defaultValue(T{}), _configIni(std::nullopt), _volatile(false) {}
 
 	// Prevents a change from being saved to ini
 	constexpr void set_volatile_value(const T& value) {
@@ -68,11 +71,11 @@ public:
 		return *this;
 	}
 
-	constexpr T value_or_default() const& {
+	constexpr T value_or_default() const& requires (HasDefaultValue) {
 		return this->has_value() ? this->value() : _defaultValue;
 	}
-	
-	constexpr T value_or_default()&& {
+
+	constexpr T value_or_default()&& requires (HasDefaultValue) {
 		return this->has_value() ? std::move(this->value()) : std::move(_defaultValue);
 	}
 
@@ -112,7 +115,7 @@ public:
 	std::optional<bool> HDR;
 	std::optional<bool> JitterCancellation;
 	std::optional<bool> DisplayResolution;
-	CustomOptional<bool> DisableReactiveMask{ true };
+	CustomOptional<bool, false> DisableReactiveMask;
 	CustomOptional<float> DlssReactiveMaskBias{ 0.45f };
 
 	// Logging

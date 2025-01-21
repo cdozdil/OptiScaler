@@ -168,7 +168,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		dumpParams.path = ".";
 		dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH | XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS | XESS_DUMP_HISTORY | XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
 
-		if (!Config::Instance()->DisableReactiveMask.value_or_default())
+		if (!Config::Instance()->DisableReactiveMask.value_or(true))
 			dumpParams.dump_elements_mask |= XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
 
 		XeSSProxy::StartDump()(_xessContext, &dumpParams);

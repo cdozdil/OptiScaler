@@ -53,7 +53,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		dumpParams.path = ".";
 		dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH | XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS | XESS_DUMP_HISTORY;
 
-		if (!Config::Instance()->DisableReactiveMask.value_or_default())
+		if (!Config::Instance()->DisableReactiveMask.value_or(true))
 			dumpParams.dump_elements_mask |= XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
 
 		XeSSProxy::StartDump()(_xessContext, &dumpParams);
@@ -241,7 +241,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
 		InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
 
-	if (!Config::Instance()->DisableReactiveMask.value_or_default())
+	if (!Config::Instance()->DisableReactiveMask.value_or(true))
 	{
 		if (paramReactiveMask)
 		{

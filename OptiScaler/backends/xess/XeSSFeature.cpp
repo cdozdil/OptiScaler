@@ -108,7 +108,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         LOG_DEBUG("xessParams.initFlags (LowResMV) {0:b}", xessParams.initFlags);
     }
 
-    if (!Config::Instance()->DisableReactiveMask.value_or_default())
+    if (!Config::Instance()->DisableReactiveMask.value_or(true))
     {
         Config::Instance()->DisableReactiveMask.set_volatile_value(false);
         xessParams.initFlags |= XESS_INIT_FLAG_RESPONSIVE_PIXEL_MASK;
