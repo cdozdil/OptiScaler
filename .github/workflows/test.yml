@@ -131,6 +131,7 @@ jobs:
 
     - name: Get Commit Messages From Last Day
       id: commit_messages
+      working-directory: ${{ github.workspace }}
       shell: powershell
       run: |
         Write-Output "Fetching commits from the last 24 hours..."
@@ -151,9 +152,5 @@ jobs:
 
         $ReleaseTag = "nightly"
         Write-Output "Updating existing release: $ReleaseTag"
-        gh release edit $ReleaseTag --notes "$ReleaseNotes"
-        
-    - name: Debug Outputs
-      run: |
-        echo "Release notes: ${{ steps.commit_messages.outputs.release_notes }}"
+        gh release edit $ReleaseTag --notes "$ReleaseNotes"        
         
