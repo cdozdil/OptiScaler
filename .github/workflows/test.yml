@@ -34,7 +34,7 @@ jobs:
     - name: Extract Version
       id: get_version
       working-directory: ${{ github.workspace }}
-      shell: powershell
+      shell: pwsh
       run: |
         # Ensure the file exists before proceeding
         $resourceFile = ".\OptiScaler\resource.h"
@@ -134,7 +134,7 @@ jobs:
       working-directory: ${{ github.workspace }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      shell: powershell
+      shell: pwsh
       run: |
         Write-Output "Fetching commits from the last 24 hours..."
 
