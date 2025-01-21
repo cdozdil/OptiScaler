@@ -13,6 +13,3 @@
 [submodule "external/spdlog"]
 	path = external/spdlog
 	url = https://github.com/gabime/spdlog.git
-[submodule "external/FidelityFX-SDK"]
-	path = external/FidelityFX-SDK
-	url = https://github.com/cdozdil/FidelityFX-SDK
