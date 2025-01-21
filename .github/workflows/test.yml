@@ -30,6 +30,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0        
         
     - name: Extract Version
       id: get_version
@@ -150,7 +152,7 @@ jobs:
         git log --since="2 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit --grep=".yml" --invert-grep
 
         # Get commit messages excluding .yml file commits
-        $commits = git log --since="2 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit
+        $commits = git log --since="2 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit --grep=".yml" --invert-grep
         
         Write-Output $commits
         
