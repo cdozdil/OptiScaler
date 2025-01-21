@@ -1,11 +1,10 @@
 #include "XeSSFeature.h"
 
-#include "../../pch.h"
-#include "../../Config.h"
-#include "../../Util.h"
-
-#include "../../detours/detours.h"
-#include "../../d3dx/d3dx12.h"
+#include <pch.h>
+#include <Config.h>
+#include <Util.h>
+#include <detours/detours.h>
+#include <d3dx/d3dx12.h>
 
 
 inline void XeSSLogCallback(const char* Message, xess_logging_level_t Level)

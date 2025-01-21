@@ -1,8 +1,8 @@
 #include "imgui_overlay_base.h"
 #include "imgui_overlay_vk.h"
 
-#include "../Util.h"
-#include "../Config.h"
+#include <Util.h>
+#include <Config.h>
 
 #include "imgui/imgui_impl_vulkan.h"
 #include "imgui/imgui_impl_win32.h"

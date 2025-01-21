@@ -7,7 +7,7 @@
 #include "Util.h"
 
 #include "detours/detours.h"
-#include "../external/streamline/sl.h"
+#include <sl.h>
 
 
 typedef int(*PFN_slSetTag)(uint64_t viewport, sl::ResourceTag* tags, uint32_t numTags, uint64_t cmdBuffer);

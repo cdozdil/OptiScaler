@@ -10,10 +10,10 @@
 
 #include "precompile/BCUS_Shader_Dx11.h"
 
-#include "../fsr1/ffx_fsr1.h"
-#include "../fsr1/FSR_EASU_Shader_Dx11.h"
+#include <fsr1/ffx_fsr1.h>
+#include <fsr1/FSR_EASU_Shader_Dx11.h>
 
-#include "../Config.h"
+#include <Config.h>
 
 inline static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
 {

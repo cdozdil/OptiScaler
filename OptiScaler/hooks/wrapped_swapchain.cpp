@@ -1,7 +1,7 @@
 #include "wrapped_swapchain.h"
 
-#include "../Config.h"
-#include "../Util.h"
+#include <Config.h>
+#include <Util.h>
 #include "HooksDx.h"
 
 // Used RenderDoc's wrapped object as referance

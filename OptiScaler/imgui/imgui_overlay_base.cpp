@@ -1,9 +1,9 @@
 #include "imgui_overlay_base.h"
 #include "imgui_common.h"
 
-#include "../Config.h"
-#include "../Logger.h"
-#include "../resource.h"
+#include <Config.h>
+#include <Logger.h>
+#include <resource.h>
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_win32.h"

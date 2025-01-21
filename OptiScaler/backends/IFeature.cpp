@@ -1,6 +1,6 @@
-#include "../pch.h"
+#include <pch.h>
+#include <Config.h>
 #include "IFeature.h"
-#include "../Config.h"
 
 void IFeature::SetHandle(unsigned int InHandleId)
 {

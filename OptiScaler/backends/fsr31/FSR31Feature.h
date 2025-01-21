@@ -2,18 +2,11 @@
 
 #include "ffx_upscale.h"
 
-#include "../IFeature.h"
-//#include "../../detours/detours.h"
+#include <backends/IFeature.h>
 
 inline static void FfxLogCallback(uint32_t type, const wchar_t* message)
 {
     std::wstring string(message);
-
-    //if (type == FFX_API_MESSAGE_TYPE_ERROR)
-    //	LOG_ERROR("FSR Runtime: {0}", str);
-    //else if (type == FFX_API_MESSAGE_TYPE_WARNING)
-    //	LOG_WARN("FSR Runtime: {0}", str);
-    //else
     LOG_DEBUG("FSR Runtime: {0}", wstring_to_string(string));
 }
 

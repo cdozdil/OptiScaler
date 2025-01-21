@@ -1,8 +1,7 @@
-#include "../../pch.h"
-#include "../../Config.h"
-#include "../../Util.h"
-
-#include "../../FfxApi_Proxy.h"
+#include <pch.h>
+#include <Config.h>
+#include <Util.h>
+#include <FfxApi_Proxy.h>
 
 #include "FSR31Feature_Dx12.h"
 

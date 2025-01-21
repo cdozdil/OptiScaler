@@ -1,5 +1,5 @@
-#include "../../pch.h"
-#include "../../Config.h"
+#include <pch.h>
+#include <Config.h>
 
 #include "FSR2Feature_Vk.h"
 

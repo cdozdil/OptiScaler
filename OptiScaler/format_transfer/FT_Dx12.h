@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../pch.h"
+#include <pch.h>
 
 #include "FT_Common.h"
 
 #include <d3d12.h>
-#include "../d3dx/d3dx12.h"
+#include <d3dx/d3dx12.h>
 
 class FT_Dx12
 {

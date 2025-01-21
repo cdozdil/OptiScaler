@@ -1,5 +1,5 @@
 #include "IFeature_Dx11wDx12.h"
-#include "../Config.h"
+#include <Config.h>
 
 #define ASSIGN_DESC(dest, src) dest.Width = src.Width; dest.Height = src.Height; dest.Format = src.Format; dest.BindFlags = src.BindFlags; dest.MiscFlags = src.MiscFlags; 
 

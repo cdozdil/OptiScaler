@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../State.h"
+#include <State.h>
 #include "fakenvapi.h"
 #include "NvApiTypes.h"
 

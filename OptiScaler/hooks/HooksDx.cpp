@@ -1,12 +1,12 @@
 #include "HooksDx.h"
 #include "wrapped_swapchain.h"
 
-#include "../Util.h"
-#include "../Logger.h"
-#include "../Config.h"
+#include <Util.h>
+#include <Logger.h>
+#include <Config.h>
 
-#include "../imgui/imgui_overlay_dx.h"
-#include "../detours/detours.h"
+#include <imgui/imgui_overlay_dx.h>
+#include <detours/detours.h>
 
 #include <d3d11on12.h>
 

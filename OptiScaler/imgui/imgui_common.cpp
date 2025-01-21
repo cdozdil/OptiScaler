@@ -1,9 +1,9 @@
 #include "imgui_common.h"
 #include "imgui/imgui_internal.h"
 
-#include "../font/Hack_Compressed.h"
-#include "../nvapi/fakenvapi.h"
-#include "../nvapi/ReflexHooks.h"
+#include <font/Hack_Compressed.h>
+#include <nvapi/fakenvapi.h>
+#include <nvapi/ReflexHooks.h>
 
 static ImVec2 overlayPosition(-1000.0f, -1000.0f);
 static bool hdrTonemapApplied = false;

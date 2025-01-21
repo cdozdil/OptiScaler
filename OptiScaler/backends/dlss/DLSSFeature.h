@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../../pch.h"
-#include "../../NVNGX_Proxy.h"
-#include "../IFeature.h"
+#include <pch.h>
+#include <NVNGX_Proxy.h>
+#include <backends/IFeature.h>
 
 typedef uint32_t(*PFN_NVSDK_NGX_GetSnippetVersion)(void);
 

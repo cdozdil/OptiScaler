@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../pch.h"
-#include "../Config.h"
+#include <pch.h>
+#include <Config.h>
 
 #include "dxgi1_6.h"
 #include "d3d12.h"

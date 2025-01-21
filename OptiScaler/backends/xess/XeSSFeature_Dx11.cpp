@@ -1,10 +1,10 @@
-#include "../../pch.h"
-#include "../../Config.h"
+#include <pch.h>
+#include <Config.h>
 
 #include "XeSSFeature_Dx11.h"
 
 #if _DEBUG
-#include "../../d3dx/D3DX11tex.h"
+#include <d3dx/D3DX11tex.h>
 #endif
 
 XeSSFeatureDx11::XeSSFeatureDx11(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : IFeature_Dx11wDx12(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters), XeSSFeature(InHandleId, InParameters)

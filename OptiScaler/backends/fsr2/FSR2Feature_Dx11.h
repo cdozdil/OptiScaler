@@ -1,11 +1,11 @@
 #pragma once
-#include "../IFeature_Dx11.h"
+#include <backends/IFeature_Dx11.h>
 #include "FSR2Feature.h"
 
 #include <dxgi1_4.h>
 
-#include "../../fsr2/include/ffx_fsr2.h"
-#include "../../fsr2/include/dx11/ffx_fsr2_dx11.h"
+#include <fsr2/include/ffx_fsr2.h>
+#include <fsr2/include/dx11/ffx_fsr2_dx11.h>
 
 class FSR2FeatureDx11 : public FSR2Feature, public IFeature_Dx11
 {

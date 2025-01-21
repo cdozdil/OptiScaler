@@ -1,5 +1,5 @@
-#include "../../pch.h"
-#include "../../Config.h"
+#include <pch.h>
+#include <Config.h>
 
 #include "XeSSFeature_Dx12.h"
 

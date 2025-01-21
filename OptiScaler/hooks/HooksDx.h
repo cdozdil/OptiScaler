@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../pch.h"
-#include "../format_transfer/FT_Dx12.h"
-#include "../backends/IFeature.h"
+#include <pch.h>
+#include <format_transfer/FT_Dx12.h>
+#include <backends/IFeature.h>
 
 #include <d3d11_4.h>
 #include <d3d12.h>
@@ -30,9 +30,9 @@
 #include <d3d12sdklayers.h>
 #endif
 
-#include "../FfxApi_Proxy.h"
-#include "../nvapi/fakenvapi.h"
-#include "../nvapi/ReflexHooks.h"
+#include <FfxApi_Proxy.h>
+#include <nvapi/fakenvapi.h>
+#include <nvapi/ReflexHooks.h>
 #include <dx12/ffx_api_dx12.h>
 #include <ffx_framegeneration.h>
 

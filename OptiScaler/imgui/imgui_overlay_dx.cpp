@@ -1,9 +1,9 @@
 #include "imgui_overlay_base.h"
 #include "imgui_overlay_dx.h"
 
-#include "../Util.h"
-#include "../Logger.h"
-#include "../Config.h"
+#include <Util.h>
+#include <Logger.h>
+#include <Config.h>
 
 #include "imgui/imgui_impl_dx11.h"
 #include "imgui/imgui_impl_dx12.h"

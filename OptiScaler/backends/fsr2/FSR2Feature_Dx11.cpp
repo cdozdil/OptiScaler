@@ -1,6 +1,6 @@
-#include "../../pch.h"
-#include "../../Config.h"
-#include "../../Util.h"
+#include <pch.h>
+#include <Config.h>
+#include <Util.h>
 
 #include "FSR2Feature_Dx11.h"
 

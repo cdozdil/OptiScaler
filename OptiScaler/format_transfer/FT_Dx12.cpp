@@ -4,7 +4,7 @@
 #include "precompile/R8G8B8A8_Shader.h"
 #include "precompile/B8R8G8A8_Shader.h"
 
-#include "../Config.h"
+#include <Config.h>
 
 inline static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
 {

@@ -1,5 +1,5 @@
 #pragma once
-#include "../pch.h"
+#include <pch.h>
 #include <nvsdk_ngx.h>
 #include <nvsdk_ngx_defs.h>
 

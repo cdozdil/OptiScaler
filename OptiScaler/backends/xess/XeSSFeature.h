@@ -1,6 +1,6 @@
 #pragma once
-#include "../IFeature.h"
-#include "../../XeSS_Proxy.h"
+#include <backends/IFeature.h>
+#include <XeSS_Proxy.h>
 
 #include <string>
 

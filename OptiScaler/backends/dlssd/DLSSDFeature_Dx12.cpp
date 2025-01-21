@@ -1,7 +1,7 @@
 #include "DLSSDFeature_Dx12.h"
 #include <dxgi1_4.h>
-#include "../../Config.h"
-#include "../../pch.h"
+#include <Config.h>
+#include <pch.h>
 
 bool DLSSDFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters)
 {
