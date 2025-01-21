@@ -34,9 +34,51 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
+        fetch-depth: 0            
         submodules: 'true'
         
-    - name: Extract Version
+    - name: Check Existing Release
+      id: check_release
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const releaseTag = "nightly";
+          try {
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: releaseTag,
+            });
+            core.setOutput("release_exists", true);
+            core.setOutput("release_id", release.data.id);
+            core.setOutput("upload_url", release.data.upload_url);
+          } catch (error) {
+            if (error.status === 404) {
+              core.setOutput("release_exists", false);
+            } else {
+              throw error;
+            }
+          }
+
+    - name: Create Nightly Release (if not exists)
+      id: create_release
+      if: steps.check_release.outputs.release_exists == 'false'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const release = await github.rest.repos.createRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag_name: "nightly",
+            name: "Nightly Builds",
+            body: "This is an automated nightly build release.",
+            draft: false,
+            prerelease: true,
+          });
+          core.setOutput("release_id", release.data.id);
+          core.setOutput("upload_url", release.data.upload_url);
+       
+    - name: Extract OptiScaler Version
       id: get_version
       working-directory: ${{ github.workspace }}
       shell: powershell
@@ -115,72 +157,7 @@ jobs:
         path: ${{ github.workspace }}\${{ steps.get_version.outputs.filename }}.7z
         compression-level: 0
         if-no-files-found: error
-        
-    - name: Check Existing Release
-      id: check_release
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const releaseTag = "nightly";
-          try {
-            const release = await github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag: releaseTag,
-            });
-            core.setOutput("release_exists", true);
-            core.setOutput("release_id", release.data.id);
-            core.setOutput("upload_url", release.data.upload_url);
-          } catch (error) {
-            if (error.status === 404) {
-              core.setOutput("release_exists", false);
-            } else {
-              throw error;
-            }
-          }
-
-    - name: Create Nightly Release (if not exists)
-      id: create_release
-      if: steps.check_release.outputs.release_exists == 'false'
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const release = await github.rest.repos.createRelease({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            tag_name: "nightly",
-            name: "Nightly Builds",
-            body: "This is an automated nightly build release.",
-            draft: false,
-            prerelease: true,
-          });
-          core.setOutput("release_id", release.data.id);
-          core.setOutput("upload_url", release.data.upload_url);
-
-    - name: Get Commit Messages From Last Day
-      id: commit_messages
-      run: |
-        echo "Fetching commits from the last 24 hours..."
-        
-        # Get commit messages from the past 24 hours
-        COMMITS=$(git log --since="1 day ago" --pretty=format:"%h %s (%an)")
-
-        # If no commits are found, cancel the workflow
-        if [ -z "$COMMITS" ]; then
-          echo "No commits in the last 24 hours. Cancelling workflow."
-          exit 0
-        fi
-
-        echo "commits=$COMMITS" >> $GITHUB_OUTPUT
-
-    - name: Generate Release Notes
-      id: release_notes
-      run: |
-        COMMITS="${{ steps.commit_messages.outputs.commits }}"
-        RELEASE_NOTES="### Changes in the Last 24 Hours\n\n$COMMITS"
-        echo "$RELEASE_NOTES"
-        echo "release_notes=$RELEASE_NOTES" >> $GITHUB_OUTPUT
-        
+       
     - name: Remove Previous Artifacts
       if: steps.check_release.outputs.release_exists == 'true'
       uses: actions/github-script@v6
@@ -202,15 +179,6 @@ jobs:
             console.log(`Deleted asset: ${asset.name}`);
           }
 
-    - name: Update Release Notes
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        RELEASE_TAG="nightly"
-        RELEASE_NOTES="${{ steps.release_notes.outputs.release_notes }}"
-        echo "Updating existing release: $RELEASE_TAG"
-        gh release edit "$RELEASE_TAG" --notes "$RELEASE_NOTES"
-        
     - name: Upload Artifact to Release
       uses: actions/upload-release-asset@v1
       env:
@@ -221,3 +189,40 @@ jobs:
         asset_name: ${{ steps.get_version.outputs.filename }}.7z
         asset_content_type: application/x-7z-compressed
 
+    - name: Get Commit Messages From Last Day and Update the Release
+      id: commit_messages
+      working-directory: ${{ github.workspace }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      shell: powershell
+      run: |
+        Write-Output "Fetching commits from the last 24 hours..."
+
+        # Get commit messages excluding .yml file commits
+        $commits = git log --since="1 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit --grep=".yml" --invert-grep  --no-merges --first-parent
+        
+        $commits = $commits -split "`n"
+
+        # If no commits are found, cancel the workflow
+        if (-not $commits) {          
+          Write-Output "No relevant commits in the last 24 hours. Cancelling workflow."
+
+          $ReleaseTag = "nightly"
+          Write-Output "Updating existing release: $ReleaseTag"
+          gh release edit $ReleaseTag --notes "### Changes in the Last 24 Hours`n`nNo changes..."   
+        }
+        else {
+          # Join commits into a newline-separated string
+          $formattedCommits = $commits -join "`n"        
+          Write-Output "Commits: $formattedCommits`n"
+  
+          # Generate release notes
+          $releaseNotes = "### Changes in the Last 24 Hours`n`n$formattedCommits"
+          
+          $ReleaseTag = "nightly"
+          Write-Output "Updating existing release: $ReleaseTag"
+          gh release edit $ReleaseTag --notes "$ReleaseNotes"   
+        }
+        
+      continue-on-error: false
+        
