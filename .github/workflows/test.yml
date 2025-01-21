@@ -131,12 +131,12 @@ jobs:
             }
           }
 
-    - name: Get Commit Messages From Last Day
+    - name: Get Commit Messages From Last Day and Update the Release
       id: commit_messages
       working-directory: ${{ github.workspace }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      shell: pwsh
+      shell: powershell
       run: |
         Write-Output "Fetching commits from the last 24 hours..."
 
@@ -148,19 +148,23 @@ jobs:
         # If no commits are found, cancel the workflow
         if (-not $commits) {          
           Write-Output "No relevant commits in the last 24 hours. Cancelling workflow."
-          exit 0
-        }
-        
-        # Join commits into a newline-separated string
-        $formattedCommits = $commits -join "`n"        
-        Write-Output "Commits: $formattedCommits`n"
 
-        # Generate release notes
-        $releaseNotes = "### Changes in the Last 24 Hours`n`n$formattedCommits"
-        
-        $ReleaseTag = "nightly"
-        Write-Output "Updating existing release: $ReleaseTag"
-        gh release edit $ReleaseTag --notes "$ReleaseNotes"   
+          $ReleaseTag = "nightly"
+          Write-Output "Updating existing release: $ReleaseTag"
+          gh release edit $ReleaseTag --notes "### Changes in the Last 24 Hours`n`nNo changes..."   
+        }
+        else {
+          # Join commits into a newline-separated string
+          $formattedCommits = $commits -join "`n"        
+          Write-Output "Commits: $formattedCommits`n"
+  
+          # Generate release notes
+          $releaseNotes = "### Changes in the Last 24 Hours`n`n$formattedCommits"
+          
+          $ReleaseTag = "nightly"
+          Write-Output "Updating existing release: $ReleaseTag"
+          gh release edit $ReleaseTag --notes "$ReleaseNotes"   
+        }
         
     
         
