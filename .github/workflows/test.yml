@@ -144,7 +144,7 @@ jobs:
           exit 0
         }
     
-        $releaseNotes = "### Changes in the Last 24 Hours`n`n$output"
+        $releaseNotes = "### Changes in the Last 24 Hours`n`n$commits"
         Add-Content -Path $env:GITHUB_OUTPUT -Value "release_notes<<EOF"
         Add-Content -Path $env:GITHUB_OUTPUT -Value $releaseNotes
         Add-Content -Path $env:GITHUB_OUTPUT -Value "EOF"        
@@ -157,7 +157,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        RELEASE_TAG="nightly"
-        RELEASE_NOTES="${{ steps.commit_messages.outputs.release_notes }}"
-        echo "Updating existing release: $RELEASE_TAG"
-        gh release edit "$RELEASE_TAG" --notes "$RELEASE_NOTES"
+        $ReleaseTag = "nightly"
+        $ReleaseNotes = "${{ steps.commit_messages.outputs.release_notes }}"
+        Write-Output "Updating existing release: $ReleaseTag"
+        gh release edit $ReleaseTag --notes "$ReleaseNotes"
