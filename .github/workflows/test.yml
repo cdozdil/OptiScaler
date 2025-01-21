@@ -146,14 +146,25 @@ jobs:
     
         # Write the commits to the output
         $output = "commits=$commits"
-        $output | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "commits<<EOF"
+        Add-Content -Path $env:GITHUB_OUTPUT -Value $commits
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "EOF"        
 
         $releaseNotes = "### Changes in the Last 24 Hours`n`n$output"
-        "release_notes=$releaseNotes" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "release_notes<<EOF"
+        Add-Content -Path $env:GITHUB_OUTPUT -Value $releaseNotes
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "EOF"        
         
     - name: Debug Outputs
       run: |
         echo "Commits: ${{ steps.commit_messages.outputs.commits }}"
         echo "Release notes: ${{ steps.commit_messages.outputs.release_notes }}"
         
-
+    - name: Update Release Notes
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        RELEASE_TAG="nightly"
+        RELEASE_NOTES="${{ steps.release_notes.outputs.release_notes }}"
+        echo "Updating existing release: $RELEASE_TAG"
+        gh release edit "$RELEASE_TAG" --notes "$RELEASE_NOTES"
