@@ -136,9 +136,7 @@ jobs:
         Write-Output "Fetching commits from the last 24 hours..."
         
         # Get commit messages from the past 24 hours
-        $commits = git log --since="1 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit | Where-Object { 
-          -not ($_ -match "\.yml$") 
-        }
+        $commits = git log --since="1 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit --grep=".yml" --invert-grep
     
         # Split output into lines if necessary
         $commits = $commits -split "`n"
