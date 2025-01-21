@@ -88,6 +88,24 @@ jobs:
         echo "Version: ${{ steps.get_version.outputs.version }}"
         echo "Filename: ${{ steps.get_version.outputs.filename }}"
         
+    - name: Create Nightly Release (if not exists)
+      id: create_release
+      if: steps.check_release.outputs.release_exists == 'false'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const release = await github.rest.repos.createRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag_name: "nightly",
+            name: "Nightly Builds",
+            body: "This is an automated nightly build release.",
+            draft: false,
+            prerelease: true,
+          });
+          core.setOutput("release_id", release.data.id);
+          core.setOutput("upload_url", release.data.upload_url);
+
     - name: Check Existing Release
       id: check_release
       uses: actions/github-script@v6
@@ -110,24 +128,6 @@ jobs:
               throw error;
             }
           }
-
-    - name: Create Nightly Release (if not exists)
-      id: create_release
-      if: steps.check_release.outputs.release_exists == 'false'
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const release = await github.rest.repos.createRelease({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            tag_name: "nightly",
-            name: "Nightly Builds",
-            body: "This is an automated nightly build release.",
-            draft: false,
-            prerelease: true,
-          });
-          core.setOutput("release_id", release.data.id);
-          core.setOutput("upload_url", release.data.upload_url);
 
     - name: Get Commit Messages From Last Day
       id: commit_messages
@@ -155,19 +155,11 @@ jobs:
         
         Write-Output "$releaseNotes"
 
-        Add-Content -Path $env:GITHUB_OUTPUT -Value "release_notes<<EOF"
-        Add-Content -Path $env:GITHUB_OUTPUT -Value $releaseNotes
-        Add-Content -Path $env:GITHUB_OUTPUT -Value "EOF"        
+        $ReleaseTag = "nightly"
+        Write-Output "Updating existing release: $ReleaseTag"
+        gh release edit $ReleaseTag --notes "$ReleaseNotes"
         
     - name: Debug Outputs
       run: |
         echo "Release notes: ${{ steps.commit_messages.outputs.release_notes }}"
         
-    - name: Update Release Notes
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        $ReleaseTag = "nightly"
-        $ReleaseNotes = "${{ steps.commit_messages.outputs.release_notes }}"
-        Write-Output "Updating existing release: $ReleaseTag"
-        gh release edit $ReleaseTag --notes "$ReleaseNotes"
