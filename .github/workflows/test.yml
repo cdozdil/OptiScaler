@@ -147,10 +147,12 @@ jobs:
         $gitVersion = git --version
         Write-Output "Git Version: $gitVersion`n"
 
-        git log --since="1 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit
-        
+        git log --since="1 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit --grep=".yml" --invert-grep
+
         # Get commit messages excluding .yml file commits
-        $commits = git log --since="1 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit --grep=".yml" --invert-grep
+        $commits = git log --since="1 day ago" --pretty=format:"%h %s (%an)" --abbrev-commit
+        
+        Write-Output "$commits"
         
         $commits = $commits -split "`n"
 
