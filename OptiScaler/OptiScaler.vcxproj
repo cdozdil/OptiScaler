@@ -82,7 +82,7 @@
     <IncludePath>$(ProjectDir);$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(SolutionDir)external\freetype;$(SolutionDir)external\streamline;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)fsr31\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(SolutionDir)external\freetype;$(LibraryPath)</LibraryPath>
     <TargetName>dxgi</TargetName>
-    <OutDir>E:\Games\Steam\steamapps\common\Red Dead Redemption 2\</OutDir>
+    <OutDir>D:\Folders\Games\Epic\DeliverUsMars\DeliverUsMars\Binaries\Win64\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
@@ -196,7 +196,6 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ag\pag_common.h" />
     <ClInclude Include="backends\dlssd\DLSSDFeature.h" />
     <ClInclude Include="backends\dlssd\DLSSDFeature_Dx11.h" />
     <ClInclude Include="backends\dlssd\DLSSDFeature_Dx12.h" />
@@ -210,40 +209,22 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="backends\fsr31\FSR31Feature_Dx11On12.h" />
     <ClInclude Include="backends\fsr31\FSR31Feature_Dx12.h" />
     <ClInclude Include="backends\fsr31\FSR31Feature_Vk.h" />
-    <ClInclude Include="bias\Bias_Common.h" />
-    <ClInclude Include="bias\Bias_Dx12.h" />
-    <ClInclude Include="bias\Bias_Dx11.h" />
-    <ClInclude Include="bias\precompile\Bias_Shader.h" />
     <ClInclude Include="DLSSG_Mod.h" />
-    <ClInclude Include="fsr1\ffx_fsr1.h" />
-    <ClInclude Include="fsr1\FSR_EASU_Shader.h" />
-    <ClInclude Include="fsr1\FSR_EASU_Shader_Dx11.h" />
     <ClInclude Include="Gdi32_Proxy.h" />
     <ClInclude Include="FfxApi_Dx12.h" />
     <ClInclude Include="FSR2_Dx12.h" />
     <ClInclude Include="FSR3_Dx12.h" />
     <ClInclude Include="nvapi\fakenvapi.h" />
-    <ClInclude Include="format_transfer\FT_Common.h" />
-    <ClInclude Include="format_transfer\FT_Dx12.h" />
     <ClInclude Include="FfxApi_Proxy.h" />
-    <ClInclude Include="format_transfer\precompile\B8R8G8A8_Shader.h" />
-    <ClInclude Include="format_transfer\precompile\R10G10B10A2_Shader.h" />
-    <ClInclude Include="format_transfer\precompile\R8G8B8A8_Shader.h" />
     <ClInclude Include="hooks\HooksDx.h" />
     <ClInclude Include="hooks\HooksVk.h" />
     <ClInclude Include="nvapi\NvApiHooks.h" />
     <ClInclude Include="nvapi\NvApiTypes.h" />
-    <ClInclude Include="output_scaling\OS_Common.h" />
-    <ClInclude Include="output_scaling\OS_Dx12.h" />
-    <ClInclude Include="output_scaling\precompile\BCDS_Shader.h" />
-    <ClInclude Include="output_scaling\precompile\BCUS_Shader.h" />
-    <ClInclude Include="bicubicscaling\precompile\FSR_Shader.h" />
     <ClInclude Include="nvapi\external\nvapi.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_212.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx11On12_212.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx12_212.h" />
     <ClInclude Include="backends\fsr2_212\FSR2Feature_Vk_212.h" />
-    <ClInclude Include="cas\include\backends\shared\ffx_shader_blobs.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="backends\fsr2\FSR2Feature.h" />
     <ClInclude Include="backends\fsr2\FSR2Feature_Dx11.h" />
@@ -287,6 +268,37 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="nvapi\ReflexHooks.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="scanner\scanner.h" />
+    <ClInclude Include="shaders\bias\Bias_Common.h" />
+    <ClInclude Include="shaders\bias\Bias_Dx11.h" />
+    <ClInclude Include="shaders\bias\Bias_Dx12.h" />
+    <ClInclude Include="shaders\bias\precompile\Bias_Shader.h" />
+    <ClInclude Include="shaders\bias\precompile\Bias_Shader_Dx11.h" />
+    <ClInclude Include="shaders\format_transfer\FT_Common.h" />
+    <ClInclude Include="shaders\format_transfer\FT_Dx12.h" />
+    <ClInclude Include="shaders\format_transfer\precompile\B8R8G8A8_Shader.h" />
+    <ClInclude Include="shaders\format_transfer\precompile\R10G10B10A2_Shader.h" />
+    <ClInclude Include="shaders\format_transfer\precompile\R8G8B8A8_Shader.h" />
+    <ClInclude Include="shaders\fsr1\ffx_fsr1.h" />
+    <ClInclude Include="shaders\fsr1\FSR_EASU_Shader.h" />
+    <ClInclude Include="shaders\fsr1\FSR_EASU_Shader_Dx11.h" />
+    <ClInclude Include="shaders\output_scaling\OS_Common.h" />
+    <ClInclude Include="shaders\output_scaling\OS_Dx11.h" />
+    <ClInclude Include="shaders\output_scaling\OS_Dx12.h" />
+    <ClInclude Include="shaders\output_scaling\precompile\bcds_bicubic_Shader.h" />
+    <ClInclude Include="shaders\output_scaling\precompile\bcds_bicubic_Shader_Dx11.h" />
+    <ClInclude Include="shaders\output_scaling\precompile\bcds_catmull_Shader.h" />
+    <ClInclude Include="shaders\output_scaling\precompile\bcds_catmull_Shader_Dx11.h" />
+    <ClInclude Include="shaders\output_scaling\precompile\bcds_lanczos_Shader.h" />
+    <ClInclude Include="shaders\output_scaling\precompile\bcds_lanczos_Shader_Dx11.h" />
+    <ClInclude Include="shaders\output_scaling\precompile\bcds_magc_Shader.h" />
+    <ClInclude Include="shaders\output_scaling\precompile\bcds_magc_Shader_Dx11.h" />
+    <ClInclude Include="shaders\output_scaling\precompile\BCUS_Shader.h" />
+    <ClInclude Include="shaders\output_scaling\precompile\BCUS_Shader_Dx11.h" />
+    <ClInclude Include="shaders\rcas\precompile\RCAS_Shader.h" />
+    <ClInclude Include="shaders\rcas\precompile\RCAS_Shader_Dx11.h" />
+    <ClInclude Include="shaders\rcas\RCAS_Common.h" />
+    <ClInclude Include="shaders\rcas\RCAS_Dx11.h" />
+    <ClInclude Include="shaders\rcas\RCAS_Dx12.h" />
     <ClInclude Include="State.h" />
     <ClInclude Include="Streamline_Proxy.h" />
     <ClInclude Include="Util.h" />
@@ -314,8 +326,6 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClCompile Include="backends\IFeature_Dx11.cpp" />
     <ClCompile Include="backends\IFeature_Dx11wDx12.cpp" />
     <ClCompile Include="backends\IFeature_Dx11wDx12.h" />
-    <ClCompile Include="bias\Bias_Dx12.cpp" />
-    <ClCompile Include="bias\Bias_Dx11.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="backends\fsr2\FSR2Feature.cpp" />
     <ClCompile Include="backends\fsr2\FSR2Feature_Dx11.cpp" />
@@ -325,7 +335,6 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClCompile Include="backends\IFeature.cpp" />
     <ClCompile Include="backends\IFeature_Dx12.cpp" />
     <ClCompile Include="FfxApi_Dx12.cpp" />
-    <ClCompile Include="format_transfer\FT_Dx12.cpp" />
     <ClCompile Include="FSR2_Dx12.cpp" />
     <ClCompile Include="FSR3_Dx12.cpp" />
     <ClCompile Include="hooks\HooksDx.cpp" />
@@ -359,11 +368,14 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClCompile Include="backends\xess\XeSSFeature_Dx11.cpp" />
     <ClCompile Include="backends\xess\XeSSFeature_Dx12.cpp" />
     <ClCompile Include="backends\xess\XeSSFeature_Dx12.h" />
-    <ClCompile Include="output_scaling\OS_Dx12.cpp" />
-    <ClCompile Include="output_scaling\OS_Dx11.cpp" />
-    <ClCompile Include="rcas\RCAS_Dx11.cpp" />
-    <ClCompile Include="rcas\RCAS_Dx12.cpp" />
     <ClCompile Include="scanner\scanner.cpp" />
+    <ClCompile Include="shaders\bias\Bias_Dx11.cpp" />
+    <ClCompile Include="shaders\bias\Bias_Dx12.cpp" />
+    <ClCompile Include="shaders\format_transfer\FT_Dx12.cpp" />
+    <ClCompile Include="shaders\output_scaling\OS_Dx11.cpp" />
+    <ClCompile Include="shaders\output_scaling\OS_Dx12.cpp" />
+    <ClCompile Include="shaders\rcas\RCAS_Dx11.cpp" />
+    <ClCompile Include="shaders\rcas\RCAS_Dx12.cpp" />
     <ClCompile Include="Util.cpp" />
     <ClCompile Include="XeSS_Debug.cpp" />
     <ClCompile Include="XeSS_Dx12.cpp" />

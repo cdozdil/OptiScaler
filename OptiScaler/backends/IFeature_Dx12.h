@@ -5,9 +5,9 @@
 #include <pch.h>
 #include <Util.h>
 #include <imgui/Imgui_Dx12.h>
-#include <output_scaling/OS_Dx12.h>
-#include <rcas/RCAS_Dx12.h>
-#include <bias/Bias_Dx12.h>
+#include <shaders/output_scaling/OS_Dx12.h>
+#include <shaders/rcas/RCAS_Dx12.h>
+#include <shaders/bias/Bias_Dx12.h>
 
 class IFeature_Dx12 : public virtual IFeature
 {
