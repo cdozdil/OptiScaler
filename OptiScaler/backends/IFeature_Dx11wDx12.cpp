@@ -512,7 +512,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         else
         {
             LOG_WARN("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
-            Config::Instance()->AutoExposure = true;
+            Config::Instance()->AutoExposure.set_volatile_value(true);
             State::Instance().changeBackend = true;
         }
     }

@@ -257,12 +257,12 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
             if (displaySizeEnabled && lowResMV)
             {
                 LOG_WARN("MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
-                Config::Instance()->DisplayResolution = false;
+                Config::Instance()->DisplayResolution.set_volatile_value(false);
                 State::Instance().changeBackend = true;
                 return true;
             }
 
-            Config::Instance()->DisplayResolution = displaySizeEnabled;
+            Config::Instance()->DisplayResolution.set_volatile_value(displaySizeEnabled);
         }
     }
     else
@@ -336,7 +336,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         else
         {
             LOG_DEBUG("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
-            Config::Instance()->AutoExposure = true;
+            Config::Instance()->AutoExposure.set_volatile_value(true);
             State::Instance().changeBackend = true;
             return true;
         }
@@ -627,46 +627,46 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
 
     if (Config::Instance()->DepthInverted.value_or(DepthInverted))
     {
-        Config::Instance()->DepthInverted = true;
+        Config::Instance()->DepthInverted.set_volatile_value(true);
         _upscalerContextDesc.flags |= Fsr31::FFX_FSR3_ENABLE_DEPTH_INVERTED;
         SetDepthInverted(true);
         LOG_INFO("contextDesc.initFlags (DepthInverted) {0:b}", _upscalerContextDesc.flags);
     }
     else
-        Config::Instance()->DepthInverted = false;
+        Config::Instance()->DepthInverted.set_volatile_value(false);
 
     if (Config::Instance()->AutoExposure.value_or(AutoExposure))
     {
-        Config::Instance()->AutoExposure = true;
+        Config::Instance()->AutoExposure.set_volatile_value(true);
         _upscalerContextDesc.flags |= Fsr31::FFX_FSR3_ENABLE_AUTO_EXPOSURE;
         LOG_INFO("contextDesc.initFlags (AutoExposure) {0:b}", _upscalerContextDesc.flags);
     }
     else
     {
-        Config::Instance()->AutoExposure = false;
+        Config::Instance()->AutoExposure.set_volatile_value(false);
         LOG_INFO("contextDesc.initFlags (!AutoExposure) {0:b}", _upscalerContextDesc.flags);
     }
 
     if (Config::Instance()->HDR.value_or(Hdr))
     {
-        Config::Instance()->HDR = true;
+        Config::Instance()->HDR.set_volatile_value(true);
         _upscalerContextDesc.flags |= Fsr31::FFX_FSR3_ENABLE_HIGH_DYNAMIC_RANGE;
         LOG_INFO("contextDesc.initFlags (HDR) {0:b}", _upscalerContextDesc.flags);
     }
     else
     {
-        Config::Instance()->HDR = false;
+        Config::Instance()->HDR.set_volatile_value(false);
         LOG_INFO("contextDesc.initFlags (!HDR) {0:b}", _upscalerContextDesc.flags);
     }
 
     if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
     {
-        Config::Instance()->JitterCancellation = true;
+        Config::Instance()->JitterCancellation.set_volatile_value(true);
         _upscalerContextDesc.flags |= Fsr31::FFX_FSR3_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
         LOG_INFO("contextDesc.initFlags (JitterCancellation) {0:b}", _upscalerContextDesc.flags);
     }
     else
-        Config::Instance()->JitterCancellation = false;
+        Config::Instance()->JitterCancellation.set_volatile_value(false);
 
     if (Config::Instance()->DisplayResolution.value_or(!LowRes))
     {

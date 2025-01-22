@@ -237,21 +237,11 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Init Flags
         {
-            if (!AutoExposure.has_value())
-                AutoExposure = readBool("InitFlags", "AutoExposure");
-
-            if (!HDR.has_value())
-                HDR = readBool("InitFlags", "HDR");
-
-            if (!DepthInverted.has_value())
-                DepthInverted = readBool("InitFlags", "DepthInverted");
-
-            if (!JitterCancellation.has_value())
-                JitterCancellation = readBool("InitFlags", "JitterCancellation");
-
-            if (!DisplayResolution.has_value())
-                DisplayResolution = readBool("InitFlags", "DisplayResolution");
-
+            AutoExposure.set_from_config(readBool("InitFlags", "AutoExposure"));
+            HDR.set_from_config(readBool("InitFlags", "HDR"));
+            DepthInverted.set_from_config(readBool("InitFlags", "DepthInverted"));
+            JitterCancellation.set_from_config(readBool("InitFlags", "JitterCancellation"));
+            DisplayResolution.set_from_config(readBool("InitFlags", "DisplayResolution"));
         	DisableReactiveMask.set_from_config(readBool("InitFlags", "DisableReactiveMask"));
         }
 
@@ -649,11 +639,11 @@ bool Config::SaveIni()
 
     // InitFlags
     {
-        ini.SetValue("InitFlags", "AutoExposure", GetBoolValue(Instance()->AutoExposure).c_str());
-        ini.SetValue("InitFlags", "HDR", GetBoolValue(Instance()->HDR).c_str());
-        ini.SetValue("InitFlags", "DepthInverted", GetBoolValue(Instance()->DepthInverted).c_str());
-        ini.SetValue("InitFlags", "JitterCancellation", GetBoolValue(Instance()->JitterCancellation).c_str());
-        ini.SetValue("InitFlags", "DisplayResolution", GetBoolValue(Instance()->DisplayResolution).c_str());
+        ini.SetValue("InitFlags", "AutoExposure", GetBoolValue(Instance()->AutoExposure.value_for_config()).c_str());
+        ini.SetValue("InitFlags", "HDR", GetBoolValue(Instance()->HDR.value_for_config()).c_str());
+        ini.SetValue("InitFlags", "DepthInverted", GetBoolValue(Instance()->DepthInverted.value_for_config()).c_str());
+        ini.SetValue("InitFlags", "JitterCancellation", GetBoolValue(Instance()->JitterCancellation.value_for_config()).c_str());
+        ini.SetValue("InitFlags", "DisplayResolution", GetBoolValue(Instance()->DisplayResolution.value_for_config()).c_str());
         ini.SetValue("InitFlags", "DisableReactiveMask", GetBoolValue(Instance()->DisableReactiveMask.value_for_config()).c_str());
     }
 
@@ -757,7 +747,7 @@ bool Config::SaveIni()
         ini.SetValue("Inputs", "Dlss", GetBoolValue(Instance()->DlssInputs.value_for_config()).c_str());
         ini.SetValue("Inputs", "XeSS", GetBoolValue(Instance()->XeSSInputs.value_for_config()).c_str());
         ini.SetValue("Inputs", "Fsr2", GetBoolValue(Instance()->Fsr2Inputs.value_for_config()).c_str());
-        //ini.SetValue("Inputs", "Fsr2Pattern", GetBoolValue(Instance()->Fsr2Pattern.value_for_config()).c_str());
+        ini.SetValue("Inputs", "Fsr2Pattern", GetBoolValue(Instance()->Fsr2Pattern.value_for_config()).c_str());
         ini.SetValue("Inputs", "Fsr3", GetBoolValue(Instance()->Fsr3Inputs.value_for_config()).c_str());
         ini.SetValue("Inputs", "Ffx", GetBoolValue(Instance()->FfxInputs.value_for_config()).c_str());
     }

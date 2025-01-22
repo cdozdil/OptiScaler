@@ -64,7 +64,7 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
     if (Config::Instance()->DepthInverted.value_or(depthInverted))
     {
-        Config::Instance()->DepthInverted = true;
+        Config::Instance()->DepthInverted.set_volatile_value(true);
         featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
         LOG_INFO("featureFlags (DepthInverted) {0:b}", featureFlags);
     }
@@ -75,7 +75,7 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
     if (Config::Instance()->AutoExposure.value_or(autoExposure))
     {
-        Config::Instance()->AutoExposure = true;
+        Config::Instance()->AutoExposure.set_volatile_value(true);
         featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
         LOG_INFO("featureFlags (AutoExposure) {0:b}", featureFlags);
     }
@@ -86,25 +86,25 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
     if (Config::Instance()->HDR.value_or(isHdr))
     {
-        Config::Instance()->HDR = true;
+        Config::Instance()->HDR.set_volatile_value(true);
         featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
         LOG_INFO("featureFlags (HDR) {0:b}", featureFlags);
     }
     else
     {
-        Config::Instance()->HDR = false;
+        Config::Instance()->HDR.set_volatile_value(false);
         LOG_INFO("featureFlags (!HDR) {0:b}", featureFlags);
     }
 
     if (Config::Instance()->JitterCancellation.value_or(mvJittered))
     {
-        Config::Instance()->JitterCancellation = true;
+        Config::Instance()->JitterCancellation.set_volatile_value(true);
         featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
         LOG_INFO("featureFlags (JitterCancellation) {0:b}", featureFlags);
     }
     else
     {
-        Config::Instance()->JitterCancellation = false;
+        Config::Instance()->JitterCancellation.set_volatile_value(false);
         LOG_INFO("featureFlags (!JitterCancellation) {0:b}", featureFlags);
     }
 

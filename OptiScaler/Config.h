@@ -14,7 +14,7 @@ private:
 	bool _volatile;
 
 public:
-	CustomOptional(T defaultValue = T{}) requires (HasDefaultValue)
+	CustomOptional(T defaultValue) requires (HasDefaultValue)
 		: std::optional<T>(), _defaultValue(std::move(defaultValue)), _configIni(std::nullopt), _volatile(false) {}
 
 	CustomOptional() requires (!HasDefaultValue)
@@ -79,19 +79,28 @@ public:
 		return this->has_value() ? std::move(this->value()) : std::move(_defaultValue);
 	}
 
-	constexpr std::optional<T> value_for_config() {
+	constexpr std::optional<T> value_for_config() requires (HasDefaultValue) {
 		if (_volatile) {
 			if (_configIni != _defaultValue)
 				return _configIni;
-			else
-				return std::nullopt;
-		}
-		else if (!this->has_value() || *this == _defaultValue) {
+
 			return std::nullopt;
 		}
-		else {
+
+		if (!this->has_value() || *this == _defaultValue)
+			return std::nullopt;
+
+		return this->value();
+	}
+
+	constexpr std::optional<T> value_for_config() requires (!HasDefaultValue) {
+		if (_volatile)
+			return _configIni;
+
+		if (this->has_value())
 			return this->value();
-		}
+
+		return std::nullopt;
 	}
 
 	constexpr T value_for_config_or(T other) {
@@ -110,11 +119,11 @@ public:
 	Config();
 
 	// Init flags
-	std::optional<bool> DepthInverted;
-	std::optional<bool> AutoExposure;
-	std::optional<bool> HDR;
-	std::optional<bool> JitterCancellation;
-	std::optional<bool> DisplayResolution;
+	CustomOptional<bool, false> DepthInverted;
+	CustomOptional<bool, false> AutoExposure;
+	CustomOptional<bool, false> HDR;
+	CustomOptional<bool, false> JitterCancellation;
+	CustomOptional<bool, false> DisplayResolution;
 	CustomOptional<bool, false> DisableReactiveMask;
 	CustomOptional<float> DlssReactiveMaskBias{ 0.45f };
 

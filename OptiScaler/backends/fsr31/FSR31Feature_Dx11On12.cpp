@@ -53,13 +53,13 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
                 if (displaySizeEnabled && lowResMV)
                 {
                     LOG_WARN("MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, TargetWidth(), displaySizeEnabled);
-                    Config::Instance()->DisplayResolution = false;
+                    Config::Instance()->DisplayResolution.set_volatile_value(false);
                 }
 
                 pvTexture->Release();
                 pvTexture = nullptr;
 
-                Config::Instance()->DisplayResolution = displaySizeEnabled;
+                Config::Instance()->DisplayResolution.set_volatile_value(displaySizeEnabled);
             }
 
             paramVelocity->Release();
@@ -75,7 +75,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
             if (paramExpo == nullptr)
             {
                 LOG_WARN("ExposureTexture is not exist, enabling AutoExposure!!");
-                Config::Instance()->AutoExposure = true;
+                Config::Instance()->AutoExposure.set_volatile_value(true);
             }
         }
 
@@ -574,46 +574,46 @@ bool FSR31FeatureDx11on12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
 
     if (Config::Instance()->DepthInverted.value_or(DepthInverted))
     {
-        Config::Instance()->DepthInverted = true;
+        Config::Instance()->DepthInverted.set_volatile_value(true);
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_DEPTH_INVERTED;
         SetDepthInverted(true);
         LOG_INFO("contextDesc.initFlags (DepthInverted) {0:b}", _contextDesc.flags);
     }
     else
-        Config::Instance()->DepthInverted = false;
+        Config::Instance()->DepthInverted.set_volatile_value(false);
 
     if (Config::Instance()->AutoExposure.value_or(AutoExposure))
     {
-        Config::Instance()->AutoExposure = true;
+        Config::Instance()->AutoExposure.set_volatile_value(true);
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_AUTO_EXPOSURE;
         LOG_INFO("contextDesc.initFlags (AutoExposure) {0:b}", _contextDesc.flags);
     }
     else
     {
-        Config::Instance()->AutoExposure = false;
+        Config::Instance()->AutoExposure.set_volatile_value(false);
         LOG_INFO("contextDesc.initFlags (!AutoExposure) {0:b}", _contextDesc.flags);
     }
 
     if (Config::Instance()->HDR.value_or(Hdr))
     {
-        Config::Instance()->HDR = true;
+        Config::Instance()->HDR.set_volatile_value(true);
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_HIGH_DYNAMIC_RANGE;
         LOG_INFO("contextDesc.initFlags (HDR) {0:b}", _contextDesc.flags);
     }
     else
     {
-        Config::Instance()->HDR = false;
+        Config::Instance()->HDR.set_volatile_value(false);
         LOG_INFO("contextDesc.initFlags (!HDR) {0:b}", _contextDesc.flags);
     }
 
     if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
     {
-        Config::Instance()->JitterCancellation = true;
+        Config::Instance()->JitterCancellation.set_volatile_value(true);
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
         LOG_INFO("contextDesc.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
     }
     else
-        Config::Instance()->JitterCancellation = false;
+        Config::Instance()->JitterCancellation.set_volatile_value(false);
 
     if (Config::Instance()->DisplayResolution.value_or(!LowRes))
     {

@@ -393,7 +393,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
                 auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
                 Dx11Contexts.erase(it);
 
-                Config::Instance()->Dx11Upscaler.set_volatile_value("fsr22");
+                Config::Instance()->Dx11Upscaler = "fsr22";
             }
             else
             {
@@ -415,7 +415,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
                     auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
                     Dx11Contexts.erase(it);
 
-                    Config::Instance()->Dx11Upscaler.set_volatile_value("fsr22");
+                    Config::Instance()->Dx11Upscaler = "fsr22";
                 }
                 else
                 {
@@ -440,7 +440,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
                 auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
                 Dx11Contexts.erase(it);
 
-                Config::Instance()->Dx11Upscaler.set_volatile_value("fsr22");
+                Config::Instance()->Dx11Upscaler = "fsr22";
             }
             else
             {
@@ -710,13 +710,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
             // next frame prepare stuff
             if (State::Instance().newBackend == "xess")
             {
-                Config::Instance()->Dx11Upscaler.set_volatile_value("xess");
+                Config::Instance()->Dx11Upscaler = "xess";
                 LOG_INFO("creating new XeSS with Dx12 feature");
                 Dx11Contexts[handleId] = std::make_unique<XeSSFeatureDx11>(handleId, createParams);
             }
             else if (State::Instance().newBackend == "dlss")
             {
-                Config::Instance()->Dx11Upscaler.set_volatile_value("dlss");
+                Config::Instance()->Dx11Upscaler = "dlss";
                 LOG_INFO("creating new DLSS feature");
                 Dx11Contexts[handleId] = std::make_unique<DLSSFeatureDx11>(handleId, createParams);
             }
@@ -727,37 +727,37 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
             }
             else if (State::Instance().newBackend == "fsr21_12")
             {
-                Config::Instance()->Dx11Upscaler.set_volatile_value("fsr21_12");
+                Config::Instance()->Dx11Upscaler = "fsr21_12";
                 LOG_INFO("creating new FSR 2.1.2 with Dx12 feature");
                 Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12_212>(handleId, createParams);
             }
             else if (State::Instance().newBackend == "fsr31_12")
             {
-                Config::Instance()->Dx11Upscaler.set_volatile_value("fsr31_12");
+                Config::Instance()->Dx11Upscaler = "fsr31_12";
                 LOG_INFO("creating new FSR 3.1 with Dx12 feature");
                 Dx11Contexts[handleId] = std::make_unique<FSR31FeatureDx11on12>(handleId, createParams);
             }
             else if (State::Instance().newBackend == "fsr22_12")
             {
-                Config::Instance()->Dx11Upscaler.set_volatile_value("fsr22_12");
+                Config::Instance()->Dx11Upscaler = "fsr22_12";
                 LOG_INFO("creating new FSR 2.2.1 with Dx12 feature");
                 Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11on12>(handleId, createParams);
             }
             else if (State::Instance().newBackend == "fsr22")
             {
-                Config::Instance()->Dx11Upscaler.set_volatile_value("fsr22");
+                Config::Instance()->Dx11Upscaler = "fsr22";
                 LOG_INFO("creating new native FSR 2.2.1 feature");
                 Dx11Contexts[handleId] = std::make_unique<FSR2FeatureDx11>(handleId, createParams);
             }
             else if (State::Instance().newBackend == "fsr31")
             {
-                Config::Instance()->Dx11Upscaler.set_volatile_value("fsr31");
+                Config::Instance()->Dx11Upscaler = "fsr31";
                 LOG_INFO("creating new native FSR 3.1.0 feature");
                 Dx11Contexts[handleId] = std::make_unique<FSR31FeatureDx11>(handleId, createParams);
             }
             //else if (State::Instance().newBackend == "fsr304")
             //{
-            //    Config::Instance()->Dx11Upscaler.set_volatile_value("fsr31");
+            //    Config::Instance()->Dx11Upscaler = "fsr31";
             //    LOG_INFO("creating new native FSR 3.1.0 feature");
             //    Dx11Contexts[handleId] = std::make_unique<FSR31FeatureDx11>(handleId, createParams);
             //}

@@ -61,39 +61,39 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
     if (Config::Instance()->DepthInverted.value_or(DepthInverted))
     {
-        Config::Instance()->DepthInverted = true;
+        Config::Instance()->DepthInverted.set_volatile_value(true);
         xessParams.initFlags |= XESS_INIT_FLAG_INVERTED_DEPTH;
         LOG_DEBUG("xessParams.initFlags (DepthInverted) {0:b}", xessParams.initFlags);
     }
 
     if (Config::Instance()->AutoExposure.value_or(AutoExposure))
     {
-        Config::Instance()->AutoExposure = true;
+        Config::Instance()->AutoExposure.set_volatile_value(true);
         xessParams.initFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
         LOG_DEBUG("xessParams.initFlags (AutoExposure) {0:b}", xessParams.initFlags);
     }
     else
     {
-        Config::Instance()->AutoExposure = false;
+        Config::Instance()->AutoExposure.set_volatile_value(false);
         xessParams.initFlags |= XESS_INIT_FLAG_EXPOSURE_SCALE_TEXTURE;
         LOG_DEBUG("xessParams.initFlags (!AutoExposure) {0:b}", xessParams.initFlags);
     }
 
     if (!Config::Instance()->HDR.value_or(Hdr))
     {
-        Config::Instance()->HDR = false;
+        Config::Instance()->HDR.set_volatile_value(false);
         xessParams.initFlags |= XESS_INIT_FLAG_LDR_INPUT_COLOR;
         LOG_DEBUG("xessParams.initFlags (!HDR) {0:b}", xessParams.initFlags);
     }
     else
     {
-        Config::Instance()->HDR = true;
+        Config::Instance()->HDR.set_volatile_value(true);
         LOG_DEBUG("xessParams.initFlags (HDR) {0:b}", xessParams.initFlags);
     }
 
     if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
     {
-        Config::Instance()->JitterCancellation = true;
+        Config::Instance()->JitterCancellation.set_volatile_value(true);
         xessParams.initFlags |= XESS_INIT_FLAG_JITTERED_MV;
         LOG_DEBUG("xessParams.initFlags (JitterCancellation) {0:b}", xessParams.initFlags);
     }

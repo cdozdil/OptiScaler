@@ -54,13 +54,13 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 				if (displaySizeEnabled && lowResMV)
 				{
 					LOG_WARN("MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, TargetWidth(), displaySizeEnabled);
-					Config::Instance()->DisplayResolution = false;
+					Config::Instance()->DisplayResolution.set_volatile_value(false);
 				}
 
 				pvTexture->Release();
 				pvTexture = nullptr;
 
-				Config::Instance()->DisplayResolution = displaySizeEnabled;
+				Config::Instance()->DisplayResolution.set_volatile_value(displaySizeEnabled);
 			}
 		}
 
@@ -73,7 +73,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 			if (paramExpo == nullptr)
 			{
 				LOG_WARN("ExposureTexture is not exist, enabling AutoExposure!!");
-				Config::Instance()->AutoExposure = true;
+				Config::Instance()->AutoExposure.set_volatile_value(true);
 			}
 		}
 

@@ -707,7 +707,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
             }
             else
             {
-                Config::Instance()->Dx12Upscaler.set_volatile_value("dlss");
+                Config::Instance()->Dx12Upscaler = "dlss";
                 LOG_INFO("creating new DLSS feature");
             }
         }
@@ -728,7 +728,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
             }
             else
             {
-                Config::Instance()->Dx12Upscaler.set_volatile_value("xess");
+                Config::Instance()->Dx12Upscaler = "xess";
                 LOG_INFO("creating new XeSS feature");
             }
         }
@@ -749,20 +749,20 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
             }
             else
             {
-                Config::Instance()->Dx12Upscaler.set_volatile_value("fsr31");
+                Config::Instance()->Dx12Upscaler = "fsr31";
                 LOG_INFO("creating new FSR 3.X feature");
             }
         }
 
         if (upscalerChoice == 1)
         {
-            Config::Instance()->Dx12Upscaler.set_volatile_value("fsr22");
+            Config::Instance()->Dx12Upscaler = "fsr22";
             LOG_INFO("creating new FSR 2.2.1 feature");
             Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12>(handleId, InParameters);
         }
         else if (upscalerChoice == 2)
         {
-            Config::Instance()->Dx12Upscaler.set_volatile_value("fsr21");
+            Config::Instance()->Dx12Upscaler = "fsr21";
             LOG_INFO("creating new FSR 2.1.2 feature");
             Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12_212>(handleId, InParameters);
         }
@@ -1223,21 +1223,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             // prepare new upscaler
             if (State::Instance().newBackend == "fsr22")
             {
-                Config::Instance()->Dx12Upscaler.set_volatile_value("fsr22");
+                Config::Instance()->Dx12Upscaler = "fsr22";
                 LOG_INFO("creating new FSR 2.2.1 feature");
                 Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12>(handleId, createParams);
                 upscalerChoice = 1;
             }
             else if (State::Instance().newBackend == "fsr21")
             {
-                Config::Instance()->Dx12Upscaler.set_volatile_value("fsr21");
+                Config::Instance()->Dx12Upscaler = "fsr21";
                 LOG_INFO("creating new FSR 2.1.2 feature");
                 Dx12Contexts[handleId] = std::make_unique<FSR2FeatureDx12_212>(handleId, createParams);
                 upscalerChoice = 2;
             }
             else if (State::Instance().newBackend == "dlss")
             {
-                Config::Instance()->Dx12Upscaler.set_volatile_value("dlss");
+                Config::Instance()->Dx12Upscaler = "dlss";
                 LOG_INFO("creating new DLSS feature");
                 Dx12Contexts[handleId] = std::make_unique<DLSSFeatureDx12>(handleId, createParams);
                 upscalerChoice = 3;
@@ -1249,14 +1249,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             }
             else if (State::Instance().newBackend == "fsr31")
             {
-                Config::Instance()->Dx12Upscaler.set_volatile_value("fsr31");
+                Config::Instance()->Dx12Upscaler = "fsr31";
                 LOG_INFO("creating new FSR 3.X feature");
                 Dx12Contexts[handleId] = std::make_unique<FSR31FeatureDx12>(handleId, createParams);
                 upscalerChoice = 4;
             }
             else
             {
-                Config::Instance()->Dx12Upscaler.set_volatile_value("xess");
+                Config::Instance()->Dx12Upscaler = "xess";
                 LOG_INFO("creating new XeSS feature");
                 Dx12Contexts[handleId] = std::make_unique<XeSSFeatureDx12>(handleId, createParams);
                 upscalerChoice = 0;
