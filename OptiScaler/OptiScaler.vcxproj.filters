@@ -110,25 +110,25 @@
     <ClInclude Include="rcas\RCAS_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="imgui\imgui_overlay_base.h">
+    <ClInclude Include="menu\imgui_overlay_base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="imgui\imgui_overlay_dx.h">
+    <ClInclude Include="menu\imgui_overlay_dx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="imgui\imgui_overlay_vk.h">
+    <ClInclude Include="menu\imgui_overlay_vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="imgui\imgui_dx_base.h">
+    <ClInclude Include="menu\imgui_dx_base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="imgui\imgui_dx11.h">
+    <ClInclude Include="menu\imgui_dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="imgui\imgui_dx12.h">
+    <ClInclude Include="menu\imgui_dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="imgui\imgui_common.h">
+    <ClInclude Include="menu\imgui_common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="rcas\RCAS_Common.h">
@@ -446,22 +446,22 @@
     <ClCompile Include="NVNGX.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="imgui\imgui_overlay_base.cpp">
+    <ClCompile Include="menu\imgui_overlay_base.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="imgui\imgui_overlay_dx.cpp">
+    <ClCompile Include="menu\imgui_overlay_dx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="imgui\imgui_overlay_vk.cpp">
+    <ClCompile Include="menu\imgui_overlay_vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="imgui\imgui_dx_base.cpp">
+    <ClCompile Include="menu\imgui_dx_base.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="imgui\imgui_dx11.cpp">
+    <ClCompile Include="menu\imgui_dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="imgui\imgui_dx12.cpp">
+    <ClCompile Include="menu\imgui_dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="backends\dlssd\DLSSDFeature.cpp">
@@ -488,7 +488,7 @@
     <ClCompile Include="backends\fsr31\FSR31Feature_Vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="imgui\imgui_common.cpp">
+    <ClCompile Include="menu\imgui_common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="backends\fsr31\FSR31Feature_Dx11.cpp">
