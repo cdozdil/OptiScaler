@@ -212,13 +212,13 @@
     <ClInclude Include="proxies\Streamline_Proxy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FfxApi_Dx12.h">
+    <ClInclude Include="inputs\FfxApi_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FSR2_Dx12.h">
+    <ClInclude Include="inputs\FSR2_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FSR3_Dx12.h">
+    <ClInclude Include="inputs\FSR3_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="scanner\scanner.h">
@@ -362,13 +362,13 @@
     <ClCompile Include="Util.cpp">
       <Filter>Util</Filter>
     </ClCompile>
-    <ClCompile Include="NVNGX_DLSS_Dx12.cpp">
+    <ClCompile Include="inputs\NVNGX_DLSS_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NVNGX_DLSS_Dx11.cpp">
+    <ClCompile Include="inputs\NVNGX_DLSS_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NVNGX_DLSS_Vk.cpp">
+    <ClCompile Include="inputs\NVNGX_DLSS_Vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="upscalers\fsr2\FSR2Feature.cpp">
@@ -443,7 +443,7 @@
     <ClCompile Include="upscalers\dlss\DLSSFeature_Vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NVNGX.cpp">
+    <ClCompile Include="inputs\NVNGX.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="menu\imgui_overlay_base.cpp">
@@ -494,10 +494,10 @@
     <ClCompile Include="upscalers\fsr31\FSR31Feature_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="XeSS_Debug.cpp">
+    <ClCompile Include="inputs\XeSS_Debug.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="XeSS_Dx12.cpp">
+    <ClCompile Include="inputs\XeSS_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="hooks\HooksDx.cpp">
@@ -509,13 +509,13 @@
     <ClCompile Include="hooks\wrapped_swapchain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FfxApi_Dx12.cpp">
+    <ClCompile Include="inputs\FfxApi_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FSR2_Dx12.cpp">
+    <ClCompile Include="inputs\FSR2_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FSR3_Dx12.cpp">
+    <ClCompile Include="inputs\FSR3_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="scanner\scanner.cpp">

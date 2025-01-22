@@ -211,9 +211,9 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="upscalers\fsr31\FSR31Feature_Vk.h" />
     <ClInclude Include="DLSSG_Mod.h" />
     <ClInclude Include="proxies\Gdi32_Proxy.h" />
-    <ClInclude Include="FfxApi_Dx12.h" />
-    <ClInclude Include="FSR2_Dx12.h" />
-    <ClInclude Include="FSR3_Dx12.h" />
+    <ClInclude Include="inputs\FfxApi_Dx12.h" />
+    <ClInclude Include="inputs\FSR2_Dx12.h" />
+    <ClInclude Include="inputs\FSR3_Dx12.h" />
     <ClInclude Include="include\imgui\imconfig.h" />
     <ClInclude Include="include\imgui\imgui.h" />
     <ClInclude Include="include\imgui\imgui_impl_dx11.h" />
@@ -334,9 +334,9 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClCompile Include="upscalers\fsr2\FSR2Feature_Vk.cpp" />
     <ClCompile Include="upscalers\IFeature.cpp" />
     <ClCompile Include="upscalers\IFeature_Dx12.cpp" />
-    <ClCompile Include="FfxApi_Dx12.cpp" />
-    <ClCompile Include="FSR2_Dx12.cpp" />
-    <ClCompile Include="FSR3_Dx12.cpp" />
+    <ClCompile Include="inputs\FfxApi_Dx12.cpp" />
+    <ClCompile Include="inputs\FSR2_Dx12.cpp" />
+    <ClCompile Include="inputs\FSR3_Dx12.cpp" />
     <ClCompile Include="hooks\HooksDx.cpp" />
     <ClCompile Include="hooks\HooksVk.cpp" />
     <ClCompile Include="menu\imgui_common.cpp" />
@@ -358,11 +358,11 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClCompile Include="include\imgui\imgui_widgets.cpp" />
     <ClCompile Include="include\imgui\misc\freetype\imgui_freetype.cpp" />
     <ClCompile Include="Logger.cpp" />
-    <ClCompile Include="NVNGX.cpp" />
-    <ClCompile Include="NVNGX_DLSS_Dx11.cpp" />
-    <ClCompile Include="NVNGX_DLSS_Dx12.cpp" />
+    <ClCompile Include="inputs\NVNGX.cpp" />
+    <ClCompile Include="inputs\NVNGX_DLSS_Dx11.cpp" />
+    <ClCompile Include="inputs\NVNGX_DLSS_Dx12.cpp" />
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="NVNGX_DLSS_Vk.cpp" />
+    <ClCompile Include="inputs\NVNGX_DLSS_Vk.cpp" />
     <ClCompile Include="upscalers\xess\XeSSFeature.cpp" />
     <ClCompile Include="upscalers\xess\XeSSFeature.h" />
     <ClCompile Include="upscalers\xess\XeSSFeature_Dx11.cpp" />
@@ -377,8 +377,8 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClCompile Include="shaders\rcas\RCAS_Dx11.cpp" />
     <ClCompile Include="shaders\rcas\RCAS_Dx12.cpp" />
     <ClCompile Include="Util.cpp" />
-    <ClCompile Include="XeSS_Debug.cpp" />
-    <ClCompile Include="XeSS_Dx12.cpp" />
+    <ClCompile Include="inputs\XeSS_Debug.cpp" />
+    <ClCompile Include="inputs\XeSS_Dx12.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OptiScaler.rc" />
