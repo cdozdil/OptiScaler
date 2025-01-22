@@ -8,8 +8,8 @@
 #include "NVNGX_Parameter.h"
 
 #include "detours/detours.h"
-#include "fsr2_212/include/ffx_fsr2.h"
-#include "fsr2_212/include/dx12/ffx_fsr2_dx12.h"
+#include "fsr2_212/ffx_fsr2.h"
+#include "fsr2_212/dx12/ffx_fsr2_dx12.h"
 
 // Tiny Tina's Wonderland
 typedef struct FfxResourceTiny
