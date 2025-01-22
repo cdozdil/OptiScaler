@@ -163,11 +163,22 @@ bool Config::Reload(std::filesystem::path iniPath)
             DebugWait.set_from_config(readBool("Log", "DebugWait"));
             LogSingleFile.set_from_config(readBool("Log", "SingleFile"));
 
-            if (auto setting = readWString("Log", "LogFile"); !setting.has_value())
             {
-                auto filename = LogSingleFile.value_or(true) ? "OptiScaler.log" : ("OptiScaler_" + std::to_string(GetTicks()) + ".log");
-                auto logFile = Util::DllPath().parent_path() / filename;
-                setting = logFile.wstring();
+                auto setting = readString("Log", "LogFile", false);
+
+                // Reproduce the old bug of "LogFile = " always disabling logs
+                if (setting.has_value() && setting.value().empty())
+                    LogFileName.set_from_config(L"");
+
+                auto path = std::filesystem::path(setting.value_or(wstring_to_string(LogFileName.value_or_default())));
+                auto filenameStem = path.stem();
+
+                auto filename = std::filesystem::path(LogSingleFile.value_or_default() ? filenameStem.wstring() + L".log" : filenameStem.wstring() + L"_" + std::to_wstring(GetTicks()) + L".log");
+
+                if (path.has_root_path())
+                    LogFileName.set_from_config((path.parent_path() / filename).wstring());
+                else
+                    LogFileName.set_from_config((Util::DllPath().parent_path() / filename).wstring());
             }
         }
 
@@ -368,7 +379,6 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Plugins
         {
-
             if (auto setting = readString("Plugins", "Path", true); setting.has_value())
             {
                 auto path = std::filesystem::path(setting.value());
