@@ -134,7 +134,7 @@ public:
 	CustomOptional<bool> OpenConsole{ false };
 	CustomOptional<bool> DebugWait{ false }; // not in ini
 	CustomOptional<int> LogLevel{ 2 };
-	CustomOptional<std::wstring> LogFileName{ L"OptiScaler" };
+	CustomOptional<std::wstring> LogFileName{ L"OptiScaler.log" };
 	CustomOptional<bool> LogSingleFile{ true };
 
 	// XeSS
