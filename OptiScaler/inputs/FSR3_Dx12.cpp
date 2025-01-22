@@ -357,60 +357,72 @@ void HookFSR3ExeInputs()
 
     auto exeName = wstring_to_string(Util::ExePath().filename());
 
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+
     if (o_ffxFsr3UpscalerContextCreate_Dx12 == nullptr)
-        o_ffxFsr3UpscalerContextCreate_Dx12 = (PFN_ffxFsr3UpscalerContextCreate)DetourFindFunction(exeName.c_str(), "ffxFsr3UpscalerContextCreate");
-
-    if (o_ffxFsr3UpscalerContextDispatch_Dx12 == nullptr)
-        o_ffxFsr3UpscalerContextDispatch_Dx12 = (PFN_ffxFsr3UpscalerContextDispatch)DetourFindFunction(exeName.c_str(), "ffxFsr3UpscalerContextDispatch");
-
-    if (o_ffxFsr3UpscalerContextDestroy_Dx12 == nullptr)
-        o_ffxFsr3UpscalerContextDestroy_Dx12 = (PFN_ffxFsr3UpscalerContextDestroy)DetourFindFunction(exeName.c_str(), "ffxFsr3UpscalerContextDestroy");
-
-    if (o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12 == nullptr)
-        o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode)DetourFindFunction(exeName.c_str(), "ffxFsr3UpscalerGetUpscaleRatioFromQualityMode");
-
-    if (o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 == nullptr)
-        o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr3UpscalerGetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "ffxFsr3UpscalerGetRenderResolutionFromQualityMode");
-
-    if (o_ffxFSR3GetInterfaceDX12 == nullptr)
-        o_ffxFSR3GetInterfaceDX12 = (PFN_ffxFSR3GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "ffxGetInterfaceDX12");
-
-    if (o_ffxFsr3UpscalerContextCreate_Dx12 != nullptr)
     {
-        LOG_INFO("FSR3 methods found, now hooking");
-
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
+        o_ffxFsr3UpscalerContextCreate_Dx12 = (PFN_ffxFsr3UpscalerContextCreate)DetourFindFunction(exeName.c_str(), "ffxFsr3UpscalerContextCreate");
 
         if (o_ffxFsr3UpscalerContextCreate_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextCreate_Dx12, ffxFsr3ContextCreate_Dx12);
 
+        LOG_DEBUG("ffxFsr3UpscalerContextCreate_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerContextCreate_Dx12);
+    }
+
+    if (o_ffxFsr3UpscalerContextDispatch_Dx12 == nullptr)
+    {
+        o_ffxFsr3UpscalerContextDispatch_Dx12 = (PFN_ffxFsr3UpscalerContextDispatch)DetourFindFunction(exeName.c_str(), "ffxFsr3UpscalerContextDispatch");
+
         if (o_ffxFsr3UpscalerContextDispatch_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextDispatch_Dx12, ffxFsr3ContextDispatch_Dx12);
+
+        LOG_DEBUG("ffxFsr3UpscalerContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerContextDispatch_Dx12);
+    }
+
+    if (o_ffxFsr3UpscalerContextDestroy_Dx12 == nullptr)
+    {
+        o_ffxFsr3UpscalerContextDestroy_Dx12 = (PFN_ffxFsr3UpscalerContextDestroy)DetourFindFunction(exeName.c_str(), "ffxFsr3UpscalerContextDestroy");
 
         if (o_ffxFsr3UpscalerContextDestroy_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextDestroy_Dx12, ffxFsr3ContextDestroy_Dx12);
 
+        LOG_DEBUG("ffxFsr3UpscalerContextDestroy_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerContextDestroy_Dx12);
+    }
+
+    if (o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12 == nullptr)
+    {
+        o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode)DetourFindFunction(exeName.c_str(), "ffxFsr3UpscalerGetUpscaleRatioFromQualityMode");
+
         if (o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12, ffxFsr3GetUpscaleRatioFromQualityMode_Dx12);
+
+        LOG_DEBUG("ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12);
+    }
+
+    if (o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 == nullptr)
+    {
+        o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr3UpscalerGetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "ffxFsr3UpscalerGetRenderResolutionFromQualityMode");
 
         if (o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12, ffxFsr3GetRenderResolutionFromQualityMode_Dx12);
 
+        LOG_DEBUG("ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12);
+    }
+
+    if (o_ffxFSR3GetInterfaceDX12 == nullptr)
+    {
+        o_ffxFSR3GetInterfaceDX12 = (PFN_ffxFSR3GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "ffxGetInterfaceDX12");
+
         if (o_ffxFSR3GetInterfaceDX12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFSR3GetInterfaceDX12, hk_ffxFsr3GetInterfaceDX12);
 
-        DetourTransactionCommit();
-
-        State::Instance().fsrHooks = true;
+        LOG_DEBUG("ffxGetInterfaceDX12: {:X}", (size_t)o_ffxFSR3GetInterfaceDX12);
     }
 
-    LOG_DEBUG("ffxFsr3UpscalerContextCreate_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerContextCreate_Dx12);
-    LOG_DEBUG("ffxFsr3UpscalerContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerContextDispatch_Dx12);
-    LOG_DEBUG("ffxFsr3UpscalerContextDestroy_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerContextDestroy_Dx12);
-    LOG_DEBUG("ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12);
-    LOG_DEBUG("ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12);
-    LOG_DEBUG("ffxGetInterfaceDX12: {:X}", (size_t)o_ffxFSR3GetInterfaceDX12);
+    DetourTransactionCommit();
+
+    State::Instance().fsrHooks = o_ffxFsr3UpscalerContextCreate_Dx12 != nullptr;
 }
 
 void HookFSR3Inputs(HMODULE module)
@@ -419,54 +431,63 @@ void HookFSR3Inputs(HMODULE module)
 
     if (module != nullptr)
     {
-        if (o_ffxFSR3GetInterfaceDX12 == nullptr)
-            o_ffxFsr3UpscalerContextCreate_Dx12 = (PFN_ffxFsr3UpscalerContextCreate)GetProcAddress(module, "ffxFsr3UpscalerContextCreate");
-
-        if (o_ffxFsr3UpscalerContextDispatch_Dx12 == nullptr)
-            o_ffxFsr3UpscalerContextDispatch_Dx12 = (PFN_ffxFsr3UpscalerContextDispatch)GetProcAddress(module, "ffxFsr3UpscalerContextDispatch");
-
-        if (o_ffxFsr3UpscalerContextDestroy_Dx12 == nullptr)
-            o_ffxFsr3UpscalerContextDestroy_Dx12 = (PFN_ffxFsr3UpscalerContextDestroy)GetProcAddress(module, "ffxFsr3UpscalerContextDestroy");
-
-        if (o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12 == nullptr)
-            o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode)GetProcAddress(module, "ffxFsr3UpscalerGetUpscaleRatioFromQualityMode");
-
-        if (o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 == nullptr)
-            o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr3UpscalerGetRenderResolutionFromQualityMode)GetProcAddress(module, "ffxFsr3UpscalerGetRenderResolutionFromQualityMode");
-    }
-
-    if (o_ffxFsr3UpscalerContextCreate_Dx12 != nullptr)
-    {
-        LOG_INFO("FSR3 methods found, now hooking");
-
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        if (o_ffxFsr3UpscalerContextCreate_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextCreate_Dx12, ffxFsr3ContextCreate_Dx12);
+        if (o_ffxFSR3GetInterfaceDX12 == nullptr)
+        {
+            o_ffxFsr3UpscalerContextCreate_Dx12 = (PFN_ffxFsr3UpscalerContextCreate)GetProcAddress(module, "ffxFsr3UpscalerContextCreate");
 
-        if (o_ffxFsr3UpscalerContextDispatch_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextDispatch_Dx12, ffxFsr3ContextDispatch_Dx12);
+            if (o_ffxFsr3UpscalerContextCreate_Dx12 != nullptr)
+                DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextCreate_Dx12, ffxFsr3ContextCreate_Dx12);
+         
+            LOG_DEBUG("ffxFsr3UpscalerContextCreate_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerContextCreate_Dx12);
+        }
 
-        if (o_ffxFsr3UpscalerContextDestroy_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextDestroy_Dx12, ffxFsr3ContextDestroy_Dx12);
+        if (o_ffxFsr3UpscalerContextDispatch_Dx12 == nullptr)
+        {
+            o_ffxFsr3UpscalerContextDispatch_Dx12 = (PFN_ffxFsr3UpscalerContextDispatch)GetProcAddress(module, "ffxFsr3UpscalerContextDispatch");
 
-        if (o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12, ffxFsr3GetUpscaleRatioFromQualityMode_Dx12);
+            if (o_ffxFsr3UpscalerContextDispatch_Dx12 != nullptr)
+                DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextDispatch_Dx12, ffxFsr3ContextDispatch_Dx12);
+         
+            LOG_DEBUG("ffxFsr3UpscalerContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerContextDispatch_Dx12);
+        }
 
-        if (o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12, ffxFsr3GetRenderResolutionFromQualityMode_Dx12);
+        if (o_ffxFsr3UpscalerContextDestroy_Dx12 == nullptr)
+        {
+            o_ffxFsr3UpscalerContextDestroy_Dx12 = (PFN_ffxFsr3UpscalerContextDestroy)GetProcAddress(module, "ffxFsr3UpscalerContextDestroy");
 
-        State::Instance().fsrHooks = true;
+            if (o_ffxFsr3UpscalerContextDestroy_Dx12 != nullptr)
+                DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextDestroy_Dx12, ffxFsr3ContextDestroy_Dx12);
+            
+            LOG_DEBUG("ffxFsr3UpscalerContextDestroy_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerContextDestroy_Dx12);
+        }
 
+        if (o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12 == nullptr)
+        {
+            o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode)GetProcAddress(module, "ffxFsr3UpscalerGetUpscaleRatioFromQualityMode");
+
+            if (o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12 != nullptr)
+                DetourAttach(&(PVOID&)o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12, ffxFsr3GetUpscaleRatioFromQualityMode_Dx12);
+            
+            LOG_DEBUG("ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12);
+        }
+
+        if (o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 == nullptr)
+        {
+            o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr3UpscalerGetRenderResolutionFromQualityMode)GetProcAddress(module, "ffxFsr3UpscalerGetRenderResolutionFromQualityMode");
+
+            if (o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 != nullptr)
+                DetourAttach(&(PVOID&)o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12, ffxFsr3GetRenderResolutionFromQualityMode_Dx12);
+
+            LOG_DEBUG("ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12);
+        }
+     
         DetourTransactionCommit();
-    }
 
-    LOG_DEBUG("ffxFsr3UpscalerContextCreate_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerContextCreate_Dx12);
-    LOG_DEBUG("ffxFsr3UpscalerContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerContextDispatch_Dx12);
-    LOG_DEBUG("ffxFsr3UpscalerContextDestroy_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerContextDestroy_Dx12);
-    LOG_DEBUG("ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12);
-    LOG_DEBUG("ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12);
+        State::Instance().fsrHooks = o_ffxFsr3UpscalerContextCreate_Dx12 != nullptr;
+    }
 }
 
 void HookFSR3Dx12Inputs(HMODULE module)
@@ -475,19 +496,18 @@ void HookFSR3Dx12Inputs(HMODULE module)
 
     if (module != nullptr)
     {
-        if (o_ffxFSR3GetInterfaceDX12 == nullptr)
-            o_ffxFSR3GetInterfaceDX12 = (PFN_ffxFSR3GetInterfaceDX12)GetProcAddress(module, "ffxGetInterfaceDX12");
-    }
-
-    if (o_ffxFSR3GetInterfaceDX12 != nullptr)
-    {
-        LOG_INFO("FSR3 methods found, now hooking");
-
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        if (o_ffxFSR3GetInterfaceDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFSR3GetInterfaceDX12, hk_ffxFsr3GetInterfaceDX12);
+        if (o_ffxFSR3GetInterfaceDX12 == nullptr)
+        {
+            o_ffxFSR3GetInterfaceDX12 = (PFN_ffxFSR3GetInterfaceDX12)GetProcAddress(module, "ffxGetInterfaceDX12");
+
+            if (o_ffxFSR3GetInterfaceDX12 != nullptr)
+                DetourAttach(&(PVOID&)o_ffxFSR3GetInterfaceDX12, hk_ffxFsr3GetInterfaceDX12);
+
+            LOG_DEBUG("ffxGetInterfaceDX12: {:X}", (size_t)o_ffxFSR3GetInterfaceDX12);
+        }
 
         DetourTransactionCommit();
     }

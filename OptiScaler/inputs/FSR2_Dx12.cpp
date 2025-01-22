@@ -872,51 +872,110 @@ void HookFSR2ExeInputs()
     auto exeNameW = Util::ExePath().filename();
     auto exeName = wstring_to_string(exeNameW);
 
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+
     // ffxFsr2ContextCreate
     if (o_ffxFsr2ContextCreate_Dx12 == nullptr)
+    {
         o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextCreate");
-    if (o_ffxFsr2ContextCreate_Dx12 == nullptr)
-        o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextCreate@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2ContextDescription@@@Z");
+        if (o_ffxFsr2ContextCreate_Dx12 == nullptr)
+            o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextCreate@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2ContextDescription@@@Z");
+
+        if (o_ffxFsr2ContextCreate_Dx12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2ContextCreate_Dx12, ffxFsr2ContextCreate_Dx12);
+
+        LOG_DEBUG("ffxFsr2ContextCreate_Dx12: {:X}", (size_t)o_ffxFsr2ContextCreate_Dx12);
+    }
 
     //ffxFsr2ContextDispatch 2.X
-    if (o_ffxFsr2ContextCreate_Dx12 == nullptr)
-        o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextDispatch)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextDispatch");
+    if (o_ffxFsr2ContextDispatch_Dx12 == nullptr)
+    {
+        o_ffxFsr2ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextDispatch");
+
+        if (o_ffxFsr2ContextDispatch_Dx12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatch_Dx12);
+
+        LOG_DEBUG("ffxFsr2ContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr2ContextDispatch_Dx12);
+    }
 
     //ffxFsr2ContextDispatch FSR2.0
     if (o_ffxFsr20ContextDispatch_Dx12 == nullptr)
+    {
         o_ffxFsr20ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextDispatch@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2DispatchDescription@@@Z");
+
+        if (o_ffxFsr20ContextDispatch_Dx12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr20ContextDispatch_Dx12, ffxFsr20ContextDispatch_Dx12);
+
+        LOG_DEBUG("ffxFsr20ContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr20ContextDispatch_Dx12);
+    }
 
     //ffxFsr2ContextDispatch Tiny Tina
     if (o_ffxFsr2TinyContextDispatch_Dx12 == nullptr)
+    {
         o_ffxFsr2TinyContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextDispatch@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2DispatchParams@@@Z");
+
+        if (o_ffxFsr2TinyContextDispatch_Dx12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2TinyContextDispatch_Dx12, ffxFsr2TinyContextDispatch_Dx12);
+
+        LOG_DEBUG("ffxFsr2TinyContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr2TinyContextDispatch_Dx12);
+    }
 
     //ffxFsr2ContextDestroy
     if (o_ffxFsr2ContextDestroy_Dx12 == nullptr)
+    {
         o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextDestroy");
-    if (o_ffxFsr2ContextDestroy_Dx12 == nullptr)
-        o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextDestroy@@YAHPEAUFfxFsr2Context@@@Z");
+        if (o_ffxFsr2ContextDestroy_Dx12 == nullptr)
+            o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextDestroy@@YAHPEAUFfxFsr2Context@@@Z");
+
+        if (o_ffxFsr2ContextDestroy_Dx12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2ContextDestroy_Dx12, ffxFsr2ContextDestroy_Dx12);
+
+        LOG_DEBUG("ffxFsr2ContextDestroy_Dx12: {:X}", (size_t)o_ffxFsr2ContextDestroy_Dx12);
+    }
 
     //ffxFsr2GetUpscaleRatioFromQualityMode
     if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 == nullptr)
+    {
         o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr2GetUpscaleRatioFromQualityMode)DetourFindFunction(exeName.c_str(), "ffxFsr2GetUpscaleRatioFromQualityMode");
-    if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 == nullptr)
-        o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr2GetUpscaleRatioFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetUpscaleRatioFromQualityMode@@YAMW4FfxFsr2QualityMode@@@Z");
+        if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 == nullptr)
+            o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr2GetUpscaleRatioFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetUpscaleRatioFromQualityMode@@YAMW4FfxFsr2QualityMode@@@Z");
+
+        if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12, ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
+
+        LOG_DEBUG("ffxFsr2GetUpscaleRatioFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
+    }
 
     //ffxFsr2GetRenderResolutionFromQualityMode
     if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
+    {
         o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "ffxFsr2GetRenderResolutionFromQualityMode");
-    if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
-        o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAI0IIW4FfxFsr2QualityMode@@@Z");
-    if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
-        o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAH0HHW4FfxFsr2QualityMode@@@Z");
+        if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
+            o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAI0IIW4FfxFsr2QualityMode@@@Z");
+        if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
+            o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAH0HHW4FfxFsr2QualityMode@@@Z");
+    
+        if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12, ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
+
+        LOG_DEBUG("ffxFsr2GetRenderResolutionFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
+    }
 
     //ffxFsr2GetInterfaceDX12
     //o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "ffxFsr2GetInterfaceDX12");
     //if (o_ffxFsr2GetInterfaceDX12 == nullptr)
+    //{
     //    o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetInterfaceDX12@@YAHPEAUFfxFsr2Interface@@PEAUID3D12Device@@PEAX_K@Z");
 
+    //    if (o_ffxFsr2GetInterfaceDX12 != nullptr)
+    //        DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
+
+    //    LOG_DEBUG("ffxFsr2GetInterfaceDX12: {:X}", (size_t)o_ffxFsr2GetInterfaceDX12);
+    //}
+
     // Pattern matching
-    if(Config::Instance()->Fsr2Pattern.value_or_default())
+    if (Config::Instance()->Fsr2Pattern.value_or_default())
     {
         LOG_DEBUG("Checking createPattern");
         std::wstring_view exeNameV(exeNameW.c_str());
@@ -942,12 +1001,22 @@ void HookFSR2ExeInputs()
         //    o_ffxFsr2ContextCreate_Pattern_Dx12 = (PFN_ffxFsr2ContextCreate)scanner::GetAddress(exeNameV, createPatternAW2, 0);
         //}
 
+        if (o_ffxFsr2ContextCreate_Pattern_Dx12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2ContextCreate_Pattern_Dx12, ffxFsr2ContextCreate_Pattern_Dx12);
+
+        LOG_DEBUG("ffxFsr2ContextCreate_Pattern_Dx12: {:X}", (size_t)o_ffxFsr2ContextCreate_Pattern_Dx12);
+
         // DRG
         // Not receiving calls
         // Assumed FSR2.0
         LOG_DEBUG("Checking dispatchPattern20");
         std::string_view dispatchPattern20("40 55 56 41 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 80 B9 ? ? ? ? 00 4C 8B FA 48 8B 02 48 8B F1");
         o_ffxFsr20ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPattern20, 0);
+
+        if (o_ffxFsr20ContextDispatch_Pattern_Dx12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr20ContextDispatch_Pattern_Dx12, ffxFsr20ContextDispatch_Pattern_Dx12);
+
+        LOG_DEBUG("ffxFsr20ContextDispatch_Patern_Dx12: {:X}", (size_t)o_ffxFsr20ContextDispatch_Pattern_Dx12);
 
         // Lies of P
         // Dispatch 2.X
@@ -988,126 +1057,90 @@ void HookFSR2ExeInputs()
         //    o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPatternAW2, 0);
         //}
 
+        if (o_ffxFsr2ContextDispatch_Pattern_Dx12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Pattern_Dx12, ffxFsr2ContextDispatch_Pattern_Dx12);
+
+        LOG_DEBUG("ffxFsr2ContextDispatch_Pattern_Dx12: {:X}", (size_t)o_ffxFsr2ContextDispatch_Pattern_Dx12);
+
         // Destroy
         LOG_DEBUG("Checking destroyPattern");
         std::string_view destroyPattern("40 53 48 83 EC 20 48 8B D9 48 85 C9 75 ? B8 00 00 00 80 48 83 C4 20 5B C3");
         o_ffxFsr2ContextDestroy_Pattern_Dx12 = (PFN_ffxFsr2ContextDestroy)scanner::GetAddress(exeNameV, destroyPattern, 0);
+
+        if (o_ffxFsr2ContextDestroy_Pattern_Dx12 != nullptr)
+            DetourAttach(&(PVOID&)o_ffxFsr2ContextDestroy_Pattern_Dx12, ffxFsr2ContextDestroy_Pattern_Dx12);
+
+        LOG_DEBUG("ffxFsr2ContextDestroy_Pattern_Dx12: {:X}", (size_t)o_ffxFsr2ContextDestroy_Pattern_Dx12);
     }
 
-    LOG_INFO("FSR2 methods found, now hooking");
-
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-
-    if (o_ffxFsr2ContextCreate_Dx12 != nullptr)
-        DetourAttach(&(PVOID&)o_ffxFsr2ContextCreate_Dx12, ffxFsr2ContextCreate_Dx12);
-
-    if (o_ffxFsr2ContextCreate_Pattern_Dx12 != nullptr)
-        DetourAttach(&(PVOID&)o_ffxFsr2ContextCreate_Pattern_Dx12, ffxFsr2ContextCreate_Pattern_Dx12);
-
-    if (o_ffxFsr2ContextDispatch_Dx12 != nullptr)
-        DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatch_Dx12);
-
-    if (o_ffxFsr2ContextDispatch_Pattern_Dx12 != nullptr)
-        DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Pattern_Dx12, ffxFsr2ContextDispatch_Pattern_Dx12);
-
-    if (o_ffxFsr20ContextDispatch_Dx12 != nullptr)
-        DetourAttach(&(PVOID&)o_ffxFsr20ContextDispatch_Dx12, ffxFsr20ContextDispatch_Dx12);
-
-    if (o_ffxFsr20ContextDispatch_Pattern_Dx12 != nullptr)
-        DetourAttach(&(PVOID&)o_ffxFsr20ContextDispatch_Pattern_Dx12, ffxFsr20ContextDispatch_Pattern_Dx12);
-
-    if (o_ffxFsr2TinyContextDispatch_Dx12 != nullptr)
-        DetourAttach(&(PVOID&)o_ffxFsr2TinyContextDispatch_Dx12, ffxFsr2TinyContextDispatch_Dx12);
-
-    if (o_ffxFsr2ContextDestroy_Dx12 != nullptr)
-        DetourAttach(&(PVOID&)o_ffxFsr2ContextDestroy_Dx12, ffxFsr2ContextDestroy_Dx12);
-
-    if (o_ffxFsr2ContextDestroy_Pattern_Dx12 != nullptr)
-        DetourAttach(&(PVOID&)o_ffxFsr2ContextDestroy_Pattern_Dx12, ffxFsr2ContextDestroy_Pattern_Dx12);
-
-    if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 != nullptr)
-        DetourAttach(&(PVOID&)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12, ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
-
-    if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 != nullptr)
-        DetourAttach(&(PVOID&)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12, ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
-
-    //if (o_ffxFsr2GetInterfaceDX12 != nullptr)
-    //    DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
-
-    State::Instance().fsrHooks = true;
+    State::Instance().fsrHooks = o_ffxFsr2ContextCreate_Dx12 != nullptr || o_ffxFsr2ContextCreate_Pattern_Dx12 != nullptr;
 
     DetourTransactionCommit();
-
-    LOG_DEBUG("ffxFsr2ContextCreate_Dx12: {:X}", (size_t)o_ffxFsr2ContextCreate_Dx12);
-    LOG_DEBUG("ffxFsr2ContextCreate_Pattern_Dx12: {:X}", (size_t)o_ffxFsr2ContextCreate_Pattern_Dx12);
-    LOG_DEBUG("ffxFsr2ContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr2ContextDispatch_Dx12);
-    LOG_DEBUG("ffxFsr2ContextDispatch_Pattern_Dx12: {:X}", (size_t)o_ffxFsr2ContextDispatch_Pattern_Dx12);
-    LOG_DEBUG("ffxFsr20ContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr20ContextDispatch_Dx12);
-    LOG_DEBUG("ffxFsr20ContextDispatch_Patern_Dx12: {:X}", (size_t)o_ffxFsr20ContextDispatch_Pattern_Dx12);
-    LOG_DEBUG("ffxFsr2TinyContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr2TinyContextDispatch_Dx12);
-    LOG_DEBUG("ffxFsr2ContextDestroy_Dx12: {:X}", (size_t)o_ffxFsr2ContextDestroy_Dx12);
-    LOG_DEBUG("ffxFsr2ContextDestroy_Pattern_Dx12: {:X}", (size_t)o_ffxFsr2ContextDestroy_Pattern_Dx12);
-    LOG_DEBUG("ffxFsr2GetUpscaleRatioFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
-    LOG_DEBUG("ffxFsr2GetRenderResolutionFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
-    //LOG_DEBUG("ffxFsr2GetInterfaceDX12: {:X}", (size_t)o_ffxFsr2GetInterfaceDX12);
 }
 
 void HookFSR2Inputs(HMODULE module)
 {
     LOG_INFO("Trying to hook FSR2 methods");
 
-    if (o_ffxFsr2ContextCreate_Dx12 != nullptr)
-        return;
-
     if (module != nullptr)
     {
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+
         if (o_ffxFsr2ContextCreate_Dx12 == nullptr)
+        {
             o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)GetProcAddress(module, "ffxFsr2ContextCreate");
 
+            if (o_ffxFsr2ContextCreate_Dx12 != nullptr)
+                DetourAttach(&(PVOID&)o_ffxFsr2ContextCreate_Dx12, ffxFsr2ContextCreate_Dx12);
+
+            LOG_DEBUG("ffxFsr2ContextCreate_Dx12: {:X}", (size_t)o_ffxFsr2ContextCreate_Dx12);
+        }
+
         if (o_ffxFsr2ContextDispatch_Dx12 == nullptr)
+        {
             o_ffxFsr2ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)GetProcAddress(module, "ffxFsr2ContextDispatch");
 
+            if (o_ffxFsr2ContextDispatch_Dx12 != nullptr)
+                DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatch_Dx12);
+
+            LOG_DEBUG("ffxFsr2ContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr2ContextDispatch_Dx12);
+        }
+
         if (o_ffxFsr2ContextDestroy_Dx12 == nullptr)
+        {
             o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy)GetProcAddress(module, "ffxFsr2ContextDestroy");
 
+            if (o_ffxFsr2ContextDestroy_Dx12 != nullptr)
+                DetourAttach(&(PVOID&)o_ffxFsr2ContextDestroy_Dx12, ffxFsr2ContextDestroy_Dx12);
+
+            LOG_DEBUG("ffxFsr2ContextDestroy_Dx12: {:X}", (size_t)o_ffxFsr2ContextDestroy_Dx12);
+        }
+
         if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 == nullptr)
+        {
             o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr2GetUpscaleRatioFromQualityMode)GetProcAddress(module, "ffxFsr2GetUpscaleRatioFromQualityMode");
 
+            if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 != nullptr)
+                DetourAttach(&(PVOID&)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12, ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
+
+            LOG_DEBUG("ffxFsr2GetUpscaleRatioFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
+        }
+
         if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
+        {
             o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)GetProcAddress(module, "ffxFsr2GetRenderResolutionFromQualityMode");
+
+            if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 != nullptr)
+                DetourAttach(&(PVOID&)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12, ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
+
+            LOG_DEBUG("ffxFsr2GetRenderResolutionFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
+        }
+
+        State::Instance().fsrHooks = o_ffxFsr2ContextCreate_Dx12 != nullptr;
+
+        DetourTransactionCommit();
     }
-
-    if (o_ffxFsr2ContextCreate_Dx12 != nullptr)
-        LOG_INFO("FSR2 methods found, now hooking");
-
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-
-    if (o_ffxFsr2ContextCreate_Dx12 != nullptr)
-        DetourAttach(&(PVOID&)o_ffxFsr2ContextCreate_Dx12, ffxFsr2ContextCreate_Dx12);
-
-    if (o_ffxFsr2ContextDispatch_Dx12 != nullptr)
-        DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatch_Dx12);
-
-    if (o_ffxFsr2ContextDestroy_Dx12 != nullptr)
-        DetourAttach(&(PVOID&)o_ffxFsr2ContextDestroy_Dx12, ffxFsr2ContextDestroy_Dx12);
-
-    if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 != nullptr)
-        DetourAttach(&(PVOID&)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12, ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
-
-    if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 != nullptr)
-        DetourAttach(&(PVOID&)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12, ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
-
-    State::Instance().fsrHooks = true;
-
-    DetourTransactionCommit();
-
-    LOG_DEBUG("ffxFsr2ContextCreate_Dx12: {:X}", (size_t)o_ffxFsr2ContextCreate_Dx12);
-    LOG_DEBUG("ffxFsr2ContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr2ContextDispatch_Dx12);
-    LOG_DEBUG("ffxFsr2ContextDestroy_Dx12: {:X}", (size_t)o_ffxFsr2ContextDestroy_Dx12);
-    LOG_DEBUG("ffxFsr2GetUpscaleRatioFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
-    LOG_DEBUG("ffxFsr2GetRenderResolutionFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
 }
 
 void HookFSR2Dx12Inputs(HMODULE module)
