@@ -2,8 +2,8 @@
 #include "FSR2Feature_212.h"
 #include <backends/IFeature_Dx11wDx12.h>
 
-#include <fsr2_212/include/ffx_fsr2.h>
-#include <fsr2_212/include/dx12/ffx_fsr2_dx12.h>
+#include <fsr2_212/ffx_fsr2.h>
+#include <fsr2_212/dx12/ffx_fsr2_dx12.h>
 
 class FSR2FeatureDx11on12_212 : public FSR2Feature212, public IFeature_Dx11wDx12
 {

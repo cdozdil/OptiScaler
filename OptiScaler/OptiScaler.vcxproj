@@ -79,17 +79,17 @@
     <LibraryPath>$(XESS_SDK)\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(SolutionDir)external\freetype;$(SolutionDir)external\streamline;$(IncludePath)</IncludePath>
-    <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)fsr31\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(SolutionDir)external\freetype;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir);$(ProjectDir)include\;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(SolutionDir)external\freetype;$(SolutionDir)external\streamline;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)library\fsr2;$(ProjectDir)library\fsr2_212;$(ProjectDir)library\fsr31;$(ProjectDir)library\vulkan;$(ProjectDir)library\d3dx;$(ProjectDir)library\detours;$(SolutionDir)external\xess\lib;$(SolutionDir)external\freetype;$(LibraryPath)</LibraryPath>
     <TargetName>dxgi</TargetName>
     <OutDir>D:\Folders\Games\Epic\DeliverUsMars\DeliverUsMars\Binaries\Win64\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(SolutionDir)external\freetype;$(SolutionDir)external\streamline;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(ProjectDir)include\;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(SolutionDir)external\freetype;$(SolutionDir)external\streamline;$(IncludePath)</IncludePath>
     <TargetName>nvngx</TargetName>
-    <LibraryPath>$(ProjectDir)fsr2\lib;$(ProjectDir)fsr2_212\lib;$(ProjectDir)fsr31\lib;$(ProjectDir)vulkan;$(ProjectDir)d3dx;$(ProjectDir)detours;$(SolutionDir)external\xess\lib;$(SolutionDir)external\freetype;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)library\fsr2;$(ProjectDir)library\fsr2_212;$(ProjectDir)library\fsr31;$(ProjectDir)library\vulkan;$(ProjectDir)library\d3dx;$(ProjectDir)library\detours;$(SolutionDir)external\xess\lib;$(SolutionDir)external\freetype;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -379,9 +379,6 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClCompile Include="Util.cpp" />
     <ClCompile Include="XeSS_Debug.cpp" />
     <ClCompile Include="XeSS_Dx12.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="vulkan\vulkan-1.lib" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OptiScaler.rc" />

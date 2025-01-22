@@ -1,5 +1,5 @@
 #pragma once
-#include <fsr2/include/ffx_fsr2.h>
+#include <fsr2/ffx_fsr2.h>
 
 #include <backends/IFeature.h>
 

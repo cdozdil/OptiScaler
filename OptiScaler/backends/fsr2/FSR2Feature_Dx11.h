@@ -4,8 +4,8 @@
 
 #include <dxgi1_4.h>
 
-#include <fsr2/include/ffx_fsr2.h>
-#include <fsr2/include/dx11/ffx_fsr2_dx11.h>
+#include <fsr2/ffx_fsr2.h>
+#include <fsr2/dx11/ffx_fsr2_dx11.h>
 
 class FSR2FeatureDx11 : public FSR2Feature, public IFeature_Dx11
 {

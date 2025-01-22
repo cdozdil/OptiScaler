@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include <fsr2/include/ffx_fsr2.h>
-#include <fsr2/include/vk/ffx_fsr2_vk.h>
+#include <fsr2/ffx_fsr2.h>
+#include <fsr2/vk/ffx_fsr2_vk.h>
 
 #include "FSR2Feature.h"
 #include <backends/IFeature_Vk.h>
