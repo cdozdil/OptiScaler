@@ -114,21 +114,13 @@ private:
 #pragma endregion
 
     static std::string GetBackendName(std::string* code);
-
     static std::string GetBackendCode(const API api);
-
     static void GetCurrentBackendInfo(const API api, std::string* code, std::string* name);
-
     static void AddDx11Backends(std::string* code, std::string* name);
-
     static void AddDx12Backends(std::string* code, std::string* name);
-
     static void AddVulkanBackends(std::string* code, std::string* name);
-
     static void AddResourceBarrier(std::string name, std::optional<int>* value);
-
     static void AddRenderPreset(std::string name, std::optional<uint32_t>* value);
-
     static void PopulateCombo(std::string name, std::optional<uint32_t>* value, const char* names[], const std::string desc[], int length);
 
 public:

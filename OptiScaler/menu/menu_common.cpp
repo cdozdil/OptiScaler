@@ -2561,11 +2561,17 @@ bool MenuCommon::RenderMenu()
                                                 "might cause screen flicker and other issues");
 
                         bool fsr2Inputs = Config::Instance()->Fsr2Inputs.value_or_default();
+                        bool fsr2Pattern = Config::Instance()->Fsr2Pattern.value_or_default();
                         bool fsr3Inputs = Config::Instance()->Fsr3Inputs.value_or_default();
                         bool ffxInputs = Config::Instance()->FfxInputs.value_or_default();
 
                         if (ImGui::Checkbox("Use Fsr2 Inputs", &fsr2Inputs))
                             Config::Instance()->Fsr2Inputs = fsr2Inputs;
+
+                        if (ImGui::Checkbox("Use Fsr2 Pattern Matching", &fsr2Pattern))
+                            Config::Instance()->Fsr2Pattern = fsr2Pattern;
+
+                        ShowTooltip("This setting will become active on next boot!");
 
                         if (ImGui::Checkbox("Use Fsr3 Inputs", &fsr3Inputs))
                             Config::Instance()->Fsr3Inputs = fsr3Inputs;
@@ -2574,7 +2580,7 @@ bool MenuCommon::RenderMenu()
                             Config::Instance()->FfxInputs = ffxInputs;
 
 
-                        SeparatorWithHelpMarker("Enable DLSSG", "These settings will be active on next boot!");
+                        SeparatorWithHelpMarker("Enable DLSSG", "These settings will become active on next boot!");
                         auto dlssgEnabled = Config::Instance()->DLSSGMod.value_or(false);
                         if (ImGui::Checkbox("DLSSG Enabled", &dlssgEnabled))
                         {
