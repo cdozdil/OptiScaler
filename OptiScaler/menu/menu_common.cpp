@@ -2538,64 +2538,66 @@ bool MenuCommon::RenderMenu()
                 if (ImGui::SliderFloat("Background Alpha", &fpsAlpha, 0.0f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
                     Config::Instance()->FpsOverlayAlpha = fpsAlpha;
 
-                if (currentFeature != nullptr)
+                // ADVANCED SETTINGS -----------------------------
+                ImGui::SeparatorText("Advanced Settings");
+
+                bool advancedSettings = Config::Instance()->AdvancedSettings.value_or_default();
+                if (ImGui::Checkbox("Show Advanced Settings", &advancedSettings))
+                    Config::Instance()->AdvancedSettings = advancedSettings;
+
+                if (advancedSettings && currentFeature != nullptr)
                 {
-                    // ADVANCED SETTINGS -----------------------------
-                    ImGui::SeparatorText("Advanced Settings");
+                    bool extendedLimits = Config::Instance()->ExtendedLimits.value_or_default();
+                    if (ImGui::Checkbox("Enable Extended Limits", &extendedLimits))
+                        Config::Instance()->ExtendedLimits = extendedLimits;
 
-                    bool advancedSettings = Config::Instance()->AdvancedSettings.value_or_default();
-                    if (ImGui::Checkbox("Show Advanced Settings", &advancedSettings))
-                        Config::Instance()->AdvancedSettings = advancedSettings;
+                    ShowHelpMarker("Extended sliders limit for quality presets\n\n"
+                                   "Using this option changes resolution detection logic\n"
+                                   "and might cause issues and crashes!");
+                }
 
-                    if (advancedSettings)
+                if (advancedSettings || currentFeature == nullptr)
+                {
+                    SeparatorWithHelpMarker("Input APIs", "Input changes when OptiFG is active\n"
+                                            "might cause screen flicker and other issues");
+
+                    bool fsr2Inputs = Config::Instance()->Fsr2Inputs.value_or_default();
+                    bool fsr2Pattern = Config::Instance()->Fsr2Pattern.value_or_default();
+                    bool fsr3Inputs = Config::Instance()->Fsr3Inputs.value_or_default();
+                    bool ffxInputs = Config::Instance()->FfxInputs.value_or_default();
+
+                    if (ImGui::Checkbox("Use Fsr2 Inputs", &fsr2Inputs))
+                        Config::Instance()->Fsr2Inputs = fsr2Inputs;
+
+                    if (ImGui::Checkbox("Use Fsr2 Pattern Matching", &fsr2Pattern))
+                        Config::Instance()->Fsr2Pattern = fsr2Pattern;
+
+                    ShowTooltip("This setting will become active on next boot!");
+
+                    if (ImGui::Checkbox("Use Fsr3 Inputs", &fsr3Inputs))
+                        Config::Instance()->Fsr3Inputs = fsr3Inputs;
+
+                    if (ImGui::Checkbox("Use Ffx Inputs", &ffxInputs))
+                        Config::Instance()->FfxInputs = ffxInputs;
+                }
+                
+                if (advancedSettings)
+                {
+                    SeparatorWithHelpMarker("Enable DLSSG", "These settings will become active on next boot!");
+                    auto dlssgEnabled = Config::Instance()->DLSSGMod.value_or(false);
+                    if (ImGui::Checkbox("DLSSG Enabled", &dlssgEnabled))
                     {
-                        bool extendedLimits = Config::Instance()->ExtendedLimits.value_or_default();
-                        if (ImGui::Checkbox("Enable Extended Limits", &extendedLimits))
-                            Config::Instance()->ExtendedLimits = extendedLimits;
+                        Config::Instance()->DLSSGMod = dlssgEnabled;
 
-                        ShowHelpMarker("Extended sliders limit for quality presets\n\n"
-                                       "Using this option changes resolution detection logic\n"
-                                       "and might cause issues and crashes!");
-
-                        SeparatorWithHelpMarker("Input APIs", "Input changes when OptiFG is active\n"
-                                                "might cause screen flicker and other issues");
-
-                        bool fsr2Inputs = Config::Instance()->Fsr2Inputs.value_or_default();
-                        bool fsr2Pattern = Config::Instance()->Fsr2Pattern.value_or_default();
-                        bool fsr3Inputs = Config::Instance()->Fsr3Inputs.value_or_default();
-                        bool ffxInputs = Config::Instance()->FfxInputs.value_or_default();
-
-                        if (ImGui::Checkbox("Use Fsr2 Inputs", &fsr2Inputs))
-                            Config::Instance()->Fsr2Inputs = fsr2Inputs;
-
-                        if (ImGui::Checkbox("Use Fsr2 Pattern Matching", &fsr2Pattern))
-                            Config::Instance()->Fsr2Pattern = fsr2Pattern;
-
-                        ShowTooltip("This setting will become active on next boot!");
-
-                        if (ImGui::Checkbox("Use Fsr3 Inputs", &fsr3Inputs))
-                            Config::Instance()->Fsr3Inputs = fsr3Inputs;
-
-                        if (ImGui::Checkbox("Use Ffx Inputs", &ffxInputs))
-                            Config::Instance()->FfxInputs = ffxInputs;
-
-
-                        SeparatorWithHelpMarker("Enable DLSSG", "These settings will become active on next boot!");
-                        auto dlssgEnabled = Config::Instance()->DLSSGMod.value_or(false);
-                        if (ImGui::Checkbox("DLSSG Enabled", &dlssgEnabled))
-                        {
-                            Config::Instance()->DLSSGMod = dlssgEnabled;
-
-                            if (dlssgEnabled)
-                                Config::Instance()->FGUseFGSwapChain = false;
-                            else
-                                Config::Instance()->FGUseFGSwapChain.reset();
-                        }
-
-                        auto hagsSpoofing = Config::Instance()->SpoofHAGS.value_or(dlssgEnabled);
-                        if (ImGui::Checkbox("HAGS Spoofing Enabled", &hagsSpoofing))
-                            Config::Instance()->SpoofHAGS = hagsSpoofing;
+                        if (dlssgEnabled)
+                            Config::Instance()->FGUseFGSwapChain = false;
+                        else
+                            Config::Instance()->FGUseFGSwapChain.reset();
                     }
+
+                    auto hagsSpoofing = Config::Instance()->SpoofHAGS.value_or(dlssgEnabled);
+                    if (ImGui::Checkbox("HAGS Spoofing Enabled", &hagsSpoofing))
+                        Config::Instance()->SpoofHAGS = hagsSpoofing;
                 }
 
                 ImGui::EndTable();
