@@ -1,7 +1,7 @@
 #pragma once
 
 #include <pch.h>
-#include <backends/IFeature.h>
+#include <upscalers/IFeature.h>
 #include <shaders/format_transfer/FT_Dx12.h>
 
 #include <d3d11_4.h>

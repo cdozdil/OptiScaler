@@ -1,7 +1,7 @@
 #pragma once
 #include "pch.h"
 #include <deque>
-#include "backends/IFeature.h"
+#include "upscalers/IFeature.h"
 
 typedef enum API
 {

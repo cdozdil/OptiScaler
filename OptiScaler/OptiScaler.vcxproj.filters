@@ -41,46 +41,46 @@
     <ClInclude Include="pch.h">
       <Filter>Other</Filter>
     </ClInclude>
-    <ClInclude Include="backends\fsr2\FSR2Feature.h">
+    <ClInclude Include="upscalers\fsr2\FSR2Feature.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\fsr2\FSR2Feature_Dx11.h">
+    <ClInclude Include="upscalers\fsr2\FSR2Feature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\fsr2\FSR2Feature_Dx11On12.h">
+    <ClInclude Include="upscalers\fsr2\FSR2Feature_Dx11On12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\fsr2\FSR2Feature_Dx12.h">
+    <ClInclude Include="upscalers\fsr2\FSR2Feature_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\fsr2\FSR2Feature_Vk.h">
+    <ClInclude Include="upscalers\fsr2\FSR2Feature_Vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\IFeature_Dx11.h">
+    <ClInclude Include="upscalers\IFeature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\IFeature_Dx12.h">
+    <ClInclude Include="upscalers\IFeature_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\IFeature.h">
+    <ClInclude Include="upscalers\IFeature.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\IFeature_Vk.h">
+    <ClInclude Include="upscalers\IFeature_Vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\xess\XeSSFeature_Dx11.h">
+    <ClInclude Include="upscalers\xess\XeSSFeature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\fsr2_212\FSR2Feature_212.h">
+    <ClInclude Include="upscalers\fsr2_212\FSR2Feature_212.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx11On12_212.h">
+    <ClInclude Include="upscalers\fsr2_212\FSR2Feature_Dx11On12_212.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\fsr2_212\FSR2Feature_Dx12_212.h">
+    <ClInclude Include="upscalers\fsr2_212\FSR2Feature_Dx12_212.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\fsr2_212\FSR2Feature_Vk_212.h">
+    <ClInclude Include="upscalers\fsr2_212\FSR2Feature_Vk_212.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="detours\detours.h">
@@ -92,19 +92,19 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\dlss\DLSSFeature.h">
+    <ClInclude Include="upscalers\dlss\DLSSFeature.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\dlss\DLSSFeature_Dx12.h">
+    <ClInclude Include="upscalers\dlss\DLSSFeature_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\dlss\DLSSFeature_Dx11.h">
+    <ClInclude Include="upscalers\dlss\DLSSFeature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="nvapi\external\nvapi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\dlss\DLSSFeature_Vk.h">
+    <ClInclude Include="upscalers\dlss\DLSSFeature_Vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="rcas\RCAS_Dx12.h">
@@ -140,28 +140,28 @@
     <ClInclude Include="NVNGX_Proxy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\dlssd\DLSSDFeature.h">
+    <ClInclude Include="upscalers\dlssd\DLSSDFeature.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\dlssd\DLSSDFeature_Dx11.h">
+    <ClInclude Include="upscalers\dlssd\DLSSDFeature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\dlssd\DLSSDFeature_Dx12.h">
+    <ClInclude Include="upscalers\dlssd\DLSSDFeature_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\dlssd\DLSSDFeature_Vk.h">
+    <ClInclude Include="upscalers\dlssd\DLSSDFeature_Vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\fsr31\FSR31Feature.h">
+    <ClInclude Include="upscalers\fsr31\FSR31Feature.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\fsr31\FSR31Feature_Dx12.h">
+    <ClInclude Include="upscalers\fsr31\FSR31Feature_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\fsr31\FSR31Feature_Dx11On12.h">
+    <ClInclude Include="upscalers\fsr31\FSR31Feature_Dx11On12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\fsr31\FSR31Feature_Vk.h">
+    <ClInclude Include="upscalers\fsr31\FSR31Feature_Vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="rcas\precompile\RCAS_Shader.h">
@@ -173,7 +173,7 @@
     <ClInclude Include="output_scaling\OS_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="backends\fsr31\FSR31Feature_Dx11.h">
+    <ClInclude Include="upscalers\fsr31\FSR31Feature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FfxApi_Proxy.h">
@@ -371,76 +371,76 @@
     <ClCompile Include="NVNGX_DLSS_Vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\fsr2\FSR2Feature.cpp">
+    <ClCompile Include="upscalers\fsr2\FSR2Feature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\fsr2\FSR2Feature_Dx11.cpp">
+    <ClCompile Include="upscalers\fsr2\FSR2Feature_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\fsr2\FSR2Feature_Dx11On12.cpp">
+    <ClCompile Include="upscalers\fsr2\FSR2Feature_Dx11On12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\fsr2\FSR2Feature_Dx12.cpp">
+    <ClCompile Include="upscalers\fsr2\FSR2Feature_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\fsr2\FSR2Feature_Vk.cpp">
+    <ClCompile Include="upscalers\fsr2\FSR2Feature_Vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\IFeature.cpp">
+    <ClCompile Include="upscalers\IFeature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\IFeature_Dx12.cpp">
+    <ClCompile Include="upscalers\IFeature_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\xess\XeSSFeature.cpp">
+    <ClCompile Include="upscalers\xess\XeSSFeature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\xess\XeSSFeature.h">
+    <ClCompile Include="upscalers\xess\XeSSFeature.h">
       <Filter>Header Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\xess\XeSSFeature_Dx11.cpp">
+    <ClCompile Include="upscalers\xess\XeSSFeature_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\xess\XeSSFeature_Dx12.cpp">
+    <ClCompile Include="upscalers\xess\XeSSFeature_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\xess\XeSSFeature_Dx12.h">
+    <ClCompile Include="upscalers\xess\XeSSFeature_Dx12.h">
       <Filter>Header Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\fsr2_212\FSR2Feature_212.cpp">
+    <ClCompile Include="upscalers\fsr2_212\FSR2Feature_212.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\fsr2_212\FSR2Feature_Dx11On12_212.cpp">
+    <ClCompile Include="upscalers\fsr2_212\FSR2Feature_Dx11On12_212.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\fsr2_212\FSR2Feature_Dx12_212.cpp">
+    <ClCompile Include="upscalers\fsr2_212\FSR2Feature_Dx12_212.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\fsr2_212\FSR2Feature_Vk_212.cpp">
+    <ClCompile Include="upscalers\fsr2_212\FSR2Feature_Vk_212.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\IFeature_Dx11wDx12.h">
+    <ClCompile Include="upscalers\IFeature_Dx11wDx12.h">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\IFeature_Dx11wDx12.cpp">
+    <ClCompile Include="upscalers\IFeature_Dx11wDx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\IFeature_Dx11.cpp">
+    <ClCompile Include="upscalers\IFeature_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Logger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\dlss\DLSSFeature.cpp">
+    <ClCompile Include="upscalers\dlss\DLSSFeature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\dlss\DLSSFeature_Dx12.cpp">
+    <ClCompile Include="upscalers\dlss\DLSSFeature_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\dlss\DLSSFeature_Dx11.cpp">
+    <ClCompile Include="upscalers\dlss\DLSSFeature_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\dlss\DLSSFeature_Vk.cpp">
+    <ClCompile Include="upscalers\dlss\DLSSFeature_Vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="NVNGX.cpp">
@@ -464,34 +464,34 @@
     <ClCompile Include="menu\imgui_dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\dlssd\DLSSDFeature.cpp">
+    <ClCompile Include="upscalers\dlssd\DLSSDFeature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\dlssd\DLSSDFeature_Dx11.cpp">
+    <ClCompile Include="upscalers\dlssd\DLSSDFeature_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\dlssd\DLSSDFeature_Dx12.cpp">
+    <ClCompile Include="upscalers\dlssd\DLSSDFeature_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\dlssd\DLSSDFeature_Vk.cpp">
+    <ClCompile Include="upscalers\dlssd\DLSSDFeature_Vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\fsr31\FSR31Feature.cpp">
+    <ClCompile Include="upscalers\fsr31\FSR31Feature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\fsr31\FSR31Feature_Dx12.cpp">
+    <ClCompile Include="upscalers\fsr31\FSR31Feature_Dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\fsr31\FSR31Feature_Dx11On12.cpp">
+    <ClCompile Include="upscalers\fsr31\FSR31Feature_Dx11On12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\fsr31\FSR31Feature_Vk.cpp">
+    <ClCompile Include="upscalers\fsr31\FSR31Feature_Vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="menu\imgui_common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="backends\fsr31\FSR31Feature_Dx11.cpp">
+    <ClCompile Include="upscalers\fsr31\FSR31Feature_Dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="XeSS_Debug.cpp">
