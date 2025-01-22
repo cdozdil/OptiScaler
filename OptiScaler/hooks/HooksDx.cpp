@@ -721,7 +721,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                 }
 
                 params->reset = (FrameGen_Dx12::reset != 0);
-    
+
                 if (State::Instance().currentFeature != nullptr)
                     fgLastFGFrame = State::Instance().currentFeature->FrameCount();
 
@@ -3473,6 +3473,31 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
         return result;
     }
 
+    // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
+    // https://github.com/EndlesslyFlowering/AutoHDR-ReShade    
+    if (pSwapChainDesc != nullptr && Config::Instance()->ForceHDR.value_or_default())
+    {
+        LOG_INFO("Force HDR on");
+
+        if (Config::Instance()->UseHDR10.value_or_default())
+        {
+            LOG_INFO("Using HDR10");
+            pSwapChainDesc->BufferDesc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+        }
+        else
+        {
+            LOG_INFO("Not using HDR10");
+            pSwapChainDesc->BufferDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+        }
+
+        if (pSwapChainDesc->BufferCount < 2)
+            pSwapChainDesc->BufferCount = 2;
+
+        pSwapChainDesc->SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        pSwapChainDesc->Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+    }
+
+
     //State::Instance().skipSpoofing = true;
     auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
     //State::Instance().skipSpoofing = false;
@@ -3482,6 +3507,93 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
         LOG_INFO("Device captured");
         d3d11Device = *ppDevice;
         HookToDevice(d3d11Device);
+    }
+
+    if (result == S_OK && pSwapChainDesc != nullptr && ppSwapChain != nullptr && *ppSwapChain != nullptr && ppDevice != nullptr && *ppDevice != nullptr)
+    {
+        // check for SL proxy
+        IDXGISwapChain* realSC = nullptr;
+        if (!CheckForRealObject(__FUNCTION__, *ppSwapChain, (IUnknown**)&realSC))
+            realSC = *ppSwapChain;
+
+        IUnknown* readDevice = nullptr;
+        if (!CheckForRealObject(__FUNCTION__, *ppDevice, (IUnknown**)&readDevice))
+            readDevice = *ppDevice;
+
+        if (Util::GetProcessWindow() == pSwapChainDesc->OutputWindow)
+        {
+            State::Instance().screenWidth = pSwapChainDesc->BufferDesc.Width;
+            State::Instance().screenHeight = pSwapChainDesc->BufferDesc.Height;
+        }
+
+        LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pSwapChainDesc->OutputWindow);
+        lastWrapped = new WrappedIDXGISwapChain4(realSC, readDevice, pSwapChainDesc->OutputWindow, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
+        *ppSwapChain = lastWrapped;
+
+        if (!fgSkipSCWrapping)
+            HooksDx::currentSwapchain = lastWrapped;
+
+        LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)*ppDevice);
+
+        // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
+        // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
+        if (Config::Instance()->ForceHDR.value_or_default())
+        {
+            if (!fgSkipSCWrapping)
+            {
+                State::Instance().SCbuffers.clear();
+                for (size_t i = 0; i < pSwapChainDesc->BufferCount; i++)
+                {
+                    IUnknown* buffer;
+                    if ((*ppSwapChain)->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
+                    {
+                        State::Instance().SCbuffers.push_back(buffer);
+                        buffer->Release();
+                    }
+                }
+            }
+
+            IDXGISwapChain3* sc3 = nullptr;
+            do
+            {
+                if ((*ppSwapChain)->QueryInterface(IID_PPV_ARGS(&sc3)) == S_OK)
+                {
+                    DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
+
+                    if (Config::Instance()->UseHDR10.value_or_default())
+                        hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+
+                    UINT css = 0;
+
+                    auto result = sc3->CheckColorSpaceSupport(hdrCS, &css);
+
+                    if (result != S_OK)
+                    {
+                        LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
+                        break;
+                    }
+
+                    if (DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT & css)
+                    {
+                        result = sc3->SetColorSpace1(hdrCS);
+
+                        if (result != S_OK)
+                        {
+                            LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
+                            break;
+                        }
+                    }
+
+                    LOG_INFO("HDR format and color space are set");
+                }
+
+            } while (false);
+
+            if (sc3 != nullptr)
+                sc3->Release();
+        }
+
+        fgSCCount++;
     }
 
     if (result == S_OK && ppDevice != nullptr && *ppDevice != nullptr)
@@ -3563,7 +3675,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     LOG_DEBUG("result: {:X}", (UINT)result);
 
     return result;
-}
+    }
 
 static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
