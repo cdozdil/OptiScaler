@@ -30,7 +30,7 @@
 #include <d3d12sdklayers.h>
 #endif
 
-#include <FfxApi_Proxy.h>
+#include <proxies/FfxApi_Proxy.h>
 #include <nvapi/fakenvapi.h>
 #include <nvapi/ReflexHooks.h>
 #include <dx12/ffx_api_dx12.h>

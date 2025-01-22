@@ -15,7 +15,7 @@
 #include "hooks/HooksVk.h"
 
 #include "NVNGX_Parameter.h"
-#include "NVNGX_Proxy.h"
+#include "proxies/NVNGX_Proxy.h"
 #include "DLSSG_Mod.h"
 
 VkInstance vkInstance;

@@ -1,7 +1,7 @@
 #include <pch.h>
 #include <Config.h>
 #include <Util.h>
-#include <FfxApi_Proxy.h>
+#include <proxies/FfxApi_Proxy.h>
 #include "FSR31Feature_Vk.h"
 
 #include "nvsdk_ngx_vk.h"

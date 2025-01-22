@@ -3,7 +3,7 @@
 #include "Util.h"
 
 #include "resource.h"
-#include "FfxApi_Proxy.h"
+#include "proxies/FfxApi_Proxy.h"
 #include "NVNGX_Parameter.h"
 
 #include "ffx_upscale.h"

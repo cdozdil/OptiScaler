@@ -3,11 +3,11 @@
 
 #include "Logger.h"
 #include "Util.h"
-#include "NVNGX_Proxy.h"
-#include "XeSS_Proxy.h"
-#include "FfxApi_Proxy.h"
-#include "Gdi32_Proxy.h"
-#include "Streamline_Proxy.h"
+#include "proxies/NVNGX_Proxy.h"
+#include "proxies/XeSS_Proxy.h"
+#include "proxies/FfxApi_Proxy.h"
+#include "proxies/Gdi32_Proxy.h"
+#include "proxies/Streamline_Proxy.h"
 #include "FSR2_Dx12.h"
 #include "FSR3_Dx12.h"
 

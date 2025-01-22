@@ -137,7 +137,7 @@
     <ClInclude Include="dllmain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NVNGX_Proxy.h">
+    <ClInclude Include="proxies\NVNGX_Proxy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="upscalers\dlssd\DLSSDFeature.h">
@@ -176,7 +176,7 @@
     <ClInclude Include="upscalers\fsr31\FSR31Feature_Dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FfxApi_Proxy.h">
+    <ClInclude Include="proxies\FfxApi_Proxy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="hooks\HooksDx.h">
@@ -188,7 +188,7 @@
     <ClInclude Include="hooks\wrapped_swapchain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="XeSS_Proxy.h">
+    <ClInclude Include="proxies\XeSS_Proxy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="nvapi\fakenvapi.h">
@@ -206,10 +206,10 @@
     <ClInclude Include="DLSSG_Mod.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Gdi32_Proxy.h">
+    <ClInclude Include="proxies\Gdi32_Proxy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Streamline_Proxy.h">
+    <ClInclude Include="proxies\Streamline_Proxy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FfxApi_Dx12.h">

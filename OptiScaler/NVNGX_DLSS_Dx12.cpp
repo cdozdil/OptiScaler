@@ -2,7 +2,7 @@
 #include "Util.h"
 
 #include "NVNGX_Parameter.h"
-#include "NVNGX_Proxy.h"
+#include "proxies/NVNGX_Proxy.h"
 #include "DLSSG_Mod.h" 
 
 #include "upscalers/dlss/DLSSFeature_Dx12.h"
@@ -13,7 +13,7 @@
 #include "upscalers/xess/XeSSFeature_Dx12.h"
 
 #include "hooks/HooksDx.h"
-#include "FfxApi_Proxy.h"
+#include "proxies/FfxApi_Proxy.h"
 
 #include <dxgi1_4.h>
 #include <shared_mutex>

@@ -4,7 +4,7 @@
 #include "resource.h"
 #include "xess_d3d12.h"
 #include "xess_d3d12_debug.h"
-#include "XeSS_Proxy.h"
+#include "proxies/XeSS_Proxy.h"
 #include "NVNGX_Parameter.h"
 
 typedef struct MotionScale

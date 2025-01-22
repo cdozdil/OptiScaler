@@ -210,7 +210,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="upscalers\fsr31\FSR31Feature_Dx12.h" />
     <ClInclude Include="upscalers\fsr31\FSR31Feature_Vk.h" />
     <ClInclude Include="DLSSG_Mod.h" />
-    <ClInclude Include="Gdi32_Proxy.h" />
+    <ClInclude Include="proxies\Gdi32_Proxy.h" />
     <ClInclude Include="FfxApi_Dx12.h" />
     <ClInclude Include="FSR2_Dx12.h" />
     <ClInclude Include="FSR3_Dx12.h" />
@@ -226,7 +226,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="include\imgui\imstb_truetype.h" />
     <ClInclude Include="include\imgui\misc\freetype\imgui_freetype.h" />
     <ClInclude Include="nvapi\fakenvapi.h" />
-    <ClInclude Include="FfxApi_Proxy.h" />
+    <ClInclude Include="proxies\FfxApi_Proxy.h" />
     <ClInclude Include="hooks\HooksDx.h" />
     <ClInclude Include="hooks\HooksVk.h" />
     <ClInclude Include="nvapi\NvApiHooks.h" />
@@ -258,7 +258,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="hooks\wrapped_swapchain.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="NVNGX_Parameter.h" />
-    <ClInclude Include="NVNGX_Proxy.h" />
+    <ClInclude Include="proxies\NVNGX_Proxy.h" />
     <ClInclude Include="output_scaling\OS_Dx11.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="rcas\precompile\RCAS_Shader.h" />
@@ -300,10 +300,10 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="shaders\rcas\RCAS_Dx11.h" />
     <ClInclude Include="shaders\rcas\RCAS_Dx12.h" />
     <ClInclude Include="State.h" />
-    <ClInclude Include="Streamline_Proxy.h" />
+    <ClInclude Include="proxies\Streamline_Proxy.h" />
     <ClInclude Include="Util.h" />
     <ClInclude Include="upscalers\xess\XeSSFeature_Dx11.h" />
-    <ClInclude Include="XeSS_Proxy.h" />
+    <ClInclude Include="proxies\XeSS_Proxy.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="upscalers\dlssd\DLSSDFeature.cpp" />
