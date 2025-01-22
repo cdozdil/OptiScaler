@@ -8,8 +8,8 @@
 #include "proxies/FfxApi_Proxy.h"
 #include "proxies/Gdi32_Proxy.h"
 #include "proxies/Streamline_Proxy.h"
-#include "FSR2_Dx12.h"
-#include "FSR3_Dx12.h"
+#include "inputs/FSR2_Dx12.h"
+#include "inputs/FSR3_Dx12.h"
 
 #include "hooks/HooksDx.h"
 #include "hooks/HooksVk.h"

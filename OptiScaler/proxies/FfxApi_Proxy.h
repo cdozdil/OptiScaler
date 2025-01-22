@@ -5,7 +5,7 @@
 #include "Config.h"
 #include "Logger.h"
 
-#include "FfxApi_Dx12.h"
+#include <inputs/FfxApi_Dx12.h>
 
 #include "ffx_api.h"
 
