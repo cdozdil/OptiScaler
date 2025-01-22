@@ -313,11 +313,11 @@ public:
             }
 
             // From nvngx.ini path
-            if (Config::Instance()->DLSSLibrary.has_value())
+            if (Config::Instance()->NvngxPath.has_value())
             {
-                LOG_INFO("trying to load nvngx from ini path!");
+                LOG_INFO("trying to load nvngx from a path specified in ini!");
 
-                std::filesystem::path cfgPath(Config::Instance()->DLSSLibrary.value().c_str());
+                std::filesystem::path cfgPath(Config::Instance()->NvngxPath.value().c_str());
 
                 if (cfgPath.has_filename())
                 {

@@ -118,7 +118,7 @@ static bool isNvngxAvailable = false;
 void AttachHooks();
 void DetachHooks();
 HMODULE LoadNvApi();
-HMODULE LoadNvgxDlss(std::wstring originalPath);
+HMODULE LoadNvngxDlss(std::wstring originalPath);
 void HookForDxgiSpoofing();
 void HookForVulkanSpoofing();
 void HookForVulkanExtensionSpoofing();
@@ -231,9 +231,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
     }
 
     // nvngx_dlss
-    if (Config::Instance()->DLSSEnabled.value_or_default() && Config::Instance()->DLSSLibrary.has_value() && CheckDllName(&lcaseLibName, &nvngxDlss))
+    if (Config::Instance()->DLSSEnabled.value_or_default() && Config::Instance()->NVNGX_DLSS_Library.has_value() && CheckDllName(&lcaseLibName, &nvngxDlss))
     {
-        auto nvngxDlss = LoadNvgxDlss(string_to_wstring(lcaseLibName));
+        auto nvngxDlss = LoadNvngxDlss(string_to_wstring(lcaseLibName));
 
         if (nvngxDlss != nullptr)
             return nvngxDlss;
@@ -404,9 +404,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
     }
 
     // nvngx_dlss
-    if (Config::Instance()->DLSSEnabled.value_or_default() && Config::Instance()->DLSSLibrary.has_value() && CheckDllNameW(&lcaseLibName, &nvngxDlssW))
+    if (Config::Instance()->DLSSEnabled.value_or_default() && Config::Instance()->NVNGX_DLSS_Library.has_value() && CheckDllNameW(&lcaseLibName, &nvngxDlssW))
     {
-        auto nvngxDlss = LoadNvgxDlss(lcaseLibName);
+        auto nvngxDlss = LoadNvngxDlss(lcaseLibName);
 
         if (nvngxDlss != nullptr)
             return nvngxDlss;
@@ -618,7 +618,7 @@ static HMODULE LoadNvApi()
     return nullptr;
 }
 
-static HMODULE LoadNvgxDlss(std::wstring originalPath)
+static HMODULE LoadNvngxDlss(std::wstring originalPath)
 {
     HMODULE nvngxDlss = nullptr;
 

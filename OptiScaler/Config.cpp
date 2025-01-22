@@ -43,14 +43,14 @@ bool Config::Reload(std::filesystem::path iniPath)
     {
         // Upscalers
         {
-        	Dx11Upscaler.set_from_config(readString("Upscalers", "Dx11Upscaler", true));
+            Dx11Upscaler.set_from_config(readString("Upscalers", "Dx11Upscaler", true));
             Dx12Upscaler.set_from_config(readString("Upscalers", "Dx12Upscaler", true));
             VulkanUpscaler.set_from_config(readString("Upscalers", "VulkanUpscaler", true));
         }
 
         // Frame Generation
         {
-        	FGUseFGSwapChain.set_from_config(readBool("FrameGen", "UseFGSwapChain"));
+            FGUseFGSwapChain.set_from_config(readBool("FrameGen", "UseFGSwapChain"));
             FGEnabled.set_from_config(readBool("FrameGen", "Enabled"));
             FGDebugView.set_from_config(readBool("FrameGen", "DebugView"));
             FGAsync.set_from_config(readBool("FrameGen", "AllowAsync"));
@@ -84,7 +84,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // FSR Common
         {
-        	FsrVerticalFov.set_from_config(readFloat("FSR", "VerticalFov"));
+            FsrVerticalFov.set_from_config(readFloat("FSR", "VerticalFov"));
 
             if (!FsrHorizontalFov.has_value())
                 FsrHorizontalFov = readFloat("FSR", "HorizontalFov");
@@ -96,7 +96,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // FSR
         {
-        	FsrVelocity.set_from_config(readFloat("FSR", "VelocityFactor"));
+            FsrVelocity.set_from_config(readFloat("FSR", "VelocityFactor"));
             FsrDebugView.set_from_config(readBool("FSR", "DebugView"));
             Fsr3xIndex.set_from_config(readInt("FSR", "UpscalerIndex"));
             FsrUseMaskForTransparency.set_from_config(readBool("FSR", "UseReactiveMaskForTransparency"));
@@ -105,26 +105,20 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // XeSS
         {
-        	BuildPipelines.set_from_config(readBool("XeSS", "BuildPipelines"));
+            BuildPipelines.set_from_config(readBool("XeSS", "BuildPipelines"));
             NetworkModel.set_from_config(readInt("XeSS", "NetworkModel"));
             CreateHeaps.set_from_config(readBool("XeSS", "CreateHeaps"));
-
-            if (!XeSSLibrary.has_value())
-                XeSSLibrary = readWString("XeSS", "LibraryPath");
+            XeSSLibrary.set_from_config(readWString("XeSS", "LibraryPath"));
         }
 
         // DLSS
         {
             // Don't enable again if set false because of no nvngx found
-        	DLSSEnabled.set_from_config(readBool("DLSS", "Enabled"));
+            DLSSEnabled.set_from_config(readBool("DLSS", "Enabled"));
+            NvngxPath.set_from_config(readWString("DLSS", "LibraryPath"));
+            NVNGX_DLSS_Library.set_from_config(readWString("DLSS", "NVNGX_DLSS_Path"));
 
-            if (!DLSSLibrary.has_value())
-                DLSSLibrary = readWString("DLSS", "LibraryPath");
-
-            if (!NVNGX_DLSS_Library.has_value())
-                NVNGX_DLSS_Library = readWString("DLSS", "NVNGX_DLSS_Path");
-
-			RenderPresetOverride.set_from_config(readBool("DLSS", "RenderPresetOverride"));
+            RenderPresetOverride.set_from_config(readBool("DLSS", "RenderPresetOverride"));
 
             if (auto setting = readInt("DLSS", "RenderPresetDLAA"); setting.has_value() && setting >= 0 && setting <= 7)
                 RenderPresetDLAA.set_from_config(setting);
@@ -253,25 +247,25 @@ bool Config::Reload(std::filesystem::path iniPath)
             DepthInverted.set_from_config(readBool("InitFlags", "DepthInverted"));
             JitterCancellation.set_from_config(readBool("InitFlags", "JitterCancellation"));
             DisplayResolution.set_from_config(readBool("InitFlags", "DisplayResolution"));
-        	DisableReactiveMask.set_from_config(readBool("InitFlags", "DisableReactiveMask"));
+            DisableReactiveMask.set_from_config(readBool("InitFlags", "DisableReactiveMask"));
         }
 
 
         // DRS
         {
-        	DrsMinOverrideEnabled.set_from_config(readBool("DRS", "DrsMinOverrideEnabled"));
+            DrsMinOverrideEnabled.set_from_config(readBool("DRS", "DrsMinOverrideEnabled"));
             DrsMaxOverrideEnabled.set_from_config(readBool("DRS", "DrsMaxOverrideEnabled"));
         }
 
         //Upscale Ratio Override
         {
-        	UpscaleRatioOverrideEnabled.set_from_config(readBool("UpscaleRatio", "UpscaleRatioOverrideEnabled"));
+            UpscaleRatioOverrideEnabled.set_from_config(readBool("UpscaleRatio", "UpscaleRatioOverrideEnabled"));
             UpscaleRatioOverrideValue.set_from_config(readFloat("UpscaleRatio", "UpscaleRatioOverrideValue"));
         }
 
         // Quality Overrides
         {
-        	QualityRatioOverrideEnabled.set_from_config(readBool("QualityOverrides", "QualityRatioOverrideEnabled"));
+            QualityRatioOverrideEnabled.set_from_config(readBool("QualityOverrides", "QualityRatioOverrideEnabled"));
             QualityRatio_DLAA.set_from_config(readFloat("QualityOverrides", "QualityRatioDLAA"));
             QualityRatio_UltraQuality.set_from_config(readFloat("QualityOverrides", "QualityRatioUltraQuality"));
             QualityRatio_Quality.set_from_config(readFloat("QualityOverrides", "QualityRatioQuality"));
@@ -286,16 +280,16 @@ bool Config::Reload(std::filesystem::path iniPath)
                 RoundInternalResolution = readInt("Hotfix", "RoundInternalResolution");
 
             if (auto setting = readFloat("Hotfix", "MipmapBiasOverride"); setting.has_value() && setting.value() <= 15.0 && setting.value() >= -15.0)
-				MipmapBiasOverride.set_from_config(setting);
+                MipmapBiasOverride.set_from_config(setting);
 
             // Unsure if that's needed but it resets invalid MipmapBiasOverride on config reload
             // Unexpected place for it but could be playing a role
             if (MipmapBiasOverride.has_value() && (MipmapBiasOverride.value() > 15.0 || MipmapBiasOverride.value() < -15.0))
                 MipmapBiasOverride.reset();
 
-        	MipmapBiasFixedOverride.set_from_config(readBool("Hotfix", "MipmapBiasFixedOverride"));
-        	MipmapBiasScaleOverride.set_from_config(readBool("Hotfix", "MipmapBiasScaleOverride"));
-        	MipmapBiasOverrideAll.set_from_config(readBool("Hotfix", "MipmapBiasOverrideAll"));
+            MipmapBiasFixedOverride.set_from_config(readBool("Hotfix", "MipmapBiasFixedOverride"));
+            MipmapBiasScaleOverride.set_from_config(readBool("Hotfix", "MipmapBiasScaleOverride"));
+            MipmapBiasOverrideAll.set_from_config(readBool("Hotfix", "MipmapBiasOverrideAll"));
 
             if (!AnisotropyOverride.has_value())
                 AnisotropyOverride = readInt("Hotfix", "AnisotropyOverride");
@@ -307,7 +301,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             RestoreGraphicSignature.set_from_config(readBool("Hotfix", "RestoreGraphicSignature"));
             PreferDedicatedGpu.set_from_config(readBool("Hotfix", "PreferDedicatedGpu"));
             PreferFirstDedicatedGpu.set_from_config(readBool("Hotfix", "PreferFirstDedicatedGpu"));
-			SkipFirstFrames.set_from_config(readInt("Hotfix", "SkipFirstFrames"));
+            SkipFirstFrames.set_from_config(readInt("Hotfix", "SkipFirstFrames"));
             UsePrecompiledShaders.set_from_config(readBool("Hotfix", "UsePrecompiledShaders"));
             UseGenericAppIdWithDlss.set_from_config(readBool("Hotfix", "UseGenericAppIdWithDlss"));
 
@@ -331,7 +325,7 @@ bool Config::Reload(std::filesystem::path iniPath)
         }
 
         // Dx11 with Dx12
-		{
+        {
             TextureSyncMethod.set_from_config(readInt("Dx11withDx12", "TextureSyncMethod"));
             CopyBackSyncMethod.set_from_config(readInt("Dx11withDx12", "CopyBackSyncMethod"));
             Dx11DelayedInit.set_from_config(readInt("Dx11withDx12", "UseDelayedInit"));
@@ -340,10 +334,10 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // NvApi
         {
-        	OverrideNvapiDll.set_from_config(readBool("NvApi", "OverrideNvapiDll"));
+            OverrideNvapiDll.set_from_config(readBool("NvApi", "OverrideNvapiDll"));
 
             if (!NvapiDllPath.has_value())
-        		NvapiDllPath = readWString("NvApi", "NvapiDllPath", true);
+                NvapiDllPath = readWString("NvApi", "NvapiDllPath", true);
         }
 
         // Spoofing
@@ -368,12 +362,12 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Inputs
         {
-        	DlssInputs.set_from_config(readBool("Inputs", "Dlss"));
-	        XeSSInputs.set_from_config(readBool("Inputs", "XeSS"));
+            DlssInputs.set_from_config(readBool("Inputs", "Dlss"));
+            XeSSInputs.set_from_config(readBool("Inputs", "XeSS"));
             Fsr2Inputs.set_from_config(readBool("Inputs", "Fsr2"));
             Fsr2Pattern.set_from_config(readBool("Inputs", "Fsr2Pattern"));
-	        Fsr3Inputs.set_from_config(readBool("Inputs", "Fsr3"));
-	        FfxInputs.set_from_config(readBool("Inputs", "Ffx"));
+            Fsr3Inputs.set_from_config(readBool("Inputs", "Fsr3"));
+            FfxInputs.set_from_config(readBool("Inputs", "Ffx"));
         }
 
         // Plugins
@@ -588,14 +582,14 @@ bool Config::SaveIni()
         ini.SetValue("XeSS", "BuildPipelines", GetBoolValue(Instance()->BuildPipelines.value_for_config()).c_str());
         ini.SetValue("XeSS", "CreateHeaps", GetBoolValue(Instance()->CreateHeaps.value_for_config()).c_str());
         ini.SetValue("XeSS", "NetworkModel", GetIntValue(Instance()->NetworkModel.value_for_config()).c_str());
-        ini.SetValue("XeSS", "LibraryPath", Instance()->XeSSLibrary.has_value() ? wstring_to_string(Instance()->XeSSLibrary.value()).c_str() : "auto");
+        ini.SetValue("XeSS", "LibraryPath",  wstring_to_string(Instance()->XeSSLibrary.value_for_config_or(L"auto")).c_str());
     }
 
     // DLSS
     {
         ini.SetValue("DLSS", "Enabled", GetBoolValue(Instance()->DLSSEnabled.value_for_config()).c_str());
-        ini.SetValue("DLSS", "LibraryPath", Instance()->DLSSLibrary.has_value() ? wstring_to_string(Instance()->DLSSLibrary.value()).c_str() : "auto");
-        ini.SetValue("DLSS", "NVNGX_DLSS_Library", Instance()->NVNGX_DLSS_Library.has_value() ? wstring_to_string(Instance()->NVNGX_DLSS_Library.value()).c_str() : "auto");
+        ini.SetValue("DLSS", "LibraryPath", wstring_to_string(Instance()->NvngxPath.value_for_config_or(L"auto")).c_str());
+        ini.SetValue("DLSS", "NVNGX_DLSS_Library", wstring_to_string(Instance()->NVNGX_DLSS_Library.value_for_config_or(L"auto")).c_str());
         ini.SetValue("DLSS", "RenderPresetOverride", GetBoolValue(Instance()->RenderPresetOverride.value_for_config()).c_str());
         ini.SetValue("DLSS", "RenderPresetDLAA", GetIntValue(Instance()->RenderPresetDLAA).c_str());
         ini.SetValue("DLSS", "RenderPresetUltraQuality", GetIntValue(Instance()->RenderPresetUltraQuality).c_str());

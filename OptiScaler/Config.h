@@ -141,12 +141,12 @@ public:
 	CustomOptional<bool> BuildPipelines{ true };
 	CustomOptional<int32_t> NetworkModel{ 0 };
 	CustomOptional<bool> CreateHeaps{ true };
-	std::optional<std::wstring> XeSSLibrary;
+	CustomOptional<std::wstring, false> XeSSLibrary;
 
 	// DLSS
 	CustomOptional<bool> DLSSEnabled{ true };
-	std::optional<std::wstring> DLSSLibrary;
-	std::optional<std::wstring> NVNGX_DLSS_Library;
+	CustomOptional<std::wstring, false> NvngxPath;
+	CustomOptional<std::wstring, false> NVNGX_DLSS_Library;
 	CustomOptional<bool> RenderPresetOverride{ false };
 	CustomOptional<uint32_t> RenderPresetDLAA{ 0 };
 	CustomOptional<uint32_t> RenderPresetUltraQuality{ 0 };
