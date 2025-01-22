@@ -3,7 +3,7 @@
 #include <pch.h>
 #include <dxgi.h>
 #include <d3d12.h>
-#include "external/nvapi.h"
+#include <nvapi.h>
 
 // Separate to break up a circular dependency 
 class NvApiTypes {
