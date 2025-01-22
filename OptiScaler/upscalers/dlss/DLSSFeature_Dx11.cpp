@@ -93,10 +93,10 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
     bool rcasEnabled = isVersionOrBetter(Version(), { 2, 5, 1 });
 
     if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) && (RCAS == nullptr || RCAS.get() == nullptr || !RCAS->IsInit()))
-        Config::Instance()->RcasEnabled = false;
+        Config::Instance()->RcasEnabled.set_volatile_value(false);
 
     if (!OutputScaler->IsInit())
-        Config::Instance()->OutputScalingEnabled = false;
+        Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
 
 
     if (NVNGXProxy::D3D11_EvaluateFeature() != nullptr)
@@ -199,7 +199,7 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
             {
                 if (!RCAS->Dispatch(Device, InDeviceContext, (ID3D11Texture2D*)setBuffer, (ID3D11Texture2D*)paramMotion, rcasConstants, OutputScaler->Buffer()))
                 {
-                    Config::Instance()->RcasEnabled = false;
+                    Config::Instance()->RcasEnabled.set_volatile_value(false);
                     return true;
                 }
             }
@@ -207,7 +207,7 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
             {
                 if (!RCAS->Dispatch(Device, InDeviceContext, (ID3D11Texture2D*)setBuffer, (ID3D11Texture2D*)paramMotion, rcasConstants, (ID3D11Texture2D*)paramOutput))
                 {
-                    Config::Instance()->RcasEnabled = false;
+                    Config::Instance()->RcasEnabled.set_volatile_value(false);
                     return true;
                 }
             }
@@ -220,7 +220,7 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
             if (!OutputScaler->Dispatch(Device, InDeviceContext, OutputScaler->Buffer(), (ID3D11Texture2D*)paramOutput))
             {
-                Config::Instance()->OutputScalingEnabled = false;
+                Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
                 State::Instance().changeBackend = true;
                 return true;
             }

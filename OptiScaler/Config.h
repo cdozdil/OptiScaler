@@ -6,7 +6,7 @@
 #include <SimpleIni.h>
 #include <map>
 
-template <class T>
+template <class T, bool HasDefaultValue = true>
 class CustomOptional : public std::optional<T> {
 private:
 	T _defaultValue;
@@ -14,8 +14,11 @@ private:
 	bool _volatile;
 
 public:
-	CustomOptional(const T& defaultValue = T{}) : std::optional<T>(), _defaultValue(defaultValue), _configIni(std::nullopt), _volatile(false) {}
-	CustomOptional(T&& defaultValue = T{}) : std::optional<T>(), _defaultValue(std::move(defaultValue)), _configIni(std::nullopt), _volatile(false) {}
+	CustomOptional(T defaultValue) requires (HasDefaultValue)
+		: std::optional<T>(), _defaultValue(std::move(defaultValue)), _configIni(std::nullopt), _volatile(false) {}
+
+	CustomOptional() requires (!HasDefaultValue)
+		: std::optional<T>(), _defaultValue(T{}), _configIni(std::nullopt), _volatile(false) {}
 
 	// Prevents a change from being saved to ini
 	constexpr void set_volatile_value(const T& value) {
@@ -62,34 +65,42 @@ public:
 	}
 
 	// Needed for string literals for some reason
-	constexpr CustomOptional& operator=(const char* value) {
+	constexpr CustomOptional& operator=(const char* value) requires std::same_as<T, std::string> {
 		_volatile = false;
-		// TODO: check if T is string
 		std::optional<T>::operator=(T(value));
 		return *this;
 	}
 
-	constexpr T value_or_default() const& {
+	constexpr T value_or_default() const& requires (HasDefaultValue) {
 		return this->has_value() ? this->value() : _defaultValue;
 	}
-	
-	constexpr T value_or_default()&& {
+
+	constexpr T value_or_default()&& requires (HasDefaultValue) {
 		return this->has_value() ? std::move(this->value()) : std::move(_defaultValue);
 	}
 
-	constexpr std::optional<T> value_for_config() {
+	constexpr std::optional<T> value_for_config() requires (HasDefaultValue) {
 		if (_volatile) {
 			if (_configIni != _defaultValue)
 				return _configIni;
-			else
-				return std::nullopt;
-		}
-		else if (!this->has_value() || *this == _defaultValue) {
+
 			return std::nullopt;
 		}
-		else {
+
+		if (!this->has_value() || *this == _defaultValue)
+			return std::nullopt;
+
+		return this->value();
+	}
+
+	constexpr std::optional<T> value_for_config() requires (!HasDefaultValue) {
+		if (_volatile)
+			return _configIni;
+
+		if (this->has_value())
 			return this->value();
-		}
+
+		return std::nullopt;
 	}
 
 	constexpr T value_for_config_or(T other) {
@@ -108,12 +119,12 @@ public:
 	Config();
 
 	// Init flags
-	std::optional<bool> DepthInverted;
-	std::optional<bool> AutoExposure;
-	std::optional<bool> HDR;
-	std::optional<bool> JitterCancellation;
-	std::optional<bool> DisplayResolution;
-	CustomOptional<bool> DisableReactiveMask{ true };
+	CustomOptional<bool, false> DepthInverted;
+	CustomOptional<bool, false> AutoExposure;
+	CustomOptional<bool, false> HDR;
+	CustomOptional<bool, false> JitterCancellation;
+	CustomOptional<bool, false> DisplayResolution;
+	CustomOptional<bool, false> DisableReactiveMask;
 	CustomOptional<float> DlssReactiveMaskBias{ 0.45f };
 
 	// Logging
@@ -123,7 +134,7 @@ public:
 	CustomOptional<bool> OpenConsole{ false };
 	CustomOptional<bool> DebugWait{ false }; // not in ini
 	CustomOptional<int> LogLevel{ 2 };
-	std::optional<std::wstring> LogFileName;
+	CustomOptional<std::wstring> LogFileName{ L"OptiScaler" };
 	CustomOptional<bool> LogSingleFile{ true };
 
 	// XeSS
@@ -195,7 +206,7 @@ public:
 	CustomOptional<float> QualityRatio_UltraPerformance{ 3.0f };
 
 	// Hotfixes
-	std::optional<float> MipmapBiasOverride; // disabled by default
+	CustomOptional<float, false> MipmapBiasOverride; // disabled by default
 	CustomOptional<bool> MipmapBiasFixedOverride{ false };
 	CustomOptional<bool> MipmapBiasScaleOverride{ false };
 	CustomOptional<bool> MipmapBiasOverrideAll{ false };
@@ -204,7 +215,7 @@ public:
 
 	CustomOptional<bool> RestoreComputeSignature{ false };
 	CustomOptional<bool> RestoreGraphicSignature{ false };
-	std::optional<int> SkipFirstFrames; // disabled by default
+	CustomOptional<int, false> SkipFirstFrames; // disabled by default
 
 	CustomOptional<bool> UsePrecompiledShaders{ true };
 

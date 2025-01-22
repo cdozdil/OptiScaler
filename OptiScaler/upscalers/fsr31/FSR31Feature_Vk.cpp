@@ -97,46 +97,46 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
 
     if (Config::Instance()->DepthInverted.value_or(DepthInverted))
     {
-        Config::Instance()->DepthInverted = true;
+        Config::Instance()->DepthInverted.set_volatile_value(true);
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_DEPTH_INVERTED;
         SetDepthInverted(true);
         LOG_INFO("contextDesc.initFlags (DepthInverted) {0:b}", _contextDesc.flags);
     }
     else
-        Config::Instance()->DepthInverted = false;
+        Config::Instance()->DepthInverted.set_volatile_value(false);
 
     if (Config::Instance()->AutoExposure.value_or(AutoExposure))
     {
-        Config::Instance()->AutoExposure = true;
+        Config::Instance()->AutoExposure.set_volatile_value(true);
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_AUTO_EXPOSURE;
         LOG_INFO("contextDesc.initFlags (AutoExposure) {0:b}", _contextDesc.flags);
     }
     else
     {
-        Config::Instance()->AutoExposure = false;
+        Config::Instance()->AutoExposure.set_volatile_value(false);
         LOG_INFO("contextDesc.initFlags (!AutoExposure) {0:b}", _contextDesc.flags);
     }
 
     if (Config::Instance()->HDR.value_or(Hdr))
     {
-        Config::Instance()->HDR = true;
+        Config::Instance()->HDR.set_volatile_value(true);
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_HIGH_DYNAMIC_RANGE;
         LOG_INFO("contextDesc.initFlags (HDR) {0:b}", _contextDesc.flags);
     }
     else
     {
-        Config::Instance()->HDR = false;
+        Config::Instance()->HDR.set_volatile_value(false);
         LOG_INFO("contextDesc.initFlags (!HDR) {0:b}", _contextDesc.flags);
     }
 
     if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
     {
-        Config::Instance()->JitterCancellation = true;
+        Config::Instance()->JitterCancellation.set_volatile_value(true);
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
         LOG_INFO("FSR31FeatureVk::InitFSR2 contextDesc.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
     }
     else
-        Config::Instance()->JitterCancellation = false;
+        Config::Instance()->JitterCancellation.set_volatile_value(false);
 
     if (Config::Instance()->DisplayResolution.value_or(!LowRes))
     {
@@ -175,7 +175,7 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     _contextDesc.header.pNext = &backendDesc.header;
 
     if (Config::Instance()->Fsr3xIndex.value_or_default() < 0 || Config::Instance()->Fsr3xIndex.value_or_default() >= State::Instance().fsr3xVersionIds.size())
-        Config::Instance()->Fsr3xIndex = 0;
+        Config::Instance()->Fsr3xIndex.set_volatile_value(0);
 
     ffxOverrideVersion ov = { 0 };
     ov.header.type = FFX_API_DESC_TYPE_OVERRIDE_VERSION;
@@ -332,7 +332,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         else
         {
             LOG_DEBUG("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
-            Config::Instance()->AutoExposure = true;
+            Config::Instance()->AutoExposure.set_volatile_value(true);
             State::Instance().changeBackend = true;
             return true;
         }
@@ -369,7 +369,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         else
         {
             LOG_DEBUG("Bias mask not exist and its enabled in config, it may cause problems!!");
-            Config::Instance()->DisableReactiveMask = true;
+            Config::Instance()->DisableReactiveMask.set_volatile_value(true);
             State::Instance().changeBackend = true;
             return true;
         }

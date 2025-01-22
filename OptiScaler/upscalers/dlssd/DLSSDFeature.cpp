@@ -60,7 +60,7 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
     if (Config::Instance()->DepthInverted.value_or(depthInverted))
     {
-        Config::Instance()->DepthInverted = true;
+        Config::Instance()->DepthInverted.set_volatile_value(true);
         featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
         LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (DepthInverted) {0:b}", featureFlags);
     }
@@ -71,7 +71,7 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
     if (Config::Instance()->AutoExposure.value_or(autoExposure))
     {
-        Config::Instance()->AutoExposure = true;
+        Config::Instance()->AutoExposure.set_volatile_value(true);
         featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
         LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (AutoExposure) {0:b}", featureFlags);
     }
@@ -82,25 +82,25 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
     if (Config::Instance()->HDR.value_or(isHdr))
     {
-        Config::Instance()->HDR = true;
+        Config::Instance()->HDR.set_volatile_value(true);
         featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
         LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (HDR) {0:b}", featureFlags);
     }
     else
     {
-        Config::Instance()->HDR = false;
+        Config::Instance()->HDR.set_volatile_value(false);
         LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (!HDR) {0:b}", featureFlags);
     }
 
     if (Config::Instance()->JitterCancellation.value_or(mvJittered))
     {
-        Config::Instance()->JitterCancellation = true;
+        Config::Instance()->JitterCancellation.set_volatile_value(true);
         featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
         LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (JitterCancellation) {0:b}", featureFlags);
     }
     else
     {
-        Config::Instance()->JitterCancellation = false;
+        Config::Instance()->JitterCancellation.set_volatile_value(false);
         LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (!JitterCancellation) {0:b}", featureFlags);
     }
 
@@ -134,12 +134,12 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
         if (ssMulti < 0.5f)
         {
             ssMulti = 0.5f;
-            Config::Instance()->OutputScalingMultiplier = ssMulti;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(ssMulti);
         }
         else if (ssMulti > 3.0f)
         {
             ssMulti = 3.0f;
-            Config::Instance()->OutputScalingMultiplier = ssMulti;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(ssMulti);
         }
 
         _targetWidth = DisplayWidth() * ssMulti;
@@ -160,8 +160,8 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
         // enable output scaling to restore image
         if (!Config::Instance()->DisplayResolution.value_or(false))
         {
-            Config::Instance()->OutputScalingMultiplier = 1.0f;
-            Config::Instance()->OutputScalingEnabled = true;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(1.0f);
+            Config::Instance()->OutputScalingEnabled.set_volatile_value(true);
         }
     }
 

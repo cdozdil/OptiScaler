@@ -1747,7 +1747,7 @@ static void CheckWorkingMode()
             isWorkingWithEnabler = lCaseFilename == "dlss-enabler-upscaler.dll";
 
             if (isWorkingWithEnabler)
-                Config::Instance()->LogToNGX = true;
+                Config::Instance()->LogToNGX.set_volatile_value(true);
 
             modeFound = true;
             break;
@@ -2034,7 +2034,7 @@ static void CheckWorkingMode()
     if (modeFound)
     {
         State::Instance().isWorkingAsNvngx = isNvngxMode && !isWorkingWithEnabler;
-        Config::Instance()->OverlayMenu = (!isNvngxMode || isWorkingWithEnabler) && Config::Instance()->OverlayMenu.value_or_default();
+        Config::Instance()->OverlayMenu.set_volatile_value((!isNvngxMode || isWorkingWithEnabler) && Config::Instance()->OverlayMenu.value_or_default());
         Config::Instance()->CheckUpscalerFiles();
 
         if (!isNvngxMode || isWorkingWithEnabler)

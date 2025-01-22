@@ -163,11 +163,22 @@ bool Config::Reload(std::filesystem::path iniPath)
             DebugWait.set_from_config(readBool("Log", "DebugWait"));
             LogSingleFile.set_from_config(readBool("Log", "SingleFile"));
 
-            if (auto setting = readWString("Log", "LogFile"); !setting.has_value())
             {
-                auto filename = LogSingleFile.value_or(true) ? "OptiScaler.log" : ("OptiScaler_" + std::to_string(GetTicks()) + ".log");
-                auto logFile = Util::DllPath().parent_path() / filename;
-                setting = logFile.wstring();
+                auto setting = readString("Log", "LogFile", false);
+
+                // Reproduce the old bug of "LogFile = " always disabling logs
+                if (setting.has_value() && setting.value().empty())
+                    LogFileName.set_from_config(L"");
+
+                auto path = std::filesystem::path(setting.value_or(wstring_to_string(LogFileName.value_or_default())));
+                auto filenameStem = path.stem();
+
+                auto filename = std::filesystem::path(LogSingleFile.value_or_default() ? filenameStem.wstring() + L".log" : filenameStem.wstring() + L"_" + std::to_wstring(GetTicks()) + L".log");
+
+                if (path.has_root_path())
+                    LogFileName.set_from_config((path.parent_path() / filename).wstring());
+                else
+                    LogFileName.set_from_config((Util::DllPath().parent_path() / filename).wstring());
             }
         }
 
@@ -237,21 +248,11 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Init Flags
         {
-            if (!AutoExposure.has_value())
-                AutoExposure = readBool("InitFlags", "AutoExposure");
-
-            if (!HDR.has_value())
-                HDR = readBool("InitFlags", "HDR");
-
-            if (!DepthInverted.has_value())
-                DepthInverted = readBool("InitFlags", "DepthInverted");
-
-            if (!JitterCancellation.has_value())
-                JitterCancellation = readBool("InitFlags", "JitterCancellation");
-
-            if (!DisplayResolution.has_value())
-                DisplayResolution = readBool("InitFlags", "DisplayResolution");
-
+            AutoExposure.set_from_config(readBool("InitFlags", "AutoExposure"));
+            HDR.set_from_config(readBool("InitFlags", "HDR"));
+            DepthInverted.set_from_config(readBool("InitFlags", "DepthInverted"));
+            JitterCancellation.set_from_config(readBool("InitFlags", "JitterCancellation"));
+            DisplayResolution.set_from_config(readBool("InitFlags", "DisplayResolution"));
         	DisableReactiveMask.set_from_config(readBool("InitFlags", "DisableReactiveMask"));
         }
 
@@ -284,9 +285,11 @@ bool Config::Reload(std::filesystem::path iniPath)
             if (!RoundInternalResolution.has_value())
                 RoundInternalResolution = readInt("Hotfix", "RoundInternalResolution");
 
-            if (!MipmapBiasOverride.has_value())
-                MipmapBiasOverride = readFloat("Hotfix", "MipmapBiasOverride");
+            if (auto setting = readFloat("Hotfix", "MipmapBiasOverride"); setting.has_value() && setting.value() <= 15.0 && setting.value() >= -15.0)
+				MipmapBiasOverride.set_from_config(setting);
 
+            // Unsure if that's needed but it resets invalid MipmapBiasOverride on config reload
+            // Unexpected place for it but could be playing a role
             if (MipmapBiasOverride.has_value() && (MipmapBiasOverride.value() > 15.0 || MipmapBiasOverride.value() < -15.0))
                 MipmapBiasOverride.reset();
 
@@ -304,10 +307,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             RestoreGraphicSignature.set_from_config(readBool("Hotfix", "RestoreGraphicSignature"));
             PreferDedicatedGpu.set_from_config(readBool("Hotfix", "PreferDedicatedGpu"));
             PreferFirstDedicatedGpu.set_from_config(readBool("Hotfix", "PreferFirstDedicatedGpu"));
-
-            if (!SkipFirstFrames.has_value())
-                SkipFirstFrames = readInt("Hotfix", "SkipFirstFrames");
-
+			SkipFirstFrames.set_from_config(readInt("Hotfix", "SkipFirstFrames"));
             UsePrecompiledShaders.set_from_config(readBool("Hotfix", "UsePrecompiledShaders"));
             UseGenericAppIdWithDlss.set_from_config(readBool("Hotfix", "UseGenericAppIdWithDlss"));
 
@@ -378,7 +378,6 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Plugins
         {
-
             if (auto setting = readString("Plugins", "Path", true); setting.has_value())
             {
                 auto path = std::filesystem::path(setting.value());
@@ -649,11 +648,11 @@ bool Config::SaveIni()
 
     // InitFlags
     {
-        ini.SetValue("InitFlags", "AutoExposure", GetBoolValue(Instance()->AutoExposure).c_str());
-        ini.SetValue("InitFlags", "HDR", GetBoolValue(Instance()->HDR).c_str());
-        ini.SetValue("InitFlags", "DepthInverted", GetBoolValue(Instance()->DepthInverted).c_str());
-        ini.SetValue("InitFlags", "JitterCancellation", GetBoolValue(Instance()->JitterCancellation).c_str());
-        ini.SetValue("InitFlags", "DisplayResolution", GetBoolValue(Instance()->DisplayResolution).c_str());
+        ini.SetValue("InitFlags", "AutoExposure", GetBoolValue(Instance()->AutoExposure.value_for_config()).c_str());
+        ini.SetValue("InitFlags", "HDR", GetBoolValue(Instance()->HDR.value_for_config()).c_str());
+        ini.SetValue("InitFlags", "DepthInverted", GetBoolValue(Instance()->DepthInverted.value_for_config()).c_str());
+        ini.SetValue("InitFlags", "JitterCancellation", GetBoolValue(Instance()->JitterCancellation.value_for_config()).c_str());
+        ini.SetValue("InitFlags", "DisplayResolution", GetBoolValue(Instance()->DisplayResolution.value_for_config()).c_str());
         ini.SetValue("InitFlags", "DisableReactiveMask", GetBoolValue(Instance()->DisableReactiveMask.value_for_config()).c_str());
     }
 
@@ -676,7 +675,7 @@ bool Config::SaveIni()
 
     // Hotfixes
     {
-        ini.SetValue("Hotfix", "MipmapBiasOverride", GetFloatValue(Instance()->MipmapBiasOverride).c_str());
+        ini.SetValue("Hotfix", "MipmapBiasOverride", GetFloatValue(Instance()->MipmapBiasOverride.value_for_config()).c_str());
         ini.SetValue("Hotfix", "MipmapBiasOverrideAll", GetBoolValue(Instance()->MipmapBiasOverrideAll.value_for_config()).c_str());
         ini.SetValue("Hotfix", "MipmapBiasFixedOverride", GetBoolValue(Instance()->MipmapBiasFixedOverride.value_for_config()).c_str());
         ini.SetValue("Hotfix", "MipmapBiasScaleOverride", GetBoolValue(Instance()->MipmapBiasScaleOverride.value_for_config()).c_str());
@@ -686,7 +685,7 @@ bool Config::SaveIni()
 
         ini.SetValue("Hotfix", "RestoreComputeSignature", GetBoolValue(Instance()->RestoreComputeSignature.value_for_config()).c_str());
         ini.SetValue("Hotfix", "RestoreGraphicSignature", GetBoolValue(Instance()->RestoreGraphicSignature.value_for_config()).c_str());
-        ini.SetValue("Hotfix", "SkipFirstFrames", GetIntValue(Instance()->SkipFirstFrames).c_str());
+        ini.SetValue("Hotfix", "SkipFirstFrames", GetIntValue(Instance()->SkipFirstFrames.value_for_config()).c_str());
 
         ini.SetValue("Hotfix", "UsePrecompiledShaders", GetBoolValue(Instance()->UsePrecompiledShaders.value_for_config()).c_str());
         ini.SetValue("Hotfix", "PreferDedicatedGpu", GetBoolValue(Instance()->PreferDedicatedGpu.value_for_config()).c_str());
@@ -757,7 +756,7 @@ bool Config::SaveIni()
         ini.SetValue("Inputs", "Dlss", GetBoolValue(Instance()->DlssInputs.value_for_config()).c_str());
         ini.SetValue("Inputs", "XeSS", GetBoolValue(Instance()->XeSSInputs.value_for_config()).c_str());
         ini.SetValue("Inputs", "Fsr2", GetBoolValue(Instance()->Fsr2Inputs.value_for_config()).c_str());
-        //ini.SetValue("Inputs", "Fsr2Pattern", GetBoolValue(Instance()->Fsr2Pattern.value_for_config()).c_str());
+        ini.SetValue("Inputs", "Fsr2Pattern", GetBoolValue(Instance()->Fsr2Pattern.value_for_config()).c_str());
         ini.SetValue("Inputs", "Fsr3", GetBoolValue(Instance()->Fsr3Inputs.value_for_config()).c_str());
         ini.SetValue("Inputs", "Ffx", GetBoolValue(Instance()->FfxInputs.value_for_config()).c_str());
     }

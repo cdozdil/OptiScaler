@@ -642,7 +642,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
     {
         int nvsdkLogging = 0;
         InParameters->Get("DLSSEnabler.Logging", &nvsdkLogging);
-        Config::Instance()->LogToNGX = nvsdkLogging > 0;
+        Config::Instance()->LogToNGX.set_volatile_value(nvsdkLogging > 0);
     }
 
     // Root signature restore
@@ -1677,9 +1677,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 m_FrameGenerationConfig.frameID = deviceContext->FrameCount();
                 m_FrameGenerationConfig.swapChain = HooksDx::currentSwapchain;
 
-                //Config::Instance()->dxgiSkipSpoofing = true;
+                //State::Instance().skipSpoofing = true;
                 ffxReturnCode_t retCode = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgContext, &m_FrameGenerationConfig.header);
-                //Config::Instance()->dxgiSkipSpoofing = false;
+                //State::Instance().skipSpoofing = false;
 
                 if (retCode != FFX_API_RETURN_OK)
                     LOG_ERROR("(FG) D3D12_Configure error: {}({})", retCode, FfxApiProxy::ReturnCodeToString(retCode));

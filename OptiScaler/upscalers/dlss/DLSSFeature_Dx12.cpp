@@ -102,10 +102,10 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	bool rcasEnabled = isVersionOrBetter(Version(), { 2, 5, 1 });
 
 	if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) && (RCAS == nullptr || RCAS.get() == nullptr || !RCAS->IsInit()))
-		Config::Instance()->RcasEnabled = false;
+		Config::Instance()->RcasEnabled.set_volatile_value(false);
 
 	if (!OutputScaler->IsInit())
-		Config::Instance()->OutputScalingEnabled = false;
+		Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
 
 	NVSDK_NGX_Result nvResult;
 
@@ -185,7 +185,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 			{
 				if (!RCAS->Dispatch(Device, InCommandList, setBuffer, paramMotion, rcasConstants, OutputScaler->Buffer()))
 				{
-					Config::Instance()->RcasEnabled = false;
+					Config::Instance()->RcasEnabled.set_volatile_value(false);
 					return true;
 				}
 			}
@@ -193,7 +193,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 			{
 				if (!RCAS->Dispatch(Device, InCommandList, setBuffer, paramMotion, rcasConstants, paramOutput))
 				{
-					Config::Instance()->RcasEnabled = false;
+					Config::Instance()->RcasEnabled.set_volatile_value(false);
 					return true;
 				}
 			}
@@ -207,7 +207,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 			if (!OutputScaler->Dispatch(Device, InCommandList, OutputScaler->Buffer(), paramOutput))
 			{
-				Config::Instance()->OutputScalingEnabled = false;
+				Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
 				State::Instance().changeBackend = true;
 				return true;
 			}

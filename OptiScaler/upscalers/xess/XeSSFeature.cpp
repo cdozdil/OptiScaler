@@ -60,39 +60,39 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
     if (Config::Instance()->DepthInverted.value_or(DepthInverted))
     {
-        Config::Instance()->DepthInverted = true;
+        Config::Instance()->DepthInverted.set_volatile_value(true);
         xessParams.initFlags |= XESS_INIT_FLAG_INVERTED_DEPTH;
         LOG_DEBUG("xessParams.initFlags (DepthInverted) {0:b}", xessParams.initFlags);
     }
 
     if (Config::Instance()->AutoExposure.value_or(AutoExposure))
     {
-        Config::Instance()->AutoExposure = true;
+        Config::Instance()->AutoExposure.set_volatile_value(true);
         xessParams.initFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
         LOG_DEBUG("xessParams.initFlags (AutoExposure) {0:b}", xessParams.initFlags);
     }
     else
     {
-        Config::Instance()->AutoExposure = false;
+        Config::Instance()->AutoExposure.set_volatile_value(false);
         xessParams.initFlags |= XESS_INIT_FLAG_EXPOSURE_SCALE_TEXTURE;
         LOG_DEBUG("xessParams.initFlags (!AutoExposure) {0:b}", xessParams.initFlags);
     }
 
     if (!Config::Instance()->HDR.value_or(Hdr))
     {
-        Config::Instance()->HDR = false;
+        Config::Instance()->HDR.set_volatile_value(false);
         xessParams.initFlags |= XESS_INIT_FLAG_LDR_INPUT_COLOR;
         LOG_DEBUG("xessParams.initFlags (!HDR) {0:b}", xessParams.initFlags);
     }
     else
     {
-        Config::Instance()->HDR = true;
+        Config::Instance()->HDR.set_volatile_value(true);
         LOG_DEBUG("xessParams.initFlags (HDR) {0:b}", xessParams.initFlags);
     }
 
     if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
     {
-        Config::Instance()->JitterCancellation = true;
+        Config::Instance()->JitterCancellation.set_volatile_value(true);
         xessParams.initFlags |= XESS_INIT_FLAG_JITTERED_MV;
         LOG_DEBUG("xessParams.initFlags (JitterCancellation) {0:b}", xessParams.initFlags);
     }
@@ -107,9 +107,9 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         LOG_DEBUG("xessParams.initFlags (LowResMV) {0:b}", xessParams.initFlags);
     }
 
-    if (!Config::Instance()->DisableReactiveMask.value_or_default())
+    if (!Config::Instance()->DisableReactiveMask.value_or(true))
     {
-        Config::Instance()->DisableReactiveMask = false;
+        Config::Instance()->DisableReactiveMask.set_volatile_value(false);
         xessParams.initFlags |= XESS_INIT_FLAG_RESPONSIVE_PIXEL_MASK;
         LOG_DEBUG("xessParams.initFlags (ReactiveMaskActive) {0:b}", xessParams.initFlags);
     }
@@ -176,12 +176,12 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         if (ssMulti < 0.5f)
         {
             ssMulti = 0.5f;
-            Config::Instance()->OutputScalingMultiplier = ssMulti;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(ssMulti);
         }
         else if (ssMulti > 3.0f)
         {
             ssMulti = 3.0f;
-            Config::Instance()->OutputScalingMultiplier = ssMulti;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(ssMulti);
         }
 
         _targetWidth = DisplayWidth() * ssMulti;
@@ -201,8 +201,8 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         // enable output scaling to restore image
         if (!Config::Instance()->DisplayResolution.value_or(false))
         {
-            Config::Instance()->OutputScalingMultiplier = 1.0f;
-            Config::Instance()->OutputScalingEnabled = true;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(1.0f);
+            Config::Instance()->OutputScalingEnabled.set_volatile_value(true);
         }
     }
 
@@ -235,7 +235,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
                 if (SUCCEEDED(hr))
                 {
-                    Config::Instance()->CreateHeaps = true;
+                    Config::Instance()->CreateHeaps.set_volatile_value(true);
 
                     LOG_DEBUG("using _localBufferHeap & _localTextureHeap!");
 

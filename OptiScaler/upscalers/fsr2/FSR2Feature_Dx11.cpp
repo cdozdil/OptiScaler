@@ -142,46 +142,46 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 
     if (Config::Instance()->DepthInverted.value_or(DepthInverted))
     {
-        Config::Instance()->DepthInverted = true;
+        Config::Instance()->DepthInverted.set_volatile_value(true);
         _contextDesc.flags |= FFX_FSR2_ENABLE_DEPTH_INVERTED;
         SetDepthInverted(true);
         LOG_INFO("contextDesc.initFlags (DepthInverted) {0:b}", _contextDesc.flags);
     }
     else
-        Config::Instance()->DepthInverted = false;
+        Config::Instance()->DepthInverted.set_volatile_value(false);
 
     if (Config::Instance()->AutoExposure.value_or(AutoExposure))
     {
-        Config::Instance()->AutoExposure = true;
+        Config::Instance()->AutoExposure.set_volatile_value(true);
         _contextDesc.flags |= FFX_FSR2_ENABLE_AUTO_EXPOSURE;
         LOG_INFO("contextDesc.initFlags (AutoExposure) {0:b}", _contextDesc.flags);
     }
     else
     {
-        Config::Instance()->AutoExposure = false;
+        Config::Instance()->AutoExposure.set_volatile_value(false);
         LOG_INFO("contextDesc.initFlags (!AutoExposure) {0:b}", _contextDesc.flags);
     }
 
     if (Config::Instance()->HDR.value_or(Hdr))
     {
-        Config::Instance()->HDR = true;
+        Config::Instance()->HDR.set_volatile_value(true);
         _contextDesc.flags |= FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
         LOG_INFO("contextDesc.initFlags (HDR) {0:b}", _contextDesc.flags);
     }
     else
     {
-        Config::Instance()->HDR = false;
+        Config::Instance()->HDR.set_volatile_value(false);
         LOG_INFO("contextDesc.initFlags (!HDR) {0:b}", _contextDesc.flags);
     }
 
     if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
     {
-        Config::Instance()->JitterCancellation = true;
+        Config::Instance()->JitterCancellation.set_volatile_value(true);
         _contextDesc.flags |= FFX_FSR2_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
         LOG_INFO("contextDesc.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
     }
     else
-        Config::Instance()->JitterCancellation = false;
+        Config::Instance()->JitterCancellation.set_volatile_value(false);
 
     if (Config::Instance()->DisplayResolution.value_or(!LowRes))
     {
@@ -201,12 +201,12 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         if (ssMulti < 0.5f)
         {
             ssMulti = 0.5f;
-            Config::Instance()->OutputScalingMultiplier = ssMulti;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(ssMulti);
         }
         else if (ssMulti > 3.0f)
         {
             ssMulti = 3.0f;
-            Config::Instance()->OutputScalingMultiplier = ssMulti;
+            Config::Instance()->OutputScalingMultiplier.set_volatile_value(ssMulti);
         }
 
         _targetWidth = DisplayWidth() * ssMulti;
@@ -224,7 +224,7 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         _contextDesc.maxRenderSize.width = RenderWidth();
         _contextDesc.maxRenderSize.height = RenderHeight();
 
-        Config::Instance()->OutputScalingMultiplier = 1.0f;
+        Config::Instance()->OutputScalingMultiplier.set_volatile_value(1.0f);
 
         // if output scaling active let it to handle downsampling
         if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false))
@@ -285,7 +285,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
         return false;
 
     if (!RCAS->IsInit())
-        Config::Instance()->RcasEnabled = false;
+        Config::Instance()->RcasEnabled.set_volatile_value(false);
 
     ID3D11ShaderResourceView* restoreSRVs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = {};
     ID3D11SamplerState* restoreSamplerStates[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] = {};
@@ -396,12 +396,12 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
             if (displaySizeEnabled && lowResMV)
             {
                 LOG_WARN("MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
-                Config::Instance()->DisplayResolution = false;
+                Config::Instance()->DisplayResolution.set_volatile_value(false);
                 State::Instance().changeBackend = true;
                 return true;
             }
 
-            Config::Instance()->DisplayResolution = displaySizeEnabled;
+            Config::Instance()->DisplayResolution.set_volatile_value(displaySizeEnabled);
         }
     }
     else
@@ -476,7 +476,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
         else
         {
             LOG_DEBUG("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
-            Config::Instance()->AutoExposure = true;
+            Config::Instance()->AutoExposure.set_volatile_value(true);
             State::Instance().changeBackend = true;
             return true;
         }
@@ -493,7 +493,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
         if (paramReactiveMask)
         {
             LOG_DEBUG("Input Bias mask exist..");
-            Config::Instance()->DisableReactiveMask = false;
+            Config::Instance()->DisableReactiveMask.set_volatile_value(false);
 
             if (Config::Instance()->FsrUseMaskForTransparency.value_or_default())
                 params.transparencyAndComposition = ffxGetResourceDX11(&_context, paramReactiveMask, (wchar_t*)L"FSR2_Transparency", FFX_RESOURCE_STATE_COMPUTE_READ);
@@ -594,7 +594,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
             if (!RCAS->Dispatch(Device, InContext, (ID3D11Texture2D*)params.output.resource, (ID3D11Texture2D*)params.motionVectors.resource,
                 rcasConstants, OutputScaler->Buffer()))
             {
-                Config::Instance()->RcasEnabled = false;
+                Config::Instance()->RcasEnabled.set_volatile_value(false);
                 return true;
             }
         }
@@ -603,7 +603,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
             if (!RCAS->Dispatch(Device, InContext, (ID3D11Texture2D*)params.output.resource, (ID3D11Texture2D*)params.motionVectors.resource,
                 rcasConstants, (ID3D11Texture2D*)paramOutput))
             {
-                Config::Instance()->RcasEnabled = false;
+                Config::Instance()->RcasEnabled.set_volatile_value(false);
                 return true;
             }
         }
@@ -614,7 +614,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
         LOG_DEBUG("scaling output...");
         if (!OutputScaler->Dispatch(Device, InContext, OutputScaler->Buffer(), (ID3D11Texture2D*)paramOutput))
         {
-            Config::Instance()->OutputScalingEnabled = false;
+            Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
             State::Instance().changeBackend = true;
             return true;
         }
