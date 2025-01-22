@@ -8,8 +8,8 @@
 #include "NVNGX_Parameter.h"
 
 #include "detours/detours.h"
-#include "fsr2_212/include/ffx_fsr2.h"
-#include "fsr2_212/include/dx12/ffx_fsr2_dx12.h"
+#include "fsr2_212/ffx_fsr2.h"
+#include "fsr2_212/dx12/ffx_fsr2_dx12.h"
 
 // Tiny Tina's Wonderland
 typedef struct FfxResourceTiny
@@ -925,6 +925,15 @@ void HookFSR2ExeInputs()
         std::string_view createPattern("40 55 57 41 54 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 4C 8B F2 41 B8 ? ? ? ? 33 D2 48 8B F9 E8");
         o_ffxFsr2ContextCreate_Pattern_Dx12 = (PFN_ffxFsr2ContextCreate)scanner::GetAddress(exeNameV, createPattern, 0);
 
+        // Witchfire
+        // Game uses FSR1 as FSR2
+        //if (o_ffxFsr2ContextCreate_Pattern_Dx12 == nullptr)
+        //{
+        //    LOG_DEBUG("Checking createPatternWF");
+        //    std::string_view createPatternWF("40 55 57 41 54 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 4C 8B F2 41 B8 ? ? ? ? 33 D2 48 8B F9");
+        //    o_ffxFsr2ContextCreate_Pattern_Dx12 = (PFN_ffxFsr2ContextCreate)scanner::GetAddress(exeNameV, createPatternWF, 0);
+        //}
+
         // AW2 
         // Custom implementation
         //if (o_ffxFsr2ContextCreate_Pattern_Dx12 == nullptr)
@@ -946,7 +955,7 @@ void HookFSR2ExeInputs()
         std::string_view dispatchPattern("40 55 53 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 80 B9 ? ? ? ? 00 48 8B DA 48 8B 02 48 8B F9");
         o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPattern, 0);
 
-        // Alone in the Dark - Not receiving calls
+        // Alone in the Dark - Game is using FSR1
         // Deliver Us Mars
         if (o_ffxFsr2ContextDispatch_Pattern_Dx12 == nullptr)
         {
@@ -954,6 +963,15 @@ void HookFSR2ExeInputs()
             std::string_view dispatchPatternAITD("40 55 57 41 56 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 80 B9 ? ? ? ? ? 4C 8B F2 48 8B 02 48 8B F9");
             o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPatternAITD, 0);
         }
+
+        // Witchfire
+        // Game uses FSR1 as FSR2
+        //if (o_ffxFsr2ContextDispatch_Pattern_Dx12 == nullptr)
+        //{
+        //    LOG_DEBUG("Checking dispatchPatternWF");
+        //    std::string_view dispatchPatternWF("40 55 56 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? F7 01 ? ? ? ? 48 8B F2 48 8B F9");
+        //    o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPatternWF, 0);
+        //}
 
         // Banishers
         // Custom implementation
@@ -972,7 +990,7 @@ void HookFSR2ExeInputs()
 
         // Destroy
         LOG_DEBUG("Checking destroyPattern");
-        std::string_view destroyPattern("40 53 48 83 EC 20 48 8B D9 48 85 C9 75 0B B8 00 00 00 80 48 83 C4 20 5B C3");
+        std::string_view destroyPattern("40 53 48 83 EC 20 48 8B D9 48 85 C9 75 ? B8 00 00 00 80 48 83 C4 20 5B C3");
         o_ffxFsr2ContextDestroy_Pattern_Dx12 = (PFN_ffxFsr2ContextDestroy)scanner::GetAddress(exeNameV, destroyPattern, 0);
     }
 

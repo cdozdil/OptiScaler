@@ -7,8 +7,8 @@
 #include "NVNGX_Parameter.h"
 
 #include "detours/detours.h"
-#include "fsr3/include/ffx_fsr3upscaler.h"
-#include "fsr3/include/dx12/ffx_dx12.h"
+#include "fsr3/ffx_fsr3upscaler.h"
+#include "fsr3/dx12/ffx_dx12.h"
 
 // FSR3
 typedef Fsr3::FfxErrorCode(*PFN_ffxFsr3UpscalerContextCreate)(Fsr3::FfxFsr3UpscalerContext* pContext, const Fsr3::FfxFsr3UpscalerContextDescription* pContextDescription);

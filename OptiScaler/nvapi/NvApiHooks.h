@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../pch.h"
+#include <pch.h>
 #include "NvApiTypes.h"
 #include "ReflexHooks.h"
 #include "fakenvapi.h"

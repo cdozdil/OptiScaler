@@ -1,6 +1,6 @@
 #pragma once
 
-#include "NVNGX_Proxy.h"
+#include "proxies/NVNGX_Proxy.h"
 
 #define DLSSG_MOD_ID_OFFSET 2000000
 

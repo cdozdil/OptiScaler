@@ -3,8 +3,11 @@
 #include "Util.h"
 
 #include "resource.h"
-#include "FfxApi_Proxy.h"
+#include "proxies/FfxApi_Proxy.h"
 #include "NVNGX_Parameter.h"
+
+#include "ffx_upscale.h"
+#include "dx12/ffx_api_dx12.h"
 
 static std::map<ffxContext, ffxCreateContextDescUpscale> _initParams;
 static std::map<ffxContext, NVSDK_NGX_Parameter*> _nvParams;
