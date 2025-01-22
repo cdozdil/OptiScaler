@@ -410,15 +410,15 @@ void HookFSR3ExeInputs()
         LOG_DEBUG("ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12);
     }
 
-    if (o_ffxFSR3GetInterfaceDX12 == nullptr)
-    {
-        o_ffxFSR3GetInterfaceDX12 = (PFN_ffxFSR3GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "ffxGetInterfaceDX12");
+    //if (o_ffxFSR3GetInterfaceDX12 == nullptr)
+    //{
+    //    o_ffxFSR3GetInterfaceDX12 = (PFN_ffxFSR3GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "ffxGetInterfaceDX12");
 
-        if (o_ffxFSR3GetInterfaceDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFSR3GetInterfaceDX12, hk_ffxFsr3GetInterfaceDX12);
+    //    if (o_ffxFSR3GetInterfaceDX12 != nullptr)
+    //        DetourAttach(&(PVOID&)o_ffxFSR3GetInterfaceDX12, hk_ffxFsr3GetInterfaceDX12);
 
-        LOG_DEBUG("ffxGetInterfaceDX12: {:X}", (size_t)o_ffxFSR3GetInterfaceDX12);
-    }
+    //    LOG_DEBUG("ffxGetInterfaceDX12: {:X}", (size_t)o_ffxFSR3GetInterfaceDX12);
+    //}
 
     DetourTransactionCommit();
 
@@ -493,6 +493,8 @@ void HookFSR3Inputs(HMODULE module)
 void HookFSR3Dx12Inputs(HMODULE module)
 {
     LOG_INFO("Trying to hook FSR3 methods");
+
+    return;
 
     if (module != nullptr)
     {
