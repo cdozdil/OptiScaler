@@ -5,7 +5,7 @@
 #include <Logger.h>
 #include <Config.h>
 
-#include <menu/imgui_overlay_dx.h>
+#include <menu/menu_overlay_dx.h>
 #include <detours/detours.h>
 
 #include <d3d11on12.h>
@@ -602,7 +602,7 @@ static bool IsFGCommandList(IUnknown* cmdList)
 
 static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
 {
-    if ((This == nullptr || This != ImGuiOverlayDx::MenuCommandList()) && State::Instance().currentFeature != nullptr && !State::Instance().FGchanged &&
+    if ((This == nullptr || This != MenuOverlayDx::MenuCommandList()) && State::Instance().currentFeature != nullptr && !State::Instance().FGchanged &&
         fgHudlessFrame != State::Instance().currentFeature->FrameCount() && FrameGen_Dx12::fgTarget < State::Instance().currentFeature->FrameCount() &&
         FrameGen_Dx12::fgContext != nullptr && FrameGen_Dx12::fgIsActive && HooksDx::currentSwapchain != nullptr)
     {
@@ -819,8 +819,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
     }
     else
     {
-        LOG_ERROR("This should not happen!\nThis != ImGuiOverlayDx::MenuCommandList(): {} && State::Instance().currentFeature != nullptr: {} && !State::Instance().FGchanged: {} && fgHudlessFrame: {} != State::Instance().currentFeature->FrameCount(): {}, FrameGen_Dx12::fgTarget: {} < State::Instance().currentFeature->FrameCount(): {} && FrameGen_Dx12::fgContext != nullptr : {} && FrameGen_Dx12::fgIsActive: {} && HooksDx::currentSwapchain != nullptr: {}",
-                  This != ImGuiOverlayDx::MenuCommandList(), State::Instance().currentFeature != nullptr, !State::Instance().FGchanged,
+        LOG_ERROR("This should not happen!\nThis != MenuOverlayDx::MenuCommandList(): {} && State::Instance().currentFeature != nullptr: {} && !State::Instance().FGchanged: {} && fgHudlessFrame: {} != State::Instance().currentFeature->FrameCount(): {}, FrameGen_Dx12::fgTarget: {} < State::Instance().currentFeature->FrameCount(): {} && FrameGen_Dx12::fgContext != nullptr : {} && FrameGen_Dx12::fgIsActive: {} && HooksDx::currentSwapchain != nullptr: {}",
+                  This != MenuOverlayDx::MenuCommandList(), State::Instance().currentFeature != nullptr, !State::Instance().FGchanged,
                   fgHudlessFrame, State::Instance().currentFeature->FrameCount(), FrameGen_Dx12::fgTarget, State::Instance().currentFeature->FrameCount(),
                   FrameGen_Dx12::fgContext != nullptr, FrameGen_Dx12::fgIsActive, HooksDx::currentSwapchain != nullptr);
     }
@@ -1238,7 +1238,7 @@ static void hkCopyResource(ID3D12GraphicsCommandList* This, ID3D12Resource* Dest
 
     auto fIndex = GetFrameIndex();
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList[fIndex] == This)
+    if (This == MenuOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList[fIndex] == This)
         return;
 
     if (!IsHudFixActive())
@@ -1266,7 +1266,7 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
 
     auto fIndex = GetFrameIndex();
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList[fIndex] == This)
+    if (This == MenuOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList[fIndex] == This)
         return;
 
     if (!IsHudFixActive())
@@ -1550,9 +1550,9 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
 
     LOG_DEBUG_ONLY("");
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || IsFGCommandList(This))
+    if (This == MenuOverlayDx::MenuCommandList() || IsFGCommandList(This))
     {
-        LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == ImGuiOverlayDx::MenuCommandList(), IsFGCommandList(This));
+        LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == MenuOverlayDx::MenuCommandList(), IsFGCommandList(This));
         o_SetGraphicsRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
     }
@@ -1624,9 +1624,9 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
 
     LOG_DEBUG_ONLY("NumRenderTargetDescriptors: {}", NumRenderTargetDescriptors);
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || IsFGCommandList(This))
+    if (This == MenuOverlayDx::MenuCommandList() || IsFGCommandList(This))
     {
-        LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == ImGuiOverlayDx::MenuCommandList(), IsFGCommandList(This));
+        LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == MenuOverlayDx::MenuCommandList(), IsFGCommandList(This));
         o_OMSetRenderTargets(This, NumRenderTargetDescriptors, pRenderTargetDescriptors, RTsSingleHandleToDescriptorRange, pDepthStencilDescriptor);
         return;
     }
@@ -1714,9 +1714,9 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
 
     LOG_DEBUG_ONLY("");
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || IsFGCommandList(This))
+    if (This == MenuOverlayDx::MenuCommandList() || IsFGCommandList(This))
     {
-        LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == ImGuiOverlayDx::MenuCommandList(), IsFGCommandList(This));
+        LOG_DEBUG_ONLY("Menu cmdlist: {} || fgCommandList: {}", This == MenuOverlayDx::MenuCommandList(), IsFGCommandList(This));
         o_SetComputeRootDescriptorTable(This, RootParameterIndex, BaseDescriptor);
         return;
     }
@@ -1788,7 +1788,7 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
     if (!IsHudFixActive())
         return;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || IsFGCommandList(This))
+    if (This == MenuOverlayDx::MenuCommandList() || IsFGCommandList(This))
         return;
 
     auto fIndex = GetFrameIndex(true);
@@ -1844,7 +1844,7 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
     if (!IsHudFixActive())
         return;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || IsFGCommandList(This))
+    if (This == MenuOverlayDx::MenuCommandList() || IsFGCommandList(This))
         return;
 
     auto fIndex = GetFrameIndex(true);
@@ -1902,7 +1902,7 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
     if (!IsHudFixActive())
         return;
 
-    if (This == ImGuiOverlayDx::MenuCommandList() || IsFGCommandList(This))
+    if (This == MenuOverlayDx::MenuCommandList() || IsFGCommandList(This))
         return;
 
     auto fIndex = GetFrameIndex(true);
@@ -2225,7 +2225,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         return presentResult;
     }
 
-    ImGuiOverlayDx::Present(pSwapChain, SyncInterval, Flags, pPresentParameters, pDevice, hWnd);
+    MenuOverlayDx::Present(pSwapChain, SyncInterval, Flags, pPresentParameters, pDevice, hWnd);
 
     if (Config::Instance()->FGUseFGSwapChain.value_or_default())
     {
@@ -2607,7 +2607,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         }
 
         LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDesc->OutputWindow);
-        lastWrapped = new WrappedIDXGISwapChain4(realSC, readDevice, pDesc->OutputWindow, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
+        lastWrapped = new WrappedIDXGISwapChain4(realSC, readDevice, pDesc->OutputWindow, Present, MenuOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
         *ppSwapChain = lastWrapped;
 
         if (!fgSkipSCWrapping)
@@ -2906,7 +2906,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         }
 
         LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)hWnd);
-        lastWrapped = new WrappedIDXGISwapChain4(realSC, readDevice, hWnd, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
+        lastWrapped = new WrappedIDXGISwapChain4(realSC, readDevice, hWnd, Present, MenuOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
         *ppSwapChain = lastWrapped;
         LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
 
@@ -3527,7 +3527,7 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
         }
 
         LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pSwapChainDesc->OutputWindow);
-        lastWrapped = new WrappedIDXGISwapChain4(realSC, readDevice, pSwapChainDesc->OutputWindow, Present, ImGuiOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
+        lastWrapped = new WrappedIDXGISwapChain4(realSC, readDevice, pSwapChainDesc->OutputWindow, Present, MenuOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
         *ppSwapChain = lastWrapped;
 
         if (!fgSkipSCWrapping)
@@ -3984,7 +3984,7 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
     std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
 #endif
 
-    ImGuiOverlayDx::CleanupRenderTarget(true, hWnd);
+    MenuOverlayDx::CleanupRenderTarget(true, hWnd);
 
     if (FrameGen_Dx12::fgContext != nullptr)
     {

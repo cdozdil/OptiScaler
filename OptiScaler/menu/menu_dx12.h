@@ -1,9 +1,9 @@
 #pragma once
 
-#include "imgui_dx_base.h"
+#include "menu_dx_base.h"
 #include <d3d12.h>
 
-class Imgui_Dx12 : public ImguiDxBase
+class Menu_Dx12 : public MenuDxBase
 {
 private:
 	bool _dx12Init = false;
@@ -20,7 +20,7 @@ private:
 public:
 	bool Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outTexture);
 
-	Imgui_Dx12(HWND handle, ID3D12Device* pDevice);
+	Menu_Dx12(HWND handle, ID3D12Device* pDevice);
 
-	~Imgui_Dx12();
+	~Menu_Dx12();
 };

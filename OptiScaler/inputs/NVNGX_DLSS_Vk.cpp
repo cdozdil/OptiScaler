@@ -1060,7 +1060,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
 
     // Unhooking and cleaning stuff causing issues during shutdown. 
     // Disabled for now to check if it cause any issues
-    //ImGuiOverlayVk::UnHookVk();
+    //MenuOverlayVk::UnHookVk();
 
     DLSSGMod::VULKAN_Shutdown();
 

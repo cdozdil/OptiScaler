@@ -1,8 +1,8 @@
-#include "Imgui_Dx11.h"
+#include "menu_dx11.h"
 #include "imgui/imgui_impl_dx11.h"
 #include "imgui/imgui_impl_win32.h"
 
-void Imgui_Dx11::CreateRenderTarget(ID3D11Resource* out)
+void Menu_Dx11::CreateRenderTarget(ID3D11Resource* out)
 {
 	ID3D11Texture2D* outTexture2D = nullptr;
 
@@ -66,7 +66,7 @@ void Imgui_Dx11::CreateRenderTarget(ID3D11Resource* out)
 	}
 }
 
-bool Imgui_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTexture)
+bool Menu_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTexture)
 {
 	if (Config::Instance()->OverlayMenu.value_or_default())
 		return false;
@@ -92,7 +92,7 @@ bool Imgui_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTextur
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 
-	ImguiDxBase::RenderMenu();
+	MenuDxBase::RenderMenu();
 
 	// Create RTV for out
 	pCmdList->OMSetRenderTargets(1, &_renderTargetView, nullptr);
@@ -116,17 +116,17 @@ bool Imgui_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTextur
 	return true;
 }
 
-Imgui_Dx11::Imgui_Dx11(HWND handle, ID3D11Device* pDevice) : ImguiDxBase(handle), _device(pDevice)
+Menu_Dx11::Menu_Dx11(HWND handle, ID3D11Device* pDevice) : MenuDxBase(handle), _device(pDevice)
 {
 	Dx11Ready();
 }
 
-Imgui_Dx11::~Imgui_Dx11()
+Menu_Dx11::~Menu_Dx11()
 {
 	if (!_dx11Init)
 		return;
 
-	ImGuiCommon::Shutdown();
+	MenuCommon::Shutdown();
 
 	// hackzor
 	std::this_thread::sleep_for(std::chrono::milliseconds(250));

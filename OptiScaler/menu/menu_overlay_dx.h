@@ -5,7 +5,7 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
-namespace ImGuiOverlayDx
+namespace MenuOverlayDx
 {
     ID3D12GraphicsCommandList* MenuCommandList();
     void CleanupRenderTarget(bool clearQueue, HWND hWnd);

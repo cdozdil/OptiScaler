@@ -196,6 +196,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="menu\font\Hack_Compressed.h" />
     <ClInclude Include="upscalers\dlssd\DLSSDFeature.h" />
     <ClInclude Include="upscalers\dlssd\DLSSDFeature_Dx11.h" />
     <ClInclude Include="upscalers\dlssd\DLSSDFeature_Dx12.h" />
@@ -248,13 +249,13 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="upscalers\IFeature_Vk.h" />
     <ClInclude Include="detours\detours.h" />
     <ClInclude Include="dllmain.h" />
-    <ClInclude Include="menu\imgui_dx_base.h" />
-    <ClInclude Include="menu\imgui_common.h" />
-    <ClInclude Include="menu\imgui_dx11.h" />
-    <ClInclude Include="menu\imgui_dx12.h" />
-    <ClInclude Include="menu\imgui_overlay_base.h" />
-    <ClInclude Include="menu\imgui_overlay_dx.h" />
-    <ClInclude Include="menu\imgui_overlay_vk.h" />
+    <ClInclude Include="menu\menu_dx_base.h" />
+    <ClInclude Include="menu\menu_common.h" />
+    <ClInclude Include="menu\menu_dx11.h" />
+    <ClInclude Include="menu\menu_dx12.h" />
+    <ClInclude Include="menu\menu_overlay_base.h" />
+    <ClInclude Include="menu\menu_overlay_dx.h" />
+    <ClInclude Include="menu\menu_overlay_vk.h" />
     <ClInclude Include="hooks\wrapped_swapchain.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="NVNGX_Parameter.h" />
@@ -339,13 +340,13 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClCompile Include="inputs\FSR3_Dx12.cpp" />
     <ClCompile Include="hooks\HooksDx.cpp" />
     <ClCompile Include="hooks\HooksVk.cpp" />
-    <ClCompile Include="menu\imgui_common.cpp" />
-    <ClCompile Include="menu\imgui_dx_base.cpp" />
-    <ClCompile Include="menu\imgui_dx11.cpp" />
-    <ClCompile Include="menu\imgui_dx12.cpp" />
-    <ClCompile Include="menu\imgui_overlay_base.cpp" />
-    <ClCompile Include="menu\imgui_overlay_dx.cpp" />
-    <ClCompile Include="menu\imgui_overlay_vk.cpp" />
+    <ClCompile Include="menu\menu_common.cpp" />
+    <ClCompile Include="menu\menu_dx_base.cpp" />
+    <ClCompile Include="menu\menu_dx11.cpp" />
+    <ClCompile Include="menu\menu_dx12.cpp" />
+    <ClCompile Include="menu\menu_overlay_base.cpp" />
+    <ClCompile Include="menu\menu_overlay_dx.cpp" />
+    <ClCompile Include="menu\menu_overlay_vk.cpp" />
     <ClCompile Include="hooks\wrapped_swapchain.cpp" />
     <ClCompile Include="include\imgui\imgui.cpp" />
     <ClCompile Include="include\imgui\imgui_demo.cpp" />

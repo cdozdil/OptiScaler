@@ -1,4 +1,4 @@
-#include "imgui_common.h"
+#include "menu_common.h"
 
 #include "font/Hack_Compressed.h"
 #include <nvapi/fakenvapi.h>
@@ -14,7 +14,7 @@ static bool inputMenu = false;
 static bool inputFps = false;
 static bool inputFpsCycle = false;
 
-void ImGuiCommon::ShowTooltip(const char* tip) {
+void MenuCommon::ShowTooltip(const char* tip) {
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
     {
         ImGui::BeginTooltip();
@@ -24,21 +24,21 @@ void ImGuiCommon::ShowTooltip(const char* tip) {
     }
 }
 
-void ImGuiCommon::ShowHelpMarker(const char* tip)
+void MenuCommon::ShowHelpMarker(const char* tip)
 {
     ImGui::SameLine();
     ImGui::TextDisabled("(?)");
     ShowTooltip(tip);
 }
 
-void ImGuiCommon::SeparatorWithHelpMarker(const char* label, const char* tip)
+void MenuCommon::SeparatorWithHelpMarker(const char* label, const char* tip)
 {
     auto marker = "(?) ";
     ImGui::SeparatorTextEx(0, label, ImGui::FindRenderedTextEnd(label), ImGui::CalcTextSize(marker, ImGui::FindRenderedTextEnd(marker)).x);
     ShowHelpMarker(tip);
 }
 
-LRESULT ImGuiCommon::hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+LRESULT MenuCommon::hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
     if (_isVisible && Msg == 0x0020)
         return TRUE;
@@ -46,7 +46,7 @@ LRESULT ImGuiCommon::hkSendMessageW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM l
         return pfn_SendMessageW(hWnd, Msg, wParam, lParam);
 }
 
-BOOL ImGuiCommon::hkSetPhysicalCursorPos(int x, int y)
+BOOL MenuCommon::hkSetPhysicalCursorPos(int x, int y)
 {
     if (_isVisible)
         return TRUE;
@@ -54,7 +54,7 @@ BOOL ImGuiCommon::hkSetPhysicalCursorPos(int x, int y)
         return pfn_SetPhysicalCursorPos(x, y);
 }
 
-BOOL ImGuiCommon::hkGetPhysicalCursorPos(LPPOINT lpPoint)
+BOOL MenuCommon::hkGetPhysicalCursorPos(LPPOINT lpPoint)
 {
     if (_isVisible)
     {
@@ -66,7 +66,7 @@ BOOL ImGuiCommon::hkGetPhysicalCursorPos(LPPOINT lpPoint)
         return pfn_GetCursorPos(lpPoint);
 }
 
-BOOL ImGuiCommon::hkSetCursorPos(int x, int y)
+BOOL MenuCommon::hkSetCursorPos(int x, int y)
 {
     if (_isVisible)
         return TRUE;
@@ -74,7 +74,7 @@ BOOL ImGuiCommon::hkSetCursorPos(int x, int y)
         return pfn_SetCursorPos(x, y);
 }
 
-BOOL ImGuiCommon::hkClipCursor(RECT* lpRect)
+BOOL MenuCommon::hkClipCursor(RECT* lpRect)
 {
     if (_isVisible)
         return TRUE;
@@ -84,7 +84,7 @@ BOOL ImGuiCommon::hkClipCursor(RECT* lpRect)
     }
 }
 
-void ImGuiCommon::hkmouse_event(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo)
+void MenuCommon::hkmouse_event(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo)
 {
     if (_isVisible)
         return;
@@ -92,7 +92,7 @@ void ImGuiCommon::hkmouse_event(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData,
         pfn_mouse_event(dwFlags, dx, dy, dwData, dwExtraInfo);
 }
 
-UINT ImGuiCommon::hkSendInput(UINT cInputs, LPINPUT pInputs, int cbSize)
+UINT MenuCommon::hkSendInput(UINT cInputs, LPINPUT pInputs, int cbSize)
 {
     if (_isVisible)
         return TRUE;
@@ -100,7 +100,7 @@ UINT ImGuiCommon::hkSendInput(UINT cInputs, LPINPUT pInputs, int cbSize)
         return pfn_SendInput(cInputs, pInputs, cbSize);
 }
 
-void ImGuiCommon::AttachHooks()
+void MenuCommon::AttachHooks()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
@@ -134,7 +134,7 @@ void ImGuiCommon::AttachHooks()
     DetourTransactionCommit();
 }
 
-void ImGuiCommon::DetachHooks()
+void MenuCommon::DetachHooks()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
@@ -172,7 +172,7 @@ void ImGuiCommon::DetachHooks()
     DetourTransactionCommit();
 }
 
-ImGuiKey ImGuiCommon::ImGui_ImplWin32_VirtualKeyToImGuiKey(WPARAM wParam)
+ImGuiKey MenuCommon::ImGui_ImplWin32_VirtualKeyToImGuiKey(WPARAM wParam)
 {
     switch (wParam)
     {
@@ -298,7 +298,7 @@ ImGuiKey ImGuiCommon::ImGui_ImplWin32_VirtualKeyToImGuiKey(WPARAM wParam)
 }
 
 //Win32 message handler
-LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT MenuCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
@@ -484,7 +484,7 @@ LRESULT ImGuiCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
 }
 
-std::string ImGuiCommon::GetBackendName(std::string* code)
+std::string MenuCommon::GetBackendName(std::string* code)
 {
     if (*code == "fsr21")
         return "FSR 2.1.2";
@@ -513,7 +513,7 @@ std::string ImGuiCommon::GetBackendName(std::string* code)
     return "????";
 }
 
-std::string ImGuiCommon::GetBackendCode(const API api)
+std::string MenuCommon::GetBackendCode(const API api)
 {
     std::string code;
 
@@ -527,13 +527,13 @@ std::string ImGuiCommon::GetBackendCode(const API api)
     return code;
 }
 
-void ImGuiCommon::GetCurrentBackendInfo(const API api, std::string* code, std::string* name)
+void MenuCommon::GetCurrentBackendInfo(const API api, std::string* code, std::string* name)
 {
     *code = GetBackendCode(api);
     *name = GetBackendName(code);
 }
 
-void ImGuiCommon::AddDx11Backends(std::string* code, std::string* name)
+void MenuCommon::AddDx11Backends(std::string* code, std::string* name)
 {
     std::string selectedUpscalerName = "";
 
@@ -581,7 +581,7 @@ void ImGuiCommon::AddDx11Backends(std::string* code, std::string* name)
     }
 }
 
-void ImGuiCommon::AddDx12Backends(std::string* code, std::string* name)
+void MenuCommon::AddDx12Backends(std::string* code, std::string* name)
 {
     std::string selectedUpscalerName = "";
 
@@ -617,7 +617,7 @@ void ImGuiCommon::AddDx12Backends(std::string* code, std::string* name)
     }
 }
 
-void ImGuiCommon::AddVulkanBackends(std::string* code, std::string* name)
+void MenuCommon::AddVulkanBackends(std::string* code, std::string* name)
 {
     std::string selectedUpscalerName = "";
 
@@ -648,7 +648,7 @@ void ImGuiCommon::AddVulkanBackends(std::string* code, std::string* name)
     }
 }
 
-void ImGuiCommon::AddResourceBarrier(std::string name, std::optional<int>* value)
+void MenuCommon::AddResourceBarrier(std::string name, std::optional<int>* value)
 {
     const char* states[] = { "AUTO", "COMMON", "VERTEX_AND_CONSTANT_BUFFER", "INDEX_BUFFER", "RENDER_TARGET", "UNORDERED_ACCESS", "DEPTH_WRITE",
         "DEPTH_READ", "NON_PIXEL_SHADER_RESOURCE", "PIXEL_SHADER_RESOURCE", "STREAM_OUT", "INDIRECT_ARGUMENT", "COPY_DEST", "COPY_SOURCE",
@@ -687,7 +687,7 @@ void ImGuiCommon::AddResourceBarrier(std::string name, std::optional<int>* value
     }
 }
 
-void ImGuiCommon::AddRenderPreset(std::string name, std::optional<uint32_t>* value)
+void MenuCommon::AddRenderPreset(std::string name, std::optional<uint32_t>* value)
 {
     const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G" };
     const std::string presetsDesc[] = { "Whatever the game uses",
@@ -703,7 +703,7 @@ void ImGuiCommon::AddRenderPreset(std::string name, std::optional<uint32_t>* val
     PopulateCombo(name, value, presets, presetsDesc, 8);
 }
 
-void ImGuiCommon::PopulateCombo(std::string name, std::optional<uint32_t>* value, const char* names[], const std::string desc[], int length) {
+void MenuCommon::PopulateCombo(std::string name, std::optional<uint32_t>* value, const char* names[], const std::string desc[], int length) {
     int selected = value->value_or(0);
 
     const char* selectedName = "";
@@ -751,7 +751,7 @@ static ImVec4 toneMapColor(const ImVec4& color)
     return ImVec4(color.x * scale, color.y * scale, color.z * scale, color.w);
 }
 
-bool ImGuiCommon::RenderMenu()
+bool MenuCommon::RenderMenu()
 {
     if (!_isInited)
         return false;
@@ -2868,7 +2868,7 @@ bool ImGuiCommon::RenderMenu()
     return true;
 }
 
-void ImGuiCommon::Init(HWND InHwnd)
+void MenuCommon::Init(HWND InHwnd)
 {
     _handle = InHwnd;
     _isVisible = false;
@@ -2928,9 +2928,9 @@ void ImGuiCommon::Init(HWND InHwnd)
     _isInited = true;
 }
 
-void ImGuiCommon::Shutdown()
+void MenuCommon::Shutdown()
 {
-    if (!ImGuiCommon::_isInited)
+    if (!MenuCommon::_isInited)
         return;
 
 
@@ -2950,7 +2950,7 @@ void ImGuiCommon::Shutdown()
     _isVisible = false;
 }
 
-void ImGuiCommon::HideMenu()
+void MenuCommon::HideMenu()
 {
     if (!_isVisible)
         return;

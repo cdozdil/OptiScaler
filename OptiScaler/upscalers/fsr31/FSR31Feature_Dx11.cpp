@@ -34,7 +34,7 @@ bool FSR31FeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
     if (InitFSR3(InParameters))
     {
         if (!Config::Instance()->OverlayMenu.value_or_default() && (Imgui == nullptr || Imgui.get() == nullptr))
-            Imgui = std::make_unique<Imgui_Dx11>(Util::GetProcessWindow(), Device);
+            Imgui = std::make_unique<Menu_Dx11>(Util::GetProcessWindow(), Device);
 
         OutputScaler = std::make_unique<OS_Dx11>("Output Scaling", InDevice, (TargetWidth() < DisplayWidth()));
         RCAS = std::make_unique<RCAS_Dx11>("RCAS", InDevice);
@@ -517,7 +517,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         else
         {
             if (Imgui == nullptr || Imgui.get() == nullptr)
-                Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+                Imgui = std::make_unique<Menu_Dx11>(GetForegroundWindow(), Device);
         }
     }
 

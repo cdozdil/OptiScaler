@@ -1,5 +1,5 @@
-#include "imgui_overlay_base.h"
-#include "imgui_overlay_vk.h"
+#include "menu_overlay_base.h"
+#include "menu_overlay_vk.h"
 
 #include <Util.h>
 #include <Config.h>
@@ -40,19 +40,19 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
         if (ImGui::GetIO().BackendRendererUserData != nullptr)
             ImGui_ImplVulkan_Shutdown();
 
-        ImGuiOverlayVk::DestroyVulkanObjects(false);
+        MenuOverlayVk::DestroyVulkanObjects(false);
 
         _vulkanObjectsCreated = false;
     }
 
     // Initialize ImGui 
-    if (!ImGuiOverlayBase::IsInited() || ImGuiOverlayBase::Handle() != hwnd)
+    if (!MenuOverlayBase::IsInited() || MenuOverlayBase::Handle() != hwnd)
     {
-        if (ImGuiOverlayBase::IsInited())
-            ImGuiOverlayBase::Shutdown();
+        if (MenuOverlayBase::IsInited())
+            MenuOverlayBase::Shutdown();
 
-        LOG_DEBUG("ImGuiOverlayBase::Init");
-        ImGuiOverlayBase::Init(hwnd);
+        LOG_DEBUG("MenuOverlayBase::Init");
+        MenuOverlayBase::Init(hwnd);
     }
 
     ImGuiIO& io = ImGui::GetIO();
@@ -376,7 +376,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
     LOG_FUNC_RESULT(_vulkanObjectsCreated);
 }
 
-void ImGuiOverlayVk::DestroyVulkanObjects(bool shutdown)
+void MenuOverlayVk::DestroyVulkanObjects(bool shutdown)
 {
     if (_ImVulkan_Info.Device == VK_NULL_HANDLE)
         return;
@@ -445,14 +445,14 @@ void ImGuiOverlayVk::DestroyVulkanObjects(bool shutdown)
     _vkCleanMutex.unlock();
 }
 
-bool ImGuiOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
+bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
 {
     LOG_FUNC();
 
     if (!_vulkanObjectsCreated)
         return true;
 
-    if (!ImGuiOverlayBase::IsInited() || _ImVulkan_Info.Device == VK_NULL_HANDLE)
+    if (!MenuOverlayBase::IsInited() || _ImVulkan_Info.Device == VK_NULL_HANDLE)
         return true;
 
     if (pPresentInfo->swapchainCount == 0)
@@ -467,7 +467,7 @@ bool ImGuiOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplWin32_NewFrame();
 
-        if (ImGuiOverlayBase::RenderMenu())
+        if (MenuOverlayBase::RenderMenu())
         {
             uint32_t idx = pPresentInfo->pImageIndices[0];
             ImGui_ImplVulkanH_Frame* fd = &_ImVulkan_Frames[idx];
@@ -555,22 +555,22 @@ bool ImGuiOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
     return true;
 }
 
-void ImGuiOverlayVk::CreateSwapchain(VkDevice device, VkPhysicalDevice pd, VkInstance instance, HWND hwnd, const VkSwapchainCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain)
+void MenuOverlayVk::CreateSwapchain(VkDevice device, VkPhysicalDevice pd, VkInstance instance, HWND hwnd, const VkSwapchainCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain)
 {
     LOG_FUNC();
 
-    if (ImGuiOverlayBase::Handle() != hwnd)
+    if (MenuOverlayBase::Handle() != hwnd)
     {
-        LOG_DEBUG("ImGuiOverlayBase::Handle() != _hwnd");
+        LOG_DEBUG("MenuOverlayBase::Handle() != _hwnd");
 
-        if (ImGuiOverlayBase::IsInited())
+        if (MenuOverlayBase::IsInited())
         {
-            LOG_DEBUG("ImGuiOverlayBase::Shutdown();");
-            ImGuiOverlayBase::Shutdown();
+            LOG_DEBUG("MenuOverlayBase::Shutdown();");
+            MenuOverlayBase::Shutdown();
         }
 
-        LOG_DEBUG("ImGuiOverlayBase::Init({0:X})", (UINT64)hwnd);
-        ImGuiOverlayBase::Init(hwnd);
+        LOG_DEBUG("MenuOverlayBase::Init({0:X})", (UINT64)hwnd);
+        MenuOverlayBase::Init(hwnd);
     }
 
     CreateVulkanObjects(device, pd, instance, hwnd, pCreateInfo, pSwapchain);
@@ -578,7 +578,7 @@ void ImGuiOverlayVk::CreateSwapchain(VkDevice device, VkPhysicalDevice pd, VkIns
     if (_ImVulkan_Info.Device != VK_NULL_HANDLE)
     {
         _isInited = true;
-        ImGuiOverlayBase::VulkanReady();
+        MenuOverlayBase::VulkanReady();
         LOG_DEBUG("Vulkan ready");
     }
 }

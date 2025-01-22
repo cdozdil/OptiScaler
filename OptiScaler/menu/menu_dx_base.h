@@ -1,8 +1,8 @@
 #include <pch.h>
-#include "imgui_common.h"
+#include "menu_common.h"
 #include <dxgi.h>
 
-class ImguiDxBase
+class MenuDxBase
 {
 private:
 	HWND _handle = nullptr;
@@ -52,7 +52,7 @@ public:
 	void Dx11Ready();
 	void Dx12Ready();
 
-	explicit ImguiDxBase(HWND handle);
+	explicit MenuDxBase(HWND handle);
 
-	~ImguiDxBase();
+	~MenuDxBase();
 };

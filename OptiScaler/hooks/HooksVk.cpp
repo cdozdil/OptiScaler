@@ -3,7 +3,7 @@
 #include <Util.h>
 #include <Config.h>
 
-#include <menu/imgui_overlay_vk.h>
+#include <menu/menu_overlay_vk.h>
 #include <detours/detours.h>
 
 typedef struct VkWin32SurfaceCreateInfoKHR {
@@ -75,7 +75,7 @@ static VkResult hkvkCreateWin32SurfaceKHR(VkInstance instance, const VkWin32Surf
 
     if (result == VK_SUCCESS && !State::Instance().vulkanSkipHooks) // && procHwnd == pCreateInfo->hwnd) // On linux sometimes procHwnd != pCreateInfo->hwnd
     {
-        ImGuiOverlayVk::DestroyVulkanObjects(false);
+        MenuOverlayVk::DestroyVulkanObjects(false);
 
         _instance = instance;
         LOG_DEBUG("_instance captured: {0:X}", (UINT64)_instance);
@@ -97,7 +97,7 @@ static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, cons
 
     if (result == VK_SUCCESS && !State::Instance().vulkanSkipHooks)
     {
-        ImGuiOverlayVk::DestroyVulkanObjects(false);
+        MenuOverlayVk::DestroyVulkanObjects(false);
 
         _instance = *pInstance;
         LOG_DEBUG("_instance captured: {0:X}", (UINT64)_instance);
@@ -116,7 +116,7 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, const VkDevice
 
     if (result == VK_SUCCESS && !State::Instance().vulkanSkipHooks)
     {
-        ImGuiOverlayVk::DestroyVulkanObjects(false);
+        MenuOverlayVk::DestroyVulkanObjects(false);
 
         _PD = physicalDevice;
         LOG_DEBUG("_PD captured: {0:X}", (UINT64)_PD);
@@ -156,7 +156,7 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
     State::Instance().swapchainApi = Vulkan;
 
     // render menu if needed
-    if(!ImGuiOverlayVk::QueuePresent(queue, pPresentInfo))
+    if(!MenuOverlayVk::QueuePresent(queue, pPresentInfo))
         return VK_ERROR_OUT_OF_DATE_KHR;
     
     // original call
@@ -186,7 +186,7 @@ static VkResult hkvkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateI
         _device = device;
         LOG_DEBUG("_device captured: {0:X}", (UINT64)_device);
 
-        ImGuiOverlayVk::CreateSwapchain(device, _PD, _instance, _hwnd, pCreateInfo, pAllocator, pSwapchain);
+        MenuOverlayVk::CreateSwapchain(device, _PD, _instance, _hwnd, pCreateInfo, pAllocator, pSwapchain);
     }
 
     LOG_FUNC_RESULT(result);

@@ -4,7 +4,7 @@
 
 #include <pch.h>
 #include <Util.h>
-#include <menu/Imgui_Dx12.h>
+#include <menu/menu_dx12.h>
 #include <shaders/output_scaling/OS_Dx12.h>
 #include <shaders/rcas/RCAS_Dx12.h>
 #include <shaders/bias/Bias_Dx12.h>
@@ -13,7 +13,7 @@ class IFeature_Dx12 : public virtual IFeature
 {
 protected:
 	ID3D12Device* Device = nullptr;
-	static inline std::unique_ptr<Imgui_Dx12> Imgui = nullptr;
+	static inline std::unique_ptr<Menu_Dx12> Imgui = nullptr;
 	std::unique_ptr<OS_Dx12> OutputScaler = nullptr;
 	std::unique_ptr<RCAS_Dx12> RCAS = nullptr;
 	std::unique_ptr<Bias_Dx12> Bias = nullptr;

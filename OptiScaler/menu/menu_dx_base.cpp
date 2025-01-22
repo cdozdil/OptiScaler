@@ -3,16 +3,16 @@
 #include <resource.h>
 #include <Util.h>
 
-#include "imgui_common.h"
-#include "imgui_dx_base.h"
+#include "menu_common.h"
+#include "menu_dx_base.h"
 #include "imgui/imgui_impl_win32.h"
 
-bool ImguiDxBase::RenderMenu()
+bool MenuDxBase::RenderMenu()
 {
     if (Config::Instance()->OverlayMenu.value_or_default())
         return false;
 
-    if (ImGuiCommon::RenderMenu())
+    if (MenuCommon::RenderMenu())
     {
         ImGui::Render();
         return true;
@@ -21,7 +21,7 @@ bool ImguiDxBase::RenderMenu()
     return false;
 }
 
-bool ImguiDxBase::IsHandleDifferent()
+bool MenuDxBase::IsHandleDifferent()
 {
     if (Config::Instance()->OverlayMenu.value_or_default())
         return false;
@@ -36,35 +36,35 @@ bool ImguiDxBase::IsHandleDifferent()
     return true;
 }
 
-void ImguiDxBase::Dx11Ready()
+void MenuDxBase::Dx11Ready()
 {
-    ImGuiCommon::Dx11Inited();
+    MenuCommon::Dx11Inited();
 }
 
-void ImguiDxBase::Dx12Ready()
+void MenuDxBase::Dx12Ready()
 {
-    ImGuiCommon::Dx12Inited();
+    MenuCommon::Dx12Inited();
 }
 
-ImguiDxBase::ImguiDxBase(HWND handle) : _handle(handle)
+MenuDxBase::MenuDxBase(HWND handle) : _handle(handle)
 {
     if (Config::Instance()->OverlayMenu.value_or_default())
         return;
 
-    ImGuiCommon::Init(handle);
+    MenuCommon::Init(handle);
 
-    _baseInit = ImGuiCommon::IsInited();
+    _baseInit = MenuCommon::IsInited();
 }
 
-ImguiDxBase::~ImguiDxBase()
+MenuDxBase::~MenuDxBase()
 {
     if (!_baseInit)
         return;
 
-    ImGuiCommon::Shutdown();
+    MenuCommon::Shutdown();
 }
 
-bool ImguiDxBase::IsVisible() const
+bool MenuDxBase::IsVisible() const
 {
-    return ImGuiCommon::IsVisible();
+    return MenuCommon::IsVisible();
 }

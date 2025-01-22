@@ -15,7 +15,7 @@ bool FSR2FeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* In
     if (InitFSR2(InParameters))
     {
         if (!Config::Instance()->OverlayMenu.value_or_default() && (Imgui == nullptr || Imgui.get() == nullptr))
-            Imgui = std::make_unique<Imgui_Dx12>(Util::GetProcessWindow(), InDevice);
+            Imgui = std::make_unique<Menu_Dx12>(Util::GetProcessWindow(), InDevice);
 
         OutputScaler = std::make_unique<OS_Dx12>("Output Scaling", InDevice, (TargetWidth() < DisplayWidth()));
         RCAS = std::make_unique<RCAS_Dx12>("RCAS", InDevice);
@@ -425,7 +425,7 @@ bool FSR2FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
         else
         {
             if (Imgui == nullptr || Imgui.get() == nullptr)
-                Imgui = std::make_unique<Imgui_Dx12>(GetForegroundWindow(), Device);
+                Imgui = std::make_unique<Menu_Dx12>(GetForegroundWindow(), Device);
         }
     }
 

@@ -116,7 +116,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		if (!Config::Instance()->OverlayMenu.value_or_default() && (Imgui == nullptr || Imgui.get() == nullptr))
 		{
 			LOG_DEBUG("Create Imgui!");
-			Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+			Imgui = std::make_unique<Menu_Dx11>(GetForegroundWindow(), Device);
 		}
 
 		if (Config::Instance()->Dx11DelayedInit.value_or_default())
@@ -440,7 +440,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 			else
 			{
 				if (Imgui == nullptr || Imgui.get() == nullptr)
-					Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+					Imgui = std::make_unique<Menu_Dx11>(GetForegroundWindow(), Device);
 			}
 		}
 	}
@@ -485,7 +485,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 			else
 			{
 				if (Imgui == nullptr || Imgui.get() == nullptr)
-					Imgui = std::make_unique<Imgui_Dx11>(GetForegroundWindow(), Device);
+					Imgui = std::make_unique<Menu_Dx11>(GetForegroundWindow(), Device);
 			}
 		}
 	}
