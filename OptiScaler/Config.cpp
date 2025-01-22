@@ -285,9 +285,11 @@ bool Config::Reload(std::filesystem::path iniPath)
             if (!RoundInternalResolution.has_value())
                 RoundInternalResolution = readInt("Hotfix", "RoundInternalResolution");
 
-            if (!MipmapBiasOverride.has_value())
-                MipmapBiasOverride = readFloat("Hotfix", "MipmapBiasOverride");
+            if (auto setting = readFloat("Hotfix", "MipmapBiasOverride"); setting.has_value() && setting.value() <= 15.0 && setting.value() >= -15.0)
+				MipmapBiasOverride.set_from_config(setting);
 
+            // Unsure if that's needed but it resets invalid MipmapBiasOverride on config reload
+            // Unexpected place for it but could be playing a role
             if (MipmapBiasOverride.has_value() && (MipmapBiasOverride.value() > 15.0 || MipmapBiasOverride.value() < -15.0))
                 MipmapBiasOverride.reset();
 
@@ -305,10 +307,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             RestoreGraphicSignature.set_from_config(readBool("Hotfix", "RestoreGraphicSignature"));
             PreferDedicatedGpu.set_from_config(readBool("Hotfix", "PreferDedicatedGpu"));
             PreferFirstDedicatedGpu.set_from_config(readBool("Hotfix", "PreferFirstDedicatedGpu"));
-
-            if (!SkipFirstFrames.has_value())
-                SkipFirstFrames = readInt("Hotfix", "SkipFirstFrames");
-
+			SkipFirstFrames.set_from_config(readInt("Hotfix", "SkipFirstFrames"));
             UsePrecompiledShaders.set_from_config(readBool("Hotfix", "UsePrecompiledShaders"));
             UseGenericAppIdWithDlss.set_from_config(readBool("Hotfix", "UseGenericAppIdWithDlss"));
 
@@ -676,7 +675,7 @@ bool Config::SaveIni()
 
     // Hotfixes
     {
-        ini.SetValue("Hotfix", "MipmapBiasOverride", GetFloatValue(Instance()->MipmapBiasOverride).c_str());
+        ini.SetValue("Hotfix", "MipmapBiasOverride", GetFloatValue(Instance()->MipmapBiasOverride.value_for_config()).c_str());
         ini.SetValue("Hotfix", "MipmapBiasOverrideAll", GetBoolValue(Instance()->MipmapBiasOverrideAll.value_for_config()).c_str());
         ini.SetValue("Hotfix", "MipmapBiasFixedOverride", GetBoolValue(Instance()->MipmapBiasFixedOverride.value_for_config()).c_str());
         ini.SetValue("Hotfix", "MipmapBiasScaleOverride", GetBoolValue(Instance()->MipmapBiasScaleOverride.value_for_config()).c_str());
@@ -686,7 +685,7 @@ bool Config::SaveIni()
 
         ini.SetValue("Hotfix", "RestoreComputeSignature", GetBoolValue(Instance()->RestoreComputeSignature.value_for_config()).c_str());
         ini.SetValue("Hotfix", "RestoreGraphicSignature", GetBoolValue(Instance()->RestoreGraphicSignature.value_for_config()).c_str());
-        ini.SetValue("Hotfix", "SkipFirstFrames", GetIntValue(Instance()->SkipFirstFrames).c_str());
+        ini.SetValue("Hotfix", "SkipFirstFrames", GetIntValue(Instance()->SkipFirstFrames.value_for_config()).c_str());
 
         ini.SetValue("Hotfix", "UsePrecompiledShaders", GetBoolValue(Instance()->UsePrecompiledShaders.value_for_config()).c_str());
         ini.SetValue("Hotfix", "PreferDedicatedGpu", GetBoolValue(Instance()->PreferDedicatedGpu.value_for_config()).c_str());

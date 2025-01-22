@@ -206,7 +206,7 @@ public:
 	CustomOptional<float> QualityRatio_UltraPerformance{ 3.0f };
 
 	// Hotfixes
-	std::optional<float> MipmapBiasOverride; // disabled by default
+	CustomOptional<float, false> MipmapBiasOverride; // disabled by default
 	CustomOptional<bool> MipmapBiasFixedOverride{ false };
 	CustomOptional<bool> MipmapBiasScaleOverride{ false };
 	CustomOptional<bool> MipmapBiasOverrideAll{ false };
@@ -215,7 +215,7 @@ public:
 
 	CustomOptional<bool> RestoreComputeSignature{ false };
 	CustomOptional<bool> RestoreGraphicSignature{ false };
-	std::optional<int> SkipFirstFrames; // disabled by default
+	CustomOptional<int, false> SkipFirstFrames; // disabled by default
 
 	CustomOptional<bool> UsePrecompiledShaders{ true };
 
