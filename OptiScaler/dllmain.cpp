@@ -1384,7 +1384,7 @@ static VkResult hkvkEnumerateInstanceExtensionProperties(const char* pLayerName,
 inline static void HookForDxgiSpoofing()
 {
     // hook dxgi when not working as dxgi.dll
-    if (dxgi.CreateDxgiFactory == nullptr && !isWorkingWithEnabler && !State::Instance().isDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
+    if (dxgi.CreateDxgiFactory == nullptr && !isWorkingWithEnabler && !State::Instance().isDxgiMode && Config::Instance()->DxgiSpoofing.value_or_default())
     {
         LOG_INFO("DxgiSpoofing is enabled loading dxgi.dll");
 
@@ -1596,7 +1596,7 @@ static void DetachHooks()
             o_vkCreateInstance = nullptr;
         }
 
-        if (!State::Instance().isDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
+        if (!State::Instance().isDxgiMode && Config::Instance()->DxgiSpoofing.value_or_default())
         {
             if (dxgi.CreateDxgiFactory != nullptr)
             {
@@ -2216,7 +2216,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                     Config::Instance()->DLSSEnabled.set_volatile_value(true);
 
                     if (!Config::Instance()->DxgiSpoofing.has_value())
-                        Config::Instance()->DxgiSpoofing = false;
+                        Config::Instance()->DxgiSpoofing.set_volatile_value(false);
 
                     isNvngxAvailable = true;
                     State::Instance().isRunningOnNvidia = true;
@@ -2237,7 +2237,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             if (!State::Instance().nvngxExists && !Config::Instance()->DxgiSpoofing.has_value())
             {
                 LOG_WARN("No nvngx.dll found disabling spoofing!");
-                Config::Instance()->DxgiSpoofing = false;
+                Config::Instance()->DxgiSpoofing.set_volatile_value(false);
             }
 
             // Init XeSS proxy

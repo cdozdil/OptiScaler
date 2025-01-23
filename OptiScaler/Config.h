@@ -269,16 +269,16 @@ public:
 
 	// NVAPI Override
 	CustomOptional<bool> OverrideNvapiDll{ false };
-	std::optional<std::wstring> NvapiDllPath;
+	CustomOptional<std::wstring, false> NvapiDllPath;
 
 	// Spoofing
-	std::optional<bool> DxgiSpoofing; // it's not always true by default
-	std::optional<std::string> DxgiBlacklist; // disabled by default
-	std::optional<int> DxgiVRAM; // disabled by default
+	CustomOptional<bool> DxgiSpoofing{ true };
+	CustomOptional<std::string, false> DxgiBlacklist; // disabled by default
+	CustomOptional<int, false> DxgiVRAM; // disabled by default
 	CustomOptional<bool> VulkanSpoofing{ false };
 	CustomOptional<bool> VulkanExtensionSpoofing{ false };
 	CustomOptional<std::wstring> SpoofedGPUName{ L"NVIDIA GeForce RTX 4090" };
-	std::optional<int> VulkanVRAM; // disabled by default
+	CustomOptional<int, false> VulkanVRAM; // disabled by default
 
 	// Plugins
 	CustomOptional<std::wstring> PluginPath{ L"plugins" };

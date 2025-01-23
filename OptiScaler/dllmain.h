@@ -1347,11 +1347,11 @@ struct dxgi_dll
 
 bool SkipSpoofing()
 {
-    auto skip = !Config::Instance()->DxgiSpoofing.value_or(true) || State::Instance().skipSpoofing; // || State::Instance().isRunningOnLinux;
+    auto skip = !Config::Instance()->DxgiSpoofing.value_or_default() || State::Instance().skipSpoofing; // || State::Instance().isRunningOnLinux;
 
     if (skip)
         LOG_TRACE("DxgiSpoofing: {}, skipSpoofing: {}, skipping spoofing",
-                  Config::Instance()->DxgiSpoofing.value_or(true), State::Instance().skipSpoofing);
+                  Config::Instance()->DxgiSpoofing.value_or_default(), State::Instance().skipSpoofing);
 
     HANDLE process = GetCurrentProcess();
 
@@ -1457,7 +1457,7 @@ HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
         if (Config::Instance()->DxgiVRAM.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiVRAM.value() * 1024 * 1024 * 1024;
 
-        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or_default())
         {
             pDesc->VendorId = 0x10de;
             pDesc->DeviceId = 0x2684;
@@ -1493,7 +1493,7 @@ HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
         if (Config::Instance()->DxgiVRAM.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiVRAM.value() * 1024 * 1024 * 1024;
 
-        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or_default())
         {
             pDesc->VendorId = 0x10de;
             pDesc->DeviceId = 0x2684;
@@ -1529,7 +1529,7 @@ HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
         if (Config::Instance()->DxgiVRAM.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiVRAM.value() * 1024 * 1024 * 1024;
 
-        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or_default())
         {
             pDesc->VendorId = 0x10de;
             pDesc->DeviceId = 0x2684;
@@ -1565,7 +1565,7 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
         if (Config::Instance()->DxgiVRAM.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiVRAM.value() * 1024 * 1024 * 1024;
 
-        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or(true))
+        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or_default())
         {
             pDesc->VendorId = 0x10de;
             pDesc->DeviceId = 0x2684;

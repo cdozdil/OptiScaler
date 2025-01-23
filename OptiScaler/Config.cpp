@@ -331,28 +331,17 @@ bool Config::Reload(std::filesystem::path iniPath)
         // NvApi
         {
             OverrideNvapiDll.set_from_config(readBool("NvApi", "OverrideNvapiDll"));
-
-            if (!NvapiDllPath.has_value())
-                NvapiDllPath = readWString("NvApi", "NvapiDllPath", true);
+            NvapiDllPath.set_from_config(readWString("NvApi", "NvapiDllPath", true));
         }
 
         // Spoofing
         {
-            if (!DxgiSpoofing.has_value())
-                DxgiSpoofing = readBool("Spoofing", "Dxgi");
-
-            if (!DxgiBlacklist.has_value())
-                DxgiBlacklist = readString("Spoofing", "DxgiBlacklist");
-
-            if (!DxgiVRAM.has_value())
-                DxgiVRAM = readInt("Spoofing", "DxgiVRAM");
-
+            DxgiSpoofing.set_from_config(readBool("Spoofing", "Dxgi"));
+            DxgiBlacklist.set_from_config(readString("Spoofing", "DxgiBlacklist"));
+            DxgiVRAM.set_from_config(readInt("Spoofing", "DxgiVRAM"));
             VulkanSpoofing.set_from_config(readBool("Spoofing", "Vulkan"));
             VulkanExtensionSpoofing.set_from_config(readBool("Spoofing", "VulkanExtensionSpoofing"));
-
-            if (!VulkanVRAM.has_value())
-                VulkanVRAM = readInt("Spoofing", "VulkanVRAM");
-
+            VulkanVRAM.set_from_config(readInt("Spoofing", "VulkanVRAM"));
             SpoofedGPUName.set_from_config(readWString("Spoofing", "SpoofedGPUName"));
         }
 
@@ -707,14 +696,14 @@ bool Config::SaveIni()
         ini.SetValue("Log", "LogToFile", GetBoolValue(Instance()->LogToFile.value_for_config()).c_str());
         ini.SetValue("Log", "LogToNGX", GetBoolValue(Instance()->LogToNGX.value_for_config()).c_str());
         ini.SetValue("Log", "OpenConsole", GetBoolValue(Instance()->OpenConsole.value_for_config()).c_str());
-        ini.SetValue("Log", "LogFile", Instance()->LogFileName.has_value() ? wstring_to_string(Instance()->LogFileName.value()).c_str() : "auto");
+        ini.SetValue("Log", "LogFile", wstring_to_string(Instance()->LogFileName.value_for_config_or(L"auto")).c_str());
         ini.SetValue("Log", "SingleFile", GetBoolValue(Instance()->LogSingleFile.value_for_config()).c_str());
     }
 
     // NvApi
     {
         ini.SetValue("NvApi", "OverrideNvapiDll", GetBoolValue(Instance()->OverrideNvapiDll.value_for_config()).c_str());
-        ini.SetValue("NvApi", "NvapiDllPath", Instance()->NvapiDllPath.has_value() ? wstring_to_string(Instance()->NvapiDllPath.value()).c_str() : "auto");
+        ini.SetValue("NvApi", "NvapiDllPath", wstring_to_string(Instance()->NvapiDllPath.value_for_config_or(L"auto")).c_str());
     }
 
     // DRS
@@ -725,12 +714,12 @@ bool Config::SaveIni()
 
     // Spoofing
     {
-        ini.SetValue("Spoofing", "Dxgi", GetBoolValue(Instance()->DxgiSpoofing).c_str());
-        ini.SetValue("Spoofing", "DxgiBlacklist", Instance()->DxgiBlacklist.value_or("auto").c_str());
+        ini.SetValue("Spoofing", "Dxgi", GetBoolValue(Instance()->DxgiSpoofing.value_for_config()).c_str());
+        ini.SetValue("Spoofing", "DxgiBlacklist", Instance()->DxgiBlacklist.value_for_config_or("auto").c_str());
         ini.SetValue("Spoofing", "Vulkan", GetBoolValue(Instance()->VulkanSpoofing.value_for_config()).c_str());
         ini.SetValue("Spoofing", "VulkanExtensionSpoofing", GetBoolValue(Instance()->VulkanExtensionSpoofing.value_for_config()).c_str());
-        ini.SetValue("Spoofing", "VulkanVRAM", GetIntValue(Instance()->VulkanVRAM).c_str());
-        ini.SetValue("Spoofing", "DxgiVRAM", GetIntValue(Instance()->DxgiVRAM).c_str());
+        ini.SetValue("Spoofing", "VulkanVRAM", GetIntValue(Instance()->VulkanVRAM.value_for_config()).c_str());
+        ini.SetValue("Spoofing", "DxgiVRAM", GetIntValue(Instance()->DxgiVRAM.value_for_config()).c_str());
         ini.SetValue("Spoofing", "SpoofedGPUName", wstring_to_string(Instance()->SpoofedGPUName.value_for_config_or(L"auto")).c_str());
     }
 
