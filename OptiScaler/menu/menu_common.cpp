@@ -648,7 +648,8 @@ void MenuCommon::AddVulkanBackends(std::string* code, std::string* name)
     }
 }
 
-void MenuCommon::AddResourceBarrier(std::string name, std::optional<int>* value)
+template <bool B>
+void MenuCommon::AddResourceBarrier(std::string name, CustomOptional<int32_t, B>* value)
 {
     const char* states[] = { "AUTO", "COMMON", "VERTEX_AND_CONSTANT_BUFFER", "INDEX_BUFFER", "RENDER_TARGET", "UNORDERED_ACCESS", "DEPTH_WRITE",
         "DEPTH_READ", "NON_PIXEL_SHADER_RESOURCE", "PIXEL_SHADER_RESOURCE", "STREAM_OUT", "INDIRECT_ARGUMENT", "COPY_DEST", "COPY_SOURCE",
@@ -687,7 +688,8 @@ void MenuCommon::AddResourceBarrier(std::string name, std::optional<int>* value)
     }
 }
 
-void MenuCommon::AddRenderPreset(std::string name, std::optional<uint32_t>* value)
+template <bool B>
+void MenuCommon::AddRenderPreset(std::string name, CustomOptional<uint32_t, B>* value)
 {
     const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G" };
     const std::string presetsDesc[] = { "Whatever the game uses",
@@ -703,7 +705,8 @@ void MenuCommon::AddRenderPreset(std::string name, std::optional<uint32_t>* valu
     PopulateCombo(name, value, presets, presetsDesc, 8);
 }
 
-void MenuCommon::PopulateCombo(std::string name, std::optional<uint32_t>* value, const char* names[], const std::string desc[], int length) {
+template <bool B>
+void MenuCommon::PopulateCombo(std::string name, CustomOptional<uint32_t, B>* value, const char* names[], const std::string desc[], int length) {
     int selected = value->value_or(0);
 
     const char* selectedName = "";

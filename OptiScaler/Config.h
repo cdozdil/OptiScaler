@@ -222,12 +222,12 @@ public:
 	CustomOptional<bool> PreferDedicatedGpu{ false };
 	CustomOptional<bool> PreferFirstDedicatedGpu{ false };
 
-	std::optional<int32_t> ColorResourceBarrier; // disabled by default
-	std::optional<int32_t> MVResourceBarrier; // disabled by default
-	std::optional<int32_t> DepthResourceBarrier; // disabled by default
-	std::optional<int32_t> ExposureResourceBarrier; // disabled by default
-	std::optional<int32_t> MaskResourceBarrier; // disabled by default
-	std::optional<int32_t> OutputResourceBarrier; // disabled by default
+	CustomOptional<int32_t, false> ColorResourceBarrier; // disabled by default
+	CustomOptional<int32_t, false> MVResourceBarrier; // disabled by default
+	CustomOptional<int32_t, false> DepthResourceBarrier; // disabled by default
+	CustomOptional<int32_t, false> ExposureResourceBarrier; // disabled by default
+	CustomOptional<int32_t, false> MaskResourceBarrier; // disabled by default
+	CustomOptional<int32_t, false> OutputResourceBarrier; // disabled by default
 
 	// Upscalers
 	CustomOptional<std::string> Dx11Upscaler{ "fsr22" };

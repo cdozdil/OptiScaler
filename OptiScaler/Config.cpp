@@ -300,24 +300,12 @@ bool Config::Reload(std::filesystem::path iniPath)
             SkipFirstFrames.set_from_config(readInt("Hotfix", "SkipFirstFrames"));
             UsePrecompiledShaders.set_from_config(readBool("Hotfix", "UsePrecompiledShaders"));
             UseGenericAppIdWithDlss.set_from_config(readBool("Hotfix", "UseGenericAppIdWithDlss"));
-
-            if (!ColorResourceBarrier.has_value())
-                ColorResourceBarrier = readInt("Hotfix", "ColorResourceBarrier");
-
-            if (!MVResourceBarrier.has_value())
-                MVResourceBarrier = readInt("Hotfix", "MotionVectorResourceBarrier");
-
-            if (!DepthResourceBarrier.has_value())
-                DepthResourceBarrier = readInt("Hotfix", "DepthResourceBarrier");
-
-            if (!MaskResourceBarrier.has_value())
-                MaskResourceBarrier = readInt("Hotfix", "ColorMaskResourceBarrier");
-
-            if (!ExposureResourceBarrier.has_value())
-                ExposureResourceBarrier = readInt("Hotfix", "ExposureResourceBarrier");
-
-            if (!OutputResourceBarrier.has_value())
-                OutputResourceBarrier = readInt("Hotfix", "OutputResourceBarrier");
+            ColorResourceBarrier.set_from_config(readInt("Hotfix", "ColorResourceBarrier"));
+            MVResourceBarrier.set_from_config(readInt("Hotfix", "MotionVectorResourceBarrier"));
+            DepthResourceBarrier.set_from_config(readInt("Hotfix", "DepthResourceBarrier"));
+            MaskResourceBarrier.set_from_config(readInt("Hotfix", "ColorMaskResourceBarrier"));
+            ExposureResourceBarrier.set_from_config(readInt("Hotfix", "ExposureResourceBarrier"));
+            OutputResourceBarrier.set_from_config(readInt("Hotfix", "OutputResourceBarrier"));
         }
 
         // Dx11 with Dx12
@@ -672,12 +660,12 @@ bool Config::SaveIni()
 
         ini.SetValue("Hotfix", "UseGenericAppIdWithDlss", GetBoolValue(Instance()->UseGenericAppIdWithDlss.value_for_config()).c_str());
 
-        ini.SetValue("Hotfix", "ColorResourceBarrier", GetIntValue(Instance()->ColorResourceBarrier).c_str());
-        ini.SetValue("Hotfix", "MotionVectorResourceBarrier", GetIntValue(Instance()->MVResourceBarrier).c_str());
-        ini.SetValue("Hotfix", "DepthResourceBarrier", GetIntValue(Instance()->DepthResourceBarrier).c_str());
-        ini.SetValue("Hotfix", "ColorMaskResourceBarrier", GetIntValue(Instance()->MaskResourceBarrier).c_str());
-        ini.SetValue("Hotfix", "ExposureResourceBarrier", GetIntValue(Instance()->ExposureResourceBarrier).c_str());
-        ini.SetValue("Hotfix", "OutputResourceBarrier", GetIntValue(Instance()->OutputResourceBarrier).c_str());
+        ini.SetValue("Hotfix", "ColorResourceBarrier", GetIntValue(Instance()->ColorResourceBarrier.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "MotionVectorResourceBarrier", GetIntValue(Instance()->MVResourceBarrier.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "DepthResourceBarrier", GetIntValue(Instance()->DepthResourceBarrier.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "ColorMaskResourceBarrier", GetIntValue(Instance()->MaskResourceBarrier.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "ExposureResourceBarrier", GetIntValue(Instance()->ExposureResourceBarrier.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "OutputResourceBarrier", GetIntValue(Instance()->OutputResourceBarrier.value_for_config()).c_str());
     }
 
     // Dx11 with Dx12
