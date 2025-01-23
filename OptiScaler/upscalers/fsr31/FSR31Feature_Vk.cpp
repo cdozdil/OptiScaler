@@ -437,7 +437,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
 
     if (Config::Instance()->FsrVerticalFov.has_value())
         params.cameraFovAngleVertical = Config::Instance()->FsrVerticalFov.value() * 0.0174532925199433f;
-    else if (Config::Instance()->FsrHorizontalFov.value_or(0.0f) > 0.0f)
+    else if (Config::Instance()->FsrHorizontalFov.value_or_default() > 0.0f)
         params.cameraFovAngleVertical = 2.0f * atan((tan(Config::Instance()->FsrHorizontalFov.value() * 0.0174532925199433f) * 0.5f) / (float)DisplayHeight() * (float)DisplayWidth());
     else
         params.cameraFovAngleVertical = 1.0471975511966f;

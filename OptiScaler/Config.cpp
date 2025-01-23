@@ -85,10 +85,7 @@ bool Config::Reload(std::filesystem::path iniPath)
         // FSR Common
         {
             FsrVerticalFov.set_from_config(readFloat("FSR", "VerticalFov"));
-
-            if (!FsrHorizontalFov.has_value())
-                FsrHorizontalFov = readFloat("FSR", "HorizontalFov");
-
+            FsrHorizontalFov.set_from_config(readFloat("FSR", "HorizontalFov"));
             FsrCameraNear.set_from_config(readFloat("FSR", "CameraNear"));
             FsrCameraFar.set_from_config(readFloat("FSR", "CameraFar"));
             FsrUseFsrInputValues.set_from_config(readBool("FSR", "UseFsrInputValues"));
@@ -276,8 +273,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Hotfixes
         {
-            if (!RoundInternalResolution.has_value())
-                RoundInternalResolution = readInt("Hotfix", "RoundInternalResolution");
+            RoundInternalResolution.set_from_config(readInt("Hotfix", "RoundInternalResolution"));
 
             if (auto setting = readFloat("Hotfix", "MipmapBiasOverride"); setting.has_value() && setting.value() <= 15.0 && setting.value() >= -15.0)
                 MipmapBiasOverride.set_from_config(setting);
@@ -291,8 +287,8 @@ bool Config::Reload(std::filesystem::path iniPath)
             MipmapBiasScaleOverride.set_from_config(readBool("Hotfix", "MipmapBiasScaleOverride"));
             MipmapBiasOverrideAll.set_from_config(readBool("Hotfix", "MipmapBiasOverrideAll"));
 
-            if (!AnisotropyOverride.has_value())
-                AnisotropyOverride = readInt("Hotfix", "AnisotropyOverride");
+            if (auto setting = readInt("Hotfix", "AnisotropyOverride"); setting.has_value() && setting.value() <= 16 && setting.value() >= 1)
+                AnisotropyOverride.set_from_config(setting);
 
             if (AnisotropyOverride.has_value() && (AnisotropyOverride.value() > 16 || AnisotropyOverride.value() < 1))
                 AnisotropyOverride.reset();
@@ -562,7 +558,7 @@ bool Config::SaveIni()
     // FSR common
     {
         ini.SetValue("FSR", "VerticalFov", GetFloatValue(Instance()->FsrVerticalFov.value_for_config()).c_str());
-        ini.SetValue("FSR", "HorizontalFov", GetFloatValue(Instance()->FsrHorizontalFov).c_str());
+        ini.SetValue("FSR", "HorizontalFov", GetFloatValue(Instance()->FsrHorizontalFov.value_for_config()).c_str());
         ini.SetValue("FSR", "CameraNear", GetFloatValue(Instance()->FsrCameraNear.value_for_config()).c_str());
         ini.SetValue("FSR", "CameraFar", GetFloatValue(Instance()->FsrCameraFar.value_for_config()).c_str());
         ini.SetValue("FSR", "UseFsrInputValues", GetBoolValue(Instance()->FsrUseFsrInputValues.value_for_config()).c_str());
@@ -674,8 +670,8 @@ bool Config::SaveIni()
         ini.SetValue("Hotfix", "MipmapBiasFixedOverride", GetBoolValue(Instance()->MipmapBiasFixedOverride.value_for_config()).c_str());
         ini.SetValue("Hotfix", "MipmapBiasScaleOverride", GetBoolValue(Instance()->MipmapBiasScaleOverride.value_for_config()).c_str());
 
-        ini.SetValue("Hotfix", "AnisotropyOverride", GetIntValue(Instance()->AnisotropyOverride).c_str());
-        ini.SetValue("Hotfix", "RoundInternalResolution", GetIntValue(Instance()->RoundInternalResolution).c_str());
+        ini.SetValue("Hotfix", "AnisotropyOverride", GetIntValue(Instance()->AnisotropyOverride.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "RoundInternalResolution", GetIntValue(Instance()->RoundInternalResolution.value_for_config()).c_str());
 
         ini.SetValue("Hotfix", "RestoreComputeSignature", GetBoolValue(Instance()->RestoreComputeSignature.value_for_config()).c_str());
         ini.SetValue("Hotfix", "RestoreGraphicSignature", GetBoolValue(Instance()->RestoreGraphicSignature.value_for_config()).c_str());

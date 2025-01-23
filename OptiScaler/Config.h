@@ -4,7 +4,6 @@
 #include <optional>
 #include <filesystem>
 #include <SimpleIni.h>
-#include <map>
 
 template <class T, bool HasDefaultValue = true>
 class CustomOptional : public std::optional<T> {
@@ -210,8 +209,8 @@ public:
 	CustomOptional<bool> MipmapBiasFixedOverride{ false };
 	CustomOptional<bool> MipmapBiasScaleOverride{ false };
 	CustomOptional<bool> MipmapBiasOverrideAll{ false };
-	std::optional<int> AnisotropyOverride; // disabled by default
-	std::optional<int> RoundInternalResolution; // disabled by default
+	CustomOptional<int, false> AnisotropyOverride; // disabled by default
+	CustomOptional<int, false> RoundInternalResolution; // disabled by default
 
 	CustomOptional<bool> RestoreComputeSignature{ false };
 	CustomOptional<bool> RestoreGraphicSignature{ false };
@@ -249,7 +248,7 @@ public:
 
 	// FSR Common
 	CustomOptional<float> FsrVerticalFov{ 60.0f };
-	std::optional<float> FsrHorizontalFov; // off by default
+	CustomOptional<float> FsrHorizontalFov{ 0.0f }; // off by default
 	CustomOptional<float> FsrCameraNear{ 0.1f };
 	CustomOptional<float> FsrCameraFar{ 100000.0f };
 	CustomOptional<bool> FsrUseFsrInputValues{ true };

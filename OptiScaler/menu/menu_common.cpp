@@ -1601,11 +1601,8 @@ bool MenuCommon::RenderMenu()
 
                         bool useVFov = Config::Instance()->FsrVerticalFov.has_value() || !Config::Instance()->FsrHorizontalFov.has_value();
 
-                        float vfov;
-                        float hfov;
-
-                        vfov = Config::Instance()->FsrVerticalFov.value_or_default();
-                        hfov = Config::Instance()->FsrHorizontalFov.value_or(90.0f);
+                        float vfov = Config::Instance()->FsrVerticalFov.value_or_default();
+                        float hfov = Config::Instance()->FsrHorizontalFov.value_or(90.0f);
 
                         if (useVFov && !Config::Instance()->FsrVerticalFov.has_value())
                             Config::Instance()->FsrVerticalFov = vfov;
@@ -1661,6 +1658,8 @@ bool MenuCommon::RenderMenu()
 
                         if (ImGui::Button("Reset Camera Values"))
                         {
+                            Config::Instance()->FsrVerticalFov.reset();
+                            Config::Instance()->FsrHorizontalFov.reset();
                             Config::Instance()->FsrCameraNear.reset();
                             Config::Instance()->FsrCameraFar.reset();
                         }

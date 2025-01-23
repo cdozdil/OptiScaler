@@ -1404,7 +1404,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         {
             if (Config::Instance()->FsrVerticalFov.has_value())
                 cameraVFov = Config::Instance()->FsrVerticalFov.value() * 0.0174532925199433f;
-            else if (Config::Instance()->FsrHorizontalFov.value_or(0.0f) > 0.0f)
+            else if (Config::Instance()->FsrHorizontalFov.value_or_default() > 0.0f)
                 cameraVFov = 2.0f * atan((tan(Config::Instance()->FsrHorizontalFov.value() * 0.0174532925199433f) * 0.5f) / (float)deviceContext->TargetHeight() * (float)deviceContext->TargetWidth());
             else
                 cameraVFov = 1.0471975511966f;
