@@ -825,10 +825,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
         }
 
         // Workaround for a bug in Nukem's mod, keeping it from DX12
-        if (uint32_t LowresMvec = 0; InParameters->Get("DLSSG.run_lowres_mvec_pass", &LowresMvec) == NVSDK_NGX_Result_Success && LowresMvec == 1) {
+        //if (uint32_t LowresMvec = 0; InParameters->Get("DLSSG.run_lowres_mvec_pass", &LowresMvec) == NVSDK_NGX_Result_Success && LowresMvec == 1) {
             InParameters->Set("DLSSG.MVecsSubrectWidth", 0U);
             InParameters->Set("DLSSG.MVecsSubrectHeight", 0U);
-        }
+        //}
 
         return DLSSGMod::VULKAN_EvaluateFeature(InCmdList, InFeatureHandle, InParameters, InCallback);
     }

@@ -139,6 +139,7 @@ bool Config::Reload(std::filesystem::path iniPath)
         // DLSSG
         {
             SpoofHAGS.set_from_config(readBool("DLSSG", "SpoofHAGS"));
+            MakeDepthCopy.set_from_config(readBool("DLSSG", "MakeDepthCopy"));
             DLSSGMod.set_from_config(readBool("DLSSG", "DLSSGMod"));
             if (DLSSGMod.value_or(false))
                 FGUseFGSwapChain.set_volatile_value(false);
@@ -575,6 +576,7 @@ bool Config::SaveIni()
     // DLSSG
     {
         ini.SetValue("DLSSG", "SpoofHAGS", GetBoolValue(Instance()->SpoofHAGS.value_for_config()).c_str());
+        ini.SetValue("DLSSG", "MakeDepthCopy", GetBoolValue(Instance()->MakeDepthCopy.value_for_config()).c_str());
         ini.SetValue("DLSSG", "DLSSGMod", GetBoolValue(Instance()->DLSSGMod.value_for_config()).c_str());
     }
 

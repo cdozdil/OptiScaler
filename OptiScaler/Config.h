@@ -157,6 +157,7 @@ public:
 	// DLSSG
 	CustomOptional<bool> SpoofHAGS{ false };
 	CustomOptional<bool> DLSSGMod{ false };
+	CustomOptional<bool> MakeDepthCopy{ false };
 
 	// CAS
 	CustomOptional<bool> RcasEnabled{ false };

@@ -1415,6 +1415,10 @@ bool MenuCommon::RenderMenu()
                             ImGui::TextColored(ImVec4(0.f, 1.f, 0.25f, 1.f), "ON");
                         else
                             ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "OFF");
+
+                        if (bool makeDepthCopy = Config::Instance()->MakeDepthCopy.value_or_default(); ImGui::Checkbox("Fix broken visuals", &makeDepthCopy))
+                            Config::Instance()->MakeDepthCopy = makeDepthCopy;
+                        ShowHelpMarker("Makes a copy of the depth buffer\nCan fix broken visuals in some games on AMD GPUs under Windows\nCan cause stutters so best to use only when necessary");
                     }
                 }
 
