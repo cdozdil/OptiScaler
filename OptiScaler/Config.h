@@ -296,10 +296,10 @@ public:
 	CustomOptional<bool> FGHUDFixExtended{ false };
 	CustomOptional<bool> FGImmediateCapture{ false };
 	CustomOptional<int> FGHUDLimit{ 1 };
-	std::optional<int> FGRectLeft;
-	std::optional<int> FGRectTop;
-	std::optional<int> FGRectWidth;
-	std::optional<int> FGRectHeight;
+	CustomOptional<int, false> FGRectLeft;
+	CustomOptional<int, false> FGRectTop;
+	CustomOptional<int, false> FGRectWidth;
+	CustomOptional<int, false> FGRectHeight;
 	CustomOptional<bool> FGDisableOverlays{ true };
 	CustomOptional<bool> FGAlwaysTrackHeaps{ false };
 	CustomOptional<bool> FGHybridSpin{ false };

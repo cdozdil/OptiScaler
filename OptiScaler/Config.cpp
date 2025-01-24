@@ -59,19 +59,10 @@ bool Config::Reload(std::filesystem::path iniPath)
             FGHUDLimit.set_from_config(readInt("FrameGen", "HUDLimit"));
             FGHUDFixExtended.set_from_config(readBool("FrameGen", "HUDFixExtended"));
             FGImmediateCapture.set_from_config(readBool("FrameGen", "HUDFixImmadiate"));
-
-            if (!FGRectLeft.has_value())
-                FGRectLeft = readInt("FrameGen", "RectLeft");
-
-            if (!FGRectTop.has_value())
-                FGRectTop = readInt("FrameGen", "RectTop");
-
-            if (!FGRectWidth.has_value())
-                FGRectWidth = readInt("FrameGen", "RectWidth");
-
-            if (!FGRectHeight.has_value())
-                FGRectHeight = readInt("FrameGen", "RectHeight");
-
+            FGRectLeft.set_from_config(readInt("FrameGen", "RectLeft"));
+            FGRectTop.set_from_config(readInt("FrameGen", "RectTop"));
+            FGRectWidth.set_from_config(readInt("FrameGen", "RectWidth"));
+            FGRectHeight.set_from_config(readInt("FrameGen", "RectHeight"));
             FGDisableOverlays.set_from_config(readBool("FrameGen", "DisableOverlays"));
             FGAlwaysTrackHeaps.set_from_config(readBool("FrameGen", "AlwaysTrackHeaps"));
             FGHybridSpin.set_from_config(readBool("FrameGen", "HybridSpin"));
@@ -511,10 +502,10 @@ bool Config::SaveIni()
         ini.SetValue("FrameGen", "HUDLimit", GetIntValue(Instance()->FGHUDLimit.value_for_config()).c_str());
         ini.SetValue("FrameGen", "HUDFixExtended", GetBoolValue(Instance()->FGHUDFixExtended.value_for_config()).c_str());
         ini.SetValue("FrameGen", "HUDFixImmadiate", GetBoolValue(Instance()->FGImmediateCapture.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "RectLeft", GetIntValue(Instance()->FGRectLeft).c_str());
-        ini.SetValue("FrameGen", "RectTop", GetIntValue(Instance()->FGRectTop).c_str());
-        ini.SetValue("FrameGen", "RectWidth", GetIntValue(Instance()->FGRectWidth).c_str());
-        ini.SetValue("FrameGen", "RectHeight", GetIntValue(Instance()->FGRectHeight).c_str());
+        ini.SetValue("FrameGen", "RectLeft", GetIntValue(Instance()->FGRectLeft.value_for_config()).c_str());
+        ini.SetValue("FrameGen", "RectTop", GetIntValue(Instance()->FGRectTop.value_for_config()).c_str());
+        ini.SetValue("FrameGen", "RectWidth", GetIntValue(Instance()->FGRectWidth.value_for_config()).c_str());
+        ini.SetValue("FrameGen", "RectHeight", GetIntValue(Instance()->FGRectHeight.value_for_config()).c_str());
         ini.SetValue("FrameGen", "DisableOverlays", GetBoolValue(Instance()->FGDisableOverlays.value_for_config()).c_str());
         ini.SetValue("FrameGen", "AlwaysTrackHeaps", GetBoolValue(Instance()->FGAlwaysTrackHeaps.value_for_config()).c_str());
         ini.SetValue("FrameGen", "HybridSpin", GetBoolValue(Instance()->FGHybridSpin.value_for_config()).c_str());
