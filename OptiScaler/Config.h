@@ -4,7 +4,6 @@
 #include <optional>
 #include <filesystem>
 #include <SimpleIni.h>
-#include <map>
 
 template <class T, bool HasDefaultValue = true>
 class CustomOptional : public std::optional<T> {
@@ -141,12 +140,12 @@ public:
 	CustomOptional<bool> BuildPipelines{ true };
 	CustomOptional<int32_t> NetworkModel{ 0 };
 	CustomOptional<bool> CreateHeaps{ true };
-	std::optional<std::wstring> XeSSLibrary;
+	CustomOptional<std::wstring, false> XeSSLibrary;
 
 	// DLSS
 	CustomOptional<bool> DLSSEnabled{ true };
-	std::optional<std::wstring> DLSSLibrary;
-	std::optional<std::wstring> NVNGX_DLSS_Library;
+	CustomOptional<std::wstring, false> NvngxPath;
+	CustomOptional<std::wstring, false> NVNGX_DLSS_Library;
 	CustomOptional<bool> RenderPresetOverride{ false };
 	CustomOptional<uint32_t> RenderPresetDLAA{ 0 };
 	CustomOptional<uint32_t> RenderPresetUltraQuality{ 0 };
@@ -158,6 +157,7 @@ public:
 	// DLSSG
 	CustomOptional<bool> SpoofHAGS{ false };
 	CustomOptional<bool> DLSSGMod{ false };
+	CustomOptional<bool> MakeDepthCopy{ false };
 
 	// CAS
 	CustomOptional<bool> RcasEnabled{ false };
@@ -210,8 +210,8 @@ public:
 	CustomOptional<bool> MipmapBiasFixedOverride{ false };
 	CustomOptional<bool> MipmapBiasScaleOverride{ false };
 	CustomOptional<bool> MipmapBiasOverrideAll{ false };
-	std::optional<int> AnisotropyOverride; // disabled by default
-	std::optional<int> RoundInternalResolution; // disabled by default
+	CustomOptional<int, false> AnisotropyOverride; // disabled by default
+	CustomOptional<int, false> RoundInternalResolution; // disabled by default
 
 	CustomOptional<bool> RestoreComputeSignature{ false };
 	CustomOptional<bool> RestoreGraphicSignature{ false };
@@ -223,12 +223,12 @@ public:
 	CustomOptional<bool> PreferDedicatedGpu{ false };
 	CustomOptional<bool> PreferFirstDedicatedGpu{ false };
 
-	std::optional<int32_t> ColorResourceBarrier; // disabled by default
-	std::optional<int32_t> MVResourceBarrier; // disabled by default
-	std::optional<int32_t> DepthResourceBarrier; // disabled by default
-	std::optional<int32_t> ExposureResourceBarrier; // disabled by default
-	std::optional<int32_t> MaskResourceBarrier; // disabled by default
-	std::optional<int32_t> OutputResourceBarrier; // disabled by default
+	CustomOptional<int32_t, false> ColorResourceBarrier; // disabled by default
+	CustomOptional<int32_t, false> MVResourceBarrier; // disabled by default
+	CustomOptional<int32_t, false> DepthResourceBarrier; // disabled by default
+	CustomOptional<int32_t, false> ExposureResourceBarrier; // disabled by default
+	CustomOptional<int32_t, false> MaskResourceBarrier; // disabled by default
+	CustomOptional<int32_t, false> OutputResourceBarrier; // disabled by default
 
 	// Upscalers
 	CustomOptional<std::string> Dx11Upscaler{ "fsr22" };
@@ -249,7 +249,7 @@ public:
 
 	// FSR Common
 	CustomOptional<float> FsrVerticalFov{ 60.0f };
-	std::optional<float> FsrHorizontalFov; // off by default
+	CustomOptional<float> FsrHorizontalFov{ 0.0f }; // off by default
 	CustomOptional<float> FsrCameraNear{ 0.1f };
 	CustomOptional<float> FsrCameraFar{ 100000.0f };
 	CustomOptional<bool> FsrUseFsrInputValues{ true };
@@ -270,16 +270,16 @@ public:
 
 	// NVAPI Override
 	CustomOptional<bool> OverrideNvapiDll{ false };
-	std::optional<std::wstring> NvapiDllPath;
+	CustomOptional<std::wstring, false> NvapiDllPath;
 
 	// Spoofing
-	std::optional<bool> DxgiSpoofing; // it's not always true by default
-	std::optional<std::string> DxgiBlacklist; // disabled by default
-	std::optional<int> DxgiVRAM; // disabled by default
+	CustomOptional<bool> DxgiSpoofing{ true };
+	CustomOptional<std::string, false> DxgiBlacklist; // disabled by default
+	CustomOptional<int, false> DxgiVRAM; // disabled by default
 	CustomOptional<bool> VulkanSpoofing{ false };
 	CustomOptional<bool> VulkanExtensionSpoofing{ false };
 	CustomOptional<std::wstring> SpoofedGPUName{ L"NVIDIA GeForce RTX 4090" };
-	std::optional<int> VulkanVRAM; // disabled by default
+	CustomOptional<int, false> VulkanVRAM; // disabled by default
 
 	// Plugins
 	CustomOptional<std::wstring> PluginPath{ L"plugins" };
@@ -296,10 +296,10 @@ public:
 	CustomOptional<bool> FGHUDFixExtended{ false };
 	CustomOptional<bool> FGImmediateCapture{ false };
 	CustomOptional<int> FGHUDLimit{ 1 };
-	std::optional<int> FGRectLeft;
-	std::optional<int> FGRectTop;
-	std::optional<int> FGRectWidth;
-	std::optional<int> FGRectHeight;
+	CustomOptional<int, false> FGRectLeft;
+	CustomOptional<int, false> FGRectTop;
+	CustomOptional<int, false> FGRectWidth;
+	CustomOptional<int, false> FGRectHeight;
 	CustomOptional<bool> FGDisableOverlays{ true };
 	CustomOptional<bool> FGAlwaysTrackHeaps{ false };
 	CustomOptional<bool> FGHybridSpin{ false };

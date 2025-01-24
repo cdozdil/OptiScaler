@@ -118,7 +118,7 @@ static bool isNvngxAvailable = false;
 void AttachHooks();
 void DetachHooks();
 HMODULE LoadNvApi();
-HMODULE LoadNvgxDlss(std::wstring originalPath);
+HMODULE LoadNvngxDlss(std::wstring originalPath);
 void HookForDxgiSpoofing();
 void HookForVulkanSpoofing();
 void HookForVulkanExtensionSpoofing();
@@ -231,9 +231,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
     }
 
     // nvngx_dlss
-    if (Config::Instance()->DLSSEnabled.value_or_default() && Config::Instance()->DLSSLibrary.has_value() && CheckDllName(&lcaseLibName, &nvngxDlss))
+    if (Config::Instance()->DLSSEnabled.value_or_default() && Config::Instance()->NVNGX_DLSS_Library.has_value() && CheckDllName(&lcaseLibName, &nvngxDlss))
     {
-        auto nvngxDlss = LoadNvgxDlss(string_to_wstring(lcaseLibName));
+        auto nvngxDlss = LoadNvngxDlss(string_to_wstring(lcaseLibName));
 
         if (nvngxDlss != nullptr)
             return nvngxDlss;
@@ -404,9 +404,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
     }
 
     // nvngx_dlss
-    if (Config::Instance()->DLSSEnabled.value_or_default() && Config::Instance()->DLSSLibrary.has_value() && CheckDllNameW(&lcaseLibName, &nvngxDlssW))
+    if (Config::Instance()->DLSSEnabled.value_or_default() && Config::Instance()->NVNGX_DLSS_Library.has_value() && CheckDllNameW(&lcaseLibName, &nvngxDlssW))
     {
-        auto nvngxDlss = LoadNvgxDlss(lcaseLibName);
+        auto nvngxDlss = LoadNvngxDlss(lcaseLibName);
 
         if (nvngxDlss != nullptr)
             return nvngxDlss;
@@ -618,7 +618,7 @@ static HMODULE LoadNvApi()
     return nullptr;
 }
 
-static HMODULE LoadNvgxDlss(std::wstring originalPath)
+static HMODULE LoadNvngxDlss(std::wstring originalPath)
 {
     HMODULE nvngxDlss = nullptr;
 
@@ -1384,7 +1384,7 @@ static VkResult hkvkEnumerateInstanceExtensionProperties(const char* pLayerName,
 inline static void HookForDxgiSpoofing()
 {
     // hook dxgi when not working as dxgi.dll
-    if (dxgi.CreateDxgiFactory == nullptr && !isWorkingWithEnabler && !State::Instance().isDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
+    if (dxgi.CreateDxgiFactory == nullptr && !isWorkingWithEnabler && !State::Instance().isDxgiMode && Config::Instance()->DxgiSpoofing.value_or_default())
     {
         LOG_INFO("DxgiSpoofing is enabled loading dxgi.dll");
 
@@ -1596,7 +1596,7 @@ static void DetachHooks()
             o_vkCreateInstance = nullptr;
         }
 
-        if (!State::Instance().isDxgiMode && Config::Instance()->DxgiSpoofing.value_or(true))
+        if (!State::Instance().isDxgiMode && Config::Instance()->DxgiSpoofing.value_or_default())
         {
             if (dxgi.CreateDxgiFactory != nullptr)
             {
@@ -2216,7 +2216,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                     Config::Instance()->DLSSEnabled.set_volatile_value(true);
 
                     if (!Config::Instance()->DxgiSpoofing.has_value())
-                        Config::Instance()->DxgiSpoofing = false;
+                        Config::Instance()->DxgiSpoofing.set_volatile_value(false);
 
                     isNvngxAvailable = true;
                     State::Instance().isRunningOnNvidia = true;
@@ -2237,7 +2237,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             if (!State::Instance().nvngxExists && !Config::Instance()->DxgiSpoofing.has_value())
             {
                 LOG_WARN("No nvngx.dll found disabling spoofing!");
-                Config::Instance()->DxgiSpoofing = false;
+                Config::Instance()->DxgiSpoofing.set_volatile_value(false);
             }
 
             // Init XeSS proxy

@@ -1022,15 +1022,17 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         }
 
         // Workaround for a bug in Nukem's mod
-        if (uint32_t LowresMvec = 0; InParameters->Get("DLSSG.run_lowres_mvec_pass", &LowresMvec) == NVSDK_NGX_Result_Success && LowresMvec == 1) {
+        //if (uint32_t LowresMvec = 0; InParameters->Get("DLSSG.run_lowres_mvec_pass", &LowresMvec) == NVSDK_NGX_Result_Success && LowresMvec == 1) {
             InParameters->Set("DLSSG.MVecsSubrectWidth", 0U);
             InParameters->Set("DLSSG.MVecsSubrectHeight", 0U);
-        }
+        //}
 
         // Make a copy of the depth going to the frame generator
         // Fixes an issue with the depth being corrupted on AMD under Windows
-        ID3D12Resource* dlssgDepth;
-        InParameters->Get("DLSSG.Depth", &dlssgDepth);
+        ID3D12Resource* dlssgDepth = nullptr;
+
+        if (Config::Instance()->MakeDepthCopy.value_or_default())
+            InParameters->Get("DLSSG.Depth", &dlssgDepth);
 
         if (dlssgDepth) {
             D3D12_RESOURCE_DESC desc = dlssgDepth->GetDesc();
@@ -1404,7 +1406,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         {
             if (Config::Instance()->FsrVerticalFov.has_value())
                 cameraVFov = Config::Instance()->FsrVerticalFov.value() * 0.0174532925199433f;
-            else if (Config::Instance()->FsrHorizontalFov.value_or(0.0f) > 0.0f)
+            else if (Config::Instance()->FsrHorizontalFov.value_or_default() > 0.0f)
                 cameraVFov = 2.0f * atan((tan(Config::Instance()->FsrHorizontalFov.value() * 0.0174532925199433f) * 0.5f) / (float)deviceContext->TargetHeight() * (float)deviceContext->TargetWidth());
             else
                 cameraVFov = 1.0471975511966f;

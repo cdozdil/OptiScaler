@@ -648,7 +648,8 @@ void MenuCommon::AddVulkanBackends(std::string* code, std::string* name)
     }
 }
 
-void MenuCommon::AddResourceBarrier(std::string name, std::optional<int>* value)
+template <bool B>
+void MenuCommon::AddResourceBarrier(std::string name, CustomOptional<int32_t, B>* value)
 {
     const char* states[] = { "AUTO", "COMMON", "VERTEX_AND_CONSTANT_BUFFER", "INDEX_BUFFER", "RENDER_TARGET", "UNORDERED_ACCESS", "DEPTH_WRITE",
         "DEPTH_READ", "NON_PIXEL_SHADER_RESOURCE", "PIXEL_SHADER_RESOURCE", "STREAM_OUT", "INDIRECT_ARGUMENT", "COPY_DEST", "COPY_SOURCE",
@@ -687,7 +688,8 @@ void MenuCommon::AddResourceBarrier(std::string name, std::optional<int>* value)
     }
 }
 
-void MenuCommon::AddRenderPreset(std::string name, std::optional<uint32_t>* value)
+template <bool B>
+void MenuCommon::AddRenderPreset(std::string name, CustomOptional<uint32_t, B>* value)
 {
     const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G" };
     const std::string presetsDesc[] = { "Whatever the game uses",
@@ -703,7 +705,8 @@ void MenuCommon::AddRenderPreset(std::string name, std::optional<uint32_t>* valu
     PopulateCombo(name, value, presets, presetsDesc, 8);
 }
 
-void MenuCommon::PopulateCombo(std::string name, std::optional<uint32_t>* value, const char* names[], const std::string desc[], int length) {
+template <bool B>
+void MenuCommon::PopulateCombo(std::string name, CustomOptional<uint32_t, B>* value, const char* names[], const std::string desc[], int length) {
     int selected = value->value_or(0);
 
     const char* selectedName = "";
@@ -1412,6 +1415,10 @@ bool MenuCommon::RenderMenu()
                             ImGui::TextColored(ImVec4(0.f, 1.f, 0.25f, 1.f), "ON");
                         else
                             ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "OFF");
+
+                        if (bool makeDepthCopy = Config::Instance()->MakeDepthCopy.value_or_default(); ImGui::Checkbox("Fix broken visuals", &makeDepthCopy))
+                            Config::Instance()->MakeDepthCopy = makeDepthCopy;
+                        ShowHelpMarker("Makes a copy of the depth buffer\nCan fix broken visuals in some games on AMD GPUs under Windows\nCan cause stutters so best to use only when necessary");
                     }
                 }
 
@@ -1601,11 +1608,8 @@ bool MenuCommon::RenderMenu()
 
                         bool useVFov = Config::Instance()->FsrVerticalFov.has_value() || !Config::Instance()->FsrHorizontalFov.has_value();
 
-                        float vfov;
-                        float hfov;
-
-                        vfov = Config::Instance()->FsrVerticalFov.value_or_default();
-                        hfov = Config::Instance()->FsrHorizontalFov.value_or(90.0f);
+                        float vfov = Config::Instance()->FsrVerticalFov.value_or_default();
+                        float hfov = Config::Instance()->FsrHorizontalFov.value_or(90.0f);
 
                         if (useVFov && !Config::Instance()->FsrVerticalFov.has_value())
                             Config::Instance()->FsrVerticalFov = vfov;
@@ -1661,6 +1665,8 @@ bool MenuCommon::RenderMenu()
 
                         if (ImGui::Button("Reset Camera Values"))
                         {
+                            Config::Instance()->FsrVerticalFov.reset();
+                            Config::Instance()->FsrHorizontalFov.reset();
                             Config::Instance()->FsrCameraNear.reset();
                             Config::Instance()->FsrCameraFar.reset();
                         }
