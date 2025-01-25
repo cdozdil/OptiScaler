@@ -268,9 +268,9 @@ if "%gpuChoice%"=="1" (
 )
 echo 	del OptiScaler.log
 echo 	del %selectedFilename%
-echo    del DlssOverrides\*
+echo    del /Q DlssOverrides\*
 echo    rd DlssOverrides
-echo    del Licenses\*
+echo    del /Q Licenses\*
 echo    rd Licenses
 echo 	echo.
 echo 	echo OptiScaler removed!
