@@ -16,9 +16,6 @@
 #include <set>
 #include <future>
 
-// Close FG CommandList after dispatch or after callback
-#define CLOSE_FG_COMMANDLIST_AFTER_CALLBACK
-
 // Clear heap info when ResourceDiscard is called
 //#define USE_RESOURCE_DISCARD
 
@@ -393,7 +390,7 @@ static int GetFrameIndex(bool active)
     //{
     if (fgActiveFrameIndex < 0)
     {
-        LOG_ERROR("fgActiveFrameIndex < 0!");
+        //LOG_ERROR("fgActiveFrameIndex < 0!");
         return 0;
     }
 
@@ -663,19 +660,20 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                 {
                     // If skipped last interpolated continue with new one
                     // trying to mimic pre66 behavior
-                    if (FrameGen_Dx12::fgHudlessFrameIndexes[i] >= params->frameID)
-                        fIndex = i;
-
-                    //if (FrameGen_Dx12::fgHudlessFrameIndexes[i] == params->frameID)
-                    //{
+                    //if (FrameGen_Dx12::fgHudlessFrameIndexes[i] != 9999999999999 && FrameGen_Dx12::fgHudlessFrameIndexes[i] >= params->frameID)
                     //    fIndex = i;
-                    //    break;
-                    //}
+
+                    if (FrameGen_Dx12::fgHudlessFrameIndexes[i] == params->frameID)
+                    {
+                        fIndex = i;
+                        break;
+                    }
                 }
 
-#ifdef CLOSE_FG_COMMANDLIST_AFTER_CALLBACK
-                if (dispatchResult == FFX_API_RETURN_OK)
+                if (Config::Instance()->FGHudFixCloseAfterCallback.value_or_default() && fIndex > 0)
                 {
+                    FrameGen_Dx12::fgHudlessFrameIndexes[fIndex] = 9999999999999;
+
                     result = FrameGen_Dx12::fgCommandList[fIndex]->Close();
                     LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
 
@@ -688,10 +686,9 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                     }
                     else
                     {
-                        dispatchResult = FFX_API_RETURN_ERROR;
+                        return FFX_API_RETURN_ERROR;
                     }
                 }
-#endif // CLOSE_FG_COMMANDLIST_AFTER_CALLBACK
 
                 // check for status
                 if (fIndex < 0 || !Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default() ||
@@ -701,7 +698,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                     LOG_WARN("Cancel async dispatch");
                     fgDispatchCalled = false;
                     FrameGen_Dx12::fgSkipHudlessChecks = false;
-                    return FFX_API_RETURN_OK;
+                    params->numGeneratedFrames = 0;
+                    //return FFX_API_RETURN_OK;
                 }
 
                 // If fg is active but upscaling paused
@@ -711,13 +709,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                 {
                     LOG_WARN("Callback without hudless! frameID: {}", params->frameID);
 
-                    auto allocator = FrameGen_Dx12::fgCommandAllocators[fIndex];
-                    result = allocator->Reset();
-                    result = FrameGen_Dx12::fgCommandList[fIndex]->Reset(allocator, nullptr);
-
-                    params->frameID = fgLastFGFrame;
                     params->numGeneratedFrames = 0;
-                    params->reset = true;
+                    //return FFX_API_RETURN_OK;
                 }
 
                 params->reset = (FrameGen_Dx12::reset != 0);
@@ -795,8 +788,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
             }
 #endif
 
-#ifndef  CLOSE_FG_COMMANDLIST_AFTER_CALLBACK
-            if (retCode == FFX_API_RETURN_OK)
+            if (!Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
             {
                 auto result = FrameGen_Dx12::fgCommandList[fIndex]->Close();
                 LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
@@ -809,8 +801,6 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                     FrameGen_Dx12::gameCommandQueue->ExecuteCommandLists(1, cl);
                 }
             }
-#endif // ! CLOSE_FG_COMMANDLIST_AFTER_CALLBACK
-
 
             fgDispatchCalled = true;
 
@@ -1119,7 +1109,7 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
     auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
     if (heap != nullptr)
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
-}
+    }
 
 static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pResource, D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
@@ -1172,7 +1162,7 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
     auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
     if (heap != nullptr)
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
-}
+    }
 
 static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pResource, ID3D12Resource* pCounterResource, D3D12_UNORDERED_ACCESS_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
@@ -1225,7 +1215,7 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
     auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
     if (heap != nullptr)
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
-}
+    }
 
 #pragma endregion
 
@@ -3260,12 +3250,12 @@ static void HookCommandList(ID3D12Device* InDevice)
 
             commandList->Close();
             commandList->Release();
-        }
+            }
 
         commandAllocator->Reset();
         commandAllocator->Release();
+        }
     }
-}
 
 static void HookToDevice(ID3D12Device* InDevice)
 {
@@ -3400,7 +3390,7 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
 
     static const D3D_FEATURE_LEVEL levels[] = {
      D3D_FEATURE_LEVEL_11_1,
-    };
+};
 
     D3D_FEATURE_LEVEL maxLevel = D3D_FEATURE_LEVEL_1_0_CORE;
 
@@ -3448,7 +3438,7 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
 
     static const D3D_FEATURE_LEVEL levels[] = {
     D3D_FEATURE_LEVEL_11_1,
-    };
+};
 
     D3D_FEATURE_LEVEL maxLevel = D3D_FEATURE_LEVEL_1_0_CORE;
 

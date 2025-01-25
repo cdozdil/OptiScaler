@@ -29,9 +29,6 @@
 // Looks like causing stutter/sync issues
 //#define USE_QUEUE_FOR_FG
 
-// Do not make copies of Depth + Velocity for FG
-//#define DONT_USE_DEPTH_MV_COPIES
-
 #ifndef USE_PRESENT_FOR_FT
 static UINT64 fgLastFrameTime = 0;
 #endif
@@ -77,7 +74,9 @@ static bool CreateBufferResource(LPCWSTR Name, ID3D12Device* InDevice, ID3D12Res
             (*OutResource) = nullptr;
         }
         else
+        {
             return true;
+        }
     }
 
     D3D12_HEAP_PROPERTIES heapProperties;
@@ -1015,7 +1014,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 cameraFar = 100000.0f;
 
             InParameters->Set("DLSSG.CameraFar", cameraFar);
-        } 
+        }
         else if (cameraFar == INFINITY) {
             cameraFar = 10000;
             InParameters->Set("DLSSG.CameraFar", cameraFar);
@@ -1023,8 +1022,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
         // Workaround for a bug in Nukem's mod
         //if (uint32_t LowresMvec = 0; InParameters->Get("DLSSG.run_lowres_mvec_pass", &LowresMvec) == NVSDK_NGX_Result_Success && LowresMvec == 1) {
-            InParameters->Set("DLSSG.MVecsSubrectWidth", 0U);
-            InParameters->Set("DLSSG.MVecsSubrectHeight", 0U);
+        InParameters->Set("DLSSG.MVecsSubrectWidth", 0U);
+        InParameters->Set("DLSSG.MVecsSubrectHeight", 0U);
         //}
 
         // Make a copy of the depth going to the frame generator
@@ -1457,6 +1456,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             auto allocator = FrameGen_Dx12::fgCommandAllocators[frameIndex];
             auto result = allocator->Reset();
             result = FrameGen_Dx12::fgCommandList[frameIndex]->Reset(allocator, nullptr);
+            LOG_DEBUG("fgCommandList[{}]->Reset()", frameIndex);
         }
 
         ID3D12GraphicsCommandList* commandList = nullptr;
@@ -1479,23 +1479,41 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
             InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
 
-        ResourceBarrier(commandList, paramVelocity, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE), D3D12_RESOURCE_STATE_COPY_SOURCE);
+        if (Config::Instance()->FGMakeMVCopy.value_or_default())
+        {
+            ResourceBarrier(commandList, paramVelocity, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE), D3D12_RESOURCE_STATE_COPY_SOURCE);
 
-        if (CreateBufferResource(L"fgVelocity", D3D12Device, paramVelocity, D3D12_RESOURCE_STATE_COPY_DEST, &FrameGen_Dx12::paramVelocity[frameIndex]))
-            commandList->CopyResource(FrameGen_Dx12::paramVelocity[frameIndex], paramVelocity);
+            if (CreateBufferResource(L"fgVelocity", D3D12Device, paramVelocity, D3D12_RESOURCE_STATE_COPY_DEST, &FrameGen_Dx12::paramVelocityCopy[frameIndex]))
+                commandList->CopyResource(FrameGen_Dx12::paramVelocityCopy[frameIndex], paramVelocity);
 
-        ResourceBarrier(commandList, paramVelocity, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+            ResourceBarrier(commandList, paramVelocity, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+
+            FrameGen_Dx12::paramVelocity[frameIndex] = FrameGen_Dx12::paramVelocityCopy[frameIndex];
+        }
+        else
+        {
+            FrameGen_Dx12::paramVelocity[frameIndex] = paramVelocity;
+        }
 
         ID3D12Resource* paramDepth;
         if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
             InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
 
-        ResourceBarrier(commandList, paramDepth, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE), D3D12_RESOURCE_STATE_COPY_SOURCE);
+        if (Config::Instance()->FGMakeDepthCopy.value_or_default())
+        {
+            ResourceBarrier(commandList, paramDepth, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE), D3D12_RESOURCE_STATE_COPY_SOURCE);
 
-        if (CreateBufferResource(L"fgDepth", D3D12Device, paramDepth, D3D12_RESOURCE_STATE_COPY_DEST, &FrameGen_Dx12::paramDepth[frameIndex]))
-            commandList->CopyResource(FrameGen_Dx12::paramDepth[frameIndex], paramDepth);
+            if (CreateBufferResource(L"fgDepth", D3D12Device, paramDepth, D3D12_RESOURCE_STATE_COPY_DEST, &FrameGen_Dx12::paramDepthCopy[frameIndex]))
+                commandList->CopyResource(FrameGen_Dx12::paramDepthCopy[frameIndex], paramDepth);
 
-        ResourceBarrier(commandList, paramDepth, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+            ResourceBarrier(commandList, paramDepth, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+
+            FrameGen_Dx12::paramDepth[frameIndex] = FrameGen_Dx12::paramDepthCopy[frameIndex];
+        }
+        else
+        {
+            FrameGen_Dx12::paramDepth[frameIndex] = paramDepth;
+        }
 
 #ifdef USE_COPY_QUEUE_FOR_FG
         ID3D12CommandList* cl[1] = { nullptr };
@@ -1625,7 +1643,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         {
                             LOG_WARN("(FG) Cancel async dispatch fIndex: {}", fIndex);
                             FrameGen_Dx12::fgSkipHudlessChecks = false;
-                            return FFX_API_RETURN_OK;
+                            params->numGeneratedFrames = 0;
+
+                            //return FFX_API_RETURN_OK;
                         }
 
                         // If fg is active but upscaling paused
@@ -1641,8 +1661,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                             result = FrameGen_Dx12::fgCommandList[fIndex]->Reset(allocator, nullptr);
 #endif
 
-                            params->frameID = fgLastFGFrame;
                             params->numGeneratedFrames = 0;
+                            //return FFX_API_RETURN_OK;
                         }
 
                         if (State::Instance().currentFeature != nullptr)
@@ -1651,9 +1671,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                         auto dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
                         LOG_DEBUG("(FG) D3D12_Dispatch result: {}, fIndex: {}", (UINT)dispatchResult, fIndex);
 
+#ifdef USE_QUEUE_FOR_FG
                         if (dispatchResult == FFX_API_RETURN_OK)
                         {
-#ifdef USE_QUEUE_FOR_FG
                             ID3D12CommandList* cl[1] = { nullptr };
                             auto result = FrameGen_Dx12::fgCommandList[fIndex]->Close();
                             cl[0] = FrameGen_Dx12::fgCommandList[fIndex];
@@ -1663,17 +1683,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                             {
                                 LOG_ERROR("(FG) Close result: {}", (UINT)result);
                             }
-
-#endif
-
-#ifdef DONT_USE_DEPTH_MV_COPIES
-                            ResourceBarrier(InCmdList, paramVelocity, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
-                            ResourceBarrier(InCmdList, paramDepth, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
-#endif
                         }
+#endif
 
                         return dispatchResult;
-                        };
+                    };
 
                 m_FrameGenerationConfig.onlyPresentGenerated = State::Instance().FGonlyGenerated; // check here
                 m_FrameGenerationConfig.frameID = deviceContext->FrameCount();
@@ -1708,27 +1722,35 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &dfgPrepare.jitterOffset.x);
                     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &dfgPrepare.jitterOffset.y);
 
-#ifndef DONT_USE_DEPTH_MV_COPIES
-                    dfgPrepare.motionVectors = ffxApiGetResourceDX12(FrameGen_Dx12::paramVelocity[frameIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
-                    dfgPrepare.depth = ffxApiGetResourceDX12(FrameGen_Dx12::paramDepth[frameIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
-#else
-                    ID3D12Resource* paramVelocity;
-                    if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
-                        InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
+                    if (Config::Instance()->FGMakeMVCopy.value_or_default())
+                    {
+                        dfgPrepare.motionVectors = ffxApiGetResourceDX12(FrameGen_Dx12::paramVelocityCopy[frameIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
+                    }
+                    else
+                    {
+                        ID3D12Resource* paramVelocity;
+                        if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
+                            InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
 
-                    ResourceBarrier(InCmdList, paramVelocity, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE), D3D12_RESOURCE_STATE_COPY_SOURCE);
+                        ResourceBarrier(InCmdList, paramVelocity, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE), D3D12_RESOURCE_STATE_COPY_SOURCE);
 
-                    dfgPrepare.motionVectors = ffxApiGetResourceDX12(paramVelocity, FFX_API_RESOURCE_STATE_COMPUTE_READ);
+                        dfgPrepare.motionVectors = ffxApiGetResourceDX12(paramVelocity, FFX_API_RESOURCE_STATE_COMPUTE_READ);
+                    }
 
-                    ID3D12Resource* paramDepth;
-                    if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
-                        InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
+                    if (Config::Instance()->FGMakeDepthCopy.value_or_default())
+                    {
+                        dfgPrepare.depth = ffxApiGetResourceDX12(FrameGen_Dx12::paramDepthCopy[frameIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
+                    }
+                    else
+                    {
+                        ID3D12Resource* paramDepth;
+                        if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
+                            InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
 
-                    ResourceBarrier(InCmdList, paramDepth, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE), D3D12_RESOURCE_STATE_COPY_SOURCE);
+                        ResourceBarrier(InCmdList, paramDepth, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE), D3D12_RESOURCE_STATE_COPY_SOURCE);
 
-                    dfgPrepare.depth = ffxApiGetResourceDX12(paramDepth, FFX_API_RESOURCE_STATE_COMPUTE_READ);
-
-#endif
+                        dfgPrepare.depth = ffxApiGetResourceDX12(paramDepth, FFX_API_RESOURCE_STATE_COMPUTE_READ);
+                    }
 
                     float MVScaleX = 1.0f;
                     float MVScaleY = 1.0f;
@@ -1770,11 +1792,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     else
                         LOG_DEBUG("(FG) Dispatch ok.");
                 }
-                    }
             }
+        }
 
         methodResult = NVSDK_NGX_Result_Success;
-        }
+    }
 
     // Root signature restore
     if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or_default() || Config::Instance()->RestoreGraphicSignature.value_or_default()))
@@ -1807,7 +1829,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     LOG_DEBUG("Upscaling done: {}", evalResult);
 
     return methodResult;
-    }
+}
 
 #pragma endregion
 

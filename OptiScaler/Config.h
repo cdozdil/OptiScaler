@@ -303,6 +303,9 @@ public:
 	CustomOptional<bool> FGDisableOverlays{ true };
 	CustomOptional<bool> FGAlwaysTrackHeaps{ false };
 	CustomOptional<bool> FGHybridSpin{ false };
+	CustomOptional<bool> FGMakeDepthCopy{ true };
+	CustomOptional<bool> FGMakeMVCopy{ true };
+	CustomOptional<bool> FGHudFixCloseAfterCallback{ false };
 
 	// DLSS Enabler
 	std::optional<int> DE_FramerateLimit;			// off - vsync - number

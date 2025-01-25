@@ -1355,6 +1355,17 @@ bool MenuCommon::RenderMenu()
 
                         if (Config::Instance()->AdvancedSettings.value_or_default())
                         {
+                            bool makeMVCopies = Config::Instance()->FGMakeMVCopy.value_or_default();
+                            if (ImGui::Checkbox("FG Make MV Copies", &makeMVCopies))
+                                Config::Instance()->FGMakeMVCopy = makeMVCopies;
+
+                            bool makeDepthCopies = Config::Instance()->FGMakeDepthCopy.value_or_default();
+                            if (ImGui::Checkbox("FG Make Depth Copies", &makeDepthCopies))
+                                Config::Instance()->FGMakeDepthCopy = makeDepthCopies;
+
+                            bool closeAfterCallback = Config::Instance()->FGHudFixCloseAfterCallback.value_or_default();
+                            if (ImGui::Checkbox("FG Close CmdList After Callback", &closeAfterCallback))
+                                Config::Instance()->FGHudFixCloseAfterCallback = closeAfterCallback;
 
                             ImGui::PushItemWidth(95.0);
                             int rectLeft = Config::Instance()->FGRectLeft.value_or(0);
