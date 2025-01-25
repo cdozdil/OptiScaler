@@ -263,7 +263,9 @@ echo.
 echo set /p removeChoice="Do you want to remove OptiScaler? [y/n]: "
 echo.
 echo if "%%removeChoice%%"=="y" ^(
-echo 	del nvngx.dll
+if "%gpuChoice%"=="1" (
+    echo 	del nvngx.dll
+)
 echo 	del OptiScaler.log
 echo 	del %selectedFilename%
 echo    del DlssOverrides\*
