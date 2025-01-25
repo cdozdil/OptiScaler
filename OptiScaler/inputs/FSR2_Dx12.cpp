@@ -374,7 +374,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
 
     // if still no device use latest created one
     // Might fixed TLOU but FMF2 still crashes
-    if (_d3d12Device == nullptr && State::Instance().d3d12Devices.size() > 0)
+    if (_d3d12Device == nullptr && State::Instance().gameQuirk != FMF2 && State::Instance().d3d12Devices.size() > 0)
         _d3d12Device = State::Instance().d3d12Devices[State::Instance().d3d12Devices.size() - 1];
 
     if (_d3d12Device == nullptr)
@@ -955,7 +955,7 @@ void HookFSR2ExeInputs()
             o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAI0IIW4FfxFsr2QualityMode@@@Z");
         if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
             o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAH0HHW4FfxFsr2QualityMode@@@Z");
-    
+
         if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12, ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
 

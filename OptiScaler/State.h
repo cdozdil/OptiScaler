@@ -14,7 +14,8 @@ typedef enum API
 typedef enum GameQuirk
 {
 	Other,
-	Cyberpunk
+	Cyberpunk,
+	FMF2
 } GameQuirk;
 
 class State {

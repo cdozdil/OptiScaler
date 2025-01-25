@@ -2144,6 +2144,11 @@ static void CheckQuirks() {
         State::Instance().gameQuirk = Cyberpunk;
         LOG_INFO("Enabling a quirk for Cyberpunk");
     }
+    else if (exePathFilename == "FMF2-Win64-Shipping.exe")
+    {
+        State::Instance().gameQuirk = FMF2;
+        LOG_INFO("Enabling a quirk for FMF2");
+    }
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
@@ -2222,7 +2227,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                     State::Instance().isRunningOnNvidia = true;
                 }
             }
-            
+
             if (!Config::Instance()->OverrideNvapiDll.has_value())
             {
                 spdlog::info("OverrideNvapiDll not set, setting it to: {}", !State::Instance().isRunningOnNvidia ? "true" : "false");
