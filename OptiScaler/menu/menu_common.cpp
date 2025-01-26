@@ -1369,7 +1369,7 @@ bool MenuCommon::RenderMenu()
 
                             bool useMutexForPresent = Config::Instance()->FGUseMutexForSwaphain.value_or_default();
                             if (ImGui::Checkbox("FG Use Mutex for Present", &useMutexForPresent))
-                                Config::Instance()->FGHudFixCloseAfterCallback = useMutexForPresent;
+                                Config::Instance()->FGUseMutexForSwaphain = useMutexForPresent;
                             ShowHelpMarker("Use mutex to prevent desync of FG and crashes\n"
                                            "Disabling might improve the perf but decrase stability");
 

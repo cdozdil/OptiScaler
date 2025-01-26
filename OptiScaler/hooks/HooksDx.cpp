@@ -793,7 +793,6 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                 auto result = FrameGen_Dx12::fgCommandList[fIndex]->Close();
                 LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
 
-                // if there is command list error return ERROR
                 if (result == S_OK)
                 {
                     ID3D12CommandList* cl[1] = { nullptr };
@@ -1999,6 +1998,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     {
         // Fixes RDR2, need to check other games
         // But at first place I have added this because of FFX documents
+        LOG_TRACE("Waiting mutex");
         std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
 
         result = o_FGSCPresent(This, SyncInterval, Flags);
