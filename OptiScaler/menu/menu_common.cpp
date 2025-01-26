@@ -1358,14 +1358,26 @@ bool MenuCommon::RenderMenu()
                             bool makeMVCopies = Config::Instance()->FGMakeMVCopy.value_or_default();
                             if (ImGui::Checkbox("FG Make MV Copies", &makeMVCopies))
                                 Config::Instance()->FGMakeMVCopy = makeMVCopies;
+                            ShowHelpMarker("Make a copy of motion vectors to use with OptiFG\n"
+                                           "For preventing corruptions that might happen");
 
                             bool makeDepthCopies = Config::Instance()->FGMakeDepthCopy.value_or_default();
                             if (ImGui::Checkbox("FG Make Depth Copies", &makeDepthCopies))
                                 Config::Instance()->FGMakeDepthCopy = makeDepthCopies;
+                            ShowHelpMarker("Make a copy of depth to use with OptiFG\n"
+                                           "For preventing corruptions that might happen");
+
+                            bool useMutexForPresent = Config::Instance()->FGUseMutexForSwaphain.value_or_default();
+                            if (ImGui::Checkbox("FG Use Mutex for Present", &useMutexForPresent))
+                                Config::Instance()->FGHudFixCloseAfterCallback = useMutexForPresent;
+                            ShowHelpMarker("Use mutex to prevent desync of FG and crashes\n"
+                                           "Disabling might improve the perf but decrase stability");
 
                             bool closeAfterCallback = Config::Instance()->FGHudFixCloseAfterCallback.value_or_default();
                             if (ImGui::Checkbox("FG Close CmdList After Callback", &closeAfterCallback))
                                 Config::Instance()->FGHudFixCloseAfterCallback = closeAfterCallback;
+                            ShowHelpMarker("Close OptiFG CmdList after swapchain callback\n"
+                                           "Mostly for debug purposes");
 
                             ImGui::PushItemWidth(95.0);
                             int rectLeft = Config::Instance()->FGRectLeft.value_or(0);
