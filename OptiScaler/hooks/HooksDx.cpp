@@ -670,10 +670,11 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                     }
                 }
 
-                if (Config::Instance()->FGHudFixCloseAfterCallback.value_or_default() && fIndex > 0)
-                {
+                if(fIndex > 0)
                     FrameGen_Dx12::fgHudlessFrameIndexes[fIndex] = 9999999999999;
 
+                if (Config::Instance()->FGHudFixCloseAfterCallback.value_or_default() && fIndex > 0)
+                {
                     result = FrameGen_Dx12::fgCommandList[fIndex]->Close();
                     LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
 
@@ -704,8 +705,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
 
                 // If fg is active but upscaling paused
                 if (!fgDispatchCalled || State::Instance().currentFeature == nullptr || State::Instance().FGchanged ||
-                    fgLastFGFrame == State::Instance().currentFeature->FrameCount() || !FrameGen_Dx12::fgIsActive ||
-                    State::Instance().currentFeature->FrameCount() == 0)
+                    fIndex < 0 || !FrameGen_Dx12::fgIsActive || State::Instance().currentFeature->FrameCount() == 0 || 
+                    FrameGen_Dx12::fgCommandList[fIndex] == nullptr)
                 {
                     LOG_WARN("Callback without hudless! frameID: {}", params->frameID);
 
@@ -1987,7 +1988,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         Config::Instance()->FGEnabled.value_or_default() && State::Instance().currentFeature != nullptr &&
         FrameGen_Dx12::fgTarget < State::Instance().currentFeature->FrameCount() && !State::Instance().FGchanged &&
         FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr &&
-        FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] >= 0) // If not captured
+        FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] == 9999999999999) // If not captured
     {
         if (FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] >= 0)
             FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] = -99999999;
