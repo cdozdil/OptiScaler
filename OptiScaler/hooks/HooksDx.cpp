@@ -692,9 +692,8 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                 }
 
                 // check for status
-                if (fIndex < 0 || !Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default() ||
-                    FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCommandList[fIndex] == nullptr ||
-                    FrameGen_Dx12::fgCommandQueue == nullptr || State::Instance().SCchanged)
+                if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default() ||
+                    FrameGen_Dx12::fgContext == nullptr || FrameGen_Dx12::fgCommandQueue == nullptr || State::Instance().SCchanged)
                 {
                     LOG_WARN("Cancel async dispatch");
                     fgDispatchCalled = false;
@@ -1990,20 +1989,41 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr &&
         FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] == 9999999999999) // If not captured
     {
-        if (FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] >= 0)
-            FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] = -99999999;
-
         LOG_WARN("Can't capture hudless, calling HudFix dispatch!");
         GetHudless(nullptr, fIndex);
     }
 
     HRESULT result;
+
+    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
         // Fixes RDR2, need to check other games
         // But at first place I have added this because of FFX documents
-        // Still not sure :/
-        //std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
+        std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
 
+        result = o_FGSCPresent(This, SyncInterval, Flags);
+        LOG_DEBUG("Result: {:X}", result);
+
+#ifdef USE_PRESENT_FOR_FT
+        float msDelta = 0.0;
+        auto now = Util::MillisecondsNow();
+
+        if (fgLastFrameTime != 0)
+        {
+            msDelta = now - fgLastFrameTime;
+            FrameGen_Dx12::AddFrameTime(msDelta);
+            LOG_DEBUG("Frametime: {0}", msDelta);
+        }
+
+        fgLastFrameTime = now;
+#else
+        LOG_DEBUG("");
+#endif
+
+        FrameGen_Dx12::upscaleRan = false;
+    }
+    else
+    {
         result = o_FGSCPresent(This, SyncInterval, Flags);
         LOG_DEBUG("Result: {:X}", result);
 
