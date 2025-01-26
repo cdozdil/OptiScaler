@@ -305,7 +305,8 @@ public:
 	CustomOptional<bool> FGHybridSpin{ false };
 	CustomOptional<bool> FGMakeDepthCopy{ true };
 	CustomOptional<bool> FGMakeMVCopy{ true };
-	CustomOptional<bool> FGHudFixCloseAfterCallback{ false };
+	CustomOptional<bool> FGHudFixCloseAfterCallback{ true };
+	CustomOptional<bool> FGUseMutexForSwaphain{ true };
 
 	// DLSS Enabler
 	std::optional<int> DE_FramerateLimit;			// off - vsync - number
