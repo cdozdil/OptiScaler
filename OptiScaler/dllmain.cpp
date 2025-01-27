@@ -2101,7 +2101,7 @@ static void CheckWorkingMode()
                 HooksDx::HookDx12();
             }
 
-            if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr/* && !State::Instance().isRunningOnLinux*/)
+            if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr)
                 HooksDx::HookDxgi();
 
             if (!isWorkingWithEnabler && (!Config::Instance()->FGUseFGSwapChain.value_or_default() || !Config::Instance()->OverlayMenu.value_or_default()) &&
@@ -2148,6 +2148,12 @@ static void CheckQuirks() {
     {
         State::Instance().gameQuirk = FMF2;
         LOG_INFO("Enabling a quirk for FMF2");
+    }
+    else if (exePathFilename == "RDR.exe" || exePathFilename == "PlayRDR.exe")
+    {
+        State::Instance().gameQuirk = RDR1;
+        Config::Instance()->FGUseFGSwapChain.set_volatile_value(false);
+        LOG_INFO("Enabling a quirk for RDR1 (Disable FSR-FG Swapchain)");
     }
 }
 
