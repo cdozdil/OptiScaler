@@ -2,6 +2,8 @@
 // Microsoft Visual C++ generated include file.
 // Used by OptiScaler.rc
 //
+#include "resource_build_date.h"
+
 #define VS_VERSION_INFO                 1
 
 // Next default values for new objects
@@ -21,7 +23,7 @@
 #define VER_MAJOR_VERSION   0
 #define VER_MINOR_VERSION   7
 #define VER_HOTFIX_VERSION  7
-#define VER_BUILD_NUMBER    5
+#define VER_BUILD_NUMBER    6
 
 #define VER_PRE_RELEASE     
 
@@ -31,7 +33,7 @@
 #define VER_PRODUCT_VERSION         VER_FILE_VERSION
 
 #ifdef VER_PRE_RELEASE
-#define VER_PRODUCT_VERSION_STR     STRINGIZE(VER_MAJOR_VERSION) "." STRINGIZE(VER_MINOR_VERSION) "." STRINGIZE(VER_HOTFIX_VERSION) "-pre" STRINGIZE(VER_BUILD_NUMBER) 
+#define VER_PRODUCT_VERSION_STR     STRINGIZE(VER_MAJOR_VERSION) "." STRINGIZE(VER_MINOR_VERSION) "." STRINGIZE(VER_HOTFIX_VERSION) "-pre" STRINGIZE(VER_BUILD_NUMBER)  " (" VER_BUILD_DATE ")"
 #else
 #define VER_PRODUCT_VERSION_STR     STRINGIZE(VER_MAJOR_VERSION) "." STRINGIZE(VER_MINOR_VERSION) "." STRINGIZE(VER_HOTFIX_VERSION) "-final"
 #endif // VER_PRE_RELEASE

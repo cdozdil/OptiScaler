@@ -15,7 +15,8 @@ typedef enum GameQuirk
 {
 	Other,
 	Cyberpunk,
-	FMF2
+	FMF2,
+	RDR1
 } GameQuirk;
 
 class State {
