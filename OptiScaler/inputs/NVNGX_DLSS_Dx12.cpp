@@ -799,7 +799,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
         State::Instance().currentFeature = deviceContext;
         evalCounter = 0;
 
-        FrameGen_Dx12::fgTarget = 10;
+        HooksDx::fgTarget = 10;
     }
     else
     {
@@ -1150,7 +1150,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         // first release everything
         if (changeBackendCounter == 1)
         {
-            if (FrameGen_Dx12::fgIsActive)
+            if (HooksDx::fgIsActive)
             {
                 FrameGen_Dx12::StopAndDestroyFGContext(false, false);
                 State::Instance().FGchanged = true;
@@ -1319,7 +1319,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
         // if initial feature can't be inited
         State::Instance().currentFeature = Dx12Contexts[handleId].get();
-        FrameGen_Dx12::fgTarget = 20;
+        HooksDx::fgTarget = 20;
 
         return NVSDK_NGX_Result_Success;
     }
@@ -1349,15 +1349,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     // FG Init || Disable    
     if (Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default())
     {
-        if (!State::Instance().FGchanged && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() && Config::Instance()->FGEnabled.value_or_default() &&
-            FfxApiProxy::InitFfxDx12() && !FrameGen_Dx12::fgIsActive && HooksDx::currentSwapchain != nullptr &&
+        if (!State::Instance().FGchanged && HooksDx::fgTarget < deviceContext->FrameCount() && Config::Instance()->FGEnabled.value_or_default() &&
+            FfxApiProxy::InitFfxDx12() && !HooksDx::fgIsActive && HooksDx::currentSwapchain != nullptr &&
             HooksDx::CurrentSwapchainFormat() != DXGI_FORMAT_UNKNOWN)
         {
             FrameGen_Dx12::CreateFGObjects(D3D12Device);
             FrameGen_Dx12::CreateFGContext(D3D12Device, deviceContext);
-            FrameGen_Dx12::fgTarget = deviceContext->FrameCount() + 3;
+            HooksDx::fgTarget = deviceContext->FrameCount() + 3;
         }
-        else if ((!Config::Instance()->FGEnabled.value_or_default() || State::Instance().FGchanged) && FrameGen_Dx12::fgIsActive)
+        else if ((!Config::Instance()->FGEnabled.value_or_default() || State::Instance().FGchanged) && HooksDx::fgIsActive)
         {
             FrameGen_Dx12::StopAndDestroyFGContext(State::Instance().SCchanged, false);
         }
@@ -1365,7 +1365,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         if (State::Instance().FGchanged)
         {
             LOG_DEBUG("(FG) Frame generation disabled for 20 frames");
-            FrameGen_Dx12::fgTarget = deviceContext->FrameCount() + 20;
+            HooksDx::fgTarget = deviceContext->FrameCount() + 20;
             FrameGen_Dx12::ResetIndexes();
             State::Instance().FGchanged = false;
         }
@@ -1432,8 +1432,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     InParameters->Get(NVSDK_NGX_Parameter_Output, &output);
     UINT frameIndex;
 
-    if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
-        Config::Instance()->FGEnabled.value_or_default() && FrameGen_Dx12::fgTarget <= deviceContext->FrameCount() &&
+    if (HooksDx::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
+        Config::Instance()->FGEnabled.value_or_default() && HooksDx::fgTarget <= deviceContext->FrameCount() &&
         FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
     {
         frameIndex = FrameGen_Dx12::NewFrame();
@@ -1554,11 +1554,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         HooksDx::dx12UpscaleTrig = true;
 
         // FG Dispatch
-        if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
-            Config::Instance()->FGEnabled.value_or_default() && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() &&
+        if (HooksDx::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
+            Config::Instance()->FGEnabled.value_or_default() && HooksDx::fgTarget < deviceContext->FrameCount() &&
             FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
         {
-            FrameGen_Dx12::upscaleRan = true;
+            HooksDx::upscaleRan = true;
             fgCallbackFrameIndex = frameIndex;
 
 #ifndef USE_PRESENT_FOR_FT
@@ -1643,14 +1643,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                             )
                         {
                             LOG_WARN("(FG) Cancel async dispatch fIndex: {}", fIndex);
-                            FrameGen_Dx12::fgSkipHudlessChecks = false;
+                            HooksDx::fgSkipHudlessChecks = false;
                             params->numGeneratedFrames = 0;
 
                             //return FFX_API_RETURN_OK;
                         }
 
                         // If fg is active but upscaling paused
-                        if (State::Instance().currentFeature == nullptr || !FrameGen_Dx12::fgIsActive ||
+                        if (State::Instance().currentFeature == nullptr || !HooksDx::fgIsActive ||
                             State::Instance().FGchanged || fgLastFGFrame == State::Instance().currentFeature->FrameCount() ||
                             State::Instance().currentFeature->FrameCount() == 0)
                         {
