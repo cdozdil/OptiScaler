@@ -9,6 +9,10 @@
 #include <dxgi1_6.h>
 #include <shared_mutex>
 
+// Use a dedicated Queue + CommandList for copying Depth + Velocity
+// Looks like it is causing issues so disabled 
+//#define USE_COPY_QUEUE_FOR_FG
+
 // According to https://gpuopen.com/manuals/fidelityfx_sdk/fidelityfx_sdk-page_techniques_super-resolution-interpolation/#id11 
 // Will use mutex to prevent race condutions
 #define USE_MUTEX_FOR_FFX
@@ -95,8 +99,9 @@ namespace FrameGen_Dx12
     inline ID3D12CommandAllocator* fgCommandAllocators[FG_BUFFER_SIZE] = { };
 
     inline ID3D12CommandQueue* fgCopyCommandQueue = nullptr;
-    inline ID3D12GraphicsCommandList* fgCopyCommandList = nullptr;
-    inline ID3D12CommandAllocator* fgCopyCommandAllocator = nullptr;
+    inline ID3D12GraphicsCommandList* fgCopyCommandList[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
+    inline ID3D12CommandAllocator* fgCopyCommandAllocator[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
+    inline ID3D12Fence* fgCopyFence = nullptr;
 
     inline UINT64 fgTarget = 10;
     inline FT_Dx12* fgFormatTransfer = nullptr;

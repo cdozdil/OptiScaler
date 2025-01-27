@@ -110,27 +110,6 @@
     <ClInclude Include="rcas\RCAS_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="menu\imgui_overlay_base.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="menu\imgui_overlay_dx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="menu\imgui_overlay_vk.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="menu\imgui_dx_base.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="menu\imgui_dx11.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="menu\imgui_dx12.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="menu\imgui_common.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="rcas\RCAS_Common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -353,6 +332,30 @@
     <ClInclude Include="include\imgui\misc\freetype\imgui_freetype.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="menu\font\Hack_Compressed.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="menu\menu_dx_base.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="menu\menu_common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="menu\menu_dx11.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="menu\menu_dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="menu\menu_overlay_base.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="menu\menu_overlay_dx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="menu\menu_overlay_vk.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -446,24 +449,6 @@
     <ClCompile Include="inputs\NVNGX.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="menu\imgui_overlay_base.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="menu\imgui_overlay_dx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="menu\imgui_overlay_vk.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="menu\imgui_dx_base.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="menu\imgui_dx11.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="menu\imgui_dx12.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="upscalers\dlssd\DLSSDFeature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -486,9 +471,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="upscalers\fsr31\FSR31Feature_Vk.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="menu\imgui_common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="upscalers\fsr31\FSR31Feature_Dx11.cpp">
@@ -570,6 +552,27 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="include\imgui\imgui_draw.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="menu\menu_common.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="menu\menu_dx_base.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="menu\menu_dx11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="menu\menu_dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="menu\menu_overlay_base.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="menu\menu_overlay_dx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="menu\menu_overlay_vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

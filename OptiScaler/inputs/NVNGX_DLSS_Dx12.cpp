@@ -21,10 +21,6 @@
 #include <ffx_framegeneration.h>
 #include <ankerl/unordered_dense.h>
 
-// Use a dedicated Queue + CommandList for copying Depth + Velocity
-// Looks like it is causing issues so disabled 
-//#define USE_COPY_QUEUE_FOR_FG
-
 // Use a dedicated Queue + CommandList for FG without hudfix
 // Looks like causing stutter/sync issues
 //#define USE_QUEUE_FOR_FG
@@ -1462,10 +1458,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         ID3D12GraphicsCommandList* commandList = nullptr;
 
 #ifdef USE_COPY_QUEUE_FOR_FG
-        FrameGen_Dx12::fgCopyCommandAllocator->Reset();
-        FrameGen_Dx12::fgCopyCommandList->Reset(FrameGen_Dx12::fgCopyCommandAllocator, nullptr);
-
-        commandList = FrameGen_Dx12::fgCopyCommandList;
+        FrameGen_Dx12::fgCopyCommandQueue->Wait(FrameGen_Dx12::fgCopyFence, frameIndex);
+        FrameGen_Dx12::fgCopyCommandAllocator[frameIndex]->Reset();
+        FrameGen_Dx12::fgCopyCommandList[frameIndex]->Reset(FrameGen_Dx12::fgCopyCommandAllocator[frameIndex], nullptr);
+        commandList = FrameGen_Dx12::fgCopyCommandList[frameIndex];
 #else
         commandList = InCmdList;
 #endif
@@ -1516,9 +1512,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         }
 
 #ifdef USE_COPY_QUEUE_FOR_FG
-        ID3D12CommandList* cl[1] = { nullptr };
-        result = FrameGen_Dx12::fgCopyCommandList->Close();
-        cl[0] = FrameGen_Dx12::fgCopyCommandList;
+        auto result = FrameGen_Dx12::fgCopyCommandList[frameIndex]->Close();
+        ID3D12CommandList* cl[] = { nullptr };
+        cl[0] = FrameGen_Dx12::fgCopyCommandList[frameIndex];
         FrameGen_Dx12::fgCopyCommandQueue->ExecuteCommandLists(1, cl);
 #endif
 
@@ -1586,6 +1582,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             else
             {
                 LOG_DEBUG("(FG) running, frame: {0}", deviceContext->FrameCount());
+
+#ifdef USE_MUTEX_FOR_FFX
+                LOG_TRACE("Waiting mutex");
+                std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
+#endif
 
                 // Update frame generation config
                 auto desc = output->GetDesc();
@@ -1775,17 +1776,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     dfgPrepare.frameTimeDelta = ftDelta;
                     dfgPrepare.viewSpaceToMetersFactor = meterFactor;
 
-#ifdef USE_MUTEX_FOR_FFX
-                    {
-                        LOG_TRACE("Waiting mutex");
-                        std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
-#endif
-
-                        retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
-
-#ifdef USE_MUTEX_FOR_FFX
-                    }
-#endif
+                    retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
 
                     if (retCode != FFX_API_RETURN_OK)
                         LOG_ERROR("(FG) D3D12_Dispatch result: {}({})", retCode, FfxApiProxy::ReturnCodeToString(retCode));
