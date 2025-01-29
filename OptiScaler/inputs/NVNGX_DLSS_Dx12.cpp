@@ -25,9 +25,7 @@
 // Looks like causing stutter/sync issues
 //#define USE_QUEUE_FOR_FG
 
-#ifndef USE_PRESENT_FOR_FT
 static UINT64 fgLastFrameTime = 0;
-#endif
 static UINT64 fgLastFGFrame = 0;
 static UINT fgCallbackFrameIndex = 0;
 
@@ -1585,7 +1583,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 #ifdef USE_MUTEX_FOR_FFX
                 LOG_TRACE("Waiting mutex");
-                std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
+                OwnedLockGuard lock(FrameGen_Dx12::ffxMutex, 1);
 #endif
 
                 // Update frame generation config

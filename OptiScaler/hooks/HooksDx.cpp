@@ -124,6 +124,7 @@ typedef struct HeapInfo
 } heap_info;
 
 /*
+// Vector version for lower heap usage
 typedef struct HeapInfo
 {
     SIZE_T cpuStart = NULL;
@@ -610,7 +611,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
         if (This != nullptr)
         {
             LOG_TRACE("Waiting mutex");
-            FrameGen_Dx12::ffxMutex.lock();
+            FrameGen_Dx12::ffxMutex.lock(1);
         }
 #endif
         FrameGen_Dx12::fgSkipHudlessChecks = true;
@@ -800,7 +801,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
 
             fgDispatchCalled = true;
 #ifdef USE_MUTEX_FOR_FFX
-            FrameGen_Dx12::ffxMutex.unlock();
+            FrameGen_Dx12::ffxMutex.unlockThis(1);
 #endif
             LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}, commandList: {3:X}", retCode, frame, fIndex, (size_t)dfgPrepare.commandList);
         }
@@ -1985,16 +1986,18 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
     bool fgIsActive = false;
 
-    // If dispatch still not called
+    // Check for if FG is active & first 50 frames are passed
     if (!fgDispatchCalled && Config::Instance()->FGHUDFix.value_or_default() && FrameGen_Dx12::fgIsActive &&
         Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
         Config::Instance()->FGEnabled.value_or_default() && State::Instance().currentFeature != nullptr &&
         FrameGen_Dx12::fgTarget < State::Instance().currentFeature->FrameCount() && !State::Instance().FGchanged &&
         FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
     {
+        // Enable mutex
         fgIsActive = true;
 
-        if (FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] == 9999999999999) // If not captured
+        // If hudless is not captured
+        if (FrameGen_Dx12::fgHUDlessCaptureCounter[fIndex] == 9999999999999) 
         {
             LOG_WARN("Can't capture hudless, calling HudFix dispatch!");
             GetHudless(nullptr, fIndex);
@@ -2002,10 +2005,12 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     }
 
 #ifdef USE_MUTEX_FOR_FFX
-    if (fgIsActive && Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    bool lockAccuired = false;
+    if (fgIsActive && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && FrameGen_Dx12::ffxMutex.getOwner() != 0)
     {
         LOG_TRACE("Waiting mutex");
-        FrameGen_Dx12::ffxMutex.lock();
+        FrameGen_Dx12::ffxMutex.lock(0);
+        lockAccuired = true;
     }
 #endif
 
@@ -2013,7 +2018,6 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     result = o_FGSCPresent(This, SyncInterval, Flags);
     LOG_DEBUG("Result: {:X}", result);
 
-#ifdef USE_PRESENT_FOR_FT
     float msDelta = 0.0;
     auto now = Util::MillisecondsNow();
 
@@ -2025,15 +2029,12 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     }
 
     fgLastFrameTime = now;
-#else
-    LOG_DEBUG("");
-#endif
 
     FrameGen_Dx12::upscaleRan = false;
 
 #ifdef USE_MUTEX_FOR_FFX
-    if (fgIsActive && Config::Instance()->FGUseMutexForSwaphain.value_or_default())
-        FrameGen_Dx12::ffxMutex.unlock();
+    if (fgIsActive && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && lockAccuired)
+        FrameGen_Dx12::ffxMutex.unlockThis(0);
 #endif
 
     return result;
@@ -2476,9 +2477,6 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
         if (result == FFX_API_RETURN_OK)
         {
-            //#ifdef USE_MUTEX_FOR_FFX
-                        // Hooking FG Swapchain present
-                        // for using ffxMutex during calls
             if (o_FGSCPresent == nullptr && *ppSwapChain != nullptr)
             {
                 void** pFactoryVTable = *reinterpret_cast<void***>(*ppSwapChain);
@@ -2497,7 +2495,6 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
                     DetourTransactionCommit();
                 }
             }
-            //#endif
 
             if (Config::Instance()->FGHybridSpin.value_or_default())
             {
@@ -2776,9 +2773,6 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
         if (result == FFX_API_RETURN_OK)
         {
-            //#ifdef USE_MUTEX_FOR_FFX
-            // Hooking FG Swapchain present
-            // for using ffxMutex during calls
             if (o_FGSCPresent == nullptr && *ppSwapChain != nullptr)
             {
                 void** pFactoryVTable = *reinterpret_cast<void***>(*ppSwapChain);
@@ -2797,7 +2791,6 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
                     DetourTransactionCommit();
                 }
             }
-            //#endif
 
             if (Config::Instance()->FGHybridSpin.value_or_default())
             {
@@ -3982,7 +3975,7 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 {
 #ifdef USE_MUTEX_FOR_FFX
     LOG_TRACE("Waiting mutex");
-    std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
+    OwnedLockGuard lock(FrameGen_Dx12::ffxMutex, 1);
 #endif
 
     MenuOverlayDx::CleanupRenderTarget(true, hWnd);
@@ -4359,7 +4352,7 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
 
 #ifdef USE_MUTEX_FOR_FFX
     if (useMutex)
-        FrameGen_Dx12::ffxMutex.lock();
+        FrameGen_Dx12::ffxMutex.lock(1);
 #endif
 
     if (!(shutDown || State::Instance().isShuttingDown) && FrameGen_Dx12::fgContext != nullptr)
@@ -4395,7 +4388,7 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
 
 #ifdef USE_MUTEX_FOR_FFX
     if (useMutex)
-        FrameGen_Dx12::ffxMutex.unlock();
+        FrameGen_Dx12::ffxMutex.unlockThis(1);
 #endif
 }
 
