@@ -1206,9 +1206,9 @@ bool MenuCommon::RenderMenu()
                     }
                 }
 
-                    // Frame Generation
+                // Frame Generation
                 if (Config::Instance()->OverlayMenu.value_or_default() && State::Instance().api == DX12 && !State::Instance().isWorkingAsNvngx)
-                    {
+                {
                     ImGui::SeparatorText("Frame Generation (OptiFG)");
 
                     auto fsrFgActive = Config::Instance()->FGUseFGSwapChain.value_or_default();
@@ -1462,27 +1462,27 @@ bool MenuCommon::RenderMenu()
                     }
 
                     if (State::Instance().DlssGIsActive) {
-                    if (!ReflexHooks::isReflexHooked()) {
-                        ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Reflex not hooked");
-                        ImGui::Text("If you are using an AMD/Intel GPU then make sure you have fakenvapi");
-                    }
-                    else if (!ReflexHooks::isDlssgDetected()) {
-                        ImGui::Text("Please select DLSS Frame Generation in the game options\nYou might need to select DLSS first");
-                    }
+                        if (!ReflexHooks::isReflexHooked()) {
+                            ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Reflex not hooked");
+                            ImGui::Text("If you are using an AMD/Intel GPU then make sure you have fakenvapi");
+                        }
+                        else if (!ReflexHooks::isDlssgDetected()) {
+                            ImGui::Text("Please select DLSS Frame Generation in the game options\nYou might need to select DLSS first");
+                        }
 
-                    if (State::Instance().api == DX12) {
-                        ImGui::Text("Current DLSSG state:");
-                        ImGui::SameLine();
-                        if (ReflexHooks::isDlssgDetected())
-                            ImGui::TextColored(ImVec4(0.f, 1.f, 0.25f, 1.f), "ON");
-                        else
-                            ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "OFF");
+                        if (State::Instance().api == DX12) {
+                            ImGui::Text("Current DLSSG state:");
+                            ImGui::SameLine();
+                            if (ReflexHooks::isDlssgDetected())
+                                ImGui::TextColored(ImVec4(0.f, 1.f, 0.25f, 1.f), "ON");
+                            else
+                                ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "OFF");
 
-                        if (bool makeDepthCopy = Config::Instance()->MakeDepthCopy.value_or_default(); ImGui::Checkbox("Fix broken visuals", &makeDepthCopy))
-                            Config::Instance()->MakeDepthCopy = makeDepthCopy;
-                        ShowHelpMarker("Makes a copy of the depth buffer\nCan fix broken visuals in some games on AMD GPUs under Windows\nCan cause stutters so best to use only when necessary");
+                            if (bool makeDepthCopy = Config::Instance()->MakeDepthCopy.value_or_default(); ImGui::Checkbox("Fix broken visuals", &makeDepthCopy))
+                                Config::Instance()->MakeDepthCopy = makeDepthCopy;
+                            ShowHelpMarker("Makes a copy of the depth buffer\nCan fix broken visuals in some games on AMD GPUs under Windows\nCan cause stutters so best to use only when necessary");
+                        }
                     }
-                }
                 }
 
                 if (currentFeature != nullptr) {
@@ -2480,20 +2480,6 @@ bool MenuCommon::RenderMenu()
                                 State::Instance().changeBackend = true;
                             }
                         }
-
-                        if (Config::Instance()->AdvancedSettings.value_or_default() && currentBackend == "dlss")
-                        {
-                            bool appIdOverride = Config::Instance()->UseGenericAppIdWithDlss.value_or_default();
-
-                            if (ImGui::Checkbox("Use Generic App Id with DLSS", &appIdOverride))
-                            {
-                                Config::Instance()->UseGenericAppIdWithDlss = appIdOverride;
-                            }
-
-                            ShowHelpMarker("Use generic appid with NGX\n"
-                                           "Fixes OptiScaler preset override not working with certain games\n"
-                                           "Requires a game restart.");
-                        }
                     }
                 }
 
@@ -2657,25 +2643,6 @@ bool MenuCommon::RenderMenu()
 
                     if (ImGui::Checkbox("Use Ffx Inputs", &ffxInputs))
                         Config::Instance()->FfxInputs = ffxInputs;
-                }
-                
-                if (advancedSettings)
-                {
-                    SeparatorWithHelpMarker("Enable DLSSG", "These settings will become active on next boot!");
-                    auto dlssgEnabled = Config::Instance()->DLSSGMod.value_or(false);
-                    if (ImGui::Checkbox("DLSSG Enabled", &dlssgEnabled))
-                    {
-                        Config::Instance()->DLSSGMod = dlssgEnabled;
-
-                        if (dlssgEnabled)
-                            Config::Instance()->FGUseFGSwapChain = false;
-                        else
-                            Config::Instance()->FGUseFGSwapChain.reset();
-                    }
-
-                    auto hagsSpoofing = Config::Instance()->SpoofHAGS.value_or(dlssgEnabled);
-                    if (ImGui::Checkbox("HAGS Spoofing Enabled", &hagsSpoofing))
-                        Config::Instance()->SpoofHAGS = hagsSpoofing;
                 }
 
                 ImGui::EndTable();
