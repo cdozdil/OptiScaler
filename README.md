@@ -150,8 +150,7 @@ Please check [this](Config.md) document for configuration parameters and explana
 If you can't open in-game menu:
 1. Please check that you have enabled DLSS, XeSS or FSR from game options
 2. Please try opening menu while you are in-game (while 3D rendering is happening)
-3. There is a 200 frame delay before enabling in-game menu, please wait 10-15 seconds before opening menu.
-4. If you are using RTSS (MSI Afterburner, CapFrameX), please enable this setting in RTSS and/or try updating RTSS.
+3. If you are using RTSS (MSI Afterburner, CapFrameX), please enable this setting in RTSS and/or try updating RTSS.
   ![image](https://github.com/cdozdil/OptiScaler/assets/35529761/8afb24ac-662a-40ae-a97c-837369e03fc7)
 
 Please check [this](Issues.md) document for the rest of the known issues and possible solutions for them. Also check the community [Wiki](https://github.com/cdozdil/OptiScaler/wiki) for possible game issues and HUDfix incompatible games.
