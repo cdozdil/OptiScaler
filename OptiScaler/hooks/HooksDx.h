@@ -58,6 +58,18 @@ namespace HooksDx
     inline int currentFrameIndex = 0;
     inline int previousFrameIndex = 0;
 
+    // FG
+    inline const int FG_BUFFER_SIZE = 4;
+
+    inline INT64 fgHUDlessCaptureCounter[FG_BUFFER_SIZE] = { 0, 0, 0, 0 };
+    inline UINT64 fgHudlessFrameIndexes[FG_BUFFER_SIZE] = { 9999999999999, 9999999999999, 9999999999999, 9999999999999 };
+    inline bool upscaleRan = false;
+    inline bool fgSkipHudlessChecks = false;
+    inline double fgFrameTime = 0.0;
+    inline std::deque<float> fgFrameTimes;
+    inline ID3D12CommandQueue* fgFSRCommandQueue = nullptr;
+    inline ID3D12CommandQueue* gameCommandQueue = nullptr;
+
     void UnHookDx();
     void HookDx11();
     void HookDx12();
@@ -80,27 +92,18 @@ namespace FrameGen_Dx12
     inline float ftDelta = 0.0;
     inline UINT reset = 0;
 
-    inline const int FG_BUFFER_SIZE = 4;
-    inline ID3D12Resource* paramVelocity[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
-    inline ID3D12Resource* paramDepth[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
-    inline ID3D12Resource* paramVelocityCopy[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
-    inline ID3D12Resource* paramDepthCopy[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
-    inline INT64 fgHUDlessCaptureCounter[FG_BUFFER_SIZE] = { 0, 0, 0, 0 };
-    inline UINT64 fgHudlessFrameIndexes[FG_BUFFER_SIZE] = { 9999999999999, 9999999999999, 9999999999999, 9999999999999 };
-    inline bool upscaleRan = false;
-    inline bool fgSkipHudlessChecks = false;
-    inline double fgFrameTime = 0.0;
-    inline std::deque<float> fgFrameTimes;
-    inline ID3D12CommandQueue* fgFSRCommandQueue = nullptr;
-    inline ID3D12CommandQueue* gameCommandQueue = nullptr;
+    inline ID3D12Resource* paramVelocity[HooksDx::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
+    inline ID3D12Resource* paramDepth[HooksDx::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
+    inline ID3D12Resource* paramVelocityCopy[HooksDx::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
+    inline ID3D12Resource* paramDepthCopy[HooksDx::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
 
     inline ID3D12CommandQueue* fgCommandQueue = nullptr;
-    inline ID3D12GraphicsCommandList* fgCommandList[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
-    inline ID3D12CommandAllocator* fgCommandAllocators[FG_BUFFER_SIZE] = { };
+    inline ID3D12GraphicsCommandList* fgCommandList[HooksDx::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
+    inline ID3D12CommandAllocator* fgCommandAllocators[HooksDx::FG_BUFFER_SIZE] = { };
 
     inline ID3D12CommandQueue* fgCopyCommandQueue = nullptr;
-    inline ID3D12GraphicsCommandList* fgCopyCommandList[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
-    inline ID3D12CommandAllocator* fgCopyCommandAllocator[FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
+    inline ID3D12GraphicsCommandList* fgCopyCommandList[HooksDx::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
+    inline ID3D12CommandAllocator* fgCopyCommandAllocator[HooksDx::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
     inline ID3D12Fence* fgCopyFence = nullptr;
 
     inline UINT64 fgTarget = 10;
