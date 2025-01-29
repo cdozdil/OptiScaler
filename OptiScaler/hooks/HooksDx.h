@@ -8,6 +8,7 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <shared_mutex>
+#include <OwnedMutex.h>
 
 // Use a dedicated Queue + CommandList for copying Depth + Velocity
 // Looks like it is causing issues so disabled 
@@ -16,10 +17,6 @@
 // According to https://gpuopen.com/manuals/fidelityfx_sdk/fidelityfx_sdk-page_techniques_super-resolution-interpolation/#id11 
 // Will use mutex to prevent race condutions
 #define USE_MUTEX_FOR_FFX
-
-#ifdef USE_MUTEX_FOR_FFX
-#define USE_PRESENT_FOR_FT
-#endif
 
 // Enable D3D12 Debug Layers
 //#define ENABLE_DEBUG_LAYER_DX12
@@ -111,7 +108,11 @@ namespace FrameGen_Dx12
     inline bool fgIsActive = false;
 
 #ifdef USE_MUTEX_FOR_FFX
-    inline std::shared_mutex ffxMutex;
+    // Owners
+    // 0: Swapchain Present
+    // 1: Framegen
+    // 2: Wrapped swapchain
+    inline OwnedMutex ffxMutex;
 #endif
 
     UINT NewFrame();

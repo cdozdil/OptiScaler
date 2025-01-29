@@ -2140,8 +2140,15 @@ static void CheckWorkingMode()
 
 static void CheckQuirks() {
     auto exePathFilename = Util::ExePath().filename();
+
+    LOG_INFO("Game's Exe: {0}", exePathFilename.string());
+
     if (exePathFilename == "Cyberpunk2077.exe") {
         State::Instance().gameQuirk = Cyberpunk;
+
+        // Disabled OptiFG for now
+        Config::Instance()->FGUseFGSwapChain.set_volatile_value(false);
+
         LOG_INFO("Enabling a quirk for Cyberpunk");
     }
     else if (exePathFilename == "FMF2-Win64-Shipping.exe")
@@ -2276,8 +2283,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             HookFSR2ExeInputs();
 
             spdlog::info("");
-
             CheckQuirks();
+            spdlog::info("");
+
             handle = GetModuleHandle(fsr3NamesW[0].c_str());
             if (handle != nullptr)
                 HookFSR3Inputs(handle);
@@ -2289,6 +2297,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             HookFSR3ExeInputs();
 
             State::Instance().skipDllLoadChecks = false;
+
+            // Initial state of FSR-FG
+            State::Instance().FsrFgIsActive = Config::Instance()->FGUseFGSwapChain.value_or_default();
+            State::Instance().DlssGIsActive = Config::Instance()->DLSSGMod.value_or_default();
 
             for (size_t i = 0; i < 300; i++)
             {
