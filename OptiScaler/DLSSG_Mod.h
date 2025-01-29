@@ -43,7 +43,10 @@ public:
 
         if (Config::Instance()->DLSSGMod.value_or_default() && !State::Instance().enablerAvailable) {
             if (_dll == nullptr)
-                _dll = LoadLibraryW(L"dlssg_to_fsr3_amd_is_better.dll");
+            {
+                auto dllPath = Util::DllPath().parent_path() / "dlssg_to_fsr3_amd_is_better.dll";
+                _dll = LoadLibraryW(dllPath.c_str());
+            }
 
             if (_dll != nullptr) {
                 _DLSSG_D3D12_Init = (PFN_D3D12_Init)GetProcAddress(_dll, "NVSDK_NGX_D3D12_Init");
@@ -74,7 +77,10 @@ public:
 
         if (Config::Instance()->DLSSGMod.value_or_default() && !State::Instance().enablerAvailable) {
             if (_dll == nullptr)
-                _dll = LoadLibraryW(L"dlssg_to_fsr3_amd_is_better.dll");
+            {
+                auto dllPath = Util::DllPath().parent_path() / "dlssg_to_fsr3_amd_is_better.dll";
+                _dll = LoadLibraryW(dllPath.c_str());
+            }
 
             if (_dll != nullptr) {
                 _DLSSG_VULKAN_Init = (PFN_VULKAN_Init)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_Init");
