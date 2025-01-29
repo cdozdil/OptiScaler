@@ -330,6 +330,7 @@ public:
 	CustomOptional<bool> Fsr2Inputs{ true };
 	CustomOptional<bool> Fsr2Pattern{ false };
 	CustomOptional<bool> Fsr3Inputs{ true };
+	CustomOptional<bool> Fsr3Pattern{ false };
 	CustomOptional<bool> FfxInputs{ true };
 
 	// Framerate

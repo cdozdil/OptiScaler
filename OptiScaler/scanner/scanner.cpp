@@ -46,9 +46,14 @@ uintptr_t FindPattern(uintptr_t startAddress, uintptr_t maxSize, const char* mas
 	return std::distance(dataStart, sig) + startAddress;
 }
 
-uintptr_t scanner::GetAddress(const std::wstring_view moduleName, const std::string_view pattern, ptrdiff_t offset)
+uintptr_t scanner::GetAddress(const std::wstring_view moduleName, const std::string_view pattern, ptrdiff_t offset, uintptr_t startAddress)
 {
-	uintptr_t address = FindPattern(GetModule(moduleName.data()).first, GetModule(moduleName.data()).second - GetModule(moduleName.data()).first, pattern.data());
+	uintptr_t address;
+	
+    if (startAddress != 0)
+        address = FindPattern(startAddress, GetModule(moduleName.data()).second - GetModule(moduleName.data()).first, pattern.data());
+    else
+        address = FindPattern(GetModule(moduleName.data()).first, GetModule(moduleName.data()).second - GetModule(moduleName.data()).first, pattern.data());
 
 	if ((GetModuleHandleW(moduleName.data()) != nullptr) && (address != NULL))
 	{
