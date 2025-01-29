@@ -606,14 +606,11 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
     {
         LOG_DEBUG("FrameCount: {0}, fgHudlessFrame: {1}, CommandList: {2:X}, fIndex: {3}", State::Instance().currentFeature->FrameCount(), fgHudlessFrame, (UINT64)This, fIndex);
 
-#ifdef USE_MUTEX_FOR_FFX
-
-        if (This != nullptr)
+        if (This != nullptr && Config::Instance()->FGUseMutexForSwaphain.value_or_default())
         {
             LOG_TRACE("Waiting mutex");
             FrameGen_Dx12::ffxMutex.lock(1);
         }
-#endif
         HooksDx::fgSkipHudlessChecks = true;
 
         // hudless captured for this frame
@@ -800,9 +797,10 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
             }
 
             fgDispatchCalled = true;
-#ifdef USE_MUTEX_FOR_FFX
+
+            if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
             FrameGen_Dx12::ffxMutex.unlockThis(1);
-#endif
+
             LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}, commandList: {3:X}", retCode, frame, fIndex, (size_t)dfgPrepare.commandList);
         }
     }
@@ -2003,7 +2001,6 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         }
     }
 
-#ifdef USE_MUTEX_FOR_FFX
     bool lockAccuired = false;
     if (fgIsActive && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && FrameGen_Dx12::ffxMutex.getOwner() != 0)
     {
@@ -2011,7 +2008,6 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         FrameGen_Dx12::ffxMutex.lock(0);
         lockAccuired = true;
     }
-#endif
 
     HRESULT result;
     result = o_FGSCPresent(This, SyncInterval, Flags);
@@ -2031,10 +2027,8 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
     HooksDx::upscaleRan = false;
 
-#ifdef USE_MUTEX_FOR_FFX
     if (fgIsActive && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && lockAccuired)
         FrameGen_Dx12::ffxMutex.unlockThis(0);
-#endif
 
     return result;
 }
@@ -3972,25 +3966,16 @@ static void ClearNextFrame()
 
 void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 {
-#ifdef USE_MUTEX_FOR_FFX
+    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    {
     LOG_TRACE("Waiting mutex");
-    OwnedLockGuard lock(FrameGen_Dx12::ffxMutex, 1);
-#endif
+        FrameGen_Dx12::ffxMutex.lock(1);
+    }
 
     MenuOverlayDx::CleanupRenderTarget(true, hWnd);
 
     if (FrameGen_Dx12::fgContext != nullptr)
-    {
         FrameGen_Dx12::StopAndDestroyFGContext(true, true, false);
-
-#ifndef USE_MUTEX_FOR_FFX
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
-#endif
-    }
-
-#ifndef USE_MUTEX_FOR_FFX
-    std::this_thread::sleep_for(std::chrono::milliseconds(250));
-#endif
 
     if (FrameGen_Dx12::fgSwapChainContext != nullptr)
     {
@@ -3999,11 +3984,10 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 
         FrameGen_Dx12::fgSwapChainContext = nullptr;
         fgSwapChains.erase(hWnd);
-
-#ifndef USE_MUTEX_FOR_FFX
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
-#endif
     }
+
+    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+        FrameGen_Dx12::ffxMutex.unlockThis(1);
 }
 
 UINT FrameGen_Dx12::NewFrame()
@@ -4011,7 +3995,6 @@ UINT FrameGen_Dx12::NewFrame()
     if (fgActiveFrameIndex == -1)
     {
         fgActiveFrameIndex = 0;
-        //fgHudlessFrameIndex = 0;
     }
     else
     {
@@ -4349,10 +4332,8 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
     HooksDx::fgSkipHudlessChecks = false;
     ResetIndexes();
 
-#ifdef USE_MUTEX_FOR_FFX
-    if (useMutex)
+    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && useMutex)
         FrameGen_Dx12::ffxMutex.lock(1);
-#endif
 
     if (!(shutDown || State::Instance().isShuttingDown) && FrameGen_Dx12::fgContext != nullptr)
     {
@@ -4385,10 +4366,8 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
     if ((shutDown || State::Instance().isShuttingDown) || destroy)
         ReleaseFGObjects();
 
-#ifdef USE_MUTEX_FOR_FFX
-    if (useMutex)
+    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && useMutex)
         FrameGen_Dx12::ffxMutex.unlockThis(1);
-#endif
 }
 
 void FrameGen_Dx12::CheckUpscaledFrame(ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InUpscaled)

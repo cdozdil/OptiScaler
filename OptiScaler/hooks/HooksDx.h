@@ -14,10 +14,6 @@
 // Looks like it is causing issues so disabled 
 //#define USE_COPY_QUEUE_FOR_FG
 
-// According to https://gpuopen.com/manuals/fidelityfx_sdk/fidelityfx_sdk-page_techniques_super-resolution-interpolation/#id11 
-// Will use mutex to prevent race condutions
-#define USE_MUTEX_FOR_FFX
-
 // Enable D3D12 Debug Layers
 //#define ENABLE_DEBUG_LAYER_DX12
 
@@ -107,13 +103,11 @@ namespace FrameGen_Dx12
     inline FT_Dx12* fgFormatTransfer = nullptr;
     inline bool fgIsActive = false;
 
-#ifdef USE_MUTEX_FOR_FFX
     // Owners
     // 0: Swapchain Present
     // 1: Framegen
     // 2: Wrapped swapchain
     inline OwnedMutex ffxMutex;
-#endif
 
     UINT NewFrame();
     UINT GetFrame();

@@ -1521,7 +1521,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             ResourceBarrier(commandList, paramDepth, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
 
             FrameGen_Dx12::paramDepth[frameIndex] = FrameGen_Dx12::paramDepthCopy[frameIndex];
-    }
+        }
         else
         {
             FrameGen_Dx12::paramDepth[frameIndex] = paramDepth;
@@ -1585,10 +1585,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             {
                 LOG_DEBUG("(FG) running, frame: {0}", deviceContext->FrameCount());
 
-#ifdef USE_MUTEX_FOR_FFX
-                LOG_TRACE("Waiting mutex");
-                OwnedLockGuard lock(FrameGen_Dx12::ffxMutex, 1);
-#endif
+                if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+                {
+                    LOG_TRACE("Waiting mutex");
+                    FrameGen_Dx12::ffxMutex.lock(1);
+                }
 
                 // Update frame generation config
                 auto desc = output->GetDesc();
@@ -1660,13 +1661,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 #ifdef USE_QUEUE_FOR_FG
                             auto allocator = FrameGen_Dx12::fgCommandAllocators[fIndex];
-                                auto result = allocator->Reset();
-                                result = FrameGen_Dx12::fgCommandList[fIndex]->Reset(allocator, nullptr);
+                            auto result = allocator->Reset();
+                            result = FrameGen_Dx12::fgCommandList[fIndex]->Reset(allocator, nullptr);
 #endif
 
-                                params->numGeneratedFrames = 0;
+                            params->numGeneratedFrames = 0;
                             //return FFX_API_RETURN_OK;
-                    }
+                        }
 
                         if (State::Instance().currentFeature != nullptr)
                             fgLastFGFrame = State::Instance().currentFeature->FrameCount();
@@ -1686,11 +1687,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                             {
                                 LOG_ERROR("(FG) Close result: {}", (UINT)result);
                             }
-            }
+                        }
 #endif
 
                         return dispatchResult;
-        };
+                    };
 
                 m_FrameGenerationConfig.onlyPresentGenerated = State::Instance().FGonlyGenerated; // check here
                 m_FrameGenerationConfig.frameID = deviceContext->FrameCount();
@@ -1785,8 +1786,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     else
                         LOG_DEBUG("(FG) Dispatch ok.");
                 }
-    }
-}
+
+                if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+                    FrameGen_Dx12::ffxMutex.unlockThis(1);
+            }
+        }
 
         methodResult = NVSDK_NGX_Result_Success;
     }
