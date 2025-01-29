@@ -2300,7 +2300,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             // Initial state of FSR-FG
             State::Instance().FsrFgIsActive = Config::Instance()->FGUseFGSwapChain.value_or_default();
-            State::Instance().DlssGIsActive = Config::Instance()->DLSSGMod.value_or_default();
+            State::Instance().DLSSGIsActive = Config::Instance()->DLSSGMod.value_or_default();
 
             for (size_t i = 0; i < 300; i++)
             {

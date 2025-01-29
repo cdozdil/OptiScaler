@@ -4,10 +4,15 @@
 
 #define DLSSG_MOD_ID_OFFSET 2000000
 
+typedef void(*PFN_EnableDebugView)(bool enable);
+
 class DLSSGMod
 {
 private:
     inline static HMODULE _dll = nullptr;
+    
+    inline static PFN_EnableDebugView _fsrDebugView = nullptr;
+
     inline static PFN_D3D12_Init _DLSSG_D3D12_Init = nullptr;
     inline static PFN_D3D12_Init_Ext _DLSSG_D3D12_Init_Ext = nullptr;
     inline static PFN_D3D12_Shutdown _DLSSG_D3D12_Shutdown = nullptr;
@@ -59,6 +64,7 @@ public:
                 _DLSSG_D3D12_GetFeatureRequirements = (PFN_D3D12_GetFeatureRequirements)GetProcAddress(_dll, "NVSDK_NGX_D3D12_GetFeatureRequirements");
                 _DLSSG_D3D12_EvaluateFeature = (PFN_D3D12_EvaluateFeature)GetProcAddress(_dll, "NVSDK_NGX_D3D12_EvaluateFeature");
                 _DLSSG_D3D12_PopulateParameters_Impl = (PFN_D3D12_PopulateParameters_Impl)GetProcAddress(_dll, "NVSDK_NGX_D3D12_PopulateParameters_Impl");
+                _fsrDebugView = (PFN_EnableDebugView)GetProcAddress(_dll, "FSRDebugView");
                 dx12_inited = true;
 
                 LOG_INFO("DLSSG Mod initialized for DX12");
@@ -95,6 +101,7 @@ public:
                 _DLSSG_VULKAN_GetFeatureRequirements = (PFN_VULKAN_GetFeatureRequirements)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_GetFeatureRequirements");
                 _DLSSG_VULKAN_EvaluateFeature = (PFN_VULKAN_EvaluateFeature)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_EvaluateFeature");
                 _DLSSG_VULKAN_PopulateParameters_Impl = (PFN_VULKAN_PopulateParameters_Impl)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_PopulateParameters_Impl");
+                _fsrDebugView = (PFN_EnableDebugView)GetProcAddress(_dll, "FSRDebugView");
                 vulkan_inited = true;
 
                 LOG_INFO("DLSSG Mod initialized for Vulkan");
@@ -107,6 +114,10 @@ public:
 
     static inline bool isLoaded() {
         return _dll != nullptr;
+    }
+
+    static inline PFN_EnableDebugView FSRDebugView() {
+        return _fsrDebugView;
     }
 
     static inline bool isDx12Available() {

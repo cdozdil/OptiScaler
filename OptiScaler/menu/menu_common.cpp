@@ -1,5 +1,7 @@
 #include "menu_common.h"
 
+#include "DLSSG_Mod.h"
+
 #include "font/Hack_Compressed.h"
 #include <nvapi/fakenvapi.h>
 #include <nvapi/ReflexHooks.h>
@@ -1451,7 +1453,7 @@ bool MenuCommon::RenderMenu()
                     }
                     ShowHelpMarker("These settings will become active on next boot!");
 
-                    if(Config::Instance()->DLSSGMod.value_or_default() && !State::Instance().NukemsFilesAvailable)
+                    if (Config::Instance()->DLSSGMod.value_or_default() && !State::Instance().NukemsFilesAvailable)
                         ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Please put dlssg_to_fsr3_amd_is_better.dll next to OptiScaler");
 
                     if (Config::Instance()->AdvancedSettings.value_or_default())
@@ -1461,7 +1463,13 @@ bool MenuCommon::RenderMenu()
                             Config::Instance()->SpoofHAGS = hagsSpoofing;
                     }
 
-                    if (State::Instance().DlssGIsActive) {
+                    if (DLSSGMod::isLoaded() && DLSSGMod::FSRDebugView() != nullptr)
+                    {
+                        if (ImGui::Checkbox("Enable Debug View", &State::Instance().DLSSGDebugView))
+                            DLSSGMod::FSRDebugView()(State::Instance().DLSSGDebugView);
+                    }
+
+                    if (State::Instance().DLSSGIsActive) {
                         if (!ReflexHooks::isReflexHooked()) {
                             ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Reflex not hooked");
                             ImGui::Text("If you are using an AMD/Intel GPU then make sure you have fakenvapi");
