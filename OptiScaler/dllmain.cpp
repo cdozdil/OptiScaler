@@ -2276,6 +2276,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             HookFSR2ExeInputs();
 
             spdlog::info("");
+            CheckQuirks();
+            spdlog::info("");
 
             CheckQuirks();
             handle = GetModuleHandle(fsr3NamesW[0].c_str());
@@ -2289,6 +2291,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             HookFSR3ExeInputs();
 
             State::Instance().skipDllLoadChecks = false;
+
+            // Initial state of FSR-FG
+            State::Instance().FsrFgIsActive = Config::Instance()->FGUseFGSwapChain.value_or_default();
+            State::Instance().DlssGIsActive = Config::Instance()->DLSSGMod.value_or_default();
 
             for (size_t i = 0; i < 300; i++)
             {

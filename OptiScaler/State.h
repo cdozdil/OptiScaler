@@ -28,6 +28,8 @@ public:
 
 	// DLSSG
 	GameQuirk gameQuirk = GameQuirk::Other;
+    bool NukemsFilesAvailable = false;
+	bool DlssGIsActive = false;
 
 	// FSR Common
 	float lastFsrCameraNear = 0.0f;
@@ -39,6 +41,7 @@ public:
 	bool SCchanged = false;
 	bool skipHeapCapture = false;
 	bool useThreadingForHeaps = false;
+	bool FsrFgIsActive = false;
 
 	bool FGcaptureResources = false;
 	int FGcapturedResourceCount = false;
