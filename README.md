@@ -6,18 +6,46 @@ While previously only DLSS2+ inputs were supported, newer versions also added su
 
 **Key aspects of OptiScaler:**
 - Enables usage of XeSS, FSR2, FSR3 and DLSS in upscaler-enabled games
-- Provides tuning options for DLSS users
-- Offers a wide range of tweaks and enhancements (RCAS & MAS, Output Scaling, DLSS Presets, Ratio & DRS Overrides etc.)
 - Allows users to fine-tune their upscaling experience
+- Offers a wide range of tweaks and enhancements (RCAS & MAS, Output Scaling, DLSS Presets, Ratio & DRS Overrides etc.)
 - With version 0.7.0 and above, added experimental frame generation support with possible HUDfix solution (OptiFG by FSR3)
 - Supports integration with [**Fakenvapi**](https://github.com/FakeMichau/fakenvapi) which enables Reflex hooking and injecting Anti-Lag 2 or LatencyFlex (LFX)  
 - Since version 0.7.7, support for Nukem's FSR FG mod [**dlssg-to-fsr3**](https://github.com/Nukem9/dlssg-to-fsr3) has also been added
 
 _[*] Regarding XeSS, Unreal Engine plugin does not provide depth, and as such renders XeSS hooking in UE pointless (recommended to set `XeSS=false` in nvngx.ini for such games). Regarding FSR inputs, FSR 3.1 is the first version with a fully standardised and forward-looking API and as such removed custom interfaces. Since FSR2 and FSR3 support custom interfaces, game support will depend on the developers' implementation. Always check the [Wiki](https://github.com/cdozdil/OptiScaler/wiki) Compatibility list for known issues._
 
+## How it works?
+OptiScaler implements the necessary API methods of DLSS2+ & NVAPI, XeSS and FSR2+ to act as a middleware. It interprets calls from the game and redirects them to the chosen upscaling backend, allowing games using one technology to use another of your choice.
+
 ## Official Discord Server: [DLSS2FSR](https://discord.gg/2JDHx6kcXB)
 
 *This project is based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2](https://github.com/PotatoOfDoom/CyberFSR2).*
+
+## Which APIs and Upscalers are Supported?
+Currently OptiScaler can be used with DirectX 11, DirectX 12 and Vulkan, but each API has different sets of upscaler options.
+
+#### For DirectX 12
+- XeSS (Default)
+- FSR2 2.1.2, 2.2.1
+- FSR3 3.1 (and FSR2 2.3.2)
+- DLSS
+
+
+#### For DirectX 11
+- FSR2 2.2.1 (Default, native DX11)
+- FSR3 3.1.2 (unofficial port to native DX11)
+- XeSS 1.x.x, FSR2 2.1.2, 2.2.1, FSR3 3.1 & FSR2 2.3.2 (via background DX12 processing) [*]
+- DLSS (native DX11)
+- XeSS 2.x (_soon™, but Intel ARC only_)
+
+_[*] These implementations use a background DirectX12 device to be able to use Dirext12-only upscalers. There is a 10-15% performance penalty for this method, but allows much more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has its own problems of which some were fixed by OptiScaler. **These implementations do not support Linux** and will result in a black screen._
+
+#### For Vulkan
+- FSR2 2.1.2 (Default), 2.2.1
+- FSR3 3.1 (and FSR2 2.3.2)
+- DLSS
+- XeSS 2.x (_soon™_)
+
 
 ## Installation
 > **Warning**: **Do not use this mod with online games.** It may trigger anti-cheat software and cause bans!
@@ -58,6 +86,9 @@ Alternatively, you can create a new folder called `plugins` and put other mod fi
 
 **Please don't rename the ini file, it should stay as `nvngx.ini`**.
 
+#### OptiFG (powered by FSR3 FG) + HUDfix (experimental HUD ghosting fix) 
+OptiFG was added with 0.7 builds and is only supported in DX12. It uses FSR3 FG to enable Frame Generation in every DX12 upscaler-enabled games, however it's not so simple. Since FSR3 FG doesn't support HUD interpolation itself, it requires a HUDless resource provided by the game to avoid HUD ghosting. In games without native FG, Optiscaler tries to find the HUDless resource when the user enables HUDfix. Depending on how the game draws its UI/HUD, Optiscaler may or may not be successful in fixing these issues. There are several options for tuning the search. A more detailed guide will be available in the [Wiki](https://github.com/cdozdil/OptiScaler/wiki), along with a list of HUDfix incompatible games.
+
 ### Install as `nvngx.dll` (deprecated, limited features, FG and Overlay Menu will be disabled)
 `Step-by-step installation:`
 1. Download the latest relase from [releases](https://github.com/cdozdil/OptiScaler/releases).
@@ -87,9 +118,6 @@ Alternatively, you can create a new folder called `plugins` and put other mod fi
 * Run `DisableSignatureOverride.reg` file 
 * Delete `EnableSignatureOverride.reg`, `DisableSignatureOverride.reg`, `nvngx.dll`, `nvngx.ini` files (if you used Fakenvapi and/or Nukem mod, then also delete `fakenvapi.ini`, `nvapi64.dll` and `dlssg_to_fsr3` files)
 * If there was a `libxess.dll` file and you have backed it up, delete the new file and restore the backed up file. If you overwrote/replaced the old file, **DO NOT** delete `libxess.dll` file. If there was no `libxess.dll` before, it's safe to delete. Same goes for FSR files (`amd_fidelityfx`).
-
-## How it works?
-OptiScaler implements the necessary API methods of DLSS2+ & NVAPI, XeSS and FSR2+ to act as a middleware. It interprets calls from the game and redirects them to the chosen upscaling backend, allowing games using one technology to use another of your choice.
 
 ## Features
 * Supports multiple upscaling backends (XeSS, FSR 2.1.2, FSR 2.2.1, FSR 3.1 and DLSS)
@@ -127,30 +155,6 @@ If you can't open in-game menu:
 
 Please check [this](Issues.md) document for the rest of the known issues and possible solutions for them. Also check the community [Wiki](https://github.com/cdozdil/OptiScaler/wiki) for possible game issues and HUDfix incompatible games.
 
-## Which APIs and Upscalers are Supported?
-Currently OptiScaler can be used with DirectX 11, DirectX 12 and Vulkan, but each API has different sets of upscaler options.
-
-#### For DirectX 12
-- XeSS (Default)
-- FSR2 2.1.2, 2.2.1
-- FSR3 3.1 (and FSR2 2.3.2)
-- DLSS
-
-
-#### For DirectX 11
-- FSR2 2.2.1 (Default, native DX11)
-- FSR3 3.1.2 (unofficial port to native DX11)
-- XeSS 1.x.x, FSR2 2.1.2, 2.2.1, FSR3 3.1 & FSR2 2.3.2 (via background DX12 processing) [*]
-- DLSS (native DX11)
-- XeSS 2.x (_soon™, but Intel ARC only_)
-
-_[*] These implementations use a background DirectX12 device to be able to use Dirext12-only upscalers. There is a 10-15% performance penalty for this method, but allows much more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has its own problems of which some were fixed by OptiScaler. **These implementations do not support Linux** and will result in a black screen._
-
-#### For Vulkan
-- FSR2 2.1.2 (Default), 2.2.1
-- FSR3 3.1 (and FSR2 2.3.2)
-- DLSS
-- XeSS 2.x (_soon™_)
 
 ## Compilation
 
