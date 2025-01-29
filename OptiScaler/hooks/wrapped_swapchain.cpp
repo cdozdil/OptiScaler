@@ -125,7 +125,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
 #ifdef USE_MUTEX_FOR_FFX
     LOG_TRACE("Waiting mutex");
-    std::unique_lock<std::shared_mutex> lock2(FrameGen_Dx12::ffxMutex);
+    OwnedLockGuard lock2(FrameGen_Dx12::ffxMutex, 3);
 #endif
 
     HRESULT result;
@@ -247,7 +247,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 
 #ifdef USE_MUTEX_FOR_FFX
     LOG_TRACE("Waiting mutex");
-    std::unique_lock<std::shared_mutex> lock2(FrameGen_Dx12::ffxMutex);
+    OwnedLockGuard lock2(FrameGen_Dx12::ffxMutex, 3);
 #endif
 
     HRESULT result;
@@ -353,29 +353,6 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
     LOG_DEBUG("Fullscreen: {}, pTarget: {:X}", Fullscreen, (size_t)pTarget);
     HRESULT result = S_OK;
 
-    //if (!Fullscreen && pTarget != nullptr)
-    //{
-    //    std::lock_guard<std::mutex> lock(_localMutex);
-    //    LOG_TRACE("Waiting mutex");
-    //    std::unique_lock<std::shared_mutex> lock2(FrameGen_Dx12::ffxMutex);
-
-    //    result = m_pReal->SetFullscreenState(Fullscreen, pTarget);
-
-    //    if (result != S_OK)
-    //        LOG_ERROR("result: {:X}", (UINT)result);
-    //    else
-    //        LOG_DEBUG("result: {:X}", result);
-
-    //    return result;
-    //}
-
-    //BOOL state;
-    //if (m_pReal->GetFullscreenState(&state, &pTarget) == S_OK && Fullscreen == state)
-    //{
-    //    LOG_DEBUG("result: {:X}", result);
-    //    return result;
-    //}
-
     {
 #ifdef USE_LOCAL_MUTEX
         // dlssg calls this from present it seems
@@ -386,7 +363,7 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 
 #ifdef USE_MUTEX_FOR_FFX
         LOG_TRACE("Waiting mutex");
-        std::unique_lock<std::shared_mutex> lock2(FrameGen_Dx12::ffxMutex);
+        OwnedLockGuard lock2(FrameGen_Dx12::ffxMutex, 3);
 #endif
 
         result = m_pReal->SetFullscreenState(Fullscreen, pTarget);
