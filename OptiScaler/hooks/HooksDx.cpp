@@ -676,10 +676,10 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                     }
                 }
 
-                if (fIndex > 0)
+                if (fIndex != -1)
                     HooksDx::fgHudlessFrameIndexes[fIndex] = 9999999999999;
 
-                if (Config::Instance()->FGHudFixCloseAfterCallback.value_or_default() && fIndex > 0)
+                if (Config::Instance()->FGHudFixCloseAfterCallback.value_or_default() && fIndex != -1)
                 {
                     result = FrameGen_Dx12::fgCommandList[fIndex]->Close();
                     LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
@@ -799,7 +799,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
             fgDispatchCalled = true;
 
             if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
-            FrameGen_Dx12::ffxMutex.unlockThis(1);
+                FrameGen_Dx12::ffxMutex.unlockThis(1);
 
             LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}, commandList: {3:X}", retCode, frame, fIndex, (size_t)dfgPrepare.commandList);
         }
@@ -3968,7 +3968,7 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 {
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
-    LOG_TRACE("Waiting mutex");
+        LOG_TRACE("Waiting mutex");
         FrameGen_Dx12::ffxMutex.lock(1);
     }
 
