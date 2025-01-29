@@ -1405,13 +1405,31 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 cameraVFov = 1.0471975511966f;
         }
 
+        // Do not use FSR frametime info
         //if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() || InParameters->Get("FSR.frameTimeDelta", &ftDelta) != NVSDK_NGX_Result_Success)
         //{
         //    if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &ftDelta) != NVSDK_NGX_Result_Success || ftDelta < 1.0f)
         //        ftDelta = FrameGen_Dx12::GetFrameTime();
         //}
 
-        ftDelta = FrameGen_Dx12::GetFrameTime();
+        // If FG swapchain is not active take frametime from here
+        if (!Config::Instance()->FGUseFGSwapChain.value_or_default())
+        {
+            float msDelta = 0.0;
+            auto now = Util::MillisecondsNow();
+
+            if (fgLastFrameTime != 0)
+                msDelta = now - fgLastFrameTime;
+
+            fgLastFrameTime = now;
+            LOG_DEBUG("Frametime: {0}", msDelta);
+            FrameGen_Dx12::AddFrameTime(msDelta);
+            ftDelta = msDelta;
+        }
+        else
+        {
+            ftDelta = FrameGen_Dx12::GetFrameTime();
+        }
 
         LOG_DEBUG("FrameTimeDeltaInMsec: {0}", FrameGen_Dx12::ftDelta);
 
@@ -1503,7 +1521,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             ResourceBarrier(commandList, paramDepth, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
 
             FrameGen_Dx12::paramDepth[frameIndex] = FrameGen_Dx12::paramDepthCopy[frameIndex];
-        }
+    }
         else
         {
             FrameGen_Dx12::paramDepth[frameIndex] = paramDepth;
@@ -1558,20 +1576,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         {
             FrameGen_Dx12::upscaleRan = true;
             fgCallbackFrameIndex = frameIndex;
-
-#ifndef USE_PRESENT_FOR_FT
-            float msDelta = 0.0;
-            auto now = Util::MillisecondsNow();
-
-            if (fgLastFrameTime != 0)
-            {
-                msDelta = now - fgLastFrameTime;
-                LOG_DEBUG("(FG) msDelta: {0}", msDelta);
-            }
-
-            fgLastFrameTime = now;
-            FrameGen_Dx12::fgFrameTime = msDelta;
-#endif
 
             if (Config::Instance()->FGHUDFix.value_or_default())
             {
@@ -1656,13 +1660,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 #ifdef USE_QUEUE_FOR_FG
                             auto allocator = FrameGen_Dx12::fgCommandAllocators[fIndex];
-                            auto result = allocator->Reset();
-                            result = FrameGen_Dx12::fgCommandList[fIndex]->Reset(allocator, nullptr);
+                                auto result = allocator->Reset();
+                                result = FrameGen_Dx12::fgCommandList[fIndex]->Reset(allocator, nullptr);
 #endif
 
-                            params->numGeneratedFrames = 0;
+                                params->numGeneratedFrames = 0;
                             //return FFX_API_RETURN_OK;
-                        }
+                    }
 
                         if (State::Instance().currentFeature != nullptr)
                             fgLastFGFrame = State::Instance().currentFeature->FrameCount();
@@ -1682,11 +1686,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                             {
                                 LOG_ERROR("(FG) Close result: {}", (UINT)result);
                             }
-                        }
+            }
 #endif
 
                         return dispatchResult;
-                    };
+        };
 
                 m_FrameGenerationConfig.onlyPresentGenerated = State::Instance().FGonlyGenerated; // check here
                 m_FrameGenerationConfig.frameID = deviceContext->FrameCount();
@@ -1781,8 +1785,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                     else
                         LOG_DEBUG("(FG) Dispatch ok.");
                 }
-            }
-        }
+    }
+}
 
         methodResult = NVSDK_NGX_Result_Success;
     }
