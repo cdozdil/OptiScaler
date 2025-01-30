@@ -694,7 +694,8 @@ void MenuCommon::AddResourceBarrier(std::string name, CustomOptional<int32_t, B>
 template <bool B>
 void MenuCommon::AddRenderPreset(std::string name, CustomOptional<uint32_t, B>* value)
 {
-    const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G" };
+    const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G", 
+                             "PRESET H", "PRESET I", "PRESET J", "PRESET K", "PRESET L", "PRESET M", "PRESET N", "PRESET O" };
     const std::string presetsDesc[] = { "Whatever the game uses",
         "Intended for Performance/Balanced/Quality modes.\nAn older variant best suited to combat ghosting for elements with missing inputs, such as motion vectors.",
         "Intended for Ultra Performance mode.\nSimilar to Preset A but for Ultra Performance mode.",
@@ -705,7 +706,7 @@ void MenuCommon::AddRenderPreset(std::string name, CustomOptional<uint32_t, B>* 
         "Unused"
     };
 
-    PopulateCombo(name, value, presets, presetsDesc, 8);
+    PopulateCombo(name, value, presets, presetsDesc, 16);
 }
 
 template <bool B>
