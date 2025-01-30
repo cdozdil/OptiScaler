@@ -16,7 +16,8 @@ typedef enum GameQuirk
 	Other,
 	Cyberpunk,
 	FMF2,
-	RDR1
+	RDR1,
+	Banishers
 } GameQuirk;
 
 class State {

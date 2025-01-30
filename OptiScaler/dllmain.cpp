@@ -2148,19 +2148,26 @@ static void CheckQuirks() {
 
         // Disabled OptiFG for now
         Config::Instance()->FGUseFGSwapChain.set_volatile_value(false);
+        Config::Instance()->DLSSGMod.set_volatile_value(true);
 
-        LOG_INFO("Enabling a quirk for Cyberpunk");
+        LOG_INFO("Enabling a quirk for Cyberpunk (Disable FSR-FG Swapchain & enable DLSS-G fix)");
     }
     else if (exePathFilename == "FMF2-Win64-Shipping.exe")
     {
         State::Instance().gameQuirk = FMF2;
-        LOG_INFO("Enabling a quirk for FMF2");
+        LOG_INFO("Enabling a quirk for FMF2 (Disable FSR3 Hooks)");
     }
     else if (exePathFilename == "RDR.exe" || exePathFilename == "PlayRDR.exe")
     {
         State::Instance().gameQuirk = RDR1;
         Config::Instance()->FGUseFGSwapChain.set_volatile_value(false);
         LOG_INFO("Enabling a quirk for RDR1 (Disable FSR-FG Swapchain)");
+    }
+    else if (exePathFilename == "Banishers-Win64-Shipping.exe")
+    {
+        State::Instance().gameQuirk = Banishers;
+        Config::Instance()->Fsr2Pattern.set_volatile_value(false);
+        LOG_INFO("Enabling a quirk for Banishers (Disable FSR2 Inputs)");
     }
 }
 
@@ -2213,6 +2220,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             State::Instance().isRunningOnLinux = IsRunningOnWine();
             State::Instance().isRunningOnDXVK = State::Instance().isRunningOnLinux;
             skipGetModuleHandle = false;
+
+            spdlog::info("");
+            CheckQuirks();
 
             // Check if real DLSS available
             if (Config::Instance()->DLSSEnabled.value_or_default())
@@ -2280,11 +2290,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             if (handle != nullptr)
                 HookFSR2Dx12Inputs(handle);
 
-            HookFSR2ExeInputs();
+            spdlog::info("");
 
-            spdlog::info("");
-            CheckQuirks();
-            spdlog::info("");
+            HookFSR2ExeInputs();
 
             handle = GetModuleHandle(fsr3NamesW[0].c_str());
             if (handle != nullptr)
