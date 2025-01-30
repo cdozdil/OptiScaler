@@ -51,7 +51,7 @@ uintptr_t scanner::GetAddress(const std::wstring_view moduleName, const std::str
 	uintptr_t address;
 	
     if (startAddress != 0)
-        address = FindPattern(startAddress, GetModule(moduleName.data()).second - GetModule(moduleName.data()).first, pattern.data());
+        address = FindPattern(startAddress, GetModule(moduleName.data()).second - startAddress, pattern.data());
     else
         address = FindPattern(GetModule(moduleName.data()).first, GetModule(moduleName.data()).second - GetModule(moduleName.data()).first, pattern.data());
 
