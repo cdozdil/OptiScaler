@@ -1587,7 +1587,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
                 {
-                    LOG_TRACE("Waiting mutex");
+                    LOG_DEBUG("Waiting ffxMutex 1");
                     FrameGen_Dx12::ffxMutex.lock(1);
                 }
 

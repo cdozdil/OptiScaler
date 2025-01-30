@@ -608,7 +608,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
 
         if (This != nullptr && Config::Instance()->FGUseMutexForSwaphain.value_or_default())
         {
-            LOG_TRACE("Waiting mutex");
+            LOG_DEBUG("Waiting ffxMutex 1");
             FrameGen_Dx12::ffxMutex.lock(1);
         }
         HooksDx::fgSkipHudlessChecks = true;
@@ -1957,7 +1957,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 {
     // Disabled, was causing freezes at games launch & state changes
     // std::unique_lock<std::shared_mutex> lock(FrameGen_Dx12::ffxMutex);
-    //LOG_TRACE("Waiting mutex");
+    //LOG_TRACE("Waiting ffxMutex");
     //std::shared_lock<std::shared_mutex> lockPresent(presentMutex);
 
     if (State::Instance().isShuttingDown)
@@ -2008,7 +2008,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     bool lockAccuired = false;
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && FrameGen_Dx12::ffxMutex.getOwner() != 2)
     {
-        LOG_TRACE("Waiting mutex");
+        LOG_DEBUG("Waiting ffxMutex 2");
         FrameGen_Dx12::ffxMutex.lock(2);
         lockAccuired = true;
     }
@@ -3972,7 +3972,7 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 {
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
-        LOG_TRACE("Waiting mutex");
+        LOG_DEBUG("Waiting ffxMutex 1");
         FrameGen_Dx12::ffxMutex.lock(1);
     }
 
@@ -4337,7 +4337,10 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
     ResetIndexes();
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && useMutex)
+    {
+        LOG_DEBUG("Waiting ffxMutex 1");
         FrameGen_Dx12::ffxMutex.lock(1);
+    }
 
     if (!(shutDown || State::Instance().isShuttingDown) && FrameGen_Dx12::fgContext != nullptr)
     {
