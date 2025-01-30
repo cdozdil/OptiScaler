@@ -104,9 +104,9 @@ namespace FrameGen_Dx12
     inline bool fgIsActive = false;
 
     // Owners
-    // 0: Swapchain Present
     // 1: Framegen
-    // 2: Wrapped swapchain
+    // 2: Swapchain Present <---
+    // 3: Wrapped swapchain
     inline OwnedMutex ffxMutex;
 
     UINT NewFrame();

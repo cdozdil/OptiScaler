@@ -1982,8 +1982,6 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         return result;
     }
 
-    bool fgIsActive = false;
-
     // If dispatch still not called
     if (!fgDispatchCalled && Config::Instance()->FGHUDFix.value_or_default() && FrameGen_Dx12::fgIsActive &&
         Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
@@ -2002,10 +2000,10 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     }
 
     bool lockAccuired = false;
-    if (fgIsActive && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && FrameGen_Dx12::ffxMutex.getOwner() != 0)
+    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && FrameGen_Dx12::ffxMutex.getOwner() != 2)
     {
         LOG_TRACE("Waiting mutex");
-        FrameGen_Dx12::ffxMutex.lock(0);
+        FrameGen_Dx12::ffxMutex.lock(2);
         lockAccuired = true;
     }
 
@@ -2027,8 +2025,8 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
     HooksDx::upscaleRan = false;
 
-    if (fgIsActive && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && lockAccuired)
-        FrameGen_Dx12::ffxMutex.unlockThis(0);
+    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && lockAccuired)
+        FrameGen_Dx12::ffxMutex.unlockThis(2);
 
     return result;
 }
