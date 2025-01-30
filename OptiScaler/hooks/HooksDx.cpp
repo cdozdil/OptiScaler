@@ -606,7 +606,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
     {
         LOG_DEBUG("FrameCount: {0}, fgHudlessFrame: {1}, CommandList: {2:X}, fIndex: {3}", State::Instance().currentFeature->FrameCount(), fgHudlessFrame, (UINT64)This, fIndex);
 
-        if (This != nullptr && Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+        if (This != nullptr && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && FrameGen_Dx12::ffxMutex.getOwner() != 2)
         {
             LOG_DEBUG("Waiting ffxMutex 1");
             FrameGen_Dx12::ffxMutex.lock(1);
@@ -2006,7 +2006,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     }
 
     bool lockAccuired = false;
-    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && FrameGen_Dx12::ffxMutex.getOwner() != 2)
+    if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && FrameGen_Dx12::ffxMutex.getOwner() != 2)
     {
         LOG_DEBUG("Waiting ffxMutex 2");
         FrameGen_Dx12::ffxMutex.lock(2);
@@ -2031,7 +2031,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
     HooksDx::upscaleRan = false;
 
-    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && lockAccuired)
+    if (lockAccuired && Config::Instance()->FGUseMutexForSwaphain.value_or_default())
         FrameGen_Dx12::ffxMutex.unlockThis(2);
 
     return result;
