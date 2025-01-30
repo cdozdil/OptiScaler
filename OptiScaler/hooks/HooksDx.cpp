@@ -664,11 +664,6 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                 // Get frame index from frame id
                 for (size_t i = 0; i < HooksDx::FG_BUFFER_SIZE; i++)
                 {
-                    // If skipped last interpolated continue with new one
-                    // trying to mimic pre66 behavior
-                    //if (FrameGen_Dx12::fgHudlessFrameIndexes[i] != 9999999999999 && FrameGen_Dx12::fgHudlessFrameIndexes[i] >= params->frameID)
-                    //    fIndex = i;
-
                     if (HooksDx::fgHudlessFrameIndexes[i] == params->frameID)
                     {
                         fIndex = i;
@@ -677,23 +672,37 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                 }
 
                 if (fIndex != -1)
+                {
                     HooksDx::fgHudlessFrameIndexes[fIndex] = 9999999999999;
 
-                if (Config::Instance()->FGHudFixCloseAfterCallback.value_or_default() && fIndex != -1)
-                {
-                    result = FrameGen_Dx12::fgCommandList[fIndex]->Close();
-                    LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
+                    if (Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
+                    {
+                        result = FrameGen_Dx12::fgCommandList[fIndex]->Close();
+                        LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
 
-                    // if there is command list error return ERROR
-                    if (result == S_OK)
-                    {
-                        ID3D12CommandList* cl[1] = { nullptr };
-                        cl[0] = FrameGen_Dx12::fgCommandList[fIndex];
-                        HooksDx::gameCommandQueue->ExecuteCommandLists(1, cl);
+                        // if there is command list error return ERROR
+                        if (result == S_OK)
+                        {
+                            ID3D12CommandList* cl[1] = { nullptr };
+                            cl[0] = FrameGen_Dx12::fgCommandList[fIndex];
+                            HooksDx::gameCommandQueue->ExecuteCommandLists(1, cl);
+                        }
+                        else
+                        {
+                            return FFX_API_RETURN_ERROR;
+                        }
                     }
-                    else
+
+                    // If it's too late for FG
+                    for (size_t i = 0; i < HooksDx::FG_BUFFER_SIZE; i++)
                     {
-                        return FFX_API_RETURN_ERROR;
+                        if (HooksDx::fgHudlessFrameIndexes[i] != 9999999999999 && HooksDx::fgHudlessFrameIndexes[i] > params->frameID)
+                        {
+                            LOG_WARN("Too late for FG, frameID: {}, fIndex: {}", params->frameID, fIndex);
+                            fIndex = -1;
+                            State::Instance().FGchanged = true;
+                            break;
+                        }
                     }
                 }
 
@@ -1989,9 +1998,6 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         FrameGen_Dx12::fgTarget < State::Instance().currentFeature->FrameCount() && !State::Instance().FGchanged &&
         FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
     {
-        // Enable mutex
-        fgIsActive = true;
-
         if (HooksDx::fgHUDlessCaptureCounter[fIndex] == 9999999999999) // If not captured
         {
             LOG_WARN("Can't capture hudless, calling HudFix dispatch!");
