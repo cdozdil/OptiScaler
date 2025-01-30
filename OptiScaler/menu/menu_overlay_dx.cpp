@@ -439,7 +439,6 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
             _showRenderImGuiDebugOnce = true;
 
             ImGui_ImplDX12_NewFrame();
-            ImGui_ImplWin32_NewFrame();
 
             if (MenuOverlayBase::RenderMenu())
             {

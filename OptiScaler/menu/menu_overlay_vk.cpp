@@ -465,7 +465,6 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
 
     {
         ImGui_ImplVulkan_NewFrame();
-        ImGui_ImplWin32_NewFrame();
 
         if (MenuOverlayBase::RenderMenu())
         {

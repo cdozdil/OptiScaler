@@ -758,61 +758,8 @@ static ImVec4 toneMapColor(const ImVec4& color)
     return ImVec4(color.x * scale, color.y * scale, color.z * scale, color.w);
 }
 
-bool MenuCommon::RenderMenu()
+static void MenuHdrCheck(ImGuiIO io)
 {
-    if (!_isInited)
-        return false;
-
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-
-    // Handle Inputs
-    {
-        if (inputFps)
-            Config::Instance()->ShowFps = !Config::Instance()->ShowFps.value_or_default();
-
-        if (inputFpsCycle && Config::Instance()->ShowFps.value_or_default())
-            Config::Instance()->FpsOverlayType = (Config::Instance()->FpsOverlayType.value_or_default() + 1) % 5;
-
-        if (inputMenu)
-        {
-            _isVisible = !_isVisible;
-
-            LOG_DEBUG("Menu key pressed, {0}", _isVisible ? "opening ImGui" : "closing ImGui");
-
-            if (_isVisible)
-            {
-                Config::Instance()->ReloadFakenvapi();
-                auto dllPath = Util::DllPath().parent_path() / "dlssg_to_fsr3_amd_is_better.dll";
-                State::Instance().NukemsFilesAvailable = std::filesystem::exists(dllPath);
-
-                if (pfn_ClipCursor_hooked)
-                {
-                    _ssRatio = 0;
-
-                    if (GetClipCursor(&_cursorLimit))
-                        pfn_ClipCursor(nullptr);
-
-                    GetCursorPos(&_lastPoint);
-                }
-            }
-            else
-            {
-                if (pfn_ClipCursor_hooked)
-                    pfn_ClipCursor(&_cursorLimit);
-
-                _showMipmapCalcWindow = false;
-            }
-
-            io.MouseDrawCursor = _isVisible;
-            io.WantCaptureKeyboard = _isVisible;
-            io.WantCaptureMouse = _isVisible;
-        }
-
-        inputFps = false;
-        inputMenu = false;
-        inputFpsCycle = false;
-    }
-
     // If game is using HDR, apply tone mapping to the ImGui style
     if (State::Instance().isHdrActive)
     {
@@ -841,7 +788,10 @@ bool MenuCommon::RenderMenu()
             hdrTonemapApplied = false;
         }
     }
+}
 
+static void MenuSizeCheck(ImGuiIO io)
+{
     // Calculate menu scale according to display resolution
     {
         if (!Config::Instance()->MenuScale.has_value())
@@ -865,10 +815,78 @@ bool MenuCommon::RenderMenu()
         if (Config::Instance()->MenuScale.value() > 2.0f)
             Config::Instance()->MenuScale = 2.0f;
     }
+}
+
+bool MenuCommon::RenderMenu()
+{
+    if (!_isInited)
+        return false;
+
+    ImGui_ImplWin32_NewFrame();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    // Handle Inputs
+    {
+        if (inputFps)
+        {
+            Config::Instance()->ShowFps = !Config::Instance()->ShowFps.value_or_default();
+            inputFps = false;
+            return false;
+        }
+
+        if (inputFpsCycle && Config::Instance()->ShowFps.value_or_default())
+            Config::Instance()->FpsOverlayType = (Config::Instance()->FpsOverlayType.value_or_default() + 1) % 5;
+
+        if (inputMenu)
+        {
+            inputMenu = false;
+            _isVisible = !_isVisible;
+
+            LOG_DEBUG("Menu key pressed, {0}", _isVisible ? "opening ImGui" : "closing ImGui");
+
+            if (_isVisible)
+            {
+                Config::Instance()->ReloadFakenvapi();
+                auto dllPath = Util::DllPath().parent_path() / "dlssg_to_fsr3_amd_is_better.dll";
+                State::Instance().NukemsFilesAvailable = std::filesystem::exists(dllPath);
+
+                io.ConfigFlags = ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
+
+                if (pfn_ClipCursor_hooked)
+                {
+                    _ssRatio = 0;
+
+                    if (GetClipCursor(&_cursorLimit))
+                        pfn_ClipCursor(nullptr);
+
+                    GetCursorPos(&_lastPoint);
+                }
+            }
+            else
+            {
+                io.ConfigFlags = ImGuiConfigFlags_NavNoCaptureKeyboard | ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
+
+                if (pfn_ClipCursor_hooked)
+                    pfn_ClipCursor(&_cursorLimit);
+
+                _showMipmapCalcWindow = false;
+            }
+
+            io.MouseDrawCursor = _isVisible;
+            io.WantCaptureKeyboard = _isVisible;
+            io.WantCaptureMouse = _isVisible;
+
+            return false;
+        }
+
+        inputFpsCycle = false;
+    }
 
     // If Fps overlay is visible
     if (Config::Instance()->ShowFps.value_or_default())
     {
+        MenuHdrCheck(io);
+        MenuSizeCheck(io);
         ImGui::NewFrame();
 
         if (Config::Instance()->MenuScale.value_or_default() > 1.0f)
@@ -1029,27 +1047,21 @@ bool MenuCommon::RenderMenu()
 
         if (!_isVisible)
         {
-            // Disable gamepad & kayboard capturing
-            if ((io.ConfigFlags & ImGuiConfigFlags_NavNoCaptureKeyboard) == 0)
-                io.ConfigFlags = ImGuiConfigFlags_NavNoCaptureKeyboard | ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
-
+            ImGui::EndFrame();
             return true;
         }
     }
 
     if (!_isVisible)
-    {
-        // Disable gamepad & kayboard capturing
-        if ((io.ConfigFlags & ImGuiConfigFlags_NavNoCaptureKeyboard) == 0)
-            io.ConfigFlags = ImGuiConfigFlags_NavNoCaptureKeyboard | ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
-
         return false;
-    }
 
     {
-        // Enable gamepad & kayboard capturing if menu is visible
-        if ((io.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard) == 0)
-            io.ConfigFlags = ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
+        if (!Config::Instance()->ShowFps.value_or_default())
+        {
+            MenuHdrCheck(io);
+            MenuSizeCheck(io);
+            ImGui::NewFrame();
+        }
 
         ImGuiWindowFlags flags = 0;
         flags |= ImGuiWindowFlags_NoSavedSettings;
@@ -1080,9 +1092,6 @@ bool MenuCommon::RenderMenu()
             style.MouseCursorScale = 1.0f;
             CopyMemory(style.Colors, styleold.Colors, sizeof(style.Colors)); // Restore colors		
         }
-
-        if (!Config::Instance()->ShowFps.value_or_default())
-            ImGui::NewFrame();
 
         if (Config::Instance()->MenuScale.value_or_default() <= 1.0)
             ImGui::PushFont(_optiFont);
