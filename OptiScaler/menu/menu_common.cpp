@@ -831,7 +831,6 @@ bool MenuCommon::RenderMenu()
     if (!_isInited)
         return false;
 
-    ImGui_ImplWin32_NewFrame();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
     // Handle Inputs
@@ -894,6 +893,7 @@ bool MenuCommon::RenderMenu()
     // If Fps overlay is visible
     if (Config::Instance()->ShowFps.value_or_default())
     {
+        ImGui_ImplWin32_NewFrame();
         MenuHdrCheck(io);
         MenuSizeCheck(io);
         ImGui::NewFrame();
@@ -1067,6 +1067,7 @@ bool MenuCommon::RenderMenu()
     {
         if (!Config::Instance()->ShowFps.value_or_default())
         {
+            ImGui_ImplWin32_NewFrame();
             MenuHdrCheck(io);
             MenuSizeCheck(io);
             ImGui::NewFrame();
