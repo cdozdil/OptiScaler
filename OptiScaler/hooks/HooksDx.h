@@ -120,4 +120,5 @@ namespace FrameGen_Dx12
     void CheckUpscaledFrame(ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InUpscaled);
     void AddFrameTime(float ft);
     float GetFrameTime();
+    void ConfigureFramePaceTuning();
 }

@@ -2493,19 +2493,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
                 }
             }
 
-            if (Config::Instance()->FGFramePacingTuning.value_or_default())
-            {
-                FfxSwapchainFramePacingTuning fpt{};
-                fpt.allowHybridSpin = true;
-
-                ffxConfigureDescFrameGenerationSwapChainKeyValueDX12 cfgDesc{};
-                cfgDesc.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_KEYVALUE_DX12;
-                cfgDesc.key = 2;
-                cfgDesc.ptr = &fpt;
-
-                result = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgSwapChainContext, &cfgDesc.header);
-                LOG_DEBUG("HybridSpin D3D12_Configure result: {}", FfxApiProxy::ReturnCodeToString(result));
-            }
+            FrameGen_Dx12::ConfigureFramePaceTuning();
 
             scInfo.swapChainFormat = pDesc->BufferDesc.Format;
             scInfo.swapChainBufferCount = pDesc->BufferCount;
@@ -2789,19 +2777,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
                 }
             }
 
-            if (Config::Instance()->FGFramePacingTuning.value_or_default())
-            {
-                FfxSwapchainFramePacingTuning fpt{};
-                fpt.allowHybridSpin = true;
-
-                ffxConfigureDescFrameGenerationSwapChainKeyValueDX12 cfgDesc{};
-                cfgDesc.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_KEYVALUE_DX12;
-                cfgDesc.key = 2;
-                cfgDesc.ptr = &fpt;
-
-                result = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgSwapChainContext, &cfgDesc.header);
-                LOG_DEBUG("HybridSpin D3D12_Configure result: {}", FfxApiProxy::ReturnCodeToString(result));
-            }
+            FrameGen_Dx12::ConfigureFramePaceTuning();
 
             scInfo.swapChainFormat = pDesc->Format;
             scInfo.swapChainBufferCount = pDesc->BufferCount;
@@ -3666,7 +3642,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     LOG_DEBUG("result: {:X}", (UINT)result);
 
     return result;
-}
+    }
 
 static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
@@ -4418,5 +4394,28 @@ float FrameGen_Dx12::GetFrameTime()
 
     //return result;
 }
+
+void FrameGen_Dx12::ConfigureFramePaceTuning()
+{
+    FfxSwapchainFramePacingTuning fpt{};
+    if (Config::Instance()->FGFramePacingTuning.value_or_default())
+    {
+        fpt.allowHybridSpin = Config::Instance()->FGFPTAllowHybridSpin.value_or_default();
+        fpt.allowWaitForSingleObjectOnFence = Config::Instance()->FGFPTAllowWaitForSingleObjectOnFence.value_or_default();
+        fpt.hybridSpinTime = Config::Instance()->FGFPTHybridSpinTime.value_or_default();
+        fpt.safetyMarginInMs = Config::Instance()->FGFPTSafetyMarginInMs.value_or_default();
+        fpt.varianceFactor = Config::Instance()->FGFPTVarianceFactor.value_or_default();
+    }
+
+    ffxConfigureDescFrameGenerationSwapChainKeyValueDX12 cfgDesc{};
+    cfgDesc.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_KEYVALUE_DX12;
+    cfgDesc.key = 2;
+    cfgDesc.ptr = &fpt;
+
+    auto result = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgSwapChainContext, &cfgDesc.header);
+    LOG_DEBUG("HybridSpin D3D12_Configure result: {}", FfxApiProxy::ReturnCodeToString(result));
+}
+
+
 
 #pragma endregion

@@ -6,6 +6,7 @@
 #include <nvapi/fakenvapi.h>
 #include <nvapi/ReflexHooks.h>
 #include <proxies/FfxApi_Proxy.h>
+#include <hooks/HooksDx.h>
 
 #include <imgui/imgui_internal.h>
 
@@ -694,7 +695,7 @@ void MenuCommon::AddResourceBarrier(std::string name, CustomOptional<int32_t, B>
 template <bool B>
 void MenuCommon::AddRenderPreset(std::string name, CustomOptional<uint32_t, B>* value)
 {
-    const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G", 
+    const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G",
                              "PRESET H", "PRESET I", "PRESET J", "PRESET K", "PRESET L", "PRESET M", "PRESET N", "PRESET O" };
     const std::string presetsDesc[] = { "Whatever the game uses",
         "Intended for Performance/Balanced/Quality modes.\nAn older variant best suited to combat ghosting for elements with missing inputs, such as motion vectors.",
@@ -1044,12 +1045,14 @@ bool MenuCommon::RenderMenu()
 
         ImGui::End();
 
-        if (Config::Instance()->FpsOverlayPos.value_or_default() == 0 || Config::Instance()->FpsOverlayPos.value_or_default() == 2) // Top left / Bottom left
+        // Top left / Bottom left
+        if (Config::Instance()->FpsOverlayPos.value_or_default() == 0 || Config::Instance()->FpsOverlayPos.value_or_default() == 2)
             overlayPosition.x = 0;
         else
             overlayPosition.x = io.DisplaySize.x - winSize.x;
 
-        if (Config::Instance()->FpsOverlayPos.value_or_default() < 2) // Top Left / Top Right
+        // Top Left / Top Right
+        if (Config::Instance()->FpsOverlayPos.value_or_default() < 2)
             overlayPosition.y = 0;
         else
             overlayPosition.y = io.DisplaySize.y - winSize.y;
@@ -1065,6 +1068,7 @@ bool MenuCommon::RenderMenu()
         return false;
 
     {
+        // If overlay is not visible frame needs to be inited
         if (!Config::Instance()->ShowFps.value_or_default())
         {
             ImGui_ImplWin32_NewFrame();
@@ -1129,6 +1133,7 @@ bool MenuCommon::RenderMenu()
             std::string currentBackend = "";
             std::string currentBackendName = "";
 
+            // No active upscaler message
             if (currentFeature == nullptr || !currentFeature->IsInited())
             {
                 ImGui::Spacing();
@@ -1452,6 +1457,57 @@ bool MenuCommon::RenderMenu()
                             ShowHelpMarker("Resets frame generation rectangle");
 
                             ImGui::EndDisabled();
+
+
+                            if (isVersionOrBetter(FfxApiProxy::VersionDx12(), { 3, 1, 3 }))
+                            {
+                                SeparatorWithHelpMarker("Frame Pacing Tuning", "These setting for advanced\ntuning of OptiFG frame timings.\nUse carefully!");
+
+                                auto fptEnabled = Config::Instance()->FGFramePacingTuning.value_or_default();
+                                if (ImGui::Checkbox("Enable Tuning", &fptEnabled))
+                                {
+                                    Config::Instance()->FGFramePacingTuning = fptEnabled;
+                                    FrameGen_Dx12::ConfigureFramePaceTuning();
+                                }
+
+                                ImGui::BeginDisabled(!Config::Instance()->FGFramePacingTuning.value_or_default());
+
+                                auto fptSafetyMargin = Config::Instance()->FGFPTSafetyMarginInMs.value_or_default();
+                                if (ImGui::InputFloat("Safety Margins in ms", &fptSafetyMargin, 0.01, 0.1, "%.2f"))
+                                    Config::Instance()->FGFPTSafetyMarginInMs = fptSafetyMargin;
+                                ShowHelpMarker("Safety margins in millisecons\n"
+                                               "FSR default value: 0.1ms\n"
+                                               "Opti default value: 0.01ms");
+
+                                auto fptVarianceFactor = Config::Instance()->FGFPTVarianceFactor.value_or_default();
+                                if (ImGui::SliderFloat("Variance Factor", &fptVarianceFactor, 0.0f, 1.0f, "%.2f"))
+                                    Config::Instance()->FGFPTVarianceFactor = fptVarianceFactor;
+                                ShowHelpMarker("Variance factor\n"
+                                               "FSR default value: 0.1\n"
+                                               "Opti default value: 0.3");
+
+                                auto fpHybridSpin = Config::Instance()->FGFPTAllowHybridSpin.value_or_default();
+                                if (ImGui::Checkbox("Enable Hybrid Spin", &fpHybridSpin))
+                                    Config::Instance()->FGFPTAllowHybridSpin = fpHybridSpin;
+                                ShowHelpMarker("Allows pacing spinlock to sleep, should reduce CPU usage\n"
+                                               "Might cause slow ramp up of FPS");
+
+                                auto fptHybridSpinTime = Config::Instance()->FGFPTHybridSpinTime.value_or_default();
+                                if (ImGui::SliderInt("Hybrid Spin Time", &fptHybridSpinTime, 0, 100))
+                                    Config::Instance()->FGFPTHybridSpinTime = fptHybridSpinTime;
+                                ShowHelpMarker("How long to spin if FPTHybridSpin is true. Measured in timer resolution units.\n"
+                                               "Not recommended to go below 2. Will result in frequent overshoots");
+
+                                auto fpWaitForSingleObjectOnFence = Config::Instance()->FGFPTAllowWaitForSingleObjectOnFence.value_or_default();
+                                if (ImGui::Checkbox("Enable WaitForSingleObjectOnFence", &fpWaitForSingleObjectOnFence))
+                                    Config::Instance()->FGFPTAllowWaitForSingleObjectOnFence = fpWaitForSingleObjectOnFence;
+                                ShowHelpMarker("Allows WaitForSingleObject instead of spinning for fence value");
+
+                                if (ImGui::Button("Apply Timing Changes"))
+                                    FrameGen_Dx12::ConfigureFramePaceTuning();
+
+                                ImGui::EndDisabled();
+                            }
                         }
                     }
                 }

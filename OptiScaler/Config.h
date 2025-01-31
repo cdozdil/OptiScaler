@@ -306,9 +306,9 @@ public:
 	CustomOptional<bool> FGMakeMVCopy{ true };
 	CustomOptional<bool> FGHudFixCloseAfterCallback{ true };
 	CustomOptional<bool> FGUseMutexForSwaphain{ true };
-	CustomOptional<bool> FGFramePacingTuning{ false };
-	CustomOptional<float> FGFPTSafetyMarginInMs{ 0.1f };
-	CustomOptional<float> FGFPTVarianceFactor{ 0.1f };
+	CustomOptional<bool> FGFramePacingTuning{ true };
+	CustomOptional<float> FGFPTSafetyMarginInMs{ 0.01f };
+	CustomOptional<float> FGFPTVarianceFactor{ 0.3f };
 	CustomOptional<bool> FGFPTAllowHybridSpin{ false };
 	CustomOptional<int> FGFPTHybridSpinTime{ 2 };
 	CustomOptional<bool> FGFPTAllowWaitForSingleObjectOnFence{ false };
