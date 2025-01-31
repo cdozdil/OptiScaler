@@ -135,6 +135,8 @@ public:
 	CustomOptional<int> LogLevel{ 2 };
 	CustomOptional<std::wstring> LogFileName{ L"OptiScaler.log" };
 	CustomOptional<bool> LogSingleFile{ true };
+	CustomOptional<bool> LogAsync{ true };
+	CustomOptional<int> LogAsyncThreads{ 1 };
 
 	// XeSS
 	CustomOptional<bool> BuildPipelines{ true };
@@ -309,7 +311,7 @@ public:
 	CustomOptional<bool> FGFramePacingTuning{ true };
 	CustomOptional<float> FGFPTSafetyMarginInMs{ 0.01f };
 	CustomOptional<float> FGFPTVarianceFactor{ 0.3f };
-	CustomOptional<bool> FGFPTAllowHybridSpin{ false };
+	CustomOptional<bool> FGFPTAllowHybridSpin{ true };
 	CustomOptional<int> FGFPTHybridSpinTime{ 2 };
 	CustomOptional<bool> FGFPTAllowWaitForSingleObjectOnFence{ false };
 
