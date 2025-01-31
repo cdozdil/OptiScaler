@@ -33,11 +33,11 @@
 
 typedef struct FfxSwapchainFramePacingTuning
 {
-    float    safetyMarginInMs = 0.0001; // in Millisecond
-    float    varianceFactor = 0.1; // valid range [0.0,1.0]
-    bool     allowHybridSpin = true; //Allows pacing spinlock to sleep.
-    uint32_t hybridSpinTime = 2;  //How long to spin when hybridSpin is enabled. Measured in timer resolution units. Not recommended to go below 2. Will result in frequent overshoots.
-    bool     allowWaitForSingleObjectOnFence = false; //Allows to call WaitForSingleObject() instead of spinning for fence value.
+    float safetyMarginInMs; // in Millisecond. Default is 0.1ms
+    float varianceFactor; // valid range [0.0,1.0]. Default is 0.1
+    bool     allowHybridSpin; //Allows pacing spinlock to sleep. Default is false.
+    uint32_t hybridSpinTime;  //How long to spin if allowHybridSpin is true. Measured in timer resolution units. Not recommended to go below 2. Will result in frequent overshoots. Default is 2.
+    bool     allowWaitForSingleObjectOnFence; //Allows WaitForSingleObject instead of spinning for fence value. Default is false.
 } FfxSwapchainFramePacingTuning;
 
 enum ResourceType
@@ -2493,7 +2493,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
                 }
             }
 
-            if (Config::Instance()->FGHybridSpin.value_or_default())
+            if (Config::Instance()->FGFramePacingTuning.value_or_default())
             {
                 FfxSwapchainFramePacingTuning fpt{};
                 fpt.allowHybridSpin = true;
@@ -2789,7 +2789,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
                 }
             }
 
-            if (Config::Instance()->FGHybridSpin.value_or_default())
+            if (Config::Instance()->FGFramePacingTuning.value_or_default())
             {
                 FfxSwapchainFramePacingTuning fpt{};
                 fpt.allowHybridSpin = true;

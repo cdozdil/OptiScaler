@@ -65,11 +65,17 @@ bool Config::Reload(std::filesystem::path iniPath)
             FGRectHeight.set_from_config(readInt("FrameGen", "RectHeight"));
             FGDisableOverlays.set_from_config(readBool("FrameGen", "DisableOverlays"));
             FGAlwaysTrackHeaps.set_from_config(readBool("FrameGen", "AlwaysTrackHeaps"));
-            FGHybridSpin.set_from_config(readBool("FrameGen", "HybridSpin"));
             FGMakeDepthCopy.set_from_config(readBool("FrameGen", "MakeDepthCopy"));
             FGMakeMVCopy.set_from_config(readBool("FrameGen", "MakeMVCopy"));
             FGHudFixCloseAfterCallback.set_from_config(readBool("FrameGen", "HudFixCloseAfterCallback"));
             FGUseMutexForSwaphain.set_from_config(readBool("FrameGen", "UseMutexForSwaphain"));
+
+            FGFramePacingTuning.set_from_config(readBool("FrameGen", "FramePacingTuning"));
+            FGFPTSafetyMarginInMs.set_from_config(readFloat("FrameGen", "FPTSafetyMarginInMs"));
+            FGFPTVarianceFactor.set_from_config(readFloat("FrameGen", "FPTVarianceFactor"));
+            FGFPTAllowHybridSpin.set_from_config(readBool("FrameGen", "FPTHybridSpin"));
+            FGFPTHybridSpinTime.set_from_config(readInt("FrameGen", "FPTHybridSpinTime"));
+            FGFPTAllowWaitForSingleObjectOnFence.set_from_config(readInt("FrameGen", "FPTWaitForSingleObjectOnFence"));
         }
 
         // Framerate
@@ -207,6 +213,7 @@ bool Config::Reload(std::filesystem::path iniPath)
         {
             HookOriginalNvngxOnly.set_from_config(readBool("Hooks", "HookOriginalNvngxOnly"));
         }
+
         // RCAS
         {
             RcasEnabled.set_from_config(readBool("CAS", "Enabled"));
@@ -513,11 +520,17 @@ bool Config::SaveIni()
         ini.SetValue("FrameGen", "RectHeight", GetIntValue(Instance()->FGRectHeight.value_for_config()).c_str());
         ini.SetValue("FrameGen", "DisableOverlays", GetBoolValue(Instance()->FGDisableOverlays.value_for_config()).c_str());
         ini.SetValue("FrameGen", "AlwaysTrackHeaps", GetBoolValue(Instance()->FGAlwaysTrackHeaps.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "HybridSpin", GetBoolValue(Instance()->FGHybridSpin.value_for_config()).c_str());
         ini.SetValue("FrameGen", "MakeDepthCopy", GetBoolValue(Instance()->FGMakeDepthCopy.value_for_config()).c_str());
         ini.SetValue("FrameGen", "MakeMVCopy", GetBoolValue(Instance()->FGMakeMVCopy.value_for_config()).c_str());
         ini.SetValue("FrameGen", "HudFixCloseAfterCallback", GetBoolValue(Instance()->FGHudFixCloseAfterCallback.value_for_config()).c_str());
         ini.SetValue("FrameGen", "UseMutexForSwaphain", GetBoolValue(Instance()->FGUseMutexForSwaphain.value_for_config()).c_str());
+
+        ini.SetValue("FrameGen", "FramePacingTuning", GetBoolValue(Instance()->FGFramePacingTuning.value_for_config()).c_str());
+        ini.SetValue("FrameGen", "FPTSafetyMarginInMs", GetFloatValue(Instance()->FGFPTSafetyMarginInMs.value_for_config()).c_str());
+        ini.SetValue("FrameGen", "FPTVarianceFactor", GetFloatValue(Instance()->FGFPTVarianceFactor.value_for_config()).c_str());
+        ini.SetValue("FrameGen", "FPTHybridSpin", GetBoolValue(Instance()->FGFPTAllowHybridSpin.value_for_config()).c_str());
+        ini.SetValue("FrameGen", "FPTHybridSpinTime", GetIntValue(Instance()->FGFPTHybridSpinTime.value_for_config()).c_str());
+        ini.SetValue("FrameGen", "FPTWaitForSingleObjectOnFence", GetBoolValue(Instance()->FGFPTAllowWaitForSingleObjectOnFence.value_for_config()).c_str());
     }
 
     // Framerate 

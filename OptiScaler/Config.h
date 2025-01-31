@@ -302,11 +302,16 @@ public:
 	CustomOptional<int, false> FGRectHeight;
 	CustomOptional<bool> FGDisableOverlays{ true };
 	CustomOptional<bool> FGAlwaysTrackHeaps{ false };
-	CustomOptional<bool> FGHybridSpin{ false };
 	CustomOptional<bool> FGMakeDepthCopy{ true };
 	CustomOptional<bool> FGMakeMVCopy{ true };
 	CustomOptional<bool> FGHudFixCloseAfterCallback{ true };
 	CustomOptional<bool> FGUseMutexForSwaphain{ true };
+	CustomOptional<bool> FGFramePacingTuning{ false };
+	CustomOptional<float> FGFPTSafetyMarginInMs{ 0.1f };
+	CustomOptional<float> FGFPTVarianceFactor{ 0.1f };
+	CustomOptional<bool> FGFPTAllowHybridSpin{ false };
+	CustomOptional<int> FGFPTHybridSpinTime{ 2 };
+	CustomOptional<bool> FGFPTAllowWaitForSingleObjectOnFence{ false };
 
 	// DLSS Enabler
 	std::optional<int> DE_FramerateLimit;			// off - vsync - number
