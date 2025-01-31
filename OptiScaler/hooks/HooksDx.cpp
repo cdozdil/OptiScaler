@@ -608,8 +608,9 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
 
         if (This != nullptr && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && FrameGen_Dx12::ffxMutex.getOwner() != 2)
         {
-            LOG_DEBUG("Waiting ffxMutex 1");
+            LOG_DEBUG("Waiting ffxMutex 1, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
             FrameGen_Dx12::ffxMutex.lock(1);
+            LOG_TRACE("Accuired ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
         }
         HooksDx::fgSkipHudlessChecks = true;
 
@@ -808,7 +809,10 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
             fgDispatchCalled = true;
 
             if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+            {
+                LOG_TRACE("Releasing ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
                 FrameGen_Dx12::ffxMutex.unlockThis(1);
+            };
 
             LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}, commandList: {3:X}", retCode, frame, fIndex, (size_t)dfgPrepare.commandList);
         }
@@ -2032,7 +2036,10 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     HooksDx::upscaleRan = false;
 
     if (lockAccuired && Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    {
+        LOG_TRACE("Releasing ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
         FrameGen_Dx12::ffxMutex.unlockThis(2);
+    }
 
     return result;
 }
@@ -3948,8 +3955,9 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 {
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
-        LOG_DEBUG("Waiting ffxMutex 1");
+        LOG_DEBUG("Waiting ffxMutex 1, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
         FrameGen_Dx12::ffxMutex.lock(1);
+        LOG_TRACE("Accuired ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
     }
 
     MenuOverlayDx::CleanupRenderTarget(true, hWnd);
@@ -3967,7 +3975,10 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
     }
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    {
+        LOG_TRACE("Releasing ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
         FrameGen_Dx12::ffxMutex.unlockThis(1);
+    }
 }
 
 UINT FrameGen_Dx12::NewFrame()
@@ -4314,8 +4325,9 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && useMutex)
     {
-        LOG_DEBUG("Waiting ffxMutex 1");
+        LOG_DEBUG("Waiting ffxMutex 1, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
         FrameGen_Dx12::ffxMutex.lock(1);
+        LOG_TRACE("Accuired ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
     }
 
     if (!(shutDown || State::Instance().isShuttingDown) && FrameGen_Dx12::fgContext != nullptr)
@@ -4350,7 +4362,10 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
         ReleaseFGObjects();
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && useMutex)
+    {
+        LOG_TRACE("Releasing ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
         FrameGen_Dx12::ffxMutex.unlockThis(1);
+    }
 }
 
 void FrameGen_Dx12::CheckUpscaledFrame(ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InUpscaled)

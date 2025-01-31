@@ -125,8 +125,9 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
-        LOG_DEBUG("Waiting ffxMutex 3");
+        LOG_DEBUG("Waiting ffxMutex 3, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
         FrameGen_Dx12::ffxMutex.lock(3);
+        LOG_TRACE("Accuired ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
     }
 
     HRESULT result;
@@ -228,7 +229,10 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
     LOG_DEBUG("result: {0:X}", (UINT)result);
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    {
+        LOG_TRACE("Releasing ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
         FrameGen_Dx12::ffxMutex.unlockThis(3);
+    }
 
     return result;
 }
@@ -252,8 +256,9 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
-        LOG_DEBUG("Waiting ffxMutex 3");
+        LOG_DEBUG("Waiting ffxMutex 3, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
         FrameGen_Dx12::ffxMutex.lock(3);
+        LOG_TRACE("Accuired ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
     }
 
     HRESULT result;
@@ -352,7 +357,10 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
     LOG_DEBUG("result: {0:X}", (UINT)result);
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    {
+        LOG_TRACE("Releasing ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
         FrameGen_Dx12::ffxMutex.unlockThis(3);
+    }
 
     return result;
 }
@@ -372,8 +380,9 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 
         if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
         {
-            LOG_DEBUG("Waiting ffxMutex 3");
+            LOG_DEBUG("Waiting ffxMutex 3, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
             FrameGen_Dx12::ffxMutex.lock(3);
+            LOG_TRACE("Accuired ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
         }
 
         result = m_pReal->SetFullscreenState(Fullscreen, pTarget);
@@ -420,7 +429,10 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
     }
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    {
+        LOG_TRACE("Releasing ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
         FrameGen_Dx12::ffxMutex.unlockThis(3);
+    }
 
     return result;
 }
