@@ -703,6 +703,15 @@ void MenuCommon::AddRenderPreset(std::string name, CustomOptional<uint32_t, B>* 
         "Default preset for Performance/Balanced/Quality modes;\ngenerally favors image stability.",
         "DLSS 3.7+, a better D preset",
         "Default preset for Ultra Performance and DLAA modes",
+        "Unused",
+
+        "Unused",
+        "Unused",
+        "Transformers",
+        "Transformers 2",
+        "Unused",
+        "Unused",
+        "Unused",
         "Unused"
     };
 
