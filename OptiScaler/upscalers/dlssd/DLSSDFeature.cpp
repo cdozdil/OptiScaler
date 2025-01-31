@@ -251,22 +251,22 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
         RenderPresetUltraPerformance = Config::Instance()->RenderPresetUltraPerformance.value_or(RenderPresetUltraPerformance);
     }
 
-    if (RenderPresetDLAA < 0 || RenderPresetDLAA > 7)
+    if (RenderPresetDLAA < 0 || RenderPresetDLAA > 15)
         RenderPresetDLAA = 0;
 
-    if (RenderPresetUltraQuality < 0 || RenderPresetUltraQuality > 7)
+    if (RenderPresetUltraQuality < 0 || RenderPresetUltraQuality > 15)
         RenderPresetUltraQuality = 0;
 
-    if (RenderPresetQuality < 0 || RenderPresetQuality > 7)
+    if (RenderPresetQuality < 0 || RenderPresetQuality > 15)
         RenderPresetQuality = 0;
 
-    if (RenderPresetBalanced < 0 || RenderPresetBalanced > 7)
+    if (RenderPresetBalanced < 0 || RenderPresetBalanced > 15)
         RenderPresetBalanced = 0;
 
-    if (RenderPresetPerformance < 0 || RenderPresetPerformance > 7)
+    if (RenderPresetPerformance < 0 || RenderPresetPerformance > 15)
         RenderPresetPerformance = 0;
 
-    if (RenderPresetUltraPerformance < 0 || RenderPresetUltraPerformance > 7)
+    if (RenderPresetUltraPerformance < 0 || RenderPresetUltraPerformance > 15)
         RenderPresetUltraPerformance = 0;
 
     LOG_DEBUG("Signed Enum: {}", signedEnum);

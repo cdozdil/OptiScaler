@@ -112,22 +112,22 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             RenderPresetOverride.set_from_config(readBool("DLSS", "RenderPresetOverride"));
 
-            if (auto setting = readInt("DLSS", "RenderPresetDLAA"); setting.has_value() && setting >= 0 && setting <= 7)
+            if (auto setting = readInt("DLSS", "RenderPresetDLAA"); setting.has_value() && setting >= 0 && setting <= 15)
                 RenderPresetDLAA.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetUltraQuality"); setting.has_value() && setting >= 0 && setting <= 7)
+            if (auto setting = readInt("DLSS", "RenderPresetUltraQuality"); setting.has_value() && setting >= 0 && setting <= 15)
                 RenderPresetUltraQuality.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetQuality"); setting.has_value() && setting >= 0 && setting <= 7)
+            if (auto setting = readInt("DLSS", "RenderPresetQuality"); setting.has_value() && setting >= 0 && setting <= 15)
                 RenderPresetQuality.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetBalanced"); setting.has_value() && setting >= 0 && setting <= 7)
+            if (auto setting = readInt("DLSS", "RenderPresetBalanced"); setting.has_value() && setting >= 0 && setting <= 15)
                 RenderPresetBalanced.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetPerformance"); setting.has_value() && setting >= 0 && setting <= 7)
+            if (auto setting = readInt("DLSS", "RenderPresetPerformance"); setting.has_value() && setting >= 0 && setting <= 15)
                 RenderPresetPerformance.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetUltraPerformance"); setting.has_value() && setting >= 0 && setting <= 7)
+            if (auto setting = readInt("DLSS", "RenderPresetUltraPerformance"); setting.has_value() && setting >= 0 && setting <= 15)
                 RenderPresetUltraPerformance.set_from_config(setting);
         }
 
