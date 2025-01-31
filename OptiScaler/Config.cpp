@@ -155,6 +155,8 @@ bool Config::Reload(std::filesystem::path iniPath)
             OpenConsole.set_from_config(readBool("Log", "OpenConsole"));
             DebugWait.set_from_config(readBool("Log", "DebugWait"));
             LogSingleFile.set_from_config(readBool("Log", "SingleFile"));
+            LogAsync.set_from_config(readBool("Log", "LogAsync"));
+            LogAsyncThreads.set_from_config(readInt("Log", "LogAsyncThreads"));
 
             {
                 auto setting = readString("Log", "LogFile", false);
