@@ -608,7 +608,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
 
         if (This != nullptr && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && FrameGen_Dx12::ffxMutex.getOwner() != 2)
         {
-            LOG_DEBUG("Waiting ffxMutex 1, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
+            LOG_TRACE("Waiting ffxMutex 1, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
             FrameGen_Dx12::ffxMutex.lock(1);
             LOG_TRACE("Accuired ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
         }
@@ -617,8 +617,6 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
         // hudless captured for this frame
         fgHudlessFrame = State::Instance().currentFeature->FrameCount();
         auto frame = fgHudlessFrame;
-
-        LOG_DEBUG("running, frame: {}, fIndex: {}", frame, fIndex);
 
         // switch dlss targets for next depth and mv 
         ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
@@ -777,7 +775,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
             dfgPrepare.viewSpaceToMetersFactor = FrameGen_Dx12::meterFactor;
             auto ft = FrameGen_Dx12::GetFrameTime();
             dfgPrepare.frameTimeDelta = ft;
-            LOG_DEBUG("frameTimeDelta: {}", ft);
+            LOG_TRACE("frameTimeDelta: {}", ft);
 
             // If somehow context is destroyed before this point
             if (State::Instance().currentFeature == nullptr || FrameGen_Dx12::fgContext == nullptr || !FrameGen_Dx12::fgIsActive)
@@ -834,7 +832,7 @@ static bool CheckCapture(std::string callerName)
         std::unique_lock<std::shared_mutex> lock(counterMutex[fIndex]);
         HooksDx::fgHUDlessCaptureCounter[fIndex]++;
 
-        LOG_DEBUG("{} -> frameCounter: {}, fgHUDlessCaptureCounter: {}, Limit: {}", callerName, State::Instance().currentFeature->FrameCount(), HooksDx::fgHUDlessCaptureCounter[fIndex], Config::Instance()->FGHUDLimit.value_or_default());
+        LOG_TRACE("{} -> frameCounter: {}, fgHUDlessCaptureCounter: {}, Limit: {}", callerName, State::Instance().currentFeature->FrameCount(), HooksDx::fgHUDlessCaptureCounter[fIndex], Config::Instance()->FGHUDLimit.value_or_default());
 
         if (HooksDx::fgHUDlessCaptureCounter[fIndex] != Config::Instance()->FGHUDLimit.value_or_default())
             return false;
@@ -968,8 +966,8 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
     if (resource->height != fgScDesc.BufferDesc.Height || resource->width != fgScDesc.BufferDesc.Width)
     {
         if (callerName.length() > 0)
-            LOG_DEBUG_ONLY("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
-                           callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
+            LOG_TRACE("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
+                      callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
 
         return false;
     }
@@ -977,7 +975,7 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
     // check for resource flags
     if ((resource->flags & fgNotAcceptedResourceFlags) > 0)
     {
-        LOG_DEBUG("Skip by flag: {:X}", (UINT)resource->flags);
+        LOG_TRACE("Skip by flag: {:X}", (UINT)resource->flags);
         return false;
     }
 
@@ -997,7 +995,7 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
     if ((!Config::Instance()->FGHUDFixExtended.value_or_default() || FrameGen_Dx12::fgFormatTransfer == nullptr))
     {
         if (callerName.length() > 0)
-            LOG_DEBUG("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
+            LOG_TRACE("{} -> Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
                       callerName, resource->width, fgScDesc.BufferDesc.Width, resource->height, fgScDesc.BufferDesc.Height, (UINT)resource->format, (UINT)fgScDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
 
         return false;
@@ -2012,8 +2010,9 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     bool lockAccuired = false;
     if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && FrameGen_Dx12::ffxMutex.getOwner() != 2)
     {
-        LOG_DEBUG("Waiting ffxMutex 2");
+        LOG_TRACE("Waiting ffxMutex 2, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
         FrameGen_Dx12::ffxMutex.lock(2);
+        LOG_TRACE("Accuired ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
         lockAccuired = true;
     }
 
@@ -2028,7 +2027,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     {
         msDelta = now - fgLastFrameTime;
         FrameGen_Dx12::AddFrameTime(msDelta);
-        LOG_DEBUG("Frametime: {0}", msDelta);
+        LOG_TRACE("Frametime: {0}", msDelta);
     }
 
     fgLastFrameTime = now;
@@ -2059,14 +2058,14 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
 
         if (presentResult == S_OK)
-            LOG_DEBUG("1 {}", (UINT)presentResult);
+            LOG_TRACE("1 {}", (UINT)presentResult);
         else
             LOG_ERROR("1 {:X}", (UINT)presentResult);
 
         return presentResult;
     }
 
-    LOG_DEBUG("{}", frameCounter);
+    LOG_TRACE("{}", frameCounter);
 
     if (hWnd != Util::GetProcessWindow())
     {
@@ -2078,7 +2077,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         HooksDx::fgSkipHudlessChecks = false;
 
         if (presentResult == S_OK)
-            LOG_DEBUG("2 {}", (UINT)presentResult);
+            LOG_TRACE("2 {}", (UINT)presentResult);
         else
             LOG_ERROR("2 {:X}", (UINT)presentResult);
 
@@ -2213,7 +2212,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
 
         if (presentResult == S_OK)
-            LOG_DEBUG("3 {}", (UINT)presentResult);
+            LOG_TRACE("3 {}", (UINT)presentResult);
         else
             LOG_ERROR("3 {:X}", (UINT)presentResult);
 
@@ -2266,7 +2265,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         device12->Release();
 
     if (presentResult == S_OK)
-        LOG_DEBUG("4 {}, Present result: {:X}", frameCounter, (UINT)presentResult);
+        LOG_TRACE("4 {}, Present result: {:X}", frameCounter, (UINT)presentResult);
     else
         LOG_ERROR("4 {:X}", (UINT)presentResult);
 
@@ -2879,10 +2878,10 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
             State::Instance().screenHeight = pDesc->Height;
         }
 
-        LOG_DEBUG("created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)hWnd);
+        LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)hWnd);
         lastWrapped = new WrappedIDXGISwapChain4(realSC, readDevice, hWnd, Present, MenuOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
         *ppSwapChain = lastWrapped;
-        LOG_DEBUG("created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
+        LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
 
         if (!fgSkipSCWrapping)
             HooksDx::currentSwapchain = lastWrapped;
@@ -3955,7 +3954,7 @@ void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 {
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
-        LOG_DEBUG("Waiting ffxMutex 1, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
+        LOG_TRACE("Waiting ffxMutex 1, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
         FrameGen_Dx12::ffxMutex.lock(1);
         LOG_TRACE("Accuired ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
     }
@@ -4325,7 +4324,7 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && useMutex)
     {
-        LOG_DEBUG("Waiting ffxMutex 1, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
+        LOG_TRACE("Waiting ffxMutex 1, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
         FrameGen_Dx12::ffxMutex.lock(1);
         LOG_TRACE("Accuired ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
     }
@@ -4389,7 +4388,7 @@ void FrameGen_Dx12::AddFrameTime(float ft)
     HooksDx::fgFrameTimes.push_back(ft);
 
     if (HooksDx::fgFrameTimes.size() == HooksDx::FG_BUFFER_SIZE)
-        LOG_DEBUG("{}, {}, {}, {}", HooksDx::fgFrameTimes[0], HooksDx::fgFrameTimes[1], HooksDx::fgFrameTimes[2], HooksDx::fgFrameTimes[3]);
+        LOG_TRACE("{}, {}, {}, {}", HooksDx::fgFrameTimes[0], HooksDx::fgFrameTimes[1], HooksDx::fgFrameTimes[2], HooksDx::fgFrameTimes[3]);
 }
 
 float FrameGen_Dx12::GetFrameTime()
