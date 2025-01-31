@@ -1907,6 +1907,57 @@ static void CheckWorkingMode()
 
             break;
         }
+        
+        // dbghelp.dll
+        if (lCaseFilename == "dbghelp.dll")
+        {
+            do
+            {
+                skipGetModuleHandle = true;
+                auto pluginFilePath = pluginPath / L"dbghelp.dll";
+                dll = LoadLibrary(pluginFilePath.wstring().c_str());
+
+                if (dll != nullptr)
+                {
+                    LOG_INFO("OptiScaler working as dbghelp.dll, original dll loaded from plugin folder");
+                    break;
+                }
+
+                dll = LoadLibrary(L"dbghelp-original.dll");
+
+                if (dll != nullptr)
+                {
+                    LOG_INFO("OptiScaler working as dbghelp.dll, dbghelp-original.dll loaded");
+                    break;
+                }
+
+                auto sysFilePath = sysPath / L"dbghelp.dll";
+                dll = LoadLibrary(sysFilePath.wstring().c_str());
+
+                if (dll != nullptr)
+                    LOG_INFO("OptiScaler working as dbghelp.dll, system dll loaded");
+                skipGetModuleHandle = false;
+
+            } while (false);
+
+            if (dll != nullptr)
+            {
+                dllNames.push_back("dbghelp.dll");
+                dllNames.push_back("dbghelp");
+                dllNamesW.push_back(L"dbghelp.dll");
+                dllNamesW.push_back(L"dbghelp");
+
+                shared.LoadOriginalLibrary(dll);
+                dbghelp.LoadOriginalLibrary(dll);
+                modeFound = true;
+            }
+            else
+            {
+                spdlog::error("OptiScaler can't find original dbghelp.dll!");
+            }
+
+            break;
+        }
 
         // optiscaler.dll
         if (lCaseFilename == "optiscaler.asi")

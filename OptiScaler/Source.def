@@ -606,30 +606,246 @@ WinHttpWebSocketShutdown = _WinHttpWebSocketShutdown
 WinHttpWriteData = _WinHttpWriteData
 WinHttpWriteProxySettings = _WinHttpWriteProxySettings
 
-LIBRARY "libxess"
-EXPORTS  
-xessD3D12BuildPipelines
-xessD3D12CreateContext
-xessD3D12Execute
-xessD3D12GetInitParams
-xessD3D12GetResourcesToDump
-xessD3D12GetProfilingData
-xessD3D12Init
-xessDestroyContext
-xessForceLegacyScaleFactors
-xessGetExposureMultiplier
-xessGetInputResolution
-xessGetIntelXeFXVersion
-xessGetJitterScale
-xessGetOptimalInputResolution
-xessGetProperties
-xessGetVelocityScale
-xessGetVersion
-xessIsOptimalDriver
-xessSelectNetworkModel
-xessSetExposureMultiplier
-xessSetJitterScale
-xessSetLoggingCallback
-xessSetVelocityScale
-xessSetContextParameterF = xessGetVersion
-xessStartDump
+LIBRARY "dbghelp"
+EXPORTS
+vc7fpo = _vc7fpo
+symsrv = _symsrv
+sym = _sym
+stackdbg = _stackdbg
+stack_force_ebp = _stack_force_ebp
+srcfiles = _srcfiles
+optdbgdumpaddr = _optdbgdumpaddr
+optdbgdump = _optdbgdump
+omap = _omap
+lminfo = _lminfo
+lmi = _lmi
+itoldyouso = _itoldyouso
+inlinedbg = _inlinedbg
+homedir = _homedir
+fptr = _fptr
+dh = _dh
+dbghelp = _dbghelp
+chksym = _chksym
+block = _block
+_EFN_DumpImage = __EFN_DumpImage
+WinDbgExtensionDllInit = _WinDbgExtensionDllInit
+UnDecorateSymbolNameW = _UnDecorateSymbolNameW
+UnDecorateSymbolName = _UnDecorateSymbolName
+SymUnloadModule64 = _SymUnloadModule64
+SymUnloadModule = _SymUnloadModule
+SymUnDName64 = _SymUnDName64
+SymUnDName = _SymUnDName
+SymSrvStoreSupplementW = _SymSrvStoreSupplementW
+SymSrvStoreSupplement = _SymSrvStoreSupplement
+SymSrvStoreFileW = _SymSrvStoreFileW
+SymSrvStoreFile = _SymSrvStoreFile
+SymSrvIsStoreW = _SymSrvIsStoreW
+SymSrvIsStore = _SymSrvIsStore
+SymSrvGetSupplementW = _SymSrvGetSupplementW
+SymSrvGetSupplement = _SymSrvGetSupplement
+SymSrvGetFileIndexesW = _SymSrvGetFileIndexesW
+SymSrvGetFileIndexes = _SymSrvGetFileIndexes
+SymSrvGetFileIndexStringW = _SymSrvGetFileIndexStringW
+SymSrvGetFileIndexString = _SymSrvGetFileIndexString
+SymSrvGetFileIndexInfoW = _SymSrvGetFileIndexInfoW
+SymSrvGetFileIndexInfo = _SymSrvGetFileIndexInfo
+SymSrvDeltaNameW = _SymSrvDeltaNameW
+SymSrvDeltaName = _SymSrvDeltaName
+SymSetSearchPathW = _SymSetSearchPathW
+SymSetSearchPath = _SymSetSearchPath
+SymSetScopeFromInlineContext = _SymSetScopeFromInlineContext
+SymSetScopeFromIndex = _SymSetScopeFromIndex
+SymSetScopeFromAddr = _SymSetScopeFromAddr
+SymSetParentWindow = _SymSetParentWindow
+SymSetOptions = _SymSetOptions
+SymSetHomeDirectoryW = _SymSetHomeDirectoryW
+SymSetHomeDirectory = _SymSetHomeDirectory
+SymSetExtendedOption = _SymSetExtendedOption
+SymSetDiaSession = _SymSetDiaSession
+SymSetContext = _SymSetContext
+SymSearchW = _SymSearchW
+SymSearch = _SymSearch
+SymRegisterFunctionEntryCallback64 = _SymRegisterFunctionEntryCallback64
+SymRegisterFunctionEntryCallback = _SymRegisterFunctionEntryCallback
+SymRegisterCallbackW64 = _SymRegisterCallbackW64
+SymRegisterCallback64 = _SymRegisterCallback64
+SymRegisterCallback = _SymRegisterCallback
+SymRefreshModuleList = _SymRefreshModuleList
+SymQueryInlineTrace = _SymQueryInlineTrace
+SymPrevW = _SymPrevW
+SymPrev = _SymPrev
+SymNextW = _SymNextW
+SymNext = _SymNext
+SymMatchStringW = _SymMatchStringW
+SymMatchStringA = _SymMatchStringA
+SymMatchString = _SymMatchString
+SymMatchFileNameW = _SymMatchFileNameW
+SymMatchFileName = _SymMatchFileName
+SymLoadModuleExW = _SymLoadModuleExW
+SymLoadModuleEx = _SymLoadModuleEx
+SymLoadModule64 = _SymLoadModule64
+SymLoadModule = _SymLoadModule
+SymInitializeW = _SymInitializeW
+SymInitialize = _SymInitialize
+SymGetUnwindInfo = _SymGetUnwindInfo
+SymGetTypeInfoEx = _SymGetTypeInfoEx
+SymGetTypeInfo = _SymGetTypeInfo
+SymGetTypeFromNameW = _SymGetTypeFromNameW
+SymGetTypeFromName = _SymGetTypeFromName
+SymGetSymbolFileW = _SymGetSymbolFileW
+SymGetSymbolFile = _SymGetSymbolFile
+SymGetSymPrev64 = _SymGetSymPrev64
+SymGetSymPrev = _SymGetSymPrev
+SymGetSymNext64 = _SymGetSymNext64
+SymGetSymNext = _SymGetSymNext
+SymGetSymFromName64 = _SymGetSymFromName64
+SymGetSymFromName = _SymGetSymFromName
+SymGetSymFromAddr64 = _SymGetSymFromAddr64
+SymGetSymFromAddr = _SymGetSymFromAddr
+SymGetSourceVarFromTokenW = _SymGetSourceVarFromTokenW
+SymGetSourceVarFromToken = _SymGetSourceVarFromToken
+SymGetSourceFileW = _SymGetSourceFileW
+SymGetSourceFileTokenW = _SymGetSourceFileTokenW
+SymGetSourceFileToken = _SymGetSourceFileToken
+SymGetSourceFileFromTokenW = _SymGetSourceFileFromTokenW
+SymGetSourceFileFromToken = _SymGetSourceFileFromToken
+SymGetSourceFileChecksumW = _SymGetSourceFileChecksumW
+SymGetSourceFileChecksum = _SymGetSourceFileChecksum
+SymGetSourceFile = _SymGetSourceFile
+SymGetSearchPathW = _SymGetSearchPathW
+SymGetSearchPath = _SymGetSearchPath
+SymGetScopeW = _SymGetScopeW
+SymGetScope = _SymGetScope
+SymGetOptions = _SymGetOptions
+SymGetOmaps = _SymGetOmaps
+SymGetOmapBlockBase = _SymGetOmapBlockBase
+SymGetModuleInfoW64 = _SymGetModuleInfoW64
+SymGetModuleInfoW = _SymGetModuleInfoW
+SymGetModuleInfo64 = _SymGetModuleInfo64
+SymGetModuleInfo = _SymGetModuleInfo
+SymGetModuleBase64 = _SymGetModuleBase64
+SymGetModuleBase = _SymGetModuleBase
+SymGetLinePrevW64 = _SymGetLinePrevW64
+SymGetLinePrevEx = _SymGetLinePrevEx
+SymGetLinePrev64 = _SymGetLinePrev64
+SymGetLinePrev = _SymGetLinePrev
+SymGetLineNextW64 = _SymGetLineNextW64
+SymGetLineNextEx = _SymGetLineNextEx
+SymGetLineNext64 = _SymGetLineNext64
+SymGetLineNext = _SymGetLineNext
+SymGetLineFromNameW64 = _SymGetLineFromNameW64
+SymGetLineFromNameEx = _SymGetLineFromNameEx
+SymGetLineFromName64 = _SymGetLineFromName64
+SymGetLineFromName = _SymGetLineFromName
+SymGetLineFromInlineContextW = _SymGetLineFromInlineContextW
+SymGetLineFromInlineContext = _SymGetLineFromInlineContext
+SymGetLineFromAddrW64 = _SymGetLineFromAddrW64
+SymGetLineFromAddrEx = _SymGetLineFromAddrEx
+SymGetLineFromAddr64 = _SymGetLineFromAddr64
+SymGetLineFromAddr = _SymGetLineFromAddr
+SymGetHomeDirectoryW = _SymGetHomeDirectoryW
+SymGetHomeDirectory = _SymGetHomeDirectory
+SymGetFileLineOffsets64 = _SymGetFileLineOffsets64
+SymGetExtendedOption = _SymGetExtendedOption
+SymGetDiaSession = _SymGetDiaSession
+SymFunctionTableAccess64AccessRoutines = _SymFunctionTableAccess64AccessRoutines
+SymFunctionTableAccess64 = _SymFunctionTableAccess64
+SymFunctionTableAccess = _SymFunctionTableAccess
+SymFromTokenW = _SymFromTokenW
+SymFromToken = _SymFromToken
+SymFromNameW = _SymFromNameW
+SymFromName = _SymFromName
+SymFromInlineContextW = _SymFromInlineContextW
+SymFromInlineContext = _SymFromInlineContext
+SymFromIndexW = _SymFromIndexW
+SymFromIndex = _SymFromIndex
+SymFromAddrW = _SymFromAddrW
+SymFromAddr = _SymFromAddr
+SymFreeDiaString = _SymFreeDiaString
+SymFindFileInPathW = _SymFindFileInPathW
+SymFindFileInPath = _SymFindFileInPath
+SymFindExecutableImageW = _SymFindExecutableImageW
+SymFindExecutableImage = _SymFindExecutableImage
+SymFindDebugInfoFileW = _SymFindDebugInfoFileW
+SymFindDebugInfoFile = _SymFindDebugInfoFile
+SymEnumerateSymbolsW64 = _SymEnumerateSymbolsW64
+SymEnumerateSymbolsW = _SymEnumerateSymbolsW
+SymEnumerateSymbols64 = _SymEnumerateSymbols64
+SymEnumerateSymbols = _SymEnumerateSymbols
+SymEnumerateModulesW64 = _SymEnumerateModulesW64
+SymEnumerateModules64 = _SymEnumerateModules64
+SymEnumerateModules = _SymEnumerateModules
+SymEnumTypesW = _SymEnumTypesW
+SymEnumTypesByNameW = _SymEnumTypesByNameW
+SymEnumTypesByName = _SymEnumTypesByName
+SymEnumTypes = _SymEnumTypes
+SymEnumSymbolsW = _SymEnumSymbolsW
+SymEnumSymbolsForAddrW = _SymEnumSymbolsForAddrW
+SymEnumSymbolsForAddr = _SymEnumSymbolsForAddr
+SymEnumSymbolsExW = _SymEnumSymbolsExW
+SymEnumSymbolsEx = _SymEnumSymbolsEx
+SymEnumSymbols = _SymEnumSymbols
+SymEnumSym = _SymEnumSym
+SymEnumSourceLinesW = _SymEnumSourceLinesW
+SymEnumSourceLines = _SymEnumSourceLines
+SymEnumSourceFilesW = _SymEnumSourceFilesW
+SymEnumSourceFiles = _SymEnumSourceFiles
+SymEnumSourceFileTokens = _SymEnumSourceFileTokens
+SymEnumProcesses = _SymEnumProcesses
+SymEnumLinesW = _SymEnumLinesW
+SymEnumLines = _SymEnumLines
+SymDeleteSymbolW = _SymDeleteSymbolW
+SymDeleteSymbol = _SymDeleteSymbol
+SymCompareInlineTrace = _SymCompareInlineTrace
+SymCleanup = _SymCleanup
+SymAllocDiaString = _SymAllocDiaString
+SymAddrIncludeInlineTrace = _SymAddrIncludeInlineTrace
+SymAddSymbolW = _SymAddSymbolW
+SymAddSymbol = _SymAddSymbol
+SymAddSourceStreamW = _SymAddSourceStreamW
+SymAddSourceStreamA = _SymAddSourceStreamA
+SymAddSourceStream = _SymAddSourceStream
+StackWalkEx = _StackWalkEx
+StackWalk64 = _StackWalk64
+StackWalk = _StackWalk
+SetSymLoadError = _SetSymLoadError
+SetCheckUserInterruptShared = _SetCheckUserInterruptShared
+SearchTreeForFileW = _SearchTreeForFileW
+SearchTreeForFile = _SearchTreeForFile
+ReportSymbolLoadSummary = _ReportSymbolLoadSummary
+RemoveInvalidModuleList = _RemoveInvalidModuleList
+RangeMapWrite = _RangeMapWrite
+RangeMapRemove = _RangeMapRemove
+RangeMapRead = _RangeMapRead
+RangeMapFree = _RangeMapFree
+RangeMapCreate = _RangeMapCreate
+RangeMapAddPeImageSections = _RangeMapAddPeImageSections
+MiniDumpWriteDump = _MiniDumpWriteDump
+MiniDumpReadDumpStream = _MiniDumpReadDumpStream
+MakeSureDirectoryPathExists = _MakeSureDirectoryPathExists
+ImagehlpApiVersionEx = _ImagehlpApiVersionEx
+ImagehlpApiVersion = _ImagehlpApiVersion
+ImageRvaToVa = _ImageRvaToVa
+ImageRvaToSection = _ImageRvaToSection
+ImageNtHeader = _ImageNtHeader
+ImageDirectoryEntryToDataEx = _ImageDirectoryEntryToDataEx
+ImageDirectoryEntryToData = _ImageDirectoryEntryToData
+GetTimestampForLoadedLibrary = _GetTimestampForLoadedLibrary
+GetSymLoadError = _GetSymLoadError
+FindFileInSearchPath = _FindFileInSearchPath
+FindFileInPath = _FindFileInPath
+FindExecutableImageExW = _FindExecutableImageExW
+FindExecutableImageEx = _FindExecutableImageEx
+FindExecutableImage = _FindExecutableImage
+FindDebugInfoFileExW = _FindDebugInfoFileExW
+FindDebugInfoFileEx = _FindDebugInfoFileEx
+FindDebugInfoFile = _FindDebugInfoFile
+ExtensionApiVersion = _ExtensionApiVersion
+EnumerateLoadedModulesW64 = _EnumerateLoadedModulesW64
+EnumerateLoadedModulesExW = _EnumerateLoadedModulesExW
+EnumerateLoadedModulesEx = _EnumerateLoadedModulesEx
+EnumerateLoadedModules64 = _EnumerateLoadedModules64
+EnumerateLoadedModules = _EnumerateLoadedModules
+EnumDirTreeW = _EnumDirTreeW
+EnumDirTree = _EnumDirTree
+DbgHelpCreateUserDumpW = _DbgHelpCreateUserDumpW
