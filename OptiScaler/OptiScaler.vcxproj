@@ -294,6 +294,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="hudfix\Hudfix_Dx12.h" />
     <ClInclude Include="menu\font\Hack_Compressed.h" />
     <ClInclude Include="OwnedMutex.h" />
     <ClInclude Include="resource_build_date.h" />
@@ -411,7 +412,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="proxies\XeSS_Proxy.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="shaders\depth_scale\DS_Dx12.cpp" />
+    <ClCompile Include="hudfix\Hudfix_Dx12.cpp" />
     <ClCompile Include="upscalers\dlssd\DLSSDFeature.cpp" />
     <ClCompile Include="upscalers\dlssd\DLSSDFeature_Dx11.cpp" />
     <ClCompile Include="upscalers\dlssd\DLSSDFeature_Dx12.cpp" />
