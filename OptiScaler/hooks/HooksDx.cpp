@@ -271,7 +271,6 @@ static ankerl::unordered_dense::map <ID3D12GraphicsCommandList*, ankerl::unorder
 // mutexes
 static std::shared_mutex heapMutex;
 static std::shared_mutex presentMutex;
-static std::shared_mutex captureMutex;
 static std::shared_mutex resourceMutex;
 static std::shared_mutex hudlessMutex[HooksDx::FG_BUFFER_SIZE];
 static std::shared_mutex counterMutex[HooksDx::FG_BUFFER_SIZE];
@@ -298,7 +297,6 @@ static bool fgStopAfterNextPresent = false;
 static UINT64 frameCounter = 0;
 
 // Swapchain frame target while capturing RTVs etc
-static UINT64 fgLastFGFrame = 0;
 static bool fgUpscaledFound = false;
 
 static WrappedIDXGISwapChain4* lastWrapped;
@@ -724,10 +722,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                     LOG_WARN("Callback without hudless! frameID: {}", params->frameID);
                     params->numGeneratedFrames = 0;
                 }
-
-                if (State::Instance().currentFeature != nullptr)
-                    fgLastFGFrame = State::Instance().currentFeature->FrameCount();
-
+                
                 dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
                 LOG_DEBUG("D3D12_Dispatch result: {}, fIndex: {}", (UINT)dispatchResult, fIndex);
 
@@ -785,7 +780,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
             }
 
 #ifdef  USE_COPY_QUEUE_FOR_FG
-            FrameGen_Dx12::gameCommandQueue->Wait(FrameGen_Dx12::fgCopyFence, fIndex);
+            HooksDx::gameCommandQueue->Wait(FrameGen_Dx12::fgCopyFence, fIndex);
 #endif
 
             HooksDx::fgHudlessFrameIndexes[fIndex] = frame;
