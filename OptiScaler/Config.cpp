@@ -165,7 +165,7 @@ bool Config::Reload(std::filesystem::path iniPath)
                 if (setting.has_value() && setting.value().empty())
                     LogFileName.set_from_config(L"");
 
-                auto path = std::filesystem::path(setting.value_or(wstring_to_string(LogFileName.value_or_default())));
+                auto path = Util::DllPath() / setting.value_or(wstring_to_string(LogFileName.value_or_default()));
                 auto filenameStem = path.stem();
 
                 auto filename = std::filesystem::path(LogSingleFile.value_or_default() ? filenameStem.wstring() + L".log" : filenameStem.wstring() + L"_" + std::to_wstring(GetTicks()) + L".log");
