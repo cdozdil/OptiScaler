@@ -258,6 +258,17 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
         InParameters->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_MaxQuality);
     }
 
+    int paramValue = -1;
+
+    if (InParameters->Get("DLSS.Use.HW.Depth", &paramValue) == NVSDK_NGX_Result_Success)
+        LOG_DEBUG("DLSS.Use.HW.Depth: {}", paramValue);
+
+    if (InParameters->Get("DLSS.Denoise.Mode", &paramValue) == NVSDK_NGX_Result_Success)
+        LOG_DEBUG("DLSS.Denoise.Mode: {}", paramValue);
+
+    if (InParameters->Get("DLSS.Roughness.Mode", &paramValue) == NVSDK_NGX_Result_Success)
+        LOG_DEBUG("DLSS.Roughness.Mode: {}", paramValue);
+
     LOG_FUNC_RESULT(0);
 }
 

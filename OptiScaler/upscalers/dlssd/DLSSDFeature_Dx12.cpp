@@ -114,6 +114,7 @@ bool DLSSDFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
 		ProcessEvaluateParams(InParameters);
 
 		ID3D12Resource* paramOutput = nullptr;
+		ID3D12Resource* paramDepth = nullptr;
 		ID3D12Resource* paramMotion = nullptr;
 		ID3D12Resource* setBuffer = nullptr;
 
@@ -121,6 +122,16 @@ bool DLSSDFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
 
 		InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput);
 		InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramMotion);
+		InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth);
+
+		if (paramDepth != nullptr)
+			LOG_DEBUG("Depth exist, {:X}", (size_t)paramDepth);
+
+		if (paramMotion != nullptr)
+			LOG_DEBUG("Velocity exist, {:X}", (size_t)paramMotion);
+
+		if (paramOutput != nullptr)
+			LOG_DEBUG("Output exist, {:X}", (size_t)paramOutput);
 
 		// supersampling
 		if (useSS)
