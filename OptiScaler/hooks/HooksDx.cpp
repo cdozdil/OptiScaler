@@ -272,6 +272,7 @@ static ankerl::unordered_dense::map <ID3D12GraphicsCommandList*, ankerl::unorder
 static std::shared_mutex heapMutex;
 static std::shared_mutex presentMutex;
 static std::shared_mutex resourceMutex;
+static std::shared_mutex captureMutex;
 static std::shared_mutex hudlessMutex[HooksDx::FG_BUFFER_SIZE];
 static std::shared_mutex counterMutex[HooksDx::FG_BUFFER_SIZE];
 
