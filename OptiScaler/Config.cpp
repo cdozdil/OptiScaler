@@ -66,10 +66,12 @@ bool Config::Reload(std::filesystem::path iniPath)
             FGDisableOverlays.set_from_config(readBool("FrameGen", "DisableOverlays"));
             FGAlwaysTrackHeaps.set_from_config(readBool("FrameGen", "AlwaysTrackHeaps"));
             FGMakeDepthCopy.set_from_config(readBool("FrameGen", "MakeDepthCopy"));
-            FGSaturateDepth.set_from_config(readBool("FrameGen", "SaturateDepth"));
             FGMakeMVCopy.set_from_config(readBool("FrameGen", "MakeMVCopy"));
             FGHudFixCloseAfterCallback.set_from_config(readBool("FrameGen", "HudFixCloseAfterCallback"));
             FGUseMutexForSwaphain.set_from_config(readBool("FrameGen", "UseMutexForSwaphain"));
+
+            FGEnableDepthScale.set_from_config(readBool("FrameGen", "EnableDepthScale"));
+            FGDepthScaleMax.set_from_config(readFloat("FrameGen", "DepthScaleMax"));
 
             FGFramePacingTuning.set_from_config(readBool("FrameGen", "FramePacingTuning"));
             FGFPTSafetyMarginInMs.set_from_config(readFloat("FrameGen", "FPTSafetyMarginInMs"));
@@ -528,6 +530,9 @@ bool Config::SaveIni()
         ini.SetValue("FrameGen", "MakeMVCopy", GetBoolValue(Instance()->FGMakeMVCopy.value_for_config()).c_str());
         ini.SetValue("FrameGen", "HudFixCloseAfterCallback", GetBoolValue(Instance()->FGHudFixCloseAfterCallback.value_for_config()).c_str());
         ini.SetValue("FrameGen", "UseMutexForSwaphain", GetBoolValue(Instance()->FGUseMutexForSwaphain.value_for_config()).c_str());
+
+        ini.SetValue("FrameGen", "EnableDepthScale", GetBoolValue(Instance()->FGEnableDepthScale.value_for_config()).c_str());
+        ini.SetValue("FrameGen", "DepthScaleMax", GetFloatValue(Instance()->FGDepthScaleMax.value_for_config()).c_str());
 
         ini.SetValue("FrameGen", "FramePacingTuning", GetBoolValue(Instance()->FGFramePacingTuning.value_for_config()).c_str());
         ini.SetValue("FrameGen", "FPTSafetyMarginInMs", GetFloatValue(Instance()->FGFPTSafetyMarginInMs.value_for_config()).c_str());

@@ -305,7 +305,8 @@ public:
 	CustomOptional<bool> FGDisableOverlays{ true };
 	CustomOptional<bool> FGAlwaysTrackHeaps{ false };
 	CustomOptional<bool> FGMakeDepthCopy{ true };
-	CustomOptional<bool> FGSaturateDepth{ false };
+	CustomOptional<bool> FGEnableDepthScale{ false };
+	CustomOptional<float> FGDepthScaleMax{ 10000.0f };
 	CustomOptional<bool> FGMakeMVCopy{ true };
 	CustomOptional<bool> FGHudFixCloseAfterCallback{ true };
 	CustomOptional<bool> FGUseMutexForSwaphain{ true };

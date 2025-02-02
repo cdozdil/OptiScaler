@@ -15,7 +15,7 @@
 #include "hooks/HooksDx.h"
 #include "proxies/FfxApi_Proxy.h"
 
-#include "shaders/depth_saturate/DS_Dx12.h"
+#include "shaders/depth_scale/DS_Dx12.h"
 
 #include <dxgi1_4.h>
 #include <shared_mutex>
@@ -42,7 +42,7 @@ static std::wstring appDataPath = L".";
 static bool shutdown = false;
 static bool inited = false;
 
-static DS_Dx12* DepthSaturate = nullptr;
+static DS_Dx12* DepthScale = nullptr;
 
 static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState)
 {
@@ -1516,19 +1516,19 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
 
 
-        if (Config::Instance()->FGSaturateDepth.value_or_default())
+        if (Config::Instance()->FGEnableDepthScale.value_or_default())
         {
-            if (DepthSaturate == nullptr)
-                DepthSaturate = new DS_Dx12("Depth Saturate", D3D12Device);
+            if (DepthScale == nullptr)
+                DepthScale = new DS_Dx12("Depth Saturate", D3D12Device);
 
-            if (DepthSaturate->CreateBufferResource(D3D12Device, paramDepth, deviceContext->DisplayWidth(), deviceContext->DisplayHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && DepthSaturate->Buffer() != nullptr)
+            if (DepthScale->CreateBufferResource(D3D12Device, paramDepth, deviceContext->DisplayWidth(), deviceContext->DisplayHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && DepthScale->Buffer() != nullptr)
             {
-                DepthSaturate->SetBufferState(InCmdList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                DepthScale->SetBufferState(InCmdList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-                if (DepthSaturate->Dispatch(D3D12Device, InCmdList, paramDepth, DepthSaturate->Buffer()))
+                if (DepthScale->Dispatch(D3D12Device, InCmdList, paramDepth, DepthScale->Buffer()))
                 {
-                    DepthSaturate->SetBufferState(InCmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-                    FrameGen_Dx12::paramDepth[frameIndex] = DepthSaturate->Buffer();
+                    DepthScale->SetBufferState(InCmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                    FrameGen_Dx12::paramDepth[frameIndex] = DepthScale->Buffer();
                 }
                 else
                 {

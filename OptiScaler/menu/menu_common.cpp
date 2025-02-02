@@ -1409,10 +1409,15 @@ bool MenuCommon::RenderMenu()
                             ShowHelpMarker("Make a copy of depth to use with OptiFG\n"
                                            "For preventing corruptions that might happen");
 
-                            bool saturateDepth = Config::Instance()->FGSaturateDepth.value_or_default();
-                            if (ImGui::Checkbox("FG Saturate Depth", &saturateDepth))
-                                Config::Instance()->FGSaturateDepth = saturateDepth;
+                            bool depthScale = Config::Instance()->FGEnableDepthScale.value_or_default();
+                            if (ImGui::Checkbox("FG Scale Depth to fix DLSS RR", &depthScale))
+                                Config::Instance()->FGEnableDepthScale = depthScale;
                             ShowHelpMarker("Fix for DLSS-D wrong depth inputs");
+
+                            float depthScaleMax = Config::Instance()->FGDepthScaleMax.value_or_default();
+                            if (ImGui::InputFloat("FG Scale Depth Max", &depthScaleMax, 10.0f, 100.0f, "%.1f"))
+                                Config::Instance()->FGDepthScaleMax = depthScaleMax;
+                            ShowHelpMarker("Depth values will be divided to this value");
 
                             bool useMutexForPresent = Config::Instance()->FGUseMutexForSwaphain.value_or_default();
                             if (ImGui::Checkbox("FG Use Mutex for Present", &useMutexForPresent))
@@ -1521,9 +1526,9 @@ bool MenuCommon::RenderMenu()
                 if (State::Instance().api != DX11 && !State::Instance().isWorkingAsNvngx)
                 {
                     SeparatorWithHelpMarker("Frame Generation (Nukem's DLSSG via FSR FG)", "DLSSG via Nukem's FSR-FG using dlss-to-fsr3 mod,\n"
-                                                                                           "for using DLSS G in game by using\n"
-                                                                                           "dlssg_to_fsr3_amd_is_better.dll file\n"
-                                                                                           "for creating better DLSS G frame generation");
+                                            "for using DLSS G in game by using\n"
+                                            "dlssg_to_fsr3_amd_is_better.dll file\n"
+                                            "for creating better DLSS G frame generation");
 
                     auto dlssgEnabled = Config::Instance()->DLSSGMod.value_or_default();
                     if (ImGui::Checkbox("DLSSG Enabled", &dlssgEnabled))
