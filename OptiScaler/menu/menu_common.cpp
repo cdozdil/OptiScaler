@@ -1889,7 +1889,7 @@ bool MenuCommon::RenderMenu()
                     }
 
                     // DLSS -----------------
-                    if (true || (Config::Instance()->DLSSEnabled.value_or_default() && currentBackend == "dlss" && State::Instance().currentFeature->Version().major > 2) ||
+                    if ((Config::Instance()->DLSSEnabled.value_or_default() && currentBackend == "dlss" && State::Instance().currentFeature->Version().major > 2) ||
                         State::Instance().currentFeature->Name() == "DLSSD")
                     {
                         ImGui::SeparatorText("DLSS Settings");
