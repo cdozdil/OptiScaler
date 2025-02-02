@@ -1409,6 +1409,11 @@ bool MenuCommon::RenderMenu()
                             ShowHelpMarker("Make a copy of depth to use with OptiFG\n"
                                            "For preventing corruptions that might happen");
 
+                            bool saturateDepth = Config::Instance()->FGSaturateDepth.value_or_default();
+                            if (ImGui::Checkbox("FG Saturate Depth", &saturateDepth))
+                                Config::Instance()->FGSaturateDepth = saturateDepth;
+                            ShowHelpMarker("Fix for DLSS-D wrong depth inputs");
+
                             bool useMutexForPresent = Config::Instance()->FGUseMutexForSwaphain.value_or_default();
                             if (ImGui::Checkbox("FG Use Mutex for Present", &useMutexForPresent))
                                 Config::Instance()->FGUseMutexForSwaphain = useMutexForPresent;

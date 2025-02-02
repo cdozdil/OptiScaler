@@ -15,6 +15,8 @@
 #include "hooks/HooksDx.h"
 #include "proxies/FfxApi_Proxy.h"
 
+#include "shaders/depth_saturate/DS_Dx12.h"
+
 #include <dxgi1_4.h>
 #include <shared_mutex>
 #include "detours/detours.h"
@@ -39,6 +41,8 @@ static int evalCounter = 0;
 static std::wstring appDataPath = L".";
 static bool shutdown = false;
 static bool inited = false;
+
+static DS_Dx12* DepthSaturate = nullptr;
 
 static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState)
 {
@@ -1010,7 +1014,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             InParameters->Set("DLSSG.CameraFar", cameraFar);
         }
         else if (cameraFar == INFINITY) {
-            cameraFar = 10000;
+            cameraFar = 100000.0f;
             InParameters->Set("DLSSG.CameraFar", cameraFar);
         }
 
@@ -1469,7 +1473,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             auto result = allocator->Reset();
             result = FrameGen_Dx12::fgCommandList[frameIndex]->Reset(allocator, nullptr);
             LOG_DEBUG("fgCommandList[{}]->Reset()", frameIndex);
-        }
+    }
 
         ID3D12GraphicsCommandList* commandList = nullptr;
 
@@ -1511,20 +1515,49 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
             InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
 
-        if (Config::Instance()->FGMakeDepthCopy.value_or_default())
+
+        if (Config::Instance()->FGSaturateDepth.value_or_default())
         {
-            ResourceBarrier(commandList, paramDepth, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE), D3D12_RESOURCE_STATE_COPY_SOURCE);
+            if (DepthSaturate == nullptr)
+                DepthSaturate = new DS_Dx12("Depth Saturate", D3D12Device);
 
-            if (CreateBufferResource(L"fgDepth", D3D12Device, paramDepth, D3D12_RESOURCE_STATE_COPY_DEST, &FrameGen_Dx12::paramDepthCopy[frameIndex]))
-                commandList->CopyResource(FrameGen_Dx12::paramDepthCopy[frameIndex], paramDepth);
+            if (DepthSaturate->CreateBufferResource(D3D12Device, paramDepth, deviceContext->DisplayWidth(), deviceContext->DisplayHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && DepthSaturate->Buffer() != nullptr)
+            {
+                DepthSaturate->SetBufferState(InCmdList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-            ResourceBarrier(commandList, paramDepth, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+                if (DepthSaturate->Dispatch(D3D12Device, InCmdList, paramDepth, DepthSaturate->Buffer()))
+                {
+                    DepthSaturate->SetBufferState(InCmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                    FrameGen_Dx12::paramDepth[frameIndex] = DepthSaturate->Buffer();
+                }
+                else
+                {
+                    FrameGen_Dx12::paramDepth[frameIndex] = paramDepth;
 
-            FrameGen_Dx12::paramDepth[frameIndex] = FrameGen_Dx12::paramDepthCopy[frameIndex];
+                }
+            }
+            else
+            {
+                FrameGen_Dx12::paramDepth[frameIndex] = paramDepth;
+            }
         }
         else
         {
-            FrameGen_Dx12::paramDepth[frameIndex] = paramDepth;
+            if (Config::Instance()->FGMakeDepthCopy.value_or_default())
+            {
+                ResourceBarrier(commandList, paramDepth, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE), D3D12_RESOURCE_STATE_COPY_SOURCE);
+
+                if (CreateBufferResource(L"fgDepth", D3D12Device, paramDepth, D3D12_RESOURCE_STATE_COPY_DEST, &FrameGen_Dx12::paramDepthCopy[frameIndex]))
+                    commandList->CopyResource(FrameGen_Dx12::paramDepthCopy[frameIndex], paramDepth);
+
+                ResourceBarrier(commandList, paramDepth, D3D12_RESOURCE_STATE_COPY_SOURCE, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+
+                FrameGen_Dx12::paramDepth[frameIndex] = FrameGen_Dx12::paramDepthCopy[frameIndex];
+            }
+            else
+            {
+                FrameGen_Dx12::paramDepth[frameIndex] = paramDepth;
+            }
         }
 
 #ifdef USE_COPY_QUEUE_FOR_FG
@@ -1544,7 +1577,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         FrameGen_Dx12::meterFactor = meterFactor;
 
         LOG_DEBUG("(FG) copy buffers done, frame: {0}", deviceContext->FrameCount());
-    }
+}
 
     // Record the first timestamp
     if (!State::Instance().isWorkingAsNvngx)
@@ -1651,7 +1684,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                             params->numGeneratedFrames = 0;
 
                             //return FFX_API_RETURN_OK;
-                        }
+                    }
 
                         // If fg is active but upscaling paused
                         if (State::Instance().currentFeature == nullptr || !FrameGen_Dx12::fgIsActive ||
@@ -1692,7 +1725,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 #endif
 
                         return dispatchResult;
-                    };
+                        };
 
                 m_FrameGenerationConfig.onlyPresentGenerated = State::Instance().FGonlyGenerated; // check here
                 m_FrameGenerationConfig.frameID = deviceContext->FrameCount();
