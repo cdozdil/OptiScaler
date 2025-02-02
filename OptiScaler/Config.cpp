@@ -69,7 +69,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             FGMakeMVCopy.set_from_config(readBool("FrameGen", "MakeMVCopy"));
             FGHudFixCloseAfterCallback.set_from_config(readBool("FrameGen", "HudFixCloseAfterCallback"));
             FGUseMutexForSwaphain.set_from_config(readBool("FrameGen", "UseMutexForSwaphain"));
-
+            
             FGEnableDepthScale.set_from_config(readBool("FrameGen", "EnableDepthScale"));
             FGDepthScaleMax.set_from_config(readFloat("FrameGen", "DepthScaleMax"));
 
@@ -168,7 +168,7 @@ bool Config::Reload(std::filesystem::path iniPath)
                 if (setting.has_value() && setting.value().empty())
                     LogFileName.set_from_config(L"");
 
-                auto path = Util::DllPath() / setting.value_or(wstring_to_string(LogFileName.value_or_default()));
+                auto path = std::filesystem::path(setting.value_or(wstring_to_string(LogFileName.value_or_default())));
                 auto filenameStem = path.stem();
 
                 auto filename = std::filesystem::path(LogSingleFile.value_or_default() ? filenameStem.wstring() + L".log" : filenameStem.wstring() + L"_" + std::to_wstring(GetTicks()) + L".log");
@@ -526,11 +526,10 @@ bool Config::SaveIni()
         ini.SetValue("FrameGen", "DisableOverlays", GetBoolValue(Instance()->FGDisableOverlays.value_for_config()).c_str());
         ini.SetValue("FrameGen", "AlwaysTrackHeaps", GetBoolValue(Instance()->FGAlwaysTrackHeaps.value_for_config()).c_str());
         ini.SetValue("FrameGen", "MakeDepthCopy", GetBoolValue(Instance()->FGMakeDepthCopy.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "SaturateDepth", GetBoolValue(Instance()->FGSaturateDepth.value_for_config()).c_str());
         ini.SetValue("FrameGen", "MakeMVCopy", GetBoolValue(Instance()->FGMakeMVCopy.value_for_config()).c_str());
         ini.SetValue("FrameGen", "HudFixCloseAfterCallback", GetBoolValue(Instance()->FGHudFixCloseAfterCallback.value_for_config()).c_str());
         ini.SetValue("FrameGen", "UseMutexForSwaphain", GetBoolValue(Instance()->FGUseMutexForSwaphain.value_for_config()).c_str());
-
+        
         ini.SetValue("FrameGen", "EnableDepthScale", GetBoolValue(Instance()->FGEnableDepthScale.value_for_config()).c_str());
         ini.SetValue("FrameGen", "DepthScaleMax", GetFloatValue(Instance()->FGDepthScaleMax.value_for_config()).c_str());
 
