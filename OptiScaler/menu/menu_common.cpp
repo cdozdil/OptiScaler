@@ -1340,6 +1340,11 @@ bool MenuCommon::RenderMenu()
                         }
                         ShowHelpMarker("Enable FSR 3.1 frame generation debug view");
 
+                        bool depthScale = Config::Instance()->FGEnableDepthScale.value_or_default();
+                        if (ImGui::Checkbox("FG Scale Depth to fix DLSS RR", &depthScale))
+                            Config::Instance()->FGEnableDepthScale = depthScale;
+                        ShowHelpMarker("Fix for DLSS-D wrong depth inputs");
+
                         ImGui::Spacing();
                         if (ImGui::CollapsingHeader("Advanced OptiFG Settings"))
                         {
@@ -1418,13 +1423,6 @@ bool MenuCommon::RenderMenu()
                                     Config::Instance()->FGMakeDepthCopy = makeDepthCopies;
                                 ShowHelpMarker("Make a copy of depth to use with OptiFG\n"
                                                "For preventing corruptions that might happen");
-
-                                ImGui::PushItemWidth(115.0 * Config::Instance()->MenuScale.value_or_default());
-                                bool depthScale = Config::Instance()->FGEnableDepthScale.value_or_default();
-                                if (ImGui::Checkbox("FG Scale Depth to fix DLSS RR", &depthScale))
-                                    Config::Instance()->FGEnableDepthScale = depthScale;
-                                ImGui::PopItemWidth();
-                                ShowHelpMarker("Fix for DLSS-D wrong depth inputs");
 
                                 ImGui::PushItemWidth(115.0 * Config::Instance()->MenuScale.value_or_default());
                                 float depthScaleMax = Config::Instance()->FGDepthScaleMax.value_or_default();
@@ -1578,12 +1576,6 @@ bool MenuCommon::RenderMenu()
                     if (Config::Instance()->DLSSGMod.value_or_default() && !State::Instance().NukemsFilesAvailable)
                         ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Please put dlssg_to_fsr3_amd_is_better.dll next to OptiScaler");
 
-                    if (DLSSGMod::isLoaded() && DLSSGMod::FSRDebugView() != nullptr)
-                    {
-                        if (ImGui::Checkbox("Enable Debug View", &State::Instance().DLSSGDebugView))
-                            DLSSGMod::FSRDebugView()(State::Instance().DLSSGDebugView);
-                    }
-
                     if (State::Instance().DLSSGIsActive) {
                         if (!ReflexHooks::isReflexHooked()) {
                             ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Reflex not hooked");
@@ -1604,6 +1596,13 @@ bool MenuCommon::RenderMenu()
                             if (bool makeDepthCopy = Config::Instance()->MakeDepthCopy.value_or_default(); ImGui::Checkbox("Fix broken visuals", &makeDepthCopy))
                                 Config::Instance()->MakeDepthCopy = makeDepthCopy;
                             ShowHelpMarker("Makes a copy of the depth buffer\nCan fix broken visuals in some games on AMD GPUs under Windows\nCan cause stutters so best to use only when necessary");
+
+                            if (DLSSGMod::isLoaded() && DLSSGMod::FSRDebugView() != nullptr)
+                            {
+                                if (ImGui::Checkbox("Enable Debug View", &State::Instance().DLSSGDebugView))
+                                    DLSSGMod::FSRDebugView()(State::Instance().DLSSGDebugView);
+                            }
+
                         }
                     }
 
@@ -1890,7 +1889,7 @@ bool MenuCommon::RenderMenu()
                     }
 
                     // DLSS -----------------
-                    if ((Config::Instance()->DLSSEnabled.value_or_default() && currentBackend == "dlss" && State::Instance().currentFeature->Version().major > 2) ||
+                    if (true || (Config::Instance()->DLSSEnabled.value_or_default() && currentBackend == "dlss" && State::Instance().currentFeature->Version().major > 2) ||
                         State::Instance().currentFeature->Name() == "DLSSD")
                     {
                         ImGui::SeparatorText("DLSS Settings");
@@ -1899,6 +1898,12 @@ bool MenuCommon::RenderMenu()
                             Config::Instance()->RenderPresetOverride = pOverride;
                         ShowHelpMarker("Each render preset has it strengths and weaknesses\n"
                                        "Override to potentially improve image quality");
+
+                        
+
+                        ImGui::PushItemWidth(135.0 * Config::Instance()->MenuScale.value_or_default());
+                        AddRenderPreset("Override Preset", &Config::Instance()->RenderPresetForAll);
+                        ImGui::PopItemWidth();
 
                         ImGui::SameLine(0.0f, 6.0f);
 
@@ -1912,20 +1917,32 @@ bool MenuCommon::RenderMenu()
                             State::Instance().changeBackend = true;
                         }
 
-                        AddRenderPreset("DLAA Preset", &Config::Instance()->RenderPresetDLAA);
-                        AddRenderPreset("UltraQ Preset", &Config::Instance()->RenderPresetUltraQuality);
-                        AddRenderPreset("Quality Preset", &Config::Instance()->RenderPresetQuality);
-                        AddRenderPreset("Balanced Preset", &Config::Instance()->RenderPresetBalanced);
-                        AddRenderPreset("Perf Preset", &Config::Instance()->RenderPresetPerformance);
-                        AddRenderPreset("UltraP Preset", &Config::Instance()->RenderPresetUltraPerformance);
+                        ImGui::Spacing();
 
-                        bool appIdOverride = Config::Instance()->UseGenericAppIdWithDlss.value_or_default();
-                        if (ImGui::Checkbox("Use Generic App Id with DLSS", &appIdOverride))
-                            Config::Instance()->UseGenericAppIdWithDlss = appIdOverride;
+                        if (ImGui::CollapsingHeader("Advanced DLSS Settings"))
+                        {
+                            ImGui::Spacing();
+                            bool appIdOverride = Config::Instance()->UseGenericAppIdWithDlss.value_or_default();
+                            if (ImGui::Checkbox("Use Generic App Id with DLSS", &appIdOverride))
+                                Config::Instance()->UseGenericAppIdWithDlss = appIdOverride;
 
-                        ShowHelpMarker("Use generic appid with NGX\n"
-                                       "Fixes OptiScaler preset override not working with certain games\n"
-                                       "Requires a game restart.");
+                            ShowHelpMarker("Use generic appid with NGX\n"
+                                           "Fixes OptiScaler preset override not working with certain games\n"
+                                           "Requires a game restart.");
+
+                            ImGui::Spacing();
+                            ImGui::PushItemWidth(135.0 * Config::Instance()->MenuScale.value_or_default());
+                            AddRenderPreset("DLAA Preset", &Config::Instance()->RenderPresetDLAA);
+                            AddRenderPreset("UltraQ Preset", &Config::Instance()->RenderPresetUltraQuality);
+                            AddRenderPreset("Quality Preset", &Config::Instance()->RenderPresetQuality);
+                            AddRenderPreset("Balanced Preset", &Config::Instance()->RenderPresetBalanced);
+                            AddRenderPreset("Perf Preset", &Config::Instance()->RenderPresetPerformance);
+                            AddRenderPreset("UltraP Preset", &Config::Instance()->RenderPresetUltraPerformance);
+                            ImGui::PopItemWidth();
+                        }
+
+                        ImGui::Spacing();
+                        ImGui::Spacing();
                     }
 
                     // RCAS -----------------
