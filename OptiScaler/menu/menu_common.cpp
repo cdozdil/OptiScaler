@@ -2474,376 +2474,376 @@ bool MenuCommon::RenderMenu()
                             }
                         }
                     }
+                }
 
-                    // FAKENVAPI ---------------------------
-                    if (fakenvapi::isUsingFakenvapi())
+                // FAKENVAPI ---------------------------
+                if (fakenvapi::isUsingFakenvapi())
+                {
+                    ImGui::SeparatorText("fakenvapi");
+
+                    if (bool logs = Config::Instance()->FN_EnableLogs.value_or_default(); ImGui::Checkbox("Enable Logs", &logs))
+                        Config::Instance()->FN_EnableLogs = logs;
+
+                    ImGui::SameLine(0.0f, 6.0f);
+                    if (bool traceLogs = Config::Instance()->FN_EnableTraceLogs.value_or_default(); ImGui::Checkbox("Enable Trace Logs", &traceLogs))
+                        Config::Instance()->FN_EnableTraceLogs = traceLogs;
+
+                    if (bool forceLFX = Config::Instance()->FN_ForceLatencyFlex.value_or_default(); ImGui::Checkbox("Force LatencyFlex", &forceLFX))
+                        Config::Instance()->FN_ForceLatencyFlex = forceLFX;
+                    ShowHelpMarker("When possible AntiLag 2 is used, this setting let's you force LatencyFlex instead");
+
+                    const char* lfx_modes[] = { "Conservative", "Aggressive", "Reflex ID" };
+                    const std::string lfx_modesDesc[] = { "The safest but might not reduce latency well",
+                        "Improves latency but in some cases will lower fps more than expected",
+                        "Best when can be used, some games are not compatible (i.e. cyberpunk) and will fallback to aggressive"
+                    };
+
+                    PopulateCombo("LatencyFlex mode", &Config::Instance()->FN_LatencyFlexMode, lfx_modes, lfx_modesDesc, 3);
+
+                    const char* rfx_modes[] = { "Follow in-game", "Force Disable", "Force Enable" };
+                    const std::string rfx_modesDesc[] = { "", "", "" };
+
+                    PopulateCombo("Force Reflex", &Config::Instance()->FN_ForceReflex, rfx_modes, rfx_modesDesc, 3);
+
+                    if (ImGui::Button("Apply##2"))
                     {
-                        ImGui::SeparatorText("fakenvapi");
-
-                        if (bool logs = Config::Instance()->FN_EnableLogs.value_or_default(); ImGui::Checkbox("Enable Logs", &logs))
-                            Config::Instance()->FN_EnableLogs = logs;
-
-                        ImGui::SameLine(0.0f, 6.0f);
-                        if (bool traceLogs = Config::Instance()->FN_EnableTraceLogs.value_or_default(); ImGui::Checkbox("Enable Trace Logs", &traceLogs))
-                            Config::Instance()->FN_EnableTraceLogs = traceLogs;
-
-                        if (bool forceLFX = Config::Instance()->FN_ForceLatencyFlex.value_or_default(); ImGui::Checkbox("Force LatencyFlex", &forceLFX))
-                            Config::Instance()->FN_ForceLatencyFlex = forceLFX;
-                        ShowHelpMarker("When possible AntiLag 2 is used, this setting let's you force LatencyFlex instead");
-
-                        const char* lfx_modes[] = { "Conservative", "Aggressive", "Reflex ID" };
-                        const std::string lfx_modesDesc[] = { "The safest but might not reduce latency well",
-                            "Improves latency but in some cases will lower fps more than expected",
-                            "Best when can be used, some games are not compatible (i.e. cyberpunk) and will fallback to aggressive"
-                        };
-
-                        PopulateCombo("LatencyFlex mode", &Config::Instance()->FN_LatencyFlexMode, lfx_modes, lfx_modesDesc, 3);
-
-                        const char* rfx_modes[] = { "Follow in-game", "Force Disable", "Force Enable" };
-                        const std::string rfx_modesDesc[] = { "", "", "" };
-
-                        PopulateCombo("Force Reflex", &Config::Instance()->FN_ForceReflex, rfx_modes, rfx_modesDesc, 3);
-
-                        if (ImGui::Button("Apply##2"))
-                        {
-                            Config::Instance()->SaveFakenvapiIni();
-                        }
+                        Config::Instance()->SaveFakenvapiIni();
                     }
+                }
 
-                    // LOGGING -----------------------------
+                ImGui::Spacing();
+                if (ImGui::CollapsingHeader("Advanced Settings"))
+                {
                     ImGui::Spacing();
-                    if (ImGui::CollapsingHeader("Logging"))
+                    if (currentFeature != nullptr)
                     {
-                        ImGui::Spacing();
-                        if (Config::Instance()->LogToConsole.value_or_default() || Config::Instance()->LogToFile.value_or_default() || Config::Instance()->LogToNGX.value_or_default())
-                            spdlog::default_logger()->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or_default());
-                        else
-                            spdlog::default_logger()->set_level(spdlog::level::off);
+                        bool extendedLimits = Config::Instance()->ExtendedLimits.value_or_default();
+                        if (ImGui::Checkbox("Enable Extended Limits", &extendedLimits))
+                            Config::Instance()->ExtendedLimits = extendedLimits;
 
-                        if (bool toFile = Config::Instance()->LogToFile.value_or_default(); ImGui::Checkbox("To File", &toFile))
-                        {
-                            Config::Instance()->LogToFile = toFile;
-                            PrepareLogger();
-                        }
-
-                        ImGui::SameLine(0.0f, 6.0f);
-                        if (bool toConsole = Config::Instance()->LogToConsole.value_or_default(); ImGui::Checkbox("To Console", &toConsole))
-                        {
-                            Config::Instance()->LogToConsole = toConsole;
-                            PrepareLogger();
-                        }
-
-                        const char* logLevels[] = { "Trace", "Debug", "Information", "Warning", "Error" };
-                        const char* selectedLevel = logLevels[Config::Instance()->LogLevel.value_or_default()];
-
-                        if (ImGui::BeginCombo("Log Level", selectedLevel))
-                        {
-                            for (int n = 0; n < 5; n++)
-                            {
-                                if (ImGui::Selectable(logLevels[n], (Config::Instance()->LogLevel.value_or_default() == n)))
-                                {
-                                    Config::Instance()->LogLevel = n;
-                                    spdlog::default_logger()->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or_default());
-                                }
-                            }
-
-                            ImGui::EndCombo();
-                        }
+                        ShowHelpMarker("Extended sliders limit for quality presets\n\n"
+                                       "Using this option changes resolution detection logic\n"
+                                       "and might cause issues and crashes!");
                     }
 
-                    // FPS OVERLAY -----------------------------
+                    bool pcShaders = Config::Instance()->UsePrecompiledShaders.value_or_default();
+                    if (ImGui::Checkbox("Use Precompiled Shaders", &pcShaders))
+                    {
+                        Config::Instance()->UsePrecompiledShaders = pcShaders;
+                        State::Instance().newBackend = currentBackend;
+                        State::Instance().changeBackend = true;
+                    }
+                }
+
+                // LOGGING -----------------------------
+                ImGui::Spacing();
+                if (ImGui::CollapsingHeader("Logging"))
+                {
                     ImGui::Spacing();
-                    if (ImGui::CollapsingHeader("FPS Overlay"))
+                    if (Config::Instance()->LogToConsole.value_or_default() || Config::Instance()->LogToFile.value_or_default() || Config::Instance()->LogToNGX.value_or_default())
+                        spdlog::default_logger()->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or_default());
+                    else
+                        spdlog::default_logger()->set_level(spdlog::level::off);
+
+                    if (bool toFile = Config::Instance()->LogToFile.value_or_default(); ImGui::Checkbox("To File", &toFile))
                     {
-                        ImGui::Spacing();
-                        bool fpsEnabled = Config::Instance()->ShowFps.value_or_default();
-                        if (ImGui::Checkbox("FPS Overlay Enabled", &fpsEnabled))
-                            Config::Instance()->ShowFps = fpsEnabled;
-
-                        ImGui::SameLine(0.0f, 6.0f);
-
-                        bool fpsHorizontal = Config::Instance()->FpsOverlayHorizontal.value_or_default();
-                        if (ImGui::Checkbox("Horizontal", &fpsHorizontal))
-                            Config::Instance()->FpsOverlayHorizontal = fpsHorizontal;
-
-                        const char* fpsPosition[] = { "Top Left", "Top Right", "Bottom Left", "Bottom Right" };
-                        const char* selectedPosition = fpsPosition[Config::Instance()->FpsOverlayPos.value_or_default()];
-
-                        if (ImGui::BeginCombo("Overlay Position", selectedPosition))
-                        {
-                            for (int n = 0; n < 4; n++)
-                            {
-                                if (ImGui::Selectable(fpsPosition[n], (Config::Instance()->FpsOverlayPos.value_or_default() == n)))
-                                    Config::Instance()->FpsOverlayPos = n;
-                            }
-
-                            ImGui::EndCombo();
-                        }
-
-                        const char* fpsType[] = { "Simple", "Detailed", "Detailed + Graph", "Full", "Full + Graph" };
-                        const char* selectedType = fpsType[Config::Instance()->FpsOverlayType.value_or_default()];
-
-                        if (ImGui::BeginCombo("Overlay Type", selectedType))
-                        {
-                            for (int n = 0; n < 5; n++)
-                            {
-                                if (ImGui::Selectable(fpsType[n], (Config::Instance()->FpsOverlayType.value_or_default() == n)))
-                                    Config::Instance()->FpsOverlayType = n;
-                            }
-
-                            ImGui::EndCombo();
-                        }
-
-                        float fpsAlpha = Config::Instance()->FpsOverlayAlpha.value_or_default();
-                        if (ImGui::SliderFloat("Background Alpha", &fpsAlpha, 0.0f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
-                            Config::Instance()->FpsOverlayAlpha = fpsAlpha;
+                        Config::Instance()->LogToFile = toFile;
+                        PrepareLogger();
                     }
 
-                    // ADVANCED SETTINGS -----------------------------
+                    ImGui::SameLine(0.0f, 6.0f);
+                    if (bool toConsole = Config::Instance()->LogToConsole.value_or_default(); ImGui::Checkbox("To Console", &toConsole))
+                    {
+                        Config::Instance()->LogToConsole = toConsole;
+                        PrepareLogger();
+                    }
+
+                    const char* logLevels[] = { "Trace", "Debug", "Information", "Warning", "Error" };
+                    const char* selectedLevel = logLevels[Config::Instance()->LogLevel.value_or_default()];
+
+                    if (ImGui::BeginCombo("Log Level", selectedLevel))
+                    {
+                        for (int n = 0; n < 5; n++)
+                        {
+                            if (ImGui::Selectable(logLevels[n], (Config::Instance()->LogLevel.value_or_default() == n)))
+                            {
+                                Config::Instance()->LogLevel = n;
+                                spdlog::default_logger()->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or_default());
+                            }
+                        }
+
+                        ImGui::EndCombo();
+                    }
+                }
+
+                // FPS OVERLAY -----------------------------
+                ImGui::Spacing();
+                if (ImGui::CollapsingHeader("FPS Overlay"))
+                {
                     ImGui::Spacing();
-                    if (ImGui::CollapsingHeader("Upscaler Inputs", currentFeature == nullptr ? ImGuiTreeNodeFlags_DefaultOpen : 0))
+                    bool fpsEnabled = Config::Instance()->ShowFps.value_or_default();
+                    if (ImGui::Checkbox("FPS Overlay Enabled", &fpsEnabled))
+                        Config::Instance()->ShowFps = fpsEnabled;
+
+                    ImGui::SameLine(0.0f, 6.0f);
+
+                    bool fpsHorizontal = Config::Instance()->FpsOverlayHorizontal.value_or_default();
+                    if (ImGui::Checkbox("Horizontal", &fpsHorizontal))
+                        Config::Instance()->FpsOverlayHorizontal = fpsHorizontal;
+
+                    const char* fpsPosition[] = { "Top Left", "Top Right", "Bottom Left", "Bottom Right" };
+                    const char* selectedPosition = fpsPosition[Config::Instance()->FpsOverlayPos.value_or_default()];
+
+                    if (ImGui::BeginCombo("Overlay Position", selectedPosition))
                     {
-                        ImGui::Spacing();
-                        bool fsr2Inputs = Config::Instance()->Fsr2Inputs.value_or_default();
-                        bool fsr2Pattern = Config::Instance()->Fsr2Pattern.value_or_default();
-                        bool fsr3Inputs = Config::Instance()->Fsr3Inputs.value_or_default();
-                        bool fsr3Pattern = Config::Instance()->Fsr3Pattern.value_or_default();
-                        bool ffxInputs = Config::Instance()->FfxInputs.value_or_default();
+                        for (int n = 0; n < 4; n++)
+                        {
+                            if (ImGui::Selectable(fpsPosition[n], (Config::Instance()->FpsOverlayPos.value_or_default() == n)))
+                                Config::Instance()->FpsOverlayPos = n;
+                        }
 
-                        if (ImGui::Checkbox("Use Fsr2 Inputs", &fsr2Inputs))
-                            Config::Instance()->Fsr2Inputs = fsr2Inputs;
-
-                        if (ImGui::Checkbox("Use Fsr2 Pattern Matching", &fsr2Pattern))
-                            Config::Instance()->Fsr2Pattern = fsr2Pattern;
-                        ShowTooltip("This setting will become active on next boot!");
-
-                        if (ImGui::Checkbox("Use Fsr3 Inputs", &fsr3Inputs))
-                            Config::Instance()->Fsr3Inputs = fsr3Inputs;
-
-                        if (ImGui::Checkbox("Use Fsr3 Pattern Matching", &fsr3Pattern))
-                            Config::Instance()->Fsr3Pattern = fsr2Pattern;
-                        ShowTooltip("This setting will become active on next boot!");
-
-                        if (ImGui::Checkbox("Use Ffx Inputs", &ffxInputs))
-                            Config::Instance()->FfxInputs = ffxInputs;
+                        ImGui::EndCombo();
                     }
 
+                    const char* fpsType[] = { "Simple", "Detailed", "Detailed + Graph", "Full", "Full + Graph" };
+                    const char* selectedType = fpsType[Config::Instance()->FpsOverlayType.value_or_default()];
+
+                    if (ImGui::BeginCombo("Overlay Type", selectedType))
+                    {
+                        for (int n = 0; n < 5; n++)
+                        {
+                            if (ImGui::Selectable(fpsType[n], (Config::Instance()->FpsOverlayType.value_or_default() == n)))
+                                Config::Instance()->FpsOverlayType = n;
+                        }
+
+                        ImGui::EndCombo();
+                    }
+
+                    float fpsAlpha = Config::Instance()->FpsOverlayAlpha.value_or_default();
+                    if (ImGui::SliderFloat("Background Alpha", &fpsAlpha, 0.0f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
+                        Config::Instance()->FpsOverlayAlpha = fpsAlpha;
+                }
+
+                // ADVANCED SETTINGS -----------------------------
+                ImGui::Spacing();
+                if (ImGui::CollapsingHeader("Upscaler Inputs", currentFeature == nullptr ? ImGuiTreeNodeFlags_DefaultOpen : 0))
+                {
                     ImGui::Spacing();
-                    if (ImGui::CollapsingHeader("Advanced Settings"))
+                    bool fsr2Inputs = Config::Instance()->Fsr2Inputs.value_or_default();
+                    bool fsr2Pattern = Config::Instance()->Fsr2Pattern.value_or_default();
+                    bool fsr3Inputs = Config::Instance()->Fsr3Inputs.value_or_default();
+                    bool fsr3Pattern = Config::Instance()->Fsr3Pattern.value_or_default();
+                    bool ffxInputs = Config::Instance()->FfxInputs.value_or_default();
+
+                    if (ImGui::Checkbox("Use Fsr2 Inputs", &fsr2Inputs))
+                        Config::Instance()->Fsr2Inputs = fsr2Inputs;
+
+                    if (ImGui::Checkbox("Use Fsr2 Pattern Matching", &fsr2Pattern))
+                        Config::Instance()->Fsr2Pattern = fsr2Pattern;
+                    ShowTooltip("This setting will become active on next boot!");
+
+                    if (ImGui::Checkbox("Use Fsr3 Inputs", &fsr3Inputs))
+                        Config::Instance()->Fsr3Inputs = fsr3Inputs;
+
+                    if (ImGui::Checkbox("Use Fsr3 Pattern Matching", &fsr3Pattern))
+                        Config::Instance()->Fsr3Pattern = fsr2Pattern;
+                    ShowTooltip("This setting will become active on next boot!");
+
+                    if (ImGui::Checkbox("Use Ffx Inputs", &ffxInputs))
+                        Config::Instance()->FfxInputs = ffxInputs;
+                }
+
+                // DX11 & DX12 -----------------------------
+                if (State::Instance().api != Vulkan)
+                {
+                    // MIPMAP BIAS & Anisotropy -----------------------------
+                    ImGui::Spacing();
+                    if (ImGui::CollapsingHeader("Mipmap Bias", currentFeature == nullptr ? ImGuiTreeNodeFlags_DefaultOpen : 0))
                     {
                         ImGui::Spacing();
-                        if (currentFeature != nullptr)
+                        if (Config::Instance()->MipmapBiasOverride.has_value() && _mipBias == 0.0f)
+                            _mipBias = Config::Instance()->MipmapBiasOverride.value();
+
+                        ImGui::SliderFloat("Mipmap Bias##2", &_mipBias, -15.0f, 15.0f, "%.6f", ImGuiSliderFlags_NoRoundToFormat);
+                        ShowHelpMarker("Can help with blurry textures in broken games\n"
+                                       "Negative values will make textures sharper\n"
+                                       "Positive values will make textures more blurry\n\n"
+                                       "Has a small performance impact");
+
+                        ImGui::BeginDisabled(!Config::Instance()->MipmapBiasOverride.has_value());
                         {
-                            bool extendedLimits = Config::Instance()->ExtendedLimits.value_or_default();
-                            if (ImGui::Checkbox("Enable Extended Limits", &extendedLimits))
-                                Config::Instance()->ExtendedLimits = extendedLimits;
-
-                            ShowHelpMarker("Extended sliders limit for quality presets\n\n"
-                                           "Using this option changes resolution detection logic\n"
-                                           "and might cause issues and crashes!");
-                        }
-
-                        bool pcShaders = Config::Instance()->UsePrecompiledShaders.value_or_default();
-                        if (ImGui::Checkbox("Use Precompiled Shaders", &pcShaders))
-                        {
-                            Config::Instance()->UsePrecompiledShaders = pcShaders;
-                            State::Instance().newBackend = currentBackend;
-                            State::Instance().changeBackend = true;
-                        }
-                    }
-
-                    // DX11 & DX12 -----------------------------
-                    if (State::Instance().api != Vulkan)
-                    {
-                        // MIPMAP BIAS & Anisotropy -----------------------------
-                        ImGui::Spacing();
-                        if (ImGui::CollapsingHeader("Mipmap Bias", currentFeature == nullptr ? ImGuiTreeNodeFlags_DefaultOpen : 0))
-                        {
-                            ImGui::Spacing();
-                            if (Config::Instance()->MipmapBiasOverride.has_value() && _mipBias == 0.0f)
-                                _mipBias = Config::Instance()->MipmapBiasOverride.value();
-
-                            ImGui::SliderFloat("Mipmap Bias##2", &_mipBias, -15.0f, 15.0f, "%.6f", ImGuiSliderFlags_NoRoundToFormat);
-                            ShowHelpMarker("Can help with blurry textures in broken games\n"
-                                           "Negative values will make textures sharper\n"
-                                           "Positive values will make textures more blurry\n\n"
-                                           "Has a small performance impact");
-
-                            ImGui::BeginDisabled(!Config::Instance()->MipmapBiasOverride.has_value());
+                            ImGui::BeginDisabled(Config::Instance()->MipmapBiasScaleOverride.has_value() && Config::Instance()->MipmapBiasScaleOverride.value());
                             {
-                                ImGui::BeginDisabled(Config::Instance()->MipmapBiasScaleOverride.has_value() && Config::Instance()->MipmapBiasScaleOverride.value());
+                                bool mbFixed = Config::Instance()->MipmapBiasFixedOverride.value_or_default();
+                                if (ImGui::Checkbox("MB Fixed Override", &mbFixed))
                                 {
-                                    bool mbFixed = Config::Instance()->MipmapBiasFixedOverride.value_or_default();
-                                    if (ImGui::Checkbox("MB Fixed Override", &mbFixed))
-                                    {
-                                        Config::Instance()->MipmapBiasScaleOverride.reset();
-                                        Config::Instance()->MipmapBiasFixedOverride = mbFixed;
-                                    }
-
-                                    ShowHelpMarker("Apply same override value to all textures");
+                                    Config::Instance()->MipmapBiasScaleOverride.reset();
+                                    Config::Instance()->MipmapBiasFixedOverride = mbFixed;
                                 }
-                                ImGui::EndDisabled();
 
-                                ImGui::SameLine(0.0f, 6.0f);
-
-                                ImGui::BeginDisabled(Config::Instance()->MipmapBiasFixedOverride.has_value() && Config::Instance()->MipmapBiasFixedOverride.value());
-                                {
-                                    bool mbScale = Config::Instance()->MipmapBiasScaleOverride.value_or_default();
-                                    if (ImGui::Checkbox("MB Scale Override", &mbScale))
-                                    {
-                                        Config::Instance()->MipmapBiasFixedOverride.reset();
-                                        Config::Instance()->MipmapBiasScaleOverride = mbScale;
-                                    }
-
-                                    ShowHelpMarker("Apply override value as scale multiplier\n"
-                                                   "When using scale mode please use positive\n"
-                                                   "override values to increase sharpness!");
-                                }
-                                ImGui::EndDisabled();
-
-                                bool mbAll = Config::Instance()->MipmapBiasOverrideAll.value_or_default();
-                                if (ImGui::Checkbox("MB Override All Textures", &mbAll))
-                                    Config::Instance()->MipmapBiasOverrideAll = mbAll;
-
-                                ShowHelpMarker("Override all textures mipmap values\n"
-                                               "Normally OptiScaler only overrides\n"
-                                               "below zero mipmap values!");
-                            }
-                            ImGui::EndDisabled();
-
-                            ImGui::BeginDisabled(Config::Instance()->MipmapBiasOverride.has_value() && Config::Instance()->MipmapBiasOverride.value() == _mipBias);
-                            {
-                                if (ImGui::Button("Set"))
-                                {
-                                    Config::Instance()->MipmapBiasOverride = _mipBias;
-                                    State::Instance().lastMipBias = 100.0f;
-                                    State::Instance().lastMipBiasMax = -100.0f;
-                                }
+                                ShowHelpMarker("Apply same override value to all textures");
                             }
                             ImGui::EndDisabled();
 
                             ImGui::SameLine(0.0f, 6.0f);
 
-                            ImGui::BeginDisabled(!Config::Instance()->MipmapBiasOverride.has_value());
+                            ImGui::BeginDisabled(Config::Instance()->MipmapBiasFixedOverride.has_value() && Config::Instance()->MipmapBiasFixedOverride.value());
                             {
-                                if (ImGui::Button("Reset"))
+                                bool mbScale = Config::Instance()->MipmapBiasScaleOverride.value_or_default();
+                                if (ImGui::Checkbox("MB Scale Override", &mbScale))
                                 {
-                                    Config::Instance()->MipmapBiasOverride.reset();
-                                    _mipBias = 0.0f;
-                                    State::Instance().lastMipBias = 100.0f;
-                                    State::Instance().lastMipBiasMax = -100.0f;
+                                    Config::Instance()->MipmapBiasFixedOverride.reset();
+                                    Config::Instance()->MipmapBiasScaleOverride = mbScale;
                                 }
+
+                                ShowHelpMarker("Apply override value as scale multiplier\n"
+                                               "When using scale mode please use positive\n"
+                                               "override values to increase sharpness!");
                             }
                             ImGui::EndDisabled();
 
-                            if (currentFeature != nullptr)
-                            {
-                                ImGui::SameLine(0.0f, 6.0f);
+                            bool mbAll = Config::Instance()->MipmapBiasOverrideAll.value_or_default();
+                            if (ImGui::Checkbox("MB Override All Textures", &mbAll))
+                                Config::Instance()->MipmapBiasOverrideAll = mbAll;
 
-                                if (ImGui::Button("Calculate Mipmap Bias"))
-                                    _showMipmapCalcWindow = true;
-                            }
-
-                            if (Config::Instance()->MipmapBiasOverride.has_value())
-                            {
-                                if (Config::Instance()->MipmapBiasFixedOverride.value_or_default())
-                                {
-                                    ImGui::Text("Current : %.3f / %.3f, Target: %.3f",
-                                                State::Instance().lastMipBias, State::Instance().lastMipBiasMax, Config::Instance()->MipmapBiasOverride.value());
-                                }
-                                else if (Config::Instance()->MipmapBiasScaleOverride.value_or_default())
-                                {
-                                    ImGui::Text("Current : %.3f / %.3f, Target: Base * %.3f",
-                                                State::Instance().lastMipBias, State::Instance().lastMipBiasMax, Config::Instance()->MipmapBiasOverride.value());
-                                }
-                                else
-                                {
-                                    ImGui::Text("Current : %.3f / %.3f, Target: Base + %.3f",
-                                                State::Instance().lastMipBias, State::Instance().lastMipBiasMax, Config::Instance()->MipmapBiasOverride.value());
-                                }
-                            }
-                            else
-                            {
-                                ImGui::Text("Current : %.3f / %.3f", State::Instance().lastMipBias, State::Instance().lastMipBiasMax);
-                            }
-
-                            ImGui::Text("Will be applied after RESOLUTION or PRESENT change !!!");
+                            ShowHelpMarker("Override all textures mipmap values\n"
+                                           "Normally OptiScaler only overrides\n"
+                                           "below zero mipmap values!");
                         }
+                        ImGui::EndDisabled();
 
-                        ImGui::Spacing();
-                        if (ImGui::CollapsingHeader("Anisotropic Filtering", currentFeature == nullptr ? ImGuiTreeNodeFlags_DefaultOpen : 0))
+                        ImGui::BeginDisabled(Config::Instance()->MipmapBiasOverride.has_value() && Config::Instance()->MipmapBiasOverride.value() == _mipBias);
                         {
-                            ImGui::Spacing();
-                            ImGui::PushItemWidth(65.0f * Config::Instance()->MenuScale.value());
-
-                            auto selectedAF = Config::Instance()->AnisotropyOverride.has_value() ? std::to_string(Config::Instance()->AnisotropyOverride.value()) : "Auto";
-                            if (ImGui::BeginCombo("Force Anisotropic Filtering", selectedAF.c_str()))
+                            if (ImGui::Button("Set"))
                             {
-                                if (ImGui::Selectable("Auto", !Config::Instance()->AnisotropyOverride.has_value()))
-                                    Config::Instance()->AnisotropyOverride.reset();
-
-                                if (ImGui::Selectable("1", Config::Instance()->AnisotropyOverride.value_or(0) == 1))
-                                    Config::Instance()->AnisotropyOverride = 1;
-
-                                if (ImGui::Selectable("2", Config::Instance()->AnisotropyOverride.value_or(0) == 2))
-                                    Config::Instance()->AnisotropyOverride = 2;
-
-                                if (ImGui::Selectable("4", Config::Instance()->AnisotropyOverride.value_or(0) == 4))
-                                    Config::Instance()->AnisotropyOverride = 4;
-
-                                if (ImGui::Selectable("8", Config::Instance()->AnisotropyOverride.value_or(0) == 8))
-                                    Config::Instance()->AnisotropyOverride = 8;
-
-                                if (ImGui::Selectable("16", Config::Instance()->AnisotropyOverride.value_or(0) == 16))
-                                    Config::Instance()->AnisotropyOverride = 16;
-
-                                ImGui::EndCombo();
+                                Config::Instance()->MipmapBiasOverride = _mipBias;
+                                State::Instance().lastMipBias = 100.0f;
+                                State::Instance().lastMipBiasMax = -100.0f;
                             }
-
-                            ImGui::PopItemWidth();
-
-                            ImGui::Text("Will be applied after RESOLUTION or PRESENT change !!!");
                         }
+                        ImGui::EndDisabled();
 
+                        ImGui::SameLine(0.0f, 6.0f);
+
+                        ImGui::BeginDisabled(!Config::Instance()->MipmapBiasOverride.has_value());
+                        {
+                            if (ImGui::Button("Reset"))
+                            {
+                                Config::Instance()->MipmapBiasOverride.reset();
+                                _mipBias = 0.0f;
+                                State::Instance().lastMipBias = 100.0f;
+                                State::Instance().lastMipBiasMax = -100.0f;
+                            }
+                        }
+                        ImGui::EndDisabled();
 
                         if (currentFeature != nullptr)
                         {
-                            // Non-DLSS hotfixes -----------------------------
-                            if (currentBackend != "dlss")
+                            ImGui::SameLine(0.0f, 6.0f);
+
+                            if (ImGui::Button("Calculate Mipmap Bias"))
+                                _showMipmapCalcWindow = true;
+                        }
+
+                        if (Config::Instance()->MipmapBiasOverride.has_value())
+                        {
+                            if (Config::Instance()->MipmapBiasFixedOverride.value_or_default())
                             {
-                                // BARRIERS -----------------------------
+                                ImGui::Text("Current : %.3f / %.3f, Target: %.3f",
+                                            State::Instance().lastMipBias, State::Instance().lastMipBiasMax, Config::Instance()->MipmapBiasOverride.value());
+                            }
+                            else if (Config::Instance()->MipmapBiasScaleOverride.value_or_default())
+                            {
+                                ImGui::Text("Current : %.3f / %.3f, Target: Base * %.3f",
+                                            State::Instance().lastMipBias, State::Instance().lastMipBiasMax, Config::Instance()->MipmapBiasOverride.value());
+                            }
+                            else
+                            {
+                                ImGui::Text("Current : %.3f / %.3f, Target: Base + %.3f",
+                                            State::Instance().lastMipBias, State::Instance().lastMipBiasMax, Config::Instance()->MipmapBiasOverride.value());
+                            }
+                        }
+                        else
+                        {
+                            ImGui::Text("Current : %.3f / %.3f", State::Instance().lastMipBias, State::Instance().lastMipBiasMax);
+                        }
+
+                        ImGui::Text("Will be applied after RESOLUTION or PRESENT change !!!");
+                    }
+
+                    ImGui::Spacing();
+                    if (ImGui::CollapsingHeader("Anisotropic Filtering", currentFeature == nullptr ? ImGuiTreeNodeFlags_DefaultOpen : 0))
+                    {
+                        ImGui::Spacing();
+                        ImGui::PushItemWidth(65.0f * Config::Instance()->MenuScale.value());
+
+                        auto selectedAF = Config::Instance()->AnisotropyOverride.has_value() ? std::to_string(Config::Instance()->AnisotropyOverride.value()) : "Auto";
+                        if (ImGui::BeginCombo("Force Anisotropic Filtering", selectedAF.c_str()))
+                        {
+                            if (ImGui::Selectable("Auto", !Config::Instance()->AnisotropyOverride.has_value()))
+                                Config::Instance()->AnisotropyOverride.reset();
+
+                            if (ImGui::Selectable("1", Config::Instance()->AnisotropyOverride.value_or(0) == 1))
+                                Config::Instance()->AnisotropyOverride = 1;
+
+                            if (ImGui::Selectable("2", Config::Instance()->AnisotropyOverride.value_or(0) == 2))
+                                Config::Instance()->AnisotropyOverride = 2;
+
+                            if (ImGui::Selectable("4", Config::Instance()->AnisotropyOverride.value_or(0) == 4))
+                                Config::Instance()->AnisotropyOverride = 4;
+
+                            if (ImGui::Selectable("8", Config::Instance()->AnisotropyOverride.value_or(0) == 8))
+                                Config::Instance()->AnisotropyOverride = 8;
+
+                            if (ImGui::Selectable("16", Config::Instance()->AnisotropyOverride.value_or(0) == 16))
+                                Config::Instance()->AnisotropyOverride = 16;
+
+                            ImGui::EndCombo();
+                        }
+
+                        ImGui::PopItemWidth();
+
+                        ImGui::Text("Will be applied after RESOLUTION or PRESENT change !!!");
+                    }
+
+
+                    if (currentFeature != nullptr)
+                    {
+                        // Non-DLSS hotfixes -----------------------------
+                        if (currentBackend != "dlss")
+                        {
+                            // BARRIERS -----------------------------
+                            ImGui::Spacing();
+                            if (ImGui::CollapsingHeader("Resource Barriers"))
+                            {
                                 ImGui::Spacing();
-                                if (ImGui::CollapsingHeader("Resource Barriers"))
+                                AddResourceBarrier("Color", &Config::Instance()->ColorResourceBarrier);
+                                AddResourceBarrier("Depth", &Config::Instance()->DepthResourceBarrier);
+                                AddResourceBarrier("Motion", &Config::Instance()->MVResourceBarrier);
+                                AddResourceBarrier("Exposure", &Config::Instance()->ExposureResourceBarrier);
+                                AddResourceBarrier("Mask", &Config::Instance()->MaskResourceBarrier);
+                                AddResourceBarrier("Output", &Config::Instance()->OutputResourceBarrier);
+                            }
+
+                            // HOTFIXES -----------------------------
+                            if (State::Instance().api == DX12)
+                            {
+                                ImGui::Spacing();
+                                if (ImGui::CollapsingHeader("Root Signatures"))
                                 {
                                     ImGui::Spacing();
-                                    AddResourceBarrier("Color", &Config::Instance()->ColorResourceBarrier);
-                                    AddResourceBarrier("Depth", &Config::Instance()->DepthResourceBarrier);
-                                    AddResourceBarrier("Motion", &Config::Instance()->MVResourceBarrier);
-                                    AddResourceBarrier("Exposure", &Config::Instance()->ExposureResourceBarrier);
-                                    AddResourceBarrier("Mask", &Config::Instance()->MaskResourceBarrier);
-                                    AddResourceBarrier("Output", &Config::Instance()->OutputResourceBarrier);
-                                }
+                                    if (bool crs = Config::Instance()->RestoreComputeSignature.value_or_default(); ImGui::Checkbox("Restore Compute Root Signature", &crs))
+                                        Config::Instance()->RestoreComputeSignature = crs;
 
-                                // HOTFIXES -----------------------------
-                                if (State::Instance().api == DX12)
-                                {
-                                    ImGui::Spacing();
-                                    if (ImGui::CollapsingHeader("Root Signatures"))
-                                    {
-                                        ImGui::Spacing();
-                                        if (bool crs = Config::Instance()->RestoreComputeSignature.value_or_default(); ImGui::Checkbox("Restore Compute Root Signature", &crs))
-                                            Config::Instance()->RestoreComputeSignature = crs;
-
-                                        if (bool grs = Config::Instance()->RestoreGraphicSignature.value_or_default(); ImGui::Checkbox("Restore Graphic Root Signature", &grs))
-                                            Config::Instance()->RestoreGraphicSignature = grs;
-                                    }
+                                    if (bool grs = Config::Instance()->RestoreGraphicSignature.value_or_default(); ImGui::Checkbox("Restore Graphic Root Signature", &grs))
+                                        Config::Instance()->RestoreGraphicSignature = grs;
                                 }
                             }
                         }
                     }
-
-                    ImGui::EndTable();
                 }
+
+                ImGui::EndTable();
 
                 ImGui::Spacing();
                 ImGui::Separator();
