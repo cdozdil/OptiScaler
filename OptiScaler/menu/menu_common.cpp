@@ -1525,13 +1525,10 @@ bool MenuCommon::RenderMenu()
                 // DLSSG Mod
                 if (State::Instance().api != DX11 && !State::Instance().isWorkingAsNvngx)
                 {
-                    SeparatorWithHelpMarker("Frame Generation (Nukem's DLSSG via FSR FG)", "DLSSG via Nukem's FSR-FG using dlss-to-fsr3 mod,\n"
-                                            "for using DLSS G in game by using\n"
-                                            "dlssg_to_fsr3_amd_is_better.dll file\n"
-                                            "for creating better DLSS G frame generation");
+                    SeparatorWithHelpMarker("Frame Generation (FSR-FG via Nukem's DLSSG)", "Requires Nukem's dlssg_to_fsr3 dll\nSelect DLSS FG in-game");
 
                     auto dlssgEnabled = Config::Instance()->DLSSGMod.value_or_default();
-                    if (ImGui::Checkbox("DLSSG Enabled", &dlssgEnabled))
+                    if (ImGui::Checkbox("DLSSG Support Enabled", &dlssgEnabled))
                     {
                         Config::Instance()->DLSSGMod = dlssgEnabled;
 
