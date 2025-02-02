@@ -1520,7 +1520,10 @@ bool MenuCommon::RenderMenu()
                 // DLSSG Mod
                 if (State::Instance().api != DX11 && !State::Instance().isWorkingAsNvngx)
                 {
-                    ImGui::SeparatorText("Frame Generation (DLSSG)");
+                    SeparatorWithHelpMarker("Frame Generation (Nukem's DLSSG via FSR FG)", "DLSSG via Nukem's FSR-FG using dlss-to-fsr3 mod,\n"
+                                                                                           "for using DLSS G in game by using\n"
+                                                                                           "dlssg_to_fsr3_amd_is_better.dll file\n"
+                                                                                           "for creating better DLSS G frame generation");
 
                     auto dlssgEnabled = Config::Instance()->DLSSGMod.value_or_default();
                     if (ImGui::Checkbox("DLSSG Enabled", &dlssgEnabled))
@@ -1532,7 +1535,7 @@ bool MenuCommon::RenderMenu()
                         else
                             Config::Instance()->FGUseFGSwapChain.reset();
                     }
-                    ShowHelpMarker("These settings will become active on next boot!");
+                    ShowHelpMarker("These settings will become active on next boot!\nTo use, select DLSS FG in-game.");
 
                     if (Config::Instance()->DLSSGMod.value_or_default() && !State::Instance().NukemsFilesAvailable)
                         ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Please put dlssg_to_fsr3_amd_is_better.dll next to OptiScaler");
