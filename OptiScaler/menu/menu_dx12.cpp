@@ -59,7 +59,7 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
         pCmdList->OMSetRenderTargets(1, &_renderTargetDescriptor[backbuf], FALSE, NULL);
 
         ImGui_ImplDX12_NewFrame();
-        ImGui_ImplWin32_NewFrame();
+        //ImGui_ImplWin32_NewFrame();
 
         // Render
         MenuDxBase::RenderMenu();
@@ -106,7 +106,7 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
     pCmdList->OMSetRenderTargets(1, &_renderTargetDescriptor[backbuf], FALSE, nullptr);
 
     ImGui_ImplDX12_NewFrame();
-    ImGui_ImplWin32_NewFrame();
+    //ImGui_ImplWin32_NewFrame();
 
     // Render to buffer
     if (MenuDxBase::RenderMenu())
@@ -181,21 +181,11 @@ Menu_Dx12::~Menu_Dx12()
     if (!_dx12Init)
         return;
 
-    ID3D12Fence* d3d12Fence;
-    _device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence));
-    d3d12Fence->Signal(999);
-
-    auto fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-    if (d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
-    {
-        WaitForSingleObject(fenceEvent, INFINITE);
-        CloseHandle(fenceEvent);
-    }
-
-    d3d12Fence->Release();
+    if (State::Instance().isShuttingDown)
+        return;
 
     ImGui_ImplDX12_Shutdown();
+    MenuCommon::Shutdown();
 
     if (_rtvDescHeap)
     {

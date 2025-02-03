@@ -11,7 +11,7 @@
 #include <imgui/imgui_internal.h>
 
 static ImVec2 overlayPosition(-1000.0f, -1000.0f);
-static bool hdrTonemapApplied = false;
+static bool _hdrTonemapApplied = false;
 static ImVec4 SdrColors[ImGuiCol_COUNT];
 static bool receivingWmInputs = false;
 static bool inputMenu = false;
@@ -771,9 +771,10 @@ static ImVec4 toneMapColor(const ImVec4& color)
 static void MenuHdrCheck(ImGuiIO io)
 {
     // If game is using HDR, apply tone mapping to the ImGui style
-    if (State::Instance().isHdrActive)
+    if (State::Instance().isHdrActive ||
+        (!Config::Instance()->OverlayMenu.value_or_default() && (State::Instance().currentFeature->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR) > 0))
     {
-        if (!hdrTonemapApplied)
+        if (!_hdrTonemapApplied)
         {
             ImGuiStyle& style = ImGui::GetStyle();
 
@@ -786,16 +787,16 @@ static void MenuHdrCheck(ImGuiIO io)
                 style.Colors[i] = toneMapColor(color);
             }
 
-            hdrTonemapApplied = true;
+            _hdrTonemapApplied = true;
         }
     }
     else
     {
-        if (hdrTonemapApplied)
+        if (_hdrTonemapApplied)
         {
             ImGuiStyle& style = ImGui::GetStyle();
             CopyMemory(style.Colors, SdrColors, sizeof(style.Colors));
-            hdrTonemapApplied = false;
+            _hdrTonemapApplied = false;
         }
     }
 }
@@ -963,7 +964,25 @@ bool MenuCommon::RenderMenu()
                         break;
 
                     default:
-                        api = "???";
+                        switch (State::Instance().api)
+                        {
+                            case Vulkan:
+                                api = "VLK";
+                                break;
+
+                            case DX11:
+                                api = "D3D11";
+                                break;
+
+                            case DX12:
+                                api = "D3D12";
+                                break;
+
+                            default:
+                                api = "???";
+                                break;
+                        }
+
                         break;
                 }
             }
@@ -3144,7 +3163,7 @@ void MenuCommon::Init(HWND InHwnd)
     bool initResult = ImGui_ImplWin32_Init(InHwnd);
     LOG_DEBUG("ImGui_ImplWin32_Init result: {0}", initResult);
 
-    if (_optiFont == nullptr)
+    if (_optiFont == nullptr || !Config::Instance()->OverlayMenu.value_or_default())
     {
         ImFontConfig fontConfig;
         //fontConfig.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_Bold;
@@ -3164,6 +3183,9 @@ void MenuCommon::Init(HWND InHwnd)
 
         io.Fonts->SetTexID(nullptr);
         io.Fonts->Build();
+
+        _imguiSizeUpdate = true;
+        _hdrTonemapApplied = false;
     }
 
     io.FontDefault = _optiFont;

@@ -90,28 +90,29 @@ bool Menu_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTexture
 		return false;
 
 	ImGui_ImplDX11_NewFrame();
-	ImGui_ImplWin32_NewFrame();
+	//ImGui_ImplWin32_NewFrame();
 
-	MenuDxBase::RenderMenu();
-
-	// Create RTV for out
-	pCmdList->OMSetRenderTargets(1, &_renderTargetView, nullptr);
-
-	if (_renderTargetTexture == nullptr)
+	if (MenuDxBase::RenderMenu())
 	{
+		// Create RTV for out
+		pCmdList->OMSetRenderTargets(1, &_renderTargetView, nullptr);
+
+		if (_renderTargetTexture == nullptr)
+		{
+			// Render
+			ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+			return true;
+		}
+
+		// Copy first
+		pCmdList->CopyResource(_renderTargetTexture, outTexture);
+
 		// Render
 		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-		return true;
+
+		// Copy result
+		pCmdList->CopyResource(outTexture, _renderTargetTexture);
 	}
-
-	// Copy first
-	pCmdList->CopyResource(_renderTargetTexture, outTexture);
-
-	// Render
-	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
-	// Copy result
-	pCmdList->CopyResource(outTexture, _renderTargetTexture);
 
 	return true;
 }
@@ -123,7 +124,7 @@ Menu_Dx11::Menu_Dx11(HWND handle, ID3D11Device* pDevice) : MenuDxBase(handle), _
 
 Menu_Dx11::~Menu_Dx11()
 {
-	if (!_dx11Init)
+	if (!_dx11Init || State::Instance().isShuttingDown)
 		return;
 
 	MenuCommon::Shutdown();
