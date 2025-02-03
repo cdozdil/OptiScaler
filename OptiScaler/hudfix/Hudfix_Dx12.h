@@ -7,6 +7,7 @@
 
 #include <shaders/format_transfer/FT_Dx12.h>
 
+#include <set>
 #include <d3d12.h>
 
 // Remove duplicate definitions later, collect them in another header
@@ -37,9 +38,11 @@ private:
     inline static UINT64 _upscaleCounter = 0;
 
     // Last presented frame
-    inline static UINT64 _presentCounter = 0;
+    inline static UINT64 _fgCounter = 0;
 
     // Limit until calling FG without hudless
+    inline static double _lastDiffTime = 0.0;
+    inline static double _upscaleEndTime = 0.0;
     inline static double _targetTime = 0.0;
 
     // Captured hudless resources
@@ -48,20 +51,19 @@ private:
     // Buffer for Format Transfer
     inline static ID3D12Resource* _captureBuffer[4] = { nullptr, nullptr, nullptr, nullptr };
 
+    // Capture List
+    inline static std::set<ID3D12Resource*> _captureList;
+
+    inline static std::shared_mutex _captureMutex;
+    inline static std::shared_mutex counterMutex;
     inline static INT64 _captureCounter[4] = { 0, 0, 0, 0 };
     inline static FT_Dx12* _formatTransfer = nullptr;
 
     inline static bool CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource);
     inline static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
     
-    // Capture resource to _capturedHudless
-    inline static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* resource, D3D12_RESOURCE_STATES state);
-    
     // Check _captureCounter for current frame
-    inline static bool CheckCapture(std::string callerName);    
-
-    // Might not be needed
-    inline static void GetHudless(ID3D12GraphicsCommandList* This, UINT64 frame);
+    inline static bool CheckCapture();    
 
     inline static int GetIndex();
 
@@ -85,5 +87,5 @@ public:
     inline static bool IsResourceCheckActive();
 
     // Check resource for hudless
-    inline static bool CheckForHudless(std::string callerName, ResourceInfo* resource);
+    inline static bool CheckForHudless(std::string callerName, ID3D12GraphicsCommandList* cmdList, ResourceInfo* resource, D3D12_RESOURCE_STATES state);
 };
