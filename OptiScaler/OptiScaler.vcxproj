@@ -295,6 +295,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="menu\font\Hack_Compressed.h" />
+    <ClInclude Include="menu\menu_base.h" />
     <ClInclude Include="OwnedMutex.h" />
     <ClInclude Include="resource_build_date.h" />
     <ClInclude Include="shaders\depth_scale\DS_Common.h" />
@@ -411,6 +412,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="proxies\XeSS_Proxy.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="menu\menu_base.cpp" />
     <ClCompile Include="shaders\depth_scale\DS_Dx12.cpp" />
     <ClCompile Include="upscalers\dlssd\DLSSDFeature.cpp" />
     <ClCompile Include="upscalers\dlssd\DLSSDFeature_Dx11.cpp" />
