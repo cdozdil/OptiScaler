@@ -76,8 +76,7 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
         if (!ImGui::GetDrawData())
             return false;
 
-        if (IsVisible()) // Dirty workaround as the menu gets always rendered
-            ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
+        ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
 
         outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
         outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;

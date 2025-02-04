@@ -2996,7 +2996,7 @@ bool MenuCommon::RenderMenu()
                     if (!ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow))
                         ImGui::SetWindowFocus();
 
-                        if (ImGui::InputScalar("Display Width", ImGuiDataType_U32, &_displayWidth, NULL, NULL, "%u"))
+                    if (ImGui::InputScalar("Display Width", ImGuiDataType_U32, &_displayWidth, NULL, NULL, "%u"))
                     {
                         if (_displayWidth <= 0)
                         {
