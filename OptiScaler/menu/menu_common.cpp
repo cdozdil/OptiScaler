@@ -1237,17 +1237,21 @@ bool MenuCommon::RenderMenu()
                 {
                     ImGui::SeparatorText("Frame Generation (OptiFG)");
 
-                    auto fsrFgActive = Config::Instance()->FGUseFGSwapChain.value_or_default();
-                    if (ImGui::Checkbox("Frame Generation Enabled", &fsrFgActive))
+                    if (!State::Instance().FsrFgIsActive)
                     {
-                        Config::Instance()->FGUseFGSwapChain = fsrFgActive;
+                        auto fsrFgActive = Config::Instance()->FGUseFGSwapChain.value_or_default();
+                        if (ImGui::Checkbox("Enable Frame Generation (OptiFG)", &fsrFgActive))
+                        {
+                            Config::Instance()->FGUseFGSwapChain = fsrFgActive;
 
-                        if (fsrFgActive)
-                            Config::Instance()->DLSSGMod = false;
-                        else
-                            Config::Instance()->DLSSGMod.reset();
+                            if (fsrFgActive)
+                                Config::Instance()->DLSSGMod = false;
+                            else
+                                Config::Instance()->DLSSGMod.reset();
+                        }
+                        ShowHelpMarker("These settings will become active on next boot!");
+
                     }
-                    ShowHelpMarker("These settings will become active on next boot!");
 
                     if (State::Instance().FsrFgIsActive && currentFeature != nullptr && FfxApiProxy::InitFfxDx12())
                     {
@@ -1553,6 +1557,14 @@ bool MenuCommon::RenderMenu()
                         ImGui::Spacing();
                         ImGui::Spacing();
                     }
+                    else if (currentFeature == nullptr)
+                    {
+                        ImGui::Text("Upscaler is not active"); // Probably never will be visible
+                    }
+                    else if (!FfxApiProxy::InitFfxDx12())
+                    {
+                        ImGui::TextColored({ 1.0f, 0.0f, 0.0f, 1.0f }, "amd_fidelityfx_dx12.dll is missing!"); // Probably never will be visible
+                    }
                 }
 
                 // DLSSG Mod
@@ -1560,17 +1572,21 @@ bool MenuCommon::RenderMenu()
                 {
                     SeparatorWithHelpMarker("Frame Generation (FSR-FG via Nukem's DLSSG)", "Requires Nukem's dlssg_to_fsr3 dll\nSelect DLSS FG in-game");
 
-                    auto dlssgEnabled = Config::Instance()->DLSSGMod.value_or_default();
-                    if (ImGui::Checkbox("DLSSG Support Enabled", &dlssgEnabled))
+                    if (!State::Instance().DLSSGIsActive)
                     {
-                        Config::Instance()->DLSSGMod = dlssgEnabled;
+                        auto dlssgEnabled = Config::Instance()->DLSSGMod.value_or_default();
+                        if (ImGui::Checkbox("Enable DLSSG Support", &dlssgEnabled))
+                        {
+                            Config::Instance()->DLSSGMod = dlssgEnabled;
 
-                        if (dlssgEnabled)
-                            Config::Instance()->FGUseFGSwapChain = false;
-                        else
-                            Config::Instance()->FGUseFGSwapChain.reset();
+                            if (dlssgEnabled)
+                                Config::Instance()->FGUseFGSwapChain = false;
+                            else
+                                Config::Instance()->FGUseFGSwapChain.reset();
+                        }
+                        ShowHelpMarker("These settings will become active on next boot!\nTo use, select DLSS FG in-game.");
+
                     }
-                    ShowHelpMarker("These settings will become active on next boot!\nTo use, select DLSS FG in-game.");
 
                     if (Config::Instance()->DLSSGMod.value_or_default() && !State::Instance().NukemsFilesAvailable)
                         ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Please put dlssg_to_fsr3_amd_is_better.dll next to OptiScaler");
@@ -1609,7 +1625,7 @@ bool MenuCommon::RenderMenu()
                     if (ImGui::CollapsingHeader("Advanced DLSSG Settings"))
                     {
                         ImGui::Spacing();
-                        auto hagsSpoofing = Config::Instance()->SpoofHAGS.value_or(dlssgEnabled);
+                        auto hagsSpoofing = Config::Instance()->SpoofHAGS.value_or(Config::Instance()->DLSSGMod.value_or_default());
                         if (ImGui::Checkbox("HAGS Spoofing Enabled", &hagsSpoofing))
                             Config::Instance()->SpoofHAGS = hagsSpoofing;
                     }
@@ -1898,7 +1914,7 @@ bool MenuCommon::RenderMenu()
                         ShowHelpMarker("Each render preset has it strengths and weaknesses\n"
                                        "Override to potentially improve image quality");
 
-                        
+
 
                         ImGui::PushItemWidth(135.0 * Config::Instance()->MenuScale.value_or_default());
                         AddRenderPreset("Override Preset", &Config::Instance()->RenderPresetForAll);
