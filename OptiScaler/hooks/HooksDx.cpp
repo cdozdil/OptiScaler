@@ -364,7 +364,7 @@ static bool _dx12Device = false;
 static ID3D11DeviceContext* g_pd3dDeviceContext = nullptr;
 
 // for dx12
-static ID3D12Device* g_pd3dDeviceParam = nullptr;
+//static ID3D12Device* g_pd3dDeviceParam = nullptr;
 //static ID3D12GraphicsCommandList* g_pd3dCommandList = nullptr;
 
 // status
@@ -601,7 +601,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
 {
     if ((This == nullptr || This != MenuOverlayDx::MenuCommandList()) && State::Instance().currentFeature != nullptr && !State::Instance().FGchanged &&
         fgHudlessFrame != State::Instance().currentFeature->FrameCount() && FrameGen_Dx12::fgTarget < State::Instance().currentFeature->FrameCount() &&
-        FrameGen_Dx12::fgContext != nullptr && FrameGen_Dx12::fgIsActive && HooksDx::currentSwapchain != nullptr)
+        FrameGen_Dx12::fgContext != nullptr && FrameGen_Dx12::fgIsActive && State::Instance().currentSwapchain != nullptr)
     {
         LOG_DEBUG("FrameCount: {0}, fgHudlessFrame: {1}, CommandList: {2:X}, fIndex: {3}", State::Instance().currentFeature->FrameCount(), fgHudlessFrame, (UINT64)This, fIndex);
 
@@ -639,7 +639,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
 
         // use swapchain buffer info 
         DXGI_SWAP_CHAIN_DESC scDesc{};
-        if (HooksDx::currentSwapchain->GetDesc(&scDesc) == S_OK)
+        if (State::Instance().currentSwapchain->GetDesc(&scDesc) == S_OK)
         {
             m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(scDesc.BufferDesc.Width);
             m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(scDesc.BufferDesc.Height);
@@ -735,7 +735,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
 
         m_FrameGenerationConfig.onlyPresentGenerated = State::Instance().FGonlyGenerated;
         m_FrameGenerationConfig.frameID = State::Instance().currentFeature->FrameCount();
-        m_FrameGenerationConfig.swapChain = HooksDx::currentSwapchain;
+        m_FrameGenerationConfig.swapChain = State::Instance().currentSwapchain;
 
         ffxReturnCode_t retCode = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgContext, &m_FrameGenerationConfig.header);
         LOG_DEBUG("D3D12_Configure result: {0:X}, frame: {1}, fIndex: {2}", retCode, frame, fIndex);
@@ -744,7 +744,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
         {
             ffxCreateBackendDX12Desc backendDesc{};
             backendDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_DX12;
-            backendDesc.device = g_pd3dDeviceParam;
+            backendDesc.device = State::Instance().currentD3D12Device;
 
             ffxDispatchDescFrameGenerationPrepare dfgPrepare{};
             dfgPrepare.header.type = FFX_API_DISPATCH_DESC_TYPE_FRAMEGENERATION_PREPARE;
@@ -816,7 +816,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
         LOG_ERROR("This should not happen!\nThis != MenuOverlayDx::MenuCommandList(): {} && State::Instance().currentFeature != nullptr: {} && !State::Instance().FGchanged: {} && fgHudlessFrame: {} != State::Instance().currentFeature->FrameCount(): {}, FrameGen_Dx12::fgTarget: {} < State::Instance().currentFeature->FrameCount(): {} && FrameGen_Dx12::fgContext != nullptr : {} && FrameGen_Dx12::fgIsActive: {} && HooksDx::currentSwapchain != nullptr: {}",
                   This != MenuOverlayDx::MenuCommandList(), State::Instance().currentFeature != nullptr, !State::Instance().FGchanged,
                   fgHudlessFrame, State::Instance().currentFeature->FrameCount(), FrameGen_Dx12::fgTarget, State::Instance().currentFeature->FrameCount(),
-                  FrameGen_Dx12::fgContext != nullptr, FrameGen_Dx12::fgIsActive, HooksDx::currentSwapchain != nullptr);
+                  FrameGen_Dx12::fgContext != nullptr, FrameGen_Dx12::fgIsActive, State::Instance().currentSwapchain != nullptr);
     }
 }
 
@@ -851,8 +851,8 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
     // needs conversion?
     if (resource->format != fgScDesc.BufferDesc.Format)
     {
-        if (FrameGen_Dx12::fgFormatTransfer != nullptr && FrameGen_Dx12::fgFormatTransfer->CreateBufferResource(g_pd3dDeviceParam, resource->buffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) &&
-            CreateBufferResource(g_pd3dDeviceParam, resource, D3D12_RESOURCE_STATE_COPY_SOURCE, &fgHudlessBuffer[fIndex]))
+        if (FrameGen_Dx12::fgFormatTransfer != nullptr && FrameGen_Dx12::fgFormatTransfer->CreateBufferResource(State::Instance().currentD3D12Device, resource->buffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) &&
+            CreateBufferResource(State::Instance().currentD3D12Device, resource, D3D12_RESOURCE_STATE_COPY_SOURCE, &fgHudlessBuffer[fIndex]))
         {
 #ifdef USE_RESOURCE_BARRIRER
             ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
@@ -867,7 +867,7 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
 #endif
 
             FrameGen_Dx12::fgFormatTransfer->SetBufferState(FrameGen_Dx12::fgCommandList[fIndex], D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            FrameGen_Dx12::fgFormatTransfer->Dispatch(g_pd3dDeviceParam, FrameGen_Dx12::fgCommandList[fIndex], fgHudlessBuffer[fIndex], FrameGen_Dx12::fgFormatTransfer->Buffer());
+            FrameGen_Dx12::fgFormatTransfer->Dispatch(State::Instance().currentD3D12Device, FrameGen_Dx12::fgCommandList[fIndex], fgHudlessBuffer[fIndex], FrameGen_Dx12::fgFormatTransfer->Buffer());
             FrameGen_Dx12::fgFormatTransfer->SetBufferState(FrameGen_Dx12::fgCommandList[fIndex], D3D12_RESOURCE_STATE_COPY_DEST);
 
             LOG_TRACE("Using fgFormatTransfer->Buffer()");
@@ -881,7 +881,7 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
     }
     else
     {
-        if (CreateBufferResource(g_pd3dDeviceParam, resource, D3D12_RESOURCE_STATE_COPY_DEST, &fgHudless[fIndex]))
+        if (CreateBufferResource(State::Instance().currentD3D12Device, resource, D3D12_RESOURCE_STATE_COPY_DEST, &fgHudless[fIndex]))
         {
 #ifdef USE_RESOURCE_BARRIRER
             ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
@@ -912,7 +912,7 @@ static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* res
 
 static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
 {
-    if (HooksDx::currentSwapchain == nullptr)
+    if (State::Instance().currentSwapchain == nullptr)
         return false;
 
     if (State::Instance().FGonlyUseCapturedResources)
@@ -934,7 +934,7 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
     }
 
     DXGI_SWAP_CHAIN_DESC scDesc{};
-    if (HooksDx::currentSwapchain->GetDesc(&scDesc) != S_OK)
+    if (State::Instance().currentSwapchain->GetDesc(&scDesc) != S_OK)
     {
         LOG_WARN("Can't get swapchain desc!");
         return false;
@@ -949,7 +949,7 @@ static bool CheckForHudless(std::string callerName, ResourceInfo* resource)
 
         FrameGen_Dx12::fgFormatTransfer = nullptr;
         State::Instance().skipHeapCapture = true;
-        FrameGen_Dx12::fgFormatTransfer = new FT_Dx12("FormatTransfer", g_pd3dDeviceParam, scDesc.BufferDesc.Format);
+        FrameGen_Dx12::fgFormatTransfer = new FT_Dx12("FormatTransfer", State::Instance().currentD3D12Device, scDesc.BufferDesc.Format);
         State::Instance().skipHeapCapture = false;
     }
 
@@ -1969,7 +1969,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
     LOG_DEBUG("frameCounter: {}, fIndex: {}, flags: {:X}", frameCounter, fIndex, Flags);
 
-    if (HooksDx::currentSwapchain == nullptr)
+    if (State::Instance().currentSwapchain == nullptr)
         return S_OK;
 
     if (State::Instance().FGresetCapturedResources)
@@ -1994,7 +1994,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
         Config::Instance()->FGEnabled.value_or_default() && State::Instance().currentFeature != nullptr &&
         FrameGen_Dx12::fgTarget < State::Instance().currentFeature->FrameCount() && !State::Instance().FGchanged &&
-        FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
+        FrameGen_Dx12::fgContext != nullptr && State::Instance().currentSwapchain != nullptr)
     {
         if (HooksDx::fgHUDlessCaptureCounter[fIndex] == 9999999999999) // If not captured
         {
@@ -2083,7 +2083,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
     if (fgSwapChains.contains(hWnd))
     {
         auto swInfo = &fgSwapChains[hWnd];
-        HooksDx::currentSwapchain = swInfo->swapChain;
+        State::Instance().currentSwapchain = swInfo->swapChain;
 
         swInfo->fgCommandQueue = (ID3D12CommandQueue*)pDevice;
         HooksDx::gameCommandQueue = swInfo->gameCommandQueue;
@@ -2559,7 +2559,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
             // It have 1 extra ref
             scInfo.swapChain->Release();
             fgSwapChains.insert_or_assign(pDesc->OutputWindow, scInfo);
-            HooksDx::currentSwapchain = scInfo.swapChain;
+            State::Instance().currentSwapchain = scInfo.swapChain;
 
             LOG_DEBUG("Created FSR-FG swapchain");
             return S_OK;
@@ -2596,7 +2596,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         *ppSwapChain = lastWrapped;
 
         if (!fgSkipSCWrapping)
-            HooksDx::currentSwapchain = lastWrapped;
+            State::Instance().currentSwapchain = lastWrapped;
 
         LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
 
@@ -2843,7 +2843,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
             // It have 1 extra ref
             scInfo.swapChain->Release();
             fgSwapChains.insert_or_assign(hWnd, scInfo);
-            HooksDx::currentSwapchain = scInfo.swapChain;
+            State::Instance().currentSwapchain = scInfo.swapChain;
 
             LOG_DEBUG("Created FSR-FG swapchain");
             return S_OK;
@@ -2880,7 +2880,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
 
         if (!fgSkipSCWrapping)
-            HooksDx::currentSwapchain = lastWrapped;
+            State::Instance().currentSwapchain = lastWrapped;
 
         if (Config::Instance()->ForceHDR.value_or_default())
         {
@@ -3334,7 +3334,7 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
     // Assuming RTSS is creating a D3D11on12 device, not sure why but sometimes RTSS tries to create 
     // it's D3D11on12 device with old CommandQueue which results crash
     // I am changing it's CommandQueue with current swapchain's command queue
-    if (HooksDx::GameCommandQueue != nullptr && *ppCommandQueues != HooksDx::GameCommandQueue && GetModuleHandle(L"RTSSHooks64.dll") != nullptr && pDevice == g_pd3dDeviceParam)
+    if (HooksDx::GameCommandQueue != nullptr && *ppCommandQueues != HooksDx::GameCommandQueue && GetModuleHandle(L"RTSSHooks64.dll") != nullptr && pDevice == State::Instance().currentD3D12Device)
     {
         LOG_INFO("Replaced RTSS CommandQueue with correct one {0:X} -> {1:X}", (UINT64)*ppCommandQueues, (UINT64)HooksDx::GameCommandQueue);
         *ppCommandQueues = HooksDx::GameCommandQueue;
@@ -3500,7 +3500,7 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
         *ppSwapChain = lastWrapped;
 
         if (!fgSkipSCWrapping)
-            HooksDx::currentSwapchain = lastWrapped;
+            State::Instance().currentSwapchain = lastWrapped;
 
         LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)*ppDevice);
 
@@ -3607,8 +3607,8 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     if (result == S_OK && ppDevice != nullptr && *ppDevice != nullptr)
     {
         LOG_DEBUG("Device captured: {0:X}", (size_t)*ppDevice);
-        g_pd3dDeviceParam = (ID3D12Device*)*ppDevice;
-        HookToDevice(g_pd3dDeviceParam);
+        State::Instance().currentD3D12Device = (ID3D12Device*)*ppDevice;
+        HookToDevice(State::Instance().currentD3D12Device);
         _d3d12Captured = true;
 
         State::Instance().d3d12Devices.push_back((ID3D12Device*)*ppDevice);
@@ -3857,11 +3857,11 @@ void HooksDx::HookDxgi()
 
 DXGI_FORMAT HooksDx::CurrentSwapchainFormat()
 {
-    if (HooksDx::currentSwapchain == nullptr)
+    if (State::Instance().currentSwapchain == nullptr)
         return DXGI_FORMAT_UNKNOWN;
 
     DXGI_SWAP_CHAIN_DESC scDesc{};
-    if (HooksDx::currentSwapchain->GetDesc(&scDesc) != S_OK)
+    if (State::Instance().currentSwapchain->GetDesc(&scDesc) != S_OK)
         return DXGI_FORMAT_UNKNOWN;
 
     return scDesc.BufferDesc.Format;
@@ -4241,7 +4241,7 @@ void FrameGen_Dx12::CreateFGContext(ID3D12Device* InDevice, IFeature* deviceCont
         ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
         m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
         m_FrameGenerationConfig.frameGenerationEnabled = true;
-        m_FrameGenerationConfig.swapChain = HooksDx::currentSwapchain;
+        m_FrameGenerationConfig.swapChain = State::Instance().currentSwapchain;
         m_FrameGenerationConfig.presentCallback = nullptr;
         m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
 
@@ -4268,7 +4268,7 @@ void FrameGen_Dx12::CreateFGContext(ID3D12Device* InDevice, IFeature* deviceCont
 
     // use swapchain buffer info 
     DXGI_SWAP_CHAIN_DESC desc{};
-    if (HooksDx::currentSwapchain->GetDesc(&desc) == S_OK)
+    if (State::Instance().currentSwapchain->GetDesc(&desc) == S_OK)
     {
         createFg.displaySize = { desc.BufferDesc.Width, desc.BufferDesc.Height };
         createFg.maxRenderSize = { desc.BufferDesc.Width, desc.BufferDesc.Height };
@@ -4330,7 +4330,7 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
         ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
         m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
         m_FrameGenerationConfig.frameGenerationEnabled = false;
-        m_FrameGenerationConfig.swapChain = HooksDx::currentSwapchain;
+        m_FrameGenerationConfig.swapChain = State::Instance().currentSwapchain;
         m_FrameGenerationConfig.presentCallback = nullptr;
         m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
 

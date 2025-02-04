@@ -1,7 +1,9 @@
 #pragma once
 #include "pch.h"
-#include <deque>
 #include "upscalers/IFeature.h"
+
+#include <deque>
+#include <dxgi.h>
 
 typedef enum API
 {
@@ -128,6 +130,9 @@ public:
 	bool fsrHooks = false;
 
 	IFeature* currentFeature = nullptr;
+	IDXGISwapChain* currentSwapchain = nullptr;
+	ID3D12Device* currentD3D12Device = nullptr;
+	ID3D11Device* currentD3D11Device = nullptr;
 
 	std::vector<ID3D12Device*> d3d12Devices;
 	std::vector<ID3D11Device*> d3d11Devices;

@@ -46,7 +46,7 @@ namespace HooksDx
     inline bool dx11UpscaleTrig[QUERY_BUFFER_COUNT] = { false, false, false };
 
     inline ID3D12CommandQueue* GameCommandQueue = nullptr;
-    inline IDXGISwapChain* currentSwapchain = nullptr;
+    //inline IDXGISwapChain* currentSwapchain = nullptr;
 
     inline int currentFrameIndex = 0;
     inline int previousFrameIndex = 0;
