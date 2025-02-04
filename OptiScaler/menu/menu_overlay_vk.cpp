@@ -342,8 +342,8 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
             return;
         }
 
-        initResult = ImGui_ImplVulkan_CreateFontsTexture();
-        LOG_DEBUG("ImGui_ImplVulkan_CreateFontsTexture result: {}", initResult);
+        initResult = ImGui_ImplVulkan_UpdateFontsTexture();
+        LOG_DEBUG("ImGui_ImplVulkan_UpdateFontsTexture result: {}", initResult);
 
         VkSubmitInfo end_info = { };
         end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -463,8 +463,15 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
     std::lock_guard<std::mutex> lock(_vkPresentMutex);
     LOG_DEBUG("rendering menu, swapchain count: {0}", pPresentInfo->swapchainCount);
 
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
+    MenuOverlayBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
+
     {
         ImGui_ImplVulkan_NewFrame();
+
+        if (io.Fonts->IsDirty())
+            ImGui_ImplVulkan_UpdateFontsTexture();
 
         if (MenuOverlayBase::RenderMenu())
         {

@@ -9,6 +9,8 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_win32.h"
 
+#include "menu_base.h"
+
 #include <detours/detours.h>
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -55,10 +57,6 @@ private:
     inline static bool _dx11Ready = false;
     inline static bool _dx12Ready = false;
     inline static bool _vulkanReady = false;
-
-    // font
-    inline static ImFont* _optiFont = nullptr;
-    inline static ImFont* _scaledOptiFont = nullptr;
 
     inline static void ShowTooltip(const char* tip);
 
@@ -127,7 +125,6 @@ private:
     static void PopulateCombo(std::string name, CustomOptional<uint32_t, B>* value, const char* names[], const std::string desc[], int length);
 
 public:
-
     static void Dx11Inited() { _dx11Ready = true; }
     static void Dx12Inited() { _dx12Ready = true; }
     static void VulkanInited() { _vulkanReady = true; }

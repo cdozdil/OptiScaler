@@ -22,7 +22,6 @@ void MenuCommon::ShowTooltip(const char* tip) {
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
     {
         ImGui::BeginTooltip();
-        ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or_default()); // Scale the tooltip text
         ImGui::Text(tip);
         ImGui::EndTooltip();
     }
@@ -900,11 +899,6 @@ bool MenuCommon::RenderMenu()
         MenuSizeCheck(io);
         ImGui::NewFrame();
 
-        if (Config::Instance()->MenuScale.value_or_default() > 1.0f)
-            ImGui::PushFont(_scaledOptiFont);
-        else
-            ImGui::PushFont(_optiFont);
-
         State::Instance().frameTimes.pop_front();
         State::Instance().frameTimes.push_back(1000.0 / io.Framerate);
 
@@ -940,8 +934,6 @@ bool MenuCommon::RenderMenu()
 
         if (ImGui::Begin("Performance Overlay", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav))
         {
-            ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
-
             std::string api;
             if (State::Instance().isRunningOnDXVK || State::Instance().isRunningOnLinux)
             {
@@ -1057,8 +1049,6 @@ bool MenuCommon::RenderMenu()
             ImGui::PopStyleColor(3); // Restore the style
         }
 
-        ImGui::PopFont();
-
         // Get size for postioning
         auto winSize = ImGui::GetWindowSize();
 
@@ -1126,11 +1116,6 @@ bool MenuCommon::RenderMenu()
             CopyMemory(style.Colors, styleold.Colors, sizeof(style.Colors)); // Restore colors		
         }
 
-        if (Config::Instance()->MenuScale.value_or_default() <= 1.0)
-            ImGui::PushFont(_optiFont);
-        else
-            ImGui::PushFont(_scaledOptiFont);
-
         auto currentFeature = State::Instance().currentFeature;
 
         auto size = ImVec2{ 0.0f, 0.0f };
@@ -1146,8 +1131,6 @@ bool MenuCommon::RenderMenu()
 
             _selectedScale = ((int)(Config::Instance()->MenuScale.value() * 10.0f)) - 5;
 
-            ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
-
             std::string selectedUpscalerName = "";
             std::string currentBackend = "";
             std::string currentBackendName = "";
@@ -1156,8 +1139,7 @@ bool MenuCommon::RenderMenu()
             if (currentFeature == nullptr || !currentFeature->IsInited())
             {
                 ImGui::Spacing();
-                ImGui::PushFont(_scaledOptiFont);
-                ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value() * 3);
+                ImGui::PushFont(MenuBase::scaledFont);
 
                 if (State::Instance().nvngxExists || State::Instance().libxessExists)
                 {
@@ -1171,7 +1153,6 @@ bool MenuCommon::RenderMenu()
 
 
                     ImGui::PopFont();
-                    ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
 
                     ImGui::Spacing();
                     ImGui::Text("nvngx.dll: %sExist", State::Instance().nvngxExists || State::Instance().isRunningOnNvidia ? "" : "Not ");
@@ -1186,7 +1167,6 @@ bool MenuCommon::RenderMenu()
                     ImGui::Spacing();
 
                     ImGui::PopFont();
-                    ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value());
                 }
 
             }
@@ -3016,8 +2996,6 @@ bool MenuCommon::RenderMenu()
                     if (!ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow))
                         ImGui::SetWindowFocus();
 
-                    ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or_default());
-
                     if (ImGui::InputScalar("Display Width", ImGuiDataType_U32, &_displayWidth, NULL, NULL, "%u"))
                     {
                         if (_displayWidth <= 0)
@@ -3130,8 +3108,6 @@ bool MenuCommon::RenderMenu()
                     ImGui::End();
                 }
             }
-
-            ImGui::PopFont();
         }
 
         return true;
@@ -3163,32 +3139,12 @@ void MenuCommon::Init(HWND InHwnd)
     bool initResult = ImGui_ImplWin32_Init(InHwnd);
     LOG_DEBUG("ImGui_ImplWin32_Init result: {0}", initResult);
 
-    if (_optiFont == nullptr || !Config::Instance()->OverlayMenu.value_or_default())
-    {
-        ImFontConfig fontConfig;
-        //fontConfig.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_Bold;
-        fontConfig.RasterizerDensity = 1.0;
-        _optiFont = io.Fonts->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85, 14.0f, &fontConfig);
+    MenuBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
 
-        ImFontConfig scaledFontConfig;
-        //scaledFontConfig.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_ForceAutoHint;
-        scaledFontConfig.RasterizerDensity = 2.0;
-        _scaledOptiFont = io.Fonts->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85, 14.0f, &scaledFontConfig);
-
-        if (!_scaledOptiFont || !_optiFont)
-        {
-            LOG_ERROR("Failed to load font");
-            return;
-        }
-
-        io.Fonts->SetTexID(nullptr);
-        io.Fonts->Build();
-
+    if (!Config::Instance()->OverlayMenu.value_or_default()) {
         _imguiSizeUpdate = true;
         _hdrTonemapApplied = false;
     }
-
-    io.FontDefault = _optiFont;
 
     if (_oWndProc == nullptr)
         _oWndProc = (WNDPROC)SetWindowLongPtr(InHwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);

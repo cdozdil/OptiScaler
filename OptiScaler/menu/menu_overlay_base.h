@@ -5,7 +5,9 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
-class MenuOverlayBase
+#include "menu_base.h"
+
+class MenuOverlayBase : public MenuBase
 {
 public:
 	static HWND Handle();
@@ -18,7 +20,7 @@ public:
 	static bool IsVisible();
 
 	static void Init(HWND InHandle);
-	static bool RenderMenu();
+    static bool RenderMenu();
 	static void Shutdown();
 	static void HideMenu();
 };

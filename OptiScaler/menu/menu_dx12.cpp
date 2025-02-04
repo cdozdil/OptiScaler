@@ -2,6 +2,8 @@
 
 #include <d3dx/d3dx12.h>
 
+#include "Config.h"
+#include "menu_common.h"
 #include "imgui/imgui_impl_dx12.h"
 #include "imgui/imgui_impl_win32.h"
 
@@ -24,7 +26,11 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
 
     CreateRenderTarget(outDesc);
 
-    if (!_dx12Init && ImGui::GetIO().BackendRendererUserData == nullptr)
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
+    UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
+
+    if (!_dx12Init && io.BackendRendererUserData == nullptr)
     {
         _dx12Init = ImGui_ImplDX12_Init(_device, 2, outDesc.Format, _srvDescHeap,
                                         _srvDescHeap->GetCPUDescriptorHandleForHeapStart(), _srvDescHeap->GetGPUDescriptorHandleForHeapStart());
@@ -61,8 +67,15 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
         ImGui_ImplDX12_NewFrame();
         //ImGui_ImplWin32_NewFrame();
 
+        if (io.Fonts->IsDirty())
+            ImGui_ImplDX12_UpdateFontsTexture();
+
         // Render
         MenuDxBase::RenderMenu();
+
+        if (!ImGui::GetDrawData())
+            return false;
+
         ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
 
         outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
@@ -107,6 +120,9 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
 
     ImGui_ImplDX12_NewFrame();
     //ImGui_ImplWin32_NewFrame();
+
+    if (io.Fonts->IsDirty())
+        ImGui_ImplDX12_UpdateFontsTexture();
 
     // Render to buffer
     if (MenuDxBase::RenderMenu())
