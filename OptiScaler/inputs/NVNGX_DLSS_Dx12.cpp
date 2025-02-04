@@ -1352,7 +1352,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     if (Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default())
     {
         if (!State::Instance().FGchanged && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() && Config::Instance()->FGEnabled.value_or_default() &&
-            FfxApiProxy::InitFfxDx12() && !FrameGen_Dx12::fgIsActive && HooksDx::currentSwapchain != nullptr &&
+            FfxApiProxy::InitFfxDx12() && !FrameGen_Dx12::fgIsActive && State::Instance().currentSwapchain != nullptr &&
             HooksDx::CurrentSwapchainFormat() != DXGI_FORMAT_UNKNOWN)
         {
             FrameGen_Dx12::CreateFGObjects(D3D12Device);
@@ -1454,7 +1454,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
         Config::Instance()->FGEnabled.value_or_default() && FrameGen_Dx12::fgTarget <= deviceContext->FrameCount() &&
-        FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
+        FrameGen_Dx12::fgContext != nullptr && State::Instance().currentSwapchain != nullptr)
     {
         frameIndex = FrameGen_Dx12::NewFrame();
 
@@ -1605,7 +1605,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         // FG Dispatch
         if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
             Config::Instance()->FGEnabled.value_or_default() && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() &&
-            FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
+            FrameGen_Dx12::fgContext != nullptr && State::Instance().currentSwapchain != nullptr)
         {
             HooksDx::upscaleRan = true;
             fgCallbackFrameIndex = frameIndex;
@@ -1653,7 +1653,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 // use swapchain buffer info 
                 DXGI_SWAP_CHAIN_DESC scDesc{};
-                if (HooksDx::currentSwapchain->GetDesc(&scDesc) == S_OK)
+                if (State::Instance().currentSwapchain->GetDesc(&scDesc) == S_OK)
                 {
                     m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(scDesc.BufferDesc.Width);
                     m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(scDesc.BufferDesc.Height);
@@ -1729,7 +1729,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 m_FrameGenerationConfig.onlyPresentGenerated = State::Instance().FGonlyGenerated; // check here
                 m_FrameGenerationConfig.frameID = deviceContext->FrameCount();
-                m_FrameGenerationConfig.swapChain = HooksDx::currentSwapchain;
+                m_FrameGenerationConfig.swapChain = State::Instance().currentSwapchain;
 
                 //State::Instance().skipSpoofing = true;
                 ffxReturnCode_t retCode = FfxApiProxy::D3D12_Configure()(&FrameGen_Dx12::fgContext, &m_FrameGenerationConfig.header);

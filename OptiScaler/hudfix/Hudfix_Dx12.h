@@ -8,7 +8,9 @@
 #include <shaders/format_transfer/FT_Dx12.h>
 
 #include <set>
+#include <dxgi.h>
 #include <d3d12.h>
+#include <shared_mutex>
 
 // Remove duplicate definitions later, collect them in another header
 enum ResourceType
@@ -55,15 +57,22 @@ private:
     inline static std::set<ID3D12Resource*> _captureList;
 
     inline static std::shared_mutex _captureMutex;
-    inline static std::shared_mutex counterMutex;
+    inline static std::shared_mutex _counterMutex;
     inline static INT64 _captureCounter[4] = { 0, 0, 0, 0 };
     inline static FT_Dx12* _formatTransfer = nullptr;
 
+    inline static ID3D12CommandQueue* _commandQueue = nullptr;
+    inline static ID3D12GraphicsCommandList* _commandList = nullptr;
+    inline static ID3D12CommandAllocator* _commandAllocator = nullptr;
+
+
+    inline static bool CreateObjects();    
     inline static bool CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource);
     inline static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
     
     // Check _captureCounter for current frame
     inline static bool CheckCapture();    
+    inline static bool CheckResource(ResourceInfo* resource);
 
     inline static int GetIndex();
 
