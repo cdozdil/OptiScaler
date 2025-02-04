@@ -179,86 +179,82 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
     LOG_INFO("Render Size: {}x{}, Target Size: {}x{}, Display Size: {}x{}", RenderWidth(), RenderHeight(), TargetWidth(), TargetHeight(), DisplayWidth(), DisplayHeight());
 
-    uint32_t RenderPresetDLAA = 0;
-    uint32_t RenderPresetUltraQuality = 0;
-    uint32_t RenderPresetQuality = 0;
-    uint32_t RenderPresetBalanced = 0;
-    uint32_t RenderPresetPerformance = 0;
-    uint32_t RenderPresetUltraPerformance = 0;
-
-    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, &RenderPresetDLAA) != NVSDK_NGX_Result_Success)
-        InParameters->Get("RayReconstruction.Hint.Render.Preset.DLAA", &RenderPresetDLAA);
-
-    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, &RenderPresetUltraQuality) != NVSDK_NGX_Result_Success)
-        InParameters->Get("RayReconstruction.Hint.Render.Preset.UltraQuality", &RenderPresetUltraQuality);
-
-    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, &RenderPresetQuality) != NVSDK_NGX_Result_Success)
-        InParameters->Get("RayReconstruction.Hint.Render.Preset.Quality", &RenderPresetQuality);
-
-    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, &RenderPresetBalanced) != NVSDK_NGX_Result_Success)
-        InParameters->Get("RayReconstruction.Hint.Render.Preset.Balanced", &RenderPresetBalanced);
-
-    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, &RenderPresetPerformance) != NVSDK_NGX_Result_Success)
-        InParameters->Get("RayReconstruction.Hint.Render.Preset.Performance", &RenderPresetPerformance);
-
-    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, &RenderPresetUltraPerformance) != NVSDK_NGX_Result_Success)
-        InParameters->Get("RayReconstruction.Hint.Render.Preset.UltraPerformance", &RenderPresetUltraPerformance);
-
     if (Config::Instance()->RenderPresetOverride.value_or_default())
     {
-        LOG_DEBUG("Preset override active, config overrides:");
-        LOG_DEBUG("Preset_DLAA {}", Config::Instance()->RenderPresetDLAA.value_or(RenderPresetDLAA));
-        LOG_DEBUG("Preset_UltraQuality {}", Config::Instance()->RenderPresetUltraQuality.value_or(RenderPresetUltraQuality));
-        LOG_DEBUG("Preset_Quality {}", Config::Instance()->RenderPresetQuality.value_or(RenderPresetQuality));
-        LOG_DEBUG("Preset_Balanced {}", Config::Instance()->RenderPresetBalanced.value_or(RenderPresetBalanced));
-        LOG_DEBUG("Preset_Performance {}", Config::Instance()->RenderPresetPerformance.value_or(RenderPresetPerformance));
-        LOG_DEBUG("Preset_UltraPerformance {}", Config::Instance()->RenderPresetUltraPerformance.value_or(RenderPresetUltraPerformance));
+        uint32_t RenderPresetDLAA = 0;
+        uint32_t RenderPresetUltraQuality = 0;
+        uint32_t RenderPresetQuality = 0;
+        uint32_t RenderPresetBalanced = 0;
+        uint32_t RenderPresetPerformance = 0;
+        uint32_t RenderPresetUltraPerformance = 0;
 
-        RenderPresetDLAA = Config::Instance()->RenderPresetDLAA.value_or(RenderPresetDLAA);
-        RenderPresetUltraQuality = Config::Instance()->RenderPresetUltraQuality.value_or(RenderPresetUltraQuality);
-        RenderPresetQuality = Config::Instance()->RenderPresetQuality.value_or(RenderPresetQuality);
-        RenderPresetBalanced = Config::Instance()->RenderPresetBalanced.value_or(RenderPresetBalanced);
-        RenderPresetPerformance = Config::Instance()->RenderPresetPerformance.value_or(RenderPresetPerformance);
-        RenderPresetUltraPerformance = Config::Instance()->RenderPresetUltraPerformance.value_or(RenderPresetUltraPerformance);
+        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, &RenderPresetDLAA) != NVSDK_NGX_Result_Success)
+            InParameters->Get("RayReconstruction.Hint.Render.Preset.DLAA", &RenderPresetDLAA);
+
+        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, &RenderPresetUltraQuality) != NVSDK_NGX_Result_Success)
+            InParameters->Get("RayReconstruction.Hint.Render.Preset.UltraQuality", &RenderPresetUltraQuality);
+
+        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, &RenderPresetQuality) != NVSDK_NGX_Result_Success)
+            InParameters->Get("RayReconstruction.Hint.Render.Preset.Quality", &RenderPresetQuality);
+
+        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, &RenderPresetBalanced) != NVSDK_NGX_Result_Success)
+            InParameters->Get("RayReconstruction.Hint.Render.Preset.Balanced", &RenderPresetBalanced);
+
+        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, &RenderPresetPerformance) != NVSDK_NGX_Result_Success)
+            InParameters->Get("RayReconstruction.Hint.Render.Preset.Performance", &RenderPresetPerformance);
+
+        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, &RenderPresetUltraPerformance) != NVSDK_NGX_Result_Success)
+            InParameters->Get("RayReconstruction.Hint.Render.Preset.UltraPerformance", &RenderPresetUltraPerformance);
+
+        if (Config::Instance()->RenderPresetOverride.value_or_default())
+        {
+            RenderPresetDLAA = Config::Instance()->RenderPresetForAll.value_or(Config::Instance()->RenderPresetDLAA.value_or(RenderPresetDLAA));
+            RenderPresetUltraQuality = Config::Instance()->RenderPresetForAll.value_or(Config::Instance()->RenderPresetUltraQuality.value_or(RenderPresetUltraQuality));
+            RenderPresetQuality = Config::Instance()->RenderPresetForAll.value_or(Config::Instance()->RenderPresetQuality.value_or(RenderPresetQuality));
+            RenderPresetBalanced = Config::Instance()->RenderPresetForAll.value_or(Config::Instance()->RenderPresetBalanced.value_or(RenderPresetBalanced));
+            RenderPresetPerformance = Config::Instance()->RenderPresetForAll.value_or(Config::Instance()->RenderPresetPerformance.value_or(RenderPresetPerformance));
+            RenderPresetUltraPerformance = Config::Instance()->RenderPresetForAll.value_or(Config::Instance()->RenderPresetUltraPerformance.value_or(RenderPresetUltraPerformance));
+
+            LOG_DEBUG("Preset override active, config overrides:");
+            LOG_DEBUG("Preset_DLAA {}", RenderPresetDLAA);
+            LOG_DEBUG("Preset_UltraQuality {}", RenderPresetUltraQuality);
+            LOG_DEBUG("Preset_Quality {}", RenderPresetQuality);
+            LOG_DEBUG("Preset_Balanced {}", RenderPresetBalanced);
+            LOG_DEBUG("Preset_Performance {}", RenderPresetPerformance);
+            LOG_DEBUG("Preset_UltraPerformance {}", RenderPresetUltraPerformance);
+        }
+
+        if (RenderPresetDLAA < 0 || RenderPresetDLAA > 15)
+            RenderPresetDLAA = 0;
+
+        if (RenderPresetUltraQuality < 0 || RenderPresetUltraQuality > 15)
+            RenderPresetUltraQuality = 0;
+
+        if (RenderPresetQuality < 0 || RenderPresetQuality > 15)
+            RenderPresetQuality = 0;
+
+        if (RenderPresetBalanced < 0 || RenderPresetBalanced > 15)
+            RenderPresetBalanced = 0;
+
+        if (RenderPresetPerformance < 0 || RenderPresetPerformance > 15)
+            RenderPresetPerformance = 0;
+
+        if (RenderPresetUltraPerformance < 0 || RenderPresetUltraPerformance > 15)
+            RenderPresetUltraPerformance = 0;
+
+        InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, RenderPresetDLAA);
+        InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, RenderPresetUltraQuality);
+        InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, RenderPresetQuality);
+        InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, RenderPresetBalanced);
+        InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, RenderPresetPerformance);
+        InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, RenderPresetUltraPerformance);
+        InParameters->Set("RayReconstruction.Hint.Render.Preset.DLAA", RenderPresetDLAA);
+        InParameters->Set("RayReconstruction.Hint.Render.Preset.UltraQuality", RenderPresetUltraQuality);
+        InParameters->Set("RayReconstruction.Hint.Render.Preset.Quality", RenderPresetQuality);
+        InParameters->Set("RayReconstruction.Hint.Render.Preset.Balanced", RenderPresetBalanced);
+        InParameters->Set("RayReconstruction.Hint.Render.Preset.Performance", RenderPresetPerformance);
+        InParameters->Set("RayReconstruction.Hint.Render.Preset.UltraPerformance", RenderPresetUltraPerformance);
     }
-
-    if (RenderPresetDLAA < 0 || RenderPresetDLAA > 15)
-        RenderPresetDLAA = 0;
-
-    if (RenderPresetUltraQuality < 0 || RenderPresetUltraQuality > 15)
-        RenderPresetUltraQuality = 0;
-
-    if (RenderPresetQuality < 0 || RenderPresetQuality > 15)
-        RenderPresetQuality = 0;
-
-    if (RenderPresetBalanced < 0 || RenderPresetBalanced > 15)
-        RenderPresetBalanced = 0;
-
-    if (RenderPresetPerformance < 0 || RenderPresetPerformance > 15)
-        RenderPresetPerformance = 0;
-
-    if (RenderPresetUltraPerformance < 0 || RenderPresetUltraPerformance > 15)
-        RenderPresetUltraPerformance = 0;
-
-    LOG_DEBUG("Final Presets:");
-    InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, RenderPresetDLAA);
-    LOG_DEBUG("Preset_DLAA {}", RenderPresetDLAA);
-    InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, RenderPresetUltraQuality);
-    LOG_DEBUG("Preset_UltraQuality {}", RenderPresetUltraQuality);
-    InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, RenderPresetQuality);
-    LOG_DEBUG("Preset_Quality {}", RenderPresetQuality);
-    InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, RenderPresetBalanced);
-    LOG_DEBUG("Preset_Balanced {}", RenderPresetBalanced);
-    InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, RenderPresetPerformance);
-    LOG_DEBUG("Preset_Performance {}", RenderPresetPerformance);
-    InParameters->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, RenderPresetUltraPerformance);
-    LOG_DEBUG("Preset_UltraPerformance {}", RenderPresetUltraPerformance);
-    InParameters->Set("RayReconstruction.Hint.Render.Preset.DLAA", RenderPresetDLAA);
-    InParameters->Set("RayReconstruction.Hint.Render.Preset.UltraQuality", RenderPresetUltraQuality);
-    InParameters->Set("RayReconstruction.Hint.Render.Preset.Quality", RenderPresetQuality);
-    InParameters->Set("RayReconstruction.Hint.Render.Preset.Balanced", RenderPresetBalanced);
-    InParameters->Set("RayReconstruction.Hint.Render.Preset.Performance", RenderPresetPerformance);
-    InParameters->Set("RayReconstruction.Hint.Render.Preset.UltraPerformance", RenderPresetUltraPerformance);
 
     UINT perfQ = NVSDK_NGX_PerfQuality_Value_Balanced;
     if (InParameters->Get(NVSDK_NGX_Parameter_PerfQualityValue, &perfQ) == NVSDK_NGX_Result_Success &&

@@ -135,8 +135,8 @@ public:
 	CustomOptional<int> LogLevel{ 2 };
 	CustomOptional<std::wstring> LogFileName{ L"OptiScaler.log" };
 	CustomOptional<bool> LogSingleFile{ true };
-	CustomOptional<bool> LogAsync{ true };
-	CustomOptional<int> LogAsyncThreads{ 1 };
+	CustomOptional<bool> LogAsync{ false };
+	CustomOptional<int> LogAsyncThreads{ 4 };
 
 	// XeSS
 	CustomOptional<bool> BuildPipelines{ true };
@@ -149,6 +149,7 @@ public:
 	CustomOptional<std::wstring, false> NvngxPath;
 	CustomOptional<std::wstring, false> NVNGX_DLSS_Library;
 	CustomOptional<bool> RenderPresetOverride{ false };
+	CustomOptional<uint32_t> RenderPresetForAll{ 0 };
 	CustomOptional<uint32_t> RenderPresetDLAA{ 0 };
 	CustomOptional<uint32_t> RenderPresetUltraQuality{ 0 };
 	CustomOptional<uint32_t> RenderPresetQuality{ 0 };
