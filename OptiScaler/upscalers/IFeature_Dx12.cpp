@@ -1,6 +1,8 @@
 #include "IFeature_Dx12.h"
 #include <pch.h>
 
+#include "State.h"
+
 void IFeature_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState) const
 {
 	D3D12_RESOURCE_BARRIER barrier = {};

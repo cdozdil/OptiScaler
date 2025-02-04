@@ -1,4 +1,7 @@
 #include "menu_dx11.h"
+
+#include "Config.h"
+#include "menu_common.h"
 #include "imgui/imgui_impl_dx11.h"
 #include "imgui/imgui_impl_win32.h"
 
@@ -83,7 +86,11 @@ bool Menu_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTexture
 
 	CreateRenderTarget(outTexture);
 
-	if (!_dx11Init && ImGui::GetIO().BackendRendererUserData == nullptr)
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
+	UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
+
+	if (!_dx11Init && io.BackendRendererUserData == nullptr)
 		_dx11Init = ImGui_ImplDX11_Init(_device, pCmdList);
 
 	if (!_dx11Init)

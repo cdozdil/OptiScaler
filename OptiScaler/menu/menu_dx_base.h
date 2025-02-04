@@ -1,8 +1,9 @@
+#pragma once
 #include <pch.h>
-#include "menu_common.h"
 #include <dxgi.h>
+#include "menu_base.h"
 
-class MenuDxBase
+class MenuDxBase : public MenuBase
 {
 private:
 	HWND _handle = nullptr;
@@ -14,9 +15,9 @@ private:
 
 protected:
 	long frameCounter = 0;
-	bool RenderMenu();
+    static bool RenderMenu();
 
-	static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
+    static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
 	{
 		switch (format) {
 			case DXGI_FORMAT_R32G32B32A32_TYPELESS:
@@ -41,7 +42,7 @@ protected:
 	}
 
 public:
-	bool IsVisible() const;
+    static bool IsVisible();
 	bool IsInited() const { return _baseInit; }
 	int Width() { return _width; }
 	int Height() { return _height; }
@@ -49,8 +50,8 @@ public:
 	int Left() { return _left; }
 	HWND Handle() { return _handle; }
 	bool IsHandleDifferent();
-	void Dx11Ready();
-	void Dx12Ready();
+    static void Dx11Ready();
+    static void Dx12Ready();
 
 	explicit MenuDxBase(HWND handle);
 

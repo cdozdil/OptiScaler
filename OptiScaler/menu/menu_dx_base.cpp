@@ -5,6 +5,7 @@
 
 #include "menu_common.h"
 #include "menu_dx_base.h"
+
 #include "imgui/imgui_impl_win32.h"
 
 bool MenuDxBase::RenderMenu()
@@ -64,7 +65,7 @@ MenuDxBase::~MenuDxBase()
     MenuCommon::Shutdown();
 }
 
-bool MenuDxBase::IsVisible() const
+bool MenuDxBase::IsVisible()
 {
     return MenuCommon::IsVisible();
 }

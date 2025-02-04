@@ -261,7 +261,11 @@ static void RenderImGui_DX11(IDXGISwapChain* pSwapChain)
 
     LOG_FUNC();
 
-    if (ImGui::GetIO().BackendRendererUserData == nullptr)
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
+    MenuOverlayBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
+
+    if (io.BackendRendererUserData == nullptr)
     {
         if (pSwapChain->GetDevice(IID_PPV_ARGS(&g_pd3dDevice)) == S_OK)
         {
@@ -327,8 +331,12 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
     // Get device from swapchain
     ID3D12Device* device = g_pd3dDeviceParam;
 
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
+    MenuOverlayBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
+
     // Generate ImGui resources
-    if (!ImGui::GetIO().BackendRendererUserData && currentSCCommandQueue != nullptr)
+    if (!io.BackendRendererUserData && currentSCCommandQueue != nullptr)
     {
         LOG_DEBUG("ImGui::GetIO().BackendRendererUserData == nullptr");
 
@@ -439,6 +447,9 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
             _showRenderImGuiDebugOnce = true;
 
             ImGui_ImplDX12_NewFrame();
+
+            if (io.Fonts->IsDirty())
+                ImGui_ImplDX12_UpdateFontsTexture();
 
             if (MenuOverlayBase::RenderMenu())
             {
