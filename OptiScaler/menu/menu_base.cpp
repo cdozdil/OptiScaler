@@ -11,6 +11,7 @@ void MenuBase::LoadCustomFonts(ImGuiIO& io, float menuScale)
     atlas->Clear();
     constexpr float fontSize = 14.0f; // just changing this doesn't make other elements scale ideally
 
+    // This automatically becomes the next default font
     ImFontConfig fontConfig;
     //fontConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LightHinting;
     font = atlas->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85, std::round(menuScale * fontSize), &fontConfig);
@@ -37,7 +38,7 @@ void MenuBase::UpdateFonts(ImGuiIO& io, float rasterizerDensity)
 {
     static float lastDensity = 0.0f;
 
-    if (lastDensity != rasterizerDensity)
+    if (lastDensity != rasterizerDensity || io.Fonts->Fonts.empty())
     {
         LoadCustomFonts(io, rasterizerDensity);
         lastDensity = rasterizerDensity;

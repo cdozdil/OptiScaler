@@ -19,6 +19,9 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
 
     frameCounter++;
 
+    //if (!IsVisible())
+    //	return true;
+
     auto outDesc = outTexture->GetDesc();
 
     CreateRenderTarget(outDesc);

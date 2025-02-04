@@ -899,8 +899,6 @@ bool MenuCommon::RenderMenu()
         MenuSizeCheck(io);
         ImGui::NewFrame();
 
-        ImGui::PushFont(MenuBase::font);
-
         State::Instance().frameTimes.pop_front();
         State::Instance().frameTimes.push_back(1000.0 / io.Framerate);
 
@@ -1051,8 +1049,6 @@ bool MenuCommon::RenderMenu()
             ImGui::PopStyleColor(3); // Restore the style
         }
 
-        ImGui::PopFont();
-
         // Get size for postioning
         auto winSize = ImGui::GetWindowSize();
 
@@ -1119,8 +1115,6 @@ bool MenuCommon::RenderMenu()
             style.MouseCursorScale = 1.0f;
             CopyMemory(style.Colors, styleold.Colors, sizeof(style.Colors)); // Restore colors		
         }
-
-        ImGui::PushFont(MenuBase::font);
 
         auto currentFeature = State::Instance().currentFeature;
 
@@ -3114,8 +3108,6 @@ bool MenuCommon::RenderMenu()
                     ImGui::End();
                 }
             }
-
-            ImGui::PopFont();
         }
 
         return true;
