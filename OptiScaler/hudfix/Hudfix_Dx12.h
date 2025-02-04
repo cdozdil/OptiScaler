@@ -70,6 +70,9 @@ private:
     inline static bool CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource);
     inline static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
     
+    // Capture resource to _capturedHudless
+    inline static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* resource, D3D12_RESOURCE_STATES state);
+    
     // Check _captureCounter for current frame
     inline static bool CheckCapture();    
     inline static bool CheckResource(ResourceInfo* resource);

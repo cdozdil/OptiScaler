@@ -404,7 +404,7 @@ inline bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsC
         else
         {
             LOG_WARN("Can't create _captureBuffer!");
-            return false;
+        return false;
         }
     }
 
