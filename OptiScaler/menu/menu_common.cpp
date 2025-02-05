@@ -1243,8 +1243,6 @@ bool MenuCommon::RenderMenu()
                     }
                 }
 
-                ImGui::SeparatorText("Frame Generation");
-
                 const char* fgOptions[] = { "No Frame Generation", "OptiFG", "FSR-FG via Nukem's DLSSG" };
                 std::vector<std::string> fgDesc = { "", "", "Select DLSS FG in-game" };
                 std::vector<uint8_t> disabledMask = { false, false, false };
@@ -1295,7 +1293,10 @@ bool MenuCommon::RenderMenu()
                     Config::Instance()->FGType = Config::Instance()->FGType.value_or_default(); // need to have a value before combo
 
                 if (disabledCount < fgOptionsCount - 1) // maybe always show it anyway?
+                {
+                    ImGui::SeparatorText("Frame Generation");
                     PopulateCombo("FG Type", reinterpret_cast<CustomOptional<uint32_t>*>(&Config::Instance()->FGType), fgOptions, fgDesc.data(), fgOptionsCount, disabledMask.data(), false);
+                }
 
                 State::Instance().showRestartWarning = State::Instance().activeFgType != Config::Instance()->FGType.value_or_default();
 
