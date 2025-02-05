@@ -12,7 +12,7 @@ While previously only DLSS2+ inputs were supported, newer versions also added su
 - Supports integration with [**Fakenvapi**](https://github.com/FakeMichau/fakenvapi) which enables Reflex hooking and injecting Anti-Lag 2 or LatencyFlex (LFX)  
 - Since version 0.7.7, support for Nukem's FSR FG mod [**dlssg-to-fsr3**](https://github.com/Nukem9/dlssg-to-fsr3) has also been added
 
-_[*] Regarding XeSS, Unreal Engine plugin does not provide depth, and as such renders XeSS hooking in UE pointless (recommended to set `XeSS=false` in nvngx.ini for such games). Regarding FSR inputs, FSR 3.1 is the first version with a fully standardised and forward-looking API and as such removed custom interfaces. Since FSR2 and FSR3 support custom interfaces, game support will depend on the developers' implementation. Always check the [Wiki](https://github.com/cdozdil/OptiScaler/wiki) Compatibility list for known issues._
+_[*] Regarding XeSS, Unreal Engine plugin does not provide depth, and as such renders XeSS hooking in UE pointless (recommended to set `XeSS=false` in OptiScaler.ini for such games). Regarding FSR inputs, FSR 3.1 is the first version with a fully standardised and forward-looking API and as such removed custom interfaces. Since FSR2 and FSR3 support custom interfaces, game support will depend on the developers' implementation. Always check the [Wiki](https://github.com/cdozdil/OptiScaler/wiki) Compatibility list for known issues._
 
 ## How it works?
 OptiScaler implements the necessary API methods of DLSS2+ & NVAPI, XeSS and FSR2+ to act as a middleware. It interprets calls from the game and redirects them to the chosen upscaling backend, allowing games using one technology to use another of your choice.
@@ -85,7 +85,7 @@ Alternatively, you can create a new folder called `plugins` and put other mod fi
 
 ![image](https://github.com/cdozdil/OptiScaler/assets/35529761/c4bf2a85-107b-49ac-b002-59d00fd06982)
 
-**Please don't rename the ini file, it should stay as `nvngx.ini`**.
+**Please don't rename the ini file, it should stay as `OptiScaler.ini`**.
 
 #### OptiFG (powered by FSR3 FG) + HUDfix (experimental HUD ghosting fix) 
 OptiFG was added with 0.7 builds and is only supported in DX12. It uses FSR3 FG to enable Frame Generation in every DX12 upscaler-enabled games, however it's not so simple. Since FSR3 FG doesn't support HUD interpolation itself, it requires a HUDless resource provided by the game to avoid HUD ghosting. In games without native FG, Optiscaler tries to find the HUDless resource when the user enables HUDfix. Depending on how the game draws its UI/HUD, Optiscaler may or may not be successful in fixing these issues. There are several options for tuning the search. A more detailed guide will be available in the [Wiki](https://github.com/cdozdil/OptiScaler/wiki), along with a list of HUDfix incompatible games.
@@ -117,7 +117,7 @@ OptiFG was added with 0.7 builds and is only supported in DX12. It uses FSR3 FG 
 
 ## Uninstallation
 * Run `DisableSignatureOverride.reg` file 
-* Delete `EnableSignatureOverride.reg`, `DisableSignatureOverride.reg`, `nvngx.dll`, `nvngx.ini` files (if you used Fakenvapi and/or Nukem mod, then also delete `fakenvapi.ini`, `nvapi64.dll` and `dlssg_to_fsr3` files)
+* Delete `EnableSignatureOverride.reg`, `DisableSignatureOverride.reg`, `nvngx.dll`, `OptiScaler.ini` files (if you used Fakenvapi and/or Nukem mod, then also delete `fakenvapi.ini`, `nvapi64.dll` and `dlssg_to_fsr3` files)
 * If there was a `libxess.dll` file and you have backed it up, delete the new file and restore the backed up file. If you overwrote/replaced the old file, **DO NOT** delete `libxess.dll` file. If there was no `libxess.dll` before, it's safe to delete. Same goes for FSR files (`amd_fidelityfx`).
 
 ## Features

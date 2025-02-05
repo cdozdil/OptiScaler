@@ -1,10 +1,10 @@
 # Configuration
-This document will try to explain the `nvngx.ini` and in-game menu (shortcut key for opening menu is **INSERT**) settings as much as possible. 
+This document will try to explain the `OptiScaler.ini` and in-game menu (shortcut key for opening menu is **INSERT**) settings as much as possible. 
 
 ![in-game menu](images/menu043.png)
 
 ### Upscalers
-OptiScaler supports DirectX 11, DirectX 12 and Vulkan APIs with multiple upscaler backends. You can select which upscaler to use in the `[Upscalers]` section of the `nvngx.ini` file.
+OptiScaler supports DirectX 11, DirectX 12 and Vulkan APIs with multiple upscaler backends. You can select which upscaler to use in the `[Upscalers]` section of the `OptiScaler.ini` file.
 
 ```ini
 [Upscalers]

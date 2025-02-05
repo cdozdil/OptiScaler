@@ -252,7 +252,7 @@ copy $(SolutionDir)external\xess\licenses\LICENSE.pdf $(SolutionDir)x64\Release\
 copy $(SolutionDir)external\xess\bin\libxess.dll $(SolutionDir)x64\Release\a\ /Y
 copy $(SolutionDir)external\FidelityFX-SDK\docs\license.md $(SolutionDir)x64\Release\a\Licenses\FidelityFX_LICENSE.md /Y
 copy $(SolutionDir)external\FidelityFX-SDK\PrebuiltSignedDLL\*.dll $(SolutionDir)x64\Release\a\ /Y
-copy $(SolutionDir)nvngx.ini $(SolutionDir)x64\Release\a\ /Y
+copy $(SolutionDir)OptiScaler.ini $(SolutionDir)x64\Release\a\ /Y
 copy "$(SolutionDir)OptiScaler Setup.bat" $(SolutionDir)x64\Release\a\ /Y
 copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y</Command>
     </PostBuildEvent>

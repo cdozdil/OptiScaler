@@ -27,14 +27,14 @@ Sometimes games exposure texture format is not recognized by upscalers. Most of 
 
 ![exposure](/images/exposure.png)<br>*Shadow of the Tomb Raider*
 
-In most cases, enabling `AutoExposure=true` in `nvngx.ini` or selecting `Auto Exposure` in `Init Parameters` from the in-game menu should fix these issues.
+In most cases, enabling `AutoExposure=true` in `OptiScaler.ini` or selecting `Auto Exposure` in `Init Parameters` from the in-game menu should fix these issues.
 
 ## Resource Barriers
 The Unreal Engine DLSS plugin is known to send DLSS resources in the wrong state. Normally OptiScaler checks engine info from NVSDK and automatically enables necessary fixes for Unreal Engine games, but some games do not report engine info correctly. This problem usually manifests itself as colored areas at the bottom of the screen.
 
 ![christmas lights](/images/christmas.png)<br>*Deep Rock Galactic*
 
-Workaround is to set `ColorResourceBarrier=4` from `nvngx.ini` or select `RENDER_TARGET` for `Color` at `Resource Barriers (Dx12)` from the in-game menu.
+Workaround is to set `ColorResourceBarrier=4` from `OptiScaler.ini` or select `RENDER_TARGET` for `Color` at `Resource Barriers (Dx12)` from the in-game menu.
 
 ## Black Screen with XeSS
 Some users have reported that when using XeSS upscaler backend, the result is a black screen with UI. In some cases downloading the latest version of [DirectX Shader Compiler](https://github.com/microsoft/DirectXShaderCompiler/releases) and extracting `dxcompiler.dll`, `dxil.dll` from `bin\x64\` next to the game exe file resolved this issue.  
