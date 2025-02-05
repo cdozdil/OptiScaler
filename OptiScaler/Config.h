@@ -5,7 +5,14 @@
 #include <filesystem>
 #include <SimpleIni.h>
 
-template <class T, bool HasDefaultValue = true>
+enum HasDefaultValue
+{
+	WithDefault,
+    NoDefault,
+	SoftDefault // Change always gets saved to the config
+};
+
+template <class T, HasDefaultValue defaultState = WithDefault>
 class CustomOptional : public std::optional<T> {
 private:
 	T _defaultValue;
@@ -13,10 +20,10 @@ private:
 	bool _volatile;
 
 public:
-	CustomOptional(T defaultValue) requires (HasDefaultValue)
+	CustomOptional(T defaultValue) requires (defaultState != NoDefault)
 		: std::optional<T>(), _defaultValue(std::move(defaultValue)), _configIni(std::nullopt), _volatile(false) {}
 
-	CustomOptional() requires (!HasDefaultValue)
+	CustomOptional() requires (defaultState == NoDefault)
 		: std::optional<T>(), _defaultValue(T{}), _configIni(std::nullopt), _volatile(false) {}
 
 	// Prevents a change from being saved to ini
@@ -70,15 +77,15 @@ public:
 		return *this;
 	}
 
-	constexpr T value_or_default() const& requires (HasDefaultValue) {
+	constexpr T value_or_default() const& requires (defaultState != NoDefault) {
 		return this->has_value() ? this->value() : _defaultValue;
 	}
 
-	constexpr T value_or_default()&& requires (HasDefaultValue) {
+	constexpr T value_or_default()&& requires (defaultState != NoDefault) {
 		return this->has_value() ? std::move(this->value()) : std::move(_defaultValue);
 	}
 
-	constexpr std::optional<T> value_for_config() requires (HasDefaultValue) {
+	constexpr std::optional<T> value_for_config() requires (defaultState == WithDefault) {
 		if (_volatile) {
 			if (_configIni != _defaultValue)
 				return _configIni;
@@ -92,7 +99,7 @@ public:
 		return this->value();
 	}
 
-	constexpr std::optional<T> value_for_config() requires (!HasDefaultValue) {
+	constexpr std::optional<T> value_for_config() requires (defaultState != WithDefault) {
 		if (_volatile)
 			return _configIni;
 
@@ -118,12 +125,12 @@ public:
 	Config();
 
 	// Init flags
-	CustomOptional<bool, false> DepthInverted;
-	CustomOptional<bool, false> AutoExposure;
-	CustomOptional<bool, false> HDR;
-	CustomOptional<bool, false> JitterCancellation;
-	CustomOptional<bool, false> DisplayResolution;
-	CustomOptional<bool, false> DisableReactiveMask;
+	CustomOptional<bool, NoDefault> DepthInverted;
+	CustomOptional<bool, NoDefault> AutoExposure;
+	CustomOptional<bool, NoDefault> HDR;
+	CustomOptional<bool, NoDefault> JitterCancellation;
+	CustomOptional<bool, NoDefault> DisplayResolution;
+	CustomOptional<bool, NoDefault> DisableReactiveMask;
 	CustomOptional<float> DlssReactiveMaskBias{ 0.45f };
 
 	// Logging
@@ -142,12 +149,12 @@ public:
 	CustomOptional<bool> BuildPipelines{ true };
 	CustomOptional<int32_t> NetworkModel{ 0 };
 	CustomOptional<bool> CreateHeaps{ true };
-	CustomOptional<std::wstring, false> XeSSLibrary;
+	CustomOptional<std::wstring, NoDefault> XeSSLibrary;
 
 	// DLSS
 	CustomOptional<bool> DLSSEnabled{ true };
-	CustomOptional<std::wstring, false> NvngxPath;
-	CustomOptional<std::wstring, false> NVNGX_DLSS_Library;
+	CustomOptional<std::wstring, NoDefault> NvngxPath;
+	CustomOptional<std::wstring, NoDefault> NVNGX_DLSS_Library;
 	CustomOptional<bool> RenderPresetOverride{ false };
 	CustomOptional<uint32_t> RenderPresetForAll{ 0 };
 	CustomOptional<uint32_t> RenderPresetDLAA{ 0 };
@@ -209,16 +216,16 @@ public:
 	CustomOptional<float> QualityRatio_UltraPerformance{ 3.0f };
 
 	// Hotfixes
-	CustomOptional<float, false> MipmapBiasOverride; // disabled by default
+	CustomOptional<float, NoDefault> MipmapBiasOverride; // disabled by default
 	CustomOptional<bool> MipmapBiasFixedOverride{ false };
 	CustomOptional<bool> MipmapBiasScaleOverride{ false };
 	CustomOptional<bool> MipmapBiasOverrideAll{ false };
-	CustomOptional<int, false> AnisotropyOverride; // disabled by default
-	CustomOptional<int, false> RoundInternalResolution; // disabled by default
+	CustomOptional<int, NoDefault> AnisotropyOverride; // disabled by default
+	CustomOptional<int, NoDefault> RoundInternalResolution; // disabled by default
 
 	CustomOptional<bool> RestoreComputeSignature{ false };
 	CustomOptional<bool> RestoreGraphicSignature{ false };
-	CustomOptional<int, false> SkipFirstFrames; // disabled by default
+	CustomOptional<int, NoDefault> SkipFirstFrames; // disabled by default
 
 	CustomOptional<bool> UsePrecompiledShaders{ true };
 
@@ -226,17 +233,17 @@ public:
 	CustomOptional<bool> PreferDedicatedGpu{ false };
 	CustomOptional<bool> PreferFirstDedicatedGpu{ false };
 
-	CustomOptional<int32_t, false> ColorResourceBarrier; // disabled by default
-	CustomOptional<int32_t, false> MVResourceBarrier; // disabled by default
-	CustomOptional<int32_t, false> DepthResourceBarrier; // disabled by default
-	CustomOptional<int32_t, false> ExposureResourceBarrier; // disabled by default
-	CustomOptional<int32_t, false> MaskResourceBarrier; // disabled by default
-	CustomOptional<int32_t, false> OutputResourceBarrier; // disabled by default
+	CustomOptional<int32_t, NoDefault> ColorResourceBarrier; // disabled by default
+	CustomOptional<int32_t, NoDefault> MVResourceBarrier; // disabled by default
+	CustomOptional<int32_t, NoDefault> DepthResourceBarrier; // disabled by default
+	CustomOptional<int32_t, NoDefault> ExposureResourceBarrier; // disabled by default
+	CustomOptional<int32_t, NoDefault> MaskResourceBarrier; // disabled by default
+	CustomOptional<int32_t, NoDefault> OutputResourceBarrier; // disabled by default
 
 	// Upscalers
-	CustomOptional<std::string> Dx11Upscaler{ "fsr22" };
-	CustomOptional<std::string> Dx12Upscaler{ "xess" };
-	CustomOptional<std::string> VulkanUpscaler{ "fsr21" };
+	CustomOptional<std::string, SoftDefault> Dx11Upscaler{ "fsr22" };
+	CustomOptional<std::string, SoftDefault> Dx12Upscaler{ "xess" };
+	CustomOptional<std::string, SoftDefault> VulkanUpscaler{ "fsr21" };
 
 	// Output Scaling
 	CustomOptional<bool> OutputScalingEnabled{ false };
@@ -273,16 +280,16 @@ public:
 
 	// NVAPI Override
 	CustomOptional<bool> OverrideNvapiDll{ false };
-	CustomOptional<std::wstring, false> NvapiDllPath;
+	CustomOptional<std::wstring, NoDefault> NvapiDllPath;
 
 	// Spoofing
 	CustomOptional<bool> DxgiSpoofing{ true };
-	CustomOptional<std::string, false> DxgiBlacklist; // disabled by default
-	CustomOptional<int, false> DxgiVRAM; // disabled by default
+	CustomOptional<std::string, NoDefault> DxgiBlacklist; // disabled by default
+	CustomOptional<int, NoDefault> DxgiVRAM; // disabled by default
 	CustomOptional<bool> VulkanSpoofing{ false };
 	CustomOptional<bool> VulkanExtensionSpoofing{ false };
 	CustomOptional<std::wstring> SpoofedGPUName{ L"NVIDIA GeForce RTX 4090" };
-	CustomOptional<int, false> VulkanVRAM; // disabled by default
+	CustomOptional<int, NoDefault> VulkanVRAM; // disabled by default
 
 	// Plugins
 	CustomOptional<std::wstring> PluginPath{ L"plugins" };
@@ -299,10 +306,10 @@ public:
 	CustomOptional<bool> FGHUDFixExtended{ false };
 	CustomOptional<bool> FGImmediateCapture{ false };
 	CustomOptional<int> FGHUDLimit{ 1 };
-	CustomOptional<int, false> FGRectLeft;
-	CustomOptional<int, false> FGRectTop;
-	CustomOptional<int, false> FGRectWidth;
-	CustomOptional<int, false> FGRectHeight;
+	CustomOptional<int, NoDefault> FGRectLeft;
+	CustomOptional<int, NoDefault> FGRectTop;
+	CustomOptional<int, NoDefault> FGRectWidth;
+	CustomOptional<int, NoDefault> FGRectHeight;
 	CustomOptional<bool> FGDisableOverlays{ true };
 	CustomOptional<bool> FGAlwaysTrackHeaps{ false };
 	CustomOptional<bool> FGMakeDepthCopy{ true };
