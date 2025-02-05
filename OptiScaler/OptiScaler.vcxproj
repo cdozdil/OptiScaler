@@ -418,6 +418,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
   <ItemGroup>
     <ClCompile Include="framegen\ffx\FSRFG_Dx12.cpp" />
     <ClCompile Include="framegen\IFGFeature.cpp" />
+    <ClCompile Include="framegen\IFGFeature_Dx12.cpp" />
     <ClCompile Include="hudfix\Hudfix_Dx12.cpp" />
     <ClCompile Include="menu\menu_base.cpp" />
     <ClCompile Include="shaders\depth_scale\DS_Dx12.cpp" />

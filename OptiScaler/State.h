@@ -1,6 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "upscalers/IFeature.h"
+#include "framegen/IFGFeature.h"
 
 #include <deque>
 #include <dxgi.h>
@@ -130,6 +131,7 @@ public:
 	bool fsrHooks = false;
 
 	IFeature* currentFeature = nullptr;
+	IFGFeature* currentFG = nullptr;
 	IDXGISwapChain* currentSwapchain = nullptr;
 	ID3D12Device* currentD3D12Device = nullptr;
 	ID3D11Device* currentD3D11Device = nullptr;

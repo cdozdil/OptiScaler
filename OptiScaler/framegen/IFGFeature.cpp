@@ -1,5 +1,15 @@
 #include "IFGFeature.h"
 
+int IFGFeature::GetIndex()
+{
+    return (_frameCount % BUFFER_COUNT);
+}
+
+UINT64 IFGFeature::UpscaleStart()
+{
+    return ++_frameCount;
+}
+
 void IFGFeature::SetJitter(float x, float y)
 {
     _jitterX = x;
@@ -29,3 +39,4 @@ void IFGFeature::SetReset(UINT reset)
 {
     _reset = reset;
 }
+

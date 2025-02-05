@@ -84,7 +84,7 @@ public:
     inline static void UpscaleStart();
 
     // Trig for upscaling end
-    inline static void UpscaleEnd(float lastFrameTime);
+    inline static void UpscaleEnd(UINT64 frameId, float lastFrameTime);
     
     // Trig for present start
     inline static void PresentStart();

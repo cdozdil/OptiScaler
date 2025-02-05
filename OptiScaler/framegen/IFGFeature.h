@@ -1,6 +1,8 @@
 #pragma once
 #include <pch.h>
 
+#include <State.h>
+#include <Config.h>
 #include <OwnedMutex.h>
 
 #include <dxgi.h>
@@ -19,13 +21,19 @@ protected:
     float _ftDelta = 0.0;
     UINT _reset = 0;
 
+    UINT64 _frameCount = 0;
+
     bool _isActive = false;
     UINT64 _targetFrame = 10;
-    bool _skipWrapping = false;
-
-    OwnedMutex _mutex;
+    
+    int GetIndex();
 
 public:
+    OwnedMutex Mutex;
+
+    UINT64 UpscaleStart();
+    virtual void UpscaleEnd(float lastFrameTime) = 0;
+
     void SetJitter(float x, float y);
     void SetMVScale(float x, float y);
     void SetCameraValues(float nearValue, float farValue, float vFov, float meterFactor = 0.0f);
@@ -34,5 +42,4 @@ public:
 
     virtual feature_version Version() = 0;
     virtual const char* Name() = 0;
-
 };
