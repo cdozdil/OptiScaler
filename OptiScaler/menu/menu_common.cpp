@@ -651,7 +651,7 @@ void MenuCommon::AddVulkanBackends(std::string* code, std::string* name)
     }
 }
 
-template <bool B>
+template <HasDefaultValue B>
 void MenuCommon::AddResourceBarrier(std::string name, CustomOptional<int32_t, B>* value)
 {
     const char* states[] = { "AUTO", "COMMON", "VERTEX_AND_CONSTANT_BUFFER", "INDEX_BUFFER", "RENDER_TARGET", "UNORDERED_ACCESS", "DEPTH_WRITE",
@@ -691,7 +691,7 @@ void MenuCommon::AddResourceBarrier(std::string name, CustomOptional<int32_t, B>
     }
 }
 
-template <bool B>
+template <HasDefaultValue B>
 void MenuCommon::AddRenderPreset(std::string name, CustomOptional<uint32_t, B>* value)
 {
     const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G",
@@ -718,7 +718,7 @@ void MenuCommon::AddRenderPreset(std::string name, CustomOptional<uint32_t, B>* 
     PopulateCombo(name, value, presets, presetsDesc, 16);
 }
 
-template <bool B>
+template <HasDefaultValue B>
 void MenuCommon::PopulateCombo(std::string name, CustomOptional<uint32_t, B>* value, const char* names[], const std::string desc[], int length, const uint8_t disabledMask[], bool firstAsDefault) {
     int selected = value->value_or(0);
 
