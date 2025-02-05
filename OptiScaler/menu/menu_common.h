@@ -117,11 +117,11 @@ private:
     static void AddDx11Backends(std::string* code, std::string* name);
     static void AddDx12Backends(std::string* code, std::string* name);
     static void AddVulkanBackends(std::string* code, std::string* name);
-    template <bool B>
+    template <HasDefaultValue B>
     static void AddResourceBarrier(std::string name, CustomOptional<int32_t, B>* value);
-    template <bool B>
+    template <HasDefaultValue B>
     static void AddRenderPreset(std::string name, CustomOptional<uint32_t, B>* value);
-    template <bool B>
+    template <HasDefaultValue B>
     static void PopulateCombo(std::string name, CustomOptional<uint32_t, B>* value, const char* names[], const std::string desc[], int length);
 
 public:
