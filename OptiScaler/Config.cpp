@@ -50,35 +50,53 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Frame Generation
         {
-            FGUseFGSwapChain.set_from_config(readBool("FrameGen", "UseFGSwapChain"));
-            FGEnabled.set_from_config(readBool("FrameGen", "Enabled"));
-            FGDebugView.set_from_config(readBool("FrameGen", "DebugView"));
-            FGAsync.set_from_config(readBool("FrameGen", "AllowAsync"));
-            FGHighPriority.set_from_config(readBool("FrameGen", "HighPriority"));
-            FGHUDFix.set_from_config(readBool("FrameGen", "HUDFix"));
-            FGHUDLimit.set_from_config(readInt("FrameGen", "HUDLimit"));
-            FGHUDFixExtended.set_from_config(readBool("FrameGen", "HUDFixExtended"));
-            FGImmediateCapture.set_from_config(readBool("FrameGen", "HUDFixImmadiate"));
-            FGRectLeft.set_from_config(readInt("FrameGen", "RectLeft"));
-            FGRectTop.set_from_config(readInt("FrameGen", "RectTop"));
-            FGRectWidth.set_from_config(readInt("FrameGen", "RectWidth"));
-            FGRectHeight.set_from_config(readInt("FrameGen", "RectHeight"));
-            FGDisableOverlays.set_from_config(readBool("FrameGen", "DisableOverlays"));
-            FGAlwaysTrackHeaps.set_from_config(readBool("FrameGen", "AlwaysTrackHeaps"));
-            FGMakeDepthCopy.set_from_config(readBool("FrameGen", "MakeDepthCopy"));
-            FGMakeMVCopy.set_from_config(readBool("FrameGen", "MakeMVCopy"));
-            FGHudFixCloseAfterCallback.set_from_config(readBool("FrameGen", "HudFixCloseAfterCallback"));
-            FGUseMutexForSwaphain.set_from_config(readBool("FrameGen", "UseMutexForSwaphain"));
-            
-            FGEnableDepthScale.set_from_config(readBool("FrameGen", "EnableDepthScale"));
-            FGDepthScaleMax.set_from_config(readFloat("FrameGen", "DepthScaleMax"));
+            if (auto FGTypeString = readString("FrameGen", "FGType"); FGTypeString.has_value())
+            {
+                if (lstrcmpiA(FGTypeString.value().c_str(), "nofg") == 0)
+                    FGType.set_from_config(FGType::NoFG);
+                else if (lstrcmpiA(FGTypeString.value().c_str(), "optifg") == 0)
+                    FGType.set_from_config(FGType::OptiFG);
+                else if (lstrcmpiA(FGTypeString.value().c_str(), "nukems") == 0)
+                    FGType.set_from_config(FGType::Nukems);
+                else
+                    FGType.set_from_config(FGType.value_or_default()); // ensure that a value is always set
+            }
+            else
+            {
+                FGType.set_from_config(FGType.value_or_default());
+            }
+        }
 
-            FGFramePacingTuning.set_from_config(readBool("FrameGen", "FramePacingTuning"));
-            FGFPTSafetyMarginInMs.set_from_config(readFloat("FrameGen", "FPTSafetyMarginInMs"));
-            FGFPTVarianceFactor.set_from_config(readFloat("FrameGen", "FPTVarianceFactor"));
-            FGFPTAllowHybridSpin.set_from_config(readBool("FrameGen", "FPTHybridSpin"));
-            FGFPTHybridSpinTime.set_from_config(readInt("FrameGen", "FPTHybridSpinTime"));
-            FGFPTAllowWaitForSingleObjectOnFence.set_from_config(readInt("FrameGen", "FPTWaitForSingleObjectOnFence"));
+        // OptiFG
+        {
+            FGEnabled.set_from_config(readBool("OptiFG", "Enabled"));
+            FGDebugView.set_from_config(readBool("OptiFG", "DebugView"));
+            FGAsync.set_from_config(readBool("OptiFG", "AllowAsync"));
+            FGHighPriority.set_from_config(readBool("OptiFG", "HighPriority"));
+            FGHUDFix.set_from_config(readBool("OptiFG", "HUDFix"));
+            FGHUDLimit.set_from_config(readInt("OptiFG", "HUDLimit"));
+            FGHUDFixExtended.set_from_config(readBool("OptiFG", "HUDFixExtended"));
+            FGImmediateCapture.set_from_config(readBool("OptiFG", "HUDFixImmadiate"));
+            FGRectLeft.set_from_config(readInt("OptiFG", "RectLeft"));
+            FGRectTop.set_from_config(readInt("OptiFG", "RectTop"));
+            FGRectWidth.set_from_config(readInt("OptiFG", "RectWidth"));
+            FGRectHeight.set_from_config(readInt("OptiFG", "RectHeight"));
+            FGDisableOverlays.set_from_config(readBool("OptiFG", "DisableOverlays"));
+            FGAlwaysTrackHeaps.set_from_config(readBool("OptiFG", "AlwaysTrackHeaps"));
+            FGMakeDepthCopy.set_from_config(readBool("OptiFG", "MakeDepthCopy"));
+            FGMakeMVCopy.set_from_config(readBool("OptiFG", "MakeMVCopy"));
+            FGHudFixCloseAfterCallback.set_from_config(readBool("OptiFG", "HudFixCloseAfterCallback"));
+            FGUseMutexForSwaphain.set_from_config(readBool("OptiFG", "UseMutexForSwaphain"));
+            
+            FGEnableDepthScale.set_from_config(readBool("OptiFG", "EnableDepthScale"));
+            FGDepthScaleMax.set_from_config(readFloat("OptiFG", "DepthScaleMax"));
+
+            FGFramePacingTuning.set_from_config(readBool("OptiFG", "FramePacingTuning"));
+            FGFPTSafetyMarginInMs.set_from_config(readFloat("OptiFG", "FPTSafetyMarginInMs"));
+            FGFPTVarianceFactor.set_from_config(readFloat("OptiFG", "FPTVarianceFactor"));
+            FGFPTAllowHybridSpin.set_from_config(readBool("OptiFG", "FPTHybridSpin"));
+            FGFPTHybridSpinTime.set_from_config(readInt("OptiFG", "FPTHybridSpinTime"));
+            FGFPTAllowWaitForSingleObjectOnFence.set_from_config(readInt("OptiFG", "FPTWaitForSingleObjectOnFence"));
         }
 
         // Framerate
@@ -143,13 +161,9 @@ bool Config::Reload(std::filesystem::path iniPath)
                 RenderPresetUltraPerformance.set_from_config(setting);
         }
 
-        // DLSSG
+        // Nukems
         {
-            SpoofHAGS.set_from_config(readBool("DLSSG", "SpoofHAGS"));
-            MakeDepthCopy.set_from_config(readBool("DLSSG", "MakeDepthCopy"));
-            DLSSGMod.set_from_config(readBool("DLSSG", "DLSSGMod"));
-            if (DLSSGMod.value_or(false))
-                FGUseFGSwapChain.set_volatile_value(false);
+            MakeDepthCopy.set_from_config(readBool("Nukems", "MakeDepthCopy"));
         }
 
         // Logging
@@ -342,6 +356,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             VulkanExtensionSpoofing.set_from_config(readBool("Spoofing", "VulkanExtensionSpoofing"));
             VulkanVRAM.set_from_config(readInt("Spoofing", "VulkanVRAM"));
             SpoofedGPUName.set_from_config(readWString("Spoofing", "SpoofedGPUName"));
+            SpoofHAGS.set_from_config(readBool("Spoofing", "SpoofHAGS"));
         }
 
         // Inputs
@@ -511,37 +526,51 @@ bool Config::SaveIni()
         ini.SetValue("Upscalers", "VulkanUpscaler", Instance()->VulkanUpscaler.value_for_config_or("auto").c_str());
     }
 
-    // Frame Generation 
+    // Frame Generation
     {
-        ini.SetValue("FrameGen", "UseFGSwapChain", GetBoolValue(Instance()->FGUseFGSwapChain.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "Enabled", GetBoolValue(Instance()->FGEnabled.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "DebugView", GetBoolValue(Instance()->FGDebugView.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "AllowAsync", GetBoolValue(Instance()->FGAsync.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "HighPriority", GetBoolValue(Instance()->FGHighPriority.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "HUDFix", GetBoolValue(Instance()->FGHUDFix.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "HUDLimit", GetIntValue(Instance()->FGHUDLimit.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "HUDFixExtended", GetBoolValue(Instance()->FGHUDFixExtended.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "HUDFixImmadiate", GetBoolValue(Instance()->FGImmediateCapture.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "RectLeft", GetIntValue(Instance()->FGRectLeft.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "RectTop", GetIntValue(Instance()->FGRectTop.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "RectWidth", GetIntValue(Instance()->FGRectWidth.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "RectHeight", GetIntValue(Instance()->FGRectHeight.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "DisableOverlays", GetBoolValue(Instance()->FGDisableOverlays.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "AlwaysTrackHeaps", GetBoolValue(Instance()->FGAlwaysTrackHeaps.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "MakeDepthCopy", GetBoolValue(Instance()->FGMakeDepthCopy.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "MakeMVCopy", GetBoolValue(Instance()->FGMakeMVCopy.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "HudFixCloseAfterCallback", GetBoolValue(Instance()->FGHudFixCloseAfterCallback.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "UseMutexForSwaphain", GetBoolValue(Instance()->FGUseMutexForSwaphain.value_for_config()).c_str());
-        
-        ini.SetValue("FrameGen", "EnableDepthScale", GetBoolValue(Instance()->FGEnableDepthScale.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "DepthScaleMax", GetFloatValue(Instance()->FGDepthScaleMax.value_for_config()).c_str());
+        std::string FGTypeString = "auto";
+        if (auto FGTypeHeld = Instance()->FGType.value_for_config(); FGTypeHeld.has_value())
+        {
+            if (FGTypeHeld.value() == FGType::NoFG)
+                FGTypeString = "NoFG";
+            if (FGTypeHeld.value() == FGType::OptiFG)
+                FGTypeString = "OptiFG";
+            if (FGTypeHeld.value() == FGType::Nukems)
+                FGTypeString = "Nukems";
+        }
+        ini.SetValue("FrameGen", "FGType", FGTypeString.c_str());
+    }
 
-        ini.SetValue("FrameGen", "FramePacingTuning", GetBoolValue(Instance()->FGFramePacingTuning.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "FPTSafetyMarginInMs", GetFloatValue(Instance()->FGFPTSafetyMarginInMs.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "FPTVarianceFactor", GetFloatValue(Instance()->FGFPTVarianceFactor.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "FPTHybridSpin", GetBoolValue(Instance()->FGFPTAllowHybridSpin.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "FPTHybridSpinTime", GetIntValue(Instance()->FGFPTHybridSpinTime.value_for_config()).c_str());
-        ini.SetValue("FrameGen", "FPTWaitForSingleObjectOnFence", GetBoolValue(Instance()->FGFPTAllowWaitForSingleObjectOnFence.value_for_config()).c_str());
+    // OptiFG 
+    {
+        ini.SetValue("OptiFG", "Enabled", GetBoolValue(Instance()->FGEnabled.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "DebugView", GetBoolValue(Instance()->FGDebugView.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "AllowAsync", GetBoolValue(Instance()->FGAsync.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "HighPriority", GetBoolValue(Instance()->FGHighPriority.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "HUDFix", GetBoolValue(Instance()->FGHUDFix.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "HUDLimit", GetIntValue(Instance()->FGHUDLimit.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "HUDFixExtended", GetBoolValue(Instance()->FGHUDFixExtended.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "HUDFixImmadiate", GetBoolValue(Instance()->FGImmediateCapture.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "RectLeft", GetIntValue(Instance()->FGRectLeft.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "RectTop", GetIntValue(Instance()->FGRectTop.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "RectWidth", GetIntValue(Instance()->FGRectWidth.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "RectHeight", GetIntValue(Instance()->FGRectHeight.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "DisableOverlays", GetBoolValue(Instance()->FGDisableOverlays.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "AlwaysTrackHeaps", GetBoolValue(Instance()->FGAlwaysTrackHeaps.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "MakeDepthCopy", GetBoolValue(Instance()->FGMakeDepthCopy.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "MakeMVCopy", GetBoolValue(Instance()->FGMakeMVCopy.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "HudFixCloseAfterCallback", GetBoolValue(Instance()->FGHudFixCloseAfterCallback.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "UseMutexForSwaphain", GetBoolValue(Instance()->FGUseMutexForSwaphain.value_for_config()).c_str());
+        
+        ini.SetValue("OptiFG", "EnableDepthScale", GetBoolValue(Instance()->FGEnableDepthScale.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "DepthScaleMax", GetFloatValue(Instance()->FGDepthScaleMax.value_for_config()).c_str());
+
+        ini.SetValue("OptiFG", "FramePacingTuning", GetBoolValue(Instance()->FGFramePacingTuning.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "FPTSafetyMarginInMs", GetFloatValue(Instance()->FGFPTSafetyMarginInMs.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "FPTVarianceFactor", GetFloatValue(Instance()->FGFPTVarianceFactor.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "FPTHybridSpin", GetBoolValue(Instance()->FGFPTAllowHybridSpin.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "FPTHybridSpinTime", GetIntValue(Instance()->FGFPTHybridSpinTime.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "FPTWaitForSingleObjectOnFence", GetBoolValue(Instance()->FGFPTAllowWaitForSingleObjectOnFence.value_for_config()).c_str());
     }
 
     // Framerate 
@@ -598,11 +627,9 @@ bool Config::SaveIni()
         ini.SetValue("DLSS", "RenderPresetUltraPerformance", GetIntValue(Instance()->RenderPresetUltraPerformance).c_str());
     }
 
-    // DLSSG
+    // Nukems
     {
-        ini.SetValue("DLSSG", "SpoofHAGS", GetBoolValue(Instance()->SpoofHAGS.value_for_config()).c_str());
-        ini.SetValue("DLSSG", "MakeDepthCopy", GetBoolValue(Instance()->MakeDepthCopy.value_for_config()).c_str());
-        ini.SetValue("DLSSG", "DLSSGMod", GetBoolValue(Instance()->DLSSGMod.value_for_config()).c_str());
+        ini.SetValue("Nukems", "MakeDepthCopy", GetBoolValue(Instance()->MakeDepthCopy.value_for_config()).c_str());
     }
 
     // Sharpness
@@ -738,6 +765,7 @@ bool Config::SaveIni()
         ini.SetValue("Spoofing", "VulkanVRAM", GetIntValue(Instance()->VulkanVRAM.value_for_config()).c_str());
         ini.SetValue("Spoofing", "DxgiVRAM", GetIntValue(Instance()->DxgiVRAM.value_for_config()).c_str());
         ini.SetValue("Spoofing", "SpoofedGPUName", wstring_to_string(Instance()->SpoofedGPUName.value_for_config_or(L"auto")).c_str());
+        ini.SetValue("Spoofing", "SpoofHAGS", GetBoolValue(Instance()->SpoofHAGS.value_for_config()).c_str());
     }
 
     // Plugins

@@ -20,6 +20,13 @@ typedef enum GameQuirk
 	Banishers
 } GameQuirk;
 
+typedef enum FGType : uint32_t
+{
+	NoFG,
+	OptiFG,
+	Nukems
+} FGType;
+
 class State {
 public:
     static State& Instance() {
@@ -30,7 +37,7 @@ public:
 	// DLSSG
 	GameQuirk gameQuirk = GameQuirk::Other;
     bool NukemsFilesAvailable = false;
-	bool DLSSGIsActive = false;
+	//bool DLSSGIsActive = false;
 	bool DLSSGDebugView = false;
 
 	// FSR Common
@@ -38,12 +45,13 @@ public:
 	float lastFsrCameraFar = 0.0f;
 
 	// FG
+	FGType activeFgType = FGType::NoFG;
 	bool FGonlyGenerated = false;
 	bool FGchanged = false;
 	bool SCchanged = false;
 	bool skipHeapCapture = false;
 	bool useThreadingForHeaps = false;
-	bool FsrFgIsActive = false;
+	//bool FsrFgIsActive = false;
 
 	bool FGcaptureResources = false;
 	int FGcapturedResourceCount = false;
@@ -122,6 +130,7 @@ public:
 	std::string currentInputApiName;
 
 	bool isShuttingDown = false;
+	bool showRestartWarning = false;
 
 	bool nvngxExists = false;
 	bool libxessExists = false;

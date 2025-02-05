@@ -26,7 +26,7 @@ public:
                 // for DLSSG on pre-20xx cards
                 // Needs more controlled way of spoofing, was breaking DLSS-D 
                 // Leaving DLSS-G spoofing to Nukem's mod for now
-                //if (Config::Instance()->DLSSGMod.value_or_default() && ArchInfo->architecture >= NV_GPU_ARCHITECTURE_GM200 && ArchInfo->architecture < NV_GPU_ARCHITECTURE_AD100) { // only GTX9xx+ supports latest reflex
+                //if (Config::Instance()->FGType.value_or_default() == FGType::Nukems && ArchInfo->architecture >= NV_GPU_ARCHITECTURE_GM200 && ArchInfo->architecture < NV_GPU_ARCHITECTURE_AD100) { // only GTX9xx+ supports latest reflex
                 //    if (ArchInfo->architecture == NV_GPU_ARCHITECTURE_TU100 && ArchInfo->implementation > NV_GPU_ARCH_IMPLEMENTATION_TU106) {
                 //        ArchInfo->implementation = NV_GPU_ARCH_IMPLEMENTATION_TU106; // let nukem's mod change the arch for those cards, breaks dlss otherwise for some reason
                 //    }

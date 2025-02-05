@@ -102,7 +102,7 @@ static void hookStreamline(HMODULE slInterposer) {
     if (o_slSetTag != nullptr || o_slInit != nullptr)
         unhookStreamline();
 
-    if (Config::Instance()->DLSSGMod.value_or_default()) {
+    if (Config::Instance()->FGType.value_or_default() == FGType::Nukems) {
         o_slSetTag = reinterpret_cast<PFN_slSetTag>(GetProcAddress(slInterposer, "slSetTag"));
         o_slInit = reinterpret_cast<PFN_slInit>(GetProcAddress(slInterposer, "slInit"));
 

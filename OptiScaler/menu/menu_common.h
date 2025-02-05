@@ -122,7 +122,7 @@ private:
     template <bool B>
     static void AddRenderPreset(std::string name, CustomOptional<uint32_t, B>* value);
     template <bool B>
-    static void PopulateCombo(std::string name, CustomOptional<uint32_t, B>* value, const char* names[], const std::string desc[], int length);
+    static void PopulateCombo(std::string name, CustomOptional<uint32_t, B>* value, const char* names[], const std::string desc[], int length, const uint8_t disabledMask[] = nullptr, bool firstAsDefault = true);
 
 public:
     static void Dx11Inited() { _dx11Ready = true; }

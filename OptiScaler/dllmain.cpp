@@ -221,7 +221,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
     }
 
     // sl.interposer.dll
-    if (Config::Instance()->DLSSGMod.value_or_default() && CheckDllName(&lcaseLibName, &streamlineNames))
+    if (Config::Instance()->FGType.value_or_default() == FGType::Nukems && CheckDllName(&lcaseLibName, &streamlineNames))
     {
         auto streamlineModule = o_LoadLibraryA(lpLibFullPath);
 
@@ -239,7 +239,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
             return nvngxDlss;
     }
 
-    if (Config::Instance()->FGUseFGSwapChain.value_or_default())
+    if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG)
     {
         if (Config::Instance()->FGDisableOverlays.value_or_default() && CheckDllName(&lcaseLibName, &overlayNames))
         {
@@ -442,7 +442,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
     }
 
     // sl.interposer.dll
-    if (Config::Instance()->DLSSGMod.value_or_default() && CheckDllNameW(&lcaseLibName, &streamlineNamesW))
+    if (Config::Instance()->FGType.value_or_default() == FGType::Nukems && CheckDllNameW(&lcaseLibName, &streamlineNamesW))
     {
         auto streamlineModule = o_LoadLibraryW(lpLibFullPath);
 
@@ -451,7 +451,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
         return streamlineModule;
     }
 
-    if (Config::Instance()->FGUseFGSwapChain.value_or_default())
+    if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG)
     {
         if (Config::Instance()->FGDisableOverlays.value_or_default() && CheckDllNameW(&lcaseLibName, &overlayNamesW))
         {
@@ -2155,7 +2155,7 @@ static void CheckWorkingMode()
             if (Config::Instance()->OverlayMenu.value() && dxgiModule != nullptr)
                 HooksDx::HookDxgi();
 
-            if (!isWorkingWithEnabler && (!Config::Instance()->FGUseFGSwapChain.value_or_default() || !Config::Instance()->OverlayMenu.value_or_default()) &&
+            if (!isWorkingWithEnabler && (Config::Instance()->FGType.value_or_default() != FGType::OptiFG || !Config::Instance()->OverlayMenu.value_or_default()) &&
                 skHandle == nullptr && Config::Instance()->LoadSpecialK.value_or_default())
             {
                 auto skFile = Util::DllPath().parent_path() / L"SpecialK64.dll";
@@ -2198,8 +2198,9 @@ static void CheckQuirks() {
         State::Instance().gameQuirk = Cyberpunk;
 
         // Disabled OptiFG for now
-        Config::Instance()->FGUseFGSwapChain.set_volatile_value(false);
-        Config::Instance()->DLSSGMod.set_volatile_value(true);
+        if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG)
+            Config::Instance()->FGType.set_volatile_value(FGType::NoFG);
+        //Config::Instance()->FGType.set_volatile_value(FGType::Nukems);
 
         LOG_INFO("Enabling a quirk for Cyberpunk (Disable FSR-FG Swapchain & enable DLSS-G fix)");
     }
@@ -2211,7 +2212,8 @@ static void CheckQuirks() {
     else if (exePathFilename == "RDR.exe" || exePathFilename == "PlayRDR.exe")
     {
         State::Instance().gameQuirk = RDR1;
-        Config::Instance()->FGUseFGSwapChain.set_volatile_value(false);
+        if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG)
+            Config::Instance()->FGType.set_volatile_value(FGType::NoFG);
         LOG_INFO("Enabling a quirk for RDR1 (Disable FSR-FG Swapchain)");
     }
     else if (exePathFilename == "Banishers-Win64-Shipping.exe")
@@ -2240,7 +2242,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             DisableThreadLibraryCalls(hModule);
 
-            if (Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->FGDisableOverlays.value_or_default())
+            if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG && Config::Instance()->FGDisableOverlays.value_or_default())
                 SetEnvironmentVariable(L"SteamNoOverlayUIDrawing", L"1");
 
             loadCount++;
@@ -2358,8 +2360,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             State::Instance().skipDllLoadChecks = false;
 
             // Initial state of FSR-FG
-            State::Instance().FsrFgIsActive = Config::Instance()->FGUseFGSwapChain.value_or_default();
-            State::Instance().DLSSGIsActive = Config::Instance()->DLSSGMod.value_or_default();
+            State::Instance().activeFgType = Config::Instance()->FGType.value_or_default();
 
             for (size_t i = 0; i < 300; i++)
             {
