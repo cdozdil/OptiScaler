@@ -43,7 +43,7 @@ public:
 	float lastFsrCameraNear = 0.0f;
 	float lastFsrCameraFar = 0.0f;
 
-	// FG
+	// Frame Generation
 	FGType activeFgType = FGType::NoFG;
 
 	// OptiFG

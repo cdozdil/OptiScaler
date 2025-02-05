@@ -288,8 +288,10 @@ public:
 	CustomOptional<bool> LoadSpecialK{ false };
 	CustomOptional<bool> LoadReShade{ false };
 
-	// FG
+	// Frame Generation
 	CustomOptional<FGType> FGType{ FGType::OptiFG };
+
+	// OptiFG
 	CustomOptional<bool> FGEnabled{ false };
 	CustomOptional<bool> FGHighPriority{ true };
 	CustomOptional<bool> FGDebugView{ false };
