@@ -1296,6 +1296,13 @@ bool MenuCommon::RenderMenu()
                 {
                     ImGui::SeparatorText("Frame Generation");
                     PopulateCombo("FG Type", reinterpret_cast<CustomOptional<uint32_t>*>(&Config::Instance()->FGType), fgOptions, fgDesc.data(), fgOptionsCount, disabledMask.data(), false);
+
+                    if (State::Instance().showRestartWarning)
+                    {
+                        ImGui::Spacing();
+                        ImGui::TextColored(ImVec4(1.f, 0.f, 0.0f, 1.f), "Save INI and restart to apply the changes");
+                        ImGui::Spacing();
+                    }
                 }
 
                 State::Instance().showRestartWarning = State::Instance().activeFgType != Config::Instance()->FGType.value_or_default();
@@ -2980,15 +2987,6 @@ bool MenuCommon::RenderMenu()
                     ImGui::Spacing();
                     ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "nvngx.ini detected, please move over to using OptiScaler.ini and delete the old config");
                     ImGui::Spacing();
-                }
-
-                if (State::Instance().showRestartWarning)
-                {
-                    ImGui::Spacing();
-                    ImGui::PushFont(MenuBase::scaledFont);
-                    ImGui::TextWrapped("Save INI and restart to apply the changes");
-                    ImGui::Spacing();
-                    ImGui::PopFont();
                 }
 
                 auto winSize = ImGui::GetWindowSize();
