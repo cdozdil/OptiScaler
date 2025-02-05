@@ -1291,6 +1291,9 @@ bool MenuCommon::RenderMenu()
                 auto disabledCount = std::ranges::count(disabledMask, 1);
                 constexpr auto fgOptionsCount = sizeof(fgOptions) / sizeof(char*);
 
+                if (!Config::Instance()->FGType.has_value())
+                    Config::Instance()->FGType = Config::Instance()->FGType.value_or_default(); // need to have a value before combo
+
                 if (disabledCount < fgOptionsCount - 1) // maybe always show it anyway?
                     PopulateCombo("FG Type", reinterpret_cast<CustomOptional<uint32_t>*>(&Config::Instance()->FGType), fgOptions, fgDesc.data(), fgOptionsCount, disabledMask.data(), false);
 

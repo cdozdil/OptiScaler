@@ -58,12 +58,6 @@ bool Config::Reload(std::filesystem::path iniPath)
                     FGType.set_from_config(FGType::OptiFG);
                 else if (lstrcmpiA(FGTypeString.value().c_str(), "nukems") == 0)
                     FGType.set_from_config(FGType::Nukems);
-                else
-                    FGType.set_from_config(FGType.value_or_default()); // ensure that a value is always set
-            }
-            else
-            {
-                FGType.set_from_config(FGType.value_or_default());
             }
         }
 
