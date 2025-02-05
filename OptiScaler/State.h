@@ -37,7 +37,6 @@ public:
 	// DLSSG
 	GameQuirk gameQuirk = GameQuirk::Other;
     bool NukemsFilesAvailable = false;
-	//bool DLSSGIsActive = false;
 	bool DLSSGDebugView = false;
 
 	// FSR Common
@@ -46,12 +45,13 @@ public:
 
 	// FG
 	FGType activeFgType = FGType::NoFG;
+
+	// OptiFG
 	bool FGonlyGenerated = false;
 	bool FGchanged = false;
 	bool SCchanged = false;
 	bool skipHeapCapture = false;
 	bool useThreadingForHeaps = false;
-	//bool FsrFgIsActive = false;
 
 	bool FGcaptureResources = false;
 	int FGcapturedResourceCount = false;
@@ -130,7 +130,10 @@ public:
 	std::string currentInputApiName;
 
 	bool isShuttingDown = false;
+
+	// menu warnings
 	bool showRestartWarning = false;
+	bool nvngxIniDetected = false;
 
 	bool nvngxExists = false;
 	bool libxessExists = false;

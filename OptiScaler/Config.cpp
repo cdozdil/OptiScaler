@@ -41,6 +41,8 @@ bool Config::Reload(std::filesystem::path iniPath)
     LOG_INFO("Trying to load ini from: {0}", wstring_to_string(pathWStr));
     if (ini.LoadFile(iniPath.c_str()) == SI_OK)
     {
+        State::Instance().nvngxIniDetected = exists(iniPath.parent_path() / "nvngx.ini");
+
         // Upscalers
         {
             Dx11Upscaler.set_from_config(readString("Upscalers", "Dx11Upscaler", true));

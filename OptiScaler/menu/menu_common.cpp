@@ -2974,6 +2974,13 @@ bool MenuCommon::RenderMenu()
                 ImGui::Spacing();
                 ImGui::Separator();
 
+                if (State::Instance().nvngxIniDetected)
+                {
+                    ImGui::Spacing();
+                    ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "nvngx.ini detected, please move over to using OptiScaler.ini and delete the old config");
+                    ImGui::Spacing();
+                }
+
                 if (State::Instance().showRestartWarning)
                 {
                     ImGui::Spacing();
