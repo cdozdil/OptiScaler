@@ -294,6 +294,9 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="framegen\ffx\FSRFG_Dx12.h" />
+    <ClInclude Include="framegen\IFGFeature.h" />
+    <ClInclude Include="framegen\IFGFeature_Dx12.h" />
     <ClInclude Include="hudfix\Hudfix_Dx12.h" />
     <ClInclude Include="menu\font\Hack_Compressed.h" />
     <ClInclude Include="menu\menu_base.h" />
@@ -413,6 +416,8 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="proxies\XeSS_Proxy.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="framegen\ffx\FSRFG_Dx12.cpp" />
+    <ClCompile Include="framegen\IFGFeature.cpp" />
     <ClCompile Include="hudfix\Hudfix_Dx12.cpp" />
     <ClCompile Include="menu\menu_base.cpp" />
     <ClCompile Include="shaders\depth_scale\DS_Dx12.cpp" />

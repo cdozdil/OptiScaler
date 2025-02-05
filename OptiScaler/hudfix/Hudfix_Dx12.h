@@ -58,7 +58,7 @@ private:
 
     inline static std::shared_mutex _captureMutex;
     inline static std::shared_mutex _counterMutex;
-    inline static INT64 _captureCounter[4] = { 0, 0, 0, 0 };
+    inline static INT64 _captureCounter[BUFFER_COUNT] = { 0, 0, 0, 0 };
     inline static FT_Dx12* _formatTransfer = nullptr;
 
     inline static ID3D12CommandQueue* _commandQueue = nullptr;
