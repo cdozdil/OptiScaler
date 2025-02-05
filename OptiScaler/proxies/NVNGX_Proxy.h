@@ -312,7 +312,7 @@ public:
                 break;
             }
 
-            // From nvngx.ini path
+            // From OptiScaler.ini path
             if (Config::Instance()->NvngxPath.has_value())
             {
                 LOG_INFO("trying to load nvngx from a path specified in ini!");

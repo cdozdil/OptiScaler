@@ -133,7 +133,7 @@ static int customD3DKMTEnumAdapters2(const D3DKMT_ENUMADAPTERS2* data) {
 static void hookGdi32() {
     LOG_FUNC();
 
-    if (Config::Instance()->SpoofHAGS.value_or_default() || Config::Instance()->DLSSGMod.value_or_default()) {
+    if (Config::Instance()->SpoofHAGS.value_or_default() || Config::Instance()->FGType.value_or_default() == FGType::Nukems) {
         o_D3DKMTQueryAdapterInfo = reinterpret_cast<PFN_D3DKMTQueryAdapterInfo>(DetourFindFunction("gdi32.dll", "D3DKMTQueryAdapterInfo"));
 
         if (o_D3DKMTQueryAdapterInfo != nullptr) {

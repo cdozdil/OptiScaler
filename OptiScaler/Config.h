@@ -164,9 +164,7 @@ public:
 	CustomOptional<uint32_t> RenderPresetPerformance{ 0 };
 	CustomOptional<uint32_t> RenderPresetUltraPerformance{ 0 };
 
-	// DLSSG
-	CustomOptional<bool> SpoofHAGS{ false };
-	CustomOptional<bool> DLSSGMod{ false };
+	// Nukems
 	CustomOptional<bool> MakeDepthCopy{ false };
 
 	// CAS
@@ -290,14 +288,17 @@ public:
 	CustomOptional<bool> VulkanExtensionSpoofing{ false };
 	CustomOptional<std::wstring> SpoofedGPUName{ L"NVIDIA GeForce RTX 4090" };
 	CustomOptional<int, NoDefault> VulkanVRAM; // disabled by default
+	CustomOptional<bool> SpoofHAGS{ false };
 
 	// Plugins
 	CustomOptional<std::wstring> PluginPath{ L"plugins" };
 	CustomOptional<bool> LoadSpecialK{ false };
 	CustomOptional<bool> LoadReShade{ false };
 
-	// FG
-	CustomOptional<bool> FGUseFGSwapChain{ true };
+	// Frame Generation
+	CustomOptional<FGType> FGType{ FGType::OptiFG };
+
+	// OptiFG
 	CustomOptional<bool> FGEnabled{ false };
 	CustomOptional<bool> FGHighPriority{ true };
 	CustomOptional<bool> FGDebugView{ false };
@@ -373,7 +374,7 @@ private:
 	CSimpleIniA ini;
 	CSimpleIniA fakenvapiIni;
 	std::filesystem::path absoluteFileName;
-	std::wstring fileName = L"nvngx.ini";
+	std::wstring fileName = L"OptiScaler.ini";
 
 	bool Reload(std::filesystem::path iniPath);
 

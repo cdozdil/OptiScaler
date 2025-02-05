@@ -719,7 +719,7 @@ void MenuCommon::AddRenderPreset(std::string name, CustomOptional<uint32_t, B>* 
 }
 
 template <HasDefaultValue B>
-void MenuCommon::PopulateCombo(std::string name, CustomOptional<uint32_t, B>* value, const char* names[], const std::string desc[], int length) {
+void MenuCommon::PopulateCombo(std::string name, CustomOptional<uint32_t, B>* value, const char* names[], const std::string desc[], int length, const uint8_t disabledMask[], bool firstAsDefault) {
     int selected = value->value_or(0);
 
     const char* selectedName = "";
@@ -736,21 +736,32 @@ void MenuCommon::PopulateCombo(std::string name, CustomOptional<uint32_t, B>* va
     if (ImGui::BeginCombo(name.c_str(), selectedName))
     {
         if (ImGui::Selectable(names[0], !value->has_value()))
-            value->reset();
+        {
+            if (firstAsDefault)
+                value->reset();
+            else
+                *value = 0;
+        }
 
-        if (desc[0].length() > 0)
+        if (!desc[0].empty())
             ShowTooltip(desc[0].c_str());
 
         for (int n = 1; n < length; n++)
         {
+            if (disabledMask && disabledMask[n])
+                ImGui::BeginDisabled();
+
             if (ImGui::Selectable(names[n], selected == n))
             {
                 if (n != selected)
                     *value = n;
             }
 
-            if (desc[n].length() > 0)
+            if (!desc[n].empty())
                 ShowTooltip(desc[n].c_str());
+
+            if (disabledMask && disabledMask[n])
+                ImGui::EndDisabled();
         }
 
         ImGui::EndCombo();
@@ -1232,28 +1243,76 @@ bool MenuCommon::RenderMenu()
                     }
                 }
 
-                // Frame Generation
-                if (Config::Instance()->OverlayMenu.value_or_default() && State::Instance().api == DX12 && !State::Instance().isWorkingAsNvngx)
+                const char* fgOptions[] = { "No Frame Generation", "OptiFG", "FSR-FG via Nukem's DLSSG" };
+                std::vector<std::string> fgDesc = { "", "", "Select DLSS FG in-game" };
+                std::vector<uint8_t> disabledMask = { false, false, false };
+
+                // OptiFG requirements
+                if (!Config::Instance()->OverlayMenu.value_or_default())
+                {
+                    disabledMask[1] = true;
+                    fgDesc[1] = "Old overlay menu is unsupported";
+                }
+                else if (State::Instance().api != DX12)
+                {
+                    disabledMask[1] = true;
+                    fgDesc[1] = "Unsupported API";
+                }
+                else if (State::Instance().isWorkingAsNvngx)
+                {
+                    disabledMask[1] = true;
+                    fgDesc[1] = "Unsupported Opti working mode";
+                }
+                else if (!FfxApiProxy::InitFfxDx12())
+                {
+                    disabledMask[1] = true;
+                    fgDesc[1] = "amd_fidelityfx_dx12.dll is missing";
+                }
+
+                // Nukem's FG mod requirements
+                if (State::Instance().api == DX11) 
+                {
+                    disabledMask[2] = true;
+                    fgDesc[2] = "Unsupported API";
+                }
+                else if (State::Instance().isWorkingAsNvngx) 
+                {
+                    disabledMask[2] = true;
+                    fgDesc[2] = "Unsupported Opti working mode";
+                }
+                else if (!State::Instance().NukemsFilesAvailable) 
+                {
+                    disabledMask[2] = true;
+                    fgDesc[2] = "Missing the dlssg_to_fsr3_amd_is_better.dll file";
+                }
+
+                auto disabledCount = std::ranges::count(disabledMask, 1);
+                constexpr auto fgOptionsCount = sizeof(fgOptions) / sizeof(char*);
+
+                if (!Config::Instance()->FGType.has_value())
+                    Config::Instance()->FGType = Config::Instance()->FGType.value_or_default(); // need to have a value before combo
+
+                if (disabledCount < fgOptionsCount - 1) // maybe always show it anyway?
+                {
+                    ImGui::SeparatorText("Frame Generation");
+                    PopulateCombo("FG Type", reinterpret_cast<CustomOptional<uint32_t>*>(&Config::Instance()->FGType), fgOptions, fgDesc.data(), fgOptionsCount, disabledMask.data(), false);
+
+                    if (State::Instance().showRestartWarning)
+                    {
+                        ImGui::Spacing();
+                        ImGui::TextColored(ImVec4(1.f, 0.f, 0.0f, 1.f), "Save INI and restart to apply the changes");
+                        ImGui::Spacing();
+                    }
+                }
+
+                State::Instance().showRestartWarning = State::Instance().activeFgType != Config::Instance()->FGType.value_or_default();
+
+                // OptiFG
+                if (Config::Instance()->OverlayMenu.value_or_default() && State::Instance().api == DX12 && !State::Instance().isWorkingAsNvngx && State::Instance().activeFgType == FGType::OptiFG)
                 {
                     ImGui::SeparatorText("Frame Generation (OptiFG)");
 
-                    if (!State::Instance().FsrFgIsActive)
-                    {
-                        auto fsrFgActive = Config::Instance()->FGUseFGSwapChain.value_or_default();
-                        if (ImGui::Checkbox("Enable Frame Generation (OptiFG)", &fsrFgActive))
-                        {
-                            Config::Instance()->FGUseFGSwapChain = fsrFgActive;
-
-                            if (fsrFgActive)
-                                Config::Instance()->DLSSGMod = false;
-                            else
-                                Config::Instance()->DLSSGMod.reset();
-                        }
-                        ShowHelpMarker("These settings will become active on next boot!");
-
-                    }
-
-                    if (State::Instance().FsrFgIsActive && currentFeature != nullptr && FfxApiProxy::InitFfxDx12())
+                    if (currentFeature != nullptr && FfxApiProxy::InitFfxDx12())
                     {
                         bool fgActive = Config::Instance()->FGEnabled.value_or_default();
                         if (ImGui::Checkbox("FG Active", &fgActive))
@@ -1568,69 +1627,40 @@ bool MenuCommon::RenderMenu()
                 }
 
                 // DLSSG Mod
-                if (State::Instance().api != DX11 && !State::Instance().isWorkingAsNvngx)
+                if (State::Instance().api != DX11 && !State::Instance().isWorkingAsNvngx && State::Instance().activeFgType == FGType::Nukems)
                 {
                     SeparatorWithHelpMarker("Frame Generation (FSR-FG via Nukem's DLSSG)", "Requires Nukem's dlssg_to_fsr3 dll\nSelect DLSS FG in-game");
 
-                    if (!State::Instance().DLSSGIsActive)
-                    {
-                        auto dlssgEnabled = Config::Instance()->DLSSGMod.value_or_default();
-                        if (ImGui::Checkbox("Enable DLSSG Support", &dlssgEnabled))
-                        {
-                            Config::Instance()->DLSSGMod = dlssgEnabled;
-
-                            if (dlssgEnabled)
-                                Config::Instance()->FGUseFGSwapChain = false;
-                            else
-                                Config::Instance()->FGUseFGSwapChain.reset();
-                        }
-                        ShowHelpMarker("These settings will become active on next boot!\nTo use, select DLSS FG in-game.");
-
-                    }
-
-                    if (Config::Instance()->DLSSGMod.value_or_default() && !State::Instance().NukemsFilesAvailable)
+                    if (!State::Instance().NukemsFilesAvailable)
                         ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Please put dlssg_to_fsr3_amd_is_better.dll next to OptiScaler");
 
-                    if (State::Instance().DLSSGIsActive) {
-                        if (!ReflexHooks::isReflexHooked()) {
-                            ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Reflex not hooked");
-                            ImGui::Text("If you are using an AMD/Intel GPU then make sure you have fakenvapi");
-                        }
-                        else if (!ReflexHooks::isDlssgDetected()) {
-                            ImGui::Text("Please select DLSS Frame Generation in the game options\nYou might need to select DLSS first");
-                        }
-
-                        if (State::Instance().api == DX12) {
-                            ImGui::Text("Current DLSSG state:");
-                            ImGui::SameLine();
-                            if (ReflexHooks::isDlssgDetected())
-                                ImGui::TextColored(ImVec4(0.f, 1.f, 0.25f, 1.f), "ON");
-                            else
-                                ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "OFF");
-
-                            if (bool makeDepthCopy = Config::Instance()->MakeDepthCopy.value_or_default(); ImGui::Checkbox("Fix broken visuals", &makeDepthCopy))
-                                Config::Instance()->MakeDepthCopy = makeDepthCopy;
-                            ShowHelpMarker("Makes a copy of the depth buffer\nCan fix broken visuals in some games on AMD GPUs under Windows\nCan cause stutters so best to use only when necessary");
-
-                            if (DLSSGMod::isLoaded() && DLSSGMod::FSRDebugView() != nullptr)
-                            {
-                                if (ImGui::Checkbox("Enable Debug View", &State::Instance().DLSSGDebugView))
-                                    DLSSGMod::FSRDebugView()(State::Instance().DLSSGDebugView);
-                            }
-
-                        }
+                    if (!ReflexHooks::isReflexHooked()) {
+                        ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Reflex not hooked");
+                        ImGui::Text("If you are using an AMD/Intel GPU then make sure you have fakenvapi");
+                    }
+                    else if (!ReflexHooks::isDlssgDetected()) {
+                        ImGui::Text("Please select DLSS Frame Generation in the game options\nYou might need to select DLSS first");
                     }
 
-                    ImGui::Spacing();
-                    if (ImGui::CollapsingHeader("Advanced DLSSG Settings"))
-                    {
-                        ImGui::Spacing();
-                        auto hagsSpoofing = Config::Instance()->SpoofHAGS.value_or(Config::Instance()->DLSSGMod.value_or_default());
-                        if (ImGui::Checkbox("HAGS Spoofing Enabled", &hagsSpoofing))
-                            Config::Instance()->SpoofHAGS = hagsSpoofing;
+                    if (State::Instance().api == DX12) {
+                        ImGui::Text("Current DLSSG state:");
+                        ImGui::SameLine();
+                        if (ReflexHooks::isDlssgDetected())
+                            ImGui::TextColored(ImVec4(0.f, 1.f, 0.25f, 1.f), "ON");
+                        else
+                            ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "OFF");
+
+                        if (bool makeDepthCopy = Config::Instance()->MakeDepthCopy.value_or_default(); ImGui::Checkbox("Fix broken visuals", &makeDepthCopy))
+                            Config::Instance()->MakeDepthCopy = makeDepthCopy;
+                        ShowHelpMarker("Makes a copy of the depth buffer\nCan fix broken visuals in some games on AMD GPUs under Windows\nCan cause stutters so best to use only when necessary");
+
+                        if (DLSSGMod::isLoaded() && DLSSGMod::FSRDebugView() != nullptr)
+                        {
+                            if (ImGui::Checkbox("Enable Debug View", &State::Instance().DLSSGDebugView))
+                                DLSSGMod::FSRDebugView()(State::Instance().DLSSGDebugView);
+                        }
+
                     }
-                    ImGui::Spacing();
-                    ImGui::Spacing();
                 }
 
                 if (currentFeature != nullptr)
@@ -1824,7 +1854,7 @@ bool MenuCommon::RenderMenu()
                     }
 
                     // FSR Common -----------------
-                    if (Config::Instance()->FGUseFGSwapChain.value_or_default() || currentBackend.rfind("fsr", 0) == 0)
+                    if (State::Instance().activeFgType == FGType::OptiFG || currentBackend.rfind("fsr", 0) == 0)
                     {
                         SeparatorWithHelpMarker("FSR Common Settings", "Affects both FSR-FG & Upscalers");
 
@@ -2951,6 +2981,13 @@ bool MenuCommon::RenderMenu()
 
                 ImGui::Spacing();
                 ImGui::Separator();
+
+                if (State::Instance().nvngxIniDetected)
+                {
+                    ImGui::Spacing();
+                    ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "nvngx.ini detected, please move over to using OptiScaler.ini and delete the old config");
+                    ImGui::Spacing();
+                }
 
                 auto winSize = ImGui::GetWindowSize();
                 auto winPos = ImGui::GetWindowPos();

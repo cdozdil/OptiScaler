@@ -46,7 +46,7 @@ public:
         if (dx12_inited)
             return;
 
-        if (Config::Instance()->DLSSGMod.value_or_default() && !State::Instance().enablerAvailable) {
+        if (Config::Instance()->FGType.value_or_default() == FGType::Nukems && !State::Instance().enablerAvailable) {
             if (_dll == nullptr)
             {
                 auto dllPath = Util::DllPath().parent_path() / "dlssg_to_fsr3_amd_is_better.dll";
@@ -81,7 +81,7 @@ public:
         if (vulkan_inited)
             return;
 
-        if (Config::Instance()->DLSSGMod.value_or_default() && !State::Instance().enablerAvailable) {
+        if (Config::Instance()->FGType.value_or_default() == FGType::Nukems && !State::Instance().enablerAvailable) {
             if (_dll == nullptr)
             {
                 auto dllPath = Util::DllPath().parent_path() / "dlssg_to_fsr3_amd_is_better.dll";

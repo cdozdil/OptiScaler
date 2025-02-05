@@ -258,10 +258,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
             State::Instance().NVNGX_FeatureInfo_Paths.push_back(std::wstring(path));
 
             std::wstring iniPathW(path);
-            LOG_DEBUG("PathListInfo[{1}] checking nvngx.ini file in: {0}", wstring_to_string(iniPathW), i);
+            LOG_DEBUG("PathListInfo[{1}] checking OptiScaler.ini file in: {0}", wstring_to_string(iniPathW), i);
 
             if (Config::Instance()->LoadFromPath(path))
-                LOG_INFO("PathListInfo[{1}] nvngx.ini file reloaded from: {0}", wstring_to_string(iniPathW), i);
+                LOG_INFO("PathListInfo[{1}] OptiScaler.ini file reloaded from: {0}", wstring_to_string(iniPathW), i);
         }
     }
 
@@ -1349,7 +1349,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         contextRendering = true;
 
     // FG Init || Disable    
-    if (Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default())
+    if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG && Config::Instance()->OverlayMenu.value_or_default())
     {
         if (!State::Instance().FGchanged && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() && Config::Instance()->FGEnabled.value_or_default() &&
             FfxApiProxy::InitFfxDx12() && !FrameGen_Dx12::fgIsActive && HooksDx::currentSwapchain != nullptr &&
@@ -1417,7 +1417,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         //}
 
         // If FG swapchain is not active take frametime from here
-        if (!Config::Instance()->FGUseFGSwapChain.value_or_default())
+        if (!Config::Instance()->FGType.value_or_default() == FGType::OptiFG)
         {
             float msDelta = 0.0;
             auto now = Util::MillisecondsNow();
@@ -1452,7 +1452,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     InParameters->Get(NVSDK_NGX_Parameter_Output, &output);
     UINT frameIndex;
 
-    if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
+    if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGType.value_or_default() == FGType::OptiFG && Config::Instance()->OverlayMenu.value_or_default() &&
         Config::Instance()->FGEnabled.value_or_default() && FrameGen_Dx12::fgTarget <= deviceContext->FrameCount() &&
         FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
     {
@@ -1603,7 +1603,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         HooksDx::dx12UpscaleTrig = true;
 
         // FG Dispatch
-        if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
+        if (FrameGen_Dx12::fgIsActive && Config::Instance()->FGType.value_or_default() == FGType::OptiFG && Config::Instance()->OverlayMenu.value_or_default() &&
             Config::Instance()->FGEnabled.value_or_default() && FrameGen_Dx12::fgTarget < deviceContext->FrameCount() &&
             FrameGen_Dx12::fgContext != nullptr && HooksDx::currentSwapchain != nullptr)
         {
