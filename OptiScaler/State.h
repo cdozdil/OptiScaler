@@ -69,6 +69,10 @@ public:
 	NVSDK_NGX_EngineType NVNGX_Engine = NVSDK_NGX_ENGINE_TYPE_CUSTOM;
 	std::string NVNGX_EngineVersion;
 
+	// NGX OTA
+	std::string NGX_OTA_Dlss;
+	std::string NGX_OTA_Dlssd;
+
 	API api = API::NotSelected;
 	API swapchainApi = API::NotSelected;
 

@@ -284,13 +284,18 @@ void DLSSFeature::ReadVersion()
             _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction(dlssPath.filename().string().c_str(), "NVSDK_NGX_GetSnippetVersion");
     }
 
+    if (_GetSnippetVersion == nullptr && !State::Instance().NGX_OTA_Dlss.empty())
+    {
+        _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction(State::Instance().NGX_OTA_Dlss.c_str(), "NVSDK_NGX_GetSnippetVersion");
+    }
+
     if (_GetSnippetVersion != nullptr)
     {
         LOG_TRACE("_GetSnippetVersion ptr: {0:X}", (ULONG64)_GetSnippetVersion);
 
         auto result = _GetSnippetVersion();
 
-        _version.major = (result & 0x00FF0000) / 0x00010000;
+        _version.major = (result & 0xFFFF0000) / 0x00010000;
         _version.minor = (result & 0x0000FF00) / 0x00000100;
         _version.patch = result & 0x000000FF / 0x00000001;
 
