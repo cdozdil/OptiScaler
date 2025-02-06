@@ -183,7 +183,6 @@ public:
 	CustomOptional<float> MenuScale{ 1.0f };
 	CustomOptional<bool> OverlayMenu{ true };
 	CustomOptional<int> ShortcutKey{ VK_INSERT };
-	CustomOptional<bool> AdvancedSettings{ false };
 	CustomOptional<bool> ExtendedLimits{ false };
 	CustomOptional<bool> ShowFps{ false };
 	CustomOptional<int> FpsOverlayPos{ 0 }; // 0 Top Left, 1 Top Right, 2 Bottom Left, 3 Bottom Right
