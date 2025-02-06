@@ -140,8 +140,6 @@ inline static bool CheckDllName(std::string* dllName, std::vector<std::string>* 
 
 inline static bool CheckDllNameW(std::wstring* dllName, std::vector<std::wstring>* namesList)
 {
-    auto found = false;
-
     for (size_t i = 0; i < namesList->size(); i++)
     {
         auto name = namesList->at(i);
@@ -237,6 +235,24 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
         if (nvngxDlss != nullptr)
             return nvngxDlss;
+    }
+
+    // NGX OTA
+    // Try to catch something like this: c:\programdata/nvidia/ngx/models//dlss/versions/20316673/files/160_e658700.bin
+    if (lcaseLibName.ends_with(".bin"))
+    {
+        auto loadedBin = o_LoadLibraryA(lpLibFullPath);
+        if (loadedBin && lcaseLibName.contains("/versions/"))
+        {
+            if (lcaseLibName.contains("/dlss/")) {
+                State::Instance().NGX_OTA_Dlss = lpLibFullPath;
+            }
+
+            if (lcaseLibName.contains("/dlssd/")) {
+                State::Instance().NGX_OTA_Dlssd = lpLibFullPath;
+            }
+        }
+        return loadedBin;
     }
 
     if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG)
@@ -410,6 +426,24 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
         if (nvngxDlss != nullptr)
             return nvngxDlss;
+    }
+
+    // NGX OTA
+    // Try to catch something like this: c:\programdata/nvidia/ngx/models//dlss/versions/20316673/files/160_e658700.bin
+    if (lcaseLibName.ends_with(L".bin"))
+    {
+        auto loadedBin = o_LoadLibraryW(lpLibFullPath);
+        if (loadedBin && lcaseLibName.contains(L"/versions/"))
+        {
+            if (lcaseLibName.contains(L"/dlss/")) {
+                State::Instance().NGX_OTA_Dlss = wstring_to_string(lpLibFullPath);
+            }
+
+            if (lcaseLibName.contains(L"/dlssd/")) {
+                State::Instance().NGX_OTA_Dlssd = wstring_to_string(lpLibFullPath);
+            }
+        }
+        return loadedBin;
     }
 
     // NvApi64.dll
@@ -903,7 +937,7 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
         return NULL;
 
     if (State::Instance().skipDllLoadChecks)
-        return o_LoadLibraryA(lpLibFileName);;
+        return o_LoadLibraryA(lpLibFileName);
 
     std::string libName(lpLibFileName);
     std::string lcaseLibName(libName);
