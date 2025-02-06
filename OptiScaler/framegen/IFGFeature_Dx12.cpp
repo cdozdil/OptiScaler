@@ -110,3 +110,145 @@ void IFGFeature_Dx12::SetHudless(ID3D12GraphicsCommandList* cmdList, ID3D12Resou
     else
         _paramHudless[GetIndex()] = hudless;
 }
+
+void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
+{
+    if (_commandQueue != nullptr)
+        return;
+
+    do
+    {
+        HRESULT result;
+
+        for (size_t i = 0; i < 4; i++)
+        {
+            result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&_commandAllocators[i]));
+            if (result != S_OK)
+            {
+                LOG_ERROR("CreateCommandAllocators _commandAllocators[{}]: {:X}", i, (unsigned long)result);
+                break;
+            }
+            _commandAllocators[i]->SetName(L"_commandAllocator");
+
+
+            result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, _commandAllocators[i], NULL, IID_PPV_ARGS(&_commandList[i]));
+            if (result != S_OK)
+            {
+                LOG_ERROR("CreateCommandList _commandList[{}]: {:X}", i, (unsigned long)result);
+                break;
+            }
+            _commandList[i]->SetName(L"_commandList");
+
+            result = _commandList[i]->Close();
+            if (result != S_OK)
+            {
+                LOG_ERROR("_commandList[{}]->Close: {:X}", i, (unsigned long)result);
+                break;
+            }
+        }
+
+        for (size_t i = 0; i < 4; i++)
+        {
+            result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&_copyCommandAllocator[i]));
+
+            result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, _copyCommandAllocator[i], NULL, IID_PPV_ARGS(&_copyCommandList[i]));
+            if (result != S_OK)
+            {
+                LOG_ERROR("CreateCommandList _copyCommandList[{}]: {:X}", i, (unsigned long)result);
+                break;
+            }
+            _copyCommandList[i]->SetName(L"_copyCommandList");
+
+            result = _copyCommandList[i]->Close();
+            if (result != S_OK)
+            {
+                LOG_ERROR("_copyCommandList[{}]->Close: {:X}", i, (unsigned long)result);
+                break;
+            }
+        }
+
+        // Create a command queue for frame generation
+        D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+        queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+        queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+        queueDesc.NodeMask = 0;
+
+        if (Config::Instance()->FGHighPriority.value_or_default())
+            queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
+        else
+            queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+
+        HRESULT hr = InDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&_commandQueue));
+        if (result != S_OK)
+        {
+            LOG_ERROR("CreateCommandQueue _commandQueue: {0:X}", (unsigned long)result);
+            break;
+        }
+        _commandQueue->SetName(L"_commandQueue");
+
+        queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
+        hr = InDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&_copyCommandQueue));
+        if (result != S_OK)
+        {
+            LOG_ERROR("CreateCommandQueue _copyCommandQueue: {0:X}", (unsigned long)result);
+            break;
+        }
+        _copyCommandQueue->SetName(L"_copyCommandQueue");
+
+        hr = InDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_copyFence));
+        if (result != S_OK)
+        {
+            LOG_ERROR("CreateFence fgCopyFence: {0:X}", (unsigned long)result);
+            break;
+        }
+
+    } while (false);
+}
+
+void IFGFeature_Dx12::ReleaseObjects()
+{
+    for (size_t i = 0; i < 4; i++)
+    {
+        if (_commandAllocators[i] != nullptr)
+        {
+            _commandAllocators[i]->Release();
+            _commandAllocators[i] = nullptr;
+        }
+
+        if (_commandList[i] != nullptr)
+        {
+            _commandList[i]->Release();
+            _commandList[i] = nullptr;
+        }
+
+        if (_copyCommandAllocator[i] != nullptr)
+        {
+            _copyCommandAllocator[i]->Release();
+            _copyCommandAllocator[i] = nullptr;
+        }
+
+        if (_copyCommandList[i] != nullptr)
+        {
+            _copyCommandList[i]->Release();
+            _copyCommandList[i] = nullptr;
+        }
+    }
+
+    if (_commandQueue != nullptr)
+    {
+        _commandQueue->Release();
+        _commandQueue = nullptr;
+    }
+
+    if (_copyFence != nullptr)
+    {
+        _copyFence->Release();
+        _copyFence = nullptr;
+    }
+
+    if (_copyCommandQueue != nullptr)
+    {
+        _copyCommandQueue->Release();
+        _copyCommandQueue = nullptr;
+    }
+}

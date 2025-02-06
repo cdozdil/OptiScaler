@@ -42,4 +42,9 @@ public:
 
     virtual feature_version Version() = 0;
     virtual const char* Name() = 0;
+
+    virtual bool Dispatch(UINT64 frameId, double frameTime) = 0;
+
+    virtual void ReleaseObjects() = 0;
+    virtual void StopAndDestroyContext(bool destroy, bool shutDown, bool useMutex) = 0;
 };

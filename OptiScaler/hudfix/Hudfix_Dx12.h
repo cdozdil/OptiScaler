@@ -47,9 +47,6 @@ private:
     inline static double _upscaleEndTime = 0.0;
     inline static double _targetTime = 0.0;
 
-    // Captured hudless resources
-    inline static ID3D12Resource* _capturedHudless[4] = { nullptr, nullptr, nullptr, nullptr };
-
     // Buffer for Format Transfer
     inline static ID3D12Resource* _captureBuffer[4] = { nullptr, nullptr, nullptr, nullptr };
 

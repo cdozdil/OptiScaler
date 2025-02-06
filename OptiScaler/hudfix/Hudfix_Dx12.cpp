@@ -250,10 +250,9 @@ inline void Hudfix_Dx12::UpscaleStart()
 
     if (_upscaleCounter > _fgCounter)
     {
-        LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
-
         if (IsResourceCheckActive())
         {
+            LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
             // CALL FG!
         }
 
@@ -268,7 +267,6 @@ inline void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
 
     // Get new index and clear resources
     auto index = GetIndex();
-    _capturedHudless[index] = nullptr;
     _captureCounter[index] = 0;
 
     // Calculate target time for capturing hudless
@@ -293,10 +291,9 @@ inline void Hudfix_Dx12::PresentStart()
     // FG not run yet!
     if (_upscaleCounter > _fgCounter)
     {
-        LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
-
         if (IsResourceCheckActive())
         {
+            LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
             // CALL FG!
         }
 
@@ -325,6 +322,10 @@ inline bool Hudfix_Dx12::IsResourceCheckActive()
         return false;
 
     if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default())
+        return false;
+
+    auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
+    if (fg == nullptr)
         return false;
 
     // DONT FORGET HERE !!!!!
@@ -360,20 +361,25 @@ inline bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsC
 
     LOG_TRACE("Capture resource: {0:X}", (size_t)resource->buffer);
 
+    // Get copy of resource
+    if (CreateBufferResource(State::Instance().currentD3D12Device, resource, D3D12_RESOURCE_STATE_COPY_DEST, &_captureBuffer[fIndex]))
+    {
+        ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
+        cmdList->CopyResource(_captureBuffer[fIndex], resource->buffer);
+        ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
+    }
+    else
+    {
+        LOG_WARN("Can't create _captureBuffer!");
+        return false;
+    }
+
     // needs conversion?
     if (resource->format != scDesc.BufferDesc.Format)
     {
-        if (_formatTransfer != nullptr && _formatTransfer->CreateBufferResource(State::Instance().currentD3D12Device, resource->buffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) &&
-            CreateBufferResource(State::Instance().currentD3D12Device, resource, D3D12_RESOURCE_STATE_COPY_SOURCE, &_captureBuffer[fIndex]))
+        if (_formatTransfer != nullptr && _formatTransfer->CreateBufferResource(State::Instance().currentD3D12Device, resource->buffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
         {
             // Make a copy of resource to capture current state
-            ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
-            ResourceBarrier(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-
-            cmdList->CopyResource(_captureBuffer[fIndex], resource->buffer);
-
-            ResourceBarrier(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
 
             // Dispatch format transfer
             if (_commandQueue != nullptr || CreateObjects())
@@ -381,9 +387,9 @@ inline bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsC
                 _commandAllocator->Reset();
                 _commandList->Reset(_commandAllocator, nullptr);
 
-                _formatTransfer->SetBufferState(_commandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                ResourceBarrier(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                 _formatTransfer->Dispatch(State::Instance().currentD3D12Device, _commandList, _captureBuffer[fIndex], _formatTransfer->Buffer());
-                _formatTransfer->SetBufferState(_commandList, D3D12_RESOURCE_STATE_COPY_DEST);
+                ResourceBarrier(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
 
                 _commandList->Close();
                 ID3D12CommandList* cmdLists[1] = { _commandList };
@@ -393,31 +399,19 @@ inline bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsC
             LOG_TRACE("Using _formatTransfer->Buffer()");
             auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
             if (fg != nullptr)
-                fg->SetHudless(cmdList, _formatTransfer->Buffer(), D3D12_RESOURCE_STATE_COPY_DEST, false);
+                fg->SetHudless(cmdList, _formatTransfer->Buffer(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false);
         }
         else
         {
-            LOG_WARN("Can't create _captureBuffer or _formatTransfer buffer!");
+            LOG_WARN("_formatTransfer is null or can't create _formatTransfer buffer!");
             return false;
         }
     }
     else
     {
-        if (CreateBufferResource(State::Instance().currentD3D12Device, resource, D3D12_RESOURCE_STATE_COPY_DEST, &_captureBuffer[fIndex]))
-        {
-            ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
-            cmdList->CopyResource(_captureBuffer[fIndex], resource->buffer);
-            ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
-
-            auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
-            if (fg != nullptr)
-                fg->SetHudless(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, false);
-        }
-        else
-        {
-            LOG_WARN("Can't create _captureBuffer!");
-            return false;
-        }
+        auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
+        if (fg != nullptr)
+            fg->SetHudless(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, false);
     }
 
     {

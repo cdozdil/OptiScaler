@@ -10,24 +10,32 @@
 class FSRFG_Dx12 : public virtual IFGFeature_Dx12
 {
 private:
-    ffxContext fgSwapChainContext = nullptr;
-    ffxContext fgContext = nullptr;
+    ffxContext _swapChainContext = nullptr;
+    ffxContext _fgContext = nullptr;
+    
 
-    ankerl::unordered_dense::map <HWND, SwapChainInfo> fgSwapChains;
-    DXGI_SWAP_CHAIN_DESC fgScDesc{};
-
+    ffxReturnCode_t HudlessCallback(ffxDispatchDescFrameGeneration* params, void* pUserCtx);
     void ConfigureFramePaceTuning();
 
 public:
-    UINT NewFrame();
-    UINT GetFrame();
-    void ResetIndexes();
-    void ReleaseFGSwapchain(HWND hWnd);
-    void ReleaseFGObjects();
-    void CreateFGObjects(ID3D12Device* InDevice);
-    void CreateFGContext(ID3D12Device* InDevice, IFeature* deviceContext);
-    void StopAndDestroyFGContext(bool destroy, bool shutDown, bool useMutex = true);
-    void CheckUpscaledFrame(ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InUpscaled);
-    void AddFrameTime(float ft);
-    float GetFrameTime();
-}
+
+    // Inherited via IFGFeature_Dx12
+    void UpscaleEnd(float lastFrameTime) final;
+
+    feature_version Version() final;
+
+    const char* Name() final;
+
+    bool Dispatch(UINT64 frameId, double frameTime) final;
+
+    bool DispatchHudless(UINT64 frameId, double frameTime, ID3D12Resource* output) final;
+
+    void StopAndDestroyContext(bool destroy, bool shutDown, bool useMutex) final;
+
+    void CreateSwapchain(IDXGIFactory* factory, ID3D12CommandQueue* cmdQueue, DXGI_SWAP_CHAIN_DESC* desc, IDXGISwapChain** swapChain) final;
+
+    void ReleaseSwapchain(IDXGISwapChain* swapChain) final;
+
+    void CreateContext(ID3D12Device* device, IFeature* upscalerContext) final;
+
+};

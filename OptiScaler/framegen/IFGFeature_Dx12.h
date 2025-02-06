@@ -3,20 +3,16 @@
 
 #include "IFGFeature.h"
 
+#include <dxgi.h>
 #include <d3d12.h>
-
-typedef struct SwapChainInfo
-{
-    IDXGISwapChain* swapChain = nullptr;
-    DXGI_FORMAT swapChainFormat = DXGI_FORMAT_UNKNOWN;
-    int swapChainBufferCount = 0;
-    ID3D12CommandQueue* fgCommandQueue = nullptr;
-    ID3D12CommandQueue* gameCommandQueue = nullptr;
-};
 
 class IFGFeature_Dx12 : public virtual IFGFeature
 {
 protected:
+    IDXGISwapChain* _swapChain = nullptr;
+    DXGI_SWAP_CHAIN_DESC _swapChainDesc{};
+    ID3D12CommandQueue* _gameCommandQueue = nullptr;
+
     ID3D12Resource* _paramVelocity[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
     ID3D12Resource* _paramVelocityCopy[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
     ID3D12Resource* _paramDepth[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
@@ -42,5 +38,14 @@ public:
     void SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* velocity, D3D12_RESOURCE_STATES state);
     void SetDepth(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* depth, D3D12_RESOURCE_STATES state);
     void SetHudless(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* hudless, D3D12_RESOURCE_STATES state, bool makeCopy = false);
+
+    virtual void CreateSwapchain(IDXGIFactory* factory, ID3D12CommandQueue* cmdQueue, DXGI_SWAP_CHAIN_DESC* desc, IDXGISwapChain** swapChain) = 0;
+    virtual void ReleaseSwapchain(IDXGISwapChain* swapChain) = 0;
+    
+    void CreateObjects(ID3D12Device* InDevice);
+    virtual void CreateContext(ID3D12Device* device, IFeature* upscalerContext) = 0;
+    void ReleaseObjects() final;
+
+    virtual bool DispatchHudless(UINT64 frameId, double frameTime, ID3D12Resource* output) = 0;
 
 };
