@@ -5,9 +5,9 @@ int IFGFeature::GetIndex()
     return (_frameCount % BUFFER_COUNT);
 }
 
-UINT64 IFGFeature::UpscaleStart()
+bool IFGFeature::IsActive()
 {
-    return ++_frameCount;
+    return _isActive && _frameCount > _targetFrame;
 }
 
 void IFGFeature::SetJitter(float x, float y)
@@ -38,5 +38,16 @@ void IFGFeature::SetFrameTimeDelta(float delta)
 void IFGFeature::SetReset(UINT reset)
 {
     _reset = reset;
+}
+
+void IFGFeature::ResetCounters()
+{
+    _frameCount = 0;
+    _targetFrame = 10;
+}
+
+void IFGFeature::UpdateTarget()
+{
+    _targetFrame = _frameCount + 10;
 }
 

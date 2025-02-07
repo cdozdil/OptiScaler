@@ -46,6 +46,7 @@ private:
     inline static double _lastDiffTime = 0.0;
     inline static double _upscaleEndTime = 0.0;
     inline static double _targetTime = 0.0;
+    inline static double _frameTime = 0.0;
 
     // Buffer for Format Transfer
     inline static ID3D12Resource* _captureBuffer[4] = { nullptr, nullptr, nullptr, nullptr };
@@ -62,19 +63,19 @@ private:
     inline static ID3D12GraphicsCommandList* _commandList = nullptr;
     inline static ID3D12CommandAllocator* _commandAllocator = nullptr;
 
+    inline static bool _skipHudlessChecks = false;
 
     inline static bool CreateObjects();    
     inline static bool CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource);
     inline static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
-    
-    // Capture resource to _capturedHudless
-    inline static void CaptureHudless(ID3D12GraphicsCommandList* cmdList, ResourceInfo* resource, D3D12_RESOURCE_STATES state);
     
     // Check _captureCounter for current frame
     inline static bool CheckCapture();    
     inline static bool CheckResource(ResourceInfo* resource);
 
     inline static int GetIndex();
+    inline static void DispatchFG(bool useHudless);
+
 
 public:
     // Trig for upscaling start
@@ -94,7 +95,14 @@ public:
 
     // Is Hudfix active
     inline static bool IsResourceCheckActive();
+    
+    // For resource tracking in hooks
+    inline static bool SkipHudlessChecks();
 
     // Check resource for hudless
     inline static bool CheckForHudless(std::string callerName, ID3D12GraphicsCommandList* cmdList, ResourceInfo* resource, D3D12_RESOURCE_STATES state);
+
+    // Reset frame counters
+    inline static void ResetCounters();
+
 };

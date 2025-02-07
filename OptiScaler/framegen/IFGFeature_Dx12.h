@@ -46,6 +46,7 @@ public:
     virtual void CreateContext(ID3D12Device* device, IFeature* upscalerContext) = 0;
     void ReleaseObjects() final;
 
-    virtual bool DispatchHudless(UINT64 frameId, double frameTime, ID3D12Resource* output) = 0;
+    virtual bool Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* output, double frameTime) = 0;
+    virtual bool DispatchHudless(bool useHudless, double frameTime) = 0;
 
 };

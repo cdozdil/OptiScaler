@@ -1,5 +1,6 @@
 #include "FSRFG_Dx12.h"
 
+#include <hudfix/Hudfix_Dx12.h>
 #include <upscalers/IFeature.h>
 #include <menu/menu_overlay_dx.h>
 
@@ -36,14 +37,30 @@ void FSRFG_Dx12::ConfigureFramePaceTuning()
     LOG_DEBUG("HybridSpin D3D12_Configure result: {}", FfxApiProxy::ReturnCodeToString(result));
 }
 
-void FSRFG_Dx12::UpscaleEnd(float lastFrameTime)
+UINT64 FSRFG_Dx12::UpscaleStart()
 {
+    _frameCount++;
 
+    auto frameIndex = GetIndex();
+    auto allocator = _commandAllocators[frameIndex];
+    auto result = allocator->Reset();
+    result = _commandList[frameIndex]->Reset(allocator, nullptr);
+    LOG_DEBUG("_commandList[{}]->Reset()", frameIndex);
+
+    return _frameCount;
+}
+
+void FSRFG_Dx12::UpscaleEnd()
+{
+    LOG_DEBUG("");
 }
 
 feature_version FSRFG_Dx12::Version()
 {
-    return feature_version();
+    if (FfxApiProxy::InitFfxDx12())
+        return FfxApiProxy::VersionDx12();
+
+    return { 0, 0, 0 };
 }
 
 const char* FSRFG_Dx12::Name()
@@ -51,21 +68,16 @@ const char* FSRFG_Dx12::Name()
     return "FSR-FG";
 }
 
-bool FSRFG_Dx12::Dispatch(UINT64 frameId, double frameTime)
+bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* output, double frameTime)
 {
-    return false;
-}
-
-bool FSRFG_Dx12::DispatchHudless(UINT64 frameId, double frameTime, ID3D12Resource* output)
-{
-    LOG_DEBUG("(FG) running, frame: {0}", frameId);
-    _frameCount = frameId;
+    LOG_DEBUG("(FG) running, frame: {0}", _frameCount);
+    auto frameIndex = _frameCount % BUFFER_COUNT;
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
-        LOG_TRACE("Waiting ffxMutex 1, current: {}", Mutex.getOwner());
+        LOG_TRACE("Waiting Mutex 1, current: {}", Mutex.getOwner());
         Mutex.lock(1);
-        LOG_TRACE("Accuired ffxMutex: {}", Mutex.getOwner());
+        LOG_TRACE("Accuired Mutex: {}", Mutex.getOwner());
     }
 
     // Update frame generation config
@@ -103,15 +115,26 @@ bool FSRFG_Dx12::DispatchHudless(UINT64 frameId, double frameTime, ID3D12Resourc
     }
     else
     {
-        m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(deviceContext->DisplayWidth());
-        m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(deviceContext->DisplayHeight());
+        m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(State::Instance().currentFeature->DisplayWidth());
+        m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(State::Instance().currentFeature->DisplayHeight());
     }
 
-    m_FrameGenerationConfig.frameGenerationCallbackUserContext = &_fgContext;
-    m_FrameGenerationConfig.frameGenerationCallback = (FfxApiFrameGenerationDispatchFunc)HudlessCallback;
+    m_FrameGenerationConfig.frameGenerationCallbackUserContext = this;
+    m_FrameGenerationConfig.frameGenerationCallback = [](ffxDispatchDescFrameGeneration* params, void* pUserCtx) -> ffxReturnCode_t
+        {
+            FSRFG_Dx12* fsrFG = nullptr;
+
+            if (pUserCtx != nullptr)
+                fsrFG = reinterpret_cast<FSRFG_Dx12*>(pUserCtx);
+
+            if (fsrFG != nullptr)
+                return fsrFG->DispatchCallback(params);
+
+            return FFX_API_RETURN_ERROR;
+        };
 
     m_FrameGenerationConfig.onlyPresentGenerated = State::Instance().FGonlyGenerated; // check here
-    m_FrameGenerationConfig.frameID = frameId;
+    m_FrameGenerationConfig.frameID = _frameCount;
     m_FrameGenerationConfig.swapChain = _swapChain;
 
     //State::Instance().skipSpoofing = true;
@@ -125,7 +148,7 @@ bool FSRFG_Dx12::DispatchHudless(UINT64 frameId, double frameTime, ID3D12Resourc
     {
         ffxCreateBackendDX12Desc backendDesc{};
         backendDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_DX12;
-        backendDesc.device = D3D12Device;
+        backendDesc.device = State::Instance().currentD3D12Device;
 
         ffxDispatchDescFrameGenerationPrepare dfgPrepare{};
         dfgPrepare.header.type = FFX_API_DISPATCH_DESC_TYPE_FRAMEGENERATION_PREPARE;
@@ -134,69 +157,26 @@ bool FSRFG_Dx12::DispatchHudless(UINT64 frameId, double frameTime, ID3D12Resourc
 #ifdef USE_QUEUE_FOR_FG
         dfgPrepare.commandList = FrameGen_Dx12::fgCommandList[fIndex];
 #else
-        dfgPrepare.commandList = InCmdList;
+        dfgPrepare.commandList = cmdList;
 #endif
-        dfgPrepare.frameID = deviceContext->FrameCount();
+        dfgPrepare.frameID = State::Instance().currentFeature->FrameCount();
         dfgPrepare.flags = m_FrameGenerationConfig.flags;
-        dfgPrepare.renderSize = { deviceContext->RenderWidth(), deviceContext->RenderHeight() };
+        dfgPrepare.renderSize = { State::Instance().currentFeature->RenderWidth(), State::Instance().currentFeature->RenderHeight() };
 
-        InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &dfgPrepare.jitterOffset.x);
-        InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &dfgPrepare.jitterOffset.y);
+        dfgPrepare.jitterOffset.x = _jitterX;
+        dfgPrepare.jitterOffset.y = _jitterY;
+        dfgPrepare.motionVectors = ffxApiGetResourceDX12(_paramVelocityCopy[frameIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
+        dfgPrepare.depth = ffxApiGetResourceDX12(_paramDepthCopy[frameIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
 
-        if (Config::Instance()->FGMakeMVCopy.value_or_default())
-        {
-            dfgPrepare.motionVectors = ffxApiGetResourceDX12(FrameGen_Dx12::paramVelocityCopy[frameIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
-        }
-        else
-        {
-            ID3D12Resource* paramVelocity;
-            if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
-                InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
+        dfgPrepare.motionVectorScale.x = _mvScaleX;
+        dfgPrepare.motionVectorScale.y = _mvScaleY;
+        dfgPrepare.cameraFar = _cameraFar;
+        dfgPrepare.cameraNear = _cameraNear;
+        dfgPrepare.cameraFovAngleVertical = _cameraVFov;
+        dfgPrepare.frameTimeDelta = _ftDelta;
+        dfgPrepare.viewSpaceToMetersFactor = _meterFactor;
 
-            ResourceBarrier(InCmdList, paramVelocity, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE), D3D12_RESOURCE_STATE_COPY_SOURCE);
-
-            dfgPrepare.motionVectors = ffxApiGetResourceDX12(paramVelocity, FFX_API_RESOURCE_STATE_COMPUTE_READ);
-        }
-
-        if (Config::Instance()->FGMakeDepthCopy.value_or_default())
-        {
-            dfgPrepare.depth = ffxApiGetResourceDX12(FrameGen_Dx12::paramDepthCopy[frameIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
-        }
-        else
-        {
-            ID3D12Resource* paramDepth;
-            if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
-                InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
-
-            ResourceBarrier(InCmdList, paramDepth, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE), D3D12_RESOURCE_STATE_COPY_SOURCE);
-
-            dfgPrepare.depth = ffxApiGetResourceDX12(paramDepth, FFX_API_RESOURCE_STATE_COMPUTE_READ);
-        }
-
-        float MVScaleX = 1.0f;
-        float MVScaleY = 1.0f;
-
-        if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
-            InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
-        {
-            dfgPrepare.motionVectorScale.x = MVScaleX;
-            dfgPrepare.motionVectorScale.y = MVScaleY;
-        }
-        else
-        {
-            LOG_WARN("(FG) Can't get motion vector scales!");
-
-            dfgPrepare.motionVectorScale.x = MVScaleX;
-            dfgPrepare.motionVectorScale.y = MVScaleY;
-        }
-
-        dfgPrepare.cameraFar = cameraFar;
-        dfgPrepare.cameraNear = cameraNear;
-        dfgPrepare.cameraFovAngleVertical = cameraVFov;
-        dfgPrepare.frameTimeDelta = ftDelta;
-        dfgPrepare.viewSpaceToMetersFactor = meterFactor;
-
-        retCode = FfxApiProxy::D3D12_Dispatch()(&FrameGen_Dx12::fgContext, &dfgPrepare.header);
+        retCode = FfxApiProxy::D3D12_Dispatch()(&_fgContext, &dfgPrepare.header);
 
         if (retCode != FFX_API_RETURN_OK)
             LOG_ERROR("(FG) D3D12_Dispatch result: {}({})", retCode, FfxApiProxy::ReturnCodeToString(retCode));
@@ -206,20 +186,139 @@ bool FSRFG_Dx12::DispatchHudless(UINT64 frameId, double frameTime, ID3D12Resourc
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
-        LOG_TRACE("Releasing ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
-        FrameGen_Dx12::ffxMutex.unlockThis(1);
+        LOG_TRACE("Releasing Mutex: {}", Mutex.getOwner());
+        Mutex.unlockThis(1);
     }
 }
 
-ffxReturnCode_t FSRFG_Dx12::HudlessCallback(ffxDispatchDescFrameGeneration* params, void* pUserCtx)
+bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
 {
-    auto fIndex = _frameCount;
+    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && Mutex.getOwner() != 2)
+    {
+        LOG_TRACE("Waiting ffxMutex 1, current: {}", Mutex.getOwner());
+        Mutex.lock(1);
+        LOG_TRACE("Accuired ffxMutex: {}", Mutex.getOwner());
+    }
+
+    // hudless captured for this frame
+    auto fIndex = GetIndex();
+
+    // switch dlss targets for next depth and mv 
+    ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
+    m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
+
+    if (useHudless)
+        m_FrameGenerationConfig.HUDLessColor = ffxApiGetResourceDX12(_paramHudless[fIndex], FFX_API_RESOURCE_STATE_COPY_DEST, 0);
+    else
+        m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
+
+    m_FrameGenerationConfig.frameGenerationEnabled = true;
+    m_FrameGenerationConfig.flags = 0;
+
+    if (Config::Instance()->FGDebugView.value_or_default())
+        m_FrameGenerationConfig.flags |= FFX_FRAMEGENERATION_FLAG_DRAW_DEBUG_VIEW;
+
+    m_FrameGenerationConfig.allowAsyncWorkloads = Config::Instance()->FGAsync.value_or_default();
+    m_FrameGenerationConfig.generationRect.left = Config::Instance()->FGRectLeft.value_or(0);
+    m_FrameGenerationConfig.generationRect.top = Config::Instance()->FGRectTop.value_or(0);
+
+    // use swapchain buffer info 
+    DXGI_SWAP_CHAIN_DESC scDesc{};
+    if (State::Instance().currentSwapchain->GetDesc(&scDesc) == S_OK)
+    {
+        m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(scDesc.BufferDesc.Width);
+        m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(scDesc.BufferDesc.Height);
+    }
+    else
+    {
+        m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(State::Instance().currentFeature->DisplayWidth());
+        m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(State::Instance().currentFeature->DisplayHeight());
+    }
+
+    m_FrameGenerationConfig.frameGenerationCallbackUserContext = this;
+    m_FrameGenerationConfig.frameGenerationCallback = [](ffxDispatchDescFrameGeneration* params, void* pUserCtx) -> ffxReturnCode_t
+        {
+            FSRFG_Dx12* fsrFG = nullptr;
+
+            if (pUserCtx != nullptr)
+                fsrFG = reinterpret_cast<FSRFG_Dx12*>(pUserCtx);
+
+            if (fsrFG != nullptr)
+                return fsrFG->HudlessDispatchCallback(params);
+
+            return FFX_API_RETURN_ERROR;
+        };
+
+    m_FrameGenerationConfig.onlyPresentGenerated = State::Instance().FGonlyGenerated;
+    m_FrameGenerationConfig.frameID = State::Instance().currentFeature->FrameCount();
+    m_FrameGenerationConfig.swapChain = State::Instance().currentSwapchain;
+
+    ffxReturnCode_t retCode = FfxApiProxy::D3D12_Configure()(&_fgContext, &m_FrameGenerationConfig.header);
+    LOG_DEBUG("D3D12_Configure result: {0:X}, frame: {1}, fIndex: {2}", retCode, _frameCount, fIndex);
+
+    if (retCode == FFX_API_RETURN_OK)
+    {
+        ffxCreateBackendDX12Desc backendDesc{};
+        backendDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_DX12;
+        backendDesc.device = State::Instance().currentD3D12Device;
+
+        ffxDispatchDescFrameGenerationPrepare dfgPrepare{};
+        dfgPrepare.header.type = FFX_API_DISPATCH_DESC_TYPE_FRAMEGENERATION_PREPARE;
+        dfgPrepare.header.pNext = &backendDesc.header;
+
+        dfgPrepare.commandList = _commandList[fIndex]; // This;
+
+        dfgPrepare.frameID = _frameCount;
+        dfgPrepare.flags = m_FrameGenerationConfig.flags;
+
+        dfgPrepare.renderSize = { State::Instance().currentFeature->RenderWidth(), State::Instance().currentFeature->RenderHeight() };
+
+        dfgPrepare.jitterOffset.x = _jitterX;
+        dfgPrepare.jitterOffset.y = _jitterY;
+        dfgPrepare.motionVectors = ffxApiGetResourceDX12(_paramVelocityCopy[fIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
+        dfgPrepare.depth = ffxApiGetResourceDX12(_paramDepthCopy[fIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
+
+        dfgPrepare.motionVectorScale.x = _mvScaleX;
+        dfgPrepare.motionVectorScale.y = _mvScaleY;
+        dfgPrepare.cameraFar = _cameraFar;
+        dfgPrepare.cameraNear = _cameraNear;
+        dfgPrepare.cameraFovAngleVertical = _cameraVFov;
+        dfgPrepare.frameTimeDelta = _ftDelta;
+        dfgPrepare.viewSpaceToMetersFactor = _meterFactor;
+
+        retCode = FfxApiProxy::D3D12_Dispatch()(&_fgContext, &dfgPrepare.header);
+
+        if (!Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
+        {
+            auto result = _commandList[fIndex]->Close();
+            LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
+
+            if (result == S_OK)
+            {
+                ID3D12CommandList* cl[] = { nullptr };
+                cl[0] = _commandList[fIndex];
+                _gameCommandQueue->ExecuteCommandLists(1, cl);
+            }
+        }
+
+        if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+        {
+            LOG_TRACE("Releasing ffxMutex: {}", Mutex.getOwner());
+            Mutex.unlockThis(1);
+        };
+
+        LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}, commandList: {3:X}", retCode, _frameCount, fIndex, (size_t)dfgPrepare.commandList);
+    }
+}
+
+ffxReturnCode_t FSRFG_Dx12::DispatchCallback(ffxDispatchDescFrameGeneration* params)
+{
+    auto fIndex = params->frameID % BUFFER_COUNT;
 
     params->reset = (_reset != 0);
 
     // check for status
-    if (!Config::Instance()->FGEnabled.value_or_default() ||
-        _fgContext == nullptr || State::Instance().SCchanged
+    if (!Config::Instance()->FGEnabled.value_or_default() || _fgContext == nullptr || State::Instance().SCchanged
 #ifdef USE_QUEUE_FOR_FG
         || FrameGen_Dx12::fgCommandList[fIndex] == nullptr || FrameGen_Dx12::fgCommandQueue == nullptr
 #endif
@@ -246,8 +345,7 @@ ffxReturnCode_t FSRFG_Dx12::HudlessCallback(ffxDispatchDescFrameGeneration* para
         //return FFX_API_RETURN_OK;
     }
 
-
-    auto dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
+    auto dispatchResult = FfxApiProxy::D3D12_Dispatch()(&_fgContext, &params->header);
     LOG_DEBUG("(FG) D3D12_Dispatch result: {}, fIndex: {}", (UINT)dispatchResult, fIndex);
 
 #ifdef USE_QUEUE_FOR_FG
@@ -262,8 +360,39 @@ ffxReturnCode_t FSRFG_Dx12::HudlessCallback(ffxDispatchDescFrameGeneration* para
         {
             LOG_ERROR("(FG) Close result: {}", (UINT)result);
         }
-    }
+}
 #endif
+
+    return dispatchResult;
+};
+
+ffxReturnCode_t FSRFG_Dx12::HudlessDispatchCallback(ffxDispatchDescFrameGeneration* params)
+{
+    HRESULT result;
+    ffxReturnCode_t dispatchResult = FFX_API_RETURN_OK;
+    int fIndex = params->frameID % BUFFER_COUNT;
+
+    LOG_DEBUG("frameID: {}, commandList: {:X}", params->frameID, (size_t)params->commandList);
+
+    // check for status
+    if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default() ||
+        _fgContext == nullptr || _commandQueue == nullptr || State::Instance().SCchanged)
+    {
+        LOG_WARN("Cancel async dispatch");
+        params->numGeneratedFrames = 0;
+    }
+
+    // If fg is active but upscaling paused
+    if (State::Instance().currentFeature == nullptr || State::Instance().FGchanged ||
+        fIndex < 0 || !IsActive() || State::Instance().currentFeature->FrameCount() == 0 ||
+        _commandList[fIndex] == nullptr)
+    {
+        LOG_WARN("Callback without hudless! frameID: {}", params->frameID);
+        params->numGeneratedFrames = 0;
+    }
+
+    dispatchResult = FfxApiProxy::D3D12_Dispatch()(&_fgContext, &params->header);
+    LOG_DEBUG("D3D12_Dispatch result: {}, fIndex: {}", (UINT)dispatchResult, fIndex);
 
     return dispatchResult;
 };
@@ -274,9 +403,9 @@ void FSRFG_Dx12::StopAndDestroyContext(bool destroy, bool shutDown, bool useMute
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && useMutex)
     {
-        LOG_TRACE("Waiting ffxMutex 1, current: {}", Mutex.getOwner());
+        LOG_TRACE("Waiting Mutex 1, current: {}", Mutex.getOwner());
         Mutex.lock(1);
-        LOG_TRACE("Accuired ffxMutex: {}", Mutex.getOwner());
+        LOG_TRACE("Accuired Mutex: {}", Mutex.getOwner());
     }
 
     if (!(shutDown || State::Instance().isShuttingDown) && _fgContext != nullptr)
@@ -312,7 +441,7 @@ void FSRFG_Dx12::StopAndDestroyContext(bool destroy, bool shutDown, bool useMute
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && useMutex)
     {
-        LOG_TRACE("Releasing ffxMutex: {}", Mutex.getOwner());
+        LOG_TRACE("Releasing Mutex: {}", Mutex.getOwner());
         Mutex.unlockThis(1);
     }
 }
@@ -340,9 +469,9 @@ void FSRFG_Dx12::ReleaseSwapchain(IDXGISwapChain* swapChain)
 {
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
-        LOG_TRACE("Waiting ffxMutex 1, current: {}", Mutex.getOwner());
+        LOG_TRACE("Waiting Mutex 1, current: {}", Mutex.getOwner());
         Mutex.lock(1);
-        LOG_TRACE("Accuired ffxMutex: {}", Mutex.getOwner());
+        LOG_TRACE("Accuired Mutex: {}", Mutex.getOwner());
     }
 
     MenuOverlayDx::CleanupRenderTarget(true, NULL);
@@ -360,7 +489,7 @@ void FSRFG_Dx12::ReleaseSwapchain(IDXGISwapChain* swapChain)
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
-        LOG_TRACE("Releasing ffxMutex: {}", Mutex.getOwner());
+        LOG_TRACE("Releasing Mutex: {}", Mutex.getOwner());
         Mutex.unlockThis(1);
     }
 }

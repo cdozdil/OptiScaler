@@ -1,6 +1,7 @@
 #include "menu_common.h"
 
 #include "DLSSG_Mod.h"
+#include <framegen/ffx/FSRFG_Dx12.h>
 
 #include "font/Hack_Compressed.h"
 #include <nvapi/fakenvapi.h>
@@ -1497,7 +1498,12 @@ bool MenuCommon::RenderMenu()
                                 ImGui::TreePop();
                             }
 
-                            if (isVersionOrBetter(FfxApiProxy::VersionDx12(), { 3, 1, 3 }))
+
+                            FSRFG_Dx12* fsrFG = nullptr;
+                            if (State::Instance().currentFG != nullptr)
+                                fsrFG = reinterpret_cast<FSRFG_Dx12*>(State::Instance().currentFG);
+
+                            if (fsrFG != nullptr && isVersionOrBetter(FfxApiProxy::VersionDx12(), { 3, 1, 3 }))
                             {
                                 ImGui::Spacing();
                                 if (ImGui::TreeNode("Frame Pacing Tuning"))
@@ -1506,7 +1512,7 @@ bool MenuCommon::RenderMenu()
                                     if (ImGui::Checkbox("Enable Tuning", &fptEnabled))
                                     {
                                         Config::Instance()->FGFramePacingTuning = fptEnabled;
-                                        FrameGen_Dx12::ConfigureFramePaceTuning();
+                                        fsrFG->ConfigureFramePaceTuning();
                                     }
 
                                     ImGui::BeginDisabled(!Config::Instance()->FGFramePacingTuning.value_or_default());
@@ -1547,7 +1553,7 @@ bool MenuCommon::RenderMenu()
                                     ShowHelpMarker("Allows WaitForSingleObject instead of spinning for fence value");
 
                                     if (ImGui::Button("Apply Timing Changes"))
-                                        FrameGen_Dx12::ConfigureFramePaceTuning();
+                                        fsrFG->ConfigureFramePaceTuning();
 
                                     ImGui::EndDisabled();
                                     ImGui::TreePop();

@@ -115,17 +115,18 @@ inline bool Hudfix_Dx12::CheckCapture()
 {
     auto fIndex = GetIndex();
 
+    // early exit
+    if (_captureCounter[fIndex] > 999)
+        return false;
+
     {
         std::unique_lock<std::shared_mutex> lock(_counterMutex);
         _captureCounter[fIndex]++;
 
         LOG_TRACE("frameCounter: {}, _captureCounter: {}, Limit: {}", State::Instance().currentFeature->FrameCount(), _captureCounter[fIndex], Config::Instance()->FGHUDLimit.value_or_default());
 
-        if (_captureCounter[fIndex] != Config::Instance()->FGHUDLimit.value_or_default())
+        if (_captureCounter[fIndex] > 999 || _captureCounter[fIndex] < Config::Instance()->FGHUDLimit.value_or_default())
             return false;
-
-        _captureCounter[fIndex] = -999999999;
-        _fgCounter++;
     }
 
     return true;
@@ -244,19 +245,29 @@ inline int Hudfix_Dx12::GetIndex()
     return _upscaleCounter % 4;
 }
 
+inline void Hudfix_Dx12::DispatchFG(bool useHudless)
+{
+    LOG_DEBUG("useHudless: {}, frame: {}", useHudless, _fgCounter);
+
+    // Set it above 1000 to prvent capture
+    _captureCounter[GetIndex()] = 9999;
+
+    // Increase counter
+    _fgCounter++;
+
+    _skipHudlessChecks = true;
+    reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG)->DispatchHudless(useHudless, _frameTime);
+    _skipHudlessChecks = false;
+}
+
 inline void Hudfix_Dx12::UpscaleStart()
 {
     LOG_DEBUG("");
 
-    if (_upscaleCounter > _fgCounter)
+    if (IsResourceCheckActive() && CheckCapture() && _upscaleCounter > _fgCounter)
     {
-        if (IsResourceCheckActive())
-        {
-            LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
-            // CALL FG!
-        }
-
-        _fgCounter++;
+        LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
+        DispatchFG(false);
     }
 }
 
@@ -264,6 +275,7 @@ inline void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
 {
     // Update counter after upscaling so _upscaleCounter == _fgCounter check at IsResourceCheckActive will work
     _upscaleCounter = frameId;
+    _frameTime = lastFrameTime;
 
     // Get new index and clear resources
     auto index = GetIndex();
@@ -289,15 +301,10 @@ inline void Hudfix_Dx12::PresentStart()
         _lastDiffTime = 0.0f;
 
     // FG not run yet!
-    if (_upscaleCounter > _fgCounter)
+    if (IsResourceCheckActive() && CheckCapture() && _upscaleCounter > _fgCounter)
     {
-        if (IsResourceCheckActive())
-        {
-            LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
-            // CALL FG!
-        }
-
-        _fgCounter++;
+        LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
+        DispatchFG(false);
     }
 }
 
@@ -318,25 +325,28 @@ inline UINT64 Hudfix_Dx12::ActivePresentFrame()
 
 inline bool Hudfix_Dx12::IsResourceCheckActive()
 {
-    if (_upscaleCounter == _fgCounter)
+    if (_upscaleCounter <= _fgCounter)
         return false;
 
     if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default())
+        return false;
+
+    if (State::Instance().currentFeature == nullptr || State::Instance().currentFG == nullptr)
+        return false;
+
+    if (!State::Instance().currentFG->IsActive() || State::Instance().FGchanged)
         return false;
 
     auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
     if (fg == nullptr)
         return false;
 
-    // DONT FORGET HERE !!!!!
-
-    //if (FrameGen_Dx12::fgContext == nullptr || State::Instance().currentFeature == nullptr || !FrameGen_Dx12::fgIsActive || State::Instance().FGchanged)
-    //    return false;
-
-    //if (FrameGen_Dx12::fgTarget > State::Instance().currentFeature->FrameCount())
-    //    return false;
-
     return true;
+}
+
+inline bool Hudfix_Dx12::SkipHudlessChecks()
+{
+    return _skipHudlessChecks;
 }
 
 inline bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandList* cmdList, ResourceInfo* resource, D3D12_RESOURCE_STATES state)
@@ -347,83 +357,112 @@ inline bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsC
     if (!IsResourceCheckActive())
         return false;
 
-    if (!CheckResource(resource))
-        return false;
-
-    auto fIndex = GetIndex();
-
-    DXGI_SWAP_CHAIN_DESC scDesc{};
-    if (State::Instance().currentSwapchain->GetDesc(&scDesc) != S_OK)
+    do
     {
-        LOG_WARN("Can't get swapchain desc!");
-        return false;
-    }
+        // Prevent double capture
+        std::unique_lock<std::shared_mutex> lock(_captureMutex);
 
-    LOG_TRACE("Capture resource: {0:X}", (size_t)resource->buffer);
+        if (!CheckResource(resource))
+            break;
 
-    // Get copy of resource
-    if (CreateBufferResource(State::Instance().currentD3D12Device, resource, D3D12_RESOURCE_STATE_COPY_DEST, &_captureBuffer[fIndex]))
-    {
-        ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
-        cmdList->CopyResource(_captureBuffer[fIndex], resource->buffer);
-        ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
-    }
-    else
-    {
-        LOG_WARN("Can't create _captureBuffer!");
-        return false;
-    }
+        auto fIndex = GetIndex();
 
-    // needs conversion?
-    if (resource->format != scDesc.BufferDesc.Format)
-    {
-        if (_formatTransfer != nullptr && _formatTransfer->CreateBufferResource(State::Instance().currentD3D12Device, resource->buffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+        DXGI_SWAP_CHAIN_DESC scDesc{};
+        if (State::Instance().currentSwapchain->GetDesc(&scDesc) != S_OK)
         {
-            // Make a copy of resource to capture current state
+            LOG_WARN("Can't get swapchain desc!");
+            _captureCounter[fIndex]--;
+            break;
+        }
 
-            // Dispatch format transfer
-            if (_commandQueue != nullptr || CreateObjects())
-            {
-                _commandAllocator->Reset();
-                _commandList->Reset(_commandAllocator, nullptr);
+        LOG_TRACE("Capture resource: {0:X}", (size_t)resource->buffer);
 
-                ResourceBarrier(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-                _formatTransfer->Dispatch(State::Instance().currentD3D12Device, _commandList, _captureBuffer[fIndex], _formatTransfer->Buffer());
-                ResourceBarrier(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-
-                _commandList->Close();
-                ID3D12CommandList* cmdLists[1] = { _commandList };
-                _commandQueue->ExecuteCommandLists(1, cmdLists);
-            }
-
-            LOG_TRACE("Using _formatTransfer->Buffer()");
-            auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
-            if (fg != nullptr)
-                fg->SetHudless(cmdList, _formatTransfer->Buffer(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false);
+        // Get copy of resource
+        if (CreateBufferResource(State::Instance().currentD3D12Device, resource, D3D12_RESOURCE_STATE_COPY_DEST, &_captureBuffer[fIndex]))
+        {
+            ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
+            cmdList->CopyResource(_captureBuffer[fIndex], resource->buffer);
+            ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
         }
         else
         {
-            LOG_WARN("_formatTransfer is null or can't create _formatTransfer buffer!");
-            return false;
+            LOG_WARN("Can't create _captureBuffer!");
+            _captureCounter[fIndex]--;
+            break;
         }
-    }
-    else
-    {
-        auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
-        if (fg != nullptr)
-            fg->SetHudless(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, false);
-    }
 
-    {
-        std::unique_lock<std::shared_mutex> lock(_captureMutex);
-        if (State::Instance().FGcaptureResources)
+        // needs conversion?
+        if (resource->format != scDesc.BufferDesc.Format)
         {
-            _captureList.insert(resource->buffer);
-            State::Instance().FGcapturedResourceCount = _captureList.size();
+            if (_formatTransfer != nullptr && _formatTransfer->CreateBufferResource(State::Instance().currentD3D12Device, resource->buffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+            {
+                // Make a copy of resource to capture current state
+
+                // Dispatch format transfer
+                if (_commandQueue != nullptr || CreateObjects())
+                {
+                    _commandAllocator->Reset();
+                    _commandList->Reset(_commandAllocator, nullptr);
+
+                    ResourceBarrier(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                    _formatTransfer->Dispatch(State::Instance().currentD3D12Device, _commandList, _captureBuffer[fIndex], _formatTransfer->Buffer());
+                    ResourceBarrier(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+
+                    _commandList->Close();
+                    ID3D12CommandList* cmdLists[1] = { _commandList };
+                    _commandQueue->ExecuteCommandLists(1, cmdLists);
+                }
+
+                LOG_TRACE("Using _formatTransfer->Buffer()");
+                auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
+                if (fg != nullptr)
+                    fg->SetHudless(cmdList, _formatTransfer->Buffer(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false);
+            }
+            else
+            {
+                LOG_WARN("_formatTransfer is null or can't create _formatTransfer buffer!");
+                _captureCounter[fIndex]--;
+                break;
+            }
         }
+        else
+        {
+            auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
+            if (fg != nullptr)
+                fg->SetHudless(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, false);
+        }
+
+        {
+            std::unique_lock<std::shared_mutex> lock(_captureMutex);
+            if (State::Instance().FGcaptureResources)
+            {
+                _captureList.insert(resource->buffer);
+                State::Instance().FGcapturedResourceCount = _captureList.size();
+            }
+        }
+
+        DispatchFG(true);
+
+        return true;
+
+    } while (false);
+
+    // Check for limit time
+    auto now = Util::MillisecondsNow();
+    if (IsResourceCheckActive() && CheckCapture() && now > _targetTime)
+    {
+        LOG_WARN("Reached limit time: {} > {}", now, _targetTime);
+        DispatchFG(false);
     }
+}
 
-    // CALL FG!
+inline void Hudfix_Dx12::ResetCounters()
+{
+    _fgCounter = 0;
+    _upscaleCounter = 0;
 
-    return true;
+    _lastDiffTime = 0.0;
+    _upscaleEndTime = 0.0;
+    _targetTime = 0.0;
+    _frameTime = 0.0;
 }

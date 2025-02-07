@@ -31,8 +31,10 @@ protected:
 public:
     OwnedMutex Mutex;
 
-    UINT64 UpscaleStart();
-    virtual void UpscaleEnd(float lastFrameTime) = 0;
+    bool IsActive();
+
+    virtual UINT64 UpscaleStart() = 0;
+    virtual void UpscaleEnd() = 0;
 
     void SetJitter(float x, float y);
     void SetMVScale(float x, float y);
@@ -43,8 +45,9 @@ public:
     virtual feature_version Version() = 0;
     virtual const char* Name() = 0;
 
-    virtual bool Dispatch(UINT64 frameId, double frameTime) = 0;
-
     virtual void ReleaseObjects() = 0;
     virtual void StopAndDestroyContext(bool destroy, bool shutDown, bool useMutex) = 0;
+
+    void ResetCounters();
+    void UpdateTarget();
 };

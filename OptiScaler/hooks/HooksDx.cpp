@@ -2094,7 +2094,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
         HooksDx::fgFSRCommandQueue = (ID3D12CommandQueue*)pDevice;
         HooksDx::fgFSRCommandQueue->SetName(L"fgFSRSwapChainQueue");
-        HooksDx::GameCommandQueue = HooksDx::fgFSRCommandQueue;
+        State::Instance().gameCommandQueue= HooksDx::fgFSRCommandQueue;
         State::Instance().swapchainApi = DX12;
 
         if (HooksDx::GameCommandQueue->GetDevice(IID_PPV_ARGS(&device12)) == S_OK)

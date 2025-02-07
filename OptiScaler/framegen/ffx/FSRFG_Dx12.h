@@ -14,21 +14,19 @@ private:
     ffxContext _fgContext = nullptr;
     
 
-    ffxReturnCode_t HudlessCallback(ffxDispatchDescFrameGeneration* params, void* pUserCtx);
-    void ConfigureFramePaceTuning();
-
 public:
 
     // Inherited via IFGFeature_Dx12
-    void UpscaleEnd(float lastFrameTime) final;
+    UINT64 UpscaleStart() final;
+    void UpscaleEnd() final;
 
     feature_version Version() final;
 
     const char* Name() final;
 
-    bool Dispatch(UINT64 frameId, double frameTime) final;
+    bool Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* output, double frameTime) final;
 
-    bool DispatchHudless(UINT64 frameId, double frameTime, ID3D12Resource* output) final;
+    bool DispatchHudless(bool useHudless, double frameTime) final;
 
     void StopAndDestroyContext(bool destroy, bool shutDown, bool useMutex) final;
 
@@ -38,4 +36,8 @@ public:
 
     void CreateContext(ID3D12Device* device, IFeature* upscalerContext) final;
 
+    void ConfigureFramePaceTuning();
+
+    ffxReturnCode_t DispatchCallback(ffxDispatchDescFrameGeneration* params);
+    ffxReturnCode_t HudlessDispatchCallback(ffxDispatchDescFrameGeneration* params);
 };
