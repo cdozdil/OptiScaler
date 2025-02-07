@@ -159,7 +159,7 @@ public:
     }
 
     // For updating information about Reflex hooks
-    inline static void update(bool fgState) {
+    inline static void update(bool optiFg_FgState) {
         // We can still use just the markers to limit the fps with Reflex disabled
         // But need to fallback in case a game stops sending them for some reason
         _updatesWithoutMarker++;
@@ -173,8 +173,8 @@ public:
         }
 
         // Don't use when: Real Reflex markers + OptiFG + Reflex disabled, causes huge input latency
-        State::Instance().reflexLimitsFps = fakenvapi::isUsingFakenvapi() || !fgState || _lastSleepParams.bLowLatencyMode;
-        State::Instance().reflexShowWarning = !fakenvapi::isUsingFakenvapi() && fgState && _lastSleepParams.bLowLatencyMode;
+        State::Instance().reflexLimitsFps = fakenvapi::isUsingFakenvapi() || !optiFg_FgState || _lastSleepParams.bLowLatencyMode;
+        State::Instance().reflexShowWarning = !fakenvapi::isUsingFakenvapi() && optiFg_FgState && _lastSleepParams.bLowLatencyMode;
         static float lastFps = 0;
         static bool lastReflexLimitsFps = State::Instance().reflexLimitsFps;
 
@@ -203,7 +203,7 @@ public:
                 LOG_DEBUG("DLSS FG no longer detected");
         }
 
-        if (fgState || (_dlssgDetected && fakenvapi::isUsingFakenvapi()))
+        if (optiFg_FgState || (_dlssgDetected && fakenvapi::isUsingFakenvapi()))
             currentFps /= 2;
 
         if (currentFps != lastFps) {
