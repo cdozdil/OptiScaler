@@ -164,6 +164,8 @@ public:
         // But need to fallback in case a game stops sending them for some reason
         _updatesWithoutMarker++;
 
+        State::Instance().reflexShowWarning = false;
+
         if (_updatesWithoutMarker > 20 || !_inited)
         {
             State::Instance().reflexLimitsFps = false;
@@ -172,6 +174,7 @@ public:
 
         // Don't use when: Real Reflex markers + OptiFG + Reflex disabled, causes huge input latency
         State::Instance().reflexLimitsFps = fakenvapi::isUsingFakenvapi() || !fgState || _lastSleepParams.bLowLatencyMode;
+        State::Instance().reflexShowWarning = !fakenvapi::isUsingFakenvapi() && fgState && _lastSleepParams.bLowLatencyMode;
         static float lastFps = 0;
         static bool lastReflexLimitsFps = State::Instance().reflexLimitsFps;
 

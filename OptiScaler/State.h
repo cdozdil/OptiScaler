@@ -81,6 +81,7 @@ public:
 
 	// Framerate
 	bool reflexLimitsFps = false;
+	bool reflexShowWarning = false;
 
 	// for realtime changes
 	bool changeBackend = false;

@@ -2166,6 +2166,9 @@ bool MenuCommon::RenderMenu()
 
                     ImGui::Text(std::format("Current method: {}", State::Instance().reflexLimitsFps ? "Reflex" : "Fallback").c_str());
 
+                    if (State::Instance().reflexShowWarning)
+                        ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Using Reflex's limit with OptiFG has performance overhead");
+
                     // set initial value
                     if (_limitFps == INFINITY)
                         _limitFps = Config::Instance()->FramerateLimit.value_or_default();
