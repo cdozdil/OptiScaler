@@ -2140,7 +2140,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             UINT64 endTime = timestampData[1];
             double elapsedTimeMs = (endTime - startTime) / static_cast<double>(gpuFrequency) * 1000.0;
 
-            // filter out posibly wrong measured high values
+            // filter out possibly wrong measured high values
             if (elapsedTimeMs < 100.0)
             {
                 State::Instance().upscaleTimes.push_back(elapsedTimeMs);

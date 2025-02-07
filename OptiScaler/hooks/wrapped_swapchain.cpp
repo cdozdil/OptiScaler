@@ -3,6 +3,7 @@
 #include <Config.h>
 #include <Util.h>
 #include "HooksDx.h"
+#include <misc/FrameLimit.h>
 
 // Used RenderDoc's wrapped object as referance
 // https://github.com/baldurk/renderdoc/blob/v1.x/renderdoc/driver/dxgi/dxgi_wrapped.cpp
@@ -467,6 +468,10 @@ HRESULT WrappedIDXGISwapChain4::Present(UINT SyncInterval, UINT Flags)
         result = RenderTrig(m_pReal, SyncInterval, Flags, nullptr, Device, Handle);
     else
         result = m_pReal->Present(SyncInterval, Flags);
+
+    // When Reflex can't be used to limit, sleep in present
+    if (!State::Instance().reflexLimitsFps)
+        FrameLimit::sleep();
 
     return result;
 }
