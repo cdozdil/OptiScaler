@@ -1,10 +1,6 @@
 #pragma once
 #include <pch.h>
 
-#include <Config.h>
-#include <State.h>
-#include <Util.h>
-
 #include <shaders/format_transfer/FT_Dx12.h>
 
 #include <set>
@@ -62,47 +58,47 @@ private:
     inline static ID3D12CommandQueue* _commandQueue = nullptr;
     inline static ID3D12GraphicsCommandList* _commandList = nullptr;
     inline static ID3D12CommandAllocator* _commandAllocator = nullptr;
-
+    
     inline static bool _skipHudlessChecks = false;
 
-    inline static bool CreateObjects();    
-    inline static bool CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource);
-    inline static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
+    static bool CreateObjects();    
+    static bool CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource);
+    static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
     
     // Check _captureCounter for current frame
-    inline static bool CheckCapture();    
-    inline static bool CheckResource(ResourceInfo* resource);
+    static bool CheckCapture();    
+    static bool CheckResource(ResourceInfo* resource);
 
-    inline static int GetIndex();
-    inline static void DispatchFG(bool useHudless);
+    static int GetIndex();
+    static void DispatchFG(bool useHudless);
 
 
 public:
     // Trig for upscaling start
-    inline static void UpscaleStart();
+    static void UpscaleStart();
 
     // Trig for upscaling end
-    inline static void UpscaleEnd(UINT64 frameId, float lastFrameTime);
+    static void UpscaleEnd(UINT64 frameId, float lastFrameTime);
     
     // Trig for present start
-    inline static void PresentStart();
+    static void PresentStart();
 
     // Trig for present end
-    inline static void PresentEnd();
+    static void PresentEnd();
 
-    inline static UINT64 ActiveUpscaleFrame();
-    inline static UINT64 ActivePresentFrame();
+    static UINT64 ActiveUpscaleFrame();
+    static UINT64 ActivePresentFrame();
 
     // Is Hudfix active
-    inline static bool IsResourceCheckActive();
+    static bool IsResourceCheckActive();
     
     // For resource tracking in hooks
-    inline static bool SkipHudlessChecks();
+    static bool SkipHudlessChecks();
 
     // Check resource for hudless
-    inline static bool CheckForHudless(std::string callerName, ID3D12GraphicsCommandList* cmdList, ResourceInfo* resource, D3D12_RESOURCE_STATES state);
+    static bool CheckForHudless(std::string callerName, ID3D12GraphicsCommandList* cmdList, ResourceInfo* resource, D3D12_RESOURCE_STATES state);
 
     // Reset frame counters
-    inline static void ResetCounters();
+    static void ResetCounters();
 
 };

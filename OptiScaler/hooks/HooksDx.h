@@ -5,7 +5,6 @@
 #include <d3d11_4.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
-#include <shared_mutex>
 
 // Use a dedicated Queue + CommandList for copying Depth + Velocity
 // Looks like it is causing issues so disabled 
@@ -24,9 +23,6 @@
 #include <d3d12sdklayers.h>
 #endif
 
-#include <nvapi/fakenvapi.h>
-#include <nvapi/ReflexHooks.h>
-
 namespace HooksDx
 {
     inline ID3D12QueryHeap* queryHeap = nullptr;
@@ -39,21 +35,10 @@ namespace HooksDx
     inline ID3D11Query* endQueries[QUERY_BUFFER_COUNT] = { nullptr, nullptr, nullptr };
     inline bool dx11UpscaleTrig[QUERY_BUFFER_COUNT] = { false, false, false };
 
-    inline ID3D12CommandQueue* GameCommandQueue = nullptr;
-    //inline IDXGISwapChain* currentSwapchain = nullptr;
-
     inline int currentFrameIndex = 0;
     inline int previousFrameIndex = 0;
 
     // FG
-    inline const int FG_BUFFER_SIZE = 4;
-
-    inline INT64 fgHUDlessCaptureCounter[FG_BUFFER_SIZE] = { 0, 0, 0, 0 };
-    inline UINT64 fgHudlessFrameIndexes[FG_BUFFER_SIZE] = { 9999999999999, 9999999999999, 9999999999999, 9999999999999 };
-    inline bool upscaleRan = false;
-    inline bool fgSkipHudlessChecks = false;
-    inline double fgFrameTime = 0.0;
-    inline std::deque<float> fgFrameTimes;
     inline ID3D12CommandQueue* fgFSRCommandQueue = nullptr;
     inline ID3D12CommandQueue* gameCommandQueue = nullptr;
 
@@ -61,5 +46,7 @@ namespace HooksDx
     void HookDx11();
     void HookDx12();
     void HookDxgi();
+    void ReleaseDx12SwapChain(HWND hwnd);
+
     DXGI_FORMAT CurrentSwapchainFormat();
 }

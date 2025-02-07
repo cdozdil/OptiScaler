@@ -272,12 +272,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 
     State::Instance().api = DX12;
 
-    // FG Init
-    if (Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() && State::Instance().currentFG == nullptr)
-    {
-        State::Instance().currentFG = new FSRFG_Dx12();
-    }
-
     if (!State::Instance().isWorkingAsNvngx)
     {
         // Create query heap for timestamp queries
@@ -1544,9 +1538,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         if (fg != nullptr && fg->IsActive() && Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
             Config::Instance()->FGEnabled.value_or_default() && State::Instance().currentSwapchain != nullptr)
         {
-            HooksDx::upscaleRan = true;
-            fgCallbackFrameIndex = frameIndex;
-
             fg->UpscaleEnd();
 
             if (Config::Instance()->FGHUDFix.value_or_default())

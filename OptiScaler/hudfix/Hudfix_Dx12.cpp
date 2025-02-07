@@ -1,7 +1,13 @@
 #include "Hudfix_Dx12.h"
+
+#include <Util.h>
+#include <State.h>
+#include <Config.h>
+
 #include <framegen/IFGFeature_Dx12.h>
 
-inline bool Hudfix_Dx12::CreateObjects()
+
+bool Hudfix_Dx12::CreateObjects()
 {
     if (_commandQueue != nullptr)
         return false;
@@ -58,7 +64,7 @@ inline bool Hudfix_Dx12::CreateObjects()
     return false;
 }
 
-inline bool Hudfix_Dx12::CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource)
+bool Hudfix_Dx12::CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource)
 {
     if (InDevice == nullptr || InSource == nullptr)
         return false;
@@ -100,7 +106,7 @@ inline bool Hudfix_Dx12::CreateBufferResource(ID3D12Device* InDevice, ResourceIn
     return true;
 }
 
-inline void Hudfix_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState)
+void Hudfix_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState)
 {
     D3D12_RESOURCE_BARRIER barrier = {};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -111,7 +117,7 @@ inline void Hudfix_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandLis
     InCommandList->ResourceBarrier(1, &barrier);
 }
 
-inline bool Hudfix_Dx12::CheckCapture()
+bool Hudfix_Dx12::CheckCapture()
 {
     auto fIndex = GetIndex();
 
@@ -133,7 +139,7 @@ inline bool Hudfix_Dx12::CheckCapture()
 
 }
 
-inline bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
+bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
 {
     if (State::Instance().FGonlyUseCapturedResources)
     {
@@ -240,12 +246,12 @@ inline bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
     return false;
 }
 
-inline int Hudfix_Dx12::GetIndex()
+int Hudfix_Dx12::GetIndex()
 {
     return _upscaleCounter % 4;
 }
 
-inline void Hudfix_Dx12::DispatchFG(bool useHudless)
+void Hudfix_Dx12::DispatchFG(bool useHudless)
 {
     LOG_DEBUG("useHudless: {}, frame: {}", useHudless, _fgCounter);
 
@@ -260,7 +266,7 @@ inline void Hudfix_Dx12::DispatchFG(bool useHudless)
     _skipHudlessChecks = false;
 }
 
-inline void Hudfix_Dx12::UpscaleStart()
+void Hudfix_Dx12::UpscaleStart()
 {
     LOG_DEBUG("");
 
@@ -271,7 +277,7 @@ inline void Hudfix_Dx12::UpscaleStart()
     }
 }
 
-inline void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
+void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
 {
     // Update counter after upscaling so _upscaleCounter == _fgCounter check at IsResourceCheckActive will work
     _upscaleCounter = frameId;
@@ -292,7 +298,7 @@ inline void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
     _lastDiffTime = 0.0f;
 }
 
-inline void Hudfix_Dx12::PresentStart()
+void Hudfix_Dx12::PresentStart()
 {
     // Calculate last upscale to present time
     if (_upscaleEndTime > 0.1f)
@@ -308,22 +314,22 @@ inline void Hudfix_Dx12::PresentStart()
     }
 }
 
-inline void Hudfix_Dx12::PresentEnd()
+void Hudfix_Dx12::PresentEnd()
 {
     LOG_DEBUG("");
 }
 
-inline UINT64 Hudfix_Dx12::ActiveUpscaleFrame()
+UINT64 Hudfix_Dx12::ActiveUpscaleFrame()
 {
     return _upscaleCounter;
 }
 
-inline UINT64 Hudfix_Dx12::ActivePresentFrame()
+UINT64 Hudfix_Dx12::ActivePresentFrame()
 {
     return _fgCounter;
 }
 
-inline bool Hudfix_Dx12::IsResourceCheckActive()
+bool Hudfix_Dx12::IsResourceCheckActive()
 {
     if (_upscaleCounter <= _fgCounter)
         return false;
@@ -344,12 +350,12 @@ inline bool Hudfix_Dx12::IsResourceCheckActive()
     return true;
 }
 
-inline bool Hudfix_Dx12::SkipHudlessChecks()
+bool Hudfix_Dx12::SkipHudlessChecks()
 {
     return _skipHudlessChecks;
 }
 
-inline bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandList* cmdList, ResourceInfo* resource, D3D12_RESOURCE_STATES state)
+bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandList* cmdList, ResourceInfo* resource, D3D12_RESOURCE_STATES state)
 {
     if (State::Instance().currentFG == nullptr)
         return false;
@@ -456,7 +462,7 @@ inline bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsC
     }
 }
 
-inline void Hudfix_Dx12::ResetCounters()
+void Hudfix_Dx12::ResetCounters()
 {
     _fgCounter = 0;
     _upscaleCounter = 0;

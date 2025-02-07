@@ -1,11 +1,9 @@
 #pragma once
 #include <pch.h>
 
-#include <State.h>
-#include <Config.h>
 #include <OwnedMutex.h>
 
-#include <dxgi.h>
+#include <dxgi1_6.h>
 
 class IFGFeature
 {
@@ -50,4 +48,9 @@ public:
 
     void ResetCounters();
     void UpdateTarget();
+
+    IFGFeature()
+    {
+        ResetCounters();
+    }
 };

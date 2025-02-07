@@ -30,9 +30,11 @@ public:
 
     void StopAndDestroyContext(bool destroy, bool shutDown, bool useMutex) final;
 
-    void CreateSwapchain(IDXGIFactory* factory, ID3D12CommandQueue* cmdQueue, DXGI_SWAP_CHAIN_DESC* desc, IDXGISwapChain** swapChain) final;
+    bool CreateSwapchain(IDXGIFactory* factory, ID3D12CommandQueue* cmdQueue, DXGI_SWAP_CHAIN_DESC* desc, IDXGISwapChain** swapChain) final;
+    
+    bool CreateSwapchain1(IDXGIFactory* factory, ID3D12CommandQueue* cmdQueue, HWND hwnd, DXGI_SWAP_CHAIN_DESC1* desc, DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGISwapChain1** swapChain) final;
 
-    void ReleaseSwapchain(IDXGISwapChain* swapChain) final;
+    bool ReleaseSwapchain(HWND hwnd) final;
 
     void CreateContext(ID3D12Device* device, IFeature* upscalerContext) final;
 
@@ -40,4 +42,6 @@ public:
 
     ffxReturnCode_t DispatchCallback(ffxDispatchDescFrameGeneration* params);
     ffxReturnCode_t HudlessDispatchCallback(ffxDispatchDescFrameGeneration* params);
+
+    FSRFG_Dx12() = default;
 };

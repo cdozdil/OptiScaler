@@ -1,5 +1,8 @@
 #include "IFGFeature_Dx12.h"
 
+#include <State.h>
+#include <Config.h>
+
 bool IFGFeature_Dx12::CreateBufferResource(ID3D12Device* device, ID3D12Resource* source, D3D12_RESOURCE_STATES state, ID3D12Resource** target)
 {
     if (device == nullptr || source == nullptr)
@@ -64,6 +67,8 @@ bool IFGFeature_Dx12::CopyResource(ID3D12GraphicsCommandList* cmdList, ID3D12Res
         result = false;
 
     ResourceBarrier(cmdList, source, D3D12_RESOURCE_STATE_COPY_SOURCE, sourceState);
+
+    return result;
 }
 
 void IFGFeature_Dx12::SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* velocity, D3D12_RESOURCE_STATES state)
@@ -251,4 +256,20 @@ void IFGFeature_Dx12::ReleaseObjects()
         _copyCommandQueue->Release();
         _copyCommandQueue = nullptr;
     }
+}
+
+bool IFGFeature_Dx12::IsFGCommandList(void* cmdList)
+{
+    auto found = false;
+
+    for (size_t i = 0; i < BUFFER_COUNT; i++)
+    {
+        if (_commandList[i] == cmdList)
+        {
+            found = true;
+            break;
+        }
+    }
+
+    return found;
 }

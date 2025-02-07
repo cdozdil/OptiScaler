@@ -1,6 +1,7 @@
 #include "FSRFG_Dx12.h"
 
-#include <hudfix/Hudfix_Dx12.h>
+#include <State.h>
+
 #include <upscalers/IFeature.h>
 #include <menu/menu_overlay_dx.h>
 
@@ -189,6 +190,8 @@ bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* ou
         LOG_TRACE("Releasing Mutex: {}", Mutex.getOwner());
         Mutex.unlockThis(1);
     }
+
+    return retCode == FFX_API_RETURN_OK;
 }
 
 bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
@@ -300,15 +303,16 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
                 _gameCommandQueue->ExecuteCommandLists(1, cl);
             }
         }
-
-        if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
-        {
-            LOG_TRACE("Releasing ffxMutex: {}", Mutex.getOwner());
-            Mutex.unlockThis(1);
-        };
-
         LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}, commandList: {3:X}", retCode, _frameCount, fIndex, (size_t)dfgPrepare.commandList);
     }
+
+    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    {
+        LOG_TRACE("Releasing ffxMutex: {}", Mutex.getOwner());
+        Mutex.unlockThis(1);
+    };
+
+    return retCode == FFX_API_RETURN_OK;
 }
 
 ffxReturnCode_t FSRFG_Dx12::DispatchCallback(ffxDispatchDescFrameGeneration* params)
@@ -446,7 +450,7 @@ void FSRFG_Dx12::StopAndDestroyContext(bool destroy, bool shutDown, bool useMute
     }
 }
 
-void FSRFG_Dx12::CreateSwapchain(IDXGIFactory* factory, ID3D12CommandQueue* cmdQueue, DXGI_SWAP_CHAIN_DESC* desc, IDXGISwapChain** swapChain)
+bool FSRFG_Dx12::CreateSwapchain(IDXGIFactory* factory, ID3D12CommandQueue* cmdQueue, DXGI_SWAP_CHAIN_DESC* desc, IDXGISwapChain** swapChain)
 {
     ffxCreateContextDescFrameGenerationSwapChainNewDX12 createSwapChainDesc{};
     createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_NEW_DX12;
@@ -459,14 +463,73 @@ void FSRFG_Dx12::CreateSwapchain(IDXGIFactory* factory, ID3D12CommandQueue* cmdQ
 
     if (result == FFX_API_RETURN_OK)
     {
+        ConfigureFramePaceTuning();
+
         _gameCommandQueue = cmdQueue;
         _swapChainDesc = *desc;
         _swapChain = *swapChain;
+        _hwnd = desc->OutputWindow;
+
+        // hack for RDR1
+        _swapChain->Release();
+
+        return true;
     }
+
+    return false;
 }
 
-void FSRFG_Dx12::ReleaseSwapchain(IDXGISwapChain* swapChain)
+bool FSRFG_Dx12::CreateSwapchain1(IDXGIFactory* factory, ID3D12CommandQueue* cmdQueue, HWND hwnd, DXGI_SWAP_CHAIN_DESC1* desc, DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGISwapChain1** swapChain)
 {
+    ffxCreateContextDescFrameGenerationSwapChainForHwndDX12 createSwapChainDesc{};
+    createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_FOR_HWND_DX12;
+    createSwapChainDesc.fullscreenDesc = pFullscreenDesc;
+    createSwapChainDesc.hwnd = hwnd;
+    createSwapChainDesc.dxgiFactory = factory;
+    createSwapChainDesc.gameQueue = cmdQueue;
+    createSwapChainDesc.desc = desc;
+    createSwapChainDesc.swapchain = (IDXGISwapChain4**)swapChain;
+
+    auto result = FfxApiProxy::D3D12_CreateContext()(&_swapChainContext, &createSwapChainDesc.header, nullptr);
+
+    if (result == FFX_API_RETURN_OK)
+    {
+        ConfigureFramePaceTuning();
+
+        _gameCommandQueue = cmdQueue;
+        
+        _swapChainDesc = {};        
+        _swapChainDesc.BufferCount = desc->BufferCount;
+        _swapChainDesc.BufferDesc.Width = desc->Width;
+        _swapChainDesc.BufferDesc.Height = desc->Height;
+        _swapChainDesc.BufferDesc.Format = desc->Format;
+        _swapChainDesc.BufferDesc.RefreshRate = pFullscreenDesc->RefreshRate;
+        _swapChainDesc.BufferDesc.ScanlineOrdering = pFullscreenDesc->ScanlineOrdering;
+        _swapChainDesc.BufferDesc.Scaling = pFullscreenDesc->Scaling;
+        _swapChainDesc.BufferUsage = desc->BufferUsage;
+        _swapChainDesc.Flags = desc->Flags;
+        _swapChainDesc.OutputWindow = hwnd;
+        _swapChainDesc.SampleDesc = desc->SampleDesc;
+        _swapChainDesc.SwapEffect = desc->SwapEffect;
+        _swapChainDesc.Windowed = pFullscreenDesc->Windowed;        
+        
+        _swapChain = *swapChain;
+        _hwnd = hwnd;
+
+        // hack for RDR1
+        _swapChain->Release();
+
+        return true;
+    }
+
+    return false;
+}
+
+bool FSRFG_Dx12::ReleaseSwapchain(HWND hwnd)
+{
+    if (hwnd != _hwnd)
+        return false;
+
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
         LOG_TRACE("Waiting Mutex 1, current: {}", Mutex.getOwner());
@@ -492,6 +555,8 @@ void FSRFG_Dx12::ReleaseSwapchain(IDXGISwapChain* swapChain)
         LOG_TRACE("Releasing Mutex: {}", Mutex.getOwner());
         Mutex.unlockThis(1);
     }
+
+    return true;
 }
 
 void FSRFG_Dx12::CreateContext(ID3D12Device* device, IFeature* upscalerContext)
