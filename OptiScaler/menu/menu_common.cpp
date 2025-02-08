@@ -2160,7 +2160,7 @@ bool MenuCommon::RenderMenu()
                 }
 
                 // Framerate ---------------------
-                if (!State::Instance().enablerAvailable /*&& State::Instance().reflexAvailable*/)
+                if (!State::Instance().enablerAvailable && (State::Instance().reflexLimitsFps || Config::Instance()->OverlayMenu))
                 {
                     SeparatorWithHelpMarker("Framerate", "Uses Reflex when possible\non AMD/Intel cards you can use fakenvapi to substitute Reflex");
 
