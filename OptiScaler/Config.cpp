@@ -613,13 +613,13 @@ bool Config::SaveIni()
         ini.SetValue("DLSS", "LibraryPath", wstring_to_string(Instance()->NvngxPath.value_for_config_or(L"auto")).c_str());
         ini.SetValue("DLSS", "NVNGX_DLSS_Library", wstring_to_string(Instance()->NVNGX_DLSS_Library.value_for_config_or(L"auto")).c_str());
         ini.SetValue("DLSS", "RenderPresetOverride", GetBoolValue(Instance()->RenderPresetOverride.value_for_config()).c_str());
-        ini.SetValue("DLSS", "RenderPresetForAll", GetIntValue(Instance()->RenderPresetForAll).c_str());
-        ini.SetValue("DLSS", "RenderPresetDLAA", GetIntValue(Instance()->RenderPresetDLAA).c_str());
-        ini.SetValue("DLSS", "RenderPresetUltraQuality", GetIntValue(Instance()->RenderPresetUltraQuality).c_str());
-        ini.SetValue("DLSS", "RenderPresetQuality", GetIntValue(Instance()->RenderPresetQuality).c_str());
-        ini.SetValue("DLSS", "RenderPresetBalanced", GetIntValue(Instance()->RenderPresetBalanced).c_str());
-        ini.SetValue("DLSS", "RenderPresetPerformance", GetIntValue(Instance()->RenderPresetPerformance).c_str());
-        ini.SetValue("DLSS", "RenderPresetUltraPerformance", GetIntValue(Instance()->RenderPresetUltraPerformance).c_str());
+        ini.SetValue("DLSS", "RenderPresetForAll", GetIntValue(Instance()->RenderPresetForAll.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetDLAA", GetIntValue(Instance()->RenderPresetDLAA.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetUltraQuality", GetIntValue(Instance()->RenderPresetUltraQuality.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetQuality", GetIntValue(Instance()->RenderPresetQuality.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetBalanced", GetIntValue(Instance()->RenderPresetBalanced.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetPerformance", GetIntValue(Instance()->RenderPresetPerformance.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetUltraPerformance", GetIntValue(Instance()->RenderPresetUltraPerformance.value_for_config()).c_str());
     }
 
     // Nukems
