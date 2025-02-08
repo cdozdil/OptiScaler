@@ -617,6 +617,9 @@
     <ClCompile Include="nvapi\fakenvapi.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="nvapi\NvApiHooks.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OptiScaler.rc" />
