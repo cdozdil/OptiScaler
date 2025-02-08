@@ -3,7 +3,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
-#define WIN32_NO_STATUS
+//#define WIN32_NO_STATUS
 #define _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_DEPRECATE
 #include <Windows.h>

@@ -377,6 +377,9 @@
     <ClInclude Include="menu\menu_base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="misc\FrameLimit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -600,6 +603,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="menu\menu_base.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="misc\FrameLimit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

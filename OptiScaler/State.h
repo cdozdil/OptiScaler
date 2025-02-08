@@ -80,7 +80,8 @@ public:
 	bool enablerAvailable = false;
 
 	// Framerate
-	bool reflexAvailable = false;
+	bool reflexLimitsFps = false;
+	bool reflexShowWarning = false;
 
 	// for realtime changes
 	bool changeBackend = false;

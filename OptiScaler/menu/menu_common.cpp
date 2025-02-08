@@ -2159,10 +2159,15 @@ bool MenuCommon::RenderMenu()
                     }
                 }
 
-                // Reflex ---------------------
-                if (!State::Instance().enablerAvailable && State::Instance().reflexAvailable)
+                // Framerate ---------------------
+                if (!State::Instance().enablerAvailable && (State::Instance().reflexLimitsFps || Config::Instance()->OverlayMenu))
                 {
-                    SeparatorWithHelpMarker("Framerate", "Currently uses Reflex to limit FPS\nbe sure the game supports it and you have it enabled\non AMD cards you can use fakenvapi to substitute Reflex");
+                    SeparatorWithHelpMarker("Framerate", "Uses Reflex when possible\non AMD/Intel cards you can use fakenvapi to substitute Reflex");
+
+                    ImGui::Text(std::format("Current method: {}", State::Instance().reflexLimitsFps ? "Reflex" : "Fallback").c_str());
+
+                    if (State::Instance().reflexShowWarning)
+                        ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Using Reflex's limit with OptiFG has performance overhead");
 
                     // set initial value
                     if (_limitFps == INFINITY)
