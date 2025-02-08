@@ -608,6 +608,12 @@
     <ClCompile Include="misc\FrameLimit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="nvapi\ReflexHooks.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nvapi\NvApiTypes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OptiScaler.rc" />

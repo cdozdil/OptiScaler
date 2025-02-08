@@ -415,6 +415,8 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
   <ItemGroup>
     <ClCompile Include="menu\menu_base.cpp" />
     <ClCompile Include="misc\FrameLimit.cpp" />
+    <ClCompile Include="nvapi\NvApiTypes.cpp" />
+    <ClCompile Include="nvapi\ReflexHooks.cpp" />
     <ClCompile Include="shaders\depth_scale\DS_Dx12.cpp" />
     <ClCompile Include="upscalers\dlssd\DLSSDFeature.cpp" />
     <ClCompile Include="upscalers\dlssd\DLSSDFeature_Dx11.cpp" />

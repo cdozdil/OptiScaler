@@ -2,11 +2,12 @@
 #include "wrapped_swapchain.h"
 
 #include <Util.h>
-#include <Logger.h>
 #include <Config.h>
 
 #include <menu/menu_overlay_dx.h>
 #include <detours/detours.h>
+#include <dx12/ffx_api_dx12.h>
+#include <ffx_framegeneration.h>
 
 #include <d3d11on12.h>
 
@@ -15,6 +16,8 @@
 #include <ankerl/unordered_dense.h>
 #include <set>
 #include <future>
+
+#include "nvapi/ReflexHooks.h"
 
 // Clear heap info when ResourceDiscard is called
 //#define USE_RESOURCE_DISCARD
