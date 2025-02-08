@@ -3,6 +3,7 @@
 #include <upscalers/IFeature_Vk.h>
 
 #include "vk/ffx_api_vk.h"
+#include <proxies/FfxApi_Proxy.h>
 
 class FSR31FeatureVk : public FSR31Feature, public IFeature_Vk
 {

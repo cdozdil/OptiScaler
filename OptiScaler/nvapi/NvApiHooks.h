@@ -1,6 +1,8 @@
 #pragma once
 
 #include <pch.h>
+#include <detours/detours.h>
+
 #include "NvApiTypes.h"
 #include "ReflexHooks.h"
 #include "fakenvapi.h"
@@ -10,7 +12,7 @@ public:
     // NvAPI_GPU_GetArchInfo hooking based on Nukem's spoofing code here
     // https://github.com/Nukem9/dlssg-to-fsr3/blob/89ddc8c1cce4593fb420e633a06605c3c4b9c3cf/source/wrapper_generic/nvapi.cpp#L50
 
-    inline static NvApiTypes::PFN_NvApi_QueryInterface o_NvAPI_QueryInterface = nullptr;
+    inline static PFN_NvApi_QueryInterface o_NvAPI_QueryInterface = nullptr;
     inline static decltype(&NvAPI_GPU_GetArchInfo) o_NvAPI_GPU_GetArchInfo = nullptr;
 
     inline static NvAPI_Status __stdcall hNvAPI_GPU_GetArchInfo(NvPhysicalGpuHandle hPhysicalGpu, NV_GPU_ARCH_INFO* pGpuArchInfo)
@@ -104,14 +106,14 @@ public:
 
         LOG_DEBUG("Trying to hook NvApi");
 
-        o_NvAPI_QueryInterface = (NvApiTypes::PFN_NvApi_QueryInterface)GetProcAddress(nvapiModule, "nvapi_QueryInterface");
+        o_NvAPI_QueryInterface = (PFN_NvApi_QueryInterface)GetProcAddress(nvapiModule, "nvapi_QueryInterface");
 
         LOG_DEBUG("OriginalNvAPI_QueryInterface = {0:X}", (unsigned long long)o_NvAPI_QueryInterface);
 
         if (o_NvAPI_QueryInterface != nullptr)
         {
             LOG_INFO("NvAPI_QueryInterface found, hooking!");
-            fakenvapi::Init((fakenvapi::PFN_Fake_QueryInterface&)o_NvAPI_QueryInterface);
+            fakenvapi::Init(o_NvAPI_QueryInterface);
 
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());

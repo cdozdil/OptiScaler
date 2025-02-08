@@ -25,7 +25,7 @@ class ReflexHooks {
     static NvAPI_Status hkNvAPI_D3D12_SetAsyncFrameMarker(ID3D12CommandQueue* pCommandQueue, NV_ASYNC_FRAME_MARKER_PARAMS* pSetAsyncFrameMarkerParams);
 
 public:
-    static void hookReflex(NvApiTypes::PFN_NvApi_QueryInterface& queryInterface);
+    static void hookReflex(PFN_NvApi_QueryInterface& queryInterface);
     static bool isDlssgDetected();
     static bool isReflexHooked();
     static void* getHookedReflex(unsigned int InterfaceId);

@@ -1,5 +1,6 @@
 #include "ReflexHooks.h"
-#include <State.h>
+#include <Config.h>
+
 #include "fakenvapi.h"
 
 NvAPI_Status ReflexHooks::hkNvAPI_D3D_SetSleepMode(IUnknown* pDev, NV_SET_SLEEP_MODE_PARAMS* pSetSleepModeParams) {
@@ -82,7 +83,7 @@ NvAPI_Status ReflexHooks::hkNvAPI_D3D12_SetAsyncFrameMarker(ID3D12CommandQueue* 
     return o_NvAPI_D3D12_SetAsyncFrameMarker(pCommandQueue, pSetAsyncFrameMarkerParams);
 }
 
-void ReflexHooks::hookReflex(NvApiTypes::PFN_NvApi_QueryInterface& queryInterface) {
+void ReflexHooks::hookReflex(PFN_NvApi_QueryInterface& queryInterface) {
 #ifdef _DEBUG
     LOG_FUNC();
 #endif
