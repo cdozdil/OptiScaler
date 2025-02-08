@@ -176,7 +176,7 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
     }
 
     // check for resource flags
-    if ((resource->flags & D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY |
+    if (resource->flags & (D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY |
         D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE | D3D12_RESOURCE_FLAG_VIDEO_ENCODE_REFERENCE_ONLY) > 0)
     {
         LOG_TRACE("Skip by flag: {:X}", (UINT)resource->flags);
@@ -280,7 +280,7 @@ void Hudfix_Dx12::UpscaleStart()
 void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
 {
     // Update counter after upscaling so _upscaleCounter == _fgCounter check at IsResourceCheckActive will work
-    _upscaleCounter = frameId;
+    _upscaleCounter++; // = frameId;
     _frameTime = lastFrameTime;
 
     // Get new index and clear resources
@@ -460,6 +460,8 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         LOG_WARN("Reached limit time: {} > {}", now, _targetTime);
         DispatchFG(false);
     }
+
+    return false;
 }
 
 void Hudfix_Dx12::ResetCounters()

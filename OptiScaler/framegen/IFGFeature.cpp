@@ -9,7 +9,7 @@ int IFGFeature::GetIndex()
 
 bool IFGFeature::IsActive()
 {
-    return _isActive && _frameCount > _targetFrame;
+    return _isActive;
 }
 
 void IFGFeature::SetJitter(float x, float y)
@@ -45,11 +45,21 @@ void IFGFeature::SetReset(UINT reset)
 void IFGFeature::ResetCounters()
 {
     _frameCount = 0;
-    _targetFrame = 10;
+    _targetFrame = 0;
 }
 
 void IFGFeature::UpdateTarget()
 {
     _targetFrame = _frameCount + 10;
+}
+
+UINT64 IFGFeature::FrameCount()
+{
+    return _frameCount;
+}
+
+UINT64 IFGFeature::TargetFrame()
+{
+    return _targetFrame;
 }
 

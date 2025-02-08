@@ -1364,6 +1364,36 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or_default() || Config::Instance()->RestoreGraphicSignature.value_or_default()))
         contextRendering = true;
 
+
+    IFGFeature_Dx12* fg = nullptr;
+    if (State::Instance().currentFG != nullptr)
+        fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
+
+    // FG Init || Disable    
+    if (Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default())
+    {
+        if (!State::Instance().FGchanged && Config::Instance()->FGEnabled.value_or_default() && fg->TargetFrame() < fg->FrameCount() &&
+            FfxApiProxy::InitFfxDx12() && !fg->IsActive() && HooksDx::CurrentSwapchainFormat() != DXGI_FORMAT_UNKNOWN)
+        {
+            fg->CreateObjects(D3D12Device);
+            fg->CreateContext(D3D12Device, deviceContext);
+            fg->ResetCounters();
+            fg->UpdateTarget();
+        }
+        else if ((!Config::Instance()->FGEnabled.value_or_default() || State::Instance().FGchanged) && !fg->IsActive())
+        {
+            fg->StopAndDestroyContext(State::Instance().SCchanged, false, false);
+        }
+
+        if (State::Instance().FGchanged)
+        {
+            LOG_DEBUG("(FG) Frame generation disabled for 20 frames");
+            fg->ResetCounters();
+            fg->UpdateTarget();
+            State::Instance().FGchanged = false;
+        }
+    }
+
     State::Instance().SCchanged = false;
 
     // FSR Camera values
@@ -1372,11 +1402,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     float cameraVFov = 0.0f;
     double ftDelta = 0.0f;
     float meterFactor = 0.0f;
-
-    IFGFeature_Dx12* fg = nullptr;
-    if (State::Instance().currentFG != nullptr)
-        fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
-
+    float mvScaleX = 0.0f;
+    float mvScaleY = 0.0f;
 
     {
         if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() || InParameters->Get("FSR.cameraNear", &cameraNear) != NVSDK_NGX_Result_Success)
@@ -1422,15 +1449,18 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         int reset = 0;
         InParameters->Get(NVSDK_NGX_Parameter_Reset, &reset);
 
+        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &mvScaleX);
+        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &mvScaleY);
+
         if (fg != nullptr)
         {
             fg->UpscaleStart();
             fg->SetCameraValues(cameraNear, cameraFar, cameraVFov, meterFactor);
             fg->SetFrameTimeDelta(ftDelta);
+            fg->SetMVScale(mvScaleX, mvScaleY);
             fg->SetReset(reset);
 
-            if (Config::Instance()->FGHUDFix.value_or_default())
-                Hudfix_Dx12::UpscaleStart();
+            Hudfix_Dx12::UpscaleStart();
         }
     }
 
@@ -1491,14 +1521,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                     if (DepthScale->Dispatch(D3D12Device, InCmdList, paramDepth, DepthScale->Buffer()))
                     {
-                        fg->SetVelocity(commandList, DepthScale->Buffer(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                        fg->SetDepth(commandList, DepthScale->Buffer(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
                         done = true;
                     }
                 }
             }
 
-            if(!done)
-                fg->SetVelocity(commandList, paramDepth, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+            if (!done)
+                fg->SetDepth(commandList, paramDepth, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value_or(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
         }
 
 #ifdef USE_COPY_QUEUE_FOR_FG
@@ -1563,7 +1593,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         }
 
         methodResult = NVSDK_NGX_Result_Success;
-}
+    }
 
     // Root signature restore
     if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or_default() || Config::Instance()->RestoreGraphicSignature.value_or_default()))
@@ -1596,7 +1626,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     LOG_DEBUG("Upscaling done: {}", evalResult);
 
     return methodResult;
-            }
+}
 
 #pragma endregion
 

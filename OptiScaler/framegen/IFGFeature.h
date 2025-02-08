@@ -22,7 +22,7 @@ protected:
     UINT64 _frameCount = 0;
 
     bool _isActive = false;
-    UINT64 _targetFrame = 10;
+    UINT64 _targetFrame = 0;
     
     int GetIndex();
 
@@ -48,9 +48,9 @@ public:
 
     void ResetCounters();
     void UpdateTarget();
+    
+    UINT64 FrameCount();
+    UINT64 TargetFrame();
 
-    IFGFeature()
-    {
-        ResetCounters();
-    }
+    IFGFeature() = default;
 };

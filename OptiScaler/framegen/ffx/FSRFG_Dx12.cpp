@@ -42,11 +42,14 @@ UINT64 FSRFG_Dx12::UpscaleStart()
 {
     _frameCount++;
 
-    auto frameIndex = GetIndex();
-    auto allocator = _commandAllocators[frameIndex];
-    auto result = allocator->Reset();
-    result = _commandList[frameIndex]->Reset(allocator, nullptr);
-    LOG_DEBUG("_commandList[{}]->Reset()", frameIndex);
+    if (IsActive())
+    {
+        auto frameIndex = GetIndex();
+        auto allocator = _commandAllocators[frameIndex];
+        auto result = allocator->Reset();
+        result = _commandList[frameIndex]->Reset(allocator, nullptr);
+        LOG_DEBUG("_commandList[{}]->Reset()", frameIndex);
+    }
 
     return _frameCount;
 }
@@ -59,7 +62,10 @@ void FSRFG_Dx12::UpscaleEnd()
 feature_version FSRFG_Dx12::Version()
 {
     if (FfxApiProxy::InitFfxDx12())
-        return FfxApiProxy::VersionDx12();
+    {
+        auto ver = FfxApiProxy::VersionDx12();
+        return ver;
+    }
 
     return { 0, 0, 0 };
 }
@@ -166,8 +172,8 @@ bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* ou
 
         dfgPrepare.jitterOffset.x = _jitterX;
         dfgPrepare.jitterOffset.y = _jitterY;
-        dfgPrepare.motionVectors = ffxApiGetResourceDX12(_paramVelocityCopy[frameIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
-        dfgPrepare.depth = ffxApiGetResourceDX12(_paramDepthCopy[frameIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
+        dfgPrepare.motionVectors = ffxApiGetResourceDX12(_paramVelocity[frameIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
+        dfgPrepare.depth = ffxApiGetResourceDX12(_paramDepth[frameIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
 
         dfgPrepare.motionVectorScale.x = _mvScaleX;
         dfgPrepare.motionVectorScale.y = _mvScaleY;
@@ -278,8 +284,8 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
 
         dfgPrepare.jitterOffset.x = _jitterX;
         dfgPrepare.jitterOffset.y = _jitterY;
-        dfgPrepare.motionVectors = ffxApiGetResourceDX12(_paramVelocityCopy[fIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
-        dfgPrepare.depth = ffxApiGetResourceDX12(_paramDepthCopy[fIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
+        dfgPrepare.motionVectors = ffxApiGetResourceDX12(_paramVelocity[fIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
+        dfgPrepare.depth = ffxApiGetResourceDX12(_paramDepth[fIndex], FFX_API_RESOURCE_STATE_COPY_DEST);
 
         dfgPrepare.motionVectorScale.x = _mvScaleX;
         dfgPrepare.motionVectorScale.y = _mvScaleY;
@@ -377,6 +383,24 @@ ffxReturnCode_t FSRFG_Dx12::HudlessDispatchCallback(ffxDispatchDescFrameGenerati
     int fIndex = params->frameID % BUFFER_COUNT;
 
     LOG_DEBUG("frameID: {}, commandList: {:X}", params->frameID, (size_t)params->commandList);
+
+    if (Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
+    {
+        result = _commandList[fIndex]->Close();
+        LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
+
+        // if there is command list error return ERROR
+        if (result == S_OK)
+        {
+            ID3D12CommandList* cl[1] = { nullptr };
+            cl[0] = _commandList[fIndex];
+            _gameCommandQueue->ExecuteCommandLists(1, cl);
+        }
+        else
+        {
+            return FFX_API_RETURN_ERROR;
+        }
+    }
 
     // check for status
     if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default() ||
@@ -527,7 +551,7 @@ bool FSRFG_Dx12::CreateSwapchain1(IDXGIFactory* factory, ID3D12CommandQueue* cmd
 
 bool FSRFG_Dx12::ReleaseSwapchain(HWND hwnd)
 {
-    if (hwnd != _hwnd)
+    if (hwnd != _hwnd || _hwnd == NULL)
         return false;
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())

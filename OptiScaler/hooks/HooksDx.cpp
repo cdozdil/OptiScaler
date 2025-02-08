@@ -1467,7 +1467,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     }
 
     bool lockAccuired = false;
-    if (fg->IsActive() && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && fg->Mutex.getOwner() != 2)
+    if (fg != nullptr && fg->IsActive() && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && fg->Mutex.getOwner() != 2)
     {
         LOG_TRACE("Waiting ffxMutex 2, current: {}", fg->Mutex.getOwner());
         fg->Mutex.lock(2);
@@ -1877,11 +1877,11 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         cq->SetName(L"GameQueue");
         cq->Release();
 
-        HooksDx::ReleaseDx12SwapChain(pDesc->OutputWindow);
-
         // FG Init
         if (State::Instance().currentFG == nullptr)
             State::Instance().currentFG = new FSRFG_Dx12();
+
+        HooksDx::ReleaseDx12SwapChain(pDesc->OutputWindow);
 
         auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
 
@@ -2140,11 +2140,11 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         cq->SetName(L"GameQueueHwnd");
         cq->Release();
 
-        HooksDx::ReleaseDx12SwapChain(hWnd);
-        
         // FG Init
         if (State::Instance().currentFG == nullptr)
             State::Instance().currentFG = new FSRFG_Dx12();
+
+        HooksDx::ReleaseDx12SwapChain(hWnd);
 
         auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
 
@@ -2625,8 +2625,8 @@ static void HookCommandList(ID3D12Device* InDevice)
 
         commandAllocator->Reset();
         commandAllocator->Release();
-        }
     }
+}
 
 static void HookToDevice(ID3D12Device* InDevice)
 {
@@ -3252,7 +3252,8 @@ void HooksDx::ReleaseDx12SwapChain(HWND hwnd)
     if (State::Instance().currentFG != nullptr)
         fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
 
-    fg->ReleaseSwapchain(hwnd);
+    if (fg != nullptr)
+        fg->ReleaseSwapchain(hwnd);
 }
 
 DXGI_FORMAT HooksDx::CurrentSwapchainFormat()

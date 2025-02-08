@@ -55,14 +55,14 @@ void IFGFeature_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* cmdList, ID3D12
     cmdList->ResourceBarrier(1, &barrier);
 }
 
-bool IFGFeature_Dx12::CopyResource(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* source, ID3D12Resource* target, D3D12_RESOURCE_STATES sourceState)
+bool IFGFeature_Dx12::CopyResource(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* source, ID3D12Resource** target, D3D12_RESOURCE_STATES sourceState)
 {
     auto result = true;
 
     ResourceBarrier(cmdList, source, sourceState, D3D12_RESOURCE_STATE_COPY_SOURCE);
 
-    if (CreateBufferResource(State::Instance().currentD3D12Device, source, D3D12_RESOURCE_STATE_COPY_DEST, &target))
-        cmdList->CopyResource(target, source);
+    if (CreateBufferResource(State::Instance().currentD3D12Device, source, D3D12_RESOURCE_STATE_COPY_DEST, target))
+        cmdList->CopyResource(*target, source);
     else
         result = false;
 
@@ -80,7 +80,7 @@ void IFGFeature_Dx12::SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Reso
     }
 
     auto index = GetIndex();
-    if (Config::Instance()->FGMakeMVCopy.value_or_default() && CopyResource(cmdList, velocity, _paramVelocityCopy[index], state))
+    if (Config::Instance()->FGMakeMVCopy.value_or_default() && CopyResource(cmdList, velocity, &_paramVelocityCopy[index], state))
         _paramVelocity[index] = _paramVelocityCopy[index];
     else
         _paramVelocity[GetIndex()] = velocity;
@@ -95,7 +95,7 @@ void IFGFeature_Dx12::SetDepth(ID3D12GraphicsCommandList* cmdList, ID3D12Resourc
     }
 
     auto index = GetIndex();
-    if (Config::Instance()->FGMakeDepthCopy.value_or_default() && CopyResource(cmdList, depth, _paramDepthCopy[index], state))
+    if (Config::Instance()->FGMakeDepthCopy.value_or_default() && CopyResource(cmdList, depth, &_paramDepthCopy[index], state))
         _paramDepth[index] = _paramDepthCopy[index];
     else
         _paramDepth[GetIndex()] = depth;
@@ -110,7 +110,7 @@ void IFGFeature_Dx12::SetHudless(ID3D12GraphicsCommandList* cmdList, ID3D12Resou
     }
 
     auto index = GetIndex();
-    if (makeCopy && CopyResource(cmdList, hudless, _paramHudlessCopy[index], state))
+    if (makeCopy && CopyResource(cmdList, hudless, &_paramHudlessCopy[index], state))
         _paramHudless[index] = _paramHudlessCopy[index];
     else
         _paramHudless[GetIndex()] = hudless;

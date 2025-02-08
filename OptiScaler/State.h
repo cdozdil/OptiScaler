@@ -1,7 +1,7 @@
 #pragma once
 #include "pch.h"
 
-#include "framegen/IFGFeature.h"
+#include "framegen/IFGFeature_Dx12.h"
 #include "upscalers/IFeature.h"
 
 #include <deque>
@@ -133,7 +133,7 @@ public:
     bool libxessExists = false;
     bool fsrHooks = false;
 
-    IFGFeature* currentFG = nullptr;
+    IFGFeature_Dx12* currentFG = nullptr;
     IFeature* currentFeature = nullptr;
     IDXGISwapChain* currentSwapchain = nullptr;
     ID3D12Device* currentD3D12Device = nullptr;
