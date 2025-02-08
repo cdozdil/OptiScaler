@@ -3,8 +3,10 @@
 
 #include "fakenvapi.h"
 
+//#define LOG_REFLEX_CALLS
+
 NvAPI_Status ReflexHooks::hkNvAPI_D3D_SetSleepMode(IUnknown* pDev, NV_SET_SLEEP_MODE_PARAMS* pSetSleepModeParams) {
-#ifdef _DEBUG
+#ifdef LOG_REFLEX_CALLS
     LOG_FUNC();
 #endif
     // Store for later so we can adjust the fps whenever we want
@@ -18,7 +20,7 @@ NvAPI_Status ReflexHooks::hkNvAPI_D3D_SetSleepMode(IUnknown* pDev, NV_SET_SLEEP_
 }
 
 NvAPI_Status ReflexHooks::hkNvAPI_D3D_Sleep(IUnknown* pDev) {
-#ifdef _DEBUG		
+#ifdef LOG_REFLEX_CALLS		
     LOG_FUNC();
 #endif
 
@@ -26,7 +28,7 @@ NvAPI_Status ReflexHooks::hkNvAPI_D3D_Sleep(IUnknown* pDev) {
 }
 
 NvAPI_Status ReflexHooks::hkNvAPI_D3D_GetLatency(IUnknown* pDev, NV_LATENCY_RESULT_PARAMS* pGetLatencyParams) {
-#ifdef _DEBUG
+#ifdef LOG_REFLEX_CALLS
     LOG_FUNC();
 #endif
 
@@ -34,7 +36,7 @@ NvAPI_Status ReflexHooks::hkNvAPI_D3D_GetLatency(IUnknown* pDev, NV_LATENCY_RESU
 }
 
 NvAPI_Status ReflexHooks::hkNvAPI_D3D_SetLatencyMarker(IUnknown* pDev, NV_LATENCY_MARKER_PARAMS* pSetLatencyMarkerParams) {
-#ifdef _DEBUG
+#ifdef LOG_REFLEX_CALLS
     LOG_FUNC();
 #endif
     _updatesWithoutMarker = 0;
@@ -47,7 +49,7 @@ NvAPI_Status ReflexHooks::hkNvAPI_D3D_SetLatencyMarker(IUnknown* pDev, NV_LATENC
 }
 
 NvAPI_Status ReflexHooks::hkNvAPI_D3D12_SetAsyncFrameMarker(ID3D12CommandQueue* pCommandQueue, NV_ASYNC_FRAME_MARKER_PARAMS* pSetAsyncFrameMarkerParams) {
-#ifdef _DEBUG
+#ifdef LOG_REFLEX_CALLS
     LOG_FUNC();
 #endif
 
