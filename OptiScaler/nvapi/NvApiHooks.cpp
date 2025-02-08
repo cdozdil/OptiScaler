@@ -1,6 +1,8 @@
 #include "NvApiHooks.h"
+#include <NvApiDriverSettings.h>
 #include "State.h"
 #include <detours/detours.h>
+#include <Config.h>
 
 NvAPI_Status __stdcall NvApiHooks::hkNvAPI_GPU_GetArchInfo(NvPhysicalGpuHandle hPhysicalGpu, NV_GPU_ARCH_INFO* pGpuArchInfo)
 {
@@ -28,8 +30,39 @@ NvAPI_Status __stdcall NvApiHooks::hkNvAPI_GPU_GetArchInfo(NvPhysicalGpuHandle h
     return status;
 }
 
+NvAPI_Status __stdcall NvApiHooks::hkNvAPI_DRS_GetSetting(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile, NvU32 settingId, NVDRS_SETTING* pSetting)
+{
+    if (!o_NvAPI_DRS_GetSetting)
+        return NVAPI_ERROR;
+
+    auto result = o_NvAPI_DRS_GetSetting(hSession, hProfile, settingId, pSetting);
+    if (pSetting && result == NVAPI_OK)
+    {
+        if (settingId == NGX_DLSS_SR_OVERRIDE_RENDER_PRESET_SELECTION_ID)
+        {
+            if (Config::Instance()->RenderPresetOverride.value_or_default())
+                pSetting->u32CurrentValue = NGX_DLSS_SR_OVERRIDE_RENDER_PRESET_SELECTION_OFF;
+            else
+                State::Instance().dlssPresetsOverriddenExternally = pSetting->u32CurrentValue != NGX_DLSS_SR_OVERRIDE_RENDER_PRESET_SELECTION_OFF;
+        }
+
+        if (settingId == NGX_DLSS_RR_OVERRIDE_RENDER_PRESET_SELECTION_ID)
+        {
+            if (Config::Instance()->RenderPresetOverride.value_or_default())
+                pSetting->u32CurrentValue = NGX_DLSS_RR_OVERRIDE_RENDER_PRESET_SELECTION_OFF;
+            else
+                State::Instance().dlssdPresetsOverriddenExternally = pSetting->u32CurrentValue != NGX_DLSS_RR_OVERRIDE_RENDER_PRESET_SELECTION_OFF;
+        }
+    }
+
+    return result;
+}
+
 void* __stdcall NvApiHooks::hkNvAPI_QueryInterface(unsigned int InterfaceId)
 {
+    if (!o_NvAPI_QueryInterface)
+        return nullptr;
+
     //LOG_DEBUG("counter: {} InterfaceId: {:X}", ++qiCounter, (uint32_t)InterfaceId);
 
     if (InterfaceId == GET_ID(NvAPI_D3D_SetSleepMode) ||
@@ -53,6 +86,11 @@ void* __stdcall NvApiHooks::hkNvAPI_QueryInterface(unsigned int InterfaceId)
         {
             o_NvAPI_GPU_GetArchInfo = static_cast<decltype(&NvAPI_GPU_GetArchInfo)>(functionPointer);
             return &hkNvAPI_GPU_GetArchInfo;
+        }
+        if (InterfaceId == GET_ID(NvAPI_DRS_GetSetting))
+        {
+            o_NvAPI_DRS_GetSetting = static_cast<decltype(&NvAPI_DRS_GetSetting)>(functionPointer);
+            return &hkNvAPI_DRS_GetSetting;
         }
     }
 

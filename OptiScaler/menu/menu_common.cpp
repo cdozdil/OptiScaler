@@ -1939,12 +1939,24 @@ bool MenuCommon::RenderMenu()
                     {
                         ImGui::SeparatorText("DLSS Settings");
 
+                        auto overridden = (State::Instance().dlssPresetsOverriddenExternally && currentBackend == "dlss") || (State::Instance().dlssdPresetsOverriddenExternally && State::Instance().currentFeature->Name() == "DLSSD");
+
+                        if (overridden) {
+                            ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Presets are overridden externally");
+                            ShowHelpMarker("This usually happens due to using tools\n"
+                                            "such as Nvidia App or Nvidia Inspector");
+                            ImGui::Text("Selecting setting below will disable that external override\n"
+                                        "but you need to Save INI and restart the game");
+
+                            ImGui::Spacing();
+                        }
+
                         if (bool pOverride = Config::Instance()->RenderPresetOverride.value_or_default(); ImGui::Checkbox("Render Presets Override", &pOverride))
                             Config::Instance()->RenderPresetOverride = pOverride;
                         ShowHelpMarker("Each render preset has it strengths and weaknesses\n"
                                        "Override to potentially improve image quality");
 
-
+                        ImGui::BeginDisabled(!Config::Instance()->RenderPresetOverride.value_or_default() || overridden);
 
                         ImGui::PushItemWidth(135.0 * Config::Instance()->MenuScale.value_or_default());
                         AddRenderPreset("Override Preset", &Config::Instance()->RenderPresetForAll);
@@ -1962,6 +1974,8 @@ bool MenuCommon::RenderMenu()
                             State::Instance().changeBackend = true;
                         }
 
+                        ImGui::EndDisabled();
+
                         ImGui::Spacing();
 
                         if (ImGui::CollapsingHeader("Advanced DLSS Settings"))
@@ -1975,6 +1989,7 @@ bool MenuCommon::RenderMenu()
                                            "Fixes OptiScaler preset override not working with certain games\n"
                                            "Requires a game restart.");
 
+                            ImGui::BeginDisabled(!Config::Instance()->RenderPresetOverride.value_or_default() || overridden);
                             ImGui::Spacing();
                             ImGui::PushItemWidth(135.0 * Config::Instance()->MenuScale.value_or_default());
                             AddRenderPreset("DLAA Preset", &Config::Instance()->RenderPresetDLAA);
@@ -1984,6 +1999,7 @@ bool MenuCommon::RenderMenu()
                             AddRenderPreset("Perf Preset", &Config::Instance()->RenderPresetPerformance);
                             AddRenderPreset("UltraP Preset", &Config::Instance()->RenderPresetUltraPerformance);
                             ImGui::PopItemWidth();
+                            ImGui::EndDisabled();
                         }
 
                         ImGui::Spacing();
@@ -2167,7 +2183,11 @@ bool MenuCommon::RenderMenu()
                     ImGui::Text(std::format("Current method: {}", State::Instance().reflexLimitsFps ? "Reflex" : "Fallback").c_str());
 
                     if (State::Instance().reflexShowWarning)
+                    {
                         ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Using Reflex's limit with OptiFG has performance overhead");
+
+                        ImGui::Spacing();
+                    }
 
                     // set initial value
                     if (_limitFps == INFINITY)
@@ -2696,7 +2716,7 @@ bool MenuCommon::RenderMenu()
                         Config::Instance()->Fsr3Inputs = fsr3Inputs;
 
                     if (ImGui::Checkbox("Use Fsr3 Pattern Matching", &fsr3Pattern))
-                        Config::Instance()->Fsr3Pattern = fsr2Pattern;
+                        Config::Instance()->Fsr3Pattern = fsr3Pattern;
                     ShowTooltip("This setting will become active on next boot!");
 
                     if (ImGui::Checkbox("Use Ffx Inputs", &ffxInputs))
