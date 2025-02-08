@@ -42,10 +42,8 @@ void* __stdcall NvApiHooks::hkNvAPI_QueryInterface(unsigned int InterfaceId)
         ReflexHooks::hookReflex(o_NvAPI_QueryInterface);
         return ReflexHooks::getHookedReflex(InterfaceId);
     }
-    else
-    {
-        ReflexHooks::hookReflex(o_NvAPI_QueryInterface);
-    }
+
+    ReflexHooks::hookReflex(o_NvAPI_QueryInterface);
 
     const auto functionPointer = o_NvAPI_QueryInterface(InterfaceId);
 

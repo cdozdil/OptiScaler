@@ -6,7 +6,7 @@ constexpr NVAPI_INTERFACE_TABLE fakenvapi_extra[] =
 {
     {"Fake_InformFGState", 0x21382138 },
     {"Fake_InformPresentFG", 0x21392139 },
-    { "Fake_GetAntiLagCtx", 0x2140214 }
+    { "Fake_GetAntiLagCtx", 0x21402140 }
 };
 
 NvApiTypes::NvApiTypes() {

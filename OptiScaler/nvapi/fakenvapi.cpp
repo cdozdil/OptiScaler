@@ -22,7 +22,7 @@ void fakenvapi::Init(PFN_NvApi_QueryInterface& queryInterface) {
 
 // Inform AntiLag 2 when present of interpolated frames starts
 void fakenvapi::reportFGPresent(IDXGISwapChain* pSwapChain, bool fg_state, bool frame_interpolated) {
-    if (Fake_InformFGState == nullptr || Fake_InformPresentFG == nullptr) return;
+    if (!Fake_InformFGState || !Fake_InformPresentFG) return;
 
     // Lets fakenvapi log and reset correctly
     Fake_InformFGState(fg_state);
@@ -60,5 +60,5 @@ void fakenvapi::reportFGPresent(IDXGISwapChain* pSwapChain, bool fg_state, bool 
 
 // won't work with older fakenvapi builds
 bool fakenvapi::isUsingFakenvapi() {
-    return Fake_InformFGState != nullptr || Fake_InformPresentFG != nullptr || Fake_GetAntiLagCtx != nullptr;
+    return Fake_InformFGState || Fake_InformPresentFG || Fake_GetAntiLagCtx;
 }

@@ -61,7 +61,7 @@ NvAPI_Status ReflexHooks::hkNvAPI_D3D12_SetAsyncFrameMarker(ID3D12CommandQueue* 
         previous_frame_ids[counter % history_size] = pSetAsyncFrameMarkerParams->frameID;
         counter++;
 
-        int repeat_count = 0;
+        size_t repeat_count = 0;
 
         for (size_t i = 1; i < history_size; i++) {
             // won't catch repeat frame ids across array wrap around
