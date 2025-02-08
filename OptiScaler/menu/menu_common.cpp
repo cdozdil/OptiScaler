@@ -695,7 +695,8 @@ template <HasDefaultValue B>
 void MenuCommon::AddRenderPreset(std::string name, CustomOptional<uint32_t, B>* value)
 {
     const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G",
-                             "PRESET H", "PRESET I", "PRESET J", "PRESET K", "PRESET L", "PRESET M", "PRESET N", "PRESET O" };
+                             "PRESET H", "PRESET I", "PRESET J", "PRESET K", "PRESET L", "PRESET M", "PRESET N", "PRESET O",
+                             "Latest"};
     const std::string presetsDesc[] = { "Whatever the game uses",
         "Intended for Performance/Balanced/Quality modes.\nAn older variant best suited to combat ghosting for elements with missing inputs, such as motion vectors.",
         "Intended for Ultra Performance mode.\nSimilar to Preset A but for Ultra Performance mode.",
@@ -712,10 +713,19 @@ void MenuCommon::AddRenderPreset(std::string name, CustomOptional<uint32_t, B>* 
         "Unused",
         "Unused",
         "Unused",
-        "Unused"
+        "Unused",
+
+        "Latest supported by the dll"
     };
 
-    PopulateCombo(name, value, presets, presetsDesc, 16);
+    if (value->value_or_default() == 0x00FFFFFF)
+        *value = 16;
+
+    PopulateCombo(name, value, presets, presetsDesc, std::size(presets));
+
+    // Value for latest preset
+    if (value->value_or_default() == 16)
+        *value = 0x00FFFFFF;
 }
 
 template <HasDefaultValue B>

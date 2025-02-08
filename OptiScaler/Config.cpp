@@ -135,25 +135,27 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             RenderPresetOverride.set_from_config(readBool("DLSS", "RenderPresetOverride"));
 
-            if (auto setting = readInt("DLSS", "RenderPresetForAll"); setting.has_value() && setting >= 0 && setting <= 15)
+            constexpr size_t presetCount = 17;
+
+            if (auto setting = readInt("DLSS", "RenderPresetForAll"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetForAll.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetDLAA"); setting.has_value() && setting >= 0 && setting <= 15)
+            if (auto setting = readInt("DLSS", "RenderPresetDLAA"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetDLAA.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetUltraQuality"); setting.has_value() && setting >= 0 && setting <= 15)
+            if (auto setting = readInt("DLSS", "RenderPresetUltraQuality"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetUltraQuality.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetQuality"); setting.has_value() && setting >= 0 && setting <= 15)
+            if (auto setting = readInt("DLSS", "RenderPresetQuality"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetQuality.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetBalanced"); setting.has_value() && setting >= 0 && setting <= 15)
+            if (auto setting = readInt("DLSS", "RenderPresetBalanced"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetBalanced.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetPerformance"); setting.has_value() && setting >= 0 && setting <= 15)
+            if (auto setting = readInt("DLSS", "RenderPresetPerformance"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetPerformance.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetUltraPerformance"); setting.has_value() && setting >= 0 && setting <= 15)
+            if (auto setting = readInt("DLSS", "RenderPresetUltraPerformance"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetUltraPerformance.set_from_config(setting);
         }
 
