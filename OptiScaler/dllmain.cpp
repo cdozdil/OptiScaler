@@ -2355,11 +2355,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 Config::Instance()->DxgiSpoofing.set_volatile_value(false);
             }
 
-            // Init XeSS proxy
             State::Instance().skipDllLoadChecks = true;
 
-            if (!XeSSProxy::InitXeSS())
-                spdlog::warn("Can't init XeSS!");
+            // Init XeSS proxy
+            // Disabled early loading of libxess
+            //if (!XeSSProxy::InitXeSS())
+            //    spdlog::warn("Can't init XeSS!");
 
             // Init FfxApi proxy
             if (!FfxApiProxy::InitFfxDx12())
