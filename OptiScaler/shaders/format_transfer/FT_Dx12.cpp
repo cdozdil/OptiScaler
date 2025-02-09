@@ -59,8 +59,6 @@ bool FT_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
     if (InDevice == nullptr || InSource == nullptr)
         return false;
 
-    LOG_FUNC();
-
     D3D12_RESOURCE_DESC texDesc = InSource->GetDesc();
 
     if (_buffer != nullptr)

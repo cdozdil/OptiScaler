@@ -88,14 +88,13 @@ bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* ou
     }
 
     // Update frame generation config
-    auto desc = output->GetDesc();
-
     ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
 
+    auto desc = output->GetDesc();
     if (desc.Format == _swapChainDesc.BufferDesc.Format)
     {
         LOG_DEBUG("(FG) desc.Format == HooksDx::swapchainFormat, using for hudless!");
-        m_FrameGenerationConfig.HUDLessColor = ffxApiGetResourceDX12(output, FFX_API_RESOURCE_STATE_UNORDERED_ACCESS, 0);
+        m_FrameGenerationConfig.HUDLessColor = ffxApiGetResourceDX12(output, FFX_API_RESOURCE_STATE_UNORDERED_ACCESS);
     }
     else
     {
@@ -166,7 +165,7 @@ bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* ou
 #else
         dfgPrepare.commandList = cmdList;
 #endif
-        dfgPrepare.frameID = State::Instance().currentFeature->FrameCount();
+        dfgPrepare.frameID = _frameCount;
         dfgPrepare.flags = m_FrameGenerationConfig.flags;
         dfgPrepare.renderSize = { State::Instance().currentFeature->RenderWidth(), State::Instance().currentFeature->RenderHeight() };
 
@@ -214,14 +213,18 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
     // hudless captured for this frame
     auto fIndex = GetIndex();
 
-    // switch dlss targets for next depth and mv 
     ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
     m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
 
     if (useHudless)
+    {
+        LOG_TRACE("Using hudless: {:X}", (size_t)_paramHudless[fIndex]);
         m_FrameGenerationConfig.HUDLessColor = ffxApiGetResourceDX12(_paramHudless[fIndex], FFX_API_RESOURCE_STATE_COPY_DEST, 0);
+    }
     else
+    {
         m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
+    }
 
     m_FrameGenerationConfig.frameGenerationEnabled = true;
     m_FrameGenerationConfig.flags = 0;
@@ -261,7 +264,7 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
         };
 
     m_FrameGenerationConfig.onlyPresentGenerated = State::Instance().FGonlyGenerated;
-    m_FrameGenerationConfig.frameID = State::Instance().currentFeature->FrameCount();
+    m_FrameGenerationConfig.frameID = _frameCount;
     m_FrameGenerationConfig.swapChain = State::Instance().currentSwapchain;
 
     ffxReturnCode_t retCode = FfxApiProxy::D3D12_Configure()(&_fgContext, &m_FrameGenerationConfig.header);
@@ -277,7 +280,7 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
         dfgPrepare.header.type = FFX_API_DISPATCH_DESC_TYPE_FRAMEGENERATION_PREPARE;
         dfgPrepare.header.pNext = &backendDesc.header;
 
-        dfgPrepare.commandList = _commandList[fIndex]; // This;
+        dfgPrepare.commandList = _commandList[fIndex];
 
         dfgPrepare.frameID = _frameCount;
         dfgPrepare.flags = m_FrameGenerationConfig.flags;
@@ -302,11 +305,11 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
         if (!Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
         {
             auto result = _commandList[fIndex]->Close();
-            LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
+            LOG_DEBUG("_commandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
 
             if (result == S_OK)
             {
-                ID3D12CommandList* cl[] = { nullptr };
+                ID3D12CommandList* cl[1] = { nullptr };
                 cl[0] = _commandList[fIndex];
                 _gameCommandQueue->ExecuteCommandLists(1, cl);
             }

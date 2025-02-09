@@ -1474,7 +1474,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         Config::Instance()->FGEnabled.value_or_default() && State::Instance().currentSwapchain != nullptr)
     {
         bool allocatorReset = false;
-        frameIndex = fg->FrameCount() % BUFFER_COUNT;
+        frameIndex = fg->GetIndex();
 
 #ifdef USE_QUEUE_FOR_FG
         auto allocator = FrameGen_Dx12::fgCommandAllocators[frameIndex];
@@ -1494,7 +1494,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         commandList = InCmdList;
 #endif
 
-        LOG_DEBUG("(FG) copy buffers for fgUpscaledImage[{}], frame: {}", frameIndex, deviceContext->FrameCount());
+        LOG_DEBUG("(FG) copy buffers for fgUpscaledImage[{}], frame: {}", frameIndex, fg->FrameCount());
 
         ID3D12Resource* paramVelocity = nullptr;
         if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)

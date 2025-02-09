@@ -24,12 +24,12 @@ protected:
     bool _isActive = false;
     UINT64 _targetFrame = 0;
     
-    int GetIndex();
 
 public:
     OwnedMutex Mutex;
 
     bool IsActive();
+    int GetIndex();
 
     virtual UINT64 UpscaleStart() = 0;
     virtual void UpscaleEnd() = 0;

@@ -1091,7 +1091,7 @@ static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UI
         {
             std::unique_lock<std::shared_mutex> lock(hudlessMutex);
 
-            auto fIndex = Hudfix_Dx12::ActiveUpscaleFrame() % BUFFER_COUNT;
+            auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
 
             if (!fgPossibleHudless[fIndex].contains(This))
             {
@@ -1176,7 +1176,7 @@ static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRender
             {
                 std::unique_lock<std::shared_mutex> lock(hudlessMutex);
 
-                auto fIndex = Hudfix_Dx12::ActiveUpscaleFrame() % BUFFER_COUNT;
+                auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
 
                 // check for command list
                 if (!fgPossibleHudless[fIndex].contains(This))
@@ -1249,7 +1249,7 @@ static void hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* This, UIN
         {
             std::unique_lock<std::shared_mutex> lock(hudlessMutex);
 
-            auto fIndex = Hudfix_Dx12::ActiveUpscaleFrame() % BUFFER_COUNT;
+            auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
 
             if (!fgPossibleHudless[fIndex].contains(This))
             {
@@ -1285,7 +1285,7 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
         {
             std::shared_lock<std::shared_mutex> lock(hudlessMutex);
 
-            auto fIndex = Hudfix_Dx12::ActiveUpscaleFrame() % BUFFER_COUNT;
+            auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
 
             // if can't find output skip
             if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
@@ -1338,7 +1338,7 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
         {
             std::shared_lock<std::shared_mutex> lock(hudlessMutex);
 
-            auto fIndex = Hudfix_Dx12::ActiveUpscaleFrame() % BUFFER_COUNT;
+            auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
 
             // if can't find output skip
             if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
@@ -1395,7 +1395,7 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
         {
             std::shared_lock<std::shared_mutex> lock(hudlessMutex);
 
-            auto fIndex = Hudfix_Dx12::ActiveUpscaleFrame() % BUFFER_COUNT;
+            auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
 
             // if can't find output skip
             if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))

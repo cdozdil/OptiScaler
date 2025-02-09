@@ -26,9 +26,7 @@ bool IFGFeature_Dx12::CreateBufferResource(ID3D12Device* device, ID3D12Resource*
     D3D12_HEAP_PROPERTIES heapProperties;
     D3D12_HEAP_FLAGS heapFlags;
     HRESULT hr = source->GetHeapProperties(&heapProperties, &heapFlags);
-
-    //inDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-
+    
     if (hr != S_OK)
     {
         LOG_ERROR("GetHeapProperties result: {:X}", (UINT64)hr);
@@ -89,7 +87,7 @@ void IFGFeature_Dx12::SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Reso
     if (Config::Instance()->FGMakeMVCopy.value_or_default() && CopyResource(cmdList, velocity, &_paramVelocityCopy[index], state))
         _paramVelocity[index] = _paramVelocityCopy[index];
     else
-        _paramVelocity[GetIndex()] = velocity;
+        _paramVelocity[index] = velocity;
 }
 
 void IFGFeature_Dx12::SetDepth(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* depth, D3D12_RESOURCE_STATES state)
@@ -106,13 +104,13 @@ void IFGFeature_Dx12::SetDepth(ID3D12GraphicsCommandList* cmdList, ID3D12Resourc
     if (Config::Instance()->FGMakeDepthCopy.value_or_default() && CopyResource(cmdList, depth, &_paramDepthCopy[index], state))
         _paramDepth[index] = _paramDepthCopy[index];
     else
-        _paramDepth[GetIndex()] = depth;
+        _paramDepth[index] = depth;
 }
 
 void IFGFeature_Dx12::SetHudless(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* hudless, D3D12_RESOURCE_STATES state, bool makeCopy)
 {
     auto index = GetIndex();
-    LOG_TRACE("Setting hudless, index: {}", index);
+    LOG_TRACE("Setting hudless, index: {}, resource: {:X}", index, (size_t)hudless);
 
     if (cmdList == nullptr)
     {
@@ -123,7 +121,7 @@ void IFGFeature_Dx12::SetHudless(ID3D12GraphicsCommandList* cmdList, ID3D12Resou
     if (makeCopy && CopyResource(cmdList, hudless, &_paramHudlessCopy[index], state))
         _paramHudless[index] = _paramHudlessCopy[index];
     else
-        _paramHudless[GetIndex()] = hudless;
+        _paramHudless[index] = hudless;
 }
 
 void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
@@ -137,7 +135,7 @@ void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
     {
         HRESULT result;
 
-        for (size_t i = 0; i < 4; i++)
+        for (size_t i = 0; i < BUFFER_COUNT; i++)
         {
             result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&_commandAllocators[i]));
             if (result != S_OK)
@@ -164,7 +162,7 @@ void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
             }
         }
 
-        for (size_t i = 0; i < 4; i++)
+        for (size_t i = 0; i < BUFFER_COUNT; i++)
         {
             result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&_copyCommandAllocator[i]));
 
@@ -226,7 +224,7 @@ void IFGFeature_Dx12::ReleaseObjects()
 {
     LOG_DEBUG("");
 
-    for (size_t i = 0; i < 4; i++)
+    for (size_t i = 0; i < BUFFER_COUNT; i++)
     {
         if (_commandAllocators[i] != nullptr)
         {
