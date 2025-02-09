@@ -202,6 +202,8 @@ bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* ou
 
 bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
 {
+    LOG_DEBUG("useHudless: {}, frameTime: {}", useHudless, frameTime);
+
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && Mutex.getOwner() != 2)
     {
         LOG_TRACE("Waiting ffxMutex 1, current: {}", Mutex.getOwner());
@@ -429,6 +431,8 @@ void FSRFG_Dx12::StopAndDestroyContext(bool destroy, bool shutDown, bool useMute
 {
     _frameCount = 0;
 
+    LOG_DEBUG("");
+
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && useMutex)
     {
         LOG_TRACE("Waiting Mutex 1, current: {}", Mutex.getOwner());
@@ -554,6 +558,8 @@ bool FSRFG_Dx12::ReleaseSwapchain(HWND hwnd)
     if (hwnd != _hwnd || _hwnd == NULL)
         return false;
 
+    LOG_DEBUG("");
+
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
         LOG_TRACE("Waiting Mutex 1, current: {}", Mutex.getOwner());
@@ -585,6 +591,8 @@ bool FSRFG_Dx12::ReleaseSwapchain(HWND hwnd)
 
 void FSRFG_Dx12::CreateContext(ID3D12Device* device, IFeature* upscalerContext)
 {
+    LOG_DEBUG("");
+
     if (_fgContext != nullptr)
     {
         ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};

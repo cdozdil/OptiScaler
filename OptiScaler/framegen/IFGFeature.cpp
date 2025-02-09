@@ -51,6 +51,7 @@ void IFGFeature::ResetCounters()
 void IFGFeature::UpdateTarget()
 {
     _targetFrame = _frameCount + 10;
+    LOG_DEBUG("Current frame: {} target frame: {}", _frameCount, _targetFrame);
 }
 
 UINT64 IFGFeature::FrameCount()

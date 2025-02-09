@@ -1387,7 +1387,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
         if (State::Instance().FGchanged)
         {
-            LOG_DEBUG("(FG) Frame generation disabled for 20 frames");
+            LOG_DEBUG("(FG) Frame generation paused");
             fg->ResetCounters();
             fg->UpdateTarget();
             State::Instance().FGchanged = false;
@@ -1474,6 +1474,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         Config::Instance()->FGEnabled.value_or_default() && State::Instance().currentSwapchain != nullptr)
     {
         bool allocatorReset = false;
+        frameIndex = fg->FrameCount() % BUFFER_COUNT;
 
 #ifdef USE_QUEUE_FOR_FG
         auto allocator = FrameGen_Dx12::fgCommandAllocators[frameIndex];

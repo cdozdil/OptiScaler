@@ -77,9 +77,12 @@ bool Hudfix_Dx12::CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InS
         {
             (*OutResource)->Release();
             (*OutResource) = nullptr;
+            LOG_WARN("Release {}x{}, new one: {}x{}", bufDesc.Width, bufDesc.Height, InSource->width, InSource->height);
         }
         else
+        {
             return true;
+        }
     }
 
     D3D12_HEAP_PROPERTIES heapProperties;
@@ -102,6 +105,8 @@ bool Hudfix_Dx12::CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InS
         LOG_ERROR("CreateCommittedResource result: {:X}", (UINT64)hr);
         return false;
     }
+
+    LOG_DEBUG("Created new one: {}x{}", texDesc.Width, texDesc.Height);
 
     return true;
 }
@@ -169,15 +174,15 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
     // dimensions not match
     if (resource->height != scDesc.BufferDesc.Height || resource->width != scDesc.BufferDesc.Width)
     {
-        LOG_TRACE("Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
-                  resource->width, scDesc.BufferDesc.Width, resource->height, scDesc.BufferDesc.Height, (UINT)resource->format, (UINT)scDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
+        //LOG_DEBUG_ONLY("Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
+        //          resource->width, scDesc.BufferDesc.Width, resource->height, scDesc.BufferDesc.Height, (UINT)resource->format, (UINT)scDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
 
         return false;
     }
 
     // check for resource flags
-    if (resource->flags & (D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY |
-        D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE | D3D12_RESOURCE_FLAG_VIDEO_ENCODE_REFERENCE_ONLY) > 0)
+    if ((resource->flags & (D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY |
+        D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE | D3D12_RESOURCE_FLAG_VIDEO_ENCODE_REFERENCE_ONLY)) > 0)
     {
         LOG_TRACE("Skip by flag: {:X}", (UINT)resource->flags);
         return false;
@@ -240,8 +245,8 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
         return CheckCapture();
     }
 
-    LOG_DEBUG_ONLY("Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
-                   resource->width, scDesc.BufferDesc.Width, resource->height, scDesc.BufferDesc.Height, (UINT)resource->format, (UINT)scDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
+    //LOG_DEBUG_ONLY("Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
+    //               resource->width, scDesc.BufferDesc.Width, resource->height, scDesc.BufferDesc.Height, (UINT)resource->format, (UINT)scDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
 
     return false;
 }
@@ -253,7 +258,7 @@ int Hudfix_Dx12::GetIndex()
 
 void Hudfix_Dx12::DispatchFG(bool useHudless)
 {
-    LOG_DEBUG("useHudless: {}, frame: {}", useHudless, _fgCounter);
+    LOG_DEBUG("useHudless: {}, _upscaleCounter: {}, _fgCounter: {}", useHudless, _upscaleCounter, _fgCounter);
 
     // Set it above 1000 to prvent capture
     _captureCounter[GetIndex()] = 9999;
@@ -270,7 +275,7 @@ void Hudfix_Dx12::UpscaleStart()
 {
     LOG_DEBUG("");
 
-    if (IsResourceCheckActive() && CheckCapture() && _upscaleCounter > _fgCounter)
+    if (_upscaleCounter > _fgCounter && IsResourceCheckActive() && CheckCapture())
     {
         LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
         DispatchFG(false);
@@ -279,6 +284,7 @@ void Hudfix_Dx12::UpscaleStart()
 
 void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
 {
+
     // Update counter after upscaling so _upscaleCounter == _fgCounter check at IsResourceCheckActive will work
     _upscaleCounter++; // = frameId;
     _frameTime = lastFrameTime;
@@ -289,10 +295,20 @@ void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
 
     // Calculate target time for capturing hudless
     auto now = Util::MillisecondsNow();
+    auto diff = 0.0f;
+
     if (_upscaleEndTime <= 0.1f || _lastDiffTime <= 0.1f)
-        _targetTime = now + 1.5f;
+        diff = 4.0f;
     else
-        _targetTime = now + _lastDiffTime - 1.0f;
+        diff = _lastDiffTime - 0.5f;
+
+    if (diff < 0.0f || diff > 4.0f)
+        diff = 4.0f;
+
+    _targetTime = now + diff;
+
+    LOG_DEBUG("_upscaleCounter: {}, _fgCounter: {}, _lastDiffTime: {}, _frameTime: {}, currentTime: {}, limitTime: {}", 
+              _upscaleCounter, _fgCounter, _lastDiffTime, _frameTime, now, _targetTime);
 
     _upscaleEndTime = now;
     _lastDiffTime = 0.0f;
@@ -307,7 +323,7 @@ void Hudfix_Dx12::PresentStart()
         _lastDiffTime = 0.0f;
 
     // FG not run yet!
-    if (IsResourceCheckActive() && CheckCapture() && _upscaleCounter > _fgCounter)
+    if (_upscaleCounter > _fgCounter && IsResourceCheckActive() && CheckCapture())
     {
         LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
         DispatchFG(false);
@@ -332,20 +348,35 @@ UINT64 Hudfix_Dx12::ActivePresentFrame()
 bool Hudfix_Dx12::IsResourceCheckActive()
 {
     if (_upscaleCounter <= _fgCounter)
+    {
+        //LOG_TRACE("_upscaleCounter: {} <= _fgCounter: {}", _upscaleCounter, _fgCounter);
         return false;
+    }
 
     if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default())
+    {
+        //LOG_TRACE("FGEnabled: {} <= FGHUDFix: {}", Config::Instance()->FGEnabled.value_or_default(), Config::Instance()->FGHUDFix.value_or_default());
         return false;
+    }
 
     if (State::Instance().currentFeature == nullptr || State::Instance().currentFG == nullptr)
+    {
+        //LOG_TRACE("currentFeature: {:X} <= currentFG: {:X}", (size_t)State::Instance().currentFeature, (size_t)State::Instance().currentFG);
         return false;
+    }
 
     if (!State::Instance().currentFG->IsActive() || State::Instance().FGchanged)
+    {
+        //LOG_TRACE("currentFG->IsActive(): {} <= State::Instance().FGchanged: {}", State::Instance().currentFG->IsActive(), State::Instance().FGchanged);
         return false;
+    }
 
     auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
     if (fg == nullptr)
+    {
+        //LOG_TRACE("currentFG is not Dx12!");
         return false;
+    }
 
     return true;
 }
@@ -366,7 +397,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
     do
     {
         // Prevent double capture
-        std::unique_lock<std::shared_mutex> lock(_captureMutex);
+        //LOG_DEBUG("Waiting mutex");
 
         if (!CheckResource(resource))
             break;
@@ -439,14 +470,15 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         }
 
         {
-            std::unique_lock<std::shared_mutex> lock(_captureMutex);
             if (State::Instance().FGcaptureResources)
             {
+                std::unique_lock<std::shared_mutex> lock(_captureMutex);
                 _captureList.insert(resource->buffer);
                 State::Instance().FGcapturedResourceCount = _captureList.size();
             }
         }
 
+        LOG_DEBUG("Calling FG with hudless");
         DispatchFG(true);
 
         return true;
@@ -455,7 +487,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
 
     // Check for limit time
     auto now = Util::MillisecondsNow();
-    if (IsResourceCheckActive() && CheckCapture() && now > _targetTime)
+    if (now > _targetTime && IsResourceCheckActive() && CheckCapture())
     {
         LOG_WARN("Reached limit time: {} > {}", now, _targetTime);
         DispatchFG(false);

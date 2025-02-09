@@ -507,16 +507,16 @@ static bool IsHudFixActive()
     if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default())
         return false;
 
-    if (Hudfix_Dx12::SkipHudlessChecks())
-        return false;
-
-    if (Hudfix_Dx12::IsResourceCheckActive())
-        return false;
-
     if (State::Instance().currentFG == nullptr || State::Instance().currentFeature == nullptr || State::Instance().FGchanged)
         return false;
 
     if (!State::Instance().currentFG->IsActive())
+        return false;
+
+    if (Hudfix_Dx12::SkipHudlessChecks())
+        return false;
+
+    if (!Hudfix_Dx12::IsResourceCheckActive())
         return false;
 
     return true;
@@ -1492,6 +1492,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 {
     // Probably not needed anymore
     //std::unique_lock<std::shared_mutex> lock(presentMutex);
+
+    LOG_DEBUG("");
 
     HRESULT presentResult;
 

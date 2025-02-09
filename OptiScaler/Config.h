@@ -309,7 +309,7 @@ public:
 	CustomOptional<bool> FGEnableDepthScale{ false };
 	CustomOptional<float> FGDepthScaleMax{ 10000.0f };
 	CustomOptional<bool> FGMakeMVCopy{ true };
-	CustomOptional<bool> FGHudFixCloseAfterCallback{ true };
+	CustomOptional<bool> FGHudFixCloseAfterCallback{ false };
 	CustomOptional<bool> FGUseMutexForSwaphain{ true };
 	CustomOptional<bool> FGFramePacingTuning{ true };
 	CustomOptional<float> FGFPTSafetyMarginInMs{ 0.01f };
