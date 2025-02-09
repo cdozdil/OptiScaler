@@ -1516,6 +1516,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
 
 
+        if (State::Instance().NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && deviceContext->Name() == "DLSSD" && !Config::Instance()->FGEnableDepthScale.has_value())
+            Config::Instance()->FGEnableDepthScale.set_volatile_value(true);
+
         if (Config::Instance()->FGEnableDepthScale.value_or_default())
         {
             if (DepthScale == nullptr)
