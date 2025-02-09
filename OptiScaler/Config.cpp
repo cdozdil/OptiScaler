@@ -135,25 +135,27 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             RenderPresetOverride.set_from_config(readBool("DLSS", "RenderPresetOverride"));
 
-            if (auto setting = readInt("DLSS", "RenderPresetForAll"); setting.has_value() && setting >= 0 && setting <= 15)
+            constexpr size_t presetCount = 17;
+
+            if (auto setting = readInt("DLSS", "RenderPresetForAll"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetForAll.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetDLAA"); setting.has_value() && setting >= 0 && setting <= 15)
+            if (auto setting = readInt("DLSS", "RenderPresetDLAA"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetDLAA.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetUltraQuality"); setting.has_value() && setting >= 0 && setting <= 15)
+            if (auto setting = readInt("DLSS", "RenderPresetUltraQuality"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetUltraQuality.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetQuality"); setting.has_value() && setting >= 0 && setting <= 15)
+            if (auto setting = readInt("DLSS", "RenderPresetQuality"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetQuality.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetBalanced"); setting.has_value() && setting >= 0 && setting <= 15)
+            if (auto setting = readInt("DLSS", "RenderPresetBalanced"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetBalanced.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetPerformance"); setting.has_value() && setting >= 0 && setting <= 15)
+            if (auto setting = readInt("DLSS", "RenderPresetPerformance"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetPerformance.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetUltraPerformance"); setting.has_value() && setting >= 0 && setting <= 15)
+            if (auto setting = readInt("DLSS", "RenderPresetUltraPerformance"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetUltraPerformance.set_from_config(setting);
         }
 
@@ -613,13 +615,13 @@ bool Config::SaveIni()
         ini.SetValue("DLSS", "LibraryPath", wstring_to_string(Instance()->NvngxPath.value_for_config_or(L"auto")).c_str());
         ini.SetValue("DLSS", "NVNGX_DLSS_Library", wstring_to_string(Instance()->NVNGX_DLSS_Library.value_for_config_or(L"auto")).c_str());
         ini.SetValue("DLSS", "RenderPresetOverride", GetBoolValue(Instance()->RenderPresetOverride.value_for_config()).c_str());
-        ini.SetValue("DLSS", "RenderPresetForAll", GetIntValue(Instance()->RenderPresetForAll).c_str());
-        ini.SetValue("DLSS", "RenderPresetDLAA", GetIntValue(Instance()->RenderPresetDLAA).c_str());
-        ini.SetValue("DLSS", "RenderPresetUltraQuality", GetIntValue(Instance()->RenderPresetUltraQuality).c_str());
-        ini.SetValue("DLSS", "RenderPresetQuality", GetIntValue(Instance()->RenderPresetQuality).c_str());
-        ini.SetValue("DLSS", "RenderPresetBalanced", GetIntValue(Instance()->RenderPresetBalanced).c_str());
-        ini.SetValue("DLSS", "RenderPresetPerformance", GetIntValue(Instance()->RenderPresetPerformance).c_str());
-        ini.SetValue("DLSS", "RenderPresetUltraPerformance", GetIntValue(Instance()->RenderPresetUltraPerformance).c_str());
+        ini.SetValue("DLSS", "RenderPresetForAll", GetIntValue(Instance()->RenderPresetForAll.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetDLAA", GetIntValue(Instance()->RenderPresetDLAA.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetUltraQuality", GetIntValue(Instance()->RenderPresetUltraQuality.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetQuality", GetIntValue(Instance()->RenderPresetQuality.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetBalanced", GetIntValue(Instance()->RenderPresetBalanced.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetPerformance", GetIntValue(Instance()->RenderPresetPerformance.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetUltraPerformance", GetIntValue(Instance()->RenderPresetUltraPerformance.value_for_config()).c_str());
     }
 
     // Nukems

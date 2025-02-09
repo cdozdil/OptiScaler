@@ -93,8 +93,10 @@ public:
 	float lastMipBias = 100.0f;
 	float lastMipBiasMax = -100.0f;
 
-	// DLSS Hook
+	// DLSS
 	bool upscalerDisableHook = false;
+	bool dlssPresetsOverriddenExternally = false;
+	bool dlssdPresetsOverriddenExternally = false;
 
 	// Spoofing
 	bool skipSpoofing = false;
