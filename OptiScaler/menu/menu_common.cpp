@@ -1664,10 +1664,22 @@ bool MenuCommon::RenderMenu()
                             Config::Instance()->MakeDepthCopy = makeDepthCopy;
                         ShowHelpMarker("Makes a copy of the depth buffer\nCan fix broken visuals in some games on AMD GPUs under Windows\nCan cause stutters so best to use only when necessary");
 
-                        if (DLSSGMod::isLoaded() && DLSSGMod::FSRDebugView() != nullptr)
+                        if (DLSSGMod::isLoaded())
                         {
-                            if (ImGui::Checkbox("Enable Debug View", &State::Instance().DLSSGDebugView))
-                                DLSSGMod::FSRDebugView()(State::Instance().DLSSGDebugView);
+                            if (DLSSGMod::is120orNewer()) {
+                                if (ImGui::Checkbox("Enable Debug View", &State::Instance().DLSSGDebugView)) {
+                                    DLSSGMod::setDebugView(State::Instance().DLSSGDebugView);
+                                }
+                                if (ImGui::Checkbox("Interpolated frames only", &State::Instance().DLSSGInterpolatedOnly)) {
+                                    DLSSGMod::setInterpolatedOnly(State::Instance().DLSSGInterpolatedOnly);
+                                }
+                            }
+                            else if (DLSSGMod::FSRDebugView() != nullptr)
+                            {
+                                if (ImGui::Checkbox("Enable Debug View", &State::Instance().DLSSGDebugView)) {
+                                    DLSSGMod::FSRDebugView()(State::Instance().DLSSGDebugView);
+                                }
+                            }
                         }
 
                     }

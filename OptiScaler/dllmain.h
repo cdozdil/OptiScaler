@@ -1292,8 +1292,8 @@ struct dxgi_dll
     PFN_CREATE_DXGI_FACTORY_1 CreateDxgiFactory1;
     PFN_CREATE_DXGI_FACTORY_2 CreateDxgiFactory2;
 
-    FARPROC dxgiDeclareAdapterRemovalSupport = nullptr;
-    FARPROC dxgiGetDebugInterface = nullptr;
+    PFN_DECLARE_ADAPTER_REMOVAL_SUPPORT dxgiDeclareAdapterRemovalSupport = nullptr;
+    PFN_GET_DEBUG_INTERFACE dxgiGetDebugInterface = nullptr;
     FARPROC dxgiApplyCompatResolutionQuirking = nullptr;
     FARPROC dxgiCompatString = nullptr;
     FARPROC dxgiCompatValue = nullptr;
@@ -1319,8 +1319,8 @@ struct dxgi_dll
         CreateDxgiFactory1 = (PFN_CREATE_DXGI_FACTORY_1)GetProcAddress(module, "CreateDXGIFactory1");
         CreateDxgiFactory2 = (PFN_CREATE_DXGI_FACTORY_2)GetProcAddress(module, "CreateDXGIFactory2");
 
-        dxgiDeclareAdapterRemovalSupport = GetProcAddress(module, "DXGIDeclareAdapterRemovalSupport");
-        dxgiGetDebugInterface = GetProcAddress(module, "DXGIGetDebugInterface1");
+        dxgiDeclareAdapterRemovalSupport = (PFN_DECLARE_ADAPTER_REMOVAL_SUPPORT)GetProcAddress(module, "DXGIDeclareAdapterRemovalSupport");
+        dxgiGetDebugInterface = (PFN_GET_DEBUG_INTERFACE)GetProcAddress(module, "DXGIGetDebugInterface1");
         //dxgiApplyCompatResolutionQuirking = GetProcAddress(module, "ApplyCompatResolutionQuirking");
         //dxgiCompatString = GetProcAddress(module, "CompatString");
         //dxgiCompatValue = GetProcAddress(module, "CompatValue");
@@ -2281,16 +2281,16 @@ HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
     return result;
 }
 
-void _DXGIDeclareAdapterRemovalSupport()
+HRESULT _DXGIDeclareAdapterRemovalSupport()
 {
     LOG_FUNC();
-    dxgi.dxgiDeclareAdapterRemovalSupport();
+    return dxgi.dxgiDeclareAdapterRemovalSupport();
 }
 
-void _DXGIGetDebugInterface1()
+HRESULT _DXGIGetDebugInterface1(UINT Flags, REFIID riid, void** pDebug)
 {
     LOG_FUNC();
-    dxgi.dxgiGetDebugInterface();
+    return dxgi.dxgiGetDebugInterface(Flags, riid, pDebug);
 }
 
 //void _ApplyCompatResolutionQuirking()

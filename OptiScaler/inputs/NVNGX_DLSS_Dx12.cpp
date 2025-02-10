@@ -988,41 +988,43 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     }
     else if (handleId >= DLSSG_MOD_ID_OFFSET)
     {
-        // Workaround mostly for final fantasy xvi
-        uint32_t depthInverted = 0;
-        float cameraNear = 0;
-        float cameraFar = 0;
-        InParameters->Get("DLSSG.DepthInverted", &depthInverted);
-        InParameters->Get("DLSSG.CameraNear", &cameraNear);
-        InParameters->Get("DLSSG.CameraFar", &cameraFar);
+        if (!DLSSGMod::is120orNewer()) {
+            // Workaround mostly for final fantasy xvi
+            uint32_t depthInverted = 0;
+            float cameraNear = 0;
+            float cameraFar = 0;
+            InParameters->Get("DLSSG.DepthInverted", &depthInverted);
+            InParameters->Get("DLSSG.CameraNear", &cameraNear);
+            InParameters->Get("DLSSG.CameraFar", &cameraFar);
 
-        if (cameraNear == 0) {
-            if (depthInverted)
-                cameraNear = 100000.0f;
-            else
-                cameraNear = 0.1f;
+            if (cameraNear == 0) {
+                if (depthInverted)
+                    cameraNear = 100000.0f;
+                else
+                    cameraNear = 0.1f;
 
-            InParameters->Set("DLSSG.CameraNear", cameraNear);
-        }
+                InParameters->Set("DLSSG.CameraNear", cameraNear);
+            }
 
-        if (cameraFar == 0) {
-            if (depthInverted)
-                cameraFar = 0.1f;
-            else
+            if (cameraFar == 0) {
+                if (depthInverted)
+                    cameraFar = 0.1f;
+                else
+                    cameraFar = 100000.0f;
+
+                InParameters->Set("DLSSG.CameraFar", cameraFar);
+            }
+            else if (cameraFar == INFINITY) {
                 cameraFar = 100000.0f;
+                InParameters->Set("DLSSG.CameraFar", cameraFar);
+            }
 
-            InParameters->Set("DLSSG.CameraFar", cameraFar);
+            // Workaround for a bug in Nukem's mod
+            //if (uint32_t LowresMvec = 0; InParameters->Get("DLSSG.run_lowres_mvec_pass", &LowresMvec) == NVSDK_NGX_Result_Success && LowresMvec == 1) {
+            InParameters->Set("DLSSG.MVecsSubrectWidth", 0U);
+            InParameters->Set("DLSSG.MVecsSubrectHeight", 0U);
+            //}
         }
-        else if (cameraFar == INFINITY) {
-            cameraFar = 100000.0f;
-            InParameters->Set("DLSSG.CameraFar", cameraFar);
-        }
-
-        // Workaround for a bug in Nukem's mod
-        //if (uint32_t LowresMvec = 0; InParameters->Get("DLSSG.run_lowres_mvec_pass", &LowresMvec) == NVSDK_NGX_Result_Success && LowresMvec == 1) {
-        InParameters->Set("DLSSG.MVecsSubrectWidth", 0U);
-        InParameters->Set("DLSSG.MVecsSubrectHeight", 0U);
-        //}
 
         // Make a copy of the depth going to the frame generator
         // Fixes an issue with the depth being corrupted on AMD under Windows
