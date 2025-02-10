@@ -4,6 +4,7 @@
 
 #define DLSSG_MOD_ID_OFFSET 2000000
 
+typedef void(*PFN_RefreshGlobalConfiguration)();
 typedef void(*PFN_EnableDebugView)(bool enable);
 
 class DLSSGMod
@@ -11,7 +12,8 @@ class DLSSGMod
 private:
     inline static HMODULE _dll = nullptr;
     
-    inline static PFN_EnableDebugView _fsrDebugView = nullptr;
+    inline static PFN_RefreshGlobalConfiguration _refreshGlobalConfiguration = nullptr;
+    inline static PFN_EnableDebugView _fsrDebugView = nullptr;  // for now keep compatibility with the patched 0.110
 
     inline static PFN_D3D12_Init _DLSSG_D3D12_Init = nullptr;
     inline static PFN_D3D12_Init_Ext _DLSSG_D3D12_Init_Ext = nullptr;
@@ -37,13 +39,26 @@ private:
     inline static PFN_VULKAN_EvaluateFeature _DLSSG_VULKAN_EvaluateFeature = nullptr;
     inline static PFN_VULKAN_PopulateParameters_Impl _DLSSG_VULKAN_PopulateParameters_Impl = nullptr;
 
-    inline static bool dx12_inited = false;
-    inline static bool vulkan_inited = false;
+    inline static bool _dx12_inited = false;
+    inline static bool _vulkan_inited = false;
+
+    // Envvars that can be set:
+    // DLSSGTOFSR3_EnableDebugOverlay
+    // DLSSGTOFSR3_EnableDebugTearLines
+    // DLSSGTOFSR3_EnableInterpolatedFramesOnly
+    static inline void setSetting(const wchar_t* setting, const wchar_t* value)
+    {
+        if (is120orNewer())
+        {
+            SetEnvironmentVariable(setting, value);
+            _refreshGlobalConfiguration();
+        }
+    }
 public:
     static void InitDLSSGMod_Dx12() {
         LOG_FUNC();
 
-        if (dx12_inited)
+        if (_dx12_inited)
             return;
 
         if (Config::Instance()->FGType.value_or_default() == FGType::Nukems && !State::Instance().enablerAvailable) {
@@ -64,8 +79,9 @@ public:
                 _DLSSG_D3D12_GetFeatureRequirements = (PFN_D3D12_GetFeatureRequirements)GetProcAddress(_dll, "NVSDK_NGX_D3D12_GetFeatureRequirements");
                 _DLSSG_D3D12_EvaluateFeature = (PFN_D3D12_EvaluateFeature)GetProcAddress(_dll, "NVSDK_NGX_D3D12_EvaluateFeature");
                 _DLSSG_D3D12_PopulateParameters_Impl = (PFN_D3D12_PopulateParameters_Impl)GetProcAddress(_dll, "NVSDK_NGX_D3D12_PopulateParameters_Impl");
+                _refreshGlobalConfiguration = (PFN_RefreshGlobalConfiguration)GetProcAddress(_dll, "RefreshGlobalConfiguration");
                 _fsrDebugView = (PFN_EnableDebugView)GetProcAddress(_dll, "FSRDebugView");
-                dx12_inited = true;
+                _dx12_inited = true;
 
                 LOG_INFO("DLSSG Mod initialized for DX12");
             }
@@ -78,7 +94,7 @@ public:
     static void InitDLSSGMod_Vulkan() {
         LOG_FUNC();
 
-        if (vulkan_inited)
+        if (_vulkan_inited)
             return;
 
         if (Config::Instance()->FGType.value_or_default() == FGType::Nukems && !State::Instance().enablerAvailable) {
@@ -101,8 +117,9 @@ public:
                 _DLSSG_VULKAN_GetFeatureRequirements = (PFN_VULKAN_GetFeatureRequirements)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_GetFeatureRequirements");
                 _DLSSG_VULKAN_EvaluateFeature = (PFN_VULKAN_EvaluateFeature)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_EvaluateFeature");
                 _DLSSG_VULKAN_PopulateParameters_Impl = (PFN_VULKAN_PopulateParameters_Impl)GetProcAddress(_dll, "NVSDK_NGX_VULKAN_PopulateParameters_Impl");
+                _refreshGlobalConfiguration = (PFN_RefreshGlobalConfiguration)GetProcAddress(_dll, "RefreshGlobalConfiguration");
                 _fsrDebugView = (PFN_EnableDebugView)GetProcAddress(_dll, "FSRDebugView");
-                vulkan_inited = true;
+                _vulkan_inited = true;
 
                 LOG_INFO("DLSSG Mod initialized for Vulkan");
             }
@@ -116,12 +133,30 @@ public:
         return _dll != nullptr;
     }
 
-    static inline PFN_EnableDebugView FSRDebugView() {
-        return _fsrDebugView;
+    static inline bool isDx12Available() {
+        return isLoaded() && _dx12_inited;
     }
 
-    static inline bool isDx12Available() {
-        return isLoaded() && dx12_inited;
+    static inline void setDebugView(bool enabled)
+    {
+        auto setting = L"DLSSGTOFSR3_EnableDebugOverlay";
+        auto value = enabled ? L"1" : L"";
+        setSetting(setting, value);
+    }
+
+    static inline void setInterpolatedOnly(bool enabled)
+    {
+        auto setting = L"DLSSGTOFSR3_EnableInterpolatedFramesOnly";
+        auto value = enabled ? L"1" : L"";
+        setSetting(setting, value);
+    }
+
+    static inline bool is120orNewer() {
+        return _refreshGlobalConfiguration != nullptr;
+    }
+
+    static inline PFN_EnableDebugView FSRDebugView() {
+        return _fsrDebugView;
     }
 
     static inline NVSDK_NGX_Result D3D12_Init(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
@@ -208,7 +243,7 @@ public:
 
 
     static inline bool isVulkanAvailable() {
-        return isLoaded() && vulkan_inited;
+        return isLoaded() && _vulkan_inited;
     }
 
     static inline NVSDK_NGX_Result VULKAN_Init(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)

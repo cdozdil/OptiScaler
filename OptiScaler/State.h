@@ -38,6 +38,7 @@ public:
 	GameQuirk gameQuirk = GameQuirk::Other;
     bool NukemsFilesAvailable = false;
 	bool DLSSGDebugView = false;
+	bool DLSSGInterpolatedOnly = false;
 
 	// FSR Common
 	float lastFsrCameraNear = 0.0f;
