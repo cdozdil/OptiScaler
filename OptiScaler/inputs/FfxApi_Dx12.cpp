@@ -228,11 +228,8 @@ ffxReturnCode_t ffxDestroyContext_Dx12(ffxContext* context, const ffxAllocationC
 
     LOG_DEBUG("context: {:X}", (size_t)*context);
 
-    if (!_initParams.contains(*context))
-    {
-        LOG_INFO("Not upscaler context: {:X}", (size_t)*context);
-        return FfxApiProxy::D3D12_DestroyContext()(context, memCb);
-    }
+    auto cdResult = FfxApiProxy::D3D12_DestroyContext()(context, memCb);
+    LOG_INFO("result: {:X}", (UINT)cdResult);
 
     if (_contexts.contains(*context))
         NVSDK_NGX_D3D12_ReleaseFeature(_contexts[*context]);
@@ -291,7 +288,7 @@ ffxReturnCode_t ffxQuery_Dx12(ffxContext* context, ffxQueryDescHeader* desc)
 
         return FFX_API_RETURN_OK;
     }
-    
+
     return FfxApiProxy::D3D12_Query()(context, desc);
 }
 
