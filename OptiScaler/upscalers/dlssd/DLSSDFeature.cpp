@@ -272,12 +272,11 @@ void DLSSDFeature::ReadVersion()
 {
     PFN_NVSDK_NGX_GetSnippetVersion _GetSnippetVersion = nullptr;
 
-    _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction("nvngx_dlssd.dll", "NVSDK_NGX_GetSnippetVersion");
-
-    if (_GetSnippetVersion == nullptr && !State::Instance().NGX_OTA_Dlssd.empty())
-    {
+    if (!State::Instance().NGX_OTA_Dlssd.empty())
         _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction(State::Instance().NGX_OTA_Dlssd.c_str(), "NVSDK_NGX_GetSnippetVersion");
-    }
+
+    if (!_GetSnippetVersion)
+        _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction("nvngx_dlssd.dll", "NVSDK_NGX_GetSnippetVersion");
 
     if (_GetSnippetVersion != nullptr)
     {

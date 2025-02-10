@@ -286,5 +286,3 @@ DLSSFeatureDx12::~DLSSFeatureDx12()
 	if (RCAS != nullptr && RCAS.get() != nullptr)
 		RCAS.reset();
 }
-
-

@@ -272,11 +272,10 @@ void DLSSFeature::ReadVersion()
 
     PFN_NVSDK_NGX_GetSnippetVersion _GetSnippetVersion = nullptr;
 
-    if (!Config::Instance()->NVNGX_DLSS_Library.has_value())
-    {
-        _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction("nvngx_dlss.dll", "NVSDK_NGX_GetSnippetVersion");
-    }
-    else
+    if (!State::Instance().NGX_OTA_Dlss.empty())
+        _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction(State::Instance().NGX_OTA_Dlss.c_str(), "NVSDK_NGX_GetSnippetVersion");
+
+    if (!_GetSnippetVersion && Config::Instance()->NVNGX_DLSS_Library.has_value())
     {
         std::filesystem::path dlssPath(Config::Instance()->NVNGX_DLSS_Library.value());
         
@@ -284,10 +283,8 @@ void DLSSFeature::ReadVersion()
             _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction(dlssPath.filename().string().c_str(), "NVSDK_NGX_GetSnippetVersion");
     }
 
-    if (_GetSnippetVersion == nullptr && !State::Instance().NGX_OTA_Dlss.empty())
-    {
-        _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction(State::Instance().NGX_OTA_Dlss.c_str(), "NVSDK_NGX_GetSnippetVersion");
-    }
+    if (!_GetSnippetVersion)
+        _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction("nvngx_dlss.dll", "NVSDK_NGX_GetSnippetVersion");
 
     if (_GetSnippetVersion != nullptr)
     {
