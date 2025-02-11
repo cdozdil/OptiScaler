@@ -1325,12 +1325,9 @@ static void hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT VertexCountPer
                     }
                 }
 
-            } while (false);
-        }
+                fgPossibleHudless[fIndex][This].clear();
 
-        {
-            std::unique_lock<std::shared_mutex> lock(hudlessMutex);
-            val0.clear();
+            } while (false);
         }
 
         LOG_DEBUG_ONLY("Clear");
@@ -1380,12 +1377,9 @@ static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCo
                     }
                 }
 
-            } while (false);
-        }
+                fgPossibleHudless[fIndex][This].clear();
 
-        {
-            std::unique_lock<std::shared_mutex> lock(hudlessMutex);
-            val0.clear();
+            } while (false);
         }
 
         LOG_DEBUG_ONLY("Clear");
@@ -1437,13 +1431,11 @@ static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, 
                     }
                 }
 
+                fgPossibleHudless[fIndex][This].clear();
+
             } while (false);
         }
 
-        {
-            std::unique_lock<std::shared_mutex> lock(hudlessMutex);
-            val0.clear();
-        }
 
         LOG_DEBUG_ONLY("Clear");
     }
@@ -1462,6 +1454,8 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     }
 
     LOG_DEBUG("frameCounter: {}, flags: {:X}", frameCounter, Flags);
+
+    fgPossibleHudless->clear();
 
     IFGFeature_Dx12* fg = nullptr;
     if (State::Instance().currentFG != nullptr)

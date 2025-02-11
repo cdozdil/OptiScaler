@@ -1380,7 +1380,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             fg->ResetCounters();
             fg->UpdateTarget();
         }
-        else if ((!Config::Instance()->FGEnabled.value_or_default() || State::Instance().FGchanged) && !fg->IsActive())
+        else if ((!Config::Instance()->FGEnabled.value_or_default() || State::Instance().FGchanged) && fg->IsActive())
         {
             fg->StopAndDestroyContext(State::Instance().SCchanged, false, false);
         }

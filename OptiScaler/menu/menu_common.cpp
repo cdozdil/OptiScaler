@@ -1299,6 +1299,7 @@ bool MenuCommon::RenderMenu()
                         {
                             LOG_DEBUG("Enabled set FGImmediateCapture: {}", immediate);
                             Config::Instance()->FGImmediateCapture = immediate;
+                            State::Instance().FGchanged = true;
                         }
                         ShowHelpMarker("Enables capturing of resources before shader execution.\nIncrease hudless capture chances but might cause capturing of unnecessary resources.");
 

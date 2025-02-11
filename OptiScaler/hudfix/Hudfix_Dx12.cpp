@@ -111,7 +111,6 @@ bool Hudfix_Dx12::CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InS
     }
 
     LOG_DEBUG("Created new one: {}x{}", texDesc.Width, texDesc.Height);
-
     return true;
 }
 
@@ -272,7 +271,9 @@ void Hudfix_Dx12::DispatchFG(bool useHudless)
 
     std::async(std::launch::async, [=]()
                {
+                   _skipHudlessChecks = true;
                    reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG)->DispatchHudless(useHudless, _frameTime);
+                   _skipHudlessChecks = false;
                });
 }
 
@@ -430,17 +431,21 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         // Make a copy of resource to capture current state
         if (CreateBufferResource(State::Instance().currentD3D12Device, resource, D3D12_RESOURCE_STATE_COPY_DEST, &_captureBuffer[fIndex]))
         {
+            ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
+            cmdList->CopyResource(_captureBuffer[fIndex], resource->buffer);
+            ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
+
             // Reset command list
-            _commandAllocator[fIndex]->Reset();
-            _commandList[fIndex]->Reset(_commandAllocator[fIndex], nullptr);
+            //_commandAllocator[fIndex]->Reset();
+            //_commandList[fIndex]->Reset(_commandAllocator[fIndex], nullptr);
 
-            ResourceBarrier(_commandList[fIndex], resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
-            _commandList[fIndex]->CopyResource(_captureBuffer[fIndex], resource->buffer);
-            ResourceBarrier(_commandList[fIndex], resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
+            //ResourceBarrier(_commandList[fIndex], resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
+            //_commandList[fIndex]->CopyResource(_captureBuffer[fIndex], resource->buffer);
+            //ResourceBarrier(_commandList[fIndex], resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
 
-            _commandList[fIndex]->Close();
-            ID3D12CommandList* cmdLists[1] = { _commandList[fIndex] };
-            _commandQueue->ExecuteCommandLists(1, cmdLists);
+            //_commandList[fIndex]->Close();
+            //ID3D12CommandList* cmdLists[1] = { _commandList[fIndex] };
+            //_commandQueue->ExecuteCommandLists(1, cmdLists);
         }
         else
         {
