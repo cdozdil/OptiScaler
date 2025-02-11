@@ -692,7 +692,7 @@ void MenuCommon::AddResourceBarrier(std::string name, CustomOptional<int32_t, B>
 }
 
 template <HasDefaultValue B>
-void MenuCommon::AddRenderPreset(std::string name, CustomOptional<uint32_t, B>* value)
+void MenuCommon::AddDLSSRenderPreset(std::string name, CustomOptional<uint32_t, B>* value)
 {
     const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G",
                              "PRESET H", "PRESET I", "PRESET J", "PRESET K", "PRESET L", "PRESET M", "PRESET N", "PRESET O",
@@ -710,6 +710,43 @@ void MenuCommon::AddRenderPreset(std::string name, CustomOptional<uint32_t, B>* 
         "Unused",
         "Transformers",
         "Transformers 2",
+        "Unused",
+        "Unused",
+        "Unused",
+        "Unused",
+
+        "Latest supported by the dll"
+    };
+
+    if (value->value_or_default() == 0x00FFFFFF)
+        *value = 16;
+
+    PopulateCombo(name, value, presets, presetsDesc, std::size(presets));
+
+    // Value for latest preset
+    if (value->value_or_default() == 16)
+        *value = 0x00FFFFFF;
+}
+
+template <HasDefaultValue B>
+void MenuCommon::AddDLSSDRenderPreset(std::string name, CustomOptional<uint32_t, B>* value)
+{
+    const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G",
+                             "PRESET H", "PRESET I", "PRESET J", "PRESET K", "PRESET L", "PRESET M", "PRESET N", "PRESET O",
+                             "Latest" };
+    const std::string presetsDesc[] = { "Whatever the game uses",
+        "CNN 1",
+        "CNN 2",
+        "CNN 3",
+        "Transformers",
+        "Transformers 2",
+        "Unused",
+        "Unused",
+
+        "Unused",
+        "Unused",
+        "Unused",
+        "Unused",
         "Unused",
         "Unused",
         "Unused",
@@ -1959,16 +1996,21 @@ bool MenuCommon::RenderMenu()
                     if ((Config::Instance()->DLSSEnabled.value_or_default() && currentBackend == "dlss" && State::Instance().currentFeature->Version().major > 2) ||
                         State::Instance().currentFeature->Name() == "DLSSD")
                     {
-                        ImGui::SeparatorText("DLSS Settings");
+                        const bool usesDlssd = State::Instance().currentFeature->Name() == "DLSSD";
 
-                        auto overridden = (State::Instance().dlssPresetsOverriddenExternally && currentBackend == "dlss") || (State::Instance().dlssdPresetsOverriddenExternally && State::Instance().currentFeature->Name() == "DLSSD");
+                        if (usesDlssd)
+                            ImGui::SeparatorText("DLSSD Settings");
+                        else
+                            ImGui::SeparatorText("DLSS Settings");
+
+                        auto overridden = usesDlssd ? State::Instance().dlssdPresetsOverriddenExternally : State::Instance().dlssPresetsOverriddenExternally;
 
                         if (overridden) {
                             ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Presets are overridden externally");
                             ShowHelpMarker("This usually happens due to using tools\n"
-                                            "such as Nvidia App or Nvidia Inspector");
+                                "such as Nvidia App or Nvidia Inspector");
                             ImGui::Text("Selecting setting below will disable that external override\n"
-                                        "but you need to Save INI and restart the game");
+                                "but you need to Save INI and restart the game");
 
                             ImGui::Spacing();
                         }
@@ -1976,19 +2018,23 @@ bool MenuCommon::RenderMenu()
                         if (bool pOverride = Config::Instance()->RenderPresetOverride.value_or_default(); ImGui::Checkbox("Render Presets Override", &pOverride))
                             Config::Instance()->RenderPresetOverride = pOverride;
                         ShowHelpMarker("Each render preset has it strengths and weaknesses\n"
-                                       "Override to potentially improve image quality");
+                            "Override to potentially improve image quality");
 
                         ImGui::BeginDisabled(!Config::Instance()->RenderPresetOverride.value_or_default() || overridden);
 
                         ImGui::PushItemWidth(135.0 * Config::Instance()->MenuScale.value_or_default());
-                        AddRenderPreset("Override Preset", &Config::Instance()->RenderPresetForAll);
+                        if (usesDlssd)
+                            AddDLSSDRenderPreset("Override Preset", &Config::Instance()->RenderPresetForAll);
+                        else
+                            AddDLSSRenderPreset("Override Preset", &Config::Instance()->RenderPresetForAll);
+
                         ImGui::PopItemWidth();
 
                         ImGui::SameLine(0.0f, 6.0f);
 
                         if (ImGui::Button("Apply Changes"))
                         {
-                            if (State::Instance().currentFeature->Name() == "DLSSD")
+                            if (usesDlssd)
                                 State::Instance().newBackend = "dlssd";
                             else
                                 State::Instance().newBackend = currentBackend;
@@ -2000,7 +2046,7 @@ bool MenuCommon::RenderMenu()
 
                         ImGui::Spacing();
 
-                        if (ImGui::CollapsingHeader("Advanced DLSS Settings"))
+                        if (ImGui::CollapsingHeader(usesDlssd ? "Advanced DLSSD Settings" : "Advanced DLSS Settings"))
                         {
                             ImGui::Spacing();
                             bool appIdOverride = Config::Instance()->UseGenericAppIdWithDlss.value_or_default();
@@ -2008,18 +2054,31 @@ bool MenuCommon::RenderMenu()
                                 Config::Instance()->UseGenericAppIdWithDlss = appIdOverride;
 
                             ShowHelpMarker("Use generic appid with NGX\n"
-                                           "Fixes OptiScaler preset override not working with certain games\n"
-                                           "Requires a game restart.");
+                                "Fixes OptiScaler preset override not working with certain games\n"
+                                "Requires a game restart.");
 
                             ImGui::BeginDisabled(!Config::Instance()->RenderPresetOverride.value_or_default() || overridden);
                             ImGui::Spacing();
                             ImGui::PushItemWidth(135.0 * Config::Instance()->MenuScale.value_or_default());
-                            AddRenderPreset("DLAA Preset", &Config::Instance()->RenderPresetDLAA);
-                            AddRenderPreset("UltraQ Preset", &Config::Instance()->RenderPresetUltraQuality);
-                            AddRenderPreset("Quality Preset", &Config::Instance()->RenderPresetQuality);
-                            AddRenderPreset("Balanced Preset", &Config::Instance()->RenderPresetBalanced);
-                            AddRenderPreset("Perf Preset", &Config::Instance()->RenderPresetPerformance);
-                            AddRenderPreset("UltraP Preset", &Config::Instance()->RenderPresetUltraPerformance);
+
+                            if (usesDlssd)
+                            {
+                                AddDLSSDRenderPreset("DLAA Preset", &Config::Instance()->RenderPresetDLAA);
+                                AddDLSSDRenderPreset("UltraQ Preset", &Config::Instance()->RenderPresetUltraQuality);
+                                AddDLSSDRenderPreset("Quality Preset", &Config::Instance()->RenderPresetQuality);
+                                AddDLSSDRenderPreset("Balanced Preset", &Config::Instance()->RenderPresetBalanced);
+                                AddDLSSDRenderPreset("Perf Preset", &Config::Instance()->RenderPresetPerformance);
+                                AddDLSSDRenderPreset("UltraP Preset", &Config::Instance()->RenderPresetUltraPerformance);
+                            }
+                            else
+                            {
+                                AddDLSSRenderPreset("DLAA Preset", &Config::Instance()->RenderPresetDLAA);
+                                AddDLSSRenderPreset("UltraQ Preset", &Config::Instance()->RenderPresetUltraQuality);
+                                AddDLSSRenderPreset("Quality Preset", &Config::Instance()->RenderPresetQuality);
+                                AddDLSSRenderPreset("Balanced Preset", &Config::Instance()->RenderPresetBalanced);
+                                AddDLSSRenderPreset("Perf Preset", &Config::Instance()->RenderPresetPerformance);
+                                AddDLSSRenderPreset("UltraP Preset", &Config::Instance()->RenderPresetUltraPerformance);
+                            }
                             ImGui::PopItemWidth();
                             ImGui::EndDisabled();
                         }
