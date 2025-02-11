@@ -6,6 +6,7 @@
 
 #include <framegen/IFGFeature_Dx12.h>
 
+#include <future>
 
 bool Hudfix_Dx12::CreateObjects()
 {
@@ -16,29 +17,32 @@ bool Hudfix_Dx12::CreateObjects()
     {
         HRESULT result;
 
-        result = State::Instance().currentD3D12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&_commandAllocator));
-        if (result != S_OK)
+        for (size_t i = 0; i < BUFFER_COUNT; i++)
         {
-            LOG_ERROR("CreateCommandAllocator: {:X}", (unsigned long)result);
-            break;
-        }
-        _commandAllocator->SetName(L"Hudfix CommandAllocator");
+            result = State::Instance().currentD3D12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&_commandAllocator[i]));
+            if (result != S_OK)
+            {
+                LOG_ERROR("CreateCommandAllocator: {:X}", (unsigned long)result);
+                break;
+            }
+            _commandAllocator[i]->SetName(L"Hudfix CommandAllocator");
 
 
-        result = State::Instance().currentD3D12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, _commandAllocator, NULL, IID_PPV_ARGS(&_commandList));
-        if (result != S_OK)
-        {
-            LOG_ERROR("CreateCommandList: {:X}", (unsigned long)result);
-            break;
-        }
+            result = State::Instance().currentD3D12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, _commandAllocator[i], NULL, IID_PPV_ARGS(&_commandList[i]));
+            if (result != S_OK)
+            {
+                LOG_ERROR("CreateCommandList: {:X}", (unsigned long)result);
+                break;
+            }
 
-        _commandList->SetName(L"Hudfix CommandList");
+            _commandList[i]->SetName(L"Hudfix CommandList");
 
-        result = _commandList->Close();
-        if (result != S_OK)
-        {
-            LOG_ERROR("_commandList->Close: {:X}", (unsigned long)result);
-            break;
+            result = _commandList[i]->Close();
+            if (result != S_OK)
+            {
+                LOG_ERROR("_commandList->Close: {:X}", (unsigned long)result);
+                break;
+            }
         }
 
         // Create a command queue for frame generation
@@ -136,7 +140,7 @@ bool Hudfix_Dx12::CheckCapture()
 
         LOG_TRACE("frameCounter: {}, _captureCounter: {}, Limit: {}", State::Instance().currentFeature->FrameCount(), _captureCounter[fIndex], Config::Instance()->FGHUDLimit.value_or_default());
 
-        if (_captureCounter[fIndex] > 999 || _captureCounter[fIndex] < Config::Instance()->FGHUDLimit.value_or_default())
+        if (_captureCounter[fIndex] > 999 || _captureCounter[fIndex] != Config::Instance()->FGHUDLimit.value_or_default())
             return false;
     }
 
@@ -266,9 +270,10 @@ void Hudfix_Dx12::DispatchFG(bool useHudless)
     // Increase counter
     _fgCounter++;
 
-    _skipHudlessChecks = true;
-    reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG)->DispatchHudless(useHudless, _frameTime);
-    _skipHudlessChecks = false;
+    std::async(std::launch::async, [=]()
+               {
+                   reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG)->DispatchHudless(useHudless, _frameTime);
+               });
 }
 
 void Hudfix_Dx12::UpscaleStart()
@@ -422,16 +427,20 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
             return false;
         }
 
-        // Reset command list
-        _commandAllocator->Reset();
-        _commandList->Reset(_commandAllocator, nullptr);
-
         // Make a copy of resource to capture current state
         if (CreateBufferResource(State::Instance().currentD3D12Device, resource, D3D12_RESOURCE_STATE_COPY_DEST, &_captureBuffer[fIndex]))
         {
-            ResourceBarrier(_commandList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
-            _commandList->CopyResource(_captureBuffer[fIndex], resource->buffer);
-            ResourceBarrier(_commandList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
+            // Reset command list
+            _commandAllocator[fIndex]->Reset();
+            _commandList[fIndex]->Reset(_commandAllocator[fIndex], nullptr);
+
+            ResourceBarrier(_commandList[fIndex], resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
+            _commandList[fIndex]->CopyResource(_captureBuffer[fIndex], resource->buffer);
+            ResourceBarrier(_commandList[fIndex], resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
+
+            _commandList[fIndex]->Close();
+            ID3D12CommandList* cmdLists[1] = { _commandList[fIndex] };
+            _commandQueue->ExecuteCommandLists(1, cmdLists);
         }
         else
         {
@@ -445,12 +454,16 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         {
             if (_formatTransfer != nullptr && _formatTransfer->CreateBufferResource(State::Instance().currentD3D12Device, resource->buffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
             {
-                ResourceBarrier(_commandList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-                _formatTransfer->Dispatch(State::Instance().currentD3D12Device, _commandList, _captureBuffer[fIndex], _formatTransfer->Buffer());
-                ResourceBarrier(_commandList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+                // Reset command list
+                _commandAllocator[fIndex]->Reset();
+                _commandList[fIndex]->Reset(_commandAllocator[fIndex], nullptr);
 
-                _commandList->Close();
-                ID3D12CommandList* cmdLists[1] = { _commandList };
+                ResourceBarrier(_commandList[fIndex], _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                _formatTransfer->Dispatch(State::Instance().currentD3D12Device, _commandList[fIndex], _captureBuffer[fIndex], _formatTransfer->Buffer());
+                ResourceBarrier(_commandList[fIndex], _captureBuffer[fIndex], D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+
+                _commandList[fIndex]->Close();
+                ID3D12CommandList* cmdLists[1] = { _commandList[fIndex] };
                 _commandQueue->ExecuteCommandLists(1, cmdLists);
 
                 LOG_TRACE("Using _formatTransfer->Buffer()");
@@ -468,10 +481,6 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         }
         else
         {
-            _commandList->Close();
-            ID3D12CommandList* cmdLists[1] = { _commandList };
-            _commandQueue->ExecuteCommandLists(1, cmdLists);
-
             auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
             if (fg != nullptr)
                 fg->SetHudless(nullptr, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, false);

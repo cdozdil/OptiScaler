@@ -45,7 +45,7 @@ private:
     inline static double _frameTime = 0.0;
 
     // Buffer for Format Transfer
-    inline static ID3D12Resource* _captureBuffer[4] = { nullptr, nullptr, nullptr, nullptr };
+    inline static ID3D12Resource* _captureBuffer[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
 
     // Capture List
     inline static std::set<ID3D12Resource*> _captureList;
@@ -56,8 +56,8 @@ private:
     inline static FT_Dx12* _formatTransfer = nullptr;
 
     inline static ID3D12CommandQueue* _commandQueue = nullptr;
-    inline static ID3D12GraphicsCommandList* _commandList = nullptr;
-    inline static ID3D12CommandAllocator* _commandAllocator = nullptr;
+    inline static ID3D12GraphicsCommandList* _commandList[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
+    inline static ID3D12CommandAllocator* _commandAllocator[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
     
     inline static bool _skipHudlessChecks = false;
 

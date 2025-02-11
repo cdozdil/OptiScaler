@@ -195,6 +195,9 @@ typedef void(*PFN_DrawIndexedInstanced)(ID3D12GraphicsCommandList* This, UINT In
 typedef void(*PFN_DrawInstanced)(ID3D12GraphicsCommandList* This, UINT VertexCountPerInstance, UINT InstanceCount, UINT StartVertexLocation, UINT StartInstanceLocation);
 typedef void(*PFN_Dispatch)(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ);
 
+typedef void(*PFN_ExecuteCommandLists)(ID3D12CommandQueue* This, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists);
+
+
 #ifdef USE_COPY_RESOURCE
 typedef void(*PFN_CopyResource)(ID3D12GraphicsCommandList* This, ID3D12Resource* pDstResource, ID3D12Resource* pSrcResource);
 typedef void(*PFN_CopyTextureRegion)(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_COPY_LOCATION* pDst, UINT DstX, UINT DstY, UINT DstZ, D3D12_TEXTURE_COPY_LOCATION* pSrc, D3D12_BOX* pSrcBox);
@@ -217,6 +220,8 @@ static PFN_Present o_FGSCPresent = nullptr;
 static PFN_Dispatch o_Dispatch = nullptr;
 static PFN_DrawInstanced o_DrawInstanced = nullptr;
 static PFN_DrawIndexedInstanced o_DrawIndexedInstanced = nullptr;
+
+static PFN_ExecuteCommandLists o_ExecuteCommandLists = nullptr;
 
 static PFN_OMSetRenderTargets o_OMSetRenderTargets = nullptr;
 static PFN_SetGraphicsRootDescriptorTable o_SetGraphicsRootDescriptorTable = nullptr;
@@ -796,6 +801,16 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
 #endif
 
 #pragma endregion
+
+static void hkExecuteCommandLists(ID3D12CommandQueue* This, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists)
+{
+    //for (size_t i = 0; i < NumCommandLists; i++)
+    //{
+    //    Hudfix_Dx12::CaptureHudless(ppCommandLists[i]);
+    //}
+
+    o_ExecuteCommandLists(This, NumCommandLists, ppCommandLists);
+}
 
 #pragma region Heap hooks
 
@@ -2541,6 +2556,43 @@ static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAda
 
 #pragma region DirectX hooks
 
+static void HookCommandQueue(ID3D12Device* InDevice)
+{
+    if (o_ExecuteCommandLists != nullptr)
+        return;
+
+    ID3D12CommandQueue* queue = nullptr;
+    D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+    queueDesc.NodeMask = 0;
+    queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+
+    auto hr = InDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&queue));
+
+    if (hr == S_OK)
+    {
+        // Get the vtable pointer
+        PVOID* pVTable = *(PVOID**)queue;
+
+        ID3D12GraphicsCommandList* realQ = nullptr;
+        if (CheckForRealObject(__FUNCTION__, queue, (IUnknown**)&realQ))
+            pVTable = *(PVOID**)realQ;
+
+        o_ExecuteCommandLists = (PFN_ExecuteCommandLists)pVTable[10];
+
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+
+        if (o_ExecuteCommandLists != nullptr)
+            DetourAttach(&(PVOID&)o_ExecuteCommandLists, hkExecuteCommandLists);
+        
+        DetourTransactionCommit();
+
+        queue->Release();
+    }
+}
+
 static void HookCommandList(ID3D12Device* InDevice)
 {
     if (o_OMSetRenderTargets != nullptr)
@@ -2619,15 +2671,15 @@ static void HookCommandList(ID3D12Device* InDevice)
                     DetourAttach(&(PVOID&)o_DiscardResource, hkDiscardResource);
 #endif
                 DetourTransactionCommit();
-            }
+        }
 
             commandList->Close();
             commandList->Release();
-        }
+    }
 
         commandAllocator->Reset();
         commandAllocator->Release();
-    }
+}
 }
 
 static void HookToDevice(ID3D12Device* InDevice)
@@ -2687,7 +2739,10 @@ static void HookToDevice(ID3D12Device* InDevice)
     }
 
     if (Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default())
+    {
+        //HookCommandQueue(InDevice);
         HookCommandList(InDevice);
+    }
 }
 
 static void HookToDevice(ID3D11Device* InDevice)
@@ -3012,7 +3067,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         if (infoQueue1 != nullptr)
             infoQueue1->Release();
 
-        if (g_pd3dDeviceParam->QueryInterface(IID_PPV_ARGS(&infoQueue)) == S_OK)
+        if (State::Instance().currentD3D12Device->QueryInterface(IID_PPV_ARGS(&infoQueue)) == S_OK)
         {
             LOG_DEBUG("infoQueue accuired");
 

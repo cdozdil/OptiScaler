@@ -45,10 +45,11 @@ public:
     virtual bool CreateSwapchain1(IDXGIFactory* factory, ID3D12CommandQueue* cmdQueue, HWND hwnd, DXGI_SWAP_CHAIN_DESC1* desc, DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGISwapChain1** swapChain) = 0;
     virtual bool ReleaseSwapchain(HWND hwnd) = 0;
     
-
     void CreateObjects(ID3D12Device* InDevice);
     virtual void CreateContext(ID3D12Device* device, IFeature* upscalerContext) = 0;
     void ReleaseObjects() final;
+    ID3D12Fence* GetFence();
+    void SetWaitOnGameQueue(UINT64 value);
 
     virtual bool Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* output, double frameTime) = 0;
     virtual bool DispatchHudless(bool useHudless, double frameTime) = 0;

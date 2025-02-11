@@ -2322,8 +2322,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             // Init XeSS proxy
             State::Instance().skipDllLoadChecks = true;
 
-            if (!XeSSProxy::InitXeSS())
-                spdlog::warn("Can't init XeSS!");
+            //if (!XeSSProxy::InitXeSS())
+            //    spdlog::warn("Can't init XeSS!");
 
             // Init FfxApi proxy
             if (!FfxApiProxy::InitFfxDx12())
