@@ -120,7 +120,9 @@ private:
     template <HasDefaultValue B>
     static void AddResourceBarrier(std::string name, CustomOptional<int32_t, B>* value);
     template <HasDefaultValue B>
-    static void AddRenderPreset(std::string name, CustomOptional<uint32_t, B>* value);
+    static void AddDLSSRenderPreset(std::string name, CustomOptional<uint32_t, B>* value);
+    template<HasDefaultValue B>
+    static void AddDLSSDRenderPreset(std::string name, CustomOptional<uint32_t, B>* value);
     template <HasDefaultValue B>
     static void PopulateCombo(std::string name, CustomOptional<uint32_t, B>* value, const char* names[], const std::string desc[], int length, const uint8_t disabledMask[] = nullptr, bool firstAsDefault = true);
 
