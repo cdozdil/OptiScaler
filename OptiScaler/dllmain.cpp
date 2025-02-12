@@ -936,8 +936,12 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (State::Instance().skipDllLoadChecks)
+    if (State::Instance().skipDllLoadChecks) {
+#ifdef _DEBUG
+        LOG_TRACE("skipping call: {0}", lpLibFileName);
+#endif
         return o_LoadLibraryA(lpLibFileName);
+    }
 
     std::string libName(lpLibFileName);
     std::string lcaseLibName(libName);
@@ -973,8 +977,13 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (State::Instance().skipDllLoadChecks)
-        return o_LoadLibraryW(lpLibFileName);;
+    if (State::Instance().skipDllLoadChecks) {
+#ifdef _DEBUG
+        std::wstring libName(lpLibFileName);
+        LOG_TRACE("skipping call: {0}", wstring_to_string(libName));
+#endif
+        return o_LoadLibraryW(lpLibFileName);
+    }
 
     std::wstring libName(lpLibFileName);
     std::wstring lcaseLibName(libName);
@@ -1010,8 +1019,12 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (State::Instance().skipDllLoadChecks)
+    if (State::Instance().skipDllLoadChecks) {
+#ifdef _DEBUG
+        LOG_TRACE("skipping call: {0}", lpLibFileName);
+#endif
         return o_LoadLibraryExA(lpLibFileName, hFile, dwFlags);
+    }
 
     std::string libName(lpLibFileName);
     std::string lcaseLibName(libName);
@@ -1047,8 +1060,13 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
     if (lpLibFileName == nullptr)
         return NULL;
 
-    if (State::Instance().skipDllLoadChecks)
+    if (State::Instance().skipDllLoadChecks) {
+#ifdef _DEBUG
+        std::wstring libName(lpLibFileName);
+        LOG_TRACE("skipping call: {0}", wstring_to_string(libName));
+#endif
         return o_LoadLibraryExW(lpLibFileName, hFile, dwFlags);
+    }
 
     std::wstring libName(lpLibFileName);
     std::wstring lcaseLibName(libName);
