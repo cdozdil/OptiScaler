@@ -500,9 +500,18 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Pattern_Dx12(Fsr212::FfxFsr2Con
     return Fsr212::FFX_OK;
 }
 
+// forward declare
+static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const FfxFsr20DispatchDescription* dispatchDescription);
+
 // FSR2.1
 static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2DispatchDescription* dispatchDescription)
 {
+    // HACK, try to detected when we hooked FSR 2.0 call as FSR2.1/2.2
+    if (std::labs(dispatchDescription->renderSize.width) > 20000)
+    {
+        return ffxFsr20ContextDispatch_Dx12(context, (FfxFsr20DispatchDescription*)dispatchDescription);
+    }
+
     // Skip OptiScaler stuff
     if (!Config::Instance()->Fsr2Inputs.value_or_default())
     {
@@ -669,6 +678,10 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context*
 
     if (evalResult == NVSDK_NGX_Result_Success)
         return Fsr212::FFX_OK;
+
+    // HACK, DLSS thinks it's using dynamic res here and errors out when changing quality
+    if (evalResult == NVSDK_NGX_Result_Fail && State::Instance().currentFeature->Name() == "DLSS")
+        State::Instance().changeBackend = true;
 
     LOG_ERROR("evalResult: {:X}", (UINT)evalResult);
     return Fsr212::FFX_ERROR_BACKEND_API_ERROR;
@@ -1041,7 +1054,7 @@ void HookFSR2ExeInputs()
             if (o_ffxFsr20ContextDispatch_Pattern_Dx12 != nullptr)
                 DetourAttach(&(PVOID&)o_ffxFsr20ContextDispatch_Pattern_Dx12, ffxFsr20ContextDispatch_Pattern_Dx12);
 
-            LOG_DEBUG("ffxFsr20ContextDispatch_Patern_Dx12: {:X}", (size_t)o_ffxFsr20ContextDispatch_Pattern_Dx12);
+            LOG_DEBUG("ffxFsr20ContextDispatch_Pattern_Dx12: {:X}", (size_t)o_ffxFsr20ContextDispatch_Pattern_Dx12);
 
             // Lies of P
             // Dispatch 2.X
