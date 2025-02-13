@@ -303,15 +303,15 @@ void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
     auto now = Util::MillisecondsNow();
     auto diff = 0.0f;
 
-    //if (_upscaleEndTime <= 0.1f || _lastDiffTime <= 0.1f)
-    //    diff = 4.0f;
-    //else
-    //    diff = _lastDiffTime - 0.5f;
+    if (_upscaleEndTime <= 0.1f || _lastDiffTime <= 0.1f)
+        diff = 8.0f;
+    else
+        diff = _lastDiffTime * 2.0f;
 
-    //if (diff < 0.0f || diff > 4.0f)
-    //    diff = 4.0f;
+    if (diff < 0.0f || diff > 8.0f)
+        diff = 8.0f;
 
-    diff = 40.0f;
+    //diff = 40.0f;
 
     _targetTime = now + diff;
 

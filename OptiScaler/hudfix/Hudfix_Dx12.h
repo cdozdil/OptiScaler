@@ -8,7 +8,6 @@
 #include <d3d12.h>
 #include <shared_mutex>
 
-// Remove duplicate definitions later, collect them in another header
 enum ResourceType
 {
     SRV,
@@ -16,7 +15,6 @@ enum ResourceType
     UAV
 };
 
-// Remove duplicate definitions later, collect them in another header
 typedef struct ResourceInfo
 {
     ID3D12Resource* buffer = nullptr;
