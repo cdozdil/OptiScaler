@@ -2919,7 +2919,7 @@ bool MenuCommon::RenderMenu()
                             ImGui::Text("Current : %.3f / %.3f", State::Instance().lastMipBias, State::Instance().lastMipBiasMax);
                         }
 
-                        ImGui::Text("Will be applied after RESOLUTION or PRESENT change !!!");
+                        ImGui::Text("Will be applied after RESOLUTION/PRESET change !!!");
                     }
 
                     ImGui::Spacing();
@@ -2954,9 +2954,8 @@ bool MenuCommon::RenderMenu()
 
                         ImGui::PopItemWidth();
 
-                        ImGui::Text("Will be applied after RESOLUTION or PRESENT change !!!");
+                        ImGui::Text("Will be applied after RESOLUTION/PRESET change !!!");
                     }
-
 
                     if (currentFeature != nullptr)
                     {
