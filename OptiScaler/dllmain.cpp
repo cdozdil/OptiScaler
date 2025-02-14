@@ -75,39 +75,32 @@ static PFN_vkEnumerateInstanceExtensionProperties o_vkEnumerateInstanceExtension
 static uint32_t vkEnumerateInstanceExtensionPropertiesCount = 0;
 static uint32_t vkEnumerateDeviceExtensionPropertiesCount = 0;
 
+#define DEFINE_NAME_VECTORS(varName, libName) \
+    inline std::vector<std::string> varName##Names = { libName ".dll", libName }; \
+    inline std::vector<std::wstring> varName##NamesW = { L##libName L".dll", L##libName };
 
 inline std::vector<std::string> dllNames;
 inline std::vector<std::wstring> dllNamesW;
-inline std::vector<std::string> nvngxNames = { "nvngx.dll", "nvngx" };
-inline std::vector<std::wstring> nvngxnamesW = { L"nvngx.dll", L"nvngx" };
-inline std::vector<std::string> nvngxDlss = { "nvngx_dlss.dll", "nvngx_dlss", };
-inline std::vector<std::wstring> nvngxDlssW = { L"nvngx_dlss.dll", L"nvngx_dlss", };
-inline std::vector<std::string> nvapiNames = { "nvapi64.dll", "nvapi64", };
-inline std::vector<std::wstring> nvapiNamesW = { L"nvapi64.dll", L"nvapi64", };
-inline std::vector<std::string> dx11Names = { "d3d11.dll", "d3d11", };
-inline std::vector<std::wstring> dx11NamesW = { L"d3d11.dll", L"d3d11", };
-inline std::vector<std::string> dx12Names = { "d3d12.dll", "d3d12", };
-inline std::vector<std::wstring> dx12NamesW = { L"d3d12.dll", L"d3d12", };
-inline std::vector<std::string> dxgiNames = { "dxgi.dll", "dxgi", };
-inline std::vector<std::wstring> dxgiNamesW = { L"dxgi.dll", L"dxgi", };
-inline std::vector<std::string> vkNames = { "vulkan-1.dll", "vulkan-1", };
-inline std::vector<std::wstring> vkNamesW = { L"vulkan-1.dll", L"vulkan-1", };
-inline std::vector<std::string> streamlineNames = { "sl.interposer.dll", "sl.interposer" };
-inline std::vector<std::wstring> streamlineNamesW = { L"sl.interposer.dll", L"sl.interposer" };
+
 inline std::vector<std::string> overlayNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping",
                                                  "gameoverlayrenderer64", "gameoverlayrenderer64.dll", "gameoverlayrenderer", "gameoverlayrenderer.dll", };
 inline std::vector<std::wstring> overlayNamesW = { L"eosovh-win32-shipping.dll", L"eosovh-win32-shipping", L"eosovh-win64-shipping.dll", L"eosovh-win64-shipping",
                                                    L"gameoverlayrenderer64", L"gameoverlayrenderer64.dll", L"gameoverlayrenderer", L"gameoverlayrenderer.dll", };
 
-inline std::vector<std::string> fsr2Names = { "ffx_fsr2_api_x64.dll", "ffx_fsr2_api_x64" };
-inline std::vector<std::wstring> fsr2NamesW = { L"ffx_fsr2_api_x64.dll", L"ffx_fsr2_api_x64" };
-inline std::vector<std::string> fsr2BENames = { "ffx_fsr2_api_dx12_x64.dll", "ffx_fsr2_api_dx12_x64" };
-inline std::vector<std::wstring> fsr2BENamesW = { L"ffx_fsr2_api_dx12_x64.dll", L"ffx_fsr2_api_dx12_x64" };
+DEFINE_NAME_VECTORS(nvngx, "nvngx");
+DEFINE_NAME_VECTORS(nvngxDlss, "nvngx_dlss");
+DEFINE_NAME_VECTORS(nvapi, "nvapi64");
+DEFINE_NAME_VECTORS(dx11, "d3d11");
+DEFINE_NAME_VECTORS(dx12, "d3d12");
+DEFINE_NAME_VECTORS(dxgi, "dxgi");
+DEFINE_NAME_VECTORS(vk, "vulkan-1");
+DEFINE_NAME_VECTORS(streamline, "sl.interposer");
 
-inline std::vector<std::string> fsr3Names = { "ffx_fsr3upscaler_x64.dll", "ffx_fsr3upscaler_x64" };
-inline std::vector<std::wstring> fsr3NamesW = { L"ffx_fsr3upscaler_x64.dll", L"ffx_fsr3upscaler_x64" };
-inline std::vector<std::string> fsr3BENames = { "ffx_backend_dx12_x64.dll", "ffx_backend_dx12_x64" };
-inline std::vector<std::wstring> fsr3BENamesW = { L"ffx_backend_dx12_x64.dll", L"ffx_backend_dx12_x64" };
+DEFINE_NAME_VECTORS(fsr2, "ffx_fsr2_api_x64");
+DEFINE_NAME_VECTORS(fsr2BE, "ffx_fsr2_api_dx12_x64");
+
+DEFINE_NAME_VECTORS(fsr3, "ffx_fsr3upscaler_x64");
+DEFINE_NAME_VECTORS(fsr3BE, "ffx_backend_dx12_x64");
 
 static int loadCount = 0;
 static bool dontCount = false;
@@ -229,7 +222,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
     }
 
     // nvngx_dlss
-    if (Config::Instance()->DLSSEnabled.value_or_default() && Config::Instance()->NVNGX_DLSS_Library.has_value() && CheckDllName(&lcaseLibName, &nvngxDlss))
+    if (Config::Instance()->DLSSEnabled.value_or_default() && Config::Instance()->NVNGX_DLSS_Library.has_value() && CheckDllName(&lcaseLibName, &nvngxDlssNames))
     {
         auto nvngxDlss = LoadNvngxDlss(string_to_wstring(lcaseLibName));
 
@@ -397,7 +390,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
         auto pos = lcaseLibName.rfind(exePath);
 
-        if (Config::Instance()->DlssInputs.value_or_default() && CheckDllNameW(&lcaseLibName, &nvngxnamesW) &&
+        if (Config::Instance()->DlssInputs.value_or_default() && CheckDllNameW(&lcaseLibName, &nvngxNamesW) &&
             (!Config::Instance()->HookOriginalNvngxOnly.value_or_default() || pos == std::string::npos))
         {
             LOG_INFO("nvngx call: {0}, returning this dll!", lcaseLibNameA);
@@ -420,7 +413,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
     }
 
     // nvngx_dlss
-    if (Config::Instance()->DLSSEnabled.value_or_default() && Config::Instance()->NVNGX_DLSS_Library.has_value() && CheckDllNameW(&lcaseLibName, &nvngxDlssW))
+    if (Config::Instance()->DLSSEnabled.value_or_default() && Config::Instance()->NVNGX_DLSS_Library.has_value() && CheckDllNameW(&lcaseLibName, &nvngxDlssNamesW))
     {
         auto nvngxDlss = LoadNvngxDlss(lcaseLibName);
 
