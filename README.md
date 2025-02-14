@@ -48,7 +48,7 @@ _[*] These implementations use a background DirectX12 device to be able to use D
 
 
 ## Installation
-> **Warning**: **Do not use this mod with online games.** It may trigger anti-cheat software and cause bans!
+_**Warning**: **Do not use this mod with online games.** It may trigger anti-cheat software and cause bans!_
 
 ## Install as `non-nvngx` (Recommended, for enabling all features, like Frame Gen)
 
