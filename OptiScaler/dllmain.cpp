@@ -2290,9 +2290,19 @@ bool isNvidia()
     if (!nvapiModule)
         return false;
 
-    auto o_NvAPI_QueryInterface = (PFN_NvApi_QueryInterface)GetProcAddress(nvapiModule, "nvapi_QueryInterface");
-    auto function = static_cast<decltype(&NvAPI_Initialize)>(o_NvAPI_QueryInterface(GET_ID(NvAPI_Initialize)));
-    auto result = function();
+    NvAPI_Status result = NVAPI_NVIDIA_DEVICE_NOT_FOUND;
+
+    if (auto o_NvAPI_QueryInterface = (PFN_NvApi_QueryInterface)GetProcAddress(nvapiModule, "nvapi_QueryInterface"))
+    {
+        auto init = static_cast<decltype(&NvAPI_Initialize)>(o_NvAPI_QueryInterface(GET_ID(NvAPI_Initialize)));
+        result = init();
+
+        if (result == NVAPI_OK)
+        {
+            if (auto unload = static_cast<decltype(&NvAPI_Unload)>(o_NvAPI_QueryInterface(GET_ID(NvAPI_Unload))))
+                unload();
+        }
+    }
 
     if (loadedHere)
         FreeLibrary(nvapiModule);
