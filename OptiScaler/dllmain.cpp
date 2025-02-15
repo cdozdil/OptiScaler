@@ -2315,6 +2315,10 @@ bool isNvidia()
         {
             if (auto unload = static_cast<decltype(&NvAPI_Unload)>(o_NvAPI_QueryInterface(GET_ID(NvAPI_Unload))))
                 unload();
+
+            // Check for fakenvapi in system32, assume it's not nvidia if found
+            if (o_NvAPI_QueryInterface(GET_ID(Fake_InformFGState)) != nullptr)
+                return false;
         }
     }
 
