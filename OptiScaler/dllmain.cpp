@@ -2290,6 +2290,40 @@ static void CheckQuirks() {
     }
 }
 
+bool isNvidia()
+{
+    auto nvapiModule = GetModuleHandleW(L"nvapi64.dll");
+
+    bool loadedHere = false;
+    if (!nvapiModule) {
+        nvapiModule = LoadLibraryExW(L"nvapi64.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        loadedHere = true;
+    }
+
+    // No nvapi, should not be nvidia
+    if (!nvapiModule)
+        return false;
+
+    NvAPI_Status result = NVAPI_NVIDIA_DEVICE_NOT_FOUND;
+
+    if (auto o_NvAPI_QueryInterface = (PFN_NvApi_QueryInterface)GetProcAddress(nvapiModule, "nvapi_QueryInterface"))
+    {
+        auto init = static_cast<decltype(&NvAPI_Initialize)>(o_NvAPI_QueryInterface(GET_ID(NvAPI_Initialize)));
+        result = init();
+
+        if (result == NVAPI_OK)
+        {
+            if (auto unload = static_cast<decltype(&NvAPI_Unload)>(o_NvAPI_QueryInterface(GET_ID(NvAPI_Unload))))
+                unload();
+        }
+    }
+
+    if (loadedHere)
+        FreeLibrary(nvapiModule);
+
+    return result != NVAPI_NVIDIA_DEVICE_NOT_FOUND;
+}
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
     HMODULE handle = nullptr;
@@ -2358,15 +2392,22 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 }
                 else
                 {
-                    spdlog::info("nvngx.dll loaded, setting DLSS as default upscaler and disabling spoofing options set to auto");
+                    State::Instance().isRunningOnNvidia = isNvidia();
+                    if (State::Instance().isRunningOnNvidia) {
+                        spdlog::info("nvngx.dll loaded, setting DLSS as default upscaler and disabling spoofing options set to auto");
 
-                    Config::Instance()->DLSSEnabled.set_volatile_value(true);
+                        Config::Instance()->DLSSEnabled.set_volatile_value(true);
 
-                    if (!Config::Instance()->DxgiSpoofing.has_value())
-                        Config::Instance()->DxgiSpoofing.set_volatile_value(false);
+                        if (!Config::Instance()->DxgiSpoofing.has_value())
+                            Config::Instance()->DxgiSpoofing.set_volatile_value(false);
 
-                    isNvngxAvailable = true;
-                    State::Instance().isRunningOnNvidia = true;
+                        isNvngxAvailable = true;
+                    }
+                    else
+                    {
+                        spdlog::warn("Driver nvngx.dll loaded but not using an Nvidia card");
+                        Config::Instance()->DLSSEnabled.set_volatile_value(false);
+                    }
                 }
             }
 
