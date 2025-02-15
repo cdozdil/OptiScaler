@@ -2,8 +2,6 @@
 #include <Config.h>
 #include <Util.h>
 
-#include <algorithm>
-
 #include "DLSSFeature.h"
 
 void DLSSFeature::ProcessEvaluateParams(NVSDK_NGX_Parameter* InParameters)
