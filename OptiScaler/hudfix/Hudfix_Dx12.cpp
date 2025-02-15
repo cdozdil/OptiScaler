@@ -205,8 +205,8 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
     // extended not active 
     if (!Config::Instance()->FGHUDFixExtended.value_or_default())
     {
-        LOG_TRACE("Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
-                  resource->width, scDesc.BufferDesc.Width, resource->height, scDesc.BufferDesc.Height, (UINT)resource->format, (UINT)scDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
+        //LOG_TRACE("Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
+        //          resource->width, scDesc.BufferDesc.Width, resource->height, scDesc.BufferDesc.Height, (UINT)resource->format, (UINT)scDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
 
         return false;
     }
@@ -269,12 +269,12 @@ void Hudfix_Dx12::DispatchFG(bool useHudless)
     // Increase counter
     _fgCounter++;
 
-    std::async(std::launch::async, [=]()
-               {
+    //std::async(std::launch::async, [=]()
+    //           {
                    _skipHudlessChecks = true;
                    reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG)->DispatchHudless(useHudless, _frameTime);
                    _skipHudlessChecks = false;
-               });
+               //});
 }
 
 void Hudfix_Dx12::UpscaleStart()

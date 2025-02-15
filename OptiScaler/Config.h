@@ -309,11 +309,11 @@ public:
 	CustomOptional<bool> FGEnableDepthScale{ false };
 	CustomOptional<float> FGDepthScaleMax{ 10000.0f };
 	CustomOptional<bool> FGMakeMVCopy{ true };
-	CustomOptional<bool> FGHudFixCloseAfterCallback{ false };
+	CustomOptional<bool> FGHudFixCloseAfterCallback{ true };
 	CustomOptional<bool> FGUseMutexForSwaphain{ true };
 	CustomOptional<bool> FGFramePacingTuning{ true };
-	CustomOptional<float> FGFPTSafetyMarginInMs{ 0.01f };
-	CustomOptional<float> FGFPTVarianceFactor{ 0.3f };
+	CustomOptional<float> FGFPTSafetyMarginInMs{ 0.75f };
+	CustomOptional<float> FGFPTVarianceFactor{ 0.1f };
 	CustomOptional<bool> FGFPTAllowHybridSpin{ true };
 	CustomOptional<int> FGFPTHybridSpinTime{ 2 };
 	CustomOptional<bool> FGFPTAllowWaitForSingleObjectOnFence{ false };

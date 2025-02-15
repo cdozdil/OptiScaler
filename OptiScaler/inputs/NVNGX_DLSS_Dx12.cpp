@@ -1364,6 +1364,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     if (deviceContext->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or_default() || Config::Instance()->RestoreGraphicSignature.value_or_default()))
         contextRendering = true;
 
+    double ftDelta = 0.0f;
+
+    auto now = Util::MillisecondsNow();
+
+    if (fgLastFrameTime != 0)
+        ftDelta = now - fgLastFrameTime;
+
+    fgLastFrameTime = now;
+    LOG_DEBUG("Frametime: {0}", ftDelta);
 
     IFGFeature_Dx12* fg = nullptr;
     if (State::Instance().currentFG != nullptr)
@@ -1400,7 +1409,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     float cameraNear = 0.0f;
     float cameraFar = 0.0f;
     float cameraVFov = 0.0f;
-    double ftDelta = 0.0f;
     float meterFactor = 0.0f;
     float mvScaleX = 0.0f;
     float mvScaleY = 0.0f;
@@ -1431,14 +1439,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             else
                 cameraVFov = 1.0471975511966f;
         }
-
-        auto now = Util::MillisecondsNow();
-
-        if (fgLastFrameTime != 0)
-            ftDelta = now - fgLastFrameTime;
-
-        fgLastFrameTime = now;
-        LOG_DEBUG("Frametime: {0}", ftDelta);
 
         if (!Config::Instance()->FsrUseFsrInputValues.value_or_default())
             InParameters->Get("FSR.viewSpaceToMetersFactor", &meterFactor);
@@ -1471,7 +1471,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     UINT frameIndex;
     if (fg != nullptr && fg->IsActive() && Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
-        Config::Instance()->FGEnabled.value_or_default() && State::Instance().currentSwapchain != nullptr)
+        Config::Instance()->FGEnabled.value_or_default() && fg->TargetFrame() < fg->FrameCount() && State::Instance().currentSwapchain != nullptr)
     {
         bool allocatorReset = false;
         frameIndex = fg->GetIndex();
@@ -1567,7 +1567,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
         // FG Dispatch
         if (fg != nullptr && fg->IsActive() && Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
-            Config::Instance()->FGEnabled.value_or_default() && State::Instance().currentSwapchain != nullptr)
+            Config::Instance()->FGEnabled.value_or_default() && fg->TargetFrame() < fg->FrameCount() && State::Instance().currentSwapchain != nullptr)
         {
             fg->UpscaleEnd();
 
