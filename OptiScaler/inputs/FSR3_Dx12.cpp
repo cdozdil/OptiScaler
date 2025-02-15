@@ -43,16 +43,16 @@ static bool _skipDispatch = false;
 static bool _skipDestroy = false;
 static float qualityRatios[] = { 1.0, 1.5, 1.7, 2.0, 3.0 };
 
-static bool CreateDLSSContext(Fsr3::FfxFsr3UpscalerContext* handle, const Fsr3::FfxFsr3UpscalerDispatchDescription* pExecParams)
+static bool CreateDLSSContext(Fsr3::FfxFsr3UpscalerContext* context, const Fsr3::FfxFsr3UpscalerDispatchDescription* pExecParams)
 {
     LOG_DEBUG("");
 
-    if (!_nvParams.contains(handle))
+    if (!_nvParams.contains(context))
         return false;
 
     NVSDK_NGX_Handle* nvHandle = nullptr;
-    auto params = _nvParams[handle];
-    auto initParams = &_initParams[handle];
+    auto params = _nvParams[context];
+    auto initParams = &_initParams[context];
     auto commandList = (ID3D12GraphicsCommandList*)pExecParams->commandList;
 
     UINT initFlags = 0;
@@ -97,7 +97,7 @@ static bool CreateDLSSContext(Fsr3::FfxFsr3UpscalerContext* handle, const Fsr3::
     if (NVSDK_NGX_D3D12_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle) != NVSDK_NGX_Result_Success)
         return false;
 
-    _contexts[handle] = nvHandle;
+    _contexts[context] = nvHandle;
 
     return true;
 }
@@ -301,7 +301,7 @@ static Fsr3::FfxErrorCode ffxFsr3ContextDispatch_Dx12(Fsr3::FfxFsr3UpscalerConte
     params->Set("FSR.viewSpaceToMetersFactor", pDispatchDescription->viewSpaceToMetersFactor);
     params->Set(NVSDK_NGX_Parameter_Sharpness, pDispatchDescription->sharpness);
 
-    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, pDispatchDescription->renderSize.width, pDispatchDescription->renderSize.height);
+    LOG_DEBUG("context: {:X}, context: {}, internalResolution: {}x{}", (size_t)pContext, handle->Id, pDispatchDescription->renderSize.width, pDispatchDescription->renderSize.height);
 
     State::Instance().setInputApiName = "FSR3-DX12";
 
@@ -466,7 +466,7 @@ static Fsr3::FfxErrorCode ffxFsr3ContextDispatch_Pattern_Dx12(Fsr3::FfxFsr3Upsca
     params->Set("FSR.viewSpaceToMetersFactor", pDispatchDescription->viewSpaceToMetersFactor);
     params->Set(NVSDK_NGX_Parameter_Sharpness, pDispatchDescription->sharpness);
 
-    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, pDispatchDescription->renderSize.width, pDispatchDescription->renderSize.height);
+    LOG_DEBUG("context: {:X}, internalResolution: {}x{}", handle->Id, pDispatchDescription->renderSize.width, pDispatchDescription->renderSize.height);
 
     State::Instance().setInputApiName = "FSR3-DX12";
 

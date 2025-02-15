@@ -5,6 +5,8 @@
 #include <upscalers/IFeature.h>
 #include <menu/menu_overlay_dx.h>
 
+#define USE_QUEUE_FOR_FG
+
 typedef struct FfxSwapchainFramePacingTuning
 {
     float safetyMarginInMs; // in Millisecond. Default is 0.1ms
@@ -161,7 +163,7 @@ bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* ou
         dfgPrepare.header.pNext = &backendDesc.header;
 
 #ifdef USE_QUEUE_FOR_FG
-        dfgPrepare.commandList = FrameGen_Dx12::fgCommandList[fIndex];
+        dfgPrepare.commandList = _commandList[frameIndex];
 #else
         dfgPrepare.commandList = cmdList;
 #endif
@@ -185,9 +187,28 @@ bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* ou
         retCode = FfxApiProxy::D3D12_Dispatch()(&_fgContext, &dfgPrepare.header);
 
         if (retCode != FFX_API_RETURN_OK)
+        {
             LOG_ERROR("(FG) D3D12_Dispatch result: {}({})", retCode, FfxApiProxy::ReturnCodeToString(retCode));
+        }
         else
+        {
             LOG_DEBUG("(FG) Dispatch ok.");
+
+#ifdef USE_QUEUE_FOR_FG
+            if (!Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
+            {
+                ID3D12CommandList* cl[1] = { nullptr };
+                auto result = _commandList[frameIndex]->Close();
+                cl[0] = _commandList[frameIndex];
+                _commandQueue->ExecuteCommandLists(1, cl);
+
+                if (result != S_OK)
+                {
+                    LOG_ERROR("(FG) Close result: {}", (UINT)result);
+                }
+            }
+#endif
+        }
     }
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
@@ -205,9 +226,9 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && Mutex.getOwner() != 2)
     {
-        LOG_TRACE("Waiting ffxMutex 1, current: {}", Mutex.getOwner());
+        LOG_TRACE("Waiting FG->Mutex 1, current: {}", Mutex.getOwner());
         Mutex.lock(1);
-        LOG_TRACE("Accuired ffxMutex: {}", Mutex.getOwner());
+        LOG_TRACE("Accuired FG->Mutex: {}", Mutex.getOwner());
     }
 
     // hudless captured for this frame
@@ -319,7 +340,7 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
-        LOG_TRACE("Releasing ffxMutex: {}", Mutex.getOwner());
+        LOG_TRACE("Releasing FG->Mutex: {}", Mutex.getOwner());
         Mutex.unlockThis(1);
     };
 
@@ -332,10 +353,25 @@ ffxReturnCode_t FSRFG_Dx12::DispatchCallback(ffxDispatchDescFrameGeneration* par
 
     params->reset = (_reset != 0);
 
+#ifdef USE_QUEUE_FOR_FG
+    if (Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
+    {
+        ID3D12CommandList* cl[1] = { nullptr };
+        auto result = _commandList[fIndex]->Close();
+        cl[0] = _commandList[fIndex];
+        _commandQueue->ExecuteCommandLists(1, cl);
+
+        if (result != S_OK)
+        {
+            LOG_ERROR("(FG) Close result: {}", (UINT)result);
+        }
+    }
+#endif
+
     // check for status
     if (!Config::Instance()->FGEnabled.value_or_default() || _fgContext == nullptr || State::Instance().SCchanged
 #ifdef USE_QUEUE_FOR_FG
-        || FrameGen_Dx12::fgCommandList[fIndex] == nullptr || FrameGen_Dx12::fgCommandQueue == nullptr
+        || _commandList[fIndex] == nullptr || _commandQueue == nullptr
 #endif
         )
     {
@@ -345,15 +381,15 @@ ffxReturnCode_t FSRFG_Dx12::DispatchCallback(ffxDispatchDescFrameGeneration* par
     }
 
     // If fg is active but upscaling paused
-    if (State::Instance().currentFeature == nullptr || !_isActive ||
+    if (State::Instance().currentFeature == nullptr || !_isActive || params->frameID == _lastUpscaledFrameId ||
         State::Instance().FGchanged || State::Instance().currentFeature->FrameCount() == 0)
     {
         LOG_WARN("(FG) Callback without active FG! fIndex:{}", fIndex);
 
 #ifdef USE_QUEUE_FOR_FG
-        auto allocator = FrameGen_Dx12::fgCommandAllocators[fIndex];
+        auto allocator = _commandAllocators[fIndex];
         auto result = allocator->Reset();
-        result = FrameGen_Dx12::fgCommandList[fIndex]->Reset(allocator, nullptr);
+        result = _commandList[fIndex]->Reset(allocator, nullptr);
 #endif
 
         params->numGeneratedFrames = 0;
@@ -363,21 +399,7 @@ ffxReturnCode_t FSRFG_Dx12::DispatchCallback(ffxDispatchDescFrameGeneration* par
     auto dispatchResult = FfxApiProxy::D3D12_Dispatch()(&_fgContext, &params->header);
     LOG_DEBUG("(FG) D3D12_Dispatch result: {}, fIndex: {}", (UINT)dispatchResult, fIndex);
 
-#ifdef USE_QUEUE_FOR_FG
-    if (dispatchResult == FFX_API_RETURN_OK)
-    {
-        ID3D12CommandList* cl[1] = { nullptr };
-        auto result = FrameGen_Dx12::fgCommandList[fIndex]->Close();
-        cl[0] = FrameGen_Dx12::fgCommandList[fIndex];
-        FrameGen_Dx12::fgCommandQueue->ExecuteCommandLists(1, cl);
-
-        if (result != S_OK)
-        {
-            LOG_ERROR("(FG) Close result: {}", (UINT)result);
-        }
-}
-#endif
-
+    _lastUpscaledFrameId = params->frameID;
     return dispatchResult;
 };
 
@@ -389,7 +411,7 @@ ffxReturnCode_t FSRFG_Dx12::HudlessDispatchCallback(ffxDispatchDescFrameGenerati
 
     LOG_DEBUG("frameID: {}, commandList: {:X}", params->frameID, (size_t)params->commandList);
 
-    if (Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
+    if (params->frameID != _lastUpscaledFrameId && Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
     {
         result = _commandList[fIndex]->Close();
         LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
@@ -418,15 +440,16 @@ ffxReturnCode_t FSRFG_Dx12::HudlessDispatchCallback(ffxDispatchDescFrameGenerati
     // If fg is active but upscaling paused
     if (State::Instance().currentFeature == nullptr || State::Instance().FGchanged ||
         fIndex < 0 || !IsActive() || State::Instance().currentFeature->FrameCount() == 0 ||
-        _commandList[fIndex] == nullptr)
+        _commandList[fIndex] == nullptr || params->frameID == _lastUpscaledFrameId)
     {
-        LOG_WARN("Callback without hudless! frameID: {}", params->frameID);
+        LOG_WARN("Upscaling paused! frameID: {}", params->frameID);
         params->numGeneratedFrames = 0;
     }
 
     dispatchResult = FfxApiProxy::D3D12_Dispatch()(&_fgContext, &params->header);
     LOG_DEBUG("D3D12_Dispatch result: {}, fIndex: {}", (UINT)dispatchResult, fIndex);
 
+    _lastUpscaledFrameId = params->frameID;
     return dispatchResult;
 };
 
@@ -534,16 +557,20 @@ bool FSRFG_Dx12::CreateSwapchain1(IDXGIFactory* factory, ID3D12CommandQueue* cmd
         _swapChainDesc.BufferDesc.Width = desc->Width;
         _swapChainDesc.BufferDesc.Height = desc->Height;
         _swapChainDesc.BufferDesc.Format = desc->Format;
-        _swapChainDesc.BufferDesc.RefreshRate = pFullscreenDesc->RefreshRate;
-        _swapChainDesc.BufferDesc.ScanlineOrdering = pFullscreenDesc->ScanlineOrdering;
-        _swapChainDesc.BufferDesc.Scaling = pFullscreenDesc->Scaling;
         _swapChainDesc.BufferUsage = desc->BufferUsage;
         _swapChainDesc.Flags = desc->Flags;
         _swapChainDesc.OutputWindow = hwnd;
         _swapChainDesc.SampleDesc = desc->SampleDesc;
         _swapChainDesc.SwapEffect = desc->SwapEffect;
-        _swapChainDesc.Windowed = pFullscreenDesc->Windowed;        
-        
+
+        if (pFullscreenDesc != nullptr)
+        {
+            _swapChainDesc.Windowed = pFullscreenDesc->Windowed;
+            _swapChainDesc.BufferDesc.RefreshRate = pFullscreenDesc->RefreshRate;
+            _swapChainDesc.BufferDesc.ScanlineOrdering = pFullscreenDesc->ScanlineOrdering;
+            _swapChainDesc.BufferDesc.Scaling = pFullscreenDesc->Scaling;
+        }
+
         _swapChain = *swapChain;
         _hwnd = hwnd;
 

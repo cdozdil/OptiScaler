@@ -125,9 +125,9 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && State::Instance().currentFG != nullptr)
     {
-        LOG_TRACE("Waiting ffxMutex 3, current: {}", State::Instance().currentFG->Mutex.getOwner());
+        LOG_TRACE("Waiting FG->Mutex 3, current: {}", State::Instance().currentFG->Mutex.getOwner());
         State::Instance().currentFG->Mutex.lock(3);
-        LOG_TRACE("Accuired ffxMutex: {}", State::Instance().currentFG->Mutex.getOwner());
+        LOG_TRACE("Accuired FG->Mutex: {}", State::Instance().currentFG->Mutex.getOwner());
     }
 
     HRESULT result;
@@ -230,7 +230,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && State::Instance().currentFG != nullptr)
     {
-        LOG_TRACE("Releasing ffxMutex: {}", State::Instance().currentFG->Mutex.getOwner());
+        LOG_TRACE("Releasing FG->Mutex: {}", State::Instance().currentFG->Mutex.getOwner());
         State::Instance().currentFG->Mutex.unlockThis(3);
     }
 
@@ -256,9 +256,9 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && State::Instance().currentFG != nullptr)
     {
-        LOG_TRACE("Waiting ffxMutex 3, current: {}", State::Instance().currentFG->Mutex.getOwner());
+        LOG_TRACE("Waiting FG->Mutex 3, current: {}", State::Instance().currentFG->Mutex.getOwner());
         State::Instance().currentFG->Mutex.lock(3);
-        LOG_TRACE("Accuired ffxMutex: {}", State::Instance().currentFG->Mutex.getOwner());
+        LOG_TRACE("Accuired FG->Mutex: {}", State::Instance().currentFG->Mutex.getOwner());
     }
 
     HRESULT result;
@@ -358,7 +358,7 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && State::Instance().currentFG != nullptr)
     {
-        LOG_TRACE("Releasing ffxMutex: {}", State::Instance().currentFG->Mutex.getOwner());
+        LOG_TRACE("Releasing FG->Mutex: {}", State::Instance().currentFG->Mutex.getOwner());
         State::Instance().currentFG->Mutex.unlockThis(3);
     }
 
@@ -380,9 +380,9 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 
         if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && State::Instance().currentFG != nullptr)
         {
-            LOG_TRACE("Waiting ffxMutex 3, current: {}", State::Instance().currentFG->Mutex.getOwner());
+            LOG_TRACE("Waiting FG->Mutex 3, current: {}", State::Instance().currentFG->Mutex.getOwner());
             State::Instance().currentFG->Mutex.lock(3);
-            LOG_TRACE("Accuired ffxMutex: {}", State::Instance().currentFG->Mutex.getOwner());
+            LOG_TRACE("Accuired FG->Mutex: {}", State::Instance().currentFG->Mutex.getOwner());
         }
 
         result = m_pReal->SetFullscreenState(Fullscreen, pTarget);
@@ -430,7 +430,7 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && State::Instance().currentFG != nullptr)
     {
-        LOG_TRACE("Releasing ffxMutex: {}", State::Instance().currentFG->Mutex.getOwner());
+        LOG_TRACE("Releasing FG->Mutex: {}", State::Instance().currentFG->Mutex.getOwner());
         State::Instance().currentFG->Mutex.unlockThis(3);
     }
 

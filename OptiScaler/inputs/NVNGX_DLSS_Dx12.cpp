@@ -1473,6 +1473,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     if (fg != nullptr && fg->IsActive() && Config::Instance()->FGUseFGSwapChain.value_or_default() && Config::Instance()->OverlayMenu.value_or_default() &&
         Config::Instance()->FGEnabled.value_or_default() && fg->TargetFrame() < fg->FrameCount() && State::Instance().currentSwapchain != nullptr)
     {
+        // Wait for present
+        if (fg->Mutex.getOwner() == 2)
+        {
+            LOG_WARN("Waiting for present!");
+            fg->Mutex.lock(4);
+            fg->Mutex.unlockThis(4);
+        }
+
         bool allocatorReset = false;
         frameIndex = fg->GetIndex();
 

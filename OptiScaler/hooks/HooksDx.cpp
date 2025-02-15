@@ -155,16 +155,19 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
     LOG_DEBUG("frameCounter: {}, flags: {:X}", frameCounter, Flags);
 
-    ResTrack_Dx12::ClearPossibleHudless();
-
-    IFGFeature_Dx12* fg = nullptr;
-    if (State::Instance().currentFG != nullptr)
-        fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
-
-    Hudfix_Dx12::PresentStart();
+    // Skip calculations etc
+    if (Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART)
+    {
+        LOG_DEBUG("TEST or RESTART, skip");
+        auto result = o_FGSCPresent(This, SyncInterval, Flags);
+        return result;
+    }
 
     if (State::Instance().currentSwapchain == nullptr)
-        return S_OK;
+    {
+        LOG_WARN("State::Instance().currentSwapchain == nullptr");
+        return o_FGSCPresent(This, SyncInterval, Flags);
+    }
 
     if (State::Instance().FGresetCapturedResources)
     {
@@ -175,14 +178,21 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         State::Instance().FGresetCapturedResources = false;
     }
 
+    IFGFeature_Dx12* fg = nullptr;
+    if (State::Instance().currentFG != nullptr)
+        fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
+
     bool lockAccuired = false;
     if (fg != nullptr && fg->IsActive() && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && fg->Mutex.getOwner() != 2)
     {
-        LOG_TRACE("Waiting ffxMutex 2, current: {}", fg->Mutex.getOwner());
+        LOG_TRACE("Waiting FG->Mutex 2, current: {}", fg->Mutex.getOwner());
         fg->Mutex.lock(2);
-        LOG_TRACE("Accuired ffxMutex: {}", fg->Mutex.getOwner());
+        LOG_TRACE("Accuired FG->Mutex: {}", fg->Mutex.getOwner());
         lockAccuired = true;
     }
+
+    ResTrack_Dx12::ClearPossibleHudless();
+    Hudfix_Dx12::PresentStart();
 
     HRESULT result;
     result = o_FGSCPresent(This, SyncInterval, Flags);
@@ -190,7 +200,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
     if (lockAccuired && Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
-        LOG_TRACE("Releasing ffxMutex: {}", fg->Mutex.getOwner());
+        LOG_TRACE("Releasing FG->Mutex: {}", fg->Mutex.getOwner());
         fg->Mutex.unlockThis(2);
     }
 

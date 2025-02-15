@@ -20,6 +20,7 @@ protected:
     UINT _reset = 0;
 
     UINT64 _frameCount = 0;
+    UINT64 _lastUpscaledFrameId = 0;
 
     bool _isActive = false;
     UINT64 _targetFrame = 0;
