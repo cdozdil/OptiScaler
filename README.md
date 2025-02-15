@@ -82,6 +82,7 @@ _To overcome DLSS 3.7's signature check requirements, I implemented a method dev
 #### OptiScaler supports these filenames
 * dxgi.dll 
 * winmm.dll
+* dbghelp.dll (nightly only)
 * version.dll
 * wininet.dll
 * winhttp.dll
