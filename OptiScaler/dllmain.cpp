@@ -88,6 +88,7 @@ inline std::vector<std::wstring> overlayNamesW = { L"eosovh-win32-shipping.dll",
                                                    L"gameoverlayrenderer64", L"gameoverlayrenderer64.dll", L"gameoverlayrenderer", L"gameoverlayrenderer.dll", };
 
 DEFINE_NAME_VECTORS(nvngx, "nvngx");
+DEFINE_NAME_VECTORS(xess, "libxess");
 DEFINE_NAME_VECTORS(nvngxDlss, "nvngx_dlss");
 DEFINE_NAME_VECTORS(nvapi, "nvapi64");
 DEFINE_NAME_VECTORS(dx11, "d3d11");
@@ -371,6 +372,16 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
         return module;
     }
 
+    if (CheckDllName(&lcaseLibName, &xessNames) && !State::Instance().upscalerDisableHook)
+    {
+        State::Instance().skipDllLoadChecks = true;
+
+        auto module = o_LoadLibraryA(lcaseLibName.c_str());
+        XeSSProxy::HookXeSS(module);
+
+        State::Instance().skipDllLoadChecks = false;
+    }
+
     return nullptr;
 }
 
@@ -599,6 +610,16 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
         State::Instance().skipDllLoadChecks = false;
 
         return module;
+    }
+
+    if (CheckDllNameW(&lcaseLibName, &xessNamesW) && !State::Instance().upscalerDisableHook)
+    {
+        State::Instance().skipDllLoadChecks = true;
+
+        auto module = o_LoadLibraryW(lcaseLibName.c_str());
+        XeSSProxy::HookXeSS(module);
+
+        State::Instance().skipDllLoadChecks = false;
     }
 
     return nullptr;
@@ -2369,9 +2390,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             State::Instance().skipDllLoadChecks = true;
 
             // Init XeSS proxy
-            // Disabled early loading of libxess
-            //if (!XeSSProxy::InitXeSS())
-            //    spdlog::warn("Can't init XeSS!");
+            if (!XeSSProxy::HookXeSS(GetModuleHandleW(L"libxess.dll")))
+                spdlog::info("Can't hook XeSS");
 
             // Init FfxApi proxy
             if (!FfxApiProxy::InitFfxDx12())
