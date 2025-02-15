@@ -12,7 +12,8 @@ While previously only DLSS2+ inputs were supported, newer versions also added su
 - Supports integration with [**Fakenvapi**](https://github.com/FakeMichau/fakenvapi) which enables Reflex hooking and injecting Anti-Lag 2 or LatencyFlex (LFX) - **_not bundled_**  
 - Since version 0.7.7, support for Nukem's FSR FG mod [**dlssg-to-fsr3**](https://github.com/Nukem9/dlssg-to-fsr3) has also been added - **_not bundled_**
 
-_[*] Regarding XeSS, Unreal Engine plugin does not provide depth, and as such renders XeSS hooking in UE pointless (recommended to set `XeSS=false` in OptiScaler.ini for such games). Regarding FSR inputs, FSR 3.1 is the first version with a fully standardised and forward-looking API and as such removed custom interfaces. Since FSR2 and FSR3 support custom interfaces, game support will depend on the developers' implementation. Always check the [Wiki](https://github.com/cdozdil/OptiScaler/wiki) Compatibility list for known issues._
+> [!NOTE]
+> _[*] Regarding XeSS, Unreal Engine plugin does not provide depth, and as such renders XeSS hooking in UE pointless (recommended to set `XeSS=false` in OptiScaler.ini for such games). Regarding FSR inputs, FSR 3.1 is the first version with a fully standardised and forward-looking API and as such removed custom interfaces. Since FSR2 and FSR3 support custom interfaces, game support will depend on the developers' implementation. Always check the [Wiki](https://github.com/cdozdil/OptiScaler/wiki) Compatibility list for known issues._
 
 ## How it works?
 OptiScaler implements the necessary API methods of DLSS2+ & NVAPI, XeSS and FSR2+ to act as a middleware. It interprets calls from the game and redirects them to the chosen upscaling backend, allowing games using one technology to use another one of your choice. Pressing **Insert** should open the Optiscaler **Overlay** in-game and expose all of the options (shortcut key can be changed in the config file).
@@ -38,7 +39,8 @@ Currently OptiScaler can be used with DirectX 11, DirectX 12 and Vulkan, but eac
 - DLSS (native DX11)
 - XeSS 2.x (_soon™, but Intel ARC only_)
 
-_[*] These implementations use a background DirectX12 device to be able to use Dirext12-only upscalers. There is a 10-15% performance penalty for this method, but allows much more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has its own problems of which some were fixed by OptiScaler. **These implementations do not support Linux** and will result in a black screen._
+> [!NOTE]
+> _[*] These implementations use a background DirectX12 device to be able to use Dirext12-only upscalers. There is a 10-15% performance penalty for this method, but allows much more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has its own problems of which some were fixed by OptiScaler. **These implementations do not support Linux** and will result in a black screen._
 
 #### For Vulkan
 - FSR2 2.1.2 (Default), 2.2.1
@@ -85,10 +87,11 @@ _To overcome DLSS 3.7's signature check requirements, I implemented a method dev
 * winhttp.dll
 * OptiScaler.asi (with an ASI loader)
 
-*[1] Linux users should add renamed dll to overrides:*
-```
-WINEDLLOVERRIDES=dxgi=n,b %COMMAND% 
-```
+> [!TIP]
+> *[1] Linux users should add renamed dll to overrides:*
+> ```
+> WINEDLLOVERRIDES=dxgi=n,b %COMMAND% 
+> ```
 
 If there is another mod (e.g. Reshade etc.) that uses the same filename (e.g. `dxgi.dll`), if you rename that mod with the `-original` suffix (e.g. `dxgi-original.dll`), OptiScaler will load this file instead of the original library.   
 
