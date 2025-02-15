@@ -1,21 +1,21 @@
 ![opti-logo](https://github.com/user-attachments/assets/c7dad5da-0b29-4710-8a57-b58e4e407abd)
 
-**OptiScaler** is a middleware that enables manipulation with various upscaling tech in temporal upscaler-enabled games. 
+**OptiScaler** is a tool that lets you replace upscalers in games that already support DLSS2+ / FSR2+ / XeSS, now also supports enabling frame generation (through OptiFG or Nukem's dlssg-to-fsr3).
 
-While previously only DLSS2+ inputs were supported, newer versions also added support for XeSS and FSR2+ inputs (_with some caveats-*_). For example, if a game has DLSS only, the user can hook over DLSS and replace it with XeSS or FSR 3.1 (same goes for an FSR or XeSS-only game). It also offers extensive customization options for all users, including those with Nvidia GPUs using DLSS.
+While previously only DLSS2+ inputs were supported, newer versions also added support for XeSS and FSR2+ inputs (_with some caveats-*_). For example, if a game has DLSS only, the user can replace DLSS with XeSS or FSR 3.1 (same goes for an FSR or XeSS-only game). It also offers extensive customization options for all users, including those with Nvidia GPUs using DLSS.
 
 **Key aspects of OptiScaler:**
 - Enables usage of XeSS, FSR2, FSR3 and DLSS in upscaler-enabled games
 - Allows users to fine-tune their upscaling experience
 - Offers a wide range of tweaks and enhancements (RCAS & MAS, Output Scaling, DLSS Presets, Ratio & DRS Overrides etc.)
 - With version 0.7.0 and above, added experimental frame generation support with possible HUDfix solution (OptiFG by FSR3)
-- Supports integration with [**Fakenvapi**](https://github.com/FakeMichau/fakenvapi) which enables Reflex hooking and injecting Anti-Lag 2 or LatencyFlex (LFX)  
-- Since version 0.7.7, support for Nukem's FSR FG mod [**dlssg-to-fsr3**](https://github.com/Nukem9/dlssg-to-fsr3) has also been added
+- Supports integration with [**Fakenvapi**](https://github.com/FakeMichau/fakenvapi) which enables Reflex hooking and injecting Anti-Lag 2 or LatencyFlex (LFX) - **_not bundled_**  
+- Since version 0.7.7, support for Nukem's FSR FG mod [**dlssg-to-fsr3**](https://github.com/Nukem9/dlssg-to-fsr3) has also been added - **_not bundled_**
 
 _[*] Regarding XeSS, Unreal Engine plugin does not provide depth, and as such renders XeSS hooking in UE pointless (recommended to set `XeSS=false` in OptiScaler.ini for such games). Regarding FSR inputs, FSR 3.1 is the first version with a fully standardised and forward-looking API and as such removed custom interfaces. Since FSR2 and FSR3 support custom interfaces, game support will depend on the developers' implementation. Always check the [Wiki](https://github.com/cdozdil/OptiScaler/wiki) Compatibility list for known issues._
 
 ## How it works?
-OptiScaler implements the necessary API methods of DLSS2+ & NVAPI, XeSS and FSR2+ to act as a middleware. It interprets calls from the game and redirects them to the chosen upscaling backend, allowing games using one technology to use another of your choice.
+OptiScaler implements the necessary API methods of DLSS2+ & NVAPI, XeSS and FSR2+ to act as a middleware. It interprets calls from the game and redirects them to the chosen upscaling backend, allowing games using one technology to use another one of your choice. Pressing **Insert** should open the Optiscaler **Overlay** in-game and expose all of the options (shortcut key can be changed in the config file).
 
 ## Official Discord Server: [DLSS2FSR](https://discord.gg/2JDHx6kcXB)
 
@@ -48,23 +48,33 @@ _[*] These implementations use a background DirectX12 device to be able to use D
 
 
 ## Installation
-> **Warning**: **Do not use this mod with online games.** It may trigger anti-cheat software and cause bans!
+_**Warning**: **Do not use this mod with online games.** It may trigger anti-cheat software and cause bans!_
 
-### Install as `non-nvngx` (For enabling all features like Frame Gen)
-To overcome DLSS 3.7's signature check requirements, I implemented a method developed by **Artur** (creator of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)). Later, this method increased the compatibility of `OverlayMenu`, allowed OptiScaler to **spoof DXGI and Vulkan**, let users override the `nvapi64.dll` and even let users to force Anisotropic Filtering and Mipmap Lod Bias. In short, this installation method allowed OptiScaler to provide more features to users.
+## Install as `non-nvngx` (Recommended, for enabling all features, like Frame Gen)
 
-**`Step-by-step installation`** (**Nvidia users, please skip to step 3**):
-1. We need an Nvidia signed dll file to bypass signature checks. All games that support DLSS come with `nvngx_dlss.dll`. Most of the time it's in the games exe folder (e.g. for Unreal Engine games it's `<path-to-game>\Binaries\Win64\`). Some games and engines keep these third party dll's in different folders (like `plugins`). So we need to find the `nvngx_dlss.dll` file and copy it to the games exe folder. If it's already in the games exe folder, make a copy of it. (_You can also just download one from the internet if you don't want to search for it_)
-2. Rename the copy of `nvngx_dlss.dll` in the games exe folder to `nvngx.dll`.
-3. Rename OptiScaler's `nvngx.dll` to one of the [supported filenames](#optiscaler-supports-these-filenames) (I prefer `dxgi.dll`) [1].
-4. Copy the renamed OptiScaler file along with the rest of the archive files to your game's executable folder.
-5. If your GPU is not an Nvidia one, check [GPU spoofing options](Spoofing.md).
+### Automated
+**Easiest way** is to extract all of the Optiscaler files by the main game exe and try the `OptiScaler Setup.bat` script which should help you automate the renaming process.
 
-**Alternatively**, you can also extract all of the Optiscaler files by the main game exe and try the new `OptiScaler Setup.bat` file which should help you automate the renaming process.
+### Manual installation
+#### Nvidia
+
+**`Step-by-step installation:`**  
+**1.** Extract all Optiscaler files from the zip by the main game exe (for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Binaries\Win64\`).  
+**2.** Rename OptiScaler's `nvngx.dll` to one of the [supported filenames](#optiscaler-supports-these-filenames) (preferred `dxgi.dll`, but depends on the game) [1].  
+
+#### AMD/Intel
+
+**`Step-by-step installation:`**  
+**1.** Extract all Optiscaler files from the zip by the main game exe (for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Binaries\Win64\`).  
+**2.** Rename OptiScaler's `nvngx.dll` to one of the [supported filenames](#optiscaler-supports-these-filenames) (preferred `dxgi.dll`, but depends on the game) [1].  
+**3.** This step requires renaming `nvngx_dlss.dll` to `nvngx.dll` for bypassing signature checks. Either locate the game's original `nvngx_dlss.dll` file (for UE games, generally in one of the subfolders like Plugins), create a copy and paste it beside Optiscaler after renaming it, or download one from the internet if you don't want to search, both are valid.
+
 
 **_Example of correct installation (with additional Fakenvapi and Nukem mod)_**
  
 ![Installation](https://github.com/user-attachments/assets/d2ef6d7b-59a2-45b5-96b0-38e61429cf6b)
+
+_To overcome DLSS 3.7's signature check requirements, I implemented a method developed by **Artur** (creator of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)). Later, this method increased the compatibility of `OverlayMenu`, allowed OptiScaler to **spoof DXGI and Vulkan**, let users override the `nvapi64.dll` and even let users to force Anisotropic Filtering and Mipmap Lod Bias. In short, this installation method allowed OptiScaler to provide more features to users._
 
 #### OptiScaler supports these filenames
 * dxgi.dll 
@@ -79,7 +89,7 @@ To overcome DLSS 3.7's signature check requirements, I implemented a method deve
 WINEDLLOVERRIDES=dxgi=n,b %COMMAND% 
 ```
 
-If there is another mod (e.g. Reshade etc.) that uses the same filename (e.g. `dxgi.dll`), if you rename it with the `-original` suffix (e.g. `dxgi-original.dll`), OptiScaler will load this file instead of the original library.   
+If there is another mod (e.g. Reshade etc.) that uses the same filename (e.g. `dxgi.dll`), if you rename that mod with the `-original` suffix (e.g. `dxgi-original.dll`), OptiScaler will load this file instead of the original library.   
 
 Alternatively, you can create a new folder called `plugins` and put other mod files in this folder. OptiScaler will check this folder and if it finds the same dll file (for example `dxgi.dll`), it will load this file instead of the original library. 
 
@@ -88,14 +98,13 @@ Alternatively, you can create a new folder called `plugins` and put other mod fi
 **Please don't rename the ini file, it should stay as `OptiScaler.ini`**.
 
 #### OptiFG (powered by FSR3 FG) + HUDfix (experimental HUD ghosting fix) 
-OptiFG was added with 0.7 builds and is only supported in DX12. It uses FSR3 FG to enable Frame Generation in every DX12 upscaler-enabled games, however it's not so simple. Since FSR3 FG doesn't support HUD interpolation itself, it requires a HUDless resource provided by the game to avoid HUD ghosting. In games without native FG, Optiscaler tries to find the HUDless resource when the user enables HUDfix. Depending on how the game draws its UI/HUD, Optiscaler may or may not be successful in fixing these issues. There are several options for tuning the search. A more detailed guide will be available in the [Wiki](https://github.com/cdozdil/OptiScaler/wiki), along with a list of HUDfix incompatible games.
+OptiFG was added with 0.7 builds and is only supported in DX12. It uses FSR3 FG to enable Frame Generation in every DX12 upscaler-enabled games, however since FSR3 FG doesn't support HUD interpolation itself, it requires a HUDless resource provided by the game to avoid HUD ghosting. In games without native FG, Optiscaler tries to find the HUDless resource when the user enables HUDfix. Depending on how the game draws its UI/HUD, Optiscaler may or may not be successful in fixing these issues. There are several options for tuning the search. A more detailed guide will be available in the [Wiki](https://github.com/cdozdil/OptiScaler/wiki), along with a list of HUDfix incompatible games.
 
 ### Install as `nvngx.dll` (deprecated, limited features, FG and Overlay Menu will be disabled)
 `Step-by-step installation:`
 1. Download the latest relase from [releases](https://github.com/cdozdil/OptiScaler/releases).
 2. Extract the contents of the archive next to the game executable file in your games folder. (e.g. for Unreal Engine games it's `<path-to-game>\Binaries\Win64\`) [1]
 3. Run `EnableSignatureOverride.reg` from `DlssOverrides` folder and confirm merge. [2][3]
-4. If your GPU is not an Nvidia one, check [GPU spoofing options](Spoofing.md).
 
 *[1] This package contains latest version of `libxess.dll` and if the game folder contains any older version of the same library, it will be overwritten. Consider backing up or renaming existing files.*
 
@@ -144,7 +153,7 @@ OptiFG was added with 0.7 builds and is only supported in DX12. It uses FSR3 FG 
 * Supports Nukem's FSR FG mod [dlssg-to-fsr3](https://github.com/Nukem9/dlssg-to-fsr3) (since version 0.7.7)  
  
 ## Configuration
-Please check [this](Config.md) document for configuration parameters and explanations. *(Will be updated)*
+Please check [this](Config.md) document for configuration parameters and explanations. If your GPU is not an Nvidia one, check [GPU spoofing options](Spoofing.md) *(Will be updated)*
 
 ## Known Issues
 If you can't open in-game menu:
