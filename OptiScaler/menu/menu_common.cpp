@@ -1457,6 +1457,7 @@ bool MenuCommon::RenderMenu()
                         ImGui::Spacing();
                         if (ImGui::CollapsingHeader("Advanced OptiFG Settings"))
                         {
+                            ScopedIndent indent{};
                             ImGui::Spacing();
                             ImGui::Checkbox("FG Only Generated", &State::Instance().FGonlyGenerated);
                             ShowHelpMarker("Display only FSR 3.1 generated frames");
@@ -1732,6 +1733,7 @@ bool MenuCommon::RenderMenu()
                         ImGui::Spacing();
                         if (ImGui::CollapsingHeader("Dx11 with Dx12 Settings"))
                         {
+                            ScopedIndent indent{};
                             ImGui::Spacing();
                             const char* sync[] = { "No Syncing", "Fence", "Fence + Event", "Fence + Flush", "Fence + Flush + Event", "Only Query" };
 
@@ -1796,6 +1798,7 @@ bool MenuCommon::RenderMenu()
                         ImGui::Spacing();
                         if (ImGui::CollapsingHeader("XeSS Settings"))
                         {
+                            ScopedIndent indent{};
                             ImGui::Spacing();
                             const char* models[] = { "KPSS", "SPLAT", "MODEL_3", "MODEL_4", "MODEL_5", "MODEL_6" };
                             auto configModes = Config::Instance()->NetworkModel.value_or_default();
@@ -2048,6 +2051,7 @@ bool MenuCommon::RenderMenu()
 
                         if (ImGui::CollapsingHeader(usesDlssd ? "Advanced DLSSD Settings" : "Advanced DLSS Settings"))
                         {
+                            ScopedIndent indent{};
                             ImGui::Spacing();
                             bool appIdOverride = Config::Instance()->UseGenericAppIdWithDlss.value_or_default();
                             if (ImGui::Checkbox("Use Generic App Id with DLSS", &appIdOverride))
@@ -2108,6 +2112,7 @@ bool MenuCommon::RenderMenu()
                         ImGui::Spacing();
                         if (ImGui::CollapsingHeader("Motion Adaptive Sharpness##2"))
                         {
+                            ScopedIndent indent{};
                             ImGui::Spacing();
                             if (bool overrideMotionSharpness = Config::Instance()->MotionSharpnessEnabled.value_or_default(); ImGui::Checkbox("Motion Adaptive Sharpness", &overrideMotionSharpness))
                                 Config::Instance()->MotionSharpnessEnabled = overrideMotionSharpness;
@@ -2180,6 +2185,7 @@ bool MenuCommon::RenderMenu()
 
                         if (ImGui::CollapsingHeader("Advanced Enabler Settings"))
                         {
+                            ScopedIndent indent{};
                             ImGui::Spacing();
                             std::string selected;
 
@@ -2514,6 +2520,7 @@ bool MenuCommon::RenderMenu()
                         ImGui::Spacing();
                         if (ImGui::CollapsingHeader("Advanced Init Flags"))
                         {
+                            ScopedIndent indent{};
                             ImGui::Spacing();
                             if (ImGui::BeginTable("init2", 2, ImGuiTableFlags_SizingStretchSame))
                             {
@@ -2665,6 +2672,7 @@ bool MenuCommon::RenderMenu()
                 ImGui::Spacing();
                 if (ImGui::CollapsingHeader("Advanced Settings"))
                 {
+                    ScopedIndent indent{};
                     ImGui::Spacing();
                     if (currentFeature != nullptr)
                     {
@@ -2690,6 +2698,7 @@ bool MenuCommon::RenderMenu()
                 ImGui::Spacing();
                 if (ImGui::CollapsingHeader("Logging"))
                 {
+                    ScopedIndent indent{};
                     ImGui::Spacing();
                     if (Config::Instance()->LogToConsole.value_or_default() || Config::Instance()->LogToFile.value_or_default() || Config::Instance()->LogToNGX.value_or_default())
                         spdlog::default_logger()->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or_default());
@@ -2731,6 +2740,7 @@ bool MenuCommon::RenderMenu()
                 ImGui::Spacing();
                 if (ImGui::CollapsingHeader("FPS Overlay"))
                 {
+                    ScopedIndent indent{};
                     ImGui::Spacing();
                     bool fpsEnabled = Config::Instance()->ShowFps.value_or_default();
                     if (ImGui::Checkbox("FPS Overlay Enabled", &fpsEnabled))
@@ -2779,6 +2789,7 @@ bool MenuCommon::RenderMenu()
                 ImGui::Spacing();
                 if (ImGui::CollapsingHeader("Upscaler Inputs", currentFeature == nullptr ? ImGuiTreeNodeFlags_DefaultOpen : 0))
                 {
+                    ScopedIndent indent{};
                     ImGui::Spacing();
                     bool fsr2Inputs = Config::Instance()->Fsr2Inputs.value_or_default();
                     bool fsr2Pattern = Config::Instance()->Fsr2Pattern.value_or_default();
@@ -2811,6 +2822,7 @@ bool MenuCommon::RenderMenu()
                     ImGui::Spacing();
                     if (ImGui::CollapsingHeader("Mipmap Bias", currentFeature == nullptr ? ImGuiTreeNodeFlags_DefaultOpen : 0))
                     {
+                        ScopedIndent indent{};
                         ImGui::Spacing();
                         if (Config::Instance()->MipmapBiasOverride.has_value() && _mipBias == 0.0f)
                             _mipBias = Config::Instance()->MipmapBiasOverride.value();
@@ -2925,6 +2937,7 @@ bool MenuCommon::RenderMenu()
                     ImGui::Spacing();
                     if (ImGui::CollapsingHeader("Anisotropic Filtering", currentFeature == nullptr ? ImGuiTreeNodeFlags_DefaultOpen : 0))
                     {
+                        ScopedIndent indent{};
                         ImGui::Spacing();
                         ImGui::PushItemWidth(65.0f * Config::Instance()->MenuScale.value());
 
@@ -2966,6 +2979,7 @@ bool MenuCommon::RenderMenu()
                             ImGui::Spacing();
                             if (ImGui::CollapsingHeader("Resource Barriers"))
                             {
+                                ScopedIndent indent{};
                                 ImGui::Spacing();
                                 AddResourceBarrier("Color", &Config::Instance()->ColorResourceBarrier);
                                 AddResourceBarrier("Depth", &Config::Instance()->DepthResourceBarrier);
@@ -2981,6 +2995,7 @@ bool MenuCommon::RenderMenu()
                                 ImGui::Spacing();
                                 if (ImGui::CollapsingHeader("Root Signatures"))
                                 {
+                                    ScopedIndent indent{};
                                     ImGui::Spacing();
                                     if (bool crs = Config::Instance()->RestoreComputeSignature.value_or_default(); ImGui::Checkbox("Restore Compute Root Signature", &crs))
                                         Config::Instance()->RestoreComputeSignature = crs;

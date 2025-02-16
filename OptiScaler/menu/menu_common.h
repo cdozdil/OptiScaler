@@ -15,6 +15,20 @@
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+class ScopedIndent {
+public:
+    explicit ScopedIndent(float indent = 16.0f) : m_indent(indent) {
+        ImGui::Indent(m_indent);
+    }
+
+    ~ScopedIndent() {
+        ImGui::Unindent(m_indent);
+    }
+
+private:
+    float m_indent;
+};
+
 class MenuCommon
 {
 private:
