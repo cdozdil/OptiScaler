@@ -332,7 +332,7 @@ void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
     if (diff < 0.0f || diff > 8.0f)
         diff = 8.0f;
 
-    diff = 40.0f;
+    //diff = 40.0f;
 
     _targetTime = now + diff;
 

@@ -17,7 +17,7 @@
 // Uses std::thread when processing descriptor heap operations
 //#define USE_THREAD_FOR_COPY_DESCS
 
-#define USE_ARRAY_HEAP_INFO
+//#define USE_ARRAY_HEAP_INFO
 
 #ifdef USE_ARRAY_HEAP_INFO
 typedef struct HeapInfo
@@ -118,10 +118,7 @@ typedef struct HeapInfo
         auto index = (cpuHandle - cpuStart) / increment;
 
         if (index < info.size())
-        {
-            //setInfo.lastUsedFrame = Util::MillisecondsNow();
             info[index] = setInfo;
-        }
     }
 
     void SetByGpuHandle(SIZE_T gpuHandle, ResourceInfo setInfo)
@@ -132,10 +129,7 @@ typedef struct HeapInfo
         auto index = (gpuHandle - gpuStart) / increment;
 
         if (index < info.size())
-        {
-            //setInfo.lastUsedFrame = Util::MillisecondsNow();
             info[index] = setInfo;
-        }
     }
 } heap_info;
 #endif
