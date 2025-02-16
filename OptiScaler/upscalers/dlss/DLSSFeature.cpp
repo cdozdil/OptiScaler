@@ -15,8 +15,7 @@ void DLSSFeature::ProcessEvaluateParams(NVSDK_NGX_Parameter* InParameters)
     {
         auto sharpness = Config::Instance()->Sharpness.value_or_default();
 
-        if (sharpness > 1.0f)
-            sharpness = 1.0f;
+        sharpness = std::min(sharpness, 1.0f);
 
         InParameters->Set(NVSDK_NGX_Parameter_Sharpness, sharpness);
     }
@@ -235,37 +234,26 @@ void DLSSFeature::ReadVersion()
 {
     LOG_FUNC();
 
-    PFN_NVSDK_NGX_GetSnippetVersion _GetSnippetVersion = nullptr;
+    std::vector<std::string> possibleDlls;
 
     if (!State::Instance().NGX_OTA_Dlss.empty())
-        _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction(State::Instance().NGX_OTA_Dlss.c_str(), "NVSDK_NGX_GetSnippetVersion");
+        possibleDlls.push_back(State::Instance().NGX_OTA_Dlss);
 
-    if (!_GetSnippetVersion && Config::Instance()->NVNGX_DLSS_Library.has_value())
+    if (Config::Instance()->NVNGX_DLSS_Library.has_value())
     {
         std::filesystem::path dlssPath(Config::Instance()->NVNGX_DLSS_Library.value());
-        
         if (dlssPath.has_filename())
-            _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction(dlssPath.filename().string().c_str(), "NVSDK_NGX_GetSnippetVersion");
+            possibleDlls.push_back(dlssPath.filename().string());
     }
 
-    if (!_GetSnippetVersion)
-        _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction("nvngx_dlss.dll", "NVSDK_NGX_GetSnippetVersion");
+    possibleDlls.push_back("nvngx_dlss.dll");
 
-    if (_GetSnippetVersion != nullptr)
-    {
-        LOG_TRACE("_GetSnippetVersion ptr: {0:X}", (ULONG64)_GetSnippetVersion);
+    _version = GetVersionUsingNGXSnippet(possibleDlls);
 
-        auto result = _GetSnippetVersion();
-
-        _version.major = (result & 0xFFFF0000) / 0x00010000;
-        _version.minor = (result & 0x0000FF00) / 0x00000100;
-        _version.patch = result & 0x000000FF / 0x00000001;
-
+    if (isVersionOrBetter(_version, { 0,0,0 }))
         LOG_INFO("DLSS v{0}.{1}.{2} loaded.", _version.major, _version.minor, _version.patch);
-        return;
-    }
-
-    LOG_WARN("GetProcAddress for NVSDK_NGX_GetSnippetVersion failed!");
+    else
+        LOG_WARN("Failed to get version using NVSDK_NGX_GetSnippetVersion!");
 }
 
 DLSSFeature::DLSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)

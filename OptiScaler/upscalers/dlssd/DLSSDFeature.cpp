@@ -235,29 +235,21 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
 void DLSSDFeature::ReadVersion()
 {
-    PFN_NVSDK_NGX_GetSnippetVersion _GetSnippetVersion = nullptr;
+    LOG_FUNC();
+
+    std::vector<std::string> possibleDlls;
 
     if (!State::Instance().NGX_OTA_Dlssd.empty())
-        _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction(State::Instance().NGX_OTA_Dlssd.c_str(), "NVSDK_NGX_GetSnippetVersion");
+        possibleDlls.push_back(State::Instance().NGX_OTA_Dlssd);
 
-    if (!_GetSnippetVersion)
-        _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction("nvngx_dlssd.dll", "NVSDK_NGX_GetSnippetVersion");
+    possibleDlls.push_back("nvngx_dlssd.dll");
 
-    if (_GetSnippetVersion != nullptr)
-    {
-        LOG_TRACE("_GetSnippetVersion ptr: {0:X}", (ULONG64)_GetSnippetVersion);
+    _version = GetVersionUsingNGXSnippet(possibleDlls);
 
-        auto result = _GetSnippetVersion();
-
-        _version.major = (result & 0xFFFF0000) / 0x00010000;
-        _version.minor = (result & 0x0000FF00) / 0x00000100;
-        _version.patch = result & 0x000000FF / 0x00000001;
-
-        LOG_INFO("v{0}.{1}.{2} loaded.", _version.major, _version.minor, _version.patch);
-        return;
-    }
-
-    LOG_INFO("GetProcAddress for NVSDK_NGX_GetSnippetVersion failed!");
+    if (isVersionOrBetter(_version, {0,0,0}))
+        LOG_INFO("DLSSD v{0}.{1}.{2} loaded.", _version.major, _version.minor, _version.patch);
+    else
+        LOG_WARN("Failed to get version using NVSDK_NGX_GetSnippetVersion!");
 }
 
 DLSSDFeature::DLSSDFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)

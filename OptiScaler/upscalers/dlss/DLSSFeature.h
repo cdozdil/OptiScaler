@@ -4,8 +4,6 @@
 #include <proxies/NVNGX_Proxy.h>
 #include <upscalers/IFeature.h>
 
-typedef uint32_t(*PFN_NVSDK_NGX_GetSnippetVersion)(void);
-
 class DLSSFeature : public virtual IFeature
 {
 private:

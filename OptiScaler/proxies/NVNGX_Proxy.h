@@ -140,6 +140,29 @@ inline static void UnhookApis()
 
 #pragma endregion
 
+typedef uint32_t(*PFN_NVSDK_NGX_GetSnippetVersion)(void);
+static feature_version GetVersionUsingNGXSnippet(const std::vector<std::string>& dlls)
+{
+    uint32_t highestVersion = 0;
+    for (const auto& dll : dlls)
+    {
+        PFN_NVSDK_NGX_GetSnippetVersion _GetSnippetVersion = (PFN_NVSDK_NGX_GetSnippetVersion)DetourFindFunction(dll.c_str(), "NVSDK_NGX_GetSnippetVersion");
+        if (_GetSnippetVersion)
+        {
+            LOG_TRACE("_GetSnippetVersion ptr from {}: {:X}", dll, (ULONG64)_GetSnippetVersion);
+            uint32_t version = _GetSnippetVersion();
+            highestVersion = std::max(version, highestVersion);
+        }
+    }
+
+    feature_version version;
+
+    version.major = (highestVersion & 0xFFFF0000) / 0x00010000;
+    version.minor = (highestVersion & 0x0000FF00) / 0x00000100;
+    version.patch = (highestVersion & 0x000000FF) / 0x00000001;
+
+    return version;
+}
 
 typedef NVSDK_NGX_Result(*PFN_CUDA_Init)(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion);
 typedef NVSDK_NGX_Result(*PFN_CUDA_Init_ProjectID)(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion, const wchar_t* InApplicationDataPath, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo);
