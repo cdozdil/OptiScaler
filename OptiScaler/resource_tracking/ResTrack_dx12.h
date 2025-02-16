@@ -4,7 +4,6 @@
 
 #include <hudfix/Hudfix_Dx12.h>
 
-
 // Clear heap info when ResourceDiscard is called
 //#define USE_RESOURCE_DISCARD
 
@@ -18,8 +17,9 @@
 // Uses std::thread when processing descriptor heap operations
 //#define USE_THREAD_FOR_COPY_DESCS
 
-#define CHECK_FOR_SL_PROXY_OBJECTS
+#define USE_ARRAY_HEAP_INFO
 
+#ifdef USE_ARRAY_HEAP_INFO
 typedef struct HeapInfo
 {
     SIZE_T cpuStart = NULL;
@@ -73,9 +73,8 @@ typedef struct HeapInfo
 
         info[index] = setInfo;
     }
-} heap_info;
-
-/*
+} heap_info; 
+#else
 // Vector version for lower heap usage
 typedef struct HeapInfo
 {
@@ -120,7 +119,7 @@ typedef struct HeapInfo
 
         if (index < info.size())
         {
-            setInfo.lastUsedFrame = Util::MillisecondsNow();
+            //setInfo.lastUsedFrame = Util::MillisecondsNow();
             info[index] = setInfo;
         }
     }
@@ -134,12 +133,12 @@ typedef struct HeapInfo
 
         if (index < info.size())
         {
-            setInfo.lastUsedFrame = Util::MillisecondsNow();
+            //setInfo.lastUsedFrame = Util::MillisecondsNow();
             info[index] = setInfo;
         }
     }
 } heap_info;
-*/
+#endif
 
 typedef struct ResourceHeapInfo
 {

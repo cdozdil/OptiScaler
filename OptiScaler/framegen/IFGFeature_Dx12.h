@@ -11,7 +11,6 @@ class IFGFeature_Dx12 : public virtual IFGFeature
 {
 protected:
     IDXGISwapChain* _swapChain = nullptr;
-    DXGI_SWAP_CHAIN_DESC _swapChainDesc{};
     HWND _hwnd = NULL;
     ID3D12CommandQueue* _gameCommandQueue = nullptr;
 

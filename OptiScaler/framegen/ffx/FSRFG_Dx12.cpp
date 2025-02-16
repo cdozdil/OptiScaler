@@ -5,7 +5,7 @@
 #include <upscalers/IFeature.h>
 #include <menu/menu_overlay_dx.h>
 
-#define USE_QUEUE_FOR_FG
+//#define USE_QUEUE_FOR_FG
 
 typedef struct FfxSwapchainFramePacingTuning
 {
@@ -92,8 +92,10 @@ bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* ou
     // Update frame generation config
     ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
 
+    DXGI_SWAP_CHAIN_DESC scDesc{};
+    _swapChain->GetDesc(&scDesc);
     auto desc = output->GetDesc();
-    if (desc.Format == _swapChainDesc.BufferDesc.Format)
+    if (desc.Format == scDesc.BufferDesc.Format)
     {
         LOG_DEBUG("(FG) desc.Format == HooksDx::swapchainFormat, using for hudless!");
         m_FrameGenerationConfig.HUDLessColor = ffxApiGetResourceDX12(output, FFX_API_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -115,11 +117,11 @@ bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* ou
     m_FrameGenerationConfig.generationRect.top = Config::Instance()->FGRectTop.value_or(0);
 
     // use swapchain buffer info 
-    DXGI_SWAP_CHAIN_DESC scDesc{};
-    if (State::Instance().currentSwapchain->GetDesc(&scDesc) == S_OK)
+    DXGI_SWAP_CHAIN_DESC scDesc1{};
+    if (State::Instance().currentSwapchain->GetDesc(&scDesc1) == S_OK)
     {
-        m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(scDesc.BufferDesc.Width);
-        m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(scDesc.BufferDesc.Height);
+        m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(scDesc1.BufferDesc.Width);
+        m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(scDesc1.BufferDesc.Height);
     }
     else
     {
@@ -506,10 +508,19 @@ void FSRFG_Dx12::StopAndDestroyContext(bool destroy, bool shutDown, bool useMute
 
 bool FSRFG_Dx12::CreateSwapchain(IDXGIFactory* factory, ID3D12CommandQueue* cmdQueue, DXGI_SWAP_CHAIN_DESC* desc, IDXGISwapChain** swapChain)
 {
+    IDXGIFactory* realFactory = nullptr;
+    ID3D12CommandQueue* realQueue = nullptr;
+
+    if (!CheckForRealObject(__FUNCTION__, factory, (IUnknown**)&realFactory))
+        realFactory = factory;
+
+    if (!CheckForRealObject(__FUNCTION__, cmdQueue, (IUnknown**)&realQueue))
+        realQueue = cmdQueue;
+
     ffxCreateContextDescFrameGenerationSwapChainNewDX12 createSwapChainDesc{};
     createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_NEW_DX12;
-    createSwapChainDesc.dxgiFactory = factory;
-    createSwapChainDesc.gameQueue = cmdQueue;
+    createSwapChainDesc.dxgiFactory = realFactory;
+    createSwapChainDesc.gameQueue = realQueue;
     createSwapChainDesc.desc = desc;
     createSwapChainDesc.swapchain = (IDXGISwapChain4**)swapChain;
 
@@ -519,8 +530,7 @@ bool FSRFG_Dx12::CreateSwapchain(IDXGIFactory* factory, ID3D12CommandQueue* cmdQ
     {
         ConfigureFramePaceTuning();
 
-        _gameCommandQueue = cmdQueue;
-        _swapChainDesc = *desc;
+        _gameCommandQueue = realQueue;
         _swapChain = *swapChain;
         _hwnd = desc->OutputWindow;
 
@@ -535,12 +545,21 @@ bool FSRFG_Dx12::CreateSwapchain(IDXGIFactory* factory, ID3D12CommandQueue* cmdQ
 
 bool FSRFG_Dx12::CreateSwapchain1(IDXGIFactory* factory, ID3D12CommandQueue* cmdQueue, HWND hwnd, DXGI_SWAP_CHAIN_DESC1* desc, DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGISwapChain1** swapChain)
 {
+    IDXGIFactory* realFactory = nullptr;
+    ID3D12CommandQueue* realQueue = nullptr;
+
+    if (!CheckForRealObject(__FUNCTION__, factory, (IUnknown**)&realFactory))
+        realFactory = factory;
+
+    if (!CheckForRealObject(__FUNCTION__, cmdQueue, (IUnknown**)&realQueue))
+        realQueue = cmdQueue;
+
     ffxCreateContextDescFrameGenerationSwapChainForHwndDX12 createSwapChainDesc{};
     createSwapChainDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_FOR_HWND_DX12;
     createSwapChainDesc.fullscreenDesc = pFullscreenDesc;
     createSwapChainDesc.hwnd = hwnd;
-    createSwapChainDesc.dxgiFactory = factory;
-    createSwapChainDesc.gameQueue = cmdQueue;
+    createSwapChainDesc.dxgiFactory = realFactory;
+    createSwapChainDesc.gameQueue = realQueue;
     createSwapChainDesc.desc = desc;
     createSwapChainDesc.swapchain = (IDXGISwapChain4**)swapChain;
 
@@ -550,27 +569,7 @@ bool FSRFG_Dx12::CreateSwapchain1(IDXGIFactory* factory, ID3D12CommandQueue* cmd
     {
         ConfigureFramePaceTuning();
 
-        _gameCommandQueue = cmdQueue;
-        
-        _swapChainDesc = {};        
-        _swapChainDesc.BufferCount = desc->BufferCount;
-        _swapChainDesc.BufferDesc.Width = desc->Width;
-        _swapChainDesc.BufferDesc.Height = desc->Height;
-        _swapChainDesc.BufferDesc.Format = desc->Format;
-        _swapChainDesc.BufferUsage = desc->BufferUsage;
-        _swapChainDesc.Flags = desc->Flags;
-        _swapChainDesc.OutputWindow = hwnd;
-        _swapChainDesc.SampleDesc = desc->SampleDesc;
-        _swapChainDesc.SwapEffect = desc->SwapEffect;
-
-        if (pFullscreenDesc != nullptr)
-        {
-            _swapChainDesc.Windowed = pFullscreenDesc->Windowed;
-            _swapChainDesc.BufferDesc.RefreshRate = pFullscreenDesc->RefreshRate;
-            _swapChainDesc.BufferDesc.ScanlineOrdering = pFullscreenDesc->ScanlineOrdering;
-            _swapChainDesc.BufferDesc.Scaling = pFullscreenDesc->Scaling;
-        }
-
+        _gameCommandQueue = realQueue;
         _swapChain = *swapChain;
         _hwnd = hwnd;
 
@@ -680,8 +679,10 @@ void FSRFG_Dx12::CreateContext(ID3D12Device* device, IFeature* upscalerContext)
     if (Config::Instance()->FGAsync.value_or_default())
         createFg.flags |= FFX_FRAMEGENERATION_ENABLE_ASYNC_WORKLOAD_SUPPORT;
 
+    DXGI_SWAP_CHAIN_DESC scDesc{};
+    _swapChain->GetDesc(&scDesc);
 
-    createFg.backBufferFormat = ffxApiGetSurfaceFormatDX12(_swapChainDesc.BufferDesc.Format);
+    createFg.backBufferFormat = ffxApiGetSurfaceFormatDX12(scDesc.BufferDesc.Format);
     createFg.header.pNext = &backendDesc.header;
 
     State::Instance().skipSpoofing = true;

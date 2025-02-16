@@ -1855,7 +1855,6 @@ void HooksDx::HookDxgi()
 void HooksDx::ReleaseDx12SwapChain(HWND hwnd)
 {
     IFGFeature_Dx12* fg = nullptr;
-
     if (State::Instance().currentFG != nullptr)
         fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
 

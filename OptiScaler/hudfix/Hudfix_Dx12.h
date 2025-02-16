@@ -70,6 +70,9 @@ private:
     static int GetIndex();
     static void DispatchFG(bool useHudless);
 
+    inline static IID streamlineRiid{};
+    static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject);
+
 
 public:
     // Trig for upscaling start

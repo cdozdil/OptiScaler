@@ -269,12 +269,33 @@ void Hudfix_Dx12::DispatchFG(bool useHudless)
     // Increase counter
     _fgCounter++;
 
-    //std::async(std::launch::async, [=]()
-    //           {
-                   _skipHudlessChecks = true;
-                   reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG)->DispatchHudless(useHudless, _frameTime);
-                   _skipHudlessChecks = false;
-               //});
+    _skipHudlessChecks = true;
+    reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG)->DispatchHudless(useHudless, _frameTime);
+    _skipHudlessChecks = false;
+}
+
+bool Hudfix_Dx12::CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject)
+{
+    //return false;
+
+    if (streamlineRiid.Data1 == 0)
+    {
+        auto iidResult = IIDFromString(L"{ADEC44E2-61F0-45C3-AD9F-1B37379284FF}", &streamlineRiid);
+
+        if (iidResult != S_OK)
+            return false;
+    }
+
+    auto qResult = pObject->QueryInterface(streamlineRiid, (void**)ppRealObject);
+
+    if (qResult == S_OK && *ppRealObject != nullptr)
+    {
+        LOG_INFO("{} Streamline proxy found!", functionName);
+        (*ppRealObject)->Release();
+        return true;
+    }
+
+    return false;
 }
 
 void Hudfix_Dx12::UpscaleStart()
@@ -311,7 +332,7 @@ void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
     if (diff < 0.0f || diff > 8.0f)
         diff = 8.0f;
 
-    //diff = 40.0f;
+    diff = 40.0f;
 
     _targetTime = now + diff;
 

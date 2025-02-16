@@ -960,7 +960,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     }
     else
     {
-        LOG_DEBUG("Handle: {0}", InFeatureHandle->Id);
+        LOG_DEBUG("Handle: {}, CommandList: {:X}", InFeatureHandle->Id, (size_t)InCmdList);
     }
 
     auto handleId = InFeatureHandle->Id;

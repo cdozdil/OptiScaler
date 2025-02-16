@@ -85,6 +85,29 @@ static ankerl::unordered_dense::map <ID3D12GraphicsCommandList*, ankerl::unorder
 static std::shared_mutex heapMutex;
 static std::shared_mutex hudlessMutex;
 
+inline static IID streamlineRiid{};
+static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject)
+{
+    if (streamlineRiid.Data1 == 0)
+    {
+        auto iidResult = IIDFromString(L"{ADEC44E2-61F0-45C3-AD9F-1B37379284FF}", &streamlineRiid);
+
+        if (iidResult != S_OK)
+            return false;
+    }
+
+    auto qResult = pObject->QueryInterface(streamlineRiid, (void**)ppRealObject);
+
+    if (qResult == S_OK && *ppRealObject != nullptr)
+    {
+        LOG_INFO("{} Streamline proxy found!", functionName);
+        (*ppRealObject)->Release();
+        return true;
+    }
+
+    return false;
+}
+
 
 #pragma region Resource methods
 
@@ -1170,8 +1193,12 @@ static void HookCommandList(ID3D12Device* InDevice)
     {
         if (InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator, nullptr, IID_PPV_ARGS(&commandList)) == S_OK)
         {
+            ID3D12GraphicsCommandList* realCL = nullptr;
+            if (!CheckForRealObject(__FUNCTION__, commandList, (IUnknown**)&realCL))
+                realCL = commandList;
+
             // Get the vtable pointer
-            PVOID* pVTable = *(PVOID**)commandList;
+            PVOID* pVTable = *(PVOID**)realCL;
 
             // hudless shader
             o_OMSetRenderTargets = (PFN_OMSetRenderTargets)pVTable[46];
@@ -1276,6 +1303,7 @@ static void HookToQueue(ID3D12Device* InDevice)
     }
 }
 
+
 void ResTrack_Dx12::HookDevice(ID3D12Device* device)
 {
     if (o_CreateDescriptorHeap != nullptr || device == nullptr)
@@ -1283,8 +1311,12 @@ void ResTrack_Dx12::HookDevice(ID3D12Device* device)
 
     LOG_FUNC();
 
+    ID3D12Device* realDevice = nullptr;
+    if (!CheckForRealObject(__FUNCTION__, device, (IUnknown**)&realDevice))
+        realDevice = device;
+
     // Get the vtable pointer
-    PVOID* pVTable = *(PVOID**)device;
+    PVOID* pVTable = *(PVOID**)realDevice;
 
     // hudless
     o_CreateRenderTargetView = (PFN_CreateRenderTargetView)pVTable[20];

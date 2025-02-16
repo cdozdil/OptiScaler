@@ -137,22 +137,27 @@ void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
 
         for (size_t i = 0; i < BUFFER_COUNT; i++)
         {
-            result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&_commandAllocators[i]));
+            ID3D12CommandAllocator* allocator = nullptr;
+            result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&allocator));
             if (result != S_OK)
             {
                 LOG_ERROR("CreateCommandAllocators _commandAllocators[{}]: {:X}", i, (unsigned long)result);
                 break;
             }
-            _commandAllocators[i]->SetName(L"_commandAllocator");
+            allocator->SetName(L"_commandAllocator");
+            if (!CheckForRealObject(__FUNCTION__, allocator, (IUnknown**)&_commandAllocators[i]))
+                _commandAllocators[i] = allocator;
 
-
-            result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, _commandAllocators[i], NULL, IID_PPV_ARGS(&_commandList[i]));
+            ID3D12GraphicsCommandList* cmdList = nullptr;
+            result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, _commandAllocators[i], NULL, IID_PPV_ARGS(&cmdList));
             if (result != S_OK)
             {
                 LOG_ERROR("CreateCommandList _commandList[{}]: {:X}", i, (unsigned long)result);
                 break;
             }
-            _commandList[i]->SetName(L"_commandList");
+            cmdList->SetName(L"_commandList");
+            if (!CheckForRealObject(__FUNCTION__, cmdList, (IUnknown**)&_commandList[i]))
+                _commandList[i] = cmdList;
 
             result = _commandList[i]->Close();
             if (result != S_OK)
@@ -183,6 +188,7 @@ void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
         }
 
         // Create a command queue for frame generation
+        ID3D12CommandQueue* queue = nullptr;
         D3D12_COMMAND_QUEUE_DESC queueDesc = {};
         queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
         queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
@@ -193,13 +199,15 @@ void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
         else
             queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 
-        HRESULT hr = InDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&_commandQueue));
+        HRESULT hr = InDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&queue));
         if (result != S_OK)
         {
             LOG_ERROR("CreateCommandQueue _commandQueue: {0:X}", (unsigned long)result);
             break;
         }
-        _commandQueue->SetName(L"_commandQueue");
+        queue->SetName(L"_commandQueue");
+        if (!CheckForRealObject(__FUNCTION__, queue, (IUnknown**)&_commandQueue))
+            _commandQueue = queue;
 
         queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
         hr = InDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&_copyCommandQueue));
