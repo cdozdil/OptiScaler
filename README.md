@@ -4,7 +4,7 @@
 
 While previously only DLSS2+ inputs were supported, newer versions also added support for XeSS and FSR2+ inputs (_with some caveats-*_). For example, if a game has DLSS only, the user can replace DLSS with XeSS or FSR 3.1 (same goes for an FSR or XeSS-only game). It also offers extensive customization options for all users, including those with Nvidia GPUs using DLSS.
 
-![image](https://github.com/user-attachments/assets/963c775e-5d49-4f91-b5cf-3f2453a96d9a)
+![image](https://github.com/user-attachments/assets/7b8e3500-f050-43b1-ae97-bdc5c394a104)
 
 **Key aspects of OptiScaler:**
 - Enables usage of XeSS, FSR2, FSR3 and DLSS in upscaler-enabled games
