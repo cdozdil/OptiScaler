@@ -17,7 +17,7 @@
 // Uses std::thread when processing descriptor heap operations
 //#define USE_THREAD_FOR_COPY_DESCS
 
-//#define USE_ARRAY_HEAP_INFO
+#define USE_ARRAY_HEAP_INFO
 
 #ifdef USE_ARRAY_HEAP_INFO
 typedef struct HeapInfo
