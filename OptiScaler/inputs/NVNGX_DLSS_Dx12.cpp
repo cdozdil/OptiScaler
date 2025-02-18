@@ -1399,6 +1399,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             LOG_DEBUG("(FG) Frame generation paused");
             fg->ResetCounters();
             fg->UpdateTarget();
+
+            // Release FG mutex
+            if (fg->Mutex.getOwner() == 2)
+                fg->Mutex.unlockThis(2);
+
             State::Instance().FGchanged = false;
         }
     }

@@ -119,8 +119,12 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
 #ifdef USE_LOCAL_MUTEX
     // dlssg calls this from present it seems
     // don't try to get a mutex when present owns it while dlssg mod is enabled
+    auto lockAccuired = false;
     if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or_default()))
-        OwnedLockGuard lock(_localMutex, 1);
+    {
+        _localMutex.lock(1);
+        lockAccuired = true;
+    }
 #endif
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && State::Instance().currentFG != nullptr)
@@ -234,6 +238,11 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount, UINT Width, UINT
         State::Instance().currentFG->Mutex.unlockThis(3);
     }
 
+#ifdef USE_LOCAL_MUTEX
+    if (lockAccuired)
+        _localMutex.unlockThis(1);
+#endif
+
     return result;
 }
 
@@ -250,8 +259,12 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
 #ifdef USE_LOCAL_MUTEX
     // dlssg calls this from present it seems
     // don't try to get a mutex when present owns it while dlssg mod is enabled
+    auto lockAccuired = false;
     if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or_default()))
-        OwnedLockGuard lock(_localMutex, 2);
+    {
+        _localMutex.lock(2);
+        lockAccuired = true;
+    }
 #endif
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && State::Instance().currentFG != nullptr)
@@ -362,6 +375,11 @@ HRESULT WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCount, UINT Width, UIN
         State::Instance().currentFG->Mutex.unlockThis(3);
     }
 
+#ifdef USE_LOCAL_MUTEX
+    if(lockAccuired)
+        _localMutex.unlockThis(2);
+#endif
+
     return result;
 }
 
@@ -374,8 +392,12 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
 #ifdef USE_LOCAL_MUTEX
         // dlssg calls this from present it seems
         // don't try to get a mutex when present owns it while dlssg mod is enabled
+        auto lockAccuired = false;
         if (!(_localMutex.getOwner() == 4 && Config::Instance()->DLSSGMod.value_or_default()))
-            OwnedLockGuard lock(_localMutex, 3);
+        {
+            _localMutex.lock(3);
+            lockAccuired = true;
+        }
 #endif
 
         if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && State::Instance().currentFG != nullptr)
@@ -401,6 +423,7 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
                 State::Instance().FGchanged = true;
         }
 
+        /*
         if (ClearTrig != nullptr)
             ClearTrig(true, Handle);
 
@@ -426,6 +449,12 @@ HRESULT WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullscreen, IDXGIOutput*
                 buffer->Release();
             }
         }
+        */
+
+#ifdef USE_LOCAL_MUTEX
+        if (lockAccuired)
+            _localMutex.unlockThis(3);
+#endif
     }
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && State::Instance().currentFG != nullptr)

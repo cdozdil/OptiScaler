@@ -270,6 +270,8 @@ void Hudfix_Dx12::DispatchFG(bool useHudless)
     _fgCounter++;
 
     reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG)->DispatchHudless(useHudless, _frameTime);
+
+    // Let resource tracker to continue
     _skipHudlessChecks = false;
 }
 
@@ -479,8 +481,11 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         {
             if (_formatTransfer != nullptr && _formatTransfer->CreateBufferResource(State::Instance().currentD3D12Device, resource->buffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
             {
-                // Reset command list
+                // This will prevent resource tracker to check these operations
+                // Will reset after FG dispatch
                 _skipHudlessChecks = true;
+                
+                // Reset command list
                 _commandAllocator[fIndex]->Reset();
                 _commandList[fIndex]->Reset(_commandAllocator[fIndex], nullptr);
 
@@ -507,6 +512,8 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         }
         else
         {
+            // This will prevent resource tracker to check these operations
+            // Will reset after FG dispatch
             _skipHudlessChecks = true;
             auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
             if (fg != nullptr)
@@ -523,6 +530,8 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         }
 
         LOG_DEBUG("Calling FG with hudless");
+        // This will prevent resource tracker to check these operations
+        // Will reset after FG dispatch
         _skipHudlessChecks = true;
         DispatchFG(true);
 
@@ -535,6 +544,8 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
     if (now > _targetTime && IsResourceCheckActive() && CheckCapture())
     {
         LOG_WARN("Reached limit time: {} > {}", now, _targetTime);
+        // This will prevent resource tracker to check these operations
+        // Will reset after FG dispatch
         _skipHudlessChecks = true;
         DispatchFG(false);
     }

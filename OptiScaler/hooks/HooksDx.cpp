@@ -45,6 +45,7 @@ static bool fgSkipSCWrapping = false;
 
 // Swapchain frame counter
 static UINT64 frameCounter = 0;
+static UINT64 fgMutexReleaseFrame = 0;
 
 static WrappedIDXGISwapChain4* lastWrapped;
 
@@ -182,13 +183,22 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     if (State::Instance().currentFG != nullptr)
         fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
 
-    bool lockAccuired = false;
-    if (fg != nullptr && fg->IsActive() && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && fg->Mutex.getOwner() != 2)
+    auto lockAccuired = false;
+    if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART) &&
+        fg != nullptr && fg->IsActive() && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && fg->Mutex.getOwner() != 2)
     {
         LOG_TRACE("Waiting FG->Mutex 2, current: {}", fg->Mutex.getOwner());
         fg->Mutex.lock(2);
+        
+        if (Config::Instance()->FGDebugView.value_or_default())
+            fgMutexReleaseFrame = frameCounter + 1; // For debug 1 frame
+        else
+            fgMutexReleaseFrame = frameCounter + 2; // For FG 2 frames
+
         LOG_TRACE("Accuired FG->Mutex: {}", fg->Mutex.getOwner());
-        lockAccuired = true;
+        
+        // Disabled for testing
+        //lockAccuired = true;
     }
 
     if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART))
@@ -422,6 +432,14 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         LOG_TRACE("4 {}, Present result: {:X}", frameCounter, (UINT)presentResult);
     else
         LOG_ERROR("4 {:X}", (UINT)presentResult);
+
+    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && 
+        fgMutexReleaseFrame != 0 && frameCounter >= fgMutexReleaseFrame && fg != nullptr)
+    {
+        LOG_TRACE("Releasing FG->Mutex: {}", fg->Mutex.getOwner());
+        fg->Mutex.unlockThis(2);
+        fgMutexReleaseFrame = 0;
+    }
 
     return presentResult;
 }
@@ -1636,7 +1654,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
             {
                 LOG_DEBUG("infoQueue1 accuired, registering MessageCallback");
                 res = infoQueue1->RegisterMessageCallback(D3D12DebugCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, NULL, NULL);
-            }
+    }
         }
 #endif
     }
