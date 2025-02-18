@@ -457,13 +457,16 @@ HRESULT WrappedIDXGISwapChain4::Present(UINT SyncInterval, UINT Flags)
     if (m_pReal == nullptr)
         return DXGI_ERROR_DEVICE_REMOVED;
 
+    if (Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART)
+        return m_pReal->Present(SyncInterval, Flags);
+
 #ifdef USE_LOCAL_MUTEX
     OwnedLockGuard lock(_localMutex, 4);
 #endif
 
     HRESULT result;
 
-    if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART) && RenderTrig != nullptr)
+    if (RenderTrig != nullptr)
         result = RenderTrig(m_pReal, SyncInterval, Flags, nullptr, Device, Handle);
     else
         result = m_pReal->Present(SyncInterval, Flags);
@@ -476,13 +479,16 @@ HRESULT WrappedIDXGISwapChain4::Present1(UINT SyncInterval, UINT Flags, const DX
     if (m_pReal1 == nullptr)
         return DXGI_ERROR_DEVICE_REMOVED;
 
+    if (Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART)
+        return m_pReal1->Present1(SyncInterval, Flags, pPresentParameters);
+
 #ifdef USE_LOCAL_MUTEX
     OwnedLockGuard lock(_localMutex, 5);
 #endif
 
     HRESULT result;
 
-    if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART) && RenderTrig != nullptr)
+    if (RenderTrig != nullptr)
         result = RenderTrig(m_pReal1, SyncInterval, Flags, pPresentParameters, Device, Handle);
     else
         result = m_pReal1->Present1(SyncInterval, Flags, pPresentParameters);

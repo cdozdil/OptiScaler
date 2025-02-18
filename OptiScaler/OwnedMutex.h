@@ -2,13 +2,22 @@
 
 #include "pch.h"
 
+#include <shared_mutex>
+
 class OwnedMutex {
 private:
-    std::mutex mtx;
+    std::shared_mutex mtx;
     uint32_t owner{}; // don't use 0
 
 public:
     void lock(uint32_t _owner) {
+        if (_owner == 0)
+        {
+            owner = _owner;
+            mtx.lock();
+            return;
+        }
+
         mtx.lock();
         owner = _owner;
     }

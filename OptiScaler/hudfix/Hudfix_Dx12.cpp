@@ -269,7 +269,6 @@ void Hudfix_Dx12::DispatchFG(bool useHudless)
     // Increase counter
     _fgCounter++;
 
-    _skipHudlessChecks = true;
     reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG)->DispatchHudless(useHudless, _frameTime);
     _skipHudlessChecks = false;
 }
@@ -481,6 +480,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
             if (_formatTransfer != nullptr && _formatTransfer->CreateBufferResource(State::Instance().currentD3D12Device, resource->buffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
             {
                 // Reset command list
+                _skipHudlessChecks = true;
                 _commandAllocator[fIndex]->Reset();
                 _commandList[fIndex]->Reset(_commandAllocator[fIndex], nullptr);
 
@@ -507,6 +507,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         }
         else
         {
+            _skipHudlessChecks = true;
             auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
             if (fg != nullptr)
                 fg->SetHudless(nullptr, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, false);
@@ -522,6 +523,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         }
 
         LOG_DEBUG("Calling FG with hudless");
+        _skipHudlessChecks = true;
         DispatchFG(true);
 
         return true;
@@ -533,6 +535,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
     if (now > _targetTime && IsResourceCheckActive() && CheckCapture())
     {
         LOG_WARN("Reached limit time: {} > {}", now, _targetTime);
+        _skipHudlessChecks = true;
         DispatchFG(false);
     }
 

@@ -156,18 +156,18 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     LOG_DEBUG("frameCounter: {}, flags: {:X}", frameCounter, Flags);
 
     // Skip calculations etc
-    if (Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART)
-    {
-        LOG_DEBUG("TEST or RESTART, skip");
-        auto result = o_FGSCPresent(This, SyncInterval, Flags);
-        return result;
-    }
+    //if (Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART)
+    //{
+    //    LOG_DEBUG("TEST or RESTART, skip");
+    //    auto result = o_FGSCPresent(This, SyncInterval, Flags);
+    //    return result;
+    //}
 
-    if (State::Instance().currentSwapchain == nullptr)
-    {
-        LOG_WARN("State::Instance().currentSwapchain == nullptr");
-        return o_FGSCPresent(This, SyncInterval, Flags);
-    }
+    //if (State::Instance().currentSwapchain == nullptr)
+    //{
+    //    LOG_WARN("State::Instance().currentSwapchain == nullptr");
+    //    return o_FGSCPresent(This, SyncInterval, Flags);
+    //}
 
     if (State::Instance().FGresetCapturedResources)
     {
@@ -191,8 +191,11 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         lockAccuired = true;
     }
 
-    ResTrack_Dx12::ClearPossibleHudless();
-    Hudfix_Dx12::PresentStart();
+    if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART))
+    {
+        ResTrack_Dx12::ClearPossibleHudless();
+        Hudfix_Dx12::PresentStart();
+    }
 
     HRESULT result;
     result = o_FGSCPresent(This, SyncInterval, Flags);
