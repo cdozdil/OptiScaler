@@ -3603,8 +3603,12 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     }
 #endif
 
+    auto minLevel = MinimumFeatureLevel;
+    if (Config::Instance()->SpoofFeatureLevel.value_or_default())
+        minLevel = D3D_FEATURE_LEVEL_11_0;
+
     //State::Instance().skipSpoofing = true;
-    auto result = o_D3D12CreateDevice(pAdapter, MinimumFeatureLevel, riid, ppDevice);
+    auto result = o_D3D12CreateDevice(pAdapter, minLevel, riid, ppDevice);
     //State::Instance().skipSpoofing = false;
 
     if (result == S_OK && ppDevice != nullptr && *ppDevice != nullptr)

@@ -288,6 +288,7 @@ public:
 	CustomOptional<std::wstring> SpoofedGPUName{ L"NVIDIA GeForce RTX 4090" };
 	CustomOptional<int, NoDefault> VulkanVRAM; // disabled by default
 	CustomOptional<bool> SpoofHAGS{ false };
+	CustomOptional<bool> SpoofFeatureLevel{ false };
 
 	// Plugins
 	CustomOptional<std::wstring> PluginPath{ L"plugins" };
