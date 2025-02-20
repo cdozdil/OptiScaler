@@ -446,13 +446,18 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
 
         if (_commandQueue == nullptr && !CreateObjects())
         {
+            LOG_WARN("Can't create command queue!");
             _captureCounter[fIndex]--;
             return false;
         }
 
+        LOG_DEBUG("1");
+
         // Make a copy of resource to capture current state
         if (CreateBufferResource(State::Instance().currentD3D12Device, resource, D3D12_RESOURCE_STATE_COPY_DEST, &_captureBuffer[fIndex]))
         {
+            LOG_DEBUG("Create a copy of resource: {:X}", (size_t)resource->buffer);
+            
             ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
             cmdList->CopyResource(_captureBuffer[fIndex], resource->buffer);
             ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
@@ -468,6 +473,8 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
             //_commandList[fIndex]->Close();
             //ID3D12CommandList* cmdLists[1] = { _commandList[fIndex] };
             //_commandQueue->ExecuteCommandLists(1, cmdLists);
+
+            LOG_DEBUG("Copy created");
         }
         else
         {
@@ -475,6 +482,8 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
             _captureCounter[fIndex]--;
             break;
         }
+
+        LOG_DEBUG("2");
 
         // needs conversion?
         if (resource->format != scDesc.BufferDesc.Format)
@@ -515,6 +524,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
             // This will prevent resource tracker to check these operations
             // Will reset after FG dispatch
             _skipHudlessChecks = true;
+            LOG_DEBUG("Using _captureBuffer");
             auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
             if (fg != nullptr)
                 fg->SetHudless(nullptr, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, false);
@@ -532,12 +542,19 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         LOG_DEBUG("Calling FG with hudless");
         // This will prevent resource tracker to check these operations
         // Will reset after FG dispatch
+
+        //_commandList[fIndex]->Close();
+        //ID3D12CommandList* cmdLists[1] = { _commandList[fIndex] };
+        //_commandQueue->ExecuteCommandLists(1, cmdLists);
+
         _skipHudlessChecks = true;
         DispatchFG(true);
 
         return true;
 
     } while (false);
+
+    LOG_DEBUG("3");
 
     // Check for limit time
     auto now = Util::MillisecondsNow();

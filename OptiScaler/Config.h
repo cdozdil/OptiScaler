@@ -317,6 +317,8 @@ public:
 	CustomOptional<bool> FGFPTAllowHybridSpin{ true };
 	CustomOptional<int> FGFPTHybridSpinTime{ 2 };
 	CustomOptional<bool> FGFPTAllowWaitForSingleObjectOnFence{ false };
+	CustomOptional<bool> FGHudfixHalfSync{ false };
+	CustomOptional<bool> FGHudfixFullSync{ false };
 
 	// DLSS Enabler
 	std::optional<int> DE_FramerateLimit;			// off - vsync - number
