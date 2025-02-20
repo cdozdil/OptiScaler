@@ -36,8 +36,7 @@ static std::shared_mutex presentMutex;
 static std::shared_mutex resourceMutex;
 static std::shared_mutex captureMutex;
 
-// Last captured upscaled hudless frame number
-//static bool fgPresentRunning = false;
+static bool _lockAccuiredForHaflOrFull = false;
 
 // Used for frametime calculation
 static bool fgStopAfterNextPresent = false;
@@ -189,19 +188,17 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     {
         LOG_TRACE("Waiting FG->Mutex 2, current: {}", fg->Mutex.getOwner());
         fg->Mutex.lock(2);
-        
+
         // If half or full sync is active, we need to release the mutex after 1 or 2 frames at Present
         lockAccuired = !Config::Instance()->FGHudfixHalfSync.value_or_default() && !Config::Instance()->FGHudfixFullSync.value_or_default();
+        _lockAccuiredForHaflOrFull = !lockAccuired;
 
-        if (!lockAccuired)
-        {
-            if (Config::Instance()->FGDebugView.value_or_default() || Config::Instance()->FGHudfixHalfSync.value_or_default())
-                fgMutexReleaseFrame = frameCounter + 1; // For debug 1 frame
-            else
-                fgMutexReleaseFrame = frameCounter + 2; // For FG 2 frames
+        if (Config::Instance()->FGDebugView.value_or_default() || Config::Instance()->FGHudfixHalfSync.value_or_default())
+            fgMutexReleaseFrame = frameCounter + 1; // For debug 1 frame
+        else
+            fgMutexReleaseFrame = frameCounter + 2; // For FG 2 frames
 
-            LOG_TRACE("Accuired FG->Mutex: {}", fg->Mutex.getOwner());
-        }
+        LOG_TRACE("Accuired FG->Mutex: {}", fg->Mutex.getOwner());
     }
 
     if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART))
@@ -436,13 +433,23 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
     else
         LOG_ERROR("4 {:X}", (UINT)presentResult);
 
+    if (fgMutexReleaseFrame != 0 && frameCounter >= fgMutexReleaseFrame)
+        ResTrack_Dx12::PresentDone();
+
     // If Half of Full sync is active or was active (fgMutexReleaseFrame != 0)
-    if ((Config::Instance()->FGHudfixHalfSync.value_or_default() || Config::Instance()->FGHudfixFullSync.value_or_default()) && fgMutexReleaseFrame != 0 &&
-        Config::Instance()->FGUseMutexForSwaphain.value_or_default() && frameCounter >= fgMutexReleaseFrame && fg != nullptr)
+    if (fgMutexReleaseFrame != 0 && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && frameCounter >= fgMutexReleaseFrame && fg != nullptr)
     {
-        LOG_TRACE("Releasing FG->Mutex: {}", fg->Mutex.getOwner());
-        fg->Mutex.unlockThis(2);
+        if (_lockAccuiredForHaflOrFull)
+        {
+            LOG_TRACE("Releasing FG->Mutex: {}", fg->Mutex.getOwner());
+            fg->Mutex.unlockThis(2);
+            _lockAccuiredForHaflOrFull = false;
+        }
+
         fgMutexReleaseFrame = 0;
+
+        // Signal for pause
+        fg->FgDone();
     }
 
     return presentResult;
@@ -1619,7 +1626,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         LOG_WARN("GPU Based Validation active!");
         debugController->SetEnableGPUBasedValidation(TRUE);
 #endif
-    }
+}
 #endif
 
     //State::Instance().skipSpoofing = true;
@@ -1658,8 +1665,8 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
             {
                 LOG_DEBUG("infoQueue1 accuired, registering MessageCallback");
                 res = infoQueue1->RegisterMessageCallback(D3D12DebugCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, NULL, NULL);
+            }
     }
-        }
 #endif
     }
 

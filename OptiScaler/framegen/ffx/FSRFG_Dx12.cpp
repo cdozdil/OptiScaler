@@ -4,6 +4,7 @@
 
 #include <upscalers/IFeature.h>
 #include <menu/menu_overlay_dx.h>
+#include <future>
 
 //#define USE_QUEUE_FOR_FG
 
@@ -453,6 +454,40 @@ ffxReturnCode_t FSRFG_Dx12::HudlessDispatchCallback(ffxDispatchDescFrameGenerati
 
     _lastUpscaledFrameId = params->frameID;
     return dispatchResult;
+}
+
+void FSRFG_Dx12::FgDone()
+{
+    return;
+
+    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    {
+        LOG_TRACE("Waiting Mutex 1, current: {}", Mutex.getOwner());
+        Mutex.lock(1);
+        LOG_TRACE("Accuired Mutex: {}", Mutex.getOwner());
+    }
+
+    if (!State::Instance().isShuttingDown && _fgContext != nullptr)
+    {
+        ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
+        m_FrameGenerationConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
+        m_FrameGenerationConfig.frameGenerationEnabled = false;
+        m_FrameGenerationConfig.swapChain = State::Instance().currentSwapchain;
+        m_FrameGenerationConfig.presentCallback = nullptr;
+        m_FrameGenerationConfig.HUDLessColor = FfxApiResource({});
+
+        ffxReturnCode_t result;
+        result = FfxApiProxy::D3D12_Configure()(&_fgContext, &m_FrameGenerationConfig.header);
+
+        if (!State::Instance().isShuttingDown)
+            LOG_INFO("D3D12_Configure result: {0:X}", result);
+    }
+
+    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    {
+        LOG_TRACE("Releasing Mutex: {}", Mutex.getOwner());
+        Mutex.unlockThis(1);
+    }
 };
 
 void FSRFG_Dx12::StopAndDestroyContext(bool destroy, bool shutDown, bool useMutex)

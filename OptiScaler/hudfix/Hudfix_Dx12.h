@@ -101,5 +101,4 @@ public:
 
     // Reset frame counters
     static void ResetCounters();
-
 };

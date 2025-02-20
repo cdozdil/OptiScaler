@@ -554,7 +554,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
 
     } while (false);
 
-    LOG_DEBUG("3");
+    //LOG_DEBUG("3");
 
     // Check for limit time
     auto now = Util::MillisecondsNow();

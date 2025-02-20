@@ -50,6 +50,7 @@ public:
 
     virtual void ReleaseObjects() = 0;
     virtual void StopAndDestroyContext(bool destroy, bool shutDown, bool useMutex) = 0;
+    virtual void FgDone() = 0;
 
     void ResetCounters();
     void UpdateTarget();

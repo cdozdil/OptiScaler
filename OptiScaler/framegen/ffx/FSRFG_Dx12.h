@@ -44,4 +44,7 @@ public:
     ffxReturnCode_t HudlessDispatchCallback(ffxDispatchDescFrameGeneration* params);
 
     FSRFG_Dx12() = default;
+
+    // Inherited via IFGFeature_Dx12
+    void FgDone() override;
 };
