@@ -354,6 +354,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             VulkanVRAM.set_from_config(readInt("Spoofing", "VulkanVRAM"));
             SpoofedGPUName.set_from_config(readWString("Spoofing", "SpoofedGPUName"));
             SpoofHAGS.set_from_config(readBool("Spoofing", "SpoofHAGS"));
+            SpoofFeatureLevel.set_from_config(readBool("Spoofing", "D3DFeatureLevel"));
         }
 
         // Inputs
@@ -762,6 +763,7 @@ bool Config::SaveIni()
         ini.SetValue("Spoofing", "DxgiVRAM", GetIntValue(Instance()->DxgiVRAM.value_for_config()).c_str());
         ini.SetValue("Spoofing", "SpoofedGPUName", wstring_to_string(Instance()->SpoofedGPUName.value_for_config_or(L"auto")).c_str());
         ini.SetValue("Spoofing", "SpoofHAGS", GetBoolValue(Instance()->SpoofHAGS.value_for_config()).c_str());
+        ini.SetValue("Spoofing", "D3DFeatureLevel", GetBoolValue(Instance()->SpoofFeatureLevel.value_for_config()).c_str());
     }
 
     // Plugins
