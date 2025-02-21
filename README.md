@@ -9,7 +9,7 @@ While previously only DLSS2+ inputs were supported, newer versions also added su
 - Allows users to fine-tune their upscaling experience
 - Offers a wide range of tweaks and enhancements (RCAS & MAS, Output Scaling, DLSS Presets, Ratio & DRS Overrides etc.)
 - With version 0.7.0 and above, added experimental frame generation support with possible HUDfix solution ([**OptiFG**](#optifg-powered-by-fsr3-fg--hudfix-experimental-hud-ghosting-fix) by FSR3)
-- Supports integration with [**Fakenvapi**](#fakenvapi) which enables Reflex hooking and injecting Anti-Lag 2 or LatencyFlex (LFX) - **_not bundled_**  
+- Supports integration with [**Fakenvapi**](#fakenvapi) which enables Reflex hooking and injecting _Anti-Lag 2_ (RDNA1+ only) or _LatencyFlex_ (LFX) - **_not bundled_**  
 - Since version 0.7.7, support for Nukem's FSR FG mod [**dlssg-to-fsr3**](#nukems-dlssg-to-fsr3) has also been added - **_not bundled_**  
 
 > [!IMPORTANT]
@@ -57,6 +57,9 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 - DLSS
 - XeSS 2.x (_soon™_)
 
+#### OptiFG (powered by FSR3 FG) + HUDfix (experimental HUD ghosting fix) 
+**OptiFG** was added with **0.7** builds and is **only supported in DX12**. It uses FSR3 FG to enable Frame Generation in every DX12 upscaler-enabled games, however since FSR3 FG doesn't support HUD interpolation itself, it requires a HUDless resource provided by the game to avoid HUD ghosting. In games without native FG, Optiscaler tries to find the HUDless resource when the user enables **HUDfix**. Depending on how the game draws its UI/HUD, Optiscaler may or may not be successful in fixing these issues. There are several options for tuning the search. A more detailed guide will be available in the [Wiki](https://github.com/cdozdil/OptiScaler/wiki), along with a **list** of **HUDfix incompatible** games.
+
 
 ## Installation
 > [!CAUTION]
@@ -93,15 +96,13 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 **1.** Download the mod - [**Fakenvapi**](https://github.com/FakeMichau/fakenvapi)  
 **2.** Extract the files and transfer `nvapi64.dll` and `fakenvapi.ini` to the same folder as Optiscaler (by the main game exe)   
 
-For information on how to verify if Anti-Lag 2 is working, please check [Anti-Lag 2 SDK](https://github.com/GPUOpen-LibrariesAndSDKs/AntiLag2-SDK?tab=readme-ov-file#testing)
+Latency Flex is cross-vendor and cross-platform. Anti-Lag 2 only supports RDNA cards and is Windows only atm. For information on how to verify if Anti-Lag 2 is working, please check [Anti-Lag 2 SDK](https://github.com/GPUOpen-LibrariesAndSDKs/AntiLag2-SDK?tab=readme-ov-file#testing)
 
 
 > [!NOTE]
 > **_Example of correct installation (with additional Fakenvapi and Nukem mod)_**
 > ![Installation](https://github.com/user-attachments/assets/d2ef6d7b-59a2-45b5-96b0-38e61429cf6b)
 
-#### OptiFG (powered by FSR3 FG) + HUDfix (experimental HUD ghosting fix) 
-**OptiFG** was added with **0.7** builds and is **only supported in DX12**. It uses FSR3 FG to enable Frame Generation in every DX12 upscaler-enabled games, however since FSR3 FG doesn't support HUD interpolation itself, it requires a HUDless resource provided by the game to avoid HUD ghosting. In games without native FG, Optiscaler tries to find the HUDless resource when the user enables **HUDfix**. Depending on how the game draws its UI/HUD, Optiscaler may or may not be successful in fixing these issues. There are several options for tuning the search. A more detailed guide will be available in the [Wiki](https://github.com/cdozdil/OptiScaler/wiki), along with a **list** of **HUDfix incompatible** games.
 
 > [!IMPORTANT]
 > **Please don't rename the ini file, it should stay as `OptiScaler.ini`**.
