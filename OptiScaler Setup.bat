@@ -22,8 +22,8 @@ if not exist nvngx.dll (
 )
 
 REM Set paths based on current directory
-set gamePath=%~dp0
-set optiScalerFile="%gamePath%\nvngx.dll"
+set "gamePath=%~dp0"
+set "optiScalerFile=%gamePath%\nvngx.dll"
 
 REM Check if the Engine folder exists
 if exist "%gamePath%\Engine" (
@@ -234,12 +234,12 @@ if exist Win64 (
 )
 
 :fileNotFound
-cd %gamePath%
+cd "%gamePath%"
 echo ERROR: "nvngx_dlss.dll" not found in expected locations. Please manually copy it and run setup again.
 goto end
 
 :fileFound
-cd %gamePath%
+cd "%gamePath%"
 echo File found at %dlssFile%
 goto resume_nvngx_dlss
 
