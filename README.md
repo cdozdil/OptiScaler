@@ -8,13 +8,13 @@ While previously only DLSS2+ inputs were supported, newer versions also added su
 - Enables usage of XeSS, FSR2, FSR3 and DLSS in upscaler-enabled games
 - Allows users to fine-tune their upscaling experience
 - Offers a wide range of tweaks and enhancements (RCAS & MAS, Output Scaling, DLSS Presets, Ratio & DRS Overrides etc.)
-- With version 0.7.0 and above, added experimental frame generation support with possible HUDfix solution ([**OptiFG**](https://github.com/TheRazerMD/OptiScaler#optifg-powered-by-fsr3-fg--hudfix-experimental-hud-ghosting-fix) by FSR3)
-- Supports integration with [**Fakenvapi**](https://github.com/TheRazerMD/OptiScaler/edit/master/README.md#fakenvapi) which enables Reflex hooking and injecting Anti-Lag 2 or LatencyFlex (LFX) - **_not bundled_**  
-- Since version 0.7.7, support for Nukem's FSR FG mod [**dlssg-to-fsr3**](https://github.com/TheRazerMD/OptiScaler/edit/master/README.md#nukems-dlssg-to-fsr3) has also been added - **_not bundled_**  
+- With version 0.7.0 and above, added experimental frame generation support with possible HUDfix solution ([**OptiFG**](#optifg-powered-by-fsr3-fg--hudfix-experimental-hud-ghosting-fix) by FSR3)
+- Supports integration with [**Fakenvapi**](#fakenvapi) which enables Reflex hooking and injecting Anti-Lag 2 or LatencyFlex (LFX) - **_not bundled_**  
+- Since version 0.7.7, support for Nukem's FSR FG mod [**dlssg-to-fsr3**](#nukems-dlssg-to-fsr3) has also been added - **_not bundled_**  
 
 > [!IMPORTANT]
 > _**Always check the [Wiki Compatibility list](https://github.com/cdozdil/OptiScaler/wiki) for known game issues and workarounds.**_  
-> Also please check the  [***Optiscaler known issues***](https://github.com/TheRazerMD/OptiScaler#known-issues) at the end regarding **RTSS** compatibility
+> Also please check the  [***Optiscaler known issues***](#known-issues) at the end regarding **RTSS** compatibility
 
 > [!NOTE]
 > _[*] Regarding **XeSS**, Unreal Engine plugin does not provide depth, and as such breaks other upscalers if you try to replace while using XeSS inputs, but you can still apply RCAS sharpening to native XeSS as it tends to be blurry (in short, if it's a UE game, in-game XeSS only works with XeSS in Opti overlay). Regarding **FSR inputs**, FSR 3.1 is the first version with a fully standardised and forward-looking API and as such should be fully supported. Since FSR2 and FSR3 support custom interfaces, game support will depend on the developers' implementation._ 
@@ -32,7 +32,7 @@ OptiScaler implements the necessary API methods of DLSS2+ & NVAPI, XeSS and FSR2
 *This project is based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2](https://github.com/PotatoOfDoom/CyberFSR2).*
 
 ## Which APIs and Upscalers are Supported?
-Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but each API has different sets of upscaler options. [**OptiFG**](https://github.com/TheRazerMD/OptiScaler#optifg-powered-by-fsr3-fg--hudfix-experimental-hud-ghosting-fix) currently **only supports DX12** and is explained in a separate paragraph.
+Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but each API has different sets of upscaler options. [**OptiFG**](#optifg-powered-by-fsr3-fg--hudfix-experimental-hud-ghosting-fix) currently **only supports DX12** and is explained in a separate paragraph.
 
 #### For DirectX 12
 - XeSS (Default)
