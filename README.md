@@ -86,7 +86,7 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 
 #### Nukem's dlssg-to-fsr3
 
-**1.** Download the mod - [**dlssg-to-fsr3 Github**](https://github.com/Nukem9/dlssg-to-fsr3) or [**dlssg-to-fsr3 NexusMods**](https://www.nexusmods.com/site/mods/738)   
+**1.** Download the mod - [**dlssg-to-fsr3 NexusMods**](https://www.nexusmods.com/site/mods/738) or [**dlssg-to-fsr3 Github**](https://github.com/Nukem9/dlssg-to-fsr3)     
 **2.** Put the `dlssg_to_fsr3_amd_is_better.dll` in the same folder as Optiscaler (by the main game exe) and set `FGType=nukems` in `Optiscaler.ini`  
 **3.** For **AMD/Intel GPUs**, **Fakenvapi** is also **required** when using **Nukem mod** in order to successfully expose DLSS FG in-game. 
 
