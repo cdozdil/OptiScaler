@@ -287,6 +287,15 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
             return FFX_API_RETURN_ERROR;
         };
 
+    /*
+    m_FrameGenerationConfig.presentCallbackUserContext = this;
+    m_FrameGenerationConfig.presentCallback = [](ffxCallbackDescFrameGenerationPresent* params, void* pUserCtx)->ffxReturnCode_t
+        {
+            LOG_DEBUG("frameId: {}, isGenerated: {}", params->frameID, params->isGeneratedFrame);
+            return FFX_API_RETURN_OK;
+        };
+    */
+
     m_FrameGenerationConfig.onlyPresentGenerated = State::Instance().FGonlyGenerated;
     m_FrameGenerationConfig.frameID = _frameCount;
     m_FrameGenerationConfig.swapChain = State::Instance().currentSwapchain;
@@ -412,7 +421,7 @@ ffxReturnCode_t FSRFG_Dx12::HudlessDispatchCallback(ffxDispatchDescFrameGenerati
     ffxReturnCode_t dispatchResult = FFX_API_RETURN_OK;
     int fIndex = params->frameID % BUFFER_COUNT;
 
-    LOG_DEBUG("frameID: {}, commandList: {:X}", params->frameID, (size_t)params->commandList);
+    LOG_DEBUG("frameID: {}, commandList: {:X}, numGeneratedFrames: {}", params->frameID, (size_t)params->commandList, params->numGeneratedFrames);
 
     if (params->frameID != _lastUpscaledFrameId && Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
     {

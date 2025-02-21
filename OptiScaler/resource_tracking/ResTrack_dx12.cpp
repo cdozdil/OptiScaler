@@ -262,6 +262,8 @@ bool ResTrack_Dx12::IsHudFixActive()
     if (!Hudfix_Dx12::IsResourceCheckActive())
         return false;
 
+    if (!_presentDone)
+        return false;
 
     return true;
 }

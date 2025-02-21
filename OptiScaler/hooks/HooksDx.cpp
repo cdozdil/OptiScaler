@@ -225,7 +225,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
     // Probably not needed anymore
     //std::unique_lock<std::shared_mutex> lock(presentMutex);
 
-    LOG_DEBUG("");
+    LOG_DEBUG("{}", frameCounter);
 
     HRESULT presentResult;
 
@@ -244,22 +244,21 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         return presentResult;
     }
 
-    LOG_TRACE("{}", frameCounter);
+    // Might cause issues, saved almost 1 ms
+    //if (hWnd != Util::GetProcessWindow())
+    //{
+    //    if (pPresentParameters == nullptr)
+    //        presentResult = pSwapChain->Present(SyncInterval, Flags);
+    //    else
+    //        presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
 
-    if (hWnd != Util::GetProcessWindow())
-    {
-        if (pPresentParameters == nullptr)
-            presentResult = pSwapChain->Present(SyncInterval, Flags);
-        else
-            presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
+    //    if (presentResult == S_OK)
+    //        LOG_TRACE("2 {}", (UINT)presentResult);
+    //    else
+    //        LOG_ERROR("2 {:X}", (UINT)presentResult);
 
-        if (presentResult == S_OK)
-            LOG_TRACE("2 {}", (UINT)presentResult);
-        else
-            LOG_ERROR("2 {:X}", (UINT)presentResult);
-
-        return presentResult;
-    }
+    //    return presentResult;
+    //}
 
     ID3D12CommandQueue* cq = nullptr;
     ID3D11Device* device = nullptr;
