@@ -160,7 +160,7 @@ if "!overwriteChoice!"=="y" (
 )
 
 echo Renaming OptiScaler file to %selectedFilename%...
-rename %optiScalerFile% %selectedFilename%
+rename "%optiScalerFile%" "%selectedFilename%"
 if errorlevel 1 (
     echo.
     echo ERROR: Failed to rename OptiScaler file to %selectedFilename%.
