@@ -24,6 +24,7 @@ if not exist nvngx.dll (
 REM Set paths based on current directory
 set "gamePath=%~dp0"
 set "optiScalerFile=%gamePath%\nvngx.dll"
+set setupSuccess=false
 
 REM Check if the Engine folder exists
 if exist "%gamePath%\Engine" (
@@ -190,10 +191,15 @@ echo  /__  /)   /  () (/
 echo          _/      /    
 echo.
 
+set setupSuccess=true
+
 :end
 pause
-REM Remove "OptiScaler Setup.bat"
-del %0
+
+if "%setupSuccess%"=="true" (
+    REM Remove "OptiScaler Setup.bat"
+    del %0
+)
 
 REM Remove leftover "nvngx_dlss_copy.dll"
 if exist "nvngx_dlss_copy.dll" (
