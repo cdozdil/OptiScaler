@@ -22,8 +22,9 @@ if not exist nvngx.dll (
 )
 
 REM Set paths based on current directory
-set gamePath=%~dp0
-set optiScalerFile="%gamePath%\nvngx.dll"
+set "gamePath=%~dp0"
+set "optiScalerFile=%gamePath%\nvngx.dll"
+set setupSuccess=false
 
 REM Check if the Engine folder exists
 if exist "%gamePath%\Engine" (
@@ -160,7 +161,7 @@ if "!overwriteChoice!"=="y" (
 )
 
 echo Renaming OptiScaler file to %selectedFilename%...
-rename %optiScalerFile% %selectedFilename%
+rename "%optiScalerFile%" "%selectedFilename%"
 if errorlevel 1 (
     echo.
     echo ERROR: Failed to rename OptiScaler file to %selectedFilename%.
@@ -190,10 +191,15 @@ echo  /__  /)   /  () (/
 echo          _/      /    
 echo.
 
+set setupSuccess=true
+
 :end
 pause
-REM Remove "OptiScaler Setup.bat"
-del %0
+
+if "%setupSuccess%"=="true" (
+    REM Remove "OptiScaler Setup.bat"
+    del %0
+)
 
 REM Remove leftover "nvngx_dlss_copy.dll"
 if exist "nvngx_dlss_copy.dll" (
@@ -234,12 +240,12 @@ if exist Win64 (
 )
 
 :fileNotFound
-cd %gamePath%
+cd "%gamePath%"
 echo ERROR: "nvngx_dlss.dll" not found in expected locations. Please manually copy it and run setup again.
 goto end
 
 :fileFound
-cd %gamePath%
+cd "%gamePath%"
 echo File found at %dlssFile%
 goto resume_nvngx_dlss
 
@@ -264,21 +270,22 @@ echo set /p removeChoice="Do you want to remove OptiScaler? [y/n]: "
 echo.
 echo if "%%removeChoice%%"=="y" ^(
 if "%gpuChoice%"=="1" (
-    echo 	del nvngx.dll
+    echo    del nvngx.dll
 )
-echo 	del OptiScaler.log
-echo 	del %selectedFilename%
+echo    del OptiScaler.log
+echo    del OptiScaler.ini
+echo    del %selectedFilename%
 echo    del /Q DlssOverrides\*
 echo    rd DlssOverrides
 echo    del /Q Licenses\*
 echo    rd Licenses
-echo 	echo.
-echo 	echo OptiScaler removed!
-echo 	echo.
+echo    echo.
+echo    echo OptiScaler removed!
+echo    echo.
 echo ^) else ^(
-echo 	echo.
-echo 	echo Operation cancelled.
-echo 	echo.
+echo    echo.
+echo    echo Operation cancelled.
+echo    echo.
 echo ^)
 echo.
 echo pause
