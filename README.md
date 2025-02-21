@@ -187,10 +187,10 @@ _To overcome DLSS 3.7's signature check requirements, I implemented a method dev
 Please check [this](Config.md) document for configuration parameters and explanations. If your GPU is not an Nvidia one, check [GPU spoofing options](Spoofing.md) *(Will be updated)*
 
 ## Known Issues
-If you can't open in-game menu:
+If you can't open the in-game menu overlay:
 1. Please check that you have enabled DLSS, XeSS or FSR from game options
 2. Please try opening menu while you are in-game (while 3D rendering is happening)
-3. If you are using RTSS (MSI Afterburner, CapFrameX), please enable this setting in RTSS and/or try updating RTSS.
+3. If you are using **RTSS** (MSI Afterburner, CapFrameX), please enable this setting in RTSS and/or try updating RTSS.
  
  ![image](https://github.com/cdozdil/OptiScaler/assets/35529761/8afb24ac-662a-40ae-a97c-837369e03fc7)
 
