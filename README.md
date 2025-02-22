@@ -65,12 +65,12 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 > [!CAUTION]
 > _**Warning**: **Do not use this mod with online games.** It may trigger anti-cheat software and cause bans!_
 
-## Install as `non-nvngx` (Recommended, for enabling all features, like Frame Gen)
+## Recommended installation (with OptiFG and all other features, `non-nvngx`)
 
 ### Automated
 **Easiest way** is to extract all of the Optiscaler files by the main game exe and try the `OptiScaler Setup.bat` script which should help you automate the renaming process.
 
-### Manual installation
+### Manual
 #### Nvidia
 
 **`Step-by-step installation:`**  
@@ -96,7 +96,7 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 **1.** Download the mod - [**Fakenvapi**](https://github.com/FakeMichau/fakenvapi)  
 **2.** Extract the files and transfer `nvapi64.dll` and `fakenvapi.ini` to the same folder as Optiscaler (by the main game exe)   
 
-Latency Flex is cross-vendor and cross-platform. Anti-Lag 2 only supports RDNA cards and is Windows only atm. For information on how to verify if Anti-Lag 2 is working, please check [Anti-Lag 2 SDK](https://github.com/GPUOpen-LibrariesAndSDKs/AntiLag2-SDK?tab=readme-ov-file#testing)
+Latency Flex is cross-vendor and cross-platform. Anti-Lag 2 only supports RDNA cards and is Windows only atm. For information on how to verify if Anti-Lag 2 is working, please check [Anti-Lag 2 SDK](https://github.com/GPUOpen-LibrariesAndSDKs/AntiLag2-SDK?tab=readme-ov-file#testing).
 
 
 > [!NOTE]
@@ -132,7 +132,7 @@ _To overcome DLSS 3.7's signature check requirements, I implemented a method dev
 ![image](https://github.com/cdozdil/OptiScaler/assets/35529761/c4bf2a85-107b-49ac-b002-59d00fd06982)
 
 
-### Install as `nvngx.dll` (deprecated, limited features, FG and Overlay Menu will be disabled)
+### Legacy installation (deprecated, no FG and limited features, `nvngx.dll`)
 `Step-by-step installation:`
 1. Download the latest relase from [releases](https://github.com/cdozdil/OptiScaler/releases).
 2. Extract the contents of the archive next to the game executable file in your games folder. (e.g. for Unreal Engine games it's `<path-to-game>\Binaries\Win64\`) [1]
