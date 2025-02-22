@@ -183,8 +183,8 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
 
     auto lockAccuired = false;
-    if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART) &&
-        fg != nullptr && fg->IsActive() && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && fg->Mutex.getOwner() != 2)
+    if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART) && fg != nullptr && fg->IsActive() && 
+        fg->TargetFrame() < fg->FrameCount() && Config::Instance()->FGUseMutexForSwaphain.value_or_default()) // && fg->Mutex.getOwner() != 2)
     {
         LOG_TRACE("Waiting FG->Mutex 2, current: {}", fg->Mutex.getOwner());
         fg->Mutex.lock(2);
@@ -198,7 +198,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         else
             fgMutexReleaseFrame = frameCounter + 2; // For FG 2 frames
 
-        LOG_TRACE("Accuired FG->Mutex: {}", fg->Mutex.getOwner());
+        LOG_TRACE("Accuired FG->Mutex: {}, fgMutexReleaseFrame: {}", fg->Mutex.getOwner(), fgMutexReleaseFrame);
     }
 
     if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART))
