@@ -82,7 +82,8 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 **`Step-by-step installation:`**  
 **1.** Extract all Optiscaler files from the zip by the main game exe (for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Binaries\Win64\`).  
 **2.** Rename OptiScaler's `nvngx.dll` to one of the [supported filenames](#optiscaler-supports-these-filenames) (preferred `dxgi.dll`, but depends on the game) [1].  
-**3.** This step requires renaming `nvngx_dlss.dll` to `nvngx.dll` for bypassing signature checks. Either locate the game's original `nvngx_dlss.dll` file (for UE games, generally in one of the subfolders like Plugins), create a copy and paste it beside Optiscaler after renaming it, or download one from the internet if you don't want to search, both are valid.
+**3a.** **Either** locate the `nvngx_dlss.dll` file (for UE games, generally in one of the subfolders like Plugins), create a copy, rename the copy to `nvngx.dll` and paste it beside Optiscaler    
+**3b.** **OR** download `nvngx_dlss.dll` from e.g. [TechPowerUp](https://www.techpowerup.com/download/nvidia-dlss-dll/) if you don't want to search, rename it to `nvngx.dll` and paste it beside Optiscaler   
 
 #### Nukem's dlssg-to-fsr3
 
@@ -108,7 +109,7 @@ Latency Flex is cross-vendor and cross-platform. Anti-Lag 2 only supports RDNA c
 > **Please don't rename the ini file, it should stay as `OptiScaler.ini`**.
 
 > [!NOTE]
-> **OptiScaler supports these filenames**
+> ### OptiScaler supports these filenames:
 > * dxgi.dll 
 > * winmm.dll
 > * dbghelp.dll (nightly only)
