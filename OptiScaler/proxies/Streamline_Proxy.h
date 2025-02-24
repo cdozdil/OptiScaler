@@ -59,7 +59,8 @@ static void streamlineLogCallback(sl::LogType type, const char* msg) {
 
 static sl::Result hkslInit(sl::Preferences* pref, uint64_t sdkVersion) {
     LOG_FUNC();
-    // o_logCallback = pref->logMessageCallback; // causes a loop in cyberpunk on linux
+    if (pref->logMessageCallback != &streamlineLogCallback)
+        o_logCallback = pref->logMessageCallback;
     pref->logLevel = sl::LogLevel::eCount;
     pref->logMessageCallback = &streamlineLogCallback;
     return o_slInit(*pref, sdkVersion);
@@ -100,12 +101,13 @@ static void streamlineLogCallback_sl1(sl1::LogType type, const char* msg) {
         o_logCallback_sl1(type, msg);
 }
 
-static bool hkslInit_sl1(sl1::Preferences* pref, uint64_t sdkVersion) {
+static bool hkslInit_sl1(sl1::Preferences* pref, int applicationId) {
     LOG_FUNC();
-    // o_logCallback = pref->logMessageCallback; // causes a loop in cyberpunk on linux
+    if (pref->logMessageCallback != &streamlineLogCallback_sl1)
+        o_logCallback_sl1 = pref->logMessageCallback;
     pref->logLevel = sl1::LogLevel::eLogLevelCount;
     pref->logMessageCallback = &streamlineLogCallback_sl1;
-    return o_slInit_sl1(*pref, sdkVersion);
+    return o_slInit_sl1(*pref, applicationId);
 }
 
 static void unhookStreamline() {
@@ -127,12 +129,20 @@ static void unhookStreamline() {
         o_slInit_sl1 = nullptr;
     }
 
+    o_logCallback_sl1 = nullptr;
+    o_logCallback = nullptr;
+
     DetourTransactionCommit();
 }
 
 // Call it just after sl.interposer's load or if sl.interposer is already loaded
 static void hookStreamline(HMODULE slInterposer) {
     LOG_FUNC();
+
+    if (!slInterposer) {
+        LOG_WARN("Streamline module in NULL");
+        return;
+    }
 
     if (o_slSetTag || o_slInit || o_slInit_sl1)
         unhookStreamline();
