@@ -6,6 +6,7 @@
 #include <nvapi.h>
 
 #define GET_ID(name) NvApiTypes::Instance().getId(#name)
+#define GET_INTERFACE(name, queryInterface) reinterpret_cast<decltype(&name)>(queryInterface(GET_ID(name)))
 
 typedef void* (__stdcall* PFN_NvApi_QueryInterface)(unsigned int InterfaceId);
 typedef NvAPI_Status(__stdcall* PFN_Fake_InformFGState)(bool fg_state);
