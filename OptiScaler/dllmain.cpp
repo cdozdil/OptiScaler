@@ -2292,40 +2292,69 @@ static void CheckQuirks() {
 
 bool isNvidia()
 {
+    bool nvidiaDetected = false;
+    bool loadedHere = false;
     auto nvapiModule = GetModuleHandleW(L"nvapi64.dll");
 
-    bool loadedHere = false;
     if (!nvapiModule) {
         nvapiModule = LoadLibraryExW(L"nvapi64.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
         loadedHere = true;
     }
 
     // No nvapi, should not be nvidia
-    if (!nvapiModule)
-        return false;
-
-    NvAPI_Status result = NVAPI_NVIDIA_DEVICE_NOT_FOUND;
+    if (!nvapiModule) {
+        LOG_DEBUG("Detected: {}", nvidiaDetected); 
+        return nvidiaDetected;
+    }
 
     if (auto o_NvAPI_QueryInterface = (PFN_NvApi_QueryInterface)GetProcAddress(nvapiModule, "nvapi_QueryInterface"))
     {
-        auto init = static_cast<decltype(&NvAPI_Initialize)>(o_NvAPI_QueryInterface(GET_ID(NvAPI_Initialize)));
-        result = init();
-
-        if (result == NVAPI_OK)
+        // dxvk-nvapi calls CreateDxgiFactory which we can't do because we are inside DLL_PROCESS_ATTACH
+        NvAPI_ShortString desc;
+        auto* getVersion = GET_INTERFACE(NvAPI_GetInterfaceVersionString, o_NvAPI_QueryInterface);
+        if (getVersion
+            && getVersion(desc) == NVAPI_OK
+            && (std::string_view(desc) == std::string_view("NVAPI Open Source Interface (DXVK-NVAPI)") || std::string_view(desc) == std::string_view("DXVK_NVAPI"))) 
         {
-            if (auto unload = static_cast<decltype(&NvAPI_Unload)>(o_NvAPI_QueryInterface(GET_ID(NvAPI_Unload))))
-                unload();
+            LOG_DEBUG("Using dxvk-nvapi");
+            DISPLAY_DEVICEA dd;
+            dd.cb = sizeof(dd);
+            int deviceIndex = 0;
 
+            while (EnumDisplayDevicesA(nullptr, deviceIndex, &dd, 0)) {
+                if (dd.StateFlags & DISPLAY_DEVICE_ACTIVE && std::string_view(dd.DeviceID).contains("VEN_10DE")) {
+                    // Having any Nvidia GPU active will take precedence
+                    nvidiaDetected = true;
+                }
+                deviceIndex++;
+            }
+        }
+        else if (o_NvAPI_QueryInterface(GET_ID(Fake_InformFGState)))
+        {
             // Check for fakenvapi in system32, assume it's not nvidia if found
-            if (o_NvAPI_QueryInterface(GET_ID(Fake_InformFGState)) != nullptr)
-                return false;
+            LOG_DEBUG("Using fakenvapi");
+            nvidiaDetected = false;
+        }
+        else 
+        {
+            LOG_DEBUG("Using Nvidia's nvapi");
+            auto init = GET_INTERFACE(NvAPI_Initialize, o_NvAPI_QueryInterface);
+            if (init && init() == NVAPI_OK)
+            {
+                nvidiaDetected = true;
+
+                if (auto unload = GET_INTERFACE(NvAPI_Unload, o_NvAPI_QueryInterface))
+                    unload();
+            }
         }
     }
 
     if (loadedHere)
         FreeLibrary(nvapiModule);
 
-    return result != NVAPI_NVIDIA_DEVICE_NOT_FOUND;
+    LOG_DEBUG("Detected: {}", nvidiaDetected);
+
+    return nvidiaDetected;
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)

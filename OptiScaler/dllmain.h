@@ -2248,37 +2248,61 @@ HRESULT WINAPI detEnumAdapters(IDXGIFactory* This, UINT Adapter, IDXGIAdapter** 
 HRESULT _CreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
     State::Instance().skipDxgiLoadChecks = true;
-    HRESULT result = dxgi.CreateDxgiFactory(riid, ppFactory);
-    State::Instance().skipDxgiLoadChecks = false;
+    if (dxgi.CreateDxgiFactory) {
+        HRESULT result = dxgi.CreateDxgiFactory(riid, ppFactory);
+        State::Instance().skipDxgiLoadChecks = false;
 
-    if (result == S_OK)
-        AttachToFactory(*ppFactory);
+        if (result == S_OK)
+            AttachToFactory(*ppFactory);
 
-    return result;
+        return result;
+    }
+    else 
+    {
+        LOG_ERROR("CreateDxgiFactory is NULL");
+        State::Instance().skipDxgiLoadChecks = false;
+        return DXGI_ERROR_INVALID_CALL;
+    }
 }
 
 HRESULT _CreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 {
     State::Instance().skipDxgiLoadChecks = true;
-    HRESULT result = dxgi.CreateDxgiFactory1(riid, ppFactory);
-    State::Instance().skipDxgiLoadChecks = false;
+    if (dxgi.CreateDxgiFactory1) {
+        HRESULT result = dxgi.CreateDxgiFactory1(riid, ppFactory);
+        State::Instance().skipDxgiLoadChecks = false;
 
-    if (result == S_OK)
-        AttachToFactory(*ppFactory);
+        if (result == S_OK)
+            AttachToFactory(*ppFactory);
 
-    return result;
+        return result;
+    }
+    else 
+    {
+        LOG_ERROR("CreateDxgiFactory1 is NULL");
+        State::Instance().skipDxgiLoadChecks = false;
+        return DXGI_ERROR_INVALID_CALL;
+    }
 }
 
 HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
 {
     State::Instance().skipDxgiLoadChecks = true;
-    HRESULT result = dxgi.CreateDxgiFactory2(Flags, riid, ppFactory);
-    State::Instance().skipDxgiLoadChecks = false;
+    if (dxgi.CreateDxgiFactory2) {
+        HRESULT result = dxgi.CreateDxgiFactory2(Flags, riid, ppFactory);
+        State::Instance().skipDxgiLoadChecks = false;
 
-    if (result == S_OK)
-        AttachToFactory(*ppFactory);
+        if (result == S_OK)
+            AttachToFactory(*ppFactory);
 
-    return result;
+        return result;
+    }
+    else
+    {
+        LOG_ERROR("CreateDxgiFactory2 is NULL");
+        State::Instance().skipDxgiLoadChecks = false;
+        return DXGI_ERROR_INVALID_CALL;
+    }
 }
 
 HRESULT _DXGIDeclareAdapterRemovalSupport()
