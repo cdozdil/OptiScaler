@@ -696,7 +696,7 @@ void MenuCommon::AddDLSSRenderPreset(std::string name, CustomOptional<uint32_t, 
 {
     const char* presets[] = { "DEFAULT", "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E", "PRESET F", "PRESET G",
                              "PRESET H", "PRESET I", "PRESET J", "PRESET K", "PRESET L", "PRESET M", "PRESET N", "PRESET O",
-                             "Latest"};
+                             "Latest" };
     const std::string presetsDesc[] = { "Whatever the game uses",
         "Intended for Performance/Balanced/Quality modes.\nAn older variant best suited to combat ghosting for elements with missing inputs, such as motion vectors.",
         "Intended for Ultra Performance mode.\nSimilar to Preset A but for Ultra Performance mode.",
@@ -1197,11 +1197,16 @@ bool MenuCommon::RenderMenu()
             if (currentFeature == nullptr || !currentFeature->IsInited())
             {
                 ImGui::Spacing();
-                ImGui::PushFont(MenuBase::scaledFont);
+
+                if (Config::Instance()->UseHQFont.value_or_default())
+                    ImGui::PushFont(MenuBase::scaledFont);
+                else
+                    ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0) * 3.0);
 
                 if (State::Instance().nvngxExists || State::Instance().libxessExists)
                 {
                     ImGui::Spacing();
+
                     ImGui::Text("Please select %s%s%s%s%s as upscaler\nfrom game options and enter the game\nto enable upscaler settings.\n",
                                 State::Instance().fsrHooks ? "FSR" : "",
                                 State::Instance().fsrHooks && (State::Instance().nvngxExists || State::Instance().isRunningOnNvidia) ? " or " : "",
@@ -1210,7 +1215,10 @@ bool MenuCommon::RenderMenu()
                                 State::Instance().libxessExists ? "XeSS" : "");
 
 
-                    ImGui::PopFont();
+                    if (Config::Instance()->UseHQFont.value_or_default())
+                        ImGui::PopFont();
+                    else
+                        ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0));
 
                     ImGui::Spacing();
                     ImGui::Text("nvngx.dll: %sExist", State::Instance().nvngxExists || State::Instance().isRunningOnNvidia ? "" : "Not ");
@@ -1224,7 +1232,10 @@ bool MenuCommon::RenderMenu()
                     ImGui::Text("Can't find nvngx.dll and libxess.dll and FSR inputs\nUpscaling support will NOT work.");
                     ImGui::Spacing();
 
-                    ImGui::PopFont();
+                    if (Config::Instance()->UseHQFont.value_or_default())
+                        ImGui::PopFont();
+                    else
+                        ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0));
                 }
 
             }
@@ -1317,17 +1328,17 @@ bool MenuCommon::RenderMenu()
                 }
 
                 // Nukem's FG mod requirements
-                if (State::Instance().api == DX11) 
+                if (State::Instance().api == DX11)
                 {
                     disabledMask[2] = true;
                     fgDesc[2] = "Unsupported API";
                 }
-                else if (State::Instance().isWorkingAsNvngx) 
+                else if (State::Instance().isWorkingAsNvngx)
                 {
                     disabledMask[2] = true;
                     fgDesc[2] = "Unsupported Opti working mode";
                 }
-                else if (!State::Instance().NukemsFilesAvailable) 
+                else if (!State::Instance().NukemsFilesAvailable)
                 {
                     disabledMask[2] = true;
                     fgDesc[2] = "Missing the dlssg_to_fsr3_amd_is_better.dll file";
@@ -2011,9 +2022,9 @@ bool MenuCommon::RenderMenu()
                         if (overridden) {
                             ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "Presets are overridden externally");
                             ShowHelpMarker("This usually happens due to using tools\n"
-                                "such as Nvidia App or Nvidia Inspector");
+                                           "such as Nvidia App or Nvidia Inspector");
                             ImGui::Text("Selecting setting below will disable that external override\n"
-                                "but you need to Save INI and restart the game");
+                                        "but you need to Save INI and restart the game");
 
                             ImGui::Spacing();
                         }
@@ -2021,7 +2032,7 @@ bool MenuCommon::RenderMenu()
                         if (bool pOverride = Config::Instance()->RenderPresetOverride.value_or_default(); ImGui::Checkbox("Render Presets Override", &pOverride))
                             Config::Instance()->RenderPresetOverride = pOverride;
                         ShowHelpMarker("Each render preset has it strengths and weaknesses\n"
-                            "Override to potentially improve image quality");
+                                       "Override to potentially improve image quality");
 
                         ImGui::BeginDisabled(!Config::Instance()->RenderPresetOverride.value_or_default() || overridden);
 
@@ -2058,8 +2069,8 @@ bool MenuCommon::RenderMenu()
                                 Config::Instance()->UseGenericAppIdWithDlss = appIdOverride;
 
                             ShowHelpMarker("Use generic appid with NGX\n"
-                                "Fixes OptiScaler preset override not working with certain games\n"
-                                "Requires a game restart.");
+                                           "Fixes OptiScaler preset override not working with certain games\n"
+                                           "Requires a game restart.");
 
                             ImGui::BeginDisabled(!Config::Instance()->RenderPresetOverride.value_or_default() || overridden);
                             ImGui::Spacing();

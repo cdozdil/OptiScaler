@@ -213,6 +213,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             ShortcutKey.set_from_config(readInt("Menu", "ShortcutKey"));
             ExtendedLimits.set_from_config(readBool("Menu", "ExtendedLimits"));
             ShowFps.set_from_config(readBool("Menu", "ShowFps"));
+            UseHQFont.set_from_config(readBool("Menu", "UseHQFont"));
 
             if (auto setting = readInt("Menu", "FpsOverlayPos"); setting.has_value())
                 FpsOverlayPos.set_from_config(std::clamp(setting.value(), 0, 3));
@@ -643,6 +644,7 @@ bool Config::SaveIni()
         ini.SetValue("Menu", "ShortcutKey", GetIntValue(Instance()->ShortcutKey.value_for_config()).c_str());
         ini.SetValue("Menu", "ExtendedLimits", GetBoolValue(Instance()->ExtendedLimits.value_for_config()).c_str());
         ini.SetValue("Menu", "ShowFps", GetBoolValue(Instance()->ShowFps.value_for_config()).c_str());
+        ini.SetValue("Menu", "UseHQFont", GetBoolValue(Instance()->UseHQFont.value_for_config()).c_str());
         ini.SetValue("Menu", "FpsOverlayPos", GetIntValue(Instance()->FpsOverlayPos.value_for_config()).c_str());
         ini.SetValue("Menu", "FpsOverlayType", GetIntValue(Instance()->FpsOverlayType.value_for_config()).c_str());
         ini.SetValue("Menu", "FpsOverlayHorizontal", GetBoolValue(Instance()->FpsOverlayHorizontal.value_for_config()).c_str());

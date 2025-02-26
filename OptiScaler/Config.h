@@ -191,6 +191,7 @@ public:
 	CustomOptional<int> FpsCycleShortcutKey{ VK_NEXT };
 	CustomOptional<bool> FpsOverlayHorizontal{ false };
 	CustomOptional<float> FpsOverlayAlpha{ 0.4f };
+	CustomOptional<bool> UseHQFont{ true };
 
 	// Hooks
 	CustomOptional<bool> HookOriginalNvngxOnly{ false };

@@ -2,6 +2,7 @@
 #include "imgui/imgui.h"
 #include "imgui/misc/freetype/imgui_freetype.h"
 #include "menu_base.h"
+#include <Config.h>
 
 // TODO: maybe a vector of fonts?
 void MenuBase::LoadCustomFonts(ImGuiIO& io, float menuScale)
@@ -40,7 +41,9 @@ void MenuBase::UpdateFonts(ImGuiIO& io, float rasterizerDensity)
 
     if (lastDensity != rasterizerDensity || io.Fonts->Fonts.empty())
     {
-        LoadCustomFonts(io, rasterizerDensity);
+        if (Config::Instance()->UseHQFont.value_or_default())
+            LoadCustomFonts(io, rasterizerDensity);
+        
         lastDensity = rasterizerDensity;
     }
 }
