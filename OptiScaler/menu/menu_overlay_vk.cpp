@@ -22,6 +22,9 @@ struct ImGui_ImplVulkan_InitInfo _ImVulkan_Info = {};
 struct ImGui_ImplVulkanH_Frame* _ImVulkan_Frames = VK_NULL_HANDLE;
 static VkSemaphore* _ImVulkan_Semaphores = VK_NULL_HANDLE;
 static VkRenderPass _vkRenderPass = VK_NULL_HANDLE;
+static uint32_t _scImageCount;
+static ULONG64 _frameCount;
+
 
 static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance instance, HWND hwnd, const VkSwapchainCreateInfoKHR* pCreateInfo, VkSwapchainKHR* pSwapchain)
 {
@@ -62,8 +65,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
     VkResult result;
 
     // Get swapchain image count.
-    uint32_t imageCount;
-    result = vkGetSwapchainImagesKHR(device, *pSwapchain, &imageCount, NULL);
+    result = vkGetSwapchainImagesKHR(device, *pSwapchain, &_scImageCount, NULL);
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("vkGetSwapchainImagesKHR error: {0:X}", (UINT)result);
@@ -71,7 +73,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
     }
 
     VkImage images[8];
-    result = vkGetSwapchainImagesKHR(device, *pSwapchain, &imageCount, images);
+    result = vkGetSwapchainImagesKHR(device, *pSwapchain, &_scImageCount, images);
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("vkGetSwapchainImagesKHR error: {0:X}", (UINT)result);
@@ -82,8 +84,8 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
     // For convenience, I am using ImGui_ImplVulkanH_Frame in imgui_impl_vulkan.h
     if (!_vulkanObjectsCreated)
     {
-        _ImVulkan_Frames = (ImGui_ImplVulkanH_Frame*)IM_ALLOC(sizeof(ImGui_ImplVulkanH_Frame) * imageCount);
-        _ImVulkan_Semaphores = (VkSemaphore*)IM_ALLOC(sizeof(VkSemaphore) * imageCount);
+        _ImVulkan_Frames = (ImGui_ImplVulkanH_Frame*)IM_ALLOC(sizeof(ImGui_ImplVulkanH_Frame) * _scImageCount);
+        _ImVulkan_Semaphores = (VkSemaphore*)IM_ALLOC(sizeof(VkSemaphore) * _scImageCount);
     }
 
     // Select queue family.
@@ -202,7 +204,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
         VkImageSubresourceRange image_range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
         info.subresourceRange = image_range;
 
-        for (uint32_t i = 0; i < imageCount; i++)
+        for (uint32_t i = 0; i < _scImageCount; i++)
         {
             ImGui_ImplVulkanH_Frame* fd = &_ImVulkan_Frames[i];
             fd->Backbuffer = images[i];
@@ -231,7 +233,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
 
         info.layers = 1;
 
-        for (uint32_t i = 0; i < imageCount; i++)
+        for (uint32_t i = 0; i < _scImageCount; i++)
         {
             ImGui_ImplVulkanH_Frame* fd = &_ImVulkan_Frames[i];
             attachment[0] = fd->BackbufferView;
@@ -245,7 +247,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
     }
 
     // Create command pools, command buffers, fences, and semaphores for every image
-    for (uint32_t i = 0; i < imageCount; i++)
+    for (uint32_t i = 0; i < _scImageCount; i++)
     {
         ImGui_ImplVulkanH_Frame* fd = &_ImVulkan_Frames[i];
         VkSemaphore* fsd = &_ImVulkan_Semaphores[i];
@@ -311,7 +313,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
         _ImVulkan_Info.DescriptorPool = pool;
         _ImVulkan_Info.Subpass = 0;
         _ImVulkan_Info.MinImageCount = pCreateInfo->minImageCount;
-        _ImVulkan_Info.ImageCount = imageCount;
+        _ImVulkan_Info.ImageCount = _scImageCount;
         _ImVulkan_Info.Allocator = NULL;
         _ImVulkan_Info.RenderPass = _vkRenderPass;
 
@@ -465,7 +467,11 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
     io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
     MenuOverlayBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
 
+    _frameCount++;
+
     {
+        auto semaphoreIndex = _frameCount % _scImageCount;
+
         ImGui_ImplVulkan_NewFrame();
 
         if (io.Fonts->IsDirty())
@@ -518,11 +524,10 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
             submit_info.commandBufferCount = 1;
             submit_info.pCommandBuffers = &fd->CommandBuffer;
             submit_info.pWaitDstStageMask = waitStages;
-
             submit_info.waitSemaphoreCount = pPresentInfo->waitSemaphoreCount;
             submit_info.pWaitSemaphores = pPresentInfo->pWaitSemaphores;
             submit_info.signalSemaphoreCount = 1;
-            submit_info.pSignalSemaphores = &_ImVulkan_Semaphores[idx];
+            submit_info.pSignalSemaphores = &_ImVulkan_Semaphores[semaphoreIndex];
 
             auto qResult = vkQueueSubmit(_ImVulkan_Info.Queue, 1, &submit_info, fd->Fence);
             if (qResult != VK_SUCCESS)
@@ -532,7 +537,7 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
             }
 
             pPresentInfo->waitSemaphoreCount = pPresentInfo->swapchainCount;
-            pPresentInfo->pWaitSemaphores = _ImVulkan_Semaphores;
+            pPresentInfo->pWaitSemaphores = &_ImVulkan_Semaphores[semaphoreIndex];
         }
     }
 
