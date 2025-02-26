@@ -458,8 +458,6 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
     if (pPresentInfo->swapchainCount == 0)
         return false;
 
-    VkSemaphore signalSemaphores[8] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
-
     std::lock_guard<std::mutex> lock(_vkPresentMutex);
     LOG_DEBUG("rendering menu, swapchain count: {0}", pPresentInfo->swapchainCount);
 
@@ -533,10 +531,8 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
                 return false;
             }
 
-            signalSemaphores[0] = _ImVulkan_Semaphores[idx];
-
             pPresentInfo->waitSemaphoreCount = pPresentInfo->swapchainCount;
-            pPresentInfo->pWaitSemaphores = signalSemaphores;
+            pPresentInfo->pWaitSemaphores = _ImVulkan_Semaphores;
         }
     }
 
