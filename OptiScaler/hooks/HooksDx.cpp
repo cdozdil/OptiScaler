@@ -3669,13 +3669,32 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
     newDesc.BorderColor[3] = pDesc->BorderColor[3];
     newDesc.ComparisonFunc = pDesc->ComparisonFunc;
 
-    if (Config::Instance()->AnisotropyOverride.has_value() &&
-        (pDesc->Filter == D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT || pDesc->Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT ||
-        pDesc->Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR || pDesc->Filter == D3D12_FILTER_ANISOTROPIC))
+    if (Config::Instance()->AnisotropyOverride.has_value())
     {
-        LOG_DEBUG("Overriding Anisotrpic ({2}) filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
-        newDesc.Filter = D3D12_FILTER_ANISOTROPIC;
-        newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
+        if (pDesc->Filter <= 0x55)
+        {
+            newDesc.Filter = D3D12_FILTER_ANISOTROPIC;
+            LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
+            newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
+        }
+        else if (pDesc->Filter > 0x55 && pDesc->Filter <= 0xd5)
+        {
+            newDesc.Filter = D3D12_FILTER_COMPARISON_ANISOTROPIC;
+            LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
+            newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
+        }
+        else if (pDesc->Filter > 0xd5 && pDesc->Filter <= 0x155)
+        {
+            newDesc.Filter = D3D12_FILTER_MINIMUM_ANISOTROPIC;
+            LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
+            newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
+        }
+        else if (pDesc->Filter > 0x155 && pDesc->Filter <= 0x1d5)
+        {
+            newDesc.Filter = D3D12_FILTER_MAXIMUM_ANISOTROPIC;
+            LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
+            newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
+        }
     }
     else
     {
@@ -3734,15 +3753,32 @@ static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC
     newDesc.MinLOD = pSamplerDesc->MinLOD;
     newDesc.MaxLOD = pSamplerDesc->MaxLOD;
 
-    if (Config::Instance()->AnisotropyOverride.has_value() &&
-        (pSamplerDesc->Filter == D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT ||
-        pSamplerDesc->Filter == D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT ||
-        pSamplerDesc->Filter == D3D11_FILTER_MIN_MAG_MIP_LINEAR ||
-        pSamplerDesc->Filter == D3D11_FILTER_ANISOTROPIC))
+    if (Config::Instance()->AnisotropyOverride.has_value())
     {
-        LOG_DEBUG("Overriding Anisotrpic ({2}) filtering {0} -> {1}", pSamplerDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pSamplerDesc->Filter);
-        newDesc.Filter = D3D11_FILTER_ANISOTROPIC;
-        newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
+        if (pSamplerDesc->Filter <= 0x55)
+        {
+            newDesc.Filter = D3D11_FILTER_ANISOTROPIC;
+            LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pSamplerDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pSamplerDesc->Filter);
+            newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
+        }
+        else if (pSamplerDesc->Filter > 0x55 && pSamplerDesc->Filter <= 0xd5)
+        {
+            newDesc.Filter = D3D11_FILTER_COMPARISON_ANISOTROPIC;
+            LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pSamplerDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pSamplerDesc->Filter);
+            newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
+        }
+        else if (pSamplerDesc->Filter > 0xd5 && pSamplerDesc->Filter <= 0x155)
+        {
+            newDesc.Filter = D3D11_FILTER_MINIMUM_ANISOTROPIC;
+            LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pSamplerDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pSamplerDesc->Filter);
+            newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
+        }
+        else if (pSamplerDesc->Filter > 0x155 && pSamplerDesc->Filter <= 0x1d5)
+        {
+            newDesc.Filter = D3D11_FILTER_MAXIMUM_ANISOTROPIC;
+            LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pSamplerDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pSamplerDesc->Filter);
+            newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
+        }
     }
     else
     {
