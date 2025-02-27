@@ -6,7 +6,7 @@
 
 #include "nvsdk_ngx_vk.h"
 
-static inline FfxApiResourceDescription ffxApiGetImageResourceDescriptionVKLocal(NVSDK_NGX_Resource_VK* vkResource, bool uav = false)
+static inline FfxApiResourceDescription ffxApiGetImageResourceDescriptionVKLocal(NVSDK_NGX_Resource_VK* vkResource)
 {
     FfxApiResourceDescription resourceDescription = {};
 
@@ -15,25 +15,27 @@ static inline FfxApiResourceDescription ffxApiGetImageResourceDescriptionVKLocal
         return resourceDescription;
 
     // Set flags properly for resource registration
-    resourceDescription.flags = FFX_API_RESOURCE_FLAGS_NONE;
+    resourceDescription.flags = FFX_API_RESOURCE_USAGE_READ_ONLY;
 
     // Unordered access use
-    if (uav)
-        resourceDescription.usage = FFX_API_RESOURCE_USAGE_UAV;
-    else
-        resourceDescription.usage = FFX_API_RESOURCE_USAGE_READ_ONLY;
+    if (vkResource->ReadWrite)
+        resourceDescription.usage |= FFX_API_RESOURCE_USAGE_UAV;
+
+    // depth use
+    if ((vkResource->Resource.ImageViewInfo.SubresourceRange.aspectMask & VK_IMAGE_ASPECT_DEPTH_BIT) > 0)
+        resourceDescription.usage |= FFX_API_RESOURCE_USAGE_DEPTHTARGET;
+
+    // stencil use
+    if ((vkResource->Resource.ImageViewInfo.SubresourceRange.aspectMask & VK_IMAGE_ASPECT_STENCIL_BIT) > 0)
+        resourceDescription.usage |= FFX_API_RESOURCE_USAGE_STENCILTARGET;
 
     resourceDescription.type = FFX_API_RESOURCE_TYPE_TEXTURE2D;
     resourceDescription.width = vkResource->Resource.ImageViewInfo.Width;
     resourceDescription.height = vkResource->Resource.ImageViewInfo.Height;
     resourceDescription.mipCount = 1;
     resourceDescription.depth = 1;
-
-    // For No Man's Sky
-    if (vkResource->Resource.ImageViewInfo.Format == VK_FORMAT_D32_SFLOAT_S8_UINT)
-        resourceDescription.format = FFX_API_SURFACE_FORMAT_R32_FLOAT;
-    else
-        resourceDescription.format = ffxApiGetSurfaceFormatVK(vkResource->Resource.ImageViewInfo.Format);
+    resourceDescription.flags = FFX_API_RESOURCE_FLAGS_NONE;
+    resourceDescription.format = ffxApiGetSurfaceFormatVK(vkResource->Resource.ImageViewInfo.Format);
 
     return resourceDescription;
 }
@@ -287,7 +289,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         LOG_DEBUG("Output exist..");
 
         params.output = ffxApiGetResourceVK(((NVSDK_NGX_Resource_VK*)paramOutput)->Resource.ImageViewInfo.Image,
-                                            ffxApiGetImageResourceDescriptionVKLocal((NVSDK_NGX_Resource_VK*)paramOutput, true),
+                                            ffxApiGetImageResourceDescriptionVKLocal((NVSDK_NGX_Resource_VK*)paramOutput),
                                             FFX_API_RESOURCE_STATE_UNORDERED_ACCESS);
     }
     else
