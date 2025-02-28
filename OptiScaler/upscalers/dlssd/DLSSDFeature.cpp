@@ -257,6 +257,11 @@ DLSSDFeature::DLSSDFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParamet
     if (NVNGXProxy::NVNGXModule() == nullptr)
         NVNGXProxy::InitNVNGX();
 
+    if (NVNGXProxy::NVNGXModule() != nullptr && !State::Instance().enablerAvailable)
+    {
+        HookNgxApi(NVNGXProxy::NVNGXModule());
+    }
+
     _moduleLoaded = NVNGXProxy::NVNGXModule() != nullptr;
 }
 
