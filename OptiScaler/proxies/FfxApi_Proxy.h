@@ -56,14 +56,15 @@ public:
             LOG_INFO("Trying to load {}", file.string());
 
             _dllDx12 = LoadLibrary(file.wstring().c_str());
-            if (_dllDx12 != nullptr)
-            {
-                _D3D12_Configure = (PfnFfxConfigure)GetProcAddress(_dllDx12, "ffxConfigure");
-                _D3D12_CreateContext = (PfnFfxCreateContext)GetProcAddress(_dllDx12, "ffxCreateContext");
-                _D3D12_DestroyContext = (PfnFfxDestroyContext)GetProcAddress(_dllDx12, "ffxDestroyContext");
-                _D3D12_Dispatch = (PfnFfxDispatch)GetProcAddress(_dllDx12, "ffxDispatch");
-                _D3D12_Query = (PfnFfxQuery)GetProcAddress(_dllDx12, "ffxQuery");
-            }
+        }
+
+        if (_dllDx12 != nullptr)
+        {
+            _D3D12_Configure = (PfnFfxConfigure)GetProcAddress(_dllDx12, "ffxConfigure");
+            _D3D12_CreateContext = (PfnFfxCreateContext)GetProcAddress(_dllDx12, "ffxCreateContext");
+            _D3D12_DestroyContext = (PfnFfxDestroyContext)GetProcAddress(_dllDx12, "ffxDestroyContext");
+            _D3D12_Dispatch = (PfnFfxDispatch)GetProcAddress(_dllDx12, "ffxDispatch");
+            _D3D12_Query = (PfnFfxQuery)GetProcAddress(_dllDx12, "ffxQuery");
         }
 
         //if (_D3D12_CreateContext == nullptr)
@@ -182,14 +183,15 @@ public:
             LOG_INFO("Trying to load {}", file.string());
 
             _dllVk = LoadLibrary(file.wstring().c_str());
-            if (_dllVk != nullptr)
-            {
-                _VULKAN_Configure = (PfnFfxConfigure)GetProcAddress(_dllVk, "ffxConfigure");
-                _VULKAN_CreateContext = (PfnFfxCreateContext)GetProcAddress(_dllVk, "ffxCreateContext");
-                _VULKAN_DestroyContext = (PfnFfxDestroyContext)GetProcAddress(_dllVk, "ffxDestroyContext");
-                _VULKAN_Dispatch = (PfnFfxDispatch)GetProcAddress(_dllVk, "ffxDispatch");
-                _VULKAN_Query = (PfnFfxQuery)GetProcAddress(_dllVk, "ffxQuery");
-            }
+        }
+
+        if (_dllVk != nullptr)
+        {
+            _VULKAN_Configure = (PfnFfxConfigure)GetProcAddress(_dllVk, "ffxConfigure");
+            _VULKAN_CreateContext = (PfnFfxCreateContext)GetProcAddress(_dllVk, "ffxCreateContext");
+            _VULKAN_DestroyContext = (PfnFfxDestroyContext)GetProcAddress(_dllVk, "ffxDestroyContext");
+            _VULKAN_Dispatch = (PfnFfxDispatch)GetProcAddress(_dllVk, "ffxDispatch");
+            _VULKAN_Query = (PfnFfxQuery)GetProcAddress(_dllVk, "ffxQuery");
         }
 
         //if (_VULKAN_CreateContext == nullptr)

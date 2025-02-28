@@ -2319,6 +2319,8 @@ bool isNvidia()
     bool loadedHere = false;
     auto nvapiModule = GetModuleHandleW(L"nvapi64.dll");
 
+    // This is before attaching to LoadLibrary methods
+    // No need to use .optidll extension
     if (!nvapiModule) {
         nvapiModule = LoadLibraryExW(L"nvapi64.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
         loadedHere = true;
