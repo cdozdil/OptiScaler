@@ -2573,6 +2573,13 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         return E_INVALIDARG;
     }
 
+    // Disable FG is amd dll is not found
+    if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG && !FfxApiProxy::InitFfxDx12())
+    {
+        Config::Instance()->FGType.set_volatile_value(NoFG);
+        State::Instance().activeFgType = Config::Instance()->FGType.value_or_default();
+    }
+
     State::Instance().skipDxgiLoadChecks = true;
     auto result = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
     State::Instance().skipDxgiLoadChecks = false;
@@ -2854,6 +2861,13 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
         LOG_ERROR("D3D12_CreateContext error: {}", result);
         return E_INVALIDARG;
+    }
+
+    // Disable FG is amd dll is not found
+    if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG && !FfxApiProxy::InitFfxDx12())
+    {
+        Config::Instance()->FGType.set_volatile_value(NoFG);
+        State::Instance().activeFgType = Config::Instance()->FGType.value_or_default();
     }
 
     State::Instance().skipDxgiLoadChecks = true;
