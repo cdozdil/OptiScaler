@@ -95,13 +95,11 @@ public:
 	float lastMipBiasMax = -100.0f;
 
 	// DLSS
-	bool upscalerDisableHook = false;
 	bool dlssPresetsOverriddenExternally = false;
 	bool dlssdPresetsOverriddenExternally = false;
 
 	// Spoofing
 	bool skipSpoofing = false;
-	bool skipDllLoadChecks = false;
 	// For DXVK, it calls DXGI which cause softlock
 	bool skipDxgiLoadChecks = false;
 

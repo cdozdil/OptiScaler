@@ -61,9 +61,9 @@ namespace HooksDx
     inline ID3D12CommandQueue* gameCommandQueue = nullptr;
 
     void UnHookDx();
-    void HookDx11();
-    void HookDx12();
-    void HookDxgi();
+    void HookDx11(HMODULE dx11Module);
+    void HookDx12(HMODULE dx12Module);
+    void HookDxgi(HMODULE dxgiModule);
     DXGI_FORMAT CurrentSwapchainFormat();
 }
 

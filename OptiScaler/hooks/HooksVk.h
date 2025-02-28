@@ -9,6 +9,6 @@ namespace HooksVk
 	inline double timeStampPeriod = 1.0;
 	inline bool vkUpscaleTrig = false;
 
-	void HookVk();
+	void HookVk(HMODULE vulkan1);
 	void UnHookVk();
 }

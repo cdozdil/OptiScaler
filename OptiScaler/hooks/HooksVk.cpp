@@ -193,14 +193,14 @@ static VkResult hkvkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateI
     return result;
 }
 
-void HooksVk::HookVk()
+void HooksVk::HookVk(HMODULE vulkan1)
 {
     if (o_vkCreateDevice != nullptr)
         return;
 
-    o_vkCreateDevice = (PFN_vkCreateDevice)DetourFindFunction("vulkan-1.dll", "vkCreateDevice");
-    o_vkCreateInstance = (PFN_vkCreateInstance)DetourFindFunction("vulkan-1.dll", "vkCreateInstance");
-    o_vkCreateWin32SurfaceKHR = (PFN_vkCreateWin32SurfaceKHR)DetourFindFunction("vulkan-1.dll", "vkCreateWin32SurfaceKHR");
+    o_vkCreateDevice = (PFN_vkCreateDevice)GetProcAddress(vulkan1, "vkCreateDevice");
+    o_vkCreateInstance = (PFN_vkCreateInstance)GetProcAddress(vulkan1, "vkCreateInstance");
+    o_vkCreateWin32SurfaceKHR = (PFN_vkCreateWin32SurfaceKHR)GetProcAddress(vulkan1, "vkCreateWin32SurfaceKHR");
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());

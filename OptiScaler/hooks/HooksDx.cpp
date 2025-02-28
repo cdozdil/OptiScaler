@@ -3830,14 +3830,14 @@ static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC
 
 #pragma region Public hook methods
 
-void HooksDx::HookDx12()
+void HooksDx::HookDx12(HMODULE dx12Module)
 {
     if (o_D3D12CreateDevice != nullptr)
         return;
 
     LOG_DEBUG("");
 
-    o_D3D12CreateDevice = (PFN_D3D12_CREATE_DEVICE)DetourFindFunction("d3d12.dll", "D3D12CreateDevice");
+    o_D3D12CreateDevice = (PFN_D3D12_CREATE_DEVICE)GetProcAddress(dx12Module, "D3D12CreateDevice");
     if (o_D3D12CreateDevice != nullptr)
     {
         LOG_DEBUG("Hooking D3D12CreateDevice method");
@@ -3851,16 +3851,17 @@ void HooksDx::HookDx12()
     }
 }
 
-void HooksDx::HookDx11()
+void HooksDx::HookDx11(HMODULE dx11Module)
 {
     if (o_D3D11CreateDevice != nullptr)
         return;
 
     LOG_DEBUG("");
 
-    o_D3D11CreateDevice = (PFN_D3D11_CREATE_DEVICE)DetourFindFunction("d3d11.dll", "D3D11CreateDevice");
-    o_D3D11CreateDeviceAndSwapChain = (PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN)DetourFindFunction("d3d11.dll", "D3D11CreateDeviceAndSwapChain");
-    o_D3D11On12CreateDevice = (PFN_D3D11ON12_CREATE_DEVICE)DetourFindFunction("d3d11.dll", "D3D11On12CreateDevice");
+    o_D3D11CreateDevice = (PFN_D3D11_CREATE_DEVICE)GetProcAddress(dx11Module, "D3D11CreateDevice");
+    o_D3D11CreateDeviceAndSwapChain = (PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN)GetProcAddress(dx11Module, "D3D11CreateDeviceAndSwapChain");
+    o_D3D11On12CreateDevice = (PFN_D3D11ON12_CREATE_DEVICE)GetProcAddress(dx11Module, "D3D11On12CreateDevice");
+
     if (o_D3D11CreateDevice != nullptr || o_D3D11On12CreateDevice != nullptr || o_D3D11CreateDeviceAndSwapChain != nullptr)
     {
         LOG_DEBUG("Hooking D3D11CreateDevice methods");
@@ -3881,16 +3882,16 @@ void HooksDx::HookDx11()
     }
 }
 
-void HooksDx::HookDxgi()
+void HooksDx::HookDxgi(HMODULE dxgiModule)
 {
     if (o_CreateDXGIFactory != nullptr)
         return;
 
     LOG_DEBUG("");
 
-    o_CreateDXGIFactory = (PFN_CreateDXGIFactory)DetourFindFunction("dxgi.dll", "CreateDXGIFactory");
-    o_CreateDXGIFactory1 = (PFN_CreateDXGIFactory1)DetourFindFunction("dxgi.dll", "CreateDXGIFactory1");
-    o_CreateDXGIFactory2 = (PFN_CreateDXGIFactory2)DetourFindFunction("dxgi.dll", "CreateDXGIFactory2");
+    o_CreateDXGIFactory = (PFN_CreateDXGIFactory)GetProcAddress(dxgiModule, "CreateDXGIFactory");
+    o_CreateDXGIFactory1 = (PFN_CreateDXGIFactory1)GetProcAddress(dxgiModule, "CreateDXGIFactory1");
+    o_CreateDXGIFactory2 = (PFN_CreateDXGIFactory2)GetProcAddress(dxgiModule, "CreateDXGIFactory2");
 
     if (o_CreateDXGIFactory != nullptr)
     {
@@ -4005,7 +4006,7 @@ static void ClearNextFrame()
 
 void FrameGen_Dx12::ReleaseFGSwapchain(HWND hWnd)
 {
-    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    if (Config::Instance()->FGType.value_or_default() == OptiFG)
     {
         LOG_TRACE("Waiting ffxMutex 1, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
         FrameGen_Dx12::ffxMutex.lock(1);

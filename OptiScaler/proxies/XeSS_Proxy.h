@@ -100,14 +100,14 @@ private:
             LOG_INFO("Trying to load libxess.dll from ini path: {}", cfgPath.string());
 
             if (!cfgPath.has_filename())
-                cfgPath = cfgPath / L"libxess.dll";
+                cfgPath = cfgPath / L"libxess.optidll";
 
             _dll = LoadLibrary(cfgPath.c_str());
         }
 
         if (_dll == nullptr)
         {
-            std::filesystem::path libXessPath = dllPath.parent_path() / L"libxess.dll";
+            std::filesystem::path libXessPath = dllPath.parent_path() / L"libxess.optidll";
             LOG_INFO("Trying to load libxess.dll from dll path: {}", libXessPath.string());
             _dll = LoadLibrary(libXessPath.c_str());
         }
@@ -115,7 +115,7 @@ private:
         // try to load from anywhere possible
         if (_dll == nullptr) {
             LOG_INFO("Trying to load libxess.dll");
-            _dll = LoadLibrary(L"libxess.dll");
+            _dll = LoadLibrary(L"libxess.optidll");
         }
 
         return _dll != nullptr;
@@ -161,8 +161,6 @@ public:
 
         if (_xessD3D12CreateContext == nullptr)
             return false;
-
-        _dll = xessModule;
 
         // read version from file because 
         // xessGetVersion cause access violation errors
@@ -219,7 +217,7 @@ DetourAttach(&(PVOID&)_##name, name)
         return true;
     }
 
-    static bool InitXeSS()
+    static bool InitXeSS(HMODULE xessModule = nullptr)
     {
         // if dll already loaded
         if (_dll != nullptr || _xessD3D12CreateContext != nullptr) {
@@ -229,13 +227,10 @@ DetourAttach(&(PVOID&)_##name, name)
 
         spdlog::info("");
 
-        State::Instance().upscalerDisableHook = true;
-        State::Instance().skipSpoofing = true;
-
-        LoadXeSS();
-
-        State::Instance().skipSpoofing = false;
-        State::Instance().upscalerDisableHook = false;
+        if (xessModule != nullptr)
+            _dll = xessModule;
+        else
+            LoadXeSS();
 
         HookXeSS(_dll);
 

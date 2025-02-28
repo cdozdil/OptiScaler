@@ -37,7 +37,7 @@ private:
     }
 
 public:
-    static bool InitFfxDx12()
+    static bool InitFfxDx12(HMODULE module = nullptr)
     {
         // if dll already loaded
         if (_dllDx12 != nullptr || _D3D12_CreateContext != nullptr)
@@ -45,33 +45,37 @@ public:
 
         spdlog::info("");
 
-        State::Instance().upscalerDisableHook = true;
+        if (module != nullptr)
+            _dllDx12 = module;
 
         LOG_DEBUG("Loading amd_fidelityfx_dx12.dll methods");
 
-        auto file = Util::DllPath().parent_path() / "amd_fidelityfx_dx12.dll";
-        LOG_INFO("Trying to load {}", file.string());
-
-        _dllDx12 = LoadLibrary(file.wstring().c_str());
-        if (_dllDx12 != nullptr)
+        if (_dllDx12 == nullptr)
         {
-            _D3D12_Configure = (PfnFfxConfigure)GetProcAddress(_dllDx12, "ffxConfigure");
-            _D3D12_CreateContext = (PfnFfxCreateContext)GetProcAddress(_dllDx12, "ffxCreateContext");
-            _D3D12_DestroyContext = (PfnFfxDestroyContext)GetProcAddress(_dllDx12, "ffxDestroyContext");
-            _D3D12_Dispatch = (PfnFfxDispatch)GetProcAddress(_dllDx12, "ffxDispatch");
-            _D3D12_Query = (PfnFfxQuery)GetProcAddress(_dllDx12, "ffxQuery");
+            auto file = Util::DllPath().parent_path() / "amd_fidelityfx_dx12.optidll";
+            LOG_INFO("Trying to load {}", file.string());
+
+            _dllDx12 = LoadLibrary(file.wstring().c_str());
+            if (_dllDx12 != nullptr)
+            {
+                _D3D12_Configure = (PfnFfxConfigure)GetProcAddress(_dllDx12, "ffxConfigure");
+                _D3D12_CreateContext = (PfnFfxCreateContext)GetProcAddress(_dllDx12, "ffxCreateContext");
+                _D3D12_DestroyContext = (PfnFfxDestroyContext)GetProcAddress(_dllDx12, "ffxDestroyContext");
+                _D3D12_Dispatch = (PfnFfxDispatch)GetProcAddress(_dllDx12, "ffxDispatch");
+                _D3D12_Query = (PfnFfxQuery)GetProcAddress(_dllDx12, "ffxQuery");
+            }
         }
 
-        if (_D3D12_CreateContext == nullptr)
-        {
-            LOG_INFO("Trying to load amd_fidelityfx_dx12.dll with detours");
+        //if (_D3D12_CreateContext == nullptr)
+        //{
+        //    LOG_INFO("Trying to load amd_fidelityfx_dx12.dll with detours");
 
-            _D3D12_Configure = (PfnFfxConfigure)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxConfigure");
-            _D3D12_CreateContext = (PfnFfxCreateContext)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxCreateContext");
-            _D3D12_DestroyContext = (PfnFfxDestroyContext)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxDestroyContext");
-            _D3D12_Dispatch = (PfnFfxDispatch)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxDispatch");
-            _D3D12_Query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxQuery");
-        }
+        //    _D3D12_Configure = (PfnFfxConfigure)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxConfigure");
+        //    _D3D12_CreateContext = (PfnFfxCreateContext)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxCreateContext");
+        //    _D3D12_DestroyContext = (PfnFfxDestroyContext)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxDestroyContext");
+        //    _D3D12_Dispatch = (PfnFfxDispatch)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxDispatch");
+        //    _D3D12_Query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_dx12.dll", "ffxQuery");
+        //}
 
         if (_D3D12_CreateContext != nullptr)
         {
@@ -97,8 +101,6 @@ public:
 
             DetourTransactionCommit();
         }
-
-        State::Instance().upscalerDisableHook = false;
 
         bool loadResult = _D3D12_CreateContext != nullptr;
 
@@ -161,7 +163,7 @@ public:
     static PfnFfxQuery D3D12_Query() { return _D3D12_Query; }
     static PfnFfxDispatch D3D12_Dispatch() { return _D3D12_Dispatch; }
 
-    static bool InitFfxVk()
+    static bool InitFfxVk(HMODULE module = nullptr)
     {
         // if dll already loaded
         if (_dllVk != nullptr || _VULKAN_CreateContext != nullptr)
@@ -169,36 +171,37 @@ public:
 
         spdlog::info("");
 
-        State::Instance().upscalerDisableHook = true;
-
         LOG_DEBUG("Loading amd_fidelityfx_vk.dll methods");
 
-        auto file = Util::DllPath().parent_path() / "amd_fidelityfx_vk.dll";
-        LOG_INFO("Trying to load {}", file.string());
+        if (module != nullptr)
+            _dllVk = module;
 
-        _dllVk = LoadLibrary(file.wstring().c_str());
-        if (_dllVk != nullptr)
+        if (_dllVk == nullptr)
         {
-            _VULKAN_Configure = (PfnFfxConfigure)GetProcAddress(_dllVk, "ffxConfigure");
-            _VULKAN_CreateContext = (PfnFfxCreateContext)GetProcAddress(_dllVk, "ffxCreateContext");
-            _VULKAN_DestroyContext = (PfnFfxDestroyContext)GetProcAddress(_dllVk, "ffxDestroyContext");
-            _VULKAN_Dispatch = (PfnFfxDispatch)GetProcAddress(_dllVk, "ffxDispatch");
-            _VULKAN_Query = (PfnFfxQuery)GetProcAddress(_dllVk, "ffxQuery");
+            auto file = Util::DllPath().parent_path() / "amd_fidelityfx_vk.optidll";
+            LOG_INFO("Trying to load {}", file.string());
+
+            _dllVk = LoadLibrary(file.wstring().c_str());
+            if (_dllVk != nullptr)
+            {
+                _VULKAN_Configure = (PfnFfxConfigure)GetProcAddress(_dllVk, "ffxConfigure");
+                _VULKAN_CreateContext = (PfnFfxCreateContext)GetProcAddress(_dllVk, "ffxCreateContext");
+                _VULKAN_DestroyContext = (PfnFfxDestroyContext)GetProcAddress(_dllVk, "ffxDestroyContext");
+                _VULKAN_Dispatch = (PfnFfxDispatch)GetProcAddress(_dllVk, "ffxDispatch");
+                _VULKAN_Query = (PfnFfxQuery)GetProcAddress(_dllVk, "ffxQuery");
+            }
         }
 
-        if (_VULKAN_CreateContext == nullptr)
-        {
-            LOG_INFO("Trying to load amd_fidelityfx_vk.dll with detours");
+        //if (_VULKAN_CreateContext == nullptr)
+        //{
+        //    LOG_INFO("Trying to load amd_fidelityfx_vk.dll with detours");
 
-            _VULKAN_Configure = (PfnFfxConfigure)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxConfigure");
-            _VULKAN_CreateContext = (PfnFfxCreateContext)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxCreateContext");
-            _VULKAN_DestroyContext = (PfnFfxDestroyContext)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxDestroyContext");
-            _VULKAN_Dispatch = (PfnFfxDispatch)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxDispatch");
-            _VULKAN_Query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxQuery");
-        }
-
-        //Config::Instance()->dxgiSkipSpoofing = false;
-        State::Instance().upscalerDisableHook = false;
+        //    _VULKAN_Configure = (PfnFfxConfigure)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxConfigure");
+        //    _VULKAN_CreateContext = (PfnFfxCreateContext)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxCreateContext");
+        //    _VULKAN_DestroyContext = (PfnFfxDestroyContext)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxDestroyContext");
+        //    _VULKAN_Dispatch = (PfnFfxDispatch)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxDispatch");
+        //    _VULKAN_Query = (PfnFfxQuery)DetourFindFunction("amd_fidelityfx_vk.dll", "ffxQuery");
+        //}
 
         bool loadResult = _VULKAN_CreateContext != nullptr;
 

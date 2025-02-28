@@ -312,7 +312,7 @@ private:
     }
 
 public:
-    static void InitNVNGX()
+    static void InitNVNGX(HMODULE nvngxModule = nullptr)
     {
         // if dll already loaded
         if (_dll != nullptr)
@@ -320,68 +320,97 @@ public:
 
         LOG_INFO("");
 
-        State::Instance().upscalerDisableHook = true;
+        if (nvngxModule != nullptr)
+            _dll = nvngxModule;
 
-        do
+        if (_dll == nullptr)
         {
-            // From DLSS Enabler
-            _dll = LoadLibrary(L"dlss-enabler-ngx.dll");
-            LOG_INFO("trying to load dlss-enabler-ngx.dll");
-
-            if (_dll)
+            do
             {
-                State::Instance().enablerAvailable = true;
-                LOG_INFO("dlss-enabler-ngx.dll loaded from DLSS Enabler, ptr: {0:X}", (ULONG64)_dll);
-                break;
-            }
+                // From DLSS Enabler
+                _dll = LoadLibrary(L"dlss-enabler-ngx.optidll");
+                LOG_INFO("trying to load dlss-enabler-ngx.dll");
 
-            // From OptiScaler.ini path
-            if (Config::Instance()->NvngxPath.has_value())
-            {
-                LOG_INFO("trying to load nvngx from a path specified in ini!");
-
-                std::filesystem::path cfgPath(Config::Instance()->NvngxPath.value().c_str());
-
-                if (cfgPath.has_filename())
+                if (_dll)
                 {
-                    _dll = LoadLibraryW(cfgPath.c_str());
+                    State::Instance().enablerAvailable = true;
+                    LOG_INFO("dlss-enabler-ngx.dll loaded from DLSS Enabler, ptr: {0:X}", (ULONG64)_dll);
+                    break;
+                }
 
+                // From OptiScaler.ini path
+                if (Config::Instance()->NvngxPath.has_value())
+                {
+                    LOG_INFO("trying to load nvngx from a path specified in ini!");
+
+                    std::filesystem::path cfgPath(Config::Instance()->NvngxPath.value().c_str());
+
+                    if (cfgPath.has_filename())
+                    {
+                        _dll = LoadLibraryW(cfgPath.c_str());
+
+                        if (_dll)
+                        {
+                            LOG_INFO("_nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(cfgPath.wstring()), (ULONG64)_dll);
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        auto path = cfgPath / L"_nvngx.optidll";
+
+                        LOG_INFO("trying to load _nvngx.dll path: {0}", wstring_to_string(cfgPath.wstring()));
+                        _dll = LoadLibraryW(path.c_str());
+
+                        if (_dll)
+                        {
+                            LOG_INFO("_nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(cfgPath.wstring()), (ULONG64)_dll);
+                            break;
+                        }
+
+                        path = cfgPath / L"nvngx.optidll";
+                        LOG_INFO("trying to load nvngx.dll path: {0}", wstring_to_string(cfgPath.wstring()));
+                        _dll = LoadLibraryW(path.c_str());
+
+                        if (_dll)
+                        {
+                            LOG_INFO("nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(cfgPath.wstring()), (ULONG64)_dll);
+                            break;
+                        }
+                    }
+                }
+
+                // From registry
+                auto regNGXCorePath = Util::NvngxPath();
+                if (regNGXCorePath.has_value())
+                {
+                    auto nvngxPath = regNGXCorePath.value() / L"_nvngx.optidll";
+                    LOG_INFO("trying to load _nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
+
+                    _dll = LoadLibraryW(nvngxPath.wstring().c_str());
                     if (_dll)
                     {
-                        LOG_INFO("_nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(cfgPath.wstring()), (ULONG64)_dll);
+                        LOG_INFO("_nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(nvngxPath.wstring()), (ULONG64)_dll);
+                        break;
+                    }
+
+                    nvngxPath = regNGXCorePath.value() / L"nvngx.optidll";
+                    LOG_INFO("trying to load nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
+
+                    _dll = LoadLibraryW(nvngxPath.wstring().c_str());
+                    if (_dll)
+                    {
+                        LOG_INFO("nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(nvngxPath.wstring()), (ULONG64)_dll);
                         break;
                     }
                 }
-                else
-                {
-                    auto path = cfgPath / L"_nvngx.dll";
 
-                    LOG_INFO("trying to load _nvngx.dll path: {0}", wstring_to_string(cfgPath.wstring()));
-                    _dll = LoadLibraryW(path.c_str());
+                // From System32
+                wchar_t sysFolder[MAX_PATH];
+                GetSystemDirectory(sysFolder, MAX_PATH);
+                std::filesystem::path sysPath(sysFolder);
 
-                    if (_dll)
-                    {
-                        LOG_INFO("_nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(cfgPath.wstring()), (ULONG64)_dll);
-                        break;
-                    }
-
-                    path = cfgPath / L"nvngx.dll";
-                    LOG_INFO("trying to load nvngx.dll path: {0}", wstring_to_string(cfgPath.wstring()));
-                    _dll = LoadLibraryW(path.c_str());
-
-                    if (_dll)
-                    {
-                        LOG_INFO("nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(cfgPath.wstring()), (ULONG64)_dll);
-                        break;
-                    }
-                }
-            }
-
-            // From registry
-            auto regNGXCorePath = Util::NvngxPath();
-            if (regNGXCorePath.has_value())
-            {
-                auto nvngxPath = regNGXCorePath.value() / L"_nvngx.dll";
+                auto nvngxPath = sysPath / L"_nvngx.optidll";
                 LOG_INFO("trying to load _nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
 
                 _dll = LoadLibraryW(nvngxPath.wstring().c_str());
@@ -391,40 +420,15 @@ public:
                     break;
                 }
 
-                nvngxPath = regNGXCorePath.value() / L"nvngx.dll";
+                nvngxPath = sysPath / L"nvngx.optidll";
                 LOG_INFO("trying to load nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
 
                 _dll = LoadLibraryW(nvngxPath.wstring().c_str());
                 if (_dll)
-                {
                     LOG_INFO("nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(nvngxPath.wstring()), (ULONG64)_dll);
-                    break;
-                }
-            }
 
-            // From System32
-            wchar_t sysFolder[MAX_PATH];
-            GetSystemDirectory(sysFolder, MAX_PATH);
-            std::filesystem::path sysPath(sysFolder);
-
-            auto nvngxPath = sysPath / L"_nvngx.dll";
-            LOG_INFO("trying to load _nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
-
-            _dll = LoadLibraryW(nvngxPath.wstring().c_str());
-            if (_dll)
-            {
-                LOG_INFO("_nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(nvngxPath.wstring()), (ULONG64)_dll);
-                break;
-            }
-
-            nvngxPath = sysPath / L"nvngx.dll";
-            LOG_INFO("trying to load nvngx.dll path: {0}", wstring_to_string(nvngxPath.wstring()));
-
-            _dll = LoadLibraryW(nvngxPath.wstring().c_str());
-            if (_dll)
-                LOG_INFO("nvngx.dll loaded from {0}, ptr: {1:X}", wstring_to_string(nvngxPath.wstring()), (ULONG64)_dll);
-
-        } while (false);
+            } while (false);
+        }
 
         if (_dll != nullptr)
         {
@@ -486,8 +490,6 @@ public:
 
             _UpdateFeature = (PFN_UpdateFeature)GetProcAddress(_dll, "NVSDK_NGX_UpdateFeature");
         }
-
-        State::Instance().upscalerDisableHook = false;
     }
 
     static void GetFeatureCommonInfo(NVSDK_NGX_FeatureCommonInfo* fcInfo)
