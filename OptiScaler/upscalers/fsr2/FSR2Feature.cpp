@@ -1,6 +1,8 @@
 #include <pch.h>
 #include "FSR2Feature.h"
 
+#include <State.h>
+
 double FSR2Feature::GetDeltaTime()
 {
 	double currentTime = MillisecondsNow();
@@ -44,9 +46,11 @@ FSR2Feature::~FSR2Feature()
 	if (!IsInited())
 		return;
 
-	auto errorCode = ffxFsr2ContextDestroy(&_context);
-
-	free(_contextDesc.callbacks.scratchBuffer);
+	if (!State::Instance().isShuttingDown)
+	{
+		auto errorCode = ffxFsr2ContextDestroy(&_context);
+		free(_contextDesc.callbacks.scratchBuffer);
+	}
 
 	SetInit(false);
 }

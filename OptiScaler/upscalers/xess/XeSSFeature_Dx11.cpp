@@ -500,6 +500,9 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 XeSSFeatureDx11::~XeSSFeatureDx11()
 {
+	if (State::Instance().isShuttingDown)
+		return;
+
 	if (RCAS != nullptr && RCAS.get() != nullptr)
 		RCAS.reset();
 

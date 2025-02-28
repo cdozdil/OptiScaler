@@ -45,9 +45,11 @@ FSR2Feature212::~FSR2Feature212()
 	if (!IsInited())
 		return;
 
-	auto errorCode = Fsr212::ffxFsr2ContextDestroy212(&_context);
-
-	free(_contextDesc.callbacks.scratchBuffer);
+	if (!State::Instance().isShuttingDown)
+	{
+		auto errorCode = Fsr212::ffxFsr2ContextDestroy212(&_context);
+		free(_contextDesc.callbacks.scratchBuffer);
+	}
 
 	SetInit(false);
 }
