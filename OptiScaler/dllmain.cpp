@@ -1229,18 +1229,29 @@ static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhy
     }
 }
 
-static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance)
+static VkResult hkvkCreateInstance(VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance)
 {
     if (pCreateInfo->pApplicationInfo->pApplicationName != nullptr)
         LOG_DEBUG("for {0}", pCreateInfo->pApplicationInfo->pApplicationName);
 
+    std::vector<const char*> newExtensionList;
+
     LOG_DEBUG("extensions ({0}):", pCreateInfo->enabledExtensionCount);
     for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
+    {
         LOG_DEBUG("  {0}", pCreateInfo->ppEnabledExtensionNames[i]);
+        newExtensionList.push_back(pCreateInfo->ppEnabledExtensionNames[i]);
+    }
+
+    LOG_INFO("Adding FFX Vulkan extensions");
+    newExtensionList.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
     LOG_DEBUG("layers ({0}):", pCreateInfo->enabledLayerCount);
     for (size_t i = 0; i < pCreateInfo->enabledLayerCount; i++)
         LOG_DEBUG("  {0}", pCreateInfo->ppEnabledLayerNames[i]);
+
+    pCreateInfo->enabledExtensionCount = static_cast<uint32_t>(newExtensionList.size());
+    pCreateInfo->ppEnabledExtensionNames = newExtensionList.data();
 
     // Skip spoofing for Intel Arc
     State::Instance().skipSpoofing = true;
@@ -1264,29 +1275,15 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
 {
     LOG_FUNC();
 
-    if (!Config::Instance()->VulkanExtensionSpoofing.value_or_default())
-    {
-        LOG_DEBUG("extension spoofing is disabled");
-
-        State::Instance().skipSpoofing = true;
-        return o_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
-        State::Instance().skipSpoofing = false;
-    }
-
-    LOG_DEBUG("layers ({0}):", pCreateInfo->enabledLayerCount);
-    for (size_t i = 0; i < pCreateInfo->enabledLayerCount; i++)
-        LOG_DEBUG("  {0}", pCreateInfo->ppEnabledLayerNames[i]);
-
     std::vector<const char*> newExtensionList;
 
-    auto bVK_KHR_get_memory_requirements2 = false;
-
-    LOG_DEBUG("checking extensions and removing VK_NVX_BINARY_IMPORT & VK_NVX_IMAGE_VIEW_HANDLE from list");
+    LOG_DEBUG("Checking extensions and removing VK_NVX_BINARY_IMPORT & VK_NVX_IMAGE_VIEW_HANDLE from list");
     for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
     {
-        if (std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_BINARY_IMPORT_EXTENSION_NAME) == 0 ||
+        if (Config::Instance()->VulkanExtensionSpoofing.value_or_default() && !State::Instance().isRunningOnNvidia &&
+            (std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_BINARY_IMPORT_EXTENSION_NAME) == 0 ||
             std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME) == 0 ||
-            std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME) == 0)
+            std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME) == 0))
         {
             LOG_DEBUG("removing {0}", pCreateInfo->ppEnabledExtensionNames[i]);
         }
@@ -1297,8 +1294,21 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
         }
     }
 
-    if (FfxApiProxy::VULKAN_CreateContext() != nullptr)
-        newExtensionList.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
+    if (State::Instance().isRunningOnNvidia)
+    {
+        LOG_INFO("Adding NVNGX Vulkan extensions");
+        newExtensionList.push_back(VK_NVX_BINARY_IMPORT_EXTENSION_NAME);
+        newExtensionList.push_back(VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME);
+        newExtensionList.push_back(VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME);
+    }
+
+    LOG_INFO("Adding FFX Vulkan extensions");
+    newExtensionList.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
+
+    LOG_INFO("Adding XeSS Vulkan extensions");
+    newExtensionList.push_back(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME);
+    newExtensionList.push_back(VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME);
+    newExtensionList.push_back(VK_EXT_MUTABLE_DESCRIPTOR_TYPE_EXTENSION_NAME);
 
     pCreateInfo->enabledExtensionCount = static_cast<uint32_t>(newExtensionList.size());
     pCreateInfo->ppEnabledExtensionNames = newExtensionList.data();
