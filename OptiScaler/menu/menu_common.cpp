@@ -1455,6 +1455,8 @@ bool MenuCommon::RenderMenu()
 
                                     if (halfSync)
                                         Config::Instance()->FGHudfixFullSync = false;
+
+                                    State::Instance().FGchanged = true;
                                 }
                                 ShowHelpMarker("Release present sync mutex after presenting 1 frame");
 
@@ -1465,6 +1467,8 @@ bool MenuCommon::RenderMenu()
 
                                     if (fullSync)
                                         Config::Instance()->FGHudfixHalfSync = false;
+
+                                    State::Instance().FGchanged = true;
 
                                 }
                                 ShowHelpMarker("Release present sync mutex after presenting 2 frames");
