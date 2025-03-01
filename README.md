@@ -17,7 +17,8 @@ While previously only DLSS2+ inputs were supported, newer versions also added su
 > Also please check the  [***Optiscaler known issues***](#known-issues) at the end regarding **RTSS** compatibility
 
 > [!NOTE]
-> _[*] Regarding **XeSS**, Unreal Engine plugin does not provide depth, and as such breaks other upscalers if you try to replace while using XeSS inputs, but you can still apply RCAS sharpening to native XeSS as it tends to be blurry (in short, if it's a UE game, in-game XeSS only works with XeSS in Opti overlay). Regarding **FSR inputs**, FSR 3.1 is the first version with a fully standardised and forward-looking API and as such should be fully supported. Since FSR2 and FSR3 support custom interfaces, game support will depend on the developers' implementation._ 
+> _[*] Regarding **XeSS**, since Unreal Engine plugin does not provide depth, replacing in-game XeSS breaks other upscalers, but you can still apply RCAS sharpening to XeSS to reduce blurry visuals (in short, if it's a UE game, in-game XeSS only works with XeSS in Opti overlay).  
+Regarding **FSR inputs**, FSR 3.1 is the first version with a fully standardised, forward-looking API and should be fully supported. Since FSR2 and FSR3 support custom interfaces, game support will depend on the developers' implementation._ 
 
 
 ## How it works?
@@ -67,15 +68,21 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 
 ## Recommended installation (with OptiFG and all other features, `non-nvngx`)
 
-### Automated
+> [!IMPORTANT]
+> ***Please use the [Nightly builds](https://github.com/cdozdil/OptiScaler/releases/tag/nightly) as the latest Stable is vastly outdated and the Readme does not apply to it anymore due to many missing features.***
+
+### [Automated]
 **Easiest way** is to extract all of the Optiscaler files by the main game exe and try the `OptiScaler Setup.bat` script which should help you automate the renaming process.
 
-### Manual
+### [Manual]
 #### Nvidia
 
 **`Step-by-step installation:`**  
 **1.** Extract all Optiscaler files from the zip by the main game exe (for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Binaries\Win64\`).  
 **2.** Rename OptiScaler's `nvngx.dll` to one of the [supported filenames](#optiscaler-supports-these-filenames) (preferred `dxgi.dll`, but depends on the game) [1].  
+
+> [!NOTE]
+> _For FSR2/3-only games that don't have DLSS (e.g. The Callisto Protocol or The Outer Worlds: Spacer's Choice Edition), you have to provide the `nvngx_dlss.dll` in order to use DLSS in Optiscaler - download link e.g. [TechPowerUp](https://www.techpowerup.com/download/nvidia-dlss-dll/) or [Streamline SDK repo](https://github.com/NVIDIAGameWorks/Streamline/tree/main/bin/x64)_
 
 #### AMD/Intel
 
@@ -83,15 +90,15 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 **1.** Extract all Optiscaler files from the zip by the main game exe (for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Binaries\Win64\`).  
 **2.** Rename OptiScaler's `nvngx.dll` to one of the [supported filenames](#optiscaler-supports-these-filenames) (preferred `dxgi.dll`, but depends on the game) [1].  
 **3a.** **Either** locate the `nvngx_dlss.dll` file (for UE games, generally in one of the subfolders like Plugins), create a copy, rename the copy to `nvngx.dll` and paste it beside Optiscaler    
-**3b.** **OR** download `nvngx_dlss.dll` from e.g. [TechPowerUp](https://www.techpowerup.com/download/nvidia-dlss-dll/) if you don't want to search, rename it to `nvngx.dll` and paste it beside Optiscaler   
+**3b.** **OR** download `nvngx_dlss.dll` from e.g. [TechPowerUp](https://www.techpowerup.com/download/nvidia-dlss-dll/) or [Streamline SDK repo](https://github.com/NVIDIAGameWorks/Streamline/tree/main/bin/x64) if you don't want to search, rename it to `nvngx.dll` and paste it beside Optiscaler   
 
-#### Nukem's dlssg-to-fsr3
+#### [Nukem's dlssg-to-fsr3]
 
 **1.** Download the mod - [**dlssg-to-fsr3 NexusMods**](https://www.nexusmods.com/site/mods/738) or [**dlssg-to-fsr3 Github**](https://github.com/Nukem9/dlssg-to-fsr3)     
 **2.** Put the `dlssg_to_fsr3_amd_is_better.dll` in the same folder as Optiscaler (by the main game exe) and set `FGType=nukems` in `Optiscaler.ini`  
 **3.** For **AMD/Intel GPUs**, **Fakenvapi** is also **required** when using **Nukem mod** in order to successfully expose DLSS FG in-game. 
 
-#### Fakenvapi
+#### [Fakenvapi]
 
 **0.** **Do not use with Nvidia**, only required for AMD/Intel  
 **1.** Download the mod - [**Fakenvapi**](https://github.com/FakeMichau/fakenvapi)  
