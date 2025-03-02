@@ -157,8 +157,11 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
 
     // render menu if needed
     if(!MenuOverlayVk::QueuePresent(queue, pPresentInfo))
+    {
+        LOG_ERROR("QueuePresent: false!");
         return VK_ERROR_OUT_OF_DATE_KHR;
-    
+    }
+
     // original call
     State::Instance().vulkanCreatingSC = true;
     auto result = o_QueuePresentKHR(queue, pPresentInfo);
