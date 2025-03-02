@@ -113,26 +113,22 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(ProjectDir);$(ProjectDir)include\;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(SolutionDir)external\freetype;$(SolutionDir)external\streamline;$(SolutionDir)external\streamline1;$(SolutionDir)external\nvapi;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)library\fsr2;$(ProjectDir)library\fsr2_212;$(ProjectDir)library\fsr31;$(ProjectDir)library\vulkan;$(ProjectDir)library\d3dx;$(ProjectDir)library\detours;$(SolutionDir)external\xess\lib;$(SolutionDir)external\freetype;$(LibraryPath)</LibraryPath>
-    <TargetName>dxgi</TargetName>
-    <OutDir>D:\Folders\Games\Banishers Ghosts of New Eden\NWD\Binaries\Win64\</OutDir>
     <IntDir>.\x64\Debug</IntDir>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(ProjectDir);$(ProjectDir)include\;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(SolutionDir)external\freetype;$(SolutionDir)external\streamline;$(SolutionDir)external\streamline1;$(SolutionDir)external\nvapi;$(IncludePath)</IncludePath>
-    <TargetName>nvngx</TargetName>
     <LibraryPath>$(ProjectDir)library\fsr2;$(ProjectDir)library\fsr2_212;$(ProjectDir)library\fsr31;$(ProjectDir)library\vulkan;$(ProjectDir)library\d3dx;$(ProjectDir)library\detours;$(SolutionDir)external\xess\lib;$(SolutionDir)external\freetype;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDebug|x64'">
     <IncludePath>$(ProjectDir);$(ProjectDir)include\;$(SolutionDir)external\vulkan\include;$(SolutionDir)external\nvngx_dlss_sdk;$(SolutionDir)external\xess\inc\xess;$(SolutionDir)external\FidelityFX-SDK\ffx-api\include\ffx_api;$(SolutionDir)external\simpleini;$(SolutionDir)external\unordered_dense\include;$(SolutionDir)external\spdlog\include;$(SolutionDir)external\freetype;$(SolutionDir)external\streamline;$(SolutionDir)external\streamline1;$(SolutionDir)external\nvapi;$(IncludePath)</IncludePath>
-    <TargetName>nvngx</TargetName>
     <LibraryPath>$(ProjectDir)library\fsr2;$(ProjectDir)library\fsr2_212;$(ProjectDir)library\fsr31;$(ProjectDir)library\vulkan;$(ProjectDir)library\d3dx;$(ProjectDir)library\detours;$(SolutionDir)external\xess\lib;$(SolutionDir)external\freetype;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;CYBERXESS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -151,7 +147,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;CYBERXESS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -172,7 +168,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;CYBERXESS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -244,10 +240,12 @@
     </Link>
     <PostBuildEvent>
       <Command>md $(SolutionDir)x64\Release\a\
-move $(SolutionDir)x64\Release\nvngx.dll $(SolutionDir)x64\Release\a\
+move $(SolutionDir)x64\Release\$(TargetFileName) $(SolutionDir)x64\Release\a\
+del /Q $(SolutionDir)x64\Release\a\DlssOverrides\*.*
 md $(SolutionDir)x64\Release\a\DlssOverrides
 copy $(SolutionDir)external\nvngx_dlss_sdk\regs\*.* $(SolutionDir)x64\Release\a\DlssOverrides /Y
 md $(SolutionDir)x64\Release\a\Licenses
+del /Q $(SolutionDir)x64\Release\a\Licenses\*.*
 copy $(SolutionDir)external\xess\licenses\LICENSE.pdf $(SolutionDir)x64\Release\a\Licenses\XeSS_LICENSE.pdf /Y
 copy $(SolutionDir)external\xess\bin\libxess.dll $(SolutionDir)x64\Release\a\ /Y
 copy $(SolutionDir)external\FidelityFX-SDK\docs\license.md $(SolutionDir)x64\Release\a\Licenses\FidelityFX_LICENSE.md /Y

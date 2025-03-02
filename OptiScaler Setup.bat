@@ -16,14 +16,14 @@ del "!! EXTRACT ALL FILES TO GAME FOLDER !!" 2>nul
 
 setlocal enabledelayedexpansion
 
-if not exist nvngx.dll (
-    echo OptiScaler "nvngx.dll" file is not found!
+if not exist OptiScaler.dll (
+    echo OptiScaler "OptiScaler.dll" file is not found!
     goto end
 )
 
 REM Set paths based on current directory
 set "gamePath=%~dp0"
-set "optiScalerFile=%gamePath%\nvngx.dll"
+set "optiScalerFile=%gamePath%\OptiScaler.dll"
 set setupSuccess=false
 
 REM Check if the Engine folder exists
