@@ -79,7 +79,7 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 
 **`Step-by-step installation:`**  
 **1.** Extract all Optiscaler files from the zip by the main game exe (for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Binaries\Win64\`).  
-**2.** Rename OptiScaler's `nvngx.dll` to one of the [supported filenames](#optiscaler-supports-these-filenames) (preferred `dxgi.dll`, but depends on the game) [1].  
+**2.** Rename OptiScaler's `OptiScaler.dll` (for old versions it's `nvngx.dll`) to one of the [supported filenames](#optiscaler-supports-these-filenames) (preferred `dxgi.dll`, but depends on the game) [1].  
 
 > [!NOTE]
 > _For FSR2/3-only games that don't have DLSS (e.g. The Callisto Protocol or The Outer Worlds: Spacer's Choice Edition), you have to provide the `nvngx_dlss.dll` in order to use DLSS in Optiscaler - download link e.g. [TechPowerUp](https://www.techpowerup.com/download/nvidia-dlss-dll/) or [Streamline SDK repo](https://github.com/NVIDIAGameWorks/Streamline/tree/main/bin/x64)_
@@ -88,7 +88,7 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 
 **`Step-by-step installation:`**  
 **1.** Extract all Optiscaler files from the zip by the main game exe (for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Binaries\Win64\`).  
-**2.** Rename OptiScaler's `nvngx.dll` to one of the [supported filenames](#optiscaler-supports-these-filenames) (preferred `dxgi.dll`, but depends on the game) [1].  
+**2.** Rename OptiScaler's `OptiScaler.dll` (for old versions it's `nvngx.dll`) to one of the [supported filenames](#optiscaler-supports-these-filenames) (preferred `dxgi.dll`, but depends on the game) [1].  
 **3a.** **Either** locate the `nvngx_dlss.dll` file (for UE games, generally in one of the subfolders like Plugins), create a copy, rename the copy to `nvngx.dll` and paste it beside Optiscaler    
 **3b.** **OR** download `nvngx_dlss.dll` from e.g. [TechPowerUp](https://www.techpowerup.com/download/nvidia-dlss-dll/) or [Streamline SDK repo](https://github.com/NVIDIAGameWorks/Streamline/tree/main/bin/x64) if you don't want to search, rename it to `nvngx.dll` and paste it beside Optiscaler   
 
@@ -144,7 +144,8 @@ _To overcome DLSS 3.7's signature check requirements, I implemented a method dev
 `Step-by-step installation:`
 1. Download the latest relase from [releases](https://github.com/cdozdil/OptiScaler/releases).
 2. Extract the contents of the archive next to the game executable file in your games folder. (e.g. for Unreal Engine games it's `<path-to-game>\Binaries\Win64\`) [1]
-3. Run `EnableSignatureOverride.reg` from `DlssOverrides` folder and confirm merge. [2][3]
+3. Rename `OptiScaler.dll` to `nvngx.dll` (For older builds file name is already `nvngx.dll`, so skip this step)
+4. Run `EnableSignatureOverride.reg` from `DlssOverrides` folder and confirm merge. [2][3]
 
 *[1] This package contains latest version of `libxess.dll` and if the game folder contains any older version of the same library, it will be overwritten. Consider backing up or renaming existing files.*
 
@@ -160,13 +161,13 @@ _To overcome DLSS 3.7's signature check requirements, I implemented a method dev
 
 ## Update OptiScaler version when using DLSS Enabler  
 1. Delete/rename `dlss-enabler-upscaler.dll` in game folder
-2. Extract `nvngx.dll` file from OptiScaler 7zip file to a temp folder
-3. Rename `nvngx.dll` to `dlss-enabler-upscaler.dll`
+2. Extract `OptiScaler.dll` (for old versions it's `nvngx.dll`) file from OptiScaler 7zip file to a temp folder
+3. Rename `OptiScaler.dll` (for old versions it's `nvngx.dll`) to `dlss-enabler-upscaler.dll`
 4. Copy `dlss-enabler-upscaler.dll` from temp folder to the game folder
 
 ## Uninstallation
 * Run `DisableSignatureOverride.reg` file 
-* Delete `EnableSignatureOverride.reg`, `DisableSignatureOverride.reg`, `nvngx.dll`, `OptiScaler.ini` files (if you used Fakenvapi and/or Nukem mod, then also delete `fakenvapi.ini`, `nvapi64.dll` and `dlssg_to_fsr3` files)
+* Delete `EnableSignatureOverride.reg`, `DisableSignatureOverride.reg`, `OptiScaler.dll` (for old versions it's `nvngx.dll`), `OptiScaler.ini` files (if you used Fakenvapi and/or Nukem mod, then also delete `fakenvapi.ini`, `nvapi64.dll` and `dlssg_to_fsr3` files)
 * If there was a `libxess.dll` file and you have backed it up, delete the new file and restore the backed up file. If you overwrote/replaced the old file, **DO NOT** delete `libxess.dll` file. If there was no `libxess.dll` before, it's safe to delete. Same goes for FSR files (`amd_fidelityfx`).
 
 ## Features
