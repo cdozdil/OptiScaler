@@ -356,9 +356,6 @@
     <ClInclude Include="menu\menu_overlay_vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resource_build_date.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="OwnedMutex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -378,6 +375,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="misc\FrameLimit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inputs\FfxApi_Vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -618,6 +618,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="nvapi\NvApiHooks.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="inputs\FfxApi_Vk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

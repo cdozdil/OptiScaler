@@ -708,6 +708,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     }
 
     auto handleId = InFeatureHandle->Id;
+    if (VkContexts[handleId] == nullptr) // prevent source api name flicker when dlssg is active
+        State::Instance().setInputApiName = State::Instance().currentInputApiName;
+
+    if (State::Instance().setInputApiName.length() == 0)
+        State::Instance().currentInputApiName = "DLSS";
+    else
+        State::Instance().currentInputApiName = State::Instance().setInputApiName;
+
+    State::Instance().setInputApiName.clear();
+
     if (handleId < 1000000)
     {
         if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::VULKAN_EvaluateFeature() != nullptr)

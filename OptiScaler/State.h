@@ -1,7 +1,10 @@
 #pragma once
 #include "pch.h"
-#include <deque>
+
 #include "upscalers/IFeature.h"
+
+#include <deque>
+#include <vulkan/vulkan.h>
 
 typedef enum API
 {
@@ -111,7 +114,6 @@ public:
 	bool isRunningOnLinux = false;
 	bool isRunningOnDXVK = false;
 	bool isRunningOnNvidia = false;
-
 	bool isDxgiMode = false;
 	bool isWorkingAsNvngx = false;
 
@@ -119,6 +121,7 @@ public:
 	bool vulkanCreatingSC = false;
 	bool vulkanSkipHooks = false;
 	bool renderMenu = true;
+	VkInstance VulkanInstance = nullptr;
 
 	// Framegraph
 	std::deque<float> upscaleTimes;

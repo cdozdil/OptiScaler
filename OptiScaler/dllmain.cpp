@@ -1268,8 +1268,10 @@ static VkResult hkvkCreateInstance(VkInstanceCreateInfo* pCreateInfo, const VkAl
 
     LOG_DEBUG("o_vkCreateInstance result: {0:X}", (INT)result);
 
-    auto head = (VkBaseInStructure*)pCreateInfo;
+    if (result == VK_SUCCESS)
+        State::Instance().VulkanInstance = *pInstance;
 
+    auto head = (VkBaseInStructure*)pCreateInfo;
     while (head->pNext != nullptr)
     {
         head = (VkBaseInStructure*)head->pNext;

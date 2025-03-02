@@ -292,6 +292,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="inputs\FfxApi_Vk.h" />
     <ClInclude Include="menu\font\Hack_Compressed.h" />
     <ClInclude Include="menu\menu_base.h" />
     <ClInclude Include="misc\FrameLimit.h" />
@@ -410,6 +411,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="proxies\XeSS_Proxy.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="inputs\FfxApi_Vk.cpp" />
     <ClCompile Include="menu\menu_base.cpp" />
     <ClCompile Include="misc\FrameLimit.cpp" />
     <ClCompile Include="nvapi\fakenvapi.cpp" />
