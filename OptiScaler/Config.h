@@ -155,6 +155,7 @@ public:
 	CustomOptional<bool> DLSSEnabled{ true };
 	CustomOptional<std::wstring, NoDefault> NvngxPath;
 	CustomOptional<std::wstring, NoDefault> NVNGX_DLSS_Library;
+	CustomOptional<std::wstring, NoDefault> DLSSFeaturePath;
 	CustomOptional<bool> RenderPresetOverride{ false };
 	CustomOptional<uint32_t> RenderPresetForAll{ 0 };
 	CustomOptional<uint32_t> RenderPresetDLAA{ 0 };
