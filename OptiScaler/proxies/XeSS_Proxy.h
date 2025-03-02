@@ -121,7 +121,6 @@ private:
         return _dll != nullptr;
     }
 
-public:
     static bool HookXeSS(HMODULE xessModule)
     {
         LOG_INFO("Trying to hook XeSS");
@@ -217,6 +216,7 @@ DetourAttach(&(PVOID&)_##name, name)
         return true;
     }
 
+public:
     static bool InitXeSS(HMODULE xessModule = nullptr)
     {
         // if dll already loaded

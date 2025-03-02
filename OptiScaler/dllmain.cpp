@@ -364,7 +364,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
     {
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
         if (module != nullptr)
-            XeSSProxy::HookXeSS(module);
+            XeSSProxy::InitXeSS(module);
 
         return module;
     }
@@ -608,7 +608,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
     {
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
         if (module != nullptr)
-            XeSSProxy::HookXeSS(module);
+            XeSSProxy::InitXeSS(module);
 
         return module;
     }
