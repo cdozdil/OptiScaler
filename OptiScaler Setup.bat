@@ -48,10 +48,11 @@ echo Choose a filename for OptiScaler (default is dxgi.dll):
 echo  [1] dxgi.dll
 echo  [2] winmm.dll
 echo  [3] version.dll
-echo  [4] wininet.dll
-echo  [5] winhttp.dll
-echo  [6] OptiScaler.asi
-set /p filenameChoice="Enter 1-6 (or press Enter for default): "
+echo  [4] dbghelp.dll
+echo  [5] wininet.dll
+echo  [6] winhttp.dll
+echo  [7] OptiScaler.asi
+set /p filenameChoice="Enter 1-7 (or press Enter for default): "
 
 if "%filenameChoice%"=="" (
     set selectedFilename="dxgi.dll"
@@ -62,10 +63,12 @@ if "%filenameChoice%"=="" (
 ) else if "%filenameChoice%"=="3" (
     set selectedFilename="version.dll"
 ) else if "%filenameChoice%"=="4" (
-    set selectedFilename="wininet.dll"
+    set selectedFilename="dbghelp.dll"
 ) else if "%filenameChoice%"=="5" (
-    set selectedFilename="winhttp.dll"
+    set selectedFilename="wininet.dll"
 ) else if "%filenameChoice%"=="6" (
+    set selectedFilename="winhttp.dll"
+) else if "%filenameChoice%"=="7" (
     set selectedFilename="OptiScaler.asi"
 ) else (
     echo Invalid choice. Please select a valid option.
