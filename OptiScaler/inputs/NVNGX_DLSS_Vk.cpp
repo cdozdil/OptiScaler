@@ -307,42 +307,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequi
         }
     }
 
-    if ((FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling || FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_FrameGeneration) && OutExtensionCount != nullptr)
-    {
-        if (OutExtensionProperties == nullptr)
-        {
-            if (Config::Instance()->VulkanExtensionSpoofing.value_or_default())
-            {
-                LOG_INFO("returning 3 extensions are needed");
-                *OutExtensionCount = 3;
-            }
-            else
-            {
-                LOG_INFO("returning no extensions are needed");
-                *OutExtensionCount = 0;
-            }
-        }
-        else if (*OutExtensionCount == 3 && Config::Instance()->VulkanExtensionSpoofing.value_or_default())
-        {
-            LOG_INFO("returning extension infos");
-
-            std::memset((*OutExtensionProperties)[0].extensionName, 0, sizeof(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME));
-            std::strcpy((*OutExtensionProperties)[0].extensionName, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-            (*OutExtensionProperties)[0].specVersion = VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_SPEC_VERSION;
-
-            std::memset((*OutExtensionProperties)[1].extensionName, 0, sizeof(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME));
-            std::strcpy((*OutExtensionProperties)[1].extensionName, VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
-            (*OutExtensionProperties)[1].specVersion = VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_SPEC_VERSION;
-
-            std::memset((*OutExtensionProperties)[2].extensionName, 0, sizeof(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME));
-            std::strcpy((*OutExtensionProperties)[2].extensionName, VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
-            (*OutExtensionProperties)[2].specVersion = VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_SPEC_VERSION;
-        }
-
-        return NVSDK_NGX_Result_Success;
-    }
-
-    return NVSDK_NGX_Result_Fail;
+    LOG_INFO("returning no extensions are needed");
+    *OutExtensionCount = 0;
+    return NVSDK_NGX_Result_Success;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements(VkInstance Instance, VkPhysicalDevice PhysicalDevice, const NVSDK_NGX_FeatureDiscoveryInfo* FeatureDiscoveryInfo, uint32_t* OutExtensionCount, VkExtensionProperties** OutExtensionProperties)
@@ -364,46 +331,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequire
         }
     }
 
-    if ((FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_SuperSampling || FeatureDiscoveryInfo->FeatureID == NVSDK_NGX_Feature_FrameGeneration) && OutExtensionCount != nullptr)
-    {
-        if (OutExtensionProperties == nullptr)
-        {
-            if (Config::Instance()->VulkanExtensionSpoofing.value_or_default())
-            {
-                LOG_INFO("returning 4 extensions are needed!");
-                *OutExtensionCount = 4;
-            }
-            else
-            {
-                LOG_INFO("returning no extensions are needed!");
-                *OutExtensionCount = 0;
-            }
-        }
-        else if (*OutExtensionCount == 4 && Config::Instance()->VulkanExtensionSpoofing.value_or_default())
-        {
-            LOG_INFO("returning extension infos");
-
-            std::memset((*OutExtensionProperties)[0].extensionName, 0, sizeof(VK_NVX_BINARY_IMPORT_EXTENSION_NAME));
-            std::strcpy((*OutExtensionProperties)[0].extensionName, VK_NVX_BINARY_IMPORT_EXTENSION_NAME);
-            (*OutExtensionProperties)[0].specVersion = VK_NVX_BINARY_IMPORT_SPEC_VERSION;
-
-            std::memset((*OutExtensionProperties)[1].extensionName, 0, sizeof(VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME));
-            std::strcpy((*OutExtensionProperties)[1].extensionName, VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME);
-            (*OutExtensionProperties)[1].specVersion = VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION;
-
-            std::memset((*OutExtensionProperties)[2].extensionName, 0, sizeof(VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME));
-            std::strcpy((*OutExtensionProperties)[2].extensionName, VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
-            (*OutExtensionProperties)[2].specVersion = VK_EXT_BUFFER_DEVICE_ADDRESS_SPEC_VERSION;
-
-            std::memset((*OutExtensionProperties)[3].extensionName, 0, sizeof(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME));
-            std::strcpy((*OutExtensionProperties)[3].extensionName, VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
-            (*OutExtensionProperties)[3].specVersion = VK_KHR_PUSH_DESCRIPTOR_SPEC_VERSION;
-        }
-
-        return NVSDK_NGX_Result_Success;
-    }
-
-    return NVSDK_NGX_Result_Fail;
+    LOG_INFO("returning no extensions are needed!");
+    *OutExtensionCount = 0;
+    return NVSDK_NGX_Result_Success;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_AllocateParameters(NVSDK_NGX_Parameter** OutParameters)

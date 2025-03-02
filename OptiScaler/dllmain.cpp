@@ -1243,6 +1243,14 @@ static VkResult hkvkCreateInstance(VkInstanceCreateInfo* pCreateInfo, const VkAl
         newExtensionList.push_back(pCreateInfo->ppEnabledExtensionNames[i]);
     }
 
+    if (State::Instance().isRunningOnNvidia)
+    {
+        LOG_INFO("Adding NVNGX Vulkan extensions");
+        newExtensionList.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+        newExtensionList.push_back(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
+        newExtensionList.push_back(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
+    }
+
     LOG_INFO("Adding FFX Vulkan extensions");
     newExtensionList.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
@@ -1300,6 +1308,8 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreate
         newExtensionList.push_back(VK_NVX_BINARY_IMPORT_EXTENSION_NAME);
         newExtensionList.push_back(VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME);
         newExtensionList.push_back(VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME);
+        newExtensionList.push_back(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
+        newExtensionList.push_back(VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
     }
 
     LOG_INFO("Adding FFX Vulkan extensions");
