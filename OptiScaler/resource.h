@@ -2,7 +2,12 @@
 // Microsoft Visual C++ generated include file.
 // Used by OptiScaler.rc
 //
+#ifdef _DEBUG
+#define VER_BUILD_DATE "Debug Build"
+#else
 #include "resource_build_date.h"
+#endif // !_DEBUG
+
 
 #define VS_VERSION_INFO                 1
 
