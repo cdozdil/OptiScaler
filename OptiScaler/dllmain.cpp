@@ -2318,7 +2318,18 @@ static void CheckQuirks() {
     else if (exePathFilename == "FMF2-Win64-Shipping.exe")
     {
         State::Instance().gameQuirk = FMF2;
-        LOG_INFO("Enabling a quirk for FMF2 (Disable FSR3 Hooks)");
+
+        if (!Config::Instance()->Fsr3Inputs.has_value())
+        {
+            Config::Instance()->Fsr3Inputs.set_volatile_value(false);
+            LOG_INFO("Enabling a quirk for FMF2 (Disable FSR3 Hooks)");
+        }
+
+        if (!Config::Instance()->Fsr3Pattern.has_value())
+        {
+            Config::Instance()->Fsr3Pattern.set_volatile_value(false);
+            LOG_INFO("Enabling a quirk for FMF2 (Disable FSR3 Pattern Hooks)");
+        }
     }
     else if (exePathFilename == "RDR.exe" || exePathFilename == "PlayRDR.exe")
     {
@@ -2330,8 +2341,12 @@ static void CheckQuirks() {
     else if (exePathFilename == "Banishers-Win64-Shipping.exe")
     {
         State::Instance().gameQuirk = Banishers;
-        Config::Instance()->Fsr2Pattern.set_volatile_value(false);
-        LOG_INFO("Enabling a quirk for Banishers (Disable FSR2 Inputs)");
+
+        if (!Config::Instance()->Fsr2Pattern.has_value())
+        {
+            Config::Instance()->Fsr2Pattern.set_volatile_value(false);
+            LOG_INFO("Enabling a quirk for Banishers (Disable FSR2 Inputs)");
+        }
     }
 }
 
