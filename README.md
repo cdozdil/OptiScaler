@@ -26,7 +26,7 @@ OptiScaler implements the necessary API methods of DLSS2+ & NVAPI, XeSS and FSR2
 > [!NOTE]
 > Pressing **`Insert`** should open the Optiscaler **Overlay** in-game and expose all of the options (shortcut key can be changed in the config file).
 
-![image](https://github.com/user-attachments/assets/16425339-b6a8-4a02-bf60-691122bc544e)
+![image](https://github.com/user-attachments/assets/e138c979-c5d9-499f-a89b-165bb7cfcb32)
 
 ## Official Discord Server: [DLSS2FSR](https://discord.gg/2JDHx6kcXB)
 
