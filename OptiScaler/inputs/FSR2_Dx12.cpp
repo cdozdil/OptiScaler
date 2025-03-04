@@ -374,7 +374,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
 
     // if still no device use latest created one
     // Might fixed TLOU but FMF2 still crashes
-    if (_d3d12Device == nullptr && State::Instance().gameQuirk != FMF2 && State::Instance().d3d12Devices.size() > 0)
+    if (_d3d12Device == nullptr && State::Instance().d3d12Devices.size() > 0)
         _d3d12Device = State::Instance().d3d12Devices[State::Instance().d3d12Devices.size() - 1];
 
     if (_d3d12Device == nullptr)
@@ -1081,12 +1081,12 @@ void HookFSR2ExeInputs()
             //}
 
             // Banishers
-            // Custom implementation
-            //if (o_ffxFsr2ContextDispatch_Pattern_Dx12 == nullptr)
-            //{
-            //    std::string_view dispatchPatternBanish("40 55 56 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? F7 01 ? ? ? ? 48 8B F2 48 8B F9");
-            //    o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPatternBanish, 0);
-            //}
+            // RHI implementation, needs r.FidelityFX.FSR2.UseNativeDX12=1
+            if (o_ffxFsr2ContextDispatch_Pattern_Dx12 == nullptr)
+            {
+                std::string_view dispatchPatternBanish("40 55 56 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? F7 01 ? ? ? ? 48 8B F2 48 8B F9");
+                o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPatternBanish, 0);
+            }
 
             // AW2 
             // Custom implementation
