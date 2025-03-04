@@ -65,15 +65,15 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         LOG_DEBUG("xessParams.initFlags (DepthInverted) {0:b}", xessParams.initFlags);
     }
 
-    if (Config::Instance()->AutoExposure.value_or(AutoExposure || State::Instance().NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL))
+    if (Config::Instance()->AutoExposure.value_or(AutoExposure || State::Instance().NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL || State::Instance().AutoExposure.value_or(false)))
     {
-        Config::Instance()->AutoExposure.set_volatile_value(true);
+        State::Instance().AutoExposure = true;
         xessParams.initFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
         LOG_DEBUG("xessParams.initFlags (AutoExposure) {0:b}", xessParams.initFlags);
     }
     else
     {
-        Config::Instance()->AutoExposure.set_volatile_value(false);
+        State::Instance().AutoExposure = false;
         xessParams.initFlags |= XESS_INIT_FLAG_EXPOSURE_SCALE_TEXTURE;
         LOG_DEBUG("xessParams.initFlags (!AutoExposure) {0:b}", xessParams.initFlags);
     }
@@ -97,7 +97,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         LOG_DEBUG("xessParams.initFlags (JitterCancellation) {0:b}", xessParams.initFlags);
     }
 
-    if (Config::Instance()->DisplayResolution.value_or(!LowRes))
+    if (Config::Instance()->DisplayResolution.value_or(!LowRes || State::Instance().DisplaySizeMV.value_or(false)))
     {
         xessParams.initFlags |= XESS_INIT_FLAG_HIGH_RES_MV;
         LOG_DEBUG("xessParams.initFlags (!LowResMV) {0:b}", xessParams.initFlags);
@@ -169,7 +169,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
             break;
     }
 
-    if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false))
+    if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false))
     {
         float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or_default();
 
@@ -199,7 +199,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         _targetHeight = RenderHeight();
 
         // enable output scaling to restore image
-        if (!Config::Instance()->DisplayResolution.value_or(false))
+        if (!Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false))
         {
             Config::Instance()->OutputScalingMultiplier.set_volatile_value(1.0f);
             Config::Instance()->OutputScalingEnabled.set_volatile_value(true);

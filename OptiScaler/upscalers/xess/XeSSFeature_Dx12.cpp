@@ -78,7 +78,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 	float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or_default();
 
-	bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false);
+	bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false);
 
 	LOG_DEBUG("Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
@@ -127,7 +127,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 			ResourceBarrier(InCommandList, params.pVelocityTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		}
 
-		if (!Config::Instance()->DisplayResolution.has_value())
+		if (!State::Instance().DisplaySizeMV.has_value())
 		{
 			auto desc = params.pVelocityTexture->GetDesc();
 			bool lowResMV = desc.Width < TargetWidth();
@@ -136,12 +136,12 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 			if (displaySizeEnabled && lowResMV)
 			{
 				LOG_WARN("MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
-				Config::Instance()->DisplayResolution.set_volatile_value(false);
+				State::Instance().DisplaySizeMV = false;
 				State::Instance().changeBackend = true;
 				return true;
 			}
 
-			Config::Instance()->DisplayResolution.set_volatile_value(displaySizeEnabled);
+			State::Instance().DisplaySizeMV = displaySizeEnabled;
 		}
 	}
 	else
@@ -205,7 +205,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 	}
 	else
 	{
-		if (!Config::Instance()->DisplayResolution.value_or(false))
+		if (!Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false))
 		{
 			LOG_ERROR("Depth not exist!!");
 			return false;
@@ -214,7 +214,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		params.pDepthTexture = nullptr;
 	}
 
-	if (!Config::Instance()->AutoExposure.value_or(false))
+	if (!Config::Instance()->AutoExposure.value_or(false) && !State::Instance().AutoExposure.value_or(false))
 	{
 		if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &params.pExposureScaleTexture) != NVSDK_NGX_Result_Success)
 			InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&params.pExposureScaleTexture);
@@ -229,7 +229,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		else
 		{
 			LOG_WARN("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
-			Config::Instance()->AutoExposure.set_volatile_value(true);
+			State::Instance().AutoExposure = true;
 			State::Instance().changeBackend = true;
 			return true;
 		}

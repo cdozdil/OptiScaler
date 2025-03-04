@@ -72,7 +72,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
 
     GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
-    bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false);
+    bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false);
 
     LOG_DEBUG("Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
@@ -120,7 +120,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
             ResourceBarrier(InCommandList, paramVelocity, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         }
 
-        if (!Config::Instance()->DisplayResolution.has_value())
+        if (!State::Instance().DisplaySizeMV.has_value())
         {
             auto desc = paramVelocity->GetDesc();
             bool lowResMV = desc.Width < TargetWidth();
@@ -129,12 +129,12 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
             if (displaySizeEnabled && lowResMV)
             {
                 LOG_WARN("MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, TargetWidth(), displaySizeEnabled);
-                Config::Instance()->DisplayResolution.set_volatile_value(false);
+                State::Instance().DisplaySizeMV = false;
                 State::Instance().changeBackend = true;
                 return true;
             }
 
-            Config::Instance()->DisplayResolution.set_volatile_value(displaySizeEnabled);
+            State::Instance().DisplaySizeMV = displaySizeEnabled;
         }
 
         params.motionVectors = Fsr212::ffxGetResourceDX12_212(&_context, paramVelocity, (wchar_t*)L"FSR2_MotionVectors", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
@@ -203,7 +203,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
     }
 
     ID3D12Resource* paramExp = nullptr;
-    if (!Config::Instance()->AutoExposure.value_or(false))
+    if (!Config::Instance()->AutoExposure.value_or(false) && !State::Instance().AutoExposure.value_or(false))
     {
         if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExp) != NVSDK_NGX_Result_Success)
             InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&paramExp);
@@ -220,7 +220,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
         else
         {
             LOG_DEBUG("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
-            Config::Instance()->AutoExposure.set_volatile_value(true);
+            State::Instance().AutoExposure = true;
             State::Instance().changeBackend = true;
             return true;
         }
@@ -521,15 +521,15 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     else
         Config::Instance()->DepthInverted.set_volatile_value(false);
 
-    if (Config::Instance()->AutoExposure.value_or(AutoExposure))
+    if (Config::Instance()->AutoExposure.value_or(AutoExposure || State::Instance().AutoExposure.value_or(false)))
     {
-        Config::Instance()->AutoExposure.set_volatile_value(true);
+        State::Instance().AutoExposure = true;
         _contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_AUTO_EXPOSURE;
         LOG_INFO("contextDesc.initFlags (AutoExposure) {0:b}", _contextDesc.flags);
     }
     else
     {
-        Config::Instance()->AutoExposure.set_volatile_value(false);
+        State::Instance().AutoExposure = false;
         LOG_INFO("contextDesc.initFlags (!AutoExposure) {0:b}", _contextDesc.flags);
     }
 
@@ -554,7 +554,7 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     else
         Config::Instance()->JitterCancellation.set_volatile_value(false);
 
-    if (Config::Instance()->DisplayResolution.value_or(!LowRes))
+    if (Config::Instance()->DisplayResolution.value_or(!LowRes || State::Instance().DisplaySizeMV.value_or(false)))
     {
         _contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
         LOG_INFO("contextDesc.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
@@ -564,7 +564,7 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         LOG_INFO("contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
     }
 
-    if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false))
+    if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false))
     {
         float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or_default();
 
@@ -597,7 +597,7 @@ bool FSR2FeatureDx12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         Config::Instance()->OutputScalingMultiplier.set_volatile_value(1.0f);
 
         // if output scaling active let it to handle downsampling
-        if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false))
+        if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false))
         {
             _contextDesc.displaySize.width = _contextDesc.maxRenderSize.width;
             _contextDesc.displaySize.height = _contextDesc.maxRenderSize.height;

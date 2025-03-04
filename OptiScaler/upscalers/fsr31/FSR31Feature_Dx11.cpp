@@ -207,7 +207,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
     GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
-    bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false);
+    bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false);
 
     LOG_DEBUG("Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
@@ -247,7 +247,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         LOG_DEBUG("MotionVectors exist..");
         params.motionVectors = ffxGetResource(paramVelocity, L"FSR3_InputMotionVectors", Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
 
-        if (!Config::Instance()->DisplayResolution.has_value())
+        if (!State::Instance().DisplaySizeMV.has_value())
         {
             D3D11_TEXTURE2D_DESC desc;
             ((ID3D11Texture2D*)paramVelocity)->GetDesc(&desc);
@@ -257,12 +257,12 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
             if (displaySizeEnabled && lowResMV)
             {
                 LOG_WARN("MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
-                Config::Instance()->DisplayResolution.set_volatile_value(false);
+                State::Instance().DisplaySizeMV = false;
                 State::Instance().changeBackend = true;
                 return true;
             }
 
-            Config::Instance()->DisplayResolution.set_volatile_value(displaySizeEnabled);
+            State::Instance().DisplaySizeMV = displaySizeEnabled;
         }
     }
     else
@@ -315,7 +315,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     }
     else
     {
-        if (!Config::Instance()->DisplayResolution.value_or(false))
+        if (!Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false))
         {
             LOG_ERROR("Depth not exist!!");
             return false;
@@ -323,7 +323,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     }
 
     ID3D11Resource* paramExp = nullptr;
-    if (!Config::Instance()->AutoExposure.value_or(false))
+    if (!Config::Instance()->AutoExposure.value_or(false) && State::Instance().AutoExposure.value_or(false))
     {
         if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExp) != NVSDK_NGX_Result_Success)
             InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&paramExp);
@@ -336,7 +336,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         else
         {
             LOG_DEBUG("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
-            Config::Instance()->AutoExposure.set_volatile_value(true);
+            State::Instance().AutoExposure = true;
             State::Instance().changeBackend = true;
             return true;
         }
@@ -635,15 +635,15 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     else
         Config::Instance()->DepthInverted.set_volatile_value(false);
 
-    if (Config::Instance()->AutoExposure.value_or(AutoExposure))
+    if (Config::Instance()->AutoExposure.value_or(AutoExposure || State::Instance().AutoExposure.value_or(false)))
     {
-        Config::Instance()->AutoExposure.set_volatile_value(true);
+        State::Instance().AutoExposure = true;
         _upscalerContextDesc.flags |= Fsr31::FFX_FSR3_ENABLE_AUTO_EXPOSURE;
         LOG_INFO("contextDesc.initFlags (AutoExposure) {0:b}", _upscalerContextDesc.flags);
     }
     else
     {
-        Config::Instance()->AutoExposure.set_volatile_value(false);
+        State::Instance().AutoExposure = false;
         LOG_INFO("contextDesc.initFlags (!AutoExposure) {0:b}", _upscalerContextDesc.flags);
     }
 
@@ -668,7 +668,7 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     else
         Config::Instance()->JitterCancellation.set_volatile_value(false);
 
-    if (Config::Instance()->DisplayResolution.value_or(!LowRes))
+    if (Config::Instance()->DisplayResolution.value_or(!LowRes || State::Instance().DisplaySizeMV.value_or(false)))
     {
         _upscalerContextDesc.flags |= Fsr31::FFX_FSR3_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
         LOG_INFO("contextDesc.initFlags (!LowResMV) {0:b}", _upscalerContextDesc.flags);
@@ -678,7 +678,7 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         LOG_INFO("contextDesc.initFlags (LowResMV) {0:b}", _upscalerContextDesc.flags);
     }
 
-    if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false))
+    if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false))
     {
         float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or_default();
 
@@ -711,7 +711,7 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         Config::Instance()->OutputScalingMultiplier.set_volatile_value(1.0f);
 
         // if output scaling active let it to handle downsampling
-        if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false))
+        if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false))
         {
             _upscalerContextDesc.maxUpscaleSize.width = _upscalerContextDesc.maxRenderSize.width;
             _upscalerContextDesc.maxUpscaleSize.height = _upscalerContextDesc.maxRenderSize.height;

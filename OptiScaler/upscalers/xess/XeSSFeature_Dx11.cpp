@@ -33,7 +33,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 	if (!_baseInit)
 	{
 		// to prevent creation dx12 device if we are going to recreate feature
-		if (!Config::Instance()->DisplayResolution.has_value())
+		if (!State::Instance().DisplaySizeMV.has_value())
 		{
 			ID3D11Resource* paramVelocity = nullptr;
 			if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
@@ -54,17 +54,17 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 				if (displaySizeEnabled && lowResMV)
 				{
 					LOG_WARN("MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, TargetWidth(), displaySizeEnabled);
-					Config::Instance()->DisplayResolution.set_volatile_value(false);
+					State::Instance().DisplaySizeMV = false;
 				}
 
 				pvTexture->Release();
 				pvTexture = nullptr;
 
-				Config::Instance()->DisplayResolution.set_volatile_value(displaySizeEnabled);
+				State::Instance().DisplaySizeMV = displaySizeEnabled;
 			}
 		}
 
-		if (!Config::Instance()->AutoExposure.has_value())
+		if (!Config::Instance()->AutoExposure.value_or(false) && !State::Instance().AutoExposure.value_or(false))
 		{
 			ID3D11Resource* paramExpo = nullptr;
 			if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExpo) != NVSDK_NGX_Result_Success)
@@ -73,7 +73,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 			if (paramExpo == nullptr)
 			{
 				LOG_WARN("ExposureTexture is not exist, enabling AutoExposure!!");
-				Config::Instance()->AutoExposure.set_volatile_value(true);
+				State::Instance().AutoExposure = true;
 			}
 		}
 
@@ -192,7 +192,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
 	auto sharpness = GetSharpness(InParameters);
 
-	bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false);
+	bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false);
 
 	LOG_DEBUG("Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 

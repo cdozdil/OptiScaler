@@ -796,11 +796,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 
 #pragma endregion
 
+    State::Instance().AutoExposure.reset();
+    State::Instance().DisplaySizeMV.reset();
+
     if (deviceContext->Init(D3D12Device, InCmdList, InParameters))
     {
         State::Instance().currentFeature = deviceContext;
         evalCounter = 0;
-
         FrameGen_Dx12::fgTarget = 10;
     }
     else
@@ -959,9 +961,23 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         State::Instance().setInputApiName = State::Instance().currentInputApiName;
 
     if (State::Instance().setInputApiName.length() == 0)
-        State::Instance().currentInputApiName = "DLSS";
+    {
+        if (std::strcmp(State::Instance().currentInputApiName.c_str(), "DLSS") != 0)
+        {
+            State::Instance().AutoExposure.reset();
+            State::Instance().DisplaySizeMV.reset();
+            State::Instance().currentInputApiName = "DLSS";
+        }
+    }
     else
-        State::Instance().currentInputApiName = State::Instance().setInputApiName;
+    {
+        if (std::strcmp(State::Instance().currentInputApiName.c_str(), State::Instance().setInputApiName.c_str()) != 0)
+        {
+            State::Instance().AutoExposure.reset();
+            State::Instance().DisplaySizeMV.reset();
+            State::Instance().currentInputApiName = State::Instance().setInputApiName;
+        }
+    }
 
     State::Instance().setInputApiName.clear();
 
@@ -1475,7 +1491,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             auto result = allocator->Reset();
             result = FrameGen_Dx12::fgCommandList[frameIndex]->Reset(allocator, nullptr);
             LOG_DEBUG("fgCommandList[{}]->Reset()", frameIndex);
-    }
+        }
 
         ID3D12GraphicsCommandList* commandList = nullptr;
 
@@ -1582,7 +1598,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         FrameGen_Dx12::meterFactor = meterFactor;
 
         LOG_DEBUG("(FG) copy buffers done, frame: {0}", deviceContext->FrameCount());
-}
+    }
 
     // Record the first timestamp
     if (!State::Instance().isWorkingAsNvngx)
@@ -1689,7 +1705,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                             params->numGeneratedFrames = 0;
 
                             //return FFX_API_RETURN_OK;
-                    }
+                        }
 
                         // If fg is active but upscaling paused
                         if (State::Instance().currentFeature == nullptr || !FrameGen_Dx12::fgIsActive ||
@@ -1730,7 +1746,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 #endif
 
                         return dispatchResult;
-                        };
+                    };
 
                 m_FrameGenerationConfig.onlyPresentGenerated = State::Instance().FGonlyGenerated; // check here
                 m_FrameGenerationConfig.frameID = deviceContext->FrameCount();

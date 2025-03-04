@@ -601,6 +601,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
     auto deviceContext = VkContexts[handleId].get();
     *OutHandle = deviceContext->Handle();
 
+    State::Instance().AutoExposure.reset();
+    State::Instance().DisplaySizeMV.reset();
+
     if (deviceContext->Init(vkInstance, vkPD, InDevice, InCmdList, vkGIPA, vkGDPA, InParameters))
     {
         State::Instance().currentFeature = deviceContext;
@@ -712,9 +715,23 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
         State::Instance().setInputApiName = State::Instance().currentInputApiName;
 
     if (State::Instance().setInputApiName.length() == 0)
-        State::Instance().currentInputApiName = "DLSS";
+    {
+        if (std::strcmp(State::Instance().currentInputApiName.c_str(), "DLSS") != 0)
+        {
+            State::Instance().AutoExposure.reset();
+            State::Instance().DisplaySizeMV.reset();
+            State::Instance().currentInputApiName = "DLSS";
+        }
+    }
     else
-        State::Instance().currentInputApiName = State::Instance().setInputApiName;
+    {
+        if (std::strcmp(State::Instance().currentInputApiName.c_str(), State::Instance().setInputApiName.c_str()) != 0)
+        {
+            State::Instance().AutoExposure.reset();
+            State::Instance().DisplaySizeMV.reset();
+            State::Instance().currentInputApiName = State::Instance().setInputApiName;
+        }
+    }
 
     State::Instance().setInputApiName.clear();
 

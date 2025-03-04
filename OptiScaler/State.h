@@ -37,6 +37,12 @@ public:
         return instance;
     }
 
+	// Init flags
+	// Used per feature
+	// Reseting on creation of new feature
+	std::optional<bool> DisplaySizeMV;
+	std::optional<bool> AutoExposure;
+
 	// DLSSG
 	GameQuirk gameQuirk = GameQuirk::Other;
     bool NukemsFilesAvailable = false;
