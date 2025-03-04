@@ -2306,8 +2306,8 @@ bool MenuCommon::RenderMenu()
                     if (State::Instance().api == DX12 || State::Instance().api == DX11)
                     {
                         // if motion vectors are not display size
-                        ImGui::BeginDisabled((Config::Instance()->DisplayResolution.has_value() && Config::Instance()->DisplayResolution.value()) ||
-                                             (!Config::Instance()->DisplayResolution.has_value() && !(State::Instance().currentFeature->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes)));
+                        ImGui::BeginDisabled(!Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false) && 
+                                             !(State::Instance().currentFeature->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes));
 
                         ImGui::SeparatorText("Output Scaling");
 
@@ -2501,7 +2501,7 @@ bool MenuCommon::RenderMenu()
                     if (ImGui::BeginTable("init", 2, ImGuiTableFlags_SizingStretchSame))
                     {
                         ImGui::TableNextColumn();
-                        if (bool autoExposure = Config::Instance()->AutoExposure.value_or(false); ImGui::Checkbox("Auto Exposure", &autoExposure))
+                        if (bool autoExposure = Config::Instance()->AutoExposure.value_or(false) || State::Instance().AutoExposure.value_or(false); ImGui::Checkbox("Auto Exposure", &autoExposure))
                         {
                             Config::Instance()->AutoExposure = autoExposure;
 
@@ -2567,7 +2567,7 @@ bool MenuCommon::RenderMenu()
                                 ShowHelpMarker("Fix for games that send motion data with preapplied jitter");
 
                                 ImGui::TableNextColumn();
-                                if (bool mv = Config::Instance()->DisplayResolution.value_or(false); ImGui::Checkbox("Display Res. MV", &mv))
+                                if (bool mv = Config::Instance()->DisplayResolution.value_or(false) || State::Instance().DisplaySizeMV.value_or(false); ImGui::Checkbox("Display Res. MV", &mv))
                                 {
                                     Config::Instance()->DisplayResolution = mv;
 
