@@ -496,11 +496,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
         }
     }
 
+    State::Instance().AutoExposure.reset();
+    State::Instance().DisplaySizeMV.reset();
+
     if (deviceContext->ModuleLoaded() && deviceContext->Init(D3D11Device, InDevCtx, InParameters))
     {
         State::Instance().currentFeature = deviceContext;
-        State::Instance().AutoExposure.reset();
-        State::Instance().DisplaySizeMV.reset();
         return NVSDK_NGX_Result_Success;
     }
 
