@@ -174,6 +174,10 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
         return false;
     }
 
+
+    //LOG_DEBUG("Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {}",
+    //          resource->width, scDesc.BufferDesc.Width, resource->height, scDesc.BufferDesc.Height, (UINT)resource->format, (UINT)scDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
+
     // dimensions not match
     if (resource->height != scDesc.BufferDesc.Height || resource->width != scDesc.BufferDesc.Width)
     {
@@ -333,7 +337,7 @@ void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
     if (diff < 0.0f || diff > 8.0f)
         diff = 8.0f;
 
-    //diff = 40.0f;
+    diff = 40.0f;
 
     _targetTime = now + diff;
 
@@ -451,16 +455,20 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
             return false;
         }
 
-        LOG_DEBUG("1");
-
         // Make a copy of resource to capture current state
         if (CreateBufferResource(State::Instance().currentD3D12Device, resource, D3D12_RESOURCE_STATE_COPY_DEST, &_captureBuffer[fIndex]))
         {
             LOG_DEBUG("Create a copy of resource: {:X}", (size_t)resource->buffer);
+
+            // Using state D3D12_RESOURCE_STATE_VIDEO_ENCODE_WRITE as skip flag
+            if (state != D3D12_RESOURCE_STATE_VIDEO_ENCODE_WRITE)
+                ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
             
-            ResourceBarrier(cmdList, resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
             cmdList->CopyResource(_captureBuffer[fIndex], resource->buffer);
-            ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
+            
+            // Using state D3D12_RESOURCE_STATE_VIDEO_ENCODE_WRITE as skip flag
+            if (state != D3D12_RESOURCE_STATE_VIDEO_ENCODE_WRITE)
+                ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
 
             // Reset command list
             //_commandAllocator[fIndex]->Reset();
@@ -483,8 +491,6 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
             break;
         }
 
-        LOG_DEBUG("2");
-
         // needs conversion?
         if (resource->format != scDesc.BufferDesc.Format)
         {
@@ -493,7 +499,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
                 // This will prevent resource tracker to check these operations
                 // Will reset after FG dispatch
                 _skipHudlessChecks = true;
-                
+
                 // Reset command list
                 _commandAllocator[fIndex]->Reset();
                 _commandList[fIndex]->Reset(_commandAllocator[fIndex], nullptr);
@@ -553,8 +559,6 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         return true;
 
     } while (false);
-
-    //LOG_DEBUG("3");
 
     // Check for limit time
     auto now = Util::MillisecondsNow();

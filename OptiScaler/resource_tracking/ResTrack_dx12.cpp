@@ -245,25 +245,81 @@ static void FillResourceInfo(ID3D12Resource* resource, ResourceInfo* info)
     info->flags = desc.Flags;
 }
 
+static bool _written = false;
+static bool _fgEnabled = false;
+static bool _currentFG = false;
+static bool _currentFGActive = false;
+static bool _skipHudless = false;
+static bool _rcActive = false;
+static bool _cmdList = false;
+
 bool ResTrack_Dx12::IsHudFixActive()
 {
     if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default())
+    {
+        if (!_fgEnabled)
+        {
+            LOG_WARN("!_fgEnabled");
+            _fgEnabled = true;
+        }
+
         return false;
+    }
 
     if (State::Instance().currentFG == nullptr || State::Instance().currentFeature == nullptr || State::Instance().FGchanged)
+    {
+        if (!_currentFG)
+        {
+            LOG_WARN("!_currentFG");
+            _currentFG = true;
+        }
+
         return false;
+    }
 
     if (!State::Instance().currentFG->IsActive())
-        return false;
+    {
+        if (!_currentFGActive)
+        {
+            LOG_WARN("!_currentFGActive");
+            _currentFGActive = true;
+        }
 
-    if (Hudfix_Dx12::SkipHudlessChecks())
         return false;
-
-    if (!Hudfix_Dx12::IsResourceCheckActive())
-        return false;
+    }
 
     if (!_presentDone)
+    {
+        if (!_written)
+        {
+            LOG_WARN("!_presentDone");
+            _presentDone = true;
+        }
+
         return false;
+    }
+
+    if (Hudfix_Dx12::SkipHudlessChecks())
+    {
+        if (!_skipHudless)
+        {
+            LOG_WARN("!_skipHudless");
+            _skipHudless = true;
+        }
+
+        return false;
+    }
+
+    if (!Hudfix_Dx12::IsResourceCheckActive())
+    {
+        if (!_rcActive)
+        {
+            LOG_WARN("!_rcActive");
+            _rcActive = true;
+        }
+
+        return false;
+    }
 
     return true;
 }
@@ -595,9 +651,9 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
 
 
 void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
-                              UINT NumDestDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pDestDescriptorRangeStarts, UINT* pDestDescriptorRangeSizes,
-                              UINT NumSrcDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorRangeStarts, UINT* pSrcDescriptorRangeSizes,
-                              D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType)
+                                      UINT NumDestDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pDestDescriptorRangeStarts, UINT* pDestDescriptorRangeSizes,
+                                      UINT NumSrcDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorRangeStarts, UINT* pSrcDescriptorRangeSizes,
+                                      D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType)
 {
     o_CopyDescriptors(This, NumDestDescriptorRanges, pDestDescriptorRangeStarts, pDestDescriptorRangeSizes, NumSrcDescriptorRanges, pSrcDescriptorRangeStarts, pSrcDescriptorRangeSizes, DescriptorHeapsType);
 
@@ -729,7 +785,7 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
 }
 
 void ResTrack_Dx12::hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptorRangeStart,
-                                    D3D12_CPU_DESCRIPTOR_HANDLE SrcDescriptorRangeStart, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType)
+                                            D3D12_CPU_DESCRIPTOR_HANDLE SrcDescriptorRangeStart, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType)
 {
     o_CopyDescriptorsSimple(This, NumDescriptors, DestDescriptorRangeStart, SrcDescriptorRangeStart, DescriptorHeapsType);
 
@@ -832,7 +888,7 @@ void ResTrack_Dx12::hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* 
         return;
     }
 
-    capturedBuffer->state = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
+    capturedBuffer->state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
     do
     {
@@ -865,7 +921,7 @@ void ResTrack_Dx12::hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* 
 #pragma region Shader output hooks
 
 void ResTrack_Dx12::hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRenderTargetDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE* pRenderTargetDescriptors,
-                                 BOOL RTsSingleHandleToDescriptorRange, D3D12_CPU_DESCRIPTOR_HANDLE* pDepthStencilDescriptor)
+                                         BOOL RTsSingleHandleToDescriptorRange, D3D12_CPU_DESCRIPTOR_HANDLE* pDepthStencilDescriptor)
 {
     if (NumRenderTargetDescriptors == 0 || pRenderTargetDescriptors == nullptr || !IsHudFixActive() || Hudfix_Dx12::SkipHudlessChecks())
     {
@@ -1027,14 +1083,34 @@ void ResTrack_Dx12::hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT Vertex
 {
     o_DrawInstanced(This, VertexCountPerInstance, InstanceCount, StartVertexLocation, StartInstanceLocation);
 
+
     if (!IsHudFixActive())
         return;
 
     if (This == MenuOverlayDx::MenuCommandList() || IsFGCommandList(This))
-        return;
+    {
+        if (!_cmdList)
+        {
+            LOG_WARN("_cmdList");
+            _cmdList = true;
+        }
 
-    if (Hudfix_Dx12::SkipHudlessChecks())
+
         return;
+    }
+
+    //if (Hudfix_Dx12::SkipHudlessChecks())
+    //{
+    //    if (!_skipHudless)
+    //    {
+    //        LOG_DEBUG("_skipHudless");
+    //        _skipHudless = true;
+    //    }
+
+    //    return;
+    //}
+
+    //LOG_DEBUG("");
 
     {
         ankerl::unordered_dense::map<ID3D12Resource*, ResourceInfo> val0;
@@ -1078,14 +1154,33 @@ void ResTrack_Dx12::hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT
 {
     o_DrawIndexedInstanced(This, IndexCountPerInstance, InstanceCount, StartIndexLocation, BaseVertexLocation, StartInstanceLocation);
 
+
     if (!IsHudFixActive())
         return;
 
     if (This == MenuOverlayDx::MenuCommandList() || IsFGCommandList(This))
-        return;
+    {
+        if (!_cmdList)
+        {
+            LOG_WARN("_cmdList");
+            _cmdList = true;
+        }
 
-    if (Hudfix_Dx12::SkipHudlessChecks())
         return;
+    }
+
+    //if (Hudfix_Dx12::SkipHudlessChecks())
+    //{
+    //    if (!_skipHudless)
+    //    {
+    //        LOG_DEBUG("_skipHudless");
+    //        _skipHudless = true;
+    //    }
+
+    //    return;
+    //}
+    
+    //LOG_DEBUG("");
 
     {
         ankerl::unordered_dense::map<ID3D12Resource*, ResourceInfo> val0;
@@ -1267,12 +1362,12 @@ void ResTrack_Dx12::HookCommandList(ID3D12Device* InDevice)
 
             commandList->Close();
             commandList->Release();
-            }
+        }
 
         commandAllocator->Reset();
         commandAllocator->Release();
-        }
     }
+}
 
 static void HookToQueue(ID3D12Device* InDevice)
 {
@@ -1365,14 +1460,26 @@ void ResTrack_Dx12::HookDevice(ID3D12Device* device)
 
 void ResTrack_Dx12::ResetCaptureList()
 {
+    std::unique_lock<std::shared_mutex> lock(hudlessMutex);
     fgCaptureList.clear();
 }
 
 void ResTrack_Dx12::ClearPossibleHudless()
 {
+    LOG_DEBUG("");
+
     std::unique_lock<std::shared_mutex> lock(hudlessMutex);
     fgPossibleHudless->clear();
     _presentDone = false;
+
+    _written = false;
+    _fgEnabled = false;
+    _currentFG = false;
+    _currentFGActive = false;
+    _skipHudless = false;
+    _rcActive = false;
+    _cmdList = false;
+
 }
 
 void ResTrack_Dx12::PresentDone()
