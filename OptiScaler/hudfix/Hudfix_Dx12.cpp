@@ -561,15 +561,15 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
     } while (false);
 
     // Check for limit time
-    auto now = Util::MillisecondsNow();
-    if (now > _targetTime && IsResourceCheckActive() && CheckCapture())
-    {
-        LOG_WARN("Reached limit time: {} > {}", now, _targetTime);
-        // This will prevent resource tracker to check these operations
-        // Will reset after FG dispatch
-        _skipHudlessChecks = true;
-        DispatchFG(false);
-    }
+    //auto now = Util::MillisecondsNow();
+    //if (now > _targetTime && IsResourceCheckActive() && CheckCapture())
+    //{
+    //    LOG_WARN("Reached limit time: {} > {}", now, _targetTime);
+    //    // This will prevent resource tracker to check these operations
+    //    // Will reset after FG dispatch
+    //    _skipHudlessChecks = true;
+    //    DispatchFG(false);
+    //}
 
     return false;
 }
