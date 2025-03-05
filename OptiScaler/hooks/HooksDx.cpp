@@ -19,38 +19,17 @@
 
 #pragma region FG definitions
 
-#include <set>
-#include <shared_mutex>
-
-typedef struct SwapChainInfo
-{
-    IDXGISwapChain* swapChain = nullptr;
-    DXGI_FORMAT swapChainFormat = DXGI_FORMAT_UNKNOWN;
-    int swapChainBufferCount = 0;
-    ID3D12CommandQueue* fgCommandQueue = nullptr;
-    ID3D12CommandQueue* gameCommandQueue = nullptr;
-};
-
-// mutexes
-static std::shared_mutex presentMutex;
-static std::shared_mutex resourceMutex;
-static std::shared_mutex captureMutex;
-
+// Is FG mutex accuired for Half/Full sync?
 static bool _lockAccuiredForHaflOrFull = false;
 
-// Used for frametime calculation
-static bool fgStopAfterNextPresent = false;
-static bool fgSkipSCWrapping = false;
+// Target frame/present could for releasing the FG mutex
+static UINT64 _releaseMutexTargetFrame = 0;
+
+// To prevent recursive FG swapchain creation
+static bool _skipFGSwapChainCreation = false;
 
 // Swapchain frame counter
-static UINT64 frameCounter = 0;
-static UINT64 fgMutexReleaseFrame = 0;
-
-static WrappedIDXGISwapChain4* lastWrapped;
-
-//static IID streamlineRiid{};
-
-//static uint32_t fgNotAcceptedResourceFlags = D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE | D3D12_RESOURCE_FLAG_VIDEO_ENCODE_REFERENCE_ONLY;
+static UINT64 _frameCounter = 0;
 
 #pragma endregion                            
 
@@ -97,15 +76,15 @@ static PFN_D3D11_CREATE_DEVICE o_D3D11CreateDevice = nullptr;
 static PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN o_D3D11CreateDeviceAndSwapChain = nullptr;
 static PFN_CreateSamplerState o_CreateSamplerState = nullptr;
 static PFN_D3D11ON12_CREATE_DEVICE o_D3D11On12CreateDevice = nullptr;
-static ID3D11Device* d3d11Device = nullptr;
-static ID3D11Device* d3d11on12Device = nullptr;
 
 // menu
 static bool _dx11Device = false;
 static bool _dx12Device = false;
 
 // for dx11
-static ID3D11DeviceContext* g_pd3dDeviceContext = nullptr;
+static ID3D11DeviceContext* _d3d11DeviceContext = nullptr;
+static ID3D11Device* d3d11Device = nullptr;
+static ID3D11Device* d3d11on12Device = nullptr;
 
 // status
 static bool _isInited = false;
@@ -153,26 +132,11 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         return result;
     }
 
-    LOG_DEBUG("frameCounter: {}, flags: {:X}", frameCounter, Flags);
-
-    // Skip calculations etc
-    //if (Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART)
-    //{
-    //    LOG_DEBUG("TEST or RESTART, skip");
-    //    auto result = o_FGSCPresent(This, SyncInterval, Flags);
-    //    return result;
-    //}
-
-    //if (State::Instance().currentSwapchain == nullptr)
-    //{
-    //    LOG_WARN("State::Instance().currentSwapchain == nullptr");
-    //    return o_FGSCPresent(This, SyncInterval, Flags);
-    //}
+    LOG_DEBUG("_frameCounter: {}, flags: {:X}", _frameCounter, Flags);
 
     if (State::Instance().FGresetCapturedResources)
     {
         LOG_DEBUG("FGResetCapturedResources");
-        std::unique_lock<std::shared_mutex> lock(captureMutex);
         ResTrack_Dx12::ResetCaptureList();
         State::Instance().FGcapturedResourceCount = 0;
         State::Instance().FGresetCapturedResources = false;
@@ -194,9 +158,9 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         _lockAccuiredForHaflOrFull = !lockAccuired;
 
         if (Config::Instance()->FGDebugView.value_or_default() || Config::Instance()->FGHudfixHalfSync.value_or_default())
-            fgMutexReleaseFrame = frameCounter + 1; // For debug 1 frame
+            _releaseMutexTargetFrame = _frameCounter + 1; // For debug 1 frame
         else
-            fgMutexReleaseFrame = frameCounter + 2; // For FG 2 frames
+            _releaseMutexTargetFrame = _frameCounter + 2; // For FG 2 frames
 
         LOG_TRACE("Accuired FG->Mutex: {}", fg->Mutex.getOwner());
     }
@@ -222,10 +186,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
 static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd)
 {
-    // Probably not needed anymore
-    //std::unique_lock<std::shared_mutex> lock(presentMutex);
-
-    LOG_DEBUG("{}", frameCounter);
+    LOG_DEBUG("{}", _frameCounter);
 
     HRESULT presentResult;
 
@@ -244,7 +205,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         return presentResult;
     }
 
-    // Might cause issues, saved almost 1 ms
+    // Removing might cause issues, saved almost 1 ms
     //if (hWnd != Util::GetProcessWindow())
     //{
     //    if (pPresentParameters == nullptr)
@@ -335,18 +296,18 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
     else if (HooksDx::dx11UpscaleTrig[HooksDx::currentFrameIndex] && device != nullptr && HooksDx::disjointQueries[0] != nullptr &&
              HooksDx::startQueries[0] != nullptr && HooksDx::endQueries[0] != nullptr)
     {
-        if (g_pd3dDeviceContext == nullptr)
-            device->GetImmediateContext(&g_pd3dDeviceContext);
+        if (_d3d11DeviceContext == nullptr)
+            device->GetImmediateContext(&_d3d11DeviceContext);
 
         // Retrieve the results from the previous frame
         D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjointData;
-        if (g_pd3dDeviceContext->GetData(HooksDx::disjointQueries[HooksDx::previousFrameIndex], &disjointData, sizeof(disjointData), 0) == S_OK)
+        if (_d3d11DeviceContext->GetData(HooksDx::disjointQueries[HooksDx::previousFrameIndex], &disjointData, sizeof(disjointData), 0) == S_OK)
         {
             if (!disjointData.Disjoint && disjointData.Frequency > 0)
             {
                 UINT64 startTime = 0, endTime = 0;
-                if (g_pd3dDeviceContext->GetData(HooksDx::startQueries[HooksDx::previousFrameIndex], &startTime, sizeof(UINT64), 0) == S_OK &&
-                    g_pd3dDeviceContext->GetData(HooksDx::endQueries[HooksDx::previousFrameIndex], &endTime, sizeof(UINT64), 0) == S_OK)
+                if (_d3d11DeviceContext->GetData(HooksDx::startQueries[HooksDx::previousFrameIndex], &startTime, sizeof(UINT64), 0) == S_OK &&
+                    _d3d11DeviceContext->GetData(HooksDx::endQueries[HooksDx::previousFrameIndex], &endTime, sizeof(UINT64), 0) == S_OK)
                 {
                     double elapsedTimeMs = (endTime - startTime) / static_cast<double>(disjointData.Frequency) * 1000.0;
 
@@ -387,14 +348,6 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         else
             LOG_ERROR("3 {:X}", (UINT)presentResult);
 
-        if (fgStopAfterNextPresent)
-        {
-            if (fg != nullptr)
-                fg->StopAndDestroyContext(false, false, false);
-
-            fgStopAfterNextPresent = false;
-        }
-
         return presentResult;
     }
 
@@ -402,14 +355,14 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
     if (Config::Instance()->FGUseFGSwapChain.value_or_default())
     {
-        fakenvapi::reportFGPresent(pSwapChain, fg != nullptr && fg->IsActive(), frameCounter % 2);
+        fakenvapi::reportFGPresent(pSwapChain, fg != nullptr && fg->IsActive(), _frameCounter % 2);
     }
 
     // death stranding fix???
-    //if (frameCounter < 5)
+    //if (_frameCounter < 5)
     //    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    frameCounter++;
+    _frameCounter++;
 
     // swapchain present
     if (pPresentParameters == nullptr)
@@ -428,15 +381,15 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         device12->Release();
 
     if (presentResult == S_OK)
-        LOG_TRACE("4 {}, Present result: {:X}", frameCounter, (UINT)presentResult);
+        LOG_TRACE("4 {}, Present result: {:X}", _frameCounter, (UINT)presentResult);
     else
         LOG_ERROR("4 {:X}", (UINT)presentResult);
 
-    if (fgMutexReleaseFrame != 0 && frameCounter >= fgMutexReleaseFrame)
+    if (_releaseMutexTargetFrame != 0 && _frameCounter >= _releaseMutexTargetFrame)
         ResTrack_Dx12::PresentDone();
 
-    // If Half of Full sync is active or was active (fgMutexReleaseFrame != 0)
-    if (fgMutexReleaseFrame != 0 && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && frameCounter >= fgMutexReleaseFrame && fg != nullptr)
+    // If Half of Full sync is active or was active (_releaseMutexTargetFrame != 0)
+    if (_releaseMutexTargetFrame != 0 && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && _frameCounter >= _releaseMutexTargetFrame && fg != nullptr)
     {
         if (_lockAccuiredForHaflOrFull)
         {
@@ -445,7 +398,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
             _lockAccuiredForHaflOrFull = false;
         }
 
-        fgMutexReleaseFrame = 0;
+        _releaseMutexTargetFrame = 0;
 
         // Signal for pause
         fg->FgDone();
@@ -569,7 +522,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
         if (pDesc != nullptr)
             LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, Windowed: {}, SkipWrapping: {}",
-                      pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, (UINT)pDesc->OutputWindow, pDesc->Windowed, fgSkipSCWrapping);
+                      pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, (UINT)pDesc->OutputWindow, pDesc->Windowed, _skipFGSwapChainCreation);
 
         State::Instance().skipDxgiLoadChecks = true;
         auto res = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
@@ -596,11 +549,11 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     }
 
     LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, Windowed: {}, SkipWrapping: {}",
-              pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, (UINT)pDesc->OutputWindow, pDesc->Windowed, fgSkipSCWrapping);
+              pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, (UINT)pDesc->OutputWindow, pDesc->Windowed, _skipFGSwapChainCreation);
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
     // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
-    if (Config::Instance()->ForceHDR.value_or_default() && !fgSkipSCWrapping)
+    if (Config::Instance()->ForceHDR.value_or_default() && !_skipFGSwapChainCreation)
     {
         LOG_INFO("Force HDR on");
 
@@ -624,7 +577,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
     ID3D12CommandQueue* cq = nullptr;
     if (Config::Instance()->OverlayMenu.value_or_default() && Config::Instance()->FGUseFGSwapChain.value_or_default() &&
-        !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+        !_skipFGSwapChainCreation && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
         cq->SetName(L"GameQueue");
         cq->Release();
@@ -641,7 +594,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         if (!CheckForRealObject(__FUNCTION__, pDevice, (IUnknown**)&real))
             real = (ID3D12CommandQueue*)pDevice;
 
-        fgSkipSCWrapping = true;
+        _skipFGSwapChainCreation = true;
         State::Instance().skipHeapCapture = true;
         State::Instance().skipDxgiLoadChecks = true;
 
@@ -649,7 +602,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
         State::Instance().skipDxgiLoadChecks = false;
         State::Instance().skipHeapCapture = false;
-        fgSkipSCWrapping = false;
+        _skipFGSwapChainCreation = false;
 
         if (scResult)
         {
@@ -760,11 +713,10 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
         LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDesc->OutputWindow);
 
-        lastWrapped = new WrappedIDXGISwapChain4(realSC, readDevice, pDesc->OutputWindow, Present, MenuOverlayDx::CleanupRenderTarget, HooksDx::ReleaseDx12SwapChain);
-        *ppSwapChain = lastWrapped;
+        *ppSwapChain = new WrappedIDXGISwapChain4(realSC, readDevice, pDesc->OutputWindow, Present, MenuOverlayDx::CleanupRenderTarget, HooksDx::ReleaseDx12SwapChain);
 
-        if (!fgSkipSCWrapping)
-            State::Instance().currentSwapchain = lastWrapped;
+        if (!_skipFGSwapChainCreation)
+            State::Instance().currentSwapchain = *ppSwapChain;
 
         LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
 
@@ -772,7 +724,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
         if (Config::Instance()->ForceHDR.value_or_default())
         {
-            if (!fgSkipSCWrapping)
+            if (!_skipFGSwapChainCreation)
             {
                 State::Instance().SCbuffers.clear();
                 for (size_t i = 0; i < pDesc->BufferCount; i++)
@@ -862,9 +814,9 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     }
 
     LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, SkipWrapping: {}",
-              pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, (UINT)hWnd, fgSkipSCWrapping);
+              pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, (UINT)hWnd, _skipFGSwapChainCreation);
 
-    if (Config::Instance()->ForceHDR.value_or_default() && !fgSkipSCWrapping)
+    if (Config::Instance()->ForceHDR.value_or_default() && !_skipFGSwapChainCreation)
     {
         LOG_INFO("Force HDR on");
 
@@ -887,7 +839,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     }
 
     ID3D12CommandQueue* cq = nullptr;
-    if (Config::Instance()->FGUseFGSwapChain.value_or_default() && !fgSkipSCWrapping && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+    if (Config::Instance()->FGUseFGSwapChain.value_or_default() && !_skipFGSwapChainCreation && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
         cq->SetName(L"GameQueueHwnd");
         cq->Release();
@@ -904,7 +856,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         if (!CheckForRealObject(__FUNCTION__, pDevice, (IUnknown**)&real))
             real = (ID3D12CommandQueue*)pDevice;
 
-        fgSkipSCWrapping = true;
+        _skipFGSwapChainCreation = true;
         State::Instance().skipHeapCapture = true;
         State::Instance().skipDxgiLoadChecks = true;
 
@@ -912,7 +864,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
         State::Instance().skipDxgiLoadChecks = false;
         State::Instance().skipHeapCapture = false;
-        fgSkipSCWrapping = false;
+        _skipFGSwapChainCreation = false;
 
         if (scResult)
         {
@@ -1021,16 +973,15 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         }
 
         LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)hWnd);
-        lastWrapped = new WrappedIDXGISwapChain4(realSC, readDevice, hWnd, Present, MenuOverlayDx::CleanupRenderTarget, HooksDx::ReleaseDx12SwapChain);
-        *ppSwapChain = lastWrapped;
+        *ppSwapChain = new WrappedIDXGISwapChain4(realSC, readDevice, hWnd, Present, MenuOverlayDx::CleanupRenderTarget, HooksDx::ReleaseDx12SwapChain);
         LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
 
-        if (!fgSkipSCWrapping)
-            State::Instance().currentSwapchain = lastWrapped;
+        if (!_skipFGSwapChainCreation)
+            State::Instance().currentSwapchain = *ppSwapChain;
 
         if (Config::Instance()->ForceHDR.value_or_default())
         {
-            if (!fgSkipSCWrapping)
+            if (!_skipFGSwapChainCreation)
             {
                 State::Instance().SCbuffers.clear();
                 for (size_t i = 0; i < pDesc->BufferCount; i++)
@@ -1526,11 +1477,10 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
         }
 
         LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pSwapChainDesc->OutputWindow);
-        lastWrapped = new WrappedIDXGISwapChain4(realSC, readDevice, pSwapChainDesc->OutputWindow, Present, MenuOverlayDx::CleanupRenderTarget, HooksDx::ReleaseDx12SwapChain);
-        *ppSwapChain = lastWrapped;
+        *ppSwapChain = new WrappedIDXGISwapChain4(realSC, readDevice, pSwapChainDesc->OutputWindow, Present, MenuOverlayDx::CleanupRenderTarget, HooksDx::ReleaseDx12SwapChain);
 
-        if (!fgSkipSCWrapping)
-            State::Instance().currentSwapchain = lastWrapped;
+        if (!_skipFGSwapChainCreation)
+            State::Instance().currentSwapchain = *ppSwapChain;
 
         LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)*ppDevice);
 
@@ -1538,7 +1488,7 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
         // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
         if (Config::Instance()->ForceHDR.value_or_default())
         {
-            if (!fgSkipSCWrapping)
+            if (!_skipFGSwapChainCreation)
             {
                 State::Instance().SCbuffers.clear();
                 for (size_t i = 0; i < pSwapChainDesc->BufferCount; i++)
