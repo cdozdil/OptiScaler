@@ -3,7 +3,6 @@
 #include <Config.h>
 #include <State.h>
 #include <Util.h>
-#include <OwnedMutex.h>
 
 #include <menu/menu_overlay_dx.h>
 

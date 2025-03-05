@@ -11,13 +11,6 @@ private:
 
 public:
     void lock(uint32_t _owner) {
-        if (_owner == 0)
-        {
-            owner = _owner;
-            mtx.lock();
-            return;
-        }
-
         mtx.lock();
         owner = _owner;
     }
@@ -27,6 +20,10 @@ public:
         if (owner == _owner) {
             mtx.unlock();
             owner = 0;
+        }
+        else
+        {
+            LOG_WARN("Current owner: {} does not match: {}, skipping unlock:", owner, _owner);
         }
     }
 

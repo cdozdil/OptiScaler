@@ -350,7 +350,7 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
         LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}, commandList: {3:X}", retCode, _frameCount, fIndex, (size_t)dfgPrepare.commandList);
     }
 
-    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && Mutex.getOwner() == 1)
     {
         LOG_TRACE("Releasing FG->Mutex: {}", Mutex.getOwner());
         Mutex.unlockThis(1);
