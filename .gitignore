@@ -434,3 +434,4 @@ FodyWeavers.xsd
 *.app
 CyberFSR/imgui.ini
 
+/OptiScaler/resource_build_date.h
