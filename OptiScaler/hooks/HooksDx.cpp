@@ -162,7 +162,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         else
             _releaseMutexTargetFrame = _frameCounter + 2; // For FG 2 frames
 
-        LOG_TRACE("Accuired FG->Mutex: {}, fgMutexReleaseFrame: {}", fg->Mutex.getOwner(), fgMutexReleaseFrame);
+        LOG_TRACE("Accuired FG->Mutex: {}, fgMutexReleaseFrame: {}", fg->Mutex.getOwner(), _releaseMutexTargetFrame);
     }
 
     if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART))

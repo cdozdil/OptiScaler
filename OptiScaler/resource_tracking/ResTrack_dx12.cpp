@@ -258,7 +258,7 @@ bool ResTrack_Dx12::IsHudFixActive()
     {
         if (!_fgEnabled)
         {
-            LOG_WARN("!_fgEnabled");
+            //LOG_WARN("!_fgEnabled");
             _fgEnabled = true;
         }
 
@@ -269,7 +269,7 @@ bool ResTrack_Dx12::IsHudFixActive()
     {
         if (!_currentFG)
         {
-            LOG_WARN("!_currentFG");
+            //LOG_WARN("!_currentFG");
             _currentFG = true;
         }
 
@@ -280,7 +280,7 @@ bool ResTrack_Dx12::IsHudFixActive()
     {
         if (!_currentFGActive)
         {
-            LOG_WARN("!_currentFGActive");
+            //LOG_WARN("!_currentFGActive");
             _currentFGActive = true;
         }
 
@@ -291,7 +291,7 @@ bool ResTrack_Dx12::IsHudFixActive()
     {
         if (!_written)
         {
-            LOG_WARN("!_presentDone");
+            //LOG_WARN("!_presentDone");
             _presentDone = true;
         }
 
@@ -302,7 +302,7 @@ bool ResTrack_Dx12::IsHudFixActive()
     {
         if (!_skipHudless)
         {
-            LOG_WARN("!_skipHudless");
+            //LOG_WARN("!_skipHudless");
             _skipHudless = true;
         }
 
@@ -313,7 +313,7 @@ bool ResTrack_Dx12::IsHudFixActive()
     {
         if (!_rcActive)
         {
-            LOG_WARN("!_rcActive");
+            //LOG_WARN("!_rcActive");
             _rcActive = true;
         }
 
