@@ -2,7 +2,7 @@
 
 **OptiScaler** is a tool that lets you replace upscalers in games that ***already support*** DLSS2+ / FSR2+ / XeSS, now also supports enabling frame generation (through OptiFG or Nukem's dlssg-to-fsr3).
 
-While previously only DLSS2+ inputs were supported, newer versions also added support for XeSS and FSR2+ inputs (_with some caveats-*_). For example, if a game has DLSS only, the user can replace DLSS with XeSS or FSR 3.1 (same goes for an FSR or XeSS-only game). It also offers extensive customization options for all users, including those with Nvidia GPUs using DLSS.
+While previously only DLSS2+ inputs were supported, newer versions also added support for XeSS and FSR2+ inputs (_with some caveats_$`^1`$). For example, if a game has DLSS only, the user can replace DLSS with XeSS or FSR 3.1 (same goes for an FSR or XeSS-only game). It also offers extensive customization options for all users, including those with Nvidia GPUs using DLSS.
 
 **Key aspects of OptiScaler:**
 - Enables usage of XeSS, FSR2, FSR3 and DLSS in upscaler-enabled games
@@ -17,8 +17,8 @@ While previously only DLSS2+ inputs were supported, newer versions also added su
 > Also please check the  [***Optiscaler known issues***](#known-issues) at the end regarding **RTSS** compatibility
 
 > [!NOTE]
-> _[*] Regarding **XeSS**, since Unreal Engine plugin does not provide depth, replacing in-game XeSS breaks other upscalers, but you can still apply RCAS sharpening to XeSS to reduce blurry visuals (in short, if it's a UE game, in-game XeSS only works with XeSS in Opti overlay).  
-Regarding **FSR inputs**, FSR 3.1 is the first version with a fully standardised, forward-looking API and should be fully supported. Since FSR2 and FSR3 support custom interfaces, game support will depend on the developers' implementation. With Unreal Engine games you might need [ini tweaks](https://github.com/cdozdil/OptiScaler/wiki/Unreal-Engine-Tweaks) for FSR inputs._
+> *[1] Regarding **XeSS**, since Unreal Engine plugin does not provide depth, replacing in-game XeSS breaks other upscalers, but you can still apply RCAS sharpening to XeSS to reduce blurry visuals (in short, if it's a UE game, in-game XeSS only works with XeSS in Opti overlay).  
+Regarding **FSR inputs**, FSR 3.1 is the first version with a fully standardised, forward-looking API and should be fully supported. Since FSR2 and FSR3 support custom interfaces, game support will depend on the developers' implementation. With Unreal Engine games you might need [ini tweaks](https://github.com/cdozdil/OptiScaler/wiki/Unreal-Engine-Tweaks) for FSR inputs.*
 
 ## How it works?
 OptiScaler implements the necessary API methods of DLSS2+ & NVAPI, XeSS and FSR2+ to act as a middleware. It interprets calls from the game and redirects them to the chosen upscaling backend, allowing games using one technology to use another one of your choice. 
@@ -44,12 +44,12 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 #### For DirectX 11
 - FSR2 2.2.1 (Default, native DX11)
 - FSR3 3.1.2 (unofficial port to native DX11)
-- XeSS 1.x.x, FSR2 2.1.2, 2.2.1, FSR3 3.1 & FSR2 2.3.2 (via background DX12 processing) [*]
+- XeSS 1.x.x, FSR2 2.1.2, 2.2.1, FSR3 3.1 & FSR2 2.3.2 (via background DX12 processing)$`^1`$
 - DLSS (native DX11)
 - XeSS 2.x (_soon™, but Intel ARC only_)
 
 > [!NOTE]
-> _[*] These implementations use a background DirectX12 device to be able to use Dirext12-only upscalers. There is a 10-15% performance penalty for this method, but allows many more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has its own problems of which some were fixed by OptiScaler. **These implementations do not support Linux** and will result in a black screen._
+> _[1] These implementations use a background DirectX12 device to be able to use Dirext12-only upscalers. There is a 10-15% performance penalty for this method, but allows many more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has its own problems of which some were fixed by OptiScaler. **These implementations do not support Linux** and will result in a black screen._
 
 #### For Vulkan
 - FSR2 2.1.2 (Default), 2.2.1
@@ -78,7 +78,7 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 
 **`Step-by-step installation:`**  
 **1.** Extract all Optiscaler files from the zip by the main game exe (for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Binaries\Win64\`).  
-**2.** Rename OptiScaler's `OptiScaler.dll` (for old versions it's `nvngx.dll`) to one of the [supported filenames](#optiscaler-supports-these-filenames) (preferred `dxgi.dll`, but depends on the game) [1].  
+**2.** Rename OptiScaler's `OptiScaler.dll` (for old versions it's `nvngx.dll`) to one of the [supported filenames](#optiscaler-supports-these-filenames) (preferred `dxgi.dll`, but depends on the game)$`^1`$  
 
 > [!NOTE]
 > _For FSR2/3-only games that don't have DLSS (e.g. The Callisto Protocol or The Outer Worlds: Spacer's Choice Edition), you have to provide the `nvngx_dlss.dll` in order to use DLSS in Optiscaler - download link e.g. [TechPowerUp](https://www.techpowerup.com/download/nvidia-dlss-dll/) or [Streamline SDK repo](https://github.com/NVIDIAGameWorks/Streamline/tree/main/bin/x64)_
@@ -86,8 +86,8 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 #### AMD/Intel
 
 **`Step-by-step installation:`**  
-**1.** Extract all Optiscaler files from the zip by the main game exe (for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Binaries\Win64\`).  
-**2.** Rename OptiScaler's `OptiScaler.dll` (for old versions it's `nvngx.dll`) to one of the [supported filenames](#optiscaler-supports-these-filenames) (preferred `dxgi.dll`, but depends on the game) [1].  
+**1.** Extract all Optiscaler files from the zip by the main game exe (for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Binaries\Win64\`)  
+**2.** Rename OptiScaler's `OptiScaler.dll` (for old versions it's `nvngx.dll`) to one of the [supported filenames](#optiscaler-supports-these-filenames) (preferred `dxgi.dll`, but depends on the game)$`^1`$  
 **3a.** **Either** locate the `nvngx_dlss.dll` file (for UE games, generally in one of the subfolders like Plugins), create a copy, rename the copy to `nvngx.dll` and paste it beside Optiscaler    
 **3b.** **OR** download `nvngx_dlss.dll` from e.g. [TechPowerUp](https://www.techpowerup.com/download/nvidia-dlss-dll/) or [Streamline SDK repo](https://github.com/NVIDIAGameWorks/Streamline/tree/main/bin/x64) if you don't want to search, rename it to `nvngx.dll` and paste it beside Optiscaler   
 
@@ -105,14 +105,11 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 
 Latency Flex is cross-vendor and cross-platform. Anti-Lag 2 only supports RDNA cards and is Windows only atm. For information on how to verify if Anti-Lag 2 is working, please check [Anti-Lag 2 SDK](https://github.com/GPUOpen-LibrariesAndSDKs/AntiLag2-SDK?tab=readme-ov-file#testing).
 
-
-> [!NOTE]
-> **_Example of correct installation (with additional Fakenvapi and Nukem mod)_**
-> ![Installation](https://github.com/user-attachments/assets/d2ef6d7b-59a2-45b5-96b0-38e61429cf6b)
-
-
-> [!IMPORTANT]
-> **Please don't rename the ini file, it should stay as `OptiScaler.ini`**.
+> [!TIP]
+> *[1] Linux users should add renamed dll to overrides:*
+> ```
+> WINEDLLOVERRIDES=dxgi=n,b %COMMAND% 
+> ```
 
 > [!NOTE]
 > ### OptiScaler supports these filenames:
@@ -124,13 +121,14 @@ Latency Flex is cross-vendor and cross-platform. Anti-Lag 2 only supports RDNA c
 > * winhttp.dll
 > * OptiScaler.asi (with an ASI loader)
 
-_To overcome DLSS 3.7's signature check requirements, I implemented a method developed by **Artur** (creator of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)). Later, this method increased the compatibility of `OverlayMenu`, allowed OptiScaler to **spoof DXGI and Vulkan**, let users override the `nvapi64.dll` and even let users to force Anisotropic Filtering and Mipmap Lod Bias. In short, this installation method allowed OptiScaler to provide more features to users._
+> [!IMPORTANT]
+> **Please don't rename the ini file, it should stay as `OptiScaler.ini`**.
 
-> [!TIP]
-> *[1] Linux users should add renamed dll to overrides:*
-> ```
-> WINEDLLOVERRIDES=dxgi=n,b %COMMAND% 
-> ```
+> [!NOTE]
+> **_Example of correct installation (with additional Fakenvapi and Nukem mod)_**
+> ![Installation](https://github.com/user-attachments/assets/d2ef6d7b-59a2-45b5-96b0-38e61429cf6b)
+
+_To overcome DLSS 3.7's signature check requirements, I implemented a method developed by **Artur** (creator of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)). Later, this method increased the compatibility of `OverlayMenu`, allowed OptiScaler to **spoof DXGI and Vulkan**, let users override the `nvapi64.dll` and even let users to force Anisotropic Filtering and Mipmap Lod Bias. In short, this installation method allowed OptiScaler to provide more features to users._
 
 > [!NOTE]
 > If there is another mod (e.g. Reshade etc.) that uses the same filename (e.g. `dxgi.dll`), if you rename that mod with the `-original` suffix (e.g. `dxgi-original.dll`), OptiScaler will load this file instead of the original library.   
@@ -142,9 +140,9 @@ _To overcome DLSS 3.7's signature check requirements, I implemented a method dev
 ### Legacy installation (deprecated, no FG and limited features, `nvngx.dll`)
 `Step-by-step installation:`
 1. Download the latest relase from [releases](https://github.com/cdozdil/OptiScaler/releases).
-2. Extract the contents of the archive next to the game executable file in your games folder. (e.g. for Unreal Engine games it's `<path-to-game>\Binaries\Win64\`) [1]
+2. Extract the contents of the archive next to the game executable file in your games folder. (e.g. for Unreal Engine games it's `<path-to-game>\Binaries\Win64\`)$`^1`$
 3. Rename `OptiScaler.dll` to `nvngx.dll` (For older builds file name is already `nvngx.dll`, so skip this step)
-4. Run `EnableSignatureOverride.reg` from `DlssOverrides` folder and confirm merge. [2][3]
+4. Run `EnableSignatureOverride.reg` from `DlssOverrides` folder and confirm merge.$`^2`$$`^3`$
 
 *[1] This package contains latest version of `libxess.dll` and if the game folder contains any older version of the same library, it will be overwritten. Consider backing up or renaming existing files.*
 
@@ -198,13 +196,12 @@ Please check [this](Config.md) document for configuration parameters and explana
 ## Known Issues
 If you can't open the in-game menu overlay:
 1. Please check that you have enabled DLSS, XeSS or FSR from game options
-2. Please try opening menu while you are in-game (while 3D rendering is happening)
-3. If you are using **RTSS** (MSI Afterburner, CapFrameX), please enable this setting in RTSS and/or try updating RTSS.
+2. If using legacy installation, please try opening menu while you are in-game (while 3D rendering is happening)
+3. If you are using **RTSS** (MSI Afterburner, CapFrameX), please enable this setting in RTSS and/or try updating RTSS. **For OptiFG please disable RTSS for best compatibility**
  
  ![image](https://github.com/cdozdil/OptiScaler/assets/35529761/8afb24ac-662a-40ae-a97c-837369e03fc7)
 
 Please check [this](Issues.md) document for the rest of the known issues and possible solutions for them. Also check the community [Wiki](https://github.com/cdozdil/OptiScaler/wiki) for possible game issues and HUDfix incompatible games.
-
 
 ## Compilation
 
@@ -212,7 +209,7 @@ Please check [this](Issues.md) document for the rest of the known issues and pos
 * Visual Studio 2022
 
 ### Instructions
-* Clone this repo with all of its submodules.
+* Clone this repo with **all of its submodules**.
 * Open the OptiScaler.sln with Visual Studio 2022.
 * Build the project
 
