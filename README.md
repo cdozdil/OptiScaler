@@ -111,6 +111,9 @@ Latency Flex is cross-vendor and cross-platform. Anti-Lag 2 only supports RDNA c
 > WINEDLLOVERRIDES=dxgi=n,b %COMMAND% 
 > ```
 
+> [!IMPORTANT]
+> **Please don't rename the ini file, it should stay as `OptiScaler.ini`**.
+
 > [!NOTE]
 > ### OptiScaler supports these filenames:
 > * dxgi.dll 
@@ -121,18 +124,12 @@ Latency Flex is cross-vendor and cross-platform. Anti-Lag 2 only supports RDNA c
 > * winhttp.dll
 > * OptiScaler.asi (with an ASI loader)
 
-> [!IMPORTANT]
-> **Please don't rename the ini file, it should stay as `OptiScaler.ini`**.
-
 > [!NOTE]
 > **_Example of correct installation (with additional Fakenvapi and Nukem mod)_**
-> ![Installation](https://github.com/user-attachments/assets/d2ef6d7b-59a2-45b5-96b0-38e61429cf6b)
-
-_To overcome DLSS 3.7's signature check requirements, I implemented a method developed by **Artur** (creator of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)). Later, this method increased the compatibility of `OverlayMenu`, allowed OptiScaler to **spoof DXGI and Vulkan**, let users override the `nvapi64.dll` and even let users to force Anisotropic Filtering and Mipmap Lod Bias. In short, this installation method allowed OptiScaler to provide more features to users._
+> ![Installation](https://github.com/user-attachments/assets/977a2a68-d117-42ea-a928-78ec43eedd28)
 
 > [!NOTE]
-> If there is another mod (e.g. Reshade etc.) that uses the same filename (e.g. `dxgi.dll`), if you rename that mod with the `-original` suffix (e.g. `dxgi-original.dll`), OptiScaler will load this file instead of the original library.   
-> Alternatively, you can create a new folder called `plugins` and put other mod files in this folder. OptiScaler will check this folder and if it finds the same dll file (for example `dxgi.dll`), it will load this file instead of the original library. 
+> If there is another mod (e.g. Reshade etc.) that uses the same filename (e.g. `dxgi.dll`), you can create a new folder called `plugins` and put other mod files in this folder. OptiScaler will check this folder and if it finds the same dll file (for example `dxgi.dll`), it will load this file instead of the original library.
 
 ![image](https://github.com/cdozdil/OptiScaler/assets/35529761/c4bf2a85-107b-49ac-b002-59d00fd06982)
 
@@ -190,6 +187,8 @@ _To overcome DLSS 3.7's signature check requirements, I implemented a method dev
 * Supports [Fakenvapi](https://github.com/FakeMichau/fakenvapi) integration which enables Reflex hooking and injecting Anti-Lag 2 or LatencyFlex (LFX)
 * Supports Nukem's FSR FG mod [dlssg-to-fsr3](https://github.com/Nukem9/dlssg-to-fsr3) (since version 0.7.7)  
  
+**To overcome DLSS 3.7's signature check requirements, OptiScaler uses a method developed by **Artur** (creator of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)).**
+
 ## Configuration
 Please check [this](Config.md) document for configuration parameters and explanations. If your GPU is not an Nvidia one, check [GPU spoofing options](Spoofing.md) *(Will be updated)*
 
@@ -197,7 +196,7 @@ Please check [this](Config.md) document for configuration parameters and explana
 If you can't open the in-game menu overlay:
 1. Please check that you have enabled DLSS, XeSS or FSR from game options
 2. If using legacy installation, please try opening menu while you are in-game (while 3D rendering is happening)
-3. If you are using **RTSS** (MSI Afterburner, CapFrameX), please enable this setting in RTSS and/or try updating RTSS. **For OptiFG please disable RTSS for best compatibility**
+3. If you are using **RTSS** (MSI Afterburner, CapFrameX), please enable this setting in RTSS and/or try updating RTSS. **When using OptiFG please disable RTSS for best compatibility**
  
  ![image](https://github.com/cdozdil/OptiScaler/assets/35529761/8afb24ac-662a-40ae-a97c-837369e03fc7)
 
@@ -215,7 +214,7 @@ Please check [this](Issues.md) document for the rest of the known issues and pos
 
 ## Thanks
 * @PotatoOfDoom for CyberFSR2
-* @Artur for DLSS Enabler and helping me implement NVAPI correctly
+* @Artur for DLSS Enabler and helping me implement NVNGX api correctly
 * @LukeFZ & @Nukem for their great mods and sharing their knowledge 
 * @FakeMichau for continous support, testing and feature creep
 * @QM for continous testing efforts and helping me to reach games
