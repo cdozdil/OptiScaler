@@ -134,7 +134,7 @@ bool Hudfix_Dx12::CheckCapture()
         return false;
 
     {
-        std::unique_lock<std::shared_mutex> lock(_counterMutex);
+        std::lock_guard<std::mutex> lock(_counterMutex);
         _captureCounter[fIndex]++;
 
         LOG_TRACE("frameCounter: {}, _captureCounter: {}, Limit: {}", State::Instance().currentFeature->FrameCount(), _captureCounter[fIndex], Config::Instance()->FGHUDLimit.value_or_default());
@@ -152,7 +152,7 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
     if (State::Instance().FGonlyUseCapturedResources)
     {
         auto result = _captureList.find(resource->buffer) != _captureList.end();
-        return CheckCapture();
+        return true;
     }
 
     auto currentMs = Util::MillisecondsNow();
@@ -203,7 +203,7 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
 
         resource->lastUsedFrame = currentMs;
 
-        return CheckCapture();
+        return true;
     }
 
     // extended not active 
@@ -249,7 +249,7 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
 
         resource->lastUsedFrame = currentMs;
 
-        return CheckCapture();
+        return true;
     }
 
     //LOG_DEBUG_ONLY("Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
@@ -430,10 +430,14 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
 
     do
     {
-        // Prevent double capture
-        //LOG_DEBUG("Waiting mutex");
-
         if (!CheckResource(resource))
+            break;
+
+        // Prevent double capture
+        LOG_DEBUG("Waiting _checkMutex");
+        std::lock_guard<std::mutex> lock(_checkMutex);
+
+        if(!CheckCapture())
             break;
 
         auto fIndex = GetIndex();
@@ -501,16 +505,20 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
                 _skipHudlessChecks = true;
 
                 // Reset command list
-                _commandAllocator[fIndex]->Reset();
-                _commandList[fIndex]->Reset(_commandAllocator[fIndex], nullptr);
+                //_commandAllocator[fIndex]->Reset();
+                //_commandList[fIndex]->Reset(_commandAllocator[fIndex], nullptr);
 
-                ResourceBarrier(_commandList[fIndex], _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-                _formatTransfer->Dispatch(State::Instance().currentD3D12Device, _commandList[fIndex], _captureBuffer[fIndex], _formatTransfer->Buffer());
-                ResourceBarrier(_commandList[fIndex], _captureBuffer[fIndex], D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+                ResourceBarrier(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                _formatTransfer->Dispatch(State::Instance().currentD3D12Device, cmdList, _captureBuffer[fIndex], _formatTransfer->Buffer());
+                ResourceBarrier(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
 
-                _commandList[fIndex]->Close();
-                ID3D12CommandList* cmdLists[1] = { _commandList[fIndex] };
-                _commandQueue->ExecuteCommandLists(1, cmdLists);
+                //ResourceBarrier(_commandList[fIndex], _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                //_formatTransfer->Dispatch(State::Instance().currentD3D12Device, _commandList[fIndex], _captureBuffer[fIndex], _formatTransfer->Buffer());
+                //ResourceBarrier(_commandList[fIndex], _captureBuffer[fIndex], D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+
+                //_commandList[fIndex]->Close();
+                //ID3D12CommandList* cmdLists[1] = { _commandList[fIndex] };
+                //_commandQueue->ExecuteCommandLists(1, cmdLists);
 
                 LOG_TRACE("Using _formatTransfer->Buffer()");
 
@@ -539,7 +547,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         {
             if (State::Instance().FGcaptureResources)
             {
-                std::unique_lock<std::shared_mutex> lock(_captureMutex);
+                std::lock_guard<std::mutex> lock(_captureMutex);
                 _captureList.insert(resource->buffer);
                 State::Instance().FGcapturedResourceCount = _captureList.size();
             }

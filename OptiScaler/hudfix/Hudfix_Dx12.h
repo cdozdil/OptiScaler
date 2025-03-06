@@ -48,8 +48,9 @@ private:
     // Capture List
     inline static std::set<ID3D12Resource*> _captureList;
 
-    inline static std::shared_mutex _captureMutex;
-    inline static std::shared_mutex _counterMutex;
+    inline static std::mutex _checkMutex;
+    inline static std::mutex _captureMutex;
+    inline static std::mutex _counterMutex;
     inline static INT64 _captureCounter[BUFFER_COUNT] = { 0, 0, 0, 0 };
     inline static FT_Dx12* _formatTransfer = nullptr;
 
