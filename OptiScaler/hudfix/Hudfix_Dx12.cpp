@@ -8,6 +8,9 @@
 
 #include <future>
 
+// Use time limit to stop hudless search before Present call
+//#define USE_TIME_LIMIT
+
 bool Hudfix_Dx12::CreateObjects()
 {
     if (_commandQueue != nullptr)
@@ -326,6 +329,7 @@ void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
     _captureCounter[index] = 0;
 
     // Calculate target time for capturing hudless
+#ifdef USE_TIME_LIMIT
     auto now = Util::MillisecondsNow();
     auto diff = 0.0f;
 
@@ -346,6 +350,7 @@ void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
 
     _upscaleEndTime = now;
     _lastDiffTime = 0.0f;
+#endif 
 }
 
 void Hudfix_Dx12::PresentStart()
@@ -560,16 +565,18 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
 
     } while (false);
 
+#ifdef USE_TIME_LIMIT
     // Check for limit time
-    //auto now = Util::MillisecondsNow();
-    //if (now > _targetTime && IsResourceCheckActive() && CheckCapture())
-    //{
-    //    LOG_WARN("Reached limit time: {} > {}", now, _targetTime);
-    //    // This will prevent resource tracker to check these operations
-    //    // Will reset after FG dispatch
-    //    _skipHudlessChecks = true;
-    //    DispatchFG(false);
-    //}
+    auto now = Util::MillisecondsNow();
+    if (now > _targetTime && IsResourceCheckActive() && CheckCapture())
+    {
+        LOG_WARN("Reached limit time: {} > {}", now, _targetTime);
+        // This will prevent resource tracker to check these operations
+        // Will reset after FG dispatch
+        _skipHudlessChecks = true;
+        DispatchFG(false);
+    }
+#endif // USE_TIME_LIMIT
 
     return false;
 }
