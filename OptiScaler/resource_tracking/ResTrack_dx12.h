@@ -5,7 +5,7 @@
 #include <hudfix/Hudfix_Dx12.h>
 
 // Clear heap info when ResourceDiscard is called
-#define USE_RESOURCE_DISCARD
+//#define USE_RESOURCE_DISCARD
 
 // Use CopyResource & CopyTextureRegion to capture hudless
 // It's a unstable

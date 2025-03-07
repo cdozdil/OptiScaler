@@ -176,7 +176,7 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
     // Need check more docs about D3D12 resource/heap usage
 
     // Compare aganist stored info first
-    if (resource->width != scDesc.BufferDesc.Width || resource->height != scDesc.BufferDesc.Height)
+    if (resource->width == 0 || resource->height == 0 || resource->buffer == nullptr)
         return false;
 
     // Check if info is valid
@@ -184,20 +184,20 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
     if (!Config::Instance()->FGAlwaysTrackHeaps.value_or_default() &&
         resource->lastUsedFrame != 0 && (currentMs - resource->lastUsedFrame) > 0.3)
     {
-        LOG_DEBUG("Resource {:X}, last used frame ({}) is too small ({}) from current one ({}) skipping resource!",
-                  (size_t)resource->buffer, currentMs - resource->lastUsedFrame, resource->lastUsedFrame, currentMs);
+        //LOG_DEBUG("Resource {:X}, last used frame ({}) is too small ({}) from current one ({}) skipping resource!",
+        //          (size_t)resource->buffer, currentMs - resource->lastUsedFrame, resource->lastUsedFrame, currentMs);
 
         resource->lastUsedFrame = currentMs; // use it next time if timing is ok
         return false;
     }
 
     // Check if resource is valid
-    LOG_TRACE("Check resource if resource is still valid, if crashes here ResTrack is missing something");
+    //LOG_TRACE("Check resource if resource is still valid, if crashes here ResTrack is missing something");
     ID3D12Resource* testRes;
     auto queryResult = resource->buffer->QueryInterface(IID_PPV_ARGS(&testRes));
     if (queryResult != S_OK)
     {
-        LOG_WARN("Resource is not valid anymore!");
+        //LOG_WARN("Resource is not valid anymore!");
         return false;
     }
 
@@ -218,7 +218,7 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
     if ((resDesc.Flags & (D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY |
         D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE | D3D12_RESOURCE_FLAG_VIDEO_ENCODE_REFERENCE_ONLY)) > 0)
     {
-        LOG_TRACE("Skip by flag: {:X}", (UINT)resDesc.Flags);
+        //LOG_TRACE("Skip by flag: {:X}", (UINT)resDesc.Flags);
         return false;
     }
 
