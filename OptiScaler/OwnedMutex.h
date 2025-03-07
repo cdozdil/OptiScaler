@@ -1,10 +1,11 @@
 #pragma once
 
 #include "pch.h"
+#include <shared_mutex>
 
 class OwnedMutex {
 private:
-    std::mutex mtx;
+    std::shared_mutex mtx;
     uint32_t owner{}; // don't use 0
 
 public:

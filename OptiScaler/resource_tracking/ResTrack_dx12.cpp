@@ -11,6 +11,8 @@
 #include <detours/detours.h>
 #include <ankerl/unordered_dense.h>
 
+#define LOG_HEAP_MOVES
+
 // Device hooks for FG
 typedef void(*PFN_CreateRenderTargetView)(ID3D12Device* This, ID3D12Resource* pResource, D3D12_RENDER_TARGET_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 typedef void(*PFN_CreateShaderResourceView)(ID3D12Device* This, ID3D12Resource* pResource, D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
@@ -65,7 +67,7 @@ static PFN_CopyTextureRegion o_CopyTextureRegion = nullptr;
 
 #ifdef USE_RESOURCE_DISCARD
 static PFN_DiscardResource o_DiscardResource = nullptr;
-static std::shared_mutex _resourceMutex;
+static std::mutex _resourceMutex;
 #endif
 
 // heaps
@@ -350,9 +352,9 @@ static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* p
 {
     o_DiscardResource(This, pResource, pRegion);
 
-    if (IsFGCommandList(This) && pRegion == nullptr)
+    if (!IsFGCommandList(This) && pRegion == nullptr)
     {
-        std::unique_lock<std::shared_mutex> lock(_resourceMutex);
+        std::lock_guard<std::mutex> lock(_resourceMutex);
 
         if (!fgHandlesByResources.contains(pResource))
             return;
@@ -364,7 +366,7 @@ static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* p
         if (heap != nullptr)
             heap->SetByCpuHandle(heapInfo->cpuStart, {});
 
-        LOG_DEBUG("Erased: {:X}", (size_t)pResource);
+        LOG_TRACE("Erased: {:X}", (size_t)pResource);
         fgHandlesByResources.erase(pResource);
     }
 }
@@ -395,6 +397,14 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
 
     o_CreateRenderTargetView(This, pResource, pDesc, DestDescriptor);
 
+    if (pResource == nullptr)
+    {
+        LOG_TRACE("Unbind: {:X}", DestDescriptor.ptr);
+        auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
+        if (heap != nullptr)
+            heap->SetByCpuHandle(DestDescriptor.ptr, {});
+    }
+
     if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_RTV_DIMENSION_TEXTURE2D)
         return;
 
@@ -410,7 +420,7 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
 
 #ifdef USE_RESOURCE_DISCARD
     {
-        std::unique_lock<std::shared_mutex> lock(_resourceMutex);
+        std::lock_guard<std::mutex> lock(_resourceMutex);
         fgHandlesByResources.insert_or_assign(pResource, info);
     }
 #endif
@@ -448,6 +458,16 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
 
     o_CreateShaderResourceView(This, pResource, pDesc, DestDescriptor);
 
+    
+
+    if (pResource == nullptr)
+    {
+        LOG_TRACE("Unbind: {:X}", DestDescriptor.ptr);
+        auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
+        if (heap != nullptr)
+            heap->SetByCpuHandle(DestDescriptor.ptr, {});
+    }
+
     if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_SRV_DIMENSION_TEXTURE2D)
         return;
 
@@ -463,7 +483,7 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
 
 #ifdef USE_RESOURCE_DISCARD
     {
-        std::unique_lock<std::shared_mutex> lock(_resourceMutex);
+        std::lock_guard<std::mutex> lock(_resourceMutex);
         fgHandlesByResources.insert_or_assign(pResource, info);
     }
 #endif
@@ -500,6 +520,14 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
 
     o_CreateUnorderedAccessView(This, pResource, pCounterResource, pDesc, DestDescriptor);
 
+    if (pResource == nullptr)
+    {
+        LOG_TRACE("Unbind: {:X}", DestDescriptor.ptr);
+        auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
+        if (heap != nullptr)
+            heap->SetByCpuHandle(DestDescriptor.ptr, {});
+    }
+
     if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_UAV_DIMENSION_TEXTURE2D)
         return;
 
@@ -515,7 +543,7 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
 
 #ifdef USE_RESOURCE_DISCARD
     {
-        std::unique_lock<std::shared_mutex> lock(_resourceMutex);
+        std::lock_guard<std::mutex> lock(_resourceMutex);
         fgHandlesByResources.insert_or_assign(pResource, info);
     }
 #endif
