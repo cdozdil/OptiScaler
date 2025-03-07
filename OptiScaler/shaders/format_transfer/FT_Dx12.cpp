@@ -122,9 +122,9 @@ void FT_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RES
     _bufferState = InState;
 }
 
-bool FT_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource, ID3D12Resource* OutResource)
+bool FT_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource)
 {
-    if (!_init || InDevice == nullptr || InCmdList == nullptr || InResource == nullptr || OutResource == nullptr)
+    if (!_init || InDevice == nullptr || InCmdList == nullptr || InResource == nullptr || _buffer == nullptr)
         return false;
 
     LOG_DEBUG("[{0}] Start!", _name);
@@ -151,7 +151,9 @@ bool FT_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     }
 
     auto inDesc = InResource->GetDesc();
-    auto outDesc = OutResource->GetDesc();
+    auto outDesc = _buffer->GetDesc();
+
+    SetBufferState(InCmdList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
     // Create SRV for Input Texture
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -168,7 +170,7 @@ bool FT_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     uavDesc.Format = DXGI_FORMAT_R32_UINT;
     uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
     uavDesc.Texture2D.MipSlice = 0;
-    InDevice->CreateUnorderedAccessView(OutResource, nullptr, &uavDesc, _cpuUavHandle[_counter]);
+    InDevice->CreateUnorderedAccessView(_buffer, nullptr, &uavDesc, _cpuUavHandle[_counter]);
 
     ID3D12DescriptorHeap* heaps[] = { _srvHeap[_counter] };
     InCmdList->SetDescriptorHeaps(_countof(heaps), heaps);
