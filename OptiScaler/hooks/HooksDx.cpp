@@ -239,8 +239,9 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         if (!_dx12Device)
             LOG_DEBUG("D3D12CommandQueue captured");
 
-        HooksDx::fgFSRCommandQueue = (ID3D12CommandQueue*)pDevice;
-        HooksDx::fgFSRCommandQueue->SetName(L"fgFSRSwapChainQueue");
+        //HooksDx::fgFSRCommandQueue = (ID3D12CommandQueue*)pDevice;
+        //HooksDx::fgFSRCommandQueue->SetName(L"fgFSRSwapChainQueue");
+        State::Instance().currentCommandQueue = cq;
         State::Instance().swapchainApi = DX12;
 
         if (cq->GetDevice(IID_PPV_ARGS(&device12)) == S_OK)
@@ -1315,10 +1316,10 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
     // Assuming RTSS is creating a D3D11on12 device, not sure why but sometimes RTSS tries to create 
     // it's D3D11on12 device with old CommandQueue which results crash
     // I am changing it's CommandQueue with current swapchain's command queue
-    if (HooksDx::gameCommandQueue != nullptr && *ppCommandQueues != HooksDx::gameCommandQueue && GetModuleHandle(L"RTSSHooks64.dll") != nullptr && pDevice == State::Instance().currentD3D12Device)
+    if (State::Instance().currentCommandQueue != nullptr && *ppCommandQueues != State::Instance().currentCommandQueue && GetModuleHandle(L"RTSSHooks64.dll") != nullptr && pDevice == State::Instance().currentD3D12Device)
     {
-        LOG_INFO("Replaced RTSS CommandQueue with correct one {0:X} -> {1:X}", (UINT64)*ppCommandQueues, (UINT64)HooksDx::gameCommandQueue);
-        *ppCommandQueues = HooksDx::gameCommandQueue;
+        LOG_INFO("Replaced RTSS CommandQueue with correct one {0:X} -> {1:X}", (UINT64)*ppCommandQueues, (UINT64)State::Instance().currentCommandQueue);
+        *ppCommandQueues = State::Instance().currentCommandQueue;
         rtss = true;
     }
 

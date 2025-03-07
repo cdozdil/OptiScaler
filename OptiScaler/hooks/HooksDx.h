@@ -38,10 +38,6 @@ namespace HooksDx
     inline int currentFrameIndex = 0;
     inline int previousFrameIndex = 0;
 
-    // FG
-    inline ID3D12CommandQueue* fgFSRCommandQueue = nullptr;
-    inline ID3D12CommandQueue* gameCommandQueue = nullptr;
-
     void UnHookDx();
     void HookDx11();
     void HookDx12();
