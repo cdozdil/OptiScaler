@@ -143,6 +143,7 @@ typedef struct ResourceHeapInfo
 class ResTrack_Dx12 {
 private:
     inline static bool _presentDone = true;
+    inline static std::mutex _drawMutex;
 
     static bool IsHudFixActive();
     

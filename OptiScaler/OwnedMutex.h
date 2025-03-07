@@ -2,11 +2,9 @@
 
 #include "pch.h"
 
-#include <shared_mutex>
-
 class OwnedMutex {
 private:
-    std::shared_mutex mtx;
+    std::mutex mtx;
     uint32_t owner{}; // don't use 0
 
 public:

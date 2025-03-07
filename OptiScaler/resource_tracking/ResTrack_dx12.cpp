@@ -82,7 +82,7 @@ static std::set<ID3D12Resource*> fgCaptureList;
 static ankerl::unordered_dense::map <ID3D12GraphicsCommandList*, ankerl::unordered_dense::map <ID3D12Resource*, ResourceInfo>> fgPossibleHudless[BUFFER_COUNT];
 
 static std::shared_mutex heapMutex;
-static std::shared_mutex hudlessMutex;
+static std::mutex hudlessMutex;
 
 inline static IID streamlineRiid{};
 static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject)
@@ -898,7 +898,7 @@ void ResTrack_Dx12::hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* 
         }
 
         {
-            std::unique_lock<std::shared_mutex> lock(hudlessMutex);
+            std::lock_guard<std::mutex> lock(hudlessMutex);
 
             auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
 
@@ -986,7 +986,7 @@ void ResTrack_Dx12::hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT N
 
             {
                 // check for command list
-                std::unique_lock<std::shared_mutex> lock(hudlessMutex);
+                std::lock_guard<std::mutex> lock(hudlessMutex);
 
                 if (!fgPossibleHudless[fIndex].contains(This))
                 {
@@ -1056,7 +1056,7 @@ void ResTrack_Dx12::hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* T
         }
 
         {
-            std::unique_lock<std::shared_mutex> lock(hudlessMutex);
+            std::lock_guard<std::mutex> lock(hudlessMutex);
 
             auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
 
@@ -1116,7 +1116,7 @@ void ResTrack_Dx12::hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT Vertex
         auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
 
         {
-            std::unique_lock<std::shared_mutex> lock(hudlessMutex);
+            std::lock_guard<std::mutex> lock(hudlessMutex);
 
             // if can't find output skip
             if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
@@ -1135,6 +1135,9 @@ void ResTrack_Dx12::hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT Vertex
 
                 for (auto& [key, val] : val0)
                 {
+                    //LOG_DEBUG("Waiting _drawMutex {:X}", (size_t)val.buffer);
+                    std::lock_guard<std::mutex> lock(_drawMutex);
+
                     if (Hudfix_Dx12::CheckForHudless(__FUNCTION__, This, &val, val.state))
                     {
                         break;
@@ -1186,7 +1189,7 @@ void ResTrack_Dx12::hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT
         auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
 
         {
-            std::unique_lock<std::shared_mutex> lock(hudlessMutex);
+            std::lock_guard<std::mutex> lock(hudlessMutex);
 
             // if can't find output skip
             if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
@@ -1205,7 +1208,8 @@ void ResTrack_Dx12::hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT
 
                 for (auto& [key, val] : val0)
                 {
-                    LOG_DEBUG_ONLY("Found matching final image");
+                    //LOG_DEBUG("Waiting _drawMutex {:X}", (size_t)val.buffer);
+                    std::lock_guard<std::mutex> lock(_drawMutex);
 
                     if (Hudfix_Dx12::CheckForHudless(__FUNCTION__, This, &val, val.state))
                     {
@@ -1231,8 +1235,8 @@ void ResTrack_Dx12::hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroup
     if (This == MenuOverlayDx::MenuCommandList() || IsFGCommandList(This))
         return;
 
-    if (Hudfix_Dx12::SkipHudlessChecks())
-        return;
+    //if (Hudfix_Dx12::SkipHudlessChecks())
+    //    return;
 
     LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
 
@@ -1241,7 +1245,7 @@ void ResTrack_Dx12::hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroup
         auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
 
         {
-            std::unique_lock<std::shared_mutex> lock(hudlessMutex);
+            std::lock_guard<std::mutex> lock(hudlessMutex);
 
             // if can't find output skip
             if (fgPossibleHudless[fIndex].size() == 0 || !fgPossibleHudless[fIndex].contains(This))
@@ -1260,7 +1264,8 @@ void ResTrack_Dx12::hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroup
 
                 for (auto& [key, val] : val0)
                 {
-                    LOG_DEBUG_ONLY("Found matching final image");
+                    //LOG_DEBUG("Waiting _drawMutex {:X}", (size_t)val.buffer);
+                    std::lock_guard<std::mutex> lock(_drawMutex);
 
                     if (Hudfix_Dx12::CheckForHudless(__FUNCTION__, This, &val, val.state))
                     {
@@ -1459,7 +1464,7 @@ void ResTrack_Dx12::HookDevice(ID3D12Device* device)
 
 void ResTrack_Dx12::ResetCaptureList()
 {
-    std::unique_lock<std::shared_mutex> lock(hudlessMutex);
+    std::lock_guard<std::mutex> lock(hudlessMutex);
     fgCaptureList.clear();
 }
 
@@ -1467,7 +1472,7 @@ void ResTrack_Dx12::ClearPossibleHudless()
 {
     LOG_DEBUG("");
 
-    std::unique_lock<std::shared_mutex> lock(hudlessMutex);
+    std::lock_guard<std::mutex> lock(hudlessMutex);
     fgPossibleHudless->clear();
     _presentDone = false;
 
