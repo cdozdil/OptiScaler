@@ -46,6 +46,13 @@ bool Hudfix_Dx12::CreateObjects()
                 LOG_ERROR("_commandList->Close: {:X}", (unsigned long)result);
                 break;
             }
+
+            result = State::Instance().currentD3D12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_fence[i]));
+            if (result != S_OK)
+            {
+                LOG_ERROR("CreateFence: {0:X}", (unsigned long)result);
+                break;
+        }
         }
 
         // Create a command queue for frame generation

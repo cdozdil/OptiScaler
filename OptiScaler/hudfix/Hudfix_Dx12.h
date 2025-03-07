@@ -56,6 +56,7 @@ private:
     inline static ID3D12CommandQueue* _commandQueue = nullptr;
     inline static ID3D12GraphicsCommandList* _commandList[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
     inline static ID3D12CommandAllocator* _commandAllocator[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
+    inline static ID3D12Fence* _fence[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
     
     inline static bool _skipHudlessChecks = false;
 
