@@ -7,38 +7,32 @@
 //#include <d3dkmthk.h>
 
 // Manually define structures
+typedef struct _D3DKMT_UMDFILENAMEINFO_L {
+    UINT    Version;
+    WCHAR   UmdFileName[MAX_PATH];
+} D3DKMT_UMDFILENAMEINFO_L;
 
-typedef struct _D3DKMT_OPENADAPTERFROMLUID_L
+typedef struct _D3DKMT_ADAPTERINFO_L
 {
-    LUID            AdapterLuid;
-    UINT   hAdapter;
-} D3DKMT_OPENADAPTERFROMLUID_L;
-
-typedef struct _D3DKMT_ADAPTERINFO_L {
-    uint64_t hAdapter;
-    LUID AdapterLuid;
-    ULONG NumOfSources;
-    BOOL bPrecisePresentRegionsPreferred;
+    UINT    hAdapter;
+    LUID    AdapterLuid;
+    ULONG   NumOfSources;
+    BOOL    bPrecisePresentRegionsPreferred;
 } D3DKMT_ADAPTERINFO_L;
+
+typedef struct _D3DKMT_QUERYADAPTERINFO_L
+{
+    UINT    hAdapter;
+    UINT    Type;
+    VOID*   pPrivateDriverData;
+    UINT    PrivateDriverDataSize;
+} D3DKMT_QUERYADAPTERINFO_L;
 
 typedef struct _D3DKMT_ENUMADAPTERS_L
 {
-    ULONG  NumAdapters;
-    D3DKMT_ADAPTERINFO_L Adapters[16];
+    ULONG               NumAdapters;
+    D3DKMT_ADAPTERINFO_L  Adapters[16];
 } D3DKMT_ENUMADAPTERS_L;
-
-typedef struct _D3DKMT_UMDFILENAMEINFO_L {
-    ULONG Version;
-    WCHAR UmdFileName[MAX_PATH];
-    WCHAR UmdResourceFileName[MAX_PATH];
-} D3DKMT_UMDFILENAMEINFO_L;
-
-typedef struct _D3DKMT_QUERYADAPTERINFO_L {
-    uint64_t  hAdapter;
-    ULONG   Type;
-    VOID* pPrivateDriverData;
-    UINT   PrivateDriverDataSize;
-} D3DKMT_QUERYADAPTERINFO_L;
 
 // Function pointers
 typedef UINT(*PFN_D3DKMTQueryAdapterInfo_L)(D3DKMT_QUERYADAPTERINFO_L*);
@@ -55,7 +49,7 @@ inline static std::optional<std::filesystem::path> GetDriverStore()
         LOG_ERROR("Failed to load Gdi32.dll");
         return result;
     }
-
+     
     do
     {
         auto o_D3DKMTEnumAdapters = (PFN_D3DKMTEnumAdapters_L)GetProcAddress(hGdi32, "D3DKMTEnumAdapters");
@@ -98,7 +92,7 @@ inline static std::optional<std::filesystem::path> GetDriverStore()
         {
             LOG_ERROR("No adapters found.");
             break;
-        }
+        } 
 
         auto hr = o_D3DKMTQueryAdapterInfo(&queryAdapterInfo);
 
