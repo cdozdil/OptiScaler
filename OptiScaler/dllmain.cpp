@@ -1,8 +1,11 @@
 #include "dllmain.h"
+
+#include "Util.h"
+#include "Logger.h"
 #include "resource.h"
 
-#include "Logger.h"
-#include "Util.h"
+#include "FSR4Upgrade.h"
+
 #include "proxies/NVNGX_Proxy.h"
 #include "proxies/XeSS_Proxy.h"
 #include "proxies/FfxApi_Proxy.h"
@@ -15,6 +18,8 @@
 #include "hooks/HooksVk.h"
 
 #include <vulkan/vulkan_core.h>
+
+HMODULE mod_amdxc64 = nullptr;
 
 // Enables hooking of GetModuleHandle
 // which might create issues, not tested very well
@@ -43,6 +48,8 @@ typedef BOOL(*PFN_GetModuleHandleExA)(DWORD dwFlags, LPCSTR lpModuleName, HMODUL
 typedef BOOL(*PFN_GetModuleHandleExW)(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE* phModule);
 
 typedef const char* (CDECL* PFN_wine_get_version)(void);
+
+typedef HRESULT(__cdecl* PFN_AmdExtD3DCreateInterface)(IUnknown* pOuter, REFIID riid, void** ppvObject);
 
 typedef struct VkDummyProps
 {
@@ -74,6 +81,9 @@ static PFN_vkEnumerateInstanceExtensionProperties o_vkEnumerateInstanceExtension
 
 static uint32_t vkEnumerateInstanceExtensionPropertiesCount = 0;
 static uint32_t vkEnumerateDeviceExtensionPropertiesCount = 0;
+
+static AmdExtFfxApi* _amdExtFfxApi = nullptr;
+static PFN_AmdExtD3DCreateInterface o_AmdExtD3DCreateInterface = nullptr;
 
 #define DEFINE_NAME_VECTORS(varName, libName) \
     inline std::vector<std::string> varName##Names = { libName ".dll", libName }; \
@@ -710,10 +720,38 @@ static HMODULE LoadNvngxDlss(std::wstring originalPath)
 
 #pragma region Load & nvngxDlss Library hooks
 
+HRESULT STDMETHODCALLTYPE hkAmdExtD3DCreateInterface(IUnknown* pOuter, REFIID riid, void** ppvObject)
+{
+    // If querying IAmdExtFfxApi 
+    if (riid == __uuidof(IAmdExtFfxApi))
+    {
+        if (_amdExtFfxApi == nullptr)
+            _amdExtFfxApi = new AmdExtFfxApi();
+
+        // Return custom one
+        *ppvObject = _amdExtFfxApi;
+
+        return S_OK;
+    }
+
+    if (o_AmdExtD3DCreateInterface != nullptr)
+        return o_AmdExtD3DCreateInterface(pOuter, riid, ppvObject);
+
+    return E_NOINTERFACE;
+}
+
 static FARPROC hkGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 {
     if (hModule == dllModule && lpProcName != nullptr)
         LOG_DEBUG("Trying to get process address of {0}", lpProcName);
+
+    if (hModule == mod_amdxc64)
+    {
+        if (lpProcName != nullptr && strcmp(lpProcName, "AmdExtD3DCreateInterface") == 0)
+        {
+            return (FARPROC)hkAmdExtD3DCreateInterface;
+        }
+    }
 
     if (State::Instance().isRunningOnLinux && lpProcName != nullptr && hModule == GetModuleHandle(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
         return (FARPROC)&customD3DKMTEnumAdapters2;
@@ -2289,6 +2327,15 @@ static void CheckWorkingMode()
 
                 reshadeHandle = LoadLibrary(rsFile.c_str());
                 LOG_INFO("Loading ReShade64.dll, result: {0:X}", (size_t)reshadeHandle);
+            }
+
+            mod_amdxc64 = GetModuleHandle(L"amdxc64.dll");
+            if (mod_amdxc64 == nullptr)
+                mod_amdxc64 = LoadLibrary(L"amdxc64.dll");
+
+            if (mod_amdxc64 != nullptr)
+            {
+                o_AmdExtD3DCreateInterface = (PFN_AmdExtD3DCreateInterface)GetProcAddress(mod_amdxc64, "AmdExtD3DCreateInterface");
             }
 
             AttachHooks();
