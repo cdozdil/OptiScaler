@@ -5,7 +5,7 @@
 While previously only DLSS2+ inputs were supported, newer versions also added support for XeSS and FSR2+ inputs (_with some caveats_$`^1`$). For example, if a game has DLSS only, the user can replace DLSS with XeSS or FSR 3.1 (same goes for an FSR or XeSS-only game). It also offers extensive customization options for all users, including those with Nvidia GPUs using DLSS.
 
 **Key aspects of OptiScaler:**
-- Enables usage of XeSS, FSR2, FSR3 and DLSS in upscaler-enabled games
+- Enables usage of XeSS, FSR2, FSR3, **FSR4**$`^2`$ and DLSS in upscaler-enabled games
 - Allows users to fine-tune their upscaling experience
 - Offers a wide range of tweaks and enhancements (RCAS & MAS, Output Scaling, DLSS Presets, Ratio & DRS Overrides etc.)
 - With version 0.7.0 and above, added experimental frame generation support with possible HUDfix solution ([**OptiFG**](#optifg-powered-by-fsr3-fg--hudfix-experimental-hud-ghosting-fix) by FSR3)
@@ -17,7 +17,10 @@ While previously only DLSS2+ inputs were supported, newer versions also added su
 > Also please check the  [***Optiscaler known issues***](#known-issues) at the end regarding **RTSS** compatibility
 
 > [!NOTE]
-> *[1] Regarding **XeSS**, since Unreal Engine plugin does not provide depth, replacing in-game XeSS breaks other upscalers, but you can still apply RCAS sharpening to XeSS to reduce blurry visuals (in short, if it's a UE game, in-game XeSS only works with XeSS in Opti overlay).  
+> *[1] Regarding **XeSS**, since Unreal Engine plugin does not provide depth, replacing in-game XeSS breaks other upscalers, but you can still apply RCAS sharpening to XeSS to reduce blurry visuals (in short, if it's a UE game, in-game XeSS only works with XeSS in OptiScaler overlay).*
+>   
+> *[2] Regarding **FSR4**, support added with recent nightly builds. Please check [compatibility list](https://github.com/cdozdil/OptiScaler/wiki/FSR4-Compatibility-List) for known supported games.*
+>   
 Regarding **FSR inputs**, FSR 3.1 is the first version with a fully standardised, forward-looking API and should be fully supported. Since FSR2 and FSR3 support custom interfaces, game support will depend on the developers' implementation. With Unreal Engine games, you might need [ini tweaks](https://github.com/cdozdil/OptiScaler/wiki/Unreal-Engine-Tweaks) for FSR inputs.*
 
 ## How it works?
