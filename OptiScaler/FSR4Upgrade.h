@@ -24,7 +24,7 @@ typedef struct _D3DKMT_QUERYADAPTERINFO_L
 {
     UINT    hAdapter;
     UINT    Type;
-    VOID*   pPrivateDriverData;
+    VOID* pPrivateDriverData;
     UINT    PrivateDriverDataSize;
 } D3DKMT_QUERYADAPTERINFO_L;
 
@@ -38,9 +38,9 @@ typedef struct _D3DKMT_ENUMADAPTERS_L
 typedef UINT(*PFN_D3DKMTQueryAdapterInfo_L)(D3DKMT_QUERYADAPTERINFO_L*);
 typedef UINT(*PFN_D3DKMTEnumAdapters_L)(D3DKMT_ENUMADAPTERS_L*);
 
-inline static std::optional<std::filesystem::path> GetDriverStore()
+inline static std::vector<std::filesystem::path> GetDriverStore()
 {
-    std::optional<std::filesystem::path> result;
+    std::vector<std::filesystem::path> result;
 
     // Load D3DKMT functions dynamically
     HMODULE hGdi32 = LoadLibrary(L"Gdi32.dll");
@@ -49,14 +49,13 @@ inline static std::optional<std::filesystem::path> GetDriverStore()
         LOG_ERROR("Failed to load Gdi32.dll");
         return result;
     }
-     
+
     do
     {
         auto o_D3DKMTEnumAdapters = (PFN_D3DKMTEnumAdapters_L)GetProcAddress(hGdi32, "D3DKMTEnumAdapters");
-        //auto o_D3DKMTOpenAdapterFromLuid = (PFN_D3DKMTOpenAdapterFromLuid_L)GetProcAddress(hGdi32, "D3DKMTOpenAdapterFromLuid");
         auto o_D3DKMTQueryAdapterInfo = (PFN_D3DKMTQueryAdapterInfo_L)GetProcAddress(hGdi32, "D3DKMTQueryAdapterInfo");
 
-        if (o_D3DKMTEnumAdapters == nullptr /*|| o_D3DKMTOpenAdapterFromLuid == nullptr*/ || o_D3DKMTQueryAdapterInfo == nullptr)
+        if (o_D3DKMTEnumAdapters == nullptr || o_D3DKMTQueryAdapterInfo == nullptr)
         {
             LOG_ERROR("Failed to resolve D3DKMT functions");
             break;
@@ -65,44 +64,40 @@ inline static std::optional<std::filesystem::path> GetDriverStore()
         D3DKMT_UMDFILENAMEINFO_L umdFileInfo = {};
         D3DKMT_QUERYADAPTERINFO_L queryAdapterInfo = {};
 
-        queryAdapterInfo.Type = 1;
+        queryAdapterInfo.Type = 1; // KMTQAITYPE_UMDRIVERNAME
         queryAdapterInfo.pPrivateDriverData = &umdFileInfo;
         queryAdapterInfo.PrivateDriverDataSize = sizeof(umdFileInfo);
 
         D3DKMT_ENUMADAPTERS_L enumAdapters = {};
 
         // Query the number of adapters first
-        if (o_D3DKMTEnumAdapters(&enumAdapters) != 0) 
+        if (o_D3DKMTEnumAdapters(&enumAdapters) != 0)
         {
             LOG_ERROR("Failed to enumerate adapters.");
             break;
         }
 
         // If there are any adapters, the first one should be in the list
-        if (enumAdapters.NumAdapters > 0) 
+        if (enumAdapters.NumAdapters > 0)
         {
-            D3DKMT_ADAPTERINFO_L adapter = enumAdapters.Adapters[0];
+            for (size_t i = 0; i < enumAdapters.NumAdapters; i++)
+            {
+                D3DKMT_ADAPTERINFO_L adapter = enumAdapters.Adapters[i];
+                queryAdapterInfo.hAdapter = adapter.hAdapter;
 
-            // Now you have the first adapter with a D3DKMT_HANDLE
-            queryAdapterInfo.hAdapter = adapter.hAdapter;
+                auto hr = o_D3DKMTQueryAdapterInfo(&queryAdapterInfo);
 
-            LOG_INFO("Found adapter with handle: {:X}", (size_t)adapter.hAdapter);
+                if (hr != 0)
+                    LOG_ERROR("Failed to query adapter info {:X}", hr);
+                else
+                    result.push_back(std::filesystem::path(umdFileInfo.UmdFileName).parent_path());
+            }
         }
-        else 
+        else
         {
             LOG_ERROR("No adapters found.");
             break;
-        } 
-
-        auto hr = o_D3DKMTQueryAdapterInfo(&queryAdapterInfo);
-
-        if (hr != 0)
-        {
-            LOG_ERROR("Failed to query adapter info {:X}", hr);
-            break;
         }
-
-        result = std::filesystem::path(umdFileInfo.UmdFileName);
 
     } while (false);
 
@@ -131,10 +126,21 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
 
         if (pfnUpdateFfxApiProvider == nullptr)
         {
-            auto dllPath = GetDriverStore();
+            auto storePath = GetDriverStore();
+            HMODULE fsr4Module = nullptr;
 
-            // TODO: Add ini option for it
-            auto fsr4Module = LoadLibrary(L"amdxcffx64.dll");
+            for (size_t i = 0; i < storePath.size(); i++)
+            {
+                if (fsr4Module == nullptr)
+                {
+                    auto dllPath = storePath[i] / L"amdxcffx64.dll";
+                    LOG_DEBUG("Trying to load: {}", wstring_to_string(dllPath.c_str()));
+                    fsr4Module = LoadLibrary(dllPath.c_str());
+                }
+            }
+
+            if (fsr4Module == nullptr)
+                fsr4Module = LoadLibrary(L"amdxcffx64.dll");
 
             if (fsr4Module == nullptr)
             {
