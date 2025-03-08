@@ -720,6 +720,7 @@ static HMODULE LoadNvngxDlss(std::wstring originalPath)
 
 #pragma region Load & nvngxDlss Library hooks
 
+// For FSR4 Upgrade
 HRESULT STDMETHODCALLTYPE hkAmdExtD3DCreateInterface(IUnknown* pOuter, REFIID riid, void** ppvObject)
 {
     // If querying IAmdExtFfxApi 
@@ -745,12 +746,12 @@ static FARPROC hkGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
     if (hModule == dllModule && lpProcName != nullptr)
         LOG_DEBUG("Trying to get process address of {0}", lpProcName);
 
-    if (hModule == mod_amdxc64)
+    // For FSR4 Upgrade
+    if (hModule == mod_amdxc64 && o_AmdExtD3DCreateInterface != nullptr &&
+        lpProcName != nullptr && strcmp(lpProcName, "AmdExtD3DCreateInterface") == 0)
     {
-        if (lpProcName != nullptr && strcmp(lpProcName, "AmdExtD3DCreateInterface") == 0)
-        {
-            return (FARPROC)hkAmdExtD3DCreateInterface;
-        }
+        // Return custom method for upgrade
+        return (FARPROC)hkAmdExtD3DCreateInterface;
     }
 
     if (State::Instance().isRunningOnLinux && lpProcName != nullptr && hModule == GetModuleHandle(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
@@ -2329,14 +2330,13 @@ static void CheckWorkingMode()
                 LOG_INFO("Loading ReShade64.dll, result: {0:X}", (size_t)reshadeHandle);
             }
 
+            // For FSR4 Upgrade
             mod_amdxc64 = GetModuleHandle(L"amdxc64.dll");
             if (mod_amdxc64 == nullptr)
                 mod_amdxc64 = LoadLibrary(L"amdxc64.dll");
 
             if (mod_amdxc64 != nullptr)
-            {
                 o_AmdExtD3DCreateInterface = (PFN_AmdExtD3DCreateInterface)GetProcAddress(mod_amdxc64, "AmdExtD3DCreateInterface");
-            }
 
             AttachHooks();
         }
