@@ -283,6 +283,14 @@ XESS_API xess_result_t xessD3D12Execute(xess_context_handle_t hContext, ID3D12Gr
     params->Set(NVSDK_NGX_Parameter_Color, pExecParams->pColorTexture);
     params->Set(NVSDK_NGX_Parameter_MotionVectors, pExecParams->pVelocityTexture);
     params->Set(NVSDK_NGX_Parameter_Output, pExecParams->pOutputTexture);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_X, pExecParams->inputColorBase.x);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_Y, pExecParams->inputColorBase.y);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_X, pExecParams->inputDepthBase.x);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_Y, pExecParams->inputDepthBase.y);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_X, pExecParams->inputMotionVectorBase.x);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_Y, pExecParams->inputMotionVectorBase.y);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_X, pExecParams->outputColorBase.x);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_Y, pExecParams->outputColorBase.y);
 
     State::Instance().setInputApiName = "XeSS";
 
