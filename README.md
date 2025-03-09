@@ -100,7 +100,7 @@ _**3.** If the Bat file wasn't successful, please check the **Manual** steps._
 **3a.** **Either** locate the `nvngx_dlss.dll` file (for UE games, generally in one of the subfolders under `Engine/Plugins`), create a copy, rename the copy to `nvngx.dll` and put it beside Optiscaler    
 **3b.** **OR** download `nvngx_dlss.dll` from e.g. [TechPowerUp](https://www.techpowerup.com/download/nvidia-dlss-dll/) or [Streamline SDK repo](https://github.com/NVIDIAGameWorks/Streamline/tree/main/bin/x64) if you don't want to search, rename it to `nvngx.dll` and put it beside Optiscaler   
 
-Check the [screenshot](#example-of-correct-installation-with-additional-fakenvapi-and-nukem-mod) for proper installation 
+_Check the [screenshot](#example-of-correct-installation-with-additional-fakenvapi-and-nukem-mod) for proper installation_
 
 #### [Nukem's dlssg-to-fsr3]
 
