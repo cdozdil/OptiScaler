@@ -18,10 +18,11 @@ While previously only DLSS2+ inputs were supported, newer versions also added su
 
 > [!NOTE]
 > *[1] Regarding **XeSS**, since Unreal Engine plugin does not provide depth, replacing in-game XeSS breaks other upscalers, but you can still apply RCAS sharpening to XeSS to reduce blurry visuals (in short, if it's a UE game, in-game XeSS only works with XeSS in OptiScaler overlay).*
->   
-> *[2] Regarding **FSR4**, support added with recent nightly builds. Please check [compatibility list](https://github.com/cdozdil/OptiScaler/wiki/FSR4-Compatibility-List) for known supported games.*
->   
-Regarding **FSR inputs**, FSR 3.1 is the first version with a fully standardised, forward-looking API and should be fully supported. Since FSR2 and FSR3 support custom interfaces, game support will depend on the developers' implementation. With Unreal Engine games, you might need [ini tweaks](https://github.com/cdozdil/OptiScaler/wiki/Unreal-Engine-Tweaks) for FSR inputs.*
+>
+> *Regarding **FSR inputs**, FSR 3.1 is the first version with a fully standardised, forward-looking API and should be fully supported. Since FSR2 and FSR3 support custom interfaces, game support will depend on the developers' implementation. With Unreal Engine games, you might need [ini tweaks](https://github.com/cdozdil/OptiScaler/wiki/Unreal-Engine-Tweaks) for FSR inputs.*  
+>
+> *[2] Regarding **FSR4**, support added with recent Nightly builds. Please check [compatibility list](https://github.com/cdozdil/OptiScaler/wiki/FSR4-Compatibility-List) for known supported games.*
+
 
 ## How it works?
 OptiScaler implements the necessary API methods of DLSS2+ & NVAPI, XeSS and FSR2+ to act as a middleware. It interprets calls from the game and redirects them to the chosen upscaling backend, allowing games using one technology to use another one of your choice. 
@@ -42,7 +43,7 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 - FSR2 2.1.2, 2.2.1
 - FSR3 3.1 (and FSR2 2.3.2)
 - DLSS
-
+- FSR4 (Preliminary support)
 
 #### For DirectX 11
 - FSR2 2.2.1 (Default, native DX11)
@@ -73,7 +74,8 @@ A more detailed guide will be available in the [Wiki](https://github.com/cdozdil
 ## Recommended installation (with OptiFG and all other features, `non-nvngx`)
 
 > [!IMPORTANT]
-> ***Please use the [Nightly builds](https://github.com/cdozdil/OptiScaler/releases/tag/nightly) as the latest Stable is vastly outdated and the Readme does not apply to it anymore due to many missing features.***
+> ***Please use the [Nightly builds](https://github.com/cdozdil/OptiScaler/releases/tag/nightly) as the latest Stable is vastly outdated and the Readme does not apply to it anymore due to many missing features.***  
+> _Fair warning, Nightly builds have Debug logging forced by default due to being bleeding-edge. If everything is working fine, then you can save storage space by disabling it by leaving `LogFile=` blank._
 
 ### [Automated]
 **1.** Extract **all** of the Optiscaler files **by the main game exe** _(for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Game-or-Project-name\Binaries\Win64\`, **ignore** the `Engine` folder)_  
@@ -98,6 +100,8 @@ _**3.** If the Bat file wasn't successful, please check the **Manual** steps._
 **3a.** **Either** locate the `nvngx_dlss.dll` file (for UE games, generally in one of the subfolders under `Engine/Plugins`), create a copy, rename the copy to `nvngx.dll` and put it beside Optiscaler    
 **3b.** **OR** download `nvngx_dlss.dll` from e.g. [TechPowerUp](https://www.techpowerup.com/download/nvidia-dlss-dll/) or [Streamline SDK repo](https://github.com/NVIDIAGameWorks/Streamline/tree/main/bin/x64) if you don't want to search, rename it to `nvngx.dll` and put it beside Optiscaler   
 
+Check the [screenshot](#example-of-correct-installation-with-additional-fakenvapi-and-nukem-mod) for proper installation 
+
 #### [Nukem's dlssg-to-fsr3]
 
 **1.** Download the mod - [**dlssg-to-fsr3 NexusMods**](https://www.nexusmods.com/site/mods/738) or [**dlssg-to-fsr3 Github**](https://github.com/Nukem9/dlssg-to-fsr3)     
@@ -110,7 +114,7 @@ _**3.** If the Bat file wasn't successful, please check the **Manual** steps._
 **1.** Download the mod - [**Fakenvapi**](https://github.com/FakeMichau/fakenvapi)  
 **2.** Extract the files and transfer `nvapi64.dll` and `fakenvapi.ini` to the same folder as Optiscaler (by the main game exe)   
 
-Latency Flex is cross-vendor and cross-platform. Anti-Lag 2 only supports RDNA cards and is Windows only atm. For information on how to verify if Anti-Lag 2 is working, please check [Anti-Lag 2 SDK](https://github.com/GPUOpen-LibrariesAndSDKs/AntiLag2-SDK?tab=readme-ov-file#testing).
+_**Anti-Lag 2** only supports RDNA cards and is Windows only atm (shortcut for cycling the overlay - `Alt+Shift+L`). For information on how to verify if Anti-Lag 2 is working, please check [Anti-Lag 2 SDK](https://github.com/GPUOpen-LibrariesAndSDKs/AntiLag2-SDK?tab=readme-ov-file#testing). **Latency Flex** is cross-vendor and cross-platform, can be used as an alternative if AL2 isn't working._ 
 
 > [!TIP]
 > *[1] Linux users should add renamed dll to overrides:*
@@ -132,7 +136,7 @@ Latency Flex is cross-vendor and cross-platform. Anti-Lag 2 only supports RDNA c
 > * OptiScaler.asi (with an ASI loader)
 
 > [!NOTE]
-> **_Example of correct installation (with additional Fakenvapi and Nukem mod)_**
+> ### _Example of correct installation (with additional Fakenvapi and Nukem mod)_
 > ![Installation](https://github.com/user-attachments/assets/977a2a68-d117-42ea-a928-78ec43eedd28)
 
 > [!NOTE]
