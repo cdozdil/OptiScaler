@@ -21,7 +21,7 @@ While previously only DLSS2+ inputs were supported, newer versions also added su
 >
 > *Regarding **FSR inputs**, FSR 3.1 is the first version with a fully standardised, forward-looking API and should be fully supported. Since FSR2 and FSR3 support custom interfaces, game support will depend on the developers' implementation. With Unreal Engine games, you might need [ini tweaks](https://github.com/cdozdil/OptiScaler/wiki/Unreal-Engine-Tweaks) for FSR inputs.*  
 >
-> *[2] Regarding **FSR4**, support added with recent Nightly builds. Please check [compatibility list](https://github.com/cdozdil/OptiScaler/wiki/FSR4-Compatibility-List) for known supported games.*
+> *[2] Regarding **FSR4**, support added with recent Nightly builds. Please check [FSR4 Compatibility list](https://github.com/cdozdil/OptiScaler/wiki/FSR4-Compatibility-List) for known supported games.*
 
 
 ## How it works?
