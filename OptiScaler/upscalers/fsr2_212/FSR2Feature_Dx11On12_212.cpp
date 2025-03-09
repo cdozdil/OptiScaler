@@ -55,7 +55,11 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
             paramVelocity = nullptr;
         }
 
-        if (!Config::Instance()->AutoExposure.value_or(false) && !State::Instance().AutoExposure.value_or(false))
+        if (Config::Instance()->AutoExposure.value_or(false) || State::Instance().AutoExposure.value_or(false))
+        {
+            LOG_DEBUG("AutoExposure enabled!");
+        }
+        else
         {
             ID3D11Resource* paramExpo = nullptr;
             if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExpo) != NVSDK_NGX_Result_Success)
@@ -543,15 +547,13 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     else
         Config::Instance()->DepthInverted.set_volatile_value(false);
 
-    if (Config::Instance()->AutoExposure.value_or(AutoExposure || State::Instance().AutoExposure.value_or(false)))
+    if (Config::Instance()->AutoExposure.value_or(AutoExposure) || State::Instance().AutoExposure.value_or(false))
     {
-        State::Instance().AutoExposure = true;
         _contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_AUTO_EXPOSURE;
         LOG_INFO("contextDesc.initFlags (AutoExposure) {0:b}", _contextDesc.flags);
     }
     else
     {
-        State::Instance().AutoExposure = false;
         LOG_INFO("contextDesc.initFlags (!AutoExposure) {0:b}", _contextDesc.flags);
     }
 

@@ -69,7 +69,7 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
         LOG_INFO("DLSSDFeature::ProcessInitParams featureFlags (!DepthInverted) {0:b}", featureFlags);
     }
 
-    if (Config::Instance()->AutoExposure.value_or(autoExposure || State::Instance().AutoExposure.value_or(false)))
+    if (Config::Instance()->AutoExposure.value_or(autoExposure) || State::Instance().AutoExposure.value_or(false))
     {
         State::Instance().AutoExposure = true;
         featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;

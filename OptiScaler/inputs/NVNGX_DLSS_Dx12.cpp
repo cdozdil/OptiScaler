@@ -964,8 +964,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     {
         if (std::strcmp(State::Instance().currentInputApiName.c_str(), "DLSS") != 0)
         {
-            State::Instance().AutoExposure.reset();
-            State::Instance().DisplaySizeMV.reset();
+            //State::Instance().AutoExposure.reset();
+            //State::Instance().DisplaySizeMV.reset();
             State::Instance().currentInputApiName = "DLSS";
         }
     }
@@ -973,8 +973,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     {
         if (std::strcmp(State::Instance().currentInputApiName.c_str(), State::Instance().setInputApiName.c_str()) != 0)
         {
-            State::Instance().AutoExposure.reset();
-            State::Instance().DisplaySizeMV.reset();
+            //State::Instance().AutoExposure.reset();
+            //State::Instance().DisplaySizeMV.reset();
             State::Instance().currentInputApiName = State::Instance().setInputApiName;
         }
     }

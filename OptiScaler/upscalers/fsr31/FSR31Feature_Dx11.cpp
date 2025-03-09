@@ -323,7 +323,11 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     }
 
     ID3D11Resource* paramExp = nullptr;
-    if (!Config::Instance()->AutoExposure.value_or(false) && State::Instance().AutoExposure.value_or(false))
+    if (Config::Instance()->AutoExposure.value_or(false) || State::Instance().AutoExposure.value_or(false))
+    {
+        LOG_DEBUG("AutoExposure enabled!");
+    }
+    else
     {
         if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExp) != NVSDK_NGX_Result_Success)
             InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&paramExp);
@@ -341,11 +345,6 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
             return true;
         }
     }
-    else
-    {
-        LOG_DEBUG("AutoExposure enabled!");
-    }
-
 
     ID3D11Resource* paramReactiveMask = nullptr;
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
@@ -635,15 +634,13 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     else
         Config::Instance()->DepthInverted.set_volatile_value(false);
 
-    if (Config::Instance()->AutoExposure.value_or(AutoExposure || State::Instance().AutoExposure.value_or(false)))
+    if (Config::Instance()->AutoExposure.value_or(AutoExposure) || State::Instance().AutoExposure.value_or(false))
     {
-        State::Instance().AutoExposure = true;
         _upscalerContextDesc.flags |= Fsr31::FFX_FSR3_ENABLE_AUTO_EXPOSURE;
         LOG_INFO("contextDesc.initFlags (AutoExposure) {0:b}", _upscalerContextDesc.flags);
     }
     else
     {
-        State::Instance().AutoExposure = false;
         LOG_INFO("contextDesc.initFlags (!AutoExposure) {0:b}", _upscalerContextDesc.flags);
     }
 

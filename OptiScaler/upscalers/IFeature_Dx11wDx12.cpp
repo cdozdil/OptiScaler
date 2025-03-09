@@ -497,7 +497,11 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         LOG_ERROR("IFeature_Dx11wDx12::Evaluate Depth not exist!!");
 
     ID3D11Resource* paramExposure = nullptr;
-    if (!Config::Instance()->AutoExposure.value_or(false) && !State::Instance().AutoExposure.value_or(false))
+    if (Config::Instance()->AutoExposure.value_or(false) || State::Instance().AutoExposure.value_or(false))
+    {
+        LOG_DEBUG("AutoExposure enabled!");
+    }
+    else
     {
         if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExposure) != NVSDK_NGX_Result_Success)
             InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&paramExposure);
@@ -516,8 +520,6 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
             State::Instance().changeBackend = true;
         }
     }
-    else
-        LOG_DEBUG("AutoExposure enabled!");
 
     ID3D11Resource* paramReactiveMask = nullptr;
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
@@ -714,8 +716,11 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         dx11Depth.Dx12Handle = dx11Depth.Dx11Handle;
     }
 
-    if (!Config::Instance()->AutoExposure.value_or(false) && !State::Instance().AutoExposure.value_or(false) && 
-        paramExposure && dx11Exp.Dx12Handle != dx11Exp.Dx11Handle)
+    if (Config::Instance()->AutoExposure.value_or(false) || State::Instance().AutoExposure.value_or(false))
+    {
+        LOG_DEBUG("AutoExposure enabled!");
+    }
+    else if (paramExposure && dx11Exp.Dx12Handle != dx11Exp.Dx11Handle)
     {
         if (dx11Exp.Dx12Handle != NULL)
             CloseHandle(dx11Exp.Dx12Handle);

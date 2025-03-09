@@ -64,7 +64,11 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 			}
 		}
 
-		if (!Config::Instance()->AutoExposure.value_or(false) && !State::Instance().AutoExposure.value_or(false))
+		if (Config::Instance()->AutoExposure.value_or(false) || State::Instance().AutoExposure.value_or(false))
+		{
+			LOG_DEBUG("AutoExposure enabled!");
+		}
+		else
 		{
 			ID3D11Resource* paramExpo = nullptr;
 			if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExpo) != NVSDK_NGX_Result_Success)

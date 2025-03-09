@@ -65,15 +65,13 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         LOG_DEBUG("xessParams.initFlags (DepthInverted) {0:b}", xessParams.initFlags);
     }
 
-    if (Config::Instance()->AutoExposure.value_or(AutoExposure || State::Instance().NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL || State::Instance().AutoExposure.value_or(false)))
+    if (Config::Instance()->AutoExposure.value_or(AutoExposure || State::Instance().NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL) || State::Instance().AutoExposure.value_or(false))
     {
-        State::Instance().AutoExposure = true;
         xessParams.initFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
         LOG_DEBUG("xessParams.initFlags (AutoExposure) {0:b}", xessParams.initFlags);
     }
     else
     {
-        State::Instance().AutoExposure = false;
         xessParams.initFlags |= XESS_INIT_FLAG_EXPOSURE_SCALE_TEXTURE;
         LOG_DEBUG("xessParams.initFlags (!AutoExposure) {0:b}", xessParams.initFlags);
     }
