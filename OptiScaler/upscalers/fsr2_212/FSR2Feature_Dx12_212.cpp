@@ -130,7 +130,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
             {
                 LOG_WARN("MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, TargetWidth(), displaySizeEnabled);
                 State::Instance().DisplaySizeMV = false;
-                State::Instance().changeBackend = true;
+                State::Instance().changeBackend[Handle()->Id] = true;
                 return true;
             }
 
@@ -225,7 +225,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
         {
             LOG_DEBUG("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
             State::Instance().AutoExposure = true;
-            State::Instance().changeBackend = true;
+            State::Instance().changeBackend[Handle()->Id] = true;
             return true;
         }
     }
@@ -410,7 +410,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
         if (!OutputScaler->Dispatch(Device, InCommandList, OutputScaler->Buffer(), paramOutput))
         {
             Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
-            State::Instance().changeBackend = true;
+            State::Instance().changeBackend[Handle()->Id] = true;
             return true;
         }
     }

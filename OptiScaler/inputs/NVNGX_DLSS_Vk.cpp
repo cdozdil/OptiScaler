@@ -813,7 +813,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 
     IFeature_Vk* deviceContext = nullptr;
 
-    if (State::Instance().changeBackend)
+    if (State::Instance().changeBackend[handleId])
     {
         if (State::Instance().newBackend == "" || (!Config::Instance()->DLSSEnabled.value_or_default() && State::Instance().newBackend == "dlss"))
             State::Instance().newBackend = Config::Instance()->VulkanUpscaler.value_or_default();
@@ -859,7 +859,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
                 LOG_ERROR("can't find handle {0} in VkContexts!", handleId);
 
                 State::Instance().newBackend = "";
-                State::Instance().changeBackend = false;
+                State::Instance().changeBackend[handleId] = false;
 
                 if (createParams != nullptr)
                 {
@@ -937,12 +937,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
                 if (State::Instance().newBackend != "dlssd")
                 {
                     State::Instance().newBackend = "fsr21";
-                    State::Instance().changeBackend = true;
+                    State::Instance().changeBackend[handleId] = true;
                 }
                 else
                 {
                     State::Instance().newBackend = "";
-                    State::Instance().changeBackend = false;
+                    State::Instance().changeBackend[handleId] = false;
                     return NVSDK_NGX_Result_Success;
                 }
             }
@@ -951,7 +951,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
                 LOG_INFO("init successful for {0}, upscaler changed", State::Instance().newBackend);
 
                 State::Instance().newBackend = "";
-                State::Instance().changeBackend = false;
+                State::Instance().changeBackend[handleId] = false;
                 evalCounter = 0;
             }
 
@@ -976,7 +976,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     if (!deviceContext->IsInited() && Config::Instance()->VulkanUpscaler.value_or_default() != "fsr21")
     {
         State::Instance().newBackend = "fsr21";
-        State::Instance().changeBackend = true;
+        State::Instance().changeBackend[handleId] = true;
         return NVSDK_NGX_Result_Success;
     }
 

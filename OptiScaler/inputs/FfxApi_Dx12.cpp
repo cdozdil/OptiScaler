@@ -45,16 +45,19 @@ static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* p
     if ((initParams->flags & FFX_UPSCALE_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS) == 0)
         initFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
 
+    auto outWidth = pExecParams->upscaleSize.width != 0 ? pExecParams->upscaleSize.width : initParams->maxUpscaleSize.width;
+    auto outHeight = pExecParams->upscaleSize.height != 0 ? pExecParams->upscaleSize.height : initParams->maxUpscaleSize.height;
+
     params->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, initFlags);
 
     params->Set(NVSDK_NGX_Parameter_Width, pExecParams->renderSize.width);
     params->Set(NVSDK_NGX_Parameter_Height, pExecParams->renderSize.height);
-    params->Set(NVSDK_NGX_Parameter_OutWidth, initParams->maxUpscaleSize.width);
-    params->Set(NVSDK_NGX_Parameter_OutHeight, initParams->maxUpscaleSize.height);
+    params->Set(NVSDK_NGX_Parameter_OutWidth, outWidth);
+    params->Set(NVSDK_NGX_Parameter_OutHeight, outHeight);
 
-    auto ratio = (float)initParams->maxUpscaleSize.width / (float)pExecParams->renderSize.width;
+    auto ratio = (float)outWidth / (float)pExecParams->renderSize.width;
 
-    LOG_INFO("renderWidth: {}, maxWidth: {}, ratio: {}", pExecParams->renderSize.width, initParams->maxUpscaleSize.width, ratio);
+    LOG_INFO("renderWidth: {}, maxWidth: {}, ratio: {}", pExecParams->renderSize.width, outWidth, ratio);
 
     if (ratio <= 3.0)
         params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_UltraPerformance);
@@ -348,6 +351,12 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
     params->Set(NVSDK_NGX_Parameter_Reset, dispatchDesc->reset ? 1 : 0);
     params->Set(NVSDK_NGX_Parameter_Width, dispatchDesc->renderSize.width);
     params->Set(NVSDK_NGX_Parameter_Height, dispatchDesc->renderSize.height);
+
+    if (dispatchDesc->upscaleSize.width != 0)
+        //params->Set(NVSDK_NGX_Parameter_OutWidth, dispatchDesc->upscaleSize.width);
+    if (dispatchDesc->upscaleSize.height != 0) {
+        //params->Set(NVSDK_NGX_Parameter_OutHeight, dispatchDesc->upscaleSize.height);
+
     params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, dispatchDesc->renderSize.width);
     params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, dispatchDesc->renderSize.height);
     params->Set(NVSDK_NGX_Parameter_Depth, dispatchDesc->depth.resource);

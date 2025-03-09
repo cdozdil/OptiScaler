@@ -416,7 +416,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         {
             LOG_DEBUG("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
             State::Instance().AutoExposure = true;
-            State::Instance().changeBackend = true;
+            State::Instance().changeBackend[Handle()->Id] = true;
             return true;
         }
     }
@@ -451,7 +451,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         {
             LOG_DEBUG("Bias mask not exist and its enabled in config, it may cause problems!!");
             Config::Instance()->DisableReactiveMask.set_volatile_value(true);
-            State::Instance().changeBackend = true;
+            State::Instance().changeBackend[Handle()->Id] = true;
             return true;
         }
     }

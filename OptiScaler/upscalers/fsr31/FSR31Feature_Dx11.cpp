@@ -258,7 +258,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
             {
                 LOG_WARN("MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
                 State::Instance().DisplaySizeMV = false;
-                State::Instance().changeBackend = true;
+                State::Instance().changeBackend[Handle()->Id] = true;
                 return true;
             }
 
@@ -341,7 +341,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         {
             LOG_DEBUG("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
             State::Instance().AutoExposure = true;
-            State::Instance().changeBackend = true;
+            State::Instance().changeBackend[Handle()->Id] = true;
             return true;
         }
     }
@@ -499,7 +499,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         if (!OutputScaler->Dispatch(Device, DeviceContext, OutputScaler->Buffer(), (ID3D11Texture2D*)paramOutput))
         {
             Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
-            State::Instance().changeBackend = true;
+            State::Instance().changeBackend[Handle()->Id] = true;
             return true;
         }
     }

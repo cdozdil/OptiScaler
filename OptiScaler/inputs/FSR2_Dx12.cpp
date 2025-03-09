@@ -681,7 +681,7 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context*
 
     // HACK, DLSS thinks it's using dynamic res here and errors out when changing quality
     if (evalResult == NVSDK_NGX_Result_Fail && State::Instance().currentFeature->Name() == "DLSS")
-        State::Instance().changeBackend = true;
+        State::Instance().changeBackend[handle->Id] = true;
 
     LOG_ERROR("evalResult: {:X}", (UINT)evalResult);
     return Fsr212::FFX_ERROR_BACKEND_API_ERROR;

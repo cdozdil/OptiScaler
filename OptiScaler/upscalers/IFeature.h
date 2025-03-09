@@ -28,10 +28,6 @@ protected:
 
 	unsigned int _renderWidth = 0;
 	unsigned int _renderHeight = 0;
-	unsigned int _targetWidth = 0;
-	unsigned int _targetHeight = 0;
-	unsigned int _displayWidth = 0;
-	unsigned int _displayHeight = 0;
 
 	long _frameCount = 0;
 	bool _moduleLoaded = false;
@@ -48,6 +44,11 @@ public:
 	static unsigned int GetNextHandleId() { return handleCounter++; }
 
 	int GetFeatureFlags() const { return _featureFlags; }
+
+	unsigned int _targetWidth = 0;
+	unsigned int _targetHeight = 0;
+	unsigned int _displayWidth = 0;
+	unsigned int _displayHeight = 0;
 
 	unsigned int DisplayWidth() const { return _displayWidth; };
 	unsigned int DisplayHeight() const { return _displayHeight; };
