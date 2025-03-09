@@ -747,7 +747,7 @@ static FARPROC hkGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
         LOG_DEBUG("Trying to get process address of {0}", lpProcName);
 
     // For FSR4 Upgrade
-    if (hModule == mod_amdxc64 && o_AmdExtD3DCreateInterface != nullptr &&
+    if (Config::Instance()->Fsr4Update.value_or_default() && hModule == mod_amdxc64 && o_AmdExtD3DCreateInterface != nullptr &&
         lpProcName != nullptr && strcmp(lpProcName, "AmdExtD3DCreateInterface") == 0)
     {
         // Return custom method for upgrade
@@ -2331,12 +2331,15 @@ static void CheckWorkingMode()
             }
 
             // For FSR4 Upgrade
-            mod_amdxc64 = GetModuleHandle(L"amdxc64.dll");
-            if (mod_amdxc64 == nullptr)
-                mod_amdxc64 = LoadLibrary(L"amdxc64.dll");
+            if (Config::Instance()->Fsr4Update.value_or_default())
+            {
+                mod_amdxc64 = GetModuleHandle(L"amdxc64.dll");
+                if (mod_amdxc64 == nullptr)
+                    mod_amdxc64 = LoadLibrary(L"amdxc64.dll");
 
-            if (mod_amdxc64 != nullptr)
-                o_AmdExtD3DCreateInterface = (PFN_AmdExtD3DCreateInterface)GetProcAddress(mod_amdxc64, "AmdExtD3DCreateInterface");
+                if (mod_amdxc64 != nullptr)
+                    o_AmdExtD3DCreateInterface = (PFN_AmdExtD3DCreateInterface)GetProcAddress(mod_amdxc64, "AmdExtD3DCreateInterface");
+            }
 
             AttachHooks();
         }

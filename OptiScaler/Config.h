@@ -255,6 +255,7 @@ public:
 	CustomOptional<int> Fsr3xIndex{ 0 };
 	CustomOptional<bool> FsrUseMaskForTransparency{ true };
 	CustomOptional<float> FsrVelocity{ 1.0f };
+	CustomOptional<bool> Fsr4Update{ true };
 
 	// FSR Common
 	CustomOptional<float> FsrVerticalFov{ 60.0f };

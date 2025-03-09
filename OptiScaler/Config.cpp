@@ -116,6 +116,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             Fsr3xIndex.set_from_config(readInt("FSR", "UpscalerIndex"));
             FsrUseMaskForTransparency.set_from_config(readBool("FSR", "UseReactiveMaskForTransparency"));
             DlssReactiveMaskBias.set_from_config(readFloat("FSR", "DlssReactiveMaskBias"));
+            Fsr4Update.set_from_config(readBool("FSR", "Fsr4Update"));
         }
 
         // XeSS
@@ -602,6 +603,7 @@ bool Config::SaveIni()
         ini.SetValue("FSR", "UpscalerIndex", GetIntValue(Instance()->Fsr3xIndex.value_for_config()).c_str());
         ini.SetValue("FSR", "UseReactiveMaskForTransparency", GetBoolValue(Instance()->FsrUseMaskForTransparency.value_for_config()).c_str());
         ini.SetValue("FSR", "DlssReactiveMaskBias", GetFloatValue(Instance()->DlssReactiveMaskBias.value_for_config()).c_str());
+        ini.SetValue("FSR", "Fsr4Update", GetBoolValue(Instance()->Fsr4Update.value_for_config()).c_str());
     }
 
     // XeSS
