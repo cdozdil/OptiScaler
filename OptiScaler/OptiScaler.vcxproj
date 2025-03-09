@@ -296,6 +296,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="inputs\FfxApi_Vk.h" />
+    <ClInclude Include="inputs\NVNGX_DLSS.h" />
     <ClInclude Include="menu\font\Hack_Compressed.h" />
     <ClInclude Include="menu\menu_base.h" />
     <ClInclude Include="misc\FrameLimit.h" />

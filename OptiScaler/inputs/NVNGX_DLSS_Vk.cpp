@@ -2,8 +2,10 @@
 #include "Util.h"
 #include "resource.h"
 
-#include <ankerl/unordered_dense.h>
-#include <vulkan/vulkan.hpp>
+#include "NVNGX_Parameter.h"
+#include "NVNGX_DLSS.h"
+#include "proxies/NVNGX_Proxy.h"
+#include "DLSSG_Mod.h"
 
 #include "Config.h"
 #include "upscalers/fsr2/FSR2Feature_Vk.h"
@@ -14,9 +16,8 @@
 
 #include "hooks/HooksVk.h"
 
-#include "NVNGX_Parameter.h"
-#include "proxies/NVNGX_Proxy.h"
-#include "DLSSG_Mod.h"
+#include <ankerl/unordered_dense.h>
+#include <vulkan/vulkan.hpp>
 
 VkInstance vkInstance;
 VkPhysicalDevice vkPD;
@@ -24,9 +25,7 @@ VkDevice vkDevice;
 PFN_vkGetInstanceProcAddr vkGIPA;
 PFN_vkGetDeviceProcAddr vkGDPA;
 
-static inline ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Vk>> VkContexts;
-static ankerl::unordered_dense::map <unsigned int, NVSDK_NGX_Parameter*> createParams;
-static ankerl::unordered_dense::map <unsigned int, int> changeBackendCounter;
+static ankerl::unordered_dense::map<unsigned int, ContextData<IFeature_Vk>> VkContexts;
 static inline int evalCounter = 0;
 static inline bool shutdown = false;
 
@@ -536,15 +535,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 
         if (upscalerChoice == 2)
         {
-            VkContexts[handleId] = std::make_unique<DLSSFeatureVk>(handleId, InParameters);
+            VkContexts[handleId].feature = std::make_unique<DLSSFeatureVk>(handleId, InParameters);
 
-            if (!VkContexts[handleId]->ModuleLoaded())
+            if (!VkContexts[handleId].feature->ModuleLoaded())
             {
                 LOG_ERROR("can't create new DLSS feature, fallback to XeSS!");
 
-                VkContexts[handleId].reset();
-                auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
-                VkContexts.erase(it);
+                VkContexts[handleId].feature.reset();
+                VkContexts[handleId].feature = nullptr;
+                //auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+                //VkContexts.erase(it);
 
                 upscalerChoice = 0;
             }
@@ -557,15 +557,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 
         if (upscalerChoice == 3)
         {
-            VkContexts[handleId] = std::make_unique<FSR31FeatureVk>(handleId, InParameters);
+            VkContexts[handleId].feature = std::make_unique<FSR31FeatureVk>(handleId, InParameters);
 
-            if (!VkContexts[handleId]->ModuleLoaded())
+            if (!VkContexts[handleId].feature->ModuleLoaded())
             {
                 LOG_ERROR("can't create new FSR 3.X feature, Fallback to FSR2.1!");
 
-                VkContexts[handleId].reset();
-                auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
-                VkContexts.erase(it);
+                VkContexts[handleId].feature.reset();
+                VkContexts[handleId].feature = nullptr;
+                //auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+                //VkContexts.erase(it);
 
                 upscalerChoice = 0;
             }
@@ -580,13 +581,13 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
         {
             Config::Instance()->VulkanUpscaler = "fsr21";
             LOG_INFO("creating new FSR 2.1.2 feature");
-            VkContexts[handleId] = std::make_unique<FSR2FeatureVk212>(handleId, InParameters);
+            VkContexts[handleId].feature = std::make_unique<FSR2FeatureVk212>(handleId, InParameters);
         }
         else if (upscalerChoice == 1)
         {
             Config::Instance()->VulkanUpscaler = "fsr22";
             LOG_INFO("creating new FSR 2.2.1 feature");
-            VkContexts[handleId] = std::make_unique<FSR2FeatureVk>(handleId, InParameters);
+            VkContexts[handleId].feature = std::make_unique<FSR2FeatureVk>(handleId, InParameters);
         }
 
         // write back finel selected upscaler 
@@ -595,10 +596,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
     else
     {
         LOG_INFO("creating new DLSSD feature");
-        VkContexts[handleId] = std::make_unique<DLSSDFeatureVk>(handleId, InParameters);
+        VkContexts[handleId].feature = std::make_unique<DLSSDFeatureVk>(handleId, InParameters);
     }
 
-    auto deviceContext = VkContexts[handleId].get();
+    auto deviceContext = VkContexts[handleId].feature.get();
     *OutHandle = deviceContext->Handle();
 
     State::Instance().AutoExposure.reset();
@@ -671,7 +672,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
     if (!shutdown)
         LOG_INFO("releasing feature with id {0}", handleId);
 
-    if (auto deviceContext = VkContexts[handleId].get(); deviceContext)
+    if (auto deviceContext = VkContexts[handleId].feature.get(); deviceContext)
     {
         if (deviceContext == State::Instance().currentFeature)
         {
@@ -682,7 +683,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
         vkDeviceWaitIdle(vkDevice);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        VkContexts[handleId].reset();
+        VkContexts[handleId].feature.reset();
         auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
         VkContexts.erase(it);
     }
@@ -711,7 +712,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     }
 
     auto handleId = InFeatureHandle->Id;
-    if (VkContexts[handleId] == nullptr) // prevent source api name flicker when dlssg is active
+    if (VkContexts[handleId].feature == nullptr) // prevent source api name flicker when dlssg is active
         State::Instance().setInputApiName = State::Instance().currentInputApiName;
 
     if (State::Instance().setInputApiName.length() == 0)
@@ -818,39 +819,40 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
         if (State::Instance().newBackend == "" || (!Config::Instance()->DLSSEnabled.value_or_default() && State::Instance().newBackend == "dlss"))
             State::Instance().newBackend = Config::Instance()->VulkanUpscaler.value_or_default();
 
-        changeBackendCounter[handleId]++;
+        VkContexts[handleId].changeBackendCounter++;
 
-        LOG_INFO("changeBackend is true, counter: {0}", changeBackendCounter[handleId]);
+        LOG_INFO("changeBackend is true, counter: {0}", VkContexts[handleId].changeBackendCounter);
 
         // first release everything
-        if (changeBackendCounter[handleId] == 1)
+        if (VkContexts[handleId].changeBackendCounter == 1)
         {
-            if (VkContexts.contains(handleId))
+            if (VkContexts.contains(handleId) && VkContexts[handleId].feature != nullptr)
             {
                 LOG_INFO("changing backend to {0}", State::Instance().newBackend);
 
-                auto dc = VkContexts[handleId].get();
+                auto dc = VkContexts[handleId].feature.get();
 
                 if (State::Instance().newBackend != "dlssd" && State::Instance().newBackend != "dlss")
-                    createParams[handleId] = GetNGXParameters("OptiVk");
+                    VkContexts[handleId].createParams = GetNGXParameters("OptiVk");
                 else
-                    createParams[handleId] = InParameters;
+                    VkContexts[handleId].createParams = InParameters;
 
-                createParams[handleId]->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
-                createParams[handleId]->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
-                createParams[handleId]->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
-                createParams[handleId]->Set(NVSDK_NGX_Parameter_OutWidth, dc->DisplayWidth());
-                createParams[handleId]->Set(NVSDK_NGX_Parameter_OutHeight, dc->DisplayHeight());
-                createParams[handleId]->Set(NVSDK_NGX_Parameter_PerfQualityValue, dc->PerfQualityValue());
+                VkContexts[handleId].createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
+                VkContexts[handleId].createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
+                VkContexts[handleId].createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
+                VkContexts[handleId].createParams->Set(NVSDK_NGX_Parameter_OutWidth, dc->DisplayWidth());
+                VkContexts[handleId].createParams->Set(NVSDK_NGX_Parameter_OutHeight, dc->DisplayHeight());
+                VkContexts[handleId].createParams->Set(NVSDK_NGX_Parameter_PerfQualityValue, dc->PerfQualityValue());
 
                 dc = nullptr;
 
                 LOG_DEBUG("sleeping before reset of current feature for 1000ms");
                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-                VkContexts[handleId].reset();
-                auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
-                VkContexts.erase(it);
+                VkContexts[handleId].feature.reset();
+                VkContexts[handleId].feature = nullptr;
+                //auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+                //VkContexts.erase(it);
 
                 State::Instance().currentFeature = nullptr;
             }
@@ -861,19 +863,19 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
                 State::Instance().newBackend = "";
                 State::Instance().changeBackend[handleId] = false;
 
-                if (createParams[handleId] != nullptr)
+                if (VkContexts[handleId].createParams != nullptr)
                 {
-                    free(createParams[handleId]);
-                    createParams[handleId] = nullptr;
+                    free(VkContexts[handleId].createParams);
+                    VkContexts[handleId].createParams = nullptr;
                 }
 
-                changeBackendCounter[handleId] = 0;
+                VkContexts[handleId].changeBackendCounter = 0;
             }
 
             return NVSDK_NGX_Result_Success;
         }
 
-        if (changeBackendCounter[handleId] == 2)
+        if (VkContexts[handleId].changeBackendCounter == 2)
         {
             // backend selection
             // 0 : FSR2.1
@@ -887,33 +889,33 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
             {
                 Config::Instance()->VulkanUpscaler = "fsr22";
                 LOG_INFO("creating new FSR 2.2.1 feature");
-                VkContexts[handleId] = std::make_unique<FSR2FeatureVk>(handleId, createParams[handleId]);
+                VkContexts[handleId].feature = std::make_unique<FSR2FeatureVk>(handleId, VkContexts[handleId].createParams);
                 upscalerChoice = 1;
             }
             else if (State::Instance().newBackend == "dlss")
             {
                 Config::Instance()->VulkanUpscaler = "dlss";
                 LOG_INFO("creating new DLSS feature");
-                VkContexts[handleId] = std::make_unique<DLSSFeatureVk>(handleId, createParams[handleId]);
+                VkContexts[handleId].feature = std::make_unique<DLSSFeatureVk>(handleId, VkContexts[handleId].createParams);
                 upscalerChoice = 2;
             }
             else if (State::Instance().newBackend == "fsr31")
             {
                 Config::Instance()->VulkanUpscaler = "fsr31";
                 LOG_INFO("creating new FSR 3.X feature");
-                VkContexts[handleId] = std::make_unique<FSR31FeatureVk>(handleId, createParams[handleId]);
+                VkContexts[handleId].feature = std::make_unique<FSR31FeatureVk>(handleId, VkContexts[handleId].createParams);
                 upscalerChoice = 3;
             }
             else if (State::Instance().newBackend == "dlssd")
             {
                 LOG_INFO("creating new DLSSD feature");
-                VkContexts[handleId] = std::make_unique<DLSSDFeatureVk>(handleId, InParameters);
+                VkContexts[handleId].feature = std::make_unique<DLSSDFeatureVk>(handleId, InParameters);
             }
             else
             {
                 Config::Instance()->VulkanUpscaler = "fsr21";
                 LOG_INFO("creating new FSR 2.1.2 feature");
-                VkContexts[handleId] = std::make_unique<FSR2FeatureVk212>(handleId, createParams[handleId]);
+                VkContexts[handleId].feature = std::make_unique<FSR2FeatureVk212>(handleId, VkContexts[handleId].createParams);
                 upscalerChoice = 0;
             }
 
@@ -923,14 +925,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
             return NVSDK_NGX_Result_Success;
         }
 
-        if (changeBackendCounter[handleId] == 3)
+        if (VkContexts[handleId].changeBackendCounter == 3)
         {
             // next frame create context
-            auto initResult = VkContexts[handleId]->Init(vkInstance, vkPD, vkDevice, InCmdList, vkGIPA, vkGDPA, createParams[handleId]);
+            auto initResult = VkContexts[handleId].feature->Init(vkInstance, vkPD, vkDevice, InCmdList, vkGIPA, vkGDPA, VkContexts[handleId].createParams);
 
-            changeBackendCounter[handleId] = 0;
+            VkContexts[handleId].changeBackendCounter = 0;
 
-            if (!initResult || !VkContexts[handleId]->ModuleLoaded())
+            if (!initResult || !VkContexts[handleId].feature->ModuleLoaded())
             {
                 LOG_ERROR("init failed with {0} feature", State::Instance().newBackend);
 
@@ -957,20 +959,20 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 
             // if opti nvparam release it
             int optiParam = 0;
-            if (createParams[handleId]->Get("OptiScaler", &optiParam) == NVSDK_NGX_Result_Success && optiParam == 1)
+            if (VkContexts[handleId].createParams->Get("OptiScaler", &optiParam) == NVSDK_NGX_Result_Success && optiParam == 1)
             {
-                free(createParams[handleId]);
-                createParams[handleId] = nullptr;
+                free(VkContexts[handleId].createParams);
+                VkContexts[handleId].createParams = nullptr;
             }
         }
 
         // if initial feature can't be inited
-        State::Instance().currentFeature = VkContexts[handleId].get();
+        State::Instance().currentFeature = VkContexts[handleId].feature.get();
 
         return NVSDK_NGX_Result_Success;
     }
 
-    deviceContext = VkContexts[handleId].get();
+    deviceContext = VkContexts[handleId].feature.get();
     State::Instance().currentFeature = deviceContext;
 
     if (!deviceContext->IsInited() && Config::Instance()->VulkanUpscaler.value_or_default() != "fsr21")
@@ -998,8 +1000,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
 {
     shutdown = true;
 
-    for (auto const& [key, val] : VkContexts)
-        NVSDK_NGX_VULKAN_ReleaseFeature(val->Handle());
+    for (auto const& [key, val] : VkContexts) {
+        if (val.feature)
+            NVSDK_NGX_VULKAN_ReleaseFeature(val.feature->Handle());
+    }
 
     VkContexts.clear();
 
