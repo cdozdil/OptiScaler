@@ -32,11 +32,11 @@ static UINT64 fgLastFGFrame = 0;
 static UINT fgCallbackFrameIndex = 0;
 
 static ankerl::unordered_dense::map <unsigned int, std::unique_ptr<IFeature_Dx12>> Dx12Contexts;
+static ankerl::unordered_dense::map <unsigned int, NVSDK_NGX_Parameter*> createParams;
+static ankerl::unordered_dense::map <unsigned int, int> changeBackendCounter;
 static ankerl::unordered_dense::map <ID3D12GraphicsCommandList*, ID3D12RootSignature*> computeSignatures;
 static ankerl::unordered_dense::map <ID3D12GraphicsCommandList*, ID3D12RootSignature*> graphicSignatures;
 static ID3D12Device* D3D12Device = nullptr;
-static ankerl::unordered_dense::map <unsigned int, NVSDK_NGX_Parameter*> createParams;
-static ankerl::unordered_dense::map <unsigned int, int> changeBackendCounter;
 static int evalCounter = 0;
 static std::wstring appDataPath = L".";
 static bool shutdown = false;
