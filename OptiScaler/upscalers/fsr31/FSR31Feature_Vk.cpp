@@ -542,6 +542,9 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
             LOG_WARN("Velocity configure result: {}", (UINT)result);
     }
 
+    InParameters->Get("FSR.upscaleSize.width", &params.upscaleSize.width);
+    InParameters->Get("FSR.upscaleSize.height", &params.upscaleSize.height);
+
     LOG_DEBUG("Dispatch!!");
     auto result = FfxApiProxy::VULKAN_Dispatch()(&_context, &params.header);
 

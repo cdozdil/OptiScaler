@@ -444,6 +444,9 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
             LOG_WARN("Velocity configure result: {}", (UINT)result);
     }
 
+    InParameters->Get("FSR.upscaleSize.width", &params.upscaleSize.width);
+    InParameters->Get("FSR.upscaleSize.height", &params.upscaleSize.height);
+
     LOG_DEBUG("Dispatch!!");
     auto result = ffxFsr3ContextDispatchUpscale(&_upscalerContext, &params);
 

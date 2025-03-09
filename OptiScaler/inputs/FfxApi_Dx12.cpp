@@ -364,6 +364,8 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
     params->Set("FSR.transparencyAndComposition", dispatchDesc->transparencyAndComposition.resource);
     params->Set("FSR.reactive", dispatchDesc->reactive.resource);
     params->Set(NVSDK_NGX_Parameter_Sharpness, dispatchDesc->sharpness);
+    params->Set("FSR.upscaleSize.width", dispatchDesc->upscaleSize.width);
+    params->Set("FSR.upscaleSize.height", dispatchDesc->upscaleSize.height);
 
     LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDesc->renderSize.width, dispatchDesc->renderSize.height);
 
