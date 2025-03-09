@@ -380,6 +380,9 @@
     <ClInclude Include="inputs\FfxApi_Vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FSR4Upgrade.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
