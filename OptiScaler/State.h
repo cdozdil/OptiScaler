@@ -5,6 +5,7 @@
 
 #include <deque>
 #include <vulkan/vulkan.h>
+#include <ankerl/unordered_dense.h>
 
 typedef enum API
 {
@@ -94,7 +95,7 @@ public:
 	bool reflexShowWarning = false;
 
 	// for realtime changes
-	bool changeBackend = false;
+	ankerl::unordered_dense::map <unsigned int, bool> changeBackend;
 	std::string newBackend = "";
 
 	// XeSS debug stuff

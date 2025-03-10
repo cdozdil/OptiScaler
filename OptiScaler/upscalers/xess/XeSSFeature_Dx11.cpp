@@ -217,7 +217,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		LOG_DEBUG("ProcessDx11Textures complete!");
 
 	// AutoExposure or ReactiveMask is nullptr
-	if (State::Instance().changeBackend)
+	if (State::Instance().changeBackend[Handle()->Id])
 	{
 		Dx12CommandList->Close();
 		ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
@@ -398,7 +398,7 @@ bool XeSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 		if (!OutputScaler->Dispatch(Dx12Device, Dx12CommandList, OutputScaler->Buffer(), dx11Out.Dx12Resource))
 		{
 			Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
-			State::Instance().changeBackend = true;
+			State::Instance().changeBackend[Handle()->Id] = true;
 
 			Dx12CommandList->Close();
 			ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };

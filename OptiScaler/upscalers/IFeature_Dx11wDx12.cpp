@@ -517,7 +517,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         {
             LOG_WARN("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
             State::Instance().AutoExposure = true;
-            State::Instance().changeBackend = true;
+            State::Instance().changeBackend[Handle()->Id] = true;
         }
     }
 
@@ -540,7 +540,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         {
             LOG_WARN("bias mask not exist and it's enabled in config, it may cause problems!!");
             Config::Instance()->DisableReactiveMask.set_volatile_value(true);
-            State::Instance().changeBackend = true;
+            State::Instance().changeBackend[Handle()->Id] = true;
         }
     }
     else

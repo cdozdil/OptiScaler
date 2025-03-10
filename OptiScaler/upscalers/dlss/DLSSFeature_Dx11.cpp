@@ -221,7 +221,7 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
             if (!OutputScaler->Dispatch(Device, InDeviceContext, OutputScaler->Buffer(), (ID3D11Texture2D*)paramOutput))
             {
                 Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
-                State::Instance().changeBackend = true;
+                State::Instance().changeBackend[Handle()->Id] = true;
                 return true;
             }
         }
