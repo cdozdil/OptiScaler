@@ -390,8 +390,11 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
             LOG_WARN("Velocity configure result: {}", (UINT)result);
     }
 
-    InParameters->Get("FSR.upscaleSize.width", &params.upscaleSize.width);
-    InParameters->Get("FSR.upscaleSize.height", &params.upscaleSize.height);
+    if (InParameters->Get("FSR.upscaleSize.width", &params.upscaleSize.width) == NVSDK_NGX_Result_Success && Config::Instance()->OutputScalingEnabled.value_or_default())
+        params.upscaleSize.width *= Config::Instance()->OutputScalingMultiplier.value_or_default();
+
+    if (InParameters->Get("FSR.upscaleSize.height", &params.upscaleSize.height) == NVSDK_NGX_Result_Success && Config::Instance()->OutputScalingEnabled.value_or_default())
+        params.upscaleSize.height *= Config::Instance()->OutputScalingMultiplier.value_or_default();
 
     LOG_DEBUG("Dispatch!!");
     auto result = FfxApiProxy::D3D12_Dispatch()(&_context, &params.header);
