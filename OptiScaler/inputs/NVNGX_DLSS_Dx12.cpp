@@ -1606,36 +1606,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     // Record the first timestamp
     if (!State::Instance().isWorkingAsNvngx)
         InCmdList->EndQuery(HooksDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
-
-    uint32_t outWidth{};
-    uint32_t outHeight{};
-
-    static uint32_t previousOutWidth{};
-    static uint32_t previousOutHeight{};
-
-    InParameters->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth);
-    InParameters->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight);
-
-    if ((deviceContext->Name() == "XeSS" || deviceContext->Name() == "DLSS") && 
-        (outWidth != previousOutWidth || outHeight != previousOutHeight)) 
-    {
-        State::Instance().changeBackend[handleId] = true;
-        previousOutWidth = outWidth;
-        previousOutHeight = outHeight;
-    }
-
-    if (outWidth != 0) {
-        deviceContext->_displayWidth = outWidth;
-        deviceContext->_targetWidth = outWidth;
-    }
-
-    if (outHeight != 0) {
-        deviceContext->_displayHeight = outHeight;
-        deviceContext->_targetHeight = outHeight;
-    }
-
-    LOG_DEBUG("Display: {}x{}, Target: {}x{}, Render: {}x{}", deviceContext->DisplayWidth(), deviceContext->DisplayHeight(), deviceContext->TargetWidth(), deviceContext->TargetHeight(), deviceContext->RenderWidth(), deviceContext->RenderHeight());
-    
+   
     // Run upscaler
     auto evalResult = deviceContext->Evaluate(InCmdList, InParameters);
 
