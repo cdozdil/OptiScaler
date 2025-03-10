@@ -2307,7 +2307,7 @@ static void CheckWorkingMode()
                 HooksDx::HookDx12(d3d12Module);
             }
 
-            // ReShade
+            // SpecialK
             if (!isWorkingWithEnabler && (Config::Instance()->FGType.value_or_default() != FGType::OptiFG || !Config::Instance()->OverlayMenu.value_or_default()) &&
                 skHandle == nullptr && Config::Instance()->LoadSpecialK.value_or_default())
             {
@@ -2317,7 +2317,7 @@ static void CheckWorkingMode()
                 LOG_INFO("Loading SpecialK64.dll, result: {0:X}", (UINT64)skHandle);
             }
 
-            // SpecialK
+            // ReShade
             if (!isWorkingWithEnabler && reshadeHandle == nullptr && Config::Instance()->LoadReShade.value_or_default())
             {
                 auto rsFile = Util::DllPath().parent_path() / L"ReShade64.dll";
