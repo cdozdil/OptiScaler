@@ -1294,7 +1294,8 @@ bool MenuCommon::RenderMenu()
                                 Config::Instance()->DlssReactiveMaskBias.reset();
                             }
 
-                            State::Instance().changeBackend = true;
+                            for (auto& singleChangeBackend : State::Instance().changeBackend)
+                                singleChangeBackend.second = true;
                         }
 
                         ImGui::SameLine(0.0f, 6.0f);
@@ -1830,7 +1831,8 @@ bool MenuCommon::RenderMenu()
                                     {
                                         Config::Instance()->NetworkModel = n;
                                         State::Instance().newBackend = currentBackend;
-                                        State::Instance().changeBackend = true;
+                                        for (auto& singleChangeBackend : State::Instance().changeBackend)
+                                            singleChangeBackend.second = true;
                                     }
                                 }
 
@@ -1890,7 +1892,8 @@ bool MenuCommon::RenderMenu()
                             {
                                 Config::Instance()->Fsr3xIndex = _fsr3xIndex;
                                 State::Instance().newBackend = currentBackend;
-                                State::Instance().changeBackend = true;
+                                for (auto& singleChangeBackend : State::Instance().changeBackend)
+                                    singleChangeBackend.second = true;
                             }
 
                             if (currentFeature->Version().patch > 0)
@@ -2056,7 +2059,8 @@ bool MenuCommon::RenderMenu()
                             else
                                 State::Instance().newBackend = currentBackend;
 
-                            State::Instance().changeBackend = true;
+                            for (auto& singleChangeBackend : State::Instance().changeBackend)
+                                singleChangeBackend.second = true;
                         }
 
                         ImGui::EndDisabled();
@@ -2373,7 +2377,8 @@ bool MenuCommon::RenderMenu()
                                 State::Instance().newBackend = currentBackend;
 
 
-                            State::Instance().changeBackend = true;
+                            for (auto& singleChangeBackend : State::Instance().changeBackend)
+                                singleChangeBackend.second = true;
                         }
                         ImGui::EndDisabled();
 
@@ -2384,7 +2389,7 @@ bool MenuCommon::RenderMenu()
                         if (currentFeature != nullptr)
                         {
                             ImGui::Text("Output Scaling is %s, target res: %dx%d", Config::Instance()->OutputScalingEnabled.value_or_default() ? "ENABLED" : "DISABLED",
-                                        (uint32_t)(currentFeature->DisplayWidth() * _ssRatio), (uint32_t)(currentFeature->DisplayHeight() * _ssRatio));
+                                (uint32_t)(currentFeature->DisplayWidth() * _ssRatio), (uint32_t)(currentFeature->DisplayHeight() * _ssRatio));
                         }
 
                         ImGui::EndDisabled();
@@ -2406,11 +2411,12 @@ bool MenuCommon::RenderMenu()
                         if (currentBackend == "dlss" && State::Instance().currentFeature->Version().major < 3)
                         {
                             State::Instance().newBackend = currentBackend;
-                            State::Instance().changeBackend = true;
+                            for (auto& singleChangeBackend : State::Instance().changeBackend)
+                                singleChangeBackend.second = true;
                         }
                     }
                     ShowHelpMarker("Ignores the value sent by the game\n"
-                                   "and uses the value set below");
+                        "and uses the value set below");
 
                     ImGui::BeginDisabled(!Config::Instance()->OverrideSharpness.value_or_default());
 
@@ -2429,9 +2435,9 @@ bool MenuCommon::RenderMenu()
                     if (bool upOverride = Config::Instance()->UpscaleRatioOverrideEnabled.value_or_default(); ImGui::Checkbox("Ratio Override", &upOverride))
                         Config::Instance()->UpscaleRatioOverrideEnabled = upOverride;
                     ShowHelpMarker("Let's you override every upscaler preset\n"
-                                   "with a value set below\n\n"
-                                   "1.5x on a 1080p screen means internal resolution of 720p\n"
-                                   "1080 / 1.5 = 720");
+                        "with a value set below\n\n"
+                        "1.5x on a 1080p screen means internal resolution of 720p\n"
+                        "1080 / 1.5 = 720");
 
                     ImGui::BeginDisabled(!Config::Instance()->UpscaleRatioOverrideEnabled.value_or_default());
 
@@ -2447,9 +2453,9 @@ bool MenuCommon::RenderMenu()
                     if (bool qOverride = Config::Instance()->QualityRatioOverrideEnabled.value_or_default(); ImGui::Checkbox("Quality Override", &qOverride))
                         Config::Instance()->QualityRatioOverrideEnabled = qOverride;
                     ShowHelpMarker("Let's you override each preset's ratio individually\n"
-                                   "Note that not every game supports every quality preset\n\n"
-                                   "1.5x on a 1080p screen means internal resolution of 720p\n"
-                                   "1080 / 1.5 = 720");
+                        "Note that not every game supports every quality preset\n\n"
+                        "1.5x on a 1080p screen means internal resolution of 720p\n"
+                        "1080 / 1.5 = 720");
 
                     ImGui::BeginDisabled(!Config::Instance()->QualityRatioOverrideEnabled.value_or_default());
 
@@ -2510,10 +2516,11 @@ bool MenuCommon::RenderMenu()
                             else
                                 State::Instance().newBackend = currentBackend;
 
-                            State::Instance().changeBackend = true;
+                            for (auto& singleChangeBackend : State::Instance().changeBackend)
+                                singleChangeBackend.second = true;
                         }
                         ShowHelpMarker("Some Unreal Engine games need this\n"
-                                       "Might fix colors, especially in dark areas");
+                            "Might fix colors, especially in dark areas");
 
                         ImGui::TableNextColumn();
                         if (bool hdr = Config::Instance()->HDR.value_or(false); ImGui::Checkbox("HDR", &hdr))
@@ -2525,7 +2532,8 @@ bool MenuCommon::RenderMenu()
                             else
                                 State::Instance().newBackend = currentBackend;
 
-                            State::Instance().changeBackend = true;
+                            for (auto& singleChangeBackend : State::Instance().changeBackend)
+                                singleChangeBackend.second = true;
                         }
                         ShowHelpMarker("Might help with purple hue in some games");
 
@@ -2548,7 +2556,8 @@ bool MenuCommon::RenderMenu()
                                     else
                                         State::Instance().newBackend = currentBackend;
 
-                                    State::Instance().changeBackend = true;
+                                    for (auto& singleChangeBackend : State::Instance().changeBackend)
+                                        singleChangeBackend.second = true;
                                 }
                                 ShowHelpMarker("You shouldn't need to change it");
 
@@ -2562,7 +2571,8 @@ bool MenuCommon::RenderMenu()
                                     else
                                         State::Instance().newBackend = currentBackend;
 
-                                    State::Instance().changeBackend = true;
+                                    for (auto& singleChangeBackend : State::Instance().changeBackend)
+                                        singleChangeBackend.second = true;
                                 }
                                 ShowHelpMarker("Fix for games that send motion data with preapplied jitter");
 
@@ -2582,10 +2592,11 @@ bool MenuCommon::RenderMenu()
                                     else
                                         State::Instance().newBackend = currentBackend;
 
-                                    State::Instance().changeBackend = true;
+                                    for (auto& singleChangeBackend : State::Instance().changeBackend)
+                                        singleChangeBackend.second = true;
                                 }
                                 ShowHelpMarker("Mostly a fix for Unreal Engine games\n"
-                                               "Top left part of the screen will be blurry");
+                                    "Top left part of the screen will be blurry");
 
                                 ImGui::TableNextColumn();
                                 auto accessToReactiveMask = State::Instance().currentFeature->AccessToReactiveMask();
@@ -2599,7 +2610,8 @@ bool MenuCommon::RenderMenu()
                                     if (currentBackend == "xess")
                                     {
                                         State::Instance().newBackend = currentBackend;
-                                        State::Instance().changeBackend = true;
+                                        for (auto& singleChangeBackend : State::Instance().changeBackend)
+                                            singleChangeBackend.second = true;
                                     }
                                 }
 
@@ -2607,8 +2619,8 @@ bool MenuCommon::RenderMenu()
 
                                 if (accessToReactiveMask)
                                     ShowHelpMarker("Allows the use of a reactive mask\n"
-                                                   "Keep in mind that a reactive mask sent to DLSS\n"
-                                                   "will not produce a good image in combination with FSR/XeSS");
+                                        "Keep in mind that a reactive mask sent to DLSS\n"
+                                        "will not produce a good image in combination with FSR/XeSS");
                                 else
                                     ShowHelpMarker("Option disabled because tha game doesn't provide a reactive mask");
 
@@ -2695,8 +2707,8 @@ bool MenuCommon::RenderMenu()
                             Config::Instance()->ExtendedLimits = extendedLimits;
 
                         ShowHelpMarker("Extended sliders limit for quality presets\n\n"
-                                       "Using this option changes resolution detection logic\n"
-                                       "and might cause issues and crashes!");
+                            "Using this option changes resolution detection logic\n"
+                            "and might cause issues and crashes!");
                     }
 
                     bool pcShaders = Config::Instance()->UsePrecompiledShaders.value_or_default();
@@ -2704,7 +2716,8 @@ bool MenuCommon::RenderMenu()
                     {
                         Config::Instance()->UsePrecompiledShaders = pcShaders;
                         State::Instance().newBackend = currentBackend;
-                        State::Instance().changeBackend = true;
+                        for (auto& singleChangeBackend : State::Instance().changeBackend)
+                            singleChangeBackend.second = true;
                     }
                 }
 

@@ -137,7 +137,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 			{
 				LOG_WARN("MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
 				State::Instance().DisplaySizeMV = false;
-				State::Instance().changeBackend = true;
+				State::Instance().changeBackend[Handle()->Id] = true;
 				return true;
 			}
 
@@ -234,7 +234,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		{
 			LOG_WARN("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
 			State::Instance().AutoExposure = true;
-			State::Instance().changeBackend = true;
+			State::Instance().changeBackend[Handle()->Id] = true;
 			return true;
 		}
 	}
@@ -269,7 +269,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		{
 			LOG_WARN("Bias mask not exist and its enabled in config, it may cause problems!!");
 			Config::Instance()->DisableReactiveMask.set_volatile_value(true);
-			State::Instance().changeBackend = true;
+			State::Instance().changeBackend[Handle()->Id] = true;
 			return true;
 		}
 	}
@@ -363,7 +363,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 		if (!OutputScaler->Dispatch(Device, InCommandList, OutputScaler->Buffer(), paramOutput))
 		{
 			Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
-			State::Instance().changeBackend = true;
+			State::Instance().changeBackend[Handle()->Id] = true;
 			return true;
 		}
 	}
