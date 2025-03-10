@@ -348,13 +348,6 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
     params->Set(NVSDK_NGX_Parameter_Reset, dispatchDesc->reset ? 1 : 0);
     params->Set(NVSDK_NGX_Parameter_Width, dispatchDesc->renderSize.width);
     params->Set(NVSDK_NGX_Parameter_Height, dispatchDesc->renderSize.height);
-
-    if (dispatchDesc->upscaleSize.width != 0)
-        params->Set(NVSDK_NGX_Parameter_OutWidth, dispatchDesc->upscaleSize.width);
-
-    if (dispatchDesc->upscaleSize.height != 0)
-        params->Set(NVSDK_NGX_Parameter_OutHeight, dispatchDesc->upscaleSize.height);
-
     params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, dispatchDesc->renderSize.width);
     params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, dispatchDesc->renderSize.height);
     params->Set(NVSDK_NGX_Parameter_Depth, dispatchDesc->depth.resource);
