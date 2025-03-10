@@ -1606,7 +1606,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     // Record the first timestamp
     if (!State::Instance().isWorkingAsNvngx)
         InCmdList->EndQuery(HooksDx::queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
-   
+
     // Run upscaler
     auto evalResult = deviceContext->Evaluate(InCmdList, InParameters);
 

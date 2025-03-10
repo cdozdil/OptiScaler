@@ -45,19 +45,16 @@ static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* p
     if ((initParams->flags & FFX_UPSCALE_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS) == 0)
         initFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
 
-    auto outWidth = pExecParams->upscaleSize.width != 0 ? pExecParams->upscaleSize.width : initParams->maxUpscaleSize.width;
-    auto outHeight = pExecParams->upscaleSize.height != 0 ? pExecParams->upscaleSize.height : initParams->maxUpscaleSize.height;
-
     params->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, initFlags);
 
     params->Set(NVSDK_NGX_Parameter_Width, pExecParams->renderSize.width);
     params->Set(NVSDK_NGX_Parameter_Height, pExecParams->renderSize.height);
-    params->Set(NVSDK_NGX_Parameter_OutWidth, outWidth);
-    params->Set(NVSDK_NGX_Parameter_OutHeight, outHeight);
+    params->Set(NVSDK_NGX_Parameter_OutWidth, initParams->maxUpscaleSize.width);
+    params->Set(NVSDK_NGX_Parameter_OutHeight, initParams->maxUpscaleSize.height);
 
-    auto ratio = (float)outWidth / (float)pExecParams->renderSize.width;
+    auto ratio = (float)initParams->maxUpscaleSize.width / (float)pExecParams->renderSize.width;
 
-    LOG_INFO("renderWidth: {}, maxWidth: {}, ratio: {}", pExecParams->renderSize.width, outWidth, ratio);
+    LOG_INFO("renderWidth: {}, maxWidth: {}, ratio: {}", pExecParams->renderSize.width, initParams->maxUpscaleSize.width, ratio);
 
     if (ratio <= 3.0)
         params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_UltraPerformance);
