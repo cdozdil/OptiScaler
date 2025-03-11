@@ -4327,16 +4327,13 @@ void FrameGen_Dx12::CreateFGContext(ID3D12Device* InDevice, IFeature* deviceCont
     // use swapchain buffer info 
     DXGI_SWAP_CHAIN_DESC desc{};
     if (HooksDx::currentSwapchain->GetDesc(&desc) == S_OK)
-    {
         createFg.displaySize = { desc.BufferDesc.Width, desc.BufferDesc.Height };
-        createFg.maxRenderSize = { desc.BufferDesc.Width, desc.BufferDesc.Height };
-    }
     else
-    {
-        // this might cause issues
         createFg.displaySize = { deviceContext->DisplayWidth(), deviceContext->DisplayHeight() };
-        createFg.maxRenderSize = { deviceContext->DisplayWidth(), deviceContext->DisplayHeight() };
-    }
+
+    // For internal res is bigger than display res situations
+    createFg.maxRenderSize = { deviceContext->DisplayWidth() > deviceContext->RenderWidth() ? deviceContext->DisplayWidth() : deviceContext->RenderWidth(),
+                               deviceContext->DisplayHeight() > deviceContext->RenderHeight() ? deviceContext->DisplayHeight() : deviceContext->RenderHeight() };
 
     createFg.flags = 0;
 
