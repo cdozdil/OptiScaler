@@ -17,6 +17,7 @@ static bool receivingWmInputs = false;
 static bool inputMenu = false;
 static bool inputFps = false;
 static bool inputFpsCycle = false;
+static bool hasGamepad = false;
 
 void MenuCommon::ShowTooltip(const char* tip) {
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -917,6 +918,14 @@ bool MenuCommon::RenderMenu()
                 auto dllPath = Util::DllPath().parent_path() / "dlssg_to_fsr3_amd_is_better.dll";
                 State::Instance().NukemsFilesAvailable = std::filesystem::exists(dllPath);
 
+                io.ClearEventsQueue();
+                io.ClearInputCharacters();
+                io.ClearInputKeys();
+                io.ClearInputMouse();
+
+                if (hasGamepad)
+                    io.BackendFlags | ImGuiBackendFlags_HasGamepad;
+
                 io.ConfigFlags = ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
 
                 if (pfn_ClipCursor_hooked)
@@ -931,6 +940,8 @@ bool MenuCommon::RenderMenu()
             }
             else
             {
+                hasGamepad = (io.BackendFlags | ImGuiBackendFlags_HasGamepad) > 0;
+                io.BackendFlags &= 30;
                 io.ConfigFlags = ImGuiConfigFlags_NavNoCaptureKeyboard | ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
 
                 if (pfn_ClipCursor_hooked)
@@ -3151,7 +3162,8 @@ bool MenuCommon::RenderMenu()
                 if (ImGui::Button("Close"))
                 {
                     _isVisible = false;
-
+                    hasGamepad = (io.BackendFlags | ImGuiBackendFlags_HasGamepad) > 0;
+                    io.BackendFlags &= 30;
                     io.ConfigFlags = ImGuiConfigFlags_NavNoCaptureKeyboard | ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
 
                     if (pfn_ClipCursor_hooked)
@@ -3364,6 +3376,9 @@ void MenuCommon::Init(HWND InHwnd)
     ImGui::StyleColorsDark();
 
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    hasGamepad = (io.BackendFlags | ImGuiBackendFlags_HasGamepad) > 0;
+    io.BackendFlags &= 30;
     io.ConfigFlags = ImGuiConfigFlags_NavNoCaptureKeyboard | ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
 
     io.MouseDrawCursor = _isVisible;
@@ -3371,7 +3386,7 @@ void MenuCommon::Init(HWND InHwnd)
     io.WantCaptureMouse = _isVisible;
     io.WantSetMousePos = _isVisible;
 
-    io.IniFilename = io.LogFilename = nullptr;
+    io.IniFilename = io.LogFilename = nullptr; 
 
     bool initResult = ImGui_ImplWin32_Init(InHwnd);
     LOG_DEBUG("ImGui_ImplWin32_Init result: {0}", initResult);
