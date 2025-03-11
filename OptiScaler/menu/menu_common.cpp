@@ -3364,7 +3364,7 @@ void MenuCommon::Init(HWND InHwnd)
     ImGui::StyleColorsDark();
 
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags = ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
+    io.ConfigFlags = ImGuiConfigFlags_NavNoCaptureKeyboard | ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
 
     io.MouseDrawCursor = _isVisible;
     io.WantCaptureKeyboard = _isVisible;
