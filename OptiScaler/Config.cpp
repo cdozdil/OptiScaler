@@ -117,6 +117,14 @@ bool Config::Reload(std::filesystem::path iniPath)
             FsrUseMaskForTransparency.set_from_config(readBool("FSR", "UseReactiveMaskForTransparency"));
             DlssReactiveMaskBias.set_from_config(readFloat("FSR", "DlssReactiveMaskBias"));
             Fsr4Update.set_from_config(readBool("FSR", "Fsr4Update"));
+            FsrNonLinearPQ.set_from_config(readBool("FSR", "FsrNonLinearPQ"));
+            FsrNonLinearSRGB.set_from_config(readBool("FSR", "FsrNonLinearSRGB"));
+
+            // Only sRGB or PQ should be enabled
+            if (FsrNonLinearPQ.has_value() && FsrNonLinearPQ.value())
+                FsrNonLinearSRGB = false;
+            else if (FsrNonLinearSRGB.has_value() && FsrNonLinearSRGB.value())
+                FsrNonLinearPQ = false;
         }
 
         // XeSS
@@ -604,6 +612,8 @@ bool Config::SaveIni()
         ini.SetValue("FSR", "UseReactiveMaskForTransparency", GetBoolValue(Instance()->FsrUseMaskForTransparency.value_for_config()).c_str());
         ini.SetValue("FSR", "DlssReactiveMaskBias", GetFloatValue(Instance()->DlssReactiveMaskBias.value_for_config()).c_str());
         ini.SetValue("FSR", "Fsr4Update", GetBoolValue(Instance()->Fsr4Update.value_for_config()).c_str());
+        ini.SetValue("FSR", "FsrNonLinearPQ", GetBoolValue(Instance()->FsrNonLinearPQ.value_for_config()).c_str());
+        ini.SetValue("FSR", "FsrNonLinearSRGB", GetBoolValue(Instance()->FsrNonLinearSRGB.value_for_config()).c_str());
     }
 
     // XeSS

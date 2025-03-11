@@ -59,6 +59,11 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     if (Config::Instance()->FsrDebugView.value_or_default())
         params.flags = FFX_UPSCALE_FLAG_DRAW_DEBUG_VIEW;
 
+    if (Config::Instance()->FsrNonLinearPQ.value_or_default())
+        params.flags = FFX_UPSCALE_FLAG_NON_LINEAR_COLOR_PQ;
+    else if (Config::Instance()->FsrNonLinearSRGB.value_or_default())
+        params.flags = FFX_UPSCALE_FLAG_NON_LINEAR_COLOR_SRGB;
+
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffset.y);
 
@@ -607,6 +612,12 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     else
     {
         LOG_INFO("contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
+    }
+
+    if (Config::Instance()->FsrNonLinearPQ.value_or_default() || Config::Instance()->FsrNonLinearSRGB.value_or_default())
+    {
+        _contextDesc.flags |= FFX_UPSCALE_ENABLE_NON_LINEAR_COLORSPACE;
+        LOG_INFO("contextDesc.initFlags (NonLinearColorSpace) {0:b}", _contextDesc.flags);
     }
 
     if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false))

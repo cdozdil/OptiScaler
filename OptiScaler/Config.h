@@ -256,6 +256,8 @@ public:
 	CustomOptional<bool> FsrUseMaskForTransparency{ true };
 	CustomOptional<float> FsrVelocity{ 1.0f };
 	CustomOptional<bool> Fsr4Update{ false };
+	CustomOptional<bool> FsrNonLinearSRGB{ false };
+	CustomOptional<bool> FsrNonLinearPQ{ false };
 
 	// FSR Common
 	CustomOptional<float> FsrVerticalFov{ 60.0f };
