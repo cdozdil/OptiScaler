@@ -2398,6 +2398,11 @@ static void CheckQuirks() {
             LOG_INFO("Enabling a quirk for Banishers (Disable FSR2 Inputs)");
         }
     }
+    else if (exePathFilename == "SplitFiction.exe")
+    {
+        State::Instance().gameQuirk = SplitFiction;
+        LOG_INFO("Enabling a quirk for Split Fiction (Quick upscaler reinit)");
+    }
 }
 
 bool isNvidia()
