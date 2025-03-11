@@ -34,16 +34,30 @@ typedef struct _D3DKMT_ENUMADAPTERS_L
     D3DKMT_ADAPTERINFO_L  Adapters[16];
 } D3DKMT_ENUMADAPTERS_L;
 
+typedef struct _D3DKMT_CLOSEADAPTER_L
+{
+    UINT   hAdapter;   // in: adapter handle
+} D3DKMT_CLOSEADAPTER_L;
+
 // Function pointers
 typedef UINT(*PFN_D3DKMTQueryAdapterInfo_L)(D3DKMT_QUERYADAPTERINFO_L*);
 typedef UINT(*PFN_D3DKMTEnumAdapters_L)(D3DKMT_ENUMADAPTERS_L*);
+typedef UINT(*PFN_D3DKMTCloseAdapter)(D3DKMT_CLOSEADAPTER_L*);
 
 inline static std::vector<std::filesystem::path> GetDriverStore()
 {
     std::vector<std::filesystem::path> result;
 
     // Load D3DKMT functions dynamically
-    HMODULE hGdi32 = LoadLibrary(L"Gdi32.dll");
+    bool libraryLoaded = false;
+    HMODULE hGdi32 = GetModuleHandle(L"Gdi32.dll");
+
+    if (hGdi32 == nullptr)
+    {
+        hGdi32 = LoadLibrary(L"Gdi32.dll");
+        libraryLoaded = hGdi32 != nullptr;
+    }
+
     if (hGdi32 == nullptr)
     {
         LOG_ERROR("Failed to load Gdi32.dll");
@@ -54,8 +68,9 @@ inline static std::vector<std::filesystem::path> GetDriverStore()
     {
         auto o_D3DKMTEnumAdapters = (PFN_D3DKMTEnumAdapters_L)GetProcAddress(hGdi32, "D3DKMTEnumAdapters");
         auto o_D3DKMTQueryAdapterInfo = (PFN_D3DKMTQueryAdapterInfo_L)GetProcAddress(hGdi32, "D3DKMTQueryAdapterInfo");
+        auto o_D3DKMTCloseAdapter = (PFN_D3DKMTCloseAdapter)GetProcAddress(hGdi32, "D3DKMTCloseAdapter");
 
-        if (o_D3DKMTEnumAdapters == nullptr || o_D3DKMTQueryAdapterInfo == nullptr)
+        if (o_D3DKMTEnumAdapters == nullptr || o_D3DKMTQueryAdapterInfo == nullptr || o_D3DKMTCloseAdapter == nullptr)
         {
             LOG_ERROR("Failed to resolve D3DKMT functions");
             break;
@@ -91,6 +106,13 @@ inline static std::vector<std::filesystem::path> GetDriverStore()
                     LOG_ERROR("Failed to query adapter info {:X}", hr);
                 else
                     result.push_back(std::filesystem::path(umdFileInfo.UmdFileName).parent_path());
+
+
+                D3DKMT_CLOSEADAPTER_L closeAdapter = {};
+                closeAdapter.hAdapter = adapter.hAdapter;
+                auto closeResult = o_D3DKMTCloseAdapter(&closeAdapter);
+                if (closeResult != 0)
+                    LOG_ERROR("D3DKMTCloseAdapter error: {:X}", closeResult);
             }
         }
         else
@@ -101,7 +123,9 @@ inline static std::vector<std::filesystem::path> GetDriverStore()
 
     } while (false);
 
-    FreeLibrary(hGdi32);
+    if (libraryLoaded)
+        FreeLibrary(hGdi32);
+
     return result;
 }
 
@@ -122,7 +146,7 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
 
     HRESULT STDMETHODCALLTYPE UpdateFfxApiProvider(void* pData, uint32_t dataSizeInBytes) override
     {
-        LOG_INFO("UpdateFfxApiProvider called");
+        LOG_INFO("UpdateFfxApiProvider called"); 
 
         if (pfnUpdateFfxApiProvider == nullptr)
         {
