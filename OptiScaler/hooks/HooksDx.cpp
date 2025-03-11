@@ -437,6 +437,7 @@ static PFN_agsDriverExtensionsDX12_CreateDevice o_agsDriverExtensionsDX12_Create
 static PFN_agsDriverExtensionsDX12_DestroyDevice o_agsDriverExtensionsDX12_DestroyDevice = nullptr;
 
 static bool _agsInited = false;
+static bool _agsSkip = false;
 static AGSContext* _agsContext = nullptr;
 
 // Original method calls for device
@@ -3815,6 +3816,9 @@ static void CALLBACK D3D12DebugCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_M
 
 static void LoadAndInitAgs(IDXGIAdapter* pAdapter)
 {
+    if (_agsInited)
+        return;
+
     State::Instance().skipSpoofing = true;
     DXGI_ADAPTER_DESC desc{};
     if (pAdapter->GetDesc(&desc) != S_OK)
@@ -3883,9 +3887,11 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
 
     HRESULT result = E_ABORT;
 
+    bool hookToDevice = false;
+
     LoadAndInitAgs(pAdapter);
 
-    if (_agsInited)
+    if (_agsInited && !_agsSkip)
     {
         AGSDX12DeviceCreationParams creationParams = {};
         creationParams.pAdapter = pAdapter;
@@ -3895,25 +3901,30 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         AGSDX12ExtensionParams extensionParams = {};
         AGSDX12ReturnedParams returnedParams = {};
 
+        _agsSkip = true;
         auto rc = o_agsDriverExtensionsDX12_CreateDevice(_agsContext, &creationParams, &extensionParams, &returnedParams);
+        _agsSkip = false;
 
         if (rc == AGS_SUCCESS)
         {
             LOG_INFO("AGS D3D12 Device created");
+            *ppDevice = returnedParams.pDevice;
             result = S_OK;
         }
         else
         {
             LOG_INFO("AGS D3D12 Device creation error: {:X}", (UINT)rc);
             result = o_D3D12CreateDevice(pAdapter, minLevel, riid, ppDevice);
+            hookToDevice = true;
         }
     }
     else
     {
         result = o_D3D12CreateDevice(pAdapter, minLevel, riid, ppDevice);
+        hookToDevice = true;
     }
 
-    if (result == S_OK && ppDevice != nullptr && *ppDevice != nullptr)
+    if (result == S_OK && hookToDevice && ppDevice != nullptr && *ppDevice != nullptr)
     {
         LOG_DEBUG("Device captured: {0:X}", (size_t)*ppDevice);
         g_pd3dDeviceParam = (ID3D12Device*)*ppDevice;
