@@ -1159,6 +1159,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     IFeature_Dx12* deviceContext = nullptr;
 
+    if (Dx12Contexts[handleId].feature) {
+        auto* feature = Dx12Contexts[handleId].feature.get();
+
+        // FSR 3.1 supports upscaleSize that doesn't need reinit to change output resolution
+        if (!std::string(feature->Name()).starts_with("FSR 3.1") && feature->Name() != "FSR3 w/Dx12" && feature->UpdateOutputResolution(InParameters))
+            State::Instance().changeBackend[handleId] = true;
+    }
+
     // Change backend
     if (State::Instance().changeBackend[handleId])
     {
@@ -1198,8 +1206,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 dc = nullptr;
 
-                LOG_DEBUG("sleeping before reset of current feature for 1000ms");
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                if (State::Instance().gameQuirk = SplitFiction) {
+                    LOG_DEBUG("sleeping before reset of current feature for 100ms (Split Fiction)");
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                }
+                else 
+                {
+                    LOG_DEBUG("sleeping before reset of current feature for 1000ms");
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                }
 
                 Dx12Contexts[handleId].feature.reset();
                 Dx12Contexts[handleId].feature = nullptr;
@@ -1344,7 +1359,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         State::Instance().currentFeature = Dx12Contexts[handleId].feature.get();
         FrameGen_Dx12::fgTarget = 20;
 
-        return NVSDK_NGX_Result_Success;
+        //return NVSDK_NGX_Result_Success;
     }
 
     deviceContext = Dx12Contexts[handleId].feature.get();

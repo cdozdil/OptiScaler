@@ -21,7 +21,8 @@ typedef enum GameQuirk
 	Cyberpunk,
 	FMF2,
 	RDR1,
-	Banishers
+	Banishers,
+	SplitFiction
 } GameQuirk;
 
 typedef enum FGType : uint32_t

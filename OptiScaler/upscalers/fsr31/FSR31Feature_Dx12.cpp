@@ -6,7 +6,12 @@
 
 #include "FSR31Feature_Dx12.h"
 
-FSR31FeatureDx12::FSR31FeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : FSR31Feature(InHandleId, InParameters), IFeature_Dx12(InHandleId, InParameters), IFeature(InHandleId, InParameters)
+NVSDK_NGX_Parameter* FSR31FeatureDx12::SetParameters(NVSDK_NGX_Parameter* InParameters) {
+    InParameters->Set("OptiScaler.SupportsUpscaleSize", true);
+    return InParameters;
+}
+
+FSR31FeatureDx12::FSR31FeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : FSR31Feature(InHandleId, InParameters), IFeature_Dx12(InHandleId, InParameters), IFeature(InHandleId, SetParameters(InParameters))
 {
     _moduleLoaded = FfxApiProxy::InitFfxDx12();
 
@@ -395,8 +400,11 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
             LOG_WARN("Velocity configure result: {}", (UINT)result);
     }
 
-    InParameters->Get("FSR.upscaleSize.width", &params.upscaleSize.width);
-    InParameters->Get("FSR.upscaleSize.height", &params.upscaleSize.height);
+    if (InParameters->Get("FSR.upscaleSize.width", &params.upscaleSize.width) == NVSDK_NGX_Result_Success && Config::Instance()->OutputScalingEnabled.value_or_default())
+        params.upscaleSize.width *= Config::Instance()->OutputScalingMultiplier.value_or_default();
+
+    if (InParameters->Get("FSR.upscaleSize.height", &params.upscaleSize.height) == NVSDK_NGX_Result_Success && Config::Instance()->OutputScalingEnabled.value_or_default())
+        params.upscaleSize.height *= Config::Instance()->OutputScalingMultiplier.value_or_default();
 
     LOG_DEBUG("Dispatch!!");
     auto result = FfxApiProxy::D3D12_Dispatch()(&_context, &params.header);
@@ -404,6 +412,12 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     if (result != FFX_API_RETURN_OK)
     {
         LOG_ERROR("_dispatch error: {0}", FfxApiProxy::ReturnCodeToString(result));
+
+        if (result == FFX_API_RETURN_ERROR_RUNTIME_ERROR) {
+            LOG_WARN("Trying to recover by recreating the feature");
+            State::Instance().changeBackend[Handle()->Id] = true;
+        }
+
         return false;
     }
 

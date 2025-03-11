@@ -6,7 +6,12 @@
 
 #include "FSR31Feature_Dx11On12.h"
 
-FSR31FeatureDx11on12::FSR31FeatureDx11on12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : FSR31Feature(InHandleId, InParameters), IFeature_Dx11wDx12(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters)
+NVSDK_NGX_Parameter* FSR31FeatureDx11on12::SetParameters(NVSDK_NGX_Parameter* InParameters) {
+    InParameters->Set("OptiScaler.SupportsUpscaleSize", true);
+    return InParameters;
+}
+
+FSR31FeatureDx11on12::FSR31FeatureDx11on12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : FSR31Feature(InHandleId, InParameters), IFeature_Dx11wDx12(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, SetParameters(InParameters))
 {
     _moduleLoaded = FfxApiProxy::InitFfxDx12();
 
@@ -344,8 +349,11 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
             LOG_WARN("Velocity configure result: {}", (UINT)result);
     }
 
-    InParameters->Get("FSR.upscaleSize.width", &params.upscaleSize.width);
-    InParameters->Get("FSR.upscaleSize.height", &params.upscaleSize.height);
+    if (InParameters->Get("FSR.upscaleSize.width", &params.upscaleSize.width) == NVSDK_NGX_Result_Success && Config::Instance()->OutputScalingEnabled.value_or_default())
+        params.upscaleSize.width *= Config::Instance()->OutputScalingMultiplier.value_or_default();
+
+    if (InParameters->Get("FSR.upscaleSize.height", &params.upscaleSize.height) == NVSDK_NGX_Result_Success && Config::Instance()->OutputScalingEnabled.value_or_default())
+        params.upscaleSize.height *= Config::Instance()->OutputScalingMultiplier.value_or_default();
 
     LOG_DEBUG("Dispatch!!");
     auto ffxresult = FfxApiProxy::D3D12_Dispatch()(&_context, &params.header);
