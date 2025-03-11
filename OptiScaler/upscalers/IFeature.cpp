@@ -24,6 +24,8 @@ bool IFeature::SetInitParameters(NVSDK_NGX_Parameter* InParameters)
 		InParameters->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight) == NVSDK_NGX_Result_Success &&
 		InParameters->Get(NVSDK_NGX_Parameter_PerfQualityValue, &pqValue) == NVSDK_NGX_Result_Success)
 	{
+		GetDynamicOutputResolution(InParameters, &outWidth, &outHeight);
+
 		// Thanks to Crytek added these checks
 		if (width > 16384 || width < 20)
 			width = 0;
@@ -153,4 +155,66 @@ float IFeature::GetSharpness(const NVSDK_NGX_Parameter* InParameters)
 	}
 
 	return sharpness;
+}
+
+bool IFeature::UpdateOutputResolution(const NVSDK_NGX_Parameter* InParameters)
+{
+	// Check for FSR's dynamic resolution output
+	auto fsrDynamicOutputWidth = 0;
+	auto fsrDynamicOutputHeight = 0;
+
+	InParameters->Get("FSR.upscaleSize.width", &fsrDynamicOutputWidth);
+	InParameters->Get("FSR.upscaleSize.height", &fsrDynamicOutputHeight);
+
+	if (Config::Instance()->OutputScalingEnabled.value_or_default()) {
+		if (_targetWidth == fsrDynamicOutputWidth || _targetHeight == fsrDynamicOutputHeight)
+			return false;
+
+		if (fsrDynamicOutputWidth > 0 && fsrDynamicOutputHeight > 0 &&
+			((unsigned int)(fsrDynamicOutputWidth * Config::Instance()->OutputScalingMultiplier.value_or_default()) != _targetWidth || fsrDynamicOutputWidth != _displayWidth || (unsigned int)(fsrDynamicOutputHeight * Config::Instance()->OutputScalingMultiplier.value_or_default()) != _targetHeight || fsrDynamicOutputHeight != _displayHeight)) {
+			_targetWidth = fsrDynamicOutputWidth * Config::Instance()->OutputScalingMultiplier.value_or_default();
+			_displayWidth = fsrDynamicOutputWidth;
+			_targetHeight = fsrDynamicOutputHeight * Config::Instance()->OutputScalingMultiplier.value_or_default();
+			_displayHeight = fsrDynamicOutputHeight;
+
+			return true;
+		}
+	}
+	else 
+	{
+		if (fsrDynamicOutputWidth > 0 && fsrDynamicOutputHeight > 0 &&
+			(fsrDynamicOutputWidth != _targetWidth || fsrDynamicOutputWidth != _displayWidth || fsrDynamicOutputHeight != _targetHeight || fsrDynamicOutputHeight != _displayHeight)) {
+			_targetWidth = fsrDynamicOutputWidth;
+			_displayWidth = fsrDynamicOutputWidth;
+			_targetHeight = fsrDynamicOutputHeight;
+			_displayHeight = fsrDynamicOutputHeight;
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void IFeature::GetDynamicOutputResolution(NVSDK_NGX_Parameter* InParameters, unsigned int* width, unsigned int* height)
+{
+	// FSR 3.1 uses upscaleSize for this, max size should stay the same
+	int supportsUpscaleSize = 0;
+	InParameters->Get("OptiScaler.SupportsUpscaleSize", &supportsUpscaleSize);
+	if (supportsUpscaleSize) {
+		InParameters->Set("OptiScaler.SupportsUpscaleSize", 0);
+		return;
+	}
+
+	// Check for FSR's dynamic resolution output
+	auto fsrDynamicOutputWidth = 0;
+	auto fsrDynamicOutputHeight = 0;
+
+	InParameters->Get("FSR.upscaleSize.width", &fsrDynamicOutputWidth);
+	InParameters->Get("FSR.upscaleSize.height", &fsrDynamicOutputHeight);
+
+	if (fsrDynamicOutputWidth > 0 && fsrDynamicOutputHeight > 0) {
+		*width = fsrDynamicOutputWidth;
+		*height = fsrDynamicOutputHeight;
+	}
 }
