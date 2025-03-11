@@ -6,7 +6,12 @@
 
 #include "FSR31Feature_Dx11On12.h"
 
-FSR31FeatureDx11on12::FSR31FeatureDx11on12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : FSR31Feature(InHandleId, InParameters), IFeature_Dx11wDx12(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters)
+NVSDK_NGX_Parameter* FSR31FeatureDx11on12::SetParameters(NVSDK_NGX_Parameter* InParameters) {
+    InParameters->Set("OptiScaler.SupportsUpscaleSize", true);
+    return InParameters;
+}
+
+FSR31FeatureDx11on12::FSR31FeatureDx11on12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : FSR31Feature(InHandleId, InParameters), IFeature_Dx11wDx12(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, SetParameters(InParameters))
 {
     _moduleLoaded = FfxApiProxy::InitFfxDx12();
 

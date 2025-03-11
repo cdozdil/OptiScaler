@@ -196,8 +196,16 @@ bool IFeature::UpdateOutputResolution(const NVSDK_NGX_Parameter* InParameters)
 	return false;
 }
 
-void IFeature::GetDynamicOutputResolution(const NVSDK_NGX_Parameter* InParameters, unsigned int* width, unsigned int* height)
+void IFeature::GetDynamicOutputResolution(NVSDK_NGX_Parameter* InParameters, unsigned int* width, unsigned int* height)
 {
+	// FSR 3.1 uses upscaleSize for this, max size should stay the same
+	int supportsUpscaleSize = 0;
+	InParameters->Get("OptiScaler.SupportsUpscaleSize", &supportsUpscaleSize);
+	if (supportsUpscaleSize) {
+		InParameters->Set("OptiScaler.SupportsUpscaleSize", 0);
+		return;
+	}
+
 	// Check for FSR's dynamic resolution output
 	auto fsrDynamicOutputWidth = 0;
 	auto fsrDynamicOutputHeight = 0;

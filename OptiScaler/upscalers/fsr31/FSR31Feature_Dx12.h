@@ -8,6 +8,7 @@
 class FSR31FeatureDx12 : public FSR31Feature, public IFeature_Dx12
 {
 private:
+	NVSDK_NGX_Parameter* SetParameters(NVSDK_NGX_Parameter* InParameters);
 
 protected:
 	bool InitFSR3(const NVSDK_NGX_Parameter* InParameters);
