@@ -1159,6 +1159,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     IFeature_Dx12* deviceContext = nullptr;
 
+    if (Dx12Contexts[handleId].feature && Dx12Contexts[handleId].feature.get()->UpdateOutputResolution(InParameters) /* && not FSR 3.1 */) {
+        State::Instance().changeBackend[handleId] = true;
+    }
+
     // Change backend
     if (State::Instance().changeBackend[handleId])
     {
