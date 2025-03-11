@@ -3150,8 +3150,17 @@ bool MenuCommon::RenderMenu()
 
                 if (ImGui::Button("Close"))
                 {
-                    _showMipmapCalcWindow = false;
                     _isVisible = false;
+
+                    io.ConfigFlags = ImGuiConfigFlags_NavNoCaptureKeyboard | ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
+
+                    if (pfn_ClipCursor_hooked)
+                        pfn_ClipCursor(&_cursorLimit);
+
+                    _showMipmapCalcWindow = false;
+                    io.MouseDrawCursor = false;
+                    io.WantCaptureKeyboard = false;
+                    io.WantCaptureMouse = false;
                 }
 
                 ImGui::Spacing();
