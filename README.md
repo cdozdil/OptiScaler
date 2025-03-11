@@ -6,9 +6,9 @@
 **2.** [**How it works?**](#how-it-works)  
 **3.** [**Supported APIs and Upscalers**](#which-apis-and-upscalers-are-supported)  
 **4.** [**Installation**](#installation)  
-**5.** [**Full Features**](#features)  
-**6.** [**Known Issues**](#known-issues)  
-**7.** [**Compilation and Credits**](#compilation)  
+**5.** [**Known Issues**](#known-issues)  
+**6.** [**Compilation and Credits**](#compilation)  
+**7.** [**Wiki**](#wiki)
 
 ## About
 
@@ -18,22 +18,30 @@ While previously only DLSS2+ inputs were supported, newer versions also added su
 
 **Key aspects of OptiScaler:**
 - Enables usage of XeSS, FSR2, FSR3, **FSR4**$`^2`$ and DLSS in upscaler-enabled games
-- Allows users to fine-tune their upscaling experience
-- Offers a wide range of tweaks and enhancements (RCAS & MAS, Output Scaling, DLSS Presets, Ratio & DRS Overrides etc.)
-- With version 0.7.0 and above, added experimental frame generation support with possible HUDfix solution ([**OptiFG**](#optifg-powered-by-fsr3-fg--hudfix-experimental-hud-ghosting-fix) by FSR3)
-- Supports integration with [**Fakenvapi**](#fakenvapi) which enables Reflex hooking and injecting _Anti-Lag 2_ (RDNA1+ only) or _LatencyFlex_ (LFX) - **_not bundled_**  
-- Since version 0.7.7, support for Nukem's FSR FG mod [**dlssg-to-fsr3**](#nukems-dlssg-to-fsr3) has also been added - **_not bundled_**  
+- Allows users to fine-tune their upscaling experience with a wide range of tweaks and enhancements (RCAS & MAS, Output Scaling, DLSS Presets, Ratio & DRS Overrides etc.)
+- Since v0.7.0+, added experimental frame generation support with possible HUDfix solution ([**OptiFG**](#optifg-powered-by-fsr3-fg--hudfix-experimental-hud-ghosting-fix) by FSR3)
+- Supports [**Fakenvapi**](#fakenvapi) integration - enables Reflex hooking and injecting _Anti-Lag 2_ (RDNA1+ only) or _LatencyFlex_ (LFX) - **_not bundled_**$`^3`$  
+- Since v0.7.7, support for Nukem's FSR FG mod [**dlssg-to-fsr3**](#nukems-dlssg-to-fsr3) has also been added - **_not bundled_**$`^3`$  
+- For a detailed list of all features, check [Features](Features.md)
+
 
 > [!IMPORTANT]
 > _**Always check the [Wiki Compatibility list](https://github.com/cdozdil/OptiScaler/wiki) for known game issues and workarounds.**_  
 > Also please check the  [***Optiscaler known issues***](#known-issues) at the end regarding **RTSS** compatibility
 
 > [!NOTE]
-> *[1] Regarding **XeSS**, since Unreal Engine plugin does not provide depth, replacing in-game XeSS breaks other upscalers, but you can still apply RCAS sharpening to XeSS to reduce blurry visuals (in short, if it's a UE game, in-game XeSS only works with XeSS in OptiScaler overlay).*
+> <details>
+>  <summary><b>Expand for [1], [2] and [3]</b></summary>  
+>  
+> ***[1]** Regarding **XeSS**, since Unreal Engine plugin does not provide depth, replacing in-game XeSS breaks other upscalers, but you can still apply RCAS sharpening to XeSS to reduce blurry visuals (in short, if it's a UE game, in-game XeSS only works with XeSS in OptiScaler overlay).*
 >
 > *Regarding **FSR inputs**, FSR 3.1 is the first version with a fully standardised, forward-looking API and should be fully supported. Since FSR2 and FSR3 support custom interfaces, game support will depend on the developers' implementation. With Unreal Engine games, you might need [ini tweaks](https://github.com/cdozdil/OptiScaler/wiki/Unreal-Engine-Tweaks) for FSR inputs.*  
 >
-> *[2] Regarding **FSR4**, support added with recent Nightly builds. Please check [FSR4 Compatibility list](https://github.com/cdozdil/OptiScaler/wiki/FSR4-Compatibility-List) for known supported games.*
+> ***[2]** Regarding **FSR4**, support added with recent Nightly builds. Please check [FSR4 Compatibility list](https://github.com/cdozdil/OptiScaler/wiki/FSR4-Compatibility-List) for known supported games.*
+>
+> ***[3]** For **not bundled** items, please check [Installation](#installation)*
+> </details>
+
 
 ## Official Discord Server: [DLSS2FSR](https://discord.gg/2JDHx6kcXB)
 
@@ -65,7 +73,11 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 - XeSS 2.x (_soon™, but Intel ARC only_)
 
 > [!NOTE]
-> _[1] These implementations use a background DirectX12 device to be able to use Dirext12-only upscalers. There is a 10-15% performance penalty for this method, but allows many more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has its own problems of which some were fixed by OptiScaler. **These implementations do not support Linux** and will result in a black screen._
+> <details>
+>  <summary><b>Expand for [1]</b></summary>
+>
+> _**[1]** These implementations use a background DirectX12 device to be able to use Dirext12-only upscalers. There is a 10-15% performance penalty for this method, but allows many more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has its own problems of which some were fixed by OptiScaler. These implementations **do not support Linux** and will result in a black screen._
+> </details>
 
 #### For Vulkan
 - FSR2 2.1.2 (Default), 2.2.1
@@ -186,31 +198,6 @@ _**Anti-Lag 2** only supports RDNA cards and is Windows only atm (shortcut for c
 * Run `DisableSignatureOverride.reg` file 
 * Delete `EnableSignatureOverride.reg`, `DisableSignatureOverride.reg`, `OptiScaler.dll` (for old versions, it's `nvngx.dll`), `OptiScaler.ini` files (if you used Fakenvapi and/or Nukem mod, then also delete `fakenvapi.ini`, `nvapi64.dll` and `dlssg_to_fsr3` files)
 * If there was a `libxess.dll` file and you have backed it up, delete the new file and restore the backed up file. If you overwrote/replaced the old file, **DO NOT** delete `libxess.dll` file. If there was no `libxess.dll` before, it's safe to delete. Same goes for FSR files (`amd_fidelityfx`).
-
-## Features
-* Supports multiple upscaling backends (XeSS, FSR 2.1.2, FSR 2.2.1, FSR 3.1 and DLSS)
-* Experimental support for frame generation (OptiFG by FSR) with version 0.7.0 and above
-* Supports DLSS 3.7 and above (check [installation instructions](#install-as-non-nvngx))
-* Supports DLSS-D (Ray Reconstruction) on Nvidia cards (Supports changing presets and using OptiScaler enhancements)
-* Ability to modify DLSS/DLSS-D presets on the fly
-* Supports XeSS v1.3.x's Ultra Performance, NativeAA modes (**Not using default XeSS 1.3.x scaling ratios, rather the old ones**) 
-* An [in-game menu](https://github.com/cdozdil/OptiScaler/blob/master/Config.md) for tuning and saving settings on the fly (Shortcut key is **INSERT**)
-* Full integration with [DLSS Enabler](https://www.nexusmods.com/site/mods/757) for DLSS-FG support
-* **RCAS** support with **MAS** (Motion Adaptive Sharpening) for all Dx12 & Dx11 upscalers
-* **Output Scaling** option (0.5x to 3.0x) for backends running on Dx12 & Dx11
-* Supports DXGI spoofing (when running as `dxgi.dll`) as Nvidia GPUs (with XeSS detection to enable XMX on Intel Arc cards)
-* Supports Vulkan spoofing (needs to be enabled from `nvngi.ini`) as Nvidia GPUs (not working for Doom Eternal)
-* Supports loading specific `nvapi64.dll` file (when running in non-nvngx mode)
-* Supports loading specific `nvngx_dlss.dll` file (when running in non-nvngx mode)
-* Supports overriding scaling ratios
-* Supports overriding DRS range
-* Autofixes for [colored lights](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#resource-barriers-dx12-only) on Unreal Engine & AMD graphics cards 
-* Autofixes for [missing exposure texture](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#init-flags) information
-* Ability to modify [Mipmap Lod Bias](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#mipmap-lod-bias-override-dx12-only) game value
-* Supports [Fakenvapi](https://github.com/FakeMichau/fakenvapi) integration which enables Reflex hooking and injecting Anti-Lag 2 or LatencyFlex (LFX)
-* Supports Nukem's FSR FG mod [dlssg-to-fsr3](https://github.com/Nukem9/dlssg-to-fsr3) (since version 0.7.7)  
- 
-**To overcome DLSS 3.7's signature check requirements, OptiScaler uses a method developed by **Artur** (creator of [DLSS Enabler](https://www.nexusmods.com/site/mods/757?tab=description)).**
 
 ## Configuration
 Please check [this](Config.md) document for configuration parameters and explanations. If your GPU is not an Nvidia one, check [GPU spoofing options](Spoofing.md) *(Will be updated)*
