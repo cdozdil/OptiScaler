@@ -3816,6 +3816,9 @@ static void CALLBACK D3D12DebugCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_M
 
 static void LoadAndInitAgs(IDXGIAdapter* pAdapter)
 {
+    //Disabled for now
+    return;
+
     if (_agsInited)
         return;
 
@@ -3889,7 +3892,8 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
 
     bool hookToDevice = false;
 
-    LoadAndInitAgs(pAdapter);
+    if (Config::Instance()->Fsr4Update.value_or_default())
+        LoadAndInitAgs(pAdapter);
 
     if (_agsInited && !_agsSkip)
     {
