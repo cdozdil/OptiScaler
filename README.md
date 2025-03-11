@@ -100,10 +100,14 @@ A more detailed guide will be available in the [Wiki](https://github.com/cdozdil
 > ***Please use the [Nightly builds](https://github.com/cdozdil/OptiScaler/releases/tag/nightly) as the latest Stable is vastly outdated and the Readme does not apply to it anymore due to many missing features.***  
 > _Fair warning, Nightly builds have Debug logging forced by default due to being bleeding-edge. If everything is working fine, then you can save storage space by disabling it by leaving `LogFile=` blank._
 
+---
+
 ### [Automated]
 **1.** Extract **all** of the Optiscaler files **by the main game exe** _(for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Game-or-Project-name\Binaries\Win64\`, **ignore** the `Engine` folder)_  
 **2.** Try the `OptiScaler Setup.bat` script for automating the renaming process.  
 _**3.** If the Bat file wasn't successful, please check the **Manual** steps._
+
+---
 
 ### [Manual]
 #### Nvidia
@@ -125,11 +129,15 @@ _**3.** If the Bat file wasn't successful, please check the **Manual** steps._
 
 _Check the [screenshot](#example-of-correct-installation-with-additional-fakenvapi-and-nukem-mod) for proper installation_
 
+---
+
 #### [Nukem's dlssg-to-fsr3]
 
 **1.** Download the mod's regular version - [**dlssg-to-fsr3 NexusMods**](https://www.nexusmods.com/site/mods/738) or [**dlssg-to-fsr3 Github**](https://github.com/Nukem9/dlssg-to-fsr3)     
 **2.** Put the `dlssg_to_fsr3_amd_is_better.dll` in the same folder as Optiscaler (by the main game exe) and set `FGType=nukems` in `Optiscaler.ini`  
 **3.** For **AMD/Intel GPUs**, **Fakenvapi** is also **required** when using **Nukem mod** in order to successfully expose DLSS FG in-game. 
+
+---
 
 #### [Fakenvapi]
 
@@ -138,6 +146,8 @@ _Check the [screenshot](#example-of-correct-installation-with-additional-fakenva
 **2.** Extract the files and transfer `nvapi64.dll` and `fakenvapi.ini` to the same folder as Optiscaler (by the main game exe)   
 
 _**Anti-Lag 2** only supports RDNA cards and is Windows only atm (shortcut for cycling the overlay - `Alt+Shift+L`). For information on how to verify if Anti-Lag 2 is working, please check [Anti-Lag 2 SDK](https://github.com/GPUOpen-LibrariesAndSDKs/AntiLag2-SDK?tab=readme-ov-file#testing). **Latency Flex** is cross-vendor and cross-platform, can be used as an alternative if AL2 isn't working._ 
+
+---
 
 > [!TIP]
 > *[1] Linux users should add renamed dll to overrides:*
@@ -161,6 +171,8 @@ _**Anti-Lag 2** only supports RDNA cards and is Windows only atm (shortcut for c
 > [!NOTE]
 > ### _Example of correct installation (with additional Fakenvapi and Nukem mod)_
 > ![Installation](https://github.com/user-attachments/assets/977a2a68-d117-42ea-a928-78ec43eedd28)
+
+---
 
 > [!NOTE]
 > If there is another mod (e.g. Reshade etc.) that uses the same filename (e.g. `dxgi.dll`), you can create a new folder called `plugins` and put other mod files in this folder. OptiScaler will check this folder and if it finds the same dll file (for example `dxgi.dll`), it will load this file instead of the original library.
