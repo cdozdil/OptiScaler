@@ -4,6 +4,8 @@
 #include <Util.h>
 #include <Config.h>
 
+//#include <include/amd_ags/amd_ags.h>
+
 #include <menu/menu_overlay_dx.h>
 #include <detours/detours.h>
 #include <dx12/ffx_api_dx12.h>
@@ -83,7 +85,8 @@ typedef struct HeapInfo
     std::shared_ptr<ResourceInfo[]> info;
 
     HeapInfo(SIZE_T cpuStart, SIZE_T cpuEnd, SIZE_T gpuStart, SIZE_T gpuEnd, UINT numResources, UINT increment, UINT type)
-        : cpuStart(cpuStart), cpuEnd(cpuEnd), gpuStart(gpuStart), gpuEnd(gpuEnd), numDescriptors(numResources), increment(increment), info(new ResourceInfo[numResources]), type(type) {}
+        : cpuStart(cpuStart), cpuEnd(cpuEnd), gpuStart(gpuStart), gpuEnd(gpuEnd), numDescriptors(numResources), increment(increment), info(new ResourceInfo[numResources]), type(type) {
+    }
 
     ResourceInfo* GetByCpuHandle(SIZE_T cpuHandle) const
     {
@@ -225,6 +228,216 @@ typedef void(*PFN_CopyTextureRegion)(ID3D12GraphicsCommandList* This, D3D12_TEXT
 #ifdef USE_RESOURCE_DISCARD
 typedef void(*PFN_DiscardResource)(ID3D12GraphicsCommandList* This, ID3D12Resource* pResource, D3D12_DISCARD_REGION* pRegion);
 #endif
+
+#define AMD_AGS_VERSION_MAJOR 6 
+#define AMD_AGS_VERSION_MINOR 2 
+#define AMD_AGS_VERSION_PATCH 0 
+#define AGS_MAKE_VERSION( major, minor, patch ) ( ( major << 22 ) | ( minor << 12 ) | patch ) ///< Macro to create the app and engine versions for the fields in \ref AGSDX12ExtensionParams and \ref AGSDX11ExtensionParams and the Radeon Software Version
+#define AGS_CURRENT_VERSION AGS_MAKE_VERSION( AMD_AGS_VERSION_MAJOR, AMD_AGS_VERSION_MINOR, AMD_AGS_VERSION_PATCH ) ///< Macro to return the current AGS version as defined by the AGS header file
+
+struct AGSContext;
+
+typedef void* (__stdcall* AGS_ALLOC_CALLBACK)(size_t allocationSize);     ///< AGS user defined allocation prototype
+typedef void(__stdcall* AGS_FREE_CALLBACK)(void* allocationPtr);         ///< AGS user defined free prototype
+
+typedef enum AGSReturnCode
+{
+    AGS_SUCCESS,                    ///< Successful function call
+    AGS_FAILURE,                    ///< Failed to complete call for some unspecified reason
+    AGS_INVALID_ARGS,               ///< Invalid arguments into the function
+    AGS_OUT_OF_MEMORY,              ///< Out of memory when allocating space internally
+    AGS_MISSING_D3D_DLL,            ///< Returned when a D3D dll fails to load
+    AGS_LEGACY_DRIVER,              ///< Returned if a feature is not present in the installed driver
+    AGS_NO_AMD_DRIVER_INSTALLED,    ///< Returned if the AMD GPU driver does not appear to be installed
+    AGS_EXTENSION_NOT_SUPPORTED,    ///< Returned if the driver does not support the requested driver extension
+    AGS_ADL_FAILURE,                ///< Failure in ADL (the AMD Display Library)
+    AGS_DX_FAILURE,                 ///< Failure from DirectX runtime
+    AGS_D3DDEVICE_NOT_CREATED       ///< Failure due to not creating the D3D device successfully via AGS.
+} AGSReturnCode;
+
+typedef struct AGSRect
+{
+    int offsetX;    ///< Offset on X axis
+    int offsetY;    ///< Offset on Y axis
+    int width;      ///< Width of rectangle
+    int height;     ///< Height of rectangle
+} AGSRect;
+
+/// The configuration options that can be passed in to \ref agsInitialize
+typedef struct AGSConfiguration
+{
+    AGS_ALLOC_CALLBACK      allocCallback;                  ///< Optional memory allocation callback. If not supplied, malloc() is used
+    AGS_FREE_CALLBACK       freeCallback;                   ///< Optional memory freeing callback. If not supplied, free() is used
+} AGSConfiguration;
+
+typedef struct AGSDisplayInfo
+{
+    char                    name[256];                    ///< The name of the display
+    char                    displayDeviceName[32];        ///< The display device name, i.e. DISPLAY_DEVICE::DeviceName
+
+    unsigned int            isPrimaryDisplay : 1;           ///< Whether this display is marked as the primary display
+    unsigned int            HDR10 : 1;                      ///< HDR10 is supported on this display
+    unsigned int            dolbyVision : 1;                ///< Dolby Vision is supported on this display
+    unsigned int            freesync : 1;                   ///< Freesync is supported on this display
+    unsigned int            freesyncHDR : 1;                ///< Freesync HDR is supported on this display
+    unsigned int            eyefinityInGroup : 1;           ///< The display is part of the Eyefinity group
+    unsigned int            eyefinityPreferredDisplay : 1;  ///< The display is the preferred display in the Eyefinity group for displaying the UI
+    unsigned int            eyefinityInPortraitMode : 1;    ///< The display is in the Eyefinity group but in portrait mode
+    unsigned int            reservedPadding : 24;           ///< Reserved for future use
+
+    int                     maxResolutionX;                 ///< The maximum supported resolution of the unrotated display
+    int                     maxResolutionY;                 ///< The maximum supported resolution of the unrotated display
+    float                   maxRefreshRate;                 ///< The maximum supported refresh rate of the display
+
+    AGSRect                 currentResolution;              ///< The current resolution and position in the desktop, ignoring Eyefinity bezel compensation
+    AGSRect                 visibleResolution;              ///< The visible resolution and position. When Eyefinity bezel compensation is enabled this will
+    ///< be the sub region in the Eyefinity single large surface (SLS)
+    float                   currentRefreshRate;             ///< The current refresh rate
+
+    int                     eyefinityGridCoordX;            ///< The X coordinate in the Eyefinity grid. -1 if not in an Eyefinity group
+    int                     eyefinityGridCoordY;            ///< The Y coordinate in the Eyefinity grid. -1 if not in an Eyefinity group
+
+    double                  chromaticityRedX;               ///< Red display primary X coord
+    double                  chromaticityRedY;               ///< Red display primary Y coord
+
+    double                  chromaticityGreenX;             ///< Green display primary X coord
+    double                  chromaticityGreenY;             ///< Green display primary Y coord
+
+    double                  chromaticityBlueX;              ///< Blue display primary X coord
+    double                  chromaticityBlueY;              ///< Blue display primary Y coord
+
+    double                  chromaticityWhitePointX;        ///< White point X coord
+    double                  chromaticityWhitePointY;        ///< White point Y coord
+
+    double                  screenDiffuseReflectance;       ///< Percentage expressed between 0 - 1
+    double                  screenSpecularReflectance;      ///< Percentage expressed between 0 - 1
+
+    double                  minLuminance;                   ///< The minimum luminance of the display in nits
+    double                  maxLuminance;                   ///< The maximum luminance of the display in nits
+    double                  avgLuminance;                   ///< The average luminance of the display in nits
+
+    int                     logicalDisplayIndex;            ///< The internally used index of this display
+    int                     adlAdapterIndex;                ///< The internally used ADL adapter index
+    int                     reserved;                       ///< reserved field
+} AGSDisplayInfo;
+
+typedef struct AGSDeviceInfo
+{
+    /// The ASIC family
+    typedef enum AsicFamily
+    {
+        AsicFamily_Unknown,                                         ///< Unknown architecture, potentially from another IHV. Check \ref AGSDeviceInfo::vendorId
+        AsicFamily_PreGCN,                                          ///< Pre GCN architecture.
+        AsicFamily_GCN1,                                            ///< AMD GCN 1 architecture: Oland, Cape Verde, Pitcairn & Tahiti.
+        AsicFamily_GCN2,                                            ///< AMD GCN 2 architecture: Hawaii & Bonaire.  This also includes APUs Kaveri and Carrizo.
+        AsicFamily_GCN3,                                            ///< AMD GCN 3 architecture: Tonga & Fiji.
+        AsicFamily_GCN4,                                            ///< AMD GCN 4 architecture: Polaris.
+        AsicFamily_Vega,                                            ///< AMD Vega architecture, including Raven Ridge (ie AMD Ryzen CPU + AMD Vega GPU).
+        AsicFamily_RDNA,                                            ///< AMD RDNA architecture
+        AsicFamily_RDNA2,                                           ///< AMD RDNA2 architecture
+        AsicFamily_RDNA3,                                           ///< AMD RDNA3 architecture
+
+        AsicFamily_Count                                            ///< Number of enumerated ASIC families
+    } AsicFamily;
+
+    const char* adapterString;                  ///< The adapter name string
+    AsicFamily                      asicFamily;                     ///< Set to Unknown if not AMD hardware
+    unsigned int                    isAPU : 1;                      ///< Whether this device is an APU
+    unsigned int                    isPrimaryDevice : 1;            ///< Whether this device is marked as the primary device
+    unsigned int                    isExternal : 1;                  ///< Whether this device is a detachable, external device
+    unsigned int                    reservedPadding : 29;           ///< Reserved for future use
+
+    int                             vendorId;                       ///< The vendor id
+    int                             deviceId;                       ///< The device id
+    int                             revisionId;                     ///< The revision id
+
+    int                             numCUs;                         ///< Number of compute units
+    int                             numWGPs;                        ///< Number of RDNA Work Group Processors.  Only valid if ASIC is RDNA onwards.
+
+    int                             numROPs;                        ///< Number of ROPs
+    int                             coreClock;                      ///< Core clock speed at 100% power in MHz
+    int                             memoryClock;                    ///< Memory clock speed at 100% power in MHz
+    int                             memoryBandwidth;                ///< Memory bandwidth in MB/s
+    float                           teraFlops;                      ///< Teraflops of GPU. Zero if not GCN onwards. Calculated from iCoreClock * iNumCUs * 64 Pixels/clk * 2 instructions/MAD
+
+    unsigned long long              localMemoryInBytes;             ///< The size of local memory in bytes. 0 for non AMD hardware.
+    unsigned long long              sharedMemoryInBytes;            ///< The size of system memory available to the GPU in bytes.  It is important to factor this into your VRAM budget for APUs
+    ///< as the reported local memory will only be a small fraction of the total memory available to the GPU.
+
+    int                             numDisplays;                    ///< The number of active displays found to be attached to this adapter.
+    AGSDisplayInfo* displays;                       ///< List of displays allocated by AGS to be numDisplays in length.
+
+    int                             eyefinityEnabled;               ///< Indicates if Eyefinity is active
+    int                             eyefinityGridWidth;             ///< Contains width of the multi-monitor grid that makes up the Eyefinity Single Large Surface.
+    int                             eyefinityGridHeight;            ///< Contains height of the multi-monitor grid that makes up the Eyefinity Single Large Surface.
+    int                             eyefinityResolutionX;           ///< Contains width in pixels of the multi-monitor Single Large Surface.
+    int                             eyefinityResolutionY;           ///< Contains height in pixels of the multi-monitor Single Large Surface.
+    int                             eyefinityBezelCompensated;      ///< Indicates if bezel compensation is used for the current SLS display area. 1 if enabled, and 0 if disabled.
+
+    int                             adlAdapterIndex;                ///< Internally used index into the ADL list of adapters
+    int                             reserved;                       ///< reserved field
+} AGSDeviceInfo;
+
+typedef struct AGSGPUInfo
+{
+    const char* driverVersion;                  ///< The AMD driver package version
+    const char* radeonSoftwareVersion;          ///< The Radeon Software Version
+
+    int                     numDevices;                     ///< Number of GPUs in the system
+    AGSDeviceInfo* devices;                        ///< List of GPUs in the system
+} AGSGPUInfo;
+
+typedef struct AGSDX12DeviceCreationParams
+{
+    IDXGIAdapter* pAdapter;                   ///< Pointer to the adapter to use when creating the device.  This may be null.
+    IID                         iid;                        ///< The interface ID for the type of device to be created.
+    D3D_FEATURE_LEVEL           FeatureLevel;               ///< The minimum feature level to create the device with.
+} AGSDX12DeviceCreationParams;
+
+typedef struct AGSDX12ExtensionParams
+{
+    const WCHAR* pAppName;               ///< Application name
+    const WCHAR* pEngineName;            ///< Engine name
+    unsigned int    appVersion;             ///< Application version
+    unsigned int    engineVersion;          ///< Engine version
+    unsigned int    uavSlot;                ///< The UAV slot reserved for intrinsic support.  Refer to the \ref agsDriverExtensionsDX12_CreateDevice documentation for more details.
+} AGSDX12ExtensionParams;
+
+typedef struct AGSDX12ReturnedParams
+{
+    ID3D12Device* pDevice;                            ///< The newly created device
+    typedef struct ExtensionsSupported                          /// Extensions for DX12
+    {
+        unsigned int        intrinsics16 : 1;                   ///< Supported in Radeon Software Version 16.9.2 onwards. ReadFirstLane, ReadLane, LaneID, Swizzle, Ballot, MBCount, Med3, Barycentrics
+        unsigned int        intrinsics17 : 1;                   ///< Supported in Radeon Software Version 17.9.1 onwards. WaveReduce, WaveScan
+        unsigned int        userMarkers : 1;                    ///< Supported in Radeon Software Version 17.9.1 onwards.
+        unsigned int        appRegistration : 1;                ///< Supported in Radeon Software Version 17.9.1 onwards.
+        unsigned int        UAVBindSlot : 1;                    ///< Supported in Radeon Software Version 19.5.1 onwards.
+        unsigned int        intrinsics19 : 1;                   ///< Supported in Radeon Software Version 19.12.2 onwards. DrawIndex, AtomicU64
+        unsigned int        baseVertex : 1;                     ///< Supported in Radeon Software Version 20.2.1 onwards.
+        unsigned int        baseInstance : 1;                   ///< Supported in Radeon Software Version 20.2.1 onwards.
+        unsigned int        getWaveSize : 1;                    ///< Supported in Radeon Software Version 20.5.1 onwards.
+        unsigned int        floatConversion : 1;                ///< Supported in Radeon Software Version 20.5.1 onwards.
+        unsigned int        readLaneAt : 1;                     ///< Supported in Radeon Software Version 20.11.2 onwards.
+        unsigned int        rayHitToken : 1;                    ///< Supported in Radeon Software Version 20.11.2 onwards.
+        unsigned int        shaderClock : 1;                    ///< Supported in Radeon Software Version 23.1.1 onwards.
+        unsigned int        padding : 19;                       ///< Reserved
+    } ExtensionsSupported;
+    ExtensionsSupported     extensionsSupported;                ///< List of supported extensions
+} AGSDX12ReturnedParams;
+
+typedef AGSReturnCode(*PFN_agsInitialize)(int agsVersion, const AGSConfiguration* config, AGSContext** context, AGSGPUInfo* gpuInfo);
+typedef AGSReturnCode(*PFN_agsDeInitialize)(AGSContext* context);
+typedef AGSReturnCode(*PFN_agsDriverExtensionsDX12_CreateDevice)(void* context, const AGSDX12DeviceCreationParams* creationParams, const AGSDX12ExtensionParams* extensionParams, AGSDX12ReturnedParams* returnedParams);
+typedef AGSReturnCode(*PFN_agsDriverExtensionsDX12_DestroyDevice)(AGSContext* context, ID3D12Device* device, unsigned int* deviceReferences);
+
+static PFN_agsInitialize o_agsInitialize = nullptr;
+static PFN_agsDeInitialize o_agsDeInitialize = nullptr;
+static PFN_agsDriverExtensionsDX12_CreateDevice o_agsDriverExtensionsDX12_CreateDevice = nullptr;
+static PFN_agsDriverExtensionsDX12_DestroyDevice o_agsDriverExtensionsDX12_DestroyDevice = nullptr;
+
+static bool _agsInited = false;
+static AGSContext* _agsContext = nullptr;
 
 // Original method calls for device
 static PFN_CreateRenderTargetView o_CreateRenderTargetView = nullptr;
@@ -726,7 +939,7 @@ static void GetHudless(ID3D12GraphicsCommandList* This, int fIndex)
                     LOG_WARN("Callback without hudless! frameID: {}", params->frameID);
                     params->numGeneratedFrames = 0;
                 }
-                
+
                 dispatchResult = FfxApiProxy::D3D12_Dispatch()(reinterpret_cast<ffxContext*>(pUserCtx), &params->header);
                 LOG_DEBUG("D3D12_Dispatch result: {}, fIndex: {}", (UINT)dispatchResult, fIndex);
 
@@ -3600,6 +3813,53 @@ static void CALLBACK D3D12DebugCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_M
 }
 #endif
 
+static void LoadAndInitAgs(IDXGIAdapter* pAdapter)
+{
+    State::Instance().skipSpoofing = true;
+    DXGI_ADAPTER_DESC desc{};
+    if (pAdapter->GetDesc(&desc) != S_OK)
+        return;
+    State::Instance().skipSpoofing = false;
+
+    // Check AMD
+    if (desc.VendorId != 0x1002)
+    {
+        LOG_WARN("Non-AMD GPU, skipping loading of AGS");
+        return;
+    }
+
+    HMODULE agsModule = LoadLibrary(L"amd_ags_x64.dll");
+
+    if (agsModule == nullptr)
+        agsModule = LoadLibraryEx(L"amd_ags_x64.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+
+    if (agsModule == nullptr)
+    {
+        LOG_WARN("amd_ags_x64.dll can't found, skipping loading of AGS");
+        return;
+    }
+
+    o_agsInitialize = (PFN_agsInitialize)GetProcAddress(agsModule, "agsInitialize");
+    o_agsDeInitialize = (PFN_agsDeInitialize)GetProcAddress(agsModule, "agsDeInitialize");
+    o_agsDriverExtensionsDX12_CreateDevice = (PFN_agsDriverExtensionsDX12_CreateDevice)GetProcAddress(agsModule, "agsDriverExtensionsDX12_CreateDevice");
+    o_agsDriverExtensionsDX12_DestroyDevice = (PFN_agsDriverExtensionsDX12_DestroyDevice)GetProcAddress(agsModule, "agsDriverExtensionsDX12_DestroyDevice");
+
+    if (o_agsInitialize != nullptr)
+    {
+        AGSGPUInfo gpuInfo{};
+        auto result = o_agsInitialize(AGS_CURRENT_VERSION, nullptr, &_agsContext, &gpuInfo);
+
+        if (result != AGS_SUCCESS)
+        {
+            LOG_ERROR("agsInitialize error: {:X}", (UINT)result);
+            return;
+        }
+
+        LOG_INFO("AGS Initialized");
+        _agsInited = true;
+    }
+}
+
 static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
 {
     LOG_FUNC();
@@ -3621,9 +3881,37 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     if (Config::Instance()->SpoofFeatureLevel.value_or_default())
         minLevel = D3D_FEATURE_LEVEL_11_0;
 
-    //State::Instance().skipSpoofing = true;
-    auto result = o_D3D12CreateDevice(pAdapter, minLevel, riid, ppDevice);
-    //State::Instance().skipSpoofing = false;
+    HRESULT result = E_ABORT;
+
+    LoadAndInitAgs(pAdapter);
+
+    if (_agsInited)
+    {
+        AGSDX12DeviceCreationParams creationParams = {};
+        creationParams.pAdapter = pAdapter;
+        creationParams.iid = riid;
+        creationParams.FeatureLevel = minLevel;
+
+        AGSDX12ExtensionParams extensionParams = {};
+        AGSDX12ReturnedParams returnedParams = {};
+
+        auto rc = o_agsDriverExtensionsDX12_CreateDevice(_agsContext, &creationParams, &extensionParams, &returnedParams);
+
+        if (rc == AGS_SUCCESS)
+        {
+            LOG_INFO("AGS D3D12 Device created");
+            result = S_OK;
+        }
+        else
+        {
+            LOG_INFO("AGS D3D12 Device creation error: {:X}", (UINT)rc);
+            result = o_D3D12CreateDevice(pAdapter, minLevel, riid, ppDevice);
+        }
+    }
+    else
+    {
+        result = o_D3D12CreateDevice(pAdapter, minLevel, riid, ppDevice);
+    }
 
     if (result == S_OK && ppDevice != nullptr && *ppDevice != nullptr)
     {
@@ -3665,7 +3953,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     LOG_DEBUG("result: {:X}", (UINT)result);
 
     return result;
-    }
+}
 
 static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
