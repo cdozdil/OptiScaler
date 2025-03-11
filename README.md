@@ -8,7 +8,7 @@
 **4.** [**Installation**](#installation)  
 **5.** [**Known Issues**](#known-issues)  
 **6.** [**Compilation and Credits**](#compilation)  
-**7.** [**Wiki**](#wiki)
+**7.** [**Wiki**](https://github.com/cdozdil/OptiScaler/wiki)
 
 ## About
 
@@ -56,7 +56,8 @@ OptiScaler implements the necessary API methods of DLSS2+ & NVAPI, XeSS and FSR2
 
 
 ## Which APIs and Upscalers are Supported?
-Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but each API has different sets of upscaler options. [**OptiFG**](#optifg-powered-by-fsr3-fg--hudfix-experimental-hud-ghosting-fix) currently **only supports DX12** and is explained in a separate paragraph.
+Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but each API has different sets of upscaler options.  
+[**OptiFG**](#optifg-powered-by-fsr3-fg--hudfix-experimental-hud-ghosting-fix) currently **only supports DX12** and is explained in a separate paragraph.
 
 #### For DirectX 12
 - XeSS (Default)
@@ -95,8 +96,6 @@ A more detailed guide will be available in the [Wiki](https://github.com/cdozdil
 > [!CAUTION]
 > _**Warning**: **Do not use this mod with online games.** It may trigger anti-cheat software and cause bans!_
 
-## Recommended installation (with OptiFG and all other features, `non-nvngx`)
-
 > [!IMPORTANT]
 > ***Please use the [Nightly builds](https://github.com/cdozdil/OptiScaler/releases/tag/nightly) as the latest Stable is vastly outdated and the Readme does not apply to it anymore due to many missing features.***  
 > _Fair warning, Nightly builds have Debug logging forced by default due to being bleeding-edge. If everything is working fine, then you can save storage space by disabling it by leaving `LogFile=` blank._
@@ -128,7 +127,7 @@ _Check the [screenshot](#example-of-correct-installation-with-additional-fakenva
 
 #### [Nukem's dlssg-to-fsr3]
 
-**1.** Download the mod - [**dlssg-to-fsr3 NexusMods**](https://www.nexusmods.com/site/mods/738) or [**dlssg-to-fsr3 Github**](https://github.com/Nukem9/dlssg-to-fsr3)     
+**1.** Download the mod's regular version - [**dlssg-to-fsr3 NexusMods**](https://www.nexusmods.com/site/mods/738) or [**dlssg-to-fsr3 Github**](https://github.com/Nukem9/dlssg-to-fsr3)     
 **2.** Put the `dlssg_to_fsr3_amd_is_better.dll` in the same folder as Optiscaler (by the main game exe) and set `FGType=nukems` in `Optiscaler.ini`  
 **3.** For **AMD/Intel GPUs**, **Fakenvapi** is also **required** when using **Nukem mod** in order to successfully expose DLSS FG in-game. 
 
@@ -170,6 +169,9 @@ _**Anti-Lag 2** only supports RDNA cards and is Windows only atm (shortcut for c
 
 
 ### Legacy installation (deprecated, no FG and limited features, `nvngx.dll`)
+<details>
+  <summary><b>Legacy</b></summary>
+
 `Step-by-step installation:`
 1. Download the latest relase from [releases](https://github.com/cdozdil/OptiScaler/releases).
 2. Extract the contents of the archive next to the game executable file in your games folder. (e.g. for Unreal Engine games, it's `<path-to-game>\Game-or-Project-name\Binaries\Win64\`)$`^1`$
@@ -187,6 +189,7 @@ _**Anti-Lag 2** only supports RDNA cards and is Windows only atm (shortcut for c
 * *You should see a message saying that you successfully added the entries to the registry*
 
 *If your game is not on Steam, it all boils down to opening regedit inside your game's prefix and importing the file.*
+</details>
 
 ## Update OptiScaler version when using DLSS Enabler  
 1. Delete/rename `dlss-enabler-upscaler.dll` in game folder
