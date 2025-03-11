@@ -1,5 +1,17 @@
 ![opti-logo](https://github.com/user-attachments/assets/c7dad5da-0b29-4710-8a57-b58e4e407abd)
 
+## Table of Contents
+
+**1.** [**About**](#about)  
+**2.** [**How it works?**](#how-it-works)  
+**3.** [**Supported APIs and Upscalers**](#which-apis-and-upscalers-are-supported)  
+**4.** [**Installation**](#installation)  
+**5.** [**Full Features**](#features)  
+**6.** [**Known Issues**](#known-issues)  
+**7.** [**Compilation and Credits**](#compilation)  
+
+## About
+
 **OptiScaler** is a tool that lets you replace upscalers in games that ***already support*** DLSS2+ / FSR2+ / XeSS, now also supports enabling frame generation (through OptiFG or Nukem's dlssg-to-fsr3).
 
 While previously only DLSS2+ inputs were supported, newer versions also added support for XeSS and FSR2+ inputs (_with some caveats_$`^1`$). For example, if a game has DLSS only, the user can replace DLSS with XeSS or FSR 3.1 (same goes for an FSR or XeSS-only game). It also offers extensive customization options for all users, including those with Nvidia GPUs using DLSS.
@@ -23,6 +35,9 @@ While previously only DLSS2+ inputs were supported, newer versions also added su
 >
 > *[2] Regarding **FSR4**, support added with recent Nightly builds. Please check [FSR4 Compatibility list](https://github.com/cdozdil/OptiScaler/wiki/FSR4-Compatibility-List) for known supported games.*
 
+## Official Discord Server: [DLSS2FSR](https://discord.gg/2JDHx6kcXB)
+
+*This project is based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2](https://github.com/PotatoOfDoom/CyberFSR2).*
 
 ## How it works?
 OptiScaler implements the necessary API methods of DLSS2+ & NVAPI, XeSS and FSR2+ to act as a middleware. It interprets calls from the game and redirects them to the chosen upscaling backend, allowing games using one technology to use another one of your choice. 
@@ -31,9 +46,6 @@ OptiScaler implements the necessary API methods of DLSS2+ & NVAPI, XeSS and FSR2
 
 ![image](https://github.com/user-attachments/assets/e138c979-c5d9-499f-a89b-165bb7cfcb32)
 
-## Official Discord Server: [DLSS2FSR](https://discord.gg/2JDHx6kcXB)
-
-*This project is based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2](https://github.com/PotatoOfDoom/CyberFSR2).*
 
 ## Which APIs and Upscalers are Supported?
 Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but each API has different sets of upscaler options. [**OptiFG**](#optifg-powered-by-fsr3-fg--hudfix-experimental-hud-ghosting-fix) currently **only supports DX12** and is explained in a separate paragraph.
