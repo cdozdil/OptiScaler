@@ -844,6 +844,10 @@ HRESULT STDMETHODCALLTYPE hkAmdExtD3DCreateInterface(IUnknown* pOuter, REFIID ri
     return E_NOINTERFACE;
 }
 
+static UINT customD3D12SDKVersion = 615;
+
+static const char8_t* customD3D12SDKPath = u8".\\D3D12_Optiscaler\\"; //Hardcoded for now
+
 static FARPROC hkGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 {
     if (hModule == dllModule && lpProcName != nullptr)
@@ -858,6 +862,24 @@ static FARPROC hkGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
         if (Config::Instance()->Fsr4Update.value_or_default())
             return (FARPROC)hkAmdExtD3DCreateInterface;
     }
+
+    // For Agility SDK Upgrade
+	HMODULE mod_mainExe;
+	GetModuleHandleEx(2u, 0i64, &mod_mainExe);
+	if (hModule == mod_mainExe && lpProcName != nullptr)
+	{
+		if (strcmp(lpProcName, "D3D12SDKVersion") == 0)
+		{
+			LOG_INFO("D3D12SDKVersion call, returning this version!");
+			return (FARPROC)&customD3D12SDKVersion;
+		}
+
+		if (strcmp(lpProcName, "D3D12SDKPath") == 0)
+		{
+			LOG_INFO("D3D12SDKPath call, returning this path!");
+			return (FARPROC)&customD3D12SDKPath;
+		}
+	}
 
     if (State::Instance().isRunningOnLinux && lpProcName != nullptr && hModule == GetModuleHandle(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
         return (FARPROC)&customD3DKMTEnumAdapters2;
