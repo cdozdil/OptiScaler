@@ -258,6 +258,7 @@ public:
 	CustomOptional<bool> Fsr4Update{ false };
 	CustomOptional<bool> FsrNonLinearSRGB{ false };
 	CustomOptional<bool> FsrNonLinearPQ{ false };
+	CustomOptional<bool> FsrAgilitySDKUpgrade{ false };
 
 	// FSR Common
 	CustomOptional<float> FsrVerticalFov{ 60.0f };

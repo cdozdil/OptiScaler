@@ -119,6 +119,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             Fsr4Update.set_from_config(readBool("FSR", "Fsr4Update"));
             FsrNonLinearPQ.set_from_config(readBool("FSR", "FsrNonLinearPQ"));
             FsrNonLinearSRGB.set_from_config(readBool("FSR", "FsrNonLinearSRGB"));
+            FsrAgilitySDKUpgrade.set_from_config(readBool("FSR", "FsrAgilitySDKUpgrade"));
 
             // Only sRGB or PQ should be enabled
             if (FsrNonLinearPQ.has_value() && FsrNonLinearPQ.value())
@@ -614,6 +615,7 @@ bool Config::SaveIni()
         ini.SetValue("FSR", "Fsr4Update", GetBoolValue(Instance()->Fsr4Update.value_for_config()).c_str());
         ini.SetValue("FSR", "FsrNonLinearPQ", GetBoolValue(Instance()->FsrNonLinearPQ.value_for_config()).c_str());
         ini.SetValue("FSR", "FsrNonLinearSRGB", GetBoolValue(Instance()->FsrNonLinearSRGB.value_for_config()).c_str());
+        ini.SetValue("FSR", "FsrAgilitySDKUpgrade", GetBoolValue(Instance()->FsrAgilitySDKUpgrade.value_for_config()).c_str());
     }
 
     // XeSS
