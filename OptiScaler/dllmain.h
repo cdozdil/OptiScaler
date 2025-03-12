@@ -1948,13 +1948,6 @@ HRESULT WINAPI detGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
             std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
             LOG_INFO("{}", descStr);
             State::Instance().adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
-
-            // Hacky detection for RDN4
-            if (pDesc->VendorId == 0x1002 && !Config::Instance()->Fsr4Update.has_value())
-            {
-                Config::Instance()->Fsr4Update = szName.find(L" 90") != std::wstring::npos;
-                LOG_INFO("Fsr4Update: {}", Config::Instance()->Fsr4Update.value());
-            }
         }
 
         if (Config::Instance()->DxgiVRAM.has_value())
@@ -1991,13 +1984,6 @@ HRESULT WINAPI detGetDesc2(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc)
             std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
             LOG_INFO("{}", descStr);
             State::Instance().adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
-
-            // Hacky detection for RDN4
-            if (pDesc->VendorId == 0x1002 && !Config::Instance()->Fsr4Update.has_value())
-            {
-                Config::Instance()->Fsr4Update = szName.find(L" 90") != std::wstring::npos;
-                LOG_INFO("Fsr4Update: {}", Config::Instance()->Fsr4Update.value());
-            }
         }
 
         if (Config::Instance()->DxgiVRAM.has_value())
@@ -2034,13 +2020,6 @@ HRESULT WINAPI detGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
             std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
             LOG_INFO("{}", descStr);
             State::Instance().adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
-
-            // Hacky detection for RDN4
-            if (pDesc->VendorId == 0x1002 && !Config::Instance()->Fsr4Update.has_value())
-            {
-                Config::Instance()->Fsr4Update = szName.find(L" 90") != std::wstring::npos;
-                LOG_INFO("Fsr4Update: {}", Config::Instance()->Fsr4Update.value());
-            }
         }
 
         if (Config::Instance()->DxgiVRAM.has_value())
@@ -2077,13 +2056,6 @@ HRESULT WINAPI detGetDesc(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc)
             std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
             LOG_INFO("{}", descStr);
             State::Instance().adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
-
-            // Hacky detection for RDN4
-            if (pDesc->VendorId == 0x1002 && !Config::Instance()->Fsr4Update.has_value())
-            {
-                Config::Instance()->Fsr4Update = szName.find(L" 90") != std::wstring::npos;
-                LOG_INFO("Fsr4Update: {}", Config::Instance()->Fsr4Update.value());
-            }
         }
 
         if (Config::Instance()->DxgiVRAM.has_value())

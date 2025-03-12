@@ -720,6 +720,108 @@ static HMODULE LoadNvngxDlss(std::wstring originalPath)
 
 #pragma region Load & nvngxDlss Library hooks
 
+static void CheckForGPU()
+{
+    if (Config::Instance()->Fsr4Update.has_value())
+        return;
+
+    bool loaded = false;
+
+    HMODULE dxgiModule = nullptr;
+
+    if (o_LoadLibraryExW != nullptr)
+    {
+        dxgiModule = o_LoadLibraryExW(L"dxgi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        loaded = dxgiModule != nullptr;
+    }
+    else
+    {
+        dxgiModule = LoadLibraryExW(L"dxgi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        loaded = dxgiModule != nullptr;
+    }
+
+    if (dxgiModule == nullptr)
+        return;
+
+    auto createFactory = (PFN_CREATE_DXGI_FACTORY)GetProcAddress(dxgiModule, "CreateDXGIFactory");
+    if (createFactory == nullptr)
+    {
+        if (loaded)
+            FreeLibrary(dxgiModule);
+
+        return;
+    }
+
+    IDXGIFactory* factory;
+    HRESULT result = createFactory(__uuidof(factory), &factory);
+
+    if (result != S_OK)
+    {
+        LOG_ERROR("Can't create DXGIFactory error: {:X}", (UINT)result);
+
+        if (loaded)
+            FreeLibrary(dxgiModule);
+
+        return;
+    }
+
+    UINT adapterIndex = 0;
+    DXGI_ADAPTER_DESC adapterDesc{};
+    IDXGIAdapter* adapter;
+
+    while (factory->EnumAdapters(adapterIndex, &adapter) == S_OK)
+    {
+        if (adapter == nullptr)
+        {
+            adapterIndex++;
+            continue;
+        }
+
+        State::Instance().skipSpoofing = true;
+        result = adapter->GetDesc(&adapterDesc);
+        State::Instance().skipSpoofing = false;
+
+        if (result == S_OK && adapterDesc.VendorId != 0x00001414)
+        {
+            std::wstring szName(adapterDesc.Description);
+            std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), adapterDesc.DedicatedVideoMemory / (1024 * 1024));
+            LOG_INFO("{}", descStr);
+
+            // If GPU is AMD
+            if (adapterDesc.VendorId == 0x1002)
+            {
+                // If GPU Name contains 90XX always set it to true
+                if (szName.find(L" 90") != std::wstring::npos)
+                    Config::Instance()->Fsr4Update = true;
+            }
+        }
+        else
+        {
+            LOG_DEBUG("Can't get description of adapter: {}", adapterIndex);
+        }
+
+        adapter->Release();
+        adapter = nullptr;
+        adapterIndex++;
+    }
+
+    factory->Release();
+    factory = nullptr;
+
+    if (loaded)
+    {
+        if (o_FreeLibrary != nullptr)
+            o_FreeLibrary(dxgiModule);
+        else
+            FreeLibrary(dxgiModule);
+    }
+
+    if (!Config::Instance()->Fsr4Update.has_value())
+        Config::Instance()->Fsr4Update = false;
+
+    LOG_INFO("Fsr4Update: {}", Config::Instance()->Fsr4Update.value_or_default());
+}
+
 // For FSR4 Upgrade
 HRESULT STDMETHODCALLTYPE hkAmdExtD3DCreateInterface(IUnknown* pOuter, REFIID riid, void** ppvObject)
 {
@@ -747,11 +849,13 @@ static FARPROC hkGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
         LOG_DEBUG("Trying to get process address of {0}", lpProcName);
 
     // For FSR4 Upgrade
-    if (Config::Instance()->Fsr4Update.value_or_default() && hModule == mod_amdxc64 && o_AmdExtD3DCreateInterface != nullptr &&
-        lpProcName != nullptr && strcmp(lpProcName, "AmdExtD3DCreateInterface") == 0)
+    if (hModule == mod_amdxc64 && o_AmdExtD3DCreateInterface != nullptr && lpProcName != nullptr && strcmp(lpProcName, "AmdExtD3DCreateInterface") == 0)
     {
-        // Return custom method for upgrade
-        return (FARPROC)hkAmdExtD3DCreateInterface;
+        CheckForGPU();
+
+        // Return custom method for upgrade for RDNA4
+        if (Config::Instance()->Fsr4Update.value_or_default())
+            return (FARPROC)hkAmdExtD3DCreateInterface;
     }
 
     if (State::Instance().isRunningOnLinux && lpProcName != nullptr && hModule == GetModuleHandle(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
@@ -2331,15 +2435,12 @@ static void CheckWorkingMode()
             }
 
             // For FSR4 Upgrade
-            if (Config::Instance()->Fsr4Update.value_or_default())
-            {
-                mod_amdxc64 = GetModuleHandle(L"amdxc64.dll");
-                if (mod_amdxc64 == nullptr)
-                    mod_amdxc64 = LoadLibrary(L"amdxc64.dll");
+            mod_amdxc64 = GetModuleHandle(L"amdxc64.dll");
+            if (mod_amdxc64 == nullptr)
+                mod_amdxc64 = LoadLibrary(L"amdxc64.dll");
 
-                if (mod_amdxc64 != nullptr)
-                    o_AmdExtD3DCreateInterface = (PFN_AmdExtD3DCreateInterface)GetProcAddress(mod_amdxc64, "AmdExtD3DCreateInterface");
-            }
+            if (mod_amdxc64 != nullptr)
+                o_AmdExtD3DCreateInterface = (PFN_AmdExtD3DCreateInterface)GetProcAddress(mod_amdxc64, "AmdExtD3DCreateInterface");
 
             AttachHooks();
         }
