@@ -19,7 +19,7 @@
 
 #include <vulkan/vulkan_core.h>
 
-HMODULE mod_amdxc64 = nullptr;
+static HMODULE mod_amdxc64 = nullptr;
 
 // Enables hooking of GetModuleHandle
 // which might create issues, not tested very well
