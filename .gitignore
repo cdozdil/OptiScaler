@@ -418,6 +418,8 @@ FodyWeavers.xsd
 *.dylib
 *.dll
 
+!external/directx_agility_sdk/lib/D3D12Core.dll
+
 # Fortran module files
 *.mod
 *.smod
