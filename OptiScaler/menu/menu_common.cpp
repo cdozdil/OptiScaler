@@ -886,10 +886,29 @@ static void MenuSizeCheck(ImGuiIO io)
     }
 }
 
+static double lastTime = 0.0;
+
 bool MenuCommon::RenderMenu()
 {
     if (!_isInited)
         return false;
+
+    // FPS & frame time calculation
+    auto now = Util::MillisecondsNow();
+    double frameTime = 0.0;
+    double frameRate = 0.0;
+
+    if (lastTime > 0.0)
+    {
+        frameTime = now - lastTime;
+        frameRate = 1000.0 / frameTime;
+    }
+
+    lastTime = now;
+
+    State::Instance().frameTimes.pop_front();
+    State::Instance().frameTimes.push_back(frameTime);
+
 
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
@@ -967,9 +986,6 @@ bool MenuCommon::RenderMenu()
         MenuHdrCheck(io);
         MenuSizeCheck(io);
         ImGui::NewFrame();
-
-        State::Instance().frameTimes.pop_front();
-        State::Instance().frameTimes.push_back(1000.0 / io.Framerate);
 
         std::vector<float> frameTimeArray(State::Instance().frameTimes.begin(), State::Instance().frameTimes.end());
         std::vector<float> upscalerFrameTimeArray(State::Instance().upscaleTimes.begin(), State::Instance().upscaleTimes.end());
@@ -1049,9 +1065,9 @@ bool MenuCommon::RenderMenu()
             }
 
             if (Config::Instance()->FpsOverlayType.value_or_default() == 0)
-                ImGui::Text("%s %5.1f fps %5.2f ms", api.c_str(), io.Framerate, 1000.0f / io.Framerate);
+                ImGui::Text("%s %5.1f fps %5.2f ms", api.c_str(), frameRate, frameTime);
             else
-                ImGui::Text("%s Fps: %5.1f, Avg: %5.1f", api.c_str(), io.Framerate, 1000.0f / averageFrameTime);
+                ImGui::Text("%s Fps: %5.1f, Avg: %5.1f", api.c_str(), frameRate, 1000.0f / averageFrameTime);
 
             if (Config::Instance()->FpsOverlayType.value_or_default() > 0)
             {
@@ -3080,14 +3096,11 @@ bool MenuCommon::RenderMenu()
                 ImGui::Separator();
                 ImGui::Spacing();
 
-                State::Instance().frameTimes.pop_front();
-                State::Instance().frameTimes.push_back(1000.0 / io.Framerate);
-
                 if (ImGui::BeginTable("plots", 2, ImGuiTableFlags_SizingStretchSame))
                 {
                     ImGui::TableNextColumn();
                     ImGui::Text("FrameTime");
-                    auto ft = std::format("{:5.2f} ms / {:5.1f} fps", State::Instance().frameTimes.back(), io.Framerate);
+                    auto ft = std::format("{:5.2f} ms / {:5.1f} fps", State::Instance().frameTimes.back(), frameRate);
                     std::vector<float> frameTimeArray(State::Instance().frameTimes.begin(), State::Instance().frameTimes.end());
                     ImGui::PlotLines(ft.c_str(), frameTimeArray.data(), frameTimeArray.size());
 
