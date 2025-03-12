@@ -63,6 +63,7 @@ static PFN_LoadLibraryW o_LoadLibraryW = nullptr;
 static PFN_LoadLibraryExA o_LoadLibraryExA = nullptr;
 static PFN_LoadLibraryExW o_LoadLibraryExW = nullptr;
 static PFN_GetProcAddress o_GetProcAddress = nullptr;
+static PFN_GetProcAddress o_GetProcAddressKernelBase = nullptr;
 static PFN_GetModuleHandleA o_GetModuleHandleA = nullptr;
 static PFN_GetModuleHandleW o_GetModuleHandleW = nullptr;
 static PFN_GetModuleHandleExA o_GetModuleHandleExA = nullptr;
@@ -843,6 +844,10 @@ HRESULT STDMETHODCALLTYPE hkAmdExtD3DCreateInterface(IUnknown* pOuter, REFIID ri
     return E_NOINTERFACE;
 }
 
+static UINT customD3D12SDKVersion = 615;
+
+static const char8_t* customD3D12SDKPath = u8".\\D3D12_Optiscaler\\"; //Hardcoded for now
+
 static FARPROC hkGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 {
     if (hModule == dllModule && lpProcName != nullptr)
@@ -857,6 +862,24 @@ static FARPROC hkGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
         if (Config::Instance()->Fsr4Update.value_or_default())
             return (FARPROC)hkAmdExtD3DCreateInterface;
     }
+
+    // For Agility SDK Upgrade
+	HMODULE mod_mainExe;
+	GetModuleHandleEx(2u, 0i64, &mod_mainExe);
+	if (hModule == mod_mainExe && lpProcName != nullptr)
+	{
+		if (strcmp(lpProcName, "D3D12SDKVersion") == 0)
+		{
+			LOG_INFO("D3D12SDKVersion call, returning this version!");
+			return (FARPROC)&customD3D12SDKVersion;
+		}
+
+		if (strcmp(lpProcName, "D3D12SDKPath") == 0)
+		{
+			LOG_INFO("D3D12SDKPath call, returning this path!");
+			return (FARPROC)&customD3D12SDKPath;
+		}
+	}
 
     if (State::Instance().isRunningOnLinux && lpProcName != nullptr && hModule == GetModuleHandle(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
         return (FARPROC)&customD3DKMTEnumAdapters2;
@@ -1764,6 +1787,12 @@ static void DetachHooks()
             o_GetProcAddress = nullptr;
         }
 
+		if (o_GetProcAddressKernelBase)
+		{
+			DetourDetach(&(PVOID&)o_GetProcAddressKernelBase, hkGetProcAddress);
+			o_GetProcAddressKernelBase = nullptr;
+		}
+
         if (o_vkGetPhysicalDeviceProperties)
         {
             DetourDetach(&(PVOID&)o_vkGetPhysicalDeviceProperties, hkvkGetPhysicalDeviceProperties);
@@ -1854,6 +1883,7 @@ static void AttachHooks()
         o_GetModuleHandleExW = reinterpret_cast<PFN_GetModuleHandleExW>(DetourFindFunction("kernel32.dll", "GetModuleHandleExW"));
 #endif
         o_GetProcAddress = reinterpret_cast<PFN_GetProcAddress>(DetourFindFunction("kernel32.dll", "GetProcAddress"));
+		o_GetProcAddressKernelBase = reinterpret_cast<PFN_GetProcAddress>(DetourFindFunction("kernelbase.dll", "GetProcAddress"));
 
         if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
         {
@@ -1895,6 +1925,9 @@ static void AttachHooks()
 
             if (o_GetProcAddress)
                 DetourAttach(&(PVOID&)o_GetProcAddress, hkGetProcAddress);
+
+			if (o_GetProcAddressKernelBase)
+				DetourAttach(&(PVOID&)o_GetProcAddressKernelBase, hkGetProcAddress);
 
             DetourTransactionCommit();
         }
