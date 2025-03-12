@@ -63,6 +63,7 @@ static PFN_LoadLibraryW o_LoadLibraryW = nullptr;
 static PFN_LoadLibraryExA o_LoadLibraryExA = nullptr;
 static PFN_LoadLibraryExW o_LoadLibraryExW = nullptr;
 static PFN_GetProcAddress o_GetProcAddress = nullptr;
+static PFN_GetProcAddress o_GetProcAddressKernelBase = nullptr;
 static PFN_GetModuleHandleA o_GetModuleHandleA = nullptr;
 static PFN_GetModuleHandleW o_GetModuleHandleW = nullptr;
 static PFN_GetModuleHandleExA o_GetModuleHandleExA = nullptr;
@@ -1764,6 +1765,12 @@ static void DetachHooks()
             o_GetProcAddress = nullptr;
         }
 
+		if (o_GetProcAddressKernelBase)
+		{
+			DetourDetach(&(PVOID&)o_GetProcAddressKernelBase, hkGetProcAddress);
+			o_GetProcAddressKernelBase = nullptr;
+		}
+
         if (o_vkGetPhysicalDeviceProperties)
         {
             DetourDetach(&(PVOID&)o_vkGetPhysicalDeviceProperties, hkvkGetPhysicalDeviceProperties);
@@ -1854,6 +1861,7 @@ static void AttachHooks()
         o_GetModuleHandleExW = reinterpret_cast<PFN_GetModuleHandleExW>(DetourFindFunction("kernel32.dll", "GetModuleHandleExW"));
 #endif
         o_GetProcAddress = reinterpret_cast<PFN_GetProcAddress>(DetourFindFunction("kernel32.dll", "GetProcAddress"));
+		o_GetProcAddressKernelBase = reinterpret_cast<PFN_GetProcAddress>(DetourFindFunction("kernelbase.dll", "GetProcAddress"));
 
         if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
         {
@@ -1895,6 +1903,9 @@ static void AttachHooks()
 
             if (o_GetProcAddress)
                 DetourAttach(&(PVOID&)o_GetProcAddress, hkGetProcAddress);
+
+			if (o_GetProcAddressKernelBase)
+				DetourAttach(&(PVOID&)o_GetProcAddressKernelBase, hkGetProcAddress);
 
             DetourTransactionCommit();
         }
