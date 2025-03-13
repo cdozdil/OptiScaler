@@ -566,7 +566,7 @@ bool FSR31FeatureDx11on12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     ffxQueryDescGetVersions versionQuery{};
     versionQuery.header.type = FFX_API_QUERY_DESC_TYPE_GET_VERSIONS;
     versionQuery.createDescType = FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE;
-    //versionQuery.device = Dx12Device; // only for DirectX 12 applications
+    versionQuery.device = Dx12Device; // only for DirectX 12 applications
     uint64_t versionCount = 0;
     versionQuery.outputCount = &versionCount;
     // get number of versions for allocation

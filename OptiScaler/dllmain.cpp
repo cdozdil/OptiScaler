@@ -872,7 +872,7 @@ static FARPROC hkGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
         {
             if (strcmp(lpProcName, "D3D12SDKVersion") == 0)
             {
-                LOG_INFO("D3D12SDKVersion call, returning this version!");
+                LOG_INFO("D3D12SDKVersion call, returning this version!"); 
                 return (FARPROC)&customD3D12SDKVersion;
             }
 
