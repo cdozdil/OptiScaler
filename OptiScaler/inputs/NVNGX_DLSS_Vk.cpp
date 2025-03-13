@@ -647,7 +647,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_ReleaseFeature(NVSDK_NGX_Handle*
         return NVSDK_NGX_Result_Success;
 
     auto handleId = InHandle->Id;
-    if (handleId < 1000000)
+    if (handleId < DLSS_MOD_ID_OFFSET)
     {
         if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::VULKAN_ReleaseFeature() != nullptr)
         {
@@ -736,7 +736,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
 
     State::Instance().setInputApiName.clear();
 
-    if (handleId < 1000000)
+    if (handleId < DLSS_MOD_ID_OFFSET)
     {
         if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::VULKAN_EvaluateFeature() != nullptr)
         {

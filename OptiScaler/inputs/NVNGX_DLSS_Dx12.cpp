@@ -859,7 +859,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
     if (!shutdown)
         LOG_INFO("releasing feature with id {0}", handleId);
 
-    if (handleId < 1000000)
+    if (handleId < DLSS_MOD_ID_OFFSET)
     {
         if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::D3D12_ReleaseFeature() != nullptr)
         {
@@ -989,7 +989,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         return NVSDK_NGX_Result_Fail;
     }
 
-    if (handleId < 1000000)
+    if (handleId < DLSS_MOD_ID_OFFSET)
     {
         if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::D3D12_EvaluateFeature() != nullptr)
         {

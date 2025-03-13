@@ -521,7 +521,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_ReleaseFeature(NVSDK_NGX_Handle* 
         return NVSDK_NGX_Result_Success;
 
     auto handleId = InHandle->Id;
-    if (handleId < 1000000)
+    if (handleId < DLSS_MOD_ID_OFFSET)
     {
         if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::D3D11_ReleaseFeature() != nullptr)
         {
@@ -620,7 +620,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
     }
 
     auto handleId = InFeatureHandle->Id;
-    if (handleId < 1000000)
+    if (handleId < DLSS_MOD_ID_OFFSET)
     {
         if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::D3D11_EvaluateFeature() != nullptr)
         {

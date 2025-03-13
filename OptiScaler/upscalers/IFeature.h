@@ -3,7 +3,9 @@
 #include <nvsdk_ngx.h>
 #include <nvsdk_ngx_defs.h>
 
-inline static unsigned int handleCounter = 1000000;
+#define DLSS_MOD_ID_OFFSET 1000000
+
+inline static unsigned int handleCounter = DLSS_MOD_ID_OFFSET;
 
 class IFeature
 {
