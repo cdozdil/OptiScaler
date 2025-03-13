@@ -2353,6 +2353,10 @@ static void CheckWorkingMode()
             // Vulkan
             HMODULE vulkanModule = nullptr;
             vulkanModule = GetModuleHandle(L"vulkan-1.dll");
+
+            if(State::Instance().isRunningOnDXVK || State::Instance().isRunningOnLinux)
+                vulkanModule = LoadLibrary(L"vulkan-1.dll");
+
             if (vulkanModule != nullptr)
             {
                 LOG_DEBUG("vulkan-1.dll already in memory");
