@@ -792,7 +792,7 @@ static void CheckForGPU()
             if (adapterDesc.VendorId == 0x1002)
             {
                 // If GPU Name contains 90XX always set it to true
-                if (szName.find(L" 90") != std::wstring::npos)
+                if (szName.find(L" 90") != std::wstring::npos || szName.find(L" GFX12") != std::wstring::npos)
                     Config::Instance()->Fsr4Update = true;
             }
         }
