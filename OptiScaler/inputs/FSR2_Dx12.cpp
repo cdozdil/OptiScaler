@@ -999,13 +999,20 @@ void HookFSR2ExeInputs()
             std::string_view createPattern("40 55 57 41 54 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 4C 8B F2 41 B8 ? ? ? ? 33 D2 48 8B F9 E8");
             o_ffxFsr2ContextCreate_Pattern_Dx12 = (PFN_ffxFsr2ContextCreate)scanner::GetAddress(exeNameV, createPattern, 0);
 
-            // Witchfire
-            // Game uses FSR1 as FSR2
+            // Witchfire 
             //if (o_ffxFsr2ContextCreate_Pattern_Dx12 == nullptr)
             //{
             //    LOG_DEBUG("Checking createPatternWF");
             //    std::string_view createPatternWF("40 55 57 41 54 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 4C 8B F2 41 B8 ? ? ? ? 33 D2 48 8B F9");
             //    o_ffxFsr2ContextCreate_Pattern_Dx12 = (PFN_ffxFsr2ContextCreate)scanner::GetAddress(exeNameV, createPatternWF, 0);
+            //}
+
+            // Ronin
+            //if (o_ffxFsr2ContextCreate_Pattern_Dx12 == nullptr)
+            //{
+            //    LOG_DEBUG("Checking createPatternRonin");
+            //    std::string_view createPatternRonin("40 55 57 41 55 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 4C 8B EA 41 B8 ? ? ? ? 33 D2 48 8B F9");
+            //    o_ffxFsr2ContextCreate_Pattern_Dx12 = (PFN_ffxFsr2ContextCreate)scanner::GetAddress(exeNameV, createPatternRonin, 0);
             //}
 
             // AW2 
@@ -1021,8 +1028,7 @@ void HookFSR2ExeInputs()
 
             LOG_DEBUG("ffxFsr2ContextCreate_Pattern_Dx12: {:X}", (size_t)o_ffxFsr2ContextCreate_Pattern_Dx12);
 
-
-            if (o_ffxFsr2ContextCreate_Dx12 == nullptr && o_ffxFsr2ContextCreate_Pattern_Dx12)
+            if (o_ffxFsr2ContextCreate_Dx12 == nullptr && o_ffxFsr2ContextCreate_Pattern_Dx12 == nullptr)
             {
                 LOG_DEBUG("No CreateContext found, stopping pattern matching");
                 break;
@@ -1078,6 +1084,14 @@ void HookFSR2ExeInputs()
             //    LOG_DEBUG("Checking dispatchPatternWF");
             //    std::string_view dispatchPatternWF("40 55 56 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? F7 01 ? ? ? ? 48 8B F2 48 8B F9");
             //    o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPatternWF, 0);
+            //}
+
+            // Ronin
+            //if (o_ffxFsr2ContextDispatch_Pattern_Dx12 == nullptr)
+            //{
+            //    LOG_DEBUG("Checking dispatchPatternRonin");
+            //    std::string_view dispatchPatternRonin("40 55 41 56 41 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 F7 01 00 01 00 00 4C 8B FA 4C 8B F1 74 05 E8 ");
+            //    o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPatternRonin, 0);
             //}
 
             // Banishers

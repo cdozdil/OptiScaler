@@ -13,6 +13,7 @@
 #include "proxies/Streamline_Proxy.h"
 #include "inputs/FSR2_Dx12.h"
 #include "inputs/FSR3_Dx12.h"
+#include "inputs/FfxApiExe_Dx12.h"
 
 #include "hooks/HooksDx.h"
 #include "hooks/HooksVk.h"
@@ -2731,6 +2732,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 HookFSR3Dx12Inputs(handle);
 
             HookFSR3ExeInputs();
+
+            //HookFfxExeInputs();
 
             // Initial state of FSR-FG
             State::Instance().activeFgType = Config::Instance()->FGType.value_or_default();

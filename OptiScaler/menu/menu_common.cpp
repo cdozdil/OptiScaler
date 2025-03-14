@@ -3427,7 +3427,6 @@ void MenuCommon::Shutdown()
     if (!MenuCommon::_isInited)
         return;
 
-
     if (_oWndProc != nullptr)
     {
         SetWindowLongPtr((HWND)ImGui::GetMainViewport()->PlatformHandleRaw, GWLP_WNDPROC, (LONG_PTR)_oWndProc);
