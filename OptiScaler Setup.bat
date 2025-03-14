@@ -141,6 +141,18 @@ if "%gpuChoice%"=="2" (
 )
 
 :checkFile
+REM Query user for GPU type
+echo.
+echo Will you use DLSS inputs?
+echo [1] Yes
+echo [2] No
+set /p copyNvngx="Enter 1 or 2 (or press Enter for Yes): "
+
+if "%copyNvngx%"=="2" (
+    echo Skipping "nvngx_dlss.dll"...
+    goto completeSetup
+)
+
 set dlssFile = 
 goto check_nvngx_dlss
 :resume_nvngx_dlss
@@ -172,13 +184,15 @@ if errorlevel 1 (
 )
 
 REM Rename nvngx_dlss.dll file if AMD/Intel is selected
-if "%gpuChoice%"=="1" (
-    echo Renaming "nvngx_dlss_copy.dll" file to "nvngx.dll"...
-    rename nvngx_dlss_copy.dll nvngx.dll
-    if errorlevel 1 (
-        echo.
-        echo ERROR: Failed to rename "nvngx_dlss.dll" to "nvngx.dll".
-        goto end
+if NOT "%copyNvngx%"=="2" (
+    if "%gpuChoice%"=="1" (
+        echo Renaming "nvngx_dlss_copy.dll" file to "nvngx.dll"...
+        rename nvngx_dlss_copy.dll nvngx.dll
+        if errorlevel 1 (
+            echo.
+            echo ERROR: Failed to rename "nvngx_dlss.dll" to "nvngx.dll".
+            goto end
+        )
     )
 )
 
@@ -272,12 +286,16 @@ echo.
 echo set /p removeChoice="Do you want to remove OptiScaler? [y/n]: "
 echo.
 echo if "%%removeChoice%%"=="y" ^(
-if "%gpuChoice%"=="1" (
-    echo    del nvngx.dll
+if NOT "%copyNvngx%"=="2" (
+    if "%gpuChoice%"=="1" (
+        echo    del nvngx.dll
+    )
 )
 echo    del OptiScaler.log
 echo    del OptiScaler.ini
 echo    del %selectedFilename%
+echo    del /Q D3D12_Optiscaler\*
+echo    rd D3D12_Optiscaler
 echo    del /Q DlssOverrides\*
 echo    rd DlssOverrides
 echo    del /Q Licenses\*
