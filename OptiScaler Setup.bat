@@ -141,9 +141,9 @@ if "%gpuChoice%"=="2" (
 )
 
 :checkFile
-REM Query user for GPU type
+REM Query user for DLSS
 echo.
-echo Will you use DLSS inputs?
+echo Will you try to use DLSS inputs?
 echo [1] Yes
 echo [2] No
 set /p copyNvngx="Enter 1 or 2 (or press Enter for Yes): "
@@ -151,6 +151,12 @@ set /p copyNvngx="Enter 1 or 2 (or press Enter for Yes): "
 if "%copyNvngx%"=="2" (
     echo Skipping "nvngx_dlss.dll"...
     goto completeSetup
+) else if NOT "%copyNvngx%"=="1" (
+    if NOT "%copyNvngx%"=="" (
+        echo.
+        echo Invalid choice. Please enter 1 or 2.
+        goto checkFile
+    )
 )
 
 set dlssFile = 
