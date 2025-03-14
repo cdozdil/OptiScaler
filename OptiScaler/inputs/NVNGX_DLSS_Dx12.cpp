@@ -960,27 +960,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
     auto handleId = InFeatureHandle->Id;
 
-    if (!Dx12Contexts.contains(handleId))
-        return NVSDK_NGX_Result_FAIL_FeatureNotFound;
-
-    auto deviceContext = &Dx12Contexts[handleId];
-
-    if (deviceContext->feature == nullptr) // prevent source api name flicker when dlssg is active
-        State::Instance().setInputApiName = State::Instance().currentInputApiName;
-
-    if (State::Instance().setInputApiName.length() == 0)
-    {
-        if (std::strcmp(State::Instance().currentInputApiName.c_str(), "DLSS") != 0)
-            State::Instance().currentInputApiName = "DLSS";
-    }
-    else
-    {
-        if (std::strcmp(State::Instance().currentInputApiName.c_str(), State::Instance().setInputApiName.c_str()) != 0)
-            State::Instance().currentInputApiName = State::Instance().setInputApiName;
-    }
-
-    State::Instance().setInputApiName.clear();
-
     if (!InCmdList)
     {
         LOG_ERROR("InCmdList is null!!!");
@@ -1087,6 +1066,27 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
         return DLSSGMod::D3D12_EvaluateFeature(InCmdList, InFeatureHandle, InParameters, InCallback);
     }
+
+    if (!Dx12Contexts.contains(handleId))
+        return NVSDK_NGX_Result_FAIL_FeatureNotFound;
+
+    auto deviceContext = &Dx12Contexts[handleId];
+
+    if (deviceContext->feature == nullptr) // prevent source api name flicker when dlssg is active
+        State::Instance().setInputApiName = State::Instance().currentInputApiName;
+
+    if (State::Instance().setInputApiName.length() == 0)
+    {
+        if (std::strcmp(State::Instance().currentInputApiName.c_str(), "DLSS") != 0)
+            State::Instance().currentInputApiName = "DLSS";
+    }
+    else
+    {
+        if (std::strcmp(State::Instance().currentInputApiName.c_str(), State::Instance().setInputApiName.c_str()) != 0)
+            State::Instance().currentInputApiName = State::Instance().setInputApiName;
+    }
+
+    State::Instance().setInputApiName.clear();
 
     evalCounter++;
     if (Config::Instance()->SkipFirstFrames.has_value() && evalCounter < Config::Instance()->SkipFirstFrames.value())
