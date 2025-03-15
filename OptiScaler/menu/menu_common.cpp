@@ -909,7 +909,6 @@ bool MenuCommon::RenderMenu()
     State::Instance().frameTimes.pop_front();
     State::Instance().frameTimes.push_back(frameTime);
 
-
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
     // Handle Inputs
@@ -982,6 +981,19 @@ bool MenuCommon::RenderMenu()
     // If Fps overlay is visible
     if (Config::Instance()->ShowFps.value_or_default())
     {
+        float frameCnt = 0;
+        for (size_t i = 299; i > 199; i--)
+        {
+            if (State::Instance().frameTimes[i] > 0.0)
+            {
+                frameTime += State::Instance().frameTimes[i];
+                frameCnt++;
+            }
+        }
+
+        frameTime /= frameCnt;
+        frameRate = 1000.0 / frameTime;
+
         ImGui_ImplWin32_NewFrame();
         MenuHdrCheck(io);
         MenuSizeCheck(io);
@@ -1165,6 +1177,19 @@ bool MenuCommon::RenderMenu()
         // If overlay is not visible frame needs to be inited
         if (!Config::Instance()->ShowFps.value_or_default())
         {
+            float frameCnt = 0;
+            for (size_t i = 299; i > 199; i--)
+            {
+                if (State::Instance().frameTimes[i] > 0.0)
+                {
+                    frameTime += State::Instance().frameTimes[i];
+                    frameCnt++;
+                }
+            }
+
+            frameTime /= frameCnt;
+            frameRate = 1000.0 / frameTime;
+
             ImGui_ImplWin32_NewFrame();
             MenuHdrCheck(io);
             MenuSizeCheck(io);
