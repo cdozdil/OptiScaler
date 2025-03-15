@@ -1381,6 +1381,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     // FG Init || Disable    
     if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG && Config::Instance()->OverlayMenu.value_or_default())
     {
+        unsigned int OutWidth;
+        unsigned int OutHeight;
+
         if (!State::Instance().FGchanged && FrameGen_Dx12::fgTarget < deviceContext->feature->FrameCount() && Config::Instance()->FGEnabled.value_or_default() &&
             FfxApiProxy::InitFfxDx12() && !FrameGen_Dx12::fgIsActive && HooksDx::currentSwapchain != nullptr &&
             HooksDx::CurrentSwapchainFormat() != DXGI_FORMAT_UNKNOWN)
@@ -1392,6 +1395,18 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         else if ((!Config::Instance()->FGEnabled.value_or_default() || State::Instance().FGchanged) && FrameGen_Dx12::fgIsActive)
         {
             FrameGen_Dx12::StopAndDestroyFGContext(State::Instance().SCchanged, false);
+        }
+        // For Control's new patch
+        // When OptiFG is active and render resolution is increased previous limit
+        // Recreate FG context
+        else if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, &OutWidth) == NVSDK_NGX_Result_Success &&
+                    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, &OutHeight) == NVSDK_NGX_Result_Success)
+        {
+            if (FrameGen_Dx12::maxRenderWidth != 0 && FrameGen_Dx12::maxRenderHeight != 0 && (OutWidth > FrameGen_Dx12::maxRenderWidth || OutHeight > FrameGen_Dx12::maxRenderHeight))
+            {
+                FrameGen_Dx12::StopAndDestroyFGContext(true, false);
+                State::Instance().FGchanged = true;
+            }
         }
 
         if (State::Instance().FGchanged)

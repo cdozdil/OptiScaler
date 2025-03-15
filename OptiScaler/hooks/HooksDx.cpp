@@ -4350,6 +4350,9 @@ void FrameGen_Dx12::CreateFGContext(ID3D12Device* InDevice, IFeature* deviceCont
     createFg.maxRenderSize = { deviceContext->DisplayWidth() > deviceContext->RenderWidth() ? deviceContext->DisplayWidth() : deviceContext->RenderWidth(),
                                deviceContext->DisplayHeight() > deviceContext->RenderHeight() ? deviceContext->DisplayHeight() : deviceContext->RenderHeight() };
 
+    maxRenderWidth = createFg.maxRenderSize.width;
+    maxRenderHeight = createFg.maxRenderSize.height;
+
     createFg.flags = 0;
 
     if (deviceContext->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR)
@@ -4421,6 +4424,9 @@ void FrameGen_Dx12::StopAndDestroyFGContext(bool destroy, bool shutDown, bool us
             LOG_INFO("D3D12_DestroyContext result: {0:X}", result);
 
         FrameGen_Dx12::fgContext = nullptr;
+
+        maxRenderWidth = 0;
+        maxRenderHeight = 0;
     }
 
     if ((shutDown || State::Instance().isShuttingDown) || destroy)

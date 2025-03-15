@@ -81,6 +81,9 @@ namespace FrameGen_Dx12
     inline float meterFactor = 0.0;
     inline float ftDelta = 0.0;
     inline UINT reset = 0;
+    
+    inline UINT maxRenderWidth = 0;
+    inline UINT maxRenderHeight = 0;
 
     inline ID3D12Resource* paramVelocity[HooksDx::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
     inline ID3D12Resource* paramDepth[HooksDx::FG_BUFFER_SIZE] = { nullptr, nullptr, nullptr, nullptr };
