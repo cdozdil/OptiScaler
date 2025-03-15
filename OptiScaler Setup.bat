@@ -260,6 +260,18 @@ if exist Win64 (
         set dlssFile=%%F
         goto fileFound
     )
+) else (
+    if exist WinGDK (
+    echo.
+    echo Going to root folder of Unreal Engine game and searching again
+    cd ..
+    cd ..
+
+    for /f "delims=" %%F in ('dir /s /b %fileToSearch% 2^>nul') do (
+        set dlssFile=%%F
+        goto fileFound
+    )
+)
 )
 
 :fileNotFound
