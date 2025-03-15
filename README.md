@@ -33,7 +33,7 @@ While previously only DLSS2+ inputs were supported, newer versions also added su
 > <details>
 >  <summary><b>Expand for [1], [2] and [3]</b></summary>  
 >  
-> ***[1]** Regarding **XeSS**, since Unreal Engine plugin does not provide depth, replacing in-game XeSS breaks other upscalers, but you can still apply RCAS sharpening to XeSS to reduce blurry visuals (in short, if it's a UE game, in-game XeSS only works with XeSS in OptiScaler overlay).*
+> ***[1]** Regarding **XeSS**, since Unreal Engine plugin does not provide depth, replacing in-game XeSS breaks other upscalers (e.g. Redout 2 as a XeSS-only game), but you can still apply RCAS sharpening to XeSS to reduce blurry visuals (in short, if it's a UE game, in-game XeSS only works with XeSS in OptiScaler overlay).*
 >
 > *Regarding **FSR inputs**, FSR 3.1 is the first version with a fully standardised, forward-looking API and should be fully supported. Since FSR2 and FSR3 support custom interfaces, game support will depend on the developers' implementation. With Unreal Engine games, you might need [ini tweaks](https://github.com/cdozdil/OptiScaler/wiki/Unreal-Engine-Tweaks) for FSR inputs.*  
 >
