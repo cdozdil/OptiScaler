@@ -1,6 +1,6 @@
 ---
 name: Crash/Bug
-about: This template is reporting issues when using OptiScaler
+about: This template is for reporting issues when using OptiScaler
 title: ''
 labels: ''
 assignees: ''
