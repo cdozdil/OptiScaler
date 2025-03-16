@@ -347,11 +347,23 @@ static PFN_CreateSwapChainForHwnd oCreateSwapChainForHwnd = nullptr;
 static bool skipHighPerfCheck = false;
 
 // DirectX
+typedef struct D3D12_ROOT_SIGNATURE_DESC_L
+{
+    UINT NumParameters;
+    D3D12_ROOT_PARAMETER* pParameters;
+    UINT NumStaticSamplers;
+    D3D12_STATIC_SAMPLER_DESC* pStaticSamplers;
+    D3D12_ROOT_SIGNATURE_FLAGS Flags;
+} 	D3D12_ROOT_SIGNATURE_DESC_L;
+
 typedef void(*PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 typedef HRESULT(*PFN_CreateSamplerState)(ID3D11Device* This, const D3D11_SAMPLER_DESC* pSamplerDesc, ID3D11SamplerState** ppSamplerState);
+typedef HRESULT(*PFN_D3D12SerializeRootSignature)(D3D12_ROOT_SIGNATURE_DESC_L* pRootSignature, D3D_ROOT_SIGNATURE_VERSION Version, ID3DBlob** ppBlob, ID3DBlob** ppErrorBlob);
 
 static PFN_D3D12_CREATE_DEVICE o_D3D12CreateDevice = nullptr;
 static PFN_CreateSampler o_CreateSampler = nullptr;
+static PFN_D3D12SerializeRootSignature o_D3D12SerializeRootSignature = nullptr;
+
 
 static PFN_D3D11_CREATE_DEVICE o_D3D11CreateDevice = nullptr;
 static PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN o_D3D11CreateDeviceAndSwapChain = nullptr;
@@ -3686,6 +3698,53 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     return result;
 }
 
+static HRESULT hkD3D12SerializeRootSignature(D3D12_ROOT_SIGNATURE_DESC_L* pRootSignature, D3D_ROOT_SIGNATURE_VERSION Version, ID3DBlob** ppBlob, ID3DBlob** ppErrorBlob)
+{
+    if (Config::Instance()->OverrideShaderSampler.value_or_default() && pRootSignature != nullptr)
+    {
+        for (size_t i = 0; i < pRootSignature->NumStaticSamplers; i++)
+        {
+            if (Config::Instance()->MipmapBiasOverride.has_value())
+            {
+                if (pRootSignature->pStaticSamplers[i].MipLODBias < 0.0f || Config::Instance()->MipmapBiasOverrideAll.value_or_default())
+                {
+                    if (Config::Instance()->MipmapBiasOverride.has_value())
+                    {
+                        LOG_DEBUG("Overriding mipmap bias {0} -> {1}", pRootSignature->pStaticSamplers[i].MipLODBias, Config::Instance()->MipmapBiasOverride.value());
+
+                        if (Config::Instance()->MipmapBiasFixedOverride.value_or_default())
+                            pRootSignature->pStaticSamplers[i].MipLODBias = Config::Instance()->MipmapBiasOverride.value();
+                        else if (Config::Instance()->MipmapBiasScaleOverride.value_or_default())
+                            pRootSignature->pStaticSamplers[i].MipLODBias = pRootSignature->pStaticSamplers[i].MipLODBias * Config::Instance()->MipmapBiasOverride.value();
+                        else
+                            pRootSignature->pStaticSamplers[i].MipLODBias = pRootSignature->pStaticSamplers[i].MipLODBias + Config::Instance()->MipmapBiasOverride.value();
+                    }
+
+                    if (State::Instance().lastMipBiasMax < pRootSignature->pStaticSamplers[i].MipLODBias)
+                        State::Instance().lastMipBiasMax = pRootSignature->pStaticSamplers[i].MipLODBias;
+
+                    if (State::Instance().lastMipBias > pRootSignature->pStaticSamplers[i].MipLODBias)
+                        State::Instance().lastMipBias = pRootSignature->pStaticSamplers[i].MipLODBias;
+                }
+            }
+
+            if (Config::Instance()->AnisotropyOverride.has_value())
+            {
+                if (pRootSignature->pStaticSamplers[i].Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR || pRootSignature->pStaticSamplers[i].Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT || 
+                    pRootSignature->pStaticSamplers[i].Filter == D3D12_FILTER_ANISOTROPIC) 
+                {
+                    pRootSignature->pStaticSamplers[i].Filter = D3D12_FILTER_ANISOTROPIC;
+                    LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}",
+                              pRootSignature->pStaticSamplers[i].MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pRootSignature->pStaticSamplers[i].Filter);
+                    pRootSignature->pStaticSamplers[i].MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
+                }
+            }
+        }
+    }
+
+    return o_D3D12SerializeRootSignature(pRootSignature, Version, ppBlob, ppErrorBlob);
+}
+
 static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
     if (pDesc == nullptr || device == nullptr)
@@ -3704,30 +3763,31 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
 
     if (Config::Instance()->AnisotropyOverride.has_value())
     {
-        if (pDesc->Filter <= D3D12_FILTER_ANISOTROPIC)
+        //if (pDesc->Filter > 0 && pDesc->Filter <= D3D12_FILTER_ANISOTROPIC)
+        if (pDesc->Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR || pDesc->Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT || pDesc->Filter == D3D12_FILTER_ANISOTROPIC)
         {
             newDesc.Filter = D3D12_FILTER_ANISOTROPIC;
             LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
             newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
         }
-        else if (pDesc->Filter > D3D12_FILTER_ANISOTROPIC && pDesc->Filter <= D3D12_FILTER_COMPARISON_ANISOTROPIC)
-        {
-            newDesc.Filter = D3D12_FILTER_COMPARISON_ANISOTROPIC;
-            LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
-            newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
-        }
-        else if (pDesc->Filter > D3D12_FILTER_COMPARISON_ANISOTROPIC && pDesc->Filter <= D3D12_FILTER_MINIMUM_ANISOTROPIC)
-        {
-            newDesc.Filter = D3D12_FILTER_MINIMUM_ANISOTROPIC;
-            LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
-            newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
-        }
-        else if (pDesc->Filter > D3D12_FILTER_MINIMUM_ANISOTROPIC && pDesc->Filter <= D3D12_FILTER_MAXIMUM_ANISOTROPIC)
-        {
-            newDesc.Filter = D3D12_FILTER_MAXIMUM_ANISOTROPIC;
-            LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
-            newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
-        }
+        //else if (pDesc->Filter >= D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR && pDesc->Filter <= D3D12_FILTER_COMPARISON_ANISOTROPIC)
+        //{
+        //    newDesc.Filter = D3D12_FILTER_COMPARISON_ANISOTROPIC;
+        //    LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
+        //    newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
+        //}
+        //else if (pDesc->Filter > D3D12_FILTER_COMPARISON_ANISOTROPIC && pDesc->Filter <= D3D12_FILTER_MINIMUM_ANISOTROPIC)
+        //{
+        //    newDesc.Filter = D3D12_FILTER_MINIMUM_ANISOTROPIC;
+        //    LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
+        //    newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
+        //}
+        //else if (pDesc->Filter > D3D12_FILTER_MINIMUM_ANISOTROPIC && pDesc->Filter <= D3D12_FILTER_MAXIMUM_ANISOTROPIC)
+        //{
+        //    newDesc.Filter = D3D12_FILTER_MAXIMUM_ANISOTROPIC;
+        //    LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
+        //    newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
+        //}
     }
     else
     {
@@ -3857,6 +3917,8 @@ void HooksDx::HookDx12(HMODULE dx12Module)
     LOG_DEBUG("");
 
     o_D3D12CreateDevice = (PFN_D3D12_CREATE_DEVICE)GetProcAddress(dx12Module, "D3D12CreateDevice");
+    o_D3D12SerializeRootSignature = (PFN_D3D12SerializeRootSignature)GetProcAddress(dx12Module, "D3D12SerializeRootSignature");
+
     if (o_D3D12CreateDevice != nullptr)
     {
         LOG_DEBUG("Hooking D3D12CreateDevice method");
@@ -3865,6 +3927,9 @@ void HooksDx::HookDx12(HMODULE dx12Module)
         DetourUpdateThread(GetCurrentThread());
 
         DetourAttach(&(PVOID&)o_D3D12CreateDevice, hkD3D12CreateDevice);
+
+        if (o_D3D12SerializeRootSignature != nullptr)
+            DetourAttach(&(PVOID&)o_D3D12SerializeRootSignature, hkD3D12SerializeRootSignature);
 
         DetourTransactionCommit();
     }

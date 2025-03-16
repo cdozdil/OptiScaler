@@ -320,12 +320,14 @@ bool Config::Reload(std::filesystem::path iniPath)
             MipmapBiasFixedOverride.set_from_config(readBool("Hotfix", "MipmapBiasFixedOverride"));
             MipmapBiasScaleOverride.set_from_config(readBool("Hotfix", "MipmapBiasScaleOverride"));
             MipmapBiasOverrideAll.set_from_config(readBool("Hotfix", "MipmapBiasOverrideAll"));
-
+            
             if (auto setting = readInt("Hotfix", "AnisotropyOverride"); setting.has_value() && setting.value() <= 16 && setting.value() >= 1)
                 AnisotropyOverride.set_from_config(setting);
 
             if (AnisotropyOverride.has_value() && (AnisotropyOverride.value() > 16 || AnisotropyOverride.value() < 1))
                 AnisotropyOverride.reset();
+
+            OverrideShaderSampler.set_from_config(readBool("Hotfix", "OverrideShaderSampler"));
 
             RestoreComputeSignature.set_from_config(readBool("Hotfix", "RestoreComputeSignature"));
             RestoreGraphicSignature.set_from_config(readBool("Hotfix", "RestoreGraphicSignature"));
@@ -718,6 +720,8 @@ bool Config::SaveIni()
 
         ini.SetValue("Hotfix", "AnisotropyOverride", GetIntValue(Instance()->AnisotropyOverride.value_for_config()).c_str());
         ini.SetValue("Hotfix", "RoundInternalResolution", GetIntValue(Instance()->RoundInternalResolution.value_for_config()).c_str());
+        
+        ini.SetValue("Hotfix", "OverrideShaderSampler", GetBoolValue(Instance()->OverrideShaderSampler.value_for_config()).c_str());
 
         ini.SetValue("Hotfix", "RestoreComputeSignature", GetBoolValue(Instance()->RestoreComputeSignature.value_for_config()).c_str());
         ini.SetValue("Hotfix", "RestoreGraphicSignature", GetBoolValue(Instance()->RestoreGraphicSignature.value_for_config()).c_str());

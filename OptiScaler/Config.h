@@ -220,6 +220,7 @@ public:
 	CustomOptional<bool> MipmapBiasScaleOverride{ false };
 	CustomOptional<bool> MipmapBiasOverrideAll{ false };
 	CustomOptional<int, NoDefault> AnisotropyOverride; // disabled by default
+	CustomOptional<bool> OverrideShaderSampler{ false };
 	CustomOptional<int, NoDefault> RoundInternalResolution; // disabled by default
 
 	CustomOptional<bool> RestoreComputeSignature{ false };
