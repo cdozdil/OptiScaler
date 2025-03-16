@@ -2666,6 +2666,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             State::Instance().isRunningOnDXVK = State::Instance().isRunningOnLinux;
             skipGetModuleHandle = false;
 
+            // Temporary fix for Linux & DXVK
+            if (State::Instance().isRunningOnDXVK || State::Instance().isRunningOnLinux)
+                Config::Instance()->UseHQFont.set_volatile_value(false);
+
             spdlog::info("");
             CheckQuirks();
 

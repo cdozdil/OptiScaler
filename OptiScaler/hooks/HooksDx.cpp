@@ -2292,6 +2292,10 @@ static void CheckAdapter(IUnknown* unkAdapter)
     {
         State::Instance().isRunningOnDXVK = dxvkAdapter != nullptr;
         ((IDXGIAdapter*)dxvkAdapter)->Release();
+
+        // Temporary fix for Linux & DXVK
+        if (State::Instance().isRunningOnDXVK || State::Instance().isRunningOnLinux)
+            Config::Instance()->UseHQFont.set_volatile_value(false);
     }
 
     if (adapterOk)
