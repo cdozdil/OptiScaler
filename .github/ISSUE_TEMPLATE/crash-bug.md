@@ -32,6 +32,6 @@ assignees: ''
 #### Please describe the issue and steps to reproduce it
 *For example:* Game is crashing when switching to FSR4.
 
-I have attached
+#### I have attached
  - [ ] OptiScaler.log
  - [ ] Screenshot of game folder
