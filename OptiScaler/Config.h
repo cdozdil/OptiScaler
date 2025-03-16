@@ -303,7 +303,7 @@ public:
 	CustomOptional<bool> LoadReShade{ false };
 
 	// Frame Generation
-	CustomOptional<FGType> FGType{ FGType::OptiFG };
+	CustomOptional<FGType> FGType{ FGType::NoFG };
 
 	// OptiFG
 	CustomOptional<bool> FGEnabled{ false };
