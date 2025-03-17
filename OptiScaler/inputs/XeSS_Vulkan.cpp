@@ -1,14 +1,24 @@
-#include "XeSS_Dx12.h"  
+#include "XeSS_Vulkan.h"
 
 #include "NVNGX_Parameter.h"
-#include "menu/menu_overlay_dx.h"
+#include "menu/menu_overlay_vk.h"
 
-static UINT64 _handleCounter = 13370000;
+#include <nvsdk_ngx_vk.h>
+
+static UINT64 _handleCounter = 23370000;
 static UINT64 _frameCounter = 0;
 static xess_context_handle_t _currentContext = nullptr;
-static ID3D12Device* _d3d12Device = nullptr;
+static VkDevice _device = nullptr;
+static VkInstance _instance = nullptr;
+static VkPhysicalDevice _physicalDevice = nullptr;
+static NVSDK_NGX_Resource_VK expNVRes[3]{};
+static NVSDK_NGX_Resource_VK depthNVRes[3]{};
+static NVSDK_NGX_Resource_VK biasNVRes[3]{};
+static NVSDK_NGX_Resource_VK colorNVRes[3]{};
+static NVSDK_NGX_Resource_VK outputNVRes[3]{};
+static NVSDK_NGX_Resource_VK mvNVRes[3]{};
 
-static bool CreateDLSSContext(xess_context_handle_t handle, ID3D12GraphicsCommandList* commandList, const xess_d3d12_execute_params_t* pExecParams)
+static bool CreateDLSSContext(xess_context_handle_t handle, VkCommandBuffer commandList, const xess_vk_execute_params_t* pExecParams)
 {
     LOG_DEBUG("");
 
@@ -17,7 +27,7 @@ static bool CreateDLSSContext(xess_context_handle_t handle, ID3D12GraphicsComman
 
     NVSDK_NGX_Handle* nvHandle = nullptr;
     auto params = _nvParams[handle];
-    auto initParams = &_d3d12InitParams[handle];
+    auto initParams = &_vkInitParams[handle];
 
     UINT initFlags = 0;
 
@@ -75,7 +85,7 @@ static bool CreateDLSSContext(xess_context_handle_t handle, ID3D12GraphicsComman
             break;
     }
 
-    if (NVSDK_NGX_D3D12_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle) != NVSDK_NGX_Result_Success)
+    if (NVSDK_NGX_VULKAN_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle) != NVSDK_NGX_Result_Success)
         return false;
 
     _contexts[handle] = nvHandle;
@@ -83,88 +93,112 @@ static bool CreateDLSSContext(xess_context_handle_t handle, ID3D12GraphicsComman
     return true;
 }
 
-xess_result_t hk_xessD3D12CreateContext(ID3D12Device* pDevice, xess_context_handle_t* phContext)
+static void CreateNVRes(const xess_vk_image_view_info* resource, NVSDK_NGX_Resource_VK* nvResource, bool readWrite = false)
+{
+    (*nvResource).Type = NVSDK_NGX_RESOURCE_VK_TYPE_VK_IMAGEVIEW;
+    (*nvResource).Resource.ImageViewInfo.ImageView = resource->imageView;
+    (*nvResource).Resource.ImageViewInfo.Image = resource->image;
+    (*nvResource).Resource.ImageViewInfo.SubresourceRange = resource->subresourceRange;
+    (*nvResource).Resource.ImageViewInfo.Height = resource->height;
+    (*nvResource).Resource.ImageViewInfo.Width = resource->width;
+    (*nvResource).Resource.ImageViewInfo.Format = resource->format;
+    (*nvResource).ReadWrite = readWrite;
+}
+
+xess_result_t hk_xessVKCreateContext(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, xess_context_handle_t* phContext)
 {
     LOG_DEBUG("");
 
-    if (pDevice == nullptr)
+    if (instance == nullptr || physicalDevice == nullptr || device == nullptr)
         return XESS_RESULT_ERROR_DEVICE;
+
+    _instance = instance;
+    _physicalDevice = physicalDevice;
+    _device = device;
 
     Util::DllPath();
 
     NVSDK_NGX_FeatureCommonInfo fcInfo{};
     wchar_t const** paths = new const wchar_t* [1];
-    auto dllPath = Util::DllPath().remove_filename().wstring();
+
+    std::wstring dllPath;
+
+    if (!Config::Instance()->DLSSFeaturePath.has_value())
+        dllPath = Util::DllPath().remove_filename().wstring();
+    else
+        dllPath = Config::Instance()->DLSSFeaturePath.value();
+
     paths[0] = dllPath.c_str();
     fcInfo.PathListInfo.Path = paths;
     fcInfo.PathListInfo.Length = 1;
 
-    auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
-                                                        pDevice, &fcInfo, State::Instance().NVNGX_Version);
+    auto nvResult = NVSDK_NGX_VULKAN_Init_ProjectID_Ext("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
+                                                        _instance, _physicalDevice, _device, vkGetInstanceProcAddr, vkGetDeviceProcAddr, State::Instance().NVNGX_Version, &fcInfo);
 
     if (nvResult != NVSDK_NGX_Result_Success)
         return XESS_RESULT_ERROR_UNINITIALIZED;
 
-    _d3d12Device = pDevice;
     *phContext = (xess_context_handle_t)++_handleCounter;
 
     NVSDK_NGX_Parameter* params = nullptr;
 
-    if (NVSDK_NGX_D3D12_GetCapabilityParameters(&params) != NVSDK_NGX_Result_Success)
+    if (NVSDK_NGX_VULKAN_GetCapabilityParameters(&params) != NVSDK_NGX_Result_Success)
         return XESS_RESULT_ERROR_INVALID_ARGUMENT;
 
     _nvParams[*phContext] = params;
-    _motionScales[*phContext] = { 1.0, 1.0 };
+    _motionScales[*phContext] = { 1.0f, 1.0f };
+
+    LOG_DEBUG("Created context: {}", (size_t)*phContext);
 
     return XESS_RESULT_SUCCESS;
 }
 
-xess_result_t hk_xessD3D12BuildPipelines(xess_context_handle_t hContext, ID3D12PipelineLibrary* pPipelineLibrary, bool blocking, uint32_t initFlags)
-{
-    LOG_WARN("");
-    return XESS_RESULT_SUCCESS;
-}
-
-xess_result_t hk_xessD3D12Init(xess_context_handle_t hContext, const xess_d3d12_init_params_t* pInitParams)
+xess_result_t hk_xessVKBuildPipelines(xess_context_handle_t hContext, VkPipelineCache pipelineCache, bool blocking, uint32_t initFlags)
 {
     LOG_DEBUG("");
+    return XESS_RESULT_SUCCESS;
+}
 
-    xess_d3d12_init_params_t ip{};
+xess_result_t hk_xessVKInit(xess_context_handle_t hContext, const xess_vk_init_params_t* pInitParams)
+{
+    LOG_DEBUG("initFlags: {:X}", pInitParams->initFlags);
+
+    xess_vk_init_params_t ip{};
     ip.bufferHeapOffset = pInitParams->bufferHeapOffset;
     ip.creationNodeMask = pInitParams->creationNodeMask;
     ip.initFlags = pInitParams->initFlags;
     ip.outputResolution = pInitParams->outputResolution;
-    ip.pPipelineLibrary = pInitParams->pPipelineLibrary;
-    ip.pTempBufferHeap = pInitParams->pTempBufferHeap;
-    ip.pTempTextureHeap = pInitParams->pTempTextureHeap;
+    ip.pipelineCache = pInitParams->pipelineCache;
     ip.qualitySetting = pInitParams->qualitySetting;
+    ip.tempBufferHeap = pInitParams->tempBufferHeap;
+    ip.tempTextureHeap = pInitParams->tempTextureHeap;
     ip.textureHeapOffset = pInitParams->textureHeapOffset;
     ip.visibleNodeMask = pInitParams->visibleNodeMask;
 
-    _d3d12InitParams[hContext] = ip;
+    _vkInitParams[hContext] = ip;
 
     if (!_contexts.contains(hContext))
         return XESS_RESULT_SUCCESS;
 
-    NVSDK_NGX_D3D12_ReleaseFeature(_contexts[hContext]);
+    NVSDK_NGX_VULKAN_ReleaseFeature(_contexts[hContext]);
     _contexts.erase(hContext);
 
     return XESS_RESULT_SUCCESS;
 }
 
-xess_result_t hk_xessD3D12Execute(xess_context_handle_t hContext, ID3D12GraphicsCommandList* pCommandList, const xess_d3d12_execute_params_t* pExecParams)
+xess_result_t hk_xessVKExecute(xess_context_handle_t hContext, VkCommandBuffer commandBuffer, const xess_vk_execute_params_t* pExecParams)
 {
     LOG_DEBUG("");
 
-    if (pCommandList == nullptr)
+    if (commandBuffer == nullptr)
         return XESS_RESULT_ERROR_INVALID_ARGUMENT;
 
-    if (!_contexts.contains(hContext) && !CreateDLSSContext(hContext, pCommandList, pExecParams))
+    if (!_contexts.contains(hContext) && !CreateDLSSContext(hContext, commandBuffer, pExecParams))
         return XESS_RESULT_ERROR_UNKNOWN;
 
     NVSDK_NGX_Parameter* params = _nvParams[hContext];
     NVSDK_NGX_Handle* handle = _contexts[hContext];
-    xess_d3d12_init_params_t* initParams = &_d3d12InitParams[hContext];
+    xess_vk_init_params_t* initParams = &_vkInitParams[hContext];
 
     if (_motionScales.contains(hContext))
     {
@@ -198,37 +232,91 @@ xess_result_t hk_xessD3D12Execute(xess_context_handle_t hContext, ID3D12Graphics
     params->Set(NVSDK_NGX_Parameter_Height, pExecParams->inputHeight);
     params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, pExecParams->inputWidth);
     params->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, pExecParams->inputHeight);
-    params->Set(NVSDK_NGX_Parameter_Depth, pExecParams->pDepthTexture);
-    params->Set(NVSDK_NGX_Parameter_ExposureTexture, pExecParams->pExposureScaleTexture);
-    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, pExecParams->pResponsivePixelMaskTexture);
-    params->Set(NVSDK_NGX_Parameter_Color, pExecParams->pColorTexture);
-    params->Set(NVSDK_NGX_Parameter_MotionVectors, pExecParams->pVelocityTexture);
-    params->Set(NVSDK_NGX_Parameter_Output, pExecParams->pOutputTexture);
+
+    _frameCounter++;
+    auto index = _frameCounter % 3;
+
+    // generate new ones with nvidia resource infos
+    if (pExecParams->depthTexture.image == nullptr)
+    {
+        LOG_ERROR("Depth error!");
+        return XESS_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    else
+    {
+        CreateNVRes(&pExecParams->depthTexture, &depthNVRes[index]);
+        params->Set(NVSDK_NGX_Parameter_Depth, &depthNVRes[index]);
+    }
+
+    if (pExecParams->exposureScaleTexture.image != nullptr)
+    {
+        CreateNVRes(&pExecParams->exposureScaleTexture, &expNVRes[index]);
+        params->Set(NVSDK_NGX_Parameter_ExposureTexture, &expNVRes[index]);
+    }
+
+    if (pExecParams->responsivePixelMaskTexture.image != nullptr)
+    {
+        CreateNVRes(&pExecParams->responsivePixelMaskTexture, &biasNVRes[index]);
+        params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &biasNVRes[index]);
+    }
+
+    if (pExecParams->colorTexture.image == nullptr)
+    {
+        LOG_ERROR("Color error!");
+        return XESS_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    else
+    {
+        CreateNVRes(&pExecParams->colorTexture, &colorNVRes[index]);
+        params->Set(NVSDK_NGX_Parameter_Color, &colorNVRes[index]);
+    }
+
+    if (pExecParams->velocityTexture.image == nullptr)
+    {
+        LOG_ERROR("Motion Vectors error!");
+        return XESS_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    else
+    {
+        CreateNVRes(&pExecParams->velocityTexture, &mvNVRes[index]);
+        params->Set(NVSDK_NGX_Parameter_MotionVectors, &mvNVRes[index]);
+    }
+
+    if (pExecParams->outputTexture.image == nullptr)
+    {
+        LOG_ERROR("Output error!");
+        return XESS_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    else
+    {
+        CreateNVRes(&pExecParams->outputTexture, &outputNVRes[index], true);
+        params->Set(NVSDK_NGX_Parameter_Output, &outputNVRes[index]);
+    }
 
     State::Instance().setInputApiName = "XeSS";
 
-    if (NVSDK_NGX_D3D12_EvaluateFeature(pCommandList, handle, params, nullptr) == NVSDK_NGX_Result_Success)
+    if (NVSDK_NGX_VULKAN_EvaluateFeature(commandBuffer, handle, params, nullptr) == NVSDK_NGX_Result_Success)
         return XESS_RESULT_SUCCESS;
 
     return XESS_RESULT_ERROR_UNKNOWN;
 }
 
-xess_result_t hk_xessD3D12GetInitParams(xess_context_handle_t hContext, xess_d3d12_init_params_t* pInitParams)
+xess_result_t hk_xessVKGetInitParams(xess_context_handle_t hContext, xess_vk_init_params_t* pInitParams)
 {
     LOG_DEBUG("");
 
-    if (!_d3d12InitParams.contains(hContext))
+    if (!_vkInitParams.contains(hContext))
         return XESS_RESULT_ERROR_INVALID_CONTEXT;
 
-    auto ip = &_d3d12InitParams[hContext];
+    auto ip = &_vkInitParams[hContext];
 
     pInitParams->bufferHeapOffset = ip->bufferHeapOffset;
     pInitParams->creationNodeMask = ip->creationNodeMask;
     pInitParams->initFlags = ip->initFlags;
     pInitParams->outputResolution = ip->outputResolution;
-    pInitParams->pPipelineLibrary = ip->pPipelineLibrary;
-    pInitParams->pTempBufferHeap = ip->pTempBufferHeap;
-    pInitParams->pTempTextureHeap = ip->pTempTextureHeap;
+    pInitParams->tempBufferHeap = ip->tempBufferHeap;
+    pInitParams->tempTextureHeap = ip->tempTextureHeap;
+    pInitParams->pipelineCache = ip->pipelineCache;
     pInitParams->qualitySetting = ip->qualitySetting;
     pInitParams->textureHeapOffset = ip->textureHeapOffset;
     pInitParams->visibleNodeMask = ip->visibleNodeMask;
@@ -236,15 +324,8 @@ xess_result_t hk_xessD3D12GetInitParams(xess_context_handle_t hContext, xess_d3d
     return XESS_RESULT_SUCCESS;
 }
 
-xess_result_t hk_xessD3D12GetResourcesToDump(xess_context_handle_t hContext, xess_resources_to_dump_t** pResourcesToDump)
+xess_result_t hk_xessVKGetResourcesToDump(xess_context_handle_t hContext, xess_vk_resources_to_dump_t** pResourcesToDump)
 {
     LOG_DEBUG("");
     return XESS_RESULT_SUCCESS;
 }
-
-xess_result_t hk_xessD3D12GetProfilingData(xess_context_handle_t hContext, xess_profiling_data_t** pProfilingData)
-{
-    LOG_DEBUG("");
-    return XESS_RESULT_SUCCESS;
-}
-

@@ -13,6 +13,7 @@
 #include "upscalers/dlssd/DLSSDFeature_Vk.h"
 #include "upscalers/fsr2_212/FSR2Feature_Vk_212.h"
 #include "upscalers/fsr31/FSR31Feature_Vk.h"
+#include "upscalers/xess/XeSSFeature_Vk.h"
 
 #include "hooks/HooksVk.h"
 
@@ -502,6 +503,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
         // 1 : FSR2.2
         // 2 : DLSS
         // 3 : FSR3.1
+        // 4 : XeSS
         int upscalerChoice = 0; // Default FSR2.1
 
         // If original NVNGX available use DLSS as base upscaler
@@ -524,6 +526,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
                     upscalerChoice = 2;
                 else if (Config::Instance()->VulkanUpscaler.value() == "fsr31")
                     upscalerChoice = 3;
+                else if (Config::Instance()->VulkanUpscaler.value() == "xess")
+                    upscalerChoice = 4;
             }
 
             LOG_INFO("upscalerChoice: {0}", upscalerChoice);
@@ -574,6 +578,28 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
             {
                 Config::Instance()->VulkanUpscaler = "fsr31";
                 LOG_INFO("creating new FSR 3.X feature");
+            }
+        }
+
+        if (upscalerChoice == 4)
+        {
+            VkContexts[handleId].feature = std::make_unique<XeSSFeature_Vk>(handleId, InParameters);
+
+            if (!VkContexts[handleId].feature->ModuleLoaded())
+            {
+                LOG_ERROR("can't create new XeSS feature, Fallback to FSR2.1!");
+
+                VkContexts[handleId].feature.reset();
+                VkContexts[handleId].feature = nullptr;
+                //auto it = std::find_if(VkContexts.begin(), VkContexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
+                //VkContexts.erase(it);
+
+                upscalerChoice = 0;
+            }
+            else
+            {
+                Config::Instance()->VulkanUpscaler = "xess";
+                LOG_INFO("creating new XeSS feature");
             }
         }
 
@@ -882,6 +908,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
             // 1 : FSR2.2
             // 2 : DLSS
             // 3 : FSR3.1
+            // 4 : XeSS
             int upscalerChoice = -1; // Default FSR2.1
 
             // prepare new upscaler
@@ -910,6 +937,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
             {
                 LOG_INFO("creating new DLSSD feature");
                 VkContexts[handleId].feature = std::make_unique<DLSSDFeatureVk>(handleId, InParameters);
+            }
+            else if (State::Instance().newBackend == "xess")
+            {
+                LOG_INFO("creating new XeSS feature");
+                VkContexts[handleId].feature = std::make_unique<XeSSFeature_Vk>(handleId, InParameters);
             }
             else
             {

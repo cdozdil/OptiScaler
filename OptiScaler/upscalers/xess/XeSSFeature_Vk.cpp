@@ -1,20 +1,49 @@
-#pragma once
-#include "XeSSFeature.h"
+#include "XeSSFeature_Vk.h"
+#include <nvsdk_ngx_vk.h>
 
-#include <pch.h>
-#include <Config.h>
-#include <Util.h>
+static std::string ResultToString(xess_result_t result)
+{
+    switch (result)
+    {
+        case XESS_RESULT_WARNING_NONEXISTING_FOLDER: return "Warning Nonexistent Folder";
+        case XESS_RESULT_WARNING_OLD_DRIVER: return "Warning Old Driver";
+        case XESS_RESULT_SUCCESS: return "Success";
+        case XESS_RESULT_ERROR_UNSUPPORTED_DEVICE: return "Unsupported Device";
+        case XESS_RESULT_ERROR_UNSUPPORTED_DRIVER: return "Unsupported Driver";
+        case XESS_RESULT_ERROR_UNINITIALIZED: return "Uninitialized";
+        case XESS_RESULT_ERROR_INVALID_ARGUMENT: return "Invalid Argument";
+        case XESS_RESULT_ERROR_DEVICE_OUT_OF_MEMORY: return "Device Out of Memory";
+        case XESS_RESULT_ERROR_DEVICE: return "Device Error";
+        case XESS_RESULT_ERROR_NOT_IMPLEMENTED: return "Not Implemented";
+        case XESS_RESULT_ERROR_INVALID_CONTEXT: return "Invalid Context";
+        case XESS_RESULT_ERROR_OPERATION_IN_PROGRESS: return "Operation in Progress";
+        case XESS_RESULT_ERROR_UNSUPPORTED: return "Unsupported";
+        case XESS_RESULT_ERROR_CANT_LOAD_LIBRARY: return "Cannot Load Library";
+        case XESS_RESULT_ERROR_UNKNOWN:
+        default: return "Unknown";
+    }
+}
 
-#include <include/detours/detours.h>
-#include <include/d3dx/d3dx12.h>
+static xess_vk_image_view_info NV_to_XeSS(NVSDK_NGX_Resource_VK* nvResource)
+{
+    xess_vk_image_view_info xessResource{};
 
+    xessResource.format = nvResource->Resource.ImageViewInfo.Format;
+    xessResource.height = nvResource->Resource.ImageViewInfo.Height;
+    xessResource.image = nvResource->Resource.ImageViewInfo.Image;
+    xessResource.imageView = nvResource->Resource.ImageViewInfo.ImageView;
+    xessResource.subresourceRange = nvResource->Resource.ImageViewInfo.SubresourceRange;
+    xessResource.width = nvResource->Resource.ImageViewInfo.Width;
 
-inline void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
+    return xessResource;
+}
+
+static void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
 {
     spdlog::log((spdlog::level::level_enum)((int)Level + 1), "XeSSFeature::LogCallback XeSS Runtime ({0})", Message);
 }
 
-bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters)
+bool XeSSFeature_Vk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Parameter* InParameters)
 {
     LOG_FUNC();
 
@@ -27,15 +56,33 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     if (IsInited())
         return true;
 
-    if (device == nullptr)
+    if (InInstance == nullptr)
     {
-        LOG_ERROR("D3D12Device is null!");
+        LOG_ERROR("VkInstance is null!");
+        return false;
+    }
+
+    if (InPD == nullptr)
+    {
+        LOG_ERROR("VkPhysicalDevice is null!");
+        return false;
+    }
+
+    if (InDevice == nullptr)
+    {
+        LOG_ERROR("VkDevice is null!");
+        return false;
+    }
+
+    if (InCmdList == nullptr)
+    {
+        LOG_ERROR("VkCommandBuffer is null!");
         return false;
     }
 
     State::Instance().skipSpoofing = true;
 
-    auto ret = XeSSProxy::D3D12CreateContext()(device, &_xessContext);
+    auto ret = XeSSProxy::VKCreateContext()(InInstance, InPD, InDevice, &_xessContext);
 
     if (ret != XESS_RESULT_SUCCESS)
     {
@@ -49,7 +96,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     ret = XeSSProxy::SetLoggingCallback()(_xessContext, XESS_LOGGING_LEVEL_DEBUG, XeSSLogCallback);
     LOG_DEBUG("xessSetLoggingCallback : {0}", ResultToString(ret));
 
-    xess_d3d12_init_params_t xessParams{};
+    xess_vk_init_params_t xessParams{};
 
     xessParams.initFlags = XESS_INIT_FLAG_NONE;
 
@@ -211,6 +258,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     xessParams.outputResolution.x = TargetWidth();
     xessParams.outputResolution.y = TargetHeight();
 
+    /*
     // create heaps to prevent create heap errors of xess
     if (Config::Instance()->CreateHeaps.value_or(true))
     {
@@ -221,9 +269,9 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         if (ret == XESS_RESULT_SUCCESS)
         {
             CD3DX12_HEAP_DESC bufferHeapDesc(xessProps.tempBufferHeapSize, D3D12_HEAP_TYPE_DEFAULT);
-            State::Instance().skipHeapCapture = true;
+            Config::Instance()->SkipHeapCapture = true;
             hr = device->CreateHeap(&bufferHeapDesc, IID_PPV_ARGS(&_localBufferHeap));
-            State::Instance().skipHeapCapture = false;
+            Config::Instance()->SkipHeapCapture = false;
 
             if (SUCCEEDED(hr))
             {
@@ -231,9 +279,9 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
                     {D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_MEMORY_POOL_UNKNOWN, 0, 0},
                     0, D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES };
 
-                State::Instance().skipHeapCapture = true;
+                Config::Instance()->SkipHeapCapture = true;
                 hr = device->CreateHeap(&textureHeapDesc, IID_PPV_ARGS(&_localTextureHeap));
-                State::Instance().skipHeapCapture = false;
+                Config::Instance()->SkipHeapCapture = false;
 
                 if (SUCCEEDED(hr))
                 {
@@ -268,7 +316,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     if (Config::Instance()->BuildPipelines.value_or(true))
     {
         LOG_DEBUG("xessD3D12BuildPipelines!");
-        State::Instance().skipHeapCapture = true;
+        Config::Instance()->SkipHeapCapture = true;
 
         ID3D12Device1* device1;
         if (FAILED(device->QueryInterface(IID_PPV_ARGS(&device1))))
@@ -305,7 +353,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         if (device1 != nullptr)
             device1->Release();
 
-        State::Instance().skipHeapCapture = false;
+        Config::Instance()->SkipHeapCapture = false;
 
         if (ret != XESS_RESULT_SUCCESS)
         {
@@ -321,9 +369,10 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         ret = XeSSProxy::SelectNetworkModel()(_xessContext, (xess_network_model_t)Config::Instance()->NetworkModel.value());
         LOG_ERROR("xessSelectNetworkModel result: {0}", ResultToString(ret));
     }
+    */
 
     State::Instance().skipHeapCapture = true;
-    ret = XeSSProxy::D3D12Init()(_xessContext, &xessParams);
+    ret = XeSSProxy::VKInit()(_xessContext, &xessParams);
     State::Instance().skipHeapCapture = false;
 
     State::Instance().skipSpoofing = false;
@@ -339,35 +388,192 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     return true;
 }
 
-XeSSFeature::XeSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
+bool XeSSFeature_Vk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* InParameters)
 {
+    LOG_FUNC();
+
+    if (!IsInited() || !_xessContext || !ModuleLoaded())
+    {
+        LOG_ERROR("Not inited!");
+        return false;
+    }
+
+    if (State::Instance().xessDebug)
+    {
+        LOG_ERROR("xessDebug");
+
+        xess_dump_parameters_t dumpParams{};
+        dumpParams.frame_count = State::Instance().xessDebugFrames;
+        dumpParams.frame_idx = dumpCount;
+        dumpParams.path = ".";
+        dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH | XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS | XESS_DUMP_HISTORY;
+
+        if (!Config::Instance()->DisableReactiveMask.value_or(true))
+            dumpParams.dump_elements_mask |= XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
+
+        XeSSProxy::StartDump()(_xessContext, &dumpParams);
+        State::Instance().xessDebug = false;
+        dumpCount += State::Instance().xessDebugFrames;
+    }
+
+    xess_result_t xessResult;
+    xess_vk_execute_params_t params{};
+
+    InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffsetX);
+    InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffsetY);
+
+    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Exposure_Scale, &params.exposureScale) != NVSDK_NGX_Result_Success)
+        params.exposureScale = 1.0f;
+
+    InParameters->Get(NVSDK_NGX_Parameter_Reset, &params.resetHistory);
+
+    GetRenderResolution(InParameters, &params.inputWidth, &params.inputHeight);
+
+    auto sharpness = GetSharpness(InParameters);
+
+    float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
+
+    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false);
+
+    LOG_DEBUG("Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
+
+    NVSDK_NGX_Resource_VK* paramColor = nullptr;
+    if (InParameters->Get(NVSDK_NGX_Parameter_Color, (void**)&paramColor) == NVSDK_NGX_Result_Success && paramColor != nullptr)
+    {
+        LOG_DEBUG("Color exist..");
+        params.colorTexture = NV_to_XeSS(paramColor);
+    }
+    else
+    {
+        LOG_ERROR("Color not exist!!");
+        return false;
+    }
+
+    NVSDK_NGX_Resource_VK* paramVelocity = nullptr;
+    if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity) == NVSDK_NGX_Result_Success && paramVelocity != nullptr)
+    {
+        LOG_DEBUG("MotionVectors exist..");
+        params.velocityTexture = NV_to_XeSS(paramVelocity);
+    }
+    else
+    {
+        LOG_ERROR("MotionVectors not exist!!");
+        return false;
+    }
+
+    NVSDK_NGX_Resource_VK* paramOutput = nullptr;
+    if (InParameters->Get(NVSDK_NGX_Parameter_Output, (void**)&paramOutput) == NVSDK_NGX_Result_Success && paramOutput != nullptr)
+    {
+        LOG_DEBUG("Output exist..");
+        params.outputTexture = NV_to_XeSS(paramOutput);
+    }
+    else
+    {
+        LOG_ERROR("Output not exist!!");
+        return false;
+    }
+
+    NVSDK_NGX_Resource_VK* paramDepth = nullptr;
+    if (InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth) == NVSDK_NGX_Result_Success && paramDepth != nullptr)
+    {
+        LOG_DEBUG("Depth exist..");
+        params.depthTexture = NV_to_XeSS(paramDepth);
+    }
+    else
+    {
+        if (!Config::Instance()->DisplayResolution.value_or(false))
+        {
+            LOG_ERROR("Depth not exist!!");
+            return false;
+        }
+    }
+
+    if (!Config::Instance()->AutoExposure.value_or(false))
+    {
+        NVSDK_NGX_Resource_VK* paramExp = nullptr;
+        if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&paramExp) == NVSDK_NGX_Result_Success && paramExp != nullptr)
+        {
+            LOG_DEBUG("ExposureTexture exist..");
+            params.exposureScaleTexture = NV_to_XeSS(paramExp);
+        }
+        else
+        {
+            LOG_WARN("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
+            Config::Instance()->AutoExposure = true;
+            State::Instance().changeBackend[_handle->Id] = true;
+            return true;
+        }
+    }
+    else
+        LOG_DEBUG("AutoExposure enabled!");
+
+
+    if (!Config::Instance()->DisableReactiveMask.value_or(true))
+    {
+        NVSDK_NGX_Resource_VK* paramReactiveMask = nullptr;
+        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask) == NVSDK_NGX_Result_Success && paramReactiveMask != nullptr)
+        {
+            LOG_DEBUG("Input Bias mask exist..");
+            Config::Instance()->DisableReactiveMask = false;
+            params.responsivePixelMaskTexture = NV_to_XeSS(paramReactiveMask);
+        }
+        else
+        {
+            LOG_WARN("Bias mask not exist and its enabled in config, it may cause problems!!");
+            Config::Instance()->DisableReactiveMask = true;
+            State::Instance().changeBackend[_handle->Id] = true;
+            return true;
+        }
+    }
+
+    _hasColor = params.colorTexture.image != VK_NULL_HANDLE;
+    _hasMV = params.velocityTexture.image != VK_NULL_HANDLE;
+    _hasOutput = params.outputTexture.image != VK_NULL_HANDLE;
+    _hasDepth = params.depthTexture.image != VK_NULL_HANDLE;
+    _hasExposure = params.exposureScaleTexture.image != VK_NULL_HANDLE;
+    _accessToReactiveMask = params.responsivePixelMaskTexture.image != VK_NULL_HANDLE;
+
+    float MVScaleX = 1.0f;
+    float MVScaleY = 1.0f;
+
+    if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
+        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
+    {
+        xessResult = XeSSProxy::SetVelocityScale()(_xessContext, MVScaleX, MVScaleY);
+
+        if (xessResult != XESS_RESULT_SUCCESS)
+        {
+            LOG_ERROR("xessSetVelocityScale: {0}", ResultToString(xessResult));
+            return false;
+        }
+    }
+    else
+        LOG_WARN("Can't get motion vector scales!");
+
+    LOG_DEBUG("Executing!!");
+    xessResult = XeSSProxy::VKExecute()(_xessContext, InCmdBuffer, &params);
+
+    if (xessResult != XESS_RESULT_SUCCESS)
+    {
+        LOG_ERROR("xessVKExecute error: {0}", ResultToString(xessResult));
+        return false;
+    }
+
+    _frameCount++;
+
+    return true;
 }
 
-XeSSFeature::~XeSSFeature()
+XeSSFeature_Vk::XeSSFeature_Vk(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters), IFeature_Vk(handleId, InParameters)
+{
+    _moduleLoaded = XeSSProxy::InitXeSS() && XeSSProxy::VKCreateContext() != nullptr;
+}
+
+XeSSFeature_Vk::~XeSSFeature_Vk()
 {
     if (_xessContext)
     {
         XeSSProxy::DestroyContext()(_xessContext);
         _xessContext = nullptr;
     }
-
-    if (_localPipeline != nullptr)
-    {
-        _localPipeline->Release();
-        _localPipeline = nullptr;
-    }
-
-    if (_localBufferHeap != nullptr)
-    {
-        _localBufferHeap->Release();
-        _localBufferHeap = nullptr;
-    }
-
-    if (_localTextureHeap != nullptr)
-    {
-        _localTextureHeap->Release();
-        _localTextureHeap = nullptr;
-    }
 }
-
-

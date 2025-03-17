@@ -44,7 +44,7 @@ protected:
 	bool InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters);
 
 public:
-	feature_version Version() final { return feature_version{ XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch}; }
+	feature_version Version() { return feature_version{ XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch}; }
 	const char* Name() override { return "XeSS"; }
 
 	XeSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters);

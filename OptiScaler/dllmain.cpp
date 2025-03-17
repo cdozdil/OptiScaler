@@ -376,7 +376,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
     {
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
         if (module != nullptr)
-            XeSSProxy::InitXeSS(module);
+            XeSSProxy::HookXeSS(module);
 
         return module;
     }
@@ -620,7 +620,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
     {
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
         if (module != nullptr)
-            XeSSProxy::InitXeSS(module);
+            XeSSProxy::HookXeSS(module);
 
         return module;
     }
@@ -2401,7 +2401,7 @@ static void CheckWorkingMode()
             if (xessModule != nullptr)
             {
                 LOG_DEBUG("libxess.dll already in memory");
-                XeSSProxy::InitXeSS(xessModule);
+                XeSSProxy::HookXeSS(xessModule);
             }
 
             // NVNGX

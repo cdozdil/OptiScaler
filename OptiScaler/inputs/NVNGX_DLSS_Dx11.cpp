@@ -15,6 +15,7 @@
 #include "upscalers/fsr31/FSR31Feature_Dx11.h"
 #include "upscalers/fsr31/FSR31Feature_Dx11On12.h"
 #include "upscalers/xess/XeSSFeature_Dx11.h"
+#include "upscalers/xess/XeSSFeature_Dx11on12.h"
 
 #include "hooks/HooksDx.h"
 
@@ -381,7 +382,27 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 
         if (Config::Instance()->Dx11Upscaler.value_or(defaultUpscaler) == "xess")
         {
-            Dx11Contexts[handleId].feature = std::make_unique<XeSSFeatureDx11>(handleId, InParameters);
+            Dx11Contexts[handleId].feature = std::make_unique<XeSSFeature_Dx11>(handleId, InParameters);
+
+
+            if (!Dx11Contexts[handleId].feature->ModuleLoaded())
+            {
+                LOG_ERROR("can't create new XeSS feature, Fallback to FSR2.2!");
+
+                Dx11Contexts[handleId].feature.reset();
+                Dx11Contexts[handleId].feature = nullptr;
+
+                Config::Instance()->Dx11Upscaler = "fsr22";
+            }
+            else
+            {
+                LOG_INFO("creating new XeSS feature");
+            }
+        }
+
+        if (Config::Instance()->Dx11Upscaler.value_or(defaultUpscaler) == "xess_12")
+        {
+            Dx11Contexts[handleId].feature = std::make_unique<XeSSFeatureDx11on12>(handleId, InParameters);
 
 
             if (!Dx11Contexts[handleId].feature->ModuleLoaded())
@@ -390,8 +411,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 
                 Dx11Contexts[handleId].feature.reset();
                 Dx11Contexts[handleId].feature = nullptr;
-                //auto it = std::find_if(Dx11Contexts.begin(), Dx11Contexts.end(), [&handleId](const auto& p) { return p.first == handleId; });
-                //Dx11Contexts.erase(it);
 
                 Config::Instance()->Dx11Upscaler = "fsr22";
             }
@@ -717,8 +736,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
             if (State::Instance().newBackend == "xess")
             {
                 Config::Instance()->Dx11Upscaler = "xess";
+                LOG_INFO("creating new XeSS feature");
+                Dx11Contexts[handleId].feature = std::make_unique<XeSSFeature_Dx11>(handleId, Dx11Contexts[handleId].createParams);
+            }
+            else if (State::Instance().newBackend == "xess_12")
+            {
+                Config::Instance()->Dx11Upscaler = "xess_12";
                 LOG_INFO("creating new XeSS with Dx12 feature");
-                Dx11Contexts[handleId].feature = std::make_unique<XeSSFeatureDx11>(handleId, Dx11Contexts[handleId].createParams);
+                Dx11Contexts[handleId].feature = std::make_unique<XeSSFeatureDx11on12>(handleId, Dx11Contexts[handleId].createParams);
             }
             else if (State::Instance().newBackend == "dlss")
             {
