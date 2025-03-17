@@ -93,7 +93,9 @@ static VkResult hkvkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, cons
 {
     LOG_FUNC();
 
+    State::Instance().skipSpoofing = true;
     auto result = o_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
+    State::Instance().skipSpoofing = false;
 
     if (result == VK_SUCCESS && !State::Instance().vulkanSkipHooks)
     {

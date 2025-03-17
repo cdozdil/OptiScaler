@@ -345,6 +345,9 @@ XeSSFeature::XeSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameter
 
 XeSSFeature::~XeSSFeature()
 {
+    if (State::Instance().isShuttingDown || _xessContext == nullptr)
+        return;
+
     if (_xessContext)
     {
         XeSSProxy::DestroyContext()(_xessContext);

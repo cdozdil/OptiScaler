@@ -203,7 +203,7 @@ public:
     static bool InitXeSS()
     {
         if (_dll != nullptr)
-            return false;
+            return true;
 
         HMODULE mainModule = nullptr;
 
@@ -239,7 +239,7 @@ public:
     static bool InitXeSSDx11()
     {
         if (_dlldx11 != nullptr)
-            return false;
+            return true;
 
         HMODULE dx11Module = nullptr;
 
@@ -381,15 +381,8 @@ public:
                 _xessVersion = GetDLLVersion(path.wstring());
             }
 
-            // read version from file because 
-            // xessGetVersion cause access violation errors
-            moduleHandle = nullptr;
-            moduleHandle = GetModuleHandle(L"libxess_dx11.dll");
-            if (moduleHandle != nullptr)
-            {
-                auto path = DllPath(moduleHandle);
-                _xessVersionDx11 = GetDLLVersion(path.wstring());
-            }
+            if (_xessVersion.major == 0)
+                _xessGetVersion(&_xessVersion);
 
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
@@ -570,6 +563,9 @@ public:
                 auto path = DllPath(moduleHandle);
                 _xessVersionDx11 = GetDLLVersion(path.wstring());
             }
+
+            if (_xessVersionDx11.major == 0)
+                _xessGetVersionDx11(&_xessVersionDx11);
 
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());

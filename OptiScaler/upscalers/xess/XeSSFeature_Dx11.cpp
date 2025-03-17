@@ -616,6 +616,9 @@ XeSSFeature_Dx11::XeSSFeature_Dx11(unsigned int handleId, NVSDK_NGX_Parameter* I
 
 XeSSFeature_Dx11::~XeSSFeature_Dx11()
 {
+    if (State::Instance().isShuttingDown)
+        return;
+
     if (_xessContext)
     {
         XeSSProxy::D3D11DestroyContext()(_xessContext);

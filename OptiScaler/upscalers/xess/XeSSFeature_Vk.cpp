@@ -571,9 +571,6 @@ XeSSFeature_Vk::XeSSFeature_Vk(unsigned int handleId, NVSDK_NGX_Parameter* InPar
 
 XeSSFeature_Vk::~XeSSFeature_Vk()
 {
-    if (_xessContext)
-    {
-        XeSSProxy::DestroyContext()(_xessContext);
-        _xessContext = nullptr;
-    }
+    if (State::Instance().isShuttingDown)
+        return;
 }

@@ -415,6 +415,9 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 XeSSFeatureDx12::~XeSSFeatureDx12()
 {
+	if (State::Instance().isShuttingDown)
+		return;
+
 	if (RCAS != nullptr && RCAS.get() != nullptr)
 		RCAS.reset();
 }
