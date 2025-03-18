@@ -399,7 +399,7 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
     {
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
         if (module != nullptr)
-            XeSSProxy::InitXeSS(module);
+            XeSSProxy::HookXeSS(module);
         else
             LOG_ERROR("Trying to load dll: {}", lcaseLibName);
 
