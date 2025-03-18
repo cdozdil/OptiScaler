@@ -487,7 +487,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
         if (nvngxDlss != nullptr)
             return nvngxDlss;
         else
-            LOG_ERROR("Trying to load dll: {}", lcaseLibName);
+            LOG_ERROR("Trying to load dll: {}", lcaseLibNameA);
     }
 
     // NGX OTA
