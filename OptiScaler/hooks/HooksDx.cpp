@@ -3763,31 +3763,12 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
 
     if (Config::Instance()->AnisotropyOverride.has_value())
     {
-        //if (pDesc->Filter > 0 && pDesc->Filter <= D3D12_FILTER_ANISOTROPIC)
         if (pDesc->Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR || pDesc->Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT || pDesc->Filter == D3D12_FILTER_ANISOTROPIC)
         {
             newDesc.Filter = D3D12_FILTER_ANISOTROPIC;
             LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
             newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
         }
-        //else if (pDesc->Filter >= D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR && pDesc->Filter <= D3D12_FILTER_COMPARISON_ANISOTROPIC)
-        //{
-        //    newDesc.Filter = D3D12_FILTER_COMPARISON_ANISOTROPIC;
-        //    LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
-        //    newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
-        //}
-        //else if (pDesc->Filter > D3D12_FILTER_COMPARISON_ANISOTROPIC && pDesc->Filter <= D3D12_FILTER_MINIMUM_ANISOTROPIC)
-        //{
-        //    newDesc.Filter = D3D12_FILTER_MINIMUM_ANISOTROPIC;
-        //    LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
-        //    newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
-        //}
-        //else if (pDesc->Filter > D3D12_FILTER_MINIMUM_ANISOTROPIC && pDesc->Filter <= D3D12_FILTER_MAXIMUM_ANISOTROPIC)
-        //{
-        //    newDesc.Filter = D3D12_FILTER_MAXIMUM_ANISOTROPIC;
-        //    LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
-        //    newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
-        //}
     }
     else
     {
@@ -3921,15 +3902,17 @@ void HooksDx::HookDx12(HMODULE dx12Module)
 
     if (o_D3D12CreateDevice != nullptr)
     {
-        LOG_DEBUG("Hooking D3D12CreateDevice method");
-
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
+        LOG_DEBUG("Hooking D3D12CreateDevice method");
         DetourAttach(&(PVOID&)o_D3D12CreateDevice, hkD3D12CreateDevice);
 
         if (o_D3D12SerializeRootSignature != nullptr)
+        {
+            LOG_DEBUG("Hooking D3D12SerializeRootSignature method");
             DetourAttach(&(PVOID&)o_D3D12SerializeRootSignature, hkD3D12SerializeRootSignature);
+        }
 
         DetourTransactionCommit();
     }
