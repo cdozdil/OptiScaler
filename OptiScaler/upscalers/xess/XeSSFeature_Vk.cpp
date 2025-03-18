@@ -508,21 +508,31 @@ bool XeSSFeature_Vk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         LOG_DEBUG("AutoExposure enabled!");
 
 
-    if (!Config::Instance()->DisableReactiveMask.value_or(true))
+    NVSDK_NGX_Resource_VK* paramReactiveMask = nullptr;
+    if (isVersionOrBetter(Version(), { 2, 0, 1 }) && InParameters->Get("FSR.reactive", (void**)&paramReactiveMask) == NVSDK_NGX_Result_Success)
     {
-        NVSDK_NGX_Resource_VK* paramReactiveMask = nullptr;
+        if (!Config::Instance()->DisableReactiveMask.value_or(true))
+            params.responsivePixelMaskTexture = NV_to_XeSS(paramReactiveMask);
+    }
+    else
+    {
         if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask) == NVSDK_NGX_Result_Success && paramReactiveMask != nullptr)
         {
             LOG_DEBUG("Input Bias mask exist..");
             Config::Instance()->DisableReactiveMask = false;
-            params.responsivePixelMaskTexture = NV_to_XeSS(paramReactiveMask);
+
+            if (!Config::Instance()->DisableReactiveMask.value_or(!isVersionOrBetter(Version(), { 2, 0, 1 })))
+                params.responsivePixelMaskTexture = NV_to_XeSS(paramReactiveMask);
         }
         else
         {
-            LOG_WARN("Bias mask not exist and its enabled in config, it may cause problems!!");
-            Config::Instance()->DisableReactiveMask = true;
-            State::Instance().changeBackend[_handle->Id] = true;
-            return true;
+            if (!Config::Instance()->DisableReactiveMask.value_or(!isVersionOrBetter(Version(), { 2, 0, 1 })))
+            {
+                LOG_WARN("Bias mask not exist and its enabled in config, it may cause problems!!");
+                Config::Instance()->DisableReactiveMask = true;
+                State::Instance().changeBackend[_handle->Id] = true;
+                return true;
+            }
         }
     }
 

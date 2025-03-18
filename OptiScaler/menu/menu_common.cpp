@@ -2690,7 +2690,8 @@ bool MenuCommon::RenderMenu()
                                 auto accessToReactiveMask = State::Instance().currentFeature->AccessToReactiveMask();
                                 ImGui::BeginDisabled(!accessToReactiveMask);
 
-                                bool rm = Config::Instance()->DisableReactiveMask.value_or(!accessToReactiveMask || currentBackend == "dlss" || currentBackend == "xess");
+                                bool rm = Config::Instance()->DisableReactiveMask.value_or(!accessToReactiveMask || currentBackend == "dlss" || 
+                                                                                           (currentBackend == "xess" && !isVersionOrBetter(currentFeature->Version(), {2, 0, 1})));
                                 if (ImGui::Checkbox("Disable Reactive Mask", &rm))
                                 {
                                     Config::Instance()->DisableReactiveMask = rm;
