@@ -238,7 +238,10 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
     {
         auto streamlineModule = o_LoadLibraryA(lpLibFullPath);
 
-        hookStreamline(streamlineModule);
+        if (streamlineModule != nullptr)
+            hookStreamline(streamlineModule);
+        else
+            LOG_ERROR("Trying to load dll: {}", lcaseLibName);
 
         return streamlineModule;
     }
@@ -248,8 +251,10 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
     {
         auto nvngxDlss = LoadNvngxDlss(string_to_wstring(lcaseLibName));
 
-        if (nvngxDlss != nullptr)
-            return nvngxDlss;
+        if (nvngxDlss == nullptr)
+            LOG_ERROR("Trying to load dll: {}", lcaseLibName);
+        
+        return nvngxDlss;
     }
 
     // NGX OTA
@@ -286,6 +291,8 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
         if (module != nullptr)
             HooksDx::HookDx11(module);
+        else
+            LOG_ERROR("Trying to load dll: {}", lcaseLibName);
 
         return module;
     }
@@ -296,6 +303,8 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
         if (module != nullptr)
             HooksDx::HookDx12(module);
+        else
+            LOG_ERROR("Trying to load dll: {}", lcaseLibName);
 
         return module;
     }
@@ -316,6 +325,10 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
             if (Config::Instance()->OverlayMenu.value_or_default())
                 HooksVk::HookVk(module);
         }
+        else
+        {
+            LOG_ERROR("Trying to load dll: {}", lcaseLibName);
+        }
 
         return module;
     }
@@ -332,6 +345,10 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
             if (Config::Instance()->OverlayMenu.value_or_default())
                 HooksDx::HookDxgi(module);
         }
+        else
+        {
+            LOG_ERROR("Trying to load dll: {}", lcaseLibName);
+        }
 
         return module;
     }
@@ -341,6 +358,8 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
         if (module != nullptr)
             HookFSR2Inputs(module);
+        else
+            LOG_ERROR("Trying to load dll: {}", lcaseLibName);
 
         return module;
     }
@@ -350,6 +369,8 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
         if (module != nullptr)
             HookFSR2Dx12Inputs(module);
+        else
+            LOG_ERROR("Trying to load dll: {}", lcaseLibName);
 
         return module;
     }
@@ -368,6 +389,8 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
         if (module != nullptr)
             HookFSR3Dx12Inputs(module);
+        else
+            LOG_ERROR("Trying to load dll: {}", lcaseLibName);
 
         return module;
     }
@@ -377,6 +400,8 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
         if (module != nullptr)
             XeSSProxy::InitXeSS(module);
+        else
+            LOG_ERROR("Trying to load dll: {}", lcaseLibName);
 
         return module;
     }
@@ -386,6 +411,8 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
         if (module != nullptr)
             FfxApiProxy::InitFfxDx12(module);
+        else
+            LOG_ERROR("Trying to load dll: {}", lcaseLibName);
 
         return module;
     }
@@ -395,6 +422,8 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
         if (module != nullptr)
             FfxApiProxy::InitFfxVk(module);
+        else
+            LOG_ERROR("Trying to load dll: {}", lcaseLibName);
 
         return module;
     }
@@ -457,6 +486,8 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
         if (nvngxDlss != nullptr)
             return nvngxDlss;
+        else
+            LOG_ERROR("Trying to load dll: {}", lcaseLibName);
     }
 
     // NGX OTA
@@ -873,7 +904,7 @@ static FARPROC hkGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
         {
             if (strcmp(lpProcName, "D3D12SDKVersion") == 0)
             {
-                LOG_INFO("D3D12SDKVersion call, returning this version!"); 
+                LOG_INFO("D3D12SDKVersion call, returning this version!");
                 return (FARPROC)&customD3D12SDKVersion;
             }
 
@@ -1791,11 +1822,11 @@ static void DetachHooks()
             o_GetProcAddress = nullptr;
         }
 
-		if (o_GetProcAddressKernelBase)
-		{
-			DetourDetach(&(PVOID&)o_GetProcAddressKernelBase, hkGetProcAddress);
-			o_GetProcAddressKernelBase = nullptr;
-		}
+        if (o_GetProcAddressKernelBase)
+        {
+            DetourDetach(&(PVOID&)o_GetProcAddressKernelBase, hkGetProcAddress);
+            o_GetProcAddressKernelBase = nullptr;
+        }
 
         if (o_vkGetPhysicalDeviceProperties)
         {
@@ -1887,7 +1918,7 @@ static void AttachHooks()
         o_GetModuleHandleExW = reinterpret_cast<PFN_GetModuleHandleExW>(DetourFindFunction("kernel32.dll", "GetModuleHandleExW"));
 #endif
         o_GetProcAddress = reinterpret_cast<PFN_GetProcAddress>(DetourFindFunction("kernel32.dll", "GetProcAddress"));
-		o_GetProcAddressKernelBase = reinterpret_cast<PFN_GetProcAddress>(DetourFindFunction("kernelbase.dll", "GetProcAddress"));
+        o_GetProcAddressKernelBase = reinterpret_cast<PFN_GetProcAddress>(DetourFindFunction("kernelbase.dll", "GetProcAddress"));
 
         if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
         {
@@ -1930,8 +1961,8 @@ static void AttachHooks()
             if (o_GetProcAddress)
                 DetourAttach(&(PVOID&)o_GetProcAddress, hkGetProcAddress);
 
-			if (o_GetProcAddressKernelBase)
-				DetourAttach(&(PVOID&)o_GetProcAddressKernelBase, hkGetProcAddress);
+            if (o_GetProcAddressKernelBase)
+                DetourAttach(&(PVOID&)o_GetProcAddressKernelBase, hkGetProcAddress);
 
             DetourTransactionCommit();
         }
@@ -2355,7 +2386,7 @@ static void CheckWorkingMode()
             HMODULE vulkanModule = nullptr;
             vulkanModule = GetModuleHandle(L"vulkan-1.dll");
 
-            if(State::Instance().isRunningOnDXVK || State::Instance().isRunningOnLinux)
+            if (State::Instance().isRunningOnDXVK || State::Instance().isRunningOnLinux)
                 vulkanModule = LoadLibrary(L"vulkan-1.dll");
 
             if (vulkanModule != nullptr)
