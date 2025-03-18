@@ -1,6 +1,8 @@
 #include "XeSS_Vulkan.h"
 
 #include "NVNGX_Parameter.h"
+
+#include <proxies/XeSS_Proxy.h>
 #include "menu/menu_overlay_vk.h"
 
 #include <nvsdk_ngx_vk.h>
@@ -257,7 +259,11 @@ xess_result_t hk_xessVKExecute(xess_context_handle_t hContext, VkCommandBuffer c
     if (pExecParams->responsivePixelMaskTexture.image != nullptr)
     {
         CreateNVRes(&pExecParams->responsivePixelMaskTexture, &biasNVRes[index]);
-        params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &biasNVRes[index]);
+
+        if (!isVersionOrBetter({ XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch }, { 2, 0, 1 }))
+            params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &biasNVRes[index]);
+        else
+            params->Set("FSR.reactive", &biasNVRes[index]);
     }
 
     if (pExecParams->colorTexture.image == nullptr)

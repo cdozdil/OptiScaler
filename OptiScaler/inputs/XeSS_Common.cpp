@@ -2,6 +2,7 @@
 
 #include "XeSS_Base.h"
 
+#include <proxies/XeSS_Proxy.h>
 #include <nvsdk_ngx_vk.h>
 
 static std::optional<float> GetQualityOverrideRatio(const xess_quality_settings_t input)
@@ -72,10 +73,10 @@ xess_result_t hk_xessGetVersion(xess_version_t* pVersion)
 {
     LOG_DEBUG("");
 
-    pVersion->major = 2;
-    pVersion->minor = 0;
-    pVersion->patch = 0;
-    pVersion->reserved = 0;
+    pVersion->major = XeSSProxy::Version().major;
+    pVersion->minor = XeSSProxy::Version().minor;
+    pVersion->patch = XeSSProxy::Version().patch;
+    pVersion->reserved = XeSSProxy::Version().reserved;
 
     return XESS_RESULT_SUCCESS;
 }
