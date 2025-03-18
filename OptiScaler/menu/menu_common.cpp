@@ -551,23 +551,26 @@ void MenuCommon::AddDx11Backends(std::string* code, std::string* name)
         selectedUpscalerName = "FSR 3.X";
     else if (State::Instance().newBackend == "fsr31_12" || (State::Instance().newBackend == "" && *code == "fsr31_12"))
         selectedUpscalerName = "FSR 3.X w/Dx12";
-    //else if (State::Instance().newBackend == "fsr304" || (State::Instance().newBackend == "" && *code == "fsr304"))
-    //    selectedUpscalerName = "FSR 3.0.4";
     else if (Config::Instance()->DLSSEnabled.value_or_default() && (State::Instance().newBackend == "dlss" || (State::Instance().newBackend == "" && *code == "dlss")))
         selectedUpscalerName = "DLSS";
+    else if (State::Instance().newBackend == "xess" || (State::Instance().newBackend == "" && *code == "xess"))
+        selectedUpscalerName = "XeSS";
     else
         selectedUpscalerName = "XeSS w/Dx12";
 
     if (ImGui::BeginCombo("Select", selectedUpscalerName.c_str()))
     {
+        if (ImGui::Selectable("XeSS", *code == "xess"))
+            State::Instance().newBackend = "xess";
+
         if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
             State::Instance().newBackend = "fsr22";
 
         if (ImGui::Selectable("FSR 3.X", *code == "fsr31"))
             State::Instance().newBackend = "fsr31";
 
-        if (ImGui::Selectable("XeSS w/Dx12", *code == "xess"))
-            State::Instance().newBackend = "xess";
+        if (ImGui::Selectable("XeSS w/Dx12", *code == "xess_12"))
+            State::Instance().newBackend = "xess_12";
 
         if (ImGui::Selectable("FSR 2.1.2 w/Dx12", *code == "fsr21_12"))
             State::Instance().newBackend = "fsr21_12";
@@ -629,6 +632,8 @@ void MenuCommon::AddVulkanBackends(std::string* code, std::string* name)
         selectedUpscalerName = "FSR 2.1.2";
     else if (State::Instance().newBackend == "fsr31" || (State::Instance().newBackend == "" && *code == "fsr31"))
         selectedUpscalerName = "FSR 3.X";
+    else if (State::Instance().newBackend == "xess" || (State::Instance().newBackend == "" && *code == "xess"))
+        selectedUpscalerName = "XeSS";
     else if (Config::Instance()->DLSSEnabled.value_or_default() && (State::Instance().newBackend == "dlss" || (State::Instance().newBackend == "" && *code == "dlss")))
         selectedUpscalerName = "DLSS";
     else
@@ -636,6 +641,9 @@ void MenuCommon::AddVulkanBackends(std::string* code, std::string* name)
 
     if (ImGui::BeginCombo("Select", selectedUpscalerName.c_str()))
     {
+        if (ImGui::Selectable("XeSS", *code == "xess"))
+            State::Instance().newBackend = "xess";
+
         if (ImGui::Selectable("FSR 2.1.2", *code == "fsr21"))
             State::Instance().newBackend = "fsr21";
 

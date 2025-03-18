@@ -1,10 +1,12 @@
+#pragma once
 #include "XeSSFeature.h"
 
 #include <pch.h>
 #include <Config.h>
 #include <Util.h>
-#include <detours/detours.h>
-#include <d3dx/d3dx12.h>
+
+#include <include/detours/detours.h>
+#include <include/d3dx/d3dx12.h>
 
 
 inline void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
@@ -60,42 +62,44 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
     if (Config::Instance()->DepthInverted.value_or(DepthInverted))
     {
-        Config::Instance()->DepthInverted.set_volatile_value(true);
+        Config::Instance()->DepthInverted = true;
         xessParams.initFlags |= XESS_INIT_FLAG_INVERTED_DEPTH;
         LOG_DEBUG("xessParams.initFlags (DepthInverted) {0:b}", xessParams.initFlags);
     }
 
-    if (Config::Instance()->AutoExposure.value_or(AutoExposure || State::Instance().NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL) || State::Instance().AutoExposure.value_or(false))
+    if (Config::Instance()->AutoExposure.value_or(AutoExposure))
     {
+        Config::Instance()->AutoExposure = true;
         xessParams.initFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
         LOG_DEBUG("xessParams.initFlags (AutoExposure) {0:b}", xessParams.initFlags);
     }
     else
     {
+        Config::Instance()->AutoExposure = false;
         xessParams.initFlags |= XESS_INIT_FLAG_EXPOSURE_SCALE_TEXTURE;
         LOG_DEBUG("xessParams.initFlags (!AutoExposure) {0:b}", xessParams.initFlags);
     }
 
     if (!Config::Instance()->HDR.value_or(Hdr))
     {
-        Config::Instance()->HDR.set_volatile_value(false);
+        Config::Instance()->HDR = false;
         xessParams.initFlags |= XESS_INIT_FLAG_LDR_INPUT_COLOR;
         LOG_DEBUG("xessParams.initFlags (!HDR) {0:b}", xessParams.initFlags);
     }
     else
     {
-        Config::Instance()->HDR.set_volatile_value(true);
+        Config::Instance()->HDR = true;
         LOG_DEBUG("xessParams.initFlags (HDR) {0:b}", xessParams.initFlags);
     }
 
     if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
     {
-        Config::Instance()->JitterCancellation.set_volatile_value(true);
+        Config::Instance()->JitterCancellation = true;
         xessParams.initFlags |= XESS_INIT_FLAG_JITTERED_MV;
         LOG_DEBUG("xessParams.initFlags (JitterCancellation) {0:b}", xessParams.initFlags);
     }
 
-    if (Config::Instance()->DisplayResolution.value_or(!LowRes || State::Instance().DisplaySizeMV.value_or(false)))
+    if (Config::Instance()->DisplayResolution.value_or(!LowRes))
     {
         xessParams.initFlags |= XESS_INIT_FLAG_HIGH_RES_MV;
         LOG_DEBUG("xessParams.initFlags (!LowResMV) {0:b}", xessParams.initFlags);
@@ -107,7 +111,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
     if (!Config::Instance()->DisableReactiveMask.value_or(true))
     {
-        Config::Instance()->DisableReactiveMask.set_volatile_value(false);
+        Config::Instance()->DisableReactiveMask = false;
         xessParams.initFlags |= XESS_INIT_FLAG_RESPONSIVE_PIXEL_MASK;
         LOG_DEBUG("xessParams.initFlags (ReactiveMaskActive) {0:b}", xessParams.initFlags);
     }
@@ -115,7 +119,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     switch (PerfQualityValue())
     {
         case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-            if (isVersionOrBetter(Version(), { 1, 3, 0 }))
+            if (Version().major >= 1 && Version().minor >= 3)
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
             else
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
@@ -123,7 +127,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
             break;
 
         case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-            if (isVersionOrBetter(Version(), { 1, 3, 0 }))
+            if (Version().major >= 1 && Version().minor >= 3)
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
             else
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
@@ -131,7 +135,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
             break;
 
         case NVSDK_NGX_PerfQuality_Value_Balanced:
-            if (isVersionOrBetter(Version(), { 1, 3, 0 }))
+            if (Version().major >= 1 && Version().minor >= 3)
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
             else
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
@@ -139,7 +143,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
             break;
 
         case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-            if (isVersionOrBetter(Version(), { 1, 3, 0 }))
+            if (Version().major >= 1 && Version().minor >= 3)
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
             else
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
@@ -147,7 +151,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
             break;
 
         case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-            if (isVersionOrBetter(Version(), { 1, 3, 0 }))
+            if (Version().major >= 1 && Version().minor >= 3)
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY_PLUS;
             else
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
@@ -155,7 +159,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
             break;
 
         case NVSDK_NGX_PerfQuality_Value_DLAA:
-            if (isVersionOrBetter(Version(), { 1, 3, 0 }))
+            if (Version().major >= 1 && Version().minor >= 3)
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_AA;
             else
                 xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
@@ -167,19 +171,19 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
             break;
     }
 
-    if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false))
+    if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or(false))
     {
-        float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or_default();
+        float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
 
         if (ssMulti < 0.5f)
         {
             ssMulti = 0.5f;
-            Config::Instance()->OutputScalingMultiplier.set_volatile_value(ssMulti);
+            Config::Instance()->OutputScalingMultiplier = ssMulti;
         }
         else if (ssMulti > 3.0f)
         {
             ssMulti = 3.0f;
-            Config::Instance()->OutputScalingMultiplier.set_volatile_value(ssMulti);
+            Config::Instance()->OutputScalingMultiplier = ssMulti;
         }
 
         _targetWidth = DisplayWidth() * ssMulti;
@@ -191,16 +195,16 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         _targetHeight = DisplayHeight();
     }
 
-    if (Config::Instance()->ExtendedLimits.value_or_default() && RenderWidth() > DisplayWidth())
+    if (Config::Instance()->ExtendedLimits.value_or(false) && RenderWidth() > DisplayWidth())
     {
         _targetWidth = RenderWidth();
         _targetHeight = RenderHeight();
 
         // enable output scaling to restore image
-        if (!Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false))
+        if (!Config::Instance()->DisplayResolution.value_or(false))
         {
-            Config::Instance()->OutputScalingMultiplier.set_volatile_value(1.0f);
-            Config::Instance()->OutputScalingEnabled.set_volatile_value(true);
+            Config::Instance()->OutputScalingMultiplier = 1.0f;
+            Config::Instance()->OutputScalingEnabled = true;
         }
     }
 
@@ -208,7 +212,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     xessParams.outputResolution.y = TargetHeight();
 
     // create heaps to prevent create heap errors of xess
-    if (Config::Instance()->CreateHeaps.value_or(false))
+    if (Config::Instance()->CreateHeaps.value_or(true))
     {
         HRESULT hr;
         xess_properties_t xessProps{};
@@ -233,7 +237,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
                 if (SUCCEEDED(hr))
                 {
-                    Config::Instance()->CreateHeaps.set_volatile_value(true);
+                    Config::Instance()->CreateHeaps = true;
 
                     LOG_DEBUG("using _localBufferHeap & _localTextureHeap!");
 
@@ -261,7 +265,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     }
 
     // try to build pipelines with local pipeline object
-    if (Config::Instance()->BuildPipelines.value_or_default())
+    if (Config::Instance()->BuildPipelines.value_or(true))
     {
         LOG_DEBUG("xessD3D12BuildPipelines!");
         State::Instance().skipHeapCapture = true;
@@ -337,12 +341,14 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 XeSSFeature::XeSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
 {
-    _moduleLoaded = XeSSProxy::InitXeSS();
 }
 
 XeSSFeature::~XeSSFeature()
 {
-    if (_xessContext && !State::Instance().isShuttingDown)
+    if (State::Instance().isShuttingDown || _xessContext == nullptr)
+        return;
+
+    if (_xessContext)
     {
         XeSSProxy::DestroyContext()(_xessContext);
         _xessContext = nullptr;

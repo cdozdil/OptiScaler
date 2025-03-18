@@ -1,4 +1,5 @@
-#include "XeSSFeature_Dx11.h"
+#include "XeSSFeature_Vk.h"
+#include <nvsdk_ngx_vk.h>
 
 static std::string ResultToString(xess_result_t result)
 {
@@ -23,12 +24,26 @@ static std::string ResultToString(xess_result_t result)
     }
 }
 
+static xess_vk_image_view_info NV_to_XeSS(NVSDK_NGX_Resource_VK* nvResource)
+{
+    xess_vk_image_view_info xessResource{};
+
+    xessResource.format = nvResource->Resource.ImageViewInfo.Format;
+    xessResource.height = nvResource->Resource.ImageViewInfo.Height;
+    xessResource.image = nvResource->Resource.ImageViewInfo.Image;
+    xessResource.imageView = nvResource->Resource.ImageViewInfo.ImageView;
+    xessResource.subresourceRange = nvResource->Resource.ImageViewInfo.SubresourceRange;
+    xessResource.width = nvResource->Resource.ImageViewInfo.Width;
+
+    return xessResource;
+}
+
 static void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
 {
     spdlog::log((spdlog::level::level_enum)((int)Level + 1), "XeSSFeature::LogCallback XeSS Runtime ({0})", Message);
 }
 
-bool XeSSFeature_Dx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters)
+bool XeSSFeature_Vk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Parameter* InParameters)
 {
     LOG_FUNC();
 
@@ -41,21 +56,33 @@ bool XeSSFeature_Dx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
     if (IsInited())
         return true;
 
-    if (InDevice == nullptr)
+    if (InInstance == nullptr)
     {
-        LOG_ERROR("ID3D11Device is null!");
+        LOG_ERROR("VkInstance is null!");
         return false;
     }
 
-    if (InContext == nullptr)
+    if (InPD == nullptr)
     {
-        LOG_ERROR("ID3D11DeviceContext is null!");
+        LOG_ERROR("VkPhysicalDevice is null!");
+        return false;
+    }
+
+    if (InDevice == nullptr)
+    {
+        LOG_ERROR("VkDevice is null!");
+        return false;
+    }
+
+    if (InCmdList == nullptr)
+    {
+        LOG_ERROR("VkCommandBuffer is null!");
         return false;
     }
 
     State::Instance().skipSpoofing = true;
 
-    auto ret = XeSSProxy::D3D11CreateContext()(InDevice, &_xessContext);
+    auto ret = XeSSProxy::VKCreateContext()(InInstance, InPD, InDevice, &_xessContext);
 
     if (ret != XESS_RESULT_SUCCESS)
     {
@@ -63,13 +90,13 @@ bool XeSSFeature_Dx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
         return false;
     }
 
-    ret = XeSSProxy::D3D11IsOptimalDriver()(_xessContext);
+    ret = XeSSProxy::IsOptimalDriver()(_xessContext);
     LOG_DEBUG("xessIsOptimalDriver : {0}", ResultToString(ret));
 
-    ret = XeSSProxy::D3D11SetLoggingCallback()(_xessContext, XESS_LOGGING_LEVEL_DEBUG, XeSSLogCallback);
+    ret = XeSSProxy::SetLoggingCallback()(_xessContext, XESS_LOGGING_LEVEL_DEBUG, XeSSLogCallback);
     LOG_DEBUG("xessSetLoggingCallback : {0}", ResultToString(ret));
 
-    xess_d3d11_init_params_t xessParams{};
+    xess_vk_init_params_t xessParams{};
 
     xessParams.initFlags = XESS_INIT_FLAG_NONE;
 
@@ -231,8 +258,121 @@ bool XeSSFeature_Dx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
     xessParams.outputResolution.x = TargetWidth();
     xessParams.outputResolution.y = TargetHeight();
 
+    /*
+    // create heaps to prevent create heap errors of xess
+    if (Config::Instance()->CreateHeaps.value_or(true))
+    {
+        HRESULT hr;
+        xess_properties_t xessProps{};
+        ret = XeSSProxy::GetProperties()(_xessContext, &xessParams.outputResolution, &xessProps);
+
+        if (ret == XESS_RESULT_SUCCESS)
+        {
+            CD3DX12_HEAP_DESC bufferHeapDesc(xessProps.tempBufferHeapSize, D3D12_HEAP_TYPE_DEFAULT);
+            Config::Instance()->SkipHeapCapture = true;
+            hr = device->CreateHeap(&bufferHeapDesc, IID_PPV_ARGS(&_localBufferHeap));
+            Config::Instance()->SkipHeapCapture = false;
+
+            if (SUCCEEDED(hr))
+            {
+                D3D12_HEAP_DESC textureHeapDesc{ xessProps.tempTextureHeapSize,
+                    {D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_MEMORY_POOL_UNKNOWN, 0, 0},
+                    0, D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES };
+
+                Config::Instance()->SkipHeapCapture = true;
+                hr = device->CreateHeap(&textureHeapDesc, IID_PPV_ARGS(&_localTextureHeap));
+                Config::Instance()->SkipHeapCapture = false;
+
+                if (SUCCEEDED(hr))
+                {
+                    Config::Instance()->CreateHeaps = true;
+
+                    LOG_DEBUG("using _localBufferHeap & _localTextureHeap!");
+
+                    xessParams.bufferHeapOffset = 0;
+                    xessParams.textureHeapOffset = 0;
+                    xessParams.pTempBufferHeap = _localBufferHeap;
+                    xessParams.pTempTextureHeap = _localTextureHeap;
+                }
+                else
+                {
+                    _localBufferHeap->Release();
+                    LOG_ERROR("CreateHeap textureHeapDesc failed {0:x}!", (UINT)hr);
+                }
+            }
+            else
+            {
+                LOG_ERROR("CreateHeap bufferHeapDesc failed {0:x}!", (UINT)hr);
+            }
+
+        }
+        else
+        {
+            LOG_ERROR("xessGetProperties failed {0}!", ResultToString(ret));
+        }
+    }
+
+    // try to build pipelines with local pipeline object
+    if (Config::Instance()->BuildPipelines.value_or(true))
+    {
+        LOG_DEBUG("xessD3D12BuildPipelines!");
+        Config::Instance()->SkipHeapCapture = true;
+
+        ID3D12Device1* device1;
+        if (FAILED(device->QueryInterface(IID_PPV_ARGS(&device1))))
+        {
+            LOG_ERROR("QueryInterface device1 failed!");
+            ret = XeSSProxy::D3D12BuildPipelines()(_xessContext, NULL, false, xessParams.initFlags);
+        }
+        else
+        {
+            HRESULT hr = device1->CreatePipelineLibrary(nullptr, 0, IID_PPV_ARGS(&_localPipeline));
+
+            if (FAILED(hr) || !_localPipeline)
+            {
+                LOG_ERROR("CreatePipelineLibrary failed {0:x}!", (UINT)hr);
+                ret = XeSSProxy::D3D12BuildPipelines()(_xessContext, NULL, false, xessParams.initFlags);
+            }
+            else
+            {
+                ret = XeSSProxy::D3D12BuildPipelines()(_xessContext, _localPipeline, false, xessParams.initFlags);
+
+                if (ret != XESS_RESULT_SUCCESS)
+                {
+                    LOG_ERROR("xessD3D12BuildPipelines error with _localPipeline: {0}", ResultToString(ret));
+                    ret = XeSSProxy::D3D12BuildPipelines()(_xessContext, NULL, false, xessParams.initFlags);
+                }
+                else
+                {
+                    LOG_DEBUG("using _localPipelines!");
+                    xessParams.pPipelineLibrary = _localPipeline;
+                }
+            }
+        }
+
+        if (device1 != nullptr)
+            device1->Release();
+
+        Config::Instance()->SkipHeapCapture = false;
+
+        if (ret != XESS_RESULT_SUCCESS)
+        {
+            LOG_ERROR("xessD3D12BuildPipelines error: {0}", ResultToString(ret));
+            return false;
+        }
+    }
+
+    LOG_DEBUG("xessD3D12Init!");
+
+    if (Config::Instance()->NetworkModel.has_value() && Config::Instance()->NetworkModel.value() >= 0 && Config::Instance()->NetworkModel.value() <= 5)
+    {
+        ret = XeSSProxy::SelectNetworkModel()(_xessContext, (xess_network_model_t)Config::Instance()->NetworkModel.value());
+        LOG_ERROR("xessSelectNetworkModel result: {0}", ResultToString(ret));
+    }
+    */
+
     State::Instance().skipHeapCapture = true;
-    ret = XeSSProxy::D3D11Init()(_xessContext, &xessParams);
+    ret = XeSSProxy::VKInit()(_xessContext, &xessParams);
     State::Instance().skipHeapCapture = false;
 
     State::Instance().skipSpoofing = false;
@@ -243,19 +383,12 @@ bool XeSSFeature_Dx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
         return false;
     }
 
-    if (!Config::Instance()->OverlayMenu.value_or(true) && (Imgui == nullptr || Imgui.get() == nullptr))
-        Imgui = std::make_unique<Menu_Dx11>(GetForegroundWindow(), InDevice);
-
-    OutputScaler = std::make_unique<OS_Dx11>("Output Scaling", InDevice, (TargetWidth() < DisplayWidth()));
-    RCAS = std::make_unique<RCAS_Dx11>("RCAS", InDevice);
-
     SetInit(true);
 
     return true;
-    return true;
 }
 
-bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Parameter* InParameters)
+bool XeSSFeature_Vk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* InParameters)
 {
     LOG_FUNC();
 
@@ -263,39 +396,6 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     {
         LOG_ERROR("Not inited!");
         return false;
-    }
-
-    if (!RCAS->IsInit())
-        Config::Instance()->RcasEnabled = false;
-
-    ID3D11ShaderResourceView* restoreSRVs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = {};
-    ID3D11SamplerState* restoreSamplerStates[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] = {};
-    ID3D11Buffer* restoreCBVs[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] = {};
-    ID3D11UnorderedAccessView* restoreUAVs[D3D11_1_UAV_SLOT_COUNT] = {};
-
-    // backup compute shader resources
-    for (size_t i = 0; i < D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT; i++)
-    {
-        restoreSRVs[i] = nullptr;
-        DeviceContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
-    }
-
-    for (size_t i = 0; i < D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; i++)
-    {
-        restoreSamplerStates[i] = nullptr;
-        DeviceContext->CSGetSamplers(i, 1, &restoreSamplerStates[i]);
-    }
-
-    for (size_t i = 0; i < D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; i++)
-    {
-        restoreCBVs[i] = nullptr;
-        DeviceContext->CSGetConstantBuffers(i, 1, &restoreCBVs[i]);
-    }
-
-    for (size_t i = 0; i < D3D11_1_UAV_SLOT_COUNT; i++)
-    {
-        restoreUAVs[i] = nullptr;
-        DeviceContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
     }
 
     if (State::Instance().xessDebug)
@@ -311,13 +411,13 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         if (!Config::Instance()->DisableReactiveMask.value_or(true))
             dumpParams.dump_elements_mask |= XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
 
-        XeSSProxy::D3D11StartDump()(_xessContext, &dumpParams);
+        XeSSProxy::StartDump()(_xessContext, &dumpParams);
         State::Instance().xessDebug = false;
         dumpCount += State::Instance().xessDebugFrames;
     }
 
     xess_result_t xessResult;
-    xess_d3d11_execute_params_t params{};
+    xess_vk_execute_params_t params{};
 
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffsetX);
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffsetY);
@@ -337,14 +437,11 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
     LOG_DEBUG("Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
-    ID3D11Resource* paramColor = nullptr;
-    if (InParameters->Get(NVSDK_NGX_Parameter_Color, &paramColor) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_Color, (void**)&paramColor);
-
-    if (paramColor)
+    NVSDK_NGX_Resource_VK* paramColor = nullptr;
+    if (InParameters->Get(NVSDK_NGX_Parameter_Color, (void**)&paramColor) == NVSDK_NGX_Result_Success && paramColor != nullptr)
     {
         LOG_DEBUG("Color exist..");
-        params.pColorTexture = paramColor;
+        params.colorTexture = NV_to_XeSS(paramColor);
     }
     else
     {
@@ -352,32 +449,11 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         return false;
     }
 
-    ID3D11Resource* paramVelocity = nullptr;
-    if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
-
-    if (paramVelocity)
+    NVSDK_NGX_Resource_VK* paramVelocity = nullptr;
+    if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity) == NVSDK_NGX_Result_Success && paramVelocity != nullptr)
     {
         LOG_DEBUG("MotionVectors exist..");
-        params.pVelocityTexture = paramVelocity;
-
-        if (!Config::Instance()->DisplayResolution.has_value())
-        {
-            D3D11_TEXTURE2D_DESC desc;
-            ((ID3D11Texture2D*)paramVelocity)->GetDesc(&desc);
-            bool lowResMV = desc.Width < TargetWidth();
-            bool displaySizeEnabled = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
-
-            if (displaySizeEnabled && lowResMV)
-            {
-                LOG_WARN("MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
-                Config::Instance()->DisplayResolution = false;
-                State::Instance().changeBackend[_handle->Id] = true;
-                return true;
-            }
-
-            Config::Instance()->DisplayResolution = displaySizeEnabled;
-        }
+        params.velocityTexture = NV_to_XeSS(paramVelocity);
     }
     else
     {
@@ -385,31 +461,11 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         return false;
     }
 
-    ID3D11Resource* paramOutput = nullptr;
-    if (InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_Output, (void**)&paramOutput);
-
-    if (paramOutput)
+    NVSDK_NGX_Resource_VK* paramOutput = nullptr;
+    if (InParameters->Get(NVSDK_NGX_Parameter_Output, (void**)&paramOutput) == NVSDK_NGX_Result_Success && paramOutput != nullptr)
     {
         LOG_DEBUG("Output exist..");
-
-        if (useSS)
-        {
-            if (OutputScaler->CreateBufferResource(Device, paramOutput, TargetWidth(), TargetHeight()))
-                params.pOutputTexture = OutputScaler->Buffer();
-            else
-                params.pOutputTexture = paramOutput;
-        }
-        else
-            params.pOutputTexture = paramOutput;
-
-        if (Config::Instance()->RcasEnabled.value_or(false) &&
-            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
-            RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() && RCAS->CreateBufferResource(Device, (ID3D11Texture2D*)params.pOutputTexture))
-        {
-            params.pOutputTexture = RCAS->Buffer();
-        }
-        
+        params.outputTexture = NV_to_XeSS(paramOutput);
     }
     else
     {
@@ -417,14 +473,11 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         return false;
     }
 
-    ID3D11Resource* paramDepth = nullptr;
-    if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
-
-    if (paramDepth)
+    NVSDK_NGX_Resource_VK* paramDepth = nullptr;
+    if (InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth) == NVSDK_NGX_Result_Success && paramDepth != nullptr)
     {
         LOG_DEBUG("Depth exist..");
-        params.pDepthTexture = paramDepth;
+        params.depthTexture = NV_to_XeSS(paramDepth);
     }
     else
     {
@@ -437,14 +490,11 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
     if (!Config::Instance()->AutoExposure.value_or(false))
     {
-        ID3D11Resource* paramExp = nullptr;
-        if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExp) != NVSDK_NGX_Result_Success)
-            InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&paramExp);
-
-        if (paramExp)
+        NVSDK_NGX_Resource_VK* paramExp = nullptr;
+        if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&paramExp) == NVSDK_NGX_Result_Success && paramExp != nullptr)
         {
             LOG_DEBUG("ExposureTexture exist..");
-            params.pExposureScaleTexture = paramExp;
+            params.exposureScaleTexture = NV_to_XeSS(paramExp);
         }
         else
         {
@@ -455,21 +505,17 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         }
     }
     else
-    {
         LOG_DEBUG("AutoExposure enabled!");
-    }
+
 
     if (!Config::Instance()->DisableReactiveMask.value_or(true))
     {
-        ID3D11Resource* paramReactiveMask = nullptr;
-        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
-            InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
-
-        if (paramReactiveMask)
+        NVSDK_NGX_Resource_VK* paramReactiveMask = nullptr;
+        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask) == NVSDK_NGX_Result_Success && paramReactiveMask != nullptr)
         {
             LOG_DEBUG("Input Bias mask exist..");
             Config::Instance()->DisableReactiveMask = false;
-            params.pResponsivePixelMaskTexture = paramReactiveMask;
+            params.responsivePixelMaskTexture = NV_to_XeSS(paramReactiveMask);
         }
         else
         {
@@ -480,12 +526,12 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         }
     }
 
-    _hasColor = params.pColorTexture != nullptr;
-    _hasMV = params.pVelocityTexture != nullptr;
-    _hasOutput = params.pOutputTexture != nullptr;
-    _hasDepth = params.pDepthTexture != nullptr;
-    _hasExposure = params.pExposureScaleTexture != nullptr;
-    _accessToReactiveMask = params.pResponsivePixelMaskTexture != nullptr;
+    _hasColor = params.colorTexture.image != VK_NULL_HANDLE;
+    _hasMV = params.velocityTexture.image != VK_NULL_HANDLE;
+    _hasOutput = params.outputTexture.image != VK_NULL_HANDLE;
+    _hasDepth = params.depthTexture.image != VK_NULL_HANDLE;
+    _hasExposure = params.exposureScaleTexture.image != VK_NULL_HANDLE;
+    _accessToReactiveMask = params.responsivePixelMaskTexture.image != VK_NULL_HANDLE;
 
     float MVScaleX = 1.0f;
     float MVScaleY = 1.0f;
@@ -493,7 +539,7 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
         InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
     {
-        xessResult = XeSSProxy::D3D11SetVelocityScale()(_xessContext, MVScaleX, MVScaleY);
+        xessResult = XeSSProxy::SetVelocityScale()(_xessContext, MVScaleX, MVScaleY);
 
         if (xessResult != XESS_RESULT_SUCCESS)
         {
@@ -505,103 +551,12 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         LOG_WARN("Can't get motion vector scales!");
 
     LOG_DEBUG("Executing!!");
-    xessResult = XeSSProxy::D3D11Execute()(_xessContext, &params);
+    xessResult = XeSSProxy::VKExecute()(_xessContext, InCmdBuffer, &params);
 
     if (xessResult != XESS_RESULT_SUCCESS)
     {
-        LOG_ERROR("D3D11Execute error: {0}", ResultToString(xessResult));
+        LOG_ERROR("xessVKExecute error: {0}", ResultToString(xessResult));
         return false;
-    }
-
-    // apply rcas
-    if (Config::Instance()->RcasEnabled.value_or(false) &&
-        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
-        RCAS != nullptr && RCAS.get() != nullptr && RCAS->CanRender())
-    {
-        RcasConstants rcasConstants{};
-
-        rcasConstants.Sharpness = _sharpness;
-        rcasConstants.DisplayWidth = TargetWidth();
-        rcasConstants.DisplayHeight = TargetHeight();
-        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
-        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
-        rcasConstants.DisplaySizeMV = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
-        rcasConstants.RenderHeight = RenderHeight();
-        rcasConstants.RenderWidth = RenderWidth();
-
-        if (useSS)
-        {
-            if (!RCAS->Dispatch(Device, DeviceContext, (ID3D11Texture2D*)params.pOutputTexture, (ID3D11Texture2D*)params.pVelocityTexture,
-                rcasConstants, OutputScaler->Buffer()))
-            {
-                Config::Instance()->RcasEnabled = false;
-                return true;
-            }
-        }
-        else
-        {
-            if (!RCAS->Dispatch(Device, DeviceContext, (ID3D11Texture2D*)params.pOutputTexture, (ID3D11Texture2D*)params.pVelocityTexture,
-                rcasConstants, (ID3D11Texture2D*)paramOutput))
-            {
-                Config::Instance()->RcasEnabled = false;
-                return true;
-            }
-        }
-    }
-
-    if (useSS)
-    {
-        LOG_DEBUG("scaling output...");
-        if (!OutputScaler->Dispatch(Device, DeviceContext, OutputScaler->Buffer(), (ID3D11Texture2D*)paramOutput))
-        {
-            Config::Instance()->OutputScalingEnabled = false;
-            State::Instance().changeBackend[_handle->Id] = true;
-            return true;
-        }
-    }
-
-    // imgui
-    if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30)
-    {
-        if (Imgui != nullptr && Imgui.get() != nullptr)
-        {
-            if (Imgui->IsHandleDifferent())
-            {
-                Imgui.reset();
-            }
-            else
-                Imgui->Render(DeviceContext, paramOutput);
-        }
-        else
-        {
-            if (Imgui == nullptr || Imgui.get() == nullptr)
-                Imgui = std::make_unique<Menu_Dx11>(GetForegroundWindow(), Device);
-        }
-    }
-
-    // restore compute shader resources
-    for (size_t i = 0; i < D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT; i++)
-    {
-        if (restoreSRVs[i] != nullptr)
-            DeviceContext->CSSetShaderResources(i, 1, &restoreSRVs[i]);
-    }
-
-    for (size_t i = 0; i < D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; i++)
-    {
-        if (restoreSamplerStates[i] != nullptr)
-            DeviceContext->CSSetSamplers(i, 1, &restoreSamplerStates[i]);
-    }
-
-    for (size_t i = 0; i < D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; i++)
-    {
-        if (restoreCBVs[i] != nullptr)
-            DeviceContext->CSSetConstantBuffers(i, 1, &restoreCBVs[i]);
-    }
-
-    for (size_t i = 0; i < D3D11_1_UAV_SLOT_COUNT; i++)
-    {
-        if (restoreUAVs[i] != nullptr)
-            DeviceContext->CSSetUnorderedAccessViews(i, 1, &restoreUAVs[i], 0);
     }
 
     _frameCount++;
@@ -609,19 +564,13 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     return true;
 }
 
-XeSSFeature_Dx11::XeSSFeature_Dx11(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters), IFeature_Dx11(handleId, InParameters)
+XeSSFeature_Vk::XeSSFeature_Vk(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters), IFeature_Vk(handleId, InParameters)
 {
-    _moduleLoaded = XeSSProxy::InitXeSSDx11() && XeSSProxy::D3D11CreateContext() != nullptr;
+    _moduleLoaded = XeSSProxy::InitXeSS() && XeSSProxy::VKCreateContext() != nullptr;
 }
 
-XeSSFeature_Dx11::~XeSSFeature_Dx11()
+XeSSFeature_Vk::~XeSSFeature_Vk()
 {
     if (State::Instance().isShuttingDown)
         return;
-
-    if (_xessContext)
-    {
-        XeSSProxy::D3D11DestroyContext()(_xessContext);
-        _xessContext = nullptr;
-    }
 }

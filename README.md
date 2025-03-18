@@ -71,7 +71,7 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 - FSR3 3.1.2 (unofficial port to native DX11)
 - XeSS 1.x.x, FSR2 2.1.2, 2.2.1, FSR3 3.1 & FSR2 2.3.2 (via background DX12 processing)$`^1`$
 - DLSS (native DX11)
-- XeSS 2.x (_soon™, but Intel ARC only_)
+- XeSS 2.x (_Intel ARC only_)
 
 > [!NOTE]
 > <details>
@@ -84,7 +84,7 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 - FSR2 2.1.2 (Default), 2.2.1
 - FSR3 3.1 (and FSR2 2.3.2)
 - DLSS
-- XeSS 2.x (_soon™_)
+- XeSS 2.x
 
 #### OptiFG (powered by FSR3 FG) + HUDfix (experimental HUD ghosting fix) 
 **OptiFG** was added with **v0.7** and is **only supported in DX12**. It's **enabled by default** with the `FGType=auto` setting in Optiscaler.ini.  
