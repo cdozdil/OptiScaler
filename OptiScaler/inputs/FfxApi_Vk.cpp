@@ -371,15 +371,15 @@ ffxReturnCode_t ffxDestroyContext_Vk(ffxContext* context, const ffxAllocationCal
 
     LOG_DEBUG("context: {:X}", (size_t)*context);
 
-    auto cdResult = FfxApiProxy::VULKAN_DestroyContext()(context, memCb);
-    LOG_INFO("result: {:X}", (UINT)cdResult);
-
     if (_contexts.contains(*context))
         NVSDK_NGX_VULKAN_ReleaseFeature(_contexts[*context]);
 
     _contexts.erase(*context);
     _nvParams.erase(*context);
     _initParams.erase(*context);
+
+    auto cdResult = FfxApiProxy::VULKAN_DestroyContext()(context, memCb);
+    LOG_INFO("result: {:X}", (UINT)cdResult);
 
     return FFX_API_RETURN_OK;
 }

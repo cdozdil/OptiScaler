@@ -232,15 +232,15 @@ ffxReturnCode_t ffxDestroyContext_Dx12(ffxContext* context, const ffxAllocationC
 
     LOG_DEBUG("context: {:X}", (size_t)*context);
 
-    auto cdResult = FfxApiProxy::D3D12_DestroyContext()(context, memCb);
-    LOG_INFO("result: {:X}", (UINT)cdResult);
-
     if (_contexts.contains(*context))
         NVSDK_NGX_D3D12_ReleaseFeature(_contexts[*context]);
 
     _contexts.erase(*context);
     _nvParams.erase(*context);
     _initParams.erase(*context);
+
+    auto cdResult = FfxApiProxy::D3D12_DestroyContext()(context, memCb);
+    LOG_INFO("result: {:X}", (UINT)cdResult);
 
     return FFX_API_RETURN_OK;
 }

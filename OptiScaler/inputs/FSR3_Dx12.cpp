@@ -321,21 +321,18 @@ static Fsr3::FfxErrorCode ffxFsr3ContextDestroy_Dx12(Fsr3::FfxFsr3UpscalerContex
 
     LOG_DEBUG("context: {:X}", (size_t)pContext);
 
-    _skipDestroy = true;
-    auto cdResult = o_ffxFsr3UpscalerContextDestroy_Dx12(pContext);
-    _skipDestroy = false;
-
-    LOG_INFO("result: {:X}", (UINT)cdResult);
-
-    if (!_initParams.contains(pContext))
-        return cdResult;
-
     if (_contexts.contains(pContext))
         NVSDK_NGX_D3D12_ReleaseFeature(_contexts[pContext]);
 
     _contexts.erase(pContext);
     _nvParams.erase(pContext);
     _initParams.erase(pContext);
+
+    _skipDestroy = true;
+    auto cdResult = o_ffxFsr3UpscalerContextDestroy_Dx12(pContext);
+    _skipDestroy = false;
+
+    LOG_INFO("result: {:X}", (UINT)cdResult);
 
     return Fsr3::FFX_OK;
 }
@@ -485,22 +482,15 @@ static Fsr3::FfxErrorCode ffxFsr3ContextDestroy_Pattern_Dx12(Fsr3::FfxFsr3Upscal
 
     LOG_DEBUG("context: {:X}", (size_t)pContext);
 
-    auto cdResult = o_ffxFsr3UpscalerContextDestroy_Dx12(pContext);
-
-    if (_skipDestroy)
-        return cdResult;
-
-    LOG_INFO("result: {:X}", (UINT)cdResult);
-
-    if (!_initParams.contains(pContext))
-        return cdResult;
-
     if (_contexts.contains(pContext))
         NVSDK_NGX_D3D12_ReleaseFeature(_contexts[pContext]);
 
     _contexts.erase(pContext);
     _nvParams.erase(pContext);
     _initParams.erase(pContext);
+
+    auto cdResult = o_ffxFsr3UpscalerContextDestroy_Dx12(pContext);
+    LOG_INFO("result: {:X}", (UINT)cdResult);
 
     return Fsr3::FFX_OK;
 }

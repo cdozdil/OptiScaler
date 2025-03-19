@@ -802,21 +802,18 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDestroy_Dx12(Fsr212::FfxFsr2Context* c
     if (context == nullptr)
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
-    _skipDestroy = true;
-    auto cdResult = o_ffxFsr2ContextDestroy_Dx12(context);
-    _skipDestroy = false;
-
-    LOG_INFO("result: {:X}", (UINT)cdResult);
-
-    if (!_initParams.contains(context) || _d3d12Device == nullptr)
-        return cdResult;
-
     if (_contexts.contains(context))
         NVSDK_NGX_D3D12_ReleaseFeature(_contexts[context]);
 
     _contexts.erase(context);
     _nvParams.erase(context);
     _initParams.erase(context);
+
+    _skipDestroy = true;
+    auto cdResult = o_ffxFsr2ContextDestroy_Dx12(context);
+    _skipDestroy = false;
+
+    LOG_INFO("result: {:X}", (UINT)cdResult);
 
     return Fsr212::FFX_OK;
 }
@@ -826,18 +823,15 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDestroy_Pattern_Dx12(Fsr212::FfxFsr2Co
     if (context == nullptr)
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
-    auto cdResult = o_ffxFsr2ContextDestroy_Pattern_Dx12(context);
-    LOG_INFO("result: {:X}", (UINT)cdResult);
-
-    if (!_initParams.contains(context) || _d3d12Device == nullptr || _skipDestroy)
-        return cdResult;
-
     if (_contexts.contains(context))
         NVSDK_NGX_D3D12_ReleaseFeature(_contexts[context]);
 
     _contexts.erase(context);
     _nvParams.erase(context);
     _initParams.erase(context);
+
+    auto cdResult = o_ffxFsr2ContextDestroy_Pattern_Dx12(context);
+    LOG_INFO("result: {:X}", (UINT)cdResult);
 
     return Fsr212::FFX_OK;
 }
