@@ -35,8 +35,8 @@ inline static PFN_EnumAdapters1 ptrEnumAdapters1 = nullptr;
 inline static PFN_EnumAdapterByLuid ptrEnumAdapterByLuid = nullptr;
 inline static PFN_EnumAdapterByGpuPreference ptrEnumAdapterByGpuPreference = nullptr;
 
-inline bool skipGetModuleHandle = false;
-inline bool skipHighPerfCheck = false;
+inline static bool skipGetModuleHandle = false;
+inline static bool skipHighPerfCheck = false;
 
 void AttachToAdapter(IUnknown* unkAdapter);
 void AttachToFactory(IUnknown* unkFactory);
@@ -1853,15 +1853,18 @@ bool SkipSpoofing()
     if (!skip && Config::Instance()->DxgiBlacklist.has_value() && process != nullptr)
     {
         skip = true;
-
-        /*
-        * File based spoofing
+        
+#ifdef XELL_TEST
+        //File based spoofing
         SymInitialize(process, NULL, TRUE);
 
         // Capture stack trace
         const int maxFrames = 64;
         void* stack[maxFrames];
         USHORT frames = CaptureStackBackTrace(0, maxFrames, stack, NULL);
+        
+        size_t pos_streamline = std::string::npos;
+        size_t pos_intel = std::string::npos;
 
         for (USHORT i = 0; i < frames; ++i)
         {
@@ -1874,28 +1877,24 @@ bool SkipSpoofing()
                 if (GetModuleFileNameA((HINSTANCE)moduleBase, moduleName, MAX_PATH))
                 {
                     std::string module(moduleName);
-                    LOG_TRACE("ModuleName: {}", module);
 
-                    auto pos = module.rfind("\\sl.");
-
-                    if (pos != std::string::npos)
-                    {
-                        LOG_INFO("spoofing for: {0}", module);
-                        skip = false;
-                        break;
-                    }
+                    if(pos_streamline == std::string::npos)
+                        pos_streamline = module.rfind("\\sl.");
+                    
+                    if(pos_intel == std::string::npos)
+                        pos_intel = module.rfind("\\libxe");
                 }
             }
         }
 
         SymCleanup(process);
-        */
 
+        skip = pos_intel != std::string::npos; //&& pos_streamline == std::string::npos;
+#else
         // Walk the call stack to find the DLL that is calling the hooked function
         void* callers[100];
 
         unsigned short frames = CaptureStackBackTrace(0, 100, callers, NULL);
-        //HANDLE process = GetCurrentProcess();
 
         if (SymInitialize(process, NULL, TRUE))
         {
@@ -1929,6 +1928,7 @@ bool SkipSpoofing()
 
             SymCleanup(process);
         }
+#endif
 
         if (skip)
             LOG_DEBUG("skipping spoofing, blacklisting active");
@@ -2257,7 +2257,7 @@ HRESULT _CreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 
         return result;
     }
-    else 
+    else
     {
         LOG_ERROR("CreateDxgiFactory is NULL");
         State::Instance().skipDxgiLoadChecks = false;
@@ -2277,7 +2277,7 @@ HRESULT _CreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 
         return result;
     }
-    else 
+    else
     {
         LOG_ERROR("CreateDxgiFactory1 is NULL");
         State::Instance().skipDxgiLoadChecks = false;
