@@ -7,6 +7,8 @@
 #include <dxgi1_6.h>
 #include <DbgHelp.h>
 
+#define FILE_BASED_SPOOFING_CHECK
+
 #pragma region DXGI definitions
 
 typedef HRESULT(*PFN_CREATE_DXGI_FACTORY)(REFIID riid, IDXGIFactory** ppFactory);
@@ -1850,11 +1852,11 @@ bool SkipSpoofing()
 
     HANDLE process = GetCurrentProcess();
 
-    if (!skip && Config::Instance()->DxgiBlacklist.has_value() && process != nullptr)
+#ifdef FILE_BASED_SPOOFING_CHECK
+    if (!skip /*&& Config::Instance()->DxgiBlacklist.has_value()*/ && process != nullptr)
     {
         skip = true;
-        
-#ifdef XELL_TEST
+
         //File based spoofing
         SymInitialize(process, NULL, TRUE);
 
@@ -1865,6 +1867,8 @@ bool SkipSpoofing()
         
         size_t pos_streamline = std::string::npos;
         size_t pos_intel = std::string::npos;
+        size_t pos_ffx = std::string::npos;
+        size_t pos_fsr = std::string::npos;
 
         for (USHORT i = 0; i < frames; ++i)
         {
@@ -1883,14 +1887,26 @@ bool SkipSpoofing()
                     
                     if(pos_intel == std::string::npos)
                         pos_intel = module.rfind("\\libxe");
+
+                    if(pos_ffx == std::string::npos)
+                        pos_ffx = module.rfind("\\amd_fidelityfx");
+
+                    if(pos_fsr == std::string::npos)
+                        pos_fsr = module.rfind("\\ffx_fsr");
                 }
             }
         }
 
         SymCleanup(process);
 
-        skip = pos_intel != std::string::npos; //&& pos_streamline == std::string::npos;
+        //&& pos_streamline == std::string::npos;
+        skip = pos_intel != std::string::npos && pos_ffx != std::string::npos && pos_fsr != std::string::npos;
+        
 #else
+    if (!skip && Config::Instance()->DxgiBlacklist.has_value() && process != nullptr)
+    {
+        skip = true;
+
         // Walk the call stack to find the DLL that is calling the hooked function
         void* callers[100];
 
