@@ -104,7 +104,7 @@ A more detailed guide will be available in the [Wiki](https://github.com/cdozdil
 ---
 
 ### [Automated]
-**1.** Extract **all** of the Optiscaler files **by the main game exe** _(for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Game-or-Project-name\Binaries\Win64\`, **ignore** the `Engine` folder)_  
+**1.** Extract **all** of the Optiscaler files **by the main game exe** _(for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Game-or-Project-name\Binaries\Win64 or WinGDK\`, **ignore** the `Engine` folder)_  
 **2.** Try the `OptiScaler Setup.bat` script for automating the renaming process.  
 _**3.** If the Bat file wasn't successful, please check the **Manual** steps._
 
@@ -114,7 +114,7 @@ _**3.** If the Bat file wasn't successful, please check the **Manual** steps._
 #### Nvidia
 
 **`Step-by-step installation:`**  
-**1.** Extract **all** Optiscaler files from the zip **by the main game exe** _(for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Game-or-Project-name\Binaries\Win64\`, **ignore** the `Engine` folder)_.  
+**1.** Extract **all** Optiscaler files from the zip **by the main game exe** _(for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Game-or-Project-name\Binaries\Win64 or WinGDK\`, **ignore** the `Engine` folder)_.  
 **2.** Rename OptiScaler's `OptiScaler.dll` (for old versions, it's `nvngx.dll`) to one of the [supported filenames](#optiscaler-supports-these-filenames) (preferred `dxgi.dll`, but depends on the game)$`^1`$  
 
 > [!NOTE]
@@ -123,7 +123,7 @@ _**3.** If the Bat file wasn't successful, please check the **Manual** steps._
 #### AMD/Intel
 
 **`Step-by-step installation:`**  
-**1.** Extract **all** Optiscaler files from the zip **by the main game exe** _(for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Game-or-Project-name\Binaries\Win64\`, **ignore** the `Engine` folder)_  
+**1.** Extract **all** Optiscaler files from the zip **by the main game exe** _(for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Game-or-Project-name\Binaries\Win64 or WinGDK\`, **ignore** the `Engine` folder)_  
 **2.** Rename OptiScaler's `OptiScaler.dll` (for old versions, it's `nvngx.dll`) to one of the [supported filenames](#optiscaler-supports-these-filenames) (preferred `dxgi.dll`, but depends on the game)$`^1`$  
 **3a.** **Either** locate the `nvngx_dlss.dll` file (for UE games, generally in one of the subfolders under `Engine/Plugins`), create a copy, rename the copy to `nvngx.dll` and put it beside Optiscaler    
 **3b.** **OR** download `nvngx_dlss.dll` from e.g. [TechPowerUp](https://www.techpowerup.com/download/nvidia-dlss-dll/) or [Streamline SDK repo](https://github.com/NVIDIAGameWorks/Streamline/tree/main/bin/x64) if you don't want to search, rename it to `nvngx.dll` and put it beside Optiscaler   
@@ -170,15 +170,16 @@ _**Anti-Lag 2** only supports RDNA cards and is Windows only atm (shortcut for c
 > * OptiScaler.asi (with an ASI loader)
 
 > [!NOTE]
-> ### _Example of correct installation (with additional Fakenvapi and Nukem mod)_
+> ### _Example of correct AMD/Intel installation (with additional Fakenvapi and Nukem mod)_
 > ![Installation](https://github.com/user-attachments/assets/977a2a68-d117-42ea-a928-78ec43eedd28)
 
 ---
 
 > [!NOTE]
-> If there is another mod (e.g. Reshade etc.) that uses the same filename (e.g. `dxgi.dll`), you can create a new folder called `plugins` and put other mod files in this folder. OptiScaler will check this folder and if it finds the same dll file (for example `dxgi.dll`), it will load this file instead of the original library.
-
-![image](https://github.com/cdozdil/OptiScaler/assets/35529761/c4bf2a85-107b-49ac-b002-59d00fd06982)
+> If there is another mod (e.g. **Reshade** etc.) that uses the same filename (e.g. `dxgi.dll`), you can create a new folder called `plugins` and put other mod files in this folder. OptiScaler will check this folder and if it finds the same dll file (for example `dxgi.dll`), it will load this file instead of the original library.  
+> Another option for **Reshade** - rename Reshade dll to `ReShade64.dll`, put it next to Optiscaler and set `LoadReshade=true` in OptiScaler.ini  
+>
+>![image](https://github.com/cdozdil/OptiScaler/assets/35529761/c4bf2a85-107b-49ac-b002-59d00fd06982)
 
 
 ### Legacy installation (deprecated, no FG and limited features, `nvngx.dll`)
@@ -187,7 +188,7 @@ _**Anti-Lag 2** only supports RDNA cards and is Windows only atm (shortcut for c
 
 `Step-by-step installation:`
 1. Download the latest relase from [releases](https://github.com/cdozdil/OptiScaler/releases).
-2. Extract the contents of the archive next to the game executable file in your games folder. (e.g. for Unreal Engine games, it's `<path-to-game>\Game-or-Project-name\Binaries\Win64\`)$`^1`$
+2. Extract the contents of the archive next to the game executable file in your games folder. (e.g. for Unreal Engine games, it's `<path-to-game>\Game-or-Project-name\Binaries\Win64 or WinGDK\`)$`^1`$
 3. Rename `OptiScaler.dll` to `nvngx.dll` (For older builds, file name is already `nvngx.dll`, so skip this step)
 4. Run `EnableSignatureOverride.reg` from `DlssOverrides` folder and confirm merge.$`^2`$$`^3`$
 
