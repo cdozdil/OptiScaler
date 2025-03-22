@@ -64,11 +64,16 @@ static PFN_LoadLibraryW o_LoadLibraryW = nullptr;
 static PFN_LoadLibraryExA o_LoadLibraryExA = nullptr;
 static PFN_LoadLibraryExW o_LoadLibraryExW = nullptr;
 static PFN_GetProcAddress o_GetProcAddress = nullptr;
-static PFN_GetProcAddress o_GetProcAddressKernelBase = nullptr;
 static PFN_GetModuleHandleA o_GetModuleHandleA = nullptr;
 static PFN_GetModuleHandleW o_GetModuleHandleW = nullptr;
 static PFN_GetModuleHandleExA o_GetModuleHandleExA = nullptr;
 static PFN_GetModuleHandleExW o_GetModuleHandleExW = nullptr;
+
+static PFN_LoadLibraryW o_KernelBase_LoadLibraryW = nullptr;
+static PFN_LoadLibraryA o_KernelBase_LoadLibraryA = nullptr;
+static PFN_LoadLibraryExA o_KernelBase_LoadLibraryExA = nullptr;
+static PFN_LoadLibraryExW o_KernelBase_LoadLibraryExW = nullptr;
+static PFN_GetProcAddress o_KernelBase_GetProcAddress = nullptr;
 
 static PFN_vkCreateDevice o_vkCreateDevice = nullptr;
 static PFN_vkCreateInstance o_vkCreateInstance = nullptr;
@@ -119,6 +124,7 @@ DEFINE_NAME_VECTORS(ffxDx12, "amd_fidelityfx_dx12");
 DEFINE_NAME_VECTORS(ffxVk, "amd_fidelityfx_vk");
 
 static int loadCount = 0;
+static bool skipLoadChecks = false;
 static bool dontCount = false;
 static bool isNvngxMode = false;
 static bool isWorkingWithEnabler = false;
@@ -193,7 +199,10 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
         auto realDll = lcaseLibName.replace(lcaseLibName.size() - from.size(), from.size(), to);
         LOG_INFO("Internal dll load call: {}", realDll);
-        return o_LoadLibraryA(realDll.c_str());
+        skipLoadChecks = true;
+        auto result = o_LoadLibraryA(realDll.c_str());
+        skipLoadChecks = false;
+        return result;
     }
 
     if (!isNvngxMode && (!State::Instance().isDxgiMode || !State::Instance().skipDxgiLoadChecks) && CheckDllName(&lcaseLibName, &dllNames))
@@ -210,7 +219,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
         {
             LOG_INFO("{0} call!", lcaseLibName);
 
+            skipLoadChecks = true;
             auto nvapi = LoadNvApi();
+            skipLoadChecks = false;
 
             // Nvapihooks intentionally won't load nvapi so have to make sure it's loaded
             if (nvapi != nullptr) {
@@ -224,7 +235,11 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
             // Try to load nvapi only from system32, like the original call would
             if (nvapi == nullptr)
+            {
+                skipLoadChecks = true;
                 nvapi = o_LoadLibraryExA(lcaseLibName.c_str(), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+                skipLoadChecks = false;
+            }
 
             if (nvapi != nullptr)
                 NvApiHooks::Hook(nvapi);
@@ -236,7 +251,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
     // sl.interposer.dll
     if (Config::Instance()->FGType.value_or_default() == FGType::Nukems && CheckDllName(&lcaseLibName, &streamlineNames))
     {
+        skipLoadChecks = true;
         auto streamlineModule = o_LoadLibraryA(lpLibFullPath);
+        skipLoadChecks = false;
 
         if (streamlineModule != nullptr)
             hookStreamline(streamlineModule);
@@ -249,11 +266,13 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
     // nvngx_dlss
     if (Config::Instance()->DLSSEnabled.value_or_default() && Config::Instance()->NVNGX_DLSS_Library.has_value() && CheckDllName(&lcaseLibName, &nvngxDlssNames))
     {
+        skipLoadChecks = true;
         auto nvngxDlss = LoadNvngxDlss(string_to_wstring(lcaseLibName));
+        skipLoadChecks = false;
 
         if (nvngxDlss == nullptr)
             LOG_ERROR("Trying to load dll: {}", lcaseLibName);
-        
+
         return nvngxDlss;
     }
 
@@ -261,7 +280,10 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
     // Try to catch something like this: c:\programdata/nvidia/ngx/models//dlss/versions/20316673/files/160_e658700.bin
     if (lcaseLibName.ends_with(".bin"))
     {
+        skipLoadChecks = true;
         auto loadedBin = o_LoadLibraryA(lpLibFullPath);
+        skipLoadChecks = false;
+
         if (loadedBin && lcaseLibName.contains("/versions/"))
         {
             if (lcaseLibName.contains("/dlss/")) {
@@ -287,7 +309,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
     // Hooks
     if (CheckDllName(&lcaseLibName, &dx11Names) && Config::Instance()->OverlayMenu.value_or_default())
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
+        skipLoadChecks = false;
 
         if (module != nullptr)
             HooksDx::HookDx11(module);
@@ -299,7 +323,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
     if (CheckDllName(&lcaseLibName, &dx12Names) && Config::Instance()->OverlayMenu.value_or_default())
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
+        skipLoadChecks = false;
 
         if (module != nullptr)
             HooksDx::HookDx12(module);
@@ -311,7 +337,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
     if (CheckDllName(&lcaseLibName, &vkNames))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
+        skipLoadChecks = false;
 
         if (module != nullptr)
         {
@@ -335,7 +363,9 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
     if (!State::Instance().skipDxgiLoadChecks && CheckDllName(&lcaseLibName, &dxgiNames))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
+        skipLoadChecks = false;
 
         if (module != nullptr)
         {
@@ -355,7 +385,10 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
     if (CheckDllName(&lcaseLibName, &fsr2Names))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
+        skipLoadChecks = false;
+
         if (module != nullptr)
             HookFSR2Inputs(module);
         else
@@ -366,7 +399,10 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
     if (CheckDllName(&lcaseLibName, &fsr2BENames))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
+        skipLoadChecks = false;
+
         if (module != nullptr)
             HookFSR2Dx12Inputs(module);
         else
@@ -377,7 +413,10 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
     if (CheckDllName(&lcaseLibName, &fsr3Names))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
+        skipLoadChecks = false;
+
         if (module != nullptr)
             HookFSR3Inputs(module);
 
@@ -386,7 +425,10 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
     if (CheckDllName(&lcaseLibName, &fsr3BENames))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
+        skipLoadChecks = false;
+
         if (module != nullptr)
             HookFSR3Dx12Inputs(module);
         else
@@ -397,7 +439,10 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
     if (CheckDllName(&lcaseLibName, &xessNames))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
+        skipLoadChecks = false;
+
         if (module != nullptr)
             XeSSProxy::HookXeSS(module);
         else
@@ -408,7 +453,10 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
     if (CheckDllName(&lcaseLibName, &ffxDx12Names))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
+        skipLoadChecks = false;
+
         if (module != nullptr)
             FfxApiProxy::InitFfxDx12(module);
         else
@@ -419,7 +467,10 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
 
     if (CheckDllName(&lcaseLibName, &ffxVkNames))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryA(lcaseLibName.c_str());
+        skipLoadChecks = false;
+
         if (module != nullptr)
             FfxApiProxy::InitFfxVk(module);
         else
@@ -466,7 +517,11 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
         auto realDll = lcaseLibName.replace(lcaseLibName.size() - from.size(), from.size(), to);
         LOG_INFO("Internal dll load call: {}", wstring_to_string(realDll));
-        return o_LoadLibraryW(realDll.c_str());
+        
+        skipLoadChecks = true;
+        auto result = o_LoadLibraryW(realDll.c_str());
+        skipLoadChecks = false;
+        return result;
     }
 
     if (!isNvngxMode && (!State::Instance().isDxgiMode || !State::Instance().skipDxgiLoadChecks) && CheckDllNameW(&lcaseLibName, &dllNamesW))
@@ -482,7 +537,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
     // nvngx_dlss
     if (Config::Instance()->DLSSEnabled.value_or_default() && Config::Instance()->NVNGX_DLSS_Library.has_value() && CheckDllNameW(&lcaseLibName, &nvngxDlssNamesW))
     {
+        skipLoadChecks = true;
         auto nvngxDlss = LoadNvngxDlss(lcaseLibName);
+        skipLoadChecks = false;
 
         if (nvngxDlss != nullptr)
             return nvngxDlss;
@@ -494,7 +551,10 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
     // Try to catch something like this: c:\programdata/nvidia/ngx/models//dlss/versions/20316673/files/160_e658700.bin
     if (lcaseLibName.ends_with(L".bin"))
     {
+        skipLoadChecks = true;
         auto loadedBin = o_LoadLibraryW(lpLibFullPath);
+        skipLoadChecks = false;
+
         if (loadedBin && lcaseLibName.contains(L"/versions/"))
         {
             if (lcaseLibName.contains(L"/dlss/")) {
@@ -514,7 +574,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
         {
             LOG_INFO("{0} call!", lcaseLibNameA);
 
+            skipLoadChecks = true;
             auto nvapi = LoadNvApi();
+            skipLoadChecks = false;
 
             // Nvapihooks intentionally won't load nvapi so have to make sure it's loaded
             if (nvapi != nullptr) {
@@ -528,7 +590,11 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
             // Try to load nvapi only from system32, like the original call would
             if (nvapi == nullptr)
+            {
+                skipLoadChecks = true;
                 nvapi = o_LoadLibraryExW(lcaseLibName.c_str(), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+                skipLoadChecks = false;
+            }
 
             if (nvapi != nullptr)
                 NvApiHooks::Hook(nvapi);
@@ -540,7 +606,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
     // sl.interposer.dll
     if (Config::Instance()->FGType.value_or_default() == FGType::Nukems && CheckDllNameW(&lcaseLibName, &streamlineNamesW))
     {
+        skipLoadChecks = true;
         auto streamlineModule = o_LoadLibraryW(lpLibFullPath);
+        skipLoadChecks = false;
 
         hookStreamline(streamlineModule);
 
@@ -559,7 +627,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
     // Hooks
     if (CheckDllNameW(&lcaseLibName, &dx11NamesW) && Config::Instance()->OverlayMenu.value_or_default())
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
+        skipLoadChecks = false;
 
         if (module != nullptr)
             HooksDx::HookDx11(module);
@@ -569,7 +639,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
     if (CheckDllNameW(&lcaseLibName, &dx12NamesW) && Config::Instance()->OverlayMenu.value_or_default())
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
+        skipLoadChecks = false;
 
         if (module != nullptr)
             HooksDx::HookDx12(module);
@@ -579,7 +651,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
     if (CheckDllNameW(&lcaseLibName, &vkNamesW))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
+        skipLoadChecks = false;
 
         if (module != nullptr)
         {
@@ -599,7 +673,9 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
     if (!State::Instance().skipDxgiLoadChecks && CheckDllNameW(&lcaseLibName, &dxgiNamesW))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
+        skipLoadChecks = false;
 
         if (module != nullptr)
         {
@@ -613,7 +689,10 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
     if (CheckDllNameW(&lcaseLibName, &fsr2NamesW))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
+        skipLoadChecks = false;
+
         if (module != nullptr)
             HookFSR2Inputs(module);
 
@@ -622,7 +701,10 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
     if (CheckDllNameW(&lcaseLibName, &fsr2BENamesW))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
+        skipLoadChecks = false;
+
         if (module != nullptr)
             HookFSR2Dx12Inputs(module);
 
@@ -631,7 +713,10 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
     if (CheckDllNameW(&lcaseLibName, &fsr3NamesW))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
+        skipLoadChecks = false;
+
         if (module != nullptr)
             HookFSR3Inputs(module);
 
@@ -640,7 +725,10 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
     if (CheckDllNameW(&lcaseLibName, &fsr3BENamesW))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
+        skipLoadChecks = false;
+
         if (module != nullptr)
             HookFSR3Dx12Inputs(module);
 
@@ -649,7 +737,10 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
     if (CheckDllNameW(&lcaseLibName, &xessNamesW))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
+        skipLoadChecks = false;
+
         if (module != nullptr)
             XeSSProxy::HookXeSS(module);
 
@@ -658,7 +749,10 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
     if (CheckDllNameW(&lcaseLibName, &ffxDx12NamesW))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
+        skipLoadChecks = false;
+
         if (module != nullptr)
             FfxApiProxy::InitFfxDx12(module);
 
@@ -667,7 +761,10 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
     if (CheckDllNameW(&lcaseLibName, &ffxVkNamesW))
     {
+        skipLoadChecks = true;
         auto module = o_LoadLibraryW(lcaseLibName.c_str());
+        skipLoadChecks = false;
+
         if (module != nullptr)
             FfxApiProxy::InitFfxVk(module);
 
@@ -1160,27 +1257,30 @@ static HMODULE hkLoadLibraryA(LPCSTR lpLibFileName)
     if (lpLibFileName == nullptr)
         return NULL;
 
-    std::string libName(lpLibFileName);
-    std::string lcaseLibName(libName);
+    if (!skipLoadChecks)
+    {
+        std::string libName(lpLibFileName);
+        std::string lcaseLibName(libName);
 
-    for (size_t i = 0; i < lcaseLibName.size(); i++)
-        lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+        for (size_t i = 0; i < lcaseLibName.size(); i++)
+            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
 #ifdef _DEBUG
-    LOG_TRACE("call: {0}", lcaseLibName);
+        LOG_TRACE("call: {0}", lcaseLibName);
 #endif // DEBUG
 
-    auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
+        auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
 
-    // skip loading of dll
-    if (moduleHandle == (HMODULE)1)
-    {
-        SetLastError(ERROR_ACCESS_DENIED);
-        return NULL;
+        // skip loading of dll
+        if (moduleHandle == (HMODULE)1)
+        {
+            SetLastError(ERROR_ACCESS_DENIED);
+            return NULL;
+        }
+
+        if (moduleHandle != nullptr)
+            return moduleHandle;
     }
-
-    if (moduleHandle != nullptr)
-        return moduleHandle;
 
     dontCount = true;
     auto result = o_LoadLibraryA(lpLibFileName);
@@ -1194,27 +1294,30 @@ static HMODULE hkLoadLibraryW(LPCWSTR lpLibFileName)
     if (lpLibFileName == nullptr)
         return NULL;
 
-    std::wstring libName(lpLibFileName);
-    std::wstring lcaseLibName(libName);
+    if (!skipLoadChecks)
+    {
+        std::wstring libName(lpLibFileName);
+        std::wstring lcaseLibName(libName);
 
-    for (size_t i = 0; i < lcaseLibName.size(); i++)
-        lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+        for (size_t i = 0; i < lcaseLibName.size(); i++)
+            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
 #ifdef _DEBUG
-    LOG_TRACE("call: {0}", wstring_to_string(lcaseLibName));
+        LOG_TRACE("call: {0}", wstring_to_string(lcaseLibName));
 #endif // DEBUG
 
-    auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
+        auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
 
-    // skip loading of dll
-    if (moduleHandle == (HMODULE)1)
-    {
-        SetLastError(ERROR_ACCESS_DENIED);
-        return NULL;
+        // skip loading of dll
+        if (moduleHandle == (HMODULE)1)
+        {
+            SetLastError(ERROR_ACCESS_DENIED);
+            return NULL;
+        }
+
+        if (moduleHandle != nullptr)
+            return moduleHandle;
     }
-
-    if (moduleHandle != nullptr)
-        return moduleHandle;
 
     dontCount = true;
     auto result = o_LoadLibraryW(lpLibFileName);
@@ -1228,27 +1331,30 @@ static HMODULE hkLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlag
     if (lpLibFileName == nullptr)
         return NULL;
 
-    std::string libName(lpLibFileName);
-    std::string lcaseLibName(libName);
+    if (!skipLoadChecks)
+    {
+        std::string libName(lpLibFileName);
+        std::string lcaseLibName(libName);
 
-    for (size_t i = 0; i < lcaseLibName.size(); i++)
-        lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+        for (size_t i = 0; i < lcaseLibName.size(); i++)
+            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
 #ifdef _DEBUG
-    LOG_TRACE("call: {0}", lcaseLibName);
+        LOG_TRACE("call: {0}", lcaseLibName);
 #endif
 
-    auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
+        auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
 
-    // skip loading of dll
-    if (moduleHandle == (HMODULE)1)
-    {
-        SetLastError(ERROR_ACCESS_DENIED);
-        return NULL;
+        // skip loading of dll
+        if (moduleHandle == (HMODULE)1)
+        {
+            SetLastError(ERROR_ACCESS_DENIED);
+            return NULL;
+        }
+
+        if (moduleHandle != nullptr)
+            return moduleHandle;
     }
-
-    if (moduleHandle != nullptr)
-        return moduleHandle;
 
     dontCount = true;
     auto result = o_LoadLibraryExA(lpLibFileName, hFile, dwFlags);
@@ -1262,30 +1368,181 @@ static HMODULE hkLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFla
     if (lpLibFileName == nullptr)
         return NULL;
 
-    std::wstring libName(lpLibFileName);
-    std::wstring lcaseLibName(libName);
+    if (!skipLoadChecks)
+    {
+        std::wstring libName(lpLibFileName);
+        std::wstring lcaseLibName(libName);
 
-    for (size_t i = 0; i < lcaseLibName.size(); i++)
-        lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+        for (size_t i = 0; i < lcaseLibName.size(); i++)
+            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
 #ifdef _DEBUG
-    LOG_TRACE("call: {0}", wstring_to_string(lcaseLibName));
+        LOG_TRACE("call: {0}", wstring_to_string(lcaseLibName));
 #endif
 
-    auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
+        auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
 
-    // skip loading of dll
-    if (moduleHandle == (HMODULE)1)
-    {
-        SetLastError(ERROR_ACCESS_DENIED);
-        return NULL;
+        // skip loading of dll
+        if (moduleHandle == (HMODULE)1)
+        {
+            SetLastError(ERROR_ACCESS_DENIED);
+            return NULL;
+        }
+
+        if (moduleHandle != nullptr)
+            return moduleHandle;
     }
-
-    if (moduleHandle != nullptr)
-        return moduleHandle;
 
     dontCount = true;
     auto result = o_LoadLibraryExW(lpLibFileName, hFile, dwFlags);
+    dontCount = false;
+
+    return result;
+}
+
+static HMODULE hkKernelBase_LoadLibraryA(LPCSTR lpLibFileName)
+{
+    if (lpLibFileName == nullptr)
+        return NULL;
+
+    if (!skipLoadChecks)
+    {
+        std::string libName(lpLibFileName);
+        std::string lcaseLibName(libName);
+
+        for (size_t i = 0; i < lcaseLibName.size(); i++)
+            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+
+#ifdef _DEBUG
+        LOG_TRACE("call: {0}", lcaseLibName);
+#endif // DEBUG
+
+        auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
+
+        // skip loading of dll
+        if (moduleHandle == (HMODULE)1)
+        {
+            SetLastError(ERROR_ACCESS_DENIED);
+            return NULL;
+        }
+
+        if (moduleHandle != nullptr)
+            return moduleHandle;
+    }
+
+    dontCount = true;
+    auto result = o_KernelBase_LoadLibraryA(lpLibFileName);
+    dontCount = false;
+
+    return result;
+}
+
+static HMODULE hkKernelBase_LoadLibraryW(LPCWSTR lpLibFileName)
+{
+    if (lpLibFileName == nullptr)
+        return NULL;
+
+    if (!skipLoadChecks)
+    {
+        std::wstring libName(lpLibFileName);
+        std::wstring lcaseLibName(libName);
+
+        for (size_t i = 0; i < lcaseLibName.size(); i++)
+            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+
+#ifdef _DEBUG
+        LOG_TRACE("call: {0}", wstring_to_string(lcaseLibName));
+#endif // DEBUG
+
+        auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
+
+        // skip loading of dll
+        if (moduleHandle == (HMODULE)1)
+        {
+            SetLastError(ERROR_ACCESS_DENIED);
+            return NULL;
+        }
+
+        if (moduleHandle != nullptr)
+            return moduleHandle;
+    }
+
+    dontCount = true;
+    auto result = o_KernelBase_LoadLibraryW(lpLibFileName);
+    dontCount = false;
+
+    return result;
+}
+
+static HMODULE hkKernelBase_LoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
+{
+    if (lpLibFileName == nullptr)
+        return NULL;
+
+    if (!skipLoadChecks)
+    {
+        std::string libName(lpLibFileName);
+        std::string lcaseLibName(libName);
+
+        for (size_t i = 0; i < lcaseLibName.size(); i++)
+            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+
+#ifdef _DEBUG
+        LOG_TRACE("call: {0}", lcaseLibName);
+#endif
+
+        auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
+
+        // skip loading of dll
+        if (moduleHandle == (HMODULE)1)
+        {
+            SetLastError(ERROR_ACCESS_DENIED);
+            return NULL;
+        }
+
+        if (moduleHandle != nullptr)
+            return moduleHandle;
+    }
+
+    dontCount = true;
+    auto result = o_KernelBase_LoadLibraryExA(lpLibFileName, hFile, dwFlags);
+    dontCount = false;
+
+    return result;
+}
+
+static HMODULE hkKernelBase_LoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
+{
+    if (lpLibFileName == nullptr)
+        return NULL;
+
+    if (!skipLoadChecks)
+    {
+        std::wstring libName(lpLibFileName);
+        std::wstring lcaseLibName(libName);
+
+        for (size_t i = 0; i < lcaseLibName.size(); i++)
+            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+
+#ifdef _DEBUG
+        LOG_TRACE("call: {0}", wstring_to_string(lcaseLibName));
+#endif
+
+        auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
+
+        // skip loading of dll
+        if (moduleHandle == (HMODULE)1)
+        {
+            SetLastError(ERROR_ACCESS_DENIED);
+            return NULL;
+        }
+
+        if (moduleHandle != nullptr)
+            return moduleHandle;
+    }
+
+    dontCount = true;
+    auto result = o_KernelBase_LoadLibraryExW(lpLibFileName, hFile, dwFlags);
     dontCount = false;
 
     return result;
@@ -1822,10 +2079,10 @@ static void DetachHooks()
             o_GetProcAddress = nullptr;
         }
 
-        if (o_GetProcAddressKernelBase)
+        if (o_KernelBase_GetProcAddress)
         {
-            DetourDetach(&(PVOID&)o_GetProcAddressKernelBase, hkGetProcAddress);
-            o_GetProcAddressKernelBase = nullptr;
+            DetourDetach(&(PVOID&)o_KernelBase_GetProcAddress, hkGetProcAddress);
+            o_KernelBase_GetProcAddress = nullptr;
         }
 
         if (o_vkGetPhysicalDeviceProperties)
@@ -1918,7 +2175,12 @@ static void AttachHooks()
         o_GetModuleHandleExW = reinterpret_cast<PFN_GetModuleHandleExW>(DetourFindFunction("kernel32.dll", "GetModuleHandleExW"));
 #endif
         o_GetProcAddress = reinterpret_cast<PFN_GetProcAddress>(DetourFindFunction("kernel32.dll", "GetProcAddress"));
-        o_GetProcAddressKernelBase = reinterpret_cast<PFN_GetProcAddress>(DetourFindFunction("kernelbase.dll", "GetProcAddress"));
+
+        o_KernelBase_LoadLibraryA = reinterpret_cast<PFN_LoadLibraryA>(DetourFindFunction("kernelbase.dll", "LoadLibraryA"));
+        o_KernelBase_LoadLibraryW = reinterpret_cast<PFN_LoadLibraryW>(DetourFindFunction("kernelbase.dll", "LoadLibraryW"));
+        o_KernelBase_LoadLibraryExA = reinterpret_cast<PFN_LoadLibraryExA>(DetourFindFunction("kerkernelbasenel32.dll", "LoadLibraryExA"));
+        o_KernelBase_LoadLibraryExW = reinterpret_cast<PFN_LoadLibraryExW>(DetourFindFunction("kernelbase.dll", "LoadLibraryExW"));
+        o_KernelBase_GetProcAddress = reinterpret_cast<PFN_GetProcAddress>(DetourFindFunction("kernelbase.dll", "GetProcAddress"));
 
         if (o_LoadLibraryA != nullptr || o_LoadLibraryW != nullptr || o_LoadLibraryExA != nullptr || o_LoadLibraryExW != nullptr)
         {
@@ -1942,6 +2204,18 @@ static void AttachHooks()
             if (o_LoadLibraryExW)
                 DetourAttach(&(PVOID&)o_LoadLibraryExW, hkLoadLibraryExW);
 
+            if (o_KernelBase_LoadLibraryA)
+                DetourAttach(&(PVOID&)o_KernelBase_LoadLibraryA, hkKernelBase_LoadLibraryA);
+
+            if (o_KernelBase_LoadLibraryW)
+                DetourAttach(&(PVOID&)o_KernelBase_LoadLibraryW, hkKernelBase_LoadLibraryW);
+
+            if (o_KernelBase_LoadLibraryExA)
+                DetourAttach(&(PVOID&)o_KernelBase_LoadLibraryExA, hkKernelBase_LoadLibraryExA);
+
+            if (o_KernelBase_LoadLibraryExW)
+                DetourAttach(&(PVOID&)o_KernelBase_LoadLibraryExW, hkKernelBase_LoadLibraryExW);
+
 #ifdef  HOOK_GET_MODULE
 
             if (o_GetModuleHandleA)
@@ -1961,8 +2235,8 @@ static void AttachHooks()
             if (o_GetProcAddress)
                 DetourAttach(&(PVOID&)o_GetProcAddress, hkGetProcAddress);
 
-            if (o_GetProcAddressKernelBase)
-                DetourAttach(&(PVOID&)o_GetProcAddressKernelBase, hkGetProcAddress);
+            if (o_KernelBase_GetProcAddress)
+                DetourAttach(&(PVOID&)o_KernelBase_GetProcAddress, hkGetProcAddress);
 
             DetourTransactionCommit();
         }
@@ -2566,8 +2840,6 @@ static void CheckWorkingMode()
 
             if (mod_amdxc64 != nullptr)
                 o_AmdExtD3DCreateInterface = (PFN_AmdExtD3DCreateInterface)GetProcAddress(mod_amdxc64, "AmdExtD3DCreateInterface");
-
-            AttachHooks();
         }
 
         return;
