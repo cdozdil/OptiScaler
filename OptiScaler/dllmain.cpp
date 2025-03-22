@@ -2031,6 +2031,8 @@ static void CheckWorkingMode()
             break;
         }
 
+        AttachHooks();
+
         // version.dll
         if (lCaseFilename == "version.dll")
         {
@@ -2312,7 +2314,7 @@ static void CheckWorkingMode()
             do
             {
                 skipGetModuleHandle = true;
-                auto pluginFilePath = pluginPath / L"dxgi.dll";
+                auto pluginFilePath = pluginPath / L"dxgi.optidll";
                 dll = LoadLibrary(pluginFilePath.wstring().c_str());
 
                 if (dll != nullptr)
@@ -2329,7 +2331,7 @@ static void CheckWorkingMode()
                     break;
                 }
 
-                auto sysFilePath = sysPath / L"dxgi.dll";
+                auto sysFilePath = sysPath / L"dxgi.optidll";
                 dll = LoadLibrary(sysFilePath.wstring().c_str());
 
                 if (dll != nullptr)
