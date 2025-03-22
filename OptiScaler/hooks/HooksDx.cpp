@@ -3614,28 +3614,6 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
 {
     LOG_FUNC();
 
-    if (pAdapter == nullptr) {
-
-        IDXGIFactory* pFactory;
-        if (CreateDXGIFactory(IID_PPV_ARGS(&pFactory)) != S_OK)
-            return E_FAIL;
-
-        UINT i = 0;
-        IDXGIAdapter* adapter;
-        std::vector <IDXGIAdapter*> vAdapters;
-        while (pFactory->EnumAdapters(i, &adapter) != DXGI_ERROR_NOT_FOUND)
-        {
-            vAdapters.push_back(adapter);
-            ++i;
-        }
-
-        pFactory->Release();
-
-        if (vAdapters.size() > 0)
-            pAdapter = vAdapters[0];
-        else
-            return E_FAIL;
-    }
 
 #ifdef ENABLE_DEBUG_LAYER_DX12
     LOG_WARN("Debug layers active!");
