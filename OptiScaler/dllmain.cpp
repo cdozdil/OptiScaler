@@ -2358,6 +2358,57 @@ static void CheckWorkingMode()
             break;
         }
 
+        // d3d12.dll
+        if (lCaseFilename == "d3d12.dll")
+        {
+            do
+            {
+                skipGetModuleHandle = true;
+                auto pluginFilePath = pluginPath / L"d3d12.optidll";
+                dll = LoadLibrary(pluginFilePath.wstring().c_str());
+
+                if (dll != nullptr)
+                {
+                    LOG_INFO("OptiScaler working as d3d12.dll, original dll loaded from plugin folder");
+                    break;
+                }
+
+                dll = LoadLibrary(L"d3d12-original.dll");
+
+                if (dll != nullptr)
+                {
+                    LOG_INFO("OptiScaler working as d3d12.dll, d3d12-original.dll loaded");
+                    break;
+                }
+
+                auto sysFilePath = sysPath / L"d3d12.optidll";
+                dll = LoadLibrary(sysFilePath.wstring().c_str());
+
+                if (dll != nullptr)
+                    LOG_INFO("OptiScaler working as d3d12.dll, system dll loaded");
+
+                skipGetModuleHandle = false;
+            } while (false);
+
+            if (dll != nullptr)
+            {
+                dllNames.push_back("d3d12.dll");
+                dllNames.push_back("d3d12");
+                dllNamesW.push_back(L"d3d12.dll");
+                dllNamesW.push_back(L"d3d12");
+
+                d3d12.LoadOriginalLibrary(dll);
+
+                modeFound = true;
+            }
+            else
+            {
+                spdlog::error("OptiScaler can't find original d3d12.dll!");
+            }
+
+            break;
+        }
+
     } while (false);
 
     if (modeFound)

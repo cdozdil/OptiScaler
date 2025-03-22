@@ -1,10 +1,31 @@
+LIBRARY "D3D12"
+EXPORTS
+GetBehaviorValue = _GetBehaviorValue @100 PRIVATE
+D3D12CreateDevice = _D3D12CreateDevice @101 PRIVATE
+D3D12GetDebugInterface = _D3D12GetDebugInterface @102 PRIVATE
+SetAppCompatStringPointer = _SetAppCompatStringPointer @103 PRIVATE
+D3D12CoreCreateLayeredDevice = _D3D12CoreCreateLayeredDevice @104 PRIVATE
+D3D12CoreGetLayeredDeviceSize = _D3D12CoreGetLayeredDeviceSize @105 PRIVATE
+D3D12CoreRegisterLayers = _D3D12CoreRegisterLayers @106 PRIVATE
+D3D12CreateRootSignatureDeserializer = _D3D12CreateRootSignatureDeserializer @107 PRIVATE
+D3D12CreateVersionedRootSignatureDeserializer = _D3D12CreateVersionedRootSignatureDeserializer @108 PRIVATE
+D3D12DeviceRemovedExtendedData = _D3D12DeviceRemovedExtendedData @109 PRIVATE
+D3D12EnableExperimentalFeatures = _D3D12EnableExperimentalFeatures @110 PRIVATE
+D3D12GetInterface = _D3D12GetInterface @111 PRIVATE
+D3D12PIXEventsReplaceBlock = _D3D12PIXEventsReplaceBlock @112  PRIVATE
+D3D12PIXGetThreadInfo = _D3D12PIXGetThreadInfo @113 PRIVATE
+D3D12PIXNotifyWakeFromFenceSignal = _D3D12PIXNotifyWakeFromFenceSignal @114  PRIVATE
+D3D12PIXReportCounter = _D3D12PIXReportCounter @115 PRIVATE
+D3D12SerializeRootSignature = _D3D12SerializeRootSignature @116 PRIVATE
+D3D12SerializeVersionedRootSignature = _D3D12SerializeVersionedRootSignature @117 PRIVATE
+
 LIBRARY "DXGI"
 EXPORTS  
-CreateDXGIFactory = _CreateDXGIFactory @9
-CreateDXGIFactory1 = _CreateDXGIFactory1 @10
-CreateDXGIFactory2 = _CreateDXGIFactory2 @11
-DXGIDeclareAdapterRemovalSupport = _DXGIDeclareAdapterRemovalSupport @16
-DXGIGetDebugInterface1 = _DXGIGetDebugInterface1 @17
+CreateDXGIFactory = _CreateDXGIFactory
+CreateDXGIFactory1 = _CreateDXGIFactory1
+CreateDXGIFactory2 = _CreateDXGIFactory2 
+DXGIDeclareAdapterRemovalSupport = _DXGIDeclareAdapterRemovalSupport 
+DXGIGetDebugInterface1 = _DXGIGetDebugInterface1 
 
 LIBRARY "wininet"
 EXPORTS
@@ -849,3 +870,4 @@ EnumerateLoadedModules = _EnumerateLoadedModules
 EnumDirTreeW = _EnumDirTreeW
 EnumDirTree = _EnumDirTree
 DbgHelpCreateUserDumpW = _DbgHelpCreateUserDumpW
+
