@@ -2368,6 +2368,8 @@ static void CheckWorkingMode()
 
         if (!isNvngxMode || isWorkingWithEnabler)
         {
+            AttachHooks();
+
             // DXGI
             HMODULE dxgiModule = nullptr;
             dxgiModule = GetModuleHandle(L"dxgi.dll");
@@ -2387,7 +2389,7 @@ static void CheckWorkingMode()
             vulkanModule = GetModuleHandle(L"vulkan-1.dll");
 
             if (State::Instance().isRunningOnDXVK || State::Instance().isRunningOnLinux)
-                vulkanModule = LoadLibrary(L"vulkan-1.dll");
+                vulkanModule = LoadLibrary(L"vulkan-1.optidll");
 
             if (vulkanModule != nullptr)
             {
@@ -2465,7 +2467,7 @@ static void CheckWorkingMode()
                 FfxApiProxy::InitFfxVk(ffxVkModule);
             }
 
-            // // DirectX 11
+            // DirectX 11
             HMODULE d3d11Module = nullptr;
             d3d11Module = GetModuleHandle(L"d3d11.dll");
             if (Config::Instance()->OverlayMenu.value() && d3d11Module != nullptr)
@@ -2481,6 +2483,10 @@ static void CheckWorkingMode()
             {
                 LOG_DEBUG("d3d12.dll already in memory");
                 HooksDx::HookDx12(d3d12Module);
+            }
+            else
+            {
+                d3d12Module = LoadLibrary(L"d3d12.dll");
             }
 
             // SpecialK
@@ -2512,9 +2518,10 @@ static void CheckWorkingMode()
                 mod_amdxc64 = LoadLibrary(L"amdxc64.dll");
 
             if (mod_amdxc64 != nullptr)
+            {
+                LOG_DEBUG("Hooking amdxc64.dll");
                 o_AmdExtD3DCreateInterface = (PFN_AmdExtD3DCreateInterface)GetProcAddress(mod_amdxc64, "AmdExtD3DCreateInterface");
-
-            AttachHooks();
+            }
         }
 
         return;
