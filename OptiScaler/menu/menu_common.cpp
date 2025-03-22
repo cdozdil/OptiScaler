@@ -472,7 +472,7 @@ LRESULT MenuCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                         io.AddMouseButtonEvent(2, false);
 
                     if (rawData.data.mouse.usButtonFlags & RI_MOUSE_WHEEL)
-                        io.AddMouseWheelEvent(0, static_cast<short>(rawData.data.mouse.usButtonData) / WHEEL_DELTA);
+                        io.AddMouseWheelEvent(0, static_cast<short>(rawData.data.mouse.usButtonData) / (float)WHEEL_DELTA);
                 }
 
                 else
@@ -1460,7 +1460,7 @@ bool MenuCommon::RenderMenu()
                         ImGui::BeginDisabled(!Config::Instance()->FGHUDFix.value_or_default());
 
                         ImGui::SameLine(0.0f, 16.0f);
-                        ImGui::PushItemWidth(95.0 * Config::Instance()->MenuScale.value_or_default());
+                        ImGui::PushItemWidth(95.0f * Config::Instance()->MenuScale.value_or_default());
                         int hudFixLimit = Config::Instance()->FGHUDLimit.value_or_default();
                         if (ImGui::InputInt("Limit", &hudFixLimit))
                         {
@@ -1538,7 +1538,7 @@ bool MenuCommon::RenderMenu()
                             ShowHelpMarker("Display only FSR 3.1 generated frames");
 
                             ImGui::BeginDisabled(State::Instance().FGresetCapturedResources);
-                            ImGui::PushItemWidth(95.0 * Config::Instance()->MenuScale.value_or_default());
+                            ImGui::PushItemWidth(95.0f * Config::Instance()->MenuScale.value_or_default());
                             if (ImGui::Checkbox("FG Create List", &State::Instance().FGcaptureResources))
                             {
                                 if (!State::Instance().FGcaptureResources)
@@ -1609,7 +1609,7 @@ bool MenuCommon::RenderMenu()
                                 ShowHelpMarker("Make a copy of depth to use with OptiFG\n"
                                                "For preventing corruptions that might happen");
 
-                                ImGui::PushItemWidth(115.0 * Config::Instance()->MenuScale.value_or_default());
+                                ImGui::PushItemWidth(115.0f * Config::Instance()->MenuScale.value_or_default());
                                 float depthScaleMax = Config::Instance()->FGDepthScaleMax.value_or_default();
                                 if (ImGui::InputFloat("FG Scale Depth Max", &depthScaleMax, 10.0f, 100.0f, "%.1f"))
                                     Config::Instance()->FGDepthScaleMax = depthScaleMax;
@@ -1640,7 +1640,7 @@ bool MenuCommon::RenderMenu()
                             ImGui::Spacing();
                             if (ImGui::TreeNode("FG Rectangle Settings"))
                             {
-                                ImGui::PushItemWidth(95.0 * Config::Instance()->MenuScale.value_or_default());
+                                ImGui::PushItemWidth(95.0f * Config::Instance()->MenuScale.value_or_default());
                                 int rectLeft = Config::Instance()->FGRectLeft.value_or(0);
                                 if (ImGui::InputInt("Rect Left", &rectLeft))
                                     Config::Instance()->FGRectLeft = rectLeft;
@@ -1693,7 +1693,7 @@ bool MenuCommon::RenderMenu()
 
                                     ImGui::BeginDisabled(!Config::Instance()->FGFramePacingTuning.value_or_default());
 
-                                    ImGui::PushItemWidth(115.0 * Config::Instance()->MenuScale.value_or_default());
+                                    ImGui::PushItemWidth(115.0f * Config::Instance()->MenuScale.value_or_default());
                                     auto fptSafetyMargin = Config::Instance()->FGFPTSafetyMarginInMs.value_or_default();
                                     if (ImGui::InputFloat("Safety Margins in ms", &fptSafetyMargin, 0.01, 0.1, "%.2f"))
                                         Config::Instance()->FGFPTSafetyMarginInMs = fptSafetyMargin;
@@ -1715,7 +1715,7 @@ bool MenuCommon::RenderMenu()
                                     ShowHelpMarker("Allows pacing spinlock to sleep, should reduce CPU usage\n"
                                                    "Might cause slow ramp up of FPS");
 
-                                    ImGui::PushItemWidth(115.0 * Config::Instance()->MenuScale.value_or_default());
+                                    ImGui::PushItemWidth(115.0f * Config::Instance()->MenuScale.value_or_default());
                                     auto fptHybridSpinTime = Config::Instance()->FGFPTHybridSpinTime.value_or_default();
                                     if (ImGui::SliderInt("Hybrid Spin Time", &fptHybridSpinTime, 0, 100))
                                         Config::Instance()->FGFPTHybridSpinTime = fptHybridSpinTime;
@@ -1906,7 +1906,7 @@ bool MenuCommon::RenderMenu()
                             ImGui::SameLine(0.0f, 6.0f);
                             int dbgCount = State::Instance().xessDebugFrames;
 
-                            ImGui::PushItemWidth(95.0 * Config::Instance()->MenuScale.value_or_default());
+                            ImGui::PushItemWidth(95.0f * Config::Instance()->MenuScale.value_or_default());
                             if (ImGui::InputInt("frames", &dbgCount))
                             {
                                 if (dbgCount < 4)
@@ -2130,7 +2130,7 @@ bool MenuCommon::RenderMenu()
 
                         ImGui::BeginDisabled(!Config::Instance()->RenderPresetOverride.value_or_default() || overridden);
 
-                        ImGui::PushItemWidth(135.0 * Config::Instance()->MenuScale.value_or_default());
+                        ImGui::PushItemWidth(135.0f * Config::Instance()->MenuScale.value_or_default());
                         if (usesDlssd)
                             AddDLSSDRenderPreset("Override Preset", &Config::Instance()->RenderPresetForAll);
                         else
@@ -2169,7 +2169,7 @@ bool MenuCommon::RenderMenu()
 
                             ImGui::BeginDisabled(!Config::Instance()->RenderPresetOverride.value_or_default() || overridden);
                             ImGui::Spacing();
-                            ImGui::PushItemWidth(135.0 * Config::Instance()->MenuScale.value_or_default());
+                            ImGui::PushItemWidth(135.0f * Config::Instance()->MenuScale.value_or_default());
 
                             if (usesDlssd)
                             {
@@ -3136,7 +3136,7 @@ bool MenuCommon::RenderMenu()
                     ImGui::Text("FrameTime");
                     auto ft = std::format("{:5.2f} ms / {:5.1f} fps", State::Instance().frameTimes.back(), frameRate);
                     std::vector<float> frameTimeArray(State::Instance().frameTimes.begin(), State::Instance().frameTimes.end());
-                    ImGui::PlotLines(ft.c_str(), frameTimeArray.data(), frameTimeArray.size());
+                    ImGui::PlotLines(ft.c_str(), frameTimeArray.data(), (int)frameTimeArray.size());
 
 
                     if (currentFeature != nullptr)
@@ -3145,7 +3145,7 @@ bool MenuCommon::RenderMenu()
                         ImGui::Text("Upscaler");
                         auto ups = std::format("{:7.4f} ms", State::Instance().upscaleTimes.back());
                         std::vector<float> upscaleTimeArray(State::Instance().upscaleTimes.begin(), State::Instance().upscaleTimes.end());
-                        ImGui::PlotLines(ups.c_str(), upscaleTimeArray.data(), upscaleTimeArray.size());
+                        ImGui::PlotLines(ups.c_str(), upscaleTimeArray.data(), (int)upscaleTimeArray.size());
                     }
 
                     ImGui::EndTable();

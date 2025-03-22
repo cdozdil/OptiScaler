@@ -132,8 +132,8 @@ public:
 	VkInstance VulkanInstance = nullptr;
 
 	// Framegraph
-	std::deque<float> upscaleTimes;
-	std::deque<float> frameTimes;
+	std::deque<double> upscaleTimes;
+	std::deque<double> frameTimes;
 
 	// Swapchain info
 	float screenWidth = 800.0;

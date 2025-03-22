@@ -107,25 +107,25 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
         ID3D11UnorderedAccessView* restoreUAVs[D3D11_1_UAV_SLOT_COUNT] = {};
 
         // backup compute shader resources
-        for (size_t i = 0; i < D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT; i++)
+        for (UINT i = 0; i < D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT; i++)
         {
             restoreSRVs[i] = nullptr;
             InDeviceContext->CSGetShaderResources(i, 1, &restoreSRVs[i]);
         }
 
-        for (size_t i = 0; i < D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; i++)
+        for (UINT i = 0; i < D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; i++)
         {
             restoreSamplerStates[i] = nullptr;
             InDeviceContext->CSGetSamplers(i, 1, &restoreSamplerStates[i]);
         }
 
-        for (size_t i = 0; i < D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; i++)
+        for (UINT i = 0; i < D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; i++)
         {
             restoreCBVs[i] = nullptr;
             InDeviceContext->CSGetConstantBuffers(i, 1, &restoreCBVs[i]);
         }
 
-        for (size_t i = 0; i < D3D11_1_UAV_SLOT_COUNT; i++)
+        for (UINT i = 0; i < D3D11_1_UAV_SLOT_COUNT; i++)
         {
             restoreUAVs[i] = nullptr;
             InDeviceContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
@@ -249,25 +249,25 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
         InParameters->Set(NVSDK_NGX_Parameter_Output, paramOutput);
 
         // restore compute shader resources
-        for (size_t i = 0; i < D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT; i++)
+        for (UINT i = 0; i < D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT; i++)
         {
             if (restoreSRVs[i] != nullptr)
                 InDeviceContext->CSSetShaderResources(i, 1, &restoreSRVs[i]);
         }
 
-        for (size_t i = 0; i < D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; i++)
+        for (UINT i = 0; i < D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; i++)
         {
             if (restoreSamplerStates[i] != nullptr)
                 InDeviceContext->CSSetSamplers(i, 1, &restoreSamplerStates[i]);
         }
 
-        for (size_t i = 0; i < D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; i++)
+        for (UINT i = 0; i < D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; i++)
         {
             if (restoreCBVs[i] != nullptr)
                 InDeviceContext->CSSetConstantBuffers(i, 1, &restoreCBVs[i]);
         }
 
-        for (size_t i = 0; i < D3D11_1_UAV_SLOT_COUNT; i++)
+        for (UINT i = 0; i < D3D11_1_UAV_SLOT_COUNT; i++)
         {
             if (restoreUAVs[i] != nullptr)
                 InDeviceContext->CSSetUnorderedAccessViews(i, 1, &restoreUAVs[i], 0);
