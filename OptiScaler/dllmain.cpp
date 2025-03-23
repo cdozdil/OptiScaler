@@ -256,9 +256,15 @@ inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFul
         skipLoadChecks = false;
 
         if (streamlineModule != nullptr)
+        {
+            skipLoadChecks = true;
             hookStreamline(streamlineModule);
+            skipLoadChecks = false;
+        }
         else
+        {
             LOG_ERROR("Trying to load dll: {}", lcaseLibName);
+        }
 
         return streamlineModule;
     }
@@ -517,7 +523,7 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
 
         auto realDll = lcaseLibName.replace(lcaseLibName.size() - from.size(), from.size(), to);
         LOG_INFO("Internal dll load call: {}", wstring_to_string(realDll));
-        
+
         skipLoadChecks = true;
         auto result = o_LoadLibraryW(realDll.c_str());
         skipLoadChecks = false;
@@ -610,7 +616,16 @@ inline static HMODULE LoadLibraryCheckW(std::wstring lcaseLibName, LPCWSTR lpLib
         auto streamlineModule = o_LoadLibraryW(lpLibFullPath);
         skipLoadChecks = false;
 
-        hookStreamline(streamlineModule);
+        if (streamlineModule != nullptr) 
+        {
+            skipLoadChecks = true;
+            hookStreamline(streamlineModule);
+            skipLoadChecks = false;
+        }
+        else
+        {
+            LOG_ERROR("Trying to load dll: {}", lcaseLibNameA);
+        }
 
         return streamlineModule;
     }
@@ -2752,7 +2767,9 @@ static void CheckWorkingMode()
             if (slModule != nullptr)
             {
                 LOG_DEBUG("sl.interposer.dll already in memory");
+                skipLoadChecks = true;
                 hookStreamline(slModule);
+                skipLoadChecks = false;
             }
 
             // XeSS
