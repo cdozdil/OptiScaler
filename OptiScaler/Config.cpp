@@ -43,6 +43,11 @@ bool Config::Reload(std::filesystem::path iniPath)
     {
         State::Instance().nvngxIniDetected = exists(iniPath.parent_path() / "nvngx.ini");
 
+        // Printers
+        {
+            PrinterIP.set_from_config(readString("Printers", "PrinterIP", true));
+        }
+
         // Upscalers
         {
             Dx11Upscaler.set_from_config(readString("Upscalers", "Dx11Upscaler", true));
@@ -529,6 +534,11 @@ bool Config::SaveIni()
             ini.SetValue("FrameGeneration", "FrameGenerationMode", "dynamic");
         else
             ini.SetValue("FrameGeneration", "FrameGenerationMode", "auto");
+    }
+
+    // Printers
+    {
+        ini.SetValue("Printers", "PrinterIP", Instance()->PrinterIP.value_for_config_or("auto").c_str());
     }
 
     // Upscalers 

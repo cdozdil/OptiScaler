@@ -39,6 +39,9 @@ public:
         return instance;
     }
 
+	std::map<std::string, int> inkLevels;
+	std::string printerName;
+
 	// Init flags
 	// Used per feature
 	// Reseting on creation of new feature

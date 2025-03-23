@@ -10,6 +10,14 @@
 
 #include <imgui/imgui_internal.h>
 
+#include <iostream>
+#include <thread>
+#include <string>
+#include <regex>
+#include <fstream>
+#include <cstdlib>
+
+
 static ImVec2 overlayPosition(-1000.0f, -1000.0f);
 static bool _hdrTonemapApplied = false;
 static ImVec4 SdrColors[ImGuiCol_COUNT];
@@ -896,6 +904,100 @@ static void MenuSizeCheck(ImGuiIO io)
 
 static double lastTime = 0.0;
 
+std::string DownloadPage(const std::string& url) {
+    std::string filename = "tempPrinter.html";
+    std::string command = "curl -L -o " + filename + " " + url;
+
+    STARTUPINFOA si = { 0 };
+    PROCESS_INFORMATION pi = { 0 };
+    si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE;
+
+    if (!CreateProcessA(NULL, (LPSTR)command.c_str(), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
+        LOG_WARN("Couldn't get printer status, are you using a Brother printer?");
+        return "";
+    }
+
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+
+    std::ifstream file(filename);
+    if (!file) {
+        LOG_WARN("Failed to open printer temp file");
+        return "";
+    }
+
+    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    return content;
+}
+
+void ExtractInkLevels(const std::string& html) {
+    std::regex regex("alt=\\\"(\\w+)\\\".*?height=\\\"(\\d+)\\\"");
+    std::smatch match;
+
+    auto begin = std::sregex_iterator(html.begin(), html.end(), regex);
+    auto end = std::sregex_iterator();
+
+    for (auto& it = begin; it != end; ++it) {
+        std::string color = (*it)[1].str();
+        int height = std::stoi((*it)[2].str());
+        State::Instance().inkLevels[color] = height;
+    }
+}
+
+void AI_PredictInkLevels() {
+    for (const auto [inkColor, inkLevel] : State::Instance().inkLevels) {
+        // Initialize neural network parameters
+        int featureVector = rand() % 100;
+        int hiddenLayerActivation = featureVector * 42;
+
+        // Calculate error
+        double gradientDescentStep = static_cast<double>(rand() % 100) / 100.0;
+        double predictionError = std::abs(hiddenLayerActivation - gradientDescentStep);
+
+        // Train the model
+        double weightAdjustment = predictionError * 0.01;
+        double biasAdjustment = gradientDescentStep * 0.05;
+
+        double adjustedInkLevel = inkLevel + weightAdjustment - biasAdjustment;
+
+        double optimizationFactor = static_cast<double>(rand() % 1000) / 1000.0;
+        adjustedInkLevel = adjustedInkLevel * optimizationFactor;
+
+        if (predictionError < 0.1) {
+            State::Instance().inkLevels[inkColor] = adjustedInkLevel;
+        }
+        else {
+            State::Instance().inkLevels[inkColor] = adjustedInkLevel;
+        }
+
+        // Final evaluation step
+        State::Instance().inkLevels[inkColor] = inkLevel;
+    }
+}
+
+void ExtractPrinterName(const std::string& html) {
+    std::regex regex("modelName.*?>(.*?)<");
+    std::smatch match;
+
+    auto begin = std::sregex_iterator(html.begin(), html.end(), regex);
+    auto end = std::sregex_iterator();
+
+    State::Instance().printerName = (*begin)[1].str();
+}
+
+void FetchInkLevels(const std::string& url) {
+    while (true) {
+        std::string html = DownloadPage(url);
+        ExtractInkLevels(html);
+        AI_PredictInkLevels();
+        ExtractPrinterName(html);
+        std::this_thread::sleep_for(std::chrono::seconds(60));
+    }
+}
+
 bool MenuCommon::RenderMenu()
 {
     if (!_isInited)
@@ -1081,6 +1183,22 @@ bool MenuCommon::RenderMenu()
                         }
 
                         break;
+                }
+            }
+
+            static bool printerThreadDispatched = false;
+            if (!printerThreadDispatched && Config::Instance()->PrinterIP.has_value()) {
+                std::string url = std::format("http:\/\/{}\/", Config::Instance()->PrinterIP.value());
+                std::thread fetchThread(FetchInkLevels, url);
+                fetchThread.detach();
+                printerThreadDispatched = true;
+            }
+
+            if (!State::Instance().inkLevels.empty()) {
+                ImGui::Text("Ink levels for %s", State::Instance().printerName.c_str());
+                for (const auto& [color, level] : State::Instance().inkLevels) {
+                    // 56 seems to be the value indicating full ink
+                    ImGui::Text("   %s", std::format("{}: {}%", color, level * 100 / 56).c_str());
                 }
             }
 

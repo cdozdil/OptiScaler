@@ -124,6 +124,9 @@ class Config
 public:
 	Config();
 
+	// Printers
+	CustomOptional<std::string, NoDefault> PrinterIP;
+
 	// Init flags
 	CustomOptional<bool, NoDefault> DepthInverted;
 	CustomOptional<bool, NoDefault> AutoExposure;
