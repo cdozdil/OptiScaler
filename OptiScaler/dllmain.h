@@ -3540,7 +3540,7 @@ HRESULT _D3D12GetInterface(REFCLSID clsid, REFIID riid, void** ppInterface)
 }
 
 void _GetBehaviorValue() { d3d12.GetBehaviorValue(); }
-void _SetAppCompatStringPointer() { d3d12.SetAppCompatStringPointer(); }
+//void _SetAppCompatStringPointer() { d3d12.SetAppCompatStringPointer(); }
 void _D3D12CoreCreateLayeredDevice() { d3d12.D3D12CoreCreateLayeredDevice(); }
 void _D3D12CoreGetLayeredDeviceSize() { d3d12.D3D12CoreGetLayeredDeviceSize(); }
 void _D3D12CoreRegisterLayers() { d3d12.D3D12CoreRegisterLayers(); }

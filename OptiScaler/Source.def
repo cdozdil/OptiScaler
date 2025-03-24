@@ -3,7 +3,6 @@ EXPORTS
 GetBehaviorValue = _GetBehaviorValue @100 PRIVATE
 D3D12CreateDevice = _D3D12CreateDevice @101 PRIVATE
 D3D12GetDebugInterface = _D3D12GetDebugInterface @102 PRIVATE
-SetAppCompatStringPointer = _SetAppCompatStringPointer @103 PRIVATE
 D3D12CoreCreateLayeredDevice = _D3D12CoreCreateLayeredDevice @104 PRIVATE
 D3D12CoreGetLayeredDeviceSize = _D3D12CoreGetLayeredDeviceSize @105 PRIVATE
 D3D12CoreRegisterLayers = _D3D12CoreRegisterLayers @106 PRIVATE
