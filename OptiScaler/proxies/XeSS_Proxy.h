@@ -213,19 +213,25 @@ public:
 
         auto dllPath = Util::DllPath();
 
+        std::wstring libraryName;
+        if (State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable)
+            libraryName = L"libxess.dll";
+        else
+            libraryName = L"libxess.optidll";
+
         // we would like to prioritize file pointed at ini
         if (Config::Instance()->XeSSLibrary.has_value())
         {
             std::filesystem::path cfgPath(Config::Instance()->XeSSLibrary.value().c_str());
             LOG_INFO("Trying to load libxess.dll from ini path: {}", cfgPath.string());
 
-            cfgPath = cfgPath / L"libxess.optidll";
+            cfgPath = cfgPath / libraryName;
             mainModule = LoadLibrary(cfgPath.c_str());
         }
 
         if (_dll == nullptr)
         {
-            std::filesystem::path libXessPath = dllPath.parent_path() / L"libxess.optidll";
+            std::filesystem::path libXessPath = dllPath.parent_path() / libraryName;
             LOG_INFO("Trying to load libxess.dll from dll path: {}", libXessPath.string());
             mainModule = LoadLibrary(libXessPath.c_str());
         }
@@ -249,19 +255,25 @@ public:
 
         auto dllPath = Util::DllPath();
 
+        std::wstring libraryName;
+        if (State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable)
+            libraryName = L"libxess_dx11.dll";
+        else
+            libraryName = L"libxess_dx11.optidll";
+
         // we would like to prioritize file pointed at ini
         if (Config::Instance()->XeSSLibrary.has_value())
         {
             std::filesystem::path cfgPath(Config::Instance()->XeSSLibrary.value().c_str());
             LOG_INFO("Trying to load libxess.dll from ini path: {}", cfgPath.string());
 
-            auto dx11Path = cfgPath.parent_path() / L"libxess_dx11.optidll";
+            auto dx11Path = cfgPath.parent_path() / libraryName;
             dx11Module = LoadLibrary(dx11Path.c_str());
         }
 
         if (dx11Module == nullptr)
         {
-            std::filesystem::path libXessDx11Path = dllPath.parent_path() / L"libxess_dx11.optidll";
+            std::filesystem::path libXessDx11Path = dllPath.parent_path() / libraryName;
             LOG_INFO("Trying to load libxess.dll from dll path: {}", libXessDx11Path.string());
             dx11Module = LoadLibrary(libXessDx11Path.c_str());
         }

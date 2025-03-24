@@ -52,7 +52,13 @@ public:
 
         if (_dllDx12 == nullptr)
         {
-            auto file = Util::DllPath().parent_path() / "amd_fidelityfx_dx12.optidll";
+            std::wstring libraryName;
+            if (State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable)
+                libraryName = L"amd_fidelityfx_dx12.dll";
+            else
+                libraryName = L"amd_fidelityfx_dx12.optidll";
+
+            auto file = Util::DllPath().parent_path() / libraryName;
             LOG_INFO("Trying to load {}", file.string());
 
             _dllDx12 = LoadLibrary(file.wstring().c_str());
@@ -168,6 +174,12 @@ public:
 
         if (_dllVk == nullptr)
         {
+            std::wstring libraryName;
+            if (State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable)
+                libraryName = L"amd_fidelityfx_vk.dll";
+            else
+                libraryName = L"amd_fidelityfx_vk.optidll";
+
             auto file = Util::DllPath().parent_path() / "amd_fidelityfx_vk.optidll";
             LOG_INFO("Trying to load {}", file.string());
 
