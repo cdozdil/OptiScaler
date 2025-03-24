@@ -328,6 +328,7 @@ typedef HRESULT(*PFN_EnumAdapters2)(IDXGIFactory* This, UINT Adapter, IUnknown**
 
 typedef HRESULT(*PFN_CreateSwapChain)(IDXGIFactory*, IUnknown*, DXGI_SWAP_CHAIN_DESC*, IDXGISwapChain**);
 typedef HRESULT(*PFN_CreateSwapChainForHwnd)(IDXGIFactory*, IUnknown*, HWND, const DXGI_SWAP_CHAIN_DESC1*, const DXGI_SWAP_CHAIN_FULLSCREEN_DESC*, IDXGIOutput*, IDXGISwapChain1**);
+typedef HRESULT(*PFN_CreateSwapChainForCoreWindow)(IDXGIFactory2*, IUnknown* pDevice, IUnknown* pWindow, DXGI_SWAP_CHAIN_DESC1* pDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain);
 
 static PFN_CreateDXGIFactory o_CreateDXGIFactory = nullptr;
 static PFN_CreateDXGIFactory1 o_CreateDXGIFactory1 = nullptr;
@@ -343,6 +344,7 @@ static PFN_EnumAdapterByGpuPreference2 ptrEnumAdapterByGpuPreference = nullptr;
 
 static PFN_CreateSwapChain oCreateSwapChain = nullptr;
 static PFN_CreateSwapChainForHwnd oCreateSwapChainForHwnd = nullptr;
+static PFN_CreateSwapChainForCoreWindow oCreateSwapChainForCoreWindow = nullptr;
 
 static bool skipHighPerfCheck = false;
 
@@ -2079,7 +2081,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
     LOG_TRACE("{}", frameCounter);
 
-    if (hWnd != Util::GetProcessWindow())
+    if (hWnd != nullptr && hWnd != Util::GetProcessWindow())
     {
         if (pPresentParameters == nullptr)
             presentResult = pSwapChain->Present(SyncInterval, Flags);
@@ -2392,6 +2394,165 @@ static void AttachToFactory(IUnknown* unkFactory)
 }
 
 static int fgSCCount = 0;
+
+
+static HRESULT hkCreateSwapChainForCoreWindow(IDXGIFactory2* pFactory, IUnknown* pDevice, IUnknown* pWindow, DXGI_SWAP_CHAIN_DESC1* pDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
+{
+    LOG_FUNC();
+
+    if (State::Instance().vulkanCreatingSC)
+    {
+        LOG_WARN("Vulkan is creating swapchain!");
+
+        if (pDesc != nullptr)
+            LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, SkipWrapping: {}",
+                      pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, fgSkipSCWrapping);
+
+        State::Instance().skipDxgiLoadChecks = true;
+        auto res = oCreateSwapChainForCoreWindow(pFactory, pDevice, pWindow, pDesc, pRestrictToOutput, ppSwapChain);
+        State::Instance().skipDxgiLoadChecks = false;
+        return res;
+    }
+
+    if (pDevice == nullptr || pDesc == nullptr)
+    {
+        LOG_WARN("pDevice or pDesc is nullptr!");
+        State::Instance().skipDxgiLoadChecks = true;
+        auto res = oCreateSwapChainForCoreWindow(pFactory, pDevice, pWindow, pDesc, pRestrictToOutput, ppSwapChain);
+        State::Instance().skipDxgiLoadChecks = false;
+        return res;
+    }
+
+    if (pDesc->Height < 100 || pDesc->Width < 100)
+    {
+        LOG_WARN("Overlay call!");
+        State::Instance().skipDxgiLoadChecks = true;
+        auto res = oCreateSwapChainForCoreWindow(pFactory, pDevice, pWindow, pDesc, pRestrictToOutput, ppSwapChain);
+        State::Instance().skipDxgiLoadChecks = false;
+        return res;
+    }
+
+    LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, SkipWrapping: {}",
+              pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, fgSkipSCWrapping);
+
+    if (fgSwapChains.contains(nullptr))
+    {
+        LOG_WARN("This hWnd is already active: {:X}", (size_t)pWindow);
+        FrameGen_Dx12::ReleaseFGSwapchain(nullptr);
+    }
+
+    // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
+    // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
+    if (Config::Instance()->ForceHDR.value_or_default() && !fgSkipSCWrapping)
+    {
+        LOG_INFO("Force HDR on");
+
+        if (Config::Instance()->UseHDR10.value_or_default())
+        {
+            LOG_INFO("Using HDR10");
+            pDesc->Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+        }
+        else
+        {
+            LOG_INFO("Not using HDR10");
+            pDesc->Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+        }
+
+        if (pDesc->BufferCount < 2)
+            pDesc->BufferCount = 2;
+
+        pDesc->SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        pDesc->Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+    }
+
+    State::Instance().skipDxgiLoadChecks = true;
+    auto result = oCreateSwapChainForCoreWindow(pFactory, pDevice, pWindow, pDesc, pRestrictToOutput, ppSwapChain);
+    State::Instance().skipDxgiLoadChecks = false;
+
+    if (result == S_OK)
+    {
+        // check for SL proxy
+        IDXGISwapChain* realSC = nullptr;
+        if (!CheckForRealObject(__FUNCTION__, *ppSwapChain, (IUnknown**)&realSC))
+            realSC = *ppSwapChain;
+
+        IUnknown* readDevice = nullptr;
+        if (!CheckForRealObject(__FUNCTION__, pDevice, (IUnknown**)&readDevice))
+            readDevice = pDevice;
+
+        State::Instance().screenWidth = pDesc->Width;
+        State::Instance().screenHeight = pDesc->Height;
+
+        LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pWindow);
+        lastWrapped = new WrappedIDXGISwapChain4(realSC, readDevice, nullptr, Present, MenuOverlayDx::CleanupRenderTarget, FrameGen_Dx12::ReleaseFGSwapchain);
+        *ppSwapChain = lastWrapped;
+
+        if (!fgSkipSCWrapping)
+            HooksDx::currentSwapchain = lastWrapped;
+
+        LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
+
+        // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
+        // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
+        if (Config::Instance()->ForceHDR.value_or_default())
+        {
+            if (!fgSkipSCWrapping)
+            {
+                State::Instance().SCbuffers.clear();
+                for (size_t i = 0; i < pDesc->BufferCount; i++)
+                {
+                    IUnknown* buffer;
+                    if ((*ppSwapChain)->GetBuffer(i, IID_PPV_ARGS(&buffer)) == S_OK)
+                    {
+                        State::Instance().SCbuffers.push_back(buffer);
+                        buffer->Release();
+                    }
+                }
+            }
+
+            IDXGISwapChain3* sc3 = nullptr;
+            do
+            {
+                if ((*ppSwapChain)->QueryInterface(IID_PPV_ARGS(&sc3)) == S_OK)
+                {
+                    DXGI_COLOR_SPACE_TYPE hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
+
+                    if (Config::Instance()->UseHDR10.value_or_default())
+                        hdrCS = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+
+                    UINT css = 0;
+
+                    auto result = sc3->CheckColorSpaceSupport(hdrCS, &css);
+
+                    if (result != S_OK)
+                    {
+                        LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
+                        break;
+                    }
+
+                    if (DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT & css)
+                    {
+                        result = sc3->SetColorSpace1(hdrCS);
+
+                        if (result != S_OK)
+                        {
+                            LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
+                            break;
+                        }
+                    }
+
+                    LOG_INFO("HDR format and color space are set");
+                }
+
+            } while (false);
+
+            if (sc3 != nullptr)
+                sc3->Release();
+        }
+    }
+
+    return result;
+}
 
 static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain)
 {
@@ -3038,30 +3199,21 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 
     AttachToFactory(real);
 
-    if (oCreateSwapChainForHwnd == nullptr)
+    if (oCreateSwapChain == nullptr)
     {
         void** pFactoryVTable = *reinterpret_cast<void***>(real);
 
-        bool skip = false;
 
-        if (oCreateSwapChain == nullptr)
-            oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
-        else
-            skip = true;
+        oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
 
-        oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
-
-        if (oCreateSwapChainForHwnd != nullptr)
+        if (oCreateSwapChain != nullptr)
         {
             LOG_INFO("Hooking native DXGIFactory1");
 
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
 
-            if (!skip)
-                DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
-
-            DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
+            DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
 
             DetourTransactionCommit();
         }
@@ -3101,6 +3253,7 @@ static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppF
             skip = true;
 
         oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
+        oCreateSwapChainForCoreWindow = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
 
         if (oCreateSwapChainForHwnd != nullptr)
         {
@@ -3112,7 +3265,11 @@ static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppF
             if (!skip)
                 DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
 
-            DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
+            if (oCreateSwapChainForHwnd != nullptr)
+                DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
+
+            if (oCreateSwapChainForCoreWindow != nullptr)
+                DetourAttach(&(PVOID&)oCreateSwapChainForCoreWindow, hkCreateSwapChainForCoreWindow);
 
             DetourTransactionCommit();
         }
@@ -3708,8 +3865,8 @@ static HRESULT hkD3D12SerializeRootSignature(D3D12_ROOT_SIGNATURE_DESC_L* pRootS
 
             if (Config::Instance()->AnisotropyOverride.has_value())
             {
-                if (pRootSignature->pStaticSamplers[i].Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR || pRootSignature->pStaticSamplers[i].Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT || 
-                    pRootSignature->pStaticSamplers[i].Filter == D3D12_FILTER_ANISOTROPIC) 
+                if (pRootSignature->pStaticSamplers[i].Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR || pRootSignature->pStaticSamplers[i].Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT ||
+                    pRootSignature->pStaticSamplers[i].Filter == D3D12_FILTER_ANISOTROPIC)
                 {
                     pRootSignature->pStaticSamplers[i].Filter = D3D12_FILTER_ANISOTROPIC;
                     LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}",
