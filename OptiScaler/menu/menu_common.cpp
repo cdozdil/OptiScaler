@@ -918,6 +918,7 @@ bool MenuCommon::RenderMenu()
     State::Instance().frameTimes.push_back(frameTime);
 
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+    auto currentFeature = State::Instance().currentFeature;
 
     // Handle Inputs
     {
@@ -1084,18 +1085,29 @@ bool MenuCommon::RenderMenu()
                 }
             }
 
+
             if (Config::Instance()->FpsOverlayType.value_or_default() == 0)
-                ImGui::Text("%s %5.1f fps %5.2f ms", api.c_str(), frameRate, frameTime);
+            {
+                if (currentFeature != nullptr)
+                    ImGui::Text("%s | FPS: %5.1f, %5.2f ms | %s -> %s", api.c_str(), frameRate, frameTime, State::Instance().currentInputApiName.c_str(), currentFeature->Name());
+                else
+                    ImGui::Text("%s | FPS: %5.1f, %5.2f ms", api.c_str(), frameRate, frameTime);
+            }
             else
-                ImGui::Text("%s Fps: %5.1f, Avg: %5.1f", api.c_str(), frameRate, 1000.0f / averageFrameTime);
+            {
+                if (currentFeature != nullptr)
+                    ImGui::Text("%s | FPS: %5.1f, Avg: %5.1f | %s -> %s", api.c_str(), frameRate, 1000.0f / averageFrameTime, State::Instance().currentInputApiName.c_str(), currentFeature->Name());
+                else
+                    ImGui::Text("%s | FPS: %5.1f, Avg: %5.1f", api.c_str(), frameRate, 1000.0f / averageFrameTime);
+            }
 
             if (Config::Instance()->FpsOverlayType.value_or_default() > 0)
             {
                 if (Config::Instance()->FpsOverlayHorizontal.value_or_default())
                 {
-                    ImGui::SameLine(0.0f, 8.0f);
+                    ImGui::SameLine(0.0f, 0.0f);
                     ImGui::Text(" | ");
-                    ImGui::SameLine(0.0f, 8.0f);
+                    ImGui::SameLine(0.0f, 0.0f);
                 }
                 else
                 {
@@ -1105,15 +1117,17 @@ bool MenuCommon::RenderMenu()
                 ImGui::Text("Frame Time: %5.2f ms, Avg: %5.2f ms", State::Instance().frameTimes.back(), averageFrameTime);
             }
 
+            ImVec2 plotSize;
+
+            if (Config::Instance()->FpsOverlayHorizontal.value_or_default())
+                plotSize = { Config::Instance()->MenuScale.value() * 150, Config::Instance()->MenuScale.value() * 16 };
+            else
+                plotSize = { Config::Instance()->MenuScale.value() * 300, Config::Instance()->MenuScale.value() * 30 };
+
             if (Config::Instance()->FpsOverlayType.value_or_default() > 1)
             {
-                ImVec2 plotSize(Config::Instance()->MenuScale.value() * 300, Config::Instance()->MenuScale.value() * 30);
-
                 if (Config::Instance()->FpsOverlayHorizontal.value_or_default())
-                {
-                    ImGui::SameLine(0.0f, 8.0f);
-                    plotSize.y = Config::Instance()->MenuScale.value() * 16;
-                }
+                    ImGui::SameLine(0.0f, 0.0f);
 
                 // Graph of frame times
                 ImGui::PlotLines("##FrameTimeGraph", frameTimeArray.data(), static_cast<int>(frameTimeArray.size()), 0, nullptr,
@@ -1124,9 +1138,9 @@ bool MenuCommon::RenderMenu()
             {
                 if (Config::Instance()->FpsOverlayHorizontal.value_or_default())
                 {
-                    ImGui::SameLine(0.0f, 8.0f);
+                    ImGui::SameLine(0.0f, 0.0f);
                     ImGui::Text(" | ");
-                    ImGui::SameLine(0.0f, 8.0f);
+                    ImGui::SameLine(0.0f, 0.0f);
                 }
                 else
                 {
@@ -1138,13 +1152,8 @@ bool MenuCommon::RenderMenu()
 
             if (Config::Instance()->FpsOverlayType.value_or_default() > 3)
             {
-                ImVec2 plotSize(Config::Instance()->MenuScale.value() * 300, Config::Instance()->MenuScale.value() * 30);
-
                 if (Config::Instance()->FpsOverlayHorizontal.value_or_default())
-                {
-                    ImGui::SameLine(0.0f, 8.0f);
-                    plotSize.y = Config::Instance()->MenuScale.value() * 16;
-                }
+                    ImGui::SameLine(0.0f, 0.0f);
 
                 // Graph of upscaler times
                 ImGui::PlotLines("##UpscalerFrameTimeGraph", upscalerFrameTimeArray.data(), static_cast<int>(upscalerFrameTimeArray.size()), 0, nullptr,
@@ -1233,8 +1242,6 @@ bool MenuCommon::RenderMenu()
             style.MouseCursorScale = 1.0f;
             CopyMemory(style.Colors, styleold.Colors, sizeof(style.Colors)); // Restore colors		
         }
-
-        auto currentFeature = State::Instance().currentFeature;
 
         auto size = ImVec2{ 0.0f, 0.0f };
         ImGui::SetNextWindowSize(size);
@@ -2690,8 +2697,8 @@ bool MenuCommon::RenderMenu()
                                 auto accessToReactiveMask = State::Instance().currentFeature->AccessToReactiveMask();
                                 ImGui::BeginDisabled(!accessToReactiveMask);
 
-                                bool rm = Config::Instance()->DisableReactiveMask.value_or(!accessToReactiveMask || currentBackend == "dlss" || 
-                                                                                           (currentBackend == "xess" && !isVersionOrBetter(currentFeature->Version(), {2, 0, 1})));
+                                bool rm = Config::Instance()->DisableReactiveMask.value_or(!accessToReactiveMask || currentBackend == "dlss" ||
+                                                                                           (currentBackend == "xess" && !isVersionOrBetter(currentFeature->Version(), { 2, 0, 1 })));
                                 if (ImGui::Checkbox("Disable Reactive Mask", &rm))
                                 {
                                     Config::Instance()->DisableReactiveMask = rm;
@@ -3433,7 +3440,7 @@ void MenuCommon::Init(HWND InHwnd)
     io.WantCaptureMouse = _isVisible;
     io.WantSetMousePos = _isVisible;
 
-    io.IniFilename = io.LogFilename = nullptr; 
+    io.IniFilename = io.LogFilename = nullptr;
 
     bool initResult = ImGui_ImplWin32_Init(InHwnd);
     LOG_DEBUG("ImGui_ImplWin32_Init result: {0}", initResult);
