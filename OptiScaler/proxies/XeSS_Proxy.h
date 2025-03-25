@@ -229,7 +229,7 @@ public:
             mainModule = LoadLibrary(cfgPath.c_str());
         }
 
-        if (_dll == nullptr)
+        if (mainModule == nullptr)
         {
             std::filesystem::path libXessPath = dllPath.parent_path() / libraryName;
             LOG_INFO("Trying to load libxess.dll from dll path: {}", libXessPath.string());
