@@ -488,6 +488,13 @@ LRESULT MenuCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
 }
 
+void KeyUp(UINT vKey)
+{
+    inputMenu = vKey == Config::Instance()->ShortcutKey.value_or_default();
+    inputFps = vKey == Config::Instance()->FpsShortcutKey.value_or_default();
+    inputFpsCycle = vKey == Config::Instance()->FpsCycleShortcutKey.value_or_default();
+}
+
 std::string MenuCommon::GetBackendName(std::string* code)
 {
     if (*code == "fsr21")
@@ -873,10 +880,15 @@ static void MenuSizeCheck(ImGuiIO io)
     {
         if (!Config::Instance()->MenuScale.has_value())
         {
-            // 1000p is minimum for 1.0 menu ratio
-            Config::Instance()->MenuScale = (float)((int)((float)io.DisplaySize.y / 100.0f)) / 10.0f;
+            float y = State::Instance().screenHeight;
 
-            if (Config::Instance()->MenuScale.value() > 1.0f)
+            if (io.DisplaySize.y != 0)
+                y = (float)io.DisplaySize.y;
+
+            // 1000p is minimum for 1.0 menu ratio
+            Config::Instance()->MenuScale = (float)((int)(y / 100.0f)) / 10.0f;
+
+            if (Config::Instance()->MenuScale.value() > 1.0f || Config::Instance()->MenuScale.value() <= 0.0f)
                 Config::Instance()->MenuScale.value() = 1.0f;
 
             ImGuiStyle& style = ImGui::GetStyle();
@@ -895,11 +907,14 @@ static void MenuSizeCheck(ImGuiIO io)
 }
 
 static double lastTime = 0.0;
+static UINT64 uwpTargetFrame = 0;
 
 bool MenuCommon::RenderMenu()
 {
     if (!_isInited)
         return false;
+
+    _frameCount++;
 
     // FPS & frame time calculation
     auto now = Util::MillisecondsNow();
@@ -920,13 +935,14 @@ bool MenuCommon::RenderMenu()
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     auto currentFeature = State::Instance().currentFeature;
 
+    bool newFrame = false;
+
     // Handle Inputs
     {
         if (inputFps)
         {
-            Config::Instance()->ShowFps = !Config::Instance()->ShowFps.value_or_default();
             inputFps = false;
-            return false;
+            Config::Instance()->ShowFps = !Config::Instance()->ShowFps.value_or_default();
         }
 
         if (inputFpsCycle && Config::Instance()->ShowFps.value_or_default())
@@ -944,11 +960,6 @@ bool MenuCommon::RenderMenu()
                 Config::Instance()->ReloadFakenvapi();
                 auto dllPath = Util::DllPath().parent_path() / "dlssg_to_fsr3_amd_is_better.dll";
                 State::Instance().NukemsFilesAvailable = std::filesystem::exists(dllPath);
-
-                io.ClearEventsQueue();
-                io.ClearInputCharacters();
-                io.ClearInputKeys();
-                io.ClearInputMouse();
 
                 if (hasGamepad)
                     io.BackendFlags | ImGuiBackendFlags_HasGamepad;
@@ -969,7 +980,7 @@ bool MenuCommon::RenderMenu()
             {
                 hasGamepad = (io.BackendFlags | ImGuiBackendFlags_HasGamepad) > 0;
                 io.BackendFlags &= 30;
-                io.ConfigFlags = ImGuiConfigFlags_NavNoCaptureKeyboard | ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
+                io.ConfigFlags = ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
 
                 if (pfn_ClipCursor_hooked)
                     pfn_ClipCursor(&_cursorLimit);
@@ -980,8 +991,6 @@ bool MenuCommon::RenderMenu()
             io.MouseDrawCursor = _isVisible;
             io.WantCaptureKeyboard = _isVisible;
             io.WantCaptureMouse = _isVisible;
-
-            return false;
         }
 
         inputFpsCycle = false;
@@ -1003,7 +1012,16 @@ bool MenuCommon::RenderMenu()
         frameTime /= frameCnt;
         frameRate = 1000.0 / frameTime;
 
-        ImGui_ImplWin32_NewFrame();
+        if (!_isUWP)
+        {
+            ImGui_ImplWin32_NewFrame();
+        }
+        else if (!newFrame)
+        {
+            ImVec2 displaySize{ State::Instance().screenWidth, State::Instance().screenHeight };
+            ImGui_ImplUwp_NewFrame(displaySize);
+        }
+
         MenuHdrCheck(io);
         MenuSizeCheck(io);
         ImGui::NewFrame();
@@ -1207,7 +1225,16 @@ bool MenuCommon::RenderMenu()
             frameTime /= frameCnt;
             frameRate = 1000.0 / frameTime;
 
-            ImGui_ImplWin32_NewFrame();
+            if (!_isUWP)
+            {
+                ImGui_ImplWin32_NewFrame();
+            }
+            else if (!newFrame)
+            {
+                ImVec2 displaySize{ State::Instance().screenWidth, State::Instance().screenHeight };
+                ImGui_ImplUwp_NewFrame(displaySize);
+            }
+
             MenuHdrCheck(io);
             MenuSizeCheck(io);
             ImGui::NewFrame();
@@ -3218,7 +3245,7 @@ bool MenuCommon::RenderMenu()
                     _isVisible = false;
                     hasGamepad = (io.BackendFlags | ImGuiBackendFlags_HasGamepad) > 0;
                     io.BackendFlags &= 30;
-                    io.ConfigFlags = ImGuiConfigFlags_NavNoCaptureKeyboard | ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
+                    io.ConfigFlags = ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
 
                     if (pfn_ClipCursor_hooked)
                         pfn_ClipCursor(&_cursorLimit);
@@ -3417,10 +3444,11 @@ bool MenuCommon::RenderMenu()
     }
 }
 
-void MenuCommon::Init(HWND InHwnd)
+void MenuCommon::Init(HWND InHwnd, bool isUWP)
 {
     _handle = InHwnd;
     _isVisible = false;
+    _isUWP = isUWP;
 
     LOG_DEBUG("Handle: {0:X}", (size_t)_handle);
 
@@ -3433,7 +3461,7 @@ void MenuCommon::Init(HWND InHwnd)
 
     hasGamepad = (io.BackendFlags | ImGuiBackendFlags_HasGamepad) > 0;
     io.BackendFlags &= 30;
-    io.ConfigFlags = ImGuiConfigFlags_NavNoCaptureKeyboard | ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
+    io.ConfigFlags = ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
 
     io.MouseDrawCursor = _isVisible;
     io.WantCaptureKeyboard = _isVisible;
@@ -3442,8 +3470,19 @@ void MenuCommon::Init(HWND InHwnd)
 
     io.IniFilename = io.LogFilename = nullptr;
 
-    bool initResult = ImGui_ImplWin32_Init(InHwnd);
-    LOG_DEBUG("ImGui_ImplWin32_Init result: {0}", initResult);
+    bool initResult = false;
+
+    if (!isUWP)
+    {
+        ImGui_ImplWin32_Init(InHwnd);
+        LOG_DEBUG("ImGui_ImplWin32_Init result: {0}", initResult);
+    }
+    else
+    {
+        ImGui_ImplUwp_Init(InHwnd);
+        ImGui_BindUwpKeyUp(KeyUp);
+        LOG_DEBUG("ImGui_ImplUwp_Init result: {0}", initResult);
+    }
 
     MenuBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
 
@@ -3452,7 +3491,7 @@ void MenuCommon::Init(HWND InHwnd)
         _hdrTonemapApplied = false;
     }
 
-    if (_oWndProc == nullptr)
+    if (_oWndProc == nullptr && !isUWP)
         _oWndProc = (WNDPROC)SetWindowLongPtr(InHwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
 
     LOG_DEBUG("_oWndProc: {0:X}", (ULONG64)_oWndProc);
@@ -3477,7 +3516,11 @@ void MenuCommon::Shutdown()
     if (pfn_SetCursorPos_hooked)
         DetachHooks();
 
-    ImGui_ImplWin32_Shutdown();
+    if (!_isUWP)
+        ImGui_ImplWin32_Shutdown();
+    else
+        ImGui_ImplUwp_Shutdown();
+
     ImGui::DestroyContext();
 
     _isInited = false;
@@ -3500,7 +3543,7 @@ void MenuCommon::HideMenu()
 
     RECT windowRect = {};
 
-    if (GetWindowRect(_handle, &windowRect))
+    if (!_isUWP && GetWindowRect(_handle, &windowRect))
     {
         auto x = windowRect.left + (windowRect.right - windowRect.left) / 2;
         auto y = windowRect.top + (windowRect.bottom - windowRect.top) / 2;

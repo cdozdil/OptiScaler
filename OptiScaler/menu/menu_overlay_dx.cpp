@@ -534,7 +534,7 @@ void MenuOverlayDx::CleanupRenderTarget(bool clearQueue, HWND hWnd)
         CleanupRenderTargetDx12(clearQueue);
 }
 
-void MenuOverlayDx::Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd)
+void MenuOverlayDx::Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd, bool isUWP)
 {
     LOG_DEBUG("");
 
@@ -577,11 +577,11 @@ void MenuOverlayDx::Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
         if (MenuOverlayBase::IsInited())
             MenuOverlayBase::Shutdown();
 
-        MenuOverlayBase::Init(hWnd);
+        MenuOverlayBase::Init(hWnd, isUWP);
 
         _isInited = false;
     }
-
+     
     // Init
     if (!_isInited)
     {

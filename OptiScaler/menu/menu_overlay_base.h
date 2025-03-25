@@ -19,7 +19,7 @@ public:
 	static bool IsInited();
 	static bool IsVisible();
 
-	static void Init(HWND InHandle);
+	static void Init(HWND InHandle, bool isUWP);
     static bool RenderMenu();
 	static void Shutdown();
 	static void HideMenu();

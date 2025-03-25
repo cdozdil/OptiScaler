@@ -55,7 +55,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
             MenuOverlayBase::Shutdown();
 
         LOG_DEBUG("MenuOverlayBase::Init");
-        MenuOverlayBase::Init(hwnd);
+        MenuOverlayBase::Init(hwnd, false);
     }
 
     ImGuiIO& io = ImGui::GetIO();
@@ -577,7 +577,7 @@ void MenuOverlayVk::CreateSwapchain(VkDevice device, VkPhysicalDevice pd, VkInst
         }
 
         LOG_DEBUG("MenuOverlayBase::Init({0:X})", (UINT64)hwnd);
-        MenuOverlayBase::Init(hwnd);
+        MenuOverlayBase::Init(hwnd, false);
     }
 
     CreateVulkanObjects(device, pd, instance, hwnd, pCreateInfo, pSwapchain);

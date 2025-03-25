@@ -413,6 +413,9 @@
     <ClInclude Include="upscalers\xess\XeSSFeature_Vk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\imgui\imgui_impl_uwp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
@@ -675,6 +678,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="upscalers\xess\XeSSFeature_Vk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="include\imgui\imgui_impl_uwp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

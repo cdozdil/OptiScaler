@@ -9,13 +9,13 @@
 
 #define USE_LOCAL_MUTEX
 
-typedef HRESULT(*PFN_SC_Present)(IDXGISwapChain*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*, IUnknown*, HWND);
+typedef HRESULT(*PFN_SC_Present)(IDXGISwapChain*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*, IUnknown*, HWND, bool);
 typedef void(*PFN_SC_Clean)(bool, HWND);
 typedef void(*PFN_SC_Release)(HWND);
 
 struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapChain4 : public IDXGISwapChain4
 {
-    WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* pDevice, HWND hWnd, PFN_SC_Present renderTrig, PFN_SC_Clean clearTrig, PFN_SC_Release releaseTrig);
+    WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* pDevice, HWND hWnd, PFN_SC_Present renderTrig, PFN_SC_Clean clearTrig, PFN_SC_Release releaseTrig, bool isUWP);
 
     virtual ~WrappedIDXGISwapChain4();
 
@@ -267,6 +267,7 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
     PFN_SC_Clean ClearTrig = nullptr;
     PFN_SC_Release ReleaseTrig = nullptr;
     HWND Handle = nullptr;
+    bool UWP = false;
 
 #ifdef USE_LOCAL_MUTEX
     OwnedMutex _localMutex;

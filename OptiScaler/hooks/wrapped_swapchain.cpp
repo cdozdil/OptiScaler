@@ -10,8 +10,8 @@
 
 static int scCount = 0;
 
-WrappedIDXGISwapChain4::WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* pDevice, HWND hWnd, PFN_SC_Present renderTrig, PFN_SC_Clean clearTrig, PFN_SC_Release releaseTrig)
-    : m_pReal(real), Device(pDevice), Handle(hWnd), RenderTrig(renderTrig), ClearTrig(clearTrig), ReleaseTrig(releaseTrig), m_iRefcount(1)
+WrappedIDXGISwapChain4::WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* pDevice, HWND hWnd, PFN_SC_Present renderTrig, PFN_SC_Clean clearTrig, PFN_SC_Release releaseTrig, bool isUWP)
+    : m_pReal(real), Device(pDevice), Handle(hWnd), RenderTrig(renderTrig), ClearTrig(clearTrig), ReleaseTrig(releaseTrig), m_iRefcount(1), UWP(isUWP)
 {
     id = ++scCount;
     LOG_INFO("{0} created, real: {1:X}", id, (UINT64)real);
@@ -465,7 +465,7 @@ HRESULT WrappedIDXGISwapChain4::Present(UINT SyncInterval, UINT Flags)
     HRESULT result;
 
     if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART) && RenderTrig != nullptr)
-        result = RenderTrig(m_pReal, SyncInterval, Flags, nullptr, Device, Handle);
+        result = RenderTrig(m_pReal, SyncInterval, Flags, nullptr, Device, Handle, UWP);
     else
         result = m_pReal->Present(SyncInterval, Flags);
 
@@ -488,7 +488,7 @@ HRESULT WrappedIDXGISwapChain4::Present1(UINT SyncInterval, UINT Flags, const DX
     HRESULT result;
 
     if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART) && RenderTrig != nullptr)
-        result = RenderTrig(m_pReal1, SyncInterval, Flags, pPresentParameters, Device, Handle);
+        result = RenderTrig(m_pReal1, SyncInterval, Flags, pPresentParameters, Device, Handle, UWP);
     else
         result = m_pReal1->Present1(SyncInterval, Flags, pPresentParameters);
 

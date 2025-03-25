@@ -8,6 +8,7 @@
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_win32.h"
+#include "imgui/imgui_impl_uwp.h"
 
 #include "menu_base.h"
 
@@ -37,6 +38,7 @@ private:
     inline static WNDPROC _oWndProc = nullptr;
     inline static bool _isVisible = false;
     inline static bool _isInited = false;
+    inline static bool _isUWP = false;
     //inline static bool _isResetRequested = false;
 
     // mipmap calculations
@@ -50,6 +52,8 @@ private:
 
     // dlss enabler
     inline static int _deLimitFps = 500;
+
+    inline static UINT64 _frameCount = 0;
 
     // reflex
     inline static float _limitFps = INFINITY;
@@ -149,7 +153,7 @@ public:
     static HWND Handle() { return _handle; }
 
     static bool RenderMenu();
-    static void Init(HWND InHwnd);
+    static void Init(HWND InHwnd, bool isUWP);
     static void Shutdown();
     static void HideMenu();
 };

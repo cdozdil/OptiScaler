@@ -29,7 +29,7 @@ bool MenuDxBase::IsHandleDifferent()
 
     HWND frontWindow = Util::GetProcessWindow();
 
-    if (frontWindow == _handle)
+    if (frontWindow != nullptr && frontWindow == _handle)
         return false;
 
     _handle = frontWindow;
@@ -52,7 +52,7 @@ MenuDxBase::MenuDxBase(HWND handle) : _handle(handle)
     if (Config::Instance()->OverlayMenu.value_or_default())
         return;
 
-    MenuCommon::Init(handle);
+    MenuCommon::Init(handle, false);
 
     _baseInit = MenuCommon::IsInited();
 }

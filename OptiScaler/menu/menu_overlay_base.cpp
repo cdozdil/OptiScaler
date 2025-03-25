@@ -5,8 +5,8 @@
 #include <Logger.h>
 #include <resource.h>
 
-#include "imgui/imgui.h"
-#include "imgui/imgui_impl_win32.h"
+//#include "imgui/imgui.h"
+//#include "imgui/imgui_impl_win32.h"
 
 
 HWND MenuOverlayBase::Handle()
@@ -40,13 +40,13 @@ bool MenuOverlayBase::IsVisible()
 }
 
 
-void MenuOverlayBase::Init(HWND InHandle)
+void MenuOverlayBase::Init(HWND InHandle, bool isUWP)
 {
 	if (!Config::Instance()->OverlayMenu.value_or_default())
 		return;
 
 	LOG_FUNC();
-	MenuCommon::Init(InHandle);
+	MenuCommon::Init(InHandle, isUWP);
 }
 
 bool MenuOverlayBase::RenderMenu()
