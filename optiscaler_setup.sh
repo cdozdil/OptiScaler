@@ -14,7 +14,7 @@ echo ""
 echo "Coping is strong with this one..."
 echo ""
 
-rm -f "!! EXTRACT ALL FILES TO GAME FOLDER !!" 2>/dev/null
+# !! EXTRACT ALL FILES TO GAME FOLDER !!
 
 if [[ ! -f "OptiScaler.dll" ]]; then
     echo 'OptiScaler "OptiScaler.dll" file is not found!'
