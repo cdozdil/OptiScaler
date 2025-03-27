@@ -105,7 +105,7 @@ A more detailed guide will be available in the [Wiki](https://github.com/cdozdil
 
 ### [Automated]
 **1.** Extract **all** of the Optiscaler files **by the main game exe** _(for Unreal Engine games, that's usually the _win_shipping.exe_ in one of the subfolders, generally `<path-to-game>\Game-or-Project-name\Binaries\Win64 or WinGDK\`, **ignore** the `Engine` folder)_  
-**2.** Try the `OptiScaler Setup.bat` script for automating the renaming process. Alternative for Linux is `optiscaler_setup.sh`. 
+**2.** Try the `OptiScaler Setup.bat` script for automating the renaming process. Alternative for Linux is `optiscaler_setup.sh`.  
 _**3.** If the Bat file wasn't successful, please check the **Manual** steps._
 
 ---
