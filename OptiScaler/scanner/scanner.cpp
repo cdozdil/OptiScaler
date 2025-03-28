@@ -1,8 +1,10 @@
 #include "scanner.h"
 
+#include <proxies/KernelBase_Proxy.h>
+
 std::pair<uintptr_t, uintptr_t> GetModule(const std::wstring_view moduleName)
 {
-	const static uintptr_t moduleBase = reinterpret_cast<uintptr_t>(GetModuleHandleW(moduleName.data()));
+	const static uintptr_t moduleBase = reinterpret_cast<uintptr_t>(KernelBaseProxy::GetModuleHandleW_()(moduleName.data()));
 	const static uintptr_t moduleEnd = [&]()
 	{
 		auto ntHeaders = reinterpret_cast<PIMAGE_NT_HEADERS64>(moduleBase + reinterpret_cast<PIMAGE_DOS_HEADER>(moduleBase)->e_lfanew);

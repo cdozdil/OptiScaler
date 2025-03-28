@@ -1,6 +1,7 @@
 #pragma once
 
 #include "proxies/NVNGX_Proxy.h"
+#include "proxies/KernelBase_Proxy.h"
 
 #define DLSSG_MOD_ID_OFFSET 2000000
 
@@ -65,7 +66,7 @@ public:
             if (_dll == nullptr)
             {
                 auto dllPath = Util::DllPath().parent_path() / "dlssg_to_fsr3_amd_is_better.dll";
-                _dll = LoadLibraryW(dllPath.c_str());
+                _dll = KernelBaseProxy::LoadLibraryExW_()(dllPath.c_str(), NULL, 0);
             }
 
             if (_dll != nullptr) {
@@ -101,7 +102,7 @@ public:
             if (_dll == nullptr)
             {
                 auto dllPath = Util::DllPath().parent_path() / "dlssg_to_fsr3_amd_is_better.dll";
-                _dll = LoadLibraryW(dllPath.c_str());
+                _dll = KernelBaseProxy::LoadLibraryExW_()(dllPath.c_str(), NULL, 0);
             }
 
             if (_dll != nullptr) {

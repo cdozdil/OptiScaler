@@ -107,7 +107,7 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
         LOG_INFO("featureFlags (!JitterCancellation) {0:b}", featureFlags);
     }
 
-    if (Config::Instance()->DisplayResolution.value_or(!mvLowRes || State::Instance().DisplaySizeMV.value_or(false)))
+    if (Config::Instance()->DisplayResolution.value_or(!mvLowRes))
     {
         LOG_INFO("featureFlags (!LowResMV) {0:b}", featureFlags);
     }
@@ -131,7 +131,7 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
     // Resolution -----------------------------
     if (State::Instance().api != Vulkan && Config::Instance()->OutputScalingEnabled.value_or_default() && 
-        !Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false))
+        !Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0))
     {
         LOG_DEBUG("Output Scaling is active");
 
@@ -165,7 +165,7 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
         _targetHeight = RenderHeight();
 
         // enable output scaling to restore image
-        if (!Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false))
+        if (!Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0))
         {
             Config::Instance()->OutputScalingMultiplier.set_volatile_value(1.0f);
             Config::Instance()->OutputScalingEnabled.set_volatile_value(true);

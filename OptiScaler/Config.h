@@ -179,6 +179,8 @@ public:
 	// Sharpness 
 	CustomOptional<bool> OverrideSharpness{ false };
 	CustomOptional<float> Sharpness{ 0.3f };
+	CustomOptional<bool> ContrastEnabled{ false };
+	CustomOptional<float> Contrast{ 0.0f };
 
 	// Menu
 	CustomOptional<float> MenuScale{ 1.0f };
@@ -300,7 +302,7 @@ public:
 	// Plugins
 	CustomOptional<std::wstring> PluginPath{ L"plugins" };
 	CustomOptional<bool> LoadSpecialK{ false };
-	CustomOptional<bool> LoadReShade{ false };
+ 	CustomOptional<bool> LoadReShade{ false };
 
 	// Frame Generation
 	CustomOptional<FGType> FGType{ FGType::NoFG };

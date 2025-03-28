@@ -1,10 +1,21 @@
 #pragma once
 
 #include <pch.h>
+
+#include <proxies/Dxgi_Proxy.h>
+#include <proxies/Kernel32_Proxy.h>
+#include <proxies/KernelBase_Proxy.h>
+
 #include <Unknwn.h>
 #include <Windows.h>
 
-//#include <d3dkmthk.h>
+typedef HRESULT(__cdecl* PFN_AmdExtD3DCreateInterface)(IUnknown* pOuter, REFIID riid, void** ppvObject);
+
+static HMODULE moduleAmdxc64 = nullptr;
+static Kernel32Proxy::PFN_GetProcAddress o_K32_GetProcAddress = nullptr;
+static KernelBaseProxy::PFN_GetProcAddress o_KB_GetProcAddress = nullptr;
+
+#pragma region GDI32
 
 // Manually define structures
 typedef struct _D3DKMT_UMDFILENAMEINFO_L {
@@ -50,11 +61,11 @@ inline static std::vector<std::filesystem::path> GetDriverStore()
 
     // Load D3DKMT functions dynamically
     bool libraryLoaded = false;
-    HMODULE hGdi32 = GetModuleHandle(L"Gdi32.dll");
+    HMODULE hGdi32 = KernelBaseProxy::GetModuleHandleW_()(L"Gdi32.dll");
 
     if (hGdi32 == nullptr)
     {
-        hGdi32 = LoadLibrary(L"Gdi32.dll");
+        hGdi32 = KernelBaseProxy::LoadLibraryExW_()(L"Gdi32.dll", NULL, 0);
         libraryLoaded = hGdi32 != nullptr;
     }
 
@@ -66,9 +77,9 @@ inline static std::vector<std::filesystem::path> GetDriverStore()
 
     do
     {
-        auto o_D3DKMTEnumAdapters = (PFN_D3DKMTEnumAdapters_L)GetProcAddress(hGdi32, "D3DKMTEnumAdapters");
-        auto o_D3DKMTQueryAdapterInfo = (PFN_D3DKMTQueryAdapterInfo_L)GetProcAddress(hGdi32, "D3DKMTQueryAdapterInfo");
-        auto o_D3DKMTCloseAdapter = (PFN_D3DKMTCloseAdapter)GetProcAddress(hGdi32, "D3DKMTCloseAdapter");
+        auto o_D3DKMTEnumAdapters = (PFN_D3DKMTEnumAdapters_L)KernelBaseProxy::GetProcAddress_()(hGdi32, "D3DKMTEnumAdapters");
+        auto o_D3DKMTQueryAdapterInfo = (PFN_D3DKMTQueryAdapterInfo_L)KernelBaseProxy::GetProcAddress_()(hGdi32, "D3DKMTQueryAdapterInfo");
+        auto o_D3DKMTCloseAdapter = (PFN_D3DKMTCloseAdapter)KernelBaseProxy::GetProcAddress_()(hGdi32, "D3DKMTCloseAdapter");
 
         if (o_D3DKMTEnumAdapters == nullptr || o_D3DKMTQueryAdapterInfo == nullptr || o_D3DKMTCloseAdapter == nullptr)
         {
@@ -124,12 +135,15 @@ inline static std::vector<std::filesystem::path> GetDriverStore()
     } while (false);
 
     if (libraryLoaded)
-        FreeLibrary(hGdi32);
+        KernelBaseProxy::FreeLibrary_()(hGdi32);
 
     return result;
 }
 
+#pragma endregion
+
 /* Potato_of_Doom's Implementation */
+#pragma region IAmdExtFfxApi
 
 MIDL_INTERFACE("b58d6601-7401-4234-8180-6febfc0e484c")
 IAmdExtFfxApi : public IUnknown
@@ -146,7 +160,7 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
 
     HRESULT STDMETHODCALLTYPE UpdateFfxApiProvider(void* pData, uint32_t dataSizeInBytes) override
     {
-        LOG_INFO("UpdateFfxApiProvider called"); 
+        LOG_INFO("UpdateFfxApiProvider called");
 
         if (pfnUpdateFfxApiProvider == nullptr)
         {
@@ -159,12 +173,12 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
                 {
                     auto dllPath = storePath[i] / L"amdxcffx64.dll";
                     LOG_DEBUG("Trying to load: {}", wstring_to_string(dllPath.c_str()));
-                    fsr4Module = LoadLibrary(dllPath.c_str());
+                    fsr4Module = KernelBaseProxy::LoadLibraryExW_()(dllPath.c_str(), NULL, 0);
                 }
             }
 
             if (fsr4Module == nullptr)
-                fsr4Module = LoadLibrary(L"amdxcffx64.dll");
+                fsr4Module = KernelBaseProxy::LoadLibraryExW_()(L"amdxcffx64.dll", NULL, 0);
 
             if (fsr4Module == nullptr)
             {
@@ -172,7 +186,7 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
                 return E_NOINTERFACE;
             }
 
-            pfnUpdateFfxApiProvider = (PFN_UpdateFfxApiProvider)GetProcAddress(fsr4Module, "UpdateFfxApiProvider");
+            pfnUpdateFfxApiProvider = (PFN_UpdateFfxApiProvider)KernelBaseProxy::GetProcAddress_()(fsr4Module, "UpdateFfxApiProvider");
 
             if (pfnUpdateFfxApiProvider == nullptr)
             {
@@ -182,7 +196,12 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
         }
 
         if (pfnUpdateFfxApiProvider != nullptr)
-            return pfnUpdateFfxApiProvider(pData, dataSizeInBytes);
+        {
+            State::DisableChecks();
+            auto result = pfnUpdateFfxApiProvider(pData, dataSizeInBytes);
+            State::EnableChecks();
+            return result;
+        }
 
         return E_NOINTERFACE;
     }
@@ -202,3 +221,151 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
         return 0;
     }
 };
+
+#pragma endregion
+
+static AmdExtFfxApi* _amdExtFfxApi = nullptr;
+static PFN_AmdExtD3DCreateInterface o_AmdExtD3DCreateInterface = nullptr;
+
+/// <summary>
+/// Sets Config::Instance()->Fsr4Update if GPU is RDNA4
+/// </summary>
+static inline void CheckForGPU()
+{
+    if (Config::Instance()->Fsr4Update.has_value())
+        return;
+
+    // Call init for any case
+    DxgiProxy::Init();
+
+    IDXGIFactory* factory;
+    HRESULT result = DxgiProxy::CreateDxgiFactory_()(__uuidof(factory), &factory);
+
+    UINT adapterIndex = 0;
+    DXGI_ADAPTER_DESC adapterDesc{};
+    IDXGIAdapter* adapter;
+
+    while (factory->EnumAdapters(adapterIndex, &adapter) == S_OK)
+    {
+        if (adapter == nullptr)
+        {
+            adapterIndex++;
+            continue;
+        }
+
+        State::Instance().skipSpoofing = true;
+        result = adapter->GetDesc(&adapterDesc);
+        State::Instance().skipSpoofing = false;
+
+        if (result == S_OK && adapterDesc.VendorId != 0x00001414)
+        {
+            std::wstring szName(adapterDesc.Description);
+            std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), adapterDesc.DedicatedVideoMemory / (1024 * 1024));
+            LOG_INFO("{}", descStr);
+
+            // If GPU is AMD
+            if (adapterDesc.VendorId == 0x1002)
+            {
+                // If GPU Name contains 90XX or GFX12 (Linux) always set it to true
+                if (szName.find(L" 90") != std::wstring::npos || szName.find(L" GFX12") != std::wstring::npos)
+                    Config::Instance()->Fsr4Update = true;
+            }
+        }
+        else
+        {
+            LOG_DEBUG("Can't get description of adapter: {}", adapterIndex);
+        }
+
+        adapter->Release();
+        adapter = nullptr;
+        adapterIndex++;
+    }
+
+    factory->Release();
+    factory = nullptr;
+
+    if (!Config::Instance()->Fsr4Update.has_value())
+        Config::Instance()->Fsr4Update = false;
+
+    LOG_INFO("Fsr4Update: {}", Config::Instance()->Fsr4Update.value_or_default());
+}
+
+inline static HRESULT STDMETHODCALLTYPE hkAmdExtD3DCreateInterface(IUnknown* pOuter, REFIID riid, void** ppvObject)
+{
+    // If querying IAmdExtFfxApi 
+    if (riid == __uuidof(IAmdExtFfxApi))
+    {
+        if (_amdExtFfxApi == nullptr)
+            _amdExtFfxApi = new AmdExtFfxApi();
+
+        // Return custom one
+        *ppvObject = _amdExtFfxApi;
+
+        return S_OK;
+    }
+
+    if (o_AmdExtD3DCreateInterface != nullptr)
+        return o_AmdExtD3DCreateInterface(pOuter, riid, ppvObject);
+
+    return E_NOINTERFACE;
+}
+
+inline static FARPROC hk_K32_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
+{
+    if (hModule == Kernel32Proxy::Module() || hModule == KernelBaseProxy::Module())
+        return o_K32_GetProcAddress(hModule, lpProcName);
+
+    if ((size_t)lpProcName < 0x0000000010000000)
+        return o_K32_GetProcAddress(hModule, lpProcName);
+
+    // For FSR4 Upgrade
+    if (hModule == moduleAmdxc64 && o_AmdExtD3DCreateInterface != nullptr && lpProcName != nullptr && strcmp(lpProcName, "AmdExtD3DCreateInterface") == 0)
+    {
+        CheckForGPU();
+
+        // Return custom method for upgrade for RDNA4
+        if (Config::Instance()->Fsr4Update.value_or_default())
+            return (FARPROC)hkAmdExtD3DCreateInterface;
+    }
+
+    return o_K32_GetProcAddress(hModule, lpProcName);
+}
+
+inline static FARPROC hk_KB_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
+{
+    if (hModule == dllModule && lpProcName != nullptr)
+        LOG_DEBUG("Trying to get process address of {0}", lpProcName);
+
+    // For FSR4 Upgrade
+    if (hModule == moduleAmdxc64 && o_AmdExtD3DCreateInterface != nullptr && lpProcName != nullptr && strcmp(lpProcName, "AmdExtD3DCreateInterface") == 0)
+    {
+        CheckForGPU();
+
+        // Return custom method for upgrade for RDNA4
+        if (Config::Instance()->Fsr4Update.value_or_default())
+            return (FARPROC)hkAmdExtD3DCreateInterface;
+    }
+
+    return o_KB_GetProcAddress(hModule, lpProcName);
+}
+
+inline void InitFSR4Update()
+{
+    LOG_DEBUG("");
+
+    // For FSR4 Upgrade
+    moduleAmdxc64 = KernelBaseProxy::GetModuleHandleW_()(L"amdxc64.dll");
+    if (moduleAmdxc64 == nullptr)
+        moduleAmdxc64 = KernelBaseProxy::LoadLibraryExW_()(L"amdxc64.dll", NULL, 0);
+
+    if (moduleAmdxc64 != nullptr)
+    {
+        LOG_DEBUG("Found amdxc64.dll");
+        o_AmdExtD3DCreateInterface = (PFN_AmdExtD3DCreateInterface)Kernel32Proxy::GetProcAddress_()(moduleAmdxc64, "AmdExtD3DCreateInterface");
+    }
+
+    o_K32_GetProcAddress = Kernel32Proxy::Hook_GetProcAddress(hk_K32_GetProcAddress);
+
+    // Disabled 
+    //o_KB_GetProcAddress = KernelBaseProxy::Hook_GetProcAddress(hk_KB_GetProcAddress);
+}

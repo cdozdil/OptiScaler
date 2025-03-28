@@ -98,7 +98,7 @@ bool FSR2FeatureVk212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     else
         Config::Instance()->JitterCancellation.set_volatile_value(false);
 
-    if (Config::Instance()->DisplayResolution.value_or(!LowRes || State::Instance().DisplaySizeMV.value_or(false)))
+    if (Config::Instance()->DisplayResolution.value_or(!LowRes))
     {
         _contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
         LOG_INFO("contextDesc.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
@@ -141,7 +141,7 @@ bool FSR2FeatureVk212::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevi
     return InitFSR2(InParameters);
 }
 
-void transitionImageToShaderReadOnly(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkAccessFlagBits flag = VK_ACCESS_SHADER_READ_BIT) 
+void transitionImageToShaderReadOnly(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkAccessFlagBits flag = VK_ACCESS_SHADER_READ_BIT)
 {
     VkImageMemoryBarrier barrier = {};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -157,7 +157,7 @@ void transitionImageToShaderReadOnly(VkCommandBuffer commandBuffer, VkImage imag
     barrier.subresourceRange.layerCount = 1;
 
     barrier.srcAccessMask = 0; // No previous accesses need to be waited on
-    barrier.dstAccessMask = flag; 
+    barrier.dstAccessMask = flag;
 
     vkCmdPipelineBarrier(
         commandBuffer,
@@ -277,10 +277,8 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     }
     else
     {
-        if (!Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false))
-            LOG_ERROR("Depth not exist!!");
-        else
-            LOG_INFO("Using high res motion vectors, depth is not needed!!");
+        LOG_ERROR("Depth not exist!!");
+        return false;
     }
 
     void* paramExp = nullptr;
@@ -327,7 +325,7 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
         if (paramReactiveMask)
         {
             LOG_DEBUG("Bias mask exist..");
-            
+
             if (Config::Instance()->DlssReactiveMaskBias.value_or_default() > 0.0f)
             {
                 params.reactive = Fsr212::ffxGetTextureResourceVK212(&_context, ((NVSDK_NGX_Resource_VK*)paramReactiveMask)->Resource.ImageViewInfo.Image,

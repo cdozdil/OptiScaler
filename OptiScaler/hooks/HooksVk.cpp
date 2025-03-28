@@ -4,6 +4,9 @@
 #include <Config.h>
 
 #include <menu/menu_overlay_vk.h>
+
+#include <proxies/Kernel32_Proxy.h>
+
 #include <detours/detours.h>
 
 typedef struct VkWin32SurfaceCreateInfoKHR {
@@ -203,9 +206,9 @@ void HooksVk::HookVk(HMODULE vulkan1)
     if (o_vkCreateDevice != nullptr)
         return;
 
-    o_vkCreateDevice = (PFN_vkCreateDevice)GetProcAddress(vulkan1, "vkCreateDevice");
-    o_vkCreateInstance = (PFN_vkCreateInstance)GetProcAddress(vulkan1, "vkCreateInstance");
-    o_vkCreateWin32SurfaceKHR = (PFN_vkCreateWin32SurfaceKHR)GetProcAddress(vulkan1, "vkCreateWin32SurfaceKHR");
+    o_vkCreateDevice = (PFN_vkCreateDevice)KernelBaseProxy::GetProcAddress_()(vulkan1, "vkCreateDevice");
+    o_vkCreateInstance = (PFN_vkCreateInstance)KernelBaseProxy::GetProcAddress_()(vulkan1, "vkCreateInstance");
+    o_vkCreateWin32SurfaceKHR = (PFN_vkCreateWin32SurfaceKHR)KernelBaseProxy::GetProcAddress_()(vulkan1, "vkCreateWin32SurfaceKHR");
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());

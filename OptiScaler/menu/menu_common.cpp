@@ -18,6 +18,7 @@ static bool inputMenu = false;
 static bool inputFps = false;
 static bool inputFpsCycle = false;
 static bool hasGamepad = false;
+static bool fsr31InitTried = false;
 
 void MenuCommon::ShowTooltip(const char* tip) {
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -517,6 +518,9 @@ std::string MenuCommon::GetBackendName(std::string* code)
 
     if (*code == "xess")
         return "XeSS";
+
+    if (*code == "xess_12")
+        return "XeSS w/Dx12";
 
     if (*code == "dlss")
         return "DLSS";
@@ -1419,8 +1423,9 @@ bool MenuCommon::RenderMenu()
                     disabledMask[1] = true;
                     fgDesc[1] = "Unsupported Opti working mode";
                 }
-                else if (!FfxApiProxy::InitFfxDx12())
+                else if ((fsr31InitTried && FfxApiProxy::Dx12Module() == nullptr) || (!fsr31InitTried && !FfxApiProxy::InitFfxDx12()))
                 {
+                    fsr31InitTried = true;
                     disabledMask[1] = true;
                     fgDesc[1] = "amd_fidelityfx_dx12.dll is missing";
                 }
@@ -2249,6 +2254,21 @@ bool MenuCommon::RenderMenu()
 
                         ImGui::BeginDisabled(!Config::Instance()->RcasEnabled.value_or(rcasEnabled));
 
+                        if (bool contrastEnabled = Config::Instance()->ContrastEnabled.value_or_default(); ImGui::Checkbox("Contrast Enabled", &contrastEnabled))
+                            Config::Instance()->ContrastEnabled = contrastEnabled;
+
+                        ShowHelpMarker("Increases sharpness at high contrast areas.");
+                                       
+                        if (Config::Instance()->ContrastEnabled.value_or_default() && Config::Instance()->Sharpness.value_or_default() > 1.0f)
+                            Config::Instance()->Sharpness = 1.0f;
+
+                        if(float contrast = Config::Instance()->Contrast.value_or_default(); ImGui::SliderFloat("Contrast", &contrast, 0.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
+                            Config::Instance()->Contrast = contrast;
+
+                        ShowHelpMarker("Higher values increases sharpness at high contrast areas.\n"
+                                       "High values might cause graphical GLITCHES \n"
+                                       "when used with high sharpness values !!!");
+
                         ImGui::Spacing();
                         if (ImGui::CollapsingHeader("Motion Adaptive Sharpness##2"))
                         {
@@ -2265,7 +2285,7 @@ bool MenuCommon::RenderMenu()
                             if (bool overrideMSDebug = Config::Instance()->MotionSharpnessDebug.value_or_default(); ImGui::Checkbox("MAS Debug", &overrideMSDebug))
                                 Config::Instance()->MotionSharpnessDebug = overrideMSDebug;
                             ShowHelpMarker("Areas that are more red will have more sharpness applied\n"
-                                           "Green areas will get reduced sharpness");
+                                           "Green areas will get reduced sharpness"); 
 
                             float motionSharpness = Config::Instance()->MotionSharpness.value_or_default();
                             ImGui::SliderFloat("MotionSharpness", &motionSharpness, -1.3f, 1.3f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
@@ -2432,7 +2452,7 @@ bool MenuCommon::RenderMenu()
                     if (State::Instance().api == DX12 || State::Instance().api == DX11)
                     {
                         // if motion vectors are not display size
-                        ImGui::BeginDisabled(!Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false) &&
+                        ImGui::BeginDisabled(!Config::Instance()->DisplayResolution.value_or((currentFeature->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0) &&
                                              !(State::Instance().currentFeature->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes));
 
                         ImGui::SeparatorText("Output Scaling");
@@ -2543,7 +2563,7 @@ bool MenuCommon::RenderMenu()
                     ImGui::BeginDisabled(!Config::Instance()->OverrideSharpness.value_or_default());
 
                     float sharpness = Config::Instance()->Sharpness.value_or_default();
-                    ImGui::SliderFloat("Sharpness", &sharpness, 0.0f, Config::Instance()->RcasEnabled.value_or(rcasEnabled) ? 1.3f : 1.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
+                    ImGui::SliderFloat("Sharpness", &sharpness, 0.0f, Config::Instance()->RcasEnabled.value_or(rcasEnabled) && !Config::Instance()->ContrastEnabled.value_or_default() ? 1.3f : 1.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
                     Config::Instance()->Sharpness = sharpness;
 
                     ImGui::EndDisabled();
@@ -2699,7 +2719,7 @@ bool MenuCommon::RenderMenu()
                                 ShowHelpMarker("Fix for games that send motion data with preapplied jitter");
 
                                 ImGui::TableNextColumn();
-                                if (bool mv = Config::Instance()->DisplayResolution.value_or(false) || State::Instance().DisplaySizeMV.value_or(false); ImGui::Checkbox("Display Res. MV", &mv))
+                                if (bool mv = Config::Instance()->DisplayResolution.value_or((currentFeature->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0); ImGui::Checkbox("Display Res. MV", &mv))
                                 {
                                     Config::Instance()->DisplayResolution = mv;
 

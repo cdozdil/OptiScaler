@@ -1,8 +1,12 @@
 #include "NvApiHooks.h"
 #include <NvApiDriverSettings.h>
+
 #include "State.h"
-#include <detours/detours.h>
 #include <Config.h>
+
+#include <proxies/KernelBase_Proxy.h>
+
+#include <detours/detours.h>
 
 NvAPI_Status __stdcall NvApiHooks::hkNvAPI_GPU_GetArchInfo(NvPhysicalGpuHandle hPhysicalGpu, NV_GPU_ARCH_INFO* pGpuArchInfo)
 {
@@ -112,7 +116,7 @@ void NvApiHooks::Hook(HMODULE nvapiModule)
 
     LOG_DEBUG("Trying to hook NvApi");
 
-    o_NvAPI_QueryInterface = (PFN_NvApi_QueryInterface)GetProcAddress(nvapiModule, "nvapi_QueryInterface");
+    o_NvAPI_QueryInterface = (PFN_NvApi_QueryInterface)KernelBaseProxy::GetProcAddress_()(nvapiModule, "nvapi_QueryInterface");
 
     LOG_DEBUG("OriginalNvAPI_QueryInterface = {0:X}", (unsigned long long)o_NvAPI_QueryInterface);
 

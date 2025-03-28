@@ -6,6 +6,8 @@
 #include "resource.h"
 #include "NVNGX_Parameter.h"
 
+#include <proxies/KernelBase_Proxy.h>
+
 #include <scanner/scanner.h>
 
 #include "detours/detours.h"
@@ -682,7 +684,7 @@ void HookFSR3Inputs(HMODULE module)
 
         if (o_ffxFSR3GetInterfaceDX12 == nullptr)
         {
-            o_ffxFsr3UpscalerContextCreate_Dx12 = (PFN_ffxFsr3UpscalerContextCreate)GetProcAddress(module, "ffxFsr3UpscalerContextCreate");
+            o_ffxFsr3UpscalerContextCreate_Dx12 = (PFN_ffxFsr3UpscalerContextCreate)KernelBaseProxy::GetProcAddress_()(module, "ffxFsr3UpscalerContextCreate");
 
             if (o_ffxFsr3UpscalerContextCreate_Dx12 != nullptr)
                 DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextCreate_Dx12, ffxFsr3ContextCreate_Dx12);
@@ -692,7 +694,7 @@ void HookFSR3Inputs(HMODULE module)
 
         if (o_ffxFsr3UpscalerContextDispatch_Dx12 == nullptr)
         {
-            o_ffxFsr3UpscalerContextDispatch_Dx12 = (PFN_ffxFsr3UpscalerContextDispatch)GetProcAddress(module, "ffxFsr3UpscalerContextDispatch");
+            o_ffxFsr3UpscalerContextDispatch_Dx12 = (PFN_ffxFsr3UpscalerContextDispatch)KernelBaseProxy::GetProcAddress_()(module, "ffxFsr3UpscalerContextDispatch");
 
             if (o_ffxFsr3UpscalerContextDispatch_Dx12 != nullptr)
                 DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextDispatch_Dx12, ffxFsr3ContextDispatch_Dx12);
@@ -702,7 +704,7 @@ void HookFSR3Inputs(HMODULE module)
 
         if (o_ffxFsr3UpscalerContextDestroy_Dx12 == nullptr)
         {
-            o_ffxFsr3UpscalerContextDestroy_Dx12 = (PFN_ffxFsr3UpscalerContextDestroy)GetProcAddress(module, "ffxFsr3UpscalerContextDestroy");
+            o_ffxFsr3UpscalerContextDestroy_Dx12 = (PFN_ffxFsr3UpscalerContextDestroy)KernelBaseProxy::GetProcAddress_()(module, "ffxFsr3UpscalerContextDestroy");
 
             if (o_ffxFsr3UpscalerContextDestroy_Dx12 != nullptr)
                 DetourAttach(&(PVOID&)o_ffxFsr3UpscalerContextDestroy_Dx12, ffxFsr3ContextDestroy_Dx12);
@@ -712,7 +714,7 @@ void HookFSR3Inputs(HMODULE module)
 
         if (o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12 == nullptr)
         {
-            o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode)GetProcAddress(module, "ffxFsr3UpscalerGetUpscaleRatioFromQualityMode");
+            o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode)KernelBaseProxy::GetProcAddress_()(module, "ffxFsr3UpscalerGetUpscaleRatioFromQualityMode");
 
             if (o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12 != nullptr)
                 DetourAttach(&(PVOID&)o_ffxFsr3UpscalerGetUpscaleRatioFromQualityMode_Dx12, ffxFsr3GetUpscaleRatioFromQualityMode_Dx12);
@@ -722,7 +724,7 @@ void HookFSR3Inputs(HMODULE module)
 
         if (o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 == nullptr)
         {
-            o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr3UpscalerGetRenderResolutionFromQualityMode)GetProcAddress(module, "ffxFsr3UpscalerGetRenderResolutionFromQualityMode");
+            o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr3UpscalerGetRenderResolutionFromQualityMode)KernelBaseProxy::GetProcAddress_()(module, "ffxFsr3UpscalerGetRenderResolutionFromQualityMode");
 
             if (o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12 != nullptr)
                 DetourAttach(&(PVOID&)o_ffxFsr3UpscalerGetRenderResolutionFromQualityMode_Dx12, ffxFsr3GetRenderResolutionFromQualityMode_Dx12);
@@ -749,7 +751,7 @@ void HookFSR3Dx12Inputs(HMODULE module)
 
         if (o_ffxFSR3GetInterfaceDX12 == nullptr)
         {
-            o_ffxFSR3GetInterfaceDX12 = (PFN_ffxFSR3GetInterfaceDX12)GetProcAddress(module, "ffxGetInterfaceDX12");
+            o_ffxFSR3GetInterfaceDX12 = (PFN_ffxFSR3GetInterfaceDX12)KernelBaseProxy::GetProcAddress_()(module, "ffxGetInterfaceDX12");
 
             if (o_ffxFSR3GetInterfaceDX12 != nullptr)
                 DetourAttach(&(PVOID&)o_ffxFSR3GetInterfaceDX12, hk_ffxFsr3GetInterfaceDX12);

@@ -11,6 +11,7 @@ private:
 	struct alignas(256) InternalConstants
 	{
 		float Sharpness;
+		float Contrast;
 
 		// Motion Vector Stuff
 		int DynamicSharpenEnabled;
