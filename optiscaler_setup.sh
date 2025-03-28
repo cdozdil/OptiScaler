@@ -122,7 +122,7 @@ if [[ "$gpuChoice" == "1" ]]; then
         fi
 
         echo "Copying $dlssFile to nvngx.dll..."
-        cp "$dlssFile" ./nvngx.dll || { echo "Failed to copy file."; exit 1; }
+        cp "$dlssFile" $gamePath/nvngx.dll || { echo "Failed to copy file."; exit 1; }
     fi
 else
     echo "Nvidia GPU selected. Skipping nvngx_dlss.dll handling."
@@ -132,11 +132,11 @@ fi
 [[ -f "$selectedFilename" && "$overwriteChoice" == "y" ]] && rm -f "$selectedFilename"
 
 echo "Renaming OptiScaler.dll to $selectedFilename..."
-mv -f "$optiScalerFile" "$selectedFilename" || { echo "Failed to rename."; exit 1; }
+mv -f "$optiScalerFile" "$gamePath/$selectedFilename" || { echo "Failed to rename."; exit 1; }
 
 # Create uninstaller
 echo "Creating uninstaller..."
-cat <<EOF > "Remove OptiScaler.sh"
+cat <<EOF > "$gamePath/remove_optiscaler.sh"
 #!/bin/bash
 
 read -p "Do you want to remove OptiScaler? [y/n]: " removeChoice
@@ -151,7 +151,7 @@ else
 fi
 EOF
 
-chmod +x "Remove OptiScaler.sh"
+chmod +x "$gamePath/remove_optiscaler.sh"
 echo ""
 echo "OptiScaler setup completed successfully."
 setupSuccess=true
