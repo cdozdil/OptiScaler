@@ -14,7 +14,7 @@ echo ""
 echo "Coping is strong with this one..."
 echo ""
 
-# !! EXTRACT ALL FILES TO GAME FOLDER !!
+rm -f "!! EXTRACT ALL FILES TO GAME FOLDER !!" 2>/dev/null
 
 if [[ ! -f "OptiScaler.dll" ]]; then
     echo 'OptiScaler "OptiScaler.dll" file is not found!'
@@ -66,12 +66,9 @@ if [[ -f "$selectedFilename" ]]; then
     fi
 fi
 
-# Detect GPU (via nvapi64.dll in Wine prefix)
-if [[ -z "$WINEPREFIX" ]]; then
-    WINEPREFIX="$HOME/.wine"
-fi
-
-if [[ -f "$WINEPREFIX/drive_c/windows/system32/nvapi64.dll" ]]; then
+# Detect GPU (via nvidia-smi)
+nvidia-smi &> /dev/null
+if [[ $? == 0 ]]; then
     isNvidia=true
 else
     isNvidia=false
@@ -106,6 +103,14 @@ if [[ "$gpuChoice" == "1" ]]; then
             dlssFile="nvngx_dlss.dll"
         else
             mapfile -t foundFiles < <(find . -iname "nvngx_dlss.dll")
+            if [[ ${#foundFiles[@]} -eq 0 ]]; then
+                if [[ -d "../Win64" || -d "../WinGDK" ]]; then
+                    echo ""
+                    echo "Going to root folder of Unreal Engine game and searching again..."
+                    cd ../..
+                    mapfile -t foundFiles < <(find . -iname "nvngx_dlss.dll")
+                fi
+            fi
             if [[ ${#foundFiles[@]} -gt 0 ]]; then
                 dlssFile="${foundFiles[0]}"
             fi
@@ -116,8 +121,8 @@ if [[ "$gpuChoice" == "1" ]]; then
             exit 1
         fi
 
-        echo "Copying $dlssFile to nvngx_dlss_copy.dll..."
-        cp "$dlssFile" ./nvngx_dlss_copy.dll || { echo "Failed to copy file."; exit 1; }
+        echo "Copying $dlssFile to nvngx.dll..."
+        cp "$dlssFile" ./nvngx.dll || { echo "Failed to copy file."; exit 1; }
     fi
 else
     echo "Nvidia GPU selected. Skipping nvngx_dlss.dll handling."
@@ -128,11 +133,6 @@ fi
 
 echo "Renaming OptiScaler.dll to $selectedFilename..."
 mv -f "$optiScalerFile" "$selectedFilename" || { echo "Failed to rename."; exit 1; }
-
-if [[ "$gpuChoice" == "1" && "$copyNvngx" != "2" ]]; then
-    echo "Renaming nvngx_dlss_copy.dll to nvngx.dll..."
-    mv -f nvngx_dlss_copy.dll nvngx.dll || { echo "Failed to rename nvngx."; exit 1; }
-fi
 
 # Create uninstaller
 echo "Creating uninstaller..."
@@ -155,8 +155,5 @@ chmod +x "Remove OptiScaler.sh"
 echo ""
 echo "OptiScaler setup completed successfully."
 setupSuccess=true
-
-# Clean up
-rm -f "nvngx_dlss_copy.dll"
 
 exit 0
