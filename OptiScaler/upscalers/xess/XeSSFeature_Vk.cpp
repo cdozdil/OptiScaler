@@ -526,7 +526,7 @@ bool XeSSFeature_Vk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         }
         else
         {
-            if (!Config::Instance()->DisableReactiveMask.value_or(!isVersionOrBetter(Version(), { 2, 0, 1 })))
+            if (!Config::Instance()->DisableReactiveMask.value_or(true))
             {
                 LOG_WARN("Bias mask not exist and its enabled in config, it may cause problems!!");
                 Config::Instance()->DisableReactiveMask = true;
