@@ -12,7 +12,7 @@
 
 ## About
 
-**OptiScaler** is a tool that lets you replace upscalers in games that ***already support*** DLSS2+ / FSR2+ / XeSS, now also supports enabling frame generation (through OptiFG or Nukem's dlssg-to-fsr3).
+**OptiScaler** is a tool that lets you replace upscalers in games that ***already support*** DLSS2+ / FSR2+ / XeSS, now also supports enabling frame generation in those same games (through OptiFG or Nukem's dlssg-to-fsr3).
 
 While previously only DLSS2+ inputs were supported, newer versions also added support for XeSS and FSR2+ inputs (_with some caveats_$`^1`$). For example, if a game has DLSS only, the user can replace DLSS with XeSS or FSR 3.1 (same goes for an FSR or XeSS-only game). It also offers extensive customization options for all users, including those with Nvidia GPUs using DLSS.
 
@@ -48,7 +48,7 @@ While previously only DLSS2+ inputs were supported, newer versions also added su
 *This project is based on [PotatoOfDoom](https://github.com/PotatoOfDoom)'s excellent [CyberFSR2](https://github.com/PotatoOfDoom/CyberFSR2).*
 
 ## How it works?
-OptiScaler implements the necessary API methods of DLSS2+ & NVAPI, XeSS and FSR2+ to act as a middleware. It interprets calls from the game and redirects them to the chosen upscaling backend, allowing games using one technology to use another one of your choice. 
+OptiScaler implements the necessary API methods of DLSS2+ & NVAPI, XeSS and FSR2+ to act as a middleware. It intercepts upscaler calls from the game (_**Inputs**_) and redirects them to the chosen upscaling backend (_**Output**_), allowing games using one technology to use another  of your choice. 
 > [!NOTE]
 > Pressing **`Insert`** should open the Optiscaler **Overlay** in-game and expose all of the options (shortcut key can be changed in the config file).
 
@@ -69,9 +69,9 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 #### For DirectX 11
 - FSR2 2.2.1 (Default, native DX11)
 - FSR3 3.1.2 (unofficial port to native DX11)
-- XeSS 1.x.x, FSR2 2.1.2, 2.2.1, FSR3 3.1 & FSR2 2.3.2 (via background DX12 processing)$`^1`$
+- XeSS, FSR2 2.1.2, 2.2.1, FSR3 3.1 w/Dx12 (_via D3D11on12_)$`^1`$
 - DLSS (native DX11)
-- XeSS 2.x (_Intel ARC only_)
+- XeSS 2.x (native DX11, _Intel ARC only_)
 
 > [!NOTE]
 > <details>
@@ -167,7 +167,7 @@ _**Anti-Lag 2** only supports RDNA cards and is Windows only atm (shortcut for c
 > * version.dll
 > * wininet.dll
 > * winhttp.dll
-> * OptiScaler.asi (with an ASI loader)
+> * OptiScaler.asi (with an [ASI loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases))
 
 > [!NOTE]
 > ### _Example of correct AMD/Intel installation (with additional Fakenvapi and Nukem mod)_
