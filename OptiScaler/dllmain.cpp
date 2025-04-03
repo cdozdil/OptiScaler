@@ -3017,15 +3017,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             loadCount++;
 
-#ifdef VER_PRE_RELEASE
-            // Enable file logging for pre builds
-            Config::Instance()->LogToFile.set_volatile_value(true);
-
-            // Set log level to debug
-            if (Config::Instance()->LogLevel.value_or_default() > 1)
-                Config::Instance()->LogLevel.set_volatile_value(1);
-#endif
-
             PrepareLogger();
             spdlog::warn("{0} loaded", VER_PRODUCT_NAME);
             spdlog::warn("---------------------------------");
