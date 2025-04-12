@@ -3167,24 +3167,15 @@ static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 
         oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
 
-        // If we hook CreateSwapChainForHwnd & CreateSwapChainForCoreWindow here
-        // Order of CreateSwapChain calls become
-        // Game -> Steam -> Opti 
-        // and Steam really does not like Opti's wrapped swapchain
-        // If we skip hooking here first Steam hook CreateSwapChainForHwnd & CreateSwapChainForCoreWindow
-        // Then hopefully Opti hook and call order become
-        // Game -> Opti -> Steam 
-        // And Opti menu works with Steam Overlay without issues
-        // ---------------------------------------------------------------------------------------------------
-        //IDXGIFactory2* factory2 = nullptr;
-        //if (real->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
-        //{
-        //    pFactoryVTable = *reinterpret_cast<void***>(factory2);
-        //    factory2->Release();
+        IDXGIFactory2* factory2 = nullptr;
+        if (real->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
+        {
+            pFactoryVTable = *reinterpret_cast<void***>(factory2);
+            factory2->Release();
 
-        //    oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
-        //    oCreateSwapChainForCoreWindow = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
-        //}
+            oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
+            oCreateSwapChainForCoreWindow = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
+        }
 
         if (oCreateSwapChain != nullptr)
         {
@@ -3231,15 +3222,15 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 
         oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
 
-        //IDXGIFactory2* factory2 = nullptr;
-        //if (real->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
-        //{
-        //    pFactoryVTable = *reinterpret_cast<void***>(factory2);
-        //    factory2->Release();
+        IDXGIFactory2* factory2 = nullptr;
+        if (real->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
+        {
+            pFactoryVTable = *reinterpret_cast<void***>(factory2);
+            factory2->Release();
 
-        //    oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
-        //    oCreateSwapChainForCoreWindow = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
-        //}
+            oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
+            oCreateSwapChainForCoreWindow = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
+        }
 
         if (oCreateSwapChain != nullptr)
         {

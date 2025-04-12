@@ -172,12 +172,44 @@ private:
             return loadedBin;
         }
 
-        if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG)
+        if (CheckDllName(&lcaseLibName, &overlayNames))
         {
-            if (Config::Instance()->FGDisableOverlays.value_or_default() && CheckDllName(&lcaseLibName, &overlayNames))
+            if (Config::Instance()->FGDisableOverlays.value_or_default())
             {
                 LOG_DEBUG("Trying to load overlay dll: {}", lcaseLibName);
                 return (HMODULE)1;
+            }
+            else
+            {
+                auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+
+                if (module != nullptr)
+                {
+                    LOG_INFO("Calling CreateDxgiFactory methods for overlay!");
+                    IDXGIFactory* factory = nullptr;
+                    IDXGIFactory1* factory1 = nullptr;
+                    IDXGIFactory2* factory2 = nullptr;
+
+                    if (DxgiProxy::CreateDxgiFactory_()(__uuidof(factory), &factory) == S_OK && factory != nullptr)
+                    {
+                        LOG_DEBUG("CreateDxgiFactory ok");
+                        factory->Release();
+                    }
+
+                    if (DxgiProxy::CreateDxgiFactory1_()(__uuidof(factory1), &factory1) == S_OK && factory1 != nullptr)
+                    {
+                        LOG_DEBUG("CreateDxgiFactory1 ok");
+                        factory1->Release();
+                    }
+
+                    if (DxgiProxy::CreateDxgiFactory2_()(0, __uuidof(factory2), &factory2) == S_OK && factory2 != nullptr)
+                    {
+                        LOG_DEBUG("CreateDxgiFactory2 ok");
+                        factory2->Release();
+                    }
+
+                    return module;
+                }
             }
         }
 
@@ -464,12 +496,54 @@ private:
             return streamlineModule;
         }
 
-        if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG)
+        if (CheckDllNameW(&lcaseLibName, &overlayNamesW))
         {
-            if (Config::Instance()->FGDisableOverlays.value_or_default() && CheckDllNameW(&lcaseLibName, &overlayNamesW))
+            if (Config::Instance()->FGDisableOverlays.value_or_default())
             {
                 LOG_DEBUG("Trying to load overlay dll: {}", lcaseLibNameA);
                 return (HMODULE)1;
+            }
+            else
+            {
+                // If we hook CreateSwapChainForHwnd & CreateSwapChainForCoreWindow here
+                // Order of CreateSwapChain calls become
+                // Game -> Overlay -> Opti 
+                // and Overlays really does not like Opti's wrapped swapchain
+                // If we skip hooking here first Steam hook CreateSwapChainForHwnd & CreateSwapChainForCoreWindow
+                // Then hopefully Opti hook and call order become
+                // Game -> Opti -> Overlay 
+                // And Opti menu works with Overlay without issues
+                // ---------------------------------------------------------------------------------------------------
+
+                auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+
+                if (module != nullptr)
+                {
+                    LOG_INFO("Calling CreateDxgiFactory methods for overlay!");
+                    IDXGIFactory* factory = nullptr;
+                    IDXGIFactory1* factory1 = nullptr;
+                    IDXGIFactory2* factory2 = nullptr;
+
+                    if (DxgiProxy::CreateDxgiFactory_()(__uuidof(factory), &factory) == S_OK && factory != nullptr)
+                    {
+                        LOG_DEBUG("CreateDxgiFactory ok");
+                        factory->Release();
+                    }
+
+                    if (DxgiProxy::CreateDxgiFactory1_()(__uuidof(factory1), &factory1) == S_OK && factory1 != nullptr)
+                    {
+                        LOG_DEBUG("CreateDxgiFactory1 ok");
+                        factory1->Release();
+                    }
+
+                    if (DxgiProxy::CreateDxgiFactory2_()(0, __uuidof(factory2), &factory2) == S_OK && factory2 != nullptr)
+                    {
+                        LOG_DEBUG("CreateDxgiFactory2 ok");
+                        factory2->Release();
+                    }
+
+                    return module;
+                }
             }
         }
 
