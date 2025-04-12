@@ -49,13 +49,19 @@ static bool InitializeConsole()
     // Make C++ standard streams point to console as well.
     std::ios::sync_with_stdio();
 
+    WaitForEnter();
+
+    return true;
+}
+
+
+void WaitForEnter()
+{
     if (Config::Instance()->DebugWait.value_or_default())
     {
         std::cout << "Press ENTER to continue..." << std::endl;
         std::cin.get();
     }
-
-    return true;
 }
 
 void PrepareLogger()

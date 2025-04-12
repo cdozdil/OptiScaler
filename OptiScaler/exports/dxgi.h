@@ -49,12 +49,12 @@ struct dxgi_dll
 
 HRESULT _CreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
-    return DxgiProxy::CreateDxgiFactory_Hooked()(riid, ppFactory);
+    return DxgiProxy::CreateDxgiFactory_()(riid, ppFactory);
 }
 
 HRESULT _CreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 {
-    return DxgiProxy::CreateDxgiFactory1_Hooked()(riid, ppFactory);
+    return DxgiProxy::CreateDxgiFactory1_()(riid, ppFactory);
 }
 
 HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
@@ -64,12 +64,12 @@ HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
 
 HRESULT _DXGIDeclareAdapterRemovalSupport()
 {
-    return DxgiProxy::DeclareAdepterRemovalSupport_Hooked()();
+    return DxgiProxy::DeclareAdepterRemovalSupport_()();
 }
 
 HRESULT _DXGIGetDebugInterface1(UINT Flags, REFIID riid, void** pDebug)
 {
-    return DxgiProxy::GetDebugInterface_Hooked()(Flags, riid, pDebug);
+    return DxgiProxy::GetDebugInterface_()(Flags, riid, pDebug);
 }
 
 void _ApplyCompatResolutionQuirking()

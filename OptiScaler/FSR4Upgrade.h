@@ -197,9 +197,9 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
 
         if (pfnUpdateFfxApiProvider != nullptr)
         {
-            State::DisableChecks();
+            State::DisableChecks(1);
             auto result = pfnUpdateFfxApiProvider(pData, dataSizeInBytes);
-            State::EnableChecks();
+            State::EnableChecks(1);
             return result;
         }
 

@@ -59,6 +59,12 @@ private:
     {
         LOG_TRACE("{}", lcaseLibName);
 
+        if (lcaseLibName.rfind("driverstore") != std::string::npos)
+        {
+            LOG_DEBUG("Skip driver call: {}", lcaseLibName);
+            return nullptr;
+        }
+
         // If Opti is not loading as nvngx.dll
         if (!State::Instance().enablerAvailable && !State::Instance().isWorkingAsNvngx)
         {
@@ -236,7 +242,7 @@ private:
             if (module != nullptr)
             {
                 DxgiProxy::Init(module);
-                
+
                 if (!State::Instance().enablerAvailable && Config::Instance()->DxgiSpoofing.value_or_default())
                     HookDxgiForSpoofing();
 
@@ -340,6 +346,12 @@ private:
     {
         auto lcaseLibNameA = wstring_to_string(lcaseLibName);
         LOG_TRACE("{}", lcaseLibNameA);
+
+        if (lcaseLibNameA.rfind("driverstore") != std::string::npos)
+        {
+            LOG_DEBUG("Skip driver call: {}", lcaseLibNameA);
+            return nullptr;
+        }
 
         // If Opti is not loading as nvngx.dll
         if (!State::Instance().enablerAvailable && !State::Instance().isWorkingAsNvngx)
@@ -725,7 +737,7 @@ private:
         {
             if (State::SkipDllName() == "")
             {
-                LOG_INFO("Skip checks for: {}", lcaseLibName);
+                LOG_TRACE("Skip checks for: {}", lcaseLibName);
                 return o_KB_LoadLibraryExA(lpLibFileName, hFile, dwFlags);
             }
 
@@ -735,7 +747,7 @@ private:
             // -4 for extension `.dll`
             if (pos == (lcaseLibName.length() - dllName.length()) || pos == (lcaseLibName.length() - dllName.length() - 4))
             {
-                LOG_INFO("Skip checks for: {}", lcaseLibName);
+                LOG_TRACE("Skip checks for: {}", lcaseLibName);
                 return o_KB_LoadLibraryExA(lpLibFileName, hFile, dwFlags);
             }
         }
@@ -773,7 +785,7 @@ private:
         {
             if (State::SkipDllName() == "")
             {
-                LOG_INFO("Skip checks for: {}", wstring_to_string(lcaseLibName));
+                LOG_TRACE("Skip checks for: {}", wstring_to_string(lcaseLibName));
                 return o_KB_LoadLibraryExW(lpLibFileName, hFile, dwFlags);
             }
 
@@ -783,7 +795,7 @@ private:
             // -4 for extension `.dll`
             if (pos == (lcaseLibName.length() - dllName.length()) || pos == (lcaseLibName.length() - dllName.length() - 4))
             {
-                LOG_INFO("Skip checks for: {}", wstring_to_string(lcaseLibName));
+                LOG_TRACE("Skip checks for: {}", wstring_to_string(lcaseLibName));
                 return o_KB_LoadLibraryExW(lpLibFileName, hFile, dwFlags);
             }
         }
@@ -812,8 +824,6 @@ private:
         std::string libName(lpLibFileName);
         std::string lcaseLibName(libName);
 
-        LOG_DEBUG("{}", lcaseLibName);
-
         for (size_t i = 0; i < lcaseLibName.size(); i++)
             lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
@@ -821,7 +831,7 @@ private:
         {
             if (State::SkipDllName() == "")
             {
-                LOG_INFO("Skip checks for: {}", lcaseLibName);
+                LOG_TRACE("Skip checks for: {}", lcaseLibName);
                 return o_K32_LoadLibraryExA(lpLibFileName, hFile, dwFlags);
             }
 
@@ -831,10 +841,14 @@ private:
             // -4 for extension `.dll`
             if (pos == (lcaseLibName.length() - dllName.length()) || pos == (lcaseLibName.length() - dllName.length() - 4))
             {
-                LOG_INFO("Skip checks for: {}", lcaseLibName);
+                LOG_TRACE("Skip checks for: {}", lcaseLibName);
                 return o_K32_LoadLibraryExA(lpLibFileName, hFile, dwFlags);
             }
         }
+
+#if _DEBUG
+        LOG_DEBUG("{}", lcaseLibName);
+#endif
 
         auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
 
@@ -860,8 +874,6 @@ private:
         std::wstring libName(lpLibFileName);
         std::wstring lcaseLibName(libName);
 
-        LOG_DEBUG("{}", wstring_to_string(lcaseLibName));
-
         for (size_t i = 0; i < lcaseLibName.size(); i++)
             lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
@@ -869,7 +881,7 @@ private:
         {
             if (State::SkipDllName() == "")
             {
-                LOG_INFO("Skip checks for: {}", wstring_to_string(lcaseLibName));
+                LOG_TRACE("Skip checks for: {}", wstring_to_string(lcaseLibName));
                 return o_K32_LoadLibraryExW(lpLibFileName, hFile, dwFlags);
             }
 
@@ -879,10 +891,14 @@ private:
             // -4 for extension `.dll`
             if (pos == (lcaseLibName.length() - dllName.length()) || pos == (lcaseLibName.length() - dllName.length() - 4))
             {
-                LOG_INFO("Skip checks for: {}", wstring_to_string(lcaseLibName));
+                LOG_TRACE("Skip checks for: {}", wstring_to_string(lcaseLibName));
                 return o_K32_LoadLibraryExW(lpLibFileName, hFile, dwFlags);
             }
         }
+
+#if _DEBUG
+        LOG_DEBUG("{}", wstring_to_string(lcaseLibName));
+#endif
 
         auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
 
@@ -908,8 +924,6 @@ private:
         std::string libName(lpLibFileName);
         std::string lcaseLibName(libName);
 
-        LOG_DEBUG("{}", lcaseLibName);
-
         for (size_t i = 0; i < lcaseLibName.size(); i++)
             lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
@@ -917,7 +931,7 @@ private:
         {
             if (State::SkipDllName() == "")
             {
-                LOG_INFO("Skip checks for: {}", lcaseLibName);
+                LOG_TRACE("Skip checks for: {}", lcaseLibName);
                 return o_K32_LoadLibraryA(lpLibFileName);
             }
 
@@ -927,11 +941,14 @@ private:
             // -4 for extension `.dll`
             if (pos == (lcaseLibName.length() - dllName.length()) || pos == (lcaseLibName.length() - dllName.length() - 4))
             {
-                LOG_INFO("Skip checks for: {}", lcaseLibName);
+                LOG_TRACE("Skip checks for: {}", lcaseLibName);
                 return o_K32_LoadLibraryA(lpLibFileName);
             }
         }
 
+#if _DEBUG
+        LOG_DEBUG("{}", lcaseLibName);
+#endif
         auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
 
         // skip loading of dll
@@ -962,7 +979,7 @@ private:
         {
             if (State::SkipDllName() == "")
             {
-                LOG_INFO("Skip checks for: {}", wstring_to_string(lcaseLibName));
+                LOG_TRACE("Skip checks for: {}", wstring_to_string(lcaseLibName));
                 return o_K32_LoadLibraryW(lpLibFileName);
             }
 
@@ -972,10 +989,14 @@ private:
             // -4 for extension `.dll`
             if (pos == (lcaseLibName.length() - dllName.length()) || pos == (lcaseLibName.length() - dllName.length() - 4))
             {
-                LOG_INFO("Skip checks for: {}", wstring_to_string(lcaseLibName));
+                LOG_TRACE("Skip checks for: {}", wstring_to_string(lcaseLibName));
                 return o_K32_LoadLibraryW(lpLibFileName);
             }
         }
+
+#if _DEBUG
+        LOG_DEBUG("{}", wstring_to_string(lcaseLibName));
+#endif
 
         auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
 

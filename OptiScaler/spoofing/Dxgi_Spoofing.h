@@ -158,6 +158,11 @@ inline static bool SkipSpoofing()
 inline static HRESULT detGetDesc3(IDXGIAdapter4 * This, DXGI_ADAPTER_DESC3 * pDesc)
 {
     auto result = o_GetDesc3(This, pDesc);
+
+#if _DEBUG
+    LOG_TRACE("result: {:X}", (UINT)result);
+#endif
+
     if (result == S_OK)
     {
         if (pDesc->VendorId != 0x1414 && !State::Instance().adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
@@ -194,6 +199,11 @@ inline static HRESULT detGetDesc3(IDXGIAdapter4 * This, DXGI_ADAPTER_DESC3 * pDe
 inline static HRESULT detGetDesc2(IDXGIAdapter2 * This, DXGI_ADAPTER_DESC2 * pDesc)
 {
     auto result = o_GetDesc2(This, pDesc);
+
+#if _DEBUG
+    LOG_TRACE("result: {:X}", (UINT)result);
+#endif
+
     if (result == S_OK)
     {
         if (pDesc->VendorId != 0x1414 && !State::Instance().adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
@@ -230,6 +240,11 @@ inline static HRESULT detGetDesc2(IDXGIAdapter2 * This, DXGI_ADAPTER_DESC2 * pDe
 inline static HRESULT detGetDesc1(IDXGIAdapter1 * This, DXGI_ADAPTER_DESC1 * pDesc)
 {
     auto result = o_GetDesc1(This, pDesc);
+
+#if _DEBUG
+    LOG_TRACE("result: {:X}", (UINT)result);
+#endif
+
     if (result == S_OK)
     {
         if (pDesc->VendorId != 0x1414 && !State::Instance().adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
@@ -266,6 +281,11 @@ inline static HRESULT detGetDesc1(IDXGIAdapter1 * This, DXGI_ADAPTER_DESC1 * pDe
 inline static HRESULT detGetDesc(IDXGIAdapter * This, DXGI_ADAPTER_DESC * pDesc)
 {
     auto result = o_GetDesc(This, pDesc);
+
+#if _DEBUG
+    LOG_TRACE("result: {:X}", (UINT)result);
+#endif
+
     if (result == S_OK)
     {
         if (pDesc->VendorId != 0x1414 && !State::Instance().adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
@@ -314,6 +334,10 @@ inline static HRESULT detEnumAdapterByGpuPreference(IDXGIFactory6 * This, UINT A
     if (result == S_OK)
         AttachToAdapter(*ppvAdapter);
 
+#if _DEBUG
+    LOG_TRACE("result: {:X}, Adapter: {}, pAdapter: {:X}", (UINT)result, Adapter, (size_t)*ppvAdapter);
+#endif
+
     return result;
 }
 
@@ -328,6 +352,10 @@ inline static HRESULT detEnumAdapterByLuid(IDXGIFactory4 * This, LUID AdapterLui
     if (result == S_OK)
         AttachToAdapter(*ppvAdapter);
 
+#if _DEBUG
+    LOG_TRACE("result: {:X}, pAdapter: {:X}", (UINT)result, (size_t)*ppvAdapter);
+#endif
+
     return result;
 }
 
@@ -341,6 +369,8 @@ inline static HRESULT detEnumAdapters1(IDXGIFactory1 * This, UINT Adapter, IDXGI
 
     if (!skipHighPerfCheck && Config::Instance()->PreferDedicatedGpu.value_or_default())
     {
+        LOG_WARN("High perf GPU selection");
+
         if (Config::Instance()->PreferFirstDedicatedGpu.value_or_default() && Adapter > 0)
         {
             LOG_DEBUG("{}, returning not found", Adapter);
@@ -398,6 +428,10 @@ inline static HRESULT detEnumAdapters1(IDXGIFactory1 * This, UINT Adapter, IDXGI
 
     if (result == S_OK)
         AttachToAdapter(*ppAdapter);
+
+#if _DEBUG
+    LOG_TRACE("result: {:X}, Adapter: {}, pAdapter: {:X}", (UINT)result, Adapter, (size_t)*ppAdapter);
+#endif
 
     return result;
 }
@@ -468,6 +502,10 @@ inline static HRESULT detEnumAdapters(IDXGIFactory * This, UINT Adapter, IDXGIAd
     if (result == S_OK)
         AttachToAdapter(*ppAdapter);
 
+#if _DEBUG
+    LOG_TRACE("result: {:X}, Adapter: {}, pAdapter: {:X}", (UINT)result, Adapter, (size_t)*ppAdapter);
+#endif
+
     return result;
 }
 
@@ -511,6 +549,9 @@ inline static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory
 
 inline static void AttachToAdapter(IUnknown * unkAdapter)
 {
+    if (o_GetDesc != nullptr && o_GetDesc1 != nullptr && o_GetDesc2 != nullptr && o_GetDesc3 != nullptr)
+        return;
+
     const GUID guid = { 0x907bf281,0xea3c,0x43b4,{0xa8,0xe4,0x9f,0x23,0x11,0x07,0xb4,0xff} };
 
     PVOID* pVTable = *(PVOID**)unkAdapter;
@@ -608,6 +649,9 @@ inline static void AttachToAdapter(IUnknown * unkAdapter)
 
 inline static void AttachToFactory(IUnknown * unkFactory)
 {
+    if (o_EnumAdapters != nullptr && o_EnumAdapters1 != nullptr && o_EnumAdapterByLuid != nullptr && o_EnumAdapterByGpuPreference != nullptr)
+        return;
+
     PVOID* pVTable = *(PVOID**)unkFactory;
 
     IDXGIFactory* factory;
@@ -667,7 +711,7 @@ inline static void AttachToFactory(IUnknown * unkFactory)
 
         DetourTransactionCommit();
 
-        factory6->Release(); 
+        factory6->Release();
     }
 }
 

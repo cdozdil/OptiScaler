@@ -168,16 +168,28 @@ public:
     /// Enables skipping of LoadLibrary checks 
     /// </summary>
     /// <param name="dllName">Lower case dll name without `.dll` at the end. Leave blank for skipping all dll's</param>
-    static void DisableChecks(std::string dllName = "")
+    static void DisableChecks(UINT owner, std::string dllName = "")
     {
-        _skipChecks = true;
-        _skipDllName = dllName;
+        if (_skipOwner == 0)
+        {
+            _skipOwner = owner;
+            _skipChecks = true;
+            _skipDllName = dllName;
+        }
+        else
+        {
+            _skipDllName = ""; // Hack for multiple skip calls
+        }
     };
 
-    static void EnableChecks()
+    static void EnableChecks(UINT owner)
     {
-        _skipChecks = false;
-        _skipDllName = "";
+        if (_skipOwner == 0 || _skipOwner == owner)
+        {
+            _skipChecks = false;
+            _skipDllName = "";
+            _skipOwner = 0;
+        }
     };
 
     static bool SkipDllChecks() { return _skipChecks; }
@@ -187,6 +199,7 @@ public:
 private:
     inline static bool _skipChecks = false;
     inline static std::string _skipDllName = "";
+    inline static UINT _skipOwner = 0;
 
     State() = default;
 };

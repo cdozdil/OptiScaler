@@ -2317,6 +2317,8 @@ static void CheckAdapter(IUnknown* unkAdapter)
 
 static void AttachToFactory(IUnknown* unkFactory)
 {
+    return;
+
     PVOID* pVTable = *(PVOID**)unkFactory;
 
     IDXGIFactory* factory;
@@ -3229,17 +3231,15 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 
         oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
 
-        // Hook CreateSwapChainForHwnd & CreateSwapChainForCoreWindow here
-        // Because GoW only create a IDXGIFactory1 and query it
-        IDXGIFactory2* factory2 = nullptr;
-        if (real->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
-        {
-            pFactoryVTable = *reinterpret_cast<void***>(factory2);
-            factory2->Release();
+        //IDXGIFactory2* factory2 = nullptr;
+        //if (real->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
+        //{
+        //    pFactoryVTable = *reinterpret_cast<void***>(factory2);
+        //    factory2->Release();
 
-            oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
-            oCreateSwapChainForCoreWindow = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
-        }
+        //    oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
+        //    oCreateSwapChainForCoreWindow = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
+        //}
 
         if (oCreateSwapChain != nullptr)
         {
@@ -3319,15 +3319,16 @@ static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppF
 
 static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter)
 {
-    LOG_FUNC();
+    LOG_TRACE("HooksDx Adapter: {}, GpuPreference: {}", Adapter, (UINT)GpuPreference);
 
-    State::DisableChecks("dxgi");
+    State::DisableChecks(2, "dxgi");
     auto result = o_EnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, ppvAdapter);
-    State::EnableChecks();
+    State::EnableChecks(2);
 
     if (result == S_OK)
         CheckAdapter(*ppvAdapter);
 
+    LOG_TRACE("HooksDx result: {:X}, Adapter: {:X}", (UINT)result, (size_t)*ppvAdapter);
     return result;
 }
 
@@ -3335,9 +3336,9 @@ static HRESULT hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID
 {
     LOG_FUNC();
 
-    State::DisableChecks("dxgi");
+    State::DisableChecks(3, "dxgi");
     auto result = o_EnumAdapterByLuid(This, AdapterLuid, riid, ppvAdapter);
-    State::EnableChecks();
+    State::EnableChecks(3);
 
     if (result == S_OK)
         CheckAdapter(*ppvAdapter);
@@ -3349,9 +3350,9 @@ static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppA
 {
     LOG_TRACE("HooksDx");
 
-    State::DisableChecks("dxgi");
+    State::DisableChecks(4, "dxgi");
     HRESULT result = o_EnumAdapters1(This, Adapter, ppAdapter);
-    State::EnableChecks();
+    State::EnableChecks(4);
 
     if (result == S_OK)
         CheckAdapter(*ppAdapter);
@@ -3363,9 +3364,9 @@ static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAda
 {
     LOG_FUNC();
 
-    State::DisableChecks("dxgi");
+    State::DisableChecks(5, "dxgi");
     HRESULT result = o_EnumAdapters(This, Adapter, ppAdapter);
-    State::EnableChecks();
+    State::EnableChecks(5);
 
     if (result == S_OK)
         CheckAdapter(*ppAdapter);
@@ -3808,8 +3809,7 @@ static void CALLBACK D3D12DebugCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_M
 
 static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
 {
-    LOG_FUNC();
-
+    LOG_TRACE("Adapter: {:X}, Level: {:X}", (size_t)pAdapter, (UINT)MinimumFeatureLevel);
 
 #ifdef ENABLE_DEBUG_LAYER_DX12
     LOG_WARN("Debug layers active!");
@@ -3824,11 +3824,23 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     }
 #endif
 
+#if _DEBUG
+    State::Instance().skipSpoofing = true;
+    DXGI_ADAPTER_DESC desc;
+    if (pAdapter->GetDesc(&desc) == S_OK)
+    {
+        std::wstring szName(desc.Description);
+        LOG_INFO("Adapter Desc: {}", wstring_to_string(szName));
+    }
+    State::Instance().skipSpoofing = false;
+#endif
+
     auto minLevel = MinimumFeatureLevel;
     if (Config::Instance()->SpoofFeatureLevel.value_or_default())
         minLevel = D3D_FEATURE_LEVEL_11_0;
 
-    HRESULT result = o_D3D12CreateDevice(pAdapter, minLevel, riid, ppDevice);
+    auto result = o_D3D12CreateDevice(pAdapter, minLevel, riid, ppDevice);
+    LOG_DEBUG("o_D3D12CreateDevice result: {:X}", (UINT)result);
 
     if (result == S_OK && ppDevice != nullptr && *ppDevice != nullptr)
     {
@@ -3867,8 +3879,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
 #endif
     }
 
-    LOG_DEBUG("result: {:X}", (UINT)result);
-
+    LOG_DEBUG("final result: {:X}", (UINT)result);
     return result;
 }
 

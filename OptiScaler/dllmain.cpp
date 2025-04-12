@@ -29,8 +29,6 @@
 
 #include <nvapi/NvApiHooks.h>
 
-#include <minhook/minhook.h>
-
 #pragma warning (disable : 4996)
 
 typedef const char* (CDECL* PFN_wine_get_version)(void);
@@ -96,10 +94,6 @@ static void CheckWorkingMode()
             modeFound = true;
             break;
         }
-
-        // Hook kernel32 & kernelbase methods
-        InitFSR4Update();
-        KernelHooks::Hook();
 
         // version.dll
         if (lCaseFilename == "version.dll")
@@ -496,12 +490,13 @@ static void CheckWorkingMode()
                     if (!State::Instance().enablerAvailable && Config::Instance()->DxgiSpoofing.value_or_default())
                         HookDxgiForSpoofing();
 
-                    if (Config::Instance()->OverlayMenu.value())
+                    if (Config::Instance()->OverlayMenu.value()) 
                         HooksDx::HookDxgi();
                 }
             }
             else
             {
+                LOG_DEBUG("dxgi.dll already in memory");
                 if (!State::Instance().enablerAvailable && Config::Instance()->DxgiSpoofing.value_or_default())
                     HookDxgiForSpoofing();
 
@@ -523,6 +518,7 @@ static void CheckWorkingMode()
             }
             else
             {
+                LOG_DEBUG("d3d12.dll already in memory");
                 HooksDx::HookDx12();
             }
 
@@ -556,6 +552,10 @@ static void CheckWorkingMode()
 
             if (Config::Instance()->OverlayMenu.value() && vulkanModule != nullptr)
                 HooksVk::HookVk(vulkanModule);
+
+            // Hook kernel32 & kernelbase methods
+            InitFSR4Update();
+            KernelHooks::Hook();
 
             // NVAPI
             HMODULE nvapi64 = nullptr;

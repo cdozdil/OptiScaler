@@ -4,6 +4,7 @@
 
 void PrepareLogger();
 void CloseLogger();
+void WaitForEnter();
 
 #ifdef DLSS_PARAM_DUMP
 

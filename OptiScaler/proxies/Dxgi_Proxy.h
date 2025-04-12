@@ -63,66 +63,66 @@ public:
 
     static PFN_CreateDxgiFactory Hook_CreateDxgiFactory(PVOID method) 
     {
-        auto addr = CreateDxgiFactory_Hooked();
+        auto addr = CreateDxgiFactory_ForHook();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         DetourAttach(&(PVOID&)addr, method);
         DetourTransactionCommit();
 
-        _CreateDxgiFactory = addr;
+        //_CreateDxgiFactory = addr;
         return addr;
     }
 
     static PFN_CreateDxgiFactory1 Hook_CreateDxgiFactory1(PVOID method)
     {
-        auto addr = CreateDxgiFactory1_Hooked();
+        auto addr = CreateDxgiFactory1_ForHook();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         DetourAttach(&(PVOID&)addr, method);
         DetourTransactionCommit();
 
-        _CreateDxgiFactory1 = addr;
+        //_CreateDxgiFactory1 = addr;
         return addr;
     }
 
     static PFN_CreateDxgiFactory2 Hook_CreateDxgiFactory2(PVOID method)
     {
-        auto addr = CreateDxgiFactory2_Hooked();
+        auto addr = CreateDxgiFactory2_ForHook();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         DetourAttach(&(PVOID&)addr, method);
         DetourTransactionCommit();
 
-        _CreateDxgiFactory2 = addr;
+        //_CreateDxgiFactory2 = addr;
         return addr;
     }    
     
     static PFN_DeclareAdepterRemovalSupport Hook_DeclareAdepterRemovalSupport(PVOID method)
     {
-        auto addr = DeclareAdepterRemovalSupport_Hooked();
+        auto addr = DeclareAdepterRemovalSupport_ForHook();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         DetourAttach(&(PVOID&)addr, method);
         DetourTransactionCommit();
 
-        _DeclareAdepterRemovalSupport = addr;
+        //_DeclareAdepterRemovalSupport = addr;
         return addr;
     }
 
     static PFN_GetDebugInterface Hook_GetDebugInterface(PVOID method)
     {
-        auto addr = GetDebugInterface_Hooked();
+        auto addr = GetDebugInterface_ForHook();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         DetourAttach(&(PVOID&)addr, method);
         DetourTransactionCommit();
 
-        _GetDebugInterface = addr;
+        //_GetDebugInterface = addr;
         return addr;
     }
 
@@ -142,4 +142,18 @@ private:
     inline static PFN_CreateDxgiFactory2 _CreateDxgiFactory2 = nullptr;
     inline static PFN_DeclareAdepterRemovalSupport _DeclareAdepterRemovalSupport = nullptr;
     inline static PFN_GetDebugInterface _GetDebugInterface = nullptr;
+
+    inline static HMODULE HookModule() 
+    {  
+        if (State::Instance().isDxgiMode)
+            return dllModule;
+
+        return _dll;
+    }
+
+    static PFN_CreateDxgiFactory CreateDxgiFactory_ForHook() { return (PFN_CreateDxgiFactory)KernelBaseProxy::GetProcAddress_()(HookModule(), "CreateDXGIFactory"); }
+    static PFN_CreateDxgiFactory1 CreateDxgiFactory1_ForHook() { return (PFN_CreateDxgiFactory1)KernelBaseProxy::GetProcAddress_()(HookModule(), "CreateDXGIFactory1"); }
+    static PFN_CreateDxgiFactory2 CreateDxgiFactory2_ForHook() { return (PFN_CreateDxgiFactory2)KernelBaseProxy::GetProcAddress_()(HookModule(), "CreateDXGIFactory2"); }
+    static PFN_DeclareAdepterRemovalSupport DeclareAdepterRemovalSupport_ForHook() { return (PFN_DeclareAdepterRemovalSupport)KernelBaseProxy::GetProcAddress_()(HookModule(), "DXGIDeclareAdepterRemovalSupport"); }
+    static PFN_GetDebugInterface GetDebugInterface_ForHook() { return (PFN_GetDebugInterface)KernelBaseProxy::GetProcAddress_()(HookModule(), "DXGIGetDebugInterface1"); }
 };
