@@ -320,7 +320,7 @@ public:
 	CustomOptional<int, NoDefault> FGRectTop;
 	CustomOptional<int, NoDefault> FGRectWidth;
 	CustomOptional<int, NoDefault> FGRectHeight;
-	CustomOptional<bool> FGDisableOverlays{ true };
+	CustomOptional<bool> FGDisableOverlays{ false };
 	CustomOptional<bool> FGAlwaysTrackHeaps{ false };
 	CustomOptional<bool> FGMakeDepthCopy{ true };
 	CustomOptional<bool> FGEnableDepthScale{ false };

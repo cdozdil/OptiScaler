@@ -54,6 +54,7 @@ private:
     inline static KernelBaseProxy::PFN_GetProcAddress o_KB_GetProcAddress = nullptr;
 
     static const DWORD _LoadExFlags = 0;
+    inline static bool _overlayMethodsCalled = false;
 
     inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFullPath)
     {
@@ -185,27 +186,32 @@ private:
 
                 if (module != nullptr)
                 {
-                    LOG_INFO("Calling CreateDxgiFactory methods for overlay!");
-                    IDXGIFactory* factory = nullptr;
-                    IDXGIFactory1* factory1 = nullptr;
-                    IDXGIFactory2* factory2 = nullptr;
-
-                    if (DxgiProxy::CreateDxgiFactory_()(__uuidof(factory), &factory) == S_OK && factory != nullptr)
+                    if (!_overlayMethodsCalled && DxgiProxy::Module() != nullptr)
                     {
-                        LOG_DEBUG("CreateDxgiFactory ok");
-                        factory->Release();
-                    }
+                        LOG_INFO("Calling CreateDxgiFactory methods for overlay!");
+                        IDXGIFactory* factory = nullptr;
+                        IDXGIFactory1* factory1 = nullptr;
+                        IDXGIFactory2* factory2 = nullptr;
 
-                    if (DxgiProxy::CreateDxgiFactory1_()(__uuidof(factory1), &factory1) == S_OK && factory1 != nullptr)
-                    {
-                        LOG_DEBUG("CreateDxgiFactory1 ok");
-                        factory1->Release();
-                    }
+                        if (DxgiProxy::CreateDxgiFactory_()(__uuidof(factory), &factory) == S_OK && factory != nullptr)
+                        {
+                            LOG_DEBUG("CreateDxgiFactory ok");
+                            factory->Release();
+                        }
 
-                    if (DxgiProxy::CreateDxgiFactory2_()(0, __uuidof(factory2), &factory2) == S_OK && factory2 != nullptr)
-                    {
-                        LOG_DEBUG("CreateDxgiFactory2 ok");
-                        factory2->Release();
+                        if (DxgiProxy::CreateDxgiFactory1_()(__uuidof(factory1), &factory1) == S_OK && factory1 != nullptr)
+                        {
+                            LOG_DEBUG("CreateDxgiFactory1 ok");
+                            factory1->Release();
+                        }
+
+                        if (DxgiProxy::CreateDxgiFactory2_()(0, __uuidof(factory2), &factory2) == S_OK && factory2 != nullptr)
+                        {
+                            LOG_DEBUG("CreateDxgiFactory2 ok");
+                            factory2->Release();
+                        }
+
+                        _overlayMethodsCalled = true;
                     }
 
                     return module;
@@ -519,27 +525,32 @@ private:
 
                 if (module != nullptr)
                 {
-                    LOG_INFO("Calling CreateDxgiFactory methods for overlay!");
-                    IDXGIFactory* factory = nullptr;
-                    IDXGIFactory1* factory1 = nullptr;
-                    IDXGIFactory2* factory2 = nullptr;
-
-                    if (DxgiProxy::CreateDxgiFactory_()(__uuidof(factory), &factory) == S_OK && factory != nullptr)
+                    if (!_overlayMethodsCalled && DxgiProxy::Module() != nullptr)
                     {
-                        LOG_DEBUG("CreateDxgiFactory ok");
-                        factory->Release();
-                    }
+                        LOG_INFO("Calling CreateDxgiFactory methods for overlay!");
+                        IDXGIFactory* factory = nullptr;
+                        IDXGIFactory1* factory1 = nullptr;
+                        IDXGIFactory2* factory2 = nullptr;
 
-                    if (DxgiProxy::CreateDxgiFactory1_()(__uuidof(factory1), &factory1) == S_OK && factory1 != nullptr)
-                    {
-                        LOG_DEBUG("CreateDxgiFactory1 ok");
-                        factory1->Release();
-                    }
+                        if (DxgiProxy::CreateDxgiFactory_()(__uuidof(factory), &factory) == S_OK && factory != nullptr)
+                        {
+                            LOG_DEBUG("CreateDxgiFactory ok");
+                            factory->Release();
+                        }
 
-                    if (DxgiProxy::CreateDxgiFactory2_()(0, __uuidof(factory2), &factory2) == S_OK && factory2 != nullptr)
-                    {
-                        LOG_DEBUG("CreateDxgiFactory2 ok");
-                        factory2->Release();
+                        if (DxgiProxy::CreateDxgiFactory1_()(__uuidof(factory1), &factory1) == S_OK && factory1 != nullptr)
+                        {
+                            LOG_DEBUG("CreateDxgiFactory1 ok");
+                            factory1->Release();
+                        }
+
+                        if (DxgiProxy::CreateDxgiFactory2_()(0, __uuidof(factory2), &factory2) == S_OK && factory2 != nullptr)
+                        {
+                            LOG_DEBUG("CreateDxgiFactory2 ok");
+                            factory2->Release();
+                        }
+
+                        _overlayMethodsCalled = true;
                     }
 
                     return module;
