@@ -76,6 +76,7 @@ class XeSSProxy
 private:
     inline static HMODULE _dll = nullptr;
     inline static HMODULE _dlldx11 = nullptr;
+
     inline static xess_version_t _xessVersion{};
     inline static xess_version_t _xessVersionDx11{};
 
@@ -202,6 +203,9 @@ private:
     }
 
 public:
+    static HMODULE Module() { return _dll; }
+    static HMODULE ModuleDx11() { return _dlldx11; }
+
     static bool InitXeSS()
     {
         if (_dll != nullptr)

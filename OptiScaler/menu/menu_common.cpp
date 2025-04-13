@@ -1,12 +1,16 @@
 #include "menu_common.h"
 
+#include "font/Hack_Compressed.h"
+
+#include <hooks/HooksDx.h>
+
+#include <proxies/XeSS_Proxy.h>
+#include <proxies/FfxApi_Proxy.h>
+
 #include "DLSSG_Mod.h"
 
-#include "font/Hack_Compressed.h"
 #include <nvapi/fakenvapi.h>
 #include <nvapi/ReflexHooks.h>
-#include <proxies/FfxApi_Proxy.h>
-#include <hooks/HooksDx.h>
 
 #include <imgui/imgui_internal.h>
 
@@ -1301,7 +1305,7 @@ bool MenuCommon::RenderMenu()
                 else
                     ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0) * 3.0);
 
-                if (State::Instance().nvngxExists || State::Instance().libxessExists)
+                if (State::Instance().nvngxExists || (State::Instance().libxessExists || XeSSProxy::Module() != nullptr))
                 {
                     ImGui::Spacing();
 
@@ -1310,7 +1314,7 @@ bool MenuCommon::RenderMenu()
                                 State::Instance().fsrHooks && (State::Instance().nvngxExists || State::Instance().isRunningOnNvidia) ? " or " : "",
                                 (State::Instance().nvngxExists || State::Instance().isRunningOnNvidia) ? "DLSS" : "",
                                 ((State::Instance().nvngxExists || State::Instance().isRunningOnNvidia) || State::Instance().fsrHooks) && State::Instance().libxessExists ? " or " : "",
-                                State::Instance().libxessExists ? "XeSS" : "");
+                                (State::Instance().libxessExists || XeSSProxy::Module() != nullptr) ? "XeSS" : "");
 
 
                     if (Config::Instance()->UseHQFont.value_or_default())
@@ -1320,7 +1324,7 @@ bool MenuCommon::RenderMenu()
 
                     ImGui::Spacing();
                     ImGui::Text("nvngx.dll: %sExist", State::Instance().nvngxExists || State::Instance().isRunningOnNvidia ? "" : "Not ");
-                    ImGui::Text("libxess.dll: %sExist", State::Instance().libxessExists ? "" : "Not ");
+                    ImGui::Text("libxess.dll: %sExist", (State::Instance().libxessExists || XeSSProxy::Module() != nullptr) ? "" : "Not ");
                     ImGui::Text("fsr: %sExist", State::Instance().fsrHooks ? "" : "Not ");
                     ImGui::Spacing();
                 }
