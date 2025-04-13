@@ -491,7 +491,7 @@ static void CheckWorkingMode()
                     if (!State::Instance().enablerAvailable && Config::Instance()->DxgiSpoofing.value_or_default())
                         HookDxgiForSpoofing();
 
-                    if (Config::Instance()->OverlayMenu.value()) 
+                    if (Config::Instance()->OverlayMenu.value())
                         HooksDx::HookDxgi();
                 }
             }
@@ -508,7 +508,7 @@ static void CheckWorkingMode()
             // DirectX 12
             if (D3d12Proxy::Module() == nullptr)
             {
-                LOG_DEBUG("Check for d3d12"); 
+                LOG_DEBUG("Check for d3d12");
                 HMODULE d3d12Module = nullptr;
                 d3d12Module = KernelBaseProxy::GetModuleHandleW_()(L"d3d12.dll");
                 if (Config::Instance()->OverlayMenu.value() && d3d12Module != nullptr)
@@ -785,9 +785,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             DisableThreadLibraryCalls(hModule);
 
-            if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG && Config::Instance()->FGDisableOverlays.value_or_default())
-                SetEnvironmentVariable(L"SteamNoOverlayUIDrawing", L"1");
-
 #ifdef _DEBUG // VER_PRE_RELEASE
             // Enable file logging for pre builds
             Config::Instance()->LogToFile.set_volatile_value(true);
@@ -809,6 +806,17 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             spdlog::warn("");
             spdlog::warn("LogLevel: {0}", Config::Instance()->LogLevel.value_or_default());
 
+            spdlog::info("");
+            CheckQuirks();
+
+            // OptiFG & Overlay Checks
+            if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG && !Config::Instance()->FGDisableOverlays.has_value())
+                Config::Instance()->FGDisableOverlays.set_volatile_value(true);
+
+            if (Config::Instance()->FGDisableOverlays.value_or_default())
+                SetEnvironmentVariable(L"SteamNoOverlayUIDrawing", L"1");
+
+            // Init Kernel proxies
             KernelBaseProxy::Init();
             Kernel32Proxy::Init();
 
@@ -820,9 +828,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             // Temporary fix for Linux & DXVK
             if (State::Instance().isRunningOnDXVK || State::Instance().isRunningOnLinux)
                 Config::Instance()->UseHQFont.set_volatile_value(false);
-
-            spdlog::info("");
-            CheckQuirks();
 
             // Check if real DLSS available
             if (Config::Instance()->DLSSEnabled.value_or_default())
