@@ -77,7 +77,6 @@ bool Config::Reload(std::filesystem::path iniPath)
             FGRectTop.set_from_config(readInt("OptiFG", "RectTop"));
             FGRectWidth.set_from_config(readInt("OptiFG", "RectWidth"));
             FGRectHeight.set_from_config(readInt("OptiFG", "RectHeight"));
-            FGDisableOverlays.set_from_config(readBool("OptiFG", "DisableOverlays"));
             FGAlwaysTrackHeaps.set_from_config(readBool("OptiFG", "AlwaysTrackHeaps"));
             FGMakeDepthCopy.set_from_config(readBool("OptiFG", "MakeDepthCopy"));
             FGMakeMVCopy.set_from_config(readBool("OptiFG", "MakeMVCopy"));
@@ -307,6 +306,8 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Hotfixes
         {
+            FGDisableOverlays.set_from_config(readBool("Hotfix", "DisableOverlays"));
+
             RoundInternalResolution.set_from_config(readInt("Hotfix", "RoundInternalResolution"));
 
             if (auto setting = readFloat("Hotfix", "MipmapBiasOverride"); setting.has_value() && setting.value() <= 15.0 && setting.value() >= -15.0)
@@ -567,7 +568,6 @@ bool Config::SaveIni()
         ini.SetValue("OptiFG", "RectTop", GetIntValue(Instance()->FGRectTop.value_for_config()).c_str());
         ini.SetValue("OptiFG", "RectWidth", GetIntValue(Instance()->FGRectWidth.value_for_config()).c_str());
         ini.SetValue("OptiFG", "RectHeight", GetIntValue(Instance()->FGRectHeight.value_for_config()).c_str());
-        ini.SetValue("OptiFG", "DisableOverlays", GetBoolValue(Instance()->FGDisableOverlays.value_for_config()).c_str());
         ini.SetValue("OptiFG", "AlwaysTrackHeaps", GetBoolValue(Instance()->FGAlwaysTrackHeaps.value_for_config()).c_str());
         ini.SetValue("OptiFG", "MakeDepthCopy", GetBoolValue(Instance()->FGMakeDepthCopy.value_for_config()).c_str());
         ini.SetValue("OptiFG", "MakeMVCopy", GetBoolValue(Instance()->FGMakeMVCopy.value_for_config()).c_str());
@@ -713,6 +713,8 @@ bool Config::SaveIni()
 
     // Hotfixes
     {
+        ini.SetValue("Hotfix", "DisableOverlays", GetBoolValue(Instance()->FGDisableOverlays.value_for_config()).c_str());
+
         ini.SetValue("Hotfix", "MipmapBiasOverride", GetFloatValue(Instance()->MipmapBiasOverride.value_for_config()).c_str());
         ini.SetValue("Hotfix", "MipmapBiasOverrideAll", GetBoolValue(Instance()->MipmapBiasOverrideAll.value_for_config()).c_str());
         ini.SetValue("Hotfix", "MipmapBiasFixedOverride", GetBoolValue(Instance()->MipmapBiasFixedOverride.value_for_config()).c_str());
