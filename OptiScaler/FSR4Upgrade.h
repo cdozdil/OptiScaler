@@ -353,6 +353,9 @@ inline void InitFSR4Update()
 {
     LOG_DEBUG("");
 
+    if (!Config::Instance()->Fsr4Update.value_or_default())
+        return;
+
     // For FSR4 Upgrade
     moduleAmdxc64 = KernelBaseProxy::GetModuleHandleW_()(L"amdxc64.dll");
     if (moduleAmdxc64 == nullptr)

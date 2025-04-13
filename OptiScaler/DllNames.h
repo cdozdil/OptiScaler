@@ -23,13 +23,13 @@ inline std::vector<std::wstring> overlayNamesW = { L"eosovh-win32-shipping.dll",
 
 inline std::vector<std::string> blockOverlayNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping",
                                                  "gameoverlayrenderer64", "gameoverlayrenderer64.dll", "gameoverlayrenderer", "gameoverlayrenderer.dll",
-                                                 "overlay64", "overlay64.dll", "overlay", "overlay.dll",
-                                                 "owclient.dll", "owclient" };
+                                                 "owclient.dll", "owclient"
+                                                 "overlay64", "overlay64.dll", "overlay", "overlay.dll" };
 
 inline std::vector<std::wstring> blockOverlayNamesW = { L"eosovh-win32-shipping.dll", L"eosovh-win32-shipping", L"eosovh-win64-shipping.dll", L"eosovh-win64-shipping",
                                                    L"gameoverlayrenderer64", L"gameoverlayrenderer64.dll", L"gameoverlayrenderer", L"gameoverlayrenderer.dll", 
-                                                   L"overlay64", L"overlay64.dll", L"overlay", L"overlay.dll",
-                                                   L"owclient.dll", L"owclient" };
+                                                   L"owclient.dll", L"owclient" 
+                                                   L"overlay64", L"overlay64.dll", L"overlay", L"overlay.dll" };
 
 DEFINE_NAME_VECTORS(nvngx, "nvngx");
 DEFINE_NAME_VECTORS(xess, "libxess");
