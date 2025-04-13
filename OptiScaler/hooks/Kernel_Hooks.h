@@ -60,12 +60,6 @@ private:
     {
         LOG_TRACE("{}", lcaseLibName);
 
-        if (lcaseLibName.rfind("driverstore") != std::string::npos)
-        {
-            LOG_DEBUG("Skip driver call: {}", lcaseLibName);
-            return nullptr;
-        }
-
         // If Opti is not loading as nvngx.dll
         if (!State::Instance().enablerAvailable && !State::Instance().isWorkingAsNvngx)
         {
@@ -383,12 +377,6 @@ private:
     {
         auto lcaseLibNameA = wstring_to_string(lcaseLibName);
         LOG_TRACE("{}", lcaseLibNameA);
-
-        if (lcaseLibNameA.rfind("driverstore") != std::string::npos)
-        {
-            LOG_DEBUG("Skip driver call: {}", lcaseLibNameA);
-            return nullptr;
-        }
 
         // If Opti is not loading as nvngx.dll
         if (!State::Instance().enablerAvailable && !State::Instance().isWorkingAsNvngx)
