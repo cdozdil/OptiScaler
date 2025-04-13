@@ -479,6 +479,7 @@ static void CheckWorkingMode()
             // DXGI
             if (DxgiProxy::Module() == nullptr)
             {
+                LOG_DEBUG("Check for dxgi");
                 HMODULE dxgiModule = nullptr;
                 dxgiModule = KernelBaseProxy::GetModuleHandleW_()(L"dxgi.dll");
                 if (dxgiModule != nullptr)
@@ -507,6 +508,7 @@ static void CheckWorkingMode()
             // DirectX 12
             if (D3d12Proxy::Module() == nullptr)
             {
+                LOG_DEBUG("Check for d3d12"); 
                 HMODULE d3d12Module = nullptr;
                 d3d12Module = KernelBaseProxy::GetModuleHandleW_()(L"d3d12.dll");
                 if (Config::Instance()->OverlayMenu.value() && d3d12Module != nullptr)

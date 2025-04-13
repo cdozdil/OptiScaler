@@ -362,10 +362,10 @@ inline void InitFSR4Update()
     {
         LOG_DEBUG("Found amdxc64.dll");
         o_AmdExtD3DCreateInterface = (PFN_AmdExtD3DCreateInterface)Kernel32Proxy::GetProcAddress_()(moduleAmdxc64, "AmdExtD3DCreateInterface");
+
+        o_K32_GetProcAddress = Kernel32Proxy::Hook_GetProcAddress(hk_K32_GetProcAddress);
+
+        // Disabled 
+        //o_KB_GetProcAddress = KernelBaseProxy::Hook_GetProcAddress(hk_KB_GetProcAddress);
     }
-
-    o_K32_GetProcAddress = Kernel32Proxy::Hook_GetProcAddress(hk_K32_GetProcAddress);
-
-    // Disabled 
-    //o_KB_GetProcAddress = KernelBaseProxy::Hook_GetProcAddress(hk_KB_GetProcAddress);
 }

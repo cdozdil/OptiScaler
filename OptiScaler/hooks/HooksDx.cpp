@@ -3816,14 +3816,17 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
 #endif
 
 #if _DEBUG
-    State::Instance().skipSpoofing = true;
-    DXGI_ADAPTER_DESC desc;
-    if (pAdapter->GetDesc(&desc) == S_OK)
+    if (pAdapter != nullptr)
     {
-        std::wstring szName(desc.Description);
-        LOG_INFO("Adapter Desc: {}", wstring_to_string(szName));
+        State::Instance().skipSpoofing = true;
+        DXGI_ADAPTER_DESC desc;
+        if (pAdapter->GetDesc(&desc) == S_OK)
+        {
+            std::wstring szName(desc.Description);
+            LOG_INFO("Adapter Desc: {}", wstring_to_string(szName));
+        }
+        State::Instance().skipSpoofing = false;
     }
-    State::Instance().skipSpoofing = false;
 #endif
 
     auto minLevel = MinimumFeatureLevel;
@@ -4123,7 +4126,7 @@ void HooksDx::HookDx11(HMODULE dx11Module)
 
 void HooksDx::HookDxgi()
 {
-    if (o_EnumAdapters != nullptr)
+    if (o_CreateDXGIFactory != nullptr)
         return;
 
     LOG_DEBUG("");
