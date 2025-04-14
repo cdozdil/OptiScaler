@@ -22,7 +22,8 @@ typedef enum GameQuirk
     FMF2,
     RDR1,
     Banishers,
-    SplitFiction
+    SplitFiction,
+    PoE2
 } GameQuirk;
 
 typedef enum FGType : uint32_t

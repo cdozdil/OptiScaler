@@ -524,6 +524,12 @@ static void CheckWorkingMode()
                 HooksDx::HookDx12();
             }
 
+            if (D3d12Proxy::Module() == nullptr && State::Instance().gameQuirk == PoE2)
+            {
+                LOG_DEBUG("Loading d3d12.dll for PoE2");
+                D3d12Proxy::Init();
+            }
+
             // DirectX 11
             HMODULE d3d11Module = nullptr;
             d3d11Module = KernelBaseProxy::GetModuleHandleW_()(L"d3d11.dll");
@@ -703,6 +709,12 @@ static void CheckQuirks() {
     {
         State::Instance().gameQuirk = SplitFiction;
         LOG_INFO("Enabling a quirk for Split Fiction (Quick upscaler reinit)");
+    }
+    else if (exePathFilename == "PathOfExile.exe" || exePathFilename == "PathOfExile_x64.exe" ||
+             exePathFilename == "PathOfExile_x64Steam.exe" || exePathFilename == "PathOfExileSteam.exe")
+    {
+        State::Instance().gameQuirk = PoE2;
+        LOG_INFO("Enabling a quirk for PoE2 (Load d3d12.dll)");
     }
 }
 
