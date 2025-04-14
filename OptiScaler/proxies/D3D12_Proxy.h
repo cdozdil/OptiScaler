@@ -2,6 +2,8 @@
 
 #include <pch.h>
 
+#include <State.h>
+
 #include <proxies/KernelBase_Proxy.h>
 
 #include <detours/detours.h>
@@ -84,7 +86,7 @@ public:
     // Hook methods
     static PFN_D3D12CreateDevice Hook_D3D12CreateDevice(PVOID method)
     {
-        auto addr = D3D12CreateDevice_Hooked();
+        auto addr = D3D12CreateDevice_ForHook();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
@@ -97,7 +99,7 @@ public:
 
     static PFN_D3D12SerializeRootSignature Hook_D3D12SerializeRootSignature(PVOID method) 
     {
-        auto addr = D3D12SerializeRootSignature_Hooked();
+        auto addr = D3D12SerializeRootSignature_ForHook();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
@@ -110,7 +112,7 @@ public:
 
     static PFN_D3D12CreateRootSignatureDeserializer Hook_D3D12CreateRootSignatureDeserializer(PVOID method)
     {
-        auto addr = D3D12CreateRootSignatureDeserializer_Hooked();
+        auto addr = D3D12CreateRootSignatureDeserializer_ForHook();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
@@ -123,7 +125,7 @@ public:
 
     static PFN_D3D12SerializeVersionedRootSignature Hook_D3D12SerializeVersionedRootSignature(PVOID method)
     {
-        auto addr = D3D12SerializeVersionedRootSignature_Hooked();
+        auto addr = D3D12SerializeVersionedRootSignature_ForHook();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
@@ -136,7 +138,7 @@ public:
 
     static PFN_D3D12CreateVersionedRootSignatureDeserializer Hook_D3D12CreateVersionedRootSignatureDeserializer(PVOID method)
     {
-        auto addr = D3D12CreateVersionedRootSignatureDeserializer_Hooked();
+        auto addr = D3D12CreateVersionedRootSignatureDeserializer_ForHook();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
@@ -149,7 +151,7 @@ public:
 
     static PFN_D3D12GetDebugInterface Hook_D3D12GetDebugInterface(PVOID method)
     {
-        auto addr = D3D12GetDebugInterface_Hooked();
+        auto addr = D3D12GetDebugInterface_ForHook();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
@@ -162,7 +164,7 @@ public:
 
     static PFN_D3D12EnableExperimentalFeatures Hook_D3D12EnableExperimentalFeatures(PVOID method)
     {
-        auto addr = D3D12EnableExperimentalFeatures_Hooked();
+        auto addr = D3D12EnableExperimentalFeatures_ForHook();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
@@ -175,7 +177,7 @@ public:
 
     static PFN_D3D12GetInterface Hook_D3D12GetInterface(PVOID method) 
     {
-        auto addr = D3D12GetInterface_Hooked();
+        auto addr = D3D12GetInterface_ForHook();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
@@ -199,13 +201,20 @@ private:
     inline static PFN_D3D12EnableExperimentalFeatures _D3D12EnableExperimentalFeatures = nullptr;
     inline static PFN_D3D12GetInterface _D3D12GetInterface = nullptr;
 
-    inline static FARPROC Hook(FARPROC* address, PVOID method)
+    inline static HMODULE HookModule()
     {
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)address, method);
-        DetourTransactionCommit();
+        if (State::Instance().isD3D12Mode)
+            return dllModule;
 
-        return (*address);
+        return _dll;
     }
+
+    static PFN_D3D12CreateDevice D3D12CreateDevice_ForHook() { return (PFN_D3D12CreateDevice)KernelBaseProxy::GetProcAddress_()(HookModule(), "D3D12CreateDevice"); }
+    static PFN_D3D12SerializeRootSignature D3D12SerializeRootSignature_ForHook() { return (PFN_D3D12SerializeRootSignature)KernelBaseProxy::GetProcAddress_()(HookModule(), "D3D12SerializeRootSignature"); }
+    static PFN_D3D12CreateRootSignatureDeserializer D3D12CreateRootSignatureDeserializer_ForHook() { return (PFN_D3D12CreateRootSignatureDeserializer)KernelBaseProxy::GetProcAddress_()(HookModule(), "D3D12CreateRootSignatureDeserializer"); }
+    static PFN_D3D12SerializeVersionedRootSignature D3D12SerializeVersionedRootSignature_ForHook() { return (PFN_D3D12SerializeVersionedRootSignature)KernelBaseProxy::GetProcAddress_()(HookModule(), "D3D12SerializeVersionedRootSignature"); }
+    static PFN_D3D12CreateVersionedRootSignatureDeserializer D3D12CreateVersionedRootSignatureDeserializer_ForHook() { return (PFN_D3D12CreateVersionedRootSignatureDeserializer)KernelBaseProxy::GetProcAddress_()(HookModule(), "D3D12CreateVersionedRootSignatureDeserializer"); }
+    static PFN_D3D12GetDebugInterface D3D12GetDebugInterface_ForHook() { return (PFN_D3D12GetDebugInterface)KernelBaseProxy::GetProcAddress_()(HookModule(), "D3D12GetDebugInterface"); }
+    static PFN_D3D12EnableExperimentalFeatures D3D12EnableExperimentalFeatures_ForHook() { return (PFN_D3D12EnableExperimentalFeatures)KernelBaseProxy::GetProcAddress_()(HookModule(), "D3D12EnableExperimentalFeatures"); }
+    static PFN_D3D12GetInterface D3D12GetInterface_ForHook() { return (PFN_D3D12GetInterface)KernelBaseProxy::GetProcAddress_()(HookModule(), "D3D12GetInterface"); }
 };
