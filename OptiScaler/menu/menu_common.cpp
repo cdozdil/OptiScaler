@@ -2262,9 +2262,11 @@ bool MenuCommon::RenderMenu()
                             Config::Instance()->ContrastEnabled = contrastEnabled;
 
                         ShowHelpMarker("Increases sharpness at high contrast areas.");
-                                       
+
                         if (Config::Instance()->ContrastEnabled.value_or_default() && Config::Instance()->Sharpness.value_or_default() > 1.0f)
                             Config::Instance()->Sharpness = 1.0f;
+
+                        ImGui::BeginDisabled(!Config::Instance()->ContrastEnabled.value_or_default());
 
                         if(float contrast = Config::Instance()->Contrast.value_or_default(); ImGui::SliderFloat("Contrast", &contrast, 0.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
                             Config::Instance()->Contrast = contrast;
@@ -2272,6 +2274,8 @@ bool MenuCommon::RenderMenu()
                         ShowHelpMarker("Higher values increases sharpness at high contrast areas.\n"
                                        "High values might cause graphical GLITCHES \n"
                                        "when used with high sharpness values !!!");
+
+                        ImGui::EndDisabled();
 
                         ImGui::Spacing();
                         if (ImGui::CollapsingHeader("Motion Adaptive Sharpness##2"))

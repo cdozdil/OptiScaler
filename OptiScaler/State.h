@@ -123,6 +123,7 @@ public:
     bool isRunningOnDXVK = false;
     bool isRunningOnNvidia = false;
     bool isDxgiMode = false;
+    bool isD3D12Mode = false;
     bool isWorkingAsNvngx = false;
 
     // Vulkan stuff

@@ -453,7 +453,7 @@ static void CheckWorkingMode()
                 D3d12Proxy::Init(dll);
                 d3d12.LoadOriginalLibrary(dll);
 
-                //HooksDx::HookDx12();
+                State::Instance().isD3D12Mode = true;
 
                 modeFound = true;
             }
