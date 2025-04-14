@@ -12,13 +12,15 @@ inline std::vector<std::wstring> dllNamesW;
 inline std::vector<std::string> overlayNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping",
                                                  "gameoverlayrenderer64", "gameoverlayrenderer64.dll", "gameoverlayrenderer", "gameoverlayrenderer.dll",
                                                  "socialclubd3d12renderer", "socialclubd3d12renderer.dll",
-                                                 "owclient.dll", "owclient",
+                                                 "owutils.dll", "owutils", 
+                                                 "rtsshooks64.dll", "rtsshooks64", "rtsshooks.dll", "rtsshooks", 
                                                  "overlay64", "overlay64.dll", "overlay", "overlay.dll" };
 
 inline std::vector<std::wstring> overlayNamesW = { L"eosovh-win32-shipping.dll", L"eosovh-win32-shipping", L"eosovh-win64-shipping.dll", L"eosovh-win64-shipping",
                                                    L"gameoverlayrenderer64", L"gameoverlayrenderer64.dll", L"gameoverlayrenderer", L"gameoverlayrenderer.dll", 
                                                    L"socialclubd3d12renderer", L"socialclubd3d12renderer.dll",
-                                                   L"owclient.dll", L"owclient", 
+                                                   L"owutils.dll", L"owutils", 
+                                                   L"rtsshooks64.dll", L"rtsshooks64", L"rtsshooks.dll", L"rtsshooks",
                                                    L"overlay64", L"overlay64.dll", L"overlay", L"overlay.dll" };
 
 inline std::vector<std::string> blockOverlayNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping",
