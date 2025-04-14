@@ -657,12 +657,16 @@ static void CheckWorkingMode()
     LOG_ERROR("Unsupported dll name: {0}", filename);
 }
 
-static void CheckQuirks() {
-    auto exePathFilename = Util::ExePath().filename();
+static void CheckQuirks() 
+{
+    auto exePathFilename = Util::ExePath().filename().string();
 
-    LOG_INFO("Game's Exe: {0}", exePathFilename.string());
+    for (size_t i = 0; i < exePathFilename.size(); i++)
+        exePathFilename[i] = std::tolower(exePathFilename[i]);
 
-    if (exePathFilename == "Cyberpunk2077.exe") {
+    LOG_INFO("Game's Exe: {0}", exePathFilename);
+
+    if (exePathFilename == "cyberpunk2077.exe") {
         State::Instance().gameQuirk = Cyberpunk;
 
         // Disabled OptiFG for now
@@ -672,7 +676,7 @@ static void CheckQuirks() {
 
         LOG_INFO("Enabling a quirk for Cyberpunk (Disable FSR-FG Swapchain & enable DLSS-G fix)");
     }
-    else if (exePathFilename == "FMF2-Win64-Shipping.exe")
+    else if (exePathFilename == "fmf2-win64-shipping.exe")
     {
         State::Instance().gameQuirk = FMF2;
 
@@ -688,30 +692,30 @@ static void CheckQuirks() {
             LOG_INFO("Enabling a quirk for FMF2 (Disable FSR3 Pattern Hooks)");
         }
     }
-    else if (exePathFilename == "RDR.exe" || exePathFilename == "PlayRDR.exe")
+    else if (exePathFilename == "rdr.exe" || exePathFilename == "playrdr.exe")
     {
         State::Instance().gameQuirk = RDR1;
         if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG)
             Config::Instance()->FGType.set_volatile_value(FGType::NoFG);
         LOG_INFO("Enabling a quirk for RDR1 (Disable FSR-FG Swapchain)");
     }
-    else if (exePathFilename == "Banishers-Win64-Shipping.exe")
+    else if (exePathFilename == "banishers-win64-shipping.exe")
     {
         State::Instance().gameQuirk = Banishers;
 
         if (!Config::Instance()->Fsr2Pattern.has_value())
         {
             Config::Instance()->Fsr2Pattern.set_volatile_value(false);
-            LOG_INFO("Enabling a quirk for Banishers (Disable FSR2 Inputs)");
+            LOG_INFO("Enabling a quirk for Banishers (Disable FSR2 Pattern Inputs)");
         }
     }
-    else if (exePathFilename == "SplitFiction.exe")
+    else if (exePathFilename == "splitfiction.exe")
     {
         State::Instance().gameQuirk = SplitFiction;
         LOG_INFO("Enabling a quirk for Split Fiction (Quick upscaler reinit)");
     }
-    else if (exePathFilename == "PathOfExile.exe" || exePathFilename == "PathOfExile_x64.exe" ||
-             exePathFilename == "PathOfExile_x64Steam.exe" || exePathFilename == "PathOfExileSteam.exe")
+    else if (exePathFilename == "pathofexile.exe" || exePathFilename == "pathofexile_x64.exe" ||
+             exePathFilename == "pathofexile_x64steam.exe" || exePathFilename == "pathofexilesteam.exe")
     {
         State::Instance().gameQuirk = PoE2;
         LOG_INFO("Enabling a quirk for PoE2 (Load d3d12.dll)");
