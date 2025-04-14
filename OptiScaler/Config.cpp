@@ -258,6 +258,10 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             if (auto setting = readFloat("CAS", "MotionScaleLimit"); setting.has_value())
                 MotionScaleLimit.set_from_config(std::clamp(setting.value(), 0.01f, 100.0f));
+
+            ContrastEnabled.set_from_config(readBool("CAS", "ContrastEnabled"));            
+            if (auto setting = readFloat("CAS", "Contrast"); setting.has_value())
+                Contrast.set_from_config(std::clamp(setting.value(), -2.0f, 2.0f));
         }
 
         // Output Scaling
@@ -595,7 +599,7 @@ bool Config::SaveIni()
         ini.SetValue("OutputScaling", "Enabled", GetBoolValue(Instance()->OutputScalingEnabled.value_for_config()).c_str());
         ini.SetValue("OutputScaling", "Multiplier", GetFloatValue(Instance()->OutputScalingMultiplier.value_for_config()).c_str());
         ini.SetValue("OutputScaling", "UseFsr", GetBoolValue(Instance()->OutputScalingUseFsr.value_for_config()).c_str());
-        ini.SetValue("OutputScaling", "Downscaler", GetBoolValue(Instance()->OutputScalingDownscaler).c_str());
+        ini.SetValue("OutputScaling", "Downscaler", GetIntValue(Instance()->OutputScalingDownscaler).c_str());
     }
 
     // FSR common
@@ -682,6 +686,8 @@ bool Config::SaveIni()
         ini.SetValue("CAS", "MotionSharpness", GetFloatValue(Instance()->MotionSharpness.value_for_config()).c_str());
         ini.SetValue("CAS", "MotionThreshold", GetFloatValue(Instance()->MotionThreshold.value_for_config()).c_str());
         ini.SetValue("CAS", "MotionScaleLimit", GetFloatValue(Instance()->MotionScaleLimit.value_for_config()).c_str());
+        ini.SetValue("CAS", "ContrastEnabled", GetBoolValue(Instance()->ContrastEnabled.value_for_config()).c_str());
+        ini.SetValue("CAS", "Contrast", GetFloatValue(Instance()->Contrast.value_for_config()).c_str());
     }
 
     // InitFlags
