@@ -25,6 +25,10 @@ assignees: ''
  - [ ] Automated
  - [ ] Manual
 
+If on AMD/Intel and Automated, **used DLSS inputs**?
+- [ ] Yes
+- [ ] No
+
 #### Did you check the [Wiki](https://github.com/cdozdil/OptiScaler/wiki)?
  - [ ] Yes
  - [ ] No
@@ -33,5 +37,6 @@ assignees: ''
 *Example:* Game is crashing when switching to FSR4.
 
 #### I have attached
- - [ ] OptiScaler.log
- - [ ] Screenshot of game folder
+ - [ ] OptiScaler.log (if too large, then zip it)
+ - [ ] Screenshot of game folder (where you placed Opti)
+ - [ ] Screenshot of Opti overlay in-game (opens with shortcut, default Insert)
