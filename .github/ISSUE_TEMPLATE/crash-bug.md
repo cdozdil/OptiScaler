@@ -37,6 +37,6 @@ If on AMD/Intel and Automated, **used DLSS inputs**?
 *Example:* Game is crashing when switching to FSR4.
 
 #### I have attached
- - [ ] OptiScaler.log (if too large, then zip it)
- - [ ] Screenshot of game folder (where you placed Opti)
- - [ ] Screenshot of Opti overlay in-game (opens with shortcut, default Insert)
+ - [ ] OptiScaler.log _(if too large, then zip it)_
+ - [ ] Screenshot of game folder _(where you placed Opti)_
+ - [ ] Screenshot of Opti overlay in-game _(opens with shortcut, default Insert)_
