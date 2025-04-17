@@ -988,10 +988,6 @@ HRESULT STDMETHODCALLTYPE hkAmdExtD3DCreateInterface(IUnknown* pOuter, REFIID ri
     return E_NOINTERFACE;
 }
 
-static UINT customD3D12SDKVersion = 615;
-
-static const char8_t* customD3D12SDKPath = u8".\\D3D12_Optiscaler\\"; //Hardcoded for now
-
 static FARPROC hkGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 {
     if (hModule == dllModule && lpProcName != nullptr)
@@ -1005,27 +1001,6 @@ static FARPROC hkGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
         // Return custom method for upgrade for RDNA4
         if (Config::Instance()->Fsr4Update.value_or_default())
             return (FARPROC)hkAmdExtD3DCreateInterface;
-    }
-
-    // For Agility SDK Upgrade
-    if (Config::Instance()->FsrAgilitySDKUpgrade.value_or_default())
-    {
-        HMODULE mod_mainExe;
-        GetModuleHandleEx(2u, 0i64, &mod_mainExe);
-        if (hModule == mod_mainExe && lpProcName != nullptr)
-        {
-            if (strcmp(lpProcName, "D3D12SDKVersion") == 0)
-            {
-                LOG_INFO("D3D12SDKVersion call, returning this version!");
-                return (FARPROC)&customD3D12SDKVersion;
-            }
-
-            if (strcmp(lpProcName, "D3D12SDKPath") == 0)
-            {
-                LOG_INFO("D3D12SDKPath call, returning this path!");
-                return (FARPROC)&customD3D12SDKPath;
-            }
-        }
     }
 
     if (State::Instance().isRunningOnLinux && lpProcName != nullptr && hModule == GetModuleHandle(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
@@ -2282,6 +2257,34 @@ static bool IsRunningOnWine()
     return false;
 }
 
+
+UINT customD3D12SDKVersion = 615;
+
+const char8_t* customD3D12SDKPath = u8".\\D3D12_Optiscaler\\"; //Hardcoded for now
+
+static void RunAgilityUpgrade(HMODULE dx12Module)
+{
+    if (Config::Instance()->FsrAgilitySDKUpgrade.value_or_default())
+    {
+        Microsoft::WRL::ComPtr<ID3D12SDKConfiguration> sdkConfig;
+        auto hr = D3D12GetInterface(CLSID_D3D12SDKConfiguration, IID_PPV_ARGS(&sdkConfig));
+
+        if (SUCCEEDED(hr)) {
+            hr = sdkConfig->SetSDKVersion(customD3D12SDKVersion, reinterpret_cast<LPCSTR>(customD3D12SDKPath));
+            if (FAILED(hr)) {
+                LOG_ERROR("Failed to upgrade Agility SDK: {0}", hr);
+            }
+            else {
+                LOG_INFO("Agility SDK upgraded successfully");
+            }
+            sdkConfig->Release();
+        }
+        else {
+            LOG_ERROR("Failed to get D3D12 SDK Configuration interface: {0}", hr);
+        }
+    }
+}
+
 static void CheckWorkingMode()
 {
     LOG_FUNC();
@@ -2853,6 +2856,8 @@ static void CheckWorkingMode()
             }
 
             // For FSR4 Upgrade
+            RunAgilityUpgrade(d3d12Module);
+
             mod_amdxc64 = GetModuleHandle(L"amdxc64.dll");
             if (mod_amdxc64 == nullptr)
                 mod_amdxc64 = LoadLibrary(L"amdxc64.dll");
