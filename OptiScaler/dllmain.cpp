@@ -2264,6 +2264,25 @@ const char8_t* customD3D12SDKPath = u8".\\D3D12_Optiscaler\\"; //Hardcoded for n
 
 static void RunAgilityUpgrade(HMODULE dx12Module)
 {
+    typedef HRESULT(*PFN_IsDeveloperModeEnabled)(BOOL* isEnabled);
+    PFN_IsDeveloperModeEnabled o_IsDeveloperModeEnabled = (PFN_IsDeveloperModeEnabled)GetProcAddress(GetModuleHandle(L"kernelbase.dll"), "IsDeveloperModeEnabled");
+
+    if (o_IsDeveloperModeEnabled == nullptr)
+    {
+        LOG_ERROR("Failed to get IsDeveloperModeEnabled function address");
+        return;
+    }
+
+    auto hk_IsDeveloperModeEnabled = [](BOOL* isEnabled) -> HRESULT {
+        *isEnabled = TRUE;
+        return S_OK;
+        };
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach(&(PVOID&)o_IsDeveloperModeEnabled, static_cast<HRESULT(*)(BOOL*)>(hk_IsDeveloperModeEnabled));
+    DetourTransactionCommit();
+
     if (Config::Instance()->FsrAgilitySDKUpgrade.value_or_default())
     {
         Microsoft::WRL::ComPtr<ID3D12SDKConfiguration> sdkConfig;
@@ -2283,6 +2302,11 @@ static void RunAgilityUpgrade(HMODULE dx12Module)
             LOG_ERROR("Failed to get D3D12 SDK Configuration interface: {0}", hr);
         }
     }
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourDetach(&(PVOID&)o_IsDeveloperModeEnabled, static_cast<HRESULT(*)(BOOL*)>(hk_IsDeveloperModeEnabled));
+    DetourTransactionCommit();
 }
 
 static void CheckWorkingMode()
