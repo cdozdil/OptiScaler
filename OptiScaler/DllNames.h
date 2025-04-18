@@ -24,25 +24,27 @@ inline std::vector<std::wstring> overlayNamesW = { L"eosovh-win32-shipping.dll",
                                                    L"overlay64", L"overlay64.dll", L"overlay", L"overlay.dll" };
 
 inline std::vector<std::string> blockOverlayNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping",
-                                                 "gameoverlayrenderer64", "gameoverlayrenderer64.dll", "gameoverlayrenderer", "gameoverlayrenderer.dll",
-                                                 "owclient.dll", "owclient"
-                                                 "overlay64", "overlay64.dll", "overlay", "overlay.dll" };
+                                                      "gameoverlayrenderer64", "gameoverlayrenderer64.dll", "gameoverlayrenderer", "gameoverlayrenderer.dll",
+                                                      "owclient.dll", "owclient"
+                                                      "overlay64", "overlay64.dll", "overlay", "overlay.dll" };
 
 inline std::vector<std::wstring> blockOverlayNamesW = { L"eosovh-win32-shipping.dll", L"eosovh-win32-shipping", L"eosovh-win64-shipping.dll", L"eosovh-win64-shipping",
-                                                   L"gameoverlayrenderer64", L"gameoverlayrenderer64.dll", L"gameoverlayrenderer", L"gameoverlayrenderer.dll", 
-                                                   L"owclient.dll", L"owclient" 
-                                                   L"overlay64", L"overlay64.dll", L"overlay", L"overlay.dll" };
+                                                        L"gameoverlayrenderer64", L"gameoverlayrenderer64.dll", L"gameoverlayrenderer", L"gameoverlayrenderer.dll", 
+                                                        L"owclient.dll", L"owclient" 
+                                                        L"overlay64", L"overlay64.dll", L"overlay", L"overlay.dll" };
 
-DEFINE_NAME_VECTORS(nvngx, "nvngx");
-DEFINE_NAME_VECTORS(xess, "libxess");
-DEFINE_NAME_VECTORS(xessDx11, "libxess_dx11");
-DEFINE_NAME_VECTORS(nvngxDlss, "nvngx_dlss");
-DEFINE_NAME_VECTORS(nvapi, "nvapi64");
 DEFINE_NAME_VECTORS(dx11, "d3d11");
 DEFINE_NAME_VECTORS(dx12, "d3d12");
 DEFINE_NAME_VECTORS(dxgi, "dxgi");
 DEFINE_NAME_VECTORS(vk, "vulkan-1");
+
+DEFINE_NAME_VECTORS(nvngx, "nvngx");
+DEFINE_NAME_VECTORS(nvngxDlss, "nvngx_dlss");
+DEFINE_NAME_VECTORS(nvapi, "nvapi64");
 DEFINE_NAME_VECTORS(streamline, "sl.interposer");
+
+DEFINE_NAME_VECTORS(xess, "libxess");
+DEFINE_NAME_VECTORS(xessDx11, "libxess_dx11");
 
 DEFINE_NAME_VECTORS(fsr2, "ffx_fsr2_api_x64");
 DEFINE_NAME_VECTORS(fsr2BE, "ffx_fsr2_api_dx12_x64");
