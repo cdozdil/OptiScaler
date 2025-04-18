@@ -164,6 +164,11 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
 
         if (pfnUpdateFfxApiProvider == nullptr)
         {
+            LOG_DEBUG("Trying to load from local folder");
+            auto fsr4Module = KernelBaseProxy::LoadLibraryExW_()(L"amdxcffx64.dll", NULL, 0);
+
+            if (fsr4Module == nullptr)
+            {
             auto storePath = GetDriverStore();
             HMODULE fsr4Module = nullptr;
 
@@ -176,9 +181,7 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
                     fsr4Module = KernelBaseProxy::LoadLibraryExW_()(dllPath.c_str(), NULL, 0);
                 }
             }
-
-            if (fsr4Module == nullptr)
-                fsr4Module = KernelBaseProxy::LoadLibraryExW_()(L"amdxcffx64.dll", NULL, 0);
+            }
 
             if (fsr4Module == nullptr)
             {
@@ -351,6 +354,9 @@ inline static FARPROC hk_KB_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 
 inline void InitFSR4Update()
 {
+    if (o_K32_GetProcAddress != nullptr)
+        return;
+
     LOG_DEBUG("");
 
     // For FSR4 Upgrade
