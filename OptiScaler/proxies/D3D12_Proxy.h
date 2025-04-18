@@ -93,7 +93,7 @@ public:
         DetourAttach(&(PVOID&)addr, method);
         DetourTransactionCommit();
 
-        _D3D12CreateDevice = addr;
+        //_D3D12CreateDevice = addr;
         return addr;
     }
 
@@ -106,7 +106,7 @@ public:
         DetourAttach(&(PVOID&)addr, method);
         DetourTransactionCommit();
 
-        _D3D12SerializeRootSignature = addr;
+        //_D3D12SerializeRootSignature = addr;
         return addr;
     }
 
@@ -119,7 +119,7 @@ public:
         DetourAttach(&(PVOID&)addr, method);
         DetourTransactionCommit();
 
-        _D3D12CreateRootSignatureDeserializer = addr;
+        //_D3D12CreateRootSignatureDeserializer = addr;
         return addr;
     }
 
@@ -132,7 +132,7 @@ public:
         DetourAttach(&(PVOID&)addr, method);
         DetourTransactionCommit();
 
-        _D3D12SerializeVersionedRootSignature = addr;
+        //_D3D12SerializeVersionedRootSignature = addr;
         return addr;
     }
 
@@ -145,7 +145,7 @@ public:
         DetourAttach(&(PVOID&)addr, method);
         DetourTransactionCommit();
 
-        _D3D12CreateVersionedRootSignatureDeserializer = addr;
+        //_D3D12CreateVersionedRootSignatureDeserializer = addr;
         return addr;
     }
 
@@ -158,7 +158,7 @@ public:
         DetourAttach(&(PVOID&)addr, method);
         DetourTransactionCommit();
 
-        _D3D12GetDebugInterface = addr;
+        //_D3D12GetDebugInterface = addr;
         return addr;
     }
 
@@ -171,7 +171,7 @@ public:
         DetourAttach(&(PVOID&)addr, method);
         DetourTransactionCommit();
 
-        _D3D12EnableExperimentalFeatures = addr;
+        //_D3D12EnableExperimentalFeatures = addr;
         return addr;
     }
 
@@ -184,7 +184,7 @@ public:
         DetourAttach(&(PVOID&)addr, method);
         DetourTransactionCommit();
 
-        _D3D12GetInterface = addr;
+        //_D3D12GetInterface = addr;
         return addr;
     }
 
