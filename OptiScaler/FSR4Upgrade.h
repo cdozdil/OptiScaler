@@ -169,18 +169,17 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
 
             if (fsr4Module == nullptr)
             {
-            auto storePath = GetDriverStore();
-            HMODULE fsr4Module = nullptr;
+                auto storePath = GetDriverStore();
 
-            for (size_t i = 0; i < storePath.size(); i++)
-            {
-                if (fsr4Module == nullptr)
+                for (size_t i = 0; i < storePath.size(); i++)
                 {
-                    auto dllPath = storePath[i] / L"amdxcffx64.dll";
-                    LOG_DEBUG("Trying to load: {}", wstring_to_string(dllPath.c_str()));
-                    fsr4Module = KernelBaseProxy::LoadLibraryExW_()(dllPath.c_str(), NULL, 0);
+                    if (fsr4Module == nullptr)
+                    {
+                        auto dllPath = storePath[i] / L"amdxcffx64.dll";
+                        LOG_DEBUG("Trying to load: {}", wstring_to_string(dllPath.c_str()));
+                        fsr4Module = KernelBaseProxy::LoadLibraryExW_()(dllPath.c_str(), NULL, 0);
+                    }
                 }
-            }
             }
 
             if (fsr4Module == nullptr)
