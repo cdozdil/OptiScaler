@@ -716,7 +716,7 @@ static void CheckWorkingMode()
                 LOG_INFO("Loading ReShade64.dll, result: {0:X}", (size_t)reshadeHandle);
             }
 
-            RunAgilityUpgrade(d3d12Module);
+            RunAgilityUpgrade(KernelBaseProxy::GetModuleHandleW_()(L"d3d12.dll"));
         }
 
         return;
