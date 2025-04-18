@@ -1115,14 +1115,16 @@ bool MenuCommon::RenderMenu()
             if (Config::Instance()->FpsOverlayType.value_or_default() == 0)
             {
                 if (currentFeature != nullptr)
-                    ImGui::Text("%s | FPS: %5.1f, %5.2f ms | %s -> %s", api.c_str(), frameRate, frameTime, State::Instance().currentInputApiName.c_str(), currentFeature->Name());
+                    ImGui::Text("%s | FPS: %5.1f, %6.2f ms | %s -> %s %d.%d.%d", api.c_str(), frameRate, frameTime, State::Instance().currentInputApiName.c_str(),
+                                currentFeature->Name(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
                 else
-                    ImGui::Text("%s | FPS: %5.1f, %5.2f ms", api.c_str(), frameRate, frameTime);
+                    ImGui::Text("%s | FPS: %5.1f, %6.2f ms", api.c_str(), frameRate, frameTime);
             }
             else
             {
                 if (currentFeature != nullptr)
-                    ImGui::Text("%s | FPS: %5.1f, Avg: %5.1f | %s -> %s", api.c_str(), frameRate, 1000.0f / averageFrameTime, State::Instance().currentInputApiName.c_str(), currentFeature->Name());
+                    ImGui::Text("%s | FPS: %5.1f, Avg: %5.1f | %s -> %s %d.%d.%d", api.c_str(), frameRate, 1000.0f / averageFrameTime, State::Instance().currentInputApiName.c_str(), 
+                                currentFeature->Name(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
                 else
                     ImGui::Text("%s | FPS: %5.1f, Avg: %5.1f", api.c_str(), frameRate, 1000.0f / averageFrameTime);
             }
@@ -1140,7 +1142,7 @@ bool MenuCommon::RenderMenu()
                     ImGui::Spacing();
                 }
 
-                ImGui::Text("Frame Time: %5.2f ms, Avg: %5.2f ms", State::Instance().frameTimes.back(), averageFrameTime);
+                ImGui::Text("Frame Time: %6.2f ms, Avg: %6.2f ms", State::Instance().frameTimes.back(), averageFrameTime);
             }
 
             ImVec2 plotSize;
@@ -1173,7 +1175,7 @@ bool MenuCommon::RenderMenu()
                     ImGui::Spacing();
                 }
 
-                ImGui::Text("Upscaler Time: %5.2f ms, Avg: %5.2f ms", State::Instance().upscaleTimes.back(), averageUpscalerFT);
+                ImGui::Text("Upscaler Time: %6.2f ms, Avg: %6.2f ms", State::Instance().upscaleTimes.back(), averageUpscalerFT);
             }
 
             if (Config::Instance()->FpsOverlayType.value_or_default() > 3)
@@ -1357,7 +1359,9 @@ bool MenuCommon::RenderMenu()
                     switch (State::Instance().api)
                     {
                         case DX11:
-                            ImGui::Text("DirectX 11 %s- %s (%d.%d.%d)", State::Instance().isRunningOnDXVK ? "(DXVK) " : "", State::Instance().currentFeature->Name(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
+                            ImGui::Text("DirectX 11 %s- %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "", State::Instance().currentFeature->Name(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
+                            ImGui::SameLine(0.0f, 6.0f);
+                            ImGui::Text("Source Api: %s", State::Instance().currentInputApiName.c_str());
 
                             if (State::Instance().currentFeature->Name() != "DLSSD")
                                 AddDx11Backends(&currentBackend, &currentBackendName);
@@ -1365,8 +1369,7 @@ bool MenuCommon::RenderMenu()
                             break;
 
                         case DX12:
-                            ImGui::Text("DirectX 12 %s- %s (%d.%d.%d)", State::Instance().isRunningOnDXVK ? "(DXVK) " : "", State::Instance().currentFeature->Name(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
-
+                            ImGui::Text("DirectX 12 %s- %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "", State::Instance().currentFeature->Name(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
                             ImGui::SameLine(0.0f, 6.0f);
                             ImGui::Text("Source Api: %s", State::Instance().currentInputApiName.c_str());
 
@@ -1376,8 +1379,7 @@ bool MenuCommon::RenderMenu()
                             break;
 
                         default:
-                            ImGui::Text("Vulkan %s- %s (%d.%d.%d)", State::Instance().isRunningOnDXVK ? "(DXVK) " : "", State::Instance().currentFeature->Name(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
-
+                            ImGui::Text("Vulkan %s- %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "", State::Instance().currentFeature->Name(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
                             ImGui::SameLine(0.0f, 6.0f);
                             ImGui::Text("Source Api: %s", State::Instance().currentInputApiName.c_str());
 
@@ -2268,7 +2270,7 @@ bool MenuCommon::RenderMenu()
 
                         ImGui::BeginDisabled(!Config::Instance()->ContrastEnabled.value_or_default());
 
-                        if(float contrast = Config::Instance()->Contrast.value_or_default(); ImGui::SliderFloat("Contrast", &contrast, 0.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
+                        if (float contrast = Config::Instance()->Contrast.value_or_default(); ImGui::SliderFloat("Contrast", &contrast, 0.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
                             Config::Instance()->Contrast = contrast;
 
                         ShowHelpMarker("Higher values increases sharpness at high contrast areas.\n"
@@ -2293,7 +2295,7 @@ bool MenuCommon::RenderMenu()
                             if (bool overrideMSDebug = Config::Instance()->MotionSharpnessDebug.value_or_default(); ImGui::Checkbox("MAS Debug", &overrideMSDebug))
                                 Config::Instance()->MotionSharpnessDebug = overrideMSDebug;
                             ShowHelpMarker("Areas that are more red will have more sharpness applied\n"
-                                           "Green areas will get reduced sharpness"); 
+                                           "Green areas will get reduced sharpness");
 
                             float motionSharpness = Config::Instance()->MotionSharpness.value_or_default();
                             ImGui::SliderFloat("MotionSharpness", &motionSharpness, -1.3f, 1.3f, "%.3f", ImGuiSliderFlags_NoRoundToFormat);
@@ -3196,7 +3198,7 @@ bool MenuCommon::RenderMenu()
                 {
                     ImGui::TableNextColumn();
                     ImGui::Text("FrameTime");
-                    auto ft = std::format("{:5.2f} ms / {:5.1f} fps", State::Instance().frameTimes.back(), frameRate);
+                    auto ft = std::format("{:6.2f} ms / {:5.1f} fps", State::Instance().frameTimes.back(), frameRate);
                     std::vector<float> frameTimeArray(State::Instance().frameTimes.begin(), State::Instance().frameTimes.end());
                     ImGui::PlotLines(ft.c_str(), frameTimeArray.data(), (int)frameTimeArray.size());
 

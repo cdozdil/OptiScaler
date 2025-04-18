@@ -30,8 +30,6 @@ inline static std::string ResultToString(xess_result_t result)
 class XeSSFeature : public virtual IFeature
 {
 private:
-	std::string _version = "1.3.0";
-
 	ID3D12PipelineLibrary* _localPipeline = nullptr;
 	ID3D12Heap* _localBufferHeap = nullptr;
 	ID3D12Heap* _localTextureHeap = nullptr;
