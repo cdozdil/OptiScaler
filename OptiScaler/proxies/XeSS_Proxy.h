@@ -215,15 +215,15 @@ public:
 
         mainModule = GetModuleHandle(L"libxess.dll");
         if (mainModule != nullptr)
-            return false;
+        {
+            _dll = mainModule;
+            return true;
+        }
 
         auto dllPath = Util::DllPath();
 
         std::wstring libraryName;
-        //if (State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable)
         libraryName = L"libxess.dll";
-        //else
-        //    libraryName = L"libxess.optidll";
 
         // we would like to prioritize file pointed at ini
         if (Config::Instance()->XeSSLibrary.has_value())
@@ -257,15 +257,15 @@ public:
 
         dx11Module = GetModuleHandle(L"libxess_dx11.dll");
         if (dx11Module != nullptr)
-            return false;
+        {
+            _dlldx11 = dx11Module;
+            return true;
+        }
 
         auto dllPath = Util::DllPath();
 
         std::wstring libraryName;
-        //if (State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable)
         libraryName = L"libxess_dx11.dll";
-        //else
-        //    libraryName = L"libxess_dx11.optidll";
 
         // we would like to prioritize file pointed at ini
         if (Config::Instance()->XeSSLibrary.has_value())
@@ -293,7 +293,7 @@ public:
     static bool HookXeSS(HMODULE libxessModule = nullptr)
     {
         // if dll already loaded
-        if (_dll != nullptr || _xessD3D12CreateContext != nullptr)
+        if (_dll != nullptr && _xessD3D12CreateContext != nullptr)
             return true;
 
         spdlog::info("");
@@ -532,7 +532,7 @@ public:
     static bool HookXeSSDx11(HMODULE libxessModule = nullptr)
     {
         // if dll already loaded
-        if (_dlldx11 != nullptr || _xessD3D11CreateContext != nullptr)
+        if (_dlldx11 != nullptr && _xessD3D11CreateContext != nullptr)
             return true;
 
         spdlog::info("");
