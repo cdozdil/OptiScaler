@@ -89,10 +89,10 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 - XeSS 2.x
 
 #### OptiFG (powered by FSR3 FG) + HUDfix (experimental HUD ghosting fix) 
-**OptiFG** was added with **v0.7** and is **only supported in DX12**. It's **not enabled by default** and can be enabled with the `FGType=optifg` setting in Optiscaler.ini.  
-It's an **experimental** way of adding FSR3 FG to games without native Frame Generation, or can also be used as a last case scenario if the native FG is not working properly.  
-Since FSR3 FG doesn't support HUD interpolation, it requires a HUDless resource to avoid HUD ghosting/garbling. In games without native FG, Optiscaler tries finding the HUDless resource when the user **enables HUDfix**. Depending on how the game draws its UI/HUD, Optiscaler may or may not be successful in finding it. There are several options for tuning the search.  
-A more detailed guide will be available in the [Wiki](https://github.com/cdozdil/OptiScaler/wiki), along with a **list** of **HUDfix incompatible** games.
+**OptiFG** was added with **v0.7** and is **only supported in DX12**. 
+It's an **experimental** way of adding FSR3 FG to games without native Frame Generation, or can also be used as a last case scenario if the native FG is not working properly.
+
+For more information on OptiFG and how to use it, please check the Wiki page - [OptiFG](https://github.com/cdozdil/OptiScaler/wiki/OptiFG).
 
 
 ## Installation
