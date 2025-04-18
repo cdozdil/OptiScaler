@@ -47,7 +47,7 @@ public:
     static bool InitFfxDx12(HMODULE module = nullptr)
     {
         // if dll already loaded
-        if (_dllDx12 != nullptr || _D3D12_CreateContext != nullptr)
+        if (_dllDx12 != nullptr && _D3D12_CreateContext != nullptr)
             return true;
 
         spdlog::info("");
@@ -183,7 +183,7 @@ public:
     static bool InitFfxVk(HMODULE module = nullptr)
     {
         // if dll already loaded
-        if (_dllVk != nullptr || _VULKAN_CreateContext != nullptr)
+        if (_dllVk != nullptr && _VULKAN_CreateContext != nullptr)
             return true;
 
         spdlog::info("");
