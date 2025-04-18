@@ -420,6 +420,11 @@ static void CheckWorkingMode()
         {
             do
             {
+                // Hook kernel32 & kernelbase methods
+                // Moved here to cover agility sdk
+                InitFSR4Update();
+                KernelHooks::Hook();
+
                 auto pluginFilePath = pluginPath / L"d3d12.dll";
                 dll = KernelBaseProxy::LoadLibraryExW_()(pluginFilePath.wstring().c_str(), NULL, 0);
                 if (dll != nullptr)
@@ -475,6 +480,11 @@ static void CheckWorkingMode()
         {
             Config::Instance()->OverlayMenu.set_volatile_value((!State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable) &&
                                                                Config::Instance()->OverlayMenu.value_or_default());
+
+            // Hook kernel32 & kernelbase methods
+            // Moved here to cover agility sdk
+            InitFSR4Update();
+            KernelHooks::Hook();
 
             // DXGI
             if (DxgiProxy::Module() == nullptr)
@@ -560,10 +570,6 @@ static void CheckWorkingMode()
 
             if (Config::Instance()->OverlayMenu.value() && vulkanModule != nullptr)
                 HooksVk::HookVk(vulkanModule);
-
-            // Hook kernel32 & kernelbase methods
-            InitFSR4Update();
-            KernelHooks::Hook();
 
             // NVAPI
             HMODULE nvapi64 = nullptr;
