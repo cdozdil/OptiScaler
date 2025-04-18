@@ -53,6 +53,9 @@ bool XeSSFeature_Dx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
         return false;
     }
 
+    Device = InDevice;
+    DeviceContext = InContext;
+
     State::Instance().skipSpoofing = true;
 
     auto ret = XeSSProxy::D3D11CreateContext()(InDevice, &_xessContext);
@@ -329,7 +332,7 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
     GetRenderResolution(InParameters, &params.inputWidth, &params.inputHeight);
 
-    auto sharpness = GetSharpness(InParameters);
+    _sharpness = GetSharpness(InParameters);
 
     float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
 
@@ -385,7 +388,7 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         else
             params.pOutputTexture = paramOutput;
 
-        if (Config::Instance()->RcasEnabled.value_or(false) &&
+        if (Config::Instance()->RcasEnabled.value_or(true) &&
             (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
             RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() && RCAS->CreateBufferResource(Device, (ID3D11Texture2D*)params.pOutputTexture))
         {
@@ -496,7 +499,7 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     }
 
     // apply rcas
-    if (Config::Instance()->RcasEnabled.value_or(false) &&
+    if (Config::Instance()->RcasEnabled.value_or(true) &&
         (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
         RCAS != nullptr && RCAS.get() != nullptr && RCAS->CanRender())
     {

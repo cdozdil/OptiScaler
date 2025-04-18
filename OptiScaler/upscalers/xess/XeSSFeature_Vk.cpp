@@ -429,7 +429,7 @@ bool XeSSFeature_Vk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
 
     GetRenderResolution(InParameters, &params.inputWidth, &params.inputHeight);
 
-    auto sharpness = GetSharpness(InParameters);
+    _sharpness = GetSharpness(InParameters);
 
     float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
 
