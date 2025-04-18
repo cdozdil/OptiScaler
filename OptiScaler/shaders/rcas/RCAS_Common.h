@@ -32,6 +32,7 @@ static std::string rcasCode = R"(
 cbuffer Params : register(b0)
 {
     float Sharpness;
+    float Contrast;
 
     // Motion Vector Stuff
     int DynamicSharpenEnabled;
@@ -106,19 +107,6 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
     float3 f = Source.Load(int3(DTid.x + 1, DTid.y, 0)).rgb;
     float3 h = Source.Load(int3(DTid.x, DTid.y + 1, 0)).rgb;
   
-    // Get lumas times 2. Should use luma weights that are twice as large as normal.
-    float bL = getRCASLuma(b);
-    float dL = getRCASLuma(d);
-    float eL = getRCASLuma(e);
-    float fL = getRCASLuma(f);
-    float hL = getRCASLuma(h);
-  
-    // denoise
-    float nz = (bL + dL + fL + hL) * 0.25 - eL;
-    float range = max(max(max(bL, dL), max(hL, fL)), eL) - min(min(min(bL, dL), min(eL, fL)), hL);
-    nz = saturate(abs(nz) * rcp(range));
-    nz = -0.5 * nz + 1.0;
-    
     // Min and max of ring.
     float3 minRGB = min(min(b, d), min(f, h));
     float3 maxRGB = max(max(b, d), max(f, h));
@@ -126,17 +114,31 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
     // Immediate constants for peak range.
     float2 peakC = float2(1.0, -4.0);
   
-    // Limiters, these need to use high precision reciprocal operations.
-    // Decided to use standard rcp for now in hopes of optimizing it
+    // Standard RCAS limiters
     float3 hitMin = minRGB * rcp(4.0 * maxRGB);
     float3 hitMax = (peakC.xxx - maxRGB) * rcp(4.0 * minRGB + peakC.yyy);
     float3 lobeRGB = max(-hitMin, hitMax);
     float lobe = max(-0.1875, min(max(lobeRGB.r, max(lobeRGB.g, lobeRGB.b)), 0.0)) * setSharpness;
     
-    // denoise
-    lobe *= nz;
-  
-    // Resolve, which needs medium precision rcp approximation to avoid visible tonality changes.
+    // Apply contrast adaptation only if Contrast > 0
+    if (Contrast >= -10.0)
+    {
+        // Smooth minimum distance to signal limit divided by smooth max (directly from CAS.fx)
+        float3 amp = saturate(min(minRGB, 2.0 - maxRGB) / max(maxRGB, 1e-5));
+        
+        // Shaping amount based on local contrast
+        amp = rsqrt(amp);
+        
+        // Calculate the contrast adaptation factor
+        float peak = -3.0 * Contrast + 8.0;
+        float contrastFactor = 1.0 / max(amp.g * peak, 1.0); // Using green as representative
+        
+        // Apply contrast modulation - more subtle approach
+        // This scales lobe strength based on local contrast without introducing softness
+        lobe *= lerp(1.0, contrastFactor, Contrast); // Reduced intensity of effect with 0.5 multiplier
+    }
+    
+    // Resolve with medium precision rcp
     float rcpL = rcp(4.0 * lobe + 1.0);
     float3 output = ((b + d + f + h) * lobe + e) * rcpL;
   

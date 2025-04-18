@@ -217,7 +217,7 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     else
         Config::Instance()->JitterCancellation.set_volatile_value(false);
 
-    if (Config::Instance()->DisplayResolution.value_or(!LowRes || State::Instance().DisplaySizeMV.value_or(false)))
+    if (Config::Instance()->DisplayResolution.value_or(!LowRes))
     {
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
         LOG_INFO("contextDesc.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
@@ -399,11 +399,8 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     }
     else
     {
-        if (!Config::Instance()->DisplayResolution.value_or(false) && !State::Instance().DisplaySizeMV.value_or(false))
-        {
-            LOG_ERROR("Depth not exist!!");
-            return false;
-        }
+        LOG_ERROR("Depth not exist!!");
+        return false;
     }
 
     void* paramExp = nullptr;

@@ -518,7 +518,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
     }
 
     State::Instance().AutoExposure.reset();
-    State::Instance().DisplaySizeMV.reset();
 
     if (deviceContext->ModuleLoaded() && deviceContext->Init(D3D11Device, InDevCtx, InParameters))
     {
@@ -856,8 +855,30 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
         return NVSDK_NGX_Result_Success;
     }
 
-    deviceContext = Dx11Contexts[handleId].feature.get();
-    State::Instance().currentFeature = deviceContext;
+    auto activeContext = &Dx11Contexts[handleId];
+
+    if (activeContext->feature == nullptr) // prevent source api name flicker when dlssg is active
+    {
+        State::Instance().setInputApiName = State::Instance().currentInputApiName;
+    }
+    else
+    {
+        deviceContext = activeContext->feature.get();
+        State::Instance().currentFeature = deviceContext;
+    }
+
+    if (State::Instance().setInputApiName.length() == 0)
+    {
+        if (std::strcmp(State::Instance().currentInputApiName.c_str(), "DLSS") != 0)
+            State::Instance().currentInputApiName = "DLSS";
+    }
+    else
+    {
+        if (std::strcmp(State::Instance().currentInputApiName.c_str(), State::Instance().setInputApiName.c_str()) != 0)
+            State::Instance().currentInputApiName = State::Instance().setInputApiName;
+    }
+
+    State::Instance().setInputApiName.clear();
 
     if (deviceContext == nullptr)
     {

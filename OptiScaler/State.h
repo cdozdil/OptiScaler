@@ -9,27 +9,28 @@
 
 typedef enum API
 {
-	NotSelected = 0,
-	DX11,
-	DX12,
-	Vulkan,
+    NotSelected = 0,
+    DX11,
+    DX12,
+    Vulkan,
 } API;
 
 typedef enum GameQuirk
 {
-	Other,
-	Cyberpunk,
-	FMF2,
-	RDR1,
-	Banishers,
-	SplitFiction
+    Other,
+    Cyberpunk,
+    FMF2,
+    RDR1,
+    Banishers,
+    SplitFiction,
+    PoE2
 } GameQuirk;
 
 typedef enum FGType : uint32_t
 {
-	NoFG,
-	OptiFG,
-	Nukems
+    NoFG,
+    OptiFG,
+    Nukems
 } FGType;
 
 class State {
@@ -39,129 +40,168 @@ public:
         return instance;
     }
 
-	// Init flags
-	// Used per feature
-	// Reseting on creation of new feature
-	std::optional<bool> DisplaySizeMV;
-	std::optional<bool> AutoExposure;
+    // Init flags
+    // Used per feature
+    // Reseting on creation of new feature
+    std::optional<bool> AutoExposure;
 
-	// DLSSG
-	GameQuirk gameQuirk = GameQuirk::Other;
+    // DLSSG
+    GameQuirk gameQuirk = GameQuirk::Other;
     bool NukemsFilesAvailable = false;
-	bool DLSSGDebugView = false;
-	bool DLSSGInterpolatedOnly = false;
+    bool DLSSGDebugView = false;
+    bool DLSSGInterpolatedOnly = false;
 
-	// FSR Common
-	float lastFsrCameraNear = 0.0f;
-	float lastFsrCameraFar = 0.0f;
+    // FSR Common
+    float lastFsrCameraNear = 0.0f;
+    float lastFsrCameraFar = 0.0f;
 
-	// Frame Generation
-	FGType activeFgType = FGType::NoFG;
+    // Frame Generation
+    FGType activeFgType = FGType::NoFG;
 
-	// OptiFG
-	bool FGonlyGenerated = false;
-	bool FGchanged = false;
-	bool SCchanged = false;
-	bool skipHeapCapture = false;
-	bool useThreadingForHeaps = false;
+    // OptiFG
+    bool FGonlyGenerated = false;
+    bool FGchanged = false;
+    bool SCchanged = false;
+    bool skipHeapCapture = false;
+    bool useThreadingForHeaps = false;
 
-	bool FGcaptureResources = false;
-	int FGcapturedResourceCount = false;
-	bool FGresetCapturedResources = false;
-	bool FGonlyUseCapturedResources = false;
+    bool FGcaptureResources = false;
+    int FGcapturedResourceCount = false;
+    bool FGresetCapturedResources = false;
+    bool FGonlyUseCapturedResources = false;
 
-	// NVNGX init parameters
-	uint64_t NVNGX_ApplicationId = 1337;
-	std::wstring NVNGX_ApplicationDataPath;
-	std::string NVNGX_ProjectId;
-	NVSDK_NGX_Version NVNGX_Version{};
-	const NVSDK_NGX_FeatureCommonInfo* NVNGX_FeatureInfo = nullptr;
-	std::vector<std::wstring> NVNGX_FeatureInfo_Paths;
-	NVSDK_NGX_LoggingInfo NVNGX_Logger{ nullptr, NVSDK_NGX_LOGGING_LEVEL_OFF, false };
-	NVSDK_NGX_EngineType NVNGX_Engine = NVSDK_NGX_ENGINE_TYPE_CUSTOM;
-	std::string NVNGX_EngineVersion;
+    // NVNGX init parameters
+    uint64_t NVNGX_ApplicationId = 1337;
+    std::wstring NVNGX_ApplicationDataPath;
+    std::string NVNGX_ProjectId;
+    NVSDK_NGX_Version NVNGX_Version{};
+    const NVSDK_NGX_FeatureCommonInfo* NVNGX_FeatureInfo = nullptr;
+    std::vector<std::wstring> NVNGX_FeatureInfo_Paths;
+    NVSDK_NGX_LoggingInfo NVNGX_Logger{ nullptr, NVSDK_NGX_LOGGING_LEVEL_OFF, false };
+    NVSDK_NGX_EngineType NVNGX_Engine = NVSDK_NGX_ENGINE_TYPE_CUSTOM;
+    std::string NVNGX_EngineVersion;
 
-	// NGX OTA
-	std::string NGX_OTA_Dlss;
-	std::string NGX_OTA_Dlssd;
+    // NGX OTA
+    std::string NGX_OTA_Dlss;
+    std::string NGX_OTA_Dlssd;
 
-	API api = API::NotSelected;
-	API swapchainApi = API::NotSelected;
+    API api = API::NotSelected;
+    API swapchainApi = API::NotSelected;
 
-	// DLSS Enabler
-	bool enablerAvailable = false;
+    // DLSS Enabler
+    bool enablerAvailable = false;
 
-	// Framerate
-	bool reflexLimitsFps = false;
-	bool reflexShowWarning = false;
+    // Framerate
+    bool reflexLimitsFps = false;
+    bool reflexShowWarning = false;
 
-	// for realtime changes
-	ankerl::unordered_dense::map <unsigned int, bool> changeBackend;
-	std::string newBackend = "";
+    // for realtime changes
+    ankerl::unordered_dense::map <unsigned int, bool> changeBackend;
+    std::string newBackend = "";
 
-	// XeSS debug stuff
-	bool xessDebug = false;
-	int xessDebugFrames = 5;
-	float lastMipBias = 100.0f;
-	float lastMipBiasMax = -100.0f;
+    // XeSS debug stuff
+    bool xessDebug = false;
+    int xessDebugFrames = 5;
+    float lastMipBias = 100.0f;
+    float lastMipBiasMax = -100.0f;
 
-	// DLSS
-	bool dlssPresetsOverriddenExternally = false;
-	bool dlssdPresetsOverriddenExternally = false;
+    // DLSS
+    bool dlssPresetsOverriddenExternally = false;
+    bool dlssdPresetsOverriddenExternally = false;
 
-	// Spoofing
-	bool skipSpoofing = false;
-	// For DXVK, it calls DXGI which cause softlock
-	bool skipDxgiLoadChecks = false;
+    // Spoofing
+    bool skipSpoofing = false;
+    // For DXVK, it calls DXGI which cause softlock
+    bool skipDxgiLoadChecks = false;
 
-	// FSR3.x
-	std::vector<const char*> fsr3xVersionNames;
-	std::vector<uint64_t> fsr3xVersionIds;
+    // FSR3.x
+    std::vector<const char*> fsr3xVersionNames;
+    std::vector<uint64_t> fsr3xVersionIds;
 
-	// Linux check
-	bool isRunningOnLinux = false;
-	bool isRunningOnDXVK = false;
-	bool isRunningOnNvidia = false;
-	bool isDxgiMode = false;
-	bool isWorkingAsNvngx = false;
+    // Linux check
+    bool isRunningOnLinux = false;
+    bool isRunningOnDXVK = false;
+    bool isRunningOnNvidia = false;
+    bool isDxgiMode = false;
+    bool isD3D12Mode = false;
+    bool isWorkingAsNvngx = false;
 
-	// Vulkan stuff
-	bool vulkanCreatingSC = false;
-	bool vulkanSkipHooks = false;
-	bool renderMenu = true;
-	VkInstance VulkanInstance = nullptr;
+    // Vulkan stuff
+    bool vulkanCreatingSC = false;
+    bool vulkanSkipHooks = false;
+    bool renderMenu = true;
+    VkInstance VulkanInstance = nullptr;
 
-	// Framegraph
-	std::deque<double> upscaleTimes;
-	std::deque<double> frameTimes;
+    // Framegraph
+    std::deque<double> upscaleTimes;
+    std::deque<double> frameTimes;
 
-	// Swapchain info
-	float screenWidth = 800.0;
-	float screenHeight = 450.0;
+    // Swapchain info
+    float screenWidth = 800.0;
+    float screenHeight = 450.0;
 
-	// HDR
-	std::vector<IUnknown*> SCbuffers;
-	bool isHdrActive = false;
+    // HDR
+    std::vector<IUnknown*> SCbuffers;
+    bool isHdrActive = false;
 
-	std::string setInputApiName;
-	std::string currentInputApiName;
+    std::string setInputApiName;
+    std::string currentInputApiName;
 
-	bool isShuttingDown = false;
+    bool isShuttingDown = false;
 
-	// menu warnings
-	bool showRestartWarning = false;
-	bool nvngxIniDetected = false;
+    // menu warnings
+    bool showRestartWarning = false;
+    bool nvngxIniDetected = false;
 
-	bool nvngxExists = false;
-	bool libxessExists = false;
-	bool fsrHooks = false;
+    bool nvngxExists = false;
+    bool libxessExists = false;
+    bool fsrHooks = false;
 
-	IFeature* currentFeature = nullptr;
+    IFeature* currentFeature = nullptr;
 
-	std::vector<ID3D12Device*> d3d12Devices;
-	std::vector<ID3D11Device*> d3d11Devices;
-	std::map<UINT64, std::string> adapterDescs;
+    std::vector<ID3D12Device*> d3d12Devices;
+    std::vector<ID3D11Device*> d3d11Devices;
+    std::map<UINT64, std::string> adapterDescs;
+
+    bool mhInited = false;
+
+    // Moved checks here to prevent circular includes
+    /// <summary>
+    /// Enables skipping of LoadLibrary checks 
+    /// </summary>
+    /// <param name="dllName">Lower case dll name without `.dll` at the end. Leave blank for skipping all dll's</param>
+    static void DisableChecks(UINT owner, std::string dllName = "")
+    {
+        if (_skipOwner == 0)
+        {
+            _skipOwner = owner;
+            _skipChecks = true;
+            _skipDllName = dllName;
+        }
+        else
+        {
+            _skipDllName = ""; // Hack for multiple skip calls
+        }
+    };
+
+    static void EnableChecks(UINT owner)
+    {
+        if (_skipOwner == 0 || _skipOwner == owner)
+        {
+            _skipChecks = false;
+            _skipDllName = "";
+            _skipOwner = 0;
+        }
+    };
+
+    static bool SkipDllChecks() { return _skipChecks; }
+    static std::string SkipDllName() { return _skipDllName; }
+
 
 private:
+    inline static bool _skipChecks = false;
+    inline static std::string _skipDllName = "";
+    inline static UINT _skipOwner = 0;
+
     State() = default;
 };

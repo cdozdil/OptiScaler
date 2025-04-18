@@ -2,16 +2,20 @@
 
 #include "pch.h"
 
-#include <d3d12.h>
-#include "Config.h"
-#include "Util.h"
+#include <Util.h>
+#include <Config.h>
 
-#include "detours/detours.h"
+#include <proxies/KernelBase_Proxy.h>
+
 #include <sl.h>
 #include <sl1.h>
 
-static decltype(&slSetTag) o_slSetTag = nullptr;
+#include "detours/detours.h"
+
+#include <d3d12.h>
+
 static decltype(&slInit) o_slInit = nullptr;
+static decltype(&slSetTag) o_slSetTag = nullptr;
 static decltype(&sl1::slInit) o_slInit_sl1 = nullptr;
 
 static sl::PFun_LogMessageCallback* o_logCallback = nullptr;
@@ -144,6 +148,10 @@ static void hookStreamline(HMODULE slInterposer) {
         return;
     }
 
+    // Looks like when reading DLL version load methods are called 
+    // To prevent loops disabling checks for sl.interposer.dll
+    State::DisableChecks(7, "sl.interposer");
+
     if (o_slSetTag || o_slInit || o_slInit_sl1)
         unhookStreamline();
 
@@ -156,8 +164,8 @@ static void hookStreamline(HMODULE slInterposer) {
         LOG_INFO("Streamline version: {}.{}.{}", sl_version.major, sl_version.minor, sl_version.patch);
 
         if (sl_version.major >= 2) {
-            o_slSetTag = reinterpret_cast<decltype(&slSetTag)>(GetProcAddress(slInterposer, "slSetTag"));
-            o_slInit = reinterpret_cast<decltype(&slInit)>(GetProcAddress(slInterposer, "slInit"));
+            o_slSetTag = reinterpret_cast<decltype(&slSetTag)>(KernelBaseProxy::GetProcAddress_()(slInterposer, "slSetTag"));
+            o_slInit = reinterpret_cast<decltype(&slInit)>(KernelBaseProxy::GetProcAddress_()(slInterposer, "slInit"));
 
             if (o_slSetTag != nullptr && o_slInit != nullptr) {
                 DetourTransactionBegin();
@@ -171,7 +179,7 @@ static void hookStreamline(HMODULE slInterposer) {
         }
         else if (sl_version.major == 1) 
         {
-            o_slInit_sl1 = reinterpret_cast<decltype(&sl1::slInit)>(GetProcAddress(slInterposer, "slInit"));
+            o_slInit_sl1 = reinterpret_cast<decltype(&sl1::slInit)>(KernelBaseProxy::GetProcAddress_()(slInterposer, "slInit"));
 
             if (o_slInit_sl1) {
                 DetourTransactionBegin();
@@ -183,5 +191,7 @@ static void hookStreamline(HMODULE slInterposer) {
             }
         }
     }
+
+    State::EnableChecks(7);
 }
 

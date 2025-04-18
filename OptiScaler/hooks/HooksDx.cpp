@@ -1,14 +1,21 @@
 #include "HooksDx.h"
-#include "wrapped_swapchain.h"
 
 #include <Util.h>
 #include <Config.h>
 
+#include "wrapped_swapchain.h"
+
 #include <menu/menu_overlay_dx.h>
+
+#include <proxies/Dxgi_Proxy.h>
+#include <proxies/D3D12_Proxy.h>
+#include <proxies/KernelBase_Proxy.h>
+
 #include <detours/detours.h>
 #include <dx12/ffx_api_dx12.h>
 #include <ffx_framegeneration.h>
 
+#include <DbgHelp.h>
 #include <d3d11on12.h>
 
 #pragma region FG definitions
@@ -317,10 +324,6 @@ static uint32_t fgNotAcceptedResourceFlags = D3D12_RESOURCE_FLAG_RAYTRACING_ACCE
 #pragma endregion                            
 
 // dxgi stuff                                
-typedef HRESULT(*PFN_CreateDXGIFactory)(REFIID riid, IDXGIFactory** ppFactory);
-typedef HRESULT(*PFN_CreateDXGIFactory1)(REFIID riid, IDXGIFactory1** ppFactory);
-typedef HRESULT(*PFN_CreateDXGIFactory2)(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory);
-
 typedef HRESULT(*PFN_EnumAdapterByGpuPreference2)(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter);
 typedef HRESULT(*PFN_EnumAdapterByLuid2)(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter);
 typedef HRESULT(*PFN_EnumAdapters12)(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter);
@@ -330,17 +333,18 @@ typedef HRESULT(*PFN_CreateSwapChain)(IDXGIFactory*, IUnknown*, DXGI_SWAP_CHAIN_
 typedef HRESULT(*PFN_CreateSwapChainForHwnd)(IDXGIFactory*, IUnknown*, HWND, const DXGI_SWAP_CHAIN_DESC1*, const DXGI_SWAP_CHAIN_FULLSCREEN_DESC*, IDXGIOutput*, IDXGISwapChain1**);
 typedef HRESULT(*PFN_CreateSwapChainForCoreWindow)(IDXGIFactory2*, IUnknown* pDevice, IUnknown* pWindow, DXGI_SWAP_CHAIN_DESC1* pDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain);
 
-static PFN_CreateDXGIFactory o_CreateDXGIFactory = nullptr;
-static PFN_CreateDXGIFactory1 o_CreateDXGIFactory1 = nullptr;
-static PFN_CreateDXGIFactory2 o_CreateDXGIFactory2 = nullptr;
-static PFN_CreateDXGIFactory o_SL_CreateDXGIFactory = nullptr;
-static PFN_CreateDXGIFactory1 o_SL_CreateDXGIFactory1 = nullptr;
-static PFN_CreateDXGIFactory2 o_SL_CreateDXGIFactory2 = nullptr;
+static DxgiProxy::PFN_CreateDxgiFactory o_CreateDXGIFactory = nullptr;
+static DxgiProxy::PFN_CreateDxgiFactory1 o_CreateDXGIFactory1 = nullptr;
+static DxgiProxy::PFN_CreateDxgiFactory2 o_CreateDXGIFactory2 = nullptr;
 
-static PFN_EnumAdapters2 ptrEnumAdapters = nullptr;
-static PFN_EnumAdapters12 ptrEnumAdapters1 = nullptr;
-static PFN_EnumAdapterByLuid2 ptrEnumAdapterByLuid = nullptr;
-static PFN_EnumAdapterByGpuPreference2 ptrEnumAdapterByGpuPreference = nullptr;
+//static PFN_CreateDXGIFactory o_SL_CreateDXGIFactory = nullptr;
+//static PFN_CreateDXGIFactory1 o_SL_CreateDXGIFactory1 = nullptr;
+//static PFN_CreateDXGIFactory2 o_SL_CreateDXGIFactory2 = nullptr;
+
+static PFN_EnumAdapters2 o_EnumAdapters = nullptr;
+static PFN_EnumAdapters12 o_EnumAdapters1 = nullptr;
+static PFN_EnumAdapterByLuid2 o_EnumAdapterByLuid = nullptr;
+static PFN_EnumAdapterByGpuPreference2 o_EnumAdapterByGpuPreference = nullptr;
 
 static PFN_CreateSwapChain oCreateSwapChain = nullptr;
 static PFN_CreateSwapChainForHwnd oCreateSwapChainForHwnd = nullptr;
@@ -349,22 +353,14 @@ static PFN_CreateSwapChainForCoreWindow oCreateSwapChainForCoreWindow = nullptr;
 static bool skipHighPerfCheck = false;
 
 // DirectX
-typedef struct D3D12_ROOT_SIGNATURE_DESC_L
-{
-    UINT NumParameters;
-    D3D12_ROOT_PARAMETER* pParameters;
-    UINT NumStaticSamplers;
-    D3D12_STATIC_SAMPLER_DESC* pStaticSamplers;
-    D3D12_ROOT_SIGNATURE_FLAGS Flags;
-} 	D3D12_ROOT_SIGNATURE_DESC_L;
 
 typedef void(*PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 typedef HRESULT(*PFN_CreateSamplerState)(ID3D11Device* This, const D3D11_SAMPLER_DESC* pSamplerDesc, ID3D11SamplerState** ppSamplerState);
-typedef HRESULT(*PFN_D3D12SerializeRootSignature)(D3D12_ROOT_SIGNATURE_DESC_L* pRootSignature, D3D_ROOT_SIGNATURE_VERSION Version, ID3DBlob** ppBlob, ID3DBlob** ppErrorBlob);
 
-static PFN_D3D12_CREATE_DEVICE o_D3D12CreateDevice = nullptr;
 static PFN_CreateSampler o_CreateSampler = nullptr;
-static PFN_D3D12SerializeRootSignature o_D3D12SerializeRootSignature = nullptr;
+
+static D3d12Proxy::PFN_D3D12CreateDevice o_D3D12CreateDevice = nullptr;
+static D3d12Proxy::PFN_D3D12SerializeRootSignature o_D3D12SerializeRootSignature = nullptr;
 
 
 static PFN_D3D11_CREATE_DEVICE o_D3D11CreateDevice = nullptr;
@@ -395,6 +391,9 @@ static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAda
 static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter);
 static HRESULT hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter);
 static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter);
+static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory);
+static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory);
+static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory);
 
 static void FfxFgLogCallback(uint32_t type, const wchar_t* message)
 {
@@ -2318,20 +2317,23 @@ static void CheckAdapter(IUnknown* unkAdapter)
 
 static void AttachToFactory(IUnknown* unkFactory)
 {
+    return;
+
     PVOID* pVTable = *(PVOID**)unkFactory;
 
     IDXGIFactory* factory;
-    if (ptrEnumAdapters == nullptr && unkFactory->QueryInterface(IID_PPV_ARGS(&factory)) == S_OK)
+    auto res = unkFactory->QueryInterface(IID_PPV_ARGS(&factory));
+    if (o_EnumAdapters == nullptr && res == S_OK)
     {
         LOG_DEBUG("Hooking EnumAdapters");
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        ptrEnumAdapters = (PFN_EnumAdapters2)pVTable[7];
+        o_EnumAdapters = (PFN_EnumAdapters2)pVTable[7];
 
-        if (ptrEnumAdapters != nullptr)
-            DetourAttach(&(PVOID&)ptrEnumAdapters, hkEnumAdapters);
+        if (o_EnumAdapters != nullptr)
+            DetourAttach(&(PVOID&)o_EnumAdapters, hkEnumAdapters);
 
         DetourTransactionCommit();
 
@@ -2339,17 +2341,18 @@ static void AttachToFactory(IUnknown* unkFactory)
     }
 
     IDXGIFactory1* factory1;
-    if (ptrEnumAdapters1 == nullptr && unkFactory->QueryInterface(IID_PPV_ARGS(&factory1)) == S_OK)
+    res = unkFactory->QueryInterface(IID_PPV_ARGS(&factory1));
+    if (o_EnumAdapters1 == nullptr && res == S_OK)
     {
         LOG_DEBUG("Hooking EnumAdapters1");
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        ptrEnumAdapters1 = (PFN_EnumAdapters12)pVTable[12];
+        o_EnumAdapters1 = (PFN_EnumAdapters12)pVTable[12];
 
-        if (ptrEnumAdapters1 != nullptr)
-            DetourAttach(&(PVOID&)ptrEnumAdapters1, hkEnumAdapters1);
+        if (o_EnumAdapters1 != nullptr)
+            DetourAttach(&(PVOID&)o_EnumAdapters1, hkEnumAdapters1);
 
         DetourTransactionCommit();
 
@@ -2357,17 +2360,18 @@ static void AttachToFactory(IUnknown* unkFactory)
     }
 
     IDXGIFactory4* factory4;
-    if (ptrEnumAdapterByLuid == nullptr && unkFactory->QueryInterface(IID_PPV_ARGS(&factory4)) == S_OK)
+    res = unkFactory->QueryInterface(IID_PPV_ARGS(&factory4));
+    if (o_EnumAdapterByLuid == nullptr && res == S_OK)
     {
         LOG_DEBUG("Hooking EnumAdapterByLuid");
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        ptrEnumAdapterByLuid = (PFN_EnumAdapterByLuid2)pVTable[26];
+        o_EnumAdapterByLuid = (PFN_EnumAdapterByLuid2)pVTable[26];
 
-        if (ptrEnumAdapterByLuid != nullptr)
-            DetourAttach(&(PVOID&)ptrEnumAdapterByLuid, hkEnumAdapterByLuid);
+        if (o_EnumAdapterByLuid != nullptr)
+            DetourAttach(&(PVOID&)o_EnumAdapterByLuid, hkEnumAdapterByLuid);
 
         DetourTransactionCommit();
 
@@ -2375,17 +2379,18 @@ static void AttachToFactory(IUnknown* unkFactory)
     }
 
     IDXGIFactory6* factory6;
-    if (ptrEnumAdapterByGpuPreference == nullptr && unkFactory->QueryInterface(IID_PPV_ARGS(&factory6)) == S_OK)
+    res = unkFactory->QueryInterface(IID_PPV_ARGS(&factory6));
+    if (o_EnumAdapterByGpuPreference == nullptr && res == S_OK)
     {
         LOG_DEBUG("Hooking EnumAdapterByGpuPreference");
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        ptrEnumAdapterByGpuPreference = (PFN_EnumAdapterByGpuPreference2)pVTable[29];
+        o_EnumAdapterByGpuPreference = (PFN_EnumAdapterByGpuPreference2)pVTable[29];
 
-        if (ptrEnumAdapterByGpuPreference != nullptr)
-            DetourAttach(&(PVOID&)ptrEnumAdapterByGpuPreference, hkEnumAdapterByGpuPreference);
+        if (o_EnumAdapterByGpuPreference != nullptr)
+            DetourAttach(&(PVOID&)o_EnumAdapterByGpuPreference, hkEnumAdapterByGpuPreference);
 
         DetourTransactionCommit();
 
@@ -3142,9 +3147,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
 #ifndef ENABLE_DEBUG_LAYER_DX12
-    State::Instance().skipDxgiLoadChecks = true;
     auto result = o_CreateDXGIFactory(riid, ppFactory);
-    State::Instance().skipDxgiLoadChecks = false;
 #else
     auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
 #endif
@@ -3164,6 +3167,16 @@ static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 
         oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
 
+        IDXGIFactory2* factory2 = nullptr;
+        if (real->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
+        {
+            pFactoryVTable = *reinterpret_cast<void***>(factory2);
+            factory2->Release();
+
+            oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
+            oCreateSwapChainForCoreWindow = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
+        }
+
         if (oCreateSwapChain != nullptr)
         {
             LOG_INFO("Hooking native DXGIFactory");
@@ -3172,6 +3185,12 @@ static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
             DetourUpdateThread(GetCurrentThread());
 
             DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
+
+            if (oCreateSwapChainForHwnd != nullptr)
+                DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
+
+            if (oCreateSwapChainForCoreWindow != nullptr)
+                DetourAttach(&(PVOID&)oCreateSwapChainForCoreWindow, hkCreateSwapChainForCoreWindow);
 
             DetourTransactionCommit();
         }
@@ -3183,9 +3202,7 @@ static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 {
 #ifndef ENABLE_DEBUG_LAYER_DX12
-    State::Instance().skipDxgiLoadChecks = true;
     auto result = o_CreateDXGIFactory1(riid, ppFactory);
-    State::Instance().skipDxgiLoadChecks = false;
 #else
     auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
 #endif
@@ -3203,8 +3220,17 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
     {
         void** pFactoryVTable = *reinterpret_cast<void***>(real);
 
-
         oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
+
+        IDXGIFactory2* factory2 = nullptr;
+        if (real->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
+        {
+            pFactoryVTable = *reinterpret_cast<void***>(factory2);
+            factory2->Release();
+
+            oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
+            oCreateSwapChainForCoreWindow = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
+        }
 
         if (oCreateSwapChain != nullptr)
         {
@@ -3214,6 +3240,12 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
             DetourUpdateThread(GetCurrentThread());
 
             DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
+
+            if (oCreateSwapChainForHwnd != nullptr)
+                DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
+
+            if (oCreateSwapChainForCoreWindow != nullptr)
+                DetourAttach(&(PVOID&)oCreateSwapChainForCoreWindow, hkCreateSwapChainForCoreWindow);
 
             DetourTransactionCommit();
         }
@@ -3225,9 +3257,7 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
 {
 #ifndef ENABLE_DEBUG_LAYER_DX12
-    State::Instance().skipDxgiLoadChecks = true;
     auto result = o_CreateDXGIFactory2(Flags, riid, ppFactory);
-    State::Instance().skipDxgiLoadChecks = false;
 #else
     auto result = o_CreateDXGIFactory2(Flags | DXGI_CREATE_FACTORY_DEBUG, riid, ppFactory);
 #endif
@@ -3280,15 +3310,16 @@ static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppF
 
 static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter)
 {
-    LOG_FUNC();
+    LOG_TRACE("HooksDx Adapter: {}, GpuPreference: {}", Adapter, (UINT)GpuPreference);
 
-    State::Instance().skipDxgiLoadChecks = true;
-    auto result = ptrEnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, ppvAdapter);
-    State::Instance().skipDxgiLoadChecks = false;
+    State::DisableChecks(2, "dxgi");
+    auto result = o_EnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, ppvAdapter);
+    State::EnableChecks(2);
 
     if (result == S_OK)
         CheckAdapter(*ppvAdapter);
 
+    LOG_TRACE("HooksDx result: {:X}, Adapter: {:X}", (UINT)result, (size_t)*ppvAdapter);
     return result;
 }
 
@@ -3296,9 +3327,9 @@ static HRESULT hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID
 {
     LOG_FUNC();
 
-    State::Instance().skipDxgiLoadChecks = true;
-    auto result = ptrEnumAdapterByLuid(This, AdapterLuid, riid, ppvAdapter);
-    State::Instance().skipDxgiLoadChecks = false;
+    State::DisableChecks(3, "dxgi");
+    auto result = o_EnumAdapterByLuid(This, AdapterLuid, riid, ppvAdapter);
+    State::EnableChecks(3);
 
     if (result == S_OK)
         CheckAdapter(*ppvAdapter);
@@ -3310,9 +3341,9 @@ static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppA
 {
     LOG_TRACE("HooksDx");
 
-    State::Instance().skipDxgiLoadChecks = true;
-    HRESULT result = ptrEnumAdapters1(This, Adapter, ppAdapter);
-    State::Instance().skipDxgiLoadChecks = false;
+    State::DisableChecks(4, "dxgi");
+    HRESULT result = o_EnumAdapters1(This, Adapter, ppAdapter);
+    State::EnableChecks(4);
 
     if (result == S_OK)
         CheckAdapter(*ppAdapter);
@@ -3324,9 +3355,9 @@ static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAda
 {
     LOG_FUNC();
 
-    State::Instance().skipDxgiLoadChecks = true;
-    HRESULT result = ptrEnumAdapters(This, Adapter, ppAdapter);
-    State::Instance().skipDxgiLoadChecks = false;
+    State::DisableChecks(5, "dxgi");
+    HRESULT result = o_EnumAdapters(This, Adapter, ppAdapter);
+    State::EnableChecks(5);
 
     if (result == S_OK)
         CheckAdapter(*ppAdapter);
@@ -3769,8 +3800,7 @@ static void CALLBACK D3D12DebugCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_M
 
 static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
 {
-    LOG_FUNC();
-
+    LOG_TRACE("Adapter: {:X}, Level: {:X}", (size_t)pAdapter, (UINT)MinimumFeatureLevel);
 
 #ifdef ENABLE_DEBUG_LAYER_DX12
     LOG_WARN("Debug layers active!");
@@ -3785,11 +3815,26 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     }
 #endif
 
+#if _DEBUG
+    if (pAdapter != nullptr)
+    {
+        State::Instance().skipSpoofing = true;
+        DXGI_ADAPTER_DESC desc;
+        if (pAdapter->GetDesc(&desc) == S_OK)
+        {
+            std::wstring szName(desc.Description);
+            LOG_INFO("Adapter Desc: {}", wstring_to_string(szName));
+        }
+        State::Instance().skipSpoofing = false;
+    }
+#endif
+
     auto minLevel = MinimumFeatureLevel;
     if (Config::Instance()->SpoofFeatureLevel.value_or_default())
         minLevel = D3D_FEATURE_LEVEL_11_0;
 
-    HRESULT result = o_D3D12CreateDevice(pAdapter, minLevel, riid, ppDevice);
+    auto result = o_D3D12CreateDevice(pAdapter, minLevel, riid, ppDevice);
+    LOG_DEBUG("o_D3D12CreateDevice result: {:X}", (UINT)result);
 
     if (result == S_OK && ppDevice != nullptr && *ppDevice != nullptr)
     {
@@ -3828,12 +3873,11 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
 #endif
     }
 
-    LOG_DEBUG("result: {:X}", (UINT)result);
-
+    LOG_DEBUG("final result: {:X}", (UINT)result);
     return result;
 }
 
-static HRESULT hkD3D12SerializeRootSignature(D3D12_ROOT_SIGNATURE_DESC_L* pRootSignature, D3D_ROOT_SIGNATURE_VERSION Version, ID3DBlob** ppBlob, ID3DBlob** ppErrorBlob)
+static HRESULT hkD3D12SerializeRootSignature(D3d12Proxy::D3D12_ROOT_SIGNATURE_DESC_L* pRootSignature, D3D_ROOT_SIGNATURE_VERSION Version, ID3DBlob** ppBlob, ID3DBlob** ppErrorBlob)
 {
     if (Config::Instance()->OverrideShaderSampler.value_or_default() && pRootSignature != nullptr)
     {
@@ -4025,44 +4069,40 @@ static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC
 
 #pragma region Public hook methods
 
-void HooksDx::HookDx12(HMODULE dx12Module)
+void HooksDx::HookDx12()
 {
     if (o_D3D12CreateDevice != nullptr)
         return;
 
     LOG_DEBUG("");
 
-    o_D3D12CreateDevice = (PFN_D3D12_CREATE_DEVICE)GetProcAddress(dx12Module, "D3D12CreateDevice");
-    o_D3D12SerializeRootSignature = (PFN_D3D12SerializeRootSignature)GetProcAddress(dx12Module, "D3D12SerializeRootSignature");
-
-    if (o_D3D12CreateDevice != nullptr)
-    {
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-
-        LOG_DEBUG("Hooking D3D12CreateDevice method");
-        DetourAttach(&(PVOID&)o_D3D12CreateDevice, hkD3D12CreateDevice);
-
-        if (o_D3D12SerializeRootSignature != nullptr)
-        {
-            LOG_DEBUG("Hooking D3D12SerializeRootSignature method");
-            DetourAttach(&(PVOID&)o_D3D12SerializeRootSignature, hkD3D12SerializeRootSignature);
-        }
-
-        DetourTransactionCommit();
-    }
+    o_D3D12CreateDevice = D3d12Proxy::Hook_D3D12CreateDevice(hkD3D12CreateDevice);
+    o_D3D12SerializeRootSignature = D3d12Proxy::Hook_D3D12SerializeRootSignature(hkD3D12SerializeRootSignature);
 }
 
 void HooksDx::HookDx11(HMODULE dx11Module)
 {
+    //if (g_pd3dDeviceParam != nullptr && currentSwapchain != nullptr)
+    //{
+    //    auto steam = KernelBaseProxy::GetModuleHandleA_()("GameOverlayRenderer64.dll");
+    //    auto epic = KernelBaseProxy::GetModuleHandleA_()("eosovh-win64-shipping.dll");
+    //    auto rtss = KernelBaseProxy::GetModuleHandleA_()("RTSSHooks64.dll");
+
+    //    if (epic != nullptr || steam != nullptr || rtss != nullptr)
+    //    {
+    //        LOG_WARN("Skipping hooking, because of Epic: {}, Steam: {}, RTSS: {}", epic != nullptr, steam != nullptr, rtss != nullptr);
+    //        return;
+    //    }
+    //}
+
     if (o_D3D11CreateDevice != nullptr)
         return;
 
     LOG_DEBUG("");
 
-    o_D3D11CreateDevice = (PFN_D3D11_CREATE_DEVICE)GetProcAddress(dx11Module, "D3D11CreateDevice");
-    o_D3D11CreateDeviceAndSwapChain = (PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN)GetProcAddress(dx11Module, "D3D11CreateDeviceAndSwapChain");
-    o_D3D11On12CreateDevice = (PFN_D3D11ON12_CREATE_DEVICE)GetProcAddress(dx11Module, "D3D11On12CreateDevice");
+    o_D3D11CreateDevice = (PFN_D3D11_CREATE_DEVICE)KernelBaseProxy::GetProcAddress_()(dx11Module, "D3D11CreateDevice");
+    o_D3D11CreateDeviceAndSwapChain = (PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN)KernelBaseProxy::GetProcAddress_()(dx11Module, "D3D11CreateDeviceAndSwapChain");
+    o_D3D11On12CreateDevice = (PFN_D3D11ON12_CREATE_DEVICE)KernelBaseProxy::GetProcAddress_()(dx11Module, "D3D11On12CreateDevice");
 
     if (o_D3D11CreateDevice != nullptr || o_D3D11On12CreateDevice != nullptr || o_D3D11CreateDeviceAndSwapChain != nullptr)
     {
@@ -4084,35 +4124,16 @@ void HooksDx::HookDx11(HMODULE dx11Module)
     }
 }
 
-void HooksDx::HookDxgi(HMODULE dxgiModule)
+void HooksDx::HookDxgi()
 {
     if (o_CreateDXGIFactory != nullptr)
         return;
 
     LOG_DEBUG("");
 
-    o_CreateDXGIFactory = (PFN_CreateDXGIFactory)GetProcAddress(dxgiModule, "CreateDXGIFactory");
-    o_CreateDXGIFactory1 = (PFN_CreateDXGIFactory1)GetProcAddress(dxgiModule, "CreateDXGIFactory1");
-    o_CreateDXGIFactory2 = (PFN_CreateDXGIFactory2)GetProcAddress(dxgiModule, "CreateDXGIFactory2");
-
-    if (o_CreateDXGIFactory != nullptr)
-    {
-        LOG_DEBUG("Hooking CreateDXGIFactory methods");
-
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-
-        if (o_CreateDXGIFactory != nullptr)
-            DetourAttach(&(PVOID&)o_CreateDXGIFactory, hkCreateDXGIFactory);
-
-        if (o_CreateDXGIFactory1 != nullptr)
-            DetourAttach(&(PVOID&)o_CreateDXGIFactory1, hkCreateDXGIFactory1);
-
-        if (o_CreateDXGIFactory2 != nullptr)
-            DetourAttach(&(PVOID&)o_CreateDXGIFactory2, hkCreateDXGIFactory2);
-
-        DetourTransactionCommit();
-    }
+    o_CreateDXGIFactory = DxgiProxy::Hook_CreateDxgiFactory(hkCreateDXGIFactory);
+    o_CreateDXGIFactory1 = DxgiProxy::Hook_CreateDxgiFactory1(hkCreateDXGIFactory1);
+    o_CreateDXGIFactory2 = DxgiProxy::Hook_CreateDxgiFactory2(hkCreateDXGIFactory2);
 }
 
 DXGI_FORMAT HooksDx::CurrentSwapchainFormat()

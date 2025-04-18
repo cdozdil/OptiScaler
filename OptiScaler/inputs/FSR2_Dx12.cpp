@@ -1,13 +1,15 @@
 #include "FSR2_Dx12.h"
 
-#include "Config.h"
 #include "Util.h"
-#include "scanner/scanner.h"
-
+#include "Config.h"
 #include "resource.h"
 #include "NVNGX_Parameter.h"
 
+#include <proxies/KernelBase_Proxy.h>
+
+#include "scanner/scanner.h"
 #include "detours/detours.h"
+
 #include "fsr2_212/ffx_fsr2.h"
 #include "fsr2_212/dx12/ffx_fsr2_dx12.h"
 
@@ -291,6 +293,8 @@ static bool CreateDLSSContextTiny(Fsr212::FfxFsr2Context* handle, const FfxFsr2T
 
 static std::optional<float> GetQualityOverrideRatioFfx(const Fsr212::FfxFsr2QualityMode input)
 {
+    LOG_DEBUG("");
+    
     std::optional<float> output;
 
     auto sliderLimit = Config::Instance()->ExtendedLimits.value_or_default() ? 0.1f : 1.0f;
@@ -343,6 +347,8 @@ static std::optional<float> GetQualityOverrideRatioFfx(const Fsr212::FfxFsr2Qual
 // FSR2 Upscaler
 static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* context, Fsr212::FfxFsr2ContextDescription* contextDescription)
 {
+    LOG_DEBUG("");
+
     if (contextDescription == nullptr || contextDescription->device == nullptr)
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
@@ -422,6 +428,8 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
 
 static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Pattern_Dx12(Fsr212::FfxFsr2Context* context, Fsr212::FfxFsr2ContextDescription* contextDescription)
 {
+    LOG_DEBUG("");
+
     if (contextDescription == nullptr || contextDescription->device == nullptr)
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
@@ -506,6 +514,8 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context*
 // FSR2.1
 static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2DispatchDescription* dispatchDescription)
 {
+    LOG_DEBUG("");
+
     // HACK, try to detected when we hooked FSR 2.0 call as FSR2.1/2.2
     if (std::labs(dispatchDescription->renderSize.width) > 20000)
     {
@@ -571,6 +581,8 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Dx12(Fsr212::FfxFsr2Context* 
 
 static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2DispatchDescription* dispatchDescription)
 {
+    LOG_DEBUG("");
+
     // Skip OptiScaler stuff
     if (!Config::Instance()->Fsr2Inputs.value_or_default() || _skipDispatch)
         return o_ffxFsr2ContextDispatch_Pattern_Dx12(context, dispatchDescription);
@@ -626,6 +638,8 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2C
 // FSR2.0
 static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const FfxFsr20DispatchDescription* dispatchDescription)
 {
+    LOG_DEBUG("");
+
     // Skip OptiScaler stuff
     if (!Config::Instance()->Fsr2Inputs.value_or_default())
     {
@@ -690,6 +704,8 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context*
 // FSR2.0 Pattern
 static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2Context* context, const FfxFsr20DispatchDescription* dispatchDescription)
 {
+    LOG_DEBUG("");
+
     // Skip OptiScaler stuff
     if (!Config::Instance()->Fsr2Inputs.value_or_default() || _skipDispatch)
         return o_ffxFsr20ContextDispatch_Pattern_Dx12(context, dispatchDescription);
@@ -745,6 +761,8 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2
 // Tiny Tina's Wonderland
 static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const FfxFsr2TinyDispatchDescription* dispatchDescription)
 {
+    LOG_DEBUG("");
+
     // Skip OptiScaler stuff
     if (!Config::Instance()->Fsr2Inputs.value_or_default())
         return o_ffxFsr2TinyContextDispatch_Dx12(context, dispatchDescription);
@@ -799,6 +817,8 @@ static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Conte
 
 static Fsr212::FfxErrorCode ffxFsr2ContextDestroy_Dx12(Fsr212::FfxFsr2Context* context)
 {
+    LOG_DEBUG("");
+
     if (context == nullptr)
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
@@ -838,6 +858,8 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDestroy_Pattern_Dx12(Fsr212::FfxFsr2Co
 
 static float ffxFsr2GetUpscaleRatioFromQualityMode_Dx12(Fsr212::FfxFsr2QualityMode qualityMode)
 {
+    LOG_DEBUG("");
+
     auto ratio = GetQualityOverrideRatioFfx(qualityMode).value_or(qualityRatios[(UINT)qualityMode]);
     LOG_DEBUG("Quality mode: {}, Upscale ratio: {}", (UINT)qualityMode, ratio);
     return ratio;
@@ -846,6 +868,8 @@ static float ffxFsr2GetUpscaleRatioFromQualityMode_Dx12(Fsr212::FfxFsr2QualityMo
 static Fsr212::FfxErrorCode ffxFsr2GetRenderResolutionFromQualityMode_Dx12(uint32_t* renderWidth, uint32_t* renderHeight,
                                                                            uint32_t displayWidth, uint32_t displayHeight, Fsr212::FfxFsr2QualityMode qualityMode)
 {
+    LOG_DEBUG("");
+
     auto ratio = GetQualityOverrideRatioFfx(qualityMode).value_or(qualityRatios[(UINT)qualityMode]);
 
     if (renderHeight != nullptr)
@@ -877,7 +901,16 @@ void HookFSR2ExeInputs()
     LOG_INFO("Trying to hook FSR2 methods");
 
     auto exeNameW = Util::ExePath().filename();
-    auto exeName = wstring_to_string(exeNameW);
+    auto exeModule = KernelBaseProxy::GetModuleHandleW_()(exeNameW.c_str());
+
+    if (KernelBaseProxy::GetProcAddress_()(exeModule, "ffxFsr2GetInterfaceKTGL") != nullptr ||
+        KernelBaseProxy::GetProcAddress_()(exeModule, "ffxFsr2GetScratchMemorySizeKTGL") != nullptr ||
+        KernelBaseProxy::GetProcAddress_()(exeModule, "ffxGetDeviceKTGL") != nullptr ||
+        KernelBaseProxy::GetProcAddress_()(exeModule, "ffxGetResourceKTGL") != nullptr)
+    {
+        LOG_WARN("Katana Engine exports detected, disabling FSR2 hooks!");
+        return;
+    }
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
@@ -885,9 +918,9 @@ void HookFSR2ExeInputs()
     // ffxFsr2ContextCreate
     if (o_ffxFsr2ContextCreate_Dx12 == nullptr)
     {
-        o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextCreate");
+        o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxFsr2ContextCreate");
         if (o_ffxFsr2ContextCreate_Dx12 == nullptr)
-            o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextCreate@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2ContextDescription@@@Z");
+            o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)KernelBaseProxy::GetProcAddress_()(exeModule, "?ffxFsr2ContextCreate@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2ContextDescription@@@Z");
 
         if (o_ffxFsr2ContextCreate_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2ContextCreate_Dx12, ffxFsr2ContextCreate_Dx12);
@@ -898,7 +931,7 @@ void HookFSR2ExeInputs()
     //ffxFsr2ContextDispatch 2.X
     if (o_ffxFsr2ContextDispatch_Dx12 == nullptr)
     {
-        o_ffxFsr2ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextDispatch");
+        o_ffxFsr2ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxFsr2ContextDispatch");
 
         if (o_ffxFsr2ContextDispatch_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatch_Dx12);
@@ -909,7 +942,7 @@ void HookFSR2ExeInputs()
     //ffxFsr2ContextDispatch FSR2.0
     if (o_ffxFsr20ContextDispatch_Dx12 == nullptr)
     {
-        o_ffxFsr20ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextDispatch@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2DispatchDescription@@@Z");
+        o_ffxFsr20ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)KernelBaseProxy::GetProcAddress_()(exeModule, "?ffxFsr2ContextDispatch@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2DispatchDescription@@@Z");
 
         if (o_ffxFsr20ContextDispatch_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr20ContextDispatch_Dx12, ffxFsr20ContextDispatch_Dx12);
@@ -920,7 +953,7 @@ void HookFSR2ExeInputs()
     //ffxFsr2ContextDispatch Tiny Tina
     if (o_ffxFsr2TinyContextDispatch_Dx12 == nullptr)
     {
-        o_ffxFsr2TinyContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextDispatch@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2DispatchParams@@@Z");
+        o_ffxFsr2TinyContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)KernelBaseProxy::GetProcAddress_()(exeModule, "?ffxFsr2ContextDispatch@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2DispatchParams@@@Z");
 
         if (o_ffxFsr2TinyContextDispatch_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2TinyContextDispatch_Dx12, ffxFsr2TinyContextDispatch_Dx12);
@@ -931,9 +964,9 @@ void HookFSR2ExeInputs()
     //ffxFsr2ContextDestroy
     if (o_ffxFsr2ContextDestroy_Dx12 == nullptr)
     {
-        o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy)DetourFindFunction(exeName.c_str(), "ffxFsr2ContextDestroy");
+        o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxFsr2ContextDestroy");
         if (o_ffxFsr2ContextDestroy_Dx12 == nullptr)
-            o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy)DetourFindFunction(exeName.c_str(), "?ffxFsr2ContextDestroy@@YAHPEAUFfxFsr2Context@@@Z");
+            o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy)KernelBaseProxy::GetProcAddress_()(exeModule, "?ffxFsr2ContextDestroy@@YAHPEAUFfxFsr2Context@@@Z");
 
         if (o_ffxFsr2ContextDestroy_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2ContextDestroy_Dx12, ffxFsr2ContextDestroy_Dx12);
@@ -944,9 +977,9 @@ void HookFSR2ExeInputs()
     //ffxFsr2GetUpscaleRatioFromQualityMode
     if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 == nullptr)
     {
-        o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr2GetUpscaleRatioFromQualityMode)DetourFindFunction(exeName.c_str(), "ffxFsr2GetUpscaleRatioFromQualityMode");
+        o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr2GetUpscaleRatioFromQualityMode)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxFsr2GetUpscaleRatioFromQualityMode");
         if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 == nullptr)
-            o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr2GetUpscaleRatioFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetUpscaleRatioFromQualityMode@@YAMW4FfxFsr2QualityMode@@@Z");
+            o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr2GetUpscaleRatioFromQualityMode)KernelBaseProxy::GetProcAddress_()(exeModule, "?ffxFsr2GetUpscaleRatioFromQualityMode@@YAMW4FfxFsr2QualityMode@@@Z");
 
         if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12, ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
@@ -957,11 +990,11 @@ void HookFSR2ExeInputs()
     //ffxFsr2GetRenderResolutionFromQualityMode
     if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
     {
-        o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "ffxFsr2GetRenderResolutionFromQualityMode");
+        o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxFsr2GetRenderResolutionFromQualityMode");
         if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
-            o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAI0IIW4FfxFsr2QualityMode@@@Z");
+            o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)KernelBaseProxy::GetProcAddress_()(exeModule, "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAI0IIW4FfxFsr2QualityMode@@@Z");
         if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
-            o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAH0HHW4FfxFsr2QualityMode@@@Z");
+            o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)KernelBaseProxy::GetProcAddress_()(exeModule, "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAH0HHW4FfxFsr2QualityMode@@@Z");
 
         if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 != nullptr)
             DetourAttach(&(PVOID&)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12, ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
@@ -970,10 +1003,10 @@ void HookFSR2ExeInputs()
     }
 
     //ffxFsr2GetInterfaceDX12
-    //o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "ffxFsr2GetInterfaceDX12");
+    //o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxFsr2GetInterfaceDX12");
     //if (o_ffxFsr2GetInterfaceDX12 == nullptr)
     //{
-    //    o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)DetourFindFunction(exeName.c_str(), "?ffxFsr2GetInterfaceDX12@@YAHPEAUFfxFsr2Interface@@PEAUID3D12Device@@PEAX_K@Z");
+    //    o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)KernelBaseProxy::GetProcAddress_()(exeModule, "?ffxFsr2GetInterfaceDX12@@YAHPEAUFfxFsr2Interface@@PEAUID3D12Device@@PEAX_K@Z");
 
     //    if (o_ffxFsr2GetInterfaceDX12 != nullptr)
     //        DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
@@ -1057,7 +1090,6 @@ void HookFSR2ExeInputs()
             LOG_DEBUG("ffxFsr20ContextDispatch_Pattern_Dx12: {:X}", (size_t)o_ffxFsr20ContextDispatch_Pattern_Dx12);
 
             // Lies of P
-            // Dispatch 2.X
             LOG_DEBUG("Checking dispatchPattern");
             std::string_view dispatchPattern("40 55 53 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 80 B9 ? ? ? ? 00 48 8B DA 48 8B 02 48 8B F9");
             o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPattern, 0, (size_t)o_ffxFsr2ContextCreate_Pattern_Dx12);
@@ -1126,7 +1158,7 @@ void HookFSR2Inputs(HMODULE module)
 
         if (o_ffxFsr2ContextCreate_Dx12 == nullptr)
         {
-            o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)GetProcAddress(module, "ffxFsr2ContextCreate");
+            o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)KernelBaseProxy::GetProcAddress_()(module, "ffxFsr2ContextCreate");
 
             if (o_ffxFsr2ContextCreate_Dx12 != nullptr)
                 DetourAttach(&(PVOID&)o_ffxFsr2ContextCreate_Dx12, ffxFsr2ContextCreate_Dx12);
@@ -1136,7 +1168,7 @@ void HookFSR2Inputs(HMODULE module)
 
         if (o_ffxFsr2ContextDispatch_Dx12 == nullptr)
         {
-            o_ffxFsr2ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)GetProcAddress(module, "ffxFsr2ContextDispatch");
+            o_ffxFsr2ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)KernelBaseProxy::GetProcAddress_()(module, "ffxFsr2ContextDispatch");
 
             if (o_ffxFsr2ContextDispatch_Dx12 != nullptr)
                 DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatch_Dx12);
@@ -1146,7 +1178,7 @@ void HookFSR2Inputs(HMODULE module)
 
         if (o_ffxFsr2ContextDestroy_Dx12 == nullptr)
         {
-            o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy)GetProcAddress(module, "ffxFsr2ContextDestroy");
+            o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy)KernelBaseProxy::GetProcAddress_()(module, "ffxFsr2ContextDestroy");
 
             if (o_ffxFsr2ContextDestroy_Dx12 != nullptr)
                 DetourAttach(&(PVOID&)o_ffxFsr2ContextDestroy_Dx12, ffxFsr2ContextDestroy_Dx12);
@@ -1156,7 +1188,7 @@ void HookFSR2Inputs(HMODULE module)
 
         if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 == nullptr)
         {
-            o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr2GetUpscaleRatioFromQualityMode)GetProcAddress(module, "ffxFsr2GetUpscaleRatioFromQualityMode");
+            o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr2GetUpscaleRatioFromQualityMode)KernelBaseProxy::GetProcAddress_()(module, "ffxFsr2GetUpscaleRatioFromQualityMode");
 
             if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 != nullptr)
                 DetourAttach(&(PVOID&)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12, ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
@@ -1166,7 +1198,7 @@ void HookFSR2Inputs(HMODULE module)
 
         if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
         {
-            o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)GetProcAddress(module, "ffxFsr2GetRenderResolutionFromQualityMode");
+            o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)KernelBaseProxy::GetProcAddress_()(module, "ffxFsr2GetRenderResolutionFromQualityMode");
 
             if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 != nullptr)
                 DetourAttach(&(PVOID&)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12, ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
@@ -1192,7 +1224,7 @@ void HookFSR2Dx12Inputs(HMODULE module)
     if (module != nullptr)
     {
         if (o_ffxFsr2GetInterfaceDX12 == nullptr)
-            o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)GetProcAddress(module, "ffxFsr2GetInterfaceDX12");
+            o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)KernelBaseProxy::GetProcAddress_()(module, "ffxFsr2GetInterfaceDX12");
     }
 
     if (o_ffxFsr2GetInterfaceDX12 != nullptr)

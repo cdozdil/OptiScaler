@@ -5,6 +5,8 @@
 #include "Config.h"
 #include "Logger.h"
 
+#include <proxies/KernelBase_Proxy.h>
+
 #include <inputs/FfxApi_Dx12.h>
 #include <inputs/FfxApi_Vk.h>
 
@@ -37,6 +39,11 @@ private:
     }
 
 public:
+    static HMODULE Dx12Module()
+    {
+        return _dllDx12;
+    }
+
     static bool InitFfxDx12(HMODULE module = nullptr)
     {
         // if dll already loaded
@@ -50,27 +57,36 @@ public:
 
         LOG_DEBUG("Loading amd_fidelityfx_dx12.dll methods");
 
+        if (_dllDx12 == nullptr && Config::Instance()->FfxDx12Path.has_value())
+        {
+            std::filesystem::path libPath(Config::Instance()->FfxDx12Path.value().c_str());
+
+            if (libPath.has_filename())
+                _dllDx12 = KernelBaseProxy::LoadLibraryExW_()(libPath.c_str(), NULL, 0);
+            else
+                _dllDx12 = KernelBaseProxy::LoadLibraryExW_()((libPath / L"amd_fidelityfx_dx12.dll").c_str(), NULL, 0);
+
+            if (_dllDx12 != nullptr)
+            {
+                LOG_INFO("amd_fidelityfx_dx12.dll loaded from {0}", wstring_to_string(Config::Instance()->FfxDx12Path.value()));
+            }
+        }
+
         if (_dllDx12 == nullptr)
         {
-            std::wstring libraryName;
-            if (State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable)
-                libraryName = L"amd_fidelityfx_dx12.dll";
-            else
-                libraryName = L"amd_fidelityfx_dx12.optidll";
+            _dllDx12 = KernelBaseProxy::LoadLibraryExW_()(L"amd_fidelityfx_dx12.dll", NULL, 0);
 
-            auto file = Util::DllPath().parent_path() / libraryName;
-            LOG_INFO("Trying to load {}", file.string());
-
-            _dllDx12 = LoadLibrary(file.wstring().c_str());
+            if (_dllDx12 != nullptr)
+                LOG_INFO("amd_fidelityfx_dx12.dll loaded from exe folder");
         }
 
         if (_dllDx12 != nullptr)
         {
-            _D3D12_Configure = (PfnFfxConfigure)GetProcAddress(_dllDx12, "ffxConfigure");
-            _D3D12_CreateContext = (PfnFfxCreateContext)GetProcAddress(_dllDx12, "ffxCreateContext");
-            _D3D12_DestroyContext = (PfnFfxDestroyContext)GetProcAddress(_dllDx12, "ffxDestroyContext");
-            _D3D12_Dispatch = (PfnFfxDispatch)GetProcAddress(_dllDx12, "ffxDispatch");
-            _D3D12_Query = (PfnFfxQuery)GetProcAddress(_dllDx12, "ffxQuery");
+            _D3D12_Configure = (PfnFfxConfigure)KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxConfigure");
+            _D3D12_CreateContext = (PfnFfxCreateContext)KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxCreateContext");
+            _D3D12_DestroyContext = (PfnFfxDestroyContext)KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxDestroyContext");
+            _D3D12_Dispatch = (PfnFfxDispatch)KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxDispatch");
+            _D3D12_Query = (PfnFfxQuery)KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxQuery");
         }
 
         if (_D3D12_CreateContext != nullptr)
@@ -159,6 +175,11 @@ public:
     static PfnFfxQuery D3D12_Query() { return _D3D12_Query; }
     static PfnFfxDispatch D3D12_Dispatch() { return _D3D12_Dispatch; }
 
+    static HMODULE VkModule()
+    {
+        return _dllVk;
+    }
+
     static bool InitFfxVk(HMODULE module = nullptr)
     {
         // if dll already loaded
@@ -172,27 +193,36 @@ public:
         if (module != nullptr)
             _dllVk = module;
 
+        if (_dllVk == nullptr && Config::Instance()->FfxVkPath.has_value())
+        {
+            std::filesystem::path libPath(Config::Instance()->FfxVkPath.value().c_str());
+
+            if (libPath.has_filename())
+                _dllVk = KernelBaseProxy::LoadLibraryExW_()(libPath.c_str(), NULL, 0);
+            else
+                _dllVk = KernelBaseProxy::LoadLibraryExW_()((libPath / L"amd_fidelityfx_vk.dll").c_str(), NULL, 0);
+
+            if (_dllVk != nullptr)
+            {
+                LOG_INFO("amd_fidelityfx_vk.dll loaded from {0}", wstring_to_string(Config::Instance()->FfxVkPath.value()));
+            }
+        }
+
         if (_dllVk == nullptr)
         {
-            std::wstring libraryName;
-            if (State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable)
-                libraryName = L"amd_fidelityfx_vk.dll";
-            else
-                libraryName = L"amd_fidelityfx_vk.optidll";
+            _dllVk = KernelBaseProxy::LoadLibraryExW_()(L"amd_fidelityfx_vk.dll", NULL, 0);
 
-            auto file = Util::DllPath().parent_path() / "amd_fidelityfx_vk.optidll";
-            LOG_INFO("Trying to load {}", file.string());
-
-            _dllVk = LoadLibrary(file.wstring().c_str());
+            if (_dllVk != nullptr)
+                LOG_INFO("amd_fidelityfx_vk.dll loaded from exe folder");
         }
 
         if (_dllVk != nullptr)
         {
-            _VULKAN_Configure = (PfnFfxConfigure)GetProcAddress(_dllVk, "ffxConfigure");
-            _VULKAN_CreateContext = (PfnFfxCreateContext)GetProcAddress(_dllVk, "ffxCreateContext");
-            _VULKAN_DestroyContext = (PfnFfxDestroyContext)GetProcAddress(_dllVk, "ffxDestroyContext");
-            _VULKAN_Dispatch = (PfnFfxDispatch)GetProcAddress(_dllVk, "ffxDispatch");
-            _VULKAN_Query = (PfnFfxQuery)GetProcAddress(_dllVk, "ffxQuery");
+            _VULKAN_Configure = (PfnFfxConfigure)KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxConfigure");
+            _VULKAN_CreateContext = (PfnFfxCreateContext)KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxCreateContext");
+            _VULKAN_DestroyContext = (PfnFfxDestroyContext)KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxDestroyContext");
+            _VULKAN_Dispatch = (PfnFfxDispatch)KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxDispatch");
+            _VULKAN_Query = (PfnFfxQuery)KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxQuery");
         }
 
         if (_VULKAN_CreateContext != nullptr)
