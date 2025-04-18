@@ -197,7 +197,7 @@ static void UnhookAll()
 #pragma region DLSS Init Calls
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath,
-    ID3D12Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
+                                                        ID3D12Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
     LOG_FUNC();
 
@@ -310,7 +310,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_Ext(unsigned long long InApp
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init(unsigned long long InApplicationId, const wchar_t* InApplicationDataPath,
-    ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
+                                                    ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
     LOG_FUNC();
 
@@ -350,7 +350,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init(unsigned long long InApplica
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType,
-    const char* InEngineVersion, const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
+                                                              const char* InEngineVersion, const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, NVSDK_NGX_Version InSDKVersion, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo)
 {
     LOG_FUNC();
 
@@ -396,7 +396,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_ProjectID(const char* InProj
 
 // Not sure about this one, original nvngx does not export this method
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Init_with_ProjectID(const char* InProjectId, NVSDK_NGX_EngineType InEngineType, const char* InEngineVersion,
-    const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
+                                                                   const wchar_t* InApplicationDataPath, ID3D12Device* InDevice, const NVSDK_NGX_FeatureCommonInfo* InFeatureInfo, NVSDK_NGX_Version InSDKVersion)
 {
     LOG_FUNC();
 
@@ -799,7 +799,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
 #pragma endregion
 
     State::Instance().AutoExposure.reset();
-    State::Instance().DisplaySizeMV.reset();
 
     if (deviceContext->Init(D3D12Device, InCmdList, InParameters))
     {
@@ -1204,9 +1203,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 if (State::Instance().gameQuirk == SplitFiction) {
                     LOG_DEBUG("sleeping before reset of current feature for 100ms (Split Fiction)");
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100)); 
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 }
-                else 
+                else
                 {
                     LOG_DEBUG("sleeping before reset of current feature for 1000ms");
                     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -1400,7 +1399,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         // When OptiFG is active and render resolution is increased previous limit
         // Recreate FG context
         else if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, &OutWidth) == NVSDK_NGX_Result_Success &&
-                    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, &OutHeight) == NVSDK_NGX_Result_Success)
+                 InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, &OutHeight) == NVSDK_NGX_Result_Success)
         {
             if (FrameGen_Dx12::maxRenderWidth != 0 && FrameGen_Dx12::maxRenderHeight != 0 && (OutWidth > FrameGen_Dx12::maxRenderWidth || OutHeight > FrameGen_Dx12::maxRenderHeight))
             {

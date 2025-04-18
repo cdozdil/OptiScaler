@@ -5,6 +5,8 @@
 #include "Config.h"
 #include "Logger.h"
 
+#include <proxies/KernelBase_Proxy.h>
+
 #include <inputs/XeSS_Common.h>
 #include <inputs/XeSS_Dx12.h>
 #include <inputs/XeSS_Vulkan.h>
@@ -74,6 +76,7 @@ class XeSSProxy
 private:
     inline static HMODULE _dll = nullptr;
     inline static HMODULE _dlldx11 = nullptr;
+
     inline static xess_version_t _xessVersion{};
     inline static xess_version_t _xessVersionDx11{};
 
@@ -200,6 +203,9 @@ private:
     }
 
 public:
+    static HMODULE Module() { return _dll; }
+    static HMODULE ModuleDx11() { return _dlldx11; }
+
     static bool InitXeSS()
     {
         if (_dll != nullptr)
@@ -209,15 +215,15 @@ public:
 
         mainModule = GetModuleHandle(L"libxess.dll");
         if (mainModule != nullptr)
-            return false;
+        {
+            _dll = mainModule;
+            return true;
+        }
 
         auto dllPath = Util::DllPath();
 
         std::wstring libraryName;
-        if (State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable)
-            libraryName = L"libxess.dll";
-        else
-            libraryName = L"libxess.optidll";
+        libraryName = L"libxess.dll";
 
         // we would like to prioritize file pointed at ini
         if (Config::Instance()->XeSSLibrary.has_value())
@@ -226,16 +232,16 @@ public:
             LOG_INFO("Trying to load libxess.dll from ini path: {}", cfgPath.string());
 
             cfgPath = cfgPath / libraryName;
-            mainModule = LoadLibrary(cfgPath.c_str());
+            mainModule = KernelBaseProxy::LoadLibraryExW_()(cfgPath.c_str(), NULL, 0);
         }
 
         if (mainModule == nullptr)
         {
             std::filesystem::path libXessPath = dllPath.parent_path() / libraryName;
             LOG_INFO("Trying to load libxess.dll from dll path: {}", libXessPath.string());
-            mainModule = LoadLibrary(libXessPath.c_str());
+            mainModule = KernelBaseProxy::LoadLibraryExW_()(libXessPath.c_str(), NULL, 0);
         }
-    
+
         if (mainModule != nullptr)
             return HookXeSS(mainModule);
 
@@ -251,15 +257,15 @@ public:
 
         dx11Module = GetModuleHandle(L"libxess_dx11.dll");
         if (dx11Module != nullptr)
-            return false;
+        {
+            _dlldx11 = dx11Module;
+            return true;
+        }
 
         auto dllPath = Util::DllPath();
 
         std::wstring libraryName;
-        if (State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable)
-            libraryName = L"libxess_dx11.dll";
-        else
-            libraryName = L"libxess_dx11.optidll";
+        libraryName = L"libxess_dx11.dll";
 
         // we would like to prioritize file pointed at ini
         if (Config::Instance()->XeSSLibrary.has_value())
@@ -268,26 +274,26 @@ public:
             LOG_INFO("Trying to load libxess.dll from ini path: {}", cfgPath.string());
 
             auto dx11Path = cfgPath.parent_path() / libraryName;
-            dx11Module = LoadLibrary(dx11Path.c_str());
+            dx11Module = KernelBaseProxy::LoadLibraryExW_()(dx11Path.c_str(), NULL, 0);
         }
 
         if (dx11Module == nullptr)
         {
             std::filesystem::path libXessDx11Path = dllPath.parent_path() / libraryName;
             LOG_INFO("Trying to load libxess.dll from dll path: {}", libXessDx11Path.string());
-            dx11Module = LoadLibrary(libXessDx11Path.c_str());
+            dx11Module = KernelBaseProxy::LoadLibraryExW_()(libXessDx11Path.c_str(), NULL, 0);
         }
 
         if (dx11Module != nullptr)
             return HookXeSSDx11(dx11Module);
-    
+
         return false;
     }
 
     static bool HookXeSS(HMODULE libxessModule = nullptr)
     {
         // if dll already loaded
-        if (_dll != nullptr || _xessD3D12CreateContext != nullptr)
+        if (_dll != nullptr && _xessD3D12CreateContext != nullptr)
             return true;
 
         spdlog::info("");
@@ -295,46 +301,69 @@ public:
         if (libxessModule != nullptr)
             _dll = libxessModule;
 
+        if (_dll == nullptr && Config::Instance()->XeSSLibrary.has_value())
+        {
+            std::filesystem::path libPath(Config::Instance()->XeSSLibrary.value().c_str());
+
+            if (libPath.has_filename())
+                _dll = KernelBaseProxy::LoadLibraryExW_()(libPath.c_str(), NULL, 0);
+            else
+                _dll = KernelBaseProxy::LoadLibraryExW_()((libPath / L"libxess.dll").c_str(), NULL, 0);
+
+            if (_dll != nullptr)
+            {
+                LOG_INFO("libxess.dll loaded from {0}", wstring_to_string(Config::Instance()->XeSSLibrary.value()));
+            }
+        }
+
+        if (_dll == nullptr)
+        {
+            _dll = KernelBaseProxy::LoadLibraryExW_()(L"libxess.dll", NULL, 0);
+
+            if (_dll != nullptr)
+                LOG_INFO("libxess.dll loaded from exe folder");
+        }
+
         State::Instance().skipDxgiLoadChecks = true;
 
         if (_dll != nullptr)
         {
-            _xessD3D12CreateContext = (PFN_xessD3D12CreateContext)GetProcAddress(_dll, "xessD3D12CreateContext");
-            _xessD3D12BuildPipelines = (PFN_xessD3D12BuildPipelines)GetProcAddress(_dll, "xessD3D12BuildPipelines");
-            _xessD3D12Init = (PRN_xessD3D12Init)GetProcAddress(_dll, "xessD3D12Init");
-            _xessD3D12Execute = (PFN_xessD3D12Execute)GetProcAddress(_dll, "xessD3D12Execute");
-            _xessSelectNetworkModel = (PFN_xessSelectNetworkModel)GetProcAddress(_dll, "xessSelectNetworkModel");
-            _xessStartDump = (PFN_xessStartDump)GetProcAddress(_dll, "xessStartDump");
-            _xessGetVersion = (PFN_xessGetVersion)GetProcAddress(_dll, "xessGetVersion");
-            _xessIsOptimalDriver = (PFN_xessIsOptimalDriver)GetProcAddress(_dll, "xessIsOptimalDriver");
-            _xessSetLoggingCallback = (PFN_xessSetLoggingCallback)GetProcAddress(_dll, "xessSetLoggingCallback");
-            _xessGetProperties = (PFN_xessGetProperties)GetProcAddress(_dll, "xessGetProperties");
-            _xessDestroyContext = (PFN_xessDestroyContext)GetProcAddress(_dll, "xessDestroyContext");
-            _xessSetVelocityScale = (PFN_xessSetVelocityScale)GetProcAddress(_dll, "xessSetVelocityScale");
+            _xessD3D12CreateContext = (PFN_xessD3D12CreateContext)KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12CreateContext");
+            _xessD3D12BuildPipelines = (PFN_xessD3D12BuildPipelines)KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12BuildPipelines");
+            _xessD3D12Init = (PRN_xessD3D12Init)KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12Init");
+            _xessD3D12Execute = (PFN_xessD3D12Execute)KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12Execute");
+            _xessSelectNetworkModel = (PFN_xessSelectNetworkModel)KernelBaseProxy::GetProcAddress_()(_dll, "xessSelectNetworkModel");
+            _xessStartDump = (PFN_xessStartDump)KernelBaseProxy::GetProcAddress_()(_dll, "xessStartDump");
+            _xessGetVersion = (PFN_xessGetVersion)KernelBaseProxy::GetProcAddress_()(_dll, "xessGetVersion");
+            _xessIsOptimalDriver = (PFN_xessIsOptimalDriver)KernelBaseProxy::GetProcAddress_()(_dll, "xessIsOptimalDriver");
+            _xessSetLoggingCallback = (PFN_xessSetLoggingCallback)KernelBaseProxy::GetProcAddress_()(_dll, "xessSetLoggingCallback");
+            _xessGetProperties = (PFN_xessGetProperties)KernelBaseProxy::GetProcAddress_()(_dll, "xessGetProperties");
+            _xessDestroyContext = (PFN_xessDestroyContext)KernelBaseProxy::GetProcAddress_()(_dll, "xessDestroyContext");
+            _xessSetVelocityScale = (PFN_xessSetVelocityScale)KernelBaseProxy::GetProcAddress_()(_dll, "xessSetVelocityScale");
 
-            _xessD3D12GetInitParams = (PFN_xessD3D12GetInitParams)GetProcAddress(_dll, "xessD3D12GetInitParams");
-            _xessForceLegacyScaleFactors = (PFN_xessForceLegacyScaleFactors)GetProcAddress(_dll, "xessForceLegacyScaleFactors");
-            _xessGetExposureMultiplier = (PFN_xessGetExposureMultiplier)GetProcAddress(_dll, "xessGetExposureMultiplier");
-            _xessGetInputResolution = (PFN_xessGetInputResolution)GetProcAddress(_dll, "xessGetInputResolution");
-            _xessGetIntelXeFXVersion = (PFN_xessGetIntelXeFXVersion)GetProcAddress(_dll, "xessGetIntelXeFXVersion");
-            _xessGetJitterScale = (PFN_xessGetJitterScale)GetProcAddress(_dll, "xessGetJitterScale");
-            _xessGetOptimalInputResolution = (PFN_xessGetOptimalInputResolution)GetProcAddress(_dll, "xessGetOptimalInputResolution");
-            _xessSetExposureMultiplier = (PFN_xessSetExposureMultiplier)GetProcAddress(_dll, "xessSetExposureMultiplier");
-            _xessSetJitterScale = (PFN_xessSetJitterScale)GetProcAddress(_dll, "xessSetJitterScale");
+            _xessD3D12GetInitParams = (PFN_xessD3D12GetInitParams)KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12GetInitParams");
+            _xessForceLegacyScaleFactors = (PFN_xessForceLegacyScaleFactors)KernelBaseProxy::GetProcAddress_()(_dll, "xessForceLegacyScaleFactors");
+            _xessGetExposureMultiplier = (PFN_xessGetExposureMultiplier)KernelBaseProxy::GetProcAddress_()(_dll, "xessGetExposureMultiplier");
+            _xessGetInputResolution = (PFN_xessGetInputResolution)KernelBaseProxy::GetProcAddress_()(_dll, "xessGetInputResolution");
+            _xessGetIntelXeFXVersion = (PFN_xessGetIntelXeFXVersion)KernelBaseProxy::GetProcAddress_()(_dll, "xessGetIntelXeFXVersion");
+            _xessGetJitterScale = (PFN_xessGetJitterScale)KernelBaseProxy::GetProcAddress_()(_dll, "xessGetJitterScale");
+            _xessGetOptimalInputResolution = (PFN_xessGetOptimalInputResolution)KernelBaseProxy::GetProcAddress_()(_dll, "xessGetOptimalInputResolution");
+            _xessSetExposureMultiplier = (PFN_xessSetExposureMultiplier)KernelBaseProxy::GetProcAddress_()(_dll, "xessSetExposureMultiplier");
+            _xessSetJitterScale = (PFN_xessSetJitterScale)KernelBaseProxy::GetProcAddress_()(_dll, "xessSetJitterScale");
 
-            _xessD3D12GetResourcesToDump = (PFN_xessD3D12GetResourcesToDump)GetProcAddress(_dll, "xessD3D12GetResourcesToDump");
-            _xessD3D12GetProfilingData = (PFN_xessD3D12GetProfilingData)GetProcAddress(_dll, "xessD3D12GetProfilingData");
-            _xessSetContextParameterF = (PFN_xessSetContextParameterF)GetProcAddress(_dll, "xessSetContextParameterF");
-            _xessGetPipelineBuildStatus = (PFN_xessGetPipelineBuildStatus)GetProcAddress(_dll, "xessGetPipelineBuildStatus");
+            _xessD3D12GetResourcesToDump = (PFN_xessD3D12GetResourcesToDump)KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12GetResourcesToDump");
+            _xessD3D12GetProfilingData = (PFN_xessD3D12GetProfilingData)KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12GetProfilingData");
+            _xessSetContextParameterF = (PFN_xessSetContextParameterF)KernelBaseProxy::GetProcAddress_()(_dll, "xessSetContextParameterF");
+            _xessGetPipelineBuildStatus = (PFN_xessGetPipelineBuildStatus)KernelBaseProxy::GetProcAddress_()(_dll, "xessGetPipelineBuildStatus");
 
-            _xessVKGetRequiredInstanceExtensions = (PFN_xessVKGetRequiredInstanceExtensions)GetProcAddress(_dll, "xessVKGetRequiredInstanceExtensions");
-            _xessVKGetRequiredDeviceExtensions = (PFN_xessVKGetRequiredDeviceExtensions)GetProcAddress(_dll, "xessVKGetRequiredDeviceExtensions");
-            _xessVKGetRequiredDeviceFeatures = (PFN_xessVKGetRequiredDeviceFeatures)GetProcAddress(_dll, "xessVKGetRequiredDeviceFeatures");
-            _xessVKCreateContext = (PFN_xessVKCreateContext)GetProcAddress(_dll, "xessVKCreateContext");
-            _xessVKBuildPipelines = (PFN_xessVKBuildPipelines)GetProcAddress(_dll, "xessVKBuildPipelines");
-            _xessVKInit = (PFN_xessVKInit)GetProcAddress(_dll, "xessVKInit");
-            _xessVKGetInitParams = (PFN_xessVKGetInitParams)GetProcAddress(_dll, "xessVKGetInitParams");
-            _xessVKExecute = (PFN_xessVKExecute)GetProcAddress(_dll, "xessVKExecute");
+            _xessVKGetRequiredInstanceExtensions = (PFN_xessVKGetRequiredInstanceExtensions)KernelBaseProxy::GetProcAddress_()(_dll, "xessVKGetRequiredInstanceExtensions");
+            _xessVKGetRequiredDeviceExtensions = (PFN_xessVKGetRequiredDeviceExtensions)KernelBaseProxy::GetProcAddress_()(_dll, "xessVKGetRequiredDeviceExtensions");
+            _xessVKGetRequiredDeviceFeatures = (PFN_xessVKGetRequiredDeviceFeatures)KernelBaseProxy::GetProcAddress_()(_dll, "xessVKGetRequiredDeviceFeatures");
+            _xessVKCreateContext = (PFN_xessVKCreateContext)KernelBaseProxy::GetProcAddress_()(_dll, "xessVKCreateContext");
+            _xessVKBuildPipelines = (PFN_xessVKBuildPipelines)KernelBaseProxy::GetProcAddress_()(_dll, "xessVKBuildPipelines");
+            _xessVKInit = (PFN_xessVKInit)KernelBaseProxy::GetProcAddress_()(_dll, "xessVKInit");
+            _xessVKGetInitParams = (PFN_xessVKGetInitParams)KernelBaseProxy::GetProcAddress_()(_dll, "xessVKGetInitParams");
+            _xessVKExecute = (PFN_xessVKExecute)KernelBaseProxy::GetProcAddress_()(_dll, "xessVKExecute");
         }
 
         // if libxess not loaded 
@@ -503,7 +532,7 @@ public:
     static bool HookXeSSDx11(HMODULE libxessModule = nullptr)
     {
         // if dll already loaded
-        if (_dlldx11 != nullptr || _xessD3D11CreateContext != nullptr)
+        if (_dlldx11 != nullptr && _xessD3D11CreateContext != nullptr)
             return true;
 
         spdlog::info("");
@@ -511,31 +540,54 @@ public:
         if (libxessModule != nullptr)
             _dlldx11 = libxessModule;
 
+        if (_dlldx11 == nullptr && Config::Instance()->XeSSDx11Library.has_value())
+        {
+            std::filesystem::path libPath(Config::Instance()->XeSSDx11Library.value().c_str());
+
+            if (libPath.has_filename())
+                _dlldx11 = KernelBaseProxy::LoadLibraryExW_()(libPath.c_str(), NULL, 0);
+            else
+                _dlldx11 = KernelBaseProxy::LoadLibraryExW_()((libPath / L"libxess_dx11.dll").c_str(), NULL, 0);
+
+            if (_dlldx11 != nullptr)
+            {
+                LOG_INFO("libxess_dx11.dll loaded from {0}", wstring_to_string(Config::Instance()->XeSSDx11Library.value()));
+            }
+        }
+
+        if (_dlldx11 == nullptr)
+        {
+            _dlldx11 = KernelBaseProxy::LoadLibraryExW_()(L"libxess_dx11.dll", NULL, 0);
+
+            if (_dlldx11 != nullptr)
+                LOG_INFO("libxess_dx11.dll loaded from exe folder");
+        }
+
         State::Instance().skipDxgiLoadChecks = true;
 
         if (_dlldx11 != nullptr)
         {
-            _xessD3D11CreateContext = (PFN_xessD3D11CreateContext)GetProcAddress(_dlldx11, "xessD3D11CreateContext");
-            _xessD3D11Init = (PFN_xessD3D11Init)GetProcAddress(_dlldx11, "xessD3D11Init");
-            _xessD3D11GetInitParams = (PFN_xessD3D11GetInitParams)GetProcAddress(_dlldx11, "xessD3D11GetInitParams");
-            _xessD3D11Execute = (PFN_xessD3D11Execute)GetProcAddress(_dlldx11, "xessD3D11Execute");
+            _xessD3D11CreateContext = (PFN_xessD3D11CreateContext)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessD3D11CreateContext");
+            _xessD3D11Init = (PFN_xessD3D11Init)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessD3D11Init");
+            _xessD3D11GetInitParams = (PFN_xessD3D11GetInitParams)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessD3D11GetInitParams");
+            _xessD3D11Execute = (PFN_xessD3D11Execute)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessD3D11Execute");
 
-            _xessSelectNetworkModelDx11 = (PFN_xessSelectNetworkModel)GetProcAddress(_dlldx11, "xessSelectNetworkModel");
-            _xessStartDumpDx11 = (PFN_xessStartDump)GetProcAddress(_dlldx11, "xessStartDump");
-            _xessGetVersionDx11 = (PFN_xessGetVersion)GetProcAddress(_dlldx11, "xessGetVersion");
-            _xessIsOptimalDriverDx11 = (PFN_xessIsOptimalDriver)GetProcAddress(_dlldx11, "xessIsOptimalDriver");
-            _xessSetLoggingCallbackDx11 = (PFN_xessSetLoggingCallback)GetProcAddress(_dlldx11, "xessSetLoggingCallback");
-            _xessGetPropertiesDx11 = (PFN_xessGetProperties)GetProcAddress(_dlldx11, "xessGetProperties");
-            _xessDestroyContextDx11 = (PFN_xessDestroyContext)GetProcAddress(_dlldx11, "xessDestroyContext");
-            _xessSetVelocityScaleDx11 = (PFN_xessSetVelocityScale)GetProcAddress(_dlldx11, "xessSetVelocityScale");
-            _xessForceLegacyScaleFactorsDx11 = (PFN_xessForceLegacyScaleFactors)GetProcAddress(_dlldx11, "xessForceLegacyScaleFactors");
-            _xessGetExposureMultiplierDx11 = (PFN_xessGetExposureMultiplier)GetProcAddress(_dlldx11, "xessGetExposureMultiplier");
-            _xessGetInputResolutionDx11 = (PFN_xessGetInputResolution)GetProcAddress(_dlldx11, "xessGetInputResolution");
-            _xessGetIntelXeFXVersionDx11 = (PFN_xessGetIntelXeFXVersion)GetProcAddress(_dlldx11, "xessGetIntelXeFXVersion");
-            _xessGetJitterScaleDx11 = (PFN_xessGetJitterScale)GetProcAddress(_dlldx11, "xessGetJitterScale");
-            _xessGetOptimalInputResolutionDx11 = (PFN_xessGetOptimalInputResolution)GetProcAddress(_dlldx11, "xessGetOptimalInputResolution");
-            _xessSetExposureMultiplierDx11 = (PFN_xessSetExposureMultiplier)GetProcAddress(_dlldx11, "xessSetExposureMultiplier");
-            _xessSetJitterScaleDx11 = (PFN_xessSetJitterScale)GetProcAddress(_dlldx11, "xessSetJitterScale");
+            _xessSelectNetworkModelDx11 = (PFN_xessSelectNetworkModel)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessSelectNetworkModel");
+            _xessStartDumpDx11 = (PFN_xessStartDump)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessStartDump");
+            _xessGetVersionDx11 = (PFN_xessGetVersion)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetVersion");
+            _xessIsOptimalDriverDx11 = (PFN_xessIsOptimalDriver)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessIsOptimalDriver");
+            _xessSetLoggingCallbackDx11 = (PFN_xessSetLoggingCallback)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessSetLoggingCallback");
+            _xessGetPropertiesDx11 = (PFN_xessGetProperties)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetProperties");
+            _xessDestroyContextDx11 = (PFN_xessDestroyContext)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessDestroyContext");
+            _xessSetVelocityScaleDx11 = (PFN_xessSetVelocityScale)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessSetVelocityScale");
+            _xessForceLegacyScaleFactorsDx11 = (PFN_xessForceLegacyScaleFactors)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessForceLegacyScaleFactors");
+            _xessGetExposureMultiplierDx11 = (PFN_xessGetExposureMultiplier)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetExposureMultiplier");
+            _xessGetInputResolutionDx11 = (PFN_xessGetInputResolution)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetInputResolution");
+            _xessGetIntelXeFXVersionDx11 = (PFN_xessGetIntelXeFXVersion)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetIntelXeFXVersion");
+            _xessGetJitterScaleDx11 = (PFN_xessGetJitterScale)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetJitterScale");
+            _xessGetOptimalInputResolutionDx11 = (PFN_xessGetOptimalInputResolution)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetOptimalInputResolution");
+            _xessSetExposureMultiplierDx11 = (PFN_xessSetExposureMultiplier)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessSetExposureMultiplier");
+            _xessSetJitterScaleDx11 = (PFN_xessSetJitterScale)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessSetJitterScale");
         }
 
         if (_xessD3D11CreateContext == nullptr)

@@ -150,6 +150,7 @@ public:
 	CustomOptional<int32_t> NetworkModel{ 0 };
 	CustomOptional<bool> CreateHeaps{ true };
 	CustomOptional<std::wstring, NoDefault> XeSSLibrary;
+	CustomOptional<std::wstring, NoDefault> XeSSDx11Library;
 
 	// DLSS
 	CustomOptional<bool> DLSSEnabled{ true };
@@ -179,6 +180,8 @@ public:
 	// Sharpness 
 	CustomOptional<bool> OverrideSharpness{ false };
 	CustomOptional<float> Sharpness{ 0.3f };
+	CustomOptional<bool> ContrastEnabled{ false };
+	CustomOptional<float> Contrast{ 0.0f };
 
 	// Menu
 	CustomOptional<float> MenuScale{ 1.0f };
@@ -268,6 +271,9 @@ public:
 	CustomOptional<float> FsrCameraFar{ 100000.0f };
 	CustomOptional<bool> FsrUseFsrInputValues{ true };
 
+	CustomOptional<std::wstring, NoDefault> FfxDx12Path;
+	CustomOptional<std::wstring, NoDefault> FfxVkPath;
+
 	// dx11wdx12
 	// Valid values are;
 	//	0 - No syncing(fastest, most prone to errors)
@@ -300,7 +306,7 @@ public:
 	// Plugins
 	CustomOptional<std::wstring> PluginPath{ L"plugins" };
 	CustomOptional<bool> LoadSpecialK{ false };
-	CustomOptional<bool> LoadReShade{ false };
+ 	CustomOptional<bool> LoadReShade{ false };
 
 	// Frame Generation
 	CustomOptional<FGType> FGType{ FGType::NoFG };
@@ -318,7 +324,7 @@ public:
 	CustomOptional<int, NoDefault> FGRectTop;
 	CustomOptional<int, NoDefault> FGRectWidth;
 	CustomOptional<int, NoDefault> FGRectHeight;
-	CustomOptional<bool> FGDisableOverlays{ true };
+	CustomOptional<bool> FGDisableOverlays{ false };
 	CustomOptional<bool> FGAlwaysTrackHeaps{ false };
 	CustomOptional<bool> FGMakeDepthCopy{ true };
 	CustomOptional<bool> FGEnableDepthScale{ false };

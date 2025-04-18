@@ -20,7 +20,7 @@ private:
     static inline feature_version _version{ 3, 1, 2 };
 
 protected:
-    std::string _name = "FSR 3.X";
+    std::string _name = "FSR";
 
     ffxContext _context = nullptr;
     ffxCreateContextDescUpscale _contextDesc = {};

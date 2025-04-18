@@ -62,8 +62,8 @@ namespace HooksDx
 
     void UnHookDx();
     void HookDx11(HMODULE dx11Module);
-    void HookDx12(HMODULE dx12Module);
-    void HookDxgi(HMODULE dxgiModule);
+    void HookDx12();
+    void HookDxgi();
     DXGI_FORMAT CurrentSwapchainFormat();
 }
 

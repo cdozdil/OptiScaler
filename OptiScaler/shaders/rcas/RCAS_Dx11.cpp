@@ -162,6 +162,12 @@ bool RCAS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext,
         return false;
 
     InternalConstants constants{};
+    
+    if (Config::Instance()->ContrastEnabled.value_or_default())
+        constants.Contrast = Config::Instance()->Contrast.value_or_default() * -1.0f;
+    else
+        constants.Contrast = -100.0f;
+
     constants.DisplayHeight = InConstants.DisplayHeight;
     constants.DisplayWidth = InConstants.DisplayWidth;
     constants.DynamicSharpenEnabled = Config::Instance()->MotionSharpnessEnabled.value_or_default() ? 1 : 0;

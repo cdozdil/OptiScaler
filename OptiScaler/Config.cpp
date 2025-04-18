@@ -77,7 +77,6 @@ bool Config::Reload(std::filesystem::path iniPath)
             FGRectTop.set_from_config(readInt("OptiFG", "RectTop"));
             FGRectWidth.set_from_config(readInt("OptiFG", "RectWidth"));
             FGRectHeight.set_from_config(readInt("OptiFG", "RectHeight"));
-            FGDisableOverlays.set_from_config(readBool("OptiFG", "DisableOverlays"));
             FGAlwaysTrackHeaps.set_from_config(readBool("OptiFG", "AlwaysTrackHeaps"));
             FGMakeDepthCopy.set_from_config(readBool("OptiFG", "MakeDepthCopy"));
             FGMakeMVCopy.set_from_config(readBool("OptiFG", "MakeMVCopy"));
@@ -107,6 +106,9 @@ bool Config::Reload(std::filesystem::path iniPath)
             FsrCameraNear.set_from_config(readFloat("FSR", "CameraNear"));
             FsrCameraFar.set_from_config(readFloat("FSR", "CameraFar"));
             FsrUseFsrInputValues.set_from_config(readBool("FSR", "UseFsrInputValues"));
+
+            FfxDx12Path.set_from_config(readWString("FSR", "FfxDx12Path"));
+            FfxVkPath.set_from_config(readWString("FSR", "FfxVkPath"));
         }
 
         // FSR
@@ -134,6 +136,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             NetworkModel.set_from_config(readInt("XeSS", "NetworkModel"));
             CreateHeaps.set_from_config(readBool("XeSS", "CreateHeaps"));
             XeSSLibrary.set_from_config(readWString("XeSS", "LibraryPath"));
+            XeSSDx11Library.set_from_config(readWString("XeSS", "Dx11LibraryPath"));
         }
 
         // DLSS
@@ -259,6 +262,10 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             if (auto setting = readFloat("CAS", "MotionScaleLimit"); setting.has_value())
                 MotionScaleLimit.set_from_config(std::clamp(setting.value(), 0.01f, 100.0f));
+
+            ContrastEnabled.set_from_config(readBool("CAS", "ContrastEnabled"));            
+            if (auto setting = readFloat("CAS", "Contrast"); setting.has_value())
+                Contrast.set_from_config(std::clamp(setting.value(), -2.0f, 2.0f));
         }
 
         // Output Scaling
@@ -307,6 +314,8 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Hotfixes
         {
+            FGDisableOverlays.set_from_config(readBool("Hotfix", "DisableOverlays"));
+
             RoundInternalResolution.set_from_config(readInt("Hotfix", "RoundInternalResolution"));
 
             if (auto setting = readFloat("Hotfix", "MipmapBiasOverride"); setting.has_value() && setting.value() <= 15.0 && setting.value() >= -15.0)
@@ -567,7 +576,6 @@ bool Config::SaveIni()
         ini.SetValue("OptiFG", "RectTop", GetIntValue(Instance()->FGRectTop.value_for_config()).c_str());
         ini.SetValue("OptiFG", "RectWidth", GetIntValue(Instance()->FGRectWidth.value_for_config()).c_str());
         ini.SetValue("OptiFG", "RectHeight", GetIntValue(Instance()->FGRectHeight.value_for_config()).c_str());
-        ini.SetValue("OptiFG", "DisableOverlays", GetBoolValue(Instance()->FGDisableOverlays.value_for_config()).c_str());
         ini.SetValue("OptiFG", "AlwaysTrackHeaps", GetBoolValue(Instance()->FGAlwaysTrackHeaps.value_for_config()).c_str());
         ini.SetValue("OptiFG", "MakeDepthCopy", GetBoolValue(Instance()->FGMakeDepthCopy.value_for_config()).c_str());
         ini.SetValue("OptiFG", "MakeMVCopy", GetBoolValue(Instance()->FGMakeMVCopy.value_for_config()).c_str());
@@ -595,7 +603,7 @@ bool Config::SaveIni()
         ini.SetValue("OutputScaling", "Enabled", GetBoolValue(Instance()->OutputScalingEnabled.value_for_config()).c_str());
         ini.SetValue("OutputScaling", "Multiplier", GetFloatValue(Instance()->OutputScalingMultiplier.value_for_config()).c_str());
         ini.SetValue("OutputScaling", "UseFsr", GetBoolValue(Instance()->OutputScalingUseFsr.value_for_config()).c_str());
-        ini.SetValue("OutputScaling", "Downscaler", GetBoolValue(Instance()->OutputScalingDownscaler).c_str());
+        ini.SetValue("OutputScaling", "Downscaler", GetIntValue(Instance()->OutputScalingDownscaler).c_str());
     }
 
     // FSR common
@@ -605,6 +613,9 @@ bool Config::SaveIni()
         ini.SetValue("FSR", "CameraNear", GetFloatValue(Instance()->FsrCameraNear.value_for_config()).c_str());
         ini.SetValue("FSR", "CameraFar", GetFloatValue(Instance()->FsrCameraFar.value_for_config()).c_str());
         ini.SetValue("FSR", "UseFsrInputValues", GetBoolValue(Instance()->FsrUseFsrInputValues.value_for_config()).c_str());
+
+        ini.SetValue("FSR", "FfxDx12Path", wstring_to_string(Instance()->FfxDx12Path.value_for_config_or(L"auto")).c_str());
+        ini.SetValue("FSR", "FfxVkPath", wstring_to_string(Instance()->FfxVkPath.value_for_config_or(L"auto")).c_str());
     }
 
     // FSR 
@@ -626,6 +637,7 @@ bool Config::SaveIni()
         ini.SetValue("XeSS", "CreateHeaps", GetBoolValue(Instance()->CreateHeaps.value_for_config()).c_str());
         ini.SetValue("XeSS", "NetworkModel", GetIntValue(Instance()->NetworkModel.value_for_config()).c_str());
         ini.SetValue("XeSS", "LibraryPath",  wstring_to_string(Instance()->XeSSLibrary.value_for_config_or(L"auto")).c_str());
+        ini.SetValue("XeSS", "Dx11LibraryPath",  wstring_to_string(Instance()->XeSSDx11Library.value_for_config_or(L"auto")).c_str());
     }
 
     // DLSS
@@ -676,12 +688,14 @@ bool Config::SaveIni()
 
     // CAS
     {
-        ini.SetValue("CAS", "Enabled", GetBoolValue(Instance()->RcasEnabled.value_for_config()).c_str());
+        ini.SetValue("CAS", "Enabled", Instance()->RcasEnabled.has_value() ? (Instance()->RcasEnabled.value() ? "true" : "false") : "auto");
         ini.SetValue("CAS", "MotionSharpnessEnabled", GetBoolValue(Instance()->MotionSharpnessEnabled.value_for_config()).c_str());
         ini.SetValue("CAS", "MotionSharpnessDebug", GetBoolValue(Instance()->MotionSharpnessDebug.value_for_config()).c_str());
         ini.SetValue("CAS", "MotionSharpness", GetFloatValue(Instance()->MotionSharpness.value_for_config()).c_str());
         ini.SetValue("CAS", "MotionThreshold", GetFloatValue(Instance()->MotionThreshold.value_for_config()).c_str());
         ini.SetValue("CAS", "MotionScaleLimit", GetFloatValue(Instance()->MotionScaleLimit.value_for_config()).c_str());
+        ini.SetValue("CAS", "ContrastEnabled", GetBoolValue(Instance()->ContrastEnabled.value_for_config()).c_str());
+        ini.SetValue("CAS", "Contrast", GetFloatValue(Instance()->Contrast.value_for_config()).c_str());
     }
 
     // InitFlags
@@ -713,6 +727,8 @@ bool Config::SaveIni()
 
     // Hotfixes
     {
+        ini.SetValue("Hotfix", "DisableOverlays", Instance()->FGDisableOverlays.has_value() ? (Instance()->FGDisableOverlays.value() ? "true" : "false") : "auto");
+
         ini.SetValue("Hotfix", "MipmapBiasOverride", GetFloatValue(Instance()->MipmapBiasOverride.value_for_config()).c_str());
         ini.SetValue("Hotfix", "MipmapBiasOverrideAll", GetBoolValue(Instance()->MipmapBiasOverrideAll.value_for_config()).c_str());
         ini.SetValue("Hotfix", "MipmapBiasFixedOverride", GetBoolValue(Instance()->MipmapBiasFixedOverride.value_for_config()).c_str());

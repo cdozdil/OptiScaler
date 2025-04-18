@@ -5,6 +5,8 @@
 #include "resource.h"
 #include "NVNGX_Parameter.h"
 
+#include <proxies/KernelBase_Proxy.h>
+
 #include "detours/detours.h"
 
 #include "ffx_api.h"
@@ -401,11 +403,11 @@ void HookFfxExeInputs()
 
     if (exeModule != nullptr)
     {
-        _D3D12_Configure = (PfnFfxConfigure)GetProcAddress(exeModule, "ffxConfigure");
-        _D3D12_CreateContext = (PfnFfxCreateContext)GetProcAddress(exeModule, "ffxCreateContext");
-        _D3D12_DestroyContext = (PfnFfxDestroyContext)GetProcAddress(exeModule, "ffxDestroyContext");
-        _D3D12_Dispatch = (PfnFfxDispatch)GetProcAddress(exeModule, "ffxDispatch");
-        _D3D12_Query = (PfnFfxQuery)GetProcAddress(exeModule, "ffxQuery");
+        _D3D12_Configure = (PfnFfxConfigure)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxConfigure");
+        _D3D12_CreateContext = (PfnFfxCreateContext)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxCreateContext");
+        _D3D12_DestroyContext = (PfnFfxDestroyContext)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxDestroyContext");
+        _D3D12_Dispatch = (PfnFfxDispatch)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxDispatch");
+        _D3D12_Query = (PfnFfxQuery)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxQuery");
     }
 
     if (_D3D12_CreateContext != nullptr)
