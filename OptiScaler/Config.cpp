@@ -106,6 +106,9 @@ bool Config::Reload(std::filesystem::path iniPath)
             FsrCameraNear.set_from_config(readFloat("FSR", "CameraNear"));
             FsrCameraFar.set_from_config(readFloat("FSR", "CameraFar"));
             FsrUseFsrInputValues.set_from_config(readBool("FSR", "UseFsrInputValues"));
+
+            FfxDx12Path.set_from_config(readWString("FSR", "FfxDx12Path"));
+            FfxVkPath.set_from_config(readWString("FSR", "FfxVkPath"));
         }
 
         // FSR
@@ -133,6 +136,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             NetworkModel.set_from_config(readInt("XeSS", "NetworkModel"));
             CreateHeaps.set_from_config(readBool("XeSS", "CreateHeaps"));
             XeSSLibrary.set_from_config(readWString("XeSS", "LibraryPath"));
+            XeSSDx11Library.set_from_config(readWString("XeSS", "Dx11LibraryPath"));
         }
 
         // DLSS
@@ -609,6 +613,9 @@ bool Config::SaveIni()
         ini.SetValue("FSR", "CameraNear", GetFloatValue(Instance()->FsrCameraNear.value_for_config()).c_str());
         ini.SetValue("FSR", "CameraFar", GetFloatValue(Instance()->FsrCameraFar.value_for_config()).c_str());
         ini.SetValue("FSR", "UseFsrInputValues", GetBoolValue(Instance()->FsrUseFsrInputValues.value_for_config()).c_str());
+
+        ini.SetValue("FSR", "FfxDx12Path", wstring_to_string(Instance()->FfxDx12Path.value_for_config_or(L"auto")).c_str());
+        ini.SetValue("FSR", "FfxVkPath", wstring_to_string(Instance()->FfxVkPath.value_for_config_or(L"auto")).c_str());
     }
 
     // FSR 
@@ -630,6 +637,7 @@ bool Config::SaveIni()
         ini.SetValue("XeSS", "CreateHeaps", GetBoolValue(Instance()->CreateHeaps.value_for_config()).c_str());
         ini.SetValue("XeSS", "NetworkModel", GetIntValue(Instance()->NetworkModel.value_for_config()).c_str());
         ini.SetValue("XeSS", "LibraryPath",  wstring_to_string(Instance()->XeSSLibrary.value_for_config_or(L"auto")).c_str());
+        ini.SetValue("XeSS", "Dx11LibraryPath",  wstring_to_string(Instance()->XeSSDx11Library.value_for_config_or(L"auto")).c_str());
     }
 
     // DLSS
@@ -680,7 +688,7 @@ bool Config::SaveIni()
 
     // CAS
     {
-        ini.SetValue("CAS", "Enabled", GetBoolValue(Instance()->RcasEnabled.value_for_config()).c_str());
+        ini.SetValue("CAS", "Enabled", Instance()->RcasEnabled.has_value() ? (Instance()->RcasEnabled.value() ? "true" : "false") : "auto");
         ini.SetValue("CAS", "MotionSharpnessEnabled", GetBoolValue(Instance()->MotionSharpnessEnabled.value_for_config()).c_str());
         ini.SetValue("CAS", "MotionSharpnessDebug", GetBoolValue(Instance()->MotionSharpnessDebug.value_for_config()).c_str());
         ini.SetValue("CAS", "MotionSharpness", GetFloatValue(Instance()->MotionSharpness.value_for_config()).c_str());
@@ -719,7 +727,7 @@ bool Config::SaveIni()
 
     // Hotfixes
     {
-        ini.SetValue("Hotfix", "DisableOverlays", GetBoolValue(Instance()->FGDisableOverlays.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "DisableOverlays", Instance()->FGDisableOverlays.has_value() ? (Instance()->FGDisableOverlays.value() ? "true" : "false") : "auto");
 
         ini.SetValue("Hotfix", "MipmapBiasOverride", GetFloatValue(Instance()->MipmapBiasOverride.value_for_config()).c_str());
         ini.SetValue("Hotfix", "MipmapBiasOverrideAll", GetBoolValue(Instance()->MipmapBiasOverrideAll.value_for_config()).c_str());

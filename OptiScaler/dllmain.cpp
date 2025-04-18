@@ -597,6 +597,14 @@ static void CheckWorkingMode()
                 XeSSProxy::HookXeSS(xessModule);
             }
 
+            HMODULE xessDx11Module = nullptr;
+            xessDx11Module = KernelBaseProxy::GetModuleHandleW_()(L"libxess_dx11.dll");
+            if (xessDx11Module != nullptr)
+            {
+                LOG_DEBUG("libxess_dx11.dll already in memory");
+                XeSSProxy::HookXeSSDx11(xessDx11Module);
+            }
+
             // NVNGX
             HMODULE nvngxModule = nullptr;
             nvngxModule = KernelBaseProxy::GetModuleHandleW_()(L"_nvngx.dll");

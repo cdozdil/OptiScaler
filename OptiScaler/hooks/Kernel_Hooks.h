@@ -53,7 +53,6 @@ private:
     inline static KernelBaseProxy::PFN_LoadLibraryExW o_KB_LoadLibraryExW = nullptr;
     inline static KernelBaseProxy::PFN_GetProcAddress o_KB_GetProcAddress = nullptr;
 
-    static const DWORD _LoadExFlags = 0;
     inline static bool _overlayMethodsCalled = false;
 
     inline static HMODULE LoadLibraryCheck(std::string lcaseLibName, LPCSTR lpLibFullPath)
@@ -123,7 +122,7 @@ private:
         // sl.interposer.dll
         if (Config::Instance()->FGType.value_or_default() == FGType::Nukems && CheckDllName(&lcaseLibName, &streamlineNames))
         {
-            auto streamlineModule = KernelBaseProxy::LoadLibraryExA_()(lpLibFullPath, NULL, _LoadExFlags);
+            auto streamlineModule = KernelBaseProxy::LoadLibraryExA_()(lpLibFullPath, NULL, 0);
 
             if (streamlineModule != nullptr)
             {
@@ -152,7 +151,7 @@ private:
         // Try to catch something like this: c:\programdata/nvidia/ngx/models//dlss/versions/20316673/files/160_e658700.bin
         if (lcaseLibName.ends_with(".bin"))
         {
-            auto loadedBin = KernelBaseProxy::LoadLibraryExA_()(lpLibFullPath, NULL, _LoadExFlags);
+            auto loadedBin = KernelBaseProxy::LoadLibraryExA_()(lpLibFullPath, NULL, 0);
 
             if (loadedBin && lcaseLibName.contains("/versions/"))
             {
@@ -176,7 +175,7 @@ private:
         {
             LOG_DEBUG("Overlay dll!");
 
-            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
             {
@@ -215,7 +214,7 @@ private:
         // Hooks
         if (CheckDllName(&lcaseLibName, &dx11Names) && Config::Instance()->OverlayMenu.value_or_default())
         {
-            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
                 HooksDx::HookDx11(module);
@@ -227,7 +226,7 @@ private:
 
         if (CheckDllName(&lcaseLibName, &dx12Names) && Config::Instance()->OverlayMenu.value_or_default())
         {
-            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
             {
@@ -244,7 +243,7 @@ private:
 
         if (CheckDllName(&lcaseLibName, &vkNames))
         {
-            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
             {
@@ -290,7 +289,7 @@ private:
 
         if (CheckDllName(&lcaseLibName, &fsr2Names))
         {
-            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
                 HookFSR2Inputs(module);
@@ -302,7 +301,7 @@ private:
 
         if (CheckDllName(&lcaseLibName, &fsr2BENames))
         {
-            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
                 HookFSR2Dx12Inputs(module);
@@ -314,7 +313,7 @@ private:
 
         if (CheckDllName(&lcaseLibName, &fsr3Names))
         {
-            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
                 HookFSR3Inputs(module);
@@ -324,7 +323,7 @@ private:
 
         if (CheckDllName(&lcaseLibName, &fsr3BENames))
         {
-            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
                 HookFSR3Dx12Inputs(module);
@@ -336,7 +335,7 @@ private:
 
         if (CheckDllName(&lcaseLibName, &xessNames))
         {
-            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = LoadLibxess(string_to_wstring(lcaseLibName)); // KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
                 XeSSProxy::HookXeSS(module);
@@ -345,10 +344,22 @@ private:
 
             return module;
         }
+                
+        if (CheckDllName(&lcaseLibName, &xessDx11Names))
+        {
+            auto module = LoadLibxessDx11(string_to_wstring(lcaseLibName)); // KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
+
+            if (module != nullptr)
+                XeSSProxy::HookXeSSDx11(module);
+            else
+                LOG_ERROR("Trying to load dll: {}", lcaseLibName);
+
+            return module;
+        }
 
         if (CheckDllName(&lcaseLibName, &ffxDx12Names))
         {
-            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = LoadFfxapiDx12(string_to_wstring(lcaseLibName));  // KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
                 FfxApiProxy::InitFfxDx12(module);
@@ -360,7 +371,7 @@ private:
 
         if (CheckDllName(&lcaseLibName, &ffxVkNames))
         {
-            auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = LoadFfxapiVk(string_to_wstring(lcaseLibName)); // KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
                 FfxApiProxy::InitFfxVk(module);
@@ -426,7 +437,7 @@ private:
         // Try to catch something like this: c:\programdata/nvidia/ngx/models//dlss/versions/20316673/files/160_e658700.bin
         if (lcaseLibName.ends_with(L".bin"))
         {
-            auto loadedBin = KernelBaseProxy::LoadLibraryExW_()(lpLibFullPath, NULL, _LoadExFlags);
+            auto loadedBin = KernelBaseProxy::LoadLibraryExW_()(lpLibFullPath, NULL, 0);
 
             if (loadedBin && lcaseLibName.contains(L"/versions/"))
             {
@@ -475,7 +486,7 @@ private:
         // sl.interposer.dll
         if (Config::Instance()->FGType.value_or_default() == FGType::Nukems && CheckDllNameW(&lcaseLibName, &streamlineNamesW))
         {
-            auto streamlineModule = KernelBaseProxy::LoadLibraryExW_()(lpLibFullPath, NULL, _LoadExFlags);
+            auto streamlineModule = KernelBaseProxy::LoadLibraryExW_()(lpLibFullPath, NULL, 0);
 
             if (streamlineModule != nullptr)
             {
@@ -508,7 +519,7 @@ private:
             // Game -> Opti -> Overlay 
             // And Opti menu works with Overlay without issues
 
-            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
             {
@@ -547,7 +558,7 @@ private:
         // Hooks
         if (CheckDllNameW(&lcaseLibName, &dx11NamesW) && Config::Instance()->OverlayMenu.value_or_default())
         {
-            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
                 HooksDx::HookDx11(module);
@@ -557,7 +568,7 @@ private:
 
         if (CheckDllNameW(&lcaseLibName, &dx12NamesW) && Config::Instance()->OverlayMenu.value_or_default())
         {
-            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
             {
@@ -570,7 +581,7 @@ private:
 
         if (CheckDllNameW(&lcaseLibName, &vkNamesW))
         {
-            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
             {
@@ -606,7 +617,7 @@ private:
 
         if (CheckDllNameW(&lcaseLibName, &fsr2NamesW))
         {
-            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
                 HookFSR2Inputs(module);
@@ -616,7 +627,7 @@ private:
 
         if (CheckDllNameW(&lcaseLibName, &fsr2BENamesW))
         {
-            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
                 HookFSR2Dx12Inputs(module);
@@ -626,7 +637,7 @@ private:
 
         if (CheckDllNameW(&lcaseLibName, &fsr3NamesW))
         {
-            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
                 HookFSR3Inputs(module);
@@ -636,7 +647,7 @@ private:
 
         if (CheckDllNameW(&lcaseLibName, &fsr3BENamesW))
         {
-            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
                 HookFSR3Dx12Inputs(module);
@@ -646,7 +657,7 @@ private:
 
         if (CheckDllNameW(&lcaseLibName, &xessNamesW))
         {
-            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = LoadLibxess(lcaseLibName); // KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
                 XeSSProxy::HookXeSS(module);
@@ -654,9 +665,22 @@ private:
             return module;
         }
 
+        if (CheckDllNameW(&lcaseLibName, &xessDx11NamesW))
+        {
+            auto module = LoadLibxessDx11(lcaseLibName); // KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
+
+            if (module != nullptr)
+                XeSSProxy::HookXeSSDx11(module);
+            else
+                LOG_ERROR("Trying to load dll: {}", wstring_to_string(lcaseLibName));
+
+            return module;
+        }
+
+
         if (CheckDllNameW(&lcaseLibName, &ffxDx12NamesW))
         {
-            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = LoadFfxapiDx12(lcaseLibName); // KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
                 FfxApiProxy::InitFfxDx12(module);
@@ -666,7 +690,7 @@ private:
 
         if (CheckDllNameW(&lcaseLibName, &ffxVkNamesW))
         {
-            auto module = KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, _LoadExFlags);
+            auto module = LoadFfxapiVk(lcaseLibName); // KernelBaseProxy::LoadLibraryExW_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
                 FfxApiProxy::InitFfxVk(module);
@@ -683,7 +707,7 @@ private:
 
         if (Config::Instance()->NvapiDllPath.has_value())
         {
-            nvapi = KernelBaseProxy::LoadLibraryExW_()(Config::Instance()->NvapiDllPath->c_str(), NULL, _LoadExFlags);
+            nvapi = KernelBaseProxy::LoadLibraryExW_()(Config::Instance()->NvapiDllPath->c_str(), NULL, 0);
 
             if (nvapi != nullptr)
             {
@@ -695,7 +719,7 @@ private:
         if (nvapi == nullptr)
         {
             auto localPath = Util::DllPath().parent_path() / L"nvapi64.dll";
-            nvapi = KernelBaseProxy::LoadLibraryExW_()(localPath.wstring().c_str(), NULL, _LoadExFlags);
+            nvapi = KernelBaseProxy::LoadLibraryExW_()(localPath.wstring().c_str(), NULL, 0);
 
             if (nvapi != nullptr)
             {
@@ -706,7 +730,7 @@ private:
 
         if (nvapi == nullptr)
         {
-            nvapi = KernelBaseProxy::LoadLibraryExW_()(L"nvapi64.dll", NULL, _LoadExFlags);
+            nvapi = KernelBaseProxy::LoadLibraryExW_()(L"nvapi64.dll", NULL, 0);
 
             if (nvapi != nullptr)
             {
@@ -724,7 +748,7 @@ private:
 
         if (Config::Instance()->NVNGX_DLSS_Library.has_value())
         {
-            nvngxDlss = KernelBaseProxy::LoadLibraryExW_()(Config::Instance()->NVNGX_DLSS_Library.value().c_str(), NULL, _LoadExFlags);
+            nvngxDlss = KernelBaseProxy::LoadLibraryExW_()(Config::Instance()->NVNGX_DLSS_Library.value().c_str(), NULL, 0);
 
             if (nvngxDlss != nullptr)
             {
@@ -739,12 +763,164 @@ private:
 
         if (nvngxDlss == nullptr)
         {
-            nvngxDlss = KernelBaseProxy::LoadLibraryExW_()(originalPath.c_str(), NULL, _LoadExFlags);
+            nvngxDlss = KernelBaseProxy::LoadLibraryExW_()(originalPath.c_str(), NULL, 0);
 
             if (nvngxDlss != nullptr)
             {
                 LOG_INFO("nvngx_dlss.dll loaded from {0}", wstring_to_string(originalPath));
                 return nvngxDlss;
+            }
+        }
+
+        return nullptr;
+    }
+
+    static HMODULE LoadLibxess(std::wstring originalPath)
+    {
+        HMODULE libxess = nullptr;
+
+        if (Config::Instance()->XeSSLibrary.has_value())
+        {
+            std::filesystem::path libPath(Config::Instance()->XeSSLibrary.value().c_str());
+
+            if(libPath.has_filename())
+                libxess = KernelBaseProxy::LoadLibraryExW_()(libPath.c_str(), NULL, 0);
+            else
+                libxess = KernelBaseProxy::LoadLibraryExW_()((libPath / L"libxess.dll").c_str(), NULL, 0);
+
+            if (libxess != nullptr)
+            {
+                LOG_INFO("libxess.dll loaded from {0}", wstring_to_string(Config::Instance()->XeSSLibrary.value()));
+                return libxess;
+            }
+            else
+            {
+                LOG_WARN("libxess.dll can't found at {0}", wstring_to_string(Config::Instance()->XeSSLibrary.value()));
+            }
+        }
+
+        if (libxess == nullptr)
+        {
+            libxess = KernelBaseProxy::LoadLibraryExW_()(originalPath.c_str(), NULL, 0);
+
+            if (libxess != nullptr)
+            {
+                LOG_INFO("libxess.dll loaded from {0}", wstring_to_string(originalPath));
+                return libxess;
+            }
+        }
+
+        return nullptr;
+    }
+
+    static HMODULE LoadLibxessDx11(std::wstring originalPath)
+    {
+        HMODULE libxess = nullptr;
+
+        if (Config::Instance()->XeSSDx11Library.has_value())
+        {
+            std::filesystem::path libPath(Config::Instance()->XeSSDx11Library.value().c_str());
+
+            if(libPath.has_filename())
+                libxess = KernelBaseProxy::LoadLibraryExW_()(libPath.c_str(), NULL, 0);
+            else
+                libxess = KernelBaseProxy::LoadLibraryExW_()((libPath / L"libxess_dx11.dll").c_str(), NULL, 0);
+
+            if (libxess != nullptr)
+            {
+                LOG_INFO("libxess_dx11.dll loaded from {0}", wstring_to_string(Config::Instance()->XeSSDx11Library.value()));
+                return libxess;
+            }
+            else
+            {
+                LOG_WARN("libxess_dx11.dll can't found at {0}", wstring_to_string(Config::Instance()->XeSSDx11Library.value()));
+            }
+        }
+
+        if (libxess == nullptr)
+        {
+            libxess = KernelBaseProxy::LoadLibraryExW_()(originalPath.c_str(), NULL, 0);
+
+            if (libxess != nullptr)
+            {
+                LOG_INFO("libxess_dx11.dll loaded from {0}", wstring_to_string(originalPath));
+                return libxess;
+            }
+        }
+
+        return nullptr;
+    }
+
+    static HMODULE LoadFfxapiDx12(std::wstring originalPath)
+    {
+        HMODULE ffxDx12 = nullptr;
+
+        if (Config::Instance()->FfxDx12Path.has_value())
+        {
+            std::filesystem::path libPath(Config::Instance()->FfxDx12Path.value().c_str());
+
+            if (libPath.has_filename())
+                ffxDx12 = KernelBaseProxy::LoadLibraryExW_()(libPath.c_str(), NULL, 0);
+            else
+                ffxDx12 = KernelBaseProxy::LoadLibraryExW_()((libPath / L"amd_fidelityfx_dx12.dll").c_str(), NULL, 0);
+
+            if (ffxDx12 != nullptr)
+            {
+                LOG_INFO("amd_fidelityfx_dx12.dll loaded from {0}", wstring_to_string(Config::Instance()->FfxDx12Path.value()));
+                return ffxDx12;
+            }
+            else
+            {
+                LOG_WARN("amd_fidelityfx_dx12.dll can't found at {0}", wstring_to_string(Config::Instance()->FfxDx12Path.value()));
+            }
+        }
+
+        if (ffxDx12 == nullptr)
+        {
+            ffxDx12 = KernelBaseProxy::LoadLibraryExW_()(originalPath.c_str(), NULL, 0);
+
+            if (ffxDx12 != nullptr)
+            {
+                LOG_INFO("amd_fidelityfx_dx12.dll loaded from {0}", wstring_to_string(originalPath));
+                return ffxDx12;
+            }
+        }
+
+        return nullptr;
+    }
+        
+    static HMODULE LoadFfxapiVk(std::wstring originalPath)
+    {
+        HMODULE ffxVk = nullptr;
+
+        if (Config::Instance()->FfxVkPath.has_value())
+        {
+            std::filesystem::path libPath(Config::Instance()->FfxVkPath.value().c_str());
+
+            if (libPath.has_filename())
+                ffxVk = KernelBaseProxy::LoadLibraryExW_()(libPath.c_str(), NULL, 0);
+            else
+                ffxVk = KernelBaseProxy::LoadLibraryExW_()((libPath / L"amd_fidelityfx_vk.dll").c_str(), NULL, 0);
+
+            if (ffxVk != nullptr)
+            {
+                LOG_INFO("amd_fidelityfx_vk.dll loaded from {0}", wstring_to_string(Config::Instance()->FfxVkPath.value()));
+                return ffxVk;
+            }
+            else
+            {
+                LOG_WARN("amd_fidelityfx_vk.dll can't found at {0}", wstring_to_string(Config::Instance()->FfxVkPath.value()));
+            }
+        }
+
+        if (ffxVk == nullptr)
+        {
+            ffxVk = KernelBaseProxy::LoadLibraryExW_()(originalPath.c_str(), NULL, 0);
+
+            if (ffxVk != nullptr)
+            {
+                LOG_INFO("amd_fidelityfx_vk.dll loaded from {0}", wstring_to_string(originalPath));
+                return ffxVk;
             }
         }
 

@@ -35,6 +35,7 @@ inline std::vector<std::wstring> blockOverlayNamesW = { L"eosovh-win32-shipping.
 
 DEFINE_NAME_VECTORS(nvngx, "nvngx");
 DEFINE_NAME_VECTORS(xess, "libxess");
+DEFINE_NAME_VECTORS(xessDx11, "libxess_dx11");
 DEFINE_NAME_VECTORS(nvngxDlss, "nvngx_dlss");
 DEFINE_NAME_VECTORS(nvapi, "nvapi64");
 DEFINE_NAME_VECTORS(dx11, "d3d11");

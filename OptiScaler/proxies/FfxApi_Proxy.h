@@ -57,18 +57,27 @@ public:
 
         LOG_DEBUG("Loading amd_fidelityfx_dx12.dll methods");
 
+        if (_dllDx12 == nullptr && Config::Instance()->FfxDx12Path.has_value())
+        {
+            std::filesystem::path libPath(Config::Instance()->FfxDx12Path.value().c_str());
+
+            if (libPath.has_filename())
+                _dllDx12 = KernelBaseProxy::LoadLibraryExW_()(libPath.c_str(), NULL, 0);
+            else
+                _dllDx12 = KernelBaseProxy::LoadLibraryExW_()((libPath / L"amd_fidelityfx_dx12.dll").c_str(), NULL, 0);
+
+            if (_dllDx12 != nullptr)
+            {
+                LOG_INFO("amd_fidelityfx_dx12.dll loaded from {0}", wstring_to_string(Config::Instance()->FfxDx12Path.value()));
+            }
+        }
+
         if (_dllDx12 == nullptr)
         {
-            std::wstring libraryName;
-            //if (State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable)
-                libraryName = L"amd_fidelityfx_dx12.dll";
-            //else
-            //    libraryName = L"amd_fidelityfx_dx12.optidll";
+            _dllDx12 = KernelBaseProxy::LoadLibraryExW_()(L"amd_fidelityfx_dx12.dll", NULL, 0);
 
-            auto file = Util::DllPath().parent_path() / libraryName;
-            LOG_INFO("Trying to load {}", file.string());
-
-            _dllDx12 = KernelBaseProxy::LoadLibraryExW_()(file.wstring().c_str(), NULL, 0);
+            if (_dllDx12 != nullptr)
+                LOG_INFO("amd_fidelityfx_dx12.dll loaded from exe folder");
         }
 
         if (_dllDx12 != nullptr)
@@ -184,18 +193,27 @@ public:
         if (module != nullptr)
             _dllVk = module;
 
+        if (_dllVk == nullptr && Config::Instance()->FfxVkPath.has_value())
+        {
+            std::filesystem::path libPath(Config::Instance()->FfxVkPath.value().c_str());
+
+            if (libPath.has_filename())
+                _dllVk = KernelBaseProxy::LoadLibraryExW_()(libPath.c_str(), NULL, 0);
+            else
+                _dllVk = KernelBaseProxy::LoadLibraryExW_()((libPath / L"amd_fidelityfx_vk.dll").c_str(), NULL, 0);
+
+            if (_dllVk != nullptr)
+            {
+                LOG_INFO("amd_fidelityfx_vk.dll loaded from {0}", wstring_to_string(Config::Instance()->FfxVkPath.value()));
+            }
+        }
+
         if (_dllVk == nullptr)
         {
-            std::wstring libraryName;
-            //if (State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable)
-                libraryName = L"amd_fidelityfx_vk.dll";
-            //else
-                //libraryName = L"amd_fidelityfx_vk.optidll";
+            _dllVk = KernelBaseProxy::LoadLibraryExW_()(L"amd_fidelityfx_vk.dll", NULL, 0);
 
-            auto file = Util::DllPath().parent_path() / "amd_fidelityfx_vk.dll";
-            LOG_INFO("Trying to load {}", file.string());
-
-            _dllVk = KernelBaseProxy::LoadLibraryExW_()(file.wstring().c_str(), NULL, 0);
+            if (_dllVk != nullptr)
+                LOG_INFO("amd_fidelityfx_vk.dll loaded from exe folder");
         }
 
         if (_dllVk != nullptr)

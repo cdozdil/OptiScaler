@@ -150,6 +150,7 @@ public:
 	CustomOptional<int32_t> NetworkModel{ 0 };
 	CustomOptional<bool> CreateHeaps{ true };
 	CustomOptional<std::wstring, NoDefault> XeSSLibrary;
+	CustomOptional<std::wstring, NoDefault> XeSSDx11Library;
 
 	// DLSS
 	CustomOptional<bool> DLSSEnabled{ true };
@@ -269,6 +270,9 @@ public:
 	CustomOptional<float> FsrCameraNear{ 0.1f };
 	CustomOptional<float> FsrCameraFar{ 100000.0f };
 	CustomOptional<bool> FsrUseFsrInputValues{ true };
+
+	CustomOptional<std::wstring, NoDefault> FfxDx12Path;
+	CustomOptional<std::wstring, NoDefault> FfxVkPath;
 
 	// dx11wdx12
 	// Valid values are;

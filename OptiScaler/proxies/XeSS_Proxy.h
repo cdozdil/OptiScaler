@@ -221,7 +221,7 @@ public:
 
         std::wstring libraryName;
         //if (State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable)
-            libraryName = L"libxess.dll";
+        libraryName = L"libxess.dll";
         //else
         //    libraryName = L"libxess.optidll";
 
@@ -241,7 +241,7 @@ public:
             LOG_INFO("Trying to load libxess.dll from dll path: {}", libXessPath.string());
             mainModule = KernelBaseProxy::LoadLibraryExW_()(libXessPath.c_str(), NULL, 0);
         }
-    
+
         if (mainModule != nullptr)
             return HookXeSS(mainModule);
 
@@ -263,7 +263,7 @@ public:
 
         std::wstring libraryName;
         //if (State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable)
-            libraryName = L"libxess_dx11.dll";
+        libraryName = L"libxess_dx11.dll";
         //else
         //    libraryName = L"libxess_dx11.optidll";
 
@@ -286,7 +286,7 @@ public:
 
         if (dx11Module != nullptr)
             return HookXeSSDx11(dx11Module);
-    
+
         return false;
     }
 
@@ -300,6 +300,29 @@ public:
 
         if (libxessModule != nullptr)
             _dll = libxessModule;
+
+        if (_dll == nullptr && Config::Instance()->XeSSLibrary.has_value())
+        {
+            std::filesystem::path libPath(Config::Instance()->XeSSLibrary.value().c_str());
+
+            if (libPath.has_filename())
+                _dll = KernelBaseProxy::LoadLibraryExW_()(libPath.c_str(), NULL, 0);
+            else
+                _dll = KernelBaseProxy::LoadLibraryExW_()((libPath / L"libxess.dll").c_str(), NULL, 0);
+
+            if (_dll != nullptr)
+            {
+                LOG_INFO("libxess.dll loaded from {0}", wstring_to_string(Config::Instance()->XeSSLibrary.value()));
+            }
+        }
+
+        if (_dll == nullptr)
+        {
+            _dll = KernelBaseProxy::LoadLibraryExW_()(L"libxess.dll", NULL, 0);
+
+            if (_dll != nullptr)
+                LOG_INFO("libxess.dll loaded from exe folder");
+        }
 
         State::Instance().skipDxgiLoadChecks = true;
 
@@ -516,6 +539,29 @@ public:
 
         if (libxessModule != nullptr)
             _dlldx11 = libxessModule;
+
+        if (_dlldx11 == nullptr && Config::Instance()->XeSSDx11Library.has_value())
+        {
+            std::filesystem::path libPath(Config::Instance()->XeSSDx11Library.value().c_str());
+
+            if (libPath.has_filename())
+                _dlldx11 = KernelBaseProxy::LoadLibraryExW_()(libPath.c_str(), NULL, 0);
+            else
+                _dlldx11 = KernelBaseProxy::LoadLibraryExW_()((libPath / L"libxess_dx11.dll").c_str(), NULL, 0);
+
+            if (_dlldx11 != nullptr)
+            {
+                LOG_INFO("libxess_dx11.dll loaded from {0}", wstring_to_string(Config::Instance()->XeSSDx11Library.value()));
+            }
+        }
+
+        if (_dlldx11 == nullptr)
+        {
+            _dlldx11 = KernelBaseProxy::LoadLibraryExW_()(L"libxess_dx11.dll", NULL, 0);
+
+            if (_dlldx11 != nullptr)
+                LOG_INFO("libxess_dx11.dll loaded from exe folder");
+        }
 
         State::Instance().skipDxgiLoadChecks = true;
 
