@@ -56,8 +56,8 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
     
         setSharpness += add;
 
-        if (setSharpness > 1.0f)
-            setSharpness = 1.0f;
+        if (setSharpness > 1.3f)
+            setSharpness = 1.3f;
         else if (setSharpness < 0.0f)
             setSharpness = 0.0f;
     }
