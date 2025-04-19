@@ -3,8 +3,9 @@
 #include <pch.h>
 
 #include <proxies/Dxgi_Proxy.h>
-#include <proxies/Kernel32_Proxy.h>
 #include <proxies/KernelBase_Proxy.h>
+
+#include <detours/detours.h>
 
 #include <Unknwn.h>
 #include <Windows.h>
@@ -12,8 +13,6 @@
 typedef HRESULT(__cdecl* PFN_AmdExtD3DCreateInterface)(IUnknown* pOuter, REFIID riid, void** ppvObject);
 
 static HMODULE moduleAmdxc64 = nullptr;
-static Kernel32Proxy::PFN_GetProcAddress o_K32_GetProcAddress = nullptr;
-static KernelBaseProxy::PFN_GetProcAddress o_KB_GetProcAddress = nullptr;
 
 #pragma region GDI32
 
@@ -240,8 +239,11 @@ static inline void CheckForGPU()
     // Call init for any case
     DxgiProxy::Init();
 
-    IDXGIFactory* factory;
+    IDXGIFactory* factory = nullptr;
     HRESULT result = DxgiProxy::CreateDxgiFactory_()(__uuidof(factory), &factory);
+
+    if (result != S_OK || factory == nullptr)
+        return;
 
     UINT adapterIndex = 0;
     DXGI_ADAPTER_DESC adapterDesc{};
@@ -294,6 +296,11 @@ static inline void CheckForGPU()
 
 inline static HRESULT STDMETHODCALLTYPE hkAmdExtD3DCreateInterface(IUnknown* pOuter, REFIID riid, void** ppvObject)
 {
+    CheckForGPU();
+
+    if (!Config::Instance()->Fsr4Update.value_or_default())
+        return o_AmdExtD3DCreateInterface(pOuter, riid, ppvObject);
+
     // If querying IAmdExtFfxApi 
     if (riid == __uuidof(IAmdExtFfxApi))
     {
@@ -312,48 +319,9 @@ inline static HRESULT STDMETHODCALLTYPE hkAmdExtD3DCreateInterface(IUnknown* pOu
     return E_NOINTERFACE;
 }
 
-inline static FARPROC hk_K32_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
-{
-    if (hModule == Kernel32Proxy::Module() || hModule == KernelBaseProxy::Module())
-        return o_K32_GetProcAddress(hModule, lpProcName);
-
-    if ((size_t)lpProcName < 0x0000000010000000)
-        return o_K32_GetProcAddress(hModule, lpProcName);
-
-    // For FSR4 Upgrade
-    if (hModule == moduleAmdxc64 && o_AmdExtD3DCreateInterface != nullptr && lpProcName != nullptr && strcmp(lpProcName, "AmdExtD3DCreateInterface") == 0)
-    {
-        CheckForGPU();
-
-        // Return custom method for upgrade for RDNA4
-        if (Config::Instance()->Fsr4Update.value_or_default())
-            return (FARPROC)hkAmdExtD3DCreateInterface;
-    }
-
-    return o_K32_GetProcAddress(hModule, lpProcName);
-}
-
-inline static FARPROC hk_KB_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
-{
-    if (hModule == dllModule && lpProcName != nullptr)
-        LOG_DEBUG("Trying to get process address of {0}", lpProcName);
-
-    // For FSR4 Upgrade
-    if (hModule == moduleAmdxc64 && o_AmdExtD3DCreateInterface != nullptr && lpProcName != nullptr && strcmp(lpProcName, "AmdExtD3DCreateInterface") == 0)
-    {
-        CheckForGPU();
-
-        // Return custom method for upgrade for RDNA4
-        if (Config::Instance()->Fsr4Update.value_or_default())
-            return (FARPROC)hkAmdExtD3DCreateInterface;
-    }
-
-    return o_KB_GetProcAddress(hModule, lpProcName);
-}
-
 inline void InitFSR4Update()
 {
-    if (o_K32_GetProcAddress != nullptr)
+    if (o_AmdExtD3DCreateInterface != nullptr)
         return;
 
     LOG_DEBUG("");
@@ -366,11 +334,15 @@ inline void InitFSR4Update()
     if (moduleAmdxc64 != nullptr)
     {
         LOG_DEBUG("Found amdxc64.dll");
-        o_AmdExtD3DCreateInterface = (PFN_AmdExtD3DCreateInterface)Kernel32Proxy::GetProcAddress_()(moduleAmdxc64, "AmdExtD3DCreateInterface");
+        o_AmdExtD3DCreateInterface = (PFN_AmdExtD3DCreateInterface)KernelBaseProxy::GetProcAddress_()(moduleAmdxc64, "AmdExtD3DCreateInterface");
 
-        o_K32_GetProcAddress = Kernel32Proxy::Hook_GetProcAddress(hk_K32_GetProcAddress);
-
-        // Disabled 
-        //o_KB_GetProcAddress = KernelBaseProxy::Hook_GetProcAddress(hk_KB_GetProcAddress);
+        if (o_AmdExtD3DCreateInterface != nullptr)
+        {
+            LOG_DEBUG("Hooking AmdExtD3DCreateInterface");
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+            DetourAttach(&(PVOID&)o_AmdExtD3DCreateInterface, hkAmdExtD3DCreateInterface);
+            DetourTransactionCommit();
+        }
     }
 }

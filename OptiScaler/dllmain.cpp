@@ -422,7 +422,6 @@ static void CheckWorkingMode()
             {
                 // Hook kernel32 & kernelbase methods
                 // Moved here to cover agility sdk
-                InitFSR4Update();
                 KernelHooks::Hook();
 
                 auto pluginFilePath = pluginPath / L"d3d12.dll";
@@ -483,7 +482,6 @@ static void CheckWorkingMode()
 
             // Hook kernel32 & kernelbase methods
             // Moved here to cover agility sdk
-            InitFSR4Update();
             KernelHooks::Hook();
 
             // DXGI
@@ -849,6 +847,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             // Init Kernel proxies
             KernelBaseProxy::Init();
             Kernel32Proxy::Init();
+            
+            // Hook FSR4 stuff as early as possible
+            InitFSR4Update();
 
             // Check for Wine
             spdlog::info("");
