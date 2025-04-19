@@ -146,6 +146,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             NvngxPath.set_from_config(readWString("DLSS", "LibraryPath"));
             DLSSFeaturePath.set_from_config(readWString("DLSS", "FeaturePath"));
             NVNGX_DLSS_Library.set_from_config(readWString("DLSS", "NVNGX_DLSS_Path"));
+            UseGenericAppIdWithDlss.set_from_config(readBool("DLSS", "UseGenericAppIdWithDlss"));
 
             RenderPresetOverride.set_from_config(readBool("DLSS", "RenderPresetOverride"));
 
@@ -344,7 +345,6 @@ bool Config::Reload(std::filesystem::path iniPath)
             PreferFirstDedicatedGpu.set_from_config(readBool("Hotfix", "PreferFirstDedicatedGpu"));
             SkipFirstFrames.set_from_config(readInt("Hotfix", "SkipFirstFrames"));
             UsePrecompiledShaders.set_from_config(readBool("Hotfix", "UsePrecompiledShaders"));
-            UseGenericAppIdWithDlss.set_from_config(readBool("Hotfix", "UseGenericAppIdWithDlss"));
             ColorResourceBarrier.set_from_config(readInt("Hotfix", "ColorResourceBarrier"));
             MVResourceBarrier.set_from_config(readInt("Hotfix", "MotionVectorResourceBarrier"));
             DepthResourceBarrier.set_from_config(readInt("Hotfix", "DepthResourceBarrier"));
@@ -654,6 +654,7 @@ bool Config::SaveIni()
         ini.SetValue("DLSS", "RenderPresetBalanced", GetIntValue(Instance()->RenderPresetBalanced.value_for_config()).c_str());
         ini.SetValue("DLSS", "RenderPresetPerformance", GetIntValue(Instance()->RenderPresetPerformance.value_for_config()).c_str());
         ini.SetValue("DLSS", "RenderPresetUltraPerformance", GetIntValue(Instance()->RenderPresetUltraPerformance.value_for_config()).c_str());
+        ini.SetValue("DLSS", "UseGenericAppIdWithDlss", GetBoolValue(Instance()->UseGenericAppIdWithDlss.value_for_config()).c_str());
     }
 
     // Nukems
@@ -746,8 +747,6 @@ bool Config::SaveIni()
         ini.SetValue("Hotfix", "UsePrecompiledShaders", GetBoolValue(Instance()->UsePrecompiledShaders.value_for_config()).c_str());
         ini.SetValue("Hotfix", "PreferDedicatedGpu", GetBoolValue(Instance()->PreferDedicatedGpu.value_for_config()).c_str());
         ini.SetValue("Hotfix", "PreferFirstDedicatedGpu", GetBoolValue(Instance()->PreferFirstDedicatedGpu.value_for_config()).c_str());
-
-        ini.SetValue("Hotfix", "UseGenericAppIdWithDlss", GetBoolValue(Instance()->UseGenericAppIdWithDlss.value_for_config()).c_str());
 
         ini.SetValue("Hotfix", "ColorResourceBarrier", GetIntValue(Instance()->ColorResourceBarrier.value_for_config()).c_str());
         ini.SetValue("Hotfix", "MotionVectorResourceBarrier", GetIntValue(Instance()->MVResourceBarrier.value_for_config()).c_str());
