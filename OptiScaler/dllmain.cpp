@@ -57,6 +57,57 @@ static bool IsRunningOnWine()
     return false;
 }
 
+UINT customD3D12SDKVersion = 615;
+
+const char8_t* customD3D12SDKPath = u8".\\D3D12_Optiscaler\\"; //Hardcoded for now
+
+static void RunAgilityUpgrade(HMODULE dx12Module)
+{
+    typedef HRESULT(*PFN_IsDeveloperModeEnabled)(BOOL* isEnabled);
+    PFN_IsDeveloperModeEnabled o_IsDeveloperModeEnabled = (PFN_IsDeveloperModeEnabled)GetProcAddress(GetModuleHandle(L"kernelbase.dll"), "IsDeveloperModeEnabled");
+
+    if (o_IsDeveloperModeEnabled == nullptr)
+    {
+        LOG_ERROR("Failed to get IsDeveloperModeEnabled function address");
+        return;
+    }
+
+    auto hk_IsDeveloperModeEnabled = [](BOOL* isEnabled) -> HRESULT {
+        *isEnabled = TRUE;
+        return S_OK;
+        };
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach(&(PVOID&)o_IsDeveloperModeEnabled, static_cast<HRESULT(*)(BOOL*)>(hk_IsDeveloperModeEnabled));
+    DetourTransactionCommit();
+
+    if (Config::Instance()->FsrAgilitySDKUpgrade.value_or_default())
+    {
+        Microsoft::WRL::ComPtr<ID3D12SDKConfiguration> sdkConfig;
+        auto hr = D3D12GetInterface(CLSID_D3D12SDKConfiguration, IID_PPV_ARGS(&sdkConfig));
+
+        if (SUCCEEDED(hr)) {
+            hr = sdkConfig->SetSDKVersion(customD3D12SDKVersion, reinterpret_cast<LPCSTR>(customD3D12SDKPath));
+            if (FAILED(hr)) {
+                LOG_ERROR("Failed to upgrade Agility SDK: {0}", hr);
+            }
+            else {
+                LOG_INFO("Agility SDK upgraded successfully");
+            }
+            sdkConfig->Release();
+        }
+        else {
+            LOG_ERROR("Failed to get D3D12 SDK Configuration interface: {0}", hr);
+        }
+    }
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourDetach(&(PVOID&)o_IsDeveloperModeEnabled, static_cast<HRESULT(*)(BOOL*)>(hk_IsDeveloperModeEnabled));
+    DetourTransactionCommit();
+}
+
 static void CheckWorkingMode()
 {
     LOG_FUNC();
@@ -480,6 +531,7 @@ static void CheckWorkingMode()
             Config::Instance()->OverlayMenu.set_volatile_value((!State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable) &&
                                                                Config::Instance()->OverlayMenu.value_or_default());
 
+            
             // Hook kernel32 & kernelbase methods
             // Moved here to cover agility sdk
             KernelHooks::Hook();
@@ -661,6 +713,8 @@ static void CheckWorkingMode()
                 reshadeHandle = KernelBaseProxy::LoadLibraryExW_()(rsFile.c_str(), NULL, 0);
                 LOG_INFO("Loading ReShade64.dll, result: {0:X}", (size_t)reshadeHandle);
             }
+
+            RunAgilityUpgrade(KernelBaseProxy::GetModuleHandleW_()(L"d3d12.dll"));
         }
 
         return;
