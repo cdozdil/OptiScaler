@@ -698,7 +698,7 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     }
 
     auto version = State::Instance().fsr3xVersionNames[Config::Instance()->Fsr3xIndex.value_or_default()];
-    _name = std::format("FSR {}", version);
+    _name = "FSR";
     parse_version(version);
 
     State::Instance().skipSpoofing = false;
