@@ -176,7 +176,7 @@ inline static HRESULT detGetDesc3(IDXGIAdapter4 * This, DXGI_ADAPTER_DESC3 * pDe
         if (Config::Instance()->DxgiVRAM.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiVRAM.value() * 1024 * 1024 * 1024;
 
-        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or_default())
+        if (pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or_default() && !SkipSpoofing())
         {
             pDesc->VendorId = 0x10de;
             pDesc->DeviceId = 0x2684;
@@ -217,7 +217,7 @@ inline static HRESULT detGetDesc2(IDXGIAdapter2 * This, DXGI_ADAPTER_DESC2 * pDe
         if (Config::Instance()->DxgiVRAM.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiVRAM.value() * 1024 * 1024 * 1024;
 
-        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or_default())
+        if (pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or_default() && !SkipSpoofing())
         {
             pDesc->VendorId = 0x10de;
             pDesc->DeviceId = 0x2684;
@@ -258,7 +258,7 @@ inline static HRESULT detGetDesc1(IDXGIAdapter1 * This, DXGI_ADAPTER_DESC1 * pDe
         if (Config::Instance()->DxgiVRAM.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiVRAM.value() * 1024 * 1024 * 1024;
 
-        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or_default())
+        if (pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or_default() && !SkipSpoofing())
         {
             pDesc->VendorId = 0x10de;
             pDesc->DeviceId = 0x2684;
@@ -299,7 +299,7 @@ inline static HRESULT detGetDesc(IDXGIAdapter * This, DXGI_ADAPTER_DESC * pDesc)
         if (Config::Instance()->DxgiVRAM.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiVRAM.value() * 1024 * 1024 * 1024;
 
-        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or_default())
+        if (pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or_default() && !SkipSpoofing())
         {
             pDesc->VendorId = 0x10de;
             pDesc->DeviceId = 0x2684;
@@ -359,7 +359,7 @@ inline static HRESULT detEnumAdapterByLuid(IDXGIFactory4 * This, LUID AdapterLui
     return result;
 }
 
-inline static HRESULT detEnumAdapters1(IDXGIFactory1 * This, UINT Adapter, IDXGIAdapter1 * *ppAdapter)
+inline static HRESULT detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1** ppAdapter)
 {
     LOG_TRACE("dllmain");
 
