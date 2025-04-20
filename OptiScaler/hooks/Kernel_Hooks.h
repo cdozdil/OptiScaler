@@ -1280,7 +1280,7 @@ private:
         if (Config::Instance()->FsrAgilitySDKUpgrade.value_or_default())
         {
             HMODULE mod_mainExe = nullptr;
-            Kernel32Proxy::GetModuleHandleExW_()(2u, 0i64, &mod_mainExe);
+            KernelBaseProxy::GetModuleHandleExW_()(2u, 0i64, &mod_mainExe);
             if (hModule == mod_mainExe && lpProcName != nullptr)
             {
                 if (strcmp(lpProcName, "D3D12SDKVersion") == 0)
@@ -1298,7 +1298,7 @@ private:
         }
 
         if (State::Instance().isRunningOnLinux && lpProcName != nullptr &&
-            hModule == Kernel32Proxy::GetModuleHandleW_()(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
+            hModule == KernelBaseProxy::GetModuleHandleW_()(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
             return (FARPROC)&customD3DKMTEnumAdapters2;
 
         return o_K32_GetProcAddress(hModule, lpProcName);
@@ -1321,7 +1321,7 @@ private:
         if (Config::Instance()->FsrAgilitySDKUpgrade.value_or_default())
         {
             HMODULE mod_mainExe = nullptr;
-            Kernel32Proxy::GetModuleHandleExW_()(2u, 0i64, &mod_mainExe);
+            KernelBaseProxy::GetModuleHandleExW_()(2u, 0i64, &mod_mainExe);
             if (hModule == mod_mainExe && lpProcName != nullptr)
             {
                 if (strcmp(lpProcName, "D3D12SDKVersion") == 0)
@@ -1339,7 +1339,7 @@ private:
         }
 
         if (State::Instance().isRunningOnLinux && lpProcName != nullptr &&
-            hModule == Kernel32Proxy::GetModuleHandleW_()(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
+            hModule == KernelBaseProxy::GetModuleHandleW_()(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
             return (FARPROC)&customD3DKMTEnumAdapters2;
 
         return o_KB_GetProcAddress(hModule, lpProcName);
