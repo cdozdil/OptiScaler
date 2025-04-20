@@ -1360,10 +1360,23 @@ public:
         o_K32_LoadLibraryExW = Kernel32Proxy::Hook_LoadLibraryExW(hk_K32_LoadLibraryExW);
         o_K32_GetProcAddress = Kernel32Proxy::Hook_GetProcAddress(hk_K32_GetProcAddress);
 
+    }
+
+    static void HookBase()
+    {
+        if (o_KB_GetProcAddress != nullptr)
+            return;
+
+        LOG_DEBUG("");
+
         // These hooks cause stability regressions
         //o_KB_FreeLibrary = KernelBaseProxy::Hook_FreeLibrary(hk_KB_FreeLibrary);
-        //o_KB_LoadLibraryExA = KernelBaseProxy::Hook_LoadLibraryExA(hk_KB_LoadLibraryExA);
-        //o_KB_LoadLibraryExW = KernelBaseProxy::Hook_LoadLibraryExW(hk_KB_LoadLibraryExW);
+        if (State::Instance().gameQuirk == Minecraft)
+        {
+            o_KB_LoadLibraryExA = KernelBaseProxy::Hook_LoadLibraryExA(hk_KB_LoadLibraryExA);
+            o_KB_LoadLibraryExW = KernelBaseProxy::Hook_LoadLibraryExW(hk_KB_LoadLibraryExW);
+        }
+
         o_KB_GetProcAddress = KernelBaseProxy::Hook_GetProcAddress(hk_KB_GetProcAddress);
     }
 };

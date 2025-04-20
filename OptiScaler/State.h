@@ -23,7 +23,8 @@ typedef enum GameQuirk
     RDR1,
     Banishers,
     SplitFiction,
-    PoE2
+    PoE2,
+    Minecraft
 } GameQuirk;
 
 typedef enum FGType : uint32_t

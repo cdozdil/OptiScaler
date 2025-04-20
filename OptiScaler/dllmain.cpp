@@ -420,9 +420,8 @@ static void CheckWorkingMode()
         {
             do
             {
-                // Hook kernel32 & kernelbase methods
                 // Moved here to cover agility sdk
-                KernelHooks::Hook();
+                KernelHooks::HookBase();
 
                 auto pluginFilePath = pluginPath / L"d3d12.dll";
                 dll = KernelBaseProxy::LoadLibraryExW_()(pluginFilePath.wstring().c_str(), NULL, 0);
@@ -480,10 +479,6 @@ static void CheckWorkingMode()
             Config::Instance()->OverlayMenu.set_volatile_value((!State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable) &&
                                                                Config::Instance()->OverlayMenu.value_or_default());
 
-            // Hook kernel32 & kernelbase methods
-            // Moved here to cover agility sdk
-            KernelHooks::Hook();
-
             // DXGI
             if (DxgiProxy::Module() == nullptr)
             {
@@ -516,6 +511,9 @@ static void CheckWorkingMode()
             // DirectX 12
             if (D3d12Proxy::Module() == nullptr)
             {
+                // Moved here to cover agility sdk
+                KernelHooks::HookBase();
+
                 LOG_DEBUG("Check for d3d12");
                 HMODULE d3d12Module = nullptr;
                 d3d12Module = KernelBaseProxy::GetModuleHandleW_()(L"d3d12.dll");
@@ -568,6 +566,9 @@ static void CheckWorkingMode()
 
             if (Config::Instance()->OverlayMenu.value() && vulkanModule != nullptr)
                 HooksVk::HookVk(vulkanModule);
+
+            // Hook kernel32 methods 
+            KernelHooks::Hook();
 
             // NVAPI
             HMODULE nvapi64 = nullptr;
@@ -725,6 +726,11 @@ static void CheckQuirks()
     {
         State::Instance().gameQuirk = SplitFiction;
         LOG_INFO("Enabling a quirk for Split Fiction (Quick upscaler reinit)");
+    }
+    else if (exePathFilename == "minecraft.windows.exe")
+    {
+        State::Instance().gameQuirk = Minecraft;
+        LOG_INFO("Enabling a quirk for Minecraft (Enable KernelBase hooks)");
     }
     else if (exePathFilename == "pathofexile.exe" || exePathFilename == "pathofexile_x64.exe" ||
              exePathFilename == "pathofexile_x64steam.exe" || exePathFilename == "pathofexilesteam.exe")
