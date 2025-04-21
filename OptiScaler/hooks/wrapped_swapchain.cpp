@@ -222,6 +222,8 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullsc
     LOG_DEBUG("Fullscreen: {}, pTarget: {:X}", Fullscreen, (size_t)pTarget);
     HRESULT result = S_OK;
 
+    bool ffxLock = false;
+
     {
 #ifdef USE_LOCAL_MUTEX
         // dlssg calls this from present it seems
@@ -229,12 +231,20 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullsc
         if (!(_localMutex.getOwner() == 4 && Config::Instance()->FGType.value_or_default() == FGType::Nukems))
             OwnedLockGuard lock(_localMutex, 3);
 #endif
-
         if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
         {
-            LOG_TRACE("Waiting ffxMutex 3, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
-            FrameGen_Dx12::ffxMutex.lock(3);
-            LOG_TRACE("Accuired ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
+
+            if (FrameGen_Dx12::ffxMutex.getOwner() != 3)
+            {
+                LOG_TRACE("Waiting ffxMutex 3, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
+                FrameGen_Dx12::ffxMutex.lock(3);
+                ffxLock = true;
+                LOG_TRACE("Accuired ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
+            }
+            else
+            {
+                LOG_TRACE("Skipping ffxMutex, owner is already 3");
+            }
         }
 
         result = m_pReal->SetFullscreenState(Fullscreen, pTarget);
@@ -280,7 +290,7 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullsc
         }
     }
 
-    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && ffxLock)
     {
         LOG_TRACE("Releasing ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
         FrameGen_Dx12::ffxMutex.unlockThis(3);
@@ -445,22 +455,22 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetLastPresentCount(UINT* pLas
 }
 
 //
-HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetDesc1(DXGI_SWAP_CHAIN_DESC1* pDesc) 
+HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetDesc1(DXGI_SWAP_CHAIN_DESC1* pDesc)
 {
     return m_pReal1->GetDesc1(pDesc);
 }
 
-HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetFullscreenDesc(DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pDesc) 
+HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetFullscreenDesc(DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pDesc)
 {
     return m_pReal1->GetFullscreenDesc(pDesc);
 }
 
-HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetHwnd(HWND* pHwnd) 
+HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetHwnd(HWND* pHwnd)
 {
     return m_pReal1->GetHwnd(pHwnd);
 }
 
-HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetCoreWindow(REFIID refiid, void** ppUnk) 
+HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetCoreWindow(REFIID refiid, void** ppUnk)
 {
     return m_pReal1->GetCoreWindow(refiid, ppUnk);
 }
@@ -494,7 +504,7 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetRestrictToOutput(IDXGIOutpu
     return m_pReal1->GetRestrictToOutput(ppRestrictToOutput);
 }
 
-HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::SetBackgroundColor(const DXGI_RGBA* pColor) 
+HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::SetBackgroundColor(const DXGI_RGBA* pColor)
 {
     return m_pReal1->SetBackgroundColor(pColor);
 }
@@ -550,12 +560,12 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetMatrixTransform(DXGI_MATRIX
     return m_pReal2->GetMatrixTransform(pMatrix);
 }
 
-UINT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetCurrentBackBufferIndex(void) 
+UINT STDMETHODCALLTYPE WrappedIDXGISwapChain4::GetCurrentBackBufferIndex(void)
 {
     return m_pReal3->GetCurrentBackBufferIndex();
 }
 
-HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::CheckColorSpaceSupport(DXGI_COLOR_SPACE_TYPE ColorSpace, UINT* pColorSpaceSupport) 
+HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::CheckColorSpaceSupport(DXGI_COLOR_SPACE_TYPE ColorSpace, UINT* pColorSpaceSupport)
 {
     return m_pReal3->CheckColorSpaceSupport(ColorSpace, pColorSpaceSupport);
 }
@@ -692,7 +702,7 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCoun
 }
 
 //
-HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::SetHDRMetaData(DXGI_HDR_METADATA_TYPE Type, UINT Size, void* pMetaData) 
+HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::SetHDRMetaData(DXGI_HDR_METADATA_TYPE Type, UINT Size, void* pMetaData)
 {
     return m_pReal4->SetHDRMetaData(Type, Size, pMetaData);
 }
