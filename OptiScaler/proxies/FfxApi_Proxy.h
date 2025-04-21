@@ -80,38 +80,38 @@ public:
                 LOG_INFO("amd_fidelityfx_dx12.dll loaded from exe folder");
         }
 
-        if (_dllDx12 != nullptr)
+        if (_dllDx12 != nullptr && _D3D12_Configure == nullptr)
         {
             _D3D12_Configure = (PfnFfxConfigure)KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxConfigure");
             _D3D12_CreateContext = (PfnFfxCreateContext)KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxCreateContext");
             _D3D12_DestroyContext = (PfnFfxDestroyContext)KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxDestroyContext");
             _D3D12_Dispatch = (PfnFfxDispatch)KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxDispatch");
             _D3D12_Query = (PfnFfxQuery)KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxQuery");
-        }
-
-        if (_D3D12_CreateContext != nullptr)
-        {
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
-
-            if (_D3D12_Configure != nullptr)
-                DetourAttach(&(PVOID&)_D3D12_Configure, ffxConfigure_Dx12);
 
             if (_D3D12_CreateContext != nullptr)
-                DetourAttach(&(PVOID&)_D3D12_CreateContext, ffxCreateContext_Dx12);
+            {
+                DetourTransactionBegin();
+                DetourUpdateThread(GetCurrentThread());
 
-            if (_D3D12_DestroyContext != nullptr)
-                DetourAttach(&(PVOID&)_D3D12_DestroyContext, ffxDestroyContext_Dx12);
+                if (_D3D12_Configure != nullptr)
+                    DetourAttach(&(PVOID&)_D3D12_Configure, ffxConfigure_Dx12);
 
-            if (_D3D12_Dispatch != nullptr)
-                DetourAttach(&(PVOID&)_D3D12_Dispatch, ffxDispatch_Dx12);
+                if (_D3D12_CreateContext != nullptr)
+                    DetourAttach(&(PVOID&)_D3D12_CreateContext, ffxCreateContext_Dx12);
 
-            if (_D3D12_Query != nullptr)
-                DetourAttach(&(PVOID&)_D3D12_Query, ffxQuery_Dx12);
+                if (_D3D12_DestroyContext != nullptr)
+                    DetourAttach(&(PVOID&)_D3D12_DestroyContext, ffxDestroyContext_Dx12);
 
-            State::Instance().fsrHooks = true;
+                if (_D3D12_Dispatch != nullptr)
+                    DetourAttach(&(PVOID&)_D3D12_Dispatch, ffxDispatch_Dx12);
 
-            DetourTransactionCommit();
+                if (_D3D12_Query != nullptr)
+                    DetourAttach(&(PVOID&)_D3D12_Query, ffxQuery_Dx12);
+
+                State::Instance().fsrHooks = true;
+
+                DetourTransactionCommit();
+            }
         }
 
         bool loadResult = _D3D12_CreateContext != nullptr;
@@ -120,6 +120,8 @@ public:
 
         if (loadResult)
             VersionDx12();
+        else
+            _dllDx12 = nullptr;
 
         return loadResult;
     }
@@ -216,38 +218,38 @@ public:
                 LOG_INFO("amd_fidelityfx_vk.dll loaded from exe folder");
         }
 
-        if (_dllVk != nullptr)
+        if (_dllVk != nullptr && _VULKAN_CreateContext == nullptr)
         {
             _VULKAN_Configure = (PfnFfxConfigure)KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxConfigure");
             _VULKAN_CreateContext = (PfnFfxCreateContext)KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxCreateContext");
             _VULKAN_DestroyContext = (PfnFfxDestroyContext)KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxDestroyContext");
             _VULKAN_Dispatch = (PfnFfxDispatch)KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxDispatch");
             _VULKAN_Query = (PfnFfxQuery)KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxQuery");
-        }
-
-        if (_VULKAN_CreateContext != nullptr)
-        {
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
-
-            if (_VULKAN_Configure != nullptr)
-                DetourAttach(&(PVOID&)_VULKAN_Configure, ffxConfigure_Vk);
 
             if (_VULKAN_CreateContext != nullptr)
-                DetourAttach(&(PVOID&)_VULKAN_CreateContext, ffxCreateContext_Vk);
+            {
+                DetourTransactionBegin();
+                DetourUpdateThread(GetCurrentThread());
 
-            if (_VULKAN_DestroyContext != nullptr)
-                DetourAttach(&(PVOID&)_VULKAN_DestroyContext, ffxDestroyContext_Vk);
+                if (_VULKAN_Configure != nullptr)
+                    DetourAttach(&(PVOID&)_VULKAN_Configure, ffxConfigure_Vk);
 
-            if (_VULKAN_Dispatch != nullptr)
-                DetourAttach(&(PVOID&)_VULKAN_Dispatch, ffxDispatch_Vk);
+                if (_VULKAN_CreateContext != nullptr)
+                    DetourAttach(&(PVOID&)_VULKAN_CreateContext, ffxCreateContext_Vk);
 
-            if (_VULKAN_Query != nullptr)
-                DetourAttach(&(PVOID&)_VULKAN_Query, ffxQuery_Vk);
+                if (_VULKAN_DestroyContext != nullptr)
+                    DetourAttach(&(PVOID&)_VULKAN_DestroyContext, ffxDestroyContext_Vk);
 
-            State::Instance().fsrHooks = true;
+                if (_VULKAN_Dispatch != nullptr)
+                    DetourAttach(&(PVOID&)_VULKAN_Dispatch, ffxDispatch_Vk);
 
-            DetourTransactionCommit();
+                if (_VULKAN_Query != nullptr)
+                    DetourAttach(&(PVOID&)_VULKAN_Query, ffxQuery_Vk);
+
+                State::Instance().fsrHooks = true;
+
+                DetourTransactionCommit();
+            }
         }
 
         bool loadResult = _VULKAN_CreateContext != nullptr;
@@ -256,6 +258,8 @@ public:
 
         if (loadResult)
             VersionVk();
+        else
+            _dllVk = nullptr;
 
         return loadResult;
     }
