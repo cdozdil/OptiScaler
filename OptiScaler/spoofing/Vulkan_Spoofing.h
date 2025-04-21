@@ -229,7 +229,8 @@ inline static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDevic
         if (Config::Instance()->VulkanExtensionSpoofing.value_or_default() && !State::Instance().isRunningOnNvidia &&
             (std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_BINARY_IMPORT_EXTENSION_NAME) == 0 ||
             std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME) == 0 ||
-            std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME) == 0))
+            std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME) == 0 ||
+            std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NV_LOW_LATENCY_EXTENSION_NAME) == 0))
         {
             LOG_DEBUG("removing {0}", pCreateInfo->ppEnabledExtensionNames[i]);
         }
@@ -246,6 +247,7 @@ inline static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDevic
         newExtensionList.push_back(VK_NVX_BINARY_IMPORT_EXTENSION_NAME);
         newExtensionList.push_back(VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME);
         newExtensionList.push_back(VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME);
+        newExtensionList.push_back(VK_NV_LOW_LATENCY_EXTENSION_NAME);
         newExtensionList.push_back(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
         newExtensionList.push_back(VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
     }
@@ -296,7 +298,7 @@ inline static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice p
 
     if (pLayerName == nullptr && pProperties == nullptr && count == 0)
     {
-        *pPropertyCount += 3;
+        *pPropertyCount += 4;
         vkEnumerateDeviceExtensionPropertiesCount = *pPropertyCount;
         LOG_TRACE("hkvkEnumerateDeviceExtensionProperties({0}) count: {1}", pLayerName, vkEnumerateDeviceExtensionPropertiesCount);
         return result;
@@ -315,6 +317,9 @@ inline static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice p
 
         VkExtensionProperties mpva{ VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME, VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_SPEC_VERSION };
         memcpy(&pProperties[*pPropertyCount - 3], &mpva, sizeof(VkExtensionProperties));
+
+        VkExtensionProperties ll{ VK_NV_LOW_LATENCY_EXTENSION_NAME, VK_NV_LOW_LATENCY_SPEC_VERSION };
+        memcpy(&pProperties[*pPropertyCount - 4], &ll, sizeof(VkExtensionProperties));
 
         LOG_DEBUG("Extensions returned:");
         for (size_t i = 0; i < *pPropertyCount; i++)
