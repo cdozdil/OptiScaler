@@ -729,8 +729,13 @@ static void CheckQuirks()
     }
     else if (exePathFilename == "minecraft.windows.exe")
     {
-        State::Instance().gameQuirk = Minecraft;
+        State::Instance().gameQuirk = KernelBaseHooks;
         LOG_INFO("Enabling a quirk for Minecraft (Enable KernelBase hooks)");
+    }
+    else if (exePathFilename == "nms.exe")
+    {
+        State::Instance().gameQuirk = KernelBaseHooks;
+        LOG_INFO("Enabling a quirk for No Man's Sky (Enable KernelBase hooks)");
     }
     else if (exePathFilename == "pathofexile.exe" || exePathFilename == "pathofexile_x64.exe" ||
              exePathFilename == "pathofexile_x64steam.exe" || exePathFilename == "pathofexilesteam.exe")
@@ -814,10 +819,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     switch (ul_reason_for_call)
     {
         case DLL_PROCESS_ATTACH:
-            dllModule = hModule;
-            processId = GetCurrentProcessId();
-
             DisableThreadLibraryCalls(hModule);
+
+            dllModule = hModule;
+            processId = GetCurrentProcessId(); 
 
 #ifdef _DEBUG // VER_PRE_RELEASE
             // Enable file logging for pre builds
@@ -870,7 +875,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             if (Config::Instance()->DLSSEnabled.value_or_default())
             {
                 spdlog::info("");
-                State::Instance().isRunningOnNvidia = isNvidia();
+                State::Instance().isRunningOnNvidia = isNvidia(); 
 
                 if (State::Instance().isRunningOnNvidia)
                 {
