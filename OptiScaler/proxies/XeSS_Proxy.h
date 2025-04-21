@@ -144,8 +144,8 @@ private:
     {
         // Step 1: Get the size of the version information
         DWORD handle = 0;
-        DWORD versionSize = GetFileVersionInfoSize(dllPath.c_str(), &handle);
-        xess_version_t version{};
+        DWORD versionSize = GetFileVersionInfoSizeW(dllPath.c_str(), &handle);
+        xess_version_t version{ 0, 0, 0 };
 
 
         if (versionSize == 0)
@@ -156,7 +156,7 @@ private:
 
         // Step 2: Allocate buffer and get the version information
         std::vector<BYTE> versionInfo(versionSize);
-        if (!GetFileVersionInfo(dllPath.c_str(), handle, versionSize, versionInfo.data()))
+        if (handle == 0 && !GetFileVersionInfoW(dllPath.c_str(), handle, versionSize, versionInfo.data()))
         {
             LOG_ERROR("Failed to get version info: {0:X}", GetLastError());
             return version;
@@ -165,7 +165,7 @@ private:
         // Step 3: Extract the version information
         VS_FIXEDFILEINFO* fileInfo = nullptr;
         UINT size = 0;
-        if (!VerQueryValue(versionInfo.data(), L"\\", reinterpret_cast<LPVOID*>(&fileInfo), &size)) {
+        if (!VerQueryValueW(versionInfo.data(), L"\\", reinterpret_cast<LPVOID*>(&fileInfo), &size)) {
             LOG_ERROR("Failed to query version value: {0:X}", GetLastError());
             return version;
         }
@@ -412,18 +412,18 @@ public:
 
         if (_xessD3D12CreateContext != nullptr)
         {
-            // read version from file because 
-            // xessGetVersion cause access violation errors
-            HMODULE moduleHandle = nullptr;
-            moduleHandle = GetModuleHandle(L"libxess.dll");
-            if (moduleHandle != nullptr)
+            if (_xessGetVersion(&_xessVersion) != XESS_RESULT_SUCCESS)
             {
-                auto path = DllPath(moduleHandle);
-                _xessVersion = GetDLLVersion(path.wstring());
+                // read version from file because 
+                // xessGetVersion cause access violation errors
+                HMODULE moduleHandle = nullptr;
+                moduleHandle = GetModuleHandle(L"libxess.dll");
+                if (moduleHandle != nullptr)
+                {
+                    auto path = DllPath(moduleHandle);
+                    _xessVersion = GetDLLVersion(path.wstring());
+                }
             }
-
-            if (_xessVersion.major == 0)
-                _xessGetVersion(&_xessVersion);
 
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
