@@ -567,9 +567,6 @@ static void CheckWorkingMode()
             if (Config::Instance()->OverlayMenu.value() && vulkanModule != nullptr)
                 HooksVk::HookVk(vulkanModule);
 
-            // Hook kernel32 methods 
-            KernelHooks::Hook();
-
             // NVAPI
             HMODULE nvapi64 = nullptr;
             nvapi64 = KernelBaseProxy::GetModuleHandleW_()(L"nvapi64.dll");
@@ -662,6 +659,9 @@ static void CheckWorkingMode()
                 reshadeHandle = KernelBaseProxy::LoadLibraryExW_()(rsFile.c_str(), NULL, 0);
                 LOG_INFO("Loading ReShade64.dll, result: {0:X}", (size_t)reshadeHandle);
             }
+
+            // Hook kernel32 methods 
+            KernelHooks::Hook();
         }
 
         return;
