@@ -321,6 +321,9 @@ inline static HRESULT STDMETHODCALLTYPE hkAmdExtD3DCreateInterface(IUnknown* pOu
 
 inline void InitFSR4Update()
 {
+    if (Config::Instance()->Fsr4Update.has_value() && !Config::Instance()->Fsr4Update.value())
+        return;
+
     if (o_AmdExtD3DCreateInterface != nullptr)
         return;
 
