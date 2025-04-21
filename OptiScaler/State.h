@@ -24,7 +24,7 @@ typedef enum GameQuirk
     Banishers,
     SplitFiction,
     PoE2,
-    Minecraft
+    KernelBaseHooks
 } GameQuirk;
 
 typedef enum FGType : uint32_t
