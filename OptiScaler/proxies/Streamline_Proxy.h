@@ -153,9 +153,12 @@ static void hookStreamline(HMODULE slInterposer) {
     State::DisableChecks(7, "sl.interposer");
 
     if (o_slSetTag || o_slInit || o_slInit_sl1)
+    {
+        LOG_TRACE("Unhook");
         unhookStreamline();
+    }
 
-    if (Config::Instance()->FGType.value_or_default() == FGType::Nukems) {
+    {
         char dllPath[MAX_PATH];
         GetModuleFileNameA(slInterposer, dllPath, MAX_PATH);
 
@@ -168,10 +171,13 @@ static void hookStreamline(HMODULE slInterposer) {
             o_slInit = reinterpret_cast<decltype(&slInit)>(KernelBaseProxy::GetProcAddress_()(slInterposer, "slInit"));
 
             if (o_slSetTag != nullptr && o_slInit != nullptr) {
+                LOG_TRACE("Hooking v2");
                 DetourTransactionBegin();
                 DetourUpdateThread(GetCurrentThread());
 
-                DetourAttach(&(PVOID&)o_slSetTag, hkslSetTag);
+                if (Config::Instance()->FGType.value_or_default() == FGType::Nukems)
+                    DetourAttach(&(PVOID&)o_slSetTag, hkslSetTag);
+
                 DetourAttach(&(PVOID&)o_slInit, hkslInit);
 
                 DetourTransactionCommit();
@@ -182,6 +188,7 @@ static void hookStreamline(HMODULE slInterposer) {
             o_slInit_sl1 = reinterpret_cast<decltype(&sl1::slInit)>(KernelBaseProxy::GetProcAddress_()(slInterposer, "slInit"));
 
             if (o_slInit_sl1) {
+                LOG_TRACE("Hooking v1");
                 DetourTransactionBegin();
                 DetourUpdateThread(GetCurrentThread());
 
