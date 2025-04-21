@@ -143,7 +143,7 @@ if "%gpuChoice%"=="2" (
 :checkFile
 REM Query user for DLSS
 echo.
-echo Will you try to use DLSS inputs?
+echo Will you try to use DLSS inputs? (enables spoofing, required for DLSS FG, Reflex->AL2)
 echo [1] Yes
 echo [2] No
 set /p copyNvngx="Enter 1 or 2 (or press Enter for Yes): "
