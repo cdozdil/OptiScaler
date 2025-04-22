@@ -25,6 +25,7 @@ namespace Util
 	bool GetDLLVersion(std::wstring dllPath, version_t* versionOut);
 	bool GetDLLVersion(std::wstring dllPath, xess_version_t* versionOut);
 	bool GetRealWindowsVersion(OSVERSIONINFOW& osInfo);
+	std::string GetWindowsName(const OSVERSIONINFOW& os);
 };
 
 inline void ThrowIfFailed(HRESULT hr)

@@ -848,12 +848,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             spdlog::info("");
             if (Util::GetRealWindowsVersion(winVer))
-                spdlog::info("Windows version: {}.{}.{} ({})", winVer.dwMajorVersion, winVer.dwMinorVersion, winVer.dwBuildNumber, winVer.dwPlatformId);
+                spdlog::info("Windows version: {} ({}.{}.{})", Util::GetWindowsName(winVer), winVer.dwMajorVersion, winVer.dwMinorVersion, winVer.dwBuildNumber, winVer.dwPlatformId);
             else
                 spdlog::warn("Can't read windows version");
             spdlog::info("");
             CheckQuirks();
-
+             
             // OptiFG & Overlay Checks
             if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG && !Config::Instance()->FGDisableOverlays.has_value())
                 Config::Instance()->FGDisableOverlays.set_volatile_value(true);

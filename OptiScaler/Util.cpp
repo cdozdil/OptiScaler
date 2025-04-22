@@ -26,6 +26,30 @@ bool Util::GetRealWindowsVersion(OSVERSIONINFOW& osInfo)
     return false;
 }
 
+std::string Util::GetWindowsName(const OSVERSIONINFOW& os)
+{
+    DWORD major = os.dwMajorVersion;
+    DWORD minor = os.dwMinorVersion;
+    DWORD build = os.dwBuildNumber;
+
+    if (major == 10 && build >= 22000)
+        return "Windows 11";
+    if (major == 10)
+        return "Windows 10";
+    if (major == 6 && minor == 3)
+        return "Windows 8.1";
+    if (major == 6 && minor == 2)
+        return "Windows 8";
+    if (major == 6 && minor == 1)
+        return "Windows 7";
+    if (major == 6 && minor == 0)
+        return "Windows Vista";
+    if (major == 5 && minor == 1)
+        return "Windows XP";
+
+    return "Unknown Windows Version";
+}
+
 std::filesystem::path Util::DllPath()
 {
     static std::filesystem::path dll;
