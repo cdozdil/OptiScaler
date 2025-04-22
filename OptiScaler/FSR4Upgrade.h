@@ -155,15 +155,14 @@ typedef HRESULT(STDMETHODCALLTYPE* PFN_UpdateFfxApiProvider)(void* pData, uint32
 
 struct AmdExtFfxApi : public IAmdExtFfxApi
 {
-    PFN_UpdateFfxApiProvider pfnUpdateFfxApiProvider = nullptr;
+    PFN_UpdateFfxApiProvider o_UpdateFfxApiProvider = nullptr;
 
     HRESULT STDMETHODCALLTYPE UpdateFfxApiProvider(void* pData, uint32_t dataSizeInBytes) override
     {
         LOG_INFO("UpdateFfxApiProvider called");
 
-        if (pfnUpdateFfxApiProvider == nullptr)
+        if (o_UpdateFfxApiProvider == nullptr)
         {
-            LOG_DEBUG("Trying to load from local folder");
             auto fsr4Module = KernelBaseProxy::LoadLibraryExW_()(L"amdxcffx64.dll", NULL, 0);
 
             if (fsr4Module == nullptr)
@@ -177,8 +176,18 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
                         auto dllPath = storePath[i] / L"amdxcffx64.dll";
                         LOG_DEBUG("Trying to load: {}", wstring_to_string(dllPath.c_str()));
                         fsr4Module = KernelBaseProxy::LoadLibraryExW_()(dllPath.c_str(), NULL, 0);
+
+                        if (fsr4Module != nullptr)
+                        {
+                            LOG_INFO("amdxcffx64 loaded from {}", dllPath.string());
+                            break;
+                        }
                     }
                 }
+            }
+            else
+            {
+                LOG_INFO("amdxcffx64 loaded from game folder");
             }
 
             if (fsr4Module == nullptr)
@@ -187,19 +196,20 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
                 return E_NOINTERFACE;
             }
 
-            pfnUpdateFfxApiProvider = (PFN_UpdateFfxApiProvider)KernelBaseProxy::GetProcAddress_()(fsr4Module, "UpdateFfxApiProvider");
+            o_UpdateFfxApiProvider = (PFN_UpdateFfxApiProvider)KernelBaseProxy::GetProcAddress_()(fsr4Module, "UpdateFfxApiProvider");
 
-            if (pfnUpdateFfxApiProvider == nullptr)
+            if (o_UpdateFfxApiProvider == nullptr)
             {
                 LOG_ERROR("Failed to get UpdateFfxApiProvider");
                 return E_NOINTERFACE;
             }
         }
 
-        if (pfnUpdateFfxApiProvider != nullptr)
+        if (o_UpdateFfxApiProvider != nullptr)
         {
             State::DisableChecks(1);
-            auto result = pfnUpdateFfxApiProvider(pData, dataSizeInBytes);
+            auto result = o_UpdateFfxApiProvider(pData, dataSizeInBytes);
+            LOG_INFO("UpdateFfxApiProvider called, result: {} ({:X})", result == S_OK ? "Ok" : "Error", (UINT)result);
             State::EnableChecks(1);
             return result;
         }
@@ -310,6 +320,8 @@ inline static HRESULT STDMETHODCALLTYPE hkAmdExtD3DCreateInterface(IUnknown* pOu
         // Return custom one
         *ppvObject = _amdExtFfxApi;
 
+        LOG_INFO("IAmdExtFfxApi queried, returning custom AmdExtFfxApi");
+
         return S_OK;
     }
 
@@ -336,7 +348,7 @@ inline void InitFSR4Update()
 
     if (moduleAmdxc64 != nullptr)
     {
-        LOG_DEBUG("Found amdxc64.dll");
+        LOG_INFO("amdxc64.dll loaded");
         o_AmdExtD3DCreateInterface = (PFN_AmdExtD3DCreateInterface)KernelBaseProxy::GetProcAddress_()(moduleAmdxc64, "AmdExtD3DCreateInterface");
 
         if (o_AmdExtD3DCreateInterface != nullptr)
@@ -347,5 +359,9 @@ inline void InitFSR4Update()
             DetourAttach(&(PVOID&)o_AmdExtD3DCreateInterface, hkAmdExtD3DCreateInterface);
             DetourTransactionCommit();
         }
+    }
+    else
+    {
+        LOG_INFO("Failed to load amdxc64.dll");
     }
 }
