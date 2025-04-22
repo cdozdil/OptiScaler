@@ -946,14 +946,22 @@ private:
 
         if (lpLibrary == dllModule)
         {
-            //if (loadCount > 0)
-            //    loadCount--;
-
-            LOG_INFO("Call for this module");
-
-            //if (loadCount == 0)
-            // return Kernel32Proxy::FreeLibrary_()(lpLibrary);
-            //else
+            LOG_INFO("Call for OptiScaler");
+            return TRUE;
+        }
+        else if (lpLibrary == FfxApiProxy::Dx12Module())
+        {
+            LOG_INFO("Call for FFX Dx12");
+            return TRUE;
+        }
+        else if (lpLibrary == FfxApiProxy::VkModule())
+        {
+            LOG_INFO("Call for FFX Vulkan");
+            return TRUE;
+        }
+        else if (lpLibrary == XeSSProxy::Module())
+        {
+            LOG_INFO("Call for XeSS");
             return TRUE;
         }
 
@@ -967,14 +975,22 @@ private:
 
         if (lpLibrary == dllModule)
         {
-            //if (loadCount > 0)
-            //    loadCount--;
-
-            LOG_INFO("Call for this module");
-
-            //if (loadCount == 0)
-            // return Kernel32Proxy::FreeLibrary_()(lpLibrary);
-            //else
+            LOG_INFO("Call for OptiScaler");
+            return TRUE;
+        }
+        else if (lpLibrary == FfxApiProxy::Dx12Module())
+        {
+            LOG_INFO("Call for FFX Dx12");
+            return TRUE;
+        }
+        else if (lpLibrary == FfxApiProxy::VkModule())
+        {
+            LOG_INFO("Call for FFX Vulkan");
+            return TRUE;
+        }
+        else if (lpLibrary == XeSSProxy::Module())
+        {
+            LOG_INFO("Call for XeSS");
             return TRUE;
         }
 
@@ -1011,6 +1027,10 @@ private:
             }
         }
 
+#if _DEBUG
+        LOG_TRACE("{}", lcaseLibName);
+#endif
+
         auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
 
         // skip loading of dll
@@ -1035,8 +1055,6 @@ private:
         std::wstring libName(lpLibFileName);
         std::wstring lcaseLibName(libName);
 
-        LOG_TRACE("{}", wstring_to_string(lcaseLibName));
-
         for (size_t i = 0; i < lcaseLibName.size(); i++)
             lcaseLibName[i] = std::tolower(lcaseLibName[i]);
 
@@ -1058,6 +1076,10 @@ private:
                 return o_KB_LoadLibraryExW(lpLibFileName, hFile, dwFlags);
             }
         }
+
+#if _DEBUG
+        LOG_TRACE("{}", wstring_to_string(lcaseLibName));
+#endif
 
         auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
 
@@ -1106,7 +1128,7 @@ private:
         }
 
 #if _DEBUG
-        LOG_DEBUG("{}", lcaseLibName);
+        LOG_TRACE("{}", lcaseLibName);
 #endif
 
         auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
@@ -1156,7 +1178,7 @@ private:
         }
 
 #if _DEBUG
-        LOG_DEBUG("{}", wstring_to_string(lcaseLibName));
+        LOG_TRACE("{}", wstring_to_string(lcaseLibName));
 #endif
 
         auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
@@ -1254,7 +1276,7 @@ private:
         }
 
 #if _DEBUG
-        LOG_DEBUG("{}", wstring_to_string(lcaseLibName));
+        LOG_TRACE("{}", wstring_to_string(lcaseLibName));
 #endif
 
         auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
