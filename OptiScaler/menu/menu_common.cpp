@@ -2014,7 +2014,7 @@ bool MenuCommon::RenderMenu()
 
                         if (currentBackend == "fsr31" || currentBackend == "fsr31_12")
                         {
-                            if (bool nlSRGB = Config::Instance()->FsrNonLinearSRGB.value_or_default(); ImGui::Checkbox("FSR Non-Linear sRGB Input", &nlSRGB))
+                            if (bool nlSRGB = Config::Instance()->FsrNonLinearSRGB.value_or_default(); ImGui::Checkbox("FSR4 Non-Linear sRGB Input", &nlSRGB))
                             {
                                 Config::Instance()->FsrNonLinearSRGB = nlSRGB;
 
@@ -2028,7 +2028,7 @@ bool MenuCommon::RenderMenu()
                             ShowHelpMarker("Indicates input color resource contains perceptual sRGB colors\n"
                                            "Might improve upscaling quality of FSR4");
 
-                            if (bool nlPQ = Config::Instance()->FsrNonLinearPQ.value_or_default(); ImGui::Checkbox("FSR Non-Linear PQ Input", &nlPQ))
+                            if (bool nlPQ = Config::Instance()->FsrNonLinearPQ.value_or_default(); ImGui::Checkbox("FSR4 Non-Linear PQ Input", &nlPQ))
                             {
                                 Config::Instance()->FsrNonLinearPQ = nlPQ;
 
@@ -2074,75 +2074,83 @@ bool MenuCommon::RenderMenu()
                         if (ImGui::Checkbox("Use FSR Input Values", &useFsrVales))
                             Config::Instance()->FsrUseFsrInputValues = useFsrVales;
 
-                        bool useVFov = Config::Instance()->FsrVerticalFov.has_value() || !Config::Instance()->FsrHorizontalFov.has_value();
-
-                        float vfov = Config::Instance()->FsrVerticalFov.value_or_default();
-                        float hfov = Config::Instance()->FsrHorizontalFov.value_or(90.0f);
-
-                        if (useVFov && !Config::Instance()->FsrVerticalFov.has_value())
-                            Config::Instance()->FsrVerticalFov = vfov;
-                        else if (!useVFov && !Config::Instance()->FsrHorizontalFov.has_value())
-                            Config::Instance()->FsrHorizontalFov = hfov;
-
-                        if (ImGui::RadioButton("Use Vert. Fov", useVFov))
+                        ImGui::Spacing();
+                        if (ImGui::CollapsingHeader("FoV & Camera Values"))
                         {
-                            Config::Instance()->FsrHorizontalFov.reset();
-                            Config::Instance()->FsrVerticalFov = vfov;
-                            useVFov = true;
-                        }
 
-                        ImGui::SameLine(0.0f, 6.0f);
+                            bool useVFov = Config::Instance()->FsrVerticalFov.has_value() || !Config::Instance()->FsrHorizontalFov.has_value();
 
-                        if (ImGui::RadioButton("Use Horz. Fov", !useVFov))
-                        {
-                            Config::Instance()->FsrVerticalFov.reset();
-                            Config::Instance()->FsrHorizontalFov = hfov;
-                            useVFov = false;
-                        }
+                            float vfov = Config::Instance()->FsrVerticalFov.value_or_default();
+                            float hfov = Config::Instance()->FsrHorizontalFov.value_or(90.0f);
 
-                        if (useVFov)
-                        {
-                            if (ImGui::SliderFloat("Vert. FOV", &vfov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
+                            if (useVFov && !Config::Instance()->FsrVerticalFov.has_value())
                                 Config::Instance()->FsrVerticalFov = vfov;
-
-                            ShowHelpMarker("Might help achieve better image quality");
-                        }
-                        else
-                        {
-                            if (ImGui::SliderFloat("Horz. FOV", &hfov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
+                            else if (!useVFov && !Config::Instance()->FsrHorizontalFov.has_value())
                                 Config::Instance()->FsrHorizontalFov = hfov;
 
-                            ShowHelpMarker("Might help achieve better image quality");
+                            if (ImGui::RadioButton("Use Vert. Fov", useVFov))
+                            {
+                                Config::Instance()->FsrHorizontalFov.reset();
+                                Config::Instance()->FsrVerticalFov = vfov;
+                                useVFov = true;
+                            }
+
+                            ImGui::SameLine(0.0f, 6.0f);
+
+                            if (ImGui::RadioButton("Use Horz. Fov", !useVFov))
+                            {
+                                Config::Instance()->FsrVerticalFov.reset();
+                                Config::Instance()->FsrHorizontalFov = hfov;
+                                useVFov = false;
+                            }
+
+                            if (useVFov)
+                            {
+                                if (ImGui::SliderFloat("Vert. FOV", &vfov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
+                                    Config::Instance()->FsrVerticalFov = vfov;
+
+                                ShowHelpMarker("Might help achieve better image quality");
+                            }
+                            else
+                            {
+                                if (ImGui::SliderFloat("Horz. FOV", &hfov, 0.0f, 180.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
+                                    Config::Instance()->FsrHorizontalFov = hfov;
+
+                                ShowHelpMarker("Might help achieve better image quality");
+                            }
+
+                            float cameraNear;
+                            float cameraFar;
+
+                            cameraNear = Config::Instance()->FsrCameraNear.value_or_default();
+                            cameraFar = Config::Instance()->FsrCameraFar.value_or_default();
+
+                            if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.1f, 500000.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
+                                Config::Instance()->FsrCameraNear = cameraNear;
+                            ShowHelpMarker("Might help achieve better image quality\n"
+                                           "And potentially less ghosting");
+
+                            if (ImGui::SliderFloat("Camera Far", &cameraFar, 0.1f, 500000.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
+                                Config::Instance()->FsrCameraFar = cameraFar;
+                            ShowHelpMarker("Might help achieve better image quality\n"
+                                           "And potentially less ghosting");
+
+                            if (ImGui::Button("Reset Camera Values"))
+                            {
+                                Config::Instance()->FsrVerticalFov.reset();
+                                Config::Instance()->FsrHorizontalFov.reset();
+                                Config::Instance()->FsrCameraNear.reset();
+                                Config::Instance()->FsrCameraFar.reset();
+                            }
+
+                            ImGui::SameLine(0.0f, 6.0f);
+                            ImGui::Text("Near: %.1f Far: %.1f",
+                                        State::Instance().lastFsrCameraNear < 500000.0f ? State::Instance().lastFsrCameraNear : 500000.0f,
+                                        State::Instance().lastFsrCameraFar < 500000.0f ? State::Instance().lastFsrCameraFar : 500000.0f);
                         }
 
-                        float cameraNear;
-                        float cameraFar;
-
-                        cameraNear = Config::Instance()->FsrCameraNear.value_or_default();
-                        cameraFar = Config::Instance()->FsrCameraFar.value_or_default();
-
-                        if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.1f, 500000.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
-                            Config::Instance()->FsrCameraNear = cameraNear;
-                        ShowHelpMarker("Might help achieve better image quality\n"
-                                       "And potentially less ghosting");
-
-                        if (ImGui::SliderFloat("Camera Far", &cameraFar, 0.1f, 500000.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
-                            Config::Instance()->FsrCameraFar = cameraFar;
-                        ShowHelpMarker("Might help achieve better image quality\n"
-                                       "And potentially less ghosting");
-
-                        if (ImGui::Button("Reset Camera Values"))
-                        {
-                            Config::Instance()->FsrVerticalFov.reset();
-                            Config::Instance()->FsrHorizontalFov.reset();
-                            Config::Instance()->FsrCameraNear.reset();
-                            Config::Instance()->FsrCameraFar.reset();
-                        }
-
-                        ImGui::SameLine(0.0f, 6.0f);
-                        ImGui::Text("Near: %.1f Far: %.1f",
-                                    State::Instance().lastFsrCameraNear < 500000.0f ? State::Instance().lastFsrCameraNear : 500000.0f,
-                                    State::Instance().lastFsrCameraFar < 500000.0f ? State::Instance().lastFsrCameraFar : 500000.0f);
+                        ImGui::Spacing();
+                        ImGui::Spacing();
                     }
 
                     // DLSS -----------------
