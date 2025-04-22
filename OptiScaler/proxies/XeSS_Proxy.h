@@ -412,18 +412,18 @@ public:
 
         if (_xessD3D12CreateContext != nullptr)
         {
-            if (_xessGetVersion(&_xessVersion) != XESS_RESULT_SUCCESS)
-            {
-                // read version from file because 
-                // xessGetVersion cause access violation errors
-                HMODULE moduleHandle = nullptr;
-                moduleHandle = GetModuleHandle(L"libxess.dll");
-                if (moduleHandle != nullptr)
-                {
-                    auto path = DllPath(moduleHandle);
-                    _xessVersion = GetDLLVersion(path.wstring());
-                }
-            }
+            // read version from file because 
+            // xessGetVersion cause access violation errors
+            //HMODULE moduleHandle = nullptr;
+            //moduleHandle = GetModuleHandle(L"libxess.dll");
+            //if (moduleHandle != nullptr)
+            //{
+            //    auto path = DllPath(moduleHandle);
+            //    _xessVersion = GetDLLVersion(path.wstring());
+            //}
+
+            //if (_xessVersion.major == 0)
+            //    _xessGetVersion(&_xessVersion);
 
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
@@ -737,6 +737,9 @@ public:
 
     static xess_version_t Version()
     {
+        if (_xessVersion.major == 0)
+            _xessGetVersion(&_xessVersion);
+
         // If dll version cant be read disable 1.3.x specific stuff
         if (_xessVersion.major == 0)
         {
@@ -750,6 +753,9 @@ public:
 
     static xess_version_t VersionDx11()
     {
+        if (_xessVersionDx11.major == 0)
+            _xessGetVersionDx11(&_xessVersionDx11);
+
         // If dll version cant be read disable 1.3.x specific stuff
         if (_xessVersionDx11.major == 0)
         {
