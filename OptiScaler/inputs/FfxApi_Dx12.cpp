@@ -340,6 +340,8 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
     {
         if (header->type == FFX_API_DISPATCH_DESC_TYPE_UPSCALE)
             dispatchDesc = (ffxDispatchDescUpscale*)header;
+        else if (!Config::Instance()->EnableHotSwapping.value_or_default() && header->type == FFX_API_DISPATCH_DESC_TYPE_UPSCALE_GENERATEREACTIVEMASK)
+            return FFX_API_RETURN_OK;
 
         header = header->pNext;
 
@@ -348,7 +350,7 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
     if (dispatchDesc == nullptr)
     {
         LOG_INFO("dispatchDesc == nullptr, desc type: {:X}", desc->type);
-        return FfxApiProxy::D3D12_Dispatch()(context, desc);
+        return FFX_API_RETURN_ERROR_PARAMETER;
     }
 
     if (dispatchDesc->commandList == nullptr)
