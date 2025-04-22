@@ -6,6 +6,26 @@
 
 extern HMODULE dllModule;
 
+typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
+
+bool Util::GetRealWindowsVersion(OSVERSIONINFOW& osInfo)
+{
+    HMODULE hMod = ::GetModuleHandleW(L"ntdll.dll");
+    if (hMod)
+    {
+        RtlGetVersionPtr fxPtr = (RtlGetVersionPtr)::GetProcAddress(hMod, "RtlGetVersion");
+        if (fxPtr != nullptr)
+        {
+            osInfo.dwOSVersionInfoSize = sizeof(osInfo);
+
+            if (fxPtr(&osInfo) == 0) // STATUS_SUCCESS == 0
+                return true;
+        }
+    }
+
+    return false;
+}
+
 std::filesystem::path Util::DllPath()
 {
     static std::filesystem::path dll;

@@ -24,6 +24,7 @@ namespace Util
 	HWND GetProcessWindow();
 	bool GetDLLVersion(std::wstring dllPath, version_t* versionOut);
 	bool GetDLLVersion(std::wstring dllPath, xess_version_t* versionOut);
+	bool GetRealWindowsVersion(OSVERSIONINFOW& osInfo);
 };
 
 inline void ThrowIfFailed(HRESULT hr)

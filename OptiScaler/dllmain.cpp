@@ -815,6 +815,7 @@ bool isNvidia()
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
     HMODULE handle = nullptr;
+    OSVERSIONINFOW winVer{ 0 };
 
     switch (ul_reason_for_call)
     {
@@ -846,6 +847,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             spdlog::warn("LogLevel: {0}", Config::Instance()->LogLevel.value_or_default());
 
             spdlog::info("");
+            if (Util::GetRealWindowsVersion(winVer))
+                spdlog::info("Windows version: {}.{}.{} ({})", winVer.dwMajorVersion, winVer.dwMinorVersion, winVer.dwBuildNumber, winVer.dwPlatformId);
+            else
+                spdlog::warn("Can't read windows version");
+            spdlog::info("");
             CheckQuirks();
 
             // OptiFG & Overlay Checks
@@ -860,6 +866,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             Kernel32Proxy::Init();
             
             // Hook FSR4 stuff as early as possible
+            spdlog::info("");
             InitFSR4Update();
 
             // Check for Wine
@@ -902,7 +909,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             // Check for working mode and attach hooks
             spdlog::info("");
             CheckWorkingMode();
-            spdlog::info("");
 
             if (!State::Instance().nvngxExists && !Config::Instance()->DxgiSpoofing.has_value())
             {
@@ -910,7 +916,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 Config::Instance()->DxgiSpoofing.set_volatile_value(false);
             }
 
-            spdlog::info("");
             handle = KernelBaseProxy::GetModuleHandleW_()(fsr2NamesW[0].c_str());
             if (handle != nullptr)
                 HookFSR2Inputs(handle);
