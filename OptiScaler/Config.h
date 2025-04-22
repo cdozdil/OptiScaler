@@ -363,7 +363,7 @@ public:
 	CustomOptional<bool> Fsr3Inputs{ true };
 	CustomOptional<bool> Fsr3Pattern{ false };
 	CustomOptional<bool> FfxInputs{ true };
-	CustomOptional<bool> EnableHotSwapping{ false };
+	CustomOptional<bool> EnableHotSwapping{ true };
 
 	// Framerate
 	CustomOptional<float> FramerateLimit{ 0.0f };
