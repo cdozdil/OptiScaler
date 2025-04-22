@@ -344,7 +344,7 @@ private:
 
             return module;
         }
-                
+
         if (CheckDllName(&lcaseLibName, &xessDx11Names))
         {
             auto module = LoadLibxessDx11(string_to_wstring(lcaseLibName)); // KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
@@ -786,7 +786,7 @@ private:
         {
             std::filesystem::path libPath(Config::Instance()->XeSSLibrary.value().c_str());
 
-            if(libPath.has_filename())
+            if (libPath.has_filename())
                 libxess = KernelBaseProxy::LoadLibraryExW_()(libPath.c_str(), NULL, 0);
             else
                 libxess = KernelBaseProxy::LoadLibraryExW_()((libPath / L"libxess.dll").c_str(), NULL, 0);
@@ -827,7 +827,7 @@ private:
         {
             std::filesystem::path libPath(Config::Instance()->XeSSDx11Library.value().c_str());
 
-            if(libPath.has_filename())
+            if (libPath.has_filename())
                 libxess = KernelBaseProxy::LoadLibraryExW_()(libPath.c_str(), NULL, 0);
             else
                 libxess = KernelBaseProxy::LoadLibraryExW_()((libPath / L"libxess_dx11.dll").c_str(), NULL, 0);
@@ -897,7 +897,7 @@ private:
 
         return nullptr;
     }
-        
+
     static HMODULE LoadFfxapiVk(std::wstring originalPath)
     {
         if (FfxApiProxy::VkModule() != nullptr)
@@ -944,25 +944,28 @@ private:
         if (lpLibrary == nullptr)
             return FALSE;
 
-        if (lpLibrary == dllModule)
+        if (!State::Instance().isShuttingDown)
         {
-            LOG_INFO("Call for OptiScaler");
-            return TRUE;
-        }
-        else if (lpLibrary == FfxApiProxy::Dx12Module())
-        {
-            LOG_INFO("Call for FFX Dx12");
-            return TRUE;
-        }
-        else if (lpLibrary == FfxApiProxy::VkModule())
-        {
-            LOG_INFO("Call for FFX Vulkan");
-            return TRUE;
-        }
-        else if (lpLibrary == XeSSProxy::Module())
-        {
-            LOG_INFO("Call for XeSS");
-            return TRUE;
+            if (lpLibrary == dllModule)
+            {
+                LOG_INFO("Call for OptiScaler");
+                return TRUE;
+            }
+            else if (lpLibrary == FfxApiProxy::Dx12Module())
+            {
+                LOG_INFO("Call for FFX Dx12");
+                return TRUE;
+            }
+            else if (lpLibrary == FfxApiProxy::VkModule())
+            {
+                LOG_INFO("Call for FFX Vulkan");
+                return TRUE;
+            }
+            else if (lpLibrary == XeSSProxy::Module())
+            {
+                LOG_INFO("Call for XeSS");
+                return TRUE;
+            }
         }
 
         return o_K32_FreeLibrary(lpLibrary);
