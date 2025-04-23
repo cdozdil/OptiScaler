@@ -53,53 +53,36 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
     xessParams.initFlags = XESS_INIT_FLAG_NONE;
 
-    bool Hdr = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
-    bool EnableSharpening = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
-    bool DepthInverted = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
-    bool JitterMotion = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
-    bool LowRes = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
-    bool AutoExposure = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
-
-    if (Config::Instance()->DepthInverted.value_or(DepthInverted))
+    if (DepthInverted())
     {
-        Config::Instance()->DepthInverted = true;
         xessParams.initFlags |= XESS_INIT_FLAG_INVERTED_DEPTH;
         LOG_DEBUG("xessParams.initFlags (DepthInverted) {0:b}", xessParams.initFlags);
     }
 
-    if (Config::Instance()->AutoExposure.value_or(AutoExposure))
+    if (AutoExposure())
     {
-        Config::Instance()->AutoExposure = true;
         xessParams.initFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
         LOG_DEBUG("xessParams.initFlags (AutoExposure) {0:b}", xessParams.initFlags);
     }
     else
     {
-        Config::Instance()->AutoExposure = false;
         xessParams.initFlags |= XESS_INIT_FLAG_EXPOSURE_SCALE_TEXTURE;
         LOG_DEBUG("xessParams.initFlags (!AutoExposure) {0:b}", xessParams.initFlags);
     }
 
-    if (!Config::Instance()->HDR.value_or(Hdr))
+    if (!IsHdr())
     {
-        Config::Instance()->HDR = false;
         xessParams.initFlags |= XESS_INIT_FLAG_LDR_INPUT_COLOR;
         LOG_DEBUG("xessParams.initFlags (!HDR) {0:b}", xessParams.initFlags);
     }
-    else
-    {
-        Config::Instance()->HDR = true;
-        LOG_DEBUG("xessParams.initFlags (HDR) {0:b}", xessParams.initFlags);
-    }
 
-    if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
+    if (JitteredMV())
     {
-        Config::Instance()->JitterCancellation = true;
         xessParams.initFlags |= XESS_INIT_FLAG_JITTERED_MV;
         LOG_DEBUG("xessParams.initFlags (JitterCancellation) {0:b}", xessParams.initFlags);
     }
 
-    if (Config::Instance()->DisplayResolution.value_or(!LowRes))
+    if (!LowResMV())
     {
         xessParams.initFlags |= XESS_INIT_FLAG_HIGH_RES_MV;
         LOG_DEBUG("xessParams.initFlags (!LowResMV) {0:b}", xessParams.initFlags);
@@ -111,7 +94,6 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
     if (!Config::Instance()->DisableReactiveMask.value_or(true))
     {
-        Config::Instance()->DisableReactiveMask = false;
         xessParams.initFlags |= XESS_INIT_FLAG_RESPONSIVE_PIXEL_MASK;
         LOG_DEBUG("xessParams.initFlags (ReactiveMaskActive) {0:b}", xessParams.initFlags);
     }
@@ -171,7 +153,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
             break;
     }
 
-    if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0))
+    if (Config::Instance()->OutputScalingEnabled.value_or(false) && LowResMV())
     {
         float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
 
@@ -201,7 +183,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
         _targetHeight = RenderHeight();
 
         // enable output scaling to restore image
-        if (!Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0))
+        if (LowResMV())
         {
             Config::Instance()->OutputScalingMultiplier = 1.0f;
             Config::Instance()->OutputScalingEnabled = true;

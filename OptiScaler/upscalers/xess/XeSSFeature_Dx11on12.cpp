@@ -39,7 +39,7 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
         if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
             InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
 
-        if (!Config::Instance()->AutoExposure.has_value())
+        if (!AutoExposure())
         {
             ID3D11Resource* paramExpo = nullptr;
             if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExpo) != NVSDK_NGX_Result_Success)
@@ -48,7 +48,7 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
             if (paramExpo == nullptr)
             {
                 LOG_WARN("ExposureTexture is not exist, enabling AutoExposure!!");
-                Config::Instance()->AutoExposure = true;
+                State::Instance().AutoExposure = true;
             }
         }
 
@@ -167,7 +167,7 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
 
     _sharpness = GetSharpness(InParameters);
 
-    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0);
+    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && LowResMV();
 
     LOG_DEBUG("Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 

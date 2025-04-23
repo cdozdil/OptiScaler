@@ -42,96 +42,28 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
     // Create flags -----------------------------
     unsigned int featureFlags = 0;
 
-    bool isHdr = false;
-    bool mvLowRes = false;
-    bool mvJittered = false;
-    bool depthInverted = false;
-    bool sharpening = false;
-    bool autoExposure = false;
-
-    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &uintValue) == NVSDK_NGX_Result_Success)
-    {
-        LOG_INFO("featureFlags {0:X}", uintValue);
-
-        isHdr = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_IsHDR);
-        mvLowRes = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
-        mvJittered = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_MVJittered);
-        depthInverted = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted);
-        sharpening = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening);
-        autoExposure = (uintValue & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure);
-    }
-
-    if (Config::Instance()->DepthInverted.value_or(depthInverted))
-    {
-        Config::Instance()->DepthInverted.set_volatile_value(true);
+    if (DepthInverted())
         featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
-        LOG_INFO("featureFlags (DepthInverted) {0:b}", featureFlags);
-    }
-    else
-    {
-        LOG_INFO("featureFlags (!DepthInverted) {0:b}", featureFlags);
-    }
 
-    if (Config::Instance()->AutoExposure.value_or(autoExposure) || State::Instance().AutoExposure.value_or(false))
-    {
-        State::Instance().AutoExposure = true;
+    if (AutoExposure())
         featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
-        LOG_INFO("featureFlags (AutoExposure) {0:b}", featureFlags);
-    }
-    else
-    {
-        LOG_INFO("featureFlags (!AutoExposure) {0:b}", featureFlags);
-    }
 
-    if (Config::Instance()->HDR.value_or(isHdr))
-    {
-        Config::Instance()->HDR.set_volatile_value(true);
+    if (IsHdr())
         featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
-        LOG_INFO("featureFlags (HDR) {0:b}", featureFlags);
-    }
-    else
-    {
-        Config::Instance()->HDR.set_volatile_value(false);
-        LOG_INFO("featureFlags (!HDR) {0:b}", featureFlags);
-    }
 
-    if (Config::Instance()->JitterCancellation.value_or(mvJittered))
-    {
-        Config::Instance()->JitterCancellation.set_volatile_value(true);
+    if (JitteredMV())
         featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
-        LOG_INFO("featureFlags (JitterCancellation) {0:b}", featureFlags);
-    }
-    else
-    {
-        Config::Instance()->JitterCancellation.set_volatile_value(false);
-        LOG_INFO("featureFlags (!JitterCancellation) {0:b}", featureFlags);
-    }
 
-    if (Config::Instance()->DisplayResolution.value_or(!mvLowRes))
-    {
-        LOG_INFO("featureFlags (!LowResMV) {0:b}", featureFlags);
-    }
-    else
-    {
+    if (LowResMV())
         featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
-        LOG_INFO("featureFlags (LowResMV) {0:b}", featureFlags);
-    }
 
-    if (Config::Instance()->OverrideSharpness.value_or(sharpening) && !(State::Instance().api == DX12 && Config::Instance()->RcasEnabled.value_or_default()))
-    {
+    if (SharpenEnabled())
         featureFlags |= NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
-        LOG_INFO("featureFlags (Sharpening) {0:b}", featureFlags);
-    }
-    else
-    {
-        LOG_INFO("featureFlags (!Sharpening) {0:b}", featureFlags);
-    }
 
     InParameters->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, featureFlags);
 
     // Resolution -----------------------------
-    if (State::Instance().api != Vulkan && Config::Instance()->OutputScalingEnabled.value_or_default() && 
-        !Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0))
+    if (State::Instance().api != Vulkan && Config::Instance()->OutputScalingEnabled.value_or_default() && LowResMV())
     {
         LOG_DEBUG("Output Scaling is active");
 
@@ -165,7 +97,7 @@ void DLSSFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
         _targetHeight = RenderHeight();
 
         // enable output scaling to restore image
-        if (!Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0))
+        if (LowResMV())
         {
             Config::Instance()->OutputScalingMultiplier.set_volatile_value(1.0f);
             Config::Instance()->OutputScalingEnabled.set_volatile_value(true);

@@ -7,12 +7,23 @@
 
 inline static unsigned int handleCounter = DLSS_MOD_ID_OFFSET;
 
+struct InitFlags
+{
+	bool IsHdr;
+	bool SharpenEnabled;
+	bool LowResMV;
+	bool AutoExposure;
+	bool DepthInverted;
+	bool JitteredMV;
+};
+
 class IFeature
 {
 private:
 	bool _initParameters = false;
 	bool _isInited = false;
 	int _featureFlags = 0;
+	InitFlags _initFlags{};
 
 	NVSDK_NGX_PerfQuality_Value _perfQualityValue;
 
@@ -74,6 +85,13 @@ public:
 	virtual const char* Name() = 0;
 	bool ModuleLoaded() const { return _moduleLoaded; }
 	long FrameCount() { return _frameCount; }
+
+	bool AutoExposure() { return _initFlags.AutoExposure; }
+	bool DepthInverted() { return _initFlags.DepthInverted; }
+	bool IsHdr() { return _initFlags.IsHdr; }
+	bool JitteredMV() { return _initFlags.JitteredMV; }
+	bool LowResMV() { return _initFlags.LowResMV; }
+	bool SharpenEnabled() { return _initFlags.SharpenEnabled; }
 
 	IFeature(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
 	{

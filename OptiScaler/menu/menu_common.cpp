@@ -853,7 +853,7 @@ static void MenuHdrCheck(ImGuiIO io)
 {
     // If game is using HDR, apply tone mapping to the ImGui style
     if (State::Instance().isHdrActive ||
-        (!Config::Instance()->OverlayMenu.value_or_default() && (State::Instance().currentFeature->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR) > 0))
+        (!Config::Instance()->OverlayMenu.value_or_default() && State::Instance().currentFeature->IsHdr()))
     {
         if (!_hdrTonemapApplied)
         {
@@ -2470,8 +2470,7 @@ bool MenuCommon::RenderMenu()
                     if (State::Instance().api == DX12 || State::Instance().api == DX11)
                     {
                         // if motion vectors are not display size
-                        ImGui::BeginDisabled(!Config::Instance()->DisplayResolution.value_or((currentFeature->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0) &&
-                                             !(State::Instance().currentFeature->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes));
+                        ImGui::BeginDisabled(!currentFeature->LowResMV());
 
                         ImGui::SeparatorText("Output Scaling");
 
@@ -2667,7 +2666,7 @@ bool MenuCommon::RenderMenu()
                     if (ImGui::BeginTable("init", 2, ImGuiTableFlags_SizingStretchSame))
                     {
                         ImGui::TableNextColumn();
-                        if (bool autoExposure = Config::Instance()->AutoExposure.value_or(false) || State::Instance().AutoExposure.value_or(false); ImGui::Checkbox("Auto Exposure", &autoExposure))
+                        if (bool autoExposure = currentFeature->AutoExposure(); ImGui::Checkbox("Auto Exposure", &autoExposure))
                         {
                             Config::Instance()->AutoExposure = autoExposure;
 
@@ -2683,7 +2682,7 @@ bool MenuCommon::RenderMenu()
                                        "Might fix colors, especially in dark areas");
 
                         ImGui::TableNextColumn();
-                        if (bool hdr = Config::Instance()->HDR.value_or(false); ImGui::Checkbox("HDR", &hdr))
+                        if (bool hdr = currentFeature->IsHdr(); ImGui::Checkbox("HDR", &hdr))
                         {
                             Config::Instance()->HDR = hdr;
 
@@ -2707,7 +2706,7 @@ bool MenuCommon::RenderMenu()
                             if (ImGui::BeginTable("init2", 2, ImGuiTableFlags_SizingStretchSame))
                             {
                                 ImGui::TableNextColumn();
-                                if (bool depth = Config::Instance()->DepthInverted.value_or(false); ImGui::Checkbox("Depth Inverted", &depth))
+                                if (bool depth = currentFeature->DepthInverted(); ImGui::Checkbox("Depth Inverted", &depth))
                                 {
                                     Config::Instance()->DepthInverted = depth;
 
@@ -2722,7 +2721,7 @@ bool MenuCommon::RenderMenu()
                                 ShowHelpMarker("You shouldn't need to change it");
 
                                 ImGui::TableNextColumn();
-                                if (bool jitter = Config::Instance()->JitterCancellation.value_or(false); ImGui::Checkbox("Jitter Cancellation", &jitter))
+                                if (bool jitter = currentFeature->JitteredMV(); ImGui::Checkbox("Jitter Cancellation", &jitter))
                                 {
                                     Config::Instance()->JitterCancellation = jitter;
 
@@ -2737,7 +2736,7 @@ bool MenuCommon::RenderMenu()
                                 ShowHelpMarker("Fix for games that send motion data with preapplied jitter");
 
                                 ImGui::TableNextColumn();
-                                if (bool mv = Config::Instance()->DisplayResolution.value_or((currentFeature->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0); ImGui::Checkbox("Display Res. MV", &mv))
+                                if (bool mv = !currentFeature->LowResMV(); ImGui::Checkbox("Display Res. MV", &mv))
                                 {
                                     Config::Instance()->DisplayResolution = mv;
 

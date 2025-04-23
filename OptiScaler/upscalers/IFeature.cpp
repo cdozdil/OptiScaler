@@ -16,7 +16,47 @@ bool IFeature::SetInitParameters(NVSDK_NGX_Parameter* InParameters)
 	unsigned int outHeight = 0;
 	int pqValue = 0;
 
-	InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &_featureFlags);
+	if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, &_featureFlags) == NVSDK_NGX_Result_Success)
+	{
+		if(Config::Instance()->HDR.has_value())
+			_initFlags.IsHdr = Config::Instance()->HDR.value();
+		else
+			_initFlags.IsHdr = _featureFlags & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
+
+		if (Config::Instance()->OverrideSharpness.has_value())
+			_initFlags.SharpenEnabled = Config::Instance()->OverrideSharpness.value();
+		else
+			_initFlags.SharpenEnabled = _featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
+		
+		if (Config::Instance()->DepthInverted.has_value())
+			_initFlags.DepthInverted = Config::Instance()->DepthInverted.value();
+		else
+			_initFlags.DepthInverted = _featureFlags & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
+		
+		if (Config::Instance()->JitterCancellation.has_value())
+			_initFlags.JitteredMV = Config::Instance()->JitterCancellation.value();
+		else
+			_initFlags.JitteredMV = _featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
+
+		if (Config::Instance()->DisplayResolution.has_value())
+			_initFlags.LowResMV = !Config::Instance()->DisplayResolution.value();
+		else
+			_initFlags.LowResMV = _featureFlags & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
+		
+		if (Config::Instance()->AutoExposure.has_value())
+			_initFlags.AutoExposure = Config::Instance()->AutoExposure.value();
+		else if (State::Instance().AutoExposure.has_value())
+			_initFlags.AutoExposure = State::Instance().AutoExposure.value();
+		else
+			_initFlags.AutoExposure = _featureFlags & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
+
+		LOG_INFO("Init Flag AutoExposure: {}", _initFlags.AutoExposure);
+		LOG_INFO("Init Flag DepthInverted: {}", _initFlags.DepthInverted);
+		LOG_INFO("Init Flag IsHdr: {}", _initFlags.IsHdr);
+		LOG_INFO("Init Flag JitteredMV: {}", _initFlags.JitteredMV);
+		LOG_INFO("Init Flag LowResMV: {}", _initFlags.LowResMV);
+		LOG_INFO("Init Flag SharpenEnabled: {}", _initFlags.SharpenEnabled);
+	}
 
 	if (InParameters->Get(NVSDK_NGX_Parameter_Width, &width) == NVSDK_NGX_Result_Success &&
 		InParameters->Get(NVSDK_NGX_Parameter_Height, &height) == NVSDK_NGX_Result_Success &&

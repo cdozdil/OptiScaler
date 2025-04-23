@@ -24,14 +24,14 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
     if (!_baseInit)
     {
         // to prevent creation dx12 device if we are going to recreate feature
-        if (!Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0))
+        if (LowResMV())
         {
             ID3D11Resource* paramVelocity = nullptr;
             if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
                 InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
         }
 
-        if (Config::Instance()->AutoExposure.value_or(false) || State::Instance().AutoExposure.value_or(false))
+        if (AutoExposure())
         {
             LOG_DEBUG("AutoExposure enabled!");
         }
@@ -153,7 +153,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
 
     GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
-    bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0);
+    bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && LowResMV();
 
     LOG_DEBUG("Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
@@ -258,7 +258,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
         params.motionVectorScale.y = MVScaleY;
     }
 
-    if (IsDepthInverted())
+    if (DepthInverted())
     {
         params.cameraFar = Config::Instance()->FsrCameraNear.value_or_default();
         params.cameraNear = Config::Instance()->FsrCameraFar.value_or_default();
@@ -506,65 +506,22 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
     _contextDesc.device = Fsr212::ffxGetDeviceDX12_212(Dx12Device);
     _contextDesc.flags = 0;
 
-    bool Hdr = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
-    bool EnableSharpening = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
-    bool DepthInverted = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
-    bool JitterMotion = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
-    bool LowRes = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
-    bool AutoExposure = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
-
-    if (Config::Instance()->DepthInverted.value_or(DepthInverted))
-    {
-        Config::Instance()->DepthInverted.set_volatile_value(true);
+    if (DepthInverted())
         _contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_DEPTH_INVERTED;
-        SetDepthInverted(true);
-        LOG_INFO("contextDesc.initFlags (DepthInverted) {0:b}", _contextDesc.flags);
-    }
-    else
-        Config::Instance()->DepthInverted.set_volatile_value(false);
 
-    if (Config::Instance()->AutoExposure.value_or(AutoExposure) || State::Instance().AutoExposure.value_or(false))
-    {
+    if (AutoExposure())
         _contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_AUTO_EXPOSURE;
-        LOG_INFO("contextDesc.initFlags (AutoExposure) {0:b}", _contextDesc.flags);
-    }
-    else
-    {
-        LOG_INFO("contextDesc.initFlags (!AutoExposure) {0:b}", _contextDesc.flags);
-    }
 
-    if (Config::Instance()->HDR.value_or(Hdr))
-    {
-        Config::Instance()->HDR.set_volatile_value(true);
+    if (IsHdr())
         _contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
-        LOG_INFO("contextDesc.initFlags (HDR) {0:b}", _contextDesc.flags);
-    }
-    else
-    {
-        Config::Instance()->HDR.set_volatile_value(false);
-        LOG_INFO("contextDesc.initFlags (!HDR) {0:b}", _contextDesc.flags);
-    }
 
-    if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
-    {
-        Config::Instance()->JitterCancellation.set_volatile_value(true);
+    if (JitteredMV())
         _contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
-        LOG_INFO("contextDesc.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
-    }
-    else
-        Config::Instance()->JitterCancellation.set_volatile_value(false);
 
-    if (Config::Instance()->DisplayResolution.value_or(!LowRes))
-    {
+    if (!LowResMV())
         _contextDesc.flags |= Fsr212::FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
-        LOG_INFO("contextDesc.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
-    }
-    else
-    {
-        LOG_INFO("contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
-    }
 
-    if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0))
+    if (Config::Instance()->OutputScalingEnabled.value_or_default() && LowResMV())
     {
         float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or_default();
 
@@ -597,7 +554,7 @@ bool FSR2FeatureDx11on12_212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
         Config::Instance()->OutputScalingMultiplier.set_volatile_value(1.0f);
 
         // if output scaling active let it to handle downsampling
-        if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0))
+        if (Config::Instance()->OutputScalingEnabled.value_or_default() && LowResMV())
         {
             _contextDesc.displaySize.width = _contextDesc.maxRenderSize.width;
             _contextDesc.displaySize.height = _contextDesc.maxRenderSize.height;

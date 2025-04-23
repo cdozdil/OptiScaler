@@ -497,7 +497,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         LOG_ERROR("IFeature_Dx11wDx12::Evaluate Depth not exist!!");
 
     ID3D11Resource* paramExposure = nullptr;
-    if (Config::Instance()->AutoExposure.value_or(false) || State::Instance().AutoExposure.value_or(false))
+    if (AutoExposure())
     {
         LOG_DEBUG("AutoExposure enabled!");
     }
@@ -716,7 +716,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         dx11Depth.Dx12Handle = dx11Depth.Dx11Handle;
     }
 
-    if (Config::Instance()->AutoExposure.value_or(false) || State::Instance().AutoExposure.value_or(false))
+    if (AutoExposure())
     {
         LOG_DEBUG("AutoExposure enabled!");
     }

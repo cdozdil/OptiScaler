@@ -139,7 +139,7 @@ bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_
         ID3D11Resource* paramMotion = nullptr;
         ID3D11Resource* setBuffer = nullptr;
 
-        bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0);
+        bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && LowResMV();
 
         InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput);
         InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramMotion);

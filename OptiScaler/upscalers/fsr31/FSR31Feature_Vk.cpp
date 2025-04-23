@@ -166,66 +166,24 @@ bool FSR31FeatureVk::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     _contextDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE;
     _contextDesc.fpMessage = FfxLogCallback;
 
-    bool Hdr = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
-    bool EnableSharpening = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
-    bool DepthInverted = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
-    bool JitterMotion = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
-    bool LowRes = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
-    bool AutoExposure = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
-
-    _contextDesc.flags = 0;
+#ifdef _DEBUG
     _contextDesc.flags |= FFX_UPSCALE_ENABLE_DEBUG_CHECKING;
+#endif
 
-    if (Config::Instance()->DepthInverted.value_or(DepthInverted))
-    {
-        Config::Instance()->DepthInverted.set_volatile_value(true);
+    if (DepthInverted())
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_DEPTH_INVERTED;
-        SetDepthInverted(true);
-        LOG_INFO("contextDesc.initFlags (DepthInverted) {0:b}", _contextDesc.flags);
-    }
-    else
-        Config::Instance()->DepthInverted.set_volatile_value(false);
 
-    if (Config::Instance()->AutoExposure.value_or(AutoExposure) || State::Instance().AutoExposure.value_or(false))
-    {
+    if (AutoExposure())
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_AUTO_EXPOSURE;
-        LOG_INFO("contextDesc.initFlags (AutoExposure) {0:b}", _contextDesc.flags);
-    }
-    else
-    {
-        LOG_INFO("contextDesc.initFlags (!AutoExposure) {0:b}", _contextDesc.flags);
-    }
 
-    if (Config::Instance()->HDR.value_or(Hdr))
-    {
-        Config::Instance()->HDR.set_volatile_value(true);
+    if (IsHdr())
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_HIGH_DYNAMIC_RANGE;
-        LOG_INFO("contextDesc.initFlags (HDR) {0:b}", _contextDesc.flags);
-    }
-    else
-    {
-        Config::Instance()->HDR.set_volatile_value(false);
-        LOG_INFO("contextDesc.initFlags (!HDR) {0:b}", _contextDesc.flags);
-    }
 
-    if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
-    {
-        Config::Instance()->JitterCancellation.set_volatile_value(true);
+    if (JitteredMV())
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
-        LOG_INFO("FSR31FeatureVk::InitFSR2 contextDesc.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
-    }
-    else
-        Config::Instance()->JitterCancellation.set_volatile_value(false);
 
-    if (Config::Instance()->DisplayResolution.value_or(!LowRes))
-    {
+    if (!LowResMV())
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
-        LOG_INFO("contextDesc.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
-    }
-    else
-    {
-        LOG_INFO("contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
-    }
 
     if (Config::Instance()->FsrNonLinearPQ.value_or_default() || Config::Instance()->FsrNonLinearSRGB.value_or_default())
     {
@@ -403,7 +361,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     }
 
     void* paramExp = nullptr;
-    if (Config::Instance()->AutoExposure.value_or(false) || State::Instance().AutoExposure.value_or(false))
+    if (AutoExposure())
     {
         LOG_DEBUG("AutoExposure enabled!");
     }
@@ -512,7 +470,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         }
     }
 
-    if (IsDepthInverted())
+    if (DepthInverted())
     {
         params.cameraFar = Config::Instance()->FsrCameraNear.value_or_default();
         params.cameraNear = Config::Instance()->FsrCameraFar.value_or_default();
