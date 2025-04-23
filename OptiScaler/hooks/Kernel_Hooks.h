@@ -1231,7 +1231,7 @@ private:
         }
 
 #if _DEBUG
-        LOG_DEBUG("{}", lcaseLibName);
+        LOG_TRACE("{}", lcaseLibName);
 #endif
         auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
 

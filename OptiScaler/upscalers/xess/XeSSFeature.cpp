@@ -54,43 +54,21 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     xessParams.initFlags = XESS_INIT_FLAG_NONE;
 
     if (DepthInverted())
-    {
         xessParams.initFlags |= XESS_INIT_FLAG_INVERTED_DEPTH;
-        LOG_DEBUG("xessParams.initFlags (DepthInverted) {0:b}", xessParams.initFlags);
-    }
 
     if (AutoExposure())
-    {
         xessParams.initFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
-        LOG_DEBUG("xessParams.initFlags (AutoExposure) {0:b}", xessParams.initFlags);
-    }
     else
-    {
         xessParams.initFlags |= XESS_INIT_FLAG_EXPOSURE_SCALE_TEXTURE;
-        LOG_DEBUG("xessParams.initFlags (!AutoExposure) {0:b}", xessParams.initFlags);
-    }
 
     if (!IsHdr())
-    {
         xessParams.initFlags |= XESS_INIT_FLAG_LDR_INPUT_COLOR;
-        LOG_DEBUG("xessParams.initFlags (!HDR) {0:b}", xessParams.initFlags);
-    }
 
     if (JitteredMV())
-    {
         xessParams.initFlags |= XESS_INIT_FLAG_JITTERED_MV;
-        LOG_DEBUG("xessParams.initFlags (JitterCancellation) {0:b}", xessParams.initFlags);
-    }
 
     if (!LowResMV())
-    {
         xessParams.initFlags |= XESS_INIT_FLAG_HIGH_RES_MV;
-        LOG_DEBUG("xessParams.initFlags (!LowResMV) {0:b}", xessParams.initFlags);
-    }
-    else
-    {
-        LOG_DEBUG("xessParams.initFlags (LowResMV) {0:b}", xessParams.initFlags);
-    }
 
     if (!Config::Instance()->DisableReactiveMask.value_or(true))
     {

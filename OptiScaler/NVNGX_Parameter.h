@@ -836,7 +836,7 @@ private:
 
         if (k == m_values.end())
         {
-            LOG_DEBUG("('{0}', FAIL)", key);
+            LOG_TRACE("('{0}', FAIL)", key);
             return NVSDK_NGX_Result_Fail;
         };
 
