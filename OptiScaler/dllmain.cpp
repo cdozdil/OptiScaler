@@ -674,10 +674,14 @@ static void CheckQuirks()
 {
     auto exePathFilename = Util::ExePath().filename().string();
 
+    State::Instance().GameExe = exePathFilename;
+    State::Instance().GameName = wstring_to_string(Util::GetExeProductName());
+
     for (size_t i = 0; i < exePathFilename.size(); i++)
         exePathFilename[i] = std::tolower(exePathFilename[i]);
 
     LOG_INFO("Game's Exe: {0}", exePathFilename);
+    LOG_INFO("Game Name: {0}", State::Instance().GameName);
 
     if (exePathFilename == "cyberpunk2077.exe") {
         State::Instance().gameQuirk = Cyberpunk;
@@ -851,6 +855,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 spdlog::info("Windows version: {} ({}.{}.{})", Util::GetWindowsName(winVer), winVer.dwMajorVersion, winVer.dwMinorVersion, winVer.dwBuildNumber, winVer.dwPlatformId);
             else
                 spdlog::warn("Can't read windows version");
+            
             spdlog::info("");
             CheckQuirks();
              

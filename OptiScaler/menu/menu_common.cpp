@@ -23,6 +23,7 @@ static bool inputFps = false;
 static bool inputFpsCycle = false;
 static bool hasGamepad = false;
 static bool fsr31InitTried = false;
+static std::string windowTitle;
 
 void MenuCommon::ShowTooltip(const char* tip) {
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -1123,7 +1124,7 @@ bool MenuCommon::RenderMenu()
             else
             {
                 if (currentFeature != nullptr)
-                    ImGui::Text("%s | FPS: %5.1f, Avg: %5.1f | %s -> %s %d.%d.%d", api.c_str(), frameRate, 1000.0f / averageFrameTime, State::Instance().currentInputApiName.c_str(), 
+                    ImGui::Text("%s | FPS: %5.1f, Avg: %5.1f | %s -> %s %d.%d.%d", api.c_str(), frameRate, 1000.0f / averageFrameTime, State::Instance().currentInputApiName.c_str(),
                                 currentFeature->Name(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
                 else
                     ImGui::Text("%s | FPS: %5.1f, Avg: %5.1f", api.c_str(), frameRate, 1000.0f / averageFrameTime);
@@ -1284,7 +1285,10 @@ bool MenuCommon::RenderMenu()
         ImGui::SetNextWindowSize(size);
 
         // Main menu window
-        if (ImGui::Begin(VER_PRODUCT_NAME, NULL, flags))
+        if (windowTitle.empty())
+            windowTitle = std::format("{} - {} {}", VER_PRODUCT_NAME, State::Instance().GameExe, State::Instance().GameName.empty() ? "" : std::format("- {}", State::Instance().GameName));
+
+        if (ImGui::Begin(windowTitle.c_str(), NULL, flags))
         {
             bool rcasEnabled = false;
 

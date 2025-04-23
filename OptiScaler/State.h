@@ -41,7 +41,9 @@ public:
         return instance;
     }
 
-    // Init flags
+    std::string GameName;
+    std::string GameExe;
+
     // Used per feature
     // Reseting on creation of new feature
     std::optional<bool> AutoExposure;
@@ -116,8 +118,8 @@ public:
     bool skipDxgiLoadChecks = false;
 
     // FSR3.x
-    std::vector<const char*> fsr3xVersionNames;
-    std::vector<uint64_t> fsr3xVersionIds;
+    std::vector<const char*> fsr3xVersionNames{};
+    std::vector<uint64_t> fsr3xVersionIds{};
 
     // Linux check
     bool isRunningOnLinux = false;

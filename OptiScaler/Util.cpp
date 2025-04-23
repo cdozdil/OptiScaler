@@ -1,4 +1,5 @@
 #include "pch.h"
+
 #include "Util.h"
 #include "Config.h"
 
@@ -7,6 +8,29 @@
 extern HMODULE dllModule;
 
 typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
+typedef DWORD(*PFN_GetFileVersionInfoSizeW)(LPCWSTR lptstrFilename, LPDWORD lpdwHandle);
+typedef BOOL(*PFN_GetFileVersionInfoW)(LPCWSTR lptstrFilename, DWORD dwHandle, DWORD dwLen, LPVOID lpData);
+typedef BOOL(*PFN_VerQueryValueW)(LPCVOID pBlock, LPCWSTR lpSubBlock, LPVOID* lplpBuffer, PUINT puLen);
+
+std::wstring Util::GetWindowTitle(HWND hwnd)
+{
+    const int maxLength = 512;
+    wchar_t buffer[maxLength] = { 0 };
+
+    // First, check if the window is valid and visible
+    if (!IsWindow(hwnd) || !IsWindowVisible(hwnd))
+        return L"";
+
+    // Try to get the text using SendMessageTimeout to avoid hanging
+    LRESULT result = 0;
+    if (SendMessageTimeoutW(hwnd, WM_GETTEXT, (WPARAM)maxLength, (LPARAM)buffer,
+        SMTO_ABORTIFHUNG | SMTO_BLOCK, 2, (PDWORD_PTR)&result) != 0)
+    {
+        return std::wstring(buffer);
+    }
+
+    return L"";
+}
 
 bool Util::GetRealWindowsVersion(OSVERSIONINFOW& osInfo)
 {
@@ -48,6 +72,55 @@ std::string Util::GetWindowsName(const OSVERSIONINFOW& os)
         return "Windows XP";
 
     return "Unknown Windows Version";
+}
+
+std::wstring Util::GetExeProductName()
+{
+    // In case of working ag version.dll
+    // Loading original dll from system
+
+    wchar_t sysFolder[MAX_PATH];
+    GetSystemDirectory(sysFolder, MAX_PATH);
+    std::filesystem::path sysPath(sysFolder);
+
+    auto dll = LoadLibraryExW((sysPath / L"version.dll").c_str(), NULL, 0);
+
+    if (dll == nullptr)
+        return L"";
+
+    auto o_GetFileVersionInfoSizeW = (PFN_GetFileVersionInfoSizeW)GetProcAddress(dll, "GetFileVersionInfoSizeW");
+    auto o_GetFileVersionInfoW = (PFN_GetFileVersionInfoW)GetProcAddress(dll, "GetFileVersionInfoW");
+    auto o_VerQueryValueW = (PFN_VerQueryValueW)GetProcAddress(dll, "VerQueryValueW");
+
+    if (o_GetFileVersionInfoSizeW == nullptr || o_GetFileVersionInfoW == nullptr || o_VerQueryValueW == nullptr)
+        return L"";
+
+    DWORD handle = 0;
+    DWORD versionSize = o_GetFileVersionInfoSizeW(Util::ExePath().c_str(), &handle);
+    if (versionSize == 0) 
+        return L"";
+
+    std::vector<BYTE> versionData(versionSize);
+    if (!o_GetFileVersionInfoW(Util::ExePath().c_str(), handle, versionSize, versionData.data()))
+        return L"";
+
+    struct LANGANDCODEPAGE 
+    {
+        WORD wLanguage;
+        WORD wCodePage;
+    } *lpTranslate;
+
+    UINT cbTranslate = 0;
+    if (!o_VerQueryValueW(versionData.data(), L"\\VarFileInfo\\Translation", (LPVOID*)&lpTranslate, &cbTranslate))
+        return L"";
+
+    std::wstring query = L"\\StringFileInfo\\" + std::format(L"{:04x}{:04x}", lpTranslate[0].wLanguage, lpTranslate[0].wCodePage) + L"\\ProductName";
+    LPWSTR productName = nullptr;
+    UINT size = 0;
+    if (o_VerQueryValueW(versionData.data(), query.c_str(), (LPVOID*)&productName, &size) && productName)
+        return productName;
+
+    return L"";
 }
 
 std::filesystem::path Util::DllPath()
@@ -161,12 +234,12 @@ HWND Util::GetProcessWindow() {
     return hwnd;
 }
 
-inline std::string LogLastError() 
+inline std::string LogLastError()
 {
     DWORD errorCode = GetLastError();
     LPWSTR errorBuffer = nullptr;
     FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                    NULL, errorCode, 0, (LPWSTR)&errorBuffer, 0, NULL);
+                  NULL, errorCode, 0, (LPWSTR)&errorBuffer, 0, NULL);
 
     std::string result;
 
@@ -185,56 +258,56 @@ inline std::string LogLastError()
 }
 
 bool Util::GetDLLVersion(std::wstring dllPath, version_t* versionOut) {
-	// Step 1: Get the size of the version information
-	DWORD handle = 0;
-	DWORD versionSize = GetFileVersionInfoSizeW(dllPath.c_str(), &handle);
+    // Step 1: Get the size of the version information
+    DWORD handle = 0;
+    DWORD versionSize = GetFileVersionInfoSizeW(dllPath.c_str(), &handle);
 
-	if (versionSize == 0)
-	{
-		//LOG_ERROR("Failed to get version info size: {0:X}", LogLastError());
-		return false;
-	}
-
-	// Step 2: Allocate buffer and get the version information
-	std::vector<BYTE> versionInfo(versionSize);
-	if (!GetFileVersionInfoW(dllPath.c_str(), handle, versionSize, versionInfo.data()))
-	{
-		//LOG_ERROR("Failed to get version info: {0:X}", LogLastError());
-		return false;
-	}
-
-	// Step 3: Extract the version information
-	VS_FIXEDFILEINFO* fileInfo = nullptr;
-	UINT size = 0;
-	if (!VerQueryValueW(versionInfo.data(), L"\\", reinterpret_cast<LPVOID*>(&fileInfo), &size)) {
-        //LOG_ERROR("Failed to query version value: {0:X}", LogLastError());
-		return false;
-	}
-
-	if (fileInfo != nullptr && versionOut != nullptr) {
-		// Extract major, minor, build, and revision numbers from version information
-		DWORD fileVersionMS = fileInfo->dwFileVersionMS;
-		DWORD fileVersionLS = fileInfo->dwFileVersionLS;
-
-		versionOut->major = (fileVersionMS >> 16) & 0xffff;
-		versionOut->minor = (fileVersionMS >> 0) & 0xffff;
-		versionOut->patch = (fileVersionLS >> 16) & 0xffff;
-		versionOut->reserved = (fileVersionLS >> 0) & 0xffff;
-	}
-	else
-	{
-		LOG_ERROR("No version information found!");
+    if (versionSize == 0)
+    {
+        //LOG_ERROR("Failed to get version info size: {0:X}", LogLastError());
         return false;
-	}
+    }
+
+    // Step 2: Allocate buffer and get the version information
+    std::vector<BYTE> versionInfo(versionSize);
+    if (!GetFileVersionInfoW(dllPath.c_str(), handle, versionSize, versionInfo.data()))
+    {
+        //LOG_ERROR("Failed to get version info: {0:X}", LogLastError());
+        return false;
+    }
+
+    // Step 3: Extract the version information
+    VS_FIXEDFILEINFO* fileInfo = nullptr;
+    UINT size = 0;
+    if (!VerQueryValueW(versionInfo.data(), L"\\", reinterpret_cast<LPVOID*>(&fileInfo), &size)) {
+        //LOG_ERROR("Failed to query version value: {0:X}", LogLastError());
+        return false;
+    }
+
+    if (fileInfo != nullptr && versionOut != nullptr) {
+        // Extract major, minor, build, and revision numbers from version information
+        DWORD fileVersionMS = fileInfo->dwFileVersionMS;
+        DWORD fileVersionLS = fileInfo->dwFileVersionLS;
+
+        versionOut->major = (fileVersionMS >> 16) & 0xffff;
+        versionOut->minor = (fileVersionMS >> 0) & 0xffff;
+        versionOut->patch = (fileVersionLS >> 16) & 0xffff;
+        versionOut->reserved = (fileVersionLS >> 0) & 0xffff;
+    }
+    else
+    {
+        LOG_ERROR("No version information found!");
+        return false;
+    }
     return true;
 }
 
 bool Util::GetDLLVersion(std::wstring dllPath, xess_version_t* xessVersionOut)
 {
-	version_t tempVersion;
-	auto result = Util::GetDLLVersion(dllPath, &tempVersion);
+    version_t tempVersion;
+    auto result = Util::GetDLLVersion(dllPath, &tempVersion);
 
-	// Don't assume that the structs are identical
+    // Don't assume that the structs are identical
     if (result) {
         xessVersionOut->major = tempVersion.major;
         xessVersionOut->minor = tempVersion.minor;
