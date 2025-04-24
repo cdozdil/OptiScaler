@@ -187,6 +187,8 @@ void DLSSDFeature::ReadVersion()
 
 DLSSDFeature::DLSSDFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
 {
+    _initParameters = SetInitParameters(InParameters);
+
     if (NVNGXProxy::NVNGXModule() == nullptr)
         NVNGXProxy::InitNVNGX();
 

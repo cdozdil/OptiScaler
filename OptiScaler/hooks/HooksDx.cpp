@@ -3374,6 +3374,8 @@ static void HookCommandList(ID3D12Device* InDevice)
     if (o_OMSetRenderTargets != nullptr)
         return;
 
+    LOG_DEBUG("");
+
     ID3D12GraphicsCommandList* commandList = nullptr;
     ID3D12CommandAllocator* commandAllocator = nullptr;
 
@@ -3463,7 +3465,7 @@ static void HookToDevice(ID3D12Device* InDevice)
     if (o_CreateSampler != nullptr || InDevice == nullptr)
         return;
 
-    LOG_FUNC();
+    LOG_DEBUG("Dx12");
 
     // Get the vtable pointer
     PVOID* pVTable = *(PVOID**)InDevice;
@@ -3523,7 +3525,7 @@ static void HookToDevice(ID3D11Device* InDevice)
     if (o_CreateSamplerState != nullptr || InDevice == nullptr)
         return;
 
-    LOG_FUNC();
+    LOG_DEBUG("Dx11");
 
     // Get the vtable pointer
     PVOID* pVTable = *(PVOID**)InDevice;

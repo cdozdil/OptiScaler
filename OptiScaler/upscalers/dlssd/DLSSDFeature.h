@@ -22,7 +22,7 @@ protected:
 
 public:
 	feature_version Version() final { return feature_version{ _version.major, _version.minor, _version.patch }; }
-	const char* Name() final { return "DLSSD"; } 
+	std::string Name() const { return "DLSSD"; }
 	void ReadVersion();
 
 	DLSSDFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters);

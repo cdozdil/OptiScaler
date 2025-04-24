@@ -10,6 +10,8 @@ private:
 protected:
 
 public:
+    std::string Name() const { return "XeSS"; }
+
     XeSSFeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters), IFeature_Dx12(InHandleId, InParameters), XeSSFeature(InHandleId, InParameters)
     {
         if (XeSSProxy::Module() == nullptr && XeSSProxy::InitXeSS())

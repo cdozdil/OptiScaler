@@ -201,14 +201,35 @@ public:
         }
     };
 
+    static void DisableServeOriginal(UINT owner)
+    {
+        if (_serveOwner == 0 || _serveOwner == owner)
+        {
+            _serveOriginal = false;
+            _skipOwner = 0;
+        }
+    };
+
+    static void EnableServeOriginal(UINT owner)
+    {
+        if (_serveOwner == 0 || _serveOwner == owner)
+        {
+            _serveOriginal = true;
+            _skipOwner = owner;
+        }
+    };
+
     static bool SkipDllChecks() { return _skipChecks; }
     static std::string SkipDllName() { return _skipDllName; }
-
+    static bool ServeOriginal() { return _serveOriginal; }
 
 private:
     inline static bool _skipChecks = false;
     inline static std::string _skipDllName = "";
     inline static UINT _skipOwner = 0;
+    
+    inline static bool _serveOriginal = false;
+    inline static UINT _serveOwner = 0;
 
     State() = default;
 };
