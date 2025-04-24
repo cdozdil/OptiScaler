@@ -43,7 +43,7 @@ protected:
 
 public:
 	feature_version Version() { return feature_version{ XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch}; }
-	const char* Name() override { return "XeSS"; }
+	std::string Name() const { return "XeSS"; }
 
 	XeSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters);
 

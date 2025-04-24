@@ -301,6 +301,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
 XeSSFeature::XeSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
 {
+    _initParameters = SetInitParameters(InParameters);
 }
 
 XeSSFeature::~XeSSFeature()

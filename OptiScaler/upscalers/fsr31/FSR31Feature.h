@@ -39,10 +39,11 @@ protected:
 
 public:
     feature_version Version() final { return _version; }
-    const char* Name() override { return _name.c_str(); }
+    std::string Name() const { return _name.c_str(); }
 
     FSR31Feature(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters)
     {
+        _initParameters = SetInitParameters(InParameters);
         _lastFrameTime = MillisecondsNow();
     }
 

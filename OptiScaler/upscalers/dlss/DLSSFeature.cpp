@@ -193,6 +193,8 @@ DLSSFeature::DLSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameter
 {
     LOG_FUNC();
 
+    _initParameters = SetInitParameters(InParameters);
+
     if (NVNGXProxy::NVNGXModule() == nullptr)
         NVNGXProxy::InitNVNGX();
 

@@ -16,7 +16,7 @@ protected:
 	bool InitFSR3(const NVSDK_NGX_Parameter* InParameters);
 
 public:
-	const char* Name() final { return "FSR3 w/Dx12"; }
+	std::string Name() const { return "FSR3 w/Dx12"; }
 
 	FSR31FeatureDx11on12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters);
 
