@@ -33,6 +33,7 @@
 //#define DETAILED_DEBUG_LOGS
 
 inline HMODULE dllModule = nullptr;
+inline HMODULE originalModule = nullptr;
 inline HMODULE skHandle = nullptr;
 inline HMODULE reshadeHandle = nullptr;
 inline DWORD processId;

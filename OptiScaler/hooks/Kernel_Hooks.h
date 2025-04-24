@@ -82,10 +82,16 @@ private:
 
         if (!State::Instance().isWorkingAsNvngx && (!State::Instance().isDxgiMode || !State::Instance().skipDxgiLoadChecks) && CheckDllName(&lcaseLibName, &dllNames))
         {
-            LOG_INFO("{0} call returning this dll!", lcaseLibName);
-            //loadCount++;
-
-            return dllModule;
+            if (!State::Instance().ServeOriginal())
+            {
+                LOG_INFO("{} call, returning this dll!", lcaseLibName);
+                return dllModule;
+            }
+            else
+            {
+                LOG_INFO("{} call, ServeOriginal active returning original dll!", lcaseLibName);
+                return originalModule;
+            }
         }
 
         // NvApi64.dll
@@ -414,12 +420,16 @@ private:
 
         if (!State::Instance().isWorkingAsNvngx && (!State::Instance().isDxgiMode || !State::Instance().skipDxgiLoadChecks) && CheckDllNameW(&lcaseLibName, &dllNamesW))
         {
-            LOG_INFO("{0} call returning this dll!", lcaseLibNameA);
-
-            //if (!dontCount)
-            //loadCount++;
-
-            return dllModule;
+            if (!State::Instance().ServeOriginal())
+            {
+                LOG_INFO("{} call, returning this dll!", lcaseLibNameA);
+                return dllModule;
+            }
+            else
+            {
+                LOG_INFO("{} call, ServeOriginal active returning original dll!", lcaseLibNameA);
+                return originalModule;
+            }
         }
 
         // nvngx_dlss
