@@ -958,22 +958,42 @@ private:
         {
             if (lpLibrary == dllModule)
             {
-                LOG_INFO("Call for OptiScaler");
+                LOG_WARN("Call for OptiScaler");
                 return TRUE;
             }
             else if (lpLibrary == FfxApiProxy::Dx12Module())
             {
-                LOG_INFO("Call for FFX Dx12");
+                LOG_WARN("Call for FFX Dx12");
                 return TRUE;
             }
             else if (lpLibrary == FfxApiProxy::VkModule())
             {
-                LOG_INFO("Call for FFX Vulkan");
+                LOG_WARN("Call for FFX Vulkan");
                 return TRUE;
             }
             else if (lpLibrary == XeSSProxy::Module())
             {
-                LOG_INFO("Call for XeSS");
+                LOG_WARN("Call for XeSS");
+                return TRUE;
+            }
+            else if (lpLibrary == DxgiProxy::Module())
+            {
+                LOG_WARN("Call for DXGI");
+                return TRUE;
+            }
+            else if (lpLibrary == D3d12Proxy::Module())
+            {
+                LOG_WARN("Call for D3D12");
+                return TRUE;
+            }
+            else if (lpLibrary == Kernel32Proxy::Module())
+            {
+                LOG_WARN("Call for Kernel32");
+                return TRUE;
+            }
+            else if (lpLibrary == KernelBaseProxy::Module())
+            {
+                LOG_WARN("Call for KernelBase");
                 return TRUE;
             }
         }
@@ -986,25 +1006,48 @@ private:
         if (lpLibrary == nullptr)
             return FALSE;
 
-        if (lpLibrary == dllModule)
+        if (!State::Instance().isShuttingDown)
         {
-            LOG_INFO("Call for OptiScaler");
-            return TRUE;
-        }
-        else if (lpLibrary == FfxApiProxy::Dx12Module())
-        {
-            LOG_INFO("Call for FFX Dx12");
-            return TRUE;
-        }
-        else if (lpLibrary == FfxApiProxy::VkModule())
-        {
-            LOG_INFO("Call for FFX Vulkan");
-            return TRUE;
-        }
-        else if (lpLibrary == XeSSProxy::Module())
-        {
-            LOG_INFO("Call for XeSS");
-            return TRUE;
+            if (lpLibrary == dllModule)
+            {
+                LOG_WARN("Call for OptiScaler");
+                return TRUE;
+            }
+            else if (lpLibrary == FfxApiProxy::Dx12Module())
+            {
+                LOG_WARN("Call for FFX Dx12");
+                return TRUE;
+            }
+            else if (lpLibrary == FfxApiProxy::VkModule())
+            {
+                LOG_WARN("Call for FFX Vulkan");
+                return TRUE;
+            }
+            else if (lpLibrary == XeSSProxy::Module())
+            {
+                LOG_WARN("Call for XeSS");
+                return TRUE;
+            }
+            else if (lpLibrary == DxgiProxy::Module())
+            {
+                LOG_WARN("Call for DXGI");
+                return TRUE;
+            }
+            else if (lpLibrary == D3d12Proxy::Module())
+            {
+                LOG_WARN("Call for D3D12");
+                return TRUE;
+            }
+            else if (lpLibrary == Kernel32Proxy::Module())
+            {
+                LOG_WARN("Call for Kernel32");
+                return TRUE;
+            }
+            else if (lpLibrary == KernelBaseProxy::Module())
+            {
+                LOG_WARN("Call for KernelBase");
+                return TRUE;
+            }
         }
 
         return o_KB_FreeLibrary(lpLibrary);
