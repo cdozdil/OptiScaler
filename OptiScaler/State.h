@@ -44,6 +44,10 @@ public:
     std::string GameName;
     std::string GameExe;
 
+    bool NvngxDx11Inited = false;
+    bool NvngxDx12Inited = false;
+    bool NvngxVkInited = false;
+
     // Used per feature
     // Reseting on creation of new feature
     std::optional<bool> AutoExposure;

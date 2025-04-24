@@ -176,6 +176,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(unsigned long long InA
     vkGetPhysicalDeviceProperties(InPD, &deviceProperties);
     HooksVk::timeStampPeriod = deviceProperties.limits.timestampPeriod;
 
+    State::Instance().NvngxVkInited = true;
+
     return NVSDK_NGX_Result_Success;
 }
 
@@ -1158,6 +1160,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
     DLSSGMod::VULKAN_Shutdown();
 
     shutdown = false;
+    State::Instance().NvngxVkInited = false;
 
     return NVSDK_NGX_Result_Success;
 }

@@ -101,6 +101,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
         InDevice->CreateQuery(&timestampQueryDesc, &HooksDx::endQueries[i]);
     }
 
+    State::Instance().NvngxDx11Inited = true;
+
     return NVSDK_NGX_Result_Success;
 }
 
@@ -215,6 +217,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown()
     //HooksDx::UnHookDx();
 
     shutdown = false;
+    State::Instance().NvngxDx11Inited = false;
 
     return NVSDK_NGX_Result_Success;
 }

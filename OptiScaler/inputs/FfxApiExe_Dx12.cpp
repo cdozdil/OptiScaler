@@ -198,18 +198,43 @@ static ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateConte
     if (!upscaleContext)
         return ffxApiResult;
 
-    NVSDK_NGX_FeatureCommonInfo fcInfo{};
-    wchar_t const** paths = new const wchar_t* [1];
-    auto dllPath = Util::DllPath().remove_filename().wstring();
-    paths[0] = dllPath.c_str();
-    fcInfo.PathListInfo.Path = paths;
-    fcInfo.PathListInfo.Length = 1;
-
-    if (!_nvnxgInited)
+    if (!State::Instance().NvngxDx12Inited)
     {
+        NVSDK_NGX_FeatureCommonInfo fcInfo{};
+
+        auto dllPath = Util::DllPath().remove_filename();
+        auto nvngxDlssPath = Util::FindFilePath(dllPath, "nvngx_dlss.dll");
+        auto nvngxDlssDPath = Util::FindFilePath(dllPath, "nvngx_dlssd.dll");
+        auto nvngxDlssGPath = Util::FindFilePath(dllPath, "nvngx_dlssg.dll");
+
+        std::vector<std::wstring> pathStorage;
+
+        pathStorage.push_back(dllPath.wstring());
+
+        if (nvngxDlssPath.has_value())
+            pathStorage.push_back(nvngxDlssPath.value().wstring());
+
+        if (nvngxDlssDPath.has_value())
+            pathStorage.push_back(nvngxDlssDPath.value().wstring());
+
+        if (nvngxDlssGPath.has_value())
+            pathStorage.push_back(nvngxDlssGPath.value().wstring());
+
+        if (Config::Instance()->DLSSFeaturePath.has_value())
+            pathStorage.push_back(Config::Instance()->DLSSFeaturePath.value());
+
+        // Build pointer array
+        wchar_t const** paths = new const wchar_t* [pathStorage.size()];
+        for (size_t i = 0; i < pathStorage.size(); ++i)
+        {
+            paths[i] = pathStorage[i].c_str();
+        }
+
+        fcInfo.PathListInfo.Path = paths;
+        fcInfo.PathListInfo.Length = (int)pathStorage.size();
 
         auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", State::Instance().NVNGX_Engine, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
-                                                            _d3d12Device, &fcInfo, State::Instance().NVNGX_Version);
+                                                            _d3d12Device, &fcInfo, State::Instance().NVNGX_Version == 0 ? NVSDK_NGX_Version_API : State::Instance().NVNGX_Version);
 
         if (nvResult != NVSDK_NGX_Result_Success)
             return FFX_API_RETURN_ERROR_RUNTIME_ERROR;

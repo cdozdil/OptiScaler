@@ -318,3 +318,48 @@ bool Util::GetDLLVersion(std::wstring dllPath, xess_version_t* xessVersionOut)
     return result;
 }
 
+std::optional<std::filesystem::path> Util::FindFilePath(const std::filesystem::path& startDir, const std::filesystem::path fileName)
+{
+    // 1) Direct check in startDir
+    std::filesystem::path candidate = startDir / fileName;
+    if (std::filesystem::exists(candidate) && std::filesystem::is_regular_file(candidate))
+    {
+        LOG_INFO("{} found at {}", fileName.string(), candidate.parent_path().string());
+        return candidate;
+    }
+
+    // 2) Recursive search under startDir
+    for (auto& entry : std::filesystem::recursive_directory_iterator(startDir, std::filesystem::directory_options::skip_permission_denied))
+    {
+        if (!entry.is_directory() && entry.path().filename() == fileName)
+        {
+            LOG_INFO("{} found at {}", fileName.string(), entry.path().parent_path().string());
+            return entry.path();
+        }
+    }
+
+    // 3) Unreal-Engine/WinGDK fallback: check for Win64 or WinGDK in parent
+    std::filesystem::path parent = startDir.parent_path().parent_path();
+    for (const char* folder : { "Win64", "WinGDK" }) 
+    {
+        if (std::filesystem::exists(parent / folder) && std::filesystem::is_directory(parent / folder))
+        {
+            // Move up two more levels from 'parent' to reach UE project root
+            std::filesystem::path ueRoot = parent.parent_path().parent_path();
+            for (auto& entry : std::filesystem::recursive_directory_iterator(ueRoot, std::filesystem::directory_options::skip_permission_denied))
+            {
+                if (!entry.is_directory() && entry.path().filename() == fileName)
+                {
+                    LOG_INFO("{} found at {}", fileName.string(), entry.path().parent_path().string());
+                    return entry.path().parent_path();
+                }
+            }
+
+            // If not found under this folder, break to avoid double-search
+            break;
+        }
+    }
+
+    // Not found anywhere
+    return std::nullopt;
+}
