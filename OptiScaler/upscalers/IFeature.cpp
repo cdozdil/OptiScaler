@@ -73,12 +73,12 @@ bool IFeature::SetInitParameters(NVSDK_NGX_Parameter* InParameters)
         if (State::Instance().AutoExposure.has_value())
         {
             LOG_INFO("AutoExposure flag overrided by OptiScaler: {}", State::Instance().AutoExposure.value());
-            _initFlags.AutoExposure = Config::Instance()->AutoExposure.value();
+            _initFlags.AutoExposure = State::Instance().AutoExposure.value();
         }
         else if (Config::Instance()->AutoExposure.has_value())
         {
             LOG_INFO("AutoExposure flag overrided by user: {}", Config::Instance()->AutoExposure.value());
-            _initFlags.AutoExposure = State::Instance().AutoExposure.value();
+            _initFlags.AutoExposure = Config::Instance()->AutoExposure.value();
         }
         else if (State::Instance().NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL && Name()[0] == 'X')
         {
