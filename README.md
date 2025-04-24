@@ -5,13 +5,15 @@
 
 <h1 align="center">
  <a href="https://discord.gg/2JDHx6kcXB">
-        <img src="https://img.shields.io/badge/DLSS2FSR%20Discord-invite?logo=discord&logoColor=white&color=5865F2" width="160">
+        <img src="https://img.shields.io/badge/DLSS2FSR%20Discord-invite?logo=discord&logoColor=white&color=5865F2" width="155">
  <a href="https://github.com/cdozdil/OptiScaler/releases/latest">
         <img src="https://img.shields.io/badge/Download-Latest-green?logo=github&logoColor=white" width="150">
  <a href="https://github.com/cdozdil/OptiScaler/commits/master">
         <img src="https://img.shields.io/github/last-commit/cdozdil/OptiScaler/master" width="140">
  <a href="https://github.com/cdozdil/OptiScaler?tab=GPL-3.0-1-ov-file#readme">
-        <img src="https://img.shields.io/github/license/cdozdil/OptiScaler" width="120">
+        <img src="https://img.shields.io/github/license/cdozdil/OptiScaler" width="125">
+ <a href="https://github.com/TheRazerMD/OptiScaler/wiki">
+        <img src="https://img.shields.io/badge/Wiki-blue?logo=mdbook" width="65">
  <a href="https://github.com/cdozdil/OptiScaler/stargazers">
         <img src="https://img.shields.io/github/stars/cdozdil/OptiScaler" width="110">
 </h1>
