@@ -24,6 +24,9 @@ static bool inputFpsCycle = false;
 static bool hasGamepad = false;
 static bool fsr31InitTried = false;
 static std::string windowTitle;
+static std::string selectedUpscalerName = "";
+static std::string currentBackend = "";
+static std::string currentBackendName = "";
 
 void MenuCommon::ShowTooltip(const char* tip) {
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -39,6 +42,32 @@ void MenuCommon::ShowHelpMarker(const char* tip)
     ImGui::SameLine();
     ImGui::TextDisabled("(?)");
     ShowTooltip(tip);
+}
+
+void MenuCommon::ShowResetButton(CustomOptional<bool, NoDefault>* initFlag, std::string buttonName)
+{
+    ImGui::SameLine();
+
+    ImGui::BeginDisabled(!initFlag->has_value());
+
+    if (ImGui::Button(buttonName.c_str()))
+    {
+        initFlag->reset();
+        ReInitUpscaler();
+    }
+
+    ImGui::EndDisabled();
+}
+
+inline void MenuCommon::ReInitUpscaler()
+{
+    if (State::Instance().currentFeature->Name() == "DLSSD")
+        State::Instance().newBackend = "dlssd";
+    else
+        State::Instance().newBackend = currentBackend;
+
+    for (auto& singleChangeBackend : State::Instance().changeBackend)
+        singleChangeBackend.second = true;
 }
 
 void MenuCommon::SeparatorWithHelpMarker(const char* label, const char* tip)
@@ -1117,7 +1146,7 @@ bool MenuCommon::RenderMenu()
             {
                 if (currentFeature != nullptr)
                     ImGui::Text("%s | FPS: %5.1f, %6.2f ms | %s -> %s %d.%d.%d", api.c_str(), frameRate, frameTime, State::Instance().currentInputApiName.c_str(),
-                                currentFeature->Name(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
+                                currentFeature->Name().c_str(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
                 else
                     ImGui::Text("%s | FPS: %5.1f, %6.2f ms", api.c_str(), frameRate, frameTime);
             }
@@ -1125,7 +1154,7 @@ bool MenuCommon::RenderMenu()
             {
                 if (currentFeature != nullptr)
                     ImGui::Text("%s | FPS: %5.1f, Avg: %5.1f | %s -> %s %d.%d.%d", api.c_str(), frameRate, 1000.0f / averageFrameTime, State::Instance().currentInputApiName.c_str(),
-                                currentFeature->Name(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
+                                currentFeature->Name().c_str(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
                 else
                     ImGui::Text("%s | FPS: %5.1f, Avg: %5.1f", api.c_str(), frameRate, 1000.0f / averageFrameTime);
             }
@@ -1297,10 +1326,6 @@ bool MenuCommon::RenderMenu()
 
             _selectedScale = ((int)(Config::Instance()->MenuScale.value() * 10.0f)) - 5;
 
-            std::string selectedUpscalerName = "";
-            std::string currentBackend = "";
-            std::string currentBackendName = "";
-
             // No active upscaler message
             if (currentFeature == nullptr || !currentFeature->IsInited())
             {
@@ -1363,7 +1388,7 @@ bool MenuCommon::RenderMenu()
                     switch (State::Instance().api)
                     {
                         case DX11:
-                            ImGui::Text("DirectX 11 %s- %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "", State::Instance().currentFeature->Name(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
+                            ImGui::Text("DirectX 11 %s- %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "", State::Instance().currentFeature->Name().c_str(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
                             ImGui::SameLine(0.0f, 6.0f);
                             ImGui::Text("Source Api: %s", State::Instance().currentInputApiName.c_str());
 
@@ -1373,7 +1398,7 @@ bool MenuCommon::RenderMenu()
                             break;
 
                         case DX12:
-                            ImGui::Text("DirectX 12 %s- %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "", State::Instance().currentFeature->Name(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
+                            ImGui::Text("DirectX 12 %s- %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "", State::Instance().currentFeature->Name().c_str(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
                             ImGui::SameLine(0.0f, 6.0f);
                             ImGui::Text("Source Api: %s", State::Instance().currentInputApiName.c_str());
 
@@ -1383,7 +1408,7 @@ bool MenuCommon::RenderMenu()
                             break;
 
                         default:
-                            ImGui::Text("Vulkan %s- %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "", State::Instance().currentFeature->Name(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
+                            ImGui::Text("Vulkan %s- %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "", State::Instance().currentFeature->Name().c_str(), State::Instance().currentFeature->Version().major, State::Instance().currentFeature->Version().minor, State::Instance().currentFeature->Version().patch);
                             ImGui::SameLine(0.0f, 6.0f);
                             ImGui::Text("Source Api: %s", State::Instance().currentInputApiName.c_str());
 
@@ -2673,15 +2698,9 @@ bool MenuCommon::RenderMenu()
                         if (bool autoExposure = currentFeature->AutoExposure(); ImGui::Checkbox("Auto Exposure", &autoExposure))
                         {
                             Config::Instance()->AutoExposure = autoExposure;
-
-                            if (State::Instance().currentFeature->Name() == "DLSSD")
-                                State::Instance().newBackend = "dlssd";
-                            else
-                                State::Instance().newBackend = currentBackend;
-
-                            for (auto& singleChangeBackend : State::Instance().changeBackend)
-                                singleChangeBackend.second = true;
+                            ReInitUpscaler();
                         }
+                        ShowResetButton(&Config::Instance()->AutoExposure, "R");
                         ShowHelpMarker("Some Unreal Engine games need this\n"
                                        "Might fix colors, especially in dark areas");
 
@@ -2689,15 +2708,9 @@ bool MenuCommon::RenderMenu()
                         if (bool hdr = currentFeature->IsHdr(); ImGui::Checkbox("HDR", &hdr))
                         {
                             Config::Instance()->HDR = hdr;
-
-                            if (State::Instance().currentFeature->Name() == "DLSSD")
-                                State::Instance().newBackend = "dlssd";
-                            else
-                                State::Instance().newBackend = currentBackend;
-
-                            for (auto& singleChangeBackend : State::Instance().changeBackend)
-                                singleChangeBackend.second = true;
+                            ReInitUpscaler();
                         }
+                        ShowResetButton(&Config::Instance()->HDR, "R##1");
                         ShowHelpMarker("Might help with purple hue in some games");
 
                         ImGui::EndTable();
@@ -2713,30 +2726,18 @@ bool MenuCommon::RenderMenu()
                                 if (bool depth = currentFeature->DepthInverted(); ImGui::Checkbox("Depth Inverted", &depth))
                                 {
                                     Config::Instance()->DepthInverted = depth;
-
-                                    if (State::Instance().currentFeature->Name() == "DLSSD")
-                                        State::Instance().newBackend = "dlssd";
-                                    else
-                                        State::Instance().newBackend = currentBackend;
-
-                                    for (auto& singleChangeBackend : State::Instance().changeBackend)
-                                        singleChangeBackend.second = true;
+                                    ReInitUpscaler();
                                 }
+                                ShowResetButton(&Config::Instance()->DepthInverted, "R##2");
                                 ShowHelpMarker("You shouldn't need to change it");
 
                                 ImGui::TableNextColumn();
                                 if (bool jitter = currentFeature->JitteredMV(); ImGui::Checkbox("Jitter Cancellation", &jitter))
                                 {
                                     Config::Instance()->JitterCancellation = jitter;
-
-                                    if (State::Instance().currentFeature->Name() == "DLSSD")
-                                        State::Instance().newBackend = "dlssd";
-                                    else
-                                        State::Instance().newBackend = currentBackend;
-
-                                    for (auto& singleChangeBackend : State::Instance().changeBackend)
-                                        singleChangeBackend.second = true;
+                                    ReInitUpscaler();
                                 }
+                                ShowResetButton(&Config::Instance()->JitterCancellation, "R##3");
                                 ShowHelpMarker("Fix for games that send motion data with preapplied jitter");
 
                                 ImGui::TableNextColumn();
@@ -2744,20 +2745,17 @@ bool MenuCommon::RenderMenu()
                                 {
                                     Config::Instance()->DisplayResolution = mv;
 
+                                    // Disable output scaling when 
+                                    // Display res MV is active
                                     if (mv)
                                     {
                                         Config::Instance()->OutputScalingEnabled = false;
                                         _ssEnabled = false;
                                     }
 
-                                    if (State::Instance().currentFeature->Name() == "DLSSD")
-                                        State::Instance().newBackend = "dlssd";
-                                    else
-                                        State::Instance().newBackend = currentBackend;
-
-                                    for (auto& singleChangeBackend : State::Instance().changeBackend)
-                                        singleChangeBackend.second = true;
+                                    ReInitUpscaler();
                                 }
+                                ShowResetButton(&Config::Instance()->DisplayResolution, "R##4");
                                 ShowHelpMarker("Mostly a fix for Unreal Engine games\n"
                                                "Top left part of the screen will be blurry");
 
