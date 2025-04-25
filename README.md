@@ -12,7 +12,7 @@
         <img src="https://img.shields.io/github/last-commit/cdozdil/OptiScaler/master" width="140">
  <a href="https://github.com/cdozdil/OptiScaler?tab=GPL-3.0-1-ov-file#readme">
         <img src="https://img.shields.io/github/license/cdozdil/OptiScaler" width="125">
- <a href="https://github.com/TheRazerMD/OptiScaler/wiki">
+ <a href="https://github.com/cdozdil/OptiScaler/wiki">
         <img src="https://img.shields.io/badge/Wiki-blue?logo=mdbook" width="65">
  <a href="https://github.com/cdozdil/OptiScaler/stargazers">
         <img src="https://img.shields.io/github/stars/cdozdil/OptiScaler" width="110">
