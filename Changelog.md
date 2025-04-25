@@ -6,7 +6,7 @@
 * Revamped init-flag handling and added buttons to reset values to their defaults
 * Added game info (executable and product name) to the in-game menu header (thanks to **IncorrectW**)
 * Changed XeSS version-checking method to prevent crashes
-* Moved FSR FOV and camera values into a collapsible section (thanks to **RazzerBrazzer**)
+* Moved FSR FOV and camera values into a collapsible section (thanks to **TheRazzerMD**)
 * Added game quirks for No Man's Sky and Minecraft
 * Simplified the `FSR4Upgrade` approach
 * Fixed a crash related to `SetFullscreenState`
@@ -30,7 +30,7 @@
 
 ## v0.7.7-pre6
 * Updated in-game menu for easier DLSS-G/OptiFG selection (thanks to **Vladzor**)
-* Added FSR3 Patten Matching for Red Dead Redemption 1 (thanks to **RazzerBrazzer**)
+* Added FSR3 Patten Matching for Red Dead Redemption 1 (thanks to **TheRazzerMD**)
 * Fixed OptiFG frame pacing (one frame wasn't rendering)
 * Added Quirk for RDR1 & updated Cp77 one to disable OptiFG
 * Fixed hangs on game boot when Mutex for Present is active (thanks to Burak)
@@ -46,7 +46,7 @@
 * Added option to enable/disable FSR2 pattern matching (thanks to **FakeMichau**)
 * Made Inputs menu options visible when no upscaler context available (thanks to **Vladzor**)
 * Fixed some issues with installer & uninstaller batch file when Nvidia is selected (thanks to **JoeGreen**)
-* Added a check to prevent crashes with FMF2 & FSR inputs (thanks to **RazzerBrazzer**)
+* Added a check to prevent crashes with FMF2 & FSR inputs (thanks to **TheRazzerMD**)
 	
 	
 ## v0.7.7-pre4
@@ -81,7 +81,7 @@
 	
 	
 ## v0.7.0-pre92
-* Added one line horizontal layout for Fps Overlay (thanks to **RazzerBrazzer** 😁)
+* Added one line horizontal layout for Fps Overlay (thanks to **TheRazzerMD** 😁)
 * Fixed gamepad interactions when Fps Overlay is visible, turns out it wasn't a bug but a feature of ImGui (thanks to **DarkH2O**)
 * Fixed Hot Wheels Unleashed split screen issue for XeSS, sadly FSR does not support it (thanks to **SuperSamus**)
 * Made in-game menu and fps overlay more stable by fixing the float value sizes
@@ -101,7 +101,7 @@
 * Fixed no menu when working with DLSS Enabler (thanks to **DarkH2O**)
 * Added option to not use camera values from FSR inputs (thanks to **Vladzor**)
 * Fixed menu UI scale selection (thanks to Od1sseas & **Vladzor**)
-* Added option to enable/disable usage of FSR inputs from menu. This allows live switching between games FSR and Opti upscaler (thanks to **RazzerBrazzer**)
+* Added option to enable/disable usage of FSR inputs from menu. This allows live switching between games FSR and Opti upscaler (thanks to **TheRazzerMD**)
 * Batch file now tries to remove all files & folders of OptiScaler
 * Added passing of reset signal from upscaler inputs to OptiFG
 * Added auto disabling of spoofing if there is no nvngx.dll in game folder
@@ -263,7 +263,7 @@ This build adds **experimental** Frame Generation support to `v0.6.8-pre4` for D
 * Crash when switching to `FSR 3.1` from in-game menu (thanks to **Melinch** & **BayuPratama**)
 * DirectX11 performance regression after upscaler time calculation (thanks to **Melinch** & **BayuPratama**)
 * A typo at menu #49 (thanks to **donizettilorenzo**)
-* Compability issue with GoW:Ragnarok #53  (thanks to **RazzerBrazzer** & **rigopoui**)
+* Compability issue with GoW:Ragnarok #53  (thanks to **TheRazzerMD** & **rigopoui**)
 * Possible crashes during resolution changes and Alt+Tab (thanks to **FakeMichau**)
 * Menu was not working with Shadow of the Tomb Raider & Rise of the Tomb Raider (thanks to **Merlinch**)
 * Wine detection error (thanks to **Lilith**)
@@ -405,7 +405,7 @@ This release aims to improve the compatibility of the new in-game menu (especial
   - In-game menu
   - RCAS sharpening (only on Dx12)
   - Output resolution scaling (only on Dx12)
-* Added **new in-game menu** which works on all APIs and does not affected by games rendering pipeline. In case of compatibility issues (or for nostalgia 😅 ) old menu still can be enabled by setting `OverlayMenu=false` from `nvngx.ini` (Thanks to **RazzerBrazzer**, **regar** **DARKERthanDA**, **Brutale1090**, **iamnotstanley** and **Od1sseas** for all the testing). 
+* Added **new in-game menu** which works on all APIs and does not affected by games rendering pipeline. In case of compatibility issues (or for nostalgia 😅 ) old menu still can be enabled by setting `OverlayMenu=false` from `nvngx.ini` (Thanks to **TheRazzerMD**, **regar** **DARKERthanDA**, **Brutale1090**, **iamnotstanley** and **Od1sseas** for all the testing). 
 * Added `Motion Sharpening` option, which increases sharpening amount of pixels based on their motion. (RCAS only) (Thanks to **Od1sseas**)
 * Added option to select RCAS for FSR upscalers (Dx12 and Dx11 with Dx12 only)
 * Added an option to round internal resolution to desired number
@@ -422,7 +422,7 @@ This release aims to improve the compatibility of the new in-game menu (especial
 **Fixed**
 * Sometimes DLSS upscaler had wrong motion vectors setup, now fixed (Thanks to **DARKERthanDA**)
 * Some games were not releasing the mouse, now they should be fixed. (Cyberpunk 2077, Horizon Zero Dawn, etc.) 
-* Some games were not registering mouse clicks, now they should be fixed. (Doom Eternal) (Thanks to **RazzerBrazzer**)
+* Some games were not registering mouse clicks, now they should be fixed. (Doom Eternal) (Thanks to **TheRazzerMD**)
 * Dx11 XeSS libxess.dll not found fallback fixed
 * Added controls for junk Vulkan DLSS init data and prevent crashes
 * Added SDK version checks for logging options
@@ -438,7 +438,7 @@ Changed
 
 ## v0.4.2 (Release)
 New:
-* XeSS now have a new parameter `CreateHeaps` (default **true**). When it's enabled OptiScaler internally create heap objects and bind them instead of relying XeSS to create them. This fixes Guardians of the Galaxy black screen with XeSS issue. (Thanks to **RazzerBrazzer**)
+* XeSS now have a new parameter `CreateHeaps` (default **true**). When it's enabled OptiScaler internally create heap objects and bind them instead of relying XeSS to create them. This fixes Guardians of the Galaxy black screen with XeSS issue. (Thanks to **TheRazzerMD**)
 
 # OptiScaler 
 
@@ -446,7 +446,7 @@ New:
 Mod renamed to **OptiScaler**
 
 Fixed:
-* Crysis 3 Remastered showing black screen w/Dx12 backends on non-Arc GPUs fixed. (Thanks to **closesim** & **RazzerBrazzer**)
+* Crysis 3 Remastered showing black screen w/Dx12 backends on non-Arc GPUs fixed. (Thanks to **closesim** & **TheRazzerMD**)
 
 Changed:
 * Dx11wDx12 backends had a few seconds worth of delays to ensure stability and compatibility. After the improvements made in v0.4 release looks like these delays aren't necessary anymore. For compatiblity sake I have added a new parameter `UseDelayedInit` (default **false**) for enabling these delays again.
