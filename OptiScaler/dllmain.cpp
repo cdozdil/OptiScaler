@@ -535,7 +535,6 @@ static void CheckWorkingMode()
             }
 
             // DirectX 11
-            HMODULE d3d11Module = nullptr;
             d3d11Module = KernelBaseProxy::GetModuleHandleW_()(L"d3d11.dll");
             if (Config::Instance()->OverlayMenu.value() && d3d11Module != nullptr)
             {
@@ -544,9 +543,7 @@ static void CheckWorkingMode()
             }
 
             // Vulkan
-            HMODULE vulkanModule = nullptr;
             vulkanModule = KernelBaseProxy::GetModuleHandleW_()(L"vulkan-1.dll");
-
             if ((State::Instance().isRunningOnDXVK || State::Instance().isRunningOnLinux) && vulkanModule == nullptr)
                 vulkanModule = KernelBaseProxy::LoadLibraryExW_()(L"vulkan-1.dll", NULL, 0);
 
@@ -637,32 +634,32 @@ static void CheckWorkingMode()
 
             // SpecialK
             if (!State::Instance().enablerAvailable && (Config::Instance()->FGType.value_or_default() != FGType::OptiFG || !Config::Instance()->OverlayMenu.value_or_default()) &&
-                skHandle == nullptr && Config::Instance()->LoadSpecialK.value_or_default())
+                skModule == nullptr && Config::Instance()->LoadSpecialK.value_or_default())
             {
                 auto skFile = Util::DllPath().parent_path() / L"SpecialK64.dll";
                 SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
                 
                 State::EnableServeOriginal(200);
-                skHandle = LoadLibraryW(skFile.c_str());
+                skModule = LoadLibraryW(skFile.c_str());
                 State::DisableServeOriginal(200);
                 
-                LOG_INFO("Loading SpecialK64.dll, result: {0:X}", (UINT64)skHandle);
+                LOG_INFO("Loading SpecialK64.dll, result: {0:X}", (UINT64)skModule);
             }
 
             // ReShade
-            if (!State::Instance().enablerAvailable && reshadeHandle == nullptr && Config::Instance()->LoadReShade.value_or_default())
+            if (!State::Instance().enablerAvailable && reshadeModule == nullptr && Config::Instance()->LoadReShade.value_or_default())
             {
                 auto rsFile = Util::DllPath().parent_path() / L"ReShade64.dll";
                 SetEnvironmentVariableW(L"RESHADE_DISABLE_LOADING_CHECK", L"1");
 
-                if (skHandle != nullptr)
+                if (skModule != nullptr)
                     SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
 
                 State::EnableServeOriginal(201);
-                reshadeHandle = LoadLibraryW(rsFile.c_str());
+                reshadeModule = LoadLibraryW(rsFile.c_str());
                 State::DisableServeOriginal(201);
 
-                LOG_INFO("Loading ReShade64.dll, result: {0:X}", (size_t)reshadeHandle);
+                LOG_INFO("Loading ReShade64.dll, result: {0:X}", (size_t)reshadeModule);
             }
 
             // Hook kernel32 methods 
@@ -974,11 +971,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             //unhookGdi32();
             //DetachHooks();
 
-            if (skHandle != nullptr)
-                KernelBaseProxy::FreeLibrary_()(skHandle);
+            if (skModule != nullptr)
+                KernelBaseProxy::FreeLibrary_()(skModule);
 
-            if (reshadeHandle != nullptr)
-                KernelBaseProxy::FreeLibrary_()(reshadeHandle);
+            if (reshadeModule != nullptr)
+                KernelBaseProxy::FreeLibrary_()(reshadeModule);
 
             spdlog::info("");
             spdlog::info("DLL_PROCESS_DETACH");

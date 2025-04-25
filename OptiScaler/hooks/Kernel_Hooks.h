@@ -996,6 +996,16 @@ private:
                 LOG_WARN("Call for KernelBase");
                 return TRUE;
             }
+            else if (lpLibrary == vulkanModule)
+            {
+                LOG_WARN("Call for Vulkan");
+                return TRUE;
+            }
+            else if (lpLibrary == d3d11Module)
+            {
+                LOG_WARN("Call for D3D11");
+                return TRUE;
+            }
         }
 
         return o_K32_FreeLibrary(lpLibrary);
@@ -1046,6 +1056,16 @@ private:
             else if (lpLibrary == KernelBaseProxy::Module())
             {
                 LOG_WARN("Call for KernelBase");
+                return TRUE;
+            }
+            else if (lpLibrary == vulkanModule)
+            {
+                LOG_WARN("Call for Vulkan");
+                return TRUE;
+            }
+            else if (lpLibrary == d3d11Module)
+            {
+                LOG_WARN("Call for D3D11");
                 return TRUE;
             }
         }

@@ -34,8 +34,10 @@
 
 inline HMODULE dllModule = nullptr;
 inline HMODULE originalModule = nullptr;
-inline HMODULE skHandle = nullptr;
-inline HMODULE reshadeHandle = nullptr;
+inline HMODULE skModule = nullptr;
+inline HMODULE reshadeModule = nullptr;
+inline HMODULE vulkanModule = nullptr;
+inline HMODULE d3d11Module = nullptr;
 inline DWORD processId;
 
 #define LOG_TRACE(msg, ...) \
