@@ -1,4 +1,6 @@
-## v0.7.7-pre9
+## Release and Build Change Log (Newest to Oldest)
+
+## v0.7.7-pre9 (Pre-Release)
 * Prevented unloading of hooked DLLs (thanks to **WickedZergling**)
 * Added path detection for `nvngx_dlss.dll`, `nvngx_dlssd.dll`, and `nvngx_dlssg.dll` for NVNGX initialization
 * Revamped init-flag handling and added buttons to reset values to their defaults
@@ -192,7 +194,7 @@
 * Fix framepacing issues (tried to keep present in order) which might help crashes with Hudfix etc
 
 
-## v0.7.0-pre66
+## v0.7.0-pre66 (Pre-Release)
 This build adds **experimental** Frame Generation support to `v0.6.8-pre4` for DLSS & XeSS supported games. 
 
 **Added**
@@ -221,7 +223,7 @@ This build adds **experimental** Frame Generation support to `v0.6.8-pre4` for D
 * Fixed ini reload logic to not overwrite user changed values
 
 
-## v0.6.8-pre4
+## v0.6.8-pre4 (Pre-Release)
 **Added**
 * `UseGenericAppIdWithDlss` for DLSS preset overriding on games like Monster Hunter Rise (thanks to @MapleHinata)  #72
 * XeSS inputs support. Now if a game supports XeSS upscaling, OptiScaler can use XeSS inputs instead of DLSS. Sadly, **Unreal XeSS Plugin does not provide a depth buffer which leads degraded visual quality.**  
@@ -236,7 +238,7 @@ This build adds **experimental** Frame Generation support to `v0.6.8-pre4` for D
 * Broken XeSS 1.2 support (thanks to **mayoringram**)
 
 
-## v0.6.7
+## v0.6.7 (Release)
 **Added**
 * **Native DirectX11 FSR 3.1.1** upscaler backend (thanks to new contributor @MapleHinata)
 * **FSR 3.1.1 libraries**
@@ -266,7 +268,7 @@ This build adds **experimental** Frame Generation support to `v0.6.8-pre4` for D
 * Menu was not working with Shadow of the Tomb Raider & Rise of the Tomb Raider (thanks to **Merlinch**)
 * Wine detection error (thanks to **Lilith**)
 
-## v0.6.6
+## v0.6.6 (Release)
 **Added**
 * `RCAS`, `Output Scaling` and `Mask Bias` options to FSR2.2 DirectX 11 backend
 * `RCAS` and  `Output Scaling`  options to DLSS DirectX 11 backend (thanks to **Sildur** for testing)
@@ -289,7 +291,7 @@ This build adds **experimental** Frame Generation support to `v0.6.8-pre4` for D
 * Can't select DLSS preset F & G from in-game menu (thanks to **Merlinch**)
 * Sending above 1.0 values to FSR's sharpener (thanks to **Rigel.**)
   
-## v0.6.5
+## v0.6.5 (Release)
 **Added**
 * **Added support for FSR 3.1.0 upscaler backends**
 * **Added support for selecting FSR 2.3.2 when using FSR 3.1.0**
@@ -339,7 +341,7 @@ This build adds **experimental** Frame Generation support to `v0.6.8-pre4` for D
 
 
 
-## v0.6.1
+## v0.6.1 (Release)
 This release aims for a more precise implementation of nvngx and bug fixes.
 
 **Added**
@@ -365,7 +367,7 @@ This release aims for a more precise implementation of nvngx and bug fixes.
 * Wrong scaling ratio reporting when using DLAA on Nvidia GPUs (thanks to **...Merlinch?**)
 
 
-## v0.6.0
+## v0.6.0 (Release)
 This release aims to improve the compatibility of the new in-game menu (especially when used with frame-gen) and add support for DLSS 3.7.
 
 ### Added
@@ -390,7 +392,7 @@ This release aims to improve the compatibility of the new in-game menu (especial
 * The structure of `nvngx.ini` has changed a bit, if your old settings are not applied, please compare with the new structure.
 
 
-## v0.5.5
+## v0.5.5 (Release)
 **Added**
 * Added DLSS upscaling support, when using DLSS with OptiScaler you will have DLSS specific;
   - Control over DLSS presets (DLSS 3.x only)
@@ -426,7 +428,7 @@ This release aims to improve the compatibility of the new in-game menu (especial
 * Added SDK version checks for logging options
 
 
-## v0.4.3
+## v0.4.3 (Release)
 New:
 * Added an in-game menu scaling option
 
@@ -434,9 +436,14 @@ Changed
 * Added new options for Dx11wDx12 creation & syncing. I have tried to explain it [here](https://github.com/cdozdil/OptiScaler/blob/master/Config.md#dx11withdx12-sync-settings). These settings are game & hw dependant so users need to tweak and find best performing configuration for their system. I have set safe and balanced values as default values.
 
 
-## v0.4.2
+## v0.4.2 (Release)
 New:
 * XeSS now have a new parameter `CreateHeaps` (default **true**). When it's enabled OptiScaler internally create heap objects and bind them instead of relying XeSS to create them. This fixes Guardians of the Galaxy black screen with XeSS issue. (Thanks to **RazzerBrazzer**)
+
+# OptiScaler 
+
+## v0.4.1 (Release)
+Mod renamed to **OptiScaler**
 
 Fixed:
 * Crysis 3 Remastered showing black screen w/Dx12 backends on non-Arc GPUs fixed. (Thanks to **closesim** & **RazzerBrazzer**)
@@ -444,7 +451,7 @@ Fixed:
 Changed:
 * Dx11wDx12 backends had a few seconds worth of delays to ensure stability and compatibility. After the improvements made in v0.4 release looks like these delays aren't necessary anymore. For compatiblity sake I have added a new parameter `UseDelayedInit` (default **false**) for enabling these delays again.
 
-## v0.4.0
+## v0.4.0 (Release)
 New:
 * Added XeSS 1.3 support and matched DLSS quality modes with XeSS quality (with v1.3 libxess.dll mod uses UltraPerformance & NativeAA modes of XeSS)
 * Added ImGui in-game menu with saving ini ability for Dx11 and Dx12 backends (shortcut key is **HOME**)
@@ -470,7 +477,7 @@ Fixes:
 * *More and more* Dx11 with Dx12 stability and performance improvements (Still not enough for Arc tho 😢 )
 * ~~Fixed washed out colors with XeSS in Alan Wake 2 & Stranger of Paradise - Final Fantasy Origin (ColorSpaceFix option in ini)~~ Thanks to [Intel](https://github.com/intel/xess/issues/19) not needed anymore
 
-## v0.3.3
+## v0.3.3 (Release)
 New:
 * Added FSR2 (2.1.2) support for DX11 (w/DX12), DX12 and Vulkan
 * Added FSR2 (2.2.1) support for DX11 (native & w/DX12 options), DX12 and Vulkan
@@ -486,7 +493,7 @@ Fixes:
 * Fixed a problem with FSR backends, init parameter MaxRenderResolution is now DisplayResolution (Fixed black screen problem with Ratchet & Clank - Rift Apart, Spiderman)
 
 
-## v0.2.0
+## v0.2.0 (Release)
 * Thanks to **Artur** much better implementation of NVNGX API now CyberXeSS is usable with his excellent [DLSS Enabler](https://www.nexusmods.com/site/mods/757)
 * Now DLSS Sharpness value is used for CAS (can be forced from ini)
 * Now DisableReactiveMask is default true for better compatibility (can be changed from ini)
@@ -497,9 +504,11 @@ Fixes:
 * Added libxess.dll to package for easy installation
 
   
-## v0.1.0
+## v0.1.0 (Release)
 * Added CAS support (Check ini file for options)
 * Added alpha Dx11 support (with possible performance & compatibility problems)
 * Added fix (ini option ColorResourceBarrier=true) for rainbow colored texture problems on AMD hardware (thanks to Nukem & LukeFZ)
 * Added logging console option (Any logging level below 2 may cause performance issues)
 * General stability improvements
+
+# CyberXeSS 
