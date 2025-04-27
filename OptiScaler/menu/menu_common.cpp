@@ -412,7 +412,7 @@ LRESULT MenuCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     if (msg == WM_KEYUP && wParam == VK_DELETE && (GetKeyState(VK_SHIFT) & 0x8000))
     {
         State::Instance().xessDebug = true;
-        return TRUE;
+        return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
     }
 
     // ImGui
@@ -420,15 +420,27 @@ LRESULT MenuCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
         {
-            LOG_TRACE("ImGui handled, hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (ULONG64)hWnd, msg, (ULONG64)wParam, (ULONG64)lParam);
-            return TRUE;
+
+            if (msg == WM_KEYUP || msg == WM_LBUTTONUP || msg == WM_RBUTTONUP || msg == WM_MBUTTONUP || msg == WM_SYSKEYUP ||
+                (msg == WM_INPUT && rawRead && rawData.header.dwType == RIM_TYPEMOUSE &&
+                (rawData.data.mouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP || rawData.data.mouse.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP ||
+                rawData.data.mouse.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP)))
+            {
+                LOG_TRACE("ImGui handled & called original, hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (ULONG64)hWnd, msg, (ULONG64)wParam, (ULONG64)lParam);
+                return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
+            }
+            else
+            {
+                LOG_TRACE("ImGui handled, hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (ULONG64)hWnd, msg, (ULONG64)wParam, (ULONG64)lParam);
+                return TRUE;
+            }
         }
 
         switch (msg)
         {
             case WM_KEYUP:
                 if (wParam != Config::Instance()->ShortcutKey.value_or_default())
-                    return TRUE;
+                    return CallWindowProc(_oWndProc, hWnd, msg, wParam, lParam);
 
                 imguiKey = ImGui_ImplWin32_VirtualKeyToImGuiKey(wParam);
                 io.AddKeyEvent(imguiKey, false);
@@ -441,7 +453,7 @@ LRESULT MenuCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
             case WM_LBUTTONUP:
                 io.AddMouseButtonEvent(0, false);
-                return TRUE;
+                break;
 
             case WM_RBUTTONDOWN:
                 io.AddMouseButtonEvent(1, true);
@@ -449,7 +461,7 @@ LRESULT MenuCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
             case WM_RBUTTONUP:
                 io.AddMouseButtonEvent(1, false);
-                return TRUE;
+                break;
 
             case WM_MBUTTONDOWN:
                 io.AddMouseButtonEvent(2, true);
@@ -457,7 +469,7 @@ LRESULT MenuCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
             case WM_MBUTTONUP:
                 io.AddMouseButtonEvent(2, false);
-                return TRUE;
+                break;
 
             case WM_LBUTTONDBLCLK:
                 io.AddMouseButtonEvent(0, true);
@@ -474,11 +486,12 @@ LRESULT MenuCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             case WM_KEYDOWN:
                 imguiKey = ImGui_ImplWin32_VirtualKeyToImGuiKey(wParam);
                 io.AddKeyEvent(imguiKey, true);
+                return TRUE;
 
+            case WM_SYSKEYUP:
                 break;
 
             case WM_SYSKEYDOWN:
-            case WM_SYSKEYUP:
             case WM_MOUSEMOVE:
             case WM_SETCURSOR:
             case WM_XBUTTONDOWN:
@@ -494,24 +507,40 @@ LRESULT MenuCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 if (rawData.header.dwType == RIM_TYPEMOUSE)
                 {
                     if (rawData.data.mouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
+                    {
                         io.AddMouseButtonEvent(0, true);
+                    }
                     else if (rawData.data.mouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP)
+                    {
                         io.AddMouseButtonEvent(0, false);
+                        break;
+                    }
                     if (rawData.data.mouse.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
+                    {
                         io.AddMouseButtonEvent(1, true);
+                    }
                     else if (rawData.data.mouse.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
+                    {
                         io.AddMouseButtonEvent(1, false);
+                        break;
+                    }
                     if (rawData.data.mouse.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
+                    {
                         io.AddMouseButtonEvent(2, true);
+                    }
                     else if (rawData.data.mouse.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP)
+                    {
                         io.AddMouseButtonEvent(2, false);
+                        break;
+                    }
 
                     if (rawData.data.mouse.usButtonFlags & RI_MOUSE_WHEEL)
                         io.AddMouseWheelEvent(0, static_cast<short>(rawData.data.mouse.usButtonData) / (float)WHEEL_DELTA);
                 }
-
                 else
+                {
                     LOG_TRACE("WM_INPUT hWnd:{0:X} msg:{1:X} wParam:{2:X} lParam:{3:X}", (ULONG64)hWnd, msg, (ULONG64)wParam, (ULONG64)lParam);
+                }
 
                 return TRUE;
 
