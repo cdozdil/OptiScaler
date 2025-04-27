@@ -303,7 +303,9 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     else
     {
         LOG_ERROR("Depth not exist!!");
-        return false;
+
+        if (LowResMV())
+            return false;
     }
 
     ID3D11Resource* paramExp = nullptr;

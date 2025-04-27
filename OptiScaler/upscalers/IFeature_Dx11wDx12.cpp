@@ -490,6 +490,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
     if (paramDepth)
     {
         LOG_DEBUG("Depth exist..");
+
         if (CopyTextureFrom11To12(paramDepth, &dx11Depth, true, true) == false)
             return false;
     }

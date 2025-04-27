@@ -357,7 +357,9 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     else
     {
         LOG_ERROR("Depth not exist!!");
-        return false;
+
+        if (LowResMV())
+            return false;
     }
 
     void* paramExp = nullptr;

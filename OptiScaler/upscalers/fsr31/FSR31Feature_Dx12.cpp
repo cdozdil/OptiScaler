@@ -209,7 +209,9 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     else
     {
         LOG_ERROR("Depth not exist!!");
-        return false;
+
+        if (LowResMV())
+            return false;
     }
 
     ID3D12Resource* paramExp = nullptr;
