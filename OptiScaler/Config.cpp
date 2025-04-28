@@ -970,14 +970,32 @@ std::optional<float> Config::readFloat(std::string section, std::string key)
 std::optional<int> Config::readInt(std::string section, std::string key)
 {
     auto value = readString(section, key);
+    if (!value.has_value())
+        return std::nullopt;
+
+    const auto& s = *value;
     try
     {
+        size_t idx = 0;
         int result;
 
-        if (value.has_value() && isInteger(value.value(), result))
-            return result;
+        // detect hex prefix
+        if (s.size() > 2
+            && (s[0] == '0')
+            && (s[1] == 'x' || s[1] == 'X'))
+        {
+            result = std::stoi(s, &idx, 16);
+        }
+        else
+        {
+            result = std::stoi(s, &idx, 10);
+        }
 
-        return std::nullopt;
+        // ensure we consumed the whole string
+        if (idx == s.size())
+            return result;
+        else
+            return std::nullopt;
     }
     catch (const std::bad_optional_access&) // missing or auto value
     {
@@ -996,14 +1014,32 @@ std::optional<int> Config::readInt(std::string section, std::string key)
 std::optional<uint32_t> Config::readUInt(std::string section, std::string key)
 {
     auto value = readString(section, key);
+    if (!value.has_value())
+        return std::nullopt;
+
+    const auto& s = *value;
     try
     {
-        uint32_t result;
+        size_t idx = 0;
+        int result;
 
-        if (value.has_value() && isUInt(value.value(), result))
+        // detect hex prefix
+        if (s.size() > 2
+            && (s[0] == '0')
+            && (s[1] == 'x' || s[1] == 'X'))
+        {
+            result = std::stoi(s, &idx, 16);
+        }
+        else
+        {
+            result = std::stoi(s, &idx, 10);
+        }
+
+        // ensure we consumed the whole string
+        if (idx == s.size())
             return result;
-
-        return std::nullopt;
+        else
+            return std::nullopt;
     }
     catch (const std::bad_optional_access&) // missing or auto value
     {
