@@ -291,6 +291,8 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
     else
         LOG_WARN("Can't get motion vector scales!");
 
+    
+
     LOG_DEBUG("Executing!!");
     xessResult = XeSSProxy::D3D12Execute()(_xessContext, InCommandList, &params);
 

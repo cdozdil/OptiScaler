@@ -88,7 +88,7 @@ inline static void hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_dev
     if (properties->vendorID != 0x1414 && !State::Instance().adapterDescs.contains(properties->vendorID | properties->deviceID))
     {
         std::string szName(properties->deviceName);
-        std::string descStr = std::format("Adapter: {}, VendorId{:#x}, DeviceId: {:#x}", szName, properties->vendorID, properties->deviceID);
+        std::string descStr = std::format("Adapter: {}, VendorId: {:#x}, DeviceId: {:#x}", szName, properties->vendorID, properties->deviceID);
         LOG_INFO("{}", descStr);
         State::Instance().adapterDescs.insert_or_assign(properties->vendorID | properties->deviceID, descStr);
     }
@@ -117,7 +117,7 @@ inline static void hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, V
     if (properties2->properties.vendorID != 0x1414 && !State::Instance().adapterDescs.contains(properties2->properties.vendorID | properties2->properties.deviceID))
     {
         std::string szName(properties2->properties.deviceName);
-        std::string descStr = std::format("Adapter: {}, VendorId{:#x}, DeviceId: {:#x}", szName, properties2->properties.vendorID, properties2->properties.deviceID);
+        std::string descStr = std::format("Adapter: {}, VendorId: {:#x}, DeviceId: {:#x}", szName, properties2->properties.vendorID, properties2->properties.deviceID);
         LOG_INFO("{}", descStr);
         State::Instance().adapterDescs.insert_or_assign(properties2->properties.vendorID | properties2->properties.deviceID, descStr);
     }
@@ -163,7 +163,7 @@ inline static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev
     if (properties2->properties.vendorID != 0x1414 && !State::Instance().adapterDescs.contains(properties2->properties.vendorID | properties2->properties.deviceID))
     {
         std::string szName(properties2->properties.deviceName);
-        std::string descStr = std::format("Adapter: {}, VendorId{:#x}, DeviceId: {:#x}", szName, properties2->properties.vendorID, properties2->properties.deviceID);
+        std::string descStr = std::format("Adapter: {}, VendorId: {:#x}, DeviceId: {:#x}", szName, properties2->properties.vendorID, properties2->properties.deviceID);
         LOG_INFO("{}", descStr);
         State::Instance().adapterDescs.insert_or_assign(properties2->properties.vendorID | properties2->properties.deviceID, descStr);
     }
