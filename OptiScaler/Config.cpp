@@ -247,6 +247,7 @@ bool Config::Reload(std::filesystem::path iniPath)
         // Hooks
         {
             HookOriginalNvngxOnly.set_from_config(readBool("Hooks", "HookOriginalNvngxOnly"));
+            EarlyHooking.set_from_config(readBool("Hooks", "EarlyHooking"));
         }
 
         // RCAS
@@ -696,6 +697,7 @@ bool Config::SaveIni()
     // Hooks
     {
         ini.SetValue("Hooks", "HookOriginalNvngxOnly", GetBoolValue(Instance()->HookOriginalNvngxOnly.value_for_config()).c_str());
+        ini.SetValue("Hooks", "EarlyHooking", GetBoolValue(Instance()->EarlyHooking.value_for_config()).c_str());
     }
 
     // CAS

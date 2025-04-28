@@ -437,12 +437,6 @@ static void CheckWorkingMode()
                 DxgiProxy::Init(originalModule);
                 dxgi.LoadOriginalLibrary(originalModule);
 
-                //if (!State::Instance().enablerAvailable && Config::Instance()->DxgiSpoofing.value_or_default())
-                //    HookDxgiForSpoofing();
-
-                //if (Config::Instance()->OverlayMenu.value())
-                //    HooksDx::HookDxgi();
-
                 State::Instance().isDxgiMode = true;
                 modeFound = true;
             }
@@ -515,6 +509,9 @@ static void CheckWorkingMode()
 
         if (!State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable)
         {
+            if (Config::Instance()->EarlyHooking.value_or_default())
+                KernelHooks::Hook();
+
             Config::Instance()->OverlayMenu.set_volatile_value((!State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable) &&
                                                                Config::Instance()->OverlayMenu.value_or_default());
 
@@ -704,7 +701,8 @@ static void CheckWorkingMode()
             }
 
             // Hook kernel32 methods 
-            KernelHooks::Hook();
+            if (!Config::Instance()->EarlyHooking.value_or_default())
+                KernelHooks::Hook();
         }
 
         return;

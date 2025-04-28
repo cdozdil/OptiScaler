@@ -199,6 +199,7 @@ public:
 
     // Hooks
     CustomOptional<bool> HookOriginalNvngxOnly{ false };
+    CustomOptional<bool> EarlyHooking{ false };
 
     // Upscale Ratio Override
     CustomOptional<bool> UpscaleRatioOverrideEnabled{ false };
