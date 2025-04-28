@@ -26,6 +26,8 @@
 #include <hooks/HooksDx.h>
 #include <hooks/HooksVk.h>
 
+#include <cwctype> 
+
 // Enables hooking of GetModuleHandle
 // which might create issues, not tested very well
 //#define HOOK_GET_MODULE
@@ -1132,7 +1134,7 @@ private:
         std::wstring lcaseLibName(libName);
 
         for (size_t i = 0; i < lcaseLibName.size(); i++)
-            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+            lcaseLibName[i] = std::towlower(lcaseLibName[i]);
 
         if (State::SkipDllChecks())
         {
@@ -1330,7 +1332,7 @@ private:
         std::wstring lcaseLibName(libName);
 
         for (size_t i = 0; i < lcaseLibName.size(); i++)
-            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+            lcaseLibName[i] = std::towlower(lcaseLibName[i]);
 
         if (State::SkipDllChecks())
         {
