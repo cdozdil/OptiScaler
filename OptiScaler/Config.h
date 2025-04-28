@@ -312,6 +312,7 @@ public:
 	CustomOptional<std::wstring> PluginPath{ L"plugins" };
 	CustomOptional<bool> LoadSpecialK{ false };
  	CustomOptional<bool> LoadReShade{ false };
+    CustomOptional<bool> LoadAsiPlugins{ true };
 
 	// Frame Generation
 	CustomOptional<FGType> FGType{ FGType::NoFG };

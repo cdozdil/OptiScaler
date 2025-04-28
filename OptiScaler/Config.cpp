@@ -410,6 +410,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             LoadSpecialK.set_from_config(readBool("Plugins", "LoadSpecialK"));
             LoadReShade.set_from_config(readBool("Plugins", "LoadReShade"));
+            LoadAsiPlugins.set_from_config(readBool("Plugins", "LoadAsiPlugins"));
         }
 
         // DLSS Enabler
@@ -817,6 +818,8 @@ bool Config::SaveIni()
         
         ini.SetValue("Plugins", "Path", wstring_to_string(Instance()->PluginPath.value_for_config_or(L"auto")).c_str());
         ini.SetValue("Plugins", "LoadSpecialK", GetBoolValue(Instance()->LoadSpecialK.value_for_config()).c_str());
+        ini.SetValue("Plugins", "LoadReShade", GetBoolValue(Instance()->LoadReShade.value_for_config()).c_str());
+        ini.SetValue("Plugins", "LoadAsiPlugins", GetBoolValue(Instance()->LoadAsiPlugins.value_for_config()).c_str());
     }
 
     // inputs

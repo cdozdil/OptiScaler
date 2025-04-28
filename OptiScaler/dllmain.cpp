@@ -29,6 +29,10 @@
 
 #include <nvapi/NvApiHooks.h>
 
+#include <cwctype> 
+
+static std::vector<HMODULE> _asiHandles;
+
 #pragma warning (disable : 4996)
 
 typedef const char* (CDECL* PFN_wine_get_version)(void);
@@ -55,6 +59,43 @@ static bool IsRunningOnWine()
 
     LOG_WARN("Wine not detected");
     return false;
+}
+
+void LoadAsiPlugins()
+{
+    std::filesystem::path pluginPath(Config::Instance()->PluginPath.value_or_default());
+    auto folderPath = pluginPath.wstring();
+
+    LOG_DEBUG("Checking {} for *.asi", pluginPath.string());
+
+    if (!std::filesystem::exists(pluginPath))
+        return;
+
+    for (const auto& entry : std::filesystem::directory_iterator(folderPath))
+    {
+        if (!entry.is_regular_file())
+            continue;
+
+        std::wstring ext = entry.path().extension().wstring();
+        std::transform(ext.begin(), ext.end(), ext.begin(),
+                       [](wchar_t c) { return std::towlower(c); });
+
+        if (ext == L".asi")
+        {
+            HMODULE hMod = KernelBaseProxy::LoadLibraryW_()(entry.path().c_str());
+
+            if (hMod != nullptr)
+            {
+                LOG_INFO("Loaded: {}", entry.path().string());
+                _asiHandles.push_back(hMod);
+            }
+            else
+            {
+                DWORD err = GetLastError();
+                LOG_ERROR("Failed to load: {}, error {:X}", entry.path().string(), err);
+            }
+        }
+    }
 }
 
 static void CheckWorkingMode()
@@ -638,11 +679,11 @@ static void CheckWorkingMode()
             {
                 auto skFile = Util::DllPath().parent_path() / L"SpecialK64.dll";
                 SetEnvironmentVariableW(L"RESHADE_DISABLE_GRAPHICS_HOOK", L"1");
-                
+
                 State::EnableServeOriginal(200);
                 skModule = LoadLibraryW(skFile.c_str());
                 State::DisableServeOriginal(200);
-                
+
                 LOG_INFO("Loading SpecialK64.dll, result: {0:X}", (UINT64)skModule);
             }
 
@@ -672,7 +713,7 @@ static void CheckWorkingMode()
     LOG_ERROR("Unsupported dll name: {0}", filename);
 }
 
-static void CheckQuirks() 
+static void CheckQuirks()
 {
     auto exePathFilename = Util::ExePath().filename().string();
 
@@ -829,7 +870,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             DisableThreadLibraryCalls(hModule);
 
             dllModule = hModule;
-            processId = GetCurrentProcessId(); 
+            processId = GetCurrentProcessId();
 
 #ifdef _DEBUG // VER_PRE_RELEASE
             // Enable file logging for pre builds
@@ -857,10 +898,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 spdlog::info("Windows version: {} ({}.{}.{})", Util::GetWindowsName(winVer), winVer.dwMajorVersion, winVer.dwMinorVersion, winVer.dwBuildNumber, winVer.dwPlatformId);
             else
                 spdlog::warn("Can't read windows version");
-            
+
             spdlog::info("");
             CheckQuirks();
-             
+
             // OptiFG & Overlay Checks
             if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG && !Config::Instance()->FGDisableOverlays.has_value())
                 Config::Instance()->FGDisableOverlays.set_volatile_value(true);
@@ -871,7 +912,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             // Init Kernel proxies
             KernelBaseProxy::Init();
             Kernel32Proxy::Init();
-            
+
             // Hook FSR4 stuff as early as possible
             spdlog::info("");
             InitFSR4Update();
@@ -889,7 +930,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             if (Config::Instance()->DLSSEnabled.value_or_default())
             {
                 spdlog::info("");
-                State::Instance().isRunningOnNvidia = isNvidia(); 
+                State::Instance().isRunningOnNvidia = isNvidia();
 
                 if (State::Instance().isRunningOnNvidia)
                 {
@@ -916,6 +957,13 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             // Check for working mode and attach hooks
             spdlog::info("");
             CheckWorkingMode();
+
+            // Asi plugins
+            if (!State::Instance().isWorkingAsNvngx && Config::Instance()->LoadAsiPlugins.value_or_default())
+            {
+                spdlog::info("");
+                LoadAsiPlugins();
+            }
 
             if (!State::Instance().nvngxExists && !Config::Instance()->DxgiSpoofing.has_value())
             {
@@ -976,6 +1024,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             if (reshadeModule != nullptr)
                 KernelBaseProxy::FreeLibrary_()(reshadeModule);
+
+            if (_asiHandles.size() > 0)
+            {
+                for (size_t i = 0; i < _asiHandles.size(); i++)
+                    KernelBaseProxy::FreeLibrary_()(_asiHandles[i]);
+            }
 
             spdlog::info("");
             spdlog::info("DLL_PROCESS_DETACH");
