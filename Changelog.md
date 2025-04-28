@@ -3,9 +3,9 @@
 ## v0.7.7-pre10
 * Enabled usage of Dilated MV's without Depth (aka UE XeSS inputs) when using FSR3.1 (and FSR4) (thanks to **hereCOMESlappy**)
 * Fixed pressedkeys getting stuck while opening menu (thanks to **peterberbec**)
-* Added support for loading ASI files from plugin folder (Needs to be tested)
-* Added custom spoofing options which gives you control over spoofed device. SpoofedVendorId & SpoofedDeviceId
-* Added custom spoofing options for selecting device(s) to be spoofed. TargetVendorId & TargetDeviceId
+* Added support for loading ASI files from plugin folder (**Needs to be tested**)
+* Added custom spoofing options which gives you control over spoofed device. `SpoofedVendorId` & `SpoofedDeviceId`
+* Added custom spoofing options for selecting device(s) to be spoofed. `TargetVendorId` & `TargetDeviceId`
 * Added hex value support for int/uint ini settings.Specially usefull for shortcut keys and device ids.
 
 ## v0.7.7-pre9 (Pre-Release)
