@@ -378,6 +378,10 @@ bool Config::Reload(std::filesystem::path iniPath)
             SpoofedGPUName.set_from_config(readWString("Spoofing", "SpoofedGPUName"));
             SpoofHAGS.set_from_config(readBool("Spoofing", "SpoofHAGS"));
             SpoofFeatureLevel.set_from_config(readBool("Spoofing", "D3DFeatureLevel"));
+            SpoofedVendorId.set_from_config(readUInt("Spoofing", "SpoofedVendorId"));
+            SpoofedDeviceId.set_from_config(readUInt("Spoofing", "SpoofedDeviceId"));
+            TargetVendorId.set_from_config(readUInt("Spoofing", "TargetVendorId"));
+            TargetDeviceId.set_from_config(readUInt("Spoofing", "TargetDeviceId"));
         }
 
         // Inputs
@@ -406,6 +410,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             LoadSpecialK.set_from_config(readBool("Plugins", "LoadSpecialK"));
             LoadReShade.set_from_config(readBool("Plugins", "LoadReShade"));
+            LoadAsiPlugins.set_from_config(readBool("Plugins", "LoadAsiPlugins"));
         }
 
         // DLSS Enabler
@@ -503,10 +508,13 @@ std::string GetBoolValue(std::optional<bool> value)
     return value.value() ? "true" : "false";
 }
 
-std::string GetIntValue(std::optional<int> value)
+std::string GetIntValue(std::optional<int> value, bool getHex = false)
 {
     if (!value.has_value())
         return "auto";
+
+    if(getHex)
+        return std::format("{:#x}", value.value());
 
     return std::to_string(value.value());
 }
@@ -673,10 +681,12 @@ bool Config::SaveIni()
     {
         ini.SetValue("Menu", "Scale", GetFloatValue(Instance()->MenuScale.value_for_config()).c_str());
         ini.SetValue("Menu", "OverlayMenu", GetBoolValue(Instance()->OverlayMenu.value_for_config()).c_str());
-        ini.SetValue("Menu", "ShortcutKey", GetIntValue(Instance()->ShortcutKey.value_for_config()).c_str());
+        ini.SetValue("Menu", "ShortcutKey", GetIntValue(Instance()->ShortcutKey.value_for_config(), true).c_str());
         ini.SetValue("Menu", "ExtendedLimits", GetBoolValue(Instance()->ExtendedLimits.value_for_config()).c_str());
         ini.SetValue("Menu", "ShowFps", GetBoolValue(Instance()->ShowFps.value_for_config()).c_str());
         ini.SetValue("Menu", "UseHQFont", GetBoolValue(Instance()->UseHQFont.value_for_config()).c_str());
+        ini.SetValue("Menu", "FpsShortcutKey", GetIntValue(Instance()->FpsShortcutKey.value_for_config(), true).c_str());
+        ini.SetValue("Menu", "FpsCycleShortcutKey", GetIntValue(Instance()->FpsCycleShortcutKey.value_for_config(), true).c_str());
         ini.SetValue("Menu", "FpsOverlayPos", GetIntValue(Instance()->FpsOverlayPos.value_for_config()).c_str());
         ini.SetValue("Menu", "FpsOverlayType", GetIntValue(Instance()->FpsOverlayType.value_for_config()).c_str());
         ini.SetValue("Menu", "FpsOverlayHorizontal", GetBoolValue(Instance()->FpsOverlayHorizontal.value_for_config()).c_str());
@@ -802,6 +812,10 @@ bool Config::SaveIni()
         ini.SetValue("Spoofing", "SpoofedGPUName", wstring_to_string(Instance()->SpoofedGPUName.value_for_config_or(L"auto")).c_str());
         ini.SetValue("Spoofing", "SpoofHAGS", GetBoolValue(Instance()->SpoofHAGS.value_for_config()).c_str());
         ini.SetValue("Spoofing", "D3DFeatureLevel", GetBoolValue(Instance()->SpoofFeatureLevel.value_for_config()).c_str());
+        ini.SetValue("Spoofing", "SpoofedVendorId", GetIntValue(Instance()->SpoofedVendorId.value_for_config(), true).c_str());
+        ini.SetValue("Spoofing", "SpoofedDeviceId", GetIntValue(Instance()->SpoofedDeviceId.value_for_config(), true).c_str());
+        ini.SetValue("Spoofing", "TargetVendorId", GetIntValue(Instance()->TargetVendorId.value_for_config(), true).c_str());
+        ini.SetValue("Spoofing", "TargetDeviceId", GetIntValue(Instance()->TargetDeviceId.value_for_config(), true).c_str());
     }
 
     // Plugins
@@ -809,6 +823,8 @@ bool Config::SaveIni()
         
         ini.SetValue("Plugins", "Path", wstring_to_string(Instance()->PluginPath.value_for_config_or(L"auto")).c_str());
         ini.SetValue("Plugins", "LoadSpecialK", GetBoolValue(Instance()->LoadSpecialK.value_for_config()).c_str());
+        ini.SetValue("Plugins", "LoadReShade", GetBoolValue(Instance()->LoadReShade.value_for_config()).c_str());
+        ini.SetValue("Plugins", "LoadAsiPlugins", GetBoolValue(Instance()->LoadAsiPlugins.value_for_config()).c_str());
     }
 
     // inputs
@@ -970,14 +986,32 @@ std::optional<float> Config::readFloat(std::string section, std::string key)
 std::optional<int> Config::readInt(std::string section, std::string key)
 {
     auto value = readString(section, key);
+    if (!value.has_value())
+        return std::nullopt;
+
+    const auto& s = *value;
     try
     {
+        size_t idx = 0;
         int result;
 
-        if (value.has_value() && isInteger(value.value(), result))
-            return result;
+        // detect hex prefix
+        if (s.size() > 2
+            && (s[0] == '0')
+            && (s[1] == 'x' || s[1] == 'X'))
+        {
+            result = std::stoi(s, &idx, 16);
+        }
+        else
+        {
+            result = std::stoi(s, &idx, 10);
+        }
 
-        return std::nullopt;
+        // ensure we consumed the whole string
+        if (idx == s.size())
+            return result;
+        else
+            return std::nullopt;
     }
     catch (const std::bad_optional_access&) // missing or auto value
     {
@@ -996,14 +1030,32 @@ std::optional<int> Config::readInt(std::string section, std::string key)
 std::optional<uint32_t> Config::readUInt(std::string section, std::string key)
 {
     auto value = readString(section, key);
+    if (!value.has_value())
+        return std::nullopt;
+
+    const auto& s = *value;
     try
     {
-        uint32_t result;
+        size_t idx = 0;
+        int result;
 
-        if (value.has_value() && isUInt(value.value(), result))
+        // detect hex prefix
+        if (s.size() > 2
+            && (s[0] == '0')
+            && (s[1] == 'x' || s[1] == 'X'))
+        {
+            result = std::stoi(s, &idx, 16);
+        }
+        else
+        {
+            result = std::stoi(s, &idx, 10);
+        }
+
+        // ensure we consumed the whole string
+        if (idx == s.size())
             return result;
-
-        return std::nullopt;
+        else
+            return std::nullopt;
     }
     catch (const std::bad_optional_access&) // missing or auto value
     {

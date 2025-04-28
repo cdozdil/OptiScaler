@@ -85,12 +85,23 @@ inline static void hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_dev
 {
     o_vkGetPhysicalDeviceProperties(physical_device, properties);
 
-    if (!State::Instance().skipSpoofing)
+    if (properties->vendorID != 0x1414 && !State::Instance().adapterDescs.contains(properties->vendorID | properties->deviceID))
+    {
+        std::string szName(properties->deviceName);
+        std::string descStr = std::format("Adapter: {}, VendorId{:#x}, DeviceId: {:#x}", szName, properties->vendorID, properties->deviceID);
+        LOG_INFO("{}", descStr);
+        State::Instance().adapterDescs.insert_or_assign(properties->vendorID | properties->deviceID, descStr);
+    }
+
+    if (!State::Instance().skipSpoofing &&
+        (!Config::Instance()->TargetVendorId.has_value() || Config::Instance()->TargetVendorId.value() == properties->vendorID) &&
+        (!Config::Instance()->TargetDeviceId.has_value() || Config::Instance()->TargetDeviceId.value() == properties->deviceID))
     {
         auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or_default());
         std::strcpy(properties->deviceName, deviceName.c_str());
-        properties->vendorID = 0x10de;
-        properties->deviceID = 0x2684;
+
+        properties->vendorID = Config::Instance()->SpoofedVendorId.value_or_default();
+        properties->deviceID = Config::Instance()->SpoofedDeviceId.value_or_default();
         properties->driverVersion = VK_MAKE_API_VERSION(999, 99, 0, 0);
     }
     else
@@ -103,27 +114,40 @@ inline static void hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, V
 {
     o_vkGetPhysicalDeviceProperties2(phys_dev, properties2);
 
-    if (!State::Instance().skipSpoofing)
+    if (properties2->properties.vendorID != 0x1414 && !State::Instance().adapterDescs.contains(properties2->properties.vendorID | properties2->properties.deviceID))
+    {
+        std::string szName(properties2->properties.deviceName);
+        std::string descStr = std::format("Adapter: {}, VendorId{:#x}, DeviceId: {:#x}", szName, properties2->properties.vendorID, properties2->properties.deviceID);
+        LOG_INFO("{}", descStr);
+        State::Instance().adapterDescs.insert_or_assign(properties2->properties.vendorID | properties2->properties.deviceID, descStr);
+    }
+
+    if (!State::Instance().skipSpoofing &&
+        (!Config::Instance()->TargetVendorId.has_value() || Config::Instance()->TargetVendorId.value() == properties2->properties.vendorID) &&
+        (!Config::Instance()->TargetDeviceId.has_value() || Config::Instance()->TargetDeviceId.value() == properties2->properties.deviceID))
     {
         auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or_default());
         std::strcpy(properties2->properties.deviceName, deviceName.c_str());
-        properties2->properties.vendorID = 0x10de;
-        properties2->properties.deviceID = 0x2684;
+        properties2->properties.vendorID = Config::Instance()->SpoofedVendorId.value_or_default();
+        properties2->properties.deviceID = Config::Instance()->SpoofedDeviceId.value_or_default();
         properties2->properties.driverVersion = VK_MAKE_API_VERSION(999, 99, 0, 0);
 
-        auto next = (VkDummyProps*)properties2->pNext;
-
-        while (next != nullptr)
+        if (Config::Instance()->SpoofedVendorId.value_or_default() == 0x10de)
         {
-            if (next->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES)
-            {
-                auto ddp = (VkPhysicalDeviceDriverProperties*)(void*)next;
-                ddp->driverID = VK_DRIVER_ID_NVIDIA_PROPRIETARY;
-                std::strcpy(ddp->driverName, "NVIDIA");
-                std::strcpy(ddp->driverInfo, "999.99");
-            }
+            auto next = (VkDummyProps*)properties2->pNext;
 
-            next = (VkDummyProps*)next->pNext;
+            while (next != nullptr)
+            {
+                if (next->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES)
+                {
+                    auto ddp = (VkPhysicalDeviceDriverProperties*)(void*)next;
+                    ddp->driverID = VK_DRIVER_ID_NVIDIA_PROPRIETARY;
+                    std::strcpy(ddp->driverName, "NVIDIA");
+                    std::strcpy(ddp->driverInfo, "999.99");
+                }
+
+                next = (VkDummyProps*)next->pNext;
+            }
         }
     }
     else
@@ -136,27 +160,40 @@ inline static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev
 {
     o_vkGetPhysicalDeviceProperties2KHR(phys_dev, properties2);
 
-    if (!State::Instance().skipSpoofing)
+    if (properties2->properties.vendorID != 0x1414 && !State::Instance().adapterDescs.contains(properties2->properties.vendorID | properties2->properties.deviceID))
+    {
+        std::string szName(properties2->properties.deviceName);
+        std::string descStr = std::format("Adapter: {}, VendorId{:#x}, DeviceId: {:#x}", szName, properties2->properties.vendorID, properties2->properties.deviceID);
+        LOG_INFO("{}", descStr);
+        State::Instance().adapterDescs.insert_or_assign(properties2->properties.vendorID | properties2->properties.deviceID, descStr);
+    }
+
+    if (!State::Instance().skipSpoofing &&
+        (!Config::Instance()->TargetVendorId.has_value() || Config::Instance()->TargetVendorId.value() == properties2->properties.vendorID) &&
+        (!Config::Instance()->TargetDeviceId.has_value() || Config::Instance()->TargetDeviceId.value() == properties2->properties.deviceID))
     {
         auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or_default());
         std::strcpy(properties2->properties.deviceName, deviceName.c_str());
-        properties2->properties.vendorID = 0x10de;
-        properties2->properties.deviceID = 0x2684;
+        properties2->properties.vendorID = Config::Instance()->SpoofedVendorId.value_or_default();
+        properties2->properties.deviceID = Config::Instance()->SpoofedDeviceId.value_or_default();
         properties2->properties.driverVersion = VK_MAKE_API_VERSION(999, 99, 0, 0);
 
-        auto next = (VkDummyProps*)properties2->pNext;
-
-        while (next != nullptr)
+        if (Config::Instance()->SpoofedVendorId.value_or_default() == 0x10de)
         {
-            if (next->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES)
-            {
-                auto ddp = (VkPhysicalDeviceDriverProperties*)(void*)next;
-                ddp->driverID = VK_DRIVER_ID_NVIDIA_PROPRIETARY;
-                std::strcpy(ddp->driverName, "NVIDIA");
-                std::strcpy(ddp->driverInfo, "999.99");
-            }
+            auto next = (VkDummyProps*)properties2->pNext;
 
-            next = (VkDummyProps*)next->pNext;
+            while (next != nullptr)
+            {
+                if (next->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES)
+                {
+                    auto ddp = (VkPhysicalDeviceDriverProperties*)(void*)next;
+                    ddp->driverID = VK_DRIVER_ID_NVIDIA_PROPRIETARY;
+                    std::strcpy(ddp->driverName, "NVIDIA");
+                    std::strcpy(ddp->driverInfo, "999.99");
+                }
+
+                next = (VkDummyProps*)next->pNext;
+            }
         }
     }
     else
