@@ -378,6 +378,10 @@ bool Config::Reload(std::filesystem::path iniPath)
             SpoofedGPUName.set_from_config(readWString("Spoofing", "SpoofedGPUName"));
             SpoofHAGS.set_from_config(readBool("Spoofing", "SpoofHAGS"));
             SpoofFeatureLevel.set_from_config(readBool("Spoofing", "D3DFeatureLevel"));
+            SpoofedVendorId.set_from_config(readUInt("Spoofing", "SpoofedVendorId"));
+            SpoofedDeviceId.set_from_config(readUInt("Spoofing", "SpoofedDeviceId"));
+            TargetVendorId.set_from_config(readUInt("Spoofing", "TargetVendorId"));
+            TargetDeviceId.set_from_config(readUInt("Spoofing", "TargetDeviceId"));
         }
 
         // Inputs
@@ -802,6 +806,10 @@ bool Config::SaveIni()
         ini.SetValue("Spoofing", "SpoofedGPUName", wstring_to_string(Instance()->SpoofedGPUName.value_for_config_or(L"auto")).c_str());
         ini.SetValue("Spoofing", "SpoofHAGS", GetBoolValue(Instance()->SpoofHAGS.value_for_config()).c_str());
         ini.SetValue("Spoofing", "D3DFeatureLevel", GetBoolValue(Instance()->SpoofFeatureLevel.value_for_config()).c_str());
+        ini.SetValue("Spoofing", "SpoofedVendorId", GetIntValue(Instance()->SpoofedVendorId.value_for_config(), true).c_str());
+        ini.SetValue("Spoofing", "SpoofedDeviceId", GetIntValue(Instance()->SpoofedDeviceId.value_for_config(), true).c_str());
+        ini.SetValue("Spoofing", "TargetVendorId", GetIntValue(Instance()->TargetVendorId.value_for_config(), true).c_str());
+        ini.SetValue("Spoofing", "TargetDeviceId", GetIntValue(Instance()->TargetDeviceId.value_for_config(), true).c_str());
     }
 
     // Plugins

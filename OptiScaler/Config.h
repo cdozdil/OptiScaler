@@ -302,6 +302,11 @@ public:
 	CustomOptional<int, NoDefault> VulkanVRAM; // disabled by default
 	CustomOptional<bool> SpoofHAGS{ false };
 	CustomOptional<bool> SpoofFeatureLevel{ false };
+    CustomOptional<uint32_t> SpoofedVendorId{ 0x10de };
+    CustomOptional<uint32_t> SpoofedDeviceId{ 0x2684 };
+    CustomOptional<uint32_t, NoDefault> TargetVendorId;
+    CustomOptional<uint32_t, NoDefault> TargetDeviceId;
+    CustomOptional<std::wstring> SpoofedGPUName{ L"NVIDIA GeForce RTX 4090" };
 
 	// Plugins
 	CustomOptional<std::wstring> PluginPath{ L"plugins" };
