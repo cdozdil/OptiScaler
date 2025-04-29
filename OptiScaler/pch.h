@@ -22,6 +22,8 @@
 #define SPDLOG_WCHAR_FILENAMES
 #include "spdlog/spdlog.h"
 
+#define BUFFER_COUNT 4
+
 // Enables logging of DLSS NV Parameters
 //#define DLSS_PARAM_DUMP
 

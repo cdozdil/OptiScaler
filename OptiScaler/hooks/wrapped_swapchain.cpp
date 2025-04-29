@@ -234,12 +234,12 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullsc
         if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
         {
 
-            if (FrameGen_Dx12::ffxMutex.getOwner() != 3)
+            if (State::Instance().currentFG->Mutex.getOwner() != 3)
             {
-                LOG_TRACE("Waiting ffxMutex 3, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
-                FrameGen_Dx12::ffxMutex.lock(3);
+                LOG_TRACE("Waiting ffxMutex 3, current: {}", State::Instance().currentFG->Mutex.getOwner());
+                State::Instance().currentFG->Mutex.lock(3);
                 ffxLock = true;
-                LOG_TRACE("Accuired ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
+                LOG_TRACE("Accuired ffxMutex: {}", State::Instance().currentFG->Mutex.getOwner());
             }
             else
             {
@@ -292,8 +292,8 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullsc
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && ffxLock)
     {
-        LOG_TRACE("Releasing ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
-        FrameGen_Dx12::ffxMutex.unlockThis(3);
+        LOG_TRACE("Releasing ffxMutex: {}", State::Instance().currentFG->Mutex.getOwner());
+        State::Instance().currentFG->Mutex.unlockThis(3);
     }
 
     return result;
@@ -322,9 +322,9 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
-        LOG_TRACE("Waiting ffxMutex 3, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
-        FrameGen_Dx12::ffxMutex.lock(3);
-        LOG_TRACE("Accuired ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
+        LOG_TRACE("Waiting ffxMutex 3, current: {}", State::Instance().currentFG->Mutex.getOwner());
+        State::Instance().currentFG->Mutex.lock(3);
+        LOG_TRACE("Accuired ffxMutex: {}", State::Instance().currentFG->Mutex.getOwner());
     }
 
     HRESULT result;
@@ -427,8 +427,8 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
-        LOG_TRACE("Releasing ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
-        FrameGen_Dx12::ffxMutex.unlockThis(3);
+        LOG_TRACE("Releasing ffxMutex: {}", State::Instance().currentFG->Mutex.getOwner());
+        State::Instance().currentFG->Mutex.unlockThis(3);
     }
 
     return result;
@@ -592,9 +592,9 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCoun
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
-        LOG_TRACE("Waiting ffxMutex 3, current: {}", FrameGen_Dx12::ffxMutex.getOwner());
-        FrameGen_Dx12::ffxMutex.lock(3);
-        LOG_TRACE("Accuired ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
+        LOG_TRACE("Waiting ffxMutex 3, current: {}", State::Instance().currentFG->Mutex.getOwner());
+        State::Instance().currentFG->Mutex.lock(3);
+        LOG_TRACE("Accuired ffxMutex: {}", State::Instance().currentFG->Mutex.getOwner());
     }
 
     HRESULT result;
@@ -694,8 +694,8 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCoun
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
-        LOG_TRACE("Releasing ffxMutex: {}", FrameGen_Dx12::ffxMutex.getOwner());
-        FrameGen_Dx12::ffxMutex.unlockThis(3);
+        LOG_TRACE("Releasing ffxMutex: {}", State::Instance().currentFG->Mutex.getOwner());
+        State::Instance().currentFG->Mutex.unlockThis(3);
     }
 
     return result;

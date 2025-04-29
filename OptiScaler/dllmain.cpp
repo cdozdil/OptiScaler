@@ -105,7 +105,7 @@ static void CheckWorkingMode()
     if (Config::Instance()->EarlyHooking.value_or_default())
     {
         KernelHooks::Hook();
-        KernelHooks::HookBase();
+        KernelHooks::HookBase(); 
     }
      
     bool modeFound = false;

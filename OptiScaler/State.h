@@ -2,6 +2,7 @@
 #include "pch.h"
 
 #include "upscalers/IFeature.h"
+#include "framegen/IFGFeature_Dx12.h"
 
 #include <deque>
 #include <vulkan/vulkan.h>
@@ -48,7 +49,6 @@ public:
     bool NvngxDx12Inited = false;
     bool NvngxVkInited = false;
 
-    // Used per feature
     // Reseting on creation of new feature
     std::optional<bool> AutoExposure;
 
@@ -165,6 +165,12 @@ public:
     bool fsrHooks = false;
 
     IFeature* currentFeature = nullptr;
+
+    IFGFeature_Dx12* currentFG = nullptr;
+    IDXGISwapChain* currentSwapchain = nullptr;
+    ID3D12Device* currentD3D12Device = nullptr;
+    ID3D11Device* currentD3D11Device = nullptr;
+    ID3D12CommandQueue* currentCommandQueue = nullptr;
 
     std::vector<ID3D12Device*> d3d12Devices;
     std::vector<ID3D11Device*> d3d11Devices;

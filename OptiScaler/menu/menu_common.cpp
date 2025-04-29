@@ -9,6 +9,8 @@
 
 #include "DLSSG_Mod.h"
 
+#include <framegen/ffx/FSRFG_Dx12.h>
+
 #include <nvapi/fakenvapi.h>
 #include <nvapi/ReflexHooks.h>
 
@@ -1731,6 +1733,31 @@ bool MenuCommon::RenderMenu()
                                 ShowHelpMarker("Use mutex to prevent desync of FG and crashes\n"
                                                "Disabling might improve the perf but decrase stability");
 
+                                bool halfSync = Config::Instance()->FGHudfixHalfSync.value_or_default();
+                                if (ImGui::Checkbox("FG Mutex Half Sync", &halfSync))
+                                {
+                                    Config::Instance()->FGHudfixHalfSync = halfSync;
+
+                                    if (halfSync)
+                                        Config::Instance()->FGHudfixFullSync = false;
+
+                                    State::Instance().FGchanged = true;
+                                }
+                                ShowHelpMarker("Release present sync mutex after presenting 1 frame");
+
+                                bool fullSync = Config::Instance()->FGHudfixFullSync.value_or_default();
+                                if (ImGui::Checkbox("FG Mutex Full Sync", &fullSync))
+                                {
+                                    Config::Instance()->FGHudfixFullSync = fullSync;
+
+                                    if (fullSync)
+                                        Config::Instance()->FGHudfixHalfSync = false;
+
+                                    State::Instance().FGchanged = true;
+
+                                }
+                                ShowHelpMarker("Release present sync mutex after presenting 2 frames");
+
                                 bool closeAfterCallback = Config::Instance()->FGHudFixCloseAfterCallback.value_or_default();
                                 if (ImGui::Checkbox("FG Close CmdList After Callback", &closeAfterCallback))
                                     Config::Instance()->FGHudFixCloseAfterCallback = closeAfterCallback;
@@ -1782,7 +1809,11 @@ bool MenuCommon::RenderMenu()
                                 ImGui::TreePop();
                             }
 
-                            if (isVersionOrBetter(FfxApiProxy::VersionDx12(), { 3, 1, 3 }))
+                            FSRFG_Dx12* fsrFG = nullptr;
+                            if (State::Instance().currentFG != nullptr)
+                                fsrFG = reinterpret_cast<FSRFG_Dx12*>(State::Instance().currentFG);
+
+                            if (fsrFG != nullptr && isVersionOrBetter(FfxApiProxy::VersionDx12(), { 3, 1, 3 }))
                             {
                                 ImGui::Spacing();
                                 if (ImGui::TreeNode("Frame Pacing Tuning"))
@@ -1791,7 +1822,7 @@ bool MenuCommon::RenderMenu()
                                     if (ImGui::Checkbox("Enable Tuning", &fptEnabled))
                                     {
                                         Config::Instance()->FGFramePacingTuning = fptEnabled;
-                                        FrameGen_Dx12::ConfigureFramePaceTuning();
+                                        fsrFG->ConfigureFramePaceTuning();
                                     }
 
                                     ImGui::BeginDisabled(!Config::Instance()->FGFramePacingTuning.value_or_default());
@@ -1832,7 +1863,7 @@ bool MenuCommon::RenderMenu()
                                     ShowHelpMarker("Allows WaitForSingleObject instead of spinning for fence value");
 
                                     if (ImGui::Button("Apply Timing Changes"))
-                                        FrameGen_Dx12::ConfigureFramePaceTuning();
+                                        fsrFG->ConfigureFramePaceTuning();
 
                                     ImGui::EndDisabled();
                                     ImGui::TreePop();
