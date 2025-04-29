@@ -1510,7 +1510,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         // Wait for present
         if (fg->Mutex.getOwner() == 2)
         {
-            LOG_WARN("Waiting for present!");
+            LOG_TRACE("Waiting for present!");
             fg->Mutex.lock(4);
             fg->Mutex.unlockThis(4);
         }

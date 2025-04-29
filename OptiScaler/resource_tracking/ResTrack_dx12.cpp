@@ -1161,22 +1161,21 @@ void ResTrack_Dx12::hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT Vertex
     if (!IsHudFixActive())
         return;
 
+    auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
+
     if (This == MenuOverlayDx::MenuCommandList() || IsFGCommandList(This))
     {
         if (!_cmdList)
-        {
-            LOG_WARN("_cmdList");
             _cmdList = true;
-        }
 
+        std::lock_guard<std::mutex> lock(hudlessMutex);
+        fgPossibleHudless[fIndex][This].clear();
 
         return;
     }
 
     {
         ankerl::unordered_dense::map<ID3D12Resource*, ResourceInfo> val0;
-        auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
-
         {
             std::lock_guard<std::mutex> lock(hudlessMutex);
 
