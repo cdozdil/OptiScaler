@@ -12,10 +12,11 @@ class FSRFG_Dx12 : public virtual IFGFeature_Dx12
 private:
     ffxContext _swapChainContext = nullptr;
     ffxContext _fgContext = nullptr;
+    ID3D12GraphicsCommandList* _dispatchCommandList = nullptr;
     
+    void GetDispatchCommandList();
 
 public:
-
     // Inherited via IFGFeature_Dx12
     UINT64 UpscaleStart() final;
     void UpscaleEnd() final;

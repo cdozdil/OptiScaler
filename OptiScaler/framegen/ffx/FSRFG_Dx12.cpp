@@ -41,6 +41,16 @@ void FSRFG_Dx12::ConfigureFramePaceTuning()
     LOG_DEBUG("HybridSpin D3D12_Configure result: {}", FfxApiProxy::ReturnCodeToString(result));
 }
 
+void FSRFG_Dx12::GetDispatchCommandList()
+{
+    ffxQueryDescFrameGenerationSwapChainInterpolationCommandListDX12 queryDesc{ 0 };
+    queryDesc.header.type = FFX_API_QUERY_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_INTERPOLATIONCOMMANDLIST_DX12;
+    queryDesc.pOutCommandList = (void**)&_dispatchCommandList;
+
+    auto result = FfxApiProxy::D3D12_Query()(&_swapChainContext, &queryDesc.header);
+    LOG_DEBUG("FG CommandList D3D12_Query result: {}", FfxApiProxy::ReturnCodeToString(result));
+}
+
 UINT64 FSRFG_Dx12::UpscaleStart()
 {
     _frameCount++;
@@ -114,18 +124,28 @@ bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* ou
         m_FrameGenerationConfig.flags |= FFX_FRAMEGENERATION_FLAG_DRAW_DEBUG_VIEW;
 
     m_FrameGenerationConfig.allowAsyncWorkloads = Config::Instance()->FGAsync.value_or_default();
-    m_FrameGenerationConfig.generationRect.left = Config::Instance()->FGRectLeft.value_or(0);
-    m_FrameGenerationConfig.generationRect.top = Config::Instance()->FGRectTop.value_or(0);
 
     // use swapchain buffer info 
     DXGI_SWAP_CHAIN_DESC scDesc1{};
     if (State::Instance().currentSwapchain->GetDesc(&scDesc1) == S_OK)
     {
+        if (State::Instance().currentFeature != nullptr)
+        {
+            m_FrameGenerationConfig.generationRect.left = Config::Instance()->FGRectLeft.value_or((scDesc1.BufferDesc.Width - State::Instance().currentFeature->DisplayWidth()) / 2);
+            m_FrameGenerationConfig.generationRect.top = Config::Instance()->FGRectTop.value_or((scDesc1.BufferDesc.Height - State::Instance().currentFeature->DisplayHeight()) / 2);
+        }
+        else
+        {
+            m_FrameGenerationConfig.generationRect.left = Config::Instance()->FGRectLeft.value_or(0);
+            m_FrameGenerationConfig.generationRect.top = Config::Instance()->FGRectTop.value_or(0);
+        }
         m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(scDesc1.BufferDesc.Width);
         m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(scDesc1.BufferDesc.Height);
     }
-    else
+    else 
     {
+        m_FrameGenerationConfig.generationRect.left = Config::Instance()->FGRectLeft.value_or(0);
+        m_FrameGenerationConfig.generationRect.top = Config::Instance()->FGRectTop.value_or(0);
         m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(State::Instance().currentFeature->DisplayWidth());
         m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(State::Instance().currentFeature->DisplayHeight());
     }
@@ -165,11 +185,14 @@ bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* ou
         dfgPrepare.header.type = FFX_API_DISPATCH_DESC_TYPE_FRAMEGENERATION_PREPARE;
         dfgPrepare.header.pNext = &backendDesc.header;
 
+        //GetDispatchCommandList();
+
 #ifdef USE_QUEUE_FOR_FG
-        dfgPrepare.commandList = _commandList[frameIndex];
+        dfgPrepare.commandList = _dispatchCommandList == nullptr ? _commandList[frameIndex] : _dispatchCommandList;
 #else
-        dfgPrepare.commandList = cmdList;
+        dfgPrepare.commandList = _dispatchCommandList == nullptr ? cmdList : _dispatchCommandList;
 #endif
+
         dfgPrepare.frameID = _frameCount;
         dfgPrepare.flags = m_FrameGenerationConfig.flags;
         dfgPrepare.renderSize = { State::Instance().currentFeature->RenderWidth(), State::Instance().currentFeature->RenderHeight() };
@@ -257,18 +280,28 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
         m_FrameGenerationConfig.flags |= FFX_FRAMEGENERATION_FLAG_DRAW_DEBUG_VIEW;
 
     m_FrameGenerationConfig.allowAsyncWorkloads = Config::Instance()->FGAsync.value_or_default();
-    m_FrameGenerationConfig.generationRect.left = Config::Instance()->FGRectLeft.value_or(0);
-    m_FrameGenerationConfig.generationRect.top = Config::Instance()->FGRectTop.value_or(0);
 
     // use swapchain buffer info 
-    DXGI_SWAP_CHAIN_DESC scDesc{};
-    if (State::Instance().currentSwapchain->GetDesc(&scDesc) == S_OK)
+    DXGI_SWAP_CHAIN_DESC scDesc1{};
+    if (State::Instance().currentSwapchain->GetDesc(&scDesc1) == S_OK)
     {
-        m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(scDesc.BufferDesc.Width);
-        m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(scDesc.BufferDesc.Height);
+        if (State::Instance().currentFeature != nullptr)
+        {
+            m_FrameGenerationConfig.generationRect.left = Config::Instance()->FGRectLeft.value_or((scDesc1.BufferDesc.Width - State::Instance().currentFeature->DisplayWidth()) / 2);
+            m_FrameGenerationConfig.generationRect.top = Config::Instance()->FGRectTop.value_or((scDesc1.BufferDesc.Height - State::Instance().currentFeature->DisplayHeight()) / 2);
+        }
+        else
+        {
+            m_FrameGenerationConfig.generationRect.left = Config::Instance()->FGRectLeft.value_or(0);
+            m_FrameGenerationConfig.generationRect.top = Config::Instance()->FGRectTop.value_or(0);
+        }
+        m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(scDesc1.BufferDesc.Width);
+        m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(scDesc1.BufferDesc.Height);
     }
     else
     {
+        m_FrameGenerationConfig.generationRect.left = Config::Instance()->FGRectLeft.value_or(0);
+        m_FrameGenerationConfig.generationRect.top = Config::Instance()->FGRectTop.value_or(0);
         m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(State::Instance().currentFeature->DisplayWidth());
         m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(State::Instance().currentFeature->DisplayHeight());
     }
@@ -313,7 +346,8 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
         dfgPrepare.header.type = FFX_API_DISPATCH_DESC_TYPE_FRAMEGENERATION_PREPARE;
         dfgPrepare.header.pNext = &backendDesc.header;
 
-        dfgPrepare.commandList = _commandList[fIndex];
+        //GetDispatchCommandList();
+        dfgPrepare.commandList = _dispatchCommandList == nullptr ? _commandList[fIndex] : _dispatchCommandList;
 
         dfgPrepare.frameID = _frameCount;
         dfgPrepare.flags = m_FrameGenerationConfig.flags;
