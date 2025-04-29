@@ -27,7 +27,7 @@
 #pragma region FG definitions
 
 // Is FG mutex accuired for Half/Full sync?
-static bool _lockAccuiredForHaflOrFull = false;
+static bool _lockAccuiredForHalfOrFull = false;
 
 // Target frame/present could for releasing the FG mutex
 static UINT64 _releaseMutexTargetFrame = 0;
@@ -165,7 +165,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
         // If half or full sync is active, we need to release the mutex after 1 or 2 frames at Present
         lockAccuired = !Config::Instance()->FGHudfixHalfSync.value_or_default() && !Config::Instance()->FGHudfixFullSync.value_or_default();
-        _lockAccuiredForHaflOrFull = !lockAccuired;
+        _lockAccuiredForHalfOrFull = !lockAccuired;
 
         if (Config::Instance()->FGDebugView.value_or_default() || Config::Instance()->FGHudfixHalfSync.value_or_default())
             _releaseMutexTargetFrame = _frameCounter + 1; // For debug 1 frame
@@ -402,11 +402,11 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
     // If Half of Full sync is active or was active (_releaseMutexTargetFrame != 0)
     if (_releaseMutexTargetFrame != 0 && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && _frameCounter >= _releaseMutexTargetFrame && fg != nullptr)
     {
-        if (_lockAccuiredForHaflOrFull)
+        if (_lockAccuiredForHalfOrFull)
         {
             LOG_TRACE("Releasing FG->Mutex: {}", fg->Mutex.getOwner());
             fg->Mutex.unlockThis(2);
-            _lockAccuiredForHaflOrFull = false;
+            _lockAccuiredForHalfOrFull = false;
         }
 
         _releaseMutexTargetFrame = 0;
