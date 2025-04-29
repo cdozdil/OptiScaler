@@ -102,9 +102,15 @@ static void CheckWorkingMode()
 {
     LOG_FUNC();
 
+    if (Config::Instance()->EarlyHooking.value_or_default())
+    {
+        KernelHooks::Hook();
+        KernelHooks::HookBase();
+    }
+     
     bool modeFound = false;
     std::string filename = Util::DllPath().filename().string();
-    std::string lCaseFilename(filename);
+    std::string lCaseFilename(filename); 
     wchar_t sysFolder[MAX_PATH];
     GetSystemDirectory(sysFolder, MAX_PATH);
     std::filesystem::path sysPath(sysFolder);
@@ -509,9 +515,6 @@ static void CheckWorkingMode()
 
         if (!State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable)
         {
-            if (Config::Instance()->EarlyHooking.value_or_default())
-                KernelHooks::Hook();
-
             Config::Instance()->OverlayMenu.set_volatile_value((!State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable) &&
                                                                Config::Instance()->OverlayMenu.value_or_default());
 

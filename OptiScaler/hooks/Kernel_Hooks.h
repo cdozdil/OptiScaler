@@ -51,6 +51,8 @@ private:
     inline static Kernel32Proxy::PFN_GetProcAddress o_K32_GetProcAddress = nullptr;
 
     inline static KernelBaseProxy::PFN_FreeLibrary o_KB_FreeLibrary = nullptr;
+    inline static KernelBaseProxy::PFN_LoadLibraryA o_KB_LoadLibraryA = nullptr;
+    inline static KernelBaseProxy::PFN_LoadLibraryW o_KB_LoadLibraryW = nullptr;
     inline static KernelBaseProxy::PFN_LoadLibraryExA o_KB_LoadLibraryExA = nullptr;
     inline static KernelBaseProxy::PFN_LoadLibraryExW o_KB_LoadLibraryExW = nullptr;
     inline static KernelBaseProxy::PFN_GetProcAddress o_KB_GetProcAddress = nullptr;
@@ -1075,6 +1077,104 @@ private:
         return o_KB_FreeLibrary(lpLibrary);
     }
 
+    static HMODULE hk_KB_LoadLibraryA(LPCSTR lpLibFileName)
+    {
+        if (lpLibFileName == nullptr)
+            return NULL;
+
+        std::string libName(lpLibFileName);
+        std::string lcaseLibName(libName);
+
+        for (size_t i = 0; i < lcaseLibName.size(); i++)
+            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+
+        if (State::SkipDllChecks())
+        {
+            if (State::SkipDllName() == "")
+            {
+                LOG_TRACE("Skip checks for: {}", lcaseLibName);
+                return o_KB_LoadLibraryA(lpLibFileName);
+            }
+
+            auto dllName = State::SkipDllName();
+            auto pos = lcaseLibName.rfind(dllName);
+
+            // -4 for extension `.dll`
+            if (pos == (lcaseLibName.length() - dllName.length()) || pos == (lcaseLibName.length() - dllName.length() - 4))
+            {
+                LOG_TRACE("Skip checks for: {}", lcaseLibName);
+                return o_KB_LoadLibraryA(lpLibFileName);
+            }
+        }
+
+#if _DEBUG
+        LOG_TRACE("{}", lcaseLibName);
+#endif
+        auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
+
+        // skip loading of dll
+        if (moduleHandle == (HMODULE)1)
+        {
+            SetLastError(ERROR_ACCESS_DENIED);
+            return NULL;
+        }
+
+        if (moduleHandle != nullptr)
+            return moduleHandle;
+
+        return o_KB_LoadLibraryA(lpLibFileName);
+    }
+
+    static HMODULE hk_KB_LoadLibraryW(LPCWSTR lpLibFileName)
+    {
+        if (lpLibFileName == nullptr)
+            return NULL;
+
+        std::wstring libName(lpLibFileName);
+        std::wstring lcaseLibName(libName);
+
+        for (size_t i = 0; i < lcaseLibName.size(); i++)
+            lcaseLibName[i] = std::towlower(lcaseLibName[i]);
+
+        if (State::SkipDllChecks())
+        {
+            if (State::SkipDllName() == "")
+            {
+                LOG_TRACE("Skip checks for: {}", wstring_to_string(lcaseLibName));
+                return o_KB_LoadLibraryW(lpLibFileName);
+            }
+
+            auto dllName = State::SkipDllName();
+            auto pos = wstring_to_string(lcaseLibName).rfind(dllName);
+
+            // -4 for extension `.dll`
+            if (pos == (lcaseLibName.length() - dllName.length()) || pos == (lcaseLibName.length() - dllName.length() - 4))
+            {
+                LOG_TRACE("Skip checks for: {}", wstring_to_string(lcaseLibName));
+                return o_KB_LoadLibraryW(lpLibFileName);
+            }
+        }
+
+#if _DEBUG
+        LOG_TRACE("{}", wstring_to_string(lcaseLibName));
+#endif
+
+        auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
+
+        // skip loading of dll
+        if (moduleHandle == (HMODULE)1)
+        {
+            SetLastError(ERROR_ACCESS_DENIED);
+            return NULL;
+        }
+
+        if (moduleHandle != nullptr)
+            return moduleHandle;
+
+        return o_KB_LoadLibraryW(lpLibFileName);
+    }
+
+
     static HMODULE hk_KB_LoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
     {
         if (lpLibFileName == nullptr)
@@ -1082,6 +1182,10 @@ private:
 
         std::string libName(lpLibFileName);
         std::string lcaseLibName(libName);
+
+#if _DEBUG
+        LOG_TRACE("{}", lcaseLibName);
+#endif
 
         for (size_t i = 0; i < lcaseLibName.size(); i++)
             lcaseLibName[i] = std::tolower(lcaseLibName[i]);
@@ -1104,10 +1208,6 @@ private:
                 return o_KB_LoadLibraryExA(lpLibFileName, hFile, dwFlags);
             }
         }
-
-#if _DEBUG
-        LOG_TRACE("{}", lcaseLibName);
-#endif
 
         auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
 
@@ -1133,6 +1233,10 @@ private:
         std::wstring libName(lpLibFileName);
         std::wstring lcaseLibName(libName);
 
+#if _DEBUG
+        LOG_TRACE("{}", wstring_to_string(lcaseLibName));
+#endif
+
         for (size_t i = 0; i < lcaseLibName.size(); i++)
             lcaseLibName[i] = std::towlower(lcaseLibName[i]);
 
@@ -1154,10 +1258,6 @@ private:
                 return o_KB_LoadLibraryExW(lpLibFileName, hFile, dwFlags);
             }
         }
-
-#if _DEBUG
-        LOG_TRACE("{}", wstring_to_string(lcaseLibName));
-#endif
 
         auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
 
@@ -1483,9 +1583,12 @@ public:
 
         // These hooks cause stability regressions
         //o_KB_FreeLibrary = KernelBaseProxy::Hook_FreeLibrary(hk_KB_FreeLibrary);
+
         if (State::Instance().gameQuirk == KernelBaseHooks)
         {
-            o_KB_LoadLibraryExA = KernelBaseProxy::Hook_LoadLibraryExA(hk_KB_LoadLibraryExA);
+            //o_KB_LoadLibraryA = KernelBaseProxy::Hook_LoadLibraryA(hk_KB_LoadLibraryA);
+            //o_KB_LoadLibraryW = KernelBaseProxy::Hook_LoadLibraryW(hk_KB_LoadLibraryW);
+            //o_KB_LoadLibraryExA = KernelBaseProxy::Hook_LoadLibraryExA(hk_KB_LoadLibraryExA);
             o_KB_LoadLibraryExW = KernelBaseProxy::Hook_LoadLibraryExW(hk_KB_LoadLibraryExW);
         }
 
