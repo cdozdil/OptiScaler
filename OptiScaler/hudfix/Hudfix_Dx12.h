@@ -51,13 +51,13 @@ private:
     inline static std::mutex _checkMutex;
     inline static std::mutex _captureMutex;
     inline static std::mutex _counterMutex;
-    inline static INT64 _captureCounter[BUFFER_COUNT] = { 0, 0, 0, 0 };
+    inline static INT64 _captureCounter[BUFFER_COUNT] = { 0, 0, 0 };
     inline static FT_Dx12* _formatTransfer = nullptr;
 
     inline static ID3D12CommandQueue* _commandQueue = nullptr;
-    inline static ID3D12GraphicsCommandList* _commandList[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
-    inline static ID3D12CommandAllocator* _commandAllocator[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
-    inline static ID3D12Fence* _fence[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
+    inline static ID3D12GraphicsCommandList* _commandList[BUFFER_COUNT] = { nullptr, nullptr, nullptr };
+    inline static ID3D12CommandAllocator* _commandAllocator[BUFFER_COUNT] = { nullptr, nullptr, nullptr };
+    inline static ID3D12Fence* _fence[BUFFER_COUNT] = { nullptr, nullptr, nullptr };
     
     inline static bool _skipHudlessChecks = false;
 
@@ -67,7 +67,6 @@ private:
     
     // Check _captureCounter for current frame
     static bool CheckCapture();    
-    static bool CheckResource(ResourceInfo* resource);
 
     static int GetIndex();
     static void DispatchFG(bool useHudless);
@@ -100,6 +99,7 @@ public:
 
     // Check resource for hudless
     static bool CheckForHudless(std::string callerName, ID3D12GraphicsCommandList* cmdList, ResourceInfo* resource, D3D12_RESOURCE_STATES state);
+    static bool CheckResource(ResourceInfo* resource);
 
     // Reset frame counters
     static void ResetCounters();

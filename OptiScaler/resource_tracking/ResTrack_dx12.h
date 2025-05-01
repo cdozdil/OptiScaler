@@ -5,7 +5,7 @@
 #include <hudfix/Hudfix_Dx12.h>
 
 // Clear heap info when ResourceDiscard is called
-//#define USE_RESOURCE_DISCARD
+#define USE_RESOURCE_DISCARD
 
 // Use CopyResource & CopyTextureRegion to capture hudless
 // It's a unstable
@@ -20,6 +20,7 @@
 #define USE_ARRAY_HEAP_INFO
 
 #ifdef USE_ARRAY_HEAP_INFO
+
 typedef struct HeapInfo
 {
     SIZE_T cpuStart = NULL;
@@ -32,7 +33,8 @@ typedef struct HeapInfo
     std::shared_ptr<ResourceInfo[]> info;
 
     HeapInfo(SIZE_T cpuStart, SIZE_T cpuEnd, SIZE_T gpuStart, SIZE_T gpuEnd, UINT numResources, UINT increment, UINT type)
-        : cpuStart(cpuStart), cpuEnd(cpuEnd), gpuStart(gpuStart), gpuEnd(gpuEnd), numDescriptors(numResources), increment(increment), info(new ResourceInfo[numResources]), type(type) {}
+        : cpuStart(cpuStart), cpuEnd(cpuEnd), gpuStart(gpuStart), gpuEnd(gpuEnd), numDescriptors(numResources), increment(increment), info(new ResourceInfo[numResources]), type(type)
+    {}
 
     ResourceInfo* GetByCpuHandle(SIZE_T cpuHandle) const
     {
@@ -40,6 +42,9 @@ typedef struct HeapInfo
             return nullptr;
 
         auto index = (cpuHandle - cpuStart) / increment;
+
+        if (index >= numDescriptors || info[index].buffer == nullptr)
+            return nullptr;
 
         return &info[index];
     }
@@ -51,15 +56,24 @@ typedef struct HeapInfo
 
         auto index = (gpuHandle - gpuStart) / increment;
 
+        if (index >= numDescriptors || info[index].buffer == nullptr)
+            return nullptr;
+
         return &info[index];
     }
 
     void SetByCpuHandle(SIZE_T cpuHandle, ResourceInfo setInfo) const
     {
+        if (setInfo.buffer == nullptr)
+            return;
+
         if (cpuStart > cpuHandle || cpuEnd < cpuHandle)
             return;
 
         auto index = (cpuHandle - cpuStart) / increment;
+
+        if (index >= numDescriptors)
+            return;
 
         info[index] = setInfo;
     }
@@ -70,6 +84,9 @@ typedef struct HeapInfo
             return;
 
         auto index = (gpuHandle - gpuStart) / increment;
+
+        if (index >= numDescriptors)
+            return;
 
         info[index] = setInfo;
     }
@@ -163,7 +180,12 @@ private:
     static void hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT IndexCountPerInstance, UINT InstanceCount, UINT StartIndexLocation, INT BaseVertexLocation, UINT StartInstanceLocation);
     static void hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ);
 
+    static void hkExecuteBundle(ID3D12GraphicsCommandList* This, ID3D12GraphicsCommandList* pCommandList);
+
+    static ULONG hkRelease(ID3D12Resource* This);
+
     static void HookCommandList(ID3D12Device* InDevice);
+    static void HookResource(ID3D12Device* InDevice);
 
 public:
     static void HookDevice(ID3D12Device* device);

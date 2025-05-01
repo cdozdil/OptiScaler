@@ -159,6 +159,9 @@ bool Hudfix_Dx12::CheckCapture()
 
 bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
 {
+    if (resource == nullptr || resource->buffer == nullptr) 
+        return false;
+
     if (State::Instance().FGonlyUseCapturedResources)
     {
         auto result = _captureList.find(resource->buffer) != _captureList.end();
@@ -261,19 +264,6 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
         LOG_DEBUG("Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> TRUE",
                   resDesc.Width, scDesc.BufferDesc.Width, resDesc.Height, scDesc.BufferDesc.Height, (UINT)resDesc.Format, (UINT)scDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
 
-        if (_formatTransfer == nullptr || !_formatTransfer->IsFormatCompatible(scDesc.BufferDesc.Format))
-        {
-            LOG_DEBUG("Format change, recreate the FormatTransfer");
-
-            if (_formatTransfer != nullptr)
-                delete _formatTransfer;
-
-            _formatTransfer = nullptr;
-            State::Instance().skipHeapCapture = true;
-            _formatTransfer = new FT_Dx12("FormatTransfer", State::Instance().currentD3D12Device, scDesc.BufferDesc.Format);
-            State::Instance().skipHeapCapture = false;
-        }
-
         resource->lastUsedFrame = currentMs;
 
         return true;
@@ -284,7 +274,7 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
 
 int Hudfix_Dx12::GetIndex()
 {
-    return _upscaleCounter % 4;
+    return _upscaleCounter % BUFFER_COUNT;
 }
 
 void Hudfix_Dx12::DispatchFG(bool useHudless)
@@ -524,6 +514,19 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         // needs conversion?
         if (resource->format != scDesc.BufferDesc.Format)
         {
+            if (_formatTransfer == nullptr || !_formatTransfer->IsFormatCompatible(scDesc.BufferDesc.Format))
+            {
+                LOG_DEBUG("Format change, recreate the FormatTransfer");
+
+                if (_formatTransfer != nullptr)
+                    delete _formatTransfer;
+
+                _formatTransfer = nullptr;
+                State::Instance().skipHeapCapture = true;
+                _formatTransfer = new FT_Dx12("FormatTransfer", State::Instance().currentD3D12Device, scDesc.BufferDesc.Format);
+                State::Instance().skipHeapCapture = false;
+            }
+
             if (_formatTransfer != nullptr && _formatTransfer->CreateBufferResource(State::Instance().currentD3D12Device, resource->buffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
             {
                 // This will prevent resource tracker to check these operations
