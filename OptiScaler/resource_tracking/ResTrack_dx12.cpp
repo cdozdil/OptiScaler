@@ -81,7 +81,7 @@ static std::vector<HeapInfo> fgHeaps;
 
 #ifdef USE_RESOURCE_DISCARD
 // created resources
-static ankerl::unordered_dense::map <ID3D12Resource*, ResourceHeapInfo> fgHandlesByResources;
+static ankerl::unordered_dense::map <ID3D12Resource*, std::vector<ResourceHeapInfo>> fgHandlesByResources;
 #endif
 
 static std::set<ID3D12Resource*> fgCaptureList;
@@ -367,9 +367,14 @@ static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* p
 
         auto heapInfo = &fgHandlesByResources[pResource];
 
-        auto heap = GetHeapByCpuHandle(heapInfo->cpuStart);
-        if (heap != nullptr)
-            heap->SetByCpuHandle(heapInfo->cpuStart, {});
+        for (size_t i = 0; i < heapInfo->size(); i++)
+        {
+            auto heap = GetHeapByCpuHandle(heapInfo->at(i).cpuStart);
+            if (heap != nullptr)
+                heap->SetByCpuHandle(heapInfo->at(i).cpuStart, {});
+        }
+
+        heapInfo->clear();
 
         LOG_TRACE("Erased: {:X}", (size_t)pResource);
         fgHandlesByResources.erase(pResource);
@@ -430,14 +435,18 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
 #ifdef USE_RESOURCE_DISCARD
     {
         std::lock_guard<std::mutex> lock(_resourceMutex);
-        fgHandlesByResources.insert_or_assign(pResource, info);
+        
+        if (fgHandlesByResources.contains(pResource))
+            fgHandlesByResources[pResource].push_back({ info.cpuStart, info.gpuStart });
+        else
+            fgHandlesByResources[pResource] = { { info.cpuStart, info.gpuStart } };
     }
 #endif
 
 #ifdef DETAILED_DEBUG_LOGS
 
-    if (CheckForHudless("", &resInfo))
-        LOG_TRACE("<------ pResource: {0:X}, CpuHandle: {1}, GpuHandle: {2}", (UINT64)pResource, DestDescriptor.ptr, GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_RTV));
+    //if (CheckForHudless("", &resInfo))
+    //    LOG_TRACE("<------ pResource: {0:X}, CpuHandle: {1}, GpuHandle: {2}", (UINT64)pResource, DestDescriptor.ptr, GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_RTV));
 
 #endif //  _DEBUG
 
@@ -494,14 +503,18 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
 #ifdef USE_RESOURCE_DISCARD
     {
         std::lock_guard<std::mutex> lock(_resourceMutex);
-        fgHandlesByResources.insert_or_assign(pResource, info);
+
+        if (fgHandlesByResources.contains(pResource))
+            fgHandlesByResources[pResource].push_back({ info.cpuStart, info.gpuStart });
+        else
+            fgHandlesByResources[pResource] = { { info.cpuStart, info.gpuStart } };
     }
 #endif
 
 #ifdef DETAILED_DEBUG_LOGS
 
-    if (CheckForHudless("", &resInfo))
-        LOG_TRACE("<------ pResource: {0:X}, CpuHandle: {1}, GpuHandle: {2}", (UINT64)pResource, DestDescriptor.ptr, GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
+    //if (CheckForHudless("", &resInfo))
+    //    LOG_TRACE("<------ pResource: {0:X}, CpuHandle: {1}, GpuHandle: {2}", (UINT64)pResource, DestDescriptor.ptr, GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
 
 #endif //  _DEBUG
 
@@ -557,14 +570,18 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
 #ifdef USE_RESOURCE_DISCARD
     {
         std::lock_guard<std::mutex> lock(_resourceMutex);
-        fgHandlesByResources.insert_or_assign(pResource, info);
+
+        if (fgHandlesByResources.contains(pResource))
+            fgHandlesByResources[pResource].push_back({ info.cpuStart, info.gpuStart });
+        else
+            fgHandlesByResources[pResource] = { { info.cpuStart, info.gpuStart } };
     }
 #endif
 
 #ifdef DETAILED_DEBUG_LOGS
 
-    if (CheckForHudless("", &resInfo))
-        LOG_TRACE("<------ pResource: {0:X}, CpuHandle: {1}, GpuHandle: {2}", (UINT64)pResource, DestDescriptor.ptr, GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
+    //if (CheckForHudless("", &resInfo))
+    //    LOG_TRACE("<------ pResource: {0:X}, CpuHandle: {1}, GpuHandle: {2}", (UINT64)pResource, DestDescriptor.ptr, GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
 
 #endif //  _DEBUG
 
@@ -699,6 +716,29 @@ ULONG ResTrack_Dx12::hkRelease(ID3D12Resource* This)
     if (result != 0)
         return result;
 
+    LOG_DEBUG_ONLY("Resource: {:X}", (size_t)This);
+
+    std::lock_guard<std::mutex> lock(_resourceMutex);
+
+    if (!fgHandlesByResources.contains(This))
+        return result;
+
+    auto heapInfo = &fgHandlesByResources[This];
+
+    for (size_t i = 0; i < heapInfo->size(); i++)
+    {
+        auto heap = GetHeapByCpuHandle(heapInfo->at(i).cpuStart);
+        if (heap != nullptr)
+            heap->SetByCpuHandle(heapInfo->at(i).cpuStart, {});
+    }
+
+    heapInfo->clear();
+
+    LOG_TRACE("Erased: {:X}", (size_t)This);
+    fgHandlesByResources.erase(This);
+
+    LOG_DEBUG_ONLY("");
+
     return result;
 }
 
@@ -726,6 +766,14 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
     UINT* destRangeSizes = pDestDescriptorRangeSizes;
     D3D12_CPU_DESCRIPTOR_HANDLE* srcRangeStarts = pSrcDescriptorRangeStarts;
     UINT* srcRangeSizes = pSrcDescriptorRangeSizes;
+
+    LOG_DEBUG_ONLY("NumDestDescriptorRanges: {}, pDestDescriptorRangeStarts: {:X}, pDestDescriptorRangeSizes: {}",
+                   NumDestDescriptorRanges, (pDestDescriptorRangeStarts == nullptr || (*pDestDescriptorRangeStarts).ptr == 0) ? 9999 : (size_t)(*pDestDescriptorRangeStarts).ptr,
+                   (pDestDescriptorRangeSizes == nullptr) ? 9999 : *pDestDescriptorRangeSizes);
+    LOG_DEBUG_ONLY("NumSrcDescriptorRanges: {}, pSrcDescriptorRangeStarts: {:X}, pSrcDescriptorRangeSizes: {}",
+                   NumSrcDescriptorRanges, (pSrcDescriptorRangeStarts == nullptr || (*pSrcDescriptorRangeStarts).ptr == 0) ? 9999 : (size_t)(*pSrcDescriptorRangeStarts).ptr,
+                   (pSrcDescriptorRangeSizes == nullptr) ? 9999 : *pSrcDescriptorRangeSizes);
+
 
     if (State::Instance().useThreadingForHeaps)
     {
@@ -844,25 +892,46 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
 
         if (srcRangeSizes != nullptr)
         {
+            LOG_DEBUG_ONLY("Src based loop");
+
             size_t destRangeIndex = 0;
             size_t destIndex = 0;
 
             for (size_t i = 0; i < NumSrcDescriptorRanges; i++)
             {
-                UINT copyCount = srcRangeSizes[i];
+                UINT copyCount = 1;
+
+                if (srcRangeSizes != nullptr)
+                    copyCount = srcRangeSizes[i];
+
+                LOG_DEBUG_ONLY("CopyCount[{}]: {}", i, copyCount);
 
                 for (size_t j = 0; j < copyCount; j++)
                 {
+                    LOG_DEBUG_ONLY("srcRangeIndex: {}, srcIndex: {}, dstRangeIndex: {}, dstIndex: {}", i, j, destRangeIndex, destIndex);
+
                     // source
                     auto srcHandle = srcRangeStarts[i].ptr + j * size;
                     auto srcHeap = GetHeapByCpuHandle(srcHandle);
                     auto destHandle = destRangeStarts[destRangeIndex].ptr + destIndex * size;
                     auto dstHeap = GetHeapByCpuHandle(destHandle);
 
+                    LOG_DEBUG_ONLY("srcHeap: {:X}, dstHeap: {:X}", srcHandle, destHandle);
+
                     if (srcHeap == nullptr)
                     {
                         if (dstHeap != nullptr)
                             dstHeap->SetByCpuHandle(destHandle, {});
+
+                        if (destRangeSizes == nullptr || destRangeSizes[destRangeIndex] == destIndex)
+                        {
+                            destIndex = 0;
+                            destRangeIndex++;
+                        }
+                        else
+                        {
+                            destIndex++;
+                        }
 
                         continue;
                     }
@@ -871,29 +940,61 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
 
                     // destination
                     if (dstHeap == nullptr)
+                    {
+                        if (destRangeSizes == nullptr || destRangeSizes[destRangeIndex] == destIndex)
+                        {
+                            destIndex = 0;
+                            destRangeIndex++;
+                        }
+                        else
+                        {
+                            destIndex++;
+                        }
+
                         continue;
+                    }
 
                     if (buffer == nullptr)
                     {
                         dstHeap->SetByCpuHandle(destHandle, {});
+
+                        if (destRangeSizes == nullptr || destRangeSizes[destRangeIndex] == destIndex)
+                        {
+                            destIndex = 0;
+                            destRangeIndex++;
+                        }
+                        else
+                        {
+                            destIndex++;
+                        }
+
                         continue;
                     }
 
                     dstHeap->SetByCpuHandle(destHandle, *buffer);
-                }
 
-                destIndex++;
+                    if (fgHandlesByResources.contains(buffer->buffer))
+                        fgHandlesByResources[buffer->buffer].push_back({ destHandle, 0 });
+                    else
+                        fgHandlesByResources[buffer->buffer] = { { destHandle, 0 } };
 
-                if (destRangeSizes != nullptr && destRangeSizes[destRangeIndex] == destIndex)
-                {
-                    destIndex = 0;
-                    destRangeIndex++;
+                    if (destRangeSizes == nullptr || destRangeSizes[destRangeIndex] == destIndex)
+                    {
+                        destIndex = 0;
+                        destRangeIndex++;
+                    }
+                    else
+                    {
+                        destIndex++;
+                    }
                 }
             }
 
         }
         else
         {
+            LOG_DEBUG_ONLY("Dst based loop");
+
             size_t srcRangeIndex = 0;
             size_t srcIndex = 0;
 
@@ -904,18 +1005,35 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
                 if (destRangeSizes != nullptr)
                     copyCount = destRangeSizes[i];
 
+                LOG_DEBUG_ONLY("CopyCount[{}]: {}", i, copyCount);
+
                 for (size_t j = 0; j < copyCount; j++)
                 {
+                    LOG_DEBUG_ONLY("dstRangeIndex: {}, dstIndex: {}, srcRangeIndex: {}, srcIndex: {}", i, j, srcRangeIndex, srcIndex);
+
                     // source
                     auto srcHandle = srcRangeStarts[srcRangeIndex].ptr + srcIndex * size;
                     auto srcHeap = GetHeapByCpuHandle(srcHandle);
                     auto destHandle = destRangeStarts[i].ptr + j * size;
                     auto dstHeap = GetHeapByCpuHandle(destHandle);
 
+                    LOG_DEBUG_ONLY("dstHeap: {:X}, srcHeap: {:X}", destHandle, srcHandle);
+
+
                     if (srcHeap == nullptr)
                     {
                         if (dstHeap != nullptr)
                             dstHeap->SetByCpuHandle(destHandle, {});
+
+                        if (srcRangeSizes == nullptr || srcRangeSizes[srcRangeIndex] == srcIndex)
+                        {
+                            srcIndex = 0;
+                            srcRangeIndex++;
+                        }
+                        else
+                        {
+                            srcIndex++;
+                        }
 
                         continue;
                     }
@@ -924,23 +1042,53 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
 
                     // destination
                     if (dstHeap == nullptr)
+                    {
+                        if (srcRangeSizes == nullptr || srcRangeSizes[srcRangeIndex] == srcIndex)
+                        {
+                            srcIndex = 0;
+                            srcRangeIndex++;
+                        }
+                        else
+                        {
+                            srcIndex++;
+                        }
+
                         continue;
+                    }
 
                     if (buffer == nullptr)
                     {
                         dstHeap->SetByCpuHandle(destHandle, {});
+
+                        if (srcRangeSizes == nullptr || srcRangeSizes[srcRangeIndex] == srcIndex)
+                        {
+                            srcIndex = 0;
+                            srcRangeIndex++;
+                        }
+                        else
+                        {
+                            srcIndex++;
+                        }
+
                         continue;
                     }
 
                     dstHeap->SetByCpuHandle(destHandle, *buffer);
-                }
 
-                srcIndex++;
+                    if (fgHandlesByResources.contains(buffer->buffer))
+                        fgHandlesByResources[buffer->buffer].push_back({ destHandle, 0 });
+                    else
+                        fgHandlesByResources[buffer->buffer] = { { destHandle, 0 } };
 
-                if (srcRangeSizes != nullptr && srcRangeSizes[srcRangeIndex] == srcIndex)
-                {
-                    srcIndex = 0;
-                    srcRangeIndex++;
+                    if (srcRangeSizes == nullptr || srcRangeSizes[srcRangeIndex] == srcIndex)
+                    {
+                        srcIndex = 0;
+                        srcRangeIndex++;
+                    }
+                    else
+                    {
+                        srcIndex++;
+                    }
                 }
             }
 
@@ -996,8 +1144,8 @@ void ResTrack_Dx12::hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescript
 
                                             dstHeap->SetByCpuHandle(destHandle, *buffer);
 
-                                            LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}",
-                                                           handle, destHandle, GetGPUHandle(This, handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), GetGPUHandle(This, destHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), (UINT)DescriptorHeapsType);
+                                            //LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}",
+                                            //               handle, destHandle, GetGPUHandle(This, handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), GetGPUHandle(This, destHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), (UINT)DescriptorHeapsType);
                                         }
 
                                     });
@@ -1036,8 +1184,13 @@ void ResTrack_Dx12::hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescript
 
             dstHeap->SetByCpuHandle(destHandle, *buffer);
 
-            LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}",
-                           handle, destHandle, GetGPUHandle(This, handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), GetGPUHandle(This, destHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), (UINT)DescriptorHeapsType);
+            if (fgHandlesByResources.contains(buffer->buffer))
+                fgHandlesByResources[buffer->buffer].push_back({ destHandle, 0 });
+            else
+                fgHandlesByResources[buffer->buffer] = { { destHandle, 0 } };
+
+            //LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}",
+            //               handle, destHandle, GetGPUHandle(This, handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), GetGPUHandle(This, destHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), (UINT)DescriptorHeapsType);
         }
     }
 }
@@ -1087,7 +1240,6 @@ void ResTrack_Dx12::hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* 
             break;
         }
 
-        if (Hudfix_Dx12::CheckResource(capturedBuffer))
         {
             std::lock_guard<std::mutex> lock(hudlessMutex);
 
@@ -1176,7 +1328,6 @@ void ResTrack_Dx12::hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT N
 
             auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
 
-            if (Hudfix_Dx12::CheckResource(resource))
             {
                 // check for command list
                 std::lock_guard<std::mutex> lock(hudlessMutex);
@@ -1249,7 +1400,6 @@ void ResTrack_Dx12::hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* T
             break;
         }
 
-        if(Hudfix_Dx12::CheckResource(capturedBuffer))
         {
             std::lock_guard<std::mutex> lock(hudlessMutex);
 
@@ -1474,6 +1624,9 @@ void ResTrack_Dx12::hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroup
 
 void ResTrack_Dx12::HookResource(ID3D12Device* InDevice)
 {
+    if (o_Release != nullptr)
+        return;
+
     ID3D12Resource* tmp = nullptr;
     auto d = CD3DX12_RESOURCE_DESC::Buffer(4);
     auto heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
@@ -1680,7 +1833,7 @@ void ResTrack_Dx12::HookDevice(ID3D12Device* device)
     }
 
     HookCommandList(device);
-    //HookResource(device);
+    HookResource(device);
 }
 
 void ResTrack_Dx12::ResetCaptureList()
