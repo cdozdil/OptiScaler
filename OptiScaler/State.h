@@ -70,7 +70,6 @@ public:
     bool FGchanged = false;
     bool SCchanged = false;
     bool skipHeapCapture = false;
-    bool useThreadingForHeaps = false;
 
     bool FGcaptureResources = false;
     int FGcapturedResourceCount = false;

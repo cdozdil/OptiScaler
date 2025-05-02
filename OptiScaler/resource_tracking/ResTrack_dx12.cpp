@@ -6,11 +6,21 @@
 
 #include <menu/menu_overlay_dx.h>
 
+#include <algorithm>
 #include <future>
 
 #include <include/d3dx/d3dx12.h>
 #include <detours/detours.h>
 #include <ankerl/unordered_dense.h>
+
+#include <initguid.h>
+#include <guiddef.h>
+
+DEFINE_GUID(GUID_Tracking,
+            0x12345678, 0x1234, 0x1234,
+            0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef);
+
+static UINT _trackMark = 1;
 
 #define LOG_HEAP_MOVES
 
@@ -81,7 +91,7 @@ static std::vector<HeapInfo> fgHeaps;
 
 #ifdef USE_RESOURCE_DISCARD
 // created resources
-static ankerl::unordered_dense::map <ID3D12Resource*, std::vector<ResourceHeapInfo>> fgHandlesByResources;
+static ankerl::unordered_dense::map <ID3D12Resource*, std::vector<size_t>> fgHandlesByResources;
 #endif
 
 static std::set<ID3D12Resource*> fgCaptureList;
@@ -175,6 +185,35 @@ static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Reso
 #pragma endregion
 
 #pragma region Heap helpers
+
+#ifdef USE_RESOURCE_DISCARD
+
+static void AddResourceHeap(ID3D12Resource* resource, size_t cpuHeapStart)
+{
+    if (fgHandlesByResources.contains(resource))
+        fgHandlesByResources[resource].push_back(cpuHeapStart);
+    else
+        fgHandlesByResources[resource] = { cpuHeapStart };
+}
+
+static void RemoveResourceHeap(ID3D12Resource* resource, size_t cpuHeapStart)
+{
+    if (fgHandlesByResources.contains(resource))
+    {
+        auto v = fgHandlesByResources[resource];
+
+        for (size_t i = 0; i < v.size(); i++)
+        {
+            if (v[i] == cpuHeapStart)
+            {
+                v.erase(v.begin() + i);
+                return;
+            }
+        }
+    }
+}
+
+#endif
 
 static SIZE_T GetGPUHandle(ID3D12Device* This, SIZE_T cpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE type)
 {
@@ -369,14 +408,22 @@ static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* p
 
         for (size_t i = 0; i < heapInfo->size(); i++)
         {
-            auto heap = GetHeapByCpuHandle(heapInfo->at(i).cpuStart);
+            auto heap = GetHeapByCpuHandle(heapInfo->at(i));
+
             if (heap != nullptr)
-                heap->SetByCpuHandle(heapInfo->at(i).cpuStart, {});
+            {
+                auto temp = heap->GetByCpuHandle(heapInfo->at(i));
+
+                if (temp != nullptr && temp->buffer != nullptr)
+                    RemoveResourceHeap(temp->buffer, heapInfo->at(i));
+
+                heap->SetByCpuHandle(heapInfo->at(i), {});
+            }
         }
 
         heapInfo->clear();
 
-        LOG_TRACE("Erased: {:X}", (size_t)pResource);
+        LOG_DEBUG_ONLY("Erased: {:X}", (size_t)pResource);
         fgHandlesByResources.erase(pResource);
     }
 }
@@ -413,6 +460,16 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
 
         auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
 
+#ifdef USE_RESOURCE_DISCARD
+        {
+            std::lock_guard<std::mutex> lock(_resourceMutex);
+            auto temp = heap->GetByCpuHandle(DestDescriptor.ptr);
+
+            if (temp != nullptr && temp->buffer != nullptr)
+                RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
+        }
+#endif
+
         if (heap != nullptr)
             heap->SetByCpuHandle(DestDescriptor.ptr, {});
 
@@ -435,11 +492,7 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
 #ifdef USE_RESOURCE_DISCARD
     {
         std::lock_guard<std::mutex> lock(_resourceMutex);
-        
-        if (fgHandlesByResources.contains(pResource))
-            fgHandlesByResources[pResource].push_back({ info.cpuStart, info.gpuStart });
-        else
-            fgHandlesByResources[pResource] = { { info.cpuStart, info.gpuStart } };
+        AddResourceHeap(pResource, info.cpuStart);
     }
 #endif
 
@@ -452,7 +505,21 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
 
     auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
     if (heap != nullptr)
+    {
+#ifdef USE_RESOURCE_DISCARD
+        {
+            std::lock_guard<std::mutex> lock(_resourceMutex);
+            auto temp = heap->GetByCpuHandle(DestDescriptor.ptr);
+
+            if (temp != nullptr && temp->buffer != nullptr)
+                RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
+        }
+#else
+        pResource->SetPrivateData(GUID_Tracking, 4, &_trackMark);
+#endif
+
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
+    }
 }
 
 static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pResource, D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
@@ -481,6 +548,17 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
         LOG_TRACE("Unbind: {:X}", DestDescriptor.ptr);
 
         auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
+
+#ifdef USE_RESOURCE_DISCARD
+        {
+            std::lock_guard<std::mutex> lock(_resourceMutex);
+            auto temp = heap->GetByCpuHandle(DestDescriptor.ptr);
+
+            if (temp != nullptr && temp->buffer != nullptr)
+                RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
+        }
+#endif
+
         if (heap != nullptr)
             heap->SetByCpuHandle(DestDescriptor.ptr, {});
 
@@ -503,11 +581,7 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
 #ifdef USE_RESOURCE_DISCARD
     {
         std::lock_guard<std::mutex> lock(_resourceMutex);
-
-        if (fgHandlesByResources.contains(pResource))
-            fgHandlesByResources[pResource].push_back({ info.cpuStart, info.gpuStart });
-        else
-            fgHandlesByResources[pResource] = { { info.cpuStart, info.gpuStart } };
+        AddResourceHeap(pResource, info.cpuStart);
     }
 #endif
 
@@ -520,7 +594,21 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
 
     auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
     if (heap != nullptr)
+    {
+#ifdef USE_RESOURCE_DISCARD
+        {
+            std::lock_guard<std::mutex> lock(_resourceMutex);
+            auto temp = heap->GetByCpuHandle(DestDescriptor.ptr);
+
+            if (temp != nullptr && temp->buffer != nullptr)
+                RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
+        }
+#else
+        pResource->SetPrivateData(GUID_Tracking, 4, &_trackMark);
+#endif
+
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
+    }
 }
 
 static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pResource, ID3D12Resource* pCounterResource, D3D12_UNORDERED_ACCESS_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
@@ -548,6 +636,17 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
         LOG_TRACE("Unbind: {:X}", DestDescriptor.ptr);
 
         auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
+
+#ifdef USE_RESOURCE_DISCARD
+        {
+            std::lock_guard<std::mutex> lock(_resourceMutex);
+            auto temp = heap->GetByCpuHandle(DestDescriptor.ptr);
+
+            if (temp != nullptr && temp->buffer != nullptr)
+                RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
+        }
+#endif
+
         if (heap != nullptr)
             heap->SetByCpuHandle(DestDescriptor.ptr, {});
 
@@ -570,11 +669,7 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
 #ifdef USE_RESOURCE_DISCARD
     {
         std::lock_guard<std::mutex> lock(_resourceMutex);
-
-        if (fgHandlesByResources.contains(pResource))
-            fgHandlesByResources[pResource].push_back({ info.cpuStart, info.gpuStart });
-        else
-            fgHandlesByResources[pResource] = { { info.cpuStart, info.gpuStart } };
+        AddResourceHeap(pResource, info.cpuStart);
     }
 #endif
 
@@ -588,7 +683,21 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
 
     auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
     if (heap != nullptr)
+    {
+#ifdef USE_RESOURCE_DISCARD
+        {
+            std::lock_guard<std::mutex> lock(_resourceMutex);
+            auto temp = heap->GetByCpuHandle(DestDescriptor.ptr);
+
+            if (temp != nullptr && temp->buffer != nullptr)
+                RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
+        }
+#else
+        pResource->SetPrivateData(GUID_Tracking, 4, &_trackMark);
+#endif
+
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
+    }
 }
 
 #pragma endregion
@@ -711,34 +820,78 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
 
 ULONG ResTrack_Dx12::hkRelease(ID3D12Resource* This)
 {
+#ifndef USE_RESOURCE_DISCARD
+    if(!Config::Instance()->FGHudfixTrackRelease.value_or_default())
+        return o_Release(This);
+#endif
+
+    This->AddRef();
+
     auto result = o_Release(This);
 
-    if (result != 0)
+    if (result != 1)
+    {
+        o_Release(This);
         return result;
+    }
+
+
+#ifdef USE_RESOURCE_DISCARD
 
     LOG_DEBUG_ONLY("Resource: {:X}", (size_t)This);
 
     std::lock_guard<std::mutex> lock(_resourceMutex);
 
     if (!fgHandlesByResources.contains(This))
+    {
+        o_Release(This);
         return result;
+    }
 
     auto heapInfo = &fgHandlesByResources[This];
 
     for (size_t i = 0; i < heapInfo->size(); i++)
     {
-        auto heap = GetHeapByCpuHandle(heapInfo->at(i).cpuStart);
+        auto heap = GetHeapByCpuHandle(heapInfo->at(i));
         if (heap != nullptr)
-            heap->SetByCpuHandle(heapInfo->at(i).cpuStart, {});
+        {
+            auto temp = heap->GetByCpuHandle(heapInfo->at(i));
+
+            if (temp != nullptr && temp->buffer == This)
+                heap->SetByCpuHandle(heapInfo->at(i), {});
+        }
     }
 
     heapInfo->clear();
 
-    LOG_TRACE("Erased: {:X}", (size_t)This);
+    LOG_DEBUG_ONLY("Erased: {:X}", (size_t)This);
     fgHandlesByResources.erase(This);
 
     LOG_DEBUG_ONLY("");
+#else
+    UINT data = 0;
+    if (This->GetPrivateData(GUID_Tracking, &data, nullptr) == S_OK)
+    {
+        std::shared_lock<std::shared_mutex> lock(heapMutex);
 
+        for (size_t i = 0; i < fgHeaps.size(); i++)
+        {
+            auto heap = fgHeaps[i];
+
+            for (size_t j = 0; j < heap.numDescriptors; j++)
+            {
+                if (heap.info[j].buffer == This)
+                {
+                    heap.info[j] = {};
+                    break;
+                }
+            }
+        }
+    }
+
+#endif
+
+    o_Release(This);
     return result;
 }
 
@@ -775,208 +928,52 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
                    (pSrcDescriptorRangeSizes == nullptr) ? 9999 : *pSrcDescriptorRangeSizes);
 
 
-    if (State::Instance().useThreadingForHeaps)
+    auto size = This->GetDescriptorHandleIncrementSize(DescriptorHeapsType);
+
+    if (srcRangeSizes != nullptr)
     {
-        auto asyncTask = std::async(std::launch::async, [=]()
-                                    {
-                                        auto size = This->GetDescriptorHandleIncrementSize(DescriptorHeapsType);
+        LOG_DEBUG_ONLY("Src based loop");
 
-                                        if (srcRangeSizes != nullptr)
-                                        {
-                                            size_t destRangeIndex = 0;
-                                            size_t destIndex = 0;
+        size_t destRangeIndex = 0;
+        size_t destIndex = 0;
 
-                                            for (size_t i = 0; i < NumSrcDescriptorRanges; i++)
-                                            {
-                                                UINT copyCount = srcRangeSizes[i];
-
-                                                for (size_t j = 0; j < copyCount; j++)
-                                                {
-                                                    // source
-                                                    auto srcHandle = srcRangeStarts[i].ptr + j * size;
-                                                    auto srcHeap = GetHeapByCpuHandle(srcHandle);
-                                                    auto destHandle = destRangeStarts[destRangeIndex].ptr + destIndex * size;
-                                                    auto dstHeap = GetHeapByCpuHandle(destHandle);
-
-                                                    if (srcHeap == nullptr)
-                                                    {
-                                                        if (dstHeap != nullptr)
-                                                            dstHeap->SetByCpuHandle(destHandle, {});
-
-                                                        continue;
-                                                    }
-
-                                                    auto buffer = srcHeap->GetByCpuHandle(srcHandle);
-
-                                                    // destination
-                                                    if (dstHeap == nullptr)
-                                                        continue;
-
-                                                    if (buffer == nullptr)
-                                                    {
-                                                        dstHeap->SetByCpuHandle(destHandle, {});
-                                                        continue;
-                                                    }
-
-                                                    dstHeap->SetByCpuHandle(destHandle, *buffer);
-                                                }
-
-                                                destIndex++;
-
-                                                if (destRangeSizes != nullptr && destRangeSizes[destRangeIndex] == destIndex)
-                                                {
-                                                    destIndex = 0;
-                                                    destRangeIndex++;
-                                                }
-                                            }
-
-                                        }
-                                        else
-                                        {
-                                            size_t srcRangeIndex = 0;
-                                            size_t srcIndex = 0;
-
-                                            for (size_t i = 0; i < NumDestDescriptorRanges; i++)
-                                            {
-                                                UINT copyCount = 1;
-
-                                                if (destRangeSizes != nullptr)
-                                                    copyCount = destRangeSizes[i];
-
-                                                for (size_t j = 0; j < copyCount; j++)
-                                                {
-                                                    // source
-                                                    auto srcHandle = srcRangeStarts[srcRangeIndex].ptr + srcIndex * size;
-                                                    auto srcHeap = GetHeapByCpuHandle(srcHandle);
-                                                    auto destHandle = destRangeStarts[i].ptr + j * size;
-                                                    auto dstHeap = GetHeapByCpuHandle(destHandle);
-
-                                                    if (srcHeap == nullptr)
-                                                    {
-                                                        if (dstHeap != nullptr)
-                                                            dstHeap->SetByCpuHandle(destHandle, {});
-
-                                                        continue;
-                                                    }
-
-                                                    auto buffer = srcHeap->GetByCpuHandle(srcHandle);
-
-                                                    // destination
-                                                    if (dstHeap == nullptr)
-                                                        continue;
-
-                                                    if (buffer == nullptr)
-                                                    {
-                                                        dstHeap->SetByCpuHandle(destHandle, {});
-                                                        continue;
-                                                    }
-
-                                                    dstHeap->SetByCpuHandle(destHandle, *buffer);
-                                                }
-
-                                                srcIndex++;
-
-                                                if (srcRangeSizes != nullptr && srcRangeSizes[srcRangeIndex] == srcIndex)
-                                                {
-                                                    srcIndex = 0;
-                                                    srcRangeIndex++;
-                                                }
-                                            }
-
-                                        }
-                                    });
-    }
-    else
-    {
-        auto size = This->GetDescriptorHandleIncrementSize(DescriptorHeapsType);
-
-        if (srcRangeSizes != nullptr)
+        for (size_t i = 0; i < NumSrcDescriptorRanges; i++)
         {
-            LOG_DEBUG_ONLY("Src based loop");
+            UINT copyCount = 1;
 
-            size_t destRangeIndex = 0;
-            size_t destIndex = 0;
+            if (srcRangeSizes != nullptr)
+                copyCount = srcRangeSizes[i];
 
-            for (size_t i = 0; i < NumSrcDescriptorRanges; i++)
+            LOG_DEBUG_ONLY("CopyCount[{}]: {}", i, copyCount);
+
+            for (size_t j = 0; j < copyCount; j++)
             {
-                UINT copyCount = 1;
+                LOG_DEBUG_ONLY("srcRangeIndex: {}, srcIndex: {}, dstRangeIndex: {}, dstIndex: {}", i, j, destRangeIndex, destIndex);
 
-                if (srcRangeSizes != nullptr)
-                    copyCount = srcRangeSizes[i];
+                // source
+                auto srcHandle = srcRangeStarts[i].ptr + j * size;
+                auto srcHeap = GetHeapByCpuHandle(srcHandle);
+                auto destHandle = destRangeStarts[destRangeIndex].ptr + destIndex * size;
+                auto dstHeap = GetHeapByCpuHandle(destHandle);
 
-                LOG_DEBUG_ONLY("CopyCount[{}]: {}", i, copyCount);
+                LOG_DEBUG_ONLY("srcHeap: {:X}, dstHeap: {:X}", srcHandle, destHandle);
 
-                for (size_t j = 0; j < copyCount; j++)
+                if (srcHeap == nullptr)
                 {
-                    LOG_DEBUG_ONLY("srcRangeIndex: {}, srcIndex: {}, dstRangeIndex: {}, dstIndex: {}", i, j, destRangeIndex, destIndex);
-
-                    // source
-                    auto srcHandle = srcRangeStarts[i].ptr + j * size;
-                    auto srcHeap = GetHeapByCpuHandle(srcHandle);
-                    auto destHandle = destRangeStarts[destRangeIndex].ptr + destIndex * size;
-                    auto dstHeap = GetHeapByCpuHandle(destHandle);
-
-                    LOG_DEBUG_ONLY("srcHeap: {:X}, dstHeap: {:X}", srcHandle, destHandle);
-
-                    if (srcHeap == nullptr)
+                    if (dstHeap != nullptr)
                     {
-                        if (dstHeap != nullptr)
-                            dstHeap->SetByCpuHandle(destHandle, {});
-
-                        if (destRangeSizes == nullptr || destRangeSizes[destRangeIndex] == destIndex)
+#ifdef USE_RESOURCE_DISCARD
                         {
-                            destIndex = 0;
-                            destRangeIndex++;
+                            std::lock_guard<std::mutex> lock(_resourceMutex);
+                            auto temp = dstHeap->GetByCpuHandle(destHandle);
+
+                            if (temp != nullptr && temp->buffer != nullptr)
+                                RemoveResourceHeap(temp->buffer, destHandle);
                         }
-                        else
-                        {
-                            destIndex++;
-                        }
+#endif
 
-                        continue;
-                    }
-
-                    auto buffer = srcHeap->GetByCpuHandle(srcHandle);
-
-                    // destination
-                    if (dstHeap == nullptr)
-                    {
-                        if (destRangeSizes == nullptr || destRangeSizes[destRangeIndex] == destIndex)
-                        {
-                            destIndex = 0;
-                            destRangeIndex++;
-                        }
-                        else
-                        {
-                            destIndex++;
-                        }
-
-                        continue;
-                    }
-
-                    if (buffer == nullptr)
-                    {
                         dstHeap->SetByCpuHandle(destHandle, {});
-
-                        if (destRangeSizes == nullptr || destRangeSizes[destRangeIndex] == destIndex)
-                        {
-                            destIndex = 0;
-                            destRangeIndex++;
-                        }
-                        else
-                        {
-                            destIndex++;
-                        }
-
-                        continue;
                     }
-
-                    dstHeap->SetByCpuHandle(destHandle, *buffer);
-
-                    if (fgHandlesByResources.contains(buffer->buffer))
-                        fgHandlesByResources[buffer->buffer].push_back({ destHandle, 0 });
-                    else
-                        fgHandlesByResources[buffer->buffer] = { { destHandle, 0 } };
 
                     if (destRangeSizes == nullptr || destRangeSizes[destRangeIndex] == destIndex)
                     {
@@ -987,98 +984,126 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
                     {
                         destIndex++;
                     }
+
+                    continue;
+                }
+
+                auto buffer = srcHeap->GetByCpuHandle(srcHandle);
+
+                // destination
+                if (dstHeap == nullptr)
+                {
+                    if (destRangeSizes == nullptr || destRangeSizes[destRangeIndex] == destIndex)
+                    {
+                        destIndex = 0;
+                        destRangeIndex++;
+                    }
+                    else
+                    {
+                        destIndex++;
+                    }
+
+                    continue;
+                }
+
+                if (buffer == nullptr)
+                {
+#ifdef USE_RESOURCE_DISCARD
+                    {
+                        std::lock_guard<std::mutex> lock(_resourceMutex);
+                        auto temp = dstHeap->GetByCpuHandle(destHandle);
+
+                        if (temp != nullptr && temp->buffer != nullptr)
+                            RemoveResourceHeap(temp->buffer, destHandle);
+                    }
+#endif
+                    dstHeap->SetByCpuHandle(destHandle, {});
+
+                    if (destRangeSizes == nullptr || destRangeSizes[destRangeIndex] == destIndex)
+                    {
+                        destIndex = 0;
+                        destRangeIndex++;
+                    }
+                    else
+                    {
+                        destIndex++;
+                    }
+
+                    continue;
+                }
+
+#ifdef USE_RESOURCE_DISCARD
+                {
+                    std::lock_guard<std::mutex> lock(_resourceMutex);
+                    auto temp = dstHeap->GetByCpuHandle(destHandle);
+
+                    if (temp != nullptr && temp->buffer != nullptr)
+                        RemoveResourceHeap(temp->buffer, destHandle);
+
+                    AddResourceHeap(buffer->buffer, destHandle);
+                }
+#endif
+
+                dstHeap->SetByCpuHandle(destHandle, *buffer);
+
+                if (destRangeSizes == nullptr || destRangeSizes[destRangeIndex] == destIndex)
+                {
+                    destIndex = 0;
+                    destRangeIndex++;
+                }
+                else
+                {
+                    destIndex++;
                 }
             }
-
         }
-        else
+
+    }
+    else
+    {
+        LOG_DEBUG_ONLY("Dst based loop");
+
+        size_t srcRangeIndex = 0;
+        size_t srcIndex = 0;
+
+        for (size_t i = 0; i < NumDestDescriptorRanges; i++)
         {
-            LOG_DEBUG_ONLY("Dst based loop");
+            UINT copyCount = 1;
 
-            size_t srcRangeIndex = 0;
-            size_t srcIndex = 0;
+            if (destRangeSizes != nullptr)
+                copyCount = destRangeSizes[i];
 
-            for (size_t i = 0; i < NumDestDescriptorRanges; i++)
+            LOG_DEBUG_ONLY("CopyCount[{}]: {}", i, copyCount);
+
+            for (size_t j = 0; j < copyCount; j++)
             {
-                UINT copyCount = 1;
+                LOG_DEBUG_ONLY("dstRangeIndex: {}, dstIndex: {}, srcRangeIndex: {}, srcIndex: {}", i, j, srcRangeIndex, srcIndex);
 
-                if (destRangeSizes != nullptr)
-                    copyCount = destRangeSizes[i];
+                // source
+                auto srcHandle = srcRangeStarts[srcRangeIndex].ptr + srcIndex * size;
+                auto srcHeap = GetHeapByCpuHandle(srcHandle);
+                auto destHandle = destRangeStarts[i].ptr + j * size;
+                auto dstHeap = GetHeapByCpuHandle(destHandle);
 
-                LOG_DEBUG_ONLY("CopyCount[{}]: {}", i, copyCount);
+                LOG_DEBUG_ONLY("dstHeap: {:X}, srcHeap: {:X}", destHandle, srcHandle);
 
-                for (size_t j = 0; j < copyCount; j++)
+
+                if (srcHeap == nullptr)
                 {
-                    LOG_DEBUG_ONLY("dstRangeIndex: {}, dstIndex: {}, srcRangeIndex: {}, srcIndex: {}", i, j, srcRangeIndex, srcIndex);
-
-                    // source
-                    auto srcHandle = srcRangeStarts[srcRangeIndex].ptr + srcIndex * size;
-                    auto srcHeap = GetHeapByCpuHandle(srcHandle);
-                    auto destHandle = destRangeStarts[i].ptr + j * size;
-                    auto dstHeap = GetHeapByCpuHandle(destHandle);
-
-                    LOG_DEBUG_ONLY("dstHeap: {:X}, srcHeap: {:X}", destHandle, srcHandle);
-
-
-                    if (srcHeap == nullptr)
+                    if (dstHeap != nullptr)
                     {
-                        if (dstHeap != nullptr)
-                            dstHeap->SetByCpuHandle(destHandle, {});
-
-                        if (srcRangeSizes == nullptr || srcRangeSizes[srcRangeIndex] == srcIndex)
+#ifdef USE_RESOURCE_DISCARD
                         {
-                            srcIndex = 0;
-                            srcRangeIndex++;
+                            std::lock_guard<std::mutex> lock(_resourceMutex);
+                            auto temp = dstHeap->GetByCpuHandle(destHandle);
+
+                            if (temp != nullptr && temp->buffer != nullptr)
+                                RemoveResourceHeap(temp->buffer, destHandle);
                         }
-                        else
-                        {
-                            srcIndex++;
-                        }
+#endif
 
-                        continue;
-                    }
-
-                    auto buffer = srcHeap->GetByCpuHandle(srcHandle);
-
-                    // destination
-                    if (dstHeap == nullptr)
-                    {
-                        if (srcRangeSizes == nullptr || srcRangeSizes[srcRangeIndex] == srcIndex)
-                        {
-                            srcIndex = 0;
-                            srcRangeIndex++;
-                        }
-                        else
-                        {
-                            srcIndex++;
-                        }
-
-                        continue;
-                    }
-
-                    if (buffer == nullptr)
-                    {
                         dstHeap->SetByCpuHandle(destHandle, {});
-
-                        if (srcRangeSizes == nullptr || srcRangeSizes[srcRangeIndex] == srcIndex)
-                        {
-                            srcIndex = 0;
-                            srcRangeIndex++;
-                        }
-                        else
-                        {
-                            srcIndex++;
-                        }
-
-                        continue;
                     }
-
-                    dstHeap->SetByCpuHandle(destHandle, *buffer);
-
-                    if (fgHandlesByResources.contains(buffer->buffer))
-                        fgHandlesByResources[buffer->buffer].push_back({ destHandle, 0 });
-                    else
-                        fgHandlesByResources[buffer->buffer] = { { destHandle, 0 } };
 
                     if (srcRangeSizes == nullptr || srcRangeSizes[srcRangeIndex] == srcIndex)
                     {
@@ -1089,10 +1114,81 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
                     {
                         srcIndex++;
                     }
+
+                    continue;
+                }
+
+                auto buffer = srcHeap->GetByCpuHandle(srcHandle);
+
+                // destination
+                if (dstHeap == nullptr)
+                {
+                    if (srcRangeSizes == nullptr || srcRangeSizes[srcRangeIndex] == srcIndex)
+                    {
+                        srcIndex = 0;
+                        srcRangeIndex++;
+                    }
+                    else
+                    {
+                        srcIndex++;
+                    }
+
+                    continue;
+                }
+
+                if (buffer == nullptr)
+                {
+#ifdef USE_RESOURCE_DISCARD
+                    {
+                        std::lock_guard<std::mutex> lock(_resourceMutex);
+                        auto temp = dstHeap->GetByCpuHandle(destHandle);
+
+                        if (temp != nullptr && temp->buffer != nullptr)
+                            RemoveResourceHeap(temp->buffer, destHandle);
+                    }
+#endif
+
+                    dstHeap->SetByCpuHandle(destHandle, {});
+
+                    if (srcRangeSizes == nullptr || srcRangeSizes[srcRangeIndex] == srcIndex)
+                    {
+                        srcIndex = 0;
+                        srcRangeIndex++;
+                    }
+                    else
+                    {
+                        srcIndex++;
+                    }
+
+                    continue;
+                }
+
+#ifdef USE_RESOURCE_DISCARD
+                {
+                    std::lock_guard<std::mutex> lock(_resourceMutex);
+                    auto temp = dstHeap->GetByCpuHandle(destHandle);
+
+                    if (temp != nullptr && temp->buffer != nullptr)
+                        RemoveResourceHeap(temp->buffer, destHandle);
+
+                    AddResourceHeap(buffer->buffer, destHandle);
+                }
+#endif
+
+                dstHeap->SetByCpuHandle(destHandle, *buffer);
+
+                if (srcRangeSizes == nullptr || srcRangeSizes[srcRangeIndex] == srcIndex)
+                {
+                    srcIndex = 0;
+                    srcRangeIndex++;
+                }
+                else
+                {
+                    srcIndex++;
                 }
             }
-
         }
+
     }
 
 }
@@ -1108,90 +1204,72 @@ void ResTrack_Dx12::hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescript
     if (!Config::Instance()->FGAlwaysTrackHeaps.value_or_default() && !IsHudFixActive())
         return;
 
-    if (State::Instance().useThreadingForHeaps)
+    auto size = This->GetDescriptorHandleIncrementSize(DescriptorHeapsType);
+
+    for (size_t i = 0; i < NumDescriptors; i++)
     {
-        auto asyncTask = std::async(std::launch::async, [=]()
-                                    {
-                                        auto size = This->GetDescriptorHandleIncrementSize(DescriptorHeapsType);
+        // source
+        auto srcHandle = SrcDescriptorRangeStart.ptr + i * size;
+        auto srcHeap = GetHeapByCpuHandle(srcHandle);
+        auto destHandle = DestDescriptorRangeStart.ptr + i * size;
+        auto dstHeap = GetHeapByCpuHandle(destHandle);
 
-                                        for (size_t i = 0; i < NumDescriptors; i++)
-                                        {
-                                            // source
-                                            auto srcHandle = SrcDescriptorRangeStart.ptr + i * size;
-                                            auto srcHeap = GetHeapByCpuHandle(srcHandle);
-                                            auto destHandle = DestDescriptorRangeStart.ptr + i * size;
-                                            auto dstHeap = GetHeapByCpuHandle(destHandle);
-
-                                            if (srcHeap == nullptr)
-                                            {
-                                                if (dstHeap != nullptr)
-                                                    dstHeap->SetByCpuHandle(destHandle, {});
-
-                                                continue;
-                                            }
-
-                                            auto buffer = srcHeap->GetByCpuHandle(srcHandle);
-
-                                            // destination
-                                            if (dstHeap == nullptr)
-                                                continue;
-
-                                            if (buffer == nullptr)
-                                            {
-                                                dstHeap->SetByCpuHandle(destHandle, {});
-                                                continue;
-                                            }
-
-                                            dstHeap->SetByCpuHandle(destHandle, *buffer);
-
-                                            //LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}",
-                                            //               handle, destHandle, GetGPUHandle(This, handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), GetGPUHandle(This, destHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), (UINT)DescriptorHeapsType);
-                                        }
-
-                                    });
-    }
-    else
-    {
-        auto size = This->GetDescriptorHandleIncrementSize(DescriptorHeapsType);
-
-        for (size_t i = 0; i < NumDescriptors; i++)
+        if (srcHeap == nullptr)
         {
-            // source
-            auto srcHandle = SrcDescriptorRangeStart.ptr + i * size;
-            auto srcHeap = GetHeapByCpuHandle(srcHandle);
-            auto destHandle = DestDescriptorRangeStart.ptr + i * size;
-            auto dstHeap = GetHeapByCpuHandle(destHandle);
-
-            if (srcHeap == nullptr)
+            if (dstHeap != nullptr)
             {
-                if (dstHeap != nullptr)
-                    dstHeap->SetByCpuHandle(destHandle, {});
+#ifdef USE_RESOURCE_DISCARD
+                {
+                    std::lock_guard<std::mutex> lock(_resourceMutex);
+                    auto temp = dstHeap->GetByCpuHandle(destHandle);
 
-                continue;
-            }
+                    if (temp != nullptr && temp->buffer != nullptr)
+                        RemoveResourceHeap(temp->buffer, destHandle);
+                }
+#endif
 
-            auto buffer = srcHeap->GetByCpuHandle(srcHandle);
-
-            // destination
-            if (dstHeap == nullptr)
-                continue;
-
-            if (buffer == nullptr)
-            {
                 dstHeap->SetByCpuHandle(destHandle, {});
-                continue;
             }
 
-            dstHeap->SetByCpuHandle(destHandle, *buffer);
-
-            if (fgHandlesByResources.contains(buffer->buffer))
-                fgHandlesByResources[buffer->buffer].push_back({ destHandle, 0 });
-            else
-                fgHandlesByResources[buffer->buffer] = { { destHandle, 0 } };
-
-            //LOG_DEBUG_ONLY("Cpu Src: {}, Cpu Dest: {}, Gpu Src: {} Gpu Dest: {}, Type: {}",
-            //               handle, destHandle, GetGPUHandle(This, handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), GetGPUHandle(This, destHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), (UINT)DescriptorHeapsType);
+            continue;
         }
+
+        auto buffer = srcHeap->GetByCpuHandle(srcHandle);
+
+        // destination
+        if (dstHeap == nullptr)
+            continue;
+
+        if (buffer == nullptr)
+        {
+#ifdef USE_RESOURCE_DISCARD
+            {
+                std::lock_guard<std::mutex> lock(_resourceMutex);
+                auto temp = dstHeap->GetByCpuHandle(destHandle);
+
+                if (temp != nullptr && temp->buffer != nullptr)
+                    RemoveResourceHeap(temp->buffer, destHandle);
+            }
+#endif
+
+            dstHeap->SetByCpuHandle(destHandle, {});
+            continue;
+        }
+
+
+#ifdef USE_RESOURCE_DISCARD
+        {
+            std::lock_guard<std::mutex> lock(_resourceMutex);
+            auto temp = dstHeap->GetByCpuHandle(destHandle);
+
+            if (temp != nullptr && temp->buffer != nullptr)
+                RemoveResourceHeap(temp->buffer, destHandle);
+
+            AddResourceHeap(buffer->buffer, destHandle);
+        }
+#endif
+
+        dstHeap->SetByCpuHandle(destHandle, *buffer);
     }
 }
 

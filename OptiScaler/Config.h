@@ -346,6 +346,7 @@ public:
     CustomOptional<bool> FGFPTAllowWaitForSingleObjectOnFence{ false };
     CustomOptional<bool> FGHudfixHalfSync{ false };
     CustomOptional<bool> FGHudfixFullSync{ false };
+    CustomOptional<bool> FGHudfixTrackRelease{ false };
 
     // DLSS Enabler
     std::optional<int> DE_FramerateLimit;			// off - vsync - number

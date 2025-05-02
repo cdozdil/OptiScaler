@@ -1690,12 +1690,6 @@ bool MenuCommon::RenderMenu()
                                 }
                                 ShowHelpMarker("Always track resources, might cause performace issues\nbut also might fix HudFix related crashes!");
 
-                                ImGui::SameLine(0.0f, 16.0f);
-                                if (ImGui::Checkbox("Async Heap Tracking", &State::Instance().useThreadingForHeaps))
-                                    LOG_DEBUG("Enabled set UseThreadingForHeaps: {}", State::Instance().useThreadingForHeaps);
-
-                                ShowHelpMarker("Use async while tracking descriptor heap copy operations.\nMight cause locks or crashes!");
-
                                 ImGui::TreePop();
                             }
 

@@ -5,7 +5,7 @@
 #include <hudfix/Hudfix_Dx12.h>
 
 // Clear heap info when ResourceDiscard is called
-#define USE_RESOURCE_DISCARD
+//#define USE_RESOURCE_DISCARD
 
 // Use CopyResource & CopyTextureRegion to capture hudless
 // It's a unstable
@@ -20,6 +20,7 @@
 #define USE_ARRAY_HEAP_INFO
 
 #ifdef USE_ARRAY_HEAP_INFO
+
 
 typedef struct HeapInfo
 {
@@ -64,9 +65,6 @@ typedef struct HeapInfo
 
     void SetByCpuHandle(SIZE_T cpuHandle, ResourceInfo setInfo) const
     {
-        if (setInfo.buffer == nullptr)
-            return;
-
         if (cpuStart > cpuHandle || cpuEnd < cpuHandle)
             return;
 
