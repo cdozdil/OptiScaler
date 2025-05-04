@@ -1539,18 +1539,18 @@ void ResTrack_Dx12::hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT N
                 }
             }
 
-            auto resource = heap->GetByCpuHandle(handle.ptr);
-            if (resource == nullptr || resource->buffer == nullptr)
+            auto capturedBuffer = heap->GetByCpuHandle(handle.ptr);
+            if (capturedBuffer == nullptr || capturedBuffer->buffer == nullptr)
             {
                 LOG_DEBUG_ONLY("Miss index: {0}, cpu: {1}", i, handle.ptr);
                 continue;
             }
 
             LOG_DEBUG_ONLY("CommandList: {:X}", (size_t)This);
-            resource->state = D3D12_RESOURCE_STATE_RENDER_TARGET;
+            capturedBuffer->state = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
             if (Config::Instance()->FGImmediateCapture.value_or_default() &&
-                Hudfix_Dx12::CheckForHudless(__FUNCTION__, This, resource, resource->state))
+                Hudfix_Dx12::CheckForHudless(__FUNCTION__, This, capturedBuffer, capturedBuffer->state))
             {
                 break;
             }
@@ -1568,8 +1568,8 @@ void ResTrack_Dx12::hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT N
                 }
 
                 // add found resource
-                resource->buffer->AddRef();
-                fgPossibleHudless[fIndex][This].insert_or_assign(resource->buffer, *resource);
+                capturedBuffer->buffer->AddRef();
+                fgPossibleHudless[fIndex][This].insert_or_assign(capturedBuffer->buffer, *capturedBuffer);
             }
         }
     }
@@ -1728,21 +1728,30 @@ void ResTrack_Dx12::hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT
 {
     o_DrawIndexedInstanced(This, IndexCountPerInstance, InstanceCount, StartIndexLocation, BaseVertexLocation, StartInstanceLocation);
 
-
     if (!IsHudFixActive())
         return;
+
+    auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
 
     if (This == MenuOverlayDx::MenuCommandList() || IsFGCommandList(This))
     {
         if (!_cmdList)
             _cmdList = true;
 
+        std::lock_guard<std::mutex> lock(hudlessMutex);
+
+        for (auto& resource : fgPossibleHudless[fIndex][This])
+        {
+            resource.first->Release();
+        }
+
+        fgPossibleHudless[fIndex][This].clear();
+
         return;
     }
 
     {
         ankerl::unordered_dense::map<ID3D12Resource*, ResourceInfo> val0;
-        auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
 
         {
             std::lock_guard<std::mutex> lock(hudlessMutex);
@@ -1798,12 +1807,27 @@ void ResTrack_Dx12::hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroup
     if (!IsHudFixActive())
         return;
 
+    auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
+
     if (This == MenuOverlayDx::MenuCommandList() || IsFGCommandList(This))
+    {
+        if (!_cmdList)
+            _cmdList = true;
+
+        std::lock_guard<std::mutex> lock(hudlessMutex);
+
+        for (auto& resource : fgPossibleHudless[fIndex][This])
+        {
+            resource.first->Release();
+        }
+
+        fgPossibleHudless[fIndex][This].clear();
+
         return;
+    }
 
     {
         ankerl::unordered_dense::map<ID3D12Resource*, ResourceInfo> val0;
-        auto fIndex = Hudfix_Dx12::ActivePresentFrame() % BUFFER_COUNT;
 
         {
             std::lock_guard<std::mutex> lock(hudlessMutex);
