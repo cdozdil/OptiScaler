@@ -341,12 +341,14 @@ public:
     CustomOptional<bool> FGFramePacingTuning{ true };
     CustomOptional<float> FGFPTSafetyMarginInMs{ 0.01f };
     CustomOptional<float> FGFPTVarianceFactor{ 0.3f };
-    CustomOptional<bool> FGFPTAllowHybridSpin{ true };
+    CustomOptional<bool> FGFPTAllowHybridSpin{ false };
     CustomOptional<int> FGFPTHybridSpinTime{ 2 };
     CustomOptional<bool> FGFPTAllowWaitForSingleObjectOnFence{ false };
     CustomOptional<bool> FGHudfixHalfSync{ false };
     CustomOptional<bool> FGHudfixFullSync{ false };
     CustomOptional<bool> FGHudfixTrackRelease{ false };
+    CustomOptional<int> FGHudfixCBVTrackMode{ 0 }; // 0 off, 1 after upscaler, 2 full
+
 
     // DLSS Enabler
     std::optional<int> DE_FramerateLimit;			// off - vsync - number

@@ -103,12 +103,12 @@ struct HeapCacheTLS
     unsigned  genSeen = 0;
 };
 
-static thread_local HeapCacheTLS cache;             
-static thread_local HeapCacheTLS cacheRTV;          
-static thread_local HeapCacheTLS cacheCBV;          
-static thread_local HeapCacheTLS cacheSRV;          
-static thread_local HeapCacheTLS cacheUAV;          
-static std::atomic<unsigned> gHeapGeneration{ 1 };  
+static thread_local HeapCacheTLS cache;
+static thread_local HeapCacheTLS cacheRTV;
+static thread_local HeapCacheTLS cacheCBV;
+static thread_local HeapCacheTLS cacheSRV;
+static thread_local HeapCacheTLS cacheUAV;
+static std::atomic<unsigned> gHeapGeneration{ 1 };
 
 #ifdef USE_RESOURCE_DISCARD
 // created resources
@@ -567,16 +567,19 @@ static void hkCreateDepthStencilView(ID3D12Device* This, ID3D12Resource* pResour
     //}
 }
 
-static void hkCreateConstantBufferView(ID3D12Device* This, const D3D12_CONSTANT_BUFFER_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
+void ResTrack_Dx12::hkCreateConstantBufferView(ID3D12Device* This, const D3D12_CONSTANT_BUFFER_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
     o_CreateConstantBufferView(This, pDesc, DestDescriptor);
 
-    if (DestDescriptor.ptr != 0)
+    if (Config::Instance()->FGHudfixCBVTrackMode.value_or_default() == 2 || (Config::Instance()->FGHudfixCBVTrackMode.value_or_default() == 1 && IsHudFixActive()))
     {
-        auto heap = GetHeapByCpuHandleCBV(DestDescriptor.ptr);
+        if (DestDescriptor.ptr != 0)
+        {
+            auto heap = GetHeapByCpuHandleCBV(DestDescriptor.ptr);
 
-        if (heap != nullptr)
-            heap->ClearByCpuHandle(DestDescriptor.ptr);
+            if (heap != nullptr)
+                heap->ClearByCpuHandle(DestDescriptor.ptr);
+        }
     }
 }
 
@@ -2008,6 +2011,9 @@ static void HookToQueue(ID3D12Device* InDevice)
 
 void ResTrack_Dx12::HookDevice(ID3D12Device* device)
 {
+    if (Config::Instance()->FGType.value_or_default() != OptiFG || !Config::Instance()->OverlayMenu.value_or_default())
+        return;
+
     if (o_CreateDescriptorHeap != nullptr || device == nullptr)
         return;
 
@@ -2032,7 +2038,7 @@ void ResTrack_Dx12::HookDevice(ID3D12Device* device)
     o_CopyDescriptorsSimple = (PFN_CopyDescriptorsSimple)pVTable[24];
 
     // Apply the detour
-    if (o_CreateDescriptorHeap != nullptr || o_CreateRenderTargetView != nullptr)
+    if (o_CreateDescriptorHeap != nullptr)
     {
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
@@ -2040,33 +2046,29 @@ void ResTrack_Dx12::HookDevice(ID3D12Device* device)
         if (o_CreateDescriptorHeap != nullptr)
             DetourAttach(&(PVOID&)o_CreateDescriptorHeap, hkCreateDescriptorHeap);
 
-        if (Config::Instance()->FGType.value_or_default() == OptiFG && Config::Instance()->OverlayMenu.value_or_default())
-        {
-            if (o_CreateConstantBufferView != nullptr)
-                DetourAttach(&(PVOID&)o_CreateConstantBufferView, hkCreateConstantBufferView);
+        if (o_CreateConstantBufferView != nullptr)
+            DetourAttach(&(PVOID&)o_CreateConstantBufferView, hkCreateConstantBufferView);
 
-            if (o_CreateRenderTargetView != nullptr)
-                DetourAttach(&(PVOID&)o_CreateRenderTargetView, hkCreateRenderTargetView);
+        if (o_CreateRenderTargetView != nullptr)
+            DetourAttach(&(PVOID&)o_CreateRenderTargetView, hkCreateRenderTargetView);
 
-            //if (o_CreateDepthStencilView != nullptr)
-            //    DetourAttach(&(PVOID&)o_CreateDepthStencilView, hkCreateDepthStencilView);
+        //if (o_CreateDepthStencilView != nullptr)
+        //    DetourAttach(&(PVOID&)o_CreateDepthStencilView, hkCreateDepthStencilView);
 
-            //if (o_CreateSampler != nullptr)
-            //    DetourAttach(&(PVOID&)o_CreateSampler, hkCreateSampler);
+        //if (o_CreateSampler != nullptr)
+        //    DetourAttach(&(PVOID&)o_CreateSampler, hkCreateSampler);
 
-            if (o_CreateShaderResourceView != nullptr)
-                DetourAttach(&(PVOID&)o_CreateShaderResourceView, hkCreateShaderResourceView);
+        if (o_CreateShaderResourceView != nullptr)
+            DetourAttach(&(PVOID&)o_CreateShaderResourceView, hkCreateShaderResourceView);
 
-            if (o_CreateUnorderedAccessView != nullptr)
-                DetourAttach(&(PVOID&)o_CreateUnorderedAccessView, hkCreateUnorderedAccessView);
+        if (o_CreateUnorderedAccessView != nullptr)
+            DetourAttach(&(PVOID&)o_CreateUnorderedAccessView, hkCreateUnorderedAccessView);
 
-            if (o_CopyDescriptors != nullptr)
-                DetourAttach(&(PVOID&)o_CopyDescriptors, hkCopyDescriptors);
+        if (o_CopyDescriptors != nullptr)
+            DetourAttach(&(PVOID&)o_CopyDescriptors, hkCopyDescriptors);
 
-            if (o_CopyDescriptorsSimple != nullptr)
-                DetourAttach(&(PVOID&)o_CopyDescriptorsSimple, hkCopyDescriptorsSimple);
-
-        }
+        if (o_CopyDescriptorsSimple != nullptr)
+            DetourAttach(&(PVOID&)o_CopyDescriptorsSimple, hkCopyDescriptorsSimple);
 
         DetourTransactionCommit();
     }

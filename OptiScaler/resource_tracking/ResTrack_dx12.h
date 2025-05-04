@@ -179,6 +179,8 @@ private:
 
     static void hkExecuteBundle(ID3D12GraphicsCommandList* This, ID3D12GraphicsCommandList* pCommandList);
 
+    static void hkCreateConstantBufferView(ID3D12Device* This, const D3D12_CONSTANT_BUFFER_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+
     static ULONG hkRelease(ID3D12Resource* This);
 
     static void HookCommandList(ID3D12Device* InDevice);

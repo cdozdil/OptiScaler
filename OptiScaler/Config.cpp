@@ -96,6 +96,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             FGHudfixHalfSync.set_from_config(readBool("OptiFG", "HudfixHalfSync"));
             FGHudfixFullSync.set_from_config(readBool("OptiFG", "HudfixFullSync"));
             FGHudfixTrackRelease.set_from_config(readBool("OptiFG", "HudfixTrackRelease"));
+            FGHudfixCBVTrackMode.set_from_config(readInt("OptiFG", "HudfixCBVTrackMode"));
         }
 
         // Framerate
@@ -609,6 +610,8 @@ bool Config::SaveIni()
         ini.SetValue("OptiFG", "HudfixHalfSync", GetBoolValue(Instance()->FGHudfixHalfSync.value_for_config()).c_str());
         ini.SetValue("OptiFG", "HudfixFullSync", GetBoolValue(Instance()->FGHudfixFullSync.value_for_config()).c_str());
         ini.SetValue("OptiFG", "HudfixTrackRelease", GetBoolValue(Instance()->FGHudfixTrackRelease.value_for_config()).c_str());
+        
+        ini.SetValue("OptiFG", "HudfixCBVTrackMode", GetIntValue(Instance()->FGHudfixCBVTrackMode.value_for_config()).c_str());
     }
 
     // Framerate 
