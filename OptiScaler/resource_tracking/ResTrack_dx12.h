@@ -35,16 +35,14 @@ typedef struct HeapInfo
 
     HeapInfo(SIZE_T cpuStart, SIZE_T cpuEnd, SIZE_T gpuStart, SIZE_T gpuEnd, UINT numResources, UINT increment, UINT type)
         : cpuStart(cpuStart), cpuEnd(cpuEnd), gpuStart(gpuStart), gpuEnd(gpuEnd), numDescriptors(numResources), increment(increment), info(new ResourceInfo[numResources]), type(type)
-    {}
+    {
+    }
 
     ResourceInfo* GetByCpuHandle(SIZE_T cpuHandle) const
     {
-        if (cpuStart > cpuHandle || cpuEnd < cpuHandle)
-            return nullptr;
-
         auto index = (cpuHandle - cpuStart) / increment;
 
-        if (index >= numDescriptors || info[index].buffer == nullptr)
+        if (info[index].buffer == nullptr)
             return nullptr;
 
         return &info[index];
@@ -52,12 +50,9 @@ typedef struct HeapInfo
 
     ResourceInfo* GetByGpuHandle(SIZE_T gpuHandle) const
     {
-        if (gpuStart > gpuHandle || gpuEnd < gpuHandle)
-            return nullptr;
-
         auto index = (gpuHandle - gpuStart) / increment;
 
-        if (index >= numDescriptors || info[index].buffer == nullptr)
+        if (info[index].buffer == nullptr)
             return nullptr;
 
         return &info[index];
@@ -65,30 +60,33 @@ typedef struct HeapInfo
 
     void SetByCpuHandle(SIZE_T cpuHandle, ResourceInfo setInfo) const
     {
-        if (cpuStart > cpuHandle || cpuEnd < cpuHandle)
-            return;
-
         auto index = (cpuHandle - cpuStart) / increment;
-
-        if (index >= numDescriptors)
-            return;
-
         info[index] = setInfo;
     }
 
     void SetByGpuHandle(SIZE_T gpuHandle, ResourceInfo setInfo) const
     {
-        if (gpuStart > gpuHandle || gpuEnd < gpuHandle)
-            return;
-
         auto index = (gpuHandle - gpuStart) / increment;
-
-        if (index >= numDescriptors)
-            return;
-
         info[index] = setInfo;
     }
-} heap_info; 
+
+    void ClearByCpuHandle(SIZE_T cpuHandle) const
+    {
+        auto index = (cpuHandle - cpuStart) / increment;
+
+        if (info[index].buffer != nullptr)
+            info[index].buffer = nullptr;
+    }
+
+    void ClearByGpuHandle(SIZE_T gpuHandle) const
+    {
+        auto index = (gpuHandle - gpuStart) / increment;
+        
+        if (info[index].buffer != nullptr)
+            info[index].buffer = nullptr;
+    }
+
+} heap_info;
 #else
 // Vector version for lower heap usage
 typedef struct HeapInfo
@@ -103,7 +101,8 @@ typedef struct HeapInfo
     std::vector<ResourceInfo> info;
 
     HeapInfo(SIZE_T cpuStart, SIZE_T cpuEnd, SIZE_T gpuStart, SIZE_T gpuEnd, UINT numResources, UINT increment, UINT type)
-        : cpuStart(cpuStart), cpuEnd(cpuEnd), gpuStart(gpuStart), gpuEnd(gpuEnd), numDescriptors(numResources), increment(increment), info(numResources), type(type) {}
+        : cpuStart(cpuStart), cpuEnd(cpuEnd), gpuStart(gpuStart), gpuEnd(gpuEnd), numDescriptors(numResources), increment(increment), info(numResources), type(type) {
+    }
 
     ResourceInfo* GetByCpuHandle(SIZE_T cpuHandle)
     {
@@ -161,14 +160,14 @@ private:
     inline static std::mutex _drawMutex;
 
     static bool IsHudFixActive();
-    
+
     static void hkCopyDescriptors(ID3D12Device* This,
                                   UINT NumDestDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pDestDescriptorRangeStarts, UINT* pDestDescriptorRangeSizes,
                                   UINT NumSrcDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorRangeStarts, UINT* pSrcDescriptorRangeSizes,
                                   D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType);
     static void hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptorRangeStart,
                                         D3D12_CPU_DESCRIPTOR_HANDLE SrcDescriptorRangeStart, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType);
-    
+
     static void hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* This, UINT RootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor);
     static void hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT NumRenderTargetDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE* pRenderTargetDescriptors,
                                      BOOL RTsSingleHandleToDescriptorRange, D3D12_CPU_DESCRIPTOR_HANDLE* pDepthStencilDescriptor);

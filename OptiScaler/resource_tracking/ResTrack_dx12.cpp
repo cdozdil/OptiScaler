@@ -28,6 +28,10 @@ static UINT _trackMark = 1;
 typedef void(*PFN_CreateRenderTargetView)(ID3D12Device* This, ID3D12Resource* pResource, D3D12_RENDER_TARGET_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 typedef void(*PFN_CreateShaderResourceView)(ID3D12Device* This, ID3D12Resource* pResource, D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 typedef void(*PFN_CreateUnorderedAccessView)(ID3D12Device* This, ID3D12Resource* pResource, ID3D12Resource* pCounterResource, D3D12_UNORDERED_ACCESS_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+typedef void(*PFN_CreateDepthStencilView)(ID3D12Device* This, ID3D12Resource* pResource, const D3D12_DEPTH_STENCIL_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+typedef void(*PFN_CreateConstantBufferView)(ID3D12Device* This, const D3D12_CONSTANT_BUFFER_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+
+typedef void(*PFN_CreateSampler)(ID3D12Device* This, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
 
 typedef HRESULT(*PFN_CreateDescriptorHeap)(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_DESC* pDescriptorHeapDesc, REFIID riid, void** ppvHeap);
 typedef void(*PFN_CopyDescriptors)(ID3D12Device* This, UINT NumDestDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pDestDescriptorRangeStarts, UINT* pDestDescriptorRangeSizes, UINT NumSrcDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorRangeStarts, UINT* pSrcDescriptorRangeSizes, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapsType);
@@ -59,6 +63,10 @@ typedef void(*PFN_DiscardResource)(ID3D12GraphicsCommandList* This, ID3D12Resour
 static PFN_CreateRenderTargetView o_CreateRenderTargetView = nullptr;
 static PFN_CreateShaderResourceView o_CreateShaderResourceView = nullptr;
 static PFN_CreateUnorderedAccessView o_CreateUnorderedAccessView = nullptr;
+static PFN_CreateDepthStencilView o_CreateDepthStencilView = nullptr;
+static PFN_CreateConstantBufferView o_CreateConstantBufferView = nullptr;
+static PFN_CreateSampler o_CreateSampler = nullptr;
+
 static PFN_CreateDescriptorHeap o_CreateDescriptorHeap = nullptr;
 static PFN_CopyDescriptors o_CopyDescriptors = nullptr;
 static PFN_CopyDescriptorsSimple o_CopyDescriptorsSimple = nullptr;
@@ -88,6 +96,19 @@ static std::mutex _resourceMutex;
 
 // heaps
 static std::vector<HeapInfo> fgHeaps;
+
+struct HeapCacheTLS
+{
+    HeapInfo* ptr = nullptr;
+    unsigned  genSeen = 0;
+};
+
+static thread_local HeapCacheTLS cache;             
+static thread_local HeapCacheTLS cacheRTV;          
+static thread_local HeapCacheTLS cacheCBV;          
+static thread_local HeapCacheTLS cacheSRV;          
+static thread_local HeapCacheTLS cacheUAV;          
+static std::atomic<unsigned> gHeapGeneration{ 1 };  
 
 #ifdef USE_RESOURCE_DISCARD
 // created resources
@@ -253,13 +274,101 @@ static SIZE_T GetCPUHandle(ID3D12Device* This, SIZE_T gpuHandle, D3D12_DESCRIPTO
     return NULL;
 }
 
-static HeapInfo* GetHeapByCpuHandle(SIZE_T cpuHandle)
+static HeapInfo* GetHeapByCpuHandleCBV(SIZE_T cpuHandle)
 {
-    std::shared_lock<std::shared_mutex> lock(heapMutex);
+    unsigned currentGen = gHeapGeneration.load(std::memory_order_relaxed);
+
+    if (cacheCBV.genSeen == currentGen && cacheCBV.ptr && cacheCBV.ptr->cpuStart <= cpuHandle && cpuHandle < cacheCBV.ptr->cpuEnd)
+        return cacheCBV.ptr;
+
     for (size_t i = 0; i < fgHeaps.size(); i++)
     {
         if (fgHeaps[i].cpuStart <= cpuHandle && fgHeaps[i].cpuEnd > cpuHandle)
-            return &fgHeaps[i];
+        {
+            cacheCBV.ptr = &fgHeaps[i];
+            cacheCBV.genSeen = currentGen;
+            return cacheCBV.ptr;
+        }
+    }
+
+    return nullptr;
+}
+
+static HeapInfo* GetHeapByCpuHandleRTV(SIZE_T cpuHandle)
+{
+    unsigned currentGen = gHeapGeneration.load(std::memory_order_relaxed);
+
+    if (cacheRTV.genSeen == currentGen && cacheRTV.ptr && cacheRTV.ptr->cpuStart <= cpuHandle && cpuHandle < cacheRTV.ptr->cpuEnd)
+        return cacheRTV.ptr;
+
+    for (size_t i = 0; i < fgHeaps.size(); i++)
+    {
+        if (fgHeaps[i].cpuStart <= cpuHandle && fgHeaps[i].cpuEnd > cpuHandle)
+        {
+            cacheRTV.ptr = &fgHeaps[i];
+            cacheRTV.genSeen = currentGen;
+            return cacheRTV.ptr;
+        }
+    }
+
+    return nullptr;
+}
+
+static HeapInfo* GetHeapByCpuHandleSRV(SIZE_T cpuHandle)
+{
+    unsigned currentGen = gHeapGeneration.load(std::memory_order_relaxed);
+
+    if (cacheSRV.genSeen == currentGen && cacheSRV.ptr && cacheSRV.ptr->cpuStart <= cpuHandle && cpuHandle < cacheSRV.ptr->cpuEnd)
+        return cacheSRV.ptr;
+
+    for (size_t i = 0; i < fgHeaps.size(); i++)
+    {
+        if (fgHeaps[i].cpuStart <= cpuHandle && fgHeaps[i].cpuEnd > cpuHandle)
+        {
+            cacheSRV.ptr = &fgHeaps[i];
+            cacheSRV.genSeen = currentGen;
+            return cacheSRV.ptr;
+        }
+    }
+
+    return nullptr;
+}
+
+static HeapInfo* GetHeapByCpuHandleUAV(SIZE_T cpuHandle)
+{
+    unsigned currentGen = gHeapGeneration.load(std::memory_order_relaxed);
+
+    if (cacheUAV.genSeen == currentGen && cacheUAV.ptr && cacheUAV.ptr->cpuStart <= cpuHandle && cpuHandle < cacheUAV.ptr->cpuEnd)
+        return cacheUAV.ptr;
+
+    for (size_t i = 0; i < fgHeaps.size(); i++)
+    {
+        if (fgHeaps[i].cpuStart <= cpuHandle && fgHeaps[i].cpuEnd > cpuHandle)
+        {
+            cacheUAV.ptr = &fgHeaps[i];
+            cacheUAV.genSeen = currentGen;
+            return cacheUAV.ptr;
+        }
+    }
+
+    return nullptr;
+}
+
+static HeapInfo* GetHeapByCpuHandle(SIZE_T cpuHandle)
+{
+    unsigned currentGen = gHeapGeneration.load(std::memory_order_relaxed);
+
+    if (cache.genSeen == currentGen && cache.ptr && cache.ptr->cpuStart <= cpuHandle && cpuHandle < cache.ptr->cpuEnd)
+        return cache.ptr;
+
+    for (size_t i = 0; i < fgHeaps.size(); i++)
+    {
+        if (fgHeaps[i].cpuStart <= cpuHandle && fgHeaps[i].cpuEnd > cpuHandle)
+        {
+            cache.ptr = &fgHeaps[i];
+            cache.genSeen = currentGen;
+            return cache.ptr;
+        }
     }
 
     return nullptr;
@@ -267,7 +376,6 @@ static HeapInfo* GetHeapByCpuHandle(SIZE_T cpuHandle)
 
 static HeapInfo* GetHeapByGpuHandle(SIZE_T gpuHandle)
 {
-    std::shared_lock<std::shared_mutex> lock(heapMutex);
     for (size_t i = 0; i < fgHeaps.size(); i++)
     {
         if (fgHeaps[i].gpuStart <= gpuHandle && fgHeaps[i].gpuEnd >= gpuHandle)
@@ -433,6 +541,45 @@ static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* p
 
 #pragma region Resource input hooks
 
+static void hkCreateSampler(ID3D12Device* This, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
+{
+    o_CreateSampler(This, pDesc, DestDescriptor);
+
+    //if (DestDescriptor.ptr != 0)
+    //{
+    //    auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
+
+    //    if (heap != nullptr)
+    //        heap->SetByCpuHandle(DestDescriptor.ptr, {});
+    //}
+}
+
+static void hkCreateDepthStencilView(ID3D12Device* This, ID3D12Resource* pResource, const D3D12_DEPTH_STENCIL_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
+{
+    o_CreateDepthStencilView(This, pResource, pDesc, DestDescriptor);
+
+    //if (DestDescriptor.ptr != 0)
+    //{
+    //    auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
+
+    //    if (heap != nullptr)
+    //        heap->SetByCpuHandle(DestDescriptor.ptr, {});
+    //}
+}
+
+static void hkCreateConstantBufferView(ID3D12Device* This, const D3D12_CONSTANT_BUFFER_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
+{
+    o_CreateConstantBufferView(This, pDesc, DestDescriptor);
+
+    if (DestDescriptor.ptr != 0)
+    {
+        auto heap = GetHeapByCpuHandleCBV(DestDescriptor.ptr);
+
+        if (heap != nullptr)
+            heap->ClearByCpuHandle(DestDescriptor.ptr);
+    }
+}
+
 static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResource, D3D12_RENDER_TARGET_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
     // force hdr for swapchain buffer
@@ -454,26 +601,24 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
 
     o_CreateRenderTargetView(This, pResource, pDesc, DestDescriptor);
 
-    if (pResource == nullptr)
+    if (pResource == nullptr || (pDesc != nullptr && pDesc->ViewDimension != D3D12_RTV_DIMENSION_TEXTURE2D))
     {
-        LOG_TRACE("Unbind: {:X}", DestDescriptor.ptr);
+        LOG_DEBUG_ONLY("Unbind: {:X}", DestDescriptor.ptr);
 
-        auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
-
-#ifdef USE_RESOURCE_DISCARD
-        {
-            std::lock_guard<std::mutex> lock(_resourceMutex);
-            auto temp = heap->GetByCpuHandle(DestDescriptor.ptr);
-
-            if (temp != nullptr && temp->buffer != nullptr)
-                RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
-        }
-#endif
+        auto heap = GetHeapByCpuHandleRTV(DestDescriptor.ptr);
 
         if (heap != nullptr)
-            heap->SetByCpuHandle(DestDescriptor.ptr, {});
+        {
+#ifdef USE_RESOURCE_DISCARD
+            if (heap->buffer != nullptr)
+            {
+                std::lock_guard<std::mutex> lock(_resourceMutex);
+                RemoveResourceHeap(heap->buffer, DestDescriptor.ptr);
+            }
+#endif
 
-        return;
+            heap->ClearByCpuHandle(DestDescriptor.ptr);
+        }
     }
 
     if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_RTV_DIMENSION_TEXTURE2D)
@@ -503,7 +648,7 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
 
 #endif //  _DEBUG
 
-    auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
+    auto heap = GetHeapByCpuHandleRTV(DestDescriptor.ptr);
     if (heap != nullptr)
     {
 #ifdef USE_RESOURCE_DISCARD
@@ -543,11 +688,11 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
 
     o_CreateShaderResourceView(This, pResource, pDesc, DestDescriptor);
 
-    if (pResource == nullptr)
+    if (pResource == nullptr || (pDesc != nullptr && pDesc->ViewDimension != D3D12_SRV_DIMENSION_TEXTURE2D))
     {
-        LOG_TRACE("Unbind: {:X}", DestDescriptor.ptr);
+        LOG_DEBUG_ONLY("Unbind: {:X}", DestDescriptor.ptr);
 
-        auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
+        auto heap = GetHeapByCpuHandleSRV(DestDescriptor.ptr);
 
 #ifdef USE_RESOURCE_DISCARD
         {
@@ -560,9 +705,7 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
 #endif
 
         if (heap != nullptr)
-            heap->SetByCpuHandle(DestDescriptor.ptr, {});
-
-        return;
+            heap->ClearByCpuHandle(DestDescriptor.ptr);
     }
 
     if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_SRV_DIMENSION_TEXTURE2D)
@@ -592,7 +735,7 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
 
 #endif //  _DEBUG
 
-    auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
+    auto heap = GetHeapByCpuHandleSRV(DestDescriptor.ptr);
     if (heap != nullptr)
     {
 #ifdef USE_RESOURCE_DISCARD
@@ -631,11 +774,11 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
 
     o_CreateUnorderedAccessView(This, pResource, pCounterResource, pDesc, DestDescriptor);
 
-    if (pResource == nullptr)
+    if (pResource == nullptr || (pDesc != nullptr && pDesc->ViewDimension != D3D12_UAV_DIMENSION_TEXTURE2D))
     {
-        LOG_TRACE("Unbind: {:X}", DestDescriptor.ptr);
+        LOG_DEBUG_ONLY("Unbind: {:X}", DestDescriptor.ptr);
 
-        auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
+        auto heap = GetHeapByCpuHandleUAV(DestDescriptor.ptr);
 
 #ifdef USE_RESOURCE_DISCARD
         {
@@ -648,9 +791,7 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
 #endif
 
         if (heap != nullptr)
-            heap->SetByCpuHandle(DestDescriptor.ptr, {});
-
-        return;
+            heap->ClearByCpuHandle(DestDescriptor.ptr);
     }
 
     if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_UAV_DIMENSION_TEXTURE2D)
@@ -680,8 +821,7 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
 
 #endif //  _DEBUG
 
-
-    auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
+    auto heap = GetHeapByCpuHandleUAV(DestDescriptor.ptr);
     if (heap != nullptr)
     {
 #ifdef USE_RESOURCE_DISCARD
@@ -803,6 +943,7 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
         {
             std::unique_lock<std::shared_mutex> lock(heapMutex);
             fgHeaps.push_back(info);
+            gHeapGeneration.fetch_add(1, std::memory_order_relaxed);
         }
     }
     else
@@ -821,7 +962,7 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
 ULONG ResTrack_Dx12::hkRelease(ID3D12Resource* This)
 {
 #ifndef USE_RESOURCE_DISCARD
-    if(!Config::Instance()->FGHudfixTrackRelease.value_or_default())
+    if (!Config::Instance()->FGHudfixTrackRelease.value_or_default())
         return o_Release(This);
 #endif
 
@@ -905,10 +1046,7 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
     if (DescriptorHeapsType != D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV && DescriptorHeapsType != D3D12_DESCRIPTOR_HEAP_TYPE_RTV)
         return;
 
-    if (pDestDescriptorRangeStarts == nullptr || pSrcDescriptorRangeStarts == nullptr)
-        return;
-
-    if (pDestDescriptorRangeSizes == nullptr && pSrcDescriptorRangeSizes == nullptr)
+    if (pDestDescriptorRangeStarts == nullptr || (*pDestDescriptorRangeStarts).ptr == 0 || pDestDescriptorRangeSizes == nullptr)
         return;
 
     if (!Config::Instance()->FGAlwaysTrackHeaps.value_or_default() && !IsHudFixActive())
@@ -930,7 +1068,7 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
 
     auto size = This->GetDescriptorHandleIncrementSize(DescriptorHeapsType);
 
-    if (srcRangeSizes != nullptr)
+    if (srcRangeStarts != nullptr && (*srcRangeStarts).ptr != 0 && srcRangeSizes != nullptr)
     {
         LOG_DEBUG_ONLY("Src based loop");
 
@@ -972,7 +1110,7 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
                         }
 #endif
 
-                        dstHeap->SetByCpuHandle(destHandle, {});
+                        dstHeap->ClearByCpuHandle(destHandle);
                     }
 
                     if (destRangeSizes == nullptr || destRangeSizes[destRangeIndex] == destIndex)
@@ -1017,7 +1155,7 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
                             RemoveResourceHeap(temp->buffer, destHandle);
                     }
 #endif
-                    dstHeap->SetByCpuHandle(destHandle, {});
+                    dstHeap->ClearByCpuHandle(destHandle);
 
                     if (destRangeSizes == nullptr || destRangeSizes[destRangeIndex] == destIndex)
                     {
@@ -1079,9 +1217,16 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
             {
                 LOG_DEBUG_ONLY("dstRangeIndex: {}, dstIndex: {}, srcRangeIndex: {}, srcIndex: {}", i, j, srcRangeIndex, srcIndex);
 
+                HeapInfo* srcHeap = nullptr;
+                unsigned long long srcHandle = 0;
+
                 // source
-                auto srcHandle = srcRangeStarts[srcRangeIndex].ptr + srcIndex * size;
-                auto srcHeap = GetHeapByCpuHandle(srcHandle);
+                if (srcRangeStarts != nullptr && (*srcRangeStarts).ptr != 0)
+                {
+                    srcHandle = srcRangeStarts[srcRangeIndex].ptr + srcIndex * size;
+                    srcHeap = GetHeapByCpuHandle(srcHandle);
+                }
+
                 auto destHandle = destRangeStarts[i].ptr + j * size;
                 auto dstHeap = GetHeapByCpuHandle(destHandle);
 
@@ -1102,7 +1247,7 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
                         }
 #endif
 
-                        dstHeap->SetByCpuHandle(destHandle, {});
+                        dstHeap->ClearByCpuHandle(destHandle);
                     }
 
                     if (srcRangeSizes == nullptr || srcRangeSizes[srcRangeIndex] == srcIndex)
@@ -1148,7 +1293,7 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
                     }
 #endif
 
-                    dstHeap->SetByCpuHandle(destHandle, {});
+                    dstHeap->ClearByCpuHandle(destHandle);
 
                     if (srcRangeSizes == nullptr || srcRangeSizes[srcRangeIndex] == srcIndex)
                     {
@@ -1208,37 +1353,40 @@ void ResTrack_Dx12::hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescript
 
     for (size_t i = 0; i < NumDescriptors; i++)
     {
+        HeapInfo* srcHeap = nullptr;
+        unsigned long long srcHandle = 0;
+
         // source
-        auto srcHandle = SrcDescriptorRangeStart.ptr + i * size;
-        auto srcHeap = GetHeapByCpuHandle(srcHandle);
-        auto destHandle = DestDescriptorRangeStart.ptr + i * size;
-        auto dstHeap = GetHeapByCpuHandle(destHandle);
-
-        if (srcHeap == nullptr)
+        if (SrcDescriptorRangeStart.ptr != 0)
         {
-            if (dstHeap != nullptr)
-            {
-#ifdef USE_RESOURCE_DISCARD
-                {
-                    std::lock_guard<std::mutex> lock(_resourceMutex);
-                    auto temp = dstHeap->GetByCpuHandle(destHandle);
-
-                    if (temp != nullptr && temp->buffer != nullptr)
-                        RemoveResourceHeap(temp->buffer, destHandle);
-                }
-#endif
-
-                dstHeap->SetByCpuHandle(destHandle, {});
-            }
-
-            continue;
+            srcHandle = SrcDescriptorRangeStart.ptr + i * size;
+            srcHeap = GetHeapByCpuHandle(srcHandle);
         }
 
-        auto buffer = srcHeap->GetByCpuHandle(srcHandle);
+        auto destHandle = DestDescriptorRangeStart.ptr + i * size;
+        auto dstHeap = GetHeapByCpuHandle(destHandle);
 
         // destination
         if (dstHeap == nullptr)
             continue;
+
+        if (srcHeap == nullptr)
+        {
+#ifdef USE_RESOURCE_DISCARD
+            {
+                std::lock_guard<std::mutex> lock(_resourceMutex);
+                auto temp = dstHeap->GetByCpuHandle(destHandle);
+
+                if (temp != nullptr && temp->buffer != nullptr)
+                    RemoveResourceHeap(temp->buffer, destHandle);
+            }
+#endif
+
+            dstHeap->ClearByCpuHandle(destHandle);
+            continue;
+        }
+
+        auto buffer = srcHeap->GetByCpuHandle(srcHandle);
 
         if (buffer == nullptr)
         {
@@ -1252,7 +1400,7 @@ void ResTrack_Dx12::hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescript
             }
 #endif
 
-            dstHeap->SetByCpuHandle(destHandle, {});
+            dstHeap->ClearByCpuHandle(destHandle);
             continue;
         }
 
@@ -1367,7 +1515,7 @@ void ResTrack_Dx12::hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT N
 
             if (RTsSingleHandleToDescriptorRange)
             {
-                heap = GetHeapByCpuHandle(pRenderTargetDescriptors[0].ptr);
+                heap = GetHeapByCpuHandleRTV(pRenderTargetDescriptors[0].ptr);
                 if (heap == nullptr)
                 {
                     LOG_DEBUG_ONLY("No heap!");
@@ -1380,7 +1528,7 @@ void ResTrack_Dx12::hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT N
             {
                 handle = pRenderTargetDescriptors[i];
 
-                heap = GetHeapByCpuHandle(handle.ptr);
+                heap = GetHeapByCpuHandleRTV(handle.ptr);
                 if (heap == nullptr)
                 {
                     LOG_DEBUG_ONLY("No heap!");
@@ -1873,12 +2021,15 @@ void ResTrack_Dx12::HookDevice(ID3D12Device* device)
     PVOID* pVTable = *(PVOID**)realDevice;
 
     // hudless
-    o_CreateRenderTargetView = (PFN_CreateRenderTargetView)pVTable[20];
     o_CreateDescriptorHeap = (PFN_CreateDescriptorHeap)pVTable[14];
-    o_CopyDescriptors = (PFN_CopyDescriptors)pVTable[23];
-    o_CopyDescriptorsSimple = (PFN_CopyDescriptorsSimple)pVTable[24];
+    o_CreateConstantBufferView = (PFN_CreateConstantBufferView)pVTable[17];
     o_CreateShaderResourceView = (PFN_CreateShaderResourceView)pVTable[18];
     o_CreateUnorderedAccessView = (PFN_CreateUnorderedAccessView)pVTable[19];
+    o_CreateRenderTargetView = (PFN_CreateRenderTargetView)pVTable[20];
+    o_CreateDepthStencilView = (PFN_CreateDepthStencilView)pVTable[21];
+    o_CreateSampler = (PFN_CreateSampler)pVTable[22];
+    o_CopyDescriptors = (PFN_CopyDescriptors)pVTable[23];
+    o_CopyDescriptorsSimple = (PFN_CopyDescriptorsSimple)pVTable[24];
 
     // Apply the detour
     if (o_CreateDescriptorHeap != nullptr || o_CreateRenderTargetView != nullptr)
@@ -1891,8 +2042,17 @@ void ResTrack_Dx12::HookDevice(ID3D12Device* device)
 
         if (Config::Instance()->FGType.value_or_default() == OptiFG && Config::Instance()->OverlayMenu.value_or_default())
         {
+            if (o_CreateConstantBufferView != nullptr)
+                DetourAttach(&(PVOID&)o_CreateConstantBufferView, hkCreateConstantBufferView);
+
             if (o_CreateRenderTargetView != nullptr)
                 DetourAttach(&(PVOID&)o_CreateRenderTargetView, hkCreateRenderTargetView);
+
+            //if (o_CreateDepthStencilView != nullptr)
+            //    DetourAttach(&(PVOID&)o_CreateDepthStencilView, hkCreateDepthStencilView);
+
+            //if (o_CreateSampler != nullptr)
+            //    DetourAttach(&(PVOID&)o_CreateSampler, hkCreateSampler);
 
             if (o_CreateShaderResourceView != nullptr)
                 DetourAttach(&(PVOID&)o_CreateShaderResourceView, hkCreateShaderResourceView);
@@ -1905,6 +2065,7 @@ void ResTrack_Dx12::HookDevice(ID3D12Device* device)
 
             if (o_CopyDescriptorsSimple != nullptr)
                 DetourAttach(&(PVOID&)o_CopyDescriptorsSimple, hkCopyDescriptorsSimple);
+
         }
 
         DetourTransactionCommit();

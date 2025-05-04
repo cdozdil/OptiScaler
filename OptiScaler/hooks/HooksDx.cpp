@@ -158,7 +158,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
     auto lockAccuired = false;
     if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART) && fg != nullptr && fg->IsActive() &&
-        fg->TargetFrame() < fg->FrameCount() && Config::Instance()->FGUseMutexForSwaphain.value_or_default()) // && fg->Mutex.getOwner() != 2)
+        fg->TargetFrame() < fg->FrameCount() && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && fg->Mutex.getOwner() != 2)
     {
         LOG_TRACE("Waiting FG->Mutex 2, current: {}", fg->Mutex.getOwner());
         fg->Mutex.lock(2);

@@ -1690,6 +1690,14 @@ bool MenuCommon::RenderMenu()
                                 }
                                 ShowHelpMarker("Always track resources, might cause performace issues\nbut also might fix HudFix related crashes!");
 
+                                auto tr = Config::Instance()->FGHudfixTrackRelease.value_or_default();
+                                if (ImGui::Checkbox("Track Resource Release", &tr))
+                                {
+                                    Config::Instance()->FGHudfixTrackRelease = tr;
+                                    LOG_DEBUG("Enabled set FGHudfixTrackRelease: {}", tr);
+                                }
+                                ShowHelpMarker("Track resource releases\nMost probably WILL TANK PERFORMANCE");
+
                                 ImGui::TreePop();
                             }
 
