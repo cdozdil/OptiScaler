@@ -292,6 +292,7 @@ public:
     // NVAPI Override
     CustomOptional<bool> OverrideNvapiDll{ false };
     CustomOptional<std::wstring, NoDefault> NvapiDllPath;
+    CustomOptional<bool> DisableFlipMetering{ false };
 
     // Spoofing
     CustomOptional<bool> DxgiSpoofing{ true };
