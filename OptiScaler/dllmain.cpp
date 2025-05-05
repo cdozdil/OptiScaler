@@ -36,6 +36,7 @@ static std::vector<HMODULE> _asiHandles;
 #pragma warning (disable : 4996)
 
 typedef const char* (CDECL* PFN_wine_get_version)(void);
+typedef void(*PFN_InitializeASI)(void);
 
 static bool IsRunningOnWine()
 {
@@ -88,6 +89,11 @@ void LoadAsiPlugins()
             {
                 LOG_INFO("Loaded: {}", entry.path().string());
                 _asiHandles.push_back(hMod);
+
+                auto init = (PFN_InitializeASI)KernelBaseProxy::GetProcAddress_()(hMod, "InitializeASI");
+                
+                if (init != nullptr)
+                    init();
             }
             else
             {
