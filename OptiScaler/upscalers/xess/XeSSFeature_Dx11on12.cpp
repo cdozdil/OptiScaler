@@ -133,6 +133,9 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
         Dx11DeviceContext = dc;
     }
 
+    if (dc != nullptr)
+        dc->Release();
+
     if (State::Instance().xessDebug)
     {
         LOG_ERROR("xessDebug");
@@ -171,308 +174,204 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
 
     LOG_DEBUG("Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
-    if (!ProcessDx11Textures(InParameters))
+    auto frame = _frameCount % 2;
+    auto cmdList = Dx12CommandList[frame];
+
+    do
     {
-        LOG_ERROR("Can't process Dx11 textures!");
-
-        Dx12CommandList->Close();
-        ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-        Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-
-        Dx12CommandAllocator->Reset();
-        Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
-
-        return false;
-    }
-    else
-        LOG_DEBUG("ProcessDx11Textures complete!");
-
-    // AutoExposure or ReactiveMask is nullptr
-    if (State::Instance().changeBackend[_handle->Id])
-    {
-        Dx12CommandList->Close();
-        ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-        Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-
-        Dx12CommandAllocator->Reset();
-        Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
-
-        return true;
-    }
-
-    params.pColorTexture = dx11Color.Dx12Resource;
-
-    _hasColor = params.pColorTexture != nullptr;
-    params.pVelocityTexture = dx11Mv.Dx12Resource;
-    _hasMV = params.pVelocityTexture != nullptr;
-
-    if (useSS)
-    {
-        if (OutputScaler->CreateBufferResource(Dx12Device, dx11Out.Dx12Resource, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+        if (!ProcessDx11Textures(InParameters))
         {
-            OutputScaler->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            params.pOutputTexture = OutputScaler->Buffer();
+            LOG_ERROR("Can't process Dx11 textures!");
+            break;
         }
-        else
-            params.pOutputTexture = dx11Out.Dx12Resource;
-    }
-    else
-    {
-        params.pOutputTexture = dx11Out.Dx12Resource;
-    }
 
-    // RCAS
-    if (Config::Instance()->RcasEnabled.value_or(true) &&
-        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
-        RCAS->IsInit() && RCAS->CreateBufferResource(Dx12Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
-    {
-        RCAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-        params.pOutputTexture = RCAS->Buffer();
-    }
-
-    _hasOutput = params.pOutputTexture != nullptr;
-    params.pDepthTexture = dx11Depth.Dx12Resource;
-    _hasDepth = params.pDepthTexture != nullptr;
-    params.pExposureScaleTexture = dx11Exp.Dx12Resource;
-    _hasExposure = params.pExposureScaleTexture != nullptr;
-
-    if (dx11Reactive.Dx12Resource != nullptr)
-    {
-        if (Config::Instance()->DlssReactiveMaskBias.value_or(0.0f) > 0.0f &&
-            Bias->IsInit() && Bias->CreateBufferResource(Dx12Device, dx11Reactive.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
+        if (State::Instance().changeBackend[_handle->Id])
         {
-            Bias->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-
-            if (Bias->Dispatch(Dx12Device, Dx12CommandList, dx11Reactive.Dx12Resource, Config::Instance()->DlssReactiveMaskBias.value_or(0.0f), Bias->Buffer()))
-            {
-                Bias->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-                params.pResponsivePixelMaskTexture = Bias->Buffer();
-            }
+            break;
         }
-    }
 
-    LOG_DEBUG("Textures -> params complete!");
-
-    float MVScaleX;
-    float MVScaleY;
-
-    if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
-        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
-    {
-        xessResult = XeSSProxy::SetVelocityScale()(_xessContext, MVScaleX, MVScaleY);
-
-        if (xessResult != XESS_RESULT_SUCCESS)
-        {
-            LOG_ERROR("xessSetVelocityScale error: {0}", ResultToString(xessResult));
-
-            Dx12CommandList->Close();
-            ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-            Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-
-            Dx12CommandAllocator->Reset();
-            Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
-
-            return false;
-        }
-    }
-    else
-        LOG_WARN("Can't get motion vector scales!");
-
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_X, &params.inputColorBase.x);
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_Y, &params.inputColorBase.y);
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_X, &params.inputDepthBase.x);
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_Y, &params.inputDepthBase.y);
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_X, &params.inputMotionVectorBase.x);
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_Y, &params.inputMotionVectorBase.y);
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_X, &params.outputColorBase.x);
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_Y, &params.outputColorBase.y);
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X, &params.inputResponsiveMaskBase.x);
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y, &params.inputResponsiveMaskBase.y);
-
-    // Execute xess
-    LOG_DEBUG("Executing!!");
-    xessResult = XeSSProxy::D3D12Execute()(_xessContext, Dx12CommandList, &params);
-
-    if (xessResult != XESS_RESULT_SUCCESS)
-    {
-        LOG_ERROR("xessD3D12Execute error: {0}", ResultToString(xessResult));
-
-        Dx12CommandList->Close();
-        ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-        Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-
-        Dx12CommandAllocator->Reset();
-        Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
-
-        return false;
-    }
-
-    // apply rcas
-    if (Config::Instance()->RcasEnabled.value_or(true) &&
-        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
-        RCAS->CanRender())
-    {
-        LOG_DEBUG("Apply RCAS");
-
-        if (params.pOutputTexture != RCAS->Buffer())
-            ResourceBarrier(Dx12CommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-        RCAS->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-        RcasConstants rcasConstants{};
-        rcasConstants.Sharpness = _sharpness;
-        rcasConstants.DisplayWidth = TargetWidth();
-        rcasConstants.DisplayHeight = TargetHeight();
-        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
-        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
-        rcasConstants.DisplaySizeMV = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
-        rcasConstants.RenderHeight = RenderHeight();
-        rcasConstants.RenderWidth = RenderWidth();
+        params.pColorTexture = dx11Color.Dx12Resource;
+        _hasColor = params.pColorTexture != nullptr;
+        params.pVelocityTexture = dx11Mv.Dx12Resource;
+        _hasMV = params.pVelocityTexture != nullptr;
 
         if (useSS)
         {
-            if (!RCAS->Dispatch(Dx12Device, Dx12CommandList, params.pOutputTexture, params.pVelocityTexture, rcasConstants, OutputScaler->Buffer()))
+            if (OutputScaler->CreateBufferResource(Dx12Device, dx11Out.Dx12Resource, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
             {
-                Config::Instance()->RcasEnabled = false;
+                OutputScaler->SetBufferState(cmdList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                params.pOutputTexture = OutputScaler->Buffer();
+            }
+            else
+                params.pOutputTexture = dx11Out.Dx12Resource;
+        }
+        else
+        {
+            params.pOutputTexture = dx11Out.Dx12Resource;
+        }
 
-                Dx12CommandList->Close();
-                ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-                Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+        // RCAS
+        if (Config::Instance()->RcasEnabled.value_or(true) &&
+            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+            RCAS->IsInit() && RCAS->CreateBufferResource(Dx12Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+        {
+            RCAS->SetBufferState(cmdList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            params.pOutputTexture = RCAS->Buffer();
+        }
 
-                Dx12CommandAllocator->Reset();
-                Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+        _hasOutput = params.pOutputTexture != nullptr;
+        params.pDepthTexture = dx11Depth.Dx12Resource;
+        _hasDepth = params.pDepthTexture != nullptr;
+        params.pExposureScaleTexture = dx11Exp.Dx12Resource;
+        _hasExposure = params.pExposureScaleTexture != nullptr;
 
-                return true;
+        if (dx11Reactive.Dx12Resource != nullptr)
+        {
+            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.0f) > 0.0f &&
+                Bias->IsInit() && Bias->CreateBufferResource(Dx12Device, dx11Reactive.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
+            {
+                Bias->SetBufferState(cmdList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+                if (Bias->Dispatch(Dx12Device, cmdList, dx11Reactive.Dx12Resource, Config::Instance()->DlssReactiveMaskBias.value_or(0.0f), Bias->Buffer()))
+                {
+                    Bias->SetBufferState(cmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                    params.pResponsivePixelMaskTexture = Bias->Buffer();
+                }
+            }
+        }
+
+        float MVScaleX;
+        float MVScaleY;
+
+        if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
+            InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
+        {
+            xessResult = XeSSProxy::SetVelocityScale()(_xessContext, MVScaleX, MVScaleY);
+
+            if (xessResult != XESS_RESULT_SUCCESS)
+            {
+                LOG_ERROR("xessSetVelocityScale error: {0}", ResultToString(xessResult));
+                break;
             }
         }
         else
         {
-            if (!RCAS->Dispatch(Dx12Device, Dx12CommandList, params.pOutputTexture, params.pVelocityTexture, rcasConstants, dx11Out.Dx12Resource))
+            LOG_WARN("Can't get motion vector scales!");
+        }
+
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_X, &params.inputColorBase.x);
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_Y, &params.inputColorBase.y);
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_X, &params.inputDepthBase.x);
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_Y, &params.inputDepthBase.y);
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_X, &params.inputMotionVectorBase.x);
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_Y, &params.inputMotionVectorBase.y);
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_X, &params.outputColorBase.x);
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_Y, &params.outputColorBase.y);
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X, &params.inputResponsiveMaskBase.x);
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y, &params.inputResponsiveMaskBase.y);
+
+        // Execute xess
+        LOG_DEBUG("Executing!!");
+        xessResult = XeSSProxy::D3D12Execute()(_xessContext, cmdList, &params);
+
+        if (xessResult != XESS_RESULT_SUCCESS)
+        {
+            LOG_ERROR("xessD3D12Execute error: {0}", ResultToString(xessResult));
+            break;
+        }
+
+        // apply rcas
+        if (Config::Instance()->RcasEnabled.value_or(true) &&
+            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+            RCAS->CanRender())
+        {
+            LOG_DEBUG("Apply RCAS");
+
+            if (params.pOutputTexture != RCAS->Buffer())
+                ResourceBarrier(cmdList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+            RCAS->SetBufferState(cmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+            RcasConstants rcasConstants{};
+            rcasConstants.Sharpness = _sharpness;
+            rcasConstants.DisplayWidth = TargetWidth();
+            rcasConstants.DisplayHeight = TargetHeight();
+            InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
+            InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
+            rcasConstants.DisplaySizeMV = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
+            rcasConstants.RenderHeight = RenderHeight();
+            rcasConstants.RenderWidth = RenderWidth();
+
+            if (useSS)
             {
-                Config::Instance()->RcasEnabled = false;
-
-                Dx12CommandList->Close();
-                ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-                Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-
-                Dx12CommandAllocator->Reset();
-                Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
-
-                return true;
-            }
-        }
-    }
-
-    if (useSS)
-    {
-        LOG_DEBUG("scaling output...");
-        OutputScaler->SetBufferState(Dx12CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-        if (!OutputScaler->Dispatch(Dx12Device, Dx12CommandList, OutputScaler->Buffer(), dx11Out.Dx12Resource))
-        {
-            Config::Instance()->OutputScalingEnabled = false;
-            State::Instance().changeBackend[_handle->Id] = true;
-
-            Dx12CommandList->Close();
-            ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-            Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-
-            Dx12CommandAllocator->Reset();
-            Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
-
-            return true;
-        }
-    }
-
-    if (!Config::Instance()->SyncAfterDx12.value_or(true))
-    {
-        if (!CopyBackOutput())
-        {
-            LOG_ERROR("Can't copy output texture back!");
-
-            Dx12CommandList->Close();
-            ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-            Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-
-            Dx12CommandAllocator->Reset();
-            Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
-
-            return false;
-        }
-
-        // imgui
-        if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30)
-        {
-            if (Imgui != nullptr && Imgui.get() != nullptr)
-            {
-                LOG_DEBUG("Apply Imgui");
-
-                if (Imgui->IsHandleDifferent())
+                if (!RCAS->Dispatch(Dx12Device, cmdList, params.pOutputTexture, params.pVelocityTexture, rcasConstants, OutputScaler->Buffer()))
                 {
-                    LOG_DEBUG("Imgui handle different, reset()!");
-                    std::this_thread::sleep_for(std::chrono::milliseconds(250));
-                    Imgui.reset();
+                    Config::Instance()->RcasEnabled = false;
+                    break;
                 }
-                else
-                    Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
             }
             else
             {
-                if (Imgui == nullptr || Imgui.get() == nullptr)
-                    Imgui = std::make_unique<Menu_Dx11>(GetForegroundWindow(), Device);
+                if (!RCAS->Dispatch(Dx12Device, cmdList, params.pOutputTexture, params.pVelocityTexture, rcasConstants, dx11Out.Dx12Resource))
+                {
+                    Config::Instance()->RcasEnabled = false;
+                    break;
+                }
             }
         }
-    }
 
-    // Execute dx12 commands to process xess
-    Dx12CommandList->Close();
-    ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
+        if (useSS)
+        {
+            LOG_DEBUG("scaling output...");
+            OutputScaler->SetBufferState(cmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+            if (!OutputScaler->Dispatch(Dx12Device, cmdList, OutputScaler->Buffer(), dx11Out.Dx12Resource))
+            {
+                Config::Instance()->OutputScalingEnabled = false;
+                State::Instance().changeBackend[_handle->Id] = true;
+
+                break;
+            }
+        }
+
+    } while (false);
+
+    cmdList->Close();
+    ID3D12CommandList* ppCommandLists[] = { cmdList };
     Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+    Dx12CommandQueue->Signal(dx12FenceTextureCopy, _fenceValue);
 
-    if (Config::Instance()->SyncAfterDx12.value_or(true))
+    if (!CopyBackOutput())
     {
-        if (!CopyBackOutput())
-        {
-            LOG_ERROR("Can't copy output texture back!");
-
-            Dx12CommandList->Close();
-            ID3D12CommandList* ppCommandLists[] = { Dx12CommandList };
-            Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
-
-            Dx12CommandAllocator->Reset();
-            Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
-
-            return false;
-        }
-
-        // imgui
-        if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30)
-        {
-            if (Imgui != nullptr && Imgui.get() != nullptr)
-            {
-                LOG_DEBUG("Apply Imgui");
-
-                if (Imgui->IsHandleDifferent())
-                {
-                    LOG_DEBUG("Imgui handle different, reset()!");
-                    std::this_thread::sleep_for(std::chrono::milliseconds(250));
-                    Imgui.reset();
-                }
-                else
-                    Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
-            }
-            else
-            {
-                if (Imgui == nullptr || Imgui.get() == nullptr)
-                    Imgui = std::make_unique<Menu_Dx11>(GetForegroundWindow(), Device);
-            }
-        }
+        LOG_ERROR("Can't copy output texture back!");
+        return false;
     }
+
+    // imgui - legacy menu disabled for now
+    //if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30)
+    //{
+    //    if (Imgui != nullptr && Imgui.get() != nullptr)
+    //    {
+    //        LOG_DEBUG("Apply Imgui");
+
+    //        if (Imgui->IsHandleDifferent())
+    //        {
+    //            LOG_DEBUG("Imgui handle different, reset()!");
+    //            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    //            Imgui.reset();
+    //        }
+    //        else
+    //            Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
+    //    }
+    //    else
+    //    {
+    //        if (Imgui == nullptr || Imgui.get() == nullptr)
+    //            Imgui = std::make_unique<Menu_Dx11>(GetForegroundWindow(), Device);
+    //    }
+    //}
 
     _frameCount++;
-
-    Dx12CommandAllocator->Reset();
-    Dx12CommandList->Reset(Dx12CommandAllocator, nullptr);
+    Dx12CommandQueue->Signal(Dx12Fence, _frameCount);
 
     return true;
 }

@@ -361,10 +361,12 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Dx11 with Dx12
         {
-            TextureSyncMethod.set_from_config(readInt("Dx11withDx12", "TextureSyncMethod"));
-            CopyBackSyncMethod.set_from_config(readInt("Dx11withDx12", "CopyBackSyncMethod"));
+            //TextureSyncMethod.set_from_config(readInt("Dx11withDx12", "TextureSyncMethod"));
+            //CopyBackSyncMethod.set_from_config(readInt("Dx11withDx12", "CopyBackSyncMethod"));
+            //SyncAfterDx12.set_from_config(readInt("Dx11withDx12", "SyncAfterDx12"));
+
             Dx11DelayedInit.set_from_config(readInt("Dx11withDx12", "UseDelayedInit"));
-            SyncAfterDx12.set_from_config(readInt("Dx11withDx12", "SyncAfterDx12"));
+            DontUseNTShared.set_from_config(readBool("Dx11withDx12", "DontUseNTShared"));
         }
 
         // NvApi
@@ -783,10 +785,10 @@ bool Config::SaveIni()
 
     // Dx11 with Dx12
     {
-        ini.SetValue("Dx11withDx12", "TextureSyncMethod", GetIntValue(Instance()->TextureSyncMethod.value_for_config()).c_str());
-        ini.SetValue("Dx11withDx12", "CopyBackSyncMethod", GetIntValue(Instance()->CopyBackSyncMethod.value_for_config()).c_str());
-        ini.SetValue("Dx11withDx12", "SyncAfterDx12", GetBoolValue(Instance()->SyncAfterDx12.value_for_config()).c_str());
-        ini.SetValue("Dx11withDx12", "UseDelayedInit", GetBoolValue(Instance()->Dx11DelayedInit.value_for_config()).c_str());
+        //ini.SetValue("Dx11withDx12", "TextureSyncMethod", GetIntValue(Instance()->TextureSyncMethod.value_for_config()).c_str());
+        //ini.SetValue("Dx11withDx12", "CopyBackSyncMethod", GetIntValue(Instance()->CopyBackSyncMethod.value_for_config()).c_str());
+        //ini.SetValue("Dx11withDx12", "SyncAfterDx12", GetBoolValue(Instance()->SyncAfterDx12.value_for_config()).c_str());
+        //ini.SetValue("Dx11withDx12", "UseDelayedInit", GetBoolValue(Instance()->Dx11DelayedInit.value_for_config()).c_str());
         ini.SetValue("Dx11withDx12", "DontUseNTShared", GetBoolValue(Instance()->DontUseNTShared.value_for_config()).c_str());
     }
 

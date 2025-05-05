@@ -12,8 +12,6 @@ do {						\
 	}						\
 } while((void)0, 0)	
 
-
-
 void IFeature_Dx11wDx12::ResourceBarrier(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
 {
     D3D12_RESOURCE_BARRIER barrier = {};
@@ -114,12 +112,10 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
                 OutResource->Dx12Handle = NULL;
             }
 
-
             desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED;
             ASSIGN_DESC(OutResource->Desc, desc);
 
             result = Dx11Device->CreateTexture2D(&desc, nullptr, &OutResource->SharedTexture);
-
 
             IDXGIResource1* resource;
             result = OutResource->SharedTexture->QueryInterface(IID_PPV_ARGS(&resource));
@@ -136,6 +132,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
             if (result != S_OK)
             {
                 LOG_ERROR("GetSharedHandle error: {0:x}", result);
+                resource->Release();
                 return false;
             }
 
@@ -207,9 +204,19 @@ void IFeature_Dx11wDx12::ReleaseSharedResources()
 
     ReleaseSyncResources();
 
-    SAFE_RELEASE(Dx12CommandList);
+    SAFE_RELEASE(Dx12CommandList[0]);
+    SAFE_RELEASE(Dx12CommandList[1]);
     SAFE_RELEASE(Dx12CommandQueue);
-    SAFE_RELEASE(Dx12CommandAllocator);
+    SAFE_RELEASE(Dx12CommandAllocator[0]);
+    SAFE_RELEASE(Dx12CommandAllocator[1]);
+    SAFE_RELEASE(Dx12Fence);
+
+    if (Dx12FenceEvent)
+    {
+        CloseHandle(Dx12FenceEvent);
+        Dx12FenceEvent = nullptr;
+    }
+
     SAFE_RELEASE(Dx12Device);
 }
 
@@ -217,31 +224,11 @@ void IFeature_Dx11wDx12::ReleaseSyncResources()
 {
     SAFE_RELEASE(dx11FenceTextureCopy);
     SAFE_RELEASE(dx12FenceTextureCopy);
-    SAFE_RELEASE(dx12FenceQuery);
-    SAFE_RELEASE(dx11FenceCopySync);
-    SAFE_RELEASE(dx12FenceCopySync);
-    SAFE_RELEASE(dx11FenceCopyOutput);
-    SAFE_RELEASE(dx12FenceCopyOutput);
-    SAFE_RELEASE(queryTextureCopy);
-    SAFE_RELEASE(queryCopyOutputFence);
-    SAFE_RELEASE(queryCopyOutput);
 
     if (dx11SHForTextureCopy != NULL)
     {
         CloseHandle(dx11SHForTextureCopy);
         dx11SHForTextureCopy = NULL;
-    }
-
-    if (dx11SHForCopyOutput != NULL)
-    {
-        CloseHandle(dx11SHForCopyOutput);
-        dx11SHForCopyOutput = NULL;
-    }
-
-    if (dx12SHForCopyOutput != NULL)
-    {
-        CloseHandle(dx12SHForCopyOutput);
-        dx12SHForCopyOutput = NULL;
     }
 }
 
@@ -376,9 +363,9 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         }
     }
 
-    if (Dx12CommandAllocator == nullptr)
+    if (Dx12CommandAllocator[0] == nullptr)
     {
-        result = Dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&Dx12CommandAllocator));
+        result = Dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&Dx12CommandAllocator[0]));
 
         if (result != S_OK)
         {
@@ -389,14 +376,64 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
         }
     }
 
-    if (Dx12CommandList == nullptr)
+    if (Dx12CommandAllocator[1] == nullptr)
+    {
+        result = Dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&Dx12CommandAllocator[1]));
+
+        if (result != S_OK)
+        {
+            LOG_ERROR("CreateCommandAllocator error: {0:x}", result);
+            State::Instance().vulkanSkipHooks = false;
+            State::Instance().skipSpoofing = false;
+            return E_NOINTERFACE;
+        }
+    }
+
+    if (Dx12CommandList[0] == nullptr)
     {
         // CreateCommandList
-        result = Dx12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, Dx12CommandAllocator, nullptr, IID_PPV_ARGS(&Dx12CommandList));
+        result = Dx12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, Dx12CommandAllocator[0], nullptr, IID_PPV_ARGS(&Dx12CommandList[0]));
 
         if (result != S_OK)
         {
             LOG_ERROR("CreateCommandList error: {0:x}", result);
+            State::Instance().vulkanSkipHooks = false;
+            State::Instance().skipSpoofing = false;
+            return E_NOINTERFACE;
+        }
+    }
+
+    if (Dx12CommandList[1] == nullptr)
+    {
+        // CreateCommandList
+        result = Dx12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, Dx12CommandAllocator[1], nullptr, IID_PPV_ARGS(&Dx12CommandList[1]));
+
+        if (result != S_OK)
+        {
+            LOG_ERROR("CreateCommandList error: {0:x}", result);
+            State::Instance().vulkanSkipHooks = false;
+            State::Instance().skipSpoofing = false;
+            return E_NOINTERFACE;
+        }
+    }
+
+    if (Dx12Fence == nullptr)
+    {
+        result = Dx12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&Dx12Fence));
+
+        if (result != S_OK)
+        {
+            LOG_ERROR("CreateFence error: {0:X}", result);
+            State::Instance().vulkanSkipHooks = false;
+            State::Instance().skipSpoofing = false;
+            return E_NOINTERFACE;
+        }
+
+        Dx12FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+        if (Dx12FenceEvent == nullptr)
+        {
+            LOG_ERROR("CreateEvent error!");
             State::Instance().vulkanSkipHooks = false;
             State::Instance().skipSpoofing = false;
             return E_NOINTERFACE;
@@ -410,29 +447,19 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
 
 bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParameters)
 {
-    HRESULT result;
-
-    // Query only
-    if (Config::Instance()->TextureSyncMethod.value_or_default() == 5 || _frameCount < 200)
+    // Wait for last frame
+    if (Dx12Fence->GetCompletedValue() < _frameCount)
     {
-        if (queryTextureCopy == nullptr)
-        {
-            D3D11_QUERY_DESC pQueryDesc;
-            pQueryDesc.Query = D3D11_QUERY_EVENT;
-            pQueryDesc.MiscFlags = 0;
-
-            result = Device->CreateQuery(&pQueryDesc, &queryTextureCopy);
-
-            if (result != S_OK || queryTextureCopy == nullptr)
-            {
-                LOG_ERROR("can't create queryTextureCopy!");
-                return false;
-            }
-        }
-
-        // Associate the query with the copy operation
-        DeviceContext->Begin(queryTextureCopy);
+        Dx12Fence->SetEventOnCompletion(_frameCount, Dx12FenceEvent);
+        WaitForSingleObject(Dx12FenceEvent, INFINITE);
     }
+
+    auto frame = _frameCount % 2;
+
+    Dx12CommandAllocator[frame]->Reset();
+    Dx12CommandList[frame]->Reset(Dx12CommandAllocator[frame], nullptr);
+
+    HRESULT result;
 
 #pragma region Texture copies
 
@@ -443,7 +470,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
     if (paramColor)
     {
         LOG_DEBUG("Color exist..");
-        if (CopyTextureFrom11To12(paramColor, &dx11Color, true, Config::Instance()->DontUseNTShared.value_or_default()) == NULL)
+        if (CopyTextureFrom11To12(paramColor, &dx11Color, true, Config::Instance()->DontUseNTShared.value_or_default()) == false)
             return false;
     }
     else
@@ -549,18 +576,6 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
 #pragma endregion
 
-    // query sync
-    if (Config::Instance()->TextureSyncMethod.value_or_default() == 5 || _frameCount < 200)
-    {
-        LOG_DEBUG("Queries!");
-        DeviceContext->End(queryTextureCopy);
-        DeviceContext->Flush();
-
-        // Wait for the query to be ready
-        while (Dx11DeviceContext->GetData(queryTextureCopy, NULL, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE)
-            std::this_thread::yield();
-    }
-    else
     {
         if (dx11FenceTextureCopy == nullptr)
         {
@@ -573,7 +588,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
             }
         }
 
-        if (dx11SHForTextureCopy == NULL)
+        if (dx11SHForTextureCopy == nullptr)
         {
             result = dx11FenceTextureCopy->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, &dx11SHForTextureCopy);
 
@@ -593,59 +608,25 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         }
 
         // Fence
-        if (Config::Instance()->TextureSyncMethod.value_or_default() > 0)
+        LOG_DEBUG("Dx11 Signal & Dx12 Wait!");
+
+        result = Dx11DeviceContext->Signal(dx11FenceTextureCopy, _fenceValue);
+        Dx11DeviceContext->Flush();
+
+        if (result != S_OK)
         {
-            LOG_DEBUG("Dx11 Signal & Dx12 Wait!");
-
-            result = Dx11DeviceContext->Signal(dx11FenceTextureCopy, 10);
-
-            if (result != S_OK)
-            {
-                LOG_ERROR("Dx11DeviceContext->Signal(dx11FenceTextureCopy, 10) : {0:x}!", result);
-                return false;
-            }
-        }
-
-        // Flush
-        if (Config::Instance()->TextureSyncMethod.value_or_default() > 2)
-        {
-            LOG_DEBUG("Dx11DeviceContext->Flush()!");
-            Dx11DeviceContext->Flush();
+            LOG_ERROR("Dx11DeviceContext->Signal(dx11FenceTextureCopy, 10) : {0:x}!", result);
+            return false;
         }
 
         // Gpu Sync
-        if (Config::Instance()->TextureSyncMethod.value_or_default() == 1 || Config::Instance()->TextureSyncMethod.value_or_default() == 3)
+        result = Dx12CommandQueue->Wait(dx12FenceTextureCopy, _fenceValue);
+        _fenceValue++;
+
+        if (result != S_OK)
         {
-            result = Dx12CommandQueue->Wait(dx12FenceTextureCopy, 10);
-
-            if (result != S_OK)
-            {
-                LOG_ERROR("Dx12CommandQueue->Wait(dx12fence_1, 10) : {0:x}!", result);
-                return false;
-            }
-        }
-        // Event Sync
-        else if (Config::Instance()->TextureSyncMethod.value_or_default() != 0)
-        {
-            // wait for end of operation
-            if (dx12FenceTextureCopy->GetCompletedValue() < 10)
-            {
-                auto fenceEvent12 = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-                if (fenceEvent12)
-                {
-                    result = dx12FenceTextureCopy->SetEventOnCompletion(10, fenceEvent12);
-
-                    if (result != S_OK)
-                    {
-                        LOG_ERROR("dx12FenceTextureCopy->SetEventOnCompletion(10, fenceEvent12) : {0:x}!", result);
-                        return false;
-                    }
-
-                    WaitForSingleObject(fenceEvent12, INFINITE);
-                    CloseHandle(fenceEvent12);
-                }
-            }
+            LOG_ERROR("Dx12CommandQueue->Wait(dx12fence_1, 10) : {0:x}!", result);
+            return false;
         }
     }
 
@@ -760,192 +741,15 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
 bool IFeature_Dx11wDx12::CopyBackOutput()
 {
-    HRESULT result;
-
-    // No sync
-    if (Config::Instance()->CopyBackSyncMethod.value_or_default() == 0 && _frameCount >= 200)
-    {
-        Dx11DeviceContext->CopyResource(paramOutput[_frameCount % 2], dx11Out.SharedTexture);
-        return true;
-    }
-
     //Fence ones
-    if (Config::Instance()->CopyBackSyncMethod.value_or_default() != 5 && _frameCount >= 200)
     {
-        if (dx12FenceCopySync == nullptr)
-        {
-            result = Dx12Device->CreateFence(0, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&dx12FenceCopySync));
-
-            if (result != S_OK)
-            {
-                LOG_ERROR("Can't create dx12FenceCopySync {0:x}", result);
-                return false;
-            }
-        }
-
-        if (dx12SHForCopyOutput == NULL)
-        {
-            result = Dx12Device->CreateSharedHandle(dx12FenceCopySync, nullptr, GENERIC_ALL, nullptr, &dx12SHForCopyOutput);
-
-            if (result != S_OK)
-            {
-                LOG_ERROR("Can't create sharedhandle for dx12FenceCopySync {0:x}", result);
-                return false;
-            }
-
-            result = Dx11Device->OpenSharedFence(dx12SHForCopyOutput, IID_PPV_ARGS(&dx11FenceCopySync));
-
-            if (result != S_OK)
-            {
-                LOG_ERROR("Can't create open sharedhandle for dx11FenceCopySync {0:x}", result);
-                return false;
-            }
-        }
-
-        Dx12CommandQueue->Signal(dx12FenceCopySync, 20);
-
-        if (Config::Instance()->CopyBackSyncMethod.value_or_default() == 1 || Config::Instance()->CopyBackSyncMethod.value_or_default() == 3)
-        {
-            // wait for fsr on dx12
-            Dx11DeviceContext->Wait(dx11FenceCopySync, 20);
-        }
-        else
-        {
-            // wait for end of operation
-            if (dx12FenceCopySync->GetCompletedValue() < 20)
-            {
-                auto fenceEvent12 = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-                if (fenceEvent12)
-                {
-                    result = dx12FenceCopySync->SetEventOnCompletion(20, fenceEvent12);
-
-                    if (result != S_OK)
-                    {
-                        LOG_ERROR("dx12FenceCopySync->SetEventOnCompletion(20, fenceEvent12) : {0:x}!", result);
-                        return false;
-                    }
-
-                    WaitForSingleObject(fenceEvent12, INFINITE);
-                    CloseHandle(fenceEvent12);
-                }
-            }
-        }
-
-        if (dx11FenceCopyOutput == nullptr)
-        {
-            result = Dx11Device->CreateFence(0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(&dx11FenceCopyOutput));
-
-            if (result != S_OK)
-            {
-                LOG_ERROR("Can't create dx11FenceCopyOutput {0:x}", result);
-                return false;
-            }
-        }
-
-        if (dx11SHForCopyOutput == NULL)
-        {
-            result = dx11FenceCopyOutput->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, &dx11SHForCopyOutput);
-
-            if (result != S_OK)
-            {
-                LOG_ERROR("Can't create sharedhandle for dx11FenceTextureCopy {0:x}", result);
-                return false;
-            }
-
-            result = Dx12Device->OpenSharedHandle(dx11SHForCopyOutput, IID_PPV_ARGS(&dx12FenceCopyOutput));
-
-            if (result != S_OK)
-            {
-                LOG_ERROR("Can't create open sharedhandle for dx12FenceTextureCopy {0:x}", result);
-                return false;
-            }
-        }
+        // wait for fsr on dx12
+        Dx11DeviceContext->Wait(dx11FenceTextureCopy, _fenceValue);
+        _fenceValue++;
 
         // Copy Back
         Dx11DeviceContext->CopyResource(paramOutput[_frameCount % 2], dx11Out.SharedTexture);
-
-        result = Dx11DeviceContext->Signal(dx11FenceCopyOutput, 30);
-
-        if (result != S_OK)
-        {
-            LOG_ERROR("Dx11DeviceContext->Signal(dx11FenceTextureCopy, 30) : {0:x}!", result);
-            return false;
-        }
-
-        // fence + flush
-        if (Config::Instance()->CopyBackSyncMethod.value_or_default() > 2)
-            Dx11DeviceContext->Flush();
-
-        if (Config::Instance()->CopyBackSyncMethod.value_or_default() == 1 || Config::Instance()->CopyBackSyncMethod.value_or_default() == 3)
-        {
-            result = Dx12CommandQueue->Wait(dx12FenceCopyOutput, 30);
-
-            if (result != S_OK)
-            {
-                LOG_ERROR("Dx12CommandQueue->Wait(dx12FenceTextureCopy, 30) : {0:x}!", result);
-                return false;
-            }
-        }
-        else
-        {
-            // wait for end of operation
-            if (dx12FenceCopyOutput->GetCompletedValue() < 30)
-            {
-                auto fenceEvent12 = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-                if (fenceEvent12)
-                {
-                    result = dx12FenceCopyOutput->SetEventOnCompletion(30, fenceEvent12);
-
-                    if (result != S_OK)
-                    {
-                        LOG_ERROR("dx12FenceCopyOutput->SetEventOnCompletion(30, fenceEvent12) : {0:x}!", result);
-                        return false;
-                    }
-
-                    WaitForSingleObject(fenceEvent12, INFINITE);
-                    CloseHandle(fenceEvent12);
-                }
-            }
-
-        }
     }
-    // query	
-    else
-    {
-        if (queryCopyOutputFence == nullptr)
-        {
-            D3D11_QUERY_DESC pQueryDesc;
-            pQueryDesc.Query = D3D11_QUERY_EVENT;
-            pQueryDesc.MiscFlags = 0;
-
-
-            result = Dx11Device->CreateQuery(&pQueryDesc, &queryCopyOutputFence);
-
-            if (result != S_OK || !queryCopyOutputFence)
-            {
-                LOG_ERROR("can't create queryCopyOutputFence!");
-                return false;
-            }
-        }
-
-        Dx11DeviceContext->Begin(queryCopyOutputFence);
-
-        // copy back output
-        Dx11DeviceContext->CopyResource(paramOutput[_frameCount % 2], dx11Out.SharedTexture);
-
-        Dx11DeviceContext->End(queryCopyOutputFence);
-
-        // Execute dx11 commands 
-        Dx11DeviceContext->Flush();
-
-        // wait for completion
-        while (Dx11DeviceContext->GetData(queryCopyOutputFence, nullptr, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_FALSE)
-            std::this_thread::yield();
-    }
-
-    ReleaseSyncResources();
 
     return true;
 }
@@ -988,9 +792,6 @@ bool IFeature_Dx11wDx12::BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* I
     {
         auto fl = Dx11Device->GetFeatureLevel();
         auto result = CreateDx12Device(fl);
-
-        //LOG_TRACE("sleeping after CreateDx12Device for 500ms");
-        //std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         if (result != S_OK || Dx12Device == nullptr)
         {

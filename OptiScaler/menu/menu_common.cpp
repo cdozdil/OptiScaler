@@ -1956,54 +1956,54 @@ bool MenuCommon::RenderMenu()
                         ImGui::Spacing();
                         if (ImGui::CollapsingHeader("Dx11 with Dx12 Settings"))
                         {
-                            ScopedIndent indent{};
-                            ImGui::Spacing();
-                            const char* sync[] = { "No Syncing", "Fence", "Fence + Event", "Fence + Flush", "Fence + Flush + Event", "Only Query" };
+                            //ScopedIndent indent{};
+                            //ImGui::Spacing();
+                            //const char* sync[] = { "No Syncing", "Fence", "Fence + Event", "Fence + Flush", "Fence + Flush + Event", "Only Query" };
 
-                            const char* syncDesc[] = {
-                                "Self explanatory",
-                                "Sync using shared Fences(Signal& Wait). These should happen on GPU which is pretty fast.",
-                                "Sync using shared Fences(Signal& Event). Events are waited on CPU which is slower.",
-                                "Like Fence but flushes Dx11 DeviceContext after Signal shared Fence.",
-                                "Like Fence + Event but flushes Dx11 DeviceContext after Signal shared Fence.",
-                                "Uses Dx11 Query to sync, in general faster than Events but slower than Fences."
-                            };
+                            //const char* syncDesc[] = {
+                            //    "Self explanatory",
+                            //    "Sync using shared Fences(Signal& Wait). These should happen on GPU which is pretty fast.",
+                            //    "Sync using shared Fences(Signal& Event). Events are waited on CPU which is slower.",
+                            //    "Like Fence but flushes Dx11 DeviceContext after Signal shared Fence.",
+                            //    "Like Fence + Event but flushes Dx11 DeviceContext after Signal shared Fence.",
+                            //    "Uses Dx11 Query to sync, in general faster than Events but slower than Fences."
+                            //};
 
-                            const char* selectedSync = sync[Config::Instance()->TextureSyncMethod.value_or_default()];
+                            //const char* selectedSync = sync[Config::Instance()->TextureSyncMethod.value_or_default()];
 
-                            if (ImGui::BeginCombo("Input Sync", selectedSync))
-                            {
-                                for (int n = 0; n < 6; n++)
-                                {
-                                    if (ImGui::Selectable(sync[n], (Config::Instance()->TextureSyncMethod.value_or_default() == n)))
-                                        Config::Instance()->TextureSyncMethod = n;
-                                    ShowTooltip(syncDesc[n]);
-                                }
+                            //if (ImGui::BeginCombo("Input Sync", selectedSync))
+                            //{
+                            //    for (int n = 0; n < 6; n++)
+                            //    {
+                            //        if (ImGui::Selectable(sync[n], (Config::Instance()->TextureSyncMethod.value_or_default() == n)))
+                            //            Config::Instance()->TextureSyncMethod = n;
+                            //        ShowTooltip(syncDesc[n]);
+                            //    }
 
-                                ImGui::EndCombo();
-                            }
+                            //    ImGui::EndCombo();
+                            //}
 
-                            const char* sync2[] = { "No Syncing", "Fence", "Fence + Event", "Fence + Flush", "Fence + Flush + Event", "Only Query" };
+                            //const char* sync2[] = { "No Syncing", "Fence", "Fence + Event", "Fence + Flush", "Fence + Flush + Event", "Only Query" };
 
-                            selectedSync = sync2[Config::Instance()->CopyBackSyncMethod.value_or_default()];
+                            //selectedSync = sync2[Config::Instance()->CopyBackSyncMethod.value_or_default()];
 
-                            if (ImGui::BeginCombo("Output Sync", selectedSync))
-                            {
-                                for (int n = 0; n < 6; n++)
-                                {
-                                    if (ImGui::Selectable(sync2[n], (Config::Instance()->CopyBackSyncMethod.value_or_default() == n)))
-                                        Config::Instance()->CopyBackSyncMethod = n;
-                                    ShowTooltip(syncDesc[n]);
-                                }
+                            //if (ImGui::BeginCombo("Output Sync", selectedSync))
+                            //{
+                            //    for (int n = 0; n < 6; n++)
+                            //    {
+                            //        if (ImGui::Selectable(sync2[n], (Config::Instance()->CopyBackSyncMethod.value_or_default() == n)))
+                            //            Config::Instance()->CopyBackSyncMethod = n;
+                            //        ShowTooltip(syncDesc[n]);
+                            //    }
 
-                                ImGui::EndCombo();
-                            }
+                            //    ImGui::EndCombo();
+                            //}
 
-                            if (bool afterDx12 = Config::Instance()->SyncAfterDx12.value_or_default(); ImGui::Checkbox("Sync After Dx12", &afterDx12))
-                                Config::Instance()->SyncAfterDx12 = afterDx12;
-                            ShowHelpMarker("When using Events for syncing output SyncAfterDx12=false is usually more performant.");
+                            //if (bool afterDx12 = Config::Instance()->SyncAfterDx12.value_or_default(); ImGui::Checkbox("Sync After Dx12", &afterDx12))
+                            //    Config::Instance()->SyncAfterDx12 = afterDx12;
+                            //ShowHelpMarker("When using Events for syncing output SyncAfterDx12=false is usually more performant.");
 
-                            ImGui::SameLine(0.0f, 6.0f);
+                            //ImGui::SameLine(0.0f, 6.0f);
 
                             if (bool dontUseNTShared = Config::Instance()->DontUseNTShared.value_or_default(); ImGui::Checkbox("Don't Use NTShared", &dontUseNTShared))
                                 Config::Instance()->DontUseNTShared = dontUseNTShared;
@@ -2011,7 +2011,6 @@ bool MenuCommon::RenderMenu()
                         ImGui::Spacing();
                         ImGui::Spacing();
                     }
-
 
                     // UPSCALER SPECIFIC -----------------------------
 

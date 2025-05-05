@@ -41,8 +41,10 @@ protected:
 	// D3D11with12
 	ID3D12Device* Dx12Device = nullptr;
 	ID3D12CommandQueue* Dx12CommandQueue = nullptr;
-	ID3D12CommandAllocator* Dx12CommandAllocator = nullptr;
-	ID3D12GraphicsCommandList* Dx12CommandList = nullptr;
+	ID3D12CommandAllocator* Dx12CommandAllocator[2] = { nullptr, nullptr };
+	ID3D12GraphicsCommandList* Dx12CommandList[2] = { nullptr, nullptr };
+	ID3D12Fence* Dx12Fence = nullptr;
+	HANDLE Dx12FenceEvent = nullptr;
 
 	D3D11_TEXTURE2D_RESOURCE_C dx11Color = {};
 	D3D11_TEXTURE2D_RESOURCE_C dx11Mv = {};
@@ -55,19 +57,8 @@ protected:
 
 	ID3D11Fence* dx11FenceTextureCopy = nullptr;
 	ID3D12Fence* dx12FenceTextureCopy = nullptr;
-	ID3D12Fence* dx12FenceQuery = nullptr;
-	ID3D11Fence* dx11FenceCopySync = nullptr;
-	ID3D12Fence* dx12FenceCopySync = nullptr;
-	ID3D11Fence* dx11FenceCopyOutput = nullptr;
-	ID3D12Fence* dx12FenceCopyOutput = nullptr;
-	
-	ID3D11Query* queryTextureCopy = nullptr;
-	ID3D11Query* queryCopyOutputFence = nullptr;
-	ID3D11Query* queryCopyOutput = nullptr;
-	
-	HANDLE dx11SHForTextureCopy = NULL;
-	HANDLE dx11SHForCopyOutput = NULL;
-	HANDLE dx12SHForCopyOutput = NULL;
+	HANDLE dx11SHForTextureCopy = nullptr;
+	ULONG _fenceValue = 0;
 
 	std::unique_ptr<OS_Dx12> OutputScaler = nullptr;
 	std::unique_ptr<RCAS_Dx12> RCAS = nullptr;

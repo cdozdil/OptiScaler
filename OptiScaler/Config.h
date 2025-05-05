@@ -283,10 +283,10 @@ public:
     //	3 - Fences + Event
     //	4 - Fences + Flush + Event
     //	5 - Query Only
-    CustomOptional<int> TextureSyncMethod{ 1 };
-    CustomOptional<int> CopyBackSyncMethod{ 5 };
+    //CustomOptional<int> TextureSyncMethod{ 1 };
+    //CustomOptional<int> CopyBackSyncMethod{ 5 };
+    //CustomOptional<bool> SyncAfterDx12{ true };
     CustomOptional<bool> Dx11DelayedInit{ false };
-    CustomOptional<bool> SyncAfterDx12{ true };
     CustomOptional<bool> DontUseNTShared{ false };
 
     // NVAPI Override
