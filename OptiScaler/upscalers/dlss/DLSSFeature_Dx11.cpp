@@ -310,6 +310,9 @@ DLSSFeatureDx11::DLSSFeatureDx11(unsigned int InHandleId, NVSDK_NGX_Parameter* I
 
 DLSSFeatureDx11::~DLSSFeatureDx11()
 {
+    if (State::Instance().isShuttingDown)
+        return;
+
     if (NVNGXProxy::D3D11_ReleaseFeature() != nullptr && _p_dlssHandle != nullptr)
         NVNGXProxy::D3D11_ReleaseFeature()(_p_dlssHandle);
 }

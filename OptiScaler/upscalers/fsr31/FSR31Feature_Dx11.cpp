@@ -547,12 +547,15 @@ FSR31FeatureDx11::~FSR31FeatureDx11()
     if (!IsInited())
         return;
 
-    auto errorCode = Fsr31::ffxFsr3ContextDestroy(&_upscalerContext);
+    if (!State::Instance().isShuttingDown)
+    {
+        auto errorCode = Fsr31::ffxFsr3ContextDestroy(&_upscalerContext);
 
-    if (errorCode != Fsr31::FFX_OK)
-        spdlog::error("FSR31FeatureDx11::~FSR31FeatureDx11 ffxFsr3ContextDestroy error: {0:x}", errorCode);
+        if (errorCode != Fsr31::FFX_OK)
+            spdlog::error("FSR31FeatureDx11::~FSR31FeatureDx11 ffxFsr3ContextDestroy error: {0:x}", errorCode);
 
-    free(_upscalerContextDesc.backendInterfaceUpscaling.scratchBuffer);
+        free(_upscalerContextDesc.backendInterfaceUpscaling.scratchBuffer);
+    }
 
     SetInit(false);
 }

@@ -127,6 +127,9 @@ DLSSDFeatureVk::DLSSDFeatureVk(unsigned int InHandleId, NVSDK_NGX_Parameter* InP
 
 DLSSDFeatureVk::~DLSSDFeatureVk()
 {
+	if (State::Instance().isShuttingDown)
+		return;
+
 	if (NVNGXProxy::VULKAN_ReleaseFeature() != nullptr && _p_dlssdHandle != nullptr)
 		NVNGXProxy::VULKAN_ReleaseFeature()(_p_dlssdHandle);
 }

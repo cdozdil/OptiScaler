@@ -280,9 +280,9 @@ DLSSFeatureDx12::DLSSFeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* I
 
 DLSSFeatureDx12::~DLSSFeatureDx12()
 {
+	if (State::Instance().isShuttingDown)
+		return;
+
 	if (NVNGXProxy::D3D12_ReleaseFeature() != nullptr && _p_dlssHandle != nullptr)
 		NVNGXProxy::D3D12_ReleaseFeature()(_p_dlssHandle);
-
-	if (RCAS != nullptr && RCAS.get() != nullptr)
-		RCAS.reset();
 }

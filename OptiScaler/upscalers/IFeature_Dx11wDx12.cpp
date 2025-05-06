@@ -112,10 +112,11 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
                 OutResource->Dx12Handle = NULL;
             }
 
+            //desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
             desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED;
             ASSIGN_DESC(OutResource->Desc, desc);
 
-            result = Dx11Device->CreateTexture2D(&desc, nullptr, &OutResource->SharedTexture);
+            result = Dx11Device->CreateTexture2D(&desc, nullptr, &OutResource->SharedTexture); 
 
             IDXGIResource1* resource;
             result = OutResource->SharedTexture->QueryInterface(IID_PPV_ARGS(&resource));
@@ -461,6 +462,8 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
     HRESULT result;
 
+    auto dontUseNTS = Config::Instance()->DontUseNTShared.value_or_default();
+
 #pragma region Texture copies
 
     ID3D11Resource* paramColor;
@@ -470,7 +473,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
     if (paramColor)
     {
         LOG_DEBUG("Color exist..");
-        if (CopyTextureFrom11To12(paramColor, &dx11Color, true, Config::Instance()->DontUseNTShared.value_or_default()) == false)
+        if (CopyTextureFrom11To12(paramColor, &dx11Color, true, dontUseNTS) == false)
             return false;
     }
     else
@@ -486,7 +489,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
     if (paramMv)
     {
         LOG_DEBUG("MotionVectors exist..");
-        if (CopyTextureFrom11To12(paramMv, &dx11Mv, true, Config::Instance()->DontUseNTShared.value_or_default()) == false)
+        if (CopyTextureFrom11To12(paramMv, &dx11Mv, true, dontUseNTS) == false)
             return false;
     }
     else
@@ -510,6 +513,10 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         return false;
     }
 
+    /*
+    * Some depth formats (R24G8) are not working correctly as shared resource
+    * Maybe a shader would help there
+    */
     ID3D11Resource* paramDepth;
     if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
         InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
@@ -518,7 +525,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
     {
         LOG_DEBUG("Depth exist..");
 
-        if (CopyTextureFrom11To12(paramDepth, &dx11Depth, true, true) == false)
+        if (CopyTextureFrom11To12(paramDepth, &dx11Depth, true, true) == false)  
             return false;
     }
     else
@@ -538,7 +545,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         {
             LOG_DEBUG("ExposureTexture exist..");
 
-            if (CopyTextureFrom11To12(paramExposure, &dx11Exp, true, Config::Instance()->DontUseNTShared.value_or_default()) == false)
+            if (CopyTextureFrom11To12(paramExposure, &dx11Exp, true, dontUseNTS) == false)
                 return false;
         }
         else
@@ -560,7 +567,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
             Config::Instance()->DisableReactiveMask.set_volatile_value(false);
             LOG_DEBUG("Input Bias mask exist..");
 
-            if (CopyTextureFrom11To12(paramReactiveMask, &dx11Reactive, true, Config::Instance()->DontUseNTShared.value_or_default()) == false)
+            if (CopyTextureFrom11To12(paramReactiveMask, &dx11Reactive, true, dontUseNTS) == false)
                 return false;
         }
         // This is only needed for XeSS
@@ -685,7 +692,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
     if (paramDepth && dx11Depth.Dx12Handle != dx11Depth.Dx11Handle)
     {
         if (dx11Depth.Dx12Handle != NULL)
-            CloseHandle(dx11Depth.Dx12Handle);
+            CloseHandle(dx11Depth.Dx12Handle); 
 
         result = Dx12Device->OpenSharedHandle(dx11Depth.Dx11Handle, IID_PPV_ARGS(&dx11Depth.Dx12Resource));
 
@@ -694,6 +701,8 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
             LOG_ERROR("Depth OpenSharedHandle error: {0:x}", result);
             return false;
         }
+
+        auto desc = dx11Depth.Dx12Resource->GetDesc();
 
         dx11Depth.Dx12Handle = dx11Depth.Dx11Handle;
     }
@@ -809,5 +818,32 @@ IFeature_Dx11wDx12::IFeature_Dx11wDx12(unsigned int InHandleId, NVSDK_NGX_Parame
 
 IFeature_Dx11wDx12::~IFeature_Dx11wDx12()
 {
+    if (State::Instance().isShuttingDown)
+        return;
+
     ReleaseSharedResources();
+
+    if (Imgui != nullptr && Imgui.get() != nullptr)
+    {
+        Imgui.reset();
+        Imgui = nullptr;
+    }
+
+    if (OutputScaler != nullptr && OutputScaler.get() != nullptr)
+    {
+        OutputScaler.reset();
+        OutputScaler = nullptr;
+    }
+
+    if (RCAS != nullptr && RCAS.get() != nullptr)
+    {
+        RCAS.reset();
+        RCAS = nullptr;
+    }
+
+    if (Bias != nullptr && Bias.get() != nullptr)
+    {
+        Bias.reset();
+        Bias = nullptr;
+    }
 }

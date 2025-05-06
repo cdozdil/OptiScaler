@@ -273,10 +273,10 @@ DLSSDFeatureDx12::DLSSDFeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter*
 
 DLSSDFeatureDx12::~DLSSDFeatureDx12()
 {
+	if (State::Instance().isShuttingDown)
+		return;
+
 	if (NVNGXProxy::D3D12_ReleaseFeature() != nullptr && _p_dlssdHandle != nullptr)
 		NVNGXProxy::D3D12_ReleaseFeature()(_p_dlssdHandle);
-
-	if (RCAS != nullptr && RCAS.get() != nullptr)
-		RCAS.reset();
 }
 

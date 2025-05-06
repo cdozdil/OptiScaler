@@ -391,6 +391,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
 
 FSR2FeatureDx11on12::~FSR2FeatureDx11on12()
 {
+    
 }
 
 bool FSR2FeatureDx11on12::InitFSR2(const NVSDK_NGX_Parameter* InParameters)

@@ -20,6 +20,9 @@ public:
 
 	~FSR31FeatureVk()
 	{
+		if (State::Instance().isShuttingDown)
+			return;
+
 		if (_context != nullptr)
 			FfxApiProxy::VULKAN_DestroyContext()(&_context, NULL);
 	}

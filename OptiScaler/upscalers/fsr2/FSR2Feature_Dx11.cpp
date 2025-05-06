@@ -608,5 +608,6 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 
 FSR2FeatureDx11::~FSR2FeatureDx11()
 {
+    ReleaseResources();
 }
 

@@ -11,6 +11,7 @@ protected:
 	ID3D11Device* Device = nullptr;
 	ID3D11DeviceContext* DeviceContext = nullptr;
 	inline static std::unique_ptr<Menu_Dx11> Imgui = nullptr;
+
 	std::unique_ptr<OS_Dx11> OutputScaler = nullptr;
 	std::unique_ptr<RCAS_Dx11> RCAS = nullptr;
 	std::unique_ptr<Bias_Dx11> Bias = nullptr;

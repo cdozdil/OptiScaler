@@ -558,6 +558,4 @@ XeSSFeature_Vk::XeSSFeature_Vk(unsigned int handleId, NVSDK_NGX_Parameter* InPar
 
 XeSSFeature_Vk::~XeSSFeature_Vk()
 {
-    if (State::Instance().isShuttingDown)
-        return;
 }

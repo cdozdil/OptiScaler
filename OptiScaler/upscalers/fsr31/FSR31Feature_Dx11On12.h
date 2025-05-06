@@ -25,6 +25,9 @@ public:
 
 	~FSR31FeatureDx11on12()
 	{
+		if (State::Instance().isShuttingDown)
+			return;
+
 		if (_context != nullptr)
 			FfxApiProxy::D3D12_DestroyContext()(&_context, NULL);
 	}
