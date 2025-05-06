@@ -1006,6 +1006,21 @@ bool MenuCommon::RenderMenu()
 
     bool newFrame = false;
 
+    // Moved here to prevent gamepad key replay
+    if (_isVisible)
+    {
+        if (hasGamepad)
+            io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
+
+        io.ConfigFlags = ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
+    }
+    else
+    {
+        hasGamepad = (io.BackendFlags | ImGuiBackendFlags_HasGamepad) > 0;
+        io.BackendFlags &= 30;
+        io.ConfigFlags = ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
+    }
+
     // Handle Inputs
     {
         if (inputFps)
@@ -1030,11 +1045,6 @@ bool MenuCommon::RenderMenu()
                 auto dllPath = Util::DllPath().parent_path() / "dlssg_to_fsr3_amd_is_better.dll";
                 State::Instance().NukemsFilesAvailable = std::filesystem::exists(dllPath);
 
-                if (hasGamepad)
-                    io.BackendFlags | ImGuiBackendFlags_HasGamepad;
-
-                io.ConfigFlags = ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
-
                 if (pfn_ClipCursor_hooked)
                 {
                     _ssRatio = 0;
@@ -1047,10 +1057,6 @@ bool MenuCommon::RenderMenu()
             }
             else
             {
-                hasGamepad = (io.BackendFlags | ImGuiBackendFlags_HasGamepad) > 0;
-                io.BackendFlags &= 30;
-                io.ConfigFlags = ImGuiConfigFlags_NoMouse | ImGuiConfigFlags_NoMouseCursorChange | ImGuiConfigFlags_NoKeyboard;
-
                 if (pfn_ClipCursor_hooked)
                     pfn_ClipCursor(&_cursorLimit);
 
