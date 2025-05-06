@@ -2,10 +2,6 @@
 
 #include <Config.h>
 
-#include <shaders/depth_transfer/DT_Dx11.h>
-
-static DepthTransfer_Dx11* _dt = nullptr;
-
 #define ASSIGN_DESC(dest, src) dest.Width = src.Width; dest.Height = src.Height; dest.Format = src.Format; dest.BindFlags = src.BindFlags; dest.MiscFlags = src.MiscFlags; 
 
 #define SAFE_RELEASE(p)		\
@@ -104,16 +100,16 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
     {
         if (desc.Format == DXGI_FORMAT_R24G8_TYPELESS)
         {
-            if (_dt == nullptr)
-                _dt = new DepthTransfer_Dx11("DT", Dx11Device);
+            if (DT == nullptr || DT.get() == nullptr)
+                DT = std::make_unique<DepthTransfer_Dx11>("DT", Dx11Device);
 
-            if (_dt->Buffer() == nullptr)
-                _dt->CreateBufferResource(Dx11Device, InResource);
+            if (DT->Buffer() == nullptr)
+                DT->CreateBufferResource(Dx11Device, InResource);
 
-            if (_dt->Dispatch(Dx11Device, Dx11DeviceContext, originalTexture, _dt->Buffer()))
+            if (DT->Dispatch(Dx11Device, Dx11DeviceContext, originalTexture, DT->Buffer()))
             {
                 IDXGIResource1* resource = nullptr;
-                result = _dt->Buffer()->QueryInterface(IID_PPV_ARGS(&resource));
+                result = DT->Buffer()->QueryInterface(IID_PPV_ARGS(&resource));
 
                 if (result != S_OK || resource == nullptr)
                 {
@@ -861,10 +857,18 @@ IFeature_Dx11wDx12::~IFeature_Dx11wDx12()
 
     ReleaseSharedResources();
 
+    
+
     if (Imgui != nullptr && Imgui.get() != nullptr)
     {
         Imgui.reset();
         Imgui = nullptr;
+    }
+
+    if (DT != nullptr && DT.get() != nullptr)
+    {
+        DT.reset();
+        DT = nullptr;
     }
 
     if (OutputScaler != nullptr && OutputScaler.get() != nullptr)

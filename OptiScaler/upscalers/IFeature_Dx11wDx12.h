@@ -2,9 +2,11 @@
 #include "IFeature_Dx11.h"
 
 #include <menu/menu_dx11.h>
+
 #include <shaders/rcas/RCAS_Dx12.h>
 #include <shaders/bias/Bias_Dx12.h>
 #include <shaders/output_scaling/OS_Dx12.h>
+#include <shaders/depth_transfer/DT_Dx11.h>
 
 #include <d3d12.h>
 #include <d3d11_4.h>
@@ -63,6 +65,8 @@ protected:
 	std::unique_ptr<OS_Dx12> OutputScaler = nullptr;
 	std::unique_ptr<RCAS_Dx12> RCAS = nullptr;
 	std::unique_ptr<Bias_Dx12> Bias = nullptr;
+	std::unique_ptr < DepthTransfer_Dx11> DT = nullptr;
+
 
 	HRESULT CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel);
 	void GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter);
