@@ -189,6 +189,8 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
 
     params.commandList = cmdList;
 
+    ffxReturnCode_t ffxresult = FFX_API_RETURN_ERROR;
+
     do
     {
         if (!ProcessDx11Textures(InParameters))
@@ -320,7 +322,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
             params.upscaleSize.height *= Config::Instance()->OutputScalingMultiplier.value_or_default();
 
         LOG_DEBUG("Dispatch!!");
-        auto ffxresult = FfxApiProxy::D3D12_Dispatch()(&_context, &params.header);
+        ffxresult = FfxApiProxy::D3D12_Dispatch()(&_context, &params.header);
 
 
         if (ffxresult != FFX_API_RETURN_OK)
@@ -393,39 +395,50 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
     Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
     Dx12CommandQueue->Signal(dx12FenceTextureCopy, _fenceValue);
 
-    if (!CopyBackOutput())
+    auto evalResult = false;
+
+    do
     {
-        LOG_ERROR("Can't copy output texture back!");
-        return false;
-    }
+        if (ffxresult != FFX_API_RETURN_OK)
+            break;
 
-    // imgui - legacy menu disabled for now
-    //if (!Config::Instance()->OverlayMenu.value_or_default() && _frameCount > 30)
-    //{
-    //    if (Imgui != nullptr && Imgui.get() != nullptr)
-    //    {
-    //        LOG_DEBUG("Apply Imgui");
+        if (!CopyBackOutput())
+        {
+            LOG_ERROR("Can't copy output texture back!");
+            break;
+        }
 
-    //        if (Imgui->IsHandleDifferent())
-    //        {
-    //            LOG_DEBUG("Imgui handle different, reset()!");
-    //            std::this_thread::sleep_for(std::chrono::milliseconds(250));
-    //            Imgui.reset();
-    //        }
-    //        else
-    //            Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
-    //    }
-    //    else
-    //    {
-    //        if (Imgui == nullptr || Imgui.get() == nullptr)
-    //            Imgui = std::make_unique<Menu_Dx11>(GetForegroundWindow(), Device);
-    //    }
-    //}
+        // imgui - legacy menu disabled for now
+        //if (!Config::Instance()->OverlayMenu.value_or_default() && _frameCount > 30)
+        //{
+        //    if (Imgui != nullptr && Imgui.get() != nullptr)
+        //    {
+        //        LOG_DEBUG("Apply Imgui");
+
+        //        if (Imgui->IsHandleDifferent())
+        //        {
+        //            LOG_DEBUG("Imgui handle different, reset()!");
+        //            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        //            Imgui.reset();
+        //        }
+        //        else
+        //            Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
+        //    }
+        //    else
+        //    {
+        //        if (Imgui == nullptr || Imgui.get() == nullptr)
+        //            Imgui = std::make_unique<Menu_Dx11>(GetForegroundWindow(), Device);
+        //    }
+        //}
+
+        evalResult = true;
+
+    } while (false);
 
     _frameCount++;
     Dx12CommandQueue->Signal(Dx12Fence, _frameCount);
 
-    return true;
+    return evalResult;
 }
 
 bool FSR31FeatureDx11on12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)

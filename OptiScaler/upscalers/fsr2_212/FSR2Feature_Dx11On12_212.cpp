@@ -165,6 +165,8 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
 
     params.commandList = Fsr212::ffxGetCommandListDX12_212(cmdList);
 
+    auto ffxresult = Fsr212::FFX_ERROR_INVALID_ALIGNMENT;
+
     do
     {
         if (!ProcessDx11Textures(InParameters))
@@ -273,7 +275,7 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
             params.preExposure = 1.0f;
 
         LOG_DEBUG("Dispatch!!");
-        auto ffxresult = Fsr212::ffxFsr2ContextDispatch212(&_context, &params);
+        ffxresult = Fsr212::ffxFsr2ContextDispatch212(&_context, &params);
 
         if (ffxresult != Fsr212::FFX_OK)
         {
@@ -345,39 +347,51 @@ bool FSR2FeatureDx11on12_212::Evaluate(ID3D11DeviceContext* InDeviceContext, NVS
     Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
     Dx12CommandQueue->Signal(dx12FenceTextureCopy, _fenceValue);
 
-    if (!CopyBackOutput())
+    auto evalResult = false;
+
+    do
     {
-        LOG_ERROR("Can't copy output texture back!");
-        return false;
-    }
+        if (ffxresult != Fsr212::FFX_OK)
+            break;
 
-    // imgui - legacy menu disabled for now
-    //if (!Config::Instance()->OverlayMenu.value_or_default() && _frameCount > 30)
-    //{
-    //    if (Imgui != nullptr && Imgui.get() != nullptr)
-    //    {
-    //        LOG_DEBUG("Apply Imgui");
+        if (!CopyBackOutput())
+        {
+            LOG_ERROR("Can't copy output texture back!");
+            break;
+        }
 
-    //        if (Imgui->IsHandleDifferent())
-    //        {
-    //            LOG_DEBUG("Imgui handle different, reset()!");
-    //            std::this_thread::sleep_for(std::chrono::milliseconds(250));
-    //            Imgui.reset();
-    //        }
-    //        else
-    //            Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
-    //    }
-    //    else
-    //    {
-    //        if (Imgui == nullptr || Imgui.get() == nullptr)
-    //            Imgui = std::make_unique<Menu_Dx11>(GetForegroundWindow(), Device);
-    //    }
-    //}
+        // imgui - legacy menu disabled for now
+        //if (!Config::Instance()->OverlayMenu.value_or_default() && _frameCount > 30)
+        //{
+        //    if (Imgui != nullptr && Imgui.get() != nullptr)
+        //    {
+        //        LOG_DEBUG("Apply Imgui");
+
+        //        if (Imgui->IsHandleDifferent())
+        //        {
+        //            LOG_DEBUG("Imgui handle different, reset()!");
+        //            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        //            Imgui.reset();
+        //        }
+        //        else
+        //            Imgui->Render(InDeviceContext, paramOutput[_frameCount % 2]);
+        //    }
+        //    else
+        //    {
+        //        if (Imgui == nullptr || Imgui.get() == nullptr)
+        //            Imgui = std::make_unique<Menu_Dx11>(GetForegroundWindow(), Device);
+        //    }
+        //}
+
+        evalResult = true;
+
+    } while (false);
+
 
     _frameCount++;
     Dx12CommandQueue->Signal(Dx12Fence, _frameCount);
 
-    return true;
+    return evalResult;
 }
 
 FSR2FeatureDx11on12_212::~FSR2FeatureDx11on12_212()
