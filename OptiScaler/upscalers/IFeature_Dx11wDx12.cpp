@@ -1,5 +1,10 @@
 #include "IFeature_Dx11wDx12.h"
+
 #include <Config.h>
+
+#include <shaders/depth_transfer/DT_Dx11.h>
+
+static DepthTransfer_Dx11* _dt = nullptr;
 
 #define ASSIGN_DESC(dest, src) dest.Width = src.Width; dest.Height = src.Height; dest.Format = src.Format; dest.BindFlags = src.BindFlags; dest.MiscFlags = src.MiscFlags; 
 
@@ -97,51 +102,88 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
     }
     else if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) == 0 && InDontUseNTShared)
     {
-        if (desc.Width != OutResource->Desc.Width || desc.Height != OutResource->Desc.Height ||
-            desc.Format != OutResource->Desc.Format || desc.BindFlags != OutResource->Desc.BindFlags ||
-            OutResource->SharedTexture == nullptr || (OutResource->Desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE))
+        if (desc.Format == DXGI_FORMAT_R24G8_TYPELESS)
         {
-            if (OutResource->SharedTexture != nullptr)
+            if (_dt == nullptr)
+                _dt = new DepthTransfer_Dx11("DT", Dx11Device);
+
+            if (_dt->Buffer() == nullptr)
+                _dt->CreateBufferResource(Dx11Device, InResource);
+
+            if (_dt->Dispatch(Dx11Device, Dx11DeviceContext, originalTexture, _dt->Buffer()))
             {
-                OutResource->SharedTexture->Release();
+                IDXGIResource1* resource = nullptr;
+                result = _dt->Buffer()->QueryInterface(IID_PPV_ARGS(&resource));
 
-                if (OutResource->Dx12Handle != NULL && (OutResource->Desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE))
-                    CloseHandle(OutResource->Dx12Handle);
+                if (result != S_OK || resource == nullptr)
+                {
+                    LOG_ERROR("QueryInterface(resource) error: {0:x}", result);
+                    return false;
+                }
 
-                OutResource->Dx11Handle = NULL;
-                OutResource->Dx12Handle = NULL;
-            }
+                // Get shared handle
+                result = resource->GetSharedHandle(&OutResource->Dx11Handle);
 
-            //desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-            desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED;
-            ASSIGN_DESC(OutResource->Desc, desc);
+                if (result != S_OK)
+                {
+                    LOG_ERROR("GetSharedHandle error: {0:x}", result);
+                    resource->Release();
+                    return false;
+                }
 
-            result = Dx11Device->CreateTexture2D(&desc, nullptr, &OutResource->SharedTexture); 
-
-            IDXGIResource1* resource;
-            result = OutResource->SharedTexture->QueryInterface(IID_PPV_ARGS(&resource));
-
-            if (result != S_OK)
-            {
-                LOG_ERROR("QueryInterface(resource) error: {0:x}", result);
-                return false;
-            }
-
-            // Get shared handle
-            result = resource->GetSharedHandle(&OutResource->Dx11Handle);
-
-            if (result != S_OK)
-            {
-                LOG_ERROR("GetSharedHandle error: {0:x}", result);
                 resource->Release();
-                return false;
+            }
+        }
+        else
+        {
+            if (desc.Width != OutResource->Desc.Width || desc.Height != OutResource->Desc.Height ||
+                desc.Format != OutResource->Desc.Format || desc.BindFlags != OutResource->Desc.BindFlags ||
+                OutResource->SharedTexture == nullptr || (OutResource->Desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE))
+            {
+                if (OutResource->SharedTexture != nullptr)
+                {
+                    OutResource->SharedTexture->Release();
+
+                    if (OutResource->Dx12Handle != NULL && (OutResource->Desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE))
+                        CloseHandle(OutResource->Dx12Handle);
+
+                    OutResource->Dx11Handle = NULL;
+                    OutResource->Dx12Handle = NULL;
+                }
+
+                if (desc.Format == DXGI_FORMAT_R24G8_TYPELESS)
+                    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+                desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED;
+                ASSIGN_DESC(OutResource->Desc, desc);
+
+                result = Dx11Device->CreateTexture2D(&desc, nullptr, &OutResource->SharedTexture);
+
+                IDXGIResource1* resource;
+                result = OutResource->SharedTexture->QueryInterface(IID_PPV_ARGS(&resource));
+
+                if (result != S_OK)
+                {
+                    LOG_ERROR("QueryInterface(resource) error: {0:x}", result);
+                    return false;
+                }
+
+                // Get shared handle
+                result = resource->GetSharedHandle(&OutResource->Dx11Handle);
+
+                if (result != S_OK)
+                {
+                    LOG_ERROR("GetSharedHandle error: {0:x}", result);
+                    resource->Release();
+                    return false;
+                }
+
+                resource->Release();
             }
 
-            resource->Release();
+            if (InCopy && OutResource->SharedTexture != nullptr)
+                Dx11DeviceContext->CopyResource(OutResource->SharedTexture, InResource);
         }
-
-        if (InCopy && OutResource->SharedTexture != nullptr)
-            Dx11DeviceContext->CopyResource(OutResource->SharedTexture, InResource);
     }
     else
     {
@@ -513,10 +555,6 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         return false;
     }
 
-    /*
-    * Some depth formats (R24G8) are not working correctly as shared resource
-    * Maybe a shader would help there
-    */
     ID3D11Resource* paramDepth;
     if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
         InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
@@ -525,7 +563,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
     {
         LOG_DEBUG("Depth exist..");
 
-        if (CopyTextureFrom11To12(paramDepth, &dx11Depth, true, true) == false)  
+        if (CopyTextureFrom11To12(paramDepth, &dx11Depth, true, true) == false)
             return false;
     }
     else
@@ -692,7 +730,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
     if (paramDepth && dx11Depth.Dx12Handle != dx11Depth.Dx11Handle)
     {
         if (dx11Depth.Dx12Handle != NULL)
-            CloseHandle(dx11Depth.Dx12Handle); 
+            CloseHandle(dx11Depth.Dx12Handle);
 
         result = Dx12Device->OpenSharedHandle(dx11Depth.Dx11Handle, IID_PPV_ARGS(&dx11Depth.Dx12Resource));
 

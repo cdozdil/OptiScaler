@@ -95,8 +95,6 @@ bool FSR2FeatureDx11::CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_RE
 
 void FSR2FeatureDx11::ReleaseResources()
 {
-    LOG_FUNC();
-
     if (!bufferColor.usingOriginal)
     {
         SAFE_RELEASE(bufferColor.Texture);
