@@ -1408,7 +1408,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
 
     // FG Init || Disable    
-    if (Config::Instance()->FGType.value_or_default() == OptiFG && Config::Instance()->OverlayMenu.value_or_default())
+    if (State::Instance().activeFgType == OptiFG && Config::Instance()->OverlayMenu.value_or_default())
     {
         if (!State::Instance().FGchanged && Config::Instance()->FGEnabled.value_or_default() && fg->TargetFrame() < fg->FrameCount() &&
             FfxApiProxy::InitFfxDx12() && !fg->IsActive() && HooksDx::CurrentSwapchainFormat() != DXGI_FORMAT_UNKNOWN)
@@ -1504,7 +1504,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         InParameters->Get(NVSDK_NGX_Parameter_Output, (void**)&output);
 
     UINT frameIndex;
-    if (fg != nullptr && fg->IsActive() && Config::Instance()->FGType.value_or_default() == OptiFG && Config::Instance()->OverlayMenu.value_or_default() &&
+    if (fg != nullptr && fg->IsActive() && State::Instance().activeFgType == OptiFG && Config::Instance()->OverlayMenu.value_or_default() &&
         Config::Instance()->FGEnabled.value_or_default() && fg->TargetFrame() < fg->FrameCount() && State::Instance().currentSwapchain != nullptr)
     {
         // Wait for present
@@ -1608,7 +1608,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         HooksDx::dx12UpscaleTrig = true;
 
         // FG Dispatch
-        if (fg != nullptr && fg->IsActive() && Config::Instance()->FGType.value_or_default() == OptiFG && Config::Instance()->OverlayMenu.value_or_default() &&
+        if (fg != nullptr && fg->IsActive() && State::Instance().activeFgType == OptiFG && Config::Instance()->OverlayMenu.value_or_default() &&
             Config::Instance()->FGEnabled.value_or_default() && fg->TargetFrame() < fg->FrameCount() && State::Instance().currentSwapchain != nullptr)
         {
             fg->UpscaleEnd();

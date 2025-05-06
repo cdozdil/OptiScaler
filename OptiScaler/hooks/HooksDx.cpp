@@ -364,7 +364,7 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
 
     MenuOverlayDx::Present(pSwapChain, SyncInterval, Flags, pPresentParameters, pDevice, hWnd, isUWP);
 
-    if (Config::Instance()->FGType.value_or_default() == OptiFG)
+    if (State::Instance().activeFgType == OptiFG)
     {
         fakenvapi::reportFGPresent(pSwapChain, fg != nullptr && fg->IsActive(), _frameCounter % 2);
     }
@@ -665,7 +665,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     }
 
     ID3D12CommandQueue* cq = nullptr;
-    if (Config::Instance()->OverlayMenu.value_or_default() && Config::Instance()->FGType.value_or_default() == FGType::OptiFG &&
+    if (Config::Instance()->OverlayMenu.value_or_default() && State::Instance().activeFgType == FGType::OptiFG &&
         !_skipFGSwapChainCreation && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
         cq->SetName(L"GameQueue");
@@ -780,7 +780,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     }
 
     // Disable FG is amd dll is not found
-    if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG && !FfxApiProxy::InitFfxDx12())
+    if (State::Instance().activeFgType == FGType::OptiFG && !FfxApiProxy::InitFfxDx12())
     {
         Config::Instance()->FGType.set_volatile_value(NoFG);
         State::Instance().activeFgType = Config::Instance()->FGType.value_or_default();
@@ -934,7 +934,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     }
 
     ID3D12CommandQueue* cq = nullptr;
-    if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG && !_skipFGSwapChainCreation && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+    if (State::Instance().activeFgType == FGType::OptiFG && !_skipFGSwapChainCreation && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
         cq->SetName(L"GameQueueHwnd");
         cq->Release();
@@ -1047,7 +1047,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     }
 
     // Disable FG is amd dll is not found
-    if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG && !FfxApiProxy::InitFfxDx12())
+    if (State::Instance().activeFgType == FGType::OptiFG && !FfxApiProxy::InitFfxDx12())
     {
         Config::Instance()->FGType.set_volatile_value(NoFG);
         State::Instance().activeFgType = Config::Instance()->FGType.value_or_default();
@@ -1395,7 +1395,7 @@ static void HookToDevice(ID3D12Device* InDevice)
         DetourTransactionCommit();
     }
 
-    if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG && Config::Instance()->OverlayMenu.value_or_default())
+    if (State::Instance().activeFgType == FGType::OptiFG && Config::Instance()->OverlayMenu.value_or_default())
         ResTrack_Dx12::HookDevice(InDevice);
 }
 

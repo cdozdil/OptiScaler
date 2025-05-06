@@ -2035,7 +2035,7 @@ static void HookToQueue(ID3D12Device* InDevice)
 
 void ResTrack_Dx12::HookDevice(ID3D12Device* device)
 {
-    if (Config::Instance()->FGType.value_or_default() != OptiFG || !Config::Instance()->OverlayMenu.value_or_default())
+    if (State::Instance().activeFgType != OptiFG || !Config::Instance()->OverlayMenu.value_or_default())
         return;
 
     if (o_CreateDescriptorHeap != nullptr || device == nullptr)
