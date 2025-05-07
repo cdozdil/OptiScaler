@@ -21,7 +21,6 @@
 #include <dx12/ffx_api_dx12.h>
 #include <ffx_framegeneration.h>
 
-#include <DbgHelp.h>
 #include <d3d11on12.h>
 
 #pragma region FG definitions
