@@ -6,7 +6,7 @@
 * Added depth conversion shader to w/Dx12 upscalers for R24G8 formats
 * Added `InitializeASI` trigger for ASI plugins
 * Added FlipMetering disabling option (thanks to **TheRazerMD**)
-* Fixed Dx11 gamepag key replaying on menu opening (thanks to **Merlinch**)
+* Fixed Dx11 gamepad key replaying on menu opening (thanks to **Merlinch**)
 
 ## v0.7.7-pre10
 * Enabled usage of Dilated MV's without Depth (aka UE XeSS inputs) when using FSR3.1 (and FSR4) (thanks to **hereCOMESlappy**)
