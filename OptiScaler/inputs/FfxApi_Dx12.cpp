@@ -375,11 +375,11 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
     if (dispatchDesc == nullptr)
     {
         LOG_INFO("dispatchDesc == nullptr, desc type: {:X}", desc->type);
-        return FFX_API_RETURN_ERROR_PARAMETER;
+        return FfxApiProxy::D3D12_Dispatch()(context, desc);
     }
 
     if (dispatchDesc->commandList == nullptr)
-        return FFX_API_RETURN_ERROR_PARAMETER;
+        return FfxApiProxy::D3D12_Dispatch()(context, desc);
 
     // If not in contexts list create and add context
     auto contextId = (size_t)*context;
