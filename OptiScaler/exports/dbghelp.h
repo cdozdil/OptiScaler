@@ -6,6 +6,12 @@
 
 #include <proxies/KernelBase_Proxy.h>
 
+// Removed
+// ImageNtHeader = _ImageNtHeader 
+// from Source.def to prevent Forza Horizon 5 crash
+// Might cause crashes while using dbghelp.dll
+// but Cp77 and Streamline Demo were ok
+
 struct dbghelp_dll
 {
     HMODULE dll = nullptr;
