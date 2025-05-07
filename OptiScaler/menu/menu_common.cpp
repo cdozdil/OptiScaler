@@ -3592,12 +3592,12 @@ void MenuCommon::Init(HWND InHwnd, bool isUWP)
 
     if (!isUWP)
     {
-        ImGui_ImplWin32_Init(InHwnd);
+        initResult = ImGui_ImplWin32_Init(InHwnd);
         LOG_DEBUG("ImGui_ImplWin32_Init result: {0}", initResult);
     }
     else
     {
-        ImGui_ImplUwp_Init(InHwnd);
+        initResult = ImGui_ImplUwp_Init(InHwnd);
         ImGui_BindUwpKeyUp(KeyUp);
         LOG_DEBUG("ImGui_ImplUwp_Init result: {0}", initResult);
     }
