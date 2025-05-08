@@ -403,7 +403,7 @@ bool Hudfix_Dx12::IsResourceCheckActive()
         return false;
     }
 
-    if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default())
+    if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default()) 
     {
         //LOG_TRACE("FGEnabled: {} <= FGHUDFix: {}", Config::Instance()->FGEnabled.value_or_default(), Config::Instance()->FGHUDFix.value_or_default());
         return false;
