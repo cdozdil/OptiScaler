@@ -2105,6 +2105,7 @@ bool MenuCommon::RenderMenu()
 
                             ShowHelpMarker("List of upscalers reported by FFX SDK");
 
+                            ImGui::SameLine(0.0f, 6.0f);
 
                             if (ImGui::Button("Change Upscaler") && _fsr3xIndex != Config::Instance()->Fsr3xIndex.value_or_default())
                             {
@@ -2114,10 +2115,63 @@ bool MenuCommon::RenderMenu()
                                     singleChangeBackend.second = true;
                             }
 
-                            ImGui::PushItemWidth(280.0f * Config::Instance()->MenuScale.value_or_default());
-
-                            if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 1 }))
+                            if (currentBackend == "fsr31" || currentBackend == "fsr31_12")
                             {
+                                if (bool nlSRGB = Config::Instance()->FsrNonLinearSRGB.value_or_default(); ImGui::Checkbox("FSR4 Non-Linear sRGB Input", &nlSRGB))
+                                {
+                                    Config::Instance()->FsrNonLinearSRGB = nlSRGB;
+
+                                    if (nlSRGB)
+                                        Config::Instance()->FsrNonLinearPQ = false;
+
+                                    State::Instance().newBackend = currentBackend;
+                                    for (auto& singleChangeBackend : State::Instance().changeBackend)
+                                        singleChangeBackend.second = true;
+                                }
+                                ShowHelpMarker("Indicates input color resource contains perceptual sRGB colors\n"
+                                               "Might improve upscaling quality of FSR4");
+
+                                if (bool nlPQ = Config::Instance()->FsrNonLinearPQ.value_or_default(); ImGui::Checkbox("FSR4 Non-Linear PQ Input", &nlPQ))
+                                {
+                                    Config::Instance()->FsrNonLinearPQ = nlPQ;
+
+                                    if (nlPQ)
+                                        Config::Instance()->FsrNonLinearSRGB = false;
+
+                                    State::Instance().newBackend = currentBackend;
+                                    for (auto& singleChangeBackend : State::Instance().changeBackend)
+                                        singleChangeBackend.second = true;
+                                }
+                                ShowHelpMarker("Indicates input color resource contains perceptual PQ colors\n"
+                                               "Might improve upscaling quality of FSR4");
+
+                                if (bool dView = Config::Instance()->FsrDebugView.value_or_default(); ImGui::Checkbox("FSR 3.X Debug View", &dView))
+                                    Config::Instance()->FsrDebugView = dView;
+                                ShowHelpMarker("Top left: Dilated Motion Vectors\n"
+                                               "Top middle: Protected Areas\n"
+                                               "Top right: Dilated Depth\n"
+                                               "Middle: Upscaled frame\n"
+                                               "Bottom left: Disocclusion mask\n"
+                                               "Bottom middle: Reactiveness\n"
+                                               "Bottom right: Detail Protection Takedown");
+                            }
+
+                            if (State::Instance().currentFeature->AccessToReactiveMask())
+                            {
+                                ImGui::BeginDisabled(Config::Instance()->DisableReactiveMask.value_or(false));
+
+                                auto useAsTransparency = Config::Instance()->FsrUseMaskForTransparency.value_or_default();
+                                if (ImGui::Checkbox("Use Reactive Mask as Transparency Mask", &useAsTransparency))
+                                    Config::Instance()->FsrUseMaskForTransparency = useAsTransparency;
+
+                                ImGui::EndDisabled();
+                            }
+
+                            ImGui::Spacing();
+                            if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 1 }) && ImGui::CollapsingHeader("Upscaler Settings"))
+                            {
+                                ImGui::PushItemWidth(280.0f * Config::Instance()->MenuScale.value_or_default());
+
                                 float velocity = Config::Instance()->FsrVelocity.value_or_default();
                                 if (ImGui::SliderFloat("Velocity Factor", &velocity, 0.00f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
                                     Config::Instance()->FsrVelocity = velocity;
@@ -2125,106 +2179,57 @@ bool MenuCommon::RenderMenu()
                                 ShowHelpMarker("Value of 0.0f can improve temporal stability of bright pixels\n"
                                                "Lower values are more stable with ghosting\n"
                                                "Higher values are more pixelly but less ghosting.");
+
+                                if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
+                                {
+                                    float reactiveScale = Config::Instance()->FsrReactiveScale.value_or_default();
+                                    if (ImGui::SliderFloat("Reactive Scale", &reactiveScale, 0.0f, 100.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
+                                        Config::Instance()->FsrReactiveScale = reactiveScale;
+
+                                    ShowHelpMarker("Meant for development purpose to test if\n"
+                                                   "writing a larger value to reactive mask, reduces ghosting.");
+                                }
+
+                                if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
+                                {
+                                    float shadingScale = Config::Instance()->FsrShadingScale.value_or_default();
+                                    if (ImGui::SliderFloat("Shading Scale", &shadingScale, 0.0f, 100.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
+                                        Config::Instance()->FsrShadingScale = shadingScale;
+
+                                    ShowHelpMarker("Increasing this scales fsr3.1 computed shading\n"
+                                                   "change value at read to have higher reactiveness.");
+                                }
+
+                                if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
+                                {
+                                    float accAddPerFrame = Config::Instance()->FsrAccAddPerFrame.value_or_default();
+                                    if (ImGui::SliderFloat("Acc. Added Per Frame", &accAddPerFrame, 0.00f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
+                                        Config::Instance()->FsrAccAddPerFrame = accAddPerFrame;
+
+                                    ShowHelpMarker("Corresponds to amount of accumulation added per frame\n"
+                                                   "at pixel coordinate where disocclusion occured or when\n"
+                                                   "reactive mask value is > 0.0f. Decreasing this and \n"
+                                                   "drawing the ghosting object (IE no mv) to reactive mask \n"
+                                                   "with value close to 1.0f can decrease temporal ghosting.\n"
+                                                   "Decreasing this could result in more thin feature pixels flickering.");
+                                }
+
+                                if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
+                                {
+                                    float minDisOccAcc = Config::Instance()->FsrMinDisOccAcc.value_or_default();
+                                    if (ImGui::SliderFloat("Min. Disocclusion Acc.", &minDisOccAcc, -1.0f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
+                                        Config::Instance()->FsrMinDisOccAcc = minDisOccAcc;
+
+                                    ShowHelpMarker("Increasing this value may reduce white pixel temporal\n"
+                                                   "flickering around swaying thin objects that are disoccluding \n"
+                                                   "one another often. Too high value may increase ghosting.");
+                                }
+
+                                ImGui::PopItemWidth();
                             }
 
-                            if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
-                            {
-                                float reactiveScale = Config::Instance()->FsrReactiveScale.value_or_default();
-                                if (ImGui::SliderFloat("Reactive Scale", &reactiveScale, 0.0f, 100.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
-                                    Config::Instance()->FsrReactiveScale = reactiveScale;
-
-                                ShowHelpMarker("Meant for development purpose to test if\n"
-                                               "writing a larger value to reactive mask, reduces ghosting.");
-                            }
-
-                            if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
-                            {
-                                float shadingScale = Config::Instance()->FsrShadingScale.value_or_default();
-                                if (ImGui::SliderFloat("Shading Scale", &shadingScale, 0.0f, 100.0f, "%.1f", ImGuiSliderFlags_NoRoundToFormat))
-                                    Config::Instance()->FsrShadingScale = shadingScale;
-
-                                ShowHelpMarker("Increasing this scales fsr3.1 computed shading\n"
-                                               "change value at read to have higher reactiveness.");
-                            }
-
-                            if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
-                            {
-                                float accAddPerFrame = Config::Instance()->FsrAccAddPerFrame.value_or_default();
-                                if (ImGui::SliderFloat("Acc. Added Per Frame", &accAddPerFrame, 0.00f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
-                                    Config::Instance()->FsrAccAddPerFrame = accAddPerFrame;
-
-                                ShowHelpMarker("Corresponds to amount of accumulation added per frame\n"
-                                               "at pixel coordinate where disocclusion occured or when\n"
-                                               "reactive mask value is > 0.0f. Decreasing this and \n"
-                                               "drawing the ghosting object (IE no mv) to reactive mask \n"
-                                               "with value close to 1.0f can decrease temporal ghosting.\n"
-                                               "Decreasing this could result in more thin feature pixels flickering.");
-                            }
-
-                            if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
-                            {
-                                float minDisOccAcc = Config::Instance()->FsrMinDisOccAcc.value_or_default();
-                                if (ImGui::SliderFloat("Min. Disocclusion Acc.", &minDisOccAcc, -1.0f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
-                                    Config::Instance()->FsrMinDisOccAcc = minDisOccAcc;
-
-                                ShowHelpMarker("Increasing this value may reduce white pixel temporal\n"
-                                               "flickering around swaying thin objects that are disoccluding \n"
-                                               "one another often. Too high value may increase ghosting.");
-                            }
-
-                            ImGui::PopItemWidth();
-                        }
-
-                        if (currentBackend == "fsr31" || currentBackend == "fsr31_12")
-                        {
-                            if (bool nlSRGB = Config::Instance()->FsrNonLinearSRGB.value_or_default(); ImGui::Checkbox("FSR4 Non-Linear sRGB Input", &nlSRGB))
-                            {
-                                Config::Instance()->FsrNonLinearSRGB = nlSRGB;
-
-                                if (nlSRGB)
-                                    Config::Instance()->FsrNonLinearPQ = false;
-
-                                State::Instance().newBackend = currentBackend;
-                                for (auto& singleChangeBackend : State::Instance().changeBackend)
-                                    singleChangeBackend.second = true;
-                            }
-                            ShowHelpMarker("Indicates input color resource contains perceptual sRGB colors\n"
-                                           "Might improve upscaling quality of FSR4");
-
-                            if (bool nlPQ = Config::Instance()->FsrNonLinearPQ.value_or_default(); ImGui::Checkbox("FSR4 Non-Linear PQ Input", &nlPQ))
-                            {
-                                Config::Instance()->FsrNonLinearPQ = nlPQ;
-
-                                if (nlPQ)
-                                    Config::Instance()->FsrNonLinearSRGB = false;
-
-                                State::Instance().newBackend = currentBackend;
-                                for (auto& singleChangeBackend : State::Instance().changeBackend)
-                                    singleChangeBackend.second = true;
-                            }
-                            ShowHelpMarker("Indicates input color resource contains perceptual PQ colors\n"
-                                           "Might improve upscaling quality of FSR4");
-
-                            if (bool dView = Config::Instance()->FsrDebugView.value_or_default(); ImGui::Checkbox("FSR 3.X Debug View", &dView))
-                                Config::Instance()->FsrDebugView = dView;
-                            ShowHelpMarker("Top left: Dilated Motion Vectors\n"
-                                           "Top middle: Protected Areas\n"
-                                           "Top right: Dilated Depth\n"
-                                           "Middle: Upscaled frame\n"
-                                           "Bottom left: Disocclusion mask\n"
-                                           "Bottom middle: Reactiveness\n"
-                                           "Bottom right: Detail Protection Takedown");
-                        }
-
-                        if (State::Instance().currentFeature->AccessToReactiveMask())
-                        {
-                            ImGui::BeginDisabled(Config::Instance()->DisableReactiveMask.value_or(false));
-
-                            auto useAsTransparency = Config::Instance()->FsrUseMaskForTransparency.value_or_default();
-                            if (ImGui::Checkbox("Use Reactive Mask as Transparency Mask", &useAsTransparency))
-                                Config::Instance()->FsrUseMaskForTransparency = useAsTransparency;
-
-                            ImGui::EndDisabled();
+                            ImGui::Spacing();
+                            ImGui::Spacing();
                         }
                     }
 
