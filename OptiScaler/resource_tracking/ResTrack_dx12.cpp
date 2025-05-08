@@ -11,7 +11,6 @@
 
 #include <include/d3dx/d3dx12.h>
 #include <detours/detours.h>
-#include <ankerl/unordered_dense.h>
 
 #include <initguid.h>
 #include <guiddef.h>
@@ -114,6 +113,31 @@ static std::atomic<unsigned> gHeapGeneration{ 1 };
 // created resources
 static ankerl::unordered_dense::map <ID3D12Resource*, std::vector<size_t>> fgHandlesByResources;
 #endif
+
+static bool CheckResource(ID3D12Resource* resource)
+{
+    if (State::Instance().currentSwapchain == nullptr)
+        return false;
+
+    ID3D12Resource* temp;
+    if (resource->QueryInterface(IID_PPV_ARGS(&temp)) != S_OK)
+        return false;
+
+    o_Release(temp);
+
+    DXGI_SWAP_CHAIN_DESC scDesc{};
+    if (State::Instance().currentSwapchain->GetDesc(&scDesc) != S_OK)
+    {
+        LOG_WARN("Can't get swapchain desc!");
+        return false;
+    }
+
+    auto resDesc = resource->GetDesc();
+    if (resDesc.Height != scDesc.BufferDesc.Height || resDesc.Width != scDesc.BufferDesc.Width)
+        return false;
+
+    return true;
+}
 
 static std::set<ID3D12Resource*> fgCaptureList;
 
@@ -378,7 +402,7 @@ static HeapInfo* GetHeapByGpuHandle(SIZE_T gpuHandle)
 {
     for (size_t i = 0; i < fgHeaps.size(); i++)
     {
-        if (fgHeaps[i].gpuStart <= gpuHandle && fgHeaps[i].gpuEnd >= gpuHandle)
+        if (fgHeaps[i].gpuStart != 0 && fgHeaps[i].gpuStart <= gpuHandle && fgHeaps[i].gpuEnd >= gpuHandle)
             return &fgHeaps[i];
     }
 
@@ -604,24 +628,26 @@ static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResour
 
     o_CreateRenderTargetView(This, pResource, pDesc, DestDescriptor);
 
-    if (pResource == nullptr || (pDesc != nullptr && pDesc->ViewDimension != D3D12_RTV_DIMENSION_TEXTURE2D))
+    if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_SRV_DIMENSION_TEXTURE2D || !CheckResource(pResource))
     {
         LOG_DEBUG_ONLY("Unbind: {:X}", DestDescriptor.ptr);
 
-        auto heap = GetHeapByCpuHandleRTV(DestDescriptor.ptr);
+        auto heap = GetHeapByCpuHandleSRV(DestDescriptor.ptr);
 
-        if (heap != nullptr)
-        {
 #ifdef USE_RESOURCE_DISCARD
-            if (heap->buffer != nullptr)
-            {
-                std::lock_guard<std::mutex> lock(_resourceMutex);
-                RemoveResourceHeap(heap->buffer, DestDescriptor.ptr);
-            }
+        {
+            std::lock_guard<std::mutex> lock(_resourceMutex);
+            auto temp = heap->GetByCpuHandle(DestDescriptor.ptr);
+
+            if (temp != nullptr && temp->buffer != nullptr)
+                RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
+        }
 #endif
 
+        if (heap != nullptr)
             heap->ClearByCpuHandle(DestDescriptor.ptr);
-        }
+
+        return;
     }
 
     if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_RTV_DIMENSION_TEXTURE2D)
@@ -691,7 +717,7 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
 
     o_CreateShaderResourceView(This, pResource, pDesc, DestDescriptor);
 
-    if (pResource == nullptr || (pDesc != nullptr && pDesc->ViewDimension != D3D12_SRV_DIMENSION_TEXTURE2D))
+    if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_SRV_DIMENSION_TEXTURE2D || !CheckResource(pResource))
     {
         LOG_DEBUG_ONLY("Unbind: {:X}", DestDescriptor.ptr);
 
@@ -709,6 +735,8 @@ static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pReso
 
         if (heap != nullptr)
             heap->ClearByCpuHandle(DestDescriptor.ptr);
+
+        return;
     }
 
     if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_SRV_DIMENSION_TEXTURE2D)
@@ -777,11 +805,11 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
 
     o_CreateUnorderedAccessView(This, pResource, pCounterResource, pDesc, DestDescriptor);
 
-    if (pResource == nullptr || (pDesc != nullptr && pDesc->ViewDimension != D3D12_UAV_DIMENSION_TEXTURE2D))
+    if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_SRV_DIMENSION_TEXTURE2D || !CheckResource(pResource))
     {
         LOG_DEBUG_ONLY("Unbind: {:X}", DestDescriptor.ptr);
 
-        auto heap = GetHeapByCpuHandleUAV(DestDescriptor.ptr);
+        auto heap = GetHeapByCpuHandleSRV(DestDescriptor.ptr);
 
 #ifdef USE_RESOURCE_DISCARD
         {
@@ -795,6 +823,8 @@ static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pRes
 
         if (heap != nullptr)
             heap->ClearByCpuHandle(DestDescriptor.ptr);
+
+        return;
     }
 
     if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_UAV_DIMENSION_TEXTURE2D)
@@ -924,8 +954,6 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
 {
     auto result = o_CreateDescriptorHeap(This, pDescriptorHeapDesc, riid, ppvHeap);
 
-
-
     if (State::Instance().skipHeapCapture)
         return result;
 
@@ -940,7 +968,7 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
         auto gpuStart = (SIZE_T)(heap->GetGPUDescriptorHandleForHeapStart().ptr);
         auto gpuEnd = gpuStart + (increment * numDescriptors);
         auto type = (UINT)pDescriptorHeapDesc->Type;
-        HeapInfo info(cpuStart, cpuEnd, gpuStart, gpuEnd, numDescriptors, increment, type);
+        HeapInfo info(heap, cpuStart, cpuEnd, gpuStart, gpuEnd, numDescriptors, increment, type);
 
         LOG_TRACE("Heap type: {}, Cpu: {}-{}, Gpu: {}-{}, Desc count: {}", info.type, info.cpuStart, info.cpuEnd, info.gpuStart, info.gpuEnd, info.numDescriptors);
         {
@@ -964,79 +992,31 @@ static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_
 
 ULONG ResTrack_Dx12::hkRelease(ID3D12Resource* This)
 {
-#ifndef USE_RESOURCE_DISCARD
-    if (!Config::Instance()->FGHudfixTrackRelease.value_or_default())
+    if(State::Instance().isShuttingDown) // || (!Config::Instance()->FGAlwaysTrackHeaps.value_or_default() && !IsHudFixActive()))
         return o_Release(This);
-#endif
 
-    This->AddRef();
-
-    auto result = o_Release(This);
-
-    if (result != 1)
+    if (This->AddRef() == 2 && _trackedResources.contains(This))
     {
-        o_Release(This);
-        return result;
-    }
+        _trMutex.lock();
 
+        LOG_DEBUG("Resource: {:X}", (size_t)This);
 
-#ifdef USE_RESOURCE_DISCARD
+        auto vector = &_trackedResources[This];
 
-    LOG_DEBUG_ONLY("Resource: {:X}", (size_t)This);
-
-    std::lock_guard<std::mutex> lock(_resourceMutex);
-
-    if (!fgHandlesByResources.contains(This))
-    {
-        o_Release(This);
-        return result;
-    }
-
-    auto heapInfo = &fgHandlesByResources[This];
-
-    for (size_t i = 0; i < heapInfo->size(); i++)
-    {
-        auto heap = GetHeapByCpuHandle(heapInfo->at(i));
-        if (heap != nullptr)
+        for (size_t i = 0; i < vector->size(); i++)
         {
-            auto temp = heap->GetByCpuHandle(heapInfo->at(i));
-
-            if (temp != nullptr && temp->buffer == This)
-                heap->SetByCpuHandle(heapInfo->at(i), {});
+            vector->at(i)->buffer == nullptr;
+            vector->at(i)->lastUsedFrame == 0;
         }
+
+        _trackedResources.erase(This);
+
+        _trMutex.unlock();
     }
-
-    heapInfo->clear();
-
-    LOG_DEBUG_ONLY("Erased: {:X}", (size_t)This);
-    fgHandlesByResources.erase(This);
-
-    LOG_DEBUG_ONLY("");
-#else
-    UINT data = 0;
-    if (This->GetPrivateData(GUID_Tracking, &data, nullptr) == S_OK)
-    {
-        std::shared_lock<std::shared_mutex> lock(heapMutex);
-
-        for (size_t i = 0; i < fgHeaps.size(); i++)
-        {
-            auto heap = fgHeaps[i];
-
-            for (size_t j = 0; j < heap.numDescriptors; j++)
-            {
-                if (heap.info[j].buffer == This)
-                {
-                    heap.info[j] = {};
-                    break;
-                }
-            }
-        }
-    }
-
-#endif
 
     o_Release(This);
-    return result;
+
+    return o_Release(This);
 }
 
 void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This,
@@ -1900,7 +1880,7 @@ void ResTrack_Dx12::HookResource(ID3D12Device* InDevice)
             DetourTransactionCommit();
         }
 
-        tmp->Release(); // drop temp
+        o_Release(tmp); // drop temp
     }
 }
 

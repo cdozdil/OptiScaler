@@ -4,6 +4,27 @@
 
 #include <hudfix/Hudfix_Dx12.h>
 
+#include <ankerl/unordered_dense.h>
+
+// Test resources if they are valid or not
+//#define DEBUG_TRACKINNG
+
+#ifdef DEBUG_TRACKINNG
+static void TestResource(ResourceInfo* info)
+{
+    if (info == nullptr || info->buffer == nullptr || (size_t)info->buffer == 0xfdfdfdfd)
+        return;
+
+    auto desc = info->buffer->GetDesc();
+
+    if (desc.Width != info->width || desc.Height != info->height || desc.Format != info->format)
+    {
+        LOG_WARN("Resource mismatch!!");
+        __debugbreak();
+    }
+}
+#endif
+
 // Clear heap info when ResourceDiscard is called
 //#define USE_RESOURCE_DISCARD
 
@@ -19,11 +40,14 @@
 
 #define USE_ARRAY_HEAP_INFO
 
-#ifdef USE_ARRAY_HEAP_INFO
+static ankerl::unordered_dense::map <ID3D12Resource*, std::vector<ResourceInfo*>> _trackedResources;
+static std::mutex _trMutex;
 
+#ifdef USE_ARRAY_HEAP_INFO
 
 typedef struct HeapInfo
 {
+    ID3D12DescriptorHeap* heap = nullptr;
     SIZE_T cpuStart = NULL;
     SIZE_T cpuEnd = NULL;
     SIZE_T gpuStart = NULL;
@@ -32,9 +56,10 @@ typedef struct HeapInfo
     UINT increment = 0;
     UINT type = 0;
     std::shared_ptr<ResourceInfo[]> info;
+    UINT lastOffset = 0;
 
-    HeapInfo(SIZE_T cpuStart, SIZE_T cpuEnd, SIZE_T gpuStart, SIZE_T gpuEnd, UINT numResources, UINT increment, UINT type)
-        : cpuStart(cpuStart), cpuEnd(cpuEnd), gpuStart(gpuStart), gpuEnd(gpuEnd), numDescriptors(numResources), increment(increment), info(new ResourceInfo[numResources]), type(type)
+    HeapInfo(ID3D12DescriptorHeap* heap, SIZE_T cpuStart, SIZE_T cpuEnd, SIZE_T gpuStart, SIZE_T gpuEnd, UINT numResources, UINT increment, UINT type)
+        : cpuStart(cpuStart), cpuEnd(cpuEnd), gpuStart(gpuStart), gpuEnd(gpuEnd), numDescriptors(numResources), increment(increment), info(new ResourceInfo[numResources]), type(type), heap(heap)
     {
     }
 
@@ -42,8 +67,12 @@ typedef struct HeapInfo
     {
         auto index = (cpuHandle - cpuStart) / increment;
 
-        if (info[index].buffer == nullptr)
+        if (info[index].buffer == nullptr || (size_t)info[index].buffer == 0xfdfdfdfd)
             return nullptr;
+
+#ifdef DEBUG_TRACKINNG
+        TestResource(&info[index]);
+#endif
 
         return &info[index];
     }
@@ -52,8 +81,12 @@ typedef struct HeapInfo
     {
         auto index = (gpuHandle - gpuStart) / increment;
 
-        if (info[index].buffer == nullptr)
+        if (info[index].buffer == nullptr || (size_t)info[index].buffer == 0xfdfdfdfd)
             return nullptr;
+
+#ifdef DEBUG_TRACKINNG
+        TestResource(&info[index]);
+#endif
 
         return &info[index];
     }
@@ -61,29 +94,103 @@ typedef struct HeapInfo
     void SetByCpuHandle(SIZE_T cpuHandle, ResourceInfo setInfo) const
     {
         auto index = (cpuHandle - cpuStart) / increment;
+
+#ifdef DEBUG_TRACKINNG
+        TestResource(&setInfo);
+#endif
+
         info[index] = setInfo;
+
+        {
+            _trMutex.lock();
+
+            if (_trackedResources.contains(setInfo.buffer))
+                _trackedResources[setInfo.buffer].push_back(&info[index]);
+            else
+                _trackedResources[setInfo.buffer] = { &info[index] };
+
+            _trMutex.unlock();
+        }
     }
 
     void SetByGpuHandle(SIZE_T gpuHandle, ResourceInfo setInfo) const
     {
         auto index = (gpuHandle - gpuStart) / increment;
+
+#ifdef DEBUG_TRACKINNG
+        TestResource(&setInfo);
+#endif
+
         info[index] = setInfo;
+
+        {
+            _trMutex.lock();
+
+            if (_trackedResources.contains(setInfo.buffer))
+                _trackedResources[setInfo.buffer].push_back(&info[index]);
+            else
+                _trackedResources[setInfo.buffer] = { &info[index] };
+
+            _trMutex.unlock();
+        }
     }
 
     void ClearByCpuHandle(SIZE_T cpuHandle) const
     {
         auto index = (cpuHandle - cpuStart) / increment;
 
-        if (info[index].buffer != nullptr)
-            info[index].buffer = nullptr;
+        if (info[index].buffer != nullptr && (size_t)info[index].buffer != 0xfdfdfdfd)
+        {
+            if (_trackedResources.contains(info[index].buffer))
+            {
+                _trMutex.lock();
+
+                auto vector = &_trackedResources[info[index].buffer];
+
+                for (size_t i = 0; i < vector->size(); i++)
+                {
+                    if (vector->at(i) == &info[index])
+                    {
+                        vector->erase(vector->begin() + i);
+                        break;
+                    }
+                }
+
+                _trMutex.unlock();
+            }
+        }
+
+        info[index].buffer = nullptr;
+        info[index].lastUsedFrame = 0;
     }
 
     void ClearByGpuHandle(SIZE_T gpuHandle) const
     {
         auto index = (gpuHandle - gpuStart) / increment;
-        
-        if (info[index].buffer != nullptr)
-            info[index].buffer = nullptr;
+
+        if (info[index].buffer != nullptr && (size_t)info[index].buffer != 0xfdfdfdfd)
+        {
+            if (_trackedResources.contains(info[index].buffer))
+            {
+                _trMutex.lock();
+
+                auto vector = &_trackedResources[info[index].buffer];
+
+                for (size_t i = 0; i < vector->size(); i++)
+                {
+                    if (vector->at(i) == &info[index])
+                    {
+                        vector->erase(vector->begin() + i);
+                        break;
+                    }
+                }
+             
+                _trMutex.unlock();
+            }
+        }
+
+        info[index].buffer = nullptr;
+        info[index].lastUsedFrame = 0;
     }
 
 } heap_info;
