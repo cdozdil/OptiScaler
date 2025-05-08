@@ -119,6 +119,10 @@ bool Config::Reload(std::filesystem::path iniPath)
         // FSR
         {
             FsrVelocity.set_from_config(readFloat("FSR", "VelocityFactor"));
+            FsrReactiveScale.set_from_config(readFloat("FSR", "ReactiveScale"));
+            FsrShadingScale.set_from_config(readFloat("FSR", "ShadingScale"));
+            FsrAccAddPerFrame.set_from_config(readFloat("FSR", "AccAddPerFrame"));
+            FsrMinDisOccAcc.set_from_config(readFloat("FSR", "MinDisOccAcc"));
             FsrDebugView.set_from_config(readBool("FSR", "DebugView"));
             Fsr3xIndex.set_from_config(readInt("FSR", "UpscalerIndex"));
             FsrUseMaskForTransparency.set_from_config(readBool("FSR", "UseReactiveMaskForTransparency"));
@@ -645,6 +649,10 @@ bool Config::SaveIni()
     // FSR 
     {
         ini.SetValue("FSR", "VelocityFactor", GetFloatValue(Instance()->FsrVelocity.value_for_config()).c_str());
+        ini.SetValue("FSR", "ReactiveScale", GetFloatValue(Instance()->FsrReactiveScale.value_for_config()).c_str());
+        ini.SetValue("FSR", "ShadingScale", GetFloatValue(Instance()->FsrShadingScale.value_for_config()).c_str());
+        ini.SetValue("FSR", "AccAddPerFrame", GetFloatValue(Instance()->FsrAccAddPerFrame.value_for_config()).c_str());
+        ini.SetValue("FSR", "MinDisOccAcc", GetFloatValue(Instance()->FsrMinDisOccAcc.value_for_config()).c_str());
         ini.SetValue("FSR", "DebugView", GetBoolValue(Instance()->FsrDebugView.value_for_config()).c_str());
         ini.SetValue("FSR", "UpscalerIndex", GetIntValue(Instance()->Fsr3xIndex.value_for_config()).c_str());
         ini.SetValue("FSR", "UseReactiveMaskForTransparency", GetBoolValue(Instance()->FsrUseMaskForTransparency.value_for_config()).c_str());
