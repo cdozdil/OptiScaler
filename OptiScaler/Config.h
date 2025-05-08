@@ -259,11 +259,15 @@ public:
     CustomOptional<bool> FsrDebugView{ false };
     CustomOptional<int> Fsr3xIndex{ 0 };
     CustomOptional<bool> FsrUseMaskForTransparency{ true };
-    CustomOptional<float> FsrVelocity{ 1.0f };
     CustomOptional<bool> Fsr4Update{ false };
     CustomOptional<bool> FsrNonLinearSRGB{ false };
     CustomOptional<bool> FsrNonLinearPQ{ false };
     CustomOptional<bool> FsrAgilitySDKUpgrade{ false };
+    CustomOptional<float> FsrVelocity{ 1.0f };
+    CustomOptional<float> FsrReactiveScale{ 1.0f };
+    CustomOptional<float> FsrShadingScale{ 1.0f };
+    CustomOptional<float> FsrAccAddPerFrame{ 0.333f };
+    CustomOptional<float> FsrMinDisOccAcc{ -0.333f };
 
     // FSR Common
     CustomOptional<float> FsrVerticalFov{ 60.0f };

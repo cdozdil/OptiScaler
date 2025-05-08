@@ -35,7 +35,11 @@ protected:
             LOG_WARN("can't parse {0}", version_str);
     }
 
-    float _velocity = 0.0f;
+    float _velocity = 1.0f;
+    float _reactiveScale = 1.0f;
+    float _shadingScale = 1.0f;
+    float _accAddPerFrame = 0.333f;
+    float _minDisOccAcc = -0.333f;
 
 public:
     feature_version Version() final { return _version; }
