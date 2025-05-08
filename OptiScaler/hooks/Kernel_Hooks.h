@@ -176,20 +176,21 @@ private:
             return loadedBin;
         }
 
+        // Overlay
         if (Config::Instance()->FGDisableOverlays.value_or_default() && CheckDllName(&lcaseLibName, &blockOverlayNames))
         {
-            LOG_DEBUG("Trying to load overlay dll: {}", lcaseLibName);
+            LOG_DEBUG("Blocking overlay dll: {}", lcaseLibName);
             return (HMODULE)1;
         }
         else if (CheckDllName(&lcaseLibName, &overlayNames))
         {
-            LOG_DEBUG("Overlay dll!");
+            LOG_DEBUG("Overlay dll: {}", lcaseLibName);
 
             auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
             {
-                if (!_overlayMethodsCalled && DxgiProxy::Module() != nullptr)
+                if (/*!_overlayMethodsCalled &&*/ DxgiProxy::Module() != nullptr)
                 {
                     LOG_INFO("Calling CreateDxgiFactory methods for overlay!");
                     IDXGIFactory* factory = nullptr;
@@ -517,12 +518,12 @@ private:
 
         if (Config::Instance()->FGDisableOverlays.value_or_default() && CheckDllNameW(&lcaseLibName, &blockOverlayNamesW))
         {
-            LOG_DEBUG("Trying to load overlay dll: {}", wstring_to_string(lcaseLibName));
+            LOG_DEBUG("Blocking overlay dll: {}", wstring_to_string(lcaseLibName));
             return (HMODULE)1;
         }
         else if (CheckDllNameW(&lcaseLibName, &overlayNamesW))
         {
-            LOG_DEBUG("Overlay dll!");
+            LOG_DEBUG("Overlay dll: {}", wstring_to_string(lcaseLibName));
 
             // If we hook CreateSwapChainForHwnd & CreateSwapChainForCoreWindow here
             // Order of CreateSwapChain calls become
@@ -537,7 +538,7 @@ private:
 
             if (module != nullptr)
             {
-                if (!_overlayMethodsCalled && DxgiProxy::Module() != nullptr)
+                if (/*!_overlayMethodsCalled && */ DxgiProxy::Module() != nullptr)
                 {
                     LOG_INFO("Calling CreateDxgiFactory methods for overlay!");
                     IDXGIFactory* factory = nullptr;

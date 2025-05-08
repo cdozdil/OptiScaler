@@ -9,28 +9,36 @@
 inline std::vector<std::string> dllNames;
 inline std::vector<std::wstring> dllNamesW;
 
-inline std::vector<std::string> overlayNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping",
-                                                 "gameoverlayrenderer64", "gameoverlayrenderer64.dll", "gameoverlayrenderer", "gameoverlayrenderer.dll",
-                                                 "socialclubd3d12renderer", "socialclubd3d12renderer.dll",
-                                                 "owutils.dll", "owutils", 
-                                                 //"rtsshooks64.dll", "rtsshooks64", "rtsshooks.dll", "rtsshooks", 
-                                                 "overlay64", "overlay64.dll", "overlay", "overlay.dll" };
+//"rtsshooks64.dll", "rtsshooks64", "rtsshooks.dll", "rtsshooks", 
+
+inline std::vector<std::string> overlayNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping",            // Epic
+                                                 "gameoverlayrenderer64", "gameoverlayrenderer64.dll", "gameoverlayrenderer", "gameoverlayrenderer.dll",                // Steam
+                                                 "socialclubd3d12renderer", "socialclubd3d12renderer.dll",                                                              // Rockstar
+                                                 "owutils.dll", "owutils",                                                                                              // Overwolf
+                                                 "galaxy.dll", "galaxy", "galaxy64.dll", "galaxy64",                                                                    // GOG Galaxy
+                                                 "discordoverlay.dll", "discordoverlay", "discordoverlay64.dll", "discordoverlay64",                                    // Discord
+                                                 "overlay64", "overlay64.dll", "overlay", "overlay.dll" };                                                              // Ubisoft
 
 inline std::vector<std::wstring> overlayNamesW = { L"eosovh-win32-shipping.dll", L"eosovh-win32-shipping", L"eosovh-win64-shipping.dll", L"eosovh-win64-shipping",
                                                    L"gameoverlayrenderer64", L"gameoverlayrenderer64.dll", L"gameoverlayrenderer", L"gameoverlayrenderer.dll", 
                                                    L"socialclubd3d12renderer", L"socialclubd3d12renderer.dll",
                                                    L"owutils.dll", L"owutils", 
-                                                   //L"rtsshooks64.dll", L"rtsshooks64", L"rtsshooks.dll", L"rtsshooks",
+                                                   L"galaxy.dll", L"galaxy", L"galaxy64.dll", L"galaxy64",
+                                                   L"discordoverlay.dll", L"discordoverlay", L"discordoverlay64.dll", L"discordoverlay64",                                    
                                                    L"overlay64", L"overlay64.dll", L"overlay", L"overlay.dll" };
 
 inline std::vector<std::string> blockOverlayNames = { "eosovh-win32-shipping.dll", "eosovh-win32-shipping", "eosovh-win64-shipping.dll", "eosovh-win64-shipping",
                                                       "gameoverlayrenderer64", "gameoverlayrenderer64.dll", "gameoverlayrenderer", "gameoverlayrenderer.dll",
                                                       "owclient.dll", "owclient"
+                                                      "galaxy.dll", "galaxy", "galaxy64.dll", "galaxy64", 
+                                                      "discordoverlay.dll", "discordoverlay", "discordoverlay64.dll", "discordoverlay64",
                                                       "overlay64", "overlay64.dll", "overlay", "overlay.dll" };
 
 inline std::vector<std::wstring> blockOverlayNamesW = { L"eosovh-win32-shipping.dll", L"eosovh-win32-shipping", L"eosovh-win64-shipping.dll", L"eosovh-win64-shipping",
                                                         L"gameoverlayrenderer64", L"gameoverlayrenderer64.dll", L"gameoverlayrenderer", L"gameoverlayrenderer.dll", 
-                                                        L"owclient.dll", L"owclient" 
+                                                        L"owclient.dll", L"owclient", 
+                                                        L"galaxy.dll", L"galaxy", L"galaxy64.dll", L"galaxy64", 
+                                                        L"discordoverlay.dll", L"discordoverlay", L"discordoverlay64.dll", L"discordoverlay64",
                                                         L"overlay64", L"overlay64.dll", L"overlay", L"overlay.dll" };
 
 DEFINE_NAME_VECTORS(dx11, "d3d11");
