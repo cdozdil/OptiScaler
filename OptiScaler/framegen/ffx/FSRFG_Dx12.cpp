@@ -55,13 +55,18 @@ UINT64 FSRFG_Dx12::UpscaleStart()
 {
     _frameCount++;
 
-    if (IsActive())
+    if (_commandQueue != nullptr)
     {
         auto frameIndex = GetIndex();
         auto allocator = _commandAllocators[frameIndex];
         auto result = allocator->Reset();
         result = _commandList[frameIndex]->Reset(allocator, nullptr);
         LOG_DEBUG("_commandList[{}]->Reset()", frameIndex);
+
+        if (IsActive() && TargetFrame() < FrameCount())
+        {
+            _commandQueue->Wait(_copyFence, _frameCount);
+        }
     }
 
     return _frameCount;
@@ -142,7 +147,7 @@ bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* ou
         m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(scDesc1.BufferDesc.Width);
         m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(scDesc1.BufferDesc.Height);
     }
-    else 
+    else
     {
         m_FrameGenerationConfig.generationRect.left = Config::Instance()->FGRectLeft.value_or(0);
         m_FrameGenerationConfig.generationRect.top = Config::Instance()->FGRectTop.value_or(0);
@@ -378,7 +383,8 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
             {
                 ID3D12CommandList* cl[1] = { nullptr };
                 cl[0] = _commandList[fIndex];
-                _gameCommandQueue->ExecuteCommandLists(1, cl);
+                _commandQueue->ExecuteCommandLists(1, cl);
+                //_gameCommandQueue->ExecuteCommandLists(1, cl);
             }
         }
         LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}, commandList: {3:X}", retCode, _frameCount, fIndex, (size_t)dfgPrepare.commandList);
@@ -467,7 +473,8 @@ ffxReturnCode_t FSRFG_Dx12::HudlessDispatchCallback(ffxDispatchDescFrameGenerati
         {
             ID3D12CommandList* cl[1] = { nullptr };
             cl[0] = _commandList[fIndex];
-            _gameCommandQueue->ExecuteCommandLists(1, cl);
+            _commandQueue->ExecuteCommandLists(1, cl);
+            //_gameCommandQueue->ExecuteCommandLists(1, cl);
         }
         else
         {
@@ -731,7 +738,7 @@ void FSRFG_Dx12::CreateContext(ID3D12Device* device, IFeature* upscalerContext)
     if (State::Instance().currentSwapchain->GetDesc(&desc) == S_OK)
     {
         createFg.displaySize = { desc.BufferDesc.Width, desc.BufferDesc.Height };
-        createFg.maxRenderSize = { desc.BufferDesc.Width, desc.BufferDesc.Height };
+        createFg.maxRenderSize = { upscalerContext->DisplayWidth(), upscalerContext->DisplayHeight() };
     }
     else
     {

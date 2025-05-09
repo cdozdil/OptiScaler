@@ -283,9 +283,9 @@ ID3D12Fence* IFGFeature_Dx12::GetFence()
     return _copyFence;
 }
 
-void IFGFeature_Dx12::SetWaitOnGameQueue(UINT64 value)
+void IFGFeature_Dx12::SendSignal(UINT64 value)
 {
-    _gameCommandQueue->Wait(_copyFence, value);
+    _commandQueue->Signal(_copyFence, value);
 }
 
 bool IFGFeature_Dx12::IsFGCommandList(void* cmdList)
@@ -303,3 +303,4 @@ bool IFGFeature_Dx12::IsFGCommandList(void* cmdList)
 
     return found;
 }
+

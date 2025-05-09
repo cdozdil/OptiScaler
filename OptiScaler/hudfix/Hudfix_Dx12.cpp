@@ -376,6 +376,7 @@ void Hudfix_Dx12::PresentStart()
     if (_upscaleCounter > _fgCounter && IsResourceCheckActive() && CheckCapture())
     {
         LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
+        _commandQueue->Signal(State::Instance().currentFG->GetFence(), State::Instance().currentFG->FrameCount());
         DispatchFG(false);
     }
 }
@@ -425,6 +426,11 @@ bool Hudfix_Dx12::IsResourceCheckActive()
     if (fg == nullptr)
     {
         //LOG_TRACE("currentFG is not Dx12!");
+        return false;
+    }
+
+    if (fg->TargetFrame() >= fg->FrameCount())
+    {
         return false;
     }
 

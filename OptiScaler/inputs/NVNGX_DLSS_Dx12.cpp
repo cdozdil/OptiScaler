@@ -1497,7 +1497,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         }
     }
 
-
     // FG Prepare
     ID3D12Resource* output = nullptr;
     if (InParameters->Get(NVSDK_NGX_Parameter_Output, &output) != NVSDK_NGX_Result_Success)
@@ -1626,7 +1625,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 info.flags = desc.Flags;
                 info.type = UAV;
 
-                Hudfix_Dx12::CheckForHudless(__FUNCTION__, InCmdList, &info, (D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value_or(D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+                if (Hudfix_Dx12::CheckForHudless(__FUNCTION__, InCmdList, &info, (D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value_or(D3D12_RESOURCE_STATE_UNORDERED_ACCESS)))
+                {
+                    State::Instance().currentCommandQueue->Signal(State::Instance().currentFG->GetFence(), State::Instance().currentFG->FrameCount());
+                }
             }
             else
             {

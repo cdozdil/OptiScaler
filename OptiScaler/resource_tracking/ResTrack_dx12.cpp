@@ -93,6 +93,8 @@ static PFN_DiscardResource o_DiscardResource = nullptr;
 static std::mutex _resourceMutex;
 #endif
 
+static ID3D12GraphicsCommandList* _commandList = nullptr;
+
 // heaps
 static std::vector<HeapInfo> fgHeaps;
 
@@ -940,12 +942,16 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
 
 static void hkExecuteCommandLists(ID3D12CommandQueue* This, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists)
 {
-    //for (size_t i = 0; i < NumCommandLists; i++)
-    //{
-    //    Hudfix_Dx12::CaptureHudless(ppCommandLists[i]);
-    //}
-
     o_ExecuteCommandLists(This, NumCommandLists, ppCommandLists);
+
+    for (size_t i = 0; i < NumCommandLists; i++)
+    {
+        if (_commandList == ppCommandLists[i])
+        {
+            This->Signal(State::Instance().currentFG->GetFence(), State::Instance().currentFG->FrameCount());
+            _commandList = nullptr; 
+        }
+    }
 }
 
 #pragma region Heap hooks
@@ -1446,6 +1452,7 @@ void ResTrack_Dx12::hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* 
         if (Config::Instance()->FGImmediateCapture.value_or_default() &&
             Hudfix_Dx12::CheckForHudless(__FUNCTION__, This, capturedBuffer, capturedBuffer->state))
         {
+            _commandList = This;
             break;
         }
 
@@ -1532,6 +1539,7 @@ void ResTrack_Dx12::hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT N
             if (Config::Instance()->FGImmediateCapture.value_or_default() &&
                 Hudfix_Dx12::CheckForHudless(__FUNCTION__, This, capturedBuffer, capturedBuffer->state))
             {
+                _commandList = This;
                 break;
             }
 
@@ -1606,6 +1614,7 @@ void ResTrack_Dx12::hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* T
         if (Config::Instance()->FGImmediateCapture.value_or_default() &&
             Hudfix_Dx12::CheckForHudless(__FUNCTION__, This, capturedBuffer, capturedBuffer->state))
         {
+            _commandList = This;
             break;
         }
 
@@ -1687,6 +1696,7 @@ void ResTrack_Dx12::hkDrawInstanced(ID3D12GraphicsCommandList* This, UINT Vertex
 
                     if (Hudfix_Dx12::CheckForHudless(__FUNCTION__, This, &val, val.state))
                     {
+                        _commandList = This;
                         break;
                     }
                 }
@@ -1758,6 +1768,7 @@ void ResTrack_Dx12::hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT
 
                     if (Hudfix_Dx12::CheckForHudless(__FUNCTION__, This, &val, val.state))
                     {
+                        _commandList = This;
                         break;
                     }
                 }
@@ -1778,6 +1789,9 @@ void ResTrack_Dx12::hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT
 void ResTrack_Dx12::hkExecuteBundle(ID3D12GraphicsCommandList* This, ID3D12GraphicsCommandList* pCommandList)
 {
     o_ExecuteBundle(This, pCommandList);
+
+    if(pCommandList == _commandList)
+        _commandList = This;
 }
 
 void ResTrack_Dx12::hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ)
@@ -1834,6 +1848,7 @@ void ResTrack_Dx12::hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroup
 
                     if (Hudfix_Dx12::CheckForHudless(__FUNCTION__, This, &val, val.state))
                     {
+                        _commandList = This;
                         break;
                     }
                 }
@@ -2077,6 +2092,7 @@ void ResTrack_Dx12::HookDevice(ID3D12Device* device)
         DetourTransactionCommit();
     }
 
+    HookToQueue(device);
     HookCommandList(device);
     HookResource(device);
 }
@@ -2107,7 +2123,7 @@ void ResTrack_Dx12::ClearPossibleHudless()
     _skipHudless = false;
     _rcActive = false;
     _cmdList = false;
-
+    _commandList = nullptr;
 }
 
 void ResTrack_Dx12::PresentDone()
