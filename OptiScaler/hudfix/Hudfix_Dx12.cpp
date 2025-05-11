@@ -668,7 +668,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         //_commandQueue->ExecuteCommandLists(1, cmdLists);
 
         _skipHudlessChecks = true;
-        //DispatchFG(true);
+        DispatchFG(true);
 
         return true;
 

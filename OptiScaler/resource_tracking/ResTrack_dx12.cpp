@@ -981,36 +981,19 @@ void ResTrack_Dx12::hkExecuteCommandLists(ID3D12CommandQueue* This, UINT NumComm
 
     for (size_t i = 0; i < NumCommandLists; i++)
     {
+        LOG_DEBUG_ONLY("cmdlist[{}]: {:X}", i, (size_t)ppCommandLists[i]);
+
         if (ppCommandLists[i] == _commandList)
         {
             LOG_DEBUG("Hudless cmdlist");
             This->Signal(State::Instance().currentFG->GetHudlessFence(), State::Instance().currentFG->FrameCount());
-
-            if (_upscalerCommandList == nullptr)
-            {
-                LOG_DEBUG("Upscaler cmdlist is nullptr, dispatching FG");
-                Hudfix_Dx12::DispatchFG(true);
-            }
-            else
-            {
-                LOG_DEBUG("Upscaler cmdlist is not nullptr, waiting for it!");
-                _dispatchAfterUpscale = true;
-            }
-
             _commandList = nullptr;
         }
-        else if (ppCommandLists[i] == _upscalerCommandList)
+        
+        if (ppCommandLists[i] == _upscalerCommandList)
         {
             LOG_DEBUG("Upscaler cmdlist");
             This->Signal(State::Instance().currentFG->GetCopyFence(), State::Instance().currentFG->FrameCount());
-
-            if (_dispatchAfterUpscale)
-            {
-                LOG_DEBUG("Upscaler cmdlist, dispatching FG");
-                Hudfix_Dx12::DispatchFG(true);
-                _dispatchAfterUpscale = false;
-            }
-
             _upscalerCommandList = nullptr;
         }
     }
@@ -1853,6 +1836,17 @@ void ResTrack_Dx12::hkDrawIndexedInstanced(ID3D12GraphicsCommandList* This, UINT
 void ResTrack_Dx12::hkExecuteBundle(ID3D12GraphicsCommandList* This, ID3D12GraphicsCommandList* pCommandList)
 {
     o_ExecuteBundle(This, pCommandList);
+
+    if (pCommandList == _commandList)
+    {
+        LOG_DEBUG("Hudless cmdlist");
+        _commandList = This;
+    }
+    else if (pCommandList == _upscalerCommandList)
+    {
+        LOG_DEBUG("Upscaler cmdlist");
+        _upscalerCommandList = This;
+    }
 }
 
 void ResTrack_Dx12::hkDispatch(ID3D12GraphicsCommandList* This, UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ)
@@ -2189,8 +2183,8 @@ void ResTrack_Dx12::ClearPossibleHudless()
     _rcActive = false;
     _cmdList = false;
 
-    _upscalerCommandList = nullptr;
-    _commandList = nullptr;
+    //_upscalerCommandList = nullptr;
+    //_commandList = nullptr;
 
 }
 
@@ -2201,6 +2195,7 @@ void ResTrack_Dx12::PresentDone()
 
 void ResTrack_Dx12::SetUpscalerCmdList(ID3D12GraphicsCommandList* cmdList)
 {
+    LOG_DEBUG("cmdList: {:X}", (size_t)cmdList);
     _upscalerCommandList = cmdList;
 }
 

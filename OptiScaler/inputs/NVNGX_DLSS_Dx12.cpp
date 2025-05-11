@@ -972,18 +972,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         LOG_DEBUG("InFeatureHandle is null");
         return NVSDK_NGX_Result_FAIL_FeatureNotFound;
     }
-    else
-    {
-        LOG_DEBUG("Handle: {0}", InFeatureHandle->Id);
-    }
 
-    auto handleId = InFeatureHandle->Id;
-
-    if (!InCmdList)
+    if (InCmdList == nullptr)
     {
         LOG_ERROR("InCmdList is null!!!");
         return NVSDK_NGX_Result_Fail;
     }
+
+    LOG_DEBUG("Handle: {}, CmdList: {:X}", InFeatureHandle->Id, (size_t)InCmdList);
+    auto handleId = InFeatureHandle->Id;
 
     if (handleId < DLSS_MOD_ID_OFFSET)
     {
@@ -1504,7 +1501,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             Hudfix_Dx12::UpscaleStart();
         }
     }
-
 
     // FG Prepare
     ID3D12Resource* output = nullptr;

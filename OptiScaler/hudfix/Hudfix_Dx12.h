@@ -85,6 +85,8 @@ private:
     // Check _captureCounter for current frame
     static bool CheckCapture();    
 
+    static void DispatchFG(bool useHudless);
+
     static int GetIndex();
 
     inline static IID streamlineRiid{};
@@ -120,5 +122,4 @@ public:
     // Reset frame counters
     static void ResetCounters();
 
-    static void DispatchFG(bool useHudless);
 };

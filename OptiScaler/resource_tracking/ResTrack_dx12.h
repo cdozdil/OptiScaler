@@ -287,8 +287,6 @@ private:
 
     inline static ID3D12GraphicsCommandList* _commandList = nullptr;
     inline static ID3D12GraphicsCommandList* _upscalerCommandList = nullptr;
-    inline static bool _dispatchAfterUpscale = false;
-
 
     static bool IsHudFixActive();
 
