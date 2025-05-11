@@ -3,6 +3,8 @@
 
 #include <shaders/format_transfer/FT_Dx12.h>
 
+#include <ankerl/unordered_dense.h>
+
 #include <set>
 #include <dxgi.h>
 #include <d3d12.h>
@@ -27,6 +29,18 @@ typedef struct ResourceInfo
     double lastUsedFrame = 0;
 } resource_info;
 
+typedef struct HudlessInfo
+{
+    UINT64 lastUsedFrame = 0;
+    UINT64 retryStartFrame = 0;
+    UINT64 lastTriedFrame = 0;
+    UINT64 retryCount = 0;
+    UINT64 reuseCount = 0;
+    UINT64 useCount = 0;
+    bool ignore = false;
+    bool dontReuse = false;
+} hudless_info;
+
 class Hudfix_Dx12
 {
 private:
@@ -44,6 +58,9 @@ private:
 
     // Buffer for Format Transfer
     inline static ID3D12Resource* _captureBuffer[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
+
+    // used hudless list
+    inline static ankerl::unordered_dense::map <ID3D12Resource*, HudlessInfo> _hudlessList;
 
     // Capture List
     inline static std::set<ID3D12Resource*> _captureList;
@@ -69,7 +86,6 @@ private:
     static bool CheckCapture();    
 
     static int GetIndex();
-    static void DispatchFG(bool useHudless);
 
     inline static IID streamlineRiid{};
     static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject);
@@ -103,4 +119,6 @@ public:
 
     // Reset frame counters
     static void ResetCounters();
+
+    static void DispatchFG(bool useHudless);
 };

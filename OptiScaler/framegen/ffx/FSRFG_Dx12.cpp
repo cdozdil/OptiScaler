@@ -61,6 +61,11 @@ UINT64 FSRFG_Dx12::UpscaleStart()
         auto allocator = _commandAllocators[frameIndex];
         auto result = allocator->Reset();
         result = _commandList[frameIndex]->Reset(allocator, nullptr);
+
+        auto callocator = _copyCommandAllocator[frameIndex];
+        result = callocator->Reset();
+        result = _copyCommandList[frameIndex]->Reset(allocator, nullptr);
+
         LOG_DEBUG("_commandList[{}]->Reset()", frameIndex);
     }
 
@@ -91,6 +96,7 @@ const char* FSRFG_Dx12::Name()
 bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* output, double frameTime)
 {
     LOG_DEBUG("(FG) running, frame: {0}", _frameCount);
+
     auto frameIndex = _frameCount % BUFFER_COUNT;
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
@@ -142,7 +148,7 @@ bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* ou
         m_FrameGenerationConfig.generationRect.width = Config::Instance()->FGRectWidth.value_or(scDesc1.BufferDesc.Width);
         m_FrameGenerationConfig.generationRect.height = Config::Instance()->FGRectHeight.value_or(scDesc1.BufferDesc.Height);
     }
-    else 
+    else
     {
         m_FrameGenerationConfig.generationRect.left = Config::Instance()->FGRectLeft.value_or(0);
         m_FrameGenerationConfig.generationRect.top = Config::Instance()->FGRectTop.value_or(0);
@@ -249,6 +255,22 @@ bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* ou
 bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
 {
     LOG_DEBUG("useHudless: {}, frameTime: {}", useHudless, frameTime);
+
+    // wait for copy operation
+    LOG_DEBUG("FG Queue wait for copy");
+    _commandQueue->Wait(_copyFence, _frameCount);
+
+    if (useHudless)
+    {
+        LOG_DEBUG("FG Queue wait for hudless copy");
+        _commandQueue->Wait(_hudlessCopyFence, _frameCount);
+    }
+
+    if (useHudless && State::Instance().currentCommandQueue != nullptr)
+    {
+        LOG_DEBUG("Game Queue wait for FG");
+        State::Instance().currentCommandQueue->Wait(_fgFence, _frameCount);
+    }
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && Mutex.getOwner() != 2)
     {
@@ -369,18 +391,24 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
 
         retCode = FfxApiProxy::D3D12_Dispatch()(&_fgContext, &dfgPrepare.header);
 
-        if (!Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
-        {
-            auto result = _commandList[fIndex]->Close();
-            LOG_DEBUG("_commandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
+        //if (!(useHudless && State::Instance().currentCommandQueue != nullptr) &&
+        //    !Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
+        //{
+        auto result = _commandList[fIndex]->Close();
+        LOG_DEBUG("_commandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
 
-            if (result == S_OK)
-            {
-                ID3D12CommandList* cl[1] = { nullptr };
-                cl[0] = _commandList[fIndex];
+        if (result == S_OK)
+        {
+            ID3D12CommandList* cl[] = { _commandList[fIndex] };
+            _commandQueue->ExecuteCommandLists(1, cl);
+
+            if (useHudless && State::Instance().currentCommandQueue != nullptr)
+                _commandQueue->Signal(_fgFence, _frameCount);
+            else
                 _gameCommandQueue->ExecuteCommandLists(1, cl);
-            }
+
         }
+        //}
         LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}, commandList: {3:X}", retCode, _frameCount, fIndex, (size_t)dfgPrepare.commandList);
     }
 
@@ -457,23 +485,26 @@ ffxReturnCode_t FSRFG_Dx12::HudlessDispatchCallback(ffxDispatchDescFrameGenerati
 
     LOG_DEBUG("frameID: {}, commandList: {:X}, numGeneratedFrames: {}", params->frameID, (size_t)params->commandList, params->numGeneratedFrames);
 
-    if (params->frameID != _lastUpscaledFrameId && Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
-    {
-        result = _commandList[fIndex]->Close();
-        LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
+    //if (params->frameID != _lastUpscaledFrameId && Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
+    //{
+    //    result = _commandList[fIndex]->Close();
+    //    LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
 
-        // if there is command list error return ERROR
-        if (result == S_OK)
-        {
-            ID3D12CommandList* cl[1] = { nullptr };
-            cl[0] = _commandList[fIndex];
-            _gameCommandQueue->ExecuteCommandLists(1, cl);
-        }
-        else
-        {
-            return FFX_API_RETURN_ERROR;
-        }
-    }
+    //    // if there is command list error return ERROR
+    //    if (result == S_OK)
+    //    {
+    //        ID3D12CommandList* cl[1] = { nullptr };
+    //        cl[0] = _commandList[fIndex];
+
+    //        _gameCommandQueue->ExecuteCommandLists(1, cl);
+    //        //_commandQueue->ExecuteCommandLists(1, cl);
+    //        //_commandQueue->Signal(_copyFence, _frameCount);
+    //    }
+    //    else
+    //    {
+    //        return FFX_API_RETURN_ERROR;
+    //    }
+    //}
 
     // check for status
     if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default() ||

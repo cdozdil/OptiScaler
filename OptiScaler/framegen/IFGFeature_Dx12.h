@@ -24,11 +24,18 @@ protected:
     ID3D12CommandQueue* _commandQueue = nullptr;
     ID3D12GraphicsCommandList* _commandList[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
     ID3D12CommandAllocator* _commandAllocators[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
+    ID3D12Fence* _fgFence = nullptr;
 
     ID3D12CommandQueue* _copyCommandQueue = nullptr;
     ID3D12GraphicsCommandList* _copyCommandList[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
     ID3D12CommandAllocator* _copyCommandAllocator[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
     ID3D12Fence* _copyFence = nullptr;
+
+    ID3D12CommandQueue* _hudlessCommandQueue = nullptr;
+    ID3D12GraphicsCommandList* _hudlessCommandList[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
+    ID3D12CommandAllocator* _hudlessCommandAllocator[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
+    ID3D12Fence* _hudlessFence = nullptr;
+    ID3D12Fence* _hudlessCopyFence = nullptr;
 
     bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource);
     void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
@@ -47,7 +54,10 @@ public:
     void CreateObjects(ID3D12Device* InDevice);
     virtual void CreateContext(ID3D12Device* device, IFeature* upscalerContext) = 0;
     void ReleaseObjects() final;
-    ID3D12Fence* GetFence();
+
+    ID3D12Fence* GetCopyFence();
+    ID3D12Fence* GetHudlessFence();
+    
     void SetWaitOnGameQueue(UINT64 value);
 
     virtual bool Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* output, double frameTime) = 0;

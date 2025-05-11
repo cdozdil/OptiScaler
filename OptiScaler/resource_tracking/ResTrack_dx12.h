@@ -67,6 +67,9 @@ typedef struct HeapInfo
     {
         auto index = (cpuHandle - cpuStart) / increment;
 
+        if (index >= numDescriptors) 
+            return nullptr;
+
         if (info[index].buffer == nullptr || (size_t)info[index].buffer == 0xfdfdfdfd)
             return nullptr;
 
@@ -81,6 +84,10 @@ typedef struct HeapInfo
     {
         auto index = (gpuHandle - gpuStart) / increment;
 
+        if (index >= numDescriptors) 
+            return nullptr;
+
+
         if (info[index].buffer == nullptr || (size_t)info[index].buffer == 0xfdfdfdfd)
             return nullptr;
 
@@ -94,6 +101,9 @@ typedef struct HeapInfo
     void SetByCpuHandle(SIZE_T cpuHandle, ResourceInfo setInfo) const
     {
         auto index = (cpuHandle - cpuStart) / increment;
+
+        if (index >= numDescriptors)
+            return;
 
 #ifdef DEBUG_TRACKINNG
         TestResource(&setInfo);
@@ -117,6 +127,9 @@ typedef struct HeapInfo
     {
         auto index = (gpuHandle - gpuStart) / increment;
 
+        if (index >= numDescriptors)
+            return;
+
 #ifdef DEBUG_TRACKINNG
         TestResource(&setInfo);
 #endif
@@ -138,6 +151,9 @@ typedef struct HeapInfo
     void ClearByCpuHandle(SIZE_T cpuHandle) const
     {
         auto index = (cpuHandle - cpuStart) / increment;
+
+        if (index >= numDescriptors) 
+            return;
 
         if (info[index].buffer != nullptr && (size_t)info[index].buffer != 0xfdfdfdfd)
         {
@@ -167,6 +183,9 @@ typedef struct HeapInfo
     void ClearByGpuHandle(SIZE_T gpuHandle) const
     {
         auto index = (gpuHandle - gpuStart) / increment;
+
+        if (index >= numDescriptors)
+            return;
 
         if (info[index].buffer != nullptr && (size_t)info[index].buffer != 0xfdfdfdfd)
         {
@@ -266,7 +285,14 @@ private:
     inline static bool _presentDone = true;
     inline static std::mutex _drawMutex;
 
+    inline static ID3D12GraphicsCommandList* _commandList = nullptr;
+    inline static ID3D12GraphicsCommandList* _upscalerCommandList = nullptr;
+    inline static bool _dispatchAfterUpscale = false;
+
+
     static bool IsHudFixActive();
+
+    static bool IsFGCommandList(IUnknown* cmdList);
 
     static void hkCopyDescriptors(ID3D12Device* This,
                                   UINT NumDestDescriptorRanges, D3D12_CPU_DESCRIPTOR_HANDLE* pDestDescriptorRangeStarts, UINT* pDestDescriptorRangeSizes,
@@ -286,16 +312,48 @@ private:
 
     static void hkExecuteBundle(ID3D12GraphicsCommandList* This, ID3D12GraphicsCommandList* pCommandList);
 
+    static void hkCreateSampler(ID3D12Device* This, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+
+    static void hkCreateDepthStencilView(ID3D12Device* This, ID3D12Resource* pResource, const D3D12_DEPTH_STENCIL_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
     static void hkCreateConstantBufferView(ID3D12Device* This, const D3D12_CONSTANT_BUFFER_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+    static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResource, D3D12_RENDER_TARGET_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+    static void hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pResource, D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+    static void hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pResource, ID3D12Resource* pCounterResource, D3D12_UNORDERED_ACCESS_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+
+    static void hkExecuteCommandLists(ID3D12CommandQueue* This, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists);
+
+    static HRESULT hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPTOR_HEAP_DESC* pDescriptorHeapDesc, REFIID riid, void** ppvHeap);
 
     static ULONG hkRelease(ID3D12Resource* This);
 
     static void HookCommandList(ID3D12Device* InDevice);
+    static void HookToQueue(ID3D12Device* InDevice);
     static void HookResource(ID3D12Device* InDevice);
+
+    static bool CheckResource(ID3D12Resource* resource);
+
+    static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject);
+
+    static bool CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource);
+
+    static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
+
+    static SIZE_T GetGPUHandle(ID3D12Device* This, SIZE_T cpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE type);
+    static SIZE_T GetCPUHandle(ID3D12Device* This, SIZE_T gpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE type);
+
+    static HeapInfo* GetHeapByCpuHandleCBV(SIZE_T cpuHandle);
+    static HeapInfo* GetHeapByCpuHandleRTV(SIZE_T cpuHandle);
+    static HeapInfo* GetHeapByCpuHandleSRV(SIZE_T cpuHandle);
+    static HeapInfo* GetHeapByCpuHandleUAV(SIZE_T cpuHandle);
+    static HeapInfo* GetHeapByCpuHandle(SIZE_T cpuHandle);
+    static HeapInfo* GetHeapByGpuHandle(SIZE_T gpuHandle);
+
+    static void FillResourceInfo(ID3D12Resource* resource, ResourceInfo* info);
 
 public:
     static void HookDevice(ID3D12Device* device);
     static void ResetCaptureList();
     static void ClearPossibleHudless();
     static void PresentDone();
+    static void SetUpscalerCmdList(ID3D12GraphicsCommandList* cmdList);
 };

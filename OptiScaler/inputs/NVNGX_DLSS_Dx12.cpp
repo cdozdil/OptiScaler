@@ -19,6 +19,7 @@
 #include "proxies/FfxApi_Proxy.h"
 
 #include <hudfix/Hudfix_Dx12.h>
+#include <resource_tracking/ResTrack_dx12.h>
 
 #include "shaders/depth_scale/DS_Dx12.h"
 
@@ -582,6 +583,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_DestroyParameters(NVSDK_NGX_Param
         LOG_INFO("calling NVNGXProxy::D3D12_DestroyParameters");
         auto result = NVNGXProxy::D3D12_DestroyParameters()(InParameters);
         LOG_INFO("calling NVNGXProxy::D3D12_DestroyParameters result: {0:X}", (UINT)result);
+        Hudfix_Dx12::ResetCounters();
         return NVSDK_NGX_Result_Success;
     }
 
@@ -868,7 +870,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_ReleaseFeature(NVSDK_NGX_Handle* 
 
     State::Instance().FGchanged = true;
     if (State::Instance().currentFG != nullptr)
+    {
         State::Instance().currentFG->StopAndDestroyContext(true, false, false);
+        Hudfix_Dx12::ResetCounters();
+    }
 
     if (!shutdown)
         LOG_INFO("releasing feature with id {0}", handleId);
@@ -1192,6 +1197,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             if (State::Instance().currentFG != nullptr && State::Instance().currentFG->IsActive())
             {
                 State::Instance().currentFG->StopAndDestroyContext(false, false, false);
+                Hudfix_Dx12::ResetCounters();
                 State::Instance().FGchanged = true;
             }
 
@@ -1421,6 +1427,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         else if ((!Config::Instance()->FGEnabled.value_or_default() || State::Instance().FGchanged) && fg != nullptr && fg->IsActive())
         {
             fg->StopAndDestroyContext(State::Instance().SCchanged, false, false);
+            Hudfix_Dx12::ResetCounters();
         }
 
         if (State::Instance().FGchanged)
@@ -1428,6 +1435,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             LOG_DEBUG("(FG) Frame generation paused");
             fg->ResetCounters();
             fg->UpdateTarget();
+            Hudfix_Dx12::ResetCounters();
 
             // Release FG mutex
             if (fg->Mutex.getOwner() == 2)
@@ -1615,6 +1623,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
             if (Config::Instance()->FGHUDFix.value_or_default())
             {
+                ResTrack_Dx12::SetUpscalerCmdList(InCmdList);
                 Hudfix_Dx12::UpscaleEnd(deviceContext->feature->FrameCount(), ftDelta);
 
                 ResourceInfo info{};

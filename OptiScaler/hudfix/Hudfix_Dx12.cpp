@@ -159,7 +159,7 @@ bool Hudfix_Dx12::CheckCapture()
 
 bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
 {
-    if (resource == nullptr || resource->buffer == nullptr) 
+    if (resource == nullptr || resource->buffer == nullptr)
         return false;
 
     if (State::Instance().FGonlyUseCapturedResources)
@@ -403,7 +403,7 @@ bool Hudfix_Dx12::IsResourceCheckActive()
         return false;
     }
 
-    if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default()) 
+    if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default())
     {
         //LOG_TRACE("FGEnabled: {} <= FGHUDFix: {}", Config::Instance()->FGEnabled.value_or_default(), Config::Instance()->FGHUDFix.value_or_default());
         return false;
@@ -452,6 +452,83 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         // Prevent double capture
         LOG_DEBUG("Waiting _checkMutex");
         std::lock_guard<std::mutex> lock(_checkMutex);
+
+        if (_hudlessList.contains(resource->buffer))
+        {
+            auto info = &_hudlessList[resource->buffer];
+
+            // if game starts reusing the buffer
+            if (info->ignore && !info->dontReuse)
+            {
+                // increase reuse count once per frame
+                if (info->lastTriedFrame != _upscaleCounter)
+                {
+                    info->retryCount++;
+                    info->lastTriedFrame = _upscaleCounter;
+
+                    // in last 69 frames tried to use at least 20 times (around everd 3rd frame)
+                    if ((_upscaleCounter - info->retryStartFrame) < 69)
+                    {
+                        if (info->retryCount > 19)
+                        {
+                            LOG_WARN("Reusing {:X} as hudless, retry start frame: {}, current frame: {}, reuse count: {}", (size_t)resource->buffer, info->retryStartFrame, _upscaleCounter, info->retryCount);
+
+                            info->lastUsedFrame = _upscaleCounter;
+                            info->retryStartFrame = 0;
+                            info->useCount = 0;
+                            info->retryCount = 0;
+                            info->ignore = false;
+                            info->reuseCount++;
+                        }
+                    }
+                    else
+                    {
+                        LOG_WARN("Reset retry for {:X} as hudless, current frame: {}", (size_t)resource->buffer, _upscaleCounter);
+
+                        info->useCount = 0;
+                        info->retryCount = 0;
+                        info->lastTriedFrame = 0;
+                        info->retryStartFrame = 0;
+                    }
+                }
+
+                // update last check frame
+                if (info->ignore && info->retryStartFrame == 0)
+                {
+                    LOG_WARN("Retry for {:X} as hudless, current frame: {}", (size_t)resource->buffer, _upscaleCounter);
+                    info->retryStartFrame = _upscaleCounter;
+                }
+            }
+
+            // directly ignore
+            if (info->ignore)
+                break;
+
+            // if buffer is not used in last 5 frames stop using it
+            if ((_upscaleCounter - info->lastUsedFrame) > 6 && info->useCount < 100)
+            {
+                LOG_WARN("Blocked {:X} as hudless, last used frame: {}, current frame: {}, use count: {}", (size_t)resource->buffer, info->lastUsedFrame, _upscaleCounter, info->useCount);
+
+                info->ignore = true;
+                info->retryCount = 0;
+                info->lastTriedFrame = 0;
+                info->retryStartFrame = 0;
+
+                // don't reuse more than 2 times
+                if (info->reuseCount > 1)
+                    info->dontReuse = true;
+
+                break;
+            }
+
+            // update the info
+            info->lastUsedFrame = _upscaleCounter;
+            info->useCount++;
+        }
+        else
+        {
+            _hudlessList[resource->buffer] = { _upscaleCounter, 0, 0, 0, 1, false };
+        }
 
         if (!CheckCapture())
             break;
@@ -591,7 +668,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         //_commandQueue->ExecuteCommandLists(1, cmdLists);
 
         _skipHudlessChecks = true;
-        DispatchFG(true);
+        //DispatchFG(true);
 
         return true;
 
@@ -622,4 +699,6 @@ void Hudfix_Dx12::ResetCounters()
     _upscaleEndTime = 0.0;
     _targetTime = 0.0;
     _frameTime = 0.0;
+
+    _hudlessList.clear();
 }
