@@ -263,6 +263,7 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullsc
                 State::Instance().FGchanged = true;
         }
 
+        /*
         if (ClearTrig != nullptr)
             ClearTrig(true, Handle);
 
@@ -288,6 +289,8 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullsc
                 buffer->Release();
             }
         }
+        */
+
     }
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && ffxLock)

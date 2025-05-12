@@ -2182,10 +2182,6 @@ void ResTrack_Dx12::ClearPossibleHudless()
     _skipHudless = false;
     _rcActive = false;
     _cmdList = false;
-
-    //_upscalerCommandList = nullptr;
-    //_commandList = nullptr;
-
 }
 
 void ResTrack_Dx12::PresentDone()
