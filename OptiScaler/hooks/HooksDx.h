@@ -35,6 +35,8 @@ namespace HooksDx
     inline ID3D11Query* endQueries[QUERY_BUFFER_COUNT] = { nullptr, nullptr, nullptr };
     inline bool dx11UpscaleTrig[QUERY_BUFFER_COUNT] = { false, false, false };
 
+    HANDLE Dx12FenceEvent = nullptr;
+
     inline int currentFrameIndex = 0;
     inline int previousFrameIndex = 0;
 

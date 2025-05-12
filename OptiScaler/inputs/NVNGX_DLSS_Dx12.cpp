@@ -1619,6 +1619,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
             if (Config::Instance()->FGHUDFix.value_or_default())
             {
+                // For signal after mv & depth copies
                 ResTrack_Dx12::SetUpscalerCmdList(InCmdList);
                 Hudfix_Dx12::UpscaleEnd(deviceContext->feature->FrameCount(), ftDelta);
 
@@ -1659,7 +1660,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             LOG_WARN("Can't restore ComputeRootSig!");
         }
 
-        if (Config::Instance()->RestoreGraphicSignature.value_or_default() && /*graphTime != 0 && graphTime > lastEvalTime && graphTime <= evaluateStart &&*/ graphicSignatures[InCmdList])
+        if (Config::Instance()->RestoreGraphicSignature.value_or_default() && graphicSignatures[InCmdList])
         {
             auto signature = graphicSignatures[InCmdList];
             LOG_TRACE("restore orgGraphicRootSig: {0:X}", (UINT64)signature);

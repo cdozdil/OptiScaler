@@ -1627,11 +1627,11 @@ bool MenuCommon::RenderMenu()
                         {
                             Config::Instance()->FGDebugView = fgDV;
 
-                            //if (Config::Instance()->FGEnabled.value_or_default())
-                            //{
-                            //    State::Instance().FGchanged = true;
-                            //    LOG_DEBUG("DebugView set FGChanged");
-                            //}
+                            if (Config::Instance()->FGEnabled.value_or_default())
+                            {
+                                State::Instance().FGchanged = true;
+                                LOG_DEBUG("DebugView set FGChanged");
+                            }
                         }
                         ShowHelpMarker("Enable FSR 3.1 frame generation debug view");
 
