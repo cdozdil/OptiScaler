@@ -67,8 +67,6 @@ void* __stdcall NvApiHooks::hkNvAPI_QueryInterface(unsigned int InterfaceId)
     if (!o_NvAPI_QueryInterface)
         return nullptr;
 
-    //LOG_DEBUG("counter: {} InterfaceId: {:X}", ++qiCounter, (uint32_t)InterfaceId);
-
     // Disable flip metering
     if (InterfaceId == 0xF3148C42 && Config::Instance()->DisableFlipMetering.value_or(!State::Instance().isRunningOnNvidia))
     {

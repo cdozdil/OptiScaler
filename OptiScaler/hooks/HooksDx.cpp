@@ -266,6 +266,8 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
 
     if (fg != nullptr)
         ReflexHooks::update(fg->IsActive());
+    else
+        ReflexHooks::update(false);
 
     // Upscaler GPU time computation
     if (HooksDx::dx12UpscaleTrig && HooksDx::readbackBuffer != nullptr && HooksDx::queryHeap != nullptr && cq != nullptr)
