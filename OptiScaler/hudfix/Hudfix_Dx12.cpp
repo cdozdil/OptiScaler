@@ -457,18 +457,30 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         {
             auto info = &_hudlessList[resource->buffer];
 
-            // if game starts reusing the buffer
+            // if game starts reusing the ignored resource & it's not banned
             if (info->ignore && !info->dontReuse)
             {
-                // increase reuse count once per frame
+                // check resource once per frame
                 if (info->lastTriedFrame != _upscaleCounter)
                 {
+                    // start retry period
+                    if (info->retryStartFrame == 0)
+                    {
+                        LOG_WARN("Retry for {:X} as hudless, current frame: {}", (size_t)resource->buffer, _upscaleCounter);
+                        info->retryStartFrame = _upscaleCounter;
+                        info->lastTriedFrame = _upscaleCounter;
+                        info->retryCount = 0;
+                        break;
+                    }
+
                     info->retryCount++;
                     info->lastTriedFrame = _upscaleCounter;
 
-                    // in last 69 frames tried to use at least 20 times (around everd 3rd frame)
+                    // If still in retry period (70 frames) 
                     if ((_upscaleCounter - info->retryStartFrame) < 69)
                     {
+                        // and used at least 20 times (around every 3rd frame)
+                        // try reusing the resource
                         if (info->retryCount > 19)
                         {
                             LOG_WARN("Reusing {:X} as hudless, retry start frame: {}, current frame: {}, reuse count: {}", (size_t)resource->buffer, info->retryStartFrame, _upscaleCounter, info->retryCount);
@@ -483,20 +495,14 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
                     }
                     else
                     {
-                        LOG_WARN("Reset retry for {:X} as hudless, current frame: {}", (size_t)resource->buffer, _upscaleCounter);
+                        // Retry period ended without success, reset values
+
+                        LOG_WARN("Retry failed for {:X} as hudless, current frame: {}", (size_t)resource->buffer, _upscaleCounter);
 
                         info->useCount = 0;
                         info->retryCount = 0;
-                        info->lastTriedFrame = 0;
                         info->retryStartFrame = 0;
                     }
-                }
-
-                // update last check frame
-                if (info->ignore && info->retryStartFrame == 0)
-                {
-                    LOG_WARN("Retry for {:X} as hudless, current frame: {}", (size_t)resource->buffer, _upscaleCounter);
-                    info->retryStartFrame = _upscaleCounter;
                 }
             }
 
@@ -513,6 +519,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
                 info->retryCount = 0;
                 info->lastTriedFrame = 0;
                 info->retryStartFrame = 0;
+                info->lastUsedFrame = _upscaleCounter;
 
                 // don't reuse more than 2 times
                 if (info->reuseCount > 1)
@@ -527,7 +534,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         }
         else
         {
-            _hudlessList[resource->buffer] = { _upscaleCounter, 0, 0, 0, 1, false };
+            _hudlessList[resource->buffer] = { _upscaleCounter, 0, 0, 0, 0, 1, false, false };
         }
 
         if (!CheckCapture())

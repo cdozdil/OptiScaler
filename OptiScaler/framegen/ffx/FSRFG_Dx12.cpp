@@ -256,16 +256,17 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
 {
     LOG_DEBUG("useHudless: {}, frameTime: {}", useHudless, frameTime);
 
-    // wait for copy operation
-    LOG_DEBUG("FG Queue wait for copy");
-    _commandQueue->Wait(_copyFence, _frameCount);
-
+    // FG queue wait for copy operations
     if (useHudless)
     {
+        LOG_DEBUG("FG Queue wait for copy");
+        _commandQueue->Wait(_copyFence, _frameCount);
+
         LOG_DEBUG("FG Queue wait for hudless copy");
         _commandQueue->Wait(_hudlessCopyFence, _frameCount);
     }
 
+    // game queue wait for FG
     if (useHudless && State::Instance().currentCommandQueue != nullptr)
     {
         LOG_DEBUG("Game Queue wait for FG");
@@ -400,12 +401,25 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
         if (result == S_OK)
         {
             ID3D12CommandList* cl[] = { _commandList[fIndex] };
-            _commandQueue->ExecuteCommandLists(1, cl);
 
-            if (useHudless && State::Instance().currentCommandQueue != nullptr)
-                _commandQueue->Signal(_fgFence, _frameCount);
+            // use FG queue
+            if (useHudless)
+            {
+                _commandQueue->ExecuteCommandLists(1, cl);
+
+                // Signal game queue
+                if (State::Instance().currentCommandQueue != nullptr)
+                {
+                    _commandQueue->Signal(_fgFence, _frameCount);
+                    LOG_DEBUG("Execute and signal from FG Queue");
+                }
+            }
             else
+            {
+                // Use game queue
                 _gameCommandQueue->ExecuteCommandLists(1, cl);
+                LOG_DEBUG("Execute from game queue!!");
+            }
 
         }
         //}
