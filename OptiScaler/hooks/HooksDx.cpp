@@ -156,23 +156,23 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
 
     auto lockAccuired = false;
-    if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART) && fg != nullptr && fg->IsActive() &&
-        fg->TargetFrame() < fg->FrameCount() && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && fg->Mutex.getOwner() != 2)
-    {
-        LOG_TRACE("Waiting FG->Mutex 2, current: {}", fg->Mutex.getOwner());
-        fg->Mutex.lock(2);
+    //if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART) && fg != nullptr && fg->IsActive() &&
+    //    fg->TargetFrame() < fg->FrameCount() && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && fg->Mutex.getOwner() != 2)
+    //{
+    //    LOG_TRACE("Waiting FG->Mutex 2, current: {}", fg->Mutex.getOwner());
+    //    fg->Mutex.lock(2);
 
-        // If half or full sync is active, we need to release the mutex after 1 or 2 frames at Present
-        lockAccuired = !Config::Instance()->FGHudfixHalfSync.value_or_default() && !Config::Instance()->FGHudfixFullSync.value_or_default();
-        _lockAccuiredForHalfOrFull = !lockAccuired;
+    //    // If half or full sync is active, we need to release the mutex after 1 or 2 frames at Present
+    //    lockAccuired = !Config::Instance()->FGHudfixHalfSync.value_or_default() && !Config::Instance()->FGHudfixFullSync.value_or_default();
+    //    _lockAccuiredForHalfOrFull = !lockAccuired;
 
-        if (Config::Instance()->FGDebugView.value_or_default() || Config::Instance()->FGHudfixHalfSync.value_or_default())
-            _releaseMutexTargetFrame = _frameCounter + 1; // For debug 1 frame
-        else
-            _releaseMutexTargetFrame = _frameCounter + 2; // For FG 2 frames
+    //    if (Config::Instance()->FGDebugView.value_or_default() || Config::Instance()->FGHudfixHalfSync.value_or_default())
+    //        _releaseMutexTargetFrame = _frameCounter + 1; // For debug 1 frame
+    //    else
+    //        _releaseMutexTargetFrame = _frameCounter + 2; // For FG 2 frames
 
-        LOG_TRACE("Accuired FG->Mutex: {}, fgMutexReleaseFrame: {}", fg->Mutex.getOwner(), _releaseMutexTargetFrame);
-    }
+    //    LOG_TRACE("Accuired FG->Mutex: {}, fgMutexReleaseFrame: {}", fg->Mutex.getOwner(), _releaseMutexTargetFrame);
+    //}
 
     if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART))
     {
@@ -184,11 +184,11 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     result = o_FGSCPresent(This, SyncInterval, Flags);
     LOG_DEBUG("Result: {:X}", result);
 
-    if (lockAccuired && Config::Instance()->FGUseMutexForSwaphain.value_or_default())
-    {
-        LOG_TRACE("Releasing FG->Mutex: {}", fg->Mutex.getOwner());
-        fg->Mutex.unlockThis(2);
-    }
+    //if (lockAccuired && Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    //{
+    //    LOG_TRACE("Releasing FG->Mutex: {}", fg->Mutex.getOwner());
+    //    fg->Mutex.unlockThis(2);
+    //}
 
     return result;
 }
@@ -399,20 +399,20 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
         ResTrack_Dx12::PresentDone();
 
     // If Half of Full sync is active or was active (_releaseMutexTargetFrame != 0)
-    if (_releaseMutexTargetFrame != 0 && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && _frameCounter >= _releaseMutexTargetFrame && fg != nullptr)
-    {
-        if (_lockAccuiredForHalfOrFull)
-        {
-            LOG_TRACE("Releasing FG->Mutex: {}", fg->Mutex.getOwner());
-            fg->Mutex.unlockThis(2);
-            _lockAccuiredForHalfOrFull = false;
-        }
+    //if (_releaseMutexTargetFrame != 0 && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && _frameCounter >= _releaseMutexTargetFrame && fg != nullptr)
+    //{
+    //    if (_lockAccuiredForHalfOrFull)
+    //    {
+    //        LOG_TRACE("Releasing FG->Mutex: {}", fg->Mutex.getOwner());
+    //        fg->Mutex.unlockThis(2);
+    //        _lockAccuiredForHalfOrFull = false;
+    //    }
 
-        _releaseMutexTargetFrame = 0;
+    //    _releaseMutexTargetFrame = 0;
 
-        // Signal for pause
-        fg->FgDone();
-    }
+    //    // Signal for pause
+    //    fg->FgDone();
+    //}
 
     return presentResult;
 }
@@ -1991,7 +1991,7 @@ void HooksDx::ReleaseDx12SwapChain(HWND hwnd)
     if (State::Instance().currentFG != nullptr)
         fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
 
-    if (fg != nullptr)
+    if (fg != nullptr && fg->SwapchainContext() != nullptr)
         fg->ReleaseSwapchain(hwnd);
 }
 

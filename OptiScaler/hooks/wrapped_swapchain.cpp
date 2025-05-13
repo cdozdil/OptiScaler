@@ -254,6 +254,7 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::SetFullscreenState(BOOL Fullsc
         else
             LOG_DEBUG("result: {:X}", result);
 
+        /*
         if (Config::Instance()->FGEnabled.value_or_default())
         {
             State::Instance().FGresetCapturedResources = true;

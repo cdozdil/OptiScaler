@@ -19,7 +19,7 @@ typedef struct FfxSwapchainFramePacingTuning
 
 void FSRFG_Dx12::ConfigureFramePaceTuning()
 {
-    if (_swapChainContext == nullptr)
+    if (_swapChainContext == nullptr || !isVersionOrBetter(Version(), { 3, 1, 3 }))
         return;
 
     FfxSwapchainFramePacingTuning fpt{};
@@ -30,15 +30,15 @@ void FSRFG_Dx12::ConfigureFramePaceTuning()
         fpt.hybridSpinTime = Config::Instance()->FGFPTHybridSpinTime.value_or_default();
         fpt.safetyMarginInMs = Config::Instance()->FGFPTSafetyMarginInMs.value_or_default();
         fpt.varianceFactor = Config::Instance()->FGFPTVarianceFactor.value_or_default();
+
+        ffxConfigureDescFrameGenerationSwapChainKeyValueDX12 cfgDesc{};
+        cfgDesc.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_KEYVALUE_DX12;
+        cfgDesc.key = 2; // FfxSwapchainFramePacingTuning
+        cfgDesc.ptr = &fpt;
+
+        auto result = FfxApiProxy::D3D12_Configure()(&_swapChainContext, &cfgDesc.header);
+        LOG_DEBUG("HybridSpin D3D12_Configure result: {}", FfxApiProxy::ReturnCodeToString(result));
     }
-
-    ffxConfigureDescFrameGenerationSwapChainKeyValueDX12 cfgDesc{};
-    cfgDesc.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_KEYVALUE_DX12;
-    cfgDesc.key = 2; // FfxSwapchainFramePacingTuning
-    cfgDesc.ptr = &fpt;
-
-    auto result = FfxApiProxy::D3D12_Configure()(&_swapChainContext, &cfgDesc.header);
-    LOG_DEBUG("HybridSpin D3D12_Configure result: {}", FfxApiProxy::ReturnCodeToString(result));
 }
 
 void FSRFG_Dx12::GetDispatchCommandList()
@@ -562,7 +562,19 @@ void FSRFG_Dx12::FgDone()
         LOG_TRACE("Releasing Mutex: {}", Mutex.getOwner());
         Mutex.unlockThis(1);
     }
-};
+}
+
+void* FSRFG_Dx12::FrameGenerationContext()
+{
+    LOG_DEBUG("");
+    return (void*)_fgContext;
+}
+
+void* FSRFG_Dx12::SwapchainContext()
+{
+    LOG_DEBUG("");
+    return _swapChainContext;
+}
 
 void FSRFG_Dx12::StopAndDestroyContext(bool destroy, bool shutDown, bool useMutex)
 {

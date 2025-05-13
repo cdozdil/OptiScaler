@@ -172,6 +172,67 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
             auto backendDesc = (ffxCreateBackendDX12Desc*)header;
             _d3d12Device = backendDesc->device;
         }
+        else if (State::Instance().activeFgType == OptiFG)
+        {
+            if (header->type == FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_WRAP_DX12)
+            {
+                LOG_INFO("Using already wrapped swapchain");
+                return FFX_API_RETURN_OK;
+            }
+            else if (header->type == FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_NEW_DX12)
+            {
+                LOG_INFO("Creating OptiFG swapchain, new swapchain");
+                auto fgDesc = (ffxCreateContextDescFrameGenerationSwapChainNewDX12*)header;
+                auto scResult = fgDesc->dxgiFactory->CreateSwapChain(fgDesc->gameQueue, fgDesc->desc, (IDXGISwapChain**)fgDesc->swapchain);
+
+                if (scResult == S_OK)
+                {
+                    if (State::Instance().currentFG == nullptr)
+                    {
+                        LOG_ERROR("State::Instance().currentFG is nullptr");
+                        return FFX_API_RETURN_ERROR_PARAMETER;
+                    }
+
+                    void* scContext = State::Instance().currentFG->SwapchainContext();
+                    context = (ffxContext*)&scContext;
+                    return FFX_API_RETURN_OK;
+                }
+                else
+                {
+                    LOG_ERROR("CreateSwapChain error: {:X}", (UINT)scResult);
+                    return FFX_API_RETURN_ERROR_PARAMETER;
+                }
+            }
+            else if (header->type == FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_FOR_HWND_DX12)
+            {
+                LOG_INFO("Creating OptiFG swapchain, new swapchain for hwnd");
+                auto fgDesc = (ffxCreateContextDescFrameGenerationSwapChainForHwndDX12*)header;
+
+                IDXGIFactory2* factory = nullptr;
+                auto scResult = fgDesc->dxgiFactory->QueryInterface(IID_PPV_ARGS(&factory));
+                if (scResult != S_OK)
+                {
+                    LOG_ERROR("CreateSwapChain error: {:X}", (UINT)scResult);
+                    return FFX_API_RETURN_ERROR_PARAMETER;
+                }
+
+                factory->Release();
+
+                scResult = factory->CreateSwapChainForHwnd(fgDesc->gameQueue, fgDesc->hwnd, fgDesc->desc, fgDesc->fullscreenDesc, nullptr, (IDXGISwapChain1**)fgDesc->swapchain);
+                if (scResult == S_OK)
+                {
+                    auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
+                    auto scContext = fg->SwapchainContext();
+                    context = (ffxContext*)&scContext;
+                    return FFX_API_RETURN_OK;
+                }
+                else
+                {
+                    LOG_ERROR("CreateSwapChainForHwnd error: {:X}", (UINT)scResult);
+                    return FFX_API_RETURN_ERROR_PARAMETER;
+                }
+            }
+        }
 
         header = header->pNext;
 

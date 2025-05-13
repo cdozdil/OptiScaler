@@ -31,26 +31,27 @@ protected:
     
 
 public:
+
     OwnedMutex Mutex;
 
-    bool IsActive();
-    int GetIndex();
+    virtual feature_version Version() = 0;
+    virtual const char* Name() = 0;
 
     virtual UINT64 UpscaleStart() = 0;
     virtual void UpscaleEnd() = 0;
+
+    virtual void FgDone() = 0;
+    virtual void ReleaseObjects() = 0;
+    virtual void StopAndDestroyContext(bool destroy, bool shutDown, bool useMutex) = 0;
+
+    bool IsActive();
+    int GetIndex();
 
     void SetJitter(float x, float y);
     void SetMVScale(float x, float y);
     void SetCameraValues(float nearValue, float farValue, float vFov, float meterFactor = 0.0f);
     void SetFrameTimeDelta(float delta);
     void SetReset(UINT reset);
-
-    virtual feature_version Version() = 0;
-    virtual const char* Name() = 0;
-
-    virtual void ReleaseObjects() = 0;
-    virtual void StopAndDestroyContext(bool destroy, bool shutDown, bool useMutex) = 0;
-    virtual void FgDone() = 0;
 
     void ResetCounters();
     void UpdateTarget();

@@ -43,25 +43,31 @@ protected:
 
 public:
 
-    void SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* velocity, D3D12_RESOURCE_STATES state);
-    void SetDepth(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* depth, D3D12_RESOURCE_STATES state);
-    void SetHudless(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* hudless, D3D12_RESOURCE_STATES state, bool makeCopy = false);
-
     virtual bool CreateSwapchain(IDXGIFactory* factory, ID3D12CommandQueue* cmdQueue, DXGI_SWAP_CHAIN_DESC* desc, IDXGISwapChain** swapChain) = 0;
     virtual bool CreateSwapchain1(IDXGIFactory* factory, ID3D12CommandQueue* cmdQueue, HWND hwnd, DXGI_SWAP_CHAIN_DESC1* desc, DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGISwapChain1** swapChain) = 0;
     virtual bool ReleaseSwapchain(HWND hwnd) = 0;
-    
-    void CreateObjects(ID3D12Device* InDevice);
+
     virtual void CreateContext(ID3D12Device* device, IFeature* upscalerContext) = 0;
-    void ReleaseObjects() final;
+
+    virtual bool Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* output, double frameTime) = 0;
+    virtual bool DispatchHudless(bool useHudless, double frameTime) = 0;
+        
+    virtual void* FrameGenerationContext() = 0;
+    virtual void* SwapchainContext() = 0;
+
+    // IFGFeature
+    void ReleaseObjects() override final;
+
+    void CreateObjects(ID3D12Device* InDevice);
+
+    void SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* velocity, D3D12_RESOURCE_STATES state);
+    void SetDepth(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* depth, D3D12_RESOURCE_STATES state);
+    void SetHudless(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* hudless, D3D12_RESOURCE_STATES state, bool makeCopy = false);
 
     ID3D12Fence* GetCopyFence();
     ID3D12Fence* GetHudlessFence();
     
     void SetWaitOnGameQueue(UINT64 value);
-
-    virtual bool Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* output, double frameTime) = 0;
-    virtual bool DispatchHudless(bool useHudless, double frameTime) = 0;
 
     bool IsFGCommandList(void* cmdList);
 
