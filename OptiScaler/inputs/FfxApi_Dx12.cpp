@@ -194,7 +194,7 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
                     }
 
                     void* scContext = State::Instance().currentFG->SwapchainContext();
-                    context = (ffxContext*)&scContext;
+                    *context = scContext;
                     return FFX_API_RETURN_OK;
                 }
                 else
@@ -223,7 +223,7 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
                 {
                     auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
                     auto scContext = fg->SwapchainContext();
-                    context = (ffxContext*)&scContext;
+                    *context = scContext;
                     return FFX_API_RETURN_OK;
                 }
                 else
@@ -319,8 +319,8 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
 
 ffxReturnCode_t ffxDestroyContext_Dx12(ffxContext* context, const ffxAllocationCallbacks* memCb)
 {
-    if (context == nullptr)
-        return FFX_API_RETURN_ERROR_PARAMETER;
+    if (context == nullptr || *context == nullptr)
+        return FFX_API_RETURN_OK;
 
     LOG_DEBUG("context: {:X}", (size_t)*context);
 
@@ -335,9 +335,13 @@ ffxReturnCode_t ffxDestroyContext_Dx12(ffxContext* context, const ffxAllocationC
     _nvParams.erase(*context);
     _initParams.erase(*context);
 
-    if (!upscalerContext || Config::Instance()->EnableHotSwapping.value_or_default())
+    LOG_DEBUG("context: {:X}, SwapchainContext: {:X}, FGContext: {:X}",
+              (size_t)(*context), (size_t)State::Instance().currentFG->SwapchainContext(), (size_t)State::Instance().currentFG->FrameGenerationContext());
+
+    if (!State::Instance().isShuttingDown && (!upscalerContext || Config::Instance()->EnableHotSwapping.value_or_default()) &&
+        (State::Instance().activeFgType != OptiFG || State::Instance().currentFG == nullptr || State::Instance().currentFG->SwapchainContext() != (*context)))
     {
-        auto cdResult = FfxApiProxy::D3D12_DestroyContext()(context, memCb);
+        auto cdResult = FfxApiProxy::D3D12_DestroyContext()(context, memCb); 
         LOG_INFO("result: {:X}", (UINT)cdResult);
     }
 
