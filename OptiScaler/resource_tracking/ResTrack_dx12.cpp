@@ -786,7 +786,7 @@ void ResTrack_Dx12::hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource*
                 RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
         }
 #else
-        pResource->SetPrivateData(GUID_Tracking, 4, &_trackMark);
+        //pResource->SetPrivateData(GUID_Tracking, 4, &_trackMark);
 #endif
 
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
@@ -875,7 +875,7 @@ void ResTrack_Dx12::hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resourc
                 RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
         }
 #else
-        pResource->SetPrivateData(GUID_Tracking, 4, &_trackMark);
+        //pResource->SetPrivateData(GUID_Tracking, 4, &_trackMark);
 #endif
 
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
@@ -963,7 +963,7 @@ void ResTrack_Dx12::hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resour
                 RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
         }
 #else
-        pResource->SetPrivateData(GUID_Tracking, 4, &_trackMark);
+        //pResource->SetPrivateData(GUID_Tracking, 4, &_trackMark);
 #endif
 
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
@@ -2261,5 +2261,11 @@ void ResTrack_Dx12::SetUpscalerCmdList(ID3D12GraphicsCommandList* cmdList)
 {
     LOG_DEBUG("cmdList: {:X}", (size_t)cmdList);
     _upscalerCommandList = cmdList;
+}
+
+void ResTrack_Dx12::SetHudlessCmdList(ID3D12GraphicsCommandList* cmdList)
+{
+    LOG_DEBUG("cmdList: {:X}", (size_t)cmdList);
+    _commandList = cmdList;
 }
 

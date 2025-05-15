@@ -76,7 +76,8 @@ bool IFGFeature_Dx12::CopyResource(ID3D12GraphicsCommandList* cmdList, ID3D12Res
 void IFGFeature_Dx12::WaitForFenceValue(ID3D12Fence* fence, UINT64 targetValue, HANDLE fenceEvent)
 {
     // Check if the fence has already been reached
-    if (fence->GetCompletedValue() < targetValue)
+    auto fenceValue = fence->GetCompletedValue();
+    if (fenceValue < targetValue)
     {
         // Instruct the fence to signal the event when the target value is reached
         HRESULT hr = fence->SetEventOnCompletion(targetValue, fenceEvent);
@@ -254,7 +255,7 @@ void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
         queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
         queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
         queueDesc.NodeMask = 0;
-        queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
+        queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 
         HRESULT hr = InDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&queue));
         if (result != S_OK)

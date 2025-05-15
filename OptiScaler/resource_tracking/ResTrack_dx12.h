@@ -355,4 +355,5 @@ public:
     static void ClearPossibleHudless();
     static void PresentDone();
     static void SetUpscalerCmdList(ID3D12GraphicsCommandList* cmdList);
+    static void SetHudlessCmdList(ID3D12GraphicsCommandList* cmdList);
 };

@@ -706,6 +706,8 @@ void Hudfix_Dx12::ResetCounters()
     _upscaleEndTime = 0.0;
     _targetTime = 0.0;
     _frameTime = 0.0;
-
+    
     _hudlessList.clear();
+
+    LOG_DEBUG("_hudlessList: {}", _hudlessList.size());
 }

@@ -353,8 +353,6 @@ public:
     CustomOptional<bool> FGHudfixFullSync{ false };
     CustomOptional<bool> FGHudfixTrackRelease{ false };
     CustomOptional<int> FGHudfixCBVTrackMode{ 0 }; // 0 off, 1 after upscaler, 2 full
-    //CustomOptional<bool> FGUseCommandQueue{ true };
-
 
     // DLSS Enabler
     std::optional<int> DE_FramerateLimit;			// off - vsync - number
