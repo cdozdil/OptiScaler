@@ -282,19 +282,19 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
     {
         // FG queue wait for copy operations
         LOG_DEBUG("FG Queue wait for copy, {}", _frameCount);
-        _commandQueue->Wait(_copyFence, _frameCount);
+        //_commandQueue->Wait(_copyFence, _frameCount);
         _lastCopyFenceValue = _frameCount;
 
         LOG_DEBUG("FG Queue wait for hudless copy, {}", _frameCount);
-        _commandQueue->Wait(_hudlessCopyFence, _frameCount);
+        //_commandQueue->Wait(_hudlessCopyFence, _frameCount);
         _lastHudlessCopyFenceValue = _frameCount;
+    }
 
-        if (State::Instance().currentCommandQueue != nullptr)
-        {
-            LOG_DEBUG("Game Queue wait for FG, {}", _frameCount);
-            State::Instance().currentCommandQueue->Wait(_fgFence, _frameCount);
-            _lastFgFenceValue = _frameCount;
-        }
+    if (State::Instance().currentCommandQueue != nullptr)
+    {
+        LOG_DEBUG("Game Queue wait for FG, {}", _frameCount);
+        //State::Instance().currentCommandQueue->Wait(_fgFence, _frameCount);
+        _lastFgFenceValue = _frameCount;
     }
 
     // hudless captured for this frame
@@ -405,13 +405,13 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
         ID3D12CommandList* cl[] = { _commandList[fIndex] };
 
         // use FG queue
-        if (useHudless)
-        {
-            _commandQueue->ExecuteCommandLists(1, cl);
-            _commandQueue->Signal(_fgFence, _frameCount);
-            LOG_DEBUG("Execute and signal from FG Queue, {}", _frameCount);
-        }
-        else if (State::Instance().currentCommandQueue != nullptr)
+        //if (useHudless)
+        //{
+        //    _commandQueue->ExecuteCommandLists(1, cl);
+        //    _commandQueue->Signal(_fgFence, _frameCount);
+        //    LOG_DEBUG("Execute and signal from FG Queue, {}", _frameCount);
+        //}
+        //else if (State::Instance().currentCommandQueue != nullptr)
         {
             //Use game queue
             State::Instance().currentCommandQueue->ExecuteCommandLists(1, cl);
