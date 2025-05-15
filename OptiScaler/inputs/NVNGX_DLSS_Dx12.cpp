@@ -33,9 +33,9 @@
 // Looks like causing stutter/sync issues
 //#define USE_QUEUE_FOR_FG
 
-static UINT64 fgLastFrameTime = 0;
-static UINT64 fgLastFGFrame = 0;
-static UINT fgCallbackFrameIndex = 0;
+//static UINT64 fgLastFrameTime = 0;
+//static UINT64 fgLastFGFrame = 0;
+//static UINT fgCallbackFrameIndex = 0;
 
 static ankerl::unordered_dense::map<unsigned int, ContextData<IFeature_Dx12>> Dx12Contexts;
 
@@ -1395,17 +1395,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
     if (deviceContext->feature->Name() != "DLSSD" && (Config::Instance()->RestoreComputeSignature.value_or_default() || Config::Instance()->RestoreGraphicSignature.value_or_default()))
         contextRendering = true;
 
-    // FG Init || Disable    
-    double ftDelta = 0.0f;
-
-    auto now = Util::MillisecondsNow();
-
-    if (fgLastFrameTime != 0)
-        ftDelta = now - fgLastFrameTime;
-
-    fgLastFrameTime = now;
-    LOG_DEBUG("Frametime: {0}", ftDelta);
-
     IFGFeature_Dx12* fg = nullptr;
     if (State::Instance().currentFG != nullptr)
         fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
@@ -1441,6 +1430,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             State::Instance().FGchanged = false;
         }
     }
+
     State::Instance().SCchanged = false;
 
     // FSR Camera values
@@ -1493,8 +1483,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         if (fg != nullptr)
         {
             fg->UpscaleStart();
+
             fg->SetCameraValues(cameraNear, cameraFar, cameraVFov, meterFactor);
-            fg->SetFrameTimeDelta(ftDelta);
+            fg->SetFrameTimeDelta(State::Instance().lastFrameTime);
             fg->SetMVScale(mvScaleX, mvScaleY);
             fg->SetReset(reset);
 
@@ -1621,7 +1612,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             {
                 // For signal after mv & depth copies
                 ResTrack_Dx12::SetUpscalerCmdList(InCmdList);
-                Hudfix_Dx12::UpscaleEnd(deviceContext->feature->FrameCount(), ftDelta);
+                Hudfix_Dx12::UpscaleEnd(deviceContext->feature->FrameCount(), State::Instance().lastFrameTime);
 
                 ResourceInfo info{};
                 auto desc = output->GetDesc();
@@ -1638,7 +1629,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
             {
                 LOG_DEBUG("(FG) running, frame: {0}", deviceContext->feature->FrameCount());
 
-                fg->Dispatch(InCmdList, output, ftDelta);
+                fg->Dispatch(InCmdList, output, State::Instance().lastFrameTime);
             }
         }
 

@@ -341,7 +341,7 @@ public:
     CustomOptional<bool> FGEnableDepthScale{ false };
     CustomOptional<float> FGDepthScaleMax{ 10000.0f };
     CustomOptional<bool> FGMakeMVCopy{ true };
-    CustomOptional<bool> FGHudFixCloseAfterCallback{ false };
+    CustomOptional<bool> FGHudFixCloseAfterCallback{ true };
     CustomOptional<bool> FGUseMutexForSwaphain{ true };
     CustomOptional<bool> FGFramePacingTuning{ true };
     CustomOptional<float> FGFPTSafetyMarginInMs{ 0.01f };
@@ -353,6 +353,7 @@ public:
     CustomOptional<bool> FGHudfixFullSync{ false };
     CustomOptional<bool> FGHudfixTrackRelease{ false };
     CustomOptional<int> FGHudfixCBVTrackMode{ 0 }; // 0 off, 1 after upscaler, 2 full
+    //CustomOptional<bool> FGUseCommandQueue{ true };
 
 
     // DLSS Enabler

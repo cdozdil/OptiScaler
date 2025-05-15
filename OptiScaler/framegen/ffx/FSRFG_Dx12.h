@@ -6,14 +6,13 @@
 #include <dx12/ffx_api_dx12.h>
 #include <ffx_framegeneration.h>
 
-
 class FSRFG_Dx12 : public virtual IFGFeature_Dx12
 {
 private:
     ffxContext _swapChainContext = nullptr;
     ffxContext _fgContext = nullptr;
     ID3D12GraphicsCommandList* _dispatchCommandList = nullptr;
-    
+
     void GetDispatchCommandList();
 
 public:

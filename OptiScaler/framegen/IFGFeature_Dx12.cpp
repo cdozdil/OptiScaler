@@ -73,6 +73,24 @@ bool IFGFeature_Dx12::CopyResource(ID3D12GraphicsCommandList* cmdList, ID3D12Res
     return result;
 }
 
+void IFGFeature_Dx12::WaitForFenceValue(ID3D12Fence* fence, UINT64 targetValue, HANDLE fenceEvent)
+{
+    // Check if the fence has already been reached
+    if (fence->GetCompletedValue() < targetValue)
+    {
+        // Instruct the fence to signal the event when the target value is reached
+        HRESULT hr = fence->SetEventOnCompletion(targetValue, fenceEvent);
+        if (hr != S_OK)
+        {
+            LOG_ERROR("Failed to set event on fence completion.");
+            return;
+        }
+
+        // Wait for the event
+        WaitForSingleObject(fenceEvent, INFINITE);
+    }
+}
+
 void IFGFeature_Dx12::SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* velocity, D3D12_RESOURCE_STATES state)
 {
     auto index = GetIndex();
@@ -236,7 +254,7 @@ void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
         queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
         queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
         queueDesc.NodeMask = 0;
-        queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+        queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
 
         HRESULT hr = InDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&queue));
         if (result != S_OK)
@@ -248,6 +266,7 @@ void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
         if (!CheckForRealObject(__FUNCTION__, queue, (IUnknown**)&_commandQueue))
             _commandQueue = queue;
 
+        queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
         hr = InDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&_copyCommandQueue));
         if (result != S_OK)
         {
@@ -270,6 +289,7 @@ void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
             LOG_ERROR("CreateFence _copyFence: {0:X}", (unsigned long)result);
             break;
         }
+        _copyFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
         hr = InDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_fgFence));
         if (result != S_OK)
@@ -277,6 +297,7 @@ void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
             LOG_ERROR("CreateFence _fgFence: {0:X}", (unsigned long)result);
             break;
         }
+        _fgFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
         hr = InDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_hudlessFence));
         if (result != S_OK)
@@ -284,6 +305,7 @@ void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
             LOG_ERROR("CreateFence _hudlessFence: {0:X}", (unsigned long)result);
             break;
         }
+        _hudlessFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
         hr = InDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_hudlessCopyFence));
         if (result != S_OK)
@@ -291,6 +313,7 @@ void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
             LOG_ERROR("CreateFence _hudlessCopyFence: {0:X}", (unsigned long)result);
             break;
         }
+        _hudlessCopyFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
     } while (false);
 }

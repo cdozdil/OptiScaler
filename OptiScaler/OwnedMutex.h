@@ -21,7 +21,10 @@ public:
         uint32_t current_owner = owner.load(std::memory_order_seq_cst);
 
         if (current_owner == 0 || current_owner != _owner)
+        {
+            LOG_WARN("current_owner: {}, _owner: {}", current_owner, _owner);
             return;
+        }
 
         owner.store(0, std::memory_order_seq_cst);
         mtx.unlock();

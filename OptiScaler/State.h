@@ -76,6 +76,8 @@ public:
     bool FGresetCapturedResources = false;
     bool FGonlyUseCapturedResources = false;
 
+    bool FSRFGFTPchanged = false;
+
     // NVNGX init parameters
     uint64_t NVNGX_ApplicationId = 1337;
     std::wstring NVNGX_ApplicationDataPath;
@@ -141,6 +143,7 @@ public:
     // Framegraph
     std::deque<double> upscaleTimes;
     std::deque<double> frameTimes;
+    double lastFrameTime = 0.0;
 
     // Swapchain info
     float screenWidth = 800.0;

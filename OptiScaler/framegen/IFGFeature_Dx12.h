@@ -25,21 +25,30 @@ protected:
     ID3D12GraphicsCommandList* _commandList[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
     ID3D12CommandAllocator* _commandAllocators[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
     ID3D12Fence* _fgFence = nullptr;
+    HANDLE _fgFenceEvent = nullptr;
+    UINT64 _lastFgFenceValue = 0;
 
     ID3D12CommandQueue* _copyCommandQueue = nullptr;
     ID3D12GraphicsCommandList* _copyCommandList[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
     ID3D12CommandAllocator* _copyCommandAllocator[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
     ID3D12Fence* _copyFence = nullptr;
+    HANDLE _copyFenceEvent = nullptr;
+    UINT64 _lastCopyFenceValue = 0;
 
     ID3D12CommandQueue* _hudlessCommandQueue = nullptr;
     ID3D12GraphicsCommandList* _hudlessCommandList[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
     ID3D12CommandAllocator* _hudlessCommandAllocator[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
     ID3D12Fence* _hudlessFence = nullptr;
     ID3D12Fence* _hudlessCopyFence = nullptr;
+    HANDLE _hudlessFenceEvent = nullptr;
+    HANDLE _hudlessCopyFenceEvent = nullptr;
+    UINT64 _lastHudlessFenceValue = 0;
+    UINT64 _lastHudlessCopyFenceValue = 0;
 
     bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource);
     void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
     bool CopyResource(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* source, ID3D12Resource** target, D3D12_RESOURCE_STATES sourceState);
+    void WaitForFenceValue(ID3D12Fence* fence, UINT64 targetValue, HANDLE fenceEvent);
 
 public:
 

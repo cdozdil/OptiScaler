@@ -7,9 +7,9 @@
 #include <ankerl/unordered_dense.h>
 
 // Test resources if they are valid or not
-//#define DEBUG_TRACKINNG
+//#define DEBUG_TRACKING
 
-#ifdef DEBUG_TRACKINNG
+#ifdef DEBUG_TRACKING
 static void TestResource(ResourceInfo* info)
 {
     if (info == nullptr || info->buffer == nullptr || (size_t)info->buffer == 0xfdfdfdfd)
@@ -73,7 +73,7 @@ typedef struct HeapInfo
         if (info[index].buffer == nullptr || (size_t)info[index].buffer == 0xfdfdfdfd)
             return nullptr;
 
-#ifdef DEBUG_TRACKINNG
+#ifdef DEBUG_TRACKING
         TestResource(&info[index]);
 #endif
 
@@ -91,7 +91,7 @@ typedef struct HeapInfo
         if (info[index].buffer == nullptr || (size_t)info[index].buffer == 0xfdfdfdfd)
             return nullptr;
 
-#ifdef DEBUG_TRACKINNG
+#ifdef DEBUG_TRACKING
         TestResource(&info[index]);
 #endif
 
@@ -105,7 +105,7 @@ typedef struct HeapInfo
         if (index >= numDescriptors)
             return;
 
-#ifdef DEBUG_TRACKINNG
+#ifdef DEBUG_TRACKING
         TestResource(&setInfo);
 #endif
 
@@ -130,7 +130,7 @@ typedef struct HeapInfo
         if (index >= numDescriptors)
             return;
 
-#ifdef DEBUG_TRACKINNG
+#ifdef DEBUG_TRACKING
         TestResource(&setInfo);
 #endif
 
@@ -344,7 +344,8 @@ private:
     static HeapInfo* GetHeapByCpuHandleSRV(SIZE_T cpuHandle);
     static HeapInfo* GetHeapByCpuHandleUAV(SIZE_T cpuHandle);
     static HeapInfo* GetHeapByCpuHandle(SIZE_T cpuHandle);
-    static HeapInfo* GetHeapByGpuHandle(SIZE_T gpuHandle);
+    static HeapInfo* GetHeapByGpuHandleGR(SIZE_T gpuHandle);
+    static HeapInfo* GetHeapByGpuHandleCR(SIZE_T gpuHandle);
 
     static void FillResourceInfo(ID3D12Resource* resource, ResourceInfo* info);
 

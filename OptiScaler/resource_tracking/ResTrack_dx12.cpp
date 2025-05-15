@@ -111,6 +111,9 @@ static thread_local HeapCacheTLS cacheSRV;
 static thread_local HeapCacheTLS cacheUAV;
 static std::atomic<unsigned> gHeapGeneration{ 1 };
 
+static thread_local HeapCacheTLS cacheGR;
+static thread_local HeapCacheTLS cacheCR;
+
 #ifdef USE_RESOURCE_DISCARD
 // created resources
 static ankerl::unordered_dense::map <ID3D12Resource*, std::vector<size_t>> fgHandlesByResources;
@@ -431,13 +434,73 @@ HeapInfo* ResTrack_Dx12::GetHeapByCpuHandle(SIZE_T cpuHandle)
     return nullptr;
 }
 
-HeapInfo* ResTrack_Dx12::GetHeapByGpuHandle(SIZE_T gpuHandle)
+HeapInfo* ResTrack_Dx12::GetHeapByGpuHandleGR(SIZE_T gpuHandle)
 {
+
+    //for (size_t i = 0; i < fgHeapIndex; i++)
+    //{
+    //    if (fgHeaps[i]->gpuStart != 0 && fgHeaps[i]->gpuStart <= gpuHandle && fgHeaps[i]->gpuEnd > gpuHandle)
+    //        return fgHeaps[i].get();
+    //}
+
+    unsigned currentGen = gHeapGeneration.load(std::memory_order_relaxed);
+
+    {
+        std::shared_lock<std::shared_mutex> lock(heapMutex);
+
+        if (cacheGR.genSeen == currentGen && cacheGR.index != -1)
+        {
+            auto heapInfo = fgHeaps[cache.index].get();
+
+            if (heapInfo->gpuStart <= gpuHandle && gpuHandle < heapInfo->gpuEnd)
+                return heapInfo;
+        }
+    }
 
     for (size_t i = 0; i < fgHeapIndex; i++)
     {
-        if (fgHeaps[i]->gpuStart != 0 && fgHeaps[i]->gpuStart <= gpuHandle && fgHeaps[i]->gpuEnd > gpuHandle)
+        if (fgHeaps[i]->cpuStart <= gpuHandle && fgHeaps[i]->gpuEnd > gpuHandle)
+        {
+            cacheGR.index = i;
+            cacheGR.genSeen = currentGen;
             return fgHeaps[i].get();
+        }
+    }
+
+    return nullptr;
+}
+
+HeapInfo* ResTrack_Dx12::GetHeapByGpuHandleCR(SIZE_T gpuHandle)
+{
+
+    //for (size_t i = 0; i < fgHeapIndex; i++)
+    //{
+    //    if (fgHeaps[i]->gpuStart != 0 && fgHeaps[i]->gpuStart <= gpuHandle && fgHeaps[i]->gpuEnd > gpuHandle)
+    //        return fgHeaps[i].get();
+    //}
+
+    unsigned currentGen = gHeapGeneration.load(std::memory_order_relaxed);
+
+    {
+        std::shared_lock<std::shared_mutex> lock(heapMutex);
+
+        if (cacheCR.genSeen == currentGen && cacheCR.index != -1)
+        {
+            auto heapInfo = fgHeaps[cache.index].get();
+
+            if (heapInfo->gpuStart <= gpuHandle && gpuHandle < heapInfo->gpuEnd)
+                return heapInfo;
+        }
+    }
+
+    for (size_t i = 0; i < fgHeapIndex; i++)
+    {
+        if (fgHeaps[i]->cpuStart <= gpuHandle && fgHeaps[i]->gpuEnd > gpuHandle)
+        {
+            cacheCR.index = i;
+            cacheCR.genSeen = currentGen;
+            return fgHeaps[i].get();
+        }
     }
 
     return nullptr;
@@ -985,15 +1048,17 @@ void ResTrack_Dx12::hkExecuteCommandLists(ID3D12CommandQueue* This, UINT NumComm
 
         if (ppCommandLists[i] == _commandList)
         {
-            LOG_DEBUG("Hudless cmdlist");
+            LOG_DEBUG("Hudless cmdlist, {}", State::Instance().currentFG->FrameCount());
             This->Signal(State::Instance().currentFG->GetHudlessFence(), State::Instance().currentFG->FrameCount());
+            //State::Instance().currentFG->GetHudlessFence()->Signal(State::Instance().currentFG->FrameCount());
             _commandList = nullptr;
         }
         
         if (ppCommandLists[i] == _upscalerCommandList)
         {
-            LOG_DEBUG("Upscaler cmdlist");
+            LOG_DEBUG("Upscaler cmdlist, {}", State::Instance().currentFG->FrameCount());
             This->Signal(State::Instance().currentFG->GetCopyFence(), State::Instance().currentFG->FrameCount());
+            //State::Instance().currentFG->GetCopyFence()->Signal(State::Instance().currentFG->FrameCount());
             _upscalerCommandList = nullptr;
         }
     }
@@ -1476,7 +1541,7 @@ void ResTrack_Dx12::hkSetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList* 
         return;
     }
 
-    auto heap = GetHeapByGpuHandle(BaseDescriptor.ptr);
+    auto heap = GetHeapByGpuHandleGR(BaseDescriptor.ptr);
     if (heap == nullptr)
     {
         LOG_DEBUG_ONLY("No heap!");
@@ -1633,7 +1698,7 @@ void ResTrack_Dx12::hkSetComputeRootDescriptorTable(ID3D12GraphicsCommandList* T
         return;
     }
 
-    auto heap = GetHeapByGpuHandle(BaseDescriptor.ptr);
+    auto heap = GetHeapByGpuHandleCR(BaseDescriptor.ptr);
     if (heap == nullptr)
     {
         LOG_DEBUG_ONLY("No heap!");

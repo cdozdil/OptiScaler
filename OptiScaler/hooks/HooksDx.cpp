@@ -36,6 +36,7 @@ static bool _skipFGSwapChainCreation = false;
 
 // Swapchain frame counter
 static UINT64 _frameCounter = 0;
+static double _lastFrameTime = 0.0;
 
 #pragma endregion                            
 
@@ -130,7 +131,6 @@ static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnk
     return false;
 }
 
-
 #pragma region Callbacks for wrapped swapchain
 
 static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
@@ -141,7 +141,17 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         return result;
     }
 
-    LOG_DEBUG("_frameCounter: {}, flags: {:X}", _frameCounter, Flags);
+    double ftDelta = 0.0f;
+
+    auto now = Util::MillisecondsNow();
+
+    if (_lastFrameTime != 0)
+        ftDelta = now - _lastFrameTime;
+
+    _lastFrameTime = now;
+    State::Instance().lastFrameTime = ftDelta;
+
+    LOG_DEBUG("_frameCounter: {}, flags: {:X}, Frametime: {}", _frameCounter, Flags, ftDelta);
 
     if (State::Instance().FGresetCapturedResources)
     {
@@ -155,9 +165,47 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     if (State::Instance().currentFG != nullptr)
         fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
 
+    if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART))
+    {
+        if (State::Instance().activeFgType == OptiFG && HooksDx::dx12UpscaleTrig && HooksDx::readbackBuffer != nullptr && 
+            HooksDx::queryHeap != nullptr && State::Instance().currentCommandQueue != nullptr)
+        {
+            UINT64* timestampData;
+            HooksDx::readbackBuffer->Map(0, nullptr, reinterpret_cast<void**>(&timestampData));
+
+            if (timestampData != nullptr)
+            {
+                // Get the GPU timestamp frequency (ticks per second)
+                UINT64 gpuFrequency;
+                State::Instance().currentCommandQueue->GetTimestampFrequency(&gpuFrequency);
+
+                // Calculate elapsed time in milliseconds
+                UINT64 startTime = timestampData[0];
+                UINT64 endTime = timestampData[1];
+                double elapsedTimeMs = (endTime - startTime) / static_cast<double>(gpuFrequency) * 1000.0;
+
+                // filter out posibly wrong measured high values
+                if (elapsedTimeMs < 100.0)
+                {
+                    State::Instance().upscaleTimes.push_back(elapsedTimeMs);
+                    State::Instance().upscaleTimes.pop_front();
+                }
+            }
+            else
+            {
+                LOG_WARN("timestampData is null!");
+            }
+
+            // Unmap the buffer
+            HooksDx::readbackBuffer->Unmap(0, nullptr);
+
+            HooksDx::dx12UpscaleTrig = false;
+        }
+    }
+
     auto lockAccuired = false;
     if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART) && fg != nullptr && fg->IsActive() &&
-        fg->TargetFrame() < fg->FrameCount() && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && fg->Mutex.getOwner() != 2)
+        Config::Instance()->FGUseMutexForSwaphain.value_or_default() && fg->Mutex.getOwner() != 2)
     {
         LOG_TRACE("Waiting FG->Mutex 2, current: {}", fg->Mutex.getOwner());
         fg->Mutex.lock(2);
@@ -212,6 +260,20 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
             LOG_ERROR("1 {:X}", (UINT)presentResult);
 
         return presentResult;
+    }
+
+    if (State::Instance().activeFgType != OptiFG && !(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART))
+    {
+        double ftDelta = 0.0f;
+
+        auto now = Util::MillisecondsNow();
+
+        if (_lastFrameTime != 0)
+            ftDelta = now - _lastFrameTime;
+
+        _lastFrameTime = now;
+        State::Instance().lastFrameTime = ftDelta;
+        LOG_DEBUG("Frametime: {0}", ftDelta);
     }
 
     // Removing might cause issues, saved almost 1 ms
@@ -270,7 +332,7 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
         ReflexHooks::update(false);
 
     // Upscaler GPU time computation
-    if (HooksDx::dx12UpscaleTrig && HooksDx::readbackBuffer != nullptr && HooksDx::queryHeap != nullptr && cq != nullptr)
+    if (State::Instance().activeFgType != OptiFG && HooksDx::dx12UpscaleTrig && HooksDx::readbackBuffer != nullptr && HooksDx::queryHeap != nullptr && cq != nullptr)
     {
         UINT64* timestampData;
         HooksDx::readbackBuffer->Map(0, nullptr, reinterpret_cast<void**>(&timestampData));

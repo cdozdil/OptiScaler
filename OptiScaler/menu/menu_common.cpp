@@ -1225,8 +1225,7 @@ bool MenuCommon::RenderMenu()
                     ImGui::SameLine(0.0f, 0.0f);
 
                 // Graph of frame times
-                ImGui::PlotLines("##FrameTimeGraph", frameTimeArray.data(), static_cast<int>(frameTimeArray.size()), 0, nullptr,
-                                 *std::min_element(frameTimeArray.begin(), frameTimeArray.end()) * 0.9f, *std::max_element(frameTimeArray.begin(), frameTimeArray.end()) * 1.1f, plotSize);
+                ImGui::PlotLines("##FrameTimeGraph", frameTimeArray.data(), static_cast<int>(frameTimeArray.size()), 0, nullptr, 0.0f, 66.6f, plotSize);
             }
 
             if (Config::Instance()->FpsOverlayType.value_or_default() > 2)
@@ -1251,8 +1250,7 @@ bool MenuCommon::RenderMenu()
                     ImGui::SameLine(0.0f, 0.0f);
 
                 // Graph of upscaler times
-                ImGui::PlotLines("##UpscalerFrameTimeGraph", upscalerFrameTimeArray.data(), static_cast<int>(upscalerFrameTimeArray.size()), 0, nullptr,
-                                 *std::min_element(upscalerFrameTimeArray.begin(), upscalerFrameTimeArray.end()) * 0.9f, *std::max_element(upscalerFrameTimeArray.begin(), upscalerFrameTimeArray.end()) * 1.1f, plotSize);
+                ImGui::PlotLines("##UpscalerFrameTimeGraph", upscalerFrameTimeArray.data(), static_cast<int>(upscalerFrameTimeArray.size()), 0, nullptr, 0.0f, 20.0f, plotSize);
             }
 
             ImGui::PopStyleColor(3); // Restore the style
@@ -1842,7 +1840,7 @@ bool MenuCommon::RenderMenu()
                                     if (ImGui::Checkbox("Enable Tuning", &fptEnabled))
                                     {
                                         Config::Instance()->FGFramePacingTuning = fptEnabled;
-                                        fsrFG->ConfigureFramePaceTuning();
+                                        State::Instance().FSRFGFTPchanged = true;
                                     }
 
                                     ImGui::BeginDisabled(!Config::Instance()->FGFramePacingTuning.value_or_default());
@@ -1883,7 +1881,7 @@ bool MenuCommon::RenderMenu()
                                     ShowHelpMarker("Allows WaitForSingleObject instead of spinning for fence value");
 
                                     if (ImGui::Button("Apply Timing Changes"))
-                                        fsrFG->ConfigureFramePaceTuning();
+                                        State::Instance().FSRFGFTPchanged = true;
 
                                     ImGui::EndDisabled();
                                     ImGui::TreePop();
