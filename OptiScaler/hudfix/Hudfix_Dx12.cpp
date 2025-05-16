@@ -7,6 +7,24 @@
 #include <framegen/IFGFeature_Dx12.h>
 
 #include <future>
+#include <utility>  // for std::forward
+
+template<typename Fn, typename... Args>
+void fire_and_forget(Fn&& fn, Args&&... args) {
+    std::thread(
+        // wrap in a lambda so we can catch exceptions if you want
+        [f = std::forward<Fn>(fn),
+        tup = std::make_tuple(std::forward<Args>(args)...)]() mutable
+        {
+            try {
+                std::apply(std::move(f), std::move(tup));
+            }
+            catch (...) {
+                // swallow or log
+            }
+        }
+    ).detach();
+}
 
 // Use time limit to stop hudless search before Present call
 //#define USE_TIME_LIMIT
@@ -281,13 +299,28 @@ void Hudfix_Dx12::DispatchFG(bool useHudless)
 {
     LOG_DEBUG("useHudless: {}, _upscaleCounter: {}, _fgCounter: {}", useHudless, _upscaleCounter, _fgCounter);
 
+    std::lock_guard<std::mutex> lock(_counterMutex);
+
+    if (_captureCounter[GetIndex()] > 1000)
+        return;
+
     // Set it above 1000 to prvent capture
     _captureCounter[GetIndex()] = 9999;
 
     // Increase counter
-    _fgCounter++;
+    _fgCounter++; 
 
-    reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG)->DispatchHudless(useHudless, _frameTime);
+    //fire_and_forget(&IFGFeature_Dx12::DispatchHudless, State::Instance().currentFG, useHudless, _frameTime);
+
+    //if (!Config::Instance()->FGUseSeperateQueue.value_or_default() && !Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
+    //{
+    //    std::thread t(&IFGFeature_Dx12::DispatchHudless, State::Instance().currentFG, useHudless, _frameTime);
+    //    t.detach();
+    //}
+    //else
+    {
+        //State::Instance().currentFG->DispatchHudless(useHudless, _frameTime);
+    }
 
     // Let resource tracker to continue
     _skipHudlessChecks = false;
@@ -706,7 +739,7 @@ void Hudfix_Dx12::ResetCounters()
     _upscaleEndTime = 0.0;
     _targetTime = 0.0;
     _frameTime = 0.0;
-    
+
     _hudlessList.clear();
 
     LOG_DEBUG("_hudlessList: {}", _hudlessList.size());

@@ -1694,26 +1694,6 @@ bool MenuCommon::RenderMenu()
                                 }
                                 ShowHelpMarker("Always track resources, might cause performace issues\nbut also might fix HudFix related crashes!");
 
-                                const char* cbv[] = { "Not Tracking", "Track After Upscaling", "Always Track" };
-                                if (ImGui::BeginCombo("CBV Tracking", cbv[Config::Instance()->FGHudfixCBVTrackMode.value_or_default()]))
-                                {
-                                    for (size_t i = 0; i < 3; i++)
-                                    {
-                                        if (ImGui::Selectable(cbv[i], (Config::Instance()->FGHudfixCBVTrackMode.value_or_default() == i)))
-                                            Config::Instance()->FGHudfixCBVTrackMode = i;
-                                    }
-
-                                    ImGui::EndCombo();
-                                }
-
-                                auto tr = Config::Instance()->FGHudfixTrackRelease.value_or_default();
-                                if (ImGui::Checkbox("Track Resource Release", &tr))
-                                {
-                                    Config::Instance()->FGHudfixTrackRelease = tr;
-                                    LOG_DEBUG("Enabled set FGHudfixTrackRelease: {}", tr);
-                                }
-                                ShowHelpMarker("Track resource releases\nMost probably WILL TANK PERFORMANCE");
-
                                 ImGui::TreePop();
                             }
 

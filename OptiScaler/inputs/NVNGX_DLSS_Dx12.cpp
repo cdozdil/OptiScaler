@@ -856,6 +856,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
         contextRendering = false;
     }
 
+    State::Instance().FGchanged = true;
+
     return NVSDK_NGX_Result_Success;
 }
 
@@ -1519,7 +1521,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         result = FrameGen_Dx12::fgCommandList[frameIndex]->Reset(allocator, nullptr);
         allocatorReset = true;
 #endif
-
         ID3D12GraphicsCommandList* commandList = nullptr;
 
 #ifdef USE_COPY_QUEUE_FOR_FG

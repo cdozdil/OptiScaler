@@ -20,6 +20,8 @@ DEFINE_GUID(GUID_Tracking,
             0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef);
 
 static UINT _trackMark = 1;
+static bool _foundUpscale = false;
+static bool _foundHudless = false;
 
 #define LOG_HEAP_MOVES
 
@@ -665,43 +667,16 @@ static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* p
 void ResTrack_Dx12::hkCreateSampler(ID3D12Device* This, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
     o_CreateSampler(This, pDesc, DestDescriptor);
-
-    //if (DestDescriptor.ptr != 0)
-    //{
-    //    auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
-
-    //    if (heap != nullptr)
-    //        heap->SetByCpuHandle(DestDescriptor.ptr, {});
-    //}
 }
 
 void ResTrack_Dx12::hkCreateDepthStencilView(ID3D12Device* This, ID3D12Resource* pResource, const D3D12_DEPTH_STENCIL_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
     o_CreateDepthStencilView(This, pResource, pDesc, DestDescriptor);
-
-    //if (DestDescriptor.ptr != 0)
-    //{
-    //    auto heap = GetHeapByCpuHandle(DestDescriptor.ptr);
-
-    //    if (heap != nullptr)
-    //        heap->SetByCpuHandle(DestDescriptor.ptr, {});
-    //}
 }
 
 void ResTrack_Dx12::hkCreateConstantBufferView(ID3D12Device* This, const D3D12_CONSTANT_BUFFER_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
     o_CreateConstantBufferView(This, pDesc, DestDescriptor);
-
-    if (Config::Instance()->FGHudfixCBVTrackMode.value_or_default() == 2 || (Config::Instance()->FGHudfixCBVTrackMode.value_or_default() == 1 && IsHudFixActive()))
-    {
-        if (DestDescriptor.ptr != 0)
-        {
-            auto heap = GetHeapByCpuHandleCBV(DestDescriptor.ptr);
-
-            if (heap != nullptr)
-                heap->ClearByCpuHandle(DestDescriptor.ptr);
-        }
-    }
 }
 
 void ResTrack_Dx12::hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResource, D3D12_RENDER_TARGET_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
@@ -1046,20 +1021,33 @@ void ResTrack_Dx12::hkExecuteCommandLists(ID3D12CommandQueue* This, UINT NumComm
     {
         LOG_DEBUG_ONLY("cmdlist[{}]: {:X}", i, (size_t)ppCommandLists[i]);
 
-        if (ppCommandLists[i] == _commandList)
+        if (_commandList != nullptr && ppCommandLists[i] == _commandList)
         {
             LOG_DEBUG("Hudless cmdlist, {}", State::Instance().currentFG->FrameCount());
             This->Signal(State::Instance().currentFG->GetHudlessFence(), State::Instance().currentFG->FrameCount());
-            //State::Instance().currentFG->GetHudlessFence()->Signal(State::Instance().currentFG->FrameCount());
             _commandList = nullptr;
+            _foundHudless = true;
         }
-        
-        if (ppCommandLists[i] == _upscalerCommandList)
+
+        if (_upscalerCommandList != nullptr && ppCommandLists[i] == _upscalerCommandList)
         {
-            LOG_DEBUG("Upscaler cmdlist, {}", State::Instance().currentFG->FrameCount());
-            This->Signal(State::Instance().currentFG->GetCopyFence(), State::Instance().currentFG->FrameCount());
-            //State::Instance().currentFG->GetCopyFence()->Signal(State::Instance().currentFG->FrameCount());
+            auto frame = State::Instance().currentFG->FrameCount();
+            LOG_DEBUG("Upscaler cmdlist, {}", frame);
+            This->Signal(State::Instance().currentFG->GetCopyFence(), frame);
             _upscalerCommandList = nullptr;
+            _foundUpscale = true;
+        }
+    }
+
+    if (_foundHudless && _foundUpscale)
+    {
+        _foundHudless = false;
+        _foundUpscale = false;
+
+        if (State::Instance().currentFG->IsActive() && State::Instance().currentFG->TargetFrame() < State::Instance().currentFG->FrameCount())
+        {
+            State::Instance().currentFG->SetUpscalerQueue(State::Instance().currentCommandQueue);
+            State::Instance().currentFG->DispatchHudless(true, State::Instance().lastFrameTime);
         }
     }
 }
@@ -2189,8 +2177,8 @@ void ResTrack_Dx12::HookDevice(ID3D12Device* device)
         if (o_CreateDescriptorHeap != nullptr)
             DetourAttach(&(PVOID&)o_CreateDescriptorHeap, hkCreateDescriptorHeap);
 
-        if (o_CreateConstantBufferView != nullptr)
-            DetourAttach(&(PVOID&)o_CreateConstantBufferView, hkCreateConstantBufferView);
+        //if (o_CreateConstantBufferView != nullptr)
+        //    DetourAttach(&(PVOID&)o_CreateConstantBufferView, hkCreateConstantBufferView);
 
         if (o_CreateRenderTargetView != nullptr)
             DetourAttach(&(PVOID&)o_CreateRenderTargetView, hkCreateRenderTargetView);
@@ -2247,9 +2235,12 @@ void ResTrack_Dx12::ClearPossibleHudless()
     _skipHudless = false;
     _rcActive = false;
     _cmdList = false;
+
+    _foundHudless = false;
+    _foundUpscale = false;
+
     //_upscalerCommandList = nullptr;
     //_commandList = nullptr;
-
 }
 
 void ResTrack_Dx12::PresentDone()

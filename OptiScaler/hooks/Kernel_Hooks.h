@@ -177,7 +177,7 @@ private:
         }
 
         // Overlay
-        if (Config::Instance()->FGDisableOverlays.value_or_default() && CheckDllName(&lcaseLibName, &blockOverlayNames))
+        if (Config::Instance()->DisableOverlays.value_or_default() && CheckDllName(&lcaseLibName, &blockOverlayNames))
         {
             LOG_DEBUG("Blocking overlay dll: {}", lcaseLibName);
             return (HMODULE)1;
@@ -516,7 +516,7 @@ private:
         }
 
 
-        if (Config::Instance()->FGDisableOverlays.value_or_default() && CheckDllNameW(&lcaseLibName, &blockOverlayNamesW))
+        if (Config::Instance()->DisableOverlays.value_or_default() && CheckDllNameW(&lcaseLibName, &blockOverlayNamesW))
         {
             LOG_DEBUG("Blocking overlay dll: {}", wstring_to_string(lcaseLibName));
             return (HMODULE)1;

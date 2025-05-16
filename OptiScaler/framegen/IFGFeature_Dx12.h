@@ -13,6 +13,7 @@ protected:
     IDXGISwapChain* _swapChain = nullptr;
     HWND _hwnd = NULL;
     ID3D12CommandQueue* _gameCommandQueue = nullptr;
+    ID3D12CommandQueue* _upscalerQueue = nullptr;
 
     ID3D12Resource* _paramVelocity[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
     ID3D12Resource* _paramVelocityCopy[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
@@ -75,6 +76,8 @@ public:
 
     ID3D12Fence* GetCopyFence();
     ID3D12Fence* GetHudlessFence();
+    ID3D12Fence* GetFGFence();
+    void SetUpscalerQueue(ID3D12CommandQueue* queue);
     
     void SetWaitOnGameQueue(UINT64 value);
 

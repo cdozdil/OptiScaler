@@ -95,8 +95,6 @@ bool Config::Reload(std::filesystem::path iniPath)
             
             FGHudfixHalfSync.set_from_config(readBool("OptiFG", "HudfixHalfSync"));
             FGHudfixFullSync.set_from_config(readBool("OptiFG", "HudfixFullSync"));
-            FGHudfixTrackRelease.set_from_config(readBool("OptiFG", "HudfixTrackRelease"));
-            FGHudfixCBVTrackMode.set_from_config(readInt("OptiFG", "HudfixCBVTrackMode"));
         }
 
         // Framerate
@@ -325,7 +323,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Hotfixes
         {
-            FGDisableOverlays.set_from_config(readBool("Hotfix", "DisableOverlays"));
+            DisableOverlays.set_from_config(readBool("Hotfix", "DisableOverlays"));
 
             RoundInternalResolution.set_from_config(readInt("Hotfix", "RoundInternalResolution"));
 
@@ -616,9 +614,6 @@ bool Config::SaveIni()
         
         ini.SetValue("OptiFG", "HudfixHalfSync", GetBoolValue(Instance()->FGHudfixHalfSync.value_for_config()).c_str());
         ini.SetValue("OptiFG", "HudfixFullSync", GetBoolValue(Instance()->FGHudfixFullSync.value_for_config()).c_str());
-        ini.SetValue("OptiFG", "HudfixTrackRelease", GetBoolValue(Instance()->FGHudfixTrackRelease.value_for_config()).c_str());
-        
-        ini.SetValue("OptiFG", "HudfixCBVTrackMode", GetIntValue(Instance()->FGHudfixCBVTrackMode.value_for_config()).c_str());
     }
 
     // Framerate 
@@ -763,7 +758,7 @@ bool Config::SaveIni()
 
     // Hotfixes
     {
-        ini.SetValue("Hotfix", "DisableOverlays", Instance()->FGDisableOverlays.has_value() ? (Instance()->FGDisableOverlays.value() ? "true" : "false") : "auto");
+        ini.SetValue("Hotfix", "DisableOverlays", Instance()->DisableOverlays.has_value() ? (Instance()->DisableOverlays.value() ? "true" : "false") : "auto");
 
         ini.SetValue("Hotfix", "MipmapBiasOverride", GetFloatValue(Instance()->MipmapBiasOverride.value_for_config()).c_str());
         ini.SetValue("Hotfix", "MipmapBiasOverrideAll", GetBoolValue(Instance()->MipmapBiasOverrideAll.value_for_config()).c_str());

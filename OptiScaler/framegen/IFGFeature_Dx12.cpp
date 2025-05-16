@@ -137,33 +137,10 @@ void IFGFeature_Dx12::SetHudless(ID3D12GraphicsCommandList* cmdList, ID3D12Resou
         return;
     }
 
-    if (makeCopy)
-    {
-        if (CopyResource(_hudlessCommandList[index], hudless, &_paramHudlessCopy[index], state))
-        {
-            auto result = _hudlessCommandList[index]->Close();
-            if (result == S_OK)
-            {
-                ID3D12CommandList* cl[] = { _hudlessCommandList[index] };
-                _hudlessCommandQueue->ExecuteCommandLists(1, cl);
-                _hudlessCommandQueue->Signal(_hudlessFence, _frameCount);
-            }
-            else
-            {
-                LOG_ERROR("_hudlessCommandList[]->Close error: {:}", index, (UINT)result);
-            }
-
-            _paramHudless[index] = _paramHudlessCopy[index];
-        }
-        else
-        {
-            _paramHudless[index] = hudless;
-        }
-    }
+    if (makeCopy && CopyResource(cmdList, hudless, &_paramHudlessCopy[index], state))
+        _paramHudless[index] = _paramHudlessCopy[index];
     else
-    {
         _paramHudless[index] = hudless;
-    }
 }
 
 void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
@@ -255,7 +232,11 @@ void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
         queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
         queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
         queueDesc.NodeMask = 0;
-        queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+
+        if (Config::Instance()->FGHighPriority.value_or_default())
+            queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
+        else
+            queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 
         HRESULT hr = InDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&queue));
         if (result != S_OK)
@@ -377,6 +358,17 @@ ID3D12Fence* IFGFeature_Dx12::GetCopyFence()
 ID3D12Fence* IFGFeature_Dx12::GetHudlessFence()
 {
     return _hudlessCopyFence;
+}
+
+ID3D12Fence* IFGFeature_Dx12::GetFGFence()
+{
+    return _fgFence;
+}
+
+void IFGFeature_Dx12::SetUpscalerQueue(ID3D12CommandQueue* queue)
+{
+    _upscalerQueue = queue;
+    queue->Signal(_hudlessFence, _frameCount);
 }
 
 void IFGFeature_Dx12::SetWaitOnGameQueue(UINT64 value)

@@ -219,6 +219,7 @@ public:
     CustomOptional<float> QualityRatio_UltraPerformance{ 3.0f };
 
     // Hotfixes
+    CustomOptional<bool> DisableOverlays{ false };
     CustomOptional<float, NoDefault> MipmapBiasOverride; // disabled by default
     CustomOptional<bool> MipmapBiasFixedOverride{ false };
     CustomOptional<bool> MipmapBiasScaleOverride{ false };
@@ -280,16 +281,6 @@ public:
     CustomOptional<std::wstring, NoDefault> FfxVkPath;
 
     // dx11wdx12
-    // Valid values are;
-    //	0 - No syncing(fastest, most prone to errors)
-    //	1 - Fence
-    //	2 - Fences + Flush
-    //	3 - Fences + Event
-    //	4 - Fences + Flush + Event
-    //	5 - Query Only
-    //CustomOptional<int> TextureSyncMethod{ 1 };
-    //CustomOptional<int> CopyBackSyncMethod{ 5 };
-    //CustomOptional<bool> SyncAfterDx12{ true };
     CustomOptional<bool> Dx11DelayedInit{ false };
     CustomOptional<bool> DontUseNTShared{ false };
 
@@ -324,35 +315,43 @@ public:
 
     // OptiFG
     CustomOptional<bool> FGEnabled{ false };
-    CustomOptional<bool> FGHighPriority{ true };
     CustomOptional<bool> FGDebugView{ false };
     CustomOptional<bool> FGAsync{ false };
+    CustomOptional<bool> FGUseMutexForSwaphain{ true };
+    CustomOptional<bool> FGMakeMVCopy{ true };
+    CustomOptional<bool> FGMakeDepthCopy{ true };
+    CustomOptional<bool> FGUseSeperateQueue{ true };
+    CustomOptional<bool> FGHighPriority{ true };
+
+    // OptiFG - Hudfix
     CustomOptional<bool> FGHUDFix{ false };
+    CustomOptional<int> FGHUDLimit{ 1 };
     CustomOptional<bool> FGHUDFixExtended{ false };
     CustomOptional<bool> FGImmediateCapture{ false };
-    CustomOptional<int> FGHUDLimit{ 1 };
+    CustomOptional<bool> FGHudFixCloseAfterCallback{ false };
+    CustomOptional<bool> FGHudfixHalfSync{ false };
+    CustomOptional<bool> FGHudfixFullSync{ false };
+
+    // OptiFG - Resource Tracking
+    CustomOptional<bool> FGAlwaysTrackHeaps{ false };
+
+    // OptiFG - DLSS-D Depth scale
+    CustomOptional<bool> FGEnableDepthScale{ false };
+    CustomOptional<float> FGDepthScaleMax{ 10000.0f };
+    
+    // OptiFG - FSR-FG 
     CustomOptional<int, NoDefault> FGRectLeft;
     CustomOptional<int, NoDefault> FGRectTop;
     CustomOptional<int, NoDefault> FGRectWidth;
     CustomOptional<int, NoDefault> FGRectHeight;
-    CustomOptional<bool> FGDisableOverlays{ false };
-    CustomOptional<bool> FGAlwaysTrackHeaps{ false };
-    CustomOptional<bool> FGMakeDepthCopy{ true };
-    CustomOptional<bool> FGEnableDepthScale{ false };
-    CustomOptional<float> FGDepthScaleMax{ 10000.0f };
-    CustomOptional<bool> FGMakeMVCopy{ true };
-    CustomOptional<bool> FGHudFixCloseAfterCallback{ true };
-    CustomOptional<bool> FGUseMutexForSwaphain{ true };
+
+    // OptiFG - FSR-FG FPT
     CustomOptional<bool> FGFramePacingTuning{ true };
     CustomOptional<float> FGFPTSafetyMarginInMs{ 0.01f };
     CustomOptional<float> FGFPTVarianceFactor{ 0.3f };
     CustomOptional<bool> FGFPTAllowHybridSpin{ false };
     CustomOptional<int> FGFPTHybridSpinTime{ 2 };
     CustomOptional<bool> FGFPTAllowWaitForSingleObjectOnFence{ false };
-    CustomOptional<bool> FGHudfixHalfSync{ false };
-    CustomOptional<bool> FGHudfixFullSync{ false };
-    CustomOptional<bool> FGHudfixTrackRelease{ false };
-    CustomOptional<int> FGHudfixCBVTrackMode{ 0 }; // 0 off, 1 after upscaler, 2 full
 
     // DLSS Enabler
     std::optional<int> DE_FramerateLimit;			// off - vsync - number

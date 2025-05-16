@@ -910,10 +910,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             CheckQuirks();
 
             // OptiFG & Overlay Checks
-            if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG && !Config::Instance()->FGDisableOverlays.has_value())
-                Config::Instance()->FGDisableOverlays.set_volatile_value(true);
+            if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG && !Config::Instance()->DisableOverlays.has_value())
+                Config::Instance()->DisableOverlays.set_volatile_value(true);
 
-            if (Config::Instance()->FGDisableOverlays.value_or_default())
+            if (Config::Instance()->DisableOverlays.value_or_default())
                 SetEnvironmentVariable(L"SteamNoOverlayUIDrawing", L"1");
 
             // Init Kernel proxies
