@@ -274,9 +274,9 @@ int Hudfix_Dx12::GetIndex()
     return _upscaleCounter % BUFFER_COUNT;
 }
 
-void Hudfix_Dx12::DispatchFG(bool useHudless)
+void Hudfix_Dx12::HudlessFound()
 {
-    LOG_DEBUG("useHudless: {}, _upscaleCounter: {}, _fgCounter: {}", useHudless, _upscaleCounter, _fgCounter);
+    LOG_DEBUG("_upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
 
     std::lock_guard<std::mutex> lock(_counterMutex);
 
@@ -321,13 +321,13 @@ void Hudfix_Dx12::UpscaleStart()
 {
     return;
     
-    LOG_DEBUG("");
+    //LOG_DEBUG("");
 
-    if (_upscaleCounter > _fgCounter && IsResourceCheckActive() && CheckCapture())
-    {
-        LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
-        DispatchFG(false);
-    }
+    //if (_upscaleCounter > _fgCounter && IsResourceCheckActive() && CheckCapture())
+    //{
+    //    LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
+    //    HudlessFound(false);
+    //}
 }
 
 void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
@@ -370,18 +370,18 @@ void Hudfix_Dx12::PresentStart()
 {
     return;
 
-    // Calculate last upscale to present time
-    if (_upscaleEndTime > 0.1f)
-        _lastDiffTime = Util::MillisecondsNow() - _upscaleEndTime;
-    else
-        _lastDiffTime = 0.0f;
+    //// Calculate last upscale to present time
+    //if (_upscaleEndTime > 0.1f)
+    //    _lastDiffTime = Util::MillisecondsNow() - _upscaleEndTime;
+    //else
+    //    _lastDiffTime = 0.0f;
 
-    // FG not run yet!
-    if (_upscaleCounter > _fgCounter && IsResourceCheckActive() && CheckCapture())
-    {
-        LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
-        DispatchFG(false);
-    }
+    //// FG not run yet!
+    //if (_upscaleCounter > _fgCounter && IsResourceCheckActive() && CheckCapture())
+    //{
+    //    LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
+    //    HudlessFound(false);
+    //}
 }
 
 void Hudfix_Dx12::PresentEnd()
@@ -635,7 +635,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
 
         // This will prevent resource tracker to check these operations
         // Will reset after FG dispatch
-        _skipHudlessChecks = true;
+        HudlessFound();
 
         return true;
 
@@ -650,7 +650,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         // This will prevent resource tracker to check these operations
         // Will reset after FG dispatch
         _skipHudlessChecks = true;
-        DispatchFG(false);
+        HudlessFound(false);
     }
 #endif // USE_TIME_LIMIT
 

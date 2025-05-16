@@ -85,7 +85,7 @@ private:
     // Check _captureCounter for current frame
     static bool CheckCapture();    
 
-    static void DispatchFG(bool useHudless);
+    static void HudlessFound();
 
     static int GetIndex();
 
