@@ -1756,12 +1756,6 @@ bool MenuCommon::RenderMenu()
                                 }
                                 ShowHelpMarker("Release present sync mutex after presenting 2 frames");
 
-                                bool closeAfterCallback = Config::Instance()->FGHudFixCloseAfterCallback.value_or_default();
-                                if (ImGui::Checkbox("FG Close CmdList After Callback", &closeAfterCallback))
-                                    Config::Instance()->FGHudFixCloseAfterCallback = closeAfterCallback;
-                                ShowHelpMarker("Close OptiFG CmdList after swapchain callback\n"
-                                               "Mostly for debug purposes");
-
                                 ImGui::TreePop();
                             }
 

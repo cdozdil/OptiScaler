@@ -68,7 +68,6 @@ bool Config::Reload(std::filesystem::path iniPath)
             FGEnabled.set_from_config(readBool("OptiFG", "Enabled"));
             FGDebugView.set_from_config(readBool("OptiFG", "DebugView"));
             FGAsync.set_from_config(readBool("OptiFG", "AllowAsync"));
-            FGHighPriority.set_from_config(readBool("OptiFG", "HighPriority"));
             FGHUDFix.set_from_config(readBool("OptiFG", "HUDFix"));
             FGHUDLimit.set_from_config(readInt("OptiFG", "HUDLimit"));
             FGHUDFixExtended.set_from_config(readBool("OptiFG", "HUDFixExtended"));
@@ -80,7 +79,6 @@ bool Config::Reload(std::filesystem::path iniPath)
             FGAlwaysTrackHeaps.set_from_config(readBool("OptiFG", "AlwaysTrackHeaps"));
             FGMakeDepthCopy.set_from_config(readBool("OptiFG", "MakeDepthCopy"));
             FGMakeMVCopy.set_from_config(readBool("OptiFG", "MakeMVCopy"));
-            FGHudFixCloseAfterCallback.set_from_config(readBool("OptiFG", "HudFixCloseAfterCallback"));
             FGUseMutexForSwaphain.set_from_config(readBool("OptiFG", "UseMutexForSwaphain"));
             
             FGEnableDepthScale.set_from_config(readBool("OptiFG", "EnableDepthScale"));
@@ -587,7 +585,6 @@ bool Config::SaveIni()
         ini.SetValue("OptiFG", "Enabled", GetBoolValue(Instance()->FGEnabled.value_for_config()).c_str());
         ini.SetValue("OptiFG", "DebugView", GetBoolValue(Instance()->FGDebugView.value_for_config()).c_str());
         ini.SetValue("OptiFG", "AllowAsync", GetBoolValue(Instance()->FGAsync.value_for_config()).c_str());
-        ini.SetValue("OptiFG", "HighPriority", GetBoolValue(Instance()->FGHighPriority.value_for_config()).c_str());
         ini.SetValue("OptiFG", "HUDFix", GetBoolValue(Instance()->FGHUDFix.value_for_config()).c_str());
         ini.SetValue("OptiFG", "HUDLimit", GetIntValue(Instance()->FGHUDLimit.value_for_config()).c_str());
         ini.SetValue("OptiFG", "HUDFixExtended", GetBoolValue(Instance()->FGHUDFixExtended.value_for_config()).c_str());
@@ -599,7 +596,6 @@ bool Config::SaveIni()
         ini.SetValue("OptiFG", "AlwaysTrackHeaps", GetBoolValue(Instance()->FGAlwaysTrackHeaps.value_for_config()).c_str());
         ini.SetValue("OptiFG", "MakeDepthCopy", GetBoolValue(Instance()->FGMakeDepthCopy.value_for_config()).c_str());
         ini.SetValue("OptiFG", "MakeMVCopy", GetBoolValue(Instance()->FGMakeMVCopy.value_for_config()).c_str());
-        ini.SetValue("OptiFG", "HudFixCloseAfterCallback", GetBoolValue(Instance()->FGHudFixCloseAfterCallback.value_for_config()).c_str());
         ini.SetValue("OptiFG", "UseMutexForSwaphain", GetBoolValue(Instance()->FGUseMutexForSwaphain.value_for_config()).c_str());
         
         ini.SetValue("OptiFG", "EnableDepthScale", GetBoolValue(Instance()->FGEnableDepthScale.value_for_config()).c_str());

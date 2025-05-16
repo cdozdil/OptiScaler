@@ -73,25 +73,6 @@ bool IFGFeature_Dx12::CopyResource(ID3D12GraphicsCommandList* cmdList, ID3D12Res
     return result;
 }
 
-void IFGFeature_Dx12::WaitForFenceValue(ID3D12Fence* fence, UINT64 targetValue, HANDLE fenceEvent)
-{
-    // Check if the fence has already been reached
-    auto fenceValue = fence->GetCompletedValue();
-    if (fenceValue < targetValue)
-    {
-        // Instruct the fence to signal the event when the target value is reached
-        HRESULT hr = fence->SetEventOnCompletion(targetValue, fenceEvent);
-        if (hr != S_OK)
-        {
-            LOG_ERROR("Failed to set event on fence completion.");
-            return;
-        }
-
-        // Wait for the event
-        WaitForSingleObject(fenceEvent, INFINITE);
-    }
-}
-
 void IFGFeature_Dx12::SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* velocity, D3D12_RESOURCE_STATES state)
 {
     auto index = GetIndex();
@@ -145,7 +126,7 @@ void IFGFeature_Dx12::SetHudless(ID3D12GraphicsCommandList* cmdList, ID3D12Resou
 
 void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
 {
-    if (_commandQueue != nullptr)
+    if (_commandAllocators[0] != nullptr)
         return;
 
     LOG_DEBUG("");
@@ -186,117 +167,6 @@ void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
             }
         }
 
-        for (size_t i = 0; i < BUFFER_COUNT; i++)
-        {
-            result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&_copyCommandAllocator[i]));
-
-            result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, _copyCommandAllocator[i], NULL, IID_PPV_ARGS(&_copyCommandList[i]));
-            if (result != S_OK)
-            {
-                LOG_ERROR("CreateCommandList _copyCommandList[{}]: {:X}", i, (unsigned long)result);
-                break;
-            }
-            _copyCommandList[i]->SetName(L"_copyCommandList");
-
-            result = _copyCommandList[i]->Close();
-            if (result != S_OK)
-            {
-                LOG_ERROR("_copyCommandList[{}]->Close: {:X}", i, (unsigned long)result);
-                break;
-            }
-        }
-
-        for (size_t i = 0; i < BUFFER_COUNT; i++)
-        {
-            result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&_hudlessCommandAllocator[i]));
-
-            result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, _hudlessCommandAllocator[i], NULL, IID_PPV_ARGS(&_hudlessCommandList[i]));
-            if (result != S_OK)
-            {
-                LOG_ERROR("CreateCommandList _hudlessCommandList[{}]: {:X}", i, (unsigned long)result);
-                break;
-            }
-            _hudlessCommandList[i]->SetName(L"_hudlessCommandList");
-
-            result = _hudlessCommandList[i]->Close();
-            if (result != S_OK)
-            {
-                LOG_ERROR("_hudlessCommandList[{}]->Close: {:X}", i, (unsigned long)result);
-                break;
-            }
-        }
-
-        // Create a command queue for frame generation
-        ID3D12CommandQueue* queue = nullptr;
-        D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-        queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-        queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-        queueDesc.NodeMask = 0;
-
-        if (Config::Instance()->FGHighPriority.value_or_default())
-            queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
-        else
-            queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-
-        HRESULT hr = InDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&queue));
-        if (result != S_OK)
-        {
-            LOG_ERROR("CreateCommandQueue _commandQueue: {0:X}", (unsigned long)result);
-            break;
-        }
-        queue->SetName(L"_commandQueue");
-        if (!CheckForRealObject(__FUNCTION__, queue, (IUnknown**)&_commandQueue))
-            _commandQueue = queue;
-
-        queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-        hr = InDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&_copyCommandQueue));
-        if (result != S_OK)
-        {
-            LOG_ERROR("CreateCommandQueue _copyCommandQueue: {0:X}", (unsigned long)result);
-            break;
-        }
-        _copyCommandQueue->SetName(L"_copyCommandQueue");
-
-        hr = InDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&_hudlessCommandQueue));
-        if (result != S_OK)
-        {
-            LOG_ERROR("CreateCommandQueue _hudlessCommandQueue: {0:X}", (unsigned long)result);
-            break;
-        }
-        _hudlessCommandQueue->SetName(L"_hudlessCommandQueue");
-
-        hr = InDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_copyFence));
-        if (result != S_OK)
-        {
-            LOG_ERROR("CreateFence _copyFence: {0:X}", (unsigned long)result);
-            break;
-        }
-        _copyFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-        hr = InDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_fgFence));
-        if (result != S_OK)
-        {
-            LOG_ERROR("CreateFence _fgFence: {0:X}", (unsigned long)result);
-            break;
-        }
-        _fgFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-        hr = InDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_hudlessFence));
-        if (result != S_OK)
-        {
-            LOG_ERROR("CreateFence _hudlessFence: {0:X}", (unsigned long)result);
-            break;
-        }
-        _hudlessFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-        hr = InDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_hudlessCopyFence));
-        if (result != S_OK)
-        {
-            LOG_ERROR("CreateFence _hudlessCopyFence: {0:X}", (unsigned long)result);
-            break;
-        }
-        _hudlessCopyFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
     } while (false);
 }
 
@@ -317,63 +187,7 @@ void IFGFeature_Dx12::ReleaseObjects()
             _commandList[i]->Release();
             _commandList[i] = nullptr;
         }
-
-        if (_copyCommandAllocator[i] != nullptr)
-        {
-            _copyCommandAllocator[i]->Release();
-            _copyCommandAllocator[i] = nullptr;
-        }
-
-        if (_copyCommandList[i] != nullptr)
-        {
-            _copyCommandList[i]->Release();
-            _copyCommandList[i] = nullptr;
-        }
     }
-
-    if (_commandQueue != nullptr)
-    {
-        _commandQueue->Release();
-        _commandQueue = nullptr;
-    }
-
-    if (_copyFence != nullptr)
-    {
-        _copyFence->Release();
-        _copyFence = nullptr;
-    }
-
-    if (_copyCommandQueue != nullptr)
-    {
-        _copyCommandQueue->Release();
-        _copyCommandQueue = nullptr;
-    }
-}
-
-ID3D12Fence* IFGFeature_Dx12::GetCopyFence()
-{
-    return _copyFence;
-}
-
-ID3D12Fence* IFGFeature_Dx12::GetHudlessFence()
-{
-    return _hudlessCopyFence;
-}
-
-ID3D12Fence* IFGFeature_Dx12::GetFGFence()
-{
-    return _fgFence;
-}
-
-void IFGFeature_Dx12::SetUpscalerQueue(ID3D12CommandQueue* queue)
-{
-    _upscalerQueue = queue;
-    queue->Signal(_hudlessFence, _frameCount);
-}
-
-void IFGFeature_Dx12::SetWaitOnGameQueue(UINT64 value)
-{
-    _gameCommandQueue->Wait(_copyFence, value);
 }
 
 bool IFGFeature_Dx12::IsFGCommandList(void* cmdList)
@@ -391,3 +205,30 @@ bool IFGFeature_Dx12::IsFGCommandList(void* cmdList)
 
     return found;
 }
+
+void IFGFeature_Dx12::MVandDepthReady()
+{
+    _mvAndDepthReady = true;
+}
+
+void IFGFeature_Dx12::HudlessReady()
+{
+    _hudlessReady = true;
+}
+
+void IFGFeature_Dx12::Present()
+{
+    if (!_mvAndDepthReady)
+    {
+        _mvAndDepthReady = false;
+        _hudlessReady = false;
+        return;
+    }
+
+    auto hudless = _hudlessReady;
+    _mvAndDepthReady = false;
+    _hudlessReady = false;
+
+    DispatchHudless(hudless, State::Instance().lastFrameTime);
+}
+

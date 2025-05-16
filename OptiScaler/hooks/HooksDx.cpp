@@ -161,9 +161,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         State::Instance().FGresetCapturedResources = false;
     }
 
-    IFGFeature_Dx12* fg = nullptr;
-    if (State::Instance().currentFG != nullptr)
-        fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
+    IFGFeature_Dx12* fg = State::Instance().currentFG;
 
     if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART))
     {
@@ -200,6 +198,11 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
             HooksDx::readbackBuffer->Unmap(0, nullptr);
 
             HooksDx::dx12UpscaleTrig = false;
+        }
+
+        if (State::Instance().activeFgType == OptiFG && fg->IsActive() && fg->TargetFrame() < fg->FrameCount())
+        {
+            fg->Present();
         }
     }
 

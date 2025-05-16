@@ -39,6 +39,9 @@ public:
 
     virtual UINT64 UpscaleStart() = 0;
     virtual void UpscaleEnd() = 0;
+    virtual void MVandDepthReady() = 0;
+    virtual void HudlessReady() = 0;
+    virtual void Present() = 0;
 
     virtual void FgDone() = 0;
     virtual void ReleaseObjects() = 0;

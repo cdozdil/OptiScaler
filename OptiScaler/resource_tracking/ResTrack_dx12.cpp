@@ -438,13 +438,6 @@ HeapInfo* ResTrack_Dx12::GetHeapByCpuHandle(SIZE_T cpuHandle)
 
 HeapInfo* ResTrack_Dx12::GetHeapByGpuHandleGR(SIZE_T gpuHandle)
 {
-
-    //for (size_t i = 0; i < fgHeapIndex; i++)
-    //{
-    //    if (fgHeaps[i]->gpuStart != 0 && fgHeaps[i]->gpuStart <= gpuHandle && fgHeaps[i]->gpuEnd > gpuHandle)
-    //        return fgHeaps[i].get();
-    //}
-
     unsigned currentGen = gHeapGeneration.load(std::memory_order_relaxed);
 
     {
@@ -535,10 +528,7 @@ bool ResTrack_Dx12::IsHudFixActive()
     if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default())
     {
         if (!_fgEnabled)
-        {
-            //LOG_WARN("!_fgEnabled");
             _fgEnabled = true;
-        }
 
         return false;
     }
@@ -546,10 +536,7 @@ bool ResTrack_Dx12::IsHudFixActive()
     if (State::Instance().currentFG == nullptr || State::Instance().currentFeature == nullptr || State::Instance().FGchanged)
     {
         if (!_currentFG)
-        {
-            //LOG_WARN("!_currentFG");
             _currentFG = true;
-        }
 
         return false;
     }
@@ -557,10 +544,7 @@ bool ResTrack_Dx12::IsHudFixActive()
     if (!State::Instance().currentFG->IsActive())
     {
         if (!_currentFGActive)
-        {
-            //LOG_WARN("!_currentFGActive");
             _currentFGActive = true;
-        }
 
         return false;
     }
@@ -568,10 +552,7 @@ bool ResTrack_Dx12::IsHudFixActive()
     if (!_presentDone)
     {
         if (!_written)
-        {
-            //LOG_WARN("!_presentDone");
             _presentDone = true;
-        }
 
         return false;
     }
@@ -579,10 +560,7 @@ bool ResTrack_Dx12::IsHudFixActive()
     if (Hudfix_Dx12::SkipHudlessChecks())
     {
         if (!_skipHudless)
-        {
-            //LOG_WARN("!_skipHudless");
             _skipHudless = true;
-        }
 
         return false;
     }
@@ -590,10 +568,7 @@ bool ResTrack_Dx12::IsHudFixActive()
     if (!Hudfix_Dx12::IsResourceCheckActive())
     {
         if (!_rcActive)
-        {
-            //LOG_WARN("!_rcActive");
             _rcActive = true;
-        }
 
         return false;
     }
@@ -664,21 +639,6 @@ static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* p
 
 #pragma region Resource input hooks
 
-void ResTrack_Dx12::hkCreateSampler(ID3D12Device* This, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
-{
-    o_CreateSampler(This, pDesc, DestDescriptor);
-}
-
-void ResTrack_Dx12::hkCreateDepthStencilView(ID3D12Device* This, ID3D12Resource* pResource, const D3D12_DEPTH_STENCIL_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
-{
-    o_CreateDepthStencilView(This, pResource, pDesc, DestDescriptor);
-}
-
-void ResTrack_Dx12::hkCreateConstantBufferView(ID3D12Device* This, const D3D12_CONSTANT_BUFFER_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
-{
-    o_CreateConstantBufferView(This, pDesc, DestDescriptor);
-}
-
 void ResTrack_Dx12::hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResource, D3D12_RENDER_TARGET_VIEW_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
     // force hdr for swapchain buffer
@@ -742,13 +702,6 @@ void ResTrack_Dx12::hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource*
     }
 #endif
 
-#ifdef DETAILED_DEBUG_LOGS
-
-    //if (CheckForHudless("", &resInfo))
-    //    LOG_TRACE("<------ pResource: {0:X}, CpuHandle: {1}, GpuHandle: {2}", (UINT64)pResource, DestDescriptor.ptr, GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_RTV));
-
-#endif //  _DEBUG
-
     auto heap = GetHeapByCpuHandleRTV(DestDescriptor.ptr);
     if (heap != nullptr)
     {
@@ -760,8 +713,6 @@ void ResTrack_Dx12::hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource*
             if (temp != nullptr && temp->buffer != nullptr)
                 RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
         }
-#else
-        //pResource->SetPrivateData(GUID_Tracking, 4, &_trackMark);
 #endif
 
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
@@ -831,13 +782,6 @@ void ResTrack_Dx12::hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resourc
     }
 #endif
 
-#ifdef DETAILED_DEBUG_LOGS
-
-    //if (CheckForHudless("", &resInfo))
-    //    LOG_TRACE("<------ pResource: {0:X}, CpuHandle: {1}, GpuHandle: {2}", (UINT64)pResource, DestDescriptor.ptr, GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
-
-#endif //  _DEBUG
-
     auto heap = GetHeapByCpuHandleSRV(DestDescriptor.ptr);
     if (heap != nullptr)
     {
@@ -849,8 +793,6 @@ void ResTrack_Dx12::hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resourc
             if (temp != nullptr && temp->buffer != nullptr)
                 RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
         }
-#else
-        //pResource->SetPrivateData(GUID_Tracking, 4, &_trackMark);
 #endif
 
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
@@ -919,13 +861,6 @@ void ResTrack_Dx12::hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resour
     }
 #endif
 
-#ifdef DETAILED_DEBUG_LOGS
-
-    //if (CheckForHudless("", &resInfo))
-    //    LOG_TRACE("<------ pResource: {0:X}, CpuHandle: {1}, GpuHandle: {2}", (UINT64)pResource, DestDescriptor.ptr, GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
-
-#endif //  _DEBUG
-
     auto heap = GetHeapByCpuHandleUAV(DestDescriptor.ptr);
     if (heap != nullptr)
     {
@@ -937,8 +872,6 @@ void ResTrack_Dx12::hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resour
             if (temp != nullptr && temp->buffer != nullptr)
                 RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
         }
-#else
-        //pResource->SetPrivateData(GUID_Tracking, 4, &_trackMark);
 #endif
 
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
@@ -1024,30 +957,15 @@ void ResTrack_Dx12::hkExecuteCommandLists(ID3D12CommandQueue* This, UINT NumComm
         if (_commandList != nullptr && ppCommandLists[i] == _commandList)
         {
             LOG_DEBUG("Hudless cmdlist, {}", State::Instance().currentFG->FrameCount());
-            This->Signal(State::Instance().currentFG->GetHudlessFence(), State::Instance().currentFG->FrameCount());
+            State::Instance().currentFG->HudlessReady();
             _commandList = nullptr;
-            _foundHudless = true;
         }
 
         if (_upscalerCommandList != nullptr && ppCommandLists[i] == _upscalerCommandList)
         {
-            auto frame = State::Instance().currentFG->FrameCount();
-            LOG_DEBUG("Upscaler cmdlist, {}", frame);
-            This->Signal(State::Instance().currentFG->GetCopyFence(), frame);
+            LOG_DEBUG("Upscaler cmdlist, {}", State::Instance().currentFG->FrameCount());
+            State::Instance().currentFG->MVandDepthReady();
             _upscalerCommandList = nullptr;
-            _foundUpscale = true;
-        }
-    }
-
-    if (_foundHudless && _foundUpscale)
-    {
-        _foundHudless = false;
-        _foundUpscale = false;
-
-        if (State::Instance().currentFG->IsActive() && State::Instance().currentFG->TargetFrame() < State::Instance().currentFG->FrameCount())
-        {
-            State::Instance().currentFG->SetUpscalerQueue(State::Instance().currentCommandQueue);
-            State::Instance().currentFG->DispatchHudless(true, State::Instance().lastFrameTime);
         }
     }
 }
@@ -1096,9 +1014,8 @@ HRESULT ResTrack_Dx12::hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPT
 
 ULONG ResTrack_Dx12::hkRelease(ID3D12Resource* This)
 {
-    if (State::Instance().isShuttingDown) // || (!Config::Instance()->FGAlwaysTrackHeaps.value_or_default() && !IsHudFixActive()))
+    if (State::Instance().isShuttingDown)
         return o_Release(This);
-
 
     _trMutex.lock();
 
@@ -2052,7 +1969,6 @@ void ResTrack_Dx12::HookCommandList(ID3D12Device* InDevice)
             // release resource
             o_DiscardResource = (PFN_DiscardResource)pVTable[51];
 #endif
-
             o_ExecuteBundle = (PFN_ExecuteBundle)pVTable[27];
 
             if (o_OMSetRenderTargets != nullptr)
@@ -2139,7 +2055,6 @@ void ResTrack_Dx12::HookToQueue(ID3D12Device* InDevice)
     }
 }
 
-
 void ResTrack_Dx12::HookDevice(ID3D12Device* device)
 {
     if (State::Instance().activeFgType != OptiFG || !Config::Instance()->OverlayMenu.value_or_default())
@@ -2177,17 +2092,8 @@ void ResTrack_Dx12::HookDevice(ID3D12Device* device)
         if (o_CreateDescriptorHeap != nullptr)
             DetourAttach(&(PVOID&)o_CreateDescriptorHeap, hkCreateDescriptorHeap);
 
-        //if (o_CreateConstantBufferView != nullptr)
-        //    DetourAttach(&(PVOID&)o_CreateConstantBufferView, hkCreateConstantBufferView);
-
         if (o_CreateRenderTargetView != nullptr)
             DetourAttach(&(PVOID&)o_CreateRenderTargetView, hkCreateRenderTargetView);
-
-        //if (o_CreateDepthStencilView != nullptr)
-        //    DetourAttach(&(PVOID&)o_CreateDepthStencilView, hkCreateDepthStencilView);
-
-        //if (o_CreateSampler != nullptr)
-        //    DetourAttach(&(PVOID&)o_CreateSampler, hkCreateSampler);
 
         if (o_CreateShaderResourceView != nullptr)
             DetourAttach(&(PVOID&)o_CreateShaderResourceView, hkCreateShaderResourceView);

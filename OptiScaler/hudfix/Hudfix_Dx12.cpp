@@ -6,26 +6,6 @@
 
 #include <framegen/IFGFeature_Dx12.h>
 
-#include <future>
-#include <utility>  // for std::forward
-
-template<typename Fn, typename... Args>
-void fire_and_forget(Fn&& fn, Args&&... args) {
-    std::thread(
-        // wrap in a lambda so we can catch exceptions if you want
-        [f = std::forward<Fn>(fn),
-        tup = std::make_tuple(std::forward<Args>(args)...)]() mutable
-        {
-            try {
-                std::apply(std::move(f), std::move(tup));
-            }
-            catch (...) {
-                // swallow or log
-            }
-        }
-    ).detach();
-}
-
 // Use time limit to stop hudless search before Present call
 //#define USE_TIME_LIMIT
 
@@ -239,7 +219,6 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
     if ((resDesc.Flags & (D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY |
         D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE | D3D12_RESOURCE_FLAG_VIDEO_ENCODE_REFERENCE_ONLY)) > 0)
     {
-        //LOG_TRACE("Skip by flag: {:X}", (UINT)resDesc.Flags);
         return false;
     }
 
@@ -310,18 +289,6 @@ void Hudfix_Dx12::DispatchFG(bool useHudless)
     // Increase counter
     _fgCounter++; 
 
-    //fire_and_forget(&IFGFeature_Dx12::DispatchHudless, State::Instance().currentFG, useHudless, _frameTime);
-
-    //if (!Config::Instance()->FGUseSeperateQueue.value_or_default() && !Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
-    //{
-    //    std::thread t(&IFGFeature_Dx12::DispatchHudless, State::Instance().currentFG, useHudless, _frameTime);
-    //    t.detach();
-    //}
-    //else
-    {
-        //State::Instance().currentFG->DispatchHudless(useHudless, _frameTime);
-    }
-
     // Let resource tracker to continue
     _skipHudlessChecks = false;
 }
@@ -352,6 +319,8 @@ bool Hudfix_Dx12::CheckForRealObject(std::string functionName, IUnknown* pObject
 
 void Hudfix_Dx12::UpscaleStart()
 {
+    return;
+    
     LOG_DEBUG("");
 
     if (_upscaleCounter > _fgCounter && IsResourceCheckActive() && CheckCapture())
@@ -399,6 +368,8 @@ void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
 
 void Hudfix_Dx12::PresentStart()
 {
+    return;
+
     // Calculate last upscale to present time
     if (_upscaleEndTime > 0.1f)
         _lastDiffTime = Util::MillisecondsNow() - _upscaleEndTime;
@@ -431,35 +402,20 @@ UINT64 Hudfix_Dx12::ActivePresentFrame()
 bool Hudfix_Dx12::IsResourceCheckActive()
 {
     if (_upscaleCounter <= _fgCounter)
-    {
-        //LOG_TRACE("_upscaleCounter: {} <= _fgCounter: {}", _upscaleCounter, _fgCounter);
         return false;
-    }
 
     if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default())
-    {
-        //LOG_TRACE("FGEnabled: {} <= FGHUDFix: {}", Config::Instance()->FGEnabled.value_or_default(), Config::Instance()->FGHUDFix.value_or_default());
         return false;
-    }
 
     if (State::Instance().currentFeature == nullptr || State::Instance().currentFG == nullptr)
-    {
-        //LOG_TRACE("currentFeature: {:X} <= currentFG: {:X}", (size_t)State::Instance().currentFeature, (size_t)State::Instance().currentFG);
         return false;
-    }
 
     if (!State::Instance().currentFG->IsActive() || State::Instance().FGchanged)
-    {
-        //LOG_TRACE("currentFG->IsActive(): {} <= State::Instance().FGchanged: {}", State::Instance().currentFG->IsActive(), State::Instance().FGchanged);
         return false;
-    }
 
     auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
     if (fg == nullptr)
-    {
-        //LOG_TRACE("currentFG is not Dx12!");
         return false;
-    }
 
     return true;
 }
@@ -607,18 +563,6 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
             if (state != D3D12_RESOURCE_STATE_VIDEO_ENCODE_WRITE)
                 ResourceBarrier(cmdList, resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
 
-            // Reset command list
-            //_commandAllocator[fIndex]->Reset();
-            //_commandList[fIndex]->Reset(_commandAllocator[fIndex], nullptr);
-
-            //ResourceBarrier(_commandList[fIndex], resource->buffer, state, D3D12_RESOURCE_STATE_COPY_SOURCE);
-            //_commandList[fIndex]->CopyResource(_captureBuffer[fIndex], resource->buffer);
-            //ResourceBarrier(_commandList[fIndex], resource->buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, state);
-
-            //_commandList[fIndex]->Close();
-            //ID3D12CommandList* cmdLists[1] = { _commandList[fIndex] };
-            //_commandQueue->ExecuteCommandLists(1, cmdLists);
-
             LOG_DEBUG("Copy created");
         }
         else
@@ -650,21 +594,9 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
                 // Will reset after FG dispatch
                 _skipHudlessChecks = true;
 
-                // Reset command list
-                //_commandAllocator[fIndex]->Reset();
-                //_commandList[fIndex]->Reset(_commandAllocator[fIndex], nullptr);
-
                 ResourceBarrier(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                 _formatTransfer->Dispatch(State::Instance().currentD3D12Device, cmdList, _captureBuffer[fIndex], _formatTransfer->Buffer());
                 ResourceBarrier(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-
-                //ResourceBarrier(_commandList[fIndex], _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-                //_formatTransfer->Dispatch(State::Instance().currentD3D12Device, _commandList[fIndex], _captureBuffer[fIndex], _formatTransfer->Buffer());
-                //ResourceBarrier(_commandList[fIndex], _captureBuffer[fIndex], D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-
-                //_commandList[fIndex]->Close();
-                //ID3D12CommandList* cmdLists[1] = { _commandList[fIndex] };
-                //_commandQueue->ExecuteCommandLists(1, cmdLists);
 
                 LOG_TRACE("Using _formatTransfer->Buffer()");
 
@@ -700,15 +632,10 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         }
 
         LOG_DEBUG("Calling FG with hudless");
+
         // This will prevent resource tracker to check these operations
         // Will reset after FG dispatch
-
-        //_commandList[fIndex]->Close();
-        //ID3D12CommandList* cmdLists[1] = { _commandList[fIndex] };
-        //_commandQueue->ExecuteCommandLists(1, cmdLists);
-
         _skipHudlessChecks = true;
-        DispatchFG(true);
 
         return true;
 

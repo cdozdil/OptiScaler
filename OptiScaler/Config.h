@@ -320,15 +320,12 @@ public:
     CustomOptional<bool> FGUseMutexForSwaphain{ true };
     CustomOptional<bool> FGMakeMVCopy{ true };
     CustomOptional<bool> FGMakeDepthCopy{ true };
-    CustomOptional<bool> FGUseSeperateQueue{ true };
-    CustomOptional<bool> FGHighPriority{ true };
 
     // OptiFG - Hudfix
     CustomOptional<bool> FGHUDFix{ false };
     CustomOptional<int> FGHUDLimit{ 1 };
     CustomOptional<bool> FGHUDFixExtended{ false };
     CustomOptional<bool> FGImmediateCapture{ false };
-    CustomOptional<bool> FGHudFixCloseAfterCallback{ false };
     CustomOptional<bool> FGHudfixHalfSync{ false };
     CustomOptional<bool> FGHudfixFullSync{ false };
 

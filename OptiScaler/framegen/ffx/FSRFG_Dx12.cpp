@@ -63,11 +63,6 @@ UINT64 FSRFG_Dx12::UpscaleStart()
         auto allocator = _commandAllocators[frameIndex];
         auto result = allocator->Reset();
         result = _commandList[frameIndex]->Reset(allocator, nullptr);
-
-        auto callocator = _copyCommandAllocator[frameIndex];
-        result = callocator->Reset();
-        result = _copyCommandList[frameIndex]->Reset(allocator, nullptr);
-
         LOG_DEBUG("_commandList[{}]->Reset()", frameIndex);
     }
 
@@ -257,98 +252,11 @@ bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* ou
 
 bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
 {
-    LOG_DEBUG("useHudless: {}, frameTime: {}, queue: {:X}", useHudless, frameTime, (size_t)_upscalerQueue);
-
-    //if (_upscalerQueue == nullptr)
-    //    return false;
+    LOG_DEBUG("useHudless: {}, frameTime: {}", useHudless, frameTime);
 
     if (State::Instance().FSRFGFTPchanged)
         ConfigureFramePaceTuning();
 
-    //_gameCommandQueue->Wait(_copyFence, _frameCount);
-    //_gameCommandQueue->Wait(_hudlessFence, _frameCount);
-
-
-    //WaitForFenceValue(_hudlessFence, _frameCount, _hudlessFenceEvent);
-/*
-    if (_lastCopyFenceValue > 0)
-        WaitForFenceValue(_copyFence, _lastCopyFenceValue, _copyFenceEvent);
-
-    if (_lastHudlessCopyFenceValue > 0)
-        WaitForFenceValue(_hudlessCopyFence, _lastHudlessCopyFenceValue, _hudlessCopyFenceEvent);
-
-    if (_lastFgFenceValue > 0)
-        WaitForFenceValue(_fgFence, _lastFgFenceValue, _fgFenceEvent);
-
-    // FG queue wait for copy operations
-    LOG_DEBUG("FG Queue wait for copy, {}", _frameCount);
-    _commandQueue->Wait(_copyFence, _frameCount);
-    _lastCopyFenceValue = _frameCount;
-
-    if (useHudless)
-    {
-        LOG_DEBUG("FG Queue wait for hudless copy, {}", _frameCount);
-        _commandQueue->Wait(_hudlessCopyFence, _frameCount);
-        _lastHudlessCopyFenceValue = _frameCount;
-    }
-    else
-    {
-        LOG_TRACE("No hudless!");
-    }
-
-    //LOG_DEBUG("Game Queue wait for FG, {}", _frameCount);
-    //_gameCommandQueue->Wait(_fgFence, _frameCount);
-    //_lastFgFenceValue = _frameCount;
-    */
-    /*
-    if (Config::Instance()->FGUseSeperateQueue.value_or_default())
-    {
-        if (_lastFgFenceValue > 0)
-            WaitForFenceValue(_fgFence, _lastFgFenceValue, _fgFenceEvent);
-
-        if (_lastCopyFenceValue > 0)
-            WaitForFenceValue(_copyFence, _lastCopyFenceValue, _copyFenceEvent);
-
-        if (_lastHudlessCopyFenceValue > 0)
-            WaitForFenceValue(_hudlessCopyFence, _lastHudlessCopyFenceValue, _hudlessCopyFenceEvent);
-
-        // FG queue wait for copy operations
-        LOG_DEBUG("FG Queue wait for copy, {}", _frameCount);
-        _commandQueue->Wait(_copyFence, _frameCount);
-        _lastCopyFenceValue = _frameCount;
-
-        if (useHudless)
-        {
-            LOG_DEBUG("FG Queue wait for hudless copy, {}", _frameCount);
-            _commandQueue->Wait(_hudlessCopyFence, _frameCount);
-            _lastHudlessCopyFenceValue = _frameCount;
-        }
-
-        if (State::Instance().currentCommandQueue != nullptr)
-        {
-            LOG_DEBUG("Game Queue wait for FG, {}", _frameCount);
-            State::Instance().currentCommandQueue->Wait(_fgFence, _frameCount);
-            _lastFgFenceValue = _frameCount;
-        }
-    }
-    else if (!Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
-    {
-        WaitForFenceValue(_copyFence, _frameCount, _copyFenceEvent);
-        WaitForFenceValue(_hudlessCopyFence, _frameCount, _hudlessCopyFenceEvent);
-
-        _lastCopyFenceValue = _frameCount;
-        _lastHudlessCopyFenceValue = _frameCount;
-    }
-
-    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && Mutex.getOwner() != 2)
-    {
-        LOG_TRACE("Waiting FG->Mutex 1, current: {}", Mutex.getOwner());
-        Mutex.lock(1);
-        LOG_TRACE("Accuired FG->Mutex: {}", Mutex.getOwner());
-    }
-    */
-
-    // hudless captured for this frame
     auto fIndex = GetIndex();
 
     ffxConfigureDescFrameGeneration m_FrameGenerationConfig = {};
@@ -451,7 +359,6 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
 
         retCode = FfxApiProxy::D3D12_Dispatch()(&_fgContext, &dfgPrepare.header);
 
-
         auto result = _commandList[fIndex]->Close();
         LOG_DEBUG("_commandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
 
@@ -461,49 +368,6 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
             ID3D12CommandList* cl[] = { cl[0] = _commandList[fIndex] };
             _gameCommandQueue->ExecuteCommandLists(1, cl);
         }
-
-        /*
-        _commandQueue->Signal(_fgFence, _frameCount);
-        */
-        /*
-        if (Config::Instance()->FGUseSeperateQueue.value_or_default())
-        {
-            auto result = _commandList[fIndex]->Close();
-            LOG_DEBUG("_commandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
-            ID3D12CommandList* cl[] = { _commandList[fIndex] };
-
-            // use FG queue
-            if (useHudless)
-            {
-                _commandQueue->ExecuteCommandLists(1, cl);
-                _commandQueue->Signal(_fgFence, _frameCount);
-                LOG_DEBUG("Execute and signal from FG Queue, {}", _frameCount);
-            }
-            else if (State::Instance().currentCommandQueue != nullptr)
-            {
-                //Use game queue
-                State::Instance().currentCommandQueue->ExecuteCommandLists(1, cl);
-                State::Instance().currentCommandQueue->Signal(_fgFence, _frameCount);
-                LOG_DEBUG("Execute from game queue!!");
-            }
-        }
-        else
-        {
-            if (!Config::Instance()->FGHudFixCloseAfterCallback.value_or_default())
-            {
-                auto result = _commandList[fIndex]->Close();
-                LOG_DEBUG("_commandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
-
-                if (result == S_OK)
-                {
-                    ID3D12CommandList* cl[] = { cl[0] = _commandList[fIndex] };
-                    _gameCommandQueue->ExecuteCommandLists(1, cl);
-                }
-
-                _gameCommandQueue->Signal(_fgFence, _frameCount);
-            }
-        }
-        */
 
         LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}, commandList: {3:X}", retCode, _frameCount, fIndex, (size_t)dfgPrepare.commandList);
     }
@@ -578,32 +442,10 @@ ffxReturnCode_t FSRFG_Dx12::HudlessDispatchCallback(ffxDispatchDescFrameGenerati
     int fIndex = params->frameID % BUFFER_COUNT;
 
     LOG_DEBUG("frameID: {}, commandList: {:X}, numGeneratedFrames: {}", params->frameID, (size_t)params->commandList, params->numGeneratedFrames);
-    
-    //if (!Config::Instance()->FGUseSeperateQueue.value_or_default())
-    //{
-        //if (params->frameID != _lastUpscaledFrameId /*&& Config::Instance()->FGHudFixCloseAfterCallback.value_or_default()*/)
-        //{
-        //    result = _commandList[fIndex]->Close();
-        //    LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
-
-        //    // if there is command list error return ERROR
-        //    if (result == S_OK)
-        //    {
-        //        ID3D12CommandList* cl[] = { _commandList[fIndex] };
-        //        _gameCommandQueue->ExecuteCommandLists(1, cl);
-        //        _gameCommandQueue->Signal(_fgFence, _frameCount);
-        //    }
-        //    else
-        //    {
-        //        _gameCommandQueue->Signal(_fgFence, _frameCount);
-        //        return FFX_API_RETURN_ERROR;
-        //    }
-        //}
-    //}
 
     // check for status
     if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default() ||
-        _fgContext == nullptr || _commandQueue == nullptr || State::Instance().SCchanged)
+        _fgContext == nullptr || _gameCommandQueue == nullptr || State::Instance().SCchanged)
     {
         LOG_WARN("Cancel async dispatch");
         params->numGeneratedFrames = 0;
@@ -685,30 +527,6 @@ void FSRFG_Dx12::StopAndDestroyContext(bool destroy, bool shutDown, bool useMute
         mutexTaken = true;
         LOG_TRACE("Accuired Mutex: {}", Mutex.getOwner());
     }
-
-    //if (!State::Instance().isShuttingDown)
-    //{
-    //    if (_lastCopyFenceValue > 0)
-    //    {
-    //        _commandQueue->Signal(_copyFence, _lastCopyFenceValue);
-    //        State::Instance().currentCommandQueue->Signal(_copyFence, _lastCopyFenceValue);
-    //        WaitForFenceValue(_copyFence, _lastCopyFenceValue, _copyFenceEvent);
-    //    }
-
-    //    if (_lastHudlessCopyFenceValue > 0 && _lastCopyFenceValue == _lastHudlessCopyFenceValue)
-    //    {
-    //        _commandQueue->Signal(_hudlessCopyFence, _lastCopyFenceValue);
-    //        State::Instance().currentCommandQueue->Signal(_hudlessCopyFence, _lastCopyFenceValue);
-    //        WaitForFenceValue(_hudlessCopyFence, _lastHudlessCopyFenceValue, _hudlessCopyFenceEvent);
-    //    }
-
-    //    if (_lastFgFenceValue > 0 && _lastCopyFenceValue == _lastFgFenceValue)
-    //        WaitForFenceValue(_fgFence, _lastFgFenceValue, _fgFenceEvent);
-    //}
-
-    _lastCopyFenceValue = 0;
-    _lastHudlessCopyFenceValue = 0;
-    _lastFgFenceValue = 0;
 
     if (!(shutDown || State::Instance().isShuttingDown) && _fgContext != nullptr)
     {

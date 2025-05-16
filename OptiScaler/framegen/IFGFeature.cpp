@@ -9,8 +9,6 @@ int IFGFeature::GetIndex()
 
 bool IFGFeature::CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject)
 {
-    //return false;
-
     if (streamlineRiid.Data1 == 0)
     {
         auto iidResult = IIDFromString(L"{ADEC44E2-61F0-45C3-AD9F-1B37379284FF}", &streamlineRiid);
