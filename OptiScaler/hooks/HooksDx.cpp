@@ -141,17 +141,20 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         return result;
     }
 
-    double ftDelta = 0.0f;
+    if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART))
+    {
+        double ftDelta = 0.0f;
 
-    auto now = Util::MillisecondsNow();
+        auto now = Util::MillisecondsNow();
 
-    if (_lastFrameTime != 0)
-        ftDelta = now - _lastFrameTime;
+        if (_lastFrameTime != 0)
+            ftDelta = now - _lastFrameTime;
 
-    _lastFrameTime = now;
-    State::Instance().lastFrameTime = ftDelta;
+        _lastFrameTime = now;
+        State::Instance().lastFrameTime = ftDelta;
 
-    LOG_DEBUG("_frameCounter: {}, flags: {:X}, Frametime: {}", _frameCounter, Flags, ftDelta);
+        LOG_DEBUG("_frameCounter: {}, flags: {:X}, Frametime: {}", _frameCounter, Flags, ftDelta);
+    }
 
     if (State::Instance().FGresetCapturedResources)
     {
